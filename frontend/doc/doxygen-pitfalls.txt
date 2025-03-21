@@ -74,3 +74,30 @@ then the log will include something like:
   Running directive: .. cpp:enum:: 
 
 for this case.
+
+---
+"CRITICAL: Duplicate ID: <long alphanumeric string>"
+---
+
+Unclear at this time what truly causes these kinds of errors, but it is
+suspected to be a bug in doxygen.
+
+A real-world example of this kind of error:
+
+```
+$CHPL_HOME/doc/rst/developer/compiler-internals/types.rst:6: CRITICAL: Duplicate ID: "_param_tag_8h_1ac254bac687cc93f8b6cb77b99f231f82".
+CHPL_HOME/doc/rst/developer/compiler-internals/types.rst:6: WARNING: Duplicate explicit target name: "_param_tag_8h_1ac254bac687cc93f8b6cb77b99f231f82".
+```
+
+This particular error concerned the ``ParamTag`` type. Because we make
+``ParamTag`` available via ``chpl::types::ParamTag`` with a statement like the
+one below, doxygen seems to get confused and emits the error:
+
+```
+using chpl::types::paramtags::ParamTag;
+```
+
+Disabling documentation of the 'using' statement quiets things down.
+
+Using the listed ID, you can search in ``build/doc/doxygen/xml/`` and from
+there can usually find a proper type name, and more useful information.

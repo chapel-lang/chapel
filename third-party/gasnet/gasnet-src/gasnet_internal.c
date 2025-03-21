@@ -158,6 +158,8 @@ gasneti_TM_t gasneti_thing_that_goes_thunk_in_the_dark = NULL;
   gasneti_progressfn_t gasneti_debug_progressfn_counted = gasneti_disabled_progressfn;
 #endif
 
+void gasneti_empty_pf(void) {}
+
 gasnet_seginfo_t *gasneti_seginfo = NULL;
 gasnet_seginfo_t *gasneti_seginfo_aux = NULL;
 
@@ -1598,6 +1600,9 @@ static int gasneti_nativeOfiProvider(void) {
     gasneti_device_probe_t dev_list[] = {
       GASNETI_IBV_DEVICES, // verbs or psm2 providers
       GASNETI_CXI_DEVICES  // cxi provider
+      #if !GASNET_SEGMENT_EVERYTHING
+        , GASNETI_GNI_DEVICES // gni provider
+      #endif
     };
     if (gasneti_probeInfiniBandHCAs() & GASNETI_HCA_TRUESCALE) {
       // Assume no good if TrueScale HCA is found (we assume single fabric)
@@ -2047,7 +2052,7 @@ const char *gasneti_format_host_detect(void) {
  * NOTE: may modify gasneti_nodemap[] if env var GASNET_SUPERNODE_MAXSIZE is set,
  *        or if gasneti_nodemap_local_count would exceed GASNETI_PSHM_MAX_NODES.
  * TODO: splitting by socket or other criteria for/with GASNET_SUPERNODE_MAXSIZE.
- * TODO: keep widths around for conduits to use? (at least ibv and aries both use)
+ * TODO: keep widths around for conduits to use? (at least ibv uses)
  */
 extern void gasneti_nodemapParse(void) {
   gex_Rank_t i,j,limit;
@@ -2167,7 +2172,7 @@ extern void gasneti_nodemapParse(void) {
     }
   #endif
   
-#if GASNET_NDEBUG && !GASNET_PSHM && !GASNET_SEGMENT_EVERYTHING
+#if GASNET_NDEBUG && !GASNET_PSHM && !GASNET_SEGMENT_EVERYTHING && !GASNET_NO_PSHM_WARNING
   if (!gasneti_mynode && (gasneti_nodes != gasneti_myhost.grp_count)) {
     // at least one host holds more than one process
     gasneti_console_message("WARNING",
@@ -2213,11 +2218,11 @@ extern void gasneti_nodemapParse(void) {
 //     Both `sz` and `stride` are ignored.
 //   }
 //
-// TODO: The "four case" above conflate the scalar/vector nature of `ids`
+// TODO: The "four cases" above conflate the scalar/vector nature of `ids`
 // with the availability of an `exchangefn`, with the result that a vector of
 // conduit-specific ids cannot be ignored in favor of one of the standard
-// GASNET_HOST_DETECT options (making "conduit" and "trivial" the only supported
-// options for aries-conduit in particular).  This could be fixed with an
+// GASNET_HOST_DETECT options (which had made "conduit" and "trivial" the only
+// supported options for aries-conduit).  This could be fixed with an
 // adjustment such as making non-zero `stride` the indicator for a vector `ids`.
 //
 // TODO: There is a proposed "greedy" algorithm which uses all of the available

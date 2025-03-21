@@ -1,21 +1,10 @@
 #ifndef QTHREAD_INNARDS_H
 #define QTHREAD_INNARDS_H
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 /* System Headers */
 #include <math.h>
 
 #include <pthread.h>
-
-#ifdef QTHREAD_HAVE_HWLOC
-#include <hwloc.h>
-#if (HWLOC_API_VERSION < 0x00010000)
-#error HWLOC version unrecognized
-#endif
-#endif
 
 /* Internal Headers */
 #include "qt_asserts.h"
@@ -72,14 +61,6 @@ typedef struct qlib_s {
   /* round robin scheduler - can probably be smarter */
   aligned_t sched_shepherd;
   QTHREAD_FASTLOCK_TYPE sched_shepherd_lock;
-
-  /*AGG cost method, call method  and max cost
-   * defined in qthreads or given by the user at qthread initialization
-   */
-  qthread_agg_f
-    agg_f; // void(*agg_f)   (int count, qthread_f *f, void **arg, void **ret);
-  int (*agg_cost)(int count, qthread_f *f, void **arg);
-  int max_c;
 } *qlib_t;
 
 extern qlib_t qlib;

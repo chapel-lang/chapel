@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -141,6 +141,7 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_ADDR_OF:
   case PRIM_SET_REFERENCE:
   case PRIM_LOCAL_CHECK:
+  case PRIM_IS_LOCAL:
 
   case PRIM_PTR_EQUAL:
   case PRIM_PTR_NOTEQUAL:

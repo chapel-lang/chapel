@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -27,14 +27,6 @@
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Record.h"
 #include "chpl/uast/Variable.h"
-
-static QualifiedType findVarType(const Module* m,
-                                 const ResolutionResultByPostorderID& rr,
-                                 std::string name) {
-  const Variable* var = findOnlyNamed(m, name)->toVariable();
-  assert(var != nullptr);
-  return rr.byAst(var).type();
-}
 
 static void testRecordInt() {
   Context ctx;

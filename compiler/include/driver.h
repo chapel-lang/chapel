@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -103,10 +103,10 @@ bool useDefaultEnv(std::string key, bool isCrayPrgEnv);
 
 extern std::map<std::string, const char*> envMap;
 
-extern char CHPL_HOME[FILENAME_MAX+1];
-extern char CHPL_RUNTIME_LIB[FILENAME_MAX+1];
-extern char CHPL_RUNTIME_INCL[FILENAME_MAX+1];
-extern char CHPL_THIRD_PARTY[FILENAME_MAX+1];
+extern std::string CHPL_HOME;
+extern std::string CHPL_RUNTIME_LIB;
+extern std::string CHPL_RUNTIME_INCL;
+extern std::string CHPL_THIRD_PARTY;
 
 extern const char* CHPL_HOST_PLATFORM;
 extern const char* CHPL_HOST_ARCH;
@@ -128,7 +128,7 @@ extern const char* CHPL_COMM_OFI_OOB;
 extern const char* CHPL_TASKS;
 extern const char* CHPL_LAUNCHER;
 extern const char* CHPL_TIMERS;
-extern const char* CHPL_MEM;
+extern const char* CHPL_TARGET_MEM;
 extern const char* CHPL_MAKE;
 extern const char* CHPL_ATOMICS;
 extern const char* CHPL_NETWORK_ATOMICS;
@@ -174,7 +174,7 @@ extern bool fParseOnly;
 extern bool fDriverDoMonolithic;
 extern bool fDriverCompilationPhase;
 extern bool fDriverMakeBinaryPhase;
-extern char driverTmpDir[FILENAME_MAX];
+extern std::string driverTmpDir;
 // end compiler driver control flags
 extern bool fExitLeaks;
 extern bool fPrintAllCandidates;
@@ -338,6 +338,7 @@ extern bool fDynoGenStdLib;
 extern bool fDynoLibGenOrUse;
 
 extern size_t fDynoBreakOnHash;
+extern bool   fDynoBreakOnHashSet;
 
 extern bool fResolveConcreteFns;
 extern bool fIdBasedMunging;

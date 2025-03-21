@@ -1,8 +1,4 @@
-param.chpl:90: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'string.c_str()' from the 'CTypes' module instead
-param.chpl:7: warning: the type 'c_string' is deprecated; please 'use CTypes' and replace 'c_string' with 'c_ptrConst(c_char)'
-param.chpl:8: warning: the type 'c_string' is deprecated; please use the variant of 'string.createCopyingBuffer' that takes a 'c_ptrConst(c_char)' instead
 bytes1 as bytes
-bytes1 as c_string
 6
 6
 6
@@ -27,4 +23,3 @@ true as bytes
 10.0i as bytes
 10.0 + 10.0i as bytes
 some string as bytes
-some C string as bytes

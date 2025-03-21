@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -44,7 +44,7 @@ namespace resolution {
  */
 MostSpecificCandidates
 findMostSpecificCandidates(
-    Context* context,
+    ResolutionContext* rc,
     const CandidatesAndForwardingInfo& lst,
     const CallInfo& call,
     const Scope* callInScope,

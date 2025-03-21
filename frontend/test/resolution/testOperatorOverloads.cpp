@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -230,10 +230,12 @@ static void test4() {
         var x : int;
       }
 
-      var a : R;
-      var b : R;
-
-      var x = a == b;
+      proc foo() {
+        const a : R;
+        const b : R;
+        return a == b;
+      }
+      var x = foo();
     )"""";
 
   QualifiedType initType = resolveTypeOfXInit(context, program);

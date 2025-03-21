@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -40,6 +40,7 @@ class ResolvedFunction;
 class TypedFnSignature;
 class UntypedFnSignature;
 class MatchingIdsWithName;
+class ImplementationWitness;
 
 /**
   This class is used to manage stack frames that may be necessary while
@@ -113,7 +114,7 @@ class ResolutionContext {
       when they are destroyed. */
   class Frame {
    public:
-    enum Kind { FUNCTION, MODULE, UNKNOWN };
+    enum Kind { FUNCTION, MODULE, INTERFACE, UNKNOWN };
 
    private:
     friend class ResolutionContext;
@@ -126,6 +127,8 @@ class ResolutionContext {
 
     Resolver* rv_ = nullptr;
     const ResolvedFunction* rf_ = nullptr;
+    const types::InterfaceType* ift_ = nullptr;
+    const ImplementationWitness* witness_ = nullptr;
     int64_t index_ = BASE_FRAME_INDEX;
     Store cachedResults_;
     Kind kind_ = UNKNOWN;
@@ -136,6 +139,9 @@ class ResolutionContext {
     }
     Frame(const ResolvedFunction* rf, int64_t index)
       : rf_(rf), index_(index), kind_(FUNCTION) {
+    }
+    Frame(const types::InterfaceType* ift, const ImplementationWitness* witness, int64_t index)
+      : ift_(ift), witness_(witness), index_(index), kind_(INTERFACE) {
     }
 
    public:
@@ -155,12 +161,14 @@ class ResolutionContext {
     }
 
     Resolver* rv() { return rv_; }
-    const ResolvedFunction* rf() { return rf_; }
+    const ResolvedFunction* rf() const { return rf_; }
+    const types::InterfaceType* ift() const { return ift_; }
+    const ImplementationWitness* witness() const { return witness_; }
 
     bool isEmpty() { return !rv() && !rf(); }
     const ID& id() const;
     const TypedFnSignature* signature() const;
-    const ResolutionResultByPostorderID* resolutionById() const;
+    const types::QualifiedType typeForContainedId(ResolutionContext* rc, const ID& id) const;
     bool isUnstable() const;
 
     template <typename T>
@@ -183,6 +191,7 @@ class ResolutionContext {
   Frame baseFrame_;
 
   const Frame* pushFrame(const ResolvedFunction* rf);
+  const Frame* pushFrame(const types::InterfaceType* t, const ImplementationWitness* witness);
   const Frame* pushFrame(Resolver* rv, Frame::Kind kind);
   void popFrame(const ResolvedFunction* rf);
   void popFrame(Resolver* rv);
@@ -386,6 +395,7 @@ class ResolutionContext::GlobalQuery {
   using InvokeArgsTuple = std::tuple<InvokeArgs...>;
   using ArgsByValueTuple = std::tuple<Value<InvokeArgs>...>;
   using Wrapper = GlobalQueryWrapper<F, RetByVal, Value<InvokeArgs>...>;
+  using TraceFn = std::function<TraceElement(const ArgsByValueTuple&)>;
 
   #if CHPL_QUERY_TIMING_AND_TRACE_ENABLED
     static constexpr bool STOPWATCH_IS_ACTIVE = true;
@@ -499,6 +509,10 @@ class ResolutionContext::GlobalQuery {
 
   bool hasCurrentResult() {
     return context_->hasCurrentResultForQuery(QUERY, ap_);
+  }
+
+  void registerTracer(TraceFn&& fn) {
+    beginMap_->registerTracer(std::move(fn));
   }
 };
 
@@ -624,7 +638,18 @@ class ResolutionContext::Query {
       uc.store(rc_, std::move(x), global_.args());
     }
   }
+
+  void registerTracer(typename GlobalQueryT::TraceFn&& fn) {
+    global_.registerTracer(std::move(fn));
+  }
 };
+
+// TODO: This is meant as a temporary placeholder/sentinel for cases where we
+// currently don't have access to a pre-existing ResolutionContext. Eventually
+// uses of this function, and the function itself, should be removed.
+/// \cond DO_NOT_DOCUMENT
+ResolutionContext createDummyRC(Context* context);
+/// \endcond DO_NOT_DOCUMENT
 
 /** This macro can be used like 'QUERY_BEGIN', except it prevents the results
     of a query from being cached in the context query cache if the computed
@@ -659,6 +684,11 @@ class ResolutionContext::Query {
     auto rcq__ = rc__->createQueryClass<fn__>(#fn__, __VA_ARGS__); \
     return rcq__.isGlobalQueryRunning(); \
   }())
+
+#define CHPL_RESOLUTION_QUERY_REGISTER_TRACER(tracerBody) \
+  rcquery__.registerTracer([](auto& args) { \
+      tracerBody; \
+  });
 
 } // end namespace resolution
 } // end namespace chpl

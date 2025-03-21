@@ -129,6 +129,7 @@ const char* gasneti_mk_ze_strerror(unsigned int result) {
                       "[Core] unknown or internal error")
     GASNETI_ZE_RESULT(ZE_RESULT_FORCE_UINT32, NULL)
     #undef GASNETI_ZE_RESULT
+    default: (void)0;
   }
   if (!errname) {
     return gasneti_dynsprintf("UNRECOGNIZED(0x%x)", result);

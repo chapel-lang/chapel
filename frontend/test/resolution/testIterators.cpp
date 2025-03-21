@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2024-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -38,7 +38,7 @@ static void testStandaloneWithoutSerial(Context* context) {
         yield 2;
         yield 3;
       }
-      var loop = foo();
+      var loop: _iteratorRecord = foo();
       forall i in loop {}
       forall j in foo() {}
     )""";
@@ -66,7 +66,7 @@ static void testLeaderFollowerWithoutSerial(Context* context) {
         yield 2;
         yield 3;
       }
-      var loop = foo();
+      var loop: _iteratorRecord = foo();
       forall i in loop {}
       forall j in foo() {}
     )""";
@@ -98,7 +98,7 @@ static void testIncompatibleYieldTypes(Context* context) {
       R"""(
       iter i1() { yield 0.0; }
       iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0; }
-      var l = i1();
+      var l: _iteratorRecord = i1();
       )""";
 
     auto vars = resolveTypesOfVariables(context, prog, {"l"});
@@ -112,7 +112,7 @@ static void testIncompatibleYieldTypes(Context* context) {
       iter i1() { yield 0.0; }
       iter i1(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
       iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield 0; }
-      var l = i1();
+      var l: _iteratorRecord = i1();
       )""";
 
     auto vars = resolveTypesOfVariables(context, prog, {"l"});
@@ -126,7 +126,7 @@ static void testIncompatibleYieldTypes(Context* context) {
       iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0; }
       iter i1(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
       iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield 0.0; }
-      var l = i1();
+      var l: _iteratorRecord = i1();
       )""";
 
     auto vars = resolveTypesOfVariables(context, prog, {"l"});
@@ -142,7 +142,7 @@ static void testIncompatibleYieldTypes(Context* context) {
       R"""(
       iter i1() { yield 0.0; }
       iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield 0; }
-      var l = i1();
+      var l: _iteratorRecord = i1();
       )""";
 
     auto vars = resolveTypesOfVariables(context, prog, {"l"});
@@ -157,7 +157,7 @@ static void testIncompatibleYieldTypes(Context* context) {
       R"""(
       iter i1() { yield 0.0; }
       iter i1(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
-      var l = i1();
+      var l: _iteratorRecord = i1();
       )""";
 
     auto vars = resolveTypesOfVariables(context, prog, {"l"});

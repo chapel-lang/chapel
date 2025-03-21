@@ -87,7 +87,7 @@ CONDUIT_EXTRALIBCFLAGS = @OFI_CFLAGS@ $(ssh_defines) $(mpi_defines) $(pmi_cppfla
 CONDUIT_EXTRAHEADERS =
 
 # headers selected by default rules that should NOT be installed
-CONDUIT_PRIVATEHEADERS =
+CONDUIT_PRIVATEHEADERS = gasnet_ofi.h
 
 # additional file dependencies not mentioned elsewhere 
 # that should force libgasnet rebuild on update

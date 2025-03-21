@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -182,6 +182,12 @@ void usage(const ArgumentState* state,
             break;
 
           case 'P':
+            if (desc[i].location != 0)
+              printf("'%s'", ((std::string*) desc[i].location)->c_str());
+            else
+              printf("''");
+            break;
+
           case 'S':
             if (desc[i].location != 0)
               printf("'%s'", (char*) desc[i].location);
@@ -343,8 +349,8 @@ void init_arg_desc(ArgumentState* state, ArgumentDescription* arg_desc,
 Flag types:
 
   I = int
-  P = path
-  S = string
+  P = path (std::string)
+  S = string (char*)
   D = double
   f = set to false
   F = set to true
@@ -496,7 +502,7 @@ static void ApplyValue(const ArgumentState*       state,
         break;
 
       case 'P':
-        strncpy((char*) location, value, FILENAME_MAX);
+        *((std::string*) location) = value;
         break;
 
       case 'S':
@@ -719,7 +725,7 @@ static void process_arg(const ArgumentState*       state,
 
         case 'P':
           if (desc->location != NULL) {
-            strncpy((char*) desc->location, arg, FILENAME_MAX);
+            *((std::string*)desc->location) = arg;
           }
           break;
 

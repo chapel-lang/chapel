@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1016,11 +1016,6 @@ struct RstSignatureVisitor {
 
   bool enter(const Conditional* node) {
     node->stringify(os_, StringifyKind::CHPL_SYNTAX);
-    return false;
-  }
-
-  bool enter(const CStringLiteral* l) {
-    os_ << "c\"" << escapeStringC(l->value().str()) << '"';
     return false;
   }
 

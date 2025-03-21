@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -22,15 +22,6 @@
 //
 
 module ChapelBase {
-
-  // We deprecate in the module code so that we don't have to modify dyno
-  // to teach it about the 'c_string' type. We perform the deprecation in
-  // ChapelBase so that you don't have to 'import CTypes' to see the type
-  // 'c_string' (which could break a lot of programs). This is OK because
-  // after the deprecation period we can just remove 'c_string' entirely.
-  pragma "last resort"
-  @deprecated(notes="the type 'c_string' is deprecated; please 'use CTypes' and replace 'c_string' with 'c_ptrConst(c_char)'")
-  type c_string = chpl_c_string;
 
   // c_fn_ptr stuff
 
@@ -91,9 +82,6 @@ module ChapelBase {
   pragma "global type symbol"
   pragma "no object"
   class _object { }
-
-  @deprecated(notes="the 'object' abstract root class has been deprecated; please use 'RootClass' instead")
-  class object { }
 
   enum iterKind {leader, follower, standalone};
 
@@ -2633,15 +2621,6 @@ module ChapelBase {
 
   // Type functions for representing function types
 
-  @deprecated("The 'func' procedure type constructor is deprecated, please use 'proc' syntax instead")
-  inline proc func() type { return __primitive("create fn type", void); }
-
-  @deprecated("The 'func' procedure type constructor is deprecated, please use 'proc' syntax instead")
-  inline proc func(type rettype) type { return __primitive("create fn type", rettype); }
-
-  @deprecated("The 'func' procedure type constructor is deprecated, please use 'proc' syntax instead")
-  inline proc func(type t...?n, type rettype) type { return __primitive("create fn type", (...t), rettype); }
-
   proc isIterator(ic: _iteratorClass) param do return true;
   proc isIterator(ir: _iteratorRecord) param do return true;
   proc isIterator(not_an_iterator) param do return false;
@@ -3427,6 +3406,7 @@ module ChapelBase {
 
   proc chpl_field_lt(a: [] ?t, b: [] t) {
     compilerError("ordered comparisons not supported by default on records with array fields");
+    return false;
   }
 
   inline proc chpl_field_lt(a, b) where !isArrayType(a.type) {
@@ -3435,6 +3415,7 @@ module ChapelBase {
 
   proc chpl_field_gt(a: [] ?t, b: [] t) {
     compilerError("ordered comparisons not supported by default on records with array fields");
+    return false;
   }
 
   inline proc chpl_field_gt(a, b) where !isArrayType(a.type) {
@@ -3442,13 +3423,27 @@ module ChapelBase {
   }
 
   // check if both arguments are local without `.locale` or `here`
-  proc chpl__bothLocal(const ref a, const ref b) {
+  inline proc chpl__bothLocal(const ref a, const ref b) {
+    // this implementation is a bit tricky. There are two checks that make
+    // different cases work fine. I do not know what the difference between the
+    // two approaches are, but I can reproduce the behavior I can't explain in
+    // isolated cases, too. Probably it has something to do with some
+    // implementation subtlety of these primitives. Following are the tests
+    // where each of these checks help with
+    //
+    // (1) _wide_get_locale: optimizations/arrayViewElision/remoteDr.chpl
+    // (2) is_local: optimizations/arrayViewElision/distributedToLocalNoRvf.chpl
     extern proc chpl_equals_localeID(const ref x, const ref y): bool;
 
     const aLoc = __primitive("_wide_get_locale", a._value);
     const bLoc = __primitive("_wide_get_locale", b._value);
 
-    return chpl_equals_localeID(aLoc, bLoc) &&
-           chpl_equals_localeID(aLoc, here_id);
+    const locIdCheck =  chpl_equals_localeID(aLoc, bLoc) &&
+                        chpl_equals_localeID(aLoc, here_id);
+
+    const isLocalCheck =  __primitive("is_local", a) &&
+                          __primitive("is_local", b);
+
+    return locIdCheck && isLocalCheck;
   }
 }

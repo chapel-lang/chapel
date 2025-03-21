@@ -1,0 +1,15 @@
+BootStrap: docker
+From: ubuntu:plucky
+
+%files
+    ../../provision-scripts/* /provision-scripts/
+
+%post
+    # the deps will pause setting up tzdata if not set to noninteractive
+    DEBIAN_FRONTEND=noninteractive /provision-scripts/apt-get-deps.sh
+    # default installs llvm 20
+    # installs LLVM 19
+    /provision-scripts/apt-get-llvm-19.sh
+
+%runscript
+    ../../provision-scripts/run.sh "$@"

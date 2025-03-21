@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -42,7 +42,6 @@ class InitResolver {
     types::QualifiedType qt;
     UniqueString name;
     bool isInitialized;
-    FieldInitState() = default;
   };
 
   enum Phase {
@@ -72,6 +71,9 @@ class InitResolver {
   // Uses of parent fields before a super.init is seen.
   // Stores field ID and ID of the uAST referencing the field.
   std::vector<std::pair<ID, ID>> useOfSuperFields_;
+  // These errors are captured but deferred until we know we haven't found
+  // a "real" super.init call.
+  std::vector<owned<ErrorBase>> errorsFromImplicitSuperInit;
 
   //initialization points to guide handling `=` operators
   std::set<const uast::AstNode*> initPoints;

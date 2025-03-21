@@ -99,7 +99,7 @@ known_dimensions = [
     ( 'launcher',           'CHPL_LAUNCHER', ),
     ( 'timers',             'CHPL_TIMERS', ),
     ( 'unwind',             'CHPL_UNWIND', ),
-    ( 'mem',                'CHPL_MEM', ),
+    ( 'mem',                'CHPL_TARGET_MEM', ),
     ( 'atomics',            'CHPL_ATOMICS', ),
     ( 'network_atomics',    'CHPL_NETWORK_ATOMICS', ),
     ( 'gmp',                'CHPL_GMP', ),

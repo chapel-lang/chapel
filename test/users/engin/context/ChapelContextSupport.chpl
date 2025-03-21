@@ -6,7 +6,7 @@ module ChapelContextSupport {
     // iterator's. Stuff here doesn't make much sense for the loop's context.
     // OTOH, we may want to use loop's context to set blockSize, for example.
     // Prototype challenge: PRIM_OUTER_CONTEXT's return type maybe a little
-    // difficult to handle. But maybe return a c_void_ptr and cast it?
+    // difficult to handle. But maybe return a c_ptr(void) and cast it?
     param rank: int;
 
     type idType = if rank==1 then int else rank*int;

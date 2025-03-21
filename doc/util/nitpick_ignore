@@ -27,6 +27,8 @@ cpp:identifier querydetail
 cpp:identifier querydetail::QueryMapResultBase
 cpp:identifier querydetail::QueryMap<ResultType, ArgTs...>
 cpp:identifier querydetail::QueryMap<ResultType, ArgTs...>::MapType
+cpp:identifier GlobalQueryT
+cpp:identifier GlobalQueryT::TraceFn
 cpp:identifier UniqueString
 cpp:identifier Resolver
 cpp:identifier ID

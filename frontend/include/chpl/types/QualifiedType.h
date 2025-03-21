@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -71,6 +71,12 @@ class QualifiedType final {
 
   static const char* kindToString(Kind k);
 
+  // Convenience functions to construct param types
+  static QualifiedType makeParamBool(Context* context, bool b);
+  static QualifiedType makeParamInt(Context* context, int64_t i);
+  static QualifiedType makeParamString(Context* context, UniqueString s);
+  static QualifiedType makeParamString(Context* context, std::string s);
+
  private:
   Kind kind_ = UNKNOWN;
   const Type* type_ = nullptr;
@@ -88,6 +94,13 @@ class QualifiedType final {
   {
     // should only set param_ for kind_ == PARAM
     CHPL_ASSERT(param_ == nullptr || kind_ == Kind::PARAM);
+  }
+
+  /** replaces placeholders (as in PlaceholderType in the type) according
+      to their values in the 'subs' map. See also Type::substitute. */
+  const QualifiedType substitute(Context* context,
+                                 const PlaceholderMap& subs) const {
+    return QualifiedType(kind_, Type::substitute(context, type_, subs), param_);
   }
 
   /** Returns the kind of the expression this QualifiedType represents */
@@ -184,6 +197,9 @@ class QualifiedType final {
   */
   bool isParamKnownTuple() const;
 
+  /** Returns true if kind is TYPE_QUERY */
+  bool isTypeQuery() const { return kind_ == Kind::TYPE_QUERY; }
+
   /**
     Returns true if the value cannot be modified directly (but might
     be modified by some other aliasing variable).
@@ -223,6 +239,8 @@ class QualifiedType final {
     Returns true if the type might need to get more info from split-init.
   */
   bool needsSplitInitTypeInfo(Context* context) const;
+
+  static QualifiedType createParamBool(Context* context, bool x);
 
   bool operator==(const QualifiedType& other) const {
     return kind_ == other.kind_ &&

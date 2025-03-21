@@ -11,6 +11,9 @@ source $UTIL_CRON_DIR/common.bash
 source $UTIL_CRON_DIR/common-arkouda.bash
 export ARKOUDA_NUMLOCALES=16
 
+# The parquetMultiIO test may exceed the default 300-second timeout
+export CHPL_TEST_TIMEOUT=500
+
 module list
 
 # setup for XC perf (ugni, gnu, 28-core broadwell)
@@ -28,6 +31,9 @@ export CHPL_LAUNCHER_CONSTRAINT="CL48,192GB"
 export CHPL_LAUNCHER_CORES_PER_LOCALE=96
 export CHPL_LAUNCHER=slurm-srun
 nightly_args="${nightly_args} -no-buildcheck"
+
+export CHPL_TEST_PERF_DESCRIPTION=release
+export CHPL_TEST_PERF_CONFIGS="release:v,nightly:v"
 
 test_release
 sync_graphs

@@ -72,7 +72,7 @@ class AMRHierarchy {
     ref_ratio:         dimension*int,
     target_efficiency: real,
     flagger:           unmanaged Flagger,
-    initialCondition:  func(dimension*real, real) )
+    initialCondition:  proc(_: dimension*real): real )
   {
 
     this.x_low             = x_low;
@@ -574,7 +574,7 @@ class PhysicalBoundary
   
   proc init ( level: unmanaged Level ) 
   {
-    this.complete();
+    init this;
     for grid in level.grids {
 
       var boundary_multidomain = new unmanaged MultiDomain(dimension,strideKind.any);
@@ -664,7 +664,7 @@ class Flagger {
 proc AMRHierarchy.init (
   file_name:  string,
   flagger:    unmanaged Flagger,
-  inputIC:    func(dimension*real,real))
+  inputIC:    proc(_: dimension*real): real)
 {
 
   const parameter_file = open(file_name, ioMode.r).reader();

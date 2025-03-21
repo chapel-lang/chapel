@@ -2,7 +2,7 @@ use CTypes;
 use Time;
 
 config const printTime = true;
-config const trials = 1_000_000;
+config const trials: c_size_t = 1_000_000;
 
 var s: stopwatch;
 s.start();

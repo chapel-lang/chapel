@@ -1,0 +1,2 @@
+Caught ImportError: ImportError: No module named 'mymod'
+Caught ImportError: ImportError: No module named 'mymod2'

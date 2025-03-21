@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 
 #
-# Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2025 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -31,6 +31,8 @@ if [ -z "$CHPL_HOME" ]; then
   fi
 fi
 
-exec $CHPL_HOME/util/config/run-in-venv-with-python-bindings.bash \
+python=$($CHPL_HOME/util/config/find-python.sh)
+
+exec $CHPL_HOME/util/config/run-in-venv-with-python-bindings.bash $python \
      $CHPL_HOME/tools/chplcheck/src/chplcheck.py "$@"
 

@@ -13,8 +13,8 @@ EXTRA_DIST = $(dotpl_DATA) \
 	gasnetrun_mic \
 	gasnet_ibrun \
 	ident \
-	cross-configure-cray-aries-alps \
-	cross-configure-cray-aries-slurm \
+	cross-configure-cray-xc-alps \
+	cross-configure-cray-xc-slurm \
 	cross-configure-intel-knc \
 	cross-configure-intel-knl
 # exclude from distribution for now

@@ -1,5 +1,5 @@
 #
-# Copyright 2023-2024 Hewlett Packard Enterprise Development LP
+# Copyright 2023-2025 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -31,17 +31,15 @@ from lsprotocol.types import (
     WorkspaceEdit,
     TextEdit,
 )
-from lsprotocol.types import Diagnostic, Range, Position, DiagnosticSeverity
+from lsprotocol.types import (
+    Diagnostic,
+    Range,
+    Position,
+    DiagnosticSeverity,
+    CodeDescription,
+)
 from fixits import Fixit, Edit
 from driver import LintDriver
-
-
-def _get_location(node: chapel.AstNode):
-    """Helper to get the location of a node"""
-    if isinstance(node, chapel.NamedDecl):
-        return chapel.lsp.location_to_range(node.name_location())
-    else:
-        return chapel.lsp.location_to_range(node.location())
 
 
 def get_lint_diagnostics(
@@ -53,12 +51,22 @@ def get_lint_diagnostics(
     diagnostics = []
     # Silence errors from scope resolution etc., especially since they
     # may be emitted from other files (dependencies).
+
+    # get the version, keep only the major and minor version
+    version = ".".join(context.get_compiler_version().split(".")[:2])
+    base_url = (
+        "https://chapel-lang.org/docs/{}/tools/chplcheck/chplcheck.html".format(
+            version
+        )
+    )
     with context.track_errors() as _:
-        for node, rule, fixits in driver.run_checks(context, asts):
+        for loc, node, rule, fixits in driver.run_checks(context, asts):
             diagnostic = Diagnostic(
-                range=_get_location(node),
+                range=chapel.lsp.location_to_range(loc),
                 message="Lint: rule [{}] violated".format(rule),
                 severity=DiagnosticSeverity.Warning,
+                code=rule,
+                code_description=CodeDescription(base_url + "#" + rule.lower()),
             )
             if fixits:
                 fixits = [Fixit.to_dict(f) for f in fixits]

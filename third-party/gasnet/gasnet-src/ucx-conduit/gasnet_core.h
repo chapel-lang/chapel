@@ -105,24 +105,25 @@ typedef struct {
 extern size_t gasnetc_ammed_bufsz;
 
 #define GASNETC_MAX_ARGS            16
-#define GASNETC_UCX_HDR_SIZE        40
-#define GASNETC_MAX_LONG            INT_MAX
+#define GASNETC_ARGS_SIZE(numargs)  (sizeof(gex_AM_Arg_t) * (numargs))
+#define GASNETC_MAX_ARGS_SIZE       GASNETC_ARGS_SIZE(GASNETC_MAX_ARGS)
 
-#define GASNETC_ARGS_SIZE(numargs) (sizeof(gex_AM_Arg_t) * (numargs))
+#define GASNETC_UCX_SHORT_HDR_SIZE(nargs)  (12 + GASNETC_ARGS_SIZE(nargs))
 
-#define GASNETC_MAX_MED_(nargs)                                                \
-  (gasnetc_ammed_bufsz - GASNETI_ALIGNUP_NOASSERT(GASNETC_UCX_HDR_SIZE +       \
-                                                  GASNETC_ARGS_SIZE(nargs), 8))
+#define GASNETC_UCX_MED_HDR_SIZE(nargs)    (16 + GASNETC_ARGS_SIZE(nargs))
+#define GASNETC_UCX_MED_HDR_SIZE_PADDED(nargs) \
+  GASNETI_ALIGNUP_NOASSERT(GASNETC_UCX_MED_HDR_SIZE(nargs),8)
+#define GASNETC_MAX_MED_(nargs) \
+  (gasnetc_ammed_bufsz - GASNETC_UCX_MED_HDR_SIZE_PADDED(nargs))
 
-#define GASNETC_MAX_LONG_(nargs)                                                \
-  (GASNETC_MAX_LONG - (GASNETC_UCX_HDR_SIZE + sizeof(gex_AM_Arg_t)*(nargs)))
-
-#define GASNETC_MAX_ARGS_SIZE (sizeof(gex_AM_Arg_t) * GASNETC_MAX_ARGS)
+#define GASNETC_MAX_LONG                   INT_MAX
+#define GASNETC_UCX_LONG_HDR_SIZE(nargs)   (24 + GASNETC_ARGS_SIZE(nargs))
+#define GASNETC_MAX_LONG_(nargs) (GASNETC_MAX_LONG - GASNETC_UCX_LONG_HDR_SIZE(nargs))
 
 #define GASNETC_AMMED_PADDING_SIZE(__nargs)                                 \
-  (GASNETI_ALIGNUP(GASNETC_ARGS_SIZE(__nargs) + GASNETC_UCX_HDR_SIZE,       \
-                  GASNETI_MEDBUF_ALIGNMENT) -                               \
-                  (GASNETC_UCX_HDR_SIZE + GASNETC_ARGS_SIZE(__nargs)))
+  (GASNETI_ALIGNUP(GASNETC_UCX_MED_HDR_SIZE(__nargs),                       \
+                   GASNETI_MEDBUF_ALIGNMENT)                                \
+                  - GASNETC_UCX_MED_HDR_SIZE(__nargs))
 
 #define gex_AM_MaxArgs()          ((unsigned int)GASNETC_MAX_ARGS)
 #define gex_AM_LUBRequestMedium() (GASNETC_MAX_MED_(GASNETC_MAX_ARGS))

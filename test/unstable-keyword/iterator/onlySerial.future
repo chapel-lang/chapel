@@ -1,0 +1,2 @@
+bug: unstable warnings on iterator overloads trigger too often
+#26590

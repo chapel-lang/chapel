@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -466,7 +466,7 @@ static void test7() {
   auto qt = resolveQualifiedTypeOfX(context, contents);
   assert(qt.type()->isRealType());
 
-  guard.realizeErrors();
+  assert(guard.realizeErrors() == 0);
 }
 
 // Test that 'except' clause doesn't exclude other symbols.
@@ -481,7 +481,7 @@ static void test8() {
     R""""(
     module M {
       record Foo {
-        var _instance : owned Bar;
+        var _instance : unmanaged Bar;
 
         proc init(value) {
           this._instance = value;
@@ -503,7 +503,42 @@ static void test8() {
   auto qt = resolveQualifiedTypeOfX(context, contents);
   assert(qt.type()->isIntType());
 
-  guard.realizeErrors();
+  assert(guard.realizeErrors() == 0);
+}
+
+// Ensure we don't search for forwarded candidates after finding non-forwarded
+// ones, even if the forwarded candidates are methods.
+static void test9() {
+  printf("test9\n");
+
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  const char* contents =
+    R""""(
+    module M {
+      class Bar {
+        proc getVal() : real do return 4;
+      }
+
+      proc getVal() : int do return 3;
+
+      class Foo {
+        var b : owned Bar = new Bar();
+        forwarding b;
+
+        proc doSomething() do return getVal();
+      }
+
+      var f : Foo = new Foo();
+      var x = f.doSomething();
+    }
+    )"""";
+
+  auto qt = resolveQualifiedTypeOfX(context, contents);
+  assert(qt.type()->isIntType());
+
+  assert(guard.realizeErrors() == 0);
 }
 
 
@@ -525,6 +560,7 @@ int main() {
   // TODO: forwarding with only, except
 
   test8();
+  test9();
 
   return 0;
 }

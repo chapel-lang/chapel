@@ -1,5 +1,5 @@
 #
-# Copyright 2023-2024 Hewlett Packard Enterprise Development LP
+# Copyright 2023-2025 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -24,11 +24,16 @@ import chapel
 from chapel import *
 from driver import LintDriver
 from fixits import Fixit, Edit
-from rule_types import BasicRuleResult, AdvancedRuleResult
+from rule_types import (
+    BasicRuleResult,
+    AdvancedRuleResult,
+    LocationRuleResult,
+    RuleLocation,
+)
 
 
 def variables(node: AstNode):
-    if isinstance(node, Variable):
+    if isinstance(node, (Variable, Formal)):
         if node.name() != "_":
             yield node
     elif isinstance(node, TupleDecl):
@@ -148,7 +153,7 @@ def check_pascal_case(
     )
 
 
-def register_rules(driver: LintDriver):
+def rules(driver: LintDriver):
     @driver.basic_rule(VarLikeDecl, default=False)
     def CamelOrPascalCaseVariables(context: Context, node: VarLikeDecl):
         """
@@ -157,7 +162,7 @@ def register_rules(driver: LintDriver):
 
         if node.name() == "_":
             return True
-        if node.linkage() == "extern":
+        if node.linkage() == "extern" and node.linkage_name() is None:
             return True
         internal_prefixes = driver.config.internal_prefixes
         return check_camel_case(
@@ -169,6 +174,9 @@ def register_rules(driver: LintDriver):
         """
         Warn for records that are not 'camelCase'.
         """
+
+        if node.linkage() == "extern" and node.linkage_name() is None:
+            return True
 
         internal_prefixes = driver.config.internal_prefixes
         return check_camel_case(context, node, internal_prefixes)
@@ -184,7 +192,7 @@ def register_rules(driver: LintDriver):
         if node.is_override():
             return True
 
-        if node.linkage() == "extern":
+        if node.linkage() == "extern" and node.linkage_name() is None:
             return True
         if node.kind() == "operator":
             return True
@@ -350,7 +358,7 @@ def register_rules(driver: LintDriver):
         """
         Warn for boolean literals like 'true' in a conditional statement.
         """
-        return BasicRuleResult(node)
+        return BasicRuleResult(node.condition(), data=node)
 
     # TODO: at some point, we should support a fixit that removes the
     # conditions and the braces, but the way locations work right now makes
@@ -363,7 +371,7 @@ def register_rules(driver: LintDriver):
         """
         Remove the unused branch of a conditional statement, keeping the braces.
         """
-        node = result.node
+        node = result.data
         lines = chapel.get_file_lines(context, node)
 
         cond = node.condition()
@@ -386,8 +394,11 @@ def register_rules(driver: LintDriver):
     @driver.basic_rule(NamedDecl)
     def ChplPrefixReserved(context: Context, node: NamedDecl):
         """
-        Warn for user-defined names that start with the 'chpl_' reserved prefix.
+        Warn for user-defined names that start with the 'chpl\\_' reserved prefix.
         """
+
+        if node.linkage() == "extern":
+            return True
 
         if node.name().startswith("chpl_"):
             path = node.location().path()
@@ -633,6 +644,9 @@ def register_rules(driver: LintDriver):
             # 'this' formals.
             if formal.name() == "this":
                 continue
+            # ignore `_`, like from a TupleDecl
+            if formal.name() == "_":
+                continue
 
             # extern functions have no bodies that can use their formals.
             if formal.parent().linkage() == "extern":
@@ -647,6 +661,8 @@ def register_rules(driver: LintDriver):
 
         for unused in formals.keys() - uses:
             anchor = formals[unused].parent()
+            while isinstance(anchor, (Variable, TupleDecl)):
+                anchor = anchor.parent()
             yield AdvancedRuleResult(formals[unused], anchor)
 
     @driver.advanced_rule
@@ -1039,3 +1055,20 @@ def register_rules(driver: LintDriver):
             )
         )
         return [fixit]
+
+    @driver.location_rule(settings=[".Max"])
+    def LineLength(_: chapel.Context, path: str, lines: List[str], Max=None):
+        """
+        Warn for lines that exceed a maximum length.
+        By default, the maximum line length is 80 characters.
+        """
+
+        Max = Max or "80"  # default to 80 characters
+        try:
+            max_line_length = int(Max)
+        except ValueError:
+            raise ValueError("Invalid value for Max: '{}'".format(Max))
+
+        for i, line in enumerate(lines, start=1):
+            if len(line) > max_line_length:
+                yield RuleLocation(path, (i, 1), (i, len(line) + 1))

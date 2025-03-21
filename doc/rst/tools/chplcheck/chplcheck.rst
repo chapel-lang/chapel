@@ -248,6 +248,32 @@ This function performs _two_ pattern-based searches: one for formals, and one
 for identifiers that might reference the formals. It then emits a warning for
 each formal for which there wasn't a corresponding identifier.
 
+Location Rules
+~~~~~~~~~~~~~~
+
+Sometimes, a linter rule is not based on a pattern of AST nodes, but rather on a
+textual pattern in the source code. For example, a rule might check that all lines
+in a file are indented with spaces, not tabs. To support this, ``chplcheck`` has
+a third type of rule: location rules. These rules are specified using the
+``driver.location_rule`` decorator. Location rules yield a ``RuleLocation``
+object that specifies the textual location of the issue. A ``RuleLocation`` has
+a path, a start position, and an end position. The start and end positions are
+tuples of line and column numbers, where the first character in the file is at
+line 1, column 1.
+
+Alternatively, a location rule can yield a ``LocationRuleResult`` object which
+wraps a ``RuleLocation`` object along with other data, like fixits.
+
+The following example demonstrates a location rule that checks for tabs:
+
+.. code-block:: python
+
+   @driver.location_rule
+   def NoTabs(context: chapel.Context, path: str, lines: List[str])
+       for line, text in enumerate(lines, start=1):
+           if '\t' in text:
+               yield RuleLocation(line, (i, 1), (i, len(line) + 1))
+
 Making Rules Ignorable
 ~~~~~~~~~~~~~~~~~~~~~~
 
@@ -460,3 +486,24 @@ The linter is run as follows:
    path/to/myfile/myfile.chpl:1: node violates rule NoFunctionFoo
    path/to/myfile/myfile.chpl:2: node violates rule NoVariableBar
 
+
+Developers may also find it helpful to maintain documentation for their custom
+rules. Adding a Python docstring to the rule function will include the
+documentation in the ``--list-rules`` output. This docstring can also be used to
+generate Sphinx documentation for the rule. This can be done by running the
+``chplcheck-docs.py`` script. For example:
+
+.. code-block:: bash
+
+   > $CHPL_HOME/doc/util/chplcheck-docs.py path/to/my/myrules.py -o my/out/directory
+
+This will generate a ``rules.rst`` file in ``my/out/directory`` that contains
+the documentation for the rules in ``myrules.py``. Note that this script is
+currently only available in the Chapel source tree.
+
+Current Rules
+-------------
+
+The following is a list of all the rules currently implemented in ``chplcheck``:
+
+.. include:: generated/rules.rst

@@ -1,0 +1,9 @@
+$CHPL_HOME/modules/standard/Sort.chpl:nnnn: In function 'compareByPart':
+$CHPL_HOME/modules/standard/Sort.chpl:nnnn: error: illegal tuple variable declaration with non-tuple initializer
+  $CHPL_HOME/modules/standard/Sort.chpl:nnnn: called as compareByPart(a: range(int(64),both,one), b: range(int(64),both,one), comparator: defaultComparator)
+  within internal functions (use --print-callstack-on-error to see)
+  $CHPL_HOME/modules/standard/Sort.chpl:nnnn: called as shellSortMoveElts(Data: [domain(1,int(64),one)] range(int(64),both,one), comparator: defaultComparator, start: int(64), end: int(64)) from function 'msbRadixSort'
+  $CHPL_HOME/modules/standard/Sort.chpl:nnnn: called as msbRadixSort(A: [domain(1,int(64),one)] range(int(64),both,one), start_n: int(64), end_n: int(64), criterion: defaultComparator, startbit: int(64), endbit: int(64), settings: MSBRadixSortSettings(5,false,false)) from function 'msbRadixSort'
+  $CHPL_HOME/modules/standard/Sort.chpl:nnnn: called as msbRadixSort(Data: [domain(1,int(64),one)] range(int(64),both,one), comparator: defaultComparator, region: range(int(64),both,one)) from function 'unstableSort'
+  $CHPL_HOME/modules/standard/Sort.chpl:nnnn: called as unstableSort(x: [domain(1,int(64),one)] range(int(64),both,one), comparator: defaultComparator, region: range(int(64),both,one)) from function 'sort'
+  arrayOfRanges.chpl:8: called as sort(x: [domain(1,int(64),one)] range(int(64),both,one), comparator: defaultComparator, param stable = false)

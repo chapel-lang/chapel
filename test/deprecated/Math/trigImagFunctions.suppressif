@@ -1,0 +1,2 @@
+# the floating point comparisons on cygwin are not handled right for this test
+CHPL_TARGET_PLATFORM <= cygwin

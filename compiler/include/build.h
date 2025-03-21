@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -212,7 +212,8 @@ ForwardingStmt* buildForwardingStmt(DefExpr* fnDef,
 BlockStmt* buildConditionalLocalStmt(Expr* condExpr, Expr* stmt);
 BlockStmt* buildLocalStmt(Expr* stmt);
 BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
-                             const char* resourceName);
+                             const char* resourceName,
+                             Symbol*& outStoredResource);
 BlockStmt* buildManageStmt(BlockStmt* managers, BlockStmt* block,
                            ModTag modTag);
 BlockStmt* buildOnStmt(Expr* expr, Expr* stmt);

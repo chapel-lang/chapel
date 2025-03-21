@@ -10,14 +10,14 @@
 
   .. code-block:: text
 
-    chpl testFFTW.chpl
+    chpl FFTWlib.chpl
 
   Otherwise, use the following (where ``$FFTW_DIR`` points to your
   FFTW installation):
 
   .. code-block:: text
 
-    chpl testFFTW.chpl -I$FFTW_DIR/include -L$FFTW_DIR/lib
+    chpl FFTWlib.chpl -I$FFTW_DIR/include -L$FFTW_DIR/lib
 
   The :mod:`FFTW` module uses the FFTW3 API and currently just implements the
   basic, double-precision interface.  We will assume that the reader
@@ -26,7 +26,7 @@
   The code computes a series of 1D, 2D and 3D transforms, exercising
   the complex<->complex and real<->complex transforms (both in- and
   out-of-place). The output of the code should be a series of small
-  numbers ( ``<= 10^-13`` ); see ``testFFTW.good`` for example values, though
+  numbers ( ``<= 10^-13`` ); see ``FFTWlib.good`` for example values, though
   it is possible that your values may differ in practice.
 
   The input data for these tests is in ``arr{1,2,3}d.dat``. The format of

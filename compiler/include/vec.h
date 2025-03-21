@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -88,8 +88,8 @@ class Vec {
   C             *v;
   C             e[S];
 
-  Vec<C,S>();
-  Vec<C,S>(const Vec<C,S> &vv);
+  Vec();
+  Vec(const Vec<C,S> &vv);
   ~Vec() { if (v && v != e) free(v); }
 
   void add(C a);

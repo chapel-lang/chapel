@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -44,7 +44,8 @@ static QualifiedType::Kind constIntentForType(const Type* t) {
     return QualifiedType::CONST_IN;
 
   if (t->isStringType() || t->isBytesType() ||
-      t->isRecordType() || t->isUnionType() || t->isTupleType())
+      t->isRecordType() || t->isUnionType() || t->isTupleType() ||
+      t->isIteratorType())
     return QualifiedType::CONST_REF;
 
   if (auto ct = t->toClassType()) {
@@ -97,6 +98,9 @@ static QualifiedType::Kind defaultIntentForType(const Type* t,
     else
       return QualifiedType::CONST_IN;
   }
+
+  if (t->isPlaceholderType())
+    return QualifiedType::DEFAULT_INTENT;
 
   // Otherwise, it should be a generic type that we will
   // instantiate before computing the final intent.

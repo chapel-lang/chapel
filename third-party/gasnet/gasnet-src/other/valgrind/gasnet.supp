@@ -13,7 +13,7 @@
    fun:gasneti_plpa_*
 }
 
-# aries-conduit: suppress Cray NIC device accesses unrecognized by valgrind
+# ofi-conduit/gni-provider: suppress Cray NIC device accesses unrecognized by valgrind
 {
    GNI-bad-ioctl
    Memcheck:Param
@@ -47,7 +47,7 @@
    obj:*/libudreg.so*
 }
 
-# aries-conduit: suppress Cray memory leak in UDREG_CacheCreate
+# ofi-conduit/gni-provider: suppress Cray memory leak in UDREG_CacheCreate
 # see: https://github.com/ofi-cray/libfabric-cray/issues/990
 {
    UDREG-UDREG_CacheCreate-leak

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -900,6 +900,7 @@ initPrimitive() {
   // local block primitives
   // assert that a wide ref is on this locale
   prim_def(PRIM_LOCAL_CHECK, "local_check", returnInfoVoid, true, true);
+  prim_def(PRIM_IS_LOCAL, "is_local", returnInfoBool, true, false);
 
   // get/set end count for 'begin' -
   // manipulates task-local storage

@@ -50,7 +50,7 @@ proc modifyBlankArgElement(tup: (?t,)) where isSyncType(t) {
 
 proc modifyBlankArgElement(tup: (?t,))
 where isStringType(t) || isBytesType(t) {
-  tup[0] = "foo";
+  tup[0] = if isStringType(t) then "foo" else b"foo";
 }
 
 proc modifyBlankArgElement(tup: (r,)) {

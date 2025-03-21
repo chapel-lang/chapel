@@ -1,3 +1,2 @@
-configparam_nonint.chpl:2: warning: the type 'c_string' is deprecated; please 'use CTypes' and replace 'c_string' with 'c_ptrConst(c_char)'
 2.718
 world

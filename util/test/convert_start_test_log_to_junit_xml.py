@@ -23,6 +23,23 @@ import chpl_platform
 
 DEBUG = False
 
+SKIP_MARKERS = (
+    "[Skipping directory",
+    "[Skipping test",
+    "[Skipping noperf test",
+    "[Skipping notest test",
+    "[Skipping future test",
+    "[Skipping non-future test",
+    "[Skipping future test without a skipif",
+    "[Skipping c test",
+    "[Skipping c++ test",
+    "[Skipping multilocale-only c test",
+    "[Skipping multilocale-only c++ test",
+    "[Skipping interpretation of",
+)
+
+SUBTEST_STARTS = ('[Starting subtest - ', '[Error running sub_test')
+SUBTEST_ENDS = ('[Finished subtest ', '[Error running sub_test')
 
 def main():
     """Parse cli arguments and convert a start_test log file to jUnit xml
@@ -50,7 +67,9 @@ def _create_junit_report(test_cases, junit_file):
     :arg junit_file: filename to write the jUnit XML report
     """
     logging.debug('Creating jUnit XML report at: {0}'.format(junit_file))
-    test_suite = XML.Element('testsuite')
+    test_suites = XML.Element('testsuites')
+    test_suite = XML.SubElement(test_suites, 'testsuite')
+    num_errors = 0
 
     for test_case in test_cases:
         case_elem = XML.SubElement(test_suite, 'testcase')
@@ -66,12 +85,18 @@ def _create_junit_report(test_cases, junit_file):
             error_elem = XML.SubElement(case_elem, 'error')
             error_elem.set('message', test_error['message'])
             error_elem.text = test_error['content']
+            num_errors += 1
 
         system_out = XML.SubElement(case_elem, 'system-out')
         system_out.text = test_case['system-out']
 
+    test_suite.set('errors', str(num_errors))
+    test_suite.set('failures', str(num_errors))
+    test_suite.set('tests', str(len(test_cases)))
+    test_suite.set('name', 'start_test results')
+
     encoding = "unicode" if sys.version_info[0] >= 3 else "us-ascii"
-    xml_content = XML.tostring(test_suite, encoding=encoding)
+    xml_content = XML.tostring(test_suites, encoding=encoding)
     xml_content = _clean_xml(xml_content)
     with open(junit_file, 'w') as fp:
         fp.write(xml_content)
@@ -93,10 +118,16 @@ def _parse_start_test_log(start_test_log):
     logging.debug('Read {0} lines from "{1}".'.format(
         len(start_test_lines), start_test_log))
 
+    # In order to catch all test results we can despite sub_test failures,
+    # the code below deliberately accepts empty or non-empty "Error running sub_test"
+    # blocks. But they are reported again in the summary. To avoid duplicates,
+    # we keep track of the sub_test failures we have seen.
+    seen_sub_test_failures = set()
+
     test_cases = []
     while len(start_test_lines) > 0:
         subtest_start, subtest_end = _get_block(
-            start_test_lines, '[Starting subtest - ', '[Finished subtest ')
+            start_test_lines, SUBTEST_STARTS, SUBTEST_ENDS)
 
         # No more sub_tests; delete the remaining lines and finish up.
         if subtest_start == -1:
@@ -108,6 +139,16 @@ def _parse_start_test_log(start_test_log):
         sub_test_lines = start_test_lines[subtest_start:subtest_end+1:1]
         del start_test_lines[:subtest_end+1]
 
+        subtest_error = None
+        subtest_file = None
+        if sub_test_lines[-1].startswith('[Error running sub_test'):
+            match = re.match(r'\[Error running sub_test \(code [\d]+\) (?:in|for) (.*)\]', sub_test_lines[-1])
+            if match and match.group(1) not in seen_sub_test_failures:
+                subtest_error = sub_test_lines[-1]
+                subtest_file = match.group(1)
+                seen_sub_test_failures.add(subtest_file)
+
+        lines_after_no_more_tests = []
         while len(sub_test_lines) > 0:
             test_start, test_end = _get_block(
                 sub_test_lines,
@@ -116,7 +157,7 @@ def _parse_start_test_log(start_test_log):
             test_start_skip, test_end_skip = _get_block(
                 sub_test_lines,
                 '[test: ',
-                '[Skipping')
+                SKIP_MARKERS)
 
             test_skipped = False
             if test_end_skip != -1 and (test_end == -1 or test_end_skip < test_end):
@@ -149,6 +190,7 @@ def _parse_start_test_log(start_test_log):
 
             # No more test cases; delete remaining lines and finish up.
             if test_start == -1:
+                lines_after_no_more_tests = [l for l in sub_test_lines]
                 del sub_test_lines[:]
                 continue
 
@@ -176,6 +218,19 @@ def _parse_start_test_log(start_test_log):
                 'system-out': test_content,
             }
 
+            test_cases.append(test_case)
+
+        # If we got a subtest error, consider all the remaining output from the
+        # subtest as output from a "test" that failed to run (the subtest itself).
+        if subtest_error is not None:
+            test_case = {
+                'name': 'subtest script',
+                'classname': subtest_file,
+                'time': 0.0,
+                'error': {'message': 'Error running subtest script', 'content': subtest_error},
+                'skipped': False,
+                'system-out': "\n".join(lines_after_no_more_tests),
+            }
             test_cases.append(test_case)
 
     logging.info('Parsed {0} test cases from "{1}".'.format(

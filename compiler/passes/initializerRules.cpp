@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -513,7 +513,10 @@ static InitNormalize preNormalize(AggregateType* at,
         } else if (isSuperInit(callExpr) == true) {
           Expr* next = callExpr->next;
 
-          INT_ASSERT(state.isPhase0() == true);
+          if (state.isPhase0() != true) {
+            USR_FATAL(callExpr,
+                       "duplicate use of 'super.init()' in initializer, this should only be called once");
+          }
           state.completePhase0(callExpr);
 
           if (at->isRecord() == true) {
@@ -1186,8 +1189,13 @@ static bool findPostinitAndMark(AggregateType* at) {
     int size = at->methods.n;
 
     for (int i = 0; i < size && retval == false; i++) {
-      if (at->methods.v[i] != NULL)
-        retval = at->methods.v[i]->isPostInitializer();
+      FnSymbol* methodi = at->methods.v[i];
+      if (methodi != nullptr && methodi->isPostInitializer()) {
+        // capture the post-initializer upon finding it
+        at->postinit = methodi;
+        retval = true;
+        break;
+      }
     }
 
   } else {
@@ -1443,10 +1451,23 @@ static void buildPostInit(AggregateType* at) {
   fn->addFlag(FLAG_METHOD_PRIMARY);
 
   if (at->isClass()) {
+    // If our parent class's postinit() is throwing, ours needs to be as well
+    forv_Vec(AggregateType, pt, at->dispatchParents) {
+      if (pt->hasPostInitializer()) {
+        if (pt->postinit->throwsError()) {
+          fn->throwsErrorInit();
+          break;
+        }
+      }
+    }
+
+    // Insert call to parent class postinit()
     insertSuperPostInit(fn);
   }
 
   at->methods.add(fn);
+
+  at->postinit = fn;
 }
 
 //
@@ -1465,11 +1486,9 @@ static int insertPostInit(AggregateType* at, bool insertSuper) {
     if (method == nullptr) continue;
 
     if (method->isPostInitializer()) {
-      if (method->throwsError() == true) {
-        USR_FATAL_CONT(method, "postinit cannot be declared as throws yet");
-      }
       if (method->where == NULL) {
         found = true;
+        at->postinit = method;
       }
       if (method->formals.length > 2) {
         // Only accept method token and 'this'

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -573,24 +573,25 @@ struct Converter final : UastConverter {
       // TODO: This is deleted by the callee, odd convention...
       std::set<Flag>* flags = nullptr;
       Expr* managerExpr = nullptr;
+      const uast::Variable* storedResourceVar = nullptr;
       const char* resourceName = nullptr;
 
       if (auto as = manager->toAs()) {
         managerExpr = convertAST(as->symbol());
 
-        auto var = as->rename()->toVariable();
-        INT_ASSERT(var);
-        INT_ASSERT(!var->initExpression() && !var->typeExpression());
+        storedResourceVar = as->rename()->toVariable();
+        INT_ASSERT(storedResourceVar);
+        INT_ASSERT(!storedResourceVar->initExpression() && !storedResourceVar->typeExpression());
 
-        resourceName = astr(var->name());
+        resourceName = astr(storedResourceVar->name());
 
         // TODO: I'm not sure what the best way to get flags is here.
-        if (var->kind() != uast::Variable::INDEX) {
+        if (storedResourceVar->kind() != uast::Variable::INDEX) {
           flags = new std::set<Flag>;
 
           // TODO: Duplication here and with 'attachSymbolStorage',
           // consider cleaning up after parser is replaced.
-          switch (var->kind()) {
+          switch (storedResourceVar->kind()) {
             case uast::Variable::CONST:
               flags->insert(FLAG_CONST);
               break;
@@ -616,7 +617,14 @@ struct Converter final : UastConverter {
 
       INT_ASSERT(managerExpr);
 
-      auto conv = buildManagerBlock(managerExpr, flags, resourceName);
+      Symbol* storedResource;
+      auto conv = buildManagerBlock(managerExpr, flags, resourceName, storedResource);
+      if (storedResourceVar) {
+        // If we had an 'as <whatever>', the production builder better have
+        // created a Symbol* for it.
+        CHPL_ASSERT(storedResource);
+        noteConvertedSym(storedResourceVar, storedResource);
+      }
       INT_ASSERT(conv);
 
       managers->insertAtTail(conv);
@@ -1703,43 +1711,84 @@ struct Converter final : UastConverter {
 
   /// Array, Domain, Range, Tuple ///
 
+  void convertArrayRow(const uast::ArrayRow* node, CallExpr* actualList) {
+    for (auto expr : node->exprs()) {
+      if (expr->isArrayRow()) {
+        convertArrayRow(expr->toArrayRow(), actualList);
+      } else {
+        actualList->insertAtTail(convertAST(expr));
+      }
+    }
+  }
+
   Expr* visit(const uast::Array* node) {
     CallExpr* actualList = new CallExpr(PRIM_ACTUALS_LIST);
+    Expr* shapeList = nullptr;
     bool isAssociativeList = false;
 
-    for (auto expr : node->exprs()) {
-      bool hasConvertedThisIter = false;
+    bool isNDArray = node->numExprs() >= 1 && node->expr(0)->isArrayRow();
+    if (!isNDArray) {
+      for (auto expr : node->exprs()) {
+        bool hasConvertedThisIter = false;
 
-      if (auto opCall = expr->toOpCall()) {
-        if (opCall->op() == USTR("=>")) {
-          isAssociativeList = true;
-          INT_ASSERT(opCall->numActuals() == 2);
-          Expr* lhs = convertAST(opCall->actual(0));
-          Expr* rhs = convertAST(opCall->actual(1));
-          actualList->insertAtTail(lhs);
-          actualList->insertAtTail(rhs);
-          hasConvertedThisIter = true;
-        } else {
-          if (isAssociativeList) CHPL_UNIMPL("Invalid associative list");
+        if (auto opCall = expr->toOpCall()) {
+          if (opCall->op() == USTR("=>")) {
+            isAssociativeList = true;
+            INT_ASSERT(opCall->numActuals() == 2);
+            Expr* lhs = convertAST(opCall->actual(0));
+            Expr* rhs = convertAST(opCall->actual(1));
+            actualList->insertAtTail(lhs);
+            actualList->insertAtTail(rhs);
+            hasConvertedThisIter = true;
+          } else {
+            if (isAssociativeList) CHPL_UNIMPL("Invalid associative list");
+          }
+        }
+
+        if (!hasConvertedThisIter) {
+          actualList->insertAtTail(convertAST(expr));
         }
       }
 
-      if (!hasConvertedThisIter) {
-        actualList->insertAtTail(convertAST(expr));
+    } else {
+      CallExpr* shapeActualList = new CallExpr(PRIM_ACTUALS_LIST);
+      shapeActualList->insertAtTail(
+        new SymExpr(new_IntSymbol(node->numExprs(), INT_SIZE_64)));
+      const uast::AstNode* cur = node->expr(0);
+      while (cur->isArrayRow()) {
+        auto row = cur->toArrayRow();
+        shapeActualList->insertAtTail(
+          new SymExpr(new_IntSymbol(row->numExprs(), INT_SIZE_64)));
+        cur = row->expr(0);
+      }
+      shapeList = new CallExpr("_build_tuple", shapeActualList);
+
+      for (auto expr : node->exprs()) {
+        convertArrayRow(expr->toArrayRow(), actualList);
       }
     }
 
     Expr* ret = nullptr;
-
-    if (isAssociativeList) {
-      ret = new CallExpr("chpl__buildAssociativeArrayExpr", actualList);
+    if (!isNDArray) {
+      INT_ASSERT(shapeList == nullptr);
+      if (isAssociativeList) {
+        ret = new CallExpr("chpl__buildAssociativeArrayExpr", actualList);
+      } else {
+        ret = new CallExpr("chpl__buildArrayExpr", actualList);
+      }
     } else {
-      ret = new CallExpr("chpl__buildArrayExpr", actualList);
+      INT_ASSERT(shapeList != nullptr);
+      ret = new CallExpr("chpl__buildNDArrayExpr", shapeList, actualList);
     }
 
     INT_ASSERT(ret != nullptr);
 
     return ret;
+  }
+
+  Expr* visit(const uast::ArrayRow* node) {
+    INT_FATAL("Should not be called directly!");
+    return nullptr;
   }
 
   Expr* visit(const uast::Domain* node) {
@@ -1855,17 +1904,6 @@ struct Converter final : UastConverter {
     INT_ASSERT(v->immediate->const_kind == CONST_KIND_STRING);
     INT_ASSERT(v->immediate->string_kind == STRING_KIND_BYTES);
     return se;
-  }
-
-  Expr* visit(const uast::CStringLiteral* node) {
-    std::string quoted = escapeStringC(node->value().str());
-    SymExpr* se = buildCStringLiteral(quoted.c_str());
-    VarSymbol* v = toVarSymbol(se->symbol());
-    INT_ASSERT(v && v->immediate);
-    INT_ASSERT(v->immediate->const_kind == CONST_KIND_STRING);
-    INT_ASSERT(v->immediate->string_kind == STRING_KIND_C_STRING);
-    return se;
-
   }
 
   Expr* visit(const uast::StringLiteral* node) {
@@ -2942,10 +2980,7 @@ struct Converter final : UastConverter {
 
   Expr* visit(const uast::Function* node) {
     // don't convert functions we were asked to ignore
-    if (symbolsToIgnore.count(node->id()) != 0) {
-      printf("Ignoring %s\n", node->id().str().c_str());
-      return nullptr;
-    }
+    if (symbolsToIgnore.count(node->id()) != 0) return nullptr;
 
     FnSymbol* fn = nullptr;
     Expr* ret = nullptr;

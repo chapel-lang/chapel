@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -522,6 +522,11 @@ bool idIsPrivateDecl(Context* context, ID id);
 bool idIsFunction(Context* context, ID id);
 
 /**
+ Returns true if the ID is an interface
+ */
+bool idIsInterface(Context* context, ID id);
+
+/**
  Returns true if the ID is marked 'extern'.
  */
 bool idIsExtern(Context* context, ID id);
@@ -558,6 +563,11 @@ const ID& idToParentId(Context* context, ID id);
 ID idToParentFunctionId(Context* context, ID id);
 
 /**
+ Returns the parent interface ID given an ID.
+ */
+ID idToParentInterfaceId(Context* context, ID id);
+
+/**
  Returns the parent AST node given an AST node
  */
 const uast::AstNode* parentAst(Context* context, const uast::AstNode* node);
@@ -567,6 +577,13 @@ const uast::AstNode* parentAst(Context* context, const uast::AstNode* node);
   or the empty ID when given a toplevel module.
  */
 ID idToParentModule(Context* context, ID id);
+
+/**
+  Given an ID 'id', attempt to lookup the declared linkage of the composite
+  type associated with 'id'. Returns 'DEFAULT_LINKAGE' if no such AST was
+  found.
+ */
+uast::Decl::Linkage idToDeclLinkage(Context* context, ID id);
 
 /**
   Returns 'true' if ID refers to a toplevel module.
@@ -588,6 +605,7 @@ bool idIsFunctionWithWhere(Context* context, ID id);
 /**
   Given an ID for a Variable, returns the ID of the containing
   MultiDecl or TupleDecl, if any, and the ID of the variable otherwise.
+  For other IDs, returns the original ID.
  */
 ID idToContainingMultiDeclId(Context* context, ID id);
 

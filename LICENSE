@@ -74,7 +74,7 @@ The Chapel implementation is composed of two categories of code:
      gasnet           only used when CHPL_COMM is 'gasnet'
      gmp              only used when CHPL_GMP is 'gmp'
      hwloc            only used when CHPL_HWLOC is 'hwloc'
-     jemalloc         only used when CHPL_MEM is 'jemalloc'
+     jemalloc         only used when CHPL_TARGET_MEM/CHPL_HOST_MEM is 'jemalloc'
      libfabric        only used when CHPL_COMM is 'ofi'
      libunwind        only used when CHPL_UNWIND is 'libunwind'
      llvm             only used when CHPL_LLVM is 'llvm'

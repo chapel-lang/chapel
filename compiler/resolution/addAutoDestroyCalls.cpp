@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -70,6 +70,8 @@ void addAutoDestroyCalls() {
   LastMentionMap lmm;
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->hasFlag(FLAG_RESOLVED_EARLY)) continue;
+
     if (fn->hasFlag(FLAG_EXTERN))
       continue; // no need to add auto-destroy in extern fn prototypes
 

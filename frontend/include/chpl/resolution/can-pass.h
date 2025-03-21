@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -96,6 +96,8 @@ class CanPassResult {
   static bool isTypeGeneric(Context* context, const types::QualifiedType& qt);
   static bool isTypeGeneric(Context* context, const types::Type* t);
 
+  static CanPassResult ensureSubtypeConversionInstantiates(CanPassResult r);
+
   static bool
   canConvertNumeric(Context* context,
                     const types::Type* actualT,
@@ -183,6 +185,21 @@ class CanPassResult {
 };
 
 /**
+  Helper function that handles the automatic coalescing of e.g. the `_owned`
+  record implementing managed types and the `owned C` type used in user code.
+  Only does this if mightBeManagerRecord is a `_owned`-like record type,
+  and mightBeClass is a class type. In other words, only does something if
+  the coalescing is necessary.
+
+  Sets mightBeClass to its record equivalent if the conversion is possible,
+  and returns true. Otherwise returns false.
+ */
+bool
+tryConvertClassTypeIntoManagerRecordIfNeeded(Context* context,
+                                             const types::Type* const & mightBeManagerRecord,
+                                             const types::Type*& mightBeClass);
+
+/**
   Given an argument with QualifiedType actualType,
   can that argument be passed to a formal with QualifiedType formalType?
 
@@ -203,6 +220,17 @@ CanPassResult canPassScalar(Context* context,
                             const types::QualifiedType& formalType) {
   return CanPassResult::canPassScalar(context, actualType, formalType);
 }
+
+/* Returns true if, all other things equal, a type with substitutions
+   'instances' is an instantiation of a type with substitutions 'generics'.
+
+   If 'allowMissing' is true, considers missing substitutions in 'generics'
+   to be "any type". Otherwise, requires that each susbtitution in
+   instances is matched by an existing substitution in generics. */
+bool canInstantiateSubstitutions(Context* context,
+                                 const SubstitutionsMap& instances,
+                                 const SubstitutionsMap& generics,
+                                 bool allowMissing);
 
 /* When trying to combine two kinds, you can't just pick one.
    For instance, if any type in the list is a value, the result
@@ -276,8 +304,11 @@ class KindProperties {
 
   bool valid() const { return isValid; }
 
-  /* Creates an corresponding kind that is const */
+  /* Creates a corresponding kind that is const */
   static types::QualifiedType::Kind makeConst(types::QualifiedType::Kind kind);
+
+  /* Creates a corresponding kind that is not a reference */
+  static types::QualifiedType::Kind removeRef(types::QualifiedType::Kind kind);
 };
 
 /**

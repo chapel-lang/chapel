@@ -45,3 +45,8 @@ function log_success() {
   local msg=$@
   echo "[Success matching ${msg}]"
 }
+
+function log() {
+  local msg=$@
+  echo "[${msg}]"
+}

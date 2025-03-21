@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -20,6 +20,7 @@
 #include "chpl/uast/AnonFormal.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Array.h"
+#include "chpl/uast/ArrayRow.h"
 #include "chpl/uast/As.h"
 #include "chpl/uast/Attribute.h"
 #include "chpl/uast/AttributeGroup.h"
@@ -30,7 +31,6 @@
 #include "chpl/uast/Break.h"
 #include "chpl/uast/Builder.h"
 #include "chpl/uast/BytesLiteral.h"
-#include "chpl/uast/CStringLiteral.h"
 #include "chpl/uast/Call.h"
 #include "chpl/uast/Catch.h"
 #include "chpl/uast/Class.h"

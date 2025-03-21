@@ -167,7 +167,7 @@ proc Gen_RMAT_graph ( a : real,
 
     var rndPos = 1;
     const seed = if REPRODUCIBLE_PROBLEMS then 0556707007
-                                          else (timeSinceEpoch().totalSeconds()*1_000_000+1):int;
+                                          else timeSinceEpoch().totalMicroseconds()+1;
 
     const delta = n_raw_edges + 1; // 1 corresponds to 'skip' in "old" code
     rndPos += 1;                   // start with a skip

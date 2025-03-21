@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -326,13 +326,11 @@ module TomlParser {
           skipNext(source);
           var array: list(shared Toml);
           while top(source) != ']' {
-            if comma.match(top(source)) {
+            if comment.match(top(source)) {
               skipNext(source);
-            }
-            else if comment.match(top(source)) {
+            } else if comma.match(top(source)) {
               skipNext(source);
-            }
-            else {
+            } else {
               var toParse = parseValue();
               array.pushBack(toParse);
             }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -123,6 +123,7 @@ HDFS Support Types and Functions
 --------------------------------
 
  */
+@deprecated("The 'HDFS' module is being deprecated.  If you are still interested in using this module, please let us know!")
 module HDFS {
 
   use IO, OS.POSIX, OS;

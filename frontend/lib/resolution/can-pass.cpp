@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -443,6 +443,16 @@ CanPassResult CanPassResult::canPassDecorators(Context* context,
                                                ClassTypeDecorator actual,
                                                ClassTypeDecorator formal) {
   if (actual == formal) {
+    if (actual.isNilable() == formal.isNilable()) {
+      if (formal.isUnknownManagement()) {
+        // Account for the case when passing an unmanaged class type to
+        // an any-managed type formal, which is technically an instantiation.
+        return CanPassResult(/* no fail reason, passes */ {},
+                             /*instantiates*/ true,
+                             /*promotes*/ false,
+                             /*conversion*/ NONE);
+      }
+    }
     return passAsIs();
   }
 
@@ -509,8 +519,12 @@ CanPassResult CanPassResult::canPassSubtypeNonBorrowing(Context* context,
                                             const Type* formalT) {
   // nil -> pointers
   if (actualT->isNilType() && formalT->isNilablePtrType() &&
-      !formalT->isCStringType())
-    return convert(SUBTYPE);
+      !formalT->isCStringType()) {
+    return CanPassResult(/* no fail reason */ {},
+                         /* instantiates */ false,
+                         /*promotes*/ false,
+                         /*conversion*/ SUBTYPE);
+  }
 
   // class types
   if (auto actualCt = actualT->toClassType()) {
@@ -549,8 +563,15 @@ CanPassResult CanPassResult::canPassSubtypeNonBorrowing(Context* context,
         instantiates = true;
         pass = true;
       } else if (actualCt->manageableType()->isAnyClassType()) {
-        CHPL_ASSERT(false && "probably shouldn't happen");
-      } else if (actualBct->isSubtypeOf(formalBct, converts, instantiates)) {
+        // We might encounter this case when relying on 'canPass' to implement
+        // the various 'subtype' primitives. Types like 'borrowed class' are
+        // valid arguments in production, and can be found in the where-clauses
+        // of some basic operator implementations.
+
+        // From the previous conditional, we know the formal isn't another
+        // 'any' class, so this actual cannot be passed.
+        pass = false;
+      } else if (actualBct->isSubtypeOf(context, formalBct, converts, instantiates)) {
         // the basic class types are the same
         // or there was a subclass relationship
         // or there was instantiation
@@ -765,8 +786,7 @@ bool CanPassResult::canInstantiateBuiltin(Context* context,
   }
 
   if (formalT->isAnyIteratorRecordType()) {
-    // TODO: represent iterators
-    return false;
+    return actualT->isIteratorType();
   }
 
   if (formalT->isAnyNumericType() && actualT->isNumericType())
@@ -820,9 +840,9 @@ static bool classTypeIsManagedAndDecorated(Context* context,
   return false;
 }
 
-static bool
+bool
 tryConvertClassTypeIntoManagerRecordIfNeeded(Context* context,
-                                             const Type*& mightBeManagerRecord,
+                                             const Type* const & mightBeManagerRecord,
                                              const Type*& mightBeClass) {
   if (!mightBeManagerRecord || !mightBeClass) return false;
 
@@ -871,6 +891,21 @@ shouldConvertClassTypeIntoManagerRecord(Context* context,
   return empty;
 }
 
+CanPassResult CanPassResult::ensureSubtypeConversionInstantiates(CanPassResult got) {
+  if (got.instantiates()) {
+    return got;
+  }
+
+  // The type passed, but didn't actually instantiate. This is odd
+  // since we are trying to instantiate a generic formal. This suggests
+  // the actual is generic, too, which typically doesn't make sense.
+  // Explicitly set the fail reason but keep the rest of the properties
+  // intact, so that that the caller can dismiss this error if
+  // generic actuals are allowed.
+  got.failReason_ = FAIL_DID_NOT_INSTANTIATE;
+  return got;
+}
+
 CanPassResult CanPassResult::canInstantiate(Context* context,
                                             const QualifiedType& actualQT,
                                             const QualifiedType& formalQT) {
@@ -892,37 +927,30 @@ CanPassResult CanPassResult::canInstantiate(Context* context,
     return instantiate();
   }
 
-  // TODO: Should we move this to the section below and have it call canPassSubtypeOrBorrowing?
-  // TODO: There may be cases for nilType that are not covered
   // this is to allow instantiating 'class?' type with nil
-  if (auto cls = formalT->toClassType()) {
-    if (auto mt = cls->manageableType()) {
-      if (mt->isAnyClassType()) {
-        if (cls->decorator().isNilable() && actualT->isNilType())
-          return instantiate();
-      }
+  if (actualT->isNilType()) {
+    auto got = canPassSubtypeOrBorrowing(context, actualT, formalT);
+    if (got.passes()) {
+      return ensureSubtypeConversionInstantiates(got);
     }
   }
 
   // TODO: check for constrained generic types
+
+  if (auto actualIt = actualT->toInterfaceType()) {
+    if (auto formalIt = formalT->toInterfaceType()) {
+      if (actualIt->isInstantiationOf(context, formalIt)) {
+        return instantiate();
+      }
+    }
+  }
 
   if (auto actualCt = actualT->toClassType()) {
     // check for instantiating classes
     if (auto formalCt = formalT->toClassType()) {
       CanPassResult got = canPassSubtypeOrBorrowing(context, actualCt, formalCt);
       if (got.passes()) {
-        if (got.instantiates()) {
-          return got;
-        }
-
-        // The type passed, but didn't actually instantiate. This is odd
-        // since we are trying to instantiate a generic formal. This suggests
-        // the actual is generic, too, which typically doesn't make sense.
-        // Explicitly set the fail reason but keep the rest of the properties
-        // intact, so that that the caller can dismiss this error if
-        // generic actuals are allowed.
-        got.failReason_ = FAIL_DID_NOT_INSTANTIATE;
-        return got;
+        return ensureSubtypeConversionInstantiates(got);
       }
     }
   } else if (auto actualCt = actualT->toCompositeType()) {
@@ -1204,6 +1232,63 @@ CanPassResult CanPassResult::canPass(Context* context,
   return got;
 }
 
+bool canInstantiateSubstitutions(Context* context,
+                                 const SubstitutionsMap& instances,
+                                 const SubstitutionsMap& generics,
+                                 bool allowMissing) {
+  // Check to see if the substitutions in `instances` are all instantiations
+  // of the substitutions in `generics`
+  //
+  // check, for each substitution in mySubs, that it matches
+  // or is an instantiation of pSubs.
+
+  for (const auto& mySubPair : instances) {
+    ID mySubId = mySubPair.first;
+    QualifiedType mySubType = mySubPair.second;
+
+    // look for a substitution in pSubs with the same ID
+    auto pSearch = generics.find(mySubId);
+    if (pSearch != generics.end()) {
+      QualifiedType pSubType = pSearch->second;
+      // check the types
+      auto r = canPass(context, mySubType, pSubType);
+      if (r.passes() && !r.promotes() && !r.converts()) {
+        // instantiation and same-type passing are allowed here
+        //
+        // canPass doesn't check param values for equivalence to allow handling
+        // coercions and narrowing, so explicitly check them here.
+        if (pSubType.isParam()) {
+          bool compatible = pSubType.param() == nullptr ||
+                            mySubType.param() == pSubType.param();
+          if (!compatible) {
+            return false;
+          }
+        }
+      } else {
+        // it was not an instantiation
+        return false;
+      }
+    } else if (!allowMissing) {
+      // If the ID isn't found, then that means the generic component doesn't
+      // exist in the other type, which means this cannot be an instantiation
+      // of the other type.
+      //
+      // How could we reach this condition? One path here involves passing a
+      // tuple to a tuple formal with a fewer number of elements. For example,
+      // passing "(1, 2, 3)" to "(int, ?)".
+      return false;
+    } else {
+      // A substitution is missing in the partial type, but we have one.
+      // For a composite type, that might just mean that we are foo(X, Y),
+      // while the partial is foo(X, ?) -- partially generic. So, this is
+      // fine, don't return false.
+    }
+  }
+
+  return true;
+
+}
+
 void KindProperties::invalidate() {
   isRef = isConst = isType = isParam = isValid = false;
 }
@@ -1300,6 +1385,12 @@ QualifiedType::Kind KindProperties::toKind() const {
 types::QualifiedType::Kind KindProperties::makeConst(types::QualifiedType::Kind kind) {
   auto props = KindProperties::fromKind(kind);
   props.setConst(true);
+  return props.toKind();
+}
+
+types::QualifiedType::Kind KindProperties::removeRef(types::QualifiedType::Kind kind) {
+  auto props = KindProperties::fromKind(kind);
+  props.setRef(false);
   return props.toKind();
 }
 

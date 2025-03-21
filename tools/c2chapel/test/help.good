@@ -1,15 +1,15 @@
 usage: c2chapel [-h] [--no-typedefs] [--debug] [--no-fake-headers]
                 [--no-comments] [-V] [--gnu-extensions]
-                file [cppFlags [cppFlags ...]]
+                file ...
 
 Generate C bindings for Chapel
 
 positional arguments:
-  file               C99 file for which to generate bindings
-  cppFlags           flags forwarded to the C preprocessor (invoked with cc
-                     -E)
+  file               C99 file for which to generate bindings. Additional
+                     arguments are forwarded to the C preprocessor (invoked
+                     with 'cc -E')
 
-optional arguments:
+options:
   -h, --help         show this help message and exit
   --no-typedefs      do not generate extern types for C typedefs
   --debug            enable debugging output

@@ -120,8 +120,8 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_UNWIND', RUNTIME | LAUNCHER | DEFAULT, 'unwind'),
     ChapelEnv('CHPL_HOST_MEM', COMPILER, 'hostmem'),
     ChapelEnv('  CHPL_HOST_JEMALLOC', RUNTIME | NOPATH, 'hostjemalloc'),
-    ChapelEnv('CHPL_MEM', RUNTIME | LAUNCHER | DEFAULT, 'mem'),
-    ChapelEnv('CHPL_TARGET_MEM', INTERNAL, 'mem'),
+    ChapelEnv('CHPL_MEM', INTERNAL, 'mem'), # deprecated and will be removed
+    ChapelEnv('CHPL_TARGET_MEM', RUNTIME | LAUNCHER | DEFAULT, 'mem'),
     ChapelEnv('  CHPL_TARGET_JEMALLOC', RUNTIME | NOPATH, 'tgtjemalloc'),
     ChapelEnv('CHPL_MAKE', INTERNAL, 'make'),
     ChapelEnv('CHPL_ATOMICS', RUNTIME | LAUNCHER | DEFAULT, 'atomics'),
@@ -219,7 +219,7 @@ def compute_all_values():
     ENV_VALS['CHPL_TIMERS'] = chpl_timers.get()
     ENV_VALS['CHPL_UNWIND'] = chpl_unwind.get()
     ENV_VALS['CHPL_HOST_MEM'] = chpl_mem.get('host')
-    ENV_VALS['CHPL_MEM'] = chpl_mem.get('target')
+    ENV_VALS['CHPL_TARGET_MEM'] = chpl_mem.get('target')
     ENV_VALS['  CHPL_HOST_JEMALLOC'] = chpl_jemalloc.get('host')
     ENV_VALS['  CHPL_TARGET_JEMALLOC'] = chpl_jemalloc.get('target')
     ENV_VALS['CHPL_MAKE'] = chpl_make.get()
@@ -266,7 +266,7 @@ def compute_internal_values():
     ENV_VALS['CHPL_TARGET_BACKEND_CPU'] = backend_info.cpu
     ENV_VALS['  CHPL_LLVM_TARGET_CPU'] = chpl_cpu.get_llvm_target_cpu().cpu
 
-    ENV_VALS['CHPL_TARGET_MEM'] = chpl_mem.get('target')
+    ENV_VALS['CHPL_MEM'] = chpl_mem.get('target')
     ENV_VALS['CHPL_RUNTIME_SUBDIR'] = printchplenv(set(['runtime']), print_format='path').rstrip('\n')
     ENV_VALS['CHPL_LAUNCHER_SUBDIR'] = printchplenv(set(['launcher']), print_format='path').rstrip('\n')
     ENV_VALS['CHPL_COMPILER_SUBDIR'] = printchplenv(set(['compiler']), print_format='path').rstrip('\n')
@@ -348,7 +348,7 @@ def filter_tidy(chpl_env):
     locale = ENV_VALS['CHPL_LOCALE_MODEL']
     gpu = ENV_VALS['  CHPL_GPU']
     host_mem = ENV_VALS['CHPL_HOST_MEM']
-    tgt_mem = ENV_VALS['CHPL_MEM']
+    tgt_mem = ENV_VALS['CHPL_TARGET_MEM']
     hwloc = ENV_VALS['CHPL_HWLOC']
 
     if chpl_env.name == '  CHPL_COMM_SUBSTRATE':

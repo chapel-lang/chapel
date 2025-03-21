@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2023-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -47,7 +47,7 @@
     ContextObject* context() const { return (ContextObject*) parent.contextObject; } \
   }; \
   \
-  extern PyTypeObject NAME##Type;
+  extern PyTypeObject* NAME##Type;
 
 /* Generate a Python object for reach AST node type. */
 #define GENERATED_TYPE(ROOT, ROOT_TYPE, NAME, TYPE, TAG, FLAGS) DECLARE_PY_OBJECT_FOR(ROOT, NAME)
@@ -95,6 +95,6 @@ struct PerTypeMethods {
   {#NAME, NODE##Object_##NAME, METH_NOARGS, DOCSTR},
 #include "method-tables.h"
 
-void setupGeneratedTypes();
+bool setupGeneratedTypes();
 
 #endif

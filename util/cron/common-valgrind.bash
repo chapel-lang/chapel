@@ -11,7 +11,7 @@ export CHPL_RT_NUM_THREADS_PER_LOCALE=450
 export CHPL_RT_NUM_THREADS_PER_LOCALE_QUIET=yes
 
 # jemalloc doesn't work with valgrind, so use cstdlib
-export CHPL_MEM=cstdlib
+export CHPL_TARGET_MEM=cstdlib
 
 # re2 has opt-in support for valgrind, so enable it
 export CHPL_RE2_VALGRIND_SUPPORT=true

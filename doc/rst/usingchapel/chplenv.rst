@@ -37,7 +37,7 @@ CHPL_HOME
 
     .. code-block:: sh
 
-        export CHPL_HOME=~/chapel-2.3.0
+        export CHPL_HOME=~/chapel-2.4.0
 
    .. note::
      This, and all other examples in the Chapel documentation, assumes you're
@@ -106,6 +106,7 @@ CHPL_HOST_PLATFORM
         cray-xc      Cray XC\ |trade|
         hpe-cray-ex  HPE Cray EX
         hpe-apollo   HPE Apollo
+        hpe-cray-xd  HPE Cray XD
         ===========  ==================================
 
    Platform-specific documentation is available for most of these platforms in
@@ -488,6 +489,11 @@ CHPL_COMM
 
 CHPL_MEM
 ~~~~~~~~
+
+   .. warning::
+
+      ``CHPL_MEM`` has been deprecated and renamed to :ref:`readme-chplenv.CHPL_TARGET_MEM`
+
    Optionally, the ``CHPL_MEM`` environment variable can be used to select
    a memory management layer.  Current options are:
 
@@ -501,8 +507,30 @@ CHPL_MEM
    If unset, ``CHPL_MEM`` defaults to ``jemalloc`` for most configurations.
    If the target platform is ``cygwin*`` it defaults to ``cstdlib``
 
-   ``CHPL_TARGET_MEM`` will be replacing ``CHPL_MEM`` in the
-   future. ``CHPL_TARGET_MEM`` takes precedence over ``CHPL_MEM``.
+   .. note::
+     Certain ``CHPL_COMM`` settings (e.g. ugni, gasnet segment fast/large,
+     ofi with the gni provider) register the heap to improve communication
+     performance.  Registering the heap requires special allocator support
+     that not all allocators provide.  Currently only ``jemalloc`` is capable
+     of supporting configurations that require a registered heap.
+
+.. _readme-chplenv.CHPL_TARGET_MEM:
+
+CHPL_TARGET_MEM
+~~~~~~~~~~~~~~~
+
+   Optionally, the ``CHPL_TARGET_MEM`` environment variable can be used to select
+   a memory management layer.  Current options are:
+
+        ========= =======================================================
+        Value     Description
+        ========= =======================================================
+        cstdlib   use the standard C malloc/free commands
+        jemalloc  use Jason Evan's memory allocator
+        ========= =======================================================
+
+   If unset, ``CHPL_TARGET_MEM`` defaults to ``jemalloc`` for most configurations.
+   If the target platform is ``cygwin*`` it defaults to ``cstdlib``
 
    .. note::
      Certain ``CHPL_COMM`` settings (e.g. ugni, gasnet segment fast/large,
@@ -900,8 +928,10 @@ CHPL_LLVM_GCC_INSTALL_DIR
    Sometimes it's necessary to request that ``clang`` work with a
    particular version of GCC. If many versions are installed at the same
    prefix (e.g. ``/usr``) then ``CHPL_LLVM_GCC_PREFIX`` won't be able to
-   differentiate between them. That is where ``CHPL_LLVM_GCC_INSTALL_DIR``
-   comes in!
+   differentiate between them. The Chapel compiler tries to infer
+   this flag based upon the ``gcc`` currently available in your ``PATH``
+   but sometimes that strategy does not work. That is where
+   ``CHPL_LLVM_GCC_INSTALL_DIR`` comes in!
 
    To understand what to set ``CHPL_LLVM_GCC_INSTALL_DIR`` to in such
    cases, try a test compile:

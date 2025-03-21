@@ -1186,6 +1186,13 @@ typedef void (*gasneti_progressfn_t)(void);
     GASNETE_BARRIER_PROGRESSFN(FN)     
 #endif
 
+// When using a variable of type gasneti_progressfn_t which is to be set at
+// runtime, use of a no-op progress function as the initial value can avoid
+// issues with a race between visibility of the writes to the progress function
+// variable and to the variable that enables it (see bug 4766).
+extern void gasneti_empty_pf(void);
+#define GASNETI_PROGRESSFN_INITIALIZER (&gasneti_empty_pf)
+
 #if GASNET_DEBUG
   extern gasneti_progressfn_t gasneti_debug_progressfn_bool;
   extern gasneti_progressfn_t gasneti_debug_progressfn_counted;

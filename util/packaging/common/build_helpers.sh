@@ -22,16 +22,16 @@ __wget_chpl_release() {
 }
 
 __build_all_packages() {
-  __build_packages $1 $2 $3 $4 $5 $6 '--platform=linux/amd64,linux/arm64' $7
+  __build_packages $1 $2 $3 $4 $5 $6 $7 '--platform=linux/amd64,linux/arm64' $8
 }
 __build_x8664_package() {
-  __build_packages $1 $2 $3 $4 $5 $6 '--platform=linux/amd64' $7
+  __build_packages $1 $2 $3 $4 $5 $6 $7 '--platform=linux/amd64' $8
 }
 __build_arm64_package() {
-  __build_packages $1 $2 $3 $4 $5 $6 '--platform=linux/arm64' $7
+  __build_packages $1 $2 $3 $4 $5 $6 $7 '--platform=linux/arm64' $8
 }
 __build_native_package() {
-  __build_packages $1 $2 $3 $4 $5 $6 '' $7
+  __build_packages $1 $2 $3 $4 $5 $6 $7 '' $8
 }
 
 __build_packages() {
@@ -41,10 +41,11 @@ __build_packages() {
   local chapel_version=$4
   local package_version=$5
   local docker_dir_name=$6
-  local architecture_string=$7
+  local docker_image_base=$7
+  local architecture_string=$8
 
   # default to 1 core
-  local para=${8:-1}
+  local para=${9:-1}
 
   __wget_chpl_release $chapel_version
 
@@ -53,6 +54,18 @@ __build_packages() {
   __get_docker_tag $os $package_name $chapel_version $package_version
 
   pushd ${package_dir}
+
+  # Try to pull the latest version of this image, as a best effort.
+  docker pull $docker_image_base || true
+  # Whether we pulled successfully or not, use the image SHA256 digest to
+  # identify the copy of it we have locally (if present), so build can proceed
+  # with that version.
+  if [ -z "$(docker image ls -q $docker_image_base)" ]; then
+    echo "Error: Failed to pull image $docker_image_base and a copy does not exist locally"
+    exit 1
+  fi
+  local docker_image_name_full="$(docker inspect --format='{{index .RepoDigests 0}}' $docker_image_base)"
+  echo "Using image digest ${docker_image_name_full} for $docker_image_base"
 
   # if there is a template file, use it to generate the Dockerfile
   if [ -f Dockerfile.template ]; then
@@ -69,6 +82,7 @@ __build_packages() {
     --build-arg "PACKAGE_VERSION=$package_version" \
     --build-arg "OS_NAME=$os" \
     --build-arg "DOCKER_DIR_NAME=$docker_dir_name" \
+    --build-arg "DOCKER_IMAGE_NAME_FULL=$docker_image_name_full" \
     --build-arg "PARALLEL=$para" \
     -t $__docker_tag \
     -f Dockerfile ../..
@@ -83,6 +97,7 @@ __build_image() {
   local chapel_version=$4
   local package_version=$5
   local docker_dir_name=$6
+  local docker_image_base=$7
 
   # default to 1 core
   local para=${7:-1}
@@ -94,6 +109,18 @@ __build_image() {
   __get_docker_tag $os $package_name $chapel_version $package_version
 
   pushd ${package_dir}
+
+  # Try to pull the latest version of this image, as a best effort.
+  docker pull $docker_image_base || true
+  # Whether we pulled successfully or not, use the image SHA256 digest to
+  # identify the copy of it we have locally (if present), so build can proceed
+  # with that version.
+  if [ -z "$(docker image ls -q $docker_image_base)" ]; then
+    echo "Error: Failed to pull image $docker_image_base and a copy does not exist locally"
+    exit 1
+  fi
+  local docker_image_name_full="$(docker inspect --format='{{index .RepoDigests 0}}' $docker_image_base)"
+  echo "Using image digest ${docker_image_name_full} for $docker_image_base"
 
   # if there is a template file, use it to generate the Dockerfile
   if [ -f Dockerfile.template ]; then
@@ -108,6 +135,7 @@ __build_image() {
     --build-arg "PACKAGE_VERSION=$package_version" \
     --build-arg "OS_NAME=$os" \
     --build-arg "DOCKER_DIR_NAME=$docker_dir_name" \
+    --build-arg "DOCKER_IMAGE_NAME_FULL=$docker_image_name_full" \
     --build-arg "PARALLEL=$para" \
     -t $__docker_tag \
     -f Dockerfile ../..

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -30,9 +30,11 @@ namespace resolution {
 
 
 struct CalledFnOrder {
-  int depth; // depth of call graph at which this one was added
-  int index; // index in the call graph at which this one was added
+  int depth = -1; // depth of call graph at which this one was added
+  int index = -1; // index in the call graph at which this one was added
 };
+
+bool operator ==(const CalledFnOrder& x, const CalledFnOrder& y);
 
 // key: a ResolvedFunction* that was called
 // value: the depth at which that ResolvedFunction was added

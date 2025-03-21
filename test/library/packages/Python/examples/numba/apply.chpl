@@ -1,5 +1,5 @@
 use Python;
-use CTypes only c_ptr, c_long;
+use CTypes only c_ptr, c_long, c_intptr;
 use Time;
 
 config const n = 10;
@@ -10,7 +10,7 @@ config const timeit = false;
 require "callFuncGadget.h";
 extern proc callFunc(func: c_ptr(void), x: c_long): c_long;
 
-proc callApply(arr, func: borrowed Function) {
+proc callApply(arr, func: borrowed Value) {
   var res: arr.type;
   for i in arr.domain {
     res(i) = func(res.eltType, arr(i));
@@ -30,18 +30,22 @@ proc callApplyByAddress(arr, func: c_ptr(void)) {
 }
 
 proc main() {
-  var data: [1..#n] int;
+  var data: [1..#n] c_long; // use c_long to match callFunc
 
   var interp = new Interpreter();
 
-  // Ideally we could just write the function in a Chapel string and compile it,
-  // but thats not possible yet
-  var lib = new Module(interp, "lib");
-  var applyFunc = new Function(lib, "apply");
-  var applyFuncAddr = applyFunc.getAttr(int, "address"): c_ptr(void);
+  var numba_code = """
+import numba
+@numba.cfunc(numba.int64(numba.int64))
+def apply(x):
+  return x + 1 if x % 2 != 0 else x
+  """;
+  var lib = interp.importModule("lib", numba_code);
+  var applyFunc = lib.get("apply");
+  var applyFuncAddr = applyFunc.get(c_intptr, "address"): c_ptr(void);
 
   {
-    data = 1..#n;
+    data = 1:c_long..#n:c_long;
     var t = new stopwatch();
     t.start();
     var res = callApply(data, applyFunc);
@@ -53,7 +57,7 @@ proc main() {
   }
 
   {
-    data = 1..#n;
+    data = 1:c_long..#n:c_long;
     var t = new stopwatch();
     t.start();
     var res = callApplyByAddress(data, applyFuncAddr);

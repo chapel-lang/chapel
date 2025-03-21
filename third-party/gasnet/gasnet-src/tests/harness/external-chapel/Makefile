@@ -1,13 +1,16 @@
 CHAPEL_GIT_REPO   ?= chapel-lang/chapel
 CHAPEL_GIT_COMMIT ?= main# was 'master' prior to June 21, 2021
 CHAPEL_MAKE_ARGS  ?= -j4
-CHAPEL_BLDDIR     ?= $(TOP_BUILDDIR)/chapel
-CHAPEL_TMPDIR     ?= $(TOP_BUILDDIR)/chapel-tmp
-CHAPEL_HOME       ?= $(HARNESS_WORKDIR)/chapel
+CHAPEL_BLDDIR     ?= $(HARNESS_WORKDIR)/chapel
+CHAPEL_TMPDIR     ?= $(HARNESS_WORKDIR)/chapel-tmp
+CHAPEL_HOME       ?= $(HARNESS_WORKDIR)/chapel-inst
 CHAPEL_CONDUIT    ?= $(NETWORK) # Default to same conduit as the enclosing harness run
 CHAPEL_PATH_PRE   ?=# empty - if set must end with :
 CHAPEL_PATH_POST  ?=# empty - if set must start with :
 CHAPEL_SHELL      ?= $(shell test -n "$${ZSH_VERSION+set}$${BASH_VERSION+set}" && echo bash || echo sh)
+
+# legacy harness support
+GASNET_SRCDIR ?= $(TOP_SRCDIR)/gasnet
 
 # Since some time in late April 2021, unset is no longer acceptable in general
 CHPL_LLVM ?= none
@@ -128,7 +131,7 @@ _chapel: force
 	$(call safe_tee_dance, $(MAKE) chapel-patch)
 	$(MAKE) chapel-launcher
 	cd $(CHAPEL_BLDDIR)/third-party/gasnet && mv gasnet-src gasnet-src.dist
-	cp -Rp $(TOP_SRCDIR)/gasnet $(CHAPEL_BLDDIR)/third-party/gasnet/gasnet-src
+	cp -Rp $(GASNET_SRCDIR) $(CHAPEL_BLDDIR)/third-party/gasnet/gasnet-src
 	mkdir -p "$(CHAPEL_HOME)"
 	cd $(CHAPEL_BLDDIR) && . util/setchplenv.$(CHAPEL_SHELL) && (                       \
 	  env $(CONFIG_ENV) $(CHAPEL_BUILD_ENV) ./configure --chpl-home="$(CHAPEL_HOME)" && \

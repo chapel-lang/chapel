@@ -1,3 +1,7 @@
 scope2.chpl:5: In function 'bar':
-scope2.chpl:6: error: 'foo' used before defined
-scope2.chpl:11: note: defined here
+scope2.chpl:6: error: statement references variable 'foo' before it is defined
+scope2.chpl:11: note: the variable 'foo' is defined here
+scope2.chpl:7: error: statement references variable 'foo' before it is defined
+scope2.chpl:11: note: the variable 'foo' is defined here
+scope2.chpl:8: error: statement references variable 'foo' before it is defined
+scope2.chpl:11: note: the variable 'foo' is defined here

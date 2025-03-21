@@ -3,4 +3,4 @@ const-ref-lvalue-error.chpl:11: error: const actual is passed to 'inout' formal 
 const-ref-lvalue-error.chpl:15: error: cannot assign to const variable
 const-ref-lvalue-error.chpl:16: error: const actual is passed to a 'ref' formal of operator <=>
 const-ref-lvalue-error.chpl:17: error: const actual is passed to a 'ref' formal of operator <=>
-const-ref-lvalue-error.chpl:20: error: const actual is passed to 'ref' formal 'x' of readIt()
+const-ref-lvalue-error.chpl:20: error: const actual is passed to 'ref' formal '_e0_args' of read()

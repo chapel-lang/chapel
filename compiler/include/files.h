@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -24,15 +24,16 @@
 #include <cstdio>
 #include <map>
 #include <string>
+#include <string_view>
 #include <vector>
 #include <functional>
 #include "vec.h"
 
-extern char executableFilename[FILENAME_MAX+1];
-extern char libmodeHeadername[FILENAME_MAX+1];
-extern char fortranModulename[FILENAME_MAX+1];
-extern char pythonModulename[FILENAME_MAX+1];
-extern char saveCDir[FILENAME_MAX+1];
+extern std::string executableFilename;
+extern std::string libmodeHeadername;
+extern std::string fortranModulename;
+extern std::string pythonModulename;
+extern std::string saveCDir;
 extern std::string ccflags;
 extern std::string ldflags;
 extern bool ccwarnings;
@@ -97,25 +98,27 @@ void addLibFile(const char* filename, bool fromCmdLine = false);
 void addIncInfo(const char* incDir, bool fromCmdLine = false);
 
 // Save (append) provided string into the given tmp file.
+// Input string is assumed to be null-terminated.
 // For storing information that needs to be saved between driver phases.
-void saveDriverTmp(const char* tmpFilePath, const char* stringToSave,
+void saveDriverTmp(const char* tmpFilePath, std::string_view stringToSave,
                    bool appendNewline = true);
 // Like saveDriverTmp, but accepts a vector of strings to save in one go without
 // repeatedly opening/closing file. Newline separated by default unless
 // noNewlines is true.
 void saveDriverTmpMultiple(const char* tmpFilePath,
-                           std::vector<const char*> stringsToSave,
+                           std::vector<std::string_view> stringsToSave,
                            bool noNewlines = false);
 // Feed strings from the specified tmp file (one per line) into the given
 // restoring function, which should copy any it needs to keep.
+// Restored string will be null-terminated.
 // For accessing information saved between driver phases with saveDriverTmp.
 void restoreDriverTmp(const char* tmpFilePath,
-                      std::function<void(const char*)> restoreSavedString);
+                      std::function<void(std::string_view)> restoreSavedString);
 // Like restoreDriverTmp, but just saves the entire contents of the file into
 // the given string including newlines.
 void restoreDriverTmpMultiline(
     const char* tmpFilePath,
-    std::function<void(const char*)> restoreSavedString);
+    std::function<void(std::string_view)> restoreSavedString);
 
 // Restore lib dir, lib name, and inc dir info that was saved to disk, for
 // compiler-driver use.

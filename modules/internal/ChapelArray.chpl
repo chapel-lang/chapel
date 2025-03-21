@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -259,7 +259,13 @@ module ChapelArray {
   config param capturedIteratorLowBound = defaultLowBound;
 
   pragma "ignore transfer errors"
-  proc chpl__buildArrayExpr( pragma "no auto destroy" in elems ...?k ) {
+  proc chpl__buildArrayExpr( in elems ...?k ) {
+    return chpl__buildNDArrayExpr((k,), (...elems));
+  }
+
+
+  pragma "ignore transfer errors"
+  proc chpl__buildNDArrayExpr(shape, pragma "no auto destroy" in elems ...?k ) {
 
     if CHPL_WARN_DOMAIN_LITERAL == "true" && isRange(elems(0)) {
       compilerWarning("Encountered an array literal with range element(s).",
@@ -273,18 +279,25 @@ module ChapelArray {
     type eltType = if homog then elems(0).type
                             else chpl_computeUnifiedType(elems);
 
-    var dom = {arrayLiteralLowBound..#k};
+    var ranges: shape.size * range(int);
+    for param i in 0..<shape.size {
+      ranges(i) = arrayLiteralLowBound..#shape(i);
+    }
+    var dom = chpl__buildDomainExpr((...ranges), true);
     var arr = dom.buildArray(eltType, initElts=false);
 
     if homog {
       for i in 0..<k {
-        ref dst = arr(i+arrayLiteralLowBound);
+        const idx = dom.orderToIndex(i);
+        ref dst = arr(idx);
         ref src = elems(i);
         __primitive("=", dst, src);
       }
+
     } else {
       for param i in 0..k-1 {
-        ref dst = arr(i+arrayLiteralLowBound);
+        const idx = dom.orderToIndex(i);
+        ref dst = arr(idx);
         ref src = elems(i);
         type currType = src.type;
 
@@ -1942,6 +1955,29 @@ module ChapelArray {
     }
   }
 
+  @unstable("casting an array to an array type is unstable due to being a new feature — please share any feedback you might have")
+  operator :(arg: [], type t: []) {
+    var res: t;
+
+    if !arg.isRectangular() || !res.isRectangular() {
+      compilerError("Casts between arrays only support rectangular arrays");
+    } else if arg.rank != res.rank {
+      compilerError("Casts between arrays require matching ranks");
+    } else {
+      if boundsChecking then
+        checkArrayShapesUponAssignment(arg, res, forCast=true);
+
+      // factor this capture of the type out of the loop since it may
+      // involve a runtime type for arrays of arrays
+      type resType = res.eltType;
+      forall (i,j) in zip(res.domain, arg.domain) {
+        res[i] = arg[j]:resType;
+      }
+    }
+
+    return res;
+  }
+
   // The same as the built-in _cast, except accepts a param arg.
   @chpldoc.nodoc
   operator :(param arg, type t:_array) {
@@ -2003,15 +2039,18 @@ module ChapelArray {
     return chpl__countRanges(arg) + chpl__countRanges((...args));
   }
 
+  // Workaround: moved these helper procs out of the body of
+  // _validRankChangeArgs to avoid issue with generic parent procs.
+  // Anna, 2025-03-04
+  proc _validRankChangeArg(type idxType, r: range(?)) param do return true;
+  proc _validRankChangeArg(type idxType, i: idxType) param do return true;
+  pragma "last resort"
+  proc _validRankChangeArg(type idxType, x) param do return false;
+
   // given a tuple args, returns true if the tuple contains only
   // integers and ranges; that is, it is a valid argument list for rank
   // change
   proc _validRankChangeArgs(args, type idxType) param {
-    proc _validRankChangeArg(type idxType, r: range(?)) param do return true;
-    proc _validRankChangeArg(type idxType, i: idxType) param do return true;
-    pragma "last resort"
-    proc _validRankChangeArg(type idxType, x) param do return false;
-
     /*
     proc help(param dim: int) param {
       if !_validRankChangeArg(idxType, args(dim)) then
@@ -2022,21 +2061,24 @@ module ChapelArray {
         return true;
     }*/
 
-    proc allValid() param {
+    // Workaround: Added explicit args and/or idxType formals to these helpers
+    // to work around lack of nested proc variable capture.
+    // Anna, 2025-03-04
+    proc allValid(args, type idxType) param {
       for param dim in 0.. args.size-1 {
         if !_validRankChangeArg(idxType, args(dim)) then
           return false;
       }
       return true;
     }
-    proc oneRange() param {
+    proc oneRange(args) param {
       for param dim in 0.. args.size-1 {
         if isRange(args(dim)) then
           return true;
       }
       return false;
     }
-    proc oneNonRange() param {
+    proc oneNonRange(args) param {
       for param dim in 0.. args.size-1 {
         if !isRange(args(dim)) then
           return true;
@@ -2044,7 +2086,7 @@ module ChapelArray {
       return false;
     }
 
-    return allValid() && oneRange() && oneNonRange();
+    return allValid(args, idxType) && oneRange(args) && oneNonRange(args);
     //return help(0);
   }
 
@@ -2142,7 +2184,7 @@ module ChapelArray {
   proc chpl__supportedDataTypeForBulkTransfer(x) param do return true;
 
   @chpldoc.nodoc
-  proc checkArrayShapesUponAssignment(a, b, forSwap = false) {
+  proc checkArrayShapesUponAssignment(a, b, forSwap=false, forCast=false) {
     if a.isRectangular() && b.isRectangular() {
       const aDims = if isProtoSlice(a) then a.dims()
                                        else a._value.dom.dsiDims();
@@ -2151,7 +2193,9 @@ module ChapelArray {
       compilerAssert(aDims.size == bDims.size);
       for param i in 0..aDims.size-1 {
         if aDims(i).sizeAs(uint) != bDims(i).sizeAs(uint) then
-          halt(if forSwap then "swapping" else "assigning",
+          halt(if forSwap then "swapping"
+                          else if forCast then "casting"
+                          else "assigning",
                " between arrays of different shapes in dimension ",
                i, ": ", aDims(i).sizeAs(uint), " vs. ", bDims(i).sizeAs(uint));
       }

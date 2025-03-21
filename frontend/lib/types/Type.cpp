@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -22,6 +22,7 @@
 #include "chpl/framework/query-impl.h"
 #include "chpl/types/AnyClassType.h"
 #include "chpl/types/AnyType.h"
+#include "chpl/types/ArrayType.h"
 #include "chpl/types/BoolType.h"
 #include "chpl/types/BuiltinType.h"
 #include "chpl/types/CStringType.h"
@@ -44,6 +45,7 @@
 #include "chpl/types/VoidType.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
+#include "../resolution/default-functions.h"
 
 namespace chpl {
 namespace types {
@@ -205,7 +207,9 @@ bool Type::isNilablePtrType() const {
 }
 
 bool Type::isUserRecordType() const {
-  if (!isRecordType())
+  // iterator types in Dyno are "iterator records" in production and so are
+  // records.
+  if (!isRecordType() && !isIteratorType())
     return false;
 
   // TODO: add exceptions in here
@@ -228,6 +232,24 @@ bool Type::hasPragma(Context* context, uast::pragmatags::PragmaTag p) const {
   return false;
 }
 
+bool Type::isRecordLike() const {
+  if (auto ct = this->toClassType()) {
+    auto decorator = ct->decorator();
+    // no action needed for 'borrowed' or 'unmanaged'
+    // (these should just default initialized to 'nil',
+    //  so nothing else needs to be resolved)
+    if (!(decorator.isBorrowed() || decorator.isUnmanaged() ||
+          decorator.isUnknownManagement())) {
+      return true;
+    }
+  } else if (this->isRecordType() || this->isUnionType()) {
+    return true;
+  }
+  // TODO: tuples?
+
+  return false;
+}
+
 const CompositeType* Type::getCompositeType() const {
   if (auto at = toCompositeType())
     return at;
@@ -238,9 +260,42 @@ const CompositeType* Type::getCompositeType() const {
   return nullptr;
 }
 
-static bool
-compositeTypeIsPod(Context* context, const Type* t) {
+template <typename F>
+static bool checkFieldsWithPredicate(resolution::ResolutionContext* rc, const Type* t, F&& pred) {
   using namespace resolution;
+
+  auto ct = t->getCompositeType();
+  CHPL_ASSERT(ct);
+
+  if (auto tt = t->toTupleType()) {
+    for (int i = 0; i < tt->numElements(); i++) {
+      auto& eltType = tt->elementType(i);
+      if (!eltType.type()) return false;
+      if (!pred(rc, eltType.type())) return false;
+    }
+
+    return true;
+  }
+
+  auto& rf = fieldsForTypeDecl(rc, ct, DefaultsPolicy::USE_DEFAULTS);
+  for (int i = 0; i < rf.numFields(); i++) {
+    auto qt = rf.fieldType(i);
+    if (auto ft = qt.type()) {
+      if (qt.kind() == QualifiedType::PARAM ||
+          qt.kind() == QualifiedType::TYPE) continue;
+      if (!pred(rc, ft)) return false;
+    } else {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+static bool
+compositeTypeIsPod(resolution::ResolutionContext* rc, const Type* t) {
+  using namespace resolution;
+  auto context = rc->context();
 
   if (auto cls = t->toClassType()) {
     return !cls->decorator().isManaged();
@@ -249,20 +304,15 @@ compositeTypeIsPod(Context* context, const Type* t) {
   auto ct = t->getCompositeType();
   if (!ct) return false;
 
+  bool fieldsArePod = checkFieldsWithPredicate(rc, t, Type::isPod);
+  if (!fieldsArePod) return false;
+
+  // for tuple, this is enough; for other composite types, see if any user-defined
+  // methods are present.
+  if (t->isTupleType()) return true;
+
   const uast::AstNode* ast = nullptr;
   if (auto id = ct->id()) ast = parsing::idToAst(context, std::move(id));
-
-  auto& rf = fieldsForTypeDecl(context, ct, DefaultsPolicy::USE_DEFAULTS);
-  for (int i = 0; i < rf.numFields(); i++) {
-    auto qt = rf.fieldType(i);
-    if (auto ft = qt.type()) {
-      if (qt.kind() == QualifiedType::PARAM ||
-          qt.kind() == QualifiedType::TYPE) continue;
-      if (!Type::isPod(context, ft)) return false;
-    } else {
-      return false;
-    }
-  }
 
   if (auto tfs = tryResolveDeinit(context, ast, t)) {
     if (!tfs->isCompilerGenerated()) return false;
@@ -278,13 +328,14 @@ compositeTypeIsPod(Context* context, const Type* t) {
 }
 
 static const bool&
-compositeTypeIsPodQuery(Context* context, const Type* t) {
-  QUERY_BEGIN(compositeTypeIsPodQuery, context, t);
-  bool ret = compositeTypeIsPod(context, t);
-  return QUERY_END(ret);
+compositeTypeIsPodQuery(resolution::ResolutionContext* rc, const Type* t) {
+  CHPL_RESOLUTION_QUERY_BEGIN(compositeTypeIsPodQuery, rc, t);
+  bool ret = compositeTypeIsPod(rc, t);
+  return CHPL_RESOLUTION_QUERY_END(ret);
 }
 
-bool Type::isPod(Context* context, const Type* t) {
+bool Type::isPod(resolution::ResolutionContext* rc, const Type* t) {
+  auto context = rc->context();
   if (t->isUnknownType() || t->isErroneousType() ||
       t->isAnyType()) return false;
   if (t->hasPragma(context, uast::PRAGMA_POD)) return true;
@@ -302,8 +353,88 @@ bool Type::isPod(Context* context, const Type* t) {
   // when given a generic actual.
   auto g = resolution::getTypeGenericity(context, t);
   if (g != Type::CONCRETE) return false;
-  if (t->getCompositeType()) return compositeTypeIsPodQuery(context, t);
+  if (t->getCompositeType()) return compositeTypeIsPodQuery(rc, t);
   return true;
+}
+
+static bool const& isDefaultInitializableQuery(resolution::ResolutionContext* rc, const Type* t) {
+  CHPL_RESOLUTION_QUERY_BEGIN(isDefaultInitializableQuery, rc, t);
+  auto context = rc->context();
+
+  bool result = true;
+  if (!t || t->isUnknownType() || t->isErroneousType()) {
+    result = false;
+  } else if (t->isBuiltinType()) {
+    result = t->genericity() == Type::CONCRETE;
+  } else if (auto at = t->toArrayType()) {
+    result = isDefaultInitializableQuery(rc, at->eltType().type());
+  } else if (t->isDomainType()) {
+    result = true; // production always returns true for domains.
+  } else if (t->isExternType()) {
+    // Currently extern records aren't initialized at all by default.
+    // But it's not necessarily reasonable to expect them to have
+    // initializers. See issue #7992 and preFold.cpp's setRecordDefaultValueFlags
+    // for FLAG_EXTERN.
+    result = true;
+  } else if (auto ct = t->toClassType()) {
+    result = ct->decorator().isNilable();
+  } else if (t->isTupleType()) {
+    result = checkFieldsWithPredicate(rc, t, Type::isDefaultInitializable);
+  } else if (t->isRecordLike()) {
+    // If the type doesn't have a user-defined initializer or is a tuple, check
+    // its fields.
+    auto fieldsDefaultInitializable = true;
+    if (resolution::needCompilerGeneratedMethod(context, t, USTR("init"), /* parenless */ false)) {
+      fieldsDefaultInitializable = checkFieldsWithPredicate(rc, t, Type::isDefaultInitializable);
+    }
+
+    if (!fieldsDefaultInitializable) {
+      result = false;
+    } else {
+      const uast::AstNode* ast = nullptr;
+      if (auto ct = t->getCompositeType()) {
+        if (auto id = ct->id()) {
+          ast = parsing::idToAst(context, std::move(id));
+        }
+      }
+
+      // note: production disallows default-init for generic fields like `var x;`,
+      // even if they are instantiated with a type that is default-initializable.
+      // But why? Seems like this is an implementation detail. Allow it in Dyno.
+
+      result = resolution::tryResolveZeroArgInit(context, ast, t) != nullptr;
+    }
+  }
+
+  return CHPL_RESOLUTION_QUERY_END(result);
+}
+
+bool Type::isDefaultInitializable(resolution::ResolutionContext* rc, const Type* t) {
+  return isDefaultInitializableQuery(rc, t);
+}
+
+bool Type::needsInitDeinitCall(const Type* t) {
+  if (t == nullptr || t->isUnknownType() || t->isErroneousType()) {
+    // can't do anything with these
+    return false;
+  } else if (t->isPrimitiveType() || t->isBuiltinType() || t->isCStringType() ||
+             t->isNilType() || t->isNothingType() || t->isVoidType()) {
+    // OK, we can always default initialize primitive numeric types,
+    // and as well we assume that for the non-generic builtin types
+    // e.g. TaskIdType.
+    // No need to resolve anything additional now.
+    return false;
+  } else if (t->isEnumType()) {
+    // OK, can default-initialize enums to first element
+    return false;
+  /*
+  // TODO: Wire this up when we reintroduce the FunctionType.
+  } else if (t->isFunctionType()) {
+    return false;
+  */
+  }
+
+  return t->isRecordLike();
 }
 
 } // end namespace types

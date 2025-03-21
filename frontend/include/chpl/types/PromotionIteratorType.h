@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2024-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -68,6 +68,12 @@ class PromotionIteratorType final : public IteratorType {
                                           const resolution::PoiScope* poiScope,
                                           const resolution::TypedFnSignature* scalarFn,
                                           resolution::SubstitutionsMap promotedFormals);
+
+  virtual const Type* substitute(Context* context,
+                                 const PlaceholderMap& subs) const override {
+    return get(context, poiScope_, scalarFn_->substitute(context, subs),
+               resolution::substituteInMap(context, promotedFormals_, subs));
+  }
 
   const resolution::TypedFnSignature* scalarFn() const {
     return scalarFn_;

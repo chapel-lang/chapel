@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -781,9 +781,7 @@ static bool isNothingType(Type* type) {
   }
   if (type->symbol->hasFlag(FLAG_STAR_TUPLE)) {
     Symbol* field = type->getField("x0", false);
-    if (field == NULL || field->type == dtNothing) {
-      return true;
-    }
+    return field == NULL || isNothingType(field->type);
   }
   return false;
 }

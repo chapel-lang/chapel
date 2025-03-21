@@ -4,7 +4,7 @@
 
 UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
-export CHPL_MEM=cstdlib
+export CHPL_TARGET_MEM=cstdlib
 export CHPL_HOST_MEM=cstdlib
 export CHPL_TASKS=fifo
 export CHPL_LLVM=none

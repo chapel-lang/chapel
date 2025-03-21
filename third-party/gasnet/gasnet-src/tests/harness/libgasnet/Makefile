@@ -4,10 +4,14 @@ all:
 	@echo For information on downloading and using Berkeley UPC, see: https://upc.lbl.gov
 	@exit 1
 
+# legacy harness support
+GASNET_SRCDIR ?= $(TOP_SRCDIR)/gasnet
+GASNET_BLDDIR ?= $(TOP_BUILDDIR)/gasnet
+
 PERL ?= perl
 LIBGASNET_LOGDIR ?= $(HARNESS_LOGDIR)
 LIBGASNET_CONFIGURE ?= configure# can also be cross-configure-*
-LIBGASNET_CONFIGURE_ARGS ?=$(shell $(PERL) -ne 'if (m/^\s*CONFIGURE_ARGS\s*=\s*(.*)$$/) { print $$1; }' < $(TOP_BUILDDIR)/gasnet/Makefile )# configure args
+LIBGASNET_CONFIGURE_ARGS ?=$(shell $(PERL) -ne 'if (m/^\s*CONFIGURE_ARGS\s*=\s*(.*)$$/) { print $$1; }' < $(GASNET_BLDDIR)/Makefile )# configure args
 LIBGASNET_CONFIGURE_ARGS_EXTRA ?=# extra configure args to append
 LIBGASNET_CONFIGURE_ENV ?=# envvars for configure
 SUITE_BUILD_DIR:=$(shell pwd)/bgasnet
@@ -16,8 +20,8 @@ do-configure: force
 	rm -Rf $(SUITE_BUILD_DIR)$(BUILD_VARIANT)
 	mkdir $(SUITE_BUILD_DIR)$(BUILD_VARIANT)
 	@logfile=$(LIBGASNET_LOGDIR)/libgasnet-configure$(BUILD_VARIANT).log ; \
-	 configure=$(TOP_SRCDIR)/gasnet/$(LIBGASNET_CONFIGURE) ; \
-	 crossconfig=$(TOP_SRCDIR)/gasnet/other/contrib/$(LIBGASNET_CONFIGURE) ; \
+	 configure=$(GASNET_SRCDIR)/$(LIBGASNET_CONFIGURE) ; \
+	 crossconfig=$(GASNET_SRCDIR)/other/contrib/$(LIBGASNET_CONFIGURE) ; \
 	 if ! test -x $$configure && test -x $$crossconfig ; then \
 	   ln -s $$crossconfig $$configure ; \
 	 fi ; \

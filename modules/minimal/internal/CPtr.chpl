@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -26,6 +26,16 @@ module CPtr {
   pragma "no wide class"
   pragma "c_ptr class"
   class c_ptr {
+    type eltType;
+  }
+
+  pragma "data class"
+  pragma "no object"
+  pragma "no default functions"
+  pragma "no wide class"
+  pragma "c_ptr class"
+  pragma "c_ptrConst class"
+  class c_ptrConst {
     type eltType;
   }
 }

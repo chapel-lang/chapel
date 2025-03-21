@@ -1,5 +1,5 @@
 #
-# Copyright 2023-2024 Hewlett Packard Enterprise Development LP
+# Copyright 2023-2025 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -114,7 +114,7 @@ class Config:
         )
         parser.add_argument(
             f"--{prefix}check-internal-prefix",
-            action="append",
+            action="store_true",
             dest="chplcheck_check_internal_prefixes",
             default=False,
             help="Check symbols with internal prefixes when linting",

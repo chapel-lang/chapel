@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -467,7 +467,8 @@ static void testGenericRecordUserInitDependentField() {
   assert(qtf2.param()->toIntParam()->value() == 8);
 
   // Now check all fields via the resolved fields query.
-  auto& rf = fieldsForTypeDecl(context, rt, DefaultsPolicy::USE_DEFAULTS);
+  auto rc = createDummyRC(context);
+  auto& rf = fieldsForTypeDecl(&rc, rt, DefaultsPolicy::USE_DEFAULTS);
   assert(rf.numFields() == 3);
   assert(!rf.isGeneric());
   assert(!rf.isGenericWithDefaults());
@@ -557,7 +558,8 @@ static void testGenericRecordUserSecondaryInitDependentField() {
   assert(ct->name() == "r");
 
   // It should already be instantiated, no need to use defaults.
-  auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+  auto rc = createDummyRC(context);
+  auto fields = fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
   assert(fields.numFields() == 3);
 
   auto f1 = fields.fieldType(0);
@@ -606,7 +608,8 @@ static void testNewGenericWithDefaults() {
     assert(ct->name() == "r");
 
     // It should already be instantiated, no need to use defaults.
-    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(context);
+    auto fields = fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
     assert(fields.numFields() == 1);
 
     auto f1 = fields.fieldType(0);
@@ -621,7 +624,8 @@ static void testNewGenericWithDefaults() {
     assert(ct->name() == "r");
 
     // It should already be instantiated, no need to use defaults.
-    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(context);
+    auto fields = fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
     assert(fields.numFields() == 1);
 
     auto f1 = fields.fieldType(0);
@@ -652,7 +656,8 @@ static void testCompilerGeneratedGenericNewWithDefaultInit() {
     assert(ct->name() == "r");
 
     // It should already be instantiated, no need to use defaults.
-    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(context);
+    auto fields = fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
     assert(fields.numFields() == 2);
 
     auto f1 = fields.fieldType(0);
@@ -670,7 +675,8 @@ static void testCompilerGeneratedGenericNewWithDefaultInit() {
     assert(ct->name() == "r");
 
     // It should already be instantiated, no need to use defaults.
-    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(context);
+    auto fields = fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
     assert(fields.numFields() == 2);
 
     auto f1 = fields.fieldType(0);
@@ -707,7 +713,8 @@ static void testCompilerGeneratedGenericNew() {
     assert(ct->name() == "r");
 
     // It should already be instantiated, no need to use defaults.
-    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(context);
+    auto fields = fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
     assert(fields.numFields() == 2);
 
     auto f1 = fields.fieldType(0);
@@ -725,7 +732,8 @@ static void testCompilerGeneratedGenericNew() {
     assert(ct->name() == "r");
 
     // It should already be instantiated, no need to use defaults.
-    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(context);
+    auto fields = fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
     assert(fields.numFields() == 2);
 
     auto f1 = fields.fieldType(0);
@@ -748,7 +756,8 @@ static void testCompilerGeneratedGenericNew() {
     assert(ct->name() == "r");
 
     // It should already be instantiated, no need to use defaults.
-    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(context);
+    auto fields = fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
     assert(fields.numFields() == 2);
 
     auto f1 = fields.fieldType(0);
@@ -787,7 +796,8 @@ static void testCompilerGeneratedGenericNewWithDefaultInitClass() {
     assert(ct->name() == "C");
 
     // It should already be instantiated, no need to use defaults.
-    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(context);
+    auto fields = fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
     assert(fields.numFields() == 2);
 
     auto f1 = fields.fieldType(0);
@@ -807,7 +817,8 @@ static void testCompilerGeneratedGenericNewWithDefaultInitClass() {
     assert(ct->name() == "C");
 
     // It should already be instantiated, no need to use defaults.
-    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(context);
+    auto fields = fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
     assert(fields.numFields() == 2);
 
     auto f1 = fields.fieldType(0);
@@ -845,7 +856,8 @@ static void testCompilerGeneratedGenericNewClass() {
     assert(ct);
 
     // It should already be instantiated, no need to use defaults.
-    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(context);
+    auto fields = fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
     assert(fields.numFields() == 2);
 
     auto f1 = fields.fieldType(0);
@@ -864,7 +876,8 @@ static void testCompilerGeneratedGenericNewClass() {
     assert(ct);
 
     // It should already be instantiated, no need to use defaults.
-    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(context);
+    auto fields = fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
     assert(fields.numFields() == 2);
 
     auto f1 = fields.fieldType(0);
@@ -888,7 +901,8 @@ static void testCompilerGeneratedGenericNewClass() {
     assert(ct);
 
     // It should already be instantiated, no need to use defaults.
-    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(context);
+    auto fields = fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
     assert(fields.numFields() == 2);
 
     auto f1 = fields.fieldType(0);
@@ -928,7 +942,8 @@ static void testSimpleUserGenericNew() {
     assert(ct->name() == "C");
 
     // It should already be instantiated, no need to use defaults.
-    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(context);
+    auto fields = fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
     assert(fields.numFields() == 1);
 
     auto f1 = fields.fieldType(0);
@@ -944,7 +959,8 @@ static void testSimpleUserGenericNew() {
     assert(ct->name() == "C");
 
     // It should already be instantiated, no need to use defaults.
-    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(context);
+    auto fields = fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
     assert(fields.numFields() == 1);
 
     auto f1 = fields.fieldType(0);
@@ -984,7 +1000,8 @@ static void testUserGenericNew() {
     assert(ct->name() == "r");
 
     // It should already be instantiated, no need to use defaults.
-    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(context);
+    auto fields = fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
     assert(fields.numFields() == 2);
 
     auto f1 = fields.fieldType(0);
@@ -1002,7 +1019,8 @@ static void testUserGenericNew() {
     assert(ct->name() == "r");
 
     // It should already be instantiated, no need to use defaults.
-    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(context);
+    auto fields = fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
     assert(fields.numFields() == 2);
 
     auto f1 = fields.fieldType(0);
@@ -1025,7 +1043,8 @@ static void testUserGenericNew() {
     assert(ct->name() == "r");
 
     // It should already be instantiated, no need to use defaults.
-    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(context);
+    auto fields = fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
     assert(fields.numFields() == 2);
 
     auto f1 = fields.fieldType(0);
@@ -1038,6 +1057,23 @@ static void testUserGenericNew() {
   }
 
   assert(guard.realizeErrors() == 1);
+}
+
+static void testExplicitManagementNew() {
+  auto ctx = buildStdContext();
+  ErrorGuard guard(ctx);
+
+  auto var = resolveTypeOfXInit(ctx,
+      R"""(
+      class C{}
+
+      proc getType() type do return unmanaged C;
+
+      var x = new (getType())();
+      )""");
+
+  assert(var.type()->isClassType());
+  assert(var.type()->toClassType()->decorator().isUnmanaged());
 }
 
 
@@ -1056,6 +1092,7 @@ int main() {
   testCompilerGeneratedGenericNewClass();
   testSimpleUserGenericNew();
   testUserGenericNew();
+  testExplicitManagementNew();
 
   return 0;
 }

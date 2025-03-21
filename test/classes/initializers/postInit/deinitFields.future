@@ -1,0 +1,15 @@
+unimplemented feature: throwing postinits don't deinit fields
+
+I suspect that addressing ../errors/errhandling/deinitFields.chpl
+would likely fix this test as well, but wanted to add a separate test
+to be sure.
+
+One interesting question about this test is whether C.deinit() should
+be called by the language as part of the cleanup in the sense that "We
+completed all the init() calls, so it's initialized" or whether the
+postinit()s are still considered part of the initialization, such that
+by not completing them, we didn't complete the initialization of C.
+The .good here is set up to not invoke C's initializer, but that's
+arbitrary and I'm not trying to take a strong stance on the issue.
+
+#26437

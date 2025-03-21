@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -60,6 +60,11 @@ class CPtrType final : public PtrType {
 
   const ID& id(Context* context) const override {
     return isConst() ? getConstId(context) : getId(context);
+  }
+
+  const Type* substitute(Context* context,
+                         const PlaceholderMap& subs) const override {
+    return get(context, Type::substitute(context, eltType_, subs));
   }
 
   const CPtrType* withoutConst(Context* context) const;

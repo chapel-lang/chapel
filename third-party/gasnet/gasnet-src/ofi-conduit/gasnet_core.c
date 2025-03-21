@@ -135,7 +135,7 @@ static int gasnetc_init( gex_Client_t            *client_p,
   gasneti_assert_zeroret(gasnetc_exit_init());
 
   #if GASNET_PSHM
-  gasneti_pshm_init(gasneti_bootstrapSNodeBroadcast, 0);
+  gasneti_pshm_init(gasneti_bootstrapNbrhdBroadcast, 0);
   #endif
 
   //  Create first Client, EP and TM *here*, for use in subsequent bootstrap communication
@@ -191,7 +191,7 @@ static int gasnetc_init( gex_Client_t            *client_p,
 }
 
 /* ------------------------------------------------------------------------------------ */
-extern int gasnetc_attach_primary(void) {
+extern int gasnetc_attach_primary(gex_Flags_t flags) {
   /* ------------------------------------------------------------------------------------ */
   /*  register fatal signal handlers */
 
@@ -289,7 +289,7 @@ extern int gasnetc_Client_Init(
 
   if (0 == (flags & GASNETI_FLAG_INIT_LEGACY)) {
     /*  primary attach  */
-    if (GASNET_OK != gasnetc_attach_primary())
+    if (GASNET_OK != gasnetc_attach_primary(flags))
       GASNETI_RETURN_ERRR(RESOURCE,"Error in primary attach");
 
     /* ensure everything is initialized across all nodes */
@@ -400,23 +400,23 @@ static void gasnetc_exit_sighandler(int sig) {
   /* note - can't call trace macros here, or even sprintf */
   if (sig == SIGALRM) {
     static const char msg[] = "gasnet_exit(): WARNING: timeout during exit... goodbye.  [";
-    (void) write(STDERR_FILENO, msg, sizeof(msg) - 1);
-    (void) write(STDERR_FILENO, state, state_len);
-    (void) write(STDERR_FILENO, "]\n", 2);
+    gasneti_unused_result( write(STDERR_FILENO, msg, sizeof(msg) - 1) );
+    gasneti_unused_result( write(STDERR_FILENO, state, state_len) );
+    gasneti_unused_result( write(STDERR_FILENO, "]\n", 2) );
   } else {
     static const char msg1[] = "gasnet_exit(): ERROR: signal ";
     static const char msg2[] = " received during exit... goodbye.  [";
     char digit;
 
-    (void) write(STDERR_FILENO, msg1, sizeof(msg1) - 1);
+    gasneti_unused_result( write(STDERR_FILENO, msg1, sizeof(msg1) - 1) );
 
     char sigstr[4];
     size_t n = gasneti_utoa(sig, sigstr, sizeof(sigstr), 10);
-    (void) write(STDERR_FILENO, sigstr, n);
+    gasneti_unused_result( write(STDERR_FILENO, sigstr, n) );
 
-    (void) write(STDERR_FILENO, msg2, sizeof(msg2) - 1);
-    (void) write(STDERR_FILENO, state, state_len);
-    (void) write(STDERR_FILENO, "]\n", 2);
+    gasneti_unused_result( write(STDERR_FILENO, msg2, sizeof(msg2) - 1) );
+    gasneti_unused_result( write(STDERR_FILENO, state, state_len) );
+    gasneti_unused_result( write(STDERR_FILENO, "]\n", 2) );
   }
   (void) fsync(STDERR_FILENO);
 
@@ -527,6 +527,11 @@ extern void gasnetc_exit(int exitcode) {
     gasneti_bootstrapAbort(exitcode);
     gasneti_killmyprocess(exitcode);
   }
+
+#if GASNET_DEBUG
+  // Disarm gasneti_checknpam() so we can use AMs for coordination
+  gasneti_checknpam_disarm();
+#endif
 
   const unsigned int timeout = (unsigned int)gasnetc_exittimeout;
 

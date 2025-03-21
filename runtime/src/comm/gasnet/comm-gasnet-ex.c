@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -59,6 +59,7 @@ static int reservedCore = -1;
 static chpl_bool defer_gasnet_progress_threads = false;
 
 static gasnet_seginfo_t* seginfo_table = NULL;
+static uintptr_t segsize_request;
 static gex_Client_t      myclient;
 static gex_EP_t          myep;
 static gex_TM_t          myteam;
@@ -714,7 +715,15 @@ int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
 
 
 int32_t chpl_comm_getMaxThreads(void) {
-  return GASNETI_MAX_THREADS-1;
+  uint64_t maxGasnetThreads = gex_System_QueryMaxThreads();
+  if (maxGasnetThreads > INT32_MAX) {
+    if (chpl_nodeID == 0) {
+      chpl_warning("GASNet's maximum number of threads exceeds Chapel's "
+                   "'int32_t' value, so capping it at INT32_MAX.", 0, 0);
+    }
+    maxGasnetThreads = INT32_MAX;
+  }
+  return maxGasnetThreads - 1; // reserve one thread for the primordial thread
 }
 
 //
@@ -925,7 +934,13 @@ void chpl_comm_pre_mem_init(void) {
   if (chpl_env_rt_get_bool("COMM_GASNET_DEDICATED_PROGRESS_CORE", false)) {
     reservedCore = chpl_topo_reserveCPUPhysical();
   }
-  GASNET_Safe(gex_Segment_Attach(&mysegment, myteam, gasnet_getMaxLocalSegmentSize()));
+
+  // Allocate and establish the GASNet shared memory segment
+  // TODO: Should Chapel unconditionally request the largest available segment?
+  segsize_request = gasnet_getMaxLocalSegmentSize();
+  GASNET_Safe(gex_Segment_Attach(&mysegment, myteam, segsize_request));
+
+  // Register AM handlers
   GASNET_Safe(gex_EP_RegisterHandlers(myep, ftable, sizeof(ftable)/sizeof(gex_AM_Entry_t)));
 
   seginfo_table = (gasnet_seginfo_t*)sys_malloc(chpl_numNodes*sizeof(gasnet_seginfo_t));
@@ -1033,6 +1048,25 @@ void chpl_comm_post_task_init(void) {
       printf("GASNet send progress thread is %s.\n", haveSendThread ?
              "enabled" : "disabled");
     }
+  }
+  if (verbosity >= 2) { // print segment size information for each locale
+  #if GASNET_SEGMENT_EVERYTHING
+    if (!chpl_nodeID) {
+      printf("GASNet segment everything.\n");
+    }
+  #else
+    char size_str[80], request_str[80];
+    uintptr_t size = gex_Segment_QuerySize(mysegment);
+    gasnett_format_number(size, size_str, sizeof(size_str), 1);
+    if (size < segsize_request) { // we got less than we asked for
+      const char *prefix = " (requested ";
+      strcpy(request_str, prefix);
+      gasnett_format_number(segsize_request, request_str+strlen(prefix),
+                            sizeof(request_str)-strlen(prefix)-1, 1);
+      strcat(request_str, ")");
+    } else request_str[0] = '\0';
+    printf("%i: GASNet segment size: %s%s\n", chpl_nodeID, size_str, request_str);
+  #endif
   }
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -22,11 +22,9 @@
 
 #include "chpl/types/Type.h"
 #include "chpl/types/QualifiedType.h"
+#include "chpl/uast/Decl.h"
 
 namespace chpl {
-namespace uast {
-  class Decl;
-}
 namespace types {
 
 
@@ -90,6 +88,7 @@ class CompositeType : public Type {
   using SubstitutionsMap = std::unordered_map<ID, types::QualifiedType>;
   using SubstitutionPair = std::pair<ID, QualifiedType>;
   using SortedSubstitutions = std::vector<SubstitutionPair>;
+  using Linkage = uast::Decl::Linkage;
 
  protected:
   ID id_;
@@ -102,13 +101,17 @@ class CompositeType : public Type {
   // If so, what types/params should we use?
   SubstitutionsMap subs_;
 
+  Linkage linkage_ = uast::Decl::DEFAULT_LINKAGE;
+
   CompositeType(typetags::TypeTag tag,
                 ID id, UniqueString name,
                 const CompositeType* instantiatedFrom,
-                SubstitutionsMap subs)
+                SubstitutionsMap subs,
+                Linkage linkage)
     : Type(tag), id_(id), name_(name),
       instantiatedFrom_(instantiatedFrom),
-      subs_(std::move(subs)) {
+      subs_(std::move(subs)),
+      linkage_(linkage) {
 
     // check instantiated only from same type of object
     CHPL_ASSERT(instantiatedFrom_ == nullptr || instantiatedFrom_->tag() == tag);
@@ -126,9 +129,10 @@ class CompositeType : public Type {
 
   bool compositeTypeContentsMatchInner(const CompositeType* other) const {
     return id_ == other->id_ &&
-           name_ != other->name_ &&
+           name_ == other->name_ &&
            instantiatedFrom_ == other->instantiatedFrom_ &&
-           subs_ == other->subs_;
+           subs_ == other->subs_ &&
+           linkage_ == other->linkage_;
   }
 
   void compositeTypeMarkUniqueStringsInner(Context* context) const {
@@ -149,6 +153,11 @@ class CompositeType : public Type {
  public:
   virtual ~CompositeType() = 0; // this is an abstract base class
 
+  /* print the substitutions map like it would be printed for a composite type. */
+  static void stringifySubstitutions(std::ostream& ss,
+                                     chpl::StringifyKind stringKind,
+                                     const SubstitutionsMap& subs);
+
   virtual void stringify(std::ostream& ss,
                          chpl::StringifyKind stringKind) const override;
 
@@ -157,6 +166,9 @@ class CompositeType : public Type {
 
   /** Returns the name of the uAST associated with this CompositeType */
   UniqueString name() const { return name_; }
+
+  /** Returns the linkage of the underlying uAST for this composite. */
+  uast::Decl::Linkage linkage() const { return linkage_; }
 
   /** If this type represents an instantiated type,
       returns the type it was instantiated from.

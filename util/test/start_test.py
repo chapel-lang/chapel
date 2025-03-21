@@ -212,11 +212,10 @@ def test_file(test):
             if args.performance or not args.gen_graphs:
                 error = run_sub_test(test)
 
-            # check for errors - 173 is an internal sub_test error that would
-            # have already reported.
-            if error != 0 and error != 173:
-                logger.write("[Error running sub_test for {0}]"
-                        .format(path_to_test))
+            # check for errors:
+            if error != 0:
+                logger.write("[Error running sub_test (code {1}) for {0}]"
+                        .format(path_to_test, error))
 
             if args.progress:
                 sys.stderr.write("[done]\n")
@@ -343,10 +342,9 @@ def test_directory(test, test_type):
                     if not args.clean_only:
                         # run all tests in dir
                         error = run_sub_test()
-                        # check for errors - 173 is an internal sub_test
-                        # error that would have already reported.
-                        if not error == 0 and not error == 173:
-                            logger.write("[Error {1} running sub_test in {0}]"
+                        # check for errors:
+                        if not error == 0:
+                            logger.write("[Error running sub_test (code {1}) in {0}]"
                                     .format(root, error))
 
             # let user know no tests were found

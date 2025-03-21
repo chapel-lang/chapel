@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -172,11 +172,6 @@ static int processStringLiteral(yyscan_t scanner,
                               context->convertLocation(*loc),
                               std::move(value),
                               quotes).release();
-  } else if (type == CSTRINGLITERAL) {
-    lit = CStringLiteral::build(context->builder,
-                                context->convertLocation(*loc),
-                                std::move(value),
-                                quotes).release();
   } else {
     CHPL_ASSERT(false && "unknown type in processStringLiteral");
   }
@@ -221,11 +216,6 @@ static int processTripleStringLiteral(yyscan_t scanner,
                               context->convertLocation(*loc),
                               std::move(value),
                               quotes).release();
-  } else if (type == CSTRINGLITERAL) {
-    lit = CStringLiteral::build(context->builder,
-                                context->convertLocation(*loc),
-                                std::move(value),
-                                quotes).release();
   } else {
     CHPL_ASSERT(false && "unknown type in processStringLiteral");
   }

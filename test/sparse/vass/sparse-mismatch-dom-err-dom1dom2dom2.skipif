@@ -1,0 +1,3 @@
+# still generates the right failure message but valgrind version 3.23.0 may have
+# impacted its ability to halt with that failure properly
+CHPL_TEST_VGRND_EXE == on

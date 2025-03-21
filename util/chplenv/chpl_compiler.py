@@ -24,11 +24,17 @@ def validate_compiler(compiler_val, flag):
         if not os.path.isfile(comp_makefile):
             warning('Unknown compiler: "{0}"'.format(compiler_val))
 
+        # if we are on an EX and not using LLVM, we should be using the prgenv compiler
+        if flag == 'target':
+            prg_compiler = get_prgenv_compiler()
+            if prg_compiler != 'none' and compiler_val != prg_compiler:
+                warning('Prefer using a PrgEnv compiler (CHPL_TARGET_COMPILER={0}) for the C backend'.format(prg_compiler))
+
 
 @memoize
 def get_prgenv_compiler():
     platform_val = chpl_platform.get('target')
-    if platform_val.startswith('cray-x') or platform_val == 'hpe-cray-ex':
+    if 'cray-x' in platform_val or chpl_platform.is_hpe_cray('target'):
         subcompiler = os.environ.get('PE_ENV', 'none')
         if subcompiler != 'none':
             return "cray-prgenv-{0}".format(subcompiler.lower())
@@ -522,10 +528,28 @@ def _main():
                       const='host', default='host')
     parser.add_option('--target', dest='flag', action='store_const',
                       const='target')
+    parser.add_option('--cc', dest='which', action='store_const',
+                      const='c', default=None, help='get CHPL_{flag}_CC')
+    parser.add_option('--cxx', dest='which', action='store_const',
+                      const='c++', help='get CHPL_{flag}_CXX')
+    parser.add_option('--compiler-only', dest='parts', action='store_const',
+                      const='compiler', default='all')
+    parser.add_option('--additional', dest='parts', action='store_const',
+                      const='additional', help='get additional compiler args')
     (options, args) = parser.parse_args()
 
-    compiler_val = get(options.flag)
-    sys.stdout.write("{0}\n".format(compiler_val))
+    if options.which is None:
+        compiler_val = get(options.flag)
+        sys.stdout.write("{0}\n".format(compiler_val))
+    else:
+        compiler = get_compiler_command(options.flag, options.which)
+        if options.parts == 'compiler':
+            sys.stdout.write("{0}\n".format(compiler[0]))
+        elif options.parts == 'additional':
+            sys.stdout.write("{0}\n".format(' '.join(compiler[1:])))
+        else:
+            sys.stdout.write("{0}\n".format(' '.join(compiler)))
+
 
 
 if __name__ == '__main__':

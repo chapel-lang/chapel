@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -25,6 +25,7 @@
 #include "chpl/uast/AstList.h"
 #include "chpl/uast/AstTag.h"
 #include "chpl/uast/forward-declare-uast.h"
+#include "chpl/uast/Pragma.h"
 #include "chpl/util/memory.h"
 
 #include <functional>
@@ -288,6 +289,9 @@ class AstNode {
   bool shallowMatch(const AstNode* other) const;
   bool completeMatch(const AstNode* other) const;
 
+  /** Returns true if this AST has the pragma 'p' attached to it. */
+  bool hasPragma(Context* context, uast::pragmatags::PragmaTag p) const;
+
   // 'keep' is some old AST
   // 'addin' is some new AST we wish to combine with it
   //
@@ -367,6 +371,7 @@ class AstNode {
 
  private:
 
+  /// \cond DO_NOT_DOCUMENT
   template <typename ReturnType, typename Visitor>
   struct Dispatcher {
     static ReturnType doDispatch(const AstNode* ast, Visitor& v) {
@@ -445,6 +450,7 @@ class AstNode {
       CHPL_ASSERT(false && "this code should never be run");
     }
   };
+  /// \endcond DO_NOT_DOCUMENT
 
  public:
 

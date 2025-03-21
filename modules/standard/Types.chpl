@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1026,31 +1026,6 @@ proc isSubtype(type sub, type sup) param {
 pragma "docs only"
 proc isProperSubtype(type sub, type sup) param {
   return __primitive("is_proper_subtype", sup, sub);
-}
-
-/* :returns: isProperSubtype(a,b) */
-pragma "docs only"
-@deprecated(notes="< operator is deprecated when comparing types; use isProperSubtype() instead")
-operator <(type a, type b) param {
-  return isProperSubtype(a,b);
-}
-/* :returns: isSubtype(a,b) */
-pragma "docs only"
-@deprecated(notes="<= operator is deprecated when comparing types; use isSubtype() instead")
-operator <=(type a, type b) param {
-  return isSubtype(a,b);
-}
-/* :returns: isProperSubtype(b,a) */
-pragma "docs only"
-@deprecated(notes="> operator is deprecated when comparing types; use isProperSubtype() instead")
-operator >(type a, type b) param {
-  return isProperSubtype(b,a);
-}
-/* :returns: isSubtype(b,a) */
-pragma "docs only"
-@deprecated(notes=">= operator is deprecated when comparing types; use isSubtype() instead")
-operator >=(type a, type b) param {
-  return isSubtype(b,a);
 }
 
 } // module Types

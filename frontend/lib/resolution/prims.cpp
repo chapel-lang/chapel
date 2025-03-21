@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -48,11 +48,11 @@ static const CompositeType* toCompositeTypeActual(const QualifiedType& type,
 }
 
 static const ResolvedFields*
-toCompositeTypeActualFields(Context* context,
+toCompositeTypeActualFields(ResolutionContext* rc,
                             const QualifiedType& type,
                             bool shouldBeType = true) {
   if (auto ct = toCompositeTypeActual(type, shouldBeType)) {
-    auto& resolvedFields = fieldsForTypeDecl(context, ct,
+    auto& resolvedFields = fieldsForTypeDecl(rc, ct,
                                              DefaultsPolicy::IGNORE_DEFAULTS);
     return &resolvedFields;
   }
@@ -101,28 +101,13 @@ static bool toParamStringActual(const QualifiedType& type, UniqueString& into) {
   return paramStringBytesHelper(type, into, true);
 }
 
-static QualifiedType makeParamBool(Context* context, bool b) {
-  return { QualifiedType::PARAM, BoolType::get(context),
-           BoolParam::get(context, b) };
-}
-
-static QualifiedType makeParamString(Context* context, UniqueString s) {
-  return { QualifiedType::PARAM, RecordType::getStringType(context),
-           StringParam::get(context, s) };
-}
-
-static QualifiedType makeParamString(Context* context, std::string s) {
-  auto ustr = UniqueString::get(context, s);
-  return makeParamString(context, ustr);
-}
-
-static QualifiedType primIsBound(Context* context, const CallInfo& ci) {
+static QualifiedType primIsBound(ResolutionContext* rc, const CallInfo& ci) {
   auto type = QualifiedType();
   if (ci.numActuals() != 2) return type;
 
   auto firstActual = ci.actual(0).type();
   auto secondActual = ci.actual(1).type();
-  if (auto fields = toCompositeTypeActualFields(context, firstActual)) {
+  if (auto fields = toCompositeTypeActualFields(rc, firstActual)) {
     UniqueString fieldName;
     if (!toParamStringActual(secondActual, fieldName)) return type;
 
@@ -135,58 +120,54 @@ static QualifiedType primIsBound(Context* context, const CallInfo& ci) {
       // will only return true if the field's type is concrete.
       auto isBound =
         fields->fieldType(i).genericity() == Type::Genericity::CONCRETE;
-      type = makeParamBool(context, isBound);
+      type = QualifiedType::makeParamBool(rc->context(), isBound);
       break;
     }
   }
   return type;
 }
 
-static QualifiedType primNumFields(Context* context, const CallInfo& ci) {
+static QualifiedType primNumFields(ResolutionContext* rc, const CallInfo& ci) {
   auto type = QualifiedType();
   if (ci.numActuals() != 1) return type;
 
   auto firstActual = ci.actual(0).type();
-  if (auto fields = toCompositeTypeActualFields(context, firstActual)) {
+  if (auto fields = toCompositeTypeActualFields(rc, firstActual)) {
     int64_t numFields = fields->numFields();
-    type = QualifiedType(QualifiedType::PARAM,
-                         IntType::get(context, 64),
-                         IntParam::get(context, numFields));
+    type = QualifiedType::makeParamInt(rc->context(), numFields);
   }
   return type;
 }
 
-static QualifiedType primFieldNumToName(Context* context, const CallInfo& ci) {
+static QualifiedType primFieldNumToName(ResolutionContext* rc, const CallInfo& ci) {
   auto type = QualifiedType();
   if (ci.numActuals() != 2) return type;
 
   auto firstActual = ci.actual(0).type();
   auto secondActual = ci.actual(1).type();
-  if (auto fields = toCompositeTypeActualFields(context, firstActual)) {
+  if (auto fields = toCompositeTypeActualFields(rc, firstActual)) {
     int64_t fieldNum = 0;
     if (!toParamIntActual(secondActual, fieldNum)) return type;
     // Fields in these primitives are 1-indexed.
     if (fieldNum > fields->numFields() || fieldNum < 1) return type;
 
     auto fieldName = fields->fieldName(fieldNum - 1);
-    type = QualifiedType(QualifiedType::PARAM,
-                         RecordType::getStringType(context),
-                         StringParam::get(context, fieldName));
+    type = QualifiedType::makeParamString(rc->context(), fieldName);
   }
   return type;
 }
 
-static QualifiedType primFieldNameToNum(Context* context, const CallInfo& ci) {
+static QualifiedType primFieldNameToNum(ResolutionContext* rc, const CallInfo& ci) {
   auto type = QualifiedType();
   if (ci.numActuals() != 2) return type;
 
   auto firstActual = ci.actual(0).type();
   auto secondActual = ci.actual(1).type();
-  if (auto fields = toCompositeTypeActualFields(context, firstActual)) {
+  bool foundField = false;
+  int field = 0;
+  if (auto fields = toCompositeTypeActualFields(rc, firstActual)) {
     UniqueString fieldName;
     if (!toParamStringActual(secondActual, fieldName)) return type;
-    bool foundField = false;
-    int field = 0;
 
     // TODO move this into a method on fields?
     for (int i = 0; i < fields->numFields(); i++) {
@@ -197,21 +178,30 @@ static QualifiedType primFieldNameToNum(Context* context, const CallInfo& ci) {
         break;
       }
     }
+  } else if (firstActual.type() && firstActual.type()->isIteratorType()) {
+    // No "real" field called _shape_ in iterator record, but pretend there
+    // is one.
+    UniqueString fieldName;
+    if (!toParamStringActual(secondActual, fieldName)) return type;
 
-    if (!foundField) return type;
-    type = QualifiedType(QualifiedType::PARAM,
-                         IntType::get(context, 64),
-                         IntParam::get(context, field));
+    if (fieldName == "_shape_" &&
+        shapeForIterator(rc->context(), firstActual.type()->toIteratorType())) {
+      foundField = true;
+      // Fields in these primitives are 1-indexed.
+      field = 1;
+    }
   }
-  return type;
+
+  if (!foundField) field = -1;
+  return QualifiedType::makeParamInt(rc->context(), field);
 }
 
-static QualifiedType primFieldByNum(Context* context, const CallInfo& ci) {
+static QualifiedType primFieldByNum(ResolutionContext* rc, const CallInfo& ci) {
   if (ci.numActuals() != 2) return QualifiedType();
 
   auto firstActual = ci.actual(0).type();
   auto secondActual = ci.actual(1).type();
-  auto fields = toCompositeTypeActualFields(context,
+  auto fields = toCompositeTypeActualFields(rc,
                                             firstActual,
                                             /* shouldBeType */ false);
   if (!fields) return QualifiedType();
@@ -242,6 +232,32 @@ static QualifiedType primCallResolves(ResolutionContext* rc,
 
   bool callAndFnResolved = false;
   std::vector<CallInfoActual> actuals;
+
+  if (forMethod && ci.actual(0).type().isUnknownOrErroneous()) {
+    return QualifiedType();
+  }
+
+  // Currently, production uses a param proc _fromForExpr_ on iterators
+  // to signal iterators created from for expressions. In the long term,
+  // when only Dyno exists, we should use a better signaling mechanism.
+  // In the meantime, mimic that behavior here.
+  if (forMethod && ci.numActuals() == 2) {
+    if (auto iter = ci.actual(0).type().type()->toIteratorType()) {
+      bool isFromForExpr = fnName == "_fromForExpr_";
+      bool isFromForeachExpr = fnName == "_fromForeachExpr_";
+
+      if (isFromForExpr || isFromForeachExpr) {
+        bool result = false;
+        if (auto loopIt = iter->toLoopExprIteratorType()) {
+          auto tag = parsing::idToTag(context, loopIt->sourceLocation());
+          result = (isFromForExpr && tag == uast::asttags::For) ||
+                   (isFromForeachExpr && tag == uast::asttags::Foreach);
+        }
+        return QualifiedType::makeParamBool(context, result);
+      }
+    }
+  }
+
   if (forMethod) {
     actuals.push_back(CallInfoActual(ci.actual(0).type(), USTR("this")));
   }
@@ -255,7 +271,7 @@ static QualifiedType primCallResolves(ResolutionContext* rc,
                            /* isParenless */ false,
                            std::move(actuals));
   auto callResult = context->runAndTrackErrors([&](Context* context) {
-    return resolveGeneratedCall(context, call, callInfo,
+    return resolveGeneratedCall(rc, call, callInfo,
                                 inScopes);
   });
   const TypedFnSignature* bestCandidate = nullptr;
@@ -278,28 +294,44 @@ static QualifiedType primCallResolves(ResolutionContext* rc,
     }
   }
 
-  return QualifiedType(QualifiedType::PARAM,
-                       BoolType::get(context),
-                       BoolParam::get(context, callAndFnResolved));
+  return QualifiedType::makeParamBool(context, callAndFnResolved);
 }
 
-static QualifiedType computeDomainType(Context* context, const CallInfo& ci) {
-  if (ci.numActuals() == 3) {
-    auto type = DomainType::getRectangularType(context,
-                                          QualifiedType(),
-                                          ci.actual(0).type(),
-                                          ci.actual(1).type(),
-                                          ci.actual(2).type());
-    return QualifiedType(QualifiedType::TYPE, type);
-  } else if (ci.numActuals() == 2) {
-    auto type = DomainType::getAssociativeType(context,
-                                               ci.actual(0).type(),
-                                               ci.actual(1).type());
-    return QualifiedType(QualifiedType::TYPE, type);
-  } else {
-    CHPL_ASSERT(false && "unhandled domain type?");
+static QualifiedType primImplementsInterface(Context* context,
+                                             const PrimCall* astForErr,
+                                             const CallInfo& ci,
+                                             const Scope* inScope,
+                                             const PoiScope* inPoiScope) {
+  if (ci.numActuals() != 2) return QualifiedType();
+
+  auto& type = ci.actual(0).type();
+  auto& ifqt = ci.actual(1).type();
+
+  if (ifqt.kind() != QualifiedType::TYPE ||
+      ifqt.isUnknownOrErroneous() ||
+      type.isUnknownOrErroneous() ||
+      !ifqt.type()->isInterfaceType()) return QualifiedType();
+
+  auto ift = ifqt.type()->toInterfaceType();
+  if (!ift) return QualifiedType();
+
+  ResolutionContext rc(context);
+  bool foundExisting;
+  auto inScopes = CallScopeInfo::forNormalCall(inScope, inPoiScope);
+  auto implPoint = findOrImplementInterface(&rc, ift, type.type(), inScopes,
+                                            astForErr->id(), foundExisting);
+
+  int returnValue = 2;
+  if (implPoint) {
+    if (foundExisting) {
+      returnValue = 0;
+    } else if (implPoint->allGenerated()) {
+      returnValue = 1;
+    } else {
+      returnValue = 2;
+    }
   }
-  return QualifiedType();
+  return QualifiedType::makeParamInt(context, returnValue);
 }
 
 static QualifiedType primAddrOf(Context* context, const CallInfo& ci) {
@@ -389,6 +421,19 @@ static QualifiedType primTypeof(Context* context, PrimitiveTag prim, const CallI
   return QualifiedType(QualifiedType::TYPE, typePtr);
 }
 
+static QualifiedType primPromotionType(Context* context, const CallInfo& ci) {
+  if (ci.numActuals() != 1) return QualifiedType();
+  auto actualQt = ci.actual(0).type();
+
+  auto promoQt = getPromotionType(context, actualQt);
+  if (promoQt.isUnknown()) promoQt = actualQt;
+
+  // We want a type result, even if the prim was passed a value.
+  auto res = QualifiedType(QualifiedType::TYPE, promoQt.type());
+
+  return res;
+}
+
 static QualifiedType primGetSvecMember(Context* context, PrimitiveTag prim,
                                        const CallInfo& ci) {
   CHPL_ASSERT(prim == PRIM_GET_SVEC_MEMBER ||
@@ -416,32 +461,83 @@ static QualifiedType primGetSvecMember(Context* context, PrimitiveTag prim,
   return QualifiedType();
 }
 
-static QualifiedType staticFieldType(Context* context, const CallInfo& ci) {
-  // Note: this is slightly different semantically from the primitive in
-  // production. In production owned(X) is a type of its own (aliasing _owned(X)),
-  // so it would have the fields of _owned accessed by the primitive. Meanwhile,
-  // in Dyno, an owned(X) will have the fields of X accessed by this primitive.
-
-  if (ci.numActuals() != 2) return QualifiedType();
+static bool getTypeAndFieldName(Context* context,
+                                const CallInfo& ci,
+                                const CompositeType*& outType,
+                                UniqueString& outFieldName) {
+  if (ci.numActuals() != 2) return false;
 
   auto typeActualQt = ci.actual(0).type();
   auto fieldActualQt = ci.actual(1).type();
 
   if (!typeActualQt.type() ||
       !fieldActualQt.isParam() || !fieldActualQt.type() || !fieldActualQt.param()) {
-    return QualifiedType();
+    return false;
   }
 
   auto compositeType = typeActualQt.type()->getCompositeType();
   auto fieldNameParam = fieldActualQt.param()->toStringParam();
 
   if (!compositeType || !fieldNameParam) {
+    return false;
+  }
+
+  outType = compositeType;
+  outFieldName = fieldNameParam->value();
+  return true;
+}
+
+static QualifiedType primGetRuntimeTypeField(Context* context,
+                                             const CallInfo& ci) {
+  const CompositeType* compositeType;
+  UniqueString fieldName;
+
+  if (!getTypeAndFieldName(context, ci, compositeType, fieldName)) {
     return QualifiedType();
   }
 
-  auto& fields = fieldsForTypeDecl(context, compositeType, DefaultsPolicy::IGNORE_DEFAULTS);
+  const RuntimeType* rtt = nullptr;
+  if (auto dt = compositeType->toDomainType()) {
+    while (dt->isSubdomain()) dt = dt->parentDomain();
+
+    auto domainRtt = dt->runtimeType(context);
+    CHPL_ASSERT(domainRtt);
+    CHPL_ASSERT(domainRtt->isRuntimeType());
+    rtt = domainRtt->toRuntimeType();
+  } else if (auto at = compositeType->toArrayType()) {
+    auto arrayRtt = at->runtimeType(context);
+    CHPL_ASSERT(arrayRtt);
+    CHPL_ASSERT(arrayRtt->isRuntimeType());
+    rtt = arrayRtt->toRuntimeType();
+  }
+
+  if (!rtt) return QualifiedType();
+
+  for (int i = 0; i < rtt->initializer()->numFormals(); i++) {
+    if (rtt->initializer()->formalName(i) == fieldName) {
+      return rtt->initializer()->formalType(i);
+    }
+  }
+
+  return QualifiedType();
+}
+
+static QualifiedType staticFieldType(ResolutionContext* rc, const CallInfo& ci) {
+  // Note: this is slightly different semantically from the primitive in
+  // production. In production owned(X) is a type of its own (aliasing _owned(X)),
+  // so it would have the fields of _owned accessed by the primitive. Meanwhile,
+  // in Dyno, an owned(X) will have the fields of X accessed by this primitive.
+
+  auto context = rc->context();
+  const CompositeType* compositeType;
+  UniqueString fieldName;
+  if (!getTypeAndFieldName(context, ci, compositeType, fieldName)) {
+    return QualifiedType();
+  }
+
+  auto& fields = fieldsForTypeDecl(rc, compositeType, DefaultsPolicy::IGNORE_DEFAULTS);
   for (int i = 0; fields.numFields(); i++) {
-    if (fields.fieldName(i) == fieldNameParam->value()) {
+    if (fields.fieldName(i) == fieldName) {
       auto returnType = fields.fieldType(i).type();
       return QualifiedType(QualifiedType::TYPE, returnType);
     }
@@ -512,9 +608,7 @@ static QualifiedType primGatherTests(Context* context, const CallInfo& ci) {
   QUERY_STORE_INPUT_RESULT(gatheredTestsQuery, context, finder.fns);
   auto numFoundFns = (int) gatheredTestsQuery(context).size();
 
-  return QualifiedType(QualifiedType::PARAM,
-                       IntType::get(context, 0),
-                       IntParam::get(context, numFoundFns));
+  return QualifiedType::makeParamInt(context, numFoundFns);
 }
 
 static QualifiedType primIsTuple(Context* context,
@@ -524,9 +618,7 @@ static QualifiedType primIsTuple(Context* context,
   if (actualType.kind() != QualifiedType::TYPE) return QualifiedType();
 
   bool isTupleType = actualType.type() && actualType.type()->isTupleType();
-  return QualifiedType(QualifiedType::PARAM,
-                       BoolType::get(context),
-                       BoolParam::get(context, isTupleType));
+  return QualifiedType::makeParamBool(context, isTupleType);
 }
 
 static QualifiedType primCast(Context* context,
@@ -711,8 +803,7 @@ static QualifiedType primFamilyIsSubtype(Context* context,
     }
   }
 
-  return QualifiedType(QualifiedType::PARAM, BoolType::get(context),
-                       BoolParam::get(context, result));
+  return QualifiedType::makeParamBool(context, result);
 }
 
 static QualifiedType primToNilableClass(Context* context,
@@ -819,7 +910,7 @@ primAbsGetType(Context* context, const CallInfo& ci) {
   return ret;
 }
 
-static QualifiedType primFamilyCopyableAssignable(Context* context,
+static QualifiedType primFamilyCopyableAssignable(ResolutionContext* rc,
                                                   const CallInfo& ci,
                                                   const PrimitiveTag prim) {
   const bool checkCopyable =
@@ -832,7 +923,7 @@ static QualifiedType primFamilyCopyableAssignable(Context* context,
   if (ci.numActuals() != 1) return QualifiedType();
   auto t = ci.actual(0).type().type();
 
-  auto info = getCopyOrAssignableInfo(context, t, checkCopyable);
+  auto info = getCopyOrAssignableInfo(rc, t, checkCopyable);
 
   // copyable/assignable from const is stricter than from ref
   const bool isFromRefOk =
@@ -840,8 +931,7 @@ static QualifiedType primFamilyCopyableAssignable(Context* context,
   const bool isCopyableOrAssignable =
       info.isFromConst() || (info.isFromRef() && isFromRefOk);
 
-  return QualifiedType(QualifiedType::PARAM, BoolType::get(context),
-                       BoolParam::get(context, isCopyableOrAssignable));
+  return QualifiedType::makeParamBool(rc->context(), isCopyableOrAssignable);
 }
 
 // TODO: What should be done for 'MAYBE_GENERIC', if anything?
@@ -853,26 +943,13 @@ static QualifiedType primIsGenericType(Context* context, const CallInfo& ci) {
     auto g = t->genericity();
 
     if (g == Type::MAYBE_GENERIC) {
-      QualifiedType qtEval = qt;
-      auto ct = t->toCompositeType();
-      if (auto cls = t->toClassType()) ct = cls->basicClassType();
-
-      // A generic type with defaults will be computed to have default subs
-      // at this point, so calling 'getTypeGenericity' on it will produce
-      // 'CONCRETE' instead of 'GENERIC_WITH_DEFAULTS'. Back up and use the
-      // uninstantiated type to produce the latter.
-      if (ct) {
-        if (auto ctGeneric = ct->instantiatedFromCompositeType()) {
-          qtEval = QualifiedType(qt.kind(), ctGeneric);
-        }
-      }
-      g = getTypeGenericity(context, qtEval);
+      g = getTypeGenericity(context, qt);
     }
 
     // Both cases are considered 'generic' for this primitive.
     eval = (g == Type::GENERIC || g == Type::GENERIC_WITH_DEFAULTS);
   }
-  return makeParamBool(context, eval);
+  return QualifiedType::makeParamBool(context, eval);
 }
 
 
@@ -889,16 +966,25 @@ static QualifiedType primIsClassType(Context* context, const CallInfo& ci) {
     const bool isDdata = t->hasPragma(context, PRAGMA_DATA_CLASS);
     eval = isClassLike && !isExtern && !isDdata;
   }
-  return makeParamBool(context, eval);
+  return QualifiedType::makeParamBool(context, eval);
 }
 
 template <typename F>
 static QualifiedType
-actualTypeHasProperty(Context* context, const CallInfo& ci, F&& f) {
+actualTypeHasProperty(ResolutionContext* rc, const CallInfo& ci, F&& f) {
   if (ci.numActuals() < 1) return QualifiedType();
   bool eval = false;
   if (auto t = ci.actual(0).type().type()) eval = f(t);
-  return makeParamBool(context, eval);
+  return QualifiedType::makeParamBool(rc->context(), eval);
+}
+
+// TODO: This is just intended as a temporary helper since many of these cases
+// below do not support ResolutionContext yet.
+template <typename F>
+static QualifiedType
+actualTypeHasProperty(Context* context, const CallInfo& ci, F&& f) {
+  ResolutionContext rc(context);
+  return actualTypeHasProperty(&rc, ci, f);
 }
 
 static QualifiedType
@@ -925,7 +1011,7 @@ static QualifiedType primIsRecordType(Context* context, const CallInfo& ci) {
 
 static QualifiedType primIsFcfType(Context* context, const CallInfo& ci) {
   CHPL_UNIMPL("PRIM_IS_FCF_TYPE");
-  return makeParamBool(context, false);
+  return QualifiedType::makeParamBool(context, false);
 }
 
 static QualifiedType primIsUnionType(Context* context, const CallInfo& ci) {
@@ -947,7 +1033,7 @@ primIsExternUnionType(Context* context, const CallInfo& ci) {
   auto qt1 = primIsExternType(context, ci);
   auto qt2 = primIsUnionType(context, ci);
   const bool eval = qt1.isParamTrue() && qt2.isParamTrue();
-  return makeParamBool(context, eval);
+  return QualifiedType::makeParamBool(context, eval);
 }
 
 static QualifiedType
@@ -979,9 +1065,21 @@ primIsAbsEnumType(Context* context, const CallInfo& ci) {
   });
 }
 
-static QualifiedType primIsPod(Context* context, const CallInfo& ci) {
-  return actualTypeHasProperty(context, ci, [=](auto t) {
-    return Type::isPod(context, t);
+static QualifiedType primIsPod(ResolutionContext* rc, const CallInfo& ci) {
+  return actualTypeHasProperty(rc, ci, [=](auto t) {
+    return Type::isPod(rc, t);
+  });
+}
+
+static QualifiedType primIsDefaultInitializable(ResolutionContext* rc, const CallInfo& ci) {
+  return actualTypeHasProperty(rc, ci, [=](auto t) {
+    return Type::isDefaultInitializable(rc, t);
+  });
+}
+
+static QualifiedType primNeedsAutoDestroy(ResolutionContext* rc, const CallInfo& ci) {
+  return actualTypeHasProperty(rc, ci, [=](auto t) {
+    return Type::needsInitDeinitCall(t) && !Type::isPod(rc, t);
   });
 }
 
@@ -994,7 +1092,7 @@ primIsCoercible(Context* context, const CallInfo& ci) {
   bool eval = canPass.passes() &&
               (canPass.instantiates() || canPass.converts()) &&
               !canPass.promotes();
-  return makeParamBool(context, eval);
+  return QualifiedType::makeParamBool(context, eval);
 }
 
 static std::string typeToString(Context* context, const Type* t);
@@ -1074,7 +1172,7 @@ primTypeToString(Context* context, const CallInfo& ci) {
   if (auto t = ci.actual(0).type().type()) {
     eval = typeToString(context, t);
   }
-  return makeParamString(context, eval);
+  return QualifiedType::makeParamString(context, eval);
 }
 
 static QualifiedType
@@ -1088,7 +1186,7 @@ primSimpleTypeName(Context* context, const CallInfo& ci) {
     }
     eval = typeToString(context, root);
   }
-  return makeParamString(context, eval);
+  return QualifiedType::makeParamString(context, eval);
 }
 
 CallResolutionResult resolvePrimCall(ResolutionContext* rc,
@@ -1136,7 +1234,7 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
       break;
 
     case PRIM_IS_BOUND:
-      type = primIsBound(context, ci);
+      type = primIsBound(rc, ci);
       break;
 
     case PRIM_IS_COERCIBLE:
@@ -1160,26 +1258,26 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
       break;
 
     case PRIM_NUM_FIELDS:
-      type = primNumFields(context, ci);
+      type = primNumFields(rc, ci);
       break;
 
     case PRIM_FIELD_NUM_TO_NAME:
-      type = primFieldNumToName(context, ci);
+      type = primFieldNumToName(rc, ci);
       break;
 
     case PRIM_FIELD_NAME_TO_NUM:
-      type = primFieldNameToNum(context, ci);
+      type = primFieldNameToNum(rc, ci);
       break;
 
     case PRIM_FIELD_BY_NUM:
-      type = primFieldByNum(context, ci);
+      type = primFieldByNum(rc, ci);
       break;
 
     case PRIM_IS_COPYABLE:
     case PRIM_IS_CONST_COPYABLE:
     case PRIM_IS_ASSIGNABLE:
     case PRIM_IS_CONST_ASSIGNABLE:
-      type = primFamilyCopyableAssignable(context, ci, prim);
+      type = primFamilyCopyableAssignable(rc, ci, prim);
       break;
 
     case PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL:
@@ -1239,12 +1337,15 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
       break;
 
     case PRIM_IS_POD:
-      type = primIsPod(context, ci);
+      type = primIsPod(rc, ci);
       break;
 
     case PRIM_HAS_DEFAULT_VALUE:
+      type = primIsDefaultInitializable(rc, ci);
+      break;
+
     case PRIM_NEEDS_AUTO_DESTROY:
-      CHPL_UNIMPL("various primitives");
+      type = primNeedsAutoDestroy(rc, ci);
       break;
 
     case PRIM_CALL_RESOLVES:
@@ -1262,8 +1363,11 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
       break;
 
     case PRIM_RESOLVES:
-    case PRIM_IMPLEMENTS_INTERFACE:
       CHPL_UNIMPL("various primitives");
+      break;
+
+    case PRIM_IMPLEMENTS_INTERFACE:
+      type = primImplementsInterface(context, call, ci, inScope, inPoiScope);
       break;
 
     case PRIM_IS_STAR_TUPLE_TYPE:
@@ -1273,9 +1377,7 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
           if (auto tt = t->toTupleType())
             result = tt->isStarTuple();
 
-        type = QualifiedType(QualifiedType::PARAM,
-                             BoolType::get(context),
-                             BoolParam::get(context, result));
+        type = QualifiedType::makeParamBool(context, result);
       }
       break;
 
@@ -1372,9 +1474,7 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
         if (toParamStringActual(actualType, sParam)||
             toParamBytesActual(actualType, sParam)) {
           const size_t s = sParam.length();
-          type = QualifiedType(QualifiedType::PARAM,
-                               IntType::get(context, 0),
-                               IntParam::get(context, s));
+          type = QualifiedType::makeParamInt(context, s);
           break;
         } else if (actualType.type()->isStringType() ||
                    actualType.type()->isBytesType() ||
@@ -1399,7 +1499,7 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
           auto lstr = lhs.param()->toStringParam()->value();
           auto rstr = rhs.param()->toStringParam()->value();
           auto concat = UniqueString::getConcat(context, lstr.c_str(), rstr.c_str());
-          type = QualifiedType(QualifiedType::PARAM, lhs.type(), StringParam::get(context, concat));
+          type = QualifiedType::makeParamString(context, concat);
         }
       }
       break;
@@ -1416,9 +1516,7 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
     case PRIM_EQUAL:
       if (ci.actual(0).type().isType() && ci.actual(1).type().isType()) {
         bool isEqual = ci.actual(0).type().type() == ci.actual(1).type().type();
-        type = QualifiedType(QualifiedType::PARAM,
-                             BoolType::get(context),
-                             BoolParam::get(context, isEqual));
+        type = QualifiedType::makeParamBool(context, isEqual);
         break;
       }
     case PRIM_IS_WIDE_PTR:
@@ -1533,6 +1631,7 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
     case PRIM_CHECK_NIL:
     case PRIM_IF_VAR:
     case PRIM_LOCAL_CHECK:
+    case PRIM_IS_LOCAL:
     case PRIM_SET_END_COUNT:
     case PRIM_SET_DYNAMIC_END_COUNT:
     case PRIM_SET_SERIAL:
@@ -1585,19 +1684,13 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
                            VoidType::get(context));
       break;
 
-    case PRIM_STATIC_DOMAIN_TYPE:
-      type = computeDomainType(context, ci);
-      break;
-
     case PRIM_GET_COMPILER_VAR: {
         auto chplenv = context->getChplEnv();
         auto varName = ci.actual(0).type().param()->toStringParam()->value().str();
         auto it = chplenv->find(varName);
         auto ret = (it != chplenv->end()) ? it->second : "";
 
-        auto st = CompositeType::getStringType(context);
-        auto sp = StringParam::get(context, UniqueString::get(context, ret));
-        type = QualifiedType(QualifiedType::PARAM, st, sp);
+        type = QualifiedType::makeParamString(context, ret);
       }
       break;
     /* primitives that return real parts from a complex */
@@ -1687,10 +1780,10 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
       break;
 
     case PRIM_SCALAR_PROMOTION_TYPE:
-      CHPL_UNIMPL("misc primitives");
+      type = primPromotionType(context, ci);
       break;
     case PRIM_STATIC_FIELD_TYPE:
-      type = staticFieldType(context, ci);
+      type = staticFieldType(rc, ci);
       break;
     case PRIM_WIDE_GET_NODE: // NodeIdType is defined as int32
       type = QualifiedType(QualifiedType::CONST_VAR,
@@ -1744,7 +1837,6 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
     case PRIM_BLOCK_UNLOCAL:
     case PRIM_LOGICAL_FOLDER:
     case PRIM_WIDE_MAKE:
-    case PRIM_WIDE_GET_LOCALE:
     case PRIM_REGISTER_GLOBAL_VAR:
     case PRIM_BROADCAST_GLOBAL_VARS:
     case PRIM_PRIVATE_BROADCAST:
@@ -1755,7 +1847,13 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
     case PRIM_VIRTUAL_METHOD_CALL:
     case PRIM_END_OF_STATEMENT:
     case PRIM_CURRENT_ERROR:
+      CHPL_UNIMPL("misc primitives");
+      break;
+
     case PRIM_GET_RUNTIME_TYPE_FIELD:
+      type = primGetRuntimeTypeField(context, ci);
+      break;
+
     case PRIM_GET_VISIBLE_SYMBOLS:
     case PRIM_STACK_ALLOCATE_CLASS:
     case PRIM_ZIP:
@@ -1769,23 +1867,25 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
       CHPL_UNIMPL("misc primitives");
       break;
 
+    case PRIM_WIDE_GET_LOCALE:
+      type = QualifiedType(QualifiedType::CONST_VAR,
+                           CompositeType::getLocaleIDType(context));
+      break;
+
     case PRIM_GATHER_TESTS:
       type = primGatherTests(context, ci);
       break;
 
     case PRIM_VERSION_MAJOR:
-      type = QualifiedType(QualifiedType::PARAM, IntType::get(context, 0),
-                           IntParam::get(context, getMajorVersion()));
+      type = QualifiedType::makeParamInt(context, getMajorVersion());
       break;
 
     case PRIM_VERSION_MINOR:
-      type = QualifiedType(QualifiedType::PARAM, IntType::get(context, 0),
-                           IntParam::get(context, getMinorVersion()));
+      type = QualifiedType::makeParamInt(context, getMinorVersion());
       break;
 
     case PRIM_VERSION_UPDATE:
-      type = QualifiedType(QualifiedType::PARAM, IntType::get(context, 0),
-                           IntParam::get(context, getUpdateVersion()));
+      type = QualifiedType::makeParamInt(context, getUpdateVersion());
       break;
 
     case PRIM_VERSION_SHA: {
@@ -1794,8 +1894,7 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
         versionHash = UniqueString::get(context, getCommitHash());
       }
 
-      type = QualifiedType(QualifiedType::PARAM, RecordType::getStringType(context),
-                           StringParam::get(context, versionHash));
+      type = QualifiedType::makeParamString(context, versionHash);
       break;
     }
 

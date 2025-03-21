@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -5469,6 +5469,24 @@ DEFINE_PRIM(LOCAL_CHECK) {
                   call->get(3),
                   filename,
                   error);
+    }
+}
+DEFINE_PRIM(IS_LOCAL) {
+    // arguments are (wide ptr, error string, line, function/file)
+    GenRet lhs = call->get(1);
+    Symbol* lhsType = lhs.chplType->symbol;
+
+    if (lhsType->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) == true) {
+      GenRet lhs = call->get(1);
+      if (call->get(1)->isRef()) {
+        lhs = codegenDeref(lhs);
+      }
+
+      ret = codegenCallExpr("chpl_is_local",
+                            codegenRlocale(lhs));
+    }
+    else {
+      ret = gTrue->codegen();
     }
 }
 

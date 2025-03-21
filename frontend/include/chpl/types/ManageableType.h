@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -39,8 +39,11 @@ class ManageableType : public CompositeType {
   ManageableType(typetags::TypeTag tag,
                 ID id, UniqueString name,
                 const CompositeType* instantiatedFrom,
-                SubstitutionsMap subs)
-    : CompositeType(tag, std::move(id), name, instantiatedFrom, std::move(subs)) {}
+                SubstitutionsMap subs,
+                CompositeType::Linkage linkage)
+    : CompositeType(tag, std::move(id), name, instantiatedFrom,
+                    std::move(subs),
+                    linkage) {}
 };
 
 } // end namespace types

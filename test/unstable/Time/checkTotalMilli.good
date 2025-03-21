@@ -1,0 +1,4 @@
+checkTotalMilli.chpl:4: warning: 'timeDelta.totalMilliseconds()' is unstable because it is new
+checkTotalMilli.chpl:7: warning: 'timeDelta.totalMilliseconds()' is unstable because it is new
+true
+true

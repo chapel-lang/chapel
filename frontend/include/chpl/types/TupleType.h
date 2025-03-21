@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -21,6 +21,7 @@
 #define CHPL_TYPES_TUPLE_TYPE_H
 
 #include "chpl/types/CompositeType.h"
+#include "chpl/resolution/resolution-types.h"
 
 namespace chpl {
 namespace types {
@@ -44,7 +45,8 @@ class TupleType final : public CompositeType {
             SubstitutionsMap subs,
             bool isVarArgTuple)
     : CompositeType(typetags::TupleType, id, name,
-                    instantiatedFrom, std::move(subs)),
+                    instantiatedFrom, std::move(subs),
+                    uast::Decl::DEFAULT_LINKAGE),
       isVarArgTuple_(isVarArgTuple)
   {
     assert(!id.isEmpty());
@@ -100,6 +102,14 @@ class TupleType final : public CompositeType {
                QualifiedType paramSize,
                QualifiedType starEltType);
 
+  const Type* substitute(Context* context,
+                         const PlaceholderMap& subs) const override {
+    return getTupleType(context,
+                        Type::substitute(context, (const TupleType*) instantiatedFrom_, subs),
+                        resolution::substituteInMap(context, subs_, subs),
+                        isVarArgTuple_).get();
+  }
+
   /** Return the generic tuple type `_tuple` */
   static const TupleType* getGenericTupleType(Context* context);
 
@@ -119,7 +129,7 @@ class TupleType final : public CompositeType {
   }
 
   /** Return the type of the i'th element */
-  QualifiedType elementType(int i) const;
+  const QualifiedType& elementType(int i) const;
 
   /** Return true if this is a *star tuple* - that is, all of the
       element types are the same. */

@@ -26,7 +26,6 @@ CONDUITMODE_DIST_SUBDIRS =    	\
 	udp-conduit  		\
 	ibv-conduit 		\
 	ucx-conduit 		\
-	aries-conduit           \
 	ofi-conduit
 CONDUITMODE_headers = 		\
 	gasnetex.h           	\
@@ -272,15 +271,25 @@ check tests-clean:
 	@$(MAKE) $(recurse_local) DO_WHAT=$@
 	@cd "$(top_builddir)/other" && $(MAKE) $@
 
-install-data-local: 
+check-prefix-vars: force
 	@if test -n "$(DESTDIR)" -a `expr "X$(DESTDIR)" : X/` = 0; then \
-          echo "ERROR: \$$DESTDIR must begin with a '/' character."; \
+          echo "ERROR: install \$$DESTDIR must begin with a '/' character."; \
+	  exit 1; \
+	 fi
+	@if test -n "$(DESTDIR)" -a `expr "$(DESTDIR)" : ".*[[:space:]]"` != 0; then \
+          echo "ERROR: install \$$DESTDIR must not contain space characters."; \
 	  exit 1; \
 	 fi
 	@if test `expr "X$(prefix)" : X/` = 0; then \
-          echo "ERROR: \$$prefix must begin with a '/' character."; \
+          echo "ERROR: install \$$prefix must begin with a '/' character."; \
 	  exit 1; \
 	 fi
+	@if test `expr "$(prefix)" : ".*[[:space:]]"` != 0; then \
+          echo "ERROR: install \$$prefix must not contain space characters."; \
+	  exit 1; \
+	 fi
+
+install-data-local: check-prefix-vars
 	@$(MAKE) $(recurse_local) DO_WHAT=install-data
 	@$(MAKE) recurse_special DO_WHAT=install-data
 	$(mkinstalldirs) $(DESTDIR)$(docdir)
@@ -312,15 +321,7 @@ install-data-local:
             chmod 644 "$$destpc" || exit $$? ; \
           else :; fi; \
         done
-install-exec-local:
-	@if test -n "$(DESTDIR)" -a `expr "X$(DESTDIR)" : X/` = 0; then \
-          echo "ERROR: \$$DESTDIR must begin with a '/' character."; \
-	  exit 1; \
-	 fi
-	@if test `expr "X$(prefix)" : X/` = 0; then \
-          echo "ERROR: \$$prefix must begin with a '/' character."; \
-	  exit 1; \
-	 fi
+install-exec-local: check-prefix-vars
 	@$(MAKE) $(recurse_local) DO_WHAT=install-exec
 	@$(MAKE) recurse_special DO_WHAT=install-exec
 uninstall-local: 

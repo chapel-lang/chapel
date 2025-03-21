@@ -8,6 +8,7 @@ doctrees
 /rst/examples
 /rst/language/spec/syntax.rst
 /rst/developer/compiler-internals/
+/rst/tools/chplcheck/generated/
 
 man.rst
 /rst/tools/chplvis/examples

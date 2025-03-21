@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -232,6 +232,9 @@ public:
   bool                        foundGenericFields;
   // A list of the generic fields in this type.
   std::vector<Symbol*>        genericFields;
+
+  // pointer to postinit() method, if defined
+  FnSymbol* postinit;
 
 private:
 

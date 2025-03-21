@@ -1,6 +1,6 @@
 /*
  * Copyright 2017 Advanced Micro Devices, Inc.
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -169,6 +169,9 @@ module LocaleModelHelpSetup {
 
     extern proc chpl_task_getMaxPar(): uint(32);
     dst.maxTaskPar = chpl_task_getMaxPar();
+
+    extern proc chpl_get_num_colocales_on_node(): c_int;
+    dst.numColocales = chpl_get_num_colocales_on_node();
   }
 
   proc helpSetupLocaleNUMA(dst:borrowed LocaleModel, out local_name:string, numSublocales, type NumaDomain) {
@@ -218,6 +221,9 @@ module LocaleModelHelpSetup {
     // then we end up not processing things in the first locale.
     extern proc chpl_task_getMaxPar(): uint(32);
     dst.maxTaskPar = chpl_task_getMaxPar();
+
+    extern proc chpl_get_num_colocales_on_node(): c_int;
+    dst.numColocales = chpl_get_num_colocales_on_node();
 
     var childSpace = {0..#numSublocales};
 

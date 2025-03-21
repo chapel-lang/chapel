@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -225,6 +225,7 @@ struct ClangInfo {
   int charSizeInBits;
   int shortSizeInBits;
   int ptrSizeInBits;
+  int wideCharSizeInBits;
 
   ClangInfo(
     std::string clangCcIn,
@@ -258,7 +259,8 @@ ClangInfo::ClangInfo(
          longLongSizeInBits(0),
          charSizeInBits(0),
          shortSizeInBits(0),
-         ptrSizeInBits(0)
+         ptrSizeInBits(0),
+         wideCharSizeInBits(0)
 {
 }
 
@@ -383,6 +385,7 @@ void setupClangContext(GenInfo* info, ASTContext* Ctx)
     clangInfo->charSizeInBits = Ctx->getTypeSize(Ctx->CharTy.getTypePtr());
     clangInfo->shortSizeInBits = Ctx->getTypeSize(Ctx->ShortTy.getTypePtr());
     clangInfo->ptrSizeInBits = Ctx->getTypeSize(Ctx->VoidPtrTy.getTypePtr());
+    clangInfo->wideCharSizeInBits = Ctx->getTypeSize(Ctx->WideCharTy.getTypePtr());
 
     setupCIntType(dt_c_int, clangInfo->intSizeInBits, false);
     setupCIntType(dt_c_uint, clangInfo->intSizeInBits, true);
@@ -400,6 +403,10 @@ void setupClangContext(GenInfo* info, ASTContext* Ctx)
     setupCIntType(dt_c_uintptr, clangInfo->ptrSizeInBits, true);
     setupCIntType(dt_ssize_t, clangInfo->ptrSizeInBits, false);
     setupCIntType(dt_size_t, clangInfo->ptrSizeInBits, true);
+    // wchar may/may not be signed, depending on the platform
+    setupCIntType(dt_wchar, clangInfo->wideCharSizeInBits,
+      Ctx->WideCharTy.getTypePtr()->isUnsignedIntegerType());
+
 
     addMinMax(Ctx, "CHAR", Ctx->CharTy);
     addMinMax(Ctx, "SCHAR", Ctx->SignedCharTy);
@@ -4881,7 +4888,7 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
 // Save the current state of the LLVM IR to an LLVM bitcode file if needed
 static void saveIrToBcFileIfNeeded(const std::string& filename,
                                    bool forceSave = false) {
-  bool shouldSave = forceSave || saveCDir[0];
+  bool shouldSave = forceSave || !saveCDir.empty();
   if (shouldSave) {
     GenInfo* info = gGenInfo;
     std::error_code tmpErr;
@@ -5167,7 +5174,7 @@ void makeBinaryLLVM(void) {
       const char* bin = "dsymutil";
       const char* sfx = ".dSYM";
       const char* tmp = astr(tmpbinname, sfx);
-      const char* out = astr(executableFilename, sfx);
+      const char* out = astr(executableFilename.c_str(), sfx);
 
       // TODO: The innermost binary in the .dSYM with all the DWARF info
       // will have the name "executable.tmp", is there a way to give it a
@@ -5183,7 +5190,7 @@ void makeBinaryLLVM(void) {
       if (fLibraryCompile) {
         moveGeneratedLibraryFile(tmpbinname);
       } else {
-        moveResultFromTmp(executableFilename, tmpbinname);
+        moveResultFromTmp(executableFilename.c_str(), tmpbinname);
       }
 
     } else {
@@ -5727,7 +5734,7 @@ static std::string getLibraryOutputPath() {
   const char* exeExt = getLibraryExtension();
   const char* libraryPrefix = "";
   int libLength = strlen("lib");
-  bool startsWithLib = strncmp(executableFilename, "lib", libLength) == 0;
+  bool startsWithLib = strncmp(executableFilename.c_str(), "lib", libLength) == 0;
 
   if (!startsWithLib) {
     libraryPrefix = "lib";

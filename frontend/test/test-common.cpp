@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -19,6 +19,7 @@
 
 #include "test-common.h"
 
+#include "chpl/framework/compiler-configuration.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/uast/post-parse-checks.h"
@@ -79,9 +80,12 @@ const uast::AstNode* findOnlyNamed(const uast::Module* mod, std::string name) {
   return col.only();
 }
 
-static std::unique_ptr<Context> _reusedContext;
 
-chpl::Context* buildStdContext() {
+chpl::Context* buildStdContext(chpl::CompilerFlags flags) {
+  // Note: If we make this 'global', we run into double-free errors most likely
+  // due to  some linking issue.
+  static std::unique_ptr<Context> _reusedContext;
+
   if (_reusedContext.get() == nullptr) {
     std::string chpl_home;
     if (const char* chpl_home_env = getenv("CHPL_HOME")) {
@@ -100,6 +104,13 @@ chpl::Context* buildStdContext() {
   }
 
   parsing::setupModuleSearchPaths(_reusedContext.get(), false, false, {}, {});
+  setCompilerFlags(_reusedContext.get(), flags);
+
+  // resolve the standard modules from the same "usual" predefined point.
+  // this way, the order in which the modules are traversed is always the same.
+  if (auto autoUseScope = resolution::scopeForAutoModule(_reusedContext.get())) {
+    std::ignore = resolution::resolveVisibilityStmts(_reusedContext.get(), autoUseScope, false);
+  }
 
   return _reusedContext.get();
 }

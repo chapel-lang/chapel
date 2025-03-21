@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -21,6 +21,7 @@
 #define CHPL_RESOLUTION_RESOLUTION_QUERIES_H
 
 #include "chpl/resolution/resolution-types.h"
+#include "chpl/resolution/interface-types.h"
 #include "chpl/resolution/scope-types.h"
 
 namespace chpl {
@@ -33,6 +34,20 @@ namespace resolution {
   Resolve a module-level statement or variable declaration.
  */
 const ResolutionResultByPostorderID& resolveModuleStmt(Context* context, ID id);
+
+/**
+  Specialized version of resolveModuleStmt when the statement is an
+  'implements'. This does the work of constructing an 'ImplementationPoint'.
+ */
+const ImplementationPoint* resolveImplementsStmt(Context* rc,
+                                                 ID id);
+
+/**
+  Determine the type etc. that 'name' would have at the module level.
+ */
+const ResolvedExpression& resolveNameInModule(Context* context,
+                                              ID modId,
+                                              UniqueString name);
 
 /**
   Resolve the contents of a Module
@@ -123,10 +138,23 @@ const TypedFnSignature*
 typedSignatureInitialForId(ResolutionContext* rc, ID id);
 
 /**
+  Compute an initial TypedFnSignature, but using placeholder types for
+  type queries and "any type" markers. This TypedFnSignature can serve
+  as a template for satisfying interface.
+ */
+const TypedFnSignature*
+typedSignatureTemplateForId(ResolutionContext* rc, ID id);
+
+/**
   Returns a Type that represents the initial type provided by a TypeDecl
   (e.g. Class, Record, etc). This type does not store the fields.
   */
 const types::Type* initialTypeForTypeDecl(Context* context, ID declId);
+
+/**
+  Returns a Type that represents the initial type provided by an Interface
+  declaration. */
+const types::Type* initialTypeForInterface(Context* context, ID declId);
 
 /**
   Resolve a single field decl (which could be e.g. a MultiDecl)
@@ -139,7 +167,7 @@ const types::Type* initialTypeForTypeDecl(Context* context, ID declId);
   If syntaxOnly is set, computes basic information (field order, IDs)
   but does not compute types.
  */
-const ResolvedFields& resolveFieldDecl(Context* context,
+const ResolvedFields& resolveFieldDecl(ResolutionContext* rc,
                                        const types::CompositeType* ct,
                                        ID fieldId,
                                        DefaultsPolicy defaultsPolicy,
@@ -164,7 +192,7 @@ const ResolvedFields& resolveFieldDecl(Context* context,
   If syntaxOnly is set, computes basic information (field order, IDs)
   but does not compute types.
  */
-const ResolvedFields& fieldsForTypeDecl(Context* context,
+const ResolvedFields& fieldsForTypeDecl(ResolutionContext* rc,
                                         const types::CompositeType* ct,
                                         DefaultsPolicy defaultsPolicy,
                                         bool syntaxOnly = false);
@@ -189,7 +217,7 @@ const types::CompositeType* isNameOfField(Context* context,
   Computes the version of a type assuming that defaults for generics
   are needed. So, for 'record R { type t = int; }', this will return R(int).
  */
-const types::QualifiedType typeWithDefaults(Context* context,
+const types::QualifiedType typeWithDefaults(ResolutionContext* rc,
                                             types::QualifiedType t);
 
 /**
@@ -274,7 +302,19 @@ ApplicabilityResult instantiateSignature(ResolutionContext* rc,
  */
 const ResolvedFunction* resolveFunction(ResolutionContext* rc,
                                         const TypedFnSignature* sig,
-                                        const PoiScope* poiScope);
+                                        const PoiScope* poiScope,
+                                        bool skipIfRunning = false);
+
+
+/**
+  Given a scope corresponding to a module, find all visible
+  implementation points for a particular interface.
+ */
+const std::vector<const ImplementationPoint*>*
+visibileImplementationPointsForInterface(Context* context,
+                                         const Scope* scope,
+                                         const PoiScope* poiScope,
+                                         ID interfaceId);
 
 /**
   Helper to resolve a concrete function using the above queries.
@@ -353,6 +393,12 @@ const TypedFnSignature* inferRefMaybeConstFormals(ResolutionContext* rc,
                                                   const TypedFnSignature* sig,
                                                   const PoiScope* poiScope);
 
+/**
+  Check if any of the formals are still generic, which is invalid. Emits
+  an error if so.
+ */
+bool checkUninstantiatedFormals(Context* context, const uast::AstNode* astForErr, const TypedFnSignature* sig);
+
 /////// call resolution
 
 /**
@@ -395,7 +441,8 @@ CallResolutionResult resolveCall(ResolutionContext* rc,
                                  const uast::Call* call,
                                  const CallInfo& ci,
                                  const CallScopeInfo& inScopes,
-                                 std::vector<ApplicabilityResult>* rejected=nullptr);
+                                 std::vector<ApplicabilityResult>* rejected=nullptr,
+                                 bool skipForwarding = false);
 
 /**
   Similar to resolveCall, but handles the implicit scope provided by a method.
@@ -418,7 +465,7 @@ CallResolutionResult resolveCallInMethod(ResolutionContext* rc,
   scope of that call, find the most specific candidates as well
   as the point-of-instantiation scopes that were used when resolving them.
  */
-CallResolutionResult resolveGeneratedCall(Context* context,
+CallResolutionResult resolveGeneratedCall(ResolutionContext* rc,
                                           const uast::AstNode* astForErrAndPoi,
                                           const CallInfo& ci,
                                           const CallScopeInfo& inScopes,
@@ -434,7 +481,7 @@ CallResolutionResult resolveGeneratedCall(Context* context,
   If implicitReceiver.type() == nullptr, it will be ignored.
  */
 CallResolutionResult
-resolveGeneratedCallInMethod(Context* context,
+resolveGeneratedCallInMethod(ResolutionContext* rc,
                              const uast::AstNode* astForErrAndPoi,
                              const CallInfo& ci,
                              const CallScopeInfo& inScopes,
@@ -446,6 +493,21 @@ const TypedFnSignature* tryResolveInitEq(Context* context,
                                          const types::Type* lhsType,
                                          const types::Type* rhsType,
                                          const PoiScope* poiScope = nullptr);
+
+// helper for tryResolveZeroArgInit: add substitutions from a type to a list
+// of actuals. In practice, "zero-arg" init calls are really init calls where
+// arguments are given by the field substitutions etc.
+bool addExistingSubstitutionsAsActuals(Context* context,
+                                       const types::Type* type,
+                                       std::vector<CallInfoActual>& outActuals,
+                                       std::vector<const uast::AstNode*>& outActualAsts);
+
+
+// tries to resolve an (unambiguous) init()
+const TypedFnSignature* tryResolveZeroArgInit(Context* context,
+                                              const uast::AstNode* astForScopeOrErr,
+                                              const types::Type* toInit,
+                                              const PoiScope* poiScope = nullptr);
 
 // tries to resolve an (unambiguous) assign
 const TypedFnSignature* tryResolveAssign(Context* context,
@@ -461,18 +523,50 @@ const TypedFnSignature* tryResolveDeinit(Context* context,
                                          const PoiScope* poiScope = nullptr);
 
 /**
-  Given a type 't', compute whether or not 't' is default initializable.
-  If 't' is a generic type, it is considered non-default-initializable.
-  Considers the fields and substitutions of composite types.
-*/
-bool isTypeDefaultInitializable(Context* context, const types::Type* t);
+  Given an instantiated interface constraint, such as 'hashable(int)',
+  search an implementation point that matches and verify its validity.
+  If no matching implementation point is found, returns nullptr.
+
+  An implementation point can be invalid if it accepts the expected actuals
+  from the interface, but the types do not provide the required functions,
+  associated types, etc.
+  */
+const ImplementationWitness* findMatchingImplementationPoint(ResolutionContext* rc,
+                                                            const types::InterfaceType* ift,
+                                                            const CallScopeInfo& inScopes);
+
+/**
+  Given the location of an implementation point, check that the constraints
+  of the interface are satisfied at that position. This is used as part of
+  'findMatchingImplementationPoint', but can be used standalone if a desired
+  implementation point is already known.
+ */
+const ImplementationWitness* checkInterfaceConstraints(ResolutionContext* rc,
+                                                       const types::InterfaceType* ift,
+                                                       const ID& implPointId,
+                                                       const CallScopeInfo& inScopes);
+
+/**
+  In a given scope, first try to search for interface implementation points,
+  then, if none are found, attempt to construct a "ghost" implementation point
+  at this location.
+
+  The 'implPointId' here can be any ID that serves as the "anchor" for where
+  the ghost implementation notionally exists.
+ */
+const ImplementationWitness* findOrImplementInterface(ResolutionContext* rc,
+                                                      const types::InterfaceType* ift,
+                                                      const types::Type* forType,
+                                                      const CallScopeInfo& inScopes,
+                                                      const ID& implPointId,
+                                                      bool& foundExisting);
 
 /**
   Determine whether type 't' is copyable/assignable from const or/and from ref.
   When checkCopyable is true, this checks copyability, and for false checks
   assignability.
 */
-CopyableAssignableInfo getCopyOrAssignableInfo(Context* context,
+CopyableAssignableInfo getCopyOrAssignableInfo(ResolutionContext* rc,
                                                const types::Type* t,
                                                bool checkCopyable);
 
@@ -540,6 +634,9 @@ const types::QualifiedType&
 yieldTypeForIterator(ResolutionContext* rc,
                      const types::IteratorType* iter);
 
+const types::Type* shapeForIterator(Context* context,
+                                    const types::IteratorType* iter);
+
 /**
   Resolve a call to the special 'these' iterator method. For certain types,
   this circumvents the normal call resolution process, since iterating over
@@ -571,6 +668,27 @@ builderResultForDefaultFunction(Context* context,
 /** Get the 'promotion type' for the given type. E.g., the promotion type
     for a range is the type of the range's elements. */
 const types::QualifiedType& getPromotionType(Context* context, types::QualifiedType qt);
+
+const types::RuntimeType* getRuntimeType(Context* context, const types::CompositeType* ct);
+
+Access accessForQualifier(uast::Qualifier q);
+
+const MostSpecificCandidate*
+determineBestReturnIntentOverload(const MostSpecificCandidates& candidates,
+                                  Access access,
+                                  bool& outAmbiguity);
+
+/**
+  This query is invoked when a diagnostic message via `compilerError` is
+  emitted at the place it wanted to be emitted. This can be used by
+  library consumers to see if fallback diagnostics can be skipped.
+ */
+bool const& noteErrorMessage(Context* context, UniqueString message);
+
+/**
+  Same as `noteErrorMessage`, but for warning messages.
+ */
+bool const& noteWarningMessage(Context* context, UniqueString message);
 
 
 } // end namespace resolution

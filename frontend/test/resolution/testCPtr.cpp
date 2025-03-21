@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -19,7 +19,6 @@
 
 
 #include "test-resolution.h"
-#include "test-minimal-modules.h"
 
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
@@ -126,7 +125,8 @@ static void test4() {
     assert(eltT && eltT->isRecordType());
     auto rt = eltT->toRecordType();
     assert(rt->name() == "rec");
-    auto& fields = fieldsForTypeDecl(eg.context(), rt, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(eg.context());
+    auto& fields = fieldsForTypeDecl(&rc, rt, DefaultsPolicy::IGNORE_DEFAULTS);
     assert(fields.numFields() == 1 && fields.fieldType(0).type()->isIntType());
   });
 }
@@ -205,7 +205,8 @@ static void test12() {
     assert(eltT && eltT->isRecordType());
     auto rt = eltT->toRecordType();
     assert(rt->name() == "rec");
-    auto& fields = fieldsForTypeDecl(eg.context(), rt, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(eg.context());
+    auto& fields = fieldsForTypeDecl(&rc, rt, DefaultsPolicy::IGNORE_DEFAULTS);
     assert(fields.numFields() == 1 && fields.fieldType(0).type()->isIntType());
   });
 }
@@ -282,7 +283,8 @@ static void test20() {
     assert(eltT && eltT->isRecordType());
     auto rt = eltT->toRecordType();
     assert(rt->name() == "rec");
-    auto& fields = fieldsForTypeDecl(eg.context(), rt, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(eg.context());
+    auto& fields = fieldsForTypeDecl(&rc, rt, DefaultsPolicy::IGNORE_DEFAULTS);
     assert(fields.numFields() == 1 && fields.fieldType(0).type()->isIntType());
   });
 }

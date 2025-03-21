@@ -1,0 +1,2 @@
+bug: `fitsInto` fails for 64 bit Chapel integers
+#22024

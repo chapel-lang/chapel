@@ -1,4 +1,4 @@
-# Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2025 Hewlett Packard Enterprise Development LP
 # Copyright 2015-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -32,8 +32,8 @@ include $(CHPL_MAKE_HOME)/make/Makefile.base
 FLTK_CONFIG=fltk-config
 FLTK_FLUID=fluid
 
-FLTK_COMPILE=$(shell $(FLTK_CONFIG) --use-images --cxx --cxxflags)
-FLTK_LINK=$(shell $(FLTK_CONFIG) --use-images --cxx)
+FLTK_COMPILE=${CHPL_MAKE_HOST_CXX} $(shell $(FLTK_CONFIG) --use-images --cxxflags)
+FLTK_LINK=${CHPL_MAKE_HOST_CXX}
 FLTK_LIBS=$(shell $(FLTK_CONFIG) --use-images --ldflags --libs)
 
 # If fltk is installed with Homebrew on ARM, need to look in /opt/homebrew

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -57,6 +57,7 @@ extern "C" {
   m(SET_WIDE_STRING,      "set wide string",                          true ), \
   m(GET_WIDE_STRING,      "get wide string",                          true ), \
   m(COMMAND_BUFFER,       "command buffer",                           true ), \
+  m(FILENAME,             "filename string",                          true ), \
   m(COMM_UTIL,            "comm layer utility space",                 false), \
   m(COMM_XMIT_RCV_BUF,    "comm layer transmit/receive buffer",       false), \
   m(COMM_FRK_SND_INFO,    "comm layer sent remote fork info",         false), \
@@ -102,6 +103,7 @@ extern "C" {
   m(GPU_KERNEL_PARAM,      "pointer to a kernel arg",                 true ), \
   m(GPU_KERNEL_PARAM_BUFF, "array of pointers to kernel args",        true ), \
   m(GPU_KERNEL_PARAM_META, "metadata about kernel parameters",        true ), \
+  m(ERROR_MSG,             "error message",                           true ), \
   m(NUM,                   "*** this must be the last entry ***",     true )
 
 //

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -160,9 +160,6 @@ module Errors {
       return "out of memory allocating array elements";
     }
   }
-
-  @deprecated(notes=":class:`CodepointSplittingError` is deprecated; please use :class:`CodepointSplitError` instead")
-  type CodepointSplittingError = CodepointSplitError;
 
   // Used by the runtime to accumulate errors. This type
   // supports adding errors concurrently but need not support

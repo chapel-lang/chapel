@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -122,8 +122,8 @@ class ID final {
     which means this is an ID for something that defines a new symbol
     scope.
    */
-   inline bool isSymbolDefiningScope() const { return postOrderId_ == -1 ||
-                                                      postOrderId_ == ID_GEN_START; }
+   bool isSymbolDefiningScope() const { return postOrderId_ == -1 ||
+                                               postOrderId_ == ID_GEN_START; }
 
   /**
     Some IDs are introduced during compilation and don't represent

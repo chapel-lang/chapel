@@ -1,3 +1,4 @@
 parenless-and-parenful-fns.chpl:1: In module 'M':
 parenless-and-parenful-fns.chpl:2: error: 'foo' has multiple definitions
 parenless-and-parenful-fns.chpl:3: note: redefined here
+parenless-and-parenful-fns.chpl:5: error: ambiguity between function and non-function at the same scope level

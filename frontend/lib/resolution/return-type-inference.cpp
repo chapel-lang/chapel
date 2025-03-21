@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -36,6 +36,7 @@
 #include "Resolver.h"
 
 #include <cstdio>
+#include <iterator>
 #include <set>
 #include <string>
 #include <tuple>
@@ -54,6 +55,127 @@ using namespace types;
 static QualifiedType adjustForReturnIntent(uast::Function::ReturnIntent ri,
                                            QualifiedType retType);
 
+
+/* pair (interface ID, implementation point ID) */
+using ImplementedInterface =
+  std::pair<const InterfaceType*, ID>;
+
+/* (parent class, implemented interfaces) tuple resulting from processing
+   the inheritance expressions of a class/record. */
+using InheritanceExprResolutionResult =
+  std::pair<const types::BasicClassType*, std::vector<ImplementedInterface>>;
+
+static const InheritanceExprResolutionResult&
+processInheritanceExpressionsForAggregateQuery(Context* context,
+                                               const AggregateDecl* ad,
+                                               SubstitutionsMap substitutions,
+                                               const PoiScope* poiScope) {
+  QUERY_BEGIN(processInheritanceExpressionsForAggregateQuery, context, ad, substitutions, poiScope);
+  const BasicClassType* parentClassType = nullptr;
+  const AstNode* parentClassNode = nullptr;
+  std::vector<ImplementedInterface> implementationPoints;
+  auto c = ad->toClass();
+
+  for (auto inheritExpr : ad->inheritExprs()) {
+    // Resolve the parent class type expression
+    ResolutionResultByPostorderID r;
+    auto visitor =
+      Resolver::createForParentClass(context, ad, inheritExpr,
+                                     substitutions,
+                                     poiScope, r);
+    inheritExpr->traverse(visitor);
+
+    auto& rr = r.byAst(inheritExpr);
+    QualifiedType qt = rr.type();
+    const BasicClassType* newParentClassType = nullptr;
+    if (auto t = qt.type()) {
+      if (auto bct = t->toBasicClassType()) {
+        newParentClassType = bct;
+      } else if (auto ct = t->toClassType()) {
+        // safe because it's checked for null later.
+        newParentClassType = ct->basicClassType();
+      }
+    }
+
+    bool foundParentClass = qt.isType() && newParentClassType != nullptr;
+    if (!c && foundParentClass) {
+      CHPL_REPORT(context, NonClassInheritance, ad, inheritExpr, newParentClassType);
+    } else if (foundParentClass) {
+      // It's a valid parent class; is it the only one? (error otherwise).
+      if (parentClassType) {
+        CHPL_ASSERT(parentClassNode);
+        reportInvalidMultipleInheritance(context, c, parentClassNode, inheritExpr);
+      } else {
+        parentClassType = newParentClassType;
+        parentClassNode = inheritExpr;
+      }
+
+      // OK
+    } else if (qt.isType() && qt.type() && qt.type()->isInterfaceType()) {
+      auto ift = qt.type()->toInterfaceType();
+      if (!ift->substitutions().empty()) {
+        context->error(inheritExpr, "cannot specify instantiated interface type in inheritance expression");
+      } else {
+        implementationPoints.emplace_back(ift, inheritExpr->id());
+      }
+    } else {
+      context->error(inheritExpr, "invalid parent class expression");
+      parentClassType = BasicClassType::getRootClassType(context);
+      parentClassNode = inheritExpr;
+    }
+  }
+
+  InheritanceExprResolutionResult result {
+    parentClassType, std::move(implementationPoints)
+  };
+  return QUERY_END(result);
+}
+
+static const std::vector<const ImplementationPoint*>&
+getImplementedInterfacesQuery(Context* context,
+                              const AggregateDecl* ad) {
+  QUERY_BEGIN(getImplementedInterfacesQuery, context, ad);
+  std::vector<const ImplementationPoint*> result;
+  std::map<const InterfaceType*, ID> seen;
+  auto inheritanceResult =
+    processInheritanceExpressionsForAggregateQuery(context, ad, {}, nullptr);
+  auto& implementationPoints = inheritanceResult.second;
+
+  auto initialType = QualifiedType(QualifiedType::TYPE,
+                                   initialTypeForTypeDecl(context, ad->id()));
+
+  for (auto& implementedInterface : implementationPoints) {
+    auto insertionResult = seen.insert({ implementedInterface.first, implementedInterface.second });
+
+    if (!insertionResult.second) {
+      // We already saw an 'implements' for this interface
+      CHPL_REPORT(context, InterfaceMultipleImplements, ad,
+                  implementedInterface.first, insertionResult.first->second,
+                  implementedInterface.second);
+    } else {
+      auto ift = InterfaceType::withTypes(context, implementedInterface.first,
+                                          { initialType });
+      if (!ift) {
+        // we gave it a single type, but got null back, which means it's
+        // not a unary interface.
+        CHPL_REPORT(context, InterfaceNaryInInherits, ad,
+                    implementedInterface.first, implementedInterface.second);
+      } else {
+        auto implPoint =
+          ImplementationPoint::get(context, ift, implementedInterface.second);
+        result.push_back(implPoint);
+      }
+    }
+  };
+
+  return QUERY_END(result);
+}
+
+const std::vector<const ImplementationPoint*>&
+getImplementedInterfaces(Context* context,
+                         const AggregateDecl* ad) {
+  return getImplementedInterfacesQuery(context, ad);
+}
 
 // Get a Type for an AggregateDecl
 // poiScope, instantiatedFrom are nullptr if not instantiating
@@ -81,63 +203,15 @@ const CompositeType* helpGetTypeForDecl(Context* context,
   const CompositeType* ret = nullptr;
 
   if (const Class* c = ad->toClass()) {
-    const BasicClassType* parentClassType = nullptr;
-    const AstNode* lastParentClass = nullptr;
-    for (auto inheritExpr : c->inheritExprs()) {
-      // Resolve the parent class type expression
-      ResolutionResultByPostorderID r;
-      auto visitor =
-        Resolver::createForParentClass(context, c, inheritExpr,
-                                       substitutions,
-                                       poiScope, r);
-      inheritExpr->traverse(visitor);
-
-      auto& rr = r.byAst(inheritExpr);
-      QualifiedType qt = rr.type();
-      if (auto t = qt.type()) {
-        if (auto bct = t->toBasicClassType()) {
-          parentClassType = bct;
-        } else if (auto ct = t->toClassType()) {
-          // safe because it's checked for null later.
-          parentClassType = ct->basicClassType();
-        }
-      }
-
-      if (qt.isType() && parentClassType != nullptr) {
-        // It's a valid parent class; is it the only one? (error otherwise).
-        if (lastParentClass) {
-          reportInvalidMultipleInheritance(context, c, lastParentClass, inheritExpr);
-        }
-        lastParentClass = inheritExpr;
-
-        // OK
-      } else if (!rr.toId().isEmpty() &&
-                 parsing::idToTag(context, rr.toId()) == uast::asttags::Interface) {
-        // OK, It's an interface.
-      } else {
-        context->error(inheritExpr, "invalid parent class expression");
-        parentClassType = BasicClassType::getRootClassType(context);
-      }
-    }
+    const BasicClassType* parentClassType =
+      processInheritanceExpressionsForAggregateQuery(context, ad,
+                                                     substitutions,
+                                                     poiScope).first;
 
     // All the parent expressions could've been interfaces, and we just
     // inherit from object.
     if (!parentClassType) {
       parentClassType = BasicClassType::getRootClassType(context);
-    }
-
-    const BasicClassType* insnFromBct = nullptr;
-    if (instantiatedFrom != nullptr) {
-      if (auto bct = instantiatedFrom->toBasicClassType()) {
-        insnFromBct = bct;
-      } else if (auto ct = instantiatedFrom->toClassType()) {
-        // safe because it's checked for null later.
-        insnFromBct = ct->basicClassType();
-      }
-
-      if (!insnFromBct) {
-        CHPL_ASSERT(false && "unexpected instantiatedFrom type");
-      }
     }
 
     if (!parentClassType->isObjectType() && !substitutions.empty()) {
@@ -154,6 +228,28 @@ const CompositeType* helpGetTypeForDecl(Context* context,
       auto gotBct = got->toBasicClassType();
       CHPL_ASSERT(gotBct);
       parentClassType = gotBct;
+    }
+
+    // Elsewhere, we use 'instantiatedFrom' to signal a generic instantiation,
+    // even if the filtered substitutions are empty. Keep that invariant
+    // here, and set instantiatedFrom for this class because its parent
+    // was instantiated.
+    if (parentClassType->instantiatedFrom() && !instantiatedFrom) {
+      instantiatedFrom = initialTypeForTypeDecl(context, ad->id());
+    }
+
+    const BasicClassType* insnFromBct = nullptr;
+    if (instantiatedFrom != nullptr) {
+      if (auto bct = instantiatedFrom->toBasicClassType()) {
+        insnFromBct = bct;
+      } else if (auto ct = instantiatedFrom->toClassType()) {
+        // safe because it's checked for null later.
+        insnFromBct = ct->basicClassType();
+      }
+
+      if (!insnFromBct) {
+        CHPL_ASSERT(false && "unexpected instantiatedFrom type");
+      }
     }
 
     ret = BasicClassType::get(context, c->id(), c->name(),
@@ -233,7 +329,7 @@ struct ReturnTypeInferrer {
   // input
   ResolutionContext* rc;
   Context* context = rc ? rc->context() : nullptr;
-  const Function* fnAstForErr;
+  const Function* fnAst;
   Function::ReturnIntent returnIntent;
   Function::Kind functionKind;
   const Type* declaredReturnType;
@@ -248,7 +344,7 @@ struct ReturnTypeInferrer {
                      const Function* fn,
                      const Type* declaredReturnType)
     : rc(rc),
-      fnAstForErr(fn),
+      fnAst(fn),
       returnIntent(fn->returnIntent()),
       functionKind(fn->kind()),
       declaredReturnType(declaredReturnType) {
@@ -257,7 +353,8 @@ struct ReturnTypeInferrer {
   void process(const uast::AstNode* symbol,
                ResolutionResultByPostorderID& byPostorder);
 
-  void checkReturn(const AstNode* inExpr, const QualifiedType& qt);
+  // emits errors for invalid return type and adjusts it for magic special cases
+  void checkReturn(const AstNode* inExpr, QualifiedType& qt);
   void noteVoidReturnType(const AstNode* inExpr);
   void noteReturnType(const AstNode* expr, const AstNode* inExpr, RV& rv);
 
@@ -310,7 +407,7 @@ void ReturnTypeInferrer::process(const uast::AstNode* symbol,
 }
 
 void ReturnTypeInferrer::checkReturn(const AstNode* inExpr,
-                                     const QualifiedType& qt) {
+                                     QualifiedType& qt) {
   if (!qt.type()) {
     return;
   }
@@ -330,6 +427,15 @@ void ReturnTypeInferrer::checkReturn(const AstNode* inExpr,
       ok = false;
     } else if (returnIntent == Function::TYPE && !qt.isType()) {
       ok = false;
+
+      // runtime type builders have a body that returns a value, but
+      // their intent is 'type'. Allow that.
+      if (auto ag = fnAst->attributeGroup()) {
+        if (ag->hasPragma(uast::pragmatags::PRAGMA_RUNTIME_TYPE_INIT_FN)) {
+          ok = true;
+          qt = QualifiedType(QualifiedType::TYPE, qt.type());
+        }
+      }
     } else if (returnIntent == Function::PARAM && !qt.isParam()) {
       ok = false;
     }
@@ -376,7 +482,7 @@ QualifiedType ReturnTypeInferrer::returnedType() {
       // Couldn't find common type, so return type is incorrect.
       // TODO: replace with custom error class, and give more information about
       // why we couldn't determine a return type
-      context->error(fnAstForErr, "could not determine return type for function");
+      context->error(fnAst, "could not determine return type for function");
       retType = QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
     }
     auto adjType = adjustForReturnIntent(returnIntent, *retType);
@@ -717,9 +823,13 @@ returnTypeForTypeCtorQuery(Context* context,
 
   // handle type construction
   const AggregateDecl* ad = nullptr;
-  if (!untyped->id().isEmpty())
-    if (auto ast = parsing::idToAst(context, untyped->compilerGeneratedOrigin()))
+  const Interface* itf = nullptr;
+  if (!untyped->id().isEmpty()) {
+    if (auto ast = parsing::idToAst(context, untyped->compilerGeneratedOrigin())) {
       ad = ast->toAggregateDecl();
+      itf = ast->toInterface();
+    }
+  }
 
   if (ad) {
     // compute instantiatedFrom
@@ -789,6 +899,19 @@ returnTypeForTypeCtorQuery(Context* context,
 
     result = theType;
 
+  } else if (itf) {
+    SubstitutionsMap subs;
+
+    CHPL_ASSERT(sig->numFormals() == itf->numFormals());
+
+    int nFormals = sig->numFormals();
+    for (int i = 0; i < nFormals; i++) {
+      auto& formalType = sig->formalType(i);
+      auto& formalId = itf->formal(i)->id();
+      subs.emplace(formalId, formalType);
+    }
+
+    result = InterfaceType::get(context, itf->id(), itf->name(), std::move(subs));
   } else {
     // built-in type construction should be handled
     // by resolveFnCallSpecialType and not reach this point.
@@ -798,15 +921,16 @@ returnTypeForTypeCtorQuery(Context* context,
   return QUERY_END(result);
 }
 
-static QualifiedType computeTypeOfField(Context* context,
+static QualifiedType computeTypeOfField(ResolutionContext* rc,
                                         const Type* t,
                                         ID fieldId) {
+  auto context = rc->context();
   if (const CompositeType* ct = t->getCompositeType()) {
     // Figure out the parent MultiDecl / TupleDecl
     ID declId = parsing::idToContainingMultiDeclId(context, fieldId);
 
     // Resolve the type of that field (or MultiDecl/TupleDecl)
-    const auto& fields = resolveFieldDecl(context, ct, declId,
+    const auto& fields = resolveFieldDecl(rc, ct, declId,
                                           DefaultsPolicy::IGNORE_DEFAULTS);
     int n = fields.numFields();
     for (int i = 0; i < n; i++) {
@@ -1032,11 +1156,12 @@ static bool helpComputeEnumToOrderReturnType(Context* context,
   return true;
 }
 
-static bool helpComputeCompilerGeneratedReturnType(Context* context,
+static bool helpComputeCompilerGeneratedReturnType(ResolutionContext* rc,
                                                    const TypedFnSignature* sig,
                                                    const PoiScope* poiScope,
                                                    QualifiedType& result,
                                                    const UntypedFnSignature* untyped) {
+  auto context = rc->context();
   if (untyped->name() == USTR("init") ||
       untyped->name() == USTR("init=") ||
       untyped->name() == USTR("deinit") ||
@@ -1056,9 +1181,16 @@ static bool helpComputeCompilerGeneratedReturnType(Context* context,
 
     result = QualifiedType(input.kind(), outputType.type());
     return true;
+  } else if (untyped->isMethod() && sig->formalType(0).type()->isIteratorType() &&
+             untyped->name() == "_shape_") {
+    auto it = sig->formalType(0).type()->toIteratorType();
+    auto shape = shapeForIterator(context, it);
+    CHPL_ASSERT(shape);
+    result = QualifiedType(QualifiedType::VAR, shape);
+    return true;
   } else if (untyped->idIsField() && untyped->isMethod()) {
     // method accessor - compute the type of the field
-    QualifiedType ft = computeTypeOfField(context,
+    QualifiedType ft = computeTypeOfField(rc,
                                           sig->formalType(0).type(),
                                           untyped->id());
     if (ft.isType() || ft.isParam()) {
@@ -1072,17 +1204,6 @@ static bool helpComputeCompilerGeneratedReturnType(Context* context,
       result = QualifiedType(QualifiedType::REF, ft.type());
     }
     return true;
-  } else if (untyped->isMethod() && sig->formalType(0).type()->isArrayType()) {
-    auto at = sig->formalType(0).type()->toArrayType();
-    
-    if (untyped->name() == "domain") {
-      result = QualifiedType(QualifiedType::CONST_REF, at->domainType().type());
-    } else if (untyped->name() == "eltType") {
-      result = at->eltType();
-    } else {
-      CHPL_ASSERT(false && "unhandled compiler-generated array method");
-    }
-      return true;
   } else if (untyped->isMethod() && sig->formalType(0).type()->isPtrType() &&
              untyped->name() == "eltType") {
     auto pt = sig->formalType(0).type()->toPtrType();
@@ -1100,8 +1221,7 @@ static bool helpComputeCompilerGeneratedReturnType(Context* context,
       auto ast = parsing::idToAst(context, enumType->id())->toEnum();
       CHPL_ASSERT(ast);
       int numElts = ast->numElements();
-      result = QualifiedType(QualifiedType::PARAM, IntType::get(context, 0),
-                             IntParam::get(context, numElts));
+      result = QualifiedType::makeParamInt(context, numElts);
       return true;
     }
     CHPL_ASSERT(false && "unhandled compiler-generated enum method");
@@ -1180,9 +1300,17 @@ static bool helpComputeReturnType(ResolutionContext* rc,
     }
 
     // if there are no returns with a value, use void return type
-    if (fn->linkage() == Decl::EXTERN && fn->returnType() == nullptr) {
-      result = QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
-      return true;
+    if (fn->linkage() == Decl::EXTERN) {
+      if (fn->returnType() == nullptr) {
+        result = QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
+        return true;
+      } else {
+        // TODO: This is a workaround for a bug where the return type was
+        // not found for some reason. By returning a type we prevent an attempt
+        // to resolve the non-existent function body.
+        result = QualifiedType(QualifiedType::CONST_VAR, UnknownType::get(context));
+        return true;
+      }
     } else if (fnAstReturnsNonVoid(context, ast->id()) == false) {
       result = QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
       return true;
@@ -1194,14 +1322,13 @@ static bool helpComputeReturnType(ResolutionContext* rc,
   } else if (untyped->isMethod() && sig->formalType(0).type()->isTupleType() &&
              untyped->name() == "size") {
     auto tup = sig->formalType(0).type()->toTupleType();
-    result = QualifiedType(QualifiedType::PARAM, IntType::get(context, 0),
-                           IntParam::get(context, tup->numElements()));
+    result = QualifiedType::makeParamInt(context, tup->numElements());
     return true;
 
     // if method call and the receiver points to a composite type definition,
     // then it's some sort of compiler-generated method
   } else if (untyped->isCompilerGenerated()) {
-    return helpComputeCompilerGeneratedReturnType(context, sig, poiScope,
+    return helpComputeCompilerGeneratedReturnType(rc, sig, poiScope,
                                                   result, untyped);
   } else {
     CHPL_ASSERT(false && "case not handled");

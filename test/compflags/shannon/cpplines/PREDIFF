@@ -1,9 +1,9 @@
-#!/bin/csh -f
+#!/bin/bash
 
-set testname = $1
-set outfile = $2
+testname=$1
+outfile=$2
 
-set tmpfile = $outfile.prediff.tmp
+tmpfile=$outfile.prediff.tmp
 mv $outfile $tmpfile
 grep "#line 1 " $testname.OUTPUT/$testname.c > /dev/null && echo "NOTE: #line directives were generated" > $testname.out || echo "NOTE: #line directives were not generated" > $testname.out
 cat $tmpfile $testname.out > $outfile

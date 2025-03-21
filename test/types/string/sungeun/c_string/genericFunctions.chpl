@@ -104,16 +104,6 @@ var vs: string;
 }
 
 {
-  proc g(param s) {
-    checkType(c_string, s.type);
-  }
-
-  g(c"bye");
-  g(s=c"bye");
-}
-
-
-{
   proc f(type gtype, g, param s) {
     checkType(gtype, g.type);
     checkType(string, s.type);

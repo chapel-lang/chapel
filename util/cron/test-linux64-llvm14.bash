@@ -5,7 +5,7 @@
 UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $UTIL_CRON_DIR/common.bash
 
-source /data/cf/chapel/setup_system_llvm.bash 14
+source /hpcdc/project/chapel/setup_llvm.bash 14
 
 clang_version=$(clang -dumpversion)
 if [ "$clang_version" != "14.0.0" ]; then

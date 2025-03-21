@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -21,6 +21,7 @@
 #include "chpl/uast/AstNode.h"
 
 
+#include "chpl/parsing/parsing-queries.h"
 #include "chpl/uast/Comment.h"
 #include "chpl/uast/Conditional.h"
 #include "chpl/uast/Identifier.h"
@@ -34,6 +35,15 @@
 namespace chpl {
 namespace uast {
 
+
+bool AstNode::hasPragma(Context* context, pragmatags::PragmaTag p) const {
+  if (auto& id = this->id()) {
+    if (auto ag = parsing::idToAttributeGroup(context, id)) {
+      return ag->hasPragma(p);
+    }
+  }
+  return false;
+}
 
 void AstNode::dumpFieldsInner(const DumpSettings& s) const {
 }
@@ -82,6 +92,7 @@ bool AstNode::mayContainStatements(AstTag tag) {
     case asttags::AnonFormal:
     case asttags::As:
     case asttags::Array:
+    case asttags::ArrayRow:
     case asttags::Attribute:
     case asttags::AttributeGroup:
     case asttags::Break:
@@ -117,7 +128,6 @@ bool AstNode::mayContainStatements(AstTag tag) {
     case asttags::UintLiteral:
     case asttags::START_StringLikeLiteral:
     case asttags::BytesLiteral:
-    case asttags::CStringLiteral:
     case asttags::StringLiteral:
     case asttags::END_StringLikeLiteral:
     case asttags::END_Literal:
@@ -208,6 +218,7 @@ bool AstNode::isInherentlyStatement() const {
     case asttags::AnonFormal:
     case asttags::As:
     case asttags::Array:
+    case asttags::ArrayRow:
     case asttags::Attribute:
     case asttags::AttributeGroup:
     case asttags::Break:
@@ -243,7 +254,6 @@ bool AstNode::isInherentlyStatement() const {
     case asttags::UintLiteral:
     case asttags::START_StringLikeLiteral:
     case asttags::BytesLiteral:
-    case asttags::CStringLiteral:
     case asttags::StringLiteral:
     case asttags::END_StringLikeLiteral:
     case asttags::END_Literal:

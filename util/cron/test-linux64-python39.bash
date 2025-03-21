@@ -8,6 +8,6 @@ source $UTIL_CRON_DIR/common-python.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="linux64-python39"
 
-set_python_version "3.9"
+set_and_check_python_version "3.9.13"
 
 $UTIL_CRON_DIR/nightly -cron -hellos ${nightly_args}

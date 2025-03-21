@@ -44,7 +44,7 @@ this_year=$(date '+%Y')
 copyright_pattern="Copyright .*${this_year}[^0-9]* Hewlett Packard Enterprise Development LP"
 outdated_copyright_pattern="Copyright .* Hewlett Packard Enterprise Development LP"
 
-source_dirs="compiler frontend runtime make modules*"
+source_dirs="compiler frontend runtime make modules* util/cmake"
 
 echo "[INFO] Moving to CHPL_HOME: ${CHPL_HOME}"
 cd $CHPL_HOME
@@ -61,6 +61,8 @@ echo "[INFO] Checking for copyrights in source files: ${copyright_pattern}"
 files_wo_copy=$(find $source_dirs -type f \( \
     -name Make\* -o \
     -name CMakeLists.txt -o \
+    -name \*.cmake -o \
+    -name \*.cmake.in -o \
     -name \*.c -o \
     -name \*.cc -o \
     -name \*.chpl -o \
@@ -92,7 +94,7 @@ root_files_wo_copy=$(find . -maxdepth 1 -name Make\* -o -name CMakeLists.txt | x
 #   tools/chplvis: cxx fl h H
 #   tools/mason:   (excluding files named test*): chpl
 
-tools_wo_copy=$(find tools \( -type d \( -name test -o -name utils \) -prune \) -o \( -type f \( \
+tools_wo_copy=$(find tools \( -type d \( -name test -o -name utils -o -name examples \) -prune \) -o \( -type f \( \
     -name Make\* -o \
     -name CMakeLists.txt -o \
     -name \*.c -o \

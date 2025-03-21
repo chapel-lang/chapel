@@ -19,7 +19,6 @@ packageModules.chpl:XX: warning: FFTW is unstable
 packageModules.chpl:XX: warning: FunctionalOperations is unstable
 packageModules.chpl:XX: warning: Futures is unstable
 packageModules.chpl:XX: warning: HDF5 is unstable
-packageModules.chpl:XX: warning: HDFS is unstable
 packageModules.chpl:XX: warning: Image is unstable
 packageModules.chpl:XX: warning: LAPACK is unstable
 packageModules.chpl:XX: warning: LinearAlgebra is unstable

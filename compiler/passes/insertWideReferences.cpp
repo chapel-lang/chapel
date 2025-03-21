@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1314,7 +1314,9 @@ static void propagateVar(Symbol* sym) {
                      rhs->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE)) {
               widenTupleField(rhs, def);
             }
-            else if (rhs->isResolved() && rhs->resolvedFunction()->getReturnSymbol()->isRefOrWideRef()) {
+            else if (rhs->isResolved() &&
+                     !rhs->resolvedFunction()->hasFlag(FLAG_EXTERN) &&
+                     rhs->resolvedFunction()->getReturnSymbol()->isRefOrWideRef()) {
               debug(sym, "return symbol must be wide\n");
               matchWide(sym, rhs->resolvedFunction()->getReturnSymbol());
             }

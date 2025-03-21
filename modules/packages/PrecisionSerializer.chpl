@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -166,10 +166,6 @@ module PrecisionSerializer {
         writer.writeLiteral("nil");
       } else if isClassType(t) || isAnyCPtr(t) || chpl_isDdata(t) {
         _serializeClassOrPtr(writer, val);
-      } else if isUnionType(t) {
-        // From ChapelIO
-        // Note: Some kind of weird resolution bug with ChapelIO.writeThis...
-        writeThisDefaultImpl(writer, val);
       } else {
         val.serialize(writer=writer, serializer=this);
       }

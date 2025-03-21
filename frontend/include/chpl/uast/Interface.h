@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -168,7 +168,7 @@ class Interface final : public NamedDecl {
     Return the i'th interface formal.
   */
   const AstNode* formal(int i) const {
-    CHPL_ASSERT(i >= 0 && i < numBodyStmts_);
+    CHPL_ASSERT(i >= 0 && i < numInterfaceFormals_);
     auto ret = child(i + interfaceFormalsChildNum_);
     CHPL_ASSERT(ret);
     return ret;

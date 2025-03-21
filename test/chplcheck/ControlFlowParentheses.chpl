@@ -51,7 +51,7 @@ while(a &&
 do {} while(a &&
             b);
 
-// Not valid syntax, but just in case; should not warn, tuples need their parens.
+// Not valid syntax, but just in case; should not warn, tuples need their parens
 if (1, 2) {}
 if (1, 2) then writeln("Hello");
 while (1, 2) {}

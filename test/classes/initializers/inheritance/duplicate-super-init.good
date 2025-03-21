@@ -1,0 +1,2 @@
+duplicate-super-init.chpl:3: In initializer:
+duplicate-super-init.chpl:5: error: duplicate use of 'super.init()' in initializer, this should only be called once

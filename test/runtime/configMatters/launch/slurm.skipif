@@ -1,0 +1,9 @@
+#!/usr/bin/env python3
+
+import os
+
+launcher = os.getenv('CHPL_LAUNCHER', 'none')
+if 'slurm' not in launcher:
+  print("True")
+else:
+  print("False")

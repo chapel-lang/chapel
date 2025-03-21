@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2023-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -49,7 +49,10 @@ CLASS_BEGIN(Context)
 
          auto& paths = std::get<0>(args);
          auto& filenames = std::get<1>(args);
-         parsing::setupModuleSearchPaths(node, false, false, paths, filenames))
+         parsing::setupModuleSearchPaths(node, false, false, paths, filenames);
+         if (auto autoUseScope = resolution::scopeForAutoModule(node)) {
+           std::ignore = resolution::resolveVisibilityStmts(node, autoUseScope, false);
+         })
   METHOD(Context, is_bundled_path, "Check if the given file path is within the bundled (built-in) Chapel files",
          bool(chpl::UniqueString),
 
@@ -64,6 +67,8 @@ CLASS_BEGIN(Context)
          node->advanceToNextRevision(prepareToGc))
   METHOD(Context, get_file_text, "Get the text of the file at the given path",
          std::string(chpl::UniqueString), return parsing::fileText(node, std::get<0>(args)).text())
+  METHOD(Context, get_compiler_version, "Get the version of the Chapel compiler",
+         std::string(), std::ignore = node; return chpl::getVersion())
 CLASS_END(Context)
 
 CLASS_BEGIN(Location)

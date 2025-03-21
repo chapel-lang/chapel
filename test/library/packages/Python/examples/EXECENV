@@ -1,8 +1,0 @@
-#!/usr/bin/env bash
-
-# if CHPL_TEST_VENV_DIR is set and not none, make sure to set VIRTUAL_ENV to match
-if [ -n "$CHPL_TEST_VENV_DIR" ] && [ "$CHPL_TEST_VENV_DIR" != "none" ]; then
-  echo "VIRTUAL_ENV=$CHPL_TEST_VENV_DIR"
-else
-  echo ""
-fi

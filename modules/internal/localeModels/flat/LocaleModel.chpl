@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -155,6 +155,7 @@ module LocaleModel {
       nPUsLogAcc = 0;
       nPUsLogAll = 0;
       maxTaskPar = 0;
+      numColocales = 0;
     }
 
     // The setup() function must use chpl_initOnLocales() to iterate (in

@@ -1,0 +1,5 @@
+#!/bin/sh
+
+if grep -v 'Unimplemented: PRIM_IS_FCF_TYPE' $2 > $2.tmp; then
+    mv $2.tmp $2
+fi

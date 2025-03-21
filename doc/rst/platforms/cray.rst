@@ -95,7 +95,8 @@ Building Chapel for an HPE Cray System from Source
        System         CHPL_HOST_PLATFORM
        =============  ==================
        EX series      hpe-cray-ex
-       Apollo series  hpe-apollo   
+       Apollo series  hpe-apollo
+       XD series      hpe-cray-xd
        XC series      cray-xc
        CS series      cray-cs
        =============  ==================

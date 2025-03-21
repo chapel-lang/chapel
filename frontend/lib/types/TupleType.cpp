@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -177,8 +177,6 @@ const TupleType*
 TupleType::getStarTuple(Context* context,
                         QualifiedType paramSize,
                         QualifiedType varArgEltType) {
-  CHPL_ASSERT(!varArgEltType.isUnknownKindOrType());
-
   if (!paramSize.isUnknown()) {
     // Fixed size, we can at least create a star tuple of AnyType
     int64_t numElements = paramSize.param()->toIntParam()->value();
@@ -193,7 +191,7 @@ TupleType::getStarTuple(Context* context,
   }
 }
 
-QualifiedType TupleType::elementType(int i) const {
+const QualifiedType& TupleType::elementType(int i) const {
   CHPL_ASSERT(isKnownSize_);
   CHPL_ASSERT(0 <= i && (size_t) i < subs_.size());
   // find subs[id]
@@ -202,7 +200,8 @@ QualifiedType TupleType::elementType(int i) const {
     return search->second;
   } else {
     CHPL_ASSERT(false && "ID mismatch in tuple elements");
-    return QualifiedType();
+    static QualifiedType empty;
+    return empty;
   }
 }
 

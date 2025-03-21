@@ -1,6 +1,5 @@
-#!/usr/bin/env python3
 #
-# Copyright 2024-2024 Hewlett Packard Enterprise Development LP
+# Copyright 2024-2025 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -172,7 +171,7 @@ class ChplcheckProxy:
 
         def error(msg: str):
             if os.environ.get("CHPL_DEVELOPER", None):
-                print("Error loading chplcheck: ", str(e), file=sys.stderr)
+                print("Error loading chplcheck: ", str(msg), file=sys.stderr)
 
         chpl_home = os.environ.get("CHPL_HOME")
         if chpl_home is None:
@@ -181,7 +180,7 @@ class ChplcheckProxy:
 
         chplcheck_path = os.path.join(chpl_home, "tools", "chplcheck", "src")
         # Add chplcheck to the path, but load via importlib
-        sys.path.append(chplcheck_path)
+        sys.path.insert(0, chplcheck_path)
 
         def load_module(module_name: str) -> Optional[ModuleType]:
             file_path = os.path.join(chplcheck_path, module_name + ".py")
@@ -1480,7 +1479,7 @@ class ChapelLanguageServer(LanguageServer):
         config = chplcheck.config.Config.from_args(clsConfig.args)
         self.lint_driver = chplcheck.driver.LintDriver(config)
 
-        chplcheck.rules.register_rules(self.lint_driver)
+        chplcheck.rules.rules(self.lint_driver)
 
         for p in config.add_rules:
             chplcheck.main.load_module(self.lint_driver, os.path.abspath(p))
@@ -1891,8 +1890,8 @@ class ChapelLanguageServer(LanguageServer):
             item.data is None
             or not isinstance(item.data, list)
             or not isinstance(item.data[0], str)
-            or not isinstance(item.data[1], Optional[str])
-            or not isinstance(item.data[2], Optional[str])
+            or not isinstance(item.data[1], (str, None))
+            or not isinstance(item.data[2], (str, None))
         ):
             self.show_message(
                 "Call hierarchy item contains missing or invalid additional data",

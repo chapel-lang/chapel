@@ -8,6 +8,23 @@
 
 #if GASNET_PSHM /* Otherwise file is empty */
 
+#if GASNETI_PSHM_SYSV
+  #define GASNETI_PSHM_API sysv
+#elif GASNETI_PSHM_POSIX
+  #define GASNETI_PSHM_API posix
+#elif GASNETI_PSHM_FILE
+  #if GASNETI_USE_HUGETLBFS
+    #define GASNETI_PSHM_API hugetlbfs
+  #else
+    #define GASNETI_PSHM_API file
+  #endif
+#elif GASNETI_PSHM_XPMEM
+  #define GASNETI_PSHM_API xpmem
+#else
+  #error "Unknown PSHM API"
+#endif
+GASNETI_IDENT(gasneti_IdentString_PSHM, "$GASNetPSHM: " _STRINGIFY(GASNETI_PSHM_API) " $");
+
 #include <gasnet_core_internal.h> /* for gasnetc_handler[] */
 #include <gasnet_am.h> /* for gasneti_{prepare_alloc,commit_free}_buffer() */
 
@@ -67,7 +84,7 @@ void gasneti_pshm_prefault(void *addr, size_t len) {
   p[len-1] = 0;
 }
 
-void *gasneti_pshm_init(gasneti_bootstrapBroadcastfn_t snodebcastfn, size_t aux_sz) {
+void *gasneti_pshm_init(gasneti_bootstrapBroadcastfn_t nbrhdbcastfn, size_t aux_sz) {
   size_t vnetsz, mmapsz;
   int discontig = 0;
   gex_Rank_t i;
@@ -75,13 +92,20 @@ void *gasneti_pshm_init(gasneti_bootstrapBroadcastfn_t snodebcastfn, size_t aux_
   gex_Rank_t j;
 #endif
 
-  gasneti_assert(snodebcastfn != NULL);  /* NULL snodebcastfn no longer supported */
+  gasneti_assert(nbrhdbcastfn != NULL);  /* NULL nbrhdbcastfn no longer supported */
 
   gasneti_assert_always_uint(gasneti_nodemap_local_count ,<=, GASNETI_PSHM_MAX_NODES);
     
   gasneti_pshm_nodes = gasneti_nodemap_local_count;
   gasneti_pshm_mynode = gasneti_nodemap_local_rank;
   gasneti_pshm_firstnode = gasneti_nodemap_local[0];
+
+  if (gasneti_pshm_nodes == 1) {
+    gasneti_use_shared_allocator = gasneti_getenv_yesno_withdefault("GASNET_USE_PSHM_SINGLETON", 0);
+  } else {
+    // For multi-process nbrhd we must use PSHM-aware memory allocation.
+    gasneti_assert( gasneti_use_shared_allocator );
+  }
 
 #if GASNET_CONDUIT_SMP
   gasneti_assert_uint(gasneti_pshm_nodes ,==, gasneti_nodes);
@@ -164,7 +188,7 @@ void *gasneti_pshm_init(gasneti_bootstrapBroadcastfn_t snodebcastfn, size_t aux_
 
   /* setup vnet shared memory region for AM infrastructure and supernode barrier.
    */
-  gasnetc_pshmnet_region = gasneti_mmap_vnet(mmapsz, snodebcastfn);
+  gasnetc_pshmnet_region = gasneti_mmap_vnet(mmapsz, nbrhdbcastfn);
   gasneti_assert_always_uint((((uintptr_t)gasnetc_pshmnet_region) % GASNETI_PSHMNET_PAGESIZE) ,==, 0);
   if (gasnetc_pshmnet_region == NULL) {
     const int save_errno = errno;
@@ -551,6 +575,7 @@ static uintptr_t get_queue_mem(int nodes)
 static size_t gasneti_pshmnet_memory_needed_pernode(gasneti_pshm_rank_t nodes)
 {
   /* Space for the message payloads */
+  if (nodes == 1) return 0;
   if_pf (!gasneti_pshmnet_queue_mem) {
     gasneti_pshmnet_queue_mem = get_queue_mem(nodes);
   }
@@ -615,12 +640,17 @@ gasneti_pshmnet_init(void *region, size_t regionlen, gasneti_pshm_rank_t pshmnod
 #endif
   gasneti_mutex_init(&vnet->alloc_lock);
 
-  /* initialize my own allocator */
-  myregion = (void *)((uintptr_t)region + (szpernode * gasneti_pshm_mynode));
-  gasneti_assert_align(myregion, GASNETI_PSHMNET_PAGESIZE);
-  vnet->my_allocator = gasneti_pshmnet_init_allocator(myregion, gasneti_pshmnet_queue_mem);
+  // initialize my own allocator, only if any intra-nbrhd AM traffic is possible
+  if (pshmnodes > 1) {
+    myregion = (void *)((uintptr_t)region + (szpernode * gasneti_pshm_mynode));
+    gasneti_assert_align(myregion, GASNETI_PSHMNET_PAGESIZE);
+    vnet->my_allocator = gasneti_pshmnet_init_allocator(myregion, gasneti_pshmnet_queue_mem);
+  } else {
+    vnet->my_allocator = NULL;
+  }
 
-  /* initialize my own queue header */
+  // initialize my own queue header, even if any no intra-nbrhd AM traffic is possible.
+  // otherwise, gasneti_AMPSHMPoll() will dereference NULL 'head' and 'shead'
   vnet->queues = (gasneti_pshmnet_queue_t*)((uintptr_t)region + szpernode * pshmnodes);
   gasneti_assert_align(vnet->queues, GASNETI_PSHMNET_PAGESIZE);
   vnet->my_queue = &vnet->queues[gasneti_pshm_mynode];
@@ -640,6 +670,7 @@ void * gasneti_pshmnet_get_send_buffer(gasneti_pshmnet_t *vnet, size_t nbytes,
   void *retval = NULL;
   
   gasneti_assert_uint(nbytes ,<=, GASNETI_PSHMNET_MAX_PAYLOAD);
+  gasneti_assert(vnet->my_allocator);
 
   p = gasneti_pshmnet_alloc(vnet->my_allocator, nbytes);
   if (p != NULL) {

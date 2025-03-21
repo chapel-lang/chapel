@@ -1,0 +1,23 @@
+#!/usr/bin/env python3
+
+import sys
+import re
+
+file = sys.argv[2]
+
+with open(file, 'r') as f:
+    lines = f.readlines()
+
+with open(file, 'w') as f:
+    for line in lines:
+        if "{" in line:
+            # grab the text between matching curly braces, split it on a comma,
+            # sort it, and replace it with the sorted version
+            matches = re.findall(r'\{([^}]+)\}', line)
+            for match in matches:
+                items = [item.strip() for item in match.split(',')]
+                items.sort()
+                sorted_match = '{' + ', '.join(items) + '}'
+                line = line.replace('{' + match + '}', sorted_match)
+        f.write(line)
+

@@ -5,7 +5,7 @@
 UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $UTIL_CRON_DIR/common.bash
 
-source /data/cf/chapel/setup_system_llvm.bash 17
+source /hpcdc/project/chapel/setup_llvm.bash 17
 
 # Check LLVM version via llvm-config from CHPL_LLVM_CONFIG
 llvm_version=$($CHPL_LLVM_CONFIG --version)

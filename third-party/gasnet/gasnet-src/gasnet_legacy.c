@@ -88,8 +88,6 @@ extern void gasneti_legacy_segment_attach_hook(gasneti_EP_t ep) {
 /* ------------------------------------------------------------------------------------ */
 // Legacy gasnet_attach()
 
-extern int gasnetc_attach_primary(void);
-
 extern int gasneti_attach( gex_TM_t               _tm,
                            gasnet_handlerentry_t  *table,
                            int                    numentries,
@@ -116,7 +114,7 @@ extern int gasneti_attach( gex_TM_t               _tm,
   #endif
 
   /*  primary attach  */
-  if (GASNET_OK != gasnetc_attach_primary())
+  if (GASNET_OK != gasnetc_attach_primary(0))
     GASNETI_RETURN_ERRR(RESOURCE,"Error in primary attach");
 
   #if GASNET_SEGMENT_FAST || GASNET_SEGMENT_LARGE

@@ -1,4 +1,4 @@
-// This test and assertOnFailToGpuize are siblings; this one tests
+// This test and assertOnFailToGpuizeAttr are siblings; this one tests
 // @gpu.assertEligible, which does not have a runtime component.
 
 use GPU;

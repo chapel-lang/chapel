@@ -1,4 +1,3 @@
-allrules.chpl:1: node violates rule UseExplicitModules
 Available rules (default rules marked with *):
   * BoolLitInCondStmt            Warn for boolean literals like 'true' in a conditional statement.
   * CamelCaseFunctions           Warn for functions that are not 'camelCase'.
@@ -11,6 +10,7 @@ Available rules (default rules marked with *):
   * DoKeywordAndBlock            Warn for redundant 'do' keyword before a curly brace '{'.
   * EmptyStmts                   Warn for empty statements (i.e., unnecessary semicolons).
   * IncorrectIndentation         Warn for inconsistent or missing indentation
+  * LineLength                   Warn for lines that exceed a maximum length.
   * MethodsAfterFields           Warn for classes or records that mix field and method definitions.
   * MisleadingIndentation        Warn for single-statement blocks that look like they might be multi-statement blocks.
   * MissingInIntent              Warn for formals used to initialize fields that are missing an 'in' intent.

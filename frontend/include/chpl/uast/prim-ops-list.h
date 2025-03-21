@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -139,8 +139,6 @@ PRIMITIVE_R(QUERY, "query")
 PRIMITIVE_R(QUERY_PARAM_FIELD, "query param field")
 PRIMITIVE_R(QUERY_TYPE_FIELD, "query type field")
 
-PRIMITIVE_R(STATIC_DOMAIN_TYPE, "static domain type")
-
 PRIMITIVE_R(STATIC_FUNCTION_VAR, "static function var")
 PRIMITIVE_R(STATIC_FUNCTION_VAR_VALIDATE_TYPE, "static function validate type")
 PRIMITIVE_R(STATIC_FUNCTION_VAR_WRAPPER, "static function var wrapper")
@@ -150,6 +148,7 @@ PRIMITIVE_G(DEREF, "deref")
 PRIMITIVE_G(SET_REFERENCE, "set reference")
 
 PRIMITIVE_G(LOCAL_CHECK, "local_check")
+PRIMITIVE_G(IS_LOCAL, "is_local")
 
 PRIMITIVE_R(GET_END_COUNT, "get end count")
 PRIMITIVE_R(SET_END_COUNT, "set end count")

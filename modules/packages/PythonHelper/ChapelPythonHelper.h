@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -21,16 +21,27 @@
 #ifndef CHPL_PYTHON_HELPER_H_
 #define CHPL_PYTHON_HELPER_H_
 
+#define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
-const uint64_t chpl_PY_VERSION_HEX = PY_VERSION_HEX;
-const char* chpl_PY_VERSION = PY_VERSION;
+static const uint64_t chpl_PY_VERSION_HEX = PY_VERSION_HEX;
+static const char* chpl_PY_VERSION = PY_VERSION;
+static const unsigned long chpl_PY_MAJOR_VERSION = PY_MAJOR_VERSION;
+static const unsigned long chpl_PY_MINOR_VERSION = PY_MINOR_VERSION;
+static const unsigned long chpl_PY_MICRO_VERSION = PY_MICRO_VERSION;
 
 static inline PyObject* chpl_PyEval_GetFrameGlobals(void) {
 #if PY_VERSION_HEX >= 0x030d0000 /* Python 3.13 */
   return PyEval_GetFrameGlobals();
 #else
   return PyEval_GetGlobals();
+#endif
+}
+static inline PyObject* chpl_PyEval_GetFrameBuiltins(void) {
+#if PY_VERSION_HEX >= 0x030d0000 /* Python 3.13 */
+  return PyEval_GetFrameBuiltins();
+#else
+  return PyEval_GetBuiltins();
 #endif
 }
 
@@ -52,7 +63,9 @@ static inline PyObject* chpl_PyErr_GetRaisedException(void) {
 #endif
 }
 
+static inline void chpl_Py_INCREF(PyObject* o) { Py_INCREF(o); }
 static inline void chpl_Py_DECREF(PyObject* o) { Py_DECREF(o); }
+static inline void chpl_Py_CLEAR(PyObject** o) { Py_CLEAR(*o); }
 
 static inline int chpl_PyList_Check(PyObject* o) { return PyList_Check(o); }
 static inline int chpl_PyGen_Check(PyObject* o) { return PyGen_Check(o); }
@@ -60,5 +73,33 @@ static inline int chpl_PyGen_Check(PyObject* o) { return PyGen_Check(o); }
 static inline PyObject* chpl_Py_None(void) { return (PyObject*)Py_None; }
 static inline PyObject* chpl_Py_True(void) { return (PyObject*)Py_True; }
 static inline PyObject* chpl_Py_False(void) { return (PyObject*)Py_False; }
+
+
+static inline PyObject* chpl_Py_CompileString(const char* str,
+                                              const char* filename, int start) {
+  return Py_CompileString(str, filename, start);
+}
+
+static inline PyStatus chpl_Py_NewIsolatedInterpreter(PyThreadState** tstate) {
+#if PY_VERSION_HEX >= 0x030c0000 /* Python 3.12 */
+  PyInterpreterConfig config = {
+    .use_main_obmalloc = 0,
+    .allow_fork = 0,
+    .allow_exec = 0,
+    .allow_threads = 1,
+    .allow_daemon_threads = 0,
+    .check_multi_interp_extensions = 1,
+    .gil = PyInterpreterConfig_OWN_GIL,
+  };
+  return Py_NewInterpreterFromConfig(tstate, &config);
+#else
+  return PyStatus_Error("Sub-interpreters are not supported in Python " PY_VERSION);
+#endif
+}
+
+static const int chpl_PyBUF_SIMPLE = PyBUF_SIMPLE;
+static const int chpl_PyBUF_WRITABLE = PyBUF_WRITABLE;
+static const int chpl_PyBUF_FORMAT = PyBUF_FORMAT;
+static const int chpl_PyBUF_ND = PyBUF_ND;
 
 #endif

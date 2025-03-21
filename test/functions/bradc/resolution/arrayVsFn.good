@@ -1,2 +1,3 @@
 arrayVsFn.chpl:1: error: 'A' has multiple definitions
 arrayVsFn.chpl:3: note: redefined here
+arrayVsFn.chpl:8: error: ambiguity between function and non-function at the same scope level

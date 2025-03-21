@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -5387,6 +5387,14 @@ void trimVisibleCandidates(CallInfo&       info,
       BaseAST* actual = NULL;
       BaseAST* formal = NULL;
 
+      // If the function was created as a part of dyno typed conversion,
+      // then do not consider it as a candidate. This means that the old
+      // AST resolver may do some redundant work re-instantiating and
+      // re-resolving functions that dyno has already handled, but that
+      // is OK - eventually the new frontend will resolve _everything_
+      // and we can remove the old resolver.
+      if (fn->hasFlag(FLAG_RESOLVED_EARLY)) continue;
+
       if ((fn->isInitializer()) || (isDeinit && fn->isMethod()) || fn->isCopyInit()) {
         actual = call->get(2);
         formal = fn->_this;
@@ -9175,9 +9183,9 @@ static void moveHaltMoveIsUnacceptable(CallExpr* call) {
   } else {
     if (lhsSym->hasFlag(FLAG_TYPE_VARIABLE) == false &&
         lhsSym->hasFlag(FLAG_MAYBE_TYPE)    == false) {
-      FnSymbol* fn = toFnSymbol(call->parentSymbol);
 
-      if (fn->getReturnSymbol() == lhsSym) {
+      auto fn = toFnSymbol(call->parentSymbol);
+      if (fn && fn->getReturnSymbol() == lhsSym) {
         USR_FATAL(call, "illegal return of type where value is expected");
 
       } else if (lhsSym->hasFlag(FLAG_CHPL__ITER) == true) {
@@ -12641,7 +12649,9 @@ static const char* autoCopyFnForType(AggregateType* at);
 static void resolveAutoCopies() {
   for_alive_in_expanding_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (! ts->hasFlag(FLAG_GENERIC)                 &&
-        ! ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
+        ! ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)  &&
+        ! ts->hasFlag(FLAG_REF)                     &&
+        ! ts->hasFlag(FLAG_RESOLVED_EARLY)) {
       if (AggregateType* at = toAggregateType(ts->type)) {
         if (isRecord(at) || isUnion(at)) {
           // If we attempt to resolve auto-copy and co. for an infinite record
@@ -13093,9 +13103,8 @@ static void printUnusedFunctions() {
    checking.
 */
 #ifdef PRINT_UNUSED_FNS_TO_FILE
-  char fname[FILENAME_MAX+1];
-  snprintf(fname, FILENAME_MAX, "%s.%s", executableFilename, "unused");
-  FILE* outFile = fopen(fname, "w");
+  std::string fname = executableFilename + ".unused";
+  FILE* outFile = fopen(fname.c_str(), "w");
 #else
   FILE* outFile = stdout;
 #endif

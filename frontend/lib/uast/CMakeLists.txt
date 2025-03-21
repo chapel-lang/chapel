@@ -1,4 +1,4 @@
-# Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2025 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -21,6 +21,7 @@ target_sources(ChplFrontend-obj
                AggregateDecl.cpp
                AnonFormal.cpp
                Array.cpp
+               ArrayRow.cpp
                AstList.cpp
                AstNode.cpp
                AstTag.cpp
@@ -44,7 +45,6 @@ target_sources(ChplFrontend-obj
                Comment.cpp
                Conditional.cpp
                Continue.cpp
-               CStringLiteral.cpp
                Decl.cpp
                Defer.cpp
                Delete.cpp

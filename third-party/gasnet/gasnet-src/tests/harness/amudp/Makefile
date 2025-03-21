@@ -4,11 +4,14 @@ all:
 	@echo For information on downloading and using Berkeley UPC, see: https://upc.lbl.gov
 	@exit 1
 
+# legacy harness support
+GASNET_BLDDIR ?= $(TOP_BUILDDIR)/gasnet
+
 PERL ?= perl
 AMX_FLAVOR=udp
-CONDUIT_DIR=$(TOP_BUILDDIR)/gasnet/$(AMX_FLAVOR)-conduit
+CONDUIT_DIR=$(GASNET_BLDDIR)/$(AMX_FLAVOR)-conduit
 CONDUIT_FRAG=$(CONDUIT_DIR)/$(AMX_FLAVOR)-seq.mak
-AMX_DIR=$(TOP_BUILDDIR)/gasnet/other/am$(AMX_FLAVOR)
+AMX_DIR=$(GASNET_BLDDIR)/other/am$(AMX_FLAVOR)
 
 Makefile: $(CONDUIT_FRAG)
 $(CONDUIT_FRAG):
@@ -52,13 +55,13 @@ amudprun:
 # We deliberately ban the MANUAL_* flags here, as they may not be appropriate for the host compiler
 # note this "banning" is only effective for cross-compile, otherwise MANUAL_CFLAGS is already folded into HOST_CFLAGS by harness
 amudprun-host:
-	rm -Rf $(TOP_BUILDDIR)/gasnet/other/amudp/.host
+	rm -Rf $(GASNET_BLDDIR)/other/amudp/.host
 	@echo "Harness default settings:" 1>&2 ; \
 	 set -x ; HOST_CC='$(HOST_CC)' HOST_CFLAGS='$(HOST_CFLAGS)' HOST_CXX='$(HOST_CXX)' HOST_CXXFLAGS='$(HOST_CXXFLAGS)' HOST_LDFLAGS='$(HOST_LDFLAGS)' HOST_LIBS='$(HOST_LIBS)' ; set +x ; \
 	 if test -z "$$HOST_CXX" ; then \
 	   echo "Defaulting HOST_CXX(FLAGS) to GASNET_CXX(FLAGS)" 1>&2 ; set -x ; \
-	   eval HOST_`$(MAKE) --no-print-directory -f $(TOP_BUILDDIR)/gasnet/Makefile echovar VARNAME=CXX` ; \
-	   eval HOST_`$(MAKE) --no-print-directory -f $(TOP_BUILDDIR)/gasnet/Makefile echovar VARNAME=CXXFLAGS` ; \
+	   eval HOST_`$(MAKE) --no-print-directory -f $(GASNET_BLDDIR)/Makefile echovar VARNAME=CXX` ; \
+	   eval HOST_`$(MAKE) --no-print-directory -f $(GASNET_BLDDIR)/Makefile echovar VARNAME=CXXFLAGS` ; \
 	 fi ; \
 	 set -x ; \
 	 $(MAKE) -C $(AMX_DIR) $@$(EXESUFFIX) CC="$$HOST_CC $$HOST_CFLAGS" CXX="$$HOST_CXX $$HOST_CXXFLAGS" platform_ldflags="$$HOST_LDFLAGS $$HOST_LIBS" \

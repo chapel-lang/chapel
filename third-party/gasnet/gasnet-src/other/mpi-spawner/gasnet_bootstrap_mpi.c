@@ -292,20 +292,26 @@ static void bootstrapBroadcast(void *src, size_t len, void *dest, int rootnode) 
   gasneti_assert_always(err == MPI_SUCCESS);
 }
 
-static void bootstrapSNodeBroadcast(void *src, size_t len, void *dest, int rootnode) {
+// Broadcast to members of a gasneti_nodegrp_t via Isend/Irecv
+static void nodegrpBcast(void *src, size_t len, void *dest, int rootnode, gasneti_nodegrp_t *scope)
+{
   check_early_finalize();
+
+  gex_Rank_t *scope_ranks = scope->nodes;
+  gex_Rank_t self = scope->node_rank;
+  int scope_count = scope->node_count;
   int err;
 
   if (gasnetc_mpi_rank == rootnode) {
-    const int count = gasneti_nodemap_local_count - 1;
+    const int count = scope_count - 1;
     MPI_Request *reqs, *r;
     int i;
 
     memmove(dest, src, len);
     reqs = gasneti_malloc(count * sizeof(MPI_Request));
-    for (i = 0, r = reqs; i < gasneti_nodemap_local_count; ++i) {
-      if (i == gasneti_nodemap_local_rank) continue;
-      err = MPI_Isend(src,len,MPI_BYTE,gasneti_nodemap_local[i],0,gasnetc_mpi_comm,r++);
+    for (i = 0, r = reqs; i < scope_count; ++i) {
+      if (i == self) continue;
+      err = MPI_Isend(src,len,MPI_BYTE,scope_ranks[i],0,gasnetc_mpi_comm,r++);
       gasneti_assert_always(err == MPI_SUCCESS);
     }
     err = MPI_Waitall(count,reqs,MPI_STATUSES_IGNORE);
@@ -317,6 +323,14 @@ static void bootstrapSNodeBroadcast(void *src, size_t len, void *dest, int rootn
   }
 }
 
+static void bootstrapNbrhdBroadcast(void *src, size_t len, void *dest, int rootnode) {
+  nodegrpBcast(src, len, dest, rootnode, &gasneti_mysupernode);
+}
+
+static void bootstrapHostBroadcast(void *src, size_t len, void *dest, int rootnode) {
+  nodegrpBcast(src, len, dest, rootnode, &gasneti_myhost);
+}
+
 static void bootstrapCleanup(void) {
   /* Nothing to do here */
 }
@@ -325,7 +339,8 @@ static gasneti_spawnerfn_t const spawnerfn = {
   bootstrapBarrier,
   bootstrapExchange,
   bootstrapBroadcast,
-  bootstrapSNodeBroadcast,
+  bootstrapNbrhdBroadcast,
+  bootstrapHostBroadcast,
   bootstrapAlltoall,
   bootstrapAbort,
   bootstrapCleanup,

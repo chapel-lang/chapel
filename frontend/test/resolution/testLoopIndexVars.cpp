@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -334,8 +334,28 @@ static void testCForLoop() {
   assert(cond.type().type() == BoolType::get(context));
 }
 
-static void testParamFor() {
-  printf("testParamFor\n");
+// Note: values hardcoded to match 'helpTestParam' helper
+struct ParamLoopTester {
+  ParamCollector pc;
+  std::map<std::string, int> resolvedIdents;
+  std::multimap<std::string, int64_t> resolvedVals;
+
+  void noteExpectedIteration(int i) {
+    resolvedIdents["i"] += 2;
+    resolvedIdents["n"] += 1;
+    resolvedIdents["x"] += 1;
+    resolvedVals.emplace("i", i);
+    resolvedVals.emplace("n", i+i);
+  }
+
+  void assertMatch() {
+    assert(resolvedIdents == pc.resolvedIdents);
+    assert(resolvedVals == pc.resolvedVals);
+  }
+};
+
+static ParamLoopTester helpTestParam(const char* rangeExpr) {
+  printf("testParamFor with %s\n", rangeExpr);
   auto context = buildStdContext();
   ErrorGuard guard(context);
   ResolutionContext rcval(context);
@@ -343,13 +363,13 @@ static void testParamFor() {
   // Test iteration over an iterator call
   //
 
-  auto iterText = R""""(
+  auto iterText = R"""(
                   var x = 0;
-                  for param i in 1..10 {
+                  for param i in )""" + std::string(rangeExpr) + R"""( {
                     param n = __primitive("+", i, i);
                     __primitive("+=", x, n);
                   }
-                  )"""";
+                  )""";
 
   const Module* m = parseModule(context, iterText);
 
@@ -360,20 +380,82 @@ static void testParamFor() {
 
   const ResolvedExpression& re = rr.byAst(m->stmt(0));
   assert(re.type().type() == IntType::get(context, 0));
-
-  std::map<std::string, int> resolvedIdents;
-  std::multimap<std::string, int64_t> resolvedVals;
-  for (int i = 1; i <= 10; i++) {
-    resolvedIdents["i"] += 2;
-    resolvedIdents["n"] += 1;
-    resolvedIdents["x"] += 1;
-    resolvedVals.emplace("i", i);
-    resolvedVals.emplace("n", i+i);
-  }
-  assert(resolvedIdents == pc.resolvedIdents);
-  assert(resolvedVals == pc.resolvedVals);
+  return ParamLoopTester{std::move(pc), {}, {}};
 }
 
+static void testParamFor() {
+  {
+    auto test = helpTestParam("1..10");
+    for (int i = 1; i <= 10; i++) {
+      test.noteExpectedIteration(i);
+    }
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestParam("1..10 by 2");
+    for (int i = 1; i <= 10; i += 2) {
+      test.noteExpectedIteration(i);
+    }
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestParam("1..10 by -2");
+    for (int i = 10; i >= 1; i -= 2) {
+      test.noteExpectedIteration(i);
+    }
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestParam("1..<10");
+    for (int i = 1; i < 10; i++) {
+      test.noteExpectedIteration(i);
+    }
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestParam("1..<10 by -2");
+    for (int i = 9; i >= 1; i -= 2) {
+      test.noteExpectedIteration(i);
+    }
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestParam("0..#10");
+    for (int i = 0; i < 10; i ++) {
+      test.noteExpectedIteration(i);
+    }
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestParam("0..#10 by -2");
+    for (int i = 9; i >= 0; i -= 2) {
+      test.noteExpectedIteration(i);
+    }
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestParam("..10#10");
+    for (int i = 1; i <= 10; i++) {
+      test.noteExpectedIteration(i);
+    }
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestParam("..10#10 by -2");
+    for (int i = 10; i >= 1; i -= 2) {
+      test.noteExpectedIteration(i);
+    }
+    test.assertMatch();
+  }
+}
 
 //
 // Test nested param loops
@@ -431,6 +513,70 @@ static void testNestedParamFor() {
 
   assert(resolvedIdents == pc.resolvedIdents);
   assert(resolvedVals == pc.resolvedVals);
+}
+
+struct TupleCollector {
+  using RV = ResolvedVisitor<TupleCollector>;
+
+  std::multimap<std::string, const Type*> resolvedVals;
+
+  TupleCollector() { }
+
+  bool enter(const uast::VarLikeDecl* decl, RV& rv) {
+    if (decl->storageKind() == Qualifier::PARAM ||
+        decl->storageKind() == Qualifier::INDEX) {
+      const ResolvedExpression& rr = rv.byAst(decl);
+      if (!rr.type().isUnknownOrErroneous()) {
+        resolvedVals.emplace(decl->name().str(), rr.type().type());
+      }
+    }
+    return true;
+  }
+
+  bool enter(const uast::AstNode* ast, RV& rv) {
+    return true;
+  }
+  void exit(const uast::AstNode* ast, RV& rv) {}
+};
+
+static void testHeteroTuples() {
+  printf("testHeteroTuples\n");
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+  ResolutionContext rcval(context);
+  auto rc = &rcval;
+
+  auto loopText = R"""(
+  var tmp = (1.0, 1, true);
+
+  for x in tmp {
+    for y in tmp {
+
+    }
+  }
+  )""";
+  const Module* m = parseModule(context, loopText);
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+  TupleCollector pc;
+  ResolvedVisitor<TupleCollector> rv(rc, m, pc, rr);
+  m->traverse(rv);
+
+  std::multimap<std::string, const Type*> expected;
+  expected.emplace("x", RealType::get(context, 0));
+  expected.emplace("y", RealType::get(context, 0));
+  expected.emplace("y", IntType::get(context, 0));
+  expected.emplace("y", BoolType::get(context));
+  expected.emplace("x", IntType::get(context, 0));
+  expected.emplace("y", RealType::get(context, 0));
+  expected.emplace("y", IntType::get(context, 0));
+  expected.emplace("y", BoolType::get(context));
+  expected.emplace("x", BoolType::get(context));
+  expected.emplace("y", RealType::get(context, 0));
+  expected.emplace("y", IntType::get(context, 0));
+  expected.emplace("y", BoolType::get(context));
+
+  assert(expected == pc.resolvedVals);
 }
 
 static void testIndexScope0() {
@@ -891,7 +1037,7 @@ static void pairIteratorInLoopExpression(
   ADVANCE_PRESERVING_STANDARD_MODULES_(context);
 
   std::string program = std::string(iterators) + "\n";
-  program = program + "var r1 = " + loopExprType[0] + " i in " + iterCall + " " + loopExprType[1] + " (i, i);\n";
+  program = program + "var r1: _iteratorRecord = " + loopExprType[0] + " i in " + iterCall + " " + loopExprType[1] + " (i, i);\n";
   program = program + loopType[0] + " j in r1 "  + loopType[1] + " j;\n";
 
   printf("===== Resolving program =====\n");
@@ -1301,6 +1447,77 @@ static void testSingletonZip(Context* context){
   assert(types.at("a").type()->isIntType());
 }
 
+static void testBracketLoopExpressionStandaloneUnpackedZipperedSingleton(Context* context) {
+  auto iters =
+    R""""(
+    iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0.0; }
+    )"""";
+
+  pairIteratorInLoopExpression(context, iters, "zip((...(i1(),)))", {"[", "]"}, {"[", "]"},
+                               [](const QualifiedType& t) { return t.type()->isRealType(); });
+}
+
+static void testBracketLoopExpressionUnpackedZippered(Context* context) {
+  auto iters =
+    R""""(
+    iter i1(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
+    iter i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield 0.0; }
+    )"""";
+
+  pairIteratorInLoopExpression(context, iters, "zip((...(i1(), i1())))", {"[", "]"}, {"[", "]"},
+                               [](const QualifiedType& t) {
+    return t.type()->isTupleType() &&
+           t.type()->toTupleType()->starType().type()->isRealType();
+  });
+}
+
+static void testForLoopExpressionTypeMethod(Context* context) {
+
+  printf("%s\n", __FUNCTION__);
+  ErrorGuard guard(context);
+
+  auto iters =
+    R""""(
+    class C {
+      iter type i1() { yield 0.0; }
+      iter type i1(param tag: iterKind) where tag == iterKind.standalone { yield 0.0; }
+      iter type i1(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
+      iter type i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield 0.0; }
+    }
+    )"""";
+
+  pairIteratorInLoopExpression(context, iters, "C.i1()", {"for", "do"}, {"for", "do"},
+                               [](const QualifiedType& t) { return t.type()->isRealType(); });
+}
+
+static void testForallLoopExpressionStandaloneTypeMethod(Context* context) {
+  auto iters =
+    R""""(
+    class C {
+      iter type i1() { yield 0.0; }
+      iter type i1(param tag: iterKind) where tag == iterKind.standalone { yield 0.0; }
+    }
+    )"""";
+
+  pairIteratorInLoopExpression(context, iters, "C.i1()", {"forall", "do"}, {"forall", "do"},
+                               [](const QualifiedType& t) { return t.type()->isRealType(); });
+}
+
+static void testForallLoopExpressionLeaderFollowerTypeMethod(Context* context) {
+  // Note: compred to the previous test, no standalone iterator is available
+  auto iters =
+    R""""(
+    class C {
+      iter type i1() { yield 0.0; }
+      iter type i1(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
+      iter type i1(param tag: iterKind, followThis) where tag == iterKind.follower { yield 0.0; }
+    }
+    )"""";
+
+  pairIteratorInLoopExpression(context, iters, "C.i1()", {"forall", "do"}, {"forall", "do"},
+                               [](const QualifiedType& t) { return t.type()->isRealType(); });
+}
+
 int main() {
   testSimpleLoop("for");
   testSimpleLoop("coforall");
@@ -1316,6 +1533,7 @@ int main() {
   testCForLoop();
   testParamFor();
   testNestedParamFor();
+  testHeteroTuples();
   testIndexScope0();
   testIndexScope1();
 
@@ -1355,6 +1573,13 @@ int main() {
   testLoopExprZipUnpackingTooFewOuter(context);
   testLoopExprZipUnpackingTooManyOuter(context);
   testSingletonZip(context);
+
+  testBracketLoopExpressionStandaloneUnpackedZipperedSingleton(context);
+  testBracketLoopExpressionUnpackedZippered(context);
+
+  testForLoopExpressionTypeMethod(context);
+  testForallLoopExpressionStandaloneTypeMethod(context);
+  testForallLoopExpressionLeaderFollowerTypeMethod(context);
 
   return 0;
 }

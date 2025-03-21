@@ -1,5 +1,0 @@
-#!/usr/bin/env perl
-
-system("hadoop dfs -rm /tmp/writef_test.txt");
-
-

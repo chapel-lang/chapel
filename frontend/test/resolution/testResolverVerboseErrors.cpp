@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -207,7 +207,7 @@ static const char* errorStarVsNotStar = R"""(
     3 | f((1.0, 1.0, true));
       |   ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
-  A formal that is a star tuple cannot accept an actual actual that is not.
+  A formal that is a star tuple cannot accept an actual that is not.
 )""";
 
 static const char* progVarArgMismatch = R"""(
@@ -264,7 +264,7 @@ static const char* errorBasic = R"""(
     3 | f(a=42);
       |
   
-  The following candidate didn't match because the provided actuals could not be mapped to its formals:
+  The following candidate didn't match because actual 1 was named 'a', but no formal with that name was found.
       |
     1 | proc f(x: int) {}
       |
@@ -309,10 +309,10 @@ static const char* errorManyCandidates = R"""(
   
   The following candidate didn't match because an actual couldn't be passed to a formal:
       |
-    1 | proc f(x: int(8)) {}
-      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺
+    8 | proc f(x: uint(64)) {}
+      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
-  The formal 'x' expects a value of type 'int(8)', but the actual was a param of type 'string'.
+  The formal 'x' expects a value of type 'uint(64)', but the actual was a param of type 'string'.
        |
     10 | f("hello");
        |   ⎺⎺⎺⎺⎺⎺⎺
@@ -320,10 +320,10 @@ static const char* errorManyCandidates = R"""(
   
   The following candidate didn't match because an actual couldn't be passed to a formal:
       |
-    2 | proc f(x: int(16)) {}
-      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+    7 | proc f(x: uint(32)) {}
+      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
-  The formal 'x' expects a value of type 'int(16)', but the actual was a param of type 'string'.
+  The formal 'x' expects a value of type 'uint(32)', but the actual was a param of type 'string'.
        |
     10 | f("hello");
        |   ⎺⎺⎺⎺⎺⎺⎺

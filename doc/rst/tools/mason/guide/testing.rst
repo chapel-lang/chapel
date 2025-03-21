@@ -101,7 +101,7 @@ Specific tests can be run by listing their names or substrings of their names as
 
 Specifying tests to run in the command line ignores the list of tests in `Mason.toml`, and searches all files in `test/`.
 
-Additional output can be displayed by throwing the ``--show flag``.
+Additional output can be displayed by throwing the ``--show`` flag.
 
 .. note::
 

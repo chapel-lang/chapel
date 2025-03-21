@@ -9,6 +9,14 @@ class MyTemplate(Template):
 
 
 substitutions = dict()
+
+substitutions[
+    "FROM"
+] = """
+ARG DOCKER_IMAGE_NAME_FULL=scratch
+FROM $DOCKER_IMAGE_NAME_FULL AS build
+"""
+
 substitutions[
     "ARGUMENTS"
 ] = """

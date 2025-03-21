@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -116,7 +116,7 @@ int sys_set_sys_sockaddr_t(sys_sockaddr_t* addr, const char* host, u_int16_t por
     struct sockaddr_in *addr_inet = (struct sockaddr_in *)&addr->addr;
     addr_inet->sin_family = AF_INET;
     addr_inet->sin_port = htons(port);
-    return inet_aton(host, &addr_inet->sin_addr);
+    return inet_pton(AF_INET, host, &addr_inet->sin_addr);
   }
   else if(family == AF_INET6){
     struct sockaddr_in6 *addr_inet6 = (struct sockaddr_in6 *)&addr->addr;

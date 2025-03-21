@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -28,4 +28,7 @@ module ChapelStandard {
   public use MemTracking;
   public use ChapelUtil;
   public use IO;
+
+  // Bring this in without exporting so that compiler-generated uses work
+  use CTypes;
 }

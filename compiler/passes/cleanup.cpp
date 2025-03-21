@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -118,6 +118,8 @@ static void cleanup(ModuleSymbol* module) {
 
   for_vector(BaseAST, ast, asts) {
     if (DefExpr* def = toDefExpr(ast)) {
+      if (def->sym->hasFlag(FLAG_RESOLVED_EARLY)) continue;
+
       if (def->sym->hasFlag(FLAG_DOCS_ONLY) == true) {
         // Delete functions/variables that are for docs only
         def->remove();

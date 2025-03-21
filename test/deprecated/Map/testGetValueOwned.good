@@ -1,3 +1,0 @@
-testGetValueOwned.chpl:7: In function 'test':
-testGetValueOwned.chpl:13: warning: 'map.getValue' is deprecated. Please rely on '[]' accessors instead.
-testGetValueOwned.chpl:13: error: cannot call `getValue()` for non-copyable map value type: owned C

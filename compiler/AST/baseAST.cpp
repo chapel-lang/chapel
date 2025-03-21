@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -409,6 +409,24 @@ ModuleSymbol* BaseAST::getModule() {
   }
 
   return retval;
+}
+
+bool BaseAST::shouldNotMutateEarly() {
+  if (auto sym = toSymbol(this)) {
+    if (sym->hasFlag(FLAG_RESOLVED_EARLY)) return true;
+  }
+
+  if (auto t = toType(this)) {
+    if (t->symbol->hasFlag(FLAG_RESOLVED_EARLY)) return true;
+  }
+
+  // Check to see if the AST is in a dyno-generated symbol.
+  auto mod = this->getModule();
+  auto fn = this->getFunction();
+  if (mod && mod->hasFlag(FLAG_RESOLVED_EARLY)) return true;
+  if (fn && fn->hasFlag(FLAG_RESOLVED_EARLY)) return true;
+
+  return false;
 }
 
 bool BaseAST::isRef() {

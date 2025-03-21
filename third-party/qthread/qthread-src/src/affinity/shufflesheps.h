@@ -4,7 +4,7 @@
 #include <stdlib.h> // for rand()
 
 extern inline INTERNAL void shuffle_sheps(qthread_shepherd_id_t *s,
-                                          size_t len) { /*{{{*/
+                                          size_t len) {
   for (size_t i = 0; i < len; ++i) {
     qthread_shepherd_id_t tmp;
     size_t j = rand() % len;
@@ -12,11 +12,11 @@ extern inline INTERNAL void shuffle_sheps(qthread_shepherd_id_t *s,
     s[j] = s[i];
     s[i] = tmp;
   }
-} /*}}}*/
+}
 
 extern inline INTERNAL void sort_sheps(unsigned int *restrict dists,
                                        qthread_shepherd_id_t *restrict s,
-                                       size_t num) { /*{{{*/
+                                       size_t num) {
   assert(num > 1);
   size_t s_max = num - 1;
   qthread_shepherd_id_t *tmp =
@@ -57,6 +57,6 @@ extern inline INTERNAL void sort_sheps(unsigned int *restrict dists,
 #endif
   memcpy(s, tmp, sizeof(qthread_shepherd_id_t) * (num - 1));
   qt_free(tmp);
-} /*}}}*/
+}
 #endif // ifndef QTHREAD_SRC_SHUFFLE_SHEPS_H
 /* vim:set expandtab: */

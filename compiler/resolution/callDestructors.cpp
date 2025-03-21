@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1079,7 +1079,7 @@ static void insertGlobalAutoDestroyCalls() {
 
       inited.clear();
       initedSet.clear();
-      if (mod->initFn != NULL) {
+      if (mod->initFn && !mod->initFn->hasFlag(FLAG_RESOLVED_EARLY)) {
         collectGlobals(mod, mod->initFn->body, inited, initedSet);
       } else {
         // Collect variables from modules without initFn
@@ -2169,6 +2169,8 @@ void callDestructors() {
   pm.runPass(InsertDestructorCalls(), gCallExprs);
   pm.runPass(LowerAutoDestroyRuntimeType(), gCallExprs);
 
+  // TODO: Move this to a different pass and don't consider this to be
+  // part of 'callDestructors', as it seems like an optimization.
   ReturnByRef::apply();
 
   pm.runPass(InsertCopiesForYields(), gCallExprs);

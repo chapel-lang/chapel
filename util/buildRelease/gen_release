@@ -167,6 +167,7 @@ if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
     "util/build_configs",
     "util/chplenv",
     "util/config",
+    "util/cmake",
     "util/quickstart",
     "util/test",
     "tools/chpldoc",

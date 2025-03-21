@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -46,7 +46,8 @@ static void test1() {
   auto ct = qt.type()->toRecordType();
   auto baseCt = ct->instantiatedFrom();
   assert(baseCt != nullptr);
-  auto& fields = chpl::resolution::fieldsForTypeDecl(context, baseCt,
+  auto rc = createDummyRC(context);
+  auto& fields = chpl::resolution::fieldsForTypeDecl(&rc, baseCt,
       chpl::resolution::DefaultsPolicy::IGNORE_DEFAULTS);
   assert(fields.numFields() == 2);
   assert(fields.fieldName(0) == "typeWithDefault");
@@ -83,7 +84,8 @@ static void test2() {
   auto ct = qt.type()->toRecordType();
   auto baseCt = ct->instantiatedFrom();
   assert(baseCt == nullptr);
-  auto& fields = chpl::resolution::fieldsForTypeDecl(context, ct,
+  auto rc = createDummyRC(context);
+  auto& fields = chpl::resolution::fieldsForTypeDecl(&rc, ct,
       chpl::resolution::DefaultsPolicy::IGNORE_DEFAULTS);
   assert(fields.numFields() == 2);
   assert(fields.fieldName(0) == "typeWithDefault");
@@ -116,7 +118,8 @@ static void test3() {
   auto ct = qt.type()->toRecordType();
   auto baseCt = ct->instantiatedFrom();
   assert(baseCt == nullptr);
-  auto& fields = chpl::resolution::fieldsForTypeDecl(context, ct,
+  auto rc = createDummyRC(context);
+  auto& fields = chpl::resolution::fieldsForTypeDecl(&rc, ct,
       chpl::resolution::DefaultsPolicy::IGNORE_DEFAULTS);
   assert(fields.numFields() == 2);
   assert(fields.fieldName(0) == "typeWithDefault");

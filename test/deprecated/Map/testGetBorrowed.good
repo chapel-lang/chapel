@@ -1,4 +1,0 @@
-testGetBorrowed.chpl:12: warning: 'map.getBorrowed' is deprecated. Please rely on '[]' accessors instead.
-borrowed C
-{i = 1}
-{one: {i = -1}, two: {i = 2}}

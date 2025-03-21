@@ -33,7 +33,7 @@ static gasnet_seginfo_t *gasnete_rdmabarrier_auxseg = NULL;
 /*keep a list of active barriers across all the teams. The poller walks the list and then kicks
  each one of them*/
 /*XXX: for now only team all registers their pollers*/
-gasneti_progressfn_t gasnete_barrier_pf= NULL;
+gasneti_progressfn_t gasnete_barrier_pf = GASNETI_PROGRESSFN_INITIALIZER;
 
 GASNETI_INLINE(gasnete_barrier_pf_enable)
 void gasnete_barrier_pf_enable(gasnete_coll_team_t team) {

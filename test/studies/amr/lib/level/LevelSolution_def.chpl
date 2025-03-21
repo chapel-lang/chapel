@@ -55,7 +55,7 @@ class LevelSolution {
 //| >    LevelSolution.setToFunction    | >
 //|/____________________________________|/
 proc LevelSolution.setToFunction(
-  initial_condition: func(dimension*real, real),
+  initial_condition: proc(_: dimension*real): real,
   time_in:           real)
 {
 

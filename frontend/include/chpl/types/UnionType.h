@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -20,6 +20,7 @@
 #ifndef CHPL_TYPES_UNION_TYPE_H
 #define CHPL_TYPES_UNION_TYPE_H
 
+#include "chpl/resolution/resolution-types.h"
 #include "chpl/types/CompositeType.h"
 
 namespace chpl {
@@ -34,9 +35,11 @@ class UnionType final : public CompositeType {
  private:
   UnionType(ID id, UniqueString name,
             const UnionType* instantiatedFrom,
-            SubstitutionsMap subs)
+            SubstitutionsMap subs,
+            CompositeType::Linkage linkage)
     : CompositeType(typetags::UnionType, id, name,
-                    instantiatedFrom, std::move(subs))
+                    instantiatedFrom, std::move(subs),
+                    linkage)
   { }
 
   bool contentsMatchInner(const Type* other) const override {
@@ -50,11 +53,19 @@ class UnionType final : public CompositeType {
   static const owned<UnionType>&
   getUnionType(Context* context, ID id, UniqueString name,
                const UnionType* instantiatedFrom,
-               SubstitutionsMap subs);
+               SubstitutionsMap subs,
+               CompositeType::Linkage linkage);
  public:
   static const UnionType* get(Context* context, ID id, UniqueString name,
                               const UnionType* instantiatedFrom,
                               CompositeType::SubstitutionsMap subs);
+
+  const Type* substitute(Context* context,
+                         const PlaceholderMap& subs) const override {
+    return get(context, id_, name_,
+               Type::substitute(context, (UnionType*) instantiatedFrom_, subs),
+               resolution::substituteInMap(context, subs_, subs));
+  }
 
   ~UnionType() = default;
 

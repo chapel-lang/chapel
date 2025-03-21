@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -384,6 +384,20 @@ void VarScopeVisitor::enterAst(const uast::AstNode* ast) {
 void VarScopeVisitor::exitAst(const uast::AstNode* ast) {
   CHPL_ASSERT(!inAstStack.empty() && ast == inAstStack.back());
   inAstStack.pop_back();
+}
+
+bool VarScopeVisitor::enter(const TupleDecl* ast, RV& rv) {
+  enterAst(ast);
+  enterScope(ast, rv);
+
+  // TODO: handle tuple decls
+  return false;
+}
+void VarScopeVisitor::exit(const TupleDecl* ast, RV& rv) {
+  exitScope(ast, rv);
+  exitAst(ast);
+
+  return;
 }
 
 bool VarScopeVisitor::enter(const NamedDecl* ast, RV& rv) {

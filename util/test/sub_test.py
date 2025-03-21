@@ -92,7 +92,7 @@
 # PRETEST: Script to execute before running the test. (arguments: <compiler
 #    executable>).
 # PERFNUMTRIALS: Number of trials to run for performance testing
-#
+# SUPPRESSIF: Suppress this test if certain environment conditions hold true
 #
 # TEST-SPECIFIC FILES:  These setting override or augment the directory-wide
 #  settings.  Unless otherwise specified, these files are named
@@ -855,7 +855,7 @@ def main():
                                               stderr=subprocess.PIPE)
         result = result.rstrip()
         if returncode != 0:
-          Fatal('Cannot find ' + lookingfor)
+            Fatal('Cannot find ' + lookingfor)
         return result
 
     c_compiler = run_compileline('--compile', 'c compiler')
@@ -915,7 +915,7 @@ def main():
     # CHPL_NETWORK_ATOMICS
     chplna=os.getenv('CHPL_NETWORK_ATOMICS','none').strip()
     chplnastr='.na-'+chplna
-    #sys.stdout.write('chplna=%s\n'%(chplna))
+    # sys.stdout.write('chplna=%s\n'%(chplna))
 
     # CHPL_LAUNCHER
     chpllauncher=os.getenv('CHPL_LAUNCHER','none').strip()
@@ -923,7 +923,7 @@ def main():
     # CHPL_LOCALE_MODEL
     chpllm=os.getenv('CHPL_LOCALE_MODEL','flat').strip()
     chpllmstr='.lm-'+chpllm
-    #sys.stdout.write('lm=%s\n'%(chpllm))
+    # sys.stdout.write('lm=%s\n'%(chpllm))
 
     # CHPL_TASKS
     chpltasks=os.getenv('CHPL_TASKS', 'none').strip()
@@ -935,14 +935,15 @@ def main():
 
     #
     # directory-wide PRETEST
-    # must be run first, in case is generates any of the following files
+    # must be run first, in case it generates any of the following files
     #
     if os.access('./PRETEST', os.R_OK|os.X_OK):
         sys.stdout.write('[Executing ./PRETEST %s]\n'%(compiler))
         sys.stdout.flush()
         stdout = run_process(['./PRETEST', compiler],
                              stdout=subprocess.PIPE,
-                             stderr=subprocess.STDOUT)[1]
+                             stderr=subprocess.STDOUT,
+                             env=os.environ)[1]
         sys.stdout.write(stdout)
         sys.stdout.flush()
 
@@ -1063,7 +1064,6 @@ def main():
         globalCatfiles=None
     # sys.stdout.write('globalCatfiles=%s\n'%(globalCatfiles))
 
-
     #
     # valgrind stuff
     #
@@ -1092,7 +1092,6 @@ def main():
         valgrindbin = None
         valgrindbinopts = None
     # sys.stdout.write('valgrindbin=%s %s\n'%(valgrindbin, valgrindbinopts))
-
 
     #
     # Misc set up
@@ -1168,7 +1167,7 @@ def main():
     if envCompopts is not None:
         envCompopts = shlex.split(envCompopts)
     else:
-      envCompopts = []
+        envCompopts = []
 
     # Global CHPLDOCOPTS
     if os.access('./CHPLDOCOPTS', os.R_OK):
@@ -1305,6 +1304,7 @@ def main():
 
         # Get the list of files starting with 'test_filename.'
         test_filename_files = fnmatch.filter(dirlist, test_filename+'.*')
+        test_filename_files += fnmatch.filter(dirlist, 'SUPPRESSIF')
         # print test_filename_files, dirlist
 
         if (perftest and (test_filename_files.count(PerfTFile(test_filename,'keys'))==0) and
@@ -1352,12 +1352,13 @@ def main():
         # Deal with these files
         do_not_test=False
         for f in test_filename_files:
+            name = os.path.basename(f)
             (root, suffix) = os.path.splitext(f)
             # sys.stdout.write("**** %s ****\n"%(f))
 
             # 'f' is of the form test_filename.SOMETHING.suffix,
             # not pertinent at the moment
-            if root != test_filename:
+            if root != test_filename and name != "SUPPRESSIF":
                 continue
 
             # Deal with these later
@@ -1378,6 +1379,8 @@ def main():
             elif (suffix=='.skipif' and (os.access(f, os.R_OK) and
                    (os.getenv('CHPL_TEST_SINGLES')=='0'))):
                 testskipiffile=True
+                sys.stdout.write('[Checking skipif: %s.skipif]\n'%(test_filename))
+                sys.stdout.flush()
                 try:
                     skipme=False
                     skiptest=runSkipIf(f)
@@ -1396,7 +1399,10 @@ def main():
                 if do_not_test:
                     break
 
-            elif (suffix=='.suppressif' and (os.access(f, os.R_OK))):
+            elif ((suffix=='.suppressif' or name == 'SUPPRESSIF') and (os.access(f, os.R_OK))):
+                logname = "SUPPRESSIF" if name == "SUPPRESSIF" else "%s.suppressif" % (test_filename)
+                sys.stdout.write('[Checking suppressif: %s]\n'%(logname))
+                sys.stdout.flush()
                 try:
                     suppressme=False
                     suppresstest=runSkipIf(f)
@@ -1404,22 +1410,32 @@ def main():
                         suppressme = suppresstest.strip() == "True" or int(suppresstest) == 1
                     if suppressme:
                         suppressline = ""
-                        with open('./'+test_filename+'.suppressif', 'r') as suppressfile:
+                        suppress_file_name = (
+                            "./" + test_filename + ".suppressif"
+                            if name != "SUPPRESSIF"
+                            else f
+                        )
+                        with open(suppress_file_name, 'r') as suppressfile:
                             for line in suppressfile:
                                 line = line.strip()
-                                if (line.startswith("#") and
-                                    not line.startswith("#!")):
+                                is_comment = (line.startswith("#") and
+                                                not line.startswith("#!"))
+                                if is_comment:
                                     suppressline = line.replace('#','').strip()
                                     break
                         futuretest='Suppress (' + suppressline + ') '
                 except (ValueError, RuntimeError) as e:
                     sys.stdout.write(str(e)+'\n')
-                    sys.stdout.write('[Error processing .suppressif file for %s]\n'
-                        % os.path.join(localdir, test_filename))
+                    suppress_name = (
+                        ".suppressif" if name != "SUPPRESSIF" else "SUPPRESSIF"
+                    )
+                    sys.stdout.write(
+                        "[Error processing %s file for %s]\n"
+                        % (suppress_name, os.path.join(localdir, test_filename))
+                    )
                     printEndOfTestMsg(os.path.join(localdir, test_filename), 0.0)
                     do_not_test=True
                     break
-
             elif (suffix==timeoutsuffix and os.access(f, os.R_OK)):
                 fileTimeout = ReadIntegerValue(f, localdir)
                 if fileTimeout < defaultTimeout or fileTimeout > globalTimeout:
@@ -1524,7 +1540,7 @@ def main():
                                              numlocales, maxLocalesAvailable))
                     continue
             if os.getenv('CHPL_TEST_MULTILOCALE_ONLY') and (numlocales <= 1) and not is_ml_c_or_cpp_test:
-                sys.stdout.write('[Skipping {0} because it does not '
+                sys.stdout.write('[Skipping test {0} because it does not '
                                  'use more than one locale]\n'
                                  .format(os.path.join(localdir, test_filename)))
                 continue
@@ -1566,7 +1582,7 @@ def main():
                 usearg = ' '.join(useopt)
                 # But change all-spaces into single space.
                 if usearg.strip() == '':
-                  usearg = ' '
+                    usearg = ' '
                 usecompoptslist += [usearg]
         compoptslist = usecompoptslist
 
@@ -1580,7 +1596,6 @@ def main():
             testcompenv[var.strip()] = val.strip()
         for var, val in [env.split('=', 1) for env in compenv]:
             testcompenv[var.strip()] = val.strip()
-
 
         # Get list of test specific exec options
         if os.access(test_filename+execoptssuffix, os.R_OK):
@@ -1646,7 +1661,6 @@ def main():
                                      stdout=subprocess.PIPE, stderr=subprocess.STDOUT)[1]
                 sys.stdout.write(stdout)
                 sys.stdout.flush()
-
 
             #
             # Build the test program
@@ -1776,12 +1790,12 @@ def main():
 
             # remove some_file: output from C compilers
             if is_c_or_cpp_test:
-              for arg in args:
-                if arg.endswith(".c") or arg.endswith(".cpp"):
-                  # remove lines like
-                  # somefile.c:
-                  # that some C compilers emit when compiling multiple files
-                  output = output.replace(arg + ":\n", "")
+                for arg in args:
+                    if arg.endswith(".c") or arg.endswith(".cpp"):
+                        # remove lines like
+                        # somefile.c:
+                        # that some C compilers emit when compiling multiple files
+                        output = output.replace(arg + ":\n", "")
 
             if (status!=0 or not executebin):
                 # Save original output
@@ -1830,7 +1844,6 @@ def main():
                                          stdout=subprocess.PIPE, stderr=subprocess.STDOUT)[1]
                     sys.stdout.write(stdout)
                     sys.stdout.flush()
-
 
                 # find the compiler .good file to compare against. The compiler
                 # .good file can be of the form testname.<configuration>.good or
@@ -2002,9 +2015,8 @@ def main():
                             if os.path.isfile(datFile):
                                 os.unlink(datFile)
 
-                #delete the timing file
+                # delete the timing file
                 cleanup(printpassesfile)
-
 
             if os.getenv('CHPL_COMPONLY'):
                 sys.stdout.write('[Note: Not executing or comparing the output due to -noexec flags]\n')
@@ -2164,27 +2176,27 @@ def main():
                 # sys.stdout.write("args=%s\n"%(args))
 
                 if len(args) >= 2 and '<' in args:
-                  redirIdx = args.index('<')
-                  execOptRedirect = args[redirIdx + 1]
-                  args.pop(redirIdx+1)
-                  args.pop(redirIdx)
-                  if redirectin == None:
-                      # It is a little unfortunate that we compile the test only to skip it here.
-                      # In order to prevent this, the logic for combining all the places execpopts
-                      # come from and checking for '<' would have to be factored out or duplicated
-                      print('[Skipping test with stdin redirection ("<") in execopts since '
+                    redirIdx = args.index('<')
+                    execOptRedirect = args[redirIdx + 1]
+                    args.pop(redirIdx+1)
+                    args.pop(redirIdx)
+                    if redirectin == None:
+                        # It is a little unfortunate that we compile the test only to skip it here.
+                        # In order to prevent this, the logic for combining all the places execpopts
+                        # come from and checking for '<' would have to be factored out or duplicated
+                        print('[Skipping test with stdin redirection ("<") in execopts since '
                             '-nostdinredirect is given {0}/{1}]'.format(localdir, test_filename))
-                      break
-                  elif redirectin == "/dev/null":
-                    if os.access(execOptRedirect, os.R_OK):
-                      redirectin = execOptRedirect
-                      redirectin_set_in_loop = True
+                        break
+                    elif redirectin == "/dev/null":
+                        if os.access(execOptRedirect, os.R_OK):
+                            redirectin = execOptRedirect
+                            redirectin_set_in_loop = True
+                        else:
+                            sys.stdout.write('[Error: redirection file %s does not exist]\n'%(execOptRedirect))
+                            break
                     else:
-                      sys.stdout.write('[Error: redirection file %s does not exist]\n'%(execOptRedirect))
-                      break
-                  else:
-                    sys.stdout.write('[Error: a redirection file already exists: %s]\n'%(redirectin))
-                    break
+                        sys.stdout.write('[Error: a redirection file already exists: %s]\n'%(redirectin))
+                        break
 
                 #
                 # Run program (with timeout)
@@ -2262,7 +2274,6 @@ def main():
                                     subprocess.call(psCom + '| head -n 1', shell=True)
                                     subprocess.call(psCom + '| tail -n +2 | sort -r -k 3 | head -n 5', shell=True)
 
-
                         else:
                             if redirectin == None:
                                 my_stdin = None
@@ -2313,7 +2324,6 @@ def main():
 
                     print('[Elapsed execution time for "{0}" - {1:.3f} '
                         'seconds]'.format(test_name, elapsedExecTime))
-
 
                     if execTimeWarnLimit and elapsedExecTime > execTimeWarnLimit:
                         sys.stdout.write('[Warning: %s/%s took over %.0f seconds to '
@@ -2430,7 +2440,6 @@ def main():
                                     printTestVariation(compoptsnum, compoptslist)
                                     sys.stdout.write(']\n')
 
-
                     if perftest:
                         if not os.path.isdir(perfdir) and not os.path.isfile(perfdir):
                             py3_compat.makedirs(perfdir, exist_ok=True)
@@ -2479,6 +2488,8 @@ def main():
                         # only notify for a failed execution if launching the test was successful
                         elif (not launcher_error):
                             sys.stdout.write('%s[Error execution failed for %s]\n'%(futuretest,test_name))
+                            sys.stdout.write('[Execution output was as follows:]\n')
+                            sys.stdout.write(trim_output(output))
 
                         if exectimeout or status != 0 or exec_status != 0:
                             break
@@ -2491,7 +2502,6 @@ def main():
         elapsedCurFileTestTime = time.time() - curFileTestStart
         test_name = os.path.join(localdir, test_filename)
         printEndOfTestMsg(test_name, elapsedCurFileTestTime)
-
 
     sys.exit(0)
 

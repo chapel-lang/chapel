@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1145,6 +1145,12 @@ makeHeapAllocations() {
           call->getStmtExpr()->insertBefore(new DefExpr(tmp));
           call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, use->symbol(), heapType->getField(1))));
           use->replace(new SymExpr(tmp));
+          if (call->isPrimitive(PRIM_ZERO_VARIABLE)) {
+            // aftering zeroing the value, we need to set it back
+            // otherwise its a dead store
+            call->getStmtExpr()->insertAfter(
+              new CallExpr(PRIM_SET_MEMBER, use->symbol(), heapType->getField(1), tmp));
+          }
         }
       } else if (use->parentExpr)
         INT_FATAL(var, "unexpected case");

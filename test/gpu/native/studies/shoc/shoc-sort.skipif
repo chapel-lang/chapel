@@ -1,1 +1,35 @@
-CHPL_GPU==cpu
+#!/bin/bash
+# Suppress ROCm6 shoc-sort failures: https://github.com/chapel-lang/chapel/issues/26669
+check_conditions() {
+    chpl_gpu=$(printenv CHPL_GPU)
+    chpl_test_perf_label=$(printenv CHPL_TEST_PERF_LABEL)
+
+    # Skip test in CPU-as-device mode
+    if [[ "$chpl_gpu" == "cpu" ]]; then
+        return 0
+    fi
+
+    # Check if CHPL_GPU is 'amd' and CHPL_TEST_PERF_LABEL is set 
+    if [[ "$chpl_gpu" != "amd" || -z "$chpl_test_perf_label" ]]; then
+        return 1
+    fi
+
+    chpl_home=$(printenv CHPL_HOME)
+    if [[ -z "$chpl_home" ]]; then
+        return 1
+    fi
+
+    # Check if CHPL_GPU_SDK_VERSION starts with '6'
+    chpl_env_output=$("$chpl_home/util/printchplenv" --all)
+    if echo "$chpl_env_output" | grep -q 'CHPL_GPU_SDK_VERSION: 6'; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+if check_conditions; then
+    echo "True"
+else
+    echo "False"
+fi

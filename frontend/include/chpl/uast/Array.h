@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -46,11 +46,11 @@ class Array final : public AstNode {
  private:
   bool trailingComma_,
        associative_;
-  
+
   Array(AstList children, bool trailingComma, bool associative)
-    : AstNode(asttags::Array, std::move(children)) {
-    trailingComma_ = trailingComma;
-    associative_ = associative;
+    : AstNode(asttags::Array, std::move(children)),
+      trailingComma_(trailingComma),
+      associative_(associative) {
   }
 
   void serializeInner(Serializer& ser) const override {
@@ -87,7 +87,7 @@ class Array final : public AstNode {
 
   bool hasTrailingComma() const { return this->trailingComma_; }
   bool isAssociative() const { return this->associative_; }
-  
+
   /**
     Return a way to iterate over the expressions of this array.
   */

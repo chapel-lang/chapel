@@ -23,6 +23,7 @@ x 3.17  EOL 2024-11-22
   3.18  EOL 2025-05-09
   3.19  EOL 2025-11-01
   3.20  EOL 2026-04-01
+  3.21  EOL 2026-11-01
 
 Amazon Linux
        -- see https://docs.aws.amazon.com/linux/al2022/ug/release-cadence.html
@@ -59,7 +60,7 @@ CentOS Stream
        -- dnf list --showduplicates llvm && dnf install llvm-devel-14.0.6
 x 8 - EOL May 2024
   9 - EOL May 2027
-
+ 10 - EOL May 2030
 
 Debian -- see https://wiki.debian.org/DebianReleases
        -- and https://app.vagrantup.com/debian
@@ -72,6 +73,7 @@ x  9 "stretch"  long-term support until Jun 2022
   12 "bookworm" released June 2023
   13 "trixie"   expected release ?
   14 "forky"    expected release ?
+  15 "duke"     expected release ?
 
 Fedora -- see https://en.wikipedia.org/wiki/Fedora_Linux_release_history
        -- and https://fedoraproject.org/wiki/End_of_life
@@ -95,9 +97,12 @@ x 37 EOL Nov 2023
 x 38 EOL May 2024
 x 39 EOL Nov 2024
   40 EOL May 2025
-  41 release Oct 2024
+  41 EOL Nov 2025
+  42 release Apr 2025
+  43 release Nov 2025
 
-FreeBSD -- see https://www.freebsd.org/security/unsupported.html
+FreeBSD -- see https://www.freebsd.org/security/unsupported.html (unsupported releases)
+        -- and https://www.freebsd.org/releases/ (all releases)
         -- and https://app.vagrantup.com/freebsd
         -- also note https://docs.freebsd.org/en/books/handbook/virtualization/#virtualization-guest-virtualbox
            has instructions for installing virtualbox guest additions, in
@@ -117,10 +122,11 @@ x 12.4 EOL Dec 2023
 x 13.0 EOL Aug 2022
 x 13.1 EOL Jul 2023
 x 13.2 EOL Jul 2024
-  13.3 released Mar 2024
+- 13.3 EOL Dec 2024
   13.4 released Sep 2024
-x 14.0 released Nov 2023
+- 14.0 released Nov 2023
   14.1 released Jun 2024
+  14.2 released Dec 2024 (as of 3/5/25 there was no 14.2-STABLE vagrant box available from freebsd)
 
 OpenSuse -- see https://en.opensuse.org/Lifetime
          -- and https://app.vagrantup.com/opensuse
@@ -134,7 +140,7 @@ x 15.1 EOL Nov 2020
 x 15.2 EOL Dec 2021
 x 15.3 EOL Nov 2022
 x 15.4 EOL Nov 2023
-- 15.5 EOL Dec 2024
+x 15.5 EOL Dec 2024
   15.6 EOL Dec 2025
 
 Rocky Linux -- see https://wiki.rockylinux.org/rocky/version/
@@ -178,4 +184,5 @@ x 21.10 "Impish Indri"      EOL July 2022
 x 22.10 "Kinetic Kudu"      EOL July 2023
 x 23.04 "Lunar Lobster"     EOL Jan 2024
 x 23.10 "Mantic Minotaur"   EOL Jul 2024
-  24.10 "Oracular Oriole"   EOL Jul 2025 (to be released)
+  24.10 "Oracular Oriole"   EOL Jul 2025
+  25.04 "Plucky Puffin"     EOL Jan 2026 (To be released)

@@ -1,7 +1,7 @@
 #ifndef QT_CONTEXT_H
 #define QT_CONTEXT_H
 
-#if defined(HAVE_UCONTEXT_H) && defined(HAVE_NATIVE_MAKECONTEXT)
+#if defined(USE_SYSTEM_SWAPCONTEXT)
 #include <ucontext.h> /* for ucontext_t */
 typedef ucontext_t qt_context_t;
 #else

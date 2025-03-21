@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -34,6 +34,9 @@ X(atomic              , "atomic")
 X(bool_               , "bool")
 X(borrow              , "borrow")
 X(borrowed            , "borrowed")
+X(buildTuple          , "_build_tuple")
+X(buildTupleNoref     , "_build_tuple_noref")
+X(buildTupleAlwaysRef , "_build_tuple_always_allow_ref")
 X(by                  , "by")
 X(bytes               , "bytes")
 X(coforall            , "coforall")

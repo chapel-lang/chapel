@@ -1,3 +1,0 @@
-testGetValue.chpl:7: In function 'test':
-testGetValue.chpl:13: warning: 'map.getValue' is deprecated. Please rely on '[]' accessors instead.
-{one: {i = -1}, two: {i = 2}}

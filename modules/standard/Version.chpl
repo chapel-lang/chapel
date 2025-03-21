@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -126,46 +126,6 @@ module Version {
   */
   const chplVersion;
   chplVersion = new versionValue(chplMajor, chplMinor, chplUpdate, chplSHA);
-
-  /*
-    This record represents a software version that is modeled after a semantic
-    version. It uses ``param`` values to represent its components in order to
-    support compile-time comparison of version numbers which in turn
-    permits code to specialize to specific versions of Chapel.  When
-    printed or converted to a string, it is represented as
-    ``major.minor.update (commit)``.
-    Note that ordered comparisons between two :type:`sourceVersion`
-    values that only differ in their ``commit`` values are not
-    supported due to the challenges involved in ordering commit
-    values.  However, when a value with an empty ``update`` value is
-    compared to one whose ``update`` is non-empty, the latter is
-    considered to be earlier than (less than) the former, due to the
-    interpretation that it represents a pre-release of the official
-    release.
-  */
-  @deprecated(notes="sourceVersion is deprecated, please use versionValue instead.")
-  type sourceVersion = versionValue;
-
-  /*
-    A helper function that creates a new sourceVersion from its arguments.
-    :arg major: The major version number
-    :type major: `int`
-    :arg minor: The minor version number
-    :type minor: `int`
-    :arg update: The optional update version number (defaults to 0)
-    :type update: `int`
-    :arg commit: The optional commit ID (defaults to "")
-    :type commit: `string`
-    :returns: A new version value of type :type:`sourceVersion`.
-  */
-  @deprecated(notes="createVersion is deprecated, please use 'new versionValue()' instead.")
-  proc createVersion(param major: int,
-                     param minor: int,
-                     param update: int = 0,
-                     param commit: string = ""): sourceVersion(?) {
-    return new sourceVersion(major, minor, update, commit);
-  }
-
 
   /*
     This record represents a software version that is modeled after

@@ -191,7 +191,7 @@ def to_dot(root: Forest, buf=sys.stdout, min_show_percent=1):
 
     fastest = fastest_self(root)
     slowest = slowest_self(root)
-    fastest_elapsed = fastest.self_elapsed
+    fastest_elapsed = fastest.self_elapsed + 0.001  # avoid div by zero
 
     # Print all the nodes and their labels
     for x in visit_forest(root):

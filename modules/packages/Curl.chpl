@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -390,7 +390,7 @@ module Curl {
   private extern const CURLOPT_READDATA: CURLoption;
 
   // Other Curl constants
-  private extern const CURLINFO_CONTENT_LENGTH_DOWNLOAD: c_int;
+  private extern const CURLINFO_CONTENT_LENGTH_DOWNLOAD_T: CURLINFO;
 
   private extern const CURL_READFUNC_PAUSE:c_size_t;
   private extern const CURL_READFUNC_ABORT:c_size_t;
@@ -779,11 +779,8 @@ module Curl {
 
         deallocate(buf.mem);
 
-        var lengthDouble: real(64);
         // Get the content length (for HTTP only)
-        curl_easy_getinfo_ptr(curl, CURLINFO_CONTENT_LENGTH_DOWNLOAD, c_ptrTo(lengthDouble));
-        length = lengthDouble: int(64);
-        // One day, use CURLINFO_CONTENT_LENGTH_DOWNLOAD_T
+        curl_easy_getinfo_ptr(curl, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T, c_ptrTo(length));
 
         curl_easy_cleanup(curl);
       }

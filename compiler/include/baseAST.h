@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -261,6 +261,12 @@ public:
   const char*       fname()                                      const;
   int               linenum()                                    const;
   const char*       stringLoc()                                  const;
+
+  // This AST is a symbol with the flag 'FLAG_RESOLVED_EARLY' or it is
+  // contained in a symbol marked with that flag. It should be handled
+  // differently by compiler passes prior to the end of 'callDestructors',
+  // in particular it should not be mutated by those passes.
+  bool              shouldNotMutateEarly();
 
   bool              isRef();
   bool              isWideRef();

@@ -51,9 +51,9 @@ chplvars = [
              'CHPL_UNWIND',
 
              'CHPL_HOST_MEM',
-             'CHPL_TARGET_MEM', # note: not in printchplenv --all
+             'CHPL_TARGET_MEM',
              'CHPL_MEM',
-             'CHPL_JEMALLOC', # note: these 3 are not in printchplenv --all
+             'CHPL_JEMALLOC',
              'CHPL_HOST_JEMALLOC',
              'CHPL_TARGET_JEMALLOC',
 
@@ -72,6 +72,7 @@ chplvars = [
              'CHPL_LLVM_CLANG_CXX',
              # CHPL_LLVM_VERSION -- doesn't make sense to override it
              'CHPL_LLVM_GCC_PREFIX', # not in printchplenv --all
+             'CHPL_LLVM_GCC_INSTALL_DIR', # not in printchplenv --all
 
              'CHPL_AUX_FILESYS',
              'CHPL_LIB_PIC',

@@ -1,7 +1,3 @@
-// This test and assertOnFailToGpuize are siblings; they both test the
-// same functionality, one as an attribute (this one) and one as
-// a "magic function call" (the other one).
-
 use GPU;
 
 config param failureMode = 8;

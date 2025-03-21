@@ -11,3 +11,6 @@
       |   ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
 
+─── error in parenless-and-parenful-fns.chpl:5 ───
+  Ambiguity between function and non-function at the same scope level
+

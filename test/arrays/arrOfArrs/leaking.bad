@@ -1,0 +1,19 @@
+type is: [domain(2,int(64),one)] [domain(1,int(64),one)] real(64)
+type is: [domain(3,int(64),one)] [domain(1,int(64),one)] real(64)
+type is: [domain(2,int(64),one)] [domain(1,int(64),one)] [domain(1,int(64),one)] real(64)
+type is: [domain(2,int(64),one)] [domain(2,int(64),one)] [domain(1,int(64),one)] real(64)
+type is: [domain(2,int(64),one)] [domain(1,int(64),one)] [domain(1,int(64),one)] [domain(1,int(64),one)] real(64)
+
+================================================= Memory Leaks ==================================================
+Allocated Memory (Bytes)         Number   Size     Total    Description                      Address             
+=================================================================================================================
+leaking.chpl:5                   n        n       n       domain(1,int(64),one)            prediffed  
+leaking.chpl:6                   n        n       n       domain(1,int(64),one)            prediffed  
+leaking.chpl:7                   n        n       n       domain(1,int(64),one)            prediffed  
+leaking.chpl:7                   n        n       n       domain(1,int(64),one)            prediffed  
+leaking.chpl:8                   n        n       n       domain(1,int(64),one)            prediffed  
+leaking.chpl:9                   n        n       n       domain(1,int(64),one)            prediffed  
+leaking.chpl:9                   n        n       n       domain(1,int(64),one)            prediffed  
+leaking.chpl:9                   n        n       n       domain(1,int(64),one)            prediffed  
+=================================================================================================================
+

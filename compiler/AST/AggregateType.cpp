@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -68,6 +68,8 @@ AggregateType::AggregateType(AggregateTag initTag) :
   mIsGenericWithDefaults = false;
   mIsGenericWithSomeDefaults = false;
   foundGenericFields = false;
+  postinit           = nullptr;
+
   typeSignature      = NULL;
 
 
@@ -132,6 +134,7 @@ AggregateType* AggregateType::copyInner(SymbolMap* map) {
   }
 
   copy_type->genericField = genericField;
+  copy_type->postinit = postinit;
 
   return copy_type;
 }
@@ -233,6 +236,12 @@ void AggregateType::verify() {
       if (ns.value && !ns.value->inTree())
         INT_FATAL(this, "Substitution value not in tree");
     }
+  }
+
+  // Should we just change all checks of this flag to a check against
+  // postinit being non-nullptr?  Or a nice method query?
+  if ((postinit != nullptr) != this->symbol->hasFlag(FLAG_HAS_POSTINIT)) {
+    INT_FATAL(this, "postinit state is inconsistent");
   }
 }
 
@@ -2714,15 +2723,22 @@ void AggregateType::buildCopyInitializer() {
     SET_LINENO(this);
 
     bool isGeneric = false;
-    // If this type is generic, then the 'other' formal needs to be generic as
-    // well
-    // TODO: Why can't we use 'fieldIsGeneric' here?
-    for_fields(fieldDefExpr, this) {
-      if (VarSymbol* field = toVarSymbol(fieldDefExpr)) {
-        if (field->hasFlag(FLAG_SUPER_CLASS) == false) {
-          if (field->hasFlag(FLAG_PARAM) || field->isType() ||
-              (field->defPoint->init == NULL && field->defPoint->exprType == NULL)) {
-            isGeneric = true;
+
+    // If the function has this flag, it was created by the frontend and
+    // is fully resolved even if it doesn't have all the information the
+    // old resolver normally expects to find.
+    if (!this->symbol->hasFlag(FLAG_RESOLVED_EARLY)) {
+      // If this type is generic, then the 'other' formal needs to be generic as
+      // well
+      // TODO: Why can't we use 'fieldIsGeneric' here?
+      for_fields(fieldDefExpr, this) {
+        if (VarSymbol* field = toVarSymbol(fieldDefExpr)) {
+          if (field->hasFlag(FLAG_SUPER_CLASS) == false) {
+            if (field->hasFlag(FLAG_PARAM) || field->isType() ||
+                (field->defPoint->init == NULL &&
+                 field->defPoint->exprType == NULL)) {
+              isGeneric = true;
+            }
           }
         }
       }

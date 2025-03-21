@@ -4,8 +4,12 @@ all:
 	@echo For information on downloading and using Berkeley UPC, see: https://upc.lbl.gov
 	@exit 1
 
+# legacy harness support
+UPCR_BLDDIR ?= $(TOP_BUILDDIR)
+GASNET_BLDDIR ?= $(TOP_BUILDDIR)/gasnet
+
 PERL ?= perl
-CONDUIT_DIR=$(TOP_BUILDDIR)/gasnet/$(NETWORK)-conduit
+CONDUIT_DIR=$(GASNET_BLDDIR)/$(NETWORK)-conduit
 
 testcxx%:       force ; $(MAKE) do-cxx-test EXE=$@
 testlegacycxx%: force ; $(MAKE) do-cxx-test EXE=$@
@@ -55,16 +59,21 @@ check-exports: force
 	@echo '#!/bin/sh' > $@ ; chmod +x $@
 
 check-tools-exports: force
-	@$(MAKE) -C $(TOP_BUILDDIR)/gasnet check-exports
+	@$(MAKE) -C $(GASNET_BLDDIR) check-exports
 	@echo '#!/bin/sh' > $@ ; chmod +x $@
 
 check-libupcr-exports: force
-	@$(MAKE) -C $(TOP_BUILDDIR) check-exports
+	@$(MAKE) -C $(UPCR_BLDDIR) check-exports
 	@echo '#!/bin/sh' > $@ ; chmod +x $@
 
-check-other: force
-	@$(MAKE) -C $(TOP_BUILDDIR)/gasnet/other check-local
-	@echo '#!/bin/sh' > $@ ; chmod +x $@
+do-check-other: force
+	@rm -f $(GASNET_BLDDIR)/other/check-pp-tgt$(EXESUFFIX)
+	@$(MAKE) -C $(GASNET_BLDDIR)/other check-local
+	@cp -f $(GASNET_BLDDIR)/other/check-pp-tgt$(EXESUFFIX) $(EXE)$(EXESUFFIX)
+
+check-other:          force ; $(MAKE) do-check-other EXE=$@
+check-other-cross:    force ; $(MAKE) do-check-other EXE=$@
+check-other-pedantic: force ; $(MAKE) do-check-other EXE=$@
 
 force:
 

@@ -1,1 +1,13 @@
-error in laterVar.chpl:1: statement references a variable before it is defined
+laterVar.chpl:19: In function 'anotherone':
+laterVar.chpl:20: error: statement references a variable before it is defined
+laterVar.chpl:32: error: Cannot establish type for call expression
+laterVar.chpl:25: In function 'bar':
+laterVar.chpl:27: error: statement references a variable before it is defined
+laterVar.chpl:1: In function 'helper':
+laterVar.chpl:2: error: statement references a variable before it is defined
+laterVar.chpl:7: In function 'other':
+laterVar.chpl:8: error: statement references a variable before it is defined
+laterVar.chpl:37: error: statement references a variable before it is defined
+laterVar.chpl:41: error: statement references a variable before it is defined
+laterVar.chpl:46: In function 'foo':
+laterVar.chpl:46: error: statement references a variable before it is defined

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -125,9 +125,6 @@ static struct fi_info* ofi_info;        // fabric interface info
 static struct fid_fabric* ofi_fabric;   // fabric domain
 static struct fid_domain* ofi_domain;   // fabric access domain
 static struct fid_ep* ofi_txEpScal;     // scalable transmit endpoint
-static struct fid_poll* ofi_amhPollSet; // poll set for AM handler
-static int pollSetSize = 0;             // number of fids in the poll set
-static struct fid_wait* ofi_amhWaitSet; // wait set for AM handler
 
 /*
 A Chapel process uses multiple endpoints to transmit and receive. In
@@ -1251,7 +1248,7 @@ void init_ofi(void) {
   DBG_PRINTF(DBG_CFG,
              "AM config: recv buf size %zd MiB, %s, responses use %s",
              ofi_iov_reqs[ofi_msg_i].iov_len / (1L << 20),
-             (ofi_amhPollSet == NULL) ? "explicit polling" : "poll+wait sets",
+             "explicit polling",
              (tciTab[tciTabLen - 1].txCntr == NULL) ? "CQ" : "counter");
   if (ofi_txEpScal != NULL) {
     DBG_PRINTF(DBG_CFG,
@@ -1437,7 +1434,6 @@ void debugOverrideHints(struct fi_info* hints) {
 
   {
     struct cfgHint hintVals[] = { CFG_HINT(FI_MR_UNSPEC),
-                                  CFG_HINT(FI_MR_BASIC),
                                   CFG_HINT(FI_MR_SCALABLE),
                                   CFG_HINT(FI_MR_LOCAL),
                                   CFG_HINT(FI_MR_RAW),
@@ -2505,52 +2501,6 @@ void init_ofiDoProviderChecks(void) {
 
 static
 void init_ofiEp(void) {
-  //
-  // The AM handler is responsible not only for AM handling and progress
-  // on any RMA it initiates but also progress on inbound RMA, if that
-  // is needed.  It uses poll and wait sets to manage this, if it can.
-  // Note: we'll either have both a poll and a wait set, or neither.
-  //
-  // We don't use poll and wait sets with the efa provider because that
-  // doesn't support wait objects.  I tried just setting the cq_attr
-  // wait object to FI_WAIT_UNSPEC for all providers, since we don't
-  // reference the wait object explicitly anyway, but then saw hangs
-  // with (at least) the tcp;ofi_rxm provider.
-  //
-  // We don't use poll and wait sets with the gni provider because (1)
-  // it returns -ENOSYS for fi_poll_open() and (2) although a wait set
-  // seems to work properly during execution, we haven't found a way to
-  // avoid getting -FI_EBUSY when we try to close it.
-  //
-  // We don't use poll and wait sets on macOS because the underlying
-  // libfabric support needs epoll, which is from Linux rather than
-  // POSIX and thus not present on macOS.  Unfortunately, libfabric has
-  // not (yet?) worked around the lack of epoll because macOS is rather
-  // a secondary platform.  One can find comments in the libfabric issue
-  // https://github.com/ofiwg/libfabric/issues/5453 that provide some
-  // background, though that issue is for an unrelated problem.
-  //
-  if (!providerInUse(provType_efa)
-      && !providerInUse(provType_gni)
-      && strcmp(CHPL_TARGET_PLATFORM, "darwin") != 0) {
-    int ret;
-    struct fi_poll_attr pollSetAttr = (struct fi_poll_attr)
-                                      { .flags = 0, };
-    OFI_CHK_2(fi_poll_open(ofi_domain, &pollSetAttr, &ofi_amhPollSet),
-              ret, -FI_ENOSYS);
-    if (ret == FI_SUCCESS) {
-      struct fi_wait_attr waitSetAttr = (struct fi_wait_attr)
-                                        { .wait_obj = FI_WAIT_UNSPEC, };
-      OFI_CHK_2(fi_wait_open(ofi_fabric, &waitSetAttr, &ofi_amhWaitSet),
-                ret, -FI_ENOSYS);
-      if (ret != FI_SUCCESS) {
-        ofi_amhPollSet = NULL;
-        ofi_amhWaitSet = NULL;
-      }
-    } else {
-      ofi_amhPollSet = NULL;
-    }
-  }
 
   //
   // Compute numbers of transmit and receive contexts, and then create
@@ -2715,20 +2665,15 @@ void init_ofiEp(void) {
   // TX contexts for the AM handler(s) can just use counters, if the
   // provider supports them.  Otherwise, they have to use CQs also.
   //
-  const enum fi_wait_obj waitObj = (ofi_amhWaitSet == NULL)
-                                   ? FI_WAIT_NONE
-                                   : FI_WAIT_SET;
 
   cqAttr = (struct fi_cq_attr)
            { .format = FI_CQ_FORMAT_MSG,
              .size = 100,
-             .wait_obj = waitObj,
-             .wait_cond = FI_CQ_COND_NONE,
-             .wait_set = ofi_amhWaitSet, };
+             .wait_obj = FI_WAIT_NONE,
+             .wait_cond = FI_CQ_COND_NONE, };
   cntrAttr = (struct fi_cntr_attr)
              { .events = FI_CNTR_EVENTS_COMP,
-               .wait_obj = FI_WAIT_UNSPEC,
-               .wait_set = ofi_amhWaitSet, };
+               .wait_obj = FI_WAIT_UNSPEC, };
   DBG_PRINTF(DBG_TCIPS, "creating AM handler tx endpoints/contexts");
   for (int i = numWorkerTxCtxs; i < tciTabLen; i++) {
     init_ofiEpTxCtx(i, true /*isAMHandler*/, &avAttr, &cqAttr,
@@ -2744,13 +2689,11 @@ void init_ofiEp(void) {
   cqAttr = (struct fi_cq_attr)
            { .size = chpl_numNodes * numWorkerTxCtxs,
              .format = FI_CQ_FORMAT_DATA,
-             .wait_obj = waitObj,
-             .wait_cond = FI_CQ_COND_NONE,
-             .wait_set = ofi_amhWaitSet, };
+             .wait_obj = FI_WAIT_NONE,
+             .wait_cond = FI_CQ_COND_NONE, };
   cntrAttr = (struct fi_cntr_attr)
              { .events = FI_CNTR_EVENTS_COMP,
-               .wait_obj = FI_WAIT_UNSPEC,
-               .wait_set = ofi_amhWaitSet, };
+               .wait_obj = FI_WAIT_UNSPEC, };
 
   OFI_CHK(fi_endpoint(ofi_domain, ofi_info, &ofi_rxEp, NULL));
   OFI_CHK(fi_ep_bind(ofi_rxEp, &ofi_rxAv->fid, 0));
@@ -2768,19 +2711,6 @@ void init_ofiEp(void) {
   OFI_CHK(fi_ep_bind(ofi_rxEp, &ofi_rxCQ->fid, cqFlags));
 
   OFI_CHK(fi_enable(ofi_rxEp));
-
-  //
-  // If we're using poll and wait sets, put all the progress-related
-  // CQs and/or counters in the poll set.
-  //
-  if (ofi_amhPollSet != NULL) {
-    OFI_CHK(fi_poll_add(ofi_amhPollSet, &ofi_rxCQ->fid, 0));
-    if (ofi_rxCntr != NULL) {
-      OFI_CHK(fi_poll_add(ofi_amhPollSet, &ofi_rxCntr->fid, 0));
-    }
-    OFI_CHK(fi_poll_add(ofi_amhPollSet, tciTab[tciTabLen - 1].txCmplFid, 0));
-    pollSetSize = 3;
-  }
 }
 
 
@@ -2957,8 +2887,7 @@ void init_ofiForMem(void) {
   // hints, which might well have caused the selection of a provider
   // which requires basic registration.
   //
-  const uint64_t basicMemRegBits = (FI_MR_BASIC
-                                    | FI_MR_LOCAL
+  const uint64_t basicMemRegBits = (FI_MR_LOCAL
                                     | FI_MR_VIRT_ADDR
                                     | FI_MR_ALLOCATED
                                     | FI_MR_PROV_KEY);
@@ -3236,6 +3165,25 @@ void init_ofiForAms(void) {
   // set up two of these and swap back and forth between them, to hedge
   // against receiving "buffer filled and released" events out of order
   // with respect to the messages stored within them.
+
+  // There are two receive buffers and we alternate between them. If there
+  // were only one buffer then there might be a window during which there is
+  // no available buffer space because we are processing the last message in
+  // the buffer while new messages are still being sent. Instead, we
+  // double-buffer. When the current buffer has been consumed up to a
+  // threshold (defined by FI_OPT_MIN_MULTI_RECV above), libfabric will tell
+  // us the buffer is (almost) full by setting the FI_MULTI_RECV flag in a
+  // completion event and switch to the other buffer. In response we re-post
+  // the buffer.
+  //
+  // One issue is knowing when there are no lingering dependencies on a buffer
+  // so we can repost it, since doing so will cause it to be filled with new
+  // messages. There are two types of active messages in the buffer; some are
+  // handled synchronously by the active message handler itself, and some are
+  // handled asynchronously by calling chpl_task_startMovedTask to create a
+  // new task to execute the active message. chpl_task_startMovedTask copies
+  // its arguments, so in either case there are no lingering dependencies on
+  // the message buffer.
   //
   CHPL_CALLOC_SZ(amLZs[0], 1, amLZSize);
   CHPL_CALLOC_SZ(amLZs[1], 1, amLZSize);
@@ -3261,16 +3209,16 @@ void init_ofiForAms(void) {
   ofi_rxBuffer = ofi_msg_reqs[0].msg_iov->iov_base;
   ofi_rxEnd = (void *) ((char *) ofi_rxBuffer +
               ofi_msg_reqs[0].msg_iov->iov_len);
+
   for (int i = 0; i < 2; i++) {
     memset(ofi_msg_reqs[i].msg_iov->iov_base, '\0',
            ofi_msg_reqs[i].msg_iov->iov_len);
     OFI_CHK(fi_recvmsg(ofi_rxEp, &ofi_msg_reqs[i], FI_MULTI_RECV));
     DBG_PRINTF(DBG_AM_BUF,
-             "pre-post fi_recvmsg(AMLZs %p, len %#zx)",
+             "post fi_recvmsg(AMLZs %p, len %#zx)",
               ofi_msg_reqs[i].msg_iov->iov_base,
               ofi_msg_reqs[i].msg_iov->iov_len);
   }
-
   init_amHandling();
 }
 
@@ -3484,14 +3432,6 @@ void fini_ofi(void) {
     CHPL_FREE(memTabMap);
   }
 
-  if (ofi_amhPollSet != NULL) {
-    OFI_CHK(fi_poll_del(ofi_amhPollSet, tciTab[tciTabLen - 1].txCmplFid, 0));
-    OFI_CHK(fi_poll_del(ofi_amhPollSet, &ofi_rxCQ->fid, 0));
-    if (ofi_rxCntr != NULL) {
-      OFI_CHK(fi_poll_del(ofi_amhPollSet, &ofi_rxCntr->fid, 0));
-    }
-  }
-
   OFI_CHK(fi_close(&ofi_rxEp->fid));
   OFI_CHK(fi_close(&ofi_rxCQ->fid));
   if (ofi_rxCntr != NULL) {
@@ -3532,10 +3472,6 @@ void fini_ofi(void) {
   }
   if (ofi_addrs != NULL) {
     CHPL_FREE(ofi_addrs);
-  }
-  if (ofi_amhPollSet != NULL) {
-    OFI_CHK(fi_close(&ofi_amhWaitSet->fid));
-    OFI_CHK(fi_close(&ofi_amhPollSet->fid));
   }
 
   OFI_CHK(fi_close(&ofi_domain->fid));
@@ -5025,15 +4961,7 @@ void amHandler(void* argNil) {
     amCheckRxTxCmpls(&hadRxEvent, &hadTxEvent, tcip);
     if (hadRxEvent) {
       processRxAmReq();
-    } else if (!hadTxEvent) {
-      //
-      // No activity; avoid CPU monopolization.
-      //
-      int ret;
-      OFI_CHK_3(fi_wait(ofi_amhWaitSet, 100 /*ms*/), ret,
-                -FI_EINTR, -FI_ETIMEDOUT);
     }
-
     if (amDoLivenessChecks) {
       amCheckLiveness();
     }
@@ -5208,6 +5136,30 @@ void processRxAmReqCntr(void) {
   ofi_rxCount += todo;
 }
 
+//
+// Post a receive buffer.
+//
+static
+chpl_bool postBuffer(int i) {
+  chpl_bool posted = true;
+  int rc;
+  OFI_CHK_2(fi_recvmsg(ofi_rxEp, &ofi_msg_reqs[i], FI_MULTI_RECV), rc,
+            -FI_EAGAIN);
+  if (rc == -FI_EAGAIN) {
+    DBG_PRINTF(DBG_AM_BUF,
+               "(re)post fi_recvmsg(AMLZs %p, len %#zx) returned EAGAIN",
+               ofi_msg_reqs[i].msg_iov->iov_base,
+               ofi_msg_reqs[i].msg_iov->iov_len);
+    posted = false;
+  } else {
+    DBG_PRINTF(DBG_AM_BUF,
+               "(re)post fi_recvmsg(AMLZs %p, len %#zx) succeeded",
+               ofi_msg_reqs[i].msg_iov->iov_base,
+               ofi_msg_reqs[i].msg_iov->iov_len);
+  }
+  return posted;
+}
+
 static
 void processRxAmReqCQ(void) {
   //
@@ -5216,44 +5168,63 @@ void processRxAmReqCQ(void) {
   struct fi_cq_data_entry cqes[5];
   const size_t maxEvents = sizeof(cqes) / sizeof(cqes[0]);
   ssize_t ret;
-  CHK_TRUE((ret = fi_cq_read(ofi_rxCQ, cqes, maxEvents)) > 0
-           || ret == -FI_EAGAIN
-           || ret == -FI_EAVAIL);
-  if (ret == -FI_EAVAIL) {
-    reportCQError(ofi_rxCQ);
-  }
-
-  const size_t numEvents = (ret == -FI_EAGAIN) ? 0 : ret;
-
-  for (int i = 0; i < numEvents; i++) {
-    if ((cqes[i].flags & FI_RECV) != 0) {
-      //
-      // This event is for an inbound AM request.  Handle it.
-      //
-      amRequest_t* req = (amRequest_t*) cqes[i].buf;
-      DBG_PRINTF(DBG_AM_BUF,
-                 "CQ rx AM req @ buffer offset %zd, sz %zd, seqId %s",
-                 (char*) req - (char*) ofi_iov_reqs[ofi_msg_i].iov_base,
-                 cqes[i].len, am_seqIdStr(req));
-      DBG_PRINTF(DBG_AM | DBG_AM_RECV,
-                 "rx AM req: %s",
-                 am_reqStr(chpl_nodeID, req, cqes[i].len));
-      (void) handleAmReq(req);
-    }
-    if ((cqes[i].flags & FI_MULTI_RECV) != 0) {
-      //
-      // Multi-receive buffer filled; post the other one.
-      //
-      ofi_msg_i = 1 - ofi_msg_i;
-      OFI_CHK(fi_recvmsg(ofi_rxEp, &ofi_msg_reqs[ofi_msg_i], FI_MULTI_RECV));
-      DBG_PRINTF(DBG_AM_BUF,
-                 "re-post fi_recvmsg(AMLZs %p, len %#zx)",
-                 ofi_msg_reqs[ofi_msg_i].msg_iov->iov_base,
-                 ofi_msg_reqs[ofi_msg_i].msg_iov->iov_len);
+  chpl_bool post = false;
+  do {
+    CHK_TRUE((ret = fi_cq_read(ofi_rxCQ, cqes, maxEvents)) > 0
+             || ret == -FI_EAGAIN
+             || ret == -FI_EAVAIL);
+    if (ret == -FI_EAVAIL) {
+      reportCQError(ofi_rxCQ);
     }
 
-    CHK_TRUE((cqes[i].flags & ~(FI_MSG | FI_RECV | FI_MULTI_RECV)) == 0);
-  }
+    //
+    // Post the other buffer if we were unable to do it when we received
+    // FI_MULTI_RECV below.
+    //
+    if (post) {
+      DBG_PRINTF(DBG_AM_BUF, "post pending\n");
+      if (postBuffer(1-ofi_msg_i) == true) {
+        post = false;
+      }
+    }
+
+    const size_t numEvents = (ret == -FI_EAGAIN) ? 0 : ret;
+
+    for (int i = 0; i < numEvents; i++) {
+      if ((cqes[i].flags & FI_RECV) != 0) {
+        //
+        // This event is for an inbound AM request.  Handle it.
+        //
+        amRequest_t* req = (amRequest_t*) cqes[i].buf;
+        DBG_PRINTF(DBG_AM_BUF,
+                   "CQ rx AM req @ buffer offset %zd, sz %zd, seqId %s %s",
+                   (char*) req - (char*) ofi_iov_reqs[ofi_msg_i].iov_base,
+                   cqes[i].len, am_seqIdStr(req),
+                   (cqes[i].flags & FI_MULTI_RECV) ? "FI_MULTI_RECV" : "");
+        DBG_PRINTF(DBG_AM | DBG_AM_RECV,
+                   "rx AM req: %s",
+                   am_reqStr(chpl_nodeID, req, cqes[i].len));
+        (void) handleAmReq(req);
+      }
+      if ((cqes[i].flags & FI_MULTI_RECV) != 0) {
+        //
+        // Multi-receive buffer filled; libfabric has switched to the other
+        // buffer. Repost this one.
+        //
+
+        if (postBuffer(ofi_msg_i) == false) {
+          //
+          // Buffer was not posted due to FI_EAGAIN. Go around the outer loop
+          // again which will call fi_cq_read to progress the endpoint and
+          // then try reposting the buffer.
+          //
+          post = true;
+        }
+        ofi_msg_i = 1-ofi_msg_i;
+      }
+      CHK_TRUE((cqes[i].flags & ~(FI_MSG | FI_RECV | FI_MULTI_RECV)) == 0);
+    }
+  } while(post);
 }
 
 static
@@ -7412,57 +7383,26 @@ void amEnsureProgress(struct perTxCtxInfo_t* tcip) {
 static
 void amCheckRxTxCmpls(chpl_bool* pHadRxEvent, chpl_bool* pHadTxEvent,
                       struct perTxCtxInfo_t* tcip) {
-  if (ofi_amhPollSet != NULL) {
-    void* contexts[pollSetSize];
-    int ret;
-    OFI_CHK_COUNT(fi_poll(ofi_amhPollSet, contexts, pollSetSize), ret);
 
-    //
-    // Process the CQs/counters that had events.  We really only have
-    // to consume completions for our transmit endpoint.  If we have
-    // inbound AM messages we'll let the caller know and those can be
-    // dealt with in the main poll loop.  For inbound RMA, ensuring
-    // progress is all that's needed, and the poll call itself will
-    // have done that.
-    //
-    for (int i = 0; i < ret; i++) {
-      if (contexts[i] == &ofi_rxCQ) {
-        if (pHadRxEvent != NULL) {
-          *pHadRxEvent = true;
-        }
-      } else if (contexts[i] == &tcip->checkTxCmplsFn) {
-        (*tcip->checkTxCmplsFn)(tcip);
-        if (pHadTxEvent != NULL) {
-          *pHadTxEvent = true;
-        }
-      } else {
-        INTERNAL_ERROR_V("unexpected context %p from fi_poll()",
-                         contexts[i]);
-      }
-    }
-  } else {
+  // Consume transmit completions, and progress the receive endpoint as
+  // required by some providers(e.g. EFA, which may exchange handshake
+  // messages in the background during a transmit and therefore requires
+  // progressing the receive checkpoint so that handshakes are received).
+  // Inbound operations will be handled by the main loop. Also, avoid CPU
+  // monopolization even if we had events, because we can't actually tell.
 
-    // The provider can't do poll sets.  Consume transmit completions,
-    // and progress the receive endpoint as required by some providers
-    // (e.g. EFA, which may exchange handshake messages in the background
-    // during a transmit and therefore requires progressing the receive
-    // checkpoint so that handshakes are received). Inbound operations
-    // will be handled by the main loop. Also, avoid CPU monopolization
-    // even if we had events, because we can't actually tell.
-
-    sched_yield();
-    int rc = fi_cq_read(ofi_rxCQ, NULL, 0);
-    if (rc == 0) {
-      if (pHadRxEvent != NULL) {
-        *pHadRxEvent = true;
-      }
-    } else if (rc != -FI_EAGAIN) {
-      INTERNAL_ERROR_V("fi_cq_read failed: %s", fi_strerror(rc));
+  sched_yield();
+  int rc = fi_cq_read(ofi_rxCQ, NULL, 0);
+  if (rc == 0) {
+    if (pHadRxEvent != NULL) {
+      *pHadRxEvent = true;
     }
-    (*tcip->checkTxCmplsFn)(tcip);
-    if (pHadTxEvent != NULL) {
-      *pHadTxEvent = true;
-    }
+  } else if (rc != -FI_EAGAIN) {
+    INTERNAL_ERROR_V("fi_cq_read failed: %s", fi_strerror(rc));
+  }
+  (*tcip->checkTxCmplsFn)(tcip);
+  if (pHadTxEvent != NULL) {
+    *pHadTxEvent = true;
   }
 }
 

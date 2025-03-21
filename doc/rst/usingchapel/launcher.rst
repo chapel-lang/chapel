@@ -191,7 +191,7 @@ UDP or InfiniBand conduits. So, for these configurations please see:
 Common Slurm Settings
 *********************
 
-* Optionally, you can  specify a node access mode by setting the environment
+* Optionally, you can specify a node access mode by setting the environment
   variable ``CHPL_LAUNCHER_NODE_ACCESS``. It will default to ``exclusive``
   access, but can be overridden to:
 
@@ -205,20 +205,32 @@ Common Slurm Settings
 
     export CHPL_LAUNCHER_NODE_ACCESS=shared
 
-* Optionally, you can specify a slurm partition by setting the environment
-  variable ``CHPL_LAUNCHER_PARTITION``. For example, to use the 'debug'
-  partition, set:
+* Optionally, you can specify a slurm partition using either the environment
+  variable ``CHPL_LAUNCHER_PARTITION`` or the ``--partition`` flag. For
+  example, to use the 'debug' partition for all runs, set:
 
   .. code-block:: bash
 
     export CHPL_LAUNCHER_PARTITION=debug
 
-* Optionally, you can specify a slurm nodelist by setting the environment
-  variable ``CHPL_LAUNCHER_NODELIST``. For example, to use node nid00001, set:
+  Or, to use the 'debug' partition for a single run, use:
+
+  .. code-block:: bash
+
+    ./myprogram --partition=debug
+
+* Optionally, you can specify a slurm nodelist using either the environment
+  variable ``CHPL_LAUNCHER_NODELIST`` or the ``--nodelist`` flag. For example, to use node nid00001 for all runs, set:
 
   .. code-block:: bash
 
     export CHPL_LAUNCHER_NODELIST=nid00001
+
+  Or, to use node nid00001 for a single run, use:
+
+  .. code-block:: bash
+
+    ./myprogram --nodelist=nid00001
 
 * Optionally, you can specify a slurm constraint by setting the environment
   variable ``CHPL_LAUNCHER_CONSTRAINT``. For example, to use nodes with the
@@ -236,13 +248,24 @@ Common Slurm Settings
 
     export CHPL_LAUNCHER_ACCOUNT=acct
 
-* If the environment variable ``CHPL_LAUNCHER_USE_SBATCH`` is defined then
-  sbatch is used to launch the job to the queue system, rather than
-  running it interactively as usual. In this mode, the output will be
+* If you wish wish to use sbatch to launch the job to the queue system, either
+  set the environment variable ``CHPL_LAUNCHER_USE_SBATCH`` or pass the
+  ``--generate-sbatch-script`` flag to the executable. In this mode, the output will be
   written by default to a file called <executableName>.<jobID>.out. The
   environment variable ``CHPL_LAUNCHER_SLURM_OUTPUT_FILENAME`` can be used
   to specify a different filename for the output.
 
+* Optionally, you can specify the number of GPUs required per node using either the environment variable ``CHPL_LAUNCHER_GPUS_PER_NODE`` or the ``--gpus-per-node`` flag. For example, to request 2 GPUs per node for all runs, set:
+
+  .. code-block:: bash
+
+    export CHPL_LAUNCHER_GPUS_PER_NODE=2
+
+  Or, to request 2 GPUs per node for a single run, use:
+
+  .. code-block:: bash
+
+    ./myprogram --gpus-per-node=2
 
 .. _ssh-launchers-with-slurm:
 

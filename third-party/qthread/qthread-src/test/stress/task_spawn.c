@@ -1,9 +1,4 @@
-#ifdef HAVE_CONFIG_H
-#include "config.h" /* for _GNU_SOURCE */
-#endif
-
 #include "argparsing.h"
-#include <assert.h>
 #include <qthread/qloop.h>
 #include <qthread/qthread.h>
 #include <stdio.h>
@@ -20,9 +15,9 @@ int main(int argc, char *argv[]) {
   CHECK_VERBOSE();
 
   NUMARG(count, "MT_COUNT");
-  assert(0 != count);
+  test_check(0 != count);
 
-  assert(qthread_initialize() == 0);
+  test_check(qthread_initialize() == 0);
 
   for (uint64_t i = 0; i < count; i++) { qthread_fork(null_task, NULL, NULL); }
   do {

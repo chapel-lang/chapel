@@ -53,15 +53,37 @@ slurm-gasnetrun_ofi   queue jobs using Slurm (srun/sbatch)
 Selecting a Spawner
 -------------------
 
-Under the covers ``gasnetrun_ofi``-based launchers must figure out
+Under the covers, ``gasnetrun_ofi``-based launchers must figure out
 how to spawn jobs and get them up and running on the compute nodes.
-GASNet's two primary means of doing this on Omni-Path clusters are
-``ssh`` and ``mpi``. GASNet will default to ``mpi`` if MPI support
-is detected at configure time, otherwise it will default to ``ssh``.
-Using ``mpi`` will likely incur a performance penalty because MPI
-will be running concurrently with GASNet. Running with ``ssh`` is
-recommended, but not all systems support ssh'ing to compute nodes so
-it is not always the default.
+GASNet's three ways of doing this on Omni-Path clusters are ``ssh``,
+``pmi``, and ``mpi``, described just below.  When MPI is detected at
+configure time, it will be selected as the default, but we recommend
+using one of the other options if possible.  This can be done by
+setting the ``GASNET_OFI_SPAWNER`` environment variable, whose legal
+values are:
+
+* ``ssh``: Based on our experience, this is the preferred option, when
+  possible.  This requires the ability to ``ssh`` to the system's
+  compute nodes, which is not supported by all systems, depending on
+  how they are configured.  See :ref:`the following
+  sub-section<using-ssh>` for details on this option.
+  
+* ``pmi``: When GASNet's configure step detects a PMI-capable job
+  scheduler like Slurm, ``pmi`` can be the next best choice because it
+  often "just works" and can reduce overhead compared to ``mpi``.  For
+  more information about this option, including how to configure job
+  launch via ``PMIRUN_CMD``, see the `GASNet README for the PMI-based
+  spawner
+  <https://bitbucket.org/berkeleylab/gasnet/src/master/other/pmi-spawner/README>`_
+  (also available at
+  ``$CHPL_HOME/third-party/gasnet/gasnet-src/other/pmi-spawner/README``).
+
+* ``mpi``: When the previous cases are not options, ``mpi`` serves as
+  a reasonable last resort.  Note that it may, depending on its
+  configuration, incur a performance penalty due to competition
+  between MPI and GASNet for limited communication resources.  See the
+  :ref:`using-mpi` section below for best practices when using this
+  option.
 
 
 Using SSH for Job Launch
@@ -75,7 +97,7 @@ To launch Omni-Path jobs with SSH, use the following:
    export GASNET_OFI_SPAWNER=ssh
 
    # Specify the nodes to run on (only required when using plain
-   # gasnetrun_ofi outside a Slurm reservation)
+   # gasnetrun_ofi outside a Slurm/PBS/LSF reservation)
    export GASNET_SSH_SERVERS="nid00001 nid00002 nid00003 ..."
 
 If you receive an error message like:
@@ -96,6 +118,14 @@ If you see the same error message this may indicate ssh connections
 to compute nodes are not allowed, in which case using the MPI
 spawner may be your only option.
 
+For further information about environment variables that can be used
+to control how `ssh` is used to launch your Chapel program, see the
+descriptions of ``GASNET_SSH_CMD`` and ``GASNET_SSH_OPTIONS`` in the
+`GASNet README for the ssh spawner
+<https://bitbucket.org/berkeleylab/gasnet/src/master/other/ssh-spawner/README>`_
+(also available at
+``$CHPL_HOME/third-party/gasnet/gasnet-src/other/ssh-spawner/README``).
+
 
 Using MPI for Job Launch
 ------------------------
@@ -109,9 +139,27 @@ configuration output.
 
    export GASNET_OFI_SPAWNER=mpi
 
-It's worth noting that some configurations do not allow opening the
-network device multiple times from a single process, so this method
-may not be reliable.
+As mentioned above, a potential downside of using MPI for launching
+Chapel programs is that the resources that it requires to get the
+program up and running can interfere with those needed by GASNet.  In
+some cases, this can result in negative impacts on performance.  In
+others, it can prevent GASNet from accessing the network resources it
+requires at all.  For example, the following error is an example of
+one in which MPI is preventing GASNet from accessing what it needs:
+
+.. code-block:: bash
+
+   *** FATAL ERROR (proc 0): in gasnetc_ofi_init() at /third-party/gasnet/gasnet-src/ofi-conduit/gasnet_ofi.c:1336: fi_endpoint for rdma failed: -22(Invalid argument)
+
+
+For tips and best practices about how to configure/use GASNet to avoid
+such conflicts with MPI, please refer to the section "Build-time
+Configuration" in the `GASNet README for the MPI spawner
+<https://bitbucket.org/berkeleylab/gasnet/src/master/other/mpi-spawner/README>`_
+(also available at
+``$CHPL_HOME/third-party/gasnet/gasnet-src/other/mpi-spawner/README``).
+Within this README, see also the description of the ``MPIRUN_CMD``
+environment variable as a means of configuring how jobs are started.
 
 
 --------------------
@@ -149,8 +197,9 @@ may be required to get access to all cores.
 See Also
 --------
 
-For more information on these and other available GASNet options,
-including configuring to launch through MPI, please refer to
+For more information on these and other available options when
+targeting Omni-Path through GASNet via OFI/libfabric, please refer to
 GASNet's official `ofi conduit documentation
-<https://gasnet.lbl.gov/dist/ofi-conduit/README>`_, which can also be found
-in ``$CHPL_HOME/third-party/gasnet/gasnet-src/ofi-conduit/README``.
+<https://gasnet.lbl.gov/dist/ofi-conduit/README>`_, which can also be
+found in
+``$CHPL_HOME/third-party/gasnet/gasnet-src/ofi-conduit/README``.

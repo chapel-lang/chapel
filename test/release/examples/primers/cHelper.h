@@ -7,7 +7,7 @@ extern uint32_t y;
 typedef int myType;
 int useMyType(myType arg);
 int sum(int, int);
-int sumArray(int64_t[], int);
+int sumArray(const int64_t[], int);
 
 typedef struct {
   int64_t a;

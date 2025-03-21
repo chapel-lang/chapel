@@ -1,8 +1,0 @@
-cast_class_to_void_ptr.chpl:14: warning: Casting from class types directly to c_ptr(void) is deprecated. Please use c_ptrTo/c_ptrToConst instead.
-cast_class_to_void_ptr.chpl:15: warning: Casting from class types directly to c_ptr(void) is deprecated. Please use c_ptrTo/c_ptrToConst instead.
-cast_class_to_void_ptr.chpl:16: warning: Casting from class types directly to c_ptr(void) is deprecated. Please use c_ptrTo/c_ptrToConst instead.
-cast_class_to_void_ptr.chpl:17: warning: Casting from class types directly to c_ptr(void) is deprecated. Please use c_ptrTo/c_ptrToConst instead.
-true
-true
-true
-true

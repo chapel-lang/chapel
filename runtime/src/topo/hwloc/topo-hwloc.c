@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -64,8 +64,6 @@ static chpl_bool debug = true;
 #define _DBG_P(f, ...)
 static chpl_bool debug = false;
 #endif
-
-static chpl_bool haveTopology = false;
 
 static hwloc_topology_t topology;
 
@@ -148,24 +146,10 @@ static void chk_err_errno_fn(const char*, int, const char*);
 
 void chpl_topo_pre_comm_init(char *accessiblePUsMask) {
   //
-  // accessibleMask is a string in hwloc "bitmap list" format that
+  // accessiblePUsMask is a string in hwloc "bitmap list" format that
   // specifies which processing units should be considered accessible
   // to this locale. It is intended for testing purposes only and
   // should be NULL in production code.
-
-  //
-  // We only load hwloc topology information in configurations where
-  // the locale model is other than "flat" or the tasking is based on
-  // Qthreads (which will use the topology we load).  We don't use
-  // it otherwise (so far) because loading it is somewhat expensive.
-  //
-  if (strcmp(CHPL_LOCALE_MODEL, "flat") != 0
-      || strcmp(CHPL_TASKS, "qthreads") == 0) {
-    haveTopology = true;
-  } else {
-    haveTopology = false;
-    return;
-  }
 
   //
   // Allocate and initialize topology object.
@@ -247,10 +231,6 @@ void chpl_topo_post_comm_init(void) {
 
 
 void chpl_topo_exit(void) {
-  if (!haveTopology) {
-    return;
-  }
-
   if (physAccSet != NULL) {
     hwloc_bitmap_free(physAccSet);
     physAccSet = NULL;
@@ -291,7 +271,7 @@ void chpl_topo_exit(void) {
 
 
 void* chpl_topo_getHwlocTopology(void) {
-  return (haveTopology) ? topology : NULL;
+  return topology;
 }
 
 //
@@ -595,8 +575,17 @@ static void partitionResources(void) {
   if (numLocalesOnNode > 1) {
     oversubscribed = true;
   }
-  if ((numColocales > 0) && (numLocalesOnNode <= numColocales)){
-    numPartitions = numColocales;
+  if (numColocales > 0) {
+    if (numLocalesOnNode <= numColocales) {
+      // There are fewer colocales than there should be, probably because the
+      // number of locales isn't evenly divisable by the number of nodes.
+      // Partition resources as if there are the full complement of
+      // colocales, but set the number of colocales to the actual number.
+      numPartitions = numColocales;
+      chpl_set_num_colocales_on_node(numLocalesOnNode);
+    } else {
+      chpl_set_num_colocales_on_node(numColocales);
+    }
   }
   logAccSets = sys_calloc(numPartitions, sizeof(hwloc_cpuset_t));
   if ((numColocales > 0) && (numLocalesOnNode > numColocales)) {
@@ -844,10 +833,6 @@ void chpl_topo_setThreadLocality(c_sublocid_t subloc) {
 
   _DBG_P("chpl_topo_setThreadLocality(%d)", (int) subloc);
 
-  if (!haveTopology) {
-    return;
-  }
-
   if (!topoSupport->cpubind->set_thread_cpubind)
     return;
 
@@ -876,10 +861,6 @@ c_sublocid_t chpl_topo_getThreadLocality(void) {
   hwloc_nodeset_t nodeset;
   int flags;
   int node;
-
-  if (!haveTopology) {
-    return c_sublocid_none;
-  }
 
   if (!topoSupport->cpubind->get_thread_cpubind) {
     return c_sublocid_none;
@@ -911,10 +892,6 @@ void chpl_topo_setMemLocality(void* p, size_t size, chpl_bool onlyInside,
   _DBG_P("chpl_topo_setMemLocality(%p, %#zx, onlyIn=%s, %d)",
          p, size, (onlyInside ? "T" : "F"), (int) subloc);
 
-  if (!haveTopology) {
-    return;
-  }
-
   alignAddrSize(p, size, onlyInside, &pgSize, &pPgLo, &nPages);
 
   _DBG_P("    localize %p, %#zx bytes (%#zx pages)",
@@ -939,10 +916,6 @@ void chpl_topo_setMemSubchunkLocality(void* p, size_t size,
 
   _DBG_P("chpl_topo_setMemSubchunkLocality(%p, %#zx, onlyIn=%s)",
          p, size, (onlyInside ? "T" : "F"));
-
-  if (!haveTopology) {
-    return;
-  }
 
   alignAddrSize(p, size, onlyInside, &pgSize, &pPgLo, &nPages);
 
@@ -977,8 +950,7 @@ void chpl_topo_touchMemFromSubloc(void* p, size_t size, chpl_bool onlyInside,
   _DBG_P("chpl_topo_touchMemFromSubloc(%p, %#zx, onlyIn=%s, %d)",
          p, size, (onlyInside ? "T" : "F"), (int) subloc);
 
-  if (!haveTopology
-      || !topoSupport->cpubind->get_thread_cpubind
+  if (!topoSupport->cpubind->get_thread_cpubind
       || !topoSupport->cpubind->set_thread_cpubind) {
     return;
   }
@@ -1056,10 +1028,6 @@ void alignAddrSize(void* p, size_t size, chpl_bool onlyInside,
 void chpl_topo_interleaveMemLocality(void* p, size_t size) {
   int flags;
 
-  if (!haveTopology) {
-    return;
-  }
-
   if (!topoSupport->membind->set_area_membind ||
       !topoSupport->membind->interleave_membind) {
     return;
@@ -1080,10 +1048,6 @@ void chpl_topo_setMemLocalityByPages(unsigned char* p, size_t size,
                                      hwloc_obj_t numaObj) {
   int flags;
 
-  if (!haveTopology) {
-    return;
-  }
-
   if (!topoSupport->membind->set_area_membind
       || !do_set_area_membind)
     return;
@@ -1103,10 +1067,6 @@ c_sublocid_t chpl_topo_getMemLocality(void* p) {
   int flags;
   hwloc_nodeset_t nodeset;
   int node;
-
-  if (!haveTopology) {
-    return c_sublocid_none;
-  }
 
   if (!topoSupport->membind->get_area_memlocation) {
     return c_sublocid_none;

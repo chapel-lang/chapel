@@ -1,16 +1,22 @@
-{r = (d = Block
--------
-distributes: [1..2]
-across locales: LOCALE0
-indexed via: [0..0]
+{r = (d = blockDist
+---------
+distributes: {1..2}
+across locales: LOCALE0 LOCALE1 LOCALE2 LOCALE3
+indexed via: {0..3}
 resulting in: 
-  [0] locale 0 owns chunk: [-2147483648..2147483647]
+  [0] locale 0 owns chunk: {-9223372036854775808..1}
+  [1] locale 1 owns chunk: {2..1}
+  [2] locale 2 owns chunk: {2..2}
+  [3] locale 3 owns chunk: {3..9223372036854775807}
 )}
-{r = (d = Block
--------
-distributes: [2..3]
-across locales: LOCALE0
-indexed via: [0..0]
+{r = (d = blockDist
+---------
+distributes: {2..3}
+across locales: LOCALE0 LOCALE1 LOCALE2 LOCALE3
+indexed via: {0..3}
 resulting in: 
-  [0] locale 0 owns chunk: [-2147483648..2147483647]
+  [0] locale 0 owns chunk: {-9223372036854775808..2}
+  [1] locale 1 owns chunk: {3..2}
+  [2] locale 2 owns chunk: {3..3}
+  [3] locale 3 owns chunk: {4..9223372036854775807}
 )}

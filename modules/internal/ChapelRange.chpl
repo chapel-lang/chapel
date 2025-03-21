@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -34,16 +34,6 @@ module ChapelRange {
 
   @chpldoc.nodoc
   config param useOptimizedRangeIterators = true;
-
-  /* This flag, when set to `true`, used to switch to using the new slicing rule
-     and to turn off the deprecation warning for using the old rule.
-     Now the new rule is always enabled regardless of this flag's value.
-     When slicing with a range with a negative stride, the old rule
-     preserves the direction of the original range or domain/array dimension
-     whereas the new rule reverses such direction. */
-  @chpldoc.nodoc
-  @deprecated("'newSliceRule' is deprecated and will be removed in a future release; it is now 'true' by default; slicing with a range with a negative stride now always reverses the direction of the original range or domain/array dimension, regardless of the value of 'newSliceRule'")
-  config param newSliceRule = true;
 
   /* Compile with ``-snewRangeLiteralType`` to switch to using the new rule
      for determining the idxType of a range literal with param integral bounds
@@ -386,17 +376,19 @@ module ChapelRange {
     }
     type newRule = (low+high).type;
     type oldRule = computeParamRangeIndexType_Old(low, high);
-    if newRule == oldRule then
+    if newRule == oldRule {
       return newRule;
-    compilerWarning("the idxType of this range literal ",
-                    low:string, "..", high:string,
-                    " with the low bound of the type ", low.type:string,
-                    " and the high bound of the type ", high.type:string,
-                    " is currently ", oldRule:string,
-          ". In a future release it will be switched to ", newRule:string,
-          ". To switch to this new typing and turn off this warning,",
-          " compile with -snewRangeLiteralType.");
-    return oldRule;
+    } else {
+      compilerWarning("the idxType of this range literal ",
+                      low:string, "..", high:string,
+                      " with the low bound of the type ", low.type:string,
+                      " and the high bound of the type ", high.type:string,
+                      " is currently ", oldRule:string,
+            ". In a future release it will be switched to ", newRule:string,
+            ". To switch to this new typing and turn off this warning,",
+            " compile with -snewRangeLiteralType.");
+      return oldRule;
+    }
   }
   proc chpl_isValidRangeIdxType(type t) param {
     return isIntegralType(t) || isEnumType(t) || isBoolType(t);
@@ -2348,18 +2340,12 @@ private proc isBCPindex(type t) param do
     if isPositiveStride(newStrides, st) then
       // start from the low index
       return if hasLowBoundForIter(r)
-             // inlined: newAlignedRange(r.chpl_alignedLowAsIntForIter)
-             // because Dyno can't helper capturing nested functions.
-             then new range(i, b, newStrides, lw, hh, st,
-                            r.chpl_alignedLowAsIntForIter, true, true)
+             then newAlignedRange(r.chpl_alignedLowAsIntForIter)
              else if st == 1 then newZeroAlmtRange() else newUnalignedRange();
     else
       // start from the high index
       return if hasHighBoundForIter(r)
-             // inlined: newAlignedRange(r.chpl_alignedHighAsIntForIter)
-             // because Dyno can't helper capturing nested functions.
-             then new range(i, b, newStrides, lw, hh, st,
-                            r.chpl_alignedHighAsIntForIter, true, true)
+             then newAlignedRange(r.chpl_alignedHighAsIntForIter)
              else if st == -1 then newZeroAlmtRange() else newUnalignedRange();
 
     proc newAlignedRange(alignment) do
@@ -2386,15 +2372,17 @@ private proc isBCPindex(type t) param do
     chpl_range_check_stride(step, r.idxType);
 
     // streamline the simple cases
-    if step == 1 then return r;
-
-    if step == -1 then return if r.hasParamStrideAltvalAld()
-      then new range(r.idxType, r.bounds, chpl_strideProduct(r, step),
-                     r._low, r._high, none, none)
-      else new range(r.idxType, r.bounds, chpl_strideProduct(r, step),
-                     r._low, r._high, -r._stride, r._alignment);
-
-    return chpl_by_help(r, step, chpl_strideProduct(r, step));
+    if step == 1 {
+      return r;
+    } else if step == -1 {
+      return if r.hasParamStrideAltvalAld()
+             then new range(r.idxType, r.bounds, chpl_strideProduct(r, step),
+                            r._low, r._high, none, none)
+             else new range(r.idxType, r.bounds, chpl_strideProduct(r, step),
+                            r._low, r._high, -r._stride, r._alignment);
+    } else {
+      return chpl_by_help(r, step, chpl_strideProduct(r, step));
+    }
   }
 
   pragma "last resort"
@@ -2729,7 +2717,7 @@ private proc isBCPindex(type t) param do
     type resultType = r.chpl_integralIdxType;
     type strType = chpl__rangeStrideType(resultType);
 
-    proc absSameType(r, type resultType) {
+    proc absSameType() {
       if r.hasNegativeStride() {
         return (-r.stride):resultType;
       } else {
@@ -2743,14 +2731,14 @@ private proc isBCPindex(type t) param do
                          bounds = boundKind.both,
                          strides = r.strides,
                          _low = r._low,
-                         _high = r._low - absSameType(r, resultType),
+                         _high = r._low - absSameType(),
                          _stride = r.stride,
                          alignmentValue = r._alignment);
       } else if (r.hasHighBound()) {
         return new range(idxType = r.idxType,
                          bounds = boundKind.both,
                          strides = r.strides,
-                         _low = r._high + absSameType(r, resultType),
+                         _low = r._high + absSameType(),
                          _high = r._high,
                          _stride = r.stride,
                          alignmentValue = r._alignment);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -137,7 +137,8 @@ bool FindElidedCopies::hasCrossTypeInitAssignWithIn(
                       actuals);
   const Scope* scope = scopeForId(context, ast->id());
   auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
-  auto c = resolveGeneratedCall(context, ast, ci, inScopes);
+  auto rc = createDummyRC(context);
+  auto c = resolveGeneratedCall(&rc, ast, ci, inScopes);
   const MostSpecificCandidates& fns = c.mostSpecific();
   // return intent overloading should not be possible with an init=
   CHPL_ASSERT(fns.numBest() <= 1);

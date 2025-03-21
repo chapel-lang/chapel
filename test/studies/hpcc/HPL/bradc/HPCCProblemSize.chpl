@@ -17,15 +17,31 @@ module HPCCProblemSize {
 			 returnLog2=false,  // whether to return log2(probSize)
                          memFraction=4,     // fraction of mem to use (eg, 1/4)
                          type retType = int(64)): retType { // type to return
+
     //
-    // Compute the total memory available to the benchmark using a sum
-    // reduction over the amount of physical memory (in bytes) owned
-    // by the set of locales on which we're running.  Then compute the
-    // number of bytes we want to use as defined by memFraction and the
-    // number that will be required by each index in the problem size.
+    // Compute the total memory available to the benchmark. If there is one
+    // locale per node, then compute the total using a sum reduction over the
+    // amount of physical memory (in bytes) owned by the set of locales on
+    // which we're running. Otherwise, sum the physical memory of unique
+    // nodes as determined by each locale's hostname. Then compute the number
+    // of bytes each locale will use as defined by memFraction and the
+    // maximum number of co-locales on any node, and the size of each index.
     //
-    const totalMem = + reduce Locales.physicalMemory(unit = MemUnits.Bytes),
-          memoryTarget = totalMem / memFraction,
+
+    var totalMem = 0;
+    if (max reduce Locales.numColocales > 1) {
+      var nodes: domain(string, parSafe=false);
+      for loc in Locales {
+        if (nodes.contains(loc.hostname) == false) {
+          nodes += loc.hostname;
+          totalMem += loc.physicalMemory(unit = MemUnits.Bytes);
+        }
+      }
+    } else {
+      totalMem = + reduce Locales.physicalMemory(unit = MemUnits.Bytes);
+    }
+
+    const memoryTarget = totalMem / memFraction,
           bytesPerIndex = numArrays * numBytes(elemType);
 
     //

@@ -11,3 +11,4 @@
 --f arrayCorner.good # arrayCorner
 --f actual.test # actual
 --f mason-1.good # mason-1
+--f arrayWithComments.test # arrayWithComments

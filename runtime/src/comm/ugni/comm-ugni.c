@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1989,7 +1989,7 @@ void chpl_comm_post_task_init(void)
                      0, 0);
       }
 
-      if (strcmp(CHPL_MEM, "jemalloc") == 0
+      if (strcmp(CHPL_TARGET_MEM, "jemalloc") == 0
           && getenv(chpl_comm_ugni_jemalloc_conf_ev_name()) == NULL) {
         char buf[200];
         (void) snprintf(buf, sizeof(buf),

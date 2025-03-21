@@ -21,8 +21,8 @@ to :ref:`using-a-more-full-featured-chapel` below.
    packages you should have available to build and run Chapel.
 
 
-1) If you don't already have the Chapel 2.3 source release, see
-   https://chapel-lang.org/download.html.
+1) If you don't already have the Chapel 2.4 source release, see
+   https://chapel-lang.org/download/
 
 
 2) Build Chapel in its 'Quickstart' configuration:
@@ -31,14 +31,14 @@ to :ref:`using-a-more-full-featured-chapel` below.
 
       .. code-block:: bash
 
-         tar xzf chapel-2.3.0.tar.gz
+         tar xzf chapel-2.4.0.tar.gz
 
    b. Make sure that you are in the directory that was created when
       unpacking the source release, for example:
 
       .. code-block:: bash
 
-         cd chapel-2.3.0
+         cd chapel-2.4.0
 
    c. Set up your environment for Chapel's Quickstart mode.
       If you are using a shell other than ``bash`` or ``zsh``,
@@ -104,8 +104,7 @@ rebuild Chapel from source in a different configuration:
 
   - Or, use ``export CHPL_LLVM=bundled`` to have Chapel build and use the
     bundled version of LLVM. Note that building the bundled version of
-    LLVM can take a long time and requires CMake version 3.13.4 or
-    higher.
+    LLVM can take a long time.
 
   - Use ``export CHPL_LLVM=none`` to continue using the C back-end rather
     than LLVM

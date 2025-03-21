@@ -1,4 +1,3 @@
-configparam.chpl:10: warning: the type 'c_string' is deprecated; please 'use CTypes' and replace 'c_string' with 'c_ptrConst(c_char)'
 true
 true
 7

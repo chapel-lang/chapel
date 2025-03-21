@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -330,7 +330,114 @@ static void test6() {
   assert(guard.numErrors() == 0);
 }
 
+static void test7() {
+  printf("test7\n");
 
+  std::string program = R"""(
+    class Parent {
+    }
+
+    class Child : Parent {
+    }
+
+    proc test(type T: Parent) {
+      var ret = new unmanaged T();
+      return ret;
+    }
+
+    var x = test(Child);
+  )""";
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto x = resolveQualifiedTypeOfX(context, program);
+  auto t = x.type()->toClassType();
+  assert(t);
+  assert(t->decorator().isUnmanaged());
+  assert(t->decorator().isNonNilable());
+  assert(t->basicClassType()->name() == "Parent");
+}
+
+static void test8() {
+  printf("test8\n");
+
+  std::string program = R"""(
+    class Parent {
+    }
+
+    class Child : Parent {
+    }
+
+    proc test(type T: Parent?) {
+      var ret = new unmanaged T();
+      return ret;
+    }
+
+    var x = test(Child);
+  )""";
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto filename = UniqueString::get(context, "test8.chpl");
+  setFileText(context, filename, program);
+  auto m = parse(context, filename, UniqueString())[0];
+  auto r = resolveModule(context, m->id());
+
+  auto x = findVariable(m, "x");
+  auto& xres = r.byAst(x->initExpression());
+
+  assert(xres.mostSpecific().only());
+  assert(!xres.mostSpecific().only().fn()->needsInstantiation());
+}
+
+// We treat 'owned C' and the underlying '_owned(C)' pretty much interchangeably.
+// However, when performing instantiation, we don't want to naively instantiate
+// _owned with owned. Rather, we should convert owned to _owned, and instantiate
+// it that way.
+static void testInstantiateManagerRecord() {
+  printf("testInstantiateOwned\n");
+
+  std::string program = R"""(
+    class C {}
+
+    proc _owned.foo() {
+      return this;
+    }
+
+    proc _shared.foo() {
+      return this;
+    }
+
+
+    var x = (new owned C()).foo();
+    var y = (new shared C()).foo();
+  )""";
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context, program, {"x", "y"});
+
+  auto checkChplT = [context](const QualifiedType qt) {
+    assert(!qt.isUnknownOrErroneous());
+    assert(qt.type()->isRecordType());
+
+    auto rc = createDummyRC(context);
+    auto fields = fieldsForTypeDecl(&rc, qt.type()->toRecordType(), DefaultsPolicy::IGNORE_DEFAULTS);
+    bool foundField = false;
+    for (int i = 0; i < fields.numFields(); i++) {
+      if (fields.fieldName(i) == "chpl_t") {
+        foundField = true;
+        assert(fields.fieldType(i).type()->isClassType());
+        assert(fields.fieldType(i).type()->toClassType()->basicClassType());
+        assert(fields.fieldType(i).type()->toClassType()->basicClassType()->name() == "C");
+        break;
+      }
+    }
+    assert(foundField);
+  };
+  checkChplT(vars.at("x"));
+  checkChplT(vars.at("y"));
+}
 
 int main() {
   test1();
@@ -339,6 +446,10 @@ int main() {
   test4();
   test5();
   test6();
+  test7();
+  test8();
+
+  testInstantiateManagerRecord();
 
   return 0;
 }

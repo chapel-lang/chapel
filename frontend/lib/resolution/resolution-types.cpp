@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -45,6 +45,16 @@ namespace resolution {
 
 using namespace uast;
 using namespace types;
+
+SubstitutionsMap substituteInMap(Context* context,
+                                 const SubstitutionsMap& substituteIn,
+                                 const PlaceholderMap& subs) {
+  SubstitutionsMap into;
+  for (auto [id, qt] : substituteIn) {
+    into.emplace(id, qt.substitute(context, subs));
+  }
+  return into;
+}
 
 const owned<UntypedFnSignature>&
 UntypedFnSignature::getUntypedFnSignature(Context* context, ID id,
@@ -416,10 +426,16 @@ CallInfo CallInfo::create(Context* context,
     auto calledExprType = tryGetType(calledExpr, byPostorder);
     auto dotReceiverType = tryGetType(dotReceiver, byPostorder);
 
-    if (calledExprType && isKindForFunctionalValue(calledExprType->kind())) {
+    if (calledExprType &&
+        (isKindForFunctionalValue(calledExprType->kind()) ||
+         calledExprType->isErroneousType())) {
       // If e.g. x is a value (and not a function, then x(0) translates to x.this(0)
       // Run this case even if the receiver is a module, since we might be
       // trying to invoke 'this' on value x in M.x.
+      //
+      // In the case of ErroneousType, assume that the called thing was
+      // a value (ambiguity or other "benign" UNKNOWN would not produce errors).
+      // Later, this can lead to skipping resolving the call altogether.
 
       name = USTR("this");
       // add the 'this' argument as well
@@ -606,7 +622,7 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
       byFormalIdx_.resize(numEntries);
 
       QualifiedType starQT;
-      if (formalQT.type() != nullptr) {
+      if (!formalQT.isUnknownOrErroneous()) {
         const TupleType* tup = formalQT.type()->toTupleType();
         CHPL_ASSERT(tup);
         if (tup->isStarTuple()) {
@@ -620,7 +636,7 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
         QualifiedType qt;
         if (starQT.type() != nullptr) {
           qt = starQT;
-        } else if (formalQT.type() != nullptr) {
+        } else if (!formalQT.isUnknownOrErroneous()) {
           // try to pull the type out of the formalQT if it
           // is after instantiation.
           const TupleType* tup = formalQT.type()->toTupleType();
@@ -785,7 +801,8 @@ syntacticallyGenericFieldsPriorToIdHaveSubs(Context* context,
   }
 
   // Compute the fields without types so that we can iterate the fields.
-  auto& fieldsForOrder = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS,
+  ResolutionContext rc(context);
+  auto& fieldsForOrder = fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS,
                                            /* syntaxOnly */ true);
   for (int i = 0; i < fieldsForOrder.numFields(); i++) {
     auto ithField = fieldsForOrder.fieldDeclId(i);
@@ -958,6 +975,27 @@ TypedFnSignature::getInferred(
                              inferredFrom->outerVariables()).get();
 }
 
+const TypedFnSignature*
+TypedFnSignature::substitute(Context* context,
+                             const PlaceholderMap& subs) const {
+  std::vector<QualifiedType> newFormalTypes;
+  for (const auto& formalType : formalTypes_) {
+    newFormalTypes.push_back(formalType.substitute(context, subs));
+  }
+
+  // TODO: do we need to substitute in outer variables' stored types?
+
+  return getTypedFnSignature(context, untyped(),
+                             std::move(newFormalTypes),
+                             whereClauseResult(),
+                             needsInstantiation(),
+                             isRefinementOnly_,
+                             instantiatedFrom(),
+                             parentFn(),
+                             formalsInstantiatedBitmap(),
+                             outerVariables()).get();
+}
+
 void TypedFnSignature::stringify(std::ostream& ss,
                                  chpl::StringifyKind stringKind) const {
 
@@ -1036,6 +1074,52 @@ void CandidatesAndForwardingInfo::stringify(
   }
 }
 
+
+// Note (Daniel): the code for 'overloaded' below comes from cppreference:
+//   https://en.cppreference.com/w/cpp/utility/variant/visit2
+//
+template<class... Ts>
+struct overloaded : Ts... { using Ts::operator()...; };
+// explicit deduction guide (not needed as of C++20)
+template<class... Ts>
+overloaded(Ts...) -> overloaded<Ts...>;
+
+void ApplicabilityResult::mark(Context* context) const {
+  std::visit(overloaded {
+    [context](const ID& id) { id.mark(context); },
+    [context](const TypedFnSignature* fn) { context->markPointer(fn); },
+    [context](const UntypedFnSignature* ufs) { context->markPointer(ufs); }
+  }, rejected_);
+  context->markPointer(candidate_);
+  (void) candidateReason_; // nothing to mark
+  (void) formalReason_; // nothing to mark
+  (void) formalIdx_; // nothing to mark
+}
+
+const ID& ApplicabilityResult::idForErr() const {
+  return std::visit(overloaded {
+    [](const ID& id) -> const ID& { return id; },
+    [](const UntypedFnSignature* ufs) -> const ID& { return ufs->id(); },
+    [](const TypedFnSignature* fn) -> const ID& { return fn->id(); }
+  }, rejected_);
+}
+
+const UntypedFnSignature* ApplicabilityResult::untypedForErr() const {
+  return std::visit(overloaded {
+    [](const ID& id) -> const UntypedFnSignature* { return nullptr; },
+    [](const UntypedFnSignature* ufs) { return ufs; },
+    [](const TypedFnSignature* fn) { return fn->untyped(); }
+  }, rejected_);
+}
+
+const TypedFnSignature* ApplicabilityResult::initialForErr() const {
+  return std::visit(overloaded {
+    [](const ID& id) -> const TypedFnSignature* { return nullptr; },
+    [](const UntypedFnSignature* ufs) -> const TypedFnSignature* { return nullptr; },
+    [](const TypedFnSignature* fn) { return fn; }
+  }, rejected_);
+}
+
 void CallInfoActual::stringify(std::ostream& ss,
                                chpl::StringifyKind stringKind) const {
   if (!byName_.isEmpty()) {
@@ -1099,10 +1183,31 @@ bool PoiInfo::canReuse(const PoiInfo& check) const {
   return false;
 }
 
-MostSpecificCandidate MostSpecificCandidate::fromTypedFnSignature(Context* context,
-                                          const TypedFnSignature* fn,
-                                          const FormalActualMap& faMap,
-                                          const SubstitutionsMap& promotedFormals) {
+MostSpecificCandidate
+MostSpecificCandidate::fromTypedFnSignature(ResolutionContext* rc,
+                                            const TypedFnSignature* fn,
+                                            const FormalActualMap& faMap,
+                                            const Scope* scope,
+                                            const PoiScope* poiScope,
+                                            const SubstitutionsMap& promotedFormals) {
+  auto newFaMap = faMap;
+
+  // Earlier, we didn't resolve the body of the function, but when it's an
+  // initializer, it can have substitution-producing statements such
+  // as `this.typeField = int`. Now that we have picked this candidate
+  // as most specific, it's safe to resolve the body without worrying about
+  // spurious errors from other andidates.
+  if (fn->isInitializer()) {
+    auto instantiationPoiScope =
+      Resolver::poiScopeOrNull(rc->context(), fn, scope, poiScope);
+    auto rf = resolveFunction(rc, fn, instantiationPoiScope, /* skipIfRunning */ true);
+
+    if (rf) {
+      fn = rf->signature();
+      newFaMap.updateReceiverType(fn);
+    }
+  }
+
   int coercionFormal = -1;
   int coercionActual = -1;
   for (auto fa : faMap.byFormals()) {
@@ -1111,7 +1216,10 @@ MostSpecificCandidate MostSpecificCandidate::fromTypedFnSignature(Context* conte
 
     if (!formalType.type() || !actualType.type()) continue;
 
-    auto got = canPass(context, actualType, formalType);
+    auto canPassFn =
+      actualType.kind() == QualifiedType::INIT_RECEIVER ? canPassScalar
+                                                        : canPass;
+    auto got = canPassFn(rc->context(), actualType, formalType);
     if (got.converts() && formalType.kind() == QualifiedType::CONST_REF) {
       coercionFormal = fa.formalIdx();
       coercionActual = fa.actualIdx();
@@ -1119,15 +1227,18 @@ MostSpecificCandidate MostSpecificCandidate::fromTypedFnSignature(Context* conte
     }
   }
 
-  return MostSpecificCandidate(fn, faMap, promotedFormals, coercionFormal, coercionActual);
+  return MostSpecificCandidate(fn, std::move(newFaMap), promotedFormals, coercionFormal, coercionActual);
 }
 
-MostSpecificCandidate MostSpecificCandidate::fromTypedFnSignature(Context* context,
-                                          const TypedFnSignature* fn,
-                                          const CallInfo& ci,
-                                          const SubstitutionsMap& promotedFormals) {
+MostSpecificCandidate
+MostSpecificCandidate::fromTypedFnSignature(ResolutionContext* rc,
+                                            const TypedFnSignature* fn,
+                                            const CallInfo& ci,
+                                            const Scope* scope,
+                                            const PoiScope* poiScope,
+                                            const SubstitutionsMap& promotedFormals) {
   auto faMap = FormalActualMap(fn, ci);
-  return MostSpecificCandidate::fromTypedFnSignature(context, fn, faMap, promotedFormals);
+  return MostSpecificCandidate::fromTypedFnSignature(rc, fn, faMap, scope, poiScope, promotedFormals);
 }
 
 void MostSpecificCandidate::stringify(std::ostream& ss,
@@ -1199,6 +1310,8 @@ const char* AssociatedAction::kindToString(Action a) {
       return "copy-init";
     case DEFAULT_INIT:
       return "default-init";
+    case CUSTOM_COPY_INIT:
+      return "custom-copy-init";
     case INIT_OTHER:
       return "init-from-other";
     case DEINIT:
@@ -1215,6 +1328,10 @@ const char* AssociatedAction::kindToString(Action a) {
       return "compare";
     case RUNTIME_TYPE:
       return "runtime-type";
+    case ENTER_CONTEXT:
+      return "enter-context";
+    case EXIT_CONTEXT:
+      return "exit-context";
     // no default to get a warning if new Actions are added
   }
 
@@ -1500,6 +1617,11 @@ bool SimpleMethodLookupHelper::isReceiverApplicable(Context* context,
   return methodReceiverId == receiverTypeId_;
 }
 
+
+bool SimpleMethodLookupHelper::shouldCheckForTertiaryMethods(Context* context, const VisibilitySymbols* toCheck) const {
+  return false; // no type information, so no clever tertiary method searching
+}
+
 void SimpleMethodLookupHelper::stringify(std::ostream& ss,
                                          chpl::StringifyKind stringKind) const {
   ss << "SimpleMethodLookupHelper ";
@@ -1556,6 +1678,31 @@ bool TypedMethodLookupHelper::isReceiverApplicable(Context* context,
     return p.passes();
   }
 
+  return false;
+}
+
+static std::vector<QualifiedType> const& importedTypesInVisibilitySymbols(Context* context, const VisibilitySymbols* symbols) {
+  QUERY_BEGIN(importedTypesInVisibilitySymbols, context, symbols);
+  std::vector<QualifiedType> result;
+
+  if (symbols->kind() == VisibilitySymbols::ONLY_CONTENTS &&
+      symbols->scope()->tag() == uast::asttags::Module) {
+    for (auto& rename : symbols->names()) {
+      auto& nameRE = resolveNameInModule(context, symbols->scope()->id(), rename.first);
+
+      if (!nameRE.type().isUnknownOrErroneous()) result.push_back(nameRE.type());
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+bool TypedMethodLookupHelper::shouldCheckForTertiaryMethods(Context* context, const VisibilitySymbols* toCheck) const {
+  auto receiverTypeAsType = QualifiedType(QualifiedType::TYPE, receiverType_.type());
+  for (auto& namedType : importedTypesInVisibilitySymbols(context, toCheck)) {
+    auto p = canPassScalar(context, receiverTypeAsType, namedType);
+    if (p.passes()) return true;
+  }
   return false;
 }
 

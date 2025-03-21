@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -610,6 +610,12 @@ void chpl_set_local_rank(int32_t rank);
 // Returns our local rank on the node, -1 if chpl_set_local_rank has
 // not been called.
 int32_t chpl_get_local_rank(void);
+
+// Sets the number of colocales on the local node.
+void chpl_set_num_colocales_on_node(int32_t count);
+
+// Returns the number of colocales on the local node.
+int32_t chpl_get_num_colocales_on_node(void);
 
 #ifdef __cplusplus
 }

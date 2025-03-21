@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1112,7 +1112,7 @@ module ChapelDomain {
     @chpldoc.nodoc
     proc init(d,
               type idxType,
-              param parSafe: bool = true,
+              param parSafe: bool = false,
               definedConst: bool = false) {
       this.init(d.newAssociativeDom(idxType, parSafe));
     }
@@ -1572,11 +1572,9 @@ module ChapelDomain {
     proc chpl_checkEltType(type eltType) /*private*/ {
       if eltType == void {
         compilerError("array element type cannot be 'void'");
-      }
-      if eltType == nothing {
+      } else if eltType == nothing {
         compilerError("array element type cannot be 'nothing'");
-      }
-      if isGenericType(eltType) {
+      } else if isGenericType(eltType) {
         compilerWarning("creating an array with element type " +
                         eltType:string);
         if isClassType(eltType) && !isGenericType(eltType:borrowed) {
@@ -1625,7 +1623,9 @@ module ChapelDomain {
       var x = _value.dsiBuildArray(eltType, initElts);
       pragma "dont disable remote value forwarding"
       proc help() {
-        _value.add_arr(x);
+        // Workaround: added 'this.' qualification as Dyno can't resolve method
+        // call in nested method atm. Anna 2025-02-27
+        this._value.add_arr(x);
       }
       help();
 
@@ -2202,18 +2202,17 @@ module ChapelDomain {
      */
     proc ref add(in idx) {
       // ensure that the rest of add() deals only with irregular domains
-      if isRectangular() then
+      if isRectangular() {
         compilerError("Cannot add indices to a rectangular domain");
 
       // 'idx' is an index
-      if isCoercible(idx.type, fullIdxType) ||
+      } else if isCoercible(idx.type, fullIdxType) ||
           // sparse 1-d domains also allow adding 1-tuples
-          isSparse() && rank == 1 && isCoercible(idx.type, 1*idxType) then
+          isSparse() && rank == 1 && isCoercible(idx.type, 1*idxType) {
         return _value.dsiAdd(idx);
 
       // allow promotion
-      type promoType = __primitive("scalar promotion type", idx);
-      if isCoercible(promoType, fullIdxType) {
+      } else if isCoercible(__primitive("scalar promotion type", idx), fullIdxType) {
         if isSparse() || (isAssociative() && ! this.parSafe) then
           compilerWarning("this promoted addition of indices to ",
             if isSparse() then "a sparse" else "an associative",
@@ -2223,11 +2222,12 @@ module ChapelDomain {
               " or declaring the domain type with 'parSafe=true'");
         // we could force serial execution in non-parSafe cases, see #24565
         return + reduce [oneIdx in idx] _value.dsiAdd(oneIdx);
-      }
 
       // for now, disallow calling add() in any other way
-      compilerError("cannot add a ", idx.type:string, " to ",
-                    domainDescription(this), " with idxType ", idxType:string);
+      } else {
+        compilerError("cannot add a ", idx.type:string, " to ",
+                      domainDescription(this), " with idxType ", idxType:string);
+      }
     }
 
     @chpldoc.nodoc

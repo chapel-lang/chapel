@@ -48,8 +48,8 @@ set -x CHPL_COMM none
 echo "Setting CHPL_TASKS to fifo"
 set -x CHPL_TASKS fifo
 
-echo "Setting CHPL_MEM to cstdlib"
-set -x CHPL_MEM cstdlib
+echo "Setting CHPL_TARGET_MEM to cstdlib"
+set -x CHPL_TARGET_MEM cstdlib
 
 echo "Setting CHPL_HOST_MEM to cstdlib"
 set -x CHPL_HOST_MEM cstdlib

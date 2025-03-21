@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -1739,6 +1739,232 @@ static void testInfiniteCycleBug() {
   std::ignore = resolveQualifiedTypeOfX(context, program1);
 }
 
+// a callable formal (like a tuple) is preferred to functions in outer
+// scopes.
+static void testFormalFunctionShadowing() {
+  std::string program =
+    R"""(
+    record R { proc this(x: int) do return 42; }
+
+    proc foo(x) do return 1.0;
+    proc foo(x: int) do return new R();
+    proc bar(foo: R) do return foo(0);
+
+    var x = bar(new R());
+    )""";
+
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto t = resolveTypeOfXInit(context, program);
+  CHPL_ASSERT(!t.isUnknownOrErroneous());
+  CHPL_ASSERT(t.type()->isIntType());
+}
+
+// a callable formal (like a tuple) interrupts the search for functions as
+// an optimization for "distance" (any functions beyond the callable formal
+// are further away than any functions we've already found).
+static void testFunctionFormalShadowing() {
+  std::string program =
+    R"""(
+    record R { proc this(x: int) do return 42; }
+
+    proc foo(x: int) do return new R();
+    proc bar(foo: R) {
+      proc foo(x) do return 1.0;
+      return foo(0);
+    }
+
+    var x = bar(new R());
+    )""";
+
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto t = resolveTypeOfXInit(context, program);
+  CHPL_ASSERT(!t.isUnknownOrErroneous());
+  CHPL_ASSERT(t.type()->isRealType());
+}
+
+// Today, we don't perform overload selection for callable objects. Instead,
+// expect an error to be issued.
+static void testCallableAmbiguity() {
+  std::string program =
+    R"""(
+    module Lib {
+      record R {
+        proc this() do return 42;
+      }
+    }
+    module M1 { use Lib; var x: R; }
+    module M2 { use Lib; var x: R; }
+    module M3 {
+      use M1;
+      use M2;
+
+      var y = x(0);
+    }
+    )""";
+
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::ignore = resolveTypesOfVariables(context, program, { "y" });
+  assert(guard.realizeErrors());
+}
+
+// Test use of the 'scalar promotion type' primitive.
+// Implementation of getting promotion types is tested more thoroughly
+// elsewhere, so this is just a very basic test the prims works as expected.
+static void testPromotionPrim() {
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  {
+    std::string prog =
+      R"""(
+        var d : domain(1, real);
+        type t = __primitive("scalar promotion type", d);
+        param x = (t == real);
+      )""";
+
+    auto x = resolveTypeOfXInit(context, prog);
+    ensureParamBool(x, true);
+
+    assert(guard.realizeErrors() == 0);
+  }
+
+  {
+    context->advanceToNextRevision(false);
+    std::string prog =
+      R"""(
+        type t = __primitive("scalar promotion type", int);
+        param x = (t == int);
+      )""";
+
+    auto x = resolveTypeOfXInit(context, prog);
+    ensureParamBool(x, true);
+
+    assert(guard.realizeErrors() == 0);
+  }
+}
+
+// Test the '_wide_get_locale' primitive.
+static void testGetLocalePrim() {
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto variables = resolveTypesOfVariables(context,
+    R"""(
+      var x : real;
+      var locId = __primitive("_wide_get_locale", x);
+      var sublocId = chpl_sublocFromLocaleID(locId);
+    )""", { "locId", "sublocId" });
+
+  auto locId = variables.at("locId");
+  assert(locId.type());
+  assert(locId.type() == CompositeType::getLocaleIDType(context));
+  auto sublocId = variables.at("sublocId");
+  assert(sublocId.type());
+  assert(sublocId.type()->isIntType());
+
+  assert(guard.realizeErrors() == 0);
+}
+
+// Test the '.locale' query.
+static void testDotLocale() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto loc = resolveTypeOfXInit(context,
+    R"""(
+      var myVar : int;
+      var x = myVar.locale;
+    )""");
+
+  assert(loc.kind() == QualifiedType::CONST_VAR);
+  assert(loc.type());
+  assert(loc.type() == CompositeType::getLocaleType(context));
+
+  assert(guard.realizeErrors() == 0);
+}
+
+// even if a formal's type has defaults, if it's explicitly made generic
+// with (?) it should not be concrete.
+static void testExplicitlyGenericFormal() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+  auto qt = resolveTypeOfXInit(context,
+    R"""(
+      record R {
+        type myType = int;
+      }
+      var intR: R(int);
+      var realR: R(real);
+
+      proc foo(x: R(?) = intR) do return x;
+      var x = foo(realR);
+    )""");
+
+  CHPL_ASSERT(qt.type()->isRecordType());
+  CHPL_ASSERT(qt.type()->toRecordType()->name() == "R");
+  for (auto& sub : qt.type()->toRecordType()->substitutions()) {
+    CHPL_ASSERT(sub.second.type()->isRealType());
+  }
+}
+
+static void testGlobalMultiDecl() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto xQt = resolveTypeOfXInit(context,
+    R"""(
+      var a, b: int;
+      proc foo() do return a;
+      var x = foo();
+    )""");
+
+  assert(xQt.type()->isIntType());
+}
+
+// Ensure that we don't attempt to resolve functions with actuals that are
+// generic but would never be generic during a "real" invocation. This
+// is a quirk of "initial signatures", which do not use instantiation
+// info, and thus occasionally have generic formals where we don't expect.
+static void testGenericTypeInInitialSignature() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::ignore = resolveTypeOfXInit(context,
+    R"""(
+      record R { type field; }
+
+      proc compilerWarning(param msg: string...) {
+        __primitive("warning");
+      }
+
+      proc foo(type t) type {
+        if t == R(?) then compilerWarning("t is generic");
+        return t;
+      }
+
+      proc sig(x: R, y: foo(x.type)) do return x;
+
+      var x = sig(new R(int), new R(int));
+    )""");
+
+
+  // No warnings should have been emitted, because the call to 'foo()' during
+  // resolving the initial signature should've been skipped.
+}
+
 int main() {
   test1();
   test2();
@@ -1769,6 +1995,21 @@ int main() {
   test27();
 
   testInfiniteCycleBug();
+
+  testFormalFunctionShadowing();
+  testFunctionFormalShadowing();
+  testCallableAmbiguity();
+
+  testPromotionPrim();
+  testGetLocalePrim();
+
+  testDotLocale();
+
+  testExplicitlyGenericFormal();
+
+  testGlobalMultiDecl();
+
+  testGenericTypeInInitialSignature();
 
   return 0;
 }

@@ -1,5 +1,4 @@
 #include "argparsing.h"
-#include <assert.h>
 #include <qthread/qthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -60,7 +59,7 @@ static int realmain(void) {
 }
 
 int main(int argc, char *argv[]) {
-  assert(qthread_initialize() == 0);
+  test_check(qthread_initialize() == 0);
 
   x = 0;
   CHECK_VERBOSE();

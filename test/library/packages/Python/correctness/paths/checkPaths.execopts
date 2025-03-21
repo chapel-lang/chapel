@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+if [ -n "$CHPL_TEST_VENV_DIR" ] && [ "$CHPL_TEST_VENV_DIR" != "none" ]; then
+  chpl_python=$CHPL_TEST_VENV_DIR/bin/python3
+else
+  chpl_python=$($CHPL_HOME/util/config/find-python.sh)
+fi
+
+echo "--pythonToUse=$chpl_python --testName='default'"
+echo "--pythonToUse=$chpl_python --testName='parentUserBase'"
+echo "--pythonToUse=$chpl_python --testName='parentPythonPath'"
