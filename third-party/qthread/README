@@ -60,3 +60,20 @@ index eb8ac5b1..ea03ed6d 100644
        qassert(hwloc_topology_init(&topology), 0);
        qassert(hwloc_topology_load(topology), 0);
 
+
+Prevent CMake from overriding the OSX deployment target
+--- a/third-party/qthread/qthread-src/CMakeLists.txt
++++ b/third-party/qthread/qthread-src/CMakeLists.txt
+@@ -16,6 +16,11 @@ else()
+     LANGUAGES C ASM CXX)
+ endif()
+ 
++# This must be done after `project` or it gets overridden by cmake
++if(APPLE)
++  set(CMAKE_OSX_DEPLOYMENT_TARGET "" CACHE STRING "" FORCE)
++endif()
++
+ include(GNUInstallDirs)
+ 
+ set(THREADS_PREFER_PTHREAD_FLAG ON)
+
