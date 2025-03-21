@@ -51,6 +51,9 @@ struct ControlFlowInfo {
   void markBreak() { if (!isDoneExecuting()) breaks_ = true; }
   void markContinue() { if (!isDoneExecuting()) continues_ = true; }
 
+  void resetContinue() { continues_ = false; }
+  void resetBreak() { breaks_ = false; }
+
   ControlFlowInfo& operator&=(const ControlFlowInfo& other) {
     returnsOrThrows_ &= other.returnsOrThrows_;
     breaks_ &= other.breaks_;

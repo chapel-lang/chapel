@@ -6219,19 +6219,40 @@ template <typename BoundInfo>
 static bool resolveParamForLoop(Resolver& rv, const For* forLoop, BoundInfo&& boundInfo) {
   Context* context = rv.context;
   std::vector<ResolutionResultByPostorderID> loopResults;
+
+  // persist information about whether iterations had 'break' or 'return',
+  // so that returns in early iterations are detected by subsequent iterations.
+  ControlFlowInfo loopControlFlow;
+
   while (!boundInfo->done()) {
+    // If a previous iteration continued, we should still keep iterating.
+    loopControlFlow.resetContinue();
+
+    // Loop execution has ended somehow (throw, break, return). No need to push
+    // loop resutls for skipped iterations.
+    if (loopControlFlow.isDoneExecuting()) break;
+
     ResolutionResultByPostorderID bodyResults;
     auto cur = Resolver::paramLoopResolver(rv, forLoop, bodyResults);
 
     cur.enterScope(forLoop);
+    cur.currentFrame()->controlFlowInfo = loopControlFlow;
 
     ResolvedExpression& idx = cur.byPostorder.byAst(forLoop->index());
     idx.setType(boundInfo->advance(context));
     forLoop->body()->traverse(cur);
 
+    loopControlFlow.sequence(cur.currentFrame()->controlFlowInfo);
     cur.exitScope(forLoop);
 
     loopResults.push_back(std::move(cur.byPostorder));
+  }
+
+  // Propagate the control flow information to the current frame.
+  loopControlFlow.resetContinue();
+  loopControlFlow.resetBreak();
+  if (!rv.scopeStack.empty()) {
+    rv.currentFrame()->controlFlowInfo.sequence(loopControlFlow);
   }
 
   auto paramLoop = new ResolvedParamLoop(forLoop);
