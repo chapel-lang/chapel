@@ -598,12 +598,12 @@ void ReturnTypeInferrer::exit(const For* forLoop, RV& rv) {
 }
 
 bool ReturnTypeInferrer::enter(const Break* brk, RV& rv) {
-  currentFrame()->controlFlowInfo.markBreak();
+  markBreak();
   return false;
 }
 void ReturnTypeInferrer::exit(const Break* brk, RV& rv) {}
 bool ReturnTypeInferrer::enter(const Continue* cont, RV& rv) {
-  currentFrame()->controlFlowInfo.markContinue();
+  markContinue();
   return false;
 }
 void ReturnTypeInferrer::exit(const Continue* cont, RV& rv) {}

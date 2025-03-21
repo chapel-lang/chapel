@@ -210,6 +210,21 @@ struct FlowSensitiveVisitor {
     return ret.get();
   }
 
+  void markReturnOrThrow() {
+    if (scopeStack.empty()) return;
+    currentFrame()->controlFlowInfo.markReturnOrThrow();
+  }
+
+  void markBreak() {
+    if (scopeStack.empty()) return;
+    currentFrame()->controlFlowInfo.markBreak();
+  }
+
+  void markContinue() {
+    if (scopeStack.empty()) return;
+    currentFrame()->controlFlowInfo.markContinue();
+  }
+
   void createSubFrames(const uast::AstNode* ast) {
     auto& newFrame = scopeStack.back();
     if (auto c = ast->toConditional()) {
