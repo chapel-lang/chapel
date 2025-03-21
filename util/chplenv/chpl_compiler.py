@@ -528,10 +528,28 @@ def _main():
                       const='host', default='host')
     parser.add_option('--target', dest='flag', action='store_const',
                       const='target')
+    parser.add_option('--cc', dest='which', action='store_const',
+                      const='c', default=None, help='get CHPL_{flag}_CC')
+    parser.add_option('--cxx', dest='which', action='store_const',
+                      const='c++', help='get CHPL_{flag}_CXX')
+    parser.add_option('--compiler-only', dest='parts', action='store_const',
+                      const='compiler', default='all')
+    parser.add_option('--additional', dest='parts', action='store_const',
+                      const='additional', help='get additional compiler args')
     (options, args) = parser.parse_args()
 
-    compiler_val = get(options.flag)
-    sys.stdout.write("{0}\n".format(compiler_val))
+    if options.which is None:
+        compiler_val = get(options.flag)
+        sys.stdout.write("{0}\n".format(compiler_val))
+    else:
+        compiler = get_compiler_command(options.flag, options.which)
+        if options.parts == 'compiler':
+            sys.stdout.write("{0}\n".format(compiler[0]))
+        elif options.parts == 'additional':
+            sys.stdout.write("{0}\n".format(' '.join(compiler[1:])))
+        else:
+            sys.stdout.write("{0}\n".format(' '.join(compiler)))
+
 
 
 if __name__ == '__main__':

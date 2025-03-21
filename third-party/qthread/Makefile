@@ -172,10 +172,10 @@ qthread-config: FORCE
 	-DCMAKE_INSTALL_PREFIX='$(QTHREAD_INSTALL_DIR)' \
 	-DCMAKE_INSTALL_LIBDIR='$(QTHREAD_LIB_DIR)' \
 	-DBUILD_SHARED_LIBS=OFF \
-	-DCMAKE_C_COMPILER='$(CC)' \
-	-DCMAKE_C_FLAGS='$(CFLAGS)' \
-	-DCMAKE_CXX_COMPILER='$(CXX)' \
-	-DCMAKE_CXX_FLAGS='$(CXXFLAGS)' \
+	-DCMAKE_C_COMPILER='$(shell $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_compiler.py --cc --target --compiler-only)' \
+	-DCMAKE_C_FLAGS='$(shell $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_compiler.py --cc --target --additional) $(CFLAGS)' \
+	-DCMAKE_CXX_COMPILER='$(shell $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_compiler.py --cxx --target --compiler-only)' \
+	-DCMAKE_CXX_FLAGS='$(shell $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_compiler.py --cxx --target --additional) $(CXXFLAGS)' \
 	-DCMAKE_MAKE_PROGRAM='$(MAKE)'
 
 qthread-build: FORCE
