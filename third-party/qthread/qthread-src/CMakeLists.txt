@@ -16,6 +16,11 @@ else()
     LANGUAGES C ASM CXX)
 endif()
 
+# This must be done after `project` or it gets overridden by cmake
+if(APPLE)
+  set(CMAKE_OSX_DEPLOYMENT_TARGET "" CACHE STRING "" FORCE)
+endif()
+
 include(GNUInstallDirs)
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
