@@ -3421,16 +3421,14 @@ Expr* TConverter::convertPrimCallOrNull(const Call* node, RV& rv) {
   return ret;
 }
 
-static std::tuple<Expr*, AggregateType*, Symbol*, types::QualifiedType>
+static std::tuple<Expr*, Symbol*, types::QualifiedType>
 locateFieldSymbolAndType(TConverter* tc,
                          Expr* receiver,
                          const types::QualifiedType& qtReceiver,
                          const char* fieldName,
                          int fieldIndex) {
   // Construct an error value we can return when convenient.
-  std::tuple error { nullptr, ((AggregateType*) nullptr),
-                     ((Symbol*) nullptr),
-                     types::QualifiedType() };
+  std::tuple error { nullptr, ((Symbol*) nullptr), types::QualifiedType() };
   auto t = qtReceiver.type();
   auto cls = t->toClassType();
   auto ct = t ? t->getCompositeType() : nullptr;
@@ -3455,7 +3453,7 @@ locateFieldSymbolAndType(TConverter* tc,
     if (auto at = toAggregateType(tc->convertType(ct))) {
       // Adjust for the presence of the generated 'size' field.
       const int idx = (fieldIndex + 2);
-      return { base, at, at->getField(idx), fieldType };
+      return { base, at->getField(idx), fieldType };
     }
 
     return error;
@@ -3498,7 +3496,7 @@ locateFieldSymbolAndType(TConverter* tc,
     // does a scan to find the field index). Is there a way we can get away
     // with only doing one while also retrieving the field's frontend type?
     const int idx = (fieldIndex + 1);
-    return { base, at, at->getField(idx), fieldType };
+    return { base, at->getField(idx), fieldType };
   }
 
   return error;
@@ -3557,9 +3555,9 @@ static Expr* codegenGetFieldImpl(TConverter* tc,
   }
 
   // Compute the other pieces we need to perform the field access.
-  auto [base, at, sym, qtField] = locateFieldSymbolAndType(tc, recv, qtRecv,
-                                                           fieldName,
-                                                           fieldIndex);
+  auto [base, sym, qtField] = locateFieldSymbolAndType(tc, recv, qtRecv,
+                                                       fieldName,
+                                                       fieldIndex);
   if (!base) return TC_PLACEHOLDER(tc);
 
   // Should not be generating fetches to compile-time values.
