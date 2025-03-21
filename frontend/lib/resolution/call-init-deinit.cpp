@@ -1090,7 +1090,7 @@ void CallInitDeinit::handleTry(const Try* t, RV& rv) {
   int nCatch = currentNumCatchFrames();
   for (int i = 0; i < nCatch; i++) {
     VarFrame* catchFrame = currentCatchFrame(i);
-    if (!catchFrame->returnsOrThrows) {
+    if (!catchFrame->controlFlowInfo.returnsOrThrows()) {
       processDeinitsAndPropagate(catchFrame, frame, rv);
     }
   }
@@ -1105,7 +1105,7 @@ void CallInitDeinit::handleDisjunction(const uast::AstNode * node,
                                  bool total, RV& rv) {
 
   for (auto frame : frames) {
-    if(!frame->returnsOrThrows) {
+    if(!frame->controlFlowInfo.returnsOrThrows()) {
       processDeinitsAndPropagate(frame, currentFrame, rv);
     }
   }

@@ -448,12 +448,35 @@ bool VarScopeVisitor::enter(const Return* ast, RV& rv) {
 void VarScopeVisitor::exit(const Return* ast, RV& rv) {
   if (!scopeStack.empty()) {
     VarFrame* frame = scopeStack.back().get();
-    frame->returnsOrThrows = true;
+    frame->controlFlowInfo.markReturnOrThrow();
     handleReturn(ast, rv);
   }
   exitAst(ast);
 }
 
+bool VarScopeVisitor::enter(const Break* ast, RV& rv) {
+  enterAst(ast);
+  return true;
+}
+void VarScopeVisitor::exit(const Break* ast, RV& rv) {
+  if (!scopeStack.empty()) {
+    VarFrame* frame = scopeStack.back().get();
+    frame->controlFlowInfo.markBreak();
+  }
+  exitAst(ast);
+}
+
+bool VarScopeVisitor::enter(const Continue* ast, RV& rv) {
+  enterAst(ast);
+  return true;
+}
+void VarScopeVisitor::exit(const Continue* ast, RV& rv) {
+  if (!scopeStack.empty()) {
+    VarFrame* frame = scopeStack.back().get();
+    frame->controlFlowInfo.markContinue();
+  }
+  exitAst(ast);
+}
 
 bool VarScopeVisitor::enter(const Throw* ast, RV& rv) {
   enterAst(ast);
@@ -462,7 +485,7 @@ bool VarScopeVisitor::enter(const Throw* ast, RV& rv) {
 void VarScopeVisitor::exit(const Throw* ast, RV& rv) {
   if (!scopeStack.empty()) {
     VarFrame* frame = scopeStack.back().get();
-    frame->returnsOrThrows = true;
+    frame->controlFlowInfo.markReturnOrThrow();
     handleThrow(ast, rv);
   }
   exitAst(ast);

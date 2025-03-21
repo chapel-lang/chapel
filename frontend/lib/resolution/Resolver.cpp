@@ -6904,7 +6904,25 @@ void Resolver::exit(const Return* ret) {
     initResolver->checkEarlyReturn(ret);
   }
   if (!scopeStack.empty()) {
-    scopeStack.back()->returnsOrThrows = true;
+    scopeStack.back()->controlFlowInfo.markReturnOrThrow();
+  }
+}
+
+bool Resolver::enter(const uast::Break* brk) {
+  return true;
+}
+void Resolver::exit(const uast::Break* brk) {
+  if (!scopeStack.empty()) {
+    scopeStack.back()->controlFlowInfo.markBreak();
+  }
+}
+
+bool Resolver::enter(const uast::Continue* cont) {
+  return true;
+}
+void Resolver::exit(const uast::Continue* cont) {
+  if (!scopeStack.empty()) {
+    scopeStack.back()->controlFlowInfo.markContinue();
   }
 }
 
@@ -6917,7 +6935,7 @@ void Resolver::exit(const Throw* node) {
     context->error(node, "initializers are not yet allowed to throw errors");
   }
   if (!scopeStack.empty()) {
-    scopeStack.back()->returnsOrThrows = true;
+    scopeStack.back()->controlFlowInfo.markReturnOrThrow();
   }
 }
 

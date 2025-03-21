@@ -26,6 +26,52 @@
 namespace chpl {
 namespace resolution {
 
+struct ControlFlowInfo {
+ private:
+  // has the block already encountered a return or a throw?
+  bool returnsOrThrows_ = false;
+
+  // whether this frame hit a 'break'
+  bool breaks_ = false;
+
+  // whether this frame hit a 'continue'
+  bool continues_ = false;
+
+ public:
+  ControlFlowInfo() = default;
+  ControlFlowInfo(bool returnsOrThrows, bool breaks, bool continues)
+    : returnsOrThrows_(returnsOrThrows), breaks_(breaks), continues_(continues) {}
+
+  bool isDoneExecuting() const { return returnsOrThrows_ || breaks_ || continues_; }
+  bool returnsOrThrows() const { return returnsOrThrows_; }
+  bool breaks() const { return breaks_; }
+  bool continues() const { return continues_; }
+
+  void markReturnOrThrow() { if (!isDoneExecuting()) returnsOrThrows_ = true; }
+  void markBreak() { if (!isDoneExecuting()) breaks_ = true; }
+  void markContinue() { if (!isDoneExecuting()) continues_ = true; }
+
+  ControlFlowInfo& operator&=(const ControlFlowInfo& other) {
+    returnsOrThrows_ &= other.returnsOrThrows_;
+    breaks_ &= other.breaks_;
+    continues_ &= other.continues_;
+    return *this;
+  }
+
+  ControlFlowInfo operator&(const ControlFlowInfo& other) {
+    auto ret = *this;
+    return ret &= other;
+  }
+
+  void sequence(const ControlFlowInfo& other) {
+    if (!isDoneExecuting()) {
+      returnsOrThrows_ |= other.returnsOrThrows_;
+      breaks_ |= other.breaks_;
+      continues_ |= other.continues_;
+    }
+  }
+};
+
 template <typename Self>
 struct BaseFrame {
   // the ast node corresponding to this frame
@@ -34,8 +80,8 @@ struct BaseFrame {
   // the scope of this frame
   const Scope* scope = nullptr;
 
-  // has the block already encountered a return or a throw?
-  bool returnsOrThrows = false;
+  // control flow information
+  ControlFlowInfo controlFlowInfo;
 
   // for conditionals/selects, does this block have a param true condition?
   bool paramTrueCond = false;
@@ -50,6 +96,11 @@ struct BaseFrame {
 
   BaseFrame() = default;
   BaseFrame(const uast::AstNode* ast) : scopeAst(ast) {}
+
+  /* have we hit a statement that would prevent further execution of this block? */
+  bool isDoneExecuting() {
+    return controlFlowInfo.isDoneExecuting();
+  }
 };
 
 struct DefaultFrame : public BaseFrame<DefaultFrame> {
@@ -212,62 +263,55 @@ struct FlowSensitiveVisitor {
   void reconcileFrames(Frame* parentFrame, const uast::Conditional* cond) {
     auto thenFrame = currentThenFrame();
     auto elseFrame = currentElseFrame();
-    if (thenFrame && elseFrame &&
-        thenFrame->returnsOrThrows && elseFrame->returnsOrThrows) {
-      parentFrame->returnsOrThrows = true;
+    if (thenFrame && elseFrame) {
+      parentFrame->controlFlowInfo.sequence(thenFrame->controlFlowInfo & elseFrame->controlFlowInfo);
     }
-    if (thenFrame && thenFrame->returnsOrThrows && thenFrame->knownPath) {
-      parentFrame->returnsOrThrows = true;
+    if (thenFrame && thenFrame->knownPath) {
+      parentFrame->controlFlowInfo.sequence(thenFrame->controlFlowInfo);
     }
-    if (elseFrame && elseFrame->returnsOrThrows && elseFrame->knownPath) {
-      parentFrame->returnsOrThrows = true;
+    if (elseFrame && elseFrame->knownPath) {
+      parentFrame->controlFlowInfo.sequence(elseFrame->controlFlowInfo);
     }
   }
 
   void reconcileFrames(Frame* parentFrame, const uast::Try* t) {
     auto tryFrame = currentFrame();
-    if (tryFrame->returnsOrThrows) {
+    if (tryFrame->controlFlowInfo.isDoneExecuting()) {
       int nCatchFrames = currentNumCatchFrames();
-      bool allCatchReturnThrow = true;
+      auto accumulatedControlFlowInfo = tryFrame->controlFlowInfo;
       for (int i = 0; i < nCatchFrames; i++) {
         auto catchFrame = currentCatchFrame(i);
-        if (!catchFrame->returnsOrThrows) {
-          allCatchReturnThrow = false;
-          break;
-        }
+        accumulatedControlFlowInfo &= catchFrame->controlFlowInfo;
       }
-      if (allCatchReturnThrow) {
-        parentFrame->returnsOrThrows = true;
-      }
+      parentFrame->controlFlowInfo.sequence(accumulatedControlFlowInfo);
     }
   }
 
   void reconcileFrames(Frame* parentFrame, const uast::Select* s) {
-    bool allReturnOrThrow = true;
+    ControlFlowInfo accumulatedControlFlowInfo(true, true, true);
     for(int i = 0; i < s->numWhenStmts(); i++) {
       auto whenFrame = currentWhenFrame(i);
       if (!whenFrame) continue;
-      allReturnOrThrow &= whenFrame->returnsOrThrows;
+      accumulatedControlFlowInfo &= whenFrame->controlFlowInfo;
       if (whenFrame->knownPath) {  // this is known to be the taken path
-        parentFrame->returnsOrThrows = whenFrame->returnsOrThrows;
+        parentFrame->controlFlowInfo.sequence(whenFrame->controlFlowInfo);
         break;
       }
     }
 
-    if (s->hasOtherwise()) parentFrame->returnsOrThrows |= allReturnOrThrow;
+    if (s->hasOtherwise()) {
+      parentFrame->controlFlowInfo.sequence(accumulatedControlFlowInfo);
+    }
   }
 
   void reconcileFrames(Frame* parentFrame, const uast::AstNode* ast) {
     if (ast->isLoop()) {
-      // don't propagate return/throw out of a loop,
-      // because it could be loop { break; return; } e.g.
+      // don't propagate return/throw etc. out of a loop, because we can't
+      // reason about its dynamic behavior. The exception are 'Param' loops.
       return;
     }
-
     auto frame = currentFrame();
-    if (frame->returnsOrThrows) {
-      parentFrame->returnsOrThrows = true;
-    }
+    parentFrame->controlFlowInfo.sequence(frame->controlFlowInfo);
   }
 
   virtual void doExitScope(const uast::AstNode* ast, ExtraData extraData) {

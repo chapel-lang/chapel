@@ -433,7 +433,7 @@ void FindElidedCopies::handleDisjunction(const AstNode * node,
   for (auto frame : frames) {
     if (!frame->knownPath) continue;
     // yielding handled during return/throw
-    if (frame->returnsOrThrows) return;
+    if (frame->controlFlowInfo.returnsOrThrows()) return;
 
     //yield the local variables
     saveLocalVarElidedCopies(frame);
@@ -461,7 +461,7 @@ void FindElidedCopies::handleDisjunction(const AstNode * node,
 
   std::vector<VarFrame*> nonReturningFrames;
   for(auto frame: frames) {
-    if (frame->returnsOrThrows) continue;
+    if (frame->controlFlowInfo.returnsOrThrows()) continue;
     saveLocalVarElidedCopies(frame);
     nonReturningFrames.push_back(frame);
   }
@@ -517,7 +517,7 @@ void FindElidedCopies::handleTry(const Try* t, RV& rv) {
 
   for (int i = 0; i < nCatchFrames; i++) {
     VarFrame* catchFrame = currentCatchFrame(i);
-    if (!catchFrame->returnsOrThrows) {
+    if (!catchFrame->controlFlowInfo.returnsOrThrows()) {
       allThrowOrReturn = false;
     }
     for (const auto& pair : catchFrame->copyElisionState) {

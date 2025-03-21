@@ -189,6 +189,12 @@ class VarScopeVisitor : protected FlowSensitiveVisitor<VarFrame, MutatingResolve
   bool enter(const Return* ast, RV& rv);
   void exit(const Return* ast, RV& rv);
 
+  bool enter(const Break* ast, RV& rv);
+  void exit(const Break* ast, RV& rv);
+
+  bool enter(const Continue* ast, RV& rv);
+  void exit(const Continue* ast, RV& rv);
+
   bool enter(const Throw* ast, RV& rv);
   void exit(const Throw* ast, RV& rv);
 

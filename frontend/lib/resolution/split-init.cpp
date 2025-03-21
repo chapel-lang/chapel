@@ -99,7 +99,7 @@ SplitInitVarStatus FindSplitInits::findVarStatus(ID varId) {
 
   for (ssize_t i = scopeStack.size() - 1; i >= 0; i--) {
     VarFrame* frame = scopeStack[i].get();
-    if (frame->returnsOrThrows) {
+    if (frame->controlFlowInfo.returnsOrThrows()) {
       status.foundReturnsThrows = true;
     }
     if (frame->initedVars.count(varId) > 0) {
@@ -280,7 +280,7 @@ std::map<ID,QualifiedType> FindSplitInits::verifyInitOrderAndType(const AstNode 
 
       // only check initialization order if the branch 
       // does not unconditionally return
-      if (frame->returnsOrThrows) continue;
+      if (frame->controlFlowInfo.returnsOrThrows()) continue;
 
       if (idx >= referenceInitOrder.size()) {
         referenceInitOrder.emplace_back(id, qt);
@@ -352,7 +352,7 @@ void FindSplitInits::handleDisjunction(const AstNode * node,
     bool allFramesInitReturnOrThrow = true;
     for(auto frame : frames) {
       bool thisFrameInits = frame->initedVars.count(id) > 0;
-      allFramesInitReturnOrThrow &= thisFrameInits || frame->returnsOrThrows;
+      allFramesInitReturnOrThrow &= thisFrameInits || frame->controlFlowInfo.returnsOrThrows();
     }
     if (allFramesInitReturnOrThrow) {
       locallySplitInitedVars.insert(id);
@@ -397,7 +397,7 @@ void FindSplitInits::handleTry(const Try* t, RV& rv) {
   bool allThrowOrReturn = true;
   for (int i = 0; i < nCatchFrames; i++) {
     VarFrame* catchFrame = currentCatchFrame(i);
-    if (!catchFrame->returnsOrThrows) {
+    if (!catchFrame->controlFlowInfo.returnsOrThrows()) {
       allThrowOrReturn = false;
     }
   }

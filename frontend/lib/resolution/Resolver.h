@@ -783,6 +783,12 @@ struct Resolver : FlowSensitiveVisitor<DefaultFrame> {
   bool enter(const uast::Return* ret);
   void exit(const uast::Return* ret);
 
+  bool enter(const uast::Break* brk);
+  void exit(const uast::Break* brk);
+
+  bool enter(const uast::Continue* cont);
+  void exit(const uast::Continue* cont);
+
   bool enter(const uast::Throw* ret);
   void exit(const uast::Throw* ret);
 
