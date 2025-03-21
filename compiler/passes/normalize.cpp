@@ -135,7 +135,7 @@ static TypeSymbol* expandTypeAlias(SymExpr* se);
 ************************************** | *************************************/
 
 static bool shouldSkipNormalizing(BaseAST* ast) {
-  return ast->shouldNotMutateEarly();
+  return ast->wasResolvedEarly();
 }
 
 static void handleSharedCArrays() {

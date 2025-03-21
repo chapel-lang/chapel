@@ -709,18 +709,33 @@ struct TConverter final : UastConverter {
   /// Expression Conversion ///
   /// --------------------- ///
 
-  // Use this any time you are generating AST and reach an error case
-  // _instead_ of doing something like 'return nullptr'. All paths
-  // through conversion should return _some_ sort of AST in order to
-  // maintain the correct shape (to keep the old compiler happy).
-  //
-  // Do not worry about handling error cases when converting. We can
-  // rely on the frontend to have emitted errors for a poorly formed
-  // program.
-  Expr* placeholder() const {
+
+  Expr* placeholder(const char* function, int line) {
+    if constexpr(trace) {
+      DebugPrinter(function, line)(this, "Generating placeholder AST!");
+    }
+
     auto var = new_IntSymbol(0, INT_SIZE_64);
-    return new SymExpr(var);
+    auto ret = new SymExpr(var);
+    return ret;
   }
+
+  // If you are converting and reach an error case, use this macro to generate
+  // _some_ expression instead of nothing at all.
+  //
+  // In most cases, the frontend should have emitted errors for malformed
+  // programs when it was used to construct the call-graph, which occurs
+  // before the typed-converter traversal runs. However, in some cases errors
+  // will not be caught until the converter executes. This can occur when the
+  // converter injects calls when generating that the frontend did not
+  // account for.
+  //
+  // In such cases, we want to continue generating as much AST as possible
+  // without calling '..._FATAL' or crashing unexpectedly, so call this
+  // macro instead. It returns an integer literal, which is fine because
+  // the frontend will emit errors, so the correctness of the generated AST
+  // does not matter.
+  #define TC_PLACEHOLDER(tc__) (tc__->placeholder(__FUNCTION__, __LINE__))
 
   // Helper that constructs AST to produce the default value for a type.
   //
@@ -736,7 +751,7 @@ struct TConverter final : UastConverter {
   Expr* defaultValueForType(const types::Type* t, const AstNode* pin, RV& rv);
 
   // Create a new temporary. The type used for it must be supplied.
-  Symbol* makeNewTemp(const types::QualifiedType& qt);
+  Symbol* makeNewTemp(const types::QualifiedType& qt, bool insertDef=true);
 
   // Store 'e' in a temporary if it does not already refer to one. The type
   // for the temporary must be provided and cannot easily be retrieved from
@@ -2673,14 +2688,13 @@ struct ConvertDefaultValueHelper {
     msg += chpl::types::typetags::tagToString(t->tag());
     msg += "'";
     TC_UNIMPL(msg.c_str());
-    return tc_->placeholder();
+    return TC_PLACEHOLDER(tc_);
   }
 
   Expr* visit(const types::ExternType* t) {
     // Taken from 'functionResolution.cpp:14000~'. Make a temp and zero it.
     types::QualifiedType qt = { types::QualifiedType::VAR, t };
     auto temp = tc_->makeNewTemp(qt);
-    tc_->insertStmt(new DefExpr(temp));
     auto ret = new CallExpr(PRIM_ZERO_VARIABLE, temp);
     return ret;
   }
@@ -2716,7 +2730,6 @@ struct ConvertDefaultValueHelper {
     // For extern records, just zero-initialize a temporary.
     if (t->linkage() == uast::Decl::EXTERN) {
       auto temp = tc_->makeNewTemp(qt);
-      tc_->insertStmt(new DefExpr(temp));
       auto ret = new CallExpr(PRIM_ZERO_VARIABLE, temp);
       return ret;
     }
@@ -2729,11 +2742,10 @@ struct ConvertDefaultValueHelper {
     const ResolvedFunction* rf = nullptr;
     auto fn = tc_->convertFunctionForGeneratedCall(ci2, node_, &rf);
 
-    if (!fn) return tc_->placeholder();
+    if (!fn) return TC_PLACEHOLDER(tc_);
 
     // Found it, so invoke the default-initializer on a temp.
     auto temp = tc_->makeNewTemp(qt);
-    tc_->insertStmt(new DefExpr(temp));
     auto initCall = new CallExpr(fn, temp);
 
     std::vector<const AstNode*> actualAsts;
@@ -2758,7 +2770,6 @@ struct ConvertDefaultValueHelper {
   Expr* visit(const types::TupleType* t) {
     types::QualifiedType qt = { types::QualifiedType::VAR, t };
     auto temp = tc_->makeNewTemp(qt);
-    tc_->insertStmt(new DefExpr(temp));
 
     auto initFn = tc_->findOrConvertTupleInit(t);
     auto initCall = new CallExpr(initFn);
@@ -2791,11 +2802,15 @@ TConverter::defaultValueForType(const types::Type* t,
   return ret;
 }
 
-Symbol* TConverter::makeNewTemp(const types::QualifiedType& qt) {
+Symbol*
+TConverter::makeNewTemp(const types::QualifiedType& qt, bool insertDef) {
   auto ret = newTemp();
   ret->addFlag(FLAG_EXPR_TEMP);
   ret->qual = convertQualifier(qt.kind());
   ret->type = convertType(qt.type());
+
+  if (insertDef) insertStmt(new DefExpr(ret));
+
   return ret;
 }
 
@@ -2810,7 +2825,6 @@ TConverter::storeInTempIfNeeded(Expr* e, const types::QualifiedType& qt) {
 
   // otherwise, store the value in a temp
   auto t = makeNewTemp(qt);
-  insertStmt(new DefExpr(t));
   insertStmt(new CallExpr(PRIM_MOVE, t, e));
   return new SymExpr(t);
 }
@@ -3352,14 +3366,13 @@ Expr* TConverter::convertTupleCallOrNull(const Call* node, RV& rv) {
 
   auto& qtTuple = re->type();
   auto tt = qtTuple.type() ? qtTuple.type()->toTupleType() : nullptr;
-  if (!tt) return placeholder();
+  if (!tt) return TC_PLACEHOLDER(this);
 
   auto fn = findOrConvertTupleInit(tt);
-  if (!fn) return placeholder();
+  if (!fn) return TC_PLACEHOLDER(this);
 
   types::QualifiedType qt = { types::QualifiedType::VAR, tt };
   auto temp = makeNewTemp(qt);
-  insertStmt(new DefExpr(temp));
 
   auto call = new CallExpr(fn);
   call->insertAtTail(temp);
@@ -3533,21 +3546,21 @@ static Expr* codegenGetFieldImpl(TConverter* tc,
     } else {
       // TODO: Have to poke around or have the frontend give more context.
       TC_UNIMPL("Fetching field from implicit receiver!");
-      return tc->placeholder();
+      return TC_PLACEHOLDER(tc);
     }
   }
 
   // The receiver does not have a useable type, so bail out.
   if (!qtRecv.hasTypePtr() || qtRecv.isUnknownOrErroneous() ||
       !qtRecv.type()->getCompositeType()) {
-    return tc->placeholder();
+    return TC_PLACEHOLDER(tc);
   }
 
   // Compute the other pieces we need to perform the field access.
   auto [base, at, sym, qtField] = locateFieldSymbolAndType(tc, recv, qtRecv,
                                                            fieldName,
                                                            fieldIndex);
-  if (!base) return tc->placeholder();
+  if (!base) return TC_PLACEHOLDER(tc);
 
   // Should not be generating fetches to compile-time values.
   // TODO: Except for RTTs...
@@ -3667,7 +3680,7 @@ Expr* TConverter::convertFieldInitOrNull(
     if (paramElideCallOrNull(init, re->poiScope(), &rf)) {
       INT_ASSERT(false && "Should not have param elided initializer call!");
     } else if (!rf) {
-      return placeholder();
+      return TC_PLACEHOLDER(this);
     }
 
     auto fn = findOrConvertFunction(rf);
@@ -3705,11 +3718,11 @@ Expr* TConverter::convertIntrinsicCastOrNull(
   INT_ASSERT(qt.type());
 
   // The cast was not typed, so the AST is malformed.
-  if (qt.isUnknownOrErroneous()) return placeholder();
+  if (qt.isUnknownOrErroneous()) return TC_PLACEHOLDER(this);
 
   if (qt.isParam()) {
     // The param value was not set, so the code is malformed.
-    if (!qt.hasParamPtr()) return placeholder();
+    if (!qt.hasParamPtr()) return TC_PLACEHOLDER(this);
 
     // Otherwise, convert the param value and return it.
     auto sym = convertParam(re->type());
@@ -3723,11 +3736,11 @@ Expr* TConverter::convertIntrinsicCastOrNull(
   auto& qt2 = rv.byAst(node->actual(1)).type();
 
   // The cast is malformed, the second actual should be a type.
-  if (qt2.kind() != types::QualifiedType::TYPE) return placeholder();
+  if (qt2.kind() != types::QualifiedType::TYPE) return TC_PLACEHOLDER(this);
 
   if (qt1.type() == qt2.type()) {
     TC_UNIMPL("Eliding cast to same type!");
-    return placeholder();
+    return TC_PLACEHOLDER(this);
   }
 
   const ResolvedFunction* rf = nullptr;
@@ -3749,7 +3762,7 @@ Expr* TConverter::convertIntrinsicCastOrNull(
 
   // There was no call, so we missed a case! Return a placeholder.
   TC_UNIMPL("Unhandled intrinsic cast!");
-  return placeholder();
+  return TC_PLACEHOLDER(this);
 }
 
 Expr* TConverter::convertIntrinsicLogicalOrNull(
@@ -3833,7 +3846,6 @@ Expr* TConverter::convertIntrinsicLogicalOrNull(
 
   // Make a temp...
   auto temp = makeNewTemp(reArg1->type());
-  insertStmt(new DefExpr(temp));
 
   // Move the left sub-tree into the temp.
   auto moveArg1 = new CallExpr(PRIM_MOVE, temp, exprArg1);
@@ -3923,7 +3935,7 @@ Expr* TConverter::convertNamedCallOrNull(const Call* node, RV& rv) {
     if (ret) return ret;
 
     TC_UNIMPL("Unhandled named call with no candidate!");
-    return placeholder();
+    return TC_PLACEHOLDER(this);
   }
 
   auto calledFn = findOrConvertFunction(rf);
@@ -4058,7 +4070,7 @@ void TConverter::ActualConverter::convertActual(const FormalActual& fa) {
   // If there is no uAST for an init-expression and the function is not
   // compiler-generated, then there is nothing we can do, so exit early.
   if (!initExpr && !decl->id().isFabricatedId()) {
-    std::get<Expr*>(slot) = tc_->placeholder();
+    std::get<Expr*>(slot) = TC_PLACEHOLDER(tc_);
     return;
   }
 
@@ -4732,7 +4744,7 @@ Expr* TConverter::convertParenlessCallOrNull(const AstNode* node, RV& rv) {
   if (Expr* elided = paramElideCallOrNull(sig, re->poiScope(), &rf)) {
     return elided;
   } else if (!rf) {
-    return placeholder();
+    return TC_PLACEHOLDER(this);
   }
 
   auto calledFn = findOrConvertFunction(rf);
@@ -4740,7 +4752,7 @@ Expr* TConverter::convertParenlessCallOrNull(const AstNode* node, RV& rv) {
 
   if (sig->isMethod()) {
     TC_UNIMPL("Handle parenless method call!");
-    return placeholder();
+    return TC_PLACEHOLDER(this);
   }
 
   return ret;
@@ -4759,7 +4771,7 @@ bool TConverter::enter(const Dot* node, RV& rv) {
 
   if (!expr) {
     TC_UNIMPL("Unhandled kind of dot expression!");
-    expr = placeholder();
+    expr = TC_PLACEHOLDER(this);
   }
 
   insertExpr(expr);
@@ -4792,7 +4804,7 @@ bool TConverter::enter(const Identifier* node, RV& rv) {
 
   if (!expr) {
     TC_UNIMPL("Identifier case not handled!");
-    expr = placeholder();
+    expr = TC_PLACEHOLDER(this);
   }
 
   insertExpr(expr);
@@ -4856,7 +4868,7 @@ bool TConverter::enter(const Call* node, RV& rv) {
   if (!expr) {
     // This may not always be the case, but for now we're missing cases.
     TC_UNIMPL("Unhandled type of call!");
-    expr = this->placeholder();
+    expr = TC_PLACEHOLDER(this);
   }
 
   insertExpr(expr);
@@ -4902,7 +4914,6 @@ bool TConverter::enter(const Conditional* node, RV& rv) {
 
     // Temp stores the result of the if expression.
     auto temp = makeNewTemp(rv.byAst(node).type());
-    insertStmt(new DefExpr(temp));
 
     // TODO: Insert conversion if necessary?
     auto thenExpr = convertExpr(node->thenBlock()->stmt(0), rv);

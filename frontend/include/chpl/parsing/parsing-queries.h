@@ -512,11 +512,6 @@ bool idIsParenlessFunction(Context* context, ID id);
 bool idIsNestedFunction(Context* context, ID id);
 
 /**
- Returns true if the ID is a nested method.
- */
-bool idIsNestedMethod(Context* context, ID id);
-
-/**
  Returns true if the ID refers to a private declaration.
  */
 bool idIsPrivateDecl(Context* context, ID id);

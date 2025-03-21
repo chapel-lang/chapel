@@ -1349,15 +1349,6 @@ bool idIsNestedFunction(Context* context, ID id) {
   return false;
 }
 
-bool idIsNestedMethod(Context* context, ID id) {
-  if (id.isEmpty() || !idIsMethod(context, id)) return false;
-  for (auto up = id.parentSymbolId(context); up;
-            up = up.parentSymbolId(context)) {
-    if (idIsMethod(context, up)) return true;
-  }
-  return false;
-}
-
 template <typename Predicate>
 bool idIsSymbolDefiningScope(Context* context, ID id, Predicate&& predicate) {
   if (!id.isSymbolDefiningScope()) {

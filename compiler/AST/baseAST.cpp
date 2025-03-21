@@ -411,19 +411,20 @@ ModuleSymbol* BaseAST::getModule() {
   return retval;
 }
 
-bool BaseAST::shouldNotMutateEarly() {
+bool BaseAST::wasResolvedEarly() {
   if (auto sym = toSymbol(this)) {
-    if (sym->hasFlag(FLAG_RESOLVED_EARLY)) return true;
+    if (sym->hasFlag(FLAG_RESOLVED_EARLY)) {
+      INT_ASSERT(!isModuleSymbol(sym));
+      return true;
+    }
   }
 
   if (auto t = toType(this)) {
     if (t->symbol->hasFlag(FLAG_RESOLVED_EARLY)) return true;
   }
 
-  // Check to see if the AST is in a dyno-generated symbol.
-  auto mod = this->getModule();
+  // Check to see if the AST is in a dyno-generated function symbol.
   auto fn = this->getFunction();
-  if (mod && mod->hasFlag(FLAG_RESOLVED_EARLY)) return true;
   if (fn && fn->hasFlag(FLAG_RESOLVED_EARLY)) return true;
 
   return false;
