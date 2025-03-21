@@ -397,6 +397,9 @@ def rules(driver: LintDriver):
         Warn for user-defined names that start with the 'chpl\\_' reserved prefix.
         """
 
+        if node.linkage() == "extern":
+            return True
+
         if node.name().startswith("chpl_"):
             path = node.location().path()
             return context.is_bundled_path(path)

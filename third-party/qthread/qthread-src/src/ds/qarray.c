@@ -1,7 +1,3 @@
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 /* System Headers */
 #include <stdlib.h> /* for calloc() */
 #include <sys/mman.h>
@@ -17,6 +13,7 @@
 #include "qthread/qarray.h"
 
 /* Local Headers */
+#include "qt_affinity.h"
 #include "qt_alloc.h"
 #include "qt_asserts.h"
 #include "qt_gcd.h" /* for qt_lcm() */
@@ -32,8 +29,7 @@ static aligned_t *chunk_distribution_tracker = NULL;
  * the bookkeeping data is stored (i.e. the record of where this segment is
  * stored) */
 static inline qthread_shepherd_id_t *
-qarray_internal_segment_shep(qarray const *a,
-                             void const *segment_head) { /*{{{ */
+qarray_internal_segment_shep(qarray const *a, void const *segment_head) {
   char *ptr = (((char *)segment_head) + (a->segment_size * a->unit_size));
 
   qassert_ret(a->dist_type == DIST, NULL);
@@ -44,11 +40,10 @@ qarray_internal_segment_shep(qarray const *a,
                 a->segment_bytes + (char const *)segment_head)),
               NULL);
   return (qthread_shepherd_id_t *)ptr;
-} /*}}} */
+}
 
 static inline qthread_shepherd_id_t
-qarray_internal_segment_shep_read(qarray const *a,
-                                  void const *segment_head) { /*{{{*/
+qarray_internal_segment_shep_read(qarray const *a, void const *segment_head) {
   qthread_shepherd_id_t retval;
   qthread_shepherd_id_t *ptr = qarray_internal_segment_shep(a, segment_head);
 
@@ -56,23 +51,21 @@ qarray_internal_segment_shep_read(qarray const *a,
   retval = *ptr;
   VALGRIND_MAKE_MEM_NOACCESS(ptr, sizeof(qthread_shepherd_id_t));
   return retval;
-} /*}}}*/
+}
 
-static inline void
-qarray_internal_segment_shep_write(qarray const *a,
-                                   void const *segment_head,
-                                   qthread_shepherd_id_t shep) { /*{{{*/
+static inline void qarray_internal_segment_shep_write(
+  qarray const *a, void const *segment_head, qthread_shepherd_id_t shep) {
   qthread_shepherd_id_t *ptr = qarray_internal_segment_shep(a, segment_head);
 
   VALGRIND_MAKE_MEM_DEFINED(ptr, sizeof(qthread_shepherd_id_t));
   *ptr = shep;
   VALGRIND_MAKE_MEM_NOACCESS(ptr, sizeof(qthread_shepherd_id_t));
-} /*}}}*/
+}
 
 /* this function returns the shepherd that owns a given segment, specified by
  * the segment's index */
 static inline qthread_shepherd_id_t
-qarray_internal_shepof_segidx(qarray const *a, size_t const seg) { /*{{{ */
+qarray_internal_shepof_segidx(qarray const *a, size_t const seg) {
   switch (a->dist_type) {
     case ALL_SAME: return a->dist_specific.dist_shep;
 
@@ -94,12 +87,12 @@ qarray_internal_shepof_segidx(qarray const *a, size_t const seg) { /*{{{ */
 
     default: QTHREAD_TRAP(); return 0;
   }
-} /*}}} */
+}
 
 /* this function returns the shepherd that owns a given segment, specified by
  * the pointer to the segment's first element */
 static inline qthread_shepherd_id_t
-qarray_internal_shepof_ch(qarray const *a, void const *segment_head) { /*{{{ */
+qarray_internal_shepof_ch(qarray const *a, void const *segment_head) {
   switch (a->dist_type) {
     case ALL_SAME: return a->dist_specific.dist_shep;
 
@@ -117,21 +110,21 @@ qarray_internal_shepof_ch(qarray const *a, void const *segment_head) { /*{{{ */
 
     case DIST: return qarray_internal_segment_shep_read(a, segment_head);
   }
-} /*}}} */
+}
 
-static void qarray_free_cdt(void) { /*{{{ */
+static void qarray_free_cdt(void) {
   if (chunk_distribution_tracker != NULL) {
     FREE(chunk_distribution_tracker,
          qthread_num_shepherds() * sizeof(aligned_t));
     chunk_distribution_tracker = NULL;
   }
-} /*}}} */
+}
 
 static qarray *qarray_create_internal(size_t const count,
                                       size_t const obj_size,
                                       distribution_t const d,
                                       char const tight,
-                                      int const seg_pages) { /*{{{ */
+                                      int const seg_pages) {
   size_t segment_count; /* number of segments allocated */
   qarray *ret = NULL;
 
@@ -287,7 +280,7 @@ static qarray *qarray_create_internal(size_t const count,
       break;
     default: ret->dist_specific.dist_shep = NO_SHEPHERD;
   }
-#ifdef QTHREAD_HAVE_MEM_AFFINITY
+#ifdef USE_HWLOC_MEM_AFFINITY
   switch (d) {
     case ALL_LOCAL:
     case ALL_RAND:
@@ -314,11 +307,11 @@ static qarray *qarray_create_internal(size_t const count,
       break;
   }
   if (ret->base_ptr == NULL) {}
-#else  /* ifdef QTHREAD_HAVE_MEM_AFFINITY */
+#else  /* ifdef USE_HWLOC_MEM_AFFINITY */
   /* For speed, we want page-aligned memory, if we can get it */
   ret->base_ptr =
     qt_internal_aligned_alloc(segment_count * ret->segment_bytes, pagesize);
-#endif /* ifdef QTHREAD_HAVE_MEM_AFFINITY */
+#endif /* ifdef USE_HWLOC_MEM_AFFINITY */
   qassert_goto((ret->base_ptr != NULL), badret_exit);
 
   /********************************************
@@ -368,7 +361,7 @@ static qarray *qarray_create_internal(size_t const count,
         qarray_internal_segment_shep_write(ret, seghead, target_shep);
       }
       assert(target_shep < max_sheps);
-#ifdef QTHREAD_HAVE_MEM_AFFINITY
+#ifdef USE_HWLOC_MEM_AFFINITY
       {
         /* make sure this shep has a node; if it does, put this segment there */
         unsigned int target_node = qthread_internal_shep_to_node(target_shep);
@@ -378,7 +371,7 @@ static qarray *qarray_create_internal(size_t const count,
           qt_affinity_mem_tonode(seghead, ret->segment_bytes, target_node);
         }
       }
-#endif /* ifdef QTHREAD_HAVE_MEM_AFFINITY */
+#endif /* ifdef USE_HWLOC_MEM_AFFINITY */
       qthread_incr(&chunk_distribution_tracker[target_shep], 1);
     }
   }
@@ -390,26 +383,26 @@ static qarray *qarray_create_internal(size_t const count,
     FREE(ret, sizeof(qarray));
   }
   return NULL;
-} /*}}} */
+}
 
-qarray *qarray_create(size_t const count, size_t const obj_size) { /*{{{ */
+API_FUNC qarray *qarray_create(size_t const count, size_t const obj_size) {
   return qarray_create_internal(count, obj_size, FIXED_HASH, 0, 0);
-} /*}}} */
+}
 
-qarray *qarray_create_tight(size_t const count,
-                            size_t const obj_size) { /*{{{ */
+API_FUNC qarray *qarray_create_tight(size_t const count,
+                                     size_t const obj_size) {
   return qarray_create_internal(count, obj_size, FIXED_HASH, 1, 0);
-} /*}}} */
+}
 
-qarray *qarray_create_configured(size_t const count,
-                                 size_t const obj_size,
-                                 distribution_t const d,
-                                 char const tight,
-                                 int const seg_pages) { /*{{{ */
+API_FUNC qarray *qarray_create_configured(size_t const count,
+                                          size_t const obj_size,
+                                          distribution_t const d,
+                                          char const tight,
+                                          int const seg_pages) {
   return qarray_create_internal(count, obj_size, d, tight, seg_pages);
-} /*}}} */
+}
 
-void qarray_destroy(qarray *a) { /*{{{ */
+API_FUNC void qarray_destroy(qarray *a) {
   qassert_retvoid((a != NULL));
   qassert_retvoid((a->base_ptr != NULL));
   switch (a->dist_type) {
@@ -422,7 +415,7 @@ void qarray_destroy(qarray *a) { /*{{{ */
         qthread_incr(
           &chunk_distribution_tracker[qarray_internal_segment_shep_read(
             a, segmenthead)],
-          -1);
+          (aligned_t)-1);
       }
       break;
     }
@@ -435,17 +428,17 @@ void qarray_destroy(qarray *a) { /*{{{ */
       for (segment = 0; segment < segment_count; segment++) {
         qthread_incr(&chunk_distribution_tracker[qarray_internal_shepof_segidx(
                        a, segment)],
-                     -1);
+                     (aligned_t)-1);
       }
       break;
     }
     case ALL_SAME:
       qthread_incr(&chunk_distribution_tracker[a->dist_specific.dist_shep],
-                   -1 * (a->count / a->segment_size +
-                         ((a->count % a->segment_size) ? 1 : 0)));
+                   ((aligned_t)-1) * (a->count / a->segment_size +
+                                      ((a->count % a->segment_size) ? 1 : 0)));
       break;
   }
-#ifdef QTHREAD_HAVE_MEM_AFFINITY
+#ifdef USE_HWLOC_MEM_AFFINITY
   qt_affinity_free(a->base_ptr,
                    a->segment_bytes * (a->count / a->segment_size +
                                        ((a->count % a->segment_size) ? 1 : 0)));
@@ -453,10 +446,9 @@ void qarray_destroy(qarray *a) { /*{{{ */
   qt_internal_aligned_free(a->base_ptr, pagesize);
 #endif
   FREE(a, sizeof(qarray));
-} /*}}} */
+}
 
-qthread_shepherd_id_t qarray_shepof(qarray const *a,
-                                    size_t const index) { /*{{{ */
+qthread_shepherd_id_t qarray_shepof(qarray const *a, size_t const index) {
   qassert_ret((a != NULL), NO_SHEPHERD);
   qassert_ret((index < a->count), NO_SHEPHERD);
   switch (a->dist_type) {
@@ -473,9 +465,9 @@ qthread_shepherd_id_t qarray_shepof(qarray const *a,
       return retval;
     }
   }
-} /*}}} */
+}
 
-void *qarray_elem_migrate(qarray const *a, size_t const index) { /*{{{ */
+void *qarray_elem_migrate(qarray const *a, size_t const index) {
   void *ret;
   qthread_shepherd_id_t dest;
 
@@ -491,7 +483,7 @@ void *qarray_elem_migrate(qarray const *a, size_t const index) { /*{{{ */
   }
   if (qthread_shep() != dest) { qthread_migrate_to(dest); }
   return ret;
-} /*}}} */
+}
 
 struct qarray_func_wrapper_args {
   union {
@@ -529,7 +521,7 @@ struct qarray_constfunc_wrapper_args {
   size_t const startat, stopat;
 };
 
-static aligned_t qarray_strider(void *arg_void) { /*{{{ */
+static aligned_t qarray_strider(void *arg_void) {
   struct qarray_func_wrapper_args const *arg =
     (struct qarray_func_wrapper_args const *)arg_void;
   size_t const segment_size = arg->a->segment_size;
@@ -623,9 +615,9 @@ static aligned_t qarray_strider(void *arg_void) { /*{{{ */
 qarray_strider_exit:
   qthread_incr(arg->donecount, 1);
   return 0;
-} /*}}} */
+}
 
-static aligned_t qarray_loop_strider(void *arg_void) { /*{{{ */
+static aligned_t qarray_loop_strider(void *arg_void) {
   struct qarray_func_wrapper_args const *arg =
     (struct qarray_func_wrapper_args const *)arg_void;
   size_t const segment_size = arg->a->segment_size;
@@ -716,9 +708,9 @@ static aligned_t qarray_loop_strider(void *arg_void) { /*{{{ */
 qarray_loop_strider_exit:
   qthread_incr(arg->donecount, 1);
   return 0;
-} /*}}} */
+}
 
-static aligned_t qarray_loopaccum_strider(void *arg_void) { /*{{{ */
+static aligned_t qarray_loopaccum_strider(void *arg_void) {
   struct qarray_accumfunc_wrapper_args const *arg =
     (struct qarray_accumfunc_wrapper_args const *)arg_void;
   size_t const segment_size = arg->a->segment_size;
@@ -823,12 +815,12 @@ static aligned_t qarray_loopaccum_strider(void *arg_void) { /*{{{ */
 qarray_loop_strider_exit:
   if (tmpret != NULL) { FREE(tmpret, arg->retsize); }
   return 0;
-} /*}}} */
+}
 
-void qarray_iter(qarray *a,
-                 size_t const startat,
-                 size_t const stopat,
-                 qthread_f func) { /*{{{ */
+API_FUNC void qarray_iter(qarray *a,
+                          size_t const startat,
+                          size_t const stopat,
+                          qthread_f func) {
   aligned_t donecount = 0;
   struct qarray_func_wrapper_args qfwa = {
     {NULL}, a, NULL, &donecount, startat, stopat};
@@ -877,13 +869,13 @@ void qarray_iter(qarray *a,
       }
       break;
   }
-} /*}}} */
+}
 
-void qarray_iter_loop(qarray *a,
-                      size_t const startat,
-                      size_t const stopat,
-                      qa_loop_f func,
-                      void *arg) { /*{{{ */
+API_FUNC void qarray_iter_loop(qarray *a,
+                               size_t const startat,
+                               size_t const stopat,
+                               qa_loop_f func,
+                               void *arg) {
   aligned_t donecount = 0;
   struct qarray_func_wrapper_args qfwa = {
     {func}, a, arg, &donecount, startat, stopat};
@@ -935,7 +927,7 @@ void qarray_iter_loop(qarray *a,
       }
       break;
   }
-} /*}}} */
+}
 
 struct qarray_ilnb_args {
   qarray *a;
@@ -945,20 +937,20 @@ struct qarray_ilnb_args {
   void *arg;
 };
 
-static aligned_t qarray_ilnb_wrapper(void *_args) { /*{{{*/
+static aligned_t qarray_ilnb_wrapper(void *_args) {
   struct qarray_ilnb_args *a = (struct qarray_ilnb_args *)_args;
 
   qarray_iter_loop(a->a, a->startat, a->stopat, a->func, a->arg);
   FREE(_args, sizeof(struct qarray_ilnb_args));
   return 0;
-} /*}}}*/
+}
 
 void qarray_iter_loop_nb(qarray *a,
                          size_t const startat,
                          size_t const stopat,
                          qa_loop_f func,
                          void *arg,
-                         aligned_t *ret) { /*{{{*/
+                         aligned_t *ret) {
   struct qarray_ilnb_args *qargs = MALLOC(sizeof(struct qarray_ilnb_args));
 
   qargs->a = a;
@@ -967,13 +959,13 @@ void qarray_iter_loop_nb(qarray *a,
   qargs->func = func;
   qargs->arg = arg;
   qthread_fork_to(qarray_ilnb_wrapper, qargs, ret, qthread_shep());
-} /*}}}*/
+}
 
 void qarray_iter_constloop(qarray const *a,
                            size_t const startat,
                            size_t const stopat,
                            qa_cloop_f func,
-                           void *arg) { /*{{{ */
+                           void *arg) {
   aligned_t donecount = 0;
   const struct qarray_constfunc_wrapper_args qfwa = {
     {func}, a, arg, &donecount, startat, stopat};
@@ -1025,16 +1017,16 @@ void qarray_iter_constloop(qarray const *a,
       }
       break;
   }
-} /*}}} */
+}
 
-void qarray_iter_loopaccum(qarray *a,
-                           size_t const startat,
-                           size_t const stopat,
-                           qa_loopr_f func,
-                           void *arg,
-                           void *ret,
-                           size_t const retsize,
-                           qt_accum_f acc) { /*{{{ */
+API_FUNC void qarray_iter_loopaccum(qarray *a,
+                                    size_t const startat,
+                                    size_t const stopat,
+                                    qa_loopr_f func,
+                                    void *arg,
+                                    void *ret,
+                                    size_t const retsize,
+                                    qt_accum_f acc) {
   qassert_retvoid((a != NULL));
   qassert_retvoid((func != NULL));
   qassert_retvoid((startat <= stopat));
@@ -1178,11 +1170,9 @@ void qarray_iter_loopaccum(qarray *a,
         break;
       }
   }
-} /*}}} */
+}
 
-void qarray_set_shepof(qarray *a,
-                       size_t const i,
-                       qthread_shepherd_id_t shep) { /*{{{ */
+void qarray_set_shepof(qarray *a, size_t const i, qthread_shepherd_id_t shep) {
   if ((a == NULL) || (i > a->count)) { return; }
   switch (a->dist_type) {
     case FIXED_FIELDS:
@@ -1192,17 +1182,17 @@ void qarray_set_shepof(qarray *a,
       if (a->dist_specific.dist_shep != shep) {
         size_t segment_count = (a->count / a->segment_size);
         segment_count += (a->count % a->segment_size) ? 1 : 0;
-#ifdef QTHREAD_HAVE_MEM_AFFINITY
+#ifdef USE_HWLOC_MEM_AFFINITY
         unsigned int target_node = qthread_internal_shep_to_node(shep);
         if (target_node != QTHREAD_NO_NODE) {
           size_t num_segments = a->count / a->segment_size;
           size_t array_size = a->segment_bytes * num_segments;
           qt_affinity_mem_tonode(a->base_ptr, array_size, target_node);
         }
-#endif /* ifdef QTHREAD_HAVE_MEM_AFFINITY */
+#endif /* ifdef USE_HWLOC_MEM_AFFINITY */
         qthread_incr(&chunk_distribution_tracker[shep], segment_count);
         qthread_incr(&chunk_distribution_tracker[a->dist_specific.dist_shep],
-                     -1 * segment_count);
+                     ((aligned_t)-1) * segment_count);
         a->dist_specific.dist_shep = shep;
       }
       return;
@@ -1214,16 +1204,16 @@ void qarray_set_shepof(qarray *a,
         qarray_internal_segment_shep_read(a, seghead);
       assert(cur_shep < qthread_num_shepherds());
       if (cur_shep != shep) {
-#ifdef QTHREAD_HAVE_MEM_AFFINITY
+#ifdef USE_HWLOC_MEM_AFFINITY
         unsigned int target_node = qthread_internal_shep_to_node(shep);
         if (target_node != QTHREAD_NO_NODE) {
           qt_affinity_mem_tonode(a->base_ptr + (a->segment_bytes * segment),
                                  a->segment_bytes,
                                  target_node);
         }
-#endif /* ifdef QTHREAD_HAVE_MEM_AFFINITY */
+#endif /* ifdef USE_HWLOC_MEM_AFFINITY */
         qthread_incr(&chunk_distribution_tracker[shep], 1);
-        qthread_incr(&chunk_distribution_tracker[cur_shep], -1);
+        qthread_incr(&chunk_distribution_tracker[cur_shep], (aligned_t)-1);
         qarray_internal_segment_shep_write(a, seghead, shep);
       }
     }
@@ -1233,9 +1223,9 @@ void qarray_set_shepof(qarray *a,
       QTHREAD_TRAP();
       return;
   }
-} /*}}} */
+}
 
-void qarray_dist_like(qarray const *ref, qarray *mod) { /*{{{ */
+void qarray_dist_like(qarray const *ref, qarray *mod) {
   qassert_retvoid(ref->count == mod->count);
   qassert_retvoid(ref->unit_size == mod->unit_size);
   if (ref->dist_type == DIST) { qassert_retvoid(mod->dist_type != ALL_SAME); }
@@ -1292,6 +1282,6 @@ void qarray_dist_like(qarray const *ref, qarray *mod) { /*{{{ */
                       ref->dist_type != FIXED_FIELDS);
 #endif
   }
-} /*}}} */
+}
 
 /* vim:set expandtab: */

@@ -132,12 +132,12 @@ master_doc = 'index'
 # 'version' adds a redundant version number onto the top of the sidebar
 # automatically (rtd-theme). We also don't use |version| anywhere in rst
 
-chplversion = '2.4'
+chplversion = '2.5'
 shortversion = chplversion.replace('-', '&#8209') # prevent line-break at hyphen, if any
 html_context = {"chplversion":chplversion}
 
 # The full version, including alpha/beta/rc tags.
-release = '2.4.0 (pre-release)'
+release = '2.5.0 (pre-release)'
 
 # General information about the project.
 project = u'Chapel Documentation'
@@ -183,10 +183,12 @@ exclude_patterns = ['Makefile',
                     'builtins/String.rst',
                     'modules/standard/AutoMath.rst',
                     'modules/standard/ChapelIO.rst',
+                    'modules/standard/ChapelSysCTypes.rst',
 
                     # exclude the chapel-py files
                     'tools/chapel-py/chapel-py-api-template.rst',
                     'tools/chapel-py/chapel-py-api.rst',
+                    'tools/chplcheck/generated/rules.rst',
                    ]
 
 # The reST default role (used for this markup: `text`) to use for all

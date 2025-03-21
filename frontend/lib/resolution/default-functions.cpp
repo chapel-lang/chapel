@@ -416,7 +416,8 @@ buildInitUfsFormals(const uast::Function* initFn) {
 }
 
 static const TypedFnSignature*
-generateInitSignature(Context* context, const CompositeType* inCompType) {
+generateInitSignature(ResolutionContext* rc, const CompositeType* inCompType) {
+  auto context = rc->context();
   if (auto ct = inCompType->getCompositeType()->toBasicClassType()) {
     if (ct->isObjectType()) {
       return nullptr;
@@ -439,8 +440,7 @@ generateInitSignature(Context* context, const CompositeType* inCompType) {
                                    std::move(formals), nullptr,
                                    inCompType->id());
 
-  ResolutionContext rcval(context);
-  return typedSignatureInitial(&rcval, uSig);
+  return typedSignatureInitial(rc, uSig);
 }
 
 const BuilderResult& buildInitEquals(Context* context, ID typeID) {
@@ -513,7 +513,8 @@ const BuilderResult& buildInitEquals(Context* context, ID typeID) {
 }
 
 static const TypedFnSignature*
-generateInitCopySignature(Context* context, const CompositeType* inCompType) {
+generateInitCopySignature(ResolutionContext* rc, const CompositeType* inCompType) {
+  auto context = rc->context();
   auto& br = buildInitEquals(context, inCompType->id());
   auto initFn = br.topLevelExpression(0)->toFunction();
   auto formals = buildInitUfsFormals(initFn);
@@ -529,8 +530,7 @@ generateInitCopySignature(Context* context, const CompositeType* inCompType) {
                                    std::move(formals), nullptr,
                                    inCompType->id());
 
-  ResolutionContext rcval(context);
-  return typedSignatureInitial(&rcval, uSig);
+  return typedSignatureInitial(rc, uSig);
 }
 
 const BuilderResult& buildDeinit(Context* context, ID typeID) {
@@ -576,7 +576,8 @@ const BuilderResult& buildDeinit(Context* context, ID typeID) {
 }
 
 static const TypedFnSignature*
-generateDeinitSignature(Context* context, const CompositeType* inCompType) {
+generateDeinitSignature(ResolutionContext* rc, const CompositeType* inCompType) {
+  auto context = rc->context();
   std::vector<UntypedFnSignature::FormalDetail> ufsFormals;
   auto& br = buildDeinit(context, inCompType->id());
   auto deinitFn = br.topLevelExpression(0)->toFunction();
@@ -599,8 +600,7 @@ generateDeinitSignature(Context* context, const CompositeType* inCompType) {
                         /*formals*/ std::move(ufsFormals),
                         /*whereClause*/ nullptr);
 
-  ResolutionContext rcval(context);
-  return typedSignatureInitial(&rcval, ufs);
+  return typedSignatureInitial(rc, ufs);
 }
 
 const BuilderResult& buildDeSerialize(Context* context, ID typeID, bool isSerializer) {
@@ -654,9 +654,10 @@ const BuilderResult& buildDeSerialize(Context* context, ID typeID, bool isSerial
 }
 
 static const TypedFnSignature*
-generateDeSerialize(Context* context, const CompositeType* compType,
+generateDeSerialize(ResolutionContext* rc, const CompositeType* compType,
                     UniqueString name, std::string channel,
                     std::string deSerializer) {
+  auto context = rc->context();
   std::vector<UntypedFnSignature::FormalDetail> ufsFormals;
   std::vector<QualifiedType> formalTypes;
 
@@ -689,8 +690,7 @@ generateDeSerialize(Context* context, const CompositeType* compType,
                         /*formals*/ std::move(ufsFormals),
                         /*whereClause*/ nullptr);
 
-  ResolutionContext rcval(context);
-  return typedSignatureInitial(&rcval, ufs);
+  return typedSignatureInitial(rc, ufs);
 }
 
 static const TypedFnSignature*
@@ -1088,9 +1088,10 @@ generateIteratorMethod(Context* context,
 }
 
 static const TypedFnSignature* const&
-getCompilerGeneratedMethodQuery(Context* context, QualifiedType receiverType,
+getCompilerGeneratedMethodQuery(ResolutionContext* rc, QualifiedType receiverType,
                                 UniqueString name, bool parenless) {
-  QUERY_BEGIN(getCompilerGeneratedMethodQuery, context, receiverType, name, parenless);
+  CHPL_RESOLUTION_QUERY_BEGIN(getCompilerGeneratedMethodQuery, rc, receiverType, name, parenless);
+  auto context = rc->context();
 
   const Type* type = receiverType.type();
 
@@ -1101,15 +1102,15 @@ getCompilerGeneratedMethodQuery(Context* context, QualifiedType receiverType,
     CHPL_ASSERT(compType || type->isPtrType() || type->isEnumType() || type->isIteratorType());
 
     if (name == USTR("init")) {
-      result = generateInitSignature(context, compType);
+      result = generateInitSignature(rc, compType);
     } else if (name == USTR("init=")) {
-      result = generateInitCopySignature(context, compType);
+      result = generateInitCopySignature(rc, compType);
     } else if (name == USTR("deinit")) {
-      result = generateDeinitSignature(context, compType);
+      result = generateDeinitSignature(rc, compType);
     } else if (name == USTR("serialize")) {
-      result = generateDeSerialize(context, compType, name, "writer", "serializer");
+      result = generateDeSerialize(rc, compType, name, "writer", "serializer");
     } else if (name == USTR("deserialize")) {
-      result = generateDeSerialize(context, compType, name, "reader", "deserializer");
+      result = generateDeSerialize(rc, compType, name, "reader", "deserializer");
     } else if (auto tupleType = type->toTupleType()) {
       result = generateTupleMethod(context, tupleType, name);
     } else if (auto recordType = type->toRecordType()) {
@@ -1133,7 +1134,7 @@ getCompilerGeneratedMethodQuery(Context* context, QualifiedType receiverType,
 
   CHPL_ASSERT(result == nullptr || result->untyped()->name() == name);
 
-  return QUERY_END(result);
+  return CHPL_RESOLUTION_QUERY_END(result);
 }
 
 static void
@@ -1231,7 +1232,7 @@ generateCastToEnum(Context* context,
   If no method was generated, returns nullptr.
 */
 const TypedFnSignature*
-getCompilerGeneratedMethod(Context* context, const QualifiedType receiverType,
+getCompilerGeneratedMethod(ResolutionContext* rc, const QualifiedType receiverType,
                            UniqueString name, bool parenless) {
   // Normalize receiverType to allow TYPE methods on c_ptr and _ddata, and to
   // otherwise use the VAR Kind. The Param* value is also stripped away to
@@ -1241,7 +1242,7 @@ getCompilerGeneratedMethod(Context* context, const QualifiedType receiverType,
   if (!(qt.isType() && isPtr)) {
     qt = QualifiedType(QualifiedType::VAR, qt.type());
   }
-  return getCompilerGeneratedMethodQuery(context, qt, name, parenless);
+  return getCompilerGeneratedMethodQuery(rc, qt, name, parenless);
 }
 
 static const TypedFnSignature* const&

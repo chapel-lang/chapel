@@ -37,7 +37,7 @@ CHPL_HOME
 
     .. code-block:: sh
 
-        export CHPL_HOME=~/chapel-2.3.0
+        export CHPL_HOME=~/chapel-2.4.0
 
    .. note::
      This, and all other examples in the Chapel documentation, assumes you're
@@ -106,6 +106,7 @@ CHPL_HOST_PLATFORM
         cray-xc      Cray XC\ |trade|
         hpe-cray-ex  HPE Cray EX
         hpe-apollo   HPE Apollo
+        hpe-cray-xd  HPE Cray XD
         ===========  ==================================
 
    Platform-specific documentation is available for most of these platforms in
@@ -927,8 +928,10 @@ CHPL_LLVM_GCC_INSTALL_DIR
    Sometimes it's necessary to request that ``clang`` work with a
    particular version of GCC. If many versions are installed at the same
    prefix (e.g. ``/usr``) then ``CHPL_LLVM_GCC_PREFIX`` won't be able to
-   differentiate between them. That is where ``CHPL_LLVM_GCC_INSTALL_DIR``
-   comes in!
+   differentiate between them. The Chapel compiler tries to infer
+   this flag based upon the ``gcc`` currently available in your ``PATH``
+   but sometimes that strategy does not work. That is where
+   ``CHPL_LLVM_GCC_INSTALL_DIR`` comes in!
 
    To understand what to set ``CHPL_LLVM_GCC_INSTALL_DIR`` to in such
    cases, try a test compile:

@@ -12,14 +12,16 @@
 #error "C11 is required"
 #endif
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #ifdef __GNUC__
 #define Q_UNUSED(x) __attribute__((unused)) x
 #else
 #define Q_UNUSED(x) x
+#endif
+
+#if defined(__has_feature)
+#if __has_feature(memory_sanitizer)
+#define QTHREAD_MSAN
+#endif
 #endif
 
 #define TLS_DECL(type, name) thread_local type name

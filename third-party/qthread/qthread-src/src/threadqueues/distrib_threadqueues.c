@@ -1,7 +1,3 @@
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 /* System Headers */
 #include <stdatomic.h>
 #include <stdio.h>
@@ -36,10 +32,12 @@ int spinloop_backoff;
 int condwait_backoff;
 int steal_ratio;
 
+typedef struct qt_threadqueue_node_s qt_threadqueue_node_t;
+
 /* Data Structures */
-struct _qt_threadqueue_node {
-  struct _qt_threadqueue_node *_Atomic next;
-  struct _qt_threadqueue_node *_Atomic prev;
+struct qt_threadqueue_node_s {
+  struct qt_threadqueue_node_s *_Atomic next;
+  struct qt_threadqueue_node_s *_Atomic prev;
   qthread_t *value;
 };
 
@@ -88,6 +86,7 @@ static qt_threadqueue_t *alloc_threadqueue(void) {
   t->t = qt_malloc(sizeof(qt_threadqueue_internal) * t->num_queues);
   t->w_inds =
     qt_calloc(qlib->nshepherds * qlib->nworkerspershep, sizeof(w_ind));
+  atomic_store_explicit(&t->numwaiters, 0ull, memory_order_relaxed);
   return t;
 }
 
@@ -385,34 +384,10 @@ qthread_t INTERNAL *qt_threadqueue_dequeue_specific(qt_threadqueue_t *q,
   return NULL;
 }
 
-qthread_t INTERNAL *
-qt_threadqueue_private_dequeue(qt_threadqueue_private_t *c) {
-  return NULL;
-}
-
-void INTERNAL qt_threadqueue_enqueue_cache(qt_threadqueue_t *q,
-                                           qt_threadqueue_private_t *cache) {}
-
-void INTERNAL qt_threadqueue_private_filter(
-  qt_threadqueue_private_t *restrict c, qt_threadqueue_filter_f f) {}
-
-int INTERNAL
-qt_threadqueue_private_enqueue(qt_threadqueue_private_t *restrict pq,
-                               qt_threadqueue_t *restrict q,
-                               qthread_t *restrict t) {
-  return 0;
-}
-
 inline int square(int x) { return x * x; }
-
-int INTERNAL qt_threadqueue_private_enqueue_yielded(
-  qt_threadqueue_private_t *restrict q, qthread_t *restrict t) {
-  return 0;
-}
 
 // We try and dequeue locally, if that fails we should do some stealing
 qthread_t INTERNAL *qt_scheduler_get_thread(qt_threadqueue_t *qe,
-                                            qt_threadqueue_private_t *qc,
                                             uint_fast8_t active) {
   qt_threadqueue_node_t *node = NULL;
   qthread_t *t;

@@ -3,18 +3,18 @@ Chapel Contributors
 
 The following people have contributed to Chapel releases:
 
-Contributors to the Chapel 2.3 release
+Contributors to the Chapel 2.4 release
 --------------------------------------
 * Jade Abraham, [HPE]
+* Shreyas Atre, individual contributor
 * [Dan Bonachea], [Lawrence Berkeley National Laboratory]
-* Paul Cassella, [HPE]
 * [Brad Chamberlain], [HPE]
-* Rui Chen, individual contributor
+* R Chinmay, individual contributor
 * Soohoon Choi, [HPE]
-* Jeremiah Corrado, [HPE]
 * Lydia Duncan, [HPE]
 * Daniel Fedorin, [HPE]
 * Michael Ferguson, [HPE]
+* [Paul H. Hargrove], [Lawrence Berkeley National Laboratory]
 * Ben Harshbarger, [HPE]
 * John Hartman, [HPE]
 * Guillaume Helbecque, individual contributor
@@ -23,14 +23,13 @@ Contributors to the Chapel 2.3 release
 * [Shreyas Khandekar], [HPE] (former intern from [University of Arizona])
 * Vassily Litvinov, [HPE]
 * David Longnecker, [HPE]
-* Ben McDonald, [HPE] (former intern from [Gonzaga University])
-* Josh Milthorpe, individual contributor, [ORNL], 
+* Audrey Mendez-Pratt, individual contributor (formerly [HPE])
+* Eduardo Morras, individual contributor
 * Brandon Neth, [HPE] (former intern from [University of Arizona])
+* Amanda Potts, individual contributor
 * Ahmad Rezaii, [HPE]
 * Anna Rift, [HPE]
 * Andy Stone, [HPE] (former [Cray Inc.] intern from [Colorado State University])
-* Michelle Mills Strout, [HPE]
-* Robin Voetter, individual contributor
 * Tim Zinsky, [HPE]
 
 Contributors to previous releases
@@ -56,14 +55,16 @@ Contributors to previous releases
 * John Byrne, [HPE]
 * Zixian Cai, individual contributor
 * David Callahan, [Cray Inc.]
+* Paul Cassella, [HPE]
 * Sanket Chaudhari, individual contributor
+* Rui Chen, individual contributor
 * Naman Chikara, individual contributor
-* R Chinmay, individual contributor
 * Sung-Eun Choi, [Cray Inc.]
 * Mike Chu, [Advanced Micro Devices, Inc.]
 * Sarah Coghlan, [HPE]
 * Cristian-loan Condruz, individual contributor
 * Andrew Consroe, [HPE]
+* Jeremiah Corrado, [HPE]
 * Anway De, individual contributor
 * Steve Deitz, [Cray Inc.]
 * Laura Delaney, [Cray Inc.] intern from [Whitworth University]
@@ -84,7 +85,6 @@ Contributors to previous releases
 * Rahul Ghangas, [GSoC 2020] student from [Australian National University]
 * Alexey Gokhberg, [Unicorn Enterprises SA]
 * Piyush Gupta, individual contributor
-* [Paul H. Hargrove], [Lawrence Berkeley National Laboratory]
 * Akihiro Hayashi, [Rice University]
 * Hannah Hemmaplardh, [Cray Inc.] intern from [University of Washington]
 * Steven Hemmy, [Cray Inc.] intern from [University of Wisconsin]
@@ -119,6 +119,7 @@ Contributors to previous releases
 * Priyank Lohariwal, individual contributor
 * Juan Lopez, [Universidad de Málaga (University of Malaga)]
 * Simon Lund, [Københavns Universitet (University of Copenhagen)]
+* Ben McDonald, [HPE] (former intern from [Gonzaga University])
 * Tom MacDonald, [Cray Inc.]
 * Deepak Majeti, individual contributor
 * Prabhanjan Mannari, individual contributor
@@ -127,6 +128,7 @@ Contributors to previous releases
 * Cory McCartan, [Cray Inc.] intern from Sammamish High School
 * Damian McGuckin, [Pacific Engineering Systems International]
 * Erin Melia, individual contributor
+* Josh Milthorpe, individual contributor, [ORNL], 
 * Kyle Milz, individual contributor
 * Iain Moncrief, [HPE] intern from [Oregon State University]
 * Barry Moore, [University of Pittsburgh]
@@ -156,7 +158,6 @@ Contributors to previous releases
 * Parth Sarthi Prasad, individual contributor
 * Chris Stinson, individual contributor
 * Kumar Prasun, individual contributor
-* Audrey Pratt, [HPE]
 * Surya Priy, individual contributor
 * Lee Prokowich, [Cray Inc.]
 * Elliot Ronaghan, [HPE]
@@ -184,6 +185,7 @@ Contributors to previous releases
 * Srinivas Sridharan, [University of Notre Dame] / [ORNL]
 * Jenna Hoole Starkey, [HPE]
 * George Stelle, [Sandia National Laboratories]
+* Michelle Mills Strout, [HPE]
 * Chris Swenson, individual contributor
 * [Kenjiro Taura], [University of Tokyo]
 * Chris Taylor, [DOD]
@@ -199,6 +201,7 @@ Contributors to previous releases
 * Thomas Van Doren, individual contributor / [Cray Inc.]
 * Varsha Verma, individual contributor
 * Branch Vincent, individual contributor
+* Robin Voetter, individual contributor
 * Chris Wailes, [Indiana University]
 * Tony Wallace, [Cray Inc.]
 * Vivian Wang, individual contributor, [GHC] 2022 Open Source Day

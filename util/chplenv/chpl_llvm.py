@@ -947,14 +947,7 @@ def _get_clang_cfg_args(clang_command):
 def get_clang_basic_args(clang_command):
     clang_args = [ ]
 
-    # Check that the clang configure file doesn't already supply
-    # info about the sysroot or gcc install so we don't end up overriding it.
     clang_cfg_args = _get_clang_cfg_args(clang_command)
-    if (any(arg.startswith("--sysroot") for arg in clang_cfg_args) or
-        any(arg.startswith("--gcc-install-dir") for arg in clang_cfg_args) or
-        any(arg.startswith("--gcc-toolchain") for arg in clang_cfg_args)):
-        return clang_args
-
     @memoize
     def _get_gcc_prefix_dir():
         # read the args that clang will use by default from the config file
@@ -972,10 +965,18 @@ def get_clang_basic_args(clang_command):
             return True
         return False
 
+    skip_sysroot = False
+
     # if the user set one of the flags, use it
     flag_to_use = _determine_gcc_flag_to_use()
     if flag_to_use:
         use_flag(flag_to_use)
+    elif (any(arg.startswith("--sysroot") for arg in clang_cfg_args) or
+          any(arg.startswith("--gcc-install-dir") for arg in clang_cfg_args) or
+          any(arg.startswith("--gcc-toolchain") for arg in clang_cfg_args)):
+        # if the clang configure file supplies sysroot, gcc-install-dir, or
+        #  gcc-toolchain, we shouldn't try to infer anything and override it
+        skip_sysroot = True
     else:
         # we should try and infer them, preferring GCC_INSTALL_DIR
         for try_flag in ['CHPL_LLVM_GCC_INSTALL_DIR', 'CHPL_LLVM_GCC_PREFIX']:
@@ -983,13 +984,14 @@ def get_clang_basic_args(clang_command):
                 break
 
     target_platform = chpl_platform.get('target')
-    sysroot_args = []
-    if target_platform == "darwin":
-        sysroot_args = get_sysroot_resource_dir_args()
-    else:
-        sysroot_args = get_sysroot_linux_args()
-    if sysroot_args:
-        clang_args.extend(sysroot_args)
+    if not skip_sysroot:
+        sysroot_args = []
+        if target_platform == "darwin":
+            sysroot_args = get_sysroot_resource_dir_args()
+        else:
+            sysroot_args = get_sysroot_linux_args()
+        if sysroot_args:
+            clang_args.extend(sysroot_args)
 
     # This is a workaround for problems with Homebrew llvm@11 on 10.14
     # which avoids errors like
@@ -1039,7 +1041,7 @@ def gather_pe_chpl_pkgconfig_libs():
 
     ret = os.environ.get('PE_CHAPEL_PKGCONFIG_LIBS', '')
     if comm != 'none':
-        if platform != 'hpe-cray-ex':
+        if not chpl_platform.is_hpe_cray('target'):
             # Adding -lhugetlbfs gets the PrgEnv driver to add the appropriate
             # linker option for static linking with it. While it's not always
             # used with Chapel programs, it is expected to be the common case
@@ -1072,7 +1074,6 @@ def gather_pe_chpl_pkgconfig_libs():
 @memoize
 def get_clang_prgenv_args():
 
-    platform = chpl_platform.get('target')
     comp_args = [ ]
     link_args = [ ]
 

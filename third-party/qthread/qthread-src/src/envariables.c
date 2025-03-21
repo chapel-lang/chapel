@@ -1,7 +1,3 @@
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include <stdio.h>  /* for fprintf() */
 #include <stdlib.h> /* for getenv() and strtoul() */
 #include <string.h>

@@ -2091,7 +2091,7 @@ static QualifiedType getVarArgTupleElemType(const QualifiedType& varArgType) {
   }
 }
 
-static Resolver createResolverForAst(Context* context,
+static Resolver createResolverForAst(ResolutionContext* rc,
                                      const Function* fn,
                                      const AggregateDecl* ad,
                                      const Enum* ed,
@@ -2099,15 +2099,15 @@ static Resolver createResolverForAst(Context* context,
                                      const PoiScope* poiScope,
                                      ResolutionResultByPostorderID& r) {
   if (fn != nullptr) {
-    return Resolver::createForInstantiatedSignature(context, fn, substitutions,
+    return Resolver::createForInstantiatedSignature(rc, fn, substitutions,
                                                     poiScope, r);
   } else if (ad != nullptr) {
-    return Resolver::createForInstantiatedSignatureFields(context, ad,
+    return Resolver::createForInstantiatedSignatureFields(rc->context(), ad,
                                                           substitutions,
                                                           poiScope, r);
   } else {
     CHPL_ASSERT(ed != nullptr);
-    return Resolver::createForEnumElements(context, ed, r);
+    return Resolver::createForEnumElements(rc->context(), ed, r);
   }
 }
 
@@ -2228,7 +2228,7 @@ ApplicabilityResult instantiateSignature(ResolutionContext* rc,
   int varArgIdx = -1;
 
   ResolutionResultByPostorderID r;
-  auto visitor = createResolverForAst(context, fn, ad, ed, substitutions,
+  auto visitor = createResolverForAst(rc, fn, ad, ed, substitutions,
                                       poiScope, r);
 
   // TODO: Stop copying these back in.
@@ -4341,7 +4341,7 @@ resolveFnCallForTypeCtor(Context* context,
 }
 
 static const TypedFnSignature*
-considerCompilerGeneratedMethods(Context* context,
+considerCompilerGeneratedMethods(ResolutionContext* rc,
                                  const CallInfo& ci,
                                  CandidatesAndForwardingInfo& candidates) {
   // only consider compiler-generated methods and opcalls, for now
@@ -4353,13 +4353,13 @@ considerCompilerGeneratedMethods(Context* context,
   auto receiverType = receiver.type();
 
   // if not compiler-generated, then nothing to do
-  if (!needCompilerGeneratedMethod(context, receiverType.type(), ci.name(),
+  if (!needCompilerGeneratedMethod(rc->context(), receiverType.type(), ci.name(),
                                    ci.isParenless())) {
     return nullptr;
   }
 
   // get the compiler-generated function, may be generic
-  auto tfs = getCompilerGeneratedMethod(context, receiverType, ci.name(),
+  auto tfs = getCompilerGeneratedMethod(rc, receiverType, ci.name(),
                                         ci.isParenless());
   return tfs;
 }
@@ -4403,26 +4403,26 @@ considerCompilerGeneratedOperators(Context* context,
 }
 
 static void
-considerCompilerGeneratedCandidates(Context* context,
+considerCompilerGeneratedCandidates(ResolutionContext* rc,
                                     const AstNode* astForErr,
                                     const CallInfo& ci,
                                     CandidatesAndForwardingInfo& candidates,
                                     std::vector<ApplicabilityResult>* rejected) {
   const TypedFnSignature* tfs = nullptr;
 
-  tfs = considerCompilerGeneratedMethods(context, ci, candidates);
+  tfs = considerCompilerGeneratedMethods(rc, ci, candidates);
   if (tfs == nullptr) {
-    tfs = considerCompilerGeneratedFunctions(context, ci, candidates);
+    tfs = considerCompilerGeneratedFunctions(rc->context(), ci, candidates);
   }
   if (tfs == nullptr) {
-    tfs = considerCompilerGeneratedOperators(context, ci, candidates);
+    tfs = considerCompilerGeneratedOperators(rc->context(), ci, candidates);
   }
 
   if (!tfs) return;
 
   // check if the initial signature matches
   auto faMap = FormalActualMap(tfs->untyped(), ci);
-  if (!isInitialTypedSignatureApplicable(context, tfs, faMap, ci).success()) {
+  if (!isInitialTypedSignatureApplicable(rc->context(), tfs, faMap, ci).success()) {
     return;
   }
 
@@ -4433,8 +4433,7 @@ considerCompilerGeneratedCandidates(Context* context,
   }
 
   // need to instantiate before storing
-  ResolutionContext rcval(context);
-  auto instantiated = doIsCandidateApplicableInstantiating(&rcval,
+  auto instantiated = doIsCandidateApplicableInstantiating(rc,
                                                            tfs,
                                                            ci,
                                                            /* POI */ nullptr);
@@ -4445,7 +4444,7 @@ considerCompilerGeneratedCandidates(Context* context,
   }
 
   if (!instantiated.candidate()->isInitializer() &&
-      checkUninstantiatedFormals(context, astForErr, instantiated.candidate())) {
+      checkUninstantiatedFormals(rc->context(), astForErr, instantiated.candidate())) {
     return; // do not push invalid candidate into list
   }
 
@@ -4732,7 +4731,7 @@ gatherAndFilterCandidatesForwarding(ResolutionContext* rc,
     for (const auto& fci : forwardingCis) {
       size_t start = nonPoiCandidates.size();
       // consider compiler-generated candidates
-      considerCompilerGeneratedCandidates(context, astContext, fci,
+      considerCompilerGeneratedCandidates(rc, astContext, fci,
                                           nonPoiCandidates,
                                           rejected);
       // update forwardingTo
@@ -4956,7 +4955,7 @@ gatherAndFilterCandidates(ResolutionContext* rc,
   //  the poiInfo from these is not gathered, because such methods should
   //  always be available in any scope that can refer to the type & are
   //  considered part of the custom type)
-  considerCompilerGeneratedCandidates(context, astContext, ci,
+  considerCompilerGeneratedCandidates(rc, astContext, ci,
                                       candidates,
                                       rejected);
 

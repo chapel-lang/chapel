@@ -17,4 +17,4 @@ xxx <=> iii;
 iii <=> xxx;
 var f = openMemFile();
 var r = f.reader(locking=false);
-r.readIt(xxx);
+r.read(xxx);

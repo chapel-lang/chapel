@@ -19,8 +19,7 @@
  */
 
 
-//  TODO: represent python context managers as Chapel context managers
-
+// TODO: represent python context managers as Chapel context managers
 // TODO: implement operators as dunder methods
 
 /* Library for interfacing with Python from Chapel code.
@@ -38,18 +37,21 @@
   ---------------------
 
   Compiling Chapel code that uses this module needs the ``Python.h`` header file
-  and requires linking with the Python library. If ``python3`` is installed,
-  this can be achieved with the following commands:
+  and requires linking with the Python library. The ``embed-python.sh`` script
+  provided with Chapel can be used to generate the necessary compiler flags.
+  Assuming ``python3`` is installed into the system path, the following command
+  can be used to compile Chapel code that uses this module:
 
   .. code-block:: bash
 
-     PYTHON_INCLUDE_DIR=$(python3 -c "import sysconfig; print(sysconfig.get_paths()['include'])")
-     PYTHON_LIB_DIR=$(python3 -c "import sysconfig; print(sysconfig.get_config_var('LIBDIR'))")
-     PYTHON_LDVERSION=$(python3 -c "import sysconfig; print(sysconfig.get_config_var('LDVERSION'))")
+     chpl $($(chpl --print-chpl-home)/util/config/embed-python.sh) ...Chapel source files...
 
-     chpl --ccflags -isystem$PYTHON_INCLUDE_DIR \
-          -L$PYTHON_LIB_DIR --ldflags -Wl,-rpath,$PYTHON_LIB_DIR \
-          -lpython$PYTHON_LDVERSION ...Chapel source files...
+  Alternative Python installations can be used by setting the ``CHPL_PYTHON``
+  environment variable:
+
+  .. code-block:: bash
+
+     chpl $(CHPL_PYTHON=/path/to/python3 $(chpl --print-chpl-home)/util/config/embed-python.sh) ...Chapel source files...
 
   .. warning::
 
@@ -229,6 +231,100 @@
 */
 @unstable("The Python module's interface is under active development and may change")
 module Python {
+
+  /*
+  =======================
+  Developer Documentation
+  =======================
+
+  This module makes heavy usage of the Python C API. Care should be taken when
+  adding new calls to the C API, especially when it comes to reference counting
+  and the GIL.
+
+  Reference Counting
+  ------------------
+
+  Python objects are reference counted. When a Python object is created, it has
+  a reference count of 1. When the reference count reaches 0 the object is
+  deallocated. Normally, Python code that is interpreted has this handled by
+  the interpreter. Using the C API, requires the programmer to manage the
+  reference counts. This module hides this implementation detail from the user.
+
+  There are two things to keep in mind.
+    1. making sure that when Chapel is done with the object, the reference
+       count is zero.
+    2. making sure that while Chapel is still owning the object, the reference
+       count is greater than zero.
+
+  The `Value` base class has a field, `isOwned`, which determines if the
+  reference count of the Python object will be decremented when the Chapel
+  object is deleted. `toPython` creates new references and `fromPython` steals
+  references (decrements the reference count). Most other functions don't touch
+  the reference count. C API functions generally document if they return/take a
+  new reference ("strong reference"), a borrowed reference (reference count is
+  neither incremented or decremented), or a stolen reference (reference count
+  is decremented). Make sure to check the behavior of new functions.
+
+  Global Interpreter Lock (GIL)
+  -----------------------------
+
+  The Global Interpreter Lock (GIL) is a mutex that protects access to the
+  interpreter state. Some newer builds of Python are "free-threaded" and don't
+  have a GIL. Whether or not the GIL is present, this module will handle the
+  GIL. The `PyGILState_Ensure` and `PyGILState_Release` functions are used to
+  acquire and release the GIL; in free-threaded builds, these functions are
+  no-ops.
+
+  Python and non-python threads require special handling. The
+  `PyGILState_[Ensure|Release]` functions not only acquire/release the GIL, but
+  also automatically handle setting up new Python threads. From Chapel's
+  perspective, `PyGILState_Ensure` must be called before any Python code and
+  `PyGILState_Release` must be called afterwards. Failure to do so will result
+  in undefined behavior, likely a segfault of some kind. You will frequently
+  see the `var g = PyGILState_Ensure(); defer PyGILState_Release(g);` pattern
+  in this module, which acquires the GIL and then releases it at the end of the
+  current scope (or during stack unwinding due to an exception)
+
+  Interacting with Chapel's threading model can also be problematic.
+  `PyGILState_[Ensure|Release]` calls must be matched to each other on the same
+  thread or deadlock will occur. NOTE: this can happen easily and
+  transparently in Chapel, particularly when `on` blocks are used (they
+  introduce new comm threads in multi-locale code). Additionally, the
+  `Py_Initialize`/``Py_Finalize` family of calls must be made on the same
+  thread. This module does additional work to facilitate that.
+
+  As an overview, the interpreter is setup in the following way to properly
+  handle the GIL.
+  1. `new Interpreter()` spawns a new daemon thread which does the following:
+     a. Initializes the Python interpreter b. acquires the gil and enters a
+     state where it can invoke threads (i.e. `Py_BEGIN_ALLOW_THREADS`) c.
+     signals that setup is done and goes to sleep, waiting for a signal to
+     finish
+  2. `Interpreter.deinit()` signals the daemon thread to finish and waits for
+     it to finish a. the daemon thread releases the gil and thread state (i.e
+     `Py_END_ALLOW_THREADS`) b. the daemon thread signals that it is done and
+     exits
+
+  All public API calls in this module should be thread safe, meaning they
+  handle the GIL correctly. So for example, `new Module(interp, "mymod")`
+  should properly acquire/release the GIL. But, internal functions like
+  `importModuleInternal` do not (and should not) acquire/release the GIL. While
+  matching pairs to `PyGILState_[Ensure|Release]` can be nested, there is no
+  reason to and the less we do that, the less overhead. This convention is
+  especially important for `[to|from]Python`. `[to|from]Python` is a part of
+  the public API, and so must acquire/release the GIL. But these functions are
+  so heavily used to implement other parts of the public API that the
+  internal `[to|from]PythonInner` functions are used to avoid the overhead of
+  acquiring/releasing the GIL. Essentially, `[to|from]Python` acquires the GIL,
+  calls `[to|from]PythonInner`, and then releases the GIL.
+
+  Important documentation to read up on Python threading and the GIL
+    - https://docs.python.org/3/c-api/init.html#thread-state-and-the-global-interpreter-lock
+    - https://docs.python.org/3/c-api/init.html#c.Py_Initialize
+    - https://docs.python.org/3/c-api/init.html#c.Py_FinalizeEx
+  */
+
+
   private use CTypes;
   private import List;
   private import Map;
@@ -286,6 +382,23 @@ module Python {
 
     var sep = interp.fromPythonInner(string, sepPy);
     return sep;
+  }
+
+  /*
+    Helper function to convert object pointer to string
+    for developer debugging purposes.
+  */
+  private proc toStringDev(obj: PyObjectPtr) {
+    var pyStr = PyObject_Str(obj);
+    defer Py_DECREF(pyStr);
+    if pyStr == nil {
+      halt("Failed to convert PyObject to a Python string");
+    }
+    var str = PyUnicode_AsUTF8(pyStr);
+    if str == nil {
+      halt("Failed to convert Python string to a C string");
+    }
+    return try! string.createCopyingBuffer(str);
   }
 
   private proc throwChapelException(message: string) throws {
@@ -598,17 +711,123 @@ module Python {
     }
 
     /*
-      Run a string of python code.
+      Get a Python object by name. This will either get a Python global
+      variable, (like `globals()[name]` in Python) or a Python builtin by name.
 
-      This function will just run the code, it cannot be passed arguments or
-      return values.
+      This will first query the current globals, and if the object is not found,
+      it will query the builtins.
+
+      :arg t: The Chapel type of the value to return.
+      :arg attr: The name of the attribute/field to access.
     */
-    proc run(code: string) throws {
+    pragma "docs only"
+    proc get(type t=owned Value, attr: string): t throws do
+      compilerError("docs only");
+
+    @chpldoc.nodoc
+    proc get(type t, attr: string): t throws {
       var g = PyGILState_Ensure();
       defer PyGILState_Release(g);
-      PyRun_SimpleString(code.c_str());
+
+      var __main__ = PyImport_AddModule("__main__");
+      this.checkException();
+      if PyObject_HasAttrString(__main__, attr.c_str()) == 1 {
+        var pyObj = PyObject_GetAttrString(__main__, attr.c_str());
+        this.checkException();
+        return this.fromPythonInner(t, pyObj);
+      }
+
+      var builtins = chpl_PyEval_GetFrameBuiltins();
+      if builtins != nil {
+        var pyObj = PyDict_GetItemString(builtins, attr.c_str());
+        this.checkException();
+        if pyObj != nil {
+          Py_INCREF(pyObj); // PyDict_GetItemString is borrowed
+          return this.fromPythonInner(t, pyObj);
+        }
+      }
+
+      throw new ChapelException("Attribute not found: " + attr);
+    }
+    @chpldoc.nodoc
+    proc get(attr: string): owned Value throws do
+      return this.get(owned Value, attr);
+
+    /*
+      Sets a global variable. Equivalent to the following in Python:
+
+      .. code-block:: python
+
+         global attr
+         attr = value
+
+      :arg attr: The name of the global variable.
+      :arg value: The value of new global variable.
+    */
+    proc set(attr: string, value: ?) throws {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
+      var __main__ = PyImport_AddModule("__main__");
+      this.checkException();
+      var globals = PyModule_GetDict(__main__);
+      this.checkException();
+
+      var pyValue = this.toPythonInner(value);
+      defer Py_DECREF(pyValue); // PyDict_SetItem doesn't steal a reference
+      PyDict_SetItemString(globals, attr.c_str(), pyValue);
       this.checkException();
     }
+
+    /*
+      Remove a global variable. Equivalent to the following in Python:
+
+      .. code-block:: python
+
+         global attr
+         del attr
+
+      :arg attr: The name of the global variable to remove.
+    */
+    proc del(attr: string) throws {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
+      var __main__ = PyImport_AddModule("__main__");
+      this.checkException();
+      var globals = PyModule_GetDict(__main__);
+      this.checkException();
+
+      PyDict_DelItemString(globals, attr.c_str());
+      this.checkException();
+    }
+
+    /*
+      Execute a snippet of Python code within the context of the current
+      interpreter. This function has access to all global
+      variables in the interpreter, and can be pass additional extra variables
+      using the ``kwargs`` argument.
+    */
+    proc run(code: string, kwargs: ? = none) throws
+    where kwargs.type == nothing || kwargs.isAssociative() {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
+      var __main__ = PyImport_AddModule("__main__");
+      this.checkException();
+      var globals = PyModule_GetDict(__main__);
+      this.checkException();
+
+      var locals;
+      if kwargs.type != nothing then
+        locals = this.toPythonInner(kwargs);
+      else
+        locals = nil:PyObjectPtr;
+
+      PyRun_String(code.c_str(), Py_file_input, globals, locals);
+      this.checkException();
+    }
+
 
     /*
       Register a custom :type:`TypeConverter` with the interpreter. This allows
@@ -632,21 +851,15 @@ module Python {
     */
     @chpldoc.nodoc
     proc compileLambdaInternal(l: string): PyObjectPtr throws {
-      var globals = chpl_PyEval_GetFrameGlobals();
-      var globalsNeedDecref = false;
-      // create a globals if it doesn't exist
-      if !globals {
-        globals = Py_BuildValue("{}");
-        globalsNeedDecref = true;
-      }
+      var __main__ = PyImport_AddModule("__main__");
+      this.checkException();
+      var globals = PyModule_GetDict(__main__);
+      this.checkException();
+
       // this is the equivalent of `eval(compile(l, '<string>', 'eval'))`
       // we can also do `Py_CompileString` -> `PyFunction_New`?
       var code = PyRun_String(l.c_str(), Py_eval_input, globals, nil);
       this.checkException();
-
-      if globalsNeedDecref {
-        Py_DECREF(globals);
-      }
       return code;
     }
 
@@ -859,9 +1072,10 @@ module Python {
         return toSet(val);
       } else if isSubtype(t, Map.map) {
         return toDict(val);
-      } else if isSubtype(t, Value) {
-        Py_INCREF(val.getPyObject());
-        return val.getPyObject();
+      } else if isSubtype(t, Value?) {
+        var borrowedVal = val: borrowed Value;
+        Py_INCREF(borrowedVal.getPyObject());
+        return borrowedVal.getPyObject();
       } else if t == NoneType {
         return Py_None;
       } else {
@@ -1577,6 +1791,21 @@ module Python {
     }
 
     /*
+      Returns the debug string representation of the object.
+
+      Equivalent to calling ``repr(obj)`` in Python.
+    */
+    proc repr(): string throws {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+      var pyStr = PyObject_Repr(this.obj);
+      this.interpreter.checkException();
+      var res = interpreter.fromPythonInner(string, pyStr);
+      return res;
+    }
+
+
+    /*
       Treat this value as a callable and call it with the given arguments.
 
       This handles conversion from Chapel types to Python types and back, by
@@ -2021,7 +2250,8 @@ module Python {
       :arg interpreter: The interpreter that this object is associated with.
       :arg fnName: The name of the function.
       :arg obj: The :type:`~CTypes.c_ptr` to the existing object.
-      :arg isOwned: Whether this object owns the Python object. This is true by default.
+      :arg isOwned: Whether this object owns the Python object. This is true by
+                    default.
     */
     proc init(interpreter: borrowed Interpreter,
               in fnName: string, in obj: PyObjectPtr, isOwned: bool = true) {
@@ -3018,6 +3248,7 @@ module Python {
     extern "chpl_Py_CLEAR" proc Py_CLEAR(obj: c_ptr(PyObjectPtr));
     extern proc PyMem_Free(ptr: c_ptr(void));
     extern proc PyObject_Str(obj: PyObjectPtr): PyObjectPtr; // `str(obj)`
+    extern proc PyObject_Repr(obj: PyObjectPtr): PyObjectPtr; // `repr(obj)`
     extern proc PyImport_ImportModule(name: c_ptrConst(c_char)): PyObjectPtr;
 
     extern "chpl_PY_VERSION_HEX" const PY_VERSION_HEX: uint(64);
@@ -3040,7 +3271,7 @@ module Python {
     */
     extern proc PyRun_SimpleString(code: c_ptrConst(c_char));
     extern proc chpl_PyEval_GetFrameGlobals(): PyObjectPtr;
-
+    extern proc chpl_PyEval_GetFrameBuiltins(): PyObjectPtr;
 
     extern var Py_eval_input: c_int;
     extern var Py_file_input: c_int;
@@ -3054,7 +3285,8 @@ module Python {
                                         code: PyObjectPtr): PyObjectPtr;
     extern proc PyMarshal_ReadObjectFromString(data: c_ptrConst(c_char),
                                                size: Py_ssize_t): PyObjectPtr;
-
+    extern proc PyImport_AddModule(name: c_ptrConst(c_char)): PyObjectPtr;
+    extern proc PyModule_GetDict(mod: PyObjectPtr): PyObjectPtr;
 
     /*
       Threading
@@ -3181,12 +3413,16 @@ module Python {
     extern proc PyDict_Clear(dict: PyObjectPtr);
     extern proc PyDict_Copy(dict: PyObjectPtr): PyObjectPtr;
     extern proc PyDict_Keys(dict: PyObjectPtr): PyObjectPtr;
+    extern proc PyDict_DelItemString(dict: PyObjectPtr,
+                                     key: c_ptrConst(c_char));
 
     extern proc PyObject_GetAttrString(obj: PyObjectPtr,
                                        name: c_ptrConst(c_char)): PyObjectPtr;
     extern proc PyObject_SetAttrString(obj: PyObjectPtr,
                                        name: c_ptrConst(c_char),
                                        value: PyObjectPtr);
+    extern proc PyObject_HasAttrString(obj: PyObjectPtr,
+                                       name: c_ptrConst(c_char)): c_int;
 
     /*
       Tuples

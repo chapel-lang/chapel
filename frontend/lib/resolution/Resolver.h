@@ -207,7 +207,7 @@ struct Resolver {
 
   // set up Resolver to resolve an instantiation of a Function signature
   static Resolver
-  createForInstantiatedSignature(Context* context,
+  createForInstantiatedSignature(ResolutionContext* rc,
                                  const uast::Function* fn,
                                  const SubstitutionsMap& substitutions,
                                  const PoiScope* poiScope,

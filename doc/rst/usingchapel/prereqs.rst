@@ -28,9 +28,9 @@ for using Chapel:
 
       * GCC 7.4 or newer
 
-      * Clang 5.0 or newer
+      * LLVM Clang 11.0 or newer
 
-      * Apple Clang 10.0 or newer
+      * Apple Xcode/Clang 11.0 or newer
 
     * C11 support, while not required, will enable faster atomic operations.
 
@@ -103,7 +103,7 @@ We have used the following commands to install the above prerequisites:
       sudo apk add llvm15-dev clang15-dev llvm15-static clang15-static
 
 
-  * Alpine 3.20::
+  * Alpine 3.20, 3.21::
 
       sudo apk add gcc g++ m4 perl python3 python3-dev bash make gawk git cmake
       sudo apk add llvm-dev clang-dev clang-static llvm-static
@@ -135,10 +135,10 @@ We have used the following commands to install the above prerequisites:
       sudo pacman -Syu
       sudo pacman -S base-devel
       sudo pacman -S cmake git python
-      sudo pacman -S llvm14 clang14
+      sudo pacman -S llvm clang
 
 
-  * CentOS Stream 9::
+  * CentOS Stream 9, 10::
 
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake
       sudo dnf install which diffutils
@@ -151,11 +151,13 @@ We have used the following commands to install the above prerequisites:
       sudo apt-get install gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config cmake
       sudo apt-get install llvm-13-dev llvm-13 llvm-13-tools clang-13 libclang-13-dev libclang-cpp13-dev libedit-dev
 
+
   * Debian 11 "Bullseye" (but note `Newer CMake required to build LLVM`_)::
 
       sudo apt-get update
       sudo apt-get install gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config cmake
       sudo apt-get install llvm-dev llvm clang libclang-dev libclang-cpp-dev libedit-dev
+
 
   * Debian 12 "Bookworm"::
 
@@ -164,26 +166,26 @@ We have used the following commands to install the above prerequisites:
       sudo apt-get install llvm-dev llvm clang libclang-dev libclang-cpp-dev libedit-dev
 
 
-  * Fedora 39, 40 (but note `Fedora CHPL_LLVM=system incompatibilities`_)::
+  * Fedora 39, 40, 41 (but note `Fedora CHPL_LLVM=system incompatibilities`_)::
 
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake
       sudo dnf install which diffutils
       sudo dnf install llvm-devel clang clang-devel
 
 
-  * FreeBSD 13.3, 13.4, 14.0, 14.1::
+  * FreeBSD 13.3, 13.4, 14.0, 14.1, 14.2::
 
       sudo pkg install gcc m4 perl5 python3 bash gmake gawk git pkgconf cmake
       sudo pkg install llvm
 
 
-  * OpenSuse Leap 15.4, 15.5::
+  * OpenSuse Leap 15.4, 15.5, 15.6::
 
       sudo zypper install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git pkg-config cmake
       sudo zypper install llvm-devel clang-devel clang
 
 
-  * Rocky Linux 8, 8.10, 9.3, 9.4::
+  * Rocky Linux 8, 8.10, 9.3, 9.4, 9.5::
 
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake
       sudo dnf install which diffutils
@@ -201,7 +203,7 @@ We have used the following commands to install the above prerequisites:
       sudo apt-get install llvm-12-dev llvm-12 llvm-12-tools clang-12 libclang-12-dev libclang-cpp12-dev libedit-dev
 
 
-  * Ubuntu 22.04 "Jammy Jellyfish", 24.04 "Noble Numbat", 24.10 "Oracular Oriole"::
+  * Ubuntu 22.04 "Jammy Jellyfish", 24.04 "Noble Numbat", 24.10 "Oracular Oriole", 25.04 "Plucky Puffin"::
 
       sudo apt-get update
       sudo apt-get install gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config cmake
@@ -217,13 +219,6 @@ Amazon Linux 2 uses GCC 7.3.1 but GCC 7.4 or newer is required to build
 LLVM. Chapel can use a system-wide install of LLVM on this platform, so
 installing the LLVM packages as shown above and using `CHPL_LLVM=system`
 is the recommended workaround.
-
-CentOS 7 CHPL_LLVM=system incompatibility
-+++++++++++++++++++++++++++++++++++++++++
-
-CentOS 7 does not include a new enough LLVM release to work with
-``CHPL_LLVM=system``. ``CHPL_LLVM=bundled`` or ``CHPL_LLVM=none`` are
-available as alternatives.
 
 Newer CMake required to build LLVM
 ++++++++++++++++++++++++++++++++++

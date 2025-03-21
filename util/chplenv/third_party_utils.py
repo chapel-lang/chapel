@@ -189,7 +189,7 @@ def pkgconfig_get_bundled_compile_args(pkg, ucp='', pcfile=''):
 # default static value for pkgconfig_get_system_link_args
 # and pkgconfig_get_bundled_link_args
 def pkgconfig_default_static():
-    static = chpl_platform.get('target')!='hpe-cray-ex'
+    static = not chpl_platform.is_hpe_cray('target')
     return static
 
 #

@@ -36,6 +36,7 @@
 #include "chpl/util/hash.h"
 #include "chpl/util/memory.h"
 
+#include <optional>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -483,6 +484,16 @@ class OuterVariables {
     auto it = mentionIdToTargetId_.find(mention);
     if (it == mentionIdToTargetId_.end()) return nullptr;
     return &*targetIdToType_.find(it->second);
+  }
+
+  /** If available, returns the type associated with an outer variable's ID */
+  const std::optional<QualifiedType> targetType(const ID& target) const {
+    auto it = targetIdToType_.find(target);
+    if (it == targetIdToType_.end()) {
+      return {};
+    } else {
+      return { it->second };
+    }
   }
 
   bool isEmpty() const {
@@ -2423,7 +2434,7 @@ class ResolvedExpression {
 
   /** for simple (non-function Identifier) cases, the ID of a NamedDecl it
    * refers to */
-  ID toId() const { return toId_; }
+  const ID& toId() const { return toId_; }
 
   /** check whether this resolution result refers to a compiler builtin like `bool`. */
   bool isBuiltin() const { return isBuiltin_; }
@@ -2757,6 +2768,17 @@ class ResolvedFunction {
 
   /** the set of point-of-instantiations used by the instantiation */
   const PoiInfo& poiInfo() const { return poiInfo_; }
+
+  const ResolvedFunction* getNestedResult(const TypedFnSignature* sig,
+                                          const PoiScope* poiScope) const {
+    auto poiInfo = PoiInfo(poiScope);
+    auto it = sigAndInfoToChildPtr_.find(std::make_pair(sig, poiScope));
+    if (it != sigAndInfoToChildPtr_.end()) {
+      return it->second;
+    } else {
+      return nullptr;
+    }
+  }
 
   bool operator==(const ResolvedFunction& other) const {
     return signature_ == other.signature_ &&

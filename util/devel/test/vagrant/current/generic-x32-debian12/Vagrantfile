@@ -8,6 +8,7 @@
 Vagrant.configure("2") do |config|
   config.vm.box = "generic-x32/debian12"
   config.vm.box_architecture = "i386"
+  config.vm.box_version = "4.3.12"
 
   config.vm.provision "shell",
     path: "../../provision-scripts/apt-get-deps.sh"

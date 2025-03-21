@@ -19,6 +19,8 @@ source $UTIL_CRON_DIR/common-hpe-apollo.bash
 #
 # setup arkouda
 source $UTIL_CRON_DIR/common-arkouda.bash
+source $UTIL_CRON_DIR/common-arkouda-hpe-apollo-hdr.bash
+
 export ARKOUDA_NUMLOCALES=16
 
 export CHPL_GASNET_SEGMENT=fast

@@ -210,7 +210,7 @@ module DistributedBag
   /*
     The victim selection policy for work stealing.
   */
-  enum VictimPolicy {
+  enum victimPolicy {
     /*
       Random selection.
     */
@@ -441,13 +441,13 @@ module DistributedBag
       :type taskId: `int`
 
       :arg policy: The victim selection policy for work stealing.
-      :type policy: :type:`VictimPolicy`
+      :type policy: :type:`victimPolicy`
 
       :return: Depending on the scenarios: `(true, elt)` if we successfully removed
                element `elt` from distBag; `(false, defaultOf(eltType))` otherwise.
       :rtype: `(bool, eltType)`
     */
-    proc remove(taskId: int, param policy: VictimPolicy = VictimPolicy.RAND): (bool, eltType)
+    proc remove(taskId: int, param policy: victimPolicy = victimPolicy.RAND): (bool, eltType)
     {
       return bag!.remove(taskId, policy);
     }
@@ -678,7 +678,7 @@ module DistributedBag
       calling task/locale cannot be chosen. We can also specify how many victims
       to check for eligibility; 1 by default.
     */
-    iter victim(const N: int, const callerId: int, param policy: VictimPolicy,
+    iter victim(const N: int, const callerId: int, param policy: victimPolicy,
       const tries: int = 1): int
     {
       var count: int;
@@ -686,7 +686,7 @@ module DistributedBag
 
       select policy {
         // Circular or ring-like selection.
-        when VictimPolicy.RING {
+        when victimPolicy.RING {
           var id = (callerId + 1) % N;
 
           while ((count < limit) && (count < tries)) {
@@ -696,7 +696,7 @@ module DistributedBag
           }
         }
         // Random selection.
-        when VictimPolicy.RAND {
+        when victimPolicy.RAND {
           var id: int;
           const victims = permute(0..#N);
 
@@ -733,7 +733,7 @@ module DistributedBag
       best case fails, it trigger a work stealing mechanism (See the Implementation
       Details section).
     */
-    proc remove(const taskId: int, param policy: VictimPolicy): (bool, eltType)
+    proc remove(const taskId: int, param policy: victimPolicy): (bool, eltType)
     {
       var phase = REMOVE_BEST_CASE;
       if (numLocales > 1) then phase = PERFORMANCE_PATCH;

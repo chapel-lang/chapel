@@ -2340,18 +2340,12 @@ private proc isBCPindex(type t) param do
     if isPositiveStride(newStrides, st) then
       // start from the low index
       return if hasLowBoundForIter(r)
-             // inlined: newAlignedRange(r.chpl_alignedLowAsIntForIter)
-             // because Dyno can't helper capturing nested functions.
-             then new range(i, b, newStrides, lw, hh, st,
-                            r.chpl_alignedLowAsIntForIter, true, true)
+             then newAlignedRange(r.chpl_alignedLowAsIntForIter)
              else if st == 1 then newZeroAlmtRange() else newUnalignedRange();
     else
       // start from the high index
       return if hasHighBoundForIter(r)
-             // inlined: newAlignedRange(r.chpl_alignedHighAsIntForIter)
-             // because Dyno can't helper capturing nested functions.
-             then new range(i, b, newStrides, lw, hh, st,
-                            r.chpl_alignedHighAsIntForIter, true, true)
+             then newAlignedRange(r.chpl_alignedHighAsIntForIter)
              else if st == -1 then newZeroAlmtRange() else newUnalignedRange();
 
     proc newAlignedRange(alignment) do
@@ -2723,7 +2717,7 @@ private proc isBCPindex(type t) param do
     type resultType = r.chpl_integralIdxType;
     type strType = chpl__rangeStrideType(resultType);
 
-    proc absSameType(r, type resultType) {
+    proc absSameType() {
       if r.hasNegativeStride() {
         return (-r.stride):resultType;
       } else {
@@ -2737,14 +2731,14 @@ private proc isBCPindex(type t) param do
                          bounds = boundKind.both,
                          strides = r.strides,
                          _low = r._low,
-                         _high = r._low - absSameType(r, resultType),
+                         _high = r._low - absSameType(),
                          _stride = r.stride,
                          alignmentValue = r._alignment);
       } else if (r.hasHighBound()) {
         return new range(idxType = r.idxType,
                          bounds = boundKind.both,
                          strides = r.strides,
-                         _low = r._high + absSameType(r, resultType),
+                         _low = r._high + absSameType(),
                          _high = r._high,
                          _stride = r.stride,
                          alignmentValue = r._alignment);

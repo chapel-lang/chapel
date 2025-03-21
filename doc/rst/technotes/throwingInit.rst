@@ -65,14 +65,28 @@ cause the program to halt.
 
 .. _init_declaring_init_as_throws:
 
-Declaring Initializers as throws
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Declaring throwing Initializers
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Initializers can be declared with the ``throws`` keyword.  This enables uncaught
-errors in the initializer body to be propagated outside of the initializer (see
-:ref:`init_calling_throwing_funcs`).  When an error is thrown, the memory that
-would have been used for the result of the initializer call will be cleaned up
-before the error is thrown back to the caller.
+Like typical routines, initializers and post-initializers
+(``postinit()`` procedures) can be declared with the ``throws``
+keyword.  This enables errors in the bodies of these procedures to be
+thrown back to the calling context.  When an error is thrown, the
+memory that would have been used for the result of the initializer
+will be freed before the error is thrown back to the caller.
+
+Note that, at present, this feature has two limitations:
+
+* The fields of the object will not have their deinitializers
+  (``deinit()`` procedures) called as they should be (see
+  https://github.com/chapel-lang/chapel/issues/26437).
+
+* Initializers can only throw errors via calls to throwing routines
+  (i.e., they cannot contain ``throws`` statements directly) — and
+  these calls must come after the ``init this`` statement (see
+  :ref:`Limitations_on_Instance_Usage_in_Initializers` for information
+  on ``init this`` and the example in
+  :ref:`init_declaring_init_as_throws`).
 
 *Example (init-declared-throws.chpl)*.
 
@@ -109,28 +123,11 @@ before the error is thrown back to the caller.
    (x = 4)
    Caught error: x too large
 
-.. _init_calling_throwing_funcs:
 
-Calling Throwing Functions
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-When an initializer is declared with the ``throws`` keyword, calls to throwing
-functions may be made in the body of the initializer after ``init this``
-(see :ref:`Limitations_on_Instance_Usage_in_Initializers` for information on
-``init this`` and the example in :ref:`init_declaring_init_as_throws`).
-As a result, thrown errors will be propagated outside of the initializer.  The
-memory that would have been used to store the instance created by the
-initializer will be cleaned up prior to propagating the error.
-
-.. note::
-
-   Calls to throwing functions are not currently allowed prior to
-   ``init this``.
-
-When an initializer is not declared with the ``throws`` keyword, calls to
-throwing functions may be made anywhere in the body of the initializer.  Such
-calls will cause the program to halt (see :ref:`Chapter-Error_Handling`) if
-errors are encountered.
+As in typical procedures, if an initializer is not declared with the
+``throws`` keyword, yet makes a call that throws an error, the program
+will halt if errors are encountered (see
+:ref:`Chapter-Error_Handling`).
 
 Future Work
 -----------

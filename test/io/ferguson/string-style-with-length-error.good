@@ -1,3 +1,0 @@
-uncaught SystemError: Invalid argument (Invalid string length prefix 100)
-  string-style-with-length-error.chpl:12: thrown here
-  string-style-with-length-error.chpl:12: uncaught here

@@ -579,6 +579,13 @@ const uast::AstNode* parentAst(Context* context, const uast::AstNode* node);
 ID idToParentModule(Context* context, ID id);
 
 /**
+  Given an ID 'id', attempt to lookup the declared linkage of the composite
+  type associated with 'id'. Returns 'DEFAULT_LINKAGE' if no such AST was
+  found.
+ */
+uast::Decl::Linkage idToDeclLinkage(Context* context, ID id);
+
+/**
   Returns 'true' if ID refers to a toplevel module.
  */
 bool idIsToplevelModule(Context* context, ID id);
