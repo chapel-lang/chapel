@@ -1199,12 +1199,6 @@ module Python {
       if isSubtype(t, Array?) {
         compilerError("Cannot create an Array from an existing PyObject");
       }
-      if isSubtype(t, PyArray?) {
-        if isGeneric(t) {
-          compilerError("Cannot get a generic PyArray, try specifying the eltType like 'PyArray(int)'");
-        }
-        return new t(this, obj);
-      }
 
       for converter in this.converters {
         if converter.handlesType(t) {
@@ -1264,6 +1258,8 @@ module Python {
         return new t(this, "<unknown>", obj);
       } else if isSubtype(t, Value?) {
         return new t(this, obj);
+      } else if isSubtype(t, PyObjectPtr) {
+        return obj;
       } else if t == NoneType {
         // returning NoneType can be used to ignore a return value
         // but if its not actually None, we still need to decrement the reference count
@@ -1655,6 +1651,10 @@ module Python {
         return new ImportError(str);
       } else if PyErr_GivenExceptionMatches(exc, PyExc_KeyError) != 0 {
         return new KeyError(str);
+      } else if PyErr_GivenExceptionMatches(exc, PyExc_BufferError) != 0 {
+        return new BufferError(str);
+      } else if PyErr_GivenExceptionMatches(exc, PyExc_NotImplementedError) != 0 {
+        return new NotImplementedError(str);
       } else {
         throw new PythonException(str);
       }
@@ -1674,6 +1674,15 @@ module Python {
     Represents a BufferError in the Python code
   */
   class BufferError: PythonException {
+    proc init(in message: string) {
+      super.init(message);
+    }
+  }
+
+  /*
+    Represents a NotImplementedError in the Python code
+  */
+  class NotImplementedError: PythonException {
     proc init(in message: string) {
       super.init(message);
     }
@@ -2957,22 +2966,13 @@ module Python {
     `numpy.ndarray <https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html>`_.
   */
   class PyArray: Value {
-    type eltType;
     @chpldoc.nodoc
     var view: Py_buffer;
-    @chpldoc.nodoc
-    var itemSize: Py_ssize_t;
 
     @chpldoc.nodoc
-    proc init(type eltType) {
-      this.eltType = eltType;
-    }
-
-    @chpldoc.nodoc
-    proc init(type eltType, in interpreter: borrowed Interpreter,
+    proc init(in interpreter: borrowed Interpreter,
               in obj: PyObjectPtr, isOwned: bool = true) {
       super.init(interpreter, obj, isOwned=isOwned);
-      this.eltType = eltType;
     }
     @chpldoc.nodoc
     proc postinit() throws {
@@ -2982,34 +2982,22 @@ module Python {
       if PyObject_CheckBuffer(this.getPyObject()) == 0 {
         throw new ChapelException("Object does not support buffer protocol");
       }
-      var flags: c_int =
-        PyBUF_SIMPLE | PyBUF_WRITABLE | PyBUF_FORMAT | PyBUF_ND;
-      if PyObject_GetBuffer(this.getPyObject(), c_ptrTo(this.view), flags) == -1 {
+      const flags = PyBUF_SIMPLE | PyBUF_WRITABLE | PyBUF_FORMAT | PyBUF_ND;
+      if PyObject_GetBuffer(this.getPyObject(),
+                            c_ptrTo(this.view), flags) == -1 {
         this.interpreter.checkException();
         // this.check should have raised an exception, if it didn't, raise one
         throw new BufferError("Failed to get buffer");
       }
-
-      if this.view.ndim > 1 {
-        throw new ChapelException("Only 1D arrays are currently supported");
+      if this.view.ndim == 0 {
+        throw new ChapelException("0-dimensional arrays are not supported");
       }
-
-      this.itemSize = PyBuffer_SizeFromFormat(this.view.format);
-      if this.itemSize == -1 {
-        if this.view.shape != nil {
-          this.itemSize = this.view.itemsize;
-        } else {
-          // disregard itemsize, use 1
-          this.itemSize = 1;
-        }
+      if this.view.shape == nil {
+        throw new ChapelException("Shape is required for arrays");
       }
-
-      if !checkFormatWithEltType(this.view.format, this.itemSize, this.eltType) {
-        throw new ChapelException("Format does not match element type");
-      }
-
     }
 
+    @chpldoc.nodoc
     proc deinit() {
       var ctx = chpl_pythonContext.enter();
       defer ctx.exit();
@@ -3017,10 +3005,56 @@ module Python {
       PyBuffer_Release(c_ptrTo(this.view));
     }
 
-    proc array: [] {
-      var buf = view.buf: c_ptr(this.eltType);
-      var size = view.len / this.itemSize;
-      var res = makeArrayFromPtr(buf, size);
+
+    /*
+      The 'rank' of the Python array, also known as the number of dimensions of
+      the array.
+
+      :returns: The number of rank of the array.
+    */
+    proc rank: int do return this.view.ndim;
+    /* Alias of :proc:`~PyArray.rank`. */
+    proc ndim: int do return this.view.ndim;
+
+    proc shape(param rank = 1): rank*int throws {
+      var s: rank*int;
+      assert(this.view.shape != nil); // checked in postinit
+      for param i in 0..<rank {
+        s(i) = this.view.shape(i);
+      }
+      return s;
+    }
+
+    @chpldoc.nodoc
+    proc computeItemSize() {
+      var itemSize = PyBuffer_SizeFromFormat(this.view.format);
+      if itemSize == -1 {
+        assert(this.view.shape != nil); // checked in postinit
+        itemSize = this.view.itemsize;
+      }
+      return itemSize;
+    }
+
+    proc array(type eltType, param rank = 1): [] throws {
+      if !checkFormatWithEltType(this.view.format, computeItemSize(), eltType) {
+        throw new ChapelException("Format does not match element type");
+      }
+      var buf = this.view.buf: c_ptr(eltType);
+      var ndim = this.view.ndim;
+
+      if ndim != rank {
+        throw new ChapelException(
+          "Python array of rank " + ndim:string +
+          " cannot be converted to a Chapel array of rank " + rank:string);
+      }
+
+      var ranges: rank * range(int, boundKind.both, strideKind.any);
+      for param i in 0..<rank {
+        ranges(i) = 0.. # this.view.shape(i);
+      }
+
+      var dom = chpl__buildDomainExpr((...ranges), false);
+      var res = makeArrayFromPtr(buf, dom);
       return res;
     }
   }
@@ -3274,6 +3308,7 @@ module Python {
   PyDict implements writeSerializable;
   PySet implements writeSerializable;
   Array implements writeSerializable;
+  PyArray implements writeSerializable;
   NoneType implements writeSerializable;
 
   @chpldoc.nodoc
@@ -3310,6 +3345,10 @@ module Python {
 
   @chpldoc.nodoc
   override proc Array.serialize(writer, ref serializer) throws do
+    writer.write(this:string);
+
+  @chpldoc.nodoc
+  override proc PyArray.serialize(writer, ref serializer) throws do
     writer.write(this:string);
 
   @chpldoc.nodoc
@@ -3483,6 +3522,8 @@ module Python {
                                             exc: PyObjectPtr): c_int;
     extern const PyExc_ImportError: PyObjectPtr;
     extern const PyExc_KeyError: PyObjectPtr;
+    extern const PyExc_BufferError: PyObjectPtr;
+    extern const PyExc_NotImplementedError: PyObjectPtr;
 
     /*
       Values
@@ -3504,17 +3545,21 @@ module Python {
     extern proc PyBytes_FromStringAndSize(s: c_ptrConst(c_char),
                                           size: Py_ssize_t): PyObjectPtr;
 
-    proc Py_None: PyObjectPtr {
+    inline proc Py_None: PyObjectPtr {
       extern proc chpl_Py_None(): PyObjectPtr;
       return chpl_Py_None();
     }
-    proc Py_True: PyObjectPtr {
+    inline proc Py_True: PyObjectPtr {
       extern proc chpl_Py_True(): PyObjectPtr;
       return chpl_Py_True();
     }
-    proc Py_False: PyObjectPtr {
+    inline proc Py_False: PyObjectPtr {
       extern proc chpl_Py_False(): PyObjectPtr;
       return chpl_Py_False();
+    }
+    inline proc Py_NotImplemented: PyObjectPtr {
+      extern proc chpl_Py_NotImplemented(): PyObjectPtr;
+      return chpl_Py_NotImplemented();
     }
 
     /*
