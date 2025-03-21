@@ -73,6 +73,12 @@ struct ControlFlowInfo {
       continues_ |= other.continues_;
     }
   }
+
+  void sequenceIteration(const ControlFlowInfo& other) {
+    if (!isDoneExecuting()) {
+      returnsOrThrows_ |= other.returnsOrThrows_;
+    }
+  }
 };
 
 template <typename Self>
@@ -173,8 +179,22 @@ struct FlowSensitiveVisitor {
   int currentNumCatchFrames() {
     auto frame = currentFrame();
     CHPL_ASSERT(frame->scopeAst->isTry());
-    int ret = frame->subFrames.size();
-    CHPL_ASSERT(frame->scopeAst->toTry()->numHandlers() == ret);
+    int ret = frame->scopeAst->toTry()->numHandlers();
+    CHPL_ASSERT((size_t) (ret + 1) == frame->subFrames.size());
+    return ret;
+  }
+
+  /** Assuming that the current frame refers to a Try,
+      returns the frame for its body. */
+  Frame* currentTryBodyFrame() {
+    auto frame = currentFrame();
+    CHPL_ASSERT(frame->scopeAst->isTry());
+    CHPL_ASSERT(frame->subFrames.size() >= 1);
+
+    // for try-catch, body will be a block with its own frame. For try expressions,
+    // body will be the expression itself, and we should use the current frame.
+    auto ret = std::get<owned<Frame>>(frame->subFrames[0]).get();
+    if (!ret) ret = frame;
     return ret;
   }
 
@@ -183,8 +203,8 @@ struct FlowSensitiveVisitor {
   Frame* currentCatchFrame(int i) {
     auto frame = currentFrame();
     CHPL_ASSERT(frame->scopeAst->isTry());
-    CHPL_ASSERT(0 <= i && (size_t) i < frame->subFrames.size());
-    auto& ret = std::get<owned<Frame>>(frame->subFrames[i]);
+    CHPL_ASSERT(0 <= i && (size_t) (i + 1) < frame->subFrames.size());
+    auto& ret = std::get<owned<Frame>>(frame->subFrames[i + 1]);
     CHPL_ASSERT(ret.get());
     return ret.get();
   }
@@ -225,6 +245,11 @@ struct FlowSensitiveVisitor {
     currentFrame()->controlFlowInfo.markContinue();
   }
 
+  bool isDoneExecuting() {
+    if (scopeStack.empty()) return false;
+    return currentFrame()->isDoneExecuting();
+  }
+
   void createSubFrames(const uast::AstNode* ast) {
     auto& newFrame = scopeStack.back();
     if (auto c = ast->toConditional()) {
@@ -232,6 +257,9 @@ struct FlowSensitiveVisitor {
       newFrame->subFrames.emplace_back(c->thenBlock(), nullptr);
       newFrame->subFrames.emplace_back(c->elseBlock(), nullptr);
     } else if (auto t = ast->toTry()) {
+      // note the body itself to avoid clobbering the whole Try node with
+      // control flow information
+      newFrame->subFrames.emplace_back(t->body(), nullptr);
       // note each of the catch handlers (aka catch clauses)
       for (auto clause : t->handlers()) {
         newFrame->subFrames.emplace_back(clause, nullptr);
@@ -292,23 +320,22 @@ struct FlowSensitiveVisitor {
     }
   }
 
-  void sequenceWithParentFrame(Frame* parentFrame, ControlFlowInfo append) {
+  void sequenceWithParentFrame(Frame* parentFrame, const ControlFlowInfo& append) {
     // 'break' and 'continue' are scoped to the loop that they're in.
     // a loop that has 'continue' in its body does not itself continue
     // its parent loop.
     if (parentFrame->scopeAst->isLoop()) {
-      append.resetBreak();
-      append.resetContinue();
+      parentFrame->controlFlowInfo.sequenceIteration(append);
+    } else {
+      parentFrame->controlFlowInfo.sequence(append);
     }
-
-    parentFrame->controlFlowInfo.sequence(append);
   }
 
   void reconcileFrames(Frame* parentFrame, const uast::Try* t) {
-    auto tryFrame = currentFrame();
-    if (tryFrame->controlFlowInfo.isDoneExecuting()) {
+    auto mainFrame = currentTryBodyFrame();
+    if (mainFrame->controlFlowInfo.isDoneExecuting()) {
       int nCatchFrames = currentNumCatchFrames();
-      auto accumulatedControlFlowInfo = tryFrame->controlFlowInfo;
+      auto accumulatedControlFlowInfo = mainFrame->controlFlowInfo;
       for (int i = 0; i < nCatchFrames; i++) {
         auto catchFrame = currentCatchFrame(i);
         accumulatedControlFlowInfo &= catchFrame->controlFlowInfo;

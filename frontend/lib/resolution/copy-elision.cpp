@@ -82,6 +82,8 @@ struct FindElidedCopies : VarScopeVisitor {
 
   void noteMentionsForOutFormals(VarFrame* frame);
 
+  void propagateChildToParent(VarFrame* frame, VarFrame* parent, const AstNode* ast);
+
   // overrides
   void handleDeclaration(const VarLikeDecl* ast, RV& rv) override;
   void handleMention(const Identifier* ast, ID varId, RV& rv) override;
@@ -493,9 +495,17 @@ void FindElidedCopies::handleDisjunction(const AstNode * node,
 void FindElidedCopies::handleTry(const Try* t, RV& rv) {
 
   VarFrame* tryFrame = currentFrame();
-
+  VarFrame* bodyFrame = currentTryBodyFrame();
   int nCatchFrames = currentNumCatchFrames();
-  // if there are no catch clauses, treat it like any other scope
+
+  // if the 'try' body is a subFrame, we didn't "exit" it normally like
+  // we do with other scopes. Do that now, since we don't need to treat
+  // it specially here.
+  if (bodyFrame != tryFrame) {
+    propagateChildToParent(bodyFrame, tryFrame, t);
+  }
+
+  // if there are no catch clauses, treat it like any other scope, except
   if (nCatchFrames == 0) {
     // will handle variables local to the try
     handleScope(t, rv);
@@ -562,10 +572,7 @@ static bool allowsCopyElision(const AstNode* ast) {
          ast->isTry();
 }
 
-void FindElidedCopies::handleScope(const AstNode* ast, RV& rv) {
-  VarFrame* frame = currentFrame();
-  VarFrame* parent = currentParentFrame();
-
+void FindElidedCopies::propagateChildToParent(VarFrame* frame, VarFrame* parent, const AstNode* ast) {
   // if it's the function's body block, consider out/inout formals mentioned
   // (since they will be used by the implicit return)
   if (frame->scopeAst == fnBody) {
@@ -597,6 +604,13 @@ void FindElidedCopies::handleScope(const AstNode* ast, RV& rv) {
     parent->initedVars.insert(frame->initedVars.begin(),
                               frame->initedVars.end());
   }
+}
+
+void FindElidedCopies::handleScope(const AstNode* ast, RV& rv) {
+  VarFrame* frame = currentFrame();
+  VarFrame* parent = currentParentFrame();
+
+  propagateChildToParent(frame, parent, ast);
 }
 
 std::set<ID>

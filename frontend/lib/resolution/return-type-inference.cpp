@@ -31,6 +31,7 @@
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/types/all-types.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/all-uast.h"
 
 #include "Resolver.h"
@@ -364,12 +365,6 @@ struct ReturnTypeInferrer : FlowSensitiveVisitor<DefaultFrame, ResolvedVisitor<R
   const types::Param* determineIfValue(const uast::AstNode* ast, RV& rv) override;
   void traverseNode(const uast::AstNode* ast, RV& rv) override;
 
-  bool markReturnOrThrow();
-  bool hasReturnedOrThrown();
-
-  bool hasHitBreak();
-  bool hasHitBreakOrContinue();
-
   bool enter(const Function* fn, RV& rv);
   void exit(const Function* fn, RV& rv);
 
@@ -397,6 +392,21 @@ struct ReturnTypeInferrer : FlowSensitiveVisitor<DefaultFrame, ResolvedVisitor<R
   bool enter(const AstNode* ast, RV& rv);
   void exit(const AstNode* ast, RV& rv);
 };
+
+} // namespace resolution
+
+namespace uast {
+
+template <>
+struct AstVisitorPrecondition<resolution::ReturnTypeInferrer> {
+  static bool skipSubtree(const AstNode* node, resolution::ReturnTypeInferrer& visitor) {
+    return visitor.isDoneExecuting();
+  }
+};
+
+} // namespace uast
+
+namespace resolution {
 
 void ReturnTypeInferrer::process(const uast::AstNode* symbol,
                                  ResolutionResultByPostorderID& byPostorder) {
@@ -529,30 +539,6 @@ void ReturnTypeInferrer::traverseNode(const uast::AstNode* ast, RV& rv) {
   ast->traverse(rv);
 }
 
-bool ReturnTypeInferrer::markReturnOrThrow() {
-  if (scopeStack.empty()) return false;
-  auto topFrame = currentFrame();
-  bool oldValue = topFrame->controlFlowInfo.returnsOrThrows();
-  topFrame->controlFlowInfo.markReturnOrThrow();
-  return oldValue;
-}
-
-bool ReturnTypeInferrer::hasReturnedOrThrown() {
-  if (scopeStack.empty()) return false;
-  return currentFrame()->controlFlowInfo.returnsOrThrows();
-}
-
-bool ReturnTypeInferrer::hasHitBreak() {
-  if (scopeStack.empty()) return false;
-  return currentFrame()->controlFlowInfo.breaks();
-}
-
-bool ReturnTypeInferrer::hasHitBreakOrContinue() {
-  if (scopeStack.empty()) return false;
-  return currentFrame()->controlFlowInfo.breaks() ||
-         currentFrame()->controlFlowInfo.continues();
-}
-
 bool ReturnTypeInferrer::enter(const Function* fn, RV& rv) {
   return false;
 }
@@ -609,14 +595,7 @@ bool ReturnTypeInferrer::enter(const Continue* cont, RV& rv) {
 void ReturnTypeInferrer::exit(const Continue* cont, RV& rv) {}
 
 bool ReturnTypeInferrer::enter(const Return* ret, RV& rv) {
-  // Ignore subsequent returns after a break or continue statement.
-  if (hasHitBreakOrContinue()) return false;
-
-  if (markReturnOrThrow()) {
-    // If it's statically known that we've already encountered a return
-    // we can safely ignore subsequent returns.
-    return false;
-  }
+  markReturnOrThrow();
 
   if (functionKind == Function::ITER) {
     // Plain returns don't count towards type inference for iterators.
@@ -634,12 +613,6 @@ void ReturnTypeInferrer::exit(const Return* ret, RV& rv) {
 }
 
 bool ReturnTypeInferrer::enter(const Yield* ret, RV& rv) {
-  if (hasReturnedOrThrown()) {
-    // If it's statically known that we've already encountered a return
-    // we can safely ignore subsequent yields.
-    return false;
-  }
-
   noteReturnType(ret->value(), ret, rv);
   return false;
 }

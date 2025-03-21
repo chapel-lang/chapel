@@ -6253,7 +6253,7 @@ static bool resolveParamForLoop(Resolver& rv, const For* forLoop, BoundInfo&& bo
 
   // Propagate the control flow information to the current frame.
   if (!rv.scopeStack.empty()) {
-    rv.sequenceWithParentFrame(rv.currentFrame(), loopControlFlow);
+    rv.currentFrame()->controlFlowInfo.sequenceIteration(loopControlFlow);
   }
 
   auto paramLoop = new ResolvedParamLoop(forLoop);

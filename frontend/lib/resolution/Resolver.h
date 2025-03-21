@@ -819,6 +819,18 @@ struct Resolver : FlowSensitiveVisitor<DefaultFrame> {
 };
 
 } // end namespace resolution
+
+namespace uast {
+template <>
+struct AstVisitorPrecondition<resolution::Resolver> {
+  static bool skipSubtree(const AstNode* node, resolution::Resolver& rv) {
+    if (rv.scopeResolveOnly) return false;
+    return rv.isDoneExecuting();
+  }
+};
+
+};
+
 } // end namespace chpl
 
 #endif

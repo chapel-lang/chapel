@@ -53,7 +53,7 @@ struct ControlFlowSubBlock;
 
     Since it is only used internally for these cases,
     the interface covers whatever these analyses need. */
-class VarScopeVisitor : protected FlowSensitiveVisitor<VarFrame, MutatingResolvedVisitor<VarScopeVisitor>&> {
+class VarScopeVisitor : public FlowSensitiveVisitor<VarFrame, MutatingResolvedVisitor<VarScopeVisitor>&> {
  protected:
   using RV = MutatingResolvedVisitor<VarScopeVisitor>;
 
@@ -305,6 +305,17 @@ computeActualFormalIntents(Context* context,
                            std::vector<types::QualifiedType>& actualFrmlTypes);
 
 } // end namespace resolution
+
+namespace uast {
+template <>
+struct AstVisitorPrecondition<resolution::VarScopeVisitor> {
+  static bool skipSubtree(const AstNode* node, resolution::VarScopeVisitor& rv) {
+    return rv.isDoneExecuting();
+  }
+};
+
+};
+
 } // end namespace chpl
 
 #endif
