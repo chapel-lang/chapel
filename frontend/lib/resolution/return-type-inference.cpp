@@ -734,12 +734,6 @@ bool ReturnTypeInferrer::enter(const For* forLoop, RV& rv) {
       for (const AstNode* child : forLoop->children()) {
         child->traverse(loopVis);
       }
-
-      if (hasHitBreak() || hasReturnedOrThrown()) {
-        // Stop processing subsequent loop bodies after a return or break
-        // statement; they're never reached.
-        break;
-      }
     }
 
     return false;
