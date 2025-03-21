@@ -28,7 +28,7 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 
 # Test performance with the latest qthreads release.
 GITHUB_USER=chapel-lang
-GITHUB_BRANCH=chapel
+GITHUB_BRANCH=main
 SHORT_NAME=main
 START_DATE=03/20/25
 
