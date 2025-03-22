@@ -5,7 +5,7 @@ import re
 import shutil
 
 import overrides
-from utils import memoize
+from utils import memoize, check_valid_var
 
 
 @memoize
@@ -37,6 +37,7 @@ def get():
                 comm_val = 'ofi'
             else:
                 comm_val = 'none'
+    check_valid_var("CHPL_COMM", comm_val, ("none", "gasnet", "ofi", "ugni"))
 
     return comm_val
 

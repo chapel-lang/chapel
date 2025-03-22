@@ -2,12 +2,13 @@
 import sys
 
 import overrides
-from utils import memoize
+from utils import memoize, check_valid_var
 
 
 @memoize
 def get():
     timers_val = overrides.get('CHPL_TIMERS', 'generic')
+    check_valid_var("CHPL_TIMERS", timers_val, ["generic"])
     return timers_val
 
 

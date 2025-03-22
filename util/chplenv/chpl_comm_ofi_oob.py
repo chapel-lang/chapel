@@ -6,7 +6,7 @@ import chpl_comm, chpl_launcher, chpl_platform
 import overrides
 import third_party_utils
 
-from utils import error, memoize
+from utils import error, memoize, check_valid_var
 
 @memoize
 def get():
@@ -16,8 +16,7 @@ def get():
 
     oob_val = overrides.get('CHPL_COMM_OFI_OOB')
     if oob_val:
-        if oob_val not in ('mpi', 'pmi2', 'sockets'):
-            error("CHPL_COMM_OFI_OOB must be 'mpi', 'pmi2', or 'sockets'")
+        check_valid_var("CHPL_COMM_OFI_OOB", oob_val, ("mpi", "pmi2", "sockets"))
         return oob_val
 
     #
