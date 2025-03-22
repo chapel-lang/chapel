@@ -122,7 +122,7 @@ if [ $LINT -eq 1 ]; then
 
     # Ensure nightly does not have syntax errors.
     echo "Checking nightly scripts"
-    perl -c $CHPL_HOME/util/buildRelease/gen_release
+    $($CHPL_HOME/util/config/find-python.sh) -m py_compile $CHPL_HOME/util/buildRelease/gen_release
     perl -c $CHPL_HOME/util/cron/nightly
 
 
