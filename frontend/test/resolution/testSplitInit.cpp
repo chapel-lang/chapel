@@ -938,7 +938,7 @@ static void test54() {
           x = 11;
         }
     )"""",
-    {});
+    {}, /* expectErrors */ true);
 }
 
 static void test55() {
@@ -965,7 +965,7 @@ static void test56() {
           x = 11;
         }
     )"""",
-    {});
+    {}, /* expectErrors */ true);
 }
 
 static void test57() {

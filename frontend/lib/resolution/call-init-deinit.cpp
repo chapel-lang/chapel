@@ -1085,12 +1085,18 @@ void CallInitDeinit::handleYield(const uast::Yield* ast, RV& rv) {
 
 void CallInitDeinit::handleTry(const Try* t, RV& rv) {
   VarFrame* frame = currentFrame();
+  VarFrame* body = currentTryBodyFrame();
   VarFrame* parent = currentParentFrame();
+
+  // propagate the body of the try
+  if (body != frame) {
+    processDeinitsAndPropagate(body, frame, rv);
+  }
 
   int nCatch = currentNumCatchFrames();
   for (int i = 0; i < nCatch; i++) {
     VarFrame* catchFrame = currentCatchFrame(i);
-    if (!catchFrame->returnsOrThrows) {
+    if (!catchFrame->controlFlowInfo.returnsOrThrows()) {
       processDeinitsAndPropagate(catchFrame, frame, rv);
     }
   }
@@ -1105,7 +1111,7 @@ void CallInitDeinit::handleDisjunction(const uast::AstNode * node,
                                  bool total, RV& rv) {
 
   for (auto frame : frames) {
-    if(!frame->returnsOrThrows) {
+    if(!frame->controlFlowInfo.returnsOrThrows()) {
       processDeinitsAndPropagate(frame, currentFrame, rv);
     }
   }
