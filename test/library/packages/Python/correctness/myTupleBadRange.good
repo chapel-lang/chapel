@@ -1,0 +1,2 @@
+myTupleBadRange.chpl:8: In function 'main':
+myTupleBadRange.chpl:16: error: cannot call `get()` on a Python tuple with a range with stride other than 1

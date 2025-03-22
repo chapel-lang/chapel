@@ -41,6 +41,35 @@ proc main() {
   testType(int, 100);
   testType(real(32), 3.14);
   testType(string, "this is a decently long string that may require extra work");
+  { // homogeneous tuple
+    var tup1: 4*int = (5, 4, 3, 2);
+    testType(tup1.type, tup1);
+  }
+
+  { // heterogeneous tuple
+    var tup1: (int, real, bool) = (17, 3.14, false);
+    testType(tup1.type, tup1);
+  }
+
+  { // tuple with a list
+    var tup1: (int, list(int)) = (5, new list([2, 1, 5]));
+    testType(tup1.type, tup1);
+  }
+
+  { // homogeneous tuple with strings
+    var tup1: 2*string = ("5", "oof");
+    testType(tup1.type, tup1);
+  }
+
+  { // homogeneous tuple with bytes
+    var tup1: 2*bytes = (b"5", b"oof");
+    testType(tup1.type, tup1);
+  }
+
+  { // heterogeneous tuple with a string
+    var tup1: (int, string, bool) = (17, "blah", false);
+    testType(tup1.type, tup1);
+  }
 
   { // int arrays
     var arr: [0..<10] int = 0..<10;
