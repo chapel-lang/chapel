@@ -65,12 +65,15 @@ clean-cmakecache: FORCE
 
 cleanall: $(CLEANALLSUBDIRS) echocompilerdir
 	rm -rf $(CLEANALL_TARGS)
+	@$(MAKE) clean-chpl-cmake-module-files
 
 cleandeps: $(CLEANSUBDIRDEPS) echocompilerdir
 	rm -f $(DEPENDS)
+	@$(MAKE) clean-chpl-cmake-module-files
 
 clobber: $(CLOBBERSUBDIRS) echocompilerdir
 	rm -rf ./$(CLOBBER_TARGS)
+	@$(MAKE) clean-chpl-cmake-module-files
 
 
 #
@@ -95,6 +98,7 @@ $(CHPL_CONFIG_CHECK): | $(CHPL_BIN_DIR)
 
 
 COMPILER_LIB_DIR = $(CHPL_MAKE_HOME)/lib/compiler/$(CHPL_MAKE_HOST_BIN_SUBDIR)
+CMAKE_LIB_DIR = $(CHPL_MAKE_HOME)/lib/cmake/chpl
 
 CMAKE_FLAGS = -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=$(CHPL_BIN_DIR) -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=$(COMPILER_LIB_DIR) -DCHPL_CXX_FLAGS="$(COMP_CXXFLAGS)" -DCHPL_LD_FLAGS="$(LDFLAGS)"
 
@@ -150,6 +154,7 @@ clean: FORCE $(CLEANSUBDIRS) echocompilerdir
 	fi
 	rm -f $(CLEAN_TARGS)
 	@$(MAKE) clean-cmakecache
+	@$(MAKE) clean-chpl-cmake-module-files
 
 # used in test-frontend to make sure cmake is configured with assertions on
 CMAKE_FLAGS_NO_NDEBUG=$(subst -DNDEBUG,,$(CMAKE_FLAGS))
@@ -214,10 +219,19 @@ chpldoc: FORCE $(CHPLDOC)
 
 MAKEALLCHPLDEFSUBDIRS = $(CHPLDEF_SUBDIRS:%=%.makedir)
 
+chpl-cmake-module-files: FORCE $(CMAKE_LIB_DIR)
+	cp $(CHPL_MAKE_HOME)/util/cmake/*.cmake $(CHPL_MAKE_HOME)/util/cmake/*.cmake.in $(CMAKE_LIB_DIR)
+
+clean-chpl-cmake-module-files: FORCE
+	rm -rf $(CMAKE_LIB_DIR)
+
 $(COMPILER_BUILD):
 	mkdir -p $@
 
 $(CHPL_BIN_DIR):
+	mkdir -p $@
+
+$(CMAKE_LIB_DIR):
 	mkdir -p $@
 
 install-chpl-chpldoc: FORCE $(CHPL_CONFIG_CHECK)
