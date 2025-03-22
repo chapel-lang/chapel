@@ -355,6 +355,7 @@ public:
 
 namespace uast {
 
+/// \cond DO_NOT_DOCUMENT
 template <typename UV>
 struct AstVisitorPrecondition<resolution::ResolvedVisitor<UV>> {
   static bool skipSubtree(const uast::AstNode* ast,
@@ -370,6 +371,7 @@ struct AstVisitorPrecondition<resolution::MutatingResolvedVisitor<UV>> {
     return AstVisitorPrecondition<UV>::skipSubtree(ast, v.userVisitor());
   }
 };
+/// \endcond
 
 } // end namespace uast
 
