@@ -1965,6 +1965,65 @@ static void testGenericTypeInInitialSignature() {
   // resolving the initial signature should've been skipped.
 }
 
+// Ensure that conditinal early returns in 'param' code are respected.
+static void testEarlyReturn() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto qt = resolveTypeOfXInit(context,
+    R"""(
+      record R { type field; }
+
+      proc compilerError(param msg: string...) {
+        __primitive("error");
+      }
+
+      proc foo(type t) type {
+        if t == int then return uint;
+        compilerError("case not handled");
+      }
+
+      type x = foo(int);
+    )""");
+  CHPL_ASSERT(qt.type()->isUintType());
+
+  // guard should have no errors
+}
+
+// Ensure that if execution is guaranteed to return in all paths, even if
+// the exact path is not known at compile time, subsequent
+// code like compilerError is not resolved.
+static void testRuntimeEarlyReturn() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto qt = resolveTypeOfXInit(context,
+    R"""(
+      record R { type field; }
+
+      proc compilerError(param msg: string...) {
+        __primitive("error");
+      }
+
+      proc foo(type t) {
+        var cond: bool;
+        if cond {
+          return 1;
+        } else {
+          return 2;
+        }
+        compilerError("case not handled");
+      }
+
+      var x = foo(int);
+    )""");
+  CHPL_ASSERT(qt.type()->isIntType());
+
+  // guard should have no errors
+}
+
 int main() {
   test1();
   test2();
@@ -2010,6 +2069,9 @@ int main() {
   testGlobalMultiDecl();
 
   testGenericTypeInInitialSignature();
+
+  testEarlyReturn();
+  testRuntimeEarlyReturn();
 
   return 0;
 }
