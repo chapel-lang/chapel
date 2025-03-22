@@ -297,34 +297,6 @@ const CompositeType* helpGetTypeForDecl(Context* context,
   return ret;
 }
 
-// TODO:
-// This code will be duplicating a lot of stuff in VarScopeVisitor, but it's
-// different enough that I don't know how to proceed. I'm certain that there's
-// a general way to make all these traversals work.
-
-struct ReturnInferenceFrame;
-struct ReturnInferenceSubFrame {
-  // The AST node whose frame should be saved into this sub-frame
-  const AstNode* astNode = nullptr;
-  // The frame associated with the given AST node.
-  owned<ReturnInferenceFrame> frame = nullptr;
-  // Whether this sub-frame should be skipped when combining sub-results.
-  // Occurs in particular when a branch is known statically not to occur.
-  bool skip = false;
-
-  ReturnInferenceSubFrame(const AstNode* node) : astNode(node) {}
-};
-
-struct ReturnInferenceFrame {
-  const AstNode* scopeAst = nullptr;
-  bool returnsOrThrows = false;
-  bool breaks = false;
-  bool continues = false;
-  std::vector<ReturnInferenceSubFrame> subFrames;
-
-  ReturnInferenceFrame(const AstNode* node) : scopeAst(node) {}
-};
-
 struct ReturnTypeInferrer : FlowSensitiveVisitor<DefaultFrame, ResolvedVisitor<ReturnTypeInferrer>&> {
   using RV = ResolvedVisitor<ReturnTypeInferrer>;
 
@@ -500,12 +472,6 @@ QualifiedType ReturnTypeInferrer::returnedType() {
 
 void ReturnTypeInferrer::doEnterScope(const uast::AstNode* node, RV& rv) {
   FlowSensitiveVisitor::doEnterScope(node, rv);
-
-  // TODO: just don't visit the node
-  if (scopeStack.size() > 1 && !node->isCatch()) {
-    // If we returned in the parent frame, we already returned here.
-    currentFrame()->controlFlowInfo = scopeStack[scopeStack.size() - 2]->controlFlowInfo;
-  }
 }
 
 void ReturnTypeInferrer::doExitScope(const uast::AstNode* node, RV& rv) {
