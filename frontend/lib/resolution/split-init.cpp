@@ -88,7 +88,6 @@ struct FindSplitInits : VarScopeVisitor {
 };
 
 struct SplitInitVarStatus {
-  bool foundReturnsThrows = false;
   bool foundInitedVar = false;
   bool foundMentionedVar = false;
   bool foundDeclaredVar = false;
@@ -101,9 +100,6 @@ SplitInitVarStatus FindSplitInits::findVarStatus(ID varId) {
 
   for (ssize_t i = scopeStack.size() - 1; i >= 0; i--) {
     VarFrame* frame = scopeStack[i].get();
-    if (frame->controlFlowInfo.returnsOrThrows()) {
-      status.foundReturnsThrows = true;
-    }
     if (frame->initedVars.count(varId) > 0) {
       status.foundInitedVar = true;
     }
@@ -140,7 +136,7 @@ void FindSplitInits::handleInitOrAssign(ID varId,
 
   // if it wasn't already initialized or mentioned, we mark it initialized
   // in this frame.
-  if (!s.foundReturnsThrows && !s.foundInitedVar && !s.foundMentionedVar) {
+  if (!s.foundInitedVar && !s.foundMentionedVar) {
     // normalize the type -- only consider param value for varId being param.
     QualifiedType::Kind kind = QualifiedType::VAR;
     if (rv.hasId(varId)) {
@@ -181,7 +177,7 @@ void FindSplitInits::handleMention(const Identifier* ast, ID varId, RV& rv) {
 
   // if it wasn't already initialized or mentioned, we mark it mentioned
   // in this frame.
-  if (!s.foundReturnsThrows && !s.foundInitedVar && !s.foundMentionedVar) {
+  if (!s.foundInitedVar && !s.foundMentionedVar) {
     frame->mentionedVars.insert(varId);
   }
 }
