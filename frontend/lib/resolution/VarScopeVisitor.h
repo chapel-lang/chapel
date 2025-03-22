@@ -53,7 +53,7 @@ struct ControlFlowSubBlock;
 
     Since it is only used internally for these cases,
     the interface covers whatever these analyses need. */
-class VarScopeVisitor : public FlowSensitiveVisitor<VarFrame, MutatingResolvedVisitor<VarScopeVisitor>&> {
+class VarScopeVisitor : public BranchSensitiveVisitor<VarFrame, MutatingResolvedVisitor<VarScopeVisitor>&> {
  protected:
   using RV = MutatingResolvedVisitor<VarScopeVisitor>;
 

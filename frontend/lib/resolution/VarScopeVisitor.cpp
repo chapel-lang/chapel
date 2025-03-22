@@ -179,11 +179,11 @@ const QualifiedType& VarScopeVisitor::returnOrYieldType() {
 }
 
 void VarScopeVisitor::doEnterScope(const uast::AstNode* ast, RV& rv) {
-  FlowSensitiveVisitor::doEnterScope(ast, rv);
+  BranchSensitiveVisitor::doEnterScope(ast, rv);
 }
 
 void VarScopeVisitor::doExitScope(const uast::AstNode* ast, RV& rv) {
-  FlowSensitiveVisitor::doExitScope(ast, rv);
+  BranchSensitiveVisitor::doExitScope(ast, rv);
 
   // we moved the frame into the parent frame's subBlocks
   if (scopeStack.back() == nullptr) return;
@@ -513,7 +513,7 @@ void VarScopeVisitor::exit(const Identifier* ast, RV& rv) {
 bool VarScopeVisitor::enter(const Conditional* cond, RV& rv) {
   enterAst(cond);
   enterScope(cond, rv);
-  return flowSensitivelyTraverse(cond, rv);
+  return branchSensitivelyTraverse(cond, rv);
 }
 
 void VarScopeVisitor::exit(const Conditional* cond, RV& rv) {
@@ -524,7 +524,7 @@ void VarScopeVisitor::exit(const Conditional* cond, RV& rv) {
 bool VarScopeVisitor::enter(const Select* sel, RV& rv) {
   enterAst(sel);
   enterScope(sel, rv);
-  return flowSensitivelyTraverse(sel, rv);
+  return branchSensitivelyTraverse(sel, rv);
 }
 
 void VarScopeVisitor::exit(const Select* ast, RV& rv) {

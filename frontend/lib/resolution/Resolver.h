@@ -35,7 +35,7 @@
 namespace chpl {
 namespace resolution {
 
-struct Resolver : FlowSensitiveVisitor<DefaultFrame> {
+struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
   // types used below
   using ActionAndId = std::tuple<AssociatedAction::Action, ID>;
   using SubstitutionsMap = types::CompositeType::SubstitutionsMap;

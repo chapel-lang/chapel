@@ -297,7 +297,7 @@ const CompositeType* helpGetTypeForDecl(Context* context,
   return ret;
 }
 
-struct ReturnTypeInferrer : FlowSensitiveVisitor<DefaultFrame, ResolvedVisitor<ReturnTypeInferrer>&> {
+struct ReturnTypeInferrer : BranchSensitiveVisitor<DefaultFrame, ResolvedVisitor<ReturnTypeInferrer>&> {
   using RV = ResolvedVisitor<ReturnTypeInferrer>;
 
   // input
@@ -471,11 +471,11 @@ QualifiedType ReturnTypeInferrer::returnedType() {
 }
 
 void ReturnTypeInferrer::doEnterScope(const uast::AstNode* node, RV& rv) {
-  FlowSensitiveVisitor::doEnterScope(node, rv);
+  BranchSensitiveVisitor::doEnterScope(node, rv);
 }
 
 void ReturnTypeInferrer::doExitScope(const uast::AstNode* node, RV& rv) {
-  FlowSensitiveVisitor::doExitScope(node, rv);
+  BranchSensitiveVisitor::doExitScope(node, rv);
 
   // we don't normally propagate information from loops up to the parent frame,
   // since they may be executed zero times. However, if it's a param loop,
@@ -514,7 +514,7 @@ void ReturnTypeInferrer::exit(const Function* fn, RV& rv) {
 
 bool ReturnTypeInferrer::enter(const Conditional* cond, RV& rv) {
   enterScope(cond, rv);
-  return flowSensitivelyTraverse(cond, rv);
+  return branchSensitivelyTraverse(cond, rv);
 }
 void ReturnTypeInferrer::exit(const Conditional* cond, RV& rv) {
   exitScope(cond, rv);
@@ -522,7 +522,7 @@ void ReturnTypeInferrer::exit(const Conditional* cond, RV& rv) {
 
 bool ReturnTypeInferrer::enter(const Select* sel, RV& rv) {
   enterScope(sel, rv);
-  return flowSensitivelyTraverse(sel, rv);
+  return branchSensitivelyTraverse(sel, rv);
 }
 void ReturnTypeInferrer::exit(const Select* sel, RV& rv) {
   exitScope(sel, rv);

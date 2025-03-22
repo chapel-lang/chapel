@@ -3337,7 +3337,7 @@ QualifiedType Resolver::typeForId(const ID& id) {
 }
 
 void Resolver::enterScope(const AstNode* ast) {
-  if (FlowSensitiveVisitor::enterScope(ast, {})) {
+  if (BranchSensitiveVisitor::enterScope(ast, {})) {
     scopeStack.back()->scope = scopeForId(context, ast->id());
   }
   if (auto d = ast->toDecl()) {
@@ -3349,7 +3349,7 @@ void Resolver::enterScope(const AstNode* ast) {
   }
 }
 void Resolver::exitScope(const AstNode* ast) {
-  FlowSensitiveVisitor::exitScope(ast, {});
+  BranchSensitiveVisitor::exitScope(ast, {});
   if (ast->isDecl()) {
     CHPL_ASSERT(!declStack.empty());
     declStack.pop_back();
@@ -3398,7 +3398,7 @@ bool Resolver::enter(const uast::Conditional* cond) {
   if (!scopeResolveOnly) {
     // Only do short-circuiting for regular resolution, not scope-resolution
 
-    if (!flowSensitivelyTraverse(cond, {})) {
+    if (!branchSensitivelyTraverse(cond, {})) {
       // the condition was param-known and we handled short-circuiting.
       // If we're an expression-level conditional, figure out the return type.
 
@@ -3468,7 +3468,7 @@ void Resolver::exit(const uast::Conditional* cond) {
 bool Resolver::enter(const uast::Select* sel) {
   sel->expr()->traverse(*this);
   enterScope(sel);
-  if (!scopeResolveOnly) return flowSensitivelyTraverse(sel, {});
+  if (!scopeResolveOnly) return branchSensitivelyTraverse(sel, {});
   return true;
 }
 

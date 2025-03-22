@@ -118,7 +118,7 @@ struct DefaultFrame : public BaseFrame<DefaultFrame> {
 };
 
 template <typename Frame /* : BaseFrame */, typename ExtraData = std::variant<std::monostate>>
-struct FlowSensitiveVisitor {
+struct BranchSensitiveVisitor {
   std::vector<owned<Frame>> scopeStack;
 
   /** Return the current frame. This should always be safe to call
@@ -412,7 +412,7 @@ struct FlowSensitiveVisitor {
 
   virtual void traverseNode(const uast::AstNode* ast, ExtraData extraData) = 0;
 
-  bool flowSensitivelyTraverse(const uast::Select* sel, ExtraData extraData) {
+  bool branchSensitivelyTraverse(const uast::Select* sel, ExtraData extraData) {
     // have we encountered a when without param-decided conditions?
     bool anyWhenNonParam = false;
 
@@ -450,7 +450,7 @@ struct FlowSensitiveVisitor {
     return false;
   }
 
-  bool flowSensitivelyTraverse(const uast::Conditional* cond, ExtraData extraData) {
+  bool branchSensitivelyTraverse(const uast::Conditional* cond, ExtraData extraData) {
     auto param = determineIfValue(cond->condition(), extraData);
     if (isParamTrue(param)) {
       // Don't need to process the false branch.
