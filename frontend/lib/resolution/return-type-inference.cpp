@@ -522,7 +522,7 @@ void ReturnTypeInferrer::doExitScope(const uast::AstNode* node, RV& rv) {
   DefaultFrame* parentFrame = nullptr;
   if (node->isLoop() && (parentFrame = currentParentFrame())) {
     if (auto rr = rv.byAstOrNull(node)) {
-      if (auto resolvedLoop = rr->paramLoop()) {
+      if (rr->paramLoop()) {
         parentFrame->controlFlowInfo.sequence(currentFrame()->controlFlowInfo);
       }
     }
