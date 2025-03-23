@@ -2791,7 +2791,11 @@ static void resolveReduceAssign(Resolver& rv, const OpCall* op) {
   auto inScopes = CallScopeInfo::forNormalCall(rv.scopeStack.back(), rv.poiScope);
   auto c = rv.resolveGeneratedCall(op, &ci, &inScopes);
   auto& resolvedOp = rv.byPostorder.byAst(op);
-  c.noteResult(&resolvedOp, { { AssociatedAction::REDUCE_SCAN, op->id() } });
+  if (c.noteResultWithoutError(&resolvedOp,
+                               { { AssociatedAction::REDUCE_SCAN, op->id() } })) {
+    // TODO: use error class
+    rv.context->error(op, "reduction does not support calls with this type");
+  }
   resolvedOp.setType(QualifiedType(QualifiedType::CONST_VAR, VoidType::get(rv.context)));
 }
 
