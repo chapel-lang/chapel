@@ -363,6 +363,47 @@ static void testReduce() {
   }
 }
 
+static void testReduceAssignNotVariable() {
+  auto ctx = buildStdContext();
+  auto program = "foreach 1..10 { (1) reduce= 1; }";
+  ErrorGuard guard(ctx);
+  std::ignore = resolveTypesOfVariables(ctx, program, {});
+
+  assert(guard.numErrors() == 1);
+  assert(guard.errors()[0]->type() == ErrorType::ReductionAssignNonIdentifier);
+  guard.realizeErrors();
+}
+
+static void testReduceAssignNotReduceIntent() {
+  auto ctx = buildStdContext();
+  auto program = "var x = 0; forall 1..10 { x reduce= 1; }";
+  ErrorGuard guard(ctx);
+  std::ignore = resolveTypesOfVariables(ctx, program, {});
+
+  assert(guard.numErrors() == 1);
+  assert(guard.errors()[0]->type() == ErrorType::ReductionAssignNotReduceIntent);
+  guard.realizeErrors();
+}
+
+static void testReduceAssignChangesType() {
+  auto ctx = buildStdContext();
+  auto program =
+    R"""(
+      var a = 0;
+      forall i in 1..10 with (minmax reduce a) {
+        a reduce= i;
+      }
+      var x = 0;
+    )""";
+
+  ErrorGuard guard(ctx);
+  std::ignore = resolveTypesOfVariables(ctx, program, {});
+
+  assert(guard.numErrors() == 1);
+  assert(guard.errors()[0]->type() == ErrorType::ReductionIntentChangesType);
+  guard.realizeErrors();
+}
+
 //
 // TODO:
 // - implicit shadow variables (flat, nested)
@@ -381,6 +422,9 @@ int main(int argc, char** argv) {
   // perform actual tests
   testKinds();
   testReduce();
+  testReduceAssignNotVariable();
+  testReduceAssignNotReduceIntent();
+  testReduceAssignChangesType();
 
   printf("\nAll tests passed successfully.\n");
 
