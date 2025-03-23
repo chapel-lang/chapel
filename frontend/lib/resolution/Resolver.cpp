@@ -2796,7 +2796,7 @@ static void resolveReduceAssign(Resolver& rv, const OpCall* op) {
   auto resolveResult = rv.context->runAndTrackErrors([&, op](Context* context) {
     auto c = rv.resolveGeneratedCall(op, &ci, &inScopes);
     return c.noteResultWithoutError(&resolvedOp,
-                                    { { AssociatedAction::REDUCE_SCAN, op->id() } });
+                                    { { AssociatedAction::REDUCE_ASSIGN, op->id() } });
   });
 
   if (!resolveResult.ranWithoutErrors() || resolveResult.result()) {

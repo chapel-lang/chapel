@@ -124,6 +124,21 @@ struct Collector {
     }
   }
 
+  bool enter(const uast::OpCall* op, RV& rv) {
+    if (op->op() == "reduce=") {
+      bool foundAction = false;
+      for (auto& aa : rv.byAst(op).associatedActions()) {
+        if (aa.action() == AssociatedAction::REDUCE_ASSIGN) {
+          foundAction = true;
+        }
+      }
+      assert(foundAction);
+    }
+    return true;
+  }
+  void exit(const uast::OpCall* op, RV& rv) {
+  }
+
   bool enter(const uast::AstNode* ast, RV& rv) {
     return true;
   }
@@ -298,7 +313,7 @@ static void testKinds() {
 }
 
 // helper for running reduce intent tests
-static void reduceHelper(const std::string& constructName) {
+static void reduceHelper(const std::string& constructName, const char* op, const char* opAssign) {
   assert(constructName == "forall" || constructName == "coforall");
 
   Context* context = buildStdContext();
@@ -307,16 +322,15 @@ static void reduceHelper(const std::string& constructName) {
 
   // Very simple test focusing on scope resolution
   std::string program;
-  program += R"""(operator +=(ref lhs: int, rhs: int) {
-  __primitive("+=", lhs, rhs);
-}
-
-var x = 0;
-)""";
+  program += "var x = 0;\n";
   program += constructName;
-  program += R"""( i in 1..10 with (+ reduce x) {
-  x += 1;
-})""";
+  program += " i in 1..10 with (";
+  program += op;
+  program += " reduce x) {\n";
+  program += "x ";
+  program += opAssign;
+  program += " i;\n";
+  program += "}\n";
 
   auto col = customHelper(program, rc);
 
@@ -344,7 +358,8 @@ static void testReduce() {
       // "begin"
   };
   for (const auto& constructName : constructNames) {
-    reduceHelper(constructName);
+    reduceHelper(constructName, "+", "+=");
+    reduceHelper(constructName, "+", "reduce=");
   }
 }
 
