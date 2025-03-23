@@ -35,7 +35,7 @@
 #include "chpl/uast/all-uast.h"
 
 #include "Resolver.h"
-#include "resolution/FlowSensitiveVisitor.h"
+#include "resolution/BranchSensitiveVisitor.h"
 
 #include <cstdio>
 #include <iterator>

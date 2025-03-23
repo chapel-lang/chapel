@@ -22,7 +22,7 @@
 
 #include "chpl/framework/ID.h"
 #include "chpl/resolution/ResolvedVisitor.h"
-#include "./FlowSensitiveVisitor.h"
+#include "./BranchSensitiveVisitor.h"
 
 namespace chpl {
 namespace uast {
@@ -163,7 +163,7 @@ class VarScopeVisitor : public BranchSensitiveVisitor<VarFrame, MutatingResolved
   /** Returns the return or yield type of the function being processed */
   const types::QualifiedType& returnOrYieldType();
 
-  // ----- overrides for FlowSensitiveVisitor
+  // ----- overrides for BranchSensitiveVisitor
   void doEnterScope(const uast::AstNode* ast, RV& rv) override;
   void doExitScope(const uast::AstNode* ast, RV& rv) override;
   const types::Param* determineWhenCaseValue(const uast::AstNode* ast, RV& extraData) override;

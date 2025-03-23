@@ -33,7 +33,7 @@
 
 #include "InitResolver.h"
 #include "VarScopeVisitor.h"
-#include "resolution/FlowSensitiveVisitor.h"
+#include "resolution/BranchSensitiveVisitor.h"
 
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/SmallVector.h"
@@ -693,7 +693,7 @@ const types::Param* Resolver::determineIfValue(const uast::AstNode* ast, Ignored
 }
 
 void Resolver::traverseNode(const uast::AstNode* ast, IgnoredExtraData rv) {
-  // This is invoked from FlowSensitiveVisitor's short-circuiting code.
+  // This is invoked from BranchSensitiveVisitor's short-circuiting code.
   // When handling Select statements, it will try to traverse the entire
   // "When" clause when applicable. However, above (in 'determineWhenCaseValue')
   // we overrode the type of the case value. Re-traversing it would clobber

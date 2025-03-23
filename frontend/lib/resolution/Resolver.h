@@ -25,7 +25,7 @@
 #include "chpl/types/CompositeType.h"
 #include "chpl/uast/all-uast.h"
 #include "InitResolver.h"
-#include "FlowSensitiveVisitor.h"
+#include "BranchSensitiveVisitor.h"
 
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/SmallVector.h"

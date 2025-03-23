@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_LIB_RESOLUTION_FLOWSENSITIVEVISITOR_H
-#define CHPL_LIB_RESOLUTION_FLOWSENSITIVEVISITOR_H
+#ifndef CHPL_LIB_RESOLUTION_BRANCHSENSITIVEVISITOR_H
+#define CHPL_LIB_RESOLUTION_BRANCHSENSITIVEVISITOR_H
 
 #include "chpl/uast/all-uast.h"
 #include "chpl/resolution/scope-queries.h"
