@@ -2757,8 +2757,7 @@ static void resolveReduceAssign(Resolver& rv, const OpCall* op) {
 
   auto lhsIdent = lhs->toIdentifier();
   if (!lhsIdent) {
-    // TODO: use error class
-    rv.context->error(op, "invalid use of reduce=");
+    CHPL_REPORT(rv.context, ReductionAssignNonIdentifier, op);
     return;
   }
 
@@ -2766,8 +2765,8 @@ static void resolveReduceAssign(Resolver& rv, const OpCall* op) {
   if (!resolvedLhs.toId() || resolvedLhs.type().isUnknownOrErroneous()) return;
 
   if (parsing::idToTag(rv.context, resolvedLhs.toId()) != asttags::ReduceIntent) {
-    // TODO: use error class
-    rv.context->error(op, "reduce= can only by applied to things in reduce intents");
+    auto refersTo = parsing::idToAst(rv.context, resolvedLhs.toId());
+    CHPL_REPORT(rv.context, ReductionAssignNotReduceIntent, op, refersTo);
     return;
   }
 
@@ -2789,12 +2788,20 @@ static void resolveReduceAssign(Resolver& rv, const OpCall* op) {
       std::move(actuals));
 
   auto inScopes = CallScopeInfo::forNormalCall(rv.scopeStack.back(), rv.poiScope);
-  auto c = rv.resolveGeneratedCall(op, &ci, &inScopes);
   auto& resolvedOp = rv.byPostorder.byAst(op);
-  if (c.noteResultWithoutError(&resolvedOp,
-                               { { AssociatedAction::REDUCE_SCAN, op->id() } })) {
-    // TODO: use error class
-    rv.context->error(op, "reduction does not support calls with this type");
+
+  // reductions in the standard library are in the habit of accepting any RHS,
+  // and then emitting errors from inside the implementation. Catch that
+  // an emit a more specific error.
+  auto resolveResult = rv.context->runAndTrackErrors([&, op](Context* context) {
+    auto c = rv.resolveGeneratedCall(op, &ci, &inScopes);
+    return c.noteResultWithoutError(&resolvedOp,
+                                    { { AssociatedAction::REDUCE_SCAN, op->id() } });
+  });
+
+  if (!resolveResult.ranWithoutErrors() || resolveResult.result()) {
+    auto shadows = parsing::idToAst(rv.context, rv.byPostorder.byAst(intent).toId());
+    CHPL_REPORT(rv.context, ReductionAssignInvalidRhs, op, intent, shadows, ci);
   }
   resolvedOp.setType(QualifiedType(QualifiedType::CONST_VAR, VoidType::get(rv.context)));
 }

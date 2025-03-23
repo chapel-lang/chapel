@@ -1888,6 +1888,41 @@ void ErrorRedefinition::write(ErrorWriterBase& wr) const {
   }
 }
 
+void ErrorReductionAssignNonIdentifier::write(ErrorWriterBase& wr) const {
+  auto opCall = std::get<const uast::OpCall*>(info_);
+  wr.heading(kind_, type_, opCall, "invalid reduction assignment to non-identifier:");
+  wr.message("The left-hand side of a 'reduce=' statement must be an identifier referring to a variable with a 'reduce' intent.");
+  wr.message("However, the left-hand side is not an identifier here:");
+  wr.code(opCall, { opCall->actual(0) });
+}
+
+void ErrorReductionAssignNotReduceIntent::write(ErrorWriterBase& wr) const {
+  auto opCall = std::get<const uast::OpCall*>(info_);
+  auto lhs = std::get<const uast::AstNode*>(info_);
+  wr.heading(kind_, type_, opCall, "invalid reduction assignment to variable declared outside of 'reduce' intent:");
+  wr.codeForLocation(opCall);
+  wr.message("The left-hand side of a 'reduce=' statement must be an identifier referring to a variable with a 'reduce' intent.");
+  wr.message("However, the left-hand side is declared (outside a 'reduce' intent) here:");
+  wr.codeForDef(lhs);
+  wr.message("The 'reduce=' operator uses the 'reduce' intent to determine the reduction operation.");
+}
+
+void ErrorReductionAssignInvalidRhs::write(ErrorWriterBase& wr) const {
+  auto opCall = std::get<const uast::OpCall*>(info_);
+  auto reduceIntent = std::get<const uast::ReduceIntent*>(info_);
+  auto shadowed = std::get<const uast::AstNode*>(info_);
+  auto& ci = std::get<resolution::CallInfo>(info_);
+  wr.heading(kind_, type_, opCall, "invalid reduction assignment:");
+  wr.codeForLocation(opCall);
+  wr.message("The right-hand side of the 'reduce=' statement refers to a variable '",
+              reduceIntent->name(), "' declared '", reduceIntent->op(), " reduce' here:");
+  wr.codeForDef(reduceIntent);
+  wr.message("This shadows the declaration of '", reduceIntent->name(), "' with type '", ci.actual(1).type().type(), "' here:");
+  wr.codeForDef(shadowed);
+  wr.message("However, the reduction '", reduceIntent->op(), "' does not support an assignment from ", decayToValue(ci.actual(2).type()), ".");
+  wr.code(opCall, { opCall->actual(1) });
+}
+
 static const uast::AstNode* getReduceOrScanOp(const uast::AstNode* reduceOrScan) {
   if (auto reduce = reduceOrScan->toReduce()) {
     return reduce->op();
