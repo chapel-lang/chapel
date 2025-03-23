@@ -26,6 +26,14 @@
 namespace chpl {
 namespace resolution {
 
+/**
+  This struct contains information about a program's control flow state.
+  Specifically, it tracks whether the program has returned, thrown, invoked 'break',
+  or invoked 'continue'. This is used in various program analyses to avoid
+  reasoning about code that's unreachable. It is also used in some analyses
+  for other reasons (e.g. if a frame doesn't initialze a split-init'ed variable,
+  but throws, that variable is still eligible for split-init).
+ */
 struct ControlFlowInfo {
  private:
   // has the block already encountered a return or a throw?
@@ -42,18 +50,29 @@ struct ControlFlowInfo {
   ControlFlowInfo(bool returnsOrThrows, bool breaks, bool continues)
     : returnsOrThrows_(returnsOrThrows), breaks_(breaks), continues_(continues) {}
 
+  /* have we hit a statement that would prevent further execution of a block? */
   bool isDoneExecuting() const { return returnsOrThrows_ || breaks_ || continues_; }
   bool returnsOrThrows() const { return returnsOrThrows_; }
   bool breaks() const { return breaks_; }
   bool continues() const { return continues_; }
 
+  // The below mark functions check if the block is already done executing.
+  // This is useful because in cases like `return; continue`, we don't want
+  // to treat the code as if it continues. If we already stopped executing,
+  // further changes to control flow are not recorded.
+
   void markReturnOrThrow() { if (!isDoneExecuting()) returnsOrThrows_ = true; }
   void markBreak() { if (!isDoneExecuting()) breaks_ = true; }
   void markContinue() { if (!isDoneExecuting()) continues_ = true; }
 
+  // resetting break and continue is useful for when we are handling 'param' for loops.
+  // If we hit a continue, we might want to move on to the next iteration of
+  // resolving the body, but if we hit a return, we should stop.
+
   void resetContinue() { continues_ = false; }
   void resetBreak() { breaks_ = false; }
 
+  /* mutably combine control flow information from two branches (e.g., then/else) */
   ControlFlowInfo& operator&=(const ControlFlowInfo& other) {
     returnsOrThrows_ &= other.returnsOrThrows_;
     breaks_ &= other.breaks_;
@@ -61,11 +80,16 @@ struct ControlFlowInfo {
     return *this;
   }
 
+
+  /* immutably combine control flow information from two branches (e.g., then/else) */
   ControlFlowInfo operator&(const ControlFlowInfo& other) {
     auto ret = *this;
     return ret &= other;
   }
 
+  /* supposing `this` represents a block's current control flow state,
+     update it with changes from `other` that represent a new statement having
+     been executed. */
   void sequence(const ControlFlowInfo& other) {
     if (!isDoneExecuting()) {
       returnsOrThrows_ |= other.returnsOrThrows_;
@@ -74,12 +98,39 @@ struct ControlFlowInfo {
     }
   }
 
+  /* same as `sequence`, except treats the `other` as an iteration of a loop
+     body rather than a statement in the current block. For this reason,
+     does not propagate 'continue' and 'break', since a loop whose body
+     continues does not continue its parent loop. */
   void sequenceIteration(const ControlFlowInfo& other) {
     if (!isDoneExecuting()) {
       returnsOrThrows_ |= other.returnsOrThrows_;
     }
   }
 };
+
+/*
+  This is a base class for frames in the BranchSensitiveVisitor. It uses
+  CRTP, so the Self template parameter should be the class inheriting from
+  BaseFrame.
+
+  At base, this struct stores information about control flow (see
+  comment on ControlFlowInfo for when this is useful). It also stores the current
+  scope and AST node. Finally, it stores information about `param`-known
+  paths; if a `then` branch of a loop is known to be taken, we will incorporate
+  that information into the analysis and not traverse the `else` branch.
+
+  The 'paramTrueCond' and 'knownPath' are subtly different. A frame
+  can have a true condition without being known to execute at compile time.
+  This can happen (e.g.) if a preceding 'when' clause has a non-`param`
+  condition, or if the preceding clause has a `param true` condition and
+  thus is evaluated instead.
+
+  Visitors deriving from BranchSensitiveVisitor can extend this frame
+  class with additional information. For example, VarScopeVisitor
+  stores split-init, copy elision, etc. information in its frames. It is not
+  included here to avoid adding unnecessary overhead to other visitors.
+*/
 
 template <typename Self>
 struct BaseFrame {
@@ -112,14 +163,182 @@ struct BaseFrame {
   }
 };
 
+/* Since you can't instantiate a template like BaseFrame with itself
+   (you'd need BaseFrame<BaseFrame<...>>), this class exists to provide
+   only the fields from BaseFrame to visitors that need nothing else.
+ */
 struct DefaultFrame : public BaseFrame<DefaultFrame> {
   DefaultFrame() = default;
   DefaultFrame(const uast::AstNode* ast) : BaseFrame(ast) {}
 };
 
+/**
+
+  This struct is intended as a base class for visitors that need to be
+  sensitive to branching and control flow. For example, Resolver relies
+  on this to avoid evaluating code that exists in dead branches.
+  The VarScopeVisitor and its family of child classes do the same, _and_
+  use control flow information for other parts of their analyses -- see
+  the comment on ControlFlowInfo above.
+
+  The visitor is parameterized by a Frame type, which should be a subclass
+  of BaseFrame. See the comment on BaseFrame for more information about
+  what it does.
+
+  Normally, this visitor (via its `enterScope` and `exitScope` methods)
+  pushes Frames onto its stack when entering an AST node with a scope,
+  and pops them when exiting. For certain types of control flow, however,
+  rather than popping the frame, it saves it in the parent frame's
+  `subFrames` field. This is done to enable processing multi-branch statements
+  that have nontrivial behaviors (e.g., 'select' picks the first branch
+  that matches, and if that condition is 'param', other branches are considered
+  dead; this affects what the whole `select` statement does w.r.t. control flow
+  and other analyses). The 'doEnterScope' and 'doExitScope' methods are
+  intended to be overridden by visitors that need to do something when
+  entering or exiting a scope. They are executed after the frame is pushed
+  and before it is popped, so that the visitor can access the current frame
+  when processing the scope.
+
+  This visitor additionally consolidates logic for deciding which branch
+  of a conditional or select to traverse. To be most general, this is done
+  via the `determineWhenCaseValue` and `determineIfValue` methods. For
+  Resolver, which actually does the work of evaluating expressions, these
+  are intended to perform that work. For other visitors which operates on
+  results of the resolution process, these methods are intended to simply
+  access that (pre-computed) information. Finally, `traverseNode` is used
+  when "comitting" to a `param`-known path.
+
+  To call into the conditional/select logic, use `branchSensitivelyTraverse`.
+
+  The ExtraData template parameter is used for visitors whose recursive
+  traversals (via `traverse`) require that additional data. This is true
+  concretely for ResolvedVisitor-based analyses, which have a mutually recursive
+  `traverse` function.
+*/
 template <typename Frame /* : BaseFrame */, typename ExtraData = std::variant<std::monostate>>
 struct BranchSensitiveVisitor {
+ public:
   std::vector<owned<Frame>> scopeStack;
+
+ private:
+  /** when entering a scope, set up slots for subFrames to be stored into,
+      if applicable for the current AST node type. */
+  void createSubFrames(const uast::AstNode* ast) {
+    auto& newFrame = scopeStack.back();
+    if (auto c = ast->toConditional()) {
+      // note thenBlock / elseBlock
+      newFrame->subFrames.emplace_back(c->thenBlock(), nullptr);
+      newFrame->subFrames.emplace_back(c->elseBlock(), nullptr);
+    } else if (auto t = ast->toTry()) {
+      // note the body itself to avoid clobbering the whole Try node with
+      // control flow information
+      newFrame->subFrames.emplace_back(t->body(), nullptr);
+      // note each of the catch handlers (aka catch clauses)
+      for (auto clause : t->handlers()) {
+        newFrame->subFrames.emplace_back(clause, nullptr);
+      }
+    } else if (auto s = ast->toSelect()) {
+      for (auto when : s->whenStmts()) {
+        newFrame->subFrames.emplace_back(when, nullptr);
+      }
+    }
+  }
+
+  /** when exiting frame, detect if we need to store it as a subFrame.
+      We do so if an existing subFrame slot created by createSubFrames
+      matches the current AST node.
+
+      Regardless, set outParentFrame to the parent frame, if any.
+   */
+  bool saveSubFrame(const uast::AstNode* ast, Frame*& outParentFrame) {
+    CHPL_ASSERT(!scopeStack.empty());
+    size_t n = scopeStack.size();
+    auto& curFrame = scopeStack[n-1];
+    CHPL_ASSERT(curFrame->scopeAst == ast);
+    if (n < 2) return false;
+
+    // Are we in the situation of just finishing a Block
+    // that is within a Conditional? or a Catch clause?
+    // If so, save the frame in the subBlocks, to
+    // be handled when processing condFrame.
+    outParentFrame = scopeStack[n-2].get();
+    for (auto & subBlock : outParentFrame->subFrames) {
+      if (std::get<const uast::AstNode*>(subBlock) == ast) {
+        std::get<owned<Frame>>(subBlock).swap(curFrame);
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /** Incororate the control flow information from a child statement into
+      the parent frame's control flow information. */
+  void sequenceWithParentFrame(Frame* parentFrame, const ControlFlowInfo& append) {
+    // 'break' and 'continue' are scoped to the loop that they're in.
+    // a loop that has 'continue' in its body does not itself continue
+    // its parent loop.
+    if (parentFrame->scopeAst->isLoop()) {
+      parentFrame->controlFlowInfo.sequenceIteration(append);
+    } else {
+      parentFrame->controlFlowInfo.sequence(append);
+    }
+  }
+
+  /** When exiting an AST node, incorporate the information form its
+      frame (assumed at the top of the stack) and sub-frames into the
+      given parent frame. */
+  void reconcileFrames(Frame* parentFrame, const uast::AstNode* ast) {
+    if (ast->isLoop()) {
+      // don't propagate return/throw etc. out of a loop, because we can't
+      // reason about its dynamic behavior. The exception are 'Param' loops.
+      return;
+    }
+    sequenceWithParentFrame(parentFrame, currentFrame()->controlFlowInfo);
+  }
+  void reconcileFrames(Frame* parentFrame, const uast::Conditional* cond) {
+    auto thenFrame = currentThenFrame();
+    auto elseFrame = currentElseFrame();
+    if (thenFrame && elseFrame) {
+      parentFrame->controlFlowInfo.sequence(thenFrame->controlFlowInfo & elseFrame->controlFlowInfo);
+    }
+    if (thenFrame && thenFrame->knownPath) {
+      parentFrame->controlFlowInfo.sequence(thenFrame->controlFlowInfo);
+    }
+    if (elseFrame && elseFrame->knownPath) {
+      parentFrame->controlFlowInfo.sequence(elseFrame->controlFlowInfo);
+    }
+  }
+  void reconcileFrames(Frame* parentFrame, const uast::Try* t) {
+    auto mainFrame = currentTryBodyFrame();
+    if (mainFrame->controlFlowInfo.isDoneExecuting()) {
+      int nCatchFrames = currentNumCatchFrames();
+      auto accumulatedControlFlowInfo = mainFrame->controlFlowInfo;
+      for (int i = 0; i < nCatchFrames; i++) {
+        auto catchFrame = currentCatchFrame(i);
+        accumulatedControlFlowInfo &= catchFrame->controlFlowInfo;
+      }
+      sequenceWithParentFrame(parentFrame, accumulatedControlFlowInfo);
+    }
+  }
+  void reconcileFrames(Frame* parentFrame, const uast::Select* s) {
+    ControlFlowInfo accumulatedControlFlowInfo(true, true, true);
+    for(int i = 0; i < s->numWhenStmts(); i++) {
+      auto whenFrame = currentWhenFrame(i);
+      if (!whenFrame) continue;
+      accumulatedControlFlowInfo &= whenFrame->controlFlowInfo;
+      if (whenFrame->knownPath) {  // this is known to be the taken path
+        sequenceWithParentFrame(parentFrame, whenFrame->controlFlowInfo);
+        break;
+      }
+    }
+
+    if (s->hasOtherwise()) {
+      sequenceWithParentFrame(parentFrame, accumulatedControlFlowInfo);
+    }
+  }
+
+ public:
 
   /** Return the current frame. This should always be safe to call
       from one of the handle* methods. */
@@ -138,6 +357,8 @@ struct BranchSensitiveVisitor {
     return parent;
   }
 
+  /** Returns the current subFrame (regardless of what AST node is being
+      used) that is known to be the path taken. */
   Frame* currentParamTrueFrame() {
     Frame* frame = currentFrame();
     for (auto& subFrameInfo : frame->subFrames) {
@@ -230,51 +451,41 @@ struct BranchSensitiveVisitor {
     return ret.get();
   }
 
+  /** note that the current frame, if any, has returned or thrown */
   void markReturnOrThrow() {
     if (scopeStack.empty()) return;
     currentFrame()->controlFlowInfo.markReturnOrThrow();
   }
 
+  /** note that the current frame, if any, has invoked 'break' */
   void markBreak() {
     if (scopeStack.empty()) return;
     currentFrame()->controlFlowInfo.markBreak();
   }
 
+  /** note that the current frame, if any, has invoked 'continue' */
   void markContinue() {
     if (scopeStack.empty()) return;
     currentFrame()->controlFlowInfo.markContinue();
   }
 
+  /** have we hit a statement that would prevent further execution of the current block / frame? */
   bool isDoneExecuting() {
     if (scopeStack.empty()) return false;
     return currentFrame()->isDoneExecuting();
   }
 
-  void createSubFrames(const uast::AstNode* ast) {
-    auto& newFrame = scopeStack.back();
-    if (auto c = ast->toConditional()) {
-      // note thenBlock / elseBlock
-      newFrame->subFrames.emplace_back(c->thenBlock(), nullptr);
-      newFrame->subFrames.emplace_back(c->elseBlock(), nullptr);
-    } else if (auto t = ast->toTry()) {
-      // note the body itself to avoid clobbering the whole Try node with
-      // control flow information
-      newFrame->subFrames.emplace_back(t->body(), nullptr);
-      // note each of the catch handlers (aka catch clauses)
-      for (auto clause : t->handlers()) {
-        newFrame->subFrames.emplace_back(clause, nullptr);
-      }
-    } else if (auto s = ast->toSelect()) {
-      for (auto when : s->whenStmts()) {
-        newFrame->subFrames.emplace_back(when, nullptr);
-      }
-    }
-  }
-
+  /** code to run right after we entered a new scope and pushed a new frame.
+      The default implemnetation sets up subFrame slots for handling Conditionals etc. */
   virtual void doEnterScope(const uast::AstNode* ast, ExtraData extraData) {
     createSubFrames(ast);
   }
 
+  /** If the given AST node creates a scope, push a new Frame onto the stack
+      and call doEnterScope.
+
+      Returns whether a new scope was entered.
+   */
   bool enterScope(const uast::AstNode* ast, ExtraData extraData) {
     if (resolution::createsScope(ast->tag())) {
       scopeStack.emplace_back(new Frame(ast));
@@ -284,92 +495,10 @@ struct BranchSensitiveVisitor {
     return false;
   }
 
-  bool saveSubFrame(const uast::AstNode* ast, Frame*& outParentFrame) {
-    CHPL_ASSERT(!scopeStack.empty());
-    size_t n = scopeStack.size();
-    auto& curFrame = scopeStack[n-1];
-    CHPL_ASSERT(curFrame->scopeAst == ast);
-    if (n < 2) return false;
-
-    // Are we in the situation of just finishing a Block
-    // that is within a Conditional? or a Catch clause?
-    // If so, save the frame in the subBlocks, to
-    // be handled when processing condFrame.
-    outParentFrame = scopeStack[n-2].get();
-    for (auto & subBlock : outParentFrame->subFrames) {
-      if (std::get<const uast::AstNode*>(subBlock) == ast) {
-        std::get<owned<Frame>>(subBlock).swap(curFrame);
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  void reconcileFrames(Frame* parentFrame, const uast::Conditional* cond) {
-    auto thenFrame = currentThenFrame();
-    auto elseFrame = currentElseFrame();
-    if (thenFrame && elseFrame) {
-      parentFrame->controlFlowInfo.sequence(thenFrame->controlFlowInfo & elseFrame->controlFlowInfo);
-    }
-    if (thenFrame && thenFrame->knownPath) {
-      parentFrame->controlFlowInfo.sequence(thenFrame->controlFlowInfo);
-    }
-    if (elseFrame && elseFrame->knownPath) {
-      parentFrame->controlFlowInfo.sequence(elseFrame->controlFlowInfo);
-    }
-  }
-
-  void sequenceWithParentFrame(Frame* parentFrame, const ControlFlowInfo& append) {
-    // 'break' and 'continue' are scoped to the loop that they're in.
-    // a loop that has 'continue' in its body does not itself continue
-    // its parent loop.
-    if (parentFrame->scopeAst->isLoop()) {
-      parentFrame->controlFlowInfo.sequenceIteration(append);
-    } else {
-      parentFrame->controlFlowInfo.sequence(append);
-    }
-  }
-
-  void reconcileFrames(Frame* parentFrame, const uast::Try* t) {
-    auto mainFrame = currentTryBodyFrame();
-    if (mainFrame->controlFlowInfo.isDoneExecuting()) {
-      int nCatchFrames = currentNumCatchFrames();
-      auto accumulatedControlFlowInfo = mainFrame->controlFlowInfo;
-      for (int i = 0; i < nCatchFrames; i++) {
-        auto catchFrame = currentCatchFrame(i);
-        accumulatedControlFlowInfo &= catchFrame->controlFlowInfo;
-      }
-      sequenceWithParentFrame(parentFrame, accumulatedControlFlowInfo);
-    }
-  }
-
-  void reconcileFrames(Frame* parentFrame, const uast::Select* s) {
-    ControlFlowInfo accumulatedControlFlowInfo(true, true, true);
-    for(int i = 0; i < s->numWhenStmts(); i++) {
-      auto whenFrame = currentWhenFrame(i);
-      if (!whenFrame) continue;
-      accumulatedControlFlowInfo &= whenFrame->controlFlowInfo;
-      if (whenFrame->knownPath) {  // this is known to be the taken path
-        sequenceWithParentFrame(parentFrame, whenFrame->controlFlowInfo);
-        break;
-      }
-    }
-
-    if (s->hasOtherwise()) {
-      sequenceWithParentFrame(parentFrame, accumulatedControlFlowInfo);
-    }
-  }
-
-  void reconcileFrames(Frame* parentFrame, const uast::AstNode* ast) {
-    if (ast->isLoop()) {
-      // don't propagate return/throw etc. out of a loop, because we can't
-      // reason about its dynamic behavior. The exception are 'Param' loops.
-      return;
-    }
-    sequenceWithParentFrame(parentFrame, currentFrame()->controlFlowInfo);
-  }
-
+  /** code to run right before we exit a scope and pop the current frame.
+      The default implementation handles storing the frame into
+      the parent frame's subFrames, if applicable. It also handles
+      incorporating the frame's control flow information into the parent frame. */
   virtual void doExitScope(const uast::AstNode* ast, ExtraData extraData) {
     Frame* parentFrame = nullptr;
 
@@ -395,6 +524,10 @@ struct BranchSensitiveVisitor {
     }
   }
 
+  /** If the given AST node creates a scope, call doExitScope and pop the current frame.
+
+      Returns whether a new scope was exited.
+   */
   bool exitScope(const uast::AstNode* ast, ExtraData extraData) {
     if (resolution::createsScope(ast->tag())) {
       doExitScope(ast, extraData);
@@ -404,14 +537,24 @@ struct BranchSensitiveVisitor {
     return false;
   }
 
+  /** Overriden by subclasses to determine the value of a when case expression.
+      This is used for evaluating short-circuited / `param` known (or not) When statements. */
   virtual const types::Param* determineWhenCaseValue(const uast::AstNode* ast, ExtraData extraData) = 0;
+
+  /** Overriden by subclasses to determine the value of an if condition.
+      This is used for evaluating short-circuited / `param known` (or not) Conditional statements. */
   virtual const types::Param* determineIfValue(const uast::AstNode* ast, ExtraData extraData) = 0;
 
   bool isParamTrue(const types::Param* param) { return param && param->isNonZero(); }
   bool isParamFalse(const types::Param* param) { return param && param->isZero(); }
 
+  /** Overriden by subclasses to traverse a node using their visitor startegy.
+      This is used for entering bodies of `param`-known branches. */
   virtual void traverseNode(const uast::AstNode* ast, ExtraData extraData) = 0;
 
+  /** Traverse the given AST node, taking into account (and traversing,
+      if possible) `param`-known branches. Returns whether the caller
+      should continue traversing the node's children. */
   bool branchSensitivelyTraverse(const uast::Select* sel, ExtraData extraData) {
     // have we encountered a when without param-decided conditions?
     bool anyWhenNonParam = false;
@@ -449,7 +592,6 @@ struct BranchSensitiveVisitor {
     }
     return false;
   }
-
   bool branchSensitivelyTraverse(const uast::Conditional* cond, ExtraData extraData) {
     auto param = determineIfValue(cond->condition(), extraData);
     if (isParamTrue(param)) {
