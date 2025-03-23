@@ -2763,7 +2763,7 @@ static void resolveReduceAssign(Resolver& rv, const OpCall* op) {
   }
 
   auto& resolvedLhs = rv.byPostorder.byAst(lhsIdent);
-  if (!resolvedLhs.toId()) return;
+  if (!resolvedLhs.toId() || resolvedLhs.type().isUnknownOrErroneous()) return;
 
   if (parsing::idToTag(rv.context, resolvedLhs.toId()) != asttags::ReduceIntent) {
     // TODO: use error class
@@ -6959,10 +6959,20 @@ bool Resolver::enter(const ReduceIntent* reduce) {
   // Consider the accumulator as the changed type.
   auto elementType = getReduceScanOpResultType(*this, reduce, op);
 
-  // override the intent to be VAR, since it's a mutable accumulator
-  elementType = QualifiedType(QualifiedType::VAR, elementType.type());
+  // Unlike reductions, a reduce intent cannot change the result of its
+  // element, because fundamentally, it writes it back to the original variable.
+  // Check if the intent changes.
+  auto got = canPassScalar(context, elementType, type);
+  if (!got.passes() || got.converts()) {
+    // TODO: use an error class
+    context->error(reduce, "reduce intent cannot change type of its variable");
+    type = QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
+  } else {
+    // override the intent to be VAR, since it's a mutable accumulator
+    type = QualifiedType(QualifiedType::VAR, type.type());
+  }
 
-  result.setType(elementType);
+  result.setType(type);
 
   return false;
 }
