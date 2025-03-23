@@ -6975,8 +6975,7 @@ bool Resolver::enter(const ReduceIntent* reduce) {
   // Check if the intent changes.
   auto got = canPassScalar(context, elementType, type);
   if (!got.passes() || got.converts()) {
-    // TODO: use an error class
-    context->error(reduce, "reduce intent cannot change type of its variable");
+    CHPL_REPORT(context, ReductionIntentChangesType, reduce, parsing::idToAst(context, id), type, elementType);
     type = QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
   } else {
     // override the intent to be VAR, since it's a mutable accumulator

@@ -1923,6 +1923,20 @@ void ErrorReductionAssignInvalidRhs::write(ErrorWriterBase& wr) const {
   wr.code(opCall, { opCall->actual(1) });
 }
 
+void ErrorReductionIntentChangesType::write(ErrorWriterBase& wr) const {
+  auto reduceIntent = std::get<const uast::ReduceIntent*>(info_);
+  auto shadowed = std::get<const uast::AstNode*>(info_);
+  auto& oldType = std::get<2>(info_);
+  auto& newType = std::get<3>(info_);
+  wr.heading(kind_, type_, reduceIntent, "cannot use non-closed reduction in intent:");
+  wr.codeForLocation(reduceIntent);
+  wr.message("A reduction is closed if it produces values of the same type as the values it operates on.");
+  wr.message("The reduce intent shadows the declaration of '", reduceIntent->name(), "' with type '", oldType.type(), "' here:");
+  wr.codeForDef(shadowed);
+  wr.message("However, the reduction '", reduceIntent->op(), "' produces values of type '", newType.type(), "'.");
+  wr.message("The reduced type of a variable cannot change, as the final reduced value is assigned back into the variable.");
+}
+
 static const uast::AstNode* getReduceOrScanOp(const uast::AstNode* reduceOrScan) {
   if (auto reduce = reduceOrScan->toReduce()) {
     return reduce->op();

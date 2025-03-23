@@ -103,6 +103,7 @@ ERROR_CLASS(Redefinition, ID, UniqueString, resolution::MatchingIdsWithName, std
 ERROR_CLASS(ReductionAssignNonIdentifier, const uast::OpCall*)
 ERROR_CLASS(ReductionAssignNotReduceIntent, const uast::OpCall*, const uast::AstNode*)
 ERROR_CLASS(ReductionAssignInvalidRhs, const uast::OpCall*, const uast::ReduceIntent*, const uast::AstNode*, resolution::CallInfo)
+ERROR_CLASS(ReductionIntentChangesType, const uast::ReduceIntent*, const uast::AstNode*, types::QualifiedType, types::QualifiedType)
 ERROR_CLASS(ReductionInvalidName, const uast::AstNode*, UniqueString, types::QualifiedType)
 ERROR_CLASS(ReductionNotReduceScanOp, const uast::AstNode*, types::QualifiedType)
 ERROR_CLASS(SelfDefinition, const uast::NamedDecl*, const uast::Identifier*)
