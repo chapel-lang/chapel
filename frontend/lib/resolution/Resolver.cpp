@@ -6718,10 +6718,7 @@ static bool computeTaskIntentInfo(Resolver& resolver, const NamedDecl* intent,
 
   // Look at the scope before the loop-statement
   const Scope* scope = scopeStack[scopeStack.size()-2];
-  LookupConfig config = LOOKUP_DECLS |
-                        LOOKUP_IMPORT_AND_USE |
-                        LOOKUP_PARENTS |
-                        LOOKUP_INNERMOST;
+  LookupConfig config = identifierLookupConfig(/* resolvingCalledIdent */ false);
 
   auto fHelper = resolver.getFieldDeclarationLookupHelper();
   auto helper = resolver.getMethodReceiverScopeHelper();
@@ -6744,30 +6741,6 @@ static bool computeTaskIntentInfo(Resolver& resolver, const NamedDecl* intent,
   } else {
     return false;
   }
-}
-
-bool Resolver::enter(const ReduceIntent* reduce) {
-  ID id;
-  QualifiedType type;
-  ResolvedExpression& result = byPostorder.byAst(reduce);
-
-  if (computeTaskIntentInfo(*this, reduce, id, type)) {
-    validateAndSetToId(result, reduce, id);
-    // set reduce intent shadow variable to a VAR with type of shadowed variable
-    QualifiedType reduceIntentType =
-        QualifiedType(QualifiedType::Kind::VAR, type.type());
-    result.setType(reduceIntentType);
-  } else if (!scopeResolveOnly) {
-    context->error(reduce, "Unable to find declaration of \"%s\" for reduction", reduce->name().c_str());
-  }
-
-  // TODO: Resolve reduce->op() with shadowed type
-  // E.g. "+ reduce x" --> "SumReduceOp(x.type)"
-
-  return false;
-}
-
-void Resolver::exit(const ReduceIntent* reduce) {
 }
 
 static UniqueString identifierReduceScanOpName(Context* context,
@@ -6836,7 +6809,7 @@ static const ClassType* determineReduceScanOp(Resolver& resolver,
                                               const QualifiedType& iterType) {
   if (auto ident = op->toIdentifier()) {
     auto toLookUp = ident->name();
-    auto opName = identifierReduceScanOpName(resolver.context, ident->name());
+    auto opName = identifierReduceScanOpName(resolver.context, toLookUp);
     if (!opName.isEmpty()) {
       // The identifier does not itself name a ReduceScanOp class, but is
       // associated with such a class. Use the associated class' name instead
@@ -6903,6 +6876,38 @@ static QualifiedType resolveReduceScanOp(Resolver& resolver,
   if (opClass == nullptr) return QualifiedType();
 
   return getReduceScanOpResultType(resolver, reduceOrScan, opClass);
+}
+
+bool Resolver::enter(const ReduceIntent* reduce) {
+  ID id;
+  QualifiedType type;
+  ResolvedExpression& result = byPostorder.byAst(reduce);
+
+  if (computeTaskIntentInfo(*this, reduce, id, type)) {
+    validateAndSetToId(result, reduce, id);
+  } else if (!scopeResolveOnly) {
+    context->error(reduce, "Unable to find declaration of \"%s\" for reduction", reduce->name().c_str());
+  }
+
+  // in case we failed to compute the variable type, don't keep going
+  if (type.isUnknownOrErroneous()) return false;
+
+  // compute the reduce operation being referenced in the intent.
+  auto op = determineReduceScanOp(*this, reduce, reduce->op(), type);
+
+  // some reduce operations (e.g., minmax) change the type of the element.
+  // Consider the accumulator as the changed type.
+  auto elementType = getReduceScanOpResultType(*this, reduce, op);
+
+  // override the intent to be VAR, since it's a mutable accumulator
+  elementType = QualifiedType(QualifiedType::VAR, elementType.type());
+
+  result.setType(elementType);
+
+  return false;
+}
+
+void Resolver::exit(const ReduceIntent* reduce) {
 }
 
 bool Resolver::enter(const uast::Reduce* reduce) {
