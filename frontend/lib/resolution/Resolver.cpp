@@ -2745,6 +2745,56 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
   return true;
 }
 
+static void resolveReduceAssign(Resolver& rv, const OpCall* op) {
+  auto lhs = op->actual(0);
+  auto rhs = op->actual(1);
+
+  // rhs is easy; it's just whatever expression we're assigning. find its type.
+  auto rhsType = rv.byPostorder.byAst(rhs).type();
+  if (rhsType.isUnknownOrErroneous()) {
+    return;
+  }
+
+  auto lhsIdent = lhs->toIdentifier();
+  if (!lhsIdent) {
+    // TODO: use error class
+    rv.context->error(op, "invalid use of reduce=");
+    return;
+  }
+
+  auto& resolvedLhs = rv.byPostorder.byAst(lhsIdent);
+  if (!resolvedLhs.toId()) return;
+
+  if (parsing::idToTag(rv.context, resolvedLhs.toId()) != asttags::ReduceIntent) {
+    // TODO: use error class
+    rv.context->error(op, "reduce= can only by applied to things in reduce intents");
+    return;
+  }
+
+  auto intent = parsing::idToAst(rv.context, resolvedLhs.toId())->toReduceIntent();
+  auto& resolvedReducer = rv.byPostorder.byAst(intent->op());
+  if (resolvedReducer.type().isUnknownOrErroneous()) return;
+
+  // set up the "accumulate onto state" call.
+  std::vector<CallInfoActual> actuals;
+  actuals.push_back({resolvedReducer.type(), USTR("this")});
+  actuals.push_back({resolvedLhs.type(), UniqueString()});
+  actuals.push_back({rhsType, UniqueString()});
+
+  auto ci = CallInfo(UniqueString::get(rv.context, "accumulateOntoState"),
+      /* calledType */ QualifiedType(),
+      /* isMethodCall */ true,
+      /* hasQuestionArg */ false,
+      /* isParenless */ false,
+      std::move(actuals));
+
+  auto inScopes = CallScopeInfo::forNormalCall(rv.scopeStack.back(), rv.poiScope);
+  auto c = rv.resolveGeneratedCall(op, &ci, &inScopes);
+  auto& resolvedOp = rv.byPostorder.byAst(op);
+  c.noteResult(&resolvedOp, { { AssociatedAction::REDUCE_SCAN, op->id() } });
+  resolvedOp.setType(QualifiedType(QualifiedType::CONST_VAR, VoidType::get(rv.context)));
+}
+
 bool Resolver::resolveSpecialOpCall(const Call* call) {
   if (!call->isOpCall()) return false;
 
@@ -2769,6 +2819,9 @@ bool Resolver::resolveSpecialOpCall(const Call* call) {
   } else if (op->op() == USTR("...")) {
     // just leave it unknown -- tuple expansion only makes sense
     // in the argument list for another call.
+    return true;
+  } else if (op->op() == USTR("reduce=")) {
+    resolveReduceAssign(*this, op);
     return true;
   }
 
@@ -6822,8 +6875,15 @@ static const ClassType* determineReduceScanOp(Resolver& resolver,
       //
       // It's safe to call basicClassType since constructReduceScanOpClass
       // ensures it's a basic class type.
-      resolver.validateAndSetToId(resolver.byPostorder.byAst(ident),
-                                  ident, scanOp->basicClassType()->id());
+      auto& identRes = resolver.byPostorder.byAst(ident);
+      resolver.validateAndSetToId(identRes, ident, scanOp->basicClassType()->id());
+
+      // when setting the type, make it an owned VAR, since we're creating
+      // a new instance of the ReduceScanOp.
+      auto dec = ClassTypeDecorator(ClassTypeDecorator::MANAGED_NONNIL);
+      auto manager = AnyOwnedType::get(resolver.context);
+      auto ownedScanOp = ClassType::get(resolver.context, scanOp->manageableType(), manager, dec);
+      identRes.setType(QualifiedType(QualifiedType::VAR, ownedScanOp));
     }
     // No further processing is needed; we found the operation.
     return scanOp;
