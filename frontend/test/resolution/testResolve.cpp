@@ -2024,6 +2024,54 @@ static void testRuntimeEarlyReturn() {
   // guard should have no errors
 }
 
+// Ensure code after continue / break is not resolved in param loops.
+static void testEarlyContinue() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::ignore = resolveTypeOfXInit(context,
+    R"""(
+      for param i in 1..3 {
+        if i == 1 then continue;
+        if i == 2 then break;
+        if i == 3 {
+          var cond: bool;
+          if cond then {
+            continue;
+          } else {
+            continue;
+          }
+        }
+        compilerError("noooo", 0);
+      }
+      var x = 42;
+    )""");
+
+  // guard should have no errors
+}
+
+// Ensure code after continue / break is not resolved in param loops.
+static void testEarlyRuntimeContinue() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::ignore = resolveTypeOfXInit(context,
+    R"""(
+      for i in 1..3 {
+        var cond: bool;
+        if cond then {
+          continue;
+        } else {
+          continue;
+        }
+        compilerError("noooo", 0);
+      }
+      var x = 42;
+    )""");
+
+  // guard should have no errors
+}
+
 int main() {
   test1();
   test2();
@@ -2072,6 +2120,8 @@ int main() {
 
   testEarlyReturn();
   testRuntimeEarlyReturn();
+  testEarlyContinue();
+  testEarlyRuntimeContinue();
 
   return 0;
 }
