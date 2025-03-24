@@ -671,7 +671,12 @@ class EndMarkerPattern:
 
 
 class ContextContainer:
-    def __init__(self, file: str, cls_config: "CLSConfig", config: Optional["WorkspaceConfig"]):
+    def __init__(
+        self,
+        file: str,
+        cls_config: "CLSConfig",
+        config: Optional["WorkspaceConfig"],
+    ):
         self.cls_config: CLSConfig = cls_config
         self.config: Optional["WorkspaceConfig"] = config
         self.file_paths: List[str] = []
@@ -692,7 +697,9 @@ class ContextContainer:
         self.std_module_root = self.cls_config.args.get("std_module_root", "")
         self.module_paths.extend(self.cls_config.args.get("module_dirs", []))
 
-        self.context._set_module_paths(self.std_module_root, self.module_paths, self.file_paths)
+        self.context._set_module_paths(
+            self.std_module_root, self.module_paths, self.file_paths
+        )
 
     def register_signature(self, sig: chapel.TypedSignature) -> str:
         """
@@ -739,7 +746,9 @@ class ContextContainer:
         """
 
         self.context.advance_to_next_revision(False)
-        self.context._set_module_paths(self.std_module_root, self.module_paths, self.file_paths)
+        self.context._set_module_paths(
+            self.std_module_root, self.module_paths, self.file_paths
+        )
 
         with self.context.track_errors() as errors:
             for fi in self.file_infos:
@@ -1384,8 +1393,12 @@ class CLSConfig:
             self.parser.set_defaults(**{dest: default})
 
         add_bool_flag("resolver", "resolver", False)
-        self.parser.add_argument("--std-module-root", default="", help=configargparse.SUPPRESS)
-        self.parser.add_argument("-M", "--module-dir", action="append", default=[])
+        self.parser.add_argument(
+            "--std-module-root", default="", help=configargparse.SUPPRESS
+        )
+        self.parser.add_argument(
+            "-M", "--module-dir", action="append", default=[]
+        )
         add_bool_flag("type-inlays", "type_inlays", True)
         add_bool_flag("param-inlays", "param_inlays", True)
         add_bool_flag("literal-arg-inlays", "literal_arg_inlays", True)
