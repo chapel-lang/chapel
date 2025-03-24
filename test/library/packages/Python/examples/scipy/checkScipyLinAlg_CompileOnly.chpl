@@ -1,0 +1,1 @@
+checkScipyLinAlg.chpl
