@@ -1378,7 +1378,7 @@ class CLSConfig:
 
     def _construct_parser(self):
         self.parser = configargparse.ArgParser(
-            default_config_files=[],
+            default_config_files=[os.path.join(os.getcwd(), "Mason.toml")],
             config_file_parser_class=configargparse.CompositeConfigParser(
                 [
                     configargparse.YAMLConfigFileParser,
