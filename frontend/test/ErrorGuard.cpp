@@ -52,22 +52,12 @@ static void errorGuardSignalHandler(int sig) {
       // standard modules are in CHPL_HOME, don't copy them out.
       if (chpl::parsing::filePathIsInBundledModule(currentGuard->context(), file)) continue;
 
-      // file could've been included from another. don't know how to handle that.
-      // auto queryArgs = std::make_tuple(file, chpl::UniqueString());
-      // if (!currentGuard->context()->hasCurrentResultForQuery(chpl::parsing::parseFileToBuilderResult, queryArgs)) continue;
-
       // copy file into temporary directory.
-
-      // use LLVM to join the file path in 'file' to the path in 'path'
       auto destPath = path + "/" + file.str();
-
       auto fileText = chpl::parsing::fileText(currentGuard->context(), file);
       std::ignore = chpl::writeFile(destPath.c_str(), fileText.text());
     }
 
-    // files have been copied into the temporary directory. now symlink it.
-    // there's no chpl:: helper. use only standard C++. the symlinkTarget
-    // is expected to be the complete path.
     if (std::remove(target) != 0) {
       printf("failed to remove symlink target %s\n", symlinkTarget());
     }
