@@ -140,7 +140,6 @@ from lsprotocol.types import (
     CallHierarchyIncomingCall,
 )
 
-import argparse
 import configargparse
 import sys
 import functools
@@ -1379,8 +1378,9 @@ class CLSConfig:
 
     def _construct_parser(self):
         self.parser = configargparse.ArgParser(
-            default_config_files=[],  # Empty for now because cwd() is odd with VSCode etc.
-            config_file_parser_class=configargparse.YAMLConfigFileParser,
+            default_config_files=[],
+            config_file_parser_class=configargparse.CompositeConfigParser([configargparse.YAMLConfigFileParser, configargparse.TomlConfigParser(["tool.chpl-language-server"])]),
+            args_for_setting_config_path=["--config", "-c"],
         )
 
         def add_bool_flag(name: str, dest: str, default: bool):
@@ -1421,20 +1421,20 @@ class CLSConfig:
         valid_choices = ["all", "none"] + list(EndMarkerPattern.all().keys())
         for marker in self.args["end_markers"]:
             if marker not in valid_choices:
-                raise argparse.ArgumentError(
+                raise configargparse.ArgumentError(
                     None, f"Invalid end marker choice: {marker}"
                 )
         n_markers = len(self.args["end_markers"])
         if n_markers != len(set(self.args["end_markers"])):
-            raise argparse.ArgumentError(
+            raise configargparse.ArgumentError(
                 None, "Cannot specify the same end marker multiple times"
             )
         if "none" in self.args["end_markers"] and n_markers > 1:
-            raise argparse.ArgumentError(
+            raise configargparse.ArgumentError(
                 None, "Cannot specify 'none' with other end marker choices"
             )
         if "all" in self.args["end_markers"] and n_markers > 1:
-            raise argparse.ArgumentError(
+            raise configargparse.ArgumentError(
                 None, "Cannot specify 'all' with other end marker choices"
             )
 
@@ -1451,6 +1451,7 @@ class ChapelLanguageServer(LanguageServer):
     def __init__(self, config: CLSConfig):
         super().__init__("chpl-language-server", "v0.1")
 
+        self.config: CLSConfig = config
         self.contexts: Dict[str, ContextContainer] = {}
         self.context_ids: Dict[ContextContainer, str] = {}
         self.context_id_counter = 0
