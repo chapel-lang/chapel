@@ -1,4 +1,4 @@
-.TH "hwlocality_disc_backends" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_disc_backends" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -104,7 +104,7 @@ Discovery status flags\&.
 The sets of allowed resources were already retrieved\&. 
 .SH "Function Documentation"
 .PP 
-.SS "struct \fBhwloc_backend\fP* hwloc_backend_alloc (struct hwloc_topology * topology, struct \fBhwloc_disc_component\fP * component)"
+.SS "struct \fBhwloc_backend\fP * hwloc_backend_alloc (struct hwloc_topology * topology, struct \fBhwloc_disc_component\fP * component)"
 
 .PP
 Allocate a backend structure, set good default values, initialize backend->component and topology, etc\&. The caller will then modify whatever needed, and call \fBhwloc_backend_enable()\fP\&. 

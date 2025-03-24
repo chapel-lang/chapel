@@ -4,11 +4,3 @@
 # See COPYING in top-level directory.
 
 SUBDIRS = hwloc lstopo
-
-if BUILD_NETLOC
-SUBDIRS += \
-        netloc/infiniband \
-        netloc/draw \
-        netloc/mpi \
-        netloc/scotch
-endif

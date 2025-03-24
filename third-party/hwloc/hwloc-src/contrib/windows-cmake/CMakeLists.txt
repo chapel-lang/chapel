@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.15)
 project(hwloc
     LANGUAGES C
-    VERSION 2.9.0)
+    VERSION 2.11.2)
 
 enable_testing()
 
@@ -245,5 +245,5 @@ endif()
 # Testing
 
 if(HWLOC_ENABLE_TESTING)
-    add_subdirectory(${TOPDIR}/tests/hwloc ${CMAKE_CURRENT_BINARY_DIR}/tests/hwloc)
+    add_subdirectory(tests ${CMAKE_CURRENT_BINARY_DIR}/tests)
 endif()

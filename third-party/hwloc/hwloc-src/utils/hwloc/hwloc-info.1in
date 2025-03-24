@@ -1,11 +1,11 @@
 .\" -*- nroff -*-
-.\" Copyright © 2009-2022 Inria.  All rights reserved.
+.\" Copyright © 2009-2024 Inria.  All rights reserved.
 .\" Copyright © 2009-2010 Université of Bordeaux
 .\" Copyright © 2009-2010 Cisco Systems, Inc.  All rights reserved.
 .\" See COPYING in top-level directory.
 .TH HWLOC-INFO "1" "%HWLOC_DATE%" "%PACKAGE_VERSION%" "%PACKAGE_NAME%"
 .SH NAME
-hwloc-info \- Show some information about some objects or about a topology or about support features
+hwloc-info \- Show some information about some objects, a topology or supported features
 .
 .\" **************************
 .\"    Synopsis Section
@@ -18,8 +18,40 @@ hwloc-info \- Show some information about some objects or about a topology or ab
 \fI<object>\fR...
 .PP
 .B hwloc-info
-[ \fIoptions \fR]...
+[ \fIoptions \fR] root
 .
+.B hwloc-info
+[ \fIoptions \fR] [ topology | levels | support ]
+.
+.PP
+\fI<object>\fR... may be a space-separated list of target objects to query.
+The program reports all information about one object before looking at the next one:
+
+    $ hwloc-info core:2 package:1 pu:all
+    Core L#2
+     type = Core
+     ...
+    Package L#1
+     ...
+    PU L#0
+     ...
+    PU L#1
+     ...
+
+The list may also contain special keywords such as:
+
+    \fBroot\fR for the topology root object.
+
+    \fBlevels\fR for information about topology levels (default if no target object is given, identical to \fB\-\-topology\fR).
+
+    \fBtopology\fR for topology info attributes stored in the root object (for forward compatibility with topology info attrs in hwloc 3.0).
+
+    \fBsupport\fR for information about supported features (identical to \fB\-\-support\fR).
+
+Real targets and special keywords may be combined:
+
+    $ hwloc-info core:2 topology pu:3 levels
+
 .PP
 Note that hwloc(7) provides a detailed explanation of the hwloc system
 and of valid <object> formats;
@@ -36,6 +68,7 @@ This is the default if some objects are given on the command-line.
 .TP
 \fB\-\-topology\fR
 Report a summary of the topology instead of about some specific objects.
+This is equivalent to passing \fIlevels\fR as a target object on the command-line.
 This is the default if no object is given on the command-line.
 .TP
 \fB\-\-support\fR
@@ -43,11 +76,12 @@ Report the features that are supported by hwloc on the topology.
 The features are those available through the \fBhwloc_topology_get_support()\fR function.
 This is useful for verifying which CPU or memory binding options are supported
 by the current hwloc installation.
+This is equivalent to passing \fIsupport\fR as a target object on the command-line.
 .TP
 \fB\-i\fR <path>, \fB\-\-input\fR <path>
 Read the topology from <path> instead of discovering the topology of the local machine.
 
-If <path> is a file and XML support has been compiled in hwloc,
+If <path> is a file,
 it may be a XML file exported by a previous hwloc program.
 If <path> is "\-", the standard input may be used as a XML file.
 
@@ -73,22 +107,62 @@ Enforce the input in the given format, among \fBxml\fR, \fBfsroot\fR,
 \fB\-v\fR \fB\-\-verbose\fR
 Include additional detail.
 .TP
-\fB\-s\fR \fB\-\-silent\fR
+\fB\-q\fR \fB\-\-quiet\fR \fB\-s\fR \fB\-\-silent\fR
 Reduce the amount of details to show.
 A single summary line per object is displayed.
+.TP
+\fB\-\-get\-attr\fR <name>
+Only report the attribute of name <name> for each object (instead of all attributes).
+The name must exactly match what is usually reported by the program,
+for instance "complete cpuset" in "0.1: complete cpuset = %0x00ffff00".
+
+Only the value is reported, any other prefix or object name is ignored,
+so that the output may easily be used by other tools.
+
+This option also works on topology information but it is ignored for
+\fBlevels\fR and \fBsupport\fR keywords.
 .TP
 \fB\-\-ancestors\fR
 Display information about the object as well as
 about all its ancestors up to the root of the topology.
+This is identical to \fB\-\-ancestor all\fR
 .TP
 \fB\-\-ancestor\fR <type>
 Only display the object ancestors that match the given type.
+
+Some special values matching multiple types may also be given:
+\fIkind=normal\fR (CPU objects, including caches),
+\fIkind=cpu\fR (CPU objects, excluding caches),
+\fIkind=cache\fR (all caches, including memory-side caches),
+\fIkind=memory\fR (NUMA nodes or memory-side caches),
+\fIkind=io\fR (IO objects),
+\fIkind=all\fR (all objects).
+See also \fIObject Kind\fR in Terms and Definitions in the documentation.
+The prefix \fIkind=\fR may be omitted if there is no ambiguity.
+
+If multiple ancestors match, they are reported from the deepest
+to the highest in the topology.
+Adding \fB\-\-first\fR will only show the first one.
 .TP
 \fB\-\-children\fR
 Display information about the object children.
 .TP
 \fB\-\-descendants\fR <type>
 Display information about the object descendants that match the given type.
+
+Some special values matching multiple types may also be given:
+\fIkind=normal\fR (CPU objects, including caches),
+\fIkind=cpu\fR (CPU objects, excluding caches),
+\fIkind=cache\fR (all caches, including memory-side caches),
+\fIkind=memory\fR (NUMA nodes or memory-side caches),
+\fIkind=io\fR (IO objects),
+\fIkind=all\fR (all objects).
+See also \fIObject Kind\fR in Terms and Definitions in the documentation.
+The prefix \fIkind=\fR may be omitted if there is no ambiguity.
+
+If multiple objects match, they are reported in a depth-first order
+(first child, then its children, etc., then second child, etc.).
+Adding \fB\-\-first\fR will only show the first one.
 .TP
 \fB\-\-local\-memory\fR
 Display information about the NUMA nodes that are local to the given object.
@@ -106,11 +180,24 @@ in the locality of the given object.
 This option enables \fB\-\-local\-memory\fR.
 .TP
 \fB\-\-best\-memattr\fR <name>
-Enable the listing local memory nodes with \fB\-\-local\-memory\fR,
-but only display the local node that has the best value for the memory
+Enable the listing of local memory nodes with \fB\-\-local\-memory\fR,
+but only display the local nodes that have the best value for the memory
 attribute given by \fI<name>\fR (or as an index).
 If the memory attribute values depend on the initiator, the object given
 to hwloc-info is used as the initiator.
+
+\fI<name>\fR may be suffixed with flags to tune the selection of best nodes,
+for instance as \fBbandwidth,strict,default\fR.
+\fBdefault\fR means that all local nodes are reported if no best could be found.
+\fBstrict\fR means that nodes are selected only if their performance is the best
+for all the input CPUs. On a dual-socket machine with HBM in each socket,
+both HBMs are the best for their local socket, but not for the remote socket.
+Hence both HBM are also considered best for the entire machine by default,
+but none if \fBstrict\fR.
+.TP
+\fB\-\-first\fR
+For each input object, only report the first matching output object
+(first ancestor, first child, etc.).
 .TP
 \fB\-n\fR
 When outputting object information, prefix each line with the index
@@ -127,15 +214,27 @@ Include objects disallowed by administrative limitations.
 .TP
 \fB\-\-restrict\fR <cpuset>
 Restrict the topology to the given cpuset.
+This removes some PUs and their now-child-less parents.
+
+Beware that restricting the PUs in a topology may change the
+logical indexes of many objects, including NUMA nodes.
 .TP
 \fB\-\-restrict\fR nodeset=<nodeset>
-Restrict the topology to the given nodeset, unless \fB\-\-restrict\-flags\fR specifies something different.
+Restrict the topology to the given nodeset
+(unless \fB\-\-restrict\-flags\fR specifies something different).
+This removes some NUMA nodes and their now-child-less parents.
+
+Beware that restricting the NUMA nodes in a topology may change the
+logical indexes of many objects, including PUs.
 .TP
 \fB\-\-restrict\fR binding
 Restrict the topology to the current process binding.
 This option requires the use of the actual current machine topology
 (or any other topology with \fB\-\-thissystem\fR or with
 HWLOC_THISSYSTEM set to 1 in the environment).
+
+Beware that restricting the topology may change the
+logical indexes of many objects, including PUs and NUMA nodes.
 .TP
 \fB\-\-restrict\-flags\fR <flags>
 Enforce flags when restricting the topology.
@@ -210,7 +309,7 @@ Display help message and exit.
 .\" **************************
 .SH DESCRIPTION
 .
-hwloc-info displays information about the specified object.
+hwloc-info displays information about the specified objects.
 It is intended to be used with tools such as grep for filtering
 certain attribute lines.
 When no object is specified, or when \fB\-\-topology\fR is passed,
@@ -249,6 +348,18 @@ To display information about the core whose physical index is 2:
      os index = 2
     ...
 
+To list the OS devices that are of subtype OpenCL:
+
+    $ hwloc-info -s "os[OpenCL]:all"
+    CoProc:6
+    CoProc:8
+
+To find the PCI bus ID of PCI devices containing OpenCL devices:
+
+    $ hwloc-info --ancestor PCI --get-attr "attr PCI bus id" 'os[opencl]:all'
+    0000:05:00.0
+    0000:42:00.0
+
 To list the NUMA nodes that are local a PU:
 
     $ hwloc-info --local-memory pu:25
@@ -259,12 +370,30 @@ To list the NUMA nodes that are local a PU:
      type = NUMANode
     ...
 
-To show the best-bandwidth node among NUMA nodes local to a PU:
+To show the best-bandwidth node(s) among NUMA nodes local to a PU:
 
     $ hwloc-info --local-memory --best-memattr bandwidth pu:25
     NUMANode L#7 = local memory #1 of PU L#25
      type = NUMANode
     ...
+
+to find where a NUMA node is attached in the hierarchy of CPU cores:
+
+    $ hwloc-info --ancestor kind=normal --first -s numa:1
+    Package:0
+
+To see levels and topology info attributes stored in the root object:
+
+    $ hwloc-info levels topology
+    depth 0:           1 Machine (type #0)
+     depth 1:          1 Package (type #1)
+      depth 2:         2 Core (type #2)
+       depth 3:        4 PU (type #3)
+    Special depth -3:  1 NUMANode (type #13)
+    info Backend = Linux
+    info LinuxCgroup = /user/622
+    info Architecture = x86_64
+    info hwlocVersion = 3.0.0a1-git
 
 .
 .\" **************************

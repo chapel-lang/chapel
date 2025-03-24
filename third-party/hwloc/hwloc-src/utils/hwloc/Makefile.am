@@ -1,6 +1,7 @@
 # Copyright © 2009-2021 Inria.  All rights reserved.
 # Copyright © 2009-2012, 2014, 2016 Université Bordeaux
 # Copyright © 2009-2014 Cisco Systems, Inc.  All rights reserved.
+# Copyright © 2023      Université de Reims Champagne-Ardenne.  All rights reserved.
 #
 # See COPYING in top-level directory.
 
@@ -160,12 +161,16 @@ endif HWLOC_HAVE_LINUX
 	@ $(SEDMAN) \
 	  > $@ < $<
 
+
+hwloc_compress_dir_name=`echo "hwloc-compress-dir" | $(SED) -e "$(transform)"`
+hwloc_gather_topology_name=`echo "hwloc-gather-topology" | $(SED) -e "$(transform)"`
+
 install-exec-hook:
-	$(SED) -e 's/HWLOC_top_builddir\/utils\/hwloc/bindir/' -e 's/HWLOC_top_builddir\/utils\/lstopo/bindir/' -e '/HWLOC_top_builddir/d' $(DESTDIR)$(bindir)/hwloc-compress-dir > $(DESTDIR)$(bindir)/hwloc-compress-dir.tmp && mv -f $(DESTDIR)$(bindir)/hwloc-compress-dir.tmp $(DESTDIR)$(bindir)/hwloc-compress-dir
-	chmod +x $(DESTDIR)$(bindir)/hwloc-compress-dir
+	$(SED) -e 's/HWLOC_top_builddir\/utils\/hwloc/bindir/' -e 's/HWLOC_top_builddir\/utils\/lstopo/bindir/' -e '/HWLOC_top_builddir/d' $(DESTDIR)$(bindir)/$(hwloc_compress_dir_name) > $(DESTDIR)$(bindir)/$(hwloc_compress_dir_name).tmp && mv -f $(DESTDIR)$(bindir)/$(hwloc_compress_dir_name).tmp $(DESTDIR)$(bindir)/$(hwloc_compress_dir_name)
+	chmod +x $(DESTDIR)$(bindir)/$(hwloc_compress_dir_name)
 if HWLOC_HAVE_LINUX
-	$(SED) -e 's/HWLOC_top_builddir\/utils\/lstopo/bindir/' -e 's/HWLOC_top_builddir\/utils\/hwloc/bindir/' -e '/HWLOC_top_builddir/d' $(DESTDIR)$(bindir)/hwloc-gather-topology > $(DESTDIR)$(bindir)/hwloc-gather-topology.tmp && mv -f $(DESTDIR)$(bindir)/hwloc-gather-topology.tmp $(DESTDIR)$(bindir)/hwloc-gather-topology
-	chmod +x $(DESTDIR)$(bindir)/hwloc-gather-topology
+	$(SED) -e 's/HWLOC_top_builddir\/utils\/lstopo/bindir/' -e 's/HWLOC_top_builddir\/utils\/hwloc/bindir/' -e '/HWLOC_top_builddir/d' $(DESTDIR)$(bindir)/$(hwloc_gather_topology_name) > $(DESTDIR)$(bindir)/$(hwloc_gather_topology_name).tmp && mv -f $(DESTDIR)$(bindir)/$(hwloc_gather_topology_name).tmp $(DESTDIR)$(bindir)/$(hwloc_gather_topology_name)
+	chmod +x $(DESTDIR)$(bindir)/$(hwloc_gather_topology_name)
 endif HWLOC_HAVE_LINUX
 
 distclean-local:

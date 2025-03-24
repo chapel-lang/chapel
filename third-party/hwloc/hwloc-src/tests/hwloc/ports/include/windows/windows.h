@@ -1,5 +1,5 @@
 /*
- * Copyright © 2009-2020 Inria.  All rights reserved.
+ * Copyright © 2009-2024 Inria.  All rights reserved.
  * Copyright © 2009-2012 Université Bordeaux
  * See COPYING in top-level directory.
  */
@@ -285,6 +285,8 @@ HICON WINAPI LoadIcon(HINSTANCE hInstance, LPCTSTR lpIconName);
 int WINAPI GetSystemMetrics(int nIndex);
 
 ATOM WINAPI RegisterClass(const WNDCLASS *lpWndClass);
+
+#define TEXT(str) (str)
 
 /* hide Linux' host disabling _SC_LARGE_PAGESIZE */
 #undef HAVE_DECL__SC_LARGE_PAGESIZE

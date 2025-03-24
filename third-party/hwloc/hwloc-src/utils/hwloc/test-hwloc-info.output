@@ -5,14 +5,19 @@ depth 0:           1 Machine (type #0)
    depth 3:        24 PU (type #3)
 Special depth -3:  2 NUMANode (type #13)
 
-# --topology
+# topology infos
+info Backend = Synthetic
+info SyntheticDescription = node:2 core:3 pu:4
+
+# topology infos --get-attr
+node:2 core:3 pu:4
+
+# levels support
 depth 0:           1 Machine (type #0)
  depth 1:          2 Group0 (type #12)
   depth 2:         6 Core (type #2)
    depth 3:        24 PU (type #3)
 Special depth -3:  2 NUMANode (type #13)
-
-# --support
 discovery:pu = 1
 discovery:disallowed_pu = 0
 discovery:numa = 1
@@ -42,12 +47,11 @@ membind:alloc_membind = 0
 membind:firsttouch_membind = 0
 membind:bind_membind = 0
 membind:interleave_membind = 0
+membind:weighted_interleave_membind = 0
 membind:nexttouch_membind = 0
 membind:migrate_membind = 0
 membind:get_area_memlocation = 0
 misc:imported_support = 0
-
-# --objects
 
 # Core range
 Core L#2
@@ -359,6 +363,54 @@ L1dCache:4
 L1dCache:4
 L1dCache:5
 
+# Ancestor caches above L1d
+0.0: L2Cache:2
+0.1: L3Cache:0
+0.2: L4Cache:0
+1.0: L2Cache:4
+1.1: L3Cache:1
+1.2: L4Cache:0
+
+# Descendant CPU objects below L4
+0.0: Core:0
+0.1: PU:0
+0.2: PU:1
+0.3: Core:1
+0.4: PU:2
+0.5: PU:3
+0.6: Core:2
+0.7: PU:4
+0.8: PU:5
+0.9: Core:3
+0.10: PU:6
+0.11: PU:7
+1.0: Core:12
+1.1: PU:24
+1.2: PU:25
+1.3: Core:13
+1.4: PU:26
+1.5: PU:27
+1.6: Core:14
+1.7: PU:28
+1.8: PU:29
+1.9: Core:15
+1.10: PU:30
+1.11: PU:31
+
+# Descendant Memory objects below L3
+0.0: NUMANode:2
+0.1: NUMANode:3
+1.0: NUMANode:17
+1.1: NUMANode:18
+
+# Where a NUMA is attached
+L3Cache:1
+Package:2
+
+# Allowed cpuset of where NUMA is attached
+0x0000ff00
+0x0000ffff,0x0
+
 # Children of L2 and Core of Node, silent
 L1dCache:2
 L1dCache:3
@@ -388,7 +440,8 @@ NUMANode L#1 = local memory #0 of PU L#8
  memory children = 0
  i/o children = 0
  misc children = 0
- local memory = 0
+ local memory = 1073741824
+ total memory = 1073741824
  cpuset = 0x0000ff00
  complete cpuset = 0x0000ff00
  allowed cpuset = 0x0000ff00
@@ -396,7 +449,7 @@ NUMANode L#1 = local memory #0 of PU L#8
  complete nodeset = 0x00000002
  allowed nodeset = 0x00000002
  symmetric subtree = 0
- memory attribute Capacity = 0
+ memory attribute Capacity = 1073741824
  memory attribute Locality = 8
 NUMANode L#2 = local memory #1 of PU L#8
  type = NUMANode
@@ -410,7 +463,8 @@ NUMANode L#2 = local memory #1 of PU L#8
  memory children = 0
  i/o children = 0
  misc children = 0
- local memory = 0
+ local memory = 1073741824
+ total memory = 1073741824
  cpuset = 0x0000ffff
  complete cpuset = 0x0000ffff
  allowed cpuset = 0x0000ffff
@@ -418,7 +472,7 @@ NUMANode L#2 = local memory #1 of PU L#8
  complete nodeset = 0x00000004
  allowed nodeset = 0x00000004
  symmetric subtree = 0
- memory attribute Capacity = 0
+ memory attribute Capacity = 1073741824
  memory attribute Locality = 16
 
 # 2 local-or-larger memories for one PU, silent
@@ -458,6 +512,23 @@ NUMANode:10
 
 # only the highest capacity among 2 local-or-larger memories for one PU, silent
 NUMANode:11
+
+
+# MCDRAM subtype NUMA filter
+NUMANode:3
+NUMANode:5
+
+# Memory Tier 1 filter
+NUMANode:6
+
+# NVML subtype OSdev type filter
+GPU:2
+GPU:5
+GPU:8
+GPU:11
+
+ # GPU OSdev type filter
+GPU:11
 
 
 # cpukinds for the entire machine

@@ -1,4 +1,4 @@
-.TH "hwloc_obj_attr_u::hwloc_pcidev_attr_s" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwloc_obj_attr_u::hwloc_pcidev_attr_s" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -52,26 +52,48 @@ PCI Device specific Object Attributes\&.
 .PP 
 .SS "unsigned char hwloc_obj_attr_u::hwloc_pcidev_attr_s::bus"
 
+.PP
+Bus number (yy in the PCI BDF notation xxxx:yy:zz\&.t)\&. 
 .SS "unsigned short hwloc_obj_attr_u::hwloc_pcidev_attr_s::class_id"
 
+.PP
+The class number (first two bytes, without the prog_if)\&. 
 .SS "unsigned char hwloc_obj_attr_u::hwloc_pcidev_attr_s::dev"
 
+.PP
+Device number (zz in the PCI BDF notation xxxx:yy:zz\&.t)\&. 
 .SS "unsigned short hwloc_obj_attr_u::hwloc_pcidev_attr_s::device_id"
 
+.PP
+Device ID (yyyy in [xxxx:yyyy])\&. 
 .SS "unsigned short hwloc_obj_attr_u::hwloc_pcidev_attr_s::domain"
 
+.PP
+Domain number (xxxx in the PCI BDF notation xxxx:yy:zz\&.t)\&. Only 16bits PCI domains are supported by default\&. 
 .SS "unsigned char hwloc_obj_attr_u::hwloc_pcidev_attr_s::func"
 
+.PP
+Function number (t in the PCI BDF notation xxxx:yy:zz\&.t)\&. 
 .SS "float hwloc_obj_attr_u::hwloc_pcidev_attr_s::linkspeed"
 
+.PP
+Link speed in GB/s\&. This datarate is the currently configured speed of the entire PCI link (sum of the bandwidth of all PCI lanes in that link)\&. It may change during execution since some devices are able to slow their PCI links down when idle\&. 
 .SS "unsigned char hwloc_obj_attr_u::hwloc_pcidev_attr_s::revision"
 
+.PP
+Revision number\&. 
 .SS "unsigned short hwloc_obj_attr_u::hwloc_pcidev_attr_s::subdevice_id"
 
+.PP
+Sub-Device ID\&. 
 .SS "unsigned short hwloc_obj_attr_u::hwloc_pcidev_attr_s::subvendor_id"
 
+.PP
+Sub-Vendor ID\&. 
 .SS "unsigned short hwloc_obj_attr_u::hwloc_pcidev_attr_s::vendor_id"
 
+.PP
+Vendor ID (xxxx in [xxxx:yyyy])\&. 
 
 .SH "Author"
 .PP 

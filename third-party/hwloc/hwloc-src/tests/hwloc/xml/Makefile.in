@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# Copyright © 2009-2021 Inria.  All rights reserved.
+# Copyright © 2009-2023 Inria.  All rights reserved.
 # Copyright © 2009-2010 Université Bordeaux
 # Copyright © 2009-2014 Cisco Systems, Inc.  All rights reserved.
 # See COPYING in top-level directory.
@@ -106,8 +106,7 @@ am__aclocal_m4_deps = $(top_srcdir)/config/hwloc.m4 \
 	$(top_srcdir)/config/ltoptions.m4 \
 	$(top_srcdir)/config/ltsugar.m4 \
 	$(top_srcdir)/config/ltversion.m4 \
-	$(top_srcdir)/config/lt~obsolete.m4 \
-	$(top_srcdir)/config/netloc.m4 $(top_srcdir)/configure.ac
+	$(top_srcdir)/config/lt~obsolete.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 DIST_COMMON = $(srcdir)/Makefile.am $(am__DIST_COMMON)
@@ -348,7 +347,6 @@ ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
 AR = @AR@
-ARCHIVEMOUNT = @ARCHIVEMOUNT@
 AS = @AS@
 AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
@@ -475,17 +473,6 @@ MAKEINDEX = @MAKEINDEX@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
 MKDIR_P = @MKDIR_P@
-MPI_CPPFLAGS = @MPI_CPPFLAGS@
-MPI_LDADD = @MPI_LDADD@
-NETLOC_CFLAGS = @NETLOC_CFLAGS@
-NETLOC_CPPFLAGS = @NETLOC_CPPFLAGS@
-NETLOC_EMBEDDED_CFLAGS = @NETLOC_EMBEDDED_CFLAGS@
-NETLOC_EMBEDDED_CPPFLAGS = @NETLOC_EMBEDDED_CPPFLAGS@
-NETLOC_EMBEDDED_LDADD = @NETLOC_EMBEDDED_LDADD@
-NETLOC_EMBEDDED_LIBS = @NETLOC_EMBEDDED_LIBS@
-NETLOC_LDFLAGS = @NETLOC_LDFLAGS@
-NETLOC_LIBS = @NETLOC_LIBS@
-NETLOC_LIBS_PRIVATE = @NETLOC_LIBS_PRIVATE@
 NM = @NM@
 NMEDIT = @NMEDIT@
 OBJDUMP = @OBJDUMP@
@@ -554,7 +541,6 @@ libdir = @libdir@
 libexecdir = @libexecdir@
 libhwloc_so_name = @libhwloc_so_name@
 libhwloc_so_version = @libhwloc_so_version@
-libnetloc_so_version = @libnetloc_so_version@
 localedir = @localedir@
 localstatedir = @localstatedir@
 mandir = @mandir@
@@ -577,7 +563,6 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-xz = @xz@
 AM_CFLAGS = $(HWLOC_CFLAGS)
 AM_CPPFLAGS = $(HWLOC_CPPFLAGS)
 AM_LDFLAGS = $(HWLOC_LDFLAGS)
@@ -610,6 +595,7 @@ xml_outputs = \
         power8gpudistances.xml \
         fakeheterodistances.xml \
         fakecpukinds.xml \
+        memorysidecaches.xml \
         8em64t-2p2ca2co-nonodesets.v1tov2.xml \
         8ia64-2n2s2c+1n.v1tov2.xml \
         16amd64-4distances.v1tov2.xml \
@@ -620,7 +606,8 @@ xml_outputs = \
         8intel64-fakeKNL-A2A-hybrid.rootattachednumas.v1tov2.xml \
         8intel64-fakeKNL-A2A-hybrid.rootattachednumas.v2tov1.xml \
         64intel64-fakeKNL-SNC4-hybrid.v1tov2.xml \
-        64intel64-fakeKNL-SNC4-hybrid.v2tov1.xml
+        64intel64-fakeKNL-SNC4-hybrid.v2tov1.xml \
+        cxlmem+dax.v2.xml
 
 
 # Each output `xyz.xml' may have a corresponding `xyz.source' file specifying
@@ -651,7 +638,9 @@ xml_source = \
         8intel64-fakeKNL-A2A-hybrid.rootattachednumas.v1tov2.source \
         8intel64-fakeKNL-A2A-hybrid.rootattachednumas.v2tov1.source \
         64intel64-fakeKNL-SNC4-hybrid.v1tov2.source \
-        64intel64-fakeKNL-SNC4-hybrid.v2tov1.source
+        64intel64-fakeKNL-SNC4-hybrid.v2tov1.source \
+        cxlmem+dax.v2.source \
+        cxlmem+dax.v3.xml
 
 
 # Each output `xyz.xml' or `xyz.output' may have a corresponding `xyz.options'
@@ -674,10 +663,7 @@ xml_options = \
 
 # Each output `xyz.xml' or `xyz.output' may have a corresponding `xyz.env'
 # modifying the environment of lstopo
-xml_envs = \
-        16amd64-4distances.console.env \
-        64intel64-3g2n+2n-irregulargroups+pci.console.env
-
+xml_envs = 
 
 # Only run the tests if we're building standalone, because the tests
 # call hwloc executables.
@@ -1055,6 +1041,13 @@ fakecpukinds.xml.log: fakecpukinds.xml
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+memorysidecaches.xml.log: memorysidecaches.xml
+	@p='memorysidecaches.xml'; \
+	b='memorysidecaches.xml'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 8em64t-2p2ca2co-nonodesets.v1tov2.xml.log: 8em64t-2p2ca2co-nonodesets.v1tov2.xml
 	@p='8em64t-2p2ca2co-nonodesets.v1tov2.xml'; \
 	b='8em64t-2p2ca2co-nonodesets.v1tov2.xml'; \
@@ -1128,6 +1121,13 @@ fakecpukinds.xml.log: fakecpukinds.xml
 64intel64-fakeKNL-SNC4-hybrid.v2tov1.xml.log: 64intel64-fakeKNL-SNC4-hybrid.v2tov1.xml
 	@p='64intel64-fakeKNL-SNC4-hybrid.v2tov1.xml'; \
 	b='64intel64-fakeKNL-SNC4-hybrid.v2tov1.xml'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+cxlmem+dax.v2.xml.log: cxlmem+dax.v2.xml
+	@p='cxlmem+dax.v2.xml'; \
+	b='cxlmem+dax.v2.xml'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \

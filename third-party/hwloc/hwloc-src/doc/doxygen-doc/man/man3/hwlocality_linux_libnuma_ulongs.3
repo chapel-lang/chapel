@@ -1,4 +1,4 @@
-.TH "hwlocality_linux_libnuma_ulongs" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_linux_libnuma_ulongs" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -41,25 +41,57 @@ The behavior of libnuma is undefined if the kernel is not NUMA-aware\&. (when CO
 .PP
 Convert the array of unsigned long \fCmask\fP into hwloc CPU set\&. \fCmask\fP is a array of unsigned long that will be read\&. \fCmaxnode\fP contains the maximal node number that may be read in \fCmask\fP\&.
 .PP
-This function may be used after calling get_mempolicy or any other function that takes an array of unsigned long as output parameter (and possibly a maximal node number as input parameter)\&. 
+This function may be used after calling get_mempolicy or any other function that takes an array of unsigned long as output parameter (and possibly a maximal node number as input parameter)\&.
+.PP
+\fBReturns\fP
+.RS 4
+0 on success\&. 
+.PP
+-1 on error, for instance if failing an internal reallocation\&. 
+.RE
+.PP
+
 .SS "static int hwloc_cpuset_to_linux_libnuma_ulongs (\fBhwloc_topology_t\fP topology, \fBhwloc_const_cpuset_t\fP cpuset, unsigned long * mask, unsigned long * maxnode)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
 Convert hwloc CPU set \fCcpuset\fP into the array of unsigned long \fCmask\fP\&. \fCmask\fP is the array of unsigned long that will be filled\&. \fCmaxnode\fP contains the maximal node number that may be stored in \fCmask\fP\&. \fCmaxnode\fP will be set to the maximal node number that was found, plus one\&.
 .PP
-This function may be used before calling set_mempolicy, mbind, migrate_pages or any other function that takes an array of unsigned long and a maximal node number as input parameter\&. 
+This function may be used before calling set_mempolicy, mbind, migrate_pages or any other function that takes an array of unsigned long and a maximal node number as input parameter\&.
+.PP
+\fBReturns\fP
+.RS 4
+0\&. 
+.RE
+.PP
+
 .SS "static int hwloc_nodeset_from_linux_libnuma_ulongs (\fBhwloc_topology_t\fP topology, \fBhwloc_nodeset_t\fP nodeset, const unsigned long * mask, unsigned long maxnode)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
 Convert the array of unsigned long \fCmask\fP into hwloc NUMA node set\&. \fCmask\fP is a array of unsigned long that will be read\&. \fCmaxnode\fP contains the maximal node number that may be read in \fCmask\fP\&.
 .PP
-This function may be used after calling get_mempolicy or any other function that takes an array of unsigned long as output parameter (and possibly a maximal node number as input parameter)\&. 
+This function may be used after calling get_mempolicy or any other function that takes an array of unsigned long as output parameter (and possibly a maximal node number as input parameter)\&.
+.PP
+\fBReturns\fP
+.RS 4
+0 on success\&. 
+.PP
+-1 with errno set to \fCENOMEM\fP if some internal reallocation failed\&. 
+.RE
+.PP
+
 .SS "static int hwloc_nodeset_to_linux_libnuma_ulongs (\fBhwloc_topology_t\fP topology, \fBhwloc_const_nodeset_t\fP nodeset, unsigned long * mask, unsigned long * maxnode)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
 Convert hwloc NUMA node set \fCnodeset\fP into the array of unsigned long \fCmask\fP\&. \fCmask\fP is the array of unsigned long that will be filled\&. \fCmaxnode\fP contains the maximal node number that may be stored in \fCmask\fP\&. \fCmaxnode\fP will be set to the maximal node number that was found, plus one\&.
 .PP
-This function may be used before calling set_mempolicy, mbind, migrate_pages or any other function that takes an array of unsigned long and a maximal node number as input parameter\&. 
+This function may be used before calling set_mempolicy, mbind, migrate_pages or any other function that takes an array of unsigned long and a maximal node number as input parameter\&.
+.PP
+\fBReturns\fP
+.RS 4
+0\&. 
+.RE
+.PP
+
 .SH "Author"
 .PP 
 Generated automatically by Doxygen for Hardware Locality (hwloc) from the source code\&.

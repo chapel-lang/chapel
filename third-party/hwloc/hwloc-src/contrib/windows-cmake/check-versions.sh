@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright © 2018-2021 Inria.  All rights reserved.
+# Copyright © 2018-2023 Inria.  All rights reserved.
 # $COPYRIGHT$
 #
 
@@ -10,7 +10,7 @@ function die() {
 }
 
 if test "x$1" = "x-h" -o "x$1" = "x--help"; then
-  echo "$0 [--quiet] [git root directory]"
+  echo "$0 [--quiet] [--update] [git root directory]"
   exit 0
 fi
 
