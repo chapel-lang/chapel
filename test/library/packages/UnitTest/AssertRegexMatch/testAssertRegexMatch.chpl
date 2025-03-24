@@ -1,14 +1,27 @@
 use UnitTest;
+use Regex;
 
-proc assertRegexMatchTestPass(test: borrowed Test) throws {
-
+proc assertRegexMatchTestStringPass(test: borrowed Test) throws {
   var str = "test";
   test.assertRegexMatch(str, ".*es.*");
 }
 
-proc assertRegexMatchTestFail(test: borrowed Test) throws {
+proc assertRegexMatchTestStringFail(test: borrowed Test) throws {
   var str = "test";
   test.assertRegexMatch(str, ".*ES.*");
+}
+
+proc assertRegexMatchTestObjectPass(test: borrowed Test) throws {
+  var str = "test";
+  var re = new regex(".*es.*");
+  test.assertRegexMatch(str, re);
+}
+
+proc assertRegexMatchTestObjectFail(test: borrowed Test) throws {
+  var str = "test";
+
+  var re = new regex(".*ES.*");
+  test.assertRegexMatch(str, re);
 }
 
 UnitTest.main();

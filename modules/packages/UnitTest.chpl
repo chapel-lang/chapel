@@ -49,6 +49,7 @@ Here are the assert functions available in the UnitTest module:
 - :proc:`~Test.assertNotEqual`
 - :proc:`~Test.assertGreaterThan`
 - :proc:`~Test.assertLessThan`
+- :proc:`~Test.assertRegexMatch`
 
 Test Metadata Functions
 -----------------------
@@ -242,6 +243,7 @@ Output:
 */
 module UnitTest {
   use Reflection;
+  use Regex;
   use TestError;
   use List, Map;
   private use IO, IO.FormattedIO;
@@ -546,12 +548,30 @@ module UnitTest {
     pragma "insert line file info"
     pragma "always propagate line file info"
     proc assertRegexMatch(x: ?t, pattern: t) throws {
-      use Regex;
-
       var re = new regex(pattern);
-      if !re.search(x).matched {
+      checkAssertRegexMatch(x, re);
+    }
+
+    /*
+      Assert that x matches the pre-compiled regular expression object.
+
+      :arg x: The first string or bytes to match.
+      :arg pattern: The pre-compiled regular expression object.
+      :throws AssertionError: If x doesn't match the regex
+    */
+    pragma "insert line file info"
+    pragma "always propagate line file info"
+    proc assertRegexMatch(x: ?t, re: regex(t)) throws {
+      checkAssertRegexMatch(x, re);
+    }
+
+    pragma "insert line file info"
+    pragma "always propagate line file info"
+    @chpldoc.nodoc
+    proc checkAssertRegexMatch(x: ?t, re: regex(t)) throws {
+      if !re.match(x) {
         const errorMsg = "assert failed - '%?' doesn't match\
-                          the regular expression '%?'".format(x, pattern);
+                          the regular expression '%?'".format(x, re:t);
         throw new owned AssertionError(errorMsg);
       }
     }
