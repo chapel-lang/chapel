@@ -197,7 +197,12 @@ def print_rules(driver: LintDriver, show_all=True):
 def main():
     parser = configargparse.ArgParser(
         default_config_files=[],
-        config_file_parser_class=configargparse.CompositeConfigParser([configargparse.YAMLConfigFileParser, configargparse.TomlConfigParser(["tool.chplcheck"])]),
+        config_file_parser_class=configargparse.CompositeConfigParser(
+            [
+                configargparse.YAMLConfigFileParser,
+                configargparse.TomlConfigParser(["tool.chplcheck"]),
+            ]
+        ),
         args_for_setting_config_path=["--config", "-c"],
     )
     parser.add_argument("filenames", nargs="*")
