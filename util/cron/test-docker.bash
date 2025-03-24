@@ -131,6 +131,7 @@ then
   read major minor patch < <(echo $RELEASE_VERSION | ( IFS=".$IFS" ; read a b c && echo $a $b $c ))
   if [ "$patch" = "0" ]
   then
+    echo "Truncating patch version '$patch' from release $RELEASE_VERSION to determine branch name"
     release_ver_no_zero_patch="$major.$minor"
   fi
   release_branch="release/$release_ver_no_zero_patch"
