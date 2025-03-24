@@ -22,6 +22,9 @@ from collections import defaultdict
 import importlib.util
 import os
 import sys
+import glob
+import itertools
+import functools
 from typing import List, Tuple, Optional
 
 import chapel
@@ -196,7 +199,7 @@ def print_rules(driver: LintDriver, show_all=True):
 
 def main():
     parser = configargparse.ArgParser(
-        default_config_files=[],
+        default_config_files=[os.path.join(os.getcwd(), "Mason.toml")],
         config_file_parser_class=configargparse.CompositeConfigParser(
             [
                 configargparse.YAMLConfigFileParser,
@@ -206,6 +209,13 @@ def main():
         args_for_setting_config_path=["--config", "-c"],
     )
     parser.add_argument("filenames", nargs="*")
+    parser.add_argument(
+        "--file",
+        "-f",
+        action="append",
+        default=[],
+        help="Add a file to the list of 'filenames' to lint",
+    )
     Config.add_arguments(parser)
     parser.add_argument("--lsp", action="store_true", default=False)
     parser.add_argument(
@@ -239,6 +249,10 @@ def main():
         help="Apply fixits interactively, requires --fixit",
     )
     args = parser.parse_args()
+    args.filenames.extend(args.file)
+    args.filenames = itertools.chain(
+        *map(functools.partial(glob.glob, recursive=True), args.filenames)
+    )
 
     config = Config.from_args(args)
     driver = LintDriver(config)
