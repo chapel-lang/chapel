@@ -43,7 +43,7 @@ fi
 # enable arrow/parquet support
 export ARKOUDA_SERVER_PARQUET_SUPPORT=true
 
-export CHPL_WHICH_RELEASE_FOR_ARKOUDA="2.3.0"
+export CHPL_WHICH_RELEASE_FOR_ARKOUDA="2.4.0"
 
 function partial_checkout_release() {
   currentSha=`git rev-parse HEAD`
