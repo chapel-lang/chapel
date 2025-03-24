@@ -691,7 +691,7 @@ module Python {
     proc createModule(moduleContents): owned Module throws
       where moduleContents.type == string || moduleContents.type == bytes {
       return this.createModule(
-        "chpl_anon_module_" + this.anonModuleCounter.fetchAdd(1),
+        "chpl_anon_module_" + this.anonModuleCounter.fetchAdd(1):string,
         moduleContents);
     }
     /*
