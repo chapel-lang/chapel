@@ -27,7 +27,8 @@ def _find_pmi2():
     # if we can't use pkg-config, look in common locations
     paths = ('/opt/cray/pe/pmi/default',)
     for path in paths:
-        if os.path.isdir(path):
+        dirs = (path, os.path.join(path, 'include'), os.path.join(path, 'lib'))
+        if all(map(os.path.exists, dirs)):
             cflags = ([], ['-I' + os.path.join(path, 'include')])
             ldflags = ([], ['-L' + os.path.join(path, 'lib'), '-lpmi2'])
             return (path, cflags, ldflags)
