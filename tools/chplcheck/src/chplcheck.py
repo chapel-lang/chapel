@@ -199,7 +199,11 @@ def print_rules(driver: LintDriver, show_all=True):
 
 def main():
     parser = configargparse.ArgParser(
-        default_config_files=[os.path.join(os.getcwd(), "Mason.toml")],
+        default_config_files=[
+            os.path.join(os.getcwd(), "chplcheck.cfg"),
+            os.path.join(os.getcwd(), ".chplcheck.cfg"),
+            os.path.join(os.getcwd(), "Mason.toml"),
+        ],
         config_file_parser_class=configargparse.CompositeConfigParser(
             [
                 configargparse.YAMLConfigFileParser,
