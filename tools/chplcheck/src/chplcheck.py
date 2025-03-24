@@ -215,7 +215,6 @@ def main():
     parser.add_argument("filenames", nargs="*")
     parser.add_argument(
         "--file",
-        "-f",
         action="append",
         default=[],
         help="Add a file to the list of 'filenames' to lint",
