@@ -41,7 +41,7 @@ proc testArray(type t, const testArr) {
 
   writeln("from python");
   IO.stdout.flush();
-  var pyCode = interp.importModule('__empty__', pythonCode);
+  var pyCode = interp.createModule(pythonCode);
   var func = pyCode.get('loop');
   func(pyArr);
   IO.stdout.flush();

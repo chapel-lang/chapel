@@ -9,7 +9,7 @@ var g = new GIL();
 var modBytes = interp.loadPycFile(pycPath);
 g.release();
 
-var mod = interp.importModule("mod", modBytes);
+var mod = interp.createModule(modBytes);
 // get MyClass and my_function
 var MyClass = mod.get("MyClass");
 var my_function = mod.get("my_function");

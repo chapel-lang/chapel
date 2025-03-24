@@ -124,7 +124,7 @@ proc main() {
   var interp = new Interpreter();
 
   var modName = Reflection.getModuleName();
-  var m = interp.importModule(modName);
+  var m = interp.createModule(modName);
   if print then writeln("module: ", m);
 
   var func = m.get("round_trip");

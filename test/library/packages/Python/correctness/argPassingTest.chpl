@@ -115,7 +115,7 @@ proc main() {
   var interp = new Interpreter();
 
   var modName = Reflection.getModuleName();
-  var m = interp.importModule(modName);
+  var m = interp.createModule(modName);
 
   test_no_args(m);
   test_one_arg(m);

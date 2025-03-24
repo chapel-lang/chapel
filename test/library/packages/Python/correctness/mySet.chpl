@@ -36,7 +36,7 @@ proc testSet(s: borrowed) {
 proc main() {
   var interp = new Interpreter();
 
-  var pyCodeModule = interp.importModule('__empty__', pyCode);
+  var pyCodeModule = interp.createModule(pyCode);
   var getSetFunc = pyCodeModule.get('getSet');
   var s = getSetFunc(owned PySet);
   testSet(s);

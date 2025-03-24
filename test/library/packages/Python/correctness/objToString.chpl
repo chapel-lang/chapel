@@ -1,7 +1,7 @@
 use Python, List, Set, Map;
 var interp = new Interpreter();
 
-var mod = interp.importModule("mod", """
+var mod = interp.createModule("""
 class my_class:
   def __init__(self, *args):
     self.args = args
