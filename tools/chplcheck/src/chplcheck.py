@@ -17,7 +17,7 @@
 # limitations under the License.
 #
 
-import argparse
+import configargparse
 from collections import defaultdict
 import importlib.util
 import os
@@ -195,8 +195,10 @@ def print_rules(driver: LintDriver, show_all=True):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        prog="chplcheck", description="A linter for the Chapel language"
+    parser = configargparse.ArgParser(
+        default_config_files=[],
+        config_file_parser_class=configargparse.CompositeConfigParser([configargparse.YAMLConfigFileParser, configargparse.TomlConfigParser(["tool.chplcheck"])]),
+        args_for_setting_config_path=["--config", "-c"],
     )
     parser.add_argument("filenames", nargs="*")
     Config.add_arguments(parser)
