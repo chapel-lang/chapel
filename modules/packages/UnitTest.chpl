@@ -553,7 +553,6 @@ module UnitTest {
         const errorMsg = "assert failed - '%?' doesn't match\
                           the regular expression '%?'".format(x, pattern);
         throw new owned AssertionError(errorMsg);
-
       }
     }
 
