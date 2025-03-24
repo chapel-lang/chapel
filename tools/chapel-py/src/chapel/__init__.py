@@ -393,7 +393,7 @@ def files_with_stdlib_contexts(
     """
 
     def setup_with_stdlib(ctx):
-        ctx.set_module_paths([], [])
+        ctx.set_module_paths("", [], [])
         if setup:
             setup(ctx)
 

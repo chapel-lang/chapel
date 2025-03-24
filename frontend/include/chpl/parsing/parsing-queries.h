@@ -299,6 +299,11 @@ void setBundledModulePath(Context* context, UniqueString path);
     chplSysModulesSubdir -- CHPL_SYS_MODULES_SUBDIR
     chplModulePath       -- CHPL_MODULE_PATH
 
+  The 'moduleRoot' argument allows overriding the default module root. If
+  'moduleRoot' is the empty string, then the default of 'CHPL_HOME/modules' is
+  used. Regardless, if 'minimalModules' is true '/minimal' is appended to the
+  'moduleRoot'.
+
   The arguments 'prependInternalModulePaths' and 'prependStandardModulePaths',
   if non-empty, allow one to override where the context will search for
   internal and standard modules, respectively. It will search each successive
@@ -312,6 +317,7 @@ void setBundledModulePath(Context* context, UniqueString path);
 void setupModuleSearchPaths(
                   Context* context,
                   const std::string& chplHome,
+                  const std::string& moduleRoot,
                   bool minimalModules,
                   const std::string& chplLocaleModel,
                   bool enableTaskTracking,
@@ -323,6 +329,18 @@ void setupModuleSearchPaths(
                   const std::vector<std::string>& prependStandardModulePaths,
                   const std::vector<std::string>& cmdLinePaths,
                   const std::vector<std::string>& inputFilenames);
+
+/**
+  Overload of the more general setupModuleSearchPaths that uses the
+  context's stored chplHome and chplEnv to determine the values of most
+  arguments.
+*/
+void setupModuleSearchPaths(Context* context,
+                            const std::string& moduleRoot,
+                            bool minimalModules,
+                            bool enableTaskTracking,
+                            const std::vector<std::string>& cmdLinePaths,
+                            const std::vector<std::string>& inputFilenames);
 
 /**
   Overload of the more general setupModuleSearchPaths that uses the

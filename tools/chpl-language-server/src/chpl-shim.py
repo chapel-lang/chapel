@@ -31,7 +31,7 @@ from chapel.core import *
 
 def list_parsed_files(files, module_paths):
     ctx = Context()
-    ctx.set_module_paths(module_paths, files)
+    ctx.set_module_paths("", module_paths, files)
 
     for file in files:
         asts = ctx.parse(file)

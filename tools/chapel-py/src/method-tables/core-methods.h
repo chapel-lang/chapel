@@ -45,11 +45,12 @@ CLASS_BEGIN(Context)
          }
          return topLevelNodes)
   METHOD(Context, set_module_paths, "Set the module path arguments to the given lists of module paths and filenames",
-         void(std::vector<std::string>, std::vector<std::string>),
+         void(std::string, std::vector<std::string>, std::vector<std::string>),
 
-         auto& paths = std::get<0>(args);
-         auto& filenames = std::get<1>(args);
-         parsing::setupModuleSearchPaths(node, false, false, paths, filenames);
+         auto& modRoot = std::get<0>(args);
+         auto& paths = std::get<1>(args);
+         auto& filenames = std::get<2>(args);
+         parsing::setupModuleSearchPaths(node, modRoot, false, false, paths, filenames);
          if (auto autoUseScope = resolution::scopeForAutoModule(node)) {
            std::ignore = resolution::resolveVisibilityStmts(node, autoUseScope, false);
          })
