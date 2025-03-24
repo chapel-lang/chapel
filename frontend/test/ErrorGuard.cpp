@@ -54,6 +54,11 @@ static void errorGuardSignalHandler(int sig) {
 
       // copy file into temporary directory.
       auto destPath = path + "/" + file.str();
+
+      // create any needed subdirectories
+      auto destDir = std::filesystem::path(destPath).parent_path();
+      std::filesystem::create_directories(destDir);
+
       auto fileText = chpl::parsing::fileText(currentGuard->context(), file);
       std::ignore = chpl::writeFile(destPath.c_str(), fileText.text());
     }
