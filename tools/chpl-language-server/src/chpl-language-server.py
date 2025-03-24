@@ -692,7 +692,7 @@ class ContextContainer:
         self.std_module_root = self.cls_config.args.get("std_module_root", "")
         self.module_paths.extend(self.cls_config.args.get("module_dirs", []))
 
-        self.context.set_module_paths(self.std_module_root, self.module_paths, self.file_paths)
+        self.context._set_module_paths(self.std_module_root, self.module_paths, self.file_paths)
 
     def register_signature(self, sig: chapel.TypedSignature) -> str:
         """
@@ -739,7 +739,7 @@ class ContextContainer:
         """
 
         self.context.advance_to_next_revision(False)
-        self.context.set_module_paths(self.std_module_root, self.module_paths, self.file_paths)
+        self.context._set_module_paths(self.std_module_root, self.module_paths, self.file_paths)
 
         with self.context.track_errors() as errors:
             for fi in self.file_infos:
