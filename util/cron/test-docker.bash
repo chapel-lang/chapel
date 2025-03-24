@@ -127,7 +127,13 @@ update_all_images() {
 if [ -n "$RELEASE_VERSION" ]
 then
   log_info "Building and pushing nightly and release-tagged images for version: $RELEASE_VERSION"
-  release_branch="release/$RELEASE_VERSION"
+  release_ver_no_zero_patch=$RELEASE_VERSION
+  read major minor patch < <(echo $RELEASE_VERSION | ( IFS=".$IFS" ; read a b c && echo $a $b $c ))
+  if [ "$patch" = "0" ]
+  then
+    release_ver_no_zero_patch="$major.$minor"
+  fi
+  release_branch="release/$release_ver_no_zero_patch"
   if [ "$(git rev-parse HEAD)" != "$(git rev-parse $release_branch)" ]
   then
     log_error "Not on expected release branch $release_branch for version $RELEASE_VERSION, aborting"
