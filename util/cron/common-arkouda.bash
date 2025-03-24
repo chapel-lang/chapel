@@ -66,5 +66,9 @@ function test_nightly() {
 }
 
 function sync_graphs() {
-  $CHPL_HOME/util/cron/syncPerfGraphs.py $CHPL_TEST_PERF_DIR/html/ arkouda/$CHPL_TEST_PERF_CONFIG_NAME
+  if [[ -n $CHPL_TEST_PERF_SYNC_DIR_SUFFIX ]]; then
+    $CHPL_HOME/util/cron/syncPerfGraphs.py $CHPL_TEST_PERF_DIR/html/ arkouda/$CHPL_TEST_PERF_CONFIG_NAME/$CHPL_TEST_PERF_SYNC_DIR_SUFFIX
+  else
+    $CHPL_HOME/util/cron/syncPerfGraphs.py $CHPL_TEST_PERF_DIR/html/ arkouda/$CHPL_TEST_PERF_CONFIG_NAME
+  fi
 }
