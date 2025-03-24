@@ -42,6 +42,7 @@ import json
 import re
 import sys
 import importlib.util
+import copy
 
 import chapel
 from chapel.lsp import location_to_range, error_to_diagnostic
@@ -693,8 +694,8 @@ class ContextContainer:
                 self.module_paths = file_config["module_dirs"]
                 self.file_paths = file_config["files"]
 
-        self.std_module_root = self.cls_config.args.get("std_module_root", "")
-        self.module_paths.extend(self.cls_config.args.get("module_dirs", []))
+        self.std_module_root = self.cls_config.get("std_module_root")
+        self.module_paths.extend(self.cls_config.get("module_dir"))
 
         self.context._set_module_paths(
             self.std_module_root, self.module_paths, self.file_paths
@@ -1408,7 +1409,7 @@ class CLSConfig:
             "--std-module-root", default="", help=configargparse.SUPPRESS
         )
         self.parser.add_argument(
-            "-M", "--module-dir", action="append", default=[]
+            "--module-dir", "-M", action="append", default=[]
         )
         add_bool_flag("type-inlays", "type_inlays", True)
         add_bool_flag("param-inlays", "param_inlays", True)
@@ -1450,7 +1451,7 @@ class CLSConfig:
             )
 
     def parse_args(self):
-        self.args = vars(self.parser.parse_args())
+        self.args = copy.deepcopy(vars(self.parser.parse_args()))
         self._parse_end_markers()
         self._validate_end_markers()
 
