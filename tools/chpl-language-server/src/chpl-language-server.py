@@ -1379,7 +1379,14 @@ class CLSConfig:
     def _construct_parser(self):
         self.parser = configargparse.ArgParser(
             default_config_files=[],
-            config_file_parser_class=configargparse.CompositeConfigParser([configargparse.YAMLConfigFileParser, configargparse.TomlConfigParser(["tool.chpl-language-server"])]),
+            config_file_parser_class=configargparse.CompositeConfigParser(
+                [
+                    configargparse.YAMLConfigFileParser,
+                    configargparse.TomlConfigParser(
+                        ["tool.chpl-language-server"]
+                    ),
+                ]
+            ),
             args_for_setting_config_path=["--config", "-c"],
         )
 
