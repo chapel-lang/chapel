@@ -31,7 +31,7 @@ proc main() {
   var interp = new Interpreter();
 
   var modName = Reflection.getModuleName();
-  var m = interp.createModule(modName);
+  var m = interp.importModule(modName);
 
   var pyClsType = m.get("MyRec");
   interp.registerConverter(new myRecConverter(pyClsType));
