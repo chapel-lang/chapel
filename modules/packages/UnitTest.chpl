@@ -541,6 +541,10 @@ module UnitTest {
     /*
       Assert that x matches the regular expression pattern.
 
+      .. warning::
+
+        This method requires Chapel to be built with `CHPL_RE2=bundled`.
+
       :arg x: The first string or bytes to match.
       :arg pattern: The regular expression pattern.
       :throws AssertionError: If x doesn't match the regex
@@ -554,6 +558,10 @@ module UnitTest {
 
     /*
       Assert that x matches the pre-compiled regular expression object.
+
+      .. warning::
+
+        This method requires Chapel to be built with `CHPL_RE2=bundled`.
 
       :arg x: The first string or bytes to match.
       :arg pattern: The pre-compiled regular expression object.
