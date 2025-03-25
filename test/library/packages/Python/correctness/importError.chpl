@@ -12,7 +12,7 @@ try {
 }
 
 try {
-  var m = interp.createModule("mymod2");
+  var m = interp.importModule("mymod2");
   writeln("module: ", m);
 } catch e: ImportError {
   writeln("Caught ImportError: ", e);
