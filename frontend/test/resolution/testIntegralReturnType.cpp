@@ -46,7 +46,7 @@ static const chpl::types::PrimitiveType* stringNameToType(Context* context, std:
   } else if (name == "uint(64)") {
     return UintType::get(context, 64);
   } else {
-    throw std::runtime_error("Unknown type name: " + name);
+    assert(false && "Unexpected type name");
   }
 }
 
