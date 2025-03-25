@@ -13,7 +13,7 @@ def bar():
 """;
 
 var interp = new Interpreter();
-var mod = interp.importModule('__empty__', code);
+var mod = interp.createModule(code);
 
 {
   var res1 = mod.call('bar');

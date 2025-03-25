@@ -17,7 +17,7 @@ proc main() {
   coforall tid in 0..#tasks {
     var localInterp = new SubInterpreter(interp);
 
-    var m = localInterp.importModule('__empty__', code);
+    var m = localInterp.createModule(code);
     var f = m.get('hello');
     for i in 1..#itersPerTask {
       f(tid, i);

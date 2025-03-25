@@ -19,7 +19,7 @@ def grad(arr):
 
 proc main() {
   var interp = new Interpreter();
-  var mod = interp.importModule('__empty__', code);
+  var mod = interp.createModule(code);
   var gradModifyArg = mod.get('gradModifyArg');
   var grad = mod.get('grad');
 

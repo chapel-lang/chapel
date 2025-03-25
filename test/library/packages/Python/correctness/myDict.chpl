@@ -10,7 +10,7 @@ proc main() {
 
   var interp = new Interpreter();
 
-  var pyCodeModule = interp.importModule('__empty__', pyCode);
+  var pyCodeModule = interp.createModule(pyCode);
   var getDictFunc = pyCodeModule.get('getDict');
 
   var d = getDictFunc(owned PyDict);
