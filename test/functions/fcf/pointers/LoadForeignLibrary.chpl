@@ -1,4 +1,12 @@
+//
+// While this exercises the internal dynamic loading API, the intent of this
+// test is to exercise the parts of the library that pertain to procedure
+// types/values - specifically, that the pointers returned via loading are
+// callable on each locale, and broadly behave as expected.
+//
+
 use ChapelDynamicLoading;
+use Reflection;
 
 /** Define a "user facing" wrapper around the internal dynamic library. */
 record dynamicLibrary {
@@ -25,6 +33,9 @@ record dynamicLibrary {
 }
 
 proc test1() {
+  writeln(Reflection.getRoutineName());
+  writeln();
+
   var bin = new dynamicLibrary("./TestCLibraryToLoad.so");
 
   type P1 = proc(_: int, _: int): int;
@@ -32,12 +43,15 @@ proc test1() {
   const addTwoReturn = try! bin.load("addTwoReturn", P1);
 
   writeln(addTwoReturn.type:string);
+  writeln();
 
   for loc in Locales do on loc {
     const n = (here.id : int);
     const x = addTwoReturn(n, n);
     writeln(here, ' got: ', x);
+    writeln('---');
   }
+  writeln();
 }
 
 extern {
@@ -45,6 +59,9 @@ extern {
 }
 
 proc test2() {
+  writeln(Reflection.getRoutineName());
+  writeln();
+
   var bin = new dynamicLibrary("./TestCLibraryToLoad.so");
 
   type P1 = proc(a: real, b: real, c: real, d: real, e: real,
@@ -59,6 +76,7 @@ proc test2() {
 
   writeln(createFoobar.type:string);
   writeln(printFoobar.type:string);
+  writeln();
 
   for loc in Locales do on loc {
     writeln(here);
@@ -75,6 +93,8 @@ proc test2() {
 
     // Confirm things look the same on Chapel's end.
     writeln('writeln: ', x);
+
+    writeln('---');
   }
 }
 

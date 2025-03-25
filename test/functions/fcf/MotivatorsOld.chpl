@@ -1,7 +1,8 @@
 //
-// Passing tests for routines-as-values as a language feature. Should be
-// at parity with 'test/functions/lambda', and include tests for new
-// features as well.
+// This old version of 'Motivators' was written with procedures-as-classes
+// as the implementation. The tests should still pass, but a newer version
+// of the test was built up with procedures-as-pointers in mind (and thus
+// replaces this one).
 //
 
 // Globals used by tests.

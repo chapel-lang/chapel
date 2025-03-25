@@ -265,18 +265,23 @@ returnInfoCast(CallExpr* call) {
 }
 
 static QualifiedType
-returnInfoToExternLinkage(CallExpr* call) {
-  INT_ASSERT(call->numActuals() == 1);
-  auto q1 = call->get(1)->qualType();
-  auto qual = q1.getQual();
-  auto type = q1.type();
-  if (auto ft = toFunctionType(q1.type())) {
-    if (!ft->hasForeignLinkage()) {
-      type = ft->getWithExternLinkage();
-    }
+returnInfoForProcTypeConverter(CallExpr* call) {
+  Type* t = call->get(1)->typeInfo();
+  int64_t mask = 0;
+
+  // Get the second arg as a 'param int' if it exists.
+  auto arg2 = call->numActuals() >= 2 ? call->get(2) : nullptr;
+  bool got = get_int(arg2, &mask);
+  INT_ASSERT(got || !arg2);
+
+  Type* typeToUse = dtUnknown;
+  if (auto ft1 = toFunctionType(t)) {
+    bool maskConflicts = false;
+    typeToUse = ft1->getWithMask(mask, maskConflicts);
+    std::ignore = maskConflicts;
   }
 
-  return QualifiedType(qual, type);
+  return QualifiedType(typeToUse, QUAL_VAL);
 }
 
 static QualifiedType
@@ -1249,8 +1254,8 @@ initPrimitive() {
   prim_def(PRIM_IS_NILABLE_CLASS_TYPE, "is nilable class type", returnInfoBool);
   prim_def(PRIM_IS_NON_NILABLE_CLASS_TYPE, "is non nilable class type", returnInfoBool);
   prim_def(PRIM_IS_RECORD_TYPE, "is record type", returnInfoBool);
-  prim_def(PRIM_IS_FCF_TYPE, "is fcf type", returnInfoBool);
-  prim_def(PRIM_TO_EXTERN_LINKAGE, "to extern linkage", returnInfoToExternLinkage);
+  prim_def(PRIM_IS_PROC_TYPE, "is proc type", returnInfoBool);
+  prim_def(PRIM_TO_PROC_TYPE, "to proc type", returnInfoForProcTypeConverter);
   prim_def(PRIM_IS_UNION_TYPE, "is union type", returnInfoBool);
   prim_def(PRIM_IS_EXTERN_UNION_TYPE, "is extern union type", returnInfoBool);
   prim_def(PRIM_IS_ATOMIC_TYPE, "is atomic type", returnInfoBool);

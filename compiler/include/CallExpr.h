@@ -108,10 +108,13 @@ public:
   void            setResolvedFunction(FnSymbol* fn);
   FnSymbol*       resolvedOrVirtualFunction()                            const;
 
+  // In the case of an indirect call, returns the called function type.
+  FunctionType* indirectCallType()                                       const;
+
   // An indirect call is _only_ one in which the base expression of the call
   // is a value with a function type. That is, the type of the function is
   // known, but not exactly which function the call refers to.
-  bool            isIndirectCall()                                       const;
+  bool isIndirectCall()                                                  const;
 
   FnSymbol*       theFnSymbol()                                          const;
 
@@ -201,12 +204,20 @@ inline bool CallExpr::isPrimitive(const char* primitiveName) const {
   return primitive && !strcmp(primitive->name, primitiveName);
 }
 
+inline FunctionType* CallExpr::indirectCallType() const {
+  // Eliminate edge cases first (e.g., primitives, direct call).
+  if (!baseExpr || resolvedFunction() || isPrimitive()) return nullptr;
+
+  // Otherwise, if the base expression has a function type...
+  if (auto ret = toFunctionType(baseExpr->qualType().type()->getValType())) {
+    return ret;
+  }
+
+  return nullptr;
+}
+
 inline bool CallExpr::isIndirectCall() const {
-  if (!baseExpr) return false;
-  if (resolvedFunction()) return false;
-  if (isPrimitive()) return false;
-  if (isFunctionType(baseExpr->qualType().type()->getValType())) return true;
-  return false;
+  return indirectCallType() != nullptr;
 }
 
 inline int CallExpr::numActuals() const {

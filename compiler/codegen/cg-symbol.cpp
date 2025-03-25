@@ -1035,19 +1035,7 @@ void VarSymbol::codegenDef() {
       info->lvt->addGlobalValue(cname, globalValue, GEN_VAL, ! is_signed(type), type);
     }
 
-    llvm::Type *varType = nullptr;
-    if (auto ft = toFunctionType(type)) {
-
-      // If it's a function type, then it's an int index and not a pointer.
-      // Don't call the FunctionType::Type() builder because that would
-      // just create a LLVM function type.
-      // TODO: Depends on whether the variable is marked local or wide.
-      // We could make some function pointers local pointers instead of
-      // global indices as an optimization.
-      varType = dtUInt[INT_SIZE_64]->getLLVMType();
-    } else {
-      varType = type->getLLVMType();
-    }
+    llvm::Type *varType = type->getLLVMType();
 
     llvm::AllocaInst *varAlloca = createVarLLVM(varType, type, this, cname);
     info->lvt->addValue(cname, varAlloca, GEN_PTR, ! is_signed(type));
@@ -1909,6 +1897,8 @@ int llvmAlignmentOrDefer(int alignment, llvm::Type* type) {
 }
 
 static inline void ensureCodegenned(TypeSymbol* ts) {
+  if (ts->hasFlag(FLAG_CODEGENNED)) return;
+
   // Beware that some types would fail codegenDef(), ex. LAPACK_C_SELECT1 in:
   // test/lib./pack./LinearAlgebra/correctness/no-dependencies/no-flags/no-flags
   if (! ts->hasLLVMType())

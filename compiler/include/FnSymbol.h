@@ -235,6 +235,7 @@ public:
   void                       setNormalized(bool value);
 
   bool                       isResolved()                                const;
+  bool                       isErrorHandlingLowered()                    const;
 
   bool                       isMethod()                                  const;
   bool                       isMethodOnClass()                           const;
@@ -279,7 +280,6 @@ public:
 
   void                       throwsErrorInit();
   bool                       throwsError()                               const;
-
   bool                       retExprDefinesNonVoid()                     const;
 
   Symbol*                    getSubstitutionWithName(const char* name)   const;

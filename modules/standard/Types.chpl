@@ -207,6 +207,79 @@ proc isBorrowedClassType(type t)  param {
   return __primitive("is borrowed class type", t);
 }
 
+// These bitmasks mirror the ones defined on the compiler 'FunctionType'.
+param chpl_procMaskWidthLocal     = 0b00001;
+param chpl_procMaskWidthWide      = 0b00010;
+param chpl_procMaskLinkageExtern  = 0b00100;
+param chpl_procMaskLinkageDefault = 0b01000;
+
+//
+// User-facing predicates used to detect procedure types. Defined in the
+// standard fashion, but not exposed to users yet. These predicates do not
+// expose any notion of "wideness" or other properties used BTS by the
+// procedure type.
+//
+
+@chpldoc.nodoc
+proc isProcedureType(type t) param do return __primitive("is proc type", t);
+
+@chpldoc.nodoc
+proc isProcedureValue(x: ?t) param do return isProcedureType(t);
+
+@chpldoc.nodoc
+proc isProcedure(x) param do return isProcedureValue(x);
+
+@chpldoc.nodoc
+proc isProcedure(type t) param do return isProcedureType(t);
+
+//
+// Predicates to detect variations of procedure types (for types and values).
+//
+
+proc chpl_isLocalProcType(type t) param do
+  return __primitive("is proc type", t, chpl_procMaskWidthLocal);
+proc chpl_isWideProcType(type t) param do
+  return __primitive("is proc type", t, chpl_procMaskWidthWide);
+proc chpl_isExternProcType(type t) param do
+  return __primitive("is proc type", t, chpl_procMaskLinkageExtern);
+
+proc chpl_isLocalProc(type t) param do return chpl_isLocalProcType(t);
+proc chpl_isWideProc(type t) param do return chpl_isWideProcType(t);
+proc chpl_isExternProc(type t) param do return chpl_isExternProcType(t);
+proc chpl_isLocalProc(x: ?t) param do return chpl_isLocalProcType(t);
+proc chpl_isWideProc(x: ?t) param do return chpl_isWideProcType(t);
+proc chpl_isExternProc(x: ?t) param do return chpl_isExternProcType(t);
+
+//
+// Type constructors to adjust the properties of a given procedure type (e.g.,
+// convert it from 'local' to 'wide'). These are not safe to use unless you
+// know what you're doing. The underlying representation of a procedure value
+// will change depending on the properties of its type, and only a cast is
+// guaranteed to properly translate between representations.
+//
+
+proc chpl_toLocalProcType(type t) type where isProcedureType(t) do
+  return __primitive("to proc type", t, chpl_procMaskWidthLocal);
+
+proc chpl_toWideProcType(type t) type where isProcedureType(t) do
+  return __primitive("to proc type", t, chpl_procMaskWidthWide);
+
+proc chpl_toExternProcType(type t) type where isProcedureType(t) do
+  return __primitive("to proc type", t, chpl_procMaskLinkageExtern);
+
+// Cast operation to produce a local procedure pointer. When given a wide
+// procedure value this cast will consult the procedure pointer cache to
+// produce a local pointer. When given a local procedure value this cast
+// will do nothing. This operation is always safe to call (provided your
+// procedure value was constructed via normal means and is present on all
+// locales).
+inline proc chpl_toLocalProc(x: ?t) where chpl_isLocalProc(t) do return x;
+inline proc chpl_toLocalProc(x: ?t) where chpl_isWideProc(t) {
+  const idx = __primitive("cast", int, x);
+  const ptr = chpl_dynamicProcIdxToLocalPtr(idx);
+  return __primitive("cast", chpl_toLocalProcType(t), ptr);
+}
+
 /*
 POD stands for Plain Old Data and roughly corresponds to the meaning of Plain
 Old Data in C++.

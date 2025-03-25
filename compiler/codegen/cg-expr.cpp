@@ -154,20 +154,25 @@ static void addNoAliasMetadata(GenRet &ret, Symbol* sym) {
 #endif
 
 static bool shouldGenerateAsIfCallingDirectly(SymExpr* se, FnSymbol* fn) {
-  bool isCallBaseExpr = false;
-  bool isCastedToPtr = false;
+  INT_ASSERT(se->symbol() == fn);
 
+  // The function in question is never used to create a 'function value',
+  // (so it cannot possibly be called indirectly), so just return 'true'.
   if (!fn->hasFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION)) return true;
 
   if (auto call = toCallExpr(se->parentExpr)) {
-    isCallBaseExpr = (se == call->baseExpr);
-    isCastedToPtr = call->isPrimitive(PRIM_CAST_TO_TYPE) ||
-                    call->isPrimitive(PRIM_CAST);
+    // Otherwise, if it's a call base expression or being casted to a pointer,
+    // then we should generate it as if calling it directly to manifest the
+    // address on the current locale.
+    bool isCallBaseExpr = (se == call->baseExpr);
+    bool isCastedToPtr = call->isPrimitive(PRIM_CAST_TO_TYPE) ||
+                         call->isPrimitive(PRIM_CAST);
+    bool ret = isCallBaseExpr || isCastedToPtr;
+    return ret;
   }
 
-  bool ret = isCallBaseExpr || isCastedToPtr;
-
-  return ret;
+  // Otherwise, treat the mention as indirect.
+  return false;
 }
 
 GenRet SymExpr::codegen() {
@@ -2798,6 +2803,7 @@ static GenRet codegenCallExprInner(GenRet function,
 
   bool isExternOrExport = chplFnType && (chplFnType->isExtern() ||
                                          chplFnType->isExport());
+  INT_ASSERT(!chplFnType || !chplFnType->throws());
 
   // As a first step, adjust the formals to have the proper types.
   for (size_t i = 0; i < args.size(); i++) {
@@ -4196,6 +4202,16 @@ static GenRet codegenCall(CallExpr* call) {
   for (int i = 0; i < call->numActuals(); i++) {
     auto formal = fn ? fn->getFormal(i+1) : nullptr;
     auto actual = call->get(i+1);
+    bool needDerefForActual = false;
+
+    if (formal) {
+      needDerefForActual = !formal->isRefOrWideRef();
+    } else {
+      INT_ASSERT(chplFnType);
+      auto ftFormal = chplFnType->formal(i);
+      needDerefForActual = !ftFormal->qualType().isRefOrWideRef();
+    }
+
     SymExpr* se = toSymExpr(actual);
     GenRet arg = actual;
 
@@ -4225,7 +4241,7 @@ static GenRet codegenCall(CallExpr* call) {
 
     // TODO: What if the actual is a wide-ref and the formal is a narrow ref?
     // Should that be handled back in IWR?
-    if (arg.chplType->symbol->isRefOrWideRef() && !formal->isRefOrWideRef()) {
+    if (arg.chplType->symbol->isRefOrWideRef() && needDerefForActual) {
       arg = codegenValue(codegenDeref(arg));
     }
 

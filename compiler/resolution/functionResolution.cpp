@@ -329,11 +329,19 @@ void makeRefType(Type* type) {
     return;
   }
 
-  CallExpr* call = new CallExpr(dtRef->symbol, type->symbol);
-  resolveUninsertedCall(type, call, false);
-  type->refType  = toAggregateType(call->typeInfo());
+  if (dtRef) {
+    CallExpr* call = new CallExpr(dtRef->symbol, type->symbol);
+    resolveUninsertedCall(type, call, false);
+    type->refType  = toAggregateType(call->typeInfo());
 
-  type->refType->getField(1)->type = type;
+    type->refType->getField(1)->type = type;
+  } else {
+    // We no longer have access to the generic 'ref' type, which means it
+    // was already pruned. In which case, we should generate as though we
+    // are at codegen. TODO: Why can't we just do this always?
+    auto rt = getOrMakeRefTypeDuringCodegen(type);
+    INT_ASSERT(rt && type->refType);
+  }
 
   if (type->symbol->hasFlag(FLAG_ATOMIC_TYPE))
     type->refType->symbol->addFlag(FLAG_ATOMIC_TYPE);
@@ -3348,16 +3356,20 @@ static bool resolveClassBorrowMethod(CallExpr* call) {
   return false;
 }
 
+static FunctionType* extractFunctionTypeFromCall(CallExpr* call) {
+  // TODO: 'proc.this(...)' or make sure that form is not injected.
+  if (auto base = call->baseExpr)
+    if (auto se = toSymExpr(base))
+      if (auto ret = toFunctionType(se->getValType()))
+        return ret;
+  return nullptr;
+}
+
 // TODO: Ideally, we would be able to leverage the existing machinery for
 // resolving calls, but we may not be able to do that until dyno is used
 // to resolve code.
 static bool resolveFunctionPointerCall(CallExpr* call) {
-  FunctionType* ft = nullptr;
-  if (auto base = call->baseExpr)
-    if (auto se = toSymExpr(base))
-      if (auto baseFnType = toFunctionType(se->getValType()))
-        ft = baseFnType;
-
+  auto ft = extractFunctionTypeFromCall(call);
   if (!ft) return false;
 
   auto base = call->baseExpr;

@@ -437,6 +437,12 @@ class FunctionType final : public Type {
   enum Width { LOCAL, WIDE };
   enum Linkage { DEFAULT, EXTERN, EXPORT };
 
+  // Masks are used to select options when implementing primitives.
+  static constexpr int MASK_WIDTH_LOCAL     = 0b00001;
+  static constexpr int MASK_WIDTH_WIDE      = 0b00010;
+  static constexpr int MASK_LINKAGE_EXTERN  = 0b00100;
+  static constexpr int MASK_LINKAGE_DEFAULT = 0b01000;
+
   class Formal {
     Qualifier qual_;
     Type* type_;
@@ -505,9 +511,13 @@ class FunctionType final : public Type {
                            bool throws);
   static FunctionType* get(FnSymbol* fn);
 
+  FunctionType* getWithWidth(Width width) const;
+  FunctionType* getWithLinkage(Linkage linkage) const;
+  FunctionType* getWithLoweredErrorHandling() const;
+  FunctionType* getWithMask(int64_t mask, bool& outMaskConflicts) const;
   FunctionType* getAsLocal() const;
   FunctionType* getAsWide() const;
-  FunctionType* getWithExternLinkage() const;
+  FunctionType* getAsExtern() const;
 
   Kind kind() const;
   Width width() const;
@@ -532,6 +542,7 @@ class FunctionType final : public Type {
   static FunctionType::Kind determineKind(FnSymbol* fn);
   static FunctionType::Linkage determineLinkage(FnSymbol* fn);
   static bool isIntentSameAsDefault(IntentTag intent, Type* t);
+  static Formal constructErrorHandlingFormal();
 
   // Prints things in a 'user facing' fashion, no mangling.
   static const char* kindToString(Kind kind);

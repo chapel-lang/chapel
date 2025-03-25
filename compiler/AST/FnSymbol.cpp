@@ -1019,6 +1019,13 @@ bool FnSymbol::isResolved() const {
   return hasFlag(FLAG_RESOLVED);
 }
 
+bool FnSymbol::isErrorHandlingLowered() const {
+  for_formals_backward(formal, this) {
+    if (formal->hasFlag(FLAG_ERROR_VARIABLE)) return true;
+  }
+  return false;
+}
+
 bool FnSymbol::isSignature() const {
   return hasFlag(FLAG_ANONYMOUS_FN) && hasFlag(FLAG_NO_FN_BODY);
 }

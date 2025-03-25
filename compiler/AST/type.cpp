@@ -707,6 +707,10 @@ FunctionType::buildUserFacingTypeString(FunctionType::Kind kind,
     oss << ": " << typeToString(returnType);
   }
 
+  if (throws) {
+    oss << " " << "throws";
+  }
+
   auto str = oss.str();
   auto ret = astr(str.c_str());
   return ret;
@@ -795,6 +799,12 @@ FunctionType* FunctionType::create(FunctionType::Kind kind,
   bool isAnyFormalNamed = false;
 
   for (auto& formal : formals) {
+    // Call 'makeRefType' if it's likely needed to avoid problems later.
+    bool isRef = formal.qual() == QUAL_REF ||
+                 formal.qual() == QUAL_CONST_REF ||
+                 formal.intent() & INTENT_REF;
+    if (isRef) makeRefType(formal.type());
+
     isAnyFormalNamed |= formal.name() != nullptr;
   }
 
@@ -888,13 +898,16 @@ getFunctionTypeFromFunction(FnSymbol* fn, FunctionType::Width width) {
   std::vector<FunctionType::Formal> formals;
   RetTag returnIntent = fn->retTag;
   Type* returnType = fn->retType;
-  bool throws = fn->throwsError();
+
+  // If error handling is lowered then this function no longer 'throws'.
+  bool throws = fn->throwsError() && !fn->isErrorHandlingLowered();
 
   for_formals(f, fn) {
     FunctionType::Formal info = { f->qual, f->type, f->intent, f->name };
     formals.push_back(std::move(info));
   }
 
+  SET_LINENO(fn);
   auto ret = FunctionType::get(kind, width, linkage,
                                std::move(formals),
                                returnIntent,
@@ -907,25 +920,77 @@ FunctionType* FunctionType::get(FnSymbol* fn) {
   return getFunctionTypeFromFunction(fn, FunctionType::WIDE);
 }
 
-FunctionType* FunctionType::getAsLocal() const {
-  return get(kind_, FunctionType::LOCAL, linkage_, formals_,
-             returnIntent_,
+FunctionType* FunctionType::getWithWidth(FunctionType::Width width) const {
+  return get(kind_, width, linkage_, formals_, returnIntent_,
              returnType_,
              throws_);
+}
+
+FunctionType*
+FunctionType::getWithLinkage(FunctionType::Linkage linkage) const {
+  return get(kind_, width_, linkage, formals_, returnIntent_,
+             returnType_,
+             throws_);
+}
+
+FunctionType* FunctionType::getAsLocal() const {
+  return getWithWidth(FunctionType::LOCAL);
 }
 
 FunctionType* FunctionType::getAsWide() const {
-  return get(kind_, FunctionType::WIDE, linkage_, formals_,
-             returnIntent_,
-             returnType_,
-             throws_);
+  return getWithWidth(FunctionType::WIDE);
 }
 
-FunctionType* FunctionType::getWithExternLinkage() const {
-  return get(kind_, width_, FunctionType::EXTERN, formals_,
+FunctionType* FunctionType::getAsExtern() const {
+  return getWithLinkage(FunctionType::EXTERN);
+}
+
+FunctionType::Formal FunctionType::constructErrorHandlingFormal() {
+  auto t = getDecoratedClass(dtError, ClassTypeDecorator::UNMANAGED_NILABLE);
+  return { QUAL_REF, t, INTENT_REF, "error_out" };
+}
+
+FunctionType* FunctionType::getWithLoweredErrorHandling() const {
+  bool newThrowsFlag = false;
+  auto newFormals = formals_;
+
+  // The error formal is always inserted into the end of the formals list.
+  newFormals.push_back(constructErrorHandlingFormal());
+
+  SET_LINENO(this->symbol);
+
+  return get(kind_, width_, linkage_, std::move(newFormals),
              returnIntent_,
              returnType_,
-             throws_);
+             newThrowsFlag);
+}
+
+FunctionType*
+FunctionType::getWithMask(int64_t mask, bool& outMaskConflicts) const {
+  FunctionType* ret = (FunctionType*) this;
+  bool maskConflicts = false;
+
+  if (mask & FunctionType::MASK_WIDTH_LOCAL) {
+    ret = ret->getWithWidth(FunctionType::LOCAL);
+  }
+
+  if (mask & FunctionType::MASK_WIDTH_WIDE) {
+    maskConflicts |= (mask & FunctionType::MASK_WIDTH_LOCAL);
+    ret = ret->getWithWidth(FunctionType::WIDE);
+  }
+
+  if (mask & FunctionType::MASK_LINKAGE_EXTERN) {
+    ret = ret->getWithLinkage(FunctionType::EXTERN);
+  }
+
+  if (mask & FunctionType::MASK_LINKAGE_DEFAULT) {
+    maskConflicts |= (mask & FunctionType::MASK_LINKAGE_EXTERN);
+    ret = ret->getWithLinkage(FunctionType::DEFAULT);
+  }
+
+  outMaskConflicts = maskConflicts;
+
+  return ret;
 }
 
 FunctionType::Kind FunctionType::kind() const {

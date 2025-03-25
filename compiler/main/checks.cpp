@@ -597,10 +597,16 @@ static void check_afterLowerErrorHandling()
     // TODO: check no more CatchStmt
 
     // check no more PRIM_THROW
-    forv_Vec(CallExpr, call, gCallExprs)
-    {
-      if (call->isPrimitive(PRIM_THROW) && call->inTree())
+    forv_Vec(CallExpr, call, gCallExprs) {
+      if (call->isPrimitive(PRIM_THROW) && call->inTree()) {
         INT_FATAL(call, "PRIM_THROW should no longer exist");
+      }
+
+      auto ft = call->indirectCallType();
+      if (ft && ft->throws()) {
+        INT_FATAL(call, "Indirect calls to throwing functions should not "
+                        "appear after this point!");
+      }
     }
   }
 }

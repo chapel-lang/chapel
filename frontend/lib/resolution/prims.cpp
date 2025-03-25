@@ -1017,8 +1017,13 @@ static QualifiedType primIsRecordType(Context* context, const CallInfo& ci) {
   });
 }
 
-static QualifiedType primIsFcfType(Context* context, const CallInfo& ci) {
-  CHPL_UNIMPL("PRIM_IS_FCF_TYPE");
+static QualifiedType primIsProcType(Context* context, const CallInfo& ci) {
+  CHPL_UNIMPL("PRIM_IS_PROC_TYPE");
+  return QualifiedType::makeParamBool(context, false);
+}
+
+static QualifiedType primToProcType(Context* context, const CallInfo& ci) {
+  CHPL_UNIMPL("PRIM_TO_PROC_TYPE");
   return QualifiedType::makeParamBool(context, false);
 }
 
@@ -1312,8 +1317,12 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
       type = primIsRecordType(context, ci);
       break;
 
-    case PRIM_IS_FCF_TYPE:
-      type = primIsFcfType(context, ci);
+    case PRIM_IS_PROC_TYPE:
+      type = primIsProcType(context, ci);
+      break;
+
+    case PRIM_TO_PROC_TYPE:
+      type = primToProcType(context, ci);
       break;
 
     case PRIM_IS_UNION_TYPE:

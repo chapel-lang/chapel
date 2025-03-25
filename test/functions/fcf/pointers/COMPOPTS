@@ -1,1 +1,1 @@
--sfcfsUsePointerImplementation=true
+-sfcfsUsePointerImplementation=true --verify

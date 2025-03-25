@@ -1822,6 +1822,8 @@ static void codegen_header(std::set<const char*> & cnames,
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (ts->defPoint->parentExpr != rootModule->block) {
       types.push_back(ts);
+    } else if (isFunctionType(ts->type)) {
+      types.push_back(ts);
     }
   }
   std::sort(types.begin(), types.end(), compareSymbol);
@@ -1960,7 +1962,6 @@ static void codegen_header(std::set<const char*> & cnames,
     // Start with primitive types in case they are referenced by
     // records or classes.
     forv_Vec(TypeSymbol, typeSymbol, gTypeSymbols) {
-      if (isFunctionType(typeSymbol->type)) typeSymbol->codegenMetadata();
       if (typeSymbol->defPoint->parentExpr == rootModule->block &&
           isPrimitiveType(typeSymbol->type) &&
           typeSymbol->hasLLVMType()) {
