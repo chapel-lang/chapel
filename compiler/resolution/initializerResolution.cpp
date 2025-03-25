@@ -203,6 +203,7 @@ static FnSymbol* buildNewWrapper(FnSymbol* initFn, Expr* allocator = nullptr) {
 
     const char* errorName = astr("e");
     BlockStmt* catchBody = new BlockStmt(callChplHereFree(initTemp));
+    CallExpr* deinitCall = new CallExpr("deinit", gMethodToken, initTemp);
     VarSymbol* error = new VarSymbol(errorName);
     DefExpr* errorDef = new DefExpr(error);
 
@@ -215,7 +216,10 @@ static FnSymbol* buildNewWrapper(FnSymbol* initFn, Expr* allocator = nullptr) {
     Expr* toOwned = new CallExpr(PRIM_NEW,
                                  new CallExpr(new SymExpr(dtOwned->symbol),
                                               nonNilC));
+
     errorDef->init = toOwned;
+
+    catchBody->insertAtHead(deinitCall);
     catchBody->insertAtHead(errorDef);
     catchBody->insertAtHead(castedDef);
 
