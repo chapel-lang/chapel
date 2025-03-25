@@ -1108,13 +1108,17 @@ get_string(Expr *e, const char **s) {
   if (e) {
     if (SymExpr *l = toSymExpr(e)) {
       imm = getSymbolImmediate(l->symbol());
+      if (imm && imm->const_kind == CONST_KIND_STRING) {
+        *s = astr(imm->v_string.c_str());
+        return true;
+      }
+
+      *s = astr(l->symbol()->name);
+      return true;
     }
   }
 
-  if (imm && imm->const_kind == CONST_KIND_STRING) {
-    *s = astr(imm->v_string.c_str());
-    return true;
-  }
+
 
   return false;
 }
