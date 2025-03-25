@@ -27,7 +27,7 @@ namespace types {
 
 
 /**
-  This class represents a bool type, i.e. `bool`.
+  This class represents the `bool` type.
  */
 class BoolType final : public PrimitiveType {
  private:
