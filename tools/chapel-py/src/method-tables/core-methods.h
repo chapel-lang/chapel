@@ -55,7 +55,7 @@ CLASS_BEGIN(Context)
          })
   METHOD(Context, _set_module_paths, "Set the module path arguments to the given lists of module paths and filenames, using a potentially different module root",
           void(std::string, std::vector<std::string>, std::vector<std::string>),
- 
+
           auto& modRoot = std::get<0>(args);
           auto& paths = std::get<1>(args);
           auto& filenames = std::get<2>(args);
