@@ -1,0 +1,2 @@
+The return type of an expression or statement should not be sensitive to the order
+of the branches in a conditional statement.
