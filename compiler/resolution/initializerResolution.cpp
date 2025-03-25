@@ -203,7 +203,6 @@ static FnSymbol* buildNewWrapper(FnSymbol* initFn, Expr* allocator = nullptr) {
 
     const char* errorName = astr("e");
     BlockStmt* catchBody = new BlockStmt(callChplHereFree(initTemp));
-    CallExpr* deinitCall = new CallExpr("deinit", gMethodToken, initTemp);
     VarSymbol* error = new VarSymbol(errorName);
     DefExpr* errorDef = new DefExpr(error);
 
@@ -219,7 +218,54 @@ static FnSymbol* buildNewWrapper(FnSymbol* initFn, Expr* allocator = nullptr) {
 
     errorDef->init = toOwned;
 
-    catchBody->insertAtHead(deinitCall);
+    // cribbed from callDestructors.cpp
+    for_fields_backward(field, type) {
+      if (field->type->hasDestructor()) {
+        AggregateType* fct = toAggregateType(field->type);
+        INT_ASSERT(fct);
+
+        if (!isClass(fct) && !field->hasFlag(FLAG_NO_AUTO_DESTROY)) {
+          bool       useRefType = !isRecordWrappedType(fct);
+          VarSymbol* tmp        = newTemp("_field_destructor_tmp_",
+                                          useRefType ? fct->refType : fct);
+
+          auto de = new DefExpr(tmp);
+          catchBody->insertAtHead(de);
+
+          auto get = new CallExpr(useRefType ? PRIM_GET_MEMBER :
+                                               PRIM_GET_MEMBER_VALUE,
+                                  initTemp,
+                                  field);
+          auto mv = new CallExpr(PRIM_MOVE, tmp, get);
+          de->insertAfter(mv);
+
+          mv->insertAfter(new CallExpr("deinit", gMethodToken, new SymExpr(tmp)));
+          /*
+          // TODO: State should be communicated by dyno or another pass.          
+          FnSymbol* autoDestroyFn = autoDestroyMap.get(field->type);
+
+          if (autoDestroyFn &&
+              autoDestroyFn->hasFlag(FLAG_REMOVABLE_AUTO_DESTROY)) {
+            de->insertAfter(new CallExpr(autoDestroyFn, gMethodToken, tmp));
+          } else {
+            de->insertAfter(new CallExpr(field->type->getDestructor(), gMethodToken,
+                                         tmp));
+          }
+          */
+        }
+      }
+
+      /*
+      Type* fieldType = field->type;
+      if (isClass(fieldType) || isRecord(fieldType)) {
+        CallExpr* fieldAccess = new CallExpr(PRIM_GET_MEMBER_VALUE, initTemp, field);
+        resolveExpr(fieldAccess);
+        CallExpr* deinitCall = new CallExpr("deinit", gMethodToken, fieldAccess);
+        catchBody->insertAtHead(deinitCall);
+      }
+      */
+    }
+    
     catchBody->insertAtHead(errorDef);
     catchBody->insertAtHead(castedDef);
 
