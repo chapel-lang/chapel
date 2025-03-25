@@ -1,0 +1,108 @@
+#!/usr/bin/env python3
+
+integral_types = [
+    "int(8)", "int(16)", "int(32)", "int(64)",
+    "uint(8)", "uint(16)", "uint(32)", "uint(64)"
+]
+
+boolean_strs = ["true", "false"]
+
+output_file = "integralTests.chpl"
+
+with open(output_file, "w") as f:
+    for bool_str in boolean_strs:
+        for type1 in integral_types:
+            for type2 in integral_types:
+                f.write("{\n")
+                f.write(f"  proc testProcCastZero(arg: bool) {{\n")
+                f.write(f"    if arg then return 0:{type1}; else return 0:{type2};\n")
+                f.write("  }\n")
+                f.write(f"  var x = testProcCastZero({bool_str});\n")
+                f.write(f"  writeln(\"testProcCastZero: when {bool_str} {type1} {type2} then \", x.type:string);\n")
+                f.write("}\n\n")
+
+                f.write("{\n")
+                f.write(f"  proc testProcZero(arg: bool) {{\n")
+                f.write(f"    var i: {type1} = 0;\n")
+                f.write(f"    var u: {type2} = 0;\n")
+                f.write(f"    if arg then return i; else return u;\n")
+                f.write("  }\n")
+                f.write(f"  var x = testProcZero({bool_str});\n")
+                f.write(f"  writeln(\"testProcZero: when {bool_str} {type1} {type2} then \", x.type:string);\n")
+                f.write("}\n\n")
+
+                f.write("{\n")
+                f.write(f"  proc testProcCastMax(arg: bool) {{\n")
+                f.write(f"    if arg then return max({type1}):{type1}; else return max({type2}):{type2};\n")
+                f.write("  }\n")
+                f.write(f"  var x = testProcCastMax({bool_str});\n")
+                f.write(f"  writeln(\"testProcCastMax: when {bool_str} {type1} {type2} then \", x.type:string);\n")
+                f.write("}\n\n")
+
+                f.write("{\n")
+                f.write(f"  proc testProcMax(arg: bool) {{\n")
+                f.write(f"    var i: {type1} = max({type1});\n")
+                f.write(f"    var u: {type2} = max({type2});\n")
+                f.write(f"    if arg then return i; else return u;\n")
+                f.write("  }\n")
+                f.write(f"  var x = testProcMax({bool_str});\n")
+                f.write(f"  writeln(\"testProcMax: when {bool_str} {type1} {type2} then \", x.type:string);\n")
+                f.write("}\n\n")
+
+                f.write("{\n")
+                f.write(f"  proc testParamProcCastZero(param arg: bool) param {{\n")
+                f.write(f"    if arg then return 0:{type1}; else return 0:{type2};\n")
+                f.write("  }\n")
+                f.write(f"  param x = testParamProcCastZero({bool_str});\n")
+                f.write(f"  writeln(\"testParamProcCastZero: when {bool_str} {type1} {type2} then \", x.type:string);\n")
+                f.write("}\n\n")
+
+                f.write("{\n")
+                f.write(f"  proc testParamProcZero(param arg: bool) param {{\n")
+                f.write(f"    param i: {type1} = 0;\n")
+                f.write(f"    param u: {type2} = 0;\n")
+                f.write(f"    if arg then return i; else return u;\n")
+                f.write("  }\n")
+                f.write(f"  param x = testParamProcZero({bool_str});\n")
+                f.write(f"  writeln(\"testParamProcZero: when {bool_str} {type1} {type2} then \", x.type:string);\n")
+                f.write("}\n\n")
+
+                f.write("{\n")
+                f.write(f"  proc testParamProcCastMax(param arg: bool) param {{\n")
+                f.write(f"    if arg then return max({type1}):{type1}; else return max({type2}):{type2};\n")
+                f.write("  }\n")
+                f.write(f"  param x = testParamProcCastMax({bool_str});\n")
+                f.write(f"  writeln(\"testParamProcCastMax: when {bool_str} {type1} {type2} then \", x.type:string);\n")
+                f.write("}\n\n")
+
+                f.write("{\n")
+                f.write(f"  proc testParamProcMax(param arg: bool) param {{\n")
+                f.write(f"    param i: {type1} = max({type1});\n")
+                f.write(f"    param u: {type2} = max({type2});\n")
+                f.write(f"    if arg then return i; else return u;\n")
+                f.write("  }\n")
+                f.write(f"  param x = testParamProcMax({bool_str});\n")
+                f.write(f"  writeln(\"testParamProcMax: when {bool_str} {type1} {type2} then \", x.type:string);\n")
+                f.write("}\n\n")
+
+                f.write("{\n")
+                f.write(f"  var b: bool = {bool_str};\n")
+                f.write(f"  var x = if b then 0:{type1} else 0:{type2};\n")
+                f.write(f"  writeln(\"testExpressionZero: when {bool_str} {type1} {type2} then \", x.type:string);\n")
+                f.write("}\n\n")
+
+                f.write("{\n")
+                f.write(f"  var b: bool = {bool_str};\n")
+                f.write(f"  var x = if b then max({type1}):{type1} else max({type2}):{type2};\n")
+                f.write(f"  writeln(\"testExpressionMax: when {bool_str} {type1} {type2} then \", x.type:string);\n")
+                f.write("}\n\n")
+
+                f.write("{\n")
+                f.write(f"  param x = if {bool_str} then 0:{type1} else 0:{type2};\n")
+                f.write(f"  writeln(\"testParamExpressionZero: when {bool_str} {type1} {type2} then \", x.type:string);\n")
+                f.write("}\n\n")
+
+                f.write("{\n")
+                f.write(f"  param x = if {bool_str} then max({type1}):{type1} else max({type2}):{type2};\n")
+                f.write(f"  writeln(\"testParamExpressionMax: when {bool_str} {type1} {type2} then \", x.type:string);\n")
+                f.write("}\n\n")
