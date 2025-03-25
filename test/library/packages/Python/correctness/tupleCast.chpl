@@ -26,4 +26,15 @@ proc main() {
   writeln(t2);
   var chapelT2 = t2: (string, bool, int);
   writeln(chapelT2);
+
+  writeln("Checking Value version");
+  var t3 = getTupFunc(owned Value);
+  writeln(t3);
+  var chapelT3 = t3: (4*int);
+  writeln(chapelT3);
+
+  var t4 = getTupFunc2(owned Value);
+  writeln(t4);
+  var chapelT4 = t4: (string, bool, int);
+  writeln(chapelT4);
 }

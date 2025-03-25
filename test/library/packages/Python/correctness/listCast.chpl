@@ -28,4 +28,16 @@ proc main() {
   writeln("lst2 ", lst2);
   var chapelList2 = lst2: List.list(shared Value?);
   writeln("chapelList2 ", chapelList2);
+
+  writeln("checking Value version");
+  var lst3 = getListFunc(owned Value);
+  writeln("lst3 ", lst3);
+  var chapelList3 = lst3: List.list(int);
+  writeln("chapelList3 ", chapelList3);
+
+  // Check getting a Python list back that contains multiple types
+  var lst4 = getListFunc2(owned Value);
+  writeln("lst4 ", lst4);
+  var chapelList4 = lst4: List.list(shared Value?);
+  writeln("chapelList4 ", chapelList4);
 }

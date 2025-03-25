@@ -21,4 +21,12 @@ proc main() {
   writeln("map[one] ", m["one"]);
   writeln("map[two] ", m["two"]);
   writeln("map[three] ", m["three"]);
+
+  writeln("Checking Value version");
+  var d2 = getDictFunc(owned Value);
+  var m2 = d2: Map.map(string, int);
+  writeln("map size ", m2.size);
+  writeln("map[one] ", m2["one"]);
+  writeln("map[two] ", m2["two"]);
+  writeln("map[three] ", m2["three"]);
 }

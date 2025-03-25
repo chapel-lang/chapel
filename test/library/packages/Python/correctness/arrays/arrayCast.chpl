@@ -6,7 +6,6 @@ proc main() {
   var mod = interp.importModule("usePythonArray");
   var doit = mod.get('doit');
 
-
   var pyRes = doit(owned PyArray(int), 10, 11, 12, 13);
   var chapelArr = pyRes: [0..3] int;
   writeln(chapelArr);

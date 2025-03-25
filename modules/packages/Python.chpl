@@ -2181,6 +2181,44 @@ module Python {
     proc getPyObject() do return this.obj;
 
     // TODO: call should support kwargs
+
+    // Casts
+    /* Creates a new tuple from ``x``, when ``x`` is a :class:`Value`. */
+    operator :(const ref x: Value, type t: _tuple): t {
+      var res = try! x.interpreter.fromPython(t, x.getPyObject());
+
+      return res;
+    }
+
+    /*
+      Creates a new list from ``x``, when ``x`` is a :class:`Value`.
+    */
+    operator :(const ref x: Value, type t: List.list(?)): t {
+      var res = try! x.interpreter.fromPython(t, x.getPyObject());
+
+      return res;
+    }
+
+    /* Creates a new map from ``x``, when ``x`` is a :class:`Value`. */
+    operator :(const ref x: Value, type t: Map.map(?)): t {
+      var res = try! x.interpreter.fromPython(t, x.getPyObject());
+
+      return res;
+    }
+
+    /* Creates a new set from ``x``, when ``x`` is a :class:`Value`. */
+    operator :(const ref x: Value, type t: Set.set(?)): t {
+      var res = try! x.interpreter.fromPython(t, x.getPyObject());
+
+      return res;
+    }
+
+    /* Creates a new array from ``x``, when ``x`` is a :class:`Value`. */
+    operator :(const ref x: Value, type t: []): t {
+      var res = try! x.interpreter.fromPython(t, x.getPyObject());
+
+      return res;
+    }
   }
 
   /*
@@ -2445,7 +2483,7 @@ module Python {
     }
 
     /* Creates a new tuple from ``x``, when ``x`` is a :class:`PyTuple`. */
-    operator :(const ref x: PyTuple, type t: _tuple): t {
+    override operator :(const ref x: PyTuple, type t: _tuple): t {
       var res = try! x.interpreter.fromPython(t, x.getPyObject());
 
       return res;
@@ -2522,7 +2560,7 @@ module Python {
     /*
       Creates a new list from ``x``, when ``x`` is a :class:`PyList`.
     */
-    operator :(const ref x: PyList, type t: List.list(?)): t {
+    override operator :(const ref x: PyList, type t: List.list(?)): t {
       var res = try! x.interpreter.fromPython(t, x.getPyObject());
 
       return res;
@@ -2657,7 +2695,7 @@ module Python {
     }
 
     /* Creates a new map from ``x``, when ``x`` is a :class:`PyDict`. */
-    operator :(const ref x: PyDict, type t: Map.map(?)): t {
+    override operator :(const ref x: PyDict, type t: Map.map(?)): t {
       var res = try! x.interpreter.fromPython(t, x.getPyObject());
 
       return res;
@@ -2766,7 +2804,7 @@ module Python {
     }
 
     /* Creates a new set from ``x``, when ``x`` is a :class:`PySet`. */
-    operator :(const ref x: PySet, type t: Set.set(?)): t {
+    override operator :(const ref x: PySet, type t: Set.set(?)): t {
       var res = try! x.interpreter.fromPython(t, x.getPyObject());
 
       return res;
@@ -2874,7 +2912,7 @@ module Python {
     }
 
     /* Creates a new array from ``x``, when ``x`` is a :class:`PyArray`. */
-    operator :(const ref x: PyArray, type t: []): t {
+    override operator :(const ref x: PyArray, type t: []): t {
       var res = try! x.interpreter.fromPython(t, x.getPyObject());
 
       return res;
