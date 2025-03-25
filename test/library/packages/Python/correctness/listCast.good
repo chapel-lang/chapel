@@ -1,0 +1,4 @@
+lst [1, 2, 5, -3, -1]
+chapelList [1, 2, 5, -3, -1]
+lst2 [1, 2, 'hi', False, 5]
+chapelList2 [1, 2, hi, False, 5]
