@@ -17,371 +17,1739 @@
  * limitations under the License.
  */
 
-#include <iostream>
-#include <sstream>
+ #include <iostream>
+ #include <sstream>
 
-#include "test-resolution.h"
+ #include "test-resolution.h"
 
-#include "chpl/parsing/parsing-queries.h"
-#include "chpl/resolution/resolution-queries.h"
-#include "chpl/resolution/scope-queries.h"
-#include "chpl/types/all-types.h"
-#include "chpl/uast/Identifier.h"
-#include "chpl/uast/Module.h"
-#include "chpl/uast/Record.h"
-#include "chpl/uast/Variable.h"
+ #include "chpl/parsing/parsing-queries.h"
+ #include "chpl/resolution/resolution-queries.h"
+ #include "chpl/resolution/scope-queries.h"
+ #include "chpl/types/all-types.h"
+ #include "chpl/uast/Identifier.h"
+ #include "chpl/uast/Module.h"
+ #include "chpl/uast/Record.h"
+ #include "chpl/uast/Variable.h"
 
 
-static std::string generateTestGenericCastZero(const std::string& type1, const std::string& type2) {
-  std::ostringstream oss;
-  oss << "proc f(arg: bool) {\n";
-  oss << "  var i: " << type1 << ";\n";
-  oss << "  var u: " << type2 << ";\n";
-  oss << "  if arg then return 0:"<<type1<<"; else return 0:"<<type2<<";\n";
-  oss << "}\n";
-  return oss.str();
-}
+// stores the mapping of test name, bool val, type1, type2, and expected result
+std::map<std::tuple<std::string, std::string, std::string, std::string>, std::string> testExpectationsMap;
 
-static std::string addCallToBoolProgram(std::string existingProgram, std::string boolVal) {
-  std::string program = existingProgram;
-  program += "\nvar x = f(";
-  program += boolVal;
-  program += ");\n";
-  return program;
-}
+// given a string representing a type, returns the corresponding PrimitiveType
+static const chpl::types::PrimitiveType* stringNameToType(Context* context, std::string name) {
+   if (name == "int(8)") {
+     return IntType::get(context, 8);
+   } else if (name == "int(16)") {
+     return IntType::get(context, 16);
+   } else if (name == "int(32)") {
+     return IntType::get(context, 32);
+   } else if (name == "int(64)") {
+     return IntType::get(context, 64);
+   } else if (name == "uint(8)") {
+     return UintType::get(context, 8);
+   } else if (name == "uint(16)") {
+     return UintType::get(context, 16);
+   } else if (name == "uint(32)") {
+     return UintType::get(context, 32);
+   } else if (name == "uint(64)") {
+     return UintType::get(context, 64);
+   } else {
+     throw std::runtime_error("Unknown type name: " + name);
+   }
+ }
 
-// takes an existing definition for f(bool, t, tt) and adds a call to it with
-// the given values for bool, t, and tt:
-// var x = f(boolVal, typeVal1, typeVal2);
-static std::string addCallToProgram(std::string existingProgram, std::string boolVal, std::string typeVal1, std::string typeVal2) {
-  std::string program = existingProgram;
-  program += "\nvar x = f(";
-  program += boolVal;
-  program += ", ";
-  program += typeVal1;
-  program += ", ";
-  program += typeVal2;
-  program += ");\n";
-  return program;
-}
+ // prepare the testExpectationsMap with the expected results.
+ // these values are based on previous runs of the tests, capturing the output
+ static void readyMap(Context* context) {
+   std::string input = R"(
+   testGenericCastZero: when true int(8) int(8) then int(8)
+   testGenericCastZero: when false int(8) int(8) then int(8)
+   testGenericZero: when true int(8) int(8) then int(8)
+   testGenericZero: when false int(8) int(8) then int(8)
+   testGenericCastMax: when true int(8) int(8) then int(8)
+   testGenericCastMax: when false int(8) int(8) then int(8)
+   testGenericMax: when true int(8) int(8) then int(8)
+   testGenericMax: when false int(8) int(8) then int(8)
+   testParamGenericCastZero: when true int(8) int(8) then int(8)
+   testParamGenericCastZero: when false int(8) int(8) then int(8)
+   testParamGenericZero: when true int(8) int(8) then int(8)
+   testParamGenericZero: when false int(8) int(8) then int(8)
+   testParamGenericCastMax: when true int(8) int(8) then int(8)
+   testParamGenericCastMax: when false int(8) int(8) then int(8)
+   testParamGenericMax: when true int(8) int(8) then int(8)
+   testParamGenericMax: when false int(8) int(8) then int(8)
+   testExpressionZero: when true int(8) int(8) then int(8)
+   testExpressionZero: when false int(8) int(8) then int(8)
+   testExpressionMax: when true int(8) int(8) then int(8)
+   testExpressionMax: when false int(8) int(8) then int(8)
+   testParamExpressionZero: when true int(8) int(8) then int(8)
+   testParamExpressionZero: when false int(8) int(8) then int(8)
+   testParamExpressionMax: when true int(8) int(8) then int(8)
+   testParamExpressionMax: when false int(8) int(8) then int(8)
+   testGenericCastZero: when true int(8) int(16) then int(16)
+   testGenericCastZero: when false int(8) int(16) then int(16)
+   testGenericZero: when true int(8) int(16) then int(16)
+   testGenericZero: when false int(8) int(16) then int(16)
+   testGenericCastMax: when true int(8) int(16) then int(16)
+   testGenericCastMax: when false int(8) int(16) then int(16)
+   testGenericMax: when true int(8) int(16) then int(16)
+   testGenericMax: when false int(8) int(16) then int(16)
+   testParamGenericCastZero: when true int(8) int(16) then int(8)
+   testParamGenericCastZero: when false int(8) int(16) then int(16)
+   testParamGenericZero: when true int(8) int(16) then int(8)
+   testParamGenericZero: when false int(8) int(16) then int(16)
+   testParamGenericCastMax: when true int(8) int(16) then int(8)
+   testParamGenericCastMax: when false int(8) int(16) then int(16)
+   testParamGenericMax: when true int(8) int(16) then int(8)
+   testParamGenericMax: when false int(8) int(16) then int(16)
+   testExpressionZero: when true int(8) int(16) then int(8)
+   testExpressionZero: when false int(8) int(16) then int(8)
+   testExpressionMax: when true int(8) int(16) then int(16)
+   testExpressionMax: when false int(8) int(16) then int(16)
+   testParamExpressionZero: when true int(8) int(16) then int(8)
+   testParamExpressionZero: when false int(8) int(16) then int(16)
+   testParamExpressionMax: when true int(8) int(16) then int(8)
+   testParamExpressionMax: when false int(8) int(16) then int(16)
+   testGenericCastZero: when true int(8) int(32) then int(32)
+   testGenericCastZero: when false int(8) int(32) then int(32)
+   testGenericZero: when true int(8) int(32) then int(32)
+   testGenericZero: when false int(8) int(32) then int(32)
+   testGenericCastMax: when true int(8) int(32) then int(32)
+   testGenericCastMax: when false int(8) int(32) then int(32)
+   testGenericMax: when true int(8) int(32) then int(32)
+   testGenericMax: when false int(8) int(32) then int(32)
+   testParamGenericCastZero: when true int(8) int(32) then int(8)
+   testParamGenericCastZero: when false int(8) int(32) then int(32)
+   testParamGenericZero: when true int(8) int(32) then int(8)
+   testParamGenericZero: when false int(8) int(32) then int(32)
+   testParamGenericCastMax: when true int(8) int(32) then int(8)
+   testParamGenericCastMax: when false int(8) int(32) then int(32)
+   testParamGenericMax: when true int(8) int(32) then int(8)
+   testParamGenericMax: when false int(8) int(32) then int(32)
+   testExpressionZero: when true int(8) int(32) then int(8)
+   testExpressionZero: when false int(8) int(32) then int(8)
+   testExpressionMax: when true int(8) int(32) then int(32)
+   testExpressionMax: when false int(8) int(32) then int(32)
+   testParamExpressionZero: when true int(8) int(32) then int(8)
+   testParamExpressionZero: when false int(8) int(32) then int(32)
+   testParamExpressionMax: when true int(8) int(32) then int(8)
+   testParamExpressionMax: when false int(8) int(32) then int(32)
+   testGenericCastZero: when true int(8) int(64) then int(64)
+   testGenericCastZero: when false int(8) int(64) then int(64)
+   testGenericZero: when true int(8) int(64) then int(64)
+   testGenericZero: when false int(8) int(64) then int(64)
+   testGenericCastMax: when true int(8) int(64) then int(64)
+   testGenericCastMax: when false int(8) int(64) then int(64)
+   testGenericMax: when true int(8) int(64) then int(64)
+   testGenericMax: when false int(8) int(64) then int(64)
+   testParamGenericCastZero: when true int(8) int(64) then int(8)
+   testParamGenericCastZero: when false int(8) int(64) then int(64)
+   testParamGenericZero: when true int(8) int(64) then int(8)
+   testParamGenericZero: when false int(8) int(64) then int(64)
+   testParamGenericCastMax: when true int(8) int(64) then int(8)
+   testParamGenericCastMax: when false int(8) int(64) then int(64)
+   testParamGenericMax: when true int(8) int(64) then int(8)
+   testParamGenericMax: when false int(8) int(64) then int(64)
+   testExpressionZero: when true int(8) int(64) then int(8)
+   testExpressionZero: when false int(8) int(64) then int(8)
+   testExpressionMax: when true int(8) int(64) then int(64)
+   testExpressionMax: when false int(8) int(64) then int(64)
+   testParamExpressionZero: when true int(8) int(64) then int(8)
+   testParamExpressionZero: when false int(8) int(64) then int(64)
+   testParamExpressionMax: when true int(8) int(64) then int(8)
+   testParamExpressionMax: when false int(8) int(64) then int(64)
+   testGenericCastZero: when true int(8) uint(8) then uint(8)
+   testGenericCastZero: when false int(8) uint(8) then uint(8)
+   testGenericZero: when true int(8) uint(8) then uint(8)
+   testGenericZero: when false int(8) uint(8) then uint(8)
+   testGenericCastMax: when true int(8) uint(8) then uint(8)
+   testGenericCastMax: when false int(8) uint(8) then uint(8)
+   testGenericMax: when true int(8) uint(8) then uint(8)
+   testGenericMax: when false int(8) uint(8) then uint(8)
+   testParamGenericCastZero: when true int(8) uint(8) then int(8)
+   testParamGenericCastZero: when false int(8) uint(8) then uint(8)
+   testParamGenericZero: when true int(8) uint(8) then int(8)
+   testParamGenericZero: when false int(8) uint(8) then uint(8)
+   testParamGenericCastMax: when true int(8) uint(8) then int(8)
+   testParamGenericCastMax: when false int(8) uint(8) then uint(8)
+   testParamGenericMax: when true int(8) uint(8) then int(8)
+   testParamGenericMax: when false int(8) uint(8) then uint(8)
+   testExpressionZero: when true int(8) uint(8) then uint(8)
+   testExpressionZero: when false int(8) uint(8) then uint(8)
+   testExpressionMax: when true int(8) uint(8) then uint(8)
+   testExpressionMax: when false int(8) uint(8) then uint(8)
+   testParamExpressionZero: when true int(8) uint(8) then int(8)
+   testParamExpressionZero: when false int(8) uint(8) then uint(8)
+   testParamExpressionMax: when true int(8) uint(8) then int(8)
+   testParamExpressionMax: when false int(8) uint(8) then uint(8)
+   testGenericCastZero: when true int(8) uint(16) then uint(16)
+   testGenericCastZero: when false int(8) uint(16) then uint(16)
+   testGenericZero: when true int(8) uint(16) then uint(16)
+   testGenericZero: when false int(8) uint(16) then uint(16)
+   testGenericCastMax: when true int(8) uint(16) then uint(16)
+   testGenericCastMax: when false int(8) uint(16) then uint(16)
+   testGenericMax: when true int(8) uint(16) then uint(16)
+   testGenericMax: when false int(8) uint(16) then uint(16)
+   testParamGenericCastZero: when true int(8) uint(16) then int(8)
+   testParamGenericCastZero: when false int(8) uint(16) then uint(16)
+   testParamGenericZero: when true int(8) uint(16) then int(8)
+   testParamGenericZero: when false int(8) uint(16) then uint(16)
+   testParamGenericCastMax: when true int(8) uint(16) then int(8)
+   testParamGenericCastMax: when false int(8) uint(16) then uint(16)
+   testParamGenericMax: when true int(8) uint(16) then int(8)
+   testParamGenericMax: when false int(8) uint(16) then uint(16)
+   testExpressionZero: when true int(8) uint(16) then uint(16)
+   testExpressionZero: when false int(8) uint(16) then uint(16)
+   testExpressionMax: when true int(8) uint(16) then uint(16)
+   testExpressionMax: when false int(8) uint(16) then uint(16)
+   testParamExpressionZero: when true int(8) uint(16) then int(8)
+   testParamExpressionZero: when false int(8) uint(16) then uint(16)
+   testParamExpressionMax: when true int(8) uint(16) then int(8)
+   testParamExpressionMax: when false int(8) uint(16) then uint(16)
+   testGenericCastZero: when true int(8) uint(32) then uint(32)
+   testGenericCastZero: when false int(8) uint(32) then uint(32)
+   testGenericZero: when true int(8) uint(32) then uint(32)
+   testGenericZero: when false int(8) uint(32) then uint(32)
+   testGenericCastMax: when true int(8) uint(32) then uint(32)
+   testGenericCastMax: when false int(8) uint(32) then uint(32)
+   testGenericMax: when true int(8) uint(32) then uint(32)
+   testGenericMax: when false int(8) uint(32) then uint(32)
+   testParamGenericCastZero: when true int(8) uint(32) then int(8)
+   testParamGenericCastZero: when false int(8) uint(32) then uint(32)
+   testParamGenericZero: when true int(8) uint(32) then int(8)
+   testParamGenericZero: when false int(8) uint(32) then uint(32)
+   testParamGenericCastMax: when true int(8) uint(32) then int(8)
+   testParamGenericCastMax: when false int(8) uint(32) then uint(32)
+   testParamGenericMax: when true int(8) uint(32) then int(8)
+   testParamGenericMax: when false int(8) uint(32) then uint(32)
+   testExpressionZero: when true int(8) uint(32) then uint(32)
+   testExpressionZero: when false int(8) uint(32) then uint(32)
+   testExpressionMax: when true int(8) uint(32) then uint(32)
+   testExpressionMax: when false int(8) uint(32) then uint(32)
+   testParamExpressionZero: when true int(8) uint(32) then int(8)
+   testParamExpressionZero: when false int(8) uint(32) then uint(32)
+   testParamExpressionMax: when true int(8) uint(32) then int(8)
+   testParamExpressionMax: when false int(8) uint(32) then uint(32)
+   testGenericCastZero: when true int(8) uint(64) then uint(64)
+   testGenericCastZero: when false int(8) uint(64) then uint(64)
+   testGenericZero: when true int(8) uint(64) then uint(64)
+   testGenericZero: when false int(8) uint(64) then uint(64)
+   testGenericCastMax: when true int(8) uint(64) then uint(64)
+   testGenericCastMax: when false int(8) uint(64) then uint(64)
+   testGenericMax: when true int(8) uint(64) then uint(64)
+   testGenericMax: when false int(8) uint(64) then uint(64)
+   testParamGenericCastZero: when true int(8) uint(64) then int(8)
+   testParamGenericCastZero: when false int(8) uint(64) then uint(64)
+   testParamGenericZero: when true int(8) uint(64) then int(8)
+   testParamGenericZero: when false int(8) uint(64) then uint(64)
+   testParamGenericCastMax: when true int(8) uint(64) then int(8)
+   testParamGenericCastMax: when false int(8) uint(64) then uint(64)
+   testParamGenericMax: when true int(8) uint(64) then int(8)
+   testParamGenericMax: when false int(8) uint(64) then uint(64)
+   testExpressionZero: when true int(8) uint(64) then uint(64)
+   testExpressionZero: when false int(8) uint(64) then uint(64)
+   testExpressionMax: when true int(8) uint(64) then uint(64)
+   testExpressionMax: when false int(8) uint(64) then uint(64)
+   testParamExpressionZero: when true int(8) uint(64) then int(8)
+   testParamExpressionZero: when false int(8) uint(64) then uint(64)
+   testParamExpressionMax: when true int(8) uint(64) then int(8)
+   testParamExpressionMax: when false int(8) uint(64) then uint(64)
+   testGenericCastZero: when true int(16) int(8) then int(16)
+   testGenericCastZero: when false int(16) int(8) then int(16)
+   testGenericZero: when true int(16) int(8) then int(16)
+   testGenericZero: when false int(16) int(8) then int(16)
+   testGenericCastMax: when true int(16) int(8) then int(16)
+   testGenericCastMax: when false int(16) int(8) then int(16)
+   testGenericMax: when true int(16) int(8) then int(16)
+   testGenericMax: when false int(16) int(8) then int(16)
+   testParamGenericCastZero: when true int(16) int(8) then int(16)
+   testParamGenericCastZero: when false int(16) int(8) then int(8)
+   testParamGenericZero: when true int(16) int(8) then int(16)
+   testParamGenericZero: when false int(16) int(8) then int(8)
+   testParamGenericCastMax: when true int(16) int(8) then int(16)
+   testParamGenericCastMax: when false int(16) int(8) then int(8)
+   testParamGenericMax: when true int(16) int(8) then int(16)
+   testParamGenericMax: when false int(16) int(8) then int(8)
+   testExpressionZero: when true int(16) int(8) then int(16)
+   testExpressionZero: when false int(16) int(8) then int(16)
+   testExpressionMax: when true int(16) int(8) then int(16)
+   testExpressionMax: when false int(16) int(8) then int(16)
+   testParamExpressionZero: when true int(16) int(8) then int(16)
+   testParamExpressionZero: when false int(16) int(8) then int(8)
+   testParamExpressionMax: when true int(16) int(8) then int(16)
+   testParamExpressionMax: when false int(16) int(8) then int(8)
+   testGenericCastZero: when true int(16) int(16) then int(16)
+   testGenericCastZero: when false int(16) int(16) then int(16)
+   testGenericZero: when true int(16) int(16) then int(16)
+   testGenericZero: when false int(16) int(16) then int(16)
+   testGenericCastMax: when true int(16) int(16) then int(16)
+   testGenericCastMax: when false int(16) int(16) then int(16)
+   testGenericMax: when true int(16) int(16) then int(16)
+   testGenericMax: when false int(16) int(16) then int(16)
+   testParamGenericCastZero: when true int(16) int(16) then int(16)
+   testParamGenericCastZero: when false int(16) int(16) then int(16)
+   testParamGenericZero: when true int(16) int(16) then int(16)
+   testParamGenericZero: when false int(16) int(16) then int(16)
+   testParamGenericCastMax: when true int(16) int(16) then int(16)
+   testParamGenericCastMax: when false int(16) int(16) then int(16)
+   testParamGenericMax: when true int(16) int(16) then int(16)
+   testParamGenericMax: when false int(16) int(16) then int(16)
+   testExpressionZero: when true int(16) int(16) then int(16)
+   testExpressionZero: when false int(16) int(16) then int(16)
+   testExpressionMax: when true int(16) int(16) then int(16)
+   testExpressionMax: when false int(16) int(16) then int(16)
+   testParamExpressionZero: when true int(16) int(16) then int(16)
+   testParamExpressionZero: when false int(16) int(16) then int(16)
+   testParamExpressionMax: when true int(16) int(16) then int(16)
+   testParamExpressionMax: when false int(16) int(16) then int(16)
+   testGenericCastZero: when true int(16) int(32) then int(32)
+   testGenericCastZero: when false int(16) int(32) then int(32)
+   testGenericZero: when true int(16) int(32) then int(32)
+   testGenericZero: when false int(16) int(32) then int(32)
+   testGenericCastMax: when true int(16) int(32) then int(32)
+   testGenericCastMax: when false int(16) int(32) then int(32)
+   testGenericMax: when true int(16) int(32) then int(32)
+   testGenericMax: when false int(16) int(32) then int(32)
+   testParamGenericCastZero: when true int(16) int(32) then int(16)
+   testParamGenericCastZero: when false int(16) int(32) then int(32)
+   testParamGenericZero: when true int(16) int(32) then int(16)
+   testParamGenericZero: when false int(16) int(32) then int(32)
+   testParamGenericCastMax: when true int(16) int(32) then int(16)
+   testParamGenericCastMax: when false int(16) int(32) then int(32)
+   testParamGenericMax: when true int(16) int(32) then int(16)
+   testParamGenericMax: when false int(16) int(32) then int(32)
+   testExpressionZero: when true int(16) int(32) then int(16)
+   testExpressionZero: when false int(16) int(32) then int(16)
+   testExpressionMax: when true int(16) int(32) then int(32)
+   testExpressionMax: when false int(16) int(32) then int(32)
+   testParamExpressionZero: when true int(16) int(32) then int(16)
+   testParamExpressionZero: when false int(16) int(32) then int(32)
+   testParamExpressionMax: when true int(16) int(32) then int(16)
+   testParamExpressionMax: when false int(16) int(32) then int(32)
+   testGenericCastZero: when true int(16) int(64) then int(64)
+   testGenericCastZero: when false int(16) int(64) then int(64)
+   testGenericZero: when true int(16) int(64) then int(64)
+   testGenericZero: when false int(16) int(64) then int(64)
+   testGenericCastMax: when true int(16) int(64) then int(64)
+   testGenericCastMax: when false int(16) int(64) then int(64)
+   testGenericMax: when true int(16) int(64) then int(64)
+   testGenericMax: when false int(16) int(64) then int(64)
+   testParamGenericCastZero: when true int(16) int(64) then int(16)
+   testParamGenericCastZero: when false int(16) int(64) then int(64)
+   testParamGenericZero: when true int(16) int(64) then int(16)
+   testParamGenericZero: when false int(16) int(64) then int(64)
+   testParamGenericCastMax: when true int(16) int(64) then int(16)
+   testParamGenericCastMax: when false int(16) int(64) then int(64)
+   testParamGenericMax: when true int(16) int(64) then int(16)
+   testParamGenericMax: when false int(16) int(64) then int(64)
+   testExpressionZero: when true int(16) int(64) then int(16)
+   testExpressionZero: when false int(16) int(64) then int(16)
+   testExpressionMax: when true int(16) int(64) then int(64)
+   testExpressionMax: when false int(16) int(64) then int(64)
+   testParamExpressionZero: when true int(16) int(64) then int(16)
+   testParamExpressionZero: when false int(16) int(64) then int(64)
+   testParamExpressionMax: when true int(16) int(64) then int(16)
+   testParamExpressionMax: when false int(16) int(64) then int(64)
+   testGenericCastZero: when true int(16) uint(8) then int(16)
+   testGenericCastZero: when false int(16) uint(8) then int(16)
+   testGenericZero: when true int(16) uint(8) then int(16)
+   testGenericZero: when false int(16) uint(8) then int(16)
+   testGenericCastMax: when true int(16) uint(8) then int(16)
+   testGenericCastMax: when false int(16) uint(8) then int(16)
+   testGenericMax: when true int(16) uint(8) then int(16)
+   testGenericMax: when false int(16) uint(8) then int(16)
+   testParamGenericCastZero: when true int(16) uint(8) then int(16)
+   testParamGenericCastZero: when false int(16) uint(8) then uint(8)
+   testParamGenericZero: when true int(16) uint(8) then int(16)
+   testParamGenericZero: when false int(16) uint(8) then uint(8)
+   testParamGenericCastMax: when true int(16) uint(8) then int(16)
+   testParamGenericCastMax: when false int(16) uint(8) then uint(8)
+   testParamGenericMax: when true int(16) uint(8) then int(16)
+   testParamGenericMax: when false int(16) uint(8) then uint(8)
+   testExpressionZero: when true int(16) uint(8) then int(16)
+   testExpressionZero: when false int(16) uint(8) then int(16)
+   testExpressionMax: when true int(16) uint(8) then int(16)
+   testExpressionMax: when false int(16) uint(8) then int(16)
+   testParamExpressionZero: when true int(16) uint(8) then int(16)
+   testParamExpressionZero: when false int(16) uint(8) then uint(8)
+   testParamExpressionMax: when true int(16) uint(8) then int(16)
+   testParamExpressionMax: when false int(16) uint(8) then uint(8)
+   testGenericCastZero: when true int(16) uint(16) then uint(16)
+   testGenericCastZero: when false int(16) uint(16) then uint(16)
+   testGenericZero: when true int(16) uint(16) then uint(16)
+   testGenericZero: when false int(16) uint(16) then uint(16)
+   testGenericCastMax: when true int(16) uint(16) then uint(16)
+   testGenericCastMax: when false int(16) uint(16) then uint(16)
+   testGenericMax: when true int(16) uint(16) then uint(16)
+   testGenericMax: when false int(16) uint(16) then uint(16)
+   testParamGenericCastZero: when true int(16) uint(16) then int(16)
+   testParamGenericCastZero: when false int(16) uint(16) then uint(16)
+   testParamGenericZero: when true int(16) uint(16) then int(16)
+   testParamGenericZero: when false int(16) uint(16) then uint(16)
+   testParamGenericCastMax: when true int(16) uint(16) then int(16)
+   testParamGenericCastMax: when false int(16) uint(16) then uint(16)
+   testParamGenericMax: when true int(16) uint(16) then int(16)
+   testParamGenericMax: when false int(16) uint(16) then uint(16)
+   testExpressionZero: when true int(16) uint(16) then uint(16)
+   testExpressionZero: when false int(16) uint(16) then uint(16)
+   testExpressionMax: when true int(16) uint(16) then uint(16)
+   testExpressionMax: when false int(16) uint(16) then uint(16)
+   testParamExpressionZero: when true int(16) uint(16) then int(16)
+   testParamExpressionZero: when false int(16) uint(16) then uint(16)
+   testParamExpressionMax: when true int(16) uint(16) then int(16)
+   testParamExpressionMax: when false int(16) uint(16) then uint(16)
+   testGenericCastZero: when true int(16) uint(32) then uint(32)
+   testGenericCastZero: when false int(16) uint(32) then uint(32)
+   testGenericZero: when true int(16) uint(32) then uint(32)
+   testGenericZero: when false int(16) uint(32) then uint(32)
+   testGenericCastMax: when true int(16) uint(32) then uint(32)
+   testGenericCastMax: when false int(16) uint(32) then uint(32)
+   testGenericMax: when true int(16) uint(32) then uint(32)
+   testGenericMax: when false int(16) uint(32) then uint(32)
+   testParamGenericCastZero: when true int(16) uint(32) then int(16)
+   testParamGenericCastZero: when false int(16) uint(32) then uint(32)
+   testParamGenericZero: when true int(16) uint(32) then int(16)
+   testParamGenericZero: when false int(16) uint(32) then uint(32)
+   testParamGenericCastMax: when true int(16) uint(32) then int(16)
+   testParamGenericCastMax: when false int(16) uint(32) then uint(32)
+   testParamGenericMax: when true int(16) uint(32) then int(16)
+   testParamGenericMax: when false int(16) uint(32) then uint(32)
+   testExpressionZero: when true int(16) uint(32) then uint(32)
+   testExpressionZero: when false int(16) uint(32) then uint(32)
+   testExpressionMax: when true int(16) uint(32) then uint(32)
+   testExpressionMax: when false int(16) uint(32) then uint(32)
+   testParamExpressionZero: when true int(16) uint(32) then int(16)
+   testParamExpressionZero: when false int(16) uint(32) then uint(32)
+   testParamExpressionMax: when true int(16) uint(32) then int(16)
+   testParamExpressionMax: when false int(16) uint(32) then uint(32)
+   testGenericCastZero: when true int(16) uint(64) then uint(64)
+   testGenericCastZero: when false int(16) uint(64) then uint(64)
+   testGenericZero: when true int(16) uint(64) then uint(64)
+   testGenericZero: when false int(16) uint(64) then uint(64)
+   testGenericCastMax: when true int(16) uint(64) then uint(64)
+   testGenericCastMax: when false int(16) uint(64) then uint(64)
+   testGenericMax: when true int(16) uint(64) then uint(64)
+   testGenericMax: when false int(16) uint(64) then uint(64)
+   testParamGenericCastZero: when true int(16) uint(64) then int(16)
+   testParamGenericCastZero: when false int(16) uint(64) then uint(64)
+   testParamGenericZero: when true int(16) uint(64) then int(16)
+   testParamGenericZero: when false int(16) uint(64) then uint(64)
+   testParamGenericCastMax: when true int(16) uint(64) then int(16)
+   testParamGenericCastMax: when false int(16) uint(64) then uint(64)
+   testParamGenericMax: when true int(16) uint(64) then int(16)
+   testParamGenericMax: when false int(16) uint(64) then uint(64)
+   testExpressionZero: when true int(16) uint(64) then uint(64)
+   testExpressionZero: when false int(16) uint(64) then uint(64)
+   testExpressionMax: when true int(16) uint(64) then uint(64)
+   testExpressionMax: when false int(16) uint(64) then uint(64)
+   testParamExpressionZero: when true int(16) uint(64) then int(16)
+   testParamExpressionZero: when false int(16) uint(64) then uint(64)
+   testParamExpressionMax: when true int(16) uint(64) then int(16)
+   testParamExpressionMax: when false int(16) uint(64) then uint(64)
+   testGenericCastZero: when true int(32) int(8) then int(32)
+   testGenericCastZero: when false int(32) int(8) then int(32)
+   testGenericZero: when true int(32) int(8) then int(32)
+   testGenericZero: when false int(32) int(8) then int(32)
+   testGenericCastMax: when true int(32) int(8) then int(32)
+   testGenericCastMax: when false int(32) int(8) then int(32)
+   testGenericMax: when true int(32) int(8) then int(32)
+   testGenericMax: when false int(32) int(8) then int(32)
+   testParamGenericCastZero: when true int(32) int(8) then int(32)
+   testParamGenericCastZero: when false int(32) int(8) then int(8)
+   testParamGenericZero: when true int(32) int(8) then int(32)
+   testParamGenericZero: when false int(32) int(8) then int(8)
+   testParamGenericCastMax: when true int(32) int(8) then int(32)
+   testParamGenericCastMax: when false int(32) int(8) then int(8)
+   testParamGenericMax: when true int(32) int(8) then int(32)
+   testParamGenericMax: when false int(32) int(8) then int(8)
+   testExpressionZero: when true int(32) int(8) then int(32)
+   testExpressionZero: when false int(32) int(8) then int(32)
+   testExpressionMax: when true int(32) int(8) then int(32)
+   testExpressionMax: when false int(32) int(8) then int(32)
+   testParamExpressionZero: when true int(32) int(8) then int(32)
+   testParamExpressionZero: when false int(32) int(8) then int(8)
+   testParamExpressionMax: when true int(32) int(8) then int(32)
+   testParamExpressionMax: when false int(32) int(8) then int(8)
+   testGenericCastZero: when true int(32) int(16) then int(32)
+   testGenericCastZero: when false int(32) int(16) then int(32)
+   testGenericZero: when true int(32) int(16) then int(32)
+   testGenericZero: when false int(32) int(16) then int(32)
+   testGenericCastMax: when true int(32) int(16) then int(32)
+   testGenericCastMax: when false int(32) int(16) then int(32)
+   testGenericMax: when true int(32) int(16) then int(32)
+   testGenericMax: when false int(32) int(16) then int(32)
+   testParamGenericCastZero: when true int(32) int(16) then int(32)
+   testParamGenericCastZero: when false int(32) int(16) then int(16)
+   testParamGenericZero: when true int(32) int(16) then int(32)
+   testParamGenericZero: when false int(32) int(16) then int(16)
+   testParamGenericCastMax: when true int(32) int(16) then int(32)
+   testParamGenericCastMax: when false int(32) int(16) then int(16)
+   testParamGenericMax: when true int(32) int(16) then int(32)
+   testParamGenericMax: when false int(32) int(16) then int(16)
+   testExpressionZero: when true int(32) int(16) then int(32)
+   testExpressionZero: when false int(32) int(16) then int(32)
+   testExpressionMax: when true int(32) int(16) then int(32)
+   testExpressionMax: when false int(32) int(16) then int(32)
+   testParamExpressionZero: when true int(32) int(16) then int(32)
+   testParamExpressionZero: when false int(32) int(16) then int(16)
+   testParamExpressionMax: when true int(32) int(16) then int(32)
+   testParamExpressionMax: when false int(32) int(16) then int(16)
+   testGenericCastZero: when true int(32) int(32) then int(32)
+   testGenericCastZero: when false int(32) int(32) then int(32)
+   testGenericZero: when true int(32) int(32) then int(32)
+   testGenericZero: when false int(32) int(32) then int(32)
+   testGenericCastMax: when true int(32) int(32) then int(32)
+   testGenericCastMax: when false int(32) int(32) then int(32)
+   testGenericMax: when true int(32) int(32) then int(32)
+   testGenericMax: when false int(32) int(32) then int(32)
+   testParamGenericCastZero: when true int(32) int(32) then int(32)
+   testParamGenericCastZero: when false int(32) int(32) then int(32)
+   testParamGenericZero: when true int(32) int(32) then int(32)
+   testParamGenericZero: when false int(32) int(32) then int(32)
+   testParamGenericCastMax: when true int(32) int(32) then int(32)
+   testParamGenericCastMax: when false int(32) int(32) then int(32)
+   testParamGenericMax: when true int(32) int(32) then int(32)
+   testParamGenericMax: when false int(32) int(32) then int(32)
+   testExpressionZero: when true int(32) int(32) then int(32)
+   testExpressionZero: when false int(32) int(32) then int(32)
+   testExpressionMax: when true int(32) int(32) then int(32)
+   testExpressionMax: when false int(32) int(32) then int(32)
+   testParamExpressionZero: when true int(32) int(32) then int(32)
+   testParamExpressionZero: when false int(32) int(32) then int(32)
+   testParamExpressionMax: when true int(32) int(32) then int(32)
+   testParamExpressionMax: when false int(32) int(32) then int(32)
+   testGenericCastZero: when true int(32) int(64) then int(64)
+   testGenericCastZero: when false int(32) int(64) then int(64)
+   testGenericZero: when true int(32) int(64) then int(64)
+   testGenericZero: when false int(32) int(64) then int(64)
+   testGenericCastMax: when true int(32) int(64) then int(64)
+   testGenericCastMax: when false int(32) int(64) then int(64)
+   testGenericMax: when true int(32) int(64) then int(64)
+   testGenericMax: when false int(32) int(64) then int(64)
+   testParamGenericCastZero: when true int(32) int(64) then int(32)
+   testParamGenericCastZero: when false int(32) int(64) then int(64)
+   testParamGenericZero: when true int(32) int(64) then int(32)
+   testParamGenericZero: when false int(32) int(64) then int(64)
+   testParamGenericCastMax: when true int(32) int(64) then int(32)
+   testParamGenericCastMax: when false int(32) int(64) then int(64)
+   testParamGenericMax: when true int(32) int(64) then int(32)
+   testParamGenericMax: when false int(32) int(64) then int(64)
+   testExpressionZero: when true int(32) int(64) then int(32)
+   testExpressionZero: when false int(32) int(64) then int(32)
+   testExpressionMax: when true int(32) int(64) then int(64)
+   testExpressionMax: when false int(32) int(64) then int(64)
+   testParamExpressionZero: when true int(32) int(64) then int(32)
+   testParamExpressionZero: when false int(32) int(64) then int(64)
+   testParamExpressionMax: when true int(32) int(64) then int(32)
+   testParamExpressionMax: when false int(32) int(64) then int(64)
+   testGenericCastZero: when true int(32) uint(8) then int(32)
+   testGenericCastZero: when false int(32) uint(8) then int(32)
+   testGenericZero: when true int(32) uint(8) then int(32)
+   testGenericZero: when false int(32) uint(8) then int(32)
+   testGenericCastMax: when true int(32) uint(8) then int(32)
+   testGenericCastMax: when false int(32) uint(8) then int(32)
+   testGenericMax: when true int(32) uint(8) then int(32)
+   testGenericMax: when false int(32) uint(8) then int(32)
+   testParamGenericCastZero: when true int(32) uint(8) then int(32)
+   testParamGenericCastZero: when false int(32) uint(8) then uint(8)
+   testParamGenericZero: when true int(32) uint(8) then int(32)
+   testParamGenericZero: when false int(32) uint(8) then uint(8)
+   testParamGenericCastMax: when true int(32) uint(8) then int(32)
+   testParamGenericCastMax: when false int(32) uint(8) then uint(8)
+   testParamGenericMax: when true int(32) uint(8) then int(32)
+   testParamGenericMax: when false int(32) uint(8) then uint(8)
+   testExpressionZero: when true int(32) uint(8) then int(32)
+   testExpressionZero: when false int(32) uint(8) then int(32)
+   testExpressionMax: when true int(32) uint(8) then int(32)
+   testExpressionMax: when false int(32) uint(8) then int(32)
+   testParamExpressionZero: when true int(32) uint(8) then int(32)
+   testParamExpressionZero: when false int(32) uint(8) then uint(8)
+   testParamExpressionMax: when true int(32) uint(8) then int(32)
+   testParamExpressionMax: when false int(32) uint(8) then uint(8)
+   testGenericCastZero: when true int(32) uint(16) then int(32)
+   testGenericCastZero: when false int(32) uint(16) then int(32)
+   testGenericZero: when true int(32) uint(16) then int(32)
+   testGenericZero: when false int(32) uint(16) then int(32)
+   testGenericCastMax: when true int(32) uint(16) then int(32)
+   testGenericCastMax: when false int(32) uint(16) then int(32)
+   testGenericMax: when true int(32) uint(16) then int(32)
+   testGenericMax: when false int(32) uint(16) then int(32)
+   testParamGenericCastZero: when true int(32) uint(16) then int(32)
+   testParamGenericCastZero: when false int(32) uint(16) then uint(16)
+   testParamGenericZero: when true int(32) uint(16) then int(32)
+   testParamGenericZero: when false int(32) uint(16) then uint(16)
+   testParamGenericCastMax: when true int(32) uint(16) then int(32)
+   testParamGenericCastMax: when false int(32) uint(16) then uint(16)
+   testParamGenericMax: when true int(32) uint(16) then int(32)
+   testParamGenericMax: when false int(32) uint(16) then uint(16)
+   testExpressionZero: when true int(32) uint(16) then int(32)
+   testExpressionZero: when false int(32) uint(16) then int(32)
+   testExpressionMax: when true int(32) uint(16) then int(32)
+   testExpressionMax: when false int(32) uint(16) then int(32)
+   testParamExpressionZero: when true int(32) uint(16) then int(32)
+   testParamExpressionZero: when false int(32) uint(16) then uint(16)
+   testParamExpressionMax: when true int(32) uint(16) then int(32)
+   testParamExpressionMax: when false int(32) uint(16) then uint(16)
+   testGenericCastZero: when true int(32) uint(32) then uint(32)
+   testGenericCastZero: when false int(32) uint(32) then uint(32)
+   testGenericZero: when true int(32) uint(32) then uint(32)
+   testGenericZero: when false int(32) uint(32) then uint(32)
+   testGenericCastMax: when true int(32) uint(32) then uint(32)
+   testGenericCastMax: when false int(32) uint(32) then uint(32)
+   testGenericMax: when true int(32) uint(32) then uint(32)
+   testGenericMax: when false int(32) uint(32) then uint(32)
+   testParamGenericCastZero: when true int(32) uint(32) then int(32)
+   testParamGenericCastZero: when false int(32) uint(32) then uint(32)
+   testParamGenericZero: when true int(32) uint(32) then int(32)
+   testParamGenericZero: when false int(32) uint(32) then uint(32)
+   testParamGenericCastMax: when true int(32) uint(32) then int(32)
+   testParamGenericCastMax: when false int(32) uint(32) then uint(32)
+   testParamGenericMax: when true int(32) uint(32) then int(32)
+   testParamGenericMax: when false int(32) uint(32) then uint(32)
+   testExpressionZero: when true int(32) uint(32) then uint(32)
+   testExpressionZero: when false int(32) uint(32) then uint(32)
+   testExpressionMax: when true int(32) uint(32) then uint(32)
+   testExpressionMax: when false int(32) uint(32) then uint(32)
+   testParamExpressionZero: when true int(32) uint(32) then int(32)
+   testParamExpressionZero: when false int(32) uint(32) then uint(32)
+   testParamExpressionMax: when true int(32) uint(32) then int(32)
+   testParamExpressionMax: when false int(32) uint(32) then uint(32)
+   testGenericCastZero: when true int(32) uint(64) then uint(64)
+   testGenericCastZero: when false int(32) uint(64) then uint(64)
+   testGenericZero: when true int(32) uint(64) then uint(64)
+   testGenericZero: when false int(32) uint(64) then uint(64)
+   testGenericCastMax: when true int(32) uint(64) then uint(64)
+   testGenericCastMax: when false int(32) uint(64) then uint(64)
+   testGenericMax: when true int(32) uint(64) then uint(64)
+   testGenericMax: when false int(32) uint(64) then uint(64)
+   testParamGenericCastZero: when true int(32) uint(64) then int(32)
+   testParamGenericCastZero: when false int(32) uint(64) then uint(64)
+   testParamGenericZero: when true int(32) uint(64) then int(32)
+   testParamGenericZero: when false int(32) uint(64) then uint(64)
+   testParamGenericCastMax: when true int(32) uint(64) then int(32)
+   testParamGenericCastMax: when false int(32) uint(64) then uint(64)
+   testParamGenericMax: when true int(32) uint(64) then int(32)
+   testParamGenericMax: when false int(32) uint(64) then uint(64)
+   testExpressionZero: when true int(32) uint(64) then uint(64)
+   testExpressionZero: when false int(32) uint(64) then uint(64)
+   testExpressionMax: when true int(32) uint(64) then uint(64)
+   testExpressionMax: when false int(32) uint(64) then uint(64)
+   testParamExpressionZero: when true int(32) uint(64) then int(32)
+   testParamExpressionZero: when false int(32) uint(64) then uint(64)
+   testParamExpressionMax: when true int(32) uint(64) then int(32)
+   testParamExpressionMax: when false int(32) uint(64) then uint(64)
+   testGenericCastZero: when true int(64) int(8) then int(64)
+   testGenericCastZero: when false int(64) int(8) then int(64)
+   testGenericZero: when true int(64) int(8) then int(64)
+   testGenericZero: when false int(64) int(8) then int(64)
+   testGenericCastMax: when true int(64) int(8) then int(64)
+   testGenericCastMax: when false int(64) int(8) then int(64)
+   testGenericMax: when true int(64) int(8) then int(64)
+   testGenericMax: when false int(64) int(8) then int(64)
+   testParamGenericCastZero: when true int(64) int(8) then int(64)
+   testParamGenericCastZero: when false int(64) int(8) then int(8)
+   testParamGenericZero: when true int(64) int(8) then int(64)
+   testParamGenericZero: when false int(64) int(8) then int(8)
+   testParamGenericCastMax: when true int(64) int(8) then int(64)
+   testParamGenericCastMax: when false int(64) int(8) then int(8)
+   testParamGenericMax: when true int(64) int(8) then int(64)
+   testParamGenericMax: when false int(64) int(8) then int(8)
+   testExpressionZero: when true int(64) int(8) then int(64)
+   testExpressionZero: when false int(64) int(8) then int(64)
+   testExpressionMax: when true int(64) int(8) then int(64)
+   testExpressionMax: when false int(64) int(8) then int(64)
+   testParamExpressionZero: when true int(64) int(8) then int(64)
+   testParamExpressionZero: when false int(64) int(8) then int(8)
+   testParamExpressionMax: when true int(64) int(8) then int(64)
+   testParamExpressionMax: when false int(64) int(8) then int(8)
+   testGenericCastZero: when true int(64) int(16) then int(64)
+   testGenericCastZero: when false int(64) int(16) then int(64)
+   testGenericZero: when true int(64) int(16) then int(64)
+   testGenericZero: when false int(64) int(16) then int(64)
+   testGenericCastMax: when true int(64) int(16) then int(64)
+   testGenericCastMax: when false int(64) int(16) then int(64)
+   testGenericMax: when true int(64) int(16) then int(64)
+   testGenericMax: when false int(64) int(16) then int(64)
+   testParamGenericCastZero: when true int(64) int(16) then int(64)
+   testParamGenericCastZero: when false int(64) int(16) then int(16)
+   testParamGenericZero: when true int(64) int(16) then int(64)
+   testParamGenericZero: when false int(64) int(16) then int(16)
+   testParamGenericCastMax: when true int(64) int(16) then int(64)
+   testParamGenericCastMax: when false int(64) int(16) then int(16)
+   testParamGenericMax: when true int(64) int(16) then int(64)
+   testParamGenericMax: when false int(64) int(16) then int(16)
+   testExpressionZero: when true int(64) int(16) then int(64)
+   testExpressionZero: when false int(64) int(16) then int(64)
+   testExpressionMax: when true int(64) int(16) then int(64)
+   testExpressionMax: when false int(64) int(16) then int(64)
+   testParamExpressionZero: when true int(64) int(16) then int(64)
+   testParamExpressionZero: when false int(64) int(16) then int(16)
+   testParamExpressionMax: when true int(64) int(16) then int(64)
+   testParamExpressionMax: when false int(64) int(16) then int(16)
+   testGenericCastZero: when true int(64) int(32) then int(64)
+   testGenericCastZero: when false int(64) int(32) then int(64)
+   testGenericZero: when true int(64) int(32) then int(64)
+   testGenericZero: when false int(64) int(32) then int(64)
+   testGenericCastMax: when true int(64) int(32) then int(64)
+   testGenericCastMax: when false int(64) int(32) then int(64)
+   testGenericMax: when true int(64) int(32) then int(64)
+   testGenericMax: when false int(64) int(32) then int(64)
+   testParamGenericCastZero: when true int(64) int(32) then int(64)
+   testParamGenericCastZero: when false int(64) int(32) then int(32)
+   testParamGenericZero: when true int(64) int(32) then int(64)
+   testParamGenericZero: when false int(64) int(32) then int(32)
+   testParamGenericCastMax: when true int(64) int(32) then int(64)
+   testParamGenericCastMax: when false int(64) int(32) then int(32)
+   testParamGenericMax: when true int(64) int(32) then int(64)
+   testParamGenericMax: when false int(64) int(32) then int(32)
+   testExpressionZero: when true int(64) int(32) then int(64)
+   testExpressionZero: when false int(64) int(32) then int(64)
+   testExpressionMax: when true int(64) int(32) then int(64)
+   testExpressionMax: when false int(64) int(32) then int(64)
+   testParamExpressionZero: when true int(64) int(32) then int(64)
+   testParamExpressionZero: when false int(64) int(32) then int(32)
+   testParamExpressionMax: when true int(64) int(32) then int(64)
+   testParamExpressionMax: when false int(64) int(32) then int(32)
+   testGenericCastZero: when true int(64) int(64) then int(64)
+   testGenericCastZero: when false int(64) int(64) then int(64)
+   testGenericZero: when true int(64) int(64) then int(64)
+   testGenericZero: when false int(64) int(64) then int(64)
+   testGenericCastMax: when true int(64) int(64) then int(64)
+   testGenericCastMax: when false int(64) int(64) then int(64)
+   testGenericMax: when true int(64) int(64) then int(64)
+   testGenericMax: when false int(64) int(64) then int(64)
+   testParamGenericCastZero: when true int(64) int(64) then int(64)
+   testParamGenericCastZero: when false int(64) int(64) then int(64)
+   testParamGenericZero: when true int(64) int(64) then int(64)
+   testParamGenericZero: when false int(64) int(64) then int(64)
+   testParamGenericCastMax: when true int(64) int(64) then int(64)
+   testParamGenericCastMax: when false int(64) int(64) then int(64)
+   testParamGenericMax: when true int(64) int(64) then int(64)
+   testParamGenericMax: when false int(64) int(64) then int(64)
+   testExpressionZero: when true int(64) int(64) then int(64)
+   testExpressionZero: when false int(64) int(64) then int(64)
+   testExpressionMax: when true int(64) int(64) then int(64)
+   testExpressionMax: when false int(64) int(64) then int(64)
+   testParamExpressionZero: when true int(64) int(64) then int(64)
+   testParamExpressionZero: when false int(64) int(64) then int(64)
+   testParamExpressionMax: when true int(64) int(64) then int(64)
+   testParamExpressionMax: when false int(64) int(64) then int(64)
+   testGenericCastZero: when true int(64) uint(8) then int(64)
+   testGenericCastZero: when false int(64) uint(8) then int(64)
+   testGenericZero: when true int(64) uint(8) then int(64)
+   testGenericZero: when false int(64) uint(8) then int(64)
+   testGenericCastMax: when true int(64) uint(8) then int(64)
+   testGenericCastMax: when false int(64) uint(8) then int(64)
+   testGenericMax: when true int(64) uint(8) then int(64)
+   testGenericMax: when false int(64) uint(8) then int(64)
+   testParamGenericCastZero: when true int(64) uint(8) then int(64)
+   testParamGenericCastZero: when false int(64) uint(8) then uint(8)
+   testParamGenericZero: when true int(64) uint(8) then int(64)
+   testParamGenericZero: when false int(64) uint(8) then uint(8)
+   testParamGenericCastMax: when true int(64) uint(8) then int(64)
+   testParamGenericCastMax: when false int(64) uint(8) then uint(8)
+   testParamGenericMax: when true int(64) uint(8) then int(64)
+   testParamGenericMax: when false int(64) uint(8) then uint(8)
+   testExpressionZero: when true int(64) uint(8) then int(64)
+   testExpressionZero: when false int(64) uint(8) then int(64)
+   testExpressionMax: when true int(64) uint(8) then int(64)
+   testExpressionMax: when false int(64) uint(8) then int(64)
+   testParamExpressionZero: when true int(64) uint(8) then int(64)
+   testParamExpressionZero: when false int(64) uint(8) then uint(8)
+   testParamExpressionMax: when true int(64) uint(8) then int(64)
+   testParamExpressionMax: when false int(64) uint(8) then uint(8)
+   testGenericCastZero: when true int(64) uint(16) then int(64)
+   testGenericCastZero: when false int(64) uint(16) then int(64)
+   testGenericZero: when true int(64) uint(16) then int(64)
+   testGenericZero: when false int(64) uint(16) then int(64)
+   testGenericCastMax: when true int(64) uint(16) then int(64)
+   testGenericCastMax: when false int(64) uint(16) then int(64)
+   testGenericMax: when true int(64) uint(16) then int(64)
+   testGenericMax: when false int(64) uint(16) then int(64)
+   testParamGenericCastZero: when true int(64) uint(16) then int(64)
+   testParamGenericCastZero: when false int(64) uint(16) then uint(16)
+   testParamGenericZero: when true int(64) uint(16) then int(64)
+   testParamGenericZero: when false int(64) uint(16) then uint(16)
+   testParamGenericCastMax: when true int(64) uint(16) then int(64)
+   testParamGenericCastMax: when false int(64) uint(16) then uint(16)
+   testParamGenericMax: when true int(64) uint(16) then int(64)
+   testParamGenericMax: when false int(64) uint(16) then uint(16)
+   testExpressionZero: when true int(64) uint(16) then int(64)
+   testExpressionZero: when false int(64) uint(16) then int(64)
+   testExpressionMax: when true int(64) uint(16) then int(64)
+   testExpressionMax: when false int(64) uint(16) then int(64)
+   testParamExpressionZero: when true int(64) uint(16) then int(64)
+   testParamExpressionZero: when false int(64) uint(16) then uint(16)
+   testParamExpressionMax: when true int(64) uint(16) then int(64)
+   testParamExpressionMax: when false int(64) uint(16) then uint(16)
+   testGenericCastZero: when true int(64) uint(32) then int(64)
+   testGenericCastZero: when false int(64) uint(32) then int(64)
+   testGenericZero: when true int(64) uint(32) then int(64)
+   testGenericZero: when false int(64) uint(32) then int(64)
+   testGenericCastMax: when true int(64) uint(32) then int(64)
+   testGenericCastMax: when false int(64) uint(32) then int(64)
+   testGenericMax: when true int(64) uint(32) then int(64)
+   testGenericMax: when false int(64) uint(32) then int(64)
+   testParamGenericCastZero: when true int(64) uint(32) then int(64)
+   testParamGenericCastZero: when false int(64) uint(32) then uint(32)
+   testParamGenericZero: when true int(64) uint(32) then int(64)
+   testParamGenericZero: when false int(64) uint(32) then uint(32)
+   testParamGenericCastMax: when true int(64) uint(32) then int(64)
+   testParamGenericCastMax: when false int(64) uint(32) then uint(32)
+   testParamGenericMax: when true int(64) uint(32) then int(64)
+   testParamGenericMax: when false int(64) uint(32) then uint(32)
+   testExpressionZero: when true int(64) uint(32) then int(64)
+   testExpressionZero: when false int(64) uint(32) then int(64)
+   testExpressionMax: when true int(64) uint(32) then int(64)
+   testExpressionMax: when false int(64) uint(32) then int(64)
+   testParamExpressionZero: when true int(64) uint(32) then int(64)
+   testParamExpressionZero: when false int(64) uint(32) then uint(32)
+   testParamExpressionMax: when true int(64) uint(32) then int(64)
+   testParamExpressionMax: when false int(64) uint(32) then uint(32)
+   testGenericCastZero: when true int(64) uint(64) then uint(64)
+   testGenericCastZero: when false int(64) uint(64) then uint(64)
+   testGenericZero: when true int(64) uint(64) then uint(64)
+   testGenericZero: when false int(64) uint(64) then uint(64)
+   testGenericCastMax: when true int(64) uint(64) then uint(64)
+   testGenericCastMax: when false int(64) uint(64) then uint(64)
+   testGenericMax: when true int(64) uint(64) then uint(64)
+   testGenericMax: when false int(64) uint(64) then uint(64)
+   testParamGenericCastZero: when true int(64) uint(64) then int(64)
+   testParamGenericCastZero: when false int(64) uint(64) then uint(64)
+   testParamGenericZero: when true int(64) uint(64) then int(64)
+   testParamGenericZero: when false int(64) uint(64) then uint(64)
+   testParamGenericCastMax: when true int(64) uint(64) then int(64)
+   testParamGenericCastMax: when false int(64) uint(64) then uint(64)
+   testParamGenericMax: when true int(64) uint(64) then int(64)
+   testParamGenericMax: when false int(64) uint(64) then uint(64)
+   testExpressionZero: when true int(64) uint(64) then uint(64)
+   testExpressionZero: when false int(64) uint(64) then uint(64)
+   testExpressionMax: when true int(64) uint(64) then uint(64)
+   testExpressionMax: when false int(64) uint(64) then uint(64)
+   testParamExpressionZero: when true int(64) uint(64) then int(64)
+   testParamExpressionZero: when false int(64) uint(64) then uint(64)
+   testParamExpressionMax: when true int(64) uint(64) then int(64)
+   testParamExpressionMax: when false int(64) uint(64) then uint(64)
+   testGenericCastZero: when true uint(8) int(8) then uint(8)
+   testGenericCastZero: when false uint(8) int(8) then uint(8)
+   testGenericZero: when true uint(8) int(8) then uint(8)
+   testGenericZero: when false uint(8) int(8) then uint(8)
+   testGenericCastMax: when true uint(8) int(8) then uint(8)
+   testGenericCastMax: when false uint(8) int(8) then uint(8)
+   testGenericMax: when true uint(8) int(8) then uint(8)
+   testGenericMax: when false uint(8) int(8) then uint(8)
+   testParamGenericCastZero: when true uint(8) int(8) then uint(8)
+   testParamGenericCastZero: when false uint(8) int(8) then int(8)
+   testParamGenericZero: when true uint(8) int(8) then uint(8)
+   testParamGenericZero: when false uint(8) int(8) then int(8)
+   testParamGenericCastMax: when true uint(8) int(8) then uint(8)
+   testParamGenericCastMax: when false uint(8) int(8) then int(8)
+   testParamGenericMax: when true uint(8) int(8) then uint(8)
+   testParamGenericMax: when false uint(8) int(8) then int(8)
+   testExpressionZero: when true uint(8) int(8) then uint(8)
+   testExpressionZero: when false uint(8) int(8) then uint(8)
+   testExpressionMax: when true uint(8) int(8) then uint(8)
+   testExpressionMax: when false uint(8) int(8) then uint(8)
+   testParamExpressionZero: when true uint(8) int(8) then uint(8)
+   testParamExpressionZero: when false uint(8) int(8) then int(8)
+   testParamExpressionMax: when true uint(8) int(8) then uint(8)
+   testParamExpressionMax: when false uint(8) int(8) then int(8)
+   testGenericCastZero: when true uint(8) int(16) then int(16)
+   testGenericCastZero: when false uint(8) int(16) then int(16)
+   testGenericZero: when true uint(8) int(16) then int(16)
+   testGenericZero: when false uint(8) int(16) then int(16)
+   testGenericCastMax: when true uint(8) int(16) then int(16)
+   testGenericCastMax: when false uint(8) int(16) then int(16)
+   testGenericMax: when true uint(8) int(16) then int(16)
+   testGenericMax: when false uint(8) int(16) then int(16)
+   testParamGenericCastZero: when true uint(8) int(16) then uint(8)
+   testParamGenericCastZero: when false uint(8) int(16) then int(16)
+   testParamGenericZero: when true uint(8) int(16) then uint(8)
+   testParamGenericZero: when false uint(8) int(16) then int(16)
+   testParamGenericCastMax: when true uint(8) int(16) then uint(8)
+   testParamGenericCastMax: when false uint(8) int(16) then int(16)
+   testParamGenericMax: when true uint(8) int(16) then uint(8)
+   testParamGenericMax: when false uint(8) int(16) then int(16)
+   testExpressionZero: when true uint(8) int(16) then int(16)
+   testExpressionZero: when false uint(8) int(16) then int(16)
+   testExpressionMax: when true uint(8) int(16) then int(16)
+   testExpressionMax: when false uint(8) int(16) then int(16)
+   testParamExpressionZero: when true uint(8) int(16) then uint(8)
+   testParamExpressionZero: when false uint(8) int(16) then int(16)
+   testParamExpressionMax: when true uint(8) int(16) then uint(8)
+   testParamExpressionMax: when false uint(8) int(16) then int(16)
+   testGenericCastZero: when true uint(8) int(32) then int(32)
+   testGenericCastZero: when false uint(8) int(32) then int(32)
+   testGenericZero: when true uint(8) int(32) then int(32)
+   testGenericZero: when false uint(8) int(32) then int(32)
+   testGenericCastMax: when true uint(8) int(32) then int(32)
+   testGenericCastMax: when false uint(8) int(32) then int(32)
+   testGenericMax: when true uint(8) int(32) then int(32)
+   testGenericMax: when false uint(8) int(32) then int(32)
+   testParamGenericCastZero: when true uint(8) int(32) then uint(8)
+   testParamGenericCastZero: when false uint(8) int(32) then int(32)
+   testParamGenericZero: when true uint(8) int(32) then uint(8)
+   testParamGenericZero: when false uint(8) int(32) then int(32)
+   testParamGenericCastMax: when true uint(8) int(32) then uint(8)
+   testParamGenericCastMax: when false uint(8) int(32) then int(32)
+   testParamGenericMax: when true uint(8) int(32) then uint(8)
+   testParamGenericMax: when false uint(8) int(32) then int(32)
+   testExpressionZero: when true uint(8) int(32) then int(32)
+   testExpressionZero: when false uint(8) int(32) then int(32)
+   testExpressionMax: when true uint(8) int(32) then int(32)
+   testExpressionMax: when false uint(8) int(32) then int(32)
+   testParamExpressionZero: when true uint(8) int(32) then uint(8)
+   testParamExpressionZero: when false uint(8) int(32) then int(32)
+   testParamExpressionMax: when true uint(8) int(32) then uint(8)
+   testParamExpressionMax: when false uint(8) int(32) then int(32)
+   testGenericCastZero: when true uint(8) int(64) then int(64)
+   testGenericCastZero: when false uint(8) int(64) then int(64)
+   testGenericZero: when true uint(8) int(64) then int(64)
+   testGenericZero: when false uint(8) int(64) then int(64)
+   testGenericCastMax: when true uint(8) int(64) then int(64)
+   testGenericCastMax: when false uint(8) int(64) then int(64)
+   testGenericMax: when true uint(8) int(64) then int(64)
+   testGenericMax: when false uint(8) int(64) then int(64)
+   testParamGenericCastZero: when true uint(8) int(64) then uint(8)
+   testParamGenericCastZero: when false uint(8) int(64) then int(64)
+   testParamGenericZero: when true uint(8) int(64) then uint(8)
+   testParamGenericZero: when false uint(8) int(64) then int(64)
+   testParamGenericCastMax: when true uint(8) int(64) then uint(8)
+   testParamGenericCastMax: when false uint(8) int(64) then int(64)
+   testParamGenericMax: when true uint(8) int(64) then uint(8)
+   testParamGenericMax: when false uint(8) int(64) then int(64)
+   testExpressionZero: when true uint(8) int(64) then int(64)
+   testExpressionZero: when false uint(8) int(64) then int(64)
+   testExpressionMax: when true uint(8) int(64) then int(64)
+   testExpressionMax: when false uint(8) int(64) then int(64)
+   testParamExpressionZero: when true uint(8) int(64) then uint(8)
+   testParamExpressionZero: when false uint(8) int(64) then int(64)
+   testParamExpressionMax: when true uint(8) int(64) then uint(8)
+   testParamExpressionMax: when false uint(8) int(64) then int(64)
+   testGenericCastZero: when true uint(8) uint(8) then uint(8)
+   testGenericCastZero: when false uint(8) uint(8) then uint(8)
+   testGenericZero: when true uint(8) uint(8) then uint(8)
+   testGenericZero: when false uint(8) uint(8) then uint(8)
+   testGenericCastMax: when true uint(8) uint(8) then uint(8)
+   testGenericCastMax: when false uint(8) uint(8) then uint(8)
+   testGenericMax: when true uint(8) uint(8) then uint(8)
+   testGenericMax: when false uint(8) uint(8) then uint(8)
+   testParamGenericCastZero: when true uint(8) uint(8) then uint(8)
+   testParamGenericCastZero: when false uint(8) uint(8) then uint(8)
+   testParamGenericZero: when true uint(8) uint(8) then uint(8)
+   testParamGenericZero: when false uint(8) uint(8) then uint(8)
+   testParamGenericCastMax: when true uint(8) uint(8) then uint(8)
+   testParamGenericCastMax: when false uint(8) uint(8) then uint(8)
+   testParamGenericMax: when true uint(8) uint(8) then uint(8)
+   testParamGenericMax: when false uint(8) uint(8) then uint(8)
+   testExpressionZero: when true uint(8) uint(8) then uint(8)
+   testExpressionZero: when false uint(8) uint(8) then uint(8)
+   testExpressionMax: when true uint(8) uint(8) then uint(8)
+   testExpressionMax: when false uint(8) uint(8) then uint(8)
+   testParamExpressionZero: when true uint(8) uint(8) then uint(8)
+   testParamExpressionZero: when false uint(8) uint(8) then uint(8)
+   testParamExpressionMax: when true uint(8) uint(8) then uint(8)
+   testParamExpressionMax: when false uint(8) uint(8) then uint(8)
+   testGenericCastZero: when true uint(8) uint(16) then uint(16)
+   testGenericCastZero: when false uint(8) uint(16) then uint(16)
+   testGenericZero: when true uint(8) uint(16) then uint(16)
+   testGenericZero: when false uint(8) uint(16) then uint(16)
+   testGenericCastMax: when true uint(8) uint(16) then uint(16)
+   testGenericCastMax: when false uint(8) uint(16) then uint(16)
+   testGenericMax: when true uint(8) uint(16) then uint(16)
+   testGenericMax: when false uint(8) uint(16) then uint(16)
+   testParamGenericCastZero: when true uint(8) uint(16) then uint(8)
+   testParamGenericCastZero: when false uint(8) uint(16) then uint(16)
+   testParamGenericZero: when true uint(8) uint(16) then uint(8)
+   testParamGenericZero: when false uint(8) uint(16) then uint(16)
+   testParamGenericCastMax: when true uint(8) uint(16) then uint(8)
+   testParamGenericCastMax: when false uint(8) uint(16) then uint(16)
+   testParamGenericMax: when true uint(8) uint(16) then uint(8)
+   testParamGenericMax: when false uint(8) uint(16) then uint(16)
+   testExpressionZero: when true uint(8) uint(16) then uint(8)
+   testExpressionZero: when false uint(8) uint(16) then uint(8)
+   testExpressionMax: when true uint(8) uint(16) then uint(16)
+   testExpressionMax: when false uint(8) uint(16) then uint(16)
+   testParamExpressionZero: when true uint(8) uint(16) then uint(8)
+   testParamExpressionZero: when false uint(8) uint(16) then uint(16)
+   testParamExpressionMax: when true uint(8) uint(16) then uint(8)
+   testParamExpressionMax: when false uint(8) uint(16) then uint(16)
+   testGenericCastZero: when true uint(8) uint(32) then uint(32)
+   testGenericCastZero: when false uint(8) uint(32) then uint(32)
+   testGenericZero: when true uint(8) uint(32) then uint(32)
+   testGenericZero: when false uint(8) uint(32) then uint(32)
+   testGenericCastMax: when true uint(8) uint(32) then uint(32)
+   testGenericCastMax: when false uint(8) uint(32) then uint(32)
+   testGenericMax: when true uint(8) uint(32) then uint(32)
+   testGenericMax: when false uint(8) uint(32) then uint(32)
+   testParamGenericCastZero: when true uint(8) uint(32) then uint(8)
+   testParamGenericCastZero: when false uint(8) uint(32) then uint(32)
+   testParamGenericZero: when true uint(8) uint(32) then uint(8)
+   testParamGenericZero: when false uint(8) uint(32) then uint(32)
+   testParamGenericCastMax: when true uint(8) uint(32) then uint(8)
+   testParamGenericCastMax: when false uint(8) uint(32) then uint(32)
+   testParamGenericMax: when true uint(8) uint(32) then uint(8)
+   testParamGenericMax: when false uint(8) uint(32) then uint(32)
+   testExpressionZero: when true uint(8) uint(32) then uint(8)
+   testExpressionZero: when false uint(8) uint(32) then uint(8)
+   testExpressionMax: when true uint(8) uint(32) then uint(32)
+   testExpressionMax: when false uint(8) uint(32) then uint(32)
+   testParamExpressionZero: when true uint(8) uint(32) then uint(8)
+   testParamExpressionZero: when false uint(8) uint(32) then uint(32)
+   testParamExpressionMax: when true uint(8) uint(32) then uint(8)
+   testParamExpressionMax: when false uint(8) uint(32) then uint(32)
+   testGenericCastZero: when true uint(8) uint(64) then uint(64)
+   testGenericCastZero: when false uint(8) uint(64) then uint(64)
+   testGenericZero: when true uint(8) uint(64) then uint(64)
+   testGenericZero: when false uint(8) uint(64) then uint(64)
+   testGenericCastMax: when true uint(8) uint(64) then uint(64)
+   testGenericCastMax: when false uint(8) uint(64) then uint(64)
+   testGenericMax: when true uint(8) uint(64) then uint(64)
+   testGenericMax: when false uint(8) uint(64) then uint(64)
+   testParamGenericCastZero: when true uint(8) uint(64) then uint(8)
+   testParamGenericCastZero: when false uint(8) uint(64) then uint(64)
+   testParamGenericZero: when true uint(8) uint(64) then uint(8)
+   testParamGenericZero: when false uint(8) uint(64) then uint(64)
+   testParamGenericCastMax: when true uint(8) uint(64) then uint(8)
+   testParamGenericCastMax: when false uint(8) uint(64) then uint(64)
+   testParamGenericMax: when true uint(8) uint(64) then uint(8)
+   testParamGenericMax: when false uint(8) uint(64) then uint(64)
+   testExpressionZero: when true uint(8) uint(64) then uint(8)
+   testExpressionZero: when false uint(8) uint(64) then uint(8)
+   testExpressionMax: when true uint(8) uint(64) then uint(64)
+   testExpressionMax: when false uint(8) uint(64) then uint(64)
+   testParamExpressionZero: when true uint(8) uint(64) then uint(8)
+   testParamExpressionZero: when false uint(8) uint(64) then uint(64)
+   testParamExpressionMax: when true uint(8) uint(64) then uint(8)
+   testParamExpressionMax: when false uint(8) uint(64) then uint(64)
+   testGenericCastZero: when true uint(16) int(8) then uint(16)
+   testGenericCastZero: when false uint(16) int(8) then uint(16)
+   testGenericZero: when true uint(16) int(8) then uint(16)
+   testGenericZero: when false uint(16) int(8) then uint(16)
+   testGenericCastMax: when true uint(16) int(8) then uint(16)
+   testGenericCastMax: when false uint(16) int(8) then uint(16)
+   testGenericMax: when true uint(16) int(8) then uint(16)
+   testGenericMax: when false uint(16) int(8) then uint(16)
+   testParamGenericCastZero: when true uint(16) int(8) then uint(16)
+   testParamGenericCastZero: when false uint(16) int(8) then int(8)
+   testParamGenericZero: when true uint(16) int(8) then uint(16)
+   testParamGenericZero: when false uint(16) int(8) then int(8)
+   testParamGenericCastMax: when true uint(16) int(8) then uint(16)
+   testParamGenericCastMax: when false uint(16) int(8) then int(8)
+   testParamGenericMax: when true uint(16) int(8) then uint(16)
+   testParamGenericMax: when false uint(16) int(8) then int(8)
+   testExpressionZero: when true uint(16) int(8) then uint(16)
+   testExpressionZero: when false uint(16) int(8) then uint(16)
+   testExpressionMax: when true uint(16) int(8) then uint(16)
+   testExpressionMax: when false uint(16) int(8) then uint(16)
+   testParamExpressionZero: when true uint(16) int(8) then uint(16)
+   testParamExpressionZero: when false uint(16) int(8) then int(8)
+   testParamExpressionMax: when true uint(16) int(8) then uint(16)
+   testParamExpressionMax: when false uint(16) int(8) then int(8)
+   testGenericCastZero: when true uint(16) int(16) then uint(16)
+   testGenericCastZero: when false uint(16) int(16) then uint(16)
+   testGenericZero: when true uint(16) int(16) then uint(16)
+   testGenericZero: when false uint(16) int(16) then uint(16)
+   testGenericCastMax: when true uint(16) int(16) then uint(16)
+   testGenericCastMax: when false uint(16) int(16) then uint(16)
+   testGenericMax: when true uint(16) int(16) then uint(16)
+   testGenericMax: when false uint(16) int(16) then uint(16)
+   testParamGenericCastZero: when true uint(16) int(16) then uint(16)
+   testParamGenericCastZero: when false uint(16) int(16) then int(16)
+   testParamGenericZero: when true uint(16) int(16) then uint(16)
+   testParamGenericZero: when false uint(16) int(16) then int(16)
+   testParamGenericCastMax: when true uint(16) int(16) then uint(16)
+   testParamGenericCastMax: when false uint(16) int(16) then int(16)
+   testParamGenericMax: when true uint(16) int(16) then uint(16)
+   testParamGenericMax: when false uint(16) int(16) then int(16)
+   testExpressionZero: when true uint(16) int(16) then uint(16)
+   testExpressionZero: when false uint(16) int(16) then uint(16)
+   testExpressionMax: when true uint(16) int(16) then uint(16)
+   testExpressionMax: when false uint(16) int(16) then uint(16)
+   testParamExpressionZero: when true uint(16) int(16) then uint(16)
+   testParamExpressionZero: when false uint(16) int(16) then int(16)
+   testParamExpressionMax: when true uint(16) int(16) then uint(16)
+   testParamExpressionMax: when false uint(16) int(16) then int(16)
+   testGenericCastZero: when true uint(16) int(32) then int(32)
+   testGenericCastZero: when false uint(16) int(32) then int(32)
+   testGenericZero: when true uint(16) int(32) then int(32)
+   testGenericZero: when false uint(16) int(32) then int(32)
+   testGenericCastMax: when true uint(16) int(32) then int(32)
+   testGenericCastMax: when false uint(16) int(32) then int(32)
+   testGenericMax: when true uint(16) int(32) then int(32)
+   testGenericMax: when false uint(16) int(32) then int(32)
+   testParamGenericCastZero: when true uint(16) int(32) then uint(16)
+   testParamGenericCastZero: when false uint(16) int(32) then int(32)
+   testParamGenericZero: when true uint(16) int(32) then uint(16)
+   testParamGenericZero: when false uint(16) int(32) then int(32)
+   testParamGenericCastMax: when true uint(16) int(32) then uint(16)
+   testParamGenericCastMax: when false uint(16) int(32) then int(32)
+   testParamGenericMax: when true uint(16) int(32) then uint(16)
+   testParamGenericMax: when false uint(16) int(32) then int(32)
+   testExpressionZero: when true uint(16) int(32) then int(32)
+   testExpressionZero: when false uint(16) int(32) then int(32)
+   testExpressionMax: when true uint(16) int(32) then int(32)
+   testExpressionMax: when false uint(16) int(32) then int(32)
+   testParamExpressionZero: when true uint(16) int(32) then uint(16)
+   testParamExpressionZero: when false uint(16) int(32) then int(32)
+   testParamExpressionMax: when true uint(16) int(32) then uint(16)
+   testParamExpressionMax: when false uint(16) int(32) then int(32)
+   testGenericCastZero: when true uint(16) int(64) then int(64)
+   testGenericCastZero: when false uint(16) int(64) then int(64)
+   testGenericZero: when true uint(16) int(64) then int(64)
+   testGenericZero: when false uint(16) int(64) then int(64)
+   testGenericCastMax: when true uint(16) int(64) then int(64)
+   testGenericCastMax: when false uint(16) int(64) then int(64)
+   testGenericMax: when true uint(16) int(64) then int(64)
+   testGenericMax: when false uint(16) int(64) then int(64)
+   testParamGenericCastZero: when true uint(16) int(64) then uint(16)
+   testParamGenericCastZero: when false uint(16) int(64) then int(64)
+   testParamGenericZero: when true uint(16) int(64) then uint(16)
+   testParamGenericZero: when false uint(16) int(64) then int(64)
+   testParamGenericCastMax: when true uint(16) int(64) then uint(16)
+   testParamGenericCastMax: when false uint(16) int(64) then int(64)
+   testParamGenericMax: when true uint(16) int(64) then uint(16)
+   testParamGenericMax: when false uint(16) int(64) then int(64)
+   testExpressionZero: when true uint(16) int(64) then int(64)
+   testExpressionZero: when false uint(16) int(64) then int(64)
+   testExpressionMax: when true uint(16) int(64) then int(64)
+   testExpressionMax: when false uint(16) int(64) then int(64)
+   testParamExpressionZero: when true uint(16) int(64) then uint(16)
+   testParamExpressionZero: when false uint(16) int(64) then int(64)
+   testParamExpressionMax: when true uint(16) int(64) then uint(16)
+   testParamExpressionMax: when false uint(16) int(64) then int(64)
+   testGenericCastZero: when true uint(16) uint(8) then uint(16)
+   testGenericCastZero: when false uint(16) uint(8) then uint(16)
+   testGenericZero: when true uint(16) uint(8) then uint(16)
+   testGenericZero: when false uint(16) uint(8) then uint(16)
+   testGenericCastMax: when true uint(16) uint(8) then uint(16)
+   testGenericCastMax: when false uint(16) uint(8) then uint(16)
+   testGenericMax: when true uint(16) uint(8) then uint(16)
+   testGenericMax: when false uint(16) uint(8) then uint(16)
+   testParamGenericCastZero: when true uint(16) uint(8) then uint(16)
+   testParamGenericCastZero: when false uint(16) uint(8) then uint(8)
+   testParamGenericZero: when true uint(16) uint(8) then uint(16)
+   testParamGenericZero: when false uint(16) uint(8) then uint(8)
+   testParamGenericCastMax: when true uint(16) uint(8) then uint(16)
+   testParamGenericCastMax: when false uint(16) uint(8) then uint(8)
+   testParamGenericMax: when true uint(16) uint(8) then uint(16)
+   testParamGenericMax: when false uint(16) uint(8) then uint(8)
+   testExpressionZero: when true uint(16) uint(8) then uint(16)
+   testExpressionZero: when false uint(16) uint(8) then uint(16)
+   testExpressionMax: when true uint(16) uint(8) then uint(16)
+   testExpressionMax: when false uint(16) uint(8) then uint(16)
+   testParamExpressionZero: when true uint(16) uint(8) then uint(16)
+   testParamExpressionZero: when false uint(16) uint(8) then uint(8)
+   testParamExpressionMax: when true uint(16) uint(8) then uint(16)
+   testParamExpressionMax: when false uint(16) uint(8) then uint(8)
+   testGenericCastZero: when true uint(16) uint(16) then uint(16)
+   testGenericCastZero: when false uint(16) uint(16) then uint(16)
+   testGenericZero: when true uint(16) uint(16) then uint(16)
+   testGenericZero: when false uint(16) uint(16) then uint(16)
+   testGenericCastMax: when true uint(16) uint(16) then uint(16)
+   testGenericCastMax: when false uint(16) uint(16) then uint(16)
+   testGenericMax: when true uint(16) uint(16) then uint(16)
+   testGenericMax: when false uint(16) uint(16) then uint(16)
+   testParamGenericCastZero: when true uint(16) uint(16) then uint(16)
+   testParamGenericCastZero: when false uint(16) uint(16) then uint(16)
+   testParamGenericZero: when true uint(16) uint(16) then uint(16)
+   testParamGenericZero: when false uint(16) uint(16) then uint(16)
+   testParamGenericCastMax: when true uint(16) uint(16) then uint(16)
+   testParamGenericCastMax: when false uint(16) uint(16) then uint(16)
+   testParamGenericMax: when true uint(16) uint(16) then uint(16)
+   testParamGenericMax: when false uint(16) uint(16) then uint(16)
+   testExpressionZero: when true uint(16) uint(16) then uint(16)
+   testExpressionZero: when false uint(16) uint(16) then uint(16)
+   testExpressionMax: when true uint(16) uint(16) then uint(16)
+   testExpressionMax: when false uint(16) uint(16) then uint(16)
+   testParamExpressionZero: when true uint(16) uint(16) then uint(16)
+   testParamExpressionZero: when false uint(16) uint(16) then uint(16)
+   testParamExpressionMax: when true uint(16) uint(16) then uint(16)
+   testParamExpressionMax: when false uint(16) uint(16) then uint(16)
+   testGenericCastZero: when true uint(16) uint(32) then uint(32)
+   testGenericCastZero: when false uint(16) uint(32) then uint(32)
+   testGenericZero: when true uint(16) uint(32) then uint(32)
+   testGenericZero: when false uint(16) uint(32) then uint(32)
+   testGenericCastMax: when true uint(16) uint(32) then uint(32)
+   testGenericCastMax: when false uint(16) uint(32) then uint(32)
+   testGenericMax: when true uint(16) uint(32) then uint(32)
+   testGenericMax: when false uint(16) uint(32) then uint(32)
+   testParamGenericCastZero: when true uint(16) uint(32) then uint(16)
+   testParamGenericCastZero: when false uint(16) uint(32) then uint(32)
+   testParamGenericZero: when true uint(16) uint(32) then uint(16)
+   testParamGenericZero: when false uint(16) uint(32) then uint(32)
+   testParamGenericCastMax: when true uint(16) uint(32) then uint(16)
+   testParamGenericCastMax: when false uint(16) uint(32) then uint(32)
+   testParamGenericMax: when true uint(16) uint(32) then uint(16)
+   testParamGenericMax: when false uint(16) uint(32) then uint(32)
+   testExpressionZero: when true uint(16) uint(32) then uint(16)
+   testExpressionZero: when false uint(16) uint(32) then uint(16)
+   testExpressionMax: when true uint(16) uint(32) then uint(32)
+   testExpressionMax: when false uint(16) uint(32) then uint(32)
+   testParamExpressionZero: when true uint(16) uint(32) then uint(16)
+   testParamExpressionZero: when false uint(16) uint(32) then uint(32)
+   testParamExpressionMax: when true uint(16) uint(32) then uint(16)
+   testParamExpressionMax: when false uint(16) uint(32) then uint(32)
+   testGenericCastZero: when true uint(16) uint(64) then uint(64)
+   testGenericCastZero: when false uint(16) uint(64) then uint(64)
+   testGenericZero: when true uint(16) uint(64) then uint(64)
+   testGenericZero: when false uint(16) uint(64) then uint(64)
+   testGenericCastMax: when true uint(16) uint(64) then uint(64)
+   testGenericCastMax: when false uint(16) uint(64) then uint(64)
+   testGenericMax: when true uint(16) uint(64) then uint(64)
+   testGenericMax: when false uint(16) uint(64) then uint(64)
+   testParamGenericCastZero: when true uint(16) uint(64) then uint(16)
+   testParamGenericCastZero: when false uint(16) uint(64) then uint(64)
+   testParamGenericZero: when true uint(16) uint(64) then uint(16)
+   testParamGenericZero: when false uint(16) uint(64) then uint(64)
+   testParamGenericCastMax: when true uint(16) uint(64) then uint(16)
+   testParamGenericCastMax: when false uint(16) uint(64) then uint(64)
+   testParamGenericMax: when true uint(16) uint(64) then uint(16)
+   testParamGenericMax: when false uint(16) uint(64) then uint(64)
+   testExpressionZero: when true uint(16) uint(64) then uint(16)
+   testExpressionZero: when false uint(16) uint(64) then uint(16)
+   testExpressionMax: when true uint(16) uint(64) then uint(64)
+   testExpressionMax: when false uint(16) uint(64) then uint(64)
+   testParamExpressionZero: when true uint(16) uint(64) then uint(16)
+   testParamExpressionZero: when false uint(16) uint(64) then uint(64)
+   testParamExpressionMax: when true uint(16) uint(64) then uint(16)
+   testParamExpressionMax: when false uint(16) uint(64) then uint(64)
+   testGenericCastZero: when true uint(32) int(8) then uint(32)
+   testGenericCastZero: when false uint(32) int(8) then uint(32)
+   testGenericZero: when true uint(32) int(8) then uint(32)
+   testGenericZero: when false uint(32) int(8) then uint(32)
+   testGenericCastMax: when true uint(32) int(8) then uint(32)
+   testGenericCastMax: when false uint(32) int(8) then uint(32)
+   testGenericMax: when true uint(32) int(8) then uint(32)
+   testGenericMax: when false uint(32) int(8) then uint(32)
+   testParamGenericCastZero: when true uint(32) int(8) then uint(32)
+   testParamGenericCastZero: when false uint(32) int(8) then int(8)
+   testParamGenericZero: when true uint(32) int(8) then uint(32)
+   testParamGenericZero: when false uint(32) int(8) then int(8)
+   testParamGenericCastMax: when true uint(32) int(8) then uint(32)
+   testParamGenericCastMax: when false uint(32) int(8) then int(8)
+   testParamGenericMax: when true uint(32) int(8) then uint(32)
+   testParamGenericMax: when false uint(32) int(8) then int(8)
+   testExpressionZero: when true uint(32) int(8) then uint(32)
+   testExpressionZero: when false uint(32) int(8) then uint(32)
+   testExpressionMax: when true uint(32) int(8) then uint(32)
+   testExpressionMax: when false uint(32) int(8) then uint(32)
+   testParamExpressionZero: when true uint(32) int(8) then uint(32)
+   testParamExpressionZero: when false uint(32) int(8) then int(8)
+   testParamExpressionMax: when true uint(32) int(8) then uint(32)
+   testParamExpressionMax: when false uint(32) int(8) then int(8)
+   testGenericCastZero: when true uint(32) int(16) then uint(32)
+   testGenericCastZero: when false uint(32) int(16) then uint(32)
+   testGenericZero: when true uint(32) int(16) then uint(32)
+   testGenericZero: when false uint(32) int(16) then uint(32)
+   testGenericCastMax: when true uint(32) int(16) then uint(32)
+   testGenericCastMax: when false uint(32) int(16) then uint(32)
+   testGenericMax: when true uint(32) int(16) then uint(32)
+   testGenericMax: when false uint(32) int(16) then uint(32)
+   testParamGenericCastZero: when true uint(32) int(16) then uint(32)
+   testParamGenericCastZero: when false uint(32) int(16) then int(16)
+   testParamGenericZero: when true uint(32) int(16) then uint(32)
+   testParamGenericZero: when false uint(32) int(16) then int(16)
+   testParamGenericCastMax: when true uint(32) int(16) then uint(32)
+   testParamGenericCastMax: when false uint(32) int(16) then int(16)
+   testParamGenericMax: when true uint(32) int(16) then uint(32)
+   testParamGenericMax: when false uint(32) int(16) then int(16)
+   testExpressionZero: when true uint(32) int(16) then uint(32)
+   testExpressionZero: when false uint(32) int(16) then uint(32)
+   testExpressionMax: when true uint(32) int(16) then uint(32)
+   testExpressionMax: when false uint(32) int(16) then uint(32)
+   testParamExpressionZero: when true uint(32) int(16) then uint(32)
+   testParamExpressionZero: when false uint(32) int(16) then int(16)
+   testParamExpressionMax: when true uint(32) int(16) then uint(32)
+   testParamExpressionMax: when false uint(32) int(16) then int(16)
+   testGenericCastZero: when true uint(32) int(32) then uint(32)
+   testGenericCastZero: when false uint(32) int(32) then uint(32)
+   testGenericZero: when true uint(32) int(32) then uint(32)
+   testGenericZero: when false uint(32) int(32) then uint(32)
+   testGenericCastMax: when true uint(32) int(32) then uint(32)
+   testGenericCastMax: when false uint(32) int(32) then uint(32)
+   testGenericMax: when true uint(32) int(32) then uint(32)
+   testGenericMax: when false uint(32) int(32) then uint(32)
+   testParamGenericCastZero: when true uint(32) int(32) then uint(32)
+   testParamGenericCastZero: when false uint(32) int(32) then int(32)
+   testParamGenericZero: when true uint(32) int(32) then uint(32)
+   testParamGenericZero: when false uint(32) int(32) then int(32)
+   testParamGenericCastMax: when true uint(32) int(32) then uint(32)
+   testParamGenericCastMax: when false uint(32) int(32) then int(32)
+   testParamGenericMax: when true uint(32) int(32) then uint(32)
+   testParamGenericMax: when false uint(32) int(32) then int(32)
+   testExpressionZero: when true uint(32) int(32) then uint(32)
+   testExpressionZero: when false uint(32) int(32) then uint(32)
+   testExpressionMax: when true uint(32) int(32) then uint(32)
+   testExpressionMax: when false uint(32) int(32) then uint(32)
+   testParamExpressionZero: when true uint(32) int(32) then uint(32)
+   testParamExpressionZero: when false uint(32) int(32) then int(32)
+   testParamExpressionMax: when true uint(32) int(32) then uint(32)
+   testParamExpressionMax: when false uint(32) int(32) then int(32)
+   testGenericCastZero: when true uint(32) int(64) then int(64)
+   testGenericCastZero: when false uint(32) int(64) then int(64)
+   testGenericZero: when true uint(32) int(64) then int(64)
+   testGenericZero: when false uint(32) int(64) then int(64)
+   testGenericCastMax: when true uint(32) int(64) then int(64)
+   testGenericCastMax: when false uint(32) int(64) then int(64)
+   testGenericMax: when true uint(32) int(64) then int(64)
+   testGenericMax: when false uint(32) int(64) then int(64)
+   testParamGenericCastZero: when true uint(32) int(64) then uint(32)
+   testParamGenericCastZero: when false uint(32) int(64) then int(64)
+   testParamGenericZero: when true uint(32) int(64) then uint(32)
+   testParamGenericZero: when false uint(32) int(64) then int(64)
+   testParamGenericCastMax: when true uint(32) int(64) then uint(32)
+   testParamGenericCastMax: when false uint(32) int(64) then int(64)
+   testParamGenericMax: when true uint(32) int(64) then uint(32)
+   testParamGenericMax: when false uint(32) int(64) then int(64)
+   testExpressionZero: when true uint(32) int(64) then int(64)
+   testExpressionZero: when false uint(32) int(64) then int(64)
+   testExpressionMax: when true uint(32) int(64) then int(64)
+   testExpressionMax: when false uint(32) int(64) then int(64)
+   testParamExpressionZero: when true uint(32) int(64) then uint(32)
+   testParamExpressionZero: when false uint(32) int(64) then int(64)
+   testParamExpressionMax: when true uint(32) int(64) then uint(32)
+   testParamExpressionMax: when false uint(32) int(64) then int(64)
+   testGenericCastZero: when true uint(32) uint(8) then uint(32)
+   testGenericCastZero: when false uint(32) uint(8) then uint(32)
+   testGenericZero: when true uint(32) uint(8) then uint(32)
+   testGenericZero: when false uint(32) uint(8) then uint(32)
+   testGenericCastMax: when true uint(32) uint(8) then uint(32)
+   testGenericCastMax: when false uint(32) uint(8) then uint(32)
+   testGenericMax: when true uint(32) uint(8) then uint(32)
+   testGenericMax: when false uint(32) uint(8) then uint(32)
+   testParamGenericCastZero: when true uint(32) uint(8) then uint(32)
+   testParamGenericCastZero: when false uint(32) uint(8) then uint(8)
+   testParamGenericZero: when true uint(32) uint(8) then uint(32)
+   testParamGenericZero: when false uint(32) uint(8) then uint(8)
+   testParamGenericCastMax: when true uint(32) uint(8) then uint(32)
+   testParamGenericCastMax: when false uint(32) uint(8) then uint(8)
+   testParamGenericMax: when true uint(32) uint(8) then uint(32)
+   testParamGenericMax: when false uint(32) uint(8) then uint(8)
+   testExpressionZero: when true uint(32) uint(8) then uint(32)
+   testExpressionZero: when false uint(32) uint(8) then uint(32)
+   testExpressionMax: when true uint(32) uint(8) then uint(32)
+   testExpressionMax: when false uint(32) uint(8) then uint(32)
+   testParamExpressionZero: when true uint(32) uint(8) then uint(32)
+   testParamExpressionZero: when false uint(32) uint(8) then uint(8)
+   testParamExpressionMax: when true uint(32) uint(8) then uint(32)
+   testParamExpressionMax: when false uint(32) uint(8) then uint(8)
+   testGenericCastZero: when true uint(32) uint(16) then uint(32)
+   testGenericCastZero: when false uint(32) uint(16) then uint(32)
+   testGenericZero: when true uint(32) uint(16) then uint(32)
+   testGenericZero: when false uint(32) uint(16) then uint(32)
+   testGenericCastMax: when true uint(32) uint(16) then uint(32)
+   testGenericCastMax: when false uint(32) uint(16) then uint(32)
+   testGenericMax: when true uint(32) uint(16) then uint(32)
+   testGenericMax: when false uint(32) uint(16) then uint(32)
+   testParamGenericCastZero: when true uint(32) uint(16) then uint(32)
+   testParamGenericCastZero: when false uint(32) uint(16) then uint(16)
+   testParamGenericZero: when true uint(32) uint(16) then uint(32)
+   testParamGenericZero: when false uint(32) uint(16) then uint(16)
+   testParamGenericCastMax: when true uint(32) uint(16) then uint(32)
+   testParamGenericCastMax: when false uint(32) uint(16) then uint(16)
+   testParamGenericMax: when true uint(32) uint(16) then uint(32)
+   testParamGenericMax: when false uint(32) uint(16) then uint(16)
+   testExpressionZero: when true uint(32) uint(16) then uint(32)
+   testExpressionZero: when false uint(32) uint(16) then uint(32)
+   testExpressionMax: when true uint(32) uint(16) then uint(32)
+   testExpressionMax: when false uint(32) uint(16) then uint(32)
+   testParamExpressionZero: when true uint(32) uint(16) then uint(32)
+   testParamExpressionZero: when false uint(32) uint(16) then uint(16)
+   testParamExpressionMax: when true uint(32) uint(16) then uint(32)
+   testParamExpressionMax: when false uint(32) uint(16) then uint(16)
+   testGenericCastZero: when true uint(32) uint(32) then uint(32)
+   testGenericCastZero: when false uint(32) uint(32) then uint(32)
+   testGenericZero: when true uint(32) uint(32) then uint(32)
+   testGenericZero: when false uint(32) uint(32) then uint(32)
+   testGenericCastMax: when true uint(32) uint(32) then uint(32)
+   testGenericCastMax: when false uint(32) uint(32) then uint(32)
+   testGenericMax: when true uint(32) uint(32) then uint(32)
+   testGenericMax: when false uint(32) uint(32) then uint(32)
+   testParamGenericCastZero: when true uint(32) uint(32) then uint(32)
+   testParamGenericCastZero: when false uint(32) uint(32) then uint(32)
+   testParamGenericZero: when true uint(32) uint(32) then uint(32)
+   testParamGenericZero: when false uint(32) uint(32) then uint(32)
+   testParamGenericCastMax: when true uint(32) uint(32) then uint(32)
+   testParamGenericCastMax: when false uint(32) uint(32) then uint(32)
+   testParamGenericMax: when true uint(32) uint(32) then uint(32)
+   testParamGenericMax: when false uint(32) uint(32) then uint(32)
+   testExpressionZero: when true uint(32) uint(32) then uint(32)
+   testExpressionZero: when false uint(32) uint(32) then uint(32)
+   testExpressionMax: when true uint(32) uint(32) then uint(32)
+   testExpressionMax: when false uint(32) uint(32) then uint(32)
+   testParamExpressionZero: when true uint(32) uint(32) then uint(32)
+   testParamExpressionZero: when false uint(32) uint(32) then uint(32)
+   testParamExpressionMax: when true uint(32) uint(32) then uint(32)
+   testParamExpressionMax: when false uint(32) uint(32) then uint(32)
+   testGenericCastZero: when true uint(32) uint(64) then uint(64)
+   testGenericCastZero: when false uint(32) uint(64) then uint(64)
+   testGenericZero: when true uint(32) uint(64) then uint(64)
+   testGenericZero: when false uint(32) uint(64) then uint(64)
+   testGenericCastMax: when true uint(32) uint(64) then uint(64)
+   testGenericCastMax: when false uint(32) uint(64) then uint(64)
+   testGenericMax: when true uint(32) uint(64) then uint(64)
+   testGenericMax: when false uint(32) uint(64) then uint(64)
+   testParamGenericCastZero: when true uint(32) uint(64) then uint(32)
+   testParamGenericCastZero: when false uint(32) uint(64) then uint(64)
+   testParamGenericZero: when true uint(32) uint(64) then uint(32)
+   testParamGenericZero: when false uint(32) uint(64) then uint(64)
+   testParamGenericCastMax: when true uint(32) uint(64) then uint(32)
+   testParamGenericCastMax: when false uint(32) uint(64) then uint(64)
+   testParamGenericMax: when true uint(32) uint(64) then uint(32)
+   testParamGenericMax: when false uint(32) uint(64) then uint(64)
+   testExpressionZero: when true uint(32) uint(64) then uint(32)
+   testExpressionZero: when false uint(32) uint(64) then uint(32)
+   testExpressionMax: when true uint(32) uint(64) then uint(64)
+   testExpressionMax: when false uint(32) uint(64) then uint(64)
+   testParamExpressionZero: when true uint(32) uint(64) then uint(32)
+   testParamExpressionZero: when false uint(32) uint(64) then uint(64)
+   testParamExpressionMax: when true uint(32) uint(64) then uint(32)
+   testParamExpressionMax: when false uint(32) uint(64) then uint(64)
+   testGenericCastZero: when true uint(64) int(8) then uint(64)
+   testGenericCastZero: when false uint(64) int(8) then uint(64)
+   testGenericZero: when true uint(64) int(8) then uint(64)
+   testGenericZero: when false uint(64) int(8) then uint(64)
+   testGenericCastMax: when true uint(64) int(8) then uint(64)
+   testGenericCastMax: when false uint(64) int(8) then uint(64)
+   testGenericMax: when true uint(64) int(8) then uint(64)
+   testGenericMax: when false uint(64) int(8) then uint(64)
+   testParamGenericCastZero: when true uint(64) int(8) then uint(64)
+   testParamGenericCastZero: when false uint(64) int(8) then int(8)
+   testParamGenericZero: when true uint(64) int(8) then uint(64)
+   testParamGenericZero: when false uint(64) int(8) then int(8)
+   testParamGenericCastMax: when true uint(64) int(8) then uint(64)
+   testParamGenericCastMax: when false uint(64) int(8) then int(8)
+   testParamGenericMax: when true uint(64) int(8) then uint(64)
+   testParamGenericMax: when false uint(64) int(8) then int(8)
+   testExpressionZero: when true uint(64) int(8) then uint(64)
+   testExpressionZero: when false uint(64) int(8) then uint(64)
+   testExpressionMax: when true uint(64) int(8) then uint(64)
+   testExpressionMax: when false uint(64) int(8) then uint(64)
+   testParamExpressionZero: when true uint(64) int(8) then uint(64)
+   testParamExpressionZero: when false uint(64) int(8) then int(8)
+   testParamExpressionMax: when true uint(64) int(8) then uint(64)
+   testParamExpressionMax: when false uint(64) int(8) then int(8)
+   testGenericCastZero: when true uint(64) int(16) then uint(64)
+   testGenericCastZero: when false uint(64) int(16) then uint(64)
+   testGenericZero: when true uint(64) int(16) then uint(64)
+   testGenericZero: when false uint(64) int(16) then uint(64)
+   testGenericCastMax: when true uint(64) int(16) then uint(64)
+   testGenericCastMax: when false uint(64) int(16) then uint(64)
+   testGenericMax: when true uint(64) int(16) then uint(64)
+   testGenericMax: when false uint(64) int(16) then uint(64)
+   testParamGenericCastZero: when true uint(64) int(16) then uint(64)
+   testParamGenericCastZero: when false uint(64) int(16) then int(16)
+   testParamGenericZero: when true uint(64) int(16) then uint(64)
+   testParamGenericZero: when false uint(64) int(16) then int(16)
+   testParamGenericCastMax: when true uint(64) int(16) then uint(64)
+   testParamGenericCastMax: when false uint(64) int(16) then int(16)
+   testParamGenericMax: when true uint(64) int(16) then uint(64)
+   testParamGenericMax: when false uint(64) int(16) then int(16)
+   testExpressionZero: when true uint(64) int(16) then uint(64)
+   testExpressionZero: when false uint(64) int(16) then uint(64)
+   testExpressionMax: when true uint(64) int(16) then uint(64)
+   testExpressionMax: when false uint(64) int(16) then uint(64)
+   testParamExpressionZero: when true uint(64) int(16) then uint(64)
+   testParamExpressionZero: when false uint(64) int(16) then int(16)
+   testParamExpressionMax: when true uint(64) int(16) then uint(64)
+   testParamExpressionMax: when false uint(64) int(16) then int(16)
+   testGenericCastZero: when true uint(64) int(32) then uint(64)
+   testGenericCastZero: when false uint(64) int(32) then uint(64)
+   testGenericZero: when true uint(64) int(32) then uint(64)
+   testGenericZero: when false uint(64) int(32) then uint(64)
+   testGenericCastMax: when true uint(64) int(32) then uint(64)
+   testGenericCastMax: when false uint(64) int(32) then uint(64)
+   testGenericMax: when true uint(64) int(32) then uint(64)
+   testGenericMax: when false uint(64) int(32) then uint(64)
+   testParamGenericCastZero: when true uint(64) int(32) then uint(64)
+   testParamGenericCastZero: when false uint(64) int(32) then int(32)
+   testParamGenericZero: when true uint(64) int(32) then uint(64)
+   testParamGenericZero: when false uint(64) int(32) then int(32)
+   testParamGenericCastMax: when true uint(64) int(32) then uint(64)
+   testParamGenericCastMax: when false uint(64) int(32) then int(32)
+   testParamGenericMax: when true uint(64) int(32) then uint(64)
+   testParamGenericMax: when false uint(64) int(32) then int(32)
+   testExpressionZero: when true uint(64) int(32) then uint(64)
+   testExpressionZero: when false uint(64) int(32) then uint(64)
+   testExpressionMax: when true uint(64) int(32) then uint(64)
+   testExpressionMax: when false uint(64) int(32) then uint(64)
+   testParamExpressionZero: when true uint(64) int(32) then uint(64)
+   testParamExpressionZero: when false uint(64) int(32) then int(32)
+   testParamExpressionMax: when true uint(64) int(32) then uint(64)
+   testParamExpressionMax: when false uint(64) int(32) then int(32)
+   testGenericCastZero: when true uint(64) int(64) then uint(64)
+   testGenericCastZero: when false uint(64) int(64) then uint(64)
+   testGenericZero: when true uint(64) int(64) then uint(64)
+   testGenericZero: when false uint(64) int(64) then uint(64)
+   testGenericCastMax: when true uint(64) int(64) then uint(64)
+   testGenericCastMax: when false uint(64) int(64) then uint(64)
+   testGenericMax: when true uint(64) int(64) then uint(64)
+   testGenericMax: when false uint(64) int(64) then uint(64)
+   testParamGenericCastZero: when true uint(64) int(64) then uint(64)
+   testParamGenericCastZero: when false uint(64) int(64) then int(64)
+   testParamGenericZero: when true uint(64) int(64) then uint(64)
+   testParamGenericZero: when false uint(64) int(64) then int(64)
+   testParamGenericCastMax: when true uint(64) int(64) then uint(64)
+   testParamGenericCastMax: when false uint(64) int(64) then int(64)
+   testParamGenericMax: when true uint(64) int(64) then uint(64)
+   testParamGenericMax: when false uint(64) int(64) then int(64)
+   testExpressionZero: when true uint(64) int(64) then uint(64)
+   testExpressionZero: when false uint(64) int(64) then uint(64)
+   testExpressionMax: when true uint(64) int(64) then uint(64)
+   testExpressionMax: when false uint(64) int(64) then uint(64)
+   testParamExpressionZero: when true uint(64) int(64) then uint(64)
+   testParamExpressionZero: when false uint(64) int(64) then int(64)
+   testParamExpressionMax: when true uint(64) int(64) then uint(64)
+   testParamExpressionMax: when false uint(64) int(64) then int(64)
+   testGenericCastZero: when true uint(64) uint(8) then uint(64)
+   testGenericCastZero: when false uint(64) uint(8) then uint(64)
+   testGenericZero: when true uint(64) uint(8) then uint(64)
+   testGenericZero: when false uint(64) uint(8) then uint(64)
+   testGenericCastMax: when true uint(64) uint(8) then uint(64)
+   testGenericCastMax: when false uint(64) uint(8) then uint(64)
+   testGenericMax: when true uint(64) uint(8) then uint(64)
+   testGenericMax: when false uint(64) uint(8) then uint(64)
+   testParamGenericCastZero: when true uint(64) uint(8) then uint(64)
+   testParamGenericCastZero: when false uint(64) uint(8) then uint(8)
+   testParamGenericZero: when true uint(64) uint(8) then uint(64)
+   testParamGenericZero: when false uint(64) uint(8) then uint(8)
+   testParamGenericCastMax: when true uint(64) uint(8) then uint(64)
+   testParamGenericCastMax: when false uint(64) uint(8) then uint(8)
+   testParamGenericMax: when true uint(64) uint(8) then uint(64)
+   testParamGenericMax: when false uint(64) uint(8) then uint(8)
+   testExpressionZero: when true uint(64) uint(8) then uint(64)
+   testExpressionZero: when false uint(64) uint(8) then uint(64)
+   testExpressionMax: when true uint(64) uint(8) then uint(64)
+   testExpressionMax: when false uint(64) uint(8) then uint(64)
+   testParamExpressionZero: when true uint(64) uint(8) then uint(64)
+   testParamExpressionZero: when false uint(64) uint(8) then uint(8)
+   testParamExpressionMax: when true uint(64) uint(8) then uint(64)
+   testParamExpressionMax: when false uint(64) uint(8) then uint(8)
+   testGenericCastZero: when true uint(64) uint(16) then uint(64)
+   testGenericCastZero: when false uint(64) uint(16) then uint(64)
+   testGenericZero: when true uint(64) uint(16) then uint(64)
+   testGenericZero: when false uint(64) uint(16) then uint(64)
+   testGenericCastMax: when true uint(64) uint(16) then uint(64)
+   testGenericCastMax: when false uint(64) uint(16) then uint(64)
+   testGenericMax: when true uint(64) uint(16) then uint(64)
+   testGenericMax: when false uint(64) uint(16) then uint(64)
+   testParamGenericCastZero: when true uint(64) uint(16) then uint(64)
+   testParamGenericCastZero: when false uint(64) uint(16) then uint(16)
+   testParamGenericZero: when true uint(64) uint(16) then uint(64)
+   testParamGenericZero: when false uint(64) uint(16) then uint(16)
+   testParamGenericCastMax: when true uint(64) uint(16) then uint(64)
+   testParamGenericCastMax: when false uint(64) uint(16) then uint(16)
+   testParamGenericMax: when true uint(64) uint(16) then uint(64)
+   testParamGenericMax: when false uint(64) uint(16) then uint(16)
+   testExpressionZero: when true uint(64) uint(16) then uint(64)
+   testExpressionZero: when false uint(64) uint(16) then uint(64)
+   testExpressionMax: when true uint(64) uint(16) then uint(64)
+   testExpressionMax: when false uint(64) uint(16) then uint(64)
+   testParamExpressionZero: when true uint(64) uint(16) then uint(64)
+   testParamExpressionZero: when false uint(64) uint(16) then uint(16)
+   testParamExpressionMax: when true uint(64) uint(16) then uint(64)
+   testParamExpressionMax: when false uint(64) uint(16) then uint(16)
+   testGenericCastZero: when true uint(64) uint(32) then uint(64)
+   testGenericCastZero: when false uint(64) uint(32) then uint(64)
+   testGenericZero: when true uint(64) uint(32) then uint(64)
+   testGenericZero: when false uint(64) uint(32) then uint(64)
+   testGenericCastMax: when true uint(64) uint(32) then uint(64)
+   testGenericCastMax: when false uint(64) uint(32) then uint(64)
+   testGenericMax: when true uint(64) uint(32) then uint(64)
+   testGenericMax: when false uint(64) uint(32) then uint(64)
+   testParamGenericCastZero: when true uint(64) uint(32) then uint(64)
+   testParamGenericCastZero: when false uint(64) uint(32) then uint(32)
+   testParamGenericZero: when true uint(64) uint(32) then uint(64)
+   testParamGenericZero: when false uint(64) uint(32) then uint(32)
+   testParamGenericCastMax: when true uint(64) uint(32) then uint(64)
+   testParamGenericCastMax: when false uint(64) uint(32) then uint(32)
+   testParamGenericMax: when true uint(64) uint(32) then uint(64)
+   testParamGenericMax: when false uint(64) uint(32) then uint(32)
+   testExpressionZero: when true uint(64) uint(32) then uint(64)
+   testExpressionZero: when false uint(64) uint(32) then uint(64)
+   testExpressionMax: when true uint(64) uint(32) then uint(64)
+   testExpressionMax: when false uint(64) uint(32) then uint(64)
+   testParamExpressionZero: when true uint(64) uint(32) then uint(64)
+   testParamExpressionZero: when false uint(64) uint(32) then uint(32)
+   testParamExpressionMax: when true uint(64) uint(32) then uint(64)
+   testParamExpressionMax: when false uint(64) uint(32) then uint(32)
+   testGenericCastZero: when true uint(64) uint(64) then uint(64)
+   testGenericCastZero: when false uint(64) uint(64) then uint(64)
+   testGenericZero: when true uint(64) uint(64) then uint(64)
+   testGenericZero: when false uint(64) uint(64) then uint(64)
+   testGenericCastMax: when true uint(64) uint(64) then uint(64)
+   testGenericCastMax: when false uint(64) uint(64) then uint(64)
+   testGenericMax: when true uint(64) uint(64) then uint(64)
+   testGenericMax: when false uint(64) uint(64) then uint(64)
+   testParamGenericCastZero: when true uint(64) uint(64) then uint(64)
+   testParamGenericCastZero: when false uint(64) uint(64) then uint(64)
+   testParamGenericZero: when true uint(64) uint(64) then uint(64)
+   testParamGenericZero: when false uint(64) uint(64) then uint(64)
+   testParamGenericCastMax: when true uint(64) uint(64) then uint(64)
+   testParamGenericCastMax: when false uint(64) uint(64) then uint(64)
+   testParamGenericMax: when true uint(64) uint(64) then uint(64)
+   testParamGenericMax: when false uint(64) uint(64) then uint(64)
+   testExpressionZero: when true uint(64) uint(64) then uint(64)
+   testExpressionZero: when false uint(64) uint(64) then uint(64)
+   testExpressionMax: when true uint(64) uint(64) then uint(64)
+   testExpressionMax: when false uint(64) uint(64) then uint(64)
+   testParamExpressionZero: when true uint(64) uint(64) then uint(64)
+   testParamExpressionZero: when false uint(64) uint(64) then uint(64)
+   testParamExpressionMax: when true uint(64) uint(64) then uint(64)
+   testParamExpressionMax: when false uint(64) uint(64) then uint(64)
+   )";
 
-// need param and non-param variants
-static std::string buildIfExpressionParamMax(std::string boolVal, std::string typeVal1, std::string typeVal2) {
-  std::string program = "param b: bool =";
-  program += boolVal;
-  program += ";\n";
-  program += "param x = if b then max(";
-  program += typeVal1;
-  program += "):";
-  program += typeVal1;
-  program += " else max(";
-  program += typeVal2;
-  program += "):";
-  program += typeVal2;
-  program += ";\n";
-  return program;
-}
+   std::istringstream iss(input);
+   std::string line;
+   while (std::getline(iss, line)) {
+     std::istringstream lineStream(line);
+     std::string testName, when, condition, type1, type2, then, resultType;
 
-// need param and non-param variants
-static std::string buildIfExpressionParamZero(std::string boolVal, std::string typeVal1, std::string typeVal2) {
-  std::string program = "param b: bool =";
-  program += boolVal;
-  program += ";\n";
-  program += "param x = if b then 0:";
-  program += typeVal1;
-  program += " else 0:";
-  program += typeVal2;
-  program += ";\n";
-  return program;
-}
+     lineStream >> testName >> when >> condition >> type1 >> type2 >> then >> resultType;
 
-static std::string buildIfExpressionNoParamMax(std::string boolVal, std::string typeVal1, std::string typeVal2) {
-  std::string program = "var b: bool =";
-  program += boolVal;
-  program += ";\n";
-  program += "var zero = max(uint(8)):uint(8);\n";
-  program += "var x = if b then zero:";
-  program += typeVal1;
-  program += " else zero:";
-  program += typeVal2;
-  program += ";\n";
-  return program;
-}
+     auto key = std::make_tuple(testName, condition, type1, type2);
+     testExpectationsMap[key] = resultType;
+   }
+ }
 
-// no difference if zero is inited to 0 or not, e.g. var zero = 0:uint(8);
-static std::string buildIfExpressionNoParamZero(std::string boolVal, std::string typeVal1, std::string typeVal2) {
-  std::string program = "var b: bool =";
-  program += boolVal;
-  program += ";\n";
-  // program += "var zero :uint(8);\n";
-  program += "var x = if b then 0:";
-  program += typeVal1;
-  program += " else 0:";
-  program += typeVal2;
-  program += ";\n";
-  return program;
-}
+ // given an existing block of code defining a procedure f(arg: bool),
+ // add a call to f with the given boolean value
+ static std::string addCallToProcedure(std::string& existingProcedure,
+                               std::string boolVal, bool isParam=false) {
+   std::ostringstream oss;
+   oss << existingProcedure;
+   oss << (isParam ? "param " : "var ");
+   oss << "x = f(" << boolVal << ");\n";
+   return oss.str();
+ }
 
-enum class ProgramTestType {
-  TestGenericMax,
-  TestGenericZero,
-  TestParamGenericMax,
-  TestParamGenericZero,
-  TestGenericCastMax,
-  TestGenericCastZero,
-  TestParamGenericCastMax,
-  TestParamGenericCastZero,
-  TestExpressionMax,
-  TestExpressionZero,
-  TestParamExpressionMax,
-  TestParamExpressionZero
-};
+ static std::string addBoolToExpression(std::string& existingExpression,
+                                 std::string boolVal, bool isParam=false) {
+   std::ostringstream oss;
+   oss << (isParam ? "param " : "var ");
+   oss << "b: bool = " << boolVal << ";\n";
+   oss << existingExpression;
+   return oss.str();
+ }
 
-static void testIntegralReturn(std::string baseProgram, std::string boolVal,
-                              std::string typeVal1, std::string typeVal2,
-                              const chpl::types::PrimitiveType* expectedType,
-                              ProgramTestType testType) {
-  auto context = buildStdContext();
-  ErrorGuard guard(context);
-  std::string program;
-  std::string lineOut = "";
-  if (testType == ProgramTestType::TestGenericMax) {
-    program = addCallToProgram(baseProgram, boolVal, typeVal1, typeVal2);
-    lineOut += "testGenericMax: when ";
-  } else if (testType == ProgramTestType::TestGenericZero) {
-    program = addCallToProgram(baseProgram, boolVal, typeVal1, typeVal2);
-    lineOut += "testGenericZero: when ";
-  } else if (testType == ProgramTestType::TestParamGenericMax) {
-    program = addCallToProgram(baseProgram, boolVal, typeVal1, typeVal2);
-    lineOut += "testParamGenericMax: when ";
-  } else if (testType == ProgramTestType::TestParamGenericZero) {
-    program = addCallToProgram(baseProgram, boolVal, typeVal1, typeVal2);
-    lineOut += "testParamGenericZero: when ";
-  } else if (testType == ProgramTestType::TestGenericCastMax) {
-    program = addCallToProgram(baseProgram, boolVal, typeVal1, typeVal2);
-    lineOut += "testGenericCastMax: when ";
-  } else if (testType == ProgramTestType::TestGenericCastZero) {
-    auto newBaseProgram = generateTestGenericCastZero(typeVal1, typeVal2);
-    program = addCallToBoolProgram(newBaseProgram, boolVal);
-    lineOut += "testGenericCastZero: when ";
-  } else if (testType == ProgramTestType::TestParamGenericCastMax) {
-    program = addCallToProgram(baseProgram, boolVal, typeVal1, typeVal2);
-    lineOut += "testParamGenericCastMax: when ";
-  } else if (testType == ProgramTestType::TestParamGenericCastZero) {
-    program = addCallToProgram(baseProgram, boolVal, typeVal1, typeVal2);
-    lineOut += "testParamGenericCastZero: when ";
-  } else if (testType == ProgramTestType::TestExpressionMax) {
-    program = buildIfExpressionNoParamMax(boolVal, typeVal1, typeVal2);
-    lineOut += "testExpressionMax: when ";
-  } else if (testType == ProgramTestType::TestExpressionZero) {
-    program = buildIfExpressionNoParamZero(boolVal, typeVal1, typeVal2);
-    lineOut += "testExpressionZero: when ";
-  } else if (testType == ProgramTestType::TestParamExpressionMax) {
-    program = buildIfExpressionParamMax(boolVal, typeVal1, typeVal2);
-    lineOut += "testParamExpressionMax: when ";
-  } else if (testType == ProgramTestType::TestParamExpressionZero) {
-    program = buildIfExpressionParamZero(boolVal, typeVal1, typeVal2);
-    lineOut += "testParamExpressionZero: when ";
-  } else {
-    assert(false);
-  }
+ static void
+ buildProcedure(std::ostringstream& oss, std::string typeVal1, std::string typeVal2,
+                bool isParam=false, bool isMax=false, bool defVars=false) {
+   oss << "proc f(";
+   oss << (isParam ? "param " : "");
+   oss << "arg: bool) ";
+   oss << (isParam ? "param " : "");
+   oss << "{\n";
+   if (defVars) {
+     oss << (isParam ? "param " : "var ");
+     oss << "  i: ";
+     oss << typeVal1;
+     oss << " = ";
+     oss << (isMax ? "max(" + typeVal1 + ");\n" : "0;\n");
+     oss << (isParam ? "param " : "var ");
+     oss << "  u: " << typeVal2 << " = ";
+     oss << (isMax ? "max(" + typeVal2 + ");\n" : "0;\n");
+     oss << "  if arg then return i; else return u;\n";
+   } else {
+     oss << "  if arg then return ";
+     oss << (isMax ? "max(" + typeVal1 + "):" : "0:");
+     oss << typeVal1 << "; else return " << (isMax ? "max(" + typeVal2 + "):" : "0:");
+     oss << typeVal2 << ";\n";
+   }
+   oss << "}\n";
+ }
 
-  lineOut += boolVal;
-  lineOut += " ";
-  lineOut += typeVal1;
-  lineOut += " ";
-  lineOut += typeVal2;
-  lineOut += " then ";
-  auto returnType = resolveTypeOfXInit(context, program, true);
-  assert(returnType.type());
-  std::cout << lineOut;
-  returnType.type()->dump();
-  // re-enable this when we have the correct types for each call
-  // assert(returnType.type() == expectedType);
-}
+ static void
+ buildIfExpression(std::ostringstream& oss, std::string typeVal1,
+                   std::string typeVal2, bool isParam=false, bool isMax=false) {
+   oss << (isParam ? "param " : "var ");
+   oss << "x = if b then " << (isMax ? "max(" + typeVal1 + "):" : "0:");
+   oss << typeVal1 << " else " << (isMax ? "max(" + typeVal2 + "):" : "0:");
+   oss << typeVal2 << ";\n";
+ }
 
-static void
-testIfExpressionIntegralTypesHelper(std::string program,
-                                    std::string boolCondition,
-                                    ProgramTestType testType) {
-  auto context = buildStdContext();
-  ErrorGuard guard(context);
-  // use only ints. 8, 16, 32, 64 bit. use each size with every other size.
-  testIntegralReturn(program, boolCondition, "int(8)", "int(8)", IntType::get(context, 8), testType);
-  testIntegralReturn(program, boolCondition, "int(8)", "int(16)", IntType::get(context, 16), testType);
-  testIntegralReturn(program, boolCondition, "int(8)", "int(32)", IntType::get(context, 32), testType);
-  testIntegralReturn(program, boolCondition, "int(8)", "int(64)", IntType::get(context, 64), testType);
-  testIntegralReturn(program, boolCondition, "int(16)", "int(8)", IntType::get(context, 16), testType);
-  testIntegralReturn(program, boolCondition, "int(16)", "int(16)", IntType::get(context, 16), testType);
-  testIntegralReturn(program, boolCondition, "int(16)", "int(32)", IntType::get(context, 32), testType);
-  testIntegralReturn(program, boolCondition, "int(16)", "int(64)", IntType::get(context, 64), testType);
-  testIntegralReturn(program, boolCondition, "int(32)", "int(8)", IntType::get(context, 32), testType);
-  testIntegralReturn(program, boolCondition, "int(32)", "int(16)", IntType::get(context, 32), testType);
-  testIntegralReturn(program, boolCondition, "int(32)", "int(32)", IntType::get(context, 32), testType);
-  testIntegralReturn(program, boolCondition, "int(32)", "int(64)", IntType::get(context, 64), testType);
-  testIntegralReturn(program, boolCondition, "int(64)", "int(8)", IntType::get(context, 64), testType);
-  testIntegralReturn(program, boolCondition, "int(64)", "int(16)", IntType::get(context, 64), testType);
-  testIntegralReturn(program, boolCondition, "int(64)", "int(32)", IntType::get(context, 64), testType);
-  testIntegralReturn(program, boolCondition, "int(64)", "int(64)", IntType::get(context, 64), testType);
-  // do the uint versions of all the above, true and false versions
-  testIntegralReturn(program, boolCondition, "uint(8)", "uint(8)", UintType::get(context, 8), testType);
-  testIntegralReturn(program, boolCondition, "uint(8)", "uint(16)", UintType::get(context, 16), testType);
-  testIntegralReturn(program, boolCondition, "uint(8)", "uint(32)", UintType::get(context, 32), testType);
-  testIntegralReturn(program, boolCondition, "uint(8)", "uint(64)", UintType::get(context, 64), testType);
-  testIntegralReturn(program, boolCondition, "uint(16)", "uint(8)", UintType::get(context, 16), testType);
-  testIntegralReturn(program, boolCondition, "uint(16)", "uint(16)", UintType::get(context, 16), testType);
-  testIntegralReturn(program, boolCondition, "uint(16)", "uint(32)", UintType::get(context, 32), testType);
-  testIntegralReturn(program, boolCondition, "uint(16)", "uint(64)", UintType::get(context, 64), testType);
-  testIntegralReturn(program, boolCondition, "uint(32)", "uint(8)", UintType::get(context, 32), testType);
-  testIntegralReturn(program, boolCondition, "uint(32)", "uint(16)", UintType::get(context, 32), testType);
-  testIntegralReturn(program, boolCondition, "uint(32)", "uint(32)", UintType::get(context, 32), testType);;
-  testIntegralReturn(program, boolCondition, "uint(32)", "uint(64)", UintType::get(context, 64), testType);
-  testIntegralReturn(program, boolCondition, "uint(64)", "uint(8)", UintType::get(context, 64), testType);;
-  testIntegralReturn(program, boolCondition, "uint(64)", "uint(16)", UintType::get(context, 64), testType);
-  testIntegralReturn(program, boolCondition, "uint(64)", "uint(32)", UintType::get(context, 64), testType);
-  testIntegralReturn(program, boolCondition, "uint(64)", "uint(64)", UintType::get(context, 64), testType);
-  // tests where the first type is int and the second is uint, do all sizes of ints and uints
-  testIntegralReturn(program, boolCondition, "int(8)", "uint(8)", UintType::get(context, 8), testType);
-  testIntegralReturn(program, boolCondition, "int(8)", "uint(16)", UintType::get(context, 16), testType);
-  testIntegralReturn(program, boolCondition, "int(8)", "uint(32)", UintType::get(context, 32), testType);
-  testIntegralReturn(program, boolCondition, "int(8)", "uint(64)", UintType::get(context, 64), testType);
-  testIntegralReturn(program, boolCondition, "int(16)", "uint(8)", IntType::get(context, 16), testType);
-  testIntegralReturn(program, boolCondition, "int(16)", "uint(16)", UintType::get(context, 16), testType);
-  testIntegralReturn(program, boolCondition, "int(16)", "uint(32)", UintType::get(context, 32), testType);
-  testIntegralReturn(program, boolCondition, "int(16)", "uint(64)", UintType::get(context, 64), testType);
-  testIntegralReturn(program, boolCondition, "int(32)", "uint(8)", IntType::get(context, 32), testType);
-  testIntegralReturn(program, boolCondition, "int(32)", "uint(16)", IntType::get(context, 32), testType);
-  testIntegralReturn(program, boolCondition, "int(32)", "uint(32)", UintType::get(context, 32), testType);
-  testIntegralReturn(program, boolCondition, "int(32)", "uint(64)", UintType::get(context, 64), testType);
-  testIntegralReturn(program, boolCondition, "int(64)", "uint(8)", IntType::get(context, 64), testType);
-  testIntegralReturn(program, boolCondition, "int(64)", "uint(16)", IntType::get(context, 64), testType);
-  testIntegralReturn(program, boolCondition, "int(64)", "uint(32)", IntType::get(context, 64), testType);
-  testIntegralReturn(program, boolCondition, "int(64)", "uint(64)", UintType::get(context, 64), testType);
-  // reverse the order of the types so that the first type is uint and the second is int
-  testIntegralReturn(program, boolCondition, "uint(8)", "int(8)", UintType::get(context, 8), testType);
-  testIntegralReturn(program, boolCondition, "uint(8)", "int(16)", IntType::get(context, 16), testType);
-  testIntegralReturn(program, boolCondition, "uint(8)", "int(32)", IntType::get(context, 32), testType);
-  testIntegralReturn(program, boolCondition, "uint(8)", "int(64)", IntType::get(context, 64), testType);
-  testIntegralReturn(program, boolCondition, "uint(16)", "int(8)", UintType::get(context, 16), testType);
-  testIntegralReturn(program, boolCondition, "uint(16)", "int(16)", UintType::get(context, 16), testType);
-  testIntegralReturn(program, boolCondition, "uint(16)", "int(32)", IntType::get(context, 32), testType);
-  testIntegralReturn(program, boolCondition, "uint(16)", "int(64)", IntType::get(context, 64), testType);
-  testIntegralReturn(program, boolCondition, "uint(32)", "int(8)", UintType::get(context, 32), testType);
-  testIntegralReturn(program, boolCondition, "uint(32)", "int(16)", UintType::get(context, 32), testType);
-  testIntegralReturn(program, boolCondition, "uint(32)", "int(32)", UintType::get(context, 32), testType);
-  testIntegralReturn(program, boolCondition, "uint(32)", "int(64)", IntType::get(context, 64), testType);
-  testIntegralReturn(program, boolCondition, "uint(64)", "int(8)", UintType::get(context, 64), testType);
-  testIntegralReturn(program, boolCondition, "uint(64)", "int(16)", UintType::get(context, 64), testType);
-  testIntegralReturn(program, boolCondition, "uint(64)", "int(32)", UintType::get(context, 64), testType);
-  testIntegralReturn(program, boolCondition, "uint(64)", "int(64)", UintType::get(context, 64), testType);
-}
+ struct IntegralTest {
+   const bool isParam;
+   const bool isMax;
+   const bool defVars;
+   const bool isProcedure;
+   const std::string type1;
+   const std::string type2;
+   const std::string testName;
+   std::string body;
+ };
 
-static void testConditionalIntegralTypes() {
-  std::string testGenericZero =
-    R"""(
-    proc f(arg: bool, type t, type tt) {
-      var i: t = 0;
-      var u: tt = 0;
-      if arg then return i; else return u;
-    }
-    )""";
+ static void evaluateTestResult(IntegralTest& test, std::string boolVal) {
+   auto context = buildStdContext();
+   ErrorGuard guard(context);
+   std::string program;
+   if (test.isProcedure) {
+     program = addCallToProcedure(test.body, boolVal, test.isParam);
+   } else {
+     program = addBoolToExpression(test.body, boolVal, test.isParam);
+   }
+   auto returnType = resolveTypeOfXInit(context, program, true);
+   assert(returnType.type());
+   auto expectedTypeName = testExpectationsMap[std::make_tuple(test.testName+":", boolVal, test.type1, test.type2)];
+   assert(expectedTypeName != "");
+   auto expectedType = stringNameToType(context, expectedTypeName);
+   assert(expectedType);
+   assert(returnType.type() == expectedType);
+ }
 
-  std::string testGenericMax =
-    R"""(
-    proc f(arg: bool, type t, type tt) {
-      var i: t = max(t);
-      var u: tt = max(tt);
-      if arg then return i; else return u;
-    }
-    )""";
+ // build a bunch of tests using different integral types in both procedures and expressions
+ // then add calls to the procedures and evaluate the expressions with different boolean values
+ // and ensure the return type is as expected
+ static void testConditionalIntegralTypes() {
+   auto context = buildStdContext();
+   readyMap(context);
+   std::vector<std::string> integralTypes = {
+     "int(8)", "int(16)", "int(32)", "int(64)",
+     "uint(8)", "uint(16)", "uint(32)", "uint(64)"
+   };
 
-  std::string testParamGenericZero =
-    R"""(
-    proc f(param arg: bool, type t, type tt) param {
-      param i: t = 0;
-      param u: tt = 0;
-      if arg then return i; else return u;
-    }
-    )""";
+   std::vector<std::string> boolVals = {
+     "true", "false"
+   };
+   std::vector<IntegralTest> chapelTests;
+   std::ostringstream oss;
+   for (const auto& type1 : integralTypes) {
+     for (const auto& type2 : integralTypes) {
+       chapelTests.push_back({false, false, false, true, type1, type2, "testGenericCastZero", ""});
+       chapelTests.push_back({false, false, true, true, type1, type2, "testGenericZero", ""});
+       chapelTests.push_back({false, true, false, true, type1, type2, "testGenericCastMax", ""});
+       chapelTests.push_back({false, true, true, true, type1, type2, "testGenericMax",""});
+       chapelTests.push_back({true, false, false, true, type1, type2, "testParamGenericCastZero",""});
+       chapelTests.push_back({true, false, true, true, type1, type2, "testParamGenericZero",""});
+       chapelTests.push_back({true, true, false, true, type1, type2, "testParamGenericCastMax",""});
+       chapelTests.push_back({true, true, true, true, type1, type2, "testParamGenericMax",""});
+       chapelTests.push_back({false, false, false, false, type1, type2, "testExpressionZero",""});
+       chapelTests.push_back({false, true, false, false, type1, type2, "testExpressionMax",""});
+       chapelTests.push_back({true, false, false, false, type1, type2, "testParamExpressionZero",""});
+       chapelTests.push_back({true, true, false, false, type1, type2, "testParamExpressionMax",""});
+     }
+   }
 
-  std::string testParamGenericMax =
-    R"""(
-    proc f(param arg: bool, type t, type tt) param {
-      param i: t = max(t);
-      param u: tt = max(tt);
-      if arg then return i; else return u;
-    }
-    )""";
+   for (auto& test : chapelTests) {
+     oss.str("");
+     oss.clear();
+     if (test.isProcedure) {
+       buildProcedure(oss, test.type1, test.type2, test.isParam, test.isMax, test.defVars);
+     } else {
+       buildIfExpression(oss, test.type1, test.type2, test.isParam, test.isMax);
+     }
+     test.body = oss.str();
+   }
 
-  // std::string testGenericCastZero =
-  //   R"""(
-  //   proc f(arg: bool, type t, type tt) {
-  //     if arg then return 0:t; else return 0:tt;
-  //   }
-  //   )""";
+   for (auto& test : chapelTests) {
+     for (auto& bVal : boolVals) {
+       evaluateTestResult(test, bVal);
+     }
+   }
+ }
 
-  std::string testGenericCastMax =
-    R"""(
-    proc f(arg: bool, type t, type tt) {
-      if arg then return max(t):t;
-      else return max(tt):tt;
-    }
-    )""";
-
-  std::string testParamGenericCastZero =
-    R"""(
-    proc f(param arg: bool, type t, type tt) param {
-      if arg then return 0:t; else return 0:tt;
-    }
-    )""";
-
-  std::string testParamGenericCastMax =
-    R"""(
-    proc f(param arg: bool, type t, type tt) param {
-      if arg then return max(t):t; else return max(tt):tt;
-    }
-    )""";
-
-  testIfExpressionIntegralTypesHelper(testGenericZero, "true", ProgramTestType::TestGenericZero);
-  testIfExpressionIntegralTypesHelper(testGenericZero, "false", ProgramTestType::TestGenericZero);
-  testIfExpressionIntegralTypesHelper(testGenericMax, "true", ProgramTestType::TestGenericMax);
-  testIfExpressionIntegralTypesHelper(testGenericMax, "false", ProgramTestType::TestGenericMax);
-  testIfExpressionIntegralTypesHelper(testParamGenericZero, "true", ProgramTestType::TestParamGenericZero);
-  testIfExpressionIntegralTypesHelper(testParamGenericZero, "false", ProgramTestType::TestParamGenericZero);
-  testIfExpressionIntegralTypesHelper(testParamGenericMax, "true", ProgramTestType::TestParamGenericMax);
-  testIfExpressionIntegralTypesHelper(testParamGenericMax, "false", ProgramTestType::TestParamGenericMax);
-  testIfExpressionIntegralTypesHelper(testParamGenericCastZero, "true", ProgramTestType::TestParamGenericCastZero);
-  testIfExpressionIntegralTypesHelper(testParamGenericCastZero, "false", ProgramTestType::TestParamGenericCastZero);
-  testIfExpressionIntegralTypesHelper(testParamGenericCastMax, "true", ProgramTestType::TestParamGenericCastMax);
-  testIfExpressionIntegralTypesHelper(testParamGenericCastMax, "false", ProgramTestType::TestParamGenericCastMax);
-  testIfExpressionIntegralTypesHelper("", "true", ProgramTestType::TestGenericCastZero);
-  testIfExpressionIntegralTypesHelper("", "false", ProgramTestType::TestGenericCastZero);
-  testIfExpressionIntegralTypesHelper(testGenericCastMax, "true", ProgramTestType::TestGenericCastMax);
-  testIfExpressionIntegralTypesHelper(testGenericCastMax, "false", ProgramTestType::TestGenericCastMax);
-  testIfExpressionIntegralTypesHelper("", "true", ProgramTestType::TestExpressionZero);
-  testIfExpressionIntegralTypesHelper("", "false", ProgramTestType::TestExpressionZero);
-  testIfExpressionIntegralTypesHelper("", "true", ProgramTestType::TestExpressionMax);
-  testIfExpressionIntegralTypesHelper("", "false", ProgramTestType::TestExpressionMax);
-  testIfExpressionIntegralTypesHelper("", "true", ProgramTestType::TestParamExpressionZero);
-  testIfExpressionIntegralTypesHelper("", "false", ProgramTestType::TestParamExpressionZero);
-  testIfExpressionIntegralTypesHelper("", "true", ProgramTestType::TestParamExpressionMax);
-  testIfExpressionIntegralTypesHelper("", "false", ProgramTestType::TestParamExpressionMax);
-
-  // std::vector<std::string> integral_types = {
-  //   "int(8)", "int(16)", "int(32)", "int(64)",
-  //   "uint(8)", "uint(16)", "uint(32)", "uint(64)"
-  // };
-
-  // for (const auto& type1 : integral_types) {
-  //     for (const auto& type2 : integral_types) {
-  //         std::string chapel_program = generateChapelProgram(type1, type2);
-
-  //     }
-  // }
-}
-
-int main() {
-  testConditionalIntegralTypes();
-  return 0;
-}
-
+ int main() {
+   testConditionalIntegralTypes();
+   return 0;
+ }
