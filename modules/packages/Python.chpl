@@ -2443,6 +2443,13 @@ module Python {
       this.interpreter.checkException();
       return result: bool;
     }
+
+    /* Creates a new tuple from ``x``, when ``x`` is a :class:`PyTuple`. */
+    operator :(const ref x: PyTuple, type t: _tuple): t {
+      var res = try! x.interpreter.fromPython(t, x.getPyObject());
+
+      return res;
+    }
   }
 
   /*
@@ -2510,6 +2517,15 @@ module Python {
                      idx.safeCast(Py_ssize_t),
                      interpreter.toPythonInner(item));
       this.interpreter.checkException();
+    }
+
+    /*
+      Creates a new list from ``x``, when ``x`` is a :class:`PyList`.
+    */
+    operator :(const ref x: PyList, type t: List.list(?)): t {
+      var res = try! x.interpreter.fromPython(t, x.getPyObject());
+
+      return res;
     }
   }
 
@@ -2639,6 +2655,13 @@ module Python {
       this.interpreter.checkException();
       return result: bool;
     }
+
+    /* Creates a new map from ``x``, when ``x`` is a :class:`PyDict`. */
+    operator :(const ref x: PyDict, type t: Map.map(?)): t {
+      var res = try! x.interpreter.fromPython(t, x.getPyObject());
+
+      return res;
+    }
   }
 
   /*
@@ -2740,6 +2763,13 @@ module Python {
 
       PySet_Clear(this.getPyObject());
       this.interpreter.checkException();
+    }
+
+    /* Creates a new set from ``x``, when ``x`` is a :class:`PySet`. */
+    operator :(const ref x: PySet, type t: Set.set(?)): t {
+      var res = try! x.interpreter.fromPython(t, x.getPyObject());
+
+      return res;
     }
   }
 
