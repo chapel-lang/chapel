@@ -1204,4 +1204,7 @@ void parseAndConvertUast() {
     }
   }
   parsed = true;
+
+  // Allow no mutation of AST generated as a result of this pass (globally).
+  BaseAST::canMutateEarlyResolvedSymbols = false;
 }

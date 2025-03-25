@@ -52,6 +52,8 @@
 #include <sstream>
 #include <string>
 
+bool BaseAST::canMutateEarlyResolvedSymbols = true;
+
 //
 // declare global vectors gSymExprs, gCallExprs, gFnSymbols, ...
 //

@@ -270,6 +270,10 @@ public:
   // symbols inserted into it that the old compiler generated).
   bool              wasResolvedEarly();
 
+  // Set to 'true' after a specific point in the 'callDestructors' pass to
+  // indicate that AST marked with 'FLAG_RESOLVED_EARLY' can be mutated.
+  static bool       canMutateEarlyResolvedSymbols;
+
   bool              isRef();
   bool              isWideRef();
   bool              isRefOrWideRef();

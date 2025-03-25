@@ -49,6 +49,14 @@
 
 class FnSymbol;
 
+// Macro to crash if the AST being mutated was resolved by the frontend.
+#define BASE_AST_CRASH_IF_RESOLVED_EARLY(ast__) do { \
+  if (!BaseAST::canMutateEarlyResolvedSymbols && ast__->wasResolvedEarly()) { \
+    INT_FATAL(ast__, "Cannot mutate AST that is or is contained in an " \
+                     "early resolved symbol!"); \
+  } \
+} while (0)
+
 // some prototypes
 
 /************************************ | *************************************
@@ -309,6 +317,8 @@ void Expr::prettyPrint(std::ostream *o) {
 }
 
 Expr* Expr::remove() {
+  BASE_AST_CRASH_IF_RESOLVED_EARLY(this);
+
   if (list) {
     if (next)
       next->prev = prev;
@@ -340,6 +350,9 @@ Expr* Expr::remove() {
 
 
 void Expr::replace(Expr* new_ast) {
+  BASE_AST_CRASH_IF_RESOLVED_EARLY(this);
+  BASE_AST_CRASH_IF_RESOLVED_EARLY(new_ast);
+
   if (new_ast->parentSymbol || new_ast->parentExpr)
     INT_FATAL(new_ast, "Argument is already in AST in Expr::replace");
   if (new_ast->list)
@@ -378,6 +391,9 @@ void Expr::replace(Expr* new_ast) {
 
 
 void Expr::insertBefore(Expr* new_ast) {
+  BASE_AST_CRASH_IF_RESOLVED_EARLY(this);
+  BASE_AST_CRASH_IF_RESOLVED_EARLY(new_ast);
+
   if (new_ast->parentSymbol || new_ast->parentExpr)
     INT_FATAL(new_ast, "Argument is already in AST in Expr::insertBefore");
   if (!list)
@@ -398,6 +414,9 @@ void Expr::insertBefore(Expr* new_ast) {
 }
 
 void Expr::insertAfter(Expr* new_ast) {
+  BASE_AST_CRASH_IF_RESOLVED_EARLY(this);
+  BASE_AST_CRASH_IF_RESOLVED_EARLY(new_ast);
+
   if (new_ast->parentSymbol || new_ast->parentExpr)
     INT_FATAL(new_ast, "Argument is already in AST in Expr::insertAfter");
   if (!list)

@@ -2212,11 +2212,13 @@ void callDestructors() {
 
   checkForErroneousInitCopies();
 
+  // Allow mutation of frontend-generation symbols now!
+  BaseAST::canMutateEarlyResolvedSymbols = true;
+
+  // This always needs to run since the frontend doesn't do lifetime checking.
   checkLifetimesAndNilDereferences();
 
-  // TODO: Interprocedural, mutates all Vars/Args/ShadowVars of a given type.
-  // TODO: Break out "removeUselessCasts()" into its own pass?
-  // TODO: I think 'dyno' can handle all of this elegantly.
+  // TODO: This pass can be removed when the typed converter comes online.
   convertClassTypesToCanonical();
 
   pm.runPass(CallDestructorsCallCleanup(), gCallExprs);
