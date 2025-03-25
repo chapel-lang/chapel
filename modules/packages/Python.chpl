@@ -2872,6 +2872,13 @@ module Python {
       var res = makeArrayFromPtr(buf, size);
       return res;
     }
+
+    /* Creates a new array from ``x``, when ``x`` is a :class:`PyArray`. */
+    operator :(const ref x: PyArray, type t: []): t {
+      var res = try! x.interpreter.fromPython(t, x.getPyObject());
+
+      return res;
+    }
   }
 
   @chpldoc.nodoc
