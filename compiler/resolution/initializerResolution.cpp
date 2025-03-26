@@ -216,17 +216,15 @@ static FnSymbol* buildNewWrapper(FnSymbol* initFn, Expr* allocator = nullptr) {
                                  new CallExpr(new SymExpr(dtOwned->symbol),
                                               nonNilC));
 
-    errorDef->init = toOwned;
-
-    // cribbed from callDestructors.cpp
     for_fields(field, type) {
-      if (field->type->hasDestructor() && !isClass(field->type)) {
+      if (isRecord(field->type)) {
         catchBody->insertAtHead(new CallExpr("deinit", gMethodToken,
                                              new CallExpr(PRIM_GET_MEMBER,
                                                           initTemp, field)));
       }
     }
-    
+
+    errorDef->init = toOwned;
     catchBody->insertAtHead(errorDef);
     catchBody->insertAtHead(castedDef);
 
