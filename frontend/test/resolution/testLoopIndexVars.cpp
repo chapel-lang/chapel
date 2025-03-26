@@ -534,6 +534,62 @@ static void testNestedParamFor() {
   assert(resolvedVals == pc.resolvedVals);
 }
 
+static void testNestedParamForLabeledBreakContinue(const std::string& control, int expectedWarnings) {
+  auto program =
+    R"""(
+      label outer
+      for param i in 0..3 {
+
+        label inner
+        for param j in 0..3 {
+         compilerWarning("Start iteration i = " + (i : string) + ", j = " + (j : string));
+         )""" + control + R"""(
+         compilerWarning("End iteration i = " + (i : string) + ", j = " + (j : string));
+        }
+      }
+  )""";
+  auto ctx = buildStdContext();
+  ErrorGuard guard(ctx);
+
+  std::ignore = resolveTypesOfVariables(ctx, program, {});
+  CHPL_ASSERT(guard.numErrors(/* countWarnings */ false) == 0);
+  // expected warnings is multiplied by two since we track emitting AND showing
+  // the warning
+  CHPL_ASSERT(guard.numErrors() == expectedWarnings * 2);
+  guard.realizeErrors();
+}
+
+static void testNestedParamForLabeledBreakContinue() {
+  // when not breaking or continuing, should print 2 * 4 * 4 = 32 warnings
+  testNestedParamForLabeledBreakContinue("", 32);
+
+  // when continuing without a label, we only print the start but not
+  // the end warning. The same should be true if we explicitly list
+  // the inner label.
+  testNestedParamForLabeledBreakContinue("continue;", 16);
+  testNestedParamForLabeledBreakContinue("continue inner;", 16);
+
+  // when breaking without a label, we should print one "start iteration"
+  // per outer loop invcation, and no "end iteration" warnings.
+  testNestedParamForLabeledBreakContinue("break;", 4);
+  testNestedParamForLabeledBreakContinue("break inner;", 4);
+
+  // Since there's no code after the inner loop, breaking the inner loop
+  // is the same as continuing the outer loop.
+  testNestedParamForLabeledBreakContinue("continue outer;", 4);
+
+  // breaking the outer loop should stop all iterations
+  testNestedParamForLabeledBreakContinue("break outer;", 1);
+
+  // test conditionally breaking the outer loop. This will break on the 8th
+  // iteration of the inner body.
+  testNestedParamForLabeledBreakContinue("if i * 4 + j == 7 { break outer; }", 15);
+
+  // test conditionally continuing the outer loop. This will continue on the 8th
+  // iteration of the inner body.
+  testNestedParamForLabeledBreakContinue("if i * 4 + j == 7 { continue outer; }", 31);
+}
+
 struct TupleCollector {
   using RV = ResolvedVisitor<TupleCollector>;
 
@@ -1552,6 +1608,7 @@ int main() {
   testCForLoop();
   testParamFor();
   testNestedParamFor();
+  testNestedParamForLabeledBreakContinue();
   testHeteroTuples();
   testIndexScope0();
   testIndexScope1();
