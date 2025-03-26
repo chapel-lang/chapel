@@ -2184,7 +2184,7 @@ module Python {
 
     // Casts
     /* Creates a new tuple from ``x``, when ``x`` is a :class:`Value`. */
-    operator :(const ref x: Value, type t: _tuple): t {
+    operator :(x: borrowed Value, type t: _tuple): t {
       var g = PyGILState_Ensure();
       defer PyGILState_Release(g);
 
@@ -2198,7 +2198,7 @@ module Python {
     /*
       Creates a new list from ``x``, when ``x`` is a :class:`Value`.
     */
-    operator :(const ref x: Value, type t: List.list(?)): t {
+    operator :(x: borrowed Value, type t: List.list(?)): t {
       var g = PyGILState_Ensure();
       defer PyGILState_Release(g);
 
@@ -2210,7 +2210,7 @@ module Python {
     }
 
     /* Creates a new map from ``x``, when ``x`` is a :class:`Value`. */
-    operator :(const ref x: Value, type t: Map.map(?)): t {
+    operator :(x: borrowed Value, type t: Map.map(?)): t {
       var g = PyGILState_Ensure();
       defer PyGILState_Release(g);
 
@@ -2222,7 +2222,7 @@ module Python {
     }
 
     /* Creates a new set from ``x``, when ``x`` is a :class:`Value`. */
-    operator :(const ref x: Value, type t: Set.set(?)): t {
+    operator :(x: borrowed Value, type t: Set.set(?)): t {
       var g = PyGILState_Ensure();
       defer PyGILState_Release(g);
 
@@ -2234,7 +2234,7 @@ module Python {
     }
 
     /* Creates a new array from ``x``, when ``x`` is a :class:`Value`. */
-    operator :(const ref x: Value, type t: []): t {
+    operator :(x: borrowed Value, type t: []): t {
       var g = PyGILState_Ensure();
       defer PyGILState_Release(g);
 
@@ -2506,18 +2506,6 @@ module Python {
       this.interpreter.checkException();
       return result: bool;
     }
-
-    /* Creates a new tuple from ``x``, when ``x`` is a :class:`PyTuple`. */
-    override operator :(const ref x: PyTuple, type t: _tuple): t {
-      var g = PyGILState_Ensure();
-      defer PyGILState_Release(g);
-
-      var pyObj = x.getPyObject();
-      Py_INCREF(pyObj);
-      var res = try! x.interpreter.fromPythonInner(t, pyObj);
-
-      return res;
-    }
   }
 
   /*
@@ -2585,20 +2573,6 @@ module Python {
                      idx.safeCast(Py_ssize_t),
                      interpreter.toPythonInner(item));
       this.interpreter.checkException();
-    }
-
-    /*
-      Creates a new list from ``x``, when ``x`` is a :class:`PyList`.
-    */
-    override operator :(const ref x: PyList, type t: List.list(?)): t {
-      var g = PyGILState_Ensure();
-      defer PyGILState_Release(g);
-
-      var pyObj = x.getPyObject();
-      Py_INCREF(pyObj);
-      var res = try! x.interpreter.fromPythonInner(t, pyObj);
-
-      return res;
     }
   }
 
@@ -2728,18 +2702,6 @@ module Python {
       this.interpreter.checkException();
       return result: bool;
     }
-
-    /* Creates a new map from ``x``, when ``x`` is a :class:`PyDict`. */
-    override operator :(const ref x: PyDict, type t: Map.map(?)): t {
-      var g = PyGILState_Ensure();
-      defer PyGILState_Release(g);
-
-      var pyObj = x.getPyObject();
-      Py_INCREF(pyObj);
-      var res = try! x.interpreter.fromPythonInner(t, pyObj);
-
-      return res;
-    }
   }
 
   /*
@@ -2842,18 +2804,6 @@ module Python {
       PySet_Clear(this.getPyObject());
       this.interpreter.checkException();
     }
-
-    /* Creates a new set from ``x``, when ``x`` is a :class:`PySet`. */
-    override operator :(const ref x: PySet, type t: Set.set(?)): t {
-      var g = PyGILState_Ensure();
-      defer PyGILState_Release(g);
-
-      var pyObj = x.getPyObject();
-      Py_INCREF(pyObj);
-      var res = try! x.interpreter.fromPythonInner(t, pyObj);
-
-      return res;
-    }
   }
 
   private proc checkFormatWithEltType(format: c_ptr(c_char),
@@ -2953,18 +2903,6 @@ module Python {
       var buf = view.buf: c_ptr(this.eltType);
       var size = view.len / this.itemSize;
       var res = makeArrayFromPtr(buf, size);
-      return res;
-    }
-
-    /* Creates a new array from ``x``, when ``x`` is a :class:`PyArray`. */
-    override operator :(const ref x: PyArray, type t: []): t {
-      var g = PyGILState_Ensure();
-      defer PyGILState_Release(g);
-
-      var pyObj = x.getPyObject();
-      Py_INCREF(pyObj);
-      var res = try! x.interpreter.fromPythonInner(t, pyObj);
-
       return res;
     }
   }

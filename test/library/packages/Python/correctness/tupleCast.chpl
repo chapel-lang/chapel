@@ -37,4 +37,11 @@ proc main() {
   writeln(t4);
   var chapelT4 = t4: (string, bool, int);
   writeln(chapelT4);
+
+  writeln("checking unmanaged");
+  var t5 = getTupFunc2(unmanaged Value);
+  writeln(t5);
+  var chapelT5 = t5: (string, bool, int);
+  writeln(chapelT5);
+  delete t5;
 }
