@@ -14,7 +14,7 @@ proc main() {
 
   var interp = new Interpreter();
 
-  var pyCodeModule = interp.importModule('__empty__', pyCode);
+  var pyCodeModule = interp.createModule(pyCode);
   var getListFunc = pyCodeModule.get('getList');
 
   var lst = getListFunc(owned PyList);
