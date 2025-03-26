@@ -3290,10 +3290,9 @@ QualifiedType Resolver::typeForId(const ID& id) {
   if (useLocalResult && curStmt != nullptr) {
     if (curStmt->id().contains(id)) {
       if (asttags::isLoop(parsing::idToTag(context, id))) {
-        // we found a reference to a label.
-        // not only do we not need to use a local result, we can return
-        // right now.
-        return QualifiedType(QualifiedType::LOOP, nullptr);
+        // we found a reference to a label. not only do we not need to use a
+        // local result, we can return right now.
+        return QualifiedType(QualifiedType::LOOP, UnknownType::get(context));
       }
       // OK, proceed using local result
     } else {
@@ -3691,6 +3690,23 @@ MatchingIdsWithName Resolver::lookupIdentifier(
 }
 
 
+static bool
+checkForLoopLabelOutsideBreakOrContinue(Context* context,
+                                        const AstNode* node, const ID& target) {
+  auto targetTag = parsing::idToTag(context, target);
+  if (asttags::isLoop(targetTag)) {
+    // This check would be insufficient if we could write something fun
+    // like 'continue (proc() {....})'. Fortunately, the grammar only
+    // allows simple identifiers after 'continue' etc.
+    auto parentTag = parsing::idToTag(context, parsing::idToParentId(context, node->id()));
+    if (!asttags::isContinue(parentTag) && !asttags::isBreak(parentTag)) {
+      // CHPL_REPORT(context, LoopLabelOutsideBreakOrContinue, node, target);
+      context->error(node, "cannot use loop label outside of a 'break' or 'continue' statement");
+      return true;
+    }
+  }
+  return false;
+}
 
 static bool
 checkForErrorModuleAsVariable(Context* context, const AstNode* node,
@@ -3817,6 +3833,7 @@ checkForIdentifierTargetErrorsQuery(Context* context, ID nodeId, ID targetId) {
   auto nodeAst = parsing::idToAst(context, nodeId);
 
   // Use bitwise-OR here to avoid short-circuiting.
+  ret |= checkForLoopLabelOutsideBreakOrContinue(context, nodeAst, targetId);
   ret |= checkForErrorModuleAsVariable(context, nodeAst, targetId);
   ret |= checkForErrorNestedClassFieldRef(context, nodeAst, targetId);
   ret |= checkForErrorUseBeforeDefine(context, nodeAst, targetId);
