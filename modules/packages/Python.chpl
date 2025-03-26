@@ -2938,7 +2938,7 @@ module Python {
     if format == nil {
       // make sure item size matches numBytes
       // but since format is nil we cannot check the type more than this
-      return numBytes(eltType) == itemSize;
+      return eltType != bool && numBytes(eltType) == itemSize;
     }
     if format.deref() == "c".toByte() && eltType == c_char then return true;
     if format.deref() == "b".toByte() && eltType == c_schar then return true;
@@ -2966,14 +2966,42 @@ module Python {
     `numpy.ndarray <https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html>`_.
   */
   class PyArray: Value {
+    /*
+      The Chapel type of the elements in the array. If this is left unspecified,
+      i.e. ``nothing``, certain operations will require the user to specify the
+      type at compile time.
+    */
+    type eltType = nothing;
+    /*
+      The number of dimensions of the array. If this is left unspecified, i.e.
+      ``-1``, certain operations will require the user to specify the rank at
+      compile time.
+    */
+    param rank: int = -1;
+
     @chpldoc.nodoc
     var view: Py_buffer;
+
+    @chpldoc.nodoc
+    proc init(type eltType = nothing, param rank: int = -1) {
+      this.eltType = eltType;
+      this.rank = rank;
+    }
 
     @chpldoc.nodoc
     proc init(in interpreter: borrowed Interpreter,
               in obj: PyObjectPtr, isOwned: bool = true) {
       super.init(interpreter, obj, isOwned=isOwned);
     }
+    @chpldoc.nodoc
+    proc init(type eltType, param rank: int,
+              in interpreter: borrowed Interpreter,
+              in obj: PyObjectPtr, isOwned: bool = true) {
+      super.init(interpreter, obj, isOwned=isOwned);
+      this.eltType = eltType;
+      this.rank = rank;
+    }
+
     @chpldoc.nodoc
     proc postinit() throws {
       var ctx = chpl_pythonContext.enter();
@@ -2982,7 +3010,8 @@ module Python {
       if PyObject_CheckBuffer(this.getPyObject()) == 0 {
         throw new ChapelException("Object does not support buffer protocol");
       }
-      const flags = PyBUF_SIMPLE | PyBUF_WRITABLE | PyBUF_FORMAT | PyBUF_ND;
+      const flags = PyBUF_SIMPLE | PyBUF_WRITABLE | PyBUF_FORMAT |
+                    PyBUF_ND | PyBUF_STRIDES;
       if PyObject_GetBuffer(this.getPyObject(),
                             c_ptrTo(this.view), flags) == -1 {
         this.interpreter.checkException();
@@ -2992,8 +3021,8 @@ module Python {
       if this.view.ndim == 0 {
         throw new ChapelException("0-dimensional arrays are not supported");
       }
-      if this.view.shape == nil {
-        throw new ChapelException("Shape is required for arrays");
+      if this.view.shape == nil || this.view.strides == nil {
+        throw new ChapelException("The Python array does not properly support the buffer protocol");
       }
     }
 
@@ -3007,36 +3036,159 @@ module Python {
 
 
     /*
-      The 'rank' of the Python array, also known as the number of dimensions of
-      the array.
-
-      :returns: The number of rank of the array.
+      The number of dimensions of the Python array.
     */
-    proc rank: int do return this.view.ndim;
-    /* Alias of :proc:`~PyArray.rank`. */
     proc ndim: int do return this.view.ndim;
 
-    proc shape(param rank = 1): rank*int throws {
+    proc size: int {
+      // equivalent check is `this.view.len / this.view.itemsize`
+      var s = 1;
+      for i in 0..<this.view.ndim {
+        s *= this.view.shape(i);
+      }
+      return s;
+    }
+
+    /*
+      The shape of the Python array, which is a tuple of integers that
+      represent the size of each dimension of the array.
+
+      :arg rank: The number of dimensions of the array. This must be known at
+                 compile time and match the rank of the Python array at runtime.
+      :returns: A tuple of integers representing the shape of the array.
+    */
+    proc shape(param rank = this.rank): rank*int throws {
+      if rank == -1 then
+        compilerError("Rank must be specified at compile time");
+
       var s: rank*int;
-      assert(this.view.shape != nil); // checked in postinit
       for param i in 0..<rank {
         s(i) = this.view.shape(i);
       }
       return s;
     }
 
-    @chpldoc.nodoc
-    proc computeItemSize() {
-      var itemSize = PyBuffer_SizeFromFormat(this.view.format);
-      if itemSize == -1 {
-        assert(this.view.shape != nil); // checked in postinit
-        itemSize = this.view.itemsize;
-      }
-      return itemSize;
+    // TODO: docs
+    pragma "docs only"
+    proc this(type eltType = this.eltType, idx) ref : eltType throws
+    where isValidArrayIndex(idx) {
+      compilerError("docs only");
     }
 
-    proc array(type eltType, param rank = 1): [] throws {
-      if !checkFormatWithEltType(this.view.format, computeItemSize(), eltType) {
+    @chpldoc.nodoc
+    proc isValidArrayIndex(idx) param : bool do
+      return idx.type == int ||
+             (isHomogeneousTupleType(idx.type) && idx(0).type == int);
+
+    @chpldoc.nodoc
+    proc this(idx) ref : eltType throws where isValidArrayIndex(idx) do
+      return this(eltType, idx);
+
+    @chpldoc.nodoc
+    proc this(type eltType, idx) ref : eltType throws
+    where isValidArrayIndex(idx) {
+
+      if eltType == nothing then
+        compilerError("Element type must be specified at compile time");
+      // if this.rank != -1 && this.rank != idx.size then
+      if this.rank != -1 &&
+         ((isHomogeneousTupleType(idx.type) && this.rank != idx.size) ||
+          idx.type == int && this.rank != 1) then
+        compilerError("Attempting to index an array of rank " +
+                      this.rank:string + " with a " + idx.size:string +
+                      "-dimensional index");
+
+      var offset = 0;
+      if idx.type == int {
+        // TODO: bounds checking
+        offset = idx * this.view.strides(0);
+      } else {
+        // TODO: bounds checking
+        if idx.size != this.view.ndim {
+          throw new ChapelException("Cannot index a " +
+            this.view.ndim:string + "-dimensional array with a " +
+            idx.size:string + "-dimensional index");
+        }
+        for param i in 0..<idx.size {
+          offset += idx(i) * this.view.strides(i);
+        }
+      }
+
+      var ptr_ = (this.view.buf:c_intptr + offset): c_ptr(void): c_ptr(eltType);
+      return ptr_.deref();
+    }
+
+    @chpldoc.nodoc
+    proc this(idx) ref : eltType throws where !isValidArrayIndex(idx) do
+      compilerError("Invalid index type for array - " +
+                    "index must be a tuple of ints " +
+                    "or a single int (for 1D arrays only)");
+
+    @chpldoc.nodoc
+    proc this(type eltType, idx) ref : eltType throws
+    where !isValidArrayIndex(idx) do
+      compilerError("Invalid index type for array - " +
+                    "index must be a tuple of ints " +
+                    "or a single int (for 1D arrays only)");
+
+    /*
+      TODO
+    */
+    pragma "docs only"
+    iter these(type eltType = this.eltType) ref : eltType throws {
+      compilerError("docs only");
+    }
+
+    @chpldoc.nodoc
+    iter these(type eltType) ref : eltType throws {
+      var ptr_ = this.view.buf: c_ptr(eltType);
+      foreach i in 0..#this.size {
+        yield ptr_[i];
+      }
+    }
+    @chpldoc.nodoc
+    iter these() ref : eltType throws {
+      foreach e in these(eltType=this.eltType) do yield e;
+    }
+    @chpldoc.nodoc
+    iter these(param tag: iterKind, type eltType) ref : eltType throws
+     where tag == iterKind.standalone {
+      var ptr_ = this.view.buf: c_ptr(eltType);
+      forall i in 0..#this.size {
+        yield ptr_[i];
+      }
+    }
+    @chpldoc.nodoc
+    iter these(param tag: iterKind) ref : eltType throws
+    where tag == iterKind.standalone do
+      foreach e in these(tag=tag, eltType=this.eltType) do yield e;
+
+    /*
+      Get the Chapel array from the Python array. This results in a Chapel view
+      of the underlying data in the Python array. The data is not copied, so
+      modifying the Chapel array will modify the Python array and vice versa.
+
+      ``eltType`` and ``rank`` can be optionally specified to override the
+      default values for the ``PyArray`` object. If ``eltType`` and ``rank``
+      are fully specified in the ``PyArray`` object, they do not need to be
+      specified here.
+    */
+    pragma "docs only"
+    proc array(type eltType = this.eltType,
+               param rank: int = this.rank): [] throws do
+      compilerError("docs only");
+
+    @chpldoc.nodoc
+    proc array(): [] throws do return array(this.eltType, this.rank);
+    @chpldoc.nodoc
+    proc array(type eltType): [] throws do return array(eltType, this.rank);
+    @chpldoc.nodoc
+    proc array(param rank: int): [] throws do return array(this.eltType, rank);
+
+    @chpldoc.nodoc
+    proc array(type eltType, param rank: int): [] throws {
+      if !checkFormatWithEltType(this.view.format,
+                                 this.view.itemsize, eltType) {
         throw new ChapelException("Format does not match element type");
       }
       var buf = this.view.buf: c_ptr(eltType);
@@ -3057,6 +3209,17 @@ module Python {
       var res = makeArrayFromPtr(buf, dom);
       return res;
     }
+  }
+
+  // TODO: this should be generalized with
+  // https://github.com/chapel-lang/chapel/issues/26958
+  // TODO: this only works with owned values, trying to write this with
+  // "borrowed" does not resolve. This is an ok limitation for now
+  @chpldoc.nodoc
+  operator:(ref arr: owned Value, type t: owned PyArray(?)): t throws {
+    var obj = arr.getPyObject();
+    Py_INCREF(obj);
+    return new t(arr.interpreter, obj, isOwned=true);
   }
 
   @chpldoc.nodoc
@@ -3701,8 +3864,8 @@ module Python {
     extern proc PyBuffer_SizeFromFormat(format: c_ptrConst(c_char)): Py_ssize_t;
     extern proc PyBuffer_IsContiguous(view: c_ptr(Py_buffer),
                                       order: c_char): c_int;
-    extern proc PyBuffer_GetPointer(view: c_ptr(Py_buffer),
-                                    inidices: c_ptr(Py_ssize_t)): c_ptr(void);
+    extern proc PyBuffer_GetPointer(view: c_ptrConst(Py_buffer),
+                                    indices: c_ptrConst(Py_ssize_t)): c_ptr(void);
     extern proc PyBuffer_FromContiguous(view: c_ptr(Py_buffer),
                                         buf: c_ptr(void),
                                         len: Py_ssize_t,
@@ -3730,6 +3893,7 @@ module Python {
     extern "chpl_PyBUF_WRITABLE" const PyBUF_WRITABLE: c_int;
     extern "chpl_PyBUF_FORMAT" const PyBUF_FORMAT: c_int;
     extern "chpl_PyBUF_ND" const PyBUF_ND: c_int;
+    extern "chpl_PyBUF_STRIDES" const PyBUF_STRIDES: c_int;
 
   }
 
