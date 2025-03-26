@@ -23,7 +23,6 @@
 #include "chpl/uast/all-uast.h"
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/resolution/resolution-types.h"
-#include <llvm/ADT/SmallPtrSet.h>
 
 namespace chpl {
 namespace resolution {
@@ -41,25 +40,20 @@ struct ControlFlowInfo {
   // has the block already encountered a return or a throw?
   bool returnsOrThrows_ = false;
 
-  // whether this frame hit a 'break'
-  llvm::SmallPtrSet<const uast::Loop*, 2> loopBreaks_;
+  // if this frame hit a 'break', the loop it broke out of
+  const uast::Loop* loopBreaks_ = nullptr;
 
-  // whether this frame hit a 'continue'
-  llvm::SmallPtrSet<const uast::Loop*, 2> loopContinues_;
+  // if this frame hit a 'continue', the loop it continued
+  const uast::Loop* loopContinues_ = nullptr;
 
  public:
   ControlFlowInfo() = default;
-  ControlFlowInfo(bool returnsOrThrows, llvm::SmallPtrSet<const uast::Loop*, 2> loopBreaks,
-                  llvm::SmallPtrSet<const uast::Loop*, 2> loopContinues)
-    : returnsOrThrows_(returnsOrThrows),
-      loopBreaks_(std::move(loopBreaks)),
-      loopContinues_(std::move(loopContinues)) {}
 
   /* have we hit a statement that would prevent further execution of a block? */
-  bool isDoneExecuting() const { return returnsOrThrows_ || !loopBreaks_.empty() || !loopContinues_.empty(); }
+  bool isDoneExecuting() const { return returnsOrThrows_ || loopBreaks_ || loopContinues_; }
   bool returnsOrThrows() const { return returnsOrThrows_; }
-  llvm::SmallPtrSetImpl<const uast::Loop*> const& breaks() const { return loopBreaks_; }
-  llvm::SmallPtrSetImpl<const uast::Loop*> const& continues() const { return loopContinues_; }
+  bool breaks() const { return loopBreaks_ != nullptr; }
+  bool continues() const { return loopContinues_ != nullptr; }
 
   // The below mark functions check if the block is already done executing.
   // This is useful because in cases like 'return; continue', we don't want
@@ -67,26 +61,33 @@ struct ControlFlowInfo {
   // further changes to control flow are not recorded.
 
   void markReturnOrThrow() { if (!isDoneExecuting()) returnsOrThrows_ = true; }
-  void markBreak(const uast::Loop* markWith) { if (!isDoneExecuting()) loopBreaks_.insert(markWith); }
-  void markContinue(const uast::Loop* markWith) { if (!isDoneExecuting()) loopContinues_.insert(markWith); }
+  void markBreak(const uast::Loop* markWith) { if (!isDoneExecuting()) loopBreaks_ = markWith; }
+  void markContinue(const uast::Loop* markWith) { if (!isDoneExecuting()) loopContinues_ = markWith; }
 
   // resetting break and continue is useful for when we are handling 'param' for loops.
   // If we hit a continue, we might want to move on to the next iteration of
   // resolving the body, but if we hit a return, we should stop.
 
-  void resetContinue(const uast::Loop* clearing) {  loopContinues_.erase(clearing); }
-  void resetBreak(const uast::Loop* clearing) {  loopBreaks_.erase(clearing); }
+  void resetBreak(const uast::Loop* clearing) {  if (loopBreaks_ == clearing) loopBreaks_ = nullptr; }
+  void resetContinue(const uast::Loop* clearing) {  if (loopContinues_ == clearing) loopContinues_ = nullptr; }
 
   /* mutably combine control flow information from two branches (e.g., then/else) */
   ControlFlowInfo& operator&=(const ControlFlowInfo& other) {
     returnsOrThrows_ &= other.returnsOrThrows_;
 
-    loopBreaks_.remove_if([&other](const uast::Loop* loop) {
-      return !other.loopBreaks_.count(loop);
-    });
-    loopContinues_.remove_if([&other](const uast::Loop* loop) {
-      return !other.loopContinues_.count(loop);
-    });
+    if (other.loopBreaks_ == loopBreaks_) {
+      // both break out of the same loop (or neither breaks), do nothing
+    } else {
+      // incompatible breaks, can't tell what will happen for sure
+      loopBreaks_ = nullptr;
+    }
+
+    if (other.loopContinues_ == loopContinues_) {
+      // both continue the same loop (or neither continue), do nothing
+    } else {
+      // incompatible continues, can't tell what will happen for sure
+      loopContinues_ = nullptr;
+    }
 
     return *this;
   }
@@ -104,8 +105,8 @@ struct ControlFlowInfo {
   void sequence(const ControlFlowInfo& other) {
     if (!isDoneExecuting()) {
       returnsOrThrows_ |= other.returnsOrThrows_;
-      loopBreaks_.insert(other.loopBreaks_.begin(), other.loopBreaks_.end());
-      loopContinues_.insert(other.loopContinues_.begin(), other.loopContinues_.end());
+      loopBreaks_ = other.loopBreaks_;
+      loopContinues_ = other.loopContinues_;
     }
   }
 
@@ -116,13 +117,8 @@ struct ControlFlowInfo {
   void sequenceIteration(const ControlFlowInfo& other, const uast::Loop* loop) {
     if (!isDoneExecuting()) {
       returnsOrThrows_ |= other.returnsOrThrows_;
-      for (auto lb : other.loopBreaks_) {
-        if (lb != loop) loopBreaks_.insert(lb);
-      }
-
-      for (auto lc : other.loopContinues_) {
-        if (lc != loop) loopContinues_.insert(lc);
-      }
+      if (other.loopBreaks_ != loop) loopBreaks_ = other.loopBreaks_;
+      if (other.loopContinues_ != loop) loopContinues_ = other.loopContinues_;
     }
   }
 };
