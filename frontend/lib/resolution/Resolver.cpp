@@ -4887,6 +4887,10 @@ bool Resolver::enter(const uast::Array* decl) {
   return true;
 }
 void Resolver::exit(const uast::Array* decl) {
+  if (scopeResolveOnly) {
+    return;
+  }
+
   ResolvedExpression& r = byPostorder.byAst(decl);
 
   if (!decl->isMultiDim()) {
