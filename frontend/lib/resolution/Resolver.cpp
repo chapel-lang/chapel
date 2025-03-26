@@ -6249,6 +6249,10 @@ static bool resolveParamForLoop(Resolver& rv, const For* forLoop, BoundInfo&& bo
     cur.exitScope(forLoop);
 
     loopResults.push_back(std::move(cur.byPostorder));
+
+    rv.userDiagnostics.insert(rv.userDiagnostics.end(),
+                              cur.userDiagnostics.begin(),
+                              cur.userDiagnostics.end());
   }
 
   // Propagate the control flow information to the current frame.
