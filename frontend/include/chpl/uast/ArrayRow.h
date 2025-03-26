@@ -65,6 +65,16 @@ class ArrayRow final : public AstNode {
   void markUniqueStringsInner(Context* context) const override {
   }
 
+  void flattenedExprsHelper(std::vector<const AstNode*>* exprs) const {
+    for (const AstNode* expr : this->exprs()) {
+      if (auto row = expr->toArrayRow()) {
+        row->flattenedExprsHelper(exprs);
+      } else {
+        exprs->push_back(expr);
+      }
+    }
+  }
+
  public:
   ~ArrayRow() override = default;
 
@@ -94,6 +104,16 @@ class ArrayRow final : public AstNode {
   const AstNode* expr(int i) const {
     const AstNode* ast = this->child(i);
     return ast;
+  }
+
+  /**
+   * Return a dimension-flattened list of expressions in this array row.
+   */
+  // TODO: replace with iterator to avoid second traversal at call site
+  std::vector<const AstNode*> flattenedExprs() const {
+    std::vector<const AstNode*> ret;
+    this->flattenedExprsHelper(&ret);
+    return ret;
   }
 };
 

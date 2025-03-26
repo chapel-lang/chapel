@@ -1763,6 +1763,7 @@ struct Converter final : UastConverter {
       shapeList = new CallExpr("_build_tuple", shapeActualList);
 
       for (auto expr : node->exprs()) {
+        // TODO: use flattening helper on Array
         convertArrayRow(expr->toArrayRow(), actualList);
       }
     }
