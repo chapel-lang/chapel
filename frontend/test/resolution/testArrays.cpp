@@ -174,6 +174,7 @@ int main() {
   testArray("domain(1)", "string");
   testArray("domain(2)", "int");
 
+  // 1D literals
   testArrayLiteral("[1, 2, 3]", "domain(1)", "int");
   testArrayLiteral("[1, 2, 3,]", "domain(1)", "int");
   testArrayLiteral("[1]", "domain(1)", "int");
@@ -181,7 +182,11 @@ int main() {
   testArrayLiteral("[\"foo\", \"bar\"]", "domain(1)", "string");
   testArrayLiteral("[1..10]", "domain(1)", "range");
   testArrayLiteral("[[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]]", "domain(1)", "[1..5] int");
-  // TODO: test multi-dim rectangular literals
+  // multi-dim literals
+  testArrayLiteral("[1, 2; 3, 4]", "domain(2)", "int");
+  testArrayLiteral("[1, 2; 3, 4;]", "domain(2)", "int");
+  testArrayLiteral("[1;]", "domain(1)", "int");
+  testArrayLiteral("[1, 2; 3, 4;; 5, 6; 7, 8]", "domain(3)", "int");
 
   // associative
   testArray("domain(int)", "int");
