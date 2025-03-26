@@ -3700,8 +3700,7 @@ checkForLoopLabelOutsideBreakOrContinue(Context* context,
     // allows simple identifiers after 'continue' etc.
     auto parentTag = parsing::idToTag(context, parsing::idToParentId(context, node->id()));
     if (!asttags::isContinue(parentTag) && !asttags::isBreak(parentTag)) {
-      // CHPL_REPORT(context, LoopLabelOutsideBreakOrContinue, node, target);
-      context->error(node, "cannot use loop label outside of a 'break' or 'continue' statement");
+      CHPL_REPORT(context, LoopLabelOutsideBreakOrContinue, node, target);
       return true;
     }
   }
@@ -7106,7 +7105,7 @@ const Loop* findTargetLoop(Resolver& rv, const ContinueOrBreak* node) {
 
 
   if (refersTo.type().kind() != QualifiedType::LOOP) {
-    rv.context->error(target, "'continue' statement refers to non-loop");
+    CHPL_REPORT(rv.context, InvalidContinueBreakTarget, node, refersTo.toId(), refersTo.type());
     return findLastLoop(rv);
   }
 
@@ -7122,7 +7121,7 @@ const Loop* findTargetLoop(Resolver& rv, const ContinueOrBreak* node) {
     current = current->parentResolver;
   }
 
-  rv.context->error(target, "could not find label in the current scope");
+  CHPL_ASSERT(false && "should not be possible to refer a label that's not in the scope stack");
   return findLastLoop(rv);
 }
 

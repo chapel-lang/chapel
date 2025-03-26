@@ -987,6 +987,31 @@ void ErrorInvalidClassCast::write(ErrorWriterBase& wr) const {
   }
 }
 
+void ErrorInvalidContinueBreakTarget::write(ErrorWriterBase& wr) const {
+  auto stmt = std::get<const uast::AstNode*>(info_);
+  auto target = std::get<ID>(info_);
+  auto& qt = std::get<types::QualifiedType>(info_);
+
+  const uast::AstNode* targetNode;
+  const char* stmtType = nullptr;
+  if (auto cont = stmt->toContinue()) {
+    targetNode = cont->target();
+    stmtType = "'continue'";
+  } else if (auto brk = stmt->toBreak()) {
+    targetNode = brk->target();
+    stmtType = "'break'";
+  } else {
+    targetNode = stmt;
+    stmtType = "'continue' or 'break'";
+    CHPL_ASSERT(false && "invalid AST in error report");
+  }
+  wr.heading(kind_, type_, stmt, "invalid target for ", stmtType, " statement.");
+  wr.code(stmt, { targetNode });
+  wr.message("A ", stmtType, " statement can only refer to a loop. This is done by using the loop's label.");
+  wr.message("However, the target is declared as ", qt, " here:");
+  wr.codeForDef(target);
+}
+
 void ErrorInvalidDomainCall::write(ErrorWriterBase& wr) const {
   auto fnCall = std::get<const uast::FnCall*>(info_);
   auto actualTypes = std::get<std::vector<types::QualifiedType>>(info_);
@@ -1198,6 +1223,18 @@ void ErrorIteratorsInOtherScopes::write(ErrorWriterBase& wr) const {
     wr.note(rejectedCandidate->id(), "one candidate was found here:");
     wr.codeForLocation(rejectedCandidate->id());
   }
+}
+
+void ErrorLoopLabelOutsideBreakOrContinue::write(ErrorWriterBase& wr) const {
+  auto label = std::get<const uast::AstNode*>(info_);
+  auto loop = std::get<ID>(info_);
+
+  wr.heading(kind_, type_, label, "invalid reference to loop label outside of a 'break' or 'continue' statement.");
+  wr.message("Loop labels can only be referenced in 'break' or 'continue' statements.");
+  wr.message("However, the expression here references a loop label in another context:");
+  wr.code(label, { label });
+  wr.message("The expression in question refers to a labeled loop declared here:");
+  wr.codeForLocation(loop);
 }
 
 void ErrorMemManagementNonClass::write(ErrorWriterBase& wr) const {
