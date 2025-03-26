@@ -57,7 +57,7 @@ struct ControlFlowInfo {
   bool continues() const { return continues_; }
 
   // The below mark functions check if the block is already done executing.
-  // This is useful because in cases like `return; continue`, we don't want
+  // This is useful because in cases like 'return; continue', we don't want
   // to treat the code as if it continues. If we already stopped executing,
   // further changes to control flow are not recorded.
 
@@ -87,8 +87,8 @@ struct ControlFlowInfo {
     return ret &= other;
   }
 
-  /* supposing `this` represents a block's current control flow state,
-     update it with changes from `other` that represent a new statement having
+  /* supposing 'this' represents a block's current control flow state,
+     update it with changes from 'other' that represent a new statement having
      been executed. */
   void sequence(const ControlFlowInfo& other) {
     if (!isDoneExecuting()) {
@@ -98,7 +98,7 @@ struct ControlFlowInfo {
     }
   }
 
-  /* same as `sequence`, except treats the `other` as an iteration of a loop
+  /* same as 'sequence', except treats the 'other' as an iteration of a loop
      body rather than a statement in the current block. For this reason,
      does not propagate 'continue' and 'break', since a loop whose body
      continues does not continue its parent loop. */
@@ -116,14 +116,14 @@ struct ControlFlowInfo {
 
   At base, this struct stores information about control flow (see
   comment on ControlFlowInfo for when this is useful). It also stores the current
-  scope and AST node. Finally, it stores information about `param`-known
-  paths; if a `then` branch of a loop is known to be taken, we will incorporate
-  that information into the analysis and not traverse the `else` branch.
+  scope and AST node. Finally, it stores information about 'param'-known
+  paths; if a 'then' branch of a loop is known to be taken, we will incorporate
+  that information into the analysis and not traverse the 'else' branch.
 
   The 'paramTrueCond' and 'knownPath' are subtly different. A frame
   can have a true condition without being known to execute at compile time.
-  This can happen (e.g.) if a preceding 'when' clause has a non-`param`
-  condition, or if the preceding clause has a `param true` condition and
+  This can happen (e.g.) if a preceding 'when' clause has a non-'param'
+  condition, or if the preceding clause has a 'param true' condition and
   thus is evaluated instead.
 
   Visitors deriving from BranchSensitiveVisitor can extend this frame
@@ -185,14 +185,14 @@ struct DefaultFrame : public BaseFrame<DefaultFrame> {
   of BaseFrame. See the comment on BaseFrame for more information about
   what it does.
 
-  Normally, this visitor (via its `enterScope` and `exitScope` methods)
+  Normally, this visitor (via its 'enterScope' and 'exitScope' methods)
   pushes Frames onto its stack when entering an AST node with a scope,
   and pops them when exiting. For certain types of control flow, however,
   rather than popping the frame, it saves it in the parent frame's
-  `subFrames` field. This is done to enable processing multi-branch statements
+  'subFrames' field. This is done to enable processing multi-branch statements
   that have nontrivial behaviors (e.g., 'select' picks the first branch
   that matches, and if that condition is 'param', other branches are considered
-  dead; this affects what the whole `select` statement does w.r.t. control flow
+  dead; this affects what the whole 'select' statement does w.r.t. control flow
   and other analyses). The 'doEnterScope' and 'doExitScope' methods are
   intended to be overridden by visitors that need to do something when
   entering or exiting a scope. They are executed after the frame is pushed
@@ -201,19 +201,19 @@ struct DefaultFrame : public BaseFrame<DefaultFrame> {
 
   This visitor additionally consolidates logic for deciding which branch
   of a conditional or select to traverse. To be most general, this is done
-  via the `determineWhenCaseValue` and `determineIfValue` methods. For
+  via the 'determineWhenCaseValue' and 'determineIfValue' methods. For
   Resolver, which actually does the work of evaluating expressions, these
   are intended to perform that work. For other visitors which operates on
   results of the resolution process, these methods are intended to simply
-  access that (pre-computed) information. Finally, `traverseNode` is used
-  when "comitting" to a `param`-known path.
+  access that (pre-computed) information. Finally, 'traverseNode' is used
+  when "comitting" to a 'param'-known path.
 
-  To call into the conditional/select logic, use `branchSensitivelyTraverse`.
+  To call into the conditional/select logic, use 'branchSensitivelyTraverse'.
 
   The ExtraData template parameter is used for visitors whose recursive
-  traversals (via `traverse`) require that additional data. This is true
+  traversals (via 'traverse') require that additional data. This is true
   concretely for ResolvedVisitor-based analyses, which have a mutually recursive
-  `traverse` function.
+  'traverse' function.
 */
 template <typename Frame /* : BaseFrame */, typename ExtraData = std::variant<std::monostate>>
 struct BranchSensitiveVisitor {
@@ -272,7 +272,7 @@ struct BranchSensitiveVisitor {
     return false;
   }
 
-  /** Incororate the control flow information from a child statement into
+  /** Incorporate the control flow information from a child statement into
       the parent frame's control flow information. */
   void sequenceWithParentFrame(Frame* parentFrame, const ControlFlowInfo& append) {
     // 'break' and 'continue' are scoped to the loop that they're in.
@@ -285,7 +285,7 @@ struct BranchSensitiveVisitor {
     }
   }
 
-  /** When exiting an AST node, incorporate the information form its
+  /** When exiting an AST node, incorporate the information from its
       frame (assumed at the top of the stack) and sub-frames into the
       given parent frame. */
   void reconcileFrames(Frame* parentFrame, const uast::AstNode* ast) {
@@ -476,7 +476,7 @@ struct BranchSensitiveVisitor {
   }
 
   /** code to run right after we entered a new scope and pushed a new frame.
-      The default implemnetation sets up subFrame slots for handling Conditionals etc. */
+      The default implementation sets up subFrame slots for handling Conditionals etc. */
   virtual void doEnterScope(const uast::AstNode* ast, ExtraData extraData) {
     createSubFrames(ast);
   }
@@ -538,22 +538,22 @@ struct BranchSensitiveVisitor {
   }
 
   /** Overriden by subclasses to determine the value of a when case expression.
-      This is used for evaluating short-circuited / `param` known (or not) When statements. */
+      This is used for evaluating short-circuited / 'param' known (or not) When statements. */
   virtual const types::Param* determineWhenCaseValue(const uast::AstNode* ast, ExtraData extraData) = 0;
 
   /** Overriden by subclasses to determine the value of an if condition.
-      This is used for evaluating short-circuited / `param known` (or not) Conditional statements. */
+      This is used for evaluating short-circuited / 'param known' (or not) Conditional statements. */
   virtual const types::Param* determineIfValue(const uast::AstNode* ast, ExtraData extraData) = 0;
 
   bool isParamTrue(const types::Param* param) { return param && param->isNonZero(); }
   bool isParamFalse(const types::Param* param) { return param && param->isZero(); }
 
   /** Overriden by subclasses to traverse a node using their visitor startegy.
-      This is used for entering bodies of `param`-known branches. */
+      This is used for entering bodies of 'param'-known branches. */
   virtual void traverseNode(const uast::AstNode* ast, ExtraData extraData) = 0;
 
   /** Traverse the given AST node, taking into account (and traversing,
-      if possible) `param`-known branches. Returns whether the caller
+      if possible) 'param'-known branches. Returns whether the caller
       should continue traversing the node's children. */
   bool branchSensitivelyTraverse(const uast::Select* sel, ExtraData extraData) {
     // have we encountered a when without param-decided conditions?
@@ -608,7 +608,7 @@ struct BranchSensitiveVisitor {
       }
       return false;
     }
-    // Not param-known condition; visit both branches as normal.
+    // Not 'param'-known condition; visit both branches as normal.
     return true;
   }
 };
