@@ -703,7 +703,7 @@ This is available for all numeric types.
 */
 pragma "no where doc"
 proc numBits(type t) param where t == bool {
-  compilerError("default-width 'bool' does not have a well-defined size");
+  compilerError("'bool' does not have a well-defined size");
 }
 @chpldoc.nodoc
 proc numBits(type t) param where t == int(8) do return 8;
