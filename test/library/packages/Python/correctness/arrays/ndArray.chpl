@@ -164,6 +164,10 @@ proc testArray(type eltType, shape) {
         pyArr_fullySpecified[idx]);
     }
 
+    if shape.size == 1 {
+      writeln("pyArr_fullySpecified.this(1): ", pyArr_fullySpecified.this(1));
+    }
+
     for e in pyArr_fullySpecified {
       writeln("element: ", e);
       e = 0:eltType;
