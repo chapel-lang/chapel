@@ -2274,7 +2274,7 @@ module Python {
 
       // Check if this type is normally supposed to be a string.  To do that,
       // get the normal Python string type.
-      var dummy = "";
+      var dummy = "s";
       var dummyPyObj = try! x.interpreter.toPythonInner(dummy); // TODO: catch
       var strType = Py_TYPE(dummyPyObj);
       try! x.interpreter.checkException();
