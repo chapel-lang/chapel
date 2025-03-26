@@ -2185,7 +2185,12 @@ module Python {
     // Casts
     /* Creates a new tuple from ``x``, when ``x`` is a :class:`Value`. */
     operator :(const ref x: Value, type t: _tuple): t {
-      var res = try! x.interpreter.fromPython(t, x.getPyObject());
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
+      var pyObj = x.getPyObject();
+      Py_INCREF(pyObj);
+      var res = try! x.interpreter.fromPythonInner(t, pyObj);
 
       return res;
     }
@@ -2194,28 +2199,48 @@ module Python {
       Creates a new list from ``x``, when ``x`` is a :class:`Value`.
     */
     operator :(const ref x: Value, type t: List.list(?)): t {
-      var res = try! x.interpreter.fromPython(t, x.getPyObject());
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
+      var pyObj = x.getPyObject();
+      Py_INCREF(pyObj);
+      var res = try! x.interpreter.fromPythonInner(t, pyObj);
 
       return res;
     }
 
     /* Creates a new map from ``x``, when ``x`` is a :class:`Value`. */
     operator :(const ref x: Value, type t: Map.map(?)): t {
-      var res = try! x.interpreter.fromPython(t, x.getPyObject());
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
+      var pyObj = x.getPyObject();
+      Py_INCREF(pyObj);
+      var res = try! x.interpreter.fromPythonInner(t, pyObj);
 
       return res;
     }
 
     /* Creates a new set from ``x``, when ``x`` is a :class:`Value`. */
     operator :(const ref x: Value, type t: Set.set(?)): t {
-      var res = try! x.interpreter.fromPython(t, x.getPyObject());
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
+      var pyObj = x.getPyObject();
+      Py_INCREF(pyObj);
+      var res = try! x.interpreter.fromPythonInner(t, pyObj);
 
       return res;
     }
 
     /* Creates a new array from ``x``, when ``x`` is a :class:`Value`. */
     operator :(const ref x: Value, type t: []): t {
-      var res = try! x.interpreter.fromPython(t, x.getPyObject());
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
+      var pyObj = x.getPyObject();
+      Py_INCREF(pyObj);
+      var res = try! x.interpreter.fromPythonInner(t, pyObj);
 
       return res;
     }
@@ -2484,7 +2509,12 @@ module Python {
 
     /* Creates a new tuple from ``x``, when ``x`` is a :class:`PyTuple`. */
     override operator :(const ref x: PyTuple, type t: _tuple): t {
-      var res = try! x.interpreter.fromPython(t, x.getPyObject());
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
+      var pyObj = x.getPyObject();
+      Py_INCREF(pyObj);
+      var res = try! x.interpreter.fromPythonInner(t, pyObj);
 
       return res;
     }
@@ -2561,7 +2591,12 @@ module Python {
       Creates a new list from ``x``, when ``x`` is a :class:`PyList`.
     */
     override operator :(const ref x: PyList, type t: List.list(?)): t {
-      var res = try! x.interpreter.fromPython(t, x.getPyObject());
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
+      var pyObj = x.getPyObject();
+      Py_INCREF(pyObj);
+      var res = try! x.interpreter.fromPythonInner(t, pyObj);
 
       return res;
     }
@@ -2696,7 +2731,12 @@ module Python {
 
     /* Creates a new map from ``x``, when ``x`` is a :class:`PyDict`. */
     override operator :(const ref x: PyDict, type t: Map.map(?)): t {
-      var res = try! x.interpreter.fromPython(t, x.getPyObject());
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
+      var pyObj = x.getPyObject();
+      Py_INCREF(pyObj);
+      var res = try! x.interpreter.fromPythonInner(t, pyObj);
 
       return res;
     }
@@ -2805,7 +2845,12 @@ module Python {
 
     /* Creates a new set from ``x``, when ``x`` is a :class:`PySet`. */
     override operator :(const ref x: PySet, type t: Set.set(?)): t {
-      var res = try! x.interpreter.fromPython(t, x.getPyObject());
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
+      var pyObj = x.getPyObject();
+      Py_INCREF(pyObj);
+      var res = try! x.interpreter.fromPythonInner(t, pyObj);
 
       return res;
     }
@@ -2913,7 +2958,12 @@ module Python {
 
     /* Creates a new array from ``x``, when ``x`` is a :class:`PyArray`. */
     override operator :(const ref x: PyArray, type t: []): t {
-      var res = try! x.interpreter.fromPython(t, x.getPyObject());
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
+      var pyObj = x.getPyObject();
+      Py_INCREF(pyObj);
+      var res = try! x.interpreter.fromPythonInner(t, pyObj);
 
       return res;
     }

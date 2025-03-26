@@ -13,4 +13,13 @@ proc main() {
   // same size)
   var chapelArr2 = pyRes: [1..4] int;
   writeln(chapelArr2);
+
+  writeln("Checking the Value version");
+  var pyRes2 = doit(owned Value, 10, 11, 12, 13);
+  var chapelArr3 = pyRes2: [0..3] int;
+  writeln(chapelArr3);
+  // Check casting to an array with a different starting index (but still the
+  // same size)
+  var chapelArr4 = pyRes2: [-2..1] int;
+  writeln(chapelArr4);
 }
