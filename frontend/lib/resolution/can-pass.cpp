@@ -1138,6 +1138,7 @@ CanPassResult CanPassResult::canPassScalar(Context* context,
     case QualifiedType::FUNCTION:
     case QualifiedType::PARENLESS_FUNCTION:
     case QualifiedType::MODULE:
+    case QualifiedType::LOOP:
     case QualifiedType::TYPE_QUERY:
     case QualifiedType::INDEX:
     case QualifiedType::DEFAULT_INTENT:

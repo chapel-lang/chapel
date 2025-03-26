@@ -102,6 +102,9 @@ enum struct Qualifier {
   /** A module */
   MODULE,
 
+  /** A loop */
+  LOOP,
+
   /** An 'imaginary' actual to 'init''s this to represent the type being constructed. */
   INIT_RECEIVER,
 };

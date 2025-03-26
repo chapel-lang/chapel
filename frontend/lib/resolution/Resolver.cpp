@@ -3288,6 +3288,12 @@ QualifiedType Resolver::typeForId(const ID& id) {
                         !id.isSymbolDefiningScope());
   if (useLocalResult && curStmt != nullptr) {
     if (curStmt->id().contains(id)) {
+      if (asttags::isLoop(parsing::idToTag(context, id))) {
+        // we found a reference to a label.
+        // not only do we not need to use a local result, we can return
+        // right now.
+        return QualifiedType(QualifiedType::LOOP, nullptr);
+      }
       // OK, proceed using local result
     } else {
       useLocalResult = false;
@@ -3783,6 +3789,14 @@ checkForErrorUseBeforeDefine(Context* context, const AstNode* node,
         if (target.postOrderId() > node->id().postOrderId()) {
           // resolved to an identifier defined later
           auto nd = parsing::idToAst(context, target)->toNamedDecl();
+          if (!nd) {
+            // labels aren't NamedDecls, but they are included in scopes.
+            // They are also "on the outside" of loops which can refer to
+            // them, so they hit this branch. You can't use-before-def a label,
+            // since if it's usable, it's defined.
+            CHPL_ASSERT(asttags::isLoop(parsing::idToTag(context, target)));
+            return false;
+          }
           CHPL_ASSERT(nd && "identifier target was not a NamedDecl");
           CHPL_REPORT(context, UseOfLaterVariable, node, target, nd->name());
           return true;
@@ -4146,6 +4160,10 @@ static QualifiedType computeDefaultsIfNecessary(Resolver& rv,
 
 void Resolver::resolveIdentifier(const Identifier* ident) {
   ResolvedExpression& result = byPostorder.byAst(ident);
+
+  if (ident->id().str() == "looplabel@4") {
+    debuggerBreakHere();
+  }
 
   // for 'proc f(arg:?)' need to set 'arg' to have type AnyType
   CHPL_ASSERT(declStack.size() > 0);
