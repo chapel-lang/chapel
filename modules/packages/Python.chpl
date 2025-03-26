@@ -3359,8 +3359,9 @@ module Python {
     extern type PyTypeObject;
     type PyTypeObjectPtr = c_ptr(PyTypeObject);
 
-    extern proc Py_TYPE(obj: PyObjectPtr): PyTypeObjectPtr;
-    extern proc Py_IS_TYPE(obj: PyObjectPtr, t: PyTypeObjectPtr): c_int;
+    extern "chpl_Py_TYPE" proc Py_TYPE(obj: PyObjectPtr): PyTypeObjectPtr;
+    extern "chpl_Py_IS_TYPE" proc Py_IS_TYPE(obj: PyObjectPtr,
+                                             t: PyTypeObjectPtr): c_int;
 
     // technically this is an extern type defined by python, but if we treat it
     // as an opaque type, we can't use it in Chapel code in casts and such.
