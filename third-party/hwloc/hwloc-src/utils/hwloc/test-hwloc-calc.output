@@ -1,7 +1,10 @@
-# root
+# root --cpuset-output-format hwloc
 0xffffffff,0xffffffff
 
-# all --taskset
+# all --cof list
+0-63
+
+# all --cpuset-output-format taskset
 0xffffffffffffffff
 
 # hex
@@ -76,6 +79,15 @@ Group0:1.Group2:2 Group0:1.Group2:3
 # Number of objects at depth 3 in a NUMA Node
 16
 
+# Number of MCDRAM subtype NUMA Nodes
+4
+
+# List of MCDRAM subtype NUMA Nodes near 2 L3
+3,5
+
+# Hierarchical list of MCDRAM subtype NUMA nodes within Package
+Package:0.NUMANode:1 Package:0.NUMANode:7
+
 # List of Machine objects
 0
 
@@ -83,7 +95,7 @@ Group0:1.Group2:2 Group0:1.Group2:3
 1
 
 # List of NUMA Nodes in a range of Cores (again)
-2,3
+NUMANode:2,NUMANode:3
 
 # Hierarchical spec for a range of PUs
 Group0:0.PU:2 Group0:0.PU:3
@@ -130,6 +142,12 @@ PU:22_PU:23_Core:6_Core:7_Group0:2
 # Converting NUMA Nodes from logical to physical
 0,2
 
+# Search cores within single NUMA when they have multiple local NUMA nodes
+0x00000060
+
+# Search NUMA node within single Group when they have multiple local Groups
+0x00000002
+
 # Physical output of NUMA Nodes when out-of-order in the topology
 2,1
 
@@ -140,10 +158,10 @@ PU:22_PU:23_Core:6_Core:7_Group0:2
 3,4,5,6
 
 # 2 local nodes larger or equal to a Package (node:2@Package + node:6@Machine), with space separator
-2 6
+NUMANode:2 NUMANode:6
 
 # Best-locality local node near a PU (node:1@Die)
-1
+NUMANode:1
 
 # Best-capacity local node near a PU (node:6@Machine)
 6
@@ -203,6 +221,30 @@ PU:22_PU:23_Core:6_Core:7_Group0:2
 8
 1,2
 
+# Converting from hwloc cpusets to taskset
+0xf000000f00000f00f
+0x10000000300000005
+0x10000000300000005
+0xf...f
+0xf...f00000001
+
+# Converting from list cpusets to hwloc
+0xf...f,0xfffffff8
+0x00000004,0x40000007,0xffffff98
+0x00000080
+0x0000002a
+
+# Converting from taskset cpusets to list
+0-3,12-15,36-39,64-67
+0-2,5-6,8,10,14,16-17,21,24
+8-
+
+# Converting to systemd-dbus-api
+AllowedCPUs ay 0x0001 0x01
+AllowedCPUs ay 0x0004 0x01 0x00 0x00 0x80
+AllowedCPUs ay 0x0008 0x01 0x00 0x00 0x80 0x00 0x00 0x00 0x80
+AllowedCPUs ay 0x0009 0x0f 0xf0 0x00 0x00 0xf0 0x00 0x00 0x00 0x0f
+
 # Reading from stdin
 Waiting for locations to process on stdin...
 0x00000001
@@ -212,4 +254,19 @@ Waiting for locations to process on stdin...
 0x00000001
 0x00000001,,0x0
 0xffffffff,0xffffffff
+
+# Reading infinite cpusets from stdin
+0xf...f
+0xf...f,0x00abcd00
+0xf...f,0x0000abcd,0x0000ef00
+0xf...f,0xffffff00
+0xf...f,0xffff0000,0xffff0000
+
+# Reading infinite cpusets from stdin and exporting to taskset
+Waiting for locations to process on stdin...
+0xf...f
+0xf...f00abcd00
+0xf...f0000abcd0000ef00
+0xf...fffffff00
+0xf...fffff0000ffff0000
 

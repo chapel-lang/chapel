@@ -1,4 +1,4 @@
-.TH "hwlocality_glibc_sched" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_glibc_sched" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -33,13 +33,29 @@ Topology \fCtopology\fP must match the current machine\&.
 .PP
 Convert glibc sched affinity CPU set \fCschedset\fP into hwloc CPU set\&. This function may be used before calling sched_setaffinity or any other function that takes a cpu_set_t as input parameter\&.
 .PP
-\fCschedsetsize\fP should be sizeof(cpu_set_t) unless \fCschedset\fP was dynamically allocated with CPU_ALLOC 
+\fCschedsetsize\fP should be sizeof(cpu_set_t) unless \fCschedset\fP was dynamically allocated with CPU_ALLOC
+.PP
+\fBReturns\fP
+.RS 4
+0 on success\&. 
+.PP
+-1 with errno set to \fCENOMEM\fP if some internal reallocation failed\&. 
+.RE
+.PP
+
 .SS "static int hwloc_cpuset_to_glibc_sched_affinity (\fBhwloc_topology_t\fP topology, \fBhwloc_const_cpuset_t\fP hwlocset, cpu_set_t * schedset, size_t schedsetsize)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
 Convert hwloc CPU set \fCtoposet\fP into glibc sched affinity CPU set \fCschedset\fP\&. This function may be used before calling sched_setaffinity or any other function that takes a cpu_set_t as input parameter\&.
 .PP
-\fCschedsetsize\fP should be sizeof(cpu_set_t) unless \fCschedset\fP was dynamically allocated with CPU_ALLOC 
+\fCschedsetsize\fP should be sizeof(cpu_set_t) unless \fCschedset\fP was dynamically allocated with CPU_ALLOC
+.PP
+\fBReturns\fP
+.RS 4
+0\&. 
+.RE
+.PP
+
 .SH "Author"
 .PP 
 Generated automatically by Doxygen for Hardware Locality (hwloc) from the source code\&.

@@ -2,9 +2,8 @@
 #include <stdio.h>
 #endif
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include "qt_visibility.h"
+
 #include <qthread/cacheline.h>
 #include <qthread/common.h>
 
@@ -23,7 +22,7 @@ static void cpuid(unsigned int const op,
                   unsigned int *eax_ptr,
                   unsigned int *ebx_ptr,
                   unsigned int *ecx_ptr,
-                  unsigned int *edx_ptr) { /*{{{ */
+                  unsigned int *edx_ptr) {
 #if (QTHREAD_ASSEMBLY_ARCH == QTHREAD_IA32) && defined(__PIC__)
   unsigned int eax, ebx, ecx, edx;
   unsigned int pic_ebx = 0;
@@ -44,13 +43,13 @@ static void cpuid(unsigned int const op,
     : "=a"(*eax_ptr), "=b"(*ebx_ptr), "=c"(*ecx_ptr), "=d"(*edx_ptr)
     : "a"(op));
 #endif /* if (QTHREAD_ASSEMBLY_ARCH == QTHREAD_IA32) && defined(__PIC__) */
-} /*}}} */
+}
 
 static void cpuid4(int const cache,
                    unsigned int *eax_ptr,
                    unsigned int *ebx_ptr,
                    unsigned int *ecx_ptr,
-                   unsigned int *edx_ptr) { /*{{{ */
+                   unsigned int *edx_ptr) {
 #if (QTHREAD_ASSEMBLY_ARCH == QTHREAD_IA32) && defined(__PIC__)
   unsigned int eax, ebx, ecx, edx;
   unsigned int pic_ebx = 0;
@@ -71,9 +70,9 @@ static void cpuid4(int const cache,
     : "=a"(*eax_ptr), "=b"(*ebx_ptr), "=c"(*ecx_ptr), "=d"(*edx_ptr)
     : "a"(4), "c"(cache));
 #endif /* if (QTHREAD_ASSEMBLY_ARCH == QTHREAD_IA32) && defined(__PIC__) */
-} /*}}} */
+}
 
-static void descriptor(unsigned int d) { /*{{{ */
+static void descriptor(unsigned int d) {
   switch (d) {
     case 0x00: return;
 
@@ -184,22 +183,22 @@ static void descriptor(unsigned int d) { /*{{{ */
 
     default: /*printf("no idea: %02x\n", d); */ return;
   }
-} /*}}} */
+}
 
-static void examine(unsigned int r) { /*{{{ */
+static void examine(unsigned int r) {
   if ((r & 0x40000000) == 0) {
     descriptor((r >> 0) & 0xff);
     descriptor((r >> 8) & 0xff);
     descriptor((r >> 16) & 0xff);
     descriptor((r >> 24) & 0xff);
   }
-} /*}}} */
+}
 
 #endif /* if ((QTHREAD_ASSEMBLY_ARCH == QTHREAD_IA32) ||                       \
           (QTHREAD_ASSEMBLY_ARCH == QTHREAD_AMD64)) &&                         \
           defined(HAVE_GCC_INLINE_ASSEMBLY) */
 
-static void figure_out_cacheline_size(void) { /*{{{ */
+static void figure_out_cacheline_size(void) {
 #if (QTHREAD_ASSEMBLY_ARCH == QTHREAD_POWERPC32) ||                            \
   (QTHREAD_ASSEMBLY_ARCH == QTHREAD_POWERPC64)
   if (sizeof(long) == 4) {
@@ -338,10 +337,10 @@ static void figure_out_cacheline_size(void) { /*{{{ */
   cacheline_bytes = 128; // safe default, probably not accurate
 #endif /* if (QTHREAD_ASSEMBLY_ARCH == QTHREAD_POWERPC32) ||                   \
           (QTHREAD_ASSEMBLY_ARCH == QTHREAD_POWERPC64) */
-} /*}}} */
+}
 
 /* returns the cache line size */
-int qthread_cacheline(void) { /*{{{ */
+int API_FUNC qthread_cacheline(void) {
   if (cacheline_bytes == 0) {
     figure_out_cacheline_size();
     if (cacheline_bytes == 0) { /* to cache errors in cacheline detection */
@@ -349,7 +348,7 @@ int qthread_cacheline(void) { /*{{{ */
     }
   }
   return cacheline_bytes;
-} /*}}} */
+}
 
 #ifdef DEBUG_CPUID
 int main() {

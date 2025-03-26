@@ -18,6 +18,7 @@
 # Copyright © 2009-2012, 2014 Université Bordeaux
 # Copyright © 2009-2014 Cisco Systems, Inc.  All rights reserved.
 # Copyright © 2020 Hewlett Packard Enterprise.  All rights reserved.
+# Copyright © 2023      Université de Reims Champagne-Ardenne.  All rights reserved.
 #
 # See COPYING in top-level directory.
 
@@ -124,8 +125,7 @@ am__aclocal_m4_deps = $(top_srcdir)/config/hwloc.m4 \
 	$(top_srcdir)/config/ltoptions.m4 \
 	$(top_srcdir)/config/ltsugar.m4 \
 	$(top_srcdir)/config/ltversion.m4 \
-	$(top_srcdir)/config/lt~obsolete.m4 \
-	$(top_srcdir)/config/netloc.m4 $(top_srcdir)/configure.ac
+	$(top_srcdir)/config/lt~obsolete.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 DIST_COMMON = $(srcdir)/Makefile.am $(am__dist_APPLICATIONS_DATA_DIST) \
@@ -526,7 +526,6 @@ ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
 AR = @AR@
-ARCHIVEMOUNT = @ARCHIVEMOUNT@
 AS = @AS@
 AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
@@ -653,17 +652,6 @@ MAKEINDEX = @MAKEINDEX@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
 MKDIR_P = @MKDIR_P@
-MPI_CPPFLAGS = @MPI_CPPFLAGS@
-MPI_LDADD = @MPI_LDADD@
-NETLOC_CFLAGS = @NETLOC_CFLAGS@
-NETLOC_CPPFLAGS = @NETLOC_CPPFLAGS@
-NETLOC_EMBEDDED_CFLAGS = @NETLOC_EMBEDDED_CFLAGS@
-NETLOC_EMBEDDED_CPPFLAGS = @NETLOC_EMBEDDED_CPPFLAGS@
-NETLOC_EMBEDDED_LDADD = @NETLOC_EMBEDDED_LDADD@
-NETLOC_EMBEDDED_LIBS = @NETLOC_EMBEDDED_LIBS@
-NETLOC_LDFLAGS = @NETLOC_LDFLAGS@
-NETLOC_LIBS = @NETLOC_LIBS@
-NETLOC_LIBS_PRIVATE = @NETLOC_LIBS_PRIVATE@
 NM = @NM@
 NMEDIT = @NMEDIT@
 OBJDUMP = @OBJDUMP@
@@ -732,7 +720,6 @@ libdir = @libdir@
 libexecdir = @libexecdir@
 libhwloc_so_name = @libhwloc_so_name@
 libhwloc_so_version = @libhwloc_so_version@
-libnetloc_so_version = @libnetloc_so_version@
 localedir = @localedir@
 localstatedir = @localstatedir@
 mandir = @mandir@
@@ -755,7 +742,6 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-xz = @xz@
 AM_CFLAGS = $(HWLOC_CFLAGS)
 # Add -I of utils/hwloc for misc.h
 AM_CPPFLAGS = $(HWLOC_CPPFLAGS) -I$(top_srcdir)/utils/hwloc
@@ -791,6 +777,9 @@ SEDMAN = $(SED) -e 's/%PACKAGE_NAME%/@PACKAGE_NAME@/g' \
 	  -e 's/%PACKAGE_VERSION%/@PACKAGE_VERSION@/g' \
 	  -e 's/%HWLOC_DATE%/@HWLOC_RELEASE_DATE@/g'
 
+hwloc_ls_name = `echo "hwloc-ls" | $(SED) -e "$(transform)"`
+lstopo_name = `echo "lstopo" | $(SED) -e "$(transform)"`
+lstopo_no_graphics_name = `echo "lstopo-no-graphics" | $(SED) -e "$(transform)"`
 all: all-am
 
 .SUFFIXES:
@@ -1923,21 +1912,21 @@ uninstall-man: uninstall-man1
 	  > $@ < $<
 
 install-exec-hook:
-	rm -f $(DESTDIR)$(bindir)/hwloc-ls$(EXEEXT)
-	cd $(DESTDIR)$(bindir) && $(LN_S) lstopo-no-graphics$(EXEEXT) hwloc-ls$(EXEEXT)
-@HWLOC_HAVE_CAIRO_FALSE@@HWLOC_HAVE_WINDOWS_FALSE@	rm -f $(DESTDIR)$(bindir)/lstopo
-@HWLOC_HAVE_CAIRO_FALSE@@HWLOC_HAVE_WINDOWS_FALSE@	cd $(DESTDIR)$(bindir) && $(LN_S) lstopo-no-graphics$(EXEEXT) lstopo$(EXEEXT) || true
+	rm -f $(DESTDIR)$(bindir)/$(hwloc_ls_name)$(EXEEXT)
+	cd $(DESTDIR)$(bindir) && $(LN_S) $(lstopo_no_graphics_name)$(EXEEXT) $(hwloc_ls_name)$(EXEEXT)
+@HWLOC_HAVE_CAIRO_FALSE@@HWLOC_HAVE_WINDOWS_FALSE@	rm -f $(DESTDIR)$(bindir)/$(lstopo_name)$(EXEEXT)
+@HWLOC_HAVE_CAIRO_FALSE@@HWLOC_HAVE_WINDOWS_FALSE@	cd $(DESTDIR)$(bindir) && $(LN_S) $(lstopo_no_graphics_name)$(EXEEXT) $(lstopo_name)$(EXEEXT) || true
 
 install-data-hook:
-	rm -f $(DESTDIR)$(man1dir)/hwloc-ls.1
-	cd $(DESTDIR)$(man1dir) && $(LN_S) lstopo-no-graphics.1 hwloc-ls.1
-	rm -f $(DESTDIR)$(man1dir)/lstopo.1
-	cd $(DESTDIR)$(man1dir) && $(LN_S) lstopo-no-graphics.1 lstopo.1
+	rm -f $(DESTDIR)$(man1dir)/$(hwloc_ls_name).1
+	cd $(DESTDIR)$(man1dir) && $(LN_S) $(lstopo_no_graphics_name).1 $(hwloc_ls_name).1
+	rm -f $(DESTDIR)$(man1dir)/$(lstopo_name).1
+	cd $(DESTDIR)$(man1dir) && $(LN_S) $(lstopo_no_graphics_name).1 $(lstopo_name).1
 
 uninstall-local:
-	rm -f $(DESTDIR)$(bindir)/hwloc-ls$(EXEEXT)
-@HWLOC_HAVE_CAIRO_FALSE@@HWLOC_HAVE_WINDOWS_FALSE@	rm -f $(DESTDIR)$(bindir)/lstopo$(EXEEXT)
-	rm -f $(DESTDIR)$(man1dir)/hwloc-ls.1 $(DESTDIR)$(man1dir)/lstopo.1
+	rm -f $(DESTDIR)$(bindir)/$(hwloc_ls_name)$(EXEEXT)
+@HWLOC_HAVE_CAIRO_FALSE@@HWLOC_HAVE_WINDOWS_FALSE@	rm -f $(DESTDIR)$(bindir)/$(lstopo_name)$(EXEEXT)
+	rm -f $(DESTDIR)$(man1dir)/$(hwloc_ls_name).1 $(DESTDIR)$(man1dir)/$(lstopo_name).1
 
 distclean-local:
 	rm -f $(nodist_man_MANS)

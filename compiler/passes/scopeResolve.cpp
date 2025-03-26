@@ -3088,6 +3088,9 @@ static void removeUnusedModules() {
   forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
     bool removeIt = (usedModules.count(mod) == 0);
 
+    // The module contains frontend-generated symbols, so do not remove it.
+    if (mod->initFn && mod->initFn->wasResolvedEarly()) removeIt = false;
+
     if (removeIt) {
       INT_ASSERT(mod->defPoint); // we should not be removing e.g. _root
       mod->defPoint->remove();

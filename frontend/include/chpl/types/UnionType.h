@@ -35,9 +35,11 @@ class UnionType final : public CompositeType {
  private:
   UnionType(ID id, UniqueString name,
             const UnionType* instantiatedFrom,
-            SubstitutionsMap subs)
+            SubstitutionsMap subs,
+            CompositeType::Linkage linkage)
     : CompositeType(typetags::UnionType, id, name,
-                    instantiatedFrom, std::move(subs))
+                    instantiatedFrom, std::move(subs),
+                    linkage)
   { }
 
   bool contentsMatchInner(const Type* other) const override {
@@ -51,7 +53,8 @@ class UnionType final : public CompositeType {
   static const owned<UnionType>&
   getUnionType(Context* context, ID id, UniqueString name,
                const UnionType* instantiatedFrom,
-               SubstitutionsMap subs);
+               SubstitutionsMap subs,
+               CompositeType::Linkage linkage);
  public:
   static const UnionType* get(Context* context, ID id, UniqueString name,
                               const UnionType* instantiatedFrom,

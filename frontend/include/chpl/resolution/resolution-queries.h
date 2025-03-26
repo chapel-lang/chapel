@@ -667,7 +667,7 @@ builderResultForDefaultFunction(Context* context,
 
 /** Get the 'promotion type' for the given type. E.g., the promotion type
     for a range is the type of the range's elements. */
-const types::QualifiedType& getPromotionType(Context* context, types::QualifiedType qt);
+const types::QualifiedType& getPromotionType(Context* context, types::QualifiedType qt, bool skipIfRunning = false);
 
 const types::RuntimeType* getRuntimeType(Context* context, const types::CompositeType* ct);
 

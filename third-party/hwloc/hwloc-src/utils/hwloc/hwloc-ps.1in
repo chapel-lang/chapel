@@ -1,5 +1,5 @@
 .\" -*- nroff -*-
-.\" Copyright © 2010-2021 Inria.  All rights reserved.
+.\" Copyright © 2010-2024 Inria.  All rights reserved.
 .\" Copyright © 2009-2010 Cisco Systems, Inc.  All rights reserved.
 .\" See COPYING in top-level directory.
 .TH HWLOC-PS "1" "%HWLOC_DATE%" "%PACKAGE_VERSION%" "%PACKAGE_NAME%"
@@ -27,6 +27,10 @@ specific part of the machine.
 \fB\-\-pid <pid>\fR
 Only show process of PID \fI<pid>\fR,
 even if it is not bound to any specific part of the machine.
+.TP
+\fB\-\-children\-of\-pid <pid>\fR
+Only show process of PID \fI<pid>\fR and its hierarchy of children,
+even if they are not bound to any specific part of the machine.
 .TP
 \fB\-\-name <name>\fR
 Only show processes whose name contains \fI<name>\fR,
@@ -82,6 +86,10 @@ in each process and display it at the end of the line.
 On Linux, try to find the process MPI rank (by querying some widespread
 environment variables) and display it at the end of the line.
 
+.TP
+\fB\-\-lstopo\-misc\fR <file>
+Output a file that may be given to \fBlstopo \-\-misc\-from\fR for displaying
+processes/threads as Misc objects. See EXAMPLES below.
 .TP
 \fB\-\-json\-server\fR
 Run the tool as a JSON server that waits for other process' requests
@@ -171,6 +179,39 @@ it only appears in the thread-aware output (or if explicitly selected):
     $ hwloc-ps --pid 4759
     4759	Machine:0		myprogram
 
+.
+.\" **************************
+.\"    Example with lstopo integration
+.\" **************************
+.SH Example with lstopo integration
+.PP
+The output may be a file that lstopo uses for adding Misc objects
+(more flexible version of lstopo --top):
+
+    $ hwloc-ps --misc-from foo
+    $ cat foo
+    name=12444 myprogram
+    cpuset=0x000000f0
+    subtype=Process
+
+    name=12444 mythread1
+    cpuset=0x00000050
+    subtype=Thread
+
+    name=12444 mythread2
+    cpuset=0x000000a0
+    subtype=Thread
+
+This may be directly given to lstopo:
+
+    $ hwloc-ps --misc-from - | lstopo --misc-from -
+
+.
+.\" **************************
+.\"    Examples with MPI processes
+.\" **************************
+.SH Examples with MPI processes
+.PP
 On Linux, hwloc-ps may also display some process specific environment
 variable at the end of the line. This is for instance useful
 for identify MPI ranks among processes:

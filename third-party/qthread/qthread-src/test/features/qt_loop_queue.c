@@ -1,8 +1,4 @@
-#ifdef HAVE_CONFIG_H
-#include "config.h" /* for _GNU_SOURCE */
-#endif
 #include "argparsing.h"
-#include <assert.h>
 #include <float.h>  /* for DBL_MIN & friends (according to C89) */
 #include <limits.h> /* for INT_MIN & friends (according to C89) */
 #include <qthread/qloop.h>
@@ -57,7 +53,7 @@ static char *human_readable_bytes(size_t bytes) {
 int main(int argc, char *argv[]) {
   size_t i;
 
-  assert(qthread_initialize() == QTHREAD_SUCCESS);
+  test_check(qthread_initialize() == QTHREAD_SUCCESS);
   CHECK_VERBOSE();
   NUMARG(BIGLEN, "BIGLEN");
   NUMARG(REALLY_VERBOSE, "REALLY_VERBOSE");
@@ -73,7 +69,7 @@ int main(int argc, char *argv[]) {
             BIGLEN,
             human_readable_bytes(BIGLEN * sizeof(aligned_t)));
     uia = (aligned_t *)malloc(sizeof(aligned_t) * BIGLEN);
-    assert(uia);
+    test_check(uia);
     iprintf("initializing array\n");
     for (i = 0; i < BIGLEN; i++) { uia[i] = random(); }
     qtimer_start(t);
@@ -91,7 +87,7 @@ int main(int argc, char *argv[]) {
             BIGLEN,
             qtimer_secs(t));
     iprintf("\tsum was %lu\n", (unsigned long)uitmp);
-    assert(uitmp == uisum);
+    test_check(uitmp == uisum);
 
     uitmp = 0;
     loophandle = qt_loop_queue_create(GUIDED, 0, BIGLEN, 1, sum, &uitmp);
@@ -102,7 +98,7 @@ int main(int argc, char *argv[]) {
             BIGLEN,
             qtimer_secs(t));
     iprintf("\tsum was %lu\n", (unsigned long)uitmp);
-    assert(uitmp == uisum);
+    test_check(uitmp == uisum);
 
     uitmp = 0;
     loophandle = qt_loop_queue_create(FACTORED, 0, BIGLEN, 1, sum, &uitmp);
@@ -113,7 +109,7 @@ int main(int argc, char *argv[]) {
             BIGLEN,
             qtimer_secs(t));
     iprintf("\tsum was %lu\n", (unsigned long)uitmp);
-    assert(uitmp == uisum);
+    test_check(uitmp == uisum);
 
     uitmp = 0;
     loophandle = qt_loop_queue_create(TIMED, 0, BIGLEN, 1, sum, &uitmp);
@@ -124,7 +120,7 @@ int main(int argc, char *argv[]) {
             BIGLEN,
             qtimer_secs(t));
     iprintf("\tsum was %lu\n", (unsigned long)uitmp);
-    assert(uitmp == uisum);
+    test_check(uitmp == uisum);
 
     free(uia);
     qtimer_destroy(t);

@@ -1,4 +1,4 @@
-.TH "hwlocality_linux_libnuma_bitmask" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_linux_libnuma_bitmask" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -39,7 +39,16 @@ The behavior of libnuma is undefined if the kernel is not NUMA-aware\&. (when CO
 .SS "static int hwloc_cpuset_from_linux_libnuma_bitmask (\fBhwloc_topology_t\fP topology, \fBhwloc_cpuset_t\fP cpuset, const struct bitmask * bitmask)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
-Convert libnuma bitmask \fCbitmask\fP into hwloc CPU set \fCcpuset\fP\&. This function may be used after calling many numa_ functions that use a struct bitmask as an output parameter\&. 
+Convert libnuma bitmask \fCbitmask\fP into hwloc CPU set \fCcpuset\fP\&. This function may be used after calling many numa_ functions that use a struct bitmask as an output parameter\&.
+.PP
+\fBReturns\fP
+.RS 4
+0 on success\&. 
+.PP
+-1 with errno set to \fCENOMEM\fP if some internal reallocation failed\&. 
+.RE
+.PP
+
 .SS "static struct bitmask * hwloc_cpuset_to_linux_libnuma_bitmask (\fBhwloc_topology_t\fP topology, \fBhwloc_const_cpuset_t\fP cpuset)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
@@ -49,14 +58,23 @@ This function may be used before calling many numa_ functions that use a struct 
 .PP
 \fBReturns\fP
 .RS 4
-newly allocated struct bitmask\&. 
+newly allocated struct bitmask, or \fCNULL\fP on error\&. 
 .RE
 .PP
 
 .SS "static int hwloc_nodeset_from_linux_libnuma_bitmask (\fBhwloc_topology_t\fP topology, \fBhwloc_nodeset_t\fP nodeset, const struct bitmask * bitmask)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
-Convert libnuma bitmask \fCbitmask\fP into hwloc NUMA node set \fCnodeset\fP\&. This function may be used after calling many numa_ functions that use a struct bitmask as an output parameter\&. 
+Convert libnuma bitmask \fCbitmask\fP into hwloc NUMA node set \fCnodeset\fP\&. This function may be used after calling many numa_ functions that use a struct bitmask as an output parameter\&.
+.PP
+\fBReturns\fP
+.RS 4
+0 on success\&. 
+.PP
+-1 with errno set to \fCENOMEM\fP if some internal reallocation failed\&. 
+.RE
+.PP
+
 .SS "static struct bitmask * hwloc_nodeset_to_linux_libnuma_bitmask (\fBhwloc_topology_t\fP topology, \fBhwloc_const_nodeset_t\fP nodeset)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
@@ -66,7 +84,7 @@ This function may be used before calling many numa_ functions that use a struct 
 .PP
 \fBReturns\fP
 .RS 4
-newly allocated struct bitmask\&. 
+newly allocated struct bitmask, or \fCNULL\fP on error\&. 
 .RE
 .PP
 

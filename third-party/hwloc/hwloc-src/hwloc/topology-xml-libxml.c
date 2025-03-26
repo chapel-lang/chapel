@@ -272,7 +272,7 @@ hwloc_libxml_import_diff(struct hwloc__xml_import_state_s *state, const char *xm
   if (xmlpath)
     doc = xmlReadFile(xmlpath, NULL, XML_PARSE_NOBLANKS);
   else if (xmlbuffer)
-    doc = xmlReadMemory(xmlbuffer, xmlbuflen, "", NULL, XML_PARSE_NOBLANKS);
+    doc = xmlReadMemory(xmlbuffer, xmlbuflen-1 /* don't include \0 */, "", NULL, XML_PARSE_NOBLANKS);
 
   if (!doc) {
     if (!errno)
@@ -368,7 +368,7 @@ hwloc_libxml_backend_init(struct hwloc_xml_backend_data_s *bdata,
   if (xmlpath)
     doc = xmlReadFile(xmlpath, NULL, XML_PARSE_NOBLANKS);
   else if (xmlbuffer)
-    doc = xmlReadMemory(xmlbuffer, xmlbuflen, "", NULL, XML_PARSE_NOBLANKS);
+    doc = xmlReadMemory(xmlbuffer, xmlbuflen-1 /* don't include \0 */, "", NULL, XML_PARSE_NOBLANKS);
 
   if (!doc) {
     if (!errno)

@@ -1252,7 +1252,11 @@ void DisambiguationCandidate::computeConversionInfo(Context* context, int numAct
 
     if (canPass.passes() && canPass.promotes()) {
       actualType = getPromotionType(context, fa1->actualType()).type();
-      this->promotedFormals[fa1->formal()->id()] = fa1->actualType();
+
+      auto promotionAnchor =
+        this->fn->untyped()->idIsField() ? this->fn->id() : fa1->formal()->id();
+
+      this->promotedFormals[promotionAnchor] = fa1->actualType();
     }
 
     nImplicitConversions++;

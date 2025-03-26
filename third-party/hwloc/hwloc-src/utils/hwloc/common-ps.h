@@ -1,5 +1,5 @@
 /*
- * Copyright © 2009-2021 Inria.  All rights reserved.
+ * Copyright © 2009-2023 Inria.  All rights reserved.
  * Copyright © 2009-2012 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -42,6 +42,12 @@ int hwloc_ps_read_process(hwloc_topology_t topology, hwloc_const_bitmap_t topocp
 
 int hwloc_ps_foreach_process(hwloc_topology_t topology, hwloc_const_bitmap_t topocpuset,
 			     void (*callback)(hwloc_topology_t topology, struct hwloc_ps_process *proc, void *cbdata),
+			     void *cbdata,
+			     unsigned long flags, const char *only_name, long only_uid);
+
+int hwloc_ps_foreach_child(hwloc_topology_t topology, hwloc_const_bitmap_t topocpuset,
+                           long pid,
+                           void (*callback)(hwloc_topology_t topology, struct hwloc_ps_process *proc, void *cbdata),
 			     void *cbdata,
 			     unsigned long flags, const char *only_name, long only_uid);
 

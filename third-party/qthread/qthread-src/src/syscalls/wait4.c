@@ -1,14 +1,8 @@
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include <stdint.h>
 
 /* System Headers */
-#ifdef HAVE_SYS_SYSCALL_H
 #include <sys/syscall.h> /* for SYS_accept and others */
 #include <unistd.h>
-#endif
 
 /* Public Headers */
 #include "qthread/qt_syscalls.h"

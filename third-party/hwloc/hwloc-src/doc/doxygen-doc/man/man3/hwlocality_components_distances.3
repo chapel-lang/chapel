@@ -1,0 +1,63 @@
+.TH "hwlocality_components_distances" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+hwlocality_components_distances \- Components and Plugins: distances
+.SH SYNOPSIS
+.br
+.PP
+.SS "Typedefs"
+
+.in +1c
+.ti -1c
+.RI "typedef void * \fBhwloc_backend_distances_add_handle_t\fP"
+.br
+.in -1c
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "\fBhwloc_backend_distances_add_handle_t\fP \fBhwloc_backend_distances_add_create\fP (\fBhwloc_topology_t\fP topology, const char *name, unsigned long kind, unsigned long flags)"
+.br
+.ti -1c
+.RI "int \fBhwloc_backend_distances_add_values\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_backend_distances_add_handle_t\fP handle, unsigned nbobjs, \fBhwloc_obj_t\fP *objs, hwloc_uint64_t *values, unsigned long flags)"
+.br
+.ti -1c
+.RI "int \fBhwloc_backend_distances_add_commit\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_backend_distances_add_handle_t\fP handle, unsigned long flags)"
+.br
+.in -1c
+.SH "Detailed Description"
+.PP 
+
+.PP
+\fBNote\fP
+.RS 4
+These structures and functions may change when \fBHWLOC_COMPONENT_ABI\fP is modified\&. 
+.RE
+.PP
+
+.SH "Typedef Documentation"
+.PP 
+.SS "typedef void* \fBhwloc_backend_distances_add_handle_t\fP"
+
+.PP
+Handle to a new distances structure during its addition to the topology\&. 
+.SH "Function Documentation"
+.PP 
+.SS "int hwloc_backend_distances_add_commit (\fBhwloc_topology_t\fP topology, \fBhwloc_backend_distances_add_handle_t\fP handle, unsigned long flags)"
+
+.PP
+Commit a new distances structure\&. This is similar to \fBhwloc_distances_add_commit()\fP but this variant is designed for backend inserting distances during topology discovery\&. 
+.SS "\fBhwloc_backend_distances_add_handle_t\fP hwloc_backend_distances_add_create (\fBhwloc_topology_t\fP topology, const char * name, unsigned long kind, unsigned long flags)"
+
+.PP
+Create a new empty distances structure\&. This is identical to \fBhwloc_distances_add_create()\fP but this variant is designed for backend inserting distances during topology discovery\&. 
+.SS "int hwloc_backend_distances_add_values (\fBhwloc_topology_t\fP topology, \fBhwloc_backend_distances_add_handle_t\fP handle, unsigned nbobjs, \fBhwloc_obj_t\fP * objs, hwloc_uint64_t * values, unsigned long flags)"
+
+.PP
+Specify the objects and values in a new empty distances structure\&. This is similar to \fBhwloc_distances_add_values()\fP but this variant is designed for backend inserting distances during topology discovery\&.
+.PP
+The only semantical difference is that \fCobjs\fP and \fCvalues\fP are not duplicated, but directly attached to the topology\&. On success, these arrays are given to the core and should not ever be freed by the caller anymore\&. 
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Hardware Locality (hwloc) from the source code\&.

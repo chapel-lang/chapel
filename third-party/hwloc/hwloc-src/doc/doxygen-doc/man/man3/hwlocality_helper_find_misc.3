@@ -1,4 +1,4 @@
-.TH "hwlocality_helper_find_misc" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_helper_find_misc" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -45,6 +45,11 @@ Remove simultaneous multithreading PUs from a CPU set\&. For each core in \fCtop
 .PP
 If \fCwhich\fP is larger than the number of PUs in a core there were originally set in \fCcpuset\fP, no PU is kept for that core\&.
 .PP
+\fBReturns\fP
+.RS 4
+0\&.
+.RE
+.PP
 \fBNote\fP
 .RS 4
 PUs that are not below a Core object are ignored (for instance if the topology does not contain any Core object)\&. None of them is removed from \fCcpuset\fP\&. 
@@ -72,7 +77,14 @@ This function requires the \fCsrc\fP object to have a CPU set\&.
 .SS "static \fBhwloc_obj_t\fP hwloc_get_numanode_obj_by_os_index (\fBhwloc_topology_t\fP topology, unsigned os_index)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
-Returns the object of type \fBHWLOC_OBJ_NUMANODE\fP with \fCos_index\fP\&. This function is useful for converting a nodeset into the NUMA node objects it contains\&. When retrieving the current binding (e\&.g\&. with \fBhwloc_get_membind()\fP with HWLOC_MEMBIND_BYNODESET), one may iterate over the bits of the resulting nodeset with \fBhwloc_bitmap_foreach_begin()\fP, and find the corresponding NUMA nodes with this function\&. 
+Returns the object of type \fBHWLOC_OBJ_NUMANODE\fP with \fCos_index\fP\&. This function is useful for converting a nodeset into the NUMA node objects it contains\&. When retrieving the current binding (e\&.g\&. with \fBhwloc_get_membind()\fP with HWLOC_MEMBIND_BYNODESET), one may iterate over the bits of the resulting nodeset with \fBhwloc_bitmap_foreach_begin()\fP, and find the corresponding NUMA nodes with this function\&.
+.PP
+\fBReturns\fP
+.RS 4
+the NUMA node object, or \fCNULL\fP if none matches\&. 
+.RE
+.PP
+
 .SS "static \fBhwloc_obj_t\fP hwloc_get_obj_below_array_by_type (\fBhwloc_topology_t\fP topology, int nr, \fBhwloc_obj_type_t\fP * typev, unsigned * idxv)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
@@ -83,6 +95,11 @@ Arrays \fCtypev\fP and \fCidxv\fP must contain \fCnr\fP types and indexes\&.
 Start from the top system object and walk the arrays \fCtypev\fP and \fCidxv\fP\&. For each type and logical index couple in the arrays, look under the previously found object to find the index-th object of the given type\&. Indexes are specified within the parent, not withing the entire system\&.
 .PP
 For instance, if nr is 3, typev contains NODE, PACKAGE and CORE, and idxv contains 0, 1 and 2, return the third core object below the second package below the first NUMA node\&.
+.PP
+\fBReturns\fP
+.RS 4
+a matching object if any, \fCNULL\fP otherwise\&.
+.RE
 .PP
 \fBNote\fP
 .RS 4
@@ -96,6 +113,11 @@ This function requires all these objects and the root object to have a CPU set\&
 Find an object below another object, both specified by types and indexes\&. Start from the top system object and find object of type \fCtype1\fP and logical index \fCidx1\fP\&. Then look below this object and find another object of type \fCtype2\fP and logical index \fCidx2\fP\&. Indexes are specified within the parent, not withing the entire system\&.
 .PP
 For instance, if type1 is PACKAGE, idx1 is 2, type2 is CORE and idx2 is 3, return the fourth core object below the third package\&.
+.PP
+\fBReturns\fP
+.RS 4
+a matching object if any, \fCNULL\fP otherwise\&.
+.RE
 .PP
 \fBNote\fP
 .RS 4
@@ -131,7 +153,14 @@ An object with identical locality, matching \fCsubtype\fP and \fCnameprefix\fP i
 .SS "static \fBhwloc_obj_t\fP hwloc_get_pu_obj_by_os_index (\fBhwloc_topology_t\fP topology, unsigned os_index)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
-Returns the object of type \fBHWLOC_OBJ_PU\fP with \fCos_index\fP\&. This function is useful for converting a CPU set into the PU objects it contains\&. When retrieving the current binding (e\&.g\&. with \fBhwloc_get_cpubind()\fP), one may iterate over the bits of the resulting CPU set with \fBhwloc_bitmap_foreach_begin()\fP, and find the corresponding PUs with this function\&. 
+Returns the object of type \fBHWLOC_OBJ_PU\fP with \fCos_index\fP\&. This function is useful for converting a CPU set into the PU objects it contains\&. When retrieving the current binding (e\&.g\&. with \fBhwloc_get_cpubind()\fP), one may iterate over the bits of the resulting CPU set with \fBhwloc_bitmap_foreach_begin()\fP, and find the corresponding PUs with this function\&.
+.PP
+\fBReturns\fP
+.RS 4
+the PU object, or \fCNULL\fP if none matches\&. 
+.RE
+.PP
+
 .SH "Author"
 .PP 
 Generated automatically by Doxygen for Hardware Locality (hwloc) from the source code\&.

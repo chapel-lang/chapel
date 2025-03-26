@@ -17,6 +17,7 @@
 # Copyright © 2009-2021 Inria.  All rights reserved.
 # Copyright © 2009-2012, 2014, 2016 Université Bordeaux
 # Copyright © 2009-2014 Cisco Systems, Inc.  All rights reserved.
+# Copyright © 2023      Université de Reims Champagne-Ardenne.  All rights reserved.
 #
 # See COPYING in top-level directory.
 
@@ -129,8 +130,7 @@ am__aclocal_m4_deps = $(top_srcdir)/config/hwloc.m4 \
 	$(top_srcdir)/config/ltoptions.m4 \
 	$(top_srcdir)/config/ltsugar.m4 \
 	$(top_srcdir)/config/ltversion.m4 \
-	$(top_srcdir)/config/lt~obsolete.m4 \
-	$(top_srcdir)/config/netloc.m4 $(top_srcdir)/configure.ac
+	$(top_srcdir)/config/lt~obsolete.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 DIST_COMMON = $(srcdir)/Makefile.am $(noinst_HEADERS) \
@@ -548,7 +548,6 @@ ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
 AR = @AR@
-ARCHIVEMOUNT = @ARCHIVEMOUNT@
 AS = @AS@
 AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
@@ -675,17 +674,6 @@ MAKEINDEX = @MAKEINDEX@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
 MKDIR_P = @MKDIR_P@
-MPI_CPPFLAGS = @MPI_CPPFLAGS@
-MPI_LDADD = @MPI_LDADD@
-NETLOC_CFLAGS = @NETLOC_CFLAGS@
-NETLOC_CPPFLAGS = @NETLOC_CPPFLAGS@
-NETLOC_EMBEDDED_CFLAGS = @NETLOC_EMBEDDED_CFLAGS@
-NETLOC_EMBEDDED_CPPFLAGS = @NETLOC_EMBEDDED_CPPFLAGS@
-NETLOC_EMBEDDED_LDADD = @NETLOC_EMBEDDED_LDADD@
-NETLOC_EMBEDDED_LIBS = @NETLOC_EMBEDDED_LIBS@
-NETLOC_LDFLAGS = @NETLOC_LDFLAGS@
-NETLOC_LIBS = @NETLOC_LIBS@
-NETLOC_LIBS_PRIVATE = @NETLOC_LIBS_PRIVATE@
 NM = @NM@
 NMEDIT = @NMEDIT@
 OBJDUMP = @OBJDUMP@
@@ -754,7 +742,6 @@ libdir = @libdir@
 libexecdir = @libexecdir@
 libhwloc_so_name = @libhwloc_so_name@
 libhwloc_so_version = @libhwloc_so_version@
-libnetloc_so_version = @libnetloc_so_version@
 localedir = @localedir@
 localstatedir = @localstatedir@
 mandir = @mandir@
@@ -777,7 +764,6 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-xz = @xz@
 AM_CFLAGS = $(HWLOC_CFLAGS)
 AM_CPPFLAGS = $(HWLOC_CPPFLAGS)
 AM_LDFLAGS = $(HWLOC_LDFLAGS)
@@ -851,6 +837,8 @@ hgc_page = hwloc-gather-cpuid.1
 
 # Same for dump-hwdata page on Linux/x86
 hdh_page = hwloc-dump-hwdata.1
+hwloc_compress_dir_name = `echo "hwloc-compress-dir" | $(SED) -e "$(transform)"`
+hwloc_gather_topology_name = `echo "hwloc-gather-topology" | $(SED) -e "$(transform)"`
 all: all-recursive
 
 .SUFFIXES:
@@ -1826,10 +1814,10 @@ uninstall-man: uninstall-man1 uninstall-man7
 	  > $@ < $<
 
 install-exec-hook:
-	$(SED) -e 's/HWLOC_top_builddir\/utils\/hwloc/bindir/' -e 's/HWLOC_top_builddir\/utils\/lstopo/bindir/' -e '/HWLOC_top_builddir/d' $(DESTDIR)$(bindir)/hwloc-compress-dir > $(DESTDIR)$(bindir)/hwloc-compress-dir.tmp && mv -f $(DESTDIR)$(bindir)/hwloc-compress-dir.tmp $(DESTDIR)$(bindir)/hwloc-compress-dir
-	chmod +x $(DESTDIR)$(bindir)/hwloc-compress-dir
-@HWLOC_HAVE_LINUX_TRUE@	$(SED) -e 's/HWLOC_top_builddir\/utils\/lstopo/bindir/' -e 's/HWLOC_top_builddir\/utils\/hwloc/bindir/' -e '/HWLOC_top_builddir/d' $(DESTDIR)$(bindir)/hwloc-gather-topology > $(DESTDIR)$(bindir)/hwloc-gather-topology.tmp && mv -f $(DESTDIR)$(bindir)/hwloc-gather-topology.tmp $(DESTDIR)$(bindir)/hwloc-gather-topology
-@HWLOC_HAVE_LINUX_TRUE@	chmod +x $(DESTDIR)$(bindir)/hwloc-gather-topology
+	$(SED) -e 's/HWLOC_top_builddir\/utils\/hwloc/bindir/' -e 's/HWLOC_top_builddir\/utils\/lstopo/bindir/' -e '/HWLOC_top_builddir/d' $(DESTDIR)$(bindir)/$(hwloc_compress_dir_name) > $(DESTDIR)$(bindir)/$(hwloc_compress_dir_name).tmp && mv -f $(DESTDIR)$(bindir)/$(hwloc_compress_dir_name).tmp $(DESTDIR)$(bindir)/$(hwloc_compress_dir_name)
+	chmod +x $(DESTDIR)$(bindir)/$(hwloc_compress_dir_name)
+@HWLOC_HAVE_LINUX_TRUE@	$(SED) -e 's/HWLOC_top_builddir\/utils\/lstopo/bindir/' -e 's/HWLOC_top_builddir\/utils\/hwloc/bindir/' -e '/HWLOC_top_builddir/d' $(DESTDIR)$(bindir)/$(hwloc_gather_topology_name) > $(DESTDIR)$(bindir)/$(hwloc_gather_topology_name).tmp && mv -f $(DESTDIR)$(bindir)/$(hwloc_gather_topology_name).tmp $(DESTDIR)$(bindir)/$(hwloc_gather_topology_name)
+@HWLOC_HAVE_LINUX_TRUE@	chmod +x $(DESTDIR)$(bindir)/$(hwloc_gather_topology_name)
 
 distclean-local:
 	rm -f $(nodist_man_MANS)

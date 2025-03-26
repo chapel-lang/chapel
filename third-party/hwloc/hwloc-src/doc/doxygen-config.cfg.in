@@ -1,4 +1,4 @@
-# Copyright © 2010-2021 Inria.  All rights reserved.
+# Copyright © 2010-2023 Inria.  All rights reserved.
 # Copyright © 2009 Cisco Systems, Inc.  All rights reserved.
 # See COPYING in top-level directory.
 
@@ -6,9 +6,7 @@
 
 PROJECT_NUMBER = @PACKAGE_VERSION@
 
-# no need to input hwloc.doxy and netloc.doxy, those are included from main.doxy
 INPUT          = \
-		@top_srcdir@/doc/main.doxy \
 		@top_srcdir@/doc/hwloc.doxy \
 		@top_srcdir@/include/hwloc.h \
 		@top_srcdir@/include/hwloc/helper.h \
@@ -31,11 +29,9 @@ INPUT          = \
 		@top_srcdir@/include/hwloc/openfabrics-verbs.h \
 		@top_srcdir@/include/hwloc/diff.h \
 		@top_srcdir@/include/hwloc/shmem.h \
-		@top_srcdir@/include/hwloc/plugins.h \
-		@top_srcdir@/doc/netloc.doxy \
-		@top_srcdir@/include/netloc.h
+		@top_srcdir@/include/hwloc/plugins.h
 
-EXAMPLE_PATH   = @top_srcdir@/doc @top_srcdir@/tests/netloc
+EXAMPLE_PATH   = @top_srcdir@/doc
 
 IMAGE_PATH     = @top_srcdir@/doc/images images
 

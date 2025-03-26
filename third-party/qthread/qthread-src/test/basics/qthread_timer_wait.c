@@ -1,13 +1,10 @@
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "qthread/qtimer.h"
-#include <assert.h>
 #include <qthread/qthread.h>
 #include <stdatomic.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "argparsing.h"
 
 aligned_t cond[2];
 
@@ -115,7 +112,7 @@ static aligned_t task_short_inner(void *arg) {
 static aligned_t task_long_outer(void *arg) {
   int status = QTHREAD_SUCCESS;
   status &= qthread_fork(task_short_inner, NULL, NULL);
-  assert(status == QTHREAD_SUCCESS);
+  test_check(status == QTHREAD_SUCCESS);
   double secs = t_long;
   qtimer_t t = qtimer_create();
   qtimer_start(t);
@@ -141,12 +138,12 @@ int main(int argc, char *argv[]) {
   int status = QTHREAD_SUCCESS;
   status &= qthread_initialize();
   status &= test1();
-  assert(!atomic_load_explicit(&check, memory_order_relaxed));
+  test_check(!atomic_load_explicit(&check, memory_order_relaxed));
   status &= test2();
-  assert(!atomic_load_explicit(&check, memory_order_relaxed));
+  test_check(!atomic_load_explicit(&check, memory_order_relaxed));
   status &= test3();
-  assert(!atomic_load_explicit(&check, memory_order_relaxed));
-  assert(status == QTHREAD_SUCCESS);
+  test_check(!atomic_load_explicit(&check, memory_order_relaxed));
+  test_check(status == QTHREAD_SUCCESS);
   return EXIT_SUCCESS;
 }
 

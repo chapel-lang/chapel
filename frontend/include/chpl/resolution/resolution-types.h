@@ -2350,6 +2350,7 @@ class AssociatedAction {
     ITERATE,      // aka "these"
     NEW_INIT,
     REDUCE_SCAN,  // resolution of "generate" for a reduce/scan operation.
+    REDUCE_ASSIGN, // resolution of "accumulateOntoState" for a reduce= operation.
     INFER_TYPE,
     COMPARE,      // == , e.g., for select-statements
     RUNTIME_TYPE, // create runtime type
@@ -2434,7 +2435,7 @@ class ResolvedExpression {
 
   /** for simple (non-function Identifier) cases, the ID of a NamedDecl it
    * refers to */
-  ID toId() const { return toId_; }
+  const ID& toId() const { return toId_; }
 
   /** check whether this resolution result refers to a compiler builtin like `bool`. */
   bool isBuiltin() const { return isBuiltin_; }

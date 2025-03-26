@@ -1,5 +1,5 @@
 .\" -*- nroff -*-
-.\" Copyright © 2013-2022 Inria.  All rights reserved.
+.\" Copyright © 2013-2024 Inria.  All rights reserved.
 .\" See COPYING in top-level directory.
 .TH HWLOC-ANNOTATE "1" "%HWLOC_DATE%" "%PACKAGE_VERSION%" "%PACKAGE_NAME%"
 .SH NAME
@@ -218,11 +218,6 @@ Only add to all Core objects:
 
     $ hwloc-annotate input.xml output.xml Core:all info infoname infovalue
 
-Add a Misc object named "foobar" under the root object of the topology
-and modify the input XML directly:
-
-    $ hwloc-annotate file.xml file.xml root misc foobar
-
 Add an info attribute to OS device #2 and #3:
 
     $ hwloc-annotate input.xml output.xml os:2-3 info infoname infovalue
@@ -232,6 +227,17 @@ Change package objects to green with red text in the lstopo graphical output:
     $ hwloc-annotate topo.xml topo.xml package:all info lstopoStyle "Background=#00ff00;Text=#ff0000"
     $ lstopo -i topo.xml
 
+Add a Misc object named "foobar" under the root object of the topology
+and modify the input XML directly:
+
+    $ hwloc-annotate file.xml file.xml root misc foobar
+
+.
+.\" **************************
+.\"    Examples with memory attributes
+.\" **************************
+.SH Examples with memory attributes
+.PP
 Set the memory attribute latency to 123 nanoseconds from the PUs in the first package to the first NUMA node:
 
     $ hwloc-annotate topo.xml topo.xml numanode:0 memattr Latency $(hwloc-calc package:0) 123
@@ -248,11 +254,23 @@ To clarify that NUMA node #0 is DDR while NUMA node #1 is HBM:
     $ hwloc-annotate topo.xml topo.xml numa:0 subtype DDR
     $ hwloc-annotate topo.xml topo.xml numa:1 subtype HBM
 
+.
+.\" **************************
+.\"    Examples with CPU kinds
+.\" **************************
+.SH Examples with CPU kinds
+.PP
 Specify that PU 0-3 and PU 4-7 are of different kinds, and the latter is more efficient:
 
     $ hwloc-annotate topo.xml topo.xml dummy cpukind 0x0f 0 0 CoreType Small
     $ hwloc-annotate topo.xml topo.xml dummy cpukind 0xf0 1 0 CoreType Big
 
+.
+.\" **************************
+.\"    Examples distances matrices
+.\" **************************
+.SH Examples with distances matrices
+.PP
 Replace NUMA nodes with Packages in the NUMALatency distances matrix,
 when they have the exact same locality.
 

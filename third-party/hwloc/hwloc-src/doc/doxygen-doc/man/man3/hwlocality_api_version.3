@@ -1,4 +1,4 @@
-.TH "hwlocality_api_version" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_api_version" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -10,7 +10,7 @@ hwlocality_api_version \- API version
 
 .in +1c
 .ti -1c
-.RI "#define \fBHWLOC_API_VERSION\fP   0x00020800"
+.RI "#define \fBHWLOC_API_VERSION\fP   0x00020b00"
 .br
 .ti -1c
 .RI "#define \fBHWLOC_COMPONENT_ABI\fP   7"
@@ -28,7 +28,7 @@ hwlocality_api_version \- API version
 
 .SH "Macro Definition Documentation"
 .PP 
-.SS "#define HWLOC_API_VERSION   0x00020800"
+.SS "#define HWLOC_API_VERSION   0x00020b00"
 
 .PP
 Indicate at build time which hwloc API version is being used\&. This number is updated to (X<<16)+(Y<<8)+Z when a new release X\&.Y\&.Z actually modifies the API\&.
@@ -50,7 +50,14 @@ Current component and plugin ABI version (see \fBhwloc/plugins\&.h\fP)
 .SS "unsigned hwloc_get_api_version (void)"
 
 .PP
-Indicate at runtime which hwloc API version was used at build time\&. Should be \fBHWLOC_API_VERSION\fP if running on the same version\&. 
+Indicate at runtime which hwloc API version was used at build time\&. Should be \fBHWLOC_API_VERSION\fP if running on the same version\&.
+.PP
+\fBReturns\fP
+.RS 4
+the build-time version number\&. 
+.RE
+.PP
+
 .SH "Author"
 .PP 
 Generated automatically by Doxygen for Hardware Locality (hwloc) from the source code\&.

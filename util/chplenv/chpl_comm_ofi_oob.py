@@ -1,12 +1,38 @@
 #!/usr/bin/env python3
 import sys
 import os
+import optparse
 
 import chpl_comm, chpl_launcher, chpl_platform
 import overrides
 import third_party_utils
 
 from utils import error, memoize
+
+@memoize
+def _find_pmi2():
+    """
+    PMI2 can have multiple names, look for all of them
+    If its found, return the name used, CFLAGS, and LDFLAGS
+    Otherwise, return None
+    """
+    pkg_config_names = ('pmi2', 'cray-pmi')
+    for name in pkg_config_names:
+        if third_party_utils.pkgconfig_system_has_package(name):
+            cflags = third_party_utils.pkgconfig_get_system_compile_args(name)
+            ldflags = third_party_utils.pkgconfig_get_system_link_args(name)
+            assert cflags != (None, None)
+            assert ldflags != (None, None)
+            return (name, cflags, ldflags)
+    # if we can't use pkg-config, look in common locations
+    paths = ('/opt/cray/pe/pmi/default',)
+    for path in paths:
+        dirs = (path, os.path.join(path, 'include'), os.path.join(path, 'lib'))
+        if all(map(os.path.exists, dirs)):
+            cflags = ([], ['-I' + os.path.join(path, 'include')])
+            ldflags = ([], ['-L' + os.path.join(path, 'lib'), '-lpmi2'])
+            return (path, cflags, ldflags)
+    return None
 
 @memoize
 def get():
@@ -35,7 +61,7 @@ def get():
         oob_val = 'mpi'
     else:
         import chpl_compiler
-        if third_party_utils.pkgconfig_system_has_package('pmi2'):
+        if _find_pmi2() is not None:
             oob_val = 'pmi2'
         elif "-lpmi2" in chpl_compiler.get_system_link_args('target'):
             oob_val = 'pmi2'
@@ -49,9 +75,6 @@ def get():
 @memoize
 def get_compile_args():
     args = ([ ], [ ])
-    libfabric_val = get()
-    if libfabric_val != 'system' and libfabric_val != 'bundled':
-        return args
 
     flags = [ ]
     ofi_oob_val = get()
@@ -59,6 +82,14 @@ def get_compile_args():
         mpi_dir_val = overrides.get_environ('MPI_DIR')
         if mpi_dir_val:
             flags.append('-I' + mpi_dir_val + '/include')
+    elif ofi_oob_val == 'pmi2':
+        # try and use pkg-config to get the libraries to link, but if that fails still just use the default of nothing
+        tup = _find_pmi2()
+        if tup is not None:
+            cflags = tup[1]
+            assert len(cflags[0]) == 0
+            flags.extend(cflags[1])
+
     args[1].extend(flags)
 
     return args
@@ -69,9 +100,6 @@ def get_compile_args():
 @memoize
 def get_link_args():
     args = ([ ], [ ])
-    libfabric_val = get()
-    if libfabric_val != 'system' and libfabric_val != 'bundled':
-        return args
 
     libs = [ ]
     ofi_oob_val = get()
@@ -98,18 +126,30 @@ def get_link_args():
     if ofi_oob_val == 'pmi2' and 'cray-xc' != platform_val:
 
         # try and use pkg-config to get the libraries to link, but if that fails still just use the default
-        tup = third_party_utils.pkgconfig_get_system_link_args('pmi2')
-        if tup == (None, None):
+        tup = _find_pmi2()
+        if tup is None:
             libs.append('-lpmi2')
         else:
-            assert len(tup[0]) == 0
-            libs.extend(tup[1])
+            ldflags = tup[2]
+            assert len(ldflags[0]) == 0
+            libs.extend(ldflags[1])
     args[1].extend(libs)
 
     return args
 
 def _main():
-    oob_val = get()
+    parser = optparse.OptionParser(usage='usage: %prog [options]')
+    parser.add_option('--compile', dest='which', action='store_const',
+                      const='compile', default=None)
+    parser.add_option('--link', dest='which', action='store_const',
+                      const='link')
+    options, args = parser.parse_args()
+    if options.which == 'compile':
+        oob_val = get_compile_args()
+    elif options.which == 'link':
+        oob_val = get_link_args()
+    else:
+        oob_val = get()
     sys.stdout.write("{0}\n".format(oob_val))
 
 

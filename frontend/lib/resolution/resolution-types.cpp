@@ -1322,6 +1322,8 @@ const char* AssociatedAction::kindToString(Action a) {
       return "new-init";
     case REDUCE_SCAN:
       return "reduce-scan";
+    case REDUCE_ASSIGN:
+      return "reduce-assign";
     case INFER_TYPE:
       return "infer-type";
     case COMPARE:

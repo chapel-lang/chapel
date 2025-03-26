@@ -631,6 +631,30 @@ static void test20() {
   assert(guard.realizeErrors() == 2);
 }
 
+static void test21() {
+  printf("%s\n", __FUNCTION__);
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+                R""""(
+                  proc f(arg: [?D] ?t) { return D; }
+                  proc g(arg: [?D] ?t) type { return t; }
+
+                  var A: [1..10] int;
+                  var D = f(A);
+                  type t = g(A);
+                )"""", {"D", "t"});
+
+  assert(!vars.at("D").isUnknownOrErroneous());
+  assert(vars.at("D").type()->isDomainType());
+  assert(vars.at("D").type()->toDomainType()->rankInt() == 1);
+  ensureParamEnumStr(vars.at("D").type()->toDomainType()->strides(), "one");
+
+  assert(!vars.at("t").isUnknownOrErroneous());
+  assert(vars.at("t").type()->isIntType());
+}
+
 int main() {
   test1();
   test2();
@@ -654,6 +678,7 @@ int main() {
   test18();
   test19();
   test20();
+  test21();
 
   return 0;
 }

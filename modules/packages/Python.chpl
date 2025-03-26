@@ -513,6 +513,9 @@ module Python {
     @chpldoc.nodoc
     var isSubInterpreter: bool;
 
+    @chpldoc.nodoc
+    var anonModuleCounter: atomic int = 0;
+
     // the done signal is a field so it has the same lifetime as the
     // helper thread
     @chpldoc.nodoc
@@ -664,8 +667,35 @@ module Python {
     proc importModule(modName: string): owned Module throws {
       return new Module(this, modName);
     }
+
+    @deprecated("'importModule' with a 'moduleContents' argument is deprecated. Use :proc:`createModule` instead.")
+    proc importModule(modName: string, moduleContents): owned Module throws
+      where moduleContents.type == string || moduleContents.type == bytes {
+      return new Module(this, modName, moduleContents);
+    }
+
     /*
-      Import a Python module, using the provided ``moduleContents``. This is
+      Create a Python module, using the provided ``moduleContents``. This is
+      equivalent to putting the code in a file, and then importing the file
+      via the file/module name.
+
+      This function will generate a unique module name. If a specific module
+      name is desired, use the :proc:`createModule` 2 argument overload, which
+      takes ``modName`` and ``moduleContents``.
+
+      :arg moduleContents: The contents of the module. This can be a
+                           :type:`~String.string` of Python code or a
+                           :type:`~Bytes.bytes` object containing Python
+                           bytecode (i.e. from a ``*.pyc`` file).
+    */
+    proc createModule(moduleContents): owned Module throws
+      where moduleContents.type == string || moduleContents.type == bytes {
+      return this.createModule(
+        "chpl_anon_module_" + this.anonModuleCounter.fetchAdd(1):string,
+        moduleContents);
+    }
+    /*
+      Create a Python module, using the provided ``moduleContents``. This is
       equivalent to putting the code in a file, and then importing the file
       via the file/module name.
 
@@ -680,7 +710,7 @@ module Python {
                            :type:`~Bytes.bytes` object containing Python
                            bytecode (i.e. from a ``*.pyc`` file).
     */
-    proc importModule(modName: string, moduleContents): owned Module throws
+    proc createModule(modName: string, moduleContents): owned Module throws
       where moduleContents.type == string || moduleContents.type == bytes {
       return new Module(this, modName, moduleContents);
     }
@@ -1064,6 +1094,8 @@ module Python {
         return toList(val);
       } else if isArrayType(t) && val.isAssociative() {
         return toDict(val);
+      } else if isTupleType(t) {
+        return toTuple(val);
       } else if isSubtype(t, List.list) {
         return toList(val);
       } else if isSubtype(t, Set.set) {
@@ -1160,6 +1192,8 @@ module Python {
         } else {
           halt("Unsupported fromPython array type: '" + t:string + "'");
         }
+      } else if isTupleType(t) {
+        return fromTuple(t, obj);
       } else if isSubtype(t, List.list) {
         return fromList(t, obj);
       } else if isSubtype(t, Set.set) {
@@ -1178,6 +1212,50 @@ module Python {
       } else {
         halt("Unsupported fromPython type: '" + t:string + "'");
       }
+    }
+
+    /*
+      Convert a tuple to a python tuple.  Returns a new reference
+    */
+    @chpldoc.nodoc
+    proc toTuple(tup): PyObjectPtr throws
+      where isTupleType(tup.type) {
+
+      var pyTup = PyTuple_New(tup.size.safeCast(Py_ssize_t));
+      this.checkException();
+      for param idx in 0..<tup.size {
+        var pyValue = toPythonInner(tup(idx));
+        PyTuple_SetItem(pyTup, idx.safeCast(Py_ssize_t), pyValue);
+        this.checkException();
+      }
+      return pyTup;
+    }
+
+    /*
+      Convert a python tuple to a tuple.  Steals a reference to obj.
+    */
+    @chpldoc.nodoc
+    proc fromTuple(type T, obj: PyObjectPtr): T throws
+      where isTupleType(T) {
+
+      var res: T;
+      var objSize = PyTuple_Size(obj);
+      this.checkException();
+      if (res.size < objSize) {
+        throw new ChapelException("type specified was smaller than returned value");
+      } else if (res.size > objSize) {
+        throw new ChapelException("type specified was larger than returned value");
+      }
+
+      for param i in 0..<res.size {
+        var elm = PyTuple_GetItem(obj, i.safeCast(Py_ssize_t));
+        this.checkException();
+        Py_INCREF(elm);
+        res(i) = fromPythonInner((res(i)).type, elm);
+        this.checkException();
+      }
+      Py_DECREF(obj);
+      return res;
     }
 
     /*
@@ -2155,7 +2233,7 @@ module Python {
 
     /*
       Import a Python module from a string using an arbitrary name.
-      See :proc:`Interpreter.importModule`.
+      See :proc:`Interpreter.createModule`.
     */
     proc init(interpreter: borrowed Interpreter,
               in modName: string, in moduleContents: string) throws {
@@ -2269,8 +2347,134 @@ module Python {
     }
   }
 
+  /*
+    Represents a Python tuple.  This provides a Chapel interface to Python
+    tuples, where the Python interpreter owns the tuple.
+  */
+  class PyTuple: Value {
+    @chpldoc.nodoc
+    proc init(in interpreter: borrowed Interpreter,
+              in obj: PyObjectPtr, isOwned: bool = true) {
+      super.init(interpreter, obj, isOwned=isOwned);
+    }
 
-  // TODO: create adapters for other common Python types like Dict, Tuple
+    /*
+      Get the size of the tuple. Equivalent to calling ``len(obj)`` in Python.
+
+      :returns: The size of the tuple.
+    */
+    proc size: int throws {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
+      var size = PyTuple_Size(this.getPyObject());
+      this.interpreter.checkException();
+      return size;
+    }
+
+    /*
+      Get an item from the tuple. Equivalent to calling ``obj[idx]`` in Python.
+
+      :arg T: The Chapel type of the item to return.
+      :arg idx: The index of the item to get.
+      :returns: The item at the given index.
+    */
+    pragma "docs only"
+    proc get(type T = owned Value, idx: int): T throws do
+      compilerError("docs only");
+
+    @chpldoc.nodoc
+    proc get(type T, idx: int): T throws {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
+      var item = PyTuple_GetItem(this.getPyObject(), idx.safeCast(Py_ssize_t));
+      this.interpreter.checkException();
+      Py_INCREF(item);
+      return interpreter.fromPythonInner(T, item);
+    }
+
+    @chpldoc.nodoc
+    proc get(idx: int): owned Value throws do
+      return this.get(owned Value, idx);
+
+    /*
+      Get a slice of the tuple indicated by ``bounds``.  Equivalent to
+      calling ``obj[bounds.low:bounds.high+1]`` in Python.
+
+      .. note::
+
+         This method does not support strided ranges or ranges with an alignment
+         other than 0.
+
+      :arg T: the Chapel type of the slice to return.
+      :arg bounds: The full slice of the tuple to return
+      :returns: A slice of the tuple for the given bounds.
+    */
+    pragma "docs only"
+    proc get(type T = owned Value, bounds: range(?)): T throws do
+      compilerError("docs only");
+
+    @chpldoc.nodoc
+    proc get(type T, bounds: range(?)): T throws {
+      if (bounds.strides != strideKind.one) {
+        compilerError("cannot call `get()` on a Python tuple with a range with stride other than 1");
+      }
+
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
+      var pyObj;
+
+      if (bounds.hasLowBound() && bounds.hasHighBound()) {
+        pyObj = PyTuple_GetSlice(this.getPyObject(),
+                                 bounds.low.safeCast(Py_ssize_t),
+                                 bounds.high.safeCast(Py_ssize_t) + 1);
+
+      } else if (!bounds.hasLowBound() && bounds.hasHighBound()) {
+        pyObj = PyTuple_GetSlice(this.getPyObject(), min(Py_ssize_t),
+                                 bounds.high.safeCast(Py_ssize_t) + 1);
+
+      } else if (bounds.hasLowBound() && !bounds.hasHighBound()) {
+        pyObj = PyTuple_GetSlice(this.getPyObject(),
+                                 bounds.low.safeCast(Py_ssize_t),
+                                 max(Py_ssize_t));
+
+      } else {
+        pyObj = PyTuple_GetSlice(this.getPyObject(), min(Py_ssize_t),
+                                 max(Py_ssize_t));
+      }
+      this.interpreter.checkException();
+      return interpreter.fromPythonInner(T, pyObj);
+    }
+
+    @chpldoc.nodoc
+    proc get(bounds: range(?)): owned Value throws {
+      if (bounds.strides != strideKind.one) {
+        // Avoids the error from the other version reporting this function
+        // instead of the user function
+        compilerError("cannot call `get()` on a Python tuple with a range with stride other than 1");
+      }
+      return this.get(owned Value, bounds);
+    }
+
+    /*
+      Check if an item is in the tuple.  Equivalent to calling ``item in obj``
+      in Python.
+
+      :arg item: The item to check for membership in the tuple.
+    */
+    proc contains(item: ?): bool throws {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
+      var result = PySequence_Contains(this.getPyObject(),
+                                       interpreter.toPythonInner(item));
+      this.interpreter.checkException();
+      return result: bool;
+    }
+  }
+
   /*
     Represents a Python list. This provides a Chapel interface to Python lists,
     where the Python interpreter owns the list.
@@ -2914,6 +3118,7 @@ module Python {
   Function implements writeSerializable;
   Module implements writeSerializable;
   Class implements writeSerializable;
+  PyTuple implements writeSerializable;
   PyList implements writeSerializable;
   PyDict implements writeSerializable;
   PySet implements writeSerializable;
@@ -2934,6 +3139,10 @@ module Python {
 
   @chpldoc.nodoc
   override proc Class.serialize(writer, ref serializer) throws do
+    writer.write(this:string);
+
+  @chpldoc.nodoc
+  override proc PyTuple.serialize(writer, ref serializer) throws do
     writer.write(this:string);
 
   @chpldoc.nodoc
@@ -3171,6 +3380,8 @@ module Python {
     extern proc PySequence_SetItem(obj: PyObjectPtr,
                                    idx: Py_ssize_t,
                                    value: PyObjectPtr);
+    extern proc PySequence_Contains(obj: PyObjectPtr,
+                                    item: PyObjectPtr): c_int;
 
 
     /*
@@ -3244,8 +3455,14 @@ module Python {
     /*
       Tuples
     */
+    extern proc PyTuple_New(size: Py_ssize_t): PyObjectPtr;
     extern proc PyTuple_Pack(size: Py_ssize_t, args...): PyObjectPtr;
-
+    extern proc PyTuple_Size(tup: PyObjectPtr): Py_ssize_t;
+    extern proc PyTuple_GetItem(tup: PyObjectPtr, idx: Py_ssize_t): PyObjectPtr;
+    extern proc PyTuple_GetSlice(tup: PyObjectPtr, low: Py_ssize_t,
+                                 high: Py_ssize_t): PyObjectPtr;
+    extern proc PyTuple_SetItem(tup: PyObjectPtr, pos: Py_ssize_t,
+                                item: PyObjectPtr);
     /*
       Functions
     */

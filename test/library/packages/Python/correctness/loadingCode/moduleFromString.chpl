@@ -8,7 +8,7 @@ def foo(x):
 
 var interp = new Interpreter();
 
-var mod = interp.importModule("mymod", modStr);
+var mod = interp.createModule(modStr);
 var foo = mod.get(owned Function, "foo");
 foo(1);
 foo([1,2,3]);

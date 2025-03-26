@@ -1395,6 +1395,26 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
         }
       }
     }
+  } else if (auto arr = formalTypeExpr->toBracketLoop()) {
+    if (!actualType.isUnknownOrErroneous() && actualType.type()->isArrayType()) {
+      // notably, we can't have type queries that select only a part of a domain
+      // at this time. See checkDomainTypeQueryUsage in post-parse-checks.cpp.
+      // So we can assume if there is a type query, it's for the whole domain.
+
+      if (arr->iterand()->isTypeQuery()) {
+        // Match production: domain type expressions are CONST_REF.
+        auto& result = byPostorder.byAst(arr->iterand());
+        result.setType(QualifiedType(QualifiedType::CONST_REF, actualType.type()->toArrayType()->domainType().type()));
+      }
+
+      // Resolve type queries in the element type.
+      CHPL_ASSERT(arr->body()->numStmts() <= 1);
+      if (arr->body()->numStmts() == 1) {
+        resolveTypeQueries(arr->body()->stmt(0),
+                           actualType.type()->toArrayType()->eltType(),
+                           isNonStarVarArg, /* isTopLevel */ false);
+      }
+    }
   }
 }
 
@@ -2778,6 +2798,67 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
   return true;
 }
 
+static void resolveReduceAssign(Resolver& rv, const OpCall* op) {
+  auto lhs = op->actual(0);
+  auto rhs = op->actual(1);
+
+  // rhs is easy; it's just whatever expression we're assigning. find its type.
+  auto rhsType = rv.byPostorder.byAst(rhs).type();
+  if (rhsType.isUnknownOrErroneous()) {
+    return;
+  }
+
+  auto lhsIdent = lhs->toIdentifier();
+  if (!lhsIdent) {
+    CHPL_REPORT(rv.context, ReductionAssignNonIdentifier, op);
+    return;
+  }
+
+  auto& resolvedLhs = rv.byPostorder.byAst(lhsIdent);
+  if (!resolvedLhs.toId() || resolvedLhs.type().isUnknownOrErroneous()) return;
+
+  if (parsing::idToTag(rv.context, resolvedLhs.toId()) != asttags::ReduceIntent) {
+    auto refersTo = parsing::idToAst(rv.context, resolvedLhs.toId());
+    CHPL_REPORT(rv.context, ReductionAssignNotReduceIntent, op, refersTo);
+    return;
+  }
+
+  auto intent = parsing::idToAst(rv.context, resolvedLhs.toId())->toReduceIntent();
+  auto& resolvedReducer = rv.byPostorder.byAst(intent->op());
+  if (resolvedReducer.type().isUnknownOrErroneous()) return;
+
+  // set up the "accumulate onto state" call.
+  std::vector<CallInfoActual> actuals;
+  actuals.push_back({resolvedReducer.type(), USTR("this")});
+  actuals.push_back({resolvedLhs.type(), UniqueString()});
+  actuals.push_back({rhsType, UniqueString()});
+
+  auto ci = CallInfo(UniqueString::get(rv.context, "accumulateOntoState"),
+      /* calledType */ QualifiedType(),
+      /* isMethodCall */ true,
+      /* hasQuestionArg */ false,
+      /* isParenless */ false,
+      std::move(actuals));
+
+  auto inScopes = CallScopeInfo::forNormalCall(rv.currentScope(), rv.poiScope);
+  auto& resolvedOp = rv.byPostorder.byAst(op);
+
+  // reductions in the standard library are in the habit of accepting any RHS,
+  // and then emitting errors from inside the implementation. Catch that
+  // an emit a more specific error.
+  auto resolveResult = rv.context->runAndTrackErrors([&, op](Context* context) {
+    auto c = rv.resolveGeneratedCall(op, &ci, &inScopes);
+    return c.noteResultWithoutError(&resolvedOp,
+                                    { { AssociatedAction::REDUCE_ASSIGN, op->id() } });
+  });
+
+  if (!resolveResult.ranWithoutErrors() || resolveResult.result()) {
+    auto shadows = parsing::idToAst(rv.context, rv.byPostorder.byAst(intent).toId());
+    CHPL_REPORT(rv.context, ReductionAssignInvalidRhs, op, intent, shadows, ci);
+  }
+  resolvedOp.setType(QualifiedType(QualifiedType::CONST_VAR, VoidType::get(rv.context)));
+}
+
 bool Resolver::resolveSpecialOpCall(const Call* call) {
   if (!call->isOpCall()) return false;
 
@@ -2802,6 +2883,9 @@ bool Resolver::resolveSpecialOpCall(const Call* call) {
   } else if (op->op() == USTR("...")) {
     // just leave it unknown -- tuple expansion only makes sense
     // in the argument list for another call.
+    return true;
+  } else if (op->op() == USTR("reduce=")) {
+    resolveReduceAssign(*this, op);
     return true;
   }
 
@@ -6690,10 +6774,7 @@ static bool computeTaskIntentInfo(Resolver& resolver, const NamedDecl* intent,
 
   // Look at the scope before the loop-statement
   const Scope* scope = scopeStack[scopeStack.size()-2]->scope;
-  LookupConfig config = LOOKUP_DECLS |
-                        LOOKUP_IMPORT_AND_USE |
-                        LOOKUP_PARENTS |
-                        LOOKUP_INNERMOST;
+  LookupConfig config = identifierLookupConfig(/* resolvingCalledIdent */ false);
 
   auto fHelper = resolver.getFieldDeclarationLookupHelper();
   auto helper = resolver.getMethodReceiverScopeHelper();
@@ -6716,30 +6797,6 @@ static bool computeTaskIntentInfo(Resolver& resolver, const NamedDecl* intent,
   } else {
     return false;
   }
-}
-
-bool Resolver::enter(const ReduceIntent* reduce) {
-  ID id;
-  QualifiedType type;
-  ResolvedExpression& result = byPostorder.byAst(reduce);
-
-  if (computeTaskIntentInfo(*this, reduce, id, type)) {
-    validateAndSetToId(result, reduce, id);
-    // set reduce intent shadow variable to a VAR with type of shadowed variable
-    QualifiedType reduceIntentType =
-        QualifiedType(QualifiedType::Kind::VAR, type.type());
-    result.setType(reduceIntentType);
-  } else if (!scopeResolveOnly) {
-    context->error(reduce, "Unable to find declaration of \"%s\" for reduction", reduce->name().c_str());
-  }
-
-  // TODO: Resolve reduce->op() with shadowed type
-  // E.g. "+ reduce x" --> "SumReduceOp(x.type)"
-
-  return false;
-}
-
-void Resolver::exit(const ReduceIntent* reduce) {
 }
 
 static UniqueString identifierReduceScanOpName(Context* context,
@@ -6808,7 +6865,7 @@ static const ClassType* determineReduceScanOp(Resolver& resolver,
                                               const QualifiedType& iterType) {
   if (auto ident = op->toIdentifier()) {
     auto toLookUp = ident->name();
-    auto opName = identifierReduceScanOpName(resolver.context, ident->name());
+    auto opName = identifierReduceScanOpName(resolver.context, toLookUp);
     if (!opName.isEmpty()) {
       // The identifier does not itself name a ReduceScanOp class, but is
       // associated with such a class. Use the associated class' name instead
@@ -6821,8 +6878,15 @@ static const ClassType* determineReduceScanOp(Resolver& resolver,
       //
       // It's safe to call basicClassType since constructReduceScanOpClass
       // ensures it's a basic class type.
-      resolver.validateAndSetToId(resolver.byPostorder.byAst(ident),
-                                  ident, scanOp->basicClassType()->id());
+      auto& identRes = resolver.byPostorder.byAst(ident);
+      resolver.validateAndSetToId(identRes, ident, scanOp->basicClassType()->id());
+
+      // when setting the type, make it an owned VAR, since we're creating
+      // a new instance of the ReduceScanOp.
+      auto dec = ClassTypeDecorator(ClassTypeDecorator::MANAGED_NONNIL);
+      auto manager = AnyOwnedType::get(resolver.context);
+      auto ownedScanOp = ClassType::get(resolver.context, scanOp->manageableType(), manager, dec);
+      identRes.setType(QualifiedType(QualifiedType::VAR, ownedScanOp));
     }
     // No further processing is needed; we found the operation.
     return scanOp;
@@ -6875,6 +6939,47 @@ static QualifiedType resolveReduceScanOp(Resolver& resolver,
   if (opClass == nullptr) return QualifiedType();
 
   return getReduceScanOpResultType(resolver, reduceOrScan, opClass);
+}
+
+bool Resolver::enter(const ReduceIntent* reduce) {
+  ID id;
+  QualifiedType type;
+  ResolvedExpression& result = byPostorder.byAst(reduce);
+
+  if (computeTaskIntentInfo(*this, reduce, id, type)) {
+    validateAndSetToId(result, reduce, id);
+  } else if (!scopeResolveOnly) {
+    context->error(reduce, "Unable to find declaration of \"%s\" for reduction", reduce->name().c_str());
+  }
+
+  // in case we failed to compute the variable type, don't keep going
+  if (type.isUnknownOrErroneous()) return false;
+
+  // compute the reduce operation being referenced in the intent.
+  auto op = determineReduceScanOp(*this, reduce, reduce->op(), type);
+
+  // some reduce operations (e.g., minmax) change the type of the element.
+  // Consider the accumulator as the changed type.
+  auto elementType = getReduceScanOpResultType(*this, reduce, op);
+
+  // Unlike reductions, a reduce intent cannot change the result of its
+  // element, because fundamentally, it writes it back to the original variable.
+  // Check if the intent changes.
+  auto got = canPassScalar(context, elementType, type);
+  if (!got.passes() || got.converts()) {
+    CHPL_REPORT(context, ReductionIntentChangesType, reduce, parsing::idToAst(context, id), type, elementType);
+    type = QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
+  } else {
+    // override the intent to be VAR, since it's a mutable accumulator
+    type = QualifiedType(QualifiedType::VAR, type.type());
+  }
+
+  result.setType(type);
+
+  return false;
+}
+
+void Resolver::exit(const ReduceIntent* reduce) {
 }
 
 bool Resolver::enter(const uast::Reduce* reduce) {

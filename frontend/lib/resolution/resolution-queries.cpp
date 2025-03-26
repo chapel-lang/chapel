@@ -3438,22 +3438,31 @@ doIsCandidateApplicableInitial(ResolutionContext* rc,
       //
       // TODO: This doesn't have anything to do with this candidate. Shouldn't
       // we be handling this somewhere else?
-      auto t = ci.actual(0).type().type();
-      auto containingType = isNameOfField(context, ci.name(), t);
-      if (!containingType) {
-        // help handle the case where we're calling a field accessor on a manger.
-        // while resolving the body of a method on owned to evaluate the applicability,
-        // we need to be able to resolve the field accessor on the manager.
-        if (auto classType = t->toClassType()) {
-          if (auto managerType = classType->managerRecordType(context)) {
-            containingType = isNameOfField(context, ci.name(), managerType);
+      auto qt = ci.actual(0).type();
+
+      // the field might not be present on the current type T, but on the
+      // element type of T for promotion. Keep trying to find the field by
+      // looking at the element type of the current type if we fail.
+      while (!qt.isUnknownOrErroneous()) {
+        auto containingType = isNameOfField(context, ci.name(), qt.type());
+        if (!containingType) {
+          // help handle the case where we're calling a field accessor on a manger.
+          // while resolving the body of a method on owned to evaluate the applicability,
+          // we need to be able to resolve the field accessor on the manager.
+          if (auto classType = qt.type()->toClassType()) {
+            if (auto managerType = classType->managerRecordType(context)) {
+              containingType = isNameOfField(context, ci.name(), managerType);
+            }
           }
         }
-      }
-      if (containingType &&
-          containingType->id() == candidateId.parentSymbolId(context)) {
-        auto ret = fieldAccessor(context, containingType, ci.name());
-        return ApplicabilityResult::success(ret);
+
+        if (containingType &&
+            containingType->id() == candidateId.parentSymbolId(context)) {
+          auto ret = fieldAccessor(context, containingType, ci.name());
+          return ApplicabilityResult::success(ret);
+        }
+
+        qt = getPromotionType(context, qt);
       }
     }
     // not a candidate
@@ -4621,6 +4630,75 @@ static void filterCandidatesLastResort(
   }
 }
 
+static void filterGatheredCandidates(ResolutionContext* rc,
+                                     MatchingIdsWithName& v,
+                                     const CallInfo& ci,
+                                     const CallScopeInfo& inScopes,
+                                     std::vector<ApplicabilityResult>* rejected,
+                                     CandidatesAndForwardingInfo& into,
+                                     CandidatesAndForwardingInfo& lastResort) {
+  // filter without instantiating yet
+  const auto& initialCandidates =
+    filterCandidatesInitial(rc, std::move(v), ci);
+
+  // find candidates, doing instantiation if necessary
+  CandidatesAndForwardingInfo candidatesWithInstantiations;
+  filterCandidatesInstantiating(rc,
+      initialCandidates,
+      ci,
+      inScopes.callScope(),
+      inScopes.poiScope(),
+      candidatesWithInstantiations,
+      rejected);
+
+  // filter out last resort candidates
+  filterCandidatesLastResort(rc->context(), candidatesWithInstantiations,
+      into, lastResort);
+}
+
+// If the receiver type is promoted, then we might be trying to call
+// a method on its scalar type, and promote that call. Search for fields in
+// scalar types to enable this pattern.
+static void
+gatherAndFilterScalarFields(ResolutionContext* rc,
+                            const CallInfo& ci,
+                            const CallScopeInfo& inScopes,
+                            CheckedScopes& visited,
+                            CandidatesAndForwardingInfo& candidates) {
+  if (!ci.isMethodCall() || !ci.isParenless()) return;
+  if (ci.name() == "chpl__promotionType") return;
+  CHPL_ASSERT(ci.numActuals() >= 1);
+
+  ReceiverScopeTypedHelper typedHelper;
+  auto receiverType = ci.actual(0).type();
+
+  // Limited version of config from lookupCalledExpr
+  LookupConfig config = LOOKUP_DECLS | LOOKUP_ONLY_METHODS_FIELDS | LOOKUP_STOP_NON_FN;
+
+  MatchingIdsWithName toReturn;
+
+  while (true) {
+    receiverType = getPromotionType(rc->context(), receiverType, /* skipIfRunning */ true);
+    if (receiverType.isUnknownOrErroneous()) break;
+
+    auto lookupHelper = typedHelper.methodLookupForType(rc->context(), receiverType);
+    auto ret = lookupNameInScopeWithSet(rc->context(),
+                                        /* scope */nullptr,
+                                        lookupHelper,
+                                        /* receiverScopeHelper */ nullptr,
+                                        ci.name(), config, visited);
+
+    for (int i = 0; i < ret.numIds(); i++) {
+      auto& idv = ret.idAndFlags(i);
+      if (idv.isMethodOrField() && !idv.isMethod()) toReturn.append(idv);
+    }
+  }
+
+  CandidatesAndForwardingInfo lastResort;
+  filterGatheredCandidates(rc, toReturn, ci, inScopes,
+                           /* rejected */ nullptr, candidates, lastResort);
+}
+
 // this function gathers candidates not from POI and candidates
 // from POI into separate vectors.
 // For each of these vectors, the corresponding forwardingTo vector
@@ -4749,23 +4827,8 @@ gatherAndFilterCandidatesForwarding(ResolutionContext* rc,
         // compute the potential functions that it could resolve to
         auto v = lookupCalledExpr(context, inScopes.lookupScope(), fci, visited[i]);
 
-        // filter without instantiating yet
-        const auto& initialCandidates =
-          filterCandidatesInitial(rc, std::move(v), fci);
-
-        // find candidates, doing instantiation if necessary
-        CandidatesAndForwardingInfo candidatesWithInstantiations;
-        filterCandidatesInstantiating(rc,
-                                      initialCandidates,
-                                      fci,
-                                      inScopes.callScope(),
-                                      inScopes.poiScope(),
-                                      candidatesWithInstantiations,
-                                      rejected);
-
-        // filter out last resort candidates
-        filterCandidatesLastResort(context, candidatesWithInstantiations,
-                                   nonPoiCandidates, newLrcGroup);
+        filterGatheredCandidates(rc, v, fci, inScopes, rejected,
+                                 nonPoiCandidates, newLrcGroup);
 
         // update forwardingTo (for candidates and last resort candidates)
         nonPoiCandidates.helpComputeForwardingTo(fci, start);
@@ -4794,23 +4857,8 @@ gatherAndFilterCandidatesForwarding(ResolutionContext* rc,
         // compute the potential functions that it could resolve to
         auto v = lookupCalledExpr(context, curPoi->inScope(), fci, visited[i]);
 
-        // filter without instantiating yet
-        auto& initialCandidates =
-          filterCandidatesInitial(rc, std::move(v), fci);
-
-        // find candidates, doing instantiation if necessary
-        CandidatesAndForwardingInfo candidatesWithInstantiations;
-        filterCandidatesInstantiating(rc,
-                                      initialCandidates,
-                                      fci,
-                                      inScopes.callScope(),
-                                      inScopes.poiScope(),
-                                      candidatesWithInstantiations,
-                                      rejected);
-
-        // filter out last resort candidates
-        filterCandidatesLastResort(context, candidatesWithInstantiations,
-                                   poiCandidates, newLrcGroup);
+        filterGatheredCandidates(rc, v, fci, inScopes, rejected,
+                                 poiCandidates, newLrcGroup);
 
         // update forwardingTo (for candidates and last resort candidates)
         poiCandidates.helpComputeForwardingTo(fci, start);
@@ -5019,6 +5067,15 @@ gatherAndFilterCandidates(ResolutionContext* rc,
       // append candidates from forwarding
       candidates.takeFromOther(nonPoiCandidates);
       candidates.takeFromOther(poiCandidates);
+    }
+
+    if (candidates.empty()) {
+      // Though it's not "true" forwarding, now is the time to look for references
+      // to fields of scalar types. (e.g., we're resolving A.x where A is an array
+      // of records that have field x).
+      CandidatesAndForwardingInfo fieldCandidates;
+      gatherAndFilterScalarFields(rc, ci, inScopes, visited, fieldCandidates);
+      candidates.takeFromOther(fieldCandidates);
     }
   }
 
@@ -6927,7 +6984,10 @@ shapeForIteratorQuery(Context* context,
     auto untypedScalarFn = scalarFn->untyped();
     auto& formalMap = promoIterator->promotedFormals();
     for (int i = 0; i < scalarFn->numFormals(); i++) {
-      auto promotedEntry = formalMap.find(untypedScalarFn->formalDecl(i)->id());
+      auto anchorId =
+        untypedScalarFn->idIsField() ? scalarFn->id() : untypedScalarFn->formalDecl(i)->id();
+
+      auto promotedEntry = formalMap.find(anchorId);
       if (promotedEntry != formalMap.end()) {
         leaderType = promotedEntry->second;
         break;
@@ -7123,8 +7183,10 @@ resolveTheseCallForPromotionIterator(ResolutionContext* rc,
   auto untypedScalarFn = typedScalarFn->untyped();
   int numFormals = untypedScalarFn->numFormals();
   for (int i = 0; i < numFormals; i++) {
-    auto id = untypedScalarFn->formalDecl(i)->id();
-    auto promotionType = promoIt->promotedFormals().find(id);
+    auto anchorId =
+      untypedScalarFn->idIsField() ? typedScalarFn->id() : untypedScalarFn->formalDecl(i)->id();
+
+    auto promotionType = promoIt->promotedFormals().find(anchorId);
     if (promotionType != promoIt->promotedFormals().end()) {
       receiverTypes.push_back(promotionType->second);
     }
@@ -7203,9 +7265,8 @@ TheseResolutionResult resolveTheseCall(ResolutionContext* rc,
   return callResolutionResultToTheseResolutionResult(cr, receiverType);
 }
 
-const types::QualifiedType& getPromotionType(Context* context, types::QualifiedType qt) {
-  QUERY_BEGIN(getPromotionType, context, qt);
-
+static const types::QualifiedType& getPromotionTypeQuery(Context* context, types::QualifiedType qt) {
+  QUERY_BEGIN(getPromotionTypeQuery, context, qt);
 
   auto ret = QualifiedType();
   if (qt.isUnknownOrErroneous()) {
@@ -7255,6 +7316,20 @@ const types::QualifiedType& getPromotionType(Context* context, types::QualifiedT
   }
 
   return QUERY_END(ret);
+}
+
+const types::QualifiedType& getPromotionType(Context* context, types::QualifiedType qt, bool skipIfRunning) {
+  // for non-type, non-param intents, normalize to const var.
+  if (!qt.isParam() && !qt.isType()) {
+    qt = QualifiedType(QualifiedType::CONST_VAR, qt.type());
+  }
+
+  if (skipIfRunning && context->isQueryRunning(getPromotionTypeQuery, std::make_tuple(qt))) {
+    static auto empty = QualifiedType();
+    return empty;
+  }
+
+  return getPromotionTypeQuery(context, qt);
 }
 
 static const types::RuntimeType* const& getRuntimeTypeQuery(Context* context, const types::CompositeType* ct) {

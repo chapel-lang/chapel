@@ -1,4 +1,4 @@
-.TH "hwloc_topology_membind_support" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwloc_topology_membind_support" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -56,6 +56,9 @@ hwloc_topology_membind_support
 .ti -1c
 .RI "unsigned char \fBget_area_memlocation\fP"
 .br
+.ti -1c
+.RI "unsigned char \fBweighted_interleave_membind\fP"
+.br
 .in -1c
 .SH "Detailed Description"
 .PP 
@@ -94,6 +97,8 @@ Binding a whole given process is supported\&.
 Binding the whole current process is supported\&. 
 .SS "unsigned char hwloc_topology_membind_support::set_thisthread_membind"
 Binding the current thread only is supported\&. 
+.SS "unsigned char hwloc_topology_membind_support::weighted_interleave_membind"
+Weighted interleave policy is supported\&. 
 
 .SH "Author"
 .PP 

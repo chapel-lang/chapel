@@ -1,4 +1,4 @@
-.TH "hwlocality_gl" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_gl" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -33,7 +33,9 @@ Get the OpenGL display port and device corresponding to the given hwloc OS objec
 .PP
 \fBReturns\fP
 .RS 4
-\fC-1\fP if none could be found\&.
+0 on success\&. 
+.PP
+-1 if none could be found\&.
 .RE
 .PP
 The topology \fCtopology\fP does not necessarily have to match the current machine\&. For instance the topology may be an XML import of a remote host\&. I/O devices detection and the GL component must be enabled in the topology\&. 

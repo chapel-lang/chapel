@@ -1,0 +1,5 @@
+specifying smaller tuple than was returned
+t[0:2] (no type) (2, 3)
+uncaught ChapelException: type specified was smaller than returned value
+  myTupleTypeTooSmall.chpl:22: thrown here
+  myTupleTypeTooSmall.chpl:22: uncaught here

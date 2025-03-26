@@ -17,7 +17,7 @@ def numpyAssign(arr):
 proc main() {
 
   var interp = new Interpreter();
-  var m = interp.importModule('__empty__', code);
+  var m = interp.createModule(code);
   var saxpy = m.get('saxpy');
   var numpyAssign = m.get('numpyAssign');
 

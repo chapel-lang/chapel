@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2021 Inria.  All rights reserved.
+ * Copyright © 2012-2023 Inria.  All rights reserved.
  * Copyright © 2013, 2018 Université Bordeaux.  All right reserved.
  * See COPYING in top-level directory.
  */
@@ -41,6 +41,15 @@ extern "C" {
  */
 /* Copyright (c) 2008-2018 The Khronos Group Inc. */
 
+/* needs "cl_khr_pci_bus_info" device extension, but not strictly required for clGetDeviceInfo() */
+typedef struct {
+    cl_uint pci_domain;
+    cl_uint pci_bus;
+    cl_uint pci_device;
+    cl_uint pci_function;
+} hwloc_cl_device_pci_bus_info_khr;
+#define HWLOC_CL_DEVICE_PCI_BUS_INFO_KHR 0x410F
+
 /* needs "cl_amd_device_attribute_query" device extension, but not strictly required for clGetDeviceInfo() */
 #define HWLOC_CL_DEVICE_TOPOLOGY_AMD 0x4037
 typedef union {
@@ -69,14 +78,27 @@ typedef union {
 /** \brief Return the domain, bus and device IDs of the OpenCL device \p device.
  *
  * Device \p device must match the local machine.
+ *
+ * \return 0 on success.
+ * \return -1 on error, for instance if device information could not be found.
  */
 static __hwloc_inline int
 hwloc_opencl_get_device_pci_busid(cl_device_id device,
                                unsigned *domain, unsigned *bus, unsigned *dev, unsigned *func)
 {
 	hwloc_cl_device_topology_amd amdtopo;
+	hwloc_cl_device_pci_bus_info_khr khrbusinfo;
 	cl_uint nvbus, nvslot, nvdomain;
 	cl_int clret;
+
+	clret = clGetDeviceInfo(device, HWLOC_CL_DEVICE_PCI_BUS_INFO_KHR, sizeof(khrbusinfo), &khrbusinfo, NULL);
+	if (CL_SUCCESS == clret) {
+		*domain = (unsigned) khrbusinfo.pci_domain;
+		*bus = (unsigned) khrbusinfo.pci_bus;
+		*dev = (unsigned) khrbusinfo.pci_device;
+		*func = (unsigned) khrbusinfo.pci_function;
+		return 0;
+	}
 
 	clret = clGetDeviceInfo(device, HWLOC_CL_DEVICE_TOPOLOGY_AMD, sizeof(amdtopo), &amdtopo, NULL);
 	if (CL_SUCCESS == clret
@@ -126,6 +148,9 @@ hwloc_opencl_get_device_pci_busid(cl_device_id device,
  * This function is currently only implemented in a meaningful way for
  * Linux with the AMD or NVIDIA OpenCL implementation; other systems will simply
  * get a full cpuset.
+ *
+ * \return 0 on success.
+ * \return -1 on error, for instance if the device could not be found.
  */
 static __hwloc_inline int
 hwloc_opencl_get_device_cpuset(hwloc_topology_t topology __hwloc_attribute_unused,

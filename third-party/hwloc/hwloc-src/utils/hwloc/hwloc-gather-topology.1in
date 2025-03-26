@@ -1,6 +1,6 @@
 .\" -*- nroff -*-
 .\" Copyright © 2010 Jirka Hladky
-.\" Copyright © 2010-2021 Inria.  All rights reserved.
+.\" Copyright © 2010-2024 Inria.  All rights reserved.
 .\" See COPYING in top-level directory.
 .TH HWLOC-GATHER-TOPOLOGY "1" "%HWLOC_DATE%" "%PACKAGE_VERSION%" "%PACKAGE_NAME%"
 .SH NAME
@@ -28,6 +28,11 @@ The gathering may be much slower, and the generated archive may be much bigger.
 \fB\-\-dmi\fR
 Also gather DMI/SMBIOS related files.
 The gathering requires root access, and the dmi-sysfs kernel module should be loaded.
+.
+.TP
+\fB\-\-dt\fR
+Also gather Device-Tree CPU files. These files aren't needed for hwloc,
+but they may be used for debugging what Linux exposes in /sys.
 .
 .TP
 \fB\-\-no\-cpuid\fR
@@ -95,7 +100,7 @@ before reading this man page.
 To store topology information to be used later (possibly on
 a different host) please run:
 
-	hwloc-gather-topology /tmp/myhost
+    $ hwloc-gather-topology /tmp/myhost
 
 It will store all relevant topology files in the \fB/tmp/myhost.tar.bz2\fR
 archive, the lstopo output in the \fB/tmp/myhost.output\fR file,
@@ -107,33 +112,33 @@ analysis and/or as the input to various hwloc utilities.
 To use these data with hwloc utilities you have to unpack
 \fBmyhost.tar.bz2\fR archive first:
 
-	tar jxvf /tmp/myhost.tar.bz2
+    $ tar jxvf /tmp/myhost.tar.bz2
 
 A new directory named \fBmyhost\fR now contains all topology files.
 Then you ask various hwloc utilities to use this topology instead
 of the one of the real machine by passing \fB\-\-input myhost\fR.
 To display the topology just run:
 
-	lstopo --input ./myhost
+     $ lstopo --input ./myhost
 
 It is not necessary that the topology is extracted in the current
 directory, absolute or relative paths are also supported:
 
-	lstopo --input /path/to/remote/host/extracted/topology/
+     $ lstopo --input /path/to/remote/host/extracted/topology/
 
 To see how hwloc would distribute 8 parallel jobs on the original host:
 
-	hwloc-distrib --input myhost --single 8
+     $ hwloc-distrib --input myhost --single 8
 
 To get the corresponding physical indexes in the previous command:
 
-	hwloc-calc --input myhost --po --li --proclist $(hwloc-distrib --input myhost --single 8)
+     $ hwloc-calc --input myhost --po --li -I pu $(hwloc-distrib --input myhost --single 8)
 
 Any program may actually override the default topology with a given
 archived one even if it does not have a \fB\-\-input\fR option.
 The \fBHWLOC_FSROOT\fR environment variable should be used to do so:
 
-	HWLOC_FSROOT=myhost hwloc-calc --po --li --proclist $(hwloc-distrib --single 8)
+     $ HWLOC_FSROOT=myhost hwloc-calc --po --li -I pu $(hwloc-distrib --single 8)
 
 All these commands will produce the same output as if executed
 directly on the host on which the topology information was

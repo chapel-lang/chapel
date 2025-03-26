@@ -22,7 +22,7 @@ str: 1, hello, 2, world
 repr: my_class(1, 'hello', 2, 'world')
 default: 1, hello, 2, world
 ================
-str: [1, 2, 3], {'world', 'hello'}, {'hello': 1, 'world': 2}
-repr: my_class([1, 2, 3], {'world', 'hello'}, {'hello': 1, 'world': 2})
-default: [1, 2, 3], {'world', 'hello'}, {'hello': 1, 'world': 2}
+str: [1, 2, 3], {'hello', 'world'}, {'hello': 1, 'world': 2}
+repr: my_class([1, 2, 3], {'hello', 'world'}, {'hello': 1, 'world': 2})
+default: [1, 2, 3], {'hello', 'world'}, {'hello': 1, 'world': 2}
 ================

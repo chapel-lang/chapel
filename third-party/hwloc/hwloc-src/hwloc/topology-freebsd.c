@@ -505,6 +505,8 @@ hwloc_look_freebsd_domains(struct hwloc_topology *topology){
     }
     if(nodes != NULL && !(topology->flags & HWLOC_TOPOLOGY_FLAG_NO_DISTANCES))
       set_locality_info(topology, ndomains, nodes);
+    else
+      free(nodes);
 
   /* nodes is either freed or given to the core in set_locality_info() */
   free(domains_memory);

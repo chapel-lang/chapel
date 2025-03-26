@@ -1,5 +1,5 @@
 .\" -*- nroff -*-
-.\" Copyright © 2010-2022 Inria.  All rights reserved.
+.\" Copyright © 2010-2024 Inria.  All rights reserved.
 .\" Copyright © 2009-2010 Cisco Systems, Inc.  All rights reserved.
 .\" See COPYING in top-level directory.
 .TH HWLOC-DISTRIB "1" "%HWLOC_DATE%" "%PACKAGE_VERSION%" "%PACKAGE_NAME%"
@@ -21,9 +21,13 @@ hwloc-distrib \- Build a number of cpu masks distributed on the system
 \fB\-\-single\fR
 Singlify each output to a single CPU.
 .TP
-\fB\-\-taskset\fR
-Show CPU set strings in the format recognized by the taskset command-line
-program instead of hwloc-specific CPU set string format.
+\fB\-\-cpuset\-output\-format\fR <hwloc|list|taskset> \fB\-\-cof\fR <hwloc|list|taskset>
+Change the format of displayed CPU set strings.
+By default, the hwloc-specific format is used.
+If \fIlist\fR is given, the output is a comma-separated of numbers or ranges,
+e.g. 2,4-5,8 .
+If \fItaskset\fR is given, the output is compatible with the taskset program
+(replaces the former \fB--taskset\fR option).
 .TP
 \fB\-v\fR \fB\-\-verbose\fR
 Verbose messages.
@@ -31,7 +35,7 @@ Verbose messages.
 \fB\-i\fR <path>, \fB\-\-input\fR <path>
 Read the topology from <path> instead of discovering the topology of the local machine.
 
-If <path> is a file and XML support has been compiled in hwloc,
+If <path> is a file,
 it may be a XML file exported by a previous hwloc program.
 If <path> is "\-", the standard input may be used as a XML file.
 
@@ -83,9 +87,18 @@ and singlify CPU sets by keeping the last bit (instead of the first bit).
 .TP
 \fB\-\-restrict\fR <cpuset>
 Restrict the topology to the given cpuset.
+This removes some PUs and their now-child-less parents.
+
+Beware that restricting the PUs in a topology may change the
+logical indexes of many objects, including NUMA nodes.
 .TP
 \fB\-\-restrict\fR nodeset=<nodeset>
-Restrict the topology to the given nodeset, unless \fB\-\-restrict\-flags\fR specifies something different.
+Restrict the topology to the given nodeset
+(unless \fB\-\-restrict\-flags\fR specifies something different).
+This removes some NUMA nodes and their now-child-less parents.
+
+Beware that restricting the NUMA nodes in a topology may change the
+logical indexes of many objects, including PUs.
 .TP
 \fB\-\-restrict\-flags\fR <flags>
 Enforce flags when restricting the topology.
@@ -120,6 +133,15 @@ by options \fB\-\-ignore\fR.
 .PP
 This can e.g. be used to distribute a set of processes hierarchically according
 to the topology of a machine. These masks can be used with hwloc-bind(1).
+.
+.PP
+On hybrid CPUs (or asymmetric platforms), distribution may be suboptimal
+since the number of cores or PUs inside packages or below caches may vary
+(the top-down recursive partitioning ignores these numbers until reaching their levels).
+Hence it is recommended to distribute only inside a single homogeneous domain.
+For instance on a CPU with energy-efficient E-cores and high-performance P-cores,
+one should distribute separately N tasks on E-cores and M tasks on P-cores
+instead of trying to distribute directly M+N tasks on the entire CPUs.
 .
 .PP
 .B NOTE:
@@ -163,16 +185,16 @@ of binding)
 
 Each output line may be converted independently with hwloc-calc:
 
-    $ hwloc-distrib 4 --single | hwloc-calc --taskset
-    0x1
-    0x100
-    0x10
-    0x1000
+    $ hwloc-distrib 4 --single | hwloc-calc --oo -q -I pu
+    PU:0
+    PU:8
+    PU:4
+    PU:12
 
 To convert the output into a list of processors that may be passed to
 dplace -c inside a mpirun command line:
 
-    $ hwloc-distrib 4 --single | xargs hwloc-calc --pulist
+    $ hwloc-distrib 4 --single | xargs hwloc-calc -I pu
     0,8,4,16
 .
 .

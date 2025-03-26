@@ -90,15 +90,15 @@ void qt_spin_exclusive_unlock(qt_spin_exclusive_t *);
   { (x)->u = 0; }
 #define QTHREAD_TRYLOCK_LOCK(x)                                                \
   {                                                                            \
-    uint32_t val = qthread_incr(&(x)->s.users, 1);                             \
+    uint32_t val =                                                             \
+      atomic_fetch_add_explicit(&(x)->s.users, 1, memory_order_relaxed);       \
     while (val != atomic_load_explicit((_Atomic uint32_t *)&(x)->s.ticket,     \
                                        memory_order_acquire))                  \
       SPINLOCK_BODY();                                                         \
   }
 #define QTHREAD_TRYLOCK_UNLOCK(x)                                              \
   do {                                                                         \
-    atomic_thread_fence(memory_order_release);                                 \
-    qthread_incr(&(x)->s.ticket, 1); /* allow next guy's turn */               \
+    atomic_fetch_add_explicit(&(x)->s.ticket, 1, memory_order_release);        \
   } while (0)
 #define QTHREAD_TRYLOCK_DESTROY(x)
 #define QTHREAD_TRYLOCK_DESTROY_PTR(x)
@@ -167,6 +167,7 @@ static inline int QTHREAD_TRYLOCK_TRY(qt_spin_trylock_t *x) {
     }                                                                          \
     {                                                                          \
       pthread_condattr_t tmp_attr;                                             \
+      pthread_condattr_init(&tmp_attr);                                        \
       qassert(pthread_condattr_setpshared(&tmp_attr, PTHREAD_PROCESS_PRIVATE), \
               0);                                                              \
       qassert(pthread_cond_init(&(c), &tmp_attr), 0);                          \
@@ -190,6 +191,7 @@ static inline int QTHREAD_TRYLOCK_TRY(qt_spin_trylock_t *x) {
     qassert(pthread_cond_destroy(&(c)), 0);                                    \
     qassert(pthread_mutex_destroy(&(c##_lock)), 0);                            \
   } while (0)
+#ifdef NDEBUG
 #define QTHREAD_COND_WAIT(c)                                                   \
   do {                                                                         \
     struct timespec t;                                                         \
@@ -198,8 +200,21 @@ static inline int QTHREAD_TRYLOCK_TRY(qt_spin_trylock_t *x) {
     t.tv_nsec = (n.tv_usec * 1000) + 500000000;                                \
     t.tv_sec = n.tv_sec + ((t.tv_nsec >= 1000000000) ? 1 : 0);                 \
     t.tv_nsec -= ((t.tv_nsec >= 1000000000) ? 1000000000 : 0);                 \
-    qassert(pthread_cond_timedwait(&(c), &(c##_lock), &t), 0);                 \
+    pthread_cond_timedwait(&(c), &(c##_lock), &t);                             \
   } while (0)
+#else
+#define QTHREAD_COND_WAIT(c)                                                   \
+  do {                                                                         \
+    struct timespec t;                                                         \
+    struct timeval n;                                                          \
+    gettimeofday(&n, NULL);                                                    \
+    t.tv_nsec = (n.tv_usec * 1000) + 500000000;                                \
+    t.tv_sec = n.tv_sec + ((t.tv_nsec >= 1000000000) ? 1 : 0);                 \
+    t.tv_nsec -= ((t.tv_nsec >= 1000000000) ? 1000000000 : 0);                 \
+    int val = pthread_cond_timedwait(&(c), &(c##_lock), &t);                   \
+    assert(!(val == EINVAL || val == EPERM));                                  \
+  } while (0)
+#endif
 #define QTHREAD_COND_WAIT_DUO(c, m)                                            \
   do {                                                                         \
     struct timespec t;                                                         \
@@ -232,9 +247,9 @@ static inline int QTHREAD_TRYLOCK_TRY(qt_spin_trylock_t *x) {
 #define qthread_internal_incr_mod(op, m, lock) qthread_internal_incr_mod_(op, m)
 #define QTHREAD_OPTIONAL_LOCKARG
 
-static inline aligned_t qthread_internal_incr_mod_(
-  aligned_t *operand,
-  unsigned int const max QTHREAD_OPTIONAL_LOCKARG) { /*{{{ */
+static inline aligned_t
+qthread_internal_incr_mod_(aligned_t *operand,
+                           unsigned int const max QTHREAD_OPTIONAL_LOCKARG) {
   aligned_t retval;
 
 #if QTHREAD_BITS == 32
@@ -264,10 +279,9 @@ static inline aligned_t qthread_internal_incr_mod_(
 #endif /* if QTHREAD_BITS == 32 */
 
   return retval;
-} /*}}} */
+}
 
-static inline void *qt_internal_atomic_swap_ptr(void **addr,
-                                                void *newval) { /*{{{*/
+static inline void *qt_internal_atomic_swap_ptr(void **addr, void *newval) {
   void *oldval =
     atomic_load_explicit((void *_Atomic *)addr, memory_order_relaxed);
   void *tmp;
@@ -276,7 +290,7 @@ static inline void *qt_internal_atomic_swap_ptr(void **addr,
     oldval = tmp;
   }
   return oldval;
-} /*}}}*/
+}
 
 #endif /* ifndef QT_ATOMICS_H */
 

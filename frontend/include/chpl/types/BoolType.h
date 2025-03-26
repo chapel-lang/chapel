@@ -27,9 +27,7 @@ namespace types {
 
 
 /**
-  This class represents a bool type, e.g. `bool` or `bool(32)`.
-
-  Note that `bool` normally has width `8` but `bool(8)` is a separate type.
+  This class represents the `bool` type.
  */
 class BoolType final : public PrimitiveType {
  private:

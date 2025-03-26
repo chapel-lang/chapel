@@ -317,6 +317,7 @@ output_x11(struct lstopo_output *loutput, const char *dummy __hwloc_attribute_un
   struct lstopo_cairo_output *coutput;
   Display *dpy;
   Window root, top;
+  XClassHint *class_hint;
   int scr;
   Screen *screen;
   int screen_width, screen_height;
@@ -387,6 +388,12 @@ output_x11(struct lstopo_output *loutput, const char *dummy __hwloc_attribute_un
   disp->top = top = XCreateSimpleWindow(dpy, root, 0, 0, screen_width, screen_height, 0, WhitePixel(dpy, scr), WhitePixel(dpy, scr));
   XStoreName(dpy, top, loutput->title);
   XSetIconName(dpy, top, "lstopo");
+  class_hint = XAllocClassHint();
+  if (class_hint) {
+    class_hint->res_name = class_hint->res_class = (char *) "lstopo";
+    XSetClassHint(dpy, top, class_hint);
+    XFree(class_hint);
+  }
   XSelectInput(dpy,top, StructureNotifyMask | KeyPressMask);
 
   if (screen_width >= screen->width)

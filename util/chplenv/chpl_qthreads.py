@@ -17,8 +17,6 @@ def get_uniq_cfg_path():
 def get_compile_args():
     ucp_val = get_uniq_cfg_path()
     bundled, system = third_party_utils.get_bundled_compile_args('qthread', ucp=ucp_val)
-    # qthread headers may have unused variables
-    bundled.append('-Wno-error=unused-variable')
     return (bundled, system)
 
 
