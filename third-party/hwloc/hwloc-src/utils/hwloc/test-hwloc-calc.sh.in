@@ -2,8 +2,8 @@
 #-*-sh-*-
 
 #
-# Copyright © 2009 CNRS
-# Copyright © 2009-2022 Inria.  All rights reserved.
+# Copyright © 2009, 2024 CNRS
+# Copyright © 2009-2024 Inria.  All rights reserved.
 # Copyright © 2009, 2011 Université Bordeaux
 # Copyright © 2014 Cisco Systems, Inc.  All rights reserved.
 # See COPYING in top-level directory.
@@ -37,11 +37,14 @@ file="$tmp/test-hwloc-calc.output"
 
 set -e
 (
-  echo "# root"
-  $calc --if synthetic --input "node:4 core:4 pu:4" root
+  echo "# root --cpuset-output-format hwloc"
+  $calc --if synthetic --input "node:4 core:4 pu:4" root --cpuset-output-format hwloc
   echo
-  echo "# all --taskset"
-  $calc --if synthetic --input "node:4 core:4 pu:4" all --taskset
+  echo "# all --cof list"
+  $calc --if synthetic --input "node:4 core:4 pu:4" all --cof list
+  echo
+  echo "# all --cpuset-output-format taskset"
+  $calc --if synthetic --input "node:4 core:4 pu:4" all --cpuset-output-format taskset
   echo
 
   echo "# hex"
@@ -120,6 +123,15 @@ set -e
   echo "# Number of objects at depth 3 in a NUMA Node"
   $calc --if synthetic --input "node:4 core:4 pu:4" node:2 -N 3
   echo
+  echo "# Number of MCDRAM subtype NUMA Nodes"
+  $calc --if xml --input $xmldir/64intel64-fakeKNL-SNC4-hybrid.xml -N 'numa[mcdram]' all
+  echo
+  echo "# List of MCDRAM subtype NUMA Nodes near 2 L3"
+  $calc --if xml --input $xmldir/64intel64-fakeKNL-SNC4-hybrid.xml -I 'numa[mcdram]' l3:1-2
+  echo
+  echo "# Hierarchical list of MCDRAM subtype NUMA nodes within Package"
+  $calc --if xml --input $xmldir/64intel64-fakeKNL-SNC4-hybrid.xml -H 'pack.numa[mcdram]' 'numa[mcdram]:0' 'numa[mcdram]:3'
+  echo
 
   echo "# List of Machine objects"
   $calc --if synthetic --input "node:4 core:4 pu:4" root --intersect Machine
@@ -128,7 +140,7 @@ set -e
   $calc --if synthetic --input "node:4 core:4 pu:4" core:4-7 -I NUMANode
   echo
   echo "# List of NUMA Nodes in a range of Cores (again)"
-  $calc --if synthetic --input "node:4 core:4 pu:4" core:10-15 -I NUMANode
+  $calc --if synthetic --input "node:4 core:4 pu:4" core:10-15 -I NUMANode --oo
   echo
 
   echo "# Hierarchical spec for a range of PUs"
@@ -181,6 +193,13 @@ set -e
   $calc --if synthetic --input "node:4 core:4 pu:4" --ni 0x5 --nodelist --po
   echo
 
+  echo "# Search cores within single NUMA when they have multiple local NUMA nodes"
+  $calc --if synthetic --input "pack:2 [numa] [numa] core:4 pu:1" sock:1.numa:1.core:1-2
+  echo
+  echo "# Search NUMA node within single Group when they have multiple local Groups"
+  $calc --if synthetic --input "pack:2 [numa] group:2 core:4 1" --nodeset-output pack:1.group:1.numa:0
+  echo
+
   echo "# Physical output of NUMA Nodes when out-of-order in the topology"
   $calc --if synthetic --input "node:4(indexes=3,2,1,0) pu:2" node:1-2 --po -I node
   echo
@@ -192,10 +211,10 @@ set -e
   $calc --if synthetic --input "[numa] pack:2 [numa] die:2 [numa] pu:2" --local-memory package:1
   echo
   echo "# 2 local nodes larger or equal to a Package (node:2@Package + node:6@Machine), with space separator"
-  $calc --if synthetic --input "[numa] pack:2 [numa] die:2 [numa] pu:2" --local-memory-flags 1 --sep " " pack:0
+  $calc --if synthetic --input "[numa] pack:2 [numa] die:2 [numa] pu:2" --local-memory-flags 1 --sep " " pack:0 --oo
   echo
   echo "# Best-locality local node near a PU (node:1@Die)"
-  $calc --if synthetic --input "[numa] pack:2 [numa] die:2 [numa] pu:2" --best-memattr locality pu:3
+  $calc --if synthetic --input "[numa] pack:2 [numa] die:2 [numa] pu:2" --best-memattr locality pu:3 --oo
   echo
   echo "# Best-capacity local node near a PU (node:6@Machine)"
   $calc --if synthetic --input "[numa(memory=1000000)] pack:2 [numa(memory=100000)] die:2 [numa(memory=1000)] pu:2" --best-memattr capacity pu:4
@@ -259,6 +278,35 @@ set -e
   $calc -i "node:4 pu:4" --restrict-flags cpuless --restrict 0xff0 all -I numa --po
   echo
 
+  echo "# Converting from hwloc cpusets to taskset"
+  $calc --if synthetic --input "node:4 core:4 pu:4"  --cpuset-output-format taskset 0xf,0xf0,f00f
+  $calc --if synthetic --input "node:4 core:4 pu:4"  --cpuset-output-format taskset --cpuset-input-format hwloc 1,3,5
+  $calc --if synthetic --input "node:4 core:4 pu:4"  --cpuset-output-format taskset 1,3,5
+  $calc --if synthetic --input "node:4 core:4 pu:4"  --cpuset-output-format taskset --cif hwloc 0xf...f
+  $calc --if synthetic --input "node:4 core:4 pu:4"  --cof taskset 0xf...f,0x1
+  echo
+  echo "# Converting from list cpusets to hwloc"
+  $calc --if synthetic --input "node:4 core:4 pu:4"  --cpuset-output-format hwloc 3-
+  $calc --if synthetic --input "node:4 core:4 pu:4"  --cpuset-output-format hwloc 3-4,7-34,62,66
+  $calc --if synthetic --input "node:4 core:4 pu:4"  --cpuset-output-format hwloc --cpuset-input-format list 7
+  $calc --if synthetic --input "node:4 core:4 pu:4"  --cof hwloc --cif list 1,3,5
+  echo
+  echo "# Converting from taskset cpusets to list"
+  $calc --if synthetic --input "node:4 core:4 pu:4"  --cpuset-output-format list 0xf000000f00000f00f
+  $calc --if synthetic --input "node:4 core:4 pu:4"  --cpuset-output-format list --cif taskset 0x1234567
+  $calc --if synthetic --input "node:4 core:4 pu:4"  --cof list 0xf...f00
+  echo
+
+  echo "# Converting to systemd-dbus-api"
+  $calc --if synthetic --input "node:4 core:4 pu:4"  --cpuset-output-format systemd-dbus-api 0x01
+  $calc --if synthetic --input "node:4 core:4 pu:4"  --cpuset-output-format systemd-dbus-api 0x80000001
+  $calc --if synthetic --input "node:4 core:4 pu:4"  --cpuset-output-format systemd-dbus-api 0x8000000080000001
+  $calc --if synthetic --input "node:4 core:4 pu:4"  --cpuset-output-format systemd-dbus-api 0xf000000f00000f00f
+  $calc --if synthetic --input "node:4 core:4 pu:4"  --cpuset-output-format systemd-dbus-api "" && exit 1
+  $calc --if synthetic --input "node:4 core:4 pu:4"  --cpuset-output-format systemd-dbus-api "0xf...f" && exit 1
+  $calc --if synthetic --input "node:4 core:4 pu:4"  --cpuset-output-format systemd-dbus-api --cpuset-input-format systemd-dbus-api "foo bar" && exit 1
+  echo
+
   echo "# Reading from stdin"
   cat << EOF | $calc --if synthetic --input "node:4 core:4 pu:4"
 pu:0
@@ -268,6 +316,24 @@ node:0 node:3
 0x0000000000000000000000000000000000000000000000000000000000000000000000000000001
 0x1,0x0,0x0
 root
+EOF
+  echo
+  echo "# Reading infinite cpusets from stdin"
+  cat << EOF | $calc --if synthetic --input "node:4 core:4 pu:4" -q
+  0xf...f
+0xf...f,abcd00
+0xf...f,abcd,ef00
+0xf...ff00
+0xf...fff0000ffff0000
+EOF
+  echo
+  echo "# Reading infinite cpusets from stdin and exporting to taskset"
+  cat << EOF | $calc --if synthetic --input "node:4 core:4 pu:4" --cpuset-output-format taskset
+  0xf...f
+0xf...f,abcd00
+0xf...f,abcd,ef00
+0xf...ff00
+0xf...fff0000ffff0000
 EOF
   echo
 ) > "$file"

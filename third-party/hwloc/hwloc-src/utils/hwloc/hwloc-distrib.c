@@ -1,8 +1,9 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2021 Inria.  All rights reserved.
+ * Copyright © 2009-2024 Inria.  All rights reserved.
  * Copyright © 2009-2010 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
+ * Copyright © 2023 Université de Reims Champagne-Ardenne.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
@@ -32,6 +33,9 @@ void usage(const char *callname __hwloc_attribute_unused, FILE *where)
   fprintf(where, "Formatting options:\n");
   fprintf(where, "  --single         Singlify each output to a single CPU\n");
   fprintf(where, "  --taskset        Show taskset-specific cpuset strings\n");
+  fprintf(where, "  --cpuset-output-format <hwloc|list|taskset>\n"
+                 "  --cof <hwloc|list|taskset>\n"
+                 "                   Change the format of cpuset outputs\n");
   fprintf(where, "Miscellaneous options:\n");
   fprintf(where, "  -v --verbose     Show verbose messages\n");
   fprintf(where, "  --version        Report version and exit\n");
@@ -43,8 +47,8 @@ int main(int argc, char *argv[])
   long n = -1;
   char *callname;
   char *input = NULL;
-  enum hwloc_utils_input_format input_format = HWLOC_UTILS_INPUT_DEFAULT;
-  int taskset = 0;
+  struct hwloc_utils_input_format_s input_format = HWLOC_UTILS_INPUT_FORMAT_DEFAULT;
+  enum hwloc_utils_cpuset_format_e cpuset_output_format = HWLOC_UTILS_CPUSET_FORMAT_HWLOC;
   int singlify = 0;
   int verbose = 0;
   char *restrictstring = NULL;
@@ -90,8 +94,21 @@ int main(int argc, char *argv[])
 	singlify = 1;
 	goto next;
       }
+      if (!strcmp(argv[0], "--cpuset-output-format") || !strcmp(argv[0], "--cof")) {
+        if (argc < 2) {
+          usage (callname, stderr);
+          exit(EXIT_FAILURE);
+        }
+        cpuset_output_format = hwloc_utils_parse_cpuset_format(argv[1]);
+        if (HWLOC_UTILS_CPUSET_FORMAT_UNKNOWN == cpuset_output_format) {
+          fprintf(stderr, "Unrecognized %s argument %s\n", argv[0], argv[1]);
+          exit(EXIT_FAILURE);
+        }
+        opt = 1;
+        goto next;
+      }
       if (!strcmp(argv[0], "--taskset")) {
-	taskset = 1;
+	cpuset_output_format = HWLOC_UTILS_CPUSET_FORMAT_TASKSET;
 	goto next;
       }
       if (!strcmp(argv[0], "-v") || !strcmp(argv[0], "--verbose")) {
@@ -229,7 +246,11 @@ int main(int argc, char *argv[])
     err = hwloc_topology_load(topology);
     if (err < 0) {
       free(cpuset);
+      if (input) hwloc_utils_disable_input_format(&input_format);
       return EXIT_FAILURE;
+    }
+    if (input) {
+      hwloc_utils_disable_input_format(&input_format);
     }
 
     if (restrictstring) {
@@ -281,10 +302,7 @@ int main(int argc, char *argv[])
 	    hwloc_bitmap_singlify(cpuset[i]);
 	  }
 	}
-	if (taskset)
-	  hwloc_bitmap_taskset_asprintf(&str, cpuset[i]);
-	else
-	  hwloc_bitmap_asprintf(&str, cpuset[i]);
+        hwloc_utils_cpuset_format_asprintf(&str, cpuset[i], cpuset_output_format);
 	printf("%s\n", str);
 	free(str);
 	hwloc_bitmap_free(cpuset[i]);

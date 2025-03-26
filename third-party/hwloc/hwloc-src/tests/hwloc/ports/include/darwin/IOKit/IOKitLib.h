@@ -6,8 +6,8 @@
 typedef int io_registry_entry_t;
 typedef int io_iterator_t;
 typedef int io_object_t;
-typedef const char io_name_t[10];
-typedef const char * io_string_t;
+typedef const char io_name_t[128];
+typedef const char io_string_t[512];
 
 typedef int kern_return_t;
 #define KERN_SUCCESS 0

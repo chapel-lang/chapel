@@ -160,7 +160,7 @@ static int get_device_unique_id(uint32_t dv_ind, char *buffer)
   if (rsmi_rc != RSMI_STATUS_SUCCESS) {
     return -1;
   }
-  sprintf(buffer, "%lx", id);
+  sprintf(buffer, "%llx", (unsigned long long) id);
   return 0;
 }
 
@@ -200,7 +200,7 @@ static int get_device_xgmi_hive_id(uint32_t dv_ind, char *buffer)
     }
     return -1;
   }
-  sprintf(buffer, "%lx", hive_id);
+  sprintf(buffer, "%llx", (unsigned long long) hive_id);
   return 0;
 }
 

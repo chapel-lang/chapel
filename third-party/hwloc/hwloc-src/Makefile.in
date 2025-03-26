@@ -94,21 +94,14 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@BUILD_NETLOC_TRUE@@HWLOC_BUILD_STANDALONE_TRUE@am__append_1 = netloc
 # We need doc/ if HWLOC_BUILD_DOXYGEN, or during make install if HWLOC_INSTALL_DOXYGEN.
 # There's no INSTALL_SUBDIRS, so always enter doc/ and check HWLOC_BUILD/INSTALL_DOXYGEN there
-@HWLOC_BUILD_STANDALONE_TRUE@am__append_2 = utils tests \
+@HWLOC_BUILD_STANDALONE_TRUE@am__append_1 = utils tests \
 @HWLOC_BUILD_STANDALONE_TRUE@	contrib/systemd \
 @HWLOC_BUILD_STANDALONE_TRUE@	contrib/completion contrib/misc \
 @HWLOC_BUILD_STANDALONE_TRUE@	contrib/hwloc-ps.www doc
-@HWLOC_BUILD_STANDALONE_TRUE@am__append_3 = contrib/windows
-@HWLOC_BUILD_STANDALONE_TRUE@am__append_4 = contrib/windows-cmake
-@BUILD_NETLOC_FALSE@@HWLOC_BUILD_STANDALONE_TRUE@am__append_5 = netloc
-# JMS Need to compare hwloc.pc and netloc.pc -- I think netloc.pc is
-# missing some things.
-# pkgconfig_DATA += netloc.pc Disabled until the netloc API is public
-@BUILD_NETLOC_TRUE@@HWLOC_BUILD_STANDALONE_TRUE@am__append_6 = netloc.pc
-@BUILD_NETLOCSCOTCH_TRUE@@BUILD_NETLOC_TRUE@@HWLOC_BUILD_STANDALONE_TRUE@am__append_7 = netlocscotch.pc
+@HWLOC_BUILD_STANDALONE_TRUE@am__append_2 = contrib/windows
+@HWLOC_BUILD_STANDALONE_TRUE@am__append_3 = contrib/windows-cmake
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/hwloc.m4 \
@@ -122,8 +115,7 @@ am__aclocal_m4_deps = $(top_srcdir)/config/hwloc.m4 \
 	$(top_srcdir)/config/ltoptions.m4 \
 	$(top_srcdir)/config/ltsugar.m4 \
 	$(top_srcdir)/config/ltversion.m4 \
-	$(top_srcdir)/config/lt~obsolete.m4 \
-	$(top_srcdir)/config/netloc.m4 $(top_srcdir)/configure.ac
+	$(top_srcdir)/config/lt~obsolete.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 DIST_COMMON = $(srcdir)/Makefile.am $(top_srcdir)/configure \
@@ -134,7 +126,7 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/include/private/autogen/config.h \
 	$(top_builddir)/include/hwloc/autogen/config.h
-CONFIG_CLEAN_FILES = hwloc.pc netloc.pc netlocscotch.pc
+CONFIG_CLEAN_FILES = hwloc.pc
 CONFIG_CLEAN_VPATH_FILES =
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
@@ -220,7 +212,6 @@ am__define_uniq_tagged_files = \
     if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
   done | $(am__uniquify_input)`
 am__DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/hwloc.pc.in \
-	$(srcdir)/netloc.pc.in $(srcdir)/netlocscotch.pc.in \
 	$(top_srcdir)/./config/ar-lib $(top_srcdir)/./config/compile \
 	$(top_srcdir)/./config/config.guess \
 	$(top_srcdir)/./config/config.sub \
@@ -280,7 +271,6 @@ ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
 AR = @AR@
-ARCHIVEMOUNT = @ARCHIVEMOUNT@
 AS = @AS@
 AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
@@ -407,17 +397,6 @@ MAKEINDEX = @MAKEINDEX@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
 MKDIR_P = @MKDIR_P@
-MPI_CPPFLAGS = @MPI_CPPFLAGS@
-MPI_LDADD = @MPI_LDADD@
-NETLOC_CFLAGS = @NETLOC_CFLAGS@
-NETLOC_CPPFLAGS = @NETLOC_CPPFLAGS@
-NETLOC_EMBEDDED_CFLAGS = @NETLOC_EMBEDDED_CFLAGS@
-NETLOC_EMBEDDED_CPPFLAGS = @NETLOC_EMBEDDED_CPPFLAGS@
-NETLOC_EMBEDDED_LDADD = @NETLOC_EMBEDDED_LDADD@
-NETLOC_EMBEDDED_LIBS = @NETLOC_EMBEDDED_LIBS@
-NETLOC_LDFLAGS = @NETLOC_LDFLAGS@
-NETLOC_LIBS = @NETLOC_LIBS@
-NETLOC_LIBS_PRIVATE = @NETLOC_LIBS_PRIVATE@
 NM = @NM@
 NMEDIT = @NMEDIT@
 OBJDUMP = @OBJDUMP@
@@ -486,7 +465,6 @@ libdir = @libdir@
 libexecdir = @libexecdir@
 libhwloc_so_name = @libhwloc_so_name@
 libhwloc_so_version = @libhwloc_so_version@
-libnetloc_so_version = @libnetloc_so_version@
 localedir = @localedir@
 localstatedir = @localstatedir@
 mandir = @mandir@
@@ -509,7 +487,6 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-xz = @xz@
 
 # Note that the -I directory must *exactly* match what was specified
 # via AC_CONFIG_MACRO_DIR in configure.ac.
@@ -521,18 +498,16 @@ ACLOCAL_AMFLAGS = -I ./config
 #
 EXTRA_DIST = README VERSION COPYING AUTHORS \
 	config/hwloc_get_version.sh config/distscript.sh \
-	config/libtool-big-sur-fixup.patch $(am__append_4) \
-	$(am__append_6)
-SUBDIRS = include hwloc $(am__append_1) $(am__append_2)
+	config/libtool-big-sur-fixup.patch $(am__append_3)
+SUBDIRS = include hwloc $(am__append_1)
 
 # Do not let automake automatically add the non-standalone dirs to the
 # distribution tarball if we're building in embedded mode.
-DIST_SUBDIRS = $(SUBDIRS) $(am__append_3) $(am__append_5)
+DIST_SUBDIRS = $(SUBDIRS) $(am__append_2)
 
 # Only install the pkg file if we're building in standalone mode (and not on Windows)
 @HWLOC_BUILD_STANDALONE_TRUE@hwlocpkgconfigdir = $(libdir)/pkgconfig
-@HWLOC_BUILD_STANDALONE_TRUE@hwlocpkgconfig_DATA = hwloc.pc \
-@HWLOC_BUILD_STANDALONE_TRUE@	$(am__append_7)
+@HWLOC_BUILD_STANDALONE_TRUE@hwlocpkgconfig_DATA = hwloc.pc
 
 # Only install the valgrind suppressions file if we're building in
 # standalone mode
@@ -597,10 +572,6 @@ include/hwloc/autogen/stamp-h2: $(top_srcdir)/include/hwloc/autogen/config.h.in 
 distclean-hdr:
 	-rm -f include/private/autogen/config.h include/private/autogen/stamp-h1 include/hwloc/autogen/config.h include/hwloc/autogen/stamp-h2
 hwloc.pc: $(top_builddir)/config.status $(srcdir)/hwloc.pc.in
-	cd $(top_builddir) && $(SHELL) ./config.status $@
-netloc.pc: $(top_builddir)/config.status $(srcdir)/netloc.pc.in
-	cd $(top_builddir) && $(SHELL) ./config.status $@
-netlocscotch.pc: $(top_builddir)/config.status $(srcdir)/netlocscotch.pc.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 
 mostlyclean-libtool:
@@ -1103,7 +1074,6 @@ uninstall-am: uninstall-dist_pkgdataDATA uninstall-hwlocpkgconfigDATA \
 @HWLOC_BUILD_STANDALONE_FALSE@dist-hook:
 @HWLOC_BUILD_STANDALONE_FALSE@	@MKDIR_P@	\
 @HWLOC_BUILD_STANDALONE_FALSE@		$(distdir)/doc \
-@HWLOC_BUILD_STANDALONE_FALSE@		$(distdir)/netloc \
 @HWLOC_BUILD_STANDALONE_FALSE@		$(distdir)/utils \
 @HWLOC_BUILD_STANDALONE_FALSE@		$(distdir)/tests \
 @HWLOC_BUILD_STANDALONE_FALSE@		$(distdir)/contrib/completion \

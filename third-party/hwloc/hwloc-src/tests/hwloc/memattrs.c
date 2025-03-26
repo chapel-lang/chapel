@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020-2022 Inria.  All rights reserved.
+ * Copyright © 2020-2024 Inria.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
@@ -39,7 +39,7 @@ main(void)
   struct hwloc_location loc, locs[2];
   unsigned nrlocs, nrtgs, i;
   hwloc_uint64_t gotvalue;
-  hwloc_obj_t node, targets[4];
+  hwloc_obj_t node, targets[4], obj;
   int err;
   hwloc_bitmap_t bitmap;
 
@@ -47,8 +47,12 @@ main(void)
   assert(!err);
   err = hwloc_topology_set_synthetic(topology, "node:4 pu:2");
   assert(!err);
+  err = hwloc_topology_set_type_filter(topology, HWLOC_OBJ_MISC, HWLOC_TYPE_FILTER_KEEP_ALL);
+  assert(!err);
   err = hwloc_topology_load(topology);
   assert(!err);
+  obj = hwloc_topology_insert_misc_object(topology, hwloc_get_root_obj(topology), "myMisc");
+  assert(obj);
 
   /* check get local nodes */
   err = hwloc_get_local_numanode_objs(topology, NULL, NULL, NULL, 0);
@@ -133,6 +137,43 @@ main(void)
   check_memattr(topology, "Bandwidth", HWLOC_MEMATTR_ID_BANDWIDTH, HWLOC_MEMATTR_FLAG_HIGHER_FIRST|HWLOC_MEMATTR_FLAG_NEED_INITIATOR);
   check_memattr(topology, "Latency", HWLOC_MEMATTR_ID_LATENCY, HWLOC_MEMATTR_FLAG_LOWER_FIRST|HWLOC_MEMATTR_FLAG_NEED_INITIATOR);
 
+  /* check buggy convenience memattr request */
+  err = hwloc_memattr_get_value(topology, HWLOC_MEMATTR_ID_CAPACITY,
+                                NULL, NULL, 0,
+                                &gotvalue);
+  assert(err == -1); /* NULL target */
+  assert(errno == EINVAL);
+  obj = hwloc_get_obj_by_type(topology, HWLOC_OBJ_NUMANODE, 0);
+  assert(obj);
+  err = hwloc_memattr_set_value(topology, HWLOC_MEMATTR_ID_CAPACITY,
+                                obj, NULL, 0,
+                                34);
+  assert(err == -1); /* cannot change CAPACITY */
+  assert(errno == EINVAL);
+  obj = hwloc_get_obj_by_type(topology, HWLOC_OBJ_PU, 0);
+  assert(obj);
+  err = hwloc_memattr_get_value(topology, HWLOC_MEMATTR_ID_CAPACITY,
+                                obj, NULL, 0,
+                                &gotvalue);
+  assert(err == -1); /* no CAPACITY in PU */
+  assert(errno == EINVAL);
+  err = hwloc_memattr_get_value(topology, HWLOC_MEMATTR_ID_LOCALITY,
+                                obj, NULL, 0,
+                                &gotvalue);
+  assert(!err);
+  assert(gotvalue == 1); /* LOCALITY of PU is 1 */
+  err = hwloc_memattr_set_value(topology, HWLOC_MEMATTR_ID_LOCALITY,
+                                obj, NULL, 0,
+                                23);
+  assert(err == -1);
+  assert(errno == EINVAL); /* cannot change LOCALITY */
+  obj = hwloc_get_obj_by_type(topology, HWLOC_OBJ_MISC, 0);
+  assert(obj);
+  err = hwloc_memattr_get_value(topology, HWLOC_MEMATTR_ID_LOCALITY,
+                                obj, NULL, 0,
+                                &gotvalue);
+  assert(err == -1);
+  assert(errno == EINVAL); /* no LOCALITY in Misc */
   /* check convenience memattr values */
   err = hwloc_memattr_get_value(topology, HWLOC_MEMATTR_ID_CAPACITY,
                                 hwloc_get_obj_by_type(topology, HWLOC_OBJ_NUMANODE, 1), NULL, 0,

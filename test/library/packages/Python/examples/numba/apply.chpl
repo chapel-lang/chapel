@@ -35,12 +35,12 @@ proc main() {
   var interp = new Interpreter();
 
   var numba_code = """
-import numba
-@numba.cfunc(numba.int64(numba.int64))
-def apply(x):
-  return x + 1 if x % 2 != 0 else x
-  """;
-  var lib = interp.importModule("lib", numba_code);
+  import numba
+  @numba.cfunc(numba.int64(numba.int64))
+  def apply(x):
+    return x + 1 if x % 2 != 0 else x
+  """.dedent();
+  var lib = interp.createModule(numba_code);
   var applyFunc = lib.get("apply");
   var applyFuncAddr = applyFunc.get(c_intptr, "address"): c_ptr(void);
 

@@ -1,4 +1,4 @@
-.TH "hwlocality_helper_types" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_helper_types" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -30,7 +30,9 @@ hwlocality_helper_types \- Kinds of object Type
 .in -1c
 .SH "Detailed Description"
 .PP 
-Each object type is either Normal (i\&.e\&. \fBhwloc_obj_type_is_normal()\fP returns 1), or Memory (i\&.e\&. \fBhwloc_obj_type_is_memory()\fP returns 1) or I/O (i\&.e\&. \fBhwloc_obj_type_is_io()\fP returns 1) or Misc (i\&.e\&. equal to \fBHWLOC_OBJ_MISC\fP)\&. It cannot be of more than one of these kinds\&. 
+Each object type is either Normal (i\&.e\&. \fBhwloc_obj_type_is_normal()\fP returns 1), or Memory (i\&.e\&. \fBhwloc_obj_type_is_memory()\fP returns 1) or I/O (i\&.e\&. \fBhwloc_obj_type_is_io()\fP returns 1) or Misc (i\&.e\&. equal to \fBHWLOC_OBJ_MISC\fP)\&. It cannot be of more than one of these kinds\&.
+.PP
+See also Object Kind in \fBTerms and Definitions\fP\&. 
 .SH "Function Documentation"
 .PP 
 .SS "int hwloc_obj_type_is_cache (\fBhwloc_obj_type_t\fP type)"

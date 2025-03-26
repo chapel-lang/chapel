@@ -8,7 +8,7 @@ import re
 import chpl_tasks
 import chpl_home_utils
 import overrides
-from utils import error, warning, memoize, try_run_command, which, is_ver_in_range
+from utils import error, warning, memoize, try_run_command, which, is_ver_in_range, check_valid_var
 
 def _validate_cuda_version():
     return _validate_cuda_version_impl()
@@ -234,7 +234,7 @@ def get():
     chpl_gpu_env = overrides.get("CHPL_GPU")
     if chpl_gpu_env:
         if chpl_gpu_env not in GPU_TYPES:
-            error("Only {} supported for 'CHPL_GPU'".format(list(GPU_TYPES.keys())))
+            check_valid_var("CHPL_GPU", chpl_gpu_env, list(GPU_TYPES.keys()))
         else:
             return chpl_gpu_env
     else:

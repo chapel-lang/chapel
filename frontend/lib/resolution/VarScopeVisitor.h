@@ -22,6 +22,7 @@
 
 #include "chpl/framework/ID.h"
 #include "chpl/resolution/ResolvedVisitor.h"
+#include "./BranchSensitiveVisitor.h"
 
 namespace chpl {
 namespace uast {
@@ -52,7 +53,7 @@ struct ControlFlowSubBlock;
 
     Since it is only used internally for these cases,
     the interface covers whatever these analyses need. */
-class VarScopeVisitor {
+class VarScopeVisitor : public BranchSensitiveVisitor<VarFrame, MutatingResolvedVisitor<VarScopeVisitor>&> {
  protected:
   using RV = MutatingResolvedVisitor<VarScopeVisitor>;
 
@@ -61,7 +62,6 @@ class VarScopeVisitor {
   types::QualifiedType fnReturnType;
 
   // ----- internal variables
-  std::vector<owned<VarFrame>> scopeStack;
   std::vector<const AstNode*> inAstStack;
 
   // ----- methods to be implemented by specific analysis subclass
@@ -108,13 +108,13 @@ class VarScopeVisitor {
       should update currentFrame() which is the frame for the Select.
       The when frames are sitting in currentFrame().subBlocks. */
   virtual void handleSelect(const uast::Select* cond, RV& rv);
-  /** Generalizes processing Conditional and Select nodes after handling 
-      their contents. Updates currentFrame based on the frames of the 
+  /** Generalizes processing Conditional and Select nodes after handling
+      their contents. Updates currentFrame based on the frames of the
       possible branching targets stored in frames. total indicates whether
       a branch is taken no matter the input. */
-  virtual void handleDisjunction(const uast::AstNode * node, 
-                                 VarFrame* currentFrame, 
-                                 const std::vector<VarFrame*>& frames, 
+  virtual void handleDisjunction(const uast::AstNode * node,
+                                 VarFrame* currentFrame,
+                                 const std::vector<VarFrame*>& frames,
                                  bool total,
                                  RV& rv) = 0;
   /** Called to process any other Scope after handling its contents --
@@ -133,47 +133,8 @@ class VarScopeVisitor {
                ResolutionResultByPostorderID& byPostorder);
 
  protected:
-
-  /** Return the current frame. This should always be safe to call
-      from one of the handle* methods. */
-  VarFrame* currentFrame() {
-    CHPL_ASSERT(!scopeStack.empty());
-    return scopeStack.back().get();
-  }
-
   /** Returns the current statement being traversed */
   const AstNode* currentStatement();
-
-  /** Return the parent frame or nullptr if there is none. */
-  VarFrame* currentParentFrame() {
-    VarFrame* parent = nullptr;
-    size_t n = scopeStack.size();
-    if (n >= 2) {
-      parent = scopeStack[n-2].get();
-    }
-    return parent;
-  }
-
-  /** Assuming that the current frame refers to a Conditional,
-      returns the frame for the 'then' block. */
-  VarFrame* currentThenFrame();
-  /** Assuming that the current frame refers to a Conditional,
-      returns the frame for the 'else' block, or 'nullptr' if there was none. */
-  VarFrame* currentElseFrame();
-
-  /** Assuming that the current frame refers to a Try,
-      returns the number of frames saved for Catch clauses.  */
-  int currentNumCatchFrames();
-  /** Assuming that the current frame refers to a Try,
-      returns the i'th saved Catch frame. */
-  VarFrame* currentCatchFrame(int i);
-
-  /** Assuming that the current frame refers to a Select,
-      returns the number of frames saved for When clauses.  */
-  int currentNumWhenFrames();
-  /** Assuming that the current frame refers to a Select,
-      returns the i'th saved When frame.  */
-  VarFrame * currentWhenFrame(int i);
 
   /** If ast is an Identifier that refers to a VarLikeDecl, return the
       Id of the VarLikeDecl. Otherwise, return an empty ID. */
@@ -202,11 +163,14 @@ class VarScopeVisitor {
   /** Returns the return or yield type of the function being processed */
   const types::QualifiedType& returnOrYieldType();
 
- public:
-  // ----- visitor implementation
-  void enterScope(const uast::AstNode* ast, RV& rv);
-  void exitScope(const uast::AstNode* ast, RV& rv);
+  // ----- overrides for BranchSensitiveVisitor
+  void doEnterScope(const uast::AstNode* ast, RV& rv) override;
+  void doExitScope(const uast::AstNode* ast, RV& rv) override;
+  const types::Param* determineWhenCaseValue(const uast::AstNode* ast, RV& extraData) override;
+  const types::Param* determineIfValue(const uast::AstNode* ast, RV& extraData) override;
+  void traverseNode(const uast::AstNode* ast, RV& rv) override;
 
+ public:
   void enterAst(const uast::AstNode* ast);
   void exitAst(const uast::AstNode* ast);
 
@@ -224,6 +188,12 @@ class VarScopeVisitor {
 
   bool enter(const Return* ast, RV& rv);
   void exit(const Return* ast, RV& rv);
+
+  bool enter(const Break* ast, RV& rv);
+  void exit(const Break* ast, RV& rv);
+
+  bool enter(const Continue* ast, RV& rv);
+  void exit(const Continue* ast, RV& rv);
 
   bool enter(const Throw* ast, RV& rv);
   void exit(const Throw* ast, RV& rv);
@@ -244,14 +214,6 @@ class VarScopeVisitor {
   void exit(const uast::AstNode* node, RV& rv);
 };
 
-/** Collects information about a Conditional's then/else blocks
-    or a Try's Catch blocks. */
-struct ControlFlowSubBlock {
-  const AstNode* block = nullptr; // then block / else block / catch block
-  owned<VarFrame> frame;
-  ControlFlowSubBlock(const AstNode* block) : block(block) { }
-};
-
 /** Per-variable state used by the copy elision implementation */
 struct CopyElisionState {
   bool lastIsCopy = false; // is the last mention (so far) a copy?
@@ -261,10 +223,7 @@ struct CopyElisionState {
 /** Collects information about a variable declaration frame / scope.
     Note that some of the fields here will only be used by a single subclass.
     Keeping them declared here keeps things simple. */
-struct VarFrame {
-  // ----- variables used by VarScopeVisitor
-  const AstNode* scopeAst = nullptr;
-
+struct VarFrame : BaseFrame<VarFrame> {
   // Which variables are declared in this scope?
   // For split init, only variables without init expressions.
   std::set<ID> declaredVars;
@@ -272,21 +231,6 @@ struct VarFrame {
   // Which variables are initialized in this scope?
   // This includes both locally declared and outer variables.
   std::set<ID> initedVars;
-
-  // has the block already encountered a return or a throw?
-  bool returnsOrThrows = false;
-
-  // for conditionals/selects, does this block have a param true condition?
-  bool paramTrueCond = false;
-
-  // for conditionals/selects, is this known to be the only path?
-  bool knownPath = false;
-
-  // When processing a conditional or catch blocks,
-  // instead of popping the SplitInitFrame for the then/else/catch blocks,
-  // store them here, for use in handleExitScope(Conditional or Try).
-  std::vector<ControlFlowSubBlock> subBlocks;
-
 
   // ----- variables declared here for use in particular subclasses
 
@@ -327,7 +271,7 @@ struct VarFrame {
   // Map of (ID of decl) -> (ID of call after which it is deinited)
   std::unordered_map<ID, ID> deinitedVars;
 
-  VarFrame(const AstNode* scopeAst) : scopeAst(scopeAst) { }
+  VarFrame(const AstNode* scopeAst) : BaseFrame(scopeAst) { }
 
   // returns 'true' if it was inserted
   bool addToDeclaredVars(ID varId);
@@ -361,6 +305,17 @@ computeActualFormalIntents(Context* context,
                            std::vector<types::QualifiedType>& actualFrmlTypes);
 
 } // end namespace resolution
+
+namespace uast {
+template <>
+struct AstVisitorPrecondition<resolution::VarScopeVisitor> {
+  static bool skipSubtree(const AstNode* node, resolution::VarScopeVisitor& rv) {
+    return rv.isDoneExecuting();
+  }
+};
+
+};
+
 } // end namespace chpl
 
 #endif

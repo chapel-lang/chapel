@@ -513,6 +513,9 @@ module Python {
     @chpldoc.nodoc
     var isSubInterpreter: bool;
 
+    @chpldoc.nodoc
+    var anonModuleCounter: atomic int = 0;
+
     // the done signal is a field so it has the same lifetime as the
     // helper thread
     @chpldoc.nodoc
@@ -664,8 +667,35 @@ module Python {
     proc importModule(modName: string): owned Module throws {
       return new Module(this, modName);
     }
+
+    @deprecated("'importModule' with a 'moduleContents' argument is deprecated. Use :proc:`createModule` instead.")
+    proc importModule(modName: string, moduleContents): owned Module throws
+      where moduleContents.type == string || moduleContents.type == bytes {
+      return new Module(this, modName, moduleContents);
+    }
+
     /*
-      Import a Python module, using the provided ``moduleContents``. This is
+      Create a Python module, using the provided ``moduleContents``. This is
+      equivalent to putting the code in a file, and then importing the file
+      via the file/module name.
+
+      This function will generate a unique module name. If a specific module
+      name is desired, use the :proc:`createModule` 2 argument overload, which
+      takes ``modName`` and ``moduleContents``.
+
+      :arg moduleContents: The contents of the module. This can be a
+                           :type:`~String.string` of Python code or a
+                           :type:`~Bytes.bytes` object containing Python
+                           bytecode (i.e. from a ``*.pyc`` file).
+    */
+    proc createModule(moduleContents): owned Module throws
+      where moduleContents.type == string || moduleContents.type == bytes {
+      return this.createModule(
+        "chpl_anon_module_" + this.anonModuleCounter.fetchAdd(1):string,
+        moduleContents);
+    }
+    /*
+      Create a Python module, using the provided ``moduleContents``. This is
       equivalent to putting the code in a file, and then importing the file
       via the file/module name.
 
@@ -680,7 +710,7 @@ module Python {
                            :type:`~Bytes.bytes` object containing Python
                            bytecode (i.e. from a ``*.pyc`` file).
     */
-    proc importModule(modName: string, moduleContents): owned Module throws
+    proc createModule(modName: string, moduleContents): owned Module throws
       where moduleContents.type == string || moduleContents.type == bytes {
       return new Module(this, modName, moduleContents);
     }
@@ -1079,7 +1109,9 @@ module Python {
       } else if t == NoneType {
         return Py_None;
       } else {
-        halt("Unsupported toPython type: '" + t:string + "'");
+        throw new ChapelException(
+          "Unsupported toPython type: '" + t:string + "'"
+        );
       }
     }
 
@@ -1160,7 +1192,9 @@ module Python {
         } else if dummy.isAssociative() {
           return fromDict(t, obj);
         } else {
-          halt("Unsupported fromPython array type: '" + t:string + "'");
+          throw new ChapelException(
+            "Unsupported fromPython array type: '" + t:string + "'"
+          );
         }
       } else if isTupleType(t) {
         return fromTuple(t, obj);
@@ -1180,7 +1214,9 @@ module Python {
         if obj != Py_None then Py_DECREF(obj);
         return None;
       } else {
-        halt("Unsupported fromPython type: '" + t:string + "'");
+        throw new ChapelException(
+          "Unsupported fromPython type: '" + t:string + "'"
+        );
       }
     }
 
@@ -2354,7 +2390,7 @@ module Python {
 
     /*
       Import a Python module from a string using an arbitrary name.
-      See :proc:`Interpreter.importModule`.
+      See :proc:`Interpreter.createModule`.
     */
     proc init(interpreter: borrowed Interpreter,
               in modName: string, in moduleContents: string) throws {
@@ -3314,9 +3350,6 @@ module Python {
     require "PythonHelper/ChapelPythonHelper.h";
     private use CTypes;
     private use super.CWChar;
-    import HaltWrappers;
-
-
 
     /*
       Types

@@ -11,7 +11,7 @@ def pass_through(x):
 """;
 
 var interp = new Interpreter();
-var mod = interp.importModule('__empty__', code);
+var mod = interp.createModule(code);
 var do_nothing = mod.get('do_nothing');
 var get_int = mod.get('get_int');
 var pass_through = mod.get('pass_through');

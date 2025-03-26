@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2015 Inria.  All rights reserved.
+ * Copyright © 2009-2024 Inria.  All rights reserved.
  * Copyright © 2009-2011 Université Bordeaux
  * Copyright © 2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -128,6 +128,8 @@ static void testmem2(hwloc_const_bitmap_t set, int flags)
   testmem(set, HWLOC_MEMBIND_BIND, flags, support->membind->bind_membind);
   printf("  interleave\n");
   testmem(set, HWLOC_MEMBIND_INTERLEAVE, flags, support->membind->interleave_membind);
+  printf("  weighted interleave\n");
+  testmem(set, HWLOC_MEMBIND_WEIGHTED_INTERLEAVE, flags, support->membind->weighted_interleave_membind);
   printf("  nexttouch\n");
   testmem(set, HWLOC_MEMBIND_NEXTTOUCH, flags, support->membind->nexttouch_membind);
 }

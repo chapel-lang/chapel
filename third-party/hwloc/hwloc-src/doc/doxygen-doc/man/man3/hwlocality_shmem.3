@@ -1,4 +1,4 @@
-.TH "hwlocality_shmem" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_shmem" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -56,11 +56,13 @@ This function takes care of calling \fBhwloc_topology_abi_check()\fP\&.
 .PP
 \fBReturns\fP
 .RS 4
--1 with errno set to EBUSY if the virtual memory mapping defined by \fCmmap_address\fP and \fClength\fP isn't available in the process\&.
+0 on success\&.
 .PP
--1 with errno set to EINVAL if \fCfileoffset\fP, \fCmmap_address\fP or \fClength\fP aren't page-aligned, or do not match what was given to \fBhwloc_shmem_topology_write()\fP earlier\&.
+-1 with errno set to \fCEBUSY\fP if the virtual memory mapping defined by \fCmmap_address\fP and \fClength\fP isn't available in the process\&.
 .PP
--1 with errno set to EINVAL if the layout of the topology structure is different between the writer process and the adopter process\&. 
+-1 with errno set to \fCEINVAL\fP if \fCfileoffset\fP, \fCmmap_address\fP or \fClength\fP aren't page-aligned, or do not match what was given to \fBhwloc_shmem_topology_write()\fP earlier\&.
+.PP
+-1 with errno set to \fCEINVAL\fP if the layout of the topology structure is different between the writer process and the adopter process\&. 
 .RE
 .PP
 
@@ -68,6 +70,11 @@ This function takes care of calling \fBhwloc_topology_abi_check()\fP\&.
 
 .PP
 Get the required shared memory length for storing a topology\&. This length (in bytes) must be used in \fBhwloc_shmem_topology_write()\fP and \fBhwloc_shmem_topology_adopt()\fP later\&.
+.PP
+\fBReturns\fP
+.RS 4
+the length, or -1 on error, for instance if flags are invalid\&.
+.RE
 .PP
 \fBNote\fP
 .RS 4
@@ -93,9 +100,11 @@ The object userdata pointer is duplicated but the pointed buffer is not\&. Howev
 .PP
 \fBReturns\fP
 .RS 4
--1 with errno set to EBUSY if the virtual memory mapping defined by \fCmmap_address\fP and \fClength\fP isn't available in the process\&. 
+0 on success\&. 
 .PP
--1 with errno set to EINVAL if \fCfileoffset\fP, \fCmmap_address\fP or \fClength\fP aren't page-aligned\&. 
+-1 with errno set to \fCEBUSY\fP if the virtual memory mapping defined by \fCmmap_address\fP and \fClength\fP isn't available in the process\&. 
+.PP
+-1 with errno set to \fCEINVAL\fP if \fCfileoffset\fP, \fCmmap_address\fP or \fClength\fP aren't page-aligned\&. 
 .RE
 .PP
 

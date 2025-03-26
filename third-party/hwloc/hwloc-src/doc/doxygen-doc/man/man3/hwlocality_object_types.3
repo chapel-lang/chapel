@@ -1,4 +1,4 @@
-.TH "hwlocality_object_types" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_object_types" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -187,6 +187,8 @@ Group objects\&. Objects which do not fit in the above but are detected by hwloc
 \fB\fIHWLOC_OBJ_NUMANODE \fP\fP
 NUMA node\&. An object that contains memory that is directly and byte-accessible to the host processors\&. It is usually close to some cores (the corresponding objects are descendants of the NUMA node object in the hwloc tree)\&. This is the smallest object representing Memory resources, it cannot have any child except Misc objects\&. However it may have Memory-side cache parents\&.
 .PP
+NUMA nodes may correspond to different kinds of memory (DRAM, HBM, CXL-DRAM, etc\&.)\&. When hwloc is able to guess that kind, it is specified in the subtype field of the object\&. See also \fBNormal attributes\fP in the main documentation\&.
+.PP
 There is always at least one such object in the topology even if the machine is not NUMA\&.
 .PP
 Memory objects are not listed in the main children list, but rather in the dedicated Memory children list\&.
@@ -221,16 +223,29 @@ Memory objects are not listed in the main children list, but rather in the dedic
 Memory-side cache have a special depth \fBHWLOC_TYPE_DEPTH_MEMCACHE\fP instead of a normal depth just like other objects in the main tree\&. 
 .TP
 \fB\fIHWLOC_OBJ_DIE \fP\fP
-Die within a physical package\&. A subpart of the physical package, that contains multiple cores\&. 
+Die within a physical package\&. A subpart of the physical package, that contains multiple cores\&. Some operating systems (e\&.g\&. Linux) may expose a single die per package even if the hardware does not support dies at all\&. To avoid showing such non-existing dies, the corresponding hwloc backend may filter them out\&. This is functionally equivalent to \fBHWLOC_TYPE_FILTER_KEEP_STRUCTURE\fP being enforced\&. 
 .SH "Function Documentation"
 .PP 
 .SS "int hwloc_compare_types (\fBhwloc_obj_type_t\fP type1, \fBhwloc_obj_type_t\fP type2)"
 
 .PP
-Compare the depth of two object types\&. Types shouldn't be compared as they are, since newer ones may be added in the future\&. This function returns less than, equal to, or greater than zero respectively if \fCtype1\fP objects usually include \fCtype2\fP objects, are the same as \fCtype2\fP objects, or are included in \fCtype2\fP objects\&. If the types can not be compared (because neither is usually contained in the other), \fBHWLOC_TYPE_UNORDERED\fP is returned\&. Object types containing CPUs can always be compared (usually, a system contains machines which contain nodes which contain packages which contain caches, which contain cores, which contain processors)\&.
+Compare the depth of two object types\&. Types shouldn't be compared as they are, since newer ones may be added in the future\&.
+.PP
+\fBReturns\fP
+.RS 4
+A negative integer if \fCtype1\fP objects usually include \fCtype2\fP objects\&. 
+.PP
+A positive integer if \fCtype1\fP objects are usually included in \fCtype2\fP objects\&. 
+.PP
+0 if \fCtype1\fP and \fCtype2\fP objects are the same\&. 
+.PP
+\fBHWLOC_TYPE_UNORDERED\fP if objects cannot be compared (because neither is usually contained in the other)\&.
+.RE
 .PP
 \fBNote\fP
 .RS 4
+Object types containing CPUs can always be compared (usually, a machine contains packages, which contain caches, which contain cores, which contain PUs)\&.
+.PP
 \fBHWLOC_OBJ_PU\fP will always be the deepest, while \fBHWLOC_OBJ_MACHINE\fP is always the highest\&.
 .PP
 This does not mean that the actual topology will respect that order: e\&.g\&. as of today cores may also contain caches, and packages may also contain nodes\&. This is thus just to be seen as a fallback comparison method\&. 

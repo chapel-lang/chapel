@@ -1835,6 +1835,75 @@ static void test24() {
     });
 }
 
+// test that we don't invoke code after continue / break (including initializers)
+static void test25(const std::string& controlModifier) {
+  testActions("test25",
+    (
+    R"""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.deinit() { }
+        proc test() {
+          for i in 1..10 {
+            )""" + controlModifier + R"""(;
+            var x:R;
+          }
+        }
+      }
+    )""").c_str(), {
+      {AssociatedAction::ITERATE, "M.test@3", "" },
+    });
+}
+
+static void test25() {
+  test25("continue");
+  test25("break");
+}
+
+// test that we don't invoke code after continue / break (including initializers)
+static void test26(const std::string& controlModifier1, const std::string& controlModifier2, bool expectInit) {
+  Actions expectedActions = {{AssociatedAction::ITERATE, "M.test@3", "" }};
+  if (expectInit) {
+    expectedActions.push_back({AssociatedAction::DEFAULT_INIT, "x", ""});
+    expectedActions.push_back({AssociatedAction::DEINIT, "M.test@14", "x"});
+  }
+  testActions("test26",
+    (
+    R"""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.deinit() { }
+        proc test() {
+          for i in 1..10 {
+            var cond: bool;
+            if (cond) {
+              )""" + controlModifier1 + R"""(;
+            } else {
+              )""" + controlModifier2 + R"""(;
+            }
+            var x:R;
+          }
+        }
+      }
+    )""").c_str(), std::move(expectedActions));
+}
+
+static void test26() {
+  test26("continue", "continue", false);
+  test26("break", "break", false);
+  test26("continue", "", true);
+  test26("", "continue", true);
+  test26("break", "", true);
+  test26("", "break", true);
+
+  /* TODO: mixing control flow requires more intelligence.
+    test26("continue", "continue", false);
+    test26("break", "break", false);
+  */
+}
+
 // calling function with 'out' intent formal
 
 // calling functions with 'inout' intent formal
@@ -1932,6 +2001,9 @@ int main() {
   test23d();
 
   test24();
+
+  test25();
+  test26();
 
   return 0;
 }

@@ -69,6 +69,9 @@ docs: FORCE
 	  echo " Try 'make frontend-docs'" ; \
 	fi
 
+docs-release: FORCE
+	$(MAKE) docs
+	cd html && rm versionButton.php && ln -s ../versionButton.php .
 
 man-chapel: FORCE
 	$(MAKE) man

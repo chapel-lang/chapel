@@ -1,4 +1,4 @@
-.TH "hwlocality_helper_distribute" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_helper_distribute" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -50,8 +50,15 @@ The caller may typically want to also call \fBhwloc_bitmap_singlify()\fP before 
 .PP
 \fCflags\fP should be 0 or a OR'ed set of \fBhwloc_distrib_flags_e\fP\&.
 .PP
+\fBReturns\fP
+.RS 4
+0 on success, -1 on error\&.
+.RE
+.PP
 \fBNote\fP
 .RS 4
+On hybrid CPUs (or asymmetric platforms), distribution may be suboptimal since the number of cores or PUs inside packages or below caches may vary (the top-down recursive partitioning ignores these numbers until reaching their levels)\&. Hence it is recommended to distribute only inside a single homogeneous domain\&. For instance on a CPU with energy-efficient E-cores and high-performance P-cores, one should distribute separately N tasks on E-cores and M tasks on P-cores instead of trying to distribute directly M+N tasks on the entire CPUs\&.
+.PP
 This function requires the \fCroots\fP objects to have a CPU set\&. 
 .RE
 .PP

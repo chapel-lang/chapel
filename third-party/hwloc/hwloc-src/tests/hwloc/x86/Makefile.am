@@ -1,4 +1,4 @@
-# Copyright © 2015-2022 Inria.  All rights reserved.
+# Copyright © 2015-2024 Inria.  All rights reserved.
 # See COPYING in top-level directory.
 
 AM_CFLAGS = $(HWLOC_CFLAGS)
@@ -11,6 +11,8 @@ AM_LDFLAGS = $(HWLOC_LDFLAGS)
 # XML outputs shouldn't have gp_index attributes to avoid spurious errors.
 # Remove them with: sed -r -e 's/ gp_index=\"[0-9]+\"//' -i foo.outpu
 cpuid_outputs = \
+	Intel-RaptorLake-Corei7-1370P.output \
+	Intel-SapphireRapids-2xXeonMax9460.output \
 	Intel-CPUID.1A-1p2co2t.output \
 	Intel-CPUID.1F-Qemu-2p3d3c2t.output \
 	Intel-CascadeLake-2xXeon6230.output \
@@ -25,6 +27,7 @@ cpuid_outputs = \
 	Intel-Core-2xXeon-E5345.output \
 	Intel-KnightsLanding-XeonPhi-7210.output \
 	Intel-KnightsCorner-XeonPhi-SE10P.output \
+	AMD-19h-Zen4-2xEpyc-9654.output \
 	AMD-19h-Zen3-2xEpyc-7763.output \
 	AMD-17h-Zen-2xEpyc-7451.output \
 	AMD-15h-Piledriver-4xOpteron-6348.output \
@@ -35,6 +38,7 @@ cpuid_outputs = \
 	AMD-K8-SledgeHammer-2xOpteron-250.output \
 	Hygon-Dhyana-32cores.output \
 	Zhaoxin-CentaurHauls-ZXD-4600.output \
+	Zhaoxin-2xCentaurHauls-KaiSheng-KH-40000.output \
 	Zhaoxin-Shanghai-KaiSheng-ZXC+-FC1081.output
 
 # FIXME add AMD-K10-Shanghai/Barcelona-[248]3xx
@@ -42,6 +46,8 @@ cpuid_outputs = \
 # Each output `xyz.output' must have a corresponding tarball `xyz.tar.bz2'
 # specifying which tarball to use
 cpuid_tarballs = \
+	Intel-RaptorLake-Corei7-1370P.tar.bz2 \
+	Intel-SapphireRapids-2xXeonMax9460.tar.bz2 \
 	Intel-CPUID.1A-1p2co2t.tar.bz2 \
 	Intel-CPUID.1F-Qemu-2p3d3c2t.tar.bz2 \
 	Intel-CascadeLake-2xXeon6230.tar.bz2 \
@@ -56,6 +62,7 @@ cpuid_tarballs = \
 	Intel-Core-2xXeon-E5345.tar.bz2 \
 	Intel-KnightsLanding-XeonPhi-7210.tar.bz2 \
 	Intel-KnightsCorner-XeonPhi-SE10P.tar.bz2 \
+	AMD-19h-Zen4-2xEpyc-9654.tar.bz2 \
 	AMD-19h-Zen3-2xEpyc-7763.tar.bz2 \
 	AMD-17h-Zen-2xEpyc-7451.tar.bz2 \
 	AMD-15h-Piledriver-4xOpteron-6348.tar.bz2 \
@@ -66,6 +73,7 @@ cpuid_tarballs = \
 	AMD-K8-SledgeHammer-2xOpteron-250.tar.bz2 \
 	Hygon-Dhyana-32cores.tar.bz2 \
 	Zhaoxin-CentaurHauls-ZXD-4600.tar.bz2 \
+	Zhaoxin-2xCentaurHauls-KaiSheng-KH-40000.tar.bz2 \
 	Zhaoxin-Shanghai-KaiSheng-ZXC+-FC1081.tar.bz2
 
 # Each output `xyz.output' may have a corresponding `xyz.options'

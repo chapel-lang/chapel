@@ -1,8 +1,9 @@
 /*
- * Copyright © 2009 CNRS
- * Copyright © 2009-2022 Inria.  All rights reserved.
+ * Copyright © 2009, 2024 CNRS
+ * Copyright © 2009-2024 Inria.  All rights reserved.
  * Copyright © 2009-2012 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
+ * Copyright © 2023 Université de Reims Champagne-Ardenne.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
@@ -26,6 +27,7 @@
 #ifdef HAVE_DIRENT_H
 #include <dirent.h>
 #endif
+#include <fcntl.h>
 #include <assert.h>
 
 extern void usage(const char *name, FILE *where);
@@ -80,15 +82,19 @@ hwloc_utils_input_format_usage(FILE *where, int addspaces)
 	   addspaces, " ");
 }
 
-enum hwloc_utils_input_format {
-  HWLOC_UTILS_INPUT_DEFAULT,
-  HWLOC_UTILS_INPUT_XML,
-  HWLOC_UTILS_INPUT_FSROOT,
-  HWLOC_UTILS_INPUT_SYNTHETIC,
-  HWLOC_UTILS_INPUT_CPUID,
-  HWLOC_UTILS_INPUT_SHMEM,
-  HWLOC_UTILS_INPUT_ARCHIVE
+struct hwloc_utils_input_format_s {
+  enum hwloc_utils_input_format {
+    HWLOC_UTILS_INPUT_DEFAULT,
+    HWLOC_UTILS_INPUT_XML,
+    HWLOC_UTILS_INPUT_FSROOT,
+    HWLOC_UTILS_INPUT_SYNTHETIC,
+    HWLOC_UTILS_INPUT_CPUID,
+    HWLOC_UTILS_INPUT_SHMEM,
+    HWLOC_UTILS_INPUT_ARCHIVE
+  } format;
+  int oldworkdir;
 };
+#define HWLOC_UTILS_INPUT_FORMAT_DEFAULT (struct hwloc_utils_input_format_s) { HWLOC_UTILS_INPUT_DEFAULT, -1 }
 
 static __hwloc_inline enum hwloc_utils_input_format
 hwloc_utils_parse_input_format(const char *name, const char *callname)
@@ -115,7 +121,7 @@ hwloc_utils_parse_input_format(const char *name, const char *callname)
 
 static __hwloc_inline int
 hwloc_utils_lookup_input_option(char *argv[], int argc, int *consumed_opts,
-				char **inputp, enum hwloc_utils_input_format *input_formatp,
+				char **inputp, struct hwloc_utils_input_format_s *input_formatp,
 				const char *callname)
 {
   if (!strcmp (argv[0], "--input")
@@ -137,7 +143,8 @@ hwloc_utils_lookup_input_option(char *argv[], int argc, int *consumed_opts,
       usage (callname, stderr);
       exit(EXIT_FAILURE);
     }
-    *input_formatp = hwloc_utils_parse_input_format (argv[1], callname);
+    *input_formatp = HWLOC_UTILS_INPUT_FORMAT_DEFAULT;
+    input_formatp->format = hwloc_utils_parse_input_format (argv[1], callname);
     *consumed_opts = 1;
     return 1;
   }
@@ -149,7 +156,8 @@ hwloc_utils_lookup_input_option(char *argv[], int argc, int *consumed_opts,
       exit(EXIT_FAILURE);
     }
     *inputp = argv[1];
-    *input_formatp = HWLOC_UTILS_INPUT_SYNTHETIC;
+    *input_formatp = HWLOC_UTILS_INPUT_FORMAT_DEFAULT;
+    input_formatp->format = HWLOC_UTILS_INPUT_SYNTHETIC;
     *consumed_opts = 1;
     return 1;
   } else if (!strcmp (argv[0], "--xml")) {
@@ -158,7 +166,8 @@ hwloc_utils_lookup_input_option(char *argv[], int argc, int *consumed_opts,
       exit(EXIT_FAILURE);
     }
     *inputp = argv[1];
-    *input_formatp = HWLOC_UTILS_INPUT_XML;
+    *input_formatp = HWLOC_UTILS_INPUT_FORMAT_DEFAULT;
+    input_formatp->format = HWLOC_UTILS_INPUT_XML;
     *consumed_opts = 1;
     return 1;
   } else if (!strcmp (argv[0], "--fsys-root")) {
@@ -167,7 +176,8 @@ hwloc_utils_lookup_input_option(char *argv[], int argc, int *consumed_opts,
       exit(EXIT_FAILURE);
     }
     *inputp = argv[1];
-    *input_formatp = HWLOC_UTILS_INPUT_FSROOT;
+    *input_formatp = HWLOC_UTILS_INPUT_FORMAT_DEFAULT;
+    input_formatp->format = HWLOC_UTILS_INPUT_FSROOT;
     *consumed_opts = 1;
     return 1;
   }
@@ -232,9 +242,10 @@ hwloc_utils_autodetect_input_format(const char *input, int verbose)
 static __hwloc_inline int
 hwloc_utils_enable_input_format(struct hwloc_topology *topology, unsigned long flags,
 				const char *input,
-				enum hwloc_utils_input_format *input_format,
+				struct hwloc_utils_input_format_s *input_formatp,
 				int verbose, const char *callname)
 {
+  enum hwloc_utils_input_format *input_format = &input_formatp->format;
   if (*input_format == HWLOC_UTILS_INPUT_DEFAULT && !strcmp(input, "-.xml")) {
     *input_format = HWLOC_UTILS_INPUT_XML;
     input = "-";
@@ -307,32 +318,52 @@ hwloc_utils_enable_input_format(struct hwloc_topology *topology, unsigned long f
   }
 
   case HWLOC_UTILS_INPUT_ARCHIVE: {
-#ifdef HWLOC_ARCHIVEMOUNT_PATH
+#ifdef HWLOC_LINUX_SYS
     char mntpath[] = "/tmp/tmpdir.hwloc.archivemount.XXXXXX";
     char mntcmd[512];
     char umntcmd[512];
     DIR *dir;
     struct dirent *dirent;
-    enum hwloc_utils_input_format sub_input_format;
+    /* oldworkdir == -1 -> close would fail if !defined(O_PATH), but we don't care */
+    struct hwloc_utils_input_format_s sub_input_format = HWLOC_UTILS_INPUT_FORMAT_DEFAULT;
     char *subdir = NULL;
     int err;
 
+#ifdef O_PATH
+    if (-1 == input_formatp->oldworkdir) { /* if archivemount'ed recursively, only keep the first oldworkdir */
+        sub_input_format.oldworkdir = open(".", O_DIRECTORY|O_PATH); /* more efficient than getcwd(3) */
+        if (sub_input_format.oldworkdir < 0) {
+            perror("Saving current working directory");
+            return EXIT_FAILURE;
+        }
+    }
+#endif
     if (!mkdtemp(mntpath)) {
       perror("Creating archivemount directory");
+      close(sub_input_format.oldworkdir);
       return EXIT_FAILURE;
     }
-    snprintf(mntcmd, sizeof(mntcmd), "%s %s %s", HWLOC_ARCHIVEMOUNT_PATH, input, mntpath);
+    snprintf(mntcmd, sizeof(mntcmd), "archivemount -o ro %s %s", input, mntpath);
     err = system(mntcmd);
     if (err) {
       perror("Archivemount'ing the archive");
       rmdir(mntpath);
+      close(sub_input_format.oldworkdir);
       return EXIT_FAILURE;
     }
     snprintf(umntcmd, sizeof(umntcmd), "umount -l %s", mntpath);
 
     /* enter the mount point and stay there so that we can umount+rmdir immediately but still use it later */
-    chdir(mntpath);
-    system(umntcmd);
+    if (chdir(mntpath) < 0) {
+      perror("Entering the archivemount'ed archive");
+      if (system(umntcmd) < 0)
+        perror("Unmounting the archivemount'ed archive (ignored)");
+      rmdir(mntpath);
+      close(sub_input_format.oldworkdir);
+      return EXIT_FAILURE;
+    }
+    if (system(umntcmd) < 0)
+      perror("Unmounting the archivemount'ed archive (ignored)");
     rmdir(mntpath);
 
     /* there should be a single subdirectory in the archive */
@@ -347,19 +378,23 @@ hwloc_utils_enable_input_format(struct hwloc_topology *topology, unsigned long f
 
     if (!subdir) {
       perror("No subdirectory in archivemount directory");
+      close(sub_input_format.oldworkdir);
       return EXIT_FAILURE;
     }
 
     /* call ourself recursively on subdir, it should be either a fsroot or a cpuid directory */
-    sub_input_format = HWLOC_UTILS_INPUT_DEFAULT;
     err = hwloc_utils_enable_input_format(topology, flags, subdir, &sub_input_format, verbose, callname);
     if (!err)
-      *input_format = sub_input_format;
-    break;
+      *input_formatp = sub_input_format;
+    else {
+      close(sub_input_format.oldworkdir);
+      return err;
+    }
 #else
     fprintf(stderr, "This installation of hwloc does not support loading from an archive, sorry.\n");
     exit(EXIT_FAILURE);
 #endif
+    break;
   }
 
   case HWLOC_UTILS_INPUT_SYNTHETIC:
@@ -377,6 +412,28 @@ hwloc_utils_enable_input_format(struct hwloc_topology *topology, unsigned long f
   }
 
   return 0;
+}
+
+static __hwloc_inline void
+hwloc_utils_disable_input_format(struct hwloc_utils_input_format_s *input_format)
+{
+  if (-1 < input_format->oldworkdir) {
+#ifdef HWLOC_LINUX_SYS
+#ifdef O_PATH
+    int err = fchdir(input_format->oldworkdir);
+    if (err) {
+      perror("Restoring current working directory");
+    }
+#else
+    fprintf(stderr, "Couldn't restore working directory. Errors may arise.\n");
+#endif
+    close(input_format->oldworkdir);
+    input_format->oldworkdir = -1;
+#else
+    fprintf(stderr, "oldworkdir should not have been changed. You should not have reached this execution branch.\n");
+    exit(EXIT_FAILURE);
+#endif
+  }
 }
 
 static __hwloc_inline void
@@ -746,143 +803,240 @@ hwloc_utils_parse_memattr_name(hwloc_topology_t topo, const char *str)
     return id;
 }
 
+#define HWLOC_UTILS_BEST_NODE_FLAG_DEFAULT (1UL<<0) /* report all nodes if no best found */
+#define HWLOC_UTILS_BEST_NODE_FLAG_STRICT (1UL<<1) /* report only best with same initiator */
+
+static __hwloc_inline unsigned long
+hwloc_utils_parse_best_node_flags(char *str)
+{
+  unsigned long best_memattr_flags = 0;
+  char *tmp;
+
+  tmp = strstr(str, ",default");
+  if (tmp) {
+    memmove(tmp, tmp+8, strlen(tmp+8)+1);
+    best_memattr_flags |= HWLOC_UTILS_BEST_NODE_FLAG_DEFAULT;
+  }
+
+  tmp = strstr(str, ",strict");
+  if (tmp) {
+    memmove(tmp, tmp+7, strlen(tmp+7)+1);
+    best_memattr_flags |= HWLOC_UTILS_BEST_NODE_FLAG_STRICT;
+  }
+
+  return best_memattr_flags;
+}
+
+static __hwloc_inline void
+hwloc_utils__update_best_node(hwloc_obj_t newnode, uint64_t newvalue,
+                              uint64_t *bestvalue, hwloc_bitmap_t bestnodeset,
+                              unsigned long mflags)
+{
+  if (hwloc_bitmap_iszero(bestnodeset)) {
+    /* first */
+    *bestvalue = newvalue;
+    hwloc_bitmap_only(bestnodeset, newnode->os_index);
+
+  } else if (mflags & HWLOC_MEMATTR_FLAG_HIGHER_FIRST) {
+    if (newvalue > *bestvalue) {
+      /* higher */
+      *bestvalue = newvalue;
+      hwloc_bitmap_only(bestnodeset, newnode->os_index);
+    } else if (newvalue == *bestvalue) {
+      /* as high */
+      hwloc_bitmap_set(bestnodeset, newnode->os_index);
+    }
+
+  } else {
+    assert(mflags & HWLOC_MEMATTR_FLAG_LOWER_FIRST);
+    if (newvalue < *bestvalue) {
+      /* lower */
+      *bestvalue = newvalue;
+      hwloc_bitmap_only(bestnodeset, newnode->os_index);
+    } else if (newvalue == *bestvalue) {
+      /* as low */
+      hwloc_bitmap_set(bestnodeset, newnode->os_index);
+    }
+  }
+}
+
+/* fill best_nodeset with best nodes.
+ * if STRICT flag, only the really local ones are returned.
+ * if none is best (they don't have values), return empty.
+ * if none is best and DEFAULT flag, return all nodes.
+ * on error, return empty.
+ */
 static __hwloc_inline int
 hwloc_utils_get_best_node_in_array_by_memattr(hwloc_topology_t topology, hwloc_memattr_id_t id,
                                               unsigned nbnodes, hwloc_obj_t *nodes,
-                                              struct hwloc_location *initiator)
+                                              struct hwloc_location *initiator,
+                                              unsigned long flags,
+                                              hwloc_nodeset_t best_nodeset)
 {
-  unsigned nbtgs, i, j;
-  hwloc_obj_t *tgs;
-  int best;
-  hwloc_uint64_t *values, bestvalue;
+  unsigned i, j;
+  hwloc_uint64_t *values, bestvalue = 0;
   unsigned long mflags;
   int err;
+
+  hwloc_bitmap_zero(best_nodeset);
 
   err = hwloc_memattr_get_flags(topology, id, &mflags);
   if (err < 0)
     goto out;
 
-  nbtgs = 0;
-  err = hwloc_memattr_get_targets(topology, id, initiator, 0, &nbtgs, NULL, NULL);
-  if (err < 0)
-    goto out;
+  if (mflags & HWLOC_MEMATTR_FLAG_NEED_INITIATOR) {
+    /* iterate over targets, and then on their initiators */
+    for(i=0; i<nbnodes; i++) {
+      unsigned nbi;
+      struct hwloc_location *initiators;
 
-  tgs = malloc(nbtgs * sizeof(*tgs));
-  values = malloc(nbtgs * sizeof(*values));
-  if (!tgs || !values)
-    goto out_with_arrays;
+      nbi = 0;
+      err = hwloc_memattr_get_initiators(topology, id, nodes[i], 0, &nbi, NULL, NULL);
+      if (err < 0)
+        goto out;
 
-  err = hwloc_memattr_get_targets(topology, id, initiator, 0, &nbtgs, tgs, values);
-  if (err < 0)
-    goto out_with_arrays;
-
-  best = -1;
-  bestvalue = 0;
-  for(i=0; i<nbnodes; i++) {
-    for(j=0; j<nbtgs; j++)
-      if (tgs[j] == nodes[i])
-        break;
-    if (j==nbtgs)
-      /* no target info for this node */
-      continue;
-    if (best == -1) {
-      best = i;
-      bestvalue = values[j];
-    } else if (mflags & HWLOC_MEMATTR_FLAG_HIGHER_FIRST) {
-      if (values[j] > bestvalue) {
-        best = i;
-        bestvalue = values[j];
+      initiators = malloc(nbi * sizeof(*initiators));
+      values = malloc(nbi * sizeof(*values));
+      if (!initiators || !values) {
+        free(initiators);
+        free(values);
+        goto out;
       }
-    } else {
-      assert(mflags & HWLOC_MEMATTR_FLAG_LOWER_FIRST);
-      if (values[j] < bestvalue) {
-        best = i;
-        bestvalue = values[j];
+
+      err = hwloc_memattr_get_initiators(topology, id, nodes[i], 0, &nbi, initiators, values);
+      if (err < 0) {
+        free(initiators);
+        free(values);
+        goto out;
       }
+
+      for(j=0; j<nbi; j++) {
+        /* does this initiator match the user location? */
+        if (initiator->type != initiators[j].type)
+          continue;
+        switch (initiator->type) {
+        case HWLOC_LOCATION_TYPE_OBJECT:
+          if (initiator->location.object->type != initiators[j].location.object->type
+              || initiator->location.object->gp_index != initiators[j].location.object->gp_index)
+            continue;
+          break;
+        case HWLOC_LOCATION_TYPE_CPUSET:
+          if (flags & HWLOC_UTILS_BEST_NODE_FLAG_STRICT) {
+            if (!hwloc_bitmap_isincluded(initiator->location.cpuset, initiators[j].location.cpuset))
+              continue;
+          } else {
+            if (!hwloc_bitmap_intersects(initiator->location.cpuset, initiators[j].location.cpuset))
+              continue;
+          }
+          break;
+        default:
+          abort();
+        }
+
+        hwloc_utils__update_best_node(nodes[i], values[j],
+                                      &bestvalue, best_nodeset,
+                                      mflags);
+      }
+
+      free(initiators);
+      free(values);
+    }
+
+  } else {
+    /* no initiator, just iterate over targets */
+    for(i=0; i<nbnodes; i++) {
+      uint64_t value;
+      if (!hwloc_memattr_get_value(topology, id, nodes[i], NULL, 0, &value))
+        hwloc_utils__update_best_node(nodes[i], value,
+                                      &bestvalue, best_nodeset,
+                                      mflags);
     }
   }
 
-  free(tgs);
-  free(values);
-  return best;
+  if ((flags & HWLOC_UTILS_BEST_NODE_FLAG_DEFAULT)
+      && hwloc_bitmap_iszero(best_nodeset)) {
+    for(i=0; i<nbnodes; i++)
+      hwloc_bitmap_set(best_nodeset, nodes[i]->os_index);
+  }
+  return 0;
 
- out_with_arrays:
-  free(tgs);
-  free(values);
  out:
+  hwloc_bitmap_zero(best_nodeset);
   return -1;
 }
 
-static __hwloc_inline int
-hwloc_utils_get_best_node_in_nodeset_by_memattr(hwloc_topology_t topology, hwloc_memattr_id_t id,
-                                                hwloc_nodeset_t nodeset,
-                                                struct hwloc_location *initiator)
+enum hwloc_utils_cpuset_format_e {
+  HWLOC_UTILS_CPUSET_FORMAT_UNKNOWN,
+  HWLOC_UTILS_CPUSET_FORMAT_HWLOC,
+  HWLOC_UTILS_CPUSET_FORMAT_LIST,
+  HWLOC_UTILS_CPUSET_FORMAT_SYSTEMD,
+  HWLOC_UTILS_CPUSET_FORMAT_TASKSET
+};
+
+static __hwloc_inline enum hwloc_utils_cpuset_format_e
+hwloc_utils_parse_cpuset_format(const char *string)
 {
-  unsigned nbtgs, i, j;
-  hwloc_obj_t *tgs;
-  int best;
-  hwloc_uint64_t *values, bestvalue;
-  unsigned long mflags;
-  int err;
-
-  err = hwloc_memattr_get_flags(topology, id, &mflags);
-  if (err < 0)
-    goto out;
-
-  nbtgs = 0;
-  err = hwloc_memattr_get_targets(topology, id, initiator, 0, &nbtgs, NULL, NULL);
-  if (err < 0)
-    goto out;
-
-  tgs = malloc(nbtgs * sizeof(*tgs));
-  values = malloc(nbtgs * sizeof(*values));
-  if (!tgs || !values)
-    goto out_with_arrays;
-
-  err = hwloc_memattr_get_targets(topology, id, initiator, 0, &nbtgs, tgs, values);
-  if (err < 0)
-    goto out_with_arrays;
-
-  best = -1;
-  bestvalue = 0;
-  hwloc_bitmap_foreach_begin(i, nodeset) {
-    for(j=0; j<nbtgs; j++)
-      if (tgs[j]->os_index == i)
-        break;
-    if (j==nbtgs)
-      /* no target info for this node */
-      continue;
-    if (best == -1) {
-      best = i;
-      bestvalue = values[j];
-    } else if (mflags & HWLOC_MEMATTR_FLAG_HIGHER_FIRST) {
-      if (values[j] > bestvalue) {
-        best = i;
-        bestvalue = values[j];
-      }
-    } else {
-      assert(mflags & HWLOC_MEMATTR_FLAG_LOWER_FIRST);
-      if (values[j] < bestvalue) {
-        best = i;
-        bestvalue = values[j];
-      }
-    }
-  } hwloc_bitmap_foreach_end();
-
-  if (best == -1)
-    hwloc_bitmap_zero(nodeset);
+  if (!strcmp(string, "hwloc"))
+    return HWLOC_UTILS_CPUSET_FORMAT_HWLOC;
+  else if (!strcmp(string, "list"))
+    return HWLOC_UTILS_CPUSET_FORMAT_LIST;
+  else if (!strcmp(string, "systemd-dbus-api"))
+    return HWLOC_UTILS_CPUSET_FORMAT_SYSTEMD;
+  else if (!strcmp(string, "taskset"))
+    return HWLOC_UTILS_CPUSET_FORMAT_TASKSET;
   else
-    hwloc_bitmap_only(nodeset, best);
+    return HWLOC_UTILS_CPUSET_FORMAT_UNKNOWN;
+}
 
-  free(tgs);
-  free(values);
-  return 0;
+/* The AllowedCPUs systemd DBus API syntax expects a string as follows:
+ * "ay 0xNNNN 0xAA [0xBB [...]]"
+ * where:
+ *   "0xNNNN" is the size of the array, max size 2^26.
+ *   "0xAA [0xBB [...]]" is the cpuset mask given bytes after bytes, little endian order.
+ * e.g. the output of `hwloc-calc --cpuset-input-format list 0,31-32,63-64,77 --cpuset-output-format systemd-dbus-api` is
+ *   "AllowedCPUs ay 0x0a 0x01 0x00 0x00 x80 0x01 0x00 0x00 0x80 0x01 0x20
+ * */
+#define HWLOC_SYSTEMD_ALLOWEDCPUS_PREFIX_FORMAT "AllowedCPUs ay 0x%04x"
+#define HWLOC_SYSTEMD_ALLOWEDCPUS_PREFIX_SIZE 21
+#define HWLOC_SYSTEMD_ALLOWEDCPUS_BYTES_FORMAT " 0x%02x"
+#define HWLOC_SYSTEMD_ALLOWEDCPUS_BYTES_SIZE 5
+static __hwloc_inline int hwloc_utils_systemd_asprintf(char ** strp, const struct hwloc_bitmap_s * __hwloc_restrict set)
+{
+  int last = hwloc_bitmap_last(set);
+  if (last == -1 ) {
+    fprintf(stderr, "Empty and infinite CPU sets are not supported with the systemd-dbus-api output format\n");
+    exit(EXIT_FAILURE);
+  }
+  int bytes = last / 8 + 1; /* how many bytes to represent the cpuset bit mask */
+  int buflen = HWLOC_SYSTEMD_ALLOWEDCPUS_PREFIX_SIZE + HWLOC_SYSTEMD_ALLOWEDCPUS_BYTES_SIZE * bytes + 1;
+  int ret = 0;
+  char *buf;
+  buf = malloc(buflen);
+  *strp = buf;
+  ret = snprintf(buf, buflen, HWLOC_SYSTEMD_ALLOWEDCPUS_PREFIX_FORMAT, bytes);
+  unsigned long ith = 0;
+  for (int byte=0; byte < bytes; byte++) {
+    if (byte % HWLOC_SIZEOF_UNSIGNED_LONG == 0) {
+      ith = hwloc_bitmap_to_ith_ulong(set, byte / HWLOC_SIZEOF_UNSIGNED_LONG);
+    }
+    ret += snprintf(buf + ret, HWLOC_SYSTEMD_ALLOWEDCPUS_BYTES_SIZE + 1, HWLOC_SYSTEMD_ALLOWEDCPUS_BYTES_FORMAT, (unsigned char) (ith & 0xFF));
+    ith >>= 8;
+  }
+  assert(ith == 0); /* whenever some bytes of the ulong ith may not be consumed, they must be 0 */
+  return ret;
+}
 
- out_with_arrays:
-  free(tgs);
-  free(values);
- out:
-  return -1;
+static __hwloc_inline int
+hwloc_utils_cpuset_format_asprintf(char **string, hwloc_const_bitmap_t set,
+                                   enum hwloc_utils_cpuset_format_e cpuset_output_format)
+{
+  switch (cpuset_output_format) {
+  case HWLOC_UTILS_CPUSET_FORMAT_HWLOC: return hwloc_bitmap_asprintf(string, set);
+  case HWLOC_UTILS_CPUSET_FORMAT_LIST: return hwloc_bitmap_list_asprintf(string, set);
+  case HWLOC_UTILS_CPUSET_FORMAT_SYSTEMD: return hwloc_utils_systemd_asprintf(string, set);
+  case HWLOC_UTILS_CPUSET_FORMAT_TASKSET: return hwloc_bitmap_taskset_asprintf(string, set);
+  default: abort();
+  }
 }
 
 static __hwloc_inline unsigned long

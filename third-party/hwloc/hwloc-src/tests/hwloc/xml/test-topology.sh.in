@@ -144,6 +144,7 @@ else if test "$filename" = "${basename}.output"; then
 else
   echo "Filename must end with either .xml or .output"
   exit 1
-fi fi
+fi
+fi
 
 rm -rf "$tmp"

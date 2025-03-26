@@ -25,6 +25,7 @@
 #include "chpl/types/CompositeType.h"
 #include "chpl/uast/all-uast.h"
 #include "InitResolver.h"
+#include "BranchSensitiveVisitor.h"
 
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/SmallVector.h"
@@ -34,11 +35,12 @@
 namespace chpl {
 namespace resolution {
 
-struct Resolver {
+struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
   // types used below
   using ActionAndId = std::tuple<AssociatedAction::Action, ID>;
   using SubstitutionsMap = types::CompositeType::SubstitutionsMap;
   using ReceiverScopesVec = SimpleMethodLookupHelper::ReceiverScopesVec;
+  using IgnoredExtraData = std::variant<std::monostate>;
 
   /**
     When looking up matches for a particular identifier, we might encounter
@@ -97,7 +99,6 @@ struct Resolver {
   ResolutionContext* rc = &emptyResolutionContext;
   bool didPushFrame = false;
   std::vector<const uast::Decl*> declStack;
-  std::vector<const Scope*> scopeStack;
   std::vector<int> tagTracker;
   bool signatureOnly = false;
   bool fieldOrFormalsComputed = false;
@@ -153,6 +154,16 @@ struct Resolver {
 
     return PoiInfo(poiScope);
   }
+
+  const types::Param* determineWhenCaseValue(const uast::AstNode* ast, IgnoredExtraData extraData) override;
+  const types::Param* determineIfValue(const uast::AstNode* ast, IgnoredExtraData extraData) override;
+  void traverseNode(const uast::AstNode* ast, IgnoredExtraData rv) override;
+
+  const Scope* currentScope() const {
+    CHPL_ASSERT(!scopeStack.empty());
+    return scopeStack.back()->scope;
+  }
+
 
  private:
   Resolver(Context* context,
@@ -772,6 +783,12 @@ struct Resolver {
   bool enter(const uast::Return* ret);
   void exit(const uast::Return* ret);
 
+  bool enter(const uast::Break* brk);
+  void exit(const uast::Break* brk);
+
+  bool enter(const uast::Continue* cont);
+  void exit(const uast::Continue* cont);
+
   bool enter(const uast::Throw* ret);
   void exit(const uast::Throw* ret);
 
@@ -802,6 +819,18 @@ struct Resolver {
 };
 
 } // end namespace resolution
+
+namespace uast {
+template <>
+struct AstVisitorPrecondition<resolution::Resolver> {
+  static bool skipSubtree(const AstNode* node, resolution::Resolver& rv) {
+    if (rv.scopeResolveOnly) return false;
+    return rv.isDoneExecuting();
+  }
+};
+
+};
+
 } // end namespace chpl
 
 #endif

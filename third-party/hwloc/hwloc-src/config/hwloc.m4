@@ -1,7 +1,7 @@
 dnl -*- Autoconf -*-
 dnl
-dnl Copyright © 2009-2022 Inria.  All rights reserved.
-dnl Copyright © 2009-2012, 2015-2017, 2020 Université Bordeaux
+dnl Copyright © 2009-2024 Inria.  All rights reserved.
+dnl Copyright © 2009-2012, 2015-2017, 2020, 2023 Université Bordeaux
 dnl Copyright © 2004-2005 The Trustees of Indiana University and Indiana
 dnl                         University Research and Technology
 dnl                         Corporation.  All rights reserved.
@@ -856,8 +856,6 @@ return 0;
       AC_DEFINE_UNQUOTED(hwloc_thread_t, $hwloc_thread_t, [Define this to the thread ID type])
     fi
 
-    AC_PATH_PROG([BASH], [bash])
-
     AC_CHECK_FUNCS([ffs], [
       _HWLOC_CHECK_DECL([ffs],[
         AC_DEFINE([HWLOC_HAVE_DECL_FFS], [1], [Define to 1 if function `ffs' is declared by system headers])
@@ -1052,7 +1050,9 @@ return 0;
 	AC_MSG_NOTICE([using default CUDA install path /usr/local/cuda ...])
         HWLOC_CUDA_COMMON_LDFLAGS="-L/usr/local/cuda/lib64/ -L/usr/local/cuda/lib64/stubs/"
         HWLOC_CUDA_COMMON_CPPFLAGS="-I/usr/local/cuda/include/"
-      fi fi fi
+      fi
+      fi
+      fi
 
       AC_MSG_NOTICE([common CUDA/OpenCL/NVML CPPFLAGS: $HWLOC_CUDA_COMMON_CPPFLAGS])
       AC_MSG_NOTICE([common CUDA/OpenCL/NVML LDFLAGS: $HWLOC_CUDA_COMMON_LDFLAGS])
@@ -1228,7 +1228,8 @@ char nvmlInit ();
       if test "x$hwloc_nvml_happy" = "xyes"; then
         tmp_save_CPPFLAGS="$CPPFLAGS"
         CPPFLAGS="$CPPFLAGS $HWLOC_NVML_CPPFLAGS"
-        AC_CHECK_DECLS([nvmlDeviceGetMaxPcieLinkGeneration],,[:],[[#include <nvml.h>]])
+        AC_CHECK_DECLS([nvmlDeviceGetCurrPcieLinkGeneration],,[:],[[#include <nvml.h>]])
+        AC_CHECK_DECLS([nvmlDeviceGetNvLinkRemoteDeviceType],,[:],[[#include <nvml.h>]])
         CPPFLAGS="$tmp_save_CPPFLAGS"
       fi
 
@@ -1275,10 +1276,18 @@ char nvmlInit ();
         AC_MSG_NOTICE([using standard ROCm install path $rocm_dir ...])
       else
         AC_MSG_NOTICE([assuming ROCm is installed in standard directories ...])
-      fi fi fi
+      fi
+      fi
+      fi
       if test "x$rocm_dir" != x; then
-         HWLOC_RSMI_CPPFLAGS="-I$rocm_dir/rocm_smi/include/"
-         HWLOC_RSMI_LDFLAGS="-L$rocm_dir/rocm_smi/lib/"
+         if test -d "$rocm_dir/include/rocm_smi"; then
+           HWLOC_RSMI_CPPFLAGS="-I$rocm_dir/include/"
+           HWLOC_RSMI_LDFLAGS="-L$rocm_dir/lib/"
+         else
+           # ROCm <5.2 only used its own rocm_smi/{include,lib} directories
+           HWLOC_RSMI_CPPFLAGS="-I$rocm_dir/rocm_smi/include/"
+           HWLOC_RSMI_LDFLAGS="-L$rocm_dir/rocm_smi/lib/"
+	 fi
       fi
 
       hwloc_rsmi_happy=yes
@@ -1364,8 +1373,14 @@ return clGetDeviceIDs(0, 0, 0, NULL, NULL);
         HWLOC_OPENCL_CPPFLAGS="$HWLOC_CUDA_COMMON_CPPFLAGS"
         HWLOC_OPENCL_LDFLAGS="$HWLOC_CUDA_COMMON_LDFLAGS"
         if test "x$rocm_dir" != x; then
-           HWLOC_OPENCL_CPPFLAGS="$HWLOC_OPENCL_CPPFLAGS -I$rocm_dir/opencl/include/"
-           HWLOC_OPENCL_LDFLAGS="$HWLOC_OPENCL_LDFLAGS -L$rocm_dir/opencl/lib/"
+	   if test -d "$rocm_dir/include/CL"; then
+             HWLOC_OPENCL_CPPFLAGS="$HWLOC_OPENCL_CPPFLAGS -I$rocm_dir/include/"
+             HWLOC_OPENCL_LDFLAGS="$HWLOC_OPENCL_LDFLAGS -L$rocm_dir/lib/"
+	   else
+             # ROCm <5.2 only used its own opencl/{include,lib} directories
+	     HWLOC_OPENCL_CPPFLAGS="$HWLOC_OPENCL_CPPFLAGS -I$rocm_dir/opencl/include/"
+             HWLOC_OPENCL_LDFLAGS="$HWLOC_OPENCL_LDFLAGS -L$rocm_dir/opencl/lib/"
+	   fi
         fi
         tmp_save_CPPFLAGS="$CPPFLAGS"
         CPPFLAGS="$CPPFLAGS $HWLOC_OPENCL_CPPFLAGS"
@@ -1408,6 +1423,7 @@ return clGetDeviceIDs(0, 0, 0, NULL, NULL);
       HWLOC_PKG_CHECK_MODULES([LEVELZERO], [libze_loader], [zesDevicePciGetProperties], [level_zero/zes_api.h],
                               [hwloc_levelzero_happy=yes
                                HWLOC_LEVELZERO_REQUIRES=libze_loader
+			       AC_CHECK_LIB([ze_loader], [zesInit], [AC_DEFINE(HWLOC_HAVE_ZESINIT, 1, [Define to 1 if zesInit is available])])
 			       AC_CHECK_LIB([ze_loader], [zeDevicePciGetPropertiesExt], [AC_DEFINE(HWLOC_HAVE_ZEDEVICEPCIGETPROPERTIESEXT, 1, [Define to 1 if zeDevicePciGetPropertiesExt is available])])
                               ], [hwloc_levelzero_happy=no])
       if test x$hwloc_levelzero_happy = xno; then
@@ -1418,6 +1434,7 @@ return clGetDeviceIDs(0, 0, 0, NULL, NULL);
               AC_CHECK_LIB([ze_loader],
 	                   [zesDevicePciGetProperties],
 	                   [HWLOC_LEVELZERO_LIBS="-lze_loader"
+			    AC_CHECK_LIB([ze_loader], [zesInit], [AC_DEFINE(HWLOC_HAVE_ZESINIT, 1, [Define to 1 if zesInit is available])])
 			    AC_CHECK_LIB([ze_loader], [zeDevicePciGetPropertiesExt], [AC_DEFINE(HWLOC_HAVE_ZEDEVICEPCIGETPROPERTIESEXT, 1, [Define to 1 if zeDevicePciGetPropertiesExt is available])])
                            ], [hwloc_levelzero_happy=no])
             ], [hwloc_levelzero_happy=no])
@@ -1589,7 +1606,8 @@ return clGetDeviceIDs(0, 0, 0, NULL, NULL);
       requested_plugins=`echo $enable_plugins | sed -e 's/,/ /g'`
     else
       hwloc_have_plugins=no
-    fi fi
+    fi
+    fi
     AC_MSG_RESULT($hwloc_have_plugins)
 
     if test "x$hwloc_have_plugins" = xyes; then
@@ -1602,7 +1620,8 @@ return clGetDeviceIDs(0, 0, 0, NULL, NULL);
         else if test "x$hwloc_windows" = "xyes"; then
           AC_MSG_WARN([dlopen not supported on non-native Windows build, disabled by default.])
           enable_plugin_dlopen=no
-        fi fi
+        fi
+        fi
       fi
       if test "x$enable_plugin_ltdl" = x; then
         if test "x$hwloc_aix" = "xyes"; then
@@ -1611,7 +1630,8 @@ return clGetDeviceIDs(0, 0, 0, NULL, NULL);
         else if test "x$hwloc_windows" = "xyes"; then
           AC_MSG_WARN([ltdl not supported on non-native Windows build, disabled by default.])
           enable_plugin_dlopen=no
-        fi fi
+        fi
+        fi
       fi
 
       # Look for dlopen
@@ -1644,7 +1664,8 @@ return clGetDeviceIDs(0, 0, 0, NULL, NULL);
         AC_MSG_RESULT([none])
         AC_MSG_WARN([Plugin support requested, but could not enable dlopen or ltdl])
         AC_MSG_ERROR([Cannot continue])
-      fi fi
+      fi
+      fi
 
       AC_DEFINE([HWLOC_HAVE_PLUGINS], 1, [Define to 1 if the hwloc library should support dynamically-loaded plugins])
     fi
@@ -1848,14 +1869,11 @@ AC_DEFUN([HWLOC_DO_AM_CONDITIONALS],[
         AM_CONDITIONAL([HWLOC_GL_BUILD_STATIC], [test "x$hwloc_gl_component" = "xstatic"])
         AM_CONDITIONAL([HWLOC_XML_LIBXML_BUILD_STATIC], [test "x$hwloc_xml_libxml_component" = "xstatic"])
 
+        AM_CONDITIONAL([HWLOC_HAVE_BASH], [test "x$BASH" != "x"])
         AM_CONDITIONAL([HWLOC_HAVE_CXX], [test "x$hwloc_have_cxx" = "xyes"])
+        AM_CONDITIONAL([HWLOC_CROSS_COMPILING], [test "x$cross_compiling" = "xyes"])
     ])
     hwloc_did_am_conditionals=yes
-
-    # For backwards compatibility (i.e., packages that only call
-    # HWLOC_DO_AM_CONDITIONS, not NETLOC DO_AM_CONDITIONALS), we also have to
-    # do the netloc AM conditionals here
-    NETLOC_DO_AM_CONDITIONALS
 ])dnl
 
 #-----------------------------------------------------------------------

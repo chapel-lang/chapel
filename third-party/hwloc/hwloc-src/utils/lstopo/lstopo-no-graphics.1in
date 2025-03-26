@@ -1,5 +1,5 @@
 .\" -*- nroff -*-
-.\" Copyright © 2009-2022 Inria.  All rights reserved.
+.\" Copyright © 2009-2024 Inria.  All rights reserved.
 .\" Copyright © 2009-2010 Université of Bordeaux
 .\" Copyright © 2009-2010 Cisco Systems, Inc.  All rights reserved.
 .\" Copyright © 2020 Hewlett Packard Enterprise.  All rights reserved.
@@ -41,7 +41,7 @@ See the OUTPUT FORMATS section below.
 \fB\-i\fR <path>, \fB\-\-input\fR <path>
 Read the topology from <path> instead of discovering the topology of the local machine.
 
-If <path> is a file and XML support has been compiled in hwloc,
+If <path> is a file,
 it may be a XML file exported by a previous hwloc program.
 If <path> is "\-", the standard input may be used as a XML file.
 
@@ -86,7 +86,7 @@ Include additional detail.
 The hwloc-info tool may be used to display even more information
 about specific objects.
 .TP
-\fB\-s\fR \fB\-\-silent\fR
+\fB\-q\fR \fB\-\-quiet\fR \fB\-s\fR \fB\-\-silent\fR
 Reduce the amount of details to show.
 .TP
 \fB\-\-distances\fR
@@ -141,14 +141,24 @@ Display the cpuset of each object.
 Only display the cpuset of each object; do not display anything else
 about the object.
 .TP
-\fB\-\-taskset\fR
-Show CPU set strings in the format recognized by the taskset command-line
-program instead of hwloc-specific CPU set string format.
+\fB\-\-cpuset\-output\-format\fR <hwloc|list|taskset> \fB\-\-cof\fR <hwloc|list|taskset>
+Change the format of displayed CPU set strings.
+By default, the hwloc-specific format is used.
+If \fIlist\fR is given, the output is a comma-separated of numbers or ranges,
+e.g. 2,4-5,8 .
+If \fItaskset\fR is given, output cpusets are compatible with the taskset program
+(replaces the former \fB--taskset\fR option).
+
 This option should be combined with \fB\-\-cpuset\fR or \fB\-\-cpuset\-only\fR,
 otherwise it will imply \fB\-\-cpuset\fR.
 .TP
 \fB\-\-only\fR <type>
 Only show objects of the given type in the textual output.
+
+\fI<type>\fR may contain a filter to select specific objects among
+the type. For instance \fB\-\-only NUMA[HBM]\fR only shows NUMA nodes
+marked with subtype "HBM", while \fB\-\-only "numa[mcdram]"\fR only
+shows MCDRAM NUMA nodes on KNL.
 .TP
 \fB\-\-filter\fR <type>:<kind>, \fB\-\-filter\fR <type>
 Filter objects of type <type>, or of any type if <type> is "all".
@@ -247,15 +257,27 @@ and bold font may be used to display PU boxes of different kinds.
 .TP
 \fB\-\-restrict\fR <cpuset>
 Restrict the topology to the given cpuset.
+This removes some PUs and their now-child-less parents.
+
+Beware that restricting the PUs in a topology may change the
+logical indexes of many objects, including NUMA nodes.
 .TP
 \fB\-\-restrict\fR nodeset=<nodeset>
-Restrict the topology to the given nodeset, unless --restrict-flags specifies something different.
+Restrict the topology to the given nodeset.
+(unless \fB\-\-restrict\-flags\fR specifies something different).
+This removes some NUMA nodes and their now-child-less parents.
+
+Beware that restricting the NUMA nodes in a topology may change the
+logical indexes of many objects, including PUs.
 .TP
 \fB\-\-restrict\fR binding
 Restrict the topology to the current process binding.
 This option requires the use of the actual current machine topology
 (or any other topology with \fB\-\-thissystem\fR or with
 HWLOC_THISSYSTEM set to 1 in the environment).
+
+Beware that restricting the topology may change the
+logical indexes of many objects, including PUs and NUMA nodes.
 .TP
 \fB\-\-restrict\-flags\fR <flags>
 Enforce flags when restricting the topology.
@@ -304,6 +326,21 @@ cluttering the output, only processes that are restricted to some part of the
 machine are shown.  On Linux, kernel threads are not shown.
 If many processes appear, the output may become hard to read anyway,
 making the hwloc-ps program more practical.
+
+See \fB\-\-misc\-from\fR for a customizable variant using \fBhwloc-ps\fR.
+.TP
+\fB\-\-misc\-from\fR <file>
+Add Misc objects as described in <file> containing entries such as:
+
+    name=myMisc1
+    cpuset=0x5
+
+    name=myMisc2
+    cpuset=0x7
+    subtype=myOptionalSubtype
+
+This is useful for combining with \fBhwloc-ps --lstopo-misc\fR (see EXAMPLES below)
+because hwloc-ps is far more customizable than lstopo's \fB\-\-top\fR option.
 .TP
 \fB\-\-children\-order\fR <order>
 Change the order of the different kinds of children with respect to
@@ -338,7 +375,7 @@ on the right.
 
 Up to hwloc 2.5, the default was rather to \fImemory:above,plain\fR.
 
-Additionally, \fIio:right\fR, \fIio:below\fR, \fImisc:right\fR
+Additionally, \fImemory:above\fR, \fIio:right\fR, \fIio:below\fR, \fImisc:right\fR
 and \fImisc:below\fR may be suffixed with
 \fI:horiz\fR, \fI:vert\fR or \fI:rect\fR to force the horizontal,
 vertical or rectangular layout of children inside these sections.
@@ -467,6 +504,7 @@ Or change the color to the given 3x8bit hexadecimal RGB combination (e.g. \fI#00
 \fB\-\-top\-color\fR <none|#rrggbb>
 Do not colorize task objects in the graphical output when \-\-top is given.
 Or change the color to the given 3x8bit hexadecimal RGB combination (e.g. \fI#0000ff\fR is blue).
+This is actually applied to Misc objects of subtype \fIProcess\fR or \fIThread\fR.
 .TP
 \fB\-\-version\fR
 Report version and exit.
@@ -499,7 +537,7 @@ CPUs by their color; see the COLORS section, below.
 .SH OUTPUT FORMATS
 .
 .PP
-By default, if no output filename is specific, the output is sent
+By default, if no output filename is specified, the output is sent
 to a graphical window if possible in the current environment
 (DISPLAY environment variable set on Unix, etc.).
 Otherwise, a text summary is displayed in the console.
@@ -598,8 +636,7 @@ Note that Misc and I/O devices are ignored during this export.
 .
 .TP
 .B xml
-If lstopo was compiled with the proper
-support, lstopo outputs an XML representation of the map.
+lstopo outputs an XML representation of the map.
 It may be reused later, even on another machine, with lstopo \-\-input,
 the HWLOC_XMLFILE environment variable, or the hwloc_topology_set_xml()
 function.
@@ -784,85 +821,94 @@ For instance, to display all core objects in blue (with white names):
 .
 To display the machine topology in textual mode:
 
-    lstopo-no-graphics
+    $ lstopo-no-graphics
 
 To display the machine topology in ascii-art mode:
 
-    lstopo-no-graphics -.ascii
+    $ lstopo-no-graphics -.ascii
 
 To display in graphical mode (assuming that the DISPLAY environment
 variable is set to a relevant value):
 
-    lstopo
+    $ lstopo
 
 To export the topology to a PNG file:
 
-    lstopo file.png
+    $ lstopo file.png
 
+.
+.\" **************************
+.\"    Examples with XML exchange and modification
+.\" **************************
+.SH Examples with XML exchange and modification
+.PP
 To export an XML file on a machine and later display the corresponding
 graphical output on another machine:
 
-    machine1$ lstopo file.xml
+    $ machine1$ lstopo file.xml
     <transfer file.xml from machine1 to machine2>
-    machine2$ lstopo --input file.xml
+    $ machine2$ lstopo --input file.xml
 
 To save the current machine topology to XML and later reload it faster
 while still considering it as the current machine:
 
-   $ lstopo file.xml
-   <...>
-   $ lstopo --input file.xml --thissystem
+    $ lstopo file.xml
+    <...>
+    $ lstopo --input file.xml --thissystem
 
 To restrict an XML topology to only physical processors 0, 1, 4 and 5:
 
-    lstopo --input file.xml --restrict 0x33 newfile.xml
+    $ lstopo --input file.xml --restrict 0x33 newfile.xml
 
 To restrict an XML topology to only numa node whose logical index is 1:
 
-    lstopo --input file.xml --restrict $(hwloc-calc --input file.xml node:1) newfile.xml
+    $ lstopo --input file.xml --restrict $(hwloc-calc --input file.xml node:1) newfile.xml
 
+.
+.\" **************************
+.\"    Examples with textual output filtering
+.\" **************************
+.SH Examples with textual output filtering
+.PP
 To display a summary of the topology:
 
-    lstopo -s
+    $ lstopo -s
 
 To get more details about the topology:
 
-    lstopo -v
+    $ lstopo -v
 
 To only show cores:
 
-    lstopo --only core
+    $ lstopo --only core
 
 To show cpusets:
 
-    lstopo --cpuset
+    $ lstopo --cpuset
 
 To only show the cpusets of package:
 
-    lstopo --only package --cpuset-only
+    $ lstopo --only package --cpuset-only
 
+.
+.\" **************************
+.\"    More examples
+.\" **************************
+.SH More examples
+.PP
 Simulate a fake hierarchy; this example shows with 2 NUMA nodes of 2
 processor units:
 
-    lstopo --input "node:2 2"
-
-To count the number of logical processors in the system
-
-   lstopo --only pu | wc -l
+    $ lstopo --input "node:2 2"
 
 To append the kernel release and version to the graphical legend:
 
-   lstopo --append-legend "Kernel release: $(uname -r)" --append-legend "Kernel version: $(uname -v)"
-.
-.\" **************************
-.\"    Notes Section
-.\" **************************
-.SH NOTES
-.
-lstopo displays memory and cache sizes with units such as
-\fBkB\fR (1 kilobyte = 1000 bytes) or \fBGB\fR (1 gigabyte = 1000*1000*1000 bytes)
-while it actually means
-\fBKiB\fR (1 kibibyte = 1024 bytes) or \fBGiB\fR (1 gibibytes = 1024*1024*1024 bytes) .
+    $ lstopo --append-legend "Kernel release: $(uname -r)" --append-legend "Kernel version: $(uname -v)"
+
+To show where a process and its children are bound by combining with hwloc-ps:
+
+    $ hwloc-ps --pid-children 23 --lstopo-misc - | lstopo --misc-from -
+
 .
 .\" **************************
 .\"    See also section
