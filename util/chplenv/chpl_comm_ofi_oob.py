@@ -7,7 +7,7 @@ import chpl_comm, chpl_launcher, chpl_platform
 import overrides
 import third_party_utils
 
-from utils import error, memoize
+from utils import error, memoize, check_valid_var
 
 @memoize
 def _find_pmi2():
@@ -41,33 +41,30 @@ def get():
         return 'none'
 
     oob_val = overrides.get('CHPL_COMM_OFI_OOB')
-    if oob_val:
-        if oob_val not in ('mpi', 'pmi2', 'sockets'):
-            error("CHPL_COMM_OFI_OOB must be 'mpi', 'pmi2', or 'sockets'")
-        return oob_val
-
-    #
-    # By default, use PMI2 out-of-band support on Cray X* and HPE Cray EX
-    # systems, MPI on other Cray systems or with an MPI-based launcher,
-    # and "sockets" otherwise.
-    #
-    platform_val = chpl_platform.get('target')
-    launcher_val = chpl_launcher.get()
-    if 'cray-x' in platform_val or chpl_platform.is_hpe_cray('target'):
-        oob_val = 'pmi2'
-    elif 'cray-' in platform_val:
-        oob_val = 'mpi'
-    elif 'mpi' in launcher_val:
-        oob_val = 'mpi'
-    else:
-        import chpl_compiler
-        if _find_pmi2() is not None:
+    if not oob_val:
+        #
+        # By default, use PMI2 out-of-band support on Cray X* and HPE Cray EX
+        # systems, MPI on other Cray systems or with an MPI-based launcher,
+        # and "sockets" otherwise.
+        #
+        platform_val = chpl_platform.get('target')
+        launcher_val = chpl_launcher.get()
+        if 'cray-x' in platform_val or chpl_platform.is_hpe_cray('target'):
             oob_val = 'pmi2'
-        elif "-lpmi2" in chpl_compiler.get_system_link_args('target'):
-            oob_val = 'pmi2'
+        elif 'cray-' in platform_val:
+            oob_val = 'mpi'
+        elif 'mpi' in launcher_val:
+            oob_val = 'mpi'
         else:
-            oob_val = 'sockets'
+            import chpl_compiler
+            if _find_pmi2() is not None:
+                oob_val = 'pmi2'
+            elif "-lpmi2" in chpl_compiler.get_system_link_args('target'):
+                oob_val = 'pmi2'
+            else:
+                oob_val = 'sockets'
 
+    check_valid_var("CHPL_COMM_OFI_OOB", oob_val, ("mpi", "pmi2", "sockets"))
     return oob_val
 
 # returns 2-tuple of lists

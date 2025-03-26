@@ -4,7 +4,7 @@ import sys
 
 import chpl_comm, chpl_compiler, chpl_platform, overrides
 from compiler_utils import CompVersion, get_compiler_version, has_std_atomics
-from utils import error, memoize, warning
+from utils import error, memoize, warning, check_valid_var
 
 
 @memoize
@@ -21,7 +21,7 @@ def get(flag='target'):
         elif atomics_val == 'gasnet':
             error("CHPL_NETWORK_ATOMICS=gasnet is not supported")
         elif atomics_val not in valid:
-            error("CHPL_NETWORK_ATOMICS must be one of " + ','.join(valid))
+            check_valid_var("CHPL_NETWORK_ATOMICS", atomics_val, valid)
         elif atomics_val != 'none' and atomics_val != comm_val:
             error("CHPL_NETWORK_ATOMICS=%s is incompatible with CHPL_COMM=%s"
                   % (atomics_val, comm_val))
@@ -82,6 +82,9 @@ def get(flag='target'):
             # we can't use intrinsics, fall back to locks
             if not atomics_val:
                 atomics_val = 'locks'
+
+        check_valid_var("CHPL_ATOMICS", atomics_val, ['cstdlib', 'intrinsics', 'locks'])
+
     else:
         error("Invalid flag: '{0}'".format(flag), ValueError)
 

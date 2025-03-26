@@ -2,7 +2,7 @@
 import sys
 
 import chpl_comm, chpl_comm_substrate, chpl_platform, overrides
-from utils import memoize
+from utils import memoize, check_valid_var
 
 
 @memoize
@@ -21,6 +21,7 @@ def get():
                 segment_val = 'large'
             else:
                 segment_val = 'everything'
+        check_valid_var("CHPL_GASNET_SEGMENT", segment_val, ("fast", "large", "everything"))
     else:
         segment_val = 'none'
     return segment_val
