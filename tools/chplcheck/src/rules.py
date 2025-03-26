@@ -649,7 +649,8 @@ def rules(driver: LintDriver):
                 continue
 
             # extern functions have no bodies that can use their formals.
-            if formal.parent().linkage() == "extern":
+            parent = formal.parent()
+            if isinstance(parent, NamedDecl) and parent.linkage() == "extern":
                 continue
 
             formals[formal.unique_id()] = formal

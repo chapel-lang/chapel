@@ -1954,8 +1954,12 @@ class ChapelLanguageServer(LanguageServer):
                 if block_size < self.end_marker_threshold:
                     continue
                 # skip blocks where other text already exists
+                # skip empty lines, this only occurs in edge cases (like having
+                # standard modules from different branches open at the same
+                # time) that should be skipped
                 curly_line = file_lines[end_loc.line].rstrip()
-                assert len(curly_line) > 0
+                if len(curly_line) == 0:
+                    continue
                 if curly_line[-1] != "}":
                     continue
 
