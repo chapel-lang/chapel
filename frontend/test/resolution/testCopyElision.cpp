@@ -1132,6 +1132,75 @@ static void test43() {
     )"""",
     {"M.test@7"});
 }
+
+// test that copy elision is sensitive to control flow
+static void test44(const std::string& controlModifier) {
+  testCopyElision("test44",
+    (
+    R"""(
+      proc test() {
+        for i in 1..10 {
+          var x = 42;
+          var y = x;
+          if i == 10 {
+            )""" + controlModifier + R"""(;
+            x;
+          }
+        }
+      }
+
+    )"""
+    ).c_str(), {"M.test@7"});
+}
+
+static void test44() {
+  test44("continue");
+  test44("break");
+}
+
+// test that copy elision is sensitive to control flow across several branches
+static void test45(const std::string& controlModifier1, const std::string controlModifier2, bool expectElision) {
+  std::vector<const char*> expectedPoints;
+  if (expectElision) expectedPoints.push_back("M.test@7");
+
+  testCopyElision("test45",
+      (
+    R"""(
+      proc test() {
+        for i in 1..10 {
+          var x = 42;
+          var y = x;
+          if i == 10 {
+            var cond: bool;
+            if cond {
+              )""" + controlModifier1 + R"""(;
+            } else {
+              )""" + controlModifier2 + R"""(;
+            }
+            x;
+          }
+        }
+      }
+
+    )"""
+    ).c_str(), std::move(expectedPoints));
+}
+
+static void test45() {
+  test45("continue", "continue", true);
+  test45("break", "break", true);
+  test45("continue", "", false);
+  test45("", "continue", false);
+  test45("break", "", false);
+  test45("", "break", false);
+
+  /* TODO: mixing control flow requires more intelligence.
+
+    test45("break", "continue", true);
+    test45("continue", "break", true);
+  */
+}
+
 int main() {
   test1();
   test2();
@@ -1176,5 +1245,7 @@ int main() {
   test41();
   test42();
   test43();
+  test44();
+  test45();
   return 0;
 }

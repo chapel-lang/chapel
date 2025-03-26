@@ -33,6 +33,7 @@
 
 #include "InitResolver.h"
 #include "VarScopeVisitor.h"
+#include "resolution/BranchSensitiveVisitor.h"
 
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/SmallVector.h"
@@ -654,6 +655,60 @@ Resolver::paramLoopResolver(Resolver& parent,
   ret.rc = parent.rc;
 
   return ret;
+}
+
+const types::Param* Resolver::determineWhenCaseValue(const uast::AstNode* ast, IgnoredExtraData extraData) {
+  const Scope* scope = currentScope();
+  auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
+
+  CHPL_ASSERT(scopeStack.back()->scopeAst->isSelect());
+  auto selectingOn = scopeStack.back()->scopeAst->toSelect()->expr();
+  auto& exprType = byPostorder.byAst(selectingOn).type();
+
+  ast->traverse(*this);
+
+  auto& caseResult = byPostorder.byAst(ast);
+  auto& caseType = caseResult.type();
+  std::vector<CallInfoActual> actuals;
+  actuals.push_back(CallInfoActual(exprType, UniqueString()));
+  actuals.push_back(CallInfoActual(caseType, UniqueString()));
+  auto ci = CallInfo (/* name */ USTR("=="),
+                      /* calledType */ QualifiedType(),
+                      /* isMethodCall */ false,
+                      /* hasQuestionArg */ false,
+                      /* isParenless */ false,
+                      actuals);
+  auto c = resolveGeneratedCall(ast, &ci, &inScopes);
+  c.noteResult(&caseResult, { { AssociatedAction::COMPARE, ast->id() } });
+
+  auto type = c.result.exprType();
+  caseResult.setType(type);
+  return type.param();
+}
+
+const types::Param* Resolver::determineIfValue(const uast::AstNode* ast, IgnoredExtraData extraData) {
+  // Condition is traversed before we dive into the flow-sensitive logic, so
+  // just fetch its type from the postorder results.
+  return byPostorder.byAst(ast).type().param();
+}
+
+void Resolver::traverseNode(const uast::AstNode* ast, IgnoredExtraData rv) {
+  // This is invoked from BranchSensitiveVisitor's short-circuiting code.
+  // When handling Select statements, it will try to traverse the entire
+  // "When" clause when applicable. However, above (in 'determineWhenCaseValue')
+  // we overrode the type of the case value. Re-traversing it would clobber
+  // that type.
+  //
+  // In general (i.e., outside of Resolver), we do want to visit the condition,
+  // since we may be doing other computations (e.g., collecting used variables).
+
+  if (auto when = ast->toWhen()) {
+    enterScope(when);
+    when->body()->traverse(*this);
+    exitScope(when);
+  } else {
+    ast->traverse(*this);
+  }
 }
 
 const AstNode* Resolver::nearestCalledExpression() const {
@@ -1463,7 +1518,7 @@ Resolver::computeCustomInferType(const AstNode* decl,
                      /* hasQuestionArg */ false,
                      /* isParenless */ false,
                      std::move(actuals));
-  auto inScopes = CallScopeInfo::forNormalCall(scopeStack.back(), poiScope);
+  auto inScopes = CallScopeInfo::forNormalCall(currentScope(), poiScope);
   auto rr = resolveGeneratedCall(nullptr, &ci, &inScopes);
   if (rr.result.mostSpecific().only()) {
     ret = rr.result.exprType();
@@ -1492,7 +1547,7 @@ const Type* Resolver::computeChplCopyInit(const uast::AstNode* decl,
                       /* isParenless */ false,
                       actuals);
 
-  const Scope* scope = scopeStack.back();
+  const Scope* scope = currentScope();
   auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
   auto c = resolveGeneratedCall(decl, &ci, &inScopes);
   c.noteResultWithoutError(&byPostorder.byAst(decl),
@@ -1625,7 +1680,7 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
                             actuals);
 
         // TODO: store an associated action?
-        const Scope* scope = scopeStack.back();
+        const Scope* scope = currentScope();
         auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
         auto c = resolution::resolveGeneratedCall(rc, declForErr, ci, inScopes);
         if (!c.mostSpecific().isEmpty()) {
@@ -2177,8 +2232,7 @@ void Resolver::issueErrorForFailedModuleDot(const Dot* dot,
   if (modName != dotModName) {
     // get a trace for where the module was renamed so that
     // the error can show line numbers
-    CHPL_ASSERT(scopeStack.size() > 0);
-    const Scope* scope = scopeStack.back();
+    const Scope* scope = currentScope();
     std::vector<ResultVisibilityTrace> trace;
     lookupNameInScopeTracing(context, scope,
                              /* methodLookupHelper */ nullptr,
@@ -2479,8 +2533,7 @@ void Resolver::resolveTupleUnpackAssign(ResolvedExpression& r,
     return;
   }
 
-  CHPL_ASSERT(scopeStack.size() > 0);
-  const Scope* scope = scopeStack.back();
+  const Scope* scope = currentScope();
   auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
 
   // Finally, try to resolve = between the elements
@@ -2707,7 +2760,7 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
                      /* isParenless */ false,
                      std::move(actuals));
   CHPL_ASSERT(actualAsts.size() == (size_t)ci.numActuals());
-  auto inScope = scopeStack.back();
+  auto inScope = currentScope();
   auto inPoiScope = poiScope;
   auto inScopes = CallScopeInfo::forNormalCall(inScope, inPoiScope);
 
@@ -2787,7 +2840,7 @@ static void resolveReduceAssign(Resolver& rv, const OpCall* op) {
       /* isParenless */ false,
       std::move(actuals));
 
-  auto inScopes = CallScopeInfo::forNormalCall(rv.scopeStack.back(), rv.poiScope);
+  auto inScopes = CallScopeInfo::forNormalCall(rv.currentScope(), rv.poiScope);
   auto& resolvedOp = rv.byPostorder.byAst(op);
 
   // reductions in the standard library are in the habit of accepting any RHS,
@@ -3034,7 +3087,7 @@ resolveSpecialKeywordCallAsNormalCall(Resolver& rv,
       return CallResolutionResult::getEmpty();
     }
 
-    auto scope = rv.scopeStack.back();
+    auto scope = rv.currentScope();
     auto inScopes = CallScopeInfo::forNormalCall(scope, rv.poiScope);
     auto c = rv.resolveGeneratedCall(innerCall, &ci, &inScopes);
     c.noteResult(&noteInto);
@@ -3118,7 +3171,7 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
                    /* isParenless */ false,
                    actuals);
 
-      auto scope = scopeStack.back();
+      auto scope = currentScope();
       auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
       auto runResult = context->runAndTrackErrors([&](Context* ctx) {
         return resolveGeneratedCall(call, &ci, &inScopes);
@@ -3219,8 +3272,8 @@ QualifiedType Resolver::typeForId(const ID& id) {
   if (parentResolver != nullptr) {
     const Scope* idScope = scopeForId(context, id);
     bool local = false;
-    for (auto sc : scopeStack) {
-      if (sc == idScope) {
+    for (auto& sc : scopeStack) {
+      if (sc->scope == idScope) {
         local = true;
       }
     }
@@ -3368,8 +3421,8 @@ QualifiedType Resolver::typeForId(const ID& id) {
 }
 
 void Resolver::enterScope(const AstNode* ast) {
-  if (createsScope(ast->tag())) {
-    scopeStack.push_back(scopeForId(context, ast->id()));
+  if (BranchSensitiveVisitor::enterScope(ast, {})) {
+    scopeStack.back()->scope = scopeForId(context, ast->id());
   }
   if (auto d = ast->toDecl()) {
     declStack.push_back(d);
@@ -3380,10 +3433,7 @@ void Resolver::enterScope(const AstNode* ast) {
   }
 }
 void Resolver::exitScope(const AstNode* ast) {
-  if (createsScope(ast->tag())) {
-    CHPL_ASSERT(!scopeStack.empty());
-    scopeStack.pop_back();
-  }
+  BranchSensitiveVisitor::exitScope(ast, {});
   if (ast->isDecl()) {
     CHPL_ASSERT(!declStack.empty());
     declStack.pop_back();
@@ -3403,6 +3453,8 @@ bool Resolver::enter(const uast::Conditional* cond) {
 
   // Try short-circuiting. Visit the condition to see if it is a param
   cond->condition()->traverse(*this);
+
+  enterScope(cond);
 
   // Make sure the 'if-var' is a class type, if it exists.
   if (auto var = cond->condition()->toVariable()) {
@@ -3430,27 +3482,18 @@ bool Resolver::enter(const uast::Conditional* cond) {
   if (!scopeResolveOnly) {
     // Only do short-circuiting for regular resolution, not scope-resolution
 
-    if (condType.isParamTrue()) {
-      // condition is param true, might as well only resolve `then` branch
-      cond->thenBlock()->traverse(*this);
+    if (!branchSensitivelyTraverse(cond, {})) {
+      // the condition was param-known and we handled short-circuiting.
+      // If we're an expression-level conditional, figure out the return type.
+
       if (cond->isExpressionLevel()) {
-        auto& thenType = byPostorder.byAst(cond->thenStmt(0)).type();
-        r.setType(thenType);
+        auto frame = currentParamTrueFrame();
+        CHPL_ASSERT(frame != nullptr);
+
+        auto expr = frame->scopeAst->toBlock()->stmt(0);
+        r.setType(byPostorder.byAst(expr).type());
       }
-      // No need to visit children again, or visit `else` branch.
-      return false;
-    } else if (condType.isParamFalse()) {
-      auto elseBlock = cond->elseBlock();
-      if (elseBlock == nullptr) {
-        // no else branch. leave the type unknown.
-        return false;
-      }
-      elseBlock->traverse(*this);
-      if (cond->isExpressionLevel()) {
-        auto& elseType = byPostorder.byAst(elseBlock->stmt(0)).type();
-        r.setType(elseType);
-      }
-      // No need to visit children again, especially `then` branch.
+
       return false;
     }
   }
@@ -3503,91 +3546,18 @@ bool Resolver::enter(const uast::Conditional* cond) {
   return false;
 }
 void Resolver::exit(const uast::Conditional* cond) {
+  exitScope(cond);
 }
 
 bool Resolver::enter(const uast::Select* sel) {
   sel->expr()->traverse(*this);
-
-  auto exprType = byPostorder.byAst(sel->expr()).type();
-
   enterScope(sel);
-
-  const Scope* scope = scopeStack.back();
-  auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
-  bool foundParamTrue = false;
-  int otherwise = -1;
-
-  for (int i = 0; i < sel->numWhenStmts(); i++) {
-    auto when = sel->whenStmt(i);
-    bool allParamFalse = true;
-    bool anyParamTrue = false;
-
-    if (when->isOtherwise()) {
-      CHPL_ASSERT(otherwise == -1);
-      otherwise = i;
-      continue;
-    }
-
-    // Resolve all the when-cases
-    for (auto caseExpr : when->caseExprs()) {
-      caseExpr->traverse(*this);
-
-      if (!scopeResolveOnly) {
-        auto caseResult = byPostorder.byAst(caseExpr);
-        auto caseType = caseResult.type();
-        std::vector<CallInfoActual> actuals;
-        actuals.push_back(CallInfoActual(exprType, UniqueString()));
-        actuals.push_back(CallInfoActual(caseType, UniqueString()));
-        auto ci = CallInfo (/* name */ USTR("=="),
-                            /* calledType */ QualifiedType(),
-                            /* isMethodCall */ false,
-                            /* hasQuestionArg */ false,
-                            /* isParenless */ false,
-                            actuals);
-        auto c = resolveGeneratedCall(caseExpr, &ci, &inScopes);
-        c.noteResult(&caseResult, { { AssociatedAction::COMPARE, caseExpr->id() } });
-
-        auto type = c.result.exprType();
-        anyParamTrue = anyParamTrue || type.isParamTrue();
-        allParamFalse = allParamFalse && type.isParamFalse();
-        byPostorder.byAst(caseExpr).setType(type);
-      }
-    }
-
-    if (!scopeResolveOnly && allParamFalse) {
-      // case will never be true, so do not resolve the statement
-      continue;
-    } else if (when->body()->numChildren() > 0) {
-      // Otherwise, resolve the body.
-      when->body()->traverse(*this);
-    }
-
-    // Current behavior is to ignore when-stmts following a param-true
-    // condition.
-    //
-    // TODO: Should we keep resolving when-cases and warn for param-true
-    // cases further down the line?
-    if (anyParamTrue) {
-      foundParamTrue = true;
-      break;
-    }
-  }
-
-  // If one of the when-stmts is statically true, we should not resolve the
-  // 'otherwise' statement, should one exist.
-  if (foundParamTrue == false && otherwise != -1) {
-    auto other = sel->whenStmt(otherwise);
-    if (other->body()->numChildren() > 0) {
-      other->body()->traverse(*this);
-    }
-  }
-
-  exitScope(sel);
-
-  return false;
+  if (!scopeResolveOnly) return branchSensitivelyTraverse(sel, {});
+  return true;
 }
 
 void Resolver::exit(const uast::Select* sel) {
+  exitScope(sel);
 }
 
 bool Resolver::enter(const Literal* literal) {
@@ -3673,8 +3643,7 @@ MatchingIdsWithName Resolver::lookupIdentifier(
       const Identifier* ident,
       bool resolvingCalledIdent,
       ParenlessOverloadInfo& outParenlessOverloadInfo) {
-  CHPL_ASSERT(scopeStack.size() > 0);
-  const Scope* scope = scopeStack.back();
+  const Scope* scope = currentScope();
   outParenlessOverloadInfo = ParenlessOverloadInfo();
 
   if (ident->name() == USTR("super")) {
@@ -3963,8 +3932,7 @@ void Resolver::tryResolveParenlessCall(const ParenlessOverloadInfo& info,
                       /* hasQuestionArg */ false,
                       /* isParenless */ true,
                       actuals);
-  CHPL_ASSERT(!scopeStack.empty());
-  auto inScope = scopeStack.back();
+  auto inScope = currentScope();
 
   // Note: this is only ever used from resolveIdentifier, so no qualifiers
   // are needed; resolve as an unqualified call.
@@ -4081,7 +4049,7 @@ ResolvedExpression Resolver::resolveNameInModule(const UniqueString name) {
   LookupConfig config = identifierLookupConfig(/* resolvingCalledIdent */ false);
   auto fHelper = getFieldDeclarationLookupHelper();
   auto helper = getMethodReceiverScopeHelper();
-  auto ids = lookupNameInScope(context, scopeStack.back(),
+  auto ids = lookupNameInScope(context, currentScope(),
                                /* methodLookupHelper */ fHelper,
                                /* receiverScopeHelper */ helper,
                                name, config);
@@ -4095,7 +4063,7 @@ ResolvedExpression Resolver::resolveNameInModule(const UniqueString name) {
       parenlessInfo.hasNonMethodCandidates()) {
     // See also resolveIdentifier. Ambiguous, but we might be able to disambiguate
     // using 'where' clauses.
-    auto inScope = scopeStack.back();
+    auto inScope = currentScope();
     auto inScopes = CallScopeInfo::forNormalCall(inScope, poiScope);
     std::vector<CallInfoActual> actuals;
     auto ci = CallInfo (/* name */ name,
@@ -4266,7 +4234,7 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
                          /* isMethodCall */ true,
                          /* hasQuestionArg */ false,
                          /* isParenless */ true, actuals);
-      auto inScope = scopeStack.back();
+      auto inScope = currentScope();
       auto inScopes = CallScopeInfo::forNormalCall(inScope, poiScope);
       auto c = resolveGeneratedCall(ident, &ci, &inScopes);
       MatchingIdsWithName redeclarations;
@@ -4476,8 +4444,7 @@ bool Resolver::enter(const NamedDecl* decl) {
     return false;
   }
 
-  CHPL_ASSERT(scopeStack.size() > 0);
-  const Scope* scope = scopeStack.back();
+  const Scope* scope = currentScope();
 
   // Silence redefinition warnings for enum elements because we have
   // a special error (DuplicateEnumElement) for those.
@@ -4569,7 +4536,7 @@ bool Resolver::enter(const uast::Manage* manage) {
                        /* hasQuestionArg */ false,
                        /* isParenless */ false,
                        /* actuals */ {CallInfoActual(rr.type(), UniqueString())});
-    auto inScopes = CallScopeInfo::forNormalCall(scopeStack.back(), poiScope);
+    auto inScopes = CallScopeInfo::forNormalCall(currentScope(), poiScope);
     auto c = resolveGeneratedCall(manage, &ci, &inScopes);
     c.noteResult(&byPostorder.byAst(manage));
     CHPL_ASSERT(c.result.mostSpecific().only());
@@ -4579,7 +4546,7 @@ bool Resolver::enter(const uast::Manage* manage) {
     // resolving from inside the body of chpl__verifyTypeContext. This
     // should improve re-use of interface search.
     auto inScopesForInterface =
-      CallScopeInfo::forNormalCall(scopeStack.back(), c.result.poiInfo().poiScope());
+      CallScopeInfo::forNormalCall(currentScope(), c.result.poiInfo().poiScope());
     auto contextManagerInterface = InterfaceType::getContextManagerType(context);
     bool ignoredFoundExisting;
     auto witness =
@@ -4795,8 +4762,7 @@ bool Resolver::enter(const TupleDecl* decl) {
   enterScope(decl);
 
   // TODO: Can we just do this every time we 'enterScope'?
-  CHPL_ASSERT(scopeStack.size() > 0);
-  const Scope* scope = scopeStack.back();
+  const Scope* scope = currentScope();
   emitMultipleDefinedSymbolErrors(context, scope);
 
   // Establish the type of the type expr / init expr within
@@ -4859,7 +4825,7 @@ void Resolver::exit(const Range* range) {
   // into an awkward position.
   auto skip = shouldSkipCallResolution(this, range, actualAsts, ci);
   if (!skip) {
-    auto scope = scopeStack.back();
+    auto scope = currentScope();
     auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
     auto c = resolveGeneratedCall(range, &ci, &inScopes);
     c.noteResult(&byPostorder.byAst(range));
@@ -4936,7 +4902,7 @@ void Resolver::exit(const uast::Domain* decl) {
                        /* hasQuestionArg */ false,
                        /* isParenless */ false,
                        actuals);
-    auto scope = scopeStack.back();
+    auto scope = currentScope();
     auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
     auto c = resolveGeneratedCall(decl, &ci, &inScopes);
 
@@ -5254,8 +5220,7 @@ void Resolver::handleCallExpr(const uast::Call* call) {
     }
   }
 
-  CHPL_ASSERT(scopeStack.size() > 0);
-  const Scope* scope = scopeStack.back();
+  const Scope* scope = currentScope();
 
   // try to resolve it as a special call (e.g. Tuple assignment)
   if (resolveSpecialCall(call)) {
@@ -5505,7 +5470,7 @@ void Resolver::exit(const Dot* dot) {
                          /* isMethodCall */ true,
                          /* hasQuestionArg */ false,
                          /* isParenless */ true, actuals);
-      auto inScope = scopeStack.back();
+      auto inScope = currentScope();
       auto inScopes = CallScopeInfo::forNormalCall(inScope, poiScope);
       auto c = resolveGeneratedCall(dot, &ci, &inScopes);
       if (!c.result.mostSpecific().isEmpty()) {
@@ -5551,7 +5516,7 @@ void Resolver::exit(const Dot* dot) {
                        /* isMethodCall */ true,
                        /* hasQuestionArg */ false,
                        /* isParenless */ true, actuals);
-    auto inScope = scopeStack.back();
+    auto inScope = currentScope();
     auto inScopes = CallScopeInfo::forNormalCall(inScope, poiScope);
     auto rr = resolveGeneratedCall(dot, &ci, &inScopes, name.c_str());
 
@@ -5668,7 +5633,7 @@ void Resolver::exit(const Dot* dot) {
                       /* hasQuestionArg */ false,
                       /* isParenless */ true,
                       actuals);
-  auto inScope = scopeStack.back();
+  auto inScope = currentScope();
   auto inScopes = CallScopeInfo::forNormalCall(inScope, poiScope);
   auto c = resolveGeneratedCall(dot, &ci, &inScopes);
   // save the most specific candidates in the resolution result for the id
@@ -6108,7 +6073,7 @@ static TheseResolutionResult resolveTheseMethod(Resolver& rv,
                                                 Function::IteratorKind iterKind,
                                                 const QualifiedType& followThisType) {
   auto& iterandRe = rv.byPostorder.byAst(iterandAstCtx);
-  auto inScope = rv.scopeStack.back();
+  auto inScope = rv.currentScope();
   auto inScopes = CallScopeInfo::forNormalCall(inScope, rv.poiScope);
 
   auto tr = resolveTheseCall(rv.rc, iterandAstCtx, iterandType, iterKind, followThisType, inScopes);
@@ -6338,19 +6303,45 @@ template <typename BoundInfo>
 static bool resolveParamForLoop(Resolver& rv, const For* forLoop, BoundInfo&& boundInfo) {
   Context* context = rv.context;
   std::vector<ResolutionResultByPostorderID> loopResults;
+
+  // persist information about whether iterations had 'break' or 'return',
+  // so that returns in early iterations are detected by subsequent iterations.
+  ControlFlowInfo loopControlFlow;
+
   while (!boundInfo->done()) {
+    // If a previous iteration continued, we should still keep iterating.
+    loopControlFlow.resetContinue();
+
+    // Loop execution has ended somehow (throw, break, return). No need to push
+    // loop resutls for skipped iterations.
+    if (loopControlFlow.isDoneExecuting()) break;
+
     ResolutionResultByPostorderID bodyResults;
     auto cur = Resolver::paramLoopResolver(rv, forLoop, bodyResults);
 
     cur.enterScope(forLoop);
+    cur.currentFrame()->controlFlowInfo = loopControlFlow;
 
     ResolvedExpression& idx = cur.byPostorder.byAst(forLoop->index());
     idx.setType(boundInfo->advance(context));
-    forLoop->body()->traverse(cur);
 
+    cur.enterScope(forLoop->body());
+    forLoop->body()->traverse(cur);
+    loopControlFlow.sequence(cur.currentFrame()->controlFlowInfo);
+
+    cur.exitScope(forLoop->body());
     cur.exitScope(forLoop);
 
     loopResults.push_back(std::move(cur.byPostorder));
+
+    rv.userDiagnostics.insert(rv.userDiagnostics.end(),
+                              cur.userDiagnostics.begin(),
+                              cur.userDiagnostics.end());
+  }
+
+  // Propagate the control flow information to the current frame.
+  if (!rv.scopeStack.empty()) {
+    rv.currentFrame()->controlFlowInfo.sequenceIteration(loopControlFlow);
   }
 
   auto paramLoop = new ResolvedParamLoop(forLoop);
@@ -6534,7 +6525,7 @@ static bool handleArrayTypeExpr(Resolver& rv,
         /* hasQuestionArg */ false,
         /* isParenless */ false,
         std::move(actuals));
-    auto scope = rv.scopeStack.back();
+    auto scope = rv.currentScope();
     auto inScopes = CallScopeInfo::forNormalCall(scope, rv.poiScope);
     auto c = resolveGeneratedCall(rv.rc, iterandExpr, ci, inScopes);
     if (!c.exprType().isUnknownOrErroneous()) {
@@ -6580,7 +6571,7 @@ static bool handleArrayTypeExpr(Resolver& rv,
         /* hasQuestionArg */ false,
         /* isParenless */ false,
         actuals);
-    auto scope = rv.scopeStack.back();
+    auto scope = rv.currentScope();
     auto inScopes = CallScopeInfo::forNormalCall(scope, rv.poiScope);
     auto c = resolveGeneratedCall(rv.rc, iterandExpr, ci, inScopes);
     if (!c.exprType().isUnknownOrErroneous()) {
@@ -6677,6 +6668,7 @@ bool Resolver::enter(const IndexableLoop* loop) {
     if (!iterandRe.type().isUnknownOrErroneous()) {
       if (auto tt = iterandRe.type().type()->toTupleType()) {
         if (!tt->isStarTuple()) {
+          enterScope(loop);
           return resolveHeterogenousTupleForLoop(*this, forLoop, tt);
         }
       }
@@ -6781,7 +6773,7 @@ static bool computeTaskIntentInfo(Resolver& resolver, const NamedDecl* intent,
   auto& scopeStack = resolver.scopeStack;
 
   // Look at the scope before the loop-statement
-  const Scope* scope = scopeStack[scopeStack.size()-2];
+  const Scope* scope = scopeStack[scopeStack.size()-2]->scope;
   LookupConfig config = identifierLookupConfig(/* resolvingCalledIdent */ false);
 
   auto fHelper = resolver.getFieldDeclarationLookupHelper();
@@ -7042,6 +7034,21 @@ void Resolver::exit(const Return* ret) {
   if (initResolver) {
     initResolver->checkEarlyReturn(ret);
   }
+  markReturnOrThrow();
+}
+
+bool Resolver::enter(const uast::Break* brk) {
+  return true;
+}
+void Resolver::exit(const uast::Break* brk) {
+  markBreak();
+}
+
+bool Resolver::enter(const uast::Continue* cont) {
+  return true;
+}
+void Resolver::exit(const uast::Continue* cont) {
+  markContinue();
 }
 
 bool Resolver::enter(const Throw* node) {
@@ -7052,6 +7059,7 @@ void Resolver::exit(const Throw* node) {
   if (initResolver) {
     context->error(node, "initializers are not yet allowed to throw errors");
   }
+  markReturnOrThrow();
 }
 
 bool Resolver::enter(const Try* node) {
@@ -7139,7 +7147,7 @@ void Resolver::exit(const Catch* node) {
 // Do not visit children. Un-ambiguous symbols will have warnings emitted
 // for them in scope resolve.
 bool Resolver::enter(const Use* node) {
-  const Scope* scope = scopeStack.back();
+  const Scope* scope = currentScope();
   CHPL_ASSERT(scope);
   std::ignore = resolveVisibilityStmts(context, scope);
   emitMultipleDefinedSymbolErrors(context, scope);
@@ -7150,7 +7158,7 @@ void Resolver::exit(const Use* node) {}
 
 // Ditto the above.
 bool Resolver::enter(const Import* node) {
-  const Scope* scope = scopeStack.back();
+  const Scope* scope = currentScope();
   CHPL_ASSERT(scope);
   std::ignore = resolveVisibilityStmts(context, scope);
   emitMultipleDefinedSymbolErrors(context, scope);

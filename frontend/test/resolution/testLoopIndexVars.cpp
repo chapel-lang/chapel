@@ -354,7 +354,7 @@ struct ParamLoopTester {
   }
 };
 
-static ParamLoopTester helpTestParam(const char* rangeExpr) {
+static ParamLoopTester helpTestParam(const char* rangeExpr, const char* extraCode = "") {
   printf("testParamFor with %s\n", rangeExpr);
   auto context = buildStdContext();
   ErrorGuard guard(context);
@@ -368,6 +368,7 @@ static ParamLoopTester helpTestParam(const char* rangeExpr) {
                   for param i in )""" + std::string(rangeExpr) + R"""( {
                     param n = __primitive("+", i, i);
                     __primitive("+=", x, n);
+                    )""" + std::string(extraCode) + R"""(
                   }
                   )""";
 
@@ -452,6 +453,24 @@ static void testParamFor() {
     auto test = helpTestParam("..10#10 by -2");
     for (int i = 10; i >= 1; i -= 2) {
       test.noteExpectedIteration(i);
+    }
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestParam("1..10", "break;");
+    for (int i = 1; i <= 10; i++) {
+      test.noteExpectedIteration(i);
+      break;
+    }
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestParam("1..10", "continue;");
+    for (int i = 1; i <= 10; i++) {
+      test.noteExpectedIteration(i);
+      continue;
     }
     test.assertMatch();
   }
