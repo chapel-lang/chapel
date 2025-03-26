@@ -652,6 +652,7 @@ Resolver::paramLoopResolver(Resolver& parent,
   ret.declStack = parent.declStack;
   ret.byPostorder.setupForParamLoop(loop, parent.byPostorder);
   ret.typedSignature = parent.typedSignature;
+  ret.curStmt = loop;
   ret.rc = parent.rc;
 
   return ret;
@@ -7057,12 +7058,24 @@ void Resolver::exit(const Return* ret) {
   markReturnOrThrow();
 }
 
+static const Loop* findLastLoop(Resolver& rv) {
+  Resolver* current = &rv;
+  while (current) {
+    if (!current->loopStack.empty()) {
+      return current->loopStack.back();
+    }
+    current = current->parentResolver;
+  }
+
+  // post-parse-checks.cpp rules out orphaned continue/break
+  CHPL_ASSERT(false && "no loop found");
+  return nullptr;
+}
+
 template <typename ContinueOrBreak>
 const Loop* findTargetLoop(Resolver& rv, const ContinueOrBreak* node) {
-  // post-parse-checks.cpp rules out orphaned continue/break
-  CHPL_ASSERT(!rv.loopStack.empty());
   if (!node->target()) {
-    return rv.loopStack.back();
+    return findLastLoop(rv);
   }
 
   // labeled continue/break.
@@ -7071,25 +7084,29 @@ const Loop* findTargetLoop(Resolver& rv, const ContinueOrBreak* node) {
 
   // if we couldn't find what it refers to, pretend it's the nearest loop.
   if (refersTo.toId().isEmpty()) {
-    return rv.loopStack.back();
+    return findLastLoop(rv);
   }
 
 
   if (refersTo.type().kind() != QualifiedType::LOOP) {
     rv.context->error(target, "'continue' statement refers to non-loop");
-    return rv.loopStack.back();
+    return findLastLoop(rv);
   }
 
   // it's probably faster to seek up through
   // the stack instead of going through idToParentId etc.
-  for (auto it = rv.loopStack.rbegin(); it != rv.loopStack.rend(); ++it) {
-    if ((*it)->id() == refersTo.toId()) {
-      return *it;
+  auto current = &rv;
+  while (current) {
+    for (auto it = current->loopStack.rbegin(); it != current->loopStack.rend(); ++it) {
+      if ((*it)->id() == refersTo.toId()) {
+        return *it;
+      }
     }
+    current = current->parentResolver;
   }
 
   rv.context->error(target, "could not find label in the current scope");
-  return rv.loopStack.back();
+  return findLastLoop(rv);
 }
 
 bool Resolver::enter(const uast::Break* brk) {
