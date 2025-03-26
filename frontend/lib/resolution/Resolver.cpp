@@ -4909,7 +4909,7 @@ void Resolver::exit(const uast::Array* decl) {
                        /* isMethodCall */ false,
                        /* hasQuestionArg */ false,
                        /* isParenless */ false, actuals);
-    auto scope = scopeStack.back();
+    auto scope = currentScope();
     auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
     auto c = resolveGeneratedCall(decl, &ci, &inScopes);
 
