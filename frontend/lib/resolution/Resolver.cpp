@@ -4893,34 +4893,47 @@ void Resolver::exit(const uast::Array* decl) {
 
   ResolvedExpression& r = byPostorder.byAst(decl);
 
+  // Resolve call to appropriate array builder proc
+  const char* arrayBuilderProc;
+  std::vector<CallInfoActual> actuals;
   if (!decl->isMultiDim()) {
-    std::vector<CallInfoActual> actuals;
-    for (auto expr : decl->exprs()) {
-      auto exprType = byPostorder.byAst(expr).type();
-      // Short circuit if any elements have unknown type, since we won't be
-      // able to resolve the array builder proc.
-      if (exprType.isUnknown()) {
-        r.setType(QualifiedType());
-        return;
-      }
-      actuals.emplace_back(exprType, UniqueString());
-    }
-
-    static auto arrayBuilderProc =
-        UniqueString::get(context, "chpl__buildArrayExpr");
-    auto ci = CallInfo(/* name */ arrayBuilderProc,
-                       /* calledType */ QualifiedType(),
-                       /* isMethodCall */ false,
-                       /* hasQuestionArg */ false,
-                       /* isParenless */ false, actuals);
-    auto scope = currentScope();
-    auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
-    auto c = resolveGeneratedCall(decl, &ci, &inScopes);
-
-    c.noteResult(&r);
+    arrayBuilderProc = "chpl__buildArrayExpr";
   } else {
-    CHPL_UNIMPL("multidimensional array literals");
+    arrayBuilderProc = "chpl__buildNDArrayExpr";
+
+    // Get shape arg
+    std::vector<QualifiedType> shapeTupleElts;
+    for (auto dim : decl->shape()) {
+      shapeTupleElts.push_back(QualifiedType::makeParamInt(context, dim));
+    }
+    auto shapeTupleType = TupleType::getQualifiedTuple(context, shapeTupleElts);
+    actuals.emplace_back(
+        QualifiedType(QualifiedType::CONST_VAR, shapeTupleType),
+        UniqueString());
   }
+
+  // Add element args
+  for (auto expr : decl->flattenedExprs()) {
+    auto exprType = byPostorder.byAst(expr).type();
+    // Short circuit if any elements have unknown type, since we won't be
+    // able to resolve the array builder proc.
+    if (exprType.isUnknown()) {
+      r.setType(QualifiedType());
+      return;
+    }
+    actuals.emplace_back(exprType, UniqueString());
+  }
+
+  auto ci = CallInfo(/* name */ UniqueString::get(context, arrayBuilderProc),
+                     /* calledType */ QualifiedType(),
+                     /* isMethodCall */ false,
+                     /* hasQuestionArg */ false,
+                     /* isParenless */ false, actuals);
+  auto scope = currentScope();
+  auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
+  auto c = resolveGeneratedCall(decl, &ci, &inScopes);
+
+  c.noteResult(&r);
 }
 
 bool Resolver::enter(const uast::Domain* decl) {

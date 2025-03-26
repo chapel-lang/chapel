@@ -22,6 +22,7 @@
 
 #include "chpl/framework/Location.h"
 #include "chpl/uast/AstNode.h"
+#include "chpl/uast/ArrayRow.h"
 
 namespace chpl {
 namespace uast {
@@ -116,6 +117,38 @@ class Array final : public AstNode {
   */
   bool isMultiDim() const {
     return this->numExprs() > 0 && this->expr(0)->isArrayRow();
+  }
+
+  /**
+   * Return a dimension-flattened list of expressions in this array.
+   */
+  // TODO: replace with iterator to avoid second traversal at call site
+  std::vector<const AstNode*> flattenedExprs() const {
+    std::vector<const AstNode*> exprs;
+    for (const AstNode* expr : this->exprs()) {
+      if (auto row = expr->toArrayRow()) {
+        auto rowExprs = row->flattenedExprs();
+        std::move(rowExprs.begin(), rowExprs.end(), std::back_inserter(exprs));
+      } else {
+        exprs.push_back(expr);
+      }
+    }
+    return exprs;
+  }
+
+  /**
+   * Return the shape of this multi-dim array, as a list of dimension lengths.
+  */
+  std::vector<int> shape() const {
+    CHPL_ASSERT(this->isMultiDim());
+    std::vector<int> ret;
+    ret.emplace_back(this->numExprs());
+    auto cur = this->expr(0);
+    while(cur->toArrayRow()) {
+      ret.emplace_back(cur->toArrayRow()->numExprs());
+      cur = cur->toArrayRow()->expr(0);
+    }
+    return ret;
   }
 };
 
