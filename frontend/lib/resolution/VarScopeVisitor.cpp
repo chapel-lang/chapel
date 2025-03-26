@@ -19,6 +19,7 @@
 
 #include "VarScopeVisitor.h"
 
+#include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/ResolvedVisitor.h"
 #include "chpl/resolution/resolution-types.h"
 #include "chpl/resolution/scope-queries.h"
@@ -458,7 +459,7 @@ bool VarScopeVisitor::enter(const Break* ast, RV& rv) {
   return true;
 }
 void VarScopeVisitor::exit(const Break* ast, RV& rv) {
-  markBreak();
+  markBreak(rv.getBreakOrContinueTarget(ast));
   exitAst(ast);
 }
 
@@ -467,7 +468,7 @@ bool VarScopeVisitor::enter(const Continue* ast, RV& rv) {
   return true;
 }
 void VarScopeVisitor::exit(const Continue* ast, RV& rv) {
-  markContinue();
+  markContinue(rv.getBreakOrContinueTarget(ast));
   exitAst(ast);
 }
 

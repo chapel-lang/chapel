@@ -3434,7 +3434,8 @@ void Resolver::enterScope(const AstNode* ast) {
     declStack.push_back(d);
   }
   tagTracker[ast->tag()] += 1;
-  if (ast->isLoop()) {
+  if (auto l = ast->toLoop()) {
+    loopStack.push_back(l);
     tagTracker[AstTag::START_Loop] += 1;
   }
 }
@@ -3447,6 +3448,7 @@ void Resolver::exitScope(const AstNode* ast) {
   tagTracker[ast->tag()] -= 1;
   if (ast->isLoop()) {
     tagTracker[AstTag::START_Loop] -= 1;
+    loopStack.pop_back();
   }
 }
 
@@ -6328,7 +6330,7 @@ static bool resolveParamForLoop(Resolver& rv, const For* forLoop, BoundInfo&& bo
 
   while (!boundInfo->done()) {
     // If a previous iteration continued, we should still keep iterating.
-    loopControlFlow.resetContinue();
+    loopControlFlow.resetContinue(forLoop);
 
     // Loop execution has ended somehow (throw, break, return). No need to push
     // loop resutls for skipped iterations.
@@ -6359,7 +6361,7 @@ static bool resolveParamForLoop(Resolver& rv, const For* forLoop, BoundInfo&& bo
 
   // Propagate the control flow information to the current frame.
   if (!rv.scopeStack.empty()) {
-    rv.currentFrame()->controlFlowInfo.sequenceIteration(loopControlFlow);
+    rv.currentFrame()->controlFlowInfo.sequenceIteration(loopControlFlow, forLoop);
   }
 
   auto paramLoop = new ResolvedParamLoop(forLoop);
@@ -7055,18 +7057,59 @@ void Resolver::exit(const Return* ret) {
   markReturnOrThrow();
 }
 
+template <typename ContinueOrBreak>
+const Loop* findTargetLoop(Resolver& rv, const ContinueOrBreak* node) {
+  // post-parse-checks.cpp rules out orphaned continue/break
+  CHPL_ASSERT(!rv.loopStack.empty());
+  if (!node->target()) {
+    return rv.loopStack.back();
+  }
+
+  // labeled continue/break.
+  auto target = node->target();
+  auto& refersTo = rv.byPostorder.byAst(target);
+
+  // if we couldn't find what it refers to, pretend it's the nearest loop.
+  if (refersTo.toId().isEmpty()) {
+    return rv.loopStack.back();
+  }
+
+
+  if (refersTo.type().kind() != QualifiedType::LOOP) {
+    rv.context->error(target, "'continue' statement refers to non-loop");
+    return rv.loopStack.back();
+  }
+
+  // it's probably faster to seek up through
+  // the stack instead of going through idToParentId etc.
+  for (auto it = rv.loopStack.rbegin(); it != rv.loopStack.rend(); ++it) {
+    if ((*it)->id() == refersTo.toId()) {
+      return *it;
+    }
+  }
+
+  rv.context->error(target, "could not find label in the current scope");
+  return rv.loopStack.back();
+}
+
 bool Resolver::enter(const uast::Break* brk) {
   return true;
 }
 void Resolver::exit(const uast::Break* brk) {
-  markBreak();
+  auto target = findTargetLoop(*this, brk);
+  CHPL_ASSERT(target);
+  byPostorder.byAst(brk).setToId(target->id());
+  markBreak(target);
 }
 
 bool Resolver::enter(const uast::Continue* cont) {
   return true;
 }
 void Resolver::exit(const uast::Continue* cont) {
-  markContinue();
+  auto target = findTargetLoop(*this, cont);
+  CHPL_ASSERT(target);
+  byPostorder.byAst(cont).setToId(target->id());
+  markContinue(target);
 }
 
 bool Resolver::enter(const Throw* node) {

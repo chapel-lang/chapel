@@ -22,6 +22,8 @@
 
 #include "chpl/uast/all-uast.h"
 #include "chpl/resolution/scope-queries.h"
+#include "chpl/resolution/resolution-types.h"
+#include <llvm/ADT/SmallPtrSet.h>
 
 namespace chpl {
 namespace resolution {
@@ -40,21 +42,24 @@ struct ControlFlowInfo {
   bool returnsOrThrows_ = false;
 
   // whether this frame hit a 'break'
-  bool breaks_ = false;
+  llvm::SmallPtrSet<const uast::Loop*, 2> loopBreaks_;
 
   // whether this frame hit a 'continue'
-  bool continues_ = false;
+  llvm::SmallPtrSet<const uast::Loop*, 2> loopContinues_;
 
  public:
   ControlFlowInfo() = default;
-  ControlFlowInfo(bool returnsOrThrows, bool breaks, bool continues)
-    : returnsOrThrows_(returnsOrThrows), breaks_(breaks), continues_(continues) {}
+  ControlFlowInfo(bool returnsOrThrows, llvm::SmallPtrSet<const uast::Loop*, 2> loopBreaks,
+                  llvm::SmallPtrSet<const uast::Loop*, 2> loopContinues)
+    : returnsOrThrows_(returnsOrThrows),
+      loopBreaks_(std::move(loopBreaks)),
+      loopContinues_(std::move(loopContinues)) {}
 
   /* have we hit a statement that would prevent further execution of a block? */
-  bool isDoneExecuting() const { return returnsOrThrows_ || breaks_ || continues_; }
+  bool isDoneExecuting() const { return returnsOrThrows_ || !loopBreaks_.empty() || !loopContinues_.empty(); }
   bool returnsOrThrows() const { return returnsOrThrows_; }
-  bool breaks() const { return breaks_; }
-  bool continues() const { return continues_; }
+  llvm::SmallPtrSetImpl<const uast::Loop*> const& breaks() const { return loopBreaks_; }
+  llvm::SmallPtrSetImpl<const uast::Loop*> const& continues() const { return loopContinues_; }
 
   // The below mark functions check if the block is already done executing.
   // This is useful because in cases like 'return; continue', we don't want
@@ -62,21 +67,27 @@ struct ControlFlowInfo {
   // further changes to control flow are not recorded.
 
   void markReturnOrThrow() { if (!isDoneExecuting()) returnsOrThrows_ = true; }
-  void markBreak() { if (!isDoneExecuting()) breaks_ = true; }
-  void markContinue() { if (!isDoneExecuting()) continues_ = true; }
+  void markBreak(const uast::Loop* markWith) { if (!isDoneExecuting()) loopBreaks_.insert(markWith); }
+  void markContinue(const uast::Loop* markWith) { if (!isDoneExecuting()) loopContinues_.insert(markWith); }
 
   // resetting break and continue is useful for when we are handling 'param' for loops.
   // If we hit a continue, we might want to move on to the next iteration of
   // resolving the body, but if we hit a return, we should stop.
 
-  void resetContinue() { continues_ = false; }
-  void resetBreak() { breaks_ = false; }
+  void resetContinue(const uast::Loop* clearing) {  loopContinues_.erase(clearing); }
+  void resetBreak(const uast::Loop* clearing) {  loopBreaks_.erase(clearing); }
 
   /* mutably combine control flow information from two branches (e.g., then/else) */
   ControlFlowInfo& operator&=(const ControlFlowInfo& other) {
     returnsOrThrows_ &= other.returnsOrThrows_;
-    breaks_ &= other.breaks_;
-    continues_ &= other.continues_;
+
+    loopBreaks_.remove_if([&other](const uast::Loop* loop) {
+      return !other.loopBreaks_.count(loop);
+    });
+    loopContinues_.remove_if([&other](const uast::Loop* loop) {
+      return !other.loopContinues_.count(loop);
+    });
+
     return *this;
   }
 
@@ -93,18 +104,25 @@ struct ControlFlowInfo {
   void sequence(const ControlFlowInfo& other) {
     if (!isDoneExecuting()) {
       returnsOrThrows_ |= other.returnsOrThrows_;
-      breaks_ |= other.breaks_;
-      continues_ |= other.continues_;
+      loopBreaks_.insert(other.loopBreaks_.begin(), other.loopBreaks_.end());
+      loopContinues_.insert(other.loopContinues_.begin(), other.loopContinues_.end());
     }
   }
 
   /* same as 'sequence', except treats the 'other' as an iteration of a loop
      body rather than a statement in the current block. For this reason,
-     does not propagate 'continue' and 'break', since a loop whose body
-     continues does not continue its parent loop. */
-  void sequenceIteration(const ControlFlowInfo& other) {
+     does not propagate 'continue' and 'break' for the given loop, since a
+     loop whose body continues does not continue its parent loop. */
+  void sequenceIteration(const ControlFlowInfo& other, const uast::Loop* loop) {
     if (!isDoneExecuting()) {
       returnsOrThrows_ |= other.returnsOrThrows_;
+      for (auto lb : other.loopBreaks_) {
+        if (lb != loop) loopBreaks_.insert(lb);
+      }
+
+      for (auto lc : other.loopContinues_) {
+        if (lc != loop) loopContinues_.insert(lc);
+      }
     }
   }
 };
@@ -278,8 +296,8 @@ struct BranchSensitiveVisitor {
     // 'break' and 'continue' are scoped to the loop that they're in.
     // a loop that has 'continue' in its body does not itself continue
     // its parent loop.
-    if (parentFrame->scopeAst->isLoop()) {
-      parentFrame->controlFlowInfo.sequenceIteration(append);
+    if (auto loop = parentFrame->scopeAst->toLoop()) {
+      parentFrame->controlFlowInfo.sequenceIteration(append, loop);
     } else {
       parentFrame->controlFlowInfo.sequence(append);
     }
@@ -322,11 +340,20 @@ struct BranchSensitiveVisitor {
     }
   }
   void reconcileFrames(Frame* parentFrame, const uast::Select* s) {
-    ControlFlowInfo accumulatedControlFlowInfo(true, true, true);
+    bool inited = false;
+    ControlFlowInfo accumulatedControlFlowInfo;
+
     for(int i = 0; i < s->numWhenStmts(); i++) {
       auto whenFrame = currentWhenFrame(i);
       if (!whenFrame) continue;
-      accumulatedControlFlowInfo &= whenFrame->controlFlowInfo;
+
+      if (!inited) {
+        accumulatedControlFlowInfo = whenFrame->controlFlowInfo;
+        inited = true;
+      } else {
+        accumulatedControlFlowInfo &= whenFrame->controlFlowInfo;
+      }
+
       if (whenFrame->knownPath) {  // this is known to be the taken path
         sequenceWithParentFrame(parentFrame, whenFrame->controlFlowInfo);
         break;
@@ -458,15 +485,15 @@ struct BranchSensitiveVisitor {
   }
 
   /** note that the current frame, if any, has invoked 'break' */
-  void markBreak() {
+  void markBreak(const uast::Loop* loop) {
     if (scopeStack.empty()) return;
-    currentFrame()->controlFlowInfo.markBreak();
+    currentFrame()->controlFlowInfo.markBreak(loop);
   }
 
   /** note that the current frame, if any, has invoked 'continue' */
-  void markContinue() {
+  void markContinue(const uast::Loop* loop) {
     if (scopeStack.empty()) return;
-    currentFrame()->controlFlowInfo.markContinue();
+    currentFrame()->controlFlowInfo.markContinue(loop);
   }
 
   /** have we hit a statement that would prevent further execution of the current block / frame? */

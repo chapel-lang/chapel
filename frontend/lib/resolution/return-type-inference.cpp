@@ -550,12 +550,12 @@ void ReturnTypeInferrer::exit(const For* forLoop, RV& rv) {
 }
 
 bool ReturnTypeInferrer::enter(const Break* brk, RV& rv) {
-  markBreak();
+  markBreak(rv.getBreakOrContinueTarget(brk));
   return false;
 }
 void ReturnTypeInferrer::exit(const Break* brk, RV& rv) {}
 bool ReturnTypeInferrer::enter(const Continue* cont, RV& rv) {
-  markContinue();
+  markContinue(rv.getBreakOrContinueTarget(cont));
   return false;
 }
 void ReturnTypeInferrer::exit(const Continue* cont, RV& rv) {}
