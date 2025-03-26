@@ -1,0 +1,4 @@
+bug: deinit is not called for exceptions thrown from a init/postinit
+#26437
+
+When this future is resolved, make sure to delete the .timeout file

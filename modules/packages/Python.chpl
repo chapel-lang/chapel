@@ -1109,7 +1109,9 @@ module Python {
       } else if t == NoneType {
         return Py_None;
       } else {
-        halt("Unsupported toPython type: '" + t:string + "'");
+        throw new ChapelException(
+          "Unsupported toPython type: '" + t:string + "'"
+        );
       }
     }
 
@@ -1190,7 +1192,9 @@ module Python {
         } else if dummy.isAssociative() {
           return fromDict(t, obj);
         } else {
-          halt("Unsupported fromPython array type: '" + t:string + "'");
+          throw new ChapelException(
+            "Unsupported fromPython array type: '" + t:string + "'"
+          );
         }
       } else if isTupleType(t) {
         return fromTuple(t, obj);
@@ -1210,7 +1214,9 @@ module Python {
         if obj != Py_None then Py_DECREF(obj);
         return None;
       } else {
-        halt("Unsupported fromPython type: '" + t:string + "'");
+        throw new ChapelException(
+          "Unsupported fromPython type: '" + t:string + "'"
+        );
       }
     }
 
@@ -3193,9 +3199,6 @@ module Python {
     require "PythonHelper/ChapelPythonHelper.h";
     private use CTypes;
     private use super.CWChar;
-    import HaltWrappers;
-
-
 
     /*
       Types
