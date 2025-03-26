@@ -73,6 +73,7 @@ static inline int chpl_PyGen_Check(PyObject* o) { return PyGen_Check(o); }
 static inline PyObject* chpl_Py_None(void) { return (PyObject*)Py_None; }
 static inline PyObject* chpl_Py_True(void) { return (PyObject*)Py_True; }
 static inline PyObject* chpl_Py_False(void) { return (PyObject*)Py_False; }
+static inline PyObject* chpl_Py_NotImplemented(void) { return (PyObject*)Py_NotImplemented; }
 
 static inline PyObject* chpl_Py_CompileString(const char* str,
                                               const char* filename, int start) {
