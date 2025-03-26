@@ -21,8 +21,7 @@ def get():
                 segment_val = 'large'
             else:
                 segment_val = 'everything'
-        else:
-            check_valid_var("CHPL_GASNET_SEGMENT", segment_val, ("none", "fast", "large", "everything"))
+        check_valid_var("CHPL_GASNET_SEGMENT", segment_val, ("fast", "large", "everything"))
     else:
         segment_val = 'none'
     return segment_val

@@ -39,7 +39,6 @@ def get(flag='host'):
         error("Invalid flag: '{0}'".format(flag), ValueError)
 
     var_name = 'CHPL_{0}_MEM'.format(flag.upper())
-    var_name = 'CHPL_MEM' if chpl_target_mem is None else var_name
     check_valid_var(var_name, mem_val, ["cstdlib", "jemalloc"])
     return mem_val
 

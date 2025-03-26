@@ -82,8 +82,9 @@ def get(flag='target'):
             # we can't use intrinsics, fall back to locks
             if not atomics_val:
                 atomics_val = 'locks'
-        else:
-            check_valid_var("CHPL_ATOMICS", atomics_val, ['cstdlib', 'intrinsics', 'locks'])
+
+        check_valid_var("CHPL_ATOMICS", atomics_val, ['cstdlib', 'intrinsics', 'locks'])
+
     else:
         error("Invalid flag: '{0}'".format(flag), ValueError)
 

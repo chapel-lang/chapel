@@ -53,13 +53,13 @@ def get(flag='target'):
         elif darwin and mem_val == 'jemalloc' and jemalloc_val == 'bundled':
             error("CHPL_HOST_JEMALLOC=bundled is not supported on Mac for host builds")
 
-    if mem_val == 'jemalloc' and jemalloc_val == 'none':
-        error("CHPL_JEMALLOC must not be 'none' when CHPL_TARGET_MEM is jemalloc")
-    elif mem_val != 'jemalloc' and jemalloc_val != 'none':
-        error("CHPL_JEMALLOC must be 'none' when CHPL_TARGET_MEM is not jemalloc")
-
     var_name = 'CHPL_{0}_JEMALLOC'.format(flag.upper())
-    var_name = 'CHPL_JEMALLOC' if chpl_target_jemalloc is None else var_name
+    mem_var_name = 'CHPL_{0}_MEM'.format(flag.upper())
+    if mem_val == 'jemalloc' and jemalloc_val == 'none':
+        error("{0} must not be 'none' when {0} is jemalloc".format(var_name, mem_var_name))
+    elif mem_val != 'jemalloc' and jemalloc_val != 'none':
+        error("{0} must be 'none' when {0} is not jemalloc".format(var_name, mem_var_name))
+
     check_valid_var(var_name, jemalloc_val, ["none", "bundled", "system"])
     return jemalloc_val
 

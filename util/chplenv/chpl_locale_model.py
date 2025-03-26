@@ -8,7 +8,7 @@ from utils import memoize, error, check_valid_var
 @memoize
 def get():
     locale_model_val = overrides.get('CHPL_LOCALE_MODEL', 'flat')
-    check_valid_var("CHPL_LOCALE_MODEL", locale_model_val, ["flat", "shared"])
+    check_valid_var("CHPL_LOCALE_MODEL", locale_model_val, ["flat", "gpu"])
     return locale_model_val
 
 

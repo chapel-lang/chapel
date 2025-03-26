@@ -182,7 +182,13 @@ def is_ver_in_range(versionStr, minimumStr, maximumStr):
     return False
 
 def check_valid_var(varname, value, valid_values):
-    """Check that a variable is set to a valid value"""
+    """
+    Check that a variable is set to a valid value
+
+    :param varname: The name of the variable, used for printing the error message
+    :param value: The value of the variable as set by the user or as inferred
+    :param valid_values: A sequence of valid values for the variable, e.g. a tuple or a list
+    """
 
     def join_words(words, conjunction='or'):
         if len(words) == 1:
