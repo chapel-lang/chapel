@@ -22,6 +22,7 @@
 
 #include "chpl/framework/Location.h"
 #include "chpl/uast/AstNode.h"
+#include <iterator>
 
 namespace chpl {
 namespace uast {
@@ -44,6 +45,7 @@ namespace uast {
  */
 class ArrayRow final : public AstNode {
  friend class AstNode;
+ friend class Array;
 
  private:
 
@@ -73,6 +75,16 @@ class ArrayRow final : public AstNode {
         exprs->push_back(expr);
       }
     }
+  }
+
+  /** Get an iterator to the first expression in this array row */
+  AstList::const_iterator begin() const {
+    return children_.begin();
+  }
+
+  /** Get an iterator to one past the last expression in this array row */
+  AstList::const_iterator end() const {
+    return children_.end();
   }
 
  public:

@@ -23,6 +23,7 @@
 #include "chpl/framework/Location.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/ArrayRow.h"
+#include <iterator>
 
 namespace chpl {
 namespace uast {
@@ -76,6 +77,16 @@ class Array final : public AstNode {
 
   void dumpInner(const DumpSettings& s) const;
 
+  /** Get an iterator to the first expression in this array */
+  AstList::const_iterator begin() const {
+    return children_.begin();
+  }
+
+  /** Get an iterator to one past the last expression in this array */
+  AstList::const_iterator end() const {
+    return children_.end();
+  }
+
  public:
   ~Array() override = default;
 
@@ -93,8 +104,7 @@ class Array final : public AstNode {
     Return a way to iterate over the expressions of this array.
   */
   AstListIteratorPair<AstNode> exprs() const {
-    return AstListIteratorPair<AstNode>(children_.begin(),
-                                        children_.end());
+    return AstListIteratorPair<AstNode>(this->begin(), this->end());
   }
 
   /**
@@ -118,6 +128,10 @@ class Array final : public AstNode {
   bool isMultiDim() const {
     return this->numExprs() > 0 && this->expr(0)->isArrayRow();
   }
+
+  /**
+   * An iterator that flattens a multi-dimensional array into a single list.
+   */
 
   /**
    * Return a dimension-flattened list of expressions in this array.
@@ -149,6 +163,106 @@ class Array final : public AstNode {
       cur = cur->toArrayRow()->expr(0);
     }
     return ret;
+  }
+
+  class FlatArrayIterator {
+    friend class Array;
+   public:
+    using iterator_category = std::forward_iterator_tag;
+    using difference_type = AstList::const_iterator::difference_type;
+    using value_type = const AstNode*;
+    using pointer = const AstNode**;
+    using reference = const AstNode*&;
+
+   private:
+    std::vector<AstList::const_iterator> iterStack;
+
+    /*
+     * Descend to the final array dimension, adding an iterator for each
+     * dimension along the way.
+    */
+    void descend() {
+      while (auto row = (*iterStack.back())->toArrayRow()) {
+        this->iterStack.push_back(row->begin());
+      }
+    }
+
+   public:
+    FlatArrayIterator(const Array* iterand) {
+      iterStack.push_back(iterand->begin());
+      descend();
+    }
+
+    bool operator==(const FlatArrayIterator rhs) const {
+      return this->iterStack == rhs.iterStack;
+    }
+    bool operator!=(const FlatArrayIterator rhs) const {
+      return !(*this == rhs);
+    }
+
+    const AstNode* operator*() const {
+      return (const AstNode*) this->iterStack.back()->get();
+    }
+    const AstNode* operator->() const {
+      return operator*();
+    }
+
+    FlatArrayIterator& operator++() {
+      // Pop up the stack until we're either at the top level, or at a row we
+      // haven't already gone through.
+      while (iterStack.size() > 1) {
+        AstList::const_iterator rowEnd;
+        auto parent = iterStack[iterStack.size() - 2];
+        if (auto parentRow = (*parent)->toArrayRow()) {
+          rowEnd = parentRow->end();
+        } else if (auto parentArray = (*parent)->toArray()) {
+          rowEnd = parentArray->end();
+        } else {
+          CHPL_ASSERT(false &&
+                      "shouldn't be reachable, descended into an array "
+                      "dimension not contained within an array or array row");
+        }
+
+        if (iterStack.back() != rowEnd) {
+          break;
+        }
+        iterStack.pop_back();
+      }
+      // Now we're in an unfinished row, but maybe not of the final dimension.
+      // Recursively descend to the final dimension to get more flat elements.
+      descend();
+
+      ++iterStack.back();
+      return *this;
+    }
+    FlatArrayIterator operator++(int) {
+      FlatArrayIterator tmp = *this;
+      operator++();
+      return tmp;
+    }
+  };
+
+  struct FlatArrayIteratorPair {
+    FlatArrayIterator begin_;
+    FlatArrayIterator end_;
+
+    FlatArrayIteratorPair(FlatArrayIterator begin, FlatArrayIterator end)
+        : begin_(begin), end_(end) {}
+    ~FlatArrayIteratorPair() = default;
+
+    FlatArrayIterator begin() const {
+      return begin_;
+    }
+    FlatArrayIterator end() const {
+      return end_;
+    }
+  };
+
+  FlatArrayIteratorPair flattenedExprsIterable() const {
+    FlatArrayIterator begin(this);
+    FlatArrayIterator end(this);
+    std::advance(end, this->flattenedExprs().size());
+    return FlatArrayIteratorPair(begin, end);
   }
 };
 
