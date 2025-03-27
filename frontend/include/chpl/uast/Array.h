@@ -243,6 +243,10 @@ class Array final : public AstNode {
     }
   };
 
+  /**
+    Return a way to iterate over the expressions of this array, transparently
+    flattened into a single list if multi-dimensional.
+  */
   FlatArrayIteratorPair flattenedExprs() const {
     FlatArrayIterator begin(this);
     FlatArrayIterator end(this, /* end */ true);
