@@ -3209,6 +3209,7 @@ module Python {
     iter these() ref : eltType throws {
       for e in these(eltType=this.eltType) do yield e;
     }
+    // TODO: it should also be possible to support leader/follower here
     @chpldoc.nodoc
     iter these(param tag: iterKind, type eltType) ref : eltType throws
      where tag == iterKind.standalone {
