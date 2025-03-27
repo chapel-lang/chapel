@@ -87,7 +87,7 @@ enum IF1_float_type : uint8_t {
 // these should correspond to double the IF1_float_types.
 // i.e. float_type_precision[i] here should refer to the real size of i
 enum IF1_complex_type : uint8_t {
-  COMPLEX_SIZE_64, COMPLEX_SIZE_128, COMPLEX_SIZE_NUM
+  COMPLEX_SIZE_32, COMPLEX_SIZE_64, COMPLEX_SIZE_128, COMPLEX_SIZE_NUM
 };
 
 //
@@ -115,6 +115,7 @@ class Immediate { public:
     // complex values
     complex128 v_complex128;
     complex64  v_complex64;
+    complex32  v_complex32;
 
     // floating-point values
     double     v_float64;

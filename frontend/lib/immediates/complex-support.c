@@ -61,6 +61,15 @@ static float complex makeFloatComplex(float re, float im) {
 #endif
 }
 
+struct complex32 complexSqrt32(struct complex32 x) {
+  // TODO: Is this correct?
+  float complex c = makeFloatComplex(x.r, x.i);
+  float complex n = csqrtf(c);
+  struct complex32 ret;
+  ret.r = crealf(n);
+  ret.i = cimagf(n);
+  return ret;
+}
 struct complex64 complexSqrt64(struct complex64 x) {
   float complex c = makeFloatComplex(x.r, x.i);
   float complex n = csqrtf(c);
