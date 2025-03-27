@@ -130,27 +130,6 @@ class Array final : public AstNode {
   }
 
   /**
-   * An iterator that flattens a multi-dimensional array into a single list.
-   */
-
-  /**
-   * Return a dimension-flattened list of expressions in this array.
-   */
-  // TODO: replace with iterator to avoid second traversal at call site
-  std::vector<const AstNode*> flattenedExprs() const {
-    std::vector<const AstNode*> exprs;
-    for (const AstNode* expr : this->exprs()) {
-      if (auto row = expr->toArrayRow()) {
-        auto rowExprs = row->flattenedExprs();
-        std::move(rowExprs.begin(), rowExprs.end(), std::back_inserter(exprs));
-      } else {
-        exprs.push_back(expr);
-      }
-    }
-    return exprs;
-  }
-
-  /**
    * Return the shape of this multi-dim array, as a list of dimension lengths.
   */
   std::vector<int> shape() const {
@@ -165,8 +144,10 @@ class Array final : public AstNode {
     return ret;
   }
 
+  /**
+   * An iterator that flattens a multi-dimensional array into a single list.
+   */
   class FlatArrayIterator {
-    friend class Array;
    public:
     using iterator_category = std::forward_iterator_tag;
     using difference_type = AstList::const_iterator::difference_type;
@@ -176,21 +157,29 @@ class Array final : public AstNode {
 
    private:
     std::vector<AstList::const_iterator> iterStack;
+    AstList::const_iterator topLevelEnd;
 
     /*
      * Descend to the final array dimension, adding an iterator for each
      * dimension along the way.
     */
     void descend() {
-      while (auto row = (*iterStack.back())->toArrayRow()) {
-        this->iterStack.push_back(row->begin());
+      if (!iterStack.empty()) {
+        while (auto row = (*iterStack.back())->toArrayRow()) {
+          this->iterStack.push_back(row->begin());
+        }
       }
     }
 
    public:
-    FlatArrayIterator(const Array* iterand) {
-      iterStack.push_back(iterand->begin());
-      descend();
+    FlatArrayIterator(const Array* iterand, bool end=false) {
+      if (end) {
+        iterStack.push_back(iterand->end());
+      } else {
+        iterStack.push_back(iterand->begin());
+        descend();
+      }
+      topLevelEnd = iterand->end();
     }
 
     bool operator==(const FlatArrayIterator rhs) const {
@@ -208,6 +197,8 @@ class Array final : public AstNode {
     }
 
     FlatArrayIterator& operator++() {
+      ++iterStack.back();
+
       // Pop up the stack until we're either at the top level, or at a row we
       // haven't already gone through.
       while (iterStack.size() > 1) {
@@ -223,16 +214,17 @@ class Array final : public AstNode {
                       "dimension not contained within an array or array row");
         }
 
-        if (iterStack.back() != rowEnd) {
+        if (iterStack.back() == rowEnd) {
+          iterStack.pop_back();
+          ++iterStack.back();
+          if (iterStack.back() != topLevelEnd) {
+            descend();
+          }
+        } else {
           break;
         }
-        iterStack.pop_back();
       }
-      // Now we're in an unfinished row, but maybe not of the final dimension.
-      // Recursively descend to the final dimension to get more flat elements.
-      descend();
 
-      ++iterStack.back();
       return *this;
     }
     FlatArrayIterator operator++(int) {
@@ -258,10 +250,9 @@ class Array final : public AstNode {
     }
   };
 
-  FlatArrayIteratorPair flattenedExprsIterable() const {
+  FlatArrayIteratorPair flattenedExprs() const {
     FlatArrayIterator begin(this);
-    FlatArrayIterator end(this);
-    std::advance(end, this->flattenedExprs().size());
+    FlatArrayIterator end(this, /* end */ true);
     return FlatArrayIteratorPair(begin, end);
   }
 };

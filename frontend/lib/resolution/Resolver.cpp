@@ -4913,7 +4913,7 @@ void Resolver::exit(const uast::Array* decl) {
   }
 
   // Add element args
-  for (auto expr : decl->flattenedExprsIterable()) {
+  for (auto expr : decl->flattenedExprs()) {
     auto exprType = byPostorder.byAst(expr).type();
     // Short circuit if any elements have unknown type, since we won't be
     // able to resolve the array builder proc.

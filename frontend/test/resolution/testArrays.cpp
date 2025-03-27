@@ -160,6 +160,7 @@ static void testArrayLiteral(std::string arrayLiteral, std::string domainType,
     {"A", "correctDom", "correctElt"});
   auto arrType = vars.at("A");
   assert(arrType.type());
+  assert(!arrType.type()->isUnknownType());
   assert(arrType.type()->isArrayType());
 
   ensureParamBool(vars.at("correctDom"), true);
