@@ -3193,6 +3193,9 @@ module Python {
 
     @chpldoc.nodoc
     iter these(type eltType) ref : eltType throws {
+      if eltType == nothing then
+        compilerError("Element type must be specified at compile time");
+
       if boundsChecking then
         if !checkFormatWithEltType(this.view.format,
                                   this.view.itemsize, eltType) {
@@ -3213,6 +3216,9 @@ module Python {
     @chpldoc.nodoc
     iter these(param tag: iterKind, type eltType) ref : eltType throws
      where tag == iterKind.standalone {
+      if eltType == nothing then
+        compilerError("Element type must be specified at compile time");
+
       if boundsChecking then
         if !checkFormatWithEltType(this.view.format,
                                   this.view.itemsize, eltType) {
@@ -3254,6 +3260,12 @@ module Python {
 
     @chpldoc.nodoc
     proc array(type eltType, param rank: int): [] throws {
+
+      if eltType == nothing then
+        compilerError("Element type must be specified at compile time");
+      if rank == -1 then
+        compilerError("Rank must be specified at compile time");
+
       if boundsChecking then
         if !checkFormatWithEltType(this.view.format,
                                   this.view.itemsize, eltType) {
