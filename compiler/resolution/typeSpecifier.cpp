@@ -102,6 +102,10 @@ Type* typeForTypeSpecifier(Expr* expr, bool fatalOK) {
                     int size = typeSize(var);
 
                     switch (size) {
+                    case 16:
+                      retval = dtReal[FLOAT_SIZE_16];
+                      break;
+
                     case 32:
                       retval = dtReal[FLOAT_SIZE_32];
                       break;
@@ -122,6 +126,10 @@ Type* typeForTypeSpecifier(Expr* expr, bool fatalOK) {
                     int size = typeSize(var);
 
                     switch (size) {
+                    case 16:
+                      retval = dtImag[FLOAT_SIZE_16];
+                      break;
+
                     case 32:
                       retval = dtImag[FLOAT_SIZE_32];
                       break;

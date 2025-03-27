@@ -164,6 +164,7 @@ typedef void* chpl_opaque;
 #define UINT32( i) ((uint32_t)(UINT32_C(i)))
 #define UINT64( i) ((uint64_t)(UINT64_C(i)))
 
+#define REAL16(i) ((_Float16)(i))
 #define REAL32(i) ((float)(i))
 #define REAL64(i) ((double)(i))
 
@@ -196,6 +197,7 @@ typedef struct _chpl_fn_info {
 #endif
 #endif
 
+typedef _Float16            _real16;
 typedef float               _real32;
 typedef double              _real64;
 typedef float               _imag32;

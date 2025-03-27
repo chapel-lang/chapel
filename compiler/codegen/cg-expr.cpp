@@ -2206,7 +2206,8 @@ static GenRet emitFmaForLlvm(GenRet av, GenRet bv, GenRet cv) {
   GenInfo* info = gGenInfo;
   INT_ASSERT(av.chplType == bv.chplType && bv.chplType == cv.chplType);
   INT_ASSERT(av.chplType == dtReal[FLOAT_SIZE_64] ||
-             av.chplType == dtReal[FLOAT_SIZE_32]);
+             av.chplType == dtReal[FLOAT_SIZE_32] ||
+             av.chplType == dtReal[FLOAT_SIZE_16]);
   auto ty = av.val->getType();
   INT_ASSERT(ty);
 
@@ -2258,6 +2259,8 @@ static GenRet emitSqrtCMath(GenRet av) {
     ret = codegenCallExpr("chpl_sqrt64", av);
   } else if (av.chplType == dtReal[FLOAT_SIZE_32]) {
     ret = codegenCallExpr("chpl_sqrt32", av);
+  } else if (av.chplType == dtReal[FLOAT_SIZE_16]) {
+    ret = codegenCallExpr("chpl_sqrt16", av);
   } else {
     INT_FATAL("The sqrt primitive can only evaluate floating point types!");
   }
@@ -2269,7 +2272,8 @@ static GenRet emitSqrtLLVMIntrinsic(GenRet av) {
 #ifdef HAVE_LLVM
   GenInfo* info = gGenInfo;
   INT_ASSERT(av.chplType == dtReal[FLOAT_SIZE_64] ||
-             av.chplType == dtReal[FLOAT_SIZE_32]);
+             av.chplType == dtReal[FLOAT_SIZE_32] ||
+             av.chplType == dtReal[FLOAT_SIZE_16]);
   auto ty = av.val->getType();
   INT_ASSERT(ty);
 
@@ -2305,6 +2309,8 @@ static GenRet emitAbsCMath(GenRet av) {
     ret = codegenCallExpr("chpl_fabs64", av);
   } else if (av.chplType == dtReal[FLOAT_SIZE_32]) {
     ret = codegenCallExpr("chpl_fabs32", av);
+  } else if (av.chplType == dtReal[FLOAT_SIZE_16]) {
+    ret = codegenCallExpr("chpl_fabs16", av);
   } else {
     INT_FATAL("The abs primitive can only evaluate floating point types!");
   }
@@ -2316,7 +2322,8 @@ static GenRet emitAbsLLVMIntrinsic(GenRet av) {
 #ifdef HAVE_LLVM
   GenInfo* info = gGenInfo;
   INT_ASSERT(av.chplType == dtReal[FLOAT_SIZE_64] ||
-             av.chplType == dtReal[FLOAT_SIZE_32]);
+             av.chplType == dtReal[FLOAT_SIZE_32] ||
+             av.chplType == dtReal[FLOAT_SIZE_16]);
   auto ty = av.val->getType();
   INT_ASSERT(ty);
 

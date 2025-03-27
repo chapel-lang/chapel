@@ -92,7 +92,7 @@ proc isUintType(type t) param do return
 
 /* Returns ``true`` if the type ``t`` is a ``real`` type, of any width. */
 proc isRealType(type t) param do return
-  (t == real(32)) || (t == real(64));
+  (t == real(16) || t == real(32)) || (t == real(64));
 
 /* Returns ``true`` if the type ``t`` is an ``imag`` type, of any width. */
 proc isImagType(type t) param do return
@@ -721,6 +721,12 @@ proc numBits(type t) param where t == uint(16) do return 16;
 proc numBits(type t) param where t == uint(32) do return 32;
 @chpldoc.nodoc
 proc numBits(type t) param where t == uint(64) do return 64;
+/*
+@chpldoc.nodoc
+proc numBits(type t: real(?w)) param do return w;
+*/
+@chpldoc.nodoc
+proc numBits(type t) param where t == real(16) do return 16;
 @chpldoc.nodoc
 proc numBits(type t) param where t == real(32) do return 32;
 @chpldoc.nodoc

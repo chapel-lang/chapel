@@ -421,6 +421,11 @@ llvm::Value* codegenImmediateLLVM(Immediate* i)
     case NUM_KIND_REAL:
     case NUM_KIND_IMAG:
       switch(i->num_index) {
+        case FLOAT_SIZE_16:
+          ret = llvm::ConstantFP::get(
+              llvm::Type::getFloatTy(info->module->getContext()),
+              i->v_float16);
+          break;
         case FLOAT_SIZE_32:
           ret = llvm::ConstantFP::get(
               llvm::Type::getFloatTy(info->module->getContext()),
@@ -575,6 +580,9 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
         double value = immediate->real_value();
         const char* castString = NULL;
         switch (immediate->num_index) {
+        case FLOAT_SIZE_16:
+          castString = "REAL16(";
+          break;
         case FLOAT_SIZE_32:
           castString = "REAL32(";
           break;
@@ -1651,10 +1659,13 @@ void TypeSymbol::codegenMetadata() {
     if (is_imag_type(type)) {
       // At present, imaginary often aliases with real,
       // so make real the parent of imaginary.
-      INT_ASSERT(type == dtImag[FLOAT_SIZE_32] ||
+      INT_ASSERT(type == dtImag[FLOAT_SIZE_16] ||
+                 type == dtImag[FLOAT_SIZE_32] ||
                  type == dtImag[FLOAT_SIZE_64]);
       TypeSymbol *re;
-      if (type == dtImag[FLOAT_SIZE_32]) {
+      if (type == dtImag[FLOAT_SIZE_16]) {
+        re = dtReal[FLOAT_SIZE_16]->symbol;
+      } else if (type == dtImag[FLOAT_SIZE_32]) {
         re = dtReal[FLOAT_SIZE_32]->symbol;
       } else {
         re = dtReal[FLOAT_SIZE_64]->symbol;

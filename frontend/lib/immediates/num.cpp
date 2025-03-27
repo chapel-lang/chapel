@@ -125,6 +125,8 @@ snprint_imm(char *str, size_t max, const Immediate &imm) {
     }
     case NUM_KIND_REAL: case NUM_KIND_IMAG:
       switch (imm.num_index) {
+        case FLOAT_SIZE_16:
+          res = snprint_float_val(str, max, imm.v_float16, true); break;
         case FLOAT_SIZE_32:
           res = snprint_float_val(str, max, imm.v_float32, true); break;
         case FLOAT_SIZE_64:
@@ -222,6 +224,10 @@ fprint_imm(FILE *fp, const Immediate &imm, bool showType) {
       char str[80];
       const char* size = NULL;
       switch (imm.num_index) {
+        case FLOAT_SIZE_16:
+          res = snprint_float_val(str, sizeof(str), imm.v_float16, false);
+          size = "(16)";
+          break;
         case FLOAT_SIZE_32:
           res = snprint_float_val(str, sizeof(str), imm.v_float32, false);
           size = "(32)";
@@ -322,6 +328,14 @@ coerce_immediate(chpl::Context* context, Immediate *from, Immediate *to) {
         } \
         case NUM_KIND_REAL: case NUM_KIND_IMAG: \
           switch (imm->num_index) { \
+            case FLOAT_SIZE_16: \
+              if (add && im1.v_float16 == 0.0) \
+                imm->v_float16 = im2.v_float16; \
+              else if (sub && im1.v_float16 == 0.0) \
+                imm->v_float16 = -im2.v_float16; \
+              else \
+                imm->v_float16 = im1.v_float16 _op im2.v_float16; \
+              break; \
             case FLOAT_SIZE_32: \
               if (add && im1.v_float32 == 0.0) \
                 imm->v_float32 = im2.v_float32; \
@@ -527,6 +541,9 @@ static void doFoldSqrt(chpl::Context* context,
     }
     case NUM_KIND_REAL: case NUM_KIND_IMAG:
       switch (imm->num_index) {
+        case FLOAT_SIZE_16:
+          // TODO: Is this right?
+          imm->v_float16 = (_Float16)sqrt((float)im1.v_float16); break;
         case FLOAT_SIZE_32:
           imm->v_float32 = sqrt(im1.v_float32); break;
         case FLOAT_SIZE_64:
@@ -593,6 +610,8 @@ static void doFoldAbs(chpl::Context* context,
     }
     case NUM_KIND_REAL: case NUM_KIND_IMAG:
       switch (im1.num_index) {
+        case FLOAT_SIZE_16:
+          imm->v_float16 = fabsf(im1.v_float16); break;
         case FLOAT_SIZE_32:
           imm->v_float32 = fabsf(im1.v_float32); break;
         case FLOAT_SIZE_64:
@@ -690,6 +709,8 @@ static void doFoldGetImag(chpl::Context* context,
         } \
         case NUM_KIND_REAL: case NUM_KIND_IMAG: \
           switch (im1.num_index) { \
+            case FLOAT_SIZE_16: \
+              imm->v_bool = im1.v_float16 _op im2.v_float16; break; \
             case FLOAT_SIZE_32: \
               imm->v_bool = im1.v_float32 _op im2.v_float32; break; \
             case FLOAT_SIZE_64: \
@@ -790,6 +811,8 @@ static void doFoldGetImag(chpl::Context* context,
         } \
         case NUM_KIND_REAL: case NUM_KIND_IMAG: \
           switch (imm->num_index) { \
+            case FLOAT_SIZE_16: \
+              imm->v_float16 = _op im1.v_float16; break; \
             case FLOAT_SIZE_32: \
               imm->v_float32 = _op im1.v_float32; break; \
             case FLOAT_SIZE_64: \
@@ -862,7 +885,9 @@ max(int a, int b) {
 
 static int
 num_kind_int_to_float(int num_index) {
-  if (int_type_precision[num_index] <= 32)
+  if (int_type_precision[num_index] <= 16)
+    return FLOAT_SIZE_16;
+  else if (int_type_precision[num_index] <= 32)
     return FLOAT_SIZE_32;
   else
     return FLOAT_SIZE_64;
