@@ -2305,9 +2305,6 @@ module Python {
       }
     }
 
-
-    // TODO: call should support kwargs
-
     // Casts
     /* Creates a new int from ``x``, when ``x`` is a :class:`Value`. */
     operator :(x: borrowed Value, type t: int(?)): t throws {
@@ -2935,28 +2932,41 @@ module Python {
 
   private proc checkFormatWithEltType(format: c_ptr(c_char),
                               itemSize: Py_ssize_t, type eltType): bool {
-    if format == nil {
-      // make sure item size matches numBytes
-      // but since format is nil we cannot check the type more than this
-      return eltType != bool && numBytes(eltType) == itemSize;
+    // we require format to be set, it should only be unset if the buffer
+    // producer does not conform to the standard
+    if format == nil then return false;
+    // See https://docs.python.org/3/library/struct.html#format-characters
+    // and https://docs.python.org/3/library/array.html for the list of format
+    // characters
+    // Python defines minimum bitwidths, not exact bitwidths, which means we
+    // if we soleyl rely on the format string we may have portability issues
+    // so rely solely on itemsize, and use the format string to help with
+    // signdness. Bools are a special case, as Chapel does not define a specific
+    // bitwidth for bools
+
+    if eltType == bool {
+      return format.deref() == "?".toByte();
+    } else {
+      if numBytes(eltType) != itemSize {
+        return false;
+      }
+      if isIntegralType(eltType) {
+        var isSigned = format.deref() == 'b'.toByte() ||
+                       format.deref() == 'h'.toByte() ||
+                       format.deref() == 'i'.toByte() ||
+                       format.deref() == 'l'.toByte() ||
+                       format.deref() == 'q'.toByte() ||
+                       format.deref() == 'n'.toByte();
+        return isSigned && isIntType(eltType);
+      } else if isRealType(eltType) || isImagType(eltType) {
+        var isFP = format.deref() == 'f'.toByte() ||
+                   format.deref() == 'd'.toByte() ||
+                  format.deref() == 'e'.toByte();
+        return isFP;
+      } else {
+        return false;
+      }
     }
-    if format.deref() == "c".toByte() && eltType == c_char then return true;
-    if format.deref() == "b".toByte() && eltType == c_schar then return true;
-    if format.deref() == "B".toByte() && eltType == c_uchar then return true;
-    if format.deref() == "?".toByte() && eltType == bool then return true;
-    if format.deref() == "h".toByte() && eltType == c_short then return true;
-    if format.deref() == "H".toByte() && eltType == c_ushort then return true;
-    if format.deref() == "i".toByte() && eltType == c_int then return true;
-    if format.deref() == "I".toByte() && eltType == c_uint then return true;
-    if format.deref() == "l".toByte() && eltType == c_long then return true;
-    if format.deref() == "L".toByte() && eltType == c_ulong then return true;
-    if format.deref() == "q".toByte() && eltType == c_longlong then return true;
-    if format.deref() == "Q".toByte() && eltType == c_ulonglong then return true;
-    if format.deref() == "n".toByte() && eltType == c_ssize_t then return true;
-    if format.deref() == "N".toByte() && eltType == c_size_t then return true;
-    if format.deref() == "f".toByte() && eltType == c_float then return true;
-    if format.deref() == "d".toByte() && eltType == c_double then return true;
-    return false;
   }
 
   /*
@@ -3022,7 +3032,9 @@ module Python {
         throw new ChapelException("0-dimensional arrays are not supported");
       }
       if this.view.shape == nil || this.view.strides == nil {
-        throw new ChapelException("The Python array does not properly support the buffer protocol");
+        throw new ChapelException(
+          "The Python array does not properly support the buffer protocol"
+        );
       }
     }
 
@@ -3061,6 +3073,12 @@ module Python {
       if rank == -1 then
         compilerError("Rank must be specified at compile time");
 
+      if boundsChecking then
+        if rank != this.view.ndim then
+          throw new ChapelException(
+            "Rank mismatch: expected " + rank:string +
+            " dimensions, but got " + this.view.ndim:string);
+
       var s: rank*int;
       for param i in 0..<rank {
         s(i) = this.view.shape(i);
@@ -3068,7 +3086,23 @@ module Python {
       return s;
     }
 
-    // TODO: docs
+    /*
+      Get an element from the Python array. This results in a modifiable
+      reference to the element of the Python array. The index must be either a
+      single `int` (for 1-D arrays) or a tuple of `int`'s where the number of
+      inidices is equal to the number of dimensions of the array. This method
+      does not currently support slicing.
+
+      .. warning::
+
+          This method performs bounds checking and will throw if the index is
+          out of bounds. This is a runtime check that is turned off with
+          ``--no-checks``.
+
+      ``eltType`` can be optionally specified to override the default value for
+      the ``PyArray`` object. If ``eltType`` is fully specified in the
+      ``PyArray`` object, it does not need to be specified here.
+    */
     pragma "docs only"
     proc this(type eltType = this.eltType, idx) ref : eltType throws
     where isValidArrayIndex(idx) {
@@ -3098,21 +3132,33 @@ module Python {
                       this.rank:string + " with a " + idx.size:string +
                       "-dimensional index");
 
+      if boundsChecking then
+        if !checkFormatWithEltType(this.view.format,
+                                  this.view.itemsize, eltType) {
+          throw new ChapelException(
+            "Source array's format does not match requested element type"
+          );
+        }
+
       var offset = 0;
       if idx.type == int {
-        // TODO: bounds checking
         offset = idx * this.view.strides(0);
       } else {
-        // TODO: bounds checking
-        if idx.size != this.view.ndim {
-          throw new ChapelException("Cannot index a " +
-            this.view.ndim:string + "-dimensional array with a " +
-            idx.size:string + "-dimensional index");
-        }
+        if boundsChecking then
+          if idx.size != this.view.ndim {
+            throw new ChapelException("Cannot index a " +
+              this.view.ndim:string + "-dimensional array with a " +
+              idx.size:string + "-dimensional index");
+          }
         for param i in 0..<idx.size {
           offset += idx(i) * this.view.strides(i);
         }
       }
+
+      if boundsChecking then
+        if offset < 0 || offset >= this.view.len {
+          throw new ChapelException("Index out of bounds");
+        }
 
       var ptr_ = (this.view.buf:c_intptr + offset): c_ptr(void): c_ptr(eltType);
       return ptr_.deref();
@@ -3132,7 +3178,13 @@ module Python {
                     "or a single int (for 1D arrays only)");
 
     /*
-      TODO
+      Iterate over the elements of the Python array. This results in a Chapel
+      iterator that yields the elements of the Python array. This yields
+      modifiable references to the elements of the Python array.
+
+      ``eltType`` can be optionally specified to override the default value for
+      the ``PyArray`` object. If ``eltType`` is fully specified in the
+      ``PyArray`` object, it does not need to be specified here.
     */
     pragma "docs only"
     iter these(type eltType = this.eltType) ref : eltType throws {
@@ -3141,6 +3193,13 @@ module Python {
 
     @chpldoc.nodoc
     iter these(type eltType) ref : eltType throws {
+      if boundsChecking then
+        if !checkFormatWithEltType(this.view.format,
+                                  this.view.itemsize, eltType) {
+          throw new ChapelException(
+            "Source array's format does not match requested element type"
+          );
+        }
       var ptr_ = this.view.buf: c_ptr(eltType);
       foreach i in 0..#this.size {
         yield ptr_[i];
@@ -3153,6 +3212,13 @@ module Python {
     @chpldoc.nodoc
     iter these(param tag: iterKind, type eltType) ref : eltType throws
      where tag == iterKind.standalone {
+      if boundsChecking then
+        if !checkFormatWithEltType(this.view.format,
+                                  this.view.itemsize, eltType) {
+          throw new ChapelException(
+            "Source array's format does not match requested element type"
+          );
+        }
       var ptr_ = this.view.buf: c_ptr(eltType);
       forall i in 0..#this.size {
         yield ptr_[i];
@@ -3187,18 +3253,22 @@ module Python {
 
     @chpldoc.nodoc
     proc array(type eltType, param rank: int): [] throws {
-      if !checkFormatWithEltType(this.view.format,
-                                 this.view.itemsize, eltType) {
-        throw new ChapelException("Format does not match element type");
-      }
+      if boundsChecking then
+        if !checkFormatWithEltType(this.view.format,
+                                  this.view.itemsize, eltType) {
+          throw new ChapelException(
+            "Source array's format does not match requested element type"
+          );
+        }
       var buf = this.view.buf: c_ptr(eltType);
       var ndim = this.view.ndim;
 
-      if ndim != rank {
-        throw new ChapelException(
-          "Python array of rank " + ndim:string +
-          " cannot be converted to a Chapel array of rank " + rank:string);
-      }
+      if boundsChecking then
+        if ndim != rank {
+          throw new ChapelException(
+            "Python array of rank " + ndim:string +
+            " cannot be converted to a Chapel array of rank " + rank:string);
+        }
 
       var ranges: rank * range(int, boundKind.both, strideKind.any);
       for param i in 0..<rank {
