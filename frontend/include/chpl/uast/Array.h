@@ -149,54 +149,52 @@ class Array final : public AstNode {
    */
   class FlatArrayIterator {
    private:
-    std::vector<AstList::const_iterator> iterStack;
+    std::vector<AstList::const_iterator> rowIterStack;
     AstList::const_iterator topLevelEnd;
 
     /*
      * Descend to the final array dimension, adding an iterator for each
      * dimension along the way.
-    */
+     */
     void descend() {
-      if (!iterStack.empty()) {
-        while (auto row = (*iterStack.back())->toArrayRow()) {
-          this->iterStack.push_back(row->begin());
+      if (!rowIterStack.empty()) {
+        while (auto row = (*rowIterStack.back())->toArrayRow()) {
+          this->rowIterStack.push_back(row->begin());
         }
       }
     }
 
    public:
-    FlatArrayIterator(const Array* iterand, bool end=false) {
+    FlatArrayIterator(const Array* iterand, bool end = false) {
       if (end) {
-        iterStack.push_back(iterand->end());
+        rowIterStack.push_back(iterand->end());
       } else {
-        iterStack.push_back(iterand->begin());
+        rowIterStack.push_back(iterand->begin());
         descend();
       }
       topLevelEnd = iterand->end();
     }
 
     bool operator==(const FlatArrayIterator rhs) const {
-      return this->iterStack == rhs.iterStack;
+      return this->rowIterStack == rhs.rowIterStack;
     }
     bool operator!=(const FlatArrayIterator rhs) const {
       return !(*this == rhs);
     }
 
     const AstNode* operator*() const {
-      return (const AstNode*) this->iterStack.back()->get();
+      return (const AstNode*)this->rowIterStack.back()->get();
     }
-    const AstNode* operator->() const {
-      return operator*();
-    }
+    const AstNode* operator->() const { return operator*(); }
 
     FlatArrayIterator& operator++() {
-      ++iterStack.back();
+      ++rowIterStack.back();
 
       // Pop up the stack until we're either at the top level, or at a row we
       // haven't already gone through.
-      while (iterStack.size() > 1) {
+      while (rowIterStack.size() > 1) {
         AstList::const_iterator rowEnd;
-        auto parent = iterStack[iterStack.size() - 2];
+        auto parent = rowIterStack[rowIterStack.size() - 2];
         if (auto parentRow = (*parent)->toArrayRow()) {
           rowEnd = parentRow->end();
         } else if (auto parentArray = (*parent)->toArray()) {
@@ -207,10 +205,10 @@ class Array final : public AstNode {
                       "dimension not contained within an array or array row");
         }
 
-        if (iterStack.back() == rowEnd) {
-          iterStack.pop_back();
-          ++iterStack.back();
-          if (iterStack.back() != topLevelEnd) {
+        if (rowIterStack.back() == rowEnd) {
+          rowIterStack.pop_back();
+          ++rowIterStack.back();
+          if (rowIterStack.back() != topLevelEnd) {
             descend();
           }
         } else {
