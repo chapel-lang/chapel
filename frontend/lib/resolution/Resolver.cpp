@@ -161,6 +161,8 @@ static QualifiedType::Kind qualifiedTypeKindForId(Context* context, ID id) {
     return QualifiedType::TYPE;
   } else if (asttags::isEnumElement(tag)) {
     return QualifiedType::CONST_VAR;
+  } else if (asttags::isLoop(tag)) {
+    return QualifiedType::LOOP;
   }
 
   return QualifiedType::UNKNOWN;
