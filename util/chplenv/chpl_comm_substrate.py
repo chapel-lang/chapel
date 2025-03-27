@@ -39,7 +39,7 @@ def get():
         else:
             substrate_val = 'none'
 
-    check_valid_var("CHPL_COMM_SUBSTRATE", substrate_val, ("none", "aries", "ofi", "ibv", "udp", "mpi"))
+    check_valid_var("CHPL_COMM_SUBSTRATE", substrate_val, ("none", "aries", "ofi", "ibv", "udp", "smp", "mpi"))
     return substrate_val
 
 
