@@ -1711,16 +1711,6 @@ struct Converter final : UastConverter {
 
   /// Array, Domain, Range, Tuple ///
 
-  void convertArrayRow(const uast::ArrayRow* node, CallExpr* actualList) {
-    for (auto expr : node->exprs()) {
-      if (expr->isArrayRow()) {
-        convertArrayRow(expr->toArrayRow(), actualList);
-      } else {
-        actualList->insertAtTail(convertAST(expr));
-      }
-    }
-  }
-
   Expr* visit(const uast::Array* node) {
     CallExpr* actualList = new CallExpr(PRIM_ACTUALS_LIST);
     Expr* shapeList = nullptr;
@@ -1762,9 +1752,8 @@ struct Converter final : UastConverter {
       }
       shapeList = new CallExpr("_build_tuple", shapeActualList);
 
-      for (auto expr : node->exprs()) {
-        // TODO: use flattening helper on Array
-        convertArrayRow(expr->toArrayRow(), actualList);
+      for (auto expr : node->flattenedExprs()) {
+        actualList->insertAtTail(convertAST(expr));
       }
     }
 
