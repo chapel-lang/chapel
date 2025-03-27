@@ -181,6 +181,7 @@ def run_process_with_chpl_env(*args, **kwargs):
     chpl_env = get_chplenv()
     file_env = os.environ.copy()
     file_env.update(chpl_env)
+    file_env.update(kwargs.get('env', {}))
     kwargs['env'] = file_env
     return run_process(*args, **kwargs)
 
@@ -2374,7 +2375,7 @@ def main():
                             for sprediff in systemPrediffs:
                                 sys.stdout.write('[Executing system-wide prediff %s]\n'%(sprediff))
                                 sys.stdout.flush()
-                                stdout = run_process([sprediff, execname, execlog, compiler,
+                                stdout = run_process_with_chpl_env([sprediff, execname, execlog, compiler,
                                                       ' '.join(envCompopts)+' '+compopts, ' '.join(args)],
                                                      env=dict(list(os.environ.items()) + list(testenv.items())),
                                                      stdout=subprocess.PIPE, stderr=subprocess.STDOUT)[1]
@@ -2383,7 +2384,7 @@ def main():
                         if globalPrediff:
                             sys.stdout.write('[Executing ./PREDIFF]\n')
                             sys.stdout.flush()
-                            stdout = run_process(['./PREDIFF', execname, execlog, compiler,
+                            stdout = run_process_with_chpl_env(['./PREDIFF', execname, execlog, compiler,
                                                  ' '.join(envCompopts)+ ' '+compopts, ' '.join(args)],
                                                  env=dict(list(os.environ.items()) + list(testenv.items())),
                                                  stdout=subprocess.PIPE, stderr=subprocess.STDOUT)[1]
@@ -2392,7 +2393,7 @@ def main():
                         if prediff:
                             sys.stdout.write('[Executing prediff ./%s]\n'%(prediff))
                             sys.stdout.flush()
-                            stdout = run_process(['./'+prediff, execname, execlog, compiler,
+                            stdout = run_process_with_chpl_env(['./'+prediff, execname, execlog, compiler,
                                                  ' '.join(envCompopts)+' '+compopts, ' '.join(args)],
                                                  env=dict(list(os.environ.items()) + list(testenv.items())),
                                                  stdout=subprocess.PIPE, stderr=subprocess.STDOUT)[1]
