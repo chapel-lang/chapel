@@ -2220,101 +2220,101 @@ module Python {
 
     // Casts
     /* Creates a new int from ``x``, when ``x`` is a :class:`Value`. */
-    operator :(x: borrowed Value, type t: int(?)): t {
+    operator :(x: borrowed Value, type t: int(?)): t throws {
       var g = PyGILState_Ensure();
       defer PyGILState_Release(g);
 
       var pyObj = x.getPyObject();
       Py_INCREF(pyObj);
-      var res = try! x.interpreter.fromPythonInner(t, pyObj);
+      var res = x.interpreter.fromPythonInner(t, pyObj);
 
       return res;
     }
 
     /* Creates a new uint from ``x``, when ``x`` is a :class:`Value`. */
-    operator :(x: borrowed Value, type t: uint(?)): t {
+    operator :(x: borrowed Value, type t: uint(?)): t throws {
       var g = PyGILState_Ensure();
       defer PyGILState_Release(g);
 
       var pyObj = x.getPyObject();
       Py_INCREF(pyObj);
-      var res = try! x.interpreter.fromPythonInner(t, pyObj);
+      var res = x.interpreter.fromPythonInner(t, pyObj);
 
       return res;
     }
 
     /* Creates a new real from ``x``, when ``x`` is a :class:`Value`. */
-    operator :(x: borrowed Value, type t: real(?)): t {
+    operator :(x: borrowed Value, type t: real(?)): t throws {
       var g = PyGILState_Ensure();
       defer PyGILState_Release(g);
 
       var pyObj = x.getPyObject();
       Py_INCREF(pyObj);
-      var res = try! x.interpreter.fromPythonInner(t, pyObj);
+      var res = x.interpreter.fromPythonInner(t, pyObj);
 
       return res;
     }
 
     /* Creates a new bool from ``x``, when ``x`` is a :class:`Value`. */
-    operator :(x: borrowed Value, type t: bool): t {
+    operator :(x: borrowed Value, type t: bool): t throws {
       var g = PyGILState_Ensure();
       defer PyGILState_Release(g);
 
       var pyObj = x.getPyObject();
       Py_INCREF(pyObj);
-      var res = try! x.interpreter.fromPythonInner(t, pyObj);
+      var res = x.interpreter.fromPythonInner(t, pyObj);
 
       return res;
     }
 
     /* Creates a new string from ``x``, when ``x`` is a :class:`Value`. */
-    operator :(x: borrowed Value, type t: string): t {
+    operator :(x: borrowed Value, type t: string): t throws {
       var g = PyGILState_Ensure();
       defer PyGILState_Release(g);
 
       // Check if this type is normally supposed to be a string.  To do that,
       // get the normal Python string type.
       var dummy = "s";
-      var dummyPyObj = try! x.interpreter.toPythonInner(dummy); // TODO: catch
+      var dummyPyObj = x.interpreter.toPythonInner(dummy); // TODO: catch
       var strType = Py_TYPE(dummyPyObj);
-      try! x.interpreter.checkException();
+      x.interpreter.checkException();
 
       var pyObj = x.getPyObject();
       var isStr = Py_IS_TYPE(pyObj, strType): bool;
-      try! x.interpreter.checkException();
+      x.interpreter.checkException();
       if (isStr) {
         // If it is a string, we need to properly transform it.
         Py_INCREF(pyObj);
-        var res = try! x.interpreter.fromPythonInner(t, pyObj);
+        var res = x.interpreter.fromPythonInner(t, pyObj);
 
         return res;
       } else {
         // If it's not already a Python string, then we're trying to convert it
         // to a string, potentially for the purpose of writing the object.
-        return try! x.str();
+        return x.str();
       }
     }
 
     /* Creates a new bytes from ``x``, when ``x`` is a :class:`Value`. */
-    operator :(x: borrowed Value, type t: bytes): t {
+    operator :(x: borrowed Value, type t: bytes): t throws {
       var g = PyGILState_Ensure();
       defer PyGILState_Release(g);
 
       var pyObj = x.getPyObject();
       Py_INCREF(pyObj);
-      var res = try! x.interpreter.fromPythonInner(t, pyObj);
+      var res = x.interpreter.fromPythonInner(t, pyObj);
 
       return res;
     }
 
     /* Creates a new tuple from ``x``, when ``x`` is a :class:`Value`. */
-    operator :(x: borrowed Value, type t: _tuple): t {
+    operator :(x: borrowed Value, type t: _tuple): t throws {
       var g = PyGILState_Ensure();
       defer PyGILState_Release(g);
 
       var pyObj = x.getPyObject();
       Py_INCREF(pyObj);
-      var res = try! x.interpreter.fromPythonInner(t, pyObj);
+      var res = x.interpreter.fromPythonInner(t, pyObj);
 
       return res;
     }
@@ -2322,49 +2322,49 @@ module Python {
     /*
       Creates a new list from ``x``, when ``x`` is a :class:`Value`.
     */
-    operator :(x: borrowed Value, type t: List.list(?)): t {
+    operator :(x: borrowed Value, type t: List.list(?)): t throws {
       var g = PyGILState_Ensure();
       defer PyGILState_Release(g);
 
       var pyObj = x.getPyObject();
       Py_INCREF(pyObj);
-      var res = try! x.interpreter.fromPythonInner(t, pyObj);
+      var res = x.interpreter.fromPythonInner(t, pyObj);
 
       return res;
     }
 
     /* Creates a new map from ``x``, when ``x`` is a :class:`Value`. */
-    operator :(x: borrowed Value, type t: Map.map(?)): t {
+    operator :(x: borrowed Value, type t: Map.map(?)): t throws {
       var g = PyGILState_Ensure();
       defer PyGILState_Release(g);
 
       var pyObj = x.getPyObject();
       Py_INCREF(pyObj);
-      var res = try! x.interpreter.fromPythonInner(t, pyObj);
+      var res = x.interpreter.fromPythonInner(t, pyObj);
 
       return res;
     }
 
     /* Creates a new set from ``x``, when ``x`` is a :class:`Value`. */
-    operator :(x: borrowed Value, type t: Set.set(?)): t {
+    operator :(x: borrowed Value, type t: Set.set(?)): t throws {
       var g = PyGILState_Ensure();
       defer PyGILState_Release(g);
 
       var pyObj = x.getPyObject();
       Py_INCREF(pyObj);
-      var res = try! x.interpreter.fromPythonInner(t, pyObj);
+      var res = x.interpreter.fromPythonInner(t, pyObj);
 
       return res;
     }
 
     /* Creates a new array from ``x``, when ``x`` is a :class:`Value`. */
-    operator :(x: borrowed Value, type t: []): t {
+    operator :(x: borrowed Value, type t: []): t throws {
       var g = PyGILState_Ensure();
       defer PyGILState_Release(g);
 
       var pyObj = x.getPyObject();
       Py_INCREF(pyObj);
-      var res = try! x.interpreter.fromPythonInner(t, pyObj);
+      var res = x.interpreter.fromPythonInner(t, pyObj);
 
       return res;
     }
