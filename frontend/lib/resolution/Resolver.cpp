@@ -4180,10 +4180,6 @@ static QualifiedType computeDefaultsIfNecessary(Resolver& rv,
 void Resolver::resolveIdentifier(const Identifier* ident) {
   ResolvedExpression& result = byPostorder.byAst(ident);
 
-  if (ident->id().str() == "looplabel@4") {
-    debuggerBreakHere();
-  }
-
   // for 'proc f(arg:?)' need to set 'arg' to have type AnyType
   CHPL_ASSERT(declStack.size() > 0);
   const Decl* inDecl = declStack.back();
