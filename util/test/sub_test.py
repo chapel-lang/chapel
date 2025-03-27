@@ -176,6 +176,14 @@ def elapsed_sub_test_time():
 def print_elapsed_sub_test_time(test_name, elapsed_sec):
     print('[Finished subtest "{0}" - {1:.3f} seconds]\n'.format(test_name, elapsed_sec))
 
+def run_process_with_chpl_env(*args, **kwargs):
+    # grab the chplenv so it can be stuffed into the subprocess env
+    chpl_env = get_chplenv()
+    file_env = os.environ.copy()
+    file_env.update(chpl_env)
+    kwargs['env'] = file_env
+    return run_process(*args, **kwargs)
+
 def run_process(*args, **kwargs):
     p = subprocess.Popen(*args, **kwargs)
     (stdout, stderr) = p.communicate()
@@ -325,16 +333,11 @@ def ReadFileWithComments(f, ignoreLeadingSpace=True, args=None):
     # OSError while trying to run, report it and try to keep going
     if os.access(f, os.X_OK):
         try:
-            # grab the chplenv so it can be stuffed into the subprocess env
-            chpl_env = get_chplenv()
-            file_env = os.environ.copy()
-            file_env.update(chpl_env)
-
             # execute the file and grab its output
             tmp_args = [os.path.abspath(f)]
             if args != None:
                 tmp_args += args
-            output = run_process(tmp_args, stdout=subprocess.PIPE, env=file_env)[1]
+            output = run_process_with_chpl_env(tmp_args, stdout=subprocess.PIPE, env=file_env)[1]
             mylines = output.splitlines()
 
         except OSError as e:
@@ -953,10 +956,9 @@ def main():
     if os.access('./PRETEST', os.R_OK|os.X_OK):
         sys.stdout.write('[Executing ./PRETEST %s]\n'%(compiler))
         sys.stdout.flush()
-        stdout = run_process(['./PRETEST', compiler],
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.STDOUT,
-                             env=os.environ)[1]
+        stdout = run_process_with_chpl_env(['./PRETEST', compiler],
+                                            stdout=subprocess.PIPE,
+                                            stderr=subprocess.STDOUT)[1]
         sys.stdout.write(stdout)
         sys.stdout.flush()
 
@@ -1661,8 +1663,8 @@ def main():
             if globalPrecomp:
                 sys.stdout.write('[Executing ./PRECOMP %s %s %s]\n'%(execname, complog, compiler))
                 sys.stdout.flush()
-                stdout = run_process(['./PRECOMP', execname, complog, compiler],
-                                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT)[1]
+                stdout = run_process_with_chpl_env(['./PRECOMP', execname, complog, compiler],
+                                                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT)[1]
                 sys.stdout.write(stdout)
                 sys.stdout.flush()
 
@@ -1670,8 +1672,8 @@ def main():
                 sys.stdout.write('[Executing precomp %s.precomp]\n'%(test_filename))
                 sys.stdout.flush()
                 test_precomp = './{0}.precomp'.format(test_filename)
-                stdout = run_process([test_precomp, execname, complog, compiler],
-                                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT)[1]
+                stdout = run_process_with_chpl_env([test_precomp, execname, complog, compiler],
+                                                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT)[1]
                 sys.stdout.write(stdout)
                 sys.stdout.flush()
 
@@ -1833,7 +1835,7 @@ def main():
                     for sprediff in systemPrediffs:
                         sys.stdout.write('[Executing system-wide prediff %s]\n'%(sprediff))
                         sys.stdout.flush()
-                        stdout = run_process([sprediff, execname, complog, compiler,
+                        stdout = run_process_with_chpl_env([sprediff, execname, complog, compiler,
                                               ' '.join(envCompopts)+' '+compopts, ' '.join(args)],
                                              stdout=subprocess.PIPE, stderr=subprocess.STDOUT)[1]
                         sys.stdout.write(stdout)
@@ -1842,7 +1844,7 @@ def main():
                 if globalPrediff:
                     sys.stdout.write('[Executing ./PREDIFF]\n')
                     sys.stdout.flush()
-                    stdout = run_process(['./PREDIFF', execname, complog, compiler,
+                    stdout = run_process_with_chpl_env(['./PREDIFF', execname, complog, compiler,
                                          ' '.join(envCompopts)+' '+compopts, ' '.join(args)],
                                          stdout=subprocess.PIPE, stderr=subprocess.STDOUT)[1]
                     sys.stdout.write(stdout)
@@ -1852,7 +1854,7 @@ def main():
                     sys.stdout.write('[Executing prediff %s.prediff]\n'%(test_filename))
                     sys.stdout.flush()
                     test_prediff = './{0}.prediff'.format(test_filename)
-                    stdout = run_process([test_prediff, execname, complog, compiler,
+                    stdout = run_process_with_chpl_env([test_prediff, execname, complog, compiler,
                                          ' '.join(envCompopts)+' '+compopts, ' '.join(args)],
                                          stdout=subprocess.PIPE, stderr=subprocess.STDOUT)[1]
                     sys.stdout.write(stdout)
@@ -2075,7 +2077,7 @@ def main():
                     for spreexec in systemPreexecs:
                         sys.stdout.write('[Executing system-wide preexec %s]\n'%(spreexec))
                         sys.stdout.flush()
-                        stdout = run_process([spreexec, execname, execlog, compiler],
+                        stdout = run_process_with_chpl_env([spreexec, execname, execlog, compiler],
                                              stdout=subprocess.PIPE, stderr=subprocess.STDOUT)[1]
                         sys.stdout.write(stdout)
                         sys.stdout.flush()
@@ -2083,7 +2085,7 @@ def main():
                 if globalPreexec:
                     sys.stdout.write('[Executing ./PREEXEC]\n')
                     sys.stdout.flush()
-                    stdout = run_process(['./PREEXEC', execname, execlog, compiler],
+                    stdout = run_process_with_chpl_env(['./PREEXEC', execname, execlog, compiler],
                                          stdout=subprocess.PIPE, stderr=subprocess.STDOUT)[1]
                     sys.stdout.write(stdout)
                     sys.stdout.flush()
@@ -2092,7 +2094,7 @@ def main():
                     sys.stdout.write('[Executing preexec %s.preexec]\n'%(test_filename))
                     sys.stdout.flush()
                     test_preexec = './{0}.preexec'.format(test_filename)
-                    stdout = run_process([test_preexec, execname, execlog, compiler],
+                    stdout = run_process_with_chpl_env([test_preexec, execname, execlog, compiler],
                                          stdout=subprocess.PIPE, stderr=subprocess.STDOUT)[1]
                     sys.stdout.write(stdout)
                     sys.stdout.flush()
