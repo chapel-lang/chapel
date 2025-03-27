@@ -16,6 +16,7 @@ class my_class:
 proc test(obj: borrowed) {
   writeln("str: ", obj.str());
   writeln("repr: ", obj.repr());
+  writeln("cast to string: ", obj: string);
   writeln("default: ", obj);
   writeln("================");
 }

@@ -1,0 +1,26 @@
+checking ints
+11
+11
+11
+11
+11
+11
+checking uints
+11
+11
+11
+11
+11
+checking reals
+true
+true
+true
+checking bools
+True
+true
+checking strings
+a str
+a str
+checking bytes
+b'a byte str'
+a byte str

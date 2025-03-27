@@ -2217,6 +2217,70 @@ module Python {
     proc getPyObject() do return this.obj;
 
     // TODO: call should support kwargs
+
+    // Casts
+    /* Creates a new int from ``x``, when ``x`` is a :class:`Value`. */
+    operator :(x: borrowed Value, type t: int(?)): t throws {
+      return _castHelper(x, t);
+    }
+
+    /* Creates a new uint from ``x``, when ``x`` is a :class:`Value`. */
+    operator :(x: borrowed Value, type t: uint(?)): t throws {
+      return _castHelper(x, t);
+    }
+
+    /* Creates a new real from ``x``, when ``x`` is a :class:`Value`. */
+    operator :(x: borrowed Value, type t: real(?)): t throws {
+      return _castHelper(x, t);
+    }
+
+    /* Creates a new bool from ``x``, when ``x`` is a :class:`Value`. */
+    operator :(x: borrowed Value, type t: bool): t throws {
+      return _castHelper(x, t);
+    }
+
+    /* Creates a new bytes from ``x``, when ``x`` is a :class:`Value`. */
+    operator :(x: borrowed Value, type t: bytes): t throws {
+      return _castHelper(x, t);
+    }
+
+    /* Creates a new tuple from ``x``, when ``x`` is a :class:`Value`. */
+    operator :(x: borrowed Value, type t: _tuple): t throws {
+      return _castHelper(x, t);
+    }
+
+    /*
+      Creates a new list from ``x``, when ``x`` is a :class:`Value`.
+    */
+    operator :(x: borrowed Value, type t: List.list(?)): t throws {
+      return _castHelper(x, t);
+    }
+
+    /* Creates a new map from ``x``, when ``x`` is a :class:`Value`. */
+    operator :(x: borrowed Value, type t: Map.map(?)): t throws {
+      return _castHelper(x, t);
+    }
+
+    /* Creates a new set from ``x``, when ``x`` is a :class:`Value`. */
+    operator :(x: borrowed Value, type t: Set.set(?)): t throws {
+      return _castHelper(x, t);
+    }
+
+    /* Creates a new array from ``x``, when ``x`` is a :class:`Value`. */
+    operator :(x: borrowed Value, type t: []): t throws {
+      return _castHelper(x, t);
+    }
+
+    proc type _castHelper(x: borrowed Value, type t): t throws {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
+      var pyObj = x.getPyObject();
+      Py_INCREF(pyObj);
+      var res = x.interpreter.fromPythonInner(t, pyObj);
+
+      return res;
+    }
   }
 
   /*
