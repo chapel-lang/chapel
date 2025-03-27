@@ -3127,7 +3127,7 @@ module Python {
     }
     @chpldoc.nodoc
     iter these() ref : eltType throws {
-      foreach e in these(eltType=this.eltType) do yield e;
+      for e in these(eltType=this.eltType) do yield e;
     }
     @chpldoc.nodoc
     iter these(param tag: iterKind, type eltType) ref : eltType throws
