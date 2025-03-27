@@ -185,7 +185,7 @@ int main() {
   // multi-dim literals
   testArrayLiteral("[1, 2; 3, 4]", "domain(2)", "int");
   testArrayLiteral("[1, 2; 3, 4;]", "domain(2)", "int");
-  testArrayLiteral("[1;]", "domain(1)", "int");
+  testArrayLiteral("[1;]", "domain(2)", "int");
   testArrayLiteral("[1, 2; 3, 4;; 5, 6; 7, 8]", "domain(3)", "int");
 
   // associative
