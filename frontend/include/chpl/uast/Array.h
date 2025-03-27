@@ -207,16 +207,21 @@ class Array final : public AstNode {
         if (rowIterStack.back() == rowEnd) {
           rowIterStack.pop_back();
           ++rowIterStack.back();
-          if (rowIterStack.back() != topLevelEnd) {
-            descend();
-          }
         } else {
           break;
         }
       }
 
+      // We're either in an unfinished row or at the end of the top level.
+      // In the former case, descend to the final dimension contained under this
+      // row to continue iteration.
+      if (rowIterStack.back() != topLevelEnd) {
+        descend();
+      }
+
       return *this;
     }
+
     FlatArrayIterator operator++(int) {
       FlatArrayIterator tmp = *this;
       operator++();
