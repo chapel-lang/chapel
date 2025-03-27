@@ -338,7 +338,7 @@ def ReadFileWithComments(f, ignoreLeadingSpace=True, args=None):
             tmp_args = [os.path.abspath(f)]
             if args != None:
                 tmp_args += args
-            output = run_process_with_chpl_env(tmp_args, stdout=subprocess.PIPE, env=file_env)[1]
+            output = run_process_with_chpl_env(tmp_args, stdout=subprocess.PIPE)[1]
             mylines = output.splitlines()
 
         except OSError as e:
