@@ -149,6 +149,18 @@ import errno
 from functools import reduce
 import atexit
 
+def memoize(func):
+    """Function memoizing decorator"""
+    cache = func.cache = {}
+
+    def memoize_wrapper(*args, **kwargs):
+        if kwargs:
+            return func(*args, **kwargs)
+        if args not in cache:
+            cache[args] = func(*args)
+        return cache[args]
+    return memoize_wrapper
+
 def elapsed_sub_test_time():
     """Print elapsed time for sub_test call to console."""
     global sub_test_start_time, localdir
@@ -272,6 +284,7 @@ def PerfDirFile(s):
 def PerfTFile(test_filename, sfx):
     return test_filename + '.' + perflabel + sfx
 
+@memoize
 def get_chplenv():
     env_cmd = [os.path.join(utildir, 'printchplenv'), '--all', '--simple', '--no-tidy', '--internal']
     chpl_env = run_process(env_cmd, stdout=subprocess.PIPE)[1]
@@ -908,25 +921,25 @@ def main():
         uniquifyTests = True
 
     # CHPL_COMM
-    chplcomm=os.getenv('CHPL_COMM','none').strip()
+    chplcomm=get_chplenv().get("CHPL_COMM", "none").strip()
     chplcommstr='.comm-'+chplcomm
     # sys.stdout.write('chplcomm=%s\n'%(chplcomm))
 
     # CHPL_NETWORK_ATOMICS
-    chplna=os.getenv('CHPL_NETWORK_ATOMICS','none').strip()
+    chplna=get_chplenv().get('CHPL_NETWORK_ATOMICS','none').strip()
     chplnastr='.na-'+chplna
     # sys.stdout.write('chplna=%s\n'%(chplna))
 
     # CHPL_LAUNCHER
-    chpllauncher=os.getenv('CHPL_LAUNCHER','none').strip()
+    chpllauncher=get_chplenv().get('CHPL_LAUNCHER','none').strip()
 
     # CHPL_LOCALE_MODEL
-    chpllm=os.getenv('CHPL_LOCALE_MODEL','flat').strip()
+    chpllm=get_chplenv().get('CHPL_LOCALE_MODEL','flat').strip()
     chpllmstr='.lm-'+chpllm
     # sys.stdout.write('lm=%s\n'%(chpllm))
 
     # CHPL_TASKS
-    chpltasks=os.getenv('CHPL_TASKS', 'none').strip()
+    chpltasks=get_chplenv().get('CHPL_TASKS', 'none').strip()
     chpltasksstr='.tasks-'+chpltasks
 
     #
