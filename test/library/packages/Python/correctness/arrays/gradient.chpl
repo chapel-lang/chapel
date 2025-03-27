@@ -39,8 +39,8 @@ proc main() {
   res = 0.0;
 
   {
-    var pyRes = grad(owned PyArray(real), pyArr);
-    res = pyRes.array;
+    var pyRes = grad(owned PyArray(real, 1), pyArr);
+    res = pyRes.array();
   }
   write("grad: ", res);
   write(" dom: ", res.domain);
