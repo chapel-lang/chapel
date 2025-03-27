@@ -157,10 +157,9 @@ class Array final : public AstNode {
      * dimension along the way.
      */
     void descend() {
-      if (!rowIterStack.empty()) {
-        while (auto row = (*rowIterStack.back())->toArrayRow()) {
-          this->rowIterStack.push_back(row->begin());
-        }
+      CHPL_ASSERT(!rowIterStack.empty() && "should not be possible");
+      while (auto row = (*rowIterStack.back())->toArrayRow()) {
+        this->rowIterStack.push_back(row->begin());
       }
     }
 
