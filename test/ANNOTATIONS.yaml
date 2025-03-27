@@ -2575,6 +2575,12 @@ arkouda: &arkouda-base
   01/02/25:
     - text: No longer running tests with --isolated
       config:  16-node-xc
+  03/06/25:
+    - text: Suspected systems changes
+      config: 16-node-xc
+  03/28/25:
+    - text: Add ARKOUDA_DEFAULT_TEMP_DIRECTORY for arkouda perf tests (#26949)
+      config: 16-node-hpe-apollo-hdr
 
 arkouda-string:
   <<: *arkouda-base
