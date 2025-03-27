@@ -70,24 +70,27 @@ Declaring throwing Initializers
 
 Like typical routines, initializers and post-initializers
 (``postinit()`` procedures) can be declared with the ``throws``
-keyword.  This enables errors in the bodies of these procedures to be
-thrown back to the calling context.  When an error is thrown, the
-memory that would have been used for the result of the initializer
-will be freed before the error is thrown back to the caller.
+keyword.  This enables errors encountered during object initialization
+to be thrown back to the calling context.  When an error is thrown
+during either of these calls, the compiler ensures that the
+``deinit()`` routine for each initialized field is called, and that
+the memory allocated to store the object is freed.
 
-Note that, at present, this feature has two limitations:
+Note that, at present, this feature has the following limitations:
 
-* The fields of the object will not have their deinitializers
-  (``deinit()`` procedures) called as they should be (see
-  https://github.com/chapel-lang/chapel/issues/26437).
+* Initializers can only throw errors after the ``init this`` statement
+  (see :ref:`Limitations_on_Instance_Usage_in_Initializers` for more
+  information about ``init this``).  One implication of this is that
+  the initializer of a superclass may not ``throw`` since its
+  invocation precedes the ``init this;`` statement.
 
-* Initializers can only throw errors via calls to throwing routines
-  (i.e., they cannot contain ``throws`` statements directly) — and
-  these calls must come after the ``init this`` statement (see
-  :ref:`Limitations_on_Instance_Usage_in_Initializers` for information
-  on ``init this`` and the example in
-  :ref:`init_declaring_init_as_throws`).
+* Initializers can only throw errors by making calls to throwing
+  routines, not by directly executing ``throws`` statements.
 
+The following is an example of a throwing initializer that relies on a
+throwing helper procedure, ``validate()``, called after its `init
+this;` statement:
+  
 *Example (init-declared-throws.chpl)*.
 
 .. code-block:: chapel
