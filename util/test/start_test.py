@@ -1072,18 +1072,10 @@ def set_up_executables():
     locale_model = chpl_locale_model.get()
 
     logger.write('[comm: "{0}"]'.format(comm))
-    os.environ["CHPL_COMM"] = comm
-    os.environ["CHPL_GASNET_SEGMENT"] = chpl_comm_segment.get()
-    os.environ["CHPL_LAUNCHER"] = launcher
 
     logger.write('[networkAtomics: "{0}"]'.format(network_atomics))
-    os.environ["CHPL_NETWORK_ATOMICS"] = network_atomics
 
     logger.write('[localeModel: "{0}"]'.format(locale_model))
-    os.environ["CHPL_LOCALE_MODEL"] = locale_model
-
-    os.environ["CHPL_LLVM"] = chpl_llvm.get()
-    os.environ["CHPL_TASKS"] = chpl_tasks.get()
 
     # skip stdin tests for most custom launchers, except for amdprun and slurm
     if (launcher != "none" and launcher != "amudprun" and launcher !=
