@@ -131,6 +131,18 @@ static bool resolvedVisitorEnterAst(ResolvedVisitorImpl& v,
 
 }
 
+static inline const uast::Loop*
+getBreakOrContinueTarget(Context* context,
+                         const ResolutionResultByPostorderID& byPostorder,
+                         const uast::AstNode* ast) {
+  auto toId = byPostorder.byAst(ast).toId();
+  CHPL_ASSERT(!toId.isEmpty());
+  auto loop = parsing::idToAst(context, toId)->toLoop();
+  CHPL_ASSERT(loop);
+  return loop;
+}
+
+
 /**
   This class enables visiting resolved uAST nodes.
   It is a kind of adapter that converts untyped visiting (traversing uAST nodes
@@ -227,6 +239,10 @@ public:
     return byPostorder_.byId(id);
   }
 
+  /** Given a Break or Continue statement, returns its target. */
+  const uast::Loop* getBreakOrContinueTarget(const uast::AstNode* ast) const {
+    return resolution::getBreakOrContinueTarget(context(), byPostorder(), ast);
+  }
 
   /*
    * Visiting a param for-loop has special behavior. The user's visitor
@@ -321,6 +337,10 @@ public:
     return byPostorder_.byId(id);
   }
 
+  /** Given a Break or Continue statement, returns its target. */
+  const uast::Loop* getBreakOrContinueTarget(const uast::AstNode* ast) const {
+    return resolution::getBreakOrContinueTarget(context(), byPostorder(), ast);
+  }
 
   /*
    * Visiting a param for-loop has special behavior. The user's visitor

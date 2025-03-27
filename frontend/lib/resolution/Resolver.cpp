@@ -161,6 +161,8 @@ static QualifiedType::Kind qualifiedTypeKindForId(Context* context, ID id) {
     return QualifiedType::TYPE;
   } else if (asttags::isEnumElement(tag)) {
     return QualifiedType::CONST_VAR;
+  } else if (asttags::isLoop(tag)) {
+    return QualifiedType::LOOP;
   }
 
   return QualifiedType::UNKNOWN;
@@ -652,6 +654,7 @@ Resolver::paramLoopResolver(Resolver& parent,
   ret.declStack = parent.declStack;
   ret.byPostorder.setupForParamLoop(loop, parent.byPostorder);
   ret.typedSignature = parent.typedSignature;
+  ret.curStmt = loop;
   ret.rc = parent.rc;
 
   return ret;
@@ -3288,6 +3291,11 @@ QualifiedType Resolver::typeForId(const ID& id) {
                         !id.isSymbolDefiningScope());
   if (useLocalResult && curStmt != nullptr) {
     if (curStmt->id().contains(id)) {
+      if (asttags::isLoop(parsing::idToTag(context, id))) {
+        // we found a reference to a label. not only do we not need to use a
+        // local result, we can return right now.
+        return QualifiedType(QualifiedType::LOOP, UnknownType::get(context));
+      }
       // OK, proceed using local result
     } else {
       useLocalResult = false;
@@ -3428,7 +3436,8 @@ void Resolver::enterScope(const AstNode* ast) {
     declStack.push_back(d);
   }
   tagTracker[ast->tag()] += 1;
-  if (ast->isLoop()) {
+  if (auto l = ast->toLoop()) {
+    loopStack.push_back(l);
     tagTracker[AstTag::START_Loop] += 1;
   }
 }
@@ -3441,6 +3450,7 @@ void Resolver::exitScope(const AstNode* ast) {
   tagTracker[ast->tag()] -= 1;
   if (ast->isLoop()) {
     tagTracker[AstTag::START_Loop] -= 1;
+    loopStack.pop_back();
   }
 }
 
@@ -3682,6 +3692,22 @@ MatchingIdsWithName Resolver::lookupIdentifier(
 }
 
 
+static bool
+checkForLoopLabelOutsideBreakOrContinue(Context* context,
+                                        const AstNode* node, const ID& target) {
+  auto targetTag = parsing::idToTag(context, target);
+  if (asttags::isLoop(targetTag)) {
+    // This check would be insufficient if we could write something fun
+    // like 'continue (proc() {....})'. Fortunately, the grammar only
+    // allows simple identifiers after 'continue' etc.
+    auto parentTag = parsing::idToTag(context, parsing::idToParentId(context, node->id()));
+    if (!asttags::isContinue(parentTag) && !asttags::isBreak(parentTag)) {
+      CHPL_REPORT(context, LoopLabelOutsideBreakOrContinue, node, target);
+      return true;
+    }
+  }
+  return false;
+}
 
 static bool
 checkForErrorModuleAsVariable(Context* context, const AstNode* node,
@@ -3783,6 +3809,14 @@ checkForErrorUseBeforeDefine(Context* context, const AstNode* node,
         if (target.postOrderId() > node->id().postOrderId()) {
           // resolved to an identifier defined later
           auto nd = parsing::idToAst(context, target)->toNamedDecl();
+          if (!nd) {
+            // labels aren't NamedDecls, but they are included in scopes.
+            // They are also "on the outside" of loops which can refer to
+            // them, so they hit this branch. You can't use-before-def a label,
+            // since if it's usable, it's defined.
+            CHPL_ASSERT(asttags::isLoop(parsing::idToTag(context, target)));
+            return false;
+          }
           CHPL_ASSERT(nd && "identifier target was not a NamedDecl");
           CHPL_REPORT(context, UseOfLaterVariable, node, target, nd->name());
           return true;
@@ -3800,6 +3834,7 @@ checkForIdentifierTargetErrorsQuery(Context* context, ID nodeId, ID targetId) {
   auto nodeAst = parsing::idToAst(context, nodeId);
 
   // Use bitwise-OR here to avoid short-circuiting.
+  ret |= checkForLoopLabelOutsideBreakOrContinue(context, nodeAst, targetId);
   ret |= checkForErrorModuleAsVariable(context, nodeAst, targetId);
   ret |= checkForErrorNestedClassFieldRef(context, nodeAst, targetId);
   ret |= checkForErrorUseBeforeDefine(context, nodeAst, targetId);
@@ -6310,7 +6345,7 @@ static bool resolveParamForLoop(Resolver& rv, const For* forLoop, BoundInfo&& bo
 
   while (!boundInfo->done()) {
     // If a previous iteration continued, we should still keep iterating.
-    loopControlFlow.resetContinue();
+    loopControlFlow.resetContinue(forLoop);
 
     // Loop execution has ended somehow (throw, break, return). No need to push
     // loop resutls for skipped iterations.
@@ -6341,7 +6376,7 @@ static bool resolveParamForLoop(Resolver& rv, const For* forLoop, BoundInfo&& bo
 
   // Propagate the control flow information to the current frame.
   if (!rv.scopeStack.empty()) {
-    rv.currentFrame()->controlFlowInfo.sequenceIteration(loopControlFlow);
+    rv.currentFrame()->controlFlowInfo.sequenceIteration(loopControlFlow, forLoop);
   }
 
   auto paramLoop = new ResolvedParamLoop(forLoop);
@@ -7037,18 +7072,75 @@ void Resolver::exit(const Return* ret) {
   markReturnOrThrow();
 }
 
+static const Loop* findLastLoop(Resolver& rv) {
+  Resolver* current = &rv;
+  while (current) {
+    if (!current->loopStack.empty()) {
+      return current->loopStack.back();
+    }
+    current = current->parentResolver;
+  }
+
+  // post-parse-checks.cpp rules out orphaned continue/break
+  CHPL_ASSERT(false && "no loop found");
+  return nullptr;
+}
+
+template <typename ContinueOrBreak>
+const Loop* findTargetLoop(Resolver& rv, const ContinueOrBreak* node) {
+  if (!node->target()) {
+    return findLastLoop(rv);
+  }
+
+  // labeled continue/break.
+  auto target = node->target();
+  auto& refersTo = rv.byPostorder.byAst(target);
+
+  // if we couldn't find what it refers to, pretend it's the nearest loop.
+  if (refersTo.toId().isEmpty()) {
+    return findLastLoop(rv);
+  }
+
+
+  if (refersTo.type().kind() != QualifiedType::LOOP) {
+    CHPL_REPORT(rv.context, InvalidContinueBreakTarget, node, refersTo.toId(), refersTo.type());
+    return findLastLoop(rv);
+  }
+
+  // it's probably faster to seek up through
+  // the stack instead of going through idToParentId etc.
+  auto current = &rv;
+  while (current) {
+    for (auto it = current->loopStack.rbegin(); it != current->loopStack.rend(); ++it) {
+      if ((*it)->id() == refersTo.toId()) {
+        return *it;
+      }
+    }
+    current = current->parentResolver;
+  }
+
+  CHPL_ASSERT(false && "should not be possible to refer a label that's not in the scope stack");
+  return findLastLoop(rv);
+}
+
 bool Resolver::enter(const uast::Break* brk) {
   return true;
 }
 void Resolver::exit(const uast::Break* brk) {
-  markBreak();
+  auto target = findTargetLoop(*this, brk);
+  CHPL_ASSERT(target);
+  byPostorder.byAst(brk).setToId(target->id());
+  markBreak(target);
 }
 
 bool Resolver::enter(const uast::Continue* cont) {
   return true;
 }
 void Resolver::exit(const uast::Continue* cont) {
-  markContinue();
+  auto target = findTargetLoop(*this, cont);
+  CHPL_ASSERT(target);
+  byPostorder.byAst(cont).setToId(target->id());
+  markContinue(target);
 }
 
 bool Resolver::enter(const Throw* node) {
