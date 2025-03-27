@@ -2300,6 +2300,7 @@ bool Resolver::CallResultWrapper::noteResultWithoutError(
     const CallResolutionResult& result,
     optional<ActionAndId> actionAndId) {
   bool needsErrors = false;
+  bool markErroneous = false;
 
   for (auto& diagnostic : gatherUserDiagnostics(resolver.rc, result)) {
     // The diagnostic's depth means it's aimed for further up the call stack.
@@ -2323,10 +2324,11 @@ bool Resolver::CallResultWrapper::noteResultWithoutError(
       // we're asked not to emit errors, and only return if errors are
       // needed.
       needsErrors = true;
+      markErroneous = diagnostic.kind() == CompilerDiagnostic::ERROR;
     }
   }
 
-  if (!result.exprType().hasTypePtr() || needsErrors) {
+  if (!result.exprType().hasTypePtr() || markErroneous) {
     if (!actionAndId && r) {
       // Only set the type to erroneous if we're handling an actual user call,
       // and not an associated action.
