@@ -74,11 +74,6 @@ static inline PyObject* chpl_Py_None(void) { return (PyObject*)Py_None; }
 static inline PyObject* chpl_Py_True(void) { return (PyObject*)Py_True; }
 static inline PyObject* chpl_Py_False(void) { return (PyObject*)Py_False; }
 
-static inline PyTypeObject* chpl_Py_TYPE(PyObject* o) { return Py_TYPE(o); }
-static inline int chpl_Py_IS_TYPE(PyObject* o, PyTypeObject* t) {
-  return Py_IS_TYPE(o, t);
-}
-
 static inline PyObject* chpl_Py_CompileString(const char* str,
                                               const char* filename, int start) {
   return Py_CompileString(str, filename, start);
