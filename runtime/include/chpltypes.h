@@ -200,6 +200,7 @@ typedef struct _chpl_fn_info {
 typedef _Float16            _real16;
 typedef float               _real32;
 typedef double              _real64;
+typedef _Float16            _imag16;
 typedef float               _imag32;
 typedef double              _imag64;
 typedef int64_t             _symbol;
