@@ -36,6 +36,10 @@ cpp:identifier Location
 cpp:identifier AstTag
 cpp:identifier uast::AstTag
 cpp:identifier AstList::const_iterator
+cpp:identifier AstListIt::value_type
+cpp:identifier AstListIt::difference_type
+cpp:identifier AstListIt::pointer
+cpp:identifier AstListIt::reference
 cpp:identifier size_t
 cpp:identifier detail
 cpp:identifier detail::PODUniqueString
