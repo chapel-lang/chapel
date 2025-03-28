@@ -2272,6 +2272,29 @@ module Python {
     */
     proc getPyObject() do return this.obj;
 
+    /*
+      Iterates over an iterable Python object.
+    */
+    @chpldoc.nodoc
+    iter these(type eltType = owned Value): eltType throws {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
+      var iter_ = PyObject_GetIter(this.getPyObject());
+      if iter_ == nil || PyIter_Check(iter_) != 0 {
+        throwChapelException("Object is not iterable");
+      }
+      while true {
+        var item = PyIter_Next(iter_);
+        interpreter.checkException();
+        if item == nil {
+          break;
+        }
+        yield interpreter.fromPythonInner(eltType, item);
+      }
+    }
+
+
     // TODO: call should support kwargs
 
     // Casts
