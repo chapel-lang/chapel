@@ -150,6 +150,13 @@ class Array final : public AstNode {
    * An iterator that flattens a multi-dimensional array into a single list.
    */
   class FlatteningArrayIterator {
+   public:
+    using iterator_category = std::forward_iterator_tag;
+    using value_type = AstList::const_iterator::value_type;
+    using difference_type = AstList::const_iterator::difference_type;
+    using pointer = AstList::const_iterator::pointer;
+    using reference = AstList::const_iterator::reference;
+
    private:
     // Stack of current row iterator positions, one for each dimension. The
     // bottom iterates over the array itself, and the top iterates over a row of
