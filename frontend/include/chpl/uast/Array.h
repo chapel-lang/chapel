@@ -162,7 +162,8 @@ class Array final : public AstNode {
     // bottom iterates over the array itself, and the top iterates over a row of
     // innermost dimension.
     // Each entry is a pair of (current, end) iterators.
-    std::vector<std::pair<AstList::const_iterator, AstList::const_iterator>>
+    llvm::SmallVector<
+        std::pair<AstList::const_iterator, AstList::const_iterator>, 1>
         rowIterStack;
 
     /*
