@@ -5237,8 +5237,8 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
 
     sortExampleCandidates(info, visibleFns);
 
-    int nPrintDetails = 1;
-    int nPrint = 3; // unused if fPrintAllCandidates
+    int nPrintDetails = 1; // ignored if fDescribeCandidates
+    int nPrint = 3;        // ignored if fPrintAllCandidates
 
     Vec<FnSymbol*> filteredFns;
     if (fPrintAllCandidates || visibleFns.n <= nPrint + 1) {
@@ -5276,7 +5276,7 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
     int nPrinted = 0; // how many candidates have we printed?
     bool printedOne = false;  // have we printed one "other candidate"?
     forv_Vec(FnSymbol, fn, filteredFns) {
-      if (nPrinted < nPrintDetails) {
+      if (fDescribeCandidates || nPrinted < nPrintDetails) {
         explainCandidateRejection(info, fn);
       } else {
         if (printedOne == false) {
