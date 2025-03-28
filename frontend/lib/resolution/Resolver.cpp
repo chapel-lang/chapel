@@ -3035,7 +3035,7 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
                qt.isRef() == false) {
       // don't skip because it could be initialized with 'out' intent,
       // but not for non-out formals because they can't be split-initialized.
-    } else if (actualAst->isTypeQuery() && ci.calledType().isType()) {
+    } else if (actualAst && actualAst->isTypeQuery() && ci.calledType().isType()) {
       // don't skip for type queries in type constructors
     } else {
       if (qt.isParam() && qt.param() == nullptr) {
