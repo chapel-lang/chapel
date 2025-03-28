@@ -47,6 +47,7 @@ Options:
 
   [misc]
   --ignore-errors  Continue processing even if an error occurs
+   --verify        Run verification tests on the current Chapel configuration
 """
 
 from collections import namedtuple
@@ -58,6 +59,7 @@ import unittest
 from sys import stdout, path
 
 from chplenv import *
+import chplenv_verify
 
 ChapelEnv = namedtuple('ChapelEnv', ['name', 'content', 'shortname'])
 
@@ -563,10 +565,13 @@ def parse_args():
 
     #[misc]
     parser.add_option('--ignore-errors', action='store_true', dest='ignore_errors')
+    parser.add_option('--verify', action='store_true', dest='verify')
 
     #[hidden]
+    parser.add_option('--devel', action='store_true', dest='devel')
+    parser.add_option('--no-devel', action='store_true', dest='nodevel')
+    parser.add_option('--verify-verbose', action='store_true', dest='verify_verbose')
     parser.add_option('--unit-tests', action='store_true', dest='do_unit_tests')
-
     # Hijack the help message to use the module docstring
     # optparse is not robust enough to support help msg sections for args.
     parser.print_help = lambda: stdout.write(__doc__)
@@ -576,6 +581,13 @@ def parse_args():
 
 def main():
     (options, args) = parse_args()
+
+    utils.init_CHPL_DEVELOPER()
+    # let the command line override the environment variable
+    if options.devel:
+        utils.set_CHPL_DEVELOPER(True)
+    if options.nodevel:
+        utils.set_CHPL_DEVELOPER(False)
 
     # If passed hidden --unit-tests flag, perform all PyUnit tests that can we
     # can find and exit.
@@ -627,13 +639,21 @@ def main():
     compute_all_values()
 
     # Don't populate internal ENV_VALS unless specified
-    if 'internal' in contents:
+    if 'internal' in contents or options.verify:
         compute_internal_values()
 
     ret = printchplenv(contents, filters, options.format, only=only)
     stdout.write(ret)
 
     utils.flush_warnings()
+
+    # at this point, we should run the verification tests
+    if options.verify or options.verify_verbose:
+        global ENV_VALS
+
+        success, reason = chplenv_verify.verify(ENV_VALS, verbose=options.verify_verbose)
+        if not success:
+            utils.error("Verification failed: {}".format(reason))
 
 
 if __name__ == '__main__':
