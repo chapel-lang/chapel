@@ -1769,7 +1769,19 @@ module Python {
       this.isOwned = true;
       this.gilInitState = PyGILState_Ensure();
       init this;
-      this.obj = this.interpreter.loadPickle(pickleData);
+      // Only catch-less try! statements are allowed in initializers for now :(
+      proc helper() throws {
+        try {
+          this.obj = this.interpreter.loadPickle(pickleData);
+        } catch e {
+          // an exception thrown from the init will not result in a call to the postinit
+          // or the deinit, so we have to handle that stuff here
+          defer PyGILState_Release(this.gilInitState);
+          // rethrow the exception
+          throw e;
+        }
+      }
+      helper();
     }
     /*
       Creates a new Python object from a Chapel value.
@@ -1782,7 +1794,19 @@ module Python {
       this.isOwned = true;
       this.gilInitState = PyGILState_Ensure();
       init this;
-      this.obj = this.interpreter.toPythonInner(value);
+      // Only catch-less try! statements are allowed in initializers for now :(
+      proc helper() throws {
+        try {
+          this.obj = this.interpreter.toPythonInner(value);
+        } catch e {
+          // an exception thrown from the init will not result in a call to the postinit
+          // or the deinit, so we have to handle that stuff here
+          defer PyGILState_Release(this.gilInitState);
+          // rethrow the exception
+          throw e;
+        }
+      }
+      helper();
     }
 
     @chpldoc.nodoc
