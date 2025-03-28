@@ -6,6 +6,7 @@ import subprocess
 import tempfile
 import glob
 import itertools
+import re
 from contextlib import contextmanager
 
 
@@ -33,8 +34,10 @@ def make(*args, **kwargs):
     return run("make", *args, **kwargs)
 
 
-def pjoin(*args):
-    return os.path.join(*args)
+pjoin = os.path.join
+
+def log(*args, **kwargs):
+    print("[gen_release]", *args, **kwargs)
 
 
 def rm_rf(*paths):
@@ -115,10 +118,7 @@ def main():
 
     # Find CHPL_HOME. If unset, use root of repo relative to this script.
     chplhome = os.getenv(
-        "CHPL_HOME",
-        os.path.dirname(
-            os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        ),
+        "CHPL_HOME", os.path.abspath(os.path.join(__file__, "..", "..", ".."))
     )
 
     # pointers to temporary directory where chapel will be built
@@ -140,14 +140,12 @@ def main():
     # Just use whatever is found in $CHPL_HOME
     if "CHPL_GEN_RELEASE_NO_CLONE" in os.environ:
         # copy the current CHPL_HOME into the directory where chapel will be built
-        print(
-            "[gen_release] CHPL_GEN_RELEASE_NO_CLONE: Creating build workspace with tar..."
-        )
+        log("CHPL_GEN_RELEASE_NO_CLONE: Creating build workspace with tar...")
         with cd(chplhome):
             p = run(tar_executable, "-cf", "-", ".", stdout=subprocess.PIPE)
             with cd(archive_dir):
                 run(tar_executable, "-xf", "-", input=p.stdout)
-            del p # free all the memory used by the tar file
+            del p  # free all the memory used by the tar file
         resultdir = pjoin(chplhome, "tar")
     else:
         # check out a clean copy of the sources into the directory where chapel will be built
@@ -158,9 +156,7 @@ def main():
         repo_cache_path = os.getenv("REPO_CACHE_PATH", "/missing")
         git_commit = os.getenv("CHPL_GEN_RELEASE_COMMIT", None)
 
-        print(
-            f"[gen_release] Cloning the sources (repo: {git_url} branch: {git_branch})..."
-        )
+        log(f"Cloning the sources (repo: {git_url} branch: {git_branch})...")
         cmd = (
             [
                 "git",
@@ -178,25 +174,20 @@ def main():
         )
         run(*cmd)
 
-        if git_commit is not None:
-            print(f"[gen_release] Checking out revision {git_commit}...")
-            with cd(rootdir):
-                run("git", "reset", "--hard", git_commit)
 
         with cd(rootdir):
-            print("[gen_release] Confirm final Git source version used.")
+            if git_commit is not None:
+                log(f"Checking out revision {git_commit}...")
+                run("git", "reset", "--hard", git_commit)
+
+            log("Confirm final Git source version used.")
             run("git", "--no-pager", "status")
             run("git", "--no-pager", "log", "-1")
 
             # write the git-sha while we have the .git directory
-            run(
-                "util/config/write-git-sha",
-                "frontend/lib/util",
-                "--build-version",
-                f"--chpl-home={rootdir}",
-            )
+            run("util/config/write-git-sha", "frontend/lib/util", "--build-version", f"--chpl-home={rootdir}")
             # use git archive to copy all the files under source control into the archive directory.
-            print("[gen_release] Creating build workspace with git archive...")
+            log("Creating build workspace with git archive...")
 
             p = run(
                 "git", "archive", "--format=tar", "HEAD", stdout=subprocess.PIPE
@@ -205,12 +196,12 @@ def main():
                 run(tar_executable, "-xf", "-", input=p.stdout)
 
             # explicitly copy the BUILD_VERSION file and git-version.cpp files
-            print("[gen_release] Copying BUILD_VERSION file.")
+            log("Copying BUILD_VERSION file.")
             shutil.copyfile(
                 "compiler/main/BUILD_VERSION",
                 pjoin(archive_dir, "compiler/main/BUILD_VERSION"),
             )
-            print("[gen_release] Copying git-version.cpp")
+            log("Copying git-version.cpp")
             shutil.copyfile(
                 "frontend/lib/util/git-version.cpp",
                 pjoin(archive_dir, "frontend/lib/util/git-version.cpp"),
@@ -223,26 +214,26 @@ def main():
 
     with cd(archive_dir):
 
-        print("[gen_release] Creating the spec tests...")
+        log("Creating the spec tests...")
         make("spectests")
 
         # Docs/man page must be built first so we can get rid of any extra files
         # (chpldoc) with a clobber
-        print("[gen_release] Building the docs...")
+        log("Building the docs...")
         # Set CHPL_COMM to none to avoid issues with gasnet generated makefiles not
         # existing because we haven't built the third-party libs and set CHPL_LLVM to
         # none since we don't need it to build the docs
         os.environ["CHPL_HOME"] = str(archive_dir)
         os.environ["CHPL_COMM"] = "none"
         os.environ["CHPL_LLVM"] = "none"
-        print(f"[gen_release] CHPL_HOME is set to: {os.environ['CHPL_HOME']}")
+        log(f"CHPL_HOME is set to: {os.environ['CHPL_HOME']}")
 
         if "CHPL_GEN_RELEASE_SKIP_DOCS" not in os.environ:
-            print("[gen_release] Building the html docs...")
+            log("Building the html docs...")
             make("chapel-py-venv")
             make("docs")
 
-            print("[gen_release] Pruning the docs directory...")
+            log("Pruning the docs directory...")
             with cd("doc"):
                 make("clean-symlinks")
                 make("prunedocs")
@@ -256,7 +247,7 @@ def main():
                     "rst/meta",
                 )
 
-            print("[gen_release] Building the man pages...")
+            log("Building the man pages...")
             make("man")
             make("man-chpldoc")
         else:
@@ -264,7 +255,7 @@ def main():
 
         make("clobber")
 
-        print("[gen_release] Creating the examples directory...")
+        log("Creating the examples directory...")
         os.unlink("examples")  # remove examples symbolic link
         shutil.copytree("test/release/examples", "examples")
         with cd("util"):
@@ -274,67 +265,49 @@ def main():
 
         # print "[gen_release] Removing compiler directories that are not intended for release...\n";
 
-        print(
-            "[gen_release] Removing runtime directories that are not ready for release..."
-        )
-        rm_rf(
-            pjoin("runtime", "src", "launch", "dummy"),
-            pjoin("runtime", "src", "launch", "mpirun"),
-        )
+        log("Removing runtime directories that are not ready for release...")
+        with cd(pjoin("runtime", "src", "launch")):
+            rm_rf("dummy", "mpirun")
 
-        print(
-            "[gen_release] Removing frontend test directory which is not intended for release..."
-        )
+        log("Removing frontend test directory which is not intended for release...")
         rm_rf(pjoin("frontend", "test"))
 
-        print(
-            "[gen_release] Removing third-party directories that are not intended for release..."
-        )
-        rm_rf(
-            pjoin("third-party", "*.devel*"),
-            pjoin("third-party", "chpl-venv", "*.devel*"),
-            pjoin("third-party", "chpl-venv", "chplspell-requirements.txt"),
-        )
+        log("Removing third-party directories that are not intended for release...")
+        with cd("third-party"):
+            rm_rf("*.devel*")
+            with cd("chpl-venv"):
+                rm_rf("*.devel*", "chplspell-requirements.txt")
 
-        print(
-            "[gen_release] Removing Git metadata files not intended for release..."
-        )
+        log("Removing Git metadata files not intended for release...")
         for p in itertools.chain(
             glob.glob(".gitignore", recursive=True),
             glob.glob(".gitattributes", recursive=True),
         ):
+            log(f"removing {p}")
             os.unlink(p)
 
         # TODO: can we use python chmod instead of system commands?
-        print("[gen_release] Chmodding the hierarchy")
+        log("Chmodding the hierarchy")
         run("chmod", "-R", "ugo+rX", ".")
         run("chmod", "-R", "go-w", ".")
 
         tarfiles = []
         for file in files:
             if not os.path.exists(file):
-                print(f"[gen_release] {file} does not exist")
+                log(f"{file} does not exist")
                 sys.exit(9)
             tarfiles.append(pjoin(reldir, file))
 
+        include_regex = re.compile(r"(\.(h|cpp|c|ypp|lex)$)|Makefile|README|BUILD_VERSION|CMakeLists\.txt")
         for d in code_dirs:
             for fullpath in glob.glob(pjoin(d, "**"), recursive=True):
-                suffix = os.path.splitext(fullpath)[1]
                 name = os.path.basename(fullpath)
-                if suffix in {".h", ".cpp", ".c", ".ypp", ".lex"} or any(
-                    n in name
-                    for n in {
-                        "Makefile",
-                        "README",
-                        "BUILD_VERSION",
-                        "CMakeLists.txt",
-                    }
-                ):
+                if include_regex.search(name):
                     tarfiles.append(pjoin(reldir, fullpath))
 
         for d in complete_dirs:
             if not os.path.exists(d):
-                print(f"[gen_release] {d} does not exist")
+                log(f"{d} does not exist")
             tarfiles.append(pjoin(reldir, d))
 
         if not os.path.exists(resultdir):
@@ -349,11 +322,11 @@ def main():
             tarball_name,
             "--no-xattrs",
         ] + tarfiles
-        os.chdir("..")
-        print(f"[gen_release] {' '.join(cmd)}")
-        run(*cmd)
+        with cd(".."):
+            log(f"{' '.join(cmd)}")
+            run(*cmd)
 
-    print(f"[gen_release] Left result in {tarball_name}")
+    log(f"Left result in {tarball_name}")
 
 
 if __name__ == "__main__":
