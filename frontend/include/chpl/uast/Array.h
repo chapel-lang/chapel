@@ -172,12 +172,14 @@ class Array final : public AstNode {
     void descendDims() {
       CHPL_ASSERT(!rowIterStack.empty() && "should not be possible");
       while (auto row = (*rowIterStack.back().first)->toArrayRow()) {
+        CHPL_ASSERT(row->numExprs() > 0 && "empty rows not supported");
         this->rowIterStack.emplace_back(row->begin(), row->end());
       }
     }
 
    public:
     FlatteningArrayIterator(const Array* iterand, bool end = false) {
+      CHPL_ASSERT(iterand->numExprs() > 0 && "empty arrays not supported");
       if (end) {
         rowIterStack.emplace_back(iterand->end(), iterand->end());
       } else {
