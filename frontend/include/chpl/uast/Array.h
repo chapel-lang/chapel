@@ -149,12 +149,12 @@ class Array final : public AstNode {
    */
   class FlatteningArrayIterator {
    private:
-    // Stack of current iterator positions, one for each dimension.
-    // The bottom iterates over the array itself, and the top iterates
-    // over a row of innermost dimension.
-    std::vector<AstList::const_iterator> rowIterStack;
-    // Iterator marking the end of the outermost dimension (the array itself)
-    AstList::const_iterator topLevelEnd;
+    // Stack of current row iterator positions, one for each dimension. The
+    // bottom iterates over the array itself, and the top iterates over a row of
+    // innermost dimension.
+    // Each entry is a pair of (current, end) iterators.
+    std::vector<std::pair<AstList::const_iterator, AstList::const_iterator>>
+        rowIterStack;
 
     /*
      * Descend to the innermost array dimension, adding an iterator for each
@@ -162,66 +162,52 @@ class Array final : public AstNode {
      */
     void descendDims() {
       CHPL_ASSERT(!rowIterStack.empty() && "should not be possible");
-      while (auto row = (*rowIterStack.back())->toArrayRow()) {
-        this->rowIterStack.push_back(row->begin());
+      while (auto row = (*rowIterStack.back().first)->toArrayRow()) {
+        this->rowIterStack.emplace_back(row->begin(), row->end());
       }
     }
 
    public:
     FlatteningArrayIterator(const Array* iterand, bool end = false) {
       if (end) {
-        rowIterStack.push_back(iterand->end());
+        rowIterStack.emplace_back(iterand->end(), iterand->end());
       } else {
-        rowIterStack.push_back(iterand->begin());
+        rowIterStack.emplace_back(iterand->begin(), iterand->end());
         descendDims();
       }
-      topLevelEnd = iterand->end();
     }
 
     bool operator==(const FlatteningArrayIterator rhs) const {
-      return this->rowIterStack == rhs.rowIterStack &&
-             this->topLevelEnd == rhs.topLevelEnd;
+      // Should only be necessary to compare the innermost-dimension iterator.
+      return this->rowIterStack.back().first == rhs.rowIterStack.back().first;
     }
     bool operator!=(const FlatteningArrayIterator rhs) const {
       return !(*this == rhs);
     }
 
     const AstNode* operator*() const {
-      return (const AstNode*)this->rowIterStack.back()->get();
+      return (const AstNode*)this->rowIterStack.back().first->get();
     }
     const AstNode* operator->() const { return operator*(); }
 
     FlatteningArrayIterator& operator++() {
-      ++rowIterStack.back();
-
       // Pop up the stack until we're either at the top level, or at a row we
       // haven't already gone through.
-      while (rowIterStack.size() > 1) {
-        AstList::const_iterator rowEnd;
-        auto parent = rowIterStack[rowIterStack.size() - 2];
-        if (auto parentRow = (*parent)->toArrayRow()) {
-          rowEnd = parentRow->end();
-        } else if (auto parentArray = (*parent)->toArray()) {
-          rowEnd = parentArray->end();
-        } else {
-          CHPL_ASSERT(false &&
-                      "shouldn't be reachable, descendDimsed into an array "
-                      "dimension not contained within an array or array row");
-        }
+      while (!rowIterStack.empty()) {
+        auto& [cur, end] = rowIterStack.back();
+        if (++cur == end) {
+          // special case: leave one thing (top level array iterator) on the
+          // stack
+          if (rowIterStack.size() == 1) break;
 
-        if (rowIterStack.back() == rowEnd) {
           rowIterStack.pop_back();
-          ++rowIterStack.back();
-        } else {
-          break;
+          continue;
         }
-      }
 
-      // We're either in an unfinished row or at the end of the top level.
-      // In the former case, begin iterating over dimensions contained within
-      // this row to continue iteration.
-      if (rowIterStack.back() != topLevelEnd) {
+        // We're in an unfinished row; continue iteration from the innermost
+        // dimension under this row.
         descendDims();
+        return *this;
       }
 
       return *this;
