@@ -1,0 +1,50 @@
+yielding Values from myCustomIterator
+1
+2
+3
+4
+5
+yielding ints from myCustomIterator
+1
+2
+3
+4
+5
+yielding Values from MyCustomObject
+1
+2
+3
+4
+5
+yielding ints from MyCustomObject
+yielding Values from list
+1
+2
+3
+4
+5
+yielding ints from list
+1
+2
+3
+4
+5
+yielding Values from tuple
+1
+2
+3
+4
+5
+yielding ints from tuple
+1
+2
+3
+4
+5
+sum of Values from set
+15
+sum of ints from set
+15
+Caught Exception: ChapelException: Object is not iterable
+Caught Exception: ChapelException: Object is not iterable
+Caught Exception: ChapelException: Unsupported fromPython type: 'R'
