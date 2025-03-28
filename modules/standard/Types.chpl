@@ -705,40 +705,21 @@ pragma "no where doc"
 proc numBits(type t) param where t == bool {
   compilerError("'bool' does not have a well-defined size");
 }
+
 @chpldoc.nodoc
-proc numBits(type t) param where t == int(8) do return 8;
+proc numBits(type t: int(?w)) param do return w;
+
 @chpldoc.nodoc
-proc numBits(type t) param where t == int(16) do return 16;
-@chpldoc.nodoc
-proc numBits(type t) param where t == int(32) do return 32;
-@chpldoc.nodoc
-proc numBits(type t) param where t == int(64) do return 64;
-@chpldoc.nodoc
-proc numBits(type t) param where t == uint(8) do return 8;
-@chpldoc.nodoc
-proc numBits(type t) param where t == uint(16) do return 16;
-@chpldoc.nodoc
-proc numBits(type t) param where t == uint(32) do return 32;
-@chpldoc.nodoc
-proc numBits(type t) param where t == uint(64) do return 64;
-/*
+proc numBits(type t: uint(?w)) param do return w;
+
 @chpldoc.nodoc
 proc numBits(type t: real(?w)) param do return w;
-*/
+
 @chpldoc.nodoc
-proc numBits(type t) param where t == real(16) do return 16;
+proc numBits(type t: imag(?w)) param do return w;
+
 @chpldoc.nodoc
-proc numBits(type t) param where t == real(32) do return 32;
-@chpldoc.nodoc
-proc numBits(type t) param where t == real(64) do return 64;
-@chpldoc.nodoc
-proc numBits(type t) param where t == imag(32) do return 32;
-@chpldoc.nodoc
-proc numBits(type t) param where t == imag(64) do return 64;
-@chpldoc.nodoc
-proc numBits(type t) param where t == complex(64) do return 64;
-@chpldoc.nodoc
-proc numBits(type t) param where t == complex(128) do return 128;
+proc numBits(type t: complex(?w)) param do return w;
 
 //
 // numBytes(type) -- returns the number of bytes in a type
