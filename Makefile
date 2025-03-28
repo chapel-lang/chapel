@@ -69,6 +69,7 @@ comprt: FORCE
 	@$(MAKE) always-build-cls
 	@$(MAKE) runtime
 	@$(MAKE) modules
+	@$(MAKE) chpl-cmake-module-files
 
 notcompiler: FORCE
 	@$(MAKE) third-party-try-opt
@@ -201,6 +202,10 @@ chpl-language-server: frontend-shared FORCE
 	@# the time of writing this target is always FORCEd (so we'd end up
 	@# building it twice).
 	cd tools/chpl-language-server && $(MAKE) all install
+
+chpl-cmake-module-files: FORCE
+	@echo "Generating CMake module files..."
+	@cd compiler && $(MAKE) chpl-cmake-module-files
 
 lint-standard-modules: chplcheck FORCE
 	tools/chplcheck/chplcheck --skip-unstable \
