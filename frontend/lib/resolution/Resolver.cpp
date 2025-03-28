@@ -4896,6 +4896,7 @@ void Resolver::exit(const uast::Array* decl) {
   // Resolve call to appropriate array builder proc
   const char* arrayBuilderProc;
   std::vector<CallInfoActual> actuals;
+  std::vector<const uast::AstNode*> actualAsts;
   if (!decl->isMultiDim()) {
     arrayBuilderProc = "chpl__buildArrayExpr";
   } else {
@@ -4907,6 +4908,7 @@ void Resolver::exit(const uast::Array* decl) {
       shapeTupleElts.push_back(QualifiedType::makeParamInt(context, dim));
     }
     auto shapeTupleType = TupleType::getQualifiedTuple(context, shapeTupleElts);
+    actualAsts.push_back(nullptr);
     actuals.emplace_back(
         QualifiedType(QualifiedType::CONST_VAR, shapeTupleType),
         UniqueString());
@@ -4914,14 +4916,8 @@ void Resolver::exit(const uast::Array* decl) {
 
   // Add element args
   for (auto expr : decl->flattenedExprs()) {
-    auto exprType = byPostorder.byAst(expr).type();
-    // Short circuit if any elements have unknown type, since we won't be
-    // able to resolve the array builder proc.
-    if (exprType.isUnknown()) {
-      r.setType(QualifiedType());
-      return;
-    }
-    actuals.emplace_back(exprType, UniqueString());
+    actualAsts.push_back(expr);
+    actuals.emplace_back(byPostorder.byAst(expr).type(), UniqueString());
   }
 
   auto ci = CallInfo(/* name */ UniqueString::get(context, arrayBuilderProc),
@@ -4929,6 +4925,10 @@ void Resolver::exit(const uast::Array* decl) {
                      /* isMethodCall */ false,
                      /* hasQuestionArg */ false,
                      /* isParenless */ false, actuals);
+  if (shouldSkipCallResolution(this, decl, actualAsts, ci)) {
+    r.setType(QualifiedType());
+    return;
+  }
   auto scope = currentScope();
   auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
   auto c = resolveGeneratedCall(decl, &ci, &inScopes);
