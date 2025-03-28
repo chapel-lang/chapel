@@ -228,17 +228,47 @@ auto queryArgsToStrings(const std::tuple<Ts...>& tuple) {
   // return ss.str();
 }
 
-// Performance: this struct only contains a pointer and an additional bit
-// field. We could probably get away with storing `errorCollectionRoot`
-// in the last bit of the result pointer, and and thus reduce the overhead
+// Performance: this struct only contains a pointer and a few additional small
+// fields. We could possibly get away with storing these bit fields
+// in the last bits of the result pointer, and and thus reduce the overhead
 // of this struct.
 struct QueryDependency {
+  enum DependencyKind {
+    /* Dependency introduced via a call to another query. */
+    DEPENDENCY_DIRECT,
+    /* Dependency introduced via 'isQueryRunning', and 'isQueryRunning' returned
+       true. */
+    DEPENDENCY_CHECK_TRUE,
+    /* Dependency introduced via 'isQueryRunning', and 'isQueryRunning' returned
+       false. */
+    DEPENDENCY_CHECK_FALSE,
+  };
+
   const QueryMapResultBase* query;
   bool errorCollectionRoot;
+  DependencyKind kind;
 
   QueryDependency(const QueryMapResultBase* query,
-                  bool errorCollectionRoot) :
-    query(query), errorCollectionRoot(errorCollectionRoot) {}
+                  bool errorCollectionRoot,
+                  DependencyKind kind) :
+    query(query), errorCollectionRoot(errorCollectionRoot), kind(kind) {}
+
+  bool isCheck() const {
+    return kind == DEPENDENCY_CHECK_TRUE || kind == DEPENDENCY_CHECK_FALSE;
+  }
+
+  bool isDirect() const {
+    return kind == DEPENDENCY_DIRECT;
+  }
+
+  // returns true when all of the following conditions are met:
+  //
+  //   * this is a check dependency (introduced via isQueryRunning)
+  //   * the result of isQueryRunning has changed since this dependency was added
+  //
+  // This means that regardless of the result of the query or its dependencies,
+  // the dependent query should be re-run.
+  bool checkHasChanged() const;
 };
 
 using QueryDependencyVec = std::vector<QueryDependency>;
