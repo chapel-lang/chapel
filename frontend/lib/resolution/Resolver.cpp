@@ -3171,12 +3171,16 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
       // Get type by resolving the type of corresponding domain builder call
       const AstNode* questionArg = nullptr;
       std::vector<CallInfoActual> actuals;
+      std::vector<const AstNode*> actualAsts;
+
       // Set up distribution arg
       auto defaultDistArg = CallInfoActual(
           DomainType::getDefaultDistType(context), UniqueString());
       actuals.push_back(std::move(defaultDistArg));
+      actualAsts.push_back(nullptr);
+
       // Remaining given args from domain() call as written
-      prepareCallInfoActuals(call, actuals, questionArg, /*actualAsts*/ nullptr);
+      prepareCallInfoActuals(call, actuals, questionArg, &actualAsts);
       CHPL_ASSERT(!questionArg);
 
       auto ci =
@@ -3186,6 +3190,13 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
                    /* hasQuestionArg */ false,
                    /* isParenless */ false,
                    actuals);
+
+      // if one of the actuals is unknown for some reason, don't attempt
+      // to resolve the call.
+      if (shouldSkipCallResolution(this, fnCall, actualAsts, ci) != NONE) {
+        r.setType(QualifiedType(QualifiedType::UNKNOWN, UnknownType::get(context)));
+        return true;
+      }
 
       auto scope = currentScope();
       auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
