@@ -126,7 +126,7 @@ static void helpDeinitFields(AggregateType* type, VarSymbol* _this,
   }
 
   for_fields(field, type) {
-    if (isRecord(field->type)) {
+    if (isRecord(field->type) && !field->hasFlag(FLAG_TYPE_VARIABLE)) {
       body->insertAtHead(new CallExpr("deinit", gMethodToken,
                            new CallExpr(PRIM_GET_MEMBER, _this, field)));
     } else if (field->hasFlag(FLAG_SUPER_CLASS) && field->type != dtObject) {
