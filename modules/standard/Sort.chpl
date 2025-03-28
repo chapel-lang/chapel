@@ -3698,22 +3698,6 @@ record defaultComparator: keyPartComparator {
 
   /*
    Default compare method used in sort functions.
-   Uses the `<` operator to compute the ordering between ``a`` and ``b``.
-   See also `The .compare method`_.
-
-   :returns: 1 if ``b < a``
-   :returns: 0 if ``a == b``
-   :returns: -1 if ``a < b``
-   */
-  pragma "last resort"
-  @deprecated("compare with 'a' and 'b' arguments is deprecated, please use compare with 'x' and 'y' arguments instead")
-  inline
-  proc compare(a, b) {
-    return compare(x=a, y=b);
-  }
-
-  /*
-   Default compare method used in sort functions.
    Uses the `<` operator to compute the ordering between ``x`` and ``y``.
    See also `The .compare method`_.
 
@@ -4166,16 +4150,6 @@ record reverseComparator: keyPartComparator {
   inline
   proc doCompare(cmp, a, b) {
     return cmp.compare(b, a);
-  }
-
-  /*
-   Reverses ``comparator.compare``. See also `The .compare method`_.
-   */
-  pragma "last resort"
-  @deprecated("compare with 'a' and 'b' arguments is deprecated, please use compare with 'x' and 'y' arguments instead")
-  inline
-  proc compare(a, b) where hasCompare(a, b) || hasCompareFromKey(a) {
-    return compare(x=a, y=b);
   }
 
   /*
