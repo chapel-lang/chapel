@@ -753,6 +753,9 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
   bool enter(const uast::Range* decl);
   void exit(const uast::Range* decl);
 
+  bool enter(const uast::Array* decl);
+  void exit(const uast::Array* decl);
+
   bool enter(const uast::Domain* decl);
   void exit(const uast::Domain* decl);
 
