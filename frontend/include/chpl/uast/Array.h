@@ -47,12 +47,14 @@ class Array final : public AstNode {
 
  private:
   bool trailingComma_,
-       associative_;
+       associative_,
+       isMultiDim_;
 
   Array(AstList children, bool trailingComma, bool associative)
-    : AstNode(asttags::Array, std::move(children)),
-      trailingComma_(trailingComma),
-      associative_(associative) {
+      : AstNode(asttags::Array, std::move(children)),
+        trailingComma_(trailingComma),
+        associative_(associative) {
+    isMultiDim_ = this->numExprs() > 0 && this->expr(0)->isArrayRow();
   }
 
   void serializeInner(Serializer& ser) const override {
@@ -126,7 +128,7 @@ class Array final : public AstNode {
     Return whether this is a multi-dimensional array.
   */
   bool isMultiDim() const {
-    return this->numExprs() > 0 && this->expr(0)->isArrayRow();
+    return this->isMultiDim_;
   }
 
   /**
