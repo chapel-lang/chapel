@@ -46,14 +46,18 @@ struct ControlFlowInfo {
   // if this frame hit a 'continue', the loop it continued
   const uast::Loop* loopContinues_ = nullptr;
 
+  // did we encounter a 'compilerError'? These terminate resolution.
+  bool fatalError_ = false;
+
  public:
   ControlFlowInfo() = default;
 
   /* have we hit a statement that would prevent further execution of a block? */
-  bool isDoneExecuting() const { return returnsOrThrows_ || loopBreaks_ || loopContinues_; }
+  bool isDoneExecuting() const { return returnsOrThrows_ || loopBreaks_ || loopContinues_ || fatalError_; }
   bool returnsOrThrows() const { return returnsOrThrows_; }
   bool breaks() const { return loopBreaks_ != nullptr; }
   bool continues() const { return loopContinues_ != nullptr; }
+  bool fatalError() const { return fatalError_; }
 
   // The below mark functions check if the block is already done executing.
   // This is useful because in cases like 'return; continue', we don't want
@@ -63,6 +67,7 @@ struct ControlFlowInfo {
   void markReturnOrThrow() { if (!isDoneExecuting()) returnsOrThrows_ = true; }
   void markBreak(const uast::Loop* markWith) { if (!isDoneExecuting()) loopBreaks_ = markWith; }
   void markContinue(const uast::Loop* markWith) { if (!isDoneExecuting()) loopContinues_ = markWith; }
+  void markFatalError() { if (!isDoneExecuting()) fatalError_ = true; }
 
   // resetting break and continue is useful for when we are handling 'param' for loops.
   // If we hit a continue, we might want to move on to the next iteration of
@@ -89,6 +94,9 @@ struct ControlFlowInfo {
       loopContinues_ = nullptr;
     }
 
+    // errors in one branch are sufficient to infect all branches
+    fatalError_ |= other.fatalError_;
+
     return *this;
   }
 
@@ -107,6 +115,7 @@ struct ControlFlowInfo {
       returnsOrThrows_ |= other.returnsOrThrows_;
       loopBreaks_ = other.loopBreaks_;
       loopContinues_ = other.loopContinues_;
+      fatalError_ |= other.fatalError_;
     }
   }
 
@@ -119,6 +128,7 @@ struct ControlFlowInfo {
       returnsOrThrows_ |= other.returnsOrThrows_;
       if (other.loopBreaks_ != loop) loopBreaks_ = other.loopBreaks_;
       if (other.loopContinues_ != loop) loopContinues_ = other.loopContinues_;
+      fatalError_ |= other.fatalError_;
     }
   }
 };
@@ -490,6 +500,12 @@ struct BranchSensitiveVisitor {
   void markContinue(const uast::Loop* loop) {
     if (scopeStack.empty()) return;
     currentFrame()->controlFlowInfo.markContinue(loop);
+  }
+
+  /** note that the current frame, if any, has encountered a fatal error */
+  void markFatalError() {
+    if (scopeStack.empty()) return;
+    currentFrame()->controlFlowInfo.markFatalError();
   }
 
   /** have we hit a statement that would prevent further execution of the current block / frame? */

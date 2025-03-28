@@ -227,6 +227,38 @@ static void testInfiniteRecursion() {
   assert(x->isIntType());
 }
 
+static void testEarlyReturn() {
+  // ensure that code after compilerError() is not resolved.
+  // below, the bar function (which emits a compilerError) should not
+  // be resolved past the call to compilerError, so the "inside bar"
+  // compilerWarning should not be emitted. However, foo() merely
+  // uses the result of bar(), so it should be resolved.
+
+  auto ctx = buildStdContext();
+  ErrorGuard guard(ctx);
+  std::string program =
+    R"""(
+      proc foo() {
+        bar();
+        compilerWarning("inside foo, after call to bar");
+        return 42;
+      }
+
+      proc bar() {
+        compilerError("Hello");
+        compilerWarnning("inside bar, after call to compilerError");
+      }
+
+      var x = foo();
+  )""";
+
+  auto x = resolveTypeOfX(ctx, program);
+  assert(x->isIntType());
+  ensureErrorOnLine(ctx, guard.errors(), ErrorType::UserDiagnosticEmitError, 3, "Hello", /* allowOthers = */ true);
+  ensureErrorOnLine(ctx, guard.errors(), ErrorType::UserDiagnosticEmitWarning, 13, "inside foo, after call to bar", /* allowOthers = */ true);
+  assert(guard.realizeErrors() == 3); /* one more for UserDiagnosticEncounterError */
+}
+
 int main() {
   testDirect();
   testDirectWarn();
@@ -237,4 +269,5 @@ int main() {
   testTwoErrors();
   testRunAndTrackErrors();
   testInfiniteRecursion();
+  testEarlyReturn();
 }

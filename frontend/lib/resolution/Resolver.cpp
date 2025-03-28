@@ -2300,6 +2300,7 @@ bool Resolver::CallResultWrapper::noteResultWithoutError(
     const CallResolutionResult& result,
     optional<ActionAndId> actionAndId) {
   bool needsErrors = false;
+  bool markErroneous = false;
 
   for (auto& diagnostic : gatherUserDiagnostics(resolver.rc, result)) {
     // The diagnostic's depth means it's aimed for further up the call stack.
@@ -2308,14 +2309,26 @@ bool Resolver::CallResultWrapper::noteResultWithoutError(
       resolver.userDiagnostics.emplace_back(diagnostic.message(),
                                             diagnostic.kind(),
                                             diagnostic.depth() - 1);
+
+      if (diagnostic.kind() == CompilerDiagnostic::ERROR) {
+        if (!astForContext->isFnCall()) {
+          resolver.context->warning(astForContext, "propagating compiler errors past non-call frames is not supported");
+        }
+
+        // functions that invoke compilerError(), and their helper code skipped
+        // via the depth, should not be resolved past the point of the error.
+        resolver.markFatalError();
+        if (r) r->setCausedFatalError(true);
+      }
     } else if (diagnostic.depth() - 1 == 0) {
       // we're asked not to emit errors, and only return if errors are
       // needed.
       needsErrors = true;
+      markErroneous = diagnostic.kind() == CompilerDiagnostic::ERROR;
     }
   }
 
-  if (!result.exprType().hasTypePtr()) {
+  if (!result.exprType().hasTypePtr() || markErroneous) {
     if (!actionAndId && r) {
       // Only set the type to erroneous if we're handling an actual user call,
       // and not an associated action.

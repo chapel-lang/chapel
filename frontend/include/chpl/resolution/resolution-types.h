@@ -2408,6 +2408,8 @@ class ResolvedExpression {
   ID toId_;
   // Is this a reference to a compiler-created primitive?
   bool isBuiltin_ = false;
+  // Did this expression cause the function to stop being resolved?
+  bool causedFatalError_ = false;
 
   // For a function call, what is the most specific candidate,
   // or when using return intent overloading, what are the most specific
@@ -2440,6 +2442,9 @@ class ResolvedExpression {
   /** check whether this resolution result refers to a compiler builtin like `bool`. */
   bool isBuiltin() const { return isBuiltin_; }
 
+  /** check whether this resolution result caused a fatal error. */
+  bool causedFatalError() const { return causedFatalError_; }
+
   /** For a function call, what is the most specific candidate, or when using
    * return intent overloading, what are the most specific candidates? The
    * choice between these needs to happen later than the main function
@@ -2463,6 +2468,9 @@ class ResolvedExpression {
 
   /** set the isPrimitive flag */
   void setIsBuiltin(bool isBuiltin) { isBuiltin_ = isBuiltin; }
+
+  /** set the causedFatalError flag */
+  void setCausedFatalError(bool causedFatalError) { causedFatalError_ = causedFatalError; }
 
   /** set the toId */
   void setToId(ID toId) { toId_ = toId; }
@@ -2491,6 +2499,7 @@ class ResolvedExpression {
     return type_ == other.type_ &&
            toId_ == other.toId_ &&
            isBuiltin_ == other.isBuiltin_ &&
+           causedFatalError_ == other.causedFatalError_ &&
            mostSpecific_ == other.mostSpecific_ &&
            poiScope_ == other.poiScope_ &&
            associatedActions_ == other.associatedActions_ &&
@@ -2503,6 +2512,7 @@ class ResolvedExpression {
     type_.swap(other.type_);
     toId_.swap(other.toId_);
     std::swap(isBuiltin_, other.isBuiltin_);
+    std::swap(causedFatalError_, other.causedFatalError_);
     mostSpecific_.swap(other.mostSpecific_);
     std::swap(poiScope_, other.poiScope_);
     std::swap(associatedActions_, other.associatedActions_);
