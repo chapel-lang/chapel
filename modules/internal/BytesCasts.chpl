@@ -247,8 +247,6 @@ module BytesCasts {
   // complex
   //
   operator :(x: chpl_anycomplex, type t:bytes) {
-    if isNan(x.re) || isNan(x.im) then
-      return b"nan";
     var re = (x.re):bytes;
     var im: bytes;
     var op: bytes;

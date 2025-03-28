@@ -4143,8 +4143,8 @@ qioerr qio_channel_print_complex(const int threadsafe,
   int re_got, im_got;
   qioerr err;
   int im_neg = 0;
-  int re_isnan = 0;
-  int im_isnan = 0;
+  //  int re_isnan = 0;
+  //  int im_isnan = 0;
   style_char_t pos_char;
   style_char_t neg_char;
   qio_style_t* style;
@@ -4171,8 +4171,8 @@ qioerr qio_channel_print_complex(const int threadsafe,
       QIO_GET_CONSTANT_ERROR(err, EINVAL, "bad floating point type");
   }
 
-  re_isnan = isnan(re_num);
-  im_isnan = isnan(im_num);
+  //  re_isnan = isnan(re_num);
+  //  im_isnan = isnan(im_num);
 
   // Lock before reading any style information from the
   // channel.
@@ -4277,13 +4277,13 @@ qioerr qio_channel_print_complex(const int threadsafe,
 
   if( (style->complex_style & QIO_COMPLEX_FORMAT_PART) == QIO_COMPLEX_FORMAT_ABI ) {
     // If real or imag part is NAN, just write one NAN number.
-    if( re_isnan ) {
+    /*    if( re_isnan ) {
       err = qio_channel_print_float(false, ch, re_ptr, len);
       if( err ) goto rewind;
     } else if( im_isnan ) {
       err = qio_channel_print_float(false, ch, im_ptr, len);
       if( err ) goto rewind;
-    } else {
+      } else */ {
       // write a + bi
       width = re_got + im_got + 3;
       err = maybe_left_pad(ch, width);
