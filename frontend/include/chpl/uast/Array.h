@@ -151,20 +151,19 @@ class Array final : public AstNode {
    */
   class FlatteningArrayIterator {
    public:
+    using AstListIt = AstList::const_iterator;
     using iterator_category = std::forward_iterator_tag;
-    using value_type = AstList::const_iterator::value_type;
-    using difference_type = AstList::const_iterator::difference_type;
-    using pointer = AstList::const_iterator::pointer;
-    using reference = AstList::const_iterator::reference;
+    using value_type = AstListIt::value_type;
+    using difference_type = AstListIt::difference_type;
+    using pointer = AstListIt::pointer;
+    using reference = AstListIt::reference;
 
    private:
     // Stack of current row iterator positions, one for each dimension. The
     // bottom iterates over the array itself, and the top iterates over a row of
     // innermost dimension.
     // Each entry is a pair of (current, end) iterators.
-    llvm::SmallVector<
-        std::pair<AstList::const_iterator, AstList::const_iterator>, 1>
-        rowIterStack;
+    llvm::SmallVector<std::pair<AstListIt, AstListIt>, 1> rowIterStack;
 
     /*
      * Descend to the innermost array dimension, adding an iterator for each
