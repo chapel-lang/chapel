@@ -193,23 +193,16 @@ class Array final : public AstNode {
     FlatteningArrayIterator& operator++() {
       // Pop up the stack until we're either at the top level, or at a row we
       // haven't already gone through.
-      while (!rowIterStack.empty()) {
-        auto& [cur, end] = rowIterStack.back();
-        if (++cur == end) {
-          // special case: leave one thing (top level array iterator) on the
-          // stack
-          if (rowIterStack.size() == 1) break;
-
-          rowIterStack.pop_back();
-          continue;
-        }
-
-        // We're in an unfinished row; continue iteration from the innermost
-        // dimension under this row.
-        descendDims();
-        return *this;
+      while (++rowIterStack.back().first == rowIterStack.back().second) {
+        // Special case: leave the top level array iterator on the stack
+        // when it hits the end.
+        if (rowIterStack.size() == 1) return *this;
+        rowIterStack.pop_back();
       }
 
+      // We're in an unfinished row; continue iteration from the innermost
+      // dimension under this row.
+      descendDims();
       return *this;
     }
 
