@@ -3296,14 +3296,20 @@ module Python {
 
   // TODO: this should be generalized with
   // https://github.com/chapel-lang/chapel/issues/26958
-  // TODO: this only works with owned values, trying to write this with
-  // "borrowed" does not resolve. This is an ok limitation for now
+  // TODO: this has to be written as ref, otherwise the overloads
+  // in ChapelBase and OwnedObject take precedence. This then means
+  // overloads must be stamped out for each type, which is not ideal.
+  // TODO: this also only works with concrete management,
+  // so additional management strategies need to be stamped out
   @chpldoc.nodoc
-  operator:(ref arr: owned Value, type t: owned PyArray(?)): t throws {
-    var obj = arr.getPyObject();
-    Py_INCREF(obj);
-    return new t(arr.interpreter, obj, isOwned=true);
-  }
+  operator:(ref x: owned Value, type t: owned PyArray(?)): t throws do
+    return Value._castHelper(x.borrow(), t);
+  // writing this as `x: owned PyArray` results in weird resolution errors, but
+  // `where` clauses work fine
+  @chpldoc.nodoc
+  operator:(ref x: PyArray(?), type t: owned PyArray(?)): t throws
+  where isOwnedClass(x) do
+    return Value._castHelper(x.borrow(), t);
 
   @chpldoc.nodoc
   proc isSupportedArrayType(arr) param : bool {
