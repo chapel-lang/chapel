@@ -147,7 +147,7 @@ class Array final : public AstNode {
   /**
    * An iterator that flattens a multi-dimensional array into a single list.
    */
-  class FlatArrayIterator {
+  class FlatteningArrayIterator {
    private:
     std::vector<AstList::const_iterator> rowIterStack;
     AstList::const_iterator topLevelEnd;
@@ -164,7 +164,7 @@ class Array final : public AstNode {
     }
 
    public:
-    FlatArrayIterator(const Array* iterand, bool end = false) {
+    FlatteningArrayIterator(const Array* iterand, bool end = false) {
       if (end) {
         rowIterStack.push_back(iterand->end());
       } else {
@@ -174,10 +174,10 @@ class Array final : public AstNode {
       topLevelEnd = iterand->end();
     }
 
-    bool operator==(const FlatArrayIterator rhs) const {
+    bool operator==(const FlatteningArrayIterator rhs) const {
       return this->rowIterStack == rhs.rowIterStack;
     }
-    bool operator!=(const FlatArrayIterator rhs) const {
+    bool operator!=(const FlatteningArrayIterator rhs) const {
       return !(*this == rhs);
     }
 
@@ -186,7 +186,7 @@ class Array final : public AstNode {
     }
     const AstNode* operator->() const { return operator*(); }
 
-    FlatArrayIterator& operator++() {
+    FlatteningArrayIterator& operator++() {
       ++rowIterStack.back();
 
       // Pop up the stack until we're either at the top level, or at a row we
@@ -222,37 +222,34 @@ class Array final : public AstNode {
       return *this;
     }
 
-    FlatArrayIterator operator++(int) {
-      FlatArrayIterator tmp = *this;
+    FlatteningArrayIterator operator++(int) {
+      FlatteningArrayIterator tmp = *this;
       operator++();
       return tmp;
     }
   };
 
-  struct FlatArrayIteratorPair {
-    FlatArrayIterator begin_;
-    FlatArrayIterator end_;
+  struct FlatteningArrayIteratorPair {
+    FlatteningArrayIterator begin_;
+    FlatteningArrayIterator end_;
 
-    FlatArrayIteratorPair(FlatArrayIterator begin, FlatArrayIterator end)
+    FlatteningArrayIteratorPair(FlatteningArrayIterator begin,
+                                FlatteningArrayIterator end)
         : begin_(begin), end_(end) {}
-    ~FlatArrayIteratorPair() = default;
+    ~FlatteningArrayIteratorPair() = default;
 
-    FlatArrayIterator begin() const {
-      return begin_;
-    }
-    FlatArrayIterator end() const {
-      return end_;
-    }
+    FlatteningArrayIterator begin() const { return begin_; }
+    FlatteningArrayIterator end() const { return end_; }
   };
 
   /**
     Return a way to iterate over the expressions of this array, transparently
     flattened into a single list if multi-dimensional.
   */
-  FlatArrayIteratorPair flattenedExprs() const {
-    FlatArrayIterator begin(this);
-    FlatArrayIterator end(this, /* end */ true);
-    return FlatArrayIteratorPair(begin, end);
+  FlatteningArrayIteratorPair flattenedExprs() const {
+    FlatteningArrayIterator begin(this);
+    FlatteningArrayIterator end(this, /* end */ true);
+    return FlatteningArrayIteratorPair(begin, end);
   }
 };
 
