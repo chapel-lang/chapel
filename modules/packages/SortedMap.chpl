@@ -35,15 +35,6 @@ module SortedMap {
   import Sort.{relativeComparator};
   public use Sort only defaultComparator;
 
-  // TODO: remove this module and its public use when the deprecations have been
-  // removed
-  pragma "ignore deprecated use"
-  private module HideDeprecatedReexport {
-    public use Sort only DefaultComparator;
-  }
-
-  public use HideDeprecatedReexport;
-
   // Lock code lifted from modules/standard/List.chpl.
   @chpldoc.nodoc
   type _lockType = ChapelLocks.chpl_LocalSpinlock;

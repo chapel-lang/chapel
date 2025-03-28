@@ -22,15 +22,6 @@
  */
 module Search {
   public use Sort only defaultComparator, reverseComparator;
-
-  // TODO: remove this module and its public use when the deprecations have been
-  // removed
-  pragma "ignore deprecated use"
-  private module HideDeprecatedReexport {
-    public use Sort only DefaultComparator, ReverseComparator;
-  }
-
-  public use HideDeprecatedReexport;
   private use Sort;
 
 /*
