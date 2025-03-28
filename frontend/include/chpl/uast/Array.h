@@ -179,7 +179,8 @@ class Array final : public AstNode {
     }
 
     bool operator==(const FlatteningArrayIterator rhs) const {
-      return this->rowIterStack == rhs.rowIterStack;
+      return this->rowIterStack == rhs.rowIterStack &&
+             this->topLevelEnd == rhs.topLevelEnd;
     }
     bool operator!=(const FlatteningArrayIterator rhs) const {
       return !(*this == rhs);
