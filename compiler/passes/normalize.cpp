@@ -4468,7 +4468,7 @@ cloneFirstParameterizedPrimitive(FnSymbol* fn, ArgSymbol* formal) {
     }
   } else if (baseSym == dtComplex[COMPLEX_SIZE_DEFAULT]->symbol) {
     ret = true;
-    for (int i = COMPLEX_SIZE_64; i < COMPLEX_SIZE_NUM; i++) {
+    for (int i = COMPLEX_SIZE_32; i < COMPLEX_SIZE_NUM; i++) {
       doCloneFirstParameterizedPrimitive(fn, formal, get_width(dtComplex[i]));
     }
   }

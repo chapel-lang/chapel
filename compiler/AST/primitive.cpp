@@ -143,7 +143,9 @@ returnInfoReal64(CallExpr* call) {
 static QualifiedType
 returnInfoComplexField(CallExpr* call) {  // for get real/imag primitives
   Type *t = call->get(1)->getValType();
-  if (t == dtComplex[COMPLEX_SIZE_64]) {
+  if (t == dtComplex[COMPLEX_SIZE_32]) {
+    return QualifiedType(dtReal[FLOAT_SIZE_16]->refType, QUAL_REF);
+  } else if (t == dtComplex[COMPLEX_SIZE_64]) {
     return QualifiedType(dtReal[FLOAT_SIZE_32]->refType, QUAL_REF);
   } else if (t == dtComplex[COMPLEX_SIZE_128]) {
     return QualifiedType(dtReal[FLOAT_SIZE_64]->refType, QUAL_REF);
@@ -156,10 +158,14 @@ returnInfoComplexField(CallExpr* call) {  // for get real/imag primitives
 static QualifiedType
 returnInfoAbs(CallExpr* call) {
   Type *t = call->get(1)->getValType();
-  if (t == dtComplex[COMPLEX_SIZE_64]) {
+  if (t == dtComplex[COMPLEX_SIZE_32]) {
+    return QualifiedType(dtReal[FLOAT_SIZE_16], QUAL_VAL);
+  } else if (t == dtComplex[COMPLEX_SIZE_64]) {
     return QualifiedType(dtReal[FLOAT_SIZE_32], QUAL_VAL);
   } else if (t == dtComplex[COMPLEX_SIZE_128]) {
     return QualifiedType(dtReal[FLOAT_SIZE_64], QUAL_VAL);
+  } else if (t == dtImag[FLOAT_SIZE_16]) {
+    return QualifiedType(dtReal[FLOAT_SIZE_16], QUAL_VAL);
   } else if (t == dtImag[FLOAT_SIZE_32]) {
     return QualifiedType(dtReal[FLOAT_SIZE_32], QUAL_VAL);
   } else if (t == dtImag[FLOAT_SIZE_64]) {

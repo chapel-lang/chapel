@@ -1207,6 +1207,7 @@ void initPrimitiveTypes() {
   INIT_PRIM_IMAG( "imag(32)", 32);
   INIT_PRIM_IMAG( "imag", 64);            // default size
 
+  INIT_PRIM_COMPLEX( "complex(32)", 32);
   INIT_PRIM_COMPLEX( "complex(64)", 64);
   INIT_PRIM_COMPLEX( "complex", 128);       // default size
 
@@ -1490,7 +1491,8 @@ bool is_imag_type(Type *t) {
 bool is_complex_type(Type *t) {
   return
     t == dtComplex[COMPLEX_SIZE_128] ||
-    t == dtComplex[COMPLEX_SIZE_64];
+    t == dtComplex[COMPLEX_SIZE_64] ||
+    t == dtComplex[COMPLEX_SIZE_32];
 }
 
 
@@ -1525,7 +1527,8 @@ int get_width(Type *t) {
   if (t == dtInt[INT_SIZE_32] ||
       t == dtUInt[INT_SIZE_32] ||
       t == dtReal[FLOAT_SIZE_32] ||
-      t == dtImag[FLOAT_SIZE_32])
+      t == dtImag[FLOAT_SIZE_32] ||
+      t == dtComplex[COMPLEX_SIZE_32])
     return 32;
   if (t == dtInt[INT_SIZE_64] ||
       t == dtUInt[INT_SIZE_64] ||
@@ -1550,8 +1553,8 @@ int get_component_width(Type *t) {
 // will fit exactly in a floating-point representation.
 int get_mantissa_width(Type *t) {
   if (t == dtReal[FLOAT_SIZE_16] ||
-      t == dtImag[FLOAT_SIZE_16]
-      //      t == dtComplex[COMPLEX_SIZE_64]
+      t == dtImag[FLOAT_SIZE_16] ||
+      t == dtComplex[COMPLEX_SIZE_32]
       )
     // mantissa for 32-bit float
     return 11;
@@ -1571,8 +1574,8 @@ int get_mantissa_width(Type *t) {
 
 int get_exponent_width(Type *t) { 
   if (t == dtReal[FLOAT_SIZE_16] ||
-      t == dtImag[FLOAT_SIZE_16]
-    //      t == dtComplex[COMPLEX_SIZE_64])
+      t == dtImag[FLOAT_SIZE_16] ||
+      t == dtComplex[COMPLEX_SIZE_32]
       )
     // exponent bits for 32-bit float
     return 5;
@@ -2155,6 +2158,7 @@ bool isPrimitiveScalar(Type* type) {
       type == dtImag[FLOAT_SIZE_32]        ||
       type == dtImag[FLOAT_SIZE_64]        ||
 
+      type == dtComplex[COMPLEX_SIZE_32]   ||
       type == dtComplex[COMPLEX_SIZE_64]   ||
       type == dtComplex[COMPLEX_SIZE_128]) {
 

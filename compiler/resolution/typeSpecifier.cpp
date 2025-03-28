@@ -150,6 +150,10 @@ Type* typeForTypeSpecifier(Expr* expr, bool fatalOK) {
                     int size = typeSize(var);
 
                     switch (size) {
+                    case 32:
+                      retval = dtComplex[COMPLEX_SIZE_32];
+                      break;
+
                     case 64:
                       retval = dtComplex[COMPLEX_SIZE_64];
                       break;

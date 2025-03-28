@@ -1949,6 +1949,10 @@ VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i,
                              IF1_complex_type size) {
   Immediate imm;
   switch (size) {
+  case COMPLEX_SIZE_32:
+    imm.v_complex32.r  = r;
+    imm.v_complex32.i  = i;
+    break;
   case COMPLEX_SIZE_64:
     imm.v_complex64.r  = r;
     imm.v_complex64.i  = i;

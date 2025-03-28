@@ -461,6 +461,7 @@ static void setupPythonTypeMap() {
   pythonNames[dtStringC->symbol] = std::make_pair("const char *", "bytes");
   // TODO: what're the proper map values for c_ptrConst(c_char) to replace c_string?
   // 08/30/2023
+  // TODO: Does Python not have a complex32?  What to do here?
   pythonNames[dtComplex[COMPLEX_SIZE_64]->symbol] =
               std::make_pair("float complex", "numpy.complex64");
   pythonNames[dtComplex[COMPLEX_SIZE_128]->symbol] =
@@ -540,6 +541,7 @@ static void setupFortranTypeMap() {
 
   // Should any chapel type map to Fortran's `character(kind=c_char)`?
   //fortranKindNames[dtStringC->symbol] = "c_char";
+  // TODO: Does Fortran have a 32-bit complex?  What to do here?
   fortranKindNames[dtComplex[COMPLEX_SIZE_64]->symbol] = "c_float_complex";
   fortranKindNames[dtComplex[COMPLEX_SIZE_128]->symbol] = "c_double_complex";
 
@@ -556,6 +558,7 @@ static void setupFortranTypeMap() {
   fortranTypeNames[dtBool->symbol] = "logical";
   // Should any chapel type map to Fortran's `character(kind=c_char)`?
   //fortranTypeNames[dtStringC->symbol] = "character";
+  // TODO: What to do here for complex32?  Are the following correct?
   fortranTypeNames[dtComplex[COMPLEX_SIZE_64]->symbol] = "complex";
   fortranTypeNames[dtComplex[COMPLEX_SIZE_128]->symbol] = "complex";
 }

@@ -221,6 +221,7 @@ void ResolveScope::addBuiltIns() {
   extend(dtImag[FLOAT_SIZE_32]->symbol);
   extend(dtImag[FLOAT_SIZE_64]->symbol);
 
+  extend(dtComplex[COMPLEX_SIZE_32]->symbol);
   extend(dtComplex[COMPLEX_SIZE_64]->symbol);
   extend(dtComplex[COMPLEX_SIZE_128]->symbol);
 

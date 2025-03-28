@@ -315,7 +315,9 @@ inline std::string Immediate::to_string(void) const {
   case NUM_KIND_COMPLEX: {
     // Not expected to execute except for the type's
     // default value
-    if (num_index == COMPLEX_SIZE_64) {
+    if (num_index == COMPLEX_SIZE_32) {
+      ss << (float)v_complex32.r << "+ " << (float)v_complex32.i;
+    } else if (num_index == COMPLEX_SIZE_64) {
       ss << v_complex64.r << "+ " << v_complex64.i;
     } else if (num_index == COMPLEX_SIZE_128) {
       ss << v_complex128.r << "+ " << v_complex128.i;

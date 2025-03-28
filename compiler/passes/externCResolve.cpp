@@ -283,7 +283,10 @@ static Expr* convertToChplType(ModuleSymbol* module,
     const clang::Type* eltType = eltTypeQ.getTypePtr();
 
     Type* chapelType = NULL;
-    if (eltType->isSpecificBuiltinType(clang::BuiltinType::Float))
+    // TODO: Is this correct?
+    if (eltType->isSpecificBuiltinType(clang::BuiltinType::Half))
+      chapelType = dtComplex[COMPLEX_SIZE_32];
+    else if (eltType->isSpecificBuiltinType(clang::BuiltinType::Float))
       chapelType = dtComplex[COMPLEX_SIZE_64];
     else if (eltType->isSpecificBuiltinType(clang::BuiltinType::Double))
       chapelType = dtComplex[COMPLEX_SIZE_128];

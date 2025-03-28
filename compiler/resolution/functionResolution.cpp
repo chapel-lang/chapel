@@ -2306,7 +2306,12 @@ static bool fits_in_mantissa_exponent(int mantissa_width,
     else
       INT_FATAL("unsupported real/imag size");
   } else if (imm->const_kind == NUM_KIND_COMPLEX) {
-    if (imm->num_index == COMPLEX_SIZE_64) {
+    if (imm->num_index == COMPLEX_SIZE_32) {
+      if (realPart)
+        v = imm->v_complex32.r;
+      else
+        v = imm->v_complex32.i;
+    } else if (imm->num_index == COMPLEX_SIZE_64) {
       if (realPart)
         v = imm->v_complex64.r;
       else

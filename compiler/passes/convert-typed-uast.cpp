@@ -2024,7 +2024,8 @@ static IF1_complex_type getComplexSize(const types::ComplexType* t) {
     return COMPLEX_SIZE_DEFAULT;
 
   int width = t->bitwidth();
-  if      (width == 64)  return COMPLEX_SIZE_64;
+  if      (width == 32)  return COMPLEX_SIZE_32;
+  else if (width == 64)  return COMPLEX_SIZE_64;
   else if (width == 128) return COMPLEX_SIZE_128;
 
   INT_FATAL("should not be reached");

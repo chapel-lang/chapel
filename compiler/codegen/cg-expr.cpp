@@ -1951,7 +1951,9 @@ GenRet codegenAdd(GenRet a, GenRet b)
     if( av.chplType ) a_signed = is_signed(av.chplType);
     if( bv.chplType ) b_signed = is_signed(bv.chplType);
 
-    if (av.chplType == dtComplex[COMPLEX_SIZE_64]) {
+    if (av.chplType == dtComplex[COMPLEX_SIZE_32]) {
+      ret = codegenCallExpr("complexAdd32", av, bv);
+    } else if (av.chplType == dtComplex[COMPLEX_SIZE_64]) {
       ret = codegenCallExpr("complexAdd64", av, bv);
     } else if (av.chplType == dtComplex[COMPLEX_SIZE_128]) {
       ret = codegenCallExpr("complexAdd128", av, bv);
@@ -2017,7 +2019,9 @@ GenRet codegenSub(GenRet a, GenRet b)
     if( av.chplType ) a_signed = is_signed(av.chplType);
     if( bv.chplType ) b_signed = is_signed(bv.chplType);
 
-    if (av.chplType == dtComplex[COMPLEX_SIZE_64]) {
+    if (av.chplType == dtComplex[COMPLEX_SIZE_32]) {
+      ret = codegenCallExpr("complexSubtract32", av, bv);
+    } else if (av.chplType == dtComplex[COMPLEX_SIZE_64]) {
       ret = codegenCallExpr("complexSubtract64", av, bv);
     } else if (av.chplType == dtComplex[COMPLEX_SIZE_128]) {
       ret = codegenCallExpr("complexSubtract128", av, bv);
@@ -2058,7 +2062,9 @@ GenRet codegenNeg(GenRet a)
   else {
 #ifdef HAVE_LLVM
     llvm::Value *value = av.val;
-    if (av.chplType == dtComplex[COMPLEX_SIZE_64]) {
+    if (av.chplType == dtComplex[COMPLEX_SIZE_32]) {
+      ret = codegenCallExpr("complexUnaryMinus32", av);
+    } else if (av.chplType == dtComplex[COMPLEX_SIZE_64]) {
       ret = codegenCallExpr("complexUnaryMinus64", av);
     } else if (av.chplType == dtComplex[COMPLEX_SIZE_128]) {
       ret = codegenCallExpr("complexUnaryMinus128", av);
@@ -2098,7 +2104,9 @@ GenRet codegenMul(GenRet a, GenRet b)
     bool b_signed = false;
     if( av.chplType ) a_signed = is_signed(av.chplType);
     if( bv.chplType ) b_signed = is_signed(bv.chplType);
-    if (av.chplType == dtComplex[COMPLEX_SIZE_64]) {
+    if (av.chplType == dtComplex[COMPLEX_SIZE_32]) {
+      ret = codegenCallExpr("complexMultiply32", av, bv);
+    } else if (av.chplType == dtComplex[COMPLEX_SIZE_64]) {
       ret = codegenCallExpr("complexMultiply64", av, bv);
     } else if (av.chplType == dtComplex[COMPLEX_SIZE_128]) {
       ret = codegenCallExpr("complexMultiply128", av, bv);
@@ -2132,7 +2140,9 @@ GenRet codegenDiv(GenRet a, GenRet b)
   if( info->cfile ) ret.c = "(" + av.c + " / " + bv.c + ")";
   else {
 #ifdef HAVE_LLVM
-    if (av.chplType == dtComplex[COMPLEX_SIZE_64]) {
+    if (av.chplType == dtComplex[COMPLEX_SIZE_32]) {
+      ret = codegenCallExpr("complexDivide32", av, bv);
+    } else if (av.chplType == dtComplex[COMPLEX_SIZE_64]) {
       ret = codegenCallExpr("complexDivide64", av, bv);
     } else if (av.chplType == dtComplex[COMPLEX_SIZE_128]) {
       ret = codegenCallExpr("complexDivide128", av, bv);
@@ -4229,12 +4239,18 @@ static GenRet codegen_prim_get_real(GenRet arg, Type* type, bool real) {
   } else {
     realOrImag = "Imag";
   }
-  if (type == dtComplex[COMPLEX_SIZE_64]->refType) {
+  if (type == dtComplex[COMPLEX_SIZE_32]->refType) {
+    snprintf(fnName, 21, "complex32Get%sRef", realOrImag);
+    ret = codegenCallExpr(fnName, arg);
+  } else if (type == dtComplex[COMPLEX_SIZE_64]->refType) {
     snprintf(fnName, 21, "complex64Get%sRef", realOrImag);
     ret = codegenCallExpr(fnName, arg);
   } else if (type == dtComplex[COMPLEX_SIZE_128]->refType) {
     snprintf(fnName, 21, "complex128Get%sRef", realOrImag);
     ret = codegenCallExpr(fnName, arg);
+  } else if (type == dtComplex[COMPLEX_SIZE_32]) {
+    snprintf(fnName, 21, "complex32Get%sRef", realOrImag);
+    ret = codegenCallExpr(fnName, codegenAddrOf(arg));
   } else if (type == dtComplex[COMPLEX_SIZE_64]) {
     snprintf(fnName, 21, "complex64Get%sRef", realOrImag);
     ret = codegenCallExpr(fnName, codegenAddrOf(arg));
