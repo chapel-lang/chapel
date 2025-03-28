@@ -149,14 +149,18 @@ class Array final : public AstNode {
    */
   class FlatteningArrayIterator {
    private:
+    // Stack of current iterator positions, one for each dimension.
+    // The bottom iterates over the array itself, and the top iterates
+    // over a row of innermost dimension.
     std::vector<AstList::const_iterator> rowIterStack;
+    // Iterator marking the end of the outermost dimension (the array itself)
     AstList::const_iterator topLevelEnd;
 
     /*
-     * Descend to the final array dimension, adding an iterator for each
+     * Descend to the innermost array dimension, adding an iterator for each
      * dimension along the way.
      */
-    void descend() {
+    void descendDims() {
       CHPL_ASSERT(!rowIterStack.empty() && "should not be possible");
       while (auto row = (*rowIterStack.back())->toArrayRow()) {
         this->rowIterStack.push_back(row->begin());
@@ -169,7 +173,7 @@ class Array final : public AstNode {
         rowIterStack.push_back(iterand->end());
       } else {
         rowIterStack.push_back(iterand->begin());
-        descend();
+        descendDims();
       }
       topLevelEnd = iterand->end();
     }
@@ -200,7 +204,7 @@ class Array final : public AstNode {
           rowEnd = parentArray->end();
         } else {
           CHPL_ASSERT(false &&
-                      "shouldn't be reachable, descended into an array "
+                      "shouldn't be reachable, descendDimsed into an array "
                       "dimension not contained within an array or array row");
         }
 
@@ -213,10 +217,10 @@ class Array final : public AstNode {
       }
 
       // We're either in an unfinished row or at the end of the top level.
-      // In the former case, descend to the final dimension contained under this
-      // row to continue iteration.
+      // In the former case, begin iterating over dimensions contained within
+      // this row to continue iteration.
       if (rowIterStack.back() != topLevelEnd) {
-        descend();
+        descendDims();
       }
 
       return *this;
