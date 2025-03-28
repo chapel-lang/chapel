@@ -168,16 +168,25 @@ class Array final : public AstNode {
       }
     }
 
+    FlatteningArrayIterator(AstListIt begin, AstListIt end) {
+      rowIterStack.emplace_back(begin, end);
+    }
+
    public:
-    FlatteningArrayIterator(const Array* iterand, bool end = false) {
+    // Construct an iterator starting at the beginning of the array
+    static FlatteningArrayIterator normal(const Array* iterand) {
       CHPL_ASSERT(iterand->numExprs() > 0 && "empty arrays not supported");
-      const auto exprs = iterand->exprs();
-      if (end) {
-        rowIterStack.emplace_back(exprs.end(), exprs.end());
-      } else {
-        rowIterStack.emplace_back(exprs.begin(), exprs.end());
-        descendDims();
-      }
+      FlatteningArrayIterator ret(iterand->exprs().begin(),
+                                  iterand->exprs().end());
+      ret.descendDims();
+      return ret;
+    }
+
+    // Construct an iterator starting at the end of the array
+    static FlatteningArrayIterator end(const Array* iterand) {
+      CHPL_ASSERT(iterand->numExprs() > 0 && "empty arrays not supported");
+      return FlatteningArrayIterator(iterand->exprs().end(),
+                                     iterand->exprs().end());
     }
 
     bool operator==(const FlatteningArrayIterator rhs) const {
@@ -234,9 +243,8 @@ class Array final : public AstNode {
     flattened into a single list if multi-dimensional.
   */
   FlatteningArrayIteratorPair flattenedExprs() const {
-    FlatteningArrayIterator begin(this);
-    FlatteningArrayIterator end(this, /* end */ true);
-    return FlatteningArrayIteratorPair(begin, end);
+    return FlatteningArrayIteratorPair(FlatteningArrayIterator::normal(this),
+                                       FlatteningArrayIterator::end(this));
   }
 };
 
