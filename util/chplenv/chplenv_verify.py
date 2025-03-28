@@ -10,6 +10,7 @@ import sys
 import os
 import shlex
 
+
 def log(*args, **kwargs):
     kwargs = {**kwargs, "file": sys.stderr}
     verbose = False
@@ -18,6 +19,7 @@ def log(*args, **kwargs):
         del kwargs["verbose"]
     if verbose:
         print(*args, **kwargs)
+
 
 class VerificationPass:
     def __init__(self, chplenv, verbose=False):
@@ -113,16 +115,21 @@ class TestCompile(VerificationPass):
         """
         return ""
 
-
     def verify(self):
         tmpdir = tempfile.mkdtemp()
 
-        hello_file = tempfile.mkstemp(dir=tmpdir, suffix=self._suffix(), text=True)
+        hello_file = tempfile.mkstemp(
+            dir=tmpdir, suffix=self._suffix(), text=True
+        )
         with open(hello_file[1], "w") as f:
             f.write(self._program())
 
         with FileCleanupManager(tmpdir) as fcm:
-            cmd = self._compiler() + [hello_file[1], "-o", f"{tmpdir}/a.out"] + self._compiler_args()
+            cmd = (
+                self._compiler()
+                + [hello_file[1], "-o", f"{tmpdir}/a.out"]
+                + self._compiler_args()
+            )
             self.log("Trying to compile with '{}'".format(" ".join(cmd)))
             succ, ret, out, _ = try_run_command(cmd, combine_output=True)
             if not succ or ret != 0:
@@ -146,7 +153,9 @@ class TestCompile(VerificationPass):
             compiler = self._compiler()
             if not compiler:
                 self.msg = "No compiler found"
-            self.msg = "{} compiler '{}' cannot compile programs".format(self._lang(), compiler[0])
+            self.msg = "{} compiler '{}' cannot compile programs".format(
+                self._lang(), compiler[0]
+            )
         return super().explain()
 
 
@@ -172,6 +181,7 @@ int main() {
   return 0;
 }
 """
+
 
 class TestTargetCompileCC(TestCompile):
     """
@@ -220,6 +230,7 @@ int main() {
 }
 """
 
+
 class TestHostCanFindLLVM(TestCompile):
     """
     Try and compile a hello world program using CHPL_HOST_CXX that includes a header from LLVM
@@ -237,7 +248,11 @@ class TestHostCanFindLLVM(TestCompile):
     def _compiler_args(self):
         comp_args = self.chplenv.get("CHPL_HOST_SYSTEM_COMPILE_ARGS", "")
         link_args = self.chplenv.get("CHPL_HOST_SYSTEM_LINK_ARGS", "")
-        return super()._compiler_args() + shlex.split(comp_args) + shlex.split(link_args)
+        return (
+            super()._compiler_args()
+            + shlex.split(comp_args)
+            + shlex.split(link_args)
+        )
 
     def _program(self):
         return """
@@ -272,6 +287,7 @@ passes = [
     ("TestTargetCompileCXX", TestTargetCompileCXX),
     ("TestHostCanFindLLVM", TestHostCanFindLLVM),
 ]
+
 
 def verify(chplenv, verbose=False):
 
