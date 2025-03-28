@@ -18,4 +18,6 @@ export CHPL_NIGHTLY_TEST_DIRS="c2chapel/"
 CHPL_BIN_SUBDIR=`"$CHPL_HOME"/util/chplenv/chpl_bin_subdir.py`
 export PATH="$CHPL_HOME/bin/$CHPL_BIN_SUBDIR:$PATH"
 
+export CHPL_LAUNCHER=none
+
 $UTIL_CRON_DIR/nightly -cron
