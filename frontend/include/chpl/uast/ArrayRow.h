@@ -45,7 +45,6 @@ namespace uast {
  */
 class ArrayRow final : public AstNode {
  friend class AstNode;
- friend class Array;
 
  private:
 
@@ -67,16 +66,6 @@ class ArrayRow final : public AstNode {
   void markUniqueStringsInner(Context* context) const override {
   }
 
-  /** Get an iterator to the first expression in this array row */
-  AstList::const_iterator begin() const {
-    return children_.begin();
-  }
-
-  /** Get an iterator to one past the last expression in this array row */
-  AstList::const_iterator end() const {
-    return children_.end();
-  }
-
  public:
   ~ArrayRow() override = default;
 
@@ -89,7 +78,7 @@ class ArrayRow final : public AstNode {
     Return a way to iterate over the expressions of this array row.
   */
   AstListIteratorPair<AstNode> exprs() const {
-    return AstListIteratorPair<AstNode>(this->begin(), this->end());
+    return AstListIteratorPair<AstNode>(children_.begin(), children_.end());
   }
 
   /**

@@ -79,16 +79,6 @@ class Array final : public AstNode {
 
   void dumpInner(const DumpSettings& s) const;
 
-  /** Get an iterator to the first expression in this array */
-  AstList::const_iterator begin() const {
-    return children_.begin();
-  }
-
-  /** Get an iterator to one past the last expression in this array */
-  AstList::const_iterator end() const {
-    return children_.end();
-  }
-
  public:
   ~Array() override = default;
 
@@ -106,7 +96,7 @@ class Array final : public AstNode {
     Return a way to iterate over the expressions of this array.
   */
   AstListIteratorPair<AstNode> exprs() const {
-    return AstListIteratorPair<AstNode>(this->begin(), this->end());
+    return AstListIteratorPair<AstNode>(children_.begin(), children_.end());
   }
 
   /**
@@ -151,7 +141,7 @@ class Array final : public AstNode {
    */
   class FlatteningArrayIterator {
    public:
-    using AstListIt = AstList::const_iterator;
+    using AstListIt = AstListIterator<AstNode>;
     using iterator_category = std::forward_iterator_tag;
     using value_type = AstListIt::value_type;
     using difference_type = AstListIt::difference_type;
@@ -173,17 +163,19 @@ class Array final : public AstNode {
       CHPL_ASSERT(!rowIterStack.empty() && "should not be possible");
       while (auto row = (*rowIterStack.back().first)->toArrayRow()) {
         CHPL_ASSERT(row->numExprs() > 0 && "empty rows not supported");
-        this->rowIterStack.emplace_back(row->begin(), row->end());
+        const auto exprs = row->exprs();
+        this->rowIterStack.emplace_back(exprs.begin(), exprs.end());
       }
     }
 
    public:
     FlatteningArrayIterator(const Array* iterand, bool end = false) {
       CHPL_ASSERT(iterand->numExprs() > 0 && "empty arrays not supported");
+      const auto exprs = iterand->exprs();
       if (end) {
-        rowIterStack.emplace_back(iterand->end(), iterand->end());
+        rowIterStack.emplace_back(exprs.end(), exprs.end());
       } else {
-        rowIterStack.emplace_back(iterand->begin(), iterand->end());
+        rowIterStack.emplace_back(exprs.begin(), exprs.end());
         descendDims();
       }
     }
@@ -197,7 +189,7 @@ class Array final : public AstNode {
     }
 
     const AstNode* operator*() const {
-      return (const AstNode*)this->rowIterStack.back().first->get();
+      return *this->rowIterStack.back().first;
     }
     const AstNode* operator->() const { return operator*(); }
 
