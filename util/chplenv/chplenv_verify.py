@@ -10,8 +10,6 @@ import sys
 import os
 import shlex
 
-passes = []
-
 def log(*args, **kwargs):
     kwargs = {**kwargs, "file": sys.stderr}
     verbose = False
@@ -20,31 +18,6 @@ def log(*args, **kwargs):
         del kwargs["verbose"]
     if verbose:
         print(*args, **kwargs)
-
-def register(_cls=None, *, after=None):
-    def decorator_register(cls):
-        global passes
-        if after:
-            idx = next(
-                i
-                for i, (name, _) in enumerate(passes)
-                if name == after.__name__
-            )
-            passes.insert(idx + 1, (cls.__name__, cls))
-        else:
-            passes.append((cls.__name__, cls))
-
-        @functools.wraps(cls)
-        def wrapper_register(*args, **kwargs):
-            return cls(*args, **kwargs)
-
-        return wrapper_register
-
-    if _cls is None:
-        return decorator_register
-    else:
-        return decorator_register(_cls)
-
 
 class VerificationPass:
     def __init__(self, chplenv, verbose=False):
@@ -177,7 +150,6 @@ class TestCompile(VerificationPass):
         return super().explain()
 
 
-@register
 class TestHostCompile(TestCompile):
     """
     Try and compile a hello world program using CHPL_HOST_CXX
@@ -201,7 +173,6 @@ int main() {
 }
 """
 
-@register(after=TestHostCompile)
 class TestTargetCompileCC(TestCompile):
     """
     Try and compile a hello world program using CHPL_TARGET_CC
@@ -226,7 +197,6 @@ int main() {
 """
 
 
-@register(after=TestTargetCompileCC)
 class TestTargetCompileCXX(TestCompile):
     """
     Try and compile a hello world program using CHPL_TARGET_CXX
@@ -250,7 +220,6 @@ int main() {
 }
 """
 
-@register(after=TestHostCompile)
 class TestHostCanFindLLVM(TestCompile):
     """
     Try and compile a hello world program using CHPL_HOST_CXX that includes a header from LLVM
@@ -296,6 +265,13 @@ int main() {
             return "No compiler found"
         return "{} cannot find LLVM headers".format(compiler[0])
 
+
+passes = [
+    ("TestHostCompile", TestHostCompile),
+    ("TestTargetCompileCC", TestTargetCompileCC),
+    ("TestTargetCompileCXX", TestTargetCompileCXX),
+    ("TestHostCanFindLLVM", TestHostCanFindLLVM),
+]
 
 def verify(chplenv, verbose=False):
 
