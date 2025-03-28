@@ -82,22 +82,47 @@ class FileCleanupManager:
 
 class TestCompile(VerificationPass):
     """
-    Try and compile a hello world program
+    Abstract base class for testing compiling programs
     """
 
     def _suffix(self):
+        """
+        Returns the suffix of the file to be created
+
+        Extended by subclasses
+        """
         return ""
 
     def _lang(self):
+        """
+        Returns the language of the file to be created
+
+        Extended by subclasses
+        """
         return ""
 
     def _compiler(self):
+        """
+        Returns the compiler to be used
+
+        Extended by subclasses
+        """
         return []
 
     def _compiler_args(self):
+        """
+        Returns the compiler arguments to be used
+
+        Extended by subclasses
+        """
         return []
 
     def _program(self):
+        """
+        Returns the program to be compiled
+
+        Extended by subclasses
+        """
         return ""
 
 
