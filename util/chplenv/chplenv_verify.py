@@ -101,13 +101,28 @@ class TestCompile(VerificationPass):
         """
         return ""
 
-    def _compiler(self):
+    def _compiler_env_var(self):
         """
-        Returns the compiler to be used
+        Returns the compiler environment variable to be used
 
         Extended by subclasses
         """
-        return []
+        return ""
+
+    def _compiler(self):
+        """
+        Returns the compiler to be used, uses _compiler_env_var by default
+
+        Extended by subclasses
+        """
+        cc_var = self._compiler_env_var()
+        if not cc_var:
+            return []
+        cc = self.chplenv.get(cc_var)
+        if not cc:
+            self.msg = "{0} is missing".format(cc_var)
+            return []
+        return shlex.split(cc)
 
     def _compiler_args(self):
         """
@@ -174,12 +189,8 @@ class TestHostCompile(TestCompile):
     def _lang(self):
         return "C++"
 
-    def _compiler(self):
-        cxx = self.chplenv.get("CHPL_HOST_CXX")
-        if not cxx:
-            self.msg = "CHPL_HOST_CXX is missing"
-            return []
-        return shlex.split(cxx)
+    def _compiler_env_var(self):
+        return "CHPL_HOST_CXX"
 
     def _program(self):
         return """
@@ -202,12 +213,8 @@ class TestTargetCompileCC(TestCompile):
     def _lang(self):
         return "C"
 
-    def _compiler(self):
-        cc = self.chplenv.get("CHPL_TARGET_CC")
-        if not cc:
-            self.msg = "CHPL_TARGET_CC is missing"
-            return []
-        return shlex.split(cc)
+    def _compiler_env_var(self):
+        return "CHPL_TARGET_CC"
 
     def _program(self):
         return """
@@ -231,12 +238,8 @@ class TestTargetCompileCXX(TestCompile):
     def _lang(self):
         return "C++"
 
-    def _compiler(self):
-        cxx = self.chplenv.get("CHPL_TARGET_CXX")
-        if not cxx:
-            self.msg = "CHPL_TARGET_CXX is missing"
-            return []
-        return shlex.split(cxx)
+    def _compiler_env_var(self):
+        return "CHPL_TARGET_CXX"
 
     def _program(self):
         return """
@@ -259,12 +262,8 @@ class TestHostCanFindLLVM(TestCompile):
     def _lang(self):
         return "C++"
 
-    def _compiler(self):
-        cxx = self.chplenv.get("CHPL_HOST_CXX")
-        if not cxx:
-            self.msg = "CHPL_HOST_CXX is missing"
-            return []
-        return shlex.split(cxx)
+    def _compiler_env_var(self):
+        return "CHPL_HOST_CXX"
 
     def _compiler_args(self):
         comp_args = self.chplenv.get("CHPL_HOST_SYSTEM_COMPILE_ARGS", "")
