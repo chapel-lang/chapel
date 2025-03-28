@@ -1,0 +1,2 @@
+deinitSuperclass2.chpl:50: In initializer:
+deinitSuperclass2.chpl:51: error: cannot call a throwing function outside of a try! before phase 2

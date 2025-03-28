@@ -1,0 +1,49 @@
+--- mode 0 ---
+In C's postinit
+In E's postinit
+In E's deinit
+In D(5)'s deinit
+In R(4)'s deinit
+In C's deinit
+In D(3)'s deinit
+In R(2)'s deinit
+In D(1)'s deinit
+In R(0)'s deinit
+Past creation of myE(0)
+--- mode 1 ---
+In D(5)'s deinit
+In R(4)'s deinit
+In D(3)'s deinit
+In R(2)'s deinit
+In D(1)'s deinit
+In R(0)'s deinit
+Caught error
+Past creation of myE(1)
+--- mode 2 ---
+In C's postinit
+In E's postinit
+In D(5)'s deinit
+In R(4)'s deinit
+In D(3)'s deinit
+In R(2)'s deinit
+In D(1)'s deinit
+In R(0)'s deinit
+Caught error
+Past creation of myE(2)
+--- mode 3 ---
+In C's postinit
+In D(5)'s deinit
+In R(4)'s deinit
+In D(3)'s deinit
+In R(2)'s deinit
+In D(1)'s deinit
+In R(0)'s deinit
+Caught error
+Past creation of myE(3)
+--- mode 4 ---
+In D(3)'s deinit
+In R(2)'s deinit
+In D(1)'s deinit
+In R(0)'s deinit
+Caught error
+Past creation of myE(4)
