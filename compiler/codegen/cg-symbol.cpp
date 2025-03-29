@@ -421,6 +421,11 @@ llvm::Value* codegenImmediateLLVM(Immediate* i)
     case NUM_KIND_REAL:
     case NUM_KIND_IMAG:
       switch(i->num_index) {
+        case FLOAT_SIZE_16:
+          ret = llvm::ConstantFP::get(
+              llvm::Type::getFloatTy(info->module->getContext()),
+              i->v_float16);
+          break;
         case FLOAT_SIZE_32:
           ret = llvm::ConstantFP::get(
               llvm::Type::getFloatTy(info->module->getContext()),
@@ -437,6 +442,19 @@ llvm::Value* codegenImmediateLLVM(Immediate* i)
       break;
     case NUM_KIND_COMPLEX:
       switch(i->num_index) {
+        case COMPLEX_SIZE_32: {
+          std::vector<llvm::Constant *> elements(2);
+          elements[0] = llvm::ConstantFP::get(
+              llvm::Type::getFloatTy(info->module->getContext()),
+              i->v_complex32.r);
+          elements[1] = llvm::ConstantFP::get(
+              llvm::Type::getFloatTy(info->module->getContext()),
+              i->v_complex32.i);
+          ret = llvm::ConstantStruct::get(
+              llvm::cast<llvm::StructType>(getTypeLLVM("_complex32")),
+              elements);
+          break;
+        }
         case COMPLEX_SIZE_64: {
           std::vector<llvm::Constant *> elements(2);
           elements[0] = llvm::ConstantFP::get(
@@ -575,6 +593,9 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
         double value = immediate->real_value();
         const char* castString = NULL;
         switch (immediate->num_index) {
+        case FLOAT_SIZE_16:
+          castString = "REAL16(";
+          break;
         case FLOAT_SIZE_32:
           castString = "REAL32(";
           break;
@@ -592,6 +613,10 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
         const char* chplComplexN = NULL;
 
         switch(immediate->num_index) {
+          case COMPLEX_SIZE_32:
+            flType = FLOAT_SIZE_16;
+            chplComplexN = "_chpl_complex32";
+            break;
           case COMPLEX_SIZE_64:
             flType = FLOAT_SIZE_32;
             chplComplexN = "_chpl_complex64";
@@ -1651,10 +1676,13 @@ void TypeSymbol::codegenMetadata() {
     if (is_imag_type(type)) {
       // At present, imaginary often aliases with real,
       // so make real the parent of imaginary.
-      INT_ASSERT(type == dtImag[FLOAT_SIZE_32] ||
+      INT_ASSERT(type == dtImag[FLOAT_SIZE_16] ||
+                 type == dtImag[FLOAT_SIZE_32] ||
                  type == dtImag[FLOAT_SIZE_64]);
       TypeSymbol *re;
-      if (type == dtImag[FLOAT_SIZE_32]) {
+      if (type == dtImag[FLOAT_SIZE_16]) {
+        re = dtReal[FLOAT_SIZE_16]->symbol;
+      } else if (type == dtImag[FLOAT_SIZE_32]) {
         re = dtReal[FLOAT_SIZE_32]->symbol;
       } else {
         re = dtReal[FLOAT_SIZE_64]->symbol;
@@ -1695,11 +1723,15 @@ void TypeSymbol::codegenCplxMetadata() {
   llvm::LLVMContext& ctx = info->module->getContext();
   const llvm::DataLayout& dl = info->module->getDataLayout();
 
-  INT_ASSERT(type == dtComplex[COMPLEX_SIZE_64] ||
+  INT_ASSERT(type == dtComplex[COMPLEX_SIZE_32] ||
+             type == dtComplex[COMPLEX_SIZE_64] ||
              type == dtComplex[COMPLEX_SIZE_128]);
 
   TypeSymbol *re, *im;
-  if (type == dtComplex[COMPLEX_SIZE_64]) {
+  if (type == dtComplex[COMPLEX_SIZE_32]) {
+    re = dtReal[FLOAT_SIZE_16]->symbol;
+    im = dtImag[FLOAT_SIZE_16]->symbol;
+  } else if (type == dtComplex[COMPLEX_SIZE_64]) {
     re = dtReal[FLOAT_SIZE_32]->symbol;
     im = dtImag[FLOAT_SIZE_32]->symbol;
   } else {

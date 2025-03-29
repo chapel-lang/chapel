@@ -190,7 +190,11 @@ optional<Immediate> paramToImmediate(Context* context,
         CHPL_ASSERT(ct);
         if (ct == nullptr) return ret;
         ret.const_kind = NUM_KIND_COMPLEX;
-        if (ct->bitwidth() == 64) {
+        if (ct->bitwidth() == 32) {
+          ret.num_index = COMPLEX_SIZE_32;
+          ret.v_complex32.r = v.re;
+          ret.v_complex32.i = v.im;
+        } else if (ct->bitwidth() == 64) {
           ret.num_index = COMPLEX_SIZE_64;
           ret.v_complex64.r = v.re;
           ret.v_complex64.i = v.im;
@@ -425,6 +429,11 @@ std::pair<const Param*, const Type*> immediateToParam(Context* context,
     }
   case NUM_KIND_COMPLEX:
     switch (imm.num_index) {
+      case COMPLEX_SIZE_32:
+        return {ComplexParam::get(context,
+                                  Param::ComplexDouble(imm.v_complex32.r,
+                                                       imm.v_complex32.i)),
+                ComplexType::get(context, 32)};
       case COMPLEX_SIZE_64:
         return {ComplexParam::get(context,
                                   Param::ComplexDouble(imm.v_complex64.r,

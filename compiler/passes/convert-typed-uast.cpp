@@ -2024,7 +2024,8 @@ static IF1_complex_type getComplexSize(const types::ComplexType* t) {
     return COMPLEX_SIZE_DEFAULT;
 
   int width = t->bitwidth();
-  if      (width == 64)  return COMPLEX_SIZE_64;
+  if      (width == 32)  return COMPLEX_SIZE_32;
+  else if (width == 64)  return COMPLEX_SIZE_64;
   else if (width == 128) return COMPLEX_SIZE_128;
 
   INT_FATAL("should not be reached");
@@ -2036,7 +2037,8 @@ static IF1_float_type getImagSize(const types::ImagType* t) {
     return FLOAT_SIZE_DEFAULT;
 
   int width = t->bitwidth();
-  if      (width == 32) return FLOAT_SIZE_32;
+  if      (width == 16) return FLOAT_SIZE_16;
+  else if (width == 32) return FLOAT_SIZE_32;
   else if (width == 64) return FLOAT_SIZE_64;
 
   INT_FATAL("should not be reached");
@@ -2062,7 +2064,8 @@ static IF1_float_type getRealSize(const types::RealType* t) {
     return FLOAT_SIZE_DEFAULT;
 
   int width = t->bitwidth();
-  if      (width == 32) return FLOAT_SIZE_32;
+  if      (width == 16) return FLOAT_SIZE_16;
+  else if (width == 32) return FLOAT_SIZE_32;
   else if (width == 64) return FLOAT_SIZE_64;
 
   INT_FATAL("should not be reached");
