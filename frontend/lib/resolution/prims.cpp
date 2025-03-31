@@ -535,11 +535,19 @@ static QualifiedType staticFieldType(ResolutionContext* rc, const CallInfo& ci) 
     return QualifiedType();
   }
 
-  auto& fields = fieldsForTypeDecl(rc, compositeType, DefaultsPolicy::IGNORE_DEFAULTS);
-  for (int i = 0; fields.numFields(); i++) {
-    if (fields.fieldName(i) == fieldName) {
-      auto returnType = fields.fieldType(i).type();
-      return QualifiedType(QualifiedType::TYPE, returnType);
+  // unlike the "name to num" primitives and company, static field type looks
+  // for fields including the ones in parent classes.
+  while (compositeType) {
+    auto& fields = fieldsForTypeDecl(rc, compositeType, DefaultsPolicy::IGNORE_DEFAULTS);
+    for (int i = 0; i < fields.numFields(); i++) {
+      if (fields.fieldName(i) == fieldName) {
+        auto returnType = fields.fieldType(i).type();
+        return QualifiedType(QualifiedType::TYPE, returnType);
+      }
+    }
+
+    if (auto bct = compositeType->toBasicClassType()) {
+      compositeType = bct->parentClassType();
     }
   }
   return QualifiedType();
