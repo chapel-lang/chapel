@@ -6272,6 +6272,10 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
     auto fn = stmt->toFunction();
     if (!fn) continue;
 
+    if (auto ag = fn->attributeGroup()) {
+      if (ag->hasPragma(PRAGMA_DOCS_ONLY)) continue;
+    }
+
     anyWitnesses = true;
 
     // Note: construct a resolver with the witness above, which pushes
