@@ -64,6 +64,8 @@ module GPU
   extern proc chpl_gpu_printf8(fmt, x1, x2, x3, x4, x5, x6, x7, x8) : void;
 
   pragma "codegen for CPU and GPU"
+  pragma "insert line file info"
+  pragma "always propagate line file info"
   extern proc chpl_gpu_clock() : uint;
 
   pragma "codegen for CPU and GPU"
@@ -142,6 +144,7 @@ module GPU
     This function is meant to be called to time sections of code within a GPU
     enabled loop.
   */
+  pragma "insert line file info"
   proc gpuClock() : uint {
     return chpl_gpu_clock();
   }

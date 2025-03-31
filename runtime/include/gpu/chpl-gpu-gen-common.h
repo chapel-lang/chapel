@@ -154,10 +154,14 @@ __host__ static inline void chpl_assert_on_gpu(int32_t lineno, int32_t filenameI
   chpl_error("assertOnGpu() failed", lineno, filenameIdx);
 }
 
-__device__ static inline unsigned int chpl_gpu_clock(void) {
+__device__ static inline unsigned int chpl_gpu_clock(int32_t lineno,
+                                                     int32_t filenameIdx) {
   return (unsigned int)clock();
 }
-__host__ static inline unsigned int chpl_gpu_clock(void) {
+__host__ static inline unsigned int chpl_gpu_clock(int32_t lineno,
+                                                   int32_t filenameIdx) {
+  chpl_warning("gpuClock was called from the host, it will return 0.",
+               lineno, filenameIdx);
   return 0;
 }
 
