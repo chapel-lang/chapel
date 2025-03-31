@@ -981,6 +981,21 @@ static void testInvalidImplementsArity() {
     )""", ErrorType::InterfaceNaryInInherits);
 };
 
+static void testDocsOny() {
+  // Self.bar is docs only, so we shouldn't require it to be implemented.
+
+  auto i = InterfaceSource("myInterface", "proc Self.foo();", "pragma \"docs only\" proc Self.bar();");
+  auto r1 = RecordSource("myRec")
+    .addMethod(NOT_A_TYPE_METHOD, "foo() {}")
+    .addInterfaceConstraint(i);
+  testSingleInterface(i, r1);
+
+  auto r2 = RecordSource("myRec")
+    .addMethod(NOT_A_TYPE_METHOD, "foo(x: int) {}")
+    .addInterfaceConstraint(i);
+  testSingleInterface(i, r2, ErrorType::InterfaceMissingFn);
+}
+
 int main() {
   // tests for "basic" interface resolution (unary interfaces)
   testRequiredMethodNoArgs();
@@ -1011,4 +1026,5 @@ int main() {
   testImplementsInvalidActual();
   testImplementsDuplicate();
   testInvalidImplementsArity();
+  testDocsOny();
 }
