@@ -28,9 +28,6 @@
 #include "chpl/uast/Record.h"
 #include "chpl/uast/Variable.h"
 
-// TODO:
-// - Slices
-
 static void testArray(std::string domainType,
                       std::string eltType) {
   std::string arrayText;
@@ -247,6 +244,41 @@ static void testArrayLiteral(std::string arrayLiteral, std::string domainType,
   assert(guard.realizeErrors() == 0);
 }
 
+static void testArraySlicing(std::string arrayLiteral, std::string sliceArgs,
+                             std::string resultType) {
+  printf("Testing slicing array %s with %s\n", arrayLiteral.c_str(),
+         sliceArgs.c_str());
+
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+    R"""(
+    module M {
+      var A = )""" + arrayLiteral + R"""(;
+
+      var mySlice = A[)""" + sliceArgs + R"""(];
+
+      type expectedSliceTy = )""" + resultType + R"""(;
+      param correctSliceType = mySlice.type == expectedSliceTy;
+    }
+    )""",
+    {"A", "mySlice", "correctSliceType"});
+  auto arrType = vars.at("A");
+  assert(arrType.type());
+  assert(!arrType.type()->isUnknownType());
+  assert(arrType.type()->isArrayType());
+
+  auto sliceType = vars.at("mySlice");
+  assert(sliceType.type());
+  assert(!sliceType.type()->isUnknownType());
+  assert(sliceType.type()->isArrayType());
+
+  ensureParamBool(vars.at("correctSliceType"), true);
+
+  assert(guard.realizeErrors() == 0);
+}
+
 int main() {
   // rectangular
   testArray("domain(1)", "int");
@@ -266,6 +298,11 @@ int main() {
   testArrayLiteral("[1, 2; 3, 4;]", "domain(2)", "int");
   testArrayLiteral("[1;]", "domain(2)", "int");
   testArrayLiteral("[1, 2; 3, 4;; 5, 6; 7, 8]", "domain(3)", "int");
+
+  // slices
+  testArraySlicing("[1, 2, 3]", "0..1", "[1..2] int");
+  testArraySlicing("[1, 2; 3, 4]", "0, 1", "int"); // testing multi-dim indexing, not really a slice
+  testArraySlicing("[1, 2; 3, 4;; 5, 6; 7, 8]", "0..1, 0..1, 1", "[0..1, 0..1] int");
 
   // associative
   testArray("domain(int)", "int");
