@@ -1164,12 +1164,9 @@ class FileInfo:
         self.siblings = chapel.SiblingMap(asts)
 
         if self.use_resolver:
-            # TODO: suppress resolution errors due to false-positives
-            # this should be removed once the resolver is finished
-            with self.context.context.track_errors() as _:
-                for ast in asts:
-                    self._search_instantiations(ast)
-                self.call_segments.sort()
+            for ast in asts:
+                self._search_instantiations(ast)
+            self.call_segments.sort()
 
     def called_function_at_position(
         self, position: Position
