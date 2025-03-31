@@ -193,8 +193,12 @@ class Array final : public AstNode {
     }
 
     bool operator==(const FlatteningArrayIterator rhs) const {
-      // Should only be necessary to compare the innermost-dimension iterator.
-      return this->rowIterStack.back().first == rhs.rowIterStack.back().first;
+      // Should only be necessary to compare the innermost-dimension iterator
+      // pairs.
+      // If we add support for empty arrays/rows we'll have to compare (up to)
+      // the entire stack, as multiple empty rows could have the same begin
+      // and end iterators.
+      return this->rowIterStack.back() == rhs.rowIterStack.back();
     }
     bool operator!=(const FlatteningArrayIterator rhs) const {
       return !(*this == rhs);
