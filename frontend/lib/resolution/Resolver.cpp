@@ -1200,6 +1200,20 @@ collectTypeQueriesIn(const AstNode* ast, bool recurse=true) {
   return ret;
 }
 
+static const TypeQuery* getDomainTypeQuery(const BracketLoop* arrayTypeExpr) {
+  auto tq = arrayTypeExpr->iterand()->toTypeQuery();
+  if (tq) return tq;
+
+  auto dom = arrayTypeExpr->iterand()->toDomain();
+  if (!dom) return nullptr;
+
+  if (!dom->usedCurlyBraces() && dom->numExprs() == 1) {
+    return dom->expr(0)->toTypeQuery();
+  }
+
+  return nullptr;
+}
+
 // helper for resolveTypeQueriesFromFormalType
 void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
                                   const QualifiedType& actualType,
@@ -1404,9 +1418,11 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
       // at this time. See checkDomainTypeQueryUsage in post-parse-checks.cpp.
       // So we can assume if there is a type query, it's for the whole domain.
 
-      if (arr->iterand()->isTypeQuery()) {
+      auto iterand = getDomainTypeQuery(arr);
+
+      if (iterand) {
         // Match production: domain type expressions are CONST_REF.
-        auto& result = byPostorder.byAst(arr->iterand());
+        auto& result = byPostorder.byAst(iterand);
         result.setType(QualifiedType(QualifiedType::CONST_REF, actualType.type()->toArrayType()->domainType().type()));
       }
 
