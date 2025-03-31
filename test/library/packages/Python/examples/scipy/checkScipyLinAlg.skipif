@@ -1,0 +1,5 @@
+# skip valgring + numba/numpy testing
+# numba (really numpy) doesn't like valgrind due to 80 bit float precision issues
+#  - https://github.com/numpy/numpy/issues/12930
+#  - https://valgrind.org/docs/manual/manual-core.html#manual-core.limits
+CHPL_TEST_VGRND_EXE==on
