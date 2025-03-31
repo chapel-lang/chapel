@@ -4285,7 +4285,12 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
     auto receiverInfo = closestMethodReceiverInfo(allowNonLocal);
     if (receiverInfo) receiverType = std::get<1>(*receiverInfo);
 
-    if (receiverInfo && receiverType.type()) {
+    // in field types, don't try an implicit receiver, because the
+    // implicit receiver is the class/record, which is not fully constructed
+    // when the field type is being resolved.
+    bool skipImplicitParenless = fieldTypesOnly;
+
+    if (receiverInfo && receiverType.type() && !skipImplicitParenless) {
       std::vector<CallInfoActual> actuals;
       actuals.push_back(CallInfoActual(receiverType, USTR("this")));
       auto ci = CallInfo(/* name */ ident->name(),
