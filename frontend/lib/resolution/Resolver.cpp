@@ -3050,7 +3050,11 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
         auto g = getTypeGenericity(context, t);
         bool isBuiltinGeneric = (g == Type::GENERIC &&
                                  (t->isAnyType() || t->isBuiltinType()));
-        if (qt.isType() && isBuiltinGeneric && rv->substitutions == nullptr) {
+        bool noSubstitution =
+          rv->substitutions == nullptr ||
+          (!toId.isEmpty() && rv->substitutions->count(toId) == 0);
+
+        if (qt.isType() && isBuiltinGeneric && noSubstitution) {
           skip = GENERIC_TYPE;
         } else if (!qt.isType() && g != Type::CONCRETE) {
           skip = GENERIC_VALUE;
