@@ -655,6 +655,31 @@ static void test21() {
   assert(vars.at("t").type()->isIntType());
 }
 
+static void test22() {
+  printf("%s\n", __FUNCTION__);
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+                R""""(
+                  proc f(arg: [?D]) { return D; }
+
+                  var A: [1..10] int,
+                      B: [1..10] real;
+                  var D1 = f(A);
+                  var D2 = f(B);
+                )"""", {"D1", "D2"});
+
+  auto check = [&vars](const std::string& name) {
+    assert(!vars.at(name).isUnknownOrErroneous());
+    assert(vars.at(name).type()->isDomainType());
+    assert(vars.at(name).type()->toDomainType()->rankInt() == 1);
+    ensureParamEnumStr(vars.at(name).type()->toDomainType()->strides(), "one");
+  };
+  check("D1");
+  check("D2");
+}
+
 int main() {
   test1();
   test2();
@@ -679,6 +704,7 @@ int main() {
   test19();
   test20();
   test21();
+  test22();
 
   return 0;
 }
