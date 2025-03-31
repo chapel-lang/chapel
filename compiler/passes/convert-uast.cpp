@@ -1711,23 +1711,12 @@ struct Converter final : UastConverter {
 
   /// Array, Domain, Range, Tuple ///
 
-  void convertArrayRow(const uast::ArrayRow* node, CallExpr* actualList) {
-    for (auto expr : node->exprs()) {
-      if (expr->isArrayRow()) {
-        convertArrayRow(expr->toArrayRow(), actualList);
-      } else {
-        actualList->insertAtTail(convertAST(expr));
-      }
-    }
-  }
-
   Expr* visit(const uast::Array* node) {
     CallExpr* actualList = new CallExpr(PRIM_ACTUALS_LIST);
     Expr* shapeList = nullptr;
     bool isAssociativeList = false;
 
-    bool isNDArray = node->numExprs() >= 1 && node->expr(0)->isArrayRow();
-    if (!isNDArray) {
+    if (!node->isMultiDim()) {
       for (auto expr : node->exprs()) {
         bool hasConvertedThisIter = false;
 
@@ -1763,13 +1752,13 @@ struct Converter final : UastConverter {
       }
       shapeList = new CallExpr("_build_tuple", shapeActualList);
 
-      for (auto expr : node->exprs()) {
-        convertArrayRow(expr->toArrayRow(), actualList);
+      for (auto expr : node->flattenedExprs()) {
+        actualList->insertAtTail(convertAST(expr));
       }
     }
 
     Expr* ret = nullptr;
-    if (!isNDArray) {
+    if (!node->isMultiDim()) {
       INT_ASSERT(shapeList == nullptr);
       if (isAssociativeList) {
         ret = new CallExpr("chpl__buildAssociativeArrayExpr", actualList);

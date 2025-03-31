@@ -3035,7 +3035,7 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
                qt.isRef() == false) {
       // don't skip because it could be initialized with 'out' intent,
       // but not for non-out formals because they can't be split-initialized.
-    } else if (actualAst->isTypeQuery() && ci.calledType().isType()) {
+    } else if (actualAst && actualAst->isTypeQuery() && ci.calledType().isType()) {
       // don't skip for type queries in type constructors
     } else {
       if (qt.isParam() && qt.param() == nullptr) {
@@ -4881,6 +4881,59 @@ void Resolver::exit(const Range* range) {
     auto& r = byPostorder.byAst(range);
     r.setType(QualifiedType());
   }
+}
+
+bool Resolver::enter(const uast::Array* decl) {
+  return true;
+}
+void Resolver::exit(const uast::Array* decl) {
+  if (scopeResolveOnly) {
+    return;
+  }
+
+  ResolvedExpression& r = byPostorder.byAst(decl);
+
+  // Resolve call to appropriate array builder proc
+  const char* arrayBuilderProc;
+  std::vector<CallInfoActual> actuals;
+  std::vector<const uast::AstNode*> actualAsts;
+  if (!decl->isMultiDim()) {
+    arrayBuilderProc = "chpl__buildArrayExpr";
+  } else {
+    arrayBuilderProc = "chpl__buildNDArrayExpr";
+
+    // Get shape arg
+    std::vector<QualifiedType> shapeTupleElts;
+    for (auto dim : decl->shape()) {
+      shapeTupleElts.push_back(QualifiedType::makeParamInt(context, dim));
+    }
+    auto shapeTupleType = TupleType::getQualifiedTuple(context, shapeTupleElts);
+    actualAsts.push_back(nullptr);
+    actuals.emplace_back(
+        QualifiedType(QualifiedType::CONST_VAR, shapeTupleType),
+        UniqueString());
+  }
+
+  // Add element args
+  for (auto expr : decl->flattenedExprs()) {
+    actualAsts.push_back(expr);
+    actuals.emplace_back(byPostorder.byAst(expr).type(), UniqueString());
+  }
+
+  auto ci = CallInfo(/* name */ UniqueString::get(context, arrayBuilderProc),
+                     /* calledType */ QualifiedType(),
+                     /* isMethodCall */ false,
+                     /* hasQuestionArg */ false,
+                     /* isParenless */ false, actuals);
+  if (shouldSkipCallResolution(this, decl, actualAsts, ci)) {
+    r.setType(QualifiedType());
+    return;
+  }
+  auto scope = currentScope();
+  auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
+  auto c = resolveGeneratedCall(decl, &ci, &inScopes);
+
+  c.noteResult(&r);
 }
 
 bool Resolver::enter(const uast::Domain* decl) {
