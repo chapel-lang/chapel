@@ -1,4 +1,3 @@
 # skip valgrind testing
 CHPL_TEST_VGRND_EXE==on
-# skip darwin testing
-CHPL_TARGET_PLATFORM==darwin
+# TODO: can we remove this now?
