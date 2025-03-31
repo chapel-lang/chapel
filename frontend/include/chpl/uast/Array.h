@@ -175,10 +175,14 @@ class Array final : public AstNode {
       rowIterStack.emplace_back(begin, end);
     }
 
+    static void assertNonEmptyArr(const Array* arr) {
+      CHPL_ASSERT(arr->numExprs() > 0 && "empty arrays not supported");
+    }
+
    public:
     // Construct an iterator starting at the beginning of the array
     static FlatteningArrayIterator normal(const Array* iterand) {
-      CHPL_ASSERT(iterand->numExprs() > 0 && "empty arrays not supported");
+      assertNonEmptyArr(iterand);
       FlatteningArrayIterator ret(iterand->exprs().begin(),
                                   iterand->exprs().end());
       ret.descendDims();
@@ -187,7 +191,7 @@ class Array final : public AstNode {
 
     // Construct an iterator starting at the end of the array
     static FlatteningArrayIterator end(const Array* iterand) {
-      CHPL_ASSERT(iterand->numExprs() > 0 && "empty arrays not supported");
+      assertNonEmptyArr(iterand);
       return FlatteningArrayIterator(iterand->exprs().end(),
                                      iterand->exprs().end());
     }
