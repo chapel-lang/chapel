@@ -94,7 +94,7 @@ async def test_call_inlays_complex(client: LanguageClient):
            // Not 'literals' in our sense:
            foo(3i + 4i);
            foo(1 + 1);
-           foo((-1) - (-i));
+           foo((-1) - (-1i));
            """
 
     inlays = [(pos((i, 4)), "a = ", None) for i in range(1, 9)]
