@@ -60,18 +60,21 @@ class Array final : public AstNode {
   void serializeInner(Serializer& ser) const override {
     ser.write(trailingComma_);
     ser.write(associative_);
+    ser.write(isMultiDim_);
   }
 
   explicit Array(Deserializer& des)
     : AstNode(asttags::Array, des) {
     trailingComma_ = des.read<bool>();
     associative_ = des.read<bool>();
+    isMultiDim_ = des.read<bool>();
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Array* rhs = other->toArray();
     return this->trailingComma_ == rhs->trailingComma_ &&
-           this->associative_ == rhs->associative_;
+           this->associative_ == rhs->associative_ &&
+           this->isMultiDim_ == rhs->isMultiDim_;
   }
 
   void markUniqueStringsInner(Context* context) const override {
