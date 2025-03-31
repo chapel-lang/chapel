@@ -3690,27 +3690,7 @@ private proc comparatorImplementsRelative(cmp) param do
 interface sortComparator { }
 
 /* Default comparator used in sort functions.*/
-@deprecated("The DefaultComparator record has been renamed to :record:`defaultComparator`, please use that name instead")
-type DefaultComparator = defaultComparator;
-
-/* Default comparator used in sort functions.*/
 record defaultComparator: keyPartComparator {
-
-  /*
-   Default compare method used in sort functions.
-   Uses the `<` operator to compute the ordering between ``a`` and ``b``.
-   See also `The .compare method`_.
-
-   :returns: 1 if ``b < a``
-   :returns: 0 if ``a == b``
-   :returns: -1 if ``a < b``
-   */
-  pragma "last resort"
-  @deprecated("compare with 'a' and 'b' arguments is deprecated, please use compare with 'x' and 'y' arguments instead")
-  inline
-  proc compare(a, b) {
-    return compare(x=a, y=b);
-  }
 
   /*
    Default compare method used in sort functions.
@@ -4008,10 +3988,6 @@ record defaultComparator: keyPartComparator {
 }
 
 /* Reverse comparator built from another comparator.*/
-@deprecated("The ReverseComparator record has been renamed to :record:`reverseComparator`, please use that name instead")
-type ReverseComparator = reverseComparator;
-
-/* Reverse comparator built from another comparator.*/
 record reverseComparator: keyPartComparator {
 
   /* Generic comparator defined in initializer.*/
@@ -4166,16 +4142,6 @@ record reverseComparator: keyPartComparator {
   inline
   proc doCompare(cmp, a, b) {
     return cmp.compare(b, a);
-  }
-
-  /*
-   Reverses ``comparator.compare``. See also `The .compare method`_.
-   */
-  pragma "last resort"
-  @deprecated("compare with 'a' and 'b' arguments is deprecated, please use compare with 'x' and 'y' arguments instead")
-  inline
-  proc compare(a, b) where hasCompare(a, b) || hasCompareFromKey(a) {
-    return compare(x=a, y=b);
   }
 
   /*

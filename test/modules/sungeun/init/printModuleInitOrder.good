@@ -44,8 +44,6 @@ Initializing Modules:
          ChapelHashtable
         ExternalArray
         RangeChunk
-        Search
-         HideDeprecatedReexport
       LocaleModelHelpRuntime
      LocaleModelHelpMem
     LocalesArray
