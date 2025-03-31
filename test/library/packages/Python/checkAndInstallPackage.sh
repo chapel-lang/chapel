@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 
+#
+# This script checks for an existing Python package and installs it if it is not found.
+#
+# After this script exits, if the package is not available "True" is printed to stdout.
+# If the package is available, "False" is printed to stdout.
+#
+
 INSTALL_DIR=$1
 shift
 PACKAGE=$1
