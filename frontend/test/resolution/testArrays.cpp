@@ -53,54 +53,68 @@ static void testArray(std::string domainType,
 
   std::string program = R"""(
 module M {
+  // input types
   var d : )""" + domainType + R"""(;
   type eltType = )""" + eltType + R"""(;
-
   var A : [d] eltType;
 
-  var someElt : eltType;
-
+  // misc fields and methods
+  const AD = A.domain;
+  type idxType = A.idxType;
+  type fullIdxType = A.fullIdxType;
   type gotEltType = A.eltType;
   param rank = A.rank;
-  var indices = A.indices;
-  var dims = A.dims();
-  var dimZero = A.dim(0);
-  const AD = A.domain;
   const size = A.size;
   const sizeAsUint = A.sizeAs(uint);
-  var reindexedA = A.reindex(d);
   const targetLocales = A.targetLocales();
   var isEmpty = A.isEmpty();
-  if (rank == 1) {
-    var last = A.last;
-    var first = A.first;
-  }
+  var someElt : eltType;
   var countElt = A.count(someElt);
-  var shape = A.shape;
 
+  // fields and methods specific to array kind
+  param isRectangular = A.isRectangular();
+  param isAssociative = A.isAssociative();
+  if (isRectangular) {
+    var strides = A.strides;
+    var rectIndices = A.indices;
+    var dims = A.dims();
+    var dimZero = A.dim(0);
+    var reindexedA = A.reindex(d);
+    if (rank == 1) {
+      var last = A.last;
+      var first = A.first;
+    }
+    var findElt = A.find(someElt);
+    var shape = A.shape;
+    var reshapedA = A.reshape(d);
+  }
+  if (isAssociative) {
+    var assocIndices = A.indices;
+  }
+
+  // indexing
   var idx : index(A.domain);
   var x1 = A[idx];
   var x2 = A[)""" + (testIdxArg.empty() ? "idx" : testIdxArg) + R"""(];
 
+  // iteration
   for loopI in A {
     var z = loopI;
   }
 
+  // call resolution
   proc generic(arg: []) {
     type GT = arg.type;
     return 42;
   }
-
   proc eltOnly(arg: [] )""" + eltType + R"""() param {
     type ETGood = arg.type;
     return "correct method";
   }
-
   proc eltOnly(arg: [] )""" + altElt + R"""() param {
     type ETBad = arg.type;
     return "wrong method";
   }
-
   var g_ret = generic(A);
   param e_ret = eltOnly(A);
 }
@@ -116,37 +130,61 @@ module M {
 
   // input types
   QualifiedType dType = findVarType(m, rr, "d");
+  assert(dType.type()->isDomainType());
   QualifiedType eType = findVarType(m, rr, "eltType");
   QualifiedType AType = findVarType(m, rr, "A");
+  assert(AType.type()->isArrayType());
 
   // array procs
+  assert(findVarType(m, rr, "AD").type() == dType.type());
+  assert(findVarType(m, rr, "idxType") ==
+         dType.type()->toDomainType()->idxType());
   assert(findVarType(m, rr, "gotEltType").type() == eType.type());
   auto rankQt = findVarType(m, rr, "rank");
   assert(rankQt.type()->isIntType());
   assert(rankQt.param() && rankQt.param()->isIntParam());
   int rank = rankQt.param()->toIntParam()->value();
-  assert(findVarType(m, rr, "indices").type()->isDomainType());
-  assert(findVarType(m, rr, "dims").type()->isTupleType());
-  assert(findVarType(m, rr, "dimZero").type()->isRecordType());
-  assert(findVarType(m, rr, "AD").type() == dType.type());
   assert(findVarType(m, rr, "size").type()->isIntType());
   assert(findVarType(m, rr, "sizeAsUint").type()->isUintType());
-  // compare original and reindexed string representation as an approximate
-  // equality check
-  auto reindexedAQt = findVarType(m, rr, "reindexedA");
-  std::stringstream ss1, ss2;
-  reindexedAQt.type()->stringify(ss1, chpl::StringifyKind::CHPL_SYNTAX);
-  AType.type()->stringify(ss2, chpl::StringifyKind::CHPL_SYNTAX);
-  assert(reindexedAQt.type()->isArrayType());
-  assert(ss1.str() == ss2.str());
   assert(findVarType(m, rr, "targetLocales").type()->isArrayType());
   assert(findVarType(m, rr, "isEmpty").type()->isBoolType());
-  if (rank == 1) {
-    assert(findVarType(m, rr, "last").type() == eType.type());
-    assert(findVarType(m, rr, "first").type() == eType.type());
-  }
+  assert(findVarType(m, rr, "someElt").type() == eType.type());
   assert(findVarType(m, rr, "countElt").type()->isIntType());
-  assert(findVarType(m, rr, "shape").type()->isTupleType());
+
+  auto isRectangularQt = findVarType(m, rr, "isRectangular");
+  bool isRectangular = isRectangularQt.param() &&
+      isRectangularQt.param()->isBoolParam() &&
+      isRectangularQt.param()->toBoolParam()->value();
+  auto isAssociativeQt = findVarType(m, rr, "isAssociative");
+  bool isAssociative = isAssociativeQt.param() &&
+      isAssociativeQt.param()->isBoolParam() &&
+      isAssociativeQt.param()->toBoolParam()->value();
+  assert(isRectangular != isAssociative); // should be one or the other
+  if (isRectangular) {
+    assert(findVarType(m, rr, "strides").type()->isEnumType());
+    assert(findVarType(m, rr, "rectIndices").type()->isDomainType());
+    assert(findVarType(m, rr, "dims").type()->isTupleType());
+    assert(findVarType(m, rr, "dimZero").type()->isRecordType());
+    {
+      // compare original and reindexed string representation as an approximate
+      // equality check
+      auto reindexedAQt = findVarType(m, rr, "reindexedA");
+      std::stringstream ss1, ss2;
+      reindexedAQt.type()->stringify(ss1, chpl::StringifyKind::CHPL_SYNTAX);
+      AType.type()->stringify(ss2, chpl::StringifyKind::CHPL_SYNTAX);
+      assert(reindexedAQt.type()->isArrayType());
+      assert(ss1.str() == ss2.str());
+    }
+    if (rank == 1) {
+      assert(findVarType(m, rr, "last").type() == eType.type());
+      assert(findVarType(m, rr, "first").type() == eType.type());
+    }
+    assert(findVarType(m, rr, "findElt").type()->isIntType());
+    assert(findVarType(m, rr, "shape").type()->isTupleType());
+    assert(findVarType(m, rr, "reshapedA").type()->isArrayType());
+  } else if (isAssociative) {
+    assert(findVarType(m, rr, "assocIndices").type()->isArrayType());
+  }
 
   assert(findVarType(m, rr, "x1").type() == eType.type());
   assert(findVarType(m, rr, "x2").type() == eType.type());
