@@ -1839,6 +1839,33 @@ static void testNilFieldInit() {
   assert(toString(vars["b"]) == "R");
 }
 
+static void testForwardingFieldInit() {
+  std::string program = R"""(
+    record Inner { proc foo() {} }
+    record R {
+      forwarding var x: Inner;
+      proc init() {
+        this.x = new Inner();
+      }
+    }
+
+    // exists to work around current lack of default-init at module scope
+    proc test() {
+      var x: R;
+      return x;
+    }
+    var a = test();
+    var b = new R();
+  )""";
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context, program, {"a", "b"});
+
+  assert(toString(vars["a"]) == "R");
+  assert(toString(vars["b"]) == "R");
+}
+
 static void testGenericFieldInit() {
   {
     std::string program = R"""(
@@ -2333,6 +2360,8 @@ int main() {
   testInitGenericAfterConcrete();
 
   testNilFieldInit();
+
+  testForwardingFieldInit();
 
   testGenericFieldInit();
 
