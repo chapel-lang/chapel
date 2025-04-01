@@ -7163,14 +7163,14 @@ bool Resolver::enter(const TaskVar* taskVar) {
     }
     return false;
   } else {
-    enterScope(taskVar);
-    return true;
+    // upcast to named decl and treat as a "normal" variable
+    return enter(taskVar->toNamedDecl());
   }
 }
 
 void Resolver::exit(const TaskVar* taskVar) {
   if (!isTaskIntent(taskVar)) {
-    exitScope(taskVar);
+    exit(taskVar->toNamedDecl());
   }
 }
 
