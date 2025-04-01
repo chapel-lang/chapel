@@ -1723,6 +1723,7 @@ bool findFieldIdInDeclaration(const AstNode* ast,
       return findFieldIdInDeclaration(fwdVar, fieldName, outFieldId);
     }
   }
+  outFieldId = ID();
   return false;
 }
 
