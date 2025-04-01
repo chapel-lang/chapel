@@ -58,6 +58,8 @@ module M {
 
   var A : [d] eltType;
 
+  var someElt : eltType;
+
   type gotEltType = A.eltType;
   param rank = A.rank;
   param strides = A.strides;
@@ -72,7 +74,7 @@ module M {
   var isEmpty = A.isEmpty();
   var last = A.last;
   var first = A.first;
-  var countZero = A.count(0);
+  var countElt = A.count(someElt);
   var shape = A.shape;
 
   var idx : index(A.domain);
@@ -138,7 +140,7 @@ module M {
   assert(findVarType(m, rr, "isEmpty").type()->isBoolType());
   assert(findVarType(m, rr, "last").type() == eType.type());
   assert(findVarType(m, rr, "first").type() == eType.type());
-  assert(findVarType(m, rr, "countZero").type()->isIntType());
+  assert(findVarType(m, rr, "countElt").type()->isIntType());
   assert(findVarType(m, rr, "shape").type()->isTupleType());
 
   assert(findVarType(m, rr, "x1").type() == eType.type());
