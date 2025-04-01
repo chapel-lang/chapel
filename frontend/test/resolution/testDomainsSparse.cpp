@@ -79,7 +79,7 @@ module M {
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
-  const Variable* d = findVariable(m, "d");
+  auto d = findVariable(m, "d");
   assert(d);
   assert(d->name() == "d");
 

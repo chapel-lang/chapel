@@ -66,8 +66,8 @@ void testCall(const char* testName,
               const char* callIdStr,
               const char* calledFnIdStr);
 
-const Variable* findVariable(const AstNode* ast, const char* name);
-const Variable* findVariable(const ModuleVec& vec, const char* name);
+const VarLikeDecl* findVariable(const AstNode* ast, const char* name);
+const VarLikeDecl* findVariable(const ModuleVec& vec, const char* name);
 
 std::unordered_map<std::string, QualifiedType>
 resolveTypesOfVariables(Context* context,
