@@ -822,6 +822,7 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
 
   bool handledFormal = false;
   bool isCatchVariable = false;
+  bool isLoopIntent = false;
   bool isRefLoopIntent = false;
 
   if (ast->isFormal() || ast->isVarArgFormal()) {
@@ -863,8 +864,15 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
 
   // 'with ([const] ref x)' means to capture 'x' by ref, so no need to initialize it.
   } else if (parent && parent->isWithClause()) {
-    if (isRef(ast->storageKind())) {
-      isRefLoopIntent = true;
+    if (auto tv = ast->toTaskVar()) {
+      // it's only a task intent if it names an outer variable and nothing else.
+      // Any other declaration (with type, with init) is just a task variable.
+      if (!tv->initExpression() && !tv->typeExpression()) {
+        isLoopIntent = true;
+        if (isRef(ast->storageKind())) {
+          isRefLoopIntent = true;
+        }
+      }
     }
   }
 
@@ -874,6 +882,15 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
     // Will be inited later, don't default init,
     // and also don't try to deinit it on e.g. a return before that point
 
+  } else if (isLoopIntent && !isRefLoopIntent ) {
+    // loop intent variables don't have a RHS, but are implicitly initialized
+    // from the outer variable they correspond to. Handle that initialization
+    // here.
+
+    auto& lhsType = rv.byAst(ast).type();
+    auto rhsType = lhsType;
+
+    processInit(frame, ast, lhsType, rhsType, rv);
   } else if (inited) {
     auto lhsAst = ast;
     auto rhsAst = ast->initExpression();
