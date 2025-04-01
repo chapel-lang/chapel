@@ -617,9 +617,12 @@ bool idContainsFieldWithName(Context* context, ID typeDeclId,
                              UniqueString fieldName);
 
 /**
-  Given an AST node for a (multi-)declaration, find for a Variable
+  Given an AST node for a (multi-)declaration, find a Variable
   node that declares a field of the given name. Returns whether the field
-  was found, and, if it was, sets outFieldId to the ID of the Variable.
+  was found. Sets outFieldId to the ID of the Variable, or empty if one
+  was not found.
+
+  Performs a search for AST nodes covered by fieldIdWithName's documentation.
  */
 bool findFieldIdInDeclaration(const uast::AstNode* varDecl,
                               UniqueString fieldName,
@@ -628,6 +631,14 @@ bool findFieldIdInDeclaration(const uast::AstNode* varDecl,
 /**
   Given an ID for a Record/Union/Class Decl,
   and a field name, returns the ID for the Variable declaring that field.
+  Does so by looking recursively for either:
+
+  * the Variable declaration directly: 'var x: int'
+  * A MultiDecl containing the name: 'var x: int, y: int'
+  * A TupleDecl with the name as a component: 'var ((x, y), z) = ...'
+  * A ForwardingDecl that forwards methods from the variable: 'forwarding var x: R'
+
+  Ignores all other AST nodes in the Record/Union/Class.
  */
 ID fieldIdWithName(Context* context, ID typeDeclId,
                    UniqueString fieldName);
