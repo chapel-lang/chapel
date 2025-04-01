@@ -236,13 +236,16 @@ static Collector customHelper(std::string program, ResolutionContext* rc, Module
 }
 
 // helper for running task intent tests
-static void kindHelper(Qualifier kind, const std::string& constructName) {
+static void kindHelper(Qualifier kind, const std::string& constructName, const std::string& initializerValue, const std::string& expectedType) {
   Context* context = buildStdContext();
   ResolutionContext rcval(context);
   auto rc = &rcval;
 
   std::string program;
-  program += "var x = 0;\n";
+  program += "class C {}\n";
+  program += "var x = ";
+  program += initializerValue;
+  program += ";\n";
   program += constructName;
   if (constructName == "forall" || constructName == "coforall") {
     program += " i in 1..10";
@@ -254,7 +257,6 @@ static void kindHelper(Qualifier kind, const std::string& constructName) {
   program += "}\n";
 
   auto col = customHelper(program, rc);
-  const auto intType = IntType::get(context, 0);
 
   // Test shadow variable type is as expected
   {
@@ -263,16 +265,21 @@ static void kindHelper(Qualifier kind, const std::string& constructName) {
     if (useKind == Qualifier::CONST_INTENT) {
       useKind = Qualifier::CONST_VAR;
     }
-    QualifiedType expected = QualifiedType(useKind, intType);
+    auto expected = qualifierToString(useKind) + std::string(" ") + expectedType;
     QualifiedType shadowX = col.onlyIdent("x").type();
-    assert(expected == shadowX);
+
+    std::ostringstream stream;
+    shadowX.stringify(stream, chpl::StringifyKind::CHPL_SYNTAX);
+    assert(stream.str() == expected);
   }
 
 
   // Test type of variable assigned value of shadow variable
   {
     QualifiedType yType = col.onlyDecl("y");
-    assert(yType.type() == intType);
+    std::ostringstream stream;
+    yType.type()->stringify(stream, chpl::StringifyKind::CHPL_SYNTAX);
+    assert(stream.str() == expectedType);
   }
 
   // Test that the shadow variable points to the original
@@ -307,7 +314,8 @@ static void testKinds() {
   // for each construct, test all intent kinds
   for (const auto& constructName : constructNames) {
     for (const auto& qualifier : qualifiers) {
-      kindHelper(qualifier, constructName);
+      kindHelper(qualifier, constructName, "0", "int(64)");
+      kindHelper(qualifier, constructName, "new unmanaged C()", "unmanaged C");
     }
   }
 }
