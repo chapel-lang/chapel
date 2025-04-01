@@ -697,10 +697,10 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
                  !offendingActual->typeExpression()) {
         auto formalKind = badPass.formalType().kind();
         auto actualName = "'" + actualExpr->toIdentifier()->name().str() + "'";
-        wr.message("The actual ", actualName,
+        wr.note(offendingActual->id(), "The actual ", actualName,
                    " expects to be split-initialized because it is declared without a type or initialization expression here:");
         wr.codeForDef(offendingActual);
-        wr.message("The call to '", ci.name() ,"' occurs before any valid initialization points:");
+        wr.note(actualExpr, "The call to '", ci.name() ,"' occurs before any valid initialization points:");
         wr.code(actualExpr, { actualExpr });
         actualPrinted = true;
         wr.message("The call to '", ci.name(), "' cannot initialize ",
@@ -2411,6 +2411,17 @@ void ErrorUseOfLaterVariable::write(ErrorWriterBase& wr) const {
   wr.note(laterId, "the variable '", name, "' is defined here:");
   wr.codeForDef(laterId);
   wr.message("Variables cannot be referenced before they are defined.");
+}
+
+
+void ErrorVariableWithoutInitOrType::write(ErrorWriterBase& wr) const {
+  auto stmt = std::get<const uast::AstNode*>(info_);
+  auto& node = std::get<ID>(info_);
+  auto name = std::get<UniqueString>(info_);
+  wr.heading(kind_, type_, stmt,
+             "variable '", name, "' is declared without an initializer or type.");
+  wr.note(node, "cannot find initialization point to split-init this variable");
+  wr.codeForLocation(node);
 }
 
 void ErrorUserDiagnosticEncounterError::write(ErrorWriterBase& wr) const {
