@@ -358,24 +358,68 @@ module Python {
   */
   config param checkExceptions = true;
 
+  /*
+    Internal internal object to handle the GIL/threadState. This is used to
+    ensure that the GIL is properly acquired and released. The common API of
+    `enter`/`exit` acquires the GIL, saves the thread state, and then grabs
+    another lock on the GIL. This is because `PyEval_SaveThread` will
+    potentially release the GIL, so we need to reacquire it. Ideally, we could
+    use `PyThreadState_Swap(nil)` which is documented to not release the GIL,
+    but seems to do so anyways.
+
+    Proper usage of this object looks like this:
+
+    .. code-block:: chapel
+
+       var ctx = chpl_pythonContext.enter();
+       // some python operation
+       ctx.exit();
+
+    This is commonly written on entry to functions that call Python code as:
+
+    .. code-block:: chapel
+
+       proc someFunction() {
+         var ctx = chpl_pythonContext.enter();
+         defer ctx.exit();
+         // some python operation
+       }
+
+    In rare cases where only the GIL is needed, `enterGILOnly`/`exitGILOnly`
+    can be used.
+  */
   @chpldoc.nodoc
   record chpl_pythonContext {
     var gil: PyGILState_STATE;
     var ts: PyThreadStatePtr;
+    var gil2: PyGILState_STATE;
+    inline proc init(in gil: PyGILState_STATE,
+                     in ts: PyThreadStatePtr,
+                     in gil2: PyGILState_STATE
+                     ) {
+      this.gil = gil;
+      this.ts = ts;
+      this.gil2 = gil2;
+    }
+    inline proc init(in gil: PyGILState_STATE) {
+      this.gil = gil;
+    }
+    inline proc deinit() {}
+
     inline proc type enter() {
-      var ctx = new chpl_pythonContext();
-      ctx.gil = PyGILState_Ensure();
-      ctx.ts = PyEval_SaveThread();
-      return ctx;
+      var gil = PyGILState_Ensure();
+      var ts = PyEval_SaveThread();
+      var gil2 = PyGILState_Ensure();
+      return new chpl_pythonContext(gil, ts, gil2);
     }
     inline proc exit() {
+      PyGILState_Release(this.gil2);
       PyEval_RestoreThread(this.ts);
       PyGILState_Release(this.gil);
     }
     inline proc type enterGILOnly() {
-      var ctx = new chpl_pythonContext();
-      ctx.gil = PyGILState_Ensure();
-      return ctx;
+      var gil = PyGILState_Ensure();
+      return new chpl_pythonContext(gil);
     }
     inline proc exitGILOnly() {
       PyGILState_Release(this.gil);
@@ -486,7 +530,9 @@ module Python {
     //
     // grab the GIL and enter a state where we can invoke threads
     //
-    var ctx = chpl_pythonContext.enter();
+    // var ctx = chpl_pythonContext.enter();
+    var gil = PyGILState_Ensure();
+    var ts = PyEval_SaveThread();
 
     //
     // setup is done
@@ -501,7 +547,9 @@ module Python {
     //
     // restore the thread state so we can release the gil and exit
     //
-    ctx.exit();
+    // ctx.exit();
+    PyEval_RestoreThread(ts);
+    PyGILState_Release(gil);
     Py_Finalize();
     return nil;
 
@@ -3420,6 +3468,7 @@ module Python {
 
     extern proc PyGILState_Ensure(): PyGILState_STATE;
     extern proc PyGILState_Release(state: PyGILState_STATE);
+    extern proc PyGILState_Check(): c_int;
 
     /*
       Error handling
