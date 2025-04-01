@@ -3035,7 +3035,7 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
                qt.isRef() == false) {
       // don't skip because it could be initialized with 'out' intent,
       // but not for non-out formals because they can't be split-initialized.
-    } else if (actualAst && actualAst->isTypeQuery() && ci.calledType().isType()) {
+    } else if (actualAst != nullptr && actualAst->isTypeQuery() && ci.calledType().isType()) {
       // don't skip for type queries in type constructors
     } else {
       if (qt.isParam() && qt.param() == nullptr) {
@@ -3050,7 +3050,11 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
         auto g = getTypeGenericity(context, t);
         bool isBuiltinGeneric = (g == Type::GENERIC &&
                                  (t->isAnyType() || t->isBuiltinType()));
-        if (qt.isType() && isBuiltinGeneric && rv->substitutions == nullptr) {
+        bool noSubstitution =
+          rv->substitutions == nullptr ||
+          (!toId.isEmpty() && rv->substitutions->count(toId) == 0);
+
+        if (qt.isType() && isBuiltinGeneric && noSubstitution) {
           skip = GENERIC_TYPE;
         } else if (!qt.isType() && g != Type::CONCRETE) {
           skip = GENERIC_VALUE;
@@ -3171,12 +3175,16 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
       // Get type by resolving the type of corresponding domain builder call
       const AstNode* questionArg = nullptr;
       std::vector<CallInfoActual> actuals;
+      std::vector<const AstNode*> actualAsts;
+
       // Set up distribution arg
       auto defaultDistArg = CallInfoActual(
           DomainType::getDefaultDistType(context), UniqueString());
       actuals.push_back(std::move(defaultDistArg));
+      actualAsts.push_back(nullptr);
+
       // Remaining given args from domain() call as written
-      prepareCallInfoActuals(call, actuals, questionArg, /*actualAsts*/ nullptr);
+      prepareCallInfoActuals(call, actuals, questionArg, &actualAsts);
       CHPL_ASSERT(!questionArg);
 
       auto ci =
@@ -3186,6 +3194,13 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
                    /* hasQuestionArg */ false,
                    /* isParenless */ false,
                    actuals);
+
+      // if one of the actuals is unknown for some reason, don't attempt
+      // to resolve the call.
+      if (shouldSkipCallResolution(this, fnCall, actualAsts, ci) != NONE) {
+        r.setType(QualifiedType(QualifiedType::UNKNOWN, UnknownType::get(context)));
+        return true;
+      }
 
       auto scope = currentScope();
       auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
@@ -4274,7 +4289,12 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
     auto receiverInfo = closestMethodReceiverInfo(allowNonLocal);
     if (receiverInfo) receiverType = std::get<1>(*receiverInfo);
 
-    if (receiverInfo && receiverType.type()) {
+    // in field types, don't try an implicit receiver, because the
+    // implicit receiver is the class/record, which is not fully constructed
+    // when the field type is being resolved.
+    bool skipImplicitParenless = fieldTypesOnly;
+
+    if (receiverInfo && receiverType.type() && !skipImplicitParenless) {
       std::vector<CallInfoActual> actuals;
       actuals.push_back(CallInfoActual(receiverType, USTR("this")));
       auto ci = CallInfo(/* name */ ident->name(),
@@ -4961,7 +4981,10 @@ void Resolver::exit(const uast::Domain* decl) {
 
     // Add key or range actuals
     std::vector<CallInfoActual> actuals;
+    std::vector<const AstNode*> actualAsts;
     bool freshDomainQuery = false;
+    int exprIndex = 0;
+    const AstNode* ignoredQuestionArg;
     for (auto expr : decl->exprs()) {
       auto exprType = byPostorder.byAst(expr).type();
 
@@ -4973,7 +4996,9 @@ void Resolver::exit(const uast::Domain* decl) {
         break;
       }
 
-      actuals.emplace_back(exprType, UniqueString());
+      CallInfo::prepareActual(context, nullptr, expr, exprIndex++,
+                              byPostorder, /* raiseErrors */ true,
+                              actuals, ignoredQuestionArg, &actualAsts);
     }
 
     if (freshDomainQuery) {
@@ -4995,6 +5020,7 @@ void Resolver::exit(const uast::Domain* decl) {
     if (decl->usedCurlyBraces()) {
       actuals.emplace_back(QualifiedType::makeParamBool(context, true)),
           UniqueString();
+      actualAsts.push_back(nullptr);
     }
 
     auto ci = CallInfo(/* name */ UniqueString::get(context, domainBuilderProc),
@@ -5003,12 +5029,17 @@ void Resolver::exit(const uast::Domain* decl) {
                        /* hasQuestionArg */ false,
                        /* isParenless */ false,
                        actuals);
-    auto scope = currentScope();
-    auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
-    auto c = resolveGeneratedCall(decl, &ci, &inScopes);
 
     ResolvedExpression& r = byPostorder.byAst(decl);
-    c.noteResult(&r);
+    if (shouldSkipCallResolution(this, decl, actualAsts, ci)) {
+      r.setType(QualifiedType());
+    } else {
+      auto scope = currentScope();
+      auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
+      auto c = resolveGeneratedCall(decl, &ci, &inScopes);
+
+      c.noteResult(&r);
+    }
   }
 }
 

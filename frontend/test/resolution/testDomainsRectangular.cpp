@@ -217,6 +217,7 @@ int main() {
 
   testDomainLiteral(context, "{1..10}", DomainType::Kind::Rectangular);
   testDomainLiteral(context, "{1..10, 1..10}", DomainType::Kind::Rectangular);
+  testDomainLiteral(context, "{(...(1..10, 1..10))}", DomainType::Kind::Rectangular);
 
   testDomainBadPass(context, "domain(1)", "domain(2)");
   testDomainBadPass(context, "domain(1, int(16))", "domain(1, int(8))");

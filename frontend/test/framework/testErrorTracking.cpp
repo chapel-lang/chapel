@@ -94,6 +94,17 @@ static const std::string& queryThatSilencesOwnErrors(Context* context) {
   return QUERY_END(output);
 }
 
+static const std::string& queryThatTracksQueryThatSilencesOwnErrors(Context* context) {
+  QUERY_BEGIN(queryThatTracksQueryThatSilencesOwnErrors, context);
+
+  auto result = context->runAndTrackErrors([](Context* ctx) {
+    return queryThatSilencesOwnErrors(ctx);
+  });
+
+  std::string output = "{" + result.result() + "}";
+  return QUERY_END(output);
+}
+
 // What happens if a query first hides the errors, then another query doesn't?
 static void test1() {
   Context ctx;
@@ -340,6 +351,20 @@ static void test7() {
   assert(guard.realizeErrors() == 1);
 }
 
+static void test8() {
+  // regression test for issue in which, when re-emitting captured errors,
+  // we incorrectly also emitted errors that were silened directly by the
+  // query that was being re-run.
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  assert(queryThatTracksQueryThatSilencesOwnErrors(context) == "{.}");
+  assert(guard.realizeErrors() == 0);
+  assert(queryThatSilencesOwnErrors(context) == ".");
+  assert(guard.realizeErrors() == 1);
+}
+
 int main() {
   test1();
   test2();
@@ -348,4 +373,5 @@ int main() {
   test5();
   test6();
   test7();
+  test8();
 }
