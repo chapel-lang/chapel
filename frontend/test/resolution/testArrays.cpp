@@ -67,7 +67,7 @@ module M {
   const AD = A.domain;
   const size = A.size;
   const sizeAsUint = A.sizeAs(uint);
-  ref reindexedA = A.reindex(d);
+  var reindexedA = A.reindex(d);
   const targetLocales = A.targetLocales();
   var isEmpty = A.isEmpty();
   var last = A.last;
@@ -126,7 +126,14 @@ module M {
   assert(findVarType(m, rr, "AD").type() == dType.type());
   assert(findVarType(m, rr, "size").type()->isIntType());
   assert(findVarType(m, rr, "sizeAsUint").type()->isUintType());
-  assert(findVarType(m, rr, "reindexedA").type() == AType.type());
+  // compare original and reindexed string representation as an approximate
+  // equality check
+  auto reindexedA = findVarType(m, rr, "reindexedA");
+  std::stringstream ss1, ss2;
+  reindexedA.type()->stringify(ss1, chpl::StringifyKind::CHPL_SYNTAX);
+  AType.type()->stringify(ss2, chpl::StringifyKind::CHPL_SYNTAX);
+  assert(reindexedA.type()->isArrayType());
+  assert(ss1.str() == ss2.str());
   assert(findVarType(m, rr, "targetLocales").type()->isArrayType());
   assert(findVarType(m, rr, "isEmpty").type()->isBoolType());
   assert(findVarType(m, rr, "last").type() == eType.type());
