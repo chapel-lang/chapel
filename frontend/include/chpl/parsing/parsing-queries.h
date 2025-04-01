@@ -617,6 +617,15 @@ bool idContainsFieldWithName(Context* context, ID typeDeclId,
                              UniqueString fieldName);
 
 /**
+  Given an AST node for a (multi-)declaration, find for a Variable
+  node that declares a field of the given name. Returns whether the field
+  was found, and, if it was, sets outFieldId to the ID of the Variable.
+ */
+bool findFieldIdInDeclaration(const uast::AstNode* varDecl,
+                              UniqueString fieldName,
+                              ID& outFieldId);
+
+/**
   Given an ID for a Record/Union/Class Decl,
   and a field name, returns the ID for the Variable declaring that field.
  */

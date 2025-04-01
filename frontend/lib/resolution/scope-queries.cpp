@@ -254,6 +254,11 @@ struct GatherDecls {
   }
   void exit(const MultiDecl* d) { }
 
+  bool enter(const ForwardingDecl* d) {
+    return true;
+  }
+  void exit(const ForwardingDecl* d) { }
+
   bool enter(const Label* l) {
     gather(declared, l->name(), l->loop(), Decl::DEFAULT_VISIBILITY, atFieldLevel);
     return true;

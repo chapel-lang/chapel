@@ -1696,27 +1696,31 @@ bool idContainsFieldWithName(Context* context, ID typeDeclId, UniqueString field
   return idContainsFieldWithNameQuery(context, typeDeclId, fieldName);
 }
 
-static bool helpFindFieldId(const AstNode* ast,
-                            UniqueString fieldName,
-                            ID& fieldId) {
+bool findFieldIdInDeclaration(const AstNode* ast,
+                              UniqueString fieldName,
+                              ID& outFieldId) {
   if (auto var = ast->toVarLikeDecl()) {
     if (var->name() == fieldName) {
-      fieldId = var->id();
+      outFieldId = var->id();
       return true;
     }
   } else if (auto mult = ast->toMultiDecl()) {
     for (auto decl : mult->decls()) {
-      bool found = helpFindFieldId(decl, fieldName, fieldId);
+      bool found = findFieldIdInDeclaration(decl, fieldName, outFieldId);
       if (found) {
         return true;
       }
     }
   } else if (auto tup = ast->toTupleDecl()) {
     for (auto decl : tup->decls()) {
-      bool found = helpFindFieldId(decl, fieldName, fieldId);
+      bool found = findFieldIdInDeclaration(decl, fieldName, outFieldId);
       if (found) {
         return true;
       }
+    }
+  } else if (auto fwd = ast->toForwardingDecl()) {
+    if (auto fwdVar = fwd->expr()->toVariable()) {
+      return findFieldIdInDeclaration(fwdVar, fieldName, outFieldId);
     }
   }
   return false;
@@ -1732,11 +1736,12 @@ fieldIdWithNameQuery(Context* context, ID typeDeclId, UniqueString fieldName) {
     auto ad = ast->toAggregateDecl();
 
     for (auto child: ad->children()) {
-      // Ignore everything other than VarLikeDecl, MultiDecl, TupleDecl
+      // Ignore everything other than VarLikeDecl, MultiDecl, TupleDecl, ForwardingDecl
       if (child->isVarLikeDecl() ||
           child->isMultiDecl() ||
-          child->isTupleDecl()) {
-        bool found = helpFindFieldId(child, fieldName, result);
+          child->isTupleDecl() ||
+          child->isForwardingDecl()) {
+        bool found = findFieldIdInDeclaration(child, fieldName, result);
         if (found) {
           break;
         }
