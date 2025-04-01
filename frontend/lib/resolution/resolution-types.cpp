@@ -382,8 +382,7 @@ static bool isKindForFunctionalValue(QualifiedType::Kind kind) {
 // if we have `x.f(args)`, returns true if the above should be treated
 // as a method call with `f(this = x, args)`.
 static bool isKindForMethodReceiver(QualifiedType::Kind kind) {
-  return kind != QualifiedType::UNKNOWN &&
-         kind != QualifiedType::FUNCTION &&
+  return kind != QualifiedType::FUNCTION &&
          kind != QualifiedType::MODULE;
 }
 

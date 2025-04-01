@@ -722,6 +722,33 @@ static void test16() {
   }
 }
 
+static void test16b() {
+  auto context = buildStdContext();
+  // Make sure no errors make it to the user, even though we will get errors.
+  ErrorGuard guard(context);
+  auto variables = resolveTypesOfVariablesInit(context,
+      R"""(
+      class Parent {
+          var x: int;
+          var y: string;
+      }
+
+      class Child : Parent {
+          var z: (int, string);
+      }
+
+      var child = new Child();
+
+      param r1 = __primitive("static field type", child, "x") == int;
+      param r2 = __primitive("static field type", child, "y") == string;
+      param r3 = __primitive("static field type", child, "z") == (int, string);
+      )""", { "r1", "r2", "r3" });
+
+  for (auto& pair : variables) {
+    pair.second.isParamTrue();
+  }
+}
+
 // module-level split-init variables
 static void test17() {
   Context context;
@@ -2089,6 +2116,7 @@ int main() {
   test14();
   test15();
   test16();
+  test16b();
   test17();
   test18();
   test19();
