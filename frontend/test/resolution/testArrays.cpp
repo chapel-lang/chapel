@@ -137,8 +137,9 @@ module M {
 
   // array procs
   assert(findVarType(m, rr, "AD").type() == dType.type());
-  assert(findVarType(m, rr, "idxType") ==
-         dType.type()->toDomainType()->idxType());
+  QualifiedType gotIdxType = findVarType(m, rr, "idxType");
+  QualifiedType gotFullIdxType = findVarType(m, rr, "fullIdxType");
+  assert(gotIdxType == dType.type()->toDomainType()->idxType());
   assert(findVarType(m, rr, "gotEltType").type() == eType.type());
   auto rankQt = findVarType(m, rr, "rank");
   assert(rankQt.type()->isIntType());
@@ -179,7 +180,7 @@ module M {
       assert(findVarType(m, rr, "last").type() == eType.type());
       assert(findVarType(m, rr, "first").type() == eType.type());
     }
-    assert(findVarType(m, rr, "findElt").type()->isIntType());
+    assert(findVarType(m, rr, "findElt").type() == gotFullIdxType.type());
     assert(findVarType(m, rr, "shape").type()->isTupleType());
     assert(findVarType(m, rr, "reshapedA").type()->isArrayType());
   } else if (isAssociative) {
