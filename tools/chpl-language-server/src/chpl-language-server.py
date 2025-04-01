@@ -1164,12 +1164,9 @@ class FileInfo:
         self.siblings = chapel.SiblingMap(asts)
 
         if self.use_resolver:
-            # TODO: suppress resolution errors due to false-positives
-            # this should be removed once the resolver is finished
-            with self.context.context.track_errors() as _:
-                for ast in asts:
-                    self._search_instantiations(ast)
-                self.call_segments.sort()
+            for ast in asts:
+                self._search_instantiations(ast)
+            self.call_segments.sort()
 
     def called_function_at_position(
         self, position: Position
@@ -2260,16 +2257,15 @@ def run_lsp():
             call for call, _ in chapel.each_matching(ast, chapel.core.FnCall)
         )
 
-        with fi.context.context.track_errors() as _:
-            for decl in decls:
-                instantiation = fi.get_inst_segment_at_position(decl.rng.start)
-                inlays.extend(ls.get_decl_inlays(decl, instantiation))
+        for decl in decls:
+            instantiation = fi.get_inst_segment_at_position(decl.rng.start)
+            inlays.extend(ls.get_decl_inlays(decl, instantiation))
 
-            for call in calls:
-                instantiation = fi.get_inst_segment_at_position(
-                    location_to_range(call.location()).start
-                )
-                inlays.extend(ls.get_call_inlays(call, instantiation))
+        for call in calls:
+            instantiation = fi.get_inst_segment_at_position(
+                location_to_range(call.location()).start
+            )
+            inlays.extend(ls.get_call_inlays(call, instantiation))
 
         return inlays
 
