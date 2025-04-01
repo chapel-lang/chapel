@@ -553,7 +553,7 @@ Error Messages / Semantic Checks
 
 Launchers
 ---------
-* added support for `--gpu-per-node` flags to all slurm-based launchers
+* added support for `--gpus-per-node` flags to all slurm-based launchers
 * added `CHPL_LAUNCHER_GPUS_PER_NODE` support to slurm-based GASNet launchers
 * reduced forwarding of unnecessary environment variables to GASNet launchers
 
