@@ -659,6 +659,22 @@ class CallInfo {
                              const uast::AstNode*& questionArg,
                              std::vector<const uast::AstNode*>* actualAsts);
 
+  /** Same as prepareActuals, but instead of iterating over all the actuals
+      of a call, simply prepare a single actual.
+
+      Unlike prepareActuals, call can be null (if setting up an actual
+      from a call-like thing, like a domain expression).
+   */
+  static void prepareActual(Context* context,
+                            const uast::Call* call,
+                            const uast::AstNode* actual,
+                            int actualIdx,
+                            const ResolutionResultByPostorderID& byPostorder,
+                            bool raiseErrors,
+                            std::vector<CallInfoActual>& actuals,
+                            const uast::AstNode*& questionArg,
+                            std::vector<const uast::AstNode*>* actualAsts);
+
 
   /** return the name of the called thing */
   const UniqueString name() const { return name_; }
