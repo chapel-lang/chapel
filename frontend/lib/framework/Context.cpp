@@ -1191,7 +1191,9 @@ bool Context::queryCanUseSavedResultAndPushIfNot(
 void Context::emitHiddenErrorsFor(const querydetail::QueryMapResultBase* result) {
   CHPL_ASSERT(!result->emittedErrors);
   for (auto& error : result->errors) {
-    reportError(this, error.first.get());
+    if (!error.second) {
+      reportError(this, error.first.get());
+    }
   }
   result->emittedErrors = true;
   for (auto& dependency : result->dependencies) {
