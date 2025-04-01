@@ -62,7 +62,6 @@ module M {
 
   type gotEltType = A.eltType;
   param rank = A.rank;
-  param strides = A.strides;
   var indices = A.indices;
   var dims = A.dims();
   var dimZero = A.dim(0);
@@ -126,7 +125,6 @@ module M {
   assert(rankQt.type()->isIntType());
   assert(rankQt.param() && rankQt.param()->isIntParam());
   int rank = rankQt.param()->toIntParam()->value();
-  assert(findVarType(m, rr, "strides").type()->isEnumType());
   assert(findVarType(m, rr, "indices").type()->isDomainType());
   assert(findVarType(m, rr, "dims").type()->isTupleType());
   assert(findVarType(m, rr, "dimZero").type()->isRecordType());
