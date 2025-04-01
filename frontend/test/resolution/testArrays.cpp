@@ -86,7 +86,7 @@ module M {
     }
     var findElt = A.find(someElt);
     var shape = A.shape;
-    var reshapedA = A.reshape(d);
+    var reshapedA = reshape(A, d);
   }
   if (isAssociative) {
     var assocIndices = A.indices;
