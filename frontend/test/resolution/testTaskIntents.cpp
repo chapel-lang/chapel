@@ -320,6 +320,27 @@ static void testKinds() {
   }
 }
 
+static void testTaskVar() {
+  auto ctx = buildStdContext();
+  ErrorGuard guard(ctx);
+  auto program =
+    R"""(
+      var outer : int;
+      forall i in 1..10 with (var x : int,
+                              ref outer) {
+        outer = x;
+        var y = x;
+      }
+    )""";
+
+  auto vars = resolveTypesOfVariables(ctx, program, {"x", "y"});
+  assert(guard.realizeErrors() == 0);
+
+  for (auto& [name, var] : vars) {
+    assert(!var.isUnknownOrErroneous() && var.type()->isIntType());
+  }
+}
+
 // helper for running reduce intent tests
 static void reduceHelper(const std::string& constructName, const char* op, const char* opAssign) {
   assert(constructName == "forall" || constructName == "coforall");
@@ -429,6 +450,7 @@ int main(int argc, char** argv) {
 
   // perform actual tests
   testKinds();
+  testTaskVar();
   testReduce();
   testReduceAssignNotVariable();
   testReduceAssignNotReduceIntent();
