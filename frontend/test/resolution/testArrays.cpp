@@ -58,8 +58,22 @@ module M {
 
   var A : [d] eltType;
 
+  type gotEltType = A.eltType;
+  param rank = A.rank;
+  param strides = A.strides;
+  var indices = A.indices;
+  var dims = A.dims();
+  var dimZero = A.dim(0);
   const AD = A.domain;
-  const s = A.size;
+  const size = A.size;
+  const sizeAsUint = A.sizeAs(uint);
+  ref reindexedA = A.reindex(d);
+  const targetLocales = A.targetLocales();
+  var isEmpty = A.isEmpty();
+  var last = A.last;
+  var first = A.first;
+  var countZero = A.count(0);
+  var shape = A.shape;
 
   var idx : index(A.domain);
   var x1 = A[idx];
@@ -97,15 +111,28 @@ module M {
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
+  // input types
   QualifiedType dType = findVarType(m, rr, "d");
-
   QualifiedType eType = findVarType(m, rr, "eltType");
-
   QualifiedType AType = findVarType(m, rr, "A");
 
+  // array procs
+  assert(findVarType(m, rr, "gotEltType").type() == eType.type());
+  assert(findVarType(m, rr, "rank").type()->isIntType());
+  assert(findVarType(m, rr, "strides").type()->isEnumType());
+  assert(findVarType(m, rr, "indices").type()->isDomainType());
+  assert(findVarType(m, rr, "dims").type()->isTupleType());
+  assert(findVarType(m, rr, "dimZero").type()->isRecordType());
   assert(findVarType(m, rr, "AD").type() == dType.type());
-
-  assert(findVarType(m, rr, "s").type()->isIntType());
+  assert(findVarType(m, rr, "size").type()->isIntType());
+  assert(findVarType(m, rr, "sizeAsUint").type()->isUintType());
+  assert(findVarType(m, rr, "reindexedA").type() == AType.type());
+  assert(findVarType(m, rr, "targetLocales").type()->isArrayType());
+  assert(findVarType(m, rr, "isEmpty").type()->isBoolType());
+  assert(findVarType(m, rr, "last").type() == eType.type());
+  assert(findVarType(m, rr, "first").type() == eType.type());
+  assert(findVarType(m, rr, "countZero").type()->isIntType());
+  assert(findVarType(m, rr, "shape").type()->isTupleType());
 
   assert(findVarType(m, rr, "x1").type() == eType.type());
   assert(findVarType(m, rr, "x2").type() == eType.type());
