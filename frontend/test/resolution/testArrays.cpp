@@ -72,8 +72,10 @@ module M {
   var reindexedA = A.reindex(d);
   const targetLocales = A.targetLocales();
   var isEmpty = A.isEmpty();
-  var last = A.last;
-  var first = A.first;
+  if (rank == 1) {
+    var last = A.last;
+    var first = A.first;
+  }
   var countElt = A.count(someElt);
   var shape = A.shape;
 
@@ -120,7 +122,10 @@ module M {
 
   // array procs
   assert(findVarType(m, rr, "gotEltType").type() == eType.type());
-  assert(findVarType(m, rr, "rank").type()->isIntType());
+  auto rankQt = findVarType(m, rr, "rank");
+  assert(rankQt.type()->isIntType());
+  assert(rankQt.param() && rankQt.param()->isIntParam());
+  int rank = rankQt.param()->toIntParam()->value();
   assert(findVarType(m, rr, "strides").type()->isEnumType());
   assert(findVarType(m, rr, "indices").type()->isDomainType());
   assert(findVarType(m, rr, "dims").type()->isTupleType());
@@ -130,16 +135,18 @@ module M {
   assert(findVarType(m, rr, "sizeAsUint").type()->isUintType());
   // compare original and reindexed string representation as an approximate
   // equality check
-  auto reindexedA = findVarType(m, rr, "reindexedA");
+  auto reindexedAQt = findVarType(m, rr, "reindexedA");
   std::stringstream ss1, ss2;
-  reindexedA.type()->stringify(ss1, chpl::StringifyKind::CHPL_SYNTAX);
+  reindexedAQt.type()->stringify(ss1, chpl::StringifyKind::CHPL_SYNTAX);
   AType.type()->stringify(ss2, chpl::StringifyKind::CHPL_SYNTAX);
-  assert(reindexedA.type()->isArrayType());
+  assert(reindexedAQt.type()->isArrayType());
   assert(ss1.str() == ss2.str());
   assert(findVarType(m, rr, "targetLocales").type()->isArrayType());
   assert(findVarType(m, rr, "isEmpty").type()->isBoolType());
-  assert(findVarType(m, rr, "last").type() == eType.type());
-  assert(findVarType(m, rr, "first").type() == eType.type());
+  if (rank == 1) {
+    assert(findVarType(m, rr, "last").type() == eType.type());
+    assert(findVarType(m, rr, "first").type() == eType.type());
+  }
   assert(findVarType(m, rr, "countElt").type()->isIntType());
   assert(findVarType(m, rr, "shape").type()->isTupleType());
 
