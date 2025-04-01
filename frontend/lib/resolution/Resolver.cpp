@@ -4981,7 +4981,10 @@ void Resolver::exit(const uast::Domain* decl) {
 
     // Add key or range actuals
     std::vector<CallInfoActual> actuals;
+    std::vector<const AstNode*> actualAsts;
     bool freshDomainQuery = false;
+    int exprIndex = 0;
+    const AstNode* ignoredQuestionArg;
     for (auto expr : decl->exprs()) {
       auto exprType = byPostorder.byAst(expr).type();
 
@@ -4993,7 +4996,9 @@ void Resolver::exit(const uast::Domain* decl) {
         break;
       }
 
-      actuals.emplace_back(exprType, UniqueString());
+      CallInfo::prepareActual(context, nullptr, expr, exprIndex++,
+                              byPostorder, /* raiseErrors */ true,
+                              actuals, ignoredQuestionArg, &actualAsts);
     }
 
     if (freshDomainQuery) {
@@ -5015,6 +5020,7 @@ void Resolver::exit(const uast::Domain* decl) {
     if (decl->usedCurlyBraces()) {
       actuals.emplace_back(QualifiedType::makeParamBool(context, true)),
           UniqueString();
+      actualAsts.push_back(nullptr);
     }
 
     auto ci = CallInfo(/* name */ UniqueString::get(context, domainBuilderProc),
@@ -5023,12 +5029,17 @@ void Resolver::exit(const uast::Domain* decl) {
                        /* hasQuestionArg */ false,
                        /* isParenless */ false,
                        actuals);
-    auto scope = currentScope();
-    auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
-    auto c = resolveGeneratedCall(decl, &ci, &inScopes);
 
     ResolvedExpression& r = byPostorder.byAst(decl);
-    c.noteResult(&r);
+    if (shouldSkipCallResolution(this, decl, actualAsts, ci)) {
+      r.setType(QualifiedType());
+    } else {
+      auto scope = currentScope();
+      auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
+      auto c = resolveGeneratedCall(decl, &ci, &inScopes);
+
+      c.noteResult(&r);
+    }
   }
 }
 
