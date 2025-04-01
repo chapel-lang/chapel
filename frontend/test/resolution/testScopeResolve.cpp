@@ -61,9 +61,9 @@ static void test1() {
   setFileText(context, path, contents);
 
   const ModuleVec& vec = parseToplevel(context, path);
-  const Variable* x = findVariable(vec, "x");
+  auto x = findVariable(vec, "x");
   assert(x);
-  const Variable* y = findVariable(vec, "y");
+  auto y = findVariable(vec, "y");
   assert(y);
 
   const ResolvedExpression& re = scopeResolveIt(context, x->initExpression());
@@ -91,9 +91,9 @@ static void test2() {
   setFileText(context, path, contents);
 
   const ModuleVec& vec = parseToplevel(context, path);
-  const Variable* x = findVariable(vec, "x");
+  auto x = findVariable(vec, "x");
   assert(x);
-  const Variable* y = findVariable(vec, "y");
+  auto y = findVariable(vec, "y");
   assert(y);
 
   const ResolvedExpression& re = scopeResolveIt(context, x->initExpression());
@@ -121,9 +121,9 @@ static void test3() {
   setFileText(context, path, contents);
 
   const ModuleVec& vec = parseToplevel(context, path);
-  const Variable* x = findVariable(vec, "x");
+  auto x = findVariable(vec, "x");
   assert(x);
-  const Variable* y = findVariable(vec, "y");
+  auto y = findVariable(vec, "y");
   assert(y);
 
   const ResolvedExpression& re = scopeResolveIt(context, x->initExpression());
@@ -151,9 +151,9 @@ static void test4() {
   setFileText(context, path, contents);
 
   const ModuleVec& vec = parseToplevel(context, path);
-  const Variable* x = findVariable(vec, "x");
+  auto x = findVariable(vec, "x");
   assert(x);
-  const Variable* y = findVariable(vec, "y");
+  auto y = findVariable(vec, "y");
   assert(y);
 
   const ResolvedExpression& re = scopeResolveIt(context, x->initExpression());
@@ -181,9 +181,9 @@ static void test5() {
   setFileText(context, path, contents);
 
   const ModuleVec& vec = parseToplevel(context, path);
-  const Variable* x = findVariable(vec, "x");
+  auto x = findVariable(vec, "x");
   assert(x);
-  const Variable* y = findVariable(vec, "y");
+  auto y = findVariable(vec, "y");
   assert(y);
 
   const ResolvedExpression& re = scopeResolveIt(context, x->initExpression());
@@ -225,7 +225,7 @@ static void test6() {
   assert(inc->isPrototype() == false);
   assert(inc->name() == "Sub");
 
-  const Variable* x = findVariable(vec, "x");
+  auto x = findVariable(vec, "x");
   assert(x);
 
   const ResolvedExpression& re = scopeResolveIt(context, x->initExpression());
@@ -237,7 +237,7 @@ static void test6() {
   assert(sub->name() == "Sub");
   assert(sub->id().symbolPath() == "MM.Sub");
 
-  const Variable* y = findVariable(sub, "y");
+  auto y = findVariable(sub, "y");
   assert(y);
 
   assert(xInitId == y->id());
@@ -263,9 +263,9 @@ static void test7() {
   setFileText(context, path, contents);
 
   const ModuleVec& vec = parseToplevel(context, path);
-  const Variable* x = findVariable(vec, "x");
+  auto x = findVariable(vec, "x");
   assert(x);
-  const Variable* y = findVariable(vec, "y");
+  auto y = findVariable(vec, "y");
   assert(y);
 
   const ResolvedExpression& re = scopeResolveIt(context, x->initExpression());
@@ -305,13 +305,13 @@ static void test8() {
 
   const ModuleVec& vec = parseToplevel(context, path);
 
-  const Variable* x = findVariable(vec, "x");
+  auto x = findVariable(vec, "x");
   assert(x);
-  const Variable* y = findVariable(vec, "y");
+  auto y = findVariable(vec, "y");
   assert(y);
-  const Variable* a = findVariable(vec, "a");
+  auto a = findVariable(vec, "a");
   assert(a);
-  const Variable* b = findVariable(vec, "b");
+  auto b = findVariable(vec, "b");
   assert(b);
 
   assert(x->initExpression() == nullptr);
@@ -348,17 +348,17 @@ static void test9() {
 
   const ModuleVec& vec = parseToplevel(context, path);
 
-  const Variable* x = findVariable(vec, "x");
+  auto x = findVariable(vec, "x");
   assert(x);
-  const Variable* y = findVariable(vec, "y");
+  auto y = findVariable(vec, "y");
   assert(y);
-  const Variable* z = findVariable(vec, "z");
+  auto z = findVariable(vec, "z");
   assert(z);
-  const Variable* a = findVariable(vec, "a");
+  auto a = findVariable(vec, "a");
   assert(a);
-  const Variable* b = findVariable(vec, "b");
+  auto b = findVariable(vec, "b");
   assert(b);
-  const Variable* c = findVariable(vec, "c");
+  auto c = findVariable(vec, "c");
   assert(c);
 
   const ResolvedExpression& reA = scopeResolveIt(context, a->initExpression());
@@ -392,9 +392,9 @@ static void test10() {
 
   const ModuleVec& vec = parseToplevel(context, path);
 
-  const Variable* x = findVariable(vec, "x");
+  auto x = findVariable(vec, "x");
   assert(x);
-  const Variable* a = findVariable(vec, "a");
+  auto a = findVariable(vec, "a");
   assert(a);
 
   const ResolvedExpression& reA = scopeResolveIt(context, a->initExpression());
@@ -428,17 +428,17 @@ static void test11() {
 
   const ModuleVec& vec = parseToplevel(context, path);
 
-  const Variable* x = findVariable(vec, "x");
+  auto x = findVariable(vec, "x");
   assert(x);
-  const Variable* y = findVariable(vec, "y");
+  auto y = findVariable(vec, "y");
   assert(y);
-  const Variable* z = findVariable(vec, "z");
+  auto z = findVariable(vec, "z");
   assert(z);
-  const Variable* a = findVariable(vec, "a");
+  auto a = findVariable(vec, "a");
   assert(a);
-  const Variable* b = findVariable(vec, "b");
+  auto b = findVariable(vec, "b");
   assert(b);
-  const Variable* c = findVariable(vec, "c");
+  auto c = findVariable(vec, "c");
   assert(c);
 
   const ResolvedExpression& reA = scopeResolveIt(context, a->initExpression());
@@ -482,15 +482,15 @@ static void test12() {
 
   const ModuleVec& vec = parseToplevel(context, path);
 
-  const Variable* x = findVariable(vec, "x");
+  auto x = findVariable(vec, "x");
   assert(x);
-  const Variable* y = findVariable(vec, "y");
+  auto y = findVariable(vec, "y");
   assert(y);
-  const Variable* a = findVariable(vec, "a");
+  auto a = findVariable(vec, "a");
   assert(a);
-  const Variable* b = findVariable(vec, "b");
+  auto b = findVariable(vec, "b");
   assert(b);
-  const Variable* c = findVariable(vec, "c");
+  auto c = findVariable(vec, "c");
   assert(c);
 
   const ResolvedExpression& reA = scopeResolveIt(context, a->initExpression());
@@ -525,7 +525,7 @@ static void test13() {
   const ModuleVec& vec = parseToplevel(ctx, path);
 
   // Variable triggers resolution of use/import statements.
-  const Variable* x = findVariable(vec, "x");
+  auto x = findVariable(vec, "x");
   assert(x);
 
   std::ignore = scopeResolveIt(ctx, x);
@@ -566,9 +566,9 @@ static void test14() {
 
   const ModuleVec& vec = parseToplevel(context, path);
 
-  const Variable* x = findVariable(vec, "x");
+  auto x = findVariable(vec, "x");
   assert(x);
-  const Variable* y = findVariable(vec, "y");
+  auto y = findVariable(vec, "y");
   assert(y);
 
   const ResolvedExpression& reY = scopeResolveIt(context, y->initExpression());
@@ -600,9 +600,9 @@ static void test15() {
 
   const ModuleVec& vec = parseToplevel(context, path);
 
-  const Variable* x = findVariable(vec, "x");
+  auto x = findVariable(vec, "x");
   assert(x);
-  const Variable* y = findVariable(vec, "y");
+  auto y = findVariable(vec, "y");
   assert(y);
 
   const ResolvedExpression& reY = scopeResolveIt(context, y->initExpression());
@@ -635,9 +635,9 @@ static void test16() {
 
   const ModuleVec& vec = parseToplevel(context, path);
 
-  const Variable* x = findVariable(vec, "x");
+  auto x = findVariable(vec, "x");
   assert(x);
-  const Variable* y = findVariable(vec, "y");
+  auto y = findVariable(vec, "y");
   assert(y);
 
   const ResolvedExpression& reY = scopeResolveIt(context, y->initExpression());
@@ -663,7 +663,7 @@ static void test17() {
 
   const ModuleVec& vec = parseToplevel(context, path);
 
-  const Variable* x = findVariable(vec, "x");
+  auto x = findVariable(vec, "x");
   assert(x);
   // Trigger scope resolution
   const ResolvedExpression& reX = scopeResolveIt(context, x->initExpression());
@@ -705,7 +705,7 @@ static void test18() {
 
   const ModuleVec& vec = parseToplevel(context, path);
 
-  const Variable* x = findVariable(vec, "x");
+  auto x = findVariable(vec, "x");
   assert(x);
 
   const ResolvedExpression& reY = scopeResolveIt(context, x->initExpression());
@@ -740,7 +740,7 @@ static void test19() {
 
   const ModuleVec& vec = parseToplevel(context, path);
 
-  const Variable* x = findVariable(vec, "x");
+  auto x = findVariable(vec, "x");
   assert(x);
 
   const ResolvedExpression& reY = scopeResolveIt(context, x->initExpression());
@@ -769,7 +769,7 @@ static void test20() {
 
   const ModuleVec& vec = parseToplevel(context, path);
 
-  const Variable* x = findVariable(vec, "x");
+  auto x = findVariable(vec, "x");
   assert(x);
 
   const ResolvedExpression& reY = scopeResolveIt(context, x->initExpression());
@@ -799,7 +799,7 @@ static void test21() {
 
   const ModuleVec& vec = parseToplevel(context, path);
 
-  const Variable* x = findVariable(vec, "x");
+  auto x = findVariable(vec, "x");
   assert(x);
 
   for (auto mod : vec) {
@@ -830,7 +830,7 @@ static void test22() {
 
   const ModuleVec& vec = parseToplevel(context, path);
 
-  const Variable* x = findVariable(vec, "x");
+  auto x = findVariable(vec, "x");
   assert(x);
 
   const ResolvedExpression& reY = scopeResolveIt(context, x->initExpression());
@@ -860,7 +860,7 @@ static void test23() {
 
   const ModuleVec& vec = parseToplevel(context, path);
 
-  const Variable* x = findVariable(vec, "x");
+  auto x = findVariable(vec, "x");
   assert(x);
 
   const ResolvedExpression& reMc = scopeResolveIt(context, x->initExpression());
@@ -894,11 +894,11 @@ static void test24() {
 
   const ModuleVec& vec = parseToplevel(context, path);
 
-  const Variable* x = findVariable(vec, "x");
+  auto x = findVariable(vec, "x");
   assert(x);
-  const Variable* y = findVariable(vec, "y");
+  auto y = findVariable(vec, "y");
   assert(x);
-  const Variable* a = findVariable(vec, "a");
+  auto a = findVariable(vec, "a");
   assert(a);
 
   const ResolvedExpression& reB = scopeResolveIt(context, x->initExpression());
@@ -935,7 +935,7 @@ static void test25() {
 
   const ModuleVec& vec = parseToplevel(context, path);
 
-  const Variable* x = findVariable(vec, "x");
+  auto x = findVariable(vec, "x");
   assert(x);
 
   const ResolvedExpression& reC = scopeResolveIt(context, x->initExpression());
@@ -969,9 +969,9 @@ static void test26() {
 
   const ModuleVec& vec = parseToplevel(context, path);
 
-  const Variable* x = findVariable(vec, "x");
+  auto x = findVariable(vec, "x");
   assert(x);
-  const Variable* y = findVariable(vec, "y");
+  auto y = findVariable(vec, "y");
   assert(y);
 
   const ResolvedExpression& reY = scopeResolveIt(context, y->initExpression());
@@ -999,9 +999,9 @@ static void test27() {
 
   const ModuleVec& vec = parseToplevel(context, path);
 
-  const Variable* x = findVariable(vec, "x");
+  auto x = findVariable(vec, "x");
   assert(x);
-  const Variable* y = findVariable(vec, "y");
+  auto y = findVariable(vec, "y");
   assert(y);
 
   ID fnId = y->id().parentSymbolId(context);
@@ -1039,9 +1039,9 @@ static void test28() {
 
   const ModuleVec& vec = parseToplevel(context, path);
 
-  const Variable* x = findVariable(vec, "x");
+  auto x = findVariable(vec, "x");
   assert(x);
-  const Variable* y = findVariable(vec, "y");
+  auto y = findVariable(vec, "y");
   assert(y);
 
   ID fnId = y->id().parentSymbolId(context);
@@ -1077,9 +1077,9 @@ static void test29() {
 
   const ModuleVec& vec = parseToplevel(context, path);
 
-  const Variable* x = findVariable(vec, "x");
+  auto x = findVariable(vec, "x");
   assert(x);
-  const Variable* y = findVariable(vec, "y");
+  auto y = findVariable(vec, "y");
   assert(y);
 
   ID fnId = y->id().parentSymbolId(context);
@@ -1126,9 +1126,9 @@ static void test30() {
 
   const ModuleVec& vec = parseToplevel(context, path);
 
-  const Variable* x = findVariable(vec, "x");
+  auto x = findVariable(vec, "x");
   assert(x);
-  const Variable* y = findVariable(vec, "y");
+  auto y = findVariable(vec, "y");
   assert(y);
 
   ID fnId = y->id().parentSymbolId(context);
@@ -1171,7 +1171,7 @@ static void test30a() {
 
   const ModuleVec& vec = parseToplevel(context, path);
 
-  const Variable* y = findVariable(vec, "y");
+  auto y = findVariable(vec, "y");
   assert(y);
 
   ID fnId = y->id().parentSymbolId(context);
@@ -1205,7 +1205,7 @@ static void test31() {
 
   const ModuleVec& vec = parseToplevel(context, path);
 
-  const Variable* x = findVariable(vec, "x");
+  auto x = findVariable(vec, "x");
   assert(x);
 
   ID fnId = x->id().parentSymbolId(context);

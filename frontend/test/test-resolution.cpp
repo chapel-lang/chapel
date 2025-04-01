@@ -186,10 +186,12 @@ void testCall(const char* testName,
   printf("\n");
 }
 
-const Variable* findVariable(const AstNode* ast, const char* name) {
-  if (auto v = ast->toVariable()) {
-    if (v->name() == name) {
-      return v;
+const VarLikeDecl* findVariable(const AstNode* ast, const char* name) {
+  if (auto v = ast->toVarLikeDecl()) {
+    if (!v->isFormal()) {
+      if (v->name() == name) {
+        return v;
+      }
     }
   }
 
@@ -201,7 +203,7 @@ const Variable* findVariable(const AstNode* ast, const char* name) {
   return nullptr;
 }
 
-const Variable* findVariable(const ModuleVec& vec, const char* name) {
+const VarLikeDecl* findVariable(const ModuleVec& vec, const char* name) {
   for (auto mod : vec) {
     auto got = findVariable(mod, name);
     if (got) return got;
