@@ -6402,28 +6402,8 @@ tryResolveAssign(Context* context,
 
 static bool helpFieldNameCheck(const AstNode* ast,
                                UniqueString name) {
-  if (auto var = ast->toVarLikeDecl()) {
-    return var->name() == name;
-  } else if (auto mult = ast->toMultiDecl()) {
-    for (auto decl : mult->decls()) {
-      bool found = helpFieldNameCheck(decl, name);
-      if (found) {
-        return true;
-      }
-    }
-  } else if (auto tup = ast->toTupleDecl()) {
-    for (auto decl : tup->decls()) {
-      bool found = helpFieldNameCheck(decl, name);
-      if (found) {
-        return true;
-      }
-    }
-  } else if (auto fwd = ast->toForwardingDecl()) {
-    if (auto fwdVar = fwd->expr()->toVariable()) {
-      return fwdVar->name() == name;
-    }
-  }
-  return false;
+  ID ignoredId;
+  return parsing::findFieldIdInDeclaration(ast, name, ignoredId);
 }
 
 static const CompositeType* const&
