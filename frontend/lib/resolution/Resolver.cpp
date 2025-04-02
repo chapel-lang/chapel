@@ -2872,7 +2872,7 @@ static void resolveReduceAssign(Resolver& rv, const OpCall* op) {
   // reductions in the standard library are in the habit of accepting any RHS,
   // and then emitting errors from inside the implementation. Catch that
   // an emit a more specific error.
-  auto resolveResult = rv.context->runAndTrackErrors([&, op](Context* context) {
+  auto resolveResult = rv.context->runAndCaptureErrors([&, op](Context* context) {
     auto c = rv.resolveGeneratedCall(op, &ci, &inScopes);
     return c.noteResultWithoutError(&resolvedOp,
                                     { { AssociatedAction::REDUCE_ASSIGN, op->id() } });
@@ -2928,7 +2928,7 @@ bool Resolver::resolveSpecialPrimitiveCall(const Call* call) {
     if (primCall->numActuals() != 1) {
       result = typeErr(primCall, "invalid call to \"resolves\" primitive");
     } else {
-      auto resultAndErrors = context->runAndTrackErrors([&](Context* context) {
+      auto resultAndErrors = context->runAndCaptureErrors([&](Context* context) {
         primCall->actual(0)->traverse(*this);
         return byPostorder.byAst(primCall->actual(0)).type();
       });
@@ -3104,7 +3104,7 @@ resolveSpecialKeywordCallAsNormalCall(Resolver& rv,
                                       const FnCall* innerCall,
                                       UniqueString name,
                                       ResolvedExpression& noteInto) {
-  auto runResult = rv.context->runAndTrackErrors([&](Context* ctx) {
+  auto runResult = rv.context->runAndCaptureErrors([&](Context* ctx) {
     std::vector<const AstNode*> actualAsts;
     auto ci = CallInfo::create(rv.context, innerCall, rv.byPostorder,
                                /* raiseErrors */ true,
@@ -3214,7 +3214,7 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
 
       auto scope = currentScope();
       auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
-      auto runResult = context->runAndTrackErrors([&](Context* ctx) {
+      auto runResult = context->runAndCaptureErrors([&](Context* ctx) {
         return resolveGeneratedCall(call, &ci, &inScopes);
       });
       auto& crr = runResult.result().result;

@@ -44,12 +44,12 @@ static const std::string& queryThatErrors(Context* context) {
 static const std::string& queryThatCapturesErrors(Context* context) {
   QUERY_BEGIN(queryThatCapturesErrors, context);
   std::string output = "";
-  auto fineResult = context->runAndTrackErrors([](Context* ctx) {
+  auto fineResult = context->runAndCaptureErrors([](Context* ctx) {
     return inputQuery(ctx);
   });
   output += fineResult.ranWithoutErrors() ? "no errors" : "errors";
   output += " on the first go; ";
-  auto badResult = context->runAndTrackErrors([](Context* ctx) {
+  auto badResult = context->runAndCaptureErrors([](Context* ctx) {
     return queryThatErrors(ctx);
   });
   output += badResult.ranWithoutErrors() ? "no errors" : "errors";
@@ -62,7 +62,7 @@ static const std::string& queryThatCapturesErrors(Context* context) {
 static const std::string& queryThatCapturesCapturingErrors(Context* context) {
   QUERY_BEGIN(queryThatCapturesCapturingErrors, context);
   std::string output = "";
-  auto result = context->runAndTrackErrors([](Context* ctx) {
+  auto result = context->runAndCaptureErrors([](Context* ctx) {
     return queryThatCapturesErrors(ctx);
   });
   output += "[" + result.result() + "] ";
@@ -86,7 +86,7 @@ static const std::string& queryThatSilencesOwnErrors(Context* context) {
   QUERY_BEGIN(queryThatSilencesOwnErrors, context);
 
   context->error(ID(), "Non-hidden error, always emitted!");
-  auto result = context->runAndTrackErrors([](Context* ctx) {
+  auto result = context->runAndCaptureErrors([](Context* ctx) {
     ctx->error(ID(), "Hidden error, should not be emitted!");
     return ".";
   });
@@ -97,7 +97,7 @@ static const std::string& queryThatSilencesOwnErrors(Context* context) {
 static const std::string& queryThatTracksQueryThatSilencesOwnErrors(Context* context) {
   QUERY_BEGIN(queryThatTracksQueryThatSilencesOwnErrors, context);
 
-  auto result = context->runAndTrackErrors([](Context* ctx) {
+  auto result = context->runAndCaptureErrors([](Context* ctx) {
     return queryThatSilencesOwnErrors(ctx);
   });
 

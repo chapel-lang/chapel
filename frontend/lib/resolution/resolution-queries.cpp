@@ -6345,7 +6345,7 @@ const ImplementationWitness* findOrImplementInterface(ResolutionContext* rc,
 
   // try automatically satisfy the interface if it's in the standard modules.
   if (parsing::idIsInBundledModule(rc->context(), ift->id())) {
-    auto runResult = rc->context()->runAndTrackErrors([&](Context* context) {
+    auto runResult = rc->context()->runAndCaptureErrors([&](Context* context) {
       return checkInterfaceConstraints(rc, instantiatedIft, implPointId, inScopes);
     });
     witness = runResult.result();

@@ -270,7 +270,7 @@ static QualifiedType primCallResolves(ResolutionContext* rc,
                            /* hasQuestionArg */ false,
                            /* isParenless */ false,
                            std::move(actuals));
-  auto callResult = context->runAndTrackErrors([&](Context* context) {
+  auto callResult = context->runAndCaptureErrors([&](Context* context) {
     return resolveGeneratedCall(rc, call, callInfo,
                                 inScopes);
   });
@@ -287,7 +287,7 @@ static QualifiedType primCallResolves(ResolutionContext* rc,
 
     if (resolveFn) {
       // We did find a candidate; resolve the function body.
-      auto bodyResult = context->runAndTrackErrors([&](Context* context) {
+      auto bodyResult = context->runAndCaptureErrors([&](Context* context) {
         return resolveFunction(rc, bestCandidate, inScopes.poiScope());
       });
       callAndFnResolved &= bodyResult.ranWithoutErrors();

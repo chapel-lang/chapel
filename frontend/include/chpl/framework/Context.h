@@ -587,7 +587,7 @@ class Context {
     not shown to the user.
    */
   template <typename F>
-  auto runAndTrackErrors(F&& f) -> RunResult<decltype(f(this))> {
+  auto runAndCaptureErrors(F&& f) -> RunResult<decltype(f(this))> {
     RunResult<decltype(f(this))> result;
     auto collectionRoot = queryStack.empty() ? nullptr : queryStack.back();
     errorCollectionStack.push_back(
