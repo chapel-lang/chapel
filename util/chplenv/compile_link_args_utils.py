@@ -81,6 +81,8 @@ def get_runtime_link_args(runtime_subdir):
     system.append("-lm")
     # always link with the pthreads library
     system.append("-lpthread")
+    # always link with the dlopen library
+    system.append("-ldl")
 
     return (bundled, system)
 
