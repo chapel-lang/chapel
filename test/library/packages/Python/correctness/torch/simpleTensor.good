@@ -1,0 +1,5 @@
+importing torch module
+getting tensor constructor
+creating tensor
+tensor([[1., 2.],
+        [3., 4.]])
