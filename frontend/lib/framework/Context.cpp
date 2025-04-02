@@ -132,17 +132,17 @@ Context::Context(Context& consumeContext, Configuration newConfig) {
   config_.swap(newConfig);
 }
 
-Context::RunResultBase::RunResultBase() = default;
+Context::CapturingRunResultBase::CapturingRunResultBase() = default;
 
-Context::RunResultBase::~RunResultBase() = default;
+Context::CapturingRunResultBase::~CapturingRunResultBase() = default;
 
-Context::RunResultBase::RunResultBase(const Context::RunResultBase& other) {
+Context::CapturingRunResultBase::CapturingRunResultBase(const Context::CapturingRunResultBase& other) {
   for (auto& err : other.errors()) {
       errors_.push_back(err->clone());
   }
 }
 
-bool Context::RunResultBase::ranWithoutErrors() const {
+bool Context::CapturingRunResultBase::ranWithoutErrors() const {
   for (auto& error : errors_) {
     auto kind = error->kind();
     if (kind == ErrorBase::ERROR || kind == ErrorBase::SYNTAX) {
@@ -152,11 +152,30 @@ bool Context::RunResultBase::ranWithoutErrors() const {
   return true;
 }
 
+Context::ObservingRunResultBase::ObservingRunResultBase() = default;
+
+Context::ObservingRunResultBase::~ObservingRunResultBase() = default;
+
+Context::ObservingRunResultBase::ObservingRunResultBase(const Context::ObservingRunResultBase& other) {
+  this->hadErrors_ = other.hadErrors_;
+}
+
+bool Context::ObservingRunResultBase::ranWithoutErrors() const {
+  return !this->hadErrors_;
+}
+
 Context::ErrorCollectionEntry
 Context::ErrorCollectionEntry::createForTrackingQuery(
     std::vector<owned<ErrorBase>>* storeInto,
     const QueryMapResultBase* trackingQuery) {
   return Context::ErrorCollectionEntry(storeInto, nullptr, trackingQuery);
+}
+
+Context::ErrorCollectionEntry
+Context::ErrorCollectionEntry::createForTrackingQuery(
+    bool* noteErrorOccurredInto,
+    const QueryMapResultBase* trackingQuery) {
+  return Context::ErrorCollectionEntry(nullptr, noteErrorOccurredInto, trackingQuery);
 }
 
 Context::ErrorCollectionEntry

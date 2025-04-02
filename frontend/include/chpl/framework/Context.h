@@ -129,16 +129,16 @@ class Context {
     void swap(Configuration& other);
   };
 
-  class RunResultBase {
+  class CapturingRunResultBase {
    private:
     std::vector<owned<ErrorBase>> errors_;
 
    public:
-    ~RunResultBase();
+    ~CapturingRunResultBase();
 
-    RunResultBase();
+    CapturingRunResultBase();
     // Should not be called due to copy elision, but it's not guaranteed..
-    RunResultBase(const RunResultBase& other);
+    CapturingRunResultBase(const CapturingRunResultBase& other);
 
     /** The errors that occurred while running. */
     std::vector<owned<ErrorBase>>& errors() { return errors_; };
@@ -150,8 +150,29 @@ class Context {
     bool ranWithoutErrors() const;
   };
 
-  template <typename T>
-  class RunResult : public RunResultBase {
+  class ObservingRunResultBase {
+   private:
+    bool hadErrors_;
+
+   public:
+    ~ObservingRunResultBase();
+
+    ObservingRunResultBase();
+    // Should not be called due to copy elision, but it's not guaranteed..
+    ObservingRunResultBase(const ObservingRunResultBase& other);
+
+    /** Whether or not any errors occurred while running. */
+    bool& hadErrors() { return hadErrors_; }
+
+    /**
+      Checks if any syntax errors or errors occurred while running.
+      Warnings do not cause this method to return false.
+    */
+    bool ranWithoutErrors() const;
+  };
+
+  template <typename T, typename Base>
+  class RunResult : public Base {
    private:
     T result_;
 
@@ -183,6 +204,14 @@ class Context {
     static ErrorCollectionEntry
     createForTrackingQuery(std::vector<owned<ErrorBase>>*,
                            const querydetail::QueryMapResultBase*);
+
+    /**
+      Like the vector-based overload above, except set up for merely
+      detecting whether or not an error occurred instead of storing
+      the errors.
+     */
+    static ErrorCollectionEntry
+    createForTrackingQuery(bool*, const querydetail::QueryMapResultBase*);
 
     /**
       When recomputing queries (to determine if a cached result should be used),
@@ -587,11 +616,22 @@ class Context {
     not shown to the user.
    */
   template <typename F>
-  auto runAndCaptureErrors(F&& f) -> RunResult<decltype(f(this))> {
-    RunResult<decltype(f(this))> result;
+  auto runAndCaptureErrors(F&& f) -> RunResult<decltype(f(this)), CapturingRunResultBase> {
+    RunResult<decltype(f(this)), CapturingRunResultBase> result;
     auto collectionRoot = queryStack.empty() ? nullptr : queryStack.back();
     errorCollectionStack.push_back(
         ErrorCollectionEntry::createForTrackingQuery(&result.errors(), collectionRoot));
+    result.result() = f(this);
+    errorCollectionStack.pop_back();
+    return result;
+  }
+
+  template <typename F>
+  auto runAndDetectErrors(F&& f) -> RunResult<decltype(f(this)), ObservingRunResultBase> {
+    RunResult<decltype(f(this)), ObservingRunResultBase> result;
+    auto collectionRoot = queryStack.empty() ? nullptr : queryStack.back();
+    errorCollectionStack.push_back(
+        ErrorCollectionEntry::createForTrackingQuery(&result.hadErrors(), collectionRoot));
     result.result() = f(this);
     errorCollectionStack.pop_back();
     return result;
