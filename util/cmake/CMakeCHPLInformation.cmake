@@ -17,11 +17,12 @@
 
 
 # TODO: this is a hack, how do we tell cmake that we can't compile to object files?
+# TODO: how do we respect <DEFINES> and <INCLUDES>, CMake will only fill that in for CMAKE_*_COMPILER_OBJECT
 set(CMAKE_CHPL_COMPILE_OBJECT "test -f <OBJECT> || ln -s <SOURCE> <OBJECT>")
-set(CMAKE_CHPL_LINK_EXECUTABLE "<CMAKE_CHPL_COMPILER> -o <TARGET> <OBJECTS> <FLAGS> <LINK_FLAGS>")
-# <COMPILE_FLAGS> doesn't work on link step
+set(CMAKE_CHPL_LINK_EXECUTABLE "<CMAKE_CHPL_COMPILER> -o <TARGET> <OBJECTS> <FLAGS> <LINK_FLAGS> <LINK_LIBRARIES>")
 
 # TODO: support --library directly to build Chapel shared libs for interoperability
+# CMAKE_*_CREATE_SHARED_LIBRARY
 
 set(CMAKE_CHPL_SOURCE_FILE_EXTENSIONS chpl)
 
