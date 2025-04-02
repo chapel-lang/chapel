@@ -483,7 +483,7 @@ module Python {
         // but by setting executable we can reuse the python logic to
         // determine the locale (in the string sense, not the chapel sense)
         const executable = string.createBorrowingBuffer(venv) + "/bin/python";
-        const wideExecutable = executable.localize().c_wstr();
+        const wideExecutable = executable.c_wstr();
         defer deallocate(wideExecutable);
         checkPyStatus(
           PyConfig_SetString(
