@@ -152,7 +152,7 @@ class Context {
 
   class ObservingRunResultBase {
    private:
-    bool hadErrors_;
+    bool hadErrors_ = false;
 
    public:
     ~ObservingRunResultBase();
