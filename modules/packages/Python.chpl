@@ -438,12 +438,28 @@ module Python {
       // check VIRTUAL_ENV, if it is set, make it the executable
       var venv = getenv("VIRTUAL_ENV".c_str());
       if venv != nil {
+        use OS.POSIX only memcpy;
+        extern const CHPL_RT_MD_STR_COPY_DATA: chpl_mem_descInt_t;
+        extern proc chpl_memhook_md_num(): chpl_mem_descInt_t;
+
+        // Explicitly combine the memory to avoid an issue with gasnet
+        var venvLen = strLen(venv);
+        var pythonPathExt = "/bin/python";
+        var newSize = venvLen + pythonPathExt.size;
+        var execCStr = chpl_here_alloc(newSize+1,
+                                       CHPL_RT_MD_STR_COPY_DATA -
+                                       chpl_memhook_md_num()): venv.type;
+        memcpy(execCStr, venv, venvLen.safeCast(c_size_t));
+        memcpy(execCStr+venvLen, pythonPathExt.buff,
+               pythonPathExt.size.safeCast(c_size_t));
+        execCStr[newSize] = 0;
+
+        const executable = string.createBorrowingBuffer(execCStr);
+        const wideExecutable = executable.c_wstr();
+        defer deallocate(wideExecutable);
         // ideally this just sets config_.home
         // but by setting executable we can reuse the python logic to
         // determine the locale (in the string sense, not the chapel sense)
-        const executable = string.createBorrowingBuffer(venv) + "/bin/python";
-        const wideExecutable = executable.c_wstr();
-        defer deallocate(wideExecutable);
         checkPyStatus(
           PyConfig_SetString(
             cfgPtr, c_ptrTo(config_.executable), wideExecutable));
