@@ -169,11 +169,7 @@ static void testTwoErrors() {
     )""";
 
   resolveTypesOfVariables(ctx, program, {"x", "y"});
-  // Note: the HACK in which we silence errors from resolving nested calls
-  // (because we can't fully resolve the standard library) is in play,
-  // which means we don't see the UserDiagnosticEncounterError. Once
-  // that workaround is disabled (i.e., when we can resolve all functions without
-  // errors), we should test for that error here.
+  ensureErrorOnLine(ctx, guard.errors(), ErrorType::UserDiagnosticEncounterError, 645, "no", /* allowOthers = */ true);
   ensureErrorOnLine(ctx, guard.errors(), ErrorType::UserDiagnosticEmitError, 5, "no", /* allowOthers = */ true);
   ensureErrorOnLine(ctx, guard.errors(), ErrorType::UserDiagnosticEmitError, 7, "no", /* allowOthers = */ true);
   guard.realizeErrors();
@@ -200,7 +196,7 @@ static void testRunAndTrackErrors() {
     return resolveConcreteFunction(ctx, modules[0]->stmt(0)->id());
   });
   assert(!result.ranWithoutErrors());
-  assert(result.errors().size() == 1);
+  assert(result.errors().size() == 2);
   ensureErrorInErrorsModule(ctx, result.errors(), ErrorType::UserDiagnosticEncounterError);
 }
 
@@ -256,7 +252,7 @@ static void testEarlyReturn() {
   assert(x->isIntType());
   ensureErrorOnLine(ctx, guard.errors(), ErrorType::UserDiagnosticEmitError, 3, "Hello", /* allowOthers = */ true);
   ensureErrorOnLine(ctx, guard.errors(), ErrorType::UserDiagnosticEmitWarning, 13, "inside foo, after call to bar", /* allowOthers = */ true);
-  assert(guard.realizeErrors() == 3); /* one more for UserDiagnosticEncounterError */
+  assert(guard.realizeErrors() == 4); /* two more for UserDiagnosticEncounter{Error,Warning} */
 }
 
 int main() {
