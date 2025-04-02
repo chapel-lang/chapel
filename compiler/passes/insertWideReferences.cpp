@@ -2437,6 +2437,8 @@ static void defragmentLocalBlocks(void) {
 //
 void
 insertWideReferences(void) {
+  auto heapAllocateGlobals = heapAllocateGlobalsHead();
+
   if (!requireWideReferences()) {
     convertNilToObject();
     handleIsWidePointer();
@@ -2573,7 +2575,6 @@ insertWideReferences(void) {
 
   handleLocalBlocks();
 
-  auto heapAllocateGlobals = heapAllocateGlobalsHead();
   heapAllocateGlobalsTail(heapAllocateGlobals, heapVars);
 
   // NWR
