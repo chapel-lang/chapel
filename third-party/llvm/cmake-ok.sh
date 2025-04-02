@@ -5,7 +5,7 @@ vers=`$CMAKE --version`
 if [ $? -eq 0 ]
 then
   case $vers in
-    *"version 3"*)
+    *"version 3"*|*"version 4"*)
       exit 0
       ;;
     *)

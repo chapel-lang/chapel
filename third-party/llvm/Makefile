@@ -89,7 +89,7 @@ llvm-config: FORCE
 	@if ./cmake-ok.sh $(CMAKE); then \
 	  echo ; \
 	else \
-	  echo Error: Chapel requires cmake 3 to build; \
+	  echo Error: Chapel requires cmake 3 or 4 to build; \
 	  exit 1; \
 	fi
 	
@@ -127,7 +127,7 @@ llvm-config-support-only: FORCE
 	@if ./cmake-ok.sh $(CMAKE); then \
 	  echo ; \
 	else \
-	  echo Error: Chapel requires cmake 3 to build; \
+	  echo Error: Chapel requires cmake 3 or 4 to build; \
 	  exit 1; \
 	fi
 	
