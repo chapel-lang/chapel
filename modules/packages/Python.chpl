@@ -359,7 +359,7 @@ module Python {
   config param checkExceptions = true;
 
   /*
-    Internal internal object to handle the GIL. This is used to
+    Internal object to handle the GIL. This is used to
     ensure that the GIL is properly acquired and released. The common API of
     `enter`/`exit` acquires the GIL.
 
@@ -3433,8 +3433,6 @@ module Python {
 
     extern proc PyGILState_Ensure(): PyGILState_STATE;
     extern proc PyGILState_Release(state: PyGILState_STATE);
-    extern proc PyGILState_Check(): c_int;
-
     /*
       Error handling
     */
