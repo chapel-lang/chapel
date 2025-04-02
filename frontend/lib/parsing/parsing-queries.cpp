@@ -1340,13 +1340,27 @@ bool idIsParenlessFunction(Context* context, ID id) {
   return idIsFunction(context, id) && idIsParenlessFunctionQuery(context, id);
 }
 
-bool idIsNestedFunction(Context* context, ID id) {
-  if (id.isEmpty() || !idIsFunction(context, id)) return false;
-  for (auto up = id.parentSymbolId(context); up;
-            up = up.parentSymbolId(context)) {
-    if (idIsFunction(context, up) || idIsInterface(context, up)) return true;
+static bool const& idIsNestedFunctionQuery(Context* context, ID id) {
+  QUERY_BEGIN(idIsNestedFunctionQuery, context, id);
+
+  bool result = false;
+  if (id.isEmpty() || !idIsFunction(context, id)) {
+    result = false;
+  } else {
+    for (auto up = id.parentSymbolId(context); up;
+              up = up.parentSymbolId(context)) {
+      if (idIsFunction(context, up) || idIsInterface(context, up)) {
+        result = true;
+        break;
+      }
+    }
   }
-  return false;
+
+  return QUERY_END(result);
+}
+
+bool idIsNestedFunction(Context* context, ID id) {
+  return idIsNestedFunctionQuery(context, id);
 }
 
 template <typename Predicate>
