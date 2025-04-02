@@ -284,7 +284,9 @@ class QueryMapResultBase {
   //
   // This is not too strongly connected to emittedErrors (which tracks whether
   // errors --- if any --- were shown to the user for this query result only)
-  mutable bool errorsPresentInSelfOrDependencies = false;
+  //
+  // Bit 0 tracks if errors occurred, bit 1 tracks warnings.
+  mutable unsigned int errorsPresentInSelfOrDependencies:2;
   // Errors emitted when re-computing a query can refer to memory and data
   // that's temporarily allocated while running the computation. Then, if the
   // output of the query is the same as before, that temporary data can
@@ -314,7 +316,6 @@ class QueryMapResultBase {
                      RevisionNumber lastChanged,
                      bool beingTestedForReuse,
                      bool emittedErrors,
-                     bool errorsPresentInSelfOrDependencies,
                      size_t oldResultForErrorContents,
                      std::set<const QueryMapResultBase*> recursionErrors,
                      QueryMapBase* parentQueryMap);
@@ -336,7 +337,7 @@ class QueryMapResult final : public QueryMapResultBase {
   //  * a default-constructed result
   QueryMapResult(QueryMap<ResultType, ArgTs...>* parentQueryMap,
                  std::tuple<ArgTs...> tupleOfArgs)
-    : QueryMapResultBase(-1, -1, false, false, false, -1, {}, parentQueryMap),
+    : QueryMapResultBase(-1, -1, false, false, -1, {}, parentQueryMap),
       tupleOfArgs(std::move(tupleOfArgs)),
       result() {
   }
@@ -344,14 +345,13 @@ class QueryMapResult final : public QueryMapResultBase {
                  RevisionNumber lastChanged,
                  bool beingTestedForReuse,
                  bool emittedErrors,
-                 bool errorsPresentInSelfOrDependencies,
                  size_t oldResultForErrorContents,
                  std::set<const QueryMapResultBase*> recursionErrors,
                  QueryMap<ResultType, ArgTs...>* parentQueryMap,
                  std::tuple<ArgTs...> tupleOfArgs,
                  ResultType result)
     : QueryMapResultBase(lastChecked, lastChanged, beingTestedForReuse,
-                         emittedErrors, errorsPresentInSelfOrDependencies,
+                         emittedErrors,
                          oldResultForErrorContents,
                          std::move(recursionErrors), parentQueryMap),
       tupleOfArgs(std::move(tupleOfArgs)),

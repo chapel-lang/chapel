@@ -897,18 +897,20 @@ void Context::report(owned<ErrorBase> error) {
   // results (errors will be re-emitted if the cached query is invoked without
   // error collection).
 
+  bool isError = error->kind() == ErrorBase::ERROR || error->kind() == ErrorBase::SYNTAX;
+
   if (queryStack.size() > 0 && errorCollectionStack.size() > 0) {
     bool isSilencing =
       errorCollectionStack.back().collectingQuery() == queryStack.back();
 
     errorCollectionStack.back().storeError(error->clone());
     queryStack.back()->errors.push_back(std::make_pair(std::move(error), isSilencing));
-    queryStack.back()->errorsPresentInSelfOrDependencies = true;
+    queryStack.back()->errorsPresentInSelfOrDependencies |= 1 << (!isError);
   } else if (queryStack.size() > 0) {
     bool isSilencing = false;
 
     queryStack.back()->errors.push_back(std::make_pair(std::move(error), isSilencing));
-    queryStack.back()->errorsPresentInSelfOrDependencies = true;
+    queryStack.back()->errorsPresentInSelfOrDependencies |= 1 << (!isError);
     reportError(this, queryStack.back()->errors.back().first.get());
   } else if (errorCollectionStack.size() > 0) {
     errorCollectionStack.back().storeError(std::move(error));
@@ -1230,7 +1232,7 @@ void Context::ErrorCollectionEntry::storeErrorsFrom(const querydetail::QueryMapR
     storeErrorsFromHelp(result, visited);
   }
   if (noteErrorOccurredInto_) {
-    *noteErrorOccurredInto_ |= result->errorsPresentInSelfOrDependencies;
+    *noteErrorOccurredInto_ |= result->errorsPresentInSelfOrDependencies & 0b1;
   }
 }
 
@@ -1371,7 +1373,6 @@ QueryMapResultBase::QueryMapResultBase(RevisionNumber lastChecked,
                    RevisionNumber lastChanged,
                    bool beingTestedForReuse,
                    bool emittedErrors,
-                   bool errorsPresentInSelfOrDependencies,
                    size_t oldResultForErrorContents,
                    std::set<const QueryMapResultBase*> recursionErrors,
                    QueryMapBase* parentQueryMap)
@@ -1379,7 +1380,7 @@ QueryMapResultBase::QueryMapResultBase(RevisionNumber lastChecked,
     lastChanged(lastChanged),
     beingTestedForReuse(beingTestedForReuse),
     emittedErrors(emittedErrors),
-    errorsPresentInSelfOrDependencies(errorsPresentInSelfOrDependencies),
+    errorsPresentInSelfOrDependencies(0),
     oldResultForErrorContents(oldResultForErrorContents),
     dependencies(),
     recursionErrors(std::move(recursionErrors)),
