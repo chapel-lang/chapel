@@ -189,7 +189,8 @@ void Context::ErrorCollectionEntry::storeError(owned<ErrorBase> toStore) const {
     storeInto_->push_back(std::move(toStore));
   }
   if (noteErrorOccurredInto_) {
-    *noteErrorOccurredInto_ = true;
+    *noteErrorOccurredInto_ |=
+      toStore->kind() == ErrorBase::ERROR || toStore->kind() == ErrorBase::SYNTAX;
   }
 }
 
@@ -924,12 +925,16 @@ void Context::report(owned<ErrorBase> error) {
 
     errorCollectionStack.back().storeError(error->clone());
     queryStack.back()->errors.push_back(std::make_pair(std::move(error), isSilencing));
-    queryStack.back()->errorsPresentInSelfOrDependencies |= 1 << (!isError);
+    if (!isSilencing) {
+      queryStack.back()->errorsPresentInSelfOrDependencies |= 1 << (!isError);
+    }
   } else if (queryStack.size() > 0) {
     bool isSilencing = false;
 
     queryStack.back()->errors.push_back(std::make_pair(std::move(error), isSilencing));
-    queryStack.back()->errorsPresentInSelfOrDependencies |= 1 << (!isError);
+    if (!isSilencing) {
+      queryStack.back()->errorsPresentInSelfOrDependencies |= 1 << (!isError);
+    }
     reportError(this, queryStack.back()->errors.back().first.get());
   } else if (errorCollectionStack.size() > 0) {
     errorCollectionStack.back().storeError(std::move(error));
@@ -1283,8 +1288,10 @@ void Context::saveDependencyInParent(const QueryMapResultBase* resultEntry) {
       bool errorCollectionRoot = !errorCollectionStack.empty() &&
                                  errorCollectionStack.back().collectingQuery() == parentQuery;
       parentQuery->dependencies.push_back(QueryDependency(resultEntry, errorCollectionRoot));
-      parentQuery->errorsPresentInSelfOrDependencies |=
-        resultEntry->errorsPresentInSelfOrDependencies;
+      if (!errorCollectionRoot) {
+        parentQuery->errorsPresentInSelfOrDependencies |=
+          resultEntry->errorsPresentInSelfOrDependencies;
+      }
     }
 
     // Propagate query errors that occurred in the child query to the parent
