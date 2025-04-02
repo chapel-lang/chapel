@@ -156,18 +156,21 @@ Context::ErrorCollectionEntry
 Context::ErrorCollectionEntry::createForTrackingQuery(
     std::vector<owned<ErrorBase>>* storeInto,
     const QueryMapResultBase* trackingQuery) {
-  return Context::ErrorCollectionEntry(storeInto, trackingQuery);
+  return Context::ErrorCollectionEntry(storeInto, nullptr, trackingQuery);
 }
 
 Context::ErrorCollectionEntry
 Context::ErrorCollectionEntry::createForRecomputing(
     const querydetail::QueryMapResultBase* trackingQuery) {
-  return Context::ErrorCollectionEntry(nullptr, trackingQuery);
+  return Context::ErrorCollectionEntry(nullptr, nullptr, trackingQuery);
 }
 
 void Context::ErrorCollectionEntry::storeError(owned<ErrorBase> toStore) const {
   if (storeInto_) {
     storeInto_->push_back(std::move(toStore));
+  }
+  if (noteErrorOccurredInto_) {
+    *noteErrorOccurredInto_ = true;
   }
 }
 
@@ -1204,27 +1207,38 @@ void Context::emitHiddenErrorsFor(const querydetail::QueryMapResultBase* result)
   }
 }
 
-static void storeErrorsForHelp(const querydetail::QueryMapResultBase* result,
-                               std::unordered_set<const querydetail::QueryMapResultBase*>& visited,
-                               Context::ErrorCollectionEntry& into) {
+void Context::ErrorCollectionEntry::
+storeErrorsFromHelp(const querydetail::QueryMapResultBase* result,
+                    std::unordered_set<const querydetail::QueryMapResultBase*>& visited) {
   auto insertResult = visited.insert(result);
   if (!insertResult.second) return;
   for (auto& error : result->errors) {
-    into.storeError(error.first->clone());
+    storeError(error.first->clone());
   }
   for (auto& dependency : result->dependencies) {
     if (!dependency.errorCollectionRoot &&
         dependency.query->errorsPresentInSelfOrDependencies) {
-      storeErrorsForHelp(dependency.query, visited, into);
+      storeErrorsFromHelp(dependency.query, visited);
     }
   }
 }
 
+void Context::ErrorCollectionEntry::storeErrorsFrom(const querydetail::QueryMapResultBase* result) {
+
+  if (storeInto_) {
+    std::unordered_set<const querydetail::QueryMapResultBase*> visited;
+    storeErrorsFromHelp(result, visited);
+  }
+  if (noteErrorOccurredInto_) {
+    *noteErrorOccurredInto_ |= result->errorsPresentInSelfOrDependencies;
+  }
+}
+
+
 void Context::storeErrorsFor(const querydetail::QueryMapResultBase* result) {
   CHPL_ASSERT(!errorCollectionStack.empty());
   auto& trackingEntry = errorCollectionStack.back();
-  std::unordered_set<const querydetail::QueryMapResultBase*> visited;
-  storeErrorsForHelp(result, visited, trackingEntry);
+  trackingEntry.storeErrorsFrom(result);
 }
 
 void Context::saveDependencyInParent(const QueryMapResultBase* resultEntry) {

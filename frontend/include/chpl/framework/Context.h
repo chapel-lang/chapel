@@ -163,12 +163,17 @@ class Context {
   class ErrorCollectionEntry {
    private:
     std::vector<owned<ErrorBase>>* storeInto_;
+    bool* noteErrorOccurredInto_;
     const querydetail::QueryMapResultBase* collectingQuery_;
 
     ErrorCollectionEntry(std::vector<owned<ErrorBase>>* storeInto,
+                         bool* noteErrorOccurredInto,
                          const querydetail::QueryMapResultBase* collectingQuery) :
-      storeInto_(storeInto), collectingQuery_(collectingQuery) {}
+      storeInto_(storeInto), noteErrorOccurredInto_(noteErrorOccurredInto),
+      collectingQuery_(collectingQuery) {}
 
+    void storeErrorsFromHelp(const querydetail::QueryMapResultBase* result,
+                            std::unordered_set<const querydetail::QueryMapResultBase*>& visited);
    public:
     /**
       When a parent query starts tracking errors, the tracking entry contains
@@ -191,7 +196,10 @@ class Context {
     createForRecomputing(const querydetail::QueryMapResultBase*);
 
     const querydetail::QueryMapResultBase* collectingQuery() const { return collectingQuery_; }
+
     void storeError(owned<ErrorBase> toStore) const;
+
+    void storeErrorsFrom(const querydetail::QueryMapResultBase* result);
   };
 
   class RecomputeMarker {
