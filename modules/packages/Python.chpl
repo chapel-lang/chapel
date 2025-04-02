@@ -359,13 +359,9 @@ module Python {
   config param checkExceptions = true;
 
   /*
-    Internal internal object to handle the GIL/threadState. This is used to
+    Internal internal object to handle the GIL. This is used to
     ensure that the GIL is properly acquired and released. The common API of
-    `enter`/`exit` acquires the GIL, saves the thread state, and then grabs
-    another lock on the GIL. This is because `PyEval_SaveThread` will
-    potentially release the GIL, so we need to reacquire it. Ideally, we could
-    use `PyThreadState_Swap(nil)` which is documented to not release the GIL,
-    but seems to do so anyways.
+    `enter`/`exit` acquires the GIL.
 
     Proper usage of this object looks like this:
 
@@ -384,23 +380,10 @@ module Python {
          defer ctx.exit();
          // some python operation
        }
-
-    In rare cases where only the GIL is needed, `enterGILOnly`/`exitGILOnly`
-    can be used.
   */
   @chpldoc.nodoc
   record chpl_pythonContext {
     var gil: PyGILState_STATE;
-    var ts: PyThreadStatePtr;
-    var gil2: PyGILState_STATE;
-    inline proc init(in gil: PyGILState_STATE,
-                     in ts: PyThreadStatePtr,
-                     in gil2: PyGILState_STATE
-                     ) {
-      this.gil = gil;
-      this.ts = ts;
-      this.gil2 = gil2;
-    }
     inline proc init(in gil: PyGILState_STATE) {
       this.gil = gil;
     }
@@ -408,20 +391,9 @@ module Python {
 
     inline proc type enter() {
       var gil = PyGILState_Ensure();
-      var ts = PyEval_SaveThread();
-      var gil2 = PyGILState_Ensure();
-      return new chpl_pythonContext(gil, ts, gil2);
-    }
-    inline proc exit() {
-      PyGILState_Release(this.gil2);
-      PyEval_RestoreThread(this.ts);
-      PyGILState_Release(this.gil);
-    }
-    inline proc type enterGILOnly() {
-      var gil = PyGILState_Ensure();
       return new chpl_pythonContext(gil);
     }
-    inline proc exitGILOnly() {
+    inline proc exit() {
       PyGILState_Release(this.gil);
     }
   }
@@ -511,7 +483,7 @@ module Python {
         // but by setting executable we can reuse the python logic to
         // determine the locale (in the string sense, not the chapel sense)
         const executable = string.createBorrowingBuffer(venv) + "/bin/python";
-        const wideExecutable = executable.c_wstr();
+        const wideExecutable = executable.localize().c_wstr();
         defer deallocate(wideExecutable);
         checkPyStatus(
           PyConfig_SetString(
@@ -530,7 +502,6 @@ module Python {
     //
     // grab the GIL and enter a state where we can invoke threads
     //
-    // var ctx = chpl_pythonContext.enter();
     var gil = PyGILState_Ensure();
     var ts = PyEval_SaveThread();
 
@@ -547,7 +518,6 @@ module Python {
     //
     // restore the thread state so we can release the gil and exit
     //
-    // ctx.exit();
     PyEval_RestoreThread(ts);
     PyGILState_Release(gil);
     Py_Finalize();
@@ -628,11 +598,8 @@ module Python {
         throw interpreterThreadError;
       }
 
-
-      // we only need the GIL, not the whole context
-      var ctx = chpl_pythonContext.enterGILOnly();
-      defer ctx.exitGILOnly();
-
+      var ctx = chpl_pythonContext.enter();
+      defer ctx.exit();
 
       var sys = PyImport_ImportModule("sys");
       this.checkException();
@@ -692,9 +659,8 @@ module Python {
       if this.isSubInterpreter then return;
 
       if pyMemLeaks && this.objgraph != nil {
-        // we only need the GIL, not the whole context
-        var ctx = chpl_pythonContext.enterGILOnly();
-        defer ctx.exitGILOnly();
+        var ctx = chpl_pythonContext.enter();
+        defer ctx.exit();
         // note: try! is used since we can't have a throwing deinit
 
         // run gc.collect() before showing growth
@@ -1082,9 +1048,8 @@ module Python {
       displayed in the correct order.
     */
     inline proc flush(flushStderr: bool = false) throws {
-      // we only need the GIL, not the whole context
-      var ctx = chpl_pythonContext.enterGILOnly();
-      defer ctx.exitGILOnly();
+      var ctx = chpl_pythonContext.enter();
+      defer ctx.exit();
 
       var stdout = PySys_GetObject("stdout");
       if stdout == nil then throw new ChapelException("stdout not found");
@@ -1869,8 +1834,8 @@ module Python {
     proc deinit() {
       if this.isOwned {
         // we only need the gil, not the whole context
-        var ctx = chpl_pythonContext.enterGILOnly();
-        defer ctx.exitGILOnly();
+        var ctx = chpl_pythonContext.enter();
+        defer ctx.exit();
         Py_DECREF(this.obj);
       }
     }
