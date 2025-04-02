@@ -666,13 +666,13 @@ FunctionType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 }
 
 const char*
-FunctionType::buildUserFacingTypeString(FunctionType::Kind kind,
-                                        FunctionType::Width width,
-                                        FunctionType::Linkage linkage,
-                                        const FormalVec& formals,
-                                        RetTag returnIntent,
-                                        Type* returnType,
-                                        bool throws) {
+FunctionType::buildUserTypeString(FunctionType::Kind kind,
+                                  FunctionType::Width width,
+                                  FunctionType::Linkage linkage,
+                                  const FormalVec& formals,
+                                  RetTag returnIntent,
+                                  Type* returnType,
+                                  bool throws) {
   std::ostringstream oss;
 
   if (developer) {
@@ -688,10 +688,14 @@ FunctionType::buildUserFacingTypeString(FunctionType::Kind kind,
   for (size_t i = 0; i < formals.size(); i++) {
     auto& info = formals[i];
 
-    if (info.intent() != INTENT_BLANK) oss << intentToString(info.intent());
-
     INT_ASSERT(info.name());
-    if (info.name()) oss << " " << info.name();
+
+    if (info.intent() != INTENT_BLANK) {
+      oss << intentToString(info.intent());
+      if (info.name()) oss << " ";
+    }
+
+    if (info.name()) oss << info.name();
     if (info.name() && info.type() != dtAny) oss << ": ";
     if (info.type() != dtAny) oss << typeToString(info.type());
     if ((i+1) != formals.size()) oss << ", ";
@@ -803,12 +807,12 @@ FunctionType* FunctionType::create(FunctionType::Kind kind,
   }
 
   // TODO: We could delay computing this until it's actually needed.
-  auto cstr = FunctionType::buildUserFacingTypeString(kind, width,
-                                                      linkage,
-                                                      formals,
-                                                      returnIntent,
-                                                      returnType,
-                                                      throws);
+  auto cstr = FunctionType::buildUserTypeString(kind, width,
+                                                linkage,
+                                                formals,
+                                                returnIntent,
+                                                returnType,
+                                                throws);
   auto ret = new FunctionType(kind, width, linkage, std::move(formals),
                               returnIntent,
                               returnType,

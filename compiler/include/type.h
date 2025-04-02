@@ -474,13 +474,13 @@ class FunctionType final : public Type {
   const char* userTypeString_;
 
   static const char*
-  buildUserFacingTypeString(Kind kind,
-                            Width width,
-                            Linkage linkage,
-                            const std::vector<Formal>& formals,
-                            RetTag returnIntent,
-                            Type* returnType,
-                            bool throws);
+  buildUserTypeString(Kind kind,
+                      Width width,
+                      Linkage linkage,
+                      const std::vector<Formal>& formals,
+                      RetTag returnIntent,
+                      Type* returnType,
+                      bool throws);
 
   FunctionType(Kind kind, Width width, Linkage linkage,
                std::vector<Formal> formals,
