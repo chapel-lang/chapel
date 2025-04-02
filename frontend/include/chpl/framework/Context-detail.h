@@ -25,6 +25,8 @@
 #include "chpl/util/memory.h"
 #include "chpl/util/hash.h"
 
+#include "llvm/ADT/SmallPtrSet.h"
+
 #include <chrono>
 #include <cstdint>
 #include <cstring>
@@ -307,7 +309,7 @@ class QueryMapResultBase {
   mutable ssize_t oldResultForErrorContents = -1;
 
   mutable QueryDependencyVec dependencies;
-  mutable std::set<const QueryMapResultBase*> recursionErrors;
+  mutable llvm::SmallPtrSet<const QueryMapResultBase*, 2> recursionErrors;
   mutable QueryErrorVec errors;
 
   QueryMapBase* parentQueryMap;
@@ -317,7 +319,7 @@ class QueryMapResultBase {
                      bool beingTestedForReuse,
                      bool emittedErrors,
                      size_t oldResultForErrorContents,
-                     std::set<const QueryMapResultBase*> recursionErrors,
+                     llvm::SmallPtrSet<const QueryMapResultBase*, 2> recursionErrors,
                      QueryMapBase* parentQueryMap);
   virtual ~QueryMapResultBase() = 0; // this is an abstract base class
   virtual void recompute(Context* context) const = 0;
@@ -346,7 +348,7 @@ class QueryMapResult final : public QueryMapResultBase {
                  bool beingTestedForReuse,
                  bool emittedErrors,
                  size_t oldResultForErrorContents,
-                 std::set<const QueryMapResultBase*> recursionErrors,
+                 llvm::SmallPtrSet<const QueryMapResultBase*, 2> recursionErrors,
                  QueryMap<ResultType, ArgTs...>* parentQueryMap,
                  std::tuple<ArgTs...> tupleOfArgs,
                  ResultType result)

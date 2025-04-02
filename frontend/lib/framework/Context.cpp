@@ -1400,7 +1400,7 @@ QueryMapResultBase::QueryMapResultBase(RevisionNumber lastChecked,
                    bool beingTestedForReuse,
                    bool emittedErrors,
                    size_t oldResultForErrorContents,
-                   std::set<const QueryMapResultBase*> recursionErrors,
+                   llvm::SmallPtrSet<const QueryMapResultBase*, 2> recursionErrors,
                    QueryMapBase* parentQueryMap)
   : lastChecked(lastChecked),
     lastChanged(lastChanged),
