@@ -2180,13 +2180,7 @@ gatherUserDiagnostics(ResolutionContext* rc,
     // shouldn't happen, but it currently does in some cases.
     if (msc.fn()->needsInstantiation()) continue;
 
-    // HACK: suppress errors from resolving the function here. this is a hack to
-    //       avoid breaking existing tests which didn't expect errors emitted
-    //       during eager resolution.
-    auto resultAndErrors = rc->context()->runAndTrackErrors([rc, &msc, &c](Context* context) {
-      return resolveFunction(rc, msc.fn(), c.poiInfo().poiScope(), /* skipIfRunning */ true);
-    });
-    auto resolvedFn = resultAndErrors.result();
+    auto resolvedFn = resolveFunction(rc, msc.fn(), c.poiInfo().poiScope(), /* skipIfRunning */ true);
     if (!resolvedFn) continue;
 
     into.insert(into.end(), resolvedFn->diagnostics().begin(),
