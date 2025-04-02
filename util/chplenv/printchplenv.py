@@ -639,7 +639,7 @@ def main():
     compute_all_values()
 
     # Don't populate internal ENV_VALS unless specified
-    if 'internal' in contents or options.verify:
+    if 'internal' in contents or options.verify or options.verify_verbose:
         compute_internal_values()
 
     ret = printchplenv(contents, filters, options.format, only=only)
