@@ -22,19 +22,21 @@ else
 fi
 
 # try and import the first package, if it fails, try and install the packages
-if ! $chpl_python -c "import $PACKAGE" &>/dev/null; then
-  echo "[Attempting to install $PACKAGE]"
+PACKAGE_NAME=$(echo $PACKAGE | cut -d'<' -f1 | cut -d'>' -f1 | cut -d'=' -f1 | cut -d'!' -f1)
+
+if ! $chpl_python -c "import $PACKAGE_NAME" &>/dev/null; then
+  echo "[Attempting to install $PACKAGE_NAME ($PACKAGE)]"
   MY_LIB_DIR=$INSTALL_DIR/python_libs
   $chpl_python -m pip install $PACKAGE $OTHER_PACKAGES --target=$MY_LIB_DIR 2>&1
   export PYTHONPATH=$MY_LIB_DIR:$PYTHONPATH
-  if ! $chpl_python -c "import $PACKAGE" &>/dev/null; then
-    echo "[Failed to install $PACKAGE]"
+  if ! $chpl_python -c "import $PACKAGE_NAME" &>/dev/null; then
+    echo "[Failed to install $PACKAGE_NAME ($PACKAGE)]"
     echo "True"
   else
-    echo "[Successfully installed $PACKAGE]"
+    echo "[Successfully installed $PACKAGE_NAME ($PACKAGE)]"
     echo "False"
   fi
 else
-  echo "[Skipping installing $PACKAGE, already installed]"
+  echo "[Skipping installing $PACKAGE_NAME ($PACKAGE), already installed]"
   echo "False"
 fi
