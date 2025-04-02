@@ -923,19 +923,21 @@ void Context::report(owned<ErrorBase> error) {
     bool isSilencing =
       errorCollectionStack.back().collectingQuery() == queryStack.back();
 
-    errorCollectionStack.back().storeError(error->clone());
-    queryStack.back()->errors.push_back(std::make_pair(std::move(error), isSilencing));
-    if (!isSilencing) {
+    if (isSilencing) {
+      // queries that are silencing themselves have no reason to store their
+      // errors anywhere besides the error collection stack, since those
+      // errors will never become visible in subsequent (re)executions with
+      // the same arguments.
+      errorCollectionStack.back().storeError(std::move(error));
+    } else {
+      errorCollectionStack.back().storeError(error->clone());
+      queryStack.back()->errors.push_back(std::move(error));
       queryStack.back()->errorsPresentInSelfOrDependencies |= 1 << (!isError);
     }
   } else if (queryStack.size() > 0) {
-    bool isSilencing = false;
-
-    queryStack.back()->errors.push_back(std::make_pair(std::move(error), isSilencing));
-    if (!isSilencing) {
-      queryStack.back()->errorsPresentInSelfOrDependencies |= 1 << (!isError);
-    }
-    reportError(this, queryStack.back()->errors.back().first.get());
+    queryStack.back()->errors.push_back(std::move(error));
+    queryStack.back()->errorsPresentInSelfOrDependencies |= 1 << (!isError);
+    reportError(this, queryStack.back()->errors.back().get());
   } else if (errorCollectionStack.size() > 0) {
     errorCollectionStack.back().storeError(std::move(error));
   } else {
@@ -1119,10 +1121,8 @@ void Context::updateForReuse(const QueryMapResultBase* resultEntry) {
   // Only re-report errors if they are not being silenced.
   if (errorCollectionStack.empty()) {
     for (auto& err: resultEntry->errors) {
-      if (!err.second) {
-        // Only report an error if it wasn't silenced in the original run
-        reportError(this, err.first.get());
-      }
+      // Only report an error if it wasn't silenced in the original run
+      reportError(this, err.get());
     }
   }
 }
@@ -1220,10 +1220,7 @@ bool Context::queryCanUseSavedResultAndPushIfNot(
 void Context::emitHiddenErrorsFor(const querydetail::QueryMapResultBase* result) {
   CHPL_ASSERT(!result->emittedErrors);
   for (auto& error : result->errors) {
-    // don't emit errors that were silenced directly in the body of this query
-    if (!error.second) {
-      reportError(this, error.first.get());
-    }
+    reportError(this, error.get());
   }
   result->emittedErrors = true;
   for (auto& dependency : result->dependencies) {
@@ -1239,7 +1236,7 @@ storeErrorsFromHelp(const querydetail::QueryMapResultBase* result,
   auto insertResult = visited.insert(result);
   if (!insertResult.second) return;
   for (auto& error : result->errors) {
-    storeError(error.first->clone());
+    storeError(error->clone());
   }
   for (auto& dependency : result->dependencies) {
     if (!dependency.errorCollectionRoot &&

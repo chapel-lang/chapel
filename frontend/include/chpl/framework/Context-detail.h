@@ -244,10 +244,7 @@ struct QueryDependency {
 };
 
 using QueryDependencyVec = std::vector<QueryDependency>;
-// The first component is the error emitted by the query, while the second
-// component stores whether or not the error was silenced (i.e. not reported).
-// The query contains all errors, but only prints the non-silenced ones.
-using QueryErrorVec = std::vector<std::pair<owned<ErrorBase>, bool>>;
+using QueryErrorVec = std::vector<owned<ErrorBase>>;
 
 class QueryMapResultBase {
  public:
