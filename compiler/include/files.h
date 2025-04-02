@@ -84,6 +84,8 @@ std::vector<std::string> getChplFilenames();
 bool isChplSource(const char* filename);
 bool isCHeader(const char* filename);
 bool isCSource(const char* filename);
+bool isStaticLibrary(const char* filename);
+bool isSharedLibrary(const char* filename);
 bool isObjFile(const char* filename);
 bool isDynoLib(const char* filename);
 void addSourceFiles(int numFilenames, const char* filename[]);
