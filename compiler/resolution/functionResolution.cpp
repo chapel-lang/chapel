@@ -3356,20 +3356,11 @@ static bool resolveClassBorrowMethod(CallExpr* call) {
   return false;
 }
 
-static FunctionType* extractFunctionTypeFromCall(CallExpr* call) {
-  // TODO: 'proc.this(...)' or make sure that form is not injected.
-  if (auto base = call->baseExpr)
-    if (auto se = toSymExpr(base))
-      if (auto ret = toFunctionType(se->getValType()))
-        return ret;
-  return nullptr;
-}
-
 // TODO: Ideally, we would be able to leverage the existing machinery for
 // resolving calls, but we may not be able to do that until dyno is used
 // to resolve code.
 static bool resolveFunctionPointerCall(CallExpr* call) {
-  auto ft = extractFunctionTypeFromCall(call);
+  auto ft = call->isIndirectCall() ? call->functionType() : nullptr;
   if (!ft) return false;
 
   auto base = call->baseExpr;
