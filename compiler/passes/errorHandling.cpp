@@ -359,11 +359,12 @@ static VarSymbol* createAndInsertErrorVar(Expr* insert) {
 }
 
 static bool isCallToThrowingFunction(CallExpr* node) {
-  auto calledFn = node->resolvedOrVirtualFunction();
-  auto calledFt = node->indirectCallType();
-  bool ret = (calledFt && calledFt->throws()) ||
-             (calledFn && calledFn->throwsError());
-  return ret;
+  if (auto calledFn = node->resolvedOrVirtualFunction()) {
+    return calledFn->throwsError();
+  } else if (auto calledFt = node->functionType()) {
+    return calledFt->throws();
+  }
+  return false;
 }
 
 bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
@@ -1057,7 +1058,7 @@ static void issueThrowingFnError(FnSymbol* calledFn,
                                  CallExpr* node,
                                  implicitThrowsReasons_t* reasons,
                                  const char* problem) {
-  auto calledFt = node->indirectCallType();
+  auto calledFt = node->isIndirectCall() ? node->functionType() : nullptr;
   const char* desc = "cast";
   bool cast = true;
 

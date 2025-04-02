@@ -613,8 +613,10 @@ int isDefAndOrUse(SymExpr* se) {
   const int DEF = 1;
   const int USE = 2;
   const int DEF_USE = 3;
+
   if (CallExpr* call = toCallExpr(se->parentExpr)) {
     bool isFirstActual = (call->numActuals() && call->get(1) == se);
+    auto fn = call->resolvedFunction();
 
     // TODO: PRIM_SET_MEMBER, PRIM_SET_SVEC_MEMBER
 
@@ -660,19 +662,47 @@ int isDefAndOrUse(SymExpr* se) {
         return DEF_USE;
       else if (arg->intent == INTENT_OUT)
         return DEF;
-    } else if (FnSymbol* fn = call->resolvedFunction()) {
-      ArgSymbol* arg = actual_to_formal(se);
 
-      // BHARSH TODO: get rid of this 'isRecord' special case
-      if (arg->intent == INTENT_REF ||
-          arg->intent == INTENT_INOUT ||
-          (fn->name == astrSassign &&
-           fn->getFormal(1) == arg &&
-           isRecord(arg->type))) {
-        return DEF_USE;
-      } else if (arg->intent == INTENT_OUT) {
-        return DEF;
+    } else if (fn || call->isIndirectCall()) {
+      auto ft = call->functionType();
+      INT_ASSERT(ft);
+
+      auto ret = USE;
+
+      int zeroBasedFormalIdx = -1;
+      if (auto formal = ft->formalByOrdinal(se, &zeroBasedFormalIdx)) {
+        if (fn && fn->name == astrSassign && zeroBasedFormalIdx == 0 &&
+            isRecord(formal->type())) {
+          // BHARSH TODO: get rid of this 'isRecord' special case
+          ret = DEF_USE;
+        } else if (formal->intent() == INTENT_INOUT ||
+                   formal->intent() == INTENT_REF) {
+          ret = DEF_USE;
+        } else if (formal->intent() == INTENT_OUT) {
+          ret = DEF;
+        }
       }
+
+      if (fVerify && fn) {
+        auto check = USE;
+
+        // This is the old code, but we keep it around in a '--verify' branch
+        // to make sure that we're computing the correct result above.
+        ArgSymbol* arg = actual_to_formal(se);
+        if (arg->intent == INTENT_REF ||
+            arg->intent == INTENT_INOUT ||
+            (fn->name == astrSassign &&
+             fn->getFormal(1) == arg &&
+             isRecord(arg->type))) {
+          check = DEF_USE;
+        } else if (arg->intent == INTENT_OUT) {
+          check = DEF;
+        }
+
+        INT_ASSERT(check == ret);
+      }
+
+      return ret;
     }
   }
 
@@ -1593,32 +1623,32 @@ computeAdjustedType(std::unordered_map<Type*, Type*>& alreadyAdjusted,
   // use of AST (e.g., not 'VarSymbol' fields in 'AggregateType').
   // TODO: Do other subclass of Type that embed AST need special help here?
   if (auto ft = toFunctionType(ret)) {
-    std::vector<FunctionType::Formal> formals;
+    std::vector<FunctionType::Formal> newFormals;
     bool anyChanged = false;
 
     for (int i = 0; i < ft->numFormals(); i++) {
       auto f = ft->formal(i);
-      auto newT = computeAdjustedType(alreadyAdjusted, adjustTypeFn, f->type());
-
+      auto newT = computeAdjustedType(alreadyAdjusted, adjustTypeFn,
+                                      f->type());
       if (newT != f->type()) {
-        formals.push_back({ f->qual(), newT, f->intent(), f->name() });
+        newFormals.push_back({ f->qual(), newT, f->intent(), f->name() });
         anyChanged = true;
       } else {
-        formals.push_back(*f);
+        newFormals.push_back(*f);
       }
     }
 
-    auto retType = computeAdjustedType(alreadyAdjusted, adjustTypeFn,
-                                       ft->returnType());
-    anyChanged = anyChanged || retType != ft->returnType();
+    auto newRetType = computeAdjustedType(alreadyAdjusted, adjustTypeFn,
+                                          ft->returnType());
+    anyChanged = anyChanged || newRetType != ft->returnType();
 
     if (anyChanged) {
       // If any types changed, then recompute the function type.
       SET_LINENO(ft->symbol);
       auto newFt = FunctionType::get(ft->kind(), ft->width(), ft->linkage(),
-                                     std::move(formals),
+                                     std::move(newFormals),
                                      ft->returnIntent(),
-                                     ft->returnType(),
+                                     newRetType,
                                      ft->throws());
       INT_ASSERT(ft != newFt);
       ret = newFt;

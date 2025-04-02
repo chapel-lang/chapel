@@ -602,7 +602,7 @@ static void check_afterLowerErrorHandling()
         INT_FATAL(call, "PRIM_THROW should no longer exist");
       }
 
-      auto ft = call->indirectCallType();
+      auto ft = call->isIndirectCall() ? call->functionType() : nullptr;
       if (ft && ft->throws()) {
         INT_FATAL(call, "Indirect calls to throwing functions should not "
                         "appear after this point!");

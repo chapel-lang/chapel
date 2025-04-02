@@ -458,6 +458,7 @@ class FunctionType final : public Type {
     IntentTag intent() const;
     const char* name() const;
     QualifiedType qualType() const;
+    bool isAnonymous() const;
     bool isRef() const;
   };
 
@@ -509,6 +510,8 @@ class FunctionType final : public Type {
                            RetTag returnIntent,
                            Type* returnType,
                            bool throws);
+
+  /*** Result is shared by functions of the same type. */
   static FunctionType* get(FnSymbol* fn);
 
   FunctionType* getWithWidth(Width width) const;
@@ -524,6 +527,7 @@ class FunctionType final : public Type {
   Linkage linkage() const;
   int numFormals() const;
   const Formal* formal(int idx) const;
+  const Formal* formalByOrdinal(Expr* actual, int* outIdx=nullptr) const;
   RetTag returnIntent() const;
   Type* returnType() const;
   bool throws() const;
@@ -538,10 +542,10 @@ class FunctionType final : public Type {
   const char* toStringMangledForCodegen() const;
   size_t hash() const;
   bool equals(const FunctionType* rhs) const;
+  bool equals(FnSymbol* fn) const;
 
   static FunctionType::Kind determineKind(FnSymbol* fn);
   static FunctionType::Linkage determineLinkage(FnSymbol* fn);
-  static bool isIntentSameAsDefault(IntentTag intent, Type* t);
   static Formal constructErrorHandlingFormal();
 
   // Prints things in a 'user facing' fashion, no mangling.
@@ -554,6 +558,7 @@ class FunctionType final : public Type {
 
   // Intended for codegen.
   static const char* intentTagMnemonicMangled(IntentTag tag);
+  static const char* qualifierMnemonicMangled(Qualifier qual);
   static const char* typeToStringMangled(Type* t);
   static const char* retTagMnemonicMangled(RetTag tag);
 };

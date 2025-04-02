@@ -687,12 +687,12 @@ FunctionType::buildUserFacingTypeString(FunctionType::Kind kind,
 
   for (size_t i = 0; i < formals.size(); i++) {
     auto& info = formals[i];
-    bool skip = isIntentSameAsDefault(info.intent(), info.type());
 
-    if (!skip) oss << intentToString(info.intent());
-    if (!skip && info.name()) oss << " ";
-    if (info.name()) oss << info.name();
-    if ((!skip || info.name()) && info.type() != dtAny) oss << ": ";
+    if (info.intent() != INTENT_BLANK) oss << intentToString(info.intent());
+
+    INT_ASSERT(info.name());
+    if (info.name()) oss << " " << info.name();
+    if (info.name() && info.type() != dtAny) oss << ": ";
     if (info.type() != dtAny) oss << typeToString(info.type());
     if ((i+1) != formals.size()) oss << ", ";
   }
@@ -759,17 +759,19 @@ const char* FunctionType::intentToString(IntentTag intent) {
   return nullptr;
 }
 
+// Print the "short name" of builtin types that can be parameterized.
 static const char* builtinTypeName(Type* vt) {
   if (vt == dtInt[INT_SIZE_DEFAULT]) return "int";
   if (vt == dtUInt[INT_SIZE_DEFAULT]) return "uint";
-  if (vt == dtReal[COMPLEX_SIZE_DEFAULT]) return "real";
-  if (vt == dtBool) return "bool";
-  if (vt == dtComplex[COMPLEX_SIZE_DEFAULT]) return "complex";
+  if (vt == dtReal[FLOAT_SIZE_DEFAULT]) return "real";
   if (vt == dtImag[FLOAT_SIZE_DEFAULT]) return "imag";
+  if (vt == dtComplex[COMPLEX_SIZE_DEFAULT]) return "complex";
+  if (vt == dtBool) return "bool";
   return nullptr;
 }
 
 const char* FunctionType::typeToString(Type* t) {
+  // Use the value type when printing out the user type to hide '_ref'.
   auto vt = t->getValType();
   if (auto builtinName = builtinTypeName(vt)) return builtinName;
   return vt->symbol->name;
@@ -777,14 +779,6 @@ const char* FunctionType::typeToString(Type* t) {
 
 const char* FunctionType::returnIntentToString(RetTag intent) {
   return retTagDescrString(intent);
-}
-
-// For the 'any' type, arbitrarily choose that only the default intent
-// is the same as the default intent (what else makes sense?).
-bool FunctionType::isIntentSameAsDefault(IntentTag intent, Type* t) {
-  if (t == dtAny) return intent == INTENT_BLANK;
-  auto ret = concreteIntent(INTENT_BLANK, t) == concreteIntent(intent, t);
-  return ret;
 }
 
 static FunctionType* cacheFunctionTypeOrReuse(FunctionType* fnType);
@@ -800,14 +794,15 @@ FunctionType* FunctionType::create(FunctionType::Kind kind,
 
   for (auto& formal : formals) {
     // Call 'makeRefType' if it's likely needed to avoid problems later.
-    bool isRef = formal.qual() == QUAL_REF ||
-                 formal.qual() == QUAL_CONST_REF ||
+    bool isRef = formal.qual() == QUAL_CONST_REF ||
+                 formal.qual() == QUAL_REF ||
                  formal.intent() & INTENT_REF;
     if (isRef) makeRefType(formal.type());
 
     isAnyFormalNamed |= formal.name() != nullptr;
   }
 
+  // TODO: We could delay computing this until it's actually needed.
   auto cstr = FunctionType::buildUserFacingTypeString(kind, width,
                                                       linkage,
                                                       formals,
@@ -825,7 +820,7 @@ FunctionType* FunctionType::create(FunctionType::Kind kind,
 
 namespace {
 
-  // Used to hash by value instead of doing pointer comparison.
+  // Used to hash by value instead of hashing the pointer.
   struct FunctionTypePtrHash {
     size_t operator()(const FunctionType* x) const {
       return x->hash();
@@ -891,21 +886,25 @@ FunctionType::Linkage FunctionType::determineLinkage(FnSymbol* fn) {
   return FunctionType::DEFAULT;
 }
 
+static FormalVec collectFormals(FnSymbol* fn) {
+  FormalVec ret;
+  for_formals(f, fn) {
+    FunctionType::Formal info = { f->qual, f->type, f->intent, f->name };
+    ret.push_back(std::move(info));
+  }
+  return ret;
+}
+
 static FunctionType*
 getFunctionTypeFromFunction(FnSymbol* fn, FunctionType::Width width) {
   FunctionType::Kind kind = FunctionType::determineKind(fn);
   FunctionType::Linkage linkage = FunctionType::determineLinkage(fn);
-  std::vector<FunctionType::Formal> formals;
+  auto formals = collectFormals(fn);
   RetTag returnIntent = fn->retTag;
   Type* returnType = fn->retType;
 
   // If error handling is lowered then this function no longer 'throws'.
   bool throws = fn->throwsError() && !fn->isErrorHandlingLowered();
-
-  for_formals(f, fn) {
-    FunctionType::Formal info = { f->qual, f->type, f->intent, f->name };
-    formals.push_back(std::move(info));
-  }
 
   SET_LINENO(fn);
   auto ret = FunctionType::get(kind, width, linkage,
@@ -1016,6 +1015,31 @@ const FunctionType::Formal* FunctionType::formal(int idx) const {
   return ret;
 }
 
+const FunctionType::Formal*
+FunctionType::formalByOrdinal(Expr* actual, int* outIdx) const {
+  if (auto call = actual ? toCallExpr(actual->parentExpr) : nullptr) {
+
+    // This will compute the called function's type if necessary.
+    auto ft = call->functionType();
+
+    if (this == ft) {
+      int idx = 0;
+
+      for_actuals(a, call) {
+        if (a == actual) {
+          // Adjust index for assert since AST uses 1-based indexing...
+          INT_ASSERT(1 <= (idx + 1) && (idx + 1) <= call->numActuals());
+          if (outIdx) *outIdx = idx;
+          return formal(idx);
+        }
+        idx++;
+      }
+    }
+  }
+
+  return nullptr;
+}
+
 RetTag FunctionType::returnIntent() const {
   return this->returnIntent_;
 }
@@ -1053,10 +1077,26 @@ const char* FunctionType::intentTagMnemonicMangled(IntentTag tag) {
   return nullptr;
 }
 
+const char* FunctionType::qualifierMnemonicMangled(Qualifier qual) {
+  switch (qual) {
+    case QUAL_UNKNOWN: return "qu";
+    case QUAL_CONST: return "qc";
+    case QUAL_REF: return "qr";
+    case QUAL_CONST_REF: return "qcr";
+    case QUAL_PARAM: return "qp";
+    case QUAL_VAL: return "qv";
+    case QUAL_NARROW_REF: return "qnr";
+    case QUAL_WIDE_REF: return "qwr";
+    case QUAL_CONST_VAL: return "qcv";
+    case QUAL_CONST_NARROW_REF: return "qcnr";
+    case QUAL_CONST_WIDE_REF: return "qcwr";
+  }
+  return nullptr;
+}
+
 const char* FunctionType::typeToStringMangled(Type* t) {
-  auto vt = t->getValType();
-  if (auto builtinName = builtinTypeName(vt)) return builtinName;
-  return vt->symbol->cname;
+  INT_ASSERT(t->symbol->cname);
+  return t->symbol->cname;
 }
 
 const char* FunctionType::retTagMnemonicMangled(RetTag tag) {
@@ -1079,11 +1119,10 @@ const char* FunctionType::toStringMangledForCodegen() const {
 
   if (hasForeignLinkage()) oss << linkageToString(linkage_) << "_";
 
-  // TODO: Handle receiver differently?
   for (int i = 0; i < numFormals(); i++) {
     auto f = this->formal(i);
-    bool skip = isIntentSameAsDefault(f->intent(), f->type());
-    if (!skip) oss << intentTagMnemonicMangled(f->intent());
+    oss << qualifierMnemonicMangled(f->qual());
+    oss << intentTagMnemonicMangled(f->intent());
     oss << typeToStringMangled(f->type()) << "_";
     if (f->name()) oss << f->name();
     oss << "_";
@@ -1192,6 +1231,17 @@ bool FunctionType::equals(const FunctionType* rhs) const {
          this->throws_ == rhs->throws_ &&
          this->isAnyFormalNamed_ == rhs->isAnyFormalNamed_ &&
          this->userTypeString_ == rhs->userTypeString_;
+}
+
+bool FunctionType::equals(FnSymbol* fn) const {
+  bool ret = this->kind_ == determineKind(fn) &&
+             this->linkage_ == determineLinkage(fn) &&
+             this->returnIntent_ == fn->retTag &&
+             this->returnType_ == fn->retType &&
+             this->throws_ == fn->throwsError() &&
+             this->numFormals() == fn->numFormals() &&
+             this->formals_ == collectFormals(fn);
+  return ret;
 }
 
 bool FunctionType::isGeneric() const {

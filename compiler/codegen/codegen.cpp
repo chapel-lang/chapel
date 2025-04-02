@@ -1643,7 +1643,8 @@ static void uniquify_names(std::set<const char*> & cnames,
   // collect types and apply canonical sort
   //
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (ts->defPoint->parentExpr != rootModule->block) {
+    if (ts->defPoint->parentExpr != rootModule->block ||
+        isFunctionType(ts->type)) {
       legalizeSymbolName(ts);
       types.push_back(ts);
     }

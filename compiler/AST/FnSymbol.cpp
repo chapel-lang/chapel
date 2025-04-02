@@ -593,6 +593,12 @@ Symbol* FnSymbol::getReturnSymbol() {
 }
 
 FunctionType* FnSymbol::computeAndSetType() {
+  if (auto ft = toFunctionType(this->type)) {
+    // The type we have now matches, so don't (potentially) generate AST.
+    if (ft->equals(this)) return ft;
+  }
+
+  // Otherwise, we have to recompute the function type.
   auto ret = FunctionType::get(this);
   this->type = ret;
   return ret;
