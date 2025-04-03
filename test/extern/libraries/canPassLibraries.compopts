@@ -4,6 +4,8 @@
 # test all the various was we could pass the library to the compiler
 #
 
+# pass via the CLI
+
 echo "myLib.h myLib.o"
 
 echo "myLib.h libmyStaticLib.a"
@@ -13,3 +15,16 @@ echo "myLib.h -L. -lmyStaticLib"
 echo "myLib.h -L. -lmySharedLib"
 
 echo "myLib.h myLib.c"
+
+
+# use requires
+
+echo "myLib.h -suseRequire=true -srequiredLib=\'myLib.o\'"
+
+echo "myLib.h -suseRequire=true -srequiredLib=\'libmyStaticLib.a\'"
+echo "myLib.h -suseRequire=true -srequiredLib=\'libmySharedLib.$(./platformExtension.sh)\'"
+
+echo "myLib.h -L. -suseRequire=true -srequiredLib=\'-lmyStaticLib\'"
+echo "myLib.h -L. -suseRequire=true -srequiredLib=\'-lmySharedLib\'"
+
+echo "myLib.h -suseRequire=true -srequiredLib=\'myLib.c\'"
