@@ -33,6 +33,12 @@ class VerificationPass:
     def verify(self):
         return False
 
+    def skipif(self):
+        """
+        Returns True if this pass should be skipped, False otherwise
+        """
+        return False
+
     def explain(self):
         return self.msg or "Unknown error"
 
@@ -164,6 +170,11 @@ class TestHostCompile(TestCompile):
     Try and compile a hello world program using CHPL_HOST_CXX
     """
 
+    def skipif(self):
+        if os.getenv("CHPLENV_SKIP_HOST", None) is not None:
+            return True
+        return super().skipif()
+
     def _suffix(self):
         return ".cpp"
 
@@ -236,6 +247,11 @@ class TestHostCanFindLLVM(TestCompile):
     Try and compile a hello world program using CHPL_HOST_CXX that includes a header from LLVM
     """
 
+    def skipif(self):
+        if os.getenv("CHPLENV_SKIP_HOST", None) is not None:
+            return True
+        return super().skipif()
+
     def _suffix(self):
         return ".cpp"
 
@@ -298,8 +314,11 @@ def verify(chplenv, verbose=False):
 
     global passes
     for name, cls in passes:
-        log(f"Running verification pass {name}", verbose=verbose)
         p = cls(mychplenv, verbose=verbose)
-        if not p.verify():
-            return (False, p.explain())
+        if p.skipif():
+            log(f"Skipping verification pass {name}", verbose=verbose)
+        else:
+            log(f"Running verification pass {name}", verbose=verbose)
+            if not p.verify():
+                return (False, p.explain())
     return (True, None)
