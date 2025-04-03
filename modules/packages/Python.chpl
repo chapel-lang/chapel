@@ -494,6 +494,7 @@ module Python {
         memcpy(execCStr+venvLen, pythonPathExt.buff,
                pythonPathExt.size.safeCast(c_size_t));
         execCStr[newSize] = 0;
+        defer chpl_here_free(execCStr);
 
         const executable = string.createBorrowingBuffer(execCStr);
         const wideExecutable = executable.c_wstr();
