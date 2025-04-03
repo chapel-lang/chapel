@@ -62,12 +62,6 @@ module ChapelHashtable {
 
     const sizeofElement = _ddata_sizeof_element(ret);
 
-    // The memset call below needs to be able to set _array records.
-    // But c_ptrTo on an _array will return a pointer to
-    // the first element, which messes up the shallowCopy/shallowSwap code
-    //
-    // As a workaround, this function just returns a pointer to the argument,
-    // whether or not it is an array.
     inline proc ptrTo(ref x) {
       return c_pointer_return(x);
     }
@@ -78,13 +72,23 @@ module ChapelHashtable {
       }
       when ArrayInit.serialInit {
         for slot in _allSlots(size) {
-          memset(ptrTo(ret[slot]), 0:uint(8), sizeofElement.safeCast(c_size_t));
+          var x = c_addrOf(ret[slot]);
+          var y = ptrTo(ret[slot]);
+          if x != y then {
+            halt("waat");
+          }
+          memset(c_addrOf(ret[slot]), 0:uint(8), sizeofElement.safeCast(c_size_t));
         }
       }
       when ArrayInit.parallelInit {
         // This should match the 'these' iterator in terms of idx->task
         forall slot in _allSlots(size) {
-          memset(ptrTo(ret[slot]), 0:uint(8), sizeofElement.safeCast(c_size_t));
+          var x = c_addrOf(ret[slot]);
+          var y = ptrTo(ret[slot]);
+          if x != y then {
+            halt("waat");
+          }
+          memset(c_addrOf(ret[slot]), 0:uint(8), sizeofElement.safeCast(c_size_t));
         }
       }
       when ArrayInit.gpuInit {
@@ -92,7 +96,7 @@ module ChapelHashtable {
         if CHPL_LOCALE_MODEL=="gpu" {
           extern proc chpl_gpu_memset(addr, byte, numBytes);
           foreach slot in _allSlots(size) {
-            chpl_gpu_memset(ptrTo(ret[slot]), 0:uint(8), sizeofElement);
+            chpl_gpu_memset(c_addrOf(ret[slot]), 0:uint(8), sizeofElement);
           }
         }
         else {
