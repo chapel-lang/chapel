@@ -300,9 +300,28 @@ static bool isNestedInMethod(Context* context, const Function* fn) {
   return false;
 }
 
-Resolver
-Resolver::createForInitialSignature(ResolutionContext* rc, const Function* fn,
-                                    ResolutionResultByPostorderID& byId) {
+// A compiler-generated init on an inheriting class may use type symbols
+// it doesn't have direct access to, but its parent does, which production
+// allows to resolve.
+// Implement this by saving the parent class in the resolver for later use.
+static void setInitResolverSuper(Resolver& r, const Function* fn,
+                                 bool compilerGenerated) {
+  if (fn->name() == USTR("init") && compilerGenerated) {
+    auto ct = r.inCompositeType;
+    CHPL_ASSERT(ct);
+    if (auto bct = ct->toBasicClassType()) {
+      if (auto parent = bct->parentClassType()) {
+        if (!parent->isObjectType()) {
+          r.superInitClassType = parent;
+        }
+      }
+    }
+  }
+}
+
+Resolver Resolver::createForInitialSignature(
+    ResolutionContext* rc, const Function* fn,
+    ResolutionResultByPostorderID& byId, bool compilerGenerated) {
   auto context = rc->context();
   auto ret = Resolver(context, fn, byId, nullptr);
   ret.signatureOnly = true;
@@ -332,6 +351,8 @@ Resolver::createForInitialSignature(ResolutionContext* rc, const Function* fn,
     }
     ret.allowReceiverScopes = true;
   }
+
+  setInitResolverSuper(ret, fn, compilerGenerated);
 
   return ret;
 }
@@ -411,9 +432,18 @@ Resolver::createForFunction(ResolutionContext* rc,
 
   ret.byPostorder.setupForFunction(fn);
 
+  // First, set the formal types using the types in the signature.
+  setFormalTypesUsingSignature(ret);
+
   if (typedFnSignature->isMethod()) {
     // allow computing the receiver scope from the typedSignature.
     ret.allowReceiverScopes = true;
+    auto receiverType = ret.byPostorder.byAst(fn->thisFormal()).type();
+    if (receiverType.hasTypePtr()) {
+      if (auto ct = receiverType.type()->getCompositeType()) {
+        ret.inCompositeType = ct;
+      }
+    }
   } else {
     // Setup for nested function inside method
     const TypedFnSignature* pfn = typedFnSignature->parentFn();
@@ -427,8 +457,7 @@ Resolver::createForFunction(ResolutionContext* rc,
     }
   }
 
-  // First, set the formal types using the types in the signature.
-  setFormalTypesUsingSignature(ret);
+  setInitResolverSuper(ret, fn, typedFnSignature->isCompilerGenerated());
 
   // Then, re-resolve the formals to set e.g., init-exprs.
   int nFormals = ret.typedSignature->numFormals();
@@ -3712,6 +3741,19 @@ MatchingIdsWithName Resolver::lookupIdentifier(
                      /* methodLookupHelper */ fHelper,
                      /* receiverScopeHelper */ helper,
                      ident->name(), config, ident->id());
+
+  // For an inheriting compiler-generated initializer, allow performing lookup
+  // as though we can see anything the superclass can.
+  if (m.isEmpty() && this->superInitClassType) {
+    const Scope* superClassScope =
+        scopeForId(context, this->superInitClassType->id());
+    m = lookupNameInScopeWithWarnings(
+                     context, superClassScope,
+                     /* methodLookupHelper */ fHelper,
+                     /* receiverScopeHelper */ helper,
+                     ident->name(), config, ident->id());
+  }
+
 
   if (!m.isEmpty()) {
     // We might be ambiguous, but due to having found multiple parenless procs.

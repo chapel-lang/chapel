@@ -661,9 +661,9 @@ typedSignatureInitialImpl(ResolutionContext* rc,
       }
     }
   }
-
   ResolutionResultByPostorderID r;
-  auto visitor = Resolver::createForInitialSignature(rc, fn, r);
+  auto visitor = Resolver::createForInitialSignature(
+      rc, fn, r, untypedSig->isCompilerGenerated());
   visitor.usePlaceholders = usePlaceholders;
 
   // visit the formals, but not the return type or body

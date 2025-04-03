@@ -85,6 +85,7 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
   const uast::AstNode* curStmt = nullptr;
   const uast::AstNode* curInheritanceExpr = nullptr;
   const types::CompositeType* inCompositeType = nullptr;
+  const types::BasicClassType* superInitClassType = nullptr;
   const SubstitutionsMap* substitutions = nullptr;
   DefaultsPolicy defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
   const TypedFnSignature* typedSignature = nullptr;
@@ -215,7 +216,7 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
   static Resolver
   createForInitialSignature(ResolutionContext* rc,
                             const uast::Function* fn,
-                            ResolutionResultByPostorderID& byPostorder);
+                            ResolutionResultByPostorderID& byPostorder, bool compilerGenerated = false);
 
   // set up Resolver to resolve an instantiation of a Function signature
   static Resolver
