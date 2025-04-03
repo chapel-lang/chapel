@@ -314,8 +314,11 @@ def verify(chplenv, verbose=False):
 
     global passes
     for name, cls in passes:
-        log(f"Running verification pass {name}", verbose=verbose)
         p = cls(mychplenv, verbose=verbose)
-        if not p.skipif() and not p.verify():
-            return (False, p.explain())
+        if p.skipif():
+            log(f"Skipping verification pass {name}", verbose=verbose)
+        else:
+            log(f"Running verification pass {name}", verbose=verbose)
+            if not p.verify():
+                return (False, p.explain())
     return (True, None)
