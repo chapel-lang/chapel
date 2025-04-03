@@ -578,6 +578,17 @@ class MatchingIdsWithName {
     }
   }
 
+  void swap(MatchingIdsWithName& other) {
+    idvs_.swap(other.idvs_);
+    std::swap(encounteredFnNonFnConflict_,
+              other.encounteredFnNonFnConflict_);
+  }
+
+  static bool update(MatchingIdsWithName& keep,
+                     MatchingIdsWithName& addin) {
+    return defaultUpdate(keep, addin);
+  }
+
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
   /// \cond DO_NOT_DOCUMENT
