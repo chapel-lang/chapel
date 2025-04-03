@@ -1974,7 +1974,6 @@ BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
   auto managerHandle = newTemp("manager");
   managerHandle->addFlag(FLAG_MANAGER_HANDLE);
   ret->insertAtTail(new DefExpr(managerHandle));
-  ret->insertAtTail(new CallExpr(PRIM_END_OF_STATEMENT));
 
   auto addrOfExpr = new CallExpr(PRIM_ADDR_OF, managerExpr);
   auto moveIntoHandle = new CallExpr(PRIM_MOVE, managerHandle, addrOfExpr);
@@ -2014,21 +2013,15 @@ BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
   auto errorTemp = newTemp("chpl_error");
   auto errorType = new CallExpr("_owned", new CallExpr(PRIM_TO_NILABLE_CLASS,
                                 new UnresolvedSymExpr("Error")));
-  auto errorDeclBlock = new BlockStmt(BLOCK_SCOPELESS);
-  ret->insertAtTail(errorDeclBlock);
-  errorDeclBlock->insertAtTail(new DefExpr(errorTemp, gNil, errorType));
-  errorDeclBlock->insertAtTail(new CallExpr(PRIM_END_OF_STATEMENT));
+  ret->insertAtTail(new DefExpr(errorTemp, gNil, errorType));
 
   // BUILD: defer manager.exitContext(error);
   auto exitCall = new CallExpr("exitContext",
                                gMethodToken,
                                new SymExpr(managerHandle),
                                new SymExpr(errorTemp));
-  auto deferBlock = new BlockStmt(BLOCK_SCOPELESS);
+  auto deferBlock = new BlockStmt();
   deferBlock->insertAtTail(exitCall);
-  deferBlock->insertAtTail(new CallExpr(PRIM_END_OF_STATEMENT,
-                             new SymExpr(managerHandle),
-                             new SymExpr(errorTemp)));
   auto defer = new DeferStmt(deferBlock);
   ret->insertAtTail(defer);
 
