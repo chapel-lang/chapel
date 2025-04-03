@@ -2466,7 +2466,6 @@ ApplicabilityResult instantiateSignature(ResolutionContext* rc,
         //
         // Also recompute receiver scopes based on the instantiated type so
         // that we correctly resolve the types of field identifiers.
-        visitor.inCompositeType = nullptr;
         visitor.setCompositeType(formalType.type()->getCompositeType());
         visitor.receiverScopesComputed = false;
       }

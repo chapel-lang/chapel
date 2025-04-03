@@ -306,8 +306,17 @@ static bool isNestedInMethod(Context* context, const Function* fn) {
 // Implement this by saving the parent class in the resolver for later use.
 static void setInitResolverSuper(Resolver& r, const Function* fn) {
   if (fn->name() == USTR("init") && fn->id().isFabricatedId()) {
+    // Determine init receiver type
     auto ct = r.inCompositeType;
+    if (!ct) {
+      fn->thisFormal()->traverse(r);
+      auto receiverType = r.byPostorder.byAst(fn->thisFormal()).type();
+      if (receiverType.hasTypePtr()) {
+        ct = receiverType.type()->getCompositeType();
+      }
+    }
     CHPL_ASSERT(ct);
+
     if (auto bct = ct->toBasicClassType()) {
       if (auto parent = bct->parentClassType()) {
         if (!parent->isObjectType()) {
@@ -371,14 +380,7 @@ Resolver::createForInstantiatedSignature(ResolutionContext* rc,
   ret.rc = rc;
 
   if (fn->isMethod()) {
-    fn->thisFormal()->traverse(ret);
-    auto receiverType = ret.byPostorder.byAst(fn->thisFormal()).type();
-    if (receiverType.hasTypePtr()) {
-      if (auto ct = receiverType.type()->getCompositeType()) {
-        ret.inCompositeType = ct;
-      }
-      ret.allowReceiverScopes = true;
-    }
+    ret.allowReceiverScopes = true;
   } else if (isNestedInMethod(context, fn)) {
     ret.allowReceiverScopes = true;
   }
@@ -440,18 +442,9 @@ Resolver::createForFunction(ResolutionContext* rc,
 
   ret.byPostorder.setupForFunction(fn);
 
-  // First, set the formal types using the types in the signature.
-  setFormalTypesUsingSignature(ret);
-
   if (typedFnSignature->isMethod()) {
     // allow computing the receiver scope from the typedSignature.
     ret.allowReceiverScopes = true;
-    auto receiverType = ret.byPostorder.byAst(fn->thisFormal()).type();
-    if (receiverType.hasTypePtr()) {
-      if (auto ct = receiverType.type()->getCompositeType()) {
-        ret.inCompositeType = ct;
-      }
-    }
   } else {
     // Setup for nested function inside method
     const TypedFnSignature* pfn = typedFnSignature->parentFn();
@@ -464,6 +457,9 @@ Resolver::createForFunction(ResolutionContext* rc,
       pfn = pfn->parentFn();
     }
   }
+
+  // First, set the formal types using the types in the signature.
+  setFormalTypesUsingSignature(ret);
 
   setInitResolverSuper(ret, fn);
 
