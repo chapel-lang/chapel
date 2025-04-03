@@ -371,10 +371,19 @@ Resolver::createForInstantiatedSignature(ResolutionContext* rc,
   ret.rc = rc;
 
   if (fn->isMethod()) {
-    ret.allowReceiverScopes = true;
+    fn->thisFormal()->traverse(ret);
+    auto receiverType = ret.byPostorder.byAst(fn->thisFormal()).type();
+    if (receiverType.hasTypePtr()) {
+      if (auto ct = receiverType.type()->getCompositeType()) {
+        ret.inCompositeType = ct;
+      }
+      ret.allowReceiverScopes = true;
+    }
   } else if (isNestedInMethod(context, fn)) {
     ret.allowReceiverScopes = true;
   }
+
+  setInitResolverSuper(ret, fn);
 
   return ret;
 }
