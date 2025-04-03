@@ -216,7 +216,7 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
   static Resolver
   createForInitialSignature(ResolutionContext* rc,
                             const uast::Function* fn,
-                            ResolutionResultByPostorderID& byPostorder, bool compilerGenerated = false);
+                            ResolutionResultByPostorderID& byPostorder);
 
   // set up Resolver to resolve an instantiation of a Function signature
   static Resolver

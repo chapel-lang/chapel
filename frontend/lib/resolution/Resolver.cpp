@@ -304,9 +304,8 @@ static bool isNestedInMethod(Context* context, const Function* fn) {
 // it doesn't have direct access to, but its parent does, which production
 // allows to resolve.
 // Implement this by saving the parent class in the resolver for later use.
-static void setInitResolverSuper(Resolver& r, const Function* fn,
-                                 bool compilerGenerated) {
-  if (fn->name() == USTR("init") && compilerGenerated) {
+static void setInitResolverSuper(Resolver& r, const Function* fn) {
+  if (fn->name() == USTR("init") && fn->id().isFabricatedId()) {
     auto ct = r.inCompositeType;
     CHPL_ASSERT(ct);
     if (auto bct = ct->toBasicClassType()) {
@@ -321,7 +320,7 @@ static void setInitResolverSuper(Resolver& r, const Function* fn,
 
 Resolver Resolver::createForInitialSignature(
     ResolutionContext* rc, const Function* fn,
-    ResolutionResultByPostorderID& byId, bool compilerGenerated) {
+    ResolutionResultByPostorderID& byId) {
   auto context = rc->context();
   auto ret = Resolver(context, fn, byId, nullptr);
   ret.signatureOnly = true;
@@ -352,7 +351,7 @@ Resolver Resolver::createForInitialSignature(
     ret.allowReceiverScopes = true;
   }
 
-  setInitResolverSuper(ret, fn, compilerGenerated);
+  setInitResolverSuper(ret, fn);
 
   return ret;
 }
@@ -457,7 +456,7 @@ Resolver::createForFunction(ResolutionContext* rc,
     }
   }
 
-  setInitResolverSuper(ret, fn, typedFnSignature->isCompilerGenerated());
+  setInitResolverSuper(ret, fn);
 
   // Then, re-resolve the formals to set e.g., init-exprs.
   int nFormals = ret.typedSignature->numFormals();
