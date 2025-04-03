@@ -661,6 +661,7 @@ typedSignatureInitialImpl(ResolutionContext* rc,
       }
     }
   }
+
   ResolutionResultByPostorderID r;
   auto visitor = Resolver::createForInitialSignature(rc, fn, r);
   visitor.usePlaceholders = usePlaceholders;
