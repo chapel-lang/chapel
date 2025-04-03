@@ -9,10 +9,10 @@
 echo "myLib.h myLib.o"
 
 echo "myLib.h libmyStaticLib.a"
-echo "myLib.h libmySharedLib.$(./platformExtension.sh)"
+echo "myLib.h libmySharedLib.$(./platformExtension.sh) --ldflags -Wl,-rpath,."
 
 echo "myLib.h -L. -lmyStaticLib"
-echo "myLib.h -L. -lmySharedLib"
+echo "myLib.h -L. -lmySharedLib --ldflags -Wl,-rpath,."
 
 echo "myLib.h myLib.c"
 
@@ -22,9 +22,9 @@ echo "myLib.h myLib.c"
 echo "myLib.h -suseRequire=true -srequiredLib=\'myLib.o\'"
 
 echo "myLib.h -suseRequire=true -srequiredLib=\'libmyStaticLib.a\'"
-echo "myLib.h -suseRequire=true -srequiredLib=\'libmySharedLib.$(./platformExtension.sh)\'"
+echo "myLib.h -suseRequire=true -srequiredLib=\'libmySharedLib.$(./platformExtension.sh)\' --ldflags -Wl,-rpath,."
 
 echo "myLib.h -L. -suseRequire=true -srequiredLib=\'-lmyStaticLib\'"
-echo "myLib.h -L. -suseRequire=true -srequiredLib=\'-lmySharedLib\'"
+echo "myLib.h -L. -suseRequire=true -srequiredLib=\'-lmySharedLib\' --ldflags -Wl,-rpath,."
 
 echo "myLib.h -suseRequire=true -srequiredLib=\'myLib.c\'"
