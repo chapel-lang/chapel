@@ -2277,8 +2277,8 @@ module Python {
     */
     @chpldoc.nodoc
     iter these(type eltType = owned Value): eltType throws {
-      var g = PyGILState_Ensure();
-      defer PyGILState_Release(g);
+      var ctx = chpl_pythonContext.enter();
+      defer ctx.exit();
 
       var iter_ = PyObject_GetIter(this.getPyObject());
       if iter_ == nil || PyIter_Check(iter_) != 0 {
