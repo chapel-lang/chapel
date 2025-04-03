@@ -1099,10 +1099,6 @@ static Type* getFormalCodegenType(ArgSymbol* formal) {
   return getFormalCodegenType(formal->qual, formal->type);
 }
 
-static Type* getFormalCodegenType(const FunctionType::Formal* formalInfo) {
-  return getFormalCodegenType(formalInfo->qual(), formalInfo->type());
-}
-
 // Alter the C code type to avoid _ref_, c_ptr_ prefixes and instead use a
 // type that C understands without additional information (e.g. instead of
 // _ref_int64_t, just int64_t *).  But only for exported symbols like the
@@ -1148,10 +1144,6 @@ static GenRet codegenFormalType(Qualifier qual, Type* type) {
 
 static GenRet codegenFormalType(ArgSymbol* formal) {
   return codegenFormalType(formal->qual, formal->type);
-}
-
-static GenRet codegenFormalType(const FunctionType::Formal* formalInfo) {
-  return codegenFormalType(formalInfo->qual(), formalInfo->type());
 }
 
 GenRet ArgSymbol::codegen() {
@@ -2240,8 +2232,8 @@ codegenFunctionTypeLLVMImpl(
         continue; // ignore - inalloca handled separately
     }
 
-    llvm::Type* argTy = codegenFormalType(formalInfo).type;
-
+    auto argTy = codegenFormalType(formalInfo->qual(),
+                                   formalInfo->type()).type;
     if (argInfo) {
       if (llvm::Type* paddingTy = argInfo->getPaddingType()) {
         argTys.push_back(paddingTy);
@@ -2353,9 +2345,9 @@ codegenFunctionTypeLLVMImpl(
         case clang::CodeGen::ABIArgInfo::Kind::Expand: {
           // TODO: check this for complex
           // TODO: should this be applying to C types not Chapel ones?
-          pushAllFieldTypesRecursively(cname, /* was 'formalInfo->name()' */
-                                       getFormalCodegenType(formalInfo),
-                                       argTys, outArgNames);
+          auto t = getFormalCodegenType(formalInfo->qual(),
+                                        formalInfo->type());
+          pushAllFieldTypesRecursively(cname, t, argTys, outArgNames);
         } break;
       }
 

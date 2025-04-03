@@ -153,6 +153,7 @@ static void addNoAliasMetadata(GenRet &ret, Symbol* sym) {
 }
 #endif
 
+#ifdef HAVE_LLVM
 static bool shouldGenerateAsIfCallingDirectly(SymExpr* se, FnSymbol* fn) {
   INT_ASSERT(se->symbol() == fn);
 
@@ -174,6 +175,7 @@ static bool shouldGenerateAsIfCallingDirectly(SymExpr* se, FnSymbol* fn) {
   // Otherwise, treat the mention as indirect.
   return false;
 }
+#endif
 
 GenRet SymExpr::codegen() {
   GenInfo* info = gGenInfo;
