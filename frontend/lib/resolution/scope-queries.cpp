@@ -1301,6 +1301,7 @@ static const IdAndFlags* getReservedIdentifier(UniqueString name) {
     {USTR("complex"),   IdAndFlags::createForBuiltinType()},
     {USTR("domain"),    IdAndFlags::createForBuiltinType()},
     {USTR("int"),       IdAndFlags::createForBuiltinType()},
+    {USTR("integral"),  IdAndFlags::createForBuiltinType()},
     {USTR("locale"),    IdAndFlags::createForBuiltinType()},
     {USTR("nil"),       IdAndFlags::createForBuiltinVar()},
     {USTR("real"),      IdAndFlags::createForBuiltinType()},
