@@ -197,12 +197,12 @@ def main():
 
             # explicitly copy the BUILD_VERSION file and git-version.cpp files
             log("Copying BUILD_VERSION file.")
-            shutil.copyfile(
+            shutil.copy2(
                 "compiler/main/BUILD_VERSION",
                 pjoin(archive_dir, "compiler/main/BUILD_VERSION"),
             )
             log("Copying git-version.cpp")
-            shutil.copyfile(
+            shutil.copy2(
                 "frontend/lib/util/git-version.cpp",
                 pjoin(archive_dir, "frontend/lib/util/git-version.cpp"),
             )
@@ -257,9 +257,9 @@ def main():
 
         log("Creating the examples directory...")
         os.unlink("examples")  # remove examples symbolic link
-        shutil.copytree("test/release/examples", "examples")
+        shutil.copytree("test/release/examples", "examples", copy_function=shutil.copy2)
         with cd("util"):
-            shutil.copyfile("start_test", "../examples/start_test")
+            shutil.copy2("start_test", "../examples/start_test")
 
         # print "[gen_release] Removing Makefiles that are not intended for release...\n";
 
