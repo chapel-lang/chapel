@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+#
+# test all the various was we could pass the library to the compiler
+#
+
+echo "myLib.h myLib.o"
+
+echo "myLib.h libmyStaticLib.a"
+echo "myLib.h libmySharedLib.$(./platformExtension.sh)"
+
+echo "myLib.h -L. -lmyStaticLib"
+echo "myLib.h -L. -lmySharedLib"
+
+echo "myLib.h myLib.c"
