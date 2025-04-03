@@ -479,7 +479,7 @@ module ChapelDynamicLoading {
       init this;
 
       if _size > 0 {
-        this._ptr = allocate(T, size, true);
+        this._ptr = allocate(T, (size : uint(64)), true);
         if _ptr == nil then halt('Out of memory!');
       }
     }
