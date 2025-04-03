@@ -1308,6 +1308,7 @@ static const IdAndFlags* getReservedIdentifier(UniqueString name) {
     {USTR("sparse"),    IdAndFlags::createForBuiltinType()},
     {USTR("string"),    IdAndFlags::createForBuiltinType()},
     {USTR("subdomain"), IdAndFlags::createForBuiltinType()},
+    {USTR("range"),     IdAndFlags::createForBuiltinType()},
     {USTR("uint"),      IdAndFlags::createForBuiltinType()},
     {USTR("void"),      IdAndFlags::createForBuiltinType()},
   };
