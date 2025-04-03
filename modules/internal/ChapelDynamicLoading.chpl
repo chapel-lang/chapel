@@ -660,7 +660,7 @@ module ChapelDynamicLoading {
         return false;
       }
 
-      halt('Should not reach here!'); 
+      halt('Should not reach here!');
       return false;
     }
 
