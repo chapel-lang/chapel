@@ -74,6 +74,7 @@ chpl_ARRAY_TYPES(chpl_MAKE_ENUM)
     DATATYPE* data; \
     Py_ssize_t size; \
     chpl_bool isOwned; \
+    Py_ssize_t numExports; \
     PyObject* eltType; \
     Py_ssize_t ndim; \
     Py_ssize_t* shape; \
@@ -226,28 +227,58 @@ static int Array##NAMESUFFIX##Object_bf_getbuffer(Array##NAMESUFFIX##Object* arr
     return -1; \
   } \
   /* check for any unsupported flags */ \
-  if (flags & ~(PyBUF_FORMAT | PyBUF_ND | PyBUF_WRITABLE | PyBUF_STRIDES | PyBUF_INDIRECT)) { \
-    PyErr_SetString(PyExc_BufferError, "Unsupported buffer flags"); \
+  if (flags & ~(PyBUF_SIMPLE | PyBUF_WRITABLE | PyBUF_FORMAT | \
+                PyBUF_ND | PyBUF_STRIDES | PyBUF_INDIRECT | PyBUF_C_CONTIGUOUS)) { \
+    PyErr_Format(PyExc_BufferError, "Unsupported buffer flags: 0x%x", flags); \
     view->obj = NULL; \
     return -1; \
   } \
   view->buf = arr->data; \
-  view->obj = (PyObject*) arr; \
+  view->internal = 0; \
   view->len = arr->size * sizeof(DATATYPE); \
   view->itemsize = sizeof(DATATYPE); \
   view->readonly = 0; /* the buffer is always writeable */ \
   view->ndim = arr->ndim; \
-  if (flags & PyBUF_FORMAT) { view->format = (char*)FORMATSTRING; } \
-  else                      { view->format = NULL; } \
-  if (flags & PyBUF_ND)     { view->shape = arr->shape; } \
-  else                      { view->shape = NULL; } \
-  view->strides = NULL; /*always NULL*/ \
-  view->suboffsets = NULL; /*always NULL*/ \
+  if (flags & PyBUF_FORMAT)  { view->format = (char*)FORMATSTRING; } \
+  else                       { view->format = NULL; } \
+  if (flags & PyBUF_ND)      { view->shape = arr->shape; } \
+  else                       { view->shape = NULL; } \
+  if (flags & PyBUF_STRIDES) { \
+    view->strides = (Py_ssize_t*)chpl_mem_alloc(sizeof(Py_ssize_t) * arr->ndim, 0, 0, 0); \
+    if (!view->strides) { \
+      PyErr_SetString(PyExc_MemoryError, "Could not allocate strides"); \
+      view->obj = NULL; \
+      return -1; \
+    } \
+    for (Py_ssize_t i = 0; i < arr->ndim; i++) { \
+      view->strides[i] = sizeof(DATATYPE); \
+    } \
+    view->internal = (void*)((intptr_t)view->internal | 0x1); /* set 0x1 if we need to free strides later */ \
+  } \
+  else { view->strides = NULL; } \
+  view->suboffsets = NULL; /*always NULL, even if PyBUF_INDIRECT is set*/ \
+  arr->numExports++; \
+  view->obj = (PyObject*) arr; \
   Py_INCREF(view->obj); \
   return 0; \
 }
 chpl_ARRAY_TYPES(chpl_MAKE_GET_BUFFER)
 #undef chpl_MAKE_GET_BUFFER
+
+#define chpl_MAKE_RELEASE_BUFFER(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, _0, _1, _2, SUPPORTSBUFFERS, FORMATSTRING) \
+static void Array##NAMESUFFIX##Object_bf_releasebuffer(Array##NAMESUFFIX##Object* arr, Py_buffer* view) { \
+  arr->numExports--; \
+  if (arr->numExports == 0) { \
+    if ((intptr_t)view->internal & 0x1) { \
+      /* free the strides */ \
+      chpl_mem_free(view->strides, 0, 0); \
+      view->internal = (void*)((intptr_t)view->internal & ~0x1); \
+    } \
+  } \
+}
+chpl_ARRAY_TYPES(chpl_MAKE_RELEASE_BUFFER)
+#undef chpl_MAKE_RELEASE_BUFFER
+
 
 #if PY_VERSION_HEX >= 0x030a0000 /* Python 3.10 */
 #define chpl_Py_TPFLAGS_SEQUENCE Py_TPFLAGS_SEQUENCE
@@ -283,6 +314,7 @@ chpl_ARRAY_TYPES(chpl_MAKE_GET_BUFFER)
       {Py_tp_methods, (void*) methods}, \
       {Py_tp_members, (void*) members}, \
       {Py_bf_getbuffer, (void*) Array##NAMESUFFIX##Object_bf_getbuffer}, \
+      {Py_bf_releasebuffer, (void*) Array##NAMESUFFIX##Object_bf_releasebuffer}, \
       {0, NULL} \
     }; \
     PyType_Spec spec = { \
@@ -321,6 +353,7 @@ chpl_ARRAY_TYPES(chpl_MAKE_TYPE)
     obj->data = data; \
     obj->size = size; \
     obj->isOwned = isOwned; \
+    obj->numExports = 0; \
     obj->eltType = PyObject_GetAttrString(ArrayTypeEnum, #NAMESUFFIX); \
     obj->ndim = ndim; \
     obj->shape = shape; \
