@@ -192,7 +192,7 @@ static void testRunAndTrackErrors() {
   assert(modules.size() == 1);
   assert(modules[0]->numStmts() == 1);
 
-  auto result = ctx->runAndTrackErrors([&](Context* ctx) {
+  auto result = ctx->runAndCaptureErrors([&](Context* ctx) {
     return resolveConcreteFunction(ctx, modules[0]->stmt(0)->id());
   });
   assert(!result.ranWithoutErrors());
