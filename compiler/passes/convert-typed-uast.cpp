@@ -1007,6 +1007,9 @@ struct TConverter final : UastConverter {
   bool enter(const Select* node, RV& rv);
   void exit(const Select* node, RV& rv);
 
+  bool enter(const Block* node, RV& rv);
+  void exit(const Block* node, RV& rv);
+
   bool enter(const AstNode* node, RV& rv);
   void exit(const AstNode* node, RV& rv);
 };
@@ -1186,6 +1189,10 @@ void TConverter::convertFunctionsToConvert() {
   std::unordered_set<ID> ignore;
   for (auto pair: fns) {
     const ResolvedFunction* fn = pair.first;
+
+    // Need to leave generic functions alone, so production can use them
+    if (fn->signature()->instantiatedFrom() != nullptr) continue;
+
     ignore.insert(fn->id());
   }
   for (auto pair: globalSyms) {
@@ -2354,6 +2361,42 @@ struct ConvertTypeHelper {
     return at;
   }
 
+  Type* visit(const types::EnumType* t) {
+    auto node = parsing::idToAst(context(), t->id())->toEnum();
+    bool isFromLibrary = tc_->cur.moduleFromLibraryFile;
+
+    auto enumType = new EnumType();
+    auto ts = new TypeSymbol(node->name().c_str(), enumType);
+    enumType->symbol = ts;
+
+    // TODO: enums with values
+    for (auto elem : node->enumElements()) {
+      DefExpr* def = new DefExpr(new EnumSymbol(astr(elem->name())), nullptr);
+      def->sym->type = enumType;
+      enumType->constants.insertAtTail(def);
+
+      // Because we're inserting the type at the module scope, the elements
+      // need to use the globalSyms map.
+      tc_->globalSyms[elem->id()] = def->sym;
+
+      if (enumType->defaultValue == nullptr) {
+        enumType->defaultValue = def->sym;
+      }
+
+      attachSymbolAttributes(context(), elem, def->sym, isFromLibrary);
+    }
+
+    attachSymbolAttributes(context(), node, ts, isFromLibrary);
+    attachSymbolVisibility(node, ts);
+
+    ts->addFlag(FLAG_RESOLVED_EARLY);
+
+    auto def = insertTypeIntoModule(t->id(), enumType);
+    INT_ASSERT(def);
+
+    return enumType;
+  }
+
   Type* visit(const types::UnionType* t) {
     auto rc = createDummyRC(context());
     auto& rf = fieldsForTypeDecl(&rc, t, DefaultsPolicy::USE_DEFAULTS);
@@ -2878,6 +2921,9 @@ Symbol* TConverter::convertParam(const types::QualifiedType& qt) {
   } else if (auto up = p->toUintParam()) {
     const types::UintType* t = qt.type()->toUintType();
     return new_UIntSymbol(up->value(), getUintSize(t));
+  } else if (auto ep = p->toEnumParam()) {
+    auto val = ep->value();
+    return globalSyms[val.id];
   }
 
   INT_FATAL("should not be reached");
@@ -3420,11 +3466,16 @@ Expr* TConverter::convertPrimCallOrNull(const Call* node, RV& rv) {
   auto re = rv.byAstOrNull(node);
   INT_ASSERT(!re || !re->hasAssociatedActions());
 
-  CallExpr* ret = new CallExpr(primCall->prim());
+  CallExpr* ret = nullptr;
+  if (primCall->prim() == chpl::uast::primtags::PRIM_RT_ERROR) {
+    ret = new CallExpr(primCall->prim(), new_CStringSymbol("<cannot handle PRIM_RT_ERROR without strings>"));
+  } else {
+    ret = new CallExpr(primCall->prim());
 
-  convertAndInsertPrimCallActuals(ret, node->actuals(), rv);
+    convertAndInsertPrimCallActuals(ret, node->actuals(), rv);
 
-  handlePostCallActions(ret, node, re, rv);
+    handlePostCallActions(ret, node, re, rv);
+  }
 
   return ret;
 }
@@ -4871,6 +4922,8 @@ bool TConverter::enter(const Call* node, RV& rv) {
     expr = x;
   } else if (auto x = convertNamedCallOrNull(node, rv)) {
     expr = x;
+  } else if (auto re = rv.byAst(node); re.type().isParam()) {
+    expr = new SymExpr(convertParam(re.type()));
   }
 
   if (!expr) {
@@ -5201,10 +5254,9 @@ bool TConverter::enter(const Select* node, RV& rv) {
       } else if (!allParamFalse) {
         auto cond = getWhenCond(this, rv, when, selectSym);
 
-        auto thenBlock = new BlockStmt();
-        pushBlock(thenBlock);
+        // Traversing the body creates a BlockStmt we can remove
         when->body()->traverse(rv);
-        popBlock();
+        auto thenBlock = cur.lastList()->last()->remove();
 
         auto elseBlock = new BlockStmt();
         auto branch = new CondStmt(cond, thenBlock, elseBlock);
@@ -5226,6 +5278,17 @@ bool TConverter::enter(const Select* node, RV& rv) {
 
 void TConverter::exit(const Select* node, RV& rv) {}
 
+bool TConverter::enter(const Block* node, RV& rv) {
+  // Necessary for explicit standalone block-statements
+  auto block = new BlockStmt();
+  pushBlock(block);
+  return true;
+}
+
+void TConverter::exit(const Block* node, RV& rv) {
+  auto cur = popBlock();
+  insertStmt(cur);
+}
 
 bool TConverter::enter(const AstNode* node, RV& rv) {
   TC_DEBUGF(this, "enter ast %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));

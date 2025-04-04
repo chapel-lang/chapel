@@ -4460,13 +4460,13 @@ considerCompilerGeneratedMethods(ResolutionContext* rc,
 }
 
 static const TypedFnSignature*
-considerCompilerGeneratedFunctions(Context* context,
+considerCompilerGeneratedFunctions(ResolutionContext* rc,
                                    const CallInfo& ci,
                                    CandidatesAndForwardingInfo& candidates) {
   // methods and op calls considered elsewhere
   if (ci.isMethodCall() || ci.isOpCall()) return nullptr;
 
-  return getCompilerGeneratedFunction(context, ci);
+  return getCompilerGeneratedFunction(rc, ci);
 }
 
 // not all compiler-generated procs are method. For instance, the compiler
@@ -4507,7 +4507,7 @@ considerCompilerGeneratedCandidates(ResolutionContext* rc,
 
   tfs = considerCompilerGeneratedMethods(rc, ci, candidates);
   if (tfs == nullptr) {
-    tfs = considerCompilerGeneratedFunctions(rc->context(), ci, candidates);
+    tfs = considerCompilerGeneratedFunctions(rc, ci, candidates);
   }
   if (tfs == nullptr) {
     tfs = considerCompilerGeneratedOperators(rc->context(), ci, candidates);

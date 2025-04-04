@@ -378,6 +378,9 @@ void Scope::addBuiltinType(UniqueString name) {
   declared_.emplace(name, OwnedIdsWithName(IdAndFlags::createForBuiltinType()));
 }
 
+void Scope::addBuiltinFunction(UniqueString name) {
+  declared_.emplace(name, OwnedIdsWithName(IdAndFlags::createForBuiltinFunction()));
+}
 
 const Scope* Scope::moduleScope() const {
   const Scope* cur;
