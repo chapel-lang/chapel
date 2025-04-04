@@ -555,24 +555,58 @@ bool
 Context::isQueryRunning(
      const ResultType& (*queryFunction)(Context* context, ArgTs...),
      const std::tuple<ArgTs...>& tupleOfArgs) {
+  // The parent query has effectively created a dependecy on the query being
+  // checked (since its behavior will be different depending on if it's running),
+  // so we need to note it as a check dependency. However, the query map,
+  // or query result entry, may not exist yet, so create empty ones if they
+  // don't. If the query being checked has never been run, we'll insert
+  // a never-executed result, which will get executed when needed.
+
   // Look up the map entry for this query name
   const void* queryFuncV = (const void*) queryFunction;
   // Look up the map entry for this query
   auto search = this->queryDB.find(queryFuncV);
   if (search == this->queryDB.end()) {
+    // need to create a new entry for the query but that's hard because we need
+    // to know its string name and whether it's an input query. Can't assert
+    // here since the first call to (isQueryRunning() else query()) will
+    // hit the assertion, always. So, just return false.
+    //
+    // TODO: can we do something clever here?
     return false;
   }
 
   // found an entry for this query
   QueryMapBase* base = search->second.get();
   auto queryMap = (QueryMap<ResultType, ArgTs...>*)base;
+
+  // find the query, or create a new uninitialized result
   QueryMapResult<ResultType, ArgTs...> key(queryMap, tupleOfArgs);
+  const QueryMapResult<ResultType, ArgTs...>* dependencyQuery = nullptr;
   auto search2 = queryMap->map.find(key);
   if (search2 == queryMap->map.end()) {
-    return false;
+    // no query like this has ever been executed before. Insert a blank result,
+    // without running the query, so that we have something to list as a dependency.
+    dependencyQuery = getResult(queryMap, tupleOfArgs);
+    dependencyQuery->lastChecked = -2; // special value: never checked, but also not running.
+  } else {
+    dependencyQuery = &(*search2);
   }
 
-  return search2->lastChecked == -1 || search2->beingTestedForReuse;
+  bool isRunning = dependencyQuery->lastChecked == -1 || dependencyQuery->beingTestedForReuse;
+
+  if (!queryStack.empty()) {
+    // The parent query has effectively created a dependecy on search2
+    // by checking if it's running, so note that. Note that it's safe to
+    // always add an edge here instead of checking for recursion errors
+    // since these dependency edges are not traversed.
+    auto kind = isRunning ? QueryDependency::DEPENDENCY_CHECK_TRUE
+                          : QueryDependency::DEPENDENCY_CHECK_FALSE;
+    auto newDependency = QueryDependency(dependencyQuery, false, kind);
+    queryStack.back()->dependencies.push_back(newDependency);
+  }
+
+  return isRunning;
 }
 
 template<typename ResultType,
