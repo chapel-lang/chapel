@@ -3294,22 +3294,12 @@ module Python {
     }
   }
 
-  // TODO: this should be generalized with
+  // TODO: this could be generalized with
   // https://github.com/chapel-lang/chapel/issues/26958
-  // TODO: this has to be written as ref, otherwise the overloads
-  // in ChapelBase and OwnedObject take precedence. This then means
-  // overloads must be stamped out for each type, which is not ideal.
-  // TODO: this also only works with concrete management,
-  // so additional management strategies need to be stamped out
+  pragma "last resort"
   @chpldoc.nodoc
-  operator:(ref x: owned Value, type t: owned PyArray(?)): t throws do
-    return Value._castHelper(x.borrow(), t);
-  // writing this as `x: owned PyArray` results in weird resolution errors, but
-  // `where` clauses work fine
-  @chpldoc.nodoc
-  operator:(ref x: PyArray(?), type t: owned PyArray(?)): t throws
-  where isOwnedClass(x) do
-    return Value._castHelper(x.borrow(), t);
+  operator:(x: borrowed PyArray(?), type t: PyArray(?)): t throws do
+    return Value._castHelper(x, t);
 
   @chpldoc.nodoc
   proc isSupportedArrayType(arr) param : bool {
