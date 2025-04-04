@@ -858,13 +858,6 @@ def main():
             Fatal('Cannot find ' + lookingfor)
         return result
 
-    c_compiler = run_compileline('--compile', 'c compiler')
-    cpp_compiler = run_compileline('--compile-c++', 'c++ compiler')
-    host_c_compiler = run_compileline('--host-c-compiler', 'host c compiler')
-    host_cpp_compiler = run_compileline('--host-cxx-compiler', 'host c++ compiler')
-    runtime_includes_and_defines = run_compileline('--includes-and-defines',
-                                                   'runtime includes and defines')
-
     # Use timedexec
     # As much as I hate calling out to another script for the time out stuff,
     #  subprocess doesn't quite cut it for this kind of stuff
@@ -1684,13 +1677,17 @@ def main():
                 args = ['-o', test_filename]+shlex.split(compopts)+[testname]
                 cmd = None
                 if is_c_test:
-                    cmd = c_compiler
+                    cmd = run_compileline('--compile', 'c compiler')
                 elif is_ml_c_test:
+                    host_c_compiler = run_compileline('--host-c-compiler', 'host c compiler')
+                    runtime_includes_and_defines = run_compileline('--includes-and-defines', 'runtime includes and defines')
                     cmd_pieces = [host_c_compiler, runtime_includes_and_defines]
                     cmd = ' '.join(cmd_pieces)
                 elif is_cpp_test:
-                    cmd = cpp_compiler
+                    cmd = run_compileline('--compile-c++', 'c++ compiler')
                 elif is_ml_cpp_test:
+                    host_cpp_compiler = run_compileline('--host-cxx-compiler', 'host c++ compiler')
+                    runtime_includes_and_defines = run_compileline('--includes-and-defines', 'runtime includes and defines')
                     cmd_pieces = [host_cpp_compiler, runtime_includes_and_defines]
                     cmd = ' '.join(cmd_pieces)
             else:
