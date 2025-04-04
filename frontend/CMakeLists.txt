@@ -68,6 +68,16 @@ endif()
 string(REPLACE "-ljemalloc" "" CHPL_LLVM_LINK_ARGS "${CHPL_LLVM_LINK_ARGS}")
 string(STRIP "${CHPL_LLVM_LINK_ARGS}" CHPL_LLVM_LINK_ARGS)
 
+if (CHPL_HOST_MEM STREQUAL "mimalloc")
+if (APPLE)
+    # filter mimalloc out of CHPL_LLVM_LINK_ARGS
+    # this is a hack to avoid linking mimalloc twice
+    string(REPLACE "-lmimalloc" "" CHPL_LLVM_LINK_ARGS "${CHPL_LLVM_LINK_ARGS}")
+    string(STRIP "${CHPL_LLVM_LINK_ARGS}" CHPL_LLVM_LINK_ARGS)
+endif()
+endif()
+
+
 set(CHPL_MAIN_SRC_DIR     ${CMAKE_CURRENT_SOURCE_DIR})
 set(CHPL_MAIN_INCLUDE_DIR ${CHPL_MAIN_SRC_DIR}/include)
 set(CHPL_INCLUDE_DIR      ${CMAKE_CURRENT_BINARY_DIR}/include)

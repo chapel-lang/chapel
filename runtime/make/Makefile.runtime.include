@@ -101,6 +101,11 @@ ifeq ($(MAKE_LAUNCHER),1)
       $(RUNTIME_ROOT)/make/Makefile.runtime.mem-$(CHPL_MAKE_TARGET_MEM)
     -include $(TARGET_MEM_INCLUDE)
   endif
+  ifeq ($(CHPL_MAKE_TARGET_MEM),mimalloc)
+    TARGET_MEM_INCLUDE=\
+      $(RUNTIME_ROOT)/make/Makefile.runtime.mem-$(CHPL_MAKE_TARGET_MEM)
+    -include $(TARGET_MEM_INCLUDE)
+  endif
 endif
 
 # Add any further includes for COMM.
