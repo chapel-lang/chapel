@@ -102,5 +102,6 @@ static const int chpl_PyBUF_WRITABLE = PyBUF_WRITABLE;
 static const int chpl_PyBUF_FORMAT = PyBUF_FORMAT;
 static const int chpl_PyBUF_ND = PyBUF_ND;
 static const int chpl_PyBUF_STRIDES = PyBUF_STRIDES;
+static const int chpl_PyBUF_C_CONTIGUOUS = PyBUF_C_CONTIGUOUS;
 
 #endif
