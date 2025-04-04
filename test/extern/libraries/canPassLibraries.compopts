@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# test all the various was we could pass the library to the compiler
+# test all the various ways we could pass the library to the compiler
 #
 
 # pass via the CLI
