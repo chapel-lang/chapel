@@ -4,7 +4,7 @@ import sys
 import optparse
 
 import chpl_mem, overrides, third_party_utils, chpl_bin_subdir, chpl_compiler, chpl_platform
-from utils import error, memoize, warning
+from utils import error, memoize, warning, check_valid_var
 
 
 def var_name(flag):
@@ -34,15 +34,12 @@ def get(flag='target'):
     else:
         error("Invalid flag: '{0}'".format(flag), ValueError)
 
-    supported_mimalloc = ('none', 'bundled', 'system')
-    if mimalloc not in supported_mimalloc:
-        error("{0}={1} is not supported, must be one of {2}".format(var_name(flag), mimalloc, supported_mimalloc))
-
     # if mimalloc is system, check if we can find it with pkg-config
     # cmake handles the host case already, but we can provide better error messages here
     if mimalloc == 'system' and not third_party_utils.pkgconfig_system_has_package("mimalloc"):
         third_party_utils.could_not_find_pkgconfig_pkg("mimalloc", var_name(flag))
 
+    check_valid_var(var_name(flag), mimalloc, ('none', 'bundled', 'system'))
     return mimalloc
 
 
