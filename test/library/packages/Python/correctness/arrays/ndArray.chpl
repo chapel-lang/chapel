@@ -2,7 +2,7 @@ use Python;
 
 
 var interp = new Interpreter();
-var mod = interp.importModule('ndarray',
+var mod = interp.createModule(
   """
   import numpy as np
 
@@ -16,6 +16,7 @@ var modify_idx = mod.get('modify_idx');
 var np = interp.importModule('numpy');
 var arange = np.get('arange');
 var zeros = np.get('zeros');
+var np_sum = np.get('sum');
 
 proc getPyArray(type eltType, shape) {
   proc toNP(type t: int(64)) do return np.get('int64');
@@ -70,7 +71,7 @@ proc testArray(type eltType, shape) {
   writeln("====");
 
   {
-    var pyArr_genericPyArr = pyArr_genericValue:owned PyArray;
+    var pyArr_genericPyArr = pyArr_genericValue.value(owned PyArray);
     writeln("pyArr_genericPyArr.ndim: ", pyArr_genericPyArr.ndim);
     writeln("pyArr_genericPyArr.size: ", pyArr_genericPyArr.size);
     writeln("pyArr_genericPyArr.shape: ", pyArr_genericPyArr.shape(rank));
@@ -81,6 +82,12 @@ proc testArray(type eltType, shape) {
     for e in pyArr_genericPyArr.these(eltType) {
       writeln("element: ", e);
     }
+    var sum = 0:(if eltType == bool then int else eltType);
+    forall e in pyArr_genericPyArr.these(eltType) with (+ reduce sum) {
+      sum reduce= e;
+    }
+    writeln("sum: ", sum:eltType);
+    writeln("np.sum: ", np_sum(pyArr_genericPyArr):eltType);
     writeln("pyArr_genericPyArr.array: ",
       pyArr_genericPyArr.array(eltType, rank));
   }
@@ -88,7 +95,7 @@ proc testArray(type eltType, shape) {
   writeln("====");
 
   {
-    var pyArr_typeSpecified = pyArr_genericValue:owned PyArray(eltType);
+    var pyArr_typeSpecified = pyArr_genericValue.value(owned PyArray(eltType));
     writeln("pyArr_typeSpecified.ndim: ", pyArr_typeSpecified.ndim);
     writeln("pyArr_typeSpecified.size: ", pyArr_typeSpecified.size);
     writeln("pyArr_typeSpecified.shape: ", pyArr_typeSpecified.shape(rank));
@@ -98,13 +105,20 @@ proc testArray(type eltType, shape) {
     for e in pyArr_typeSpecified {
       writeln("element: ", e);
     }
-    writeln("pyArr_typeSpecified.array:", pyArr_typeSpecified.array(rank));
+    var sum = 0:(if eltType == bool then int else eltType);
+    forall e in pyArr_typeSpecified with (+ reduce sum) {
+      sum reduce= e;
+    }
+    writeln("sum: ", sum:eltType);
+    writeln("np.sum: ", np_sum(pyArr_typeSpecified):eltType);
+    writeln("pyArr_typeSpecified.array: ", pyArr_typeSpecified.array(rank));
   }
 
   writeln("====");
 
   {
-    var pyArr_rankSpecified = pyArr_genericValue:owned PyArray(rank=rank);
+    var pyArr_rankSpecified =
+      pyArr_genericValue.value(owned PyArray(rank=rank));
     writeln("pyArr_rankSpecified.ndim: ", pyArr_rankSpecified.ndim);
     writeln("pyArr_rankSpecified.size: ", pyArr_rankSpecified.size);
     writeln("pyArr_rankSpecified.shape: ", pyArr_rankSpecified.shape());
@@ -115,6 +129,12 @@ proc testArray(type eltType, shape) {
     for e in pyArr_rankSpecified.these(eltType) {
       writeln("element: ", e);
     }
+    var sum = 0:(if eltType == bool then int else eltType);
+    forall e in pyArr_rankSpecified.these(eltType) with (+ reduce sum) {
+      sum reduce= e;
+    }
+    writeln("sum: ", sum:eltType);
+    writeln("np.sum: ", np_sum(pyArr_rankSpecified):eltType);
     writeln("pyArr_rankSpecified.array: ",
       pyArr_rankSpecified.array(eltType));
   }
@@ -122,7 +142,7 @@ proc testArray(type eltType, shape) {
   writeln("====");
 
   {
-    var pyArr_fullySpecified = pyArr_genericValue:owned PyArray(eltType, rank);
+    var pyArr_fullySpecified = pyArr_genericValue.value(owned PyArray(eltType, rank));
     writeln("pyArr_fullySpecified.ndim: ", pyArr_fullySpecified.ndim);
     writeln("pyArr_fullySpecified.size: ", pyArr_fullySpecified.size);
     writeln("pyArr_fullySpecified.shape: ", pyArr_fullySpecified.shape());
@@ -132,6 +152,12 @@ proc testArray(type eltType, shape) {
     for e in pyArr_fullySpecified {
       writeln("element: ", e);
     }
+    var sum = 0:(if eltType == bool then int else eltType);
+    forall e in pyArr_fullySpecified with (+ reduce sum) {
+      sum reduce= e;
+    }
+    writeln("sum: ", sum:eltType);
+    writeln("np.sum: ", np_sum(pyArr_fullySpecified):eltType);
     writeln("pyArr_fullySpecified.array: ",
       pyArr_fullySpecified.array());
   }
@@ -139,7 +165,7 @@ proc testArray(type eltType, shape) {
   writeln("====");
 
   {
-    var pyArr_fullySpecified = pyArr_genericValue:owned PyArray(eltType, rank);
+    var pyArr_fullySpecified = pyArr_genericValue.value(owned PyArray(eltType, rank));
 
     {
       var idx: rank*int;
@@ -171,6 +197,10 @@ proc testArray(type eltType, shape) {
     for e in pyArr_fullySpecified {
       writeln("element: ", e);
       e = 0:eltType;
+    }
+    writeln("pyArr_fullySpecified: ", pyArr_fullySpecified);
+    forall e in pyArr_fullySpecified {
+      e = 1:eltType;
     }
     writeln("pyArr_fullySpecified: ", pyArr_fullySpecified);
   }
