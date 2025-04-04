@@ -435,16 +435,4 @@ module ChapelIO {
     use IO only chpl_stringify;
     return chpl_stringify((...args));
   }
-
-  //
-  // handle casting FCF types to string
-  //
-  @chpldoc.nodoc
-  proc isFcfType(type t) param do
-    return __primitive("is fcf type", t);
-
-  @chpldoc.nodoc
-  operator :(x, type t:string) where isFcfType(x.type) do
-    return chpl_stringify_wrapper(x);
-
 }

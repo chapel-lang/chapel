@@ -305,6 +305,11 @@ operator :(x: string, type t:chpl_anycomplex) throws {
     return retVal;
   }
 
+  operator :(x: ?t1, type t2: string) where chpl_enableProcPtrs(t1) {
+    var ptr = x: c_ptr(void);
+    return ptr : string;
+  }
+
   // Catch all cast anything -> string is in ChapelIO
 
 }

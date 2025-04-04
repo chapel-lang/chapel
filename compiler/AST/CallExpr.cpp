@@ -452,29 +452,35 @@ CallExpr* createCast(BaseAST* src, BaseAST* toType) {
 
 QualifiedType CallExpr::qualType(void) {
   QualifiedType retval(NULL);
+  auto se = toSymExpr(baseExpr);
 
   if (primitive) {
     retval = primitive->returnInfo(this);
 
-  } else if (isResolved()) {
-    FnSymbol* fn = resolvedFunction();
-    Qualifier q  = QUAL_UNKNOWN;
+  } else if (isResolved() || (se && isFunctionType(se->symbol()->type))) {
+    auto ft = toFunctionType(se->symbol()->type);
+    auto fn = resolvedFunction();
+    INT_ASSERT(fn || ft);
 
-    if (fn->retType->isRef()) {
+    auto q  = QUAL_UNKNOWN;
+    auto retType = fn ? fn->retType : ft->returnType();
+    auto retTag = fn ? fn->retTag : ft->returnIntent();
+
+    if (retType->isRef()) {
       q = QUAL_REF;
 
-    } else if (fn->retType->isWideRef()) {
+    } else if (retType->isWideRef()) {
       q = QUAL_WIDE_REF;
 
-    } else if (fn->retTag == RET_VALUE) {
+    } else if (retTag == RET_VALUE) {
       q = QUAL_VAL;
 
     } else {
       q = QUAL_UNKNOWN;
     }
 
-    retval = QualifiedType(q, fn->retType);
-  } else if (SymExpr* se = toSymExpr(baseExpr)) {
+    retval = QualifiedType(q, retType);
+  } else if (se) {
     // Handle type constructor calls
     Type* retType = dtUnknown;
     if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
@@ -488,10 +494,6 @@ QualifiedType CallExpr::qualType(void) {
         // a ``uint(64)`` unless there are zero arguments
         retType = se->typeInfo();
       }
-    }
-
-    if (auto fnType = toFunctionType(se->symbol()->type)) {
-      retType = fnType->returnType();
     }
 
     retval = QualifiedType(QUAL_UNKNOWN, retType);

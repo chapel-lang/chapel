@@ -165,7 +165,7 @@ class AList {
                                                                               \
   Expr* _alist_actual_next = (actual) ? actual->next : NULL;                  \
                                                                               \
-  for (ArgSymbol* formal = (_alist_fn->formals.head) ?                        \
+  for (ArgSymbol* formal = (_alist_fn && _alist_fn->formals.head) ?           \
          toArgSymbol(toDefExpr(_alist_fn->formals.head)->sym) : NULL,         \
                                                                               \
        *_alist_formal_next = (formal && formal->defPoint->next) ?             \

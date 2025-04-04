@@ -1486,7 +1486,7 @@ Type* getOrMakeRefTypeDuringCodegen(Type* type) {
   refType = type->refType;
   if( ! refType ) {
     SET_LINENO(type->symbol);
-    AggregateType* ref = new AggregateType(AGGREGATE_RECORD);
+    AggregateType* ref = new AggregateType(AGGREGATE_CLASS);
     TypeSymbol* refTs = new TypeSymbol(astr("_ref_", type->symbol->cname), ref);
     refTs->addFlag(FLAG_REF);
     refTs->addFlag(FLAG_NO_DEFAULT_FUNCTIONS);

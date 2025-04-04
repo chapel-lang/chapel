@@ -389,6 +389,14 @@ module CTypes {
     __primitive("=", lhs, nil);
   }
 
+  @chpldoc.nodoc
+  inline operator :(x: ?t1, type t2: c_ptr(void))
+                   where chpl_enableProcPtrs(t1) {
+    var localProc = chpl_toLocalProc(x);
+    // The cast will go through because 'localProc' is a pointer.
+    var ret = __primitive("cast", t2, localProc);
+    return ret;
+  }
 
   @chpldoc.nodoc
   inline operator :(x:c_fn_ptr, type t:c_ptr(void)) {

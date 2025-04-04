@@ -336,6 +336,26 @@ genGlobalInt(const char* cname, int value, bool isHeader,
   }
 }
 
+void codegenGlobalInt64(const char* cname, int64_t value, bool isHeader,
+                        bool isConstant) {
+  GenInfo* info = gGenInfo;
+  if( info->cfile ) {
+    if(isHeader)
+      fprintf(info->cfile, "extern const int64_t %s;\n", cname);
+    else
+    fprintf(info->cfile, "const int64_t %s = %" PRId64 ";\n", cname, value);
+  } else {
+#ifdef HAVE_LLVM
+    llvm::GlobalVariable *globalInt = llvm::cast<llvm::GlobalVariable>(
+        info->module->getOrInsertGlobal(
+          cname, llvm::IntegerType::getInt64Ty(info->module->getContext())));
+    globalInt->setInitializer(info->irBuilder->getInt64(value));
+    globalInt->setConstant(isConstant);
+    info->lvt->addGlobalValue(cname, globalInt, GEN_PTR, false, dtInt[INT_SIZE_64]);
+#endif
+  }
+}
+
 static void genGlobalInt32(const char *cname, int value) {
   GenInfo *info = gGenInfo;
   if (info->cfile) {
@@ -657,12 +677,13 @@ static void
 genFtable(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
   GenInfo* info = gGenInfo;
 
-  const char* eltType = "chpl_fn_p";
-  const char* name = "chpl_ftable";
+  const char* eltType = dtCVoidPtr->symbol->cname;
+  const char* name = ftableName;
 
   if (isHeader) {
     // Just pass NULL when generating header
     codegenGlobalConstArray(name, eltType, NULL, true);
+    codegenGlobalInt64(ftableSizeName, 0, true);
     return;
   }
 
@@ -692,14 +713,15 @@ genFtable(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
     ftable.push_back(gen);
   }
 
-  // make sure ftable always contains at least 1 element
-  if (ftable.empty()) {
-    GenRet nullFn = codegenTypedNull(funcPtrType);
-    ftable.push_back(nullFn);
-  }
+  // Make sure there is a NULL sentinel at the end.
+  GenRet nullFn = codegenTypedNull(funcPtrType);
+  ftable.push_back(nullFn);
 
   // Now emit the global array declaration
   codegenGlobalConstArray(name, eltType, &ftable, false);
+
+  // Now emit the size
+  codegenGlobalInt64(ftableSizeName, ftable.size(), false);
 }
 
 static void
@@ -1621,7 +1643,8 @@ static void uniquify_names(std::set<const char*> & cnames,
   // collect types and apply canonical sort
   //
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (ts->defPoint->parentExpr != rootModule->block) {
+    if (ts->defPoint->parentExpr != rootModule->block ||
+        isFunctionType(ts->type)) {
       legalizeSymbolName(ts);
       types.push_back(ts);
     }
@@ -1800,6 +1823,8 @@ static void codegen_header(std::set<const char*> & cnames,
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (ts->defPoint->parentExpr != rootModule->block) {
       types.push_back(ts);
+    } else if (isFunctionType(ts->type)) {
+      types.push_back(ts);
     }
   }
   std::sort(types.begin(), types.end(), compareSymbol);
@@ -1966,6 +1991,7 @@ static void codegen_header(std::set<const char*> & cnames,
   for_vector(FnSymbol, fn2, functions) {
     if (fn2->hasFlag(FLAG_BEGIN_BLOCK) ||
         fn2->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK) ||
+        fn2->hasFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION) ||
         fn2->hasFlag(FLAG_ON_BLOCK)) {
       ftableVec.push_back(fn2);
       ftableMap[fn2] = ftableVec.size()-1;
@@ -2294,13 +2320,29 @@ static const char* generateFileName(ChainHashMap<const char*, StringHashFns, int
   return name;
 }
 
+bool argRequiresCPtr(IntentTag intent, Type* t, bool isReceiver) {
+  /* This used to be true for INTENT_REF, but that is handled with the "_ref"
+     class and we don't need to generate a pointer for it directly */
+  if (isReceiver && is_complex_type(t)) return true;
+  return argMustUseCPtr(t);
+}
+
+bool argRequiresCPtr(ArgSymbol* formal) {
+  bool isReceiver = formal->hasFlag(FLAG_ARG_THIS);
+  return argRequiresCPtr(formal->intent, formal->type, isReceiver);
+}
+
+bool argRequiresCPtr(const FunctionType::Formal* formal) {
+  bool isReceiver = !strcmp(formal->name(), "this");
+  return argRequiresCPtr(formal->intent(), formal->type(), isReceiver);
+}
 
 static bool
 shouldChangeArgumentTypeToRef(ArgSymbol* arg) {
   FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
 
   bool shouldPassRef = (arg->intent & INTENT_FLAG_REF) ||
-                       arg->requiresCPtr();
+                       argRequiresCPtr(arg);
 
   bool alreadyRef = arg->typeInfo()->symbol->hasFlag(FLAG_REF) ||
                     arg->isRef() ||

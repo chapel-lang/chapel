@@ -92,6 +92,37 @@ void PrimitiveType::codegenDef() {
 void ConstrainedType::codegenDef() {
 }
 
+#ifdef HAVE_LLVM
+static void codegenFunctionTypeWideLlvm(FunctionType* ft) {
+  // Use a 'int64' dynamic index. Do not bother generating a function type.
+  auto t = llvm::Type::getInt64Ty(gContext->llvmContext());
+  if (!ft->symbol->hasLLVMType()) {
+    gGenInfo->lvt->addGlobalType(ft->symbol->cname, t, false);
+    ft->symbol->llvmImplType = t;
+    ft->symbol->llvmAlignment = ALIGNMENT_DEFER;
+  }
+}
+#endif
+
+#ifdef HAVE_LLVM
+static void codegenFunctionTypeLocalLlvm(FunctionType* ft) {
+  // Generate the underlying type. This is a function value type.
+  const auto& info = fetchLocalFunctionTypeLlvm(ft);
+  auto baseType = info.type;
+
+  // The final type is a pointer to the underlying function type.
+  auto& layout = gGenInfo->module->getDataLayout();
+  auto addrSpace = layout.getAllocaAddrSpace();
+  llvm::Type* t = llvm::PointerType::get(baseType, addrSpace);
+
+  if (!ft->symbol->hasLLVMType()) {
+    gGenInfo->lvt->addGlobalType(ft->symbol->cname, t, false);
+    ft->symbol->llvmImplType = t;
+    ft->symbol->llvmAlignment = ALIGNMENT_DEFER;
+  }
+}
+#endif
+
 // TODO: See 'codegenFunctionTypeLLVM' for hints about what ABI stuff to
 // do when code generating extern/export stuff. It's a mess in there!
 void FunctionType::codegenDef() {
@@ -102,44 +133,13 @@ void FunctionType::codegenDef() {
     INT_FATAL("The C backend is not supported yet!");
   } else {
     #ifdef HAVE_LLVM
-    llvm::Type* returnTy = this->returnType()->symbol->getLLVMType();
-    std::vector<llvm::Type*> argTys;
-
-    for (int i = 0; i < numFormals(); i++) {
-      auto formal = this->formal(i);
-      llvm::Type* llvmTy = formal->type->symbol->getLLVMType();
-      INT_ASSERT(llvmTy);
-      argTys.push_back(llvmTy);
-    }
-
-    // Get the base type for the function. It is not a pointer.
-    const bool isVarArgs = false;
-    auto baseType = llvm::FunctionType::get(returnTy, argTys, isVarArgs);
-
-    // TODO: With the new 'opaque pointer' strategy that LLVM is adopting,
-    // it would be impossible to get the underlying type unless we carry
-    // it around or have access to the Chapel FunctionType in contexts
-    // where that information is important...
-    // But this complicates the generator, because the type of a static
-    // function (FnSymbol*) is a pointer to a function type, and the type
-    // of a Chapel function type is the underlying function type.
-    // For now, my workaround is just going to be to use a static map from
-    // the pointer type to the function type. That way the LLVM type for a
-    // Chapel FunctionType can still be a pointer, and everything lines up
-    // nicely in the generator.
-    bool ok = llvmMapUnderlyingFunctionType(this, baseType);
-    INT_ASSERT(ok);
-
-    // The final type is a pointer to the underlying function type.
-    auto& layout = info->module->getDataLayout();
-    auto addrSpace = layout.getAllocaAddrSpace();
-    auto type = llvm::PointerType::get(baseType, addrSpace);
-
-    if (! this->symbol->hasLLVMType()) {
-      info->lvt->addGlobalType(this->symbol->cname, type, false);
-      this->symbol->llvmImplType = type;
-      this->symbol->llvmAlignment = ALIGNMENT_DEFER;
-    }
+      llvm::Type *type = info->lvt->getType(symbol->cname);
+      if (type) return;
+      if (this->isWide()) {
+        codegenFunctionTypeWideLlvm(this);
+      } else {
+        codegenFunctionTypeLocalLlvm(this);
+      }
     #endif
   }
 }
