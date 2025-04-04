@@ -2282,6 +2282,7 @@ module Python {
       defer ctx.exit();
 
       var iter_ = PyObject_GetIter(this.getPyObject());
+      defer { if iter_ != nil then Py_DECREF(iter_); }
       if iter_ == nil || PyIter_Check(iter_) != 0 {
         throwChapelException("Object is not iterable");
       }
