@@ -7,14 +7,6 @@ proc main() {
 
   var array = interp.importModule('array').get('array');
 
-  writeln("cast value to array");
-  {
-    var arr = array('l', [1, 2, 3, 4, 5]);
-    writeln(arr.type:string, arr, sep=" ");
-    var arr2 = arr:owned PyArray;
-    writeln(arr2.type:string, arr2, sep=" ");
-  }
-
   writeln("cast array to array");
   {
     var arr = array(owned PyArray, 'l', [1, 2, 3, 4, 5]);

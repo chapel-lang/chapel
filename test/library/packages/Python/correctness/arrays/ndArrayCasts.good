@@ -1,6 +1,3 @@
-cast value to array
-owned Value array('l', [1, 2, 3, 4, 5])
-owned PyArray(nothing,-1) array('l', [1, 2, 3, 4, 5])
 cast array to array
 owned PyArray(nothing,-1) array('l', [1, 2, 3, 4, 5])
 owned PyArray(nothing,-1) array('l', [1, 2, 3, 4, 5])
