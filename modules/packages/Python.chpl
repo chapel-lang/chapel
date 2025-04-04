@@ -3973,6 +3973,7 @@ module Python {
     extern "chpl_PyBUF_FORMAT" const PyBUF_FORMAT: c_int;
     extern "chpl_PyBUF_ND" const PyBUF_ND: c_int;
     extern "chpl_PyBUF_STRIDES" const PyBUF_STRIDES: c_int;
+    extern "chpl_PyBUF_C_CONTIGUOUS" const PyBUF_C_CONTIGUOUS: c_int;
 
   }
 
@@ -4023,7 +4024,6 @@ module Python {
       for i in 0..# arr.rank {
         pyShape(i) = shape(i).safeCast(Py_ssize_t);
       }
-
 
       if isArrayType(T) {
         var sub = allocate(PyObjectPtr, arr.size);
