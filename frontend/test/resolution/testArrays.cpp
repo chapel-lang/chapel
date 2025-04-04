@@ -153,13 +153,11 @@ module M {
   assert(findVarType(m, rr, "countElt").type()->isIntType());
 
   auto isRectangularQt = findVarType(m, rr, "isRectangular");
-  bool isRectangular = isRectangularQt.param() &&
-      isRectangularQt.param()->isBoolParam() &&
-      isRectangularQt.param()->toBoolParam()->value();
+  assert(isRectangularQt.type()->isBoolType());
+  bool isRectangular = isRectangularQt.isParamTrue();
   auto isAssociativeQt = findVarType(m, rr, "isAssociative");
-  bool isAssociative = isAssociativeQt.param() &&
-      isAssociativeQt.param()->isBoolParam() &&
-      isAssociativeQt.param()->toBoolParam()->value();
+  assert(isAssociativeQt.type()->isBoolType());
+  bool isAssociative = isAssociativeQt.isParamTrue();
   assert(isRectangular != isAssociative); // should be one or the other
   if (isRectangular) {
     assert(findVarType(m, rr, "strides").type()->isEnumType());
