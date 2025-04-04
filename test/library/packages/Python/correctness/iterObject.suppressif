@@ -1,0 +1,2 @@
+# leaks memory due to #27062
+EXECOPTS <= memLeaks
