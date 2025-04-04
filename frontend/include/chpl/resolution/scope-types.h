@@ -573,7 +573,9 @@ class MatchingIdsWithName {
   }
 
   void mark(Context* context) const {
-    chpl::mark<decltype(idvs_)>{}(context, idvs_);
+    for (const auto& idv : idvs_) {
+      idv.id_.mark(context);
+    }
   }
 
   void swap(MatchingIdsWithName& other) {
