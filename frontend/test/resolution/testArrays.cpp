@@ -300,7 +300,7 @@ int main() {
   testArrayLiteral("[1, 2; 3, 4;; 5, 6; 7, 8]", "domain(3)", "int");
 
   // slices
-  testArraySlicing("[1, 2, 3]", "0..1", "[1..2] int");
+  testArraySlicing("[1, 2, 3]", "0..1", "[0..1] int");
   testArraySlicing("[1, 2; 3, 4]", "0, 1", "int"); // testing multi-dim indexing, not really a slice
   testArraySlicing("[1, 2; 3, 4;; 5, 6; 7, 8]", "0..1, 0..1, 1", "[0..1, 0..1] int");
 
