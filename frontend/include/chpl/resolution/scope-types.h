@@ -195,6 +195,16 @@ class IdAndFlags {
                       /* isType */ false);
   }
 
+  static IdAndFlags createForBuiltinFunction() {
+    return IdAndFlags(ID(),
+                      /* isPublic */ true,
+                      /* isMethodOrField */ false,
+                      /* isParenfulFunction */ true,
+                      /* isMethod */ false,
+                      /* isModule */ false,
+                      /* isType */ false);
+  }
+
   bool operator==(const IdAndFlags& other) const {
     return id_ == other.id_ &&
            flags_ == other.flags_;
@@ -669,6 +679,10 @@ class Scope {
   /** Add a builtin var with the provided name. This needs to
       be called to populate the root scope with builtins. */
   void addBuiltinVar(UniqueString name);
+
+  /** Add a builtin function with the provided name. This needs to
+      be called to populate the root scope with builtins. */
+  void addBuiltinFunction(UniqueString name);
 
   /** Return the parent scope for this scope. */
   const Scope* parentScope() const { return parentScope_; }

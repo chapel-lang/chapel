@@ -487,6 +487,9 @@ static void populateScopeWithBuiltins(Context* context, Scope* scope) {
   scope->addBuiltinVar(USTR("nil"));
   scope->addBuiltinVar(USTR("none"));
 
+  scope->addBuiltinFunction(USTR("chpl__orderToEnum"));
+  scope->addBuiltinFunction(USTR("chpl__enumToOrder"));
+
   populateScopeWithBuiltinKeywords(context, scope);
 }
 
