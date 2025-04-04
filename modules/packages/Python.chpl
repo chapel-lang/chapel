@@ -1825,7 +1825,19 @@ module Python {
       this.isOwned = true;
       this.ctxInitState = chpl_pythonContext.enter();
       init this;
-      this.obj = this.interpreter.loadPickle(pickleData);
+      // Only catch-less try! statements are allowed in initializers for now :(
+      proc helper() throws {
+        try {
+          this.obj = this.interpreter.loadPickle(pickleData);
+        } catch e {
+          // an exception thrown from the init will not result in a call to the postinit
+          // or the deinit, so we have to handle that stuff here
+          defer PyGILState_Release(this.gilInitState);
+          // rethrow the exception
+          throw e;
+        }
+      }
+      helper();
     }
     /*
       Creates a new Python object from a Chapel value.
@@ -1838,7 +1850,19 @@ module Python {
       this.isOwned = true;
       this.ctxInitState = chpl_pythonContext.enter();
       init this;
-      this.obj = this.interpreter.toPythonInner(value);
+      // Only catch-less try! statements are allowed in initializers for now :(
+      proc helper() throws {
+        try {
+          this.obj = this.interpreter.toPythonInner(value);
+        } catch e {
+          // an exception thrown from the init will not result in a call to the postinit
+          // or the deinit, so we have to handle that stuff here
+          defer PyGILState_Release(this.gilInitState);
+          // rethrow the exception
+          throw e;
+        }
+      }
+      helper();
     }
 
     @chpldoc.nodoc
@@ -2391,7 +2415,19 @@ module Python {
       super.init(interpreter, nil: PyObjectPtr, isOwned=true);
       this.modName = modName;
       init this;
-      this.obj = interpreter.compileModule(moduleContents, modName);
+      // Only catch-less try! statements are allowed in initializers for now :(
+      proc helper() throws {
+        try {
+          this.obj = interpreter.compileModule(moduleContents, modName);
+        } catch e {
+          // an exception thrown from the init will not result in a call to the postinit
+          // or the deinit, so we have to handle that stuff here
+          defer PyGILState_Release(this.gilInitState);
+          // rethrow the exception
+          throw e;
+        }
+      }
+      helper();
     }
 
     /*
@@ -2403,7 +2439,19 @@ module Python {
       super.init(interpreter, nil: PyObjectPtr, isOwned=true);
       this.modName = modName;
       init this;
-      this.obj = interpreter.compileModule(moduleBytecode, modName);
+      // Only catch-less try! statements are allowed in initializers for now :(
+      proc helper() throws {
+        try {
+          this.obj = interpreter.compileModule(moduleBytecode, modName);
+        } catch e {
+          // an exception thrown from the init will not result in a call to the postinit
+          // or the deinit, so we have to handle that stuff here
+          defer PyGILState_Release(this.gilInitState);
+          // rethrow the exception
+          throw e;
+        }
+      }
+      helper();
     }
   }
 
@@ -2458,7 +2506,19 @@ module Python {
       super.init(interpreter, nil: PyObjectPtr, isOwned=true);
       this.fnName = "<anon>";
       init this;
-      this.obj = interpreter.compileLambdaInternal(lambdaFn);
+      // Only catch-less try! statements are allowed in initializers for now :(
+      proc helper() throws {
+        try {
+          this.obj = interpreter.compileLambdaInternal(lambdaFn);
+        } catch e {
+          // an exception thrown from the init will not result in a call to the postinit
+          // or the deinit, so we have to handle that stuff here
+          defer PyGILState_Release(this.gilInitState);
+          // rethrow the exception
+          throw e;
+        }
+      }
+      helper();
     }
     @chpldoc.nodoc
     proc init(in interpreter: borrowed Interpreter,
@@ -3077,7 +3137,7 @@ module Python {
       :arg interpreter: The interpreter that this object is associated with.
       :arg arr: The Chapel array to create the object from.
     */
-    proc init(in interpreter: borrowed Interpreter, ref arr: []) throws
+    proc init(in interpreter: borrowed Interpreter, ref arr: [])
       where isSupportedArrayType(arr) {
       super.init(interpreter, nil: PyObjectPtr, isOwned=true);
       this.eltType = arr.eltType;
@@ -3085,7 +3145,7 @@ module Python {
       this.obj = ArrayTypes.createArray(arr);
     }
     @chpldoc.nodoc
-    proc init(in interpreter: borrowed Interpreter, ref arr: []) throws
+    proc init(in interpreter: borrowed Interpreter, ref arr: [])
       where !isSupportedArrayType(arr) {
       compilerError("Only 1D local rectangular arrays are currently supported");
       this.eltType = nothing;
