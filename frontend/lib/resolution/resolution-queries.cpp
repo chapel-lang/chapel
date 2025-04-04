@@ -4460,6 +4460,37 @@ considerCompilerGeneratedCandidates(ResolutionContext* rc,
   candidates.addCandidate(instantiated.candidate());
 }
 
+static MatchingIdsWithName lookupCalledExprImpl(Context* context,
+                                                const Scope* scope,
+                                                UniqueString name,
+                                                const QualifiedType& receiverType,
+                                                LookupConfig config,
+                                                CheckedScopes& visited) {
+  ReceiverScopeTypedHelper typedHelper;
+  auto lookupHelper = typedHelper.methodLookupForType(context, receiverType);
+  auto ret = lookupNameInScopeWithSet(context, scope,
+                                      lookupHelper,
+                                      /* receiverScopeHelper */ nullptr,
+                                      name, config, visited);
+
+  // At this point, we don't allow "switching gears" to 'proc this'-based
+  // resolution of non-function names. The calling code is expected to
+  // have set up the CallInfo with 'name = "this"' if that's what it wanted.
+  // So, rule out non-functional IDs.
+  //
+  // This relies on the fact that under LOOKUP_STOP_NON_FN, the non-functional
+  // IDs are last. (except in the case of ambiguity, but that should've been
+  // ruled out by calling code as well).
+  if (config & LOOKUP_STOP_NON_FN) {
+    for (int i = 0; i < ret.numIds(); i++) {
+      auto& idv = ret.idAndFlags(i);
+      if (!idv.isFunctionLike() && !idv.isType()) ret.truncate(i);
+    }
+  }
+
+  return ret;
+}
+
 static MatchingIdsWithName const& cachedCandidates(Context* context,
                                                    const Scope* scope,
                                                    UniqueString name,
@@ -4467,12 +4498,12 @@ static MatchingIdsWithName const& cachedCandidates(Context* context,
                                                    LookupConfig config) {
   QUERY_BEGIN(cachedCandidates, context, scope, name, receiverType, config);
 
-  // this should only be set by lookupCalledExpr
-  MatchingIdsWithName ret;
+  CheckedScopes visited;
+  auto ret =
+    lookupCalledExprImpl(context, scope, name, receiverType, config, visited);
 
   return QUERY_END(ret);
 }
-
 
 static MatchingIdsWithName
 lookupCalledExpr(Context* context,
@@ -4480,7 +4511,6 @@ lookupCalledExpr(Context* context,
                  const CallInfo& ci,
                  CheckedScopes& visited) {
 
-  const MethodLookupHelper* lookupHelper = nullptr;
   auto receiverType = QualifiedType();
 
   // For method calls, also consider the receiver scope.
@@ -4488,8 +4518,6 @@ lookupCalledExpr(Context* context,
     // TODO: should types of all arguments be considered for an op call?
     CHPL_ASSERT(ci.numActuals() >= 1);
     receiverType = ci.actual(0).type();
-    ReceiverScopeTypedHelper typedHelper;
-    lookupHelper = typedHelper.methodLookupForType(context, receiverType);
   }
 
   LookupConfig config = LOOKUP_DECLS | LOOKUP_IMPORT_AND_USE | LOOKUP_PARENTS;
@@ -4511,44 +4539,19 @@ lookupCalledExpr(Context* context,
 
   UniqueString name = ci.name();
 
-  // Check the cache. This is intended to improve
-  // the case when a generic function is re-resolved with various instantiations,
-  // but always refers to the same candidate in one of its type arguments.
+  // If this is a cacheable lookup (i.e., one that doesn't depend on
+  // prior state), use cachedCandidates, which is the same as invoking
+  // lookupCalledExprImpl except that it doesn't populate visited
+  // and caches the result. This is intended to optimize cases where
+  // the same function is re-resolved with different types, but expressions
+  // in its body always refer to the same thing.
   bool tryCache = visited.size() == 0;
   if (tryCache) {
-    auto args = std::make_tuple(scope, ci.name(), receiverType, config);
-    if (context->hasCurrentResultForQuery(cachedCandidates, std::move(args))) {
-      return cachedCandidates(context, scope, ci.name(), receiverType, config);
-    }
+    return cachedCandidates(context, scope, name, receiverType, config);
   }
 
-  auto ret = lookupNameInScopeWithSet(context, scope,
-                                      lookupHelper,
-                                      /* receiverScopeHelper */ nullptr,
-                                      name, config, visited);
-
-  // At this point, we don't allow "switching gears" to 'proc this'-based
-  // resolution of non-function names. The calling code is expected to
-  // have set up the CallInfo with 'name = "this"' if that's what it wanted.
-  // So, rule out non-functional IDs.
-  //
-  // This relies on the fact that under LOOKUP_STOP_NON_FN, the non-functional
-  // IDs are last. (except in the case of ambiguity, but that should've been
-  // ruled out by calling code as well).
-  if (config & LOOKUP_STOP_NON_FN) {
-    for (int i = 0; i < ret.numIds(); i++) {
-      auto& idv = ret.idAndFlags(i);
-      if (!idv.isFunctionLike() && !idv.isType()) ret.truncate(i);
-    }
-  }
-
-  // Cache the result if we are able
-  if (tryCache) {
-    auto toStore = ret; // copy since STORE moves.
-    QUERY_STORE_RESULT(cachedCandidates, context, toStore, scope, name, receiverType, config);
-  }
-
-  return ret;
+  return lookupCalledExprImpl(context, scope, name, receiverType, config,
+                           visited);
 }
 
 // Container for ordering groups of last resort candidates by resolution
