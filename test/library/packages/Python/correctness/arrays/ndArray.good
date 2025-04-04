@@ -34,6 +34,8 @@ element: 8
 element: 9
 element: 10
 element: 11
+sum: 66
+np.sum: 66
 pyArr_genericPyArr.array: 0 1
 2 3
 4 5
@@ -58,7 +60,9 @@ element: 8
 element: 9
 element: 10
 element: 11
-pyArr_typeSpecified.array:0 1
+sum: 66
+np.sum: 66
+pyArr_typeSpecified.array: 0 1
 2 3
 4 5
 
@@ -82,6 +86,8 @@ element: 8
 element: 9
 element: 10
 element: 11
+sum: 66
+np.sum: 66
 pyArr_rankSpecified.array: 0 1
 2 3
 4 5
@@ -106,6 +112,8 @@ element: 8
 element: 9
 element: 10
 element: 11
+sum: 66
+np.sum: 66
 pyArr_fullySpecified.array: 0 1
 2 3
 4 5
@@ -136,6 +144,13 @@ pyArr_fullySpecified: [[[0 0]
  [[0 0]
   [0 0]
   [0 0]]]
+pyArr_fullySpecified: [[[1 1]
+  [1 1]
+  [1 1]]
+
+ [[1 1]
+  [1 1]
+  [1 1]]]
 ========================================
 Testing array with type '[domain(2,int(64),one)] real(64)' and shape (8, 2)
 calling modify_idx(pyArr, 0, 100)
@@ -179,6 +194,8 @@ element: 12.0
 element: 13.0
 element: 14.0
 element: 15.0
+sum: 120.0
+np.sum: 120.0
 pyArr_genericPyArr.array: 0.0 1.0
 2.0 3.0
 4.0 5.0
@@ -208,7 +225,9 @@ element: 12.0
 element: 13.0
 element: 14.0
 element: 15.0
-pyArr_typeSpecified.array:0.0 1.0
+sum: 120.0
+np.sum: 120.0
+pyArr_typeSpecified.array: 0.0 1.0
 2.0 3.0
 4.0 5.0
 6.0 7.0
@@ -237,6 +256,8 @@ element: 12.0
 element: 13.0
 element: 14.0
 element: 15.0
+sum: 120.0
+np.sum: 120.0
 pyArr_rankSpecified.array: 0.0 1.0
 2.0 3.0
 4.0 5.0
@@ -266,6 +287,8 @@ element: 12.0
 element: 13.0
 element: 14.0
 element: 15.0
+sum: 120.0
+np.sum: 120.0
 pyArr_fullySpecified.array: 0.0 1.0
 2.0 3.0
 4.0 5.0
@@ -302,6 +325,14 @@ pyArr_fullySpecified: [[0. 0.]
  [0. 0.]
  [0. 0.]
  [0. 0.]]
+pyArr_fullySpecified: [[1. 1.]
+ [1. 1.]
+ [1. 1.]
+ [1. 1.]
+ [1. 1.]
+ [1. 1.]
+ [1. 1.]
+ [1. 1.]]
 ========================================
 Testing array with type '[domain(1,int(64),one)] bool' and shape (4,)
 calling modify_idx(pyArr, 0, 100)
@@ -319,6 +350,8 @@ element: false
 element: false
 element: false
 element: false
+sum: false
+np.sum: false
 pyArr_genericPyArr.array: false false false false
 ====
 pyArr_typeSpecified.ndim: 1
@@ -329,7 +362,9 @@ element: false
 element: false
 element: false
 element: false
-pyArr_typeSpecified.array:false false false false
+sum: false
+np.sum: false
+pyArr_typeSpecified.array: false false false false
 ====
 pyArr_rankSpecified.ndim: 1
 pyArr_rankSpecified.size: 4
@@ -339,6 +374,8 @@ element: false
 element: false
 element: false
 element: false
+sum: false
+np.sum: false
 pyArr_rankSpecified.array: false false false false
 ====
 pyArr_fullySpecified.ndim: 1
@@ -349,6 +386,8 @@ element: false
 element: false
 element: false
 element: false
+sum: false
+np.sum: false
 pyArr_fullySpecified.array: false false false false
 ====
 pyArr_fullySpecified.this((0,)): true
@@ -360,4 +399,5 @@ element: true
 element: false
 element: true
 pyArr_fullySpecified: [False False False False]
+pyArr_fullySpecified: [ True  True  True  True]
 ========================================
