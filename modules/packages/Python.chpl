@@ -2311,8 +2311,16 @@ module Python {
     }
 
     @chpldoc.nodoc
-    iter these(): owned Value throws do
-      for e in this.these(owned Value) do yield e;
+    iter these(): owned Value throws {
+      try {
+        // the try/catch is needed to work around a bug
+        // https://github.com/chapel-lang/chapel/issues/27008
+        for e in this.these(owned Value) do
+          yield e;
+      } catch e {
+        throw e;
+      }
+    }
 
 
     // Casts
