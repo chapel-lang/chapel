@@ -5085,7 +5085,9 @@ void makeBinaryLLVM(void) {
 
         mysystem(cmd.c_str(), "Compile C File");
         dotOFiles.push_back(objFilename);
-      } else if( isObjFile(inputFilename) ) {
+      } else if(isObjFile(inputFilename) ||
+                isStaticLibrary(inputFilename) ||
+                isSharedLibrary(inputFilename)) {
         dotOFiles.push_back(inputFilename);
       }
     }

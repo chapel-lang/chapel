@@ -1120,8 +1120,9 @@ two mechanisms.
     .. code-block:: sh
 
        chpl foo.h foo.c myProgram.chpl
-       chpl foo.h foo.o myProgram.chpl  # if foo.c had already been compiled
-       chpl foo.h -lfoo myProgram.chpl  # if foo.c had been archived in libfoo.a or libfoo.so
+       chpl foo.h foo.o myProgram.chpl    # if foo.c had already been compiled
+       chpl foo.h -lfoo myProgram.chpl    # if foo.c had been archived in libfoo.a or libfoo.so/libfoo.dylib
+       chpl foo.h libfoo.a myProgram.chpl # if foo.c had been archived in libfoo.a
 
  2) Alternatively, the required C resources can be listed within the
     Chapel file using the ``require`` statement. For example:
@@ -1185,9 +1186,9 @@ Either of the two approaches above will result in the following:
    in a ``require`` statement will be compiled using the same flags as the
    Chapel-generated C files (use ``--print-commands`` to see these compile
    commands).
- * During Chapel's link step, any ``.o`` and ``.a``/``.so`` files listed on the compiler's
-   command-line or in ``require`` statements will be linked into the final
-   executable.
+ * During Chapel's link step, any ``.o`` and ``.a``/``.so``/``.dylib`` files
+   listed on the compiler's command-line or in ``require`` statements will be
+   linked into the final executable.
  * Any paths specified using the ``-I`` and ``-L`` flags will be passed along
    to the back-end compiler.
 

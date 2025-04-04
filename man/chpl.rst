@@ -25,7 +25,8 @@ Options or C Code Generation Options below.
 SOURCE FILES
 ------------
 
-Chapel recognizes four source file types: **.chpl**, .c, .h, and .o.
+Chapel recognizes the following source file types: **.chpl**, .c, .h, .o,
+.a, .so, and .dylib.
 
 **foo.chpl**
 
@@ -42,6 +43,14 @@ Chapel recognizes four source file types: **.chpl**, .c, .h, and .o.
 **foo.o**
 
     Object file.
+
+**foo.a**
+
+    Static library.
+
+**foo.so/foo.dylib**
+
+    Shared library.
 
 OPTIONS
 -------
