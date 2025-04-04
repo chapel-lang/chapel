@@ -142,6 +142,10 @@ Context::CapturingRunResultBase::CapturingRunResultBase(const Context::Capturing
   }
 }
 
+std::vector<owned<ErrorBase>> Context::CapturingRunResultBase::consumeErrors() {
+ return std::move(errors_);
+}
+
 bool Context::CapturingRunResultBase::ranWithoutErrors() const {
   for (auto& error : errors_) {
     auto kind = error->kind();

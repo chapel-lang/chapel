@@ -147,7 +147,7 @@ class Context {
     const std::vector<owned<ErrorBase>>& errors() const { return errors_; };
 
     /** Steal the errors that occurred while running, leaving this result empty. */
-    std::vector<owned<ErrorBase>> consumeErrors() { return std::move(errors_); };
+    std::vector<owned<ErrorBase>> consumeErrors();
 
     /**
       Checks if any syntax errors or errors occurred while running.
