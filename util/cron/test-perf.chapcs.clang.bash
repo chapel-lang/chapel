@@ -15,6 +15,8 @@ unset CXX
 export CHPL_HOST_COMPILER=clang
 export CHPL_TARGET_COMPILER=clang
 
+export CHPL_LAUNCHER=none
+
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.clang"
 
 SHORT_NAME=clang

@@ -11,6 +11,8 @@ source $UTIL_CRON_DIR/common-c-backend.bash
 # common-llvm restricts us to extern/fergeson, we want all the perf tests
 unset CHPL_NIGHTLY_TEST_DIRS
 
+export CHPL_LAUNCHER=none
+
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.c-backend"
 
 perf_args="-performance-description c-backend -performance-configs default:v,c-backend:v -sync-dir-suffix c-backend"
