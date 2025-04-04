@@ -4030,13 +4030,13 @@ module Python {
                          isOwned: bool): PyObjectPtr;
 
       var shape = arr.shape;
-      var pyShape = allocate(Py_ssize_t, arr.rank);
+      var pyShape = allocate(Py_ssize_t, arr.rank.safeCast(c_size_t));
       for i in 0..# arr.rank {
         pyShape(i) = shape(i).safeCast(Py_ssize_t);
       }
 
       if isArrayType(T) {
-        var sub = allocate(PyObjectPtr, arr.size);
+        var sub = allocate(PyObjectPtr, arr.size.safeCast(c_size_t));
         for i in 0..#arr.size {
           sub(i) = createArray(arr(i));
         }
