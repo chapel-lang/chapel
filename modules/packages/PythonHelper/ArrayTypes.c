@@ -226,6 +226,7 @@ static int Array##NAMESUFFIX##Object_bf_getbuffer(Array##NAMESUFFIX##Object* arr
     view->obj = NULL; \
     return -1; \
   } \
+  assert(arr->ndim != 0); \
   /* check for any unsupported flags */ \
   if (flags & ~(PyBUF_SIMPLE | PyBUF_WRITABLE | PyBUF_FORMAT | \
                 PyBUF_ND | PyBUF_STRIDES | PyBUF_INDIRECT | PyBUF_C_CONTIGUOUS)) { \
@@ -250,8 +251,13 @@ static int Array##NAMESUFFIX##Object_bf_getbuffer(Array##NAMESUFFIX##Object* arr
       view->obj = NULL; \
       return -1; \
     } \
-    for (Py_ssize_t i = 0; i < arr->ndim; i++) { \
-      view->strides[i] = sizeof(DATATYPE); \
+    if (arr->ndim == 1) { \
+      view->strides[0] = sizeof(DATATYPE); \
+    } else { \
+      view->strides[arr->ndim-1] = sizeof(DATATYPE); \
+      for (Py_ssize_t i = arr->ndim - 2; i >= 0; i--) { \
+        view->strides[i] = view->strides[i+1] * arr->shape[i+1]; \
+      } \
     } \
     view->internal = (void*)((intptr_t)view->internal | 0x1); /* set 0x1 if we need to free strides later */ \
   } \
