@@ -1121,7 +1121,6 @@ void Context::updateForReuse(const QueryMapResultBase* resultEntry) {
   // Only re-report errors if they are not being silenced.
   if (errorCollectionStack.empty()) {
     for (auto& err: resultEntry->errors) {
-      // Only report an error if it wasn't silenced in the original run
       reportError(this, err.get());
     }
   }

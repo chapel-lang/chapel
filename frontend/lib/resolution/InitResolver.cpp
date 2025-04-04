@@ -148,7 +148,7 @@ void InitResolver::resolveImplicitSuperInit() {
       return true;
     });
 
-    errorsFromImplicitSuperInit = std::move(cAndErrors.errors());
+    errorsFromImplicitSuperInit = cAndErrors.consumeErrors();
     updateSuperType(&c.result);
   }
 }
