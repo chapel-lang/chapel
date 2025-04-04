@@ -2465,6 +2465,7 @@ int main(int argc, char** argv) {
   auto chplModulePath = (it != chplEnv->end()) ? it->second : "";
   setupModuleSearchPaths(gContext,
                          CHPL_HOME,
+                         "", //moduleRoot
                          false, //minimal modules
                          chplEnv->at("CHPL_LOCALE_MODEL"),
                          false, //task tracking

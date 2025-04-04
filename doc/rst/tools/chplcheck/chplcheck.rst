@@ -148,6 +148,39 @@ as at least 1 rule opts in to using them. For example, custom rules could confor
 to the setting ``MyIgnoreList``, which could be set as
 ``--setting MyIgnoreList="foo,bar"``.
 
+Configuration Files
+-------------------
+
+``chplcheck`` can be configured without passing command line flags using a
+configuration file. This file can be specified using the ``--config`` (also
+``-c``) flag. The configuration file can either be a YAML file or a specific
+TOML file. For example, running ``chplcheck -c config.yaml`` will load the
+configuration from ``config.yaml``. Additionally, ``chplcheck`` will look for a
+configuration files in the current directory named ``chplcheck.cfg`` or
+``.chplcheck.cfg`` (in that order).
+
+Most command line options can be specified in the configuration file. For
+example, the following YAML configuration file will explicitly enable the
+``UseExplicitModules`` rule and disable the ``UnusedLoopIndex`` and
+``UnusedFormal`` rules:
+
+.. code-block:: yaml
+
+   enable-rule: ["UseExplicitModules"]
+   disable-rule: ["UnusedLoopIndex", "UnusedFormal"]
+
+TOML configuration files can also be used, for example the following is the same configuration as above:
+
+.. code-block:: toml
+
+   [tool.chplcheck]
+   enable-rule = ["UseExplicitModules"]
+   disable-rule = ["UnusedLoopIndex", "UnusedFormal"]
+
+This configuration can also be added to a :ref:`Mason <readme-mason>`
+configuration file. ``chplcheck`` will automatically use a configuration file
+contained in a ``Mason.toml`` file in the current directory.
+
 Setting Up In Your Editor
 -------------------------
 
