@@ -4460,6 +4460,20 @@ considerCompilerGeneratedCandidates(ResolutionContext* rc,
   candidates.addCandidate(instantiated.candidate());
 }
 
+static MatchingIdsWithName const& cachedCandidates(Context* context,
+                                                   const Scope* scope,
+                                                   UniqueString name,
+                                                   QualifiedType receiverType,
+                                                   LookupConfig config) {
+  QUERY_BEGIN(cachedCandidates, context, scope, name, receiverType, config);
+
+  // this should only be set by lookupCalledExpr
+  MatchingIdsWithName ret;
+
+  return QUERY_END(ret);
+}
+
+
 static MatchingIdsWithName
 lookupCalledExpr(Context* context,
                  const Scope* scope,
@@ -4467,12 +4481,13 @@ lookupCalledExpr(Context* context,
                  CheckedScopes& visited) {
 
   const MethodLookupHelper* lookupHelper = nullptr;
+  auto receiverType = QualifiedType();
 
   // For method calls, also consider the receiver scope.
   if (ci.isMethodCall() || ci.isOpCall()) {
     // TODO: should types of all arguments be considered for an op call?
     CHPL_ASSERT(ci.numActuals() >= 1);
-    QualifiedType receiverType = ci.actual(0).type();
+    receiverType = ci.actual(0).type();
     ReceiverScopeTypedHelper typedHelper;
     lookupHelper = typedHelper.methodLookupForType(context, receiverType);
   }
@@ -4496,6 +4511,17 @@ lookupCalledExpr(Context* context,
 
   UniqueString name = ci.name();
 
+  // Check the cache. This is intended to improve
+  // the case when a generic function is re-resolved with various instantiations,
+  // but always refers to the same candidate in one of its type arguments.
+  bool tryCache = visited.size() == 0;
+  if (tryCache) {
+    auto args = std::make_tuple(scope, ci.name(), receiverType, config);
+    if (context->hasCurrentResultForQuery(cachedCandidates, std::move(args))) {
+      return cachedCandidates(context, scope, ci.name(), receiverType, config);
+    }
+  }
+
   auto ret = lookupNameInScopeWithSet(context, scope,
                                       lookupHelper,
                                       /* receiverScopeHelper */ nullptr,
@@ -4514,6 +4540,12 @@ lookupCalledExpr(Context* context,
       auto& idv = ret.idAndFlags(i);
       if (!idv.isFunctionLike() && !idv.isType()) ret.truncate(i);
     }
+  }
+
+  // Cache the result if we are able
+  if (tryCache) {
+    auto toStore = ret; // copy since STORE moves.
+    QUERY_STORE_RESULT(cachedCandidates, context, toStore, scope, name, receiverType, config);
   }
 
   return ret;
