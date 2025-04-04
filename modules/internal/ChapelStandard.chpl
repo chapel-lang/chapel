@@ -78,7 +78,6 @@ module ChapelStandard {
   public use ChapelStaticVars;
   public use ChapelRemoteVars;
   public use ChapelArrayViewElision;
-  public use ChapelDynamicLoading;
 
   // Standard modules.
   public use Types as Types;
