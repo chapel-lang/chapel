@@ -2285,8 +2285,13 @@ module Python {
     /*
       Iterates over an iterable Python object.
     */
+    pragma "docs only"
+    iter these(type eltType = owned Value): eltType throws do
+      compilerError("docs only");
+
+
     @chpldoc.nodoc
-    iter these(type eltType = owned Value): eltType throws {
+    iter these(type eltType): eltType throws {
       var ctx = chpl_pythonContext.enter();
       defer ctx.exit();
 
@@ -2304,6 +2309,11 @@ module Python {
         yield interpreter.fromPythonInner(eltType, item);
       }
     }
+
+    @chpldoc.nodoc
+    iter these(): owned Value throws do
+      for e in this.these(owned Value) do yield e;
+
 
     // Casts
     /* Creates a new int from ``x``, when ``x`` is a :class:`Value`. */
@@ -3187,12 +3197,12 @@ module Python {
       ``PyArray`` object, it does not need to be specified here.
     */
     pragma "docs only"
-    iter these(type eltType = this.eltType) ref : eltType throws {
+    override iter these(type eltType = this.eltType) ref : eltType throws {
       compilerError("docs only");
     }
 
     @chpldoc.nodoc
-    iter these(type eltType) ref : eltType throws {
+    override iter these(type eltType) ref : eltType throws {
       if eltType == nothing then
         compilerError("Element type must be specified at compile time");
 
@@ -3209,7 +3219,7 @@ module Python {
       }
     }
     @chpldoc.nodoc
-    iter these() ref : eltType throws {
+    override iter these() ref : eltType throws {
       for e in these(eltType=this.eltType) do yield e;
     }
     // TODO: it should also be possible to support leader/follower here
