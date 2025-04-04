@@ -4463,12 +4463,12 @@ cloneFirstParameterizedPrimitive(FnSymbol* fn, ArgSymbol* formal) {
   } else if (baseSym == dtReal[FLOAT_SIZE_DEFAULT]->symbol ||
              baseSym == dtImag[FLOAT_SIZE_DEFAULT]->symbol) {
     ret = true;
-    for (int i = FLOAT_SIZE_32; i < FLOAT_SIZE_NUM; i++) {
+    for (int i = FLOAT_SIZE_16; i < FLOAT_SIZE_NUM; i++) {
       doCloneFirstParameterizedPrimitive(fn, formal, get_width(dtReal[i]));
     }
   } else if (baseSym == dtComplex[COMPLEX_SIZE_DEFAULT]->symbol) {
     ret = true;
-    for (int i = COMPLEX_SIZE_64; i < COMPLEX_SIZE_NUM; i++) {
+    for (int i = COMPLEX_SIZE_32; i < COMPLEX_SIZE_NUM; i++) {
       doCloneFirstParameterizedPrimitive(fn, formal, get_width(dtComplex[i]));
     }
   }
