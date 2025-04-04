@@ -3021,7 +3021,7 @@ module Python {
         throw new ChapelException("Object does not support buffer protocol");
       }
       const flags = PyBUF_SIMPLE | PyBUF_WRITABLE | PyBUF_FORMAT |
-                    PyBUF_ND | PyBUF_STRIDES;
+                    PyBUF_ND | PyBUF_STRIDES | PyBUF_C_CONTIGUOUS;
       if PyObject_GetBuffer(this.getPyObject(),
                             c_ptrTo(this.view), flags) == -1 {
         this.interpreter.checkException();
