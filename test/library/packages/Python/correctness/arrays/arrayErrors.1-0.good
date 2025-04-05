@@ -1,0 +1,28 @@
+[[[0 0 0]
+  [0 0 0]
+  [0 0 0]]
+
+ [[0 0 0]
+  [0 0 0]
+  [0 0 0]]
+
+ [[0 0 0]
+  [0 0 0]
+  [0 0 0]]]
+[[0. 0.]
+ [0. 0.]]
+[0. 0. 0. 0.]
+Caught error: ChapelException: Cannot index a 3-dimensional array with a 2-dimensional index
+Caught error: ChapelException: Index out of bounds
+Caught error: ChapelException: Index out of bounds
+Caught error: ChapelException: Source array's format does not match requested element type
+Caught error: ChapelException: Source array's format does not match requested element type
+Caught error: ChapelException: Source array's format does not match requested element type
+Caught error: ChapelException: Cannot index a 2-dimensional array with a 1-dimensional index
+Caught error: ChapelException: Rank mismatch: expected 2 dimensions, but got 1
+Caught error: ChapelException: Cannot index a 1-dimensional array with a 2-dimensional index
+Caught error: ChapelException: Source array's format does not match requested element type
+Caught error: ChapelException: Python array of rank 3 cannot be converted to a Chapel array of rank 1
+Caught error: ChapelException: 0-dimensional arrays are not supported
+Caught error: ChapelException: Cannot index a 2-dimensional array with a 1-dimensional index
+Caught error: ChapelException: Cannot index a 3-dimensional array with a 1-dimensional index
