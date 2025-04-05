@@ -1566,13 +1566,12 @@ module ChapelArray {
 
     // sparse array interface
     /* Return the Implicitly Represented Value for sparse arrays */
-    proc IRV where !this.isSparse() {
-      compilerError("only sparse arrays have an IRV");
-    }
-
-    @chpldoc.nodoc
     proc IRV ref where this.isSparse() {
       return _value.IRV;
+    }
+    @chpldoc.nodoc
+    proc IRV where !this.isSparse() {
+      compilerError("only sparse arrays have an IRV");
     }
 
     @chpldoc.nodoc
