@@ -3087,7 +3087,12 @@ module Python {
                  compile time and match the rank of the Python array at runtime.
       :returns: A tuple of integers representing the shape of the array.
     */
-    proc shape(param rank = this.rank): rank*int throws {
+    pragma "docs only"
+    proc shape(param rank: int = this.rank): rank*int throws do
+      compilerError("docs only");
+
+    @chpldoc.nodoc
+    proc shape(param rank: int): rank*int throws {
       if rank == -1 then
         compilerError("Rank must be specified at compile time");
 
@@ -3103,6 +3108,13 @@ module Python {
       }
       return s;
     }
+    @chpldoc.nodoc
+    proc shape() throws where this.rank == -1 {
+      compilerError("Rank must be specified at compile time");
+    }
+    @chpldoc.nodoc
+    proc shape(): this.rank*int throws where this.rank != -1 do
+      return this.shape(this.rank);
 
     /*
       Get an element from the Python array. This results in a modifiable
