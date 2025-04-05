@@ -1,0 +1,2 @@
+arrayErrors.chpl:nnnn: In function 'main':
+arrayErrors.chpl:nnnn: error: Rank must be specified at compile time

@@ -1,0 +1,2 @@
+arrayErrors.chpl:nnnn: In function 'main':
+arrayErrors.chpl:nnnn: error: Invalid index type for array - index must be a tuple of ints or a single int (for 1D arrays only)
