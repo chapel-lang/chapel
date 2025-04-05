@@ -3154,13 +3154,16 @@ module Python {
 
       if eltType == nothing then
         compilerError("Element type must be specified at compile time");
-      // if this.rank != -1 && this.rank != idx.size then
-      if this.rank != -1 &&
-         ((isHomogeneousTupleType(idx.type) && this.rank != idx.size) ||
-          idx.type == int && this.rank != 1) then
-        compilerError("Attempting to index an array of rank " +
-                      this.rank:string + " with a " + idx.size:string +
-                      "-dimensional index");
+      if this.rank != -1 {
+        if isHomogeneousTupleType(idx.type) && this.rank != idx.size then
+          compilerError("Attempting to index an array of rank " +
+                        this.rank:string + " with a " + idx.size:string +
+                        "-dimensional index");
+        if idx.type == int && this.rank != 1 then
+          compilerError("Attempting to index an array of rank " +
+                        this.rank:string + " with a 1-dimensional index");
+      }
+
 
       if boundsChecking then
         if !checkFormatWithEltType(this.view.format,
@@ -3176,7 +3179,7 @@ module Python {
           if this.view.ndim != 1 {
             throw new ChapelException("Cannot index a " +
               this.view.ndim:string + "-dimensional array with a " +
-              idx.size:string + "-dimensional index");
+              "1-dimensional index");
           }
         offset = idx * this.view.strides(0);
       } else {
