@@ -3160,6 +3160,12 @@ module Python {
 
       var offset = 0;
       if idx.type == int {
+        if boundsChecking then
+          if this.view.ndim != 1 {
+            throw new ChapelException("Cannot index a " +
+              this.view.ndim:string + "-dimensional array with a " +
+              idx.size:string + "-dimensional index");
+          }
         offset = idx * this.view.strides(0);
       } else {
         if boundsChecking then
