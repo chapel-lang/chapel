@@ -274,12 +274,10 @@ chpl_ARRAY_TYPES(chpl_MAKE_GET_BUFFER)
 #define chpl_MAKE_RELEASE_BUFFER(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, _0, _1, _2, SUPPORTSBUFFERS, FORMATSTRING) \
 static void Array##NAMESUFFIX##Object_bf_releasebuffer(Array##NAMESUFFIX##Object* arr, Py_buffer* view) { \
   arr->numExports--; \
-  if (arr->numExports == 0) { \
-    if ((intptr_t)view->internal & 0x1) { \
-      /* free the strides */ \
-      chpl_mem_free(view->strides, 0, 0); \
-      view->internal = (void*)((intptr_t)view->internal & ~0x1); \
-    } \
+  if ((intptr_t)view->internal & 0x1) { \
+    /* free the strides */ \
+    chpl_mem_free(view->strides, 0, 0); \
+    view->internal = (void*)((intptr_t)view->internal & ~0x1); \
   } \
 }
 chpl_ARRAY_TYPES(chpl_MAKE_RELEASE_BUFFER)
