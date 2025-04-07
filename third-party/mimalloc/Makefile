@@ -31,10 +31,7 @@ endif
 # CHPL_MIMALLOC_CFG_OPTIONS += -DMI_TRACK_ASAN=ON
 
 
-# if host, use the C++ compiler
-ifeq ($(strip $(CHPL_MAKE_HOST_TARGET)),--host)
-CHPL_MIMALLOC_CFG_OPTIONS += -DMI_USE_CXX=ON
-endif
+CHPL_MIMALLOC_CFG_OPTIONS += -DMI_USE_CXX=OFF
 
 ifeq ($(CHPL_LIB_PIC),pic)
 CFLAGS += $(SHARED_LIB_CFLAGS)
@@ -67,10 +64,11 @@ configure-mimalloc: FORCE
 	mkdir -p $(MIMALLOC_BUILD_DIR)
 	$(CMAKE) -B $(MIMALLOC_BUILD_DIR) -S $(MIMALLOC_SUBDIR) \
 	  $(CHPL_MIMALLOC_CFG_OPTIONS) \
-    -DCMAKE_C_COMPILER=$(CC) \
-    -DCMAKE_C_FLAGS='$(CFLAGS)' \
-    -DCMAKE_CXX_COMPILER=$(CXX) \
-    -DCMAKE_CXX_FLAGS='$(CXXFLAGS)'
+	  -DCMAKE_C_COMPILER='$(shell $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_compiler.py --cc --target --compiler-only)' \
+	  -DCMAKE_C_FLAGS='$(shell $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_compiler.py --cc --target --additional) $(CFLAGS)' \
+	  -DCMAKE_CXX_COMPILER='$(shell $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_compiler.py --cxx --target --compiler-only)' \
+	  -DCMAKE_CXX_FLAGS='$(shell $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_compiler.py --cxx --target --additional) $(CXXFLAGS)'
+
 
 build-mimalloc: FORCE
 	$(CMAKE) --build $(MIMALLOC_BUILD_DIR)
