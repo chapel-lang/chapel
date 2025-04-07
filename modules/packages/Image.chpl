@@ -686,7 +686,8 @@ module Image {
 
     proc readPng(const ref infile: fileReader(?)) throws {
       const bytes_ = infile.readAll();
-      if bytes_.size >= 3 && bytes_[0..#3] != b"PNG" then
+      if bytes_.size >= 8 &&
+         bytes_[0..#8] != b"\x89\x50\x4E\x47\x0D\x0A\x1A\x0A" then
         throw new Error("Not a PNG file");
       return readCommon(bytes_);
     }
