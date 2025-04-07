@@ -434,7 +434,9 @@ static const ArrayType* arrayTypeFromSubsHelper(
                                    QualifiedType(QualifiedType::TYPE, domain),
                                    eltType);
   } else if (instanceBct->id().symbolPath() ==
-             "DefaultAssociative.DefaultAssociativeArr") {
+                 "DefaultAssociative.DefaultAssociativeArr" ||
+             instanceBct->id().symbolPath() ==
+                 "ArrayViewReindex.ArrayViewReindexArr") {
     auto [domInstanceQt] = extractFields(rc, instanceBct, "dom");
     auto domain = domainTypeFromInstance(rc, domInstanceQt);
     CHPL_ASSERT(domain);
