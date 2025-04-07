@@ -66,4 +66,28 @@ proc main() {
   //   writeln("Error reading PNG as BMP: ", e.message());
   // }
 
+  // GOOD CASES
+  // try and read the JPG as a JPG
+  try {
+    readImage("pixels.jpg", imageType.jpg);
+    writeln("read JPG as JPG");
+  } catch e: Error {
+    writeln("Error reading JPG as JPG: ", e.message());
+  }
+  // try and read the PNG as a PNG
+  try {
+    readImage("pixels.png", imageType.png);
+    writeln("read PNG as PNG");
+  } catch e: Error {
+    writeln("Error reading PNG as PNG: ", e.message());
+  }
+   // TODO: BMP reading is not yet supported
+  // try and read the BMP as a BMP
+  // try {
+  //   readImage("pixels.bmp", imageType.bmp);
+  //   writeln("read BMP as BMP");
+  // } catch e: Error {
+  //   writeln("Error reading BMP as BMP: ", e.message());
+  // }
+
 }
