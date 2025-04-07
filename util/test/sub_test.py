@@ -146,7 +146,7 @@ import re
 import shlex
 import datetime
 import errno
-from functools import reduce
+from functools import reduce, cache
 import atexit
 
 def elapsed_sub_test_time():
@@ -849,6 +849,7 @@ def main():
     # purpose. compileline will not work correctly in some configurations when run
     # outside of its directory tree.
     compileline = os.path.join(chpl_home, 'util', 'config', 'compileline')
+    @cache
     def run_compileline(flag, lookingfor):
         (returncode, result, _) = run_process([compileline, flag],
                                               stdout=subprocess.PIPE,
