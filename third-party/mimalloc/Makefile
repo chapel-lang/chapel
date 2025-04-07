@@ -33,7 +33,7 @@ endif
 
 # if host, use the C++ compiler
 ifeq ($(strip $(CHPL_MAKE_HOST_TARGET)),--host)
-CHPL_MIMALLOC_CFG_OPTIONS += -DMI_BUILD_CXX=ON
+CHPL_MIMALLOC_CFG_OPTIONS += -DMI_USE_CXX=ON
 endif
 
 ifeq ($(CHPL_LIB_PIC),pic)
