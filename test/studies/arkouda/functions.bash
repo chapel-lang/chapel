@@ -54,8 +54,8 @@ function log() {
 function apply_git_patch() {
   # Function to apply a git patch to a specified directory
 
-  PATCH_FILE=$1
-  TARGET_DIR=$2
+  local PATCH_FILE=$1
+  local TARGET_DIR=$2
 
   # Some checks
   if [[ ! -f "$PATCH_FILE" ]]; then
@@ -66,11 +66,14 @@ function apply_git_patch() {
     log_fatal_error "Target directory '$TARGET_DIR' does not exist."
   fi
 
-  cd "$TARGET_DIR"
-  # Ensure the directory is a Git repository
-  if ! git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
-    log_fatal_error "Target directory '$TARGET_DIR' is not a Git repository."
-  fi
+
+  (
+    # Ensure the directory is a Git repository
+    cd "$TARGET_DIR" || log_fatal_error "Failed to change directory to '$TARGET_DIR'."
+    if ! git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+      log_fatal_error "Target directory '$TARGET_DIR' is not a Git repository."
+    fi
+  )
 
   # Apply the patch
   echo "Applying patch '$PATCH_FILE' to Git repository in '$TARGET_DIR'..."
