@@ -1508,7 +1508,6 @@ void TypeSymbol::codegenDef() {
 #endif
   }
 
-
   this->addFlag(FLAG_CODEGENNED);
 
   if( info->cfile ) {
@@ -1889,8 +1888,6 @@ int llvmAlignmentOrDefer(int alignment, llvm::Type* type) {
 }
 
 static inline void ensureCodegenned(TypeSymbol* ts) {
-  if (ts->hasFlag(FLAG_CODEGENNED)) return;
-
   // Beware that some types would fail codegenDef(), ex. LAPACK_C_SELECT1 in:
   // test/lib./pack./LinearAlgebra/correctness/no-dependencies/no-flags/no-flags
   if (! ts->hasLLVMType())

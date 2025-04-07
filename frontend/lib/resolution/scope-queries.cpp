@@ -1270,8 +1270,9 @@ LookupResult LookupHelper::doLookupInExternBlocks(const Scope* scope,
     }
   }
 
-  /* might be a lie, because we're lying about isParenfulFunction above */
-  bool nonFunctions = true;
+  /* Might be a lie, because we're lying about isParenfulFunction above.
+     Set it to the same value as 'found' to avoid spurious assertions. */
+  bool nonFunctions = found;
   return LookupResult(found, nonFunctions);
 }
 

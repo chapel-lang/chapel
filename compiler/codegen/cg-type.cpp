@@ -220,11 +220,12 @@ void EnumType::codegenDef() {
 
 static Type* baseForLLVMPointer(TypeSymbol* origBase) {
   Type* result = origBase->type;
-  if (result == dtVoid || result == dtNothing)
+  if (result == dtVoid || result == dtNothing) {
     // LLVM does not allow void*, see StructType::isValidElementType()
     // for typed pointers, use i8*
     // for untyped pointers, i8* is good enough. it does not matter the base type
     result = dtInt[INT_SIZE_8];
+  }
   return result;
 }
 
