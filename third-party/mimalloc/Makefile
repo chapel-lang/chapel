@@ -30,7 +30,7 @@ endif
 # TODO: enabled this when CHPL_SANITIZE_EXE is not none
 # CHPL_MIMALLOC_CFG_OPTIONS += -DMI_TRACK_ASAN=ON
 
-
+# always use the C compiler
 CHPL_MIMALLOC_CFG_OPTIONS += -DMI_USE_CXX=OFF
 
 ifeq ($(CHPL_LIB_PIC),pic)
