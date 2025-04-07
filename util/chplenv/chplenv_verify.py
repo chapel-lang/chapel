@@ -193,19 +193,26 @@ int main() {
 }
 """
 
+def missing_llvm(chplenv):
+    """
+    Check if LLVM is missing or not
+    if CHPL_LLVM is bundled, return True if its has not been built
+    if CHPL_LLVM is none and CHPL_LLVM_SUPPORT is bundled, return True if has not been built
+    """
+    if (chplenv.get("CHPL_LLVM") == "bundled" or
+        (chplenv.get("CHPL_LLVM") == "none" and
+        chplenv.get("CHPL_LLVM_SUPPORT") == "bundled")):
+        llvm_config = chplenv.get("CHPL_LLVM_CONFIG")
+        if not llvm_config or not os.path.exists(llvm_config):
+            return True
+    return False
+
 
 class TestTargetCompile(TestCompile):
 
     def skipif(self):
-        if self.chplenv.get("CHPL_TARGET_COMPILER") == "llvm":
-            # if CHPL_LLVM is bundled, skip if the bundled LLVM is missing
-            # if CHPL_LLVM is none and CHPL_LLVM_SUPPORT is bundled, skip if the bundled LLVM is missing
-            if (self.chplenv.get("CHPL_LLVM") == "bundled" or
-                (self.chplenv.get("CHPL_LLVM") == "none" and
-                self.chplenv.get("CHPL_LLVM_SUPPORT") == "bundled")):
-                llvm_config = self.chplenv.get("CHPL_LLVM_CONFIG")
-                if not llvm_config or not os.path.exists(llvm_config):
-                    return True
+        if self.chplenv.get("CHPL_TARGET_COMPILER") == "llvm" and missing_llvm(self.chplenv):
+            return True
         return super().skipif()
 
 class TestTargetCompileCC(TestTargetCompile):
@@ -264,14 +271,8 @@ class TestHostCanFindLLVM(TestCompile):
     def skipif(self):
         if os.getenv("CHPLENV_SKIP_HOST", None) is not None:
             return True
-        # if CHPL_LLVM is bundled, skip if the bundled LLVM is missing
-        # if CHPL_LLVM is none and CHPL_LLVM_SUPPORT is bundled, skip if the bundled LLVM is missing
-        if (self.chplenv.get("CHPL_LLVM") == "bundled" or
-            (self.chplenv.get("CHPL_LLVM") == "none" and
-            self.chplenv.get("CHPL_LLVM_SUPPORT") == "bundled")):
-            llvm_config = self.chplenv.get("CHPL_LLVM_CONFIG")
-            if not llvm_config or not os.path.exists(llvm_config):
-                return True
+        if missing_llvm(self.chplenv):
+            return True
         return super().skipif()
 
     def _suffix(self):
