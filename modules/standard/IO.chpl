@@ -2441,12 +2441,15 @@ record defaultSerializer {
     } else if isClassType(t) {
       x!.serialize(writer=writer, serializer=this);
     } else if isProcedureType(t) {
+      // The legacy procedure classes should have been handled by above.
+      compilerAssert(!isClassType(t));
+
       // TODO: We might like to print the symbol name instead, here, and
       // that may be achievable since the names of loaded symbols are
       // stored in the binary cache (though they won't necessarily be
       // retrievable without comm). So we'd just have to arrange to store
       // the names of 'ftable' entries as well.
-      var ptr = x : c_ptr(void);
+      const ptr = x : c_ptr(void);
       ptr.serialize(writer=writer, serializer=this);
     } else {
       x.serialize(writer=writer, serializer=this);

@@ -32,6 +32,7 @@
 #include "config.h"
 #include "driver.h"
 #include "expr.h"
+#include "fcf-support.h"
 #include "files.h"
 #include "fixupExports.h"
 #include "insertLineNumbers.h"
@@ -1824,7 +1825,14 @@ static void codegen_header(std::set<const char*> & cnames,
     if (ts->defPoint->parentExpr != rootModule->block) {
       types.push_back(ts);
     } else if (isFunctionType(ts->type)) {
-      types.push_back(ts);
+      if (!fcfs::usePointerImplementation()) {
+        INT_ASSERT(!ts->isUsed());
+      } else if (ts->isUsed()) {
+        // Types will still exist in the tree even if they are not used
+        // by any variables/etc because many computations will run over
+        // the function type rather than the function itself.
+        types.push_back(ts);
+      }
     }
   }
   std::sort(types.begin(), types.end(), compareSymbol);

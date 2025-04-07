@@ -1588,6 +1588,7 @@ bool symExprIsUsedAsRef(
 static Type*
 computeAdjustedType(std::unordered_map<Type*, Type*>& alreadyAdjusted,
                     AdjustTypeFn adjustTypeFn,
+                    bool preserveRefLevels,
                     Type* t) {
   // This is a helper function that memoizes the result of performing the
   // caller's type adjustment function. Additionally, if the type returned
@@ -1599,21 +1600,23 @@ computeAdjustedType(std::unordered_map<Type*, Type*>& alreadyAdjusted,
   if (it != alreadyAdjusted.end()) return it->second;
 
   Type* ret = nullptr;
-  if (isReferenceType(t)) {
+  if (preserveRefLevels && isReferenceType(t)) {
     // For reference types, unpack and adjust the value type instead.
     auto vt1 = t->getValType();
-    auto vt2 = computeAdjustedType(alreadyAdjusted, adjustTypeFn, vt1);
+    auto vt2 = computeAdjustedType(alreadyAdjusted, adjustTypeFn,
+                                   preserveRefLevels, vt1);
+    INT_ASSERT(vt2);
 
-    if (vt1 != vt2) {
-      // Constructing new reference types as needed.
-      if (!vt2->refType) makeRefType(vt2);
-      INT_ASSERT(vt2->refType);
-    }
+    // Constructing new reference types as needed.
+    if (!vt2->refType) makeRefType(vt2);
+    INT_ASSERT(vt2->refType);
 
+    // The result is the final reference type.
     ret = vt2->refType;
 
   } else {
-    // For value types, perform the caller-given adjustment function.
+    // For value types (or if we are not preserving reference levels),
+    // perform the caller-given adjustment function.
     ret = adjustTypeFn(t);
   }
 
@@ -1629,6 +1632,7 @@ computeAdjustedType(std::unordered_map<Type*, Type*>& alreadyAdjusted,
     for (int i = 0; i < ft->numFormals(); i++) {
       auto f = ft->formal(i);
       auto newT = computeAdjustedType(alreadyAdjusted, adjustTypeFn,
+                                      preserveRefLevels,
                                       f->type());
       if (newT != f->type()) {
         newFormals.push_back({ f->qual(), newT, f->intent(), f->name() });
@@ -1639,6 +1643,7 @@ computeAdjustedType(std::unordered_map<Type*, Type*>& alreadyAdjusted,
     }
 
     auto newRetType = computeAdjustedType(alreadyAdjusted, adjustTypeFn,
+                                          preserveRefLevels,
                                           ft->returnType());
     anyChanged = anyChanged || newRetType != ft->returnType();
 
@@ -1661,12 +1666,13 @@ computeAdjustedType(std::unordered_map<Type*, Type*>& alreadyAdjusted,
   return ret;
 }
 
-void adjustAllSymbolTypes(AdjustTypeFn adjustTypeFn) {
+void adjustAllSymbolTypes(AdjustTypeFn adjustTypeFn, bool preserveRefLevels) {
   std::unordered_map<Type*, Type*> alreadyAdjusted;
 
   // Wrapper around a helper function that performs the adjustment.
   auto doAdjust = [&](Type* t) {
-    return computeAdjustedType(alreadyAdjusted, adjustTypeFn, t);
+    return computeAdjustedType(alreadyAdjusted, adjustTypeFn,
+                               preserveRefLevels, t);
   };
 
   forv_Vec(VarSymbol, var, gVarSymbols) {
@@ -1738,9 +1744,11 @@ void adjustAllSymbolTypes(AdjustTypeFn adjustTypeFn) {
   }
 
   for (auto [kt, vt] : alreadyAdjusted) {
+    // No change took place, so there is nothing to remove.
     if (kt == vt) continue;
 
     if (auto ts = kt->symbol) {
+      // Otherwise, try to remove the key type from the tree.
       if (!ts->inTree()) continue;
       bool noUses = ts->firstSymExpr() == nullptr;
       if (noUses) ts->defPoint->remove();

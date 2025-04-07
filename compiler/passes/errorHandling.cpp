@@ -1524,7 +1524,7 @@ static bool isCompilerGeneratedFunction(FnSymbol* fn)
          fn->hasFlag(FLAG_COMPILER_GENERATED);
 }
 
-static Type* adjustFunctionType(Type* t) {
+static Type* adjustThrowingFunctionType(Type* t) {
   if (auto ft = toFunctionType(t)) {
     if (ft->throws()) return ft->getWithLoweredErrorHandling();
   }
@@ -1532,8 +1532,8 @@ static Type* adjustFunctionType(Type* t) {
 }
 
 static void adjustFunctionTypesToBeNonThrowing() {
-  AdjustTypeFn adjustFn = adjustFunctionType;
-  adjustAllSymbolTypes(adjustFn);
+  AdjustTypeFn adjustTypeFn = adjustThrowingFunctionType;
+  adjustAllSymbolTypes(adjustTypeFn);
 }
 
 void lowerErrorHandling() {

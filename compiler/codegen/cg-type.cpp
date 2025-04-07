@@ -28,6 +28,7 @@
 #include "codegen.h"
 #include "driver.h"
 #include "expr.h"
+#include "fcf-support.h"
 #include "files.h"
 #include "intlimits.h"
 #include "iterator.h"
@@ -128,6 +129,9 @@ static void codegenFunctionTypeLocalLlvm(FunctionType* ft) {
 void FunctionType::codegenDef() {
   auto info = gGenInfo;
   auto outfile = info->cfile;
+
+  // This must hold, otherwise we'd be using class instances instead...
+  INT_ASSERT(fcfs::usePointerImplementation());
 
   if (outfile) {
     INT_FATAL("The C backend is not supported yet!");

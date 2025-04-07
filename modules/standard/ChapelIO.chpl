@@ -432,7 +432,17 @@ module ChapelIO {
 
   @chpldoc.nodoc
   proc chpl_stringify_wrapper(const args ...):string {
-    use IO only chpl_stringify;
+    import IO.{chpl_stringify};
     return chpl_stringify((...args));
+  }
+
+  // NOTE: Moved here to avoid circular dependencies in 'StringCasts.chpl'.
+  //
+  // Cast a procedure value to a string. This path handles both the legacy
+  // class types and the newer procedure pointer types.
+  //
+  @chpldoc.nodoc
+  operator :(x: ?t1, type t2: string) where isProcedureType(t1) {
+    return chpl_stringify_wrapper(x);
   }
 }

@@ -105,9 +105,10 @@ void computeAllCallSites(FnSymbol* fn);
 // The type of a function that takes a type and produces a type.
 using AdjustTypeFn = Type*(*)(Type* t);
 
-// Given 'adjustFn', walk all symbols and re-assign the type of symbol if the
-// type produced by 'adjustFn' differs from the symbol's current type.
-void adjustAllSymbolTypes(AdjustTypeFn adjustTypeFn);
+// Given 'adjustTypeFn', walk all symbols and re-assign the type of symbol if
+// the type produced by 'adjustTypeFn' differs from the symbol's current type.
+void adjustAllSymbolTypes(AdjustTypeFn adjustTypeFn,
+                          bool preserveRefLevels=true);
 
 //
 // collect set of symbols and vector of SymExpr; can be used to
