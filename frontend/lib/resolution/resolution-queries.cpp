@@ -5270,7 +5270,8 @@ resolutionResultFromMostSpecificCandidate(ResolutionContext* rc,
   QualifiedType exprType;
   QualifiedType yieldedType;
   if (msc.fn()) {
-    exprType = returnType(rc, msc.fn(), instantiationPoiScope);
+    auto& yieldAndRet = returnTypes(rc, msc.fn(), instantiationPoiScope);
+    exprType = yieldAndRet.second;
 
     if (!msc.promotedFormals().empty()) {
       yieldedType = exprType;
@@ -5283,7 +5284,7 @@ resolutionResultFromMostSpecificCandidate(ResolutionContext* rc,
     }
 
     if (msc.fn()->isIterator() && yieldedType.isUnknown()) {
-      yieldedType = yieldType(rc, msc.fn(), instantiationPoiScope);
+      yieldedType = yieldAndRet.first;
     }
   }
 
@@ -5391,56 +5392,57 @@ resolveFnCall(ResolutionContext* rc,
   optional<QualifiedType> retType;
   optional<QualifiedType> yieldedType;
   for (const MostSpecificCandidate& candidate : mostSpecific) {
-    if (candidate.fn() != nullptr) {
-      bool isIterator = candidate.fn()->isIterator();
+    if (candidate.fn() == nullptr) continue;
 
-      QualifiedType rt;
-      // TODO: Ideally we'd refactor things such that we instantiate some kind
-      // of hidden argument to these functions that is then returned. Alas, we
-      // still need this stuff to work with production, so we create this hack.
-      if (handleReflectionFunction(rc, candidate.fn(), call, rt)) {
-        CHPL_ASSERT(rt.isParam() && rt.hasParamPtr());
-      } else {
-        rt = returnType(rc, candidate.fn(),
-                        instantiationPoiScope);
+    QualifiedType rt;
+    if (handleReflectionFunction(rc, candidate.fn(), call, rt)) {
+      CHPL_ASSERT(rt.isParam() && rt.hasParamPtr());
+      CHPL_ASSERT(mostSpecific.numBest() == 1);
+      CHPL_ASSERT(candidate.fn()->numFormals() == 0);
+      retType = rt;
+      break;
+    }
+
+    bool isIterator = candidate.fn()->isIterator();
+    auto& yieldAndRet =
+      returnTypes(rc, candidate.fn(), instantiationPoiScope);
+    rt = yieldAndRet.second;
+
+    QualifiedType yt;
+
+    if (!candidate.promotedFormals().empty()) {
+      // this is actually a promotion; construct a promotion type instead.
+      yt = rt;
+      rt = QualifiedType(rt.kind(), PromotionIteratorType::get(context, instantiationPoiScope, candidate.fn(), candidate.promotedFormals()));
+    }
+
+    if (retType && retType->type() != rt.type()) {
+      // The actual iterator type for each overload will be different
+      // since it includes the TypedFnSignature, and different overloads
+      // are different TypedFnSignatures. Don't error, though.
+      //
+      // TODO: how do iterators + iterator groups work with return intent
+      // overloading?
+      if (!isIterator) {
+        context->error(candidate.fn(),
+                       nullptr,
+                       "return intent overload type does not match");
+      }
+    } else if (!retType) {
+      retType = rt;
+    }
+
+    if (isIterator || !yt.isUnknown()) {
+      if (yt.isUnknown()) {
+        yt = yieldAndRet.first;
       }
 
-      QualifiedType yt;
-
-      if (!candidate.promotedFormals().empty()) {
-        // this is actually a promotion; construct a promotion type instead.
-        yt = rt;
-        rt = QualifiedType(rt.kind(), PromotionIteratorType::get(context, instantiationPoiScope, candidate.fn(), candidate.promotedFormals()));
-      }
-
-      if (retType && retType->type() != rt.type()) {
-        // The actual iterator type for each overload will be different
-        // since it includes the TypedFnSignature, and different overloads
-        // are different TypedFnSignatures. Don't error, though.
-        //
-        // TODO: how do iterators + iterator groups work with return intent
-        // overloading?
-        if (!isIterator) {
-          context->error(candidate.fn(),
-                         nullptr,
-                         "return intent overload type does not match");
-        }
-      } else if (!retType) {
-        retType = rt;
-      }
-
-      if (isIterator || !yt.isUnknown()) {
-        if (yt.isUnknown()) {
-          yt = yieldType(rc, candidate.fn(), instantiationPoiScope);
-        }
-
-        if (yieldedType && yieldedType->type() != yt.type()) {
-          context->error(candidate.fn(),
-                         nullptr,
-                         "return intent overload type does not match");
-        } else if (!yieldedType) {
-          yieldedType = yt;
-        }
+      if (yieldedType && yieldedType->type() != yt.type()) {
+        context->error(candidate.fn(),
+                       nullptr,
+                       "return intent overload type does not match");
+      } else if (!yieldedType) {
+        yieldedType = yt;
       }
     }
   }

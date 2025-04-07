@@ -365,6 +365,14 @@ types::QualifiedType yieldType(ResolutionContext* rc,
                                const TypedFnSignature* sig,
                                const PoiScope* poiScope);
 
+/* Returns a pair of (yieldType(), returnType()) for the function.
+   These can differ if the function has ITER kind, which may
+   have an 'int' return type but creates an iterable yielding 'int' when called. */
+const std::pair<types::QualifiedType, types::QualifiedType>&
+returnTypes(ResolutionContext* rc,
+            const TypedFnSignature* sig,
+            const PoiScope* poiScope);
+
 /**
   Compute the types for any generic 'out' formal types after instantiation
   of any other generic arguments.
