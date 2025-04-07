@@ -300,9 +300,36 @@ static bool isNestedInMethod(Context* context, const Function* fn) {
   return false;
 }
 
-Resolver
-Resolver::createForInitialSignature(ResolutionContext* rc, const Function* fn,
-                                    ResolutionResultByPostorderID& byId) {
+// A compiler-generated init on an inheriting class may use type symbols
+// it doesn't have direct access to, but its parent does, which production
+// allows to resolve.
+// Implement this by saving the parent class in the resolver for later use.
+static void setInitResolverSuper(Resolver& r, const Function* fn) {
+  if (fn->name() == USTR("init") && fn->id().isFabricatedId()) {
+    // Determine init receiver type
+    auto ct = r.inCompositeType;
+    if (!ct) {
+      fn->thisFormal()->traverse(r);
+      auto receiverType = r.byPostorder.byAst(fn->thisFormal()).type();
+      if (receiverType.hasTypePtr()) {
+        ct = receiverType.type()->getCompositeType();
+      }
+    }
+    CHPL_ASSERT(ct);
+
+    if (auto bct = ct->toBasicClassType()) {
+      if (auto parent = bct->parentClassType()) {
+        if (!parent->isObjectType()) {
+          r.superInitClassType = parent;
+        }
+      }
+    }
+  }
+}
+
+Resolver Resolver::createForInitialSignature(
+    ResolutionContext* rc, const Function* fn,
+    ResolutionResultByPostorderID& byId) {
   auto context = rc->context();
   auto ret = Resolver(context, fn, byId, nullptr);
   ret.signatureOnly = true;
@@ -333,6 +360,8 @@ Resolver::createForInitialSignature(ResolutionContext* rc, const Function* fn,
     ret.allowReceiverScopes = true;
   }
 
+  setInitResolverSuper(ret, fn);
+
   return ret;
 }
 
@@ -355,6 +384,8 @@ Resolver::createForInstantiatedSignature(ResolutionContext* rc,
   } else if (isNestedInMethod(context, fn)) {
     ret.allowReceiverScopes = true;
   }
+
+  setInitResolverSuper(ret, fn);
 
   return ret;
 }
@@ -429,6 +460,8 @@ Resolver::createForFunction(ResolutionContext* rc,
 
   // First, set the formal types using the types in the signature.
   setFormalTypesUsingSignature(ret);
+
+  setInitResolverSuper(ret, fn);
 
   // Then, re-resolve the formals to set e.g., init-exprs.
   int nFormals = ret.typedSignature->numFormals();
@@ -3712,6 +3745,19 @@ MatchingIdsWithName Resolver::lookupIdentifier(
                      /* methodLookupHelper */ fHelper,
                      /* receiverScopeHelper */ helper,
                      ident->name(), config, ident->id());
+
+  // For an inheriting compiler-generated initializer, allow performing lookup
+  // as though we can see anything the superclass can.
+  if (m.isEmpty() && this->superInitClassType) {
+    const Scope* superClassScope =
+        scopeForId(context, this->superInitClassType->id());
+    m = lookupNameInScopeWithWarnings(
+                     context, superClassScope,
+                     /* methodLookupHelper */ fHelper,
+                     /* receiverScopeHelper */ helper,
+                     ident->name(), config, ident->id());
+  }
+
 
   if (!m.isEmpty()) {
     // We might be ambiguous, but due to having found multiple parenless procs.
