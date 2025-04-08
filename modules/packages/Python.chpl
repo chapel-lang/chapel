@@ -3120,7 +3120,7 @@ module Python {
       Get an element from the Python array. This results in a modifiable
       reference to the element of the Python array. The index must be either a
       single `int` (for 1-D arrays) or a tuple of `int`'s where the number of
-      inidices is equal to the number of dimensions of the array. This method
+      indices is equal to the number of dimensions of the array. This method
       does not currently support slicing.
 
       .. warning::
