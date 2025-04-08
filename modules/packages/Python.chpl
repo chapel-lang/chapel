@@ -2956,11 +2956,11 @@ module Python {
     // See https://docs.python.org/3/library/struct.html#format-characters
     // and https://docs.python.org/3/library/array.html for the list of format
     // characters
-    // Python defines minimum bitwidths, not exact bitwidths, which means we
-    // if we soleyl rely on the format string we may have portability issues
+    // Python defines minimum bitwidths, not exact bitwidths, which means
+    // if we soley rely on the format string we may have portability issues
     // so rely solely on itemsize, and use the format string to help with
-    // signdness. Bools are a special case, as Chapel does not define a specific
-    // bitwidth for bools
+    // signedness. Bools are a special case, as Chapel does not define a
+    // specific bitwidth for bools
 
     if eltType == bool {
       return format.deref() == "?".toByte();
