@@ -43,7 +43,7 @@ module ChapelDynamicLoading {
   param chpl_defaultProcBufferSize = 512;
   param chpl_msbUintMask = (1 << 63);
 
-  // Make this private since we wouldn't normally want to change it.
+  @unstable()
   private config const chpl_dynamicLoadingSupport = chpl_dynamicLoading.EAGER;
 
   private inline proc isDynamicLoadingEnabled {
