@@ -652,6 +652,7 @@ addCommandLineFileDirectories(std::vector<std::string>& searchPath,
 void setupModuleSearchPaths(
                   Context* context,
                   const std::string& chplHome,
+                  const std::string& moduleRoot,
                   bool minimalModules,
                   const std::string& chplLocaleModel,
                   bool enableTaskTracking,
@@ -668,10 +669,13 @@ void setupModuleSearchPaths(
       "setupModuleSearchPaths should be called before any queries are run");
 
   std::string modRoot;
-  if (!minimalModules) {
+  if (moduleRoot.empty()) {
     modRoot = chplHome + "/modules";
   } else {
-    modRoot = chplHome + "/modules/minimal";
+    modRoot = moduleRoot;
+  }
+  if (minimalModules) {
+    modRoot += "/minimal";
   }
 
   std::string internal = modRoot + "/internal";
@@ -756,6 +760,7 @@ void setupModuleSearchPaths(
 
 
 void setupModuleSearchPaths(Context* context,
+                            const std::string& moduleRoot,
                             bool minimalModules,
                             bool enableTaskTracking,
                             const std::vector<std::string>& cmdLinePaths,
@@ -770,6 +775,7 @@ void setupModuleSearchPaths(Context* context,
   auto chplModulePath = (it != chplEnv->end()) ? it->second : "";
   setupModuleSearchPaths(context,
                          chplHomeStr,
+                         moduleRoot,
                          minimalModules,
                          chplEnv->at("CHPL_LOCALE_MODEL"),
                          false,
@@ -781,6 +787,15 @@ void setupModuleSearchPaths(Context* context,
                          {},  // prependStandardModulePaths
                          cmdLinePaths,
                          inputFilenames);
+}
+
+void setupModuleSearchPaths(Context* context,
+                            bool minimalModules,
+                            bool enableTaskTracking,
+                            const std::vector<std::string>& cmdLinePaths,
+                            const std::vector<std::string>& inputFilenames) {
+  setupModuleSearchPaths(context, "", minimalModules, enableTaskTracking,
+                                      cmdLinePaths, inputFilenames);
 }
 
 bool

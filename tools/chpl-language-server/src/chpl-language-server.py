@@ -42,6 +42,7 @@ import json
 import re
 import sys
 import importlib.util
+import copy
 
 import chapel
 from chapel.lsp import location_to_range, error_to_diagnostic
@@ -140,7 +141,6 @@ from lsprotocol.types import (
     CallHierarchyIncomingCall,
 )
 
-import argparse
 import configargparse
 import sys
 import functools
@@ -671,9 +671,16 @@ class EndMarkerPattern:
 
 
 class ContextContainer:
-    def __init__(self, file: str, config: Optional["WorkspaceConfig"]):
+    def __init__(
+        self,
+        file: str,
+        cls_config: "CLSConfig",
+        config: Optional["WorkspaceConfig"],
+    ):
+        self.cls_config: CLSConfig = cls_config
         self.config: Optional["WorkspaceConfig"] = config
         self.file_paths: List[str] = []
+        self.std_module_root: str = ""
         self.module_paths: List[str] = [os.path.dirname(os.path.abspath(file))]
         self.context: chapel.Context = chapel.Context()
         self.file_infos: List["FileInfo"] = []
@@ -687,7 +694,12 @@ class ContextContainer:
                 self.module_paths = file_config["module_dirs"]
                 self.file_paths = file_config["files"]
 
-        self.context.set_module_paths(self.module_paths, self.file_paths)
+        self.std_module_root = self.cls_config.get("std_module_root")
+        self.module_paths.extend(self.cls_config.get("module_dir"))
+
+        self.context._set_module_paths(
+            self.std_module_root, self.module_paths, self.file_paths
+        )
 
     def register_signature(self, sig: chapel.TypedSignature) -> str:
         """
@@ -734,7 +746,9 @@ class ContextContainer:
         """
 
         self.context.advance_to_next_revision(False)
-        self.context.set_module_paths(self.module_paths, self.file_paths)
+        self.context._set_module_paths(
+            self.std_module_root, self.module_paths, self.file_paths
+        )
 
         with self.context.track_errors() as errors:
             for fi in self.file_infos:
@@ -1365,8 +1379,20 @@ class CLSConfig:
 
     def _construct_parser(self):
         self.parser = configargparse.ArgParser(
-            default_config_files=[],  # Empty for now because cwd() is odd with VSCode etc.
-            config_file_parser_class=configargparse.YAMLConfigFileParser,
+            default_config_files=[
+                os.path.join(os.getcwd(), "chpl-language-server.cfg"),
+                os.path.join(os.getcwd(), ".chpl-language-server.cfg"),
+                os.path.join(os.getcwd(), "Mason.toml"),
+            ],
+            config_file_parser_class=configargparse.CompositeConfigParser(
+                [
+                    configargparse.YAMLConfigFileParser,
+                    configargparse.TomlConfigParser(
+                        ["tool.chpl-language-server"]
+                    ),
+                ]
+            ),
+            args_for_setting_config_path=["--config", "-c"],
         )
 
         def add_bool_flag(name: str, dest: str, default: bool):
@@ -1379,6 +1405,12 @@ class CLSConfig:
             self.parser.set_defaults(**{dest: default})
 
         add_bool_flag("resolver", "resolver", False)
+        self.parser.add_argument(
+            "--std-module-root", default="", help=configargparse.SUPPRESS
+        )
+        self.parser.add_argument(
+            "--module-dir", "-M", action="append", default=[]
+        )
         add_bool_flag("type-inlays", "type_inlays", True)
         add_bool_flag("param-inlays", "param_inlays", True)
         add_bool_flag("literal-arg-inlays", "literal_arg_inlays", True)
@@ -1401,25 +1433,25 @@ class CLSConfig:
         valid_choices = ["all", "none"] + list(EndMarkerPattern.all().keys())
         for marker in self.args["end_markers"]:
             if marker not in valid_choices:
-                raise argparse.ArgumentError(
+                raise configargparse.ArgumentError(
                     None, f"Invalid end marker choice: {marker}"
                 )
         n_markers = len(self.args["end_markers"])
         if n_markers != len(set(self.args["end_markers"])):
-            raise argparse.ArgumentError(
+            raise configargparse.ArgumentError(
                 None, "Cannot specify the same end marker multiple times"
             )
         if "none" in self.args["end_markers"] and n_markers > 1:
-            raise argparse.ArgumentError(
+            raise configargparse.ArgumentError(
                 None, "Cannot specify 'none' with other end marker choices"
             )
         if "all" in self.args["end_markers"] and n_markers > 1:
-            raise argparse.ArgumentError(
+            raise configargparse.ArgumentError(
                 None, "Cannot specify 'all' with other end marker choices"
             )
 
     def parse_args(self):
-        self.args = vars(self.parser.parse_args())
+        self.args = copy.deepcopy(vars(self.parser.parse_args()))
         self._parse_end_markers()
         self._validate_end_markers()
 
@@ -1431,6 +1463,7 @@ class ChapelLanguageServer(LanguageServer):
     def __init__(self, config: CLSConfig):
         super().__init__("chpl-language-server", "v0.1")
 
+        self.config: CLSConfig = config
         self.contexts: Dict[str, ContextContainer] = {}
         self.context_ids: Dict[ContextContainer, str] = {}
         self.context_id_counter = 0
@@ -1530,7 +1563,7 @@ class ChapelLanguageServer(LanguageServer):
         if path in self.contexts:
             return self.contexts[path]
 
-        context = ContextContainer(path, workspace_config)
+        context = ContextContainer(path, self.config, workspace_config)
         for file in context.file_paths:
             self.contexts[file] = context
         self.contexts[path] = context
