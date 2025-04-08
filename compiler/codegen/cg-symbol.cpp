@@ -2599,27 +2599,18 @@ void FnSymbol::codegenPrototype() {
                                                       argAttrs,
                                                       argNames);
 
-    llvm::Function *existing;
-
-    // Look for the function in the LayeredValueTable
-    // or in the module.
-    existing = getFunctionLLVM(cname);
-
-    // Check to see if another function already exists.
-    if( existing ) {
-      // other function with the same name exists!
-      // check that the prototype matches.
+    if (auto existing = getFunctionLLVM(cname)) {
+      // Another function with the same name exists, so emit last ditch errors.
       if(!existing->empty()) {
-        INT_FATAL(this, "Redefinition of a function");
+        USR_FATAL(this, "Redefinition of a function");
       }
       if(existing->arg_size() != argNames.size()) {
-        INT_FATAL(this,
+        USR_FATAL(this,
                   "Redefinition of a function with different number of args");
       }
       if(fTy != existing->getFunctionType()) {
-        INT_FATAL(this, "Redefinition of a function with different arg types");
+        USR_FATAL(this, "Redefinition of a function with different arg types");
       }
-
       return;
     }
 
