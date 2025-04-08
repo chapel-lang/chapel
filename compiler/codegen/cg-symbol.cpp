@@ -1908,7 +1908,7 @@ llvm::Type* TypeSymbol::getLLVMType() {
   if (auto* stype = llvm::dyn_cast_or_null<llvm::StructType>(llvmImplType)) {
     if (auto* aggType = toAggregateType(this->type)) {
       if (aggType->isClass()) {
-        return stype->getPointerTo();
+        return llvm::PointerType::getUnqual(stype);
       }
     }
   }
@@ -2138,7 +2138,7 @@ codegenFunctionTypeLLVM(FnSymbol* fn, llvm::AttributeList& attrs,
     // Add type for inalloca argument
     if (CGI->usesInAlloca()) {
       auto argStruct = CGI->getArgStruct();
-      argTys.push_back(argStruct->getPointerTo());
+      argTys.push_back(llvm::PointerType::getUnqual(argStruct));
       argNames.push_back("inalloca_arg");
 
       // Adjust attributes for inalloca argument
@@ -2403,7 +2403,7 @@ GenRet FnSymbol::codegenCast(GenRet fnPtr) {
 #ifdef HAVE_LLVM
     // now cast to correct function type
     llvm::FunctionType* fnType = llvm::cast<llvm::FunctionType>(t.type);
-    llvm::PointerType *ptrToFnType = llvm::PointerType::get(fnType, 0);
+    llvm::PointerType *ptrToFnType = llvm::PointerType::getUnqual(fnType);
     fngen.val = info->irBuilder->CreateBitCast(fnPtr.val, ptrToFnType);
     trackLLVMValue(fngen.val);
 #endif
@@ -3163,7 +3163,12 @@ GenRet FnSymbol::codegen() {
       llvm::Intrinsic::ID ID = llvm::Function::lookupIntrinsicID(cname);
       if (ID == llvm::Intrinsic::not_intrinsic && TII)
         ID = static_cast<llvm::Intrinsic::ID>(TII->lookupName(cname));
+#if LLVM_VERSION_MAJOR >= 20
+      ret.val = llvm::Intrinsic::getOrInsertDeclaration(info->module, ID, Types);
+#else
       ret.val = llvm::Intrinsic::getDeclaration(info->module, ID, Types);
+#endif
+
       if (!ret.val) {
         USR_FATAL("Could not find LLVM intrinsic %s", cname);
       }

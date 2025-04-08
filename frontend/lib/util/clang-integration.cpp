@@ -282,10 +282,18 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
 
     auto diagOptions = wrapCreateAndPopulateDiagOpts(cc1argsCstrs);
     auto diagClient = new clang::TextDiagnosticBuffer();
+#if LLVM_VERSION_MAJOR >= 20
+      auto clangDiags =
+      clang::CompilerInstance::createDiagnostics(*llvm::vfs::getRealFileSystem(),
+                                                 diagOptions.release(),
+                                                 diagClient,
+                                                 /* owned */ true);
+#else
     auto clangDiags =
       clang::CompilerInstance::createDiagnostics(diagOptions.release(),
                                                  diagClient,
                                                  /* owned */ true);
+#endif
     Clang->setDiagnostics(&*clangDiags);
 
     // replace current compiler invocation with one including args and diags
@@ -380,10 +388,18 @@ precompiledHeaderContainsNameQuery(Context* context,
     auto diagOptions = wrapCreateAndPopulateDiagOpts(cc1argsCstrs);
     auto diagClient = new clang::TextDiagnosticPrinter(llvm::errs(),
                                                        &*diagOptions);
+#if LLVM_VERSION_MAJOR >= 20
+    auto clangDiags =
+      clang::CompilerInstance::createDiagnostics(*llvm::vfs::getRealFileSystem(),
+                                                 diagOptions.release(),
+                                                 diagClient,
+                                                 /* owned */ true);
+#else
     auto clangDiags =
       clang::CompilerInstance::createDiagnostics(diagOptions.release(),
                                                  diagClient,
                                                  /* owned */ true);
+#endif
     Clang->setDiagnostics(&*clangDiags);
 
     bool success =

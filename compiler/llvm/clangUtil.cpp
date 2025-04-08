@@ -1686,10 +1686,18 @@ void setupClang(GenInfo* info, std::string mainFile)
     chpl::util::wrapCreateAndPopulateDiagOpts(clangInfo->driverArgsCStrings);
   auto diagClient = new clang::TextDiagnosticPrinter(llvm::errs(),
                                                      &*diagOptions);
+#if LLVM_VERSION_MAJOR >= 20
   auto clangDiags =
-    clang::CompilerInstance::createDiagnostics(diagOptions.release(),
+    clang::CompilerInstance::createDiagnostics(*llvm::vfs::getRealFileSystem(),
+                                               diagOptions.get(),
                                                diagClient,
                                                /* owned */ true);
+#else
+  auto clangDiags =
+    clang::CompilerInstance::createDiagnostics(diagOptions.get(),
+                                               diagClient,
+                                               /* owned */ true);
+#endif
   Clang->setDiagnostics(&*clangDiags);
 
   if (usingGpuLocaleModel()) {
@@ -1799,7 +1807,11 @@ void setupClang(GenInfo* info, std::string mainFile)
   }
 
   // Create the compilers actual diagnostics engine.
+#if LLVM_VERSION_MAJOR >= 20
+  clangInfo->Clang->createDiagnostics(*llvm::vfs::getRealFileSystem());
+#else
   clangInfo->Clang->createDiagnostics();
+#endif
   if (!clangInfo->Clang->hasDiagnostics())
     INT_FATAL("Bad diagnostics from clang");
 
