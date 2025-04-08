@@ -8,7 +8,26 @@ set(QTHREADS_DEFAULT_STACK_SIZE 32768 CACHE STRING "Default qthread stack size."
 set(QTHREADS_HASHMAP hashmap CACHE STRING "Which hashmap implementation to use. Valid values are \"hashmap\" and \"lf_hashmap\".")
 set(QTHREADS_DICT_TYPE shavit CACHE STRING "Which dictionary implementation to use. Valid values are \"shavit\", \"trie\", and \"simple\".")
 set(QTHREADS_TIMER_TYPE gettimeofday CACHE STRING "Which timer implementation to use. Valid values are \"clock_gettime\", \"mach\", \"gettimeofday\", and \"gethrtime\".")
-set(QTHREADS_CONTEXT_SWAP_IMPL fastcontext CACHE STRING "Which context swap implementation to use. Valid values are \"system\" and \"fastcontext\".")
+# Only default to the fastcontext implementation in cases where it's confirmed to work.
+# Note: apparently 32-bit x86 may show up as i386, i486, i586, or i686.
+# Little-endian powerpc variants are excluded here as they're known not to work
+# due to an unresolved bug in our fastcontext code.
+if ("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64" OR
+    "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "amd64" OR
+    "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "aarch64" OR
+    "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "arm64" OR
+    "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "arm" OR
+    "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "i386" OR
+    "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "i486" OR
+    "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "i586" OR
+    "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "i686" OR
+    "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "ppc64" OR
+    "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "ppc")
+  set(QTHREADS_CONTEXT_SWAP_IMPL fastcontext CACHE STRING "Which context swap implementation to use. Valid values are \"system\" and \"fastcontext\".")
+else()
+  message(WARNING "No fast context swap available on this system, falling back to the system-provided one.")
+  set(QTHREADS_CONTEXT_SWAP_IMPL system CACHE STRING "Which context swap implementation to use. Valid values are \"system\" and \"fastcontext\".")
+endif()
 set(QTHREADS_HWLOC_GET_TOPOLOGY_FUNCTION "" CACHE STRING "function to get hwloc topology (otherwise uses hwloc_topology_init and hwloc_topology_load)")
 set(QTHREADS_GUARD_PAGES OFF CACHE BOOL "Whether or not to guard memory pages to help with debugging stack overflows. Default is OFF.")
 set(QTHREADS_CONDWAIT_QUEUE OFF CACHE BOOL "Use a waiting queue based on pthread condition variables instead of a spin-based queue for inter-thread communication. Default is OFF.")
