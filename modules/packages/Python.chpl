@@ -3134,8 +3134,7 @@ module Python {
       ``PyArray`` object, it does not need to be specified here.
     */
     pragma "docs only"
-    proc this(type eltType = this.eltType, idx) ref : eltType throws
-    where isValidArrayIndex(idx) {
+    proc this(type eltType = this.eltType, idx) ref : eltType throws {
       compilerError("docs only");
     }
 
