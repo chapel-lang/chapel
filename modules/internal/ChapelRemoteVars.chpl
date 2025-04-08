@@ -25,13 +25,9 @@ module ChapelRemoteVars {
   class _remoteVarContainer {
     var containedValue;
 
-    proc init(in containedValue) {
-      this.containedValue = containedValue;
-    }
-
-    proc init(type containedValueType) {
+    proc type _noinit(type containedValueType) {
       var tmp: containedValueType = noinit;
-      this.containedValue = tmp;
+      return new _remoteVarContainer(tmp);
     }
   }
 
@@ -93,7 +89,7 @@ module ChapelRemoteVars {
     // We use a specific overload of the _remoteVarContainer constructor
     // which accepts a type and uses noinit.
     var c: owned _remoteVarContainer(inType)?;
-    on loc do c = new _remoteVarContainer(inType);
+    on loc do c = _remoteVarContainer._noinit(inType);
     return new _remoteVarWrapper(try! c : owned _remoteVarContainer(inType));
   }
 
