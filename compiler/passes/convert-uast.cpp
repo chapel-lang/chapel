@@ -3523,8 +3523,9 @@ struct Converter final : UastConverter {
       if (auto prevInitExpr = multiState->prevInitExpr) {
         Expr* replaceWith;
         if (prevInitExpr->isNoInitExpr()) {
-          // for remote variables, don't persist 'noinit', since we just
-          // select a different overload of buildRemoteWrapper.
+          // for remote variables, don't bother trying to replace 'noinit',
+          // since we already threw it away and selected a different overload of
+          // buildRemoteWrapper.
           replaceWith = isRemote ? nullptr : prevInitExpr->copy();
         } else if (typeExpr) {
           replaceWith = new CallExpr("chpl__readXX", new SymExpr(varSym));
