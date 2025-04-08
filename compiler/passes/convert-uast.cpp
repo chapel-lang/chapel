@@ -2298,7 +2298,7 @@ struct Converter final : UastConverter {
     // Field multi-decl desugaring happens later in build.cpp and produces
     // different code; don't do redundant work here.
     bool isField = parsing::idIsField(context, node->id());
-    if (!isField) {
+    if (isField) {
       // post-parse checks should rule this out
       CHPL_ASSERT(!node->destination());
     }
