@@ -6,6 +6,7 @@ UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
 export ARKOUDA_DEP_DIR=/hpelustre/chapelu/arkouda-deps
 export ARKOUDA_SKIP_CHECK_DEPS=true
+export CHPL_TEST_ARKOUDA_MULTI_DIM=true
 
 export CHPL_TEST_ARKOUDA_PERF=false
 export ARKOUDA_DEVELOPER=true
