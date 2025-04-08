@@ -573,9 +573,20 @@ class MatchingIdsWithName {
   }
 
   void mark(Context* context) const {
-    for (auto const& elt : idvs_) {
-      context->markPointer(&elt.id_);
+    for (const auto& idv : idvs_) {
+      idv.id_.mark(context);
     }
+  }
+
+  void swap(MatchingIdsWithName& other) {
+    idvs_.swap(other.idvs_);
+    std::swap(encounteredFnNonFnConflict_,
+              other.encounteredFnNonFnConflict_);
+  }
+
+  static bool update(MatchingIdsWithName& keep,
+                     MatchingIdsWithName& addin) {
+    return defaultUpdate(keep, addin);
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;

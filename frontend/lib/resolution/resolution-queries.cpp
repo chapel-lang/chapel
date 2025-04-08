@@ -4460,42 +4460,14 @@ considerCompilerGeneratedCandidates(ResolutionContext* rc,
   candidates.addCandidate(instantiated.candidate());
 }
 
-static MatchingIdsWithName
-lookupCalledExpr(Context* context,
-                 const Scope* scope,
-                 const CallInfo& ci,
-                 CheckedScopes& visited) {
-
-  const MethodLookupHelper* lookupHelper = nullptr;
-
-  // For method calls, also consider the receiver scope.
-  if (ci.isMethodCall() || ci.isOpCall()) {
-    // TODO: should types of all arguments be considered for an op call?
-    CHPL_ASSERT(ci.numActuals() >= 1);
-    QualifiedType receiverType = ci.actual(0).type();
-    ReceiverScopeTypedHelper typedHelper;
-    lookupHelper = typedHelper.methodLookupForType(context, receiverType);
-  }
-
-  LookupConfig config = LOOKUP_DECLS | LOOKUP_IMPORT_AND_USE | LOOKUP_PARENTS;
-
-  // For parenless non-method calls, only find the innermost match
-  if (ci.isParenless() && !ci.isMethodCall()) {
-    config |= LOOKUP_INNERMOST;
-  } else {
-    config |= LOOKUP_STOP_NON_FN;
-  }
-
-  if (ci.isMethodCall()) {
-    config |= LOOKUP_ONLY_METHODS_FIELDS;
-  }
-
-  if (ci.isOpCall()) {
-    config |= LOOKUP_METHODS;
-  }
-
-  UniqueString name = ci.name();
-
+static MatchingIdsWithName lookupCalledExprImpl(Context* context,
+                                                const Scope* scope,
+                                                UniqueString name,
+                                                const QualifiedType& receiverType,
+                                                LookupConfig config,
+                                                CheckedScopes& visited) {
+  ReceiverScopeTypedHelper typedHelper;
+  auto lookupHelper = typedHelper.methodLookupForType(context, receiverType);
   auto ret = lookupNameInScopeWithSet(context, scope,
                                       lookupHelper,
                                       /* receiverScopeHelper */ nullptr,
@@ -4517,6 +4489,69 @@ lookupCalledExpr(Context* context,
   }
 
   return ret;
+}
+
+static MatchingIdsWithName const& cachedCandidates(Context* context,
+                                                   const Scope* scope,
+                                                   UniqueString name,
+                                                   QualifiedType receiverType,
+                                                   LookupConfig config) {
+  QUERY_BEGIN(cachedCandidates, context, scope, name, receiverType, config);
+
+  CheckedScopes visited;
+  auto ret =
+    lookupCalledExprImpl(context, scope, name, receiverType, config, visited);
+
+  return QUERY_END(ret);
+}
+
+static MatchingIdsWithName
+lookupCalledExpr(Context* context,
+                 const Scope* scope,
+                 const CallInfo& ci,
+                 CheckedScopes& visited) {
+
+  auto receiverType = QualifiedType();
+
+  // For method calls, also consider the receiver scope.
+  if (ci.isMethodCall() || ci.isOpCall()) {
+    // TODO: should types of all arguments be considered for an op call?
+    CHPL_ASSERT(ci.numActuals() >= 1);
+    receiverType = ci.actual(0).type();
+  }
+
+  LookupConfig config = LOOKUP_DECLS | LOOKUP_IMPORT_AND_USE | LOOKUP_PARENTS;
+
+  // For parenless non-method calls, only find the innermost match
+  if (ci.isParenless() && !ci.isMethodCall()) {
+    config |= LOOKUP_INNERMOST;
+  } else {
+    config |= LOOKUP_STOP_NON_FN;
+  }
+
+  if (ci.isMethodCall()) {
+    config |= LOOKUP_ONLY_METHODS_FIELDS;
+  }
+
+  if (ci.isOpCall()) {
+    config |= LOOKUP_METHODS;
+  }
+
+  UniqueString name = ci.name();
+
+  // If this is a cacheable lookup (i.e., one that doesn't depend on
+  // prior state), use cachedCandidates, which is the same as invoking
+  // lookupCalledExprImpl except that it doesn't populate visited
+  // and caches the result. This is intended to optimize cases where
+  // the same function is re-resolved with different types, but expressions
+  // in its body always refer to the same thing.
+  bool tryCache = visited.size() == 0;
+  if (tryCache) {
+    return cachedCandidates(context, scope, name, receiverType, config);
+  }
+
+  return lookupCalledExprImpl(context, scope, name, receiverType, config,
+                           visited);
 }
 
 // Container for ordering groups of last resort candidates by resolution
