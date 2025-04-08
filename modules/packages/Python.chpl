@@ -2957,11 +2957,10 @@ module Python {
     // and https://docs.python.org/3/library/array.html for the list of format
     // characters
     // Python defines minimum bitwidths, not exact bitwidths, which means
-    // if we soley rely on the format string we may have portability issues
+    // if we solely rely on the format string we may have portability issues
     // so rely solely on itemsize, and use the format string to help with
     // signedness. Bools are a special case, as Chapel does not define a
     // specific bitwidth for bools
-
     if eltType == bool {
       return format.deref() == "?".toByte();
     } else {
@@ -2969,13 +2968,25 @@ module Python {
         return false;
       }
       if isIntegralType(eltType) {
+        // the signedness of 'c' is implementation defined, so no need to check
+        if format.deref() == 'c'.toByte() then return true;
+
         var isSigned = format.deref() == 'b'.toByte() ||
                        format.deref() == 'h'.toByte() ||
                        format.deref() == 'i'.toByte() ||
                        format.deref() == 'l'.toByte() ||
                        format.deref() == 'q'.toByte() ||
                        format.deref() == 'n'.toByte();
-        return isSigned && isIntType(eltType);
+        if isSigned && isIntType(eltType) then
+          return true;
+
+        var isUnsigned = format.deref() == 'B'.toByte() ||
+                         format.deref() == 'H'.toByte() ||
+                         format.deref() == 'I'.toByte() ||
+                         format.deref() == 'L'.toByte() ||
+                         format.deref() == 'Q'.toByte() ||
+                         format.deref() == 'N'.toByte();
+        return isUnsigned && isUintType(eltType);
       } else if isRealType(eltType) || isImagType(eltType) {
         var isFP = format.deref() == 'f'.toByte() ||
                    format.deref() == 'd'.toByte() ||
@@ -3580,23 +3591,6 @@ module Python {
     where isSubtype(v.type, Value) || isSubtype(v.type, NoneType) {
     return v.str();
   }
-
-  // operator+(lhs: borrowed Value?, rhs: borrowed Value?): owned Value throws {
-  //   var lhs_ = (lhs:borrowed class);
-  //   var res = lhs_.call(PyObjectPtr, "__add__", rhs);
-  //   if res == Py_NotImplemented then
-  //     res = (rhs:borrowed class).call(PyObjectPtr, "__radd__", lhs);
-  //   return new Value(lhs_.interpreter, res, isOwned=true);
-  // }
-  // operator+=(ref lhs: owned Value?, rhs: borrowed Value?) throws do
-  //   lhs = (lhs:borrowed class) + rhs;
-
-
-  // operator==(lhs: borrowed Value, rhs: borrowed Value): bool throws do
-  //   return lhs.call(bool, "__eq__", rhs);
-  // operator!=(lhs: borrowed Value, rhs: borrowed Value): bool throws do
-  //   return lhs.call(bool, "__ne__", rhs);
-  // // ....
 
   Value implements writeSerializable;
   Function implements writeSerializable;
