@@ -752,6 +752,7 @@ struct TConverter final : UastConverter {
 
   // Create a new temporary. The type used for it must be supplied.
   Symbol* makeNewTemp(const types::QualifiedType& qt, bool insertDef=true);
+  Symbol* makeNewTemp(::Qualifier qual, Type* t, bool insertDef=true);
 
   // Store 'e' in a temporary if it does not already refer to one. The type
   // for the temporary must be provided and cannot easily be retrieved from
@@ -1004,6 +1005,9 @@ struct TConverter final : UastConverter {
   bool enter(const ExternBlock* node, RV& rv);
   void exit(const ExternBlock* node, RV& rv);
 
+  bool enter(const Select* node, RV& rv);
+  void exit(const Select* node, RV& rv);
+
   bool enter(const AstNode* node, RV& rv);
   void exit(const AstNode* node, RV& rv);
 };
@@ -1167,7 +1171,9 @@ void TConverter::convertFunctionsToConvert() {
   }
 
   for (auto pair : v) {
-    convertFunction(pair.first);
+    if (fns.find(pair.first) == fns.end()) {
+      convertFunction(pair.first);
+    }
   }
 
   // Create 'chpl_gen_main()' as well as an empty 'main()' function if needed.
@@ -2803,15 +2809,20 @@ TConverter::defaultValueForType(const types::Type* t,
 }
 
 Symbol*
-TConverter::makeNewTemp(const types::QualifiedType& qt, bool insertDef) {
+TConverter::makeNewTemp(::Qualifier qual, Type* t, bool insertDef) {
   auto ret = newTemp();
   ret->addFlag(FLAG_EXPR_TEMP);
-  ret->qual = convertQualifier(qt.kind());
-  ret->type = convertType(qt.type());
+  ret->qual = qual;
+  ret->type = t;
 
   if (insertDef) insertStmt(new DefExpr(ret));
 
   return ret;
+}
+
+Symbol*
+TConverter::makeNewTemp(const types::QualifiedType& qt, bool insertDef) {
+  return makeNewTemp(convertQualifier(qt.kind()), convertType(qt.type()), insertDef);
 }
 
 SymExpr*
@@ -2820,11 +2831,18 @@ TConverter::storeInTempIfNeeded(Expr* e, const types::QualifiedType& qt) {
     return se;
   }
 
-  // Prevent default-constructed 'QualifiedType' from slipping in.
-  INT_ASSERT(qt.hasTypePtr());
+  Symbol* t = nullptr;
 
-  // otherwise, store the value in a temp
-  auto t = makeNewTemp(qt);
+  if (qt.isUnknown()) {
+    t = makeNewTemp(e->qualType().getQual(), e->typeInfo());
+  } else {
+    // Prevent default-constructed 'QualifiedType' from slipping in.
+    INT_ASSERT(qt.hasTypePtr());
+
+    // otherwise, store the value in a temp
+    t = makeNewTemp(qt);
+  }
+
   insertStmt(new CallExpr(PRIM_MOVE, t, e));
   return new SymExpr(t);
 }
@@ -4050,7 +4068,8 @@ void TConverter::ActualConverter::convertActual(const FormalActual& fa) {
     INT_ASSERT(astActual);
 
     // Convert the actual and leave.
-    std::get<Expr*>(slot) = tc_->convertExpr(astActual, rv_);
+    auto actualExpr = tc_->convertExpr(astActual, rv_);
+    std::get<Expr*>(slot) = tc_->storeInTempIfNeeded(actualExpr, {});
 
     return;
   }
@@ -5070,6 +5089,157 @@ bool TConverter::enter(const ExternBlock* node, RV& rv) {
 }
 
 void TConverter::exit(const ExternBlock* node, RV& rv) {}
+
+static SymExpr* makeCaseCond(TConverter& tc, TConverter::RV& rv,
+                             const uast::When* when,
+                             SymExpr* selectExpr,
+                             const uast::AstNode* cs) {
+  auto re = rv.byAst(cs);
+
+  // Grab the '==' ResolvedFunction
+  const AssociatedAction* action = nullptr;
+  for (const auto& a : re.associatedActions()) {
+    if (a.action() == AssociatedAction::COMPARE) {
+      action = &a;
+      break;
+    } else {
+      INT_ASSERT(false);
+    }
+  }
+  auto cmp = action->fn();
+
+  // TODO: create a wrapper for this kind of thing
+  const ResolvedFunction* rf = nullptr;
+  if (tc.paramElideCallOrNull(cmp, re.poiScope(), &rf)) {
+    INT_ASSERT(false && "Should not have param elided initializer call!");
+  } else if (!rf) {
+    return toSymExpr(TC_PLACEHOLDER((&tc)));
+  }
+
+  auto fn = tc.findOrConvertFunction(rf);
+  INT_ASSERT(fn);
+
+  // TODO: is there a better way to represent the return type of '=='? As-is,
+  //   it's a bit confusing for the case-expression's type in 'rv' to always be
+  //   a bool.
+  Expr* caseExpr = tc.convertExpr(cs, rv);
+  caseExpr = tc.storeInTempIfNeeded(caseExpr, {});
+
+  // TODO: handle case where passing to '==' has an associated action
+  auto call = new CallExpr(fn, selectExpr->copy(), caseExpr);
+
+  auto cond = tc.storeInTempIfNeeded(call, re.type());
+
+  return cond;
+}
+
+static SymExpr* getWhenCond(TConverter& tc, TConverter::RV& rv,
+                            const uast::When* when,
+                            SymExpr* selectExpr) {
+  if (when->numCaseExprs() == 1) {
+    auto cs = when->caseExpr(0);
+    return makeCaseCond(tc, rv, when, selectExpr, cs);
+  } else {
+    // Multiple cases should follow '||'-like short-circuiting, such that
+    // equality comparisons are not evaluated unless the preceding cases do
+    // not match.
+
+    VarSymbol* agg = new VarSymbol("_case_cond_agg", dtBool);
+    tc.insertStmt(new CallExpr(PRIM_MOVE, agg, gFalse));
+    tc.insertStmt(new DefExpr(agg));
+
+    int count = 0;
+    for (auto cs : when->caseExprs()) {
+      // If it's param-true, 'getWhenCond' would not have been called
+      // If it's param-false, there's no need to generate any comparisons
+      if (rv.byAst(cs).type().isParam()) continue;
+
+      auto cond = makeCaseCond(tc, rv, when, selectExpr, cs);
+
+      auto thenBlock = new BlockStmt();
+      thenBlock->insertAtTail(new CallExpr(PRIM_MOVE, agg, gTrue));
+
+      auto elseBlock = new BlockStmt();
+      auto branch = new CondStmt(cond, thenBlock, elseBlock);
+      tc.insertStmt(branch);
+
+      // Push the else branch so that the next case check is inserted there
+      tc.pushBlock(elseBlock);
+      count += 1;
+    }
+
+    // pop the blocks we pushed, to get back to the when-stmt level
+    for (int i = 0; i < count; i++) {
+      tc.popBlock();
+    }
+
+    return new SymExpr(agg);
+  }
+}
+
+bool TConverter::enter(const Select* node, RV& rv) {
+  // TODO:
+  // - test case-exprs where the '==' operators have associated actions
+  //   (e.g. in-intent on record argument)
+
+  //Note: out-of-order otherwise is an error addressed by post-parse-checks
+
+  types::QualifiedType selectQT;
+  auto selectExpr = convertExpr(node->expr(), rv, &selectQT);
+  auto selectSym = storeInTempIfNeeded(selectExpr, selectQT);
+
+  int count = 0;
+  for (auto when : node->whenStmts()) {
+    if (when->isOtherwise()) {
+      when->body()->traverse(rv);
+    } else {
+      bool anyParamTrue = false;
+      bool allParamFalse = true;
+      for(auto cs : when->caseExprs()) {
+        auto qt = rv.byAst(cs).type();
+        if (!qt.isParamFalse()) {
+          allParamFalse = false;
+        }
+
+        if (qt.isParamTrue()) {
+          anyParamTrue = true;
+        }
+      }
+
+      // Note: this differs from traditional behavior in production, where each
+      // comparison was made.
+      if (anyParamTrue) {
+        when->body()->traverse(rv);
+
+        // Nothing else can match after this, so we're done
+        break;
+      } else if (!allParamFalse) {
+        auto cond = getWhenCond(*this, rv, when, selectSym);
+
+        auto thenBlock = new BlockStmt();
+        pushBlock(thenBlock);
+        when->body()->traverse(rv);
+        popBlock();
+
+        auto elseBlock = new BlockStmt();
+        auto branch = new CondStmt(cond, thenBlock, elseBlock);
+        insertStmt(branch);
+
+        pushBlock(elseBlock);
+        count += 1;
+      }
+    }
+  }
+
+  // For every when-stmt, pop the else-conditions off
+  for (int i = 0; i < count; i++) {
+    popBlock();
+  }
+
+  return false;
+}
+
+void TConverter::exit(const Select* node, RV& rv) {}
 
 
 bool TConverter::enter(const AstNode* node, RV& rv) {
