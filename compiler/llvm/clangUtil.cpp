@@ -1689,12 +1689,12 @@ void setupClang(GenInfo* info, std::string mainFile)
 #if LLVM_VERSION_MAJOR >= 20
   auto clangDiags =
     clang::CompilerInstance::createDiagnostics(*llvm::vfs::getRealFileSystem(),
-                                               diagOptions.get(),
+                                               diagOptions.release(),
                                                diagClient,
                                                /* owned */ true);
 #else
   auto clangDiags =
-    clang::CompilerInstance::createDiagnostics(diagOptions.get(),
+    clang::CompilerInstance::createDiagnostics(diagOptions.release(),
                                                diagClient,
                                                /* owned */ true);
 #endif
