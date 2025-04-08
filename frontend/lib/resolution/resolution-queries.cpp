@@ -2160,10 +2160,11 @@ static bool instantiateAcrossManagerRecordConversion(Context* context,
 
 // TODO: We could remove the 'ResolutionContext' argument if we figure out
 // a different way/decide not to resolve initializer bodies down below.
-ApplicabilityResult instantiateSignature(ResolutionContext* rc,
-                                         const TypedFnSignature* sig,
-                                         const CallInfo& call,
-                                         const PoiScope* poiScope) {
+static ApplicabilityResult
+instantiateSignatureImpl(ResolutionContext* rc,
+                         const TypedFnSignature* sig,
+                         const CallInfo& call,
+                         const PoiScope* poiScope) {
   // Performance: Should this query use a similar approach to
   // resolveFunctionByInfoQuery, where the PoiInfo and visibility
   // are consulted?
@@ -2634,6 +2635,23 @@ ApplicabilityResult instantiateSignature(ResolutionContext* rc,
   // Body resolution will be done by MostSpecificCandidate when constructed.
 
   return ApplicabilityResult::success(result);
+}
+
+static ApplicabilityResult const&
+instantiateSignatureQuery(ResolutionContext* rc,
+                          const TypedFnSignature* sig,
+                          const CallInfo& call,
+                          const PoiScope* poiScope) {
+  CHPL_RESOLUTION_QUERY_BEGIN(instantiateSignatureQuery, rc, sig, call, poiScope);
+  auto ret = instantiateSignatureImpl(rc, sig, call, poiScope);
+  return CHPL_RESOLUTION_QUERY_END(ret);
+}
+
+ApplicabilityResult instantiateSignature(ResolutionContext* rc,
+                                         const TypedFnSignature* sig,
+                                         const CallInfo& call,
+                                         const PoiScope* poiScope) {
+  return instantiateSignatureQuery(rc, sig, call, poiScope);
 }
 
 // This implements the body of 'resolveFunctionByInfo'. It returns a new
