@@ -147,7 +147,7 @@ module Image {
       when imageType.png do PNGHelper.write(outfile, pixels);
       when imageType.jpg do JPGHelper.write(outfile, pixels);
       otherwise
-        throw new Error("Don't know how to write images of type: " + format:string);
+        throw new IllegalArgumentError("Don't know how to write images of type: " + format:string);
     }
   }
 
@@ -166,7 +166,7 @@ module Image {
       when imageType.png do return PNGHelper.read(infile);
       when imageType.jpg do return JPGHelper.read(infile);
       otherwise
-        throw new Error("Don't know how to read images of type: " + format:string);
+        throw new IllegalArgumentError("Don't know how to read images of type: " + format:string);
     }
   }
 
