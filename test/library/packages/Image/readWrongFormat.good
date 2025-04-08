@@ -1,0 +1,6 @@
+Error reading BMP as JPG: Not a JPG file
+Error reading BMP as PNG: Not a PNG file
+Error reading JPG as PNG: Not a PNG file
+Error reading PNG as JPG: Not a JPG file
+read JPG as JPG
+read PNG as PNG

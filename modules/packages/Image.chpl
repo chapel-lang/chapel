@@ -147,7 +147,7 @@ module Image {
       when imageType.png do PNGHelper.write(outfile, pixels);
       when imageType.jpg do JPGHelper.write(outfile, pixels);
       otherwise
-        halt("Don't know how to write images of type: ", format);
+        throw new IllegalArgumentError("Don't know how to write images of type: " + format:string);
     }
   }
 
@@ -166,7 +166,7 @@ module Image {
       when imageType.png do return PNGHelper.read(infile);
       when imageType.jpg do return JPGHelper.read(infile);
       otherwise
-        halt("Don't know how to read images of type: ", format);
+        throw new IllegalArgumentError("Don't know how to read images of type: " + format:string);
     }
   }
 
@@ -626,9 +626,7 @@ module Image {
                                       req_comp: c_int): c_ptr(uint(8));
     private extern proc stbi_image_free(data: c_ptr(void)): void;
 
-    private proc readCommon(const ref infile: fileReader(?)) throws {
-      // read bytes in
-      const bytes_ = infile.readAll();
+    private proc readCommon(const ref bytes_: bytes) throws {
       const nBytes = bytes_.size.safeCast(c_int);
       const buffer = bytes_.c_str():c_ptrConst(void);
 
@@ -636,22 +634,22 @@ module Image {
       var x, y, comp: c_int;
       const ok = stbi_info_from_memory(buffer, nBytes, c_ptrTo(x), c_ptrTo(y), c_ptrTo(comp));
       if ok == 0 then
-        halt("Failed to read image info");
+        throw new Error("Failed to read image info");
 
       // check that the image is 3 channels and 8 bits per channel
       if comp != 3 && comp != 4 then
-        halt("Image must have 3 or 4 channels");
+        throw new Error("Image must have 3 or 4 channels");
 
       const is_16 = stbi_is_16_bit_from_memory(buffer, nBytes);
       if is_16 then
-        halt("Image must have 8 bits per channel");
+        throw new Error("Image must have 8 bits per channel");
 
 
       // read image
       var x_, y_, comp_: c_int;
       var data = stbi_load_from_memory(buffer, nBytes, c_ptrTo(x_), c_ptrTo(y_), c_ptrTo(comp_), 0);
       if data == nil then
-        halt("Failed to read image");
+        throw new Error("Failed to read image");
       assert(x_ == x && y_ == y && comp_ == comp);
       defer stbi_image_free(data);
 
@@ -687,10 +685,19 @@ module Image {
     }
 
     proc readPng(const ref infile: fileReader(?)) throws {
-      return readCommon(infile);
+      const bytes_ = infile.readAll();
+      // magic number: https://en.wikipedia.org/wiki/List_of_file_signatures
+      if bytes_.size >= 8 &&
+         bytes_[0..#8] != b"\x89\x50\x4E\x47\x0D\x0A\x1A\x0A" then
+        throw new Error("Not a PNG file");
+      return readCommon(bytes_);
     }
     proc readJpg(const ref infile: fileReader(?)) throws {
-      return readCommon(infile);
+      const bytes_ = infile.readAll();
+      // magic number: https://en.wikipedia.org/wiki/List_of_file_signatures
+      if bytes_.size >= 3 && bytes_[0..#3] != b"\xFF\xD8\xFF" then
+        throw new Error("Not a JPG file");
+      return readCommon(bytes_);
     }
 
   }
