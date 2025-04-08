@@ -16,6 +16,8 @@ export CHPL_TEST_PERF_CONFIG_NAME='chapcs'
 source $UTIL_CRON_DIR/common-perf.bash
 source $UTIL_CRON_DIR/common-playground.bash
 
+export CHPL_LAUNCHER=none
+
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 
 #

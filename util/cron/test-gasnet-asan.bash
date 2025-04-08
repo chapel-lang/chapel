@@ -22,6 +22,7 @@ export CHPL_RT_CACHE_QUIET=true
 #
 export CHPL_COMM_SUBSTRATE=udp
 export CHPL_GASNET_SEGMENT=everything
+unset CHPL_LAUNCHER
 
 $UTIL_CRON_DIR/nightly -cron -multilocale ${nightly_args} $(get_nightly_paratest_args 8)
 
