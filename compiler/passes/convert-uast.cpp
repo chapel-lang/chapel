@@ -3551,7 +3551,14 @@ struct Converter final : UastConverter {
       wrapperCall->insertAtTail(destinationExpr ? destinationExpr : new SymExpr(multiState->localeTemp));
 
       if (typeExpr) wrapperCall->insertAtTail(typeExpr);
-      if (initExpr) wrapperCall->insertAtTail(new CallExpr(PRIM_CREATE_THUNK, initExpr));
+      if (initExpr) {
+        SymExpr* initSe;
+        if ((initSe = toSymExpr(initExpr)) && initSe->symbol() == gNoInit) {
+          wrapperCall->insertAtTail(new SymExpr(dtVoid->symbol));
+        } else {
+          wrapperCall->insertAtTail(new CallExpr(PRIM_CREATE_THUNK, initExpr));
+        }
+      }
       auto wrapperDef = new DefExpr(wrapper, wrapperCall);
 
       auto wrapperGet = new CallExpr(".", new SymExpr(wrapper), new_CStringSymbol("get"));
