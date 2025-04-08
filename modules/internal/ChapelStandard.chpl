@@ -84,6 +84,6 @@ module ChapelStandard {
   public use AutoMath as AutoMath;
   public use AutoGpu as AutoGpu;
 
-  use stopInitCommDiags;    // Internal, but uses standard/CommDiagnostics
-  use ChapelDynamicLoading; // Internal, but compiler needs to see some procs
+  use stopInitCommDiags;      // Internal, but uses standard/CommDiagnostics
+  use ChapelDynamicLoading;   // Internal, but the compiler uses this
 }
