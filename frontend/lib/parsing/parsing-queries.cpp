@@ -1042,12 +1042,8 @@ std::string getExistingFileInModuleSearchPath(Context* context,
       // internal/standard module.
 
       bool firstMatchBundled =
-        filePathIsInInternalModule(context, UniqueString::get(context, found)) ||
-        filePathIsInStandardModule(context, UniqueString::get(context, found)) ||
         filePathIsInBundledModule(context, UniqueString::get(context, found));
       bool curMatchBundled =
-        filePathIsInInternalModule(context, UniqueString::get(context, check)) ||
-        filePathIsInStandardModule(context, UniqueString::get(context, check)) ||
         filePathIsInBundledModule(context, UniqueString::get(context, check));
 
       bool skip = firstMatchBundled && curMatchBundled;
