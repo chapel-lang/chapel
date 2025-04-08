@@ -3348,7 +3348,11 @@ struct Converter final : UastConverter {
 
     void replaceInitExpr(Expr* newExpr) {
       if (localeTemp) {
-        prevInitExpr->replace(newExpr);
+        // could not be in tree if we decided to choose a different overload
+        // for remote variable construction (e.g., a noinit version).
+        if (prevInitExpr->inTree()) {
+          prevInitExpr->replace(newExpr);
+        }
       } else {
         prev->defPoint->init = newExpr;
       }
@@ -3552,8 +3556,7 @@ struct Converter final : UastConverter {
 
       if (typeExpr) wrapperCall->insertAtTail(typeExpr);
       if (initExpr) {
-        SymExpr* initSe;
-        if ((initSe = toSymExpr(initExpr)) && initSe->symbol() == gNoInit) {
+        if (initExpr->isNoInitExpr()) {
           wrapperCall->insertAtTail(new SymExpr(dtVoid->symbol));
         } else {
           wrapperCall->insertAtTail(new CallExpr(PRIM_CREATE_THUNK, initExpr));
