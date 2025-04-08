@@ -25,7 +25,7 @@ module ChapelRemoteVars {
   class _remoteVarContainer {
     var containedValue;
 
-    proc init(containedValue) {
+    proc init(in containedValue) {
       this.containedValue = containedValue;
     }
 
