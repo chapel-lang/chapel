@@ -25,7 +25,7 @@
 #include <stdint.h>
 #include "chpltypes.h"
 
-// TODO: for some of the smaller types, when comsuming a PyObject we should check
+// TODO: for some of the smaller types, when consuming a PyObject we should check
 // if it will fit in the C type, and if not raise an error.
 //
 // args:
@@ -53,14 +53,20 @@
   V(PyObject*, "array", A, (intptr_t), (PyObject*), (PyObject*), false, "P")
 
 
-#define chpl_MAKE_ARRAY_TYPES(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, ...) extern PyTypeObject* Array##NAMESUFFIX##Type;
+#define chpl_MAKE_ARRAY_TYPES(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, ...) \
+  extern PyTypeObject* Array##NAMESUFFIX##Type;
 chpl_ARRAY_TYPES(chpl_MAKE_ARRAY_TYPES)
 #undef chpl_MAKE_ARRAY_TYPES
 
 chpl_bool registerArrayTypeEnum(void);
 chpl_bool createArrayTypes(void);
 
-#define chpl_CREATE_ARRAY(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, ...) PyObject* createArray##NAMESUFFIX(DATATYPE* data, Py_ssize_t size, chpl_bool isOwned);
+#define chpl_CREATE_ARRAY(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, ...) \
+  PyObject* createArray##NAMESUFFIX(DATATYPE* data, \
+                                    Py_ssize_t numElements, \
+                                    Py_ssize_t ndim, \
+                                    Py_ssize_t* shape, \
+                                    chpl_bool isOwned);
 chpl_ARRAY_TYPES(chpl_CREATE_ARRAY)
 #undef chpl_CREATE_ARRAY
 

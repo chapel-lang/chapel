@@ -1199,12 +1199,6 @@ module Python {
       if isSubtype(t, Array?) {
         compilerError("Cannot create an Array from an existing PyObject");
       }
-      if isSubtype(t, PyArray?) {
-        if isGeneric(t) {
-          compilerError("Cannot get a generic PyArray, try specifying the eltType like 'PyArray(int)'");
-        }
-        return new t(this, obj);
-      }
 
       for converter in this.converters {
         if converter.handlesType(t) {
@@ -1264,6 +1258,8 @@ module Python {
         return new t(this, "<unknown>", obj);
       } else if isSubtype(t, Value?) {
         return new t(this, obj);
+      } else if isSubtype(t, PyObjectPtr) {
+        return obj;
       } else if t == NoneType {
         // returning NoneType can be used to ignore a return value
         // but if its not actually None, we still need to decrement the reference count
@@ -1655,6 +1651,10 @@ module Python {
         return new ImportError(str);
       } else if PyErr_GivenExceptionMatches(exc, PyExc_KeyError) != 0 {
         return new KeyError(str);
+      } else if PyErr_GivenExceptionMatches(exc, PyExc_BufferError) != 0 {
+        return new BufferError(str);
+      } else if PyErr_GivenExceptionMatches(exc, PyExc_NotImplementedError) != 0 {
+        return new NotImplementedError(str);
       } else {
         throw new PythonException(str);
       }
@@ -1674,6 +1674,15 @@ module Python {
     Represents a BufferError in the Python code
   */
   class BufferError: PythonException {
+    proc init(in message: string) {
+      super.init(message);
+    }
+  }
+
+  /*
+    Represents a NotImplementedError in the Python code
+  */
+  class NotImplementedError: PythonException {
     proc init(in message: string) {
       super.init(message);
     }
@@ -2276,8 +2285,13 @@ module Python {
     /*
       Iterates over an iterable Python object.
     */
+    pragma "docs only"
+    iter these(type eltType = owned Value): eltType throws do
+      compilerError("docs only");
+
+
     @chpldoc.nodoc
-    iter these(type eltType = owned Value): eltType throws {
+    iter these(type eltType): eltType throws {
       var ctx = chpl_pythonContext.enter();
       defer ctx.exit();
 
@@ -2296,8 +2310,18 @@ module Python {
       }
     }
 
+    @chpldoc.nodoc
+    iter these(): owned Value throws {
+      try {
+        // the try/catch is needed to work around a bug
+        // https://github.com/chapel-lang/chapel/issues/27008
+        for e in this.these(owned Value) do
+          yield e;
+      } catch e {
+        throw e;
+      }
+    }
 
-    // TODO: call should support kwargs
 
     // Casts
     /* Creates a new int from ``x``, when ``x`` is a :class:`Value`. */
@@ -2926,28 +2950,52 @@ module Python {
 
   private proc checkFormatWithEltType(format: c_ptr(c_char),
                               itemSize: Py_ssize_t, type eltType): bool {
-    if format == nil {
-      // make sure item size matches numBytes
-      // but since format is nil we cannot check the type more than this
-      return numBytes(eltType) == itemSize;
+    // we require format to be set, it should only be unset if the buffer
+    // producer does not conform to the standard
+    if format == nil then return false;
+    // See https://docs.python.org/3/library/struct.html#format-characters
+    // and https://docs.python.org/3/library/array.html for the list of format
+    // characters
+    // Python defines minimum bitwidths, not exact bitwidths, which means
+    // if we solely rely on the format string we may have portability issues
+    // so rely solely on itemsize, and use the format string to help with
+    // signedness. Bools are a special case, as Chapel does not define a
+    // specific bitwidth for bools
+    if eltType == bool {
+      return format.deref() == "?".toByte();
+    } else {
+      if numBytes(eltType) != itemSize {
+        return false;
+      }
+      if isIntegralType(eltType) {
+        // the signedness of 'c' is implementation defined, so no need to check
+        if format.deref() == 'c'.toByte() then return true;
+
+        var isSigned = format.deref() == 'b'.toByte() ||
+                       format.deref() == 'h'.toByte() ||
+                       format.deref() == 'i'.toByte() ||
+                       format.deref() == 'l'.toByte() ||
+                       format.deref() == 'q'.toByte() ||
+                       format.deref() == 'n'.toByte();
+        if isSigned && isIntType(eltType) then
+          return true;
+
+        var isUnsigned = format.deref() == 'B'.toByte() ||
+                         format.deref() == 'H'.toByte() ||
+                         format.deref() == 'I'.toByte() ||
+                         format.deref() == 'L'.toByte() ||
+                         format.deref() == 'Q'.toByte() ||
+                         format.deref() == 'N'.toByte();
+        return isUnsigned && isUintType(eltType);
+      } else if isRealType(eltType) || isImagType(eltType) {
+        var isFP = format.deref() == 'f'.toByte() ||
+                   format.deref() == 'd'.toByte() ||
+                  format.deref() == 'e'.toByte();
+        return isFP;
+      } else {
+        return false;
+      }
     }
-    if format.deref() == "c".toByte() && eltType == c_char then return true;
-    if format.deref() == "b".toByte() && eltType == c_schar then return true;
-    if format.deref() == "B".toByte() && eltType == c_uchar then return true;
-    if format.deref() == "?".toByte() && eltType == bool then return true;
-    if format.deref() == "h".toByte() && eltType == c_short then return true;
-    if format.deref() == "H".toByte() && eltType == c_ushort then return true;
-    if format.deref() == "i".toByte() && eltType == c_int then return true;
-    if format.deref() == "I".toByte() && eltType == c_uint then return true;
-    if format.deref() == "l".toByte() && eltType == c_long then return true;
-    if format.deref() == "L".toByte() && eltType == c_ulong then return true;
-    if format.deref() == "q".toByte() && eltType == c_longlong then return true;
-    if format.deref() == "Q".toByte() && eltType == c_ulonglong then return true;
-    if format.deref() == "n".toByte() && eltType == c_ssize_t then return true;
-    if format.deref() == "N".toByte() && eltType == c_size_t then return true;
-    if format.deref() == "f".toByte() && eltType == c_float then return true;
-    if format.deref() == "d".toByte() && eltType == c_double then return true;
-    return false;
   }
 
   /*
@@ -2957,23 +3005,42 @@ module Python {
     `numpy.ndarray <https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html>`_.
   */
   class PyArray: Value {
-    type eltType;
-    @chpldoc.nodoc
-    var view: Py_buffer;
-    @chpldoc.nodoc
-    var itemSize: Py_ssize_t;
+    /*
+      The Chapel type of the elements in the array. If this is left unspecified,
+      i.e. ``nothing``, certain operations will require the user to specify the
+      type at compile time.
+    */
+    type eltType = nothing;
+    /*
+      The number of dimensions of the array. If this is left unspecified, i.e.
+      ``-1``, certain operations will require the user to specify the rank at
+      compile time.
+    */
+    param rank: int = -1;
 
     @chpldoc.nodoc
-    proc init(type eltType) {
+    var view: Py_buffer;
+
+    @chpldoc.nodoc
+    proc init(type eltType = nothing, param rank: int = -1) {
       this.eltType = eltType;
+      this.rank = rank;
     }
 
     @chpldoc.nodoc
-    proc init(type eltType, in interpreter: borrowed Interpreter,
+    proc init(in interpreter: borrowed Interpreter,
+              in obj: PyObjectPtr, isOwned: bool = true) {
+      super.init(interpreter, obj, isOwned=isOwned);
+    }
+    @chpldoc.nodoc
+    proc init(type eltType, param rank: int,
+              in interpreter: borrowed Interpreter,
               in obj: PyObjectPtr, isOwned: bool = true) {
       super.init(interpreter, obj, isOwned=isOwned);
       this.eltType = eltType;
+      this.rank = rank;
     }
+
     @chpldoc.nodoc
     proc postinit() throws {
       var ctx = chpl_pythonContext.enter();
@@ -2982,34 +3049,25 @@ module Python {
       if PyObject_CheckBuffer(this.getPyObject()) == 0 {
         throw new ChapelException("Object does not support buffer protocol");
       }
-      var flags: c_int =
-        PyBUF_SIMPLE | PyBUF_WRITABLE | PyBUF_FORMAT | PyBUF_ND;
-      if PyObject_GetBuffer(this.getPyObject(), c_ptrTo(this.view), flags) == -1 {
+      const flags = PyBUF_SIMPLE | PyBUF_WRITABLE | PyBUF_FORMAT |
+                    PyBUF_ND | PyBUF_STRIDES | PyBUF_C_CONTIGUOUS;
+      if PyObject_GetBuffer(this.getPyObject(),
+                            c_ptrTo(this.view), flags) == -1 {
         this.interpreter.checkException();
         // this.check should have raised an exception, if it didn't, raise one
         throw new BufferError("Failed to get buffer");
       }
-
-      if this.view.ndim > 1 {
-        throw new ChapelException("Only 1D arrays are currently supported");
+      if this.view.ndim == 0 {
+        throw new ChapelException("0-dimensional arrays are not supported");
       }
-
-      this.itemSize = PyBuffer_SizeFromFormat(this.view.format);
-      if this.itemSize == -1 {
-        if this.view.shape != nil {
-          this.itemSize = this.view.itemsize;
-        } else {
-          // disregard itemsize, use 1
-          this.itemSize = 1;
-        }
+      if this.view.shape == nil || this.view.strides == nil {
+        throw new ChapelException(
+          "The Python array does not properly support the buffer protocol"
+        );
       }
-
-      if !checkFormatWithEltType(this.view.format, this.itemSize, this.eltType) {
-        throw new ChapelException("Format does not match element type");
-      }
-
     }
 
+    @chpldoc.nodoc
     proc deinit() {
       var ctx = chpl_pythonContext.enter();
       defer ctx.exit();
@@ -3017,18 +3075,286 @@ module Python {
       PyBuffer_Release(c_ptrTo(this.view));
     }
 
-    proc array: [] {
-      var buf = view.buf: c_ptr(this.eltType);
-      var size = view.len / this.itemSize;
-      var res = makeArrayFromPtr(buf, size);
+
+    /*
+      The number of dimensions of the Python array.
+    */
+    proc ndim: int do return this.view.ndim;
+
+    proc size: int {
+      // equivalent check is `this.view.len / this.view.itemsize`
+      var s = 1;
+      for i in 0..<this.view.ndim {
+        s *= this.view.shape(i);
+      }
+      return s;
+    }
+
+    /*
+      The shape of the Python array, which is a tuple of integers that
+      represent the size of each dimension of the array.
+
+      :arg rank: The number of dimensions of the array. This must be known at
+                 compile time and match the rank of the Python array at runtime.
+      :returns: A tuple of integers representing the shape of the array.
+    */
+    pragma "docs only"
+    proc shape(param rank: int = this.rank): rank*int throws do
+      compilerError("docs only");
+
+    @chpldoc.nodoc
+    proc shape(param rank: int): rank*int throws {
+      if rank == -1 then
+        compilerError("Rank must be specified at compile time");
+
+      if boundsChecking then
+        if rank != this.view.ndim then
+          throw new ChapelException(
+            "Rank mismatch: expected " + rank:string +
+            " dimensions, but got " + this.view.ndim:string);
+
+      var s: rank*int;
+      for param i in 0..<rank {
+        s(i) = this.view.shape(i);
+      }
+      return s;
+    }
+    @chpldoc.nodoc
+    proc shape() throws where this.rank == -1 {
+      compilerError("Rank must be specified at compile time");
+    }
+    @chpldoc.nodoc
+    proc shape(): this.rank*int throws where this.rank != -1 do
+      return this.shape(this.rank);
+
+    /*
+      Get an element from the Python array. This results in a modifiable
+      reference to the element of the Python array. The index must be either a
+      single `int` (for 1-D arrays) or a tuple of `int`'s where the number of
+      indices is equal to the number of dimensions of the array. This method
+      does not currently support slicing.
+
+      .. warning::
+
+          This method performs bounds checking and will throw if the index is
+          out of bounds. This is a runtime check that is turned off with
+          ``--no-checks``.
+
+      ``eltType`` can be optionally specified to override the default value for
+      the ``PyArray`` object. If ``eltType`` is fully specified in the
+      ``PyArray`` object, it does not need to be specified here.
+    */
+    pragma "docs only"
+    proc this(type eltType = this.eltType, idx) ref : eltType throws {
+      compilerError("docs only");
+    }
+
+    @chpldoc.nodoc
+    proc isValidArrayIndex(idx) param : bool do
+      return idx.type == int ||
+             (isHomogeneousTupleType(idx.type) && idx(0).type == int);
+
+    @chpldoc.nodoc
+    proc this(idx) ref : eltType throws where isValidArrayIndex(idx) do
+      return this(eltType, idx);
+
+    @chpldoc.nodoc
+    proc this(type eltType, idx) ref : eltType throws
+    where isValidArrayIndex(idx) {
+
+      if eltType == nothing then
+        compilerError("Element type must be specified at compile time");
+      if this.rank != -1 {
+        if isHomogeneousTupleType(idx.type) && this.rank != idx.size then
+          compilerError("Attempting to index an array of rank " +
+                        this.rank:string + " with a " + idx.size:string +
+                        "-dimensional index");
+        if idx.type == int && this.rank != 1 then
+          compilerError("Attempting to index an array of rank " +
+                        this.rank:string + " with a 1-dimensional index");
+      }
+
+
+      if boundsChecking then
+        if !checkFormatWithEltType(this.view.format,
+                                  this.view.itemsize, eltType) {
+          throw new ChapelException(
+            "Source array's format does not match requested element type"
+          );
+        }
+
+      var offset = 0;
+      if idx.type == int {
+        if boundsChecking then
+          if this.view.ndim != 1 {
+            throw new ChapelException("Cannot index a " +
+              this.view.ndim:string + "-dimensional array with a " +
+              "1-dimensional index");
+          }
+        offset = idx * this.view.strides(0);
+      } else {
+        if boundsChecking then
+          if idx.size != this.view.ndim {
+            throw new ChapelException("Cannot index a " +
+              this.view.ndim:string + "-dimensional array with a " +
+              idx.size:string + "-dimensional index");
+          }
+        for param i in 0..<idx.size {
+          offset += idx(i) * this.view.strides(i);
+        }
+      }
+
+      if boundsChecking then
+        if offset < 0 || offset >= this.view.len {
+          throw new ChapelException("Index out of bounds");
+        }
+
+      var ptr_ = (this.view.buf:c_intptr + offset): c_ptr(void): c_ptr(eltType);
+      return ptr_.deref();
+    }
+
+    @chpldoc.nodoc
+    proc this(idx) ref : eltType throws where !isValidArrayIndex(idx) do
+      compilerError(
+        "Invalid index type of '" + idx.type:string + "' for array - " +
+        "index must be a single int (for 1D arrays only) " +
+        "or a tuple of ints");
+
+    @chpldoc.nodoc
+    proc this(type eltType, idx) ref : eltType throws
+    where !isValidArrayIndex(idx) do
+      compilerError(
+        "Invalid index type of '" + idx.type:string + "' for array - " +
+        "index must be a single int (for 1D arrays only) " +
+        "or a tuple of ints");
+
+    /*
+      Iterate over the elements of the Python array. This results in a Chapel
+      iterator that yields the elements of the Python array. This yields
+      modifiable references to the elements of the Python array.
+
+      ``eltType`` can be optionally specified to override the default value for
+      the ``PyArray`` object. If ``eltType`` is fully specified in the
+      ``PyArray`` object, it does not need to be specified here.
+    */
+    pragma "docs only"
+    override iter these(type eltType = this.eltType) ref : eltType throws {
+      compilerError("docs only");
+    }
+
+    @chpldoc.nodoc
+    override iter these(type eltType) ref : eltType throws {
+      if eltType == nothing then
+        compilerError("Element type must be specified at compile time");
+
+      if boundsChecking then
+        if !checkFormatWithEltType(this.view.format,
+                                  this.view.itemsize, eltType) {
+          throw new ChapelException(
+            "Source array's format does not match requested element type"
+          );
+        }
+      var ptr_ = this.view.buf: c_ptr(eltType);
+      foreach i in 0..#this.size {
+        yield ptr_[i];
+      }
+    }
+    @chpldoc.nodoc
+    override iter these() ref : eltType throws {
+      for e in these(eltType=this.eltType) do yield e;
+    }
+    // TODO: it should also be possible to support leader/follower here
+    @chpldoc.nodoc
+    iter these(param tag: iterKind, type eltType) ref : eltType throws
+     where tag == iterKind.standalone {
+      if eltType == nothing then
+        compilerError("Element type must be specified at compile time");
+
+      if boundsChecking then
+        if !checkFormatWithEltType(this.view.format,
+                                  this.view.itemsize, eltType) {
+          throw new ChapelException(
+            "Source array's format does not match requested element type"
+          );
+        }
+      var ptr_ = this.view.buf: c_ptr(eltType);
+      forall i in 0..#this.size {
+        yield ptr_[i];
+      }
+    }
+    @chpldoc.nodoc
+    iter these(param tag: iterKind) ref : eltType throws
+    where tag == iterKind.standalone do
+      foreach e in these(tag=tag, eltType=this.eltType) do yield e;
+
+    /*
+      Get the Chapel array from the Python array. This results in a Chapel view
+      of the underlying data in the Python array. The data is not copied, so
+      modifying the Chapel array will modify the Python array and vice versa.
+
+      ``eltType`` and ``rank`` can be optionally specified to override the
+      default values for the ``PyArray`` object. If ``eltType`` and ``rank``
+      are fully specified in the ``PyArray`` object, they do not need to be
+      specified here.
+    */
+    pragma "docs only"
+    proc array(type eltType = this.eltType,
+               param rank: int = this.rank): [] throws do
+      compilerError("docs only");
+
+    @chpldoc.nodoc
+    proc array(): [] throws do return array(this.eltType, this.rank);
+    @chpldoc.nodoc
+    proc array(type eltType): [] throws do return array(eltType, this.rank);
+    @chpldoc.nodoc
+    proc array(param rank: int): [] throws do return array(this.eltType, rank);
+
+    @chpldoc.nodoc
+    proc array(type eltType, param rank: int): [] throws {
+
+      if eltType == nothing then
+        compilerError("Element type must be specified at compile time");
+      if rank == -1 then
+        compilerError("Rank must be specified at compile time");
+
+      if boundsChecking then
+        if !checkFormatWithEltType(this.view.format,
+                                  this.view.itemsize, eltType) {
+          throw new ChapelException(
+            "Source array's format does not match requested element type"
+          );
+        }
+      var buf = this.view.buf: c_ptr(eltType);
+      var ndim = this.view.ndim;
+
+      if boundsChecking then
+        if ndim != rank {
+          throw new ChapelException(
+            "Python array of rank " + ndim:string +
+            " cannot be converted to a Chapel array of rank " + rank:string);
+        }
+
+      var ranges: rank * range(int, boundKind.both, strideKind.any);
+      for param i in 0..<rank {
+        ranges(i) = 0.. # this.view.shape(i);
+      }
+
+      var dom = chpl__buildDomainExpr((...ranges), false);
+      var res = makeArrayFromPtr(buf, dom);
       return res;
     }
   }
 
+  // TODO: this could be generalized with
+  // https://github.com/chapel-lang/chapel/issues/26958
+  pragma "last resort"
+  @chpldoc.nodoc
+  operator:(x: borrowed PyArray(?), type t: PyArray(?)): t throws do
+    return Value._castHelper(x, t);
+
   @chpldoc.nodoc
   proc isSupportedArrayType(arr) param : bool {
     return isArrayType(arr.type) &&
-           arr.rank == 1 &&
            arr.idxType == int &&
            arr.isDefaultRectangular();
   }
@@ -3087,6 +3413,7 @@ module Python {
     @chpldoc.nodoc
     proc init(in interpreter: borrowed Interpreter, ref arr: []) throws
       where !isSupportedArrayType(arr) {
+      super.init(interpreter, nil: PyObjectPtr, isOwned=false);
       compilerError("Only 1D local rectangular arrays are currently supported");
       this.eltType = nothing;
     }
@@ -3274,6 +3601,7 @@ module Python {
   PyDict implements writeSerializable;
   PySet implements writeSerializable;
   Array implements writeSerializable;
+  PyArray implements writeSerializable;
   NoneType implements writeSerializable;
 
   @chpldoc.nodoc
@@ -3310,6 +3638,10 @@ module Python {
 
   @chpldoc.nodoc
   override proc Array.serialize(writer, ref serializer) throws do
+    writer.write(this:string);
+
+  @chpldoc.nodoc
+  override proc PyArray.serialize(writer, ref serializer) throws do
     writer.write(this:string);
 
   @chpldoc.nodoc
@@ -3483,6 +3815,8 @@ module Python {
                                             exc: PyObjectPtr): c_int;
     extern const PyExc_ImportError: PyObjectPtr;
     extern const PyExc_KeyError: PyObjectPtr;
+    extern const PyExc_BufferError: PyObjectPtr;
+    extern const PyExc_NotImplementedError: PyObjectPtr;
 
     /*
       Values
@@ -3504,17 +3838,21 @@ module Python {
     extern proc PyBytes_FromStringAndSize(s: c_ptrConst(c_char),
                                           size: Py_ssize_t): PyObjectPtr;
 
-    proc Py_None: PyObjectPtr {
+    inline proc Py_None: PyObjectPtr {
       extern proc chpl_Py_None(): PyObjectPtr;
       return chpl_Py_None();
     }
-    proc Py_True: PyObjectPtr {
+    inline proc Py_True: PyObjectPtr {
       extern proc chpl_Py_True(): PyObjectPtr;
       return chpl_Py_True();
     }
-    proc Py_False: PyObjectPtr {
+    inline proc Py_False: PyObjectPtr {
       extern proc chpl_Py_False(): PyObjectPtr;
       return chpl_Py_False();
+    }
+    inline proc Py_NotImplemented: PyObjectPtr {
+      extern proc chpl_Py_NotImplemented(): PyObjectPtr;
+      return chpl_Py_NotImplemented();
     }
 
     /*
@@ -3656,8 +3994,8 @@ module Python {
     extern proc PyBuffer_SizeFromFormat(format: c_ptrConst(c_char)): Py_ssize_t;
     extern proc PyBuffer_IsContiguous(view: c_ptr(Py_buffer),
                                       order: c_char): c_int;
-    extern proc PyBuffer_GetPointer(view: c_ptr(Py_buffer),
-                                    inidices: c_ptr(Py_ssize_t)): c_ptr(void);
+    extern proc PyBuffer_GetPointer(view: c_ptrConst(Py_buffer),
+                                    indices: c_ptrConst(Py_ssize_t)): c_ptr(void);
     extern proc PyBuffer_FromContiguous(view: c_ptr(Py_buffer),
                                         buf: c_ptr(void),
                                         len: Py_ssize_t,
@@ -3685,6 +4023,8 @@ module Python {
     extern "chpl_PyBUF_WRITABLE" const PyBUF_WRITABLE: c_int;
     extern "chpl_PyBUF_FORMAT" const PyBUF_FORMAT: c_int;
     extern "chpl_PyBUF_ND" const PyBUF_ND: c_int;
+    extern "chpl_PyBUF_STRIDES" const PyBUF_STRIDES: c_int;
+    extern "chpl_PyBUF_C_CONTIGUOUS" const PyBUF_C_CONTIGUOUS: c_int;
 
   }
 
@@ -3725,16 +4065,33 @@ module Python {
       param externalName = "createArray" + suffix;
       extern externalName
       proc createPyArray(arr: c_ptr(void),
-                         size: Py_ssize_t, isOwned: bool): PyObjectPtr;
+                         size: Py_ssize_t,
+                         ndim: Py_ssize_t,
+                         shape: c_ptr(Py_ssize_t),
+                         isOwned: bool): PyObjectPtr;
+
+      var shape = arr.shape;
+      var pyShape = allocate(Py_ssize_t, arr.rank.safeCast(c_size_t));
+      for i in 0..# arr.rank {
+        pyShape(i) = shape(i).safeCast(Py_ssize_t);
+      }
 
       if isArrayType(T) {
-        var sub = allocate(PyObjectPtr, arr.size);
+        var sub = allocate(PyObjectPtr, arr.size.safeCast(c_size_t));
         for i in 0..#arr.size {
           sub(i) = createArray(arr(i));
         }
-        return createPyArray(sub, arr.size.safeCast(Py_ssize_t), true);
+        return createPyArray(sub,
+                             arr.size.safeCast(Py_ssize_t),
+                             arr.rank.safeCast(Py_ssize_t),
+                             pyShape,
+                             true);
       } else {
-        return createPyArray(c_ptrTo(arr), arr.size.safeCast(Py_ssize_t), false);
+        return createPyArray(c_ptrTo(arr),
+                             arr.size.safeCast(Py_ssize_t),
+                             arr.rank.safeCast(Py_ssize_t),
+                             pyShape,
+                             false);
       }
 
     }

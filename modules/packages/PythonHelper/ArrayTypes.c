@@ -74,8 +74,10 @@ chpl_ARRAY_TYPES(chpl_MAKE_ENUM)
     DATATYPE* data; \
     Py_ssize_t size; \
     chpl_bool isOwned; \
+    Py_ssize_t numExports; \
     PyObject* eltType; \
     Py_ssize_t ndim; \
+    Py_ssize_t* shape; \
   } Array##NAMESUFFIX##Object; \
   PyTypeObject* Array##NAMESUFFIX##Type = NULL;
 chpl_ARRAY_TYPES(chpl_MAKE_ARRAY_STRUCT)
@@ -87,6 +89,7 @@ static int ArrayGenericObject_init(PyObject* self, PyObject* args, PyObject* kwa
 #define chpl_MAKE_DEALLOC(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, ...) \
   static void Array##NAMESUFFIX##Object_dealloc(Array##NAMESUFFIX##Object* self) { \
     if (self->isOwned) chpl_mem_free(self->data, 0, 0); \
+    chpl_mem_free(self->shape, 0, 0); \
     Py_CLEAR(self->eltType); \
     void (*tp_free)(PyObject*) = (void (*)(PyObject*))(PyType_GetSlot(Array##NAMESUFFIX##Type, Py_tp_free)); \
     if (!tp_free) PyErr_SetString(PyExc_RuntimeError, "Could not free object"); \
@@ -98,7 +101,8 @@ chpl_ARRAY_TYPES(chpl_MAKE_DEALLOC)
 
 #define chpl_MAKE_REPR(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, ...) \
   static PyObject* Array##NAMESUFFIX##Object_repr(Array##NAMESUFFIX##Object* self) { \
-    return PyUnicode_FromFormat("Array(eltType=" CHAPELDATATYPE ",size=%zd)", self->size); \
+    /* TODO: print the shape */ \
+    return PyUnicode_FromFormat("Array(eltType=" CHAPELDATATYPE ",size=%zd,ndim=%zd)", self->size, self->ndim); \
   }
 chpl_ARRAY_TYPES(chpl_MAKE_REPR)
 #undef chpl_MAKE_REPR
@@ -106,6 +110,10 @@ chpl_ARRAY_TYPES(chpl_MAKE_REPR)
 // TODO: how can we remove the error checking here with --no-checks or -scheckExceptions=false?
 #define chpl_MAKE_SETITEM(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, CHECKTYPE, ASTYPE, ...) \
   static int Array##NAMESUFFIX##Object_sq_setitem(Array##NAMESUFFIX##Object* self, Py_ssize_t index, PyObject* value) { \
+    if (self->ndim != 1) { \
+      PyErr_SetString(PyExc_TypeError, "can only assign to 1D arrays"); \
+      return -1; \
+    } \
     if (!value) { \
       PyErr_SetString(PyExc_TypeError, "cannot delete items from this array"); \
       return -1; \
@@ -128,6 +136,10 @@ chpl_ARRAY_TYPES(chpl_MAKE_SETITEM)
 
 #define chpl_MAKE_SETITEM(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, CHECKTYPE, ASTYPE, ...) \
   static int Array##NAMESUFFIX##Object_mp_setitem(Array##NAMESUFFIX##Object* self, PyObject* indexObj, PyObject* value) { \
+    if (self->ndim != 1) { \
+      PyErr_SetString(PyExc_TypeError, "can only assign to 1D arrays"); \
+      return -1; \
+    } \
     if (!value) { \
       PyErr_SetString(PyExc_TypeError, "cannot delete items from this array"); \
       return -1; \
@@ -156,6 +168,10 @@ chpl_ARRAY_TYPES(chpl_MAKE_SETITEM)
 
 #define chpl_MAKE_GETITEM(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, CHECKTYPE, ASTYPE, FROMTYPE, ...) \
   static PyObject* Array##NAMESUFFIX##Object_sq_getitem(Array##NAMESUFFIX##Object* self, Py_ssize_t index) { \
+    if (self->ndim != 1) { \
+      PyErr_SetString(PyExc_TypeError, "can only get items from 1D arrays"); \
+      return NULL; \
+    } \
     if (index < 0 || index >= self->size) { \
       PyErr_SetString(PyExc_IndexError, "index out of bounds"); \
       return NULL; \
@@ -166,6 +182,10 @@ chpl_ARRAY_TYPES(chpl_MAKE_GETITEM)
 #undef chpl_MAKE_GETITEM
 #define chpl_MAKE_GETITEM(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, CHECKTYPE, ASTYPE, FROMTYPE, ...) \
   static PyObject* Array##NAMESUFFIX##Object_mp_getitem(Array##NAMESUFFIX##Object* self, PyObject* indexObj) { \
+    if (self->ndim != 1) { \
+      PyErr_SetString(PyExc_TypeError, "can only get items from 1D arrays"); \
+      return NULL; \
+    } \
     if (!PyLong_Check(indexObj)) { \
       /* TODO: support slices */ \
       PyErr_SetString(PyExc_TypeError, "index must be an integer"); \
@@ -183,6 +203,10 @@ chpl_ARRAY_TYPES(chpl_MAKE_GETITEM)
 
 #define chpl_MAKE_LENGTH(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, ...) \
   static Py_ssize_t Array##NAMESUFFIX##Object_length(Array##NAMESUFFIX##Object* self) { \
+    if (self->ndim != 1) { \
+      PyErr_SetString(PyExc_TypeError, "can only get the length of 1D arrays"); \
+      return -1; \
+    } \
     return self->size; \
   }
 chpl_ARRAY_TYPES(chpl_MAKE_LENGTH)
@@ -202,26 +226,63 @@ static int Array##NAMESUFFIX##Object_bf_getbuffer(Array##NAMESUFFIX##Object* arr
     view->obj = NULL; \
     return -1; \
   } \
-  /* other error checking for invalid request in flags?! */ \
+  assert(arr->ndim != 0); \
+  /* check for any unsupported flags */ \
+  if (flags & ~(PyBUF_SIMPLE | PyBUF_WRITABLE | PyBUF_FORMAT | \
+                PyBUF_ND | PyBUF_STRIDES | PyBUF_INDIRECT | PyBUF_C_CONTIGUOUS)) { \
+    PyErr_Format(PyExc_BufferError, "Unsupported buffer flags: 0x%x", flags); \
+    view->obj = NULL; \
+    return -1; \
+  } \
   view->buf = arr->data; \
-  view->obj = (PyObject*) arr; \
+  view->internal = 0; \
   view->len = arr->size * sizeof(DATATYPE); \
   view->itemsize = sizeof(DATATYPE); \
-  view->readonly = 0; \
+  view->readonly = 0; /* the buffer is always writeable */ \
   view->ndim = arr->ndim; \
-  view->format = NULL; \
-  if (flags & PyBUF_FORMAT) { \
-    view->format = (char*)FORMATSTRING; \
+  if (flags & PyBUF_FORMAT)  { view->format = (char*)FORMATSTRING; } \
+  else                       { view->format = NULL; } \
+  if (flags & PyBUF_ND)      { view->shape = arr->shape; } \
+  else                       { view->shape = NULL; } \
+  if (flags & PyBUF_STRIDES) { \
+    view->strides = (Py_ssize_t*)chpl_mem_alloc(sizeof(Py_ssize_t) * arr->ndim, 0, 0, 0); \
+    if (!view->strides) { \
+      PyErr_SetString(PyExc_MemoryError, "Could not allocate strides"); \
+      view->obj = NULL; \
+      return -1; \
+    } \
+    if (arr->ndim == 1) { \
+      view->strides[0] = sizeof(DATATYPE); \
+    } else { \
+      view->strides[arr->ndim-1] = sizeof(DATATYPE); \
+      for (Py_ssize_t i = arr->ndim - 2; i >= 0; i--) { \
+        view->strides[i] = view->strides[i+1] * arr->shape[i+1]; \
+      } \
+    } \
+    view->internal = (void*)((intptr_t)view->internal | 0x1); /* set 0x1 if we need to free strides later */ \
   } \
-  /*TODO: support nd arrays*/ \
-  view->shape = NULL; \
-  view->strides = NULL; \
-  view->suboffsets = NULL; \
+  else { view->strides = NULL; } \
+  view->suboffsets = NULL; /*always NULL, even if PyBUF_INDIRECT is set*/ \
+  arr->numExports++; \
+  view->obj = (PyObject*) arr; \
   Py_INCREF(view->obj); \
   return 0; \
 }
 chpl_ARRAY_TYPES(chpl_MAKE_GET_BUFFER)
 #undef chpl_MAKE_GET_BUFFER
+
+#define chpl_MAKE_RELEASE_BUFFER(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, _0, _1, _2, SUPPORTSBUFFERS, FORMATSTRING) \
+static void Array##NAMESUFFIX##Object_bf_releasebuffer(Array##NAMESUFFIX##Object* arr, Py_buffer* view) { \
+  arr->numExports--; \
+  if ((intptr_t)view->internal & 0x1) { \
+    /* free the strides */ \
+    chpl_mem_free(view->strides, 0, 0); \
+    view->internal = (void*)((intptr_t)view->internal & ~0x1); \
+  } \
+}
+chpl_ARRAY_TYPES(chpl_MAKE_RELEASE_BUFFER)
+#undef chpl_MAKE_RELEASE_BUFFER
+
 
 #if PY_VERSION_HEX >= 0x030a0000 /* Python 3.10 */
 #define chpl_Py_TPFLAGS_SEQUENCE Py_TPFLAGS_SEQUENCE
@@ -242,6 +303,7 @@ chpl_ARRAY_TYPES(chpl_MAKE_GET_BUFFER)
       {"ndim", Py_T_PYSSIZET, offsetof(Array##NAMESUFFIX##Object, ndim), Py_READONLY, PyDoc_STR("number of dimensions in the array")}, \
       {NULL} /* Sentinel */\
     }; \
+    /* TODO: expose shape as a `PyGetSetDef` */ \
     PyType_Slot slots[] = { \
       {Py_tp_init, (void*) ArrayGenericObject_init}, \
       {Py_tp_dealloc, (void*) Array##NAMESUFFIX##Object_dealloc}, \
@@ -256,6 +318,7 @@ chpl_ARRAY_TYPES(chpl_MAKE_GET_BUFFER)
       {Py_tp_methods, (void*) methods}, \
       {Py_tp_members, (void*) members}, \
       {Py_bf_getbuffer, (void*) Array##NAMESUFFIX##Object_bf_getbuffer}, \
+      {Py_bf_releasebuffer, (void*) Array##NAMESUFFIX##Object_bf_releasebuffer}, \
       {0, NULL} \
     }; \
     PyType_Spec spec = { \
@@ -281,7 +344,11 @@ chpl_ARRAY_TYPES(chpl_MAKE_TYPE)
 }
 
 #define chpl_CREATE_ARRAY(DATATYPE, CHAPELDATATYPE, NAMESUFFIX, ...) \
-  PyObject* createArray##NAMESUFFIX(DATATYPE* data, Py_ssize_t size, chpl_bool isOwned) { \
+  PyObject* createArray##NAMESUFFIX(DATATYPE* data, \
+                                    Py_ssize_t size, \
+                                    Py_ssize_t ndim, \
+                                    Py_ssize_t* shape, \
+                                    chpl_bool isOwned) { \
     assert(Array##NAMESUFFIX##Type); \
     assert(ArrayTypeEnum); \
     PyObject* objPy = PyObject_CallNoArgs((PyObject *) Array##NAMESUFFIX##Type); \
@@ -290,8 +357,10 @@ chpl_ARRAY_TYPES(chpl_MAKE_TYPE)
     obj->data = data; \
     obj->size = size; \
     obj->isOwned = isOwned; \
+    obj->numExports = 0; \
     obj->eltType = PyObject_GetAttrString(ArrayTypeEnum, #NAMESUFFIX); \
-    obj->ndim = 1; /*TODO: when we support proper ND chapel arrays, set dynamicly */\
+    obj->ndim = ndim; \
+    obj->shape = shape; \
     return objPy; \
   }
 chpl_ARRAY_TYPES(chpl_CREATE_ARRAY)
