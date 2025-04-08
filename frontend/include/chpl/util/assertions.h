@@ -42,10 +42,7 @@ void chpl_unimpl(const char* filename, const char* func, int lineno,
 #ifdef NDEBUG
 // release mode
 #define CHPL_ASSERT(expr__) \
-  do { \
-    bool ignore = expr__; \
-    (void) ignore; \
-   } while (0)
+  do {} while (0)
 
 #else
 // debug mode
