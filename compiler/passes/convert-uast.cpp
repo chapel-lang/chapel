@@ -3348,11 +3348,7 @@ struct Converter final : UastConverter {
 
     void replaceInitExpr(Expr* newExpr) {
       if (localeTemp) {
-        // could not be in tree if we decided to choose a different overload
-        // for remote variable construction (e.g., a noinit version).
-        if (prevInitExpr->inTree()) {
-          prevInitExpr->replace(newExpr);
-        }
+        prevInitExpr->replace(newExpr);
       } else {
         prev->defPoint->init = newExpr;
       }
@@ -3527,13 +3523,15 @@ struct Converter final : UastConverter {
       if (auto prevInitExpr = multiState->prevInitExpr) {
         Expr* replaceWith;
         if (prevInitExpr->isNoInitExpr()) {
-          replaceWith = prevInitExpr->copy();
+          // for remote variables, don't persist 'noinit', since we just
+          // select a different overload of buildRemoteWrapper.
+          replaceWith = isRemote ? nullptr : prevInitExpr->copy();
         } else if (typeExpr) {
           replaceWith = new CallExpr("chpl__readXX", new SymExpr(varSym));
         } else {
           replaceWith = new SymExpr(varSym);
         }
-        multiState->replaceInitExpr(replaceWith);
+        if (replaceWith) multiState->replaceInitExpr(replaceWith);
         initExpr = prevInitExpr;
       }
 
