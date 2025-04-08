@@ -3204,16 +3204,18 @@ module Python {
 
     @chpldoc.nodoc
     proc this(idx) ref : eltType throws where !isValidArrayIndex(idx) do
-      compilerError("Invalid index type for array - " +
-                    "index must be a tuple of ints " +
-                    "or a single int (for 1D arrays only)");
+      compilerError(
+        "Invalid index type of '" + idx.type:string + "' for array - " +
+        "index must be a single int (for 1D arrays only) " +
+        "or a tuple of ints");
 
     @chpldoc.nodoc
     proc this(type eltType, idx) ref : eltType throws
     where !isValidArrayIndex(idx) do
-      compilerError("Invalid index type for array - " +
-                    "index must be a tuple of ints " +
-                    "or a single int (for 1D arrays only)");
+      compilerError(
+        "Invalid index type of '" + idx.type:string + "' for array - " +
+        "index must be a single int (for 1D arrays only) " +
+        "or a tuple of ints");
 
     /*
       Iterate over the elements of the Python array. This results in a Chapel
@@ -3578,6 +3580,23 @@ module Python {
     where isSubtype(v.type, Value) || isSubtype(v.type, NoneType) {
     return v.str();
   }
+
+  // operator+(lhs: borrowed Value?, rhs: borrowed Value?): owned Value throws {
+  //   var lhs_ = (lhs:borrowed class);
+  //   var res = lhs_.call(PyObjectPtr, "__add__", rhs);
+  //   if res == Py_NotImplemented then
+  //     res = (rhs:borrowed class).call(PyObjectPtr, "__radd__", lhs);
+  //   return new Value(lhs_.interpreter, res, isOwned=true);
+  // }
+  // operator+=(ref lhs: owned Value?, rhs: borrowed Value?) throws do
+  //   lhs = (lhs:borrowed class) + rhs;
+
+
+  // operator==(lhs: borrowed Value, rhs: borrowed Value): bool throws do
+  //   return lhs.call(bool, "__eq__", rhs);
+  // operator!=(lhs: borrowed Value, rhs: borrowed Value): bool throws do
+  //   return lhs.call(bool, "__ne__", rhs);
+  // // ....
 
   Value implements writeSerializable;
   Function implements writeSerializable;

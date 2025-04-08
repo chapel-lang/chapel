@@ -1,7 +1,3 @@
 #!/usr/bin/env bash
 
-tmpfile=$2
-tmptmp=`mktemp "tmp.XXXXXX"`
-regex='s/\.chpl:[0-9:]*:/.chpl:nnnn:/'
-sed -e "$regex" $tmpfile > $tmptmp
-mv $tmptmp $tmpfile
+$CHPL_HOME/util/test/prediff-obscure-module-linenos $@
