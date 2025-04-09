@@ -1,4 +1,4 @@
-use Python;
+use Python, CTypes;
 
 proc main() {
   var interp = new Interpreter();
@@ -6,7 +6,7 @@ proc main() {
   var doit = mod.get('doit');
 
 
-  var pyRes = doit(owned PyArray(int, 1), 10, 11, 12, 13);
+  var pyRes = doit(owned PyArray(c_long, 1), 10, 11, 12, 13);
   var res = pyRes.array();
   write("arr: ", res);
   write(" dom: ", res.domain);

@@ -18,9 +18,7 @@ writeln(memview.get('strides'));
 writeln(memview.get('ndim'));
 try {
   var pyArr = new PyArray(real, 2, interp, buf.getPyObject(), isOwned=false);
-} catch e: BufferError {
-  writeln(e);
+} catch e {
+  writeln(e.message());
   writeln("This is expected because the buffer is not writable");
-} catch {
-  writeln("Unexpected error");
 }

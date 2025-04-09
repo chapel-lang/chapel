@@ -71,13 +71,9 @@ proc main() {
     var lst = memView.call(owned PyList, 'tolist');
     writeln("tolist: ", lst);
 
-    var pyArray = interp.fromPython(
-      owned PyArray(real(32), 3),
-      arrRef.getPyObject()
-    );
+    var pyArray = arrRef.value(owned PyArray(real(32), 3));
     var result = pyArray.these();
     writeln("Round tripped array:\n", result);
-
   }
 
 }
