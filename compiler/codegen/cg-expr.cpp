@@ -815,7 +815,8 @@ GenRet codegenLocaleForNode(GenRet node)
   args.push_back(codegenZero());
   args.push_back(codegenZero32());
 
-  GenRet ret = codegenCallExprWithArgs(gChplBuildLocaleId->codegen(), args,
+  auto baseBuildLocaleId = gChplBuildLocaleId->codegenAsCallBaseExpr();
+  GenRet ret = codegenCallExprWithArgs(baseBuildLocaleId, args,
                                        gChplBuildLocaleId->cname,
                                        gChplBuildLocaleId, nullptr, true);
   ret.chplType = LOCALE_ID_TYPE;
