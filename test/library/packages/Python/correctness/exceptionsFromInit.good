@@ -1,0 +1,4 @@
+Caught exception: PythonException: invalid syntax (<string>, line 1)
+Caught exception: PythonException: invalid load key, 'f'.
+Caught exception: PythonException: marshal data too short
+Caught exception: PythonException: invalid syntax (<string>, line 1)
