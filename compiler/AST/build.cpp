@@ -2010,7 +2010,7 @@ BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
   }
 
   // BUILD: TEMP var error = nil;
-  auto errorTemp = newTemp("chpl_error");
+  auto errorTemp = newTemp();
   auto errorType = new CallExpr("_owned", new CallExpr(PRIM_TO_NILABLE_CLASS,
                                 new UnresolvedSymExpr("Error")));
   ret->insertAtTail(new DefExpr(errorTemp, gNil, errorType));
