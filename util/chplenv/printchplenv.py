@@ -47,6 +47,7 @@ Options:
 
   [misc]
   --ignore-errors  Continue processing even if an error occurs
+   --verify        Run verification tests on the current Chapel configuration
 """
 
 from collections import namedtuple
@@ -58,6 +59,7 @@ import unittest
 from sys import stdout, path
 
 from chplenv import *
+import chplenv_verify
 
 ChapelEnv = namedtuple('ChapelEnv', ['name', 'content', 'shortname'])
 
@@ -119,10 +121,12 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_TIMERS', RUNTIME | LAUNCHER | DEFAULT, 'tmr'),
     ChapelEnv('CHPL_UNWIND', RUNTIME | LAUNCHER | DEFAULT, 'unwind'),
     ChapelEnv('CHPL_HOST_MEM', COMPILER, 'hostmem'),
-    ChapelEnv('  CHPL_HOST_JEMALLOC', RUNTIME | NOPATH, 'hostjemalloc'),
+    ChapelEnv('  CHPL_HOST_JEMALLOC', COMPILER | NOPATH, 'hostjemalloc'),
+    ChapelEnv('  CHPL_HOST_MIMALLOC', COMPILER | NOPATH, 'hostmimalloc'),
     ChapelEnv('CHPL_MEM', INTERNAL, 'mem'), # deprecated and will be removed
     ChapelEnv('CHPL_TARGET_MEM', RUNTIME | LAUNCHER | DEFAULT, 'mem'),
     ChapelEnv('  CHPL_TARGET_JEMALLOC', RUNTIME | NOPATH, 'tgtjemalloc'),
+    ChapelEnv('  CHPL_TARGET_MIMALLOC', RUNTIME | NOPATH, 'tgtmimalloc'),
     ChapelEnv('CHPL_MAKE', INTERNAL, 'make'),
     ChapelEnv('CHPL_ATOMICS', RUNTIME | LAUNCHER | DEFAULT, 'atomics'),
     ChapelEnv('  CHPL_NETWORK_ATOMICS', INTERNAL | DEFAULT),
@@ -156,6 +160,8 @@ CHPL_ENVS = [
     ChapelEnv('  CHPL_HWLOC_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_HOST_JEMALLOC_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_TARGET_JEMALLOC_UNIQ_CFG_PATH', INTERNAL),
+    ChapelEnv('  CHPL_HOST_MIMALLOC_UNIQ_CFG_PATH', INTERNAL),
+    ChapelEnv('  CHPL_TARGET_MIMALLOC_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_LIBFABRIC_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_LIBUNWIND_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_QTHREAD_UNIQ_CFG_PATH', INTERNAL),
@@ -222,6 +228,8 @@ def compute_all_values():
     ENV_VALS['CHPL_TARGET_MEM'] = chpl_mem.get('target')
     ENV_VALS['  CHPL_HOST_JEMALLOC'] = chpl_jemalloc.get('host')
     ENV_VALS['  CHPL_TARGET_JEMALLOC'] = chpl_jemalloc.get('target')
+    ENV_VALS['  CHPL_HOST_MIMALLOC'] = chpl_mimalloc.get('host')
+    ENV_VALS['  CHPL_TARGET_MIMALLOC'] = chpl_mimalloc.get('target')
     ENV_VALS['CHPL_MAKE'] = chpl_make.get()
     ENV_VALS['CHPL_ATOMICS'] = chpl_atomics.get()
     ENV_VALS['  CHPL_NETWORK_ATOMICS'] = chpl_atomics.get('network')
@@ -288,6 +296,8 @@ def compute_internal_values():
 
     ENV_VALS['  CHPL_HOST_JEMALLOC_UNIQ_CFG_PATH'] = chpl_jemalloc.get_uniq_cfg_path('host')
     ENV_VALS['  CHPL_TARGET_JEMALLOC_UNIQ_CFG_PATH'] = chpl_jemalloc.get_uniq_cfg_path('target')
+    ENV_VALS['  CHPL_HOST_MIMALLOC_UNIQ_CFG_PATH'] = chpl_mimalloc.get_uniq_cfg_path('host')
+    ENV_VALS['  CHPL_TARGET_MIMALLOC_UNIQ_CFG_PATH'] = chpl_mimalloc.get_uniq_cfg_path('target')
     ENV_VALS['  CHPL_LIBFABRIC_UNIQ_CFG_PATH'] = chpl_libfabric.get_uniq_cfg_path()
     ENV_VALS['  CHPL_LIBUNWIND_UNIQ_CFG_PATH'] = chpl_unwind.get_uniq_cfg_path()
 
@@ -383,6 +393,10 @@ def filter_tidy(chpl_env):
         return host_mem == 'jemalloc'
     elif chpl_env.name == '  CHPL_TARGET_JEMALLOC':
         return tgt_mem == 'jemalloc'
+    elif chpl_env.name == '  CHPL_HOST_MIMALLOC':
+        return host_mem == 'mimalloc'
+    elif chpl_env.name == '  CHPL_TARGET_MIMALLOC':
+        return tgt_mem == 'mimalloc'
     elif chpl_env.name == '  CHPL_HWLOC_PCI':
         return hwloc == 'bundled'
     return True
@@ -563,10 +577,13 @@ def parse_args():
 
     #[misc]
     parser.add_option('--ignore-errors', action='store_true', dest='ignore_errors')
+    parser.add_option('--verify', action='store_true', dest='verify')
 
     #[hidden]
+    parser.add_option('--devel', action='store_true', dest='devel')
+    parser.add_option('--no-devel', action='store_true', dest='nodevel')
+    parser.add_option('--verify-verbose', action='store_true', dest='verify_verbose')
     parser.add_option('--unit-tests', action='store_true', dest='do_unit_tests')
-
     # Hijack the help message to use the module docstring
     # optparse is not robust enough to support help msg sections for args.
     parser.print_help = lambda: stdout.write(__doc__)
@@ -576,6 +593,13 @@ def parse_args():
 
 def main():
     (options, args) = parse_args()
+
+    utils.init_CHPL_DEVELOPER()
+    # let the command line override the environment variable
+    if options.devel:
+        utils.set_CHPL_DEVELOPER(True)
+    if options.nodevel:
+        utils.set_CHPL_DEVELOPER(False)
 
     # If passed hidden --unit-tests flag, perform all PyUnit tests that can we
     # can find and exit.
@@ -627,13 +651,21 @@ def main():
     compute_all_values()
 
     # Don't populate internal ENV_VALS unless specified
-    if 'internal' in contents:
+    if 'internal' in contents or options.verify or options.verify_verbose:
         compute_internal_values()
 
     ret = printchplenv(contents, filters, options.format, only=only)
     stdout.write(ret)
 
     utils.flush_warnings()
+
+    # at this point, we should run the verification tests
+    if options.verify or options.verify_verbose:
+        global ENV_VALS
+
+        success, reason = chplenv_verify.verify(ENV_VALS, verbose=options.verify_verbose)
+        if not success:
+            utils.error("Verification failed: {}".format(reason))
 
 
 if __name__ == '__main__':

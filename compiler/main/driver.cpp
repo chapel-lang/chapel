@@ -2346,6 +2346,7 @@ static void dynoConfigureContext(std::string chpl_module_path) {
 
   chpl::parsing::setupModuleSearchPaths(gContext,
                                         CHPL_HOME,
+                                        "", //moduleRoot
                                         fMinimalModules,
                                         CHPL_LOCALE_MODEL,
                                         fEnableTaskTracking,

@@ -1,0 +1,4 @@
+COMPOPTS <= --no-checks
+COMPOPTS <= --fast
+# requires iterator inlining
+COMPOPTS <= --baseline

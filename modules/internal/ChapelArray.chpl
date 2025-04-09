@@ -1566,13 +1566,12 @@ module ChapelArray {
 
     // sparse array interface
     /* Return the Implicitly Represented Value for sparse arrays */
-    proc IRV where !this.isSparse() {
-      compilerError("only sparse arrays have an IRV");
-    }
-
-    @chpldoc.nodoc
     proc IRV ref where this.isSparse() {
       return _value.IRV;
+    }
+    @chpldoc.nodoc
+    proc IRV where !this.isSparse() {
+      compilerError("only sparse arrays have an IRV");
     }
 
     @chpldoc.nodoc
@@ -2039,18 +2038,15 @@ module ChapelArray {
     return chpl__countRanges(arg) + chpl__countRanges((...args));
   }
 
-  // Workaround: moved these helper procs out of the body of
-  // _validRankChangeArgs to avoid issue with generic parent procs.
-  // Anna, 2025-03-04
-  proc _validRankChangeArg(type idxType, r: range(?)) param do return true;
-  proc _validRankChangeArg(type idxType, i: idxType) param do return true;
-  pragma "last resort"
-  proc _validRankChangeArg(type idxType, x) param do return false;
-
   // given a tuple args, returns true if the tuple contains only
   // integers and ranges; that is, it is a valid argument list for rank
   // change
   proc _validRankChangeArgs(args, type idxType) param {
+    proc _validRankChangeArg(type idxType, r: range(?)) param do return true;
+    proc _validRankChangeArg(type idxType, i: idxType) param do return true;
+    pragma "last resort"
+    proc _validRankChangeArg(type idxType, x) param do return false;
+
     /*
     proc help(param dim: int) param {
       if !_validRankChangeArg(idxType, args(dim)) then
@@ -2061,24 +2057,21 @@ module ChapelArray {
         return true;
     }*/
 
-    // Workaround: Added explicit args and/or idxType formals to these helpers
-    // to work around lack of nested proc variable capture.
-    // Anna, 2025-03-04
-    proc allValid(args, type idxType) param {
+    proc allValid() param {
       for param dim in 0.. args.size-1 {
         if !_validRankChangeArg(idxType, args(dim)) then
           return false;
       }
       return true;
     }
-    proc oneRange(args) param {
+    proc oneRange() param {
       for param dim in 0.. args.size-1 {
         if isRange(args(dim)) then
           return true;
       }
       return false;
     }
-    proc oneNonRange(args) param {
+    proc oneNonRange() param {
       for param dim in 0.. args.size-1 {
         if !isRange(args(dim)) then
           return true;
@@ -2086,7 +2079,7 @@ module ChapelArray {
       return false;
     }
 
-    return allValid(args, idxType) && oneRange(args) && oneNonRange(args);
+    return allValid() && oneRange() && oneNonRange();
     //return help(0);
   }
 

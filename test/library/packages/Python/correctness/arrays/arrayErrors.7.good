@@ -1,0 +1,2 @@
+arrayErrors.chpl:5: In function 'main':
+arrayErrors.chpl:134: error: Invalid index type of '(int(64),int(64),real(64))' for array - index must be a single int (for 1D arrays only) or a tuple of ints

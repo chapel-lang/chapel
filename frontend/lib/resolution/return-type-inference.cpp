@@ -337,6 +337,9 @@ struct ReturnTypeInferrer : BranchSensitiveVisitor<DefaultFrame, ResolvedVisitor
   const types::Param* determineIfValue(const uast::AstNode* ast, RV& rv) override;
   void traverseNode(const uast::AstNode* ast, RV& rv) override;
 
+  bool enter(const FnCall* ast, RV& rv);
+  void exit(const FnCall* ast, RV& rv);
+
   bool enter(const Function* fn, RV& rv);
   void exit(const Function* fn, RV& rv);
 
@@ -503,6 +506,22 @@ const types::Param* ReturnTypeInferrer::determineIfValue(const uast::AstNode* as
 }
 void ReturnTypeInferrer::traverseNode(const uast::AstNode* ast, RV& rv) {
   ast->traverse(rv);
+}
+
+bool ReturnTypeInferrer::enter(const FnCall* ast, RV& rv) {
+  enterScope(ast, rv);
+
+  if (auto rr = rv.byPostorder().byAstOrNull(ast)) {
+    if (rr->causedFatalError()) {
+      markFatalError();
+    }
+  }
+
+  return true;
+}
+
+void ReturnTypeInferrer::exit(const FnCall* ast, RV& rv) {
+  exitScope(ast, rv);
 }
 
 bool ReturnTypeInferrer::enter(const Function* fn, RV& rv) {

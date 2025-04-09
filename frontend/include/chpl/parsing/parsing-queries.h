@@ -299,6 +299,11 @@ void setBundledModulePath(Context* context, UniqueString path);
     chplSysModulesSubdir -- CHPL_SYS_MODULES_SUBDIR
     chplModulePath       -- CHPL_MODULE_PATH
 
+  The 'moduleRoot' argument allows overriding the default module root. If
+  'moduleRoot' is the empty string, then the default of 'CHPL_HOME/modules' is
+  used. Regardless, if 'minimalModules' is true '/minimal' is appended to the
+  'moduleRoot'.
+
   The arguments 'prependInternalModulePaths' and 'prependStandardModulePaths',
   if non-empty, allow one to override where the context will search for
   internal and standard modules, respectively. It will search each successive
@@ -312,6 +317,7 @@ void setBundledModulePath(Context* context, UniqueString path);
 void setupModuleSearchPaths(
                   Context* context,
                   const std::string& chplHome,
+                  const std::string& moduleRoot,
                   bool minimalModules,
                   const std::string& chplLocaleModel,
                   bool enableTaskTracking,
@@ -323,6 +329,18 @@ void setupModuleSearchPaths(
                   const std::vector<std::string>& prependStandardModulePaths,
                   const std::vector<std::string>& cmdLinePaths,
                   const std::vector<std::string>& inputFilenames);
+
+/**
+  Overload of the more general setupModuleSearchPaths that uses the
+  context's stored chplHome and chplEnv to determine the values of most
+  arguments.
+*/
+void setupModuleSearchPaths(Context* context,
+                            const std::string& moduleRoot,
+                            bool minimalModules,
+                            bool enableTaskTracking,
+                            const std::vector<std::string>& cmdLinePaths,
+                            const std::vector<std::string>& inputFilenames);
 
 /**
   Overload of the more general setupModuleSearchPaths that uses the
@@ -617,8 +635,28 @@ bool idContainsFieldWithName(Context* context, ID typeDeclId,
                              UniqueString fieldName);
 
 /**
+  Given an AST node for a (multi-)declaration, find a Variable
+  node that declares a field of the given name. Returns whether the field
+  was found. Sets outFieldId to the ID of the Variable, or empty if one
+  was not found.
+
+  Performs a search for AST nodes covered by fieldIdWithName's documentation.
+ */
+bool findFieldIdInDeclaration(const uast::AstNode* varDecl,
+                              UniqueString fieldName,
+                              ID& outFieldId);
+
+/**
   Given an ID for a Record/Union/Class Decl,
   and a field name, returns the ID for the Variable declaring that field.
+  Does so by looking recursively for either:
+
+  * the Variable declaration directly: 'var x: int'
+  * A MultiDecl containing the name: 'var x: int, y: int'
+  * A TupleDecl with the name as a component: 'var ((x, y), z) = ...'
+  * A ForwardingDecl that forwards methods from the variable: 'forwarding var x: R'
+
+  Ignores all other AST nodes in the Record/Union/Class.
  */
 ID fieldIdWithName(Context* context, ID typeDeclId,
                    UniqueString fieldName);

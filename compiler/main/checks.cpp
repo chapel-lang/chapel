@@ -55,7 +55,6 @@ static void checkIsIterator(); // Ensure each iterator is flagged so.
 static void check_afterInlineFunctions();
 static void checkResolveRemovedPrims(void); // Checks that certain primitives
                                             // are removed after resolution
-static void checkNoRecordDeletes();  // No 'delete' on records.
 static void checkTaskRemovedPrims(); // Checks that certain primitives are
                                      // removed after task functions are
                                      // created.
@@ -547,7 +546,6 @@ static void check_afterResolution()
   checkReturnTypesHaveRefTypes();
   if (fVerify)
   {
-    checkNoRecordDeletes();
     checkTaskRemovedPrims();
     checkResolveRemovedPrims();
 // Disabled for now because user warnings should not be logged multiple times:
@@ -695,16 +693,6 @@ checkResolveRemovedPrims(void) {
       }
     }
   }
-}
-
-static void checkNoRecordDeletes() {
-  // No need to do for_alive_in_Vec - there shouldn't be any, period.
-  // User errors are to be detected by chpl__delete() in the modules.
-  forv_Vec(CallExpr, call, gCallExprs)
-    if (FnSymbol* fn = call->resolvedFunction())
-      if(fn->hasFlag(FLAG_DESTRUCTOR))
-        if (!isClassLike(call->get(1)->typeInfo()->getValType()))
-          INT_FATAL(call, "delete not on a class");
 }
 
 static void

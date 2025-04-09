@@ -85,6 +85,7 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
   const uast::AstNode* curStmt = nullptr;
   const uast::AstNode* curInheritanceExpr = nullptr;
   const types::CompositeType* inCompositeType = nullptr;
+  const types::BasicClassType* superInitClassType = nullptr;
   const SubstitutionsMap* substitutions = nullptr;
   DefaultsPolicy defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
   const TypedFnSignature* typedSignature = nullptr;
@@ -752,6 +753,9 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
 
   bool enter(const uast::Range* decl);
   void exit(const uast::Range* decl);
+
+  bool enter(const uast::Array* decl);
+  void exit(const uast::Array* decl);
 
   bool enter(const uast::Domain* decl);
   void exit(const uast::Domain* decl);

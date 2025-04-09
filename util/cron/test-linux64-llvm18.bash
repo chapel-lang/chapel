@@ -15,6 +15,8 @@ if [ "$llvm_version" != "18.1.3" ]; then
   exit 2
 fi
 
+export CHPL_LAUNCHER=none
+
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="linux64-llvm18"
 
 $UTIL_CRON_DIR/nightly -cron -examples -blog ${nightly_args}

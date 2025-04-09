@@ -143,12 +143,12 @@ void InitResolver::resolveImplicitSuperInit() {
     // Capture the errors emitted here and defer them until we know we haven't
     // found a "real" super.init call (which means a different error supercedes
     // these).
-    auto cAndErrors = ctx_->runAndTrackErrors([&c](Context* ctx) {
+    auto cAndErrors = ctx_->runAndCaptureErrors([&c](Context* ctx) {
       c.noteResultPrintCandidates(nullptr);
       return true;
     });
 
-    errorsFromImplicitSuperInit = std::move(cAndErrors.errors());
+    errorsFromImplicitSuperInit = cAndErrors.consumeErrors();
     updateSuperType(&c.result);
   }
 }
@@ -434,7 +434,9 @@ static const ArrayType* arrayTypeFromSubsHelper(
                                    QualifiedType(QualifiedType::TYPE, domain),
                                    eltType);
   } else if (instanceBct->id().symbolPath() ==
-             "DefaultAssociative.DefaultAssociativeArr") {
+                 "DefaultAssociative.DefaultAssociativeArr" ||
+             instanceBct->id().symbolPath() ==
+                 "ArrayViewReindex.ArrayViewReindexArr") {
     auto [domInstanceQt] = extractFields(rc, instanceBct, "dom");
     auto domain = domainTypeFromInstance(rc, domInstanceQt);
     CHPL_ASSERT(domain);

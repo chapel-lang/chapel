@@ -141,6 +141,35 @@ language server with linting enabled various ``chplcheck`` flags:
      --chplcheck-disable-rule UnusedLoopIndex \
      --chplcheck-add-rules path/to/my/myrules.py
 
+Configuration Files
+^^^^^^^^^^^^^^^^^^^
+
+``chpl-language-server`` can be configured without passing command line flags using a
+configuration file. This file can be specified using the ``--config`` (also
+``-c``) flag. The configuration file can either be a YAML file or a specific
+TOML file. For example, running ``chpl-language-server -c config.yaml`` will load the
+configuration from ``config.yaml``. Additionally, ``chpl-language-server`` will look for a
+configuration files in the current directory named ``chpl-language-server.cfg`` or
+``.chpl-language-server.cfg`` (in that order).
+
+Most command line options can be specified in the configuration file. For
+example, the following YAML configuration file will enable end of block markers for loops and declarations.
+
+.. code-block:: yaml
+
+   end-markers: "loop,decl"
+
+TOML configuration files can also be used, for example the following is the same configuration as above:
+
+.. code-block:: toml
+
+   [tool.chpl-language-server]
+   end-markers = ["loop", "decl"]
+
+This configuration can also be added to a :ref:`Mason <readme-mason>`
+configuration file. ``CLS`` will automatically use a configuration file
+contained in a ``Mason.toml`` file in the current directory.
+
 Configuring Chapel Projects
 ---------------------------
 

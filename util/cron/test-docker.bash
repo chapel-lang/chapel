@@ -63,7 +63,8 @@ update_image() {
   # image before erroring out; it's important that release pushes come after
   # all nightly pushes so we can't push a broken release image.
   # Anna, 2024-10-07
-  if [ -z "$release_tag" ] then
+  if [ -z "$release_tag" ]
+  then
     docker buildx build --platform=linux/amd64,linux/arm64 --push . -t "$imageName"
   else
     # Also push as 'latest' tag if this is a release build.
@@ -126,7 +127,14 @@ update_all_images() {
 if [ -n "$RELEASE_VERSION" ]
 then
   log_info "Building and pushing nightly and release-tagged images for version: $RELEASE_VERSION"
-  release_branch="release/$RELEASE_VERSION"
+  release_ver_no_zero_patch=$RELEASE_VERSION
+  read major minor patch < <(echo $RELEASE_VERSION | ( IFS=".$IFS" ; read a b c && echo $a $b $c ))
+  if [ "$patch" = "0" ]
+  then
+    echo "Truncating patch version '$patch' from release $RELEASE_VERSION to determine branch name"
+    release_ver_no_zero_patch="$major.$minor"
+  fi
+  release_branch="release/$release_ver_no_zero_patch"
   if [ "$(git rev-parse HEAD)" != "$(git rev-parse $release_branch)" ]
   then
     log_error "Not on expected release branch $release_branch for version $RELEASE_VERSION, aborting"

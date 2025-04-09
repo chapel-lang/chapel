@@ -263,97 +263,109 @@ void CallInfo::prepareActuals(Context* context,
                               std::vector<CallInfoActual>& actuals,
                               const AstNode*& questionArg,
                               std::vector<const uast::AstNode*>* actualAsts) {
-
-  const FnCall* fnCall = call->toFnCall();
-
   // Prepare the actuals of the call.
   for (int i = 0; i < call->numActuals(); i++) {
     auto actual = call->actual(i);
+    prepareActual(context, call, actual, i, byPostorder, raiseErrors,
+                  actuals, questionArg, actualAsts);
+  }
+}
 
-    if (isQuestionMark(actual)) {
-      if (call->isTuple()) {
-        // Expressions like (?,?,?)
-        UniqueString byName;
-        auto qt = QualifiedType(QualifiedType::TYPE, AnyType::get(context));
-        actuals.push_back(CallInfoActual(qt, byName));
-        if (actualAsts != nullptr) {
-          actualAsts->push_back(actual);
-        }
-      } else if (questionArg == nullptr) {
-        questionArg = actual;
-      } else {
-        CHPL_REPORT(context, MultipleQuestionArgs, fnCall, questionArg, actual);
-        // Keep questionArg pointing at the first question argument we found
-      }
-    } else {
-      QualifiedType actualType;
-      // replace default value with resolved if available
-      if (const ResolvedExpression* r = byPostorder.byAstOrNull(actual)) {
-        actualType = r->type();
-      }
+void CallInfo::prepareActual(Context* context,
+                             const Call* call,
+                             const AstNode* actual,
+                             int actualIdx,
+                             const ResolutionResultByPostorderID& byPostorder,
+                             bool raiseErrors,
+                             std::vector<CallInfoActual>& actuals,
+                             const AstNode*& questionArg,
+                             std::vector<const uast::AstNode*>* actualAsts) {
+  auto fnCall = call ? call->toFnCall() : nullptr;
+
+  if (isQuestionMark(actual)) {
+    if (call && call->isTuple()) {
+      // Expressions like (?,?,?)
       UniqueString byName;
-      if (fnCall && fnCall->isNamedActual(i)) {
-        byName = fnCall->actualName(i);
+      auto qt = QualifiedType(QualifiedType::TYPE, AnyType::get(context));
+      actuals.push_back(CallInfoActual(qt, byName));
+      if (actualAsts != nullptr) {
+        actualAsts->push_back(actual);
       }
+    } else if (questionArg == nullptr) {
+      questionArg = actual;
+    } else {
+      CHPL_REPORT(context, MultipleQuestionArgs, fnCall, questionArg, actual);
+      // Keep questionArg pointing at the first question argument we found
+    }
+  } else {
+    QualifiedType actualType;
+    // replace default value with resolved if available
+    if (const ResolvedExpression* r = byPostorder.byAstOrNull(actual)) {
+      actualType = r->type();
+    }
+    UniqueString byName;
+    if (fnCall && fnCall->isNamedActual(actualIdx)) {
+      byName = fnCall->actualName(actualIdx);
+    }
 
-      bool handledTupleExpansion = false;
-      if (auto op = actual->toOpCall()) {
-        if (op->op() == USTR("...")) {
-          if (op->numActuals() != 1) {
-            if (raiseErrors) {
-              context->error(op, "tuple expansion can only accept one argument");
-            }
-            actualType = QualifiedType(QualifiedType::VAR,
-                                       ErroneousType::get(context));
-          } else {
-            const ResolvedExpression& rr = byPostorder.byAst(op->actual(0));
-            actualType = rr.type();
+    bool handledTupleExpansion = false;
+    if (auto op = actual->toOpCall()) {
+      if (op->op() == USTR("...")) {
+        if (op->numActuals() != 1) {
+          if (raiseErrors) {
+            context->error(op, "tuple expansion can only accept one argument");
           }
-
-          // handle tuple expansion
-          if (!actualType.hasTypePtr() ||
-              actualType.type()->isUnknownType()) {
-            // leave the result unknown
-            actualType = QualifiedType(QualifiedType::VAR,
-                                       UnknownType::get(context));
-          } else if (actualType.type()->isErroneousType()) {
-            // let it stay erroneous type
-          } else if (!actualType.type()->isTupleType()) {
-            if (raiseErrors) {
-              CHPL_REPORT(context, TupleExpansionNonTuple, fnCall, op, actualType);
-            }
-            actualType = QualifiedType(QualifiedType::VAR,
-                                       ErroneousType::get(context));
-          } else {
-            if (!byName.isEmpty()) {
-              CHPL_REPORT(context, TupleExpansionNamedArgs, op, fnCall);
-            }
-
-            auto tupleType = actualType.type()->toTupleType();
-            int n = tupleType->numElements();
-            for (int i = 0; i < n; i++) {
-              tupleType->elementType(i);
-              // intentionally use the empty name (to ignore it if it was
-              // set and we issued an error above)
-              actuals.push_back(CallInfoActual(tupleType->elementType(i),
-                                               UniqueString()));
-              if (actualAsts != nullptr) {
-                actualAsts->push_back(op);
-              }
-            }
-            handledTupleExpansion = true;
-          }
+          actualType = QualifiedType(QualifiedType::VAR,
+              ErroneousType::get(context));
+        } else {
+          const ResolvedExpression& rr = byPostorder.byAst(op->actual(0));
+          actualType = rr.type();
         }
-      }
 
-      if (!handledTupleExpansion) {
-        actuals.push_back(CallInfoActual(actualType, byName));
-        if (actualAsts != nullptr) {
-          actualAsts->push_back(actual);
+        // handle tuple expansion
+        if (!actualType.hasTypePtr() ||
+            actualType.type()->isUnknownType()) {
+          // leave the result unknown
+          actualType = QualifiedType(QualifiedType::VAR,
+              UnknownType::get(context));
+        } else if (actualType.type()->isErroneousType()) {
+          // let it stay erroneous type
+        } else if (!actualType.type()->isTupleType()) {
+          if (raiseErrors) {
+            CHPL_REPORT(context, TupleExpansionNonTuple, fnCall, op, actualType);
+          }
+          actualType = QualifiedType(QualifiedType::VAR,
+              ErroneousType::get(context));
+        } else {
+          if (!byName.isEmpty()) {
+            CHPL_REPORT(context, TupleExpansionNamedArgs, op, fnCall);
+          }
+
+          auto tupleType = actualType.type()->toTupleType();
+          int n = tupleType->numElements();
+          for (int i = 0; i < n; i++) {
+            tupleType->elementType(i);
+            // intentionally use the empty name (to ignore it if it was
+            // set and we issued an error above)
+            actuals.push_back(CallInfoActual(tupleType->elementType(i),
+                  UniqueString()));
+            if (actualAsts != nullptr) {
+              actualAsts->push_back(op);
+            }
+          }
+          handledTupleExpansion = true;
         }
       }
     }
+
+    if (!handledTupleExpansion) {
+      actuals.push_back(CallInfoActual(actualType, byName));
+      if (actualAsts != nullptr) {
+        actualAsts->push_back(actual);
+      }
+    }
   }
+
 }
 
 // returns true if values of this kind should be treated as 'functional':
@@ -370,8 +382,7 @@ static bool isKindForFunctionalValue(QualifiedType::Kind kind) {
 // if we have `x.f(args)`, returns true if the above should be treated
 // as a method call with `f(this = x, args)`.
 static bool isKindForMethodReceiver(QualifiedType::Kind kind) {
-  return kind != QualifiedType::UNKNOWN &&
-         kind != QualifiedType::FUNCTION &&
+  return kind != QualifiedType::FUNCTION &&
          kind != QualifiedType::MODULE;
 }
 

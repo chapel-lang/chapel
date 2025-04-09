@@ -254,6 +254,11 @@ struct GatherDecls {
   }
   void exit(const MultiDecl* d) { }
 
+  bool enter(const ForwardingDecl* d) {
+    return true;
+  }
+  void exit(const ForwardingDecl* d) { }
+
   bool enter(const Label* l) {
     gather(declared, l->name(), l->loop(), Decl::DEFAULT_VISIBILITY, atFieldLevel);
     return true;
@@ -1296,12 +1301,14 @@ static const IdAndFlags* getReservedIdentifier(UniqueString name) {
     {USTR("complex"),   IdAndFlags::createForBuiltinType()},
     {USTR("domain"),    IdAndFlags::createForBuiltinType()},
     {USTR("int"),       IdAndFlags::createForBuiltinType()},
+    {USTR("integral"),  IdAndFlags::createForBuiltinType()},
     {USTR("locale"),    IdAndFlags::createForBuiltinType()},
     {USTR("nil"),       IdAndFlags::createForBuiltinVar()},
     {USTR("real"),      IdAndFlags::createForBuiltinType()},
     {USTR("sparse"),    IdAndFlags::createForBuiltinType()},
     {USTR("string"),    IdAndFlags::createForBuiltinType()},
     {USTR("subdomain"), IdAndFlags::createForBuiltinType()},
+    {USTR("range"),     IdAndFlags::createForBuiltinType()},
     {USTR("uint"),      IdAndFlags::createForBuiltinType()},
     {USTR("void"),      IdAndFlags::createForBuiltinType()},
   };

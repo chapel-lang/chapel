@@ -340,97 +340,102 @@ void VarScopeVisitor::exit(const OpCall* ast, RV& rv) {
   exitAst(ast);
 }
 
-
 bool VarScopeVisitor::enter(const FnCall* callAst, RV& rv) {
   enterAst(callAst);
 
-  if (rv.hasAst(callAst)) {
-    // Does any return-intent-overload use 'in', 'out', or 'inout'?
-    // This filter is intended as an optimization.
-    const MostSpecificCandidates& candidates = rv.byAst(callAst).mostSpecific();
-    bool anyInOutInout = false;
-    bool isMethod = false;
-    for (const MostSpecificCandidate& candidate : candidates) {
-      if (candidate) {
-        auto fn = candidate.fn();
-        if (fn->untyped()->isMethod()) isMethod = true;
+  auto rr = rv.byPostorder().byAstOrNull(callAst);
+  if (!rr) return false;
 
-        int n = fn->numFormals();
-        for (int i = 0; i < n; i++) {
-          const QualifiedType& formalQt = fn->formalType(i);
-          auto kind = formalQt.kind();
-          if (kind == QualifiedType::OUT ||
-              kind == QualifiedType::IN || kind == QualifiedType::CONST_IN ||
-              kind == QualifiedType::INOUT) {
-            anyInOutInout = true;
-            break;
-          }
-        }
-        if (anyInOutInout) {
+  if (rr->causedFatalError()) {
+    markFatalError();
+    return false;
+  }
+
+  // Does any return-intent-overload use 'in', 'out', or 'inout'?
+  // This filter is intended as an optimization.
+  const MostSpecificCandidates& candidates = rr->mostSpecific();
+  bool anyInOutInout = false;
+  bool isMethod = false;
+  for (const MostSpecificCandidate& candidate : candidates) {
+    if (candidate) {
+      auto fn = candidate.fn();
+      if (fn->untyped()->isMethod()) isMethod = true;
+
+      int n = fn->numFormals();
+      for (int i = 0; i < n; i++) {
+        const QualifiedType& formalQt = fn->formalType(i);
+        auto kind = formalQt.kind();
+        if (kind == QualifiedType::OUT ||
+            kind == QualifiedType::IN || kind == QualifiedType::CONST_IN ||
+            kind == QualifiedType::INOUT) {
+          anyInOutInout = true;
           break;
         }
       }
+      if (anyInOutInout) {
+        break;
+      }
+    }
+  }
+
+  if (!anyInOutInout) {
+    // visit the actuals to gather mentions
+    for (auto actualAst : callAst->actuals()) {
+      actualAst->traverse(rv);
+    }
+  } else {
+    // Use FormalActualMap to figure out which variable ID
+    // is passed to a formal with out/in/inout intent.
+    // Issue an error if it does not match among return intent overloads.
+    //
+    // TODO: Should we store the resolved CallInfo so we don't need to build
+    // it back up here?
+    std::vector<const AstNode*> actualAsts;
+    auto ci = CallInfo::create(context, callAst, rv.byPostorder(),
+                               /* raiseErrors */ false,
+                               &actualAsts);
+
+    if (isMethod && ci.isMethodCall() == false) {
+      // Create a dummy 'this' actual
+      ci = ci.createWithReceiver(ci, QualifiedType());
+      actualAsts.insert(actualAsts.begin(), nullptr);
     }
 
-    if (!anyInOutInout) {
-      // visit the actuals to gather mentions
-      for (auto actualAst : callAst->actuals()) {
+    // compute a vector indicating which actuals are passed to
+    // an 'out' formal in all return intent overloads
+    std::vector<QualifiedType> actualFormalTypes;
+    std::vector<Qualifier> actualFormalIntents;
+    computeActualFormalIntents(context, candidates, ci, actualAsts,
+                               actualFormalIntents, actualFormalTypes);
+
+    int actualIdx = 0;
+    for (auto actual : ci.actuals()) {
+      (void) actual; // avoid compilation error about unused variable
+
+      const AstNode* actualAst = actualAsts[actualIdx];
+      Qualifier kind = actualFormalIntents[actualIdx];
+
+      // handle an actual that is passed to an 'out'/'in'/'inout' formal
+      if (actualAst == nullptr) {
+        CHPL_ASSERT(ci.isMethodCall() && actualIdx == 0);
+      } else if (kind == Qualifier::OUT) {
+        handleOutFormal(callAst, actualAst,
+                        actualFormalTypes[actualIdx], rv);
+      } else if ((kind == Qualifier::IN || kind == Qualifier::CONST_IN) &&
+                 !(ci.name() == "init" && actualIdx == 0)) {
+        // don't do this for the 'this' argument to 'init', because it
+        // is not getting copied.
+        handleInFormal(callAst, actualAst,
+                       actualFormalTypes[actualIdx], rv);
+      } else if (kind == Qualifier::INOUT) {
+        handleInoutFormal(callAst, actualAst,
+                          actualFormalTypes[actualIdx], rv);
+      } else {
+        // otherwise, visit the actuals to gather mentions
         actualAst->traverse(rv);
       }
-    } else {
-      // Use FormalActualMap to figure out which variable ID
-      // is passed to a formal with out/in/inout intent.
-      // Issue an error if it does not match among return intent overloads.
-      //
-      // TODO: Should we store the resolved CallInfo so we don't need to build
-      // it back up here?
-      std::vector<const AstNode*> actualAsts;
-      auto ci = CallInfo::create(context, callAst, rv.byPostorder(),
-                                 /* raiseErrors */ false,
-                                 &actualAsts);
 
-      if (isMethod && ci.isMethodCall() == false) {
-        // Create a dummy 'this' actual
-        ci = ci.createWithReceiver(ci, QualifiedType());
-        actualAsts.insert(actualAsts.begin(), nullptr);
-      }
-
-      // compute a vector indicating which actuals are passed to
-      // an 'out' formal in all return intent overloads
-      std::vector<QualifiedType> actualFormalTypes;
-      std::vector<Qualifier> actualFormalIntents;
-      computeActualFormalIntents(context, candidates, ci, actualAsts,
-                                 actualFormalIntents, actualFormalTypes);
-
-      int actualIdx = 0;
-      for (auto actual : ci.actuals()) {
-        (void) actual; // avoid compilation error about unused variable
-
-        const AstNode* actualAst = actualAsts[actualIdx];
-        Qualifier kind = actualFormalIntents[actualIdx];
-
-        // handle an actual that is passed to an 'out'/'in'/'inout' formal
-        if (actualAst == nullptr) {
-          CHPL_ASSERT(ci.isMethodCall() && actualIdx == 0);
-        } else if (kind == Qualifier::OUT) {
-          handleOutFormal(callAst, actualAst,
-                          actualFormalTypes[actualIdx], rv);
-        } else if ((kind == Qualifier::IN || kind == Qualifier::CONST_IN) &&
-                   !(ci.name() == "init" && actualIdx == 0)) {
-          // don't do this for the 'this' argument to 'init', because it
-          // is not getting copied.
-          handleInFormal(callAst, actualAst,
-                         actualFormalTypes[actualIdx], rv);
-        } else if (kind == Qualifier::INOUT) {
-          handleInoutFormal(callAst, actualAst,
-                            actualFormalTypes[actualIdx], rv);
-        } else {
-          // otherwise, visit the actuals to gather mentions
-          actualAst->traverse(rv);
-        }
-
-        actualIdx++;
-      }
+      actualIdx++;
     }
   }
 

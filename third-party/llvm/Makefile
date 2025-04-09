@@ -86,12 +86,6 @@ clobber: FORCE
 
 llvm-config: FORCE
 	mkdir -p $(LLVM_BUILD_DIR)
-	@if ./cmake-ok.sh $(CMAKE); then \
-	  echo ; \
-	else \
-	  echo Error: Chapel requires cmake 3 to build; \
-	  exit 1; \
-	fi
 	
 	@if [ "$(CHPL_MAKE_LLVM)" = "bundled" ] && \
 	    [ "$(CHPL_MAKE_COMPILER)" = "llvm" ]; then \
@@ -124,12 +118,6 @@ llvm-config: FORCE
 
 llvm-config-support-only: FORCE
 	mkdir -p $(LLVM_SUPPORT_BUILD_DIR)
-	@if ./cmake-ok.sh $(CMAKE); then \
-	  echo ; \
-	else \
-	  echo Error: Chapel requires cmake 3 to build; \
-	  exit 1; \
-	fi
 	
 	@if [ "$(CHPL_MAKE_LLVM)" = "bundled" ] && \
 	    [ "$(CHPL_MAKE_COMPILER)" = "llvm" ]; then \

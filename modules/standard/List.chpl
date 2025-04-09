@@ -38,13 +38,6 @@
       - remove
       - pop
       - clear
-      - sort
-
-      .. warning::
-
-        :proc:`list.sort<List.list.sort>` is deprecated - please use the
-        :proc:`sort(x: list)<Sort.sort>` procedure from the
-        :mod:`Sort` module instead
 
   Additionally, all references to list elements are invalidated when the list
   is deinitialized.
@@ -65,11 +58,6 @@ module List {
   private use HaltWrappers;
   private use Math;
   private import Reflection.getRoutineName;
-
-  //
-  // TODO: remove me when `list.sort` is removed
-  //
-  private use Sort;
 
   @chpldoc.nodoc
   private const _initialCapacity = 8;
@@ -1547,22 +1535,6 @@ module List {
 
       return result;
     }
-
-    //TODO: When this is removed make sure to remove the `use Sort` from this module
-    /*
-      Sort the items of this list in place using a comparator. If no comparator
-      is provided, sort this list using the default sort order of its elements.
-
-      .. warning::
-
-        Sorting the elements of this list may invalidate existing references
-        to the elements contained in this list.
-
-      :arg comparator: A comparator used to sort this list.
-    */
-    @deprecated("'list.sort' is deprecated - please use the :proc:`sort(x: list)<Sort.sort>` procedure from the :mod:`Sort` module instead")
-    proc ref sort(comparator: ?rec= new Sort.DefaultComparator()) do
-      Sort.sort(this, comparator);
 
     /*
       Return a copy of the element at a given index in this list.

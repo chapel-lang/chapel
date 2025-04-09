@@ -129,20 +129,26 @@ class Context {
     void swap(Configuration& other);
   };
 
-  class RunResultBase {
+  class CapturingRunResultBase {
+    friend class Context;
+
    private:
     std::vector<owned<ErrorBase>> errors_;
 
-   public:
-    ~RunResultBase();
+    std::vector<owned<ErrorBase>>& value() { return errors_; };
 
-    RunResultBase();
-    // Should not be called due to copy elision, but it's not guaranteed..
-    RunResultBase(const RunResultBase& other);
+   public:
+    ~CapturingRunResultBase();
+    CapturingRunResultBase();
+    CapturingRunResultBase(const CapturingRunResultBase& other);
+    // ^ should not be called due to copy elision, but it's not guaranteed..
 
     /** The errors that occurred while running. */
-    std::vector<owned<ErrorBase>>& errors() { return errors_; };
     const std::vector<owned<ErrorBase>>& errors() const { return errors_; };
+
+    /** Steal the errors that occurred while running, leaving this result empty. */
+    std::vector<owned<ErrorBase>> consumeErrors();
+
     /**
       Checks if any syntax errors or errors occurred while running.
       Warnings do not cause this method to return false.
@@ -150,8 +156,29 @@ class Context {
     bool ranWithoutErrors() const;
   };
 
-  template <typename T>
-  class RunResult : public RunResultBase {
+  class ObservingRunResultBase {
+    friend class Context;
+
+   private:
+    bool hadErrors_ = false;
+
+    bool& value() { return hadErrors_; };
+
+   public:
+    ~ObservingRunResultBase();
+    ObservingRunResultBase();
+    ObservingRunResultBase(const ObservingRunResultBase& other);
+    // ^ should not be called due to copy elision, but it's not guaranteed..
+
+    /**
+      Checks if any syntax errors or errors occurred while running.
+      Warnings do not cause this method to return false.
+    */
+    bool ranWithoutErrors() const;
+  };
+
+  template <typename T, typename Base>
+  class RunResult : public Base {
    private:
     T result_;
 
@@ -163,12 +190,17 @@ class Context {
   class ErrorCollectionEntry {
    private:
     std::vector<owned<ErrorBase>>* storeInto_;
+    bool* noteErrorOccurredInto_;
     const querydetail::QueryMapResultBase* collectingQuery_;
 
     ErrorCollectionEntry(std::vector<owned<ErrorBase>>* storeInto,
+                         bool* noteErrorOccurredInto,
                          const querydetail::QueryMapResultBase* collectingQuery) :
-      storeInto_(storeInto), collectingQuery_(collectingQuery) {}
+      storeInto_(storeInto), noteErrorOccurredInto_(noteErrorOccurredInto),
+      collectingQuery_(collectingQuery) {}
 
+    void storeErrorsFromHelp(const querydetail::QueryMapResultBase* result,
+                            std::unordered_set<const querydetail::QueryMapResultBase*>& visited);
    public:
     /**
       When a parent query starts tracking errors, the tracking entry contains
@@ -178,6 +210,14 @@ class Context {
     static ErrorCollectionEntry
     createForTrackingQuery(std::vector<owned<ErrorBase>>*,
                            const querydetail::QueryMapResultBase*);
+
+    /**
+      Like the vector-based overload above, except set up for merely
+      detecting whether or not an error occurred instead of storing
+      the errors.
+     */
+    static ErrorCollectionEntry
+    createForTrackingQuery(bool*, const querydetail::QueryMapResultBase*);
 
     /**
       When recomputing queries (to determine if a cached result should be used),
@@ -191,7 +231,10 @@ class Context {
     createForRecomputing(const querydetail::QueryMapResultBase*);
 
     const querydetail::QueryMapResultBase* collectingQuery() const { return collectingQuery_; }
+
     void storeError(owned<ErrorBase> toStore) const;
+
+    void storeErrorsFrom(const querydetail::QueryMapResultBase* result);
   };
 
   class RecomputeMarker {
@@ -487,6 +530,17 @@ class Context {
   // tune the hashtable bucket size, or something? Do we need a custom
   // hashtable?
 
+  template <typename F, typename ResultBase>
+  auto runAndHandleErrors(F&& f) -> RunResult<decltype(f(this)), ResultBase> {
+    RunResult<decltype(f(this)), ResultBase> result;
+    auto collectionRoot = queryStack.empty() ? nullptr : queryStack.back();
+    errorCollectionStack.push_back(
+        ErrorCollectionEntry::createForTrackingQuery(&result.value(), collectionRoot));
+    result.result() = f(this);
+    errorCollectionStack.pop_back();
+    return result;
+  }
+
  public:
   /** Report the error to standard error output. */
   static void defaultReportError(Context* context, const ErrorBase* err);
@@ -579,14 +633,13 @@ class Context {
     not shown to the user.
    */
   template <typename F>
-  auto runAndTrackErrors(F&& f) -> RunResult<decltype(f(this))> {
-    RunResult<decltype(f(this))> result;
-    auto collectionRoot = queryStack.empty() ? nullptr : queryStack.back();
-    errorCollectionStack.push_back(
-        ErrorCollectionEntry::createForTrackingQuery(&result.errors(), collectionRoot));
-    result.result() = f(this);
-    errorCollectionStack.pop_back();
-    return result;
+  auto runAndCaptureErrors(F&& f) -> RunResult<decltype(f(this)), CapturingRunResultBase> {
+    return runAndHandleErrors<F, CapturingRunResultBase>(std::forward<F>(f));
+  }
+
+  template <typename F>
+  auto runAndDetectErrors(F&& f) -> RunResult<decltype(f(this)), ObservingRunResultBase> {
+    return runAndHandleErrors<F, ObservingRunResultBase>(std::forward<F>(f));
   }
 
   optional<std::vector<TraceElement>> recoverFromSelfRecursion() const;

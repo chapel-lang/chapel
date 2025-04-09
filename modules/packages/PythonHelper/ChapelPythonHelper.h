@@ -73,6 +73,7 @@ static inline int chpl_PyGen_Check(PyObject* o) { return PyGen_Check(o); }
 static inline PyObject* chpl_Py_None(void) { return (PyObject*)Py_None; }
 static inline PyObject* chpl_Py_True(void) { return (PyObject*)Py_True; }
 static inline PyObject* chpl_Py_False(void) { return (PyObject*)Py_False; }
+static inline PyObject* chpl_Py_NotImplemented(void) { return (PyObject*)Py_NotImplemented; }
 
 static inline PyObject* chpl_Py_CompileString(const char* str,
                                               const char* filename, int start) {
@@ -100,5 +101,7 @@ static const int chpl_PyBUF_SIMPLE = PyBUF_SIMPLE;
 static const int chpl_PyBUF_WRITABLE = PyBUF_WRITABLE;
 static const int chpl_PyBUF_FORMAT = PyBUF_FORMAT;
 static const int chpl_PyBUF_ND = PyBUF_ND;
+static const int chpl_PyBUF_STRIDES = PyBUF_STRIDES;
+static const int chpl_PyBUF_C_CONTIGUOUS = PyBUF_C_CONTIGUOUS;
 
 #endif

@@ -169,11 +169,7 @@ static void testTwoErrors() {
     )""";
 
   resolveTypesOfVariables(ctx, program, {"x", "y"});
-  // Note: the HACK in which we silence errors from resolving nested calls
-  // (because we can't fully resolve the standard library) is in play,
-  // which means we don't see the UserDiagnosticEncounterError. Once
-  // that workaround is disabled (i.e., when we can resolve all functions without
-  // errors), we should test for that error here.
+  ensureErrorOnLine(ctx, guard.errors(), ErrorType::UserDiagnosticEncounterError, 645, "no", /* allowOthers = */ true);
   ensureErrorOnLine(ctx, guard.errors(), ErrorType::UserDiagnosticEmitError, 5, "no", /* allowOthers = */ true);
   ensureErrorOnLine(ctx, guard.errors(), ErrorType::UserDiagnosticEmitError, 7, "no", /* allowOthers = */ true);
   guard.realizeErrors();
@@ -196,11 +192,11 @@ static void testRunAndTrackErrors() {
   assert(modules.size() == 1);
   assert(modules[0]->numStmts() == 1);
 
-  auto result = ctx->runAndTrackErrors([&](Context* ctx) {
+  auto result = ctx->runAndCaptureErrors([&](Context* ctx) {
     return resolveConcreteFunction(ctx, modules[0]->stmt(0)->id());
   });
   assert(!result.ranWithoutErrors());
-  assert(result.errors().size() == 1);
+  assert(result.errors().size() == 2);
   ensureErrorInErrorsModule(ctx, result.errors(), ErrorType::UserDiagnosticEncounterError);
 }
 
@@ -227,6 +223,38 @@ static void testInfiniteRecursion() {
   assert(x->isIntType());
 }
 
+static void testEarlyReturn() {
+  // ensure that code after compilerError() is not resolved.
+  // below, the bar function (which emits a compilerError) should not
+  // be resolved past the call to compilerError, so the "inside bar"
+  // compilerWarning should not be emitted. However, foo() merely
+  // uses the result of bar(), so it should be resolved.
+
+  auto ctx = buildStdContext();
+  ErrorGuard guard(ctx);
+  std::string program =
+    R"""(
+      proc foo() {
+        bar();
+        compilerWarning("inside foo, after call to bar");
+        return 42;
+      }
+
+      proc bar() {
+        compilerError("Hello");
+        compilerWarnning("inside bar, after call to compilerError");
+      }
+
+      var x = foo();
+  )""";
+
+  auto x = resolveTypeOfX(ctx, program);
+  assert(x->isIntType());
+  ensureErrorOnLine(ctx, guard.errors(), ErrorType::UserDiagnosticEmitError, 3, "Hello", /* allowOthers = */ true);
+  ensureErrorOnLine(ctx, guard.errors(), ErrorType::UserDiagnosticEmitWarning, 13, "inside foo, after call to bar", /* allowOthers = */ true);
+  assert(guard.realizeErrors() == 4); /* two more for UserDiagnosticEncounter{Error,Warning} */
+}
+
 int main() {
   testDirect();
   testDirectWarn();
@@ -237,4 +265,5 @@ int main() {
   testTwoErrors();
   testRunAndTrackErrors();
   testInfiniteRecursion();
+  testEarlyReturn();
 }
