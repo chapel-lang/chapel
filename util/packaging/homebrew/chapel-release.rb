@@ -15,6 +15,7 @@ class Chapel < Formula
     sha256 arm64_ventura: "f3bb27f2dcc20c01fe7a2ba76f6035b8acbc8f90435c996122065c744f7308cf"
     sha256 sonoma:        "df799ae0298a4dce4d9723f447fdbb3d1e8d4e6ba9351d3c4d2de36dd21e591e"
     sha256 ventura:       "d34c180e3189d10e91f9bc0027c2284b5dd56d0c487502d68e5261be3b9ab665"
+    sha256 arm64_linux:   "e4a6d3dc4ab06f2a8274501989aec21ff31f9cbe52eb640e1b27b2c8bc9cd048"
     sha256 x86_64_linux:  "8b4606eb517371eab693e70bf8b4170fe21d8b8ce411d0fc347e2cd53f780148"
   end
 
@@ -90,7 +91,7 @@ class Chapel < Formula
 
     # Install chpl and other binaries (e.g. chpldoc) into bin/ as exec scripts.
     platform = if OS.linux? && Hardware::CPU.is_64_bit?
-      "linux64-#{Hardware::CPU.arch}"
+      "linux64-#{Hardware::CPU.arm? ? "aarch64" : Hardware::CPU.arch}"
     else
       "#{OS.kernel_name.downcase}-#{Hardware::CPU.arch}"
     end
