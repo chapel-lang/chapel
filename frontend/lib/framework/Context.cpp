@@ -784,7 +784,7 @@ bool Context::pathIsInLibrary(UniqueString filePath,
     return true;
   }
 
-  pathOut = UniqueString::get(this, "<unknown library path>");
+  pathOut = USTR("<unknown library path>");
   return false;
 }
 
