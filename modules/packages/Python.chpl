@@ -3209,7 +3209,8 @@ module Python {
           throw new ChapelException("Index out of bounds");
         }
 
-      var ptr_ = (this.view.buf:c_intptr + offset): c_ptr(void): c_ptr(eltType);
+      var ptr_ =
+        (this.view.buf:c_intptr + offset:c_intptr): c_ptr(void): c_ptr(eltType);
       return ptr_.deref();
     }
 
