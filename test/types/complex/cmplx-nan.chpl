@@ -3,7 +3,7 @@ use IO;
 var z = 0.0/0.0;
 writeln(z);
 
-{
+{ // test NaN real and imag components
   var c = z + z*1.0i;
   writeln(c);
 
@@ -23,7 +23,7 @@ writeln(z);
   writeln(c4);
 }
 
-{
+{ // Test NaN real, non-NaN imag
   var c = z + 1.2i;
   writeln(c);
 
@@ -43,7 +43,7 @@ writeln(z);
   writeln(c4);
 }
 
-{
+{ // Test non-NaN real, NaN imag
   var c = 3.4 + z*1.0i;
   writeln(c);
 
