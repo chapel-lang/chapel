@@ -132,6 +132,12 @@ def compute_internal_compile_link_args(runtime_subdir):
         extend2(host_compile, chpl_jemalloc.get_compile_args('host'))
         extend2(host_link, chpl_jemalloc.get_link_args('host'))
 
+    extend2(tgt_compile, chpl_mimalloc.get_compile_args('target'))
+    extend2(tgt_link, chpl_mimalloc.get_link_args('target'))
+    if not skip_host:
+        extend2(host_compile, chpl_mimalloc.get_compile_args('host'))
+        extend2(host_link, chpl_mimalloc.get_link_args('host'))
+
     if chpl_re2.get() != 'none':
         extend2(tgt_compile, chpl_re2.get_compile_args())
         extend2(tgt_link, chpl_re2.get_link_args())

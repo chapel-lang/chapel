@@ -47,6 +47,8 @@ def generate_subdir_map():
     pkg_aliases['CHPL_JEMALLOC-bundled'] = 'jemalloc'
     pkg_aliases['CHPL_TARGET_JEMALLOC-bundled'] = 'jemalloc'
     pkg_aliases['CHPL_HOST_JEMALLOC-bundled'] = 'jemalloc'
+    pkg_aliases['CHPL_TARGET_MIMALLOC-bundled'] = 'mimalloc'
+    pkg_aliases['CHPL_HOST_MIMALLOC-bundled'] = 'mimalloc'
     pkg_aliases['CHPL_LIBFABRIC-bundled'] = 'libfabric'
     pkg_aliases['CHPL_LLVM-bundled'] = 'llvm'
     pkg_aliases['CHPL_UNWIND-bundled'] = 'libunwind'
