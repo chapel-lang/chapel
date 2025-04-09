@@ -6,7 +6,7 @@
 # backwards compatibility). Please don't change it unless you know what
 # you're doing.
 Vagrant.configure("2") do |config|
-  config.vm.box = "bento/freebsd-14.0"
+  config.vm.box = "bento/freebsd-13.5"
 
   # needs more disk space
   # have to use this for it to work:
@@ -21,8 +21,6 @@ Vagrant.configure("2") do |config|
   config.vm.provision "shell",
     path: "../../provision-scripts/freebsd-pkg-deps.sh"
 
-  # It comes with clang 15 and pkg install llvm installs 15,
-  # but 11 - 16 are available.
   config.vm.provision "shell",
     path: "../../provision-scripts/freebsd-pkg-llvm.sh"
 
@@ -34,7 +32,7 @@ Vagrant.configure("2") do |config|
 
   config.vm.provider "virtualbox" do |vb|
     vb.memory = 4096
-    #vb.cpus = 2
+    # vb.cpus = 2
   end
 
 end
