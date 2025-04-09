@@ -1841,7 +1841,7 @@ module Python {
         } catch e {
           // an exception thrown from the init will not result in a call to the postinit
           // or the deinit, so we have to handle that stuff here
-          defer PyGILState_Release(this.gilInitState);
+          defer this.ctxInitState.exit();
           // rethrow the exception
           throw e;
         }
@@ -1866,7 +1866,7 @@ module Python {
         } catch e {
           // an exception thrown from the init will not result in a call to the postinit
           // or the deinit, so we have to handle that stuff here
-          defer PyGILState_Release(this.gilInitState);
+          defer this.ctxInitState.exit();
           // rethrow the exception
           throw e;
         }
@@ -2446,7 +2446,7 @@ module Python {
         } catch e {
           // an exception thrown from the init will not result in a call to the postinit
           // or the deinit, so we have to handle that stuff here
-          defer PyGILState_Release(this.gilInitState);
+          defer this.ctxInitState.exit();
           // rethrow the exception
           throw e;
         }
@@ -2470,7 +2470,7 @@ module Python {
         } catch e {
           // an exception thrown from the init will not result in a call to the postinit
           // or the deinit, so we have to handle that stuff here
-          defer PyGILState_Release(this.gilInitState);
+          defer this.ctxInitState.exit();
           // rethrow the exception
           throw e;
         }
@@ -2537,7 +2537,7 @@ module Python {
         } catch e {
           // an exception thrown from the init will not result in a call to the postinit
           // or the deinit, so we have to handle that stuff here
-          defer PyGILState_Release(this.gilInitState);
+          defer this.ctxInitState.exit();
           // rethrow the exception
           throw e;
         }
