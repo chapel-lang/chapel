@@ -36,6 +36,15 @@ proc helper() {
   return 5;
 }
 
+proc valueRet(arg: int) {
+  select arg {
+    when 1 do return 1;       // single-expr case
+    when 2 do return 2;       // intentionally do not pass '2' to test AST
+    when 3, 4, 5 do return 5; // multi-expr case
+    otherwise do return 42;   // otherwise
+  }
+}
+
 proc main() {
   test(1);
   test(2);
@@ -66,4 +75,8 @@ proc main() {
     when 5 do println(5);
     otherwise do println(999);
   }
+
+  println(valueRet(1));
+  println(valueRet(5));
+  println(valueRet(99));
 }
