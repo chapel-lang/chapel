@@ -1,6 +1,6 @@
-use IO;
+use IO, Math;
 
-var z = 0.0/0.0;
+var z = nan;
 writeln(z);
 
 { // test NaN real and imag components
