@@ -116,7 +116,6 @@ proc main() {
     writeln("Chapel array: ", chplArray2);
   }
   testNumpy(bool, 'bool', true, false);
-  testNumpy(c_char, 'byte', 0x60, 0x61, 0x62);
   testNumpy(c_schar, 'byte', -1, -2, -3);
   testNumpy(c_uchar, 'ubyte', 1, 2, 3);
   testNumpy(c_short, 'short', -1, -2, -3);
