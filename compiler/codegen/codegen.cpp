@@ -1968,15 +1968,17 @@ static void codegen_header(std::set<const char*> & cnames,
   if(!info->cfile) {
 #ifdef HAVE_LLVM
     // Codegen any type annotations that are necessary.
-    // Start with primitive types in case they are referenced by
-    // records or classes.
-    forv_Vec(TypeSymbol, typeSymbol, gTypeSymbols) {
-      if (typeSymbol->defPoint->parentExpr == rootModule->block &&
-          isPrimitiveType(typeSymbol->type) &&
-          typeSymbol->hasLLVMType()) {
-        typeSymbol->codegenMetadata();
+    // Start with primitive types and function types in case they are used
+    // by records or classes.
+    forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+      bool isInRootModule = ts->defPoint->parentExpr == rootModule->block;
+      if (isInRootModule && ts->hasLLVMType()) {
+        if (isPrimitiveType(ts->type) || isFunctionType(ts->type)) {
+          ts->codegenMetadata();
+        }
       }
     }
+
     forv_Vec(TypeSymbol, typeSymbol, types) {
       if (!isDecoratedClassType(typeSymbol->type))
         typeSymbol->codegenMetadata();
