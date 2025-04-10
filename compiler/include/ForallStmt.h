@@ -117,6 +117,7 @@ class ForallOptimizationInfo {
 
     // the dynamic check call added for symbol
     std::map<Symbol *, CallExpr *> dynamicCheckForSymMap;
+    std::map<Symbol *, CallExpr *> dynamicCheckWOffForSymMap;
 
     std::vector<Symbol *> staticCheckSymsForDynamicCandidates;
 

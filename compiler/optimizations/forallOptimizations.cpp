@@ -1217,12 +1217,15 @@ static void generateDynamicCheckForAccess(ALACandidate& candidate,
   auto& staticCheckSymMap = candidate.hasOffset() ?
                                 optInfo.staticCheckWOffSymForSymMap :
                                 optInfo.staticCheckSymForSymMap;
+  auto& dynamicCheckSymMap = candidate.hasOffset() ?
+                                optInfo.dynamicCheckWOffForSymMap :
+                                optInfo.dynamicCheckForSymMap;
 
   SET_LINENO(forall);
 
-  if (optInfo.dynamicCheckForSymMap.count(baseSym) == 0) {
+  if (dynamicCheckSymMap.count(baseSym) == 0) {
     CallExpr* check = new CallExpr("chpl__ala_dynamicCheck");
-    optInfo.dynamicCheckForSymMap[baseSym] = check;
+    dynamicCheckSymMap[baseSym] = check;
 
     check->insertAtTail(baseSym);
 
@@ -1253,7 +1256,7 @@ static void generateDynamicCheckForAccess(ALACandidate& candidate,
   }
 
   if (candidate.hasOffset()) {
-    CallExpr* curCheck = optInfo.dynamicCheckForSymMap[baseSym];
+    CallExpr* curCheck = dynamicCheckSymMap[baseSym];
 
     CallExpr* offsetCheck = new CallExpr("chpl__ala_offsetCheck");
     offsetCheck->insertAtTail(baseSym);
@@ -1268,7 +1271,7 @@ static void generateDynamicCheckForAccess(ALACandidate& candidate,
     CallExpr* newCheck = new CallExpr("&&", offsetCheck); // we'll add curCheck
     curCheck->replace(newCheck);
     newCheck->insertAtTail(curCheck);
-    optInfo.dynamicCheckForSymMap[baseSym] = newCheck;
+    dynamicCheckSymMap[baseSym] = newCheck;
   }
 }
 
