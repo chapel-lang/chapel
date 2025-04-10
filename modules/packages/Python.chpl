@@ -3709,6 +3709,127 @@ module Python {
   proc NoneType.serialize(writer, ref serializer) throws do
     writer.write(this:string);
 
+  //
+  // binary ops
+  //
+  operator+(lhs: borrowed Value, rhs: borrowed Value): owned Value throws {
+    var res = lhs.call(PyObjectPtr, "__add__", rhs);
+    if res == Py_NotImplemented then
+      res = rhs.call(PyObjectPtr, "__radd__", lhs);
+    return new Value(lhs.interpreter, res, isOwned=true);
+  }
+  operator+=(ref lhs: owned Value, rhs: borrowed Value?) throws do
+    lhs.call("__iadd__", rhs);
+  operator-(lhs: borrowed Value, rhs: borrowed Value): owned Value throws {
+    var res = lhs.call(PyObjectPtr, "__sub__", rhs);
+    if res == Py_NotImplemented then
+      res = rhs.call(PyObjectPtr, "__rsub__", lhs);
+    return new Value(lhs.interpreter, res, isOwned=true);
+  }
+  operator-=(ref lhs: owned Value, rhs: borrowed Value?) throws do
+    lhs.call("__isub__", rhs);
+  operator*(lhs: borrowed Value, rhs: borrowed Value): owned Value throws {
+    var res = lhs.call(PyObjectPtr, "__mul__", rhs);
+    if res == Py_NotImplemented then
+      res = rhs.call(PyObjectPtr, "__rmul__", lhs);
+    return new Value(lhs.interpreter, res, isOwned=true);
+  }
+  operator*=(ref lhs: owned Value, rhs: borrowed Value?) throws do
+    lhs.call("__imul__", rhs);
+  operator/(lhs: borrowed Value, rhs: borrowed Value): owned Value throws {
+    var res = lhs.call(PyObjectPtr, "__truediv__", rhs);
+    if res == Py_NotImplemented then
+      res = rhs.call(PyObjectPtr, "__rtruediv__", lhs);
+    return new Value(lhs.interpreter, res, isOwned=true);
+  }
+  operator/=(ref lhs: owned Value, rhs: borrowed Value?) throws do
+    lhs.call("__itruediv__", rhs);
+  operator%(lhs: borrowed Value, rhs: borrowed Value): owned Value throws {
+    var res = lhs.call(PyObjectPtr, "__mod__", rhs);
+    if res == Py_NotImplemented then
+      res = rhs.call(PyObjectPtr, "__rmod__", lhs);
+    return new Value(lhs.interpreter, res, isOwned=true);
+  }
+  operator%=(ref lhs: owned Value, rhs: borrowed Value?) throws do
+    lhs.call("__imod__", rhs);
+  operator**(lhs: borrowed Value, rhs: borrowed Value): owned Value throws {
+    var res = lhs.call(PyObjectPtr, "__pow__", rhs);
+    if res == Py_NotImplemented then
+      res = rhs.call(PyObjectPtr, "__rpow__", lhs);
+    return new Value(lhs.interpreter, res, isOwned=true);
+  }
+  operator**=(ref lhs: owned Value, rhs: borrowed Value?) throws do
+    lhs.call("__ipow__", rhs);
+  operator&(lhs: borrowed Value, rhs: borrowed Value): owned Value throws {
+    var res = lhs.call(PyObjectPtr, "__and__", rhs);
+    if res == Py_NotImplemented then
+      res = rhs.call(PyObjectPtr, "__rand__", lhs);
+    return new Value(lhs.interpreter, res, isOwned=true);
+  }
+  operator&=(ref lhs: owned Value, rhs: borrowed Value?) throws do
+    lhs.call("__iand__", rhs);
+  operator|(lhs: borrowed Value, rhs: borrowed Value): owned Value throws {
+    var res = lhs.call(PyObjectPtr, "__or__", rhs);
+    if res == Py_NotImplemented then
+      res = rhs.call(PyObjectPtr, "__ror__", lhs);
+    return new Value(lhs.interpreter, res, isOwned=true);
+  }
+  operator|=(ref lhs: owned Value, rhs: borrowed Value?) throws do
+    lhs.call("__ior__", rhs);
+  operator^(lhs: borrowed Value, rhs: borrowed Value): owned Value throws {
+    var res = lhs.call(PyObjectPtr, "__xor__", rhs);
+    if res == Py_NotImplemented then
+      res = rhs.call(PyObjectPtr, "__rxor__", lhs);
+    return new Value(lhs.interpreter, res, isOwned=true);
+  }
+  operator^=(ref lhs: owned Value, rhs: borrowed Value?) throws do
+    lhs.call("__ixor__", rhs);
+  operator<<(lhs: borrowed Value, rhs: borrowed Value): owned Value throws {
+    var res = lhs.call(PyObjectPtr, "__lshift__", rhs);
+    if res == Py_NotImplemented then
+      res = rhs.call(PyObjectPtr, "__rlshift__", lhs);
+    return new Value(lhs.interpreter, res, isOwned=true);
+  }
+  operator<<=(ref lhs: owned Value, rhs: borrowed Value?) throws do
+    lhs.call("__ilshift__", rhs);
+  operator>>(lhs: borrowed Value, rhs: borrowed Value): owned Value throws {
+    var res = lhs.call(PyObjectPtr, "__rshift__", rhs);
+    if res == Py_NotImplemented then
+      res = rhs.call(PyObjectPtr, "__rrshift__", lhs);
+    return new Value(lhs.interpreter, res, isOwned=true);
+  }
+  operator>>=(ref lhs: owned Value, rhs: borrowed Value?) throws do
+    lhs.call("__irshift__", rhs);
+
+  //
+  // unary ops
+  //
+  operator+(lhs: borrowed Value): owned Value throws do
+    return lhs.call("__pos__");
+  operator-(lhs: borrowed Value): owned Value throws do
+    return lhs.call("__neg__");
+  operator~(lhs: borrowed Value): owned Value throws do
+    return lhs.call("__invert__");
+  operator!(lhs: borrowed Value): owned Value throws do
+    return lhs.call("__not__");
+
+  //
+  // comparison ops
+  //
+  operator==(lhs: borrowed Value, rhs: borrowed Value): bool throws do
+    return lhs.call(bool, "__eq__", rhs);
+  operator!=(lhs: borrowed Value, rhs: borrowed Value): bool throws do
+    return lhs.call(bool, "__ne__", rhs);
+  operator<(lhs: borrowed Value, rhs: borrowed Value): bool throws do
+    return lhs.call(bool, "__lt__", rhs);
+  operator<=(lhs: borrowed Value, rhs: borrowed Value): bool throws do
+    return lhs.call(bool, "__le__", rhs);
+  operator>(lhs: borrowed Value, rhs: borrowed Value): bool throws do
+    return lhs.call(bool, "__gt__", rhs);
+  operator>=(lhs: borrowed Value, rhs: borrowed Value): bool throws do
+    return lhs.call(bool, "__ge__", rhs);
+
+
   @chpldoc.nodoc
   module CWChar {
     require "wchar.h";
