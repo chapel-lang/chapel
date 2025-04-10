@@ -4199,7 +4199,7 @@ qioerr qio_channel_print_complex(const int threadsafe,
     // For the a+bi format, instead of emitting a+-bi, always
     // compute the string for |b| and then fold replace the original
     // + with a - if necessary (ie so we get a-bi).
-    if( signbit(im_num) && !isnan(im_num) ) {
+    if( signbit(im_num) ) {
       // num = - num;
       im_num = copysign(im_num, 1.0);
       im_neg = 1;
