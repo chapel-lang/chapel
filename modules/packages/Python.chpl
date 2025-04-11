@@ -3775,71 +3775,81 @@ module Python {
     lhs.retain(res);
     lhs.interpreter.checkException();
   }
-  operator+(lhs: borrowed Value, rhs: borrowed Value): owned Value throws do
+  operator +(lhs: borrowed Value, rhs: borrowed Value): owned Value throws do
     return _binaryOp("add", lhs, rhs);
-  operator+=(ref lhs: owned Value, rhs: borrowed Value) throws do
+  operator +=(ref lhs: owned Value, rhs: borrowed Value) throws do
     _binaryOpInPlace("iadd", lhs, rhs);
-  operator+=(ref lhs: owned Value, const ref rhs: Value) throws do
+  operator +=(ref lhs: owned Value, const ref rhs: Value) throws do
     _binaryOpInPlace("iadd", lhs.borrow(), rhs.borrow());
-  operator-(lhs: borrowed Value, rhs: borrowed Value): owned Value throws do
+
+  operator -(lhs: borrowed Value, rhs: borrowed Value): owned Value throws do
     return _binaryOp("sub", lhs, rhs);
-  operator-=(ref lhs: owned Value, rhs: borrowed Value) throws do
+  operator -=(ref lhs: owned Value, rhs: borrowed Value) throws do
     _binaryOpInPlace("isub", lhs, rhs);
-  operator-=(ref lhs: owned Value, const ref rhs: Value) throws do
+  operator -=(ref lhs: owned Value, const ref rhs: Value) throws do
     _binaryOpInPlace("isub", lhs.borrow(), rhs.borrow());
-  operator*(lhs: borrowed Value, rhs: borrowed Value): owned Value throws do
+
+  operator *(lhs: borrowed Value, rhs: borrowed Value): owned Value throws do
     return _binaryOp("mul", lhs, rhs);
-  operator*=(ref lhs: owned Value, rhs: borrowed Value) throws do
+  operator *=(ref lhs: owned Value, rhs: borrowed Value) throws do
     _binaryOpInPlace("imul", lhs, rhs);
-  operator*=(ref lhs: owned Value, const ref rhs: Value) throws do
+  operator *=(ref lhs: owned Value, const ref rhs: Value) throws do
     _binaryOpInPlace("imul", lhs.borrow(), rhs.borrow());
-  operator/(lhs: borrowed Value, rhs: borrowed Value): owned Value throws do
+
+  operator /(lhs: borrowed Value, rhs: borrowed Value): owned Value throws do
     return _binaryOp("truediv", lhs, rhs);
-  operator/=(ref lhs: owned Value, rhs: borrowed Value) throws do
+  operator /=(ref lhs: owned Value, rhs: borrowed Value) throws do
     _binaryOpInPlace("itruediv", lhs, rhs);
-  operator/=(ref lhs: owned Value, const ref rhs: Value) throws do
+  operator /=(ref lhs: owned Value, const ref rhs: Value) throws do
     _binaryOpInPlace("itruediv", lhs.borrow(), rhs.borrow());
-   operator%(lhs: borrowed Value, rhs: borrowed Value): owned Value throws do
+
+  operator %(lhs: borrowed Value, rhs: borrowed Value): owned Value throws do
     return _binaryOp("mod", lhs, rhs);
-  operator%=(ref lhs: owned Value, rhs: borrowed Value) throws do
+  operator %=(ref lhs: owned Value, rhs: borrowed Value) throws do
     _binaryOpInPlace("imod", lhs, rhs);
-  operator%=(ref lhs: owned Value, const ref rhs: Value) throws do
+  operator %=(ref lhs: owned Value, const ref rhs: Value) throws do
     _binaryOpInPlace("imod", lhs.borrow(), rhs.borrow());
-  operator**(lhs: borrowed Value, rhs: borrowed Value): owned Value throws do
+
+  operator **(lhs: borrowed Value, rhs: borrowed Value): owned Value throws do
     return _binaryOp("pow", lhs, rhs);
-  operator**=(ref lhs: owned Value, rhs: borrowed Value) throws do
+  operator **=(ref lhs: owned Value, rhs: borrowed Value) throws do
     _binaryOpInPlace("ipow", lhs, rhs);
-  operator**=(ref lhs: owned Value, const ref rhs: Value) throws do
+  operator **=(ref lhs: owned Value, const ref rhs: Value) throws do
     _binaryOpInPlace("ipow", lhs.borrow(), rhs.borrow());
-  operator&(lhs: borrowed Value, rhs: borrowed Value): owned Value throws do
+
+  operator &(lhs: borrowed Value, rhs: borrowed Value): owned Value throws do
     return _binaryOp("and_", lhs, rhs);
-  operator&=(ref lhs: owned Value, rhs: borrowed Value) throws do
+  operator &=(ref lhs: owned Value, rhs: borrowed Value) throws do
     _binaryOpInPlace("iand", lhs, rhs);
-  operator&=(ref lhs: owned Value, const ref rhs: Value) throws do
+  operator &=(ref lhs: owned Value, const ref rhs: Value) throws do
     _binaryOpInPlace("iand", lhs.borrow(), rhs.borrow());
-  operator|(lhs: borrowed Value, rhs: borrowed Value): owned Value throws do
+
+  operator |(lhs: borrowed Value, rhs: borrowed Value): owned Value throws do
     return _binaryOp("or_", lhs, rhs);
-  operator|=(ref lhs: owned Value, rhs: borrowed Value) throws do
+  operator |=(ref lhs: owned Value, rhs: borrowed Value) throws do
     _binaryOpInPlace("ior", lhs, rhs);
-  operator|=(ref lhs: owned Value, const ref rhs: Value) throws do
+  operator |=(ref lhs: owned Value, const ref rhs: Value) throws do
     _binaryOpInPlace("ior", lhs.borrow(), rhs.borrow());
-  operator^(lhs: borrowed Value, rhs: borrowed Value): owned Value throws do
+
+  operator ^(lhs: borrowed Value, rhs: borrowed Value): owned Value throws do
     return _binaryOp("xor", lhs, rhs);
-  operator^=(ref lhs: owned Value, rhs: borrowed Value) throws do
+  operator ^=(ref lhs: owned Value, rhs: borrowed Value) throws do
     _binaryOpInPlace("ixor", lhs, rhs);
-  operator^=(ref lhs: owned Value, const ref rhs: Value) throws do
+  operator ^=(ref lhs: owned Value, const ref rhs: Value) throws do
     _binaryOpInPlace("ixor", lhs.borrow(), rhs.borrow());
-  operator<<(lhs: borrowed Value, rhs: borrowed Value): owned Value throws do
+
+  operator <<(lhs: borrowed Value, rhs: borrowed Value): owned Value throws do
     return _binaryOp("lshift", lhs, rhs);
-  operator<<=(ref lhs: owned Value, rhs: borrowed Value) throws do
+  operator <<=(ref lhs: owned Value, rhs: borrowed Value) throws do
     _binaryOpInPlace("ilshift", lhs, rhs);
-  operator<<=(ref lhs: owned Value, const ref rhs: Value) throws do
+  operator <<=(ref lhs: owned Value, const ref rhs: Value) throws do
     _binaryOpInPlace("ilshift", lhs.borrow(), rhs.borrow());
-  operator>>(lhs: borrowed Value, rhs: borrowed Value): owned Value throws do
+
+  operator >>(lhs: borrowed Value, rhs: borrowed Value): owned Value throws do
     return _binaryOp("rshift", lhs, rhs);
-  operator>>=(ref lhs: owned Value, rhs: borrowed Value) throws do
+  operator >>=(ref lhs: owned Value, rhs: borrowed Value) throws do
     _binaryOpInPlace("irshift", lhs, rhs);
-  operator>>=(ref lhs: owned Value, const ref rhs: Value) throws do
+  operator >>=(ref lhs: owned Value, const ref rhs: Value) throws do
     _binaryOpInPlace("irshift", lhs.borrow(), rhs.borrow());
 
   //
@@ -3855,13 +3865,13 @@ module Python {
     lhs.interpreter.checkException();
     return new Value(lhs.interpreter, res, isOwned=true);
   }
-  operator+(lhs: borrowed Value): owned Value throws do
+  operator +(lhs: borrowed Value): owned Value throws do
     return _unaryOp("pos", lhs);
-  operator-(lhs: borrowed Value): owned Value throws do
+  operator -(lhs: borrowed Value): owned Value throws do
     return _unaryOp("neg", lhs);
-  operator~(lhs: borrowed Value): owned Value throws do
+  operator ~(lhs: borrowed Value): owned Value throws do
     return _unaryOp("invert", lhs);
-  operator!(lhs: borrowed Value): owned Value throws do
+  operator !(lhs: borrowed Value): owned Value throws do
     return _unaryOp("not_", lhs);
 
   //
@@ -3878,17 +3888,19 @@ module Python {
     lhs.interpreter.checkException();
     return lhs.interpreter.fromPythonInner(bool, res);
   }
-  operator==(lhs: borrowed Value, rhs: borrowed Value): bool throws do
+  operator ==(lhs: borrowed Value, rhs: borrowed Value): bool throws do
     return _cmpOp("eq", lhs, rhs);
-  operator!=(lhs: borrowed Value, rhs: borrowed Value): bool throws do
+  operator !=(lhs: borrowed Value, rhs: borrowed Value): bool throws do
     return _cmpOp("ne", lhs, rhs);
-  operator<(lhs: borrowed Value, rhs: borrowed Value): bool throws do
+
+  operator <(lhs: borrowed Value, rhs: borrowed Value): bool throws do
     return _cmpOp("lt", lhs, rhs);
-  operator<=(lhs: borrowed Value, rhs: borrowed Value): bool throws do
+  operator <=(lhs: borrowed Value, rhs: borrowed Value): bool throws do
     return _cmpOp("le", lhs, rhs);
-  operator>(lhs: borrowed Value, rhs: borrowed Value): bool throws do
+
+  operator >(lhs: borrowed Value, rhs: borrowed Value): bool throws do
     return _cmpOp("gt", lhs, rhs);
-  operator>=(lhs: borrowed Value, rhs: borrowed Value): bool throws do
+  operator >=(lhs: borrowed Value, rhs: borrowed Value): bool throws do
     return _cmpOp("ge", lhs, rhs);
 
 
