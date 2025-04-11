@@ -120,7 +120,7 @@ Expr* preFold(CallExpr* call) {
           symExpr->getValType()->symbol->hasFlag(FLAG_TUPLE) == false) {
 
       } else if (isLcnSymbol(symExpr->symbol())) {
-        if (!isFunctionType(symExpr->symbol()->type)) {
+        if (!isFunctionType(symExpr->symbol()->getValType())) {
           baseExpr->replace(new UnresolvedSymExpr("this"));
           call->insertAtHead(baseExpr);
           call->insertAtHead(gMethodToken);
@@ -160,14 +160,35 @@ Expr* preFold(CallExpr* call) {
         receiver = callExpr;
       }
 
-      receiver->replace(new UnresolvedSymExpr("this"));
-      retval = new CallExpr(PRIM_MOVE, thisTemp, receiver);
-
-      call->insertAtHead(new SymExpr(thisTemp));
-      call->insertAtHead(gMethodToken);
-
+      // Insert the definition of the temp.
       call->getStmtExpr()->insertBefore(new DefExpr(thisTemp));
+
+      SymExpr* useToDerefAndRetarget = nullptr;
+      if (isFunctionType(receiver->typeInfo()->getValType())) {
+        // If it is a function, the compiler can handle it in the base
+        // expression, and there is no 'this' method defined for it.
+        auto se = new SymExpr(thisTemp);
+        if (receiver->typeInfo()->isRef()) useToDerefAndRetarget = se;
+        receiver->replace(se);
+
+      } else {
+        // Otherwise, construct a call to '<receiver>.this(...)'.
+        receiver->replace(new UnresolvedSymExpr("this"));
+        call->insertAtHead(new SymExpr(thisTemp));
+        call->insertAtHead(gMethodToken);
+      }
+
+      retval = new CallExpr(PRIM_MOVE, thisTemp, receiver);
       call->getStmtExpr()->insertBefore(retval);
+
+      if (auto se = useToDerefAndRetarget) {
+        auto derefTemp = newTemp();
+        call->getStmtExpr()->insertBefore(new DefExpr(derefTemp));
+        auto deref = new CallExpr(PRIM_DEREF, se->symbol());
+        auto move = new CallExpr(PRIM_MOVE, derefTemp, deref);
+        call->getStmtExpr()->insertBefore(move);
+        se->setSymbol(derefTemp);
+      }
     }
 
   } else {
@@ -1734,14 +1755,54 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
-  case PRIM_IS_FCF_TYPE: {
+  case PRIM_IS_PROC_TYPE: {
     Type* t = call->get(1)->typeInfo();
+    int64_t mask = 0;
 
-    if (t->symbol->hasFlag(FLAG_FUNCTION_CLASS))
-      retval = new SymExpr(gTrue);
-    else
-      retval = new SymExpr(gFalse);
+    // Get the second arg as a 'param int' if it exists.
+    auto arg2 = call->numActuals() >= 2 ? call->get(2) : nullptr;
+    bool got = get_int(arg2, &mask);
+    INT_ASSERT(got || !arg2);
 
+    bool flag = false;
+    if (mask == 0 && t->symbol->hasFlag(FLAG_FUNCTION_CLASS)) {
+      INT_ASSERT(!got);
+      flag = true;
+
+    } else if (auto ft1 = toFunctionType(t)) {
+      bool maskConflicts = false;
+      auto ft2 = ft1->getWithMask(mask, maskConflicts);
+      INT_ASSERT(!maskConflicts);
+
+      // If nothing changed after applying the mask, then we have a match.
+      flag = (ft2 == ft1);
+    }
+
+    retval = new SymExpr(flag ? gTrue : gFalse);
+    call->replace(retval);
+
+    break;
+  }
+
+  case PRIM_TO_PROC_TYPE: {
+    Type* t = call->get(1)->typeInfo();
+    int64_t mask = 0;
+
+    // Get the second arg as a 'param int' if it exists.
+    auto arg2 = call->numActuals() >= 2 ? call->get(2) : nullptr;
+    bool got = get_int(arg2, &mask);
+    INT_ASSERT(got || !arg2);
+
+    if (auto ft1 = toFunctionType(t)) {
+      bool maskConflicts = false;
+      auto ft2 = ft1->getWithMask(mask, maskConflicts);
+      INT_ASSERT(!maskConflicts);
+      retval = new SymExpr(ft2->symbol);
+    } else {
+      INT_FATAL(call, "Expected a function type!");
+    }
+
+    INT_ASSERT(retval);
     call->replace(retval);
 
     break;

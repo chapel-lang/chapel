@@ -1916,33 +1916,25 @@ BlockStmt* buildConditionalLocalStmt(Expr* condExpr, Expr *stmt) {
   try {
     // Insertion point for next manager or user block.
   } catch chpl_tmp_err {
-    errorCaught = true;
-    manager.exitContext(chpl_tmp_err);
+    errorTemp = chpl_tmp_err;
   }
 
 */
 static TryStmt* buildTryCatchForManagerBlock(VarSymbol* managerHandle,
-                                             VarSymbol* errorCaught) {
-  const char* errName = "chpl_tmp_err";
+                                             VarSymbol* errorTemp) {
+  const char* caughtErrName = "chpl_tmp_err";
 
   // Build the catch block.
   auto catchBlock = new BlockStmt();
 
-  // BUILD: errorCaught = true;
-  auto seErrorCaught = new SymExpr(errorCaught);
-  auto seTrue = new SymExpr(gTrue);
-  auto errorCaughtToTrue = new CallExpr(PRIM_MOVE, seErrorCaught, seTrue);
-  catchBlock->insertAtTail(errorCaughtToTrue);
-
-  // BUILD: manager.exitContext(chpl_tmp_err);
-  auto leave = new CallExpr("exitContext",
-                            gMethodToken,
-                            new SymExpr(managerHandle),
-                            new UnresolvedSymExpr(errName));
-  catchBlock->insertAtTail(leave);
+  // BUILD: errorTemp = chpl_temp_err;
+  auto caughtErrUsym = new UnresolvedSymExpr(caughtErrName);
+  auto errorTempSet = new CallExpr("=", errorTemp, caughtErrUsym);
+  catchBlock->insertAtTail(errorTempSet);
 
   // BUILD: catch chpl_tmp_err { ... }
-  auto catchStmt = CatchStmt::build(errName, catchBlock);
+  auto catchStmt = CatchStmt::build(caughtErrName, catchBlock);
+  catchStmt->createErrSym();
 
   // Build the entire try/catch.
   auto catchList = new BlockStmt();
@@ -1960,16 +1952,14 @@ static TryStmt* buildTryCatchForManagerBlock(VarSymbol* managerHandle,
     TEMP ref manager = PRIM_ADDR_OF(myManager());
     chpl__verifyTypeContext(manager);
     USER [var/ref/const] myResource = manager.enterContext();
-    TEMP errorCaught = false;
+    TEMP error = nil;
+    defer manager.exitContext(error);
 
     try {
       // Insertion point for next manager or user block.
     } catch chpl_temp_err {
-      errorCaught = true;
-      manager.exitContext(chpl_tmp_err);
+      error = chpl_temp_err;
     }
-
-    if !errorCaught then manager.exitContext(nil);
   }
 
 */
@@ -2019,22 +2009,25 @@ BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
     ret->insertAtTail(enterContext);
   }
 
-  // BUILD: TEMP var errorCaught = false;
-  auto errorCaught = newTemp("errorCaught");
-  ret->insertAtTail(new DefExpr(errorCaught, gFalse));
+  // BUILD: TEMP var error = nil;
+  auto errorTemp = newTemp();
+  auto errorType = new CallExpr("_owned", new CallExpr(PRIM_TO_NILABLE_CLASS,
+                                new UnresolvedSymExpr("Error")));
+  ret->insertAtTail(new DefExpr(errorTemp, gNil, errorType));
 
-  // Call helper to construct try/catch block.
-  auto tryCatch = buildTryCatchForManagerBlock(managerHandle, errorCaught);
-  ret->insertAtTail(tryCatch);
-
-  // BUILD: if !errorCaught then manager.exitContext(nil);
-  auto ifCond = new CallExpr(PRIM_UNARY_LNOT, new SymExpr(errorCaught));
-  auto ifBranch = new CallExpr("exitContext",
+  // BUILD: defer manager.exitContext(error);
+  auto exitCall = new CallExpr("exitContext",
                                gMethodToken,
                                new SymExpr(managerHandle),
-                               gNil);
-  auto ifStmt = new CondStmt(ifCond, ifBranch);
-  ret->insertAtTail(ifStmt);
+                               new SymExpr(errorTemp));
+  auto deferBlock = new BlockStmt();
+  deferBlock->insertAtTail(exitCall);
+  auto defer = new DeferStmt(deferBlock);
+  ret->insertAtTail(defer);
+
+  // Call helper to construct try/catch block.
+  auto tryCatch = buildTryCatchForManagerBlock(managerHandle, errorTemp);
+  ret->insertAtTail(tryCatch);
 
   return ret;
 }

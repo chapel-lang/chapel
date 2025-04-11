@@ -432,19 +432,17 @@ module ChapelIO {
 
   @chpldoc.nodoc
   proc chpl_stringify_wrapper(const args ...):string {
-    use IO only chpl_stringify;
+    import IO.{chpl_stringify};
     return chpl_stringify((...args));
   }
 
+  // NOTE: Moved here to avoid circular dependencies in 'StringCasts.chpl'.
   //
-  // handle casting FCF types to string
+  // Cast a procedure value to a string. This path handles both the legacy
+  // class types and the newer procedure pointer types.
   //
   @chpldoc.nodoc
-  proc isFcfType(type t) param do
-    return __primitive("is fcf type", t);
-
-  @chpldoc.nodoc
-  operator :(x, type t:string) where isFcfType(x.type) do
+  operator :(x: ?t1, type t2: string) where isProcedureType(t1) {
     return chpl_stringify_wrapper(x);
-
+  }
 }

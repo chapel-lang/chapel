@@ -21,6 +21,7 @@ Initializing Modules:
         ChapelNumLocales
        DefaultRectangular
         ChapelArray
+         ArrayViewSlice
          ChapelPrivatization
          ChapelDomain
           FormattedIO
@@ -29,6 +30,7 @@ Initializing Modules:
             Types
            Regex
             RegexIoSupport
+          MemMove
          Sort
           List
           MSBRadixSort
@@ -44,6 +46,7 @@ Initializing Modules:
          ChapelHashtable
         ExternalArray
         RangeChunk
+        ChapelHashing
       LocaleModelHelpRuntime
      LocaleModelHelpMem
     LocalesArray
@@ -53,6 +56,7 @@ Initializing Modules:
     ExportWrappers
     ChapelContext
     ChapelStaticVars
+    ChapelDynamicLoading
     AlignedTSupport
     CopyAggregation
      AggregationPrimitives

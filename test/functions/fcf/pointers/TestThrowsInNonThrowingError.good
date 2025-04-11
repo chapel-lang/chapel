@@ -1,0 +1,2 @@
+TestThrowsInNonThrowingError.chpl:11: In method 'method':
+TestThrowsInNonThrowingError.chpl:11: error: call to throwing function value of type 'proc() throws' without throws, try, or try! (relaxed mode)

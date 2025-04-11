@@ -7,7 +7,3 @@ UseSpinlockGuardBadTaskIntent.chpl:13: error: const actual is passed to 'ref' fo
 SpinlockGuard.chpl:4: note: to formal of type spinlock(int(64))
 UseSpinlockGuardBadTaskIntent.chpl:1: note: The shadow variable 'manager' is constant due to task intents in this parallel statement
 SpinlockGuard.chpl:23: note: to ref formal here
-UseSpinlockGuardBadTaskIntent.chpl:13: error: const actual is passed to 'ref' formal 'this' of exitContext()
-SpinlockGuard.chpl:4: note: to formal of type spinlock(int(64))
-UseSpinlockGuardBadTaskIntent.chpl:1: note: The shadow variable 'manager' is constant due to task intents in this parallel statement
-SpinlockGuard.chpl:23: note: to ref formal here

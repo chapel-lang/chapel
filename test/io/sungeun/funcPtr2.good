@@ -1,1 +1,1 @@
-proc blah(): int { ... }
+extern proc blah(): int { ... }

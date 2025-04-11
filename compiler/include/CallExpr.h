@@ -109,9 +109,13 @@ public:
   FnSymbol*       resolvedOrVirtualFunction()                            const;
 
   // An indirect call is _only_ one in which the base expression of the call
-  // is a value with a function type. That is, the type of the function is
-  // known, but not exactly which function the call refers to.
-  bool            isIndirectCall()                                       const;
+  // is a value with a function type, but is not a use of a 'FnSymbol'. That
+  // is, the type of the function is known, but not exactly which function
+  // the call refers to.
+  bool isIndirectCall()                                                  const;
+
+  // Return the function type representing the function used to make the call.
+  FunctionType* functionType()                                           const;
 
   FnSymbol*       theFnSymbol()                                          const;
 
@@ -202,11 +206,31 @@ inline bool CallExpr::isPrimitive(const char* primitiveName) const {
 }
 
 inline bool CallExpr::isIndirectCall() const {
-  if (!baseExpr) return false;
-  if (resolvedFunction()) return false;
-  if (isPrimitive()) return false;
-  if (isFunctionType(baseExpr->qualType().type())) return true;
+  // Eliminate edge cases first (e.g., primitives, direct call).
+  if (!baseExpr || resolvedFunction() || isPrimitive()) return false;
+
+  // Otherwise, if the base expression has a function type...
+  if (isFunctionType(baseExpr->qualType().type()->getValType())) {
+    return true;
+  }
+
   return false;
+}
+
+inline FunctionType* CallExpr::functionType() const {
+  if (isIndirectCall()) {
+    // For indirect calls, grab the type of the base expression.
+    auto ret = toFunctionType(baseExpr->qualType().type()->getValType());
+    INT_ASSERT(ret);
+    return ret;
+
+  } else if (auto fn = resolvedFunction()) {
+    // The call is a direct call, so compute the function's type...
+    auto ret = fn->computeAndSetType();
+    return ret;
+  }
+
+  return nullptr;
 }
 
 inline int CallExpr::numActuals() const {

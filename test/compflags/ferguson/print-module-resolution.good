@@ -212,6 +212,8 @@ AutoGpu
   from print-module-resolution.ChapelStandard.AutoGpu
 stopInitCommDiags
   from print-module-resolution.ChapelStandard.stopInitCommDiags
+ChapelDynamicLoading
+  from print-module-resolution.ChapelStandard.ChapelDynamicLoading
 ChapelStandard
   from print-module-resolution.ChapelStandard
 print-module-resolution
