@@ -624,13 +624,26 @@ QualifiedType Param::fold(Context* context,
 
 void Param::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
 
+  // for debug output, remove newlines so that we don't break output
+  // that expects to be printed on a single line.
+  auto cleanStr = [stringKind](std::string& toClean) {
+    if (stringKind != CHPL_SYNTAX) {
+      std::string::size_type pos = 0;
+      while ((pos = toClean.find('\n', pos)) != std::string::npos) {
+        toClean.replace(pos, 1, "\\n");
+        pos += 2;
+      }
+    }
+    return toClean;
+  };
 
   switch (tag_) {
 #define PARAM_NODE(NAME, VALTYPE) \
     case paramtags::NAME: { \
       const NAME* casted = (const NAME*) this; \
       auto value = casted->value(); \
-      ss << Param::valueToString(value); \
+      std::string valueStr = Param::valueToString(value); \
+      ss << cleanStr(valueStr); \
       break; \
     }
 // Apply the above macros to param-classes-list.h

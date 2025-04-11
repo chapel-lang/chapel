@@ -1281,13 +1281,13 @@ void Context::saveDependencyInParent(const QueryMapResultBase* resultEntry) {
       // Should only happen if recursion occurred, in which case do not add it
       // to dependencies, in which case code below will skip it.
       CHPL_ASSERT(resultEntry->recursionErrors.count(resultEntry) > 0);
-    } else if (resultEntry->recursionErrors.count(resultEntry) > 0) {
+    } else if (resultEntry->recursionErrors.contains(resultEntry)) {
       // Skip adding recursion error triggers to the dependency graph
       // to avoid creating cycles.
     } else {
       bool errorCollectionRoot = !errorCollectionStack.empty() &&
                                  errorCollectionStack.back().collectingQuery() == parentQuery;
-      parentQuery->dependencies.push_back(QueryDependency(resultEntry, errorCollectionRoot));
+      parentQuery->dependencies.emplace_back(resultEntry, errorCollectionRoot);
       if (!errorCollectionRoot) {
         parentQuery->errorsPresentInSelfOrDependencies |=
           resultEntry->errorsPresentInSelfOrDependencies;
@@ -1295,8 +1295,10 @@ void Context::saveDependencyInParent(const QueryMapResultBase* resultEntry) {
     }
 
     // Propagate query errors that occurred in the child query to the parent
-    parentQuery->recursionErrors.insert(resultEntry->recursionErrors.begin(),
-                                        resultEntry->recursionErrors.end());
+    if (!resultEntry->recursionErrors.empty()) {
+      parentQuery->recursionErrors.insert(resultEntry->recursionErrors.begin(),
+                                          resultEntry->recursionErrors.end());
+    }
   }
 
   // The resultEntry might have been a query that silences errors. However,
