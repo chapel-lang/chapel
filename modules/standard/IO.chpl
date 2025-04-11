@@ -6172,7 +6172,9 @@ private proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, param b
       compilerError("Unknown int type in _write_binary_internal ", t:string);
     }
   } else if isRealType(t) || isImagType(t) {
-    if t == real(32) || t == imag(32) {
+    if t == real(16) || t == imag(16) {
+      return qio_channel_write_float32(false, byteorder:c_int, _channel_internal, x);
+    } else if t == real(32) || t == imag(32) {
       return qio_channel_write_float32(false, byteorder:c_int, _channel_internal, x);
     } else if t == real(64) || t == imag(64) {
       return qio_channel_write_float64(false, byteorder:c_int, _channel_internal, x);
