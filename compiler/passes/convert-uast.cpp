@@ -2156,28 +2156,6 @@ struct Converter final : UastConverter {
     return new CallExpr(PRIM_TO_NILABLE_CLASS_CHECKED, expr);
   }
 
-  Expr* convertLogicalAndAssign(const uast::OpCall* node) {
-    if (node->op() != USTR("&&=")) return nullptr;
-
-    astlocMarker markAstLoc(node->id());
-
-    INT_ASSERT(node->numActuals() == 2);
-    Expr* lhs = convertAST(node->actual(0));
-    Expr* rhs = convertAST(node->actual(1));
-    return buildLAndAssignment(lhs, rhs);
-  }
-
-  Expr* convertLogicalOrAssign(const uast::OpCall* node) {
-    if (node->op() != USTR("||=")) return nullptr;
-
-    astlocMarker markAstLoc(node->id());
-
-    INT_ASSERT(node->numActuals() == 2);
-    Expr* lhs = convertAST(node->actual(0));
-    Expr* rhs = convertAST(node->actual(1));
-    return buildLOrAssignment(lhs, rhs);
-  }
-
   Expr* convertTupleAssign(const uast::OpCall* node) {
     if (node->op() != USTR("=") || node->numActuals() < 1
         || !node->actual(0)->isTuple()) return nullptr;
@@ -2225,10 +2203,6 @@ struct Converter final : UastConverter {
     } else if (auto conv = convertReduceAssign(node)) {
       ret = conv;
     } else if (auto conv = convertToNilableChecked(node)) {
-      ret = conv;
-    } else if (auto conv = convertLogicalAndAssign(node)) {
-      ret = conv;
-    } else if (auto conv = convertLogicalOrAssign(node)) {
       ret = conv;
     } else if (auto conv = convertTupleAssign(node)) {
       ret = conv;
