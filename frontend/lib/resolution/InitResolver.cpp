@@ -438,7 +438,9 @@ static const ArrayType* arrayTypeFromSubsHelper(
              instanceBct->id().symbolPath() ==
                  "ArrayViewReindex.ArrayViewReindexArr" ||
              instanceBct->id().symbolPath() ==
-                 "ArrayViewSlice.ArrayViewSliceArr") {
+                 "ArrayViewSlice.ArrayViewSliceArr" ||
+             instanceBct->id().symbolPath() ==
+                 "ArrayViewRankChange.ArrayViewRankChangeArr") {
     auto [domInstanceQt] = extractFields(rc, instanceBct, "dom");
     auto domain = domainTypeFromInstance(rc, domInstanceQt);
     CHPL_ASSERT(domain);
