@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+sed "s/('invalid syntax', ('<string>'.*$/invalid syntax (<string>, line 1)/" $2 > $2.tmp
+mv $2.tmp $2
