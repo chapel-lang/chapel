@@ -5665,9 +5665,13 @@ void Resolver::exit(const Dot* dot) {
 
     // Try to resolve a it as a field/parenless proc so we can resolve 'this' on
     // it later if needed.
+    // Special case: Don't try to resolve calls to array.domain here, as we
+    // need to proceed to the handling logic below.
     if (!receiver.type().isUnknown() && receiver.type().type() &&
         receiver.type().type()->getCompositeType() &&
-        dot->field() != "init") {
+        dot->field() != USTR("init") &&
+        !(receiver.type().type()->isArrayType() &&
+          dot->field() == USTR("domain"))) {
       std::vector<CallInfoActual> actuals;
       actuals.push_back(CallInfoActual(receiver.type(), USTR("this")));
       auto ci = CallInfo(/* name */ dot->field(),
