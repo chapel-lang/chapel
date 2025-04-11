@@ -2862,6 +2862,10 @@ module ChapelBase {
     lhs = lhs ^ rhs;
   }
 
+  inline operator &&=(ref lhs: bool, rhs: bool) do __primitive("&&=", lhs, rhs);
+
+  inline operator ||=(ref lhs: bool, rhs: bool) do __primitive("||=", lhs, rhs);
+
   inline operator >>=(ref lhs:int(?w), rhs:integral) {
     __primitive(">>=", lhs, rhs);
   }
