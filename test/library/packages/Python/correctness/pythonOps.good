@@ -115,42 +115,42 @@ rhs: world
   <<=: Exception: unsupported operand type(s) for <<=: 'str' and 'str'
   >>=: Exception: unsupported operand type(s) for >>=: 'str' and 'str'
 ========================
-lhs: True
-rhs: False
+lhs: False
+rhs: True
  binary ops:
   +: 1 owned Value <class 'int'>
-  -: 1 owned Value <class 'int'>
+  -: -1 owned Value <class 'int'>
   *: 0 owned Value <class 'int'>
-  /: Exception: division by zero
-  %: Exception: integer modulo by zero
-  **: 1 owned Value <class 'int'>
+  /: 0.0 owned Value <class 'float'>
+  %: 0 owned Value <class 'int'>
+  **: 0 owned Value <class 'int'>
   &: False owned Value <class 'bool'>
   |: True owned Value <class 'bool'>
   ^: True owned Value <class 'bool'>
-  <<: 1 owned Value <class 'int'>
-  >>: 1 owned Value <class 'int'>
+  <<: 0 owned Value <class 'int'>
+  >>: 0 owned Value <class 'int'>
  comparison ops:
   ==: false bool
   !=: true bool
-  <: false bool
-  <=: false bool
-  >: true bool
-  >=: true bool
+  <: true bool
+  <=: true bool
+  >: false bool
+  >=: false bool
  unary ops:
-  +: 1 owned Value <class 'int'>
-  -: -1 owned Value <class 'int'>
-  ~: -2 owned Value <class 'int'>
-  !: False owned Value <class 'bool'>
+  +: 0 owned Value <class 'int'>
+  -: 0 owned Value <class 'int'>
+  ~: -1 owned Value <class 'int'>
+  !: True owned Value <class 'bool'>
  assignment ops:
   +=: 1 owned Value <class 'int'>
-  -=: 1 owned Value <class 'int'>
+  -=: -1 owned Value <class 'int'>
   *=: 0 owned Value <class 'int'>
-  /=: Exception: division by zero
-  %=: Exception: integer modulo by zero
-  **=: 1 owned Value <class 'int'>
+  /=: 0.0 owned Value <class 'float'>
+  %=: 0 owned Value <class 'int'>
+  **=: 0 owned Value <class 'int'>
   &=: False owned Value <class 'bool'>
   |=: True owned Value <class 'bool'>
   ^=: True owned Value <class 'bool'>
-  <<=: 1 owned Value <class 'int'>
-  >>=: 1 owned Value <class 'int'>
+  <<=: 0 owned Value <class 'int'>
+  >>=: 0 owned Value <class 'int'>
 ========================

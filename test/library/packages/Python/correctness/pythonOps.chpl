@@ -6,7 +6,7 @@ proc main() {
   doOps(new Value(interp, 1), new Value(interp, 2));
   doOps(new Value(interp, 2.0), new Value(interp, 1.0));
   doOps(new Value(interp, "hello"), new Value(interp, "world"));
-  doOps(new Value(interp, true), new Value(interp, false));
+  doOps(new Value(interp, false), new Value(interp, true));
 }
 
 proc doOps(in lhs, in rhs) throws {
