@@ -570,6 +570,8 @@ module Python {
     var objgraph: PyObjectPtr = nil;
     @chpldoc.nodoc
     var isSubInterpreter: bool;
+    @chpldoc.nodoc
+    var operatorModule: PyObjectPtr = nil;
 
     @chpldoc.nodoc
     var anonModuleCounter: atomic int = 0;
@@ -653,6 +655,11 @@ module Python {
         throwChapelException("Failed to register Python array types for Chapel arrays");
       }
 
+      this.operatorModule = this.importModuleInternal("operator");
+      if this.operatorModule == nil {
+        throwChapelException("Failed to import operator module");
+      }
+
       if pyMemLeaks {
         // import objgraph
         this.objgraph = this.importModuleInternal("objgraph");
@@ -675,9 +682,11 @@ module Python {
     proc deinit()  {
       if this.isSubInterpreter then return;
 
+      var ctx = chpl_pythonContext.enter();
+
+      Py_DECREF(this.operatorModule);
+
       if pyMemLeaks && this.objgraph != nil {
-        var ctx = chpl_pythonContext.enter();
-        defer ctx.exit();
         // note: try! is used since we can't have a throwing deinit
 
         // run gc.collect() before showing growth
@@ -701,6 +710,9 @@ module Python {
 
         Py_DECREF(this.objgraph);
       }
+
+
+      ctx.exit();
 
       //
       // we are done, the thread keeping the interpreter alive can finish
@@ -1930,6 +1942,20 @@ module Python {
       return res;
     }
 
+    /*
+      Returns the type of the object.
+
+      Equivalent to calling ``type(obj)`` in Python.
+    */
+    proc pyType(): owned Value throws {
+      var ctx = chpl_pythonContext.enter();
+      defer ctx.exit();
+      var pyType = PyObject_Type(this.obj);
+      this.interpreter.checkException();
+      var res = interpreter.fromPythonInner(owned Value, pyType);
+      return res;
+    }
+
 
     /*
       Treat this value as a callable and call it with the given arguments.
@@ -2260,6 +2286,20 @@ module Python {
       // fromPython will decrement the ref count, so we need to increment it
       Py_INCREF(this.obj);
       return interpreter.fromPythonInner(value, this.obj);
+    }
+
+    /*
+      Retain a new Python object.
+      If the previous object was owned, decrements the reference count
+    */
+    @chpldoc.nodoc
+    proc retain(val: PyObjectPtr, isOwned: bool = true) {
+      var old = this.obj;
+      this.obj = val;
+      if this.isOwned {
+        Py_DECREF(old);
+      }
+      this.isOwned = isOwned;
     }
 
     /*
@@ -3709,6 +3749,161 @@ module Python {
   proc NoneType.serialize(writer, ref serializer) throws do
     writer.write(this:string);
 
+  //
+  // binary ops
+  //
+  private inline proc _binaryOp(param op: string,
+                                lhs: borrowed Value,
+                                rhs: borrowed Value): owned Value throws {
+    var ctx = chpl_pythonContext.enter();
+    defer ctx.exit();
+    var res = PyObject_CallMethod(
+      lhs.interpreter.operatorModule, op,
+      "OO", lhs.getPyObject(), rhs.getPyObject());
+    lhs.interpreter.checkException();
+    return new Value(lhs.interpreter, res, isOwned=true);
+  }
+  inline proc _binaryOpInPlace(param op: string,
+                                lhs: borrowed Value,
+                                rhs: borrowed Value) throws {
+    var ctx = chpl_pythonContext.enter();
+    defer ctx.exit();
+    var res = PyObject_CallMethod(
+      lhs.interpreter.operatorModule, op,
+      "OO", lhs.getPyObject(), rhs.getPyObject());
+    lhs.interpreter.checkException();
+    lhs.retain(res);
+    lhs.interpreter.checkException();
+  }
+  operator +(lhs: borrowed Value, rhs: borrowed Value): owned Value throws do
+    return _binaryOp("add", lhs, rhs);
+  operator +=(ref lhs: owned Value, rhs: borrowed Value) throws do
+    _binaryOpInPlace("iadd", lhs, rhs);
+  operator +=(ref lhs: owned Value, const ref rhs: Value) throws do
+    _binaryOpInPlace("iadd", lhs.borrow(), rhs.borrow());
+
+  operator -(lhs: borrowed Value, rhs: borrowed Value): owned Value throws do
+    return _binaryOp("sub", lhs, rhs);
+  operator -=(ref lhs: owned Value, rhs: borrowed Value) throws do
+    _binaryOpInPlace("isub", lhs, rhs);
+  operator -=(ref lhs: owned Value, const ref rhs: Value) throws do
+    _binaryOpInPlace("isub", lhs.borrow(), rhs.borrow());
+
+  operator *(lhs: borrowed Value, rhs: borrowed Value): owned Value throws do
+    return _binaryOp("mul", lhs, rhs);
+  operator *=(ref lhs: owned Value, rhs: borrowed Value) throws do
+    _binaryOpInPlace("imul", lhs, rhs);
+  operator *=(ref lhs: owned Value, const ref rhs: Value) throws do
+    _binaryOpInPlace("imul", lhs.borrow(), rhs.borrow());
+
+  operator /(lhs: borrowed Value, rhs: borrowed Value): owned Value throws do
+    return _binaryOp("truediv", lhs, rhs);
+  operator /=(ref lhs: owned Value, rhs: borrowed Value) throws do
+    _binaryOpInPlace("itruediv", lhs, rhs);
+  operator /=(ref lhs: owned Value, const ref rhs: Value) throws do
+    _binaryOpInPlace("itruediv", lhs.borrow(), rhs.borrow());
+
+  operator %(lhs: borrowed Value, rhs: borrowed Value): owned Value throws do
+    return _binaryOp("mod", lhs, rhs);
+  operator %=(ref lhs: owned Value, rhs: borrowed Value) throws do
+    _binaryOpInPlace("imod", lhs, rhs);
+  operator %=(ref lhs: owned Value, const ref rhs: Value) throws do
+    _binaryOpInPlace("imod", lhs.borrow(), rhs.borrow());
+
+  operator **(lhs: borrowed Value, rhs: borrowed Value): owned Value throws do
+    return _binaryOp("pow", lhs, rhs);
+  operator **=(ref lhs: owned Value, rhs: borrowed Value) throws do
+    _binaryOpInPlace("ipow", lhs, rhs);
+  operator **=(ref lhs: owned Value, const ref rhs: Value) throws do
+    _binaryOpInPlace("ipow", lhs.borrow(), rhs.borrow());
+
+  operator &(lhs: borrowed Value, rhs: borrowed Value): owned Value throws do
+    return _binaryOp("and_", lhs, rhs);
+  operator &=(ref lhs: owned Value, rhs: borrowed Value) throws do
+    _binaryOpInPlace("iand", lhs, rhs);
+  operator &=(ref lhs: owned Value, const ref rhs: Value) throws do
+    _binaryOpInPlace("iand", lhs.borrow(), rhs.borrow());
+
+  operator |(lhs: borrowed Value, rhs: borrowed Value): owned Value throws do
+    return _binaryOp("or_", lhs, rhs);
+  operator |=(ref lhs: owned Value, rhs: borrowed Value) throws do
+    _binaryOpInPlace("ior", lhs, rhs);
+  operator |=(ref lhs: owned Value, const ref rhs: Value) throws do
+    _binaryOpInPlace("ior", lhs.borrow(), rhs.borrow());
+
+  operator ^(lhs: borrowed Value, rhs: borrowed Value): owned Value throws do
+    return _binaryOp("xor", lhs, rhs);
+  operator ^=(ref lhs: owned Value, rhs: borrowed Value) throws do
+    _binaryOpInPlace("ixor", lhs, rhs);
+  operator ^=(ref lhs: owned Value, const ref rhs: Value) throws do
+    _binaryOpInPlace("ixor", lhs.borrow(), rhs.borrow());
+
+  operator <<(lhs: borrowed Value, rhs: borrowed Value): owned Value throws do
+    return _binaryOp("lshift", lhs, rhs);
+  operator <<=(ref lhs: owned Value, rhs: borrowed Value) throws do
+    _binaryOpInPlace("ilshift", lhs, rhs);
+  operator <<=(ref lhs: owned Value, const ref rhs: Value) throws do
+    _binaryOpInPlace("ilshift", lhs.borrow(), rhs.borrow());
+
+  operator >>(lhs: borrowed Value, rhs: borrowed Value): owned Value throws do
+    return _binaryOp("rshift", lhs, rhs);
+  operator >>=(ref lhs: owned Value, rhs: borrowed Value) throws do
+    _binaryOpInPlace("irshift", lhs, rhs);
+  operator >>=(ref lhs: owned Value, const ref rhs: Value) throws do
+    _binaryOpInPlace("irshift", lhs.borrow(), rhs.borrow());
+
+  //
+  // unary ops
+  //
+  private inline proc _unaryOp(param op: string,
+                               lhs: borrowed Value): owned Value throws {
+    var ctx = chpl_pythonContext.enter();
+    defer ctx.exit();
+    var res = PyObject_CallMethod(
+      lhs.interpreter.operatorModule, op,
+      "O", lhs.getPyObject());
+    lhs.interpreter.checkException();
+    return new Value(lhs.interpreter, res, isOwned=true);
+  }
+  operator +(lhs: borrowed Value): owned Value throws do
+    return _unaryOp("pos", lhs);
+  operator -(lhs: borrowed Value): owned Value throws do
+    return _unaryOp("neg", lhs);
+  operator ~(lhs: borrowed Value): owned Value throws do
+    return _unaryOp("invert", lhs);
+  operator !(lhs: borrowed Value): owned Value throws do
+    return _unaryOp("not_", lhs);
+
+  //
+  // comparison ops
+  //
+  private inline proc _cmpOp(param op: string,
+                            lhs: borrowed Value,
+                            rhs: borrowed Value): bool throws {
+    var ctx = chpl_pythonContext.enter();
+    defer ctx.exit();
+    var res = PyObject_CallMethod(
+      lhs.interpreter.operatorModule, op,
+      "OO", lhs.getPyObject(), rhs.getPyObject());
+    lhs.interpreter.checkException();
+    return lhs.interpreter.fromPythonInner(bool, res);
+  }
+  operator ==(lhs: borrowed Value, rhs: borrowed Value): bool throws do
+    return _cmpOp("eq", lhs, rhs);
+  operator !=(lhs: borrowed Value, rhs: borrowed Value): bool throws do
+    return _cmpOp("ne", lhs, rhs);
+
+  operator <(lhs: borrowed Value, rhs: borrowed Value): bool throws do
+    return _cmpOp("lt", lhs, rhs);
+  operator <=(lhs: borrowed Value, rhs: borrowed Value): bool throws do
+    return _cmpOp("le", lhs, rhs);
+
+  operator >(lhs: borrowed Value, rhs: borrowed Value): bool throws do
+    return _cmpOp("gt", lhs, rhs);
+  operator >=(lhs: borrowed Value, rhs: borrowed Value): bool throws do
+    return _cmpOp("ge", lhs, rhs);
+
+
   @chpldoc.nodoc
   module CWChar {
     require "wchar.h";
@@ -3818,6 +4013,7 @@ module Python {
     extern proc PyMem_Free(ptr: c_ptr(void));
     extern proc PyObject_Str(obj: PyObjectPtr): PyObjectPtr; // `str(obj)`
     extern proc PyObject_Repr(obj: PyObjectPtr): PyObjectPtr; // `repr(obj)`
+    extern proc PyObject_Type(obj: PyObjectPtr): PyObjectPtr; // `type(obj)`
     extern proc PyImport_ImportModule(name: c_ptrConst(c_char)): PyObjectPtr;
 
     extern "chpl_PY_VERSION_HEX" const PY_VERSION_HEX: uint(64);
@@ -4028,6 +4224,10 @@ module Python {
     extern proc PyObject_CallMethodObjArgs(obj: PyObjectPtr,
                                            method: PyObjectPtr,
                                            args...): PyObjectPtr;
+    extern proc PyObject_CallMethod(obj: PyObjectPtr,
+                                    method: c_ptrConst(c_char),
+                                    format: c_ptrConst(c_char),
+                                    args...): PyObjectPtr;
 
 
     /*
