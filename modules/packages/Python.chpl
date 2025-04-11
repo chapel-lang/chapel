@@ -2866,6 +2866,22 @@ module Python {
       PyList_Append(this.getPyObject(), interpreter.toPythonInner(item));
       this.interpreter.checkException();
     }
+
+    /*
+      Remove all items from the list.  Equivalent to calling ``obj.clear()`` or
+      ``del obj[:]``
+
+      .. warning::
+
+         This method is only support for Python 3.13 or later!
+    */
+    proc clear() throws {
+      var ctx = chpl_pythonContext.enter();
+      defer ctx.exit();
+
+      PyList_Clear(this.getPyObject());
+      this.interpreter.checkException();
+    }
   }
 
   /*
@@ -4044,6 +4060,7 @@ module Python {
                               idx: Py_ssize_t,
                               item: PyObjectPtr);
     extern proc PyList_Append(list: PyObjectPtr, item: PyObjectPtr);
+    extern proc PyList_Clear(list: PyObjectPtr);
 
     /*
       Sets
