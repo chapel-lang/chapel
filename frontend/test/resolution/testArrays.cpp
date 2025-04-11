@@ -256,25 +256,31 @@ static void testArraySlicing(std::string arrayLiteral, std::string sliceArgs,
     R"""(
     module M {
       var A = )""" + arrayLiteral + R"""(;
-
       var mySlice = A[)""" + sliceArgs + R"""(];
-
+      type gotSliceTy = mySlice.type;
       type expectedSliceTy = )""" + resultType + R"""(;
-      param correctSliceType = mySlice.type == expectedSliceTy;
     }
     )""",
-    {"A", "mySlice", "correctSliceType"});
+    {"A", "gotSliceTy", "expectedSliceTy"});
   auto arrType = vars.at("A");
   assert(arrType.type());
   assert(!arrType.type()->isUnknownType());
   assert(arrType.type()->isArrayType());
 
-  auto sliceType = vars.at("mySlice");
-  assert(sliceType.type());
-  assert(!sliceType.type()->isUnknownType());
-  assert(sliceType.type()->isArrayType());
+  auto gotSliceTy = vars.at("gotSliceTy");
+  assert(gotSliceTy.type());
+  assert(!gotSliceTy.type()->isUnknownType());
 
-  ensureParamBool(vars.at("correctSliceType"), true);
+  auto expectedSliceTy = vars.at("expectedSliceTy");
+  assert(expectedSliceTy.type());
+  assert(!expectedSliceTy.type()->isUnknownType());
+
+  // Compare types approximately by stringifying, since they won't have the
+  // same underlying instance
+  std::stringstream ss1, ss2;
+  gotSliceTy.type()->stringify(ss1, chpl::StringifyKind::CHPL_SYNTAX);
+  expectedSliceTy.type()->stringify(ss2, chpl::StringifyKind::CHPL_SYNTAX);
+  assert(ss1.str() == ss2.str());
 
   assert(guard.realizeErrors() == 0);
 }
