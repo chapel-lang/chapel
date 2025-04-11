@@ -319,7 +319,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
     fclose(slurmFile);
     chmod(slurmFilename, 0755);
-    char* format="sbatch %s\n";
+    const char* format="sbatch %s\n";
     int baseCommandLen = strlen(slurmFilename) + strlen(format);
     baseCommand = (char*)chpl_mem_allocMany(baseCommandLen, sizeof(char),
                                             CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
@@ -352,7 +352,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     for (i=1; i<argc; i++) {
       chpl_append_to_cmd(&iCom, &len, " '%s'", argv[i]);
     }
-    char* format = "salloc %s";
+    const char* format = "salloc %s";
     int baseCommandLen = strlen(format) + len + 1;
     baseCommand = (char*)chpl_mem_allocMany(baseCommandLen, sizeof(char),
                                             CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
