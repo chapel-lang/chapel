@@ -5235,6 +5235,12 @@ DEFINE_PRIM(OR_ASSIGN) {
 DEFINE_PRIM(XOR_ASSIGN) {
     codegenOpAssign(call->get(1), call->get(2), " ^= ", codegenXor);
 }
+DEFINE_PRIM(LOGICALAND_ASSIGN) {
+    codegenOpAssign(call->get(1), call->get(2), " &&= ", codegenLogicalAnd);
+}
+DEFINE_PRIM(LOGICALOR_ASSIGN) {
+    codegenOpAssign(call->get(1), call->get(2), " ||= ", codegenLogicalOr);
+}
 DEFINE_PRIM(POW) {
     ret = codegenCallExpr("pow", call->get(1), call->get(2));
 }
