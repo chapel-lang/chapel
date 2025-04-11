@@ -109,6 +109,18 @@ llvm/
   See also: llvm/llvm-src/README.txt and llvm/llvm-src/tools/clang/README.txt
 
 
+mimalloc/
+  Summary: mimalloc is an alternative allocator to with an emphasis on
+           multithreaded performance and reducing fragmentation
+
+  License: mimalloc is released under the MIT License (see
+           mimalloc/mimalloc-src/LICENSE)
+
+  Website: https://microsoft.github.io/mimalloc/
+
+  See also: mimalloc/README and mimalloc/mimalloc-src/README
+
+
 qthread/ 
   Summary: the Qthreads user-level tasking package developed by Sandia
            National Laboratory.
