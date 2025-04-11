@@ -24,6 +24,11 @@ module ChapelRemoteVars {
 
   class _remoteVarContainer {
     var containedValue;
+
+    proc type _noinit(type containedValueType) {
+      var tmp: containedValueType = noinit;
+      return new _remoteVarContainer(tmp);
+    }
   }
 
   record _remoteVarWrapper {
@@ -75,6 +80,16 @@ module ChapelRemoteVars {
     type inType = thunkToReturnType(tr.type);
     var c: owned _remoteVarContainer(inType)?;
     on loc do c = new _remoteVarContainer(__primitive("force thunk", tr));
+    return new _remoteVarWrapper(try! c : owned _remoteVarContainer(inType));
+  }
+
+  @unstable("remote variables are unstable")
+  inline proc chpl__buildRemoteWrapper(const ref loc, type inType, type noinitMarker) where noinitMarker == void {
+    // This is a special case to create a noinit remote variable.
+    // We use a specific overload of the _remoteVarContainer constructor
+    // which accepts a type and uses noinit.
+    var c: owned _remoteVarContainer(inType)?;
+    on loc do c = _remoteVarContainer._noinit(inType);
     return new _remoteVarWrapper(try! c : owned _remoteVarContainer(inType));
   }
 
