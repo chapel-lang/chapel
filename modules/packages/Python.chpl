@@ -2761,6 +2761,66 @@ module Python {
       return this.get(owned Value, idx);
 
     /*
+      Get a slice of the list indicated by ``bounds``.  Equivalent to
+      calling ``obj[bounds.low:bounds.high+1]`` in Python.
+
+      .. note::
+
+         This method does not support strided ranges or ranges with an alignment
+         other than 0.
+
+      :arg T: the Chapel type of the slice to return.
+      :arg bounds: The full slice of the list to return
+      :returns: A slice of the list for the given bounds.
+    */
+    pragma "docs only"
+    proc get(type T = owned Value, bounds: range(?)): T throws do
+      compilerError("docs only");
+
+    @chpldoc.nodoc
+    proc get(type T, bounds: range(?)): T throws {
+      if (bounds.strides != strideKind.one) {
+        compilerError("cannot call `get()` on a Python list with a range with stride other than 1");
+      }
+
+      var ctx = chpl_pythonContext.enter();
+      defer ctx.exit();
+
+      var pyObj;
+
+      if (bounds.hasLowBound() && bounds.hasHighBound()) {
+        pyObj = PyList_GetSlice(this.getPyObject(),
+                                bounds.low.safeCast(Py_ssize_t),
+                                bounds.high.safeCast(Py_ssize_t) + 1);
+
+      } else if (!bounds.hasLowBound() && bounds.hasHighBound()) {
+        pyObj = PyList_GetSlice(this.getPyObject(), min(Py_ssize_t),
+                                bounds.high.safeCast(Py_ssize_t) + 1);
+
+      } else if (bounds.hasLowBound() && !bounds.hasHighBound()) {
+        pyObj = PyList_GetSlice(this.getPyObject(),
+                                bounds.low.safeCast(Py_ssize_t),
+                                max(Py_ssize_t));
+
+      } else {
+        pyObj = PyList_GetSlice(this.getPyObject(), min(Py_ssize_t),
+                                max(Py_ssize_t));
+      }
+      this.interpreter.checkException();
+      return interpreter.fromPythonInner(T, pyObj);
+    }
+
+    @chpldoc.nodoc
+    proc get(bounds: range(?)): owned Value throws {
+      if (bounds.strides != strideKind.one) {
+        // Avoids the error from the other version reporting this function
+        // instead of the user function
+        compilerError("cannot call `get()` on a Python list with a range with stride other than 1");
+      }
+      return this.get(owned Value, bounds);
+    }
+
+    /*
       Set an item in the list. Equivalent to calling ``obj[idx] = item`` in
       Python.
 
@@ -2774,6 +2834,36 @@ module Python {
       PySequence_SetItem(this.getPyObject(),
                      idx.safeCast(Py_ssize_t),
                      interpreter.toPythonInner(item));
+      this.interpreter.checkException();
+    }
+
+    /*
+      Insert an item into the list at the specified index.  Equivalent to
+      calling ``obj.insert(index, item)`` in Python.
+
+      :arg idx: The index to insert the item at
+      :arg item: The item to append
+    */
+    proc insert(idx: int, item: ?) throws {
+      var ctx = chpl_pythonContext.enter();
+      defer ctx.exit();
+
+      PyList_Insert(this.getPyObject(), idx.safeCast(Py_ssize_t),
+                    interpreter.toPythonInner(item));
+      this.interpreter.checkException();
+    }
+
+    /*
+      Append an item to the end of the list.  Equivalent to calling
+      ``obj.append(item)`` in Python.
+
+      :arg item: The item to append
+    */
+    proc append(item: ?) throws {
+      var ctx = chpl_pythonContext.enter();
+      defer ctx.exit();
+
+      PyList_Append(this.getPyObject(), interpreter.toPythonInner(item));
       this.interpreter.checkException();
     }
   }
@@ -3947,6 +4037,8 @@ module Python {
                                idx: Py_ssize_t,
                                item: PyObjectPtr);
     extern proc PyList_GetItem(list: PyObjectPtr, idx: Py_ssize_t): PyObjectPtr;
+    extern proc PyList_GetSlice(list: PyObjectPtr, low: Py_ssize_t,
+                                high: Py_ssize_t): PyObjectPtr;
     extern proc PyList_Size(list: PyObjectPtr): Py_ssize_t;
     extern proc PyList_Insert(list: PyObjectPtr,
                               idx: Py_ssize_t,

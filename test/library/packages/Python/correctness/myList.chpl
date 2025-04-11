@@ -23,12 +23,32 @@ proc main() {
   writeln("lst[-3] ", lst.get(owned Value, -3));
   writeln("lst[-3] ", lst.get(-3));
 
+  writeln("lst[2] ", lst.get(2));
+  lst.insert(2, -4);
+  writeln("lst[2] after insert ", lst.get(2));
+
+  lst.append("goodbye");
+  writeln("lst post append: ", lst);
+
+  var lstSlice = lst.get(1..3);
+  writeln("lst[1:4] ", lstSlice);
+
   try {
     write("lst[lst.size] ");
     writeln(lst.get(int, lst.size));
   } catch e: PythonException {
     writeln("Caught exception: ", e);
   } catch e{
+    writeln("Caught unknown exception: ", e);
+  }
+
+  try {
+    // get(int, bounds) should not work
+    writeln("checking trying to convert slice to an int");
+    var x = lst.get(int, 1..2);
+  } catch e: PythonException {
+    writeln("Caught exception: ", e);
+  } catch e {
     writeln("Caught unknown exception: ", e);
   }
 
