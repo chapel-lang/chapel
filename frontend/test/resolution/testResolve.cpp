@@ -1730,6 +1730,29 @@ static void test27() {
   assert(guard.realizeErrors() == 0);
 }
 
+// Test resolving logical AND/OR compound assignment operators
+static void test28() {
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string prog =
+    R"""(
+    proc baz() {
+      var ok = true;
+      ok &&= false;
+      ok ||= true;
+      return ok;
+    }
+    var x = baz();
+    )""";
+
+  auto t = resolveTypeOfXInit(context, prog);
+  CHPL_ASSERT(!t.isUnknownOrErroneous());
+  CHPL_ASSERT(t.type()->isBoolType());
+
+  assert(guard.realizeErrors() == 0);
+}
+
 // This bug is hard to replicate with queries alone, but does seem to show
 // up in some cases of the query system.
 static void testInfiniteCycleBug() {
@@ -2128,6 +2151,7 @@ int main() {
   test25();
   test26();
   test27();
+  test28();
 
   testInfiniteCycleBug();
 
