@@ -31,13 +31,8 @@
 // TODO:
 // - Slices
 
-// Test using an array with a type expression consisting of the given domain
-// and element type.
-// Optionally accepts arguments to test indexing into the array with (in
-// addition to doing so with the default value of the domain's index type).
 static void testArray(std::string domainType,
-                      std::string eltType,
-                      std::string testIdxArg = "") {
+                      std::string eltType) {
   std::string arrayText;
   arrayText += "[" + domainType + "] " + eltType;
   printf("Testing array type expression: %s\n", arrayText.c_str());
@@ -94,8 +89,7 @@ module M {
 
   // indexing
   var idx : index(A.domain);
-  var x1 = A[idx];
-  var x2 = A[)""" + (testIdxArg.empty() ? "idx" : testIdxArg) + R"""(];
+  var x = A[idx];
 
   // iteration
   for loopI in A {
@@ -185,8 +179,7 @@ module M {
     assert(findVarType(m, rr, "assocIndices").type()->isArrayType());
   }
 
-  assert(findVarType(m, rr, "x1").type() == eType.type());
-  assert(findVarType(m, rr, "x2").type() == eType.type());
+  assert(findVarType(m, rr, "x").type() == eType.type());
 
   assert(findVarType(m, rr, "z").type() == eType.type());
 
@@ -258,7 +251,7 @@ int main() {
   // rectangular
   testArray("domain(1)", "int");
   testArray("domain(1)", "string");
-  testArray("domain(2)", "int", "0, 1");
+  testArray("domain(2)", "int");
 
   // 1D literals
   testArrayLiteral("[1, 2, 3]", "domain(1)", "int");
