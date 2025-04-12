@@ -812,6 +812,8 @@ static void handleForallGoto(ForallStmt* forall, GotoStmt* gs) {
 
 static void resolveGotoLabels() {
   forv_Vec(GotoStmt, gs, gGotoStmts) {
+    if (gs->parentSymbol->hasFlag(FLAG_RESOLVED_EARLY)) continue;
+
     SET_LINENO(gs);
 
     Stmt* loop = NULL;
