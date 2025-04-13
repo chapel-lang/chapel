@@ -1190,6 +1190,16 @@ void PoiInfo::accumulateRecursive(const TypedFnSignature* signature,
 bool PoiInfo::canReuse(const PoiInfo& check) const {
   CHPL_ASSERT(resolved_ && !check.resolved_);
 
+  if (poiScope_ == check.poiScope_) {
+    // if the POI scopes are the same, then we can reuse
+    return true;
+  }
+
+  if (poiFnIdsUsed_.empty() && recursiveFnsUsed_.empty()) {
+    // if we have no POI functions used, then we can reuse
+    return true;
+  }
+
   // Performance TODO: consider function names etc -- see PR #16261
   return false;
 }

@@ -2743,6 +2743,11 @@ resolveFunctionByInfoQuery(ResolutionContext* rc,
                            const TypedFnSignature* sig,
                            PoiInfo poiInfo);
 
+static const ResolvedFunction* const&
+resolveFunctionByResolvedInfoQuery(Context* context,
+                                   const TypedFnSignature* sig,
+                                   PoiInfo poiInfo);
+
 static const owned<ResolvedFunction>&
 resolveFunctionByPoisQuery(ResolutionContext* rc, PoiInfo::Trace poiTrace);
 
@@ -2860,48 +2865,69 @@ resolveFunctionByPoisQuery(ResolutionContext* rc, PoiInfo::Trace poiTrace) {
 }
 
 static const ResolvedFunction* const&
+resolveFunctionByResolvedInfoQuery(Context* context,
+                                   const TypedFnSignature* sig,
+                                   PoiInfo poiInfo) {
+  QUERY_BEGIN(resolveFunctionByResolvedInfoQuery, context, sig, poiInfo);
+
+  // should only ever be SET by 'resolveFunctionByInfoQuery'
+  const ResolvedFunction* ret = nullptr;
+
+  return QUERY_END(ret);
+}
+
+static const ResolvedFunction* const&
 resolveFunctionByInfoQuery(ResolutionContext* rc,
                            const TypedFnSignature* sig,
                            PoiInfo poiInfo) {
   CHPL_RESOLUTION_QUERY_BEGIN(resolveFunctionByInfoQuery, rc, sig, poiInfo);
 
-  // Call the implementation which resolves the function body.
-  auto resolved = resolveFunctionByInfoImpl(rc, sig, poiInfo);
+  const ResolvedFunction* ret = nullptr;
+  if (rc->context()->hasCurrentResultForQuery(resolveFunctionByResolvedInfoQuery,
+                                              std::make_tuple(sig, poiInfo))) {
+    ret = resolveFunctionByResolvedInfoQuery(rc->context(), sig, poiInfo);
+  } else {
+    // Call the implementation which resolves the function body.
+    auto resolved = resolveFunctionByInfoImpl(rc, sig, poiInfo);
 
-  // The final signature should only differ for initializers.
-  auto finalSig = resolved->signature();
-  CHPL_ASSERT(finalSig == sig || sig->isInitializer());
+    // The final signature should only differ for initializers.
+    auto finalSig = resolved->signature();
+    CHPL_ASSERT(finalSig == sig || sig->isInitializer());
 
-  // Make a POI trace for use with the generic cache.
-  auto resolvedPoiTrace = resolved->poiInfo().createTraceFor(sig);
+    // Make a POI trace for use with the generic cache.
+    auto resolvedPoiTrace = resolved->poiInfo().createTraceFor(sig);
 
-  // Try to store in the generic cache.
-  CHPL_RESOLUTION_QUERY_STORE_RESULT(resolveFunctionByPoisQuery, rc,
-                                     std::move(resolved),
-                                     resolvedPoiTrace);
+    // Try to store in the generic cache.
+    CHPL_RESOLUTION_QUERY_STORE_RESULT(resolveFunctionByPoisQuery, rc,
+        std::move(resolved),
+        resolvedPoiTrace);
 
-  // Initializer signatures can potentially require their body to be
-  // resolved in order to complete instantiation. This means that the
-  // 'ResolvedFunction' can have a different signature than what you
-  // started with (the receiver or a dependent type could instantiate).
-  //
-  // The user could pass in the fully resolved initializer signature
-  // in a subsequent call, and we don't want to resolve the function
-  // body again. So record a second entry for 'resolveFunctionByInfoQuery'
-  // which links the fully resolved signature to the result.
-  if (finalSig != sig) {
+    // Initializer signatures can potentially require their body to be
+    // resolved in order to complete instantiation. This means that the
+    // 'ResolvedFunction' can have a different signature than what you
+    // started with (the receiver or a dependent type could instantiate).
+    //
+    // The user could pass in the fully resolved initializer signature
+    // in a subsequent call, and we don't want to resolve the function
+    // body again. So record a second entry for 'resolveFunctionByInfoQuery'
+    // which links the fully resolved signature to the result.
+    if (finalSig != sig) {
+      auto& saved = resolveFunctionByPoisQuery(rc, resolvedPoiTrace);
+      CHPL_RESOLUTION_QUERY_STORE_RESULT(resolveFunctionByInfoQuery, rc,
+          saved.get(),
+          finalSig,
+          poiInfo);
+    }
+
+    // Return the unique result from the query (that might have been saved
+    // above - if it was not saved, then we are reusing a cached result,
+    // which means the input and final signatures can differ.
     auto& saved = resolveFunctionByPoisQuery(rc, resolvedPoiTrace);
-    CHPL_RESOLUTION_QUERY_STORE_RESULT(resolveFunctionByInfoQuery, rc,
-                                       saved.get(),
-                                       finalSig,
-                                       poiInfo);
-  }
+    ret = saved.get();
 
-  // Return the unique result from the query (that might have been saved
-  // above - if it was not saved, then we are reusing a cached result,
-  // which means the input and final signatures can differ.
-  auto& saved = resolveFunctionByPoisQuery(rc, resolvedPoiTrace);
-  auto ret = saved.get();
+    QUERY_STORE_RESULT(resolveFunctionByResolvedInfoQuery, rc->context(),
+                       ret, sig, saved->poiInfo());
+  }
 
   return CHPL_RESOLUTION_QUERY_END(ret);
 }
