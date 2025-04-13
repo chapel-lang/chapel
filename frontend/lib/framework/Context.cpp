@@ -1041,6 +1041,9 @@ void Context::recomputeIfNeeded(const QueryMapResultBase* resultEntry) {
   //         resultEntry->parentQueryMap->queryName);
   //}
 
+  // we should not be trying to recompute a query that's set by other queries.
+  CHPL_ASSERT(!resultEntry->externallySet);
+
   if (this->currentRevisionNumber == resultEntry->lastChecked) {
     // No need to check the dependencies again.
     // We already know that we can reuse the result.
@@ -1064,7 +1067,7 @@ void Context::recomputeIfNeeded(const QueryMapResultBase* resultEntry) {
   resultEntry->beingTestedForReuse = true;
   for (auto& dependency : resultEntry->dependencies) {
     const QueryMapResultBase* dependencyQuery = dependency.query;
-    if (dependencyQuery->lastChanged > resultEntry->lastChanged) {
+    if (dependencyQuery->externallySet || dependencyQuery->lastChanged > resultEntry->lastChanged) {
       useSaved = false;
       break;
     } else if (this->currentRevisionNumber == dependencyQuery->lastChecked) {
@@ -1144,6 +1147,10 @@ bool Context::queryCanUseSavedResult(
   } else if (this->currentRevisionNumber == resultEntry->lastChecked) {
     // the query was already checked/run in this revision
     useSaved = true;
+  } else if (resultEntry->externallySet) {
+    // queries set externally in the previous generation are not safe to re-use,
+    // we should re-run the code that sets them.
+    useSaved = false;
   } else if (resultEntry->recursionErrors.size()) {
     // If the query had recursion, don't re-use its result
     // in subsequent generations.
@@ -1169,6 +1176,11 @@ bool Context::queryCanUseSavedResult(
     resultEntry->beingTestedForReuse = true;
     for (auto& dependency: resultEntry->dependencies) {
       const QueryMapResultBase* dependencyQuery = dependency.query;
+
+      if (dependencyQuery->externallySet) {
+        useSaved = false;
+        break;
+      }
 
       if (dependency.errorCollectionRoot) {
         errorCollectionStack.push_back(
@@ -1400,6 +1412,7 @@ void queryArgsPrintSep(std::ostream& s) {
 QueryMapResultBase::QueryMapResultBase(RevisionNumber lastChecked,
                    RevisionNumber lastChanged,
                    bool beingTestedForReuse,
+                   bool externallySet,
                    bool emittedErrors,
                    size_t oldResultForErrorContents,
                    llvm::SmallPtrSet<const QueryMapResultBase*, 2> recursionErrors,
@@ -1407,6 +1420,7 @@ QueryMapResultBase::QueryMapResultBase(RevisionNumber lastChecked,
   : lastChecked(lastChecked),
     lastChanged(lastChanged),
     beingTestedForReuse(beingTestedForReuse),
+    externallySet(externallySet),
     emittedErrors(emittedErrors),
     errorsPresentInSelfOrDependencies(0),
     oldResultForErrorContents(oldResultForErrorContents),

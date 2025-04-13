@@ -273,6 +273,13 @@ class QueryMapResultBase {
   // and that field is used for a lot of things, so for the time being, the
   // extra boolean is fine.
   mutable bool beingTestedForReuse = false;
+  // queries that aren't set in "usual" ways (e.g., ones that are set by
+  // another query) should be marked externallySet. This ensures that these queries,
+  // which would have no dependencies and thus always look like their result
+  // can be reused, are treated properly. For the most part, this means that
+  // queries that rely on an externally set query will be recomputed, possibly
+  // prompting the externally-set query to be set again.
+  mutable bool externallySet = false;
 
   // Whether or not errors from this query result have been shown to the
   // user (they may not have been if some query checked for errors).
@@ -314,6 +321,7 @@ class QueryMapResultBase {
   QueryMapResultBase(RevisionNumber lastChecked,
                      RevisionNumber lastChanged,
                      bool beingTestedForReuse,
+                     bool externallySet,
                      bool emittedErrors,
                      size_t oldResultForErrorContents,
                      llvm::SmallPtrSet<const QueryMapResultBase*, 2> recursionErrors,
@@ -336,7 +344,7 @@ class QueryMapResult final : public QueryMapResultBase {
   //  * a default-constructed result
   QueryMapResult(QueryMap<ResultType, ArgTs...>* parentQueryMap,
                  std::tuple<ArgTs...> tupleOfArgs)
-    : QueryMapResultBase(-1, -1, false, false, -1, {}, parentQueryMap),
+    : QueryMapResultBase(-1, -1, false, false, false, -1, {}, parentQueryMap),
       tupleOfArgs(std::move(tupleOfArgs)),
       result() {
   }

@@ -672,6 +672,16 @@ Context::querySetterUpdateResult(
   auto QUERY_RECOMPUTATION_MARKER = context->markRecomputing(false); \
   QUERY_BEGIN_TIMING(context);
 
+#define QUERY_BEGIN_EXTERNALLY_SET(func, context, ...) \
+  QUERY_BEGIN_INNER(false, func, #func, context, __VA_ARGS__); \
+  BEGIN_QUERY_FOUND->externallySet = true; \
+  if (QUERY_USE_SAVED()) { \
+    return QUERY_GET_SAVED(); \
+  } \
+  CHPL_ASSERT(false && "query configured to be only set by other queries is being computed on its own"); \
+  auto QUERY_RECOMPUTATION_MARKER = context->markRecomputing(false); \
+  QUERY_BEGIN_TIMING(context);
+
 /**
   Write
 

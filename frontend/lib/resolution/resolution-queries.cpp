@@ -2868,9 +2868,10 @@ static const ResolvedFunction* const&
 resolveFunctionByResolvedInfoQuery(Context* context,
                                    const TypedFnSignature* sig,
                                    PoiInfo poiInfo) {
-  QUERY_BEGIN(resolveFunctionByResolvedInfoQuery, context, sig, poiInfo);
+  QUERY_BEGIN_EXTERNALLY_SET(resolveFunctionByResolvedInfoQuery, context, sig, poiInfo);
 
-  // should only ever be SET by 'resolveFunctionByInfoQuery'
+  // should only ever be SET by 'resolveFunctionByInfoQuery'. Since we got
+  // here, something is wrong; return a bogus result.
   const ResolvedFunction* ret = nullptr;
 
   return QUERY_END(ret);
