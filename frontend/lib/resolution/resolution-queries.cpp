@@ -2899,7 +2899,7 @@ resolveFunctionByInfoQuery(ResolutionContext* rc,
     auto resolvedPoiTrace = resolved->poiInfo().createTraceFor(sig);
 
     // Try to store in the generic cache.
-    CHPL_RESOLUTION_QUERY_STORE_RESULT(resolveFunctionByPoisQuery, rc,
+    CHPL_RESOLUTION_QUERY_UNSAFE_STORE_RESULT(resolveFunctionByPoisQuery, rc,
         std::move(resolved),
         resolvedPoiTrace);
 
@@ -2914,7 +2914,7 @@ resolveFunctionByInfoQuery(ResolutionContext* rc,
     // which links the fully resolved signature to the result.
     if (finalSig != sig) {
       auto& saved = resolveFunctionByPoisQuery(rc, resolvedPoiTrace);
-      CHPL_RESOLUTION_QUERY_STORE_RESULT(resolveFunctionByInfoQuery, rc,
+      CHPL_RESOLUTION_QUERY_UNSAFE_STORE_RESULT(resolveFunctionByInfoQuery, rc,
           saved.get(),
           finalSig,
           poiInfo);

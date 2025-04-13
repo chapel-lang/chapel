@@ -245,7 +245,7 @@ Context::getResult(QueryMap<ResultType, ArgTs...>* queryMap,
     // return nullptr, class C queries return C()).
     savedElement->recursionErrors.insert(savedElement);
     updateResultForQueryMapR(queryMap, savedElement, tupleOfArgs, ResultType(),
-                             /* forSetter */ false);
+                             /* forSetter */ false, /* markExternallySet */ false);
   }
 
   return savedElement;
@@ -356,7 +356,7 @@ Context::queryEnd(
 
   const QueryMapResult<ResultType, ArgTs...>* ret =
     this->updateResultForQueryMapR(queryMap, r, tupleOfArgs,
-                                   std::move(result), /* forSetter */ false);
+                                   std::move(result), /* forSetter */ false, /* markExternallySet */ false);
 
   if (r->recursionErrors.count(r) != 0) {
     // This query had the opportunity to handle its own recursion, but didn't.
@@ -404,8 +404,13 @@ Context::updateResultForQueryMapR(QueryMap<ResultType, ArgTs...>* queryMap,
                                   const QueryMapResult<ResultType, ArgTs...>* r,
                                   const std::tuple<ArgTs...>& tupleOfArgs,
                                   ResultType result,
-                                  bool forSetter) {
+                                  bool forSetter,
+                                  bool markExternallySet) {
   CHPL_ASSERT(r != nullptr);
+
+  if (markExternallySet) {
+    r->externallySet = true;
+  }
 
   // If we already have found a result, use that.
   //
@@ -493,14 +498,15 @@ const QueryMapResult<ResultType, ArgTs...>*
 Context::updateResultForQueryMap(QueryMap<ResultType, ArgTs...>* queryMap,
                                  const std::tuple<ArgTs...>& tupleOfArgs,
                                  ResultType result,
-                                 bool forSetter) {
+                                 bool forSetter,
+                                 bool markExternallySet) {
   // Look up the current entry
   const QueryMapResult<ResultType, ArgTs...>* r
     = getResult(queryMap, tupleOfArgs);
 
   // Run the version of the function accepting the map and result entry
   return updateResultForQueryMapR(queryMap, r, tupleOfArgs,
-                                  std::move(result), forSetter);
+                                  std::move(result), forSetter, markExternallySet);
 }
 
 template<typename ResultType,
@@ -512,14 +518,15 @@ Context::updateResultForQuery(
                 ResultType result,
                 const char* traceQueryName,
                 bool isInputQuery,
-                bool forSetter) {
+                bool forSetter,
+                bool markExternallySet) {
   // Look up the map entry for this query name
   QueryMap<ResultType, ArgTs...>* queryMap =
     getMap(queryFunction, tupleOfArgs, traceQueryName, isInputQuery);
 
   // Run the version of the function accepting the map
   return updateResultForQueryMap(queryMap, tupleOfArgs,
-                                 std::move(result), forSetter);
+                                 std::move(result), forSetter, markExternallySet);
 }
 
 template<typename ResultType,
@@ -599,9 +606,10 @@ Context::querySetterUpdateResult(
     const std::tuple<ArgTs...>& tupleOfArgs,
     ResultType result,
     const char* traceQueryName,
-    bool isInputQuery) {
+    bool isInputQuery,
+    bool markExternallySet) {
   updateResultForQuery(queryFunction, tupleOfArgs, std::move(result),
-                       traceQueryName, isInputQuery, /* forSetter */ true);
+                       traceQueryName, isInputQuery, /* forSetter */ true, markExternallySet);
 }
 
 } // end namespace chpl
@@ -705,7 +713,7 @@ Context::querySetterUpdateResult(
                                  BEGIN_QUERY_FUNC_NAME))
 
 /**
-  Use QUERY_STORE_RESULT to implement a setter for a non-input query.
+  Use QUERY_UNSAFE_STORE_RESULT to implement a setter for a non-input query.
   Arguments are:
    * the query function to update
    * the context
@@ -715,13 +723,33 @@ Context::querySetterUpdateResult(
   The result will be `std::move`d into the query.
   If called multiple times within the same revision, only the first
   stored result in that revision will be saved.
+
+  This is unsafe in that improper use of this function can wreak havoc on
+  the recomputation model of the query system, since it obfuscates what
+  is needed to (re)compute the result of the query being set.
+
+  To do this in a way that works out of the box using the query system,
+  use the QUERY_STORE_RESULT macro, which sets certain flags to avoid
+  running into these issues (but could result in redunant recomputations).
+ */
+#define QUERY_UNSAFE_STORE_RESULT(func, context, result, ...) \
+  context->querySetterUpdateResult(func, \
+                                   std::make_tuple(__VA_ARGS__), \
+                                   std::move(result), \
+                                   #func, \
+                                   false, \
+                                   false)
+
+/**
+  Safe version of QUERY_UNSAFE_STORE_RESULT. See its documentation above.
  */
 #define QUERY_STORE_RESULT(func, context, result, ...) \
   context->querySetterUpdateResult(func, \
                                    std::make_tuple(__VA_ARGS__), \
                                    std::move(result), \
                                    #func, \
-                                   false)
+                                   false, \
+                                   true)
 
 /**
   Use QUERY_STORE_INPUT_RESULT to implement a setter for an input query.
@@ -741,7 +769,8 @@ Context::querySetterUpdateResult(
                                    std::make_tuple(__VA_ARGS__), \
                                    std::move(result), \
                                    #func, \
-                                   true)
+                                   true, \
+                                   false)
 
 /// \endcond
 

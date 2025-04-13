@@ -721,7 +721,8 @@ void Context::setFilePathForModuleId(ID moduleID, UniqueString path) {
                        tupleOfArgs, path,
                        "filePathForModuleIdSymbolPathQuery",
                        /* isInputQuery */ false,
-                       /* forSetter */ true);
+                       /* forSetter */ true,
+                       /* markExternallySet */ false);
 
   if (enableDebugTrace) {
     printf("%i SETTING FILE PATH FOR MODULE %s -> %s\n", queryTraceDepth,
@@ -810,7 +811,8 @@ void Context::registerLibraryForModule(ID moduleId,
                        tupleOfArgs, libPath,
                        "pathHasLibraryQuery",
                        /* isInputQuery */ false,
-                       /* forSetter */ true);
+                       /* forSetter */ true,
+                       /* markExternallySet */ false);
 
   // also update the lookup by module ID
   setFilePathForModuleId(moduleId, filePath);
