@@ -32,10 +32,3 @@ writeln(A);
 
 A **= 2;
 writeln(A);
-
-var B: [1..3, 1..3] bool = false;
-B &&= true;
-writeln(B);
-
-B ||= true;
-writeln(B);
