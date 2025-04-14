@@ -1,4 +1,5 @@
 import sys
+import os
 import subprocess as sp
 from package_name import package_name
 
@@ -20,4 +21,6 @@ dirs = [
 for f in files:
     sp.check_call(["cp", f, f"{deb_name}{f}"])
 for d in dirs:
+    dirname = os.path.dirname(d)
+    os.makedirs(f"{deb_name}{dirname}", exist_ok=True)
     sp.check_call(["cp", "-r", d, f"{deb_name}{d}"])
