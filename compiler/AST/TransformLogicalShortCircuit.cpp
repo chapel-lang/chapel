@@ -38,8 +38,9 @@ bool TransformLogicalShortCircuit::enterCallExpr(CallExpr* call)
   {
     if (UnresolvedSymExpr* expr = toUnresolvedSymExpr(call->baseExpr))
     {
-      bool isLogicalAnd = strcmp(expr->unresolved, "&&") == 0;
-      bool isLogicalOr  = strcmp(expr->unresolved, "||") == 0;
+      bool isLogicalAnd = strncmp(expr->unresolved, "&&", 2) == 0;
+      bool isLogicalOr  = strncmp(expr->unresolved, "||", 2) == 0;
+      bool isCompoundAssign = strncmp(expr->unresolved + 2, "=", 1) == 0;
 
       if (isLogicalAnd || isLogicalOr)
       {
@@ -81,11 +82,20 @@ bool TransformLogicalShortCircuit::enterCallExpr(CallExpr* call)
         //
         Expr* stmt = call->getStmtExpr();
         stmt->insertBefore(new DefExpr(lvar));
-        stmt->insertBefore(new CallExpr(PRIM_MOVE, lvar, left));
+        if (isCompoundAssign) {
+          stmt->insertBefore(new CallExpr(PRIM_MOVE, lvar, new CallExpr(PRIM_ADDR_OF, left)));
+        } else {
+          stmt->insertBefore(new CallExpr(PRIM_MOVE, lvar, left));
+        }
         stmt->insertBefore(new CondStmt(new CallExpr("_cond_invalid", lvar),
                                         new CallExpr("compilerError", eMsg)));
+        if (isCompoundAssign) {
+          stmt->insertAfter(new CallExpr("=", lvar, ife));
+          call->replace(new SymExpr(lvar));
+        } else {
+          call->replace(ife);
+        }
 
-        call->replace(ife);
 
         left->accept(this);
         ife->accept(this);

@@ -677,8 +677,8 @@ static void transformLogicalShortCircuit() {
   for_alive_in_Vec(CallExpr, call, gCallExprs) {
     if (call->primitive == 0) {
       if (UnresolvedSymExpr* expr = toUnresolvedSymExpr(call->baseExpr)) {
-        if (strcmp(expr->unresolved, "&&") == 0 ||
-            strcmp(expr->unresolved, "||") == 0) {
+        if (strncmp(expr->unresolved, "&&", 2) == 0 ||
+            strncmp(expr->unresolved, "||", 2) == 0) {
           // Don't normalize lifetime constraint clauses
           if (isInLifetimeClause(call) == false)
             stmts.insert(call->getStmtExpr());
