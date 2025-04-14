@@ -35,7 +35,7 @@ cp %{_prefix}/bin/chplcheck %{buildroot}/%{_prefix}/bin/chplcheck
 cp %{_prefix}/bin/chpl-language-server %{buildroot}/%{_prefix}/bin/chpl-language-server
 # Libraries
 cp -r %{_prefix}/lib/chapel %{buildroot}/%{_prefix}/lib/chapel
-cp -r %{_prefix}/lib/cmake/chpl %{buildroot}/%{_prefix}/lib/cmake/chpl
+cp -r %{_prefix}/lib/cmake/chpl %{buildroot}/%{_prefix}/lib/cmake
 # CHPL_HOME
 cp -r %{_prefix}/share/chapel %{buildroot}/%{_prefix}/share/chapel
 
@@ -47,5 +47,6 @@ cp -r %{_prefix}/share/chapel %{buildroot}/%{_prefix}/share/chapel
 %{_prefix}/bin/chpl-language-server
 %{_prefix}/lib/chapel/*
 %{_prefix}/share/chapel/*
+%{_prefix}/lib/cmake/chpl/*
 
 %changelog
