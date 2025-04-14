@@ -65,11 +65,9 @@ clean-cmakecache: FORCE
 
 cleanall: $(CLEANALLSUBDIRS) echocompilerdir
 	rm -rf $(CLEANALL_TARGS)
-	@$(MAKE) clean-chpl-cmake-module-files
 
 cleandeps: $(CLEANSUBDIRDEPS) echocompilerdir
 	rm -f $(DEPENDS)
-	@$(MAKE) clean-chpl-cmake-module-files
 
 clobber: $(CLOBBERSUBDIRS) echocompilerdir
 	rm -rf ./$(CLOBBER_TARGS)
@@ -154,7 +152,6 @@ clean: FORCE $(CLEANSUBDIRS) echocompilerdir
 	fi
 	rm -f $(CLEAN_TARGS)
 	@$(MAKE) clean-cmakecache
-	@$(MAKE) clean-chpl-cmake-module-files
 
 # used in test-frontend to make sure cmake is configured with assertions on
 CMAKE_FLAGS_NO_NDEBUG=$(subst -DNDEBUG,,$(CMAKE_FLAGS))
