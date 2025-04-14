@@ -5,11 +5,11 @@ record R {
 }
 
 writeln("yesinit");
-on here.gpus[0] var A: [0..0] R;
+on Locales[0] var A: [0..0] R;
 writeln("noinit");
-on here.gpus[0] var B: [0..0] R = noinit;
+on Locales[0] var B: [0..0] R = noinit;
 
 writeln("yesinit");
-on here.gpus[0] var C, D: [0..0] R;
+on Locales[0] var C, D: [0..0] R;
 writeln("noinit");
-on here.gpus[0] var E, F: [0..0] R = noinit;
+on Locales[0] var E, F: [0..0] R = noinit;
