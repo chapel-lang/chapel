@@ -675,14 +675,10 @@ static void transformLogicalShortCircuit() {
 
   // Collect the distinct stmts that contain logical AND/OR expressions
   for_alive_in_Vec(CallExpr, call, gCallExprs) {
-    if (call->primitive == 0) {
-      if (UnresolvedSymExpr* expr = toUnresolvedSymExpr(call->baseExpr)) {
-        if (strncmp(expr->unresolved, "&&", 2) == 0 ||
-            strncmp(expr->unresolved, "||", 2) == 0) {
-          // Don't normalize lifetime constraint clauses
-          if (isInLifetimeClause(call) == false)
-            stmts.insert(call->getStmtExpr());
-        }
+    if (TransformLogicalShortCircuit::shouldTransformCall(call)) {
+      // Don't normalize lifetime constraint clauses
+      if (isInLifetimeClause(call) == false) {
+        stmts.insert(call->getStmtExpr());
       }
     }
   }
