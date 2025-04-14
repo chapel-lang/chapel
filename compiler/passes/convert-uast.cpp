@@ -2298,7 +2298,7 @@ struct Converter final : UastConverter {
     // Field multi-decl desugaring happens later in build.cpp and produces
     // different code; don't do redundant work here.
     bool isField = parsing::idIsField(context, node->id());
-    if (!isField) {
+    if (isField) {
       // post-parse checks should rule this out
       CHPL_ASSERT(!node->destination());
     }
@@ -3523,13 +3523,16 @@ struct Converter final : UastConverter {
       if (auto prevInitExpr = multiState->prevInitExpr) {
         Expr* replaceWith;
         if (prevInitExpr->isNoInitExpr()) {
-          replaceWith = prevInitExpr->copy();
+          // for remote variables, don't bother trying to replace 'noinit',
+          // since we already threw it away and selected a different overload of
+          // buildRemoteWrapper.
+          replaceWith = isRemote ? nullptr : prevInitExpr->copy();
         } else if (typeExpr) {
           replaceWith = new CallExpr("chpl__readXX", new SymExpr(varSym));
         } else {
           replaceWith = new SymExpr(varSym);
         }
-        multiState->replaceInitExpr(replaceWith);
+        if (replaceWith) multiState->replaceInitExpr(replaceWith);
         initExpr = prevInitExpr;
       }
 
@@ -3551,7 +3554,13 @@ struct Converter final : UastConverter {
       wrapperCall->insertAtTail(destinationExpr ? destinationExpr : new SymExpr(multiState->localeTemp));
 
       if (typeExpr) wrapperCall->insertAtTail(typeExpr);
-      if (initExpr) wrapperCall->insertAtTail(new CallExpr(PRIM_CREATE_THUNK, initExpr));
+      if (initExpr) {
+        if (initExpr->isNoInitExpr()) {
+          wrapperCall->insertAtTail(new SymExpr(dtVoid->symbol));
+        } else {
+          wrapperCall->insertAtTail(new CallExpr(PRIM_CREATE_THUNK, initExpr));
+        }
+      }
       auto wrapperDef = new DefExpr(wrapper, wrapperCall);
 
       auto wrapperGet = new CallExpr(".", new SymExpr(wrapper), new_CStringSymbol("get"));
