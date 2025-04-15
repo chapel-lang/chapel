@@ -1870,10 +1870,10 @@ static void testCallableAmbiguity() {
 // Implementation of getting promotion types is tested more thoroughly
 // elsewhere, so this is just a very basic test the prims works as expected.
 static void testPromotionPrim() {
-  Context* context = buildStdContext();
-  ErrorGuard guard(context);
-
   {
+    Context* context = buildStdContext();
+    ErrorGuard guard(context);
+
     std::string prog =
       R"""(
         var d : domain(1, real);
@@ -1888,7 +1888,9 @@ static void testPromotionPrim() {
   }
 
   {
-    context->advanceToNextRevision(false);
+    Context* context = buildStdContext();
+    ErrorGuard guard(context);
+
     std::string prog =
       R"""(
         type t = __primitive("scalar promotion type", int);

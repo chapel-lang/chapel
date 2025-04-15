@@ -265,9 +265,8 @@ static void test9() {
 
 static void test9b() {
   printf("%s\n", __FUNCTION__);
-  auto context = buildStdContext();
-
   {
+    auto context = buildStdContext();
     ErrorGuard guard(context);
 
     std::string program = R"""(
@@ -282,7 +281,7 @@ static void test9b() {
     assert(vars["xb"].type()->isIntType());
   }
   {
-    context->advanceToNextRevision(false);
+    auto context = buildStdContext();
     ErrorGuard guard(context);
 
     std::string program = R"""(
@@ -302,7 +301,7 @@ static void test9b() {
     assert(vars["xd"].type()->isUintType());
   }
   {
-    context->advanceToNextRevision(false);
+    auto context = buildStdContext();
     ErrorGuard guard(context);
 
     std::string program = R"""(
