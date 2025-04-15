@@ -1055,9 +1055,6 @@ def gather_pe_chpl_pkgconfig_libs():
         if platform.startswith('cray-x'):
             ret = 'cray-ugni:' + ret
 
-        if comm == 'gasnet' and substrate == 'aries':
-            ret = 'cray-udreg:' + ret
-
         if comm == 'ofi' and chpl_libfabric.get() == 'system':
             ret = 'libfabric:' + ret
 
