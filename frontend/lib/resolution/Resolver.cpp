@@ -4973,7 +4973,9 @@ void Resolver::exit(const uast::Array* decl) {
   const char* arrayBuilderProc;
   std::vector<CallInfoActual> actuals;
   std::vector<const uast::AstNode*> actualAsts;
-  if (!decl->isMultiDim()) {
+  if (decl->isAssociative()) {
+    arrayBuilderProc = "chpl__buildAssociativeArrayExpr";
+  } else if (!decl->isMultiDim()) {
     arrayBuilderProc = "chpl__buildArrayExpr";
   } else {
     arrayBuilderProc = "chpl__buildNDArrayExpr";
@@ -4991,9 +4993,25 @@ void Resolver::exit(const uast::Array* decl) {
   }
 
   // Add element args
-  for (auto expr : decl->flattenedExprs()) {
-    actualAsts.push_back(expr);
-    actuals.emplace_back(byPostorder.byAst(expr).type(), UniqueString());
+  if (decl->isAssociative()) {
+    for (auto expr : decl->exprs()) {
+      auto arrowOp = expr->toOpCall();
+      // this should be enforced by the parser
+      CHPL_ASSERT(arrowOp && arrowOp->op() == USTR("=>") &&
+                  arrowOp->numActuals() == 2 &&
+                  "invalid associative array expr");
+      auto lhs = arrowOp->actual(0);
+      auto rhs = arrowOp->actual(1);
+      actualAsts.push_back(lhs);
+      actuals.emplace_back(byPostorder.byAst(lhs).type(), UniqueString());
+      actualAsts.push_back(rhs);
+      actuals.emplace_back(byPostorder.byAst(rhs).type(), UniqueString());
+    }
+  } else {
+    for (auto expr : decl->flattenedExprs()) {
+      actualAsts.push_back(expr);
+      actuals.emplace_back(byPostorder.byAst(expr).type(), UniqueString());
+    }
   }
 
   auto ci = CallInfo(/* name */ UniqueString::get(context, arrayBuilderProc),
@@ -5401,9 +5419,15 @@ void Resolver::handleCallExpr(const uast::Call* call) {
     return;
 
   auto op = call->toOpCall();
-  if (op && (op->op() == USTR("&&") || op->op() == USTR("||"))) {
-    if (!scopeResolveOnly) {
+
+  if (op && !scopeResolveOnly) {
+    // skip resolving some special cases
+    if (op->op() == USTR("&&") || op->op() == USTR("||")) {
       // these are handled in 'enter' to do param folding
+      return;
+    } else if (op->op() == USTR("=>")) {
+      // this is an associative array literal element binding,
+      // not actually a call
       return;
     }
   }
