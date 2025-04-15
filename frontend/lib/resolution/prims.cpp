@@ -264,8 +264,9 @@ static QualifiedType primCallResolves(ResolutionContext* rc,
   for (size_t i = fnNameActual + 1; i < ci.numActuals(); i++) {
     actuals.push_back(ci.actual(i));
   }
+  QualifiedType calledType = forMethod ? ci.actual(0).type() : QualifiedType();
   auto callInfo = CallInfo(fnName,
-                           /* calledType */ QualifiedType(),
+                           /* calledType */ calledType,
                            /* isMethodCall */ forMethod,
                            /* hasQuestionArg */ false,
                            /* isParenless */ false,

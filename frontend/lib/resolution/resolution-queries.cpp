@@ -5940,9 +5940,11 @@ struct InterfaceCheckHelper {
       actuals.emplace_back(templateSig->formalType(i), name);
     }
 
+    QualifiedType calledType =
+        templateFn->isMethod() ? templateSig->formalType(0) : QualifiedType();
     CallInfo ci {
       templateSig->untyped()->name(),
-        /* calledType */ QualifiedType(),
+        /* calledType */ calledType,
         /* isMethodCall */ templateFn->isMethod(),
         /* hasQuestionArg */ false,
         /* isParenless */ templateFn->isParenless(),

@@ -4354,7 +4354,7 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
       std::vector<CallInfoActual> actuals;
       actuals.push_back(CallInfoActual(receiverType, USTR("this")));
       auto ci = CallInfo(/* name */ ident->name(),
-                         /* calledType */ QualifiedType(),
+                         /* calledType */ receiverType,
                          /* isMethodCall */ true,
                          /* hasQuestionArg */ false,
                          /* isParenless */ true, actuals);
@@ -5654,7 +5654,7 @@ void Resolver::exit(const Dot* dot) {
       std::vector<CallInfoActual> actuals;
       actuals.push_back(CallInfoActual(receiver.type(), USTR("this")));
       auto ci = CallInfo(/* name */ dot->field(),
-                         /* calledType */ QualifiedType(),
+                         /* calledType */ receiver.type(),
                          /* isMethodCall */ true,
                          /* hasQuestionArg */ false,
                          /* isParenless */ true, actuals);
@@ -5816,7 +5816,7 @@ void Resolver::exit(const Dot* dot) {
   std::vector<CallInfoActual> actuals;
   actuals.push_back(CallInfoActual(receiver.type(), USTR("this")));
   auto ci = CallInfo (/* name */ dot->field(),
-                      /* calledType */ QualifiedType(),
+                      /* calledType */ receiver.type(),
                       /* isMethodCall */ true,
                       /* hasQuestionArg */ false,
                       /* isParenless */ true,
