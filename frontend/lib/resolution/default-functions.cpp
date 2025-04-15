@@ -457,10 +457,14 @@ const BuilderResult& buildInitEquals(Context* context, ID typeID) {
                                   std::move(thisType), nullptr);
 
   // TODO: constrain type to be same as 'typeID', possibly through 'this.type'?
+  auto thisDotType =  Dot::build(builder, dummyLoc,
+                                 Identifier::build(builder, dummyLoc, USTR("this")),
+                                 USTR("type"));
+
   auto otherName = UniqueString::get(context, "other");
   auto otherFormal = Formal::build(builder, dummyLoc, nullptr,
                                    otherName, Formal::DEFAULT_INTENT,
-                                   nullptr, nullptr);
+                                   std::move(thisDotType), nullptr);
   AstList formals;
   formals.push_back(std::move(otherFormal));
 
