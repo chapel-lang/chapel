@@ -203,3 +203,41 @@ will build a release version of the program:
    mkdir build && cd build
    cmake .. -DCMAKE_BUILD_TYPE=release
    cmake --build .
+
+
+Additional compilation flags for compiling the Chapel code can be added using
+``target_link_options``. For example, this snippet limits the amount of
+optimization done by the backend compiler to speed up compilation times.
+
+.. code-block:: cmake
+
+   target_link_options(myProgram PRIVATE --ccflags -O1)
+
+This also means that projects using a mix of C and Chapel code may need to
+specify arguments twice. For example, this snippet shows a project that uses
+both Chapel and C code:
+
+.. code-block:: cmake
+
+   add_executable(main)
+   target_sources(main PRIVATE myChapelProgram.chpl src/c_source_file.c)
+   set_target_properties(main PROPERTIES LINKER_LANGUAGE CHPL)
+
+   # used by C compiler
+   target_include_directories(main PRIVATE include)
+   # used by Chapel compiler
+   target_link_options(main PRIVATE -I${CMAKE_SOURCE_DIR}/include)
+
+
+In larger projects, it may be useful to compile the C code separately. This can
+be done by creating a library target for the C code and linking it to the Chapel
+code:
+
+.. code-block:: cmake
+
+   add_library(myCCode src/c_source_file.c)
+   target_include_directories(myCCode PRIVATE include)
+
+   add_executable(myChapelProgram main.chpl)
+   target_link_options(main PRIVATE -I${CMAKE_SOURCE_DIR}/include)
+   target_link_libraries(myChapelProgram PRIVATE myCCode)
