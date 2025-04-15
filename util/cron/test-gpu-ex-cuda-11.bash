@@ -14,7 +14,6 @@ module load cuda/11.8
 export CHPL_CUDA_PATH=/opt/nvidia/hpc_sdk/Linux_x86_64/23.3/cuda/11.8
 
 export CHPL_COMM=none
-export CHPL_LOCALE_MODEL=gpu
 export CHPL_GPU=nvidia  # amd is also detected automatically
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="gpu-ex-cuda-11"

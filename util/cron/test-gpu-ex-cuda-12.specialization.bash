@@ -11,8 +11,6 @@ module load cuda/12.4
 
 export CHPL_LLVM=system
 export CHPL_COMM=none
-export CHPL_LOCALE_MODEL=gpu
-export CHPL_TEST_GPU=true
 export CHPL_GPU=nvidia  # amd is also detected automatically
 
 export CHPL_GPU_SPECIALIZATION=y
