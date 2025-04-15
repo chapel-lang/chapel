@@ -411,6 +411,11 @@ class UntypedFnSignature {
   /// \endcond DO_NOT_DOCUMENT
 };
 
+const UntypedFnSignature*
+getUntypedFnSignatureForFn(Context* context,
+                           const uast::Function* fn,
+                           ID const* compilerGeneratedOrigin = nullptr);
+
 /**
   This type stores the outer variables used by a function. For each mention
   of an outer variable, it keeps track of the outer variable's ID and type.
