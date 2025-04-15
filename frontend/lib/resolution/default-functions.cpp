@@ -22,6 +22,7 @@
 #include "chpl/framework/global-strings.h"
 #include "chpl/framework/query-impl.h"
 #include "chpl/parsing/parsing-queries.h"
+#include "chpl/resolution/ResolutionContext.h"
 #include "chpl/resolution/can-pass.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
@@ -443,76 +444,118 @@ generateInitSignature(ResolutionContext* rc, const CompositeType* inCompType) {
   return typedSignatureInitial(rc, uSig);
 }
 
+struct FieldFnBuilder {
+ private:
+  // inputs to the builder
+  Context* context_;
+  ID typeID_;
+  UniqueString name_;
+  Function::Kind kind_;
+
+  owned<Builder> builder_;
+  Location dummyLoc;
+
+  owned<Formal> thisFormal_;
+  owned<Formal> otherFormal_;
+
+  AstList stmts_;
+
+ public:
+  FieldFnBuilder(Context* context, ID typeID, UniqueString name,
+                 Function::Kind kind)
+    : context_(context), typeID_(std::move(typeID)), name_(name), kind_(kind) {
+
+    builder_ = Builder::createForGeneratedCode(context_, typeID_);
+    dummyLoc = parsing::locateId(context_, typeID_);
+
+    auto typeDecl = parsing::idToAst(context, typeID)->toAggregateDecl();
+    CHPL_ASSERT(typeDecl);
+
+    thisFormal_ = Formal::build(builder(), dummyLoc, nullptr,
+                               USTR("this"), Formal::DEFAULT_INTENT,
+                               identifier(typeDecl->name()), nullptr);
+
+    auto otherName = UniqueString::get(context, "other");
+    auto thisDotType =  dot(identifier(USTR("this")), USTR("type"));
+    otherFormal_ = Formal::build(builder(), dummyLoc, nullptr,
+                                otherName, Formal::DEFAULT_INTENT,
+                                std::move(thisDotType), nullptr);
+  }
+
+  Builder* builder() { return builder_.get(); }
+
+  AstList& stmts() { return stmts_; }
+
+  owned<Identifier> identifier(UniqueString name) {
+    return Identifier::build(builder(), dummyLoc, name);
+  }
+
+  owned<Dot> dot(owned<AstNode> lhs, UniqueString name) {
+    return Dot::build(builder(), dummyLoc, std::move(lhs), name);
+  }
+
+  owned<OpCall> op(owned<AstNode> lhs, UniqueString op, owned<AstNode> rhs) {
+    return OpCall::build(builder(), dummyLoc, op,
+                         std::move(lhs), std::move(rhs));
+  }
+
+  template <typename F>
+  void eachFieldPair(F&& callable) {
+    auto ct = initialTypeForTypeDecl(context_, typeID_)->getCompositeType();
+
+    // attempt to resolve the fields
+    auto defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
+    auto rc = createDummyRC(context_);
+    auto& rf = fieldsForTypeDecl(&rc, ct,
+                                                 defaultsPolicy,
+                                                 /* syntaxOnly */ true);
+    for (int i = 0; i < rf.numFields(); i++) {
+      auto name = rf.fieldName(i);
+      // Create 'this.field = other.field;' statement
+      auto lhs = dot(identifier(USTR("this")), name);
+      auto rhs = dot(identifier(UniqueString::get(context_, "other")), name);
+      callable(this, std::move(lhs), std::move(rhs));
+    }
+  }
+
+  BuilderResult finalize() {
+    auto body = Block::build(builder(), dummyLoc, std::move(stmts_));
+    AstList otherFormals;
+    otherFormals.push_back(std::move(otherFormal_));
+    auto genFn = Function::build(builder(),
+                                 dummyLoc, {},
+                                 Decl::Visibility::PUBLIC,
+                                 Decl::Linkage::DEFAULT_LINKAGE,
+                                 /*linkageName=*/{},
+                                 name_,
+                                 /*inline=*/false, /*override=*/false,
+                                 kind_,
+                                 /*receiver=*/std::move(thisFormal_),
+                                 Function::ReturnIntent::DEFAULT_RETURN_INTENT,
+                                 // throws, primaryMethod, parenless
+                                 false, false, false,
+                                 std::move(otherFormals),
+                                 // returnType, where, lifetime, body
+                                 {}, {}, {}, std::move(body));
+
+    builder_->noteChildrenLocations(genFn.get(), dummyLoc);
+    builder_->addToplevelExpression(std::move(genFn));
+
+    return builder_->result();
+  }
+};
+
+
 const BuilderResult& buildInitEquals(Context* context, ID typeID) {
   QUERY_BEGIN(buildInitEquals, context, typeID);
 
-  auto typeDecl = parsing::idToAst(context, typeID)->toAggregateDecl();
-  auto bld = Builder::createForGeneratedCode(context, typeID);
-  auto builder = bld.get();
-  auto dummyLoc = parsing::locateId(context, typeID);
+  FieldFnBuilder bld(context, typeID, USTR("init="), Function::Kind::PROC);
 
-  auto thisType = Identifier::build(builder, dummyLoc, typeDecl->name());
-  auto thisFormal = Formal::build(builder, dummyLoc, nullptr,
-                                  USTR("this"), Formal::DEFAULT_INTENT,
-                                  std::move(thisType), nullptr);
+  bld.eachFieldPair([](FieldFnBuilder* bld, owned<AstNode> lhs, owned<AstNode> rhs) {
+    bld->stmts().push_back(bld->op(std::move(lhs), USTR("="), std::move(rhs)));
+  });
 
-  // TODO: constrain type to be same as 'typeID', possibly through 'this.type'?
-  auto thisDotType =  Dot::build(builder, dummyLoc,
-                                 Identifier::build(builder, dummyLoc, USTR("this")),
-                                 USTR("type"));
-
-  auto otherName = UniqueString::get(context, "other");
-  auto otherFormal = Formal::build(builder, dummyLoc, nullptr,
-                                   otherName, Formal::DEFAULT_INTENT,
-                                   std::move(thisDotType), nullptr);
-  AstList formals;
-  formals.push_back(std::move(otherFormal));
-
-  AstList stmts;
-
-  auto ct = initialTypeForTypeDecl(context, typeID)->getCompositeType();
-
-  // attempt to resolve the fields
-  DefaultsPolicy defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
-  ResolutionContext rc(context);
-  const ResolvedFields& rf = fieldsForTypeDecl(&rc, ct,
-                                               defaultsPolicy,
-                                               /* syntaxOnly */ true);
-  for (int i = 0; i < rf.numFields(); i++) {
-    auto name = rf.fieldName(i);
-    // Create 'this.field = other.field;' statement
-    owned<AstNode> lhs = Dot::build(builder, dummyLoc,
-                                    Identifier::build(builder, dummyLoc, USTR("this")),
-                                    name);
-    owned<AstNode> rhs = Dot::build(builder, dummyLoc,
-                                    Identifier::build(builder, dummyLoc, otherName),
-                                    name);
-    owned<AstNode> assign = OpCall::build(builder, dummyLoc, USTR("="),
-                                          std::move(lhs), std::move(rhs));
-    stmts.push_back(std::move(assign));
-  }
-
-  auto body = Block::build(builder, dummyLoc, std::move(stmts));
-  auto genFn = Function::build(builder,
-                               dummyLoc, {},
-                               Decl::Visibility::PUBLIC,
-                               Decl::Linkage::DEFAULT_LINKAGE,
-                               /*linkageName=*/{},
-                               USTR("init="),
-                               /*inline=*/false, /*override=*/false,
-                               Function::Kind::PROC,
-                               /*receiver=*/std::move(thisFormal),
-                               Function::ReturnIntent::DEFAULT_RETURN_INTENT,
-                               // throws, primaryMethod, parenless
-                               false, false, false,
-                               std::move(formals),
-                               // returnType, where, lifetime, body
-                               {}, {}, {}, std::move(body));
-
-  builder->noteChildrenLocations(genFn.get(), dummyLoc);
-  builder->addToplevelExpression(std::move(genFn));
-
-  auto result = builder->result();
+  auto result = bld.finalize();
   return QUERY_END(result);
 }
 
