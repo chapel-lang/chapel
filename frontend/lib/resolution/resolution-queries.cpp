@@ -2743,6 +2743,11 @@ resolveFunctionByInfoQuery(ResolutionContext* rc,
                            const TypedFnSignature* sig,
                            PoiInfo poiInfo);
 
+static const ResolvedFunction* const&
+resolveFunctionByResolvedInfoQuery(Context* context,
+                                   const TypedFnSignature* sig,
+                                   PoiInfo poiInfo);
+
 static const owned<ResolvedFunction>&
 resolveFunctionByPoisQuery(ResolutionContext* rc, PoiInfo::Trace poiTrace);
 
@@ -2859,49 +2864,117 @@ resolveFunctionByPoisQuery(ResolutionContext* rc, PoiInfo::Trace poiTrace) {
   return CHPL_RESOLUTION_QUERY_END(ret);
 }
 
+// Why does this query exist in addition to resolveFunctionByInfoQuery?
+//
+// Overall, the goal is to enable generic instantiation caching. There are,
+// in fact, two kinds of PoiInfo: resolved and unresolved ones, which
+// correspond loosely to "before instantiation" and "after instantiation".
+//
+// Unresolved PoI infos simply contain a PoI scope in which a function's
+// body should be resolved. Caching these queries would prevent having
+// to re-resolve a function called mutliple times from the same scope, but
+// it will not do anything clever about PoI compatibility (see see PR #16261, e.g.).
+//
+// Resolved PoI infos don't contain the scope in which they were resolved; instead,
+// they contain a trace of all functions that used PoI. By the logic described
+// in PR #16261, the same instantiation can be re-used in another PoI scope if
+// all PoI calls in its trace are visible from that other scope. As a special
+// case, a function that didn't use any PoI calls can be re-used in any scope.
+//
+// Resolved PoI infos have two important properties:
+// 2. They can only be constructed after resolving a function instantiation.
+//    Pragmatically, this means that they can't serve as a-priori inputs
+//    to "resolveFunction" (otherwise, we'd need to resolve the function
+//    to resolve the function).
+//
+//    This hints at the need for two queries, one that gets called with the
+//    "initial" PoI scope, and one that gets set after the function is resolved.
+//
+// 1. Importantly, by removing the PoI scope and replacing it with the trace,
+//    resolved PoiInfos actually describe _sets of PoI scopes_ that are compatible
+//    with a given instantiation for the purposes of reuse. The compatibility
+//    check is encoded in PoiInfo::canReuse. In fact, to fit into the query framework,
+//    the '==' operator is relaxed to "compatibility": uInfo == rInfo is true
+//    if the unresolved info uInfo is compatible with the resolved info rInfo.
+//
+//    This essentially forces a query that operates on "resolved" infos to
+//    not have any dependencies, because it represents a related set of
+//    resolutions, each of which would presumably have different dependencies.
+//    Having incompatible dependencies would wreak havoc on the query system.
+//    Instead, we have '...ByInfoQuery', which includes all the dependencies
+//    of resolving the function, and '...ByResolvedInfoQuery', which is
+//    set and used when possible.
+static const ResolvedFunction* const&
+resolveFunctionByResolvedInfoQuery(Context* context,
+                                   const TypedFnSignature* sig,
+                                   PoiInfo poiInfo) {
+  QUERY_BEGIN_EXTERNALLY_SET(resolveFunctionByResolvedInfoQuery, context, sig, poiInfo);
+
+  // should only ever be SET by 'resolveFunctionByInfoQuery'. Since we got
+  // here, something is wrong; return a bogus result.
+  const ResolvedFunction* ret = nullptr;
+
+  return QUERY_END(ret);
+}
+
 static const ResolvedFunction* const&
 resolveFunctionByInfoQuery(ResolutionContext* rc,
                            const TypedFnSignature* sig,
                            PoiInfo poiInfo) {
   CHPL_RESOLUTION_QUERY_BEGIN(resolveFunctionByInfoQuery, rc, sig, poiInfo);
 
-  // Call the implementation which resolves the function body.
-  auto resolved = resolveFunctionByInfoImpl(rc, sig, poiInfo);
+  const ResolvedFunction* ret = nullptr;
+  // note: this lookup searches for "compatible" post-resolution POI infos
+  //       because we're feeding it an unresolved PoI info, and its
+  //       entries are always stored from resolved PoI infos. Operator ==
+  //       decides compatibility in that case. See comment on
+  //       resolveFunctionByResolvedInfoQuery, and the implementation
+  //       of PoiInfo::operator==.
+  if (rc->context()->hasCurrentResultForQuery(resolveFunctionByResolvedInfoQuery,
+                                              std::make_tuple(sig, poiInfo))) {
+    ret = resolveFunctionByResolvedInfoQuery(rc->context(), sig, poiInfo);
+  } else {
+    // Call the implementation which resolves the function body.
+    auto resolved = resolveFunctionByInfoImpl(rc, sig, poiInfo);
 
-  // The final signature should only differ for initializers.
-  auto finalSig = resolved->signature();
-  CHPL_ASSERT(finalSig == sig || sig->isInitializer());
+    // The final signature should only differ for initializers.
+    auto finalSig = resolved->signature();
+    CHPL_ASSERT(finalSig == sig || sig->isInitializer());
 
-  // Make a POI trace for use with the generic cache.
-  auto resolvedPoiTrace = resolved->poiInfo().createTraceFor(sig);
+    // Make a POI trace for use with the generic cache.
+    auto resolvedPoiTrace = resolved->poiInfo().createTraceFor(sig);
 
-  // Try to store in the generic cache.
-  CHPL_RESOLUTION_QUERY_STORE_RESULT(resolveFunctionByPoisQuery, rc,
-                                     std::move(resolved),
-                                     resolvedPoiTrace);
+    // Try to store in the generic cache.
+    CHPL_RESOLUTION_QUERY_UNSAFE_STORE_RESULT(resolveFunctionByPoisQuery, rc,
+        std::move(resolved),
+        resolvedPoiTrace);
 
-  // Initializer signatures can potentially require their body to be
-  // resolved in order to complete instantiation. This means that the
-  // 'ResolvedFunction' can have a different signature than what you
-  // started with (the receiver or a dependent type could instantiate).
-  //
-  // The user could pass in the fully resolved initializer signature
-  // in a subsequent call, and we don't want to resolve the function
-  // body again. So record a second entry for 'resolveFunctionByInfoQuery'
-  // which links the fully resolved signature to the result.
-  if (finalSig != sig) {
+    // Initializer signatures can potentially require their body to be
+    // resolved in order to complete instantiation. This means that the
+    // 'ResolvedFunction' can have a different signature than what you
+    // started with (the receiver or a dependent type could instantiate).
+    //
+    // The user could pass in the fully resolved initializer signature
+    // in a subsequent call, and we don't want to resolve the function
+    // body again. So record a second entry for 'resolveFunctionByInfoQuery'
+    // which links the fully resolved signature to the result.
+    if (finalSig != sig) {
+      auto& saved = resolveFunctionByPoisQuery(rc, resolvedPoiTrace);
+      CHPL_RESOLUTION_QUERY_UNSAFE_STORE_RESULT(resolveFunctionByInfoQuery, rc,
+          saved.get(),
+          finalSig,
+          poiInfo);
+    }
+
+    // Return the unique result from the query (that might have been saved
+    // above - if it was not saved, then we are reusing a cached result,
+    // which means the input and final signatures can differ.
     auto& saved = resolveFunctionByPoisQuery(rc, resolvedPoiTrace);
-    CHPL_RESOLUTION_QUERY_STORE_RESULT(resolveFunctionByInfoQuery, rc,
-                                       saved.get(),
-                                       finalSig,
-                                       poiInfo);
-  }
+    ret = saved.get();
 
-  // Return the unique result from the query (that might have been saved
-  // above - if it was not saved, then we are reusing a cached result,
-  // which means the input and final signatures can differ.
-  auto& saved = resolveFunctionByPoisQuery(rc, resolvedPoiTrace);
-  auto ret = saved.get();
+    QUERY_STORE_RESULT(resolveFunctionByResolvedInfoQuery, rc->context(),
+                       ret, sig, saved->poiInfo());
+  }
 
   return CHPL_RESOLUTION_QUERY_END(ret);
 }

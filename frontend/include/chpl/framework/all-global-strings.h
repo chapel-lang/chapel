@@ -28,6 +28,7 @@
 
 X(tombstone           , "<tombstone>")
 X(empty               , "<empty>")
+X(unknownLibPath      , "<unknown library path>")
 X(align               , "align")
 X(assertOnGpu         , "assertOnGpu")
 X(atomic              , "atomic")
