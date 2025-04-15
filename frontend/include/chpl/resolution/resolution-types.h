@@ -579,6 +579,8 @@ class CallInfo {
     if (isMethodCall) {
       CHPL_ASSERT(numActuals() >= 1);
       CHPL_ASSERT(this->actual(0).byName() == "this");
+      CHPL_ASSERT(calledType.isUnknownOrErroneous() ==
+                  this->actual(0).type().isUnknownOrErroneous());
     }
     if (isParenless) {
       if (isMethodCall) {
