@@ -4,7 +4,7 @@ import os
 import re
 import shutil
 
-import chpl_platform, overrides
+import overrides
 from utils import memoize, check_valid_var, error
 
 
@@ -38,8 +38,10 @@ def get():
             else:
                 comm_val = 'none'
 
-    if comm_val == 'gasnet' and get_network() == 'aries':
-        error("CHPL_COMM=gasnet is no longer supported on Cray XC. Please use CHPL_COMM=ugni instead.")
+    if comm_val == 'gasnet':
+        import chpl_platform
+        if get_network() == 'aries' or chpl_platform.get('target') == 'cray-xc':
+            error("CHPL_COMM=gasnet is no longer supported on Cray XC. Please use CHPL_COMM=ugni instead.")
 
     check_valid_var("CHPL_COMM", comm_val, ("none", "gasnet", "ofi", "ugni"))
     return comm_val
