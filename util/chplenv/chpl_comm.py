@@ -39,7 +39,7 @@ def get():
                 comm_val = 'none'
 
     if comm_val == 'gasnet' and get_network() == 'aries':
-        error("CHPL_COMM=gasnet is no longer supported on aries. Please use CHPL_COMM=ugni instead.")
+        error("CHPL_COMM=gasnet is no longer supported on Cray XC. Please use CHPL_COMM=ugni instead.")
 
     check_valid_var("CHPL_COMM", comm_val, ("none", "gasnet", "ofi", "ugni"))
     return comm_val
