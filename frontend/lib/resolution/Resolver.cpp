@@ -5649,6 +5649,10 @@ QualifiedType Resolver::typeForEnumElement(const EnumType* enumType,
   return qt;
 }
 
+static bool isDotDomainAccess(const Dot* dot) {
+  return dot->field() == USTR("domain");
+}
+
 void Resolver::exit(const Dot* dot) {
   ResolvedExpression& receiver = byPostorder.byAst(dot->receiver());
   ResolvedExpression& r = byPostorder.byAst(dot);
@@ -5665,13 +5669,11 @@ void Resolver::exit(const Dot* dot) {
 
     // Try to resolve a it as a field/parenless proc so we can resolve 'this' on
     // it later if needed.
-    // Special case: Don't try to resolve calls to array.domain here, as we
+    // Special case: Don't try to resolve calls to .domain here, as we
     // need to proceed to the handling logic below.
     if (!receiver.type().isUnknown() && receiver.type().type() &&
         receiver.type().type()->getCompositeType() &&
-        dot->field() != USTR("init") &&
-        !(receiver.type().type()->isArrayType() &&
-          dot->field() == USTR("domain"))) {
+        dot->field() != USTR("init") && !isDotDomainAccess(dot)) {
       std::vector<CallInfoActual> actuals;
       actuals.push_back(CallInfoActual(receiver.type(), USTR("this")));
       auto ci = CallInfo(/* name */ dot->field(),
@@ -5714,9 +5716,9 @@ void Resolver::exit(const Dot* dot) {
   }
 
   // Handle .domain on an array (which doesn't exist in module code) as a call
-  // to _dom.
-  if (receiver.type().type() && receiver.type().type()->isArrayType() &&
-      dot->field() == USTR("domain")) {
+  // to _dom. We do this even for a non-array receiver as that's what production
+  // does.
+  if (isDotDomainAccess(dot)) {
     std::vector<CallInfoActual> actuals;
     actuals.emplace_back(receiver.type(), USTR("this"));
     auto name = UniqueString::get(context, "_dom");
