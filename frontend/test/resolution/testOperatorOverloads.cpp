@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+#include "test-common.h"
 #include "test-resolution.h"
 
 // basic definition tests with cast operator
@@ -220,8 +221,8 @@ static void test3() {
 
 // test that we get a compiler generated record method for `==` when none exist
 static void test4() {
-  Context ctx;
-  Context* context = &ctx;
+  // generated field comparison uses chpl_field_neq, which is part of the stdib.
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program =
@@ -296,8 +297,7 @@ static void test6() {
 // test that we do get a compiler generated record method for `==`
 // when other operators exist
 static void test7() {
-  Context ctx;
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program =
@@ -321,8 +321,7 @@ static void test7() {
 
 // test that we get compiler generated methods for = and == when inside a proc
 static void test8() {
-  Context ctx;
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program =

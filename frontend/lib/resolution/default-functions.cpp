@@ -450,7 +450,7 @@ struct FieldFnBuilder {
   Function::Kind kind_;
 
   owned<Builder> builder_;
-  Location dummyLoc;
+  Location dummyLoc_;
 
   owned<Formal> thisFormal_;
   owned<Formal> otherFormal_;
@@ -463,37 +463,79 @@ struct FieldFnBuilder {
     : context_(context), typeID_(std::move(typeID)), name_(name), kind_(kind) {
 
     builder_ = Builder::createForGeneratedCode(context_, typeID_);
-    dummyLoc = parsing::locateId(context_, typeID_);
+    dummyLoc_ = parsing::locateId(context_, typeID_);
 
     auto typeDecl = parsing::idToAst(context, typeID)->toAggregateDecl();
     CHPL_ASSERT(typeDecl);
 
-    thisFormal_ = Formal::build(builder(), dummyLoc, nullptr,
-                               USTR("this"), Formal::DEFAULT_INTENT,
+    // notionally, functions built using this builder are methods declared in
+    // the scope of the type. As a special rule, Chapel operators declared
+    // inside a type ignore the 'this' formal, and instead have an 'lhs' and
+    // 'rhs' formal. Handle that here by constructing a formal that's
+    // not called 'this'. When finalizing, we'll insert a dummy 'this' formal.
+    UniqueString nameToUse = USTR("this");
+    if (kind_ == Function::Kind::OPERATOR) {
+      nameToUse = UniqueString::get(context, "lhs");
+    }
+
+    thisFormal_ = Formal::build(builder(), dummyLoc_, nullptr,
+                               nameToUse, Formal::DEFAULT_INTENT,
                                identifier(typeDecl->name()), nullptr);
 
-    auto otherName = UniqueString::get(context, "other");
+    auto otherName = UniqueString::get(context, "rhs");
     auto thisDotType =  dot(identifier(USTR("this")), USTR("type"));
-    otherFormal_ = Formal::build(builder(), dummyLoc, nullptr,
+    otherFormal_ = Formal::build(builder(), dummyLoc_, nullptr,
                                 otherName, Formal::DEFAULT_INTENT,
                                 std::move(thisDotType), nullptr);
   }
+
+  Context* context() const { return context_; }
 
   Builder* builder() { return builder_.get(); }
 
   AstList& stmts() { return stmts_; }
 
   owned<Identifier> identifier(UniqueString name) {
-    return Identifier::build(builder(), dummyLoc, name);
+    return Identifier::build(builder(), dummyLoc_, name);
   }
 
+  owned<Identifier> lhs() { return identifier(thisFormal_->name()); }
+  owned<Identifier> rhs() { return identifier(otherFormal_->name()); }
+
   owned<Dot> dot(owned<AstNode> lhs, UniqueString name) {
-    return Dot::build(builder(), dummyLoc, std::move(lhs), name);
+    return Dot::build(builder(), dummyLoc_, std::move(lhs), name);
   }
 
   owned<OpCall> op(owned<AstNode> lhs, UniqueString op, owned<AstNode> rhs) {
-    return OpCall::build(builder(), dummyLoc, op,
+    return OpCall::build(builder(), dummyLoc_, op,
                          std::move(lhs), std::move(rhs));
+  }
+
+  owned<FnCall> call(UniqueString fn, owned<AstNode> lhs, owned<AstNode> rhs) {
+    AstList args;
+    args.push_back(std::move(lhs));
+    args.push_back(std::move(rhs));
+    return FnCall::build(builder(), dummyLoc_, identifier(fn), std::move(args), /* callUsedSquareBrackets */ false);
+  }
+
+  owned<Return> ret(owned<AstNode> result) {
+    return Return::build(builder(), dummyLoc_, std::move(result));
+  }
+
+  owned<AstNode> earlyReturn(owned<AstNode> condition, owned<AstNode> result) {
+    auto retStmt = ret(std::move(result));
+    AstList stmts;
+    stmts.push_back(std::move(retStmt));
+    auto cond = Conditional::build(builder(), dummyLoc_,
+                                   std::move(condition),
+                                   BlockStyle::IMPLICIT,
+                                   Block::build(builder(), dummyLoc_, std::move(stmts)),
+                                   /* isExpressionLevel */ false);
+    return cond;
+  }
+
+  owned<BoolLiteral> boolLit(bool value) {
+    return BoolLiteral::build(builder(), dummyLoc_, value);
   }
 
   template <typename F>
@@ -509,18 +551,28 @@ struct FieldFnBuilder {
     for (int i = 0; i < rf.numFields(); i++) {
       auto name = rf.fieldName(i);
       // Create 'this.field = other.field;' statement
-      auto lhs = dot(identifier(USTR("this")), name);
-      auto rhs = dot(identifier(UniqueString::get(context_, "other")), name);
-      callable(this, std::move(lhs), std::move(rhs));
+      auto fieldLhs = dot(lhs(), name);
+      auto fieldRhs = dot(rhs(), name);
+      callable(this, std::move(fieldLhs), std::move(fieldRhs));
     }
   }
 
   BuilderResult finalize() {
-    auto body = Block::build(builder(), dummyLoc, std::move(stmts_));
+    auto body = Block::build(builder(), dummyLoc_, std::move(stmts_));
     AstList otherFormals;
+
+    // See comment in constructor. For operators, the "lhs" is not really
+    // "this", and "this" is a dummy formal. Insert the "this" formal as a normal
+    // formal, and create the dummy.
+    if (kind_ == Function::Kind::OPERATOR) {
+      otherFormals.push_back(std::move(thisFormal_));
+      thisFormal_ = Formal::build(builder(), dummyLoc_, nullptr,
+                                      USTR("this"), Formal::DEFAULT_INTENT,
+                                      identifier(typeID_.symbolName(context_)), nullptr);
+    }
     otherFormals.push_back(std::move(otherFormal_));
     auto genFn = Function::build(builder(),
-                                 dummyLoc, {},
+                                 dummyLoc_, {},
                                  Decl::Visibility::PUBLIC,
                                  Decl::Linkage::DEFAULT_LINKAGE,
                                  /*linkageName=*/{},
@@ -535,7 +587,7 @@ struct FieldFnBuilder {
                                  // returnType, where, lifetime, body
                                  {}, {}, {}, std::move(body));
 
-    builder_->noteChildrenLocations(genFn.get(), dummyLoc);
+    builder_->noteChildrenLocations(genFn.get(), dummyLoc_);
     builder_->addToplevelExpression(std::move(genFn));
 
     return builder_->result();
@@ -573,6 +625,27 @@ const BuilderResult& buildInitEquals(Context* context, ID typeID) {
 static const TypedFnSignature*
 generateInitCopySignature(ResolutionContext* rc, const CompositeType* inCompType) {
   return typedSignatureFromGenerator(rc, buildInitEquals, inCompType->id());
+}
+
+const BuilderResult& buildRecordComparison(Context* context, ID typeID) {
+  QUERY_BEGIN(buildRecordComparison, context, typeID);
+
+  FieldFnBuilder bld(context, typeID, USTR("=="), Function::Kind::OPERATOR);
+
+  bld.eachFieldPair([](FieldFnBuilder* bld, owned<AstNode> lhs, owned<AstNode> rhs) {
+    auto neqCall = bld->call(UniqueString::get(bld->context(), "chpl_field_neq"), std::move(lhs), std::move(rhs));
+    bld->stmts().push_back(bld->earlyReturn(std::move(neqCall), bld->boolLit(false)));
+  });
+
+  bld.stmts().push_back(bld.ret(bld.boolLit(true)));
+
+  auto result = bld.finalize();
+  return QUERY_END(result);
+}
+
+static const TypedFnSignature*
+generateRecordComparisonSignature(Context* context, const CompositeType* lhsType) {
+  return typedSignatureFromGenerator(context, buildRecordComparison, lhsType->id());
 }
 
 const BuilderResult& buildDeinit(Context* context, ID typeID) {
@@ -974,14 +1047,6 @@ generateRecordAssignment(Context* context, const CompositeType* lhsType) {
 }
 
 static const TypedFnSignature*
-generateRecordComparison(Context* context, const CompositeType* lhsType) {
-  return generateRecordBinaryOperator(context, USTR("=="), lhsType,
-                                      /*this*/ QualifiedType::TYPE,
-                                      /*lhs*/  QualifiedType::CONST_REF,
-                                      /*rhs*/  QualifiedType::CONST_REF);
-}
-
-static const TypedFnSignature*
 generatePtrMethod(Context* context, QualifiedType receiverType,
                    UniqueString name) {
   // Build a basic function signature for methods on a PtrType
@@ -1157,7 +1222,7 @@ getCompilerGeneratedMethodQuery(ResolutionContext* rc, QualifiedType receiverTyp
       result = generateTupleMethod(context, tupleType, name);
     } else if (auto recordType = type->toRecordType()) {
       if (name == USTR("==")) {
-        result = generateRecordComparison(context, recordType);
+        result = generateRecordComparisonSignature(context, recordType);
       } else if (name == USTR("=")) {
         result = generateRecordAssignment(context, recordType);
       } else {
@@ -1569,6 +1634,8 @@ builderResultForDefaultFunction(Context* context,
     return &buildDeSerialize(context, typeID, true);
   } else if (name == USTR("deserialize")) {
     return &buildDeSerialize(context, typeID, false);
+  } else if (name == USTR("==")) {
+    return &buildRecordComparison(context, typeID);
   } else if (typeID.symbolName(context) == name) {
     return &buildTypeConstructor(context, typeID);
   }
