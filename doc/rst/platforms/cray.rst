@@ -613,10 +613,9 @@ beginning of execution.  The default size works well in most cases but
 if it doesn't a different size can be specified, as discussed in the
 following section.
 
-Note that the 'aries' substrate is no longer supported by GASNet, making it
-difficuly to target a Cray XC with GASNet. It is possible to use the 'ofi' or
-'mpi' substrates to target a Cray XC with GASNet, but this is not well
-supported or tested.
+Note that as of Chapel 2.4, the 'aries' substrate is no longer supported by
+GASNet. It is still possible to use the 'ofi' or 'mpi' substrates to target a
+Cray XC with GASNet, but this is not well supported or tested.
 
 
 gasnet Communication Layer and the Heap
