@@ -678,7 +678,8 @@ static void
 genFtable(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
   GenInfo* info = gGenInfo;
 
-  const char* eltType = dtCVoidPtr->symbol->cname;
+  // TODO: Change this to be 'void*' instead.
+  const char* eltType = "chpl_fn_p";
   const char* name = ftableName;
 
   if (isHeader) {

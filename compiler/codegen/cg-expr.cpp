@@ -4194,9 +4194,13 @@ static GenRet codegenCall(CallExpr* call) {
     INT_ASSERT(chplFnType);
     INT_ASSERT(chplFnType->isLocal());
     INT_ASSERT(call->numActuals() == chplFnType->numFormals());
+  } else if (fn) {
+    auto se = toSymExpr(call->baseExpr);
+    INT_ASSERT(se && se->symbol() == fn);
+    base = fn->codegenAsCallBaseExpr();
   } else {
-    base = call->baseExpr->codegen();
-    INT_ASSERT(fn);
+    // It's not a base expression we should be handling...
+    INT_FATAL(call, "Should not reach here!");
   }
 
   bool isCallToExtern = (chplFnType && chplFnType->isExtern()) ||

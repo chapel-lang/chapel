@@ -3232,9 +3232,8 @@ static GenRet codegenFnSymbolToWideCacheIndex(FnSymbol* fn) {
 }
 
 GenRet FnSymbol::codegen() {
-  INT_FATAL(this, "Should not be called directly!");
-  GenRet ret;
-  return ret;
+  // Without context, the best we can do is convert it as a base expression.
+  return this->codegenAsCallBaseExpr();
 }
 
 GenRet FnSymbol::codegenAsValue() {
