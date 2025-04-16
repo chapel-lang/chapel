@@ -24,11 +24,6 @@ module ChapelDynamicLoading {
   private use Atomics;
   private use ChapelLocks;
 
-  // To gain access to the C functions 'dlopen()' and 'dlsym()'.
-  extern {
-    #include <dlfcn.h>
-  }
-
   /** If the mode is 'OFF', then dynamic loading cannot be used.
 
       If the mode is 'EAGER', then when a library is loaded, Chapel
@@ -256,11 +251,12 @@ module ChapelDynamicLoading {
               } else if ptr {
                 // The buffer is not wide!
                 on Locales[0] do bin._systemPtrs[n] = ptr;
-                // Clear the pointer to avoid closing it.
+                // Clear the pointer to avoid closing it in the defer.
                 ptr = nil;
               } else {
                 // TODO: Construct an error instead.
-                halt('Failed to load system \'dlopen()\' pointer!');
+                halt('Failed to load binary \'' + path + '\' on ' +
+                     here.id:string + '!');
               }
             }
           }
@@ -298,22 +294,34 @@ module ChapelDynamicLoading {
       return ret;
     }
 
-    inline proc type _systemDynLibClearError() do dlerror();
+    inline proc type _systemDynLibError() {
+      extern proc chpl_dlerror(): c_ptrConst(c_char);
+      return chpl_dlerror();
+    }
 
-    inline proc type _systemDynLibClose(ptr: c_ptr(void)) do dlclose(ptr);
+    inline proc type _systemDynLibClearError() do _systemDynLibError();
 
     inline proc type _systemDynLibWrapError() {
-      const sysErr = dlerror();
+      const sysErr = _systemDynLibError();
       if sysErr != nil then
         return new DynLibError?(try! string.createCopyingBuffer(sysErr));
       return nil;
+    }
+
+    inline proc type _systemDynLibClose(ptr: c_ptr(void)) {
+      extern proc chpl_dlclose(handle: c_ptr(void)): c_int;
+      chpl_dlclose(ptr);
     }
 
     inline proc type
     _systemDynLibOpen(path: string, out err: owned DynLibError?) {
       _systemDynLibClearError();
 
-      var ret = dlopen(path.c_str(), RTLD_LAZY);
+      extern proc chpl_dlopen(path: c_ptrConst(c_char),
+                              mode: c_int): c_ptr(void);
+      extern const CHPL_RTLD_LAZY: c_int;
+
+      var ret = chpl_dlopen(path.c_str(), CHPL_RTLD_LAZY);
       if ret == nil {
         var tmp = _systemDynLibWrapError();
         if tmp != nil then err = tmp;
@@ -327,7 +335,10 @@ module ChapelDynamicLoading {
                         out err: owned DynLibError?) {
       _systemDynLibClearError();
 
-      var ret = dlsym(handle, sym.c_str());
+      extern proc chpl_dlsym(handle: c_ptr(void),
+                             symbol: c_ptrConst(c_char)): c_ptr(void);
+
+      var ret = chpl_dlsym(handle, sym.c_str());
       if ret == nil {
         var tmp = _systemDynLibWrapError();
         if tmp != nil then err = tmp;

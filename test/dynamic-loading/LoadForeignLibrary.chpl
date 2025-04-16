@@ -6,7 +6,36 @@
 //
 
 use ChapelDynamicLoading;
+use CTypes;
 use Reflection;
+
+require "TestTypeOnlyHeader.h";
+
+// These types are declared in the header above, but we have to re-declare
+// them here because a require doesn't actually bring them into view as an
+// extern block would.
+//
+// TODO: Can we automagically convert the above header in a precomp?
+extern record baz {
+  var a: c_int;
+  var b: c_int;
+  var c: c_int;
+  var d: c_int;
+}
+
+param FOOBAR_PADDING: int = 32;
+extern record foobar {
+  var a: c_double;
+  var b: c_double;
+  var c: c_double;
+  var d: c_double;
+  var e: c_double;
+  var f: c_double;
+  var g: c_double;
+  var h: c_double;
+  var x: baz;
+  var padding: c_array(c_int, FOOBAR_PADDING);
+}
 
 /** Define a "user facing" wrapper around the internal dynamic library. */
 record dynamicLibrary {
@@ -16,11 +45,11 @@ record dynamicLibrary {
   proc init(path: string) {
     init this;
     this._bin = chpl_BinaryInfo.create(path, this._err);
-    _bin!.bumpRefCount();
+    if _bin then _bin!.bumpRefCount();
   }
 
   proc deinit() {
-    _bin!.dropRefCount();
+    if _bin then _bin!.dropRefCount();
   }
 
   proc ref load(sym: string, type T) throws {
@@ -52,10 +81,6 @@ proc test1() {
     writeln('---');
   }
   writeln();
-}
-
-extern {
-  #include "TestTypeOnlyHeader.h"
 }
 
 proc test2() {

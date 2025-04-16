@@ -18,39 +18,30 @@
  * limitations under the License.
  */
 
-#ifndef _chpl_privatization_h_
-#define _chpl_privatization_h_
-#ifndef LAUNCHER
-#include <stdint.h>
-#include "chpltypes.h"
+#ifndef _CHPL_DYNAMIC_LOADING_H_
+#define _CHPL_DYNAMIC_LOADING_H_
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void chpl_privatization_init(void);
+// Simple hook used by the compiler to get the ftable pointer in module
+// code. Has to exist because making an 'extern...' declaration of the
+// 'ftable' in module code leads to strange compiler errors when compiling
+// under earlier versions of LLVM that require typed pointers (e.g,. LLVM-14).
+// It has the type 'void**' because in practice that is how we use it (and
+// it can contain procedure pointers of any type, now).
+void** chpl_get_ftable(void);
 
-void chpl_newPrivatizedClass(void*, int64_t);
+extern int CHPL_RTLD_LAZY;
 
-typedef struct chpl_privateObject_s {
-  void* obj;
-} chpl_privateObject_t;
-
-// This is a dynamically-allocated array of chpl_privateObject_t.
-extern chpl_privateObject_t* chpl_privateObjects;
-
-// Compiler generates accesses like chpl_privateObjects[i];
-// see chpl_getPrivatizedCopy.
-// This allows TBAA information for chpl_privateObjects to be used.
-// At the very least, inlining it would be important for performance.
-
-void chpl_clearPrivatizedClass(int64_t);
-
-int64_t chpl_numPrivatizedClasses(void);
+void* chpl_dlopen(const char* path, int mode);
+void* chpl_dlsym(void* handle, const char* symbol);
+int chpl_dlclose(void* handle);
+const char* chpl_dlerror(void);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // LAUNCHER
-#endif // _chpl_privatization_h_
+#endif
