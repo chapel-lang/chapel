@@ -452,8 +452,8 @@ struct FieldFnBuilder {
   owned<Builder> builder_;
   Location dummyLoc_;
 
-  owned<Formal> thisFormal_;
-  owned<Formal> otherFormal_;
+  owned<Formal> lhsFormal_;
+  owned<Formal> rhsFormal_;
 
   AstList stmts_;
 
@@ -468,23 +468,22 @@ struct FieldFnBuilder {
     auto typeDecl = parsing::idToAst(context, typeID)->toAggregateDecl();
     CHPL_ASSERT(typeDecl);
 
-    // notionally, functions built using this builder are methods declared in
-    // the scope of the type. As a special rule, Chapel operators declared
-    // inside a type ignore the 'this' formal, and instead have an 'lhs' and
-    // 'rhs' formal. Handle that here by constructing a formal that's
-    // not called 'this'. When finalizing, we'll insert a dummy 'this' formal.
+    // As a special rule in Chapel, operator declarations inside a type ignore
+    // the 'this' formal, and instead have an 'lhs' and 'rhs' formal. Handle
+    // that here by constructing an LHS formal that's not called 'this'. When
+    // finalizing, we'll insert a dummy 'this' formal.
     UniqueString nameToUse = USTR("this");
     if (kind_ == Function::Kind::OPERATOR) {
       nameToUse = UniqueString::get(context, "lhs");
     }
 
-    thisFormal_ = Formal::build(builder(), dummyLoc_, nullptr,
+    lhsFormal_ = Formal::build(builder(), dummyLoc_, nullptr,
                                nameToUse, Formal::DEFAULT_INTENT,
                                identifier(typeDecl->name()), nullptr);
 
     auto otherName = UniqueString::get(context, "rhs");
     auto thisDotType =  dot(identifier(USTR("this")), USTR("type"));
-    otherFormal_ = Formal::build(builder(), dummyLoc_, nullptr,
+    rhsFormal_ = Formal::build(builder(), dummyLoc_, nullptr,
                                 otherName, Formal::DEFAULT_INTENT,
                                 std::move(thisDotType), nullptr);
   }
@@ -499,8 +498,8 @@ struct FieldFnBuilder {
     return Identifier::build(builder(), dummyLoc_, name);
   }
 
-  owned<Identifier> lhs() { return identifier(thisFormal_->name()); }
-  owned<Identifier> rhs() { return identifier(otherFormal_->name()); }
+  owned<Identifier> lhs() { return identifier(lhsFormal_->name()); }
+  owned<Identifier> rhs() { return identifier(rhsFormal_->name()); }
 
   owned<Dot> dot(owned<AstNode> lhs, UniqueString name) {
     return Dot::build(builder(), dummyLoc_, std::move(lhs), name);
@@ -561,16 +560,16 @@ struct FieldFnBuilder {
     auto body = Block::build(builder(), dummyLoc_, std::move(stmts_));
     AstList otherFormals;
 
-    // See comment in constructor. For operators, the "lhs" is not really
-    // "this", and "this" is a dummy formal. Insert the "this" formal as a normal
+    // See comment in constructor. For operators, the left hand side formal is not really
+    // "this", and "this" is a dummy formal. Insert the "lhs" formal as a normal
     // formal, and create the dummy.
     if (kind_ == Function::Kind::OPERATOR) {
-      otherFormals.push_back(std::move(thisFormal_));
-      thisFormal_ = Formal::build(builder(), dummyLoc_, nullptr,
+      otherFormals.push_back(std::move(lhsFormal_));
+      lhsFormal_ = Formal::build(builder(), dummyLoc_, nullptr,
                                       USTR("this"), Formal::DEFAULT_INTENT,
                                       identifier(typeID_.symbolName(context_)), nullptr);
     }
-    otherFormals.push_back(std::move(otherFormal_));
+    otherFormals.push_back(std::move(rhsFormal_));
     auto genFn = Function::build(builder(),
                                  dummyLoc_, {},
                                  Decl::Visibility::PUBLIC,
@@ -579,7 +578,7 @@ struct FieldFnBuilder {
                                  name_,
                                  /*inline=*/false, /*override=*/false,
                                  kind_,
-                                 /*receiver=*/std::move(thisFormal_),
+                                 /*receiver=*/std::move(lhsFormal_),
                                  Function::ReturnIntent::DEFAULT_RETURN_INTENT,
                                  // throws, primaryMethod, parenless
                                  false, false, false,
