@@ -606,13 +606,17 @@ segments, though even then its performance will rarely match that of the
 ugni communication layer.  The relevant configurations are::
 
   CHPL_COMM=gasnet
-    CHPL_COMM_SUBSTRATE=aries (for XC)
     CHPL_GASNET_SEGMENT=fast or large
 
 In these configurations the heap is created with a fixed size at the
 beginning of execution.  The default size works well in most cases but
 if it doesn't a different size can be specified, as discussed in the
 following section.
+
+Note that the 'aries' substrate is no longer supported by GASNet, making it
+difficuly to target a Cray XC with GASNet. It is possible to use the 'ofi' or
+'mpi' substrates to target a Cray XC with GASNet, but this is not well
+supported or tested.
 
 
 gasnet Communication Layer and the Heap
