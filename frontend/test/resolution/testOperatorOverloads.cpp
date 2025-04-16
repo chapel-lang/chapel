@@ -376,6 +376,127 @@ static void test9() {
   assert(qt.kind() == QualifiedType::CONST_VAR);
 }
 
+static void helpTestGeneratedComparisons(std::string program, std::vector<std::string> trace) {
+  std::string wrapper = R"""(
+    record wrapper {
+      var x;
+
+      operator <(lhs: wrapper, rhs: wrapper) {
+        compilerWarning("operator < with " + (lhs.x.type : string));
+        return lhs.x < rhs.x;
+      }
+
+      operator >(lhs: wrapper, rhs: wrapper) {
+        compilerWarning("operator > with " + (lhs.x.type : string));
+        return lhs.x > rhs.x;
+      }
+
+      operator ==(lhs: wrapper, rhs: wrapper) {
+        compilerWarning("operator == with " + (lhs.x.type : string));
+        return lhs.x == rhs.x;
+      }
+
+      operator !=(lhs: wrapper, rhs: wrapper) {
+        compilerWarning("operator != with " + (lhs.x.type : string));
+        return lhs.x != rhs.x;
+      }
+    }
+  )""";
+
+  auto wholeProg = wrapper + program;
+
+  auto ctx = buildStdContext();
+  ErrorGuard guard(ctx);
+  auto result = resolveTypesOfVariables(ctx, wholeProg, {});
+
+  int index = 0;
+  assert(guard.numErrors() == trace.size() * 2);
+  for (auto& op : trace) {
+    assert(guard.error(index)->message().find(op) != std::string::npos);
+    index += 2;
+  }
+
+  assert(guard.realizeErrors(/* countWarnings */ false) == 0);
+}
+
+// test compiler-generated comparison operators
+static void test10() {
+  helpTestGeneratedComparisons(
+      R"""(
+      record R {
+        var x: wrapper(int);
+      }
+      var tmp = new R() == new R();
+      )""", { "!= with int" });
+
+  helpTestGeneratedComparisons(
+      R"""(
+      record R {
+        var x: wrapper(int);
+        var y: wrapper(bool);
+      }
+      var tmp = new R() == new R();
+      )""", { "!= with int", "!= with bool" });
+
+  helpTestGeneratedComparisons(
+      R"""(
+      record R {
+        var x: wrapper(int);
+        var y: wrapper(bool);
+        var z: wrapper(real);
+      }
+      var tmp = new R() == new R();
+      )""", { "!= with int", "!= with bool", "!= with real" });
+
+  helpTestGeneratedComparisons(
+      R"""(
+      record R {
+        var x: wrapper(int);
+        var y: wrapper(bool);
+        var z: wrapper(real);
+      }
+      var tmp = new R() < new R();
+      )""", { "< with int", "> with int",
+              "< with bool", "> with bool",
+              "< with real", "> with real" });
+
+  helpTestGeneratedComparisons(
+      R"""(
+      record R {
+        var x: wrapper(int);
+        var y: wrapper(bool);
+        var z: wrapper(real);
+      }
+      var tmp = new R() > new R();
+      )""", { "> with int", "< with int",
+              "> with bool", "< with bool",
+              "> with real", "< with real" });
+
+  helpTestGeneratedComparisons(
+      R"""(
+      record R {
+        var x: wrapper(int);
+        var y: wrapper(bool);
+        var z: wrapper(real);
+      }
+      var tmp = new R() <= new R();
+      )""", { "< with int", "> with int",
+              "< with bool", "> with bool",
+              "< with real", "> with real" });
+
+  helpTestGeneratedComparisons(
+      R"""(
+      record R {
+        var x: wrapper(int);
+        var y: wrapper(bool);
+        var z: wrapper(real);
+      }
+      var tmp = new R() >= new R();
+      )""", { "> with int", "< with int",
+              "> with bool", "< with bool",
+              "> with real", "< with real" });
+}
+
 int main() {
   test1();
   test2();
@@ -386,6 +507,7 @@ int main() {
   test7();
   test8();
   test9();
+  test10();
 
   return 0;
 }
