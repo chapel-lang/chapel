@@ -474,39 +474,54 @@ module ChapelDynamicLoading {
       init this;
     }
 
+    // Returns a new 'chpl_localBuffer' containing the old contents.
+    // The new buffer memory is 'zeroed'.
+    inline proc ref reallocateAndClear(size: int) {
+      assert(size >= 0);
+
+      // Create a shallow copy of 'this' to return.
+      var ret: this.type;
+      ret._ptr = _ptr;
+      ret._size = _size;
+
+      // Reallocate the current buffer.
+      this._size = size;
+      if size > 0 then this._ptr = allocate(T, (size : uint(64)), true);
+      if _ptr == nil then halt('Out of memory!');
+
+      return ret;
+    }
+
     proc init(type T, size: int) {
       this.T = T;
-      this._size = size;
       init this;
-
-      if _size > 0 {
-        this._ptr = allocate(T, (size : uint(64)), true);
-        if _ptr == nil then halt('Out of memory!');
-      }
+      if size > 0 then reallocateAndClear(size);
+      assert(_size == size && (_size == 0 || _ptr != nil));
     }
 
     proc ref deinit() {
-      if _ptr != nil {
-        deallocate(_ptr);
-        _ptr = nil;
-      }
+      if _ptr != nil then deallocate(_ptr);
+    }
+
+    proc init=(rhs: chpl_localBuffer(?T)) {
+      this.init(T, rhs.size);
+      forall i in 0..<rhs.size do this[i] = rhs[i];
+    }
+
+    operator =(lhs: this.type, rhs: this.type) {
+      compilerError('Should not be called!');
     }
 
     inline proc size do return _size;
     inline proc ptr do return _ptr;
-    inline proc needsDestroy() param {
-      import MemMove;
-      return MemMove.needsDestroy(T);
-    }
 
-    inline proc this(idx: integral) ref: T {
-      if boundsChecking then
-        if idx < 0 || idx >= _size then
+    inline proc this(idx: integral) ref {
+      if boundsChecking && (idx < 0 || idx >= _size) then
           halt('Out of bounds!');
       return _ptr[idx];
     }
 
-    iter these() ref {
+    inline iter these() ref {
       for idx in 0..<_size do yield _ptr[idx];
     }
   }
@@ -520,6 +535,7 @@ module ChapelDynamicLoading {
   // This hashtable does not use a tombstone field and expects key types to be
   // simple scalars or POD types. It reserves a key with all 0-bits for use as
   // the empty key. The value type may be any moveable type.
+  //
   record chpl_localMap {
     type K, V;
     record slot {
@@ -534,6 +550,7 @@ module ChapelDynamicLoading {
       this.K = K;
       this.V = V;
       init this;
+      if !isPODType(K) then compilerError('Key type must be POD!');
     }
 
     inline proc size do return _size;
@@ -543,24 +560,24 @@ module ChapelDynamicLoading {
       return MemMove.needsDestroy(V);
     }
 
+    inline proc _baseBufferSize param do return chpl_defaultProcBufferSize;
     inline proc _minLoadFactor param do return 0.10;
-    inline proc _maxLoadFactor param do return 0.60;
+    inline proc _maxLoadFactor param do return 0.70;
 
     inline proc _loadFactor(): real do {
-      return if _bufferSize <= 0 then 1.0 else _size / _bufferSize;
+      var ret = if _slots.size <= 0 then 1.0 else _size:real / _slots.size;
+      return ret;
     }
 
-    inline proc _nextBufferSize(grow: bool) {
-      const num = if grow then _bufferSize * 2 else _bufferSize / 2;
-      return if num < _baseBufferSize then _baseBufferSize else num;
-    }
-
-    inline proc _bufferSize do return _slots.size;
-    inline proc _baseBufferSize param do return chpl_defaultProcBufferSize;
+    inline proc _isKeyZeroBits(key: K) do return (key : int) == 0;
     inline proc _shouldTryToExpand() do return _loadFactor() > _maxLoadFactor;
     inline proc _shouldTryToShrink() do return _loadFactor() < _minLoadFactor;
-    inline proc _nextExpandSize() do return _nextBufferSize(grow=true);
-    inline proc _nextShrinkSize() do return _nextBufferSize(grow=false);
+
+    // TODO: Switch from doubling to linear to decrease memory pressure.
+    inline proc _nextBufferSize(grow: bool) {
+      const num = if grow then _slots.size * 2 else _slots.size / 2;
+      return if num < _baseBufferSize then _baseBufferSize else num;
+    }
 
     inline proc _hash(key: K): int {
       use ChapelHashing;
@@ -568,17 +585,18 @@ module ChapelDynamicLoading {
       return ret;
     }
 
-    inline iter _walk(start: int) {
-      for idx in start..<_bufferSize do yield idx;
-      if start != 0 then for idx in 0..<start do yield idx;
+    inline iter _walk(start: int=0) {
+      assert(0 <= start && start < _slots.size);
+      for idx in start..<_slots.size do yield idx;
+      for idx in 0..<start do yield idx;
     }
 
-    inline proc _isKeyZeroBits(key: K) do return (key : int) == 0;
-
     inline iter slots(liveSlotsOnly: bool=true) ref {
-      for idx in _walk(start=0) {
-        ref slot = _slots[idx];
-        if !liveSlotsOnly || !_isKeyZeroBits(slot.key) then yield slot;
+      if _slots.size > 0 {
+        for idx in _walk() {
+          ref slot = _slots[idx];
+          if !liveSlotsOnly || !_isKeyZeroBits(slot.key) then yield slot;
+        }
       }
     }
 
@@ -586,23 +604,21 @@ module ChapelDynamicLoading {
       if !_shouldTryToExpand() && !_shouldTryToShrink() then return;
 
       const newBufferSize = if _shouldTryToExpand()
-          then _nextExpandSize()
-          else _nextShrinkSize();
+          then _nextBufferSize(grow=true)
+          else _nextBufferSize(grow=false);
 
       // Nothing to do.
-      if newBufferSize <= _bufferSize then return;
+      if newBufferSize <= _slots.size then return;
 
-      var buf = new _slots.type(newBufferSize);
+      // Reallocate a new empty buffer, set 'size' to 0 for rehashing.
+      const oldBuf = _slots.reallocateAndClear(newBufferSize);
       const oldSize = _size;
-
-      // Swap in the new buffer, set 'size' to 0 for rehashing.
-      this._slots <=> buf;
-      this._size = 0;
+      _size = 0;
 
       // Rehash all the live slots from the old buffer. Use 'moveFrom'
       // so that we can avoid making a copy of the existing value. The
       // key is a simple scalar type so it is trivially copied.
-      for slot in buf {
+      for slot in oldBuf {
         if !_isKeyZeroBits(slot.key) {
           import MemMove;
           const added = set(slot.key, MemMove.moveFrom(slot.val));
@@ -614,19 +630,10 @@ module ChapelDynamicLoading {
       assert(_size == oldSize);
     }
 
-    proc ref _findSlotIdx(in key: K, ref idx: int, param resize: bool): bool
-             where resize {
-      _resizeIfNeeded();
-      var ret = _findSlotIdx(key, idx, resize=false);
-      // Should always find a slot after we've resized.
-      assert(ret);
-      return ret;
-    }
-
-    proc _findSlotIdx(in key: K, ref idx: int, param resize: bool): bool {
+    proc _findSlotIdx(in key: K, ref idx: int): bool {
       assert(!_isKeyZeroBits(key));
 
-      const start = _hash(key) % _bufferSize;
+      const start = _hash(key) % _slots.size;
       for w in _walk(start) {
         const ref slot = _slots[w];
         if _isKeyZeroBits(slot.key) || slot.key == key {
@@ -641,9 +648,11 @@ module ChapelDynamicLoading {
     proc ref set(in key: K, in val: V): bool {
       if _isKeyZeroBits(key) then return false;
 
+      _resizeIfNeeded();
+
       var idx = 0;
-      var found = _findSlotIdx(key, idx, resize=true);
-      assert(found && (0 <= idx && idx < _bufferSize));
+      var found = _findSlotIdx(key, idx);
+      assert(found && (0 <= idx && idx < _slots.size));
 
       ref slot = _slots[idx];
       if _isKeyZeroBits(slot.key) {
@@ -672,7 +681,7 @@ module ChapelDynamicLoading {
       if _size == 0 then return false;
 
       var idx = 0;
-      var found = _findSlotIdx(key, idx, resize=false);
+      var found = _findSlotIdx(key, idx);
       if !found then return false;
 
       ref slot = _slots[idx];
