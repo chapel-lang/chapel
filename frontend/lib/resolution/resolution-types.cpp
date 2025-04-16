@@ -455,8 +455,7 @@ CallInfo CallInfo::create(Context* context,
       if (actualAsts != nullptr) {
         actualAsts->push_back(calledExpr);
       }
-      // and reset calledType
-      calledType = QualifiedType(QualifiedType::FUNCTION, nullptr);
+      calledType = *calledExprType;
     } else if (dotReceiverType && dotReceiverType->kind() == QualifiedType::MODULE) {
       // In calls like `M.f()`, where `M` is a module, we need to restrict
       // our search to `M`'s scope. Signal this by setting `moduleScopeId`.

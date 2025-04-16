@@ -6245,7 +6245,7 @@ struct InterfaceCheckHelper {
     // Set up a parenless type-proc call to compute associated type
     auto ci = CallInfo(
       td->name(),
-      /* calledType */ QualifiedType(),
+      /* calledType */ receiverType,
       /* isMethodCall */ true,
       /* hasQuestionArg */ false,
       /* isParenless */ true,

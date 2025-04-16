@@ -2893,7 +2893,7 @@ static void resolveReduceAssign(Resolver& rv, const OpCall* op) {
   actuals.push_back({rhsType, UniqueString()});
 
   auto ci = CallInfo(UniqueString::get(rv.context, "accumulateOntoState"),
-      /* calledType */ QualifiedType(),
+      /* calledType */ resolvedReducer.type(),
       /* isMethodCall */ true,
       /* hasQuestionArg */ false,
       /* isParenless */ false,
