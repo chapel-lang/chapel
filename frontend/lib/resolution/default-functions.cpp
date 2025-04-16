@@ -392,15 +392,12 @@ buildInitUfsFormals(const uast::Function* initFn) {
     if (auto formal = decl->toFormal()) {
       name = formal->name();
 
-      // Check if formal should have a default, which is never true for init=
-      if (initFn->name() != USTR("init=")) {
-        hasDefault = formal->initExpression() != nullptr;
-        if (decl != initFn->thisFormal()) {
-          if (formal->intent() != Formal::Intent::TYPE &&
-              formal->intent() != Formal::Intent::PARAM) {
-            if (formal->typeExpression() != nullptr) {
-              hasDefault = true;
-            }
+      hasDefault = formal->initExpression() != nullptr;
+      if (decl != initFn->thisFormal()) {
+        if (formal->intent() != Formal::Intent::TYPE &&
+            formal->intent() != Formal::Intent::PARAM) {
+          if (formal->typeExpression() != nullptr) {
+            hasDefault = true;
           }
         }
       }
@@ -545,6 +542,20 @@ struct FieldFnBuilder {
   }
 };
 
+template <typename F>
+const TypedFnSignature* typedSignatureFromGenerator(ResolutionContext* rc, F&& generator, const ID& generateFor) {
+  auto context = rc->context();
+  auto& br = generator(context, generateFor);
+  auto initFn = br.topLevelExpression(0)->toFunction();
+  auto uSig = getUntypedFnSignatureForFn(context, initFn, &generateFor);
+  return typedSignatureInitial(rc, uSig);
+}
+
+template <typename F>
+const TypedFnSignature* typedSignatureFromGenerator(Context* context, F&& generator, const ID& generateFor) {
+  auto rc = createDummyRC(context);
+  return typedSignatureFromGenerator(&rc, generator, generateFor);
+}
 
 const BuilderResult& buildInitEquals(Context* context, ID typeID) {
   QUERY_BEGIN(buildInitEquals, context, typeID);
@@ -561,23 +572,7 @@ const BuilderResult& buildInitEquals(Context* context, ID typeID) {
 
 static const TypedFnSignature*
 generateInitCopySignature(ResolutionContext* rc, const CompositeType* inCompType) {
-  auto context = rc->context();
-  auto& br = buildInitEquals(context, inCompType->id());
-  auto initFn = br.topLevelExpression(0)->toFunction();
-  auto formals = buildInitUfsFormals(initFn);
-
-  // find the unique-ified untyped signature
-  auto uSig = UntypedFnSignature::get(context, initFn->id(), initFn->name(),
-                                   true,
-                                   /* isTypeConstructor */ false,
-                                   /* isCompilerGenerated */ true,
-                                   /* throws */ false,
-                                   /* idTag */ asttags::Function,
-                                   uast::Function::Kind::PROC,
-                                   std::move(formals), nullptr,
-                                   inCompType->id());
-
-  return typedSignatureInitial(rc, uSig);
+  return typedSignatureFromGenerator(rc, buildInitEquals, inCompType->id());
 }
 
 const BuilderResult& buildDeinit(Context* context, ID typeID) {
