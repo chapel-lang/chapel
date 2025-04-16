@@ -575,6 +575,7 @@ class CallInfo {
         hasQuestionArg_(hasQuestionArg),
         isParenless_(isParenless),
         actuals_(std::move(actuals)) {
+    CHPL_ASSERT(calledType.isUnknown() || !isMethodCall);
     #ifndef NDEBUG
     if (isMethodCall) {
       CHPL_ASSERT(numActuals() >= 1);

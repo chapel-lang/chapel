@@ -5433,7 +5433,14 @@ void Resolver::handleCallExpr(const uast::Call* call) {
 
     // If the user has mistakenly instantiated a field of the type before
     // calling ``init``, then the receiver type will either be fully or
-    // partially instantiated. This will cause a failure to resolve the
+    // partially instantiated. E.g.,
+    //
+    //    proc init(...) {
+    //      this.typeField = ...;
+    //      this.init(....);
+    //    }
+    //
+    // This will cause a failure to resolve the inner
     // ``init`` call, and result in a confusing and unhelpful error message.
     // To resolve this problem, manually compute the fully-generic type that
     // is being initialized and reset the receiver.
