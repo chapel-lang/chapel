@@ -23,7 +23,9 @@ def get():
             else:
                 import chpl_platform
                 platform_val = chpl_platform.get('target')
-                if platform_val == 'hpe-cray-ex':
+                if platform_val == 'cray-xc':
+                    substrate_val = 'aries'
+                elif platform_val == 'hpe-cray-ex':
                     substrate_val = 'ofi'
                 elif platform_val == 'hpe-cray-xd':
                     # default to ofi on XD when we can't determine ib vs cxi
