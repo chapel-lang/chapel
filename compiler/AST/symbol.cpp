@@ -1862,6 +1862,10 @@ static VarSymbol* new_FloatSymbol(const char* num,
   n[j] = '\0';
 
   switch (size) {
+    case FLOAT_SIZE_16:
+      // TODO: Is there something more precise
+      imm.v_float16 = (_Float16)strtof(n, NULL);
+      break;
     case FLOAT_SIZE_32:
       imm.v_float32  = strtof(n, NULL);
       break;
@@ -1911,6 +1915,16 @@ VarSymbol *new_RealSymbol(const char *n, IF1_float_type size) {
   return new_FloatSymbol(n, size, NUM_KIND_REAL, dtReal[size]);
 }
 
+/*
+VarSymbol *new_RealSymbol(_Float16 val) {
+  Immediate imm;
+  imm.v_float16 = val;
+  imm.const_kind = NUM_KIND_REAL;
+  imm.num_index = FLOAT_SIZE_16;
+  return new_ImmediateSymbol(&imm);
+}
+*/
+
 VarSymbol *new_RealSymbol(float val) {
   Immediate imm;
   imm.v_float32 = val;
@@ -1935,6 +1949,10 @@ VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i,
                              IF1_complex_type size) {
   Immediate imm;
   switch (size) {
+  case COMPLEX_SIZE_32:
+    imm.v_complex32.r  = r;
+    imm.v_complex32.i  = i;
+    break;
   case COMPLEX_SIZE_64:
     imm.v_complex64.r  = r;
     imm.v_complex64.i  = i;

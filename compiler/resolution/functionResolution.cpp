@@ -2297,14 +2297,21 @@ static bool fits_in_mantissa_exponent(int mantissa_width,
 
   if (imm->const_kind == NUM_KIND_REAL ||
       imm->const_kind == NUM_KIND_IMAG) {
-    if (imm->num_index == FLOAT_SIZE_32)
+    if (imm->num_index == FLOAT_SIZE_16)
+      v = imm->v_float16;
+    else if (imm->num_index == FLOAT_SIZE_32)
       v = imm->v_float32;
     else if(imm->num_index == FLOAT_SIZE_64)
       v = imm->v_float64;
     else
       INT_FATAL("unsupported real/imag size");
   } else if (imm->const_kind == NUM_KIND_COMPLEX) {
-    if (imm->num_index == COMPLEX_SIZE_64) {
+    if (imm->num_index == COMPLEX_SIZE_32) {
+      if (realPart)
+        v = imm->v_complex32.r;
+      else
+        v = imm->v_complex32.i;
+    } else if (imm->num_index == COMPLEX_SIZE_64) {
       if (realPart)
         v = imm->v_complex64.r;
       else

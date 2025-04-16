@@ -81,13 +81,13 @@ enum IF1_int_type : uint8_t {
 
 // when updating these, be sure to also update float_type_precision!
 enum IF1_float_type : uint8_t {
-  FLOAT_SIZE_32, FLOAT_SIZE_64, FLOAT_SIZE_NUM
+  FLOAT_SIZE_16, FLOAT_SIZE_32, FLOAT_SIZE_64, FLOAT_SIZE_NUM
 };
 
 // these should correspond to double the IF1_float_types.
 // i.e. float_type_precision[i] here should refer to the real size of i
 enum IF1_complex_type : uint8_t {
-  COMPLEX_SIZE_64, COMPLEX_SIZE_128, COMPLEX_SIZE_NUM
+  COMPLEX_SIZE_32, COMPLEX_SIZE_64, COMPLEX_SIZE_128, COMPLEX_SIZE_NUM
 };
 
 //
@@ -115,10 +115,12 @@ class Immediate { public:
     // complex values
     complex128 v_complex128;
     complex64  v_complex64;
+    complex32  v_complex32;
 
     // floating-point values
     double     v_float64;
     float      v_float32;
+    _Float16   v_float16;
 
     // signed integer values
     // int128     v_int128;
@@ -232,6 +234,7 @@ Immediate::real_value( void) const {
   double val = 0.0;
   CHPL_ASSERT(const_kind == NUM_KIND_REAL || const_kind == NUM_KIND_IMAG);
   switch (num_index) {
+  case FLOAT_SIZE_16: val = v_float16; break;
   case FLOAT_SIZE_32: val = v_float32; break;
   case FLOAT_SIZE_64: val = v_float64; break;
   default:
@@ -298,7 +301,9 @@ inline std::string Immediate::to_string(void) const {
   case NUM_KIND_UINT: ss << uint_value(); break;
   case CONST_KIND_STRING: return v_string.str();
   case NUM_KIND_REAL: {
-    if (num_index == FLOAT_SIZE_32) {
+    if (num_index == FLOAT_SIZE_16) {
+      ss << (float)v_float16;
+    } else if (num_index == FLOAT_SIZE_32) {
       ss << v_float32;
     } else if (num_index == FLOAT_SIZE_64) {
       ss << v_float64;
@@ -310,7 +315,9 @@ inline std::string Immediate::to_string(void) const {
   case NUM_KIND_COMPLEX: {
     // Not expected to execute except for the type's
     // default value
-    if (num_index == COMPLEX_SIZE_64) {
+    if (num_index == COMPLEX_SIZE_32) {
+      ss << (float)v_complex32.r << "+ " << (float)v_complex32.i;
+    } else if (num_index == COMPLEX_SIZE_64) {
       ss << v_complex64.r << "+ " << v_complex64.i;
     } else if (num_index == COMPLEX_SIZE_128) {
       ss << v_complex128.r << "+ " << v_complex128.i;

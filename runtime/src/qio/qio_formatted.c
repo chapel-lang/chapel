@@ -3039,6 +3039,9 @@ error:
     case 4:
       *(float*) out = num;
       break;
+    case 2:
+      *(_Float16*) out = num;
+      break;
     default:
       QIO_GET_CONSTANT_ERROR(err, EINVAL, "bad floating point type");
   }
@@ -3781,6 +3784,9 @@ qioerr qio_channel_print_float_or_imag(const int threadsafe, qio_channel_t* rest
 
   err = 0;
   switch (len) {
+    case 2:
+      num = *(_Float16*) ptr;
+      break;
     case 4:
       num = *(float*) ptr;
       break;
@@ -3961,6 +3967,9 @@ qioerr qio_channel_scan_complex(const int threadsafe, qio_channel_t* restrict ch
           case 4:
             *(float*) im_out = - *(float*) im_out;
             break;
+          case 2:
+            *(_Float16*) im_out = - *(_Float16*) im_out;
+            break;
           default:
             QIO_GET_CONSTANT_ERROR(err, EINVAL, "bad floating point type");
         }
@@ -3988,6 +3997,11 @@ qioerr qio_channel_scan_complex(const int threadsafe, qio_channel_t* restrict ch
         case 4:
           if( isnan(*(float*) re_out) ) *(float*) im_out = *(float*) re_out;
           else *(float*) im_out = 0.0;
+          err = 0;
+          break;
+        case 2:
+          if( isnan(*(_Float16*) re_out) ) *(_Float16*) im_out = *(_Float16*) re_out;
+          else *(_Float16*) im_out = 0.0;
           err = 0;
           break;
         default:
@@ -4159,6 +4173,10 @@ qioerr qio_channel_print_complex(const int threadsafe,
   // Read our numbers.
   err = 0;
   switch (len) {
+    case 2:
+      re_num = *(_Float16*)re_ptr;
+      im_num = *(_Float16*)im_ptr;
+      break;
     case 4:
       re_num = *(float*)re_ptr;
       im_num = *(float*)im_ptr;
