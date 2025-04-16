@@ -5,7 +5,7 @@ import re
 import shutil
 
 import overrides
-from utils import memoize, check_valid_var, error
+from utils import memoize, check_valid_var
 
 
 @memoize

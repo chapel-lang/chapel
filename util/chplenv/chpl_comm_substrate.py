@@ -2,7 +2,7 @@
 import sys
 import shutil
 
-import chpl_comm, chpl_platform, overrides
+import chpl_comm, overrides
 from utils import memoize, check_valid_var, error
 
 
