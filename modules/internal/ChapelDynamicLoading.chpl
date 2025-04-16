@@ -36,8 +36,10 @@ module ChapelDynamicLoading {
   enum chpl_dynamicLoading { OFF, EAGER, LAZY }
 
   param chpl_defaultProcBufferSize = 512;
-  param chpl_msbUintMask = (1 << 63);
 
+  // Have to mark this as 'unstable' to avoid it showing up as a config in
+  // the output of some tests. It should be completely "hidden", and marking
+  // it 'private' alone does not do that.
   @unstable()
   private config const chpl_dynamicLoadingSupport = chpl_dynamicLoading.EAGER;
 
@@ -144,7 +146,6 @@ module ChapelDynamicLoading {
     proc deinit() {
       for slot in _handleToInfo.slots() do {
         if slot.val != nil then delete slot.val;
-        slot.val = nil;
       }
     }
   }
@@ -204,7 +205,7 @@ module ChapelDynamicLoading {
       var ret: unmanaged chpl_BinaryInfo? = nil;
 
       on Locales[0] {
-        ref store = chpl_binaryInfoStore;
+        const store = chpl_binaryInfoStore.borrow();
         var shouldCreateNewEntry = true;
 
         // Start by opening a system handle on LOCALE-0.
@@ -247,7 +248,7 @@ module ChapelDynamicLoading {
               if err {
                 // The buffer is not wide! Assignment occurs on LOCALE-0.
                 on Locales[0] do errBuf[n] = err;
-                numErrs.fetchAdd(1);
+                numErrs.add(1);
               } else if ptr {
                 // The buffer is not wide!
                 on Locales[0] do bin._systemPtrs[n] = ptr;
@@ -261,7 +262,7 @@ module ChapelDynamicLoading {
             }
           }
 
-          if numErrs.read() {
+          if numErrs.read() > 0 {
             // If there were errors, then report the first error.
             // TODO: Consolidate the reported errors.
             for i in 0..<errBuf.size {
@@ -366,14 +367,15 @@ module ChapelDynamicLoading {
       }
     }
 
-    inline proc bumpRefCount() do _refCount.fetchAdd(1);
+    inline proc bumpRefCount() do _refCount.add(1);
     inline proc dropRefCount() {
       if _refCount.read() <= 0 then return;
-      _refCount.fetchSub(1);
+      _refCount.sub(1);
     }
 
-    // TODO: 'T' must be a procedure type, but we cannot restrict it yet.
-    // Could add a primitive "any procedure type" to use instead.
+    // TODO: 'T' must be a procedure type, but we cannot restrict it yet,
+    // e.g., we cannot write "type t: proc". As a short-term workaround
+    // we could add a primitive "any procedure type" to use instead.
     proc loadSymbol(sym: string, type t, out err: owned DynLibError?) {
       var idx: int = 0;
 
@@ -391,11 +393,6 @@ module ChapelDynamicLoading {
                       'should be wide');
       }
 
-      // TODO: I think a faster path would just try to load the symbol without
-      // going to LOCALE-0. The problem with that is that we wouldn't be able
-      // to do any book-keeping, or we'd need to make some portion of the
-      // state be privatized. Or, we could avoid book-keeping if we just say
-      //
       // On the fast path, we check to see if the symbol exists on LOCALE-0.
       // If it does, then it should be in the procedure pointer cache, and
       // we can immediately translate it into a wide index.
@@ -438,7 +435,7 @@ module ChapelDynamicLoading {
               var ptr = this.type._systemDynLibLookup(sym, handle, err);
               if err {
                 on Locales[0] do errBuf[n] = err;
-                numErrs.fetchAdd(1);
+                numErrs.add(1);
               } else if ptr {
                 var got = chpl_insertExternLocalPtrNoSync(ptr, idx);
                 assert(got == idx);
@@ -449,7 +446,7 @@ module ChapelDynamicLoading {
             }
           }
 
-          if numErrs.read() {
+          if numErrs.read() > 0 {
             // If there were errors, then report the first error.
             // TODO: Evict any pointers stored in the cache.
             // TODO: Consolidate the reported errors.
@@ -497,7 +494,7 @@ module ChapelDynamicLoading {
 
       // Reallocate the current buffer.
       this._size = size;
-      if size > 0 then this._ptr = allocate(T, (size : uint(64)), true);
+      if size > 0 then this._ptr = allocate(T, (size : c_size_t), true);
       if _ptr == nil then halt('Out of memory!');
 
       return ret;

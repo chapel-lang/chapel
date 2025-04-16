@@ -140,8 +140,8 @@ memoryOrder.seqCst.
 pragma "atomic module"
 module Atomics {
 
-  import CTypes.{c_ptr, c_ptrConst};
   use ChapelBase;
+  use CTypes;
   public use MemConsistency;  // OK: to get and propagate memoryOrder
   import AutoMath;
 
@@ -162,15 +162,11 @@ module Atomics {
     atomic_fence(c_memory_order(order));
   }
 
-  private proc isPointerType(type T) param do return false;
-  private proc isPointerType(type T: c_ptr) param do return true;
-  private proc isPointerType(type T: c_ptrConst) param do return true;
-
   proc isSupportedType(type valType) param {
-    return valType == bool        ||
-           isInt(valType)         ||
-           isUint(valType)        ||
-           isPointerType(valType) ||
+    return valType == bool    ||
+           isInt(valType)     ||
+           isUint(valType)    ||
+           isAnyCPtr(valType) ||
            isReal(valType);
   }
 
@@ -192,7 +188,7 @@ module Atomics {
     extern "chpl_atomic__real32" type atomic__real32;
     extern "chpl_atomic_uintptr_t" type atomic_uintptr_t;
 
-    if isPointerType(valType) then return atomic_uintptr_t;
+    if isAnyCPtr(valType) then return atomic_uintptr_t;
 
     select valType {
       when bool     do return atomic_bool;
