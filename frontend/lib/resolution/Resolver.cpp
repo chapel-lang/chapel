@@ -5720,7 +5720,9 @@ void Resolver::exit(const Dot* dot) {
   // does.
   if (isDotDomainAccess(dot)) {
     std::vector<CallInfoActual> actuals;
+    std::vector<const AstNode*> actualAsts;
     actuals.emplace_back(receiver.type(), USTR("this"));
+    actualAsts.push_back(dot->receiver());
     auto name = UniqueString::get(context, "_dom");
     auto ci = CallInfo(/* name */ name,
                        /* calledType */ QualifiedType(),
@@ -5729,6 +5731,10 @@ void Resolver::exit(const Dot* dot) {
                        /* isParenless */ true, actuals);
     auto inScope = currentScope();
     auto inScopes = CallScopeInfo::forNormalCall(inScope, poiScope);
+    if (shouldSkipCallResolution(this, dot, actualAsts, ci)) {
+      r.setType(QualifiedType());
+      return;
+    }
     auto rr = resolveGeneratedCall(dot, &ci, &inScopes, name.c_str());
 
     auto baseDomainType = rr.result.exprType().type()->toDomainType();
