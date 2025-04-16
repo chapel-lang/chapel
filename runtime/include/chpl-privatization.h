@@ -28,6 +28,14 @@
 extern "C" {
 #endif
 
+// Simple hook used by the compiler to get the ftable pointer in module
+// code. Has to exist because making an 'extern...' declaration of the
+// 'ftable' in module code leads to strange compiler errors when compiling
+// under earlier versions of LLVM that require typed pointers (e.g,. LLVM-14).
+// It has the type 'void**' because in practice that is how we use it (and
+// it can contain procedure pointers of any type, now).
+void** chpl_get_ftable(void);
+
 void chpl_privatization_init(void);
 
 void chpl_newPrivatizedClass(void*, int64_t);

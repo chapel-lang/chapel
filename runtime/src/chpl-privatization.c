@@ -23,6 +23,8 @@
 #include "chpl-mem.h"
 #include "chpl-atomics.h"
 
+void** chpl_get_ftable(void) { return (void**) chpl_ftable; }
+
 static int64_t chpl_capPrivateObjects = 0;
 static chpl_atomic_spinlock_t lock;
 

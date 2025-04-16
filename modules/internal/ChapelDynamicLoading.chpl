@@ -694,12 +694,12 @@ module ChapelDynamicLoading {
     }
   }
 
-  // TODO: If I make this inline I get an internal compiler error.
   private proc lookupPtrFromLocalFtable(idx: int): c_ptr(void) {
-    extern const chpl_ftable: c_ptr(c_ptr(void));
+    extern proc chpl_get_ftable(): c_ptr(c_ptr(void));
     extern const chpl_ftableSize: int(64);
     assert(idx < chpl_ftableSize);
-    return chpl_ftable[idx];
+    const ftable = chpl_get_ftable();
+    return ftable[idx];
   }
 
   inline proc fetchLocalPtrForDynamicIdx(idx: int): c_ptr(void) {
