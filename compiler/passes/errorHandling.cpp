@@ -232,8 +232,6 @@ ErrorHandlingVisitor::ErrorHandlingVisitor(ArgSymbol*   _outError,
   state = _state;
 }
 
-
-
 bool ErrorHandlingVisitor::enterTryStmt(TryStmt* node) {
   SET_LINENO(node);
 
@@ -1524,7 +1522,7 @@ static bool isCompilerGeneratedFunction(FnSymbol* fn)
          fn->hasFlag(FLAG_COMPILER_GENERATED);
 }
 
-static Type* adjustThrowingFunctionType(Type* t) {
+static Type* adjustThrowingFunctionTypeToNonThrowing(Type* t) {
   if (auto ft = toFunctionType(t)) {
     if (ft->throws()) return ft->getWithLoweredErrorHandling();
   }
@@ -1532,7 +1530,7 @@ static Type* adjustThrowingFunctionType(Type* t) {
 }
 
 static void adjustFunctionTypesToBeNonThrowing() {
-  AdjustTypeFn adjustTypeFn = adjustThrowingFunctionType;
+  AdjustTypeFn adjustTypeFn = adjustThrowingFunctionTypeToNonThrowing;
   adjustAllSymbolTypes(adjustTypeFn);
 }
 

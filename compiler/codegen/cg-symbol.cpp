@@ -2125,7 +2125,8 @@ llvm::FunctionType*
 codegenFunctionTypeLLVM(FunctionType* ft,
                         llvm::AttributeList& outAttrs,
                         std::vector<const char*>& outArgNames) {
-  bool isNoAliasOnReturn = false;
+  // This is false since we cannot check for 'FLAG_LLVM_RETURN_NOALIAS'.
+  const bool isNoAliasOnReturn = false;
   std::vector<AddedFormalInfo> addedFormalInfos;
 
   for (int i = 0; i < ft->numFormals(); i++) {
@@ -3201,9 +3202,9 @@ void FnSymbol::codegenDef() {
 static GenRet codegenFnSymbolToWideCacheIndex(FnSymbol* fn) {
   auto ft = fn->computeAndSetType();
 
-  // This should not be possible, a function type derived from a symbol
-  // always starts with a wide type (that can be casted to narrow)
-  // later after it is constructed).
+  // This should not be possible, a function type derived from a 'FnSymbol*'
+  // always starts with a wide type (that can be casted to narrow later after
+  // it is constructed).
   INT_ASSERT(!ft->isLocal());
   INT_ASSERT(!ft->isExtern() || fn->hasFlag(FLAG_EXTERN));
 

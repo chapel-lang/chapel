@@ -10661,27 +10661,6 @@ static Expr* swapInFunctionForCapture(FnSymbol* fn, Expr* use) {
   // Mark the function as a root to be added to the function table later.
   fn->addFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION);
 
-  // When referred to directly, functions always produce a "wide" value.
-  // This is critical because producing the value adds the function to
-  // the dynamic procedure pointer cache.
-  // But for the sake of optimization, we want most uses of function
-  // pointers to be local pointers so that they can participate in
-  // the 'insertWideReferences' and 'loopInvariantCodeMotion' passes.
-  //
-  // TODO: Figure out if we need to start with local pointers here.
-
-  /*
-  auto localTmp = newTempConst("local_ptr");
-  auto localDef = use->replace(new DefExpr(localTmp));
-  auto ft = fn->computeAndSetType();
-  INT_ASSERT(ft && ft->isWide());
-  auto narrowCast = new CallExpr(PRIM_CAST_TO_TYPE,
-                                 new SymExpr(fn),
-                                 FunctionType::getAsLocal(ft));
-  auto move = new CallExpr(PRIM_MOVE, localTmp, narrowCast);
-  localDef->insertAfter(move);
-  */
-
   auto ret = new SymExpr(fn);
   use->replace(ret);
   return ret;

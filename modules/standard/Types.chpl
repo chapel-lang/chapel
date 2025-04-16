@@ -216,8 +216,8 @@ param chpl_procMaskLinkageDefault = 0b01000;
 //
 // User-facing predicates used to detect procedure types. Defined in the
 // standard fashion, but not exposed to users yet. These predicates do not
-// expose any notion of "wideness" or other properties used BTS by the
-// procedure type.
+// expose any notion of "wideness" or other properties used behind the scenes
+// by the procedure type.
 //
 
 @chpldoc.nodoc
