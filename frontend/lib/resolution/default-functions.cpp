@@ -141,12 +141,83 @@ areOverloadsPresentInDefiningScope(Context* context,
   return false;
 }
 
-// non-record types have == and = implemented in the modules so we don't
+template <typename F>
+const TypedFnSignature* typedSignatureFromGenerator(ResolutionContext* rc, F&& generator, const ID& generateFor) {
+  auto context = rc->context();
+  auto& br = generator(context, generateFor);
+  auto initFn = br.topLevelExpression(0)->toFunction();
+  auto uSig = getUntypedFnSignatureForFn(context, initFn, &generateFor);
+  return typedSignatureInitial(rc, uSig);
+}
+
+static const TypedFnSignature*
+generateInitCopySignature(ResolutionContext* rc, const CompositeType* inCompType) {
+  return typedSignatureFromGenerator(rc, buildInitEquals, inCompType->id());
+}
+
+static const TypedFnSignature*
+generateRecordComparisonSignature(ResolutionContext* rc, const CompositeType* lhsType) {
+  return typedSignatureFromGenerator(rc, buildRecordComparison, lhsType->id());
+}
+
+static const TypedFnSignature*
+generateRecordInequalityComparisonSignature(ResolutionContext* rc,
+                                            const CompositeType* lhsType) {
+  return typedSignatureFromGenerator(rc, buildRecordInequalityComparison, lhsType->id());
+}
+
+static const TypedFnSignature*
+generateRecordCompareLtSignature(ResolutionContext* rc, const CompositeType* lhsType) {
+  return typedSignatureFromGenerator(rc, buildRecordCompareLt, lhsType->id());
+}
+
+static const TypedFnSignature*
+generateRecordCompareLeSignature(ResolutionContext* rc, const CompositeType* lhsType) {
+  return typedSignatureFromGenerator(rc, buildRecordCompareLe, lhsType->id());
+}
+
+static const TypedFnSignature*
+generateRecordCompareGtSignature(ResolutionContext* rc, const CompositeType* lhsType) {
+  return typedSignatureFromGenerator(rc, buildRecordCompareGt, lhsType->id());
+}
+
+static const TypedFnSignature*
+generateRecordCompareGeSignature(ResolutionContext* rc, const CompositeType* lhsType) {
+  return typedSignatureFromGenerator(rc, buildRecordCompareGe, lhsType->id());
+}
+
+static const TypedFnSignature*
+generateRecordAssignment(ResolutionContext* rc, const CompositeType* lhsType);
+
+
+using GeneratorType = TypedFnSignature const* (*)(ResolutionContext*, const CompositeType*);
+
+static GeneratorType generatorForCompilerGeneratedRecordOperator(UniqueString name) {
+  if (name == USTR("==")) {
+    return generateRecordComparisonSignature;
+  } else if (name == USTR("!=")) {
+    return generateRecordInequalityComparisonSignature;
+  } else if (name == USTR("<")) {
+    return generateRecordCompareLtSignature;
+  } else if (name == USTR("<=")) {
+    return generateRecordCompareLeSignature;
+  } else if (name == USTR(">")) {
+    return generateRecordCompareGtSignature;
+  } else if (name == USTR(">=")) {
+    return generateRecordCompareGeSignature;
+  } else if (name == USTR("init")) {
+    return generateInitCopySignature;
+  } else if (name == USTR("=")) {
+    return generateRecordAssignment;
+  }
+
+  return nullptr;
+}
+
+// non-record types have == and = etc. implemented in the modules so we don't
 // want to generate them
-static bool isBuiltinTypeOperator(UniqueString name) {
-  // adding "==" and "=" to list of compiler generated method names was
-  // problematic for other types, like int
-  return !(name == USTR("==") || name == USTR("="));
+static bool isNameOfCompilerGeneratedRecordOperator(UniqueString name) {
+  return generatorForCompilerGeneratedRecordOperator(name) != nullptr;
 }
 
 bool
@@ -158,7 +229,7 @@ needCompilerGeneratedMethod(Context* context, const Type* type,
 
   bool isAggregate = type->getCompositeType() || type->isRecordLike();
   if ((isAggregate && isNameOfCompilerGeneratedMethod(name)) ||
-      (type->isRecordType() && !isBuiltinTypeOperator(name))) {
+      (type->isRecordType() && isNameOfCompilerGeneratedRecordOperator(name))) {
     if (!areOverloadsPresentInDefiningScope(context, type, QualifiedType::INIT_RECEIVER, name)) {
       return true;
     }
@@ -448,6 +519,8 @@ struct FieldFnBuilder {
   ID typeID_;
   UniqueString name_;
   Function::Kind kind_;
+  Formal::Intent lhsIntent_;
+  Formal::Intent rhsIntent_;
 
   owned<Builder> builder_;
   Location dummyLoc_;
@@ -459,8 +532,11 @@ struct FieldFnBuilder {
 
  public:
   FieldFnBuilder(Context* context, ID typeID, UniqueString name,
-                 Function::Kind kind)
-    : context_(context), typeID_(std::move(typeID)), name_(name), kind_(kind) {
+                 Function::Kind kind,
+                 Formal::Intent lhsIntent = Formal::DEFAULT_INTENT,
+                 Formal::Intent rhsIntent = Formal::DEFAULT_INTENT)
+    : context_(context), typeID_(std::move(typeID)), name_(name), kind_(kind),
+      lhsIntent_(lhsIntent), rhsIntent_(rhsIntent) {
 
     builder_ = Builder::createForGeneratedCode(context_, typeID_);
     dummyLoc_ = parsing::locateId(context_, typeID_);
@@ -478,13 +554,13 @@ struct FieldFnBuilder {
     }
 
     lhsFormal_ = Formal::build(builder(), dummyLoc_, nullptr,
-                               nameToUse, Formal::DEFAULT_INTENT,
+                               nameToUse, lhsIntent_,
                                identifier(typeDecl->name()), nullptr);
 
     auto otherName = UniqueString::get(context, "rhs");
     auto thisDotType =  dot(identifier(USTR("this")), USTR("type"));
     rhsFormal_ = Formal::build(builder(), dummyLoc_, nullptr,
-                                otherName, Formal::DEFAULT_INTENT,
+                                otherName, rhsIntent_,
                                 std::move(thisDotType), nullptr);
   }
 
@@ -593,21 +669,6 @@ struct FieldFnBuilder {
   }
 };
 
-template <typename F>
-const TypedFnSignature* typedSignatureFromGenerator(ResolutionContext* rc, F&& generator, const ID& generateFor) {
-  auto context = rc->context();
-  auto& br = generator(context, generateFor);
-  auto initFn = br.topLevelExpression(0)->toFunction();
-  auto uSig = getUntypedFnSignatureForFn(context, initFn, &generateFor);
-  return typedSignatureInitial(rc, uSig);
-}
-
-template <typename F>
-const TypedFnSignature* typedSignatureFromGenerator(Context* context, F&& generator, const ID& generateFor) {
-  auto rc = createDummyRC(context);
-  return typedSignatureFromGenerator(&rc, generator, generateFor);
-}
-
 const BuilderResult& buildInitEquals(Context* context, ID typeID) {
   QUERY_BEGIN(buildInitEquals, context, typeID);
 
@@ -621,15 +682,12 @@ const BuilderResult& buildInitEquals(Context* context, ID typeID) {
   return QUERY_END(result);
 }
 
-static const TypedFnSignature*
-generateInitCopySignature(ResolutionContext* rc, const CompositeType* inCompType) {
-  return typedSignatureFromGenerator(rc, buildInitEquals, inCompType->id());
-}
-
 const BuilderResult& buildRecordComparison(Context* context, ID typeID) {
   QUERY_BEGIN(buildRecordComparison, context, typeID);
 
-  FieldFnBuilder bld(context, typeID, USTR("=="), Function::Kind::OPERATOR);
+  FieldFnBuilder bld(context, typeID, USTR("=="), Function::Kind::OPERATOR,
+                     Formal::CONST_REF,
+                     Formal::CONST_REF);
 
   bld.eachFieldPair([](FieldFnBuilder* bld, owned<AstNode> lhs, owned<AstNode> rhs) {
     auto neqCall = bld->call(UniqueString::get(bld->context(), "chpl_field_neq"), std::move(lhs), std::move(rhs));
@@ -642,9 +700,112 @@ const BuilderResult& buildRecordComparison(Context* context, ID typeID) {
   return QUERY_END(result);
 }
 
-static const TypedFnSignature*
-generateRecordComparisonSignature(Context* context, const CompositeType* lhsType) {
-  return typedSignatureFromGenerator(context, buildRecordComparison, lhsType->id());
+const BuilderResult& buildRecordInequalityComparison(Context* context, ID typeID) {
+  QUERY_BEGIN(buildRecordComparison, context, typeID);
+
+  FieldFnBuilder bld(context, typeID, USTR("!="), Function::Kind::OPERATOR,
+                     Formal::CONST_REF,
+                     Formal::CONST_REF);
+
+  bld.eachFieldPair([](FieldFnBuilder* bld, owned<AstNode> lhs, owned<AstNode> rhs) {
+    bld->stmts().push_back(bld->call(UniqueString::get(bld->context(), "chpl_field_neq"), std::move(lhs), std::move(rhs)));
+  });
+
+  owned<AstNode> wholeNeq = bld.boolLit(false);
+  for (auto it = bld.stmts().rbegin(); it != bld.stmts().rend(); ++it) {
+    wholeNeq = bld.op(std::move(wholeNeq), USTR("||"), std::move(*it));
+  }
+
+  bld.stmts().clear();
+  bld.stmts().push_back(bld.ret(std::move(wholeNeq)));
+
+  auto result = bld.finalize();
+  return QUERY_END(result);
+}
+
+static const BuilderResult buildOrderedComparison(Context* context, ID typeID,
+                                                  UniqueString fnName,
+                                                  UniqueString strictCompFn,
+                                                  UniqueString strictCompReversedFn,
+                                                  bool allowEqual) {
+
+  FieldFnBuilder bld(context, typeID, fnName, Function::Kind::OPERATOR,
+                     Formal::CONST_REF,
+                     Formal::CONST_REF);
+
+  // kind of clunky, but because eachFieldPair uses owned and we can't clone
+  // ASTs, we need to call it twice to get two copies of lhs/rhs to
+  // compare.
+  //
+  // the general pattern is:
+  // if (x[0] < y[0]) return true;
+  // if (x[0] > y[0]) return false;
+  //
+  // otherwise, first field is equal, so move on to second field.
+  // This implements dictionary ordering.
+
+  AstList earlyReturnsIfTrue;
+  bld.eachFieldPair([&, strictCompFn](FieldFnBuilder* bld, owned<AstNode> lhs, owned<AstNode> rhs) {
+    earlyReturnsIfTrue.push_back(
+      bld->earlyReturn(bld->call(strictCompFn, std::move(lhs), std::move(rhs)),
+                       bld->boolLit(true))
+    );
+  });
+  AstList earlyReturnsIfFalse;
+  bld.eachFieldPair([&, strictCompReversedFn](FieldFnBuilder* bld, owned<AstNode> lhs, owned<AstNode> rhs) {
+    earlyReturnsIfFalse.push_back(
+      bld->earlyReturn(bld->call(strictCompReversedFn, std::move(lhs), std::move(rhs)),
+                       bld->boolLit(false))
+    );
+  });
+
+  // intersperse the comparisons.
+  for (size_t i = 0; i < earlyReturnsIfTrue.size(); i++) {
+    bld.stmts().push_back(std::move(earlyReturnsIfTrue[i]));
+    bld.stmts().push_back(std::move(earlyReturnsIfFalse[i]));
+  }
+
+  // if we get here, all fields are equal. If allowEqual is true, return
+  // true, otherwise return false.
+  bld.stmts().push_back(bld.ret(bld.boolLit(allowEqual)));
+
+  return bld.finalize();
+}
+
+const uast::BuilderResult& buildRecordCompareLt(Context* context, ID typeID) {
+  QUERY_BEGIN(buildRecordCompareLt, context, typeID);
+  auto result = buildOrderedComparison(context, typeID, USTR("<"),
+                                       UniqueString::get(context, "chpl_field_lt"),
+                                       UniqueString::get(context, "chpl_field_gt"),
+                                       false);
+  return QUERY_END(result);
+}
+
+const uast::BuilderResult& buildRecordCompareLe(Context* context, ID typeID) {
+  QUERY_BEGIN(buildRecordCompareLe, context, typeID);
+  auto result = buildOrderedComparison(context, typeID, USTR("<="),
+                                       UniqueString::get(context, "chpl_field_lt"),
+                                       UniqueString::get(context, "chpl_field_gt"),
+                                       true);
+  return QUERY_END(result);
+}
+
+const uast::BuilderResult& buildRecordCompareGt(Context* context, ID typeID) {
+  QUERY_BEGIN(buildRecordCompareGt, context, typeID);
+  auto result = buildOrderedComparison(context, typeID, USTR(">"),
+                                       UniqueString::get(context, "chpl_field_gt"),
+                                       UniqueString::get(context, "chpl_field_lt"),
+                                       false);
+  return QUERY_END(result);
+}
+
+const uast::BuilderResult& buildRecordCompareGe(Context* context, ID typeID) {
+  QUERY_BEGIN(buildRecordCompareGe, context, typeID);
+  auto result = buildOrderedComparison(context, typeID, USTR(">="),
+                                       UniqueString::get(context, "chpl_field_gt"),
+                                       UniqueString::get(context, "chpl_field_lt"),
+                                       true);
+  return QUERY_END(result);
 }
 
 const BuilderResult& buildDeinit(Context* context, ID typeID) {
@@ -1034,12 +1195,12 @@ generateRecordBinaryOperator(Context* context, UniqueString op,
 }
 
 static const TypedFnSignature*
-generateRecordAssignment(Context* context, const CompositeType* lhsType) {
+generateRecordAssignment(ResolutionContext* rc, const CompositeType* lhsType) {
   // rhs used to be 'maybe const' but now 'const' is default.
   //
   // TODO: it's possible that we need to compute the dyno equivalent of
   //       FLAG_COPY_MUTATES to get the right constness here.
-  return generateRecordBinaryOperator(context, USTR("="), lhsType,
+  return generateRecordBinaryOperator(rc->context(), USTR("="), lhsType,
                                       /*this*/ QualifiedType::TYPE,
                                       /*lhs*/  QualifiedType::REF,
                                       /*rhs*/  QualifiedType::CONST_REF );
@@ -1220,10 +1381,8 @@ getCompilerGeneratedMethodQuery(ResolutionContext* rc, QualifiedType receiverTyp
     } else if (auto tupleType = type->toTupleType()) {
       result = generateTupleMethod(context, tupleType, name);
     } else if (auto recordType = type->toRecordType()) {
-      if (name == USTR("==")) {
-        result = generateRecordComparisonSignature(context, recordType);
-      } else if (name == USTR("=")) {
-        result = generateRecordAssignment(context, recordType);
+      if (auto generator = generatorForCompilerGeneratedRecordOperator(name)) {
+        result = generator(rc, recordType);
       } else {
         CHPL_UNIMPL("record method not implemented yet!");
       }
@@ -1635,6 +1794,16 @@ builderResultForDefaultFunction(Context* context,
     return &buildDeSerialize(context, typeID, false);
   } else if (name == USTR("==")) {
     return &buildRecordComparison(context, typeID);
+  } else if (name == USTR("!=")) {
+    return &buildRecordInequalityComparison(context, typeID);
+  } else if (name == USTR("<")) {
+    return &buildRecordCompareLt(context, typeID);
+  } else if (name == USTR("<=")) {
+    return &buildRecordCompareLe(context, typeID);
+  } else if (name == USTR(">")) {
+    return &buildRecordCompareGt(context, typeID);
+  } else if (name == USTR(">=")) {
+    return &buildRecordCompareGe(context, typeID);
   } else if (typeID.symbolName(context) == name) {
     return &buildTypeConstructor(context, typeID);
   }
