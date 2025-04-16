@@ -14,7 +14,9 @@ def get():
 
         if comm_val == 'gasnet':
             network = chpl_comm.get_network()
-            if network == 'ibv':
+            if network == 'aries':
+                substrate_val = 'aries'
+            elif network == 'ibv':
                 substrate_val = 'ibv'
             elif network == 'cxi':
                 substrate_val = 'ofi'
@@ -37,7 +39,7 @@ def get():
 
     # special case error for aries to be nice to users
     if chpl_comm.get() == 'gasnet' and substrate_val == 'aries':
-        error("CHPL_COMM=gasnet is no longer supported on Cray XC. Please use CHPL_COMM=ugni instead and unset CHPL_COMM_SUBSTRATE.")
+        error("'CHPL_COMM=gasnet' with the 'aries' substrate is no longer supported. Please prefer using 'CHPL_COMM=ugni' instead")
 
     # values are ordered alphabetically, with none first
     check_valid_var("CHPL_COMM_SUBSTRATE", substrate_val, ("none", "ibv", "mpi", "ofi", "smp", "ucx", "udp"))
