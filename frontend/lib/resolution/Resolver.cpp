@@ -5731,14 +5731,15 @@ void Resolver::exit(const Dot* dot) {
                        /* isParenless */ true, actuals);
     auto inScope = currentScope();
     auto inScopes = CallScopeInfo::forNormalCall(inScope, poiScope);
-    if (shouldSkipCallResolution(this, dot, actualAsts, ci)) {
-      r.setType(QualifiedType());
-      return;
+    auto resultType = QualifiedType();
+    if (!shouldSkipCallResolution(this, dot, actualAsts, ci)) {
+      auto rr = resolveGeneratedCall(dot, &ci, &inScopes, name.c_str());
+      if (!rr.result.mostSpecific().isEmpty()) {
+        auto baseDomainType = rr.result.exprType().type()->toDomainType();
+        resultType = QualifiedType(QualifiedType::CONST_VAR, baseDomainType);
+      }
     }
-    auto rr = resolveGeneratedCall(dot, &ci, &inScopes, name.c_str());
-
-    auto baseDomainType = rr.result.exprType().type()->toDomainType();
-    r.setType(QualifiedType(QualifiedType::CONST_VAR, baseDomainType));
+    r.setType(resultType);
     return;
   }
 
