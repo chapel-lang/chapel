@@ -579,6 +579,7 @@ class CallInfo {
     if (isMethodCall) {
       CHPL_ASSERT(numActuals() >= 1);
       CHPL_ASSERT(this->actual(0).byName() == "this");
+      CHPL_ASSERT(calledType.isUnknown());
     }
     if (isParenless) {
       if (isMethodCall) {
@@ -678,6 +679,14 @@ class CallInfo {
                             const uast::AstNode*& questionArg,
                             std::vector<const uast::AstNode*>* actualAsts);
 
+  /** return the type of the 'this' actual, aka the receiver of a method call. */
+  types::QualifiedType methodReceiverType() const {
+    CHPL_ASSERT(isMethodCall());
+    CHPL_ASSERT(numActuals() > 0);
+    auto& firstActual = actual(0);
+    CHPL_ASSERT(firstActual.byName() == "this");
+    return firstActual.type();
+  }
 
   /** return the name of the called thing */
   const UniqueString name() const { return name_; }
@@ -1243,9 +1252,10 @@ struct CandidatesAndForwardingInfo {
 
   // Compute and fill in forwarding info for a range of newly-added candidates.
   void helpComputeForwardingTo(const CallInfo& fci, size_t start) {
+    CHPL_ASSERT(fci.isMethodCall());
     CHPL_ASSERT(forwardingInfo.size() <= start);
     forwardingInfo.resize(start);
-    types::QualifiedType forwardingReceiverActualType = fci.calledType();
+    types::QualifiedType forwardingReceiverActualType = fci.methodReceiverType();
     for (size_t i = start; i < candidates.size(); i++) {
       forwardingInfo.push_back(forwardingReceiverActualType);
     }

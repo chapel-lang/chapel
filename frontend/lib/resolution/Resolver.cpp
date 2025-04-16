@@ -1565,7 +1565,7 @@ Resolver::computeCustomInferType(const AstNode* decl,
   std::vector<CallInfoActual> actuals = {std::move(receiver)};
 
   auto ci = CallInfo(/* name */ name,
-                     /* calledType */ calledType,
+                     /* calledType */ QualifiedType(),
                      /* isMethodCall */ true,
                      /* hasQuestionArg */ false,
                      /* isParenless */ false,
@@ -2814,7 +2814,7 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
   CHPL_ASSERT(!questionArg);
 
   // The 'new' will produce an 'init' call as a side effect.
-  auto ci = CallInfo(USTR("init"), calledType, isMethodCall,
+  auto ci = CallInfo(USTR("init"), QualifiedType(), isMethodCall,
                      /* hasQuestionArg */ questionArg != nullptr,
                      /* isParenless */ false,
                      std::move(actuals));
@@ -5433,7 +5433,14 @@ void Resolver::handleCallExpr(const uast::Call* call) {
 
     // If the user has mistakenly instantiated a field of the type before
     // calling ``init``, then the receiver type will either be fully or
-    // partially instantiated. This will cause a failure to resolve the
+    // partially instantiated. E.g.,
+    //
+    //    proc init(...) {
+    //      this.typeField = ...;
+    //      this.init(....);
+    //    }
+    //
+    // This will cause a failure to resolve the inner
     // ``init`` call, and result in a confusing and unhelpful error message.
     // To resolve this problem, manually compute the fully-generic type that
     // is being initialized and reset the receiver.
@@ -5443,7 +5450,7 @@ void Resolver::handleCallExpr(const uast::Call* call) {
     //
     // TODO: Move this logic into InitResolver.cpp - but where?
     if (initResolver && ci.name() == USTR("init")) {
-      auto gt = ci.isMethodCall() ? ci.calledType() : receiverType;
+      auto gt = ci.isMethodCall() ? ci.methodReceiverType() : receiverType;
       auto gen = getGenericType(context, gt.type());
       receiverType = QualifiedType(QualifiedType::INIT_RECEIVER, gen);
 
@@ -5700,7 +5707,7 @@ void Resolver::exit(const Dot* dot) {
     actuals.emplace_back(receiver.type(), USTR("this"));
     auto name = UniqueString::get(context, "_dom");
     auto ci = CallInfo(/* name */ name,
-                       /* calledType */ receiver.type(),
+                       /* calledType */ QualifiedType(),
                        /* isMethodCall */ true,
                        /* hasQuestionArg */ false,
                        /* isParenless */ true, actuals);
@@ -7100,7 +7107,7 @@ static QualifiedType getReduceScanOpResultType(Resolver& resolver,
   std::vector<CallInfoActual> typeActuals;
   typeActuals.push_back(CallInfoActual(thisActual, USTR("this")));
   auto ci = CallInfo (/* name */ USTR("generate"),
-                      /* calledType */ thisActual,
+                      /* calledType */ QualifiedType(),
                       /* isMethodCall */ true,
                       /* hasQuestionArg */ false,
                       /* isParenless */ false,

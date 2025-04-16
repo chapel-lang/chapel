@@ -126,7 +126,7 @@ void InitResolver::resolveImplicitSuperInit() {
                                   ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL));
     auto superQT = QualifiedType(QualifiedType::INIT_RECEIVER, superCT);
     actuals.push_back(CallInfoActual(superQT, USTR("this")));
-    auto ci = CallInfo(USTR("init"), superQT, true, false, false, actuals);
+    auto ci = CallInfo(USTR("init"), QualifiedType(), true, false, false, actuals);
     auto inScopes = CallScopeInfo::forNormalCall(initResolver_.currentScope(), initResolver_.poiScope);
 
     auto callContext = fn_->body();

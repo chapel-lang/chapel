@@ -3573,7 +3573,7 @@ doIsCandidateApplicableInitial(ResolutionContext* rc,
 
   if (ci.isMethodCall() && (ci.name() == "init" || ci.name() == "init=")) {
     // TODO: test when record has defaults for type/param fields
-    auto recv = ci.calledType();
+    auto recv = ci.methodReceiverType();
     auto fn = parsing::idToAst(context, candidateId)->toFunction();
     ResolutionResultByPostorderID r;
     auto vis = Resolver::createForInitialSignature(rc, fn, r);
@@ -4915,7 +4915,7 @@ gatherAndFilterCandidatesForwarding(ResolutionContext* rc,
       }
 
       forwardingCis.push_back(CallInfo(ci.name(),
-                                       forwardType,
+                                       QualifiedType(),
                                        ci.isMethodCall(),
                                        ci.hasQuestionArg(),
                                        ci.isParenless(),
@@ -5751,7 +5751,7 @@ const TypedFnSignature* tryResolveInitEq(Context* context,
   actuals.push_back(CallInfoActual(lhsQt, USTR("this")));
   actuals.push_back(CallInfoActual(rhsQt, UniqueString()));
   auto ci = CallInfo(/* name */ USTR("init="),
-                     /* calledType */ lhsQt,
+                     /* calledType */ QualifiedType(),
                      /* isMethodCall */ true,
                      /* hasQuestionArg */ false,
                      /* isParenless */ false, actuals);
@@ -5806,7 +5806,7 @@ const TypedFnSignature* tryResolveZeroArgInit(Context* context,
   actuals.push_back(CallInfoActual(toInitQt, USTR("this")));
   addExistingSubstitutionsAsActuals(context, toInit, actuals, ignoredActualAsts);
   auto ci = CallInfo(/* name */ USTR("init"),
-                     /* calledType */ toInitQt,
+                     /* calledType */ QualifiedType(),
                      /* isMethodCall */ true,
                      /* hasQuestionArg */ false,
                      /* isParenless */ false, actuals);
@@ -5831,7 +5831,7 @@ const TypedFnSignature* tryResolveDeinit(Context* context,
   std::vector<CallInfoActual> actuals;
   actuals.push_back(CallInfoActual(qt, USTR("this")));
   auto ci = CallInfo(/* name */ USTR("deinit"),
-                     /* calledType */ qt,
+                     /* calledType */ QualifiedType(),
                      /* isMethodCall */ true,
                      /* hasQuestionArg */ false,
                      /* isParenless */ false,
@@ -6500,7 +6500,7 @@ tryResolveAssignHelper(Context* context,
   actuals.push_back(CallInfoActual(qtLhs, UniqueString()));
   actuals.push_back(CallInfoActual(qtRhs, UniqueString()));
   auto ci = CallInfo(/* name */ USTR("="),
-                     /* calledType */ qtLhs,
+                     /* calledType */ QualifiedType(),
                      /* isMethodCall */ asMethod,
                      /* hasQuestionArg */ false,
                      /* isParenless */ false,
@@ -6864,23 +6864,22 @@ static const MostSpecificCandidate&
 findTaggedIterator(ResolutionContext* rc,
                    UniqueString name,
                    bool isMethod,
-                   QualifiedType receiverType,
                    std::vector<QualifiedType> argTypes,
                    Function::IteratorKind tag,
                    const Scope* callScope,
                    const Scope* iteratorScope,
                    const PoiScope* poiScope) {
-  CHPL_RESOLUTION_QUERY_BEGIN(findTaggedIterator, rc, name, isMethod, receiverType, argTypes, tag, callScope, iteratorScope, poiScope);
+  CHPL_RESOLUTION_QUERY_BEGIN(findTaggedIterator, rc, name, isMethod, argTypes, tag, callScope, iteratorScope, poiScope);
 
   auto scopeInfo = CallScopeInfo::forIteratorOverloadSearch(callScope, iteratorScope, poiScope);
 
-  CHPL_ASSERT(!isMethod || !receiverType.isUnknownOrErroneous());
+  CHPL_ASSERT(!isMethod || (argTypes.size() >= 1 && !argTypes[0].isUnknownOrErroneous()));
 
   auto followThisType = QualifiedType();
   bool isFollower = tag == Function::FOLLOWER;
   bool isSerial = tag == Function::SERIAL;
   if (isFollower) {
-    auto candidate = findTaggedIterator(rc, name, isMethod, receiverType, argTypes,
+    auto candidate = findTaggedIterator(rc, name, isMethod, argTypes,
                                         Function::LEADER, callScope, iteratorScope, poiScope);
     if (candidate && candidate.fn()->isIterator()) {
       followThisType = yieldType(rc, candidate.fn(), poiScope);
@@ -6926,7 +6925,7 @@ findTaggedIterator(ResolutionContext* rc,
     actuals.push_back(CallInfoActual(followThisType, USTR("followThis")));
   }
 
-  auto ci = CallInfo(name, receiverType,
+  auto ci = CallInfo(name, QualifiedType(),
                      /* isMethodCall */ isMethod,
                      /* hasQuestionArg */ false,
                      /* isParenless */ false,
@@ -6989,14 +6988,13 @@ findTaggedIteratorForType(ResolutionContext* rc,
 
   auto fn = fnIter->iteratorFn();
   auto name = fnIter->iteratorFn()->untyped()->name();
-  auto receiverType = fn->isMethod() ? fn->formalType(0) : QualifiedType();
   std::vector<QualifiedType> argTypes;
   for (int i = 0; i < fn->numFormals(); i++) {
     argTypes.push_back(fn->formalType(i));
   }
   auto inScopes = callScopeInfoForIterator(rc->context(), fnIter, overrideScope);
 
-  auto ret = findTaggedIterator(rc, name, fn->isMethod(), receiverType, argTypes, iterKind,
+  auto ret = findTaggedIterator(rc, name, fn->isMethod(), argTypes, iterKind,
                                 inScopes.callScope(), inScopes.lookupScope(), inScopes.poiScope());
   return CHPL_RESOLUTION_QUERY_END(ret);
 }
@@ -7368,7 +7366,7 @@ TheseResolutionResult resolveTheseCall(ResolutionContext* rc,
   }
 
   auto ci = CallInfo(USTR("these"),
-                     receiverType,
+                     QualifiedType(),
                      /* isMethodCall */ true,
                      /* hasQuestionArg */ false,
                      /* isParenless */ false,
@@ -7399,7 +7397,7 @@ static const types::QualifiedType& getPromotionTypeQuery(Context* context, types
     std::vector<CallInfoActual> actuals;
     actuals.push_back(CallInfoActual(qt, USTR("this")));
     auto ci = CallInfo(UniqueString::get(context, "chpl__promotionType"),
-        qt,
+        QualifiedType(),
         /* isMethodCall */ true,
         /* hasQuestionArg */ false,
         /* isParenless */ false,
