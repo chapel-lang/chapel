@@ -570,15 +570,24 @@ struct FieldFnBuilder {
 
   AstList& stmts() { return stmts_; }
 
+  owned<BoolLiteral> boolLit(bool value) {
+    return BoolLiteral::build(builder(), dummyLoc_, value);
+  }
+
   owned<Identifier> identifier(UniqueString name) {
     return Identifier::build(builder(), dummyLoc_, name);
   }
 
-  owned<Identifier> lhs() { return identifier(lhsFormal_->name()); }
-  owned<Identifier> rhs() { return identifier(rhsFormal_->name()); }
-
   owned<Dot> dot(owned<AstNode> lhs, UniqueString name) {
     return Dot::build(builder(), dummyLoc_, std::move(lhs), name);
+  }
+
+  owned<Dot> lhsField(const VarLikeDecl* fieldDecl) {
+    return dot(identifier(lhsFormal_->name()), fieldDecl->name());
+  }
+
+  owned<Dot> rhsField(const VarLikeDecl* fieldDecl) {
+    return dot(identifier(rhsFormal_->name()), fieldDecl->name());
   }
 
   owned<OpCall> op(owned<AstNode> lhs, UniqueString op, owned<AstNode> rhs) {
@@ -609,10 +618,6 @@ struct FieldFnBuilder {
     return cond;
   }
 
-  owned<BoolLiteral> boolLit(bool value) {
-    return BoolLiteral::build(builder(), dummyLoc_, value);
-  }
-
   template <typename F>
   void eachFieldPair(F&& callable) {
     auto ct = initialTypeForTypeDecl(context_, typeID_)->getCompositeType();
@@ -624,11 +629,9 @@ struct FieldFnBuilder {
                                                  defaultsPolicy,
                                                  /* syntaxOnly */ true);
     for (int i = 0; i < rf.numFields(); i++) {
-      auto name = rf.fieldName(i);
-      // Create 'this.field = other.field;' statement
-      auto fieldLhs = dot(lhs(), name);
-      auto fieldRhs = dot(rhs(), name);
-      callable(this, std::move(fieldLhs), std::move(fieldRhs));
+      auto fieldDecl = parsing::idToAst(context_, rf.fieldDeclId(i));
+      CHPL_ASSERT(fieldDecl && fieldDecl->isVariable());
+      callable(this, fieldDecl->toVariable());
     }
   }
 
@@ -674,8 +677,10 @@ const BuilderResult& buildInitEquals(Context* context, ID typeID) {
 
   FieldFnBuilder bld(context, typeID, USTR("init="), Function::Kind::PROC);
 
-  bld.eachFieldPair([](FieldFnBuilder* bld, owned<AstNode> lhs, owned<AstNode> rhs) {
-    bld->stmts().push_back(bld->op(std::move(lhs), USTR("="), std::move(rhs)));
+  bld.eachFieldPair([](FieldFnBuilder* bld, const Variable* decl) {
+    bld->stmts().push_back(bld->op(bld->lhsField(decl),
+                                   USTR("="),
+                                   bld->rhsField(decl)));
   });
 
   auto result = bld.finalize();
@@ -689,8 +694,12 @@ const BuilderResult& buildRecordComparison(Context* context, ID typeID) {
                      Formal::CONST_REF,
                      Formal::CONST_REF);
 
-  bld.eachFieldPair([](FieldFnBuilder* bld, owned<AstNode> lhs, owned<AstNode> rhs) {
-    auto neqCall = bld->call(UniqueString::get(bld->context(), "chpl_field_neq"), std::move(lhs), std::move(rhs));
+  bld.eachFieldPair([](FieldFnBuilder* bld, const Variable* decl) {
+    if (decl->kind() == Variable::TYPE) return;
+
+    auto neqCall =
+      bld->call(UniqueString::get(bld->context(), "chpl_field_neq"),
+                bld->lhsField(decl), bld->rhsField(decl));
     bld->stmts().push_back(bld->earlyReturn(std::move(neqCall), bld->boolLit(false)));
   });
 
@@ -707,8 +716,12 @@ const BuilderResult& buildRecordInequalityComparison(Context* context, ID typeID
                      Formal::CONST_REF,
                      Formal::CONST_REF);
 
-  bld.eachFieldPair([](FieldFnBuilder* bld, owned<AstNode> lhs, owned<AstNode> rhs) {
-    bld->stmts().push_back(bld->call(UniqueString::get(bld->context(), "chpl_field_neq"), std::move(lhs), std::move(rhs)));
+  bld.eachFieldPair([](FieldFnBuilder* bld, const Variable* decl) {
+    if (decl->kind() == Variable::TYPE) return;
+
+    bld->stmts().push_back(
+        bld->call(UniqueString::get(bld->context(), "chpl_field_neq"),
+                  bld->lhsField(decl), bld->rhsField(decl)));
   });
 
   owned<AstNode> wholeNeq = bld.boolLit(false);
@@ -733,10 +746,6 @@ static const BuilderResult buildOrderedComparison(Context* context, ID typeID,
                      Formal::CONST_REF,
                      Formal::CONST_REF);
 
-  // kind of clunky, but because eachFieldPair uses owned and we can't clone
-  // ASTs, we need to call it twice to get two copies of lhs/rhs to
-  // compare.
-  //
   // the general pattern is:
   // if (x[0] < y[0]) return true;
   // if (x[0] > y[0]) return false;
@@ -744,26 +753,22 @@ static const BuilderResult buildOrderedComparison(Context* context, ID typeID,
   // otherwise, first field is equal, so move on to second field.
   // This implements dictionary ordering.
 
-  AstList earlyReturnsIfTrue;
-  bld.eachFieldPair([&, strictCompFn](FieldFnBuilder* bld, owned<AstNode> lhs, owned<AstNode> rhs) {
-    earlyReturnsIfTrue.push_back(
-      bld->earlyReturn(bld->call(strictCompFn, std::move(lhs), std::move(rhs)),
+  bld.eachFieldPair([&, strictCompFn](FieldFnBuilder* bld, const Variable* decl) {
+    if (decl->kind() == Variable::TYPE) return;
+
+    bld->stmts().push_back(
+      bld->earlyReturn(bld->call(strictCompFn,
+                                 bld->lhsField(decl),
+                                 bld->rhsField(decl)),
                        bld->boolLit(true))
     );
-  });
-  AstList earlyReturnsIfFalse;
-  bld.eachFieldPair([&, strictCompReversedFn](FieldFnBuilder* bld, owned<AstNode> lhs, owned<AstNode> rhs) {
-    earlyReturnsIfFalse.push_back(
-      bld->earlyReturn(bld->call(strictCompReversedFn, std::move(lhs), std::move(rhs)),
+    bld->stmts().push_back(
+      bld->earlyReturn(bld->call(strictCompReversedFn,
+                                 bld->lhsField(decl),
+                                 bld->rhsField(decl)),
                        bld->boolLit(false))
     );
   });
-
-  // intersperse the comparisons.
-  for (size_t i = 0; i < earlyReturnsIfTrue.size(); i++) {
-    bld.stmts().push_back(std::move(earlyReturnsIfTrue[i]));
-    bld.stmts().push_back(std::move(earlyReturnsIfFalse[i]));
-  }
 
   // if we get here, all fields are equal. If allowEqual is true, return
   // true, otherwise return false.

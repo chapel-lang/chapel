@@ -495,6 +495,19 @@ static void test10() {
       )""", { "> with int", "< with int",
               "> with bool", "< with bool",
               "> with real", "< with real" });
+
+  helpTestGeneratedComparisons(
+      R"""(
+      record R {
+        type typeField = int;
+        var x: wrapper(int);
+        var y: wrapper(bool);
+        var z: wrapper(real);
+      }
+      var tmp = new R() >= new R();
+      )""", { "> with int", "< with int",
+              "> with bool", "< with bool",
+              "> with real", "< with real" });
 }
 
 int main() {
