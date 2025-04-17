@@ -246,6 +246,14 @@ CompositeType::getSharedRecordType(Context* context, const BasicClassType* bct) 
   return tryCreateManagerRecord(context, getSharedRecordId(context), bct);
 }
 
+const RecordType*
+CompositeType::getSyncType(Context* context) {
+  auto [id, name] =
+      parsing::getSymbolFromTopLevelModule(context, "ChapelSyncvar", "_syncvar");
+  return RecordType::get(context, id, name,
+                         /* instantiatedFrom */ nullptr, SubstitutionsMap());
+}
+
 const ClassType* CompositeType::getErrorType(Context* context) {
   auto [id, name] =
       parsing::getSymbolFromTopLevelModule(context, "Errors", "Error");

@@ -246,6 +246,9 @@ class CompositeType : public Type {
   /** Get the record _shared implementing shared */
   static const RecordType* getSharedRecordType(Context* context, const BasicClassType* bct);
 
+  /** Get the sync type (_syncvar record) */
+  static const RecordType* getSyncType(Context* context);
+
   /* Get the Error type */
   static const ClassType* getErrorType(Context* context);
 
