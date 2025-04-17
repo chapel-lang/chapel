@@ -2099,6 +2099,22 @@ static void testEarlyRuntimeContinue() {
   // guard should have no errors
 }
 
+static void testGenericSync() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto qt = resolveTypeOfXInit(context,
+    R"""(
+      proc foo (x: sync) do return 3;
+      var a : sync int;
+      var x = foo(a);
+    )""");
+
+  assert(qt.type() && qt.type()->isIntType());
+
+  // guard should have no errors
+}
+
 int main() {
   test1();
   test2();
@@ -2150,6 +2166,8 @@ int main() {
   testRuntimeEarlyReturn();
   testEarlyContinue();
   testEarlyRuntimeContinue();
+
+  testGenericSync();
 
   return 0;
 }
