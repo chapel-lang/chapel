@@ -141,6 +141,7 @@ pragma "atomic module"
 module Atomics {
 
   use ChapelBase;
+  use CTypes;
   public use MemConsistency;  // OK: to get and propagate memoryOrder
   import AutoMath;
 
@@ -161,12 +162,15 @@ module Atomics {
     atomic_fence(c_memory_order(order));
   }
 
-  private proc isSupported(type valType) param {
-    return valType == bool || isInt(valType) || isUint(valType) || isReal(valType);
+  proc isSupportedType(type valType) param {
+    return valType == bool    ||
+           isInt(valType)     ||
+           isUint(valType)    ||
+           isAnyCPtr(valType) ||
+           isReal(valType);
   }
 
   // Compute the C/Runtime type from the Chapel type
-  // TODO support extern type renaming?
   private proc externT(type valType) type {
     extern "chpl_atomic_bool" type atomic_bool;
 
@@ -182,6 +186,9 @@ module Atomics {
 
     extern "chpl_atomic__real64" type atomic__real64;
     extern "chpl_atomic__real32" type atomic__real32;
+    extern "chpl_atomic_uintptr_t" type atomic_uintptr_t;
+
+    if isAnyCPtr(valType) then return atomic_uintptr_t;
 
     select valType {
       when bool     do return atomic_bool;
@@ -199,6 +206,9 @@ module Atomics {
       when real(32) do return atomic__real32;
       when real(64) do return atomic__real64;
     }
+
+    compilerError('Should not reach here!');
+    return nothing;
   }
 
   private proc externTString(type valType) param {
@@ -206,6 +216,7 @@ module Atomics {
     if isInt(valType)  then return "int_least"  + numBits(valType):string + "_t";
     if isUint(valType) then return "uint_least" + numBits(valType):string + "_t";
     if isReal(valType) then return "_real"      + numBits(valType):string;
+    if isPointerType(valType) then return "uintptr_t";
   }
 
   private proc externFunc(param s: string, type valType, param explicit=true) param {
@@ -215,7 +226,7 @@ module Atomics {
 
   proc chpl__processorAtomicType(type valType) type {
     if valType == bool           then return AtomicBool;
-    else if isSupported(valType) then return AtomicT(valType);
+    else if isSupportedType(valType) then return AtomicT(valType);
     else compilerError("Unsupported atomic type: " + valType:string);
   }
 

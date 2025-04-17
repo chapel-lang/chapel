@@ -31,6 +31,8 @@ Expr* getCmdLineConfig(const char *);
 void  useCmdLineConfig(const char *, VarSymbol*);
 VarSymbol* isUsedCmdLineConfig(const char *);
 bool isSetCmdLineConfig(const char *, const char *);
+
+// This will fail if the symbol for the param is deleted.
 VarSymbol* getConfigParamBool(ModuleSymbol*, const char*);
 
 extern bool mainHasArgs;

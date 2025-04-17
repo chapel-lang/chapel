@@ -1,1 +1,1 @@
-errorInArgNMismatch.chpl:3: error: Argument number mismatch in export proc
+errorInArgNMismatch.chpl:3: error: Redefinition of a function with different number of args

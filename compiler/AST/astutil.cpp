@@ -613,8 +613,10 @@ int isDefAndOrUse(SymExpr* se) {
   const int DEF = 1;
   const int USE = 2;
   const int DEF_USE = 3;
+
   if (CallExpr* call = toCallExpr(se->parentExpr)) {
     bool isFirstActual = (call->numActuals() && call->get(1) == se);
+    auto fn = call->resolvedFunction();
 
     // TODO: PRIM_SET_MEMBER, PRIM_SET_SVEC_MEMBER
 
@@ -660,19 +662,47 @@ int isDefAndOrUse(SymExpr* se) {
         return DEF_USE;
       else if (arg->intent == INTENT_OUT)
         return DEF;
-    } else if (FnSymbol* fn = call->resolvedFunction()) {
-      ArgSymbol* arg = actual_to_formal(se);
 
-      // BHARSH TODO: get rid of this 'isRecord' special case
-      if (arg->intent == INTENT_REF ||
-          arg->intent == INTENT_INOUT ||
-          (fn->name == astrSassign &&
-           fn->getFormal(1) == arg &&
-           isRecord(arg->type))) {
-        return DEF_USE;
-      } else if (arg->intent == INTENT_OUT) {
-        return DEF;
+    } else if (fn || call->isIndirectCall()) {
+      auto ft = call->functionType();
+      INT_ASSERT(ft);
+
+      auto ret = USE;
+
+      int zeroBasedFormalIdx = -1;
+      if (auto formal = ft->formalByOrdinal(se, &zeroBasedFormalIdx)) {
+        if (fn && fn->name == astrSassign && zeroBasedFormalIdx == 0 &&
+            isRecord(formal->type())) {
+          // BHARSH TODO: get rid of this 'isRecord' special case
+          ret = DEF_USE;
+        } else if (formal->intent() == INTENT_INOUT ||
+                   formal->intent() == INTENT_REF) {
+          ret = DEF_USE;
+        } else if (formal->intent() == INTENT_OUT) {
+          ret = DEF;
+        }
       }
+
+      if (fVerify && fn) {
+        auto check = USE;
+
+        // This is the old code, but we keep it around in a '--verify' branch
+        // to make sure that we're computing the correct result above.
+        ArgSymbol* arg = actual_to_formal(se);
+        if (arg->intent == INTENT_REF ||
+            arg->intent == INTENT_INOUT ||
+            (fn->name == astrSassign &&
+             fn->getFormal(1) == arg &&
+             isRecord(arg->type))) {
+          check = DEF_USE;
+        } else if (arg->intent == INTENT_OUT) {
+          check = DEF;
+        }
+
+        INT_ASSERT(check == ret);
+      }
+
+      return ret;
     }
   }
 
@@ -848,8 +878,8 @@ actual_to_formal(Expr *a) {
       }
     }
   }
-  INT_FATAL(a, "bad call to actual_to_formal");
-  return NULL;
+
+  return nullptr;
 }
 
 
@@ -1553,4 +1583,175 @@ bool symExprIsUsedAsRef(
     }
   }
   return false;
+}
+
+static Type*
+computeAdjustedType(std::unordered_map<Type*, Type*>& alreadyAdjusted,
+                    AdjustTypeFn adjustTypeFn,
+                    bool preserveRefLevels,
+                    Type* t) {
+  // This is a helper function that memoizes the result of performing the
+  // caller's type adjustment function. Additionally, if the type returned
+  // by the caller's function is a function type, this function will
+  // attempt to adjust the types embedded in the function type as well.
+
+  // Memoization - return the already computed type if it is stored.
+  auto it = alreadyAdjusted.find(t);
+  if (it != alreadyAdjusted.end()) return it->second;
+
+  Type* ret = nullptr;
+  if (preserveRefLevels && isReferenceType(t)) {
+    // For reference types, unpack and adjust the value type instead.
+    auto vt1 = t->getValType();
+    auto vt2 = computeAdjustedType(alreadyAdjusted, adjustTypeFn,
+                                   preserveRefLevels, vt1);
+    INT_ASSERT(vt2);
+
+    // Constructing new reference types as needed.
+    if (!vt2->refType) makeRefType(vt2);
+    INT_ASSERT(vt2->refType);
+
+    // The result is the final reference type.
+    ret = vt2->refType;
+
+  } else {
+    // For value types (or if we are not preserving reference levels),
+    // perform the caller-given adjustment function.
+    ret = adjustTypeFn(t);
+  }
+
+  INT_ASSERT(ret);
+
+  // The type may still need adjustment if it embeds other 'Type*' without
+  // use of AST (e.g., not 'VarSymbol' fields in 'AggregateType').
+  // TODO: Do other subclass of Type that embed AST need special help here?
+  if (auto ft = toFunctionType(ret)) {
+    std::vector<FunctionType::Formal> newFormals;
+    bool anyChanged = false;
+
+    for (int i = 0; i < ft->numFormals(); i++) {
+      auto f = ft->formal(i);
+      auto newT = computeAdjustedType(alreadyAdjusted, adjustTypeFn,
+                                      preserveRefLevels,
+                                      f->type());
+      if (newT != f->type()) {
+        newFormals.push_back({ f->qual(), newT, f->intent(), f->name() });
+        anyChanged = true;
+      } else {
+        newFormals.push_back(*f);
+      }
+    }
+
+    auto newRetType = computeAdjustedType(alreadyAdjusted, adjustTypeFn,
+                                          preserveRefLevels,
+                                          ft->returnType());
+    anyChanged = anyChanged || newRetType != ft->returnType();
+
+    if (anyChanged) {
+      // If any types changed, then recompute the function type.
+      SET_LINENO(ft->symbol);
+      auto newFt = FunctionType::get(ft->kind(), ft->width(), ft->linkage(),
+                                     std::move(newFormals),
+                                     ft->returnIntent(),
+                                     newRetType,
+                                     ft->throws());
+      INT_ASSERT(ft != newFt);
+      ret = newFt;
+    }
+  }
+
+  // Cache the result.
+  alreadyAdjusted.emplace_hint(it, t, ret);
+
+  return ret;
+}
+
+void adjustAllSymbolTypes(AdjustTypeFn adjustTypeFn, bool preserveRefLevels) {
+  std::unordered_map<Type*, Type*> alreadyAdjusted;
+
+  // Wrapper around a helper function that performs the adjustment.
+  auto doAdjust = [&](Type* t) {
+    return computeAdjustedType(alreadyAdjusted, adjustTypeFn,
+                               preserveRefLevels, t);
+  };
+
+  forv_Vec(VarSymbol, var, gVarSymbols) {
+    Type* newT = doAdjust(var->type);
+    if (newT != var->type) var->type = newT;
+  }
+
+  forv_Vec(ArgSymbol, arg, gArgSymbols) {
+    Type* newT = doAdjust(arg->type);
+    if (newT != arg->type) arg->type = newT;
+  }
+
+  forv_Vec(ShadowVarSymbol, sv, gShadowVarSymbols) {
+    Type* newT = doAdjust(sv->type);
+    if (newT != sv->type) sv->type = newT;
+  }
+
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+    Type* newT = doAdjust(ts->type);
+
+    if (newT != ts->type) {
+      TypeSymbol* newTS = newT->symbol;
+      for_SymbolSymExprs(se, ts) {
+        se->setSymbol(newTS);
+      }
+    }
+
+    size_t n = ts->type->substitutionsPostResolve.size();;
+    for (size_t i = 0; i < n; i++) {
+      NameAndSymbol& ns = ts->type->substitutionsPostResolve[i];
+      if (TypeSymbol* ets = toTypeSymbol(ns.value)) {
+        Type* newT = doAdjust(ets->type);
+        if (newT != ets->type) {
+          TypeSymbol* newTS = newT->symbol;
+          ns.value = newTS;
+        }
+      }
+    }
+  }
+
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    Type* newRetT = doAdjust(fn->retType);
+    if (newRetT != fn->retType) fn->retType = newRetT;
+
+    if (fn->iteratorInfo) {
+      Type* newYieldT = doAdjust(fn->iteratorInfo->yieldedType);
+      if (newYieldT != fn->iteratorInfo->yieldedType)
+        fn->iteratorInfo->yieldedType = newYieldT;
+    }
+
+    if (fn->type && fn->type != dtUnknown) {
+      // Adjust also the function type if it was previously computed.
+      Type* newFnT = doAdjust(fn->type);
+      if (newFnT != fn->type) fn->type = newFnT;
+      INT_ASSERT(isFunctionType(newFnT));
+    }
+
+    size_t n = fn->substitutionsPostResolve.size();
+    for (size_t i = 0; i < n; i++) {
+      NameAndSymbol& ns = fn->substitutionsPostResolve[i];
+      if (TypeSymbol* ets = toTypeSymbol(ns.value)) {
+        Type* newT = doAdjust(ets->type);
+        if (newT != ets->type) {
+          TypeSymbol* newTS = newT->symbol;
+          ns.value = newTS;
+        }
+      }
+    }
+  }
+
+  for (auto [kt, vt] : alreadyAdjusted) {
+    // No change took place, so there is nothing to remove.
+    if (kt == vt) continue;
+
+    if (auto ts = kt->symbol) {
+      // Otherwise, try to remove the key type from the tree.
+      if (!ts->inTree()) continue;
+      bool noUses = ts->firstSymExpr() == nullptr;
+      if (noUses) ts->defPoint->remove();
+    }
+  }
 }

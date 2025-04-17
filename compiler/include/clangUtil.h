@@ -90,6 +90,7 @@ int getCTypeAlignment(const clang::QualType &qt);
 
 const clang::CodeGen::CGFunctionInfo& getClangABIInfoFD(clang::FunctionDecl* FD);
 const clang::CodeGen::CGFunctionInfo& getClangABIInfo(FnSymbol* fn);
+const clang::CodeGen::CGFunctionInfo& getClangABIInfo(FunctionType* ft);
 
 const clang::CodeGen::ABIArgInfo*
 getCGArgInfo(const clang::CodeGen::CGFunctionInfo* CGI, int curCArg,
@@ -134,6 +135,15 @@ const char* getGeneratedAnonTypeName(const clang::RecordType* structType);
 
 // simplify the function using the function simplification pipeline
 void simplifyFunction(llvm::Function* func);
+
+llvm::FunctionType*
+codegenFunctionTypeLLVM(FnSymbol* fn,
+                        llvm::AttributeList& outAttrs,
+                        std::vector<const char*>& outArgNames);
+llvm::FunctionType*
+codegenFunctionTypeLLVM(FunctionType* ft,
+                        llvm::AttributeList& outAttrs,
+                        std::vector<const char*>& outArgNames);
 
 #endif // HAVE_LLVM
 

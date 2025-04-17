@@ -40,7 +40,8 @@ var tests = [
 
 proc main() {
   for test in tests {
-    writeln("--- ", test:string, " ---");
+    // TODO: For this to be possible function types cannot print addresses.
+    // writeln("--- ", test:string, " ---");
     test();
   }
 }
