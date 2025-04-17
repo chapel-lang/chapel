@@ -4396,11 +4396,6 @@ static bool resolveFnCallSpecialType(Context* context,
     auto ctorCall = CallInfo::copyAndRename(ci, newName);
     result = resolveCall(rc, call, ctorCall, inScopes);
     return true;
-  } else if (ci.name() == "sync") {
-    auto newName = UniqueString::get(context, "_syncvar");
-    auto ctorCall = CallInfo::copyAndRename(ci, newName);
-    result = resolveCall(rc, call, ctorCall, inScopes);
-    return true;
   }
 
   return false;
