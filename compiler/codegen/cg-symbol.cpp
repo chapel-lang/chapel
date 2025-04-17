@@ -3160,7 +3160,11 @@ GenRet FnSymbol::codegen() {
       llvm::Type* Types[] = {ty.type};
 
       const llvm::TargetIntrinsicInfo *TII = info->targetMachine->getIntrinsicInfo();
+#if LLVM_VERSION_MAJOR >= 20
+      llvm::Intrinsic::ID ID = llvm::Intrinsic::lookupIntrinsicID(cname);
+#else
       llvm::Intrinsic::ID ID = llvm::Function::lookupIntrinsicID(cname);
+#endif
       if (ID == llvm::Intrinsic::not_intrinsic && TII)
         ID = static_cast<llvm::Intrinsic::ID>(TII->lookupName(cname));
 #if LLVM_VERSION_MAJOR >= 20
