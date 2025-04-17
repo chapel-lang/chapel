@@ -714,11 +714,11 @@ const types::Param* Resolver::determineWhenCaseValue(const uast::AstNode* ast, I
                       /* hasQuestionArg */ false,
                       /* isParenless */ false,
                       actuals);
-  auto c = resolveGeneratedCall(ast, &ci, &inScopes);
-  c.noteResult(&caseResult, { { AssociatedAction::COMPARE, ast->id() } });
 
+  auto c = resolveGeneratedCall(ast, &ci, &inScopes);
   auto type = c.result.exprType();
-  caseResult.setType(type);
+  c.noteResult(&caseResult, { { AssociatedAction::COMPARE, ast->id(), type } });
+
   return type.param();
 }
 
@@ -2341,7 +2341,7 @@ bool Resolver::CallResultWrapper::noteResultWithoutError(
     ResolvedExpression* r,
     const uast::AstNode* astForContext,
     const CallResolutionResult& result,
-    optional<ActionAndId> actionAndId) {
+    optional<ActionInfo> actionInfo) {
   bool needsErrors = false;
   bool markErroneous = false;
 
@@ -2372,7 +2372,7 @@ bool Resolver::CallResultWrapper::noteResultWithoutError(
   }
 
   if (!result.exprType().hasTypePtr() || markErroneous) {
-    if (!actionAndId && r) {
+    if (!actionInfo && r) {
       // Only set the type to erroneous if we're handling an actual user call,
       // and not an associated action.
       r->setType(QualifiedType(r->type().kind(), ErroneousType::get(resolver.context)));
@@ -2383,12 +2383,22 @@ bool Resolver::CallResultWrapper::noteResultWithoutError(
     // issued its own error, so we shouldn't emit a general error.
     return !result.speciallyHandled() || needsErrors;
   } else {
-    if (actionAndId) {
+    if (actionInfo) {
       // save candidates as associated functions
-      for (auto& sig : result.mostSpecific()) {
-        if (sig && r) {
-          r->addAssociatedAction(std::get<0>(*actionAndId), sig.fn(),
-                                 std::get<1>(*actionAndId));
+      if (result.mostSpecific().isEmpty() && r) {
+        // Store an associated action that did not have a function.
+        // E.g., 'COMPARE' for a when-statement condition that is param-true
+        r->addAssociatedAction(actionInfo->action, nullptr,
+                               actionInfo->id, actionInfo->type);
+      } else {
+        bool seen = false;
+        for (auto& sig : result.mostSpecific()) {
+          if (sig && r) {
+            CHPL_ASSERT(!seen);
+            seen = true;
+            r->addAssociatedAction(actionInfo->action, sig.fn(),
+                                   actionInfo->id, actionInfo->type);
+          }
         }
       }
     } else if (r) {
@@ -2405,13 +2415,13 @@ bool Resolver::CallResultWrapper::noteResultWithoutError(
 
 
 bool Resolver::CallResultWrapper::noteResultWithoutError(ResolvedExpression* r,
-                                                          optional<ActionAndId> actionAndId) {
-  return noteResultWithoutError(*parent, r, astForContext, result, std::move(actionAndId));
+                                                          optional<ActionInfo> actionInfo) {
+  return noteResultWithoutError(*parent, r, astForContext, result, std::move(actionInfo));
 }
 
 void Resolver::CallResultWrapper::noteResult(ResolvedExpression* r,
-                                              optional<ActionAndId> actionAndId) {
-  if (noteResultWithoutError(r, std::move(actionAndId))) {
+                                              optional<ActionInfo> actionInfo) {
+  if (noteResultWithoutError(r, std::move(actionInfo))) {
     issueBasicError();
   }
 }
@@ -2447,9 +2457,9 @@ bool Resolver::CallResultWrapper::rerunCallAndPrintCandidates() {
 }
 
 void Resolver::CallResultWrapper::noteResultPrintCandidates(ResolvedExpression* r,
-                                                             optional<ActionAndId> actionAndId) {
+                                                             optional<ActionInfo> actionInfo) {
   CHPL_ASSERT(!wasGeneratedCall || receiverType.isUnknown());
-  if (noteResultWithoutError(r, std::move(actionAndId))) {
+  if (noteResultWithoutError(r, std::move(actionInfo))) {
     if (rerunCallAndPrintCandidates()) {
       return;
     }
@@ -2825,7 +2835,7 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
 
   // note: the resolution machinery will get compiler generated candidates
   auto c = resolveGeneratedCall(call, &ci, &inScopes);
-  optional<ActionAndId> action({ AssociatedAction::NEW_INIT, call->id() });
+  optional<ActionInfo> action({ AssociatedAction::NEW_INIT, call->id() });
   c.noteResultPrintCandidates(&re, std::move(action));
 
 
@@ -3254,7 +3264,7 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
 
       // Note: this issues errors from compilerError in the body of the
       // domain builder.
-      optional<ActionAndId> action({ AssociatedAction::RUNTIME_TYPE, fnCall->id() });
+      optional<ActionInfo> action({ AssociatedAction::RUNTIME_TYPE, fnCall->id() });
       bool needsErrors =
         runResult.result().noteResultWithoutError(&r, std::move(action));
 
@@ -4763,8 +4773,8 @@ bool Resolver::enter(const uast::Manage* manage) {
       }
     }
     CHPL_ASSERT(enterSig && exitSig);
-    rr.addAssociatedAction(AssociatedAction::ENTER_CONTEXT, enterSig, manage->id());
-    rr.addAssociatedAction(AssociatedAction::EXIT_CONTEXT, exitSig, manage->id());
+    rr.addAssociatedAction(AssociatedAction::ENTER_CONTEXT, enterSig, manage->id(), {});
+    rr.addAssociatedAction(AssociatedAction::EXIT_CONTEXT, exitSig, manage->id(), {});
   }
 
   enterScope(manage);
@@ -5274,7 +5284,7 @@ rerunCallInfoWithIteratorTag(ResolutionContext* rc,
   if (!newC.mostSpecific().isEmpty()) {
     for (auto sig : newC.mostSpecific()) {
       if (!sig) continue;
-      r.addAssociatedAction(AssociatedAction::ITERATE, sig.fn(), call->id());
+      r.addAssociatedAction(AssociatedAction::ITERATE, sig.fn(), call->id(), {});
     }
 
     return newC;

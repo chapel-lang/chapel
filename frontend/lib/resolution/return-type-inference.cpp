@@ -499,7 +499,11 @@ void ReturnTypeInferrer::doExitScope(const uast::AstNode* node, RV& rv) {
 }
 
 const types::Param* ReturnTypeInferrer::determineWhenCaseValue(const uast::AstNode* ast, RV& rv) {
-  return rv.byAst(ast).type().param();
+  if (auto action = rv.byAst(ast).getAction(AssociatedAction::COMPARE)) {
+    return action->type().param();
+  } else {
+    return nullptr;
+  }
 }
 const types::Param* ReturnTypeInferrer::determineIfValue(const uast::AstNode* ast, RV& rv) {
   return rv.byAst(ast).type().param();

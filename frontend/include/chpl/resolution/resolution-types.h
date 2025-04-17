@@ -2405,15 +2405,18 @@ class AssociatedAction {
   Action action_;
   const TypedFnSignature* fn_;
   ID id_;
+  types::QualifiedType type_;
 
  public:
-  AssociatedAction(Action action, const TypedFnSignature* fn, ID id)
-    : action_(action), fn_(fn), id_(id) {
+  AssociatedAction(Action action, const TypedFnSignature* fn, ID id,
+                   types::QualifiedType type)
+    : action_(action), fn_(fn), id_(id), type_(type) {
   }
   bool operator==(const AssociatedAction& other) const {
     return action_ == other.action_ &&
            fn_ == other.fn_ &&
-           id_ == other.id_;
+           id_ == other.id_ &&
+           type_ == other.type_;
   }
   bool operator!=(const AssociatedAction& other) const {
     return !(*this == other);
@@ -2427,9 +2430,12 @@ class AssociatedAction {
   /** Return the ID is associated with the action */
   const ID& id() const { return id_; }
 
+  const types::QualifiedType type() const { return type_; }
+
   void mark(Context* context) const {
     if (fn_ != nullptr) fn_->mark(context);
     id_.mark(context);
+    type_.mark(context);
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
@@ -2505,6 +2511,19 @@ class ResolvedExpression {
     return associatedActions_;
   }
 
+  // TODO: Expected to be a placeholder as we look towards updating the
+  // representation of associated actions.
+  std::optional<AssociatedAction> getAction(AssociatedAction::Action action) const {
+    // TODO: what if there are multiple instances of the same action?
+    auto it = std::find_if(associatedActions_.begin(), associatedActions_.end(),
+                [&](const AssociatedAction a) { return a.action() == action; });
+    if (it != associatedActions_.end()) {
+      return *it;
+    } else {
+      return {};
+    }
+  }
+
   const ResolvedParamLoop* paramLoop() const {
     return paramLoop_;
   }
@@ -2532,8 +2551,9 @@ class ResolvedExpression {
   /** add an associated function */
   void addAssociatedAction(AssociatedAction::Action action,
                            const TypedFnSignature* fn,
-                           ID id) {
-    associatedActions_.push_back(AssociatedAction(action, fn, id));
+                           ID id,
+                           types::QualifiedType type) {
+    associatedActions_.push_back(AssociatedAction(action, fn, id, type));
   }
 
   void setParamLoop(const ResolvedParamLoop* paramLoop) { paramLoop_ = paramLoop; }

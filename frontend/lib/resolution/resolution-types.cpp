@@ -1365,6 +1365,10 @@ void AssociatedAction::stringify(std::ostream& ss,
     ss << " id=";
     id_.stringify(ss, stringKind);
   }
+  if (!type_.isUnknown()) {
+    ss << " type=";
+    type_.stringify(ss, stringKind);
+  }
 }
 
 void ResolvedExpression::stringify(std::ostream& ss,

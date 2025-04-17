@@ -37,7 +37,12 @@ namespace resolution {
 
 struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
   // types used below
-  using ActionAndId = std::tuple<AssociatedAction::Action, ID>;
+  struct ActionInfo {
+    public:
+      AssociatedAction::Action action;
+      ID id;
+      types::QualifiedType type;
+  };
   using SubstitutionsMap = types::CompositeType::SubstitutionsMap;
   using ReceiverScopesVec = SimpleMethodLookupHelper::ReceiverScopesVec;
   using IgnoredExtraData = std::variant<std::monostate>;
@@ -528,17 +533,17 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
     //
     // Instead, returns 'true' if an error needs to be issued.
     bool noteResultWithoutError(ResolvedExpression* r,
-                                optional<ActionAndId> associatedActionAndId = {});
+                                optional<ActionInfo> associatedActionInfo = {});
 
     static bool noteResultWithoutError(Resolver& resolver,
                                        ResolvedExpression* r,
                                        const uast::AstNode* astForContext,
                                        const CallResolutionResult& c,
-                                       optional<ActionAndId> associatedActionAndId = {});
+                                       optional<ActionInfo> associatedActionInfo = {});
 
     // Same as noteResultWithoutError, but also issues errors.
     void noteResult(ResolvedExpression* r,
-                    optional<ActionAndId> associatedActionAndId = {});
+                    optional<ActionInfo> associatedActionInfo = {});
 
     // Issues a more specific error (listing rejected candidates) if possible.
     // To collect the candidates, re-runs the call. Returns true if an error
@@ -548,7 +553,7 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
     // Like noteResult, except attempts to do more work to print fancier errors
     // (see rerunCallAndPrintCandidates).
     void noteResultPrintCandidates(ResolvedExpression* r,
-                                   optional<ActionAndId> associatedActionAndId = {});
+                                     optional<ActionInfo> associatedActionInfo = {});
   };
 
   /* The resolver's wrapper of resolution::resolveGeneratedCall.
