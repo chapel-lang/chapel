@@ -156,6 +156,14 @@ namespace {
 #endif
   }
 
+  auto typeIncompatible(Type* type) {
+  #if LLVM_VERSION_MAJOR >= 20
+    return AttributeFuncs::typeIncompatible(type, AttributeSet{});
+  #else
+    return AttributeFuncs::typeIncompatible(type);
+  #endif
+  }
+
   // removeInvalidRetAttrs and removeInvalidParamAttrs are
   // templated to add overloads for `Function*` and `CallBase*`.
   // this template will only be active for `Function`, `CallBase`, and
@@ -163,7 +171,7 @@ namespace {
   template <typename BaseTy, std::enable_if_t<std::is_base_of_v<Function, BaseTy> ||
                              std::is_base_of_v<CallBase, BaseTy>,  bool> = true>
   void removeInvalidRetAttrs(BaseTy* V, Type* type) {
-    auto mask = AttributeFuncs::typeIncompatible(type);
+    auto mask = typeIncompatible(type);
 #if HAVE_LLVM_VER >= 140
     V->removeRetAttrs(mask);
 #else
@@ -180,7 +188,7 @@ namespace {
   template <typename BaseTy, std::enable_if_t<std::is_base_of_v<Function, BaseTy> ||
                              std::is_base_of_v<CallBase, BaseTy>,  bool> = true>
   void removeInvalidParamAttrs(BaseTy* V, size_t idx, Type* type) {
-    auto mask = AttributeFuncs::typeIncompatible(type);
+    auto mask = typeIncompatible(type);
 #if HAVE_LLVM_VER >= 140
     V->removeParamAttrs(idx, mask);
 #else
@@ -2109,8 +2117,13 @@ static
 bool containsGlobalPointers(unsigned gSpace, SmallSet<Type*, 10> & set, Type* t)
 {
   // All primitive types do not need to change.
+#if LLVM_VERSION_MAJOR >= 20
+  if(t->isFloatingPointTy() || t->isLabelTy() ||
+     t->isMetadataTy() || t->isVoidTy() || t->isIntegerTy()) return false;
+#else
   if(t->isFloatingPointTy() || t->isX86_MMXTy() || t->isLabelTy() ||
      t->isMetadataTy() || t->isVoidTy() || t->isIntegerTy()) return false;
+#endif
 
   // Pointer types return true if they are in our address space.
   if(t->isPointerTy()){
