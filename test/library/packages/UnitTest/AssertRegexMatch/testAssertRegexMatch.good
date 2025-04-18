@@ -1,0 +1,20 @@
+assertRegexMatchTestStringPass()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+assertRegexMatchTestStringFail()
+Flavour: FAIL
+======================================================================
+AssertionError: in testAssertRegexMatch.chpl:11 - assert failed - 'test' doesn't match
+                          the regular expression '.*ES.*'
+----------------------------------------------------------------------
+assertRegexMatchTestObjectPass()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+assertRegexMatchTestObjectFail()
+Flavour: FAIL
+======================================================================
+AssertionError: in testAssertRegexMatch.chpl:24 - assert failed - 'test' doesn't match
+                          the regular expression '.*ES.*'
+----------------------------------------------------------------------
