@@ -1875,6 +1875,42 @@ getCodeModel(const CodeGenOptions &CodeGenOpts) {
   return static_cast<llvm::CodeModel::Model>(CodeModel);
 }
 
+#if HAVE_LLVM_VER >= 200
+// copied from clang/lib/CodeGen/BackendUtil.cpp
+static std::string flattenClangCommandLine(ArrayRef<std::string> Args,
+                                           StringRef MainFilename) {
+  if (Args.empty())
+    return std::string{};
+
+  std::string FlatCmdLine;
+  raw_string_ostream OS(FlatCmdLine);
+  bool PrintedOneArg = false;
+  if (!StringRef(Args[0]).contains("-cc1")) {
+    llvm::sys::printArg(OS, "-cc1", /*Quote=*/true);
+    PrintedOneArg = true;
+  }
+  for (unsigned i = 0; i < Args.size(); i++) {
+    StringRef Arg = Args[i];
+    if (Arg.empty())
+      continue;
+    if (Arg == "-main-file-name" || Arg == "-o") {
+      i++; // Skip this argument and next one.
+      continue;
+    }
+    if (Arg.starts_with("-object-file-name") || Arg == MainFilename)
+      continue;
+    // Skip fmessage-length for reproducibility.
+    if (Arg.starts_with("-fmessage-length"))
+      continue;
+    if (PrintedOneArg)
+      OS << " ";
+    llvm::sys::printArg(OS, Arg, /*Quote=*/true);
+    PrintedOneArg = true;
+  }
+  return FlatCmdLine;
+}
+#endif
+
 // this function is substantially similar to clang's
 // initTargetOptions from BackendUtil.cpp
 static llvm::TargetOptions getTargetOptions(
@@ -1929,7 +1965,11 @@ static llvm::TargetOptions getTargetOptions(
   Options.DisableIntegratedAS = CodeGenOpts.DisableIntegratedAS;
 #if HAVE_LLVM_VER >= 190
   Options.MCOptions.CompressDebugSections = CodeGenOpts.getCompressDebugSections();
+#if HAVE_LLVM_VER >= 200
+  Options.MCOptions.X86RelaxRelocations = CodeGenOpts.X86RelaxRelocations;
+#else
   Options.MCOptions.X86RelaxRelocations = CodeGenOpts.RelaxELFRelocations;
+#endif
 #else
   Options.CompressDebugSections = CodeGenOpts.getCompressDebugSections();
   Options.RelaxELFRelocations = CodeGenOpts.RelaxELFRelocations;
@@ -1951,7 +1991,9 @@ static llvm::TargetOptions getTargetOptions(
   Options.BBSections =
     llvm::StringSwitch<llvm::BasicBlockSection>(CodeGenOpts.BBSections)
         .Case("all", llvm::BasicBlockSection::All)
+#if HAVE_LLVM_VER < 200
         .Case("labels", llvm::BasicBlockSection::Labels)
+#endif
         .StartsWith("list=", llvm::BasicBlockSection::List)
         .Case("none", llvm::BasicBlockSection::None)
         .Default(llvm::BasicBlockSection::None);
@@ -2035,7 +2077,12 @@ static llvm::TargetOptions getTargetOptions(
   // if .include directives with integrated assembler are needed
 
   Options.MCOptions.Argv0 = CodeGenOpts.Argv0;
+#if HAVE_LLVM_VER >= 200
+  Options.MCOptions.CommandlineArgs = flattenClangCommandLine(
+    CodeGenOpts.CommandLineArgs, CodeGenOpts.MainFileName);
+#else
   Options.MCOptions.CommandLineArgs = CodeGenOpts.CommandLineArgs;
+#endif
 #if HAVE_LLVM_VER >= 130
   Options.DebugStrictDwarf = CodeGenOpts.DebugStrictDwarf;
 #endif
