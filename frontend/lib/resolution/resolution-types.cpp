@@ -101,8 +101,8 @@ UntypedFnSignature::get(Context* context, ID id,
                                compilerGeneratedOrigin).get();
 }
 
-static const UntypedFnSignature*
-getUntypedFnSignatureForFn(Context* context, const uast::Function* fn) {
+const UntypedFnSignature*
+getUntypedFnSignatureForFn(Context* context, const uast::Function* fn, ID const* compilerGeneratedOrigin) {
   const UntypedFnSignature* result = nullptr;
 
   if (fn != nullptr) {
@@ -134,11 +134,13 @@ getUntypedFnSignatureForFn(Context* context, const uast::Function* fn) {
     result = UntypedFnSignature::get(context, fn->id(), fn->name(),
                                      fn->isMethod(),
                                      /* isTypeConstructor */ false,
-                                     /* isCompilerGenerated */ false,
+                                     /* isCompilerGenerated */ compilerGeneratedOrigin != nullptr,
                                      /* throws */ fn->throws(),
                                      /* idTag */ asttags::Function,
                                      fn->kind(),
-                                     std::move(formals), fn->whereClause());
+                                     std::move(formals), fn->whereClause(),
+                                     compilerGeneratedOrigin ? *compilerGeneratedOrigin
+                                                             : ID());
   }
 
   return result;
