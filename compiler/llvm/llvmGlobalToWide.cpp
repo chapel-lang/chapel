@@ -471,7 +471,7 @@ namespace {
       Function* fn = getWideToGlobalFn(globalTy);
       Value* local_args[1];
       local_args[0] = widePtr;
-      CallInst* call = CallInst::Create( fn, local_args, "", insertBefore);
+      CallInst* call = CallInst::Create( fn, local_args, "", getInsertPosition(insertBefore));
       trackLLVMValue(call);
       return call;
     }
