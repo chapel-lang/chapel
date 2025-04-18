@@ -2076,7 +2076,7 @@ static llvm::TargetOptions getTargetOptions(
   // consider setting Options.MCOptions.IASSearchPaths
   // if .include directives with integrated assembler are needed
 
-  Options.MCOptions.Argv0 = CodeGenOpts.Argv0;
+  Options.MCOptions.Argv0 = CodeGenOpts.Argv0 ? CodeGenOpts.Argv0 : "";
 #if HAVE_LLVM_VER >= 200
   Options.MCOptions.CommandlineArgs = flattenClangCommandLine(
     CodeGenOpts.CommandLineArgs, CodeGenOpts.MainFileName);
