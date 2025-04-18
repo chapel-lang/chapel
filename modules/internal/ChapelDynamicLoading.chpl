@@ -577,7 +577,10 @@ module ChapelDynamicLoading {
       return ret;
     }
 
-    inline proc _isKeyZeroBits(key: K) do return (key : int) == 0;
+    inline proc _isKeyZeroBits(x: ?t) where isAnyCPtr(t) do return x == nil;
+    inline proc _isKeyZeroBits(x: ?t) where isIntegral(t) do return x == 0;
+    inline proc _isKeyZeroBits(x) do return (x: int) == 0;
+
     inline proc _shouldTryToExpand() do return _loadFactor() > _maxLoadFactor;
     inline proc _shouldTryToShrink() do return _loadFactor() < _minLoadFactor;
 
@@ -587,9 +590,15 @@ module ChapelDynamicLoading {
       return if num < _baseBufferSize then _baseBufferSize else num;
     }
 
-    inline proc _hash(key: K): int {
+    // TODO: Look into adding 'c_ptr.hash()' and 'c_ptrConst.hash()'.
+    inline proc _hash(x: ?t): int where isAnyCPtr(t) {
+      const num = __primitive("object2int", x);
+      return _hash(num, check=false);
+    }
+
+    inline proc _hash(x: ?t, param check=true): int {
       use ChapelHashing;
-      var ret: int = ((key : int).hash() & max(int)) : int;
+      const ret = (x.hash() : int) & max(int);
       return ret;
     }
 
