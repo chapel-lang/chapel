@@ -74,12 +74,12 @@ llvm::AllocaInst* makeAlloca(llvm::Type* type,
       tempVar = new llvm::AllocaInst(type,
                                      DL.getAllocaAddrSpace(),
                                      size, llvm::Align(align),
-                                     name, insertBefore);
+                                     name, insertBefore->getIterator());
       trackLLVMValue(tempVar);
     } else {
       tempVar = new llvm::AllocaInst(type,
                                      DL.getAllocaAddrSpace(),
-                                     size, name, insertBefore);
+                                     size, name, insertBefore->getIterator());
       trackLLVMValue(tempVar);
     }
   } else {
