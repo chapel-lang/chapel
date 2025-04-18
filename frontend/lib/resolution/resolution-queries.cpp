@@ -5175,7 +5175,7 @@ gatherAndFilterCandidates(ResolutionContext* rc,
     // The 'isInsideForwarding' check below would prevent resolving a method
     // 'bar()' on 'b'.
 
-    if (typeUsesForwarding(context, receiverType) &&
+    if (receiverType && typeUsesForwarding(context, receiverType) &&
         !isInsideForwarding(context, call)) {
       CandidatesAndForwardingInfo nonPoiCandidates;
       CandidatesAndForwardingInfo poiCandidates;
