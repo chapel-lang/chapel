@@ -1000,6 +1000,10 @@ void Visitor::checkOperatorNameValidity(const Function* node) {
     if (!isOpName(node->name())) {
       error(node, "'%s' is not a legal operator name.", node->name().c_str());
     }
+    if ((node->name() == USTR("&&=") || node->name() == USTR("||=")) &&
+        isUserCode()) {
+      error(node, "'%s' operator may not be overloaded.", node->name().c_str());
+    }
   } else {
     // functions with operator names must be declared as operators
     if (isOpName(node->name())) {

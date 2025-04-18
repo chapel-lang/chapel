@@ -1,0 +1,2 @@
+overloadLogicalOpEquals.chpl:1: error: '&&=' operator may not be overloaded
+overloadLogicalOpEquals.chpl:2: error: '||=' operator may not be overloaded

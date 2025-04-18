@@ -534,16 +534,19 @@ void addUse(Map<Symbol*,Vec<SymExpr*>*>& useMap, SymExpr* use) {
 // op= function call (such as before inlining)
 //
 bool isOpEqualPrim(CallExpr* call) {
-  if (call->isPrimitive(PRIM_ADD_ASSIGN)      ||
-      call->isPrimitive(PRIM_SUBTRACT_ASSIGN) ||
-      call->isPrimitive(PRIM_MULT_ASSIGN)     ||
-      call->isPrimitive(PRIM_DIV_ASSIGN)      ||
-      call->isPrimitive(PRIM_MOD_ASSIGN)      ||
-      call->isPrimitive(PRIM_LSH_ASSIGN)      ||
-      call->isPrimitive(PRIM_RSH_ASSIGN)      ||
-      call->isPrimitive(PRIM_AND_ASSIGN)      ||
-      call->isPrimitive(PRIM_OR_ASSIGN)       ||
-      call->isPrimitive(PRIM_XOR_ASSIGN)) {
+  if (call->isPrimitive(PRIM_ADD_ASSIGN)        ||
+      call->isPrimitive(PRIM_SUBTRACT_ASSIGN)   ||
+      call->isPrimitive(PRIM_MULT_ASSIGN)       ||
+      call->isPrimitive(PRIM_DIV_ASSIGN)        ||
+      call->isPrimitive(PRIM_MOD_ASSIGN)        ||
+      call->isPrimitive(PRIM_LSH_ASSIGN)        ||
+      call->isPrimitive(PRIM_RSH_ASSIGN)        ||
+      call->isPrimitive(PRIM_AND_ASSIGN)        ||
+      call->isPrimitive(PRIM_OR_ASSIGN)         ||
+      call->isPrimitive(PRIM_XOR_ASSIGN)        ||
+      call->isPrimitive(PRIM_LOGICALAND_ASSIGN) ||
+      call->isPrimitive(PRIM_LOGICALOR_ASSIGN)
+      ) {
     return true;
   }
   //otherwise false

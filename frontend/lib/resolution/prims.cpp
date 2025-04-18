@@ -1645,6 +1645,8 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
     case PRIM_AND_ASSIGN:
     case PRIM_OR_ASSIGN:
     case PRIM_XOR_ASSIGN:
+    case PRIM_LOGICALAND_ASSIGN:
+    case PRIM_LOGICALOR_ASSIGN:
     case PRIM_REDUCE_ASSIGN:
     case PRIM_SETCID:
     case PRIM_SET_UNION_ID:
