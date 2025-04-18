@@ -4245,24 +4245,24 @@ bool isBuiltinExternCFunction(const char* cname)
 }
 
 #ifndef LLVM_USE_OLD_PASSES
-static void addDumpIrModule(ModulePassManager& MPM,
-                            LlvmOptimizationLevel v,
-                            llvmStageNum::llvmStageNum_t stage) {
+static void addDumpIr(ModulePassManager& MPM,
+                      LlvmOptimizationLevel v,
+                      llvmStageNum::llvmStageNum_t stage) {
   MPM.addPass(llvm::createModuleToFunctionPassAdaptor(DumpIRPass(stage)));
 }
-static void addDumpIrCG(CGSCCPassManager& CPM,
-                        LlvmOptimizationLevel v,
-                        llvmStageNum::llvmStageNum_t stage) {
+static void addDumpIr(CGSCCPassManager& CPM,
+                      LlvmOptimizationLevel v,
+                      llvmStageNum::llvmStageNum_t stage) {
   CPM.addPass(DumpIRPass(stage));
 }
-static void addDumpIrFunction(FunctionPassManager& FPM,
-                              LlvmOptimizationLevel v,
-                              llvmStageNum::llvmStageNum_t stage) {
+static void addDumpIr(FunctionPassManager& FPM,
+                      LlvmOptimizationLevel v,
+                      llvmStageNum::llvmStageNum_t stage) {
   FPM.addPass(DumpIRPass(stage));
 }
-static void addDumpIrLoop(LoopPassManager& LPM,
-                        LlvmOptimizationLevel v,
-                        llvmStageNum::llvmStageNum_t stage) {
+static void addDumpIr(LoopPassManager& LPM,
+                      LlvmOptimizationLevel v,
+                      llvmStageNum::llvmStageNum_t stage) {
   LPM.addPass(DumpIRPass(stage));
 }
 static void registerDumpIrExtensions(PassBuilder& PB) {
@@ -4270,12 +4270,23 @@ static void registerDumpIrExtensions(PassBuilder& PB) {
     llvmStageNum::llvmStageNum_t stage = (llvmStageNum::llvmStageNum_t) i;
     if (llvmPrintIrStageNum == llvmStageNum::EVERY ||
         llvmPrintIrStageNum == stage) {
+
+      auto dumpIRLambda = [stage](auto & PM, LlvmOptimizationLevel v) {
+        addDumpIr(PM, v, stage);
+      };
+#if LLVM_VERSION_MAJOR >= 20
+      auto dumpIRLambdaWithPhase = [stage](auto & PM, LlvmOptimizationLevel v,
+                                           llvm::ThinOrFullLTOPhase phase) {
+        addDumpIr(PM, v, stage);
+      };
+#else
+      // prior versions had no phase, use the same as the default
+      auto dumpIRLambdaWithPhase = dumpIRLambda;
+#endif
+
       switch (stage) {
         case llvmStageNum::EarlyAsPossible:
-          PB.registerPipelineStartEPCallback(
-            [stage](ModulePassManager &MPM, LlvmOptimizationLevel v) {
-                      addDumpIrModule(MPM, v, stage);
-                    });
+          PB.registerPipelineStartEPCallback(dumpIRLambda);
           break;
         case llvmStageNum::ModuleOptimizerEarly:
           if (llvmPrintIrStageNum != llvmStageNum::EVERY) {
@@ -4285,52 +4296,28 @@ static void registerDumpIrExtensions(PassBuilder& PB) {
           }
           break;
         case llvmStageNum::LateLoopOptimizer:
-          PB.registerLateLoopOptimizationsEPCallback(
-            [stage](LoopPassManager &LPM, LlvmOptimizationLevel v) {
-                      addDumpIrLoop(LPM, v, stage);
-                    });
+          PB.registerLateLoopOptimizationsEPCallback(dumpIRLambda);
           break;
         case llvmStageNum::LoopOptimizerEnd:
-          PB.registerLoopOptimizerEndEPCallback(
-            [stage](LoopPassManager &LPM, LlvmOptimizationLevel v) {
-                      addDumpIrLoop(LPM, v, stage);
-                    });
+          PB.registerLoopOptimizerEndEPCallback(dumpIRLambda);
           break;
         case llvmStageNum::ScalarOptimizerLate:
-          PB.registerScalarOptimizerLateEPCallback(
-            [stage](FunctionPassManager &FPM, LlvmOptimizationLevel v) {
-                      addDumpIrFunction(FPM, v, stage);
-                    });
+          PB.registerScalarOptimizerLateEPCallback(dumpIRLambda);
           break;
         case llvmStageNum::EarlySimplification:
-          PB.registerPipelineEarlySimplificationEPCallback(
-            [stage](ModulePassManager &MPM, LlvmOptimizationLevel v) {
-                      addDumpIrModule(MPM, v, stage);
-                    });
+          PB.registerPipelineEarlySimplificationEPCallback(dumpIRLambdaWithPhase);
           break;
         case llvmStageNum::OptimizerEarly:
-          PB.registerOptimizerEarlyEPCallback(
-            [stage](ModulePassManager &MPM, LlvmOptimizationLevel v) {
-                      addDumpIrModule(MPM, v, stage);
-                    });
+          PB.registerOptimizerEarlyEPCallback(dumpIRLambdaWithPhase);
           break;
         case llvmStageNum::OptimizerLast:
-          PB.registerOptimizerLastEPCallback(
-            [stage](ModulePassManager &MPM, LlvmOptimizationLevel v) {
-                      addDumpIrModule(MPM, v, stage);
-                    });
+          PB.registerOptimizerLastEPCallback(dumpIRLambdaWithPhase);
           break;
         case llvmStageNum::CGSCCOptimizerLate:
-          PB.registerCGSCCOptimizerLateEPCallback(
-            [stage](CGSCCPassManager &CPM, LlvmOptimizationLevel v) {
-                      addDumpIrCG(CPM, v, stage);
-                    });
+          PB.registerCGSCCOptimizerLateEPCallback(dumpIRLambda);
           break;
         case llvmStageNum::VectorizerStart:
-          PB.registerVectorizerStartEPCallback(
-              [stage](FunctionPassManager &FPM, LlvmOptimizationLevel v) {
-                      addDumpIrFunction(FPM, v, stage);
-                      });
+          PB.registerVectorizerStartEPCallback(dumpIRLambda);
           break;
         case llvmStageNum::EnabledOnOptLevel0:
           if (llvmPrintIrStageNum != llvmStageNum::EVERY) {
@@ -4340,10 +4327,7 @@ static void registerDumpIrExtensions(PassBuilder& PB) {
           }
           break;
         case llvmStageNum::Peephole:
-          PB.registerPeepholeEPCallback(
-              [stage](FunctionPassManager &FPM, LlvmOptimizationLevel v) {
-                      addDumpIrFunction(FPM, v, stage);
-                      });
+          PB.registerPeepholeEPCallback(dumpIRLambda);
           break;
         case llvmStageNum::NOPRINT:
         case llvmStageNum::NONE:
