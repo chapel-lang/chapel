@@ -65,6 +65,8 @@ class RealType final : public PrimitiveType {
 
   const char* c_str() const override {
     switch (bitwidth_) {
+      case 16:
+        return "real(16)";
       case 32:
         return "real(32)";
       case 64:

@@ -6186,7 +6186,12 @@ private proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, param b
     var re = x.re;
     var im = x.im;
     var err:errorCode = 0;
-    if re.type == real(32) {
+    if re.type == real(16) {
+      err = qio_channel_write_float32(false, byteorder:c_int, _channel_internal, re);
+      if ! err {
+        err = qio_channel_write_float32(false, byteorder:c_int, _channel_internal, im);
+      }
+    } else if re.type == real(32) {
       err = qio_channel_write_float32(false, byteorder:c_int, _channel_internal, re);
       if ! err {
         err = qio_channel_write_float32(false, byteorder:c_int, _channel_internal, im);

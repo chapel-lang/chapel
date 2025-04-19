@@ -121,6 +121,8 @@ static void test2() {
   intPrimTypeHelper(IntType::defaultBitwidth(), "string_length_bytes", {"b"}, "var b: bytes;");
 }
 
+// TODO: add similar tests for float16 types?
+
 static void test3() {
   // test for primitive return type for get real/imag
   realPrimTypeHelper(64, "complex_get_real", {"a"}, "var a: complex(128);", QualifiedType::REF);

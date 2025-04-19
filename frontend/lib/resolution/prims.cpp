@@ -1443,6 +1443,11 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
       type = primToNonNilableClass(context, call, ci, /* checked */ false);
       break;
 
+    case PRIM_UINT16_AS_REAL16:
+      type = primNumericTransmute<UintParam, RealParam, uint16_t, _Float16>(
+          context, call, ci, UintType::get(context, 16), RealType::get(context, 16));
+      break;
+
     case PRIM_UINT32_AS_REAL32:
       type = primNumericTransmute<UintParam, RealParam, uint32_t, float>(
           context, call, ci, UintType::get(context, 32), RealType::get(context, 32));
@@ -1451,6 +1456,11 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
     case PRIM_UINT64_AS_REAL64:
       type = primNumericTransmute<UintParam, RealParam, uint64_t, double>(
           context, call, ci, UintType::get(context, 64), RealType::get(context, 64));
+      break;
+
+    case PRIM_REAL16_AS_UINT16:
+      type = primNumericTransmute<RealParam, UintParam, _Float16, uint16_t>(
+          context, call, ci, RealType::get(context, 16), UintType::get(context, 16));
       break;
 
     case PRIM_REAL32_AS_UINT32:

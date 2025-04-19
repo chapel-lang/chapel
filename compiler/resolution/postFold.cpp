@@ -722,6 +722,15 @@ static Expr* postFoldPrimop(CallExpr* call) {
     memcpy(&ui, &f, sizeof(f));
     retval = new SymExpr(new_UIntSymbol(ui, INT_SIZE_32));
     call->replace(retval);
+  } else if (call->isPrimitive(PRIM_REAL16_AS_UINT16)) {
+    Expr* realArg = call->get(1);
+    Immediate* realVal = getSymbolImmediate(toSymExpr(realArg)->symbol());
+    _Float16 f = realVal->v_float16;
+    uint16_t ui;
+    INT_ASSERT(sizeof(f) == sizeof(ui));
+    memcpy(&ui, &f, sizeof(f));
+    retval = new SymExpr(new_UIntSymbol(ui, INT_SIZE_16));
+    call->replace(retval);
   } else if (call->isPrimitive(PRIM_UINT64_AS_REAL64)) {
     Expr* uintArg = call->get(1);
     Immediate* uintVal = getSymbolImmediate(toSymExpr(uintArg)->symbol());
@@ -735,6 +744,15 @@ static Expr* postFoldPrimop(CallExpr* call) {
     Expr* uintArg = call->get(1);
     Immediate* uintVal = getSymbolImmediate(toSymExpr(uintArg)->symbol());
     uint32_t ui = uintVal->v_uint32;
+    float f;
+    INT_ASSERT(sizeof(f) == sizeof(ui));
+    memcpy(&f, &ui, sizeof(f));
+    retval = new SymExpr(new_RealSymbol(f));
+    call->replace(retval);
+  } else if (call->isPrimitive(PRIM_UINT16_AS_REAL16)) {
+    Expr* uintArg = call->get(1);
+    Immediate* uintVal = getSymbolImmediate(toSymExpr(uintArg)->symbol());
+    uint16_t ui = uintVal->v_uint16;
     float f;
     INT_ASSERT(sizeof(f) == sizeof(ui));
     memcpy(&f, &ui, sizeof(f));

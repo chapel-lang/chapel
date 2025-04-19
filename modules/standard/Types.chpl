@@ -96,11 +96,11 @@ proc isRealType(type t) param do return
 
 /* Returns ``true`` if the type ``t`` is an ``imag`` type, of any width. */
 proc isImagType(type t) param do return
-  (t == imag(32)) || (t == imag(64));
+  (t == imag(16) || t == imag(32)) || (t == imag(64));
 
 /* Returns ``true`` if the type ``t`` is a ``complex`` type, of any width. */
 proc isComplexType(type t) param do return
-  (t == complex(64)) || (t == complex(128));
+  (t == complex(32) || t == complex(64)) || (t == complex(128));
 
 /* Returns ``true`` if the type ``t`` is the ``string`` type. */
 proc isStringType(type t) param do return t == string;
