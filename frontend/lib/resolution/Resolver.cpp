@@ -3192,14 +3192,14 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
   } else if (fnName == "subdomain") {
     // check if we're inside a 'sparse subdomain' call, in which case we should
     // do nothing.
-    CHPL_ASSERT(callNodeStack.size() >= 2);
-    CHPL_ASSERT(callNodeStack.back() == fnCall);
-    auto parentCall = callNodeStack[callNodeStack.size() - 2];
-    if (parentCall->numActuals() == 1 && parentCall->actual(0) == fnCall) {
-      if (auto parentFnCall = parentCall->toFnCall()) {
-        if (parentFnCall->calledExpression()->isIdentifier() &&
-            parentFnCall->calledExpression()->toIdentifier()->name() == "sparse") {
-          return true;
+    if (callNodeStack.size() >= 2 && callNodeStack.back() == fnCall) {
+      auto parentCall = callNodeStack[callNodeStack.size() - 2];
+      if (parentCall->numActuals() == 1 && parentCall->actual(0) == fnCall) {
+        if (auto parentFnCall = parentCall->toFnCall()) {
+          auto parentIdent = parentFnCall->calledExpression()->toIdentifier();
+          if (parentIdent && parentIdent->name() == "sparse") {
+            return true;
+          }
         }
       }
     }
