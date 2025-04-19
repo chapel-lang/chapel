@@ -7481,7 +7481,19 @@ static const types::RuntimeType* const& getRuntimeTypeQuery(Context* context, co
 }
 
 const types::RuntimeType* getRuntimeType(Context* context, const types::CompositeType* ct) {
-  return getRuntimeTypeQuery(context, ct);
+  const DomainType* dom = nullptr;
+  if (auto array = ct->toArrayType()) {
+    dom = array->domainType().type()->toDomainType();
+  } else {
+    dom = ct->toDomainType();
+  }
+
+  if (dom != nullptr && dom == DomainType::getGenericDomainType(context)) {
+    // Handle e.g., '[domain(?)] eltType'
+    return nullptr;
+  } else {
+    return getRuntimeTypeQuery(context, ct);
+  }
 }
 
 Access accessForQualifier(Qualifier q) {
