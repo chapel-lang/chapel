@@ -677,7 +677,10 @@ builderResultForDefaultFunction(Context* context,
     for a range is the type of the range's elements. */
 const types::QualifiedType& getPromotionType(Context* context, types::QualifiedType qt, bool skipIfRunning = false);
 
+/// \cond DO_NOT_DOCUMENT
+// Common helper for ArrayType and DomainType
 const types::RuntimeType* getRuntimeType(Context* context, const types::CompositeType* ct);
+/// \endcond
 
 Access accessForQualifier(uast::Qualifier q);
 
