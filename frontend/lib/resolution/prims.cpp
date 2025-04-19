@@ -500,17 +500,12 @@ static QualifiedType primGetRuntimeTypeField(Context* context,
   if (auto dt = compositeType->toDomainType()) {
     while (dt->isSubdomain()) dt = dt->parentDomain();
 
-    auto domainRtt = dt->runtimeType(context);
-    CHPL_ASSERT(domainRtt);
-    CHPL_ASSERT(domainRtt->isRuntimeType());
-    rtt = domainRtt->toRuntimeType();
+    rtt = dt->runtimeType(context);
   } else if (auto at = compositeType->toArrayType()) {
-    auto arrayRtt = at->runtimeType(context);
-    CHPL_ASSERT(arrayRtt);
-    CHPL_ASSERT(arrayRtt->isRuntimeType());
-    rtt = arrayRtt->toRuntimeType();
+    rtt = at->runtimeType(context);
   }
 
+  // Might be the case if domain is the generic 'domain(?)'
   if (!rtt) return QualifiedType();
 
   for (int i = 0; i < rtt->initializer()->numFormals(); i++) {
