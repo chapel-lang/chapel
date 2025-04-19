@@ -72,6 +72,8 @@ areOverloadsPresentInDefiningScope(Context* context,
     scopeForReceiverType = scopeForId(context, compType->id());
   } else if (auto enumType = type->toEnumType()) {
     scopeForReceiverType = scopeForId(context, enumType->id());
+  } else if (auto externType = type->toExternType()) {
+    scopeForReceiverType = scopeForId(context, externType->id());
   }
 
   // there is no defining scope
@@ -229,7 +231,8 @@ needCompilerGeneratedMethod(Context* context, const Type* type,
 
   bool isAggregate = type->getCompositeType() || type->isRecordLike();
   if ((isAggregate && isNameOfCompilerGeneratedMethod(name)) ||
-      (type->isRecordType() && isNameOfCompilerGeneratedRecordOperator(name))) {
+      (type->isRecordType() && isNameOfCompilerGeneratedRecordOperator(name)) ||
+      (type->isExternType() && name == USTR("="))) {
     if (!areOverloadsPresentInDefiningScope(context, type, QualifiedType::INIT_RECEIVER, name)) {
       return true;
     }
@@ -710,7 +713,7 @@ const BuilderResult& buildRecordComparison(Context* context, ID typeID) {
 }
 
 const BuilderResult& buildRecordInequalityComparison(Context* context, ID typeID) {
-  QUERY_BEGIN(buildRecordComparison, context, typeID);
+  QUERY_BEGIN(buildRecordInequalityComparison, context, typeID);
 
   FieldFnBuilder bld(context, typeID, USTR("!="), Function::Kind::OPERATOR,
                      Formal::CONST_REF,
@@ -1079,7 +1082,7 @@ const TypedFnSignature* fieldAccessor(Context* context,
 // generate formal detail and formal type
 static void
 generateOperatorFormalDetail(const UniqueString name,
-                             const CompositeType*& compType,
+                             const Type* compType,
                              std::vector<UntypedFnSignature::FormalDetail>& ufsFormals,
                              std::vector<QualifiedType>& formalTypes,
                              QualifiedType::Kind qtKind,
@@ -1359,6 +1362,44 @@ generateIteratorMethod(Context* context,
   return result;
 }
 
+static const TypedFnSignature*
+generateExternAssignment(ResolutionContext* rc, const ExternType* type) {
+  auto context = rc->context();
+  const TypedFnSignature* result = nullptr;
+  std::vector<UntypedFnSignature::FormalDetail> ufsFormals;
+  std::vector<QualifiedType> formalTypes;
+
+  generateOperatorFormalDetail(UniqueString::get(context,"lhs"),
+                               type, ufsFormals, formalTypes,
+                               QualifiedType::REF);
+  generateOperatorFormalDetail(UniqueString::get(context,"rhs"),
+                               type, ufsFormals, formalTypes,
+                               QualifiedType::CONST_INTENT);
+
+  auto ufs = UntypedFnSignature::get(context,
+                        /*id*/ type->id(),
+                        /*name*/ USTR("="),
+                        /*isMethod*/ true,
+                        /*isTypeConstructor*/ false,
+                        /*isCompilerGenerated*/ true,
+                        /*throws*/ false,
+                        /*idTag*/ asttags::Tuple,
+                        /*kind*/ uast::Function::Kind::PROC,
+                        /*formals*/ std::move(ufsFormals),
+                        /*whereClause*/ nullptr);
+
+  // now build the other pieces of the typed signature
+  result = TypedFnSignature::get(context, ufs, std::move(formalTypes),
+                                 TypedFnSignature::WHERE_NONE,
+                                 /* needsInstantiation */ false,
+                                 /* instantiatedFrom */ nullptr,
+                                 /* parentFn */ nullptr,
+                                 /* formalsInstantiated */ Bitmap(),
+                                 /* outerVariables */ {});
+
+  return result;
+}
+
 static const TypedFnSignature* const&
 getCompilerGeneratedMethodQuery(ResolutionContext* rc, QualifiedType receiverType,
                                 UniqueString name, bool parenless) {
@@ -1371,7 +1412,8 @@ getCompilerGeneratedMethodQuery(ResolutionContext* rc, QualifiedType receiverTyp
 
   if (needCompilerGeneratedMethod(context, type, name, parenless)) {
     auto compType = type->getCompositeType();
-    CHPL_ASSERT(compType || type->isPtrType() || type->isEnumType() || type->isIteratorType());
+    CHPL_ASSERT(compType || type->isPtrType() || type->isEnumType() ||
+                type->isIteratorType() || type->isExternType());
 
     if (name == USTR("init")) {
       result = generateInitSignature(rc, compType);
@@ -1397,6 +1439,8 @@ getCompilerGeneratedMethodQuery(ResolutionContext* rc, QualifiedType receiverTyp
       result = generateEnumMethod(context, enumType, name);
     } else if (auto iterType = type->toIteratorType()) {
       result = generateIteratorMethod(context, iterType, name);
+    } else if (type->isExternType() && name == USTR("=")) {
+      result = generateExternAssignment(rc, type->toExternType());
     } else {
       CHPL_UNIMPL("should not be reachable");
     }
