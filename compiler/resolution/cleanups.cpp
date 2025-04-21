@@ -542,39 +542,72 @@ static void removeUnusedTypes() {
 
   clearGenericWellKnownTypes();
   std::set<Type*> wellknown = getWellKnownTypesSet();
+  std::vector<FunctionType*> functionTypes;
+  std::set<Type*> removed;
 
   // Remove unused aggregate types.
-  for_alive_in_expanding_Vec(TypeSymbol, type, gTypeSymbols) {
-    if (! type->hasFlag(FLAG_REF)                &&
-        ! type->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
-      if (AggregateType* at = toAggregateType(type->type)) {
+  for_alive_in_expanding_Vec(TypeSymbol, ts, gTypeSymbols) {
+    if (auto ft = toFunctionType(ts->type)) {
+      // Collect function types to check later.
+      functionTypes.push_back(ft);
+      continue;
+    }
+
+    if (! ts->hasFlag(FLAG_REF)                &&
+        ! ts->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
+      // First collect any unused aggregates.
+      if (AggregateType* at = toAggregateType(ts->type)) {
         if (isUnusedClass(at, wellknown)) {
           at->symbol->defPoint->remove();
+          removed.insert(at);
         }
-      } else if(DecoratedClassType* dt = toDecoratedClassType(type->type)) {
+      } else if(DecoratedClassType* dt = toDecoratedClassType(ts->type)) {
         if (isUnusedClass(dt->getCanonicalClass(), wellknown)) {
           dt->symbol->defPoint->remove();
+          removed.insert(dt);
         }
       }
     }
   }
 
   // Remove unused ref types.
-  for_alive_in_Vec(TypeSymbol, type, gTypeSymbols) {
-    if (type->hasFlag(FLAG_REF)) {
+  for_alive_in_Vec(TypeSymbol, ts, gTypeSymbols) {
+    if (ts->hasFlag(FLAG_REF)) {
       // Get the value type of the ref type.
-      if (AggregateType* at1 = toAggregateType(type->getValType())) {
+      if (AggregateType* at1 = toAggregateType(ts->getValType())) {
         if (isUnusedClass(at1, wellknown)) {
           // If the value type is unused, its ref type can also be removed.
-          type->defPoint->remove();
+          removed.insert(ts->type);
         }
       } else if(DecoratedClassType* dt =
-                toDecoratedClassType(type->getValType())) {
+                toDecoratedClassType(ts->getValType())) {
         if (isUnusedClass(dt->getCanonicalClass(), wellknown)) {
-          type->defPoint->remove();
+          removed.insert(ts->type);
         }
       }
     }
+  }
+
+  for (auto ft : functionTypes) {
+    bool containsRemoved = removed.find(ft->returnType()) != removed.end();
+    if (!containsRemoved) {
+      for (int i = 0; i < ft->numFormals(); i++) {
+        if (removed.find(ft->formal(i)->type()) != removed.end()) {
+          containsRemoved = true;
+          break;
+        }
+      }
+    }
+
+    // Remove the function type if it contains any removed types.
+    if (containsRemoved) {
+      removed.insert(ft);
+    }
+  }
+
+  for (auto t : removed) {
+    auto ts = t ? t->symbol : nullptr;
+    if (ts && ts->defPoint->inTree()) ts->defPoint->remove();
   }
 }
 

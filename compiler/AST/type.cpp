@@ -638,17 +638,61 @@ FunctionType::FunctionType(Kind kind, Width width, Linkage linkage,
       userTypeString_(userTypeString) {
 }
 
-void FunctionType::verify() {
-  bool isAnyFormalNamed = false;
+namespace {
 
-  for (auto& formal : formals_) {
-    if (formal.name() != nullptr) {
-      isAnyFormalNamed = true;
-      break;
+  // Used to hash by value instead of hashing the pointer.
+  struct FunctionTypePtrHash {
+    size_t operator()(const FunctionType* x) const {
+      return x->hash();
     }
+  };
+
+  // Used to compare by value instead of doing pointer comparison.
+  struct FunctionTypePtrEq {
+    bool operator()(const FunctionType* lhs,
+                    const FunctionType* rhs) const {
+      return lhs->equals(rhs);
+    }
+  };
+
+  using FunctionTypeCache =
+    std::unordered_set<FunctionType*, FunctionTypePtrHash,
+                       FunctionTypePtrEq>;
+}
+
+// Cache to make sure that we don't produce duplicate function types.
+static FunctionTypeCache functionTypeCache;
+
+FunctionType::~FunctionType() {
+  auto it = functionTypeCache.find(this);
+  if (it != functionTypeCache.end()) {
+    functionTypeCache.erase(it);
+  }
+}
+
+void FunctionType::verify() {
+  Type::verify();
+
+  if (!returnType()->symbol->inTree()) {
+    INT_FATAL(this->symbol, "The function type %s is used but has a return "
+                            "type %s that is no longer in the tree",
+                            typeToString(this),
+                            typeToString(returnType()));
   }
 
-  INT_ASSERT(isAnyFormalNamed == this->isAnyFormalNamed_);
+  if (numFormals() > 0) {
+    for (int i = 0; i < numFormals(); i++) {
+      auto name = formal(i)->name();
+      auto type = formal(i)->type();
+      if (!type->inTree()) {
+        INT_FATAL(this->symbol, "The function type %s is used but has a "
+                                "formal %s with a type %s that is no "
+                                "longer in the tree",
+                                typeToString(this), name,
+                                typeToString(type));
+      }
+    }
+  }
 }
 
 void FunctionType::accept(AstVisitor* visitor) {
@@ -821,31 +865,6 @@ FunctionType* FunctionType::create(FunctionType::Kind kind,
                               cstr);
   return ret;
 }
-
-namespace {
-
-  // Used to hash by value instead of hashing the pointer.
-  struct FunctionTypePtrHash {
-    size_t operator()(const FunctionType* x) const {
-      return x->hash();
-    }
-  };
-
-  // Used to compare by value instead of doing pointer comparison.
-  struct FunctionTypePtrEq {
-    bool operator()(const FunctionType* lhs,
-                    const FunctionType* rhs) const {
-      return lhs->equals(rhs);
-    }
-  };
-
-  using FunctionTypeCache =
-    std::unordered_set<FunctionType*, FunctionTypePtrHash,
-                       FunctionTypePtrEq>;
-}
-
-// Cache to make sure that we don't produce duplicate function types.
-static FunctionTypeCache functionTypeCache;
 
 static FunctionType* cacheFunctionTypeOrReuse(FunctionType* fnType) {
   auto it = functionTypeCache.find(fnType);

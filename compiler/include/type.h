@@ -495,8 +495,9 @@ class FunctionType final : public Type {
                               RetTag returnIntent,
                               Type* returnType,
                               bool throws);
-
  public:
+ ~FunctionType() override;
+
   void verify() override;
   void accept(AstVisitor* visitor) override;
   DECLARE_COPY(FunctionType);
