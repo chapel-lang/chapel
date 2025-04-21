@@ -20,6 +20,12 @@
 #ifndef CHPL_STB_IMAGE_WRITE_HELPER_H_
 #define CHPL_STB_IMAGE_WRITE_HELPER_H_
 
+#include "chpl-mem.h"
+
+#define STBIW_MALLOC(sz)        chpl_malloc(sz)
+#define STBIW_REALLOC(p,newsz)  chpl_realloc(p,newsz)
+#define STBIW_FREE(p)           chpl_free(p)
+
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_ONLY_PNG
 #define STBI_ONLY_JPEG
