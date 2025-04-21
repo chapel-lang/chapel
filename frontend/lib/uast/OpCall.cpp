@@ -69,7 +69,8 @@ bool isOpName(UniqueString name) {
          name == USTR("+=") || name == USTR("-=") ||
          name == USTR("*=") || name == USTR("/=") || name == USTR("%=") ||
          name == USTR("**=") || name == USTR("&=") || name == USTR("|=") ||
-         name == USTR("^=") || name == USTR(">>=") || name == USTR("<<=") ||
+         name == USTR("^=") || name == USTR("&&=") || name == USTR("||=") ||
+         name == USTR(">>=") || name == USTR("<<=") ||
          name == USTR("#") || name == USTR("chpl_by") || name == USTR("by") ||
          name == USTR("align") || name == USTR("chpl_align") ||
          name == USTR(":");

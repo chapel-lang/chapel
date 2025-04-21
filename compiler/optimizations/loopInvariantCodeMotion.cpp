@@ -437,6 +437,8 @@ static bool isLoopInvariantPrimitive(PrimitiveOp* primitiveOp)
       case PRIM_AND_ASSIGN:
       case PRIM_OR_ASSIGN:
       case PRIM_XOR_ASSIGN:
+      case PRIM_LOGICALAND_ASSIGN:
+      case PRIM_LOGICALOR_ASSIGN:
 
       case PRIM_MIN:
       case PRIM_MAX:
