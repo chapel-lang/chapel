@@ -314,5 +314,11 @@ int main() {
   testArray("domain(int)", "int");
   testArray("domain(int, true)", "int");
 
+  // associative literals
+  testArrayLiteral("[1 => \"one\", 10 => \"ten\", 3 => \"three\", 16 => \"sixteen\"]", "domain(int)", "string");
+  testArrayLiteral("[1 => 1, 10 => 10, 3 => 3, 16 => 16]", "domain(int)", "int");
+  testArrayLiteral("[\"foo\" => false]", "domain(string)", "bool");
+  testArrayLiteral("[\"foo\" => false, ]", "domain(string)", "bool");
+
   return 0;
 }
