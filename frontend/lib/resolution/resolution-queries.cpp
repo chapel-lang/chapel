@@ -2160,10 +2160,11 @@ static bool instantiateAcrossManagerRecordConversion(Context* context,
 
 // TODO: We could remove the 'ResolutionContext' argument if we figure out
 // a different way/decide not to resolve initializer bodies down below.
-ApplicabilityResult instantiateSignature(ResolutionContext* rc,
-                                         const TypedFnSignature* sig,
-                                         const CallInfo& call,
-                                         const PoiScope* poiScope) {
+static ApplicabilityResult
+instantiateSignatureImpl(ResolutionContext* rc,
+                         const TypedFnSignature* sig,
+                         const CallInfo& call,
+                         const PoiScope* poiScope) {
   // Performance: Should this query use a similar approach to
   // resolveFunctionByInfoQuery, where the PoiInfo and visibility
   // are consulted?
@@ -2636,6 +2637,23 @@ ApplicabilityResult instantiateSignature(ResolutionContext* rc,
   return ApplicabilityResult::success(result);
 }
 
+static ApplicabilityResult const&
+instantiateSignatureQuery(ResolutionContext* rc,
+                          const TypedFnSignature* sig,
+                          const CallInfo& call,
+                          const PoiScope* poiScope) {
+  CHPL_RESOLUTION_QUERY_BEGIN(instantiateSignatureQuery, rc, sig, call, poiScope);
+  auto ret = instantiateSignatureImpl(rc, sig, call, poiScope);
+  return CHPL_RESOLUTION_QUERY_END(ret);
+}
+
+ApplicabilityResult instantiateSignature(ResolutionContext* rc,
+                                         const TypedFnSignature* sig,
+                                         const CallInfo& call,
+                                         const PoiScope* poiScope) {
+  return instantiateSignatureQuery(rc, sig, call, poiScope);
+}
+
 // This implements the body of 'resolveFunctionByInfo'. It returns a new
 // 'ResolvedFunction' and does not directly set any queries.
 //
@@ -2724,6 +2742,11 @@ static const ResolvedFunction* const&
 resolveFunctionByInfoQuery(ResolutionContext* rc,
                            const TypedFnSignature* sig,
                            PoiInfo poiInfo);
+
+static const ResolvedFunction* const&
+resolveFunctionByResolvedInfoQuery(Context* context,
+                                   const TypedFnSignature* sig,
+                                   PoiInfo poiInfo);
 
 static const owned<ResolvedFunction>&
 resolveFunctionByPoisQuery(ResolutionContext* rc, PoiInfo::Trace poiTrace);
@@ -2841,49 +2864,117 @@ resolveFunctionByPoisQuery(ResolutionContext* rc, PoiInfo::Trace poiTrace) {
   return CHPL_RESOLUTION_QUERY_END(ret);
 }
 
+// Why does this query exist in addition to resolveFunctionByInfoQuery?
+//
+// Overall, the goal is to enable generic instantiation caching. There are,
+// in fact, two kinds of PoiInfo: resolved and unresolved ones, which
+// correspond loosely to "before instantiation" and "after instantiation".
+//
+// Unresolved PoI infos simply contain a PoI scope in which a function's
+// body should be resolved. Caching these queries would prevent having
+// to re-resolve a function called mutliple times from the same scope, but
+// it will not do anything clever about PoI compatibility (see see PR #16261, e.g.).
+//
+// Resolved PoI infos don't contain the scope in which they were resolved; instead,
+// they contain a trace of all functions that used PoI. By the logic described
+// in PR #16261, the same instantiation can be re-used in another PoI scope if
+// all PoI calls in its trace are visible from that other scope. As a special
+// case, a function that didn't use any PoI calls can be re-used in any scope.
+//
+// Resolved PoI infos have two important properties:
+// 2. They can only be constructed after resolving a function instantiation.
+//    Pragmatically, this means that they can't serve as a-priori inputs
+//    to "resolveFunction" (otherwise, we'd need to resolve the function
+//    to resolve the function).
+//
+//    This hints at the need for two queries, one that gets called with the
+//    "initial" PoI scope, and one that gets set after the function is resolved.
+//
+// 1. Importantly, by removing the PoI scope and replacing it with the trace,
+//    resolved PoiInfos actually describe _sets of PoI scopes_ that are compatible
+//    with a given instantiation for the purposes of reuse. The compatibility
+//    check is encoded in PoiInfo::canReuse. In fact, to fit into the query framework,
+//    the '==' operator is relaxed to "compatibility": uInfo == rInfo is true
+//    if the unresolved info uInfo is compatible with the resolved info rInfo.
+//
+//    This essentially forces a query that operates on "resolved" infos to
+//    not have any dependencies, because it represents a related set of
+//    resolutions, each of which would presumably have different dependencies.
+//    Having incompatible dependencies would wreak havoc on the query system.
+//    Instead, we have '...ByInfoQuery', which includes all the dependencies
+//    of resolving the function, and '...ByResolvedInfoQuery', which is
+//    set and used when possible.
+static const ResolvedFunction* const&
+resolveFunctionByResolvedInfoQuery(Context* context,
+                                   const TypedFnSignature* sig,
+                                   PoiInfo poiInfo) {
+  QUERY_BEGIN_EXTERNALLY_SET(resolveFunctionByResolvedInfoQuery, context, sig, poiInfo);
+
+  // should only ever be SET by 'resolveFunctionByInfoQuery'. Since we got
+  // here, something is wrong; return a bogus result.
+  const ResolvedFunction* ret = nullptr;
+
+  return QUERY_END(ret);
+}
+
 static const ResolvedFunction* const&
 resolveFunctionByInfoQuery(ResolutionContext* rc,
                            const TypedFnSignature* sig,
                            PoiInfo poiInfo) {
   CHPL_RESOLUTION_QUERY_BEGIN(resolveFunctionByInfoQuery, rc, sig, poiInfo);
 
-  // Call the implementation which resolves the function body.
-  auto resolved = resolveFunctionByInfoImpl(rc, sig, poiInfo);
+  const ResolvedFunction* ret = nullptr;
+  // note: this lookup searches for "compatible" post-resolution POI infos
+  //       because we're feeding it an unresolved PoI info, and its
+  //       entries are always stored from resolved PoI infos. Operator ==
+  //       decides compatibility in that case. See comment on
+  //       resolveFunctionByResolvedInfoQuery, and the implementation
+  //       of PoiInfo::operator==.
+  if (rc->context()->hasCurrentResultForQuery(resolveFunctionByResolvedInfoQuery,
+                                              std::make_tuple(sig, poiInfo))) {
+    ret = resolveFunctionByResolvedInfoQuery(rc->context(), sig, poiInfo);
+  } else {
+    // Call the implementation which resolves the function body.
+    auto resolved = resolveFunctionByInfoImpl(rc, sig, poiInfo);
 
-  // The final signature should only differ for initializers.
-  auto finalSig = resolved->signature();
-  CHPL_ASSERT(finalSig == sig || sig->isInitializer());
+    // The final signature should only differ for initializers.
+    auto finalSig = resolved->signature();
+    CHPL_ASSERT(finalSig == sig || sig->isInitializer());
 
-  // Make a POI trace for use with the generic cache.
-  auto resolvedPoiTrace = resolved->poiInfo().createTraceFor(sig);
+    // Make a POI trace for use with the generic cache.
+    auto resolvedPoiTrace = resolved->poiInfo().createTraceFor(sig);
 
-  // Try to store in the generic cache.
-  CHPL_RESOLUTION_QUERY_STORE_RESULT(resolveFunctionByPoisQuery, rc,
-                                     std::move(resolved),
-                                     resolvedPoiTrace);
+    // Try to store in the generic cache.
+    CHPL_RESOLUTION_QUERY_UNSAFE_STORE_RESULT(resolveFunctionByPoisQuery, rc,
+        std::move(resolved),
+        resolvedPoiTrace);
 
-  // Initializer signatures can potentially require their body to be
-  // resolved in order to complete instantiation. This means that the
-  // 'ResolvedFunction' can have a different signature than what you
-  // started with (the receiver or a dependent type could instantiate).
-  //
-  // The user could pass in the fully resolved initializer signature
-  // in a subsequent call, and we don't want to resolve the function
-  // body again. So record a second entry for 'resolveFunctionByInfoQuery'
-  // which links the fully resolved signature to the result.
-  if (finalSig != sig) {
+    // Initializer signatures can potentially require their body to be
+    // resolved in order to complete instantiation. This means that the
+    // 'ResolvedFunction' can have a different signature than what you
+    // started with (the receiver or a dependent type could instantiate).
+    //
+    // The user could pass in the fully resolved initializer signature
+    // in a subsequent call, and we don't want to resolve the function
+    // body again. So record a second entry for 'resolveFunctionByInfoQuery'
+    // which links the fully resolved signature to the result.
+    if (finalSig != sig) {
+      auto& saved = resolveFunctionByPoisQuery(rc, resolvedPoiTrace);
+      CHPL_RESOLUTION_QUERY_UNSAFE_STORE_RESULT(resolveFunctionByInfoQuery, rc,
+          saved.get(),
+          finalSig,
+          poiInfo);
+    }
+
+    // Return the unique result from the query (that might have been saved
+    // above - if it was not saved, then we are reusing a cached result,
+    // which means the input and final signatures can differ.
     auto& saved = resolveFunctionByPoisQuery(rc, resolvedPoiTrace);
-    CHPL_RESOLUTION_QUERY_STORE_RESULT(resolveFunctionByInfoQuery, rc,
-                                       saved.get(),
-                                       finalSig,
-                                       poiInfo);
-  }
+    ret = saved.get();
 
-  // Return the unique result from the query (that might have been saved
-  // above - if it was not saved, then we are reusing a cached result,
-  // which means the input and final signatures can differ.
-  auto& saved = resolveFunctionByPoisQuery(rc, resolvedPoiTrace);
-  auto ret = saved.get();
+    QUERY_STORE_RESULT(resolveFunctionByResolvedInfoQuery, rc->context(),
+                       ret, sig, saved->poiInfo());
+  }
 
   return CHPL_RESOLUTION_QUERY_END(ret);
 }
@@ -3482,7 +3573,7 @@ doIsCandidateApplicableInitial(ResolutionContext* rc,
 
   if (ci.isMethodCall() && (ci.name() == "init" || ci.name() == "init=")) {
     // TODO: test when record has defaults for type/param fields
-    auto recv = ci.calledType();
+    auto recv = ci.methodReceiverType();
     auto fn = parsing::idToAst(context, candidateId)->toFunction();
     ResolutionResultByPostorderID r;
     auto vis = Resolver::createForInitialSignature(rc, fn, r);
@@ -4305,11 +4396,6 @@ static bool resolveFnCallSpecialType(Context* context,
     auto ctorCall = CallInfo::copyAndRename(ci, newName);
     result = resolveCall(rc, call, ctorCall, inScopes);
     return true;
-  } else if (ci.name() == "sync") {
-    auto newName = UniqueString::get(context, "_syncvar");
-    auto ctorCall = CallInfo::copyAndRename(ci, newName);
-    result = resolveCall(rc, call, ctorCall, inScopes);
-    return true;
   }
 
   return false;
@@ -4824,7 +4910,7 @@ gatherAndFilterCandidatesForwarding(ResolutionContext* rc,
       }
 
       forwardingCis.push_back(CallInfo(ci.name(),
-                                       forwardType,
+                                       QualifiedType(),
                                        ci.isMethodCall(),
                                        ci.hasQuestionArg(),
                                        ci.isParenless(),
@@ -5089,7 +5175,7 @@ gatherAndFilterCandidates(ResolutionContext* rc,
     // The 'isInsideForwarding' check below would prevent resolving a method
     // 'bar()' on 'b'.
 
-    if (typeUsesForwarding(context, receiverType) &&
+    if (receiverType && typeUsesForwarding(context, receiverType) &&
         !isInsideForwarding(context, call)) {
       CandidatesAndForwardingInfo nonPoiCandidates;
       CandidatesAndForwardingInfo poiCandidates;
@@ -5270,7 +5356,8 @@ resolutionResultFromMostSpecificCandidate(ResolutionContext* rc,
   QualifiedType exprType;
   QualifiedType yieldedType;
   if (msc.fn()) {
-    exprType = returnType(rc, msc.fn(), instantiationPoiScope);
+    auto& yieldAndRet = returnTypes(rc, msc.fn(), instantiationPoiScope);
+    exprType = yieldAndRet.second;
 
     if (!msc.promotedFormals().empty()) {
       yieldedType = exprType;
@@ -5283,7 +5370,7 @@ resolutionResultFromMostSpecificCandidate(ResolutionContext* rc,
     }
 
     if (msc.fn()->isIterator() && yieldedType.isUnknown()) {
-      yieldedType = yieldType(rc, msc.fn(), instantiationPoiScope);
+      yieldedType = yieldAndRet.first;
     }
   }
 
@@ -5391,56 +5478,57 @@ resolveFnCall(ResolutionContext* rc,
   optional<QualifiedType> retType;
   optional<QualifiedType> yieldedType;
   for (const MostSpecificCandidate& candidate : mostSpecific) {
-    if (candidate.fn() != nullptr) {
-      bool isIterator = candidate.fn()->isIterator();
+    if (candidate.fn() == nullptr) continue;
 
-      QualifiedType rt;
-      // TODO: Ideally we'd refactor things such that we instantiate some kind
-      // of hidden argument to these functions that is then returned. Alas, we
-      // still need this stuff to work with production, so we create this hack.
-      if (handleReflectionFunction(rc, candidate.fn(), call, rt)) {
-        CHPL_ASSERT(rt.isParam() && rt.hasParamPtr());
-      } else {
-        rt = returnType(rc, candidate.fn(),
-                        instantiationPoiScope);
+    QualifiedType rt;
+    if (handleReflectionFunction(rc, candidate.fn(), call, rt)) {
+      CHPL_ASSERT(rt.isParam() && rt.hasParamPtr());
+      CHPL_ASSERT(mostSpecific.numBest() == 1);
+      CHPL_ASSERT(candidate.fn()->numFormals() == 0);
+      retType = rt;
+      break;
+    }
+
+    bool isIterator = candidate.fn()->isIterator();
+    auto& yieldAndRet =
+      returnTypes(rc, candidate.fn(), instantiationPoiScope);
+    rt = yieldAndRet.second;
+
+    QualifiedType yt;
+
+    if (!candidate.promotedFormals().empty()) {
+      // this is actually a promotion; construct a promotion type instead.
+      yt = rt;
+      rt = QualifiedType(rt.kind(), PromotionIteratorType::get(context, instantiationPoiScope, candidate.fn(), candidate.promotedFormals()));
+    }
+
+    if (retType && retType->type() != rt.type()) {
+      // The actual iterator type for each overload will be different
+      // since it includes the TypedFnSignature, and different overloads
+      // are different TypedFnSignatures. Don't error, though.
+      //
+      // TODO: how do iterators + iterator groups work with return intent
+      // overloading?
+      if (!isIterator) {
+        context->error(candidate.fn(),
+                       nullptr,
+                       "return intent overload type does not match");
+      }
+    } else if (!retType) {
+      retType = rt;
+    }
+
+    if (isIterator || !yt.isUnknown()) {
+      if (yt.isUnknown()) {
+        yt = yieldAndRet.first;
       }
 
-      QualifiedType yt;
-
-      if (!candidate.promotedFormals().empty()) {
-        // this is actually a promotion; construct a promotion type instead.
-        yt = rt;
-        rt = QualifiedType(rt.kind(), PromotionIteratorType::get(context, instantiationPoiScope, candidate.fn(), candidate.promotedFormals()));
-      }
-
-      if (retType && retType->type() != rt.type()) {
-        // The actual iterator type for each overload will be different
-        // since it includes the TypedFnSignature, and different overloads
-        // are different TypedFnSignatures. Don't error, though.
-        //
-        // TODO: how do iterators + iterator groups work with return intent
-        // overloading?
-        if (!isIterator) {
-          context->error(candidate.fn(),
-                         nullptr,
-                         "return intent overload type does not match");
-        }
-      } else if (!retType) {
-        retType = rt;
-      }
-
-      if (isIterator || !yt.isUnknown()) {
-        if (yt.isUnknown()) {
-          yt = yieldType(rc, candidate.fn(), instantiationPoiScope);
-        }
-
-        if (yieldedType && yieldedType->type() != yt.type()) {
-          context->error(candidate.fn(),
-                         nullptr,
-                         "return intent overload type does not match");
-        } else if (!yieldedType) {
-          yieldedType = yt;
-        }
+      if (yieldedType && yieldedType->type() != yt.type()) {
+        context->error(candidate.fn(),
+                       nullptr,
+                       "return intent overload type does not match");
+      } else if (!yieldedType) {
+        yieldedType = yt;
       }
     }
   }
@@ -5658,7 +5746,7 @@ const TypedFnSignature* tryResolveInitEq(Context* context,
   actuals.push_back(CallInfoActual(lhsQt, USTR("this")));
   actuals.push_back(CallInfoActual(rhsQt, UniqueString()));
   auto ci = CallInfo(/* name */ USTR("init="),
-                     /* calledType */ lhsQt,
+                     /* calledType */ QualifiedType(),
                      /* isMethodCall */ true,
                      /* hasQuestionArg */ false,
                      /* isParenless */ false, actuals);
@@ -5713,7 +5801,7 @@ const TypedFnSignature* tryResolveZeroArgInit(Context* context,
   actuals.push_back(CallInfoActual(toInitQt, USTR("this")));
   addExistingSubstitutionsAsActuals(context, toInit, actuals, ignoredActualAsts);
   auto ci = CallInfo(/* name */ USTR("init"),
-                     /* calledType */ toInitQt,
+                     /* calledType */ QualifiedType(),
                      /* isMethodCall */ true,
                      /* hasQuestionArg */ false,
                      /* isParenless */ false, actuals);
@@ -5738,7 +5826,7 @@ const TypedFnSignature* tryResolveDeinit(Context* context,
   std::vector<CallInfoActual> actuals;
   actuals.push_back(CallInfoActual(qt, USTR("this")));
   auto ci = CallInfo(/* name */ USTR("deinit"),
-                     /* calledType */ qt,
+                     /* calledType */ QualifiedType(),
                      /* isMethodCall */ true,
                      /* hasQuestionArg */ false,
                      /* isParenless */ false,
@@ -6407,7 +6495,7 @@ tryResolveAssignHelper(Context* context,
   actuals.push_back(CallInfoActual(qtLhs, UniqueString()));
   actuals.push_back(CallInfoActual(qtRhs, UniqueString()));
   auto ci = CallInfo(/* name */ USTR("="),
-                     /* calledType */ qtLhs,
+                     /* calledType */ QualifiedType(),
                      /* isMethodCall */ asMethod,
                      /* hasQuestionArg */ false,
                      /* isParenless */ false,
@@ -6771,23 +6859,22 @@ static const MostSpecificCandidate&
 findTaggedIterator(ResolutionContext* rc,
                    UniqueString name,
                    bool isMethod,
-                   QualifiedType receiverType,
                    std::vector<QualifiedType> argTypes,
                    Function::IteratorKind tag,
                    const Scope* callScope,
                    const Scope* iteratorScope,
                    const PoiScope* poiScope) {
-  CHPL_RESOLUTION_QUERY_BEGIN(findTaggedIterator, rc, name, isMethod, receiverType, argTypes, tag, callScope, iteratorScope, poiScope);
+  CHPL_RESOLUTION_QUERY_BEGIN(findTaggedIterator, rc, name, isMethod, argTypes, tag, callScope, iteratorScope, poiScope);
 
   auto scopeInfo = CallScopeInfo::forIteratorOverloadSearch(callScope, iteratorScope, poiScope);
 
-  CHPL_ASSERT(!isMethod || !receiverType.isUnknownOrErroneous());
+  CHPL_ASSERT(!isMethod || (argTypes.size() >= 1 && !argTypes[0].isUnknownOrErroneous()));
 
   auto followThisType = QualifiedType();
   bool isFollower = tag == Function::FOLLOWER;
   bool isSerial = tag == Function::SERIAL;
   if (isFollower) {
-    auto candidate = findTaggedIterator(rc, name, isMethod, receiverType, argTypes,
+    auto candidate = findTaggedIterator(rc, name, isMethod, argTypes,
                                         Function::LEADER, callScope, iteratorScope, poiScope);
     if (candidate && candidate.fn()->isIterator()) {
       followThisType = yieldType(rc, candidate.fn(), poiScope);
@@ -6833,7 +6920,7 @@ findTaggedIterator(ResolutionContext* rc,
     actuals.push_back(CallInfoActual(followThisType, USTR("followThis")));
   }
 
-  auto ci = CallInfo(name, receiverType,
+  auto ci = CallInfo(name, QualifiedType(),
                      /* isMethodCall */ isMethod,
                      /* hasQuestionArg */ false,
                      /* isParenless */ false,
@@ -6896,14 +6983,13 @@ findTaggedIteratorForType(ResolutionContext* rc,
 
   auto fn = fnIter->iteratorFn();
   auto name = fnIter->iteratorFn()->untyped()->name();
-  auto receiverType = fn->isMethod() ? fn->formalType(0) : QualifiedType();
   std::vector<QualifiedType> argTypes;
   for (int i = 0; i < fn->numFormals(); i++) {
     argTypes.push_back(fn->formalType(i));
   }
   auto inScopes = callScopeInfoForIterator(rc->context(), fnIter, overrideScope);
 
-  auto ret = findTaggedIterator(rc, name, fn->isMethod(), receiverType, argTypes, iterKind,
+  auto ret = findTaggedIterator(rc, name, fn->isMethod(), argTypes, iterKind,
                                 inScopes.callScope(), inScopes.lookupScope(), inScopes.poiScope());
   return CHPL_RESOLUTION_QUERY_END(ret);
 }
@@ -7275,7 +7361,7 @@ TheseResolutionResult resolveTheseCall(ResolutionContext* rc,
   }
 
   auto ci = CallInfo(USTR("these"),
-                     receiverType,
+                     QualifiedType(),
                      /* isMethodCall */ true,
                      /* hasQuestionArg */ false,
                      /* isParenless */ false,
@@ -7306,7 +7392,7 @@ static const types::QualifiedType& getPromotionTypeQuery(Context* context, types
     std::vector<CallInfoActual> actuals;
     actuals.push_back(CallInfoActual(qt, USTR("this")));
     auto ci = CallInfo(UniqueString::get(context, "chpl__promotionType"),
-        qt,
+        QualifiedType(),
         /* isMethodCall */ true,
         /* hasQuestionArg */ false,
         /* isParenless */ false,

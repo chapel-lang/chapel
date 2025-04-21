@@ -1004,6 +1004,9 @@ struct TConverter final : UastConverter {
   bool enter(const ExternBlock* node, RV& rv);
   void exit(const ExternBlock* node, RV& rv);
 
+  bool enter(const Select* node, RV& rv);
+  void exit(const Select* node, RV& rv);
+
   bool enter(const AstNode* node, RV& rv);
   void exit(const AstNode* node, RV& rv);
 };
@@ -1167,7 +1170,9 @@ void TConverter::convertFunctionsToConvert() {
   }
 
   for (auto pair : v) {
-    convertFunction(pair.first);
+    if (fns.find(pair.first) == fns.end()) {
+      convertFunction(pair.first);
+    }
   }
 
   // Create 'chpl_gen_main()' as well as an empty 'main()' function if needed.
@@ -2820,11 +2825,14 @@ TConverter::storeInTempIfNeeded(Expr* e, const types::QualifiedType& qt) {
     return se;
   }
 
-  // Prevent default-constructed 'QualifiedType' from slipping in.
-  INT_ASSERT(qt.hasTypePtr());
+  Symbol* t = nullptr;
 
+  // Prevent default-constructed 'QualifiedType' from slipping in.
+  // Note: Can't use, e.g., ``e->qualType()`` here because ``qualType`` may
+  //   attempt to invoke production's resolution in some cases.
+  INT_ASSERT(qt.hasTypePtr());
   // otherwise, store the value in a temp
-  auto t = makeNewTemp(qt);
+  t = makeNewTemp(qt);
   insertStmt(new CallExpr(PRIM_MOVE, t, e));
   return new SymExpr(t);
 }
@@ -4050,7 +4058,9 @@ void TConverter::ActualConverter::convertActual(const FormalActual& fa) {
     INT_ASSERT(astActual);
 
     // Convert the actual and leave.
-    std::get<Expr*>(slot) = tc_->convertExpr(astActual, rv_);
+    types::QualifiedType actualType;
+    auto actualExpr = tc_->convertExpr(astActual, rv_, &actualType);
+    std::get<Expr*>(slot) = tc_->storeInTempIfNeeded(actualExpr, actualType);
 
     return;
   }
@@ -5070,6 +5080,151 @@ bool TConverter::enter(const ExternBlock* node, RV& rv) {
 }
 
 void TConverter::exit(const ExternBlock* node, RV& rv) {}
+
+static SymExpr* makeCaseCond(TConverter* tc, TConverter::RV& rv,
+                             const uast::When* when,
+                             SymExpr* selectExpr,
+                             const uast::AstNode* cs) {
+  auto re = rv.byAst(cs);
+
+  // Grab the '==' ResolvedFunction
+  auto action = re.getAction(AssociatedAction::COMPARE);
+  INT_ASSERT(action);
+  auto cmp = action->fn();
+
+  // TODO: create a wrapper for this kind of thing
+  const ResolvedFunction* rf = nullptr;
+  if (tc->paramElideCallOrNull(cmp, re.poiScope(), &rf)) {
+    INT_ASSERT(false && "Should not have param elided initializer call!");
+  } else if (!rf) {
+    return toSymExpr(TC_PLACEHOLDER(tc));
+  }
+
+  auto fn = tc->findOrConvertFunction(rf);
+  INT_ASSERT(fn);
+
+  types::QualifiedType caseType;
+  Expr* caseExpr = tc->convertExpr(cs, rv, &caseType);
+  caseExpr = tc->storeInTempIfNeeded(caseExpr, caseType);
+
+  // TODO: handle case where passing to '==' has an associated action
+  auto call = new CallExpr(fn, selectExpr->copy(), caseExpr);
+
+  auto cond = tc->storeInTempIfNeeded(call, re.type());
+
+  return cond;
+}
+
+static SymExpr* getWhenCond(TConverter* tc, TConverter::RV& rv,
+                            const uast::When* when,
+                            SymExpr* selectExpr) {
+  if (when->numCaseExprs() == 1) {
+    auto cs = when->caseExpr(0);
+    return makeCaseCond(tc, rv, when, selectExpr, cs);
+  } else {
+    // Multiple cases should follow '||'-like short-circuiting, such that
+    // equality comparisons are not evaluated unless the preceding cases do
+    // not match.
+
+    VarSymbol* agg = new VarSymbol("_case_cond_agg", dtBool);
+    tc->insertStmt(new CallExpr(PRIM_MOVE, agg, gFalse));
+    tc->insertStmt(new DefExpr(agg));
+
+    int count = 0;
+    for (auto cs : when->caseExprs()) {
+      if (auto action = rv.byAst(cs).getAction(AssociatedAction::COMPARE)) {
+        // If it's param-true, 'getWhenCond' would not have been called
+        // If it's param-false, there's no need to generate any comparisons
+        if (action->type().isParam()) continue;
+      }
+
+      auto cond = makeCaseCond(tc, rv, when, selectExpr, cs);
+
+      auto thenBlock = new BlockStmt();
+      thenBlock->insertAtTail(new CallExpr(PRIM_MOVE, agg, gTrue));
+
+      auto elseBlock = new BlockStmt();
+      auto branch = new CondStmt(cond, thenBlock, elseBlock);
+      tc->insertStmt(branch);
+
+      // Push the else branch so that the next case check is inserted there
+      tc->pushBlock(elseBlock);
+      count += 1;
+    }
+
+    // pop the blocks we pushed, to get back to the when-stmt level
+    for (int i = 0; i < count; i++) {
+      tc->popBlock();
+    }
+
+    return new SymExpr(agg);
+  }
+}
+
+bool TConverter::enter(const Select* node, RV& rv) {
+  // TODO:
+  // - test case-exprs where the '==' operators have associated actions
+  //   (e.g. in-intent on record argument)
+
+  //Note: out-of-order otherwise is an error addressed by post-parse-checks
+
+  types::QualifiedType selectQT;
+  auto selectExpr = convertExpr(node->expr(), rv, &selectQT);
+  auto selectSym = storeInTempIfNeeded(selectExpr, selectQT);
+
+  int count = 0;
+  for (auto when : node->whenStmts()) {
+    if (when->isOtherwise()) {
+      when->body()->traverse(rv);
+    } else {
+      bool anyParamTrue = false;
+      bool allParamFalse = true;
+      for(auto cs : when->caseExprs()) {
+        if (auto action = rv.byAst(cs).getAction(AssociatedAction::COMPARE)) {
+          if (!action->type().isParamFalse()) {
+            allParamFalse = false;
+          }
+
+          if (action->type().isParamTrue()) {
+            anyParamTrue = true;
+          }
+        }
+      }
+
+      // Note: this differs from traditional behavior in production, where each
+      // comparison was made.
+      if (anyParamTrue) {
+        when->body()->traverse(rv);
+
+        // Nothing else can match after this, so we're done
+        break;
+      } else if (!allParamFalse) {
+        auto cond = getWhenCond(this, rv, when, selectSym);
+
+        auto thenBlock = new BlockStmt();
+        pushBlock(thenBlock);
+        when->body()->traverse(rv);
+        popBlock();
+
+        auto elseBlock = new BlockStmt();
+        auto branch = new CondStmt(cond, thenBlock, elseBlock);
+        insertStmt(branch);
+
+        pushBlock(elseBlock);
+        count += 1;
+      }
+    }
+  }
+
+  // For every when-stmt, pop the else-conditions off
+  for (int i = 0; i < count; i++) {
+    popBlock();
+  }
+
+  return false;
+}
+
+void TConverter::exit(const Select* node, RV& rv) {}
 
 
 bool TConverter::enter(const AstNode* node, RV& rv) {

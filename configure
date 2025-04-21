@@ -124,7 +124,8 @@ fi
 # and then move it.
 # Note that the resulting chplconfig is expected to cover the same
 # material as any existing chplconfig.
-./util/printchplenv --all --simple --overrides --anonymize > configured-chplconfig
+# if printchplenv failed, remove the temporary file and exit
+./util/printchplenv --all --simple --overrides --anonymize > configured-chplconfig || { rm -f configured-chplconfig; exit 1; }
 mv configured-chplconfig chplconfig
 
 # Compile the Python scripts in util before installation.
@@ -136,7 +137,7 @@ make compile-util-python
 echo
 echo "  Currently selected Chapel configuration:"
 echo
-./util/printchplenv --anonymize
+./util/printchplenv --anonymize || exit 1
 echo
 echo "  Selected installation options:"
 echo

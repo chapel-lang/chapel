@@ -70,7 +70,8 @@ static const bool& checkSignatureQuery(Context* context,
     // check the intent of the rhs argument
     if (sig->formalType(0).type() == sig->formalType(1).type()) {
       // same-type case: only const/default/ref/const ref RHS is allowed
-      if (!rhsIntentGenericOrRef) {
+      // allow 'in' for borrowed RHS, such as when defining init= for a class.
+      if (!rhsIntentGenericOrRef && !sig->formalType(0).type()->isClassType()) {
         context->error(errId, "Bad intent for same-type init= other argument");
       }
     } else {

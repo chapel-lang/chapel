@@ -228,7 +228,7 @@ setupCallForCopyOrMove(Resolver& resolver,
     actuals.push_back(CallInfoActual(rhsType, UniqueString()));
     outAsts.push_back(rhsAst);
     auto ci = CallInfo (/* name */ USTR("init="),
-                        /* calledType */ varArg,
+                        /* calledType */ QualifiedType(),
                         /* isMethodCall */ true,
                         /* hasQuestionArg */ false,
                         /* isParenless */ false,
@@ -504,15 +504,8 @@ void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
                                         ignoredActualAsts);
     }
 
-    // Get the 'root' instantiation
-    const CompositeType* calledCT = compositeType;
-    while (auto insn = calledCT->instantiatedFromCompositeType()) {
-      calledCT = insn;
-    }
-    auto calledType = QualifiedType(QualifiedType::VAR, calledCT);
-
     auto ci = CallInfo (/* name */ USTR("init"),
-                        /* calledType */ calledType,
+                        /* calledType */ QualifiedType(),
                         /* isMethodCall */ true,
                         /* hasQuestionArg */ false,
                         /* isParenless */ false,
@@ -787,7 +780,7 @@ void CallInitDeinit::resolveDeinit(const AstNode* ast,
   std::vector<CallInfoActual> actuals;
   actuals.push_back(CallInfoActual(deinitType, USTR("this")));
   auto ci = CallInfo (/* name */ USTR("deinit"),
-                      /* calledType */ deinitType,
+                      /* calledType */ QualifiedType(),
                       /* isMethodCall */ true,
                       /* hasQuestionArg */ false,
                       /* isParenless */ false,

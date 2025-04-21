@@ -2391,25 +2391,13 @@ static void fixRecordWrappedTypes() {
 }
 
 //
-// Widen variables that may be remote.
+// fragmentLocalBlocks splits up local blocks, but sometimes they end up
+// being consecutive. To make the generated code easier to read, we merge
+// such blocks together. Sometimes there are only DefExprs separating
+// local blocks. If that's the case, we move those DefExprs before the
+// earlier local block.
 //
-void
-insertWideReferences(void) {
-  FnSymbol* heapAllocateGlobals = heapAllocateGlobalsHead();
-
-  if (!requireWideReferences()) {
-    convertNilToObject();
-    handleIsWidePointer();
-    return;
-  }
-
-  //
-  // fragmentLocalBlocks splits up local blocks, but sometimes they end up
-  // being consecutive. To make the generated code easier to read, we merge
-  // such blocks together. Sometimes there are only DefExprs separating
-  // local blocks. If that's the case, we move those DefExprs before the
-  // earlier local block.
-  //
+static void defragmentLocalBlocks(void) {
   // TODO: What would we need to do to avoid the fragmentation around
   // if-statements and loops?
   //
@@ -2442,6 +2430,22 @@ insertWideReferences(void) {
       }
     }
   }
+}
+
+//
+// Widen variables that may be remote.
+//
+void
+insertWideReferences(void) {
+  auto heapAllocateGlobals = heapAllocateGlobalsHead();
+
+  if (!requireWideReferences()) {
+    convertNilToObject();
+    handleIsWidePointer();
+    return;
+  }
+
+  defragmentLocalBlocks();
 
   std::vector<Symbol*> heapVars;
   getHeapVars(heapVars);
@@ -2570,6 +2574,7 @@ insertWideReferences(void) {
   derefWideRefsToWideClasses();
 
   handleLocalBlocks();
+
   heapAllocateGlobalsTail(heapAllocateGlobals, heapVars);
 
   // NWR

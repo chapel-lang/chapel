@@ -714,11 +714,11 @@ const types::Param* Resolver::determineWhenCaseValue(const uast::AstNode* ast, I
                       /* hasQuestionArg */ false,
                       /* isParenless */ false,
                       actuals);
-  auto c = resolveGeneratedCall(ast, &ci, &inScopes);
-  c.noteResult(&caseResult, { { AssociatedAction::COMPARE, ast->id() } });
 
+  auto c = resolveGeneratedCall(ast, &ci, &inScopes);
   auto type = c.result.exprType();
-  caseResult.setType(type);
+  c.noteResult(&caseResult, { { AssociatedAction::COMPARE, ast->id(), type } });
+
   return type.param();
 }
 
@@ -1565,7 +1565,7 @@ Resolver::computeCustomInferType(const AstNode* decl,
   std::vector<CallInfoActual> actuals = {std::move(receiver)};
 
   auto ci = CallInfo(/* name */ name,
-                     /* calledType */ calledType,
+                     /* calledType */ QualifiedType(),
                      /* isMethodCall */ true,
                      /* hasQuestionArg */ false,
                      /* isParenless */ false,
@@ -2341,7 +2341,7 @@ bool Resolver::CallResultWrapper::noteResultWithoutError(
     ResolvedExpression* r,
     const uast::AstNode* astForContext,
     const CallResolutionResult& result,
-    optional<ActionAndId> actionAndId) {
+    optional<ActionInfo> actionInfo) {
   bool needsErrors = false;
   bool markErroneous = false;
 
@@ -2372,7 +2372,7 @@ bool Resolver::CallResultWrapper::noteResultWithoutError(
   }
 
   if (!result.exprType().hasTypePtr() || markErroneous) {
-    if (!actionAndId && r) {
+    if (!actionInfo && r) {
       // Only set the type to erroneous if we're handling an actual user call,
       // and not an associated action.
       r->setType(QualifiedType(r->type().kind(), ErroneousType::get(resolver.context)));
@@ -2383,12 +2383,22 @@ bool Resolver::CallResultWrapper::noteResultWithoutError(
     // issued its own error, so we shouldn't emit a general error.
     return !result.speciallyHandled() || needsErrors;
   } else {
-    if (actionAndId) {
+    if (actionInfo) {
       // save candidates as associated functions
-      for (auto& sig : result.mostSpecific()) {
-        if (sig && r) {
-          r->addAssociatedAction(std::get<0>(*actionAndId), sig.fn(),
-                                 std::get<1>(*actionAndId));
+      if (result.mostSpecific().isEmpty() && r) {
+        // Store an associated action that did not have a function.
+        // E.g., 'COMPARE' for a when-statement condition that is param-true
+        r->addAssociatedAction(actionInfo->action, nullptr,
+                               actionInfo->id, actionInfo->type);
+      } else {
+        bool seen = false;
+        for (auto& sig : result.mostSpecific()) {
+          if (sig && r) {
+            CHPL_ASSERT(!seen);
+            seen = true;
+            r->addAssociatedAction(actionInfo->action, sig.fn(),
+                                   actionInfo->id, actionInfo->type);
+          }
         }
       }
     } else if (r) {
@@ -2405,13 +2415,13 @@ bool Resolver::CallResultWrapper::noteResultWithoutError(
 
 
 bool Resolver::CallResultWrapper::noteResultWithoutError(ResolvedExpression* r,
-                                                          optional<ActionAndId> actionAndId) {
-  return noteResultWithoutError(*parent, r, astForContext, result, std::move(actionAndId));
+                                                          optional<ActionInfo> actionInfo) {
+  return noteResultWithoutError(*parent, r, astForContext, result, std::move(actionInfo));
 }
 
 void Resolver::CallResultWrapper::noteResult(ResolvedExpression* r,
-                                              optional<ActionAndId> actionAndId) {
-  if (noteResultWithoutError(r, std::move(actionAndId))) {
+                                              optional<ActionInfo> actionInfo) {
+  if (noteResultWithoutError(r, std::move(actionInfo))) {
     issueBasicError();
   }
 }
@@ -2447,9 +2457,9 @@ bool Resolver::CallResultWrapper::rerunCallAndPrintCandidates() {
 }
 
 void Resolver::CallResultWrapper::noteResultPrintCandidates(ResolvedExpression* r,
-                                                             optional<ActionAndId> actionAndId) {
+                                                             optional<ActionInfo> actionInfo) {
   CHPL_ASSERT(!wasGeneratedCall || receiverType.isUnknown());
-  if (noteResultWithoutError(r, std::move(actionAndId))) {
+  if (noteResultWithoutError(r, std::move(actionInfo))) {
     if (rerunCallAndPrintCandidates()) {
       return;
     }
@@ -2814,7 +2824,7 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
   CHPL_ASSERT(!questionArg);
 
   // The 'new' will produce an 'init' call as a side effect.
-  auto ci = CallInfo(USTR("init"), calledType, isMethodCall,
+  auto ci = CallInfo(USTR("init"), QualifiedType(), isMethodCall,
                      /* hasQuestionArg */ questionArg != nullptr,
                      /* isParenless */ false,
                      std::move(actuals));
@@ -2825,7 +2835,7 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
 
   // note: the resolution machinery will get compiler generated candidates
   auto c = resolveGeneratedCall(call, &ci, &inScopes);
-  optional<ActionAndId> action({ AssociatedAction::NEW_INIT, call->id() });
+  optional<ActionInfo> action({ AssociatedAction::NEW_INIT, call->id() });
   c.noteResultPrintCandidates(&re, std::move(action));
 
 
@@ -3254,7 +3264,7 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
 
       // Note: this issues errors from compilerError in the body of the
       // domain builder.
-      optional<ActionAndId> action({ AssociatedAction::RUNTIME_TYPE, fnCall->id() });
+      optional<ActionInfo> action({ AssociatedAction::RUNTIME_TYPE, fnCall->id() });
       bool needsErrors =
         runResult.result().noteResultWithoutError(&r, std::move(action));
 
@@ -4763,8 +4773,8 @@ bool Resolver::enter(const uast::Manage* manage) {
       }
     }
     CHPL_ASSERT(enterSig && exitSig);
-    rr.addAssociatedAction(AssociatedAction::ENTER_CONTEXT, enterSig, manage->id());
-    rr.addAssociatedAction(AssociatedAction::EXIT_CONTEXT, exitSig, manage->id());
+    rr.addAssociatedAction(AssociatedAction::ENTER_CONTEXT, enterSig, manage->id(), {});
+    rr.addAssociatedAction(AssociatedAction::EXIT_CONTEXT, exitSig, manage->id(), {});
   }
 
   enterScope(manage);
@@ -4973,7 +4983,9 @@ void Resolver::exit(const uast::Array* decl) {
   const char* arrayBuilderProc;
   std::vector<CallInfoActual> actuals;
   std::vector<const uast::AstNode*> actualAsts;
-  if (!decl->isMultiDim()) {
+  if (decl->isAssociative()) {
+    arrayBuilderProc = "chpl__buildAssociativeArrayExpr";
+  } else if (!decl->isMultiDim()) {
     arrayBuilderProc = "chpl__buildArrayExpr";
   } else {
     arrayBuilderProc = "chpl__buildNDArrayExpr";
@@ -4991,9 +5003,25 @@ void Resolver::exit(const uast::Array* decl) {
   }
 
   // Add element args
-  for (auto expr : decl->flattenedExprs()) {
-    actualAsts.push_back(expr);
-    actuals.emplace_back(byPostorder.byAst(expr).type(), UniqueString());
+  if (decl->isAssociative()) {
+    for (auto expr : decl->exprs()) {
+      auto arrowOp = expr->toOpCall();
+      // this should be enforced by the parser
+      CHPL_ASSERT(arrowOp && arrowOp->op() == USTR("=>") &&
+                  arrowOp->numActuals() == 2 &&
+                  "invalid associative array expr");
+      auto lhs = arrowOp->actual(0);
+      auto rhs = arrowOp->actual(1);
+      actualAsts.push_back(lhs);
+      actuals.emplace_back(byPostorder.byAst(lhs).type(), UniqueString());
+      actualAsts.push_back(rhs);
+      actuals.emplace_back(byPostorder.byAst(rhs).type(), UniqueString());
+    }
+  } else {
+    for (auto expr : decl->flattenedExprs()) {
+      actualAsts.push_back(expr);
+      actuals.emplace_back(byPostorder.byAst(expr).type(), UniqueString());
+    }
   }
 
   auto ci = CallInfo(/* name */ UniqueString::get(context, arrayBuilderProc),
@@ -5274,7 +5302,7 @@ rerunCallInfoWithIteratorTag(ResolutionContext* rc,
   if (!newC.mostSpecific().isEmpty()) {
     for (auto sig : newC.mostSpecific()) {
       if (!sig) continue;
-      r.addAssociatedAction(AssociatedAction::ITERATE, sig.fn(), call->id());
+      r.addAssociatedAction(AssociatedAction::ITERATE, sig.fn(), call->id(), {});
     }
 
     return newC;
@@ -5401,9 +5429,15 @@ void Resolver::handleCallExpr(const uast::Call* call) {
     return;
 
   auto op = call->toOpCall();
-  if (op && (op->op() == USTR("&&") || op->op() == USTR("||"))) {
-    if (!scopeResolveOnly) {
+
+  if (op && !scopeResolveOnly) {
+    // skip resolving some special cases
+    if (op->op() == USTR("&&") || op->op() == USTR("||")) {
       // these are handled in 'enter' to do param folding
+      return;
+    } else if (op->op() == USTR("=>")) {
+      // this is an associative array literal element binding,
+      // not actually a call
       return;
     }
   }
@@ -5433,7 +5467,14 @@ void Resolver::handleCallExpr(const uast::Call* call) {
 
     // If the user has mistakenly instantiated a field of the type before
     // calling ``init``, then the receiver type will either be fully or
-    // partially instantiated. This will cause a failure to resolve the
+    // partially instantiated. E.g.,
+    //
+    //    proc init(...) {
+    //      this.typeField = ...;
+    //      this.init(....);
+    //    }
+    //
+    // This will cause a failure to resolve the inner
     // ``init`` call, and result in a confusing and unhelpful error message.
     // To resolve this problem, manually compute the fully-generic type that
     // is being initialized and reset the receiver.
@@ -5443,7 +5484,7 @@ void Resolver::handleCallExpr(const uast::Call* call) {
     //
     // TODO: Move this logic into InitResolver.cpp - but where?
     if (initResolver && ci.name() == USTR("init")) {
-      auto gt = ci.isMethodCall() ? ci.calledType() : receiverType;
+      auto gt = ci.isMethodCall() ? ci.methodReceiverType() : receiverType;
       auto gen = getGenericType(context, gt.type());
       receiverType = QualifiedType(QualifiedType::INIT_RECEIVER, gen);
 
@@ -5632,6 +5673,10 @@ QualifiedType Resolver::typeForEnumElement(const EnumType* enumType,
   return qt;
 }
 
+static bool isDotDomainAccess(const Dot* dot) {
+  return dot->field() == USTR("domain");
+}
+
 void Resolver::exit(const Dot* dot) {
   ResolvedExpression& receiver = byPostorder.byAst(dot->receiver());
   ResolvedExpression& r = byPostorder.byAst(dot);
@@ -5648,9 +5693,11 @@ void Resolver::exit(const Dot* dot) {
 
     // Try to resolve a it as a field/parenless proc so we can resolve 'this' on
     // it later if needed.
+    // Special case: Don't try to resolve calls to .domain here, as we
+    // need to proceed to the handling logic below.
     if (!receiver.type().isUnknown() && receiver.type().type() &&
         receiver.type().type()->getCompositeType() &&
-        dot->field() != "init") {
+        dot->field() != USTR("init") && !isDotDomainAccess(dot)) {
       std::vector<CallInfoActual> actuals;
       actuals.push_back(CallInfoActual(receiver.type(), USTR("this")));
       auto ci = CallInfo(/* name */ dot->field(),
@@ -5693,23 +5740,27 @@ void Resolver::exit(const Dot* dot) {
   }
 
   // Handle .domain on an array (which doesn't exist in module code) as a call
-  // to _dom.
-  if (receiver.type().type() && receiver.type().type()->isArrayType() &&
-      dot->field() == USTR("domain")) {
+  // to _dom. We do this even for a non-array receiver as that's what production
+  // does.
+  if (isDotDomainAccess(dot)) {
     std::vector<CallInfoActual> actuals;
+    std::vector<const AstNode*> actualAsts;
     actuals.emplace_back(receiver.type(), USTR("this"));
+    actualAsts.push_back(dot->receiver());
     auto name = UniqueString::get(context, "_dom");
     auto ci = CallInfo(/* name */ name,
-                       /* calledType */ receiver.type(),
+                       /* calledType */ QualifiedType(),
                        /* isMethodCall */ true,
                        /* hasQuestionArg */ false,
                        /* isParenless */ true, actuals);
     auto inScope = currentScope();
     auto inScopes = CallScopeInfo::forNormalCall(inScope, poiScope);
-    auto rr = resolveGeneratedCall(dot, &ci, &inScopes, name.c_str());
-
-    auto baseDomainType = rr.result.exprType().type()->toDomainType();
-    r.setType(QualifiedType(QualifiedType::CONST_VAR, baseDomainType));
+    if (shouldSkipCallResolution(this, dot, actualAsts, ci)) {
+      r.setType(QualifiedType());
+    } else {
+      auto rr = resolveGeneratedCall(dot, &ci, &inScopes, name.c_str());
+      rr.noteResultWithoutError(&r);
+    }
     return;
   }
 
@@ -7100,7 +7151,7 @@ static QualifiedType getReduceScanOpResultType(Resolver& resolver,
   std::vector<CallInfoActual> typeActuals;
   typeActuals.push_back(CallInfoActual(thisActual, USTR("this")));
   auto ci = CallInfo (/* name */ USTR("generate"),
-                      /* calledType */ thisActual,
+                      /* calledType */ QualifiedType(),
                       /* isMethodCall */ true,
                       /* hasQuestionArg */ false,
                       /* isParenless */ false,

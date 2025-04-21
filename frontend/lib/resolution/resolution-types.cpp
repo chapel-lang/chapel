@@ -101,8 +101,8 @@ UntypedFnSignature::get(Context* context, ID id,
                                compilerGeneratedOrigin).get();
 }
 
-static const UntypedFnSignature*
-getUntypedFnSignatureForFn(Context* context, const uast::Function* fn) {
+const UntypedFnSignature*
+getUntypedFnSignatureForFn(Context* context, const uast::Function* fn, ID const* compilerGeneratedOrigin) {
   const UntypedFnSignature* result = nullptr;
 
   if (fn != nullptr) {
@@ -134,11 +134,13 @@ getUntypedFnSignatureForFn(Context* context, const uast::Function* fn) {
     result = UntypedFnSignature::get(context, fn->id(), fn->name(),
                                      fn->isMethod(),
                                      /* isTypeConstructor */ false,
-                                     /* isCompilerGenerated */ false,
+                                     /* isCompilerGenerated */ compilerGeneratedOrigin != nullptr,
                                      /* throws */ fn->throws(),
                                      /* idTag */ asttags::Function,
                                      fn->kind(),
-                                     std::move(formals), fn->whereClause());
+                                     std::move(formals), fn->whereClause(),
+                                     compilerGeneratedOrigin ? *compilerGeneratedOrigin
+                                                             : ID());
   }
 
   return result;
@@ -228,7 +230,6 @@ CallInfo CallInfo::createSimple(UniqueString calledFnName,
 CallInfo CallInfo::createUnknown(const uast::FnCall* call) {
   // Pieces of the CallInfo we need to prepare.
   UniqueString name;
-  QualifiedType calledType;
   bool isMethodCall = false;
   bool hasQuestionArg = false;
   std::vector<CallInfoActual> actuals;
@@ -250,7 +251,7 @@ CallInfo CallInfo::createUnknown(const uast::FnCall* call) {
     }
   }
 
-  auto ret = CallInfo(name, calledType, isMethodCall, hasQuestionArg,
+  auto ret = CallInfo(name, QualifiedType(), isMethodCall, hasQuestionArg,
                       /* isParenless */ false, actuals);
 
   return ret;
@@ -455,14 +456,13 @@ CallInfo CallInfo::create(Context* context,
       if (actualAsts != nullptr) {
         actualAsts->push_back(calledExpr);
       }
-      // and reset calledType
-      calledType = QualifiedType(QualifiedType::FUNCTION, nullptr);
     } else if (dotReceiverType && dotReceiverType->kind() == QualifiedType::MODULE) {
       // In calls like `M.f()`, where `M` is a module, we need to restrict
       // our search to `M`'s scope. Signal this by setting `moduleScopeId`.
       if (moduleScopeId != nullptr)
         *moduleScopeId = byPostorder.byAst(dotReceiver).toId();
-    } else if (calledExprType && !calledExprType->isUnknown()) {
+      /* TODO: set calledType? */
+    } else if (calledExprType && !calledExprType->isUnknown() && calledExprType->isType()) {
       calledType = *calledExprType;
     } else if (!call->isOpCall() && dotReceiverType &&
                isKindForMethodReceiver(dotReceiverType->kind())) {
@@ -479,7 +479,6 @@ CallInfo CallInfo::create(Context* context,
       if (actualAsts != nullptr) {
         actualAsts->push_back(dotReceiver);
       }
-      calledType = dotReceiverQt;
       isMethodCall = true;
     }
   }
@@ -521,14 +520,8 @@ CallInfo CallInfo::createWithReceiver(const CallInfo& ci,
   // append the other actuals
   newActuals.insert(newActuals.end(), ci.actuals_.begin() + off, ci.actuals_.end());
 
-  if (ci.name() == USTR("init")) {
-    // For calls to 'init', tag the receiver with a special intent to
-    // relax some checks on its genericity.
-    receiverType = convertToInitReceiverType(receiverType);
-  }
-
   auto name = rename.isEmpty() ? ci.name_ : rename;
-  return CallInfo(name, receiverType,
+  return CallInfo(name, QualifiedType(),
                   /* isMethodCall */ true,
                   ci.hasQuestionArg_,
                   ci.isParenless_,
@@ -1190,6 +1183,16 @@ void PoiInfo::accumulateRecursive(const TypedFnSignature* signature,
 bool PoiInfo::canReuse(const PoiInfo& check) const {
   CHPL_ASSERT(resolved_ && !check.resolved_);
 
+  if (poiScope_ == check.poiScope_) {
+    // if the POI scopes are the same, then we can reuse
+    return true;
+  }
+
+  if (poiFnIdsUsed_.empty() && recursiveFnsUsed_.empty()) {
+    // if we have no POI functions used, then we can reuse
+    return true;
+  }
+
   // Performance TODO: consider function names etc -- see PR #16261
   return false;
 }
@@ -1363,6 +1366,10 @@ void AssociatedAction::stringify(std::ostream& ss,
   if (!id_.isEmpty()) {
     ss << " id=";
     id_.stringify(ss, stringKind);
+  }
+  if (!type_.isUnknown()) {
+    ss << " type=";
+    type_.stringify(ss, stringKind);
   }
 }
 

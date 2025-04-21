@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+#include "test-common.h"
 #include "test-resolution.h"
 
 // basic definition tests with cast operator
@@ -220,8 +221,8 @@ static void test3() {
 
 // test that we get a compiler generated record method for `==` when none exist
 static void test4() {
-  Context ctx;
-  Context* context = &ctx;
+  // generated field comparison uses chpl_field_neq, which is part of the stdib.
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program =
@@ -296,8 +297,7 @@ static void test6() {
 // test that we do get a compiler generated record method for `==`
 // when other operators exist
 static void test7() {
-  Context ctx;
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program =
@@ -321,8 +321,7 @@ static void test7() {
 
 // test that we get compiler generated methods for = and == when inside a proc
 static void test8() {
-  Context ctx;
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program =
@@ -377,6 +376,140 @@ static void test9() {
   assert(qt.kind() == QualifiedType::CONST_VAR);
 }
 
+static void helpTestGeneratedComparisons(std::string program, std::vector<std::string> trace) {
+  std::string wrapper = R"""(
+    record wrapper {
+      var x;
+
+      operator <(lhs: wrapper, rhs: wrapper) {
+        compilerWarning("operator < with " + (lhs.x.type : string));
+        return lhs.x < rhs.x;
+      }
+
+      operator >(lhs: wrapper, rhs: wrapper) {
+        compilerWarning("operator > with " + (lhs.x.type : string));
+        return lhs.x > rhs.x;
+      }
+
+      operator ==(lhs: wrapper, rhs: wrapper) {
+        compilerWarning("operator == with " + (lhs.x.type : string));
+        return lhs.x == rhs.x;
+      }
+
+      operator !=(lhs: wrapper, rhs: wrapper) {
+        compilerWarning("operator != with " + (lhs.x.type : string));
+        return lhs.x != rhs.x;
+      }
+    }
+  )""";
+
+  auto wholeProg = wrapper + program;
+
+  auto ctx = buildStdContext();
+  ErrorGuard guard(ctx);
+  auto result = resolveTypesOfVariables(ctx, wholeProg, {});
+
+  int index = 0;
+  assert(guard.numErrors() == trace.size() * 2);
+  for (auto& op : trace) {
+    assert(guard.error(index)->message().find(op) != std::string::npos);
+    index += 2;
+  }
+
+  assert(guard.realizeErrors(/* countWarnings */ false) == 0);
+}
+
+// test compiler-generated comparison operators
+static void test10() {
+  helpTestGeneratedComparisons(
+      R"""(
+      record R {
+        var x: wrapper(int);
+      }
+      var tmp = new R() == new R();
+      )""", { "!= with int" });
+
+  helpTestGeneratedComparisons(
+      R"""(
+      record R {
+        var x: wrapper(int);
+        var y: wrapper(bool);
+      }
+      var tmp = new R() == new R();
+      )""", { "!= with int", "!= with bool" });
+
+  helpTestGeneratedComparisons(
+      R"""(
+      record R {
+        var x: wrapper(int);
+        var y: wrapper(bool);
+        var z: wrapper(real);
+      }
+      var tmp = new R() == new R();
+      )""", { "!= with int", "!= with bool", "!= with real" });
+
+  helpTestGeneratedComparisons(
+      R"""(
+      record R {
+        var x: wrapper(int);
+        var y: wrapper(bool);
+        var z: wrapper(real);
+      }
+      var tmp = new R() < new R();
+      )""", { "< with int", "> with int",
+              "< with bool", "> with bool",
+              "< with real", "> with real" });
+
+  helpTestGeneratedComparisons(
+      R"""(
+      record R {
+        var x: wrapper(int);
+        var y: wrapper(bool);
+        var z: wrapper(real);
+      }
+      var tmp = new R() > new R();
+      )""", { "> with int", "< with int",
+              "> with bool", "< with bool",
+              "> with real", "< with real" });
+
+  helpTestGeneratedComparisons(
+      R"""(
+      record R {
+        var x: wrapper(int);
+        var y: wrapper(bool);
+        var z: wrapper(real);
+      }
+      var tmp = new R() <= new R();
+      )""", { "< with int", "> with int",
+              "< with bool", "> with bool",
+              "< with real", "> with real" });
+
+  helpTestGeneratedComparisons(
+      R"""(
+      record R {
+        var x: wrapper(int);
+        var y: wrapper(bool);
+        var z: wrapper(real);
+      }
+      var tmp = new R() >= new R();
+      )""", { "> with int", "< with int",
+              "> with bool", "< with bool",
+              "> with real", "< with real" });
+
+  helpTestGeneratedComparisons(
+      R"""(
+      record R {
+        type typeField = int;
+        var x: wrapper(int);
+        var y: wrapper(bool);
+        var z: wrapper(real);
+      }
+      var tmp = new R() >= new R();
+      )""", { "> with int", "< with int",
+              "> with bool", "< with bool",
+              "> with real", "< with real" });
+}
+
 int main() {
   test1();
   test2();
@@ -387,6 +520,7 @@ int main() {
   test7();
   test8();
   test9();
+  test10();
 
   return 0;
 }

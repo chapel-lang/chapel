@@ -3923,17 +3923,21 @@ static clang::CanQualType getClangType(::Type* t, bool makeRef) {
   return cTy;
 }
 
-static clang::CanQualType getClangFormalType(ArgSymbol* formal) {
-  ::Type* t = formal->type;
-
-  bool ref = (formal->intent & INTENT_FLAG_REF) ||
-             (formal->requiresCPtr() &&
-              formal->type->getValType()->symbol->hasFlag(FLAG_TUPLE));
-
-  if (formal->isWideRef())
-    USR_FATAL(formal, "Cannot use wide reference in exported function");
+static clang::CanQualType
+getClangFormalType(IntentTag intent, ::Type* t, bool isReceiver) {
+  bool ref = (intent & INTENT_FLAG_REF) ||
+             (argRequiresCPtr(intent, t, isReceiver) &&
+              t->getValType()->symbol->hasFlag(FLAG_TUPLE));
+  if (t->symbol->hasFlag(FLAG_WIDE_REF)) {
+    USR_FATAL(t->symbol, "cannot convert wide reference type to Clang type");
+  }
 
   return getClangType(t, ref);
+}
+
+static clang::CanQualType getClangFormalType(ArgSymbol* formal) {
+  bool isReceiver = formal->hasFlag(FLAG_ARG_THIS);
+  return getClangFormalType(formal->intent, formal->type, isReceiver);
 }
 
 const clang::CodeGen::CGFunctionInfo& getClangABIInfoFD(clang::FunctionDecl* FD)
@@ -3959,6 +3963,45 @@ const clang::CodeGen::CGFunctionInfo& getClangABIInfoFD(clang::FunctionDecl* FD)
   return clang::CodeGen::arrangeFreeFunctionType(CGM, proto);
 }
 
+const clang::CodeGen::CGFunctionInfo& getClangABIInfo(::FunctionType* ft) {
+  auto info = gGenInfo;
+  auto clangInfo = info->clangInfo;
+  auto cCodeGen = clangInfo->cCodeGen;
+  INT_ASSERT(info && clangInfo && cCodeGen);
+  auto& CGM = cCodeGen->CGM();
+
+  // Otherwise, we should call arrangeFreeFunctionCall
+  // with the various types, which must be extern types.
+  // (An alternative strategy would be to generate the C headers
+  //  for these types before creating this clang parser).
+  llvm::SmallVector<clang::CanQualType,4> argTys;
+
+  // Convert each formal to a Clang type.
+  for (int i = 0; i < ft->numFormals(); i++) {
+    auto formal = ft->formal(i);
+    bool isReceiver = !strcmp(formal->name(), "this");
+    auto ty = getClangFormalType(formal->intent(), formal->type(), isReceiver);
+    argTys.push_back(ty);
+  }
+
+  // Convert the return type
+  bool retRef = ft->returnIntent() == RET_CONST_REF ||
+                ft->returnIntent() == RET_REF;
+
+  auto ts = ft->returnType()->symbol;
+  if (ts->hasFlag(FLAG_WIDE_REF)) {
+    // TODO: Error location is not useful and should be issued elsewhere.
+    USR_FATAL(ts, "cannot convert wide reference type to Clang type");
+  }
+
+  auto retTy = getClangType(ft->returnType(), retRef);
+  auto extInfo = clang::FunctionType::ExtInfo();
+  auto tag = CodeGen::RequiredArgs::All;
+  auto& ret = CodeGen::arrangeFreeFunctionCall(CGM, retTy, argTys,
+                                               extInfo,
+                                               tag);
+  return ret;
+}
 
 const clang::CodeGen::CGFunctionInfo& getClangABIInfo(FnSymbol* fn) {
   GenInfo* info = gGenInfo;
@@ -4017,9 +4060,9 @@ const clang::CodeGen::CGFunctionInfo& getClangABIInfo(FnSymbol* fn) {
 }
 
 const clang::CodeGen::ABIArgInfo*
-getCGArgInfo(const clang::CodeGen::CGFunctionInfo* CGI, int curCArg,
-             FnSymbol* fn)
-{
+getCGArgInfo(const clang::CodeGen::CGFunctionInfo* CGI,
+             int curCArg,
+             FnSymbol* fn) {
 
   // Don't try to use the calling convention code for variadic args.
   if ((unsigned) curCArg >= CGI->arg_size()) {

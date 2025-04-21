@@ -50,6 +50,7 @@ COMMON_NOGEN_SRCS = \
 	chpl-mem-hook.c \
 	chplmemtrack.c \
 	chpl-privatization.c \
+	chpl-dynamic-loading.c \
 	chpl-string.c \
 	chplsys.c \
 	chpl-tasks.c \

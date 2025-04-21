@@ -499,7 +499,11 @@ void ReturnTypeInferrer::doExitScope(const uast::AstNode* node, RV& rv) {
 }
 
 const types::Param* ReturnTypeInferrer::determineWhenCaseValue(const uast::AstNode* ast, RV& rv) {
-  return rv.byAst(ast).type().param();
+  if (auto action = rv.byAst(ast).getAction(AssociatedAction::COMPARE)) {
+    return action->type().param();
+  } else {
+    return nullptr;
+  }
 }
 const types::Param* ReturnTypeInferrer::determineIfValue(const uast::AstNode* ast, RV& rv) {
   return rv.byAst(ast).type().param();
@@ -1140,17 +1144,17 @@ static bool helpComputeReturnType(ResolutionContext* rc,
   return false;
 }
 
-static const QualifiedType&
-returnTypeWithoutIterableQuery(ResolutionContext* rc,
-                               const TypedFnSignature* sig,
-                               const PoiScope* poiScope) {
-  CHPL_RESOLUTION_QUERY_BEGIN(returnTypeWithoutIterableQuery, rc, sig, poiScope);
+const std::pair<QualifiedType, QualifiedType>&
+returnTypes(ResolutionContext* rc,
+            const TypedFnSignature* sig,
+            const PoiScope* poiScope) {
+  CHPL_RESOLUTION_QUERY_BEGIN(returnTypes, rc, sig, poiScope);
 
   Context* context = rc->context();
   const UntypedFnSignature* untyped = sig->untyped();
-  QualifiedType result;
+  std::pair<QualifiedType, QualifiedType> result;
 
-  bool computed = helpComputeReturnType(rc, sig, poiScope, result);
+  bool computed = helpComputeReturnType(rc, sig, poiScope, result.first);
   if (!computed) {
     const AstNode* ast = parsing::idToAst(context, untyped->id());
     const Function* fn = ast->toFunction();
@@ -1160,25 +1164,14 @@ returnTypeWithoutIterableQuery(ResolutionContext* rc,
     // resolveFunction will arrange to call computeReturnType
     // and store the return type in the result.
     if (auto rFn = resolveFunction(rc, sig, poiScope)) {
-      result = rFn->returnType();
+      result.first = rFn->returnType();
     }
   }
 
-  return CHPL_RESOLUTION_QUERY_END(result);
-}
-
-static const QualifiedType& returnTypeQuery(ResolutionContext* rc,
-                                            const TypedFnSignature* sig,
-                                            const PoiScope* poiScope) {
-  CHPL_RESOLUTION_QUERY_BEGIN(returnTypeQuery, rc, sig, poiScope);
-
-  Context* context = rc->context();
-  auto result = returnTypeWithoutIterableQuery(rc, sig, poiScope);
-
-  if (sig->isIterator() && !result.isUnknownOrErroneous()) {
-    result = QualifiedType(result.kind(),
-                           FnIteratorType::get(context, poiScope, sig));
-
+  result.second = result.first;
+  if (sig->isIterator() && !result.second.isUnknownOrErroneous()) {
+    result.second = QualifiedType(result.second.kind(),
+                                  FnIteratorType::get(context, poiScope, sig));
   }
 
   return CHPL_RESOLUTION_QUERY_END(result);
@@ -1187,14 +1180,14 @@ static const QualifiedType& returnTypeQuery(ResolutionContext* rc,
 QualifiedType returnType(ResolutionContext* rc,
                          const TypedFnSignature* sig,
                          const PoiScope* poiScope) {
-  return returnTypeQuery(rc, sig, poiScope);
+  return returnTypes(rc, sig, poiScope).second;
 }
 
 QualifiedType yieldType(ResolutionContext* rc,
                         const TypedFnSignature* sig,
                         const PoiScope* poiScope) {
   CHPL_ASSERT(sig->isIterator());
-  return returnTypeWithoutIterableQuery(rc, sig, poiScope);
+  return returnTypes(rc, sig, poiScope).first;
 }
 
 static const TypedFnSignature* const&

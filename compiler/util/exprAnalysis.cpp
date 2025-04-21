@@ -174,16 +174,17 @@ bool SafeExprAnalysis::fnHasNoSideEffects(FnSymbol* fnSym) {
       if(!isNonEssentialPrimitive(ce)) {
         if(! ce->isPrimitive()) {
           FnSymbol* innerFnSym = ce->theFnSymbol();
-          INT_ASSERT(innerFnSym);
+          INT_ASSERT(innerFnSym || ce->isIndirectCall());
 
-          if(fnSym == innerFnSym) {
-            safeFnCache[fnSym] = true;
-            return true;
-          }
-          else {
-            const bool retval = fnHasNoSideEffects(innerFnSym);
-            safeFnCache[innerFnSym] = retval;
-            return retval;
+          if (innerFnSym) {
+            if(fnSym == innerFnSym) {
+              safeFnCache[fnSym] = true;
+              return true;
+            } else {
+              const bool retval = fnHasNoSideEffects(innerFnSym);
+              safeFnCache[innerFnSym] = retval;
+              return retval;
+            }
           }
         }
         safeFnCache[fnSym] = false;

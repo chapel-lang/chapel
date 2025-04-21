@@ -89,6 +89,15 @@ module ChapelBase {
   // It is unstable and experimental.
   config param fcfsUsePointerImplementation = false;
 
+  proc chpl_enableProcPtrs(type t) param {
+    if !fcfsUsePointerImplementation then return false;
+    return isProcedure(t) && !isClass(t);
+  }
+
+  proc chpl_enableProcPtrs(type t1, type t2) param {
+    return chpl_enableProcPtrs(t1) && chpl_enableProcPtrs(t2);
+  }
+
   //
   // assignment on primitive types
   //
@@ -173,6 +182,33 @@ module ChapelBase {
     compilerError("Comparisons between mixed enumerated types not supported by default");
     return false;
   }
+
+  inline operator !=(a: ?t, b: _nilType) where chpl_enableProcPtrs(t) {
+    // Fine for either local or wide since 'NULL' is '0'.
+    return __primitive("!=", a, 0);
+  }
+  inline operator !=(a: _nilType, b: ?t) where chpl_enableProcPtrs(t) {
+    // Fine for either local or wide since 'NULL' is '0'.
+    return __primitive("!=", b, 0);
+  }
+
+  inline operator ==(a: ?t1, b: ?t2) where chpl_enableProcPtrs(t1, t2) {
+    if chpl_isLocalProc(t1) && chpl_isLocalProc(t2) {
+      // Fine, both are pointers.
+      return __primitive("==", a, b);
+    } else if chpl_isWideProc(t1) && chpl_isWideProc(t2) {
+      // Fine, both are integers.
+      return __primitive("==", a, b);
+    } else {
+      // Translate both to pointers then compare.
+      const ptr1 = chpl_toLocalProc(a);
+      const ptr2 = chpl_toLocalProc(b);
+      return __primitive("==", ptr1, ptr2);
+    }
+  }
+
+  inline operator !=(a: ?t1, b: ?t2) where chpl_enableProcPtrs(t1, t2) do
+    return !(a == b);
 
   inline operator !=(a: _nilType, b: _nilType) param do return false;
   inline operator !=(a: bool, b: bool) do return __primitive("!=", a, b);
@@ -2861,6 +2897,10 @@ module ChapelBase {
   where !(isNumericType(lhs.type) && isNumericType(rhs.type)) {
     lhs = lhs ^ rhs;
   }
+
+  inline operator &&=(ref lhs: bool, rhs: bool) do __primitive("&&=", lhs, rhs);
+
+  inline operator ||=(ref lhs: bool, rhs: bool) do __primitive("||=", lhs, rhs);
 
   inline operator >>=(ref lhs:int(?w), rhs:integral) {
     __primitive(">>=", lhs, rhs);

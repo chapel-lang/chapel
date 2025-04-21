@@ -4,7 +4,7 @@ import os
 import re
 import shutil
 
-import chpl_platform, overrides
+import overrides
 from utils import memoize, check_valid_var
 
 

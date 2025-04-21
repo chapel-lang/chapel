@@ -211,7 +211,10 @@ static const types::Param* determineParamValue(const ResolvedExpression& rr) {
 }
 
 const types::Param* VarScopeVisitor::determineWhenCaseValue(const uast::AstNode* ast, RV& extraData) {
-  return determineParamValue(extraData.byAst(ast));
+  if (auto action = extraData.byAst(ast).getAction(AssociatedAction::COMPARE)) {
+    return action->type().param();
+  }
+  return nullptr;
 }
 
 const types::Param* VarScopeVisitor::determineIfValue(const uast::AstNode* ast, RV& extraData) {

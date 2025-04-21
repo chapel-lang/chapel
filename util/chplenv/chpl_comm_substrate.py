@@ -2,8 +2,8 @@
 import sys
 import shutil
 
-import chpl_comm, chpl_platform, overrides
-from utils import memoize, check_valid_var
+import chpl_comm, overrides
+from utils import memoize, check_valid_var, error
 
 
 @memoize
@@ -39,7 +39,12 @@ def get():
         else:
             substrate_val = 'none'
 
-    check_valid_var("CHPL_COMM_SUBSTRATE", substrate_val, ("none", "aries", "ofi", "ibv", "udp", "smp", "mpi"))
+    # special case error for aries to be nice to users
+    if chpl_comm.get() == 'gasnet' and substrate_val == 'aries':
+        error("'CHPL_COMM=gasnet' with the 'aries' substrate is no longer supported. Please prefer using 'CHPL_COMM=ugni' instead")
+
+    # values are ordered alphabetically, with none first
+    check_valid_var("CHPL_COMM_SUBSTRATE", substrate_val, ("none", "ibv", "mpi", "ofi", "smp", "ucx", "udp"))
     return substrate_val
 
 

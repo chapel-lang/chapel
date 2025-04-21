@@ -1017,8 +1017,13 @@ static QualifiedType primIsRecordType(Context* context, const CallInfo& ci) {
   });
 }
 
-static QualifiedType primIsFcfType(Context* context, const CallInfo& ci) {
-  CHPL_UNIMPL("PRIM_IS_FCF_TYPE");
+static QualifiedType primIsProcType(Context* context, const CallInfo& ci) {
+  CHPL_UNIMPL("PRIM_IS_PROC_TYPE");
+  return QualifiedType::makeParamBool(context, false);
+}
+
+static QualifiedType primToProcType(Context* context, const CallInfo& ci) {
+  CHPL_UNIMPL("PRIM_TO_PROC_TYPE");
   return QualifiedType::makeParamBool(context, false);
 }
 
@@ -1312,8 +1317,12 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
       type = primIsRecordType(context, ci);
       break;
 
-    case PRIM_IS_FCF_TYPE:
-      type = primIsFcfType(context, ci);
+    case PRIM_IS_PROC_TYPE:
+      type = primIsProcType(context, ci);
+      break;
+
+    case PRIM_TO_PROC_TYPE:
+      type = primToProcType(context, ci);
       break;
 
     case PRIM_IS_UNION_TYPE:
@@ -1449,6 +1458,10 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
 
     case PRIM_TO_NON_NILABLE_CLASS:
       type = primToNonNilableClass(context, call, ci, /* checked */ false);
+      break;
+
+    case PRIM_TO_EXTERN_LINKAGE:
+      CHPL_UNIMPL("PRIM_TO_EXTERN_LINKAGE");
       break;
 
     case PRIM_UINT32_AS_REAL32:
@@ -1632,6 +1645,8 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
     case PRIM_AND_ASSIGN:
     case PRIM_OR_ASSIGN:
     case PRIM_XOR_ASSIGN:
+    case PRIM_LOGICALAND_ASSIGN:
+    case PRIM_LOGICALOR_ASSIGN:
     case PRIM_REDUCE_ASSIGN:
     case PRIM_SETCID:
     case PRIM_SET_UNION_ID:

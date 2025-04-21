@@ -229,6 +229,10 @@ def _main():
                       dest='func', const=using_chapel_module)
     parser.add_option('--configured-install-lib-prefix', action='store_const',
                       dest='func', const=get_chpl_configured_install_lib_prefix)
+    parser.add_option('--runtime-lib', action='store_const',
+                      dest='func', const=get_chpl_runtime_lib)
+    parser.add_option('--runtime-incl', action='store_const',
+                      dest='func', const=get_chpl_runtime_incl)
     (options, args) = parser.parse_args()
 
     if options.func:

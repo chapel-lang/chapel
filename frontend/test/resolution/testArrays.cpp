@@ -28,16 +28,8 @@
 #include "chpl/uast/Record.h"
 #include "chpl/uast/Variable.h"
 
-// TODO:
-// - Slices
-
-// Test using an array with a type expression consisting of the given domain
-// and element type.
-// Optionally accepts arguments to test indexing into the array with (in
-// addition to doing so with the default value of the domain's index type).
 static void testArray(std::string domainType,
-                      std::string eltType,
-                      std::string testIdxArg = "") {
+                      std::string eltType) {
   std::string arrayText;
   arrayText += "[" + domainType + "] " + eltType;
   printf("Testing array type expression: %s\n", arrayText.c_str());
@@ -94,8 +86,7 @@ module M {
 
   // indexing
   var idx : index(A.domain);
-  var x1 = A[idx];
-  var x2 = A[)""" + (testIdxArg.empty() ? "idx" : testIdxArg) + R"""(];
+  var x = A[idx];
 
   // iteration
   for loopI in A {
@@ -185,8 +176,7 @@ module M {
     assert(findVarType(m, rr, "assocIndices").type()->isArrayType());
   }
 
-  assert(findVarType(m, rr, "x1").type() == eType.type());
-  assert(findVarType(m, rr, "x2").type() == eType.type());
+  assert(findVarType(m, rr, "x").type() == eType.type());
 
   assert(findVarType(m, rr, "z").type() == eType.type());
 
@@ -254,11 +244,52 @@ static void testArrayLiteral(std::string arrayLiteral, std::string domainType,
   assert(guard.realizeErrors() == 0);
 }
 
+static void testArraySlicing(std::string arrayLiteral, std::string sliceArgs,
+                             std::string resultType) {
+  printf("Testing slicing array %s with %s\n", arrayLiteral.c_str(),
+         sliceArgs.c_str());
+
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+    R"""(
+    module M {
+      var A = )""" + arrayLiteral + R"""(;
+      var mySlice = A[)""" + sliceArgs + R"""(];
+      type gotSliceTy = mySlice.type;
+      type expectedSliceTy = )""" + resultType + R"""(;
+    }
+    )""",
+    {"A", "gotSliceTy", "expectedSliceTy"});
+  auto arrType = vars.at("A");
+  assert(arrType.type());
+  assert(!arrType.type()->isUnknownType());
+  assert(arrType.type()->isArrayType());
+
+  auto gotSliceTy = vars.at("gotSliceTy");
+  assert(gotSliceTy.type());
+  assert(!gotSliceTy.type()->isUnknownType());
+
+  auto expectedSliceTy = vars.at("expectedSliceTy");
+  assert(expectedSliceTy.type());
+  assert(!expectedSliceTy.type()->isUnknownType());
+
+  // Compare types approximately by stringifying, since they won't have the
+  // same underlying instance
+  std::stringstream ss1, ss2;
+  gotSliceTy.type()->stringify(ss1, chpl::StringifyKind::CHPL_SYNTAX);
+  expectedSliceTy.type()->stringify(ss2, chpl::StringifyKind::CHPL_SYNTAX);
+  assert(ss1.str() == ss2.str());
+
+  assert(guard.realizeErrors() == 0);
+}
+
 int main() {
   // rectangular
   testArray("domain(1)", "int");
   testArray("domain(1)", "string");
-  testArray("domain(2)", "int", "0, 1");
+  testArray("domain(2)", "int");
 
   // 1D literals
   testArrayLiteral("[1, 2, 3]", "domain(1)", "int");
@@ -274,9 +305,20 @@ int main() {
   testArrayLiteral("[1;]", "domain(2)", "int");
   testArrayLiteral("[1, 2; 3, 4;; 5, 6; 7, 8]", "domain(3)", "int");
 
+  // slices
+  testArraySlicing("[1, 2, 3]", "0..1", "[0..1] int");
+  testArraySlicing("[1, 2; 3, 4]", "0, 1", "int"); // testing multi-dim indexing, not really a slice
+  testArraySlicing("[1, 2; 3, 4;; 5, 6; 7, 8]", "0..1, 0..1, 1", "[0..1, 0..1] int");
+
   // associative
   testArray("domain(int)", "int");
   testArray("domain(int, true)", "int");
+
+  // associative literals
+  testArrayLiteral("[1 => \"one\", 10 => \"ten\", 3 => \"three\", 16 => \"sixteen\"]", "domain(int)", "string");
+  testArrayLiteral("[1 => 1, 10 => 10, 3 => 3, 16 => 16]", "domain(int)", "int");
+  testArrayLiteral("[\"foo\" => false]", "domain(string)", "bool");
+  testArrayLiteral("[\"foo\" => false, ]", "domain(string)", "bool");
 
   return 0;
 }

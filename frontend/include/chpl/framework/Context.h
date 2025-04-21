@@ -466,7 +466,8 @@ class Context {
       const querydetail::QueryMapResult<ResultType, ArgTs...>* r,
       const std::tuple<ArgTs...>& tupleOfArgs,
       ResultType result,
-      bool forSetter);
+      bool forSetter,
+      bool markExternallySet);
 
   template<typename ResultType,
            typename... ArgTs>
@@ -475,7 +476,8 @@ class Context {
       querydetail::QueryMap<ResultType, ArgTs...>* queryMap,
       const std::tuple<ArgTs...>& tupleOfArgs,
       ResultType result,
-      bool forSetter);
+      bool forSetter,
+      bool markExternallySet);
 
   template<typename ResultType,
            typename... ArgTs>
@@ -486,7 +488,8 @@ class Context {
        ResultType result,
        const char* traceQueryName,
        bool isInputQuery,
-       bool forSetter);
+       bool forSetter,
+       bool markExternallySet);
 
   void recomputeIfNeeded(const querydetail::QueryMapResultBase* resultEntry);
   void updateForReuse(const querydetail::QueryMapResultBase* resultEntry);
@@ -1108,7 +1111,8 @@ class Context {
       const std::tuple<ArgTs...>& tupleOfArgs,
       ResultType result,
       const char* traceQueryName,
-      bool isInputQuery);
+      bool isInputQuery,
+      bool markExternallySet);
 
 
   /**

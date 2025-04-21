@@ -329,11 +329,19 @@ void makeRefType(Type* type) {
     return;
   }
 
-  CallExpr* call = new CallExpr(dtRef->symbol, type->symbol);
-  resolveUninsertedCall(type, call, false);
-  type->refType  = toAggregateType(call->typeInfo());
+  if (dtRef) {
+    CallExpr* call = new CallExpr(dtRef->symbol, type->symbol);
+    resolveUninsertedCall(type, call, false);
+    type->refType  = toAggregateType(call->typeInfo());
 
-  type->refType->getField(1)->type = type;
+    type->refType->getField(1)->type = type;
+  } else {
+    // We no longer have access to the generic 'ref' type, which means it
+    // was already pruned. In which case, we should generate as though we
+    // are at codegen. TODO: Why can't we just do this always?
+    auto rt = getOrMakeRefTypeDuringCodegen(type);
+    INT_ASSERT(rt && type->refType);
+  }
 
   if (type->symbol->hasFlag(FLAG_ATOMIC_TYPE))
     type->refType->symbol->addFlag(FLAG_ATOMIC_TYPE);
@@ -3352,12 +3360,7 @@ static bool resolveClassBorrowMethod(CallExpr* call) {
 // resolving calls, but we may not be able to do that until dyno is used
 // to resolve code.
 static bool resolveFunctionPointerCall(CallExpr* call) {
-  FunctionType* ft = nullptr;
-  if (auto base = call->baseExpr)
-    if (auto se = toSymExpr(base))
-      if (auto baseFnType = toFunctionType(se->getValType()))
-        ft = baseFnType;
-
+  auto ft = call->isIndirectCall() ? call->functionType() : nullptr;
   if (!ft) return false;
 
   auto base = call->baseExpr;
@@ -3399,7 +3402,7 @@ static bool resolveFunctionPointerCall(CallExpr* call) {
     Type* actualType = actual->qualType().type();
     Symbol* actualSym = isSymExpr(actual) ? toSymExpr(actual)->symbol()
                                           : nullptr;
-    Type* formalType = ft->formal(i)->type;
+    Type* formalType = ft->formal(i)->type();
     ArgSymbol* formalSym = nullptr;
     FnSymbol* fn = nullptr;
     bool promotes = false;
@@ -10552,7 +10555,6 @@ static Expr* resolveFunctionTypeConstructor(DefExpr* def) {
 
   auto ft = FunctionType::get(fn);
   INT_ASSERT(ft);
-
   Type* t = ft;
 
   // If we aren't using pointers, have to convert to a function class type
@@ -10656,6 +10658,9 @@ static Expr* swapInErrorSinkForCapture(FunctionType::Kind kind, Expr* use) {
 }
 
 static Expr* swapInFunctionForCapture(FnSymbol* fn, Expr* use) {
+  // Mark the function as a root to be added to the function table later.
+  fn->addFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION);
+
   auto ret = new SymExpr(fn);
   use->replace(ret);
   return ret;
@@ -10718,16 +10723,17 @@ static Expr* resolveFunctionCapture(FnSymbol* fn, Expr* use,
                      fn->name);
     }
 
-    for(auto i = 0; i < ft->numFormals(); i++) {
+    for (auto i = 0; i < ft->numFormals(); i++) {
       auto formal = ft->formal(i);
       if (formal->isGeneric()) {
-        std::string reason;
-        auto reasons = explainGeneric(formal->type);
+        auto reasons = explainGeneric(formal->type());
         if (reasons.empty()) {
-          USR_PRINT(use, "the formal '%s' is generic", formal->name);
+          USR_PRINT(use, "the formal '%s' is generic", formal->name());
         } else {
           for (auto& r : reasons) {
-            USR_PRINT(use, "the formal '%s' is generic because %s", formal->name, r.c_str());
+            USR_PRINT(use, "the formal '%s' is generic because %s",
+                      formal->name(),
+                      r.c_str());
           }
         }
       }

@@ -265,6 +265,26 @@ returnInfoCast(CallExpr* call) {
 }
 
 static QualifiedType
+returnInfoForProcTypeConverter(CallExpr* call) {
+  Type* t = call->get(1)->typeInfo();
+  int64_t mask = 0;
+
+  // Get the second arg as a 'param int' if it exists.
+  auto arg2 = call->numActuals() >= 2 ? call->get(2) : nullptr;
+  bool got = get_int(arg2, &mask);
+  INT_ASSERT(got || !arg2);
+
+  Type* typeToUse = dtUnknown;
+  if (auto ft1 = toFunctionType(t)) {
+    bool maskConflicts = false;
+    typeToUse = ft1->getWithMask(mask, maskConflicts);
+    std::ignore = maskConflicts;
+  }
+
+  return QualifiedType(typeToUse, QUAL_VAL);
+}
+
+static QualifiedType
 returnInfoVal(CallExpr* call) {
   AggregateType* ct = toAggregateType(call->get(1)->typeInfo());
 
@@ -843,6 +863,8 @@ initPrimitive() {
   prim_def(PRIM_AND_ASSIGN, "&=", returnInfoVoid, true);
   prim_def(PRIM_OR_ASSIGN, "|=", returnInfoVoid, true);
   prim_def(PRIM_XOR_ASSIGN, "^=", returnInfoVoid, true);
+  prim_def(PRIM_LOGICALAND_ASSIGN, "&&=", returnInfoVoid, true);
+  prim_def(PRIM_LOGICALOR_ASSIGN, "||=", returnInfoVoid, true);
   prim_def(PRIM_REDUCE_ASSIGN, "reduce=", returnInfoVoid, true);
 
   prim_def(PRIM_MIN, "_min", returnInfoFirst);
@@ -1186,7 +1208,8 @@ initPrimitive() {
   prim_def(PRIM_STRING_COPY, "string_copy", returnInfoStringC, false, true);
   // Cast the object argument to void*.
   prim_def(PRIM_CAST_TO_VOID_STAR, "cast_to_void_star", returnInfoCVoidPtr, true, false);
-  // Cast to the second argument at codegen time.
+  // Cast to the second argument. The conversion is done at codegen time.
+  // In most cases the cast is effectively a bitcast/'reinterpret_cast'.
   prim_def(PRIM_CAST_TO_TYPE, "cast_to_type", returnInfoSecondActualTypeSymbol, true, false);
   prim_def(PRIM_STRING_SELECT, "string_select", returnInfoStringC, true, true);
   prim_def(PRIM_SLEEP, "sleep", returnInfoVoid, true);
@@ -1233,7 +1256,8 @@ initPrimitive() {
   prim_def(PRIM_IS_NILABLE_CLASS_TYPE, "is nilable class type", returnInfoBool);
   prim_def(PRIM_IS_NON_NILABLE_CLASS_TYPE, "is non nilable class type", returnInfoBool);
   prim_def(PRIM_IS_RECORD_TYPE, "is record type", returnInfoBool);
-  prim_def(PRIM_IS_FCF_TYPE, "is fcf type", returnInfoBool);
+  prim_def(PRIM_IS_PROC_TYPE, "is proc type", returnInfoBool);
+  prim_def(PRIM_TO_PROC_TYPE, "to proc type", returnInfoForProcTypeConverter);
   prim_def(PRIM_IS_UNION_TYPE, "is union type", returnInfoBool);
   prim_def(PRIM_IS_EXTERN_UNION_TYPE, "is extern union type", returnInfoBool);
   prim_def(PRIM_IS_ATOMIC_TYPE, "is atomic type", returnInfoBool);

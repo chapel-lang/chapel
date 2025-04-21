@@ -114,9 +114,6 @@ ibv
 udp
     UDP - portable conduit, works on any network with a TCP/IP stack
     (see :ref:`Using the Portable UDP Conduit <using-udp>`)
-aries
-    Aries for Cray XC series
-    (see :ref:`Using Chapel on Cray Systems <readme-cray>`)
 mpi
     MPI - portable conduit, works on any network with MPI 1.1 or newer
 smp
@@ -131,7 +128,6 @@ Current defaults are:
 CHPL_TARGET_PLATFORM  CHPL_COMM_SUBSTRATE
 ====================  ===================
 cray-cs                ibv
-cray-xc                aries
 pwr6                   ibv
 other                  udp
 ====================  ===================
@@ -170,7 +166,6 @@ Current defaults are:
 ===================  ====================
 CHPL_COMM_SUBSTRATE  CHPL_GASNET_SEGMENT
 ===================  ====================
-aries                fast
 ibv                  large
 smp                  fast
 other                everything

@@ -1730,6 +1730,29 @@ static void test27() {
   assert(guard.realizeErrors() == 0);
 }
 
+// Test resolving logical AND/OR compound assignment operators
+static void test28() {
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string prog =
+    R"""(
+    proc baz() {
+      var ok = true;
+      ok &&= false;
+      ok ||= true;
+      return ok;
+    }
+    var x = baz();
+    )""";
+
+  auto t = resolveTypeOfXInit(context, prog);
+  CHPL_ASSERT(!t.isUnknownOrErroneous());
+  CHPL_ASSERT(t.type()->isBoolType());
+
+  assert(guard.realizeErrors() == 0);
+}
+
 // This bug is hard to replicate with queries alone, but does seem to show
 // up in some cases of the query system.
 static void testInfiniteCycleBug() {
@@ -1847,10 +1870,10 @@ static void testCallableAmbiguity() {
 // Implementation of getting promotion types is tested more thoroughly
 // elsewhere, so this is just a very basic test the prims works as expected.
 static void testPromotionPrim() {
-  Context* context = buildStdContext();
-  ErrorGuard guard(context);
-
   {
+    Context* context = buildStdContext();
+    ErrorGuard guard(context);
+
     std::string prog =
       R"""(
         var d : domain(1, real);
@@ -1865,7 +1888,9 @@ static void testPromotionPrim() {
   }
 
   {
-    context->advanceToNextRevision(false);
+    Context* context = buildStdContext();
+    ErrorGuard guard(context);
+
     std::string prog =
       R"""(
         type t = __primitive("scalar promotion type", int);
@@ -2099,6 +2124,22 @@ static void testEarlyRuntimeContinue() {
   // guard should have no errors
 }
 
+static void testGenericSync() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto qt = resolveTypeOfXInit(context,
+    R"""(
+      proc foo (x: sync) do return 3;
+      var a : sync int;
+      var x = foo(a);
+    )""");
+
+  assert(qt.type() && qt.type()->isIntType());
+
+  // guard should have no errors
+}
+
 int main() {
   test1();
   test2();
@@ -2128,6 +2169,7 @@ int main() {
   test25();
   test26();
   test27();
+  test28();
 
   testInfiniteCycleBug();
 
@@ -2150,6 +2192,8 @@ int main() {
   testRuntimeEarlyReturn();
   testEarlyContinue();
   testEarlyRuntimeContinue();
+
+  testGenericSync();
 
   return 0;
 }
