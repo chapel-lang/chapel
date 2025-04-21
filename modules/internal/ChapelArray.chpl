@@ -2010,7 +2010,7 @@ module ChapelArray {
       }
     }
   }
-  
+
   @unstable("casting an array to an array type is unstable due to being a new feature — please share any feedback you might have")
   operator :(arg: [], type t: []) {
     var res: t;
