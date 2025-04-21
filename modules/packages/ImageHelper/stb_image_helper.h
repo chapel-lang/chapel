@@ -22,9 +22,9 @@
 
 #include "chpl-mem.h"
 
-#define STBIW_MALLOC(sz)        chpl_malloc(sz)
-#define STBIW_REALLOC(p,newsz)  chpl_realloc(p,newsz)
-#define STBIW_FREE(p)           chpl_free(p)
+#define STBIW_MALLOC(sz)        chpl_mem_alloc(sz, 0, 0, 0)
+#define STBIW_REALLOC(p,newsz)  chpl_mem_realloc(p, newsz, 0, 0, 0)
+#define STBIW_FREE(p)           chpl_mem_free(p, 0, 0)
 
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_ONLY_PNG
