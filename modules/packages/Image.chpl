@@ -597,17 +597,29 @@ module Image {
     }
 
     proc writePng(const ref outfile: fileWriter(?), pixels: [?dom]) throws {
-      const (writeFunc, context, width, height, mode, data) = writeCommon(outfile, pixels);
+      const (writeFunc, context,
+             width, height,
+             mode, data) = writeCommon(outfile, pixels);
+      defer deallocate(data);
       const stride = width * mode;
-      stbi_write_png_to_func(writeFunc, context, width, height, mode, data, stride);
-      deallocate(data);
+      const ok = stbi_write_png_to_func(writeFunc, context,
+                                        width, height,
+                                        mode, data, stride);
+      if ok == 0 then
+        throw new Error("Failed to write PNG image");
     }
 
     proc writeJpg(const ref outfile: fileWriter(?), pixels: [?dom]) throws {
-      const (writeFunc, context, width, height, mode, data) = writeCommon(outfile, pixels);
+      const (writeFunc, context,
+             width, height,
+             mode, data) = writeCommon(outfile, pixels);
+      defer deallocate(data);
       const quality: c_int = 100;
-      stbi_write_jpg_to_func(writeFunc, context, width, height, mode, data, quality);
-      deallocate(data);
+      const ok = stbi_write_jpg_to_func(writeFunc, context,
+                                        width, height,
+                                        mode, data, quality);
+      if ok == 0 then
+        throw new Error("Failed to write JPG image");
     }
 
 
