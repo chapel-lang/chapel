@@ -2198,7 +2198,7 @@ codegenFunctionTypeLLVMImpl(
     if (CGI->usesInAlloca()) {
       auto argStruct = CGI->getArgStruct();
       argTys.push_back(llvm::PointerType::getUnqual(argStruct));
-      argNames.push_back("inalloca_arg");
+      outArgNames.push_back("inalloca_arg");
 
       // Adjust attributes for inalloca argument
       auto b = llvmPrepareAttrBuilder(ctx);
