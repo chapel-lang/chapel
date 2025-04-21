@@ -33,6 +33,9 @@ const ID ArrayType::domainId = ID(UniqueString(), 0, 0);
 const ID ArrayType::eltTypeId = ID(UniqueString(), 1, 0);
 
 const RuntimeType* ArrayType::runtimeType(Context* context) const {
+  auto dom = domainType().type()->toDomainType();
+  if (dom->kind() == DomainType::Kind::Unknown) return nullptr;
+
   return resolution::getRuntimeType(context, this);
 }
 

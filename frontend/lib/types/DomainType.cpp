@@ -38,6 +38,9 @@ const ID DomainType::parSafeId = ID(UniqueString(), 1, 0);
 const ID DomainType::parentDomainId = ID(UniqueString(), 0, 0);
 
 const RuntimeType* DomainType::runtimeType(Context* context) const {
+  // generic domains do not have a runtime type
+  if (kind() == DomainType::Kind::Unknown) return nullptr;
+
   return resolution::getRuntimeType(context, this);
 }
 

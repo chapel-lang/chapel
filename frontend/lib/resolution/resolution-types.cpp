@@ -190,8 +190,6 @@ static UniqueString getCallName(const uast::Call* call) {
       name = calledDot->field();
     } else if (auto op = called->toOpCall()) {
       name = op->op();
-    } else {
-      CHPL_UNIMPL("CallInfo without a name");
     }
   }
   return name;
