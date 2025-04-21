@@ -1954,10 +1954,18 @@ module ChapelArray {
     }
   }
 
+  pragma "reference to const when const this"
+  pragma "fn returns aliasing array"
   proc _array.reshape(ranges: range(?)...) {
-    return this.reshape({(...ranges)});
+    if ranges.size == 1 && ranges(0).bounds == boundKind.low {
+      return this.reshape({ranges(0).low..#this.size});
+    } else {
+      return this.reshape({(...ranges)});
+    }
   }
 
+  pragma "reference to const when const this"
+  pragma "fn returns aliasing array"
   proc _array.reshape(dom: domain(?)) {
     if Reflection.canResolveMethod(_value, "doiReshape", dom) {
       if boundsChecking then
@@ -2006,7 +2014,7 @@ module ChapelArray {
         } while (arrDim < this.rank && domDim < dom.rank);
 
         if error then
-          warning(this.dims(), " doesn't view cleanly as ", dom.dims());
+          warning(this.dims(), " doesn't preserve dimensions as ", dom.dims());
       }
     }
   }
