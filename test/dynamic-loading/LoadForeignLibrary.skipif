@@ -1,2 +1,3 @@
 CHPL_COMM == none
 CHPL_TARGET_PLATFORM != darwin
+CHPL_TARGET_PLATFORM == darwin
