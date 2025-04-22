@@ -1319,6 +1319,9 @@ void TypeSymbol::verify() {
   }
   if (type->symbol != this)
     INT_FATAL(this, "TypeSymbol::type->symbol != TypeSymbol");
+
+  // Verify the 'FunctionType's since they do not have a 'gVec'.
+  if (auto ft = toFunctionType(type)) ft->verify();
 }
 
 
