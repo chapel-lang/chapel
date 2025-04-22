@@ -52,6 +52,10 @@ MAYBE_GPU static inline int chpl_macro_float_signbit(float x) { return signbit(x
 chpl_COMPLEX_RETURN_REAL(chpl_complex_wrapper)
 #undef chpl_complex_wrapper
 
+// Define creal and cimag for complex32; weirdly, using builtin_*f works...?!
+MAYBE_GPU static ___always_inline _Float16 chpl_crealh(_complex32 x) { return __builtin_realf(x); }
+MAYBE_GPU static ___always_inline _Float16 chpl_cimagh(_complex32 x) { return __builtin_imagf(x); }
+
 #define chpl_complex_wrapper(basename)                                     \
   MAYBE_GPU static ___always_inline _complex128                                      \
     chpl_##basename(_complex128 x) { return __builtin_##basename(x); }     \
@@ -67,6 +71,9 @@ chpl_COMPLEX_RETURN_COMPLEX(chpl_complex_wrapper)
     chpl_##basename##f(_complex64 x) { return basename##f(x); }
 chpl_COMPLEX_RETURN_REAL(chpl_complex_wrapper)
 #undef chpl_complex_wrapper
+
+MAYBE_GPU static ___always_inline _Float16 chpl_crealh(_complex32 x) { return crealf(x); }
+MAYBE_GPU static ___always_inline _Float16 chpl_cimagh(_complex32 x) { return cimagf(x); }
 
 #define chpl_complex_wrapper(basename)                         \
   MAYBE_GPU static ___always_inline _complex128                          \

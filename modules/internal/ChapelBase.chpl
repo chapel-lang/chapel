@@ -1483,17 +1483,8 @@ module ChapelBase {
     } else {
       pragma "fn synchronization free"
       pragma "codegen for CPU and GPU"
-      extern proc chpl_crealf(x:complex(64)): real(32);
-      // TODO: How to avoid going to complex 64?
-      // TODO: This doesn't work b/c it uses a cast that's implemented in
-      // terms of .re, so we get an infinite recursion
-      var c64:complex(64) = this;
-      return chpl_crealf(c64): real(16);
-/*
-      // TODO: I haven't actually created this routine
       extern proc chpl_crealh(x:complex(32)): real(16);
       return chpl_crealh(this);
-*/
     }
   }
   inline proc ref chpl_anycomplex.im ref {
@@ -1516,17 +1507,8 @@ module ChapelBase {
     } else {
       pragma "fn synchronization free"
       pragma "codegen for CPU and GPU"
-      extern proc chpl_cimagf(x:complex(64)): real(32);
-      // TODO: How to avoid going to complex 64?
-      // TODO: This doesn't work b/c it uses a cast that's implemented in
-      // terms of .re, so we get an infinite recursion
-      var c64:complex(64) = this;
-      return chpl_cimagf(c64): real(16);
-/*
-      // TODO: I haven't actually created this routine
       extern proc chpl_cimagh(x:complex(32)): real(16);
       return chpl_cimagh(this);
-*/
     }
   }
 

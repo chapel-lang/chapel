@@ -295,23 +295,25 @@ static inline _complex64 _chpl_complex64(_real32 re, _real32 im) {
 }
 
 static inline _complex32 _chpl_complex32(_real16 re, _real16 im) {
-// though CMPLXF works for some C++ compilers, it doesn't work for all in our
+// though CMPLXH works for some C++ compilers, it doesn't work for all in our
 // test environments, so dodge it to be safe;  Currently, we only compile
 // this header using a C++ compiler when compiling our re2 stubs, which
 // don't seem to use this routine anyway.
-#if defined(CMPLXF) && !defined(__cplusplus)
-  return (_complex32)(CMPLXF(re, im));
+#if defined(CMPLXH) && !defined(__cplusplus)
+  return (_complex32)(CMPLXH(re, im));
 #else
 #ifndef CHPL_DONT_USE_CMPLX_PTR_ALIASING
-#define cmplx_re16(c) (((float *)&(c))[0])
-#define cmplx_im16(c) (((float *)&(c))[1])
+#define cmplx_re16(c) (((_Float16 *)&(c))[0])
+#define cmplx_im16(c) (((_Float16 *)&(c))[1])
   _complex32 val;
   cmplx_re16(val) = re;
   cmplx_im16(val) = im;
   return val;
 #else
   // This can generate bad values in the face of inf/nan values
-  return re + im*_Complex_I;
+  _complex32 c32 = re + im*_Complex_I;
+  printf("%d\n", *(int*)((void*)(&c32)));
+  return c32;
 #endif
 #endif
 }
