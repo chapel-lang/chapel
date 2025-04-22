@@ -66,7 +66,7 @@ getCompilerGeneratedMethod(ResolutionContext* rc,
   to the call is necessary.
 */
 const TypedFnSignature*
-getCompilerGeneratedFunction(Context* context,
+getCompilerGeneratedFunction(ResolutionContext* context,
                              const CallInfo& ci);
 
 /**
@@ -94,6 +94,8 @@ const uast::BuilderResult& buildRecordCompareGe(Context* context, ID typeID);
 const uast::BuilderResult& buildTypeConstructor(Context* context, ID typeID);
 const uast::BuilderResult& buildDeinit(Context* context, ID typeID);
 const uast::BuilderResult& buildDeSerialize(Context* context, ID typeID, bool isSerializer);
+const uast::BuilderResult& buildEnumToOrder(Context* context, ID typeID);
+const uast::BuilderResult& buildOrderToEnum(Context* context, ID typeID);
 
 } // end namespace resolution
 } // end namespace chpl
