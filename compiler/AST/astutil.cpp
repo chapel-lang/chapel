@@ -1270,9 +1270,12 @@ static bool shouldPruneRefType(TypeSymbol* ts, Vec<TypeSymbol*>& types) {
 
     // Don't delete nil ref as it is used in widening.
     if (vt == dtNil) return false;
+
+    // Ok, we can remove the ref type.
+    return true;
   }
 
-  return true;
+  return false;
 }
 
 static void pruneUnusedRefs(Vec<TypeSymbol*>& types) {
