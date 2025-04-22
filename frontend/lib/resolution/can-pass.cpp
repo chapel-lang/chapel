@@ -309,7 +309,7 @@ bool CanPassResult::canConvertNumeric(Context* context,
     // don't convert bools to complexes (per spec: "unintended by programmer")
 
     // coerce any integer type to any width complex
-    if (actualT->isNumericType())
+    if (actualT->isIntegralType())
       return true;
 
     // convert smaller complex types
