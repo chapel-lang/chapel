@@ -542,29 +542,19 @@ static void removeUnusedTypes() {
 
   clearGenericWellKnownTypes();
   std::set<Type*> wellknown = getWellKnownTypesSet();
-  std::vector<FunctionType*> functionTypes;
-  std::set<Type*> removed;
 
   // Remove unused aggregate types.
   for_alive_in_expanding_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (auto ft = toFunctionType(ts->type)) {
-      // Collect function types to check later.
-      functionTypes.push_back(ft);
-      continue;
-    }
-
     if (! ts->hasFlag(FLAG_REF)                &&
         ! ts->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
       // First collect any unused aggregates.
       if (AggregateType* at = toAggregateType(ts->type)) {
         if (isUnusedClass(at, wellknown)) {
           at->symbol->defPoint->remove();
-          removed.insert(at);
         }
       } else if(DecoratedClassType* dt = toDecoratedClassType(ts->type)) {
         if (isUnusedClass(dt->getCanonicalClass(), wellknown)) {
           dt->symbol->defPoint->remove();
-          removed.insert(dt);
         }
       }
     }
@@ -577,37 +567,34 @@ static void removeUnusedTypes() {
       if (AggregateType* at1 = toAggregateType(ts->getValType())) {
         if (isUnusedClass(at1, wellknown)) {
           // If the value type is unused, its ref type can also be removed.
-          removed.insert(ts->type);
+          ts->defPoint->remove();
         }
       } else if(DecoratedClassType* dt =
                 toDecoratedClassType(ts->getValType())) {
         if (isUnusedClass(dt->getCanonicalClass(), wellknown)) {
-          removed.insert(ts->type);
+          ts->defPoint->remove();
         }
       }
     }
   }
+}
 
-  for (auto ft : functionTypes) {
-    bool containsRemoved = removed.find(ft->returnType()) != removed.end();
+static void removeStaleFunctionTypes() {
+  for_alive_in_expanding_Vec(TypeSymbol, ts, gTypeSymbols) {
+    auto ft = toFunctionType(ts->type);
+    if (!ft) continue;
+
+    bool containsRemoved = !ft->returnType()->inTree();
     if (!containsRemoved) {
       for (int i = 0; i < ft->numFormals(); i++) {
-        if (removed.find(ft->formal(i)->type()) != removed.end()) {
+        if (!ft->formal(i)->type()->inTree()) {
           containsRemoved = true;
           break;
         }
       }
     }
 
-    // Remove the function type if it contains any removed types.
-    if (containsRemoved) {
-      removed.insert(ft);
-    }
-  }
-
-  for (auto t : removed) {
-    auto ts = t ? t->symbol : nullptr;
-    if (ts && ts->defPoint->inTree()) ts->defPoint->remove();
+    if (containsRemoved) ft->symbol->defPoint->remove();
   }
 }
 
@@ -1112,6 +1099,8 @@ void pruneResolvedTree() {
   expandInitFieldPrims();
 
   cleanupNothingVarsAndFields();
+
+  removeStaleFunctionTypes();
 
   cleanupAfterRemoves();
 }
