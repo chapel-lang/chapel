@@ -4922,8 +4922,6 @@ bool TConverter::enter(const Call* node, RV& rv) {
     expr = x;
   } else if (auto x = convertNamedCallOrNull(node, rv)) {
     expr = x;
-  } else if (auto re = rv.byAst(node); re.type().isParam()) {
-    expr = new SymExpr(convertParam(re.type()));
   }
 
   if (!expr) {
