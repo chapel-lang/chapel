@@ -1924,6 +1924,8 @@ static void testArrayGetPrim() {
   assert(r1.kind() == QualifiedType::REF);
   assert(r1.type()->isIntType() && r1.type()->toIntType()->isDefaultWidth());
 
+  // note: in production, even const c_ptr returns non-const REF from
+  // this call.
   auto& r2 = variables.at("r2");
   assert(r2.kind() == QualifiedType::REF);
   assert(r2.type()->isBoolType());
