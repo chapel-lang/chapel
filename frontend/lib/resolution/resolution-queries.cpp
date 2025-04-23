@@ -4318,11 +4318,13 @@ static bool resolveFnCallSpecial(Context* context,
        !receiverCt->decorator().isManaged());
 
     if (handle) {
-      bool nilable = receiverCt && receiverCt->decorator().isNilable();
       auto finalBct = receiverBct ? receiverBct : receiverCt->manageableType();
 
-      auto decorator = ClassTypeDecorator(
-          nilable ? ClassTypeDecorator::BORROWED : ClassTypeDecorator::BORROWED_NONNIL);
+      auto decorator = ClassTypeDecorator(ClassTypeDecorator::BORROWED);
+      if (receiverCt) {
+        decorator = decorator.copyNilabilityFrom(receiverCt->decorator());
+      }
+
       auto outTy = ClassType::get(context, finalBct, nullptr, decorator);
       exprTypeOut = QualifiedType(QualifiedType::VAR, outTy);
       return true;
