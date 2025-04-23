@@ -567,6 +567,29 @@ static void test46() {
   }
 }
 
+static void test47() {
+  printf("test47\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto testBorrow = [context](std::string buildC, bool expectNilable) {
+    context->advanceToNextRevision(false);
+    ErrorGuard guard(context);
+
+    auto fullProg = "class C{}\n" + buildC + "\nvar x = c.borrow();";
+    auto xInit = resolveTypeOfXInit(context, fullProg);
+    assert(xInit.type());
+    assert(xInit.type()->isClassType());
+    assert(xInit.type()->toClassType()->decorator().isBorrowed());
+    assert(xInit.type()->toClassType()->decorator().isNilable() == expectNilable);
+  };
+
+  testBorrow("var cu = new unmanaged C();\n var c = cu : borrowed;", false);
+  testBorrow("var cu = new unmanaged C?();\n var c = cu : borrowed;", true);
+  testBorrow("var c = new unmanaged C();", false);
+  testBorrow("var c = new unmanaged C?();", true);
+}
+
 int main() {
   test1();
   test2();
@@ -614,6 +637,7 @@ int main() {
   test44();
   test45();
   test46();
+  test47();
 
   return 0;
 }
