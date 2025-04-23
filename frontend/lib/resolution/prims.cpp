@@ -931,7 +931,8 @@ static QualifiedType primAscii(ResolutionContext* rc, const PrimCall* call, cons
   // 'param' contexts. So, here, only handle the 'param' cases.
 
   UniqueString str;
-  if (!toParamStringActual(ci.actual(0).type(), str)) {
+  if (!toParamStringActual(ci.actual(0).type(), str) &&
+      !toParamBytesActual(ci.actual(0).type(), str)) {
     return QualifiedType();
   }
 
