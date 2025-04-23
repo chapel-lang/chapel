@@ -3053,6 +3053,28 @@ bool Resolver::resolveSpecialPrimitiveCall(const Call* call) {
   return false;
 }
 
+// checks if an identifier referring to toId could be attempting to set its
+// type via a call to an 'out' function.
+static bool couldBeOutInitialized(Resolver* rv, const ID& toId) {
+  if (!asttags::isVarLikeDecl(parsing::idToTag(rv->context, toId))) return false;
+
+  auto vld = parsing::idToAst(rv->context, toId)->toVarLikeDecl();
+
+  // if it had a type expression or an init expression, we certainly can't
+  // be trying to out-initialize it.
+  if (vld->typeExpression() || vld->initExpression()) return false;
+
+  auto parentDecl = parsing::idToContainingMultiDeclId(rv->context, toId);
+  auto parentOfDecl = parsing::idToParentId(rv->context, parentDecl);
+  if (asttags::isIndexableLoop(parsing::idToTag(rv->context, parentOfDecl))) {
+    // if this is a (multi)decl in a loop, it can't be out-initialized;
+    // it's set by the loop.
+    return false;
+  }
+
+  return true;
+}
+
 static SkipCallResolutionReason
 shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
                          std::vector<const uast::AstNode*> actualAsts,
@@ -3085,7 +3107,8 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
                qt.isUnknown() &&
                qt.kind() != QualifiedType::PARAM &&
                qt.kind() != QualifiedType::TYPE &&
-               qt.isRef() == false) {
+               qt.isRef() == false &&
+               couldBeOutInitialized(rv, toId)) {
       // don't skip because it could be initialized with 'out' intent,
       // but not for non-out formals because they can't be split-initialized.
     } else if (actualAst != nullptr && actualAst->isTypeQuery() && ci.calledType().isType()) {
