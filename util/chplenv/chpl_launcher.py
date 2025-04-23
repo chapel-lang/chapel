@@ -27,8 +27,6 @@ def get():
                   'required'.format(launcher_val))
 
     if not launcher_val:
-        platform_val = chpl_platform.get('target')
-
         if comm_val == 'gasnet':
             if substrate_val == 'smp':
                 launcher_val = 'smp'
@@ -41,9 +39,7 @@ def get():
             elif substrate_val == 'ofi':
                 launcher_val = slurm_prefix('gasnetrun_ofi')
         else:
-            is_known_cluster = (platform_val.startswith('cray-') or
-                                platform_val.startswith('hpe-'))
-            if is_known_cluster:
+            if chpl_platform.is_cluster('target'):
                 has_aprun = which('aprun')
                 has_slurm = which('srun')
                 if has_aprun and has_slurm:
