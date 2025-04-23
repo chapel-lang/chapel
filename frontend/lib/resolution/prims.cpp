@@ -575,6 +575,8 @@ static QualifiedType arrayGet(ResolutionContext* rc, const PrimCall* call, const
 
   if (auto ptr = act.type()->toCPtrType()) {
     return QualifiedType(QualifiedType::REF, ptr->eltType());
+  } else if (auto ptr = act.type()->toHeapBufferType()) {
+    return QualifiedType(QualifiedType::REF, ptr->eltType());
   } else if (auto ct = act.type()->toCompositeType()) {
     auto ast = parsing::idToAst(rc->context(), ct->id());
     bool hasSupportedPragmas =
