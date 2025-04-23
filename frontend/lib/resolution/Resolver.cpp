@@ -690,6 +690,9 @@ Resolver::paramLoopResolver(Resolver& parent,
   ret.curStmt = loop;
   ret.rc = parent.rc;
 
+  // copy the loop type (almost certainly LOOP) from the parent resolver
+  ret.byPostorder.byAst(loop).setType(parent.byPostorder.byAst(loop).type());
+
   return ret;
 }
 
@@ -3395,11 +3398,6 @@ QualifiedType Resolver::typeForId(const ID& id) {
                         !id.isSymbolDefiningScope());
   if (useLocalResult && curStmt != nullptr) {
     if (curStmt->id().contains(id)) {
-      if (asttags::isLoop(parsing::idToTag(context, id))) {
-        // we found a reference to a label. not only do we not need to use a
-        // local result, we can return right now.
-        return QualifiedType(QualifiedType::LOOP, UnknownType::get(context));
-      }
       // OK, proceed using local result
     } else {
       useLocalResult = false;
@@ -5719,8 +5717,8 @@ void Resolver::exit(const Dot* dot) {
     // Special case: Don't try to resolve calls to .domain here, as we
     // need to proceed to the handling logic below.
     if (!receiver.type().isUnknown() && receiver.type().type() &&
-        receiver.type().type()->getCompositeType() &&
-        dot->field() != USTR("init") && !isDotDomainAccess(dot)) {
+        (receiver.type().type()->getCompositeType() || isDotDomainAccess(dot)) &&
+        dot->field() != USTR("init")) {
       std::vector<CallInfoActual> actuals;
       actuals.push_back(CallInfoActual(receiver.type(), USTR("this")));
       auto ci = CallInfo(/* name */ dot->field(),
@@ -5759,31 +5757,6 @@ void Resolver::exit(const Dot* dot) {
   if (dot->field() == USTR("locale")) {
     r.setType(QualifiedType(QualifiedType::CONST_VAR,
                             CompositeType::getLocaleType(context)));
-    return;
-  }
-
-  // Handle .domain on an array (which doesn't exist in module code) as a call
-  // to _dom. We do this even for a non-array receiver as that's what production
-  // does.
-  if (isDotDomainAccess(dot)) {
-    std::vector<CallInfoActual> actuals;
-    std::vector<const AstNode*> actualAsts;
-    actuals.emplace_back(receiver.type(), USTR("this"));
-    actualAsts.push_back(dot->receiver());
-    auto name = UniqueString::get(context, "_dom");
-    auto ci = CallInfo(/* name */ name,
-                       /* calledType */ QualifiedType(),
-                       /* isMethodCall */ true,
-                       /* hasQuestionArg */ false,
-                       /* isParenless */ true, actuals);
-    auto inScope = currentScope();
-    auto inScopes = CallScopeInfo::forNormalCall(inScope, poiScope);
-    if (shouldSkipCallResolution(this, dot, actualAsts, ci)) {
-      r.setType(QualifiedType());
-    } else {
-      auto rr = resolveGeneratedCall(dot, &ci, &inScopes, name.c_str());
-      rr.noteResultWithoutError(&r);
-    }
     return;
   }
 
@@ -6888,6 +6861,14 @@ static void noteLoopExprType(Resolver& rv, const IndexableLoop* loop, const std:
 bool Resolver::enter(const IndexableLoop* loop) {
   auto forLoop = loop->toFor();
   bool isParamForLoop = forLoop != nullptr && forLoop->isParam();
+
+  // standalone loops have LOOP type so that when labels refer to them,
+  // we recognize them as valid.
+  if (!loop->isExpressionLevel()) {
+    byPostorder.byAst(loop).setType(
+        QualifiedType(QualifiedType::LOOP,
+                      UnknownType::get(context)));
+  }
 
   // whether this is a param or regular loop, before entering its body
   // or considering its iterand, resolve expressions in the loop's attribute

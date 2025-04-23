@@ -2014,6 +2014,30 @@ static void testDotLocale() {
   assert(guard.realizeErrors() == 0);
 }
 
+// .bytes() should be rewritten to .chpl_bytes()
+static void testDotBytes() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto variables = resolveTypesOfVariables(context,
+    R"""(
+      var str = "hello";
+      var bts = b"hello";
+
+      var x = str.bytes();
+      var y = bts.bytes();
+    )""", { "x", "y" });
+
+  for (auto& kv : variables) {
+    auto& qt = kv.second;
+
+    assert(!qt.isUnknownOrErroneous());
+    assert(qt.type()->isArrayType());
+    assert(qt.type()->toArrayType()->eltType().type()->isUintType());
+    assert(qt.type()->toArrayType()->eltType().type()->toUintType()->bitwidth() == 8);
+  }
+}
+
 // even if a formal's type has defaults, if it's explicitly made generic
 // with (?) it should not be concrete.
 static void testExplicitlyGenericFormal() {
@@ -2252,6 +2276,7 @@ int main() {
   testAsciiPrim();
 
   testDotLocale();
+  testDotBytes();
 
   testExplicitlyGenericFormal();
 
