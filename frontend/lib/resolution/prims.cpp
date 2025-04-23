@@ -553,6 +553,53 @@ static QualifiedType staticFieldType(ResolutionContext* rc, const CallInfo& ci) 
   return QualifiedType();
 }
 
+static QualifiedType arrayGet(ResolutionContext* rc, const PrimCall* call, const CallInfo& ci) {
+  if (ci.numActuals() != 2 ||
+      ci.actual(0).type().isUnknownOrErroneous() ||
+      ci.actual(1).type().isUnknownOrErroneous()) {
+    return QualifiedType();
+  }
+
+  if (!ci.actual(1).type().type()->isIntegralType()) {
+    rc->context()->error(call, "bad call to primitive \"%s\": second argument "
+                               "must be an integral type",
+                         primTagToName(call->prim()));
+    return QualifiedType();
+  }
+
+  auto act = ci.actual(0).type();
+
+  // in production, anything with tags "data class" or "c array" has its
+  // "eltType" return by this primitive. We treat CPtrType specially, so we
+  // handle that as a separate case.
+
+  if (auto ptr = act.type()->toCPtrType()) {
+    return QualifiedType(QualifiedType::REF, ptr->eltType());
+  } else if (auto ct = act.type()->toCompositeType()) {
+    auto ast = parsing::idToAst(rc->context(), ct->id());
+    bool hasSupportedPragmas =
+      ast->hasPragma(rc->context(), pragmatags::PragmaTag::PRAGMA_DATA_CLASS) ||
+      ast->hasPragma(rc->context(), pragmatags::PragmaTag::PRAGMA_C_ARRAY);
+
+    if (!hasSupportedPragmas) {
+      rc->context()->error(call, "bad call to primitive \"%s\": first argument "
+          "must be a data class or C array",
+          primTagToName(call->prim()));
+      return QualifiedType();
+    }
+
+    auto fields = fieldsForTypeDecl(rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    for (int i = 0; i < fields.numFields(); i++) {
+      if (fields.fieldName(i) == "eltType") {
+        auto returnType = fields.fieldType(i).type();
+        return QualifiedType(QualifiedType::REF, returnType);
+      }
+    }
+  }
+
+  return QualifiedType();
+}
+
 struct TestFunctionFinder {
   // Inputs
   Context* context;
@@ -1815,19 +1862,8 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
                            CompositeType::getLocaleIDType(context));
       break;
 
-    case PRIM_ARRAY_GET: {
-        if (ci.numActuals() == 2 && ci.actual(0).type().hasTypePtr()) {
-          auto index = ci.actual(1).type();
-          if (index.hasTypePtr() && index.type()->isIntegralType()) {
-            auto act = ci.actual(0).type();
-            if (auto ptr = act.type()->toCPtrType()) {
-              type = QualifiedType(QualifiedType::REF, ptr->eltType());
-            }
-          } else {
-            context->error(call, "bad call to primitive \"%s\": second argument must be an integral type", primTagToName(prim));
-          }
-        }
-      }
+    case PRIM_ARRAY_GET:
+      type = arrayGet(rc, call, ci);
       break;
 
     case PRIM_GET_SVEC_MEMBER:
