@@ -183,6 +183,17 @@ void Type::setSubstitutionWithName(const char* name, Symbol* value) {
   INT_FATAL("substitution not found");
 }
 
+// "iterator|promoted expression yielding ..."
+// result may be non-astr()
+static const char* toIteratorString(AggregateType* at, bool decorateAllClasses) {
+  const char* kind = at->symbol->hasFlag(FLAG_PROMOTION_ITERATOR_RECORD)
+    ? "promoted expression" : "iterator";
+  if (IteratorInfo* ii = at->iteratorInfo)
+    if (Type* yt = ii->yieldedType)
+      return astr(kind, " yielding ", toString(yt, decorateAllClasses));
+  return kind;
+}
+
 const char* toString(Type* type, bool decorateAllClasses) {
   const char* retval = NULL;
 
@@ -238,7 +249,7 @@ const char* toString(Type* type, bool decorateAllClasses) {
         }
       } else if (vt->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
         if (developer == false)
-          retval = "iterator";
+          retval = toIteratorString(at, decorateAllClasses);
       } else if (at->symbol->hasFlag(FLAG_ATOMIC_TYPE) &&
                  (strcmp(at->symbol->name, "AtomicBool") == 0 ||
                   strcmp(at->symbol->name, "RAtomicBool") == 0)) {
