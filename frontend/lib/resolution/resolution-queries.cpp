@@ -4362,6 +4362,12 @@ static bool resolveFnCallSpecial(Context* context,
         exprTypeOut = QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
       } else {
         auto member = tup->elementType(val);
+
+        // adjust kind ensure that tupleType(idx) is also a type.
+        if (thisType.isType()) {
+          member = QualifiedType(thisType.kind(), member.type());
+        }
+
         exprTypeOut = member;
       }
       return true;
