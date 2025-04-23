@@ -1901,6 +1901,42 @@ static void testGetLocalePrim() {
   assert(guard.realizeErrors() == 0);
 }
 
+static void testArrayGetPrim() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto variables = resolveTypesOfVariablesInit(context,
+    R"""(
+      use CTypes;
+
+      var a: c_ptr(int);
+      var b: c_ptrConst(bool);
+      var c: _ddata(real);
+      var d: c_array(int(8), 4);
+
+      var r1 = __primitive("array_get", a, 0);
+      var r2 = __primitive("array_get", b, 0);
+      var r3 = __primitive("array_get", c, 0);
+      var r4 = __primitive("array_get", d, 0);
+    )""", { "r1", "r2", "r3", "r4" });
+
+  auto& r1 = variables.at("r1");
+  assert(r1.kind() == QualifiedType::REF);
+  assert(r1.type()->isIntType() && r1.type()->toIntType()->isDefaultWidth());
+
+  auto& r2 = variables.at("r2");
+  assert(r2.kind() == QualifiedType::REF);
+  assert(r2.type()->isBoolType());
+
+  auto& r3 = variables.at("r3");
+  assert(r3.kind() == QualifiedType::REF);
+  assert(r3.type()->isRealType() && r3.type()->toRealType()->isDefaultWidth());
+
+  auto& r4 = variables.at("r4");
+  assert(r4.kind() == QualifiedType::REF);
+  assert(r4.type()->isIntType() && r4.type()->toIntType()->bitwidth() == 8);
+}
+
 // Test the '.locale' query.
 static void testDotLocale() {
   Context ctx;
@@ -2137,6 +2173,7 @@ int main() {
 
   testPromotionPrim();
   testGetLocalePrim();
+  testArrayGetPrim();
 
   testDotLocale();
 
