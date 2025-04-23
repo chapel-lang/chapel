@@ -937,7 +937,7 @@ static QualifiedType primAscii(ResolutionContext* rc, const PrimCall* call, cons
   }
 
   int64_t index = 0;
-  if (ci.numActuals() == 3 && !toParamIntActual(ci.actual(1).type(), index)) {
+  if (ci.numActuals() == 2 && !toParamIntActual(ci.actual(1).type(), index)) {
     return QualifiedType();
   }
 
