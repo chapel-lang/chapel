@@ -5696,9 +5696,9 @@ QualifiedType Resolver::typeForEnumElement(const EnumType* enumType,
   return qt;
 }
 
-static bool isDotDomainAccess(const Dot* dot) {
-  return dot->field() == USTR("domain");
-}
+// static bool isDotDomainAccess(const Dot* dot) {
+//   return dot->field() == USTR("domain");
+// }
 
 void Resolver::exit(const Dot* dot) {
   ResolvedExpression& receiver = byPostorder.byAst(dot->receiver());
@@ -5720,7 +5720,7 @@ void Resolver::exit(const Dot* dot) {
     // need to proceed to the handling logic below.
     if (!receiver.type().isUnknown() && receiver.type().type() &&
         receiver.type().type()->getCompositeType() &&
-        dot->field() != USTR("init") && !isDotDomainAccess(dot)) {
+        dot->field() != USTR("init")) {
       std::vector<CallInfoActual> actuals;
       actuals.push_back(CallInfoActual(receiver.type(), USTR("this")));
       auto ci = CallInfo(/* name */ dot->field(),
@@ -5759,31 +5759,6 @@ void Resolver::exit(const Dot* dot) {
   if (dot->field() == USTR("locale")) {
     r.setType(QualifiedType(QualifiedType::CONST_VAR,
                             CompositeType::getLocaleType(context)));
-    return;
-  }
-
-  // Handle .domain on an array (which doesn't exist in module code) as a call
-  // to _dom. We do this even for a non-array receiver as that's what production
-  // does.
-  if (isDotDomainAccess(dot)) {
-    std::vector<CallInfoActual> actuals;
-    std::vector<const AstNode*> actualAsts;
-    actuals.emplace_back(receiver.type(), USTR("this"));
-    actualAsts.push_back(dot->receiver());
-    auto name = UniqueString::get(context, "_dom");
-    auto ci = CallInfo(/* name */ name,
-                       /* calledType */ QualifiedType(),
-                       /* isMethodCall */ true,
-                       /* hasQuestionArg */ false,
-                       /* isParenless */ true, actuals);
-    auto inScope = currentScope();
-    auto inScopes = CallScopeInfo::forNormalCall(inScope, poiScope);
-    if (shouldSkipCallResolution(this, dot, actualAsts, ci)) {
-      r.setType(QualifiedType());
-    } else {
-      auto rr = resolveGeneratedCall(dot, &ci, &inScopes, name.c_str());
-      rr.noteResultWithoutError(&r);
-    }
     return;
   }
 
