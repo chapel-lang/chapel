@@ -423,7 +423,7 @@ llvm::Value* codegenImmediateLLVM(Immediate* i)
       switch(i->num_index) {
         case FLOAT_SIZE_16:
           ret = llvm::ConstantFP::get(
-              llvm::Type::getFloatTy(info->module->getContext()),
+              llvm::Type::getHalfTy(info->module->getContext()),
               i->v_float16);
           break;
         case FLOAT_SIZE_32:
@@ -445,10 +445,10 @@ llvm::Value* codegenImmediateLLVM(Immediate* i)
         case COMPLEX_SIZE_32: {
           std::vector<llvm::Constant *> elements(2);
           elements[0] = llvm::ConstantFP::get(
-              llvm::Type::getFloatTy(info->module->getContext()),
+              llvm::Type::getHalfTy(info->module->getContext()),
               i->v_complex32.r);
           elements[1] = llvm::ConstantFP::get(
-              llvm::Type::getFloatTy(info->module->getContext()),
+              llvm::Type::getHalfTy(info->module->getContext()),
               i->v_complex32.i);
           ret = llvm::ConstantStruct::get(
               llvm::cast<llvm::StructType>(getTypeLLVM("_complex32")),
