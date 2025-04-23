@@ -941,7 +941,7 @@ static QualifiedType primAscii(ResolutionContext* rc, const PrimCall* call, cons
     return QualifiedType();
   }
 
-  if (index >= str.length()) {
+  if (index < 0 || (uint64_t) index >= str.length()) {
     rc->context()->error(call, "index out of range");
     return QualifiedType();
   }
