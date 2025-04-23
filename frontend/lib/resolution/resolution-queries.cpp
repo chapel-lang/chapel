@@ -4304,6 +4304,31 @@ static bool resolveFnCallSpecial(Context* context,
     }
   }
 
+  if (ci.name() == USTR("borrow") && ci.numActuals() == 1 && ci.isMethodCall()) {
+    // this is the equivalent of the production compiler's `resolveClassBorrowMethod`.
+    // A call to `isClassLike` there rejects handling `owned` and `shared,
+    // so only handle undecorated class types here.
+
+    auto receiver = ci.methodReceiverType();
+    const ManageableType* receiverBct = nullptr;
+    const ClassType* receiverCt = nullptr;
+    bool handle =
+      (receiverBct = receiver.type()->toBasicClassType()) ||
+      ((receiverCt = receiver.type()->toClassType()) &&
+       !receiverCt->decorator().isManaged());
+
+    if (handle) {
+      bool nilable = receiverCt && receiverCt->decorator().isNilable();
+      auto finalBct = receiverBct ? receiverBct : receiverCt->manageableType();
+
+      auto decorator = ClassTypeDecorator(
+          nilable ? ClassTypeDecorator::BORROWED : ClassTypeDecorator::BORROWED_NONNIL);
+      auto outTy = ClassType::get(context, finalBct, nullptr, decorator);
+      exprTypeOut = QualifiedType(QualifiedType::VAR, outTy);
+      return true;
+    }
+  }
+
   if (ci.name() == USTR("isCoercible")) {
     if (ci.numActuals() != 2) {
       if (!ci.isMethodCall()) {
