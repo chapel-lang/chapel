@@ -4423,6 +4423,13 @@ static bool resolveMethodCallSpecial(Context* context,
     return true;
   }
 
+  if (ci.name() == USTR("bytes") && !ci.isParenless()) {
+    auto newName = UniqueString::get(context, "chpl_bytes");
+    auto ctorCall = CallInfo::copyAndRename(ci, newName);
+    result = resolveGeneratedCall(rc, astContext, ctorCall, inScopes);
+    return true;
+  }
+
   return false;
 }
 
