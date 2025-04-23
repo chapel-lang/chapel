@@ -1964,6 +1964,37 @@ static void testArrayGetPrim() {
   assert(r4.type()->isIntType() && r4.type()->toIntType()->bitwidth() == 8);
 }
 
+static void testAsciiPrim() {
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto variables = resolveTypesOfVariables(context,
+    R"""(
+      param b = __primitive("ascii", "b");
+      param h = __primitive("ascii", "hi", 0);
+      param i = __primitive("ascii", "hi", 1);
+      param c = __primitive("ascii", b"c");
+      param p = __primitive("ascii", b"po", 0);
+      param o = __primitive("ascii", b"po", 1);
+    )""", { "b", "h", "i", "c", "p", "o" });
+
+  auto b = variables.at("b");
+  ensureParamUint(b, 98);
+
+  auto h = variables.at("h");
+  ensureParamUint(h, 104);
+  auto i = variables.at("i");
+  ensureParamUint(i, 105);
+
+  auto c = variables.at("c");
+  ensureParamUint(c, 99);
+
+  auto p = variables.at("p");
+  ensureParamUint(p, 112);
+  auto o = variables.at("o");
+  ensureParamUint(o, 111);
+}
+
 // Test the '.locale' query.
 static void testDotLocale() {
   Context ctx;
@@ -2218,6 +2249,7 @@ int main() {
   testPromotionPrim();
   testGetLocalePrim();
   testArrayGetPrim();
+  testAsciiPrim();
 
   testDotLocale();
 

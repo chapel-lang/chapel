@@ -923,6 +923,34 @@ static QualifiedType primObjectToInt(Context* context, const CallInfo& ci) {
   return QualifiedType(argType.kind(), IntType::get(context, 64));
 }
 
+static QualifiedType primAscii(ResolutionContext* rc, const PrimCall* call, const CallInfo& ci) {
+  if (ci.numActuals() != 1 && ci.numActuals() != 2) return QualifiedType();
+
+  // production's legacy handling of this primitive includes fallbacks for
+  // runtime cases. However, all uses in the standard library today are in
+  // 'param' contexts. So, here, only handle the 'param' cases.
+
+  UniqueString str;
+  if (!toParamStringActual(ci.actual(0).type(), str) &&
+      !toParamBytesActual(ci.actual(0).type(), str)) {
+    return QualifiedType();
+  }
+
+  int64_t index = 0;
+  if (ci.numActuals() == 2 && !toParamIntActual(ci.actual(1).type(), index)) {
+    return QualifiedType();
+  }
+
+  if (index < 0 || (uint64_t) index >= str.length()) {
+    rc->context()->error(call, "index out of range");
+    return QualifiedType();
+  }
+
+  return QualifiedType(QualifiedType::PARAM,
+                       UintType::get(rc->context(), 8),
+                       UintParam::get(rc->context(), str.c_str()[index]));
+}
+
 /*
   for get real/imag primitives
 */
@@ -1570,12 +1598,20 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
       break;
     }
     case PRIM_STRING_LENGTH_CODEPOINTS:
+      CHPL_UNIMPL("misc primitives");
+      break;
+
     case PRIM_ASCII:
+      type = primAscii(rc, call, ci);
+      break;
+
     case PRIM_STRING_ITEM:
     case PRIM_BYTES_ITEM:
     case PRIM_STRING_INDEX:
     case PRIM_STRING_COPY:
     case PRIM_STRING_SELECT:
+      CHPL_UNIMPL("misc primitives");
+      break;
 
     /* primitives that always return bool */
     case PRIM_EQUAL:
