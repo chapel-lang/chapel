@@ -5694,9 +5694,9 @@ QualifiedType Resolver::typeForEnumElement(const EnumType* enumType,
   return qt;
 }
 
-// static bool isDotDomainAccess(const Dot* dot) {
-//   return dot->field() == USTR("domain");
-// }
+static bool isDotDomainAccess(const Dot* dot) {
+  return dot->field() == USTR("domain");
+}
 
 void Resolver::exit(const Dot* dot) {
   ResolvedExpression& receiver = byPostorder.byAst(dot->receiver());
@@ -5717,7 +5717,7 @@ void Resolver::exit(const Dot* dot) {
     // Special case: Don't try to resolve calls to .domain here, as we
     // need to proceed to the handling logic below.
     if (!receiver.type().isUnknown() && receiver.type().type() &&
-        receiver.type().type()->getCompositeType() &&
+        (receiver.type().type()->getCompositeType() || isDotDomainAccess(dot)) &&
         dot->field() != USTR("init")) {
       std::vector<CallInfoActual> actuals;
       actuals.push_back(CallInfoActual(receiver.type(), USTR("this")));
