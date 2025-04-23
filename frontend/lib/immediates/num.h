@@ -79,13 +79,11 @@ enum IF1_int_type : uint8_t {
   INT_SIZE_8, INT_SIZE_16, INT_SIZE_32, INT_SIZE_64, INT_SIZE_NUM
 };
 
-// when updating these, be sure to also update float_type_precision!
 enum IF1_float_type : uint8_t {
   FLOAT_SIZE_16, FLOAT_SIZE_32, FLOAT_SIZE_64, FLOAT_SIZE_NUM
 };
 
 // these should correspond to double the IF1_float_types.
-// i.e. float_type_precision[i] here should refer to the real size of i
 enum IF1_complex_type : uint8_t {
   COMPLEX_SIZE_32, COMPLEX_SIZE_64, COMPLEX_SIZE_128, COMPLEX_SIZE_NUM
 };
@@ -339,14 +337,6 @@ class ImmHashFns { public:
 
 #define CPP_IS_LAME {1,8,16,32,64}
 IFA_EXTERN int int_type_precision[5] IFA_EXTERN_INIT(CPP_IS_LAME);
-#undef CPP_IS_LAME
-
-#define CPP_IS_LAME {32,64}
-IFA_EXTERN int float_type_precision[8] IFA_EXTERN_INIT(CPP_IS_LAME);
-#undef CPP_IS_LAME
-
-#define CPP_IS_LAME {{0,0,0,0,0,0,0,0}, {"bool","uint8","uint16","uint32","uint64",0,0,0}, {"bool","int8","int16","int32","int64",0,0,0}, {0,"float32",0,"float64",0,0,0,"float128"}}
-IFA_EXTERN const char *num_kind_string[4][8] IFA_EXTERN_INIT(CPP_IS_LAME);
 #undef CPP_IS_LAME
 
 inline Immediate& Immediate::operator=(const Immediate& imm) {
