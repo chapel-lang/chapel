@@ -690,6 +690,9 @@ Resolver::paramLoopResolver(Resolver& parent,
   ret.curStmt = loop;
   ret.rc = parent.rc;
 
+  // copy the loop type (almost certainly LOOP) from the parent resolver
+  ret.byPostorder.byAst(loop).setType(parent.byPostorder.byAst(loop).type());
+
   return ret;
 }
 
@@ -3395,11 +3398,6 @@ QualifiedType Resolver::typeForId(const ID& id) {
                         !id.isSymbolDefiningScope());
   if (useLocalResult && curStmt != nullptr) {
     if (curStmt->id().contains(id)) {
-      if (asttags::isLoop(parsing::idToTag(context, id))) {
-        // we found a reference to a label. not only do we not need to use a
-        // local result, we can return right now.
-        return QualifiedType(QualifiedType::LOOP, UnknownType::get(context));
-      }
       // OK, proceed using local result
     } else {
       useLocalResult = false;
@@ -6863,6 +6861,14 @@ static void noteLoopExprType(Resolver& rv, const IndexableLoop* loop, const std:
 bool Resolver::enter(const IndexableLoop* loop) {
   auto forLoop = loop->toFor();
   bool isParamForLoop = forLoop != nullptr && forLoop->isParam();
+
+  // standalone loops have LOOP type so that when labels refer to them,
+  // we recognize them as valid.
+  if (!loop->isExpressionLevel()) {
+    byPostorder.byAst(loop).setType(
+        QualifiedType(QualifiedType::LOOP,
+                      UnknownType::get(context)));
+  }
 
   // whether this is a param or regular loop, before entering its body
   // or considering its iterand, resolve expressions in the loop's attribute
