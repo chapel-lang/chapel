@@ -997,7 +997,7 @@ proc type blockDist.createDomain(dom: domain(?), targetLocales: [] locale = Loca
 }
 
 // create a domain over a blockDist Distribution constructed from a series of ranges
-proc type blockDist.createDomain(rng: range(?)..., targetLocales: [] locale = Locales) {
+proc type blockDist.createDomain(rng: range(?)..., targetLocales: [] locale) {
   return createDomain({(...rng)}, targetLocales);
 }
 
@@ -1058,7 +1058,7 @@ pragma "no copy return"
 proc type blockDist.createArray(
   rng: range(?)...,
   type eltType,
-  targetLocales: [] locale = Locales
+  targetLocales: [] locale
 ) {
   return createArray({(...rng)}, eltType, targetLocales);
 }
@@ -1074,7 +1074,7 @@ pragma "no copy return"
 proc type blockDist.createArray(
   rng: range(?)...,
   type eltType, initExpr: ?t,
-  targetLocales: [] locale = Locales
+  targetLocales: [] locale
 ) where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType)
 {
   return createArray({(...rng)}, eltType, initExpr, targetLocales);
@@ -1096,7 +1096,7 @@ proc type blockDist.createArray(
   rng: range(?)...,
   type eltType,
   initExpr: [?arrayDom] ?arrayEltType,
-  targetLocales: [] locale = Locales
+  targetLocales: [] locale
 ) where rng.size == arrayDom.rank && isCoercible(arrayEltType, eltType)
 {
   return createArray({(...rng)}, eltType, initExpr, targetLocales);

@@ -940,7 +940,7 @@ proc type stencilDist.createDomain(
 // create a domain over a Stencil Distribution constructed from a series of ranges
 proc type stencilDist.createDomain(
   rng: range(?)...,
-  targetLocales: [] locale = Locales,
+  targetLocales: [] locale,
   fluff: ?t = makeZero(rng.size, int),
   periodic = false
 ) where isHomogeneousTupleType(t)
@@ -1008,7 +1008,7 @@ pragma "no copy return"
 proc type stencilDist.createArray(
   rng: range(?)...,
   type eltType,
-  targetLocales: [] locale = Locales,
+  targetLocales: [] locale,
   fluff: ?f = makeZero(rng.size, int),
   periodic = false
 ) where isHomogeneousTupleType(f) {
@@ -1034,7 +1034,7 @@ proc type stencilDist.createArray(
   rng: range(?)...,
   type eltType,
   initExpr: ?t,
-  targetLocales: [] locale = Locales,
+  targetLocales: [] locale,
   fluff: ?f = makeZero(rng.size, int),
   periodic = false
 ) where (isSubtype(t, _iteratorRecord) || isCoercible(t, eltType)) && isHomogeneousTupleType(f)  {
@@ -1057,7 +1057,7 @@ proc type stencilDist.createArray(
   rng: range(?)...,
   type eltType,
   initExpr: [?arrayDom] ?arrayEltType,
-  targetLocales: [] locale = Locales,
+  targetLocales: [] locale,
   fluff: ?f = makeZero(rng.size, int),
   periodic = false
 ) where rng.size == arrayDom.rank && isCoercible(arrayEltType, eltType) && isHomogeneousTupleType(f)
