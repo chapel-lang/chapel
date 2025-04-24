@@ -4345,7 +4345,7 @@ module Python {
                               idx: Py_ssize_t,
                               item: PyObjectPtr);
     extern proc PyList_Append(list: PyObjectPtr, item: PyObjectPtr);
-    extern proc PyList_Clear(list: PyObjectPtr);
+    extern "chpl_PyList_Clear" proc PyList_Clear(list: PyObjectPtr);
 
     /*
       Sets
