@@ -226,6 +226,13 @@ module ChapelReduce {
       state[0] = min(state[0], other[0]);
       state[1] = max(state[1], other[1]);
     }
+    // we could move it to 'class ReduceScanOp', then have to omit 'eltType'
+    pragma "last resort"
+    proc accumulateOntoState(state, x) {
+      compilerError("reducing a value of type ", x.type:string,
+             "; here expecting values of type ", eltType:string,
+             " for an accumulation state of type ", state.type:string);
+    }
     inline proc accumulate(x: eltType) {
       accumulateOntoState(value, x);
     }

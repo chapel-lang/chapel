@@ -750,6 +750,12 @@ static void insertCallTempsForRiSpecs(BaseAST* base) {
 
   for_vector(ForallStmt, fs, forallStmts) {
     for_shadow_vars(svar, temp, fs) {
+      if (svar->specBlock == nullptr)
+        continue;
+      // hoist the details, if any out of the ForallStmt
+      for (AList& sbody = svar->specBlock->body;
+           sbody.head != sbody.tail;
+           fs->insertBefore(sbody.head->remove()));
       if (CallExpr* specCall = toCallExpr(svar->reduceOpExpr())) {
         insertCallTempsWithStmt(specCall, fs);
       }
