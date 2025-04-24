@@ -2947,6 +2947,54 @@ module Python {
     }
 
     /*
+      Remove item at index from the list.  Equivalent to calling `del obj[idx]`
+      in Python.
+
+      :arg idx: The index of the item to remove.
+    */
+    proc remove(idx: int) throws {
+      var ctx = chpl_pythonContext.enter();
+      defer ctx.exit();
+
+      PyList_SetSlice(this.getPyObject(), idx.safeCast(Py_ssize_t),
+                      idx.safeCast(Py_ssize_t) + 1, nil);
+      this.interpreter.checkException();
+    }
+
+    /*
+      Remove the specified items from the list.  Equivalent to calling
+      ``obj[bounds.low:bounds.high+1] = []`` in Python.
+
+      :arg bounds: The indices of the items to remove.
+    */
+    proc remove(bounds: range(?)) throws {
+      if (bounds.strides != strideKind.one) {
+        compilerError("cannot call `remove()` on a Python list with a range with stride other than 1");
+      }
+
+      var ctx = chpl_pythonContext.enter();
+      defer ctx.exit();
+
+      if (bounds.hasLowBound() && bounds.hasHighBound()) {
+        PyList_SetSlice(this.getPyObject(), bounds.low.safeCast(Py_ssize_t),
+                        bounds.high.safeCast(Py_ssize_t) + 1, nil);
+
+      } else if (!bounds.hasLowBound() && bounds.hasHighBound()) {
+        PyList_SetSlice(this.getPyObject(), min(Py_ssize_t),
+                        bounds.high.safeCast(Py_ssize_t) + 1, nil);
+
+      } else if (bounds.hasLowBound() && !bounds.hasHighBound()) {
+        PyList_SetSlice(this.getPyObject(), bounds.low.safeCast(Py_ssize_t),
+                        max(Py_ssize_t), nil);
+
+      } else {
+        PyList_SetSlice(this.getPyObject(), min(Py_ssize_t),
+                        max(Py_ssize_t), nil);
+      }
+      this.interpreter.checkException();
+    }
+
+    /*
       Remove all items from the list.  Equivalent to calling ``obj.clear()`` or
       ``del obj[:]``
 

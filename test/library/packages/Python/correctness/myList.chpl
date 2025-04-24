@@ -66,4 +66,10 @@ proc main() {
   var arr = [true, true, false];
   lst.set(0..2, arr); // send an array
   writeln("lst ", lst);
+
+  lst.remove(5);
+  writeln("lst ", lst);
+
+  lst.remove(1..3);
+  writeln("lst ", lst);
 }
