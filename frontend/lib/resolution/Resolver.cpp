@@ -2563,125 +2563,6 @@ Resolver::adjustTypesForOutFormals(const CallInfo& ci,
   }
 }
 
-// Adjusts LHS tuple type so that its components are all references.
-// Does no sanity checks.
-static QualifiedType
-adjustLhsForTupleUnpackAssign(Resolver& rv,
-                              const uast::AstNode* astForErr,
-                              const Tuple* lhsTuple,
-                              const QualifiedType& lhsType) {
-  Context* context = rv.context;
-  std::vector<QualifiedType> eltTypes;
-
-  auto lhsT = lhsType.type() ? lhsType.type()->toTupleType() : nullptr;
-  if (!lhsT || lhsT->numElements() != lhsTuple->numActuals()) return lhsType;
-
-  for (int i = 0; i < lhsTuple->numActuals(); i++) {
-    auto actual = lhsTuple->actual(i);
-    auto ident = actual->toIdentifier();
-    QualifiedType qt;
-
-    if (ident && ident->name() == USTR("_")) {
-      // If the LHS actual is '_', then use the Nothing type. This is fine
-      // since the '_' will never be set.
-      qt = { QualifiedType::VAR, NothingType::get(context) };
-
-    } else {
-      // Otherwise, turn its qualifier into 'ref' / 'const ref' and make
-      // sure the actual is a valid assignment target.
-      auto eqt = lhsT->elementType(i);
-      auto kind = KindProperties::addRefness(eqt.kind());
-      qt = { kind, eqt.type(), eqt.param() };
-    }
-
-    eltTypes.push_back(std::move(qt));
-  }
-
-  // Set the 'LHS' tuple type.
-  auto k = QualifiedType::VAR;
-  auto t = TupleType::getQualifiedTuple(context, std::move(eltTypes));
-  QualifiedType ret = { k, t };
-  rv.byPostorder.byAst(lhsTuple).setType(ret);
-  return ret;
-}
-
-void Resolver::resolveTupleUnpackAssign(const Tuple* lhsTuple,
-                                        const AstNode* astForErr,
-                                        const QualifiedType& initialLhsType,
-                                        const QualifiedType& rhsType) {
-  // Make sure that both the LHS and RHS have types
-  if (!initialLhsType.hasTypePtr()) {
-    context->error(lhsTuple, "Unknown lhs tuple type in split tuple assign");
-    return;
-  }
-  if (!rhsType.hasTypePtr()) {
-    context->error(lhsTuple, "Unknown rhs tuple type in split tuple assign");
-    return;
-  }
-
-  // Then, check that lhsType and rhsType are tuples
-  const TupleType* initialLhsT = initialLhsType.type()->toTupleType();
-  const TupleType* rhsT = rhsType.type()->toTupleType();
-
-  if (initialLhsT == nullptr) {
-    context->error(lhsTuple, "lhs type is not tuple in split tuple assign");
-    return;
-  }
-  if (rhsT == nullptr) {
-    context->error(lhsTuple, "rhs type is not tuple in split tuple assign");
-    return;
-  }
-
-  // Then, check that they have the same size
-  if (lhsTuple->numActuals() != rhsT->numElements() ||
-      initialLhsT->numElements() != rhsT->numElements()) {
-    context->error(lhsTuple, "tuple size mismatch in split tuple assign");
-    return;
-  }
-
-  const Scope* scope = currentScope();
-  auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
-
-  // Then, make sure that the LHS is valid and adjust its intent.
-  // It recomputes the LHS tuple type and sets it in 'byPostorder'.
-  // It does not recompute intents for component sub-expressions.
-  auto lhsType = adjustLhsForTupleUnpackAssign(*this, astForErr, lhsTuple,
-                                               initialLhsType);
-  auto lhsT = lhsType.type()->toTupleType();
-
-  for (int i = 0; i < lhsTuple->numActuals(); i++) {
-    auto actual = lhsTuple->actual(i);
-
-    QualifiedType lhsEltType = lhsT->elementType(i);
-    QualifiedType rhsEltType = rhsT->elementType(i);
-    auto ident = actual->toIdentifier();
-
-    // Do not perform an assignment in the case of a '_' variable.
-    if (ident && ident->name() == USTR("_")) continue;
-
-    if (auto innerTuple = actual->toTuple()) {
-      // Recurse if the element is a tuple.
-      resolveTupleUnpackAssign(innerTuple, astForErr, lhsEltType, rhsEltType);
-      continue;
-    }
-
-    // Otherwise, try to resolve a call to 'operator=' between the elements.
-    std::vector<CallInfoActual> actuals;
-    actuals.push_back(CallInfoActual(lhsEltType, UniqueString()));
-    actuals.push_back(CallInfoActual(rhsEltType, UniqueString()));
-    auto ci = CallInfo (/* name */ USTR("="),
-                        /* calledType */ QualifiedType(),
-                        /* isMethodCall */ false,
-                        /* hasQuestionArg */ false,
-                        /* isParenless */ false,
-                        std::move(actuals));
-
-    auto& re = byPostorder.byAst(actual);
-    auto c = resolveGeneratedCall(actual, &ci, &inScopes);
-    c.noteResult(&re, { { AssociatedAction::ASSIGN, lhsTuple->id() } });
-  }
-}
-
 static void adjustIndexVariableKind(Resolver& rv, const NamedDecl* nd,
                                     const QualifiedType& considering) {
   auto var = nd->toVarLikeDecl();
@@ -3025,13 +2906,6 @@ bool Resolver::resolveSpecialOpCall(const Call* call) {
 
   if (op->op() == USTR("=")) {
     if (op->numActuals() == 2) {
-      if (auto lhsTuple = op->actual(0)->toTuple()) {
-        auto& lhsType = byPostorder.byAst(op->actual(0)).type();
-        auto& rhsType = byPostorder.byAst(op->actual(1)).type();
-        resolveTupleUnpackAssign(lhsTuple, call, lhsType, rhsType);
-        return true;
-      }
-
       // Update a generic/unknown type when split-init is used.
       adjustTypesOnAssign(op->actual(0), op->actual(1));
     }

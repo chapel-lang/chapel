@@ -1007,24 +1007,32 @@ static void test24() {
     operator=(ref lhs: real, rhs: real) {}
     operator=(ref lhs: int, rhs: int) {}
     proc foo() { return (1.0, 2); }
-    var x: real;
-    (x, _) = foo();
+    proc test() {
+      var x: real;
+      (x, _) = foo();
+    }
+    test();
     )"""";
-
-  auto xQt = resolveQualifiedTypeOfX(context, program);
-  assert(!guard.realizeErrors());
-  assert(xQt.kind() == QualifiedType::VAR);
-  assert(xQt.type()->isRealType());
-
 
   auto mod = parseModule(context, program);
   auto& rr = resolveModule(context, mod->id());
   assert(!guard.realizeErrors());
 
+  // Get the results for the 'test()' call
+  //
+  // TODO: workaround for current issue where we do not run call-init-deinit
+  // for module statements.
+  auto testCall = mod->stmt(4)->toFnCall();
+  auto testSig = rr.byAst(testCall).mostSpecific().only().fn();
+  ResolutionContext rc(context);
+  auto fn = resolveFunction(&rc, testSig, nullptr);
+  auto fnRR = fn->resolutionById();
+
   // Get the type of the '(x, _)' tuple itself.
-  auto astTup = mod->stmt(4)->toCall()->actual(0)->toTuple();
+  auto testFn = mod->stmt(3)->toFunction();
+  auto astTup = testFn->stmt(1)->toCall()->actual(0)->toTuple();
   assert(astTup);
-  auto& qtTup = rr.byAst(astTup).type();
+  auto& qtTup = fnRR.byAst(astTup).type();
 
   // The tuple itself is 'VAR' because its components will be assigned to.
   assert(qtTup.kind() == QualifiedType::VAR);
@@ -1041,7 +1049,7 @@ static void test24() {
   // Finally confirm that there is an assignment for 'x' but not for '_'.
   for (int i = 0; i < astTup->numActuals(); i++) {
     auto actual = astTup->actual(i);
-    auto& actions = rr.byAst(actual).associatedActions();
+    auto& actions = fnRR.byAst(actual).associatedActions();
     assert(i != 0 || actions.size() == 1 &&
                      actions[0].action() == AssociatedAction::ASSIGN);
     assert(i != 1 || actions.size() == 0);
