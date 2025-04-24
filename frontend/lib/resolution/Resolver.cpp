@@ -2576,6 +2576,26 @@ static void adjustIndexVariableKind(Resolver& rv, const NamedDecl* nd,
   re.setKind(kind);
 }
 
+static void gatherEltTypesFromRhs(const TupleDecl* lhsTuple,
+                                  const QualifiedType& rhsType,
+                                  std::vector<QualifiedType>& eltTypes) {
+  QualifiedType::Kind lhsKind = (Qualifier) lhsTuple->intentOrKind();
+  bool isLhsIdxOrRef = lhsKind == Qualifier::INDEX ||
+                       isRefQualifier(lhsKind);
+
+  auto rhsT = rhsType.type()->toTupleType();
+  for (int i = 0; i < rhsT->numElements(); i++) {
+    auto kind = rhsT->elementType(i).kind();
+    auto type = rhsT->elementType(i).type();
+
+    // If the LHS is a ref tuple or a tuple index e.g., for (i, j)..., and
+    // the RHS is a ref tuple, then we need to transform the detupled
+    // components into references to the original tuple's components.
+    if (isLhsIdxOrRef && rhsType.isRef()) kind = rhsType.kind();
+    eltTypes.push_back({ kind, type });
+  }
+}
+
 void Resolver::resolveTupleUnpackDecl(const TupleDecl* lhsTuple,
                                       const QualifiedType& rhsType) {
   // Exit since 'resolveNamedDecl' also exits when scope-resolving.
@@ -2608,20 +2628,7 @@ void Resolver::resolveTupleUnpackDecl(const TupleDecl* lhsTuple,
 
   // Else, it's a tuple of the same size, so use the RHS element types
   } else {
-    QualifiedType::Kind lhsKind = (Qualifier) lhsTuple->intentOrKind();
-    bool isLhsIdxOrRef = lhsKind == Qualifier::INDEX ||
-                         isRefQualifier(lhsKind);
-
-    for (int i = 0; i < rhsT->numElements(); i++) {
-      auto kind = rhsT->elementType(i).kind();
-      auto type = rhsT->elementType(i).type();
-
-      // If the LHS is a ref tuple or a tuple index e.g., for (i, j)..., and
-      // the RHS is a ref tuple, then we need to transform the detupled
-      // components into references to the original tuple's components.
-      if (isLhsIdxOrRef && rhsType.isRef()) kind = rhsType.kind();
-      eltTypes.push_back({ kind, type });
-    }
+    gatherEltTypesFromRhs(lhsTuple, rhsType, eltTypes);
   }
 
   // Finally, try to resolve the types of the elements
@@ -2645,6 +2652,10 @@ void Resolver::resolveTupleUnpackDecl(const TupleDecl* lhsTuple,
 }
 
 void Resolver::resolveTupleDecl(const TupleDecl* td) {
+  if (scopeResolveOnly) {
+    return;
+  }
+
   QualifiedType::Kind declKind = (Qualifier) td->intentOrKind();
   QualifiedType qt;
 
@@ -2663,7 +2674,6 @@ void Resolver::resolveTupleDecl(const TupleDecl* td) {
       qt = sub;
     }
 
-  // Otherwise use the type that was provided.
   } else if (typeExpr == nullptr && initExpr == nullptr) {
     // Note: we seem to rely on tuple components being 'var', and relying on
     // the tuple's kind instead. Without this, the current instantiation
@@ -2673,6 +2683,7 @@ void Resolver::resolveTupleDecl(const TupleDecl* td) {
     auto tup = TupleType::getQualifiedTuple(context, eltTypes);
     qt = QualifiedType(declKind, tup);
   } else {
+    // Otherwise use the type that was resolved.
     QualifiedType typeExprT;
     QualifiedType initExprT;
 
@@ -2718,7 +2729,10 @@ void Resolver::resolveTupleDecl(const TupleDecl* td, QualifiedType useType) {
     // Default-intent indicates a TupleDecl used to capture identifiers, and
     // such tuples should be converted to a referential tuple. For more, see
     // ``Value Tuples and Referential Tuples`` in the language specification.
-    if (useType.kind() == QualifiedType::DEFAULT_INTENT) {
+    //
+    // This is expected to apply to default-intent tuple formals, or to
+    // loop index variables.
+    if (td->intentOrKind() == TupleDecl::IntentOrKind::DEFAULT_INTENT) {
       useType = QualifiedType(useType.kind(), tt->toReferentialTuple(context));
     }
   }
