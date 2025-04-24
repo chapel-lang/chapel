@@ -3829,9 +3829,17 @@ static const Type* getNumericType(Context* context,
                                   const CallInfo& ci) {
   UniqueString name = ci.name();
 
-  if (name == USTR("int") || name == USTR("uint") || name == USTR("bool") ||
-      name == USTR("real") || name == USTR("imag") || name == USTR("complex")) {
+  bool namedCall =
+      name == USTR("int") || name == USTR("uint") || name == USTR("bool") ||
+      name == USTR("real") || name == USTR("imag") || name == USTR("complex");
 
+
+  bool calledType = false;
+  if (auto ct = ci.calledType().type()) {
+    calledType = ct->isNumericOrBoolType();
+  }
+
+  if (namedCall || calledType) {
     // Should we compute the generic version of the type (e.g. int(?))
     bool useGenericType = false;
 
