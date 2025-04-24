@@ -72,4 +72,7 @@ proc main() {
 
   lst.remove(1..3);
   writeln("lst ", lst);
+
+  lst.set(0..1, arr); // check specifying less elements than contained in arr
+  writeln("lst ", lst);
 }

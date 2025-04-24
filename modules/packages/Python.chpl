@@ -2881,8 +2881,8 @@ module Python {
       Set an item in the list. Equivalent to calling
       ``obj[bounds.low:bounds.high+1] = items`` in Python.
 
-      Note that providing less items than specified by `bounds` will cause the
-      remaining indices to be deleted.
+      Note that providing more or less items than specified by `bounds` will
+      change the length of the list.
 
       :arg bounds: The indices of the items to set.
       :arg item: The item to set.
