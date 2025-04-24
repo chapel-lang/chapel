@@ -113,6 +113,11 @@ struct CallInitDeinit : VarScopeVisitor {
                      ID deinitedId,
                      const QualifiedType& type,
                      RV& rv);
+  void resolveTupleUnpackAssign(const Tuple* lhsTuple,
+                                const AstNode* astForErr,
+                                const QualifiedType& initialLhsType,
+                                const QualifiedType& rhsType,
+                                RV& rv);
 
 
   void processReturnThrowYield(const uast::AstNode* ast, RV& rv);
@@ -517,6 +522,110 @@ void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
   }
 }
 
+// Adjusts LHS tuple type so that its components are all references.
+// Does no sanity checks.
+static QualifiedType
+getLhsForTupleUnpackAssign(Context* context,
+                           const uast::AstNode* astForErr,
+                           const Tuple* lhsTuple,
+                           const QualifiedType& lhsType) {
+  std::vector<QualifiedType> eltTypes;
+
+  auto lhsT = lhsType.type() ? lhsType.type()->toTupleType() : nullptr;
+  if (!lhsT || lhsT->numElements() != lhsTuple->numActuals()) return lhsType;
+
+  for (int i = 0; i < lhsTuple->numActuals(); i++) {
+    auto actual = lhsTuple->actual(i);
+    auto ident = actual->toIdentifier();
+    QualifiedType qt;
+
+    if (ident && ident->name() == USTR("_")) {
+      // If the LHS actual is '_', then use the Nothing type. This is fine
+      // since the '_' will never be set.
+      qt = { QualifiedType::VAR, NothingType::get(context) };
+
+    } else {
+      // Otherwise, turn its qualifier into 'ref' / 'const ref'
+      auto eqt = lhsT->elementType(i);
+      auto kind = KindProperties::addRefness(eqt.kind());
+      qt = { kind, eqt.type(), eqt.param() };
+    }
+
+    eltTypes.push_back(std::move(qt));
+  }
+
+  // Set the 'LHS' tuple type.
+  auto k = QualifiedType::VAR;
+  auto t = TupleType::getQualifiedTuple(context, std::move(eltTypes));
+  QualifiedType ret = { k, t };
+  return ret;
+}
+
+
+void CallInitDeinit::resolveTupleUnpackAssign(const Tuple* lhsTuple,
+                                              const AstNode* astForErr,
+                                              const QualifiedType& initialLhsType,
+                                              const QualifiedType& rhsType,
+                                              RV& rv) {
+  // Make sure that both the LHS and RHS have types
+  if (!initialLhsType.hasTypePtr()) {
+    context->error(lhsTuple, "Unknown lhs tuple type in split tuple assign");
+    return;
+  }
+  if (!rhsType.hasTypePtr()) {
+    context->error(lhsTuple, "Unknown rhs tuple type in split tuple assign");
+    return;
+  }
+
+  // Then, check that lhsType and rhsType are tuples
+  const TupleType* initialLhsT = initialLhsType.type()->toTupleType();
+  const TupleType* rhsT = rhsType.type()->toTupleType();
+
+  if (initialLhsT == nullptr) {
+    context->error(lhsTuple, "lhs type is not tuple in split tuple assign");
+    return;
+  }
+  if (rhsT == nullptr) {
+    context->error(lhsTuple, "rhs type is not tuple in split tuple assign");
+    return;
+  }
+
+  // Then, check that they have the same size
+  if (lhsTuple->numActuals() != rhsT->numElements() ||
+      initialLhsT->numElements() != rhsT->numElements()) {
+    context->error(lhsTuple, "tuple size mismatch in split tuple assign");
+    return;
+  }
+
+  // Then, make sure that the LHS is valid and adjust its intent.
+  // It recomputes the LHS tuple type and sets it in 'byPostorder'.
+  // It does not recompute intents for component sub-expressions.
+  auto lhsType = getLhsForTupleUnpackAssign(context, astForErr, lhsTuple,
+                                            initialLhsType);
+  rv.byPostorder().byAst(lhsTuple).setType(lhsType);
+
+  auto lhsT = lhsType.type()->toTupleType();
+
+  for (int i = 0; i < lhsTuple->numActuals(); i++) {
+    auto actual = lhsTuple->actual(i);
+
+    QualifiedType lhsEltType = lhsT->elementType(i);
+    QualifiedType rhsEltType = rhsT->elementType(i);
+    auto ident = actual->toIdentifier();
+
+    // Do not perform an assignment in the case of a '_' variable.
+    if (ident && ident->name() == USTR("_")) continue;
+
+    if (auto innerTuple = actual->toTuple()) {
+      // Recurse if the element is a tuple.
+      resolveTupleUnpackAssign(innerTuple, astForErr, lhsEltType, rhsEltType, rv);
+      continue;
+    }
+
+    resolveAssign(actual, lhsEltType, rhsEltType, rv);
+  }
+}
+
 void CallInitDeinit::resolveAssign(const AstNode* ast,
                                    const QualifiedType& lhsType,
                                    const QualifiedType& rhsTypeIn,
@@ -531,8 +640,12 @@ void CallInitDeinit::resolveAssign(const AstNode* ast,
 
   if (auto call = ast->toOpCall()) {
     if (call->op() == "=" && call->child(0)->isTuple()) {
-      // Tuple unpacking assignment, handled directly by Resolver
+      // Tuple unpacking assignment
       // (a, b, c) = foo();
+      auto lhsTuple = call->actual(0)->toTuple();
+      auto& lhsType = rv.byPostorder().byAst(call->actual(0)).type();
+      auto& rhsType = rv.byPostorder().byAst(call->actual(1)).type();
+      resolveTupleUnpackAssign(lhsTuple, call, lhsType, rhsType, rv);
       return;
     }
   }

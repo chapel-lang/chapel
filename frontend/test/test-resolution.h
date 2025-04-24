@@ -77,6 +77,9 @@ resolveTypesOfVariables(Context* context,
 std::unordered_map<std::string, QualifiedType>
 resolveTypesOfVariables(Context* context, std::string program, const std::vector<std::string>& variables);
 
+QualifiedType resolveTypeOfVariable(Context* context, std::string program,
+                                    const std::string& variable);
+
 std::unordered_map<std::string, QualifiedType>
 resolveTypesOfVariablesInit(Context* context, std::string program, const std::vector<std::string>& variables);
 

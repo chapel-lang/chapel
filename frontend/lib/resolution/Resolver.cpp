@@ -1835,7 +1835,7 @@ static const Type* computeVarArgTuple(Resolver& resolver,
       auto newKind = resolveIntent(QualifiedType(qtKind, typePtr),
                                    /* isThis */ false, /* isInit */ false);
       QualifiedType elt = QualifiedType(newKind, typePtr);
-      typePtr = TupleType::getStarTuple(context, paramSize, elt);
+      typePtr = TupleType::getVarArgTuple(context, paramSize, elt);
     }
   }
 
@@ -2566,81 +2566,50 @@ Resolver::adjustTypesForOutFormals(const CallInfo& ci,
   }
 }
 
-void Resolver::resolveTupleUnpackAssign(ResolvedExpression& r,
-                                        const uast::AstNode* astForErr,
-                                        const Tuple* lhsTuple,
-                                        QualifiedType lhsType,
-                                        QualifiedType rhsType) {
-  // Check that lhsType = rhsType can work
+static void adjustIndexVariableKind(Resolver& rv, const NamedDecl* nd,
+                                    const QualifiedType& considering) {
+  auto var = nd->toVarLikeDecl();
+  if (!var || var->storageKind() != uast::Qualifier::INDEX) return;
 
-  if (!lhsType.hasTypePtr()) {
-    context->error(lhsTuple, "Unknown lhs tuple type in split tuple assign");
-    return;
-  }
-  if (!rhsType.hasTypePtr()) {
-    context->error(lhsTuple, "Unknown rhs tuple type in split tuple assign");
-    return;
-  }
+  auto kind = considering.kind();
+  // Non-ref index variables are generally immutable, so make it 'const'.
+  if (!considering.isRef()) kind = KindProperties::addConstness(kind);
 
-  // First, check that lhsType and rhsType are tuples
-  const TupleType* lhsT = lhsType.type()->toTupleType();
-  const TupleType* rhsT = rhsType.type()->toTupleType();
+  auto& re = rv.byPostorder.byAst(var);
+  re.setKind(kind);
+}
 
-  if (lhsT == nullptr) {
-    context->error(lhsTuple, "lhs type is not tuple in split tuple assign");
-    return;
-  }
-  if (rhsT == nullptr) {
-    context->error(lhsTuple, "rhs type is not tuple in split tuple assign");
-    return;
-  }
+static void gatherEltTypesFromRhs(const TupleDecl* lhsTuple,
+                                  const QualifiedType& rhsType,
+                                  std::vector<QualifiedType>& eltTypes) {
+  QualifiedType::Kind lhsKind = (Qualifier) lhsTuple->intentOrKind();
+  bool isLhsIdxOrRef = lhsKind == Qualifier::INDEX ||
+                       isRefQualifier(lhsKind);
 
-  // Then, check that they have the same size
-  if (lhsTuple->numActuals() != rhsT->numElements()) {
-    context->error(lhsTuple, "tuple size mismatch in split tuple assign");
-    return;
-  }
-  if (lhsT->numElements() != rhsT->numElements()) {
-    context->error(lhsTuple, "tuple size mismatch in split tuple assign");
-    return;
-  }
+  auto rhsT = rhsType.type()->toTupleType();
+  for (int i = 0; i < rhsT->numElements(); i++) {
+    auto kind = rhsT->elementType(i).kind();
+    auto type = rhsT->elementType(i).type();
 
-  const Scope* scope = currentScope();
-  auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
-
-  // Finally, try to resolve = between the elements
-  int i = 0;
-  for (auto actual : lhsTuple->actuals()) {
-    QualifiedType lhsEltType = lhsT->elementType(i);
-    QualifiedType rhsEltType = rhsT->elementType(i);
-    if (auto innerTuple = actual->toTuple()) {
-      resolveTupleUnpackAssign(r, astForErr, innerTuple, lhsEltType, rhsEltType);
-    } else {
-      std::vector<CallInfoActual> actuals;
-      actuals.push_back(CallInfoActual(lhsEltType, UniqueString()));
-      actuals.push_back(CallInfoActual(rhsEltType, UniqueString()));
-      auto ci = CallInfo (/* name */ USTR("="),
-                          /* calledType */ QualifiedType(),
-                          /* isMethodCall */ false,
-                          /* hasQuestionArg */ false,
-                          /* isParenless */ false,
-                          actuals);
-
-      auto c = resolveGeneratedCall(actual, &ci, &inScopes);
-      c.noteResult(&r, { { AssociatedAction::ASSIGN, lhsTuple->id() } });
-    }
-    i++;
+    // If the LHS is a ref tuple or a tuple index e.g., for (i, j)..., and
+    // the RHS is a ref tuple, then we need to transform the detupled
+    // components into references to the original tuple's components.
+    if (isLhsIdxOrRef && rhsType.isRef()) kind = rhsType.kind();
+    eltTypes.push_back({ kind, type });
   }
 }
 
 void Resolver::resolveTupleUnpackDecl(const TupleDecl* lhsTuple,
-                                      QualifiedType rhsType) {
+                                      const QualifiedType& rhsType) {
+  // Exit since 'resolveNamedDecl' also exits when scope-resolving.
+  if (scopeResolveOnly) return;
+
   if (!rhsType.hasTypePtr()) {
     CHPL_REPORT(context, TupleDeclUnknownType, lhsTuple);
     return;
   }
 
-  const TupleType* rhsT = rhsType.type() ? rhsType.type()->toTupleType() : nullptr;
+  auto rhsT = rhsType.type() ? rhsType.type()->toTupleType() : nullptr;
   std::vector<QualifiedType> eltTypes;
 
   if (rhsT == nullptr) {
@@ -2654,39 +2623,95 @@ void Resolver::resolveTupleUnpackDecl(const TupleDecl* lhsTuple,
       CHPL_REPORT(context, TupleDeclNotTuple, lhsTuple, rhsType.type());
       return;
     }
+
+  // Then, check that they have the same size
   } else if (lhsTuple->numDecls() != rhsT->numElements()) {
-    // Then, check that they have the same size
     CHPL_REPORT(context, TupleDeclMismatchedElems, lhsTuple, rhsT);
     return;
+
+  // Else, it's a tuple of the same size, so use the RHS element types
   } else {
-    for (int i = 0; i < rhsT->numElements(); i++) {
-      eltTypes.push_back(rhsT->elementType(i));
-    }
+    gatherEltTypesFromRhs(lhsTuple, rhsType, eltTypes);
   }
 
   // Finally, try to resolve the types of the elements
   int i = 0;
   for (auto actual : lhsTuple->decls()) {
     QualifiedType rhsEltType = eltTypes[i];
+
     if (auto innerTuple = actual->toTupleDecl()) {
       resolveTupleUnpackDecl(innerTuple, rhsEltType);
+
     } else if (auto namedDecl = actual->toNamedDecl()) {
       resolveNamedDecl(namedDecl, rhsEltType.type());
+
+      // If the element is an index variable, adjust its qualifier.
+      adjustIndexVariableKind(*this, namedDecl, rhsEltType);
     } else {
-      CHPL_ASSERT(false && "case not handled");
+      CHPL_UNIMPL("Unhandled case when unpacking tuple decl");
     }
     i++;
   }
 }
 
-void Resolver::resolveTupleDecl(const TupleDecl* td,
-                                const Type* useType) {
+void Resolver::resolveTupleDecl(const TupleDecl* td) {
   if (scopeResolveOnly) {
     return;
   }
 
   QualifiedType::Kind declKind = (Qualifier) td->intentOrKind();
-  QualifiedType useT;
+  QualifiedType qt;
+
+  auto typeExpr = td->typeExpression();
+  auto initExpr = td->initExpression();
+
+  // If there is a substitution, use that instead.
+  if (substitutions != nullptr && substitutions->count(td->id()) != 0) {
+    auto sub = substitutions->find(td->id())->second;
+    auto subTup = sub.hasTypePtr() ? sub.type()->toTupleType() : nullptr;
+
+    if (subTup == nullptr) {
+      // Rely on hasTypePtr check below to recognize error
+      qt = QualifiedType();
+    } else {
+      qt = sub;
+    }
+
+  } else if (typeExpr == nullptr && initExpr == nullptr) {
+    // Note: we seem to rely on tuple components being 'var', and relying on
+    // the tuple's kind instead. Without this, the current instantiation
+    // logic won't allow, for example, passing (1, 2, 3) to (?, ?, ?).
+    auto anyType = QualifiedType(QualifiedType::VAR, AnyType::get(context));
+    std::vector<QualifiedType> eltTypes(td->numDecls(), anyType);
+    auto tup = TupleType::getQualifiedTuple(context, eltTypes);
+    qt = QualifiedType(declKind, tup);
+  } else {
+    // Otherwise use the type that was resolved.
+    QualifiedType typeExprT;
+    QualifiedType initExprT;
+
+    if (typeExpr != nullptr) {
+      ResolvedExpression& result = byPostorder.byAst(typeExpr);
+      typeExprT = result.type();
+    }
+    if (initExpr != nullptr) {
+      ResolvedExpression& result = byPostorder.byAst(initExpr);
+      initExprT = result.type();
+    }
+
+    qt = getTypeForDecl(td, typeExpr, initExpr, declKind, typeExprT,
+                        initExprT);
+  }
+
+  resolveTupleDecl(td, std::move(qt));
+}
+
+void Resolver::resolveTupleDecl(const TupleDecl* td, QualifiedType useType) {
+  if (scopeResolveOnly) {
+    return;
+  }
+
+  QualifiedType::Kind declKind = (Qualifier) td->intentOrKind();
 
   // Non-default intents are currently not allowed for tuple-grouped formals.
   //
@@ -2694,73 +2719,33 @@ void Resolver::resolveTupleDecl(const TupleDecl* td,
   // formal ``((a, b), c)``. Such nested formals should be handled by
   // ``resolveTupleUnpackDecl``.
   if (td->isTupleDeclFormal() && declKind != QualifiedType::DEFAULT_INTENT) {
-    useT = QualifiedType(declKind, ErroneousType::get(context));
-    ResolvedExpression& result = byPostorder.byAst(td);
-    result.setType(useT);
+    auto qt = QualifiedType(declKind, ErroneousType::get(context));
+    auto& result = byPostorder.byAst(td);
+    result.setType(qt);
     return;
   }
 
-  // Figure out the type to use for this tuple
-  if (useType != nullptr) {
-    useT = QualifiedType(declKind, useType);
-  } else if (substitutions != nullptr &&
-             substitutions->count(td->id()) != 0) {
-    auto sub = substitutions->find(td->id())->second;
-    auto subTup = sub.hasTypePtr() ? sub.type()->toTupleType() : nullptr;
+  if (!useType.hasTypePtr()) {
+    useType = typeErr(td, "Cannot establish type for tuple decl");
 
-    if (subTup == nullptr) {
-      // Rely on hasTypePtr check below to recognize error
-      useT = QualifiedType();
-    } else {
-      useT = sub;
+  } else if (auto tt = useType.type()->toTupleType()) {
+    // Default-intent indicates a TupleDecl used to capture identifiers, and
+    // such tuples should be converted to a referential tuple. For more, see
+    // ``Value Tuples and Referential Tuples`` in the language specification.
+    //
+    // This is expected to apply to default-intent tuple formals, or to
+    // loop index variables.
+    if (td->intentOrKind() == TupleDecl::IntentOrKind::DEFAULT_INTENT) {
+      useType = QualifiedType(useType.kind(), tt->toReferentialTuple(context));
     }
-  } else {
-    QualifiedType typeExprT;
-    QualifiedType initExprT;
-
-    auto typeExpr = td->typeExpression();
-    auto initExpr = td->initExpression();
-
-    if (typeExpr == nullptr && initExpr == nullptr) {
-      // Note: we seem to rely on tuple components being 'var', and relying on
-      // the tuple's kind instead. Without this, the current instantiation
-      // logic won't allow, for example, passing (1, 2, 3) to (?, ?, ?).
-      std::vector<QualifiedType> eltTypes;
-      for (auto decl : td->decls()) {
-        eltTypes.push_back(QualifiedType(QualifiedType::VAR,
-                                         getAnyType(*this, decl->id())));
-      }
-      auto tup = TupleType::getQualifiedTuple(context, eltTypes);
-      useT = QualifiedType(declKind, tup);
-    } else {
-      if (typeExpr != nullptr) {
-        ResolvedExpression& result = byPostorder.byAst(typeExpr);
-        typeExprT = result.type();
-      }
-      if (initExpr != nullptr) {
-        ResolvedExpression& result = byPostorder.byAst(initExpr);
-        initExprT = result.type();
-      }
-
-      useT = getTypeForDecl(td, typeExpr, initExpr,
-                            declKind, typeExprT, initExprT);
-
-    }
-  }
-
-  if (!useT.hasTypePtr()) {
-    context->error(td, "Cannot establish type for tuple decl");
-    useT = QualifiedType(declKind, ErroneousType::get(context));
-  } else if (useT.type()->isTupleType()) {
-    useT = QualifiedType(useT.kind(),
-                         useT.type()->toTupleType()->toReferentialTuple(context));
   }
 
   // save the type in byPostorder
   ResolvedExpression& result = byPostorder.byAst(td);
-  result.setType(useT);
+  result.setType(useType);
+
   // resolve the types of the tuple elements
-  resolveTupleUnpackDecl(td, useT);
+  resolveTupleUnpackDecl(td, std::move(useType));
 }
 
 bool Resolver::resolveSpecialNewCall(const Call* call) {
@@ -2938,17 +2923,6 @@ bool Resolver::resolveSpecialOpCall(const Call* call) {
 
   if (op->op() == USTR("=")) {
     if (op->numActuals() == 2) {
-      if (auto lhsTuple = op->actual(0)->toTuple()) {
-
-        ResolvedExpression& r = byPostorder.byAst(op);
-        QualifiedType lhsType = byPostorder.byAst(op->actual(0)).type();
-        QualifiedType rhsType = byPostorder.byAst(op->actual(1)).type();
-
-        resolveTupleUnpackAssign(r, call,
-                                 lhsTuple, lhsType, rhsType);
-        return true;
-      }
-
       // Update a generic/unknown type when split-init is used.
       adjustTypesOnAssign(op->actual(0), op->actual(1));
     }
@@ -4305,6 +4279,14 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
     return;
   }
 
+  // Throwaway '_', must be handled elsewhere and has no type on its own.
+  // Use the '?' type as a placeholder since 'unknown' causes resolution
+  // of the tuple type to give up.
+  if (ident->name() == USTR("_")) {
+    result.setType(QualifiedType(QualifiedType::VAR, AnyType::get(context)));
+    return;
+  }
+
   // lookupIdentifier reports any errors that are needed
   bool resolvingCalledIdent = nearestCalledExpression() == ident;
   auto parenlessInfo = ParenlessOverloadInfo();
@@ -4895,7 +4877,14 @@ void Resolver::exit(const MultiDecl* decl) {
         if (auto v = d->toVarLikeDecl()) {
           resolveNamedDecl(v, t);
         } else if (auto td = d->toTupleDecl()) {
-          resolveTupleDecl(td, t);
+          if (t == nullptr) {
+            resolveTupleDecl(td);
+          } else {
+            // Use the declared intent.
+            auto kind = (Qualifier) td->intentOrKind();
+            QualifiedType qt = { kind, t };
+            resolveTupleDecl(td, std::move(qt));
+          }
         }
 
         // update lastType
@@ -4931,7 +4920,7 @@ bool Resolver::enter(const TupleDecl* decl) {
 }
 
 void Resolver::exit(const TupleDecl* decl) {
-  resolveTupleDecl(decl, /* useType */ nullptr);
+  resolveTupleDecl(decl);
   exitScope(decl);
 }
 
@@ -6947,7 +6936,7 @@ bool Resolver::enter(const IndexableLoop* loop) {
     ResolvedExpression& re = byPostorder.byAst(idx);
 
     if (idx->isTupleDecl() && !scopeResolveOnly) {
-      resolveTupleUnpackDecl(idx->toTupleDecl(), idxType);
+      resolveTupleDecl(idx->toTupleDecl(), idxType);
     } else {
       re.setType(idxType);
     }

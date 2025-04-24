@@ -2482,7 +2482,8 @@ instantiateSignatureImpl(ResolutionContext* rc,
     }
 
     if (instantiateVarArgs) {
-      const TupleType* t = TupleType::getQualifiedTuple(context, varargsTypes);
+      const TupleType* t = TupleType::getQualifiedTuple(context, varargsTypes,
+                                                        /*isVarArgTuple=*/true);
       auto formal = faMap.byFormalIdx(varArgIdx).formal()->toVarArgFormal();
       QualifiedType vat = QualifiedType(formal->storageKind(), t);
       substitutions.insert({formal->id(), vat});
@@ -4095,7 +4096,9 @@ static const Type* resolveBuiltinTypeCtor(Context* context,
     auto second = ci.actual(1).type();
     if (first.isParam() && first.type()->isIntType() &&
         second.isType()) {
-      return TupleType::getStarTuple(context, first, second);
+      auto num = first.param()->toIntParam()->value();
+      std::vector<const Type*> eltTypes(num, second.type());
+      return TupleType::getValueTuple(context, eltTypes);
     }
   }
 
