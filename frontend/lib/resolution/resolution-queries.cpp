@@ -2482,7 +2482,8 @@ instantiateSignatureImpl(ResolutionContext* rc,
     }
 
     if (instantiateVarArgs) {
-      const TupleType* t = TupleType::getQualifiedTuple(context, varargsTypes);
+      const TupleType* t = TupleType::getQualifiedTuple(context, varargsTypes,
+                                                        /*isVarArgTuple=*/true);
       auto formal = faMap.byFormalIdx(varArgIdx).formal()->toVarArgFormal();
       QualifiedType vat = QualifiedType(formal->storageKind(), t);
       substitutions.insert({formal->id(), vat});
