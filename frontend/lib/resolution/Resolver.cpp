@@ -3044,6 +3044,40 @@ bool Resolver::resolveSpecialOpCall(const Call* call) {
   } else if (op->op() == USTR("reduce=")) {
     resolveReduceAssign(*this, op);
     return true;
+  } else if (op->op() == USTR("dmapped")) {
+    std::vector<const AstNode*> actualAsts;
+    std::vector<CallInfoActual> actuals;
+    const AstNode* questionArg = nullptr;
+
+    prepareCallInfoActuals(call, actuals, questionArg, &actualAsts);
+    CHPL_ASSERT(!questionArg);
+
+    // for some reason, the standard function has its actuals swapped
+    // compared to how the operator occurs in the AST.
+    std::swap(actuals[0], actuals[1]);
+    std::swap(actualAsts[0], actualAsts[1]);
+
+    // add the 'definedConst' actual, which at this time is always true.
+    actualAsts.push_back(nullptr);
+    actuals.push_back({ QualifiedType::makeParamBool(context, true),
+                        UniqueString::get(context, "definedConst") });
+
+    auto ci = CallInfo(UniqueString::get(context, "chpl__distributed"),
+                       /* calledType */ QualifiedType(),
+                       /* isMethodCall */ false,
+                       /* hasQuestionArg */ questionArg != nullptr,
+                       /* isParenless */ false,
+                       std::move(actuals));
+
+    if (shouldSkipCallResolution(this, call, actualAsts, ci)) {
+      return true;
+    }
+
+    auto inScopes = CallScopeInfo::forNormalCall(currentScope(), poiScope);
+    auto cr = resolveGeneratedCall(call, &ci, &inScopes);
+    cr.noteResult(&byPostorder.byAst(call));
+
+    return true;
   }
 
   return false;
