@@ -154,6 +154,30 @@ PyObject* AstNodeObject::iter(AstNodeObject *self) {
   return wrapIterPair((ContextObject*) self->contextObject, self->value_->children());
 }
 
+PyObject* AstNodeObject::str(AstNodeObject *self) {
+  if (!self->value_) {
+    raiseExceptionForIncorrectlyConstructedType("AstNode");
+    return nullptr;
+  }
+
+  std::stringstream ss;
+  self->value_->stringify(ss, CHPL_SYNTAX);
+  auto typeString = ss.str();
+  return Py_BuildValue("s", typeString.c_str());
+}
+
+PyObject* AstNodeObject::repr(AstNodeObject *self) {
+  if (!self->value_) {
+    raiseExceptionForIncorrectlyConstructedType("AstNode");
+    return nullptr;
+  }
+
+  std::stringstream ss;
+  self->value_->stringify(ss, DEBUG_DETAIL);
+  auto typeString = ss.str();
+  return Py_BuildValue("s", typeString.c_str());
+}
+
 void ChapelTypeObject_dealloc(ChapelTypeObject* self) {
   Py_XDECREF(self->contextObject);
   callPyTypeSlot_tp_free(ChapelTypeObject::PythonType, (PyObject*) self);

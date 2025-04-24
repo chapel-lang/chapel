@@ -140,9 +140,13 @@ struct AstNodeObject : public PythonClassWithContext<AstNodeObject, const chpl::
   static constexpr const char* DocStr = "The base type of Chapel AST nodes";
 
   static PyObject* iter(AstNodeObject *self);
+  static PyObject* str(AstNodeObject *self);
+  static PyObject* repr(AstNodeObject *self);
 
   static PyTypeObject* configurePythonType() {
-    std::array<PyType_Slot, 1> extraSlots = {
+    std::array<PyType_Slot, 3> extraSlots = {
+      PyType_Slot{Py_tp_str, (void*) AstNodeObject::str},
+      PyType_Slot{Py_tp_repr, (void*) AstNodeObject::repr},
       PyType_Slot{Py_tp_iter, (void*) AstNodeObject::iter},
     };
     PyTypeObject* configuring = PythonClassWithContext<AstNodeObject, const chpl::uast::AstNode*>::configurePythonType(Py_TPFLAGS_BASETYPE, extraSlots);
