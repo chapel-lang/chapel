@@ -2563,15 +2563,6 @@ Resolver::adjustTypesForOutFormals(const CallInfo& ci,
   }
 }
 
-static bool
-isValidAssignmentTarget(const ID& id, const ResolvedExpression& re) {
-  // If the kind is a reference then it must point to an assignable name.
-  if (re.type().isRef()) return true;
-  // It's a non-ref returning call, so it returns a temporary value.
-  if (re.mostSpecific().foundCandidates()) return false;
-  return true;
-}
-
 // Adjusts LHS tuple type so that its components are all references.
 // Does no sanity checks.
 static QualifiedType
@@ -2588,7 +2579,6 @@ adjustLhsForTupleUnpackAssign(Resolver& rv,
   for (int i = 0; i < lhsTuple->numActuals(); i++) {
     auto actual = lhsTuple->actual(i);
     auto ident = actual->toIdentifier();
-    auto& re = rv.byPostorder.byAst(actual);
     QualifiedType qt;
 
     if (ident && ident->name() == USTR("_")) {
@@ -2602,11 +2592,6 @@ adjustLhsForTupleUnpackAssign(Resolver& rv,
       auto eqt = lhsT->elementType(i);
       auto kind = KindProperties::addRefness(eqt.kind());
       qt = { kind, eqt.type(), eqt.param() };
-
-      // Finally, make sure the actual is a valid assignment target.
-      if (!isValidAssignmentTarget(actual->id(), re)) {
-        context->error(actual, "invalid lhs component in tuple assignment");
-      }
     }
 
     eltTypes.push_back(std::move(qt));
@@ -2785,7 +2770,20 @@ void Resolver::resolveTupleDecl(const TupleDecl* td) {
   auto typeExpr = td->typeExpression();
   auto initExpr = td->initExpression();
 
-  if (typeExpr == nullptr && initExpr == nullptr) {
+  // If there is a substitution, use that instead.
+  if (substitutions != nullptr && substitutions->count(td->id()) != 0) {
+    auto sub = substitutions->find(td->id())->second;
+    auto subTup = sub.hasTypePtr() ? sub.type()->toTupleType() : nullptr;
+
+    if (subTup == nullptr) {
+      // Rely on hasTypePtr check below to recognize error
+      qt = QualifiedType();
+    } else {
+      qt = sub;
+    }
+
+  // Otherwise use the type that was provided.
+  } else if (typeExpr == nullptr && initExpr == nullptr) {
     // Note: we seem to rely on tuple components being 'var', and relying on
     // the tuple's kind instead. Without this, the current instantiation
     // logic won't allow, for example, passing (1, 2, 3) to (?, ?, ?).
@@ -2819,7 +2817,6 @@ void Resolver::resolveTupleDecl(const TupleDecl* td, QualifiedType useType) {
   }
 
   QualifiedType::Kind declKind = (Qualifier) td->intentOrKind();
-  QualifiedType qt;
 
   // Non-default intents are currently not allowed for tuple-grouped formals.
   //
@@ -2827,46 +2824,30 @@ void Resolver::resolveTupleDecl(const TupleDecl* td, QualifiedType useType) {
   // formal ``((a, b), c)``. Such nested formals should be handled by
   // ``resolveTupleUnpackDecl``.
   if (td->isTupleDeclFormal() && declKind != QualifiedType::DEFAULT_INTENT) {
-    qt = QualifiedType(declKind, ErroneousType::get(context));
+    auto qt = QualifiedType(declKind, ErroneousType::get(context));
     auto& result = byPostorder.byAst(td);
     result.setType(qt);
     return;
   }
 
-  // If there is a substitution, use that instead.
-  if (substitutions != nullptr && substitutions->count(td->id()) != 0) {
-    auto sub = substitutions->find(td->id())->second;
-    auto subTup = sub.hasTypePtr() ? sub.type()->toTupleType() : nullptr;
+  if (!useType.hasTypePtr()) {
+    useType = typeErr(td, "Cannot establish type for tuple decl");
 
-    if (subTup == nullptr) {
-      // Rely on hasTypePtr check below to recognize error
-      qt = QualifiedType();
-    } else {
-      qt = sub;
-    }
-
-  // Otherwise use the type that was provided.
-  } else {
-    qt = useType;
-  }
-
-  if (!qt.hasTypePtr()) {
-    context->error(td, "Cannot establish type for tuple decl");
-    qt = QualifiedType(declKind, ErroneousType::get(context));
-
-  } else if (auto tt = qt.type()->toTupleType()) {
-    // Adjust default-intent tuple types to be a referential tuple.
-    if (qt.kind() == QualifiedType::DEFAULT_INTENT) {
-      qt = QualifiedType(qt.kind(), tt->toReferentialTuple(context)); 
+  } else if (auto tt = useType.type()->toTupleType()) {
+    // Default-intent indicates a TupleDecl used to capture identifiers, and
+    // such tuples should be converted to a referential tuple. For more, see
+    // ``Value Tuples and Referential Tuples`` in the language specification.
+    if (useType.kind() == QualifiedType::DEFAULT_INTENT) {
+      useType = QualifiedType(useType.kind(), tt->toReferentialTuple(context));
     }
   }
 
   // save the type in byPostorder
   ResolvedExpression& result = byPostorder.byAst(td);
-  result.setType(qt);
+  result.setType(useType);
 
   // resolve the types of the tuple elements
-  resolveTupleUnpackDecl(td, std::move(qt));
+  resolveTupleUnpackDecl(td, std::move(useType));
 }
 
 bool Resolver::resolveSpecialNewCall(const Call* call) {

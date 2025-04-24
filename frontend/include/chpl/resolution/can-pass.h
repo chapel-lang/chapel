@@ -297,7 +297,7 @@ class KindProperties {
   void strictCombineWith(const KindProperties& other);
 
   /* Combine the properties of two kinds, returning the result as a kind. */
-  static types::QualifiedType::Kind combineKindsMeet(Kind kind1, Kind kind2);
+  static Kind combineKindsMeet(Kind kind1, Kind kind2);
 
   /* Convert the set of kind properties back into a kind. */
   types::QualifiedType::Kind toKind() const;
