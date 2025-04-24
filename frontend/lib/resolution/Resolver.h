@@ -604,15 +604,6 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
                                 const std::vector<const uast::AstNode*>& asts,
                                 const MostSpecificCandidates& fns);
 
-  // e.g. (a, b) = mytuple
-  // checks that tuple size matches and that the elements are assignable
-  // saves any '=' called for tuple components as associated actions in
-  // their respective resolved expressions
-  void resolveTupleUnpackAssign(const uast::Tuple* lhsTuple,
-                                const uast::AstNode* astForErr,
-                                const types::QualifiedType& lhsType,
-                                const types::QualifiedType& rhsType);
-
   // helper for resolveTupleDecl
   // e.g. var (a, b) = mytuple
   // checks that tuple size matches and establishes types for a and b
