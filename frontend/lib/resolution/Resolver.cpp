@@ -6302,6 +6302,23 @@ static IterDetails resolveNonZipExpression(Resolver& rv,
   return ret;
 }
 
+static IterDetails resolveNonZipExpression(Resolver& rv,
+                                           const AstNode* astForErr,
+                                           bool requiresParallel,
+                                           bool prefersParallel,
+                                           const AstNode* iterand,
+                                           const QualifiedType& leaderYieldType) {
+  int m = IterDetails::NONE;
+  if (prefersParallel) m |= IterDetails::LEADER_FOLLOWER |
+                                IterDetails::STANDALONE;
+  if (!requiresParallel) m |= IterDetails::SERIAL;
+  CHPL_ASSERT(m != IterDetails::NONE);
+
+  return resolveNonZipExpression(rv, astForErr, iterand,
+                                 leaderYieldType, m);
+}
+
+
 static TheseResolutionResult resolveTheseMethod(Resolver& rv,
                                                 const AstNode* iterandAstCtx,
                                                 const QualifiedType& iterandType,
@@ -6610,13 +6627,11 @@ static bool resolveHeterogenousTupleForLoop(Resolver& rv, const For* forLoop, co
 }
 
 static QualifiedType
-resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip, std::vector<IterandComponent>& outIcs) {
+resolveZipExpression(Resolver& rv, const AstNode* anchor, bool requiresParallel, bool prefersParallel, const Zip* zip, std::vector<IterandComponent>& outIcs) {
   // Failures to find various iteration strategies (serial, follower) go here.
   IteratorFailures failures;
 
   Context* context = rv.context;
-  bool loopRequiresParallel = loop->isForall();
-  bool loopPrefersParallel = loopRequiresParallel || loop->isBracketLoop();
   QualifiedType ret;
 
   // Compute iterator components to resolve as part of zippering. This
@@ -6644,7 +6659,7 @@ resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip, st
     if (singletonZip) {
       m |= IterDetails::STANDALONE;
     }
-    if (loopPrefersParallel) {
+    if (prefersParallel) {
       m |= IterDetails::LEADER_FOLLOWER;
     } else {
       // Note that we will not attempt a leader/follower iterator.
@@ -6654,7 +6669,7 @@ resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip, st
                                  TheseResolutionResult());
     }
 
-    if (!loopRequiresParallel) {
+    if (!requiresParallel) {
       m |= IterDetails::SERIAL;
     } else {
       // Note that we will not attempt a serial iterator for any iterand.
@@ -6679,7 +6694,7 @@ resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip, st
 
   if (!rv.scopeResolveOnly && ret.isUnknownOrErroneous()) {
     // Emit a NonIterable error.
-    ret = CHPL_TYPE_ERROR(context, NonIterable, loop, zip,
+    ret = CHPL_TYPE_ERROR(context, NonIterable, anchor, zip,
                           QualifiedType(), std::move(failures));
   }
 
@@ -6925,19 +6940,12 @@ bool Resolver::enter(const IndexableLoop* loop) {
   // always map one-to-one to indices if we're using tuple unpacking). This
   // will be used below for noting the loop expression type.
   std::vector<IterandComponent> ics;
+  bool loopRequiresParallel = loop->isForall();
+  bool loopPrefersParallel = loopRequiresParallel || loop->isBracketLoop();
   if (iterand->isZip()) {
-    idxType = resolveZipExpression(*this, loop, iterand->toZip(), ics);
+    idxType = resolveZipExpression(*this, loop, loopRequiresParallel, loopPrefersParallel, iterand->toZip(), ics);
   } else {
-    bool loopRequiresParallel = loop->isForall();
-    bool loopPrefersParallel = loopRequiresParallel || loop->isBracketLoop();
-
-    int m = IterDetails::NONE;
-    if (loopPrefersParallel) m |= IterDetails::LEADER_FOLLOWER |
-                                  IterDetails::STANDALONE;
-    if (!loopRequiresParallel) m |= IterDetails::SERIAL;
-    CHPL_ASSERT(m != IterDetails::NONE);
-
-    auto dt = resolveNonZipExpression(*this, loop, iterand, {}, m);
+    auto dt = resolveNonZipExpression(*this, loop, loopRequiresParallel, loopPrefersParallel, iterand, {});
     idxType = dt.idxType;
   }
 
@@ -7174,9 +7182,20 @@ static QualifiedType resolveReduceScanOp(Resolver& resolver,
                                          const AstNode* op,
                                          const AstNode* iterand) {
   iterand->traverse(resolver);
-  auto dt = resolveNonZipExpression(resolver, reduceOrScan, iterand, {},
-                                    IterDetails::SERIAL);
-  auto idxType = dt.idxType;
+
+  bool requiresParallel = false;
+  bool prefersParallel = true;
+
+  QualifiedType idxType;
+  if (auto zip = iterand->toZip()) {
+    std::vector<IterandComponent> ics;
+    idxType = resolveZipExpression(resolver, reduceOrScan, requiresParallel,
+                                         prefersParallel, zip, ics);
+  } else {
+    idxType = resolveNonZipExpression(resolver, reduceOrScan, requiresParallel,
+                                            prefersParallel, iterand, {}).idxType;
+  }
+
   if (idxType.isUnknown()) return QualifiedType();
   auto opClass = determineReduceScanOp(resolver, reduceOrScan, op, idxType);
   if (opClass == nullptr) return QualifiedType();
