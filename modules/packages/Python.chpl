@@ -2878,6 +2878,45 @@ module Python {
     }
 
     /*
+      Set an item in the list. Equivalent to calling
+      ``obj[bounds.low:bounds.high+1] = items`` in Python.
+
+      Note that providing less items than specified by `bounds` will cause the
+      remaining indices to be deleted.
+
+      :arg bounds: The indices of the items to set.
+      :arg item: The item to set.
+    */
+    proc set(bounds: range(?), items: ?) throws {
+      if (bounds.strides != strideKind.one) {
+        compilerError("cannot call `set()` on a Python list with a range with stride other than 1");
+      }
+
+      var ctx = chpl_pythonContext.enter();
+      defer ctx.exit();
+
+      if (bounds.hasLowBound() && bounds.hasHighBound()) {
+        PyList_SetSlice(this.getPyObject(), bounds.low.safeCast(Py_ssize_t),
+                        bounds.high.safeCast(Py_ssize_t) + 1,
+                        interpreter.toPythonInner(items));
+
+      } else if (!bounds.hasLowBound() && bounds.hasHighBound()) {
+        PyList_SetSlice(this.getPyObject(), min(Py_ssize_t),
+                        bounds.high.safeCast(Py_ssize_t) + 1,
+                        interpreter.toPythonInner(items));
+
+      } else if (bounds.hasLowBound() && !bounds.hasHighBound()) {
+        PyList_SetSlice(this.getPyObject(), bounds.low.safeCast(Py_ssize_t),
+                        max(Py_ssize_t), interpreter.toPythonInner(items));
+
+      } else {
+        PyList_SetSlice(this.getPyObject(), min(Py_ssize_t),
+                        max(Py_ssize_t), interpreter.toPythonInner(items));
+      }
+      this.interpreter.checkException();
+    }
+
+    /*
       Insert an item into the list at the specified index.  Equivalent to
       calling ``obj.insert(index, item)`` in Python.
 
@@ -4248,6 +4287,8 @@ module Python {
     extern proc PyList_SetItem(list: PyObjectPtr,
                                idx: Py_ssize_t,
                                item: PyObjectPtr);
+    extern proc PyList_SetSlice(list: PyObjectPtr, low: Py_ssize_t,
+                                high: Py_ssize_t, itemlist: PyObjectPtr);
     extern proc PyList_GetItem(list: PyObjectPtr, idx: Py_ssize_t): PyObjectPtr;
     extern proc PyList_GetSlice(list: PyObjectPtr, low: Py_ssize_t,
                                 high: Py_ssize_t): PyObjectPtr;

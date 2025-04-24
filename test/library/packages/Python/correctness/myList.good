@@ -14,3 +14,6 @@ lst[lst.size] Caught exception: PythonException: list index out of range
 checking trying to convert slice to an int
 Caught exception: PythonException: 'list' object cannot be interpreted as an integer
 lst [100, 2, -4, 'hi', False, 5, 'goodbye']
+lst [100, 2, 'oh', 'no', 3, 5, 'goodbye']
+lst [100, 2, 'oh', 'no', 3, 11, 'goodbye']
+lst [True, True, False, 'no', 3, 11, 'goodbye']

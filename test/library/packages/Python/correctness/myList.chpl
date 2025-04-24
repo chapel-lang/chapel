@@ -54,4 +54,16 @@ proc main() {
 
   lst.set(0, 100);
   writeln("lst ", lst);
+
+  lst.set(2..4, ("oh", "no", 3)); // send a tuple
+  writeln("lst ", lst);
+
+  var chapelList = new List.list(int);
+  chapelList.pushBack(11);
+  lst.set(5..5, chapelList); // send a Chapel list
+  writeln("lst ", lst);
+
+  var arr = [true, true, false];
+  lst.set(0..2, arr); // send an array
+  writeln("lst ", lst);
 }
