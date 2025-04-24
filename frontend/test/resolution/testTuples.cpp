@@ -1288,6 +1288,32 @@ static void test32() {
   assert(m["b"].type()->isIntType());
 }
 
+static void test33() {
+  printf("%s\n", __FUNCTION__);
+  Context ctx;
+  auto context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program =
+    R""""(
+    proc foo() { return (1.0, 2); }
+    proc test() {
+      var x : real;
+      var y : int;
+      (x, y, _) = foo();
+    }
+    test();
+    )"""";
+
+  auto mod = parseModule(context, program);
+  resolveModule(context, mod->id());
+
+  assert(guard.numErrors() == 1);
+  auto& err = guard.error(0);
+  assert(err->message() == "tuple size mismatch in split tuple assign");
+  guard.realizeErrors();
+}
+
 int main() {
   test1();
   test2();
@@ -1325,6 +1351,7 @@ int main() {
   test30();
   test31();
   test32();
+  test33();
 
   return 0;
 }
