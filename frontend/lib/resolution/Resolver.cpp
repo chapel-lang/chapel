@@ -2916,6 +2916,117 @@ static void resolveReduceAssign(Resolver& rv, const OpCall* op) {
   resolvedOp.setType(QualifiedType(QualifiedType::CONST_VAR, VoidType::get(rv.context)));
 }
 
+// checks if an identifier referring to toId could be attempting to set its
+// type via a call to an 'out' function.
+static bool couldBeOutInitialized(Resolver* rv, const ID& toId) {
+  if (!asttags::isVarLikeDecl(parsing::idToTag(rv->context, toId))) return false;
+
+  auto vld = parsing::idToAst(rv->context, toId)->toVarLikeDecl();
+
+  // if it had a type expression or an init expression, we certainly can't
+  // be trying to out-initialize it.
+  if (vld->typeExpression() || vld->initExpression()) return false;
+
+  auto parentDecl = parsing::idToContainingMultiDeclId(rv->context, toId);
+  auto parentOfDecl = parsing::idToParentId(rv->context, parentDecl);
+  if (asttags::isIndexableLoop(parsing::idToTag(rv->context, parentOfDecl))) {
+    // if this is a (multi)decl in a loop, it can't be out-initialized;
+    // it's set by the loop.
+    return false;
+  }
+
+  return true;
+}
+
+static SkipCallResolutionReason
+shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
+                         std::vector<const uast::AstNode*> actualAsts,
+                         const CallInfo& ci) {
+  Context* context = rv->context;
+  SkipCallResolutionReason skip = NONE;
+  auto& byPostorder = rv->byPostorder;
+
+  if (callLike->isTuple()) return skip;
+
+  int actualIdx = 0;
+  for (const auto& actual : ci.actuals()) {
+    ID toId; // does the actual refer directly to a particular variable?
+    const AstNode* actualAst = actualAsts[actualIdx];
+    if (actualAst != nullptr && byPostorder.hasAst(actualAst)) {
+      toId = byPostorder.byAst(actualAst).toId();
+    }
+    QualifiedType qt = actual.type();
+    const Type* t = qt.type();
+
+    auto formalAst = toId.isEmpty() ? nullptr : parsing::idToAst(context, toId);
+    bool isNonOutFormal = formalAst != nullptr &&
+                          formalAst->isFormal() &&
+                          formalAst->toFormal()->intent() != Formal::Intent::OUT;
+
+    if (t != nullptr && t->isErroneousType()) {
+      // always skip if there is an ErroneousType
+      skip = ERRONEOUS_ACT;
+    } else if (!toId.isEmpty() && !isNonOutFormal &&
+               qt.isUnknown() &&
+               qt.kind() != QualifiedType::PARAM &&
+               qt.kind() != QualifiedType::TYPE &&
+               qt.isRef() == false &&
+               couldBeOutInitialized(rv, toId)) {
+      // don't skip because it could be initialized with 'out' intent,
+      // but not for non-out formals because they can't be split-initialized.
+    } else if (actualAst != nullptr && actualAst->isTypeQuery() && ci.calledType().isType()) {
+      // don't skip for type queries in type constructors
+    } else {
+      if (qt.isParam() && qt.param() == nullptr) {
+        skip = UNKNOWN_PARAM;
+      } else if (qt.isUnknown()) {
+        skip = UNKNOWN_ACT;
+      } else if (t != nullptr && qt.kind() != QualifiedType::INIT_RECEIVER) {
+        // For initializer calls, allow generic formals using the above
+        // condition; this way, 'this.init(..)' while 'this' is generic
+        // should be fine.
+
+        auto g = getTypeGenericity(context, t);
+        bool isBuiltinGeneric = (g == Type::GENERIC &&
+                                 (t->isAnyType() || t->isBuiltinType()));
+        bool noSubstitution =
+          rv->substitutions == nullptr ||
+          (!toId.isEmpty() && rv->substitutions->count(toId) == 0);
+
+        if (qt.isType() && isBuiltinGeneric && noSubstitution) {
+          skip = GENERIC_TYPE;
+        } else if (!qt.isType() && g != Type::CONCRETE) {
+          skip = GENERIC_VALUE;
+        }
+      }
+    }
+
+    // Don't skip for type constructors, except due to unknown params.
+    if (skip != UNKNOWN_PARAM && skip != UNKNOWN_ACT && ci.calledType().isType()) {
+      skip = NONE;
+    }
+
+    // Do not skip primitive calls that accept a generic type, since they
+    // may be valid.
+    if (skip == GENERIC_TYPE && callLike->toPrimCall()) {
+      skip = NONE;
+    }
+
+    if (skip) {
+      break;
+    }
+    actualIdx++;
+  }
+
+  // Don't try to resolve calls to '=' until later
+  if (ci.isOpCall() && ci.name() == USTR("=")) {
+    skip = OTHER_REASON;
+  }
+
+  return skip;
+}
+
+
 bool Resolver::resolveSpecialOpCall(const Call* call) {
   if (!call->isOpCall()) return false;
 
@@ -3028,116 +3139,6 @@ bool Resolver::resolveSpecialPrimitiveCall(const Call* call) {
   }
 
   return false;
-}
-
-// checks if an identifier referring to toId could be attempting to set its
-// type via a call to an 'out' function.
-static bool couldBeOutInitialized(Resolver* rv, const ID& toId) {
-  if (!asttags::isVarLikeDecl(parsing::idToTag(rv->context, toId))) return false;
-
-  auto vld = parsing::idToAst(rv->context, toId)->toVarLikeDecl();
-
-  // if it had a type expression or an init expression, we certainly can't
-  // be trying to out-initialize it.
-  if (vld->typeExpression() || vld->initExpression()) return false;
-
-  auto parentDecl = parsing::idToContainingMultiDeclId(rv->context, toId);
-  auto parentOfDecl = parsing::idToParentId(rv->context, parentDecl);
-  if (asttags::isIndexableLoop(parsing::idToTag(rv->context, parentOfDecl))) {
-    // if this is a (multi)decl in a loop, it can't be out-initialized;
-    // it's set by the loop.
-    return false;
-  }
-
-  return true;
-}
-
-static SkipCallResolutionReason
-shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
-                         std::vector<const uast::AstNode*> actualAsts,
-                         const CallInfo& ci) {
-  Context* context = rv->context;
-  SkipCallResolutionReason skip = NONE;
-  auto& byPostorder = rv->byPostorder;
-
-  if (callLike->isTuple()) return skip;
-
-  int actualIdx = 0;
-  for (const auto& actual : ci.actuals()) {
-    ID toId; // does the actual refer directly to a particular variable?
-    const AstNode* actualAst = actualAsts[actualIdx];
-    if (actualAst != nullptr && byPostorder.hasAst(actualAst)) {
-      toId = byPostorder.byAst(actualAst).toId();
-    }
-    QualifiedType qt = actual.type();
-    const Type* t = qt.type();
-
-    auto formalAst = toId.isEmpty() ? nullptr : parsing::idToAst(context, toId);
-    bool isNonOutFormal = formalAst != nullptr &&
-                          formalAst->isFormal() &&
-                          formalAst->toFormal()->intent() != Formal::Intent::OUT;
-
-    if (t != nullptr && t->isErroneousType()) {
-      // always skip if there is an ErroneousType
-      skip = ERRONEOUS_ACT;
-    } else if (!toId.isEmpty() && !isNonOutFormal &&
-               qt.isUnknown() &&
-               qt.kind() != QualifiedType::PARAM &&
-               qt.kind() != QualifiedType::TYPE &&
-               qt.isRef() == false &&
-               couldBeOutInitialized(rv, toId)) {
-      // don't skip because it could be initialized with 'out' intent,
-      // but not for non-out formals because they can't be split-initialized.
-    } else if (actualAst != nullptr && actualAst->isTypeQuery() && ci.calledType().isType()) {
-      // don't skip for type queries in type constructors
-    } else {
-      if (qt.isParam() && qt.param() == nullptr) {
-        skip = UNKNOWN_PARAM;
-      } else if (qt.isUnknown()) {
-        skip = UNKNOWN_ACT;
-      } else if (t != nullptr && qt.kind() != QualifiedType::INIT_RECEIVER) {
-        // For initializer calls, allow generic formals using the above
-        // condition; this way, 'this.init(..)' while 'this' is generic
-        // should be fine.
-
-        auto g = getTypeGenericity(context, t);
-        bool isBuiltinGeneric = (g == Type::GENERIC &&
-                                 (t->isAnyType() || t->isBuiltinType()));
-        bool noSubstitution =
-          rv->substitutions == nullptr ||
-          (!toId.isEmpty() && rv->substitutions->count(toId) == 0);
-
-        if (qt.isType() && isBuiltinGeneric && noSubstitution) {
-          skip = GENERIC_TYPE;
-        } else if (!qt.isType() && g != Type::CONCRETE) {
-          skip = GENERIC_VALUE;
-        }
-      }
-    }
-
-    // Don't skip for type constructors, except due to unknown params.
-    if (skip != UNKNOWN_PARAM && skip != UNKNOWN_ACT && ci.calledType().isType()) {
-      skip = NONE;
-    }
-
-    // Do not skip primitive calls that accept a generic type, since they
-    // may be valid.
-    if (skip == GENERIC_TYPE && callLike->toPrimCall()) {
-      skip = NONE;
-    }
-
-    if (skip) {
-      break;
-    }
-    actualIdx++;
-  }
-
-  // Don't try to resolve calls to '=' until later
-  if (ci.isOpCall() && ci.name() == USTR("=")) {
-    skip = OTHER_REASON;
-  }
-
-  return skip;
 }
 
 template <typename ErrorType>
