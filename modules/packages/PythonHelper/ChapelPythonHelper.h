@@ -78,6 +78,15 @@ static inline void chpl_PyList_Clear(PyObject* o) {
 #endif
 }
 
+static inline void chpl_PyList_Extend(PyObject* o, PyObject* iterable) {
+#if PY_VERSION_HEX >= 0x30d00f0 /* Python 3.13 */
+  PyList_Extend(o, iterable);
+#else
+  PyErr_SetString(PyErr_NewException("exceptions.Exception", NULL, NULL),
+                  "PyList.extend() is not supported in Python " PY_VERSION);
+#endif
+}
+
 static inline int chpl_PyGen_Check(PyObject* o) { return PyGen_Check(o); }
 
 static inline PyObject* chpl_Py_None(void) { return (PyObject*)Py_None; }

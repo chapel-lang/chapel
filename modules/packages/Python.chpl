@@ -2947,6 +2947,24 @@ module Python {
     }
 
     /*
+      Extend the list with the contents of `iterable`.  Equivalent to calling
+      ``obj.extend(iterable)` in Python.
+
+      .. warning::
+
+         This method is only support for Python 3.13 or later!
+
+      :arg iterable: something that can be iterated over to extend the list
+    */
+    proc extend(iterable: ?) throws {
+      var ctx = chpl_pythonContext.enter();
+      defer ctx.exit();
+
+      PyList_Extend(this.getPyObject(), interpreter.toPythonInner(iterable));
+      this.interpreter.checkException();
+    }
+
+    /*
       Remove item at index from the list.  Equivalent to calling `del obj[idx]`
       in Python.
 
@@ -4346,6 +4364,8 @@ module Python {
                               item: PyObjectPtr);
     extern proc PyList_Append(list: PyObjectPtr, item: PyObjectPtr);
     extern "chpl_PyList_Clear" proc PyList_Clear(list: PyObjectPtr);
+    extern "chpl_PyList_Extend" proc PyList_Extend(list: PyObjectPtr,
+                                                   iterable: PyObjectPtr);
 
     /*
       Sets
