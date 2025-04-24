@@ -33,6 +33,11 @@ proc main() {
   var lstSlice = lst.get(1..3);
   writeln("lst[1:4] ", lstSlice);
 
+  var lstSlice2 = lst.get(5..);
+  writeln("lst[5:] ", lstSlice2);
+  writeln("lst[:2] ", lst.get(..1));
+  writeln("lst[:] ", lst.get(..));
+
   try {
     write("lst[lst.size] ");
     writeln(lst.get(int, lst.size));
@@ -74,5 +79,19 @@ proc main() {
   writeln("lst ", lst);
 
   lst.set(0..1, arr); // check specifying less elements than contained in arr
+  writeln("lst ", lst);
+
+  lst.set(2.., ("blah", -2));
+  writeln("lst ", lst);
+  lst.set(..1, (11, false));
+  writeln("lst ", lst);
+  lst.set(.., ('a', 'b', 'c', 'd'));
+  writeln("lst ", lst);
+
+  lst.remove(3..);
+  writeln("lst ", lst);
+  lst.remove(..1);
+  writeln("lst ", lst);
+  lst.remove(..);
   writeln("lst ", lst);
 }
