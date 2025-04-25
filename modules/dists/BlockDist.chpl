@@ -997,7 +997,8 @@ proc type blockDist.createDomain(dom: domain(?), targetLocales: [] locale = Loca
 }
 
 // create a domain over a blockDist Distribution constructed from a series of ranges
-proc type blockDist.createDomain(rng: range(?)..., targetLocales: [] locale) {
+pragma "last resort"
+proc type blockDist.createDomain(rng: range(?)..., targetLocales: [] locale = Locales) {
   return createDomain({(...rng)}, targetLocales);
 }
 
@@ -1055,10 +1056,11 @@ proc type blockDist.createArray(
 
 // create an array over a blockDist Distribution constructed from a series of ranges, default initialized
 pragma "no copy return"
+pragma "last resort"
 proc type blockDist.createArray(
   rng: range(?)...,
   type eltType,
-  targetLocales: [] locale
+  targetLocales: [] locale = Locales
 ) {
   return createArray({(...rng)}, eltType, targetLocales);
 }
@@ -1070,11 +1072,12 @@ proc type blockDist.createArray(rng: range(?)..., type eltType) {
 
 // create an array over a blockDist Distribution constructed from a series of ranges, initialized with the given value or iterator
 pragma "no copy return"
+pragma "last resort"
 @unstable("'blockDist.createArray' with an 'initExpr' formal is unstable and may change in a future release")
 proc type blockDist.createArray(
   rng: range(?)...,
   type eltType, initExpr: ?t,
-  targetLocales: [] locale
+  targetLocales: [] locale = Locales
 ) where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType)
 {
   return createArray({(...rng)}, eltType, initExpr, targetLocales);
@@ -1091,12 +1094,13 @@ proc type blockDist.createArray(rng: range(?)..., type eltType, initExpr: ?t)
 
 // create an array over a blockDist Distribution constructed from a series of ranges, initialized from the given array
 pragma "no copy return"
+pragma "last resort"
 @unstable("'blockDist.createArray' with an 'initExpr' formal is unstable and may change in a future release")
 proc type blockDist.createArray(
   rng: range(?)...,
   type eltType,
   initExpr: [?arrayDom] ?arrayEltType,
-  targetLocales: [] locale
+  targetLocales: [] locale = Locales
 ) where rng.size == arrayDom.rank && isCoercible(arrayEltType, eltType)
 {
   return createArray({(...rng)}, eltType, initExpr, targetLocales);

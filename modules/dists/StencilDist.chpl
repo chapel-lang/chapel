@@ -938,9 +938,10 @@ proc type stencilDist.createDomain(
 }
 
 // create a domain over a Stencil Distribution constructed from a series of ranges
+pragma "last resort"
 proc type stencilDist.createDomain(
   rng: range(?)...,
-  targetLocales: [] locale,
+  targetLocales: [] locale = Locales,
   fluff: ?t = makeZero(rng.size, int),
   periodic = false
 ) where isHomogeneousTupleType(t)
@@ -1005,10 +1006,11 @@ proc type stencilDist.createArray(
 
 // create an array over a Stencil Distribution constructed from a series of ranges, default initialized
 pragma "no copy return"
+pragma "last resort"
 proc type stencilDist.createArray(
   rng: range(?)...,
   type eltType,
-  targetLocales: [] locale,
+  targetLocales: [] locale = Locales,
   fluff: ?f = makeZero(rng.size, int),
   periodic = false
 ) where isHomogeneousTupleType(f) {
@@ -1030,11 +1032,12 @@ proc type stencilDist.createArray(rng: range(?)..., type eltType, initExpr: ?t)
 }
 
 pragma "no copy return"
+pragma "last resort"
 proc type stencilDist.createArray(
   rng: range(?)...,
   type eltType,
   initExpr: ?t,
-  targetLocales: [] locale,
+  targetLocales: [] locale = Locales,
   fluff: ?f = makeZero(rng.size, int),
   periodic = false
 ) where (isSubtype(t, _iteratorRecord) || isCoercible(t, eltType)) && isHomogeneousTupleType(f)  {
@@ -1053,11 +1056,12 @@ proc type stencilDist.createArray(
 }
 
 pragma "no copy return"
+pragma "last resort"
 proc type stencilDist.createArray(
   rng: range(?)...,
   type eltType,
   initExpr: [?arrayDom] ?arrayEltType,
-  targetLocales: [] locale,
+  targetLocales: [] locale = Locales,
   fluff: ?f = makeZero(rng.size, int),
   periodic = false
 ) where rng.size == arrayDom.rank && isCoercible(arrayEltType, eltType) && isHomogeneousTupleType(f)
