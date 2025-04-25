@@ -664,6 +664,10 @@ CanPassResult CanPassResult::canConvertTuples(Context* context,
     return fail(FAIL_INCOMPATIBLE_TUPLE_STAR);
   }
 
+  if (aT->toReferentialTuple(context) == fT) {
+    return convert(TO_REFERENTIAL_TUPLE);
+  }
+
   int n = aT->numElements();
   if (aT->isStarTuple())
     n = 1; // only need to consider one type
@@ -1157,15 +1161,7 @@ CanPassResult CanPassResult::canPassScalar(Context* context,
       {
         auto actualTup = actualT->toTupleType();
         if (actualTup != nullptr  && formalT->isTupleType()) {
-          if (actualTup->isVarArgTuple() &&
-              actualTup->toReferentialTuple(context) == formalT) {
-            // Supports code like:
-            //   proc foo(args...) do
-            //     bar(args);
-            //
-            // TODO: Should this register as a conversion?
-            return passAsIs();
-          } else if (formalQT.kind() == QualifiedType::TYPE &&
+          if (formalQT.kind() == QualifiedType::TYPE &&
                 actualTup->toValueTuple(context) == formalT) {
             return passAsIs();
           } else if (formalQT.kind() != QualifiedType::TYPE) {

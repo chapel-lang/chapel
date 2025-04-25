@@ -1314,6 +1314,26 @@ static void test33() {
   guard.realizeErrors();
 }
 
+static void test34() {
+  printf("%s\n", __FUNCTION__);
+  Context ctx;
+  auto context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program =
+    R""""(
+    record R {}
+    proc foo(x) {}
+
+    var data: ((R,),);
+    foo(data);
+    )"""";
+
+  // Should resolve without error
+  auto mod = parseModule(context, program);
+  resolveModule(context, mod->id());
+}
+
 int main() {
   test1();
   test2();
@@ -1352,6 +1372,7 @@ int main() {
   test31();
   test32();
   test33();
+  test34();
 
   return 0;
 }
