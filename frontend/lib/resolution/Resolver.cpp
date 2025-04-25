@@ -5001,10 +5001,8 @@ void Resolver::exit(const uast::Array* decl) {
     arrayBuilderProc = "chpl__buildNDArrayExpr";
 
     // Get shape arg
-    std::vector<QualifiedType> shapeTupleElts;
-    for (auto dim : decl->shape()) {
-      shapeTupleElts.push_back(QualifiedType::makeParamInt(context, dim));
-    }
+    auto intType = QualifiedType(QualifiedType::VAR, IntType::get(context, 0));
+    std::vector<QualifiedType> shapeTupleElts(decl->shape().size(), intType);
     auto shapeTupleType = TupleType::getQualifiedTuple(context, shapeTupleElts);
     actualAsts.push_back(nullptr);
     actuals.emplace_back(
@@ -5047,6 +5045,7 @@ void Resolver::exit(const uast::Array* decl) {
   auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
   auto c = resolveGeneratedCall(decl, &ci, &inScopes);
 
+  // TODO: We need an associated action here
   c.noteResult(&r);
 }
 
