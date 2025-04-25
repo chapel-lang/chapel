@@ -2916,120 +2916,6 @@ static void resolveReduceAssign(Resolver& rv, const OpCall* op) {
   resolvedOp.setType(QualifiedType(QualifiedType::CONST_VAR, VoidType::get(rv.context)));
 }
 
-bool Resolver::resolveSpecialOpCall(const Call* call) {
-  if (!call->isOpCall()) return false;
-
-  auto op = call->toOpCall();
-
-  if (op->op() == USTR("=")) {
-    if (op->numActuals() == 2) {
-      // Update a generic/unknown type when split-init is used.
-      adjustTypesOnAssign(op->actual(0), op->actual(1));
-    }
-  } else if (op->op() == USTR("...")) {
-    // just leave it unknown -- tuple expansion only makes sense
-    // in the argument list for another call.
-    return true;
-  } else if (op->op() == USTR("reduce=")) {
-    resolveReduceAssign(*this, op);
-    return true;
-  }
-
-  return false;
-}
-
-bool Resolver::resolveSpecialPrimitiveCall(const Call* call) {
-  auto primCall = call->toPrimCall();
-  if (!primCall) return false;
-
-  if (primCall->prim() == PRIM_RESOLVES) {
-    QualifiedType result;
-
-    if (primCall->numActuals() != 1) {
-      result = typeErr(primCall, "invalid call to \"resolves\" primitive");
-    } else {
-      auto resultAndErrors = context->runAndDetectErrors([&](Context* context) {
-        primCall->actual(0)->traverse(*this);
-        return byPostorder.byAst(primCall->actual(0)).type();
-      });
-
-      bool resultBool = true;
-      if (!resultAndErrors.ranWithoutErrors()) {
-        // Errors were emitted, so even if we have a type, it doesn't
-        // "resolve".
-        resultBool = false;
-      } else if (resultAndErrors.result().isErroneousType() ||
-                 resultAndErrors.result().isUnknown()) {
-        // We got an erroneous or unknown type, so it didn't resolve.
-        resultBool = false;
-      }
-
-      result = QualifiedType::makeParamBool(context, resultBool);
-    }
-
-    byPostorder.byAst(primCall).setType(result);
-    return true;
-  } else if (primCall->prim() == PRIM_ERROR ||
-             primCall->prim() == PRIM_WARNING) {
-    // No matter what, this primitive is void-returning.
-    byPostorder.byAst(primCall).setType({ QualifiedType::VAR, VoidType::get(context) });
-
-    auto kind = primCall->prim() == PRIM_ERROR ? CompilerDiagnostic::ERROR
-                                               : CompilerDiagnostic::WARNING;
-
-    const TupleType* messageComponents = nullptr;
-    const IntParam* depthParam = nullptr;
-    if (typedSignature) {
-      for (int i = 0; i < typedSignature->numFormals(); i++) {
-        auto& qt = typedSignature->formalType(i);
-        if (qt.isUnknownOrErroneous()) continue;
-
-        if (typedSignature->untyped()->formalName(i) == "msg") {
-          messageComponents = qt.type()->toTupleType();
-        } else if (typedSignature->untyped()->formalName(i) == "errorDepth") {
-          depthParam = qt.param() ? qt.param()->toIntParam() : nullptr;
-        }
-      }
-    }
-
-    if (!messageComponents) {
-      context->error(primCall, "invalid use of compiler diagnostic primitive");
-      return true;
-    }
-
-    std::string message;
-    for (int i = 0; i < messageComponents->numElements(); i++) {
-      auto qt = messageComponents->elementType(i);
-      if (!qt.param()) continue;
-      message += qt.param()->toStringParam()->value().c_str();
-    }
-
-    // In Dyno, depth counts call sites, since we don't have an accessible stack.
-    // by default, we anchor the error to the function that invoked compilerError(),
-    // which means two call sites to skip: one of the __primitive("error"), and
-    // one for compilerError() itself. The next call site will be the call
-    // to the function that invoked compilerError().
-    int64_t depth = 2;
-    if (depthParam) {
-      depth = depthParam->value() + 1;
-    }
-
-    auto diagnostic =
-      CompilerDiagnostic(UniqueString::get(context, message.c_str()), kind, depth);
-    if (depth == 0) {
-      emitUserDiagnostic(diagnostic, primCall);
-    } else {
-      // We are not the target recipient of the error; functions further up
-      // the call stack ought to issue this error.
-      noteEncounteredUserDiagnostic(diagnostic, primCall);
-    }
-
-    return true;
-  }
-
-  return false;
-}
-
 // checks if an identifier referring to toId could be attempting to set its
 // type via a call to an 'out' function.
 static bool couldBeOutInitialized(Resolver* rv, const ID& toId) {
@@ -3138,6 +3024,155 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
   }
 
   return skip;
+}
+
+
+bool Resolver::resolveSpecialOpCall(const Call* call) {
+  if (!call->isOpCall()) return false;
+
+  auto op = call->toOpCall();
+
+  if (op->op() == USTR("=")) {
+    if (op->numActuals() == 2) {
+      // Update a generic/unknown type when split-init is used.
+      adjustTypesOnAssign(op->actual(0), op->actual(1));
+    }
+  } else if (op->op() == USTR("...")) {
+    // just leave it unknown -- tuple expansion only makes sense
+    // in the argument list for another call.
+    return true;
+  } else if (op->op() == USTR("reduce=")) {
+    resolveReduceAssign(*this, op);
+    return true;
+  } else if (op->op() == USTR("dmapped")) {
+    std::vector<const AstNode*> actualAsts;
+    std::vector<CallInfoActual> actuals;
+    const AstNode* questionArg = nullptr;
+
+    prepareCallInfoActuals(call, actuals, questionArg, &actualAsts);
+    CHPL_ASSERT(!questionArg);
+
+    // for some reason, the standard function has its actuals swapped
+    // compared to how the operator occurs in the AST.
+    std::swap(actuals[0], actuals[1]);
+    std::swap(actualAsts[0], actualAsts[1]);
+
+    // add the 'definedConst' actual, which at this time is always true.
+    actualAsts.push_back(nullptr);
+    actuals.push_back({ QualifiedType::makeParamBool(context, true),
+                        UniqueString::get(context, "definedConst") });
+
+    auto ci = CallInfo(UniqueString::get(context, "chpl__distributed"),
+                       /* calledType */ QualifiedType(),
+                       /* isMethodCall */ false,
+                       /* hasQuestionArg */ questionArg != nullptr,
+                       /* isParenless */ false,
+                       std::move(actuals));
+
+    if (shouldSkipCallResolution(this, call, actualAsts, ci)) {
+      return true;
+    }
+
+    auto inScopes = CallScopeInfo::forNormalCall(currentScope(), poiScope);
+    auto cr = resolveGeneratedCall(call, &ci, &inScopes);
+    cr.noteResult(&byPostorder.byAst(call));
+
+    return true;
+  }
+
+  return false;
+}
+
+bool Resolver::resolveSpecialPrimitiveCall(const Call* call) {
+  auto primCall = call->toPrimCall();
+  if (!primCall) return false;
+
+  if (primCall->prim() == PRIM_RESOLVES) {
+    QualifiedType result;
+
+    if (primCall->numActuals() != 1) {
+      result = typeErr(primCall, "invalid call to \"resolves\" primitive");
+    } else {
+      auto resultAndErrors = context->runAndDetectErrors([&](Context* context) {
+        primCall->actual(0)->traverse(*this);
+        return byPostorder.byAst(primCall->actual(0)).type();
+      });
+
+      bool resultBool = true;
+      if (!resultAndErrors.ranWithoutErrors()) {
+        // Errors were emitted, so even if we have a type, it doesn't
+        // "resolve".
+        resultBool = false;
+      } else if (resultAndErrors.result().isErroneousType() ||
+                 resultAndErrors.result().isUnknown()) {
+        // We got an erroneous or unknown type, so it didn't resolve.
+        resultBool = false;
+      }
+
+      result = QualifiedType::makeParamBool(context, resultBool);
+    }
+
+    byPostorder.byAst(primCall).setType(result);
+    return true;
+  } else if (primCall->prim() == PRIM_ERROR ||
+             primCall->prim() == PRIM_WARNING) {
+    // No matter what, this primitive is void-returning.
+    byPostorder.byAst(primCall).setType({ QualifiedType::VAR, VoidType::get(context) });
+
+    auto kind = primCall->prim() == PRIM_ERROR ? CompilerDiagnostic::ERROR
+                                               : CompilerDiagnostic::WARNING;
+
+    const TupleType* messageComponents = nullptr;
+    const IntParam* depthParam = nullptr;
+    if (typedSignature) {
+      for (int i = 0; i < typedSignature->numFormals(); i++) {
+        auto& qt = typedSignature->formalType(i);
+        if (qt.isUnknownOrErroneous()) continue;
+
+        if (typedSignature->untyped()->formalName(i) == "msg") {
+          messageComponents = qt.type()->toTupleType();
+        } else if (typedSignature->untyped()->formalName(i) == "errorDepth") {
+          depthParam = qt.param() ? qt.param()->toIntParam() : nullptr;
+        }
+      }
+    }
+
+    if (!messageComponents) {
+      context->error(primCall, "invalid use of compiler diagnostic primitive");
+      return true;
+    }
+
+    std::string message;
+    for (int i = 0; i < messageComponents->numElements(); i++) {
+      auto qt = messageComponents->elementType(i);
+      if (!qt.param()) continue;
+      message += qt.param()->toStringParam()->value().c_str();
+    }
+
+    // In Dyno, depth counts call sites, since we don't have an accessible stack.
+    // by default, we anchor the error to the function that invoked compilerError(),
+    // which means two call sites to skip: one of the __primitive("error"), and
+    // one for compilerError() itself. The next call site will be the call
+    // to the function that invoked compilerError().
+    int64_t depth = 2;
+    if (depthParam) {
+      depth = depthParam->value() + 1;
+    }
+
+    auto diagnostic =
+      CompilerDiagnostic(UniqueString::get(context, message.c_str()), kind, depth);
+    if (depth == 0) {
+      emitUserDiagnostic(diagnostic, primCall);
+    } else {
+      // We are not the target recipient of the error; functions further up
+      // the call stack ought to issue this error.
+      noteEncounteredUserDiagnostic(diagnostic, primCall);
+    }
+
+    return true;
+  }
+
+  return false;
 }
 
 template <typename ErrorType>
