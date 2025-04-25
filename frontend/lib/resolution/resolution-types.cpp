@@ -534,14 +534,14 @@ CallInfo CallInfo::copyAndRename(const CallInfo &ci, UniqueString rename) {
 void ResolutionResultByPostorderID::setupForSymbol(const AstNode* ast) {
   CHPL_ASSERT(Builder::astTagIndicatesNewIdScope(ast->tag()));
 
-  symbolId = ast->id();
+  symbolId_ = ast->id();
 }
 void ResolutionResultByPostorderID::setupForSignature(const Function* func) {
-  symbolId = func->id();
+  symbolId_ = func->id();
 }
 void ResolutionResultByPostorderID::setupForParamLoop(
     const For* loop, ResolutionResultByPostorderID& parent) {
-  this->symbolId = parent.symbolId;
+  this->symbolId_ = parent.symbolId_;
 }
 void ResolutionResultByPostorderID::setupForFunction(const Function* func) {
   setupForSymbol(func);
@@ -1400,13 +1400,13 @@ ResolutionResultByPostorderID::stringify(std::ostream& ss,
 
   size_t maxIdWidth = 0;
   for (auto key : keys) {
-    auto id = ID(symbolId.symbolPath(), key, -1);
+    auto id = ID(symbolId_.symbolPath(), key, -1);
     if (id.str().size() > maxIdWidth)
       maxIdWidth = id.str().size();
   }
 
   for (auto key : keys) {
-    auto id = ID(symbolId.symbolPath(), key, -1);
+    auto id = ID(symbolId_.symbolPath(), key, -1);
 
     // output the ID
     std::cout << std::setw(maxIdWidth) << std::left << id.str();
