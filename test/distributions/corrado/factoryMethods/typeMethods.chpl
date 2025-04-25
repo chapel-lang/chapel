@@ -58,10 +58,11 @@ testArray("Block iter:", blockDist.createArray((...rng), eltType, [(i, j) in dom
 testArray("Block iter:", blockDist.createArray((...rng), eltType, [(i, j) in dom] i + j, targetLocales=tls));
 testArray("Block iter:", blockDist.createArray((...rng), eltType, [(i, j) in dom] i + j, tls));
 testArray("Block array:", blockDist.createArray(dom, eltType, a));
+testArray("Block array:", blockDist.createArray(dom, eltType, b));
 testArray("Block array:", blockDist.createArray((...rng), eltType, a));
 testArray("Block array:", blockDist.createArray((...rng), eltType, a, targetLocales=tls));
 testArray("Block array:", blockDist.createArray((...rng), eltType, a, tls));
-testArray("Block array:", blockDist.createArray(dom, eltType, b));
+testArray("Block array:", blockDist.createArray((...rng), eltType, b));
 testArray("Block array:", blockDist.createArray((...rng), eltType, b, targetLocales=tls));
 testArray("Block array:", blockDist.createArray((...rng), eltType, b, tls));
 

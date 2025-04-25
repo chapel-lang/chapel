@@ -293,6 +293,16 @@ Block array:
 [BlockDom(2,int(64),one,unmanaged DefaultDist)] int(64)
 
 Block array:
+6 6 6 6 6 6
+6 6 6 6 6 6
+6 6 6 6 6 6
+6 6 6 6 6 6
+6 6 6 6 6 6
+6 6 6 6 6 6
+{1..6, 1..6}
+[BlockDom(2,int(64),one,unmanaged DefaultDist)] int(64)
+
+Block array:
 5 5 5 5 5 5
 5 5 5 5 5 5
 5 5 5 5 5 5
