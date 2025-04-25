@@ -4306,7 +4306,7 @@ static bool resolveFnCallSpecial(Context* context,
 
   if (ci.name() == USTR("borrow") && ci.numActuals() == 1 && ci.isMethodCall()) {
     // this is the equivalent of the production compiler's `resolveClassBorrowMethod`.
-    // A call to `isClassLike` there rejects handling `owned` and `shared,
+    // A call to `isClassLike` there rejects handling `owned` and `shared`,
     // so only handle undecorated class types here.
 
     auto receiver = ci.methodReceiverType();
