@@ -5298,8 +5298,14 @@ rerunCallInfoWithIteratorTag(ResolutionContext* rc,
   if (iterKindActual.isUnknown()) return empty;
 
   std::vector<CallInfoActual> actuals;
-  for (const auto& actual : ci.actuals())
+  for (const auto& actual : ci.actuals()) {
+    // If the user explictly specified a tag, we can't re-run with a different tag.
+    if (actual.byName() == USTR("tag")) {
+      return empty;
+    }
+
     actuals.push_back(actual);
+  }
   actuals.emplace_back(iterKindActual, USTR("tag"));
 
   auto newCi = CallInfo(ci.name(), ci.calledType(), ci.isMethodCall(),
