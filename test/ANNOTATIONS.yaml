@@ -2578,7 +2578,7 @@ arkouda: &arkouda-base
   03/06/25:
     - text: Suspected systems changes
       config: 16-node-xc
-  03/28/25:
+  03/20/25:
     - text: Add ARKOUDA_DEFAULT_TEMP_DIRECTORY for arkouda perf tests (#26949)
       config: 16-node-hpe-apollo-hdr
 
