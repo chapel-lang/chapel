@@ -444,7 +444,15 @@ void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
     return;
   }
   if (varType.isUnknownKindOrType()) {
-    CHPL_REPORT(context, VariableWithoutInitOrType, ast, ast->id(), ast->name());
+    auto& po = rv.byPostorder();
+    chpl::ID symId;
+    for (auto& [intId, re] : po) {
+      if (re.toId() == ast->id()) {
+        auto symPath = po.symbolId().symbolPath();
+        symId = ID(symPath, intId, 0);
+      }
+    }
+    CHPL_REPORT(context, VariableWithoutInitOrType, ast, symId, ast->name());
     return;
   }
   // check genericity

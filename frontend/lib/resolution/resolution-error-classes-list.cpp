@@ -2415,13 +2415,19 @@ void ErrorUseOfLaterVariable::write(ErrorWriterBase& wr) const {
 
 
 void ErrorVariableWithoutInitOrType::write(ErrorWriterBase& wr) const {
-  auto stmt = std::get<const uast::AstNode*>(info_);
-  auto& node = std::get<ID>(info_);
+  auto decl = std::get<const uast::AstNode*>(info_);
+  auto& useOf = std::get<ID>(info_);
   auto name = std::get<UniqueString>(info_);
-  wr.heading(kind_, type_, stmt,
+  wr.heading(kind_, type_, decl,
              "variable '", name, "' is declared without an initializer or type.");
-  wr.note(node, "cannot find initialization point to split-init this variable");
-  wr.codeForLocation(node);
+  if (!useOf.isEmpty()) {
+    wr.note(useOf, "cannot find initialization point to split-init this variable");
+  }
+  wr.codeForDef(decl);
+  if (!useOf.isEmpty()) {
+    wr.note(useOf, "the variable '", name, "' is used here");
+    wr.codeForLocation(useOf);
+  }
 }
 
 void ErrorUserDiagnosticEncounterError::write(ErrorWriterBase& wr) const {
