@@ -2948,7 +2948,7 @@ module Python {
 
     /*
       Extend the list with the contents of `iterable`.  Equivalent to calling
-      ``obj.extend(iterable)` in Python.
+      ``obj.extend(iterable)`` in Python.
 
       .. warning::
 
