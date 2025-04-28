@@ -2622,6 +2622,23 @@ module Python {
     }
   }
 
+  private proc determineSliceBounds(bounds: range(?)): (Py_ssize_t, Py_ssize_t)
+    {
+    if (bounds.hasLowBound() && bounds.hasHighBound()) {
+      return (bounds.low.safeCast(Py_ssize_t),
+              bounds.high.safeCast(Py_ssize_t) + 1);
+
+    } else if (!bounds.hasLowBound() && bounds.hasHighBound()) {
+      return (min(Py_ssize_t), bounds.high.safeCast(Py_ssize_t) + 1);
+
+    } else if (bounds.hasLowBound() && !bounds.hasHighBound()) {
+      return (bounds.low.safeCast(Py_ssize_t), max(Py_ssize_t));
+
+    } else {
+      return (min(Py_ssize_t), max(Py_ssize_t));
+    }
+  }
+
   /*
     Represents a Python tuple.  This provides a Chapel interface to Python
     tuples, where the Python interpreter owns the tuple.
@@ -2701,25 +2718,10 @@ module Python {
 
       var pyObj;
 
-      if (bounds.hasLowBound() && bounds.hasHighBound()) {
-        pyObj = PyTuple_GetSlice(this.getPyObject(),
-                                 bounds.low.safeCast(Py_ssize_t),
-                                 bounds.high.safeCast(Py_ssize_t) + 1);
-
-      } else if (!bounds.hasLowBound() && bounds.hasHighBound()) {
-        pyObj = PyTuple_GetSlice(this.getPyObject(), min(Py_ssize_t),
-                                 bounds.high.safeCast(Py_ssize_t) + 1);
-
-      } else if (bounds.hasLowBound() && !bounds.hasHighBound()) {
-        pyObj = PyTuple_GetSlice(this.getPyObject(),
-                                 bounds.low.safeCast(Py_ssize_t),
-                                 max(Py_ssize_t));
-
-      } else {
-        pyObj = PyTuple_GetSlice(this.getPyObject(), min(Py_ssize_t),
-                                 max(Py_ssize_t));
-      }
+      var (low, high) = determineSliceBounds(bounds);
+      pyObj = PyTuple_GetSlice(this.getPyObject(), low, high);
       this.interpreter.checkException();
+
       return interpreter.fromPythonInner(T, pyObj);
     }
 
@@ -2828,25 +2830,10 @@ module Python {
 
       var pyObj;
 
-      if (bounds.hasLowBound() && bounds.hasHighBound()) {
-        pyObj = PyList_GetSlice(this.getPyObject(),
-                                bounds.low.safeCast(Py_ssize_t),
-                                bounds.high.safeCast(Py_ssize_t) + 1);
-
-      } else if (!bounds.hasLowBound() && bounds.hasHighBound()) {
-        pyObj = PyList_GetSlice(this.getPyObject(), min(Py_ssize_t),
-                                bounds.high.safeCast(Py_ssize_t) + 1);
-
-      } else if (bounds.hasLowBound() && !bounds.hasHighBound()) {
-        pyObj = PyList_GetSlice(this.getPyObject(),
-                                bounds.low.safeCast(Py_ssize_t),
-                                max(Py_ssize_t));
-
-      } else {
-        pyObj = PyList_GetSlice(this.getPyObject(), min(Py_ssize_t),
-                                max(Py_ssize_t));
-      }
+      var (low, high) = determineSliceBounds(bounds);
+      pyObj = PyList_GetSlice(this.getPyObject(), low, high);
       this.interpreter.checkException();
+
       return interpreter.fromPythonInner(T, pyObj);
     }
 
@@ -2895,24 +2882,9 @@ module Python {
       var ctx = chpl_pythonContext.enter();
       defer ctx.exit();
 
-      if (bounds.hasLowBound() && bounds.hasHighBound()) {
-        PyList_SetSlice(this.getPyObject(), bounds.low.safeCast(Py_ssize_t),
-                        bounds.high.safeCast(Py_ssize_t) + 1,
-                        interpreter.toPythonInner(items));
-
-      } else if (!bounds.hasLowBound() && bounds.hasHighBound()) {
-        PyList_SetSlice(this.getPyObject(), min(Py_ssize_t),
-                        bounds.high.safeCast(Py_ssize_t) + 1,
-                        interpreter.toPythonInner(items));
-
-      } else if (bounds.hasLowBound() && !bounds.hasHighBound()) {
-        PyList_SetSlice(this.getPyObject(), bounds.low.safeCast(Py_ssize_t),
-                        max(Py_ssize_t), interpreter.toPythonInner(items));
-
-      } else {
-        PyList_SetSlice(this.getPyObject(), min(Py_ssize_t),
-                        max(Py_ssize_t), interpreter.toPythonInner(items));
-      }
+      var (low, high) = determineSliceBounds(bounds);
+      PyList_SetSlice(this.getPyObject(), low, high,
+                      interpreter.toPythonInner(items));
       this.interpreter.checkException();
     }
 
@@ -2993,22 +2965,8 @@ module Python {
       var ctx = chpl_pythonContext.enter();
       defer ctx.exit();
 
-      if (bounds.hasLowBound() && bounds.hasHighBound()) {
-        PyList_SetSlice(this.getPyObject(), bounds.low.safeCast(Py_ssize_t),
-                        bounds.high.safeCast(Py_ssize_t) + 1, nil);
-
-      } else if (!bounds.hasLowBound() && bounds.hasHighBound()) {
-        PyList_SetSlice(this.getPyObject(), min(Py_ssize_t),
-                        bounds.high.safeCast(Py_ssize_t) + 1, nil);
-
-      } else if (bounds.hasLowBound() && !bounds.hasHighBound()) {
-        PyList_SetSlice(this.getPyObject(), bounds.low.safeCast(Py_ssize_t),
-                        max(Py_ssize_t), nil);
-
-      } else {
-        PyList_SetSlice(this.getPyObject(), min(Py_ssize_t),
-                        max(Py_ssize_t), nil);
-      }
+      var (low, high) = determineSliceBounds(bounds);
+      PyList_SetSlice(this.getPyObject(), low, high, nil);
       this.interpreter.checkException();
     }
 
