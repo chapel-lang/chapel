@@ -1752,13 +1752,30 @@ QualifiedType getInstantiationType(Context* context,
       }
 
       // which BasicClassType to use?
-      const BasicClassType* bct;
+      const BasicClassType* bct = nullptr;
       auto formalBct = formalCt->basicClassType();
       if (formalBct && getTypeGenericity(context, formalBct) == Type::CONCRETE) {
         bct = formalBct;
-      } else {
-        CHPL_ASSERT(formalCt->manageableType()->toManageableType());
+      } else if (!formalBct) {
         bct = actualCt->basicClassType();
+      } else {
+        // search for a common parent. in the case of Parent(X=?) being instantiated
+        // with Child(X, Y), need to get Parent(X).
+
+        auto actualBct = actualCt->basicClassType();
+        while (actualBct) {
+          if (actualBct->id() == formalBct->id()) {
+            bct = actualBct;
+            break;
+          }
+
+          actualBct = actualBct->parentClassType();
+        }
+
+        if (!bct) {
+          // no common parent found, so use the actual's basic class type
+          bct = actualCt->basicClassType();
+        }
       }
 
       // now construct the ClassType
