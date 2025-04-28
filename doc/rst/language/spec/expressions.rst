@@ -510,7 +510,7 @@ precedence than those listed later.
 
    ======================= == =====================
    ``(x & MASK) == MASK``  as ``x & MASK == MASK``
-   ``a * b * 2 ** y``      as ``a * b << y``
+   ``a + b * 2 ** y``      as ``a + b << y``
    ======================= == =====================
 
    One final area of note is the precedence of reductions. Two common
