@@ -48,6 +48,12 @@ Note that it is the user's responsibility to make sure things are set up
 so the terminal emulator run in the target environment can open its
 display window in the launch environment.
 
+Using a graphical debugger
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The Chapel VSCode extension provides a graphical debugging experience with
+either ``gdb`` or ``lldb``. See :ref:`vscode-debugging` for more information.
+
 The `Debugger.breakpoint` statement
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -62,13 +68,17 @@ display Chapel source code. This works well with either the LLVM or C backends.
 .. note::
    Executables will not run as expected if `breakpoint` is used in code compiled with ``-g`` and not run attached to a debugger.
 
+.. _readme-debugging-bkc:
+
 ------------------------
 Best Known Configuration
 ------------------------
 
 The current best practice for debugging Chapel source code is to use the C
 backend and use a series of flags to improve the debuggability of the generated
-executable. This can be done in two steps.
+executable. While debugging with the default LLVM backend and set of flags is
+possible, these flags result in generated code with debug information that most
+closely matches the Chapel source code. This can be done in two steps.
 
 1) Build the compiler with ``CHPL_TARGET_COMPILER`` set to ``gnu``
    (or ``clang`` if on Mac):
@@ -83,9 +93,9 @@ executable. This can be done in two steps.
 
    .. code-block:: bash
 
-        chpl -g --target-compiler=gnu --savec <dir> --preserve-inlined-line-numbers --no-munge-user-idents --no-return-by-ref --no-inline <source_file>
+        chpl -g --target-compiler=gnu --preserve-inlined-line-numbers --no-munge-user-idents --no-return-by-ref --no-inline <source_file>
         # On MacOS
-        # chpl -g --target-compiler=clang --savec <dir> --preserve-inlined-line-numbers --no-munge-user-idents --no-return-by-ref --no-inline <source_file>
+        # chpl -g --target-compiler=clang --preserve-inlined-line-numbers --no-munge-user-idents --no-return-by-ref --no-inline <source_file>
 
 For more details on these settings, read the rest of this section.
 
@@ -154,8 +164,8 @@ where the compiler has further renamed the variable).  If the
 
 See :ref:`more-munging-info` for more information on munging.
 
-Over time, we plan to improve our ability to debug the generated C
-code for a Chapel program.  If you find yourself debugging the
+Over time, we plan to improve our ability to debug the generated
+code for a Chapel program. If you find yourself debugging the
 generated code a lot and need help or have requests for better
 support, please let us know so that we can prioritize accordingly.
 
