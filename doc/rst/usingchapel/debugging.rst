@@ -3,7 +3,6 @@
     single: debugging
     single: debugging; gdb
     single: debugging; lldb
-
 .. _readme-debugging:
 
 =========================
