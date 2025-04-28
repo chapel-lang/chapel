@@ -997,6 +997,7 @@ proc type blockDist.createDomain(dom: domain(?), targetLocales: [] locale = Loca
 }
 
 // create a domain over a blockDist Distribution constructed from a series of ranges
+pragma "last resort"
 proc type blockDist.createDomain(rng: range(?)..., targetLocales: [] locale = Locales) {
   return createDomain({(...rng)}, targetLocales);
 }
@@ -1055,6 +1056,7 @@ proc type blockDist.createArray(
 
 // create an array over a blockDist Distribution constructed from a series of ranges, default initialized
 pragma "no copy return"
+pragma "last resort"
 proc type blockDist.createArray(
   rng: range(?)...,
   type eltType,
@@ -1070,6 +1072,7 @@ proc type blockDist.createArray(rng: range(?)..., type eltType) {
 
 // create an array over a blockDist Distribution constructed from a series of ranges, initialized with the given value or iterator
 pragma "no copy return"
+pragma "last resort"
 @unstable("'blockDist.createArray' with an 'initExpr' formal is unstable and may change in a future release")
 proc type blockDist.createArray(
   rng: range(?)...,
@@ -1091,6 +1094,7 @@ proc type blockDist.createArray(rng: range(?)..., type eltType, initExpr: ?t)
 
 // create an array over a blockDist Distribution constructed from a series of ranges, initialized from the given array
 pragma "no copy return"
+pragma "last resort"
 @unstable("'blockDist.createArray' with an 'initExpr' formal is unstable and may change in a future release")
 proc type blockDist.createArray(
   rng: range(?)...,
