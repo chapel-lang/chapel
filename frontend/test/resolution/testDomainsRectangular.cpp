@@ -203,6 +203,24 @@ static void testBadDomain(Context* contextWithStd, std::string domainType) {
   }
 }
 
+// check that the 'dmapped' call is handled via a call to 'chpl__distributed'
+static void testDmapped() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto qt = resolveTypeOfXInit(context,
+    R"""(
+      use BlockDist;
+
+      var Space = {1..10, 1..10};
+      var Dist = new blockDist(Space);
+      var D = Space dmapped Dist;
+      var x = D.distribution.type : string;
+  )""");
+
+  ensureParamString(qt, "blockDist(2, int(64), unmanaged DefaultDist)");
+}
+
 int main() {
   // Set up context with standard modules, re-used between tests for
   // performance.
@@ -235,6 +253,8 @@ int main() {
   testBadDomain(context, "domain(\"asdf\", \"asdf2\")");
   testBadDomain(context, "domain(1, \"asdf\")");
   testBadDomain(context, "domain(1, int, \"asdf\")");
+
+  testDmapped();
 
   return 0;
 }

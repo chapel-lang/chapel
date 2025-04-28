@@ -690,6 +690,9 @@ Resolver::paramLoopResolver(Resolver& parent,
   ret.curStmt = loop;
   ret.rc = parent.rc;
 
+  // copy the loop type (almost certainly LOOP) from the parent resolver
+  ret.byPostorder.byAst(loop).setType(parent.byPostorder.byAst(loop).type());
+
   return ret;
 }
 
@@ -1832,7 +1835,7 @@ static const Type* computeVarArgTuple(Resolver& resolver,
       auto newKind = resolveIntent(QualifiedType(qtKind, typePtr),
                                    /* isThis */ false, /* isInit */ false);
       QualifiedType elt = QualifiedType(newKind, typePtr);
-      typePtr = TupleType::getStarTuple(context, paramSize, elt);
+      typePtr = TupleType::getVarArgTuple(context, paramSize, elt);
     }
   }
 
@@ -2563,81 +2566,50 @@ Resolver::adjustTypesForOutFormals(const CallInfo& ci,
   }
 }
 
-void Resolver::resolveTupleUnpackAssign(ResolvedExpression& r,
-                                        const uast::AstNode* astForErr,
-                                        const Tuple* lhsTuple,
-                                        QualifiedType lhsType,
-                                        QualifiedType rhsType) {
-  // Check that lhsType = rhsType can work
+static void adjustIndexVariableKind(Resolver& rv, const NamedDecl* nd,
+                                    const QualifiedType& considering) {
+  auto var = nd->toVarLikeDecl();
+  if (!var || var->storageKind() != uast::Qualifier::INDEX) return;
 
-  if (!lhsType.hasTypePtr()) {
-    context->error(lhsTuple, "Unknown lhs tuple type in split tuple assign");
-    return;
-  }
-  if (!rhsType.hasTypePtr()) {
-    context->error(lhsTuple, "Unknown rhs tuple type in split tuple assign");
-    return;
-  }
+  auto kind = considering.kind();
+  // Non-ref index variables are generally immutable, so make it 'const'.
+  if (!considering.isRef()) kind = KindProperties::addConstness(kind);
 
-  // First, check that lhsType and rhsType are tuples
-  const TupleType* lhsT = lhsType.type()->toTupleType();
-  const TupleType* rhsT = rhsType.type()->toTupleType();
+  auto& re = rv.byPostorder.byAst(var);
+  re.setKind(kind);
+}
 
-  if (lhsT == nullptr) {
-    context->error(lhsTuple, "lhs type is not tuple in split tuple assign");
-    return;
-  }
-  if (rhsT == nullptr) {
-    context->error(lhsTuple, "rhs type is not tuple in split tuple assign");
-    return;
-  }
+static void gatherEltTypesFromRhs(const TupleDecl* lhsTuple,
+                                  const QualifiedType& rhsType,
+                                  std::vector<QualifiedType>& eltTypes) {
+  QualifiedType::Kind lhsKind = (Qualifier) lhsTuple->intentOrKind();
+  bool isLhsIdxOrRef = lhsKind == Qualifier::INDEX ||
+                       isRefQualifier(lhsKind);
 
-  // Then, check that they have the same size
-  if (lhsTuple->numActuals() != rhsT->numElements()) {
-    context->error(lhsTuple, "tuple size mismatch in split tuple assign");
-    return;
-  }
-  if (lhsT->numElements() != rhsT->numElements()) {
-    context->error(lhsTuple, "tuple size mismatch in split tuple assign");
-    return;
-  }
+  auto rhsT = rhsType.type()->toTupleType();
+  for (int i = 0; i < rhsT->numElements(); i++) {
+    auto kind = rhsT->elementType(i).kind();
+    auto type = rhsT->elementType(i).type();
 
-  const Scope* scope = currentScope();
-  auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
-
-  // Finally, try to resolve = between the elements
-  int i = 0;
-  for (auto actual : lhsTuple->actuals()) {
-    QualifiedType lhsEltType = lhsT->elementType(i);
-    QualifiedType rhsEltType = rhsT->elementType(i);
-    if (auto innerTuple = actual->toTuple()) {
-      resolveTupleUnpackAssign(r, astForErr, innerTuple, lhsEltType, rhsEltType);
-    } else {
-      std::vector<CallInfoActual> actuals;
-      actuals.push_back(CallInfoActual(lhsEltType, UniqueString()));
-      actuals.push_back(CallInfoActual(rhsEltType, UniqueString()));
-      auto ci = CallInfo (/* name */ USTR("="),
-                          /* calledType */ QualifiedType(),
-                          /* isMethodCall */ false,
-                          /* hasQuestionArg */ false,
-                          /* isParenless */ false,
-                          actuals);
-
-      auto c = resolveGeneratedCall(actual, &ci, &inScopes);
-      c.noteResult(&r, { { AssociatedAction::ASSIGN, lhsTuple->id() } });
-    }
-    i++;
+    // If the LHS is a ref tuple or a tuple index e.g., for (i, j)..., and
+    // the RHS is a ref tuple, then we need to transform the detupled
+    // components into references to the original tuple's components.
+    if (isLhsIdxOrRef && rhsType.isRef()) kind = rhsType.kind();
+    eltTypes.push_back({ kind, type });
   }
 }
 
 void Resolver::resolveTupleUnpackDecl(const TupleDecl* lhsTuple,
-                                      QualifiedType rhsType) {
+                                      const QualifiedType& rhsType) {
+  // Exit since 'resolveNamedDecl' also exits when scope-resolving.
+  if (scopeResolveOnly) return;
+
   if (!rhsType.hasTypePtr()) {
     CHPL_REPORT(context, TupleDeclUnknownType, lhsTuple);
     return;
   }
 
-  const TupleType* rhsT = rhsType.type() ? rhsType.type()->toTupleType() : nullptr;
+  auto rhsT = rhsType.type() ? rhsType.type()->toTupleType() : nullptr;
   std::vector<QualifiedType> eltTypes;
 
   if (rhsT == nullptr) {
@@ -2651,39 +2623,95 @@ void Resolver::resolveTupleUnpackDecl(const TupleDecl* lhsTuple,
       CHPL_REPORT(context, TupleDeclNotTuple, lhsTuple, rhsType.type());
       return;
     }
+
+  // Then, check that they have the same size
   } else if (lhsTuple->numDecls() != rhsT->numElements()) {
-    // Then, check that they have the same size
     CHPL_REPORT(context, TupleDeclMismatchedElems, lhsTuple, rhsT);
     return;
+
+  // Else, it's a tuple of the same size, so use the RHS element types
   } else {
-    for (int i = 0; i < rhsT->numElements(); i++) {
-      eltTypes.push_back(rhsT->elementType(i));
-    }
+    gatherEltTypesFromRhs(lhsTuple, rhsType, eltTypes);
   }
 
   // Finally, try to resolve the types of the elements
   int i = 0;
   for (auto actual : lhsTuple->decls()) {
     QualifiedType rhsEltType = eltTypes[i];
+
     if (auto innerTuple = actual->toTupleDecl()) {
       resolveTupleUnpackDecl(innerTuple, rhsEltType);
+
     } else if (auto namedDecl = actual->toNamedDecl()) {
       resolveNamedDecl(namedDecl, rhsEltType.type());
+
+      // If the element is an index variable, adjust its qualifier.
+      adjustIndexVariableKind(*this, namedDecl, rhsEltType);
     } else {
-      CHPL_ASSERT(false && "case not handled");
+      CHPL_UNIMPL("Unhandled case when unpacking tuple decl");
     }
     i++;
   }
 }
 
-void Resolver::resolveTupleDecl(const TupleDecl* td,
-                                const Type* useType) {
+void Resolver::resolveTupleDecl(const TupleDecl* td) {
   if (scopeResolveOnly) {
     return;
   }
 
   QualifiedType::Kind declKind = (Qualifier) td->intentOrKind();
-  QualifiedType useT;
+  QualifiedType qt;
+
+  auto typeExpr = td->typeExpression();
+  auto initExpr = td->initExpression();
+
+  // If there is a substitution, use that instead.
+  if (substitutions != nullptr && substitutions->count(td->id()) != 0) {
+    auto sub = substitutions->find(td->id())->second;
+    auto subTup = sub.hasTypePtr() ? sub.type()->toTupleType() : nullptr;
+
+    if (subTup == nullptr) {
+      // Rely on hasTypePtr check below to recognize error
+      qt = QualifiedType();
+    } else {
+      qt = sub;
+    }
+
+  } else if (typeExpr == nullptr && initExpr == nullptr) {
+    // Note: we seem to rely on tuple components being 'var', and relying on
+    // the tuple's kind instead. Without this, the current instantiation
+    // logic won't allow, for example, passing (1, 2, 3) to (?, ?, ?).
+    auto anyType = QualifiedType(QualifiedType::VAR, AnyType::get(context));
+    std::vector<QualifiedType> eltTypes(td->numDecls(), anyType);
+    auto tup = TupleType::getQualifiedTuple(context, eltTypes);
+    qt = QualifiedType(declKind, tup);
+  } else {
+    // Otherwise use the type that was resolved.
+    QualifiedType typeExprT;
+    QualifiedType initExprT;
+
+    if (typeExpr != nullptr) {
+      ResolvedExpression& result = byPostorder.byAst(typeExpr);
+      typeExprT = result.type();
+    }
+    if (initExpr != nullptr) {
+      ResolvedExpression& result = byPostorder.byAst(initExpr);
+      initExprT = result.type();
+    }
+
+    qt = getTypeForDecl(td, typeExpr, initExpr, declKind, typeExprT,
+                        initExprT);
+  }
+
+  resolveTupleDecl(td, std::move(qt));
+}
+
+void Resolver::resolveTupleDecl(const TupleDecl* td, QualifiedType useType) {
+  if (scopeResolveOnly) {
+    return;
+  }
+
+  QualifiedType::Kind declKind = (Qualifier) td->intentOrKind();
 
   // Non-default intents are currently not allowed for tuple-grouped formals.
   //
@@ -2691,73 +2719,33 @@ void Resolver::resolveTupleDecl(const TupleDecl* td,
   // formal ``((a, b), c)``. Such nested formals should be handled by
   // ``resolveTupleUnpackDecl``.
   if (td->isTupleDeclFormal() && declKind != QualifiedType::DEFAULT_INTENT) {
-    useT = QualifiedType(declKind, ErroneousType::get(context));
-    ResolvedExpression& result = byPostorder.byAst(td);
-    result.setType(useT);
+    auto qt = QualifiedType(declKind, ErroneousType::get(context));
+    auto& result = byPostorder.byAst(td);
+    result.setType(qt);
     return;
   }
 
-  // Figure out the type to use for this tuple
-  if (useType != nullptr) {
-    useT = QualifiedType(declKind, useType);
-  } else if (substitutions != nullptr &&
-             substitutions->count(td->id()) != 0) {
-    auto sub = substitutions->find(td->id())->second;
-    auto subTup = sub.hasTypePtr() ? sub.type()->toTupleType() : nullptr;
+  if (!useType.hasTypePtr()) {
+    useType = typeErr(td, "Cannot establish type for tuple decl");
 
-    if (subTup == nullptr) {
-      // Rely on hasTypePtr check below to recognize error
-      useT = QualifiedType();
-    } else {
-      useT = sub;
+  } else if (auto tt = useType.type()->toTupleType()) {
+    // Default-intent indicates a TupleDecl used to capture identifiers, and
+    // such tuples should be converted to a referential tuple. For more, see
+    // ``Value Tuples and Referential Tuples`` in the language specification.
+    //
+    // This is expected to apply to default-intent tuple formals, or to
+    // loop index variables.
+    if (td->intentOrKind() == TupleDecl::IntentOrKind::DEFAULT_INTENT) {
+      useType = QualifiedType(useType.kind(), tt->toReferentialTuple(context));
     }
-  } else {
-    QualifiedType typeExprT;
-    QualifiedType initExprT;
-
-    auto typeExpr = td->typeExpression();
-    auto initExpr = td->initExpression();
-
-    if (typeExpr == nullptr && initExpr == nullptr) {
-      // Note: we seem to rely on tuple components being 'var', and relying on
-      // the tuple's kind instead. Without this, the current instantiation
-      // logic won't allow, for example, passing (1, 2, 3) to (?, ?, ?).
-      std::vector<QualifiedType> eltTypes;
-      for (auto decl : td->decls()) {
-        eltTypes.push_back(QualifiedType(QualifiedType::VAR,
-                                         getAnyType(*this, decl->id())));
-      }
-      auto tup = TupleType::getQualifiedTuple(context, eltTypes);
-      useT = QualifiedType(declKind, tup);
-    } else {
-      if (typeExpr != nullptr) {
-        ResolvedExpression& result = byPostorder.byAst(typeExpr);
-        typeExprT = result.type();
-      }
-      if (initExpr != nullptr) {
-        ResolvedExpression& result = byPostorder.byAst(initExpr);
-        initExprT = result.type();
-      }
-
-      useT = getTypeForDecl(td, typeExpr, initExpr,
-                            declKind, typeExprT, initExprT);
-
-    }
-  }
-
-  if (!useT.hasTypePtr()) {
-    context->error(td, "Cannot establish type for tuple decl");
-    useT = QualifiedType(declKind, ErroneousType::get(context));
-  } else if (useT.type()->isTupleType()) {
-    useT = QualifiedType(useT.kind(),
-                         useT.type()->toTupleType()->toReferentialTuple(context));
   }
 
   // save the type in byPostorder
   ResolvedExpression& result = byPostorder.byAst(td);
-  result.setType(useT);
+  result.setType(useType);
+
   // resolve the types of the tuple elements
-  resolveTupleUnpackDecl(td, useT);
+  resolveTupleUnpackDecl(td, std::move(useType));
 }
 
 bool Resolver::resolveSpecialNewCall(const Call* call) {
@@ -2928,6 +2916,117 @@ static void resolveReduceAssign(Resolver& rv, const OpCall* op) {
   resolvedOp.setType(QualifiedType(QualifiedType::CONST_VAR, VoidType::get(rv.context)));
 }
 
+// checks if an identifier referring to toId could be attempting to set its
+// type via a call to an 'out' function.
+static bool couldBeOutInitialized(Resolver* rv, const ID& toId) {
+  if (!asttags::isVarLikeDecl(parsing::idToTag(rv->context, toId))) return false;
+
+  auto vld = parsing::idToAst(rv->context, toId)->toVarLikeDecl();
+
+  // if it had a type expression or an init expression, we certainly can't
+  // be trying to out-initialize it.
+  if (vld->typeExpression() || vld->initExpression()) return false;
+
+  auto parentDecl = parsing::idToContainingMultiDeclId(rv->context, toId);
+  auto parentOfDecl = parsing::idToParentId(rv->context, parentDecl);
+  if (asttags::isIndexableLoop(parsing::idToTag(rv->context, parentOfDecl))) {
+    // if this is a (multi)decl in a loop, it can't be out-initialized;
+    // it's set by the loop.
+    return false;
+  }
+
+  return true;
+}
+
+static SkipCallResolutionReason
+shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
+                         std::vector<const uast::AstNode*> actualAsts,
+                         const CallInfo& ci) {
+  Context* context = rv->context;
+  SkipCallResolutionReason skip = NONE;
+  auto& byPostorder = rv->byPostorder;
+
+  if (callLike->isTuple()) return skip;
+
+  int actualIdx = 0;
+  for (const auto& actual : ci.actuals()) {
+    ID toId; // does the actual refer directly to a particular variable?
+    const AstNode* actualAst = actualAsts[actualIdx];
+    if (actualAst != nullptr && byPostorder.hasAst(actualAst)) {
+      toId = byPostorder.byAst(actualAst).toId();
+    }
+    QualifiedType qt = actual.type();
+    const Type* t = qt.type();
+
+    auto formalAst = toId.isEmpty() ? nullptr : parsing::idToAst(context, toId);
+    bool isNonOutFormal = formalAst != nullptr &&
+                          formalAst->isFormal() &&
+                          formalAst->toFormal()->intent() != Formal::Intent::OUT;
+
+    if (t != nullptr && t->isErroneousType()) {
+      // always skip if there is an ErroneousType
+      skip = ERRONEOUS_ACT;
+    } else if (!toId.isEmpty() && !isNonOutFormal &&
+               qt.isUnknown() &&
+               qt.kind() != QualifiedType::PARAM &&
+               qt.kind() != QualifiedType::TYPE &&
+               qt.isRef() == false &&
+               couldBeOutInitialized(rv, toId)) {
+      // don't skip because it could be initialized with 'out' intent,
+      // but not for non-out formals because they can't be split-initialized.
+    } else if (actualAst != nullptr && actualAst->isTypeQuery() && ci.calledType().isType()) {
+      // don't skip for type queries in type constructors
+    } else {
+      if (qt.isParam() && qt.param() == nullptr) {
+        skip = UNKNOWN_PARAM;
+      } else if (qt.isUnknown()) {
+        skip = UNKNOWN_ACT;
+      } else if (t != nullptr && qt.kind() != QualifiedType::INIT_RECEIVER) {
+        // For initializer calls, allow generic formals using the above
+        // condition; this way, 'this.init(..)' while 'this' is generic
+        // should be fine.
+
+        auto g = getTypeGenericity(context, t);
+        bool isBuiltinGeneric = (g == Type::GENERIC &&
+                                 (t->isAnyType() || t->isBuiltinType()));
+        bool noSubstitution =
+          rv->substitutions == nullptr ||
+          (!toId.isEmpty() && rv->substitutions->count(toId) == 0);
+
+        if (qt.isType() && isBuiltinGeneric && noSubstitution) {
+          skip = GENERIC_TYPE;
+        } else if (!qt.isType() && g != Type::CONCRETE) {
+          skip = GENERIC_VALUE;
+        }
+      }
+    }
+
+    // Don't skip for type constructors, except due to unknown params.
+    if (skip != UNKNOWN_PARAM && skip != UNKNOWN_ACT && ci.calledType().isType()) {
+      skip = NONE;
+    }
+
+    // Do not skip primitive calls that accept a generic type, since they
+    // may be valid.
+    if (skip == GENERIC_TYPE && callLike->toPrimCall()) {
+      skip = NONE;
+    }
+
+    if (skip) {
+      break;
+    }
+    actualIdx++;
+  }
+
+  // Don't try to resolve calls to '=' until later
+  if (ci.isOpCall() && ci.name() == USTR("=")) {
+    skip = OTHER_REASON;
+  }
+
+  return skip;
+}
+
+
 bool Resolver::resolveSpecialOpCall(const Call* call) {
   if (!call->isOpCall()) return false;
 
@@ -2935,17 +3034,6 @@ bool Resolver::resolveSpecialOpCall(const Call* call) {
 
   if (op->op() == USTR("=")) {
     if (op->numActuals() == 2) {
-      if (auto lhsTuple = op->actual(0)->toTuple()) {
-
-        ResolvedExpression& r = byPostorder.byAst(op);
-        QualifiedType lhsType = byPostorder.byAst(op->actual(0)).type();
-        QualifiedType rhsType = byPostorder.byAst(op->actual(1)).type();
-
-        resolveTupleUnpackAssign(r, call,
-                                 lhsTuple, lhsType, rhsType);
-        return true;
-      }
-
       // Update a generic/unknown type when split-init is used.
       adjustTypesOnAssign(op->actual(0), op->actual(1));
     }
@@ -2955,6 +3043,40 @@ bool Resolver::resolveSpecialOpCall(const Call* call) {
     return true;
   } else if (op->op() == USTR("reduce=")) {
     resolveReduceAssign(*this, op);
+    return true;
+  } else if (op->op() == USTR("dmapped")) {
+    std::vector<const AstNode*> actualAsts;
+    std::vector<CallInfoActual> actuals;
+    const AstNode* questionArg = nullptr;
+
+    prepareCallInfoActuals(call, actuals, questionArg, &actualAsts);
+    CHPL_ASSERT(!questionArg);
+
+    // for some reason, the standard function has its actuals swapped
+    // compared to how the operator occurs in the AST.
+    std::swap(actuals[0], actuals[1]);
+    std::swap(actualAsts[0], actualAsts[1]);
+
+    // add the 'definedConst' actual, which at this time is always true.
+    actualAsts.push_back(nullptr);
+    actuals.push_back({ QualifiedType::makeParamBool(context, true),
+                        UniqueString::get(context, "definedConst") });
+
+    auto ci = CallInfo(UniqueString::get(context, "chpl__distributed"),
+                       /* calledType */ QualifiedType(),
+                       /* isMethodCall */ false,
+                       /* hasQuestionArg */ questionArg != nullptr,
+                       /* isParenless */ false,
+                       std::move(actuals));
+
+    if (shouldSkipCallResolution(this, call, actualAsts, ci)) {
+      return true;
+    }
+
+    auto inScopes = CallScopeInfo::forNormalCall(currentScope(), poiScope);
+    auto cr = resolveGeneratedCall(call, &ci, &inScopes);
+    cr.noteResult(&byPostorder.byAst(call));
+
     return true;
   }
 
@@ -3053,93 +3175,6 @@ bool Resolver::resolveSpecialPrimitiveCall(const Call* call) {
   return false;
 }
 
-static SkipCallResolutionReason
-shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
-                         std::vector<const uast::AstNode*> actualAsts,
-                         const CallInfo& ci) {
-  Context* context = rv->context;
-  SkipCallResolutionReason skip = NONE;
-  auto& byPostorder = rv->byPostorder;
-
-  if (callLike->isTuple()) return skip;
-
-  int actualIdx = 0;
-  for (const auto& actual : ci.actuals()) {
-    ID toId; // does the actual refer directly to a particular variable?
-    const AstNode* actualAst = actualAsts[actualIdx];
-    if (actualAst != nullptr && byPostorder.hasAst(actualAst)) {
-      toId = byPostorder.byAst(actualAst).toId();
-    }
-    QualifiedType qt = actual.type();
-    const Type* t = qt.type();
-
-    auto formalAst = toId.isEmpty() ? nullptr : parsing::idToAst(context, toId);
-    bool isNonOutFormal = formalAst != nullptr &&
-                          formalAst->isFormal() &&
-                          formalAst->toFormal()->intent() != Formal::Intent::OUT;
-
-    if (t != nullptr && t->isErroneousType()) {
-      // always skip if there is an ErroneousType
-      skip = ERRONEOUS_ACT;
-    } else if (!toId.isEmpty() && !isNonOutFormal &&
-               qt.isUnknown() &&
-               qt.kind() != QualifiedType::PARAM &&
-               qt.kind() != QualifiedType::TYPE &&
-               qt.isRef() == false) {
-      // don't skip because it could be initialized with 'out' intent,
-      // but not for non-out formals because they can't be split-initialized.
-    } else if (actualAst != nullptr && actualAst->isTypeQuery() && ci.calledType().isType()) {
-      // don't skip for type queries in type constructors
-    } else {
-      if (qt.isParam() && qt.param() == nullptr) {
-        skip = UNKNOWN_PARAM;
-      } else if (qt.isUnknown()) {
-        skip = UNKNOWN_ACT;
-      } else if (t != nullptr && qt.kind() != QualifiedType::INIT_RECEIVER) {
-        // For initializer calls, allow generic formals using the above
-        // condition; this way, 'this.init(..)' while 'this' is generic
-        // should be fine.
-
-        auto g = getTypeGenericity(context, t);
-        bool isBuiltinGeneric = (g == Type::GENERIC &&
-                                 (t->isAnyType() || t->isBuiltinType()));
-        bool noSubstitution =
-          rv->substitutions == nullptr ||
-          (!toId.isEmpty() && rv->substitutions->count(toId) == 0);
-
-        if (qt.isType() && isBuiltinGeneric && noSubstitution) {
-          skip = GENERIC_TYPE;
-        } else if (!qt.isType() && g != Type::CONCRETE) {
-          skip = GENERIC_VALUE;
-        }
-      }
-    }
-
-    // Don't skip for type constructors, except due to unknown params.
-    if (skip != UNKNOWN_PARAM && skip != UNKNOWN_ACT && ci.calledType().isType()) {
-      skip = NONE;
-    }
-
-    // Do not skip primitive calls that accept a generic type, since they
-    // may be valid.
-    if (skip == GENERIC_TYPE && callLike->toPrimCall()) {
-      skip = NONE;
-    }
-
-    if (skip) {
-      break;
-    }
-    actualIdx++;
-  }
-
-  // Don't try to resolve calls to '=' until later
-  if (ci.isOpCall() && ci.name() == USTR("=")) {
-    skip = OTHER_REASON;
-  }
-
-  return skip;
-}
-
 template <typename ErrorType>
 static void
 resolveSpecialKeywordCallAsNormalCall(Resolver& rv,
@@ -3192,14 +3227,14 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
   } else if (fnName == "subdomain") {
     // check if we're inside a 'sparse subdomain' call, in which case we should
     // do nothing.
-    CHPL_ASSERT(callNodeStack.size() >= 2);
-    CHPL_ASSERT(callNodeStack.back() == fnCall);
-    auto parentCall = callNodeStack[callNodeStack.size() - 2];
-    if (parentCall->numActuals() == 1 && parentCall->actual(0) == fnCall) {
-      if (auto parentFnCall = parentCall->toFnCall()) {
-        if (parentFnCall->calledExpression()->isIdentifier() &&
-            parentFnCall->calledExpression()->toIdentifier()->name() == "sparse") {
-          return true;
+    if (callNodeStack.size() >= 2 && callNodeStack.back() == fnCall) {
+      auto parentCall = callNodeStack[callNodeStack.size() - 2];
+      if (parentCall->numActuals() == 1 && parentCall->actual(0) == fnCall) {
+        if (auto parentFnCall = parentCall->toFnCall()) {
+          auto parentIdent = parentFnCall->calledExpression()->toIdentifier();
+          if (parentIdent && parentIdent->name() == "sparse") {
+            return true;
+          }
         }
       }
     }
@@ -3372,11 +3407,6 @@ QualifiedType Resolver::typeForId(const ID& id) {
                         !id.isSymbolDefiningScope());
   if (useLocalResult && curStmt != nullptr) {
     if (curStmt->id().contains(id)) {
-      if (asttags::isLoop(parsing::idToTag(context, id))) {
-        // we found a reference to a label. not only do we not need to use a
-        // local result, we can return right now.
-        return QualifiedType(QualifiedType::LOOP, UnknownType::get(context));
-      }
       // OK, proceed using local result
     } else {
       useLocalResult = false;
@@ -4284,6 +4314,14 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
     return;
   }
 
+  // Throwaway '_', must be handled elsewhere and has no type on its own.
+  // Use the '?' type as a placeholder since 'unknown' causes resolution
+  // of the tuple type to give up.
+  if (ident->name() == USTR("_")) {
+    result.setType(QualifiedType(QualifiedType::VAR, AnyType::get(context)));
+    return;
+  }
+
   // lookupIdentifier reports any errors that are needed
   bool resolvingCalledIdent = nearestCalledExpression() == ident;
   auto parenlessInfo = ParenlessOverloadInfo();
@@ -4874,7 +4912,14 @@ void Resolver::exit(const MultiDecl* decl) {
         if (auto v = d->toVarLikeDecl()) {
           resolveNamedDecl(v, t);
         } else if (auto td = d->toTupleDecl()) {
-          resolveTupleDecl(td, t);
+          if (t == nullptr) {
+            resolveTupleDecl(td);
+          } else {
+            // Use the declared intent.
+            auto kind = (Qualifier) td->intentOrKind();
+            QualifiedType qt = { kind, t };
+            resolveTupleDecl(td, std::move(qt));
+          }
         }
 
         // update lastType
@@ -4910,7 +4955,7 @@ bool Resolver::enter(const TupleDecl* decl) {
 }
 
 void Resolver::exit(const TupleDecl* decl) {
-  resolveTupleDecl(decl, /* useType */ nullptr);
+  resolveTupleDecl(decl);
   exitScope(decl);
 }
 
@@ -5288,8 +5333,14 @@ rerunCallInfoWithIteratorTag(ResolutionContext* rc,
   if (iterKindActual.isUnknown()) return empty;
 
   std::vector<CallInfoActual> actuals;
-  for (const auto& actual : ci.actuals())
+  for (const auto& actual : ci.actuals()) {
+    // If the user explictly specified a tag, we can't re-run with a different tag.
+    if (actual.byName() == USTR("tag")) {
+      return empty;
+    }
+
     actuals.push_back(actual);
+  }
   actuals.emplace_back(iterKindActual, USTR("tag"));
 
   auto newCi = CallInfo(ci.name(), ci.calledType(), ci.isMethodCall(),
@@ -5696,8 +5747,8 @@ void Resolver::exit(const Dot* dot) {
     // Special case: Don't try to resolve calls to .domain here, as we
     // need to proceed to the handling logic below.
     if (!receiver.type().isUnknown() && receiver.type().type() &&
-        receiver.type().type()->getCompositeType() &&
-        dot->field() != USTR("init") && !isDotDomainAccess(dot)) {
+        (receiver.type().type()->getCompositeType() || isDotDomainAccess(dot)) &&
+        dot->field() != USTR("init")) {
       std::vector<CallInfoActual> actuals;
       actuals.push_back(CallInfoActual(receiver.type(), USTR("this")));
       auto ci = CallInfo(/* name */ dot->field(),
@@ -5736,31 +5787,6 @@ void Resolver::exit(const Dot* dot) {
   if (dot->field() == USTR("locale")) {
     r.setType(QualifiedType(QualifiedType::CONST_VAR,
                             CompositeType::getLocaleType(context)));
-    return;
-  }
-
-  // Handle .domain on an array (which doesn't exist in module code) as a call
-  // to _dom. We do this even for a non-array receiver as that's what production
-  // does.
-  if (isDotDomainAccess(dot)) {
-    std::vector<CallInfoActual> actuals;
-    std::vector<const AstNode*> actualAsts;
-    actuals.emplace_back(receiver.type(), USTR("this"));
-    actualAsts.push_back(dot->receiver());
-    auto name = UniqueString::get(context, "_dom");
-    auto ci = CallInfo(/* name */ name,
-                       /* calledType */ QualifiedType(),
-                       /* isMethodCall */ true,
-                       /* hasQuestionArg */ false,
-                       /* isParenless */ true, actuals);
-    auto inScope = currentScope();
-    auto inScopes = CallScopeInfo::forNormalCall(inScope, poiScope);
-    if (shouldSkipCallResolution(this, dot, actualAsts, ci)) {
-      r.setType(QualifiedType());
-    } else {
-      auto rr = resolveGeneratedCall(dot, &ci, &inScopes, name.c_str());
-      rr.noteResultWithoutError(&r);
-    }
     return;
   }
 
@@ -6866,6 +6892,14 @@ bool Resolver::enter(const IndexableLoop* loop) {
   auto forLoop = loop->toFor();
   bool isParamForLoop = forLoop != nullptr && forLoop->isParam();
 
+  // standalone loops have LOOP type so that when labels refer to them,
+  // we recognize them as valid.
+  if (!loop->isExpressionLevel()) {
+    byPostorder.byAst(loop).setType(
+        QualifiedType(QualifiedType::LOOP,
+                      UnknownType::get(context)));
+  }
+
   // whether this is a param or regular loop, before entering its body
   // or considering its iterand, resolve expressions in the loop's attribute
   // group.
@@ -6943,7 +6977,7 @@ bool Resolver::enter(const IndexableLoop* loop) {
     ResolvedExpression& re = byPostorder.byAst(idx);
 
     if (idx->isTupleDecl() && !scopeResolveOnly) {
-      resolveTupleUnpackDecl(idx->toTupleDecl(), idxType);
+      resolveTupleDecl(idx->toTupleDecl(), idxType);
     } else {
       re.setType(idxType);
     }

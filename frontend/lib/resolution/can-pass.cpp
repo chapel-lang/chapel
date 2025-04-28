@@ -309,7 +309,7 @@ bool CanPassResult::canConvertNumeric(Context* context,
     // don't convert bools to complexes (per spec: "unintended by programmer")
 
     // coerce any integer type to any width complex
-    if (actualT->isNumericType())
+    if (actualT->isIntegralType())
       return true;
 
     // convert smaller complex types
@@ -1370,6 +1370,20 @@ types::QualifiedType::Kind KindProperties::combineKindsMeet(
   auto kp2 = KindProperties::fromKind(kind2);
   kp1.combineWithMeet(kp2);
   return kp1.toKind();
+}
+
+QualifiedType::Kind
+KindProperties::addConstness(QualifiedType::Kind kind) {
+  auto kp = KindProperties::fromKind(kind);
+  kp.setConst(true);
+  return kp.toKind();
+}
+
+QualifiedType::Kind
+KindProperties::addRefness(QualifiedType::Kind kind) {
+  auto kp = KindProperties::fromKind(kind);
+  kp.setRef(true);
+  return kp.toKind();
 }
 
 QualifiedType::Kind KindProperties::toKind() const {

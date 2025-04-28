@@ -544,14 +544,15 @@ static void removeUnusedTypes() {
   std::set<Type*> wellknown = getWellKnownTypesSet();
 
   // Remove unused aggregate types.
-  for_alive_in_expanding_Vec(TypeSymbol, type, gTypeSymbols) {
-    if (! type->hasFlag(FLAG_REF)                &&
-        ! type->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
-      if (AggregateType* at = toAggregateType(type->type)) {
+  for_alive_in_expanding_Vec(TypeSymbol, ts, gTypeSymbols) {
+    if (! ts->hasFlag(FLAG_REF)                &&
+        ! ts->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
+      // First collect any unused aggregates.
+      if (AggregateType* at = toAggregateType(ts->type)) {
         if (isUnusedClass(at, wellknown)) {
           at->symbol->defPoint->remove();
         }
-      } else if(DecoratedClassType* dt = toDecoratedClassType(type->type)) {
+      } else if(DecoratedClassType* dt = toDecoratedClassType(ts->type)) {
         if (isUnusedClass(dt->getCanonicalClass(), wellknown)) {
           dt->symbol->defPoint->remove();
         }
@@ -560,21 +561,40 @@ static void removeUnusedTypes() {
   }
 
   // Remove unused ref types.
-  for_alive_in_Vec(TypeSymbol, type, gTypeSymbols) {
-    if (type->hasFlag(FLAG_REF)) {
+  for_alive_in_Vec(TypeSymbol, ts, gTypeSymbols) {
+    if (ts->hasFlag(FLAG_REF)) {
       // Get the value type of the ref type.
-      if (AggregateType* at1 = toAggregateType(type->getValType())) {
+      if (AggregateType* at1 = toAggregateType(ts->getValType())) {
         if (isUnusedClass(at1, wellknown)) {
           // If the value type is unused, its ref type can also be removed.
-          type->defPoint->remove();
+          ts->defPoint->remove();
         }
       } else if(DecoratedClassType* dt =
-                toDecoratedClassType(type->getValType())) {
+                toDecoratedClassType(ts->getValType())) {
         if (isUnusedClass(dt->getCanonicalClass(), wellknown)) {
-          type->defPoint->remove();
+          ts->defPoint->remove();
         }
       }
     }
+  }
+}
+
+static void removeStaleFunctionTypes() {
+  for_alive_in_expanding_Vec(TypeSymbol, ts, gTypeSymbols) {
+    auto ft = toFunctionType(ts->type);
+    if (!ft) continue;
+
+    bool containsRemoved = !ft->returnType()->inTree();
+    if (!containsRemoved) {
+      for (int i = 0; i < ft->numFormals(); i++) {
+        if (!ft->formal(i)->type()->inTree()) {
+          containsRemoved = true;
+          break;
+        }
+      }
+    }
+
+    if (containsRemoved) ft->symbol->defPoint->remove();
   }
 }
 
@@ -1079,6 +1099,8 @@ void pruneResolvedTree() {
   expandInitFieldPrims();
 
   cleanupNothingVarsAndFields();
+
+  removeStaleFunctionTypes();
 
   cleanupAfterRemoves();
 }

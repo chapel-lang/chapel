@@ -160,7 +160,8 @@ TupleType::getGenericTupleType(Context* context) {
 
 const TupleType*
 TupleType::getQualifiedTuple(Context* context,
-                             std::vector<QualifiedType> eltTypes) {
+                             std::vector<QualifiedType> eltTypes,
+                             bool isVarArgTuple) {
   SubstitutionsMap subs;
   int i = 0;
   for (const auto& t : eltTypes) {
@@ -169,20 +170,19 @@ TupleType::getQualifiedTuple(Context* context,
   }
 
   const TupleType* instantiatedFrom = getGenericTupleType(context);
-  const bool isVarArgTuple = true;
   return getTupleType(context, instantiatedFrom,
                       std::move(subs), isVarArgTuple).get();
 }
 
 const TupleType*
-TupleType::getStarTuple(Context* context,
-                        QualifiedType paramSize,
-                        QualifiedType varArgEltType) {
+TupleType::getVarArgTuple(Context* context,
+                          QualifiedType paramSize,
+                          QualifiedType varArgEltType) {
   if (!paramSize.isUnknown()) {
     // Fixed size, we can at least create a star tuple of AnyType
     int64_t numElements = paramSize.param()->toIntParam()->value();
     std::vector<QualifiedType> eltTypes(numElements, varArgEltType);
-    return getQualifiedTuple(context, eltTypes);
+    return getQualifiedTuple(context, eltTypes, true);
   } else {
     // Size unknown, store the expected element type
     const TupleType* instantiatedFrom = getGenericTupleType(context);

@@ -2482,7 +2482,8 @@ instantiateSignatureImpl(ResolutionContext* rc,
     }
 
     if (instantiateVarArgs) {
-      const TupleType* t = TupleType::getQualifiedTuple(context, varargsTypes);
+      const TupleType* t = TupleType::getQualifiedTuple(context, varargsTypes,
+                                                        /*isVarArgTuple=*/true);
       auto formal = faMap.byFormalIdx(varArgIdx).formal()->toVarArgFormal();
       QualifiedType vat = QualifiedType(formal->storageKind(), t);
       substitutions.insert({formal->id(), vat});
@@ -4095,7 +4096,9 @@ static const Type* resolveBuiltinTypeCtor(Context* context,
     auto second = ci.actual(1).type();
     if (first.isParam() && first.type()->isIntType() &&
         second.isType()) {
-      return TupleType::getStarTuple(context, first, second);
+      auto num = first.param()->toIntParam()->value();
+      std::vector<const Type*> eltTypes(num, second.type());
+      return TupleType::getValueTuple(context, eltTypes);
     }
   }
 
@@ -4304,6 +4307,33 @@ static bool resolveFnCallSpecial(Context* context,
     }
   }
 
+  if (ci.name() == USTR("borrow") && ci.numActuals() == 1 && ci.isMethodCall()) {
+    // this is the equivalent of the production compiler's `resolveClassBorrowMethod`.
+    // A call to `isClassLike` there rejects handling `owned` and `shared`,
+    // so only handle undecorated class types here.
+
+    auto receiver = ci.methodReceiverType();
+    const ManageableType* receiverBct = nullptr;
+    const ClassType* receiverCt = nullptr;
+    bool handle =
+      (receiverBct = receiver.type()->toBasicClassType()) ||
+      ((receiverCt = receiver.type()->toClassType()) &&
+       !receiverCt->decorator().isManaged());
+
+    if (handle) {
+      auto finalBct = receiverBct ? receiverBct : receiverCt->manageableType();
+
+      auto decorator = ClassTypeDecorator(ClassTypeDecorator::BORROWED);
+      if (receiverCt) {
+        decorator = decorator.copyNilabilityFrom(receiverCt->decorator());
+      }
+
+      auto outTy = ClassType::get(context, finalBct, nullptr, decorator);
+      exprTypeOut = QualifiedType(QualifiedType::VAR, outTy);
+      return true;
+    }
+  }
+
   if (ci.name() == USTR("isCoercible")) {
     if (ci.numActuals() != 2) {
       if (!ci.isMethodCall()) {
@@ -4401,6 +4431,38 @@ static bool resolveFnCallSpecialType(Context* context,
   return false;
 }
 
+static bool resolveMethodCallSpecial(Context* context,
+                                     const AstNode* astContext,
+                                     const CallInfo& ci,
+                                     const CallScopeInfo& inScopes,
+                                     CallResolutionResult& result) {
+  if (!ci.isMethodCall()) {
+    return false;
+  }
+
+  ResolutionContext rcval(context);
+  auto rc = &rcval;
+
+  // Methods that require resolving some kind of helper method to build
+  // the type.
+
+  if (ci.name() == USTR("domain") && ci.isParenless()) {
+    auto newName = UniqueString::get(context, "_dom");
+    auto ctorCall = CallInfo::copyAndRename(ci, newName);
+    result = resolveGeneratedCall(rc, astContext, ctorCall, inScopes);
+    return true;
+  }
+
+  if (ci.name() == USTR("bytes") && !ci.isParenless()) {
+    auto newName = UniqueString::get(context, "chpl_bytes");
+    auto ctorCall = CallInfo::copyAndRename(ci, newName);
+    result = resolveGeneratedCall(rc, astContext, ctorCall, inScopes);
+    return true;
+  }
+
+  return false;
+}
+
 static MostSpecificCandidates
 resolveFnCallForTypeCtor(Context* context,
                          const CallInfo& ci,
@@ -4460,13 +4522,13 @@ considerCompilerGeneratedMethods(ResolutionContext* rc,
 }
 
 static const TypedFnSignature*
-considerCompilerGeneratedFunctions(Context* context,
+considerCompilerGeneratedFunctions(ResolutionContext* rc,
                                    const CallInfo& ci,
                                    CandidatesAndForwardingInfo& candidates) {
   // methods and op calls considered elsewhere
   if (ci.isMethodCall() || ci.isOpCall()) return nullptr;
 
-  return getCompilerGeneratedFunction(context, ci);
+  return getCompilerGeneratedFunction(rc, ci);
 }
 
 // not all compiler-generated procs are method. For instance, the compiler
@@ -4507,7 +4569,7 @@ considerCompilerGeneratedCandidates(ResolutionContext* rc,
 
   tfs = considerCompilerGeneratedMethods(rc, ci, candidates);
   if (tfs == nullptr) {
-    tfs = considerCompilerGeneratedFunctions(rc->context(), ci, candidates);
+    tfs = considerCompilerGeneratedFunctions(rc, ci, candidates);
   }
   if (tfs == nullptr) {
     tfs = considerCompilerGeneratedOperators(rc->context(), ci, candidates);
@@ -5642,6 +5704,10 @@ CallResolutionResult resolveCall(ResolutionContext* rc,
       return keywordRes;
     }
 
+    if (resolveMethodCallSpecial(context, call, ci, inScopes, keywordRes)) {
+      return keywordRes;
+    }
+
     // otherwise do regular call resolution
     return resolveFnCall(rc, call, call, ci, inScopes, rejected, skipForwarding);
   } else if (auto prim = call->toPrimCall()) {
@@ -5704,6 +5770,12 @@ CallResolutionResult resolveGeneratedCall(ResolutionContext* rc,
   if (resolveFnCallSpecial(rc->context(), astContext, ci, tmpRetType)) {
     return CallResolutionResult(std::move(tmpRetType));
   }
+
+  CallResolutionResult keywordRes;
+  if (resolveMethodCallSpecial(rc->context(), astContext, ci, inScopes, keywordRes)) {
+    return keywordRes;
+  }
+
   // otherwise do regular call resolution
   const Call* call = nullptr;
   return resolveFnCall(rc, astContext, call, ci, inScopes, rejected);
