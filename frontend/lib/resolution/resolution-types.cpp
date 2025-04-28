@@ -436,6 +436,16 @@ CallInfo CallInfo::create(Context* context,
     auto calledExprType = tryGetType(calledExpr, byPostorder);
     auto dotReceiverType = tryGetType(dotReceiver, byPostorder);
 
+    auto makeCallToDotThis = [&]() {
+      name = USTR("this");
+      // add the 'this' argument as well
+      isMethodCall = true;
+      actuals.push_back(CallInfoActual(*calledExprType, USTR("this")));
+      if (actualAsts != nullptr) {
+        actualAsts->push_back(calledExpr);
+      }
+    };
+
     if (calledExprType &&
         (isKindForFunctionalValue(calledExprType->kind()) ||
          calledExprType->isErroneousType())) {
@@ -447,13 +457,7 @@ CallInfo CallInfo::create(Context* context,
       // a value (ambiguity or other "benign" UNKNOWN would not produce errors).
       // Later, this can lead to skipping resolving the call altogether.
 
-      name = USTR("this");
-      // add the 'this' argument as well
-      isMethodCall = true;
-      actuals.push_back(CallInfoActual(*calledExprType, USTR("this")));
-      if (actualAsts != nullptr) {
-        actualAsts->push_back(calledExpr);
-      }
+      makeCallToDotThis();
     } else if (dotReceiverType && dotReceiverType->kind() == QualifiedType::MODULE) {
       // In calls like `M.f()`, where `M` is a module, we need to restrict
       // our search to `M`'s scope. Signal this by setting `moduleScopeId`.
@@ -461,7 +465,15 @@ CallInfo CallInfo::create(Context* context,
         *moduleScopeId = byPostorder.byAst(dotReceiver).toId();
       /* TODO: set calledType? */
     } else if (calledExprType && !calledExprType->isUnknown() && calledExprType->isType()) {
-      calledType = *calledExprType;
+      // normally, we would say this is a type constructor and set calledType.
+      // However, for tuples, we treat this as a regular "proc this", which
+      // enables accessing the individual element's types.
+
+      if (calledExprType->type() && calledExprType->type()->isTupleType()) {
+        makeCallToDotThis();
+      } else {
+        calledType = *calledExprType;
+      }
     } else if (!call->isOpCall() && dotReceiverType &&
                isKindForMethodReceiver(dotReceiverType->kind())) {
       // Check for normal method call, maybe construct a receiver.
