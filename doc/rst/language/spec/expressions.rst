@@ -503,15 +503,14 @@ precedence than those listed later.
    ordering is to allow these operators to be used as
    non-short-circuiting logical operations.
 
-   In contrast to C, we give bitwise operations a higher precedence than
-   binary addition/subtraction and comparison operators. This enables
-   using the shift operators as shorthand for multiplication/division by
-   powers of 2, and also makes it easier to extract and test a bitmapped
-   field:
+   In contrast to C, we give bitwise operations a higher precedence than binary
+   addition/subtraction and comparison operators. This enables shift operators
+   to be used as shorthand for multiplication/division of integers by powers of
+   2, and also makes it easier to extract and test a bitmapped field:
 
    ======================= == =====================
    ``(x & MASK) == MASK``  as ``x & MASK == MASK``
-   ``a + b * pow(2,y)``    as ``a * b << y``
+   ``a * b * 2 ** y``      as ``a * b << y``
    ======================= == =====================
 
    One final area of note is the precedence of reductions. Two common
