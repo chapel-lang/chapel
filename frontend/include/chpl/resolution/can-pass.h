@@ -58,6 +58,8 @@ class CanPassResult {
     BORROWS_SUBTYPE,
     /** Non-subtype conversion that doesn't produce a param */
     OTHER,
+    /** A conversion from a tuple to its referential tuple type equivalent */
+    TO_REFERENTIAL_TUPLE,
   };
 
  private:

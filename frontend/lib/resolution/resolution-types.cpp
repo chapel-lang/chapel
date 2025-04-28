@@ -1231,8 +1231,12 @@ MostSpecificCandidate::fromTypedFnSignature(ResolutionContext* rc,
     auto canPassFn =
       actualType.kind() == QualifiedType::INIT_RECEIVER ? canPassScalar
                                                         : canPass;
+    // An exception is made for the case where we have to convert a tuple to
+    // its referential equivalent, which doesn't count as coercion in the
+    // conventional Chapel sense.
     auto got = canPassFn(rc->context(), actualType, formalType);
-    if (got.converts() && formalType.kind() == QualifiedType::CONST_REF) {
+    if (got.converts() && formalType.kind() == QualifiedType::CONST_REF &&
+        got.conversionKind() != CanPassResult::TO_REFERENTIAL_TUPLE) {
       coercionFormal = fa.formalIdx();
       coercionActual = fa.actualIdx();
       break;
