@@ -2922,9 +2922,11 @@ module Python {
       Extend the list with the contents of `iterable`.  Equivalent to calling
       ``obj.extend(iterable)`` in Python.
 
-      .. warning::
+      .. note::
 
-         This method is only support for Python 3.13 or later!
+         This method is only support for Python 3.13 or later.  Calling it with
+         earlier versions of Python will result in a PythonException that the
+         method is not supported.
 
       :arg iterable: something that can be iterated over to extend the list
     */
@@ -2953,7 +2955,8 @@ module Python {
 
     /*
       Remove the specified items from the list.  Equivalent to calling
-      ``obj[bounds.low:bounds.high+1] = []`` in Python.
+      ``obj[bounds.low:bounds.high+1] = []`` or
+      ``del obj[bounds.low:bounds.high+1]`` in Python.
 
       :arg bounds: The indices of the items to remove.
     */
@@ -2974,9 +2977,11 @@ module Python {
       Remove all items from the list.  Equivalent to calling ``obj.clear()`` or
       ``del obj[:]``
 
-      .. warning::
+      .. note::
 
-         This method is only support for Python 3.13 or later!
+         This method is only support for Python 3.13 or later.  Calling it with
+         earlier versions of Python will result in a PythonException that the
+         method is not supported.
     */
     proc clear() throws {
       var ctx = chpl_pythonContext.enter();
