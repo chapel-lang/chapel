@@ -72,5 +72,5 @@ and creates tasks using the compiler in the default ``PATH`` with default
 settings. You can also create your own tasks by creating a ``tasks.json`` file
 in the ``.vscode`` directory of your project. See the `VSCode documentation on tasks
 <https://code.visualstudio.com/docs/editor/tasks>`_ for more information on
-creating tasks. For a good starting point, its recommend to reconfigure one of
+creating tasks. For a good starting point, it is recommend to reconfigure one of
 the default tasks.
