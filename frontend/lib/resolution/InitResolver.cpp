@@ -350,9 +350,33 @@ static auto helpExtractFields(ResolutionContext* rc, const BasicClassType* bct, 
   return ret;
 }
 
+// same as above, but consider parent classes
+template <typename ...FieldNames, size_t ... Is>
+static auto helpExtractFieldsHierarchy(ResolutionContext* rc, const BasicClassType* bct, std::index_sequence<Is...>, FieldNames... names) {
+  size_t found = 0;
+  typename ImplCreateNTuple<Is...>::type ret;
+
+  while (found < sizeof...(names) && bct) {
+    auto& rf = fieldsForTypeDecl(rc, bct,
+                                 DefaultsPolicy::IGNORE_DEFAULTS);
+    for (int i = 0; i < rf.numFields(); i++) {
+      found += ((rf.fieldName(i) == names ? (std::get<Is>(ret) = rf.fieldType(i), 1) : 0) + ... + 0);
+    }
+
+    bct = bct->parentClassType();
+  }
+
+  return ret;
+}
+
 template <typename ...FieldNames>
 static auto extractFields(ResolutionContext* rc, const BasicClassType* bct,  FieldNames... names) {
   return helpExtractFields(rc, bct, std::make_index_sequence<sizeof...(FieldNames)>(), names...);
+}
+
+template <typename ...FieldNames>
+static auto extractFieldsHierarchy(ResolutionContext* rc, const BasicClassType* bct,  FieldNames... names) {
+  return helpExtractFieldsHierarchy(rc, bct, std::make_index_sequence<sizeof...(FieldNames)>(), names...);
 }
 
 static std::tuple<QualifiedType, QualifiedType, QualifiedType>
@@ -433,25 +457,6 @@ static const ArrayType* arrayTypeFromSubsHelper(
     return ArrayType::getArrayType(context, instanceQt,
                                    QualifiedType(QualifiedType::TYPE, domain),
                                    eltType);
-  } else if (instanceBct->id().symbolPath() ==
-                 "DefaultAssociative.DefaultAssociativeArr" ||
-             instanceBct->id().symbolPath() ==
-                 "ArrayViewReindex.ArrayViewReindexArr" ||
-             instanceBct->id().symbolPath() ==
-                 "ArrayViewSlice.ArrayViewSliceArr" ||
-             instanceBct->id().symbolPath() ==
-                 "ArrayViewRankChange.ArrayViewRankChangeArr") {
-    auto [domInstanceQt] = extractFields(rc, instanceBct, "dom");
-    auto domain = domainTypeFromInstance(rc, domInstanceQt);
-    CHPL_ASSERT(domain);
-
-    CHPL_ASSERT(baseArr &&
-                baseArr->id().symbolPath() == "ChapelDistribution.AbsBaseArr");
-    auto [eltType] = extractFields(rc, baseArr, "eltType");
-
-    return ArrayType::getArrayType(context, instanceQt,
-                                   QualifiedType(QualifiedType::TYPE, domain),
-                                   eltType);
   } else if (baseArr->id().symbolPath() ==
              "ChapelDistribution.BaseSparseArrImpl") {
     // The Impl doesn't have the data, the parent class does.
@@ -473,7 +478,12 @@ static const ArrayType* arrayTypeFromSubsHelper(
                                    QualifiedType(QualifiedType::TYPE, domain),
                                    eltType);
   } else {
-    CHPL_UNIMPL("unknown kind of array class");
+    auto [domInstanceQt, eltType] = extractFieldsHierarchy(rc, instanceBct, "dom", "eltType");
+    auto domain = domainTypeFromInstance(rc, domInstanceQt);
+
+    return ArrayType::getArrayType(context, instanceQt,
+                                   QualifiedType(QualifiedType::TYPE, domain),
+                                   eltType);
   }
 
   // If we reach here, we weren't able to resolve the array type
