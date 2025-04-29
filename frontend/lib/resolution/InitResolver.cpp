@@ -351,19 +351,26 @@ static auto helpExtractFields(ResolutionContext* rc, const BasicClassType* bct, 
 }
 
 // same as above, but consider parent classes
-template <typename ...FieldNames, size_t ... Is>
-static auto helpExtractFieldsHierarchy(ResolutionContext* rc, const BasicClassType* bct, std::index_sequence<Is...>, FieldNames... names) {
-  size_t found = 0;
+template <typename FoundEach, typename ...FieldNames, size_t ... Is>
+static auto helpExtractFieldsHierarchy(ResolutionContext* rc, const BasicClassType* bct, FoundEach& foundEach, std::index_sequence<Is...>, FieldNames... names) {
   typename ImplCreateNTuple<Is...>::type ret;
 
-  while (found < sizeof...(names) && bct) {
+  while (bct) {
     auto& rf = fieldsForTypeDecl(rc, bct,
                                  DefaultsPolicy::IGNORE_DEFAULTS);
     for (int i = 0; i < rf.numFields(); i++) {
-      found += ((rf.fieldName(i) == names ? (std::get<Is>(ret) = rf.fieldType(i), 1) : 0) + ... + 0);
+        ((rf.fieldName(i) == names ?
+          (std::get<Is>(ret) = rf.fieldType(i),
+           std::get<Is>(foundEach) += 1,
+           0) : 0), ...);
     }
 
     bct = bct->parentClassType();
+
+    // if we've found all of them, stop
+    if ((std::get<Is>(foundEach) && ...)) {
+      break;
+    }
   }
 
   return ret;
@@ -374,9 +381,14 @@ static auto extractFields(ResolutionContext* rc, const BasicClassType* bct,  Fie
   return helpExtractFields(rc, bct, std::make_index_sequence<sizeof...(FieldNames)>(), names...);
 }
 
-template <typename ...FieldNames>
-static auto extractFieldsHierarchy(ResolutionContext* rc, const BasicClassType* bct,  FieldNames... names) {
-  return helpExtractFieldsHierarchy(rc, bct, std::make_index_sequence<sizeof...(FieldNames)>(), names...);
+// similar to extractFields, but instead of assuming the fields are in the given
+// class, traverse the class hierarchy to find them. Also, the additional
+// foundEach template argument is used to count how many times each field
+// has occurred. This is useful to know when to stop searching, and to
+// issue errors for missing fields.
+template <typename FoundEach, typename ...FieldNames>
+static auto extractFieldsHierarchy(ResolutionContext* rc, const BasicClassType* bct,  FoundEach& foundEach, FieldNames... names) {
+  return helpExtractFieldsHierarchy(rc, bct, foundEach, std::make_index_sequence<sizeof...(FieldNames)>(), names...);
 }
 
 static std::tuple<QualifiedType, QualifiedType, QualifiedType>
@@ -448,46 +460,21 @@ static const ArrayType* arrayTypeFromSubsHelper(
   auto [instanceBct, baseArr] = extractBasicSubclassFromInstance(instanceQt);
   if (!instanceBct || !baseArr) return genericArray;
 
-  if (baseArr->id().symbolPath() == "ChapelDistribution.BaseRectangularArr") {
-    auto [domInstanceQt] = extractFields(rc, instanceBct, "dom");
-    auto domain = domainTypeFromInstance(rc, domInstanceQt);
-    CHPL_ASSERT(domain);
+  auto fieldCounts = std::make_pair(0, 0);
+  auto [domInstanceQt, eltType] = extractFieldsHierarchy(rc, instanceBct, fieldCounts, "dom", "eltType");
 
-    auto [eltType] = extractFields(rc, baseArr, "eltType");
-    return ArrayType::getArrayType(context, instanceQt,
-                                   QualifiedType(QualifiedType::TYPE, domain),
-                                   eltType);
-  } else if (baseArr->id().symbolPath() ==
-             "ChapelDistribution.BaseSparseArrImpl") {
-    // The Impl doesn't have the data, the parent class does.
-    auto baseArrSparse = baseArr->parentClassType();
-    CHPL_ASSERT(baseArrSparse &&
-                baseArrSparse->id().symbolPath() ==
-                    "ChapelDistribution.BaseSparseArr");
-    auto absBaseArr = baseArrSparse->parentClassType();
-    CHPL_ASSERT(absBaseArr &&
-                absBaseArr->id().symbolPath() ==
-                    "ChapelDistribution.AbsBaseArr");
-
-    auto [domInstanceQt] = extractFields(rc, baseArrSparse,"dom");
-    auto [eltType] = extractFields(rc, absBaseArr, "eltType");
-    auto domain = domainTypeFromInstance(rc, domInstanceQt);
-    CHPL_ASSERT(domain);
-
-    return ArrayType::getArrayType(context, instanceQt,
-                                   QualifiedType(QualifiedType::TYPE, domain),
-                                   eltType);
-  } else {
-    auto [domInstanceQt, eltType] = extractFieldsHierarchy(rc, instanceBct, "dom", "eltType");
-    auto domain = domainTypeFromInstance(rc, domInstanceQt);
-
-    return ArrayType::getArrayType(context, instanceQt,
-                                   QualifiedType(QualifiedType::TYPE, domain),
-                                   eltType);
+  if (fieldCounts.first == 0) {
+    rc->context()->error(instanceBct->id(), "array implementation class doesn't have required field 'dom'");
+  }
+  if (fieldCounts.second == 0) {
+    rc->context()->error(instanceBct->id(), "array implementation class doesn't have required field 'eltType'");
   }
 
-  // If we reach here, we weren't able to resolve the array type
-  return genericArray;
+  auto domain = domainTypeFromInstance(rc, domInstanceQt);
+
+  return ArrayType::getArrayType(context, instanceQt,
+                                 QualifiedType(QualifiedType::TYPE, domain),
+                                 eltType);
 }
 
 static const Type* ctFromSubs(ResolutionContext* rc,
