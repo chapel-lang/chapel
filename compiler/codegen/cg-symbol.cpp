@@ -2814,7 +2814,7 @@ void FnSymbol::codegenDef() {
   info->cLocalDecls.clear();
 
   if( outfile ) {
-    if (saveCDir.empty()) {
+    if (!saveCDir.empty()) {
      if (const char* rawname = fname()) {
       zlineToFileIfNeeded(this, outfile);
       const char* name = strrchr(rawname, '/');
