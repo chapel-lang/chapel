@@ -106,6 +106,7 @@ static void test3() {
   printf("test3\n");
   auto context = buildStdContext();
 
+  // TODO: add more checks here?
   auto m = parseModule(context, "var r: real;\n"
                                 "var r32: real(32);\n"
                                 "var r64: real(64);\n"
