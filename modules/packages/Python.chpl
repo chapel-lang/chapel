@@ -2622,8 +2622,8 @@ module Python {
     }
   }
 
-  private proc determineSliceBounds(bounds: range(?)): (Py_ssize_t, Py_ssize_t)
-    {
+  private inline
+  proc determineSliceBounds(bounds: range(?)): (Py_ssize_t, Py_ssize_t) {
     if (bounds.hasLowBound() && bounds.hasHighBound()) {
       return (bounds.low.safeCast(Py_ssize_t),
               bounds.high.safeCast(Py_ssize_t) + 1);
