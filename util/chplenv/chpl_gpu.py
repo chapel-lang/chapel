@@ -542,7 +542,7 @@ def _validate_rocm_version_impl():
     MAX_REQ_VERSION = "5.5" # upper bound non-inclusive
     MAX_REQ_VERSION_NICE = "5.4.x"
 
-    MIN_ROCM6_REQ_VERSION = "6"
+    MIN_ROCM6_REQ_VERSION = "6.0"
     MAX_ROCM6_REQ_VERSION = "6.3" # upper bound non-inclusive
     MAX_ROCM6_REQ_VERSION_NICE = "6.2.x"
 
