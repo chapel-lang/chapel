@@ -14,7 +14,7 @@ proc absComparator.compare(x, y) {
   return abs(x) - abs(y); // ascending order
 }
 
-var absReverseComparator: reverseComparator(absComparator); // reverse order
+var absReverseComparator = new reverseComparator(new absComparator()); // reverse order
 
 sort(Array, comparator=absReverseComparator);
 
