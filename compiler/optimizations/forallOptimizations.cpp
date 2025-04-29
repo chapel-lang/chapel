@@ -1367,11 +1367,11 @@ static void optimizeLoop(ForallStmt *forall,
                          Expr *&staticCond, CallExpr *&dynamicCond,
                          bool doStatic) {
 
-  std::vector<ALACandidate>& candidates = doStatic ?
+  std::deque<ALACandidate>& candidates = doStatic ?
       forall->optInfo.staticCandidates :
       forall->optInfo.dynamicCandidates;
 
-  std::vector<ALACandidate>::iterator it;
+  std::deque<ALACandidate>::iterator it;
   for(it = candidates.begin() ; it != candidates.end() ; it++) {
     ALACandidate& candidate = *it;
 
@@ -1492,8 +1492,8 @@ static void constructCondStmtFromLoops(Expr *condExpr,
 // be duplicate loops at the end of normalize, but after resolution we expect
 // them to go away.
 static void generateOptimizedLoops(ForallStmt *forall) {
-  std::vector<ALACandidate> &sOptCandidates = forall->optInfo.staticCandidates;
-  std::vector<ALACandidate> &dOptCandidates = forall->optInfo.dynamicCandidates;
+  std::deque<ALACandidate> &sOptCandidates = forall->optInfo.staticCandidates;
+  std::deque<ALACandidate> &dOptCandidates = forall->optInfo.dynamicCandidates;
 
   const int totalNumCandidates = sOptCandidates.size() + dOptCandidates.size();
   if (totalNumCandidates == 0) return;
@@ -1638,6 +1638,12 @@ static void autoLocalAccess(ForallStmt *forall) {
       }
 
       if (canOptimizeStatically) {
+        // we could support static ALA with offsets. Today, the blocker is that
+        // the stencil distribution's fluff is not a static information. We
+        // would need param tuples for that. In any case, this assertion can be
+        // removed when we add support for this optimization.
+        INT_ASSERT(!candidate.hasOffset());
+
         bool reportedLoc = LOG_ALA(2,
                                    "This call is a static optimization candidate",
                                    call);
@@ -1671,7 +1677,12 @@ static void autoLocalAccess(ForallStmt *forall) {
         primMaybeLocalThisLocations.insert(call->astloc);
       }
 
-      forall->optInfo.dynamicCandidates.push_back(candidate);
+      if (candidate.hasOffset()) {
+        forall->optInfo.dynamicCandidates.push_back(candidate);
+      }
+      else {
+        forall->optInfo.dynamicCandidates.push_front(candidate);
+      }
     }
   }
 
