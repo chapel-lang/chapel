@@ -85,6 +85,15 @@ def is_cray(flag='host'):
     return platform.startswith('cray') or is_hpe_cray(flag)
 
 @memoize
+def is_hpe_apollo(flag='host'):
+    platform = get(flag)
+    return platform == 'hpe-apollo'
+
+@memoize
+def is_cluster(flag='host'):
+    return is_cray(flag) or is_hpe_apollo(flag)
+
+@memoize
 def get_mac_os_version():
     release, version, machine = platform.mac_ver()
     return release
