@@ -2696,6 +2696,18 @@ Type* arrayElementType(Type* arrayType) {
   return eltType;
 }
 
+// some simple cases, not exhaustive
+static const char* chooseSeparatorForType(const char* type) {
+  if (startsWith(type, "i") ||
+      startsWith(type, "a") ||
+      startsWith(type, "own") ||
+      startsWith(type, "[") )
+    return "an ";
+  else
+    // todo: perhaps switch this to "a(n) "; need to update many .good files
+    return "a ";
+}
+
 static void issueInitConversionError(Symbol* to, Symbol* toType, Symbol* from,
                                      Expr* where) {
 
@@ -2733,8 +2745,8 @@ static void issueInitConversionError(Symbol* to, Symbol* toType, Symbol* from,
     sep = "";
     fromStr = "nil";
   } else {
-    sep = "a ";
     fromStr = toString(fromValType);
+    sep = chooseSeparatorForType(fromStr);
   }
 
   USR_FATAL_CONT(where,

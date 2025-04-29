@@ -14,11 +14,11 @@ $CHPL_HOME/modules/standard/JSON.chpl:nnnn: warning: Serialization of rectangula
   unstableWriting.chpl:12: called as helper(thing: domain(1,int(64),one))
 $CHPL_HOME/modules/standard/JSON.chpl:nnnn: In method 'serializeValue':
 $CHPL_HOME/modules/standard/JSON.chpl:nnnn: warning: Serialization of iterators with non-default Serializer is unstable, and may change in the future
-  $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as jsonSerializer.serializeValue(writer: fileWriter(false,jsonSerializer), val: iterator) from method '_serializeOne'
-  $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as (fileWriter(true,jsonSerializer))._serializeOne(x: iterator, loc: locale) from method 'writeHelper'
-  $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as (fileWriter(true,jsonSerializer)).writeHelper(endl: chpl_ioNewline, sep: nothing, args(0): iterator) from method 'writeln'
-  unstableWriting.chpl:7: called as (fileWriter(true,jsonSerializer)).writeln(args(0): iterator) from function 'helper'
-  unstableWriting.chpl:13: called as helper(thing: iterator)
+  $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as jsonSerializer.serializeValue(writer: fileWriter(false,jsonSerializer), val: iterator yielding int(64)) from method '_serializeOne'
+  $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as (fileWriter(true,jsonSerializer))._serializeOne(x: iterator yielding int(64), loc: locale) from method 'writeHelper'
+  $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as (fileWriter(true,jsonSerializer)).writeHelper(endl: chpl_ioNewline, sep: nothing, args(0): iterator yielding int(64)) from method 'writeln'
+  unstableWriting.chpl:7: called as (fileWriter(true,jsonSerializer)).writeln(args(0): iterator yielding int(64)) from function 'helper'
+  unstableWriting.chpl:13: called as helper(thing: iterator yielding int(64))
 "1..10"
 ["1..10"]
 [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
