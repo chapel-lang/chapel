@@ -126,10 +126,18 @@ module ChapelReduce {
       if ! canResolve("+", x, x) then
         // Issue a user-friendly error.
         compilerError("+ reduce cannot be used on values of the type ",
-                      eltType:string);
+            eltType:string, " because they cannot be summed using '+'");
       return (x + x).type;
     }
    }
+  }
+
+  proc chpl_check_assign_reduce_result(ref target, in value) {
+    if __primitive("call resolves", "=", target, value) then
+      target = value;
+    else
+      compilerError("cannot store reduction result of type ", value.type:string,
+                    " into a variable of type ", target.type:string);
   }
 
   pragma "ReduceScanOp"
