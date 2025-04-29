@@ -498,7 +498,7 @@ static QualifiedType primGetRuntimeTypeField(Context* context,
 
   const RuntimeType* rtt = nullptr;
   if (auto dt = compositeType->toDomainType()) {
-    while (dt->isSubdomain()) dt = dt->parentDomain();
+    while (dt->isSubdomain() && !dt->isSparse()) dt = dt->parentDomain();
 
     rtt = dt->runtimeType(context);
   } else if (auto at = compositeType->toArrayType()) {

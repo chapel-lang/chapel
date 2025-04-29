@@ -51,9 +51,7 @@ module M {
   param ak = d.isAssociative();
   param sk = d.isSparse();
 
-  param rttR = __primitive("get runtime type field", d, "rank");
-  type rttI = __primitive("get runtime type field", d, "idxType");
-  param rttS = __primitive("get runtime type field", d, "strides");
+  var rttP = __primitive("get runtime type field", d, "parentDom");
 
   var p = d.pid;
 
@@ -94,23 +92,19 @@ module M {
 
   QualifiedType fullIndexType = findVarType(m, rr, "fullIndex");
 
+  assert(findVarType(m, rr, "rttP") == findVarType(m, rr, "parent"));
+
   auto rankVarTy = findVarType(m, rr, "r");
   assert(rankVarTy == dType->rank());
   ensureParamInt(rankVarTy, rank);
-
-  assert(findVarType(m, rr, "rttR") == rankVarTy);
 
   auto idxTypeVarTy = findVarType(m, rr, "i");
   assert(idxTypeVarTy == dType->idxType());
   assert(findVarType(m, rr, "ig") == idxTypeVarTy);
 
-  assert(findVarType(m, rr, "rttI") == idxTypeVarTy);
-
   auto stridesVarTy = findVarType(m, rr, "s");
   assert(stridesVarTy == dType->strides());
   assert(stridesVarTy.param()->toEnumParam()->value().str == strides);
-
-  assert(findVarType(m, rr, "rttS") == stridesVarTy);
 
   ensureParamBool(findVarType(m, rr, "rk"), false);
 
