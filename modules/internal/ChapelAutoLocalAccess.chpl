@@ -27,8 +27,18 @@ module ChapelAutoLocalAccess {
   // forall's and we don't want to mess up the iterator
   proc chpl__ala_staticCheck(accessBase: [], loopDomain: domain,
                              myIterand: domain, param hasOffsets=false) param {
-    if hasOffsets && !accessBase.domain.supportsOffsetAutoLocalAccess() {
-      return false;
+    if hasOffsets {
+      // basic type check
+      if !accessBase.domain.supportsOffsetAutoLocalAccess() {
+        return false;
+      }
+
+      // we currently prevent types to allow ALA with offset if they don't
+      // support ALA without one
+      if !chpl__ala_staticCheck(accessBase, loopDomain, myIterand,
+                                hasOffsets=false) {
+        return false;
+      }
     }
 
     if accessBase.domain.type == loopDomain.type {
