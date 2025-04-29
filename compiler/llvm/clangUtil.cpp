@@ -2897,7 +2897,7 @@ static void helpComputeClangArgs(std::string& clangCC,
   }
 
   // add a -I. so we can find headers named on command line in same dir
-  clangCCArgs.push_back("-I.");
+  clangCCArgs.push_back("-iquote.");
 
   // add a -I for the generated code directory
   clangCCArgs.push_back(std::string("-I") + getIntermediateDirName());

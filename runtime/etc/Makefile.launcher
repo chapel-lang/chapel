@@ -55,7 +55,7 @@ endif
 ifneq ($(CHPL_MAKE_IS_MLI),1)
 	$(CC) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) \
 		-c -o $(TMPBINNAME)_launcher.o \
-		-DLAUNCHER $(CHPL_LN_INCS) -I. $(LAUNCHER_SRC_NAME)
+		-DLAUNCHER $(CHPL_LN_INCS) -iquote. $(LAUNCHER_SRC_NAME)
 else
 #
 # If we are building launcher object files for a multi-locale library, then
@@ -64,7 +64,7 @@ else
 #
 	$(CC) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) $(SHARED_LIB_CFLAGS) \
 		-c -o $(TMPBINNAME)_launcher.o \
-		-DLAUNCHER $(CHPL_LN_INCS) -I. $(LAUNCHER_SRC_NAME)
+		-DLAUNCHER $(CHPL_LN_INCS) -iquote. $(LAUNCHER_SRC_NAME)
 endif
 ifneq ($(CHPL_MAKE_IS_MLI),1)
 	$(LD) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) -o $(TMPBINNAME)_launcher -L$(CHPL_LN_LIB_DIR) $(TMPBINNAME)_launcher.o $(CHPL_LN_LIB_DIR)/main_launcher.o -lchpllaunch -lm $(LAUNCH_LIBS)
