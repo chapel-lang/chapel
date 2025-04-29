@@ -34,32 +34,19 @@ The simplest way to sort an array is to call the :proc:`sort` function on the
 array. The sort function will use the default comparator to sort the array in
 ascending order.
 
-.. code-block:: chapel
-
-  var Array = [3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5];
-
-  sort(Array);
-
-  // This will output: 1, 1, 2, 3, 3, 4, 5, 5, 5, 6, 9
-  writeln(Array);
-
+.. literalinclude:: ../../../../test/library/standard/Sort/doc-examples/basicSort.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE
+   :end-before: STOP_EXAMPLE
 
 The sort function can also accept a region argument to sort a subset of an
 array. This is offered as an optimization over using an array slice which may
 have performance overhead.
 
-
-.. code-block:: chapel
-
-  var Array = [3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5];
-
-  // Sort only the elements in the range 1..5
-  // Same as sort(Array[1..5]);
-  sort(Array, region=1..5);
-
-  // This will output: 3, 1, 1, 4, 5, 9, 2, 6, 5, 3, 5
-  writeln(Array);
-
+.. literalinclude:: ../../../../test/library/standard/Sort/doc-examples/regionSort.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE
+   :end-before: STOP_EXAMPLE
 
 The sort function can also be called on a list, be stable or unstable, and
 accept a custom comparator.
@@ -128,22 +115,10 @@ The default key method would look like this:
 As an example, if the user wants to sort an array by the absolute values of its
 elements, the user can define a comparator with a key method as follows:
 
-.. code-block:: chapel
-
-  var Array = [-1, -4, 2, 3];
-
-  // Empty record serves as comparator, implements the keyComparator interface
-  record absComparator : keyComparator { }
-
-  // key method maps an element to the value to be used for comparison
-  proc absComparator.key(elt) { return abs(elt); }
-
-  var absoluteComparator: absComparator;
-
-  sort(Array, comparator=absoluteComparator);
-
-  // This will output: -1, 2, 3, -4
-  writeln(Array);
+.. literalinclude:: ../../../../test/library/standard/Sort/doc-examples/keyComparator.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE
+   :end-before: STOP_EXAMPLE
 
 The return type of ``key(elt)`` must support the ``<``
 operator, which is used by the base compare method of all sort routines. If the
@@ -192,25 +167,10 @@ The default compare method for a signed integral type can look like this:
 The absolute value comparison example from above can alternatively be
 implemented with a ``relativeComparator`` as follows:
 
-.. code-block:: chapel
-
-  var Array = [-1, -4, 2, 3];
-
-  // Empty record serves as comparator
-  record absComparator : relativeComparator { }
-
-  // compare method defines how 2 elements are compared
-  proc absComparator.compare(x, y) {
-    return abs(x) - abs(y);
-  }
-
-  var absoluteComparator: absComparator;
-
-  sort(Array, comparator=absoluteComparator);
-
-  // This will output: -1, 2, 3, -4
-  writeln(Array);
-
+.. literalinclude:: ../../../../test/library/standard/Sort/doc-examples/compareComparator.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE
+   :end-before: STOP_EXAMPLE
 
 The keyPartComparator interface
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -250,27 +210,17 @@ simplifications of ``keyPart`` methods already available in the
 
 This ``keyPart`` method supports sorting tuples of 2 integers:
 
-.. code-block:: chapel
-
-  proc keyPart(elt: 2*int, i: int) {
-    if i > 1 then
-      return (keyPartStatus.pre, 0); // second value is not used
-
-    return (keyPartStatus.returned, elt(i));
-  }
-
+.. literalinclude:: ../../../../test/library/standard/Sort/doc-examples/keyPartComparator.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_TUPLE_INT
+   :end-before: STOP_EXAMPLE_TUPLE_INT
 
 Here is a ``keyPart`` to support sorting of strings:
 
-.. code-block:: chapel
-
-  proc keyPart(x: string, i: int): (keyPartStatus, uint(8)) {
-    var len = x.numBytes;
-    var section = if i < len then keyPartStatus.returned  else keyPartStatus.pre;
-    var part =    if i < len then x.byte(i)               else 0:uint(8);
-    return (section, part);
-  }
-
+.. literalinclude:: ../../../../test/library/standard/Sort/doc-examples/keyPartComparator.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_STRING
+   :end-before: STOP_EXAMPLE_STRING
 
 .. _reverse-comparator:
 
@@ -283,16 +233,10 @@ sorting is handled through the comparator interface.
 An instance of the type :record:`reverseComparator` can be passed to a sort
 function to reverse the default sorting order.
 
-.. code-block:: chapel
-
-  var Array = [-1, -4, 2, 3];
-
-  // Using module-defined 'reverseComparator'
-  sort(Array, comparator = new reverseComparator())
-
-  // This will output: 3, 2, -1, -4
-  writeln(Array);
-
+.. literalinclude:: ../../../../test/library/standard/Sort/doc-examples/reversedSort.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE
+   :end-before: STOP_EXAMPLE
 
 To reverse the sort order of a user-defined comparator, pass the user-defined
 comparator to the initializer of the module-defined
@@ -302,27 +246,11 @@ For this example, we will reverse the absolute value comparison from above
 using the ``relativeComparator`` interface, although the same can be done with
 the ``keyComparator`` interface.
 
-.. code-block:: chapel
-
-  var Array = [-1, -4, 2, 3];
-
-  // Empty record serves as comparator
-  record absComparator : relativeComparator{ }
-
-  // compare method defines how 2 elements are compared
-  proc absComparator.compare(x, y) {
-    return abs(x) - abs(y); // ascending order
-  }
-
-  var absReverseComparator: reverseComparator(absComparator); // reverse order
-
-  sort(Array, comparator=absReverseComparator);
-
-  // This will output: -4, 3, 2, -1
-  writeln(Array);
-
- */
-
+.. literalinclude:: ../../../../test/library/standard/Sort/doc-examples/reversedCustomSort.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE
+   :end-before: STOP_EXAMPLE
+*/
 module Sort {
 
   private use List;
