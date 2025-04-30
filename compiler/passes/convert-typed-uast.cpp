@@ -1339,6 +1339,10 @@ void TConverter::convertFunction(const ResolvedFunction* rf) {
   // don't actually convert for --dyno-resolve-only
   if (fDynoResolveOnly) return;
 
+  if (auto it = fns.find(rf); it != fns.end()) {
+    return;
+  }
+
   auto& id = rf->id();
   TC_DEBUGF(this, "Converting function %s\n", id.str().c_str());
 
@@ -1422,6 +1426,13 @@ FnSymbol* TConverter::convertNewWrapper(const ResolvedFunction* rInitFn) {
 
   // find or convert the init function
   FnSymbol* initFn = findOrConvertFunction(rInitFn);
+
+  // Converting the init function might have already generated the _new
+  // wrapper, if encountered recursively
+  if (auto it = newWrappers.find(rInitFn); it != newWrappers.end()) {
+    return it->second;
+  }
+
   AggregateType* type = toAggregateType(initFn->_this->getValType());
 
   if (initFn->throwsError()) {
@@ -1519,8 +1530,11 @@ FnSymbol* TConverter::findOrConvertNewWrapper(const ResolvedFunction* rInitFn) {
   // otherwise, convert the function now
   FnSymbol* ret = convertNewWrapper(rInitFn);
   INT_ASSERT(ret);
-  INT_ASSERT(newWrappers[rInitFn] == nullptr);
-  newWrappers[rInitFn] = ret;
+  if (auto it = newWrappers.find(rInitFn); it != newWrappers.end()) {
+    INT_ASSERT(it->second == ret);
+  } else {
+    newWrappers[rInitFn] = ret;
+  }
 
   return ret;
 }
@@ -3526,13 +3540,22 @@ locateFieldSymbolAndType(TConverter* tc,
   auto dpo = resolution::DefaultsPolicy::IGNORE_DEFAULTS;
   auto& rfds = fieldsForTypeDecl(&rc, ct, dpo);
 
+  int dynoFieldIndex = -1;
+  int prodFieldIndex = -1;
+
   // TODO: Fetching superclass field (non-flat access).
   if (fieldName != nullptr) {
     bool found = false;
 
+    int typeParamOffset = 0;
     for (int i = 0; i < rfds.numFields(); i++) {
+      if (auto type = rfds.fieldType(i);
+          type.isParam() || type.isType()) {
+        typeParamOffset += 1;
+      }
       if (rfds.fieldName(i) != fieldName) continue;
-      fieldIndex = i;
+      dynoFieldIndex = i;
+      prodFieldIndex = i - typeParamOffset;
       found = true;
       break;
     }
@@ -3543,19 +3566,27 @@ locateFieldSymbolAndType(TConverter* tc,
     }
   }
 
-  bool inBounds = (0 <= fieldIndex && fieldIndex < rfds.numFields());
+  bool inBounds = (0 <= dynoFieldIndex && dynoFieldIndex < rfds.numFields());
   if (!inBounds) return error;
 
-  auto fieldType = rfds.fieldType(fieldIndex);
+  auto fieldType = rfds.fieldType(dynoFieldIndex);
 
   // TODO: Is it appropriate to always use the 'BasicClassType' here?
   if (auto at = toAggregateType(tc->convertType(ct))) {
+    int superOffset = 0;
+    if (auto bct = ct->toBasicClassType()) {
+      if (bct->parentClassType() != nullptr) {
+        superOffset = 1;
+      }
+    }
 
     // TODO: Currently we do two scans (consulting 'ResolvedFields' above also
     // does a scan to find the field index). Is there a way we can get away
     // with only doing one while also retrieving the field's frontend type?
-    const int idx = (fieldIndex + 1);
-    return { base, at->getField(idx), fieldType };
+    const int idx = (prodFieldIndex + 1) + superOffset;
+    auto field = at->getField(idx);
+    CHPL_ASSERT(0==strcmp(fieldName, field->name));
+    return { base, field, fieldType };
   }
 
   return error;
@@ -3687,12 +3718,37 @@ Expr* TConverter::convertIntrinsicTupleIndexingOrNull(
     auto tt = qt1.type() ? qt1.type()->toTupleType() : nullptr;
 
     if (tt && qt2.param() && qt2.type() && qt2.type()->isIntType()) {
-      // Generate a field access (which handles any tuple-specific details).
+      auto recv = actualAsts[0];
+      bool paramVarArg = false;
       auto idx = qt2.param()->toIntParam()->value();
-      types::QualifiedType qtField;
-      auto fetch = codegenGetField(actualAsts[0], idx, rv, &qtField);
-      auto ret = storeInTempIfNeeded(fetch, qtField);
-      return ret;
+
+      if (auto recvRe = rv.byAstOrNull(recv)) {
+        if (auto id = recvRe->toId()) {
+          auto ast = parsing::idToAst(context, id);
+          if (ast->isVarArgFormal()) {
+            //paramVarArg = true;
+
+            INT_ASSERT(cur.fnSymbol);
+            int count = 0;
+            for_formals(arg, cur.fnSymbol) {
+              if (arg->hasFlag(FLAG_EXPANDED_VARARGS)) {
+                if (count == idx) {
+                  return new SymExpr(arg);
+                }
+                count += 1;
+              }
+            }
+          }
+        }
+      }
+
+      if (!paramVarArg) {
+        // Generate a field access (which handles any tuple-specific details).
+        types::QualifiedType qtField;
+        auto fetch = codegenGetField(actualAsts[0], idx, rv, &qtField);
+        auto ret = storeInTempIfNeeded(fetch, qtField);
+        return ret;
+      }
     }
   }
 
@@ -3712,6 +3768,12 @@ Expr* TConverter::convertFieldInitOrNull(
 
   // If the call maps directly to a function then it is not initialization.
   if (re->mostSpecific().only()) return nullptr;
+
+  // No code to generate for initialize type/param fields
+  if (auto type = ci.actual(0).type();
+      type.isParam() || type.isType()) {
+    return nullptr;
+  }
 
   // Search for a relevant initialization action.
   const AssociatedAction* action = nullptr;
@@ -3743,7 +3805,8 @@ Expr* TConverter::convertFieldInitOrNull(
     auto fn = findOrConvertFunction(rf);
     INT_ASSERT(fn);
 
-    auto fam = FormalActualMap(init->untyped(), ci);
+    auto initCI = resolution::CallInfo::copyAndRename(ci, USTR("init="));
+    auto fam = FormalActualMap(rf->signature()->untyped(), initCI);
     INT_ASSERT(fam.isValid());
 
     auto call = new CallExpr(fn);
@@ -4888,7 +4951,7 @@ void TConverter::exit(const Return* node, RV& rv) {
   TC_DEBUGF(this, "exit return %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 
   CallExpr* ret = exitCallActuals();
-  INT_ASSERT(ret && ret->isPrimitive(PRIM_RETURN) && ret->numActuals() == 1);
+  INT_ASSERT(ret && ret->isPrimitive(PRIM_RETURN) && ret->numActuals() <= 1);
   ret->remove();
 
   // normalize returns to use the Return Value Variable (RVV)
@@ -4942,24 +5005,6 @@ void TConverter::exit(const Call* node, RV& rv) {
 bool TConverter::enter(const Conditional* node, RV& rv) {
   TC_DEBUGF(this, "enter conditional %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 
-  auto condRE = rv.byAst(node->condition());
-  if (condRE.type().isParamTrue()) {
-    // Don't need to process the false branch.
-    auto block = pushNewBlock();
-    node->thenBlock()->traverse(rv);
-    popBlock();
-    insertStmt(block);
-    return false;
-  } else if (condRE.type().isParamFalse()) {
-    if (auto elseBlock = node->elseBlock()) {
-      auto block = pushNewBlock();
-      elseBlock->traverse(rv);
-      popBlock();
-      insertStmt(block);
-    }
-    return false;
-  }
-
   // Not param-known condition; visit both branches as normal.
 
   if (node->isExpressionLevel()) {
@@ -4967,30 +5012,56 @@ bool TConverter::enter(const Conditional* node, RV& rv) {
     INT_ASSERT(node->thenBlock()->numStmts() == 1);
     INT_ASSERT(node->elseBlock()->numStmts() == 1);
 
-    types::QualifiedType qtCond;
-    auto condExpr = convertExpr(node->condition(), rv, &qtCond);
-    auto condTempUse = storeInTempIfNeeded(condExpr, qtCond);
-
     // Temp stores the result of the if expression.
     auto temp = makeNewTemp(rv.byAst(node).type());
 
-    // TODO: Insert conversion if necessary?
-    auto thenExpr = convertExpr(node->thenBlock()->stmt(0), rv);
-    auto thenMove = new CallExpr(PRIM_MOVE, new SymExpr(temp), thenExpr);
-    auto thenBlock = new BlockStmt(thenMove);
+    if (auto cond = rv.byAst(node->condition()).type();
+        cond.isParam()) {
+      auto block = cond.isParamTrue() ? node->thenBlock() : node->elseBlock();
+      auto expr = convertExpr(block->stmt(0), rv);
+      auto move = new CallExpr(PRIM_MOVE, temp, expr);
+      insertStmt(move);
+    } else {
+      types::QualifiedType qtCond;
+      auto condExpr = convertExpr(node->condition(), rv, &qtCond);
+      auto condTempUse = storeInTempIfNeeded(condExpr, qtCond);
 
-    // TODO: Insert conversion if necessary?
-    auto elseExpr = convertExpr(node->elseBlock()->stmt(0), rv);
-    auto elseMove = new CallExpr(PRIM_MOVE, new SymExpr(temp), elseExpr);
-    auto elseBlock = new BlockStmt(elseMove);
+      // TODO: Insert conversion if necessary?
+      auto thenExpr = convertExpr(node->thenBlock()->stmt(0), rv);
+      auto thenMove = new CallExpr(PRIM_MOVE, new SymExpr(temp), thenExpr);
+      auto thenBlock = new BlockStmt(thenMove);
 
-    // After normalize the 'IfExpr' is lowered to a 'CondStmt'.
-    auto branch = new CondStmt(condTempUse, thenBlock, elseBlock);
-    insertStmt(branch);
+      // TODO: Insert conversion if necessary?
+      auto elseExpr = convertExpr(node->elseBlock()->stmt(0), rv);
+      auto elseMove = new CallExpr(PRIM_MOVE, new SymExpr(temp), elseExpr);
+      auto elseBlock = new BlockStmt(elseMove);
+
+      // After normalize the 'IfExpr' is lowered to a 'CondStmt'.
+      auto branch = new CondStmt(condTempUse, thenBlock, elseBlock);
+      insertStmt(branch);
+    }
 
     // The result of the 'if-expr' will be stored in 'temp'.
     insertExpr(new SymExpr(temp));
   } else {
+    auto condRE = rv.byAst(node->condition());
+    if (condRE.type().isParamTrue()) {
+      // Don't need to process the false branch.
+      auto block = pushNewBlock();
+      node->thenBlock()->traverse(rv);
+      popBlock();
+      insertStmt(block);
+      return false;
+    } else if (condRE.type().isParamFalse()) {
+      if (auto elseBlock = node->elseBlock()) {
+        auto block = pushNewBlock();
+        elseBlock->traverse(rv);
+        popBlock();
+        insertStmt(block);
+      }
+      return false;
+    }
+
     astlocMarker markAstLoc(node->id());
 
     types::QualifiedType qtCond;
@@ -5075,7 +5146,9 @@ bool TConverter::enter(const Conditional* node, RV& rv) {
                                {CallInfoActual(qt)});
           FnSymbol* condFn = convertFunctionForGeneratedCall(ci, node);
           CallExpr* condCall = new CallExpr(condFn, cond);
-          cond = storeInTempIfNeeded(condCall, {});
+          types::QualifiedType type = {types::QualifiedType::CONST_VAR,
+                                       types::BoolType::get(context)};
+          cond = storeInTempIfNeeded(condCall, type);
         }
       }
     }
