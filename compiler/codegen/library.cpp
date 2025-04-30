@@ -403,8 +403,10 @@ void codegen_library_cmakelists() {
 
 const char* getLibraryExtension() {
   if (fLibraryCompile) {
-    if (fLinkStyle==LS_DYNAMIC) return ".so";
-    else return ".a";
+    if (fLinkStyle==LS_DYNAMIC)
+      return !strcmp(CHPL_TARGET_PLATFORM, "darwin") ? ".dylib" : ".so";
+    else
+      return ".a";
   }
   return "";
 }
