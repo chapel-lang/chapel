@@ -7,4 +7,11 @@ else
   chpl_python=$($CHPL_HOME/util/config/find-python.sh)
 fi
 
+# make sure to add the libs dir to the PYTHONPATH if it exists
+FILE_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+MY_LIB_DIR=$FILE_DIR/python_libs
+if [ -d "$MY_LIB_DIR" ]; then
+  export PYTHONPATH=$MY_LIB_DIR:$PYTHONPATH
+fi
+
 $chpl_python create_file.py > $1.good
