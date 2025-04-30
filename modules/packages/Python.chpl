@@ -3332,7 +3332,7 @@ module Python {
     //
     // TODO: these are meant to prevent users from calling .these on a PyArray
     // when they probaby wanted .values. But the mere presence of these as
-    // compiler errors prevents the any program using Value.these from
+    // compiler errors prevents any program using Value.these from
     // compiling. And we can't just make them throw instead because inheritance
     // prevents iterator inlining, which is not yet supported
     //
