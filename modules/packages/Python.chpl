@@ -3329,6 +3329,26 @@ module Python {
         "index must be a single int (for 1D arrays only) " +
         "or a tuple of ints");
 
+    //
+    // TODO: these are meant to prevent users from calling .these on a PyArray
+    // when they probaby wanted .values. But the mere presence of these as
+    // compiler errors prevents the any program using Value.these from
+    // compiling. And we can't just make them throw instead because inheritance
+    // prevents iterator inlining, which is not yet supported
+    //
+    // @chpldoc.nodoc
+    // override iter these(type eltType): eltType throws {
+    //   compilerError(
+    //     "Calling '.these(eltType)' on a PyArray is not supported."
+    //     + " Use '.values(eltType)' instead.");
+    // }
+    // @chpldoc.nodoc
+    // override iter these(): owned Value throws {
+    //   compilerError(
+    //     "Calling '.these()' on a PyArray is not supported."
+    //     + " Use '.values()' instead.");
+    // }
+
     /*
       Iterate over the elements of the Python array. This results in a Chapel
       iterator that yields the elements of the Python array. This yields
@@ -3339,12 +3359,12 @@ module Python {
       ``PyArray`` object, it does not need to be specified here.
     */
     pragma "docs only"
-    override iter these(type eltType = this.eltType) ref : eltType throws {
+    iter values(type eltType = this.eltType) ref : eltType throws {
       compilerError("docs only");
     }
 
     @chpldoc.nodoc
-    override iter these(type eltType) ref : eltType throws {
+    iter values(type eltType) ref : eltType throws {
       if eltType == nothing then
         compilerError("Element type must be specified at compile time");
 
@@ -3361,12 +3381,12 @@ module Python {
       }
     }
     @chpldoc.nodoc
-    override iter these() ref : eltType throws {
-      for e in these(eltType=this.eltType) do yield e;
+    iter values() ref : eltType throws {
+      for e in values(eltType=this.eltType) do yield e;
     }
     // TODO: it should also be possible to support leader/follower here
     @chpldoc.nodoc
-    iter these(param tag: iterKind, type eltType) ref : eltType throws
+    iter values(param tag: iterKind, type eltType) ref : eltType throws
      where tag == iterKind.standalone {
       if eltType == nothing then
         compilerError("Element type must be specified at compile time");
@@ -3384,9 +3404,9 @@ module Python {
       }
     }
     @chpldoc.nodoc
-    iter these(param tag: iterKind) ref : eltType throws
+    iter values(param tag: iterKind) ref : eltType throws
     where tag == iterKind.standalone do
-      foreach e in these(tag=tag, eltType=this.eltType) do yield e;
+      foreach e in values(tag=tag, eltType=this.eltType) do yield e;
 
     /*
       Get the Chapel array from the Python array. This results in a Chapel view
