@@ -2347,7 +2347,18 @@ module Python {
     proc getPyObject() do return this.obj;
 
     /*
-      Iterates over an iterable Python object.
+      Iterate over an iterable Python object. This is equivalent to calling
+      ``next`` continuously on an object until it raises ``StopIteration`` in
+      Python.
+
+      .. note::
+
+         This iterator does not support parallelism.
+
+      .. note::
+
+         If iterating over a Python array, prefer using a :type:`PyArray` object
+         and calling :iter:`PyArray.values` instead.
     */
     pragma "docs only"
     iter these(type eltType = owned Value): eltType throws do
@@ -3329,6 +3340,19 @@ module Python {
         "index must be a single int (for 1D arrays only) " +
         "or a tuple of ints");
 
+
+    /*
+      Iterate over the elements of the Python array.
+
+      .. warning::
+
+        This invokes the Python iterator, which has considerable overhead.
+        Prefer using :iter:`PyArray.values` which is significantly faster and
+        supports parallel iteration.
+    */
+    pragma "docs only"
+    override iter these(type eltType = owned Value): eltType throws do
+      compilerError("docs only");
     //
     // TODO: these are meant to prevent users from calling .these on a PyArray
     // when they probaby wanted .values. But the mere presence of these as
@@ -3343,7 +3367,7 @@ module Python {
     //     + " Use '.values(eltType)' instead.");
     // }
     // @chpldoc.nodoc
-    // override iter these(): owned Value throws {
+    // override iter these(): eltType throws {
     //   compilerError(
     //     "Calling '.these()' on a PyArray is not supported."
     //     + " Use '.values()' instead.");
