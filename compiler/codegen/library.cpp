@@ -31,6 +31,8 @@
 #include "stlUtil.h"
 #include "stringutil.h"
 
+#include <array>
+
 std::map<Symbol*, TypeSymbol*> exportedArrayElementType;
 
 std::string libDir;
@@ -306,9 +308,12 @@ static void printCMakeListsIncludes(fileinfo cmakelists, std::string name) {
   }
 
   std::string includes = getCompilelineOption("includes-and-defines");
+  auto toStrip = std::array{"-I", "-iquote"};
   std::size_t pos = std::string::npos;
-  while((pos = includes.find("-I")) != std::string::npos) {
-    includes.erase(pos, 2);
+  for (const char* s : toStrip) {
+    while((pos = includes.find(s)) != std::string::npos) {
+      includes.erase(pos, strlen(s));
+    }
   }
   removeTrailingNewlines(includes);
 
