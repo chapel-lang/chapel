@@ -59,6 +59,7 @@ all: comprt
 	@test -r Makefile.devel && $(MAKE) develall || echo ""
 
 comprt: FORCE
+	@$(MAKE) chplenv-verify
 	@$(MAKE) compiler
 	@$(MAKE) third-party-try-opt
 	@$(MAKE) always-build-test-venv
@@ -70,6 +71,7 @@ comprt: FORCE
 	@$(MAKE) runtime
 	@$(MAKE) modules
 	@$(MAKE) chpl-cmake-module-files
+	@$(MAKE) chplenv-verify
 
 notcompiler: FORCE
 	@$(MAKE) third-party-try-opt
@@ -230,6 +232,11 @@ compile-util-python: FORCE
 	  fi ; \
 	else \
 	  echo "Not compiling Python scripts - missing compileall" ; \
+	fi
+
+chplenv-verify: FORCE
+	-@if [ -z "$$CHPLENV_SKIP_VERIFY" ]; then \
+	$(CHPL_MAKE_ALL_VARS) $(CHPL_MAKE_HOME)/util/printchplenv --verify >/dev/null ; \
 	fi
 
 clean: FORCE
