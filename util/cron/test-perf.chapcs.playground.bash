@@ -28,14 +28,17 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-GITHUB_USER=chapel-lang
-GITHUB_BRANCH=main
-SHORT_NAME=libmvec
-START_DATE=04/16/25
+GITHUB_USER=jabraham17
+GITHUB_BRANCH=llvm-20
+SHORT_NAME=llvm20
+START_DATE=04/30/25
+
+source /hpcdc/project/chapel/setup_llvm.bash 20
 
 set -e
 checkout_branch $GITHUB_USER $GITHUB_BRANCH
 set +e
+
 
 perf_args="-performance-description $SHORT_NAME -performance-configs default:v,$SHORT_NAME:v -sync-dir-suffix $SHORT_NAME"
 perf_args="${perf_args} -numtrials 1 -startdate $START_DATE"
