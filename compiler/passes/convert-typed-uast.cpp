@@ -2770,6 +2770,11 @@ struct ConvertDefaultValueHelper {
     return new SymExpr(var);
   }
 
+  Expr* visit(const types::UintType* t) {
+    auto var = new_UIntSymbol(0, getUintSize(t));
+    return new SymExpr(var);
+  }
+
   Expr* visit(const types::RealType* t) {
     auto var = new_RealSymbol("0.0", getRealSize(t));
     return new SymExpr(var);
