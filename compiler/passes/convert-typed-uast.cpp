@@ -4793,7 +4793,12 @@ bool TConverter::enter(const Variable* node, RV& rv) {
   TC_DEBUGF(this, "enter variable %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 
   auto sym = convertVariable(node, rv, true);
-  INT_ASSERT(sym);
+
+  // OK for type variables to do nothing
+  // TODO: assert that sym==null if it's a type alias only
+  INT_ASSERT(sym ||
+             node->kind() == uast::Variable::TYPE ||
+             node->kind() == uast::Variable::PARAM);
 
   return false;
 }
