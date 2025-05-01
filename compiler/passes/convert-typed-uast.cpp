@@ -2941,8 +2941,14 @@ Symbol* TConverter::convertParam(const types::QualifiedType& qt) {
     const types::UintType* t = qt.type()->toUintType();
     return new_UIntSymbol(up->value(), getUintSize(t));
   } else if (auto ep = p->toEnumParam()) {
+    // First, convert the type in case it hasn't been already
+    auto t = convertType(qt.type());
+
+    // After conversion, the enum elements should be in 'globalSyms'
     auto val = ep->value();
-    return globalSyms[val.id];
+    auto ret = globalSyms[val.id];
+    CHPL_ASSERT(t == ret->type);
+    return ret;
   }
 
   INT_FATAL("should not be reached");
