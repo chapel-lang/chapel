@@ -944,6 +944,7 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
   bool isCatchVariable = false;
   bool isLoopIntent = false;
   bool isRefLoopIntent = false;
+  bool isResource = false;
 
   if (ast->isFormal() || ast->isVarArgFormal()) {
 
@@ -974,24 +975,33 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
     }
   }
 
-  // Errors in Catch statements will be instantiated by the throwing function
-  // in the Try block
   auto parent = parsing::parentAst(context, ast);
-  if (parent && parent->isCatch()) {
-    auto catchNode = parent->toCatch();
-    CHPL_ASSERT(ast == catchNode->error());
-    isCatchVariable = true;
+  if (parent) {
+    // Errors in Catch statements will be instantiated by the throwing function
+    // in the Try block
+    if (parent->isCatch()) {
+      auto catchNode = parent->toCatch();
+      CHPL_ASSERT(ast == catchNode->error());
+      isCatchVariable = true;
 
-  // 'with ([const] ref x)' means to capture 'x' by ref, so no need to initialize it.
-  } else if (parent && parent->isWithClause()) {
-    if (auto tv = ast->toTaskVar()) {
-      // it's only a task intent if it names an outer variable and nothing else.
-      // Any other declaration (with type, with init) is just a task variable.
-      if (!tv->initExpression() && !tv->typeExpression()) {
-        isLoopIntent = true;
-        if (isRef(ast->storageKind())) {
-          isRefLoopIntent = true;
+      // 'with ([const] ref x)' means to capture 'x' by ref, so no need to initialize it.
+    } else if (parent->isWithClause()) {
+      if (auto tv = ast->toTaskVar()) {
+        // it's only a task intent if it names an outer variable and nothing else.
+        // Any other declaration (with type, with init) is just a task variable.
+        if (!tv->initExpression() && !tv->typeExpression()) {
+          isLoopIntent = true;
+          if (isRef(ast->storageKind())) {
+            isRefLoopIntent = true;
+          }
         }
+      }
+
+      // 'manage bla as reg x' means to capture the 'enterContext' clal by ref,
+      // no need to initialize it.
+    } else if (parent->isAs()) {
+      if (auto grandparent = parsing::parentAst(context, parent)) {
+        isResource = grandparent->isManage();
       }
     }
   }
@@ -1026,7 +1036,7 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
     ID id = ast->id();
     frame->addToInitedVars(id);
     frame->localsAndDefers.push_back(id);
-  } else if (isCatchVariable || isRefLoopIntent) {
+  } else if (isCatchVariable || isRefLoopIntent || isResource) {
     // initialized from the throw that activates this Catch, or implicitly with
     // a reference to a variable in outer scope.
     ID id = ast->id();
