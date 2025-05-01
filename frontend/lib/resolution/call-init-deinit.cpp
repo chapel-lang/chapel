@@ -408,9 +408,15 @@ void CallInitDeinit::processDeinitsAndPropagate(VarFrame* frame,
       ResolvedExpression& re = rv.byId(varOrDeferId);
       QualifiedType type = re.type();
       // don't deinit reference variables
-      if (isValue(type.kind())) {
-        resolveDeinit(frame->scopeAst, varOrDeferId, type, rv);
+      if (!isValue(type.kind())) continue;
+
+      // don't deinit generic variables (asuming error issued elsewhere)
+      auto g = getTypeGenericity(context, type);
+      if (g != Type::CONCRETE) {
+        return;
       }
+
+      resolveDeinit(frame->scopeAst, varOrDeferId, type, rv);
     }
   }
 
@@ -829,6 +835,12 @@ void CallInitDeinit::processInit(VarFrame* frame,
     // these are basically 'move' initialization
     resolveMoveInit(ast, rhsAst, lhsType, rhsType, rv);
   } else {
+    // check genericity; rhs must be concrete. assume error was issued elsewhere.
+    auto g = getTypeGenericity(context, rhsType);
+    if (g != Type::CONCRETE) {
+      return;
+    }
+
     if (isRef(lhsType.kind())) {
       // e.g. ref x = localVariable;
       //  or  ref y = returnAValue();
