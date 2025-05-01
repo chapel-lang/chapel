@@ -294,7 +294,7 @@ module ChapelDynamicLoading {
         var shouldCreateNewEntry = true;
 
         // Start by opening a system handle on LOCALE-0.
-        var err0;
+        var err0: owned DynLibError?;
         var ptr0 = localDynLoadOpen(path, err0);
 
         // TODO: Need to propagate/combine this error instead.
@@ -327,7 +327,7 @@ module ChapelDynamicLoading {
             coforall loc in Locales[1..] with (ref errBuf) do on loc {
               const n = (here.id: int);
 
-              var err;
+              var err: owned DynLibError?;
               var ptr = localDynLoadOpen(path, err);
 
               // TODO: Need to propagate/combine this error instead.
@@ -395,7 +395,7 @@ module ChapelDynamicLoading {
             const loc = Locales[i];
             const ptr = _systemPtrs[i];
             if ptr != nil then on loc {
-              var err;
+              var err: owned DynLibError?;
               localDynLoadClose(ptr, err);
               // TODO: Figure out how to propagate this instead of halting?
               if err != nil then halt(err!.message());
@@ -469,7 +469,7 @@ module ChapelDynamicLoading {
             coforall loc in Locales[1..] do on loc {
               const n = (here.id: int);
 
-              var err;
+              var err: owned DynLibError?;
               const ptr = localDynLoadSymbolLookup(sym, handle, err);
               if err {
                 on Locales[0] do errBuf[n] = err;
