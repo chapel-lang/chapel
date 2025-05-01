@@ -498,8 +498,13 @@ formalNeedsInstantiation(Context* context,
   }
 
   bool considerGenericity = true;
-  if (substitutions != nullptr) {
-    if (formalDecl && substitutions->count(formalDecl->id())) {
+  if (substitutions != nullptr && formalDecl) {
+    if (auto vld = formalDecl->toVarLikeDecl();
+        vld && vld->name() == USTR("this") &&
+        vld->storageKind() != Qualifier::TYPE) {
+      // 'this' does not support partial instantiations, so don't bother
+      // looking at substitutions.
+    } else if (substitutions->count(formalDecl->id())) {
       // don't consider it needing a substitution - e.g. when passing
       // a generic type into a type argument.
       considerGenericity = false;
@@ -524,7 +529,10 @@ anyFormalNeedsInstantiation(Context* context,
   bool genericOrUnknown = false;
   int i = 0;
   for (const auto& qt : formalTs) {
-    if (formalNeedsInstantiation(context, qt, untypedSig->formalDecl(i),
+    if (untypedSig->isOperator() && untypedSig->formalName(i) == USTR("this")) {
+      // the 'this' formals of operators aren't really used (lhs and rhs are
+      // passed in as the first two formals), do don't check 'this'.
+    } else if (formalNeedsInstantiation(context, qt, untypedSig->formalDecl(i),
                                  substitutions)) {
       genericOrUnknown = true;
       break;

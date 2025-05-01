@@ -2839,24 +2839,27 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
   if (auto initMsc = c.result.mostSpecific().only()) {
     auto initTfs = initMsc.fn();
 
-    // Set the final output type based on the result of the 'new' call.
-    auto qtInitReceiver = initTfs->formalType(0);
-    auto type = qtInitReceiver.type();
+    // only set type to the receiver if the init call was successful
+    if (!c.result.exprType().isUnknownOrErroneous()) {
+      // Set the final output type based on the result of the 'new' call.
+      auto qtInitReceiver = initTfs->formalType(0);
+      auto type = qtInitReceiver.type();
 
-    // Preserve original management if receiver is a class.
-    if (auto cls = type->toClassType()) {
-      auto newCls = qtNewExpr.type()->toClassType();
-      CHPL_ASSERT(newCls);
-      CHPL_ASSERT(!cls->manager() && cls->decorator().isNonNilable());
-      CHPL_ASSERT(cls->decorator().isBorrowed());
-      CHPL_ASSERT(cls->basicClassType());
-      type = ClassType::get(context, cls->basicClassType(),
-                            newCls->manager(),
-                            newCls->decorator());
+      // Preserve original management if receiver is a class.
+      if (auto cls = type->toClassType()) {
+        auto newCls = qtNewExpr.type()->toClassType();
+        CHPL_ASSERT(newCls);
+        CHPL_ASSERT(!cls->manager() && cls->decorator().isNonNilable());
+        CHPL_ASSERT(cls->decorator().isBorrowed());
+        CHPL_ASSERT(cls->basicClassType());
+        type = ClassType::get(context, cls->basicClassType(),
+            newCls->manager(),
+            newCls->decorator());
+      }
+
+      auto qt = QualifiedType(QualifiedType::VAR, type);
+      re.setType(qt);
     }
-
-    auto qt = QualifiedType(QualifiedType::VAR, type);
-    re.setType(qt);
   }
 
   return true;
