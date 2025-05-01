@@ -1999,7 +1999,7 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
     case PRIM_STATIC_FUNCTION_VAR_VALIDATE_TYPE:
     case PRIM_STATIC_FUNCTION_VAR_WRAPPER:
     case NUM_KNOWN_PRIMS:
-    case PRIM_BREAKPOINT:
+    case PRIM_DEBUG_TRAP:
     case PRIM_CONST_ARG_HASH:
     case PRIM_CHECK_CONST_ARG_HASH:
     case PRIM_TASK_PRIVATE_SVAR_CAPTURE:

@@ -6494,7 +6494,7 @@ DEFINE_PRIM(OPTIMIZATION_INFO) {
   // No action required here
 }
 
-DEFINE_PRIM(BREAKPOINT) {
+DEFINE_PRIM(DEBUG_TRAP) {
   GenInfo* info = gGenInfo;
   if (info->cfile) {
     ret = codegenCallExpr("chpl_debugtrap");
