@@ -23,35 +23,18 @@ For example, the following code creates a 3x3 array of pixels and writes it to
 a BMP file. The array is then scaled by a factor of 2 (creating a 9x9 image)
 and written to a second BMP file.
 
-.. code-block:: chapel
-
-   use Image;
-
-   var color: [1..3, 1..3] 3*int;
-
-   colors[1, ..] = [(0xFF,0,0), (0,0xFF,0), (0,0,0xFF)];
-   colors[2, ..] = [(0,0xFF,0), (0,0,0xFF), (0xFF,0,0)];
-   colors[3, ..] = [(0,0,0xFF), (0xFF,0,0), (0,0xFF,0)];
-
-   var format = (rgbColor.blue, rgbColor.green, rgbColor.red);
-   var arr = colorToPixel(color, format=format);
-
-   writeImage("pixels.bmp", imageType.bmp, arr);
-   writeImage("pixels2.bmp", imageType.bmp, scale(arr, 2));
+.. literalinclude:: ../../../../test/library/packages/Image/example1.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE
+   :end-before: STOP_EXAMPLE
 
 In another example, the following code reads a PNG file, removes all green from
 the image, and writes it back out to a new JPG file.
 
-.. code-block:: chapel
-
-   use Image;
-
-   var arr = readImage("input.png", imageType.png);
-   const fmt = (rgbColor.red, rgbColor.green, rgbColor.blue);
-   var colors = pixelToColor(arr, format=fmt);
-   [c in colors] c(1) = 0;
-   arr = colorToPixel(colors, format=fmt);
-   writeImage("output.jpg", imageType.jpg, arr);
+.. literalinclude:: ../../../../test/library/packages/Image/example2.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE
+   :end-before: STOP_EXAMPLE
 
 */
 @unstable("Image is unstable")
