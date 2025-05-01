@@ -3069,28 +3069,38 @@ Symbol* TConverter::convertVariable(const uast::Variable* node,
 
     // Only bother if we have an 'ExternType' and there wasn't an error.
     auto& qt = re->type();
-    if (qt.type() && qt.type()->isExternType()) {
-      auto t = convertType(qt.type());
-      INT_ASSERT(t);
-      auto ret = t->symbol;
-      INT_ASSERT(node->name() == ret->name);
-      INT_ASSERT(ret->hasFlag(FLAG_EXTERN));
+    if (qt.type()) {
+      if (qt.type()->isExternType()) {
+        auto t = convertType(qt.type());
+        INT_ASSERT(t);
+        auto ret = t->symbol;
+        INT_ASSERT(node->name() == ret->name ||
+                   (node->linkageName() &&
+                    node->linkageName()->toStringLiteral()->value() == ret->name));
+        INT_ASSERT(ret->hasFlag(FLAG_EXTERN));
+        INT_ASSERT(node->initExpression() == nullptr);
 
-      attachSymbolAttributes(context, node, ret, cur.moduleFromLibraryFile);
-      attachSymbolVisibility(node, ret);
+        attachSymbolAttributes(context, node, ret, cur.moduleFromLibraryFile);
+        attachSymbolVisibility(node, ret);
 
-      // Remove the 'DefExpr' for the converted 'ExternType' and place it
-      // at the declaration point of the variable. It's OK if this might
-      // happen multiple times, because if it does then it means the
-      // program is ill-formed.
-      INT_ASSERT(ret->defPoint && ret->defPoint->inTree());
-      auto def = ret->defPoint->remove();
-      insertStmt(def);
+        // Remove the 'DefExpr' for the converted 'ExternType' and place it
+        // at the declaration point of the variable. It's OK if this might
+        // happen multiple times, because if it does then it means the
+        // program is ill-formed.
+        //
+        // Note: might not be 'inTree' if in the module initialization block
+        auto def = ret->defPoint->remove();
+        insertStmt(def);
 
-      noteConvertedSym(node, ret);
+        noteConvertedSym(node, ret);
 
-      // Exit since we are not actually creating a "variable".
-      return ret;
+        // Exit since we are not actually creating a "variable".
+        return ret;
+      } else {
+        INT_ASSERT(node->initExpression() != nullptr);
+        // No action needed; e.g. 'extern type x = int(32);'
+        return nullptr;
+      }
     }
   }
 
