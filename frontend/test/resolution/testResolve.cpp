@@ -480,8 +480,7 @@ static void test9() {
 // error happens after disambiguation.
 static void test10() {
   printf("test10\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   auto path = UniqueString::get(context, "input.chpl");
@@ -497,7 +496,7 @@ static void test10() {
                              proc f(const ref arg: Parent, x: int(8)) { }
                              proc f(const ref arg: Parent, x: numeric) { }
 
-                             var x: owned Child;
+                             var x = new Child();
                              var sixtyFourBits: int = 0;
                              f(x, sixtyFourBits);
                           }
@@ -589,10 +588,10 @@ static void test13() {
 }
 
 static void test14() {
-  Context context;
+  auto context = buildStdContext();
   // Make sure no errors make it to the user, even though we will get errors.
-  ErrorGuard guard(&context);
-  auto variables = resolveTypesOfVariablesInit(&context,
+  ErrorGuard guard(context);
+  auto variables = resolveTypesOfVariablesInit(context,
       R"""(
       param xp = 42;
       var xv = 42;
@@ -610,10 +609,10 @@ static void test14() {
       var r7 = __primitive("addr of", int);
       )""", { "r1", "r2", "r3", "r4", "r5", "r6", "r7" });
 
-  auto refInt = QualifiedType(QualifiedType::REF, IntType::get(&context, 0));
-  auto constRefInt = QualifiedType(QualifiedType::CONST_REF, IntType::get(&context, 0));
-  auto refStr = QualifiedType(QualifiedType::REF, RecordType::getStringType(&context));
-  auto constRefStr = QualifiedType(QualifiedType::CONST_REF, RecordType::getStringType(&context));
+  auto refInt = QualifiedType(QualifiedType::REF, IntType::get(context, 0));
+  auto constRefInt = QualifiedType(QualifiedType::CONST_REF, IntType::get(context, 0));
+  auto refStr = QualifiedType(QualifiedType::REF, RecordType::getStringType(context));
+  auto constRefStr = QualifiedType(QualifiedType::CONST_REF, RecordType::getStringType(context));
 
   assert(variables.at("r1") == constRefInt);
   assert(variables.at("r2") == refInt);
@@ -689,10 +688,10 @@ static void test15() {
 }
 
 static void test16() {
-  Context context;
+  auto context = buildStdContext();
   // Make sure no errors make it to the user, even though we will get errors.
-  ErrorGuard guard(&context);
-  auto variables = resolveTypesOfVariablesInit(&context,
+  ErrorGuard guard(context);
+  auto variables = resolveTypesOfVariablesInit(context,
       R"""(
       record Concrete {
           var x: int;
@@ -707,7 +706,7 @@ static void test16() {
       }
 
       var conc: Concrete;
-      var inst: Generic(int, string, (int, string));
+      var inst = new Generic(1, "hello", (1, "hello"));
 
       param r1 = __primitive("static field type", conc, "x") == int;
       param r2 = __primitive("static field type", conc, "y") == string;
@@ -751,9 +750,9 @@ static void test16b() {
 
 // module-level split-init variables
 static void test17() {
-  Context context;
+  auto context = buildStdContext();
 
-  auto variables = resolveTypesOfVariables(&context,
+  auto variables = resolveTypesOfVariables(context,
       R"""(
       var foo;
       foo = 5;
@@ -859,8 +858,7 @@ static void test19() {
 
 // Accessing the param value of a split-init'd symbol in another module
 static void test20() {
-  Context ctx;
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string contents =
@@ -1997,8 +1995,7 @@ static void testAsciiPrim() {
 
 // Test the '.locale' query.
 static void testDotLocale() {
-  Context ctx;
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
 
   auto loc = resolveTypeOfXInit(context,
