@@ -316,7 +316,7 @@ module ChapelDynamicLoading {
         if shouldCreateNewEntry {
           var bin = new owned chpl_BinaryInfo(path, chpl_binaryInfoStore);
 
-          // Swap in the LOCALE-0 pointer and clear the local variable.
+          // Swap in the LOCALE-0 pointer. This clears the local variable.
           bin._systemPtrs[0] <=> ptr0;
 
           var errBuf = new chpl_localBuffer(owned DynLibError?, numLocales);
