@@ -1,4 +1,4 @@
-static void printfArr(double* arr, int* size) {
+static void printfArr(const double* arr, int* size) {
   for (int i = 0; i<*size; i++) {
     printf("%lf ", arr[i]);
   }
