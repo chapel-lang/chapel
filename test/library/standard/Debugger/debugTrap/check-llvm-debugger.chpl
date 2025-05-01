@@ -13,9 +13,9 @@ proc main() {
   // CHECK: @writeln
   // CHECK: @end_print
   begin_print();
-  breakpoint;
+  debugTrap;
   writeln("hello");
-  breakpoint;
+  debugTrap;
   writeln("world");
   end_print();
 
@@ -28,7 +28,7 @@ proc main() {
     // CHECK: @end_loop
     begin_loop();
     a = A[i];
-    breakpoint;
+    debugTrap;
     writeln("Elm ", a);
     end_loop();
   }
