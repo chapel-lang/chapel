@@ -827,7 +827,9 @@ void CallInitDeinit::processInit(VarFrame* frame,
     rhsAst = r->value();
   } else if (auto y = ast->toYield()) {
     rhsAst = y->value();
-  } else {
+  }
+
+  if (rhsAst == nullptr) {
     rhsAst = ast;
   }
 
