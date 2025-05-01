@@ -93,9 +93,11 @@ struct FindElidedCopies : VarScopeVisitor {
                        RV& rv) override;
   void handleInFormal(const FnCall* ast, const AstNode* actual,
                       const QualifiedType& formalType,
+                      const QualifiedType* actualScalarType,
                       RV& rv) override;
   void handleInoutFormal(const FnCall* ast, const AstNode* actual,
                          const QualifiedType& formalType,
+                         const QualifiedType* actualScalarType,
                          RV& rv) override;
 
   void handleReturn(const uast::Return* ast, RV& rv) override;
@@ -345,13 +347,18 @@ void FindElidedCopies::handleOutFormal(const FnCall* ast,
 }
 void FindElidedCopies::handleInFormal(const FnCall* ast, const AstNode* actual,
                                       const QualifiedType& formalType,
+                                      const QualifiedType* actualScalarType,
                                       RV& rv) {
   // 'in' formal can be copied from another variable, and that
   // copy might need to be elided
   VarFrame* frame = currentFrame();
   ID actualToId = refersToId(actual, rv);
   bool elide = false;
-  if (!actualToId.isEmpty() && isEligibleVarInAnyFrame(actualToId)) {
+  if (actualScalarType) {
+    // cannot do copy elision across promotion, since a single actual variable
+    // feeds into several scalar formals.
+    elide = false;
+  } else if (!actualToId.isEmpty() && isEligibleVarInAnyFrame(actualToId)) {
     // check that the types are the same
     if (rv.hasId(actualToId)) {
       QualifiedType actualType = rv.byId(actualToId).type();
@@ -370,6 +377,7 @@ void FindElidedCopies::handleInFormal(const FnCall* ast, const AstNode* actual,
 void FindElidedCopies::handleInoutFormal(const FnCall* ast,
                                          const AstNode* actual,
                                          const QualifiedType& formalType,
+                                         const QualifiedType* actualScalarType,
                                          RV& rv) {
   // 'inout' can't be the RHS for an elided copy
   processMentions(actual, rv);

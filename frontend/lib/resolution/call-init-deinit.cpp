@@ -131,9 +131,11 @@ struct CallInitDeinit : VarScopeVisitor {
                        RV& rv) override;
   void handleInFormal(const FnCall* ast, const AstNode* actual,
                       const QualifiedType& formalType,
+                      const QualifiedType* actualScalarType,
                       RV& rv) override;
   void handleInoutFormal(const FnCall* ast, const AstNode* actual,
                          const QualifiedType& formalType,
+                         const QualifiedType* actualScalarType,
                          RV& rv) override;
   void handleReturn(const uast::Return* ast, RV& rv) override;
   void handleThrow(const uast::Throw* ast, RV& rv) override;
@@ -719,9 +721,10 @@ void CallInitDeinit::resolveCopyInit(const AstNode* ast,
 
   std::vector<Qualifier> intents;
   std::vector<QualifiedType> formalTypes;
+  std::vector<bool> actualPromoted;
 
   computeActualFormalIntents(context, c.result.mostSpecific(), ci, actualAsts,
-                             intents, formalTypes);
+                             intents, formalTypes, actualPromoted, /* promotionCtx */ nullptr);
 
   bool formalUsesInIntent = false;
   CHPL_ASSERT(intents.size() >= 1);
@@ -1128,6 +1131,7 @@ void CallInitDeinit::handleOutFormal(const FnCall* ast,
 }
 void CallInitDeinit::handleInFormal(const FnCall* ast, const AstNode* actual,
                                     const QualifiedType& formalType,
+                                    const QualifiedType* actualScalarType,
                                     RV& rv) {
   VarFrame* frame = currentFrame();
 
@@ -1147,6 +1151,7 @@ void CallInitDeinit::handleInFormal(const FnCall* ast, const AstNode* actual,
   if (elidedCopyFromIds.count(actual->id()) > 0 &&
       isValue(actualType.kind()) &&
       Type::needsInitDeinitCall(actualType.type())) {
+    CHPL_ASSERT(actualScalarType == nullptr);
     // it is move initialization
     resolveMoveInit(actual, actual, formalType, actualType, rv);
 
@@ -1157,13 +1162,15 @@ void CallInitDeinit::handleInFormal(const FnCall* ast, const AstNode* actual,
     CHPL_ASSERT(!actualId.isEmpty());
     frame->deinitedVars.emplace(actualId, ast->id());
   } else {
-    processInit(frame, actual, formalType, actualType, rv);
+    processInit(frame, actual, formalType,
+                actualScalarType ? *actualScalarType : actualType, rv);
   }
 }
 
 void CallInitDeinit::handleInoutFormal(const FnCall* ast,
                                        const AstNode* actual,
                                        const QualifiedType& formalType,
+                                       const QualifiedType* actualScalarType,
                                        RV& rv) {
   // check for use of deinited variables
   processMentions(actual, rv);
@@ -1172,7 +1179,8 @@ void CallInitDeinit::handleInoutFormal(const FnCall* ast,
   QualifiedType actualType = rv.byAst(actual).type();
 
   // resolve '=' for storing and writeback
-  resolveAssign(actual, actualType, formalType, rv);
+  resolveAssign(actual,
+                actualScalarType ? *actualScalarType : actualType, formalType, rv);
 }
 
 void CallInitDeinit::processReturnThrowYield(const uast::AstNode* ast, RV& rv) {

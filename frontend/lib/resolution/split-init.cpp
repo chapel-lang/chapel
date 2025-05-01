@@ -69,9 +69,11 @@ struct FindSplitInits : VarScopeVisitor {
                        RV& rv) override;
   void handleInFormal(const FnCall* ast, const AstNode* actual,
                       const QualifiedType& formalType,
+                      const QualifiedType* actualScalarType,
                       RV& rv) override;
   void handleInoutFormal(const FnCall* ast, const AstNode* actual,
                          const QualifiedType& formalType,
+                         const QualifiedType* actualScalarType,
                          RV& rv) override;
 
   void handleReturn(const uast::Return* ast, RV& rv) override;
@@ -210,12 +212,14 @@ void FindSplitInits::handleOutFormal(const FnCall* ast, const AstNode* actual,
 
 void FindSplitInits::handleInFormal(const FnCall* ast, const AstNode* actual,
                                     const QualifiedType& formalType,
+                                    const QualifiedType* actualScalarType,
                                     RV& rv) {
   processMentions(actual, rv);
 }
 
 void FindSplitInits::handleInoutFormal(const FnCall* ast, const AstNode* actual,
                                        const QualifiedType& formalType,
+                                       const QualifiedType* actualScalarType,
                                        RV& rv) {
   processMentions(actual, rv);
 }

@@ -2548,12 +2548,18 @@ void Resolver::adjustTypesOnAssign(const AstNode* lhsAst,
 void
 Resolver::adjustTypesForOutFormals(const CallInfo& ci,
                                    const std::vector<const AstNode*>& asts,
-                                   const MostSpecificCandidates& fns) {
+                                   const CallResolutionResult& crr) {
 
+  const PromotionIteratorType* promotionCtx = nullptr;
+  if (!crr.exprType().isUnknownOrErroneous()) {
+    promotionCtx = crr.exprType().type()->toPromotionIteratorType();
+  }
   std::vector<QualifiedType> actualFormalTypes;
   std::vector<Qualifier> actualIntents;
-  computeActualFormalIntents(context, fns, ci, asts,
-                             actualIntents, actualFormalTypes);
+  std::vector<bool> actualPromoted;
+  computeActualFormalIntents(context, crr.mostSpecific(), ci, asts,
+                             actualIntents, actualFormalTypes, actualPromoted,
+                             promotionCtx);
 
   int actualIdx = 0;
   for (const auto& actual : ci.actuals()) {
@@ -5560,7 +5566,7 @@ void Resolver::handleCallExpr(const uast::Call* call) {
     c.noteResultPrintCandidates(&r);
 
     // handle type inference for variables split-inited by 'out' formals
-    adjustTypesForOutFormals(ci, actualAsts, c.result.mostSpecific());
+    adjustTypesForOutFormals(ci, actualAsts, c.result);
 
     // issue errors for iterator groups where e.g. serial/standalone types mismatch
     issueIteratorDiagnosticsIfNeeded(*this, call, inScopes, c.result);
