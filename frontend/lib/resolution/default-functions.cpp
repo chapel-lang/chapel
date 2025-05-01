@@ -405,10 +405,9 @@ const BuilderResult& buildInitializer(Context* context, ID typeID) {
   auto builder = bld.get();
   auto dummyLoc = parsing::locateId(context, typeID);
 
-  auto thisType = Identifier::build(builder, dummyLoc, typeDecl->name());
   auto thisFormal = Formal::build(builder, dummyLoc, nullptr,
                                   USTR("this"), Formal::DEFAULT_INTENT,
-                                  std::move(thisType), nullptr);
+                                  nullptr, nullptr);
 
   AstList formals;
   AstList stmts;
@@ -823,10 +822,9 @@ const BuilderResult& buildDeinit(Context* context, ID typeID) {
   auto builder = bld.get();
   auto dummyLoc = parsing::locateId(context, typeID);
 
-  auto thisType = Identifier::build(builder, dummyLoc, typeID.symbolName(context));
   auto thisFormal = Formal::build(builder, dummyLoc, nullptr,
                                   USTR("this"), Formal::DEFAULT_INTENT,
-                                  std::move(thisType), nullptr);
+                                  nullptr, nullptr);
 
   AstList formals;
 
