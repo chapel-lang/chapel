@@ -1290,16 +1290,9 @@ void callInitDeinit(Resolver& resolver) {
     symName = nd->name();
   }
 
-  // TODO: Run this for module initializer code as well. Currently if enabled,
-  // it breaks a large number of dyno tests that have module-initializer code
-  // containing things we can't resolve default-init for yet, such as
-  // fully-defaulted generic types. Either adjust the tests to expect the errors
-  // for unsupported code, or add the support, then enable this on modules.
-  if (!resolver.symbol->isModule()) {
-    CallInitDeinit uv(resolver.context, resolver,
-                      splitInitedVars, elidedCopyFromIds);
-    uv.process(resolver.symbol, resolver.byPostorder);
-  }
+  CallInitDeinit uv(resolver.context, resolver,
+                    splitInitedVars, elidedCopyFromIds);
+  uv.process(resolver.symbol, resolver.byPostorder);
 }
 
 
