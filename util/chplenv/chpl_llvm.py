@@ -760,6 +760,11 @@ def is_gcc_install_dir_supported():
 def get_gcc_install_dir():
     gcc_dir = overrides.get('CHPL_LLVM_GCC_INSTALL_DIR', '')
 
+    # darwin and FreeBSD default to clang, so shouldn't need GCC toolchain
+    host_platform = chpl_platform.get('host')
+    if host_platform == "darwin" or host_platform == "freebsd":
+        return gcc_dir
+
     flag_supported = is_gcc_install_dir_supported()
 
     if gcc_dir:
