@@ -3045,6 +3045,20 @@ Symbol* TConverter::convertVariable(const uast::Variable* node,
   auto inModule = cur.symbol->toModule();
   bool moduleScopeVar = false;
 
+  if (node->kind() == uast::Variable::PARAM) {
+#ifndef NDEBUG
+    auto type = rv.byAst(node).type();
+    CHPL_ASSERT(type.isParam() && type.hasParamPtr());
+#endif
+    return nullptr;
+  } else if (isTypeVar && !isExtern) {
+#ifndef NDEBUG
+    auto type = rv.byAst(node).type();
+    CHPL_ASSERT(type.isType() && type.hasTypePtr());
+#endif
+    return nullptr;
+  }
+
   // Special handling for extern type variables. In this case, we will point
   // the definition of the "variable" towards the 'TypeSymbol' of the
   // converted 'types::ExternType*'. We will not generate a 'VarSymbol*' to
