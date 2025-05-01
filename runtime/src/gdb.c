@@ -25,4 +25,4 @@
 #include <stdio.h>
 
 
-void gdbShouldBreakHere(void) {printf("%s", "");}
+void debuggerBreakHere(void) {printf("%s", "");}
