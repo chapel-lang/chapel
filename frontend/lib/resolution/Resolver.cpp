@@ -1703,7 +1703,7 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
     auto fullDeclType = QualifiedType(declKind, declaredType.type());
     auto got = canPass(context, initExprType, fullDeclType);
     if (!got.passes()) {
-      if (initExprType.type()->isUnknownType()) {
+      if (initExprType.isUnknownOrErroneous()) {
         // var x: declType = <unknown or erroneous>
         //
         // if declType is concrete use it, else use unknown.
@@ -1721,6 +1721,13 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
           typePtr = UnknownType::get(context);
         }
 
+      } else if (declaredType.isUnknownOrErroneous()) {
+        // var x: <unknown or erroneous> = expr
+        //
+        // this might've been an init= coercing assignment, so can't use
+        // initial expr type. Instead, use unknown.
+
+        typePtr = UnknownType::get(context);
       } else if (declaredType.type()->isExternType()) {
         auto varDT = QualifiedType(QualifiedType::VAR, declaredType.type());
         // We allow for default-init-then-assign for extern types
