@@ -207,7 +207,7 @@ static GeneratorType generatorForCompilerGeneratedRecordOperator(UniqueString na
     return generateRecordCompareGtSignature;
   } else if (name == USTR(">=")) {
     return generateRecordCompareGeSignature;
-  } else if (name == USTR("init")) {
+  } else if (name == USTR("init=")) {
     return generateInitCopySignature;
   } else if (name == USTR("=")) {
     return generateRecordAssignment;
