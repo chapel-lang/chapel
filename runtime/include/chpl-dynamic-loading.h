@@ -36,8 +36,11 @@ void** chpl_get_ftable(void);
 extern int CHPL_RTLD_LAZY;
 
 void* chpl_dlopen(const char* path, int mode);
+
 void* chpl_dlsym(void* handle, const char* symbol);
+
 int chpl_dlclose(void* handle);
+
 const char* chpl_dlerror(void);
 
 #ifdef __cplusplus
