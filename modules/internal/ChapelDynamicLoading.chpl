@@ -316,7 +316,7 @@ module ChapelDynamicLoading {
         if shouldCreateNewEntry {
           var bin = new owned chpl_BinaryInfo(path, chpl_binaryInfoStore);
 
-          // Swap in the LOCALE-0 pointer. This clears the local variable.
+          // Swap in pointer on LOCALE-0. This clears the variable.
           bin._systemPtrs[0] <=> ptr0;
 
           var errBuf = new chpl_localBuffer(owned DynLibError?, numLocales);
@@ -338,9 +338,9 @@ module ChapelDynamicLoading {
                 on Locales[0] do errBuf[n] = err;
                 numErrs.add(1);
               } else if ptr {
-                // The buffer is not wide!
-                on Locales[0] do bin._systemPtrs[n] = ptr;
-                // Clear the pointer to avoid closing it in the defer.
+                // Swap in pointer on LOCALE-0. This clears the variable.
+                on Locales[0] do bin._systemPtrs[n] <=> ptr;
+
                 ptr = nil;
               } else {
                 // TODO: Construct an error instead.
@@ -440,10 +440,10 @@ module ChapelDynamicLoading {
         var shouldInternPointer = false;
 
         // No need to grab the lock, this should not be modified (or nil).
-        const handle = _systemPtrs[0];
-        assert(handle != nil);
+        const handle0 = _systemPtrs[0];
+        assert(handle0 != nil);
 
-        const ptr0 = localDynLoadSymbolLookup(sym, handle, errBuf[0]);
+        const ptr0 = localDynLoadSymbolLookup(sym, handle0, errBuf[0]);
 
         if errBuf[0] == nil && ptr0 != nil {
           manage this.withReadLock() {
@@ -468,6 +468,10 @@ module ChapelDynamicLoading {
             // Loop over all locales and fetch the symbol's local pointer.
             coforall loc in Locales[1..] do on loc {
               const n = (here.id: int);
+
+              // Fetch the system handle that is stored on LOCALE-0.
+              var handle: c_ptr(void);
+              on Locales[0] do handle = _systemPtrs[n];
 
               var err: owned DynLibError?;
               const ptr = localDynLoadSymbolLookup(sym, handle, err);
