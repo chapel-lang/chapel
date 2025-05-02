@@ -123,6 +123,9 @@ void chpl_comm_post_mem_init(void) { }
 
 int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
 
+  //
+  // WARNING: its entirely possible to inject something using DEBUGGER_ARGS
+  //
   const char* extraArguments = chpl_env_rt_get("DEBUGGER_ARGS", "");
   char* command = chpl_glom_strings(4,
     "gdb -q -ex 'break debuggerBreakHere' ",
@@ -142,6 +145,9 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
 
 int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status) {
 
+  //
+  // WARNING: its entirely possible to inject something using DEBUGGER_ARGS
+  //
   const char* extraArguments = chpl_env_rt_get("DEBUGGER_ARGS", "");
   char* command = chpl_glom_strings(4,
     "lldb -o 'b debuggerBreakHere' ",
