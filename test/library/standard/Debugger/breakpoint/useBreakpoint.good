@@ -1,0 +1,5 @@
+(lldb) p myVariable
+(void *) 0x0000000000000000
+--
+(lldb) p myVariable
+(void *) 0x0000000000000011

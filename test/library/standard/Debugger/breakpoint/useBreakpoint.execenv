@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+if command -v lldb >/dev/null ; then
+  echo "CHPL_RT_DEBUGGER_ARGS=--source useBreakpointTestCommands.txt"
+elif command -v gdb >/dev/null ; then
+  echo "CHPL_RT_DEBUGGER_ARGS='--command useBreakpointTestCommands.txt'"
+else
+  # this skipif should prevent this case from running
+  echo "error: No debugger found" >&2
+  exit 1
+fi
