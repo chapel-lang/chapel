@@ -1,5 +1,0 @@
-(gdb) p/d myVariable
-(void *) 0
---
-(gdb) p/d myVariable
-(void *) 17
