@@ -43,6 +43,8 @@ module Debugger {
     debuggerBreakHere();
   }
 
+  // TODO: This should be a private config var (to force qualified access)
+  // but that suppresses the docs for it.
   /*
     If ``disableDebugTraps`` is set to ``true``, then the
     :proc:`debugTrap` function will not raise a debug trap exception.
