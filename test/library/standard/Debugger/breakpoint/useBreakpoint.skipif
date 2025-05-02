@@ -1,7 +1,0 @@
-#!/usr/bin/env bash
-
-if command -v lldb >/dev/null || command -v gdb >/dev/null ; then
-  echo "False"
-else
-  echo "True"
-fi
