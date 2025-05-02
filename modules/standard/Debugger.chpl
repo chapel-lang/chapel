@@ -25,8 +25,8 @@ The Debugger module currently provides two functions: :proc:`breakpoint` and
 when using a debugger. Users should prefer using the :proc:`breakpoint`
 function, as it is more portable and easier to use.
 
-The :proc:`debugTrap` is a lower-level function that raises a debug trap
-exception. This function is useful for testing purposes, but can crash the
+The :proc:`debugTrap` function is a lower-level function that raises a debug
+trap exception. This function is useful for testing purposes, but can crash the
 program if used and no debugger is attached.
 */
 @unstable(category="experimental", reason="The Debugger module is unstable due to its experimental behavior")
