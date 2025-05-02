@@ -20,9 +20,14 @@
 
 /* Provides a collection of useful debugging utilities.
 
-The Debugger module currently only provides a single function,
-:proc:`breakpoint`. This function can be used to set a breakpoint in the code
-that will be hit when the program is run under a debugger.
+The Debugger module currently provides two functions: :proc:`breakpoint` and
+:proc:`debugTrap`. Both functions can be used to set breakpoints in your code
+when using a debugger. Users should prefer using the :proc:`breakpoint`
+function, as it is more portable and easier to use.
+
+The :proc:`debugTrap` is a lower-level function that raises a debug trap
+exception. This function is useful for testing purposes, but can crash the
+program if used and no debugger is attached.
 */
 @unstable(category="experimental", reason="The Debugger module is unstable due to its experimental behavior")
 module Debugger {
