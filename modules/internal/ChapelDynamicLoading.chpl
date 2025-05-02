@@ -440,10 +440,10 @@ module ChapelDynamicLoading {
         var shouldInternPointer = false;
 
         // No need to grab the lock, this should not be modified (or nil).
-        const handle = _systemPtrs[0];
-        assert(handle != nil);
+        const handle0 = _systemPtrs[0];
+        assert(handle0 != nil);
 
-        const ptr0 = localDynLoadSymbolLookup(sym, handle, errBuf[0]);
+        const ptr0 = localDynLoadSymbolLookup(sym, handle0, errBuf[0]);
 
         if errBuf[0] == nil && ptr0 != nil {
           manage this.withReadLock() {
@@ -468,6 +468,10 @@ module ChapelDynamicLoading {
             // Loop over all locales and fetch the symbol's local pointer.
             coforall loc in Locales[1..] do on loc {
               const n = (here.id: int);
+
+              // Fetch the system handle that is stored on Locale[0].
+              var handle: c_ptr(void);
+              on Locales[0] do handle = _systemPtrs[n];
 
               var err: owned DynLibError?;
               const ptr = localDynLoadSymbolLookup(sym, handle, err);
