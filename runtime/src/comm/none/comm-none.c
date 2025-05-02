@@ -122,10 +122,15 @@ void chpl_comm_pre_mem_init(void) { }
 void chpl_comm_post_mem_init(void) { }
 
 int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
-  int i;
-  char* command = chpl_glom_strings(2, "gdb -q -ex 'break debuggerBreakHere' --args ",
-                                    argv[0]);
-  for (i=1; i<argc; i++) {
+
+  const char* extraArguments = chpl_env_rt_get("DEBUGGER_ARGS", "");
+  char* command = chpl_glom_strings(4,
+    "gdb -q -ex 'break debuggerBreakHere' ",
+    extraArguments,
+    " --args ",
+    argv[0]);
+
+  for (int i=1; i<argc; i++) {
     if (i != gdbArgnum) {
       command = chpl_glom_strings(3, command, " ", argv[i]);
     }
@@ -136,10 +141,15 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
 }
 
 int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status) {
-  int i;
-  char* command = chpl_glom_strings(2, "lldb -o 'b debuggerBreakHere' -- ",
-                                    argv[0]);
-  for (i=1; i<argc; i++) {
+
+  const char* extraArguments = chpl_env_rt_get("DEBUGGER_ARGS", "");
+  char* command = chpl_glom_strings(4,
+    "lldb -o 'b debuggerBreakHere' ",
+    extraArguments,
+    " -- ",
+    argv[0]);
+
+  for (int i=1; i<argc; i++) {
     if (i != lldbArgnum) {
       command = chpl_glom_strings(3, command, " ", argv[i]);
     }
