@@ -28,7 +28,7 @@ that will be hit when the program is run under a debugger.
 module Debugger {
   /*
     Sets a breakpoint at this point in execution.
-    
+
     This only works if a breakpoint is set on the 'debuggerBreakHere' function
     with ``b debuggerBreakHere``. If using ``--gdb`` or ``--lldb``, this
     is done automatically.
