@@ -22,6 +22,8 @@ DIR=`pwd`
 
 i=0
 
+exit_status=0
+
 # compute longest length for padding
 maxlen=0
 for name in current/*
@@ -64,6 +66,7 @@ do
       echo "     " $*
       echo
       echo
+      exit_status=1
       #uncomment the below line to make errors fatal
       #exit 1
       ;;
@@ -88,3 +91,5 @@ do
     ((i++))
   fi
 done
+
+exit $exit_status
