@@ -183,7 +183,7 @@ GenRet SymExpr::codegen() {
   GenRet ret;
 
   if (id == breakOnCodegenID)
-    gdbShouldBreakHere();
+    debuggerBreakHere();
 
   if( outfile ) {
     if (getStmtExpr() && getStmtExpr() == this)
@@ -4312,7 +4312,7 @@ GenRet CallExpr::codegen() {
   GenRet ret;
 
   // Note (for debugging), function name is in parentSymbol->cname.
-  if (id == breakOnCodegenID) gdbShouldBreakHere();
+  if (id == breakOnCodegenID) debuggerBreakHere();
 
   if (getStmtExpr() == this) codegenStmt(this);
 
@@ -6750,7 +6750,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
   if(!call) return false;
 
   if (call->id == breakOnCodegenID)
-    gdbShouldBreakHere();
+    debuggerBreakHere();
 
   if (call->primitive) {
     switch (call->primitive->tag) {

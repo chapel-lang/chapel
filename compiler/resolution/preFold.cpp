@@ -581,7 +581,7 @@ static Expr* preFoldPrimInitVarForManagerResource(CallExpr* call) {
       INT_ASSERT(isSymExpr(call->get(2)));
 
       if (call->id == breakOnResolveID) {
-        gdbShouldBreakHere();
+        debuggerBreakHere();
       }
 
       Symbol* lhs = se->symbol();
@@ -727,7 +727,7 @@ static Expr* preFoldPrimInitVarForManagerResource(CallExpr* call) {
 }
 
 static Expr* preFoldPrimResolves(CallExpr* call) {
-  if (call->id == breakOnResolveID) gdbShouldBreakHere();
+  if (call->id == breakOnResolveID) debuggerBreakHere();
 
   // This primitive should only have one actual.
   INT_ASSERT(call && call->numActuals() == 1);

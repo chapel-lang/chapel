@@ -54,7 +54,7 @@ static const bool doPrintDebugInfo = false;
   do { \
     if (sym__->id == breakOnId1 || sym__->id == breakOnId2 || \
         sym__->id == breakOnId3) { \
-      gdbShouldBreakHere(); \
+      debuggerBreakHere(); \
     } \
   } while (0)
 

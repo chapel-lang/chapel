@@ -2416,7 +2416,7 @@ static void reissueMsgHelp(CallExpr* from, const char* str, bool err) {
   if (err) {
     USR_FATAL(from, "%s", str);
   } else {
-    gdbShouldBreakHere();
+    debuggerBreakHere();
     USR_WARN(from, "%s", str);
   }
 }
@@ -3687,7 +3687,7 @@ static void warnForCallConcreteType(CallExpr* call, Type* t) {
 
 static Type* resolveTypeSpecifier(CallInfo& info) {
   CallExpr* call = info.call;
-  if (call->id == breakOnResolveID) gdbShouldBreakHere();
+  if (call->id == breakOnResolveID) debuggerBreakHere();
 
   Type* ret = NULL;
 
@@ -3965,7 +3965,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState) {
   if (call->id == breakOnResolveID) {
     printf("breaking on resolve call %d:\n", call->id);
     print_view(call);
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
 
   resolveGenericActuals(call);
@@ -5622,7 +5622,7 @@ static void filterCandidate(CallInfo&                  info,
     USR_PRINT(fn, "Considering function: %s", toString(fn));
 
     if (info.call->id == breakOnResolveID) {
-      gdbShouldBreakHere();
+      debuggerBreakHere();
     }
   }
 
@@ -7347,7 +7347,7 @@ static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn) {
       // INT_ASSERT(varActual->type->symbol->hasFlag(FLAG_GENERIC) == false);
 
       if (formal->id == breakOnResolveID)
-        gdbShouldBreakHere();
+        debuggerBreakHere();
 
       IntentTag origFormalIntent = formal->intent;
 
@@ -8001,7 +8001,7 @@ static Symbol* resolveFieldSymbol(Type* base, Expr* fieldExpr) {
 static void resolveSetMember(CallExpr* call) {
 
   if (call->id == breakOnResolveID) {
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
 
   Symbol* fs = resolveFieldSymbol(call->get(1)->typeInfo()->getValType(),
@@ -8078,7 +8078,7 @@ static void handleSetMemberTypeMismatch(Type*     t,
 
 static void resolveInitField(CallExpr* call) {
   if (call->id == breakOnResolveID) {
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
 
   INT_ASSERT(call->argList.length == 3);
@@ -8156,7 +8156,7 @@ static void resolveInitField(CallExpr* call) {
     // fields from the old instantiation
 
     if (fs->id == breakOnResolveID) {
-      gdbShouldBreakHere();
+      debuggerBreakHere();
     }
 
     bool ignoredHasDefault = false;
@@ -8493,7 +8493,7 @@ void resolveInitVar(CallExpr* call) {
   bool isParamString = dst->hasFlag(FLAG_PARAM) && isString(srcType);
 
   if (call->id == breakOnResolveID) {
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
 
   if (call->isPrimitive(PRIM_INIT_VAR_SPLIT_INIT)) {
@@ -9097,7 +9097,7 @@ static bool isMoveFromMain(CallExpr* call) {
 
 static void resolveMove(CallExpr* call) {
   if (call->id == breakOnResolveID) {
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
 
   if (moveIsAcceptable(call) == false) {
@@ -9321,7 +9321,7 @@ Type* moveDetermineLhsType(CallExpr* call) {
 
   if (lhsSym->type == dtUnknown || lhsSym->type == dtNil) {
     if (lhsSym->id == breakOnResolveID) {
-      gdbShouldBreakHere();
+      debuggerBreakHere();
     }
 
     Type* type = call->get(2)->typeInfo();
@@ -9800,7 +9800,7 @@ static bool isUndecoratedClassNew(CallExpr* newExpr, Type* newType);
 static void resolveNew(CallExpr* newExpr) {
 
   if (newExpr->id == breakOnResolveID) {
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
 
   // If it's a managed new, detect the _chpl_manager named arg and remove it
@@ -10545,7 +10545,7 @@ static Expr* resolveFunctionTypeConstructor(DefExpr* def) {
   INT_ASSERT(fn->type == dtUnknown);
 
   if (def->id == breakOnResolveID || fn->id == breakOnResolveID) {
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
 
   bool isBodyResolved = fcfs::checkAndResolveSignature(fn, def);
@@ -10696,7 +10696,7 @@ static Expr* resolveFunctionCapture(FnSymbol* fn, Expr* use,
                                     bool discardType,
                                     bool useClass) {
   if (fn->id == breakOnResolveID || use->id == breakOnResolveID) {
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
 
   // Discarding the type (e.g., for 'c_ptrTo') is well specified.
@@ -10815,7 +10815,7 @@ static Expr* maybeResolveFunctionCapturePrimitive(CallExpr* call) {
     return nullptr;
   }
 
-  if (call->id == breakOnResolveID) gdbShouldBreakHere();
+  if (call->id == breakOnResolveID) debuggerBreakHere();
 
   switch (call->primitive->tag) {
 
@@ -10924,7 +10924,7 @@ Expr* resolveExpr(Expr* expr) {
   Expr*     retval = NULL;
 
   if (expr->id == breakOnResolveID)
-    gdbShouldBreakHere();
+    debuggerBreakHere();
 
   SET_LINENO(expr);
 
@@ -13665,7 +13665,7 @@ static void resolvePrimInit(CallExpr* call) {
 
 static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
 
-  if (call->id == breakOnResolveID) gdbShouldBreakHere();
+  if (call->id == breakOnResolveID) debuggerBreakHere();
 
   AggregateType* at = toAggregateType(type);
   val->type = type;
@@ -13957,7 +13957,7 @@ static void errorInvalidParamInit(CallExpr* call, Symbol* val, Type* type) {
 static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type,
                           Expr* preventingSplitInit) {
 
-  if (call->id == breakOnResolveID) gdbShouldBreakHere();
+  if (call->id == breakOnResolveID) debuggerBreakHere();
 
   AggregateType* at     = toAggregateType(type);
 
@@ -14747,7 +14747,7 @@ static void resolveInitRef(CallExpr* call) {
                refSym->hasFlag(FLAG_REF_VAR));
     INT_ASSERT(refSym->type == dtUnknown); // fyi
 
-    if (refSym->id == breakOnResolveID) gdbShouldBreakHere();
+    if (refSym->id == breakOnResolveID) debuggerBreakHere();
     resolveExpr(call->get(2)); // the normalized type expression
     Expr* typeExpr = call->get(2)->remove();
     if (SymExpr* typeSE = toSymExpr(typeExpr))

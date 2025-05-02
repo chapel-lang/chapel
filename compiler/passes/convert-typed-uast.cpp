@@ -67,10 +67,10 @@
 // If defined as 1, dump debug output from the converter to stdout.
 #define TC_DEBUG_TRACE 0
 
-// Wrapper around 'CHPL_UNIMPL' that also calls 'gdbShouldBreakHere()'.
+// Wrapper around 'CHPL_UNIMPL' that also calls 'debuggerBreakHere()'.
 #define TC_UNIMPL(msg__) do { \
   CHPL_UNIMPL(msg__); \
-  gdbShouldBreakHere(); \
+  debuggerBreakHere(); \
 } while (0)
 
 

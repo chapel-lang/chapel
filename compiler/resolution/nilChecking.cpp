@@ -585,7 +585,7 @@ static void checkCall(
   CallExpr* initCall = NULL;
 
   if (call->id == debugNilsForId)
-    gdbShouldBreakHere();
+    debuggerBreakHere();
 
   // set moveLike and userCall
   if (call->isPrimitive(PRIM_MOVE) ||
@@ -1137,7 +1137,7 @@ static void checkBasicBlock(
     }
 
     if (expr->id == debugNilsForId)
-      gdbShouldBreakHere();
+      debuggerBreakHere();
 
     if (ForallStmt* forall = toForallStmt(expr)) {
 
@@ -1318,7 +1318,7 @@ static void findNilDereferencesInFn(FnSymbol* fn) {
   if (debugging) {
     printf("Visiting function %s id %i\n", fn->name, fn->id);
     nprint_view(fn);
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
 
   BasicBlock::buildBasicBlocks(fn);
