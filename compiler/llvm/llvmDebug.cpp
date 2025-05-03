@@ -106,7 +106,7 @@ void debug_data::finalize() {
   dibuilder.finalize();
 }
 
-void debug_data::create_compile_unit(const char *file, const char *directory, bool is_optimized, const char *flags)
+llvm::DICompileUnit* debug_data::create_compile_unit(const char *file, const char *directory, bool is_optimized, const char *flags)
 {
   this->optimized = is_optimized;
   char version[128];
@@ -115,13 +115,15 @@ void debug_data::create_compile_unit(const char *file, const char *directory, bo
   snprintf(chapel_string, 256, "Chapel version %s", version);
   strncpy(current_dir, directory,sizeof(current_dir)-1);
 
-  this->dibuilder.createCompileUnit(llvm::dwarf::DW_LANG_C99, /* Lang */
-                                    this->dibuilder.createFile(
-                                      file, directory), /* File */
-                                    chapel_string, /* Producer */
-                                    is_optimized, /* isOptimized */
-                                    flags, /* Flags */
-                                    0 /* RV */ );
+  auto compileUnit =
+    this->dibuilder.createCompileUnit(llvm::dwarf::DW_LANG_C99, /* Lang */
+                                      this->dibuilder.createFile(
+                                        file, directory), /* File */
+                                      chapel_string, /* Producer */
+                                      is_optimized, /* isOptimized */
+                                      flags, /* Flags */
+                                      0 /* RV */ );
+  return compileUnit;
 }
 
 
@@ -595,13 +597,16 @@ llvm::DIGlobalVariableExpression* debug_data::construct_global_variable(VarSymbo
   const char *file_name = gVarSym->astloc.filename();
   int line_number = gVarSym->astloc.lineno();
 
+  ModuleSymbol* modSym = gVarSym->getModule();
+  auto compileUnit = modSym->llvmDICompileUnit;
+
   llvm::DIFile* file = get_file(file_name);
   llvm::DIType* gVarSym_type = get_type(gVarSym->type); // type is member of Symbol
 
   if(gVarSym_type)
     return this->dibuilder.createGlobalVariableExpression
      (
-      file, /* Context */
+      compileUnit, /* Context */
       name, /* name */
       cname, /* linkage name */
       file, /* File */
