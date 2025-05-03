@@ -967,7 +967,10 @@ void VarSymbol::codegenGlobalDef(bool isHeader) {
       setValueAlignment(gVar, type, this);
 
       if(debug_info){
-        debug_info->get_global_variable(this);
+        auto di = debug_info->get_global_variable(this);
+        if (di) {
+          gVar->addDebugInfo(di);
+        }
       }
     }
 #endif
