@@ -642,7 +642,7 @@ static void handleTaskPrivate(LoopWithShadowVarsInterface* fs, ShadowVarSymbol* 
 
 static void handleOneShadowVar(LoopWithShadowVarsInterface* fs, ShadowVarSymbol* svar)
 {
-  if (svar->id == breakOnResolveID) gdbShouldBreakHere();
+  if (svar->id == breakOnResolveID) debuggerBreakHere();
 
   switch (svar->intent) {
     case TFI_IN:           handleIn(fs, svar, false);   break;

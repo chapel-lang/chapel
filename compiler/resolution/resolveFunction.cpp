@@ -536,7 +536,7 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
     if (fn->id == breakOnResolveID) {
       printf("breaking on resolve fn %s[%d] (%d args)\n",
              fn->name, fn->id, fn->numFormals());
-      gdbShouldBreakHere();
+      debuggerBreakHere();
     }
 
     fn->addFlag(FLAG_RESOLVED);
@@ -3016,7 +3016,7 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn,
             lhsType = lhsType->getValType();
 
           if (call->id == breakOnResolveID)
-            gdbShouldBreakHere();
+            debuggerBreakHere();
 
           Symbol* to = lhs->symbol();
           Symbol* toType = NULL;

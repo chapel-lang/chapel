@@ -195,7 +195,7 @@ void trace_remove(BaseAST* ast, char flag) {
   }
   if (ast->id == breakOnRemoveID) {
     if (deletedIdON() == true) fflush(deletedIdHandle);
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
   // There should never be an attempt to delete a global type.
   if (flag != 'z' && // At least, not before compiler shutdown.
@@ -367,7 +367,7 @@ int lastNodeIDUsed() {
 // BaseAST instance in gdb.
 static void checkid(int id) {
   if (id == breakOnID) {
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
 }
 

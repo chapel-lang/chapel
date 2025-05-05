@@ -489,7 +489,7 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
   ret.chplType = typeInfo();
 
   if (id == breakOnCodegenID)
-    gdbShouldBreakHere();
+    debuggerBreakHere();
 
   if( outfile ) {
     // dtString immediates don't actually codegen as immediates, we just use
@@ -908,7 +908,7 @@ void VarSymbol::codegenGlobalDef(bool isHeader) {
   if( id == breakOnCodegenID ||
       (breakOnCodegenCname[0] &&
        0 == strcmp(cname, breakOnCodegenCname)) ) {
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
 
   if( info->cfile ) {
@@ -978,7 +978,7 @@ void VarSymbol::codegenDef() {
   GenInfo* info = gGenInfo;
 
   if (id == breakOnCodegenID)
-    gdbShouldBreakHere();
+    debuggerBreakHere();
 
   // Local variable symbols should never be
   // generated for extern or void types
@@ -1153,7 +1153,7 @@ GenRet ArgSymbol::codegen() {
 
   if (this->id == breakOnCodegenID ||
       this->defPoint->id == breakOnCodegenID) {
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
 
   ret.chplType = this->type;
@@ -1482,7 +1482,7 @@ void TypeSymbol::codegenDef() {
   if( id == breakOnCodegenID ||
       (breakOnCodegenCname[0] &&
        0 == strcmp(cname, breakOnCodegenCname)) ) {
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
 
   if (!hasFlag(FLAG_EXTERN)) {
@@ -2571,9 +2571,9 @@ importPrecompiledFunctionProto(chpl::ID fnId, const char* cname) {
 #endif
 
 void FnSymbol::codegenPrototype() {
-  if (id == breakOnCodegenID) gdbShouldBreakHere();
+  if (id == breakOnCodegenID) debuggerBreakHere();
   if (breakOnCodegenCname[0] && !strcmp(cname, breakOnCodegenCname)) {
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
 
   GenInfo *info = gGenInfo;
@@ -2805,7 +2805,7 @@ void FnSymbol::codegenDef() {
   if( id == breakOnCodegenID ||
       (breakOnCodegenCname[0] &&
        0 == strcmp(cname, breakOnCodegenCname)) ) {
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
 
   if (!needsCodegenWrtGPU(this)) return;
@@ -2945,7 +2945,7 @@ void FnSymbol::codegenDef() {
     }
 
     for_formals(arg, this) {
-      if (arg->id == breakOnCodegenID) gdbShouldBreakHere();
+      if (arg->id == breakOnCodegenID) debuggerBreakHere();
 
       const clang::CodeGen::ABIArgInfo* argInfo = NULL;
       if (CGI) {

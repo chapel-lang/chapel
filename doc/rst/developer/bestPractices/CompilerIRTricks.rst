@@ -89,7 +89,7 @@ To break on the creation of a particular ID, use ``--break-on-id``:
   Breakpoint 1 at 0x527ae0
   (gdb) run
   Starting program: chpl --break-on-id 70157 -o ./bin/hello ./test/release/example/hello.chpl
-  Breakpoint 1, 0x0000000000527ae0 in gdbShouldBreakHere ()
+  Breakpoint 1, 0x0000000000527ae0 in debuggerBreakHere ()
   (gdb) 
 
 Should you want to break on more than one ID without running gdb several

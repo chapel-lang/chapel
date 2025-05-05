@@ -914,7 +914,7 @@ void Context::collectGarbage() {
 
 void Context::report(owned<ErrorBase> error) {
   if (!config_.disableErrorBreakpoints) {
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
 
   // If errorCollectionStack is not empty, errors are being collected, and

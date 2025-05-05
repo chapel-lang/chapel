@@ -676,7 +676,7 @@ static int addLlvmValue(const llvm::Value* val) {
 
 const llvm::Value* trackLLVMValue(const llvm::Value* val) {
   int newId = addLlvmValue(val);
-  if (newId == breakOnLLVMID) gdbShouldBreakHere();
+  if (newId == breakOnLLVMID) debuggerBreakHere();
   return val;
 }
 
