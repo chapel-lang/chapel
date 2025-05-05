@@ -3127,14 +3127,16 @@ static void codegenPartTwo() {
       debug_info = new debug_data(*info->module);
     }
     if(debug_info) {
-      // eveyr module gets its own compile unit
+      // every module gets its own compile unit
       forv_Vec(ModuleSymbol, currentModule, allModules) {
-        //So, this is pretty quick. I'm assuming that the main module is in the current dir, no optimization (need to figure out how to get this)
+        // So, this is pretty quick. I'm assuming that the main module is in the current dir, no optimization (need to figure out how to get this)
         // and no compile flags, since I can't figure out how to get that either.
         const char *current_dir = "./";
         const char *empty_string = "";
-        auto di = debug_info->create_compile_unit(currentModule->astloc.filename(), current_dir, false, empty_string);
-        currentModule->llvmDICompileUnit = di;
+        currentModule->llvmDICompileUnit = debug_info->create_compile_unit(
+          currentModule->astloc.filename(), current_dir,
+          false, empty_string
+        );
       }
     }
 
