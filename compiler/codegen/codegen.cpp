@@ -3133,11 +3133,15 @@ static void codegenPartTwo() {
         // and no compile flags, since I can't figure out how to get that either.
         const char *current_dir = "./";
         const char *empty_string = "";
-        currentModule->llvmDICompileUnit = debug_info->create_compile_unit(
+        debug_info->create_compile_unit(currentModule,
           currentModule->astloc.filename(), current_dir,
           false, empty_string
         );
       }
+      debug_info->create_compile_unit(rootModule,
+        rootModule->astloc.filename(), "./",
+        false, ""
+      );
     }
 
     // When doing codegen for programs that have GPU kernels we fork the
