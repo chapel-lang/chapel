@@ -35,7 +35,7 @@ static void chpl_exit_common(int status, int all) {
   fflush(stdout);
   fflush(stderr);
   if (status != 0) {
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
   chpl_finalize(status, all);
   exit(status);

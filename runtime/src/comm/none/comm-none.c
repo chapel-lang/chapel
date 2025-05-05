@@ -123,7 +123,7 @@ void chpl_comm_post_mem_init(void) { }
 
 int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
   int i;
-  char* command = chpl_glom_strings(2, "gdb -q -ex 'break gdbShouldBreakHere' --args ",
+  char* command = chpl_glom_strings(2, "gdb -q -ex 'break debuggerBreakHere' --args ",
                                     argv[0]);
   for (i=1; i<argc; i++) {
     if (i != gdbArgnum) {
@@ -137,7 +137,7 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
 
 int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status) {
   int i;
-  char* command = chpl_glom_strings(2, "lldb -o 'b gdbShouldBreakHere' -- ",
+  char* command = chpl_glom_strings(2, "lldb -o 'b debuggerBreakHere' -- ",
                                     argv[0]);
   for (i=1; i<argc; i++) {
     if (i != lldbArgnum) {

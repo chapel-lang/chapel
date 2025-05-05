@@ -27,7 +27,7 @@
 extern "C" {
 #endif
 
-void gdbShouldBreakHere(void);  // must be in separate file to avoid elimination
+void debuggerBreakHere(void);  // must be in separate file to avoid elimination
 
 inline static void chpl_debugtrap(void) {
   #ifdef __has_builtin
