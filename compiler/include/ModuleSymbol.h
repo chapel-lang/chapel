@@ -25,6 +25,7 @@
 
 #ifdef HAVE_LLVM
 namespace llvm {
+  class DIBuilder;
   class DICompileUnit;
 }
 #endif
@@ -102,10 +103,12 @@ public:
   // LLVM uses this for extern C blocks.
 #ifdef HAVE_LLVM
   ExternBlockInfo*        extern_info;
+  llvm::DIBuilder*        llvmDIBuilder;
   llvm::DICompileUnit*    llvmDICompileUnit;
   llvm::MDNode*           llvmDINameSpace;
 #else
   void*                   extern_info;
+  void*                   llvmDIBuilder;
   void*                   llvmDICompileUnit;
   void*                   llvmDINameSpace;
 #endif
