@@ -586,6 +586,16 @@ void print_llvm(llvm::Module* m)
   fprintf(stderr, "\n");
 }
 
+void print_llvm(llvm::Metadata* m)
+{
+  if (m == NULL)
+    fprintf(stderr, "NULL");
+  else
+    m->print(llvm::dbgs(), nullptr, true);
+
+  fprintf(stderr, "\n");
+}
+
 static void printfLLVMHelper(const char* fmt) {
   auto fd = getLlvmPrintIrFile();
   *fd << fmt;
@@ -635,6 +645,15 @@ void list_view(const llvm::Module* arg) {
   else {
     auto fd = getLlvmPrintIrFile();
     arg->print(*fd, nullptr, true, true);
+  }
+  printfLLVMHelper("\n");
+}
+
+void list_view(const llvm::Metadata* arg) {
+  if (arg == NULL) printfLLVMHelper("<NULL>");
+  else {
+    auto fd = getLlvmPrintIrFile();
+    arg->print(*fd, nullptr, true);
   }
   printfLLVMHelper("\n");
 }
@@ -763,13 +782,24 @@ void nprint_view(const llvm::Module* arg) {
   printfLLVMHelper("\n");
 }
 
+
+void nprint_view(const llvm::Metadata* arg) {
+  if (arg == NULL) printfLLVMHelper("<NULL>");
+  else {
+    auto fd = getLlvmPrintIrFile();
+    arg->print(*fd, &llvmValueTracker, nullptr, true);
+  }
+  printfLLVMHelper("\n");
+}
+
 #else // if TRACK_LLVM_VALUES
 
 // LLVM IDs are not tracked; nprint_view() is the same as list_view()
 
-void nprint_view(const llvm::Type* arg)   { list_view(arg); }
-void nprint_view(const llvm::Value* arg)  { list_view(arg); }
-void nprint_view(const llvm::Module* arg) { list_view(arg); }
+void nprint_view(const llvm::Type* arg)     { list_view(arg); }
+void nprint_view(const llvm::Value* arg)    { list_view(arg); }
+void nprint_view(const llvm::Module* arg)   { list_view(arg); }
+void nprint_view(const llvm::Metadata* arg) { list_view(arg); }
 
 #endif // if TRACK_LLVM_VALUES
 
