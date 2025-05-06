@@ -30,6 +30,7 @@ cd $CHPL_HOME
 # replace the url and sha in the chapel formula with the url pointing to the tarball created and sha of the tarball.
 # run home-brew scripts to install chapel.
 
+short_version=$(get_short_version)
 gen_release $short_version
 
 cp ${CHPL_HOME}/util/packaging/homebrew/chapel-main.rb  ${CHPL_HOME}/util/packaging/homebrew/chapel.rb
