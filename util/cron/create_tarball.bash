@@ -14,11 +14,18 @@ export CHPL_GEN_RELEASE_NO_CLONE=true
 
 export CHPL_LLVM=none
 
-# if CHPL_VERSION is set, use that
+# if CHPL_VERSION is set, use it
+# if CHPL_VERSION is set to 'release', use the release version
+# if CHPL_VERSION is set to 'short', use the short version
+# otherwise, use the prerelease version
 if [ "${CHPL_VERSION+x}" != "x" ] ; then
-  version=$(get_prerelease_version)
-else
+  version=$CHPL_VERSION
+elif [ "${CHPL_VERSION}" = "release" ] ; then
   version=$(get_version)
+elif [ "${CHPL_VERSION}" = "short" ] ; then
+  version=$(get_short_version)
+else
+  version=$(get_prerelease_version)
 fi
 
 gen_release $version
