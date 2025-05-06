@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+# keep only $1 = and $2 = lines
+grep '$[12] =' $2 > $2.tmp
+mv $2.tmp $2

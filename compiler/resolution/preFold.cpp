@@ -2429,15 +2429,6 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
-  case PRIM_BREAKPOINT: {
-    if (!debugCCode) {
-      // if not in debug mode, remove the primitive
-      retval = new CallExpr(PRIM_NOOP);
-      call->replace(retval);
-    }
-    break;
-  }
-
   case PRIM_FORCE_THUNK: {
     auto sizeSym = toSymExpr(call->get(1));
     auto sizeType = sizeSym->symbol()->typeInfo()->getValType();

@@ -1,0 +1,1 @@
+--llvm-print-ir main --llvm-print-ir-stage=basic --fast -sDebugger.disableDebugTraps
