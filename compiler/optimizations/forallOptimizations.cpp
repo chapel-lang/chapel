@@ -1638,12 +1638,6 @@ static void autoLocalAccess(ForallStmt *forall) {
       }
 
       if (canOptimizeStatically) {
-        // we could support static ALA with offsets. Today, the blocker is that
-        // the stencil distribution's fluff is not a static information. We
-        // would need param tuples for that. In any case, this assertion can be
-        // removed when we add support for this optimization.
-        INT_ASSERT(!candidate.hasOffset());
-
         bool reportedLoc = LOG_ALA(2,
                                    "This call is a static optimization candidate",
                                    call);
