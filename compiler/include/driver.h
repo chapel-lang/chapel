@@ -304,6 +304,8 @@ extern const char* compileCommandFilename;
 extern const char* compileCommand;
 extern char compileVersion[64];
 
+extern std::string fEdition;
+
 // This flag is useful for testing
 // the compiler but breaks the language!
 extern bool fMinimalModules;

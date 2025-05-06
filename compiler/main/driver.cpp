@@ -354,6 +354,8 @@ const char* compileCommandFilename = "compileCommand.tmp";
 const char* compileCommand = NULL;
 char compileVersion[64];
 
+std::string fEdition = "2.0";
+
 static bool fPrintCopyright = false;
 static bool fPrintEnvHelp = false;
 static bool fPrintHelp = false;
@@ -815,6 +817,21 @@ static int runDriverMakeBinaryPhase(int argc, char* argv[]) {
                             "invoking driver makeBinary phase");
 }
 
+static void setEdition(const ArgumentDescription* desc, const char* arg) {
+  std::string val = std::string(arg);
+
+  // TODO: make this a helper check?  Can this be an enum?
+  if (val != "2.0" && val != "pre-edition") {
+    printf("--edition only accepts a limited set of values.  Current options");
+    printf(" are:\n");
+    printf("2.0\n");
+    printf("pre-edition\n");
+    clean_exit(1);
+  } else {
+    fEdition = val;
+  }
+}
+
 static void runCompilerInGDB(int argc, char* argv[]) {
   const char* gdbCommandFilename = createDebuggerFile("gdb", argc, argv);
   const char* command = astr("gdb -q ", argv[0]," -x ", gdbCommandFilename);
@@ -1211,6 +1228,7 @@ static ArgumentDescription arg_desc[] = {
  {"print-search-dirs", ' ', NULL, "[Don't] print module search path", "N", &printSearchDirs, "CHPL_PRINT_SEARCH_DIRS", NULL},
 
  {"", ' ', NULL, "Warning and Language Control Options", NULL, NULL, NULL, NULL},
+ {"edition", ' ', "<edition>", "Specify the language edition to use", "S", NULL, NULL, &setEdition},
  {"permit-unhandled-module-errors", ' ', NULL, "Permit unhandled thrown errors; such errors halt at runtime", "N", &fPermitUnhandledModuleErrors, "CHPL_PERMIT_UNHANDLED_MODULE_ERRORS", NULL},
  {"warn-unstable", ' ', NULL, "Enable [disable] warnings for uses of language features that are in flux", "N", &fWarnUnstable, "CHPL_WARN_UNSTABLE", NULL},
  {"warnings", ' ', NULL, "Enable [disable] output of warnings", "n", &ignore_warnings, "CHPL_WARNINGS", NULL},
