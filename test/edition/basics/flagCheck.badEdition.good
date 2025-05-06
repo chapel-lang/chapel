@@ -1,0 +1,3 @@
+--edition only accepts a limited set of values.  Current options are:
+2.0
+pre-edition
