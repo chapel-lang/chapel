@@ -7134,7 +7134,7 @@ yieldTypeForIterator(ResolutionContext* rc,
 
   QualifiedType ret;
   if (auto fnIter = iter->toFnIteratorType()) {
-    ret = yieldType(rc, fnIter->iteratorFn(), iter->poiScope());
+    ret = fnIter->yieldType();
   } else if (auto loopIter = iter->toLoopExprIteratorType()) {
     ret = loopIter->yieldType();
   } else {
@@ -7491,10 +7491,7 @@ static const types::QualifiedType& getPromotionTypeQuery(Context* context, types
   } else if (auto loopIt = qt.type()->toLoopExprIteratorType()) {
     ret = loopIt->yieldType();
   } else if (auto fnIt = qt.type()->toFnIteratorType()) {
-    // TODO, the iteratorFn could be a nested function, in which case a default
-    //       resolution context is not sufficient.
-    ResolutionContext rc(context);
-    ret = yieldType(&rc, fnIt->iteratorFn(), fnIt->poiScope());
+    ret = fnIt->yieldType();
   } else if (auto promoIt = qt.type()->toPromotionIteratorType()) {
     ret = promoIt->yieldType();
   } else {

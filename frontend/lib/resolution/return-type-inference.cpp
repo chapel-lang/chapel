@@ -1171,7 +1171,7 @@ returnTypes(ResolutionContext* rc,
   result.second = result.first;
   if (sig->isIterator() && !result.second.isUnknownOrErroneous()) {
     result.second = QualifiedType(result.second.kind(),
-                                  FnIteratorType::get(context, poiScope, sig));
+                                  FnIteratorType::get(context, poiScope, sig, result.second));
   }
 
   return CHPL_RESOLUTION_QUERY_END(result);
