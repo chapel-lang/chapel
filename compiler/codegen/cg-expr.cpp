@@ -3524,7 +3524,21 @@ void codegenCallMemcpy(GenRet dest, GenRet src, GenRet size,
     //types[3] = llvm::Type::getInt32Ty(info->llvmContext);
     //types[4] = llvm::Type::getInt1Ty(info->llvmContext);
 
-    llvm::Function *func = llvm::Intrinsic::getDeclaration(info->module, llvm::Intrinsic::memcpy, types);
+#if LLVM_VERSION_MAJOR >= 20
+    llvm::Function *func =
+      llvm::Intrinsic::getOrInsertDeclaration(
+        info->module,
+        llvm::Intrinsic::memcpy,
+        types
+      );
+#else
+    llvm::Function *func =
+      llvm::Intrinsic::getDeclaration(
+        info->module,
+        llvm::Intrinsic::memcpy,
+        types
+      );
+#endif
     //llvm::FunctionType *fnType = func->getFunctionType();
 
     // LLVM 7 and later: memcpy has no alignment argument
@@ -6281,14 +6295,14 @@ DEFINE_PRIM(FTABLE_CALL) {
       argt = call->get(2)->typeInfo()->codegen().type;
 
       if (argMustUseCPtr(call->get(2)->typeInfo()))
-        argt = argt->getPointerTo();
+        argt = llvm::PointerType::getUnqual(argt);
 
       argumentTypes.push_back(argt);
 
       argt = call->get(3)->typeInfo()->codegen().type;
 
       if (argMustUseCPtr(call->get(3)->typeInfo()))
-        argt = argt->getPointerTo();
+        argt = llvm::PointerType::getUnqual(argt);
 
       argumentTypes.push_back(argt);
 
@@ -6298,7 +6312,7 @@ DEFINE_PRIM(FTABLE_CALL) {
 
       // OK, now cast to the fnTy.
       fngen.val = gGenInfo->irBuilder->CreateBitCast(fnPtr,
-                                                     fnTy->getPointerTo());
+                                                    llvm::PointerType::getUnqual(fnTy));
       trackLLVMValue(fngen.val);
 #endif
     }
