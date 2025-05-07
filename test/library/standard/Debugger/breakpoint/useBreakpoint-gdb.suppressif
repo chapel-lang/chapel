@@ -1,0 +1,2 @@
+# running lldb on multi-locale code is not yet well supported
+CHPL_COMM!=none
