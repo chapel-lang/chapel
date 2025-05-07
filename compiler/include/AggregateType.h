@@ -167,6 +167,7 @@ public:
   void                        buildCopyInitializer();
 
   Symbol*                     getSubstitution(const char* name)          const;
+  void                        saveGenericSubstitutions();
 
   Type*                       getDecoratedClass(ClassTypeDecoratorEnum d);
 

@@ -139,5 +139,6 @@ void attachSymbolStorage(const uast::Qualifier kind, Symbol* vs, bool setQual);
 bool isEnsureDomainExprCall(Expr* expr);
 AggregateTag convertAggregateDeclTag(const uast::AggregateDecl* node);
 ModTag getModuleTag(Context* context, UniqueString path);
+void flattenPrimaryMethod(TypeSymbol* ts, FnSymbol* fn);
 
 #endif

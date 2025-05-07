@@ -1030,29 +1030,7 @@ void saveGenericSubstitutions() {
 
   for_alive_in_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (AggregateType* at = toAggregateType(ts->type)) {
-      if (at->substitutions.n > 0) {
-        // Generate substitutionsPostResolve which should not be generated yet
-        INT_ASSERT(at->substitutionsPostResolve.size() == 0);
-        for_fields(field, at) {
-          if (Symbol* value = at->getSubstitutionWithName(field->name)) {
-            NameAndSymbol ns;
-            ns.name = field->name;
-            ns.value = value;
-            ns.isParam = field->isParameter();
-            ns.isType = field->hasFlag(FLAG_TYPE_VARIABLE);
-            at->substitutionsPostResolve.push_back(ns);
-          }
-        }
-        // Clear substitutions since keys might refer to deleted AST nodes
-        at->substitutions.clear();
-      }
-
-      if (at->instantiatedFrom != NULL) {
-        // Clear instantiatedFrom since it would refer to a deleted AST node
-        at->instantiatedFrom = NULL;
-
-        ts->addFlag(FLAG_INSTANTIATED_GENERIC);
-      }
+      at->saveGenericSubstitutions();
     }
   }
 }

@@ -560,6 +560,11 @@ struct TConverter final : UastConverter {
     return nullptr;
   }
 
+  Expr* convertAST(const AstNode* node, ModTag modTag) override {
+    INT_ASSERT(false && "Should not be called here!");
+    return nullptr;
+  }
+
   Expr* convertAstUntyped(const AstNode* node) {
     return untypedConverter->convertAST(node);
   }
@@ -2604,28 +2609,29 @@ struct ConvertTypeHelper {
       base->symbol = new TypeSymbol(name, base);
     }
 
+    // Use untyped converter to build AST, so that we can use it for
+    // instantiation.
     if (base->numFields() == 0) {
-      // fill in the 'type eltType' field
-      VarSymbol* v = new VarSymbol(astr("eltType"), dtAny);
-      v->qual = QUAL_UNKNOWN;
-      v->makeField();
-      base->fields.insertAtTail(new DefExpr(v));
+      auto id = t->id(context());
+      auto node = parsing::idToAst(context(), id)->toDecl();
+      INT_ASSERT(!base->symbol->defPoint);
 
-      // add to globalSyms so it can be ignored in the untyped converter
-      const char* symbolPath = nullptr;
-      if (base == dtCPointer) {
-        symbolPath = "CTypes.c_ptr";
-      } else if (base == dtCPointerConst) {
-        symbolPath = "CTypes.c_ptrConst";
-      } else {
-        symbolPath = "ChapelBase._ddata";
-      }
+      auto def = tc_->untypedConverter->convertAST(node, MOD_STANDARD);
+      auto ts = toTypeSymbol(toDefExpr(def)->sym);
 
-      auto id = ID(tc_->ustr(symbolPath));
+      ID inModuleId = parsing::idToParentModule(context(), id);
+      auto mod = tc_->findOrSetupModule(inModuleId);
+      mod->block->insertAtTail(def);
+
       tc_->globalSyms[id] = base->symbol;
 
-      auto def = insertTypeIntoModule(id, base);
-      INT_ASSERT(def);
+      for_fields(field, base) {
+        if (auto fn = toFnSymbol(field)) {
+          flattenPrimaryMethod(ts, fn);
+        }
+      }
+
+      base->processGenericFields();
     }
 
     // handle ptr without an element type
@@ -2642,6 +2648,11 @@ struct ConvertTypeHelper {
     Expr* insnPoint = nullptr; // TODO: does this need to be set?
     AggregateType* ret =
       base->getInstantiation(convertedEltT->symbol, index, insnPoint);
+    ret->resolveStatus = RESOLVED;
+    ret->symbol->addFlag(FLAG_RESOLVED_EARLY);
+
+    ret->saveGenericSubstitutions();
+    propagateNotPOD(ret);
 
     return ret;
   }
@@ -4998,11 +5009,13 @@ void TConverter::exit(const Return* node, RV& rv) {
   if (node->value() != nullptr) {
     Expr* retExpr = ret->get(1)->remove();
     CallExpr* move = nullptr;
-    if (cur.fnSymbol->returnsRefOrConstRef()) {
+    auto retQt = rv.byAst(node->value()).type();
+    auto temp = storeInTempIfNeeded(retExpr, retQt);
+    if (cur.fnSymbol->returnsRefOrConstRef() && !retQt.isRef()) {
       move = new CallExpr(PRIM_MOVE,
-                          cur.retVar, new CallExpr(PRIM_ADDR_OF, retExpr));
+                          cur.retVar, new CallExpr(PRIM_ADDR_OF, temp));
     } else {
-      move = new CallExpr(PRIM_MOVE, cur.retVar, retExpr);
+      move = new CallExpr(PRIM_MOVE, cur.retVar, temp);
     }
     insertStmt(move);
   }
