@@ -5467,6 +5467,7 @@ resolutionResultFromMostSpecificCandidate(ResolutionContext* rc,
           PromotionIteratorType::get(rc->context(),
                                      instantiationPoiScope,
                                      msc.fn(),
+                                     exprType,
                                      msc.promotedFormals()));
     }
 
@@ -5600,7 +5601,7 @@ resolveFnCall(ResolutionContext* rc,
     if (!candidate.promotedFormals().empty()) {
       // this is actually a promotion; construct a promotion type instead.
       yt = rt;
-      rt = QualifiedType(rt.kind(), PromotionIteratorType::get(context, instantiationPoiScope, candidate.fn(), candidate.promotedFormals()));
+      rt = QualifiedType(rt.kind(), PromotionIteratorType::get(context, instantiationPoiScope, candidate.fn(), rt, candidate.promotedFormals()));
     }
 
     if (retType && retType->type() != rt.type()) {
@@ -7139,7 +7140,7 @@ yieldTypeForIterator(ResolutionContext* rc,
   } else {
     CHPL_ASSERT(iter->isPromotionIteratorType());
     auto promoIter = iter->toPromotionIteratorType();
-    ret = returnType(rc, promoIter->scalarFn(), promoIter->poiScope());
+    ret = promoIter->yieldType();
   }
 
   return CHPL_RESOLUTION_QUERY_END(ret);
@@ -7351,7 +7352,7 @@ resolveTheseCallForZipperedArguments(ResolutionContext* rc,
     CHPL_ASSERT(iterType->isPromotionIteratorType());
     auto promoIt = iterType->toPromotionIteratorType();
 
-    auto scalarReturn = returnType(rc, promoIt->scalarFn(), promoIt->poiScope());
+    auto scalarReturn = promoIt->yieldType();
     auto cr = CallResolutionResult(QualifiedType(QualifiedType::CONST_VAR, promoIt),
                                    scalarReturn);
     return TheseResolutionResult::success(cr, std::move(iterandType));
@@ -7495,10 +7496,7 @@ static const types::QualifiedType& getPromotionTypeQuery(Context* context, types
     ResolutionContext rc(context);
     ret = yieldType(&rc, fnIt->iteratorFn(), fnIt->poiScope());
   } else if (auto promoIt = qt.type()->toPromotionIteratorType()) {
-    // TODO, the scalarFn could be a nested function, in which case a default
-    //       resolution context is not sufficient.
-    ResolutionContext rc(context);
-    ret = returnType(&rc, promoIt->scalarFn(), promoIt->poiScope());
+    ret = promoIt->yieldType();
   } else {
     std::vector<CallInfoActual> actuals;
     actuals.push_back(CallInfoActual(qt, USTR("this")));
