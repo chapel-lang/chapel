@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Test default configuration on examples only, on linux64, with llvm 19
+# Test default configuration on examples only, on linux64, with llvm 20
 
 UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $UTIL_CRON_DIR/common.bash
