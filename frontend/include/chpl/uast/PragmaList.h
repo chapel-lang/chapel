@@ -223,6 +223,8 @@ PRAGMA(DONT_DISABLE_REMOTE_VALUE_FORWARDING, ypr,
        "dont disable remote value forwarding",
        ncm)
 PRAGMA(DOWN_END_COUNT_FN, ypr, "down end count fn", ncm)
+PRAGMA(EDITION, npr, "edition",
+       "applied to breaking changes to indicate which edition they are associated with")
 PRAGMA(END_COUNT, ypr, "end count", ncm)
 PRAGMA(ERRONEOUS_COPY, ypr, "erroneous copy", ncm)
 PRAGMA(ERROR_MODE_FATAL, ypr, "error mode fatal", ncm)
