@@ -43,6 +43,7 @@
 
 #include "llvm/Config/llvm-config.h"
 #include "llvm/Support/TargetSelect.h"
+#include "llvm/Support/Casting.h"
 
 #if LLVM_VERSION_MAJOR >= 16
 #include "llvm/TargetParser/Host.h"
@@ -460,9 +461,31 @@ precompiledHeaderTypeForSymbolQuery(Context* context,
                                     clang::ASTReader::ARR_None);
     if (readResult == clang::ASTReader::Success) {
       clang::IdentifierInfo* iid = astReader->get(name.c_str());
-      // TODO
-      (void)iid;
-      result = types::QualifiedType();
+      if (iid->hasMacroDefinition()) {
+        // TODO: implement
+        result = types::QualifiedType();
+      } else {
+        clang::DeclarationName declName(iid);
+        if (declName.isIdentifier()) {
+          if (Clang->hasASTContext()) {
+            auto tuDecl = Clang->getASTContext().getTranslationUnitDecl();
+            auto lookupResult = tuDecl->lookup(declName);
+            if (lookupResult.isSingleResult()) {
+              auto decl = lookupResult.front();
+              if (llvm::isa<clang::FunctionDecl>(decl)) {
+                result = types::QualifiedType(types::QualifiedType::FUNCTION,
+                                              nullptr);
+              } else if (auto varDecl = llvm::dyn_cast<clang::VarDecl>(decl)) {
+                if (auto typePtr = varDecl->getType().getTypePtrOrNull()) {
+                  (void)typePtr;
+                  debuggerBreakHere();
+                  result = types::QualifiedType();
+                }
+              }
+            }
+          }
+        }
+      }
     }
 
     delete Clang;

@@ -50,7 +50,6 @@ const types::QualifiedType externBlockTypeForSymbol(Context* context,
     const owned<TemporaryFileResult>& tfs =
         createClangPrecompiledHeader(context, externBlockId);
     const TemporaryFileResult* ptr = tfs.get();
-    debuggerBreakHere();
     if (ptr != nullptr) {
       result = precompiledHeaderTypeForSymbol(context, ptr, name);
     }
