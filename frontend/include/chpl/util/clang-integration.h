@@ -21,6 +21,7 @@
 #define CHPL_UTIL_CLANG_INTEGRATION_H
 
 #include "chpl/framework/ID.h"
+#include "chpl/types/QualifiedType.h"
 #include "chpl/util/memory.h"
 
 #include "llvm/ADT/ArrayRef.h"
@@ -76,6 +77,14 @@ createClangPrecompiledHeader(Context* context, ID externBlockId);
     or declaration name and 'false' otherwise.
  */
 bool precompiledHeaderContainsName(Context* context,
+                                   const TemporaryFileResult* pch,
+                                   UniqueString name);
+
+/** Given a TemporaryFileResult created from createClangPrecompiledHeader,
+    return the Chapel equivalent of the type of the symbol with the passed name
+    if present, or an empty QualifiedType otherwise.
+ */
+const types::QualifiedType& precompiledHeaderTypeForSymbol(Context* context,
                                    const TemporaryFileResult* pch,
                                    UniqueString name);
 

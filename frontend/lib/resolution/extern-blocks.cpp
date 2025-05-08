@@ -20,6 +20,7 @@
 #include "extern-blocks.h"
 
 #include "chpl/util/clang-integration.h"
+#include "chpl/types/Type.h"
 
 namespace chpl {
 namespace resolution {
@@ -38,6 +39,24 @@ bool externBlockContainsName(Context* context,
   }
 
   return false;
+}
+
+const types::QualifiedType externBlockTypeForSymbol(Context* context,
+                                    ID externBlockId,
+                                    UniqueString name) {
+  types::QualifiedType result;
+
+  if (externBlockContainsName(context, externBlockId, name)) {
+    const owned<TemporaryFileResult>& tfs =
+        createClangPrecompiledHeader(context, externBlockId);
+    const TemporaryFileResult* ptr = tfs.get();
+    debuggerBreakHere();
+    if (ptr != nullptr) {
+      result = precompiledHeaderTypeForSymbol(context, ptr, name);
+    }
+  }
+
+  return result;
 }
 
 

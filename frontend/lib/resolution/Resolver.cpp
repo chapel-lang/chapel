@@ -34,6 +34,7 @@
 #include "InitResolver.h"
 #include "VarScopeVisitor.h"
 #include "resolution/BranchSensitiveVisitor.h"
+#include "resolution/extern-blocks.h"
 
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/SmallVector.h"
@@ -3475,12 +3476,13 @@ QualifiedType Resolver::typeForId(const ID& id) {
   if (id.isFabricatedId()) {
     switch (id.fabricatedIdKind()) {
       case ID::ExternBlockElement: {
-        // TODO: resolve types for extern block
-        // (will need the Identifier name for that)
-        auto unknownType = UnknownType::get(context);
-        return QualifiedType(QualifiedType::UNKNOWN, unknownType);
+        auto name = id.symbolName(context);
+        auto externBlockId = id.parentSymbolId(context);
+        return externBlockTypeForSymbol(context, externBlockId, name);
+        break;
       }
       case ID::Generated: break;
+      // no default case to guarantee we handle all kinds
     }
   }
 

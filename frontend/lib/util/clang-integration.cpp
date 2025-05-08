@@ -433,10 +433,27 @@ precompiledHeaderContainsNameQuery(Context* context,
   return QUERY_END(result);
 }
 
+static const types::QualifiedType&
+precompiledHeaderTypeForSymbolQuery(Context* context,
+                                      const TemporaryFileResult* pch,
+                                      UniqueString name) {
+  QUERY_BEGIN(precompiledHeaderTypeForSymbolQuery, context, pch, name);
+
+  types::QualifiedType result;
+
+  return QUERY_END(result);
+}
+
 bool precompiledHeaderContainsName(Context* context,
                                    const TemporaryFileResult* pch,
                                    UniqueString name) {
   return precompiledHeaderContainsNameQuery(context, pch, name);
+}
+
+const types::QualifiedType& precompiledHeaderTypeForSymbol(Context* context,
+                                   const TemporaryFileResult* pch,
+                                   UniqueString name) {
+  return precompiledHeaderTypeForSymbolQuery(context, pch, name);
 }
 
 
