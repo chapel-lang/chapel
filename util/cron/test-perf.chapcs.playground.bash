@@ -28,10 +28,10 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-GITHUB_USER=jabraham17
-GITHUB_BRANCH=llvm-20
-SHORT_NAME=llvm20
-START_DATE=04/30/25
+GITHUB_USER=chapel-lang
+GITHUB_BRANCH=main
+SHORT_NAME=main
+START_DATE=05/09/25
 
 source /hpcdc/project/chapel/setup_llvm.bash 20
 
