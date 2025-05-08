@@ -171,6 +171,10 @@ smp                  fast
 other                everything
 ===================  ====================
 
+
+.. index::
+   single: colocale
+   single: co-locale
 .. _readme-colocale:
 
 Co-locales
