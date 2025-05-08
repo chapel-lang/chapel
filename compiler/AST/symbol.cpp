@@ -534,8 +534,7 @@ void Symbol::maybeGenerateDeprecationWarning(Expr* context) {
 
 const char* Symbol::getFirstEdition() const {
   if (firstEdition == "") {
-    // TODO: better return value
-    return "";
+    return editions[0].c_str();
   } else {
     return firstEdition.c_str();
   }
