@@ -1954,6 +1954,71 @@ module ChapelArray {
     }
   }
 
+  pragma "reference to const when const this"
+  pragma "fn returns aliasing array"
+  proc _array.reshape(ranges: range(?)...) {
+    if ranges.size == 1 && ranges(0).bounds == boundKind.low {
+      return this.reshape({ranges(0).low..#this.size});
+    } else {
+      return this.reshape({(...ranges)});
+    }
+  }
+
+  pragma "reference to const when const this"
+  pragma "fn returns aliasing array"
+  proc _array.reshape(dom: domain(?)) {
+    if Reflection.canResolveMethod(_value, "doiReshape", dom) {
+      if boundsChecking then
+        validateReshape();
+      return _value.doiReshape(dom);
+    } else {
+      compilerError("This array type does not support the '.reshape()'  method");
+    }
+
+    proc validateReshape() {
+      if dom.size != this.size then
+        halt("Size mismatch: Can't rehape a ", this.size,
+             "-element array into a ", dom.size, "-element array");
+
+      if this.size > 0 && dom.size > 0 {
+        var arrDim, domDim = 0;
+        var arrSize, domSize = 0;
+        var arrCatchup, domCatchup, error = false;
+        do {
+          if arrSize == 0 {
+            arrSize = this.dim(arrDim).size;
+          }
+          if domSize == 0 {
+            domSize = dom.dim(domDim).size;
+          }
+          if (arrSize == domSize) {
+            arrDim += 1;
+            domDim += 1;
+            arrSize = 0;
+            domSize = 0;
+            arrCatchup = false;
+            domCatchup = false;
+          } else if (arrSize < domSize) {
+            if domCatchup then
+              error = true;
+            arrCatchup = true;
+            arrDim += 1;
+            arrSize *= this.dim(arrDim).size;
+          } else {
+            if arrCatchup then
+              error = true;
+            domCatchup = true;
+            domDim += 1;
+            domSize *= dom.dim(domDim).size;
+          }
+        } while (arrDim < this.rank && domDim < dom.rank);
+
+        if error then
+          warning(this.dims(), " doesn't preserve dimensions as ", dom.dims());
+      }
+    }
+  }
+
   @unstable("casting an array to an array type is unstable due to being a new feature — please share any feedback you might have")
   operator :(arg: [], type t: []) {
     var res: t;
