@@ -27,7 +27,7 @@ export GASNET_PHYSMEM_MAX="0.90"
 # When the multi-local playground is not used, set `SKIP_ML_PLAYGROUND=1
 #
 
-SKIP_ML_PLAYGROUND=0
+SKIP_ML_PLAYGROUND=1
 if [[ "$SKIP_ML_PLAYGROUND" == "1" ]]; then
   log_info "Skipping testing of the multi-local playground"
   exit
@@ -35,8 +35,8 @@ fi
 
 GITHUB_USER=chapel-lang
 GITHUB_BRANCH=main
-SHORT_NAME=libmvec
-START_DATE=04/16/25
+SHORT_NAME=main
+START_DATE=05/09/25
 
 set -e
 checkout_branch $GITHUB_USER $GITHUB_BRANCH
