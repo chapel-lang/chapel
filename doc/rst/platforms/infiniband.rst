@@ -282,6 +282,10 @@ Setting ``GASNET_PHYSMEM_MAX`` to a small value can limit
 communication performance so it is highly recommended to use the value
 GASNet suggests.
 
+.. index::
+   single: colocale
+   single: co-locale
+
 ----------
 Co-locales
 ----------
