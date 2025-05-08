@@ -304,7 +304,12 @@ extern const char* compileCommandFilename;
 extern const char* compileCommand;
 extern char compileVersion[64];
 
+// This is where the list of all supported editions goes.  Be sure to update
+// setEdition when this changes!
+extern std::string editions[2];
 extern std::string fEdition;
+
+bool isValidEdition(std::string maybeEdition);
 
 // This flag is useful for testing
 // the compiler but breaks the language!

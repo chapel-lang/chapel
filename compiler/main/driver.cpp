@@ -354,6 +354,7 @@ const char* compileCommandFilename = "compileCommand.tmp";
 const char* compileCommand = NULL;
 char compileVersion[64];
 
+std::string editions[2] = {"2.0", "pre-edition"};
 std::string fEdition = "2.0";
 
 static bool fPrintCopyright = false;
@@ -817,15 +818,31 @@ static int runDriverMakeBinaryPhase(int argc, char* argv[]) {
                             "invoking driver makeBinary phase");
 }
 
+bool isValidEdition(std::string maybeEdition) {
+  bool result = false;
+
+  // Keep end up to date with size of editions array
+  for (int i = 0; i < 2; i++) {
+    if (maybeEdition == editions[i]) {
+      result = true;
+    }
+  }
+
+  return result;
+}
+
 static void setEdition(const ArgumentDescription* desc, const char* arg) {
   std::string val = std::string(arg);
 
   // TODO: make this a helper check?  Can this be an enum?
-  if (val != "2.0" && val != "pre-edition") {
+  if (!isValidEdition(val)) {
     printf("--edition only accepts a limited set of values.  Current options");
     printf(" are:\n");
-    printf("2.0\n");
-    printf("pre-edition\n");
+
+    // Iterate over all the edition names to list them
+    for (int i = 0; i < 2; i++) {
+      printf("%s\n", editions[i].c_str());
+    }
     clean_exit(1);
   } else {
     fEdition = val;

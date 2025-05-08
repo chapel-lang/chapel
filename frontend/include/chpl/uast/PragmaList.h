@@ -223,8 +223,6 @@ PRAGMA(DONT_DISABLE_REMOTE_VALUE_FORWARDING, ypr,
        "dont disable remote value forwarding",
        ncm)
 PRAGMA(DOWN_END_COUNT_FN, ypr, "down end count fn", ncm)
-PRAGMA(EDITION, npr, "edition",
-       "applied to breaking changes to indicate which edition they are associated with")
 PRAGMA(END_COUNT, ypr, "end count", ncm)
 PRAGMA(ERRONEOUS_COPY, ypr, "erroneous copy", ncm)
 PRAGMA(ERROR_MODE_FATAL, ypr, "error mode fatal", ncm)
@@ -303,6 +301,8 @@ PRAGMA(NO_GPU_CODEGEN, ypr, "no gpu codegen", "this function is GPU-ineligible")
 PRAGMA(NOT_CALLED_FROM_GPU, ypr, "not called from gpu", "runtime error if this function is called from a gpu")
 PRAGMA(ASSERT_ON_GPU, ypr, "assert on gpu", "triggers runtime assertion if not running on device")
 
+PRAGMA(HAS_EDITION, npr, "has edition",
+       "applied to breaking changes to indicate which edition they are associated with")
 PRAGMA(HAS_POSTINIT, ypr, "has postinit", "type that has a postinit method")
 PRAGMA(HAS_RUNTIME_TYPE, ypr, "has runtime type", "type that has an associated runtime type")
 PRAGMA(IGNORE_RUNTIME_TYPE, ypr, "ignore runtime type", "use the static type only in the return value")
