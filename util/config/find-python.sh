@@ -19,7 +19,7 @@ if [ -n "$CHPL_PYTHON" ]; then
   exit 1
 fi
 
-for cmd in python3 python python2; do
+for cmd in python3 python; do
   check_python $cmd
 done
 
