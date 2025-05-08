@@ -687,6 +687,7 @@ Access accessForQualifier(uast::Qualifier q);
 const MostSpecificCandidate*
 determineBestReturnIntentOverload(const MostSpecificCandidates& candidates,
                                   Access access,
+                                  types::QualifiedType::Kind &outReturnKind,
                                   bool& outAmbiguity);
 
 /**

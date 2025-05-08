@@ -7608,9 +7608,12 @@ Access accessForQualifier(Qualifier q) {
   return VALUE; // including IN at least
 }
 
+// leaves outReturnKind unchanged if no return intent overload selection
+// took place.
 const MostSpecificCandidate*
 determineBestReturnIntentOverload(const MostSpecificCandidates& candidates,
                                   Access access,
+                                  QualifiedType::Kind& outReturnKind,
                                   bool& outAmbiguity) {
   outAmbiguity = false;
   const MostSpecificCandidate* best = nullptr;
@@ -7637,6 +7640,12 @@ determineBestReturnIntentOverload(const MostSpecificCandidates& candidates,
       else if (bestConstRef) best = &bestConstRef;
       else best = &bestRef;
     }
+
+    // set the determined return intent.
+    if (best == &bestRef) outReturnKind = QualifiedType::REF;
+    else if (best == &bestConstRef) outReturnKind = QualifiedType::CONST_REF;
+    else if (best == &bestValue) outReturnKind = QualifiedType::CONST_VAR;
+
   } else if (candidates.numBest() == 1) {
     best = &candidates.only();
   }
