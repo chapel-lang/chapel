@@ -357,6 +357,57 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
   return QUERY_END(result);
 }
 
+#ifdef HAVE_LLVM
+static clang::CompilerInstance* getCompilerInstanceForReadingPch(
+    Context* context) {
+  std::vector<std::string> clFlags = clangFlags(context);
+
+  std::string dummyFile = context->chplHome() + "/runtime/etc/rtmain.c";
+  clFlags.push_back(dummyFile);
+
+  const std::vector<std::string>& cc1args =
+    getCC1Arguments(context, clFlags, /* forGpuCodegen */ false);
+
+  std::vector<const char*> cc1argsCstrs;
+  cc1argsCstrs.push_back("clang-cc1");
+  for (const auto& arg : cc1args) {
+    if (arg != dummyFile) {
+      cc1argsCstrs.push_back(arg.c_str());
+    }
+  }
+
+  clang::CompilerInstance* Clang = new clang::CompilerInstance();
+  auto diagOptions = wrapCreateAndPopulateDiagOpts(cc1argsCstrs);
+  auto diagClient = new clang::TextDiagnosticPrinter(llvm::errs(),
+                                                     &*diagOptions);
+#if LLVM_VERSION_MAJOR >= 20
+  auto clangDiags =
+    clang::CompilerInstance::createDiagnostics(*llvm::vfs::getRealFileSystem(),
+                                               diagOptions.release(),
+                                               diagClient,
+                                               /* owned */ true);
+#else
+  auto clangDiags =
+    clang::CompilerInstance::createDiagnostics(diagOptions.release(),
+                                               diagClient,
+                                               /* owned */ true);
+#endif
+  Clang->setDiagnostics(&*clangDiags);
+
+  bool success =
+    clang::CompilerInvocation::CreateFromArgs(Clang->getInvocation(),
+                                              cc1argsCstrs, *clangDiags);
+  CHPL_ASSERT(success);
+
+  Clang->setTarget(clang::TargetInfo::CreateTargetInfo(Clang->getDiagnostics(), Clang->getInvocation().TargetOpts));
+  Clang->createFileManager();
+  Clang->createSourceManager(Clang->getFileManager());
+  Clang->createPreprocessor(clang::TU_Complete);
+
+  return Clang;
+}
+#endif
+
 static const bool&
 precompiledHeaderContainsNameQuery(Context* context,
                                    const TemporaryFileResult* pch,
@@ -367,62 +418,18 @@ precompiledHeaderContainsNameQuery(Context* context,
 
 #ifdef HAVE_LLVM
 
-  if (pch != nullptr) {
-    std::vector<std::string> clFlags = clangFlags(context);
-
-    std::string dummyFile = context->chplHome() + "/runtime/etc/rtmain.c";
-    clFlags.push_back(dummyFile);
-
-    const std::vector<std::string>& cc1args =
-      getCC1Arguments(context, clFlags, /* forGpuCodegen */ false);
-
-    std::vector<const char*> cc1argsCstrs;
-    cc1argsCstrs.push_back("clang-cc1");
-    for (const auto& arg : cc1args) {
-      if (arg != dummyFile) {
-        cc1argsCstrs.push_back(arg.c_str());
-      }
-    }
-
-    clang::CompilerInstance* Clang = new clang::CompilerInstance();
-    auto diagOptions = wrapCreateAndPopulateDiagOpts(cc1argsCstrs);
-    auto diagClient = new clang::TextDiagnosticPrinter(llvm::errs(),
-                                                       &*diagOptions);
-#if LLVM_VERSION_MAJOR >= 20
-    auto clangDiags =
-      clang::CompilerInstance::createDiagnostics(*llvm::vfs::getRealFileSystem(),
-                                                 diagOptions.release(),
-                                                 diagClient,
-                                                 /* owned */ true);
-#else
-    auto clangDiags =
-      clang::CompilerInstance::createDiagnostics(diagOptions.release(),
-                                                 diagClient,
-                                                 /* owned */ true);
-#endif
-    Clang->setDiagnostics(&*clangDiags);
-
-    bool success =
-      clang::CompilerInvocation::CreateFromArgs(Clang->getInvocation(),
-                                                cc1argsCstrs, *clangDiags);
-    CHPL_ASSERT(success);
-
-    Clang->setTarget(clang::TargetInfo::CreateTargetInfo(Clang->getDiagnostics(), Clang->getInvocation().TargetOpts));
-    Clang->createFileManager();
-    Clang->createSourceManager(Clang->getFileManager());
-    Clang->createPreprocessor(clang::TU_Complete);
-
+  if (pch) {
+    clang::CompilerInstance* Clang = getCompilerInstanceForReadingPch(context);
     Clang->createASTReader();
+    clang::ASTReader* astReader = Clang->getASTReader().get();
+    CHPL_ASSERT(astReader);
 
-    clang::ASTReader* astr = Clang->getASTReader().get();
-    CHPL_ASSERT(astr);
-
-    auto readResult = astr->ReadAST(pch->path(),
+    auto readResult = astReader->ReadAST(pch->path(),
                                     clang::serialization::MK_PCH,
                                     clang::SourceLocation(),
                                     clang::ASTReader::ARR_None);
     if (readResult == clang::ASTReader::Success) {
-      clang::IdentifierInfo* iid = astr->get(name.c_str());
+      clang::IdentifierInfo* iid = astReader->get(name.c_str());
       result = (iid != nullptr);
     }
 
@@ -440,6 +447,26 @@ precompiledHeaderTypeForSymbolQuery(Context* context,
   QUERY_BEGIN(precompiledHeaderTypeForSymbolQuery, context, pch, name);
 
   types::QualifiedType result;
+
+  if (pch) {
+    clang::CompilerInstance* Clang = getCompilerInstanceForReadingPch(context);
+    Clang->createASTReader();
+    clang::ASTReader* astReader = Clang->getASTReader().get();
+    CHPL_ASSERT(astReader);
+
+    auto readResult = astReader->ReadAST(pch->path(),
+                                    clang::serialization::MK_PCH,
+                                    clang::SourceLocation(),
+                                    clang::ASTReader::ARR_None);
+    if (readResult == clang::ASTReader::Success) {
+      clang::IdentifierInfo* iid = astReader->get(name.c_str());
+      // TODO
+      (void)iid;
+      result = types::QualifiedType();
+    }
+
+    delete Clang;
+  }
 
   return QUERY_END(result);
 }
