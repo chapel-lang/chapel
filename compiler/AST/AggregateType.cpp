@@ -3240,6 +3240,32 @@ Symbol* AggregateType::getSubstitution(const char* name) const {
   return retval;
 }
 
+void AggregateType::saveGenericSubstitutions() {
+  if (this->substitutions.n > 0) {
+    // Generate substitutionsPostResolve which should not be generated yet
+    INT_ASSERT(this->substitutionsPostResolve.size() == 0);
+    for_fields(field, this) {
+      if (Symbol* value = this->getSubstitutionWithName(field->name)) {
+        NameAndSymbol ns;
+        ns.name = field->name;
+        ns.value = value;
+        ns.isParam = field->isParameter();
+        ns.isType = field->hasFlag(FLAG_TYPE_VARIABLE);
+        this->substitutionsPostResolve.push_back(ns);
+      }
+    }
+    // Clear substitutions since keys might refer to deleted AST nodes
+    this->substitutions.clear();
+  }
+
+  if (this->instantiatedFrom != NULL) {
+    // Clear instantiatedFrom since it would refer to a deleted AST node
+    this->instantiatedFrom = NULL;
+
+    symbol->addFlag(FLAG_INSTANTIATED_GENERIC);
+  }
+}
+
 Type* AggregateType::getDecoratedClass(ClassTypeDecoratorEnum d) {
 
   int packedDecorator = -1;

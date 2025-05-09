@@ -57,6 +57,7 @@ void assertion(bool expr, const char* filename, const char* func,
     fprintf(stderr, "[%s:%d in %s] Assertion failed: %s\n",
             filename, lineno, func, exprText);
     if (assertionsAreFatal()) {
+      debuggerBreakHere();
       std::abort();
     }
   }

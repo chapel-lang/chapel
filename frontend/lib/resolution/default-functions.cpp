@@ -438,7 +438,7 @@ const BuilderResult& buildInitializer(Context* context, ID typeID) {
                                /*receiver=*/std::move(thisFormal),
                                Function::ReturnIntent::DEFAULT_RETURN_INTENT,
                                // throws, primaryMethod, parenless
-                               false, false, false,
+                               false, true, false,
                                std::move(formals),
                                // returnType, where, lifetime, body
                                {}, {}, {}, std::move(body));
@@ -844,7 +844,7 @@ const BuilderResult& buildDeinit(Context* context, ID typeID) {
                                /*receiver=*/std::move(thisFormal),
                                Function::ReturnIntent::DEFAULT_RETURN_INTENT,
                                // throws, primaryMethod, parenless
-                               false, false, false,
+                               false, true, false,
                                std::move(formals),
                                // returnType, where, lifetime, body
                                {}, {}, {}, std::move(body));
@@ -898,7 +898,7 @@ const BuilderResult& buildDeSerialize(Context* context, ID typeID, bool isSerial
   auto thisType = Identifier::build(builder, dummyLoc, typeID.symbolName(context));
   auto thisFormal = Formal::build(builder, dummyLoc, nullptr,
                                   USTR("this"), Formal::DEFAULT_INTENT,
-                                  std::move(thisType), nullptr);
+                                  nullptr, nullptr);
 
   auto writerArg = Formal::build(builder, dummyLoc, nullptr, UniqueString::get(context, "writer"),
                                  Formal::DEFAULT_INTENT, {}, nullptr);
@@ -922,7 +922,7 @@ const BuilderResult& buildDeSerialize(Context* context, ID typeID, bool isSerial
                                /*receiver=*/std::move(thisFormal),
                                Function::ReturnIntent::DEFAULT_RETURN_INTENT,
                                // throws, primaryMethod, parenless
-                               true, false, false,
+                               true, true, false,
                                std::move(formals),
                                // returnType, where, lifetime, body
                                {}, {}, {}, std::move(body));

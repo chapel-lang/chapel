@@ -601,3 +601,27 @@ ModTag getModuleTag(Context* context, UniqueString path) {
   }
   return modTag;
 }
+
+// Note: used in 'cleanup' pass as well
+void flattenPrimaryMethod(TypeSymbol* ts, FnSymbol* fn) {
+  Expr*    insertPoint = ts->defPoint;
+  DefExpr* def         = fn->defPoint;
+
+  while (isTypeSymbol(insertPoint->parentSymbol)) {
+    insertPoint = insertPoint->parentSymbol->defPoint;
+  }
+
+  insertPoint->insertBefore(def->remove());
+
+  if (fn->userString != NULL && fn->name != ts->name) {
+    if (strncmp(fn->userString, "ref ", 4) == 0) {
+      // fn->userString of "ref foo()"
+      // Move "ref " before the type name so we end up with "ref Type.foo()"
+      // instead of "Type.ref foo()"
+      fn->userString = astr("ref ", ts->name, ".", fn->userString + 4);
+
+    } else {
+      fn->userString = astr(ts->name, ".", fn->userString);
+    }
+  }
+}
