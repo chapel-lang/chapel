@@ -101,6 +101,8 @@ class ArrayType final : public CompositeType {
 
   const RuntimeType* runtimeType(Context* context) const;
 
+  bool isAliasingArray(Context* context) const;
+
   ~ArrayType() = default;
 
   virtual void stringify(std::ostream& ss,
