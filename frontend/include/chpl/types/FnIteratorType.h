@@ -37,15 +37,20 @@ class FnIteratorType final : public IteratorType {
    */
   const resolution::TypedFnSignature* iteratorFn_;
 
+  QualifiedType yieldType_;
+
   FnIteratorType(const resolution::PoiScope* poiScope,
-                 const resolution::TypedFnSignature* iteratorFn)
+                 const resolution::TypedFnSignature* iteratorFn,
+                 QualifiedType yieldType)
     : IteratorType(typetags::FnIteratorType, poiScope),
-      iteratorFn_(iteratorFn) {}
+      iteratorFn_(iteratorFn),
+      yieldType_(std::move(yieldType)) {}
 
   bool contentsMatchInner(const Type* other) const override {
     auto rhs = (FnIteratorType*) other;
     return iteratorTypeContentsMatchInner(rhs) &&
-           this->iteratorFn_ == rhs->iteratorFn_;
+           this->iteratorFn_ == rhs->iteratorFn_ &&
+           this->yieldType_ == rhs->yieldType_;
   }
 
   void markUniqueStringsInner(Context* context) const override;
@@ -53,20 +58,26 @@ class FnIteratorType final : public IteratorType {
   static const owned <FnIteratorType>&
   getFnIteratorType(Context* context,
                     const resolution::PoiScope* poiScope,
-                    const resolution::TypedFnSignature* iteratorFn);
+                    const resolution::TypedFnSignature* iteratorFn,
+                    QualifiedType yieldType);
 
  public:
   static const FnIteratorType* get(Context* context,
                                    const resolution::PoiScope* poiScope,
-                                   const resolution::TypedFnSignature* iteratorFn);
+                                   const resolution::TypedFnSignature* iteratorFn,
+                                   QualifiedType yieldType);
 
   virtual const Type* substitute(Context* context,
                                  const PlaceholderMap& subs) const override {
-    return get(context, poiScope_, iteratorFn_->substitute(context, subs));
+    return get(context, poiScope_, iteratorFn_->substitute(context, subs), yieldType_.substitute(context, subs));
   }
 
   const resolution::TypedFnSignature* iteratorFn() const {
     return iteratorFn_;
+  }
+
+  const QualifiedType& yieldType() const {
+    return yieldType_;
   }
 };
 

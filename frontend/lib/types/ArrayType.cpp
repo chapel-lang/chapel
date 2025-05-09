@@ -39,6 +39,34 @@ const RuntimeType* ArrayType::runtimeType(Context* context) const {
   return resolution::getRuntimeType(context, this);
 }
 
+static bool const& isAliasingArrayQuery(Context* context, const ArrayType* at) {
+  QUERY_BEGIN(isAliasingArrayQuery, context, at);
+  bool res = false;
+  // assume that there's only one ID that doesn't have a blank path,
+  // and that this ID is the instance field.
+  for (auto& sub : at->substitutions()) {
+    if (sub.first.symbolPath().isEmpty()) continue;
+    auto instanceQt = sub.second;
+
+    if (instanceQt.isUnknownOrErroneous()) break;
+
+    if (auto ct = instanceQt.type()->getCompositeType()) {
+      auto ast = parsing::idToAst(context, ct->id());
+      if (auto ag = ast->attributeGroup()) {
+        if (ag->hasPragma(uast::pragmatags::PRAGMA_ALIASING_ARRAY)) {
+          res = true;
+          break;
+        }
+      }
+    }
+  }
+
+  return QUERY_END(res);
+}
+
+bool ArrayType::isAliasingArray(Context* context) const {
+  return isAliasingArrayQuery(context, this);
+}
 
 void ArrayType::stringify(std::ostream& ss,
                            chpl::StringifyKind stringKind) const {
