@@ -742,6 +742,16 @@ struct TConverter final : UastConverter {
   // does not matter.
   #define TC_PLACEHOLDER(tc__) (tc__->placeholder(__FUNCTION__, __LINE__))
 
+  Expr* elided(const char* function, int line, const AstNode* node) {
+    if constexpr(trace) {
+      DebugPrinter(function, line)(this, "Eliding call at %s!", node->id().str().c_str());
+    }
+
+    return new CallExpr(PRIM_NOOP);
+  }
+
+  #define TC_ELIDED(tc__, node) (tc__->elided(__FUNCTION__, __LINE__, node))
+
   // Helper that constructs AST to produce the default value for a type.
   //
   // The argument 'pin' is an uAST node used to ground any generated calls
@@ -3905,6 +3915,7 @@ Expr* TConverter::convertIntrinsicCastOrNull(
   if (qt2.kind() != types::QualifiedType::TYPE) return TC_PLACEHOLDER(this);
 
   if (qt1.type() == qt2.type()) {
+    // TODO: I believe we actually have to insert a copy here
     TC_UNIMPL("Eliding cast to same type!");
     return TC_PLACEHOLDER(this);
   }
@@ -4082,6 +4093,12 @@ Expr* TConverter::convertNamedCallOrNull(const Call* node, RV& rv) {
   auto ci = resolution::CallInfo::create(context, node, rv.byPostorder(),
                                          raiseErrors,
                                          &actualAsts);
+
+  // No need to resolve assignment betwen types
+  if (ci.name() == USTR("=") &&
+      (ci.actual(0).type().isType() || ci.actual(0).type().isParam())) {
+    return TC_ELIDED(this, node);
+  }
 
   if (noCandidateForCall) {
     // The call may be to an intrinsic handled entirely by the compiler.
