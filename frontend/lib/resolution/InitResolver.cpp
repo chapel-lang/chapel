@@ -92,7 +92,7 @@ bool InitResolver::setupFromType(const Type* type) {
   }
 
   auto ct = type->getCompositeType();
-  auto& rf = fieldsForTypeDecl(initResolver_.rc, ct, DefaultsPolicy::USE_DEFAULTS);
+  auto& rf = fieldsForTypeDecl(initResolver_.rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
 
   // If any of the newly-set fields are type or params, setting them
   // effectively means the receiver is a different type.
@@ -158,15 +158,7 @@ void InitResolver::doSetupInitialState(void) {
   phase_ = isCallToSuperInitRequired() ? PHASE_NEED_SUPER_INIT
                                        : PHASE_NEED_COMPLETE;
 
-  // when initializing, don't insert substitutions into the fields. The user
-  // ought to explicitly set fields that need instantiations, unless they
-  // have defaults, but we'll figure those out later.
   const Type* setupFrom = initialRecvType_;
-  if (auto initialCt = initialRecvType_->toCompositeType()) {
-    if (auto initialCtInst = initialCt->instantiatedFromCompositeType()) {
-      setupFrom = initialCtInst;
-    }
-  }
   std::ignore = setupFromType(setupFrom);
 }
 

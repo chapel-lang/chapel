@@ -44,7 +44,7 @@ void testHeapBufferArg(const char* formalType, const char* actualType, F&& test)
   std::stringstream ss;
 
   ss << "record rec { type someType; }" << std::endl;
-  ss << "proc f(x: " << formalType << ") {}" << std::endl;
+  ss << "proc f(x: " << formalType << ") { return 0; }" << std::endl;
   ss << "var arg: " << actualType << ";" << std::endl;
   ss << "var x = f(arg);" << std::endl;
 
@@ -239,7 +239,7 @@ static void test11() {
   assert(guard.realizeErrors() == 0);
 }
 
-static void runAllTests() {
+static void runCommonTests() {
   test1();
   test2();
   test3();
@@ -249,22 +249,26 @@ static void runAllTests() {
   test7();
   test8();
   test9();
-  test10();
   test11();
+}
+
+static void runTestsThatRequireStdlib() {
+  test10();
 }
 
 int main() {
   // With stdlib
   {
     context = new Context(getConfigWithHome());
-    runAllTests();
+    runCommonTests();
+    runTestsThatRequireStdlib();
     delete context;
   }
 
   // Without stdlib
   {
     context = new Context();
-    runAllTests();
+    runCommonTests();
     delete context;
   }
 

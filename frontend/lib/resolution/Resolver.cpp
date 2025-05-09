@@ -1703,7 +1703,7 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
     auto fullDeclType = QualifiedType(declKind, declaredType.type());
     auto got = canPass(context, initExprType, fullDeclType);
     if (!got.passes()) {
-      if (initExprType.type()->isUnknownType()) {
+      if (initExprType.isUnknownOrErroneous()) {
         // var x: declType = <unknown or erroneous>
         //
         // if declType is concrete use it, else use unknown.
@@ -1721,6 +1721,13 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
           typePtr = UnknownType::get(context);
         }
 
+      } else if (declaredType.isUnknownOrErroneous()) {
+        // var x: <unknown or erroneous> = expr
+        //
+        // this might've been an init= coercing assignment, so can't use
+        // initial expr type. Instead, use unknown.
+
+        typePtr = UnknownType::get(context);
       } else if (declaredType.type()->isExternType()) {
         auto varDT = QualifiedType(QualifiedType::VAR, declaredType.type());
         // We allow for default-init-then-assign for extern types
@@ -2541,12 +2548,18 @@ void Resolver::adjustTypesOnAssign(const AstNode* lhsAst,
 void
 Resolver::adjustTypesForOutFormals(const CallInfo& ci,
                                    const std::vector<const AstNode*>& asts,
-                                   const MostSpecificCandidates& fns) {
+                                   const CallResolutionResult& crr) {
 
+  const PromotionIteratorType* promotionCtx = nullptr;
+  if (!crr.exprType().isUnknownOrErroneous()) {
+    promotionCtx = crr.exprType().type()->toPromotionIteratorType();
+  }
   std::vector<QualifiedType> actualFormalTypes;
   std::vector<Qualifier> actualIntents;
-  computeActualFormalIntents(context, fns, ci, asts,
-                             actualIntents, actualFormalTypes);
+  std::vector<bool> actualPromoted;
+  computeActualFormalIntents(context, crr.mostSpecific(), ci, asts,
+                             actualIntents, actualFormalTypes, actualPromoted,
+                             promotionCtx);
 
   int actualIdx = 0;
   for (const auto& actual : ci.actuals()) {
@@ -2832,24 +2845,27 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
   if (auto initMsc = c.result.mostSpecific().only()) {
     auto initTfs = initMsc.fn();
 
-    // Set the final output type based on the result of the 'new' call.
-    auto qtInitReceiver = initTfs->formalType(0);
-    auto type = qtInitReceiver.type();
+    // only set type to the receiver if the init call was successful
+    if (!c.result.exprType().isUnknownOrErroneous()) {
+      // Set the final output type based on the result of the 'new' call.
+      auto qtInitReceiver = initTfs->formalType(0);
+      auto type = qtInitReceiver.type();
 
-    // Preserve original management if receiver is a class.
-    if (auto cls = type->toClassType()) {
-      auto newCls = qtNewExpr.type()->toClassType();
-      CHPL_ASSERT(newCls);
-      CHPL_ASSERT(!cls->manager() && cls->decorator().isNonNilable());
-      CHPL_ASSERT(cls->decorator().isBorrowed());
-      CHPL_ASSERT(cls->basicClassType());
-      type = ClassType::get(context, cls->basicClassType(),
-                            newCls->manager(),
-                            newCls->decorator());
+      // Preserve original management if receiver is a class.
+      if (auto cls = type->toClassType()) {
+        auto newCls = qtNewExpr.type()->toClassType();
+        CHPL_ASSERT(newCls);
+        CHPL_ASSERT(!cls->manager() && cls->decorator().isNonNilable());
+        CHPL_ASSERT(cls->decorator().isBorrowed());
+        CHPL_ASSERT(cls->basicClassType());
+        type = ClassType::get(context, cls->basicClassType(),
+            newCls->manager(),
+            newCls->decorator());
+      }
+
+      auto qt = QualifiedType(QualifiedType::VAR, type);
+      re.setType(qt);
     }
-
-    auto qt = QualifiedType(QualifiedType::VAR, type);
-    re.setType(qt);
   }
 
   return true;
@@ -5550,7 +5566,7 @@ void Resolver::handleCallExpr(const uast::Call* call) {
     c.noteResultPrintCandidates(&r);
 
     // handle type inference for variables split-inited by 'out' formals
-    adjustTypesForOutFormals(ci, actualAsts, c.result.mostSpecific());
+    adjustTypesForOutFormals(ci, actualAsts, c.result);
 
     // issue errors for iterator groups where e.g. serial/standalone types mismatch
     issueIteratorDiagnosticsIfNeeded(*this, call, inScopes, c.result);

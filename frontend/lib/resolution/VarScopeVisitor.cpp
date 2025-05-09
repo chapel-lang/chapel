@@ -21,6 +21,7 @@
 
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/ResolvedVisitor.h"
+#include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/resolution-types.h"
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/uast/all-uast.h"
@@ -404,13 +405,34 @@ bool VarScopeVisitor::enter(const FnCall* callAst, RV& rv) {
       actualAsts.insert(actualAsts.begin(), nullptr);
     }
 
+
     // compute a vector indicating which actuals are passed to
     // an 'out' formal in all return intent overloads
+    const PromotionIteratorType* promoCtx = nullptr;
+    if (!rr->type().isUnknownOrErroneous()) {
+      promoCtx = rr->type().type()->toPromotionIteratorType();
+    }
     std::vector<QualifiedType> actualFormalTypes;
     std::vector<Qualifier> actualFormalIntents;
+    std::vector<bool> actualPromoted;
     computeActualFormalIntents(context, candidates, ci, actualAsts,
-                               actualFormalIntents, actualFormalTypes);
+                               actualFormalIntents, actualFormalTypes,
+                               actualPromoted, promoCtx);
 
+    // for a given actual index, returns:
+    // * nullptr if no promotion ocurred
+    // * the scalar type of the given actual was used in promotion
+    // * the actual type itself if it was not
+    // This can be used to signal to handleInFormal() etc. to adjust
+    // their behavior for promotion, and to provide the additional information
+    // of the scalar type.
+    auto getScalarType = [&](int idx) {
+      auto& actualQt = ci.actual(idx).type();
+      return
+        promoCtx == nullptr ? nullptr :
+        actualPromoted[idx] ? &getPromotionType(context, actualQt) :
+        &actualQt;
+    };
     int actualIdx = 0;
     for (auto actual : ci.actuals()) {
       (void) actual; // avoid compilation error about unused variable
@@ -428,11 +450,12 @@ bool VarScopeVisitor::enter(const FnCall* callAst, RV& rv) {
                  !(ci.name() == "init" && actualIdx == 0)) {
         // don't do this for the 'this' argument to 'init', because it
         // is not getting copied.
+
         handleInFormal(callAst, actualAst,
-                       actualFormalTypes[actualIdx], rv);
+                       actualFormalTypes[actualIdx], getScalarType(actualIdx), rv);
       } else if (kind == Qualifier::INOUT) {
         handleInoutFormal(callAst, actualAst,
-                          actualFormalTypes[actualIdx], rv);
+                          actualFormalTypes[actualIdx], getScalarType(actualIdx), rv);
       } else {
         // otherwise, visit the actuals to gather mentions
         actualAst->traverse(rv);
@@ -576,13 +599,17 @@ computeActualFormalIntents(Context* context,
                            const CallInfo& ci,
                            const std::vector<const AstNode*>& actualAsts,
                            std::vector<Qualifier>& actualFormalIntents,
-                           std::vector<QualifiedType>& actualFormalTypes) {
+                           std::vector<QualifiedType>& actualFormalTypes,
+                           std::vector<bool>& actualPromoted,
+                           const types::PromotionIteratorType* promoCtx) {
 
   int nActuals = ci.numActuals();
   actualFormalIntents.clear();
   actualFormalIntents.resize(nActuals);
   actualFormalTypes.clear();
   actualFormalTypes.resize(nActuals);
+  actualPromoted.clear();
+  actualPromoted.resize(nActuals);
 
   int nFns = candidates.numBest();
   if (nFns == 0) {
@@ -598,6 +625,12 @@ computeActualFormalIntents(Context* context,
         const FormalActual* fa = formalActualMap.byActualIdx(actualIdx);
         auto intent  = normalizeFormalIntent(fa->formalType().kind());
         QualifiedType& aft = actualFormalTypes[actualIdx];
+
+        // all actualPromoted are guaranteed to be the same IF all the
+        // formal types are guaranteed to be the same, which they are
+        // using the checks below.
+        actualPromoted[actualIdx] =
+          promoCtx && promoCtx->promotedFormals().count(fa->formal()->id()) > 0;
 
         if (firstCandidate) {
           actualFormalIntents[actualIdx] = intent;

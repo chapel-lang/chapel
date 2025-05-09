@@ -275,8 +275,8 @@ static void test0(void) {
 
       var v1 = new r1();
       var v2 = new r2();
-      var v3 = new c1();
-      var v4 = new c2();
+      var v3 = new unmanaged c1();
+      var v4 = new unmanaged c2();
       var v5 = new u1();
       var v6 = new u2();
       var v7 = foo1;
@@ -469,7 +469,7 @@ static void test2(void) {
       proc C.baz() {}   // Tertiary
       proc r.baz() {}   // Tertiary
 
-      var a = new C();  // Unstable warning for this mention
+      var a = new unmanaged C();  // Unstable warning for this mention
       a.foo();
       a.bar();
       a.baz();
@@ -603,7 +603,7 @@ static void test4(ErrorType expectedError) {
     proc foo(x: C) {}
 
     proc main() {
-      var x = new C();
+      var x = new unmanaged C();
       foo(x);
     }
     )"""";

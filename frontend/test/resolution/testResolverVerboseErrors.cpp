@@ -49,7 +49,7 @@ class Child : Parent {}
 
 proc f(ref x: owned Parent) {}
 
-var x: owned Child;
+var x = new Child();
 f(x);
 )""";
 
@@ -104,7 +104,7 @@ class C {}
 
 proc f(x: owned C) {}
 
-var x: shared C;
+var x = new shared C();
 f(x);
 )""";
 

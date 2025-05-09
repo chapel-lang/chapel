@@ -134,8 +134,8 @@ class ErrorGuard {
 
   /** The guard destructor will assert that no errors have occurred. */
   ~ErrorGuard() {
-    removeSignalHandler();
     assert(!this->realizeErrors());
+    removeSignalHandler();
     std::ignore = ctx_->installErrorHandler(std::move(oldErrorHandler_));
   }
 };
