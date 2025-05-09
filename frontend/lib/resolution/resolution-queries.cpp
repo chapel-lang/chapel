@@ -5596,6 +5596,39 @@ resolveFnCall(ResolutionContext* rc,
       returnTypes(rc, candidate.fn(), instantiationPoiScope);
     rt = yieldAndRet.second;
 
+
+    // handle pragmas like REF_TO_CONST_WHEN_CONST_THIS
+    if (ci.isMethodCall()) {
+      bool adjustConst = false;
+      if (candidate.fn()->untyped()->idIsFunction() && !candidate.fn()->isCompilerGenerated()) {
+        auto fnAst = parsing::idToAst(context, candidate.fn()->id());
+        if (auto ag = fnAst->attributeGroup()) {
+          if (ag->hasPragma(pragmatags::PRAGMA_REF_TO_CONST_WHEN_CONST_THIS)) {
+            adjustConst = true;
+          }
+        }
+      } else if (candidate.fn()->untyped()->idIsField()) {
+        // the return type computation for fields already takes care of making
+        // it ref where necessary, so just adjust constness for refs.
+        //
+        // Don't do this for classes, though: a 'const shared C' can still
+        // have its fields accessed mutably.
+
+        if (ci.methodReceiverType().type() &&
+            ci.methodReceiverType().type()->isClassType()) {
+          // don't adjust
+        } else {
+          adjustConst = rt.isRef();
+        }
+      }
+
+      if (adjustConst) {
+        auto kp = KindProperties::fromKind(rt.kind());
+        kp.setConst(ci.methodReceiverType().isConst());
+        rt = QualifiedType(kp.toKind(), rt.type());
+      }
+    }
+
     QualifiedType yt;
 
     if (!candidate.promotedFormals().empty()) {
