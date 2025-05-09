@@ -4938,13 +4938,23 @@ Expr* TConverter::convertParenlessCallOrNull(const AstNode* node, RV& rv) {
   }
 
   auto calledFn = findOrConvertFunction(rf);
-  auto ret = new CallExpr(calledFn);
+  Expr* ret = nullptr;
 
   if (sig->isMethod()) {
-    TC_UNIMPL("Handle parenless method call!");
-    return TC_PLACEHOLDER(this);
+    if (node->isIdentifier()) {
+      INT_ASSERT(cur.fnSymbol && cur.fnSymbol->isMethod());
+      ret = new CallExpr(calledFn, cur.fnSymbol->_this);
+    } else {
+      auto [recvAst, fieldName] = accessExpressionDetails(node);
+      types::QualifiedType qtRecv;
+      auto recv = recvAst ? convertExpr(recvAst, rv, &qtRecv) : nullptr;
+      ret = new CallExpr(calledFn, recv);
+    }
+  } else {
+    ret = new CallExpr(calledFn);
   }
 
+  ret = storeInTempIfNeeded(ret, re->type());
   return ret;
 }
 
