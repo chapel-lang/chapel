@@ -477,8 +477,8 @@ precompiledHeaderTypeForSymbolQuery(Context* context,
                                               nullptr);
               } else if (auto varDecl = llvm::dyn_cast<clang::VarDecl>(decl)) {
                 if (auto typePtr = varDecl->getType().getTypePtrOrNull()) {
+                  // TODO: implement
                   (void)typePtr;
-                  debuggerBreakHere();
                   result = types::QualifiedType();
                 }
               }
