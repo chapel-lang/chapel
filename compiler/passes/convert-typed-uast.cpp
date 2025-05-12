@@ -918,6 +918,8 @@ struct TConverter final : UastConverter {
                         int fieldIndex, RV& rv,
                         types::QualifiedType* outFieldQt=nullptr);
 
+  Expr* codegenImplicitThis(RV& rv);
+
   // helpers we might want to bring back from convert-uast.cpp
   //Expr* resolvedIdentifier(const Identifier* node);
   //BlockStmt* convertExplicitBlock(AstListIteratorPair<AstNode> stmts,
@@ -3683,8 +3685,7 @@ static Expr* codegenGetFieldImpl(TConverter* tc,
         }
       }
 
-      INT_ASSERT(tc->cur.fnSymbol && tc->cur.fnSymbol->isMethod());
-      recv = new SymExpr(tc->cur.fnSymbol->_this);
+      recv = tc->codegenImplicitThis(rv);
       qtRecv = sig->formalType(0);
 
     } else {
@@ -3759,6 +3760,13 @@ Expr* TConverter::codegenGetField(const AstNode* recvAst,
   return ret;
 }
 
+// Gets its own little helper for now in the event that finding the implicit
+// this becomes more compilcated down the road, e.g., for nested functions
+Expr* TConverter::codegenImplicitThis(RV& rv) {
+  INT_ASSERT(cur.fnSymbol && cur.fnSymbol->isMethod());
+  return new SymExpr(cur.fnSymbol->_this);
+}
+
 // TODO: The frontend should tell us this is happening so that we don't have
 // to pattern-match against this. E.g., generate a method for param indexing.
 Expr* TConverter::convertIntrinsicTupleIndexingOrNull(
@@ -3775,14 +3783,12 @@ Expr* TConverter::convertIntrinsicTupleIndexingOrNull(
 
     if (tt && qt2.param() && qt2.type() && qt2.type()->isIntType()) {
       auto recv = actualAsts[0];
-      bool paramVarArg = false;
       auto idx = qt2.param()->toIntParam()->value();
 
       if (auto recvRe = rv.byAstOrNull(recv)) {
         if (auto id = recvRe->toId()) {
           auto ast = parsing::idToAst(context, id);
           if (ast->isVarArgFormal()) {
-            //paramVarArg = true;
 
             INT_ASSERT(cur.fnSymbol);
             int count = 0;
@@ -3798,13 +3804,11 @@ Expr* TConverter::convertIntrinsicTupleIndexingOrNull(
         }
       }
 
-      if (!paramVarArg) {
-        // Generate a field access (which handles any tuple-specific details).
-        types::QualifiedType qtField;
-        auto fetch = codegenGetField(actualAsts[0], idx, rv, &qtField);
-        auto ret = storeInTempIfNeeded(fetch, qtField);
-        return ret;
-      }
+      // Generate a field access (which handles any tuple-specific details).
+      types::QualifiedType qtField;
+      auto fetch = codegenGetField(actualAsts[0], idx, rv, &qtField);
+      auto ret = storeInTempIfNeeded(fetch, qtField);
+      return ret;
     }
   }
 
@@ -3861,8 +3865,11 @@ Expr* TConverter::convertFieldInitOrNull(
     auto fn = findOrConvertFunction(rf);
     INT_ASSERT(fn);
 
+    // Need to rename the field initialization CI from '=' to 'init=' so that
+    // it does not register as an 'OpCall', which influences the behavior of
+    // the FAMap
     auto initCI = resolution::CallInfo::copyAndRename(ci, USTR("init="));
-    auto fam = FormalActualMap(rf->signature()->untyped(), initCI);
+    auto fam = FormalActualMap(init->untyped(), initCI);
     INT_ASSERT(fam.isValid());
 
     auto call = new CallExpr(fn);
@@ -4942,13 +4949,12 @@ Expr* TConverter::convertParenlessCallOrNull(const AstNode* node, RV& rv) {
 
   if (sig->isMethod()) {
     if (node->isIdentifier()) {
-      INT_ASSERT(cur.fnSymbol && cur.fnSymbol->isMethod());
-      ret = new CallExpr(calledFn, cur.fnSymbol->_this);
+      ret = new CallExpr(calledFn, codegenImplicitThis(rv));
     } else {
       auto [recvAst, fieldName] = accessExpressionDetails(node);
       types::QualifiedType qtRecv;
       auto recv = recvAst ? convertExpr(recvAst, rv, &qtRecv) : nullptr;
-      ret = new CallExpr(calledFn, recv);
+      ret = new CallExpr(calledFn, storeInTempIfNeeded(recv, qtRecv));
     }
   } else {
     ret = new CallExpr(calledFn);
@@ -5095,26 +5101,23 @@ bool TConverter::enter(const Conditional* node, RV& rv) {
     // Temp stores the result of the if expression.
     auto temp = makeNewTemp(rv.byAst(node).type());
 
+    auto makeMove = [this, &rv, &temp](const uast::AstNode* node) {
+      auto expr = convertExpr(node, rv);
+      return new CallExpr(PRIM_MOVE, temp, expr);
+    };
+
     if (auto cond = rv.byAst(node->condition()).type();
         cond.isParam()) {
       auto block = cond.isParamTrue() ? node->thenBlock() : node->elseBlock();
-      auto expr = convertExpr(block->stmt(0), rv);
-      auto move = new CallExpr(PRIM_MOVE, temp, expr);
-      insertStmt(move);
+      insertStmt(makeMove(block->stmt(0)));
     } else {
       types::QualifiedType qtCond;
       auto condExpr = convertExpr(node->condition(), rv, &qtCond);
       auto condTempUse = storeInTempIfNeeded(condExpr, qtCond);
 
       // TODO: Insert conversion if necessary?
-      auto thenExpr = convertExpr(node->thenBlock()->stmt(0), rv);
-      auto thenMove = new CallExpr(PRIM_MOVE, new SymExpr(temp), thenExpr);
-      auto thenBlock = new BlockStmt(thenMove);
-
-      // TODO: Insert conversion if necessary?
-      auto elseExpr = convertExpr(node->elseBlock()->stmt(0), rv);
-      auto elseMove = new CallExpr(PRIM_MOVE, new SymExpr(temp), elseExpr);
-      auto elseBlock = new BlockStmt(elseMove);
+      auto thenBlock = new BlockStmt(makeMove(node->thenBlock()->stmt(0)));
+      auto elseBlock = new BlockStmt(makeMove(node->elseBlock()->stmt(0)));
 
       // After normalize the 'IfExpr' is lowered to a 'CondStmt'.
       auto branch = new CondStmt(condTempUse, thenBlock, elseBlock);
