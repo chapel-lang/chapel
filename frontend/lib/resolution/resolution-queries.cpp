@@ -4707,7 +4707,8 @@ lookupCalledExpr(Context* context,
     receiverType = ci.actual(0).type();
   }
 
-  LookupConfig config = LOOKUP_DECLS | LOOKUP_IMPORT_AND_USE | LOOKUP_PARENTS;
+  LookupConfig config = LOOKUP_DECLS | LOOKUP_IMPORT_AND_USE | LOOKUP_PARENTS |
+                        LOOKUP_EXTERN_BLOCKS;
 
   // For parenless non-method calls, only find the innermost match
   if (ci.isParenless() && !ci.isMethodCall()) {
