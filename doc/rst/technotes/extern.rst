@@ -98,8 +98,8 @@ The Chapel names for C types are:
   c_uchar
   c_short
   c_ushort
-  ssize_t
-  size_t
+  c_ssize_t
+  c_size_t
   c_ptr(T)
   c_ptrConst(T)
   c_array(T,n)
