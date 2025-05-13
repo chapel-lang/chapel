@@ -23,6 +23,7 @@
 #include "chpl/framework/TemporaryFileResult.h"
 #include "chpl/framework/query-impl.h"
 #include "chpl/parsing/parsing-queries.h"
+#include "chpl/resolution/resolution-queries.h"
 #include "chpl/uast/ExternBlock.h"
 
 #include "../util/filesystem_help.h"
@@ -54,6 +55,8 @@
 
 namespace chpl {
 namespace util {
+
+using namespace types;
 
 
 const std::vector<std::string>& clangFlags(Context* context) {
@@ -358,6 +361,76 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
   return QUERY_END(result);
 }
 
+static QualifiedType convertClangTypeToChapelType(
+    Context* context, const clang::Type* clangType) {
+  QualifiedType chapelType;
+
+#ifdef HAVE_LLVM
+  auto clangBuiltinType = clangType->getAs<clang::BuiltinType>();
+  if (clangBuiltinType) {
+    switch (clangBuiltinType->getKind()) {
+      case clang::BuiltinType::Bool:
+        chapelType =
+            QualifiedType(QualifiedType::CONST_VAR, BoolType::get(context));
+        break;
+      case clang::BuiltinType::Int:
+        chapelType = resolution::typeForSysCType(context, USTR("c_int"));
+        break;
+      case clang::BuiltinType::UInt:
+        chapelType = resolution::typeForSysCType(context, USTR("c_uint"));
+        break;
+      case clang::BuiltinType::Long:
+        chapelType = resolution::typeForSysCType(context, USTR("c_long"));
+        break;
+      case clang::BuiltinType::ULong:
+        chapelType = resolution::typeForSysCType(context, USTR("c_ulong"));
+        break;
+      case clang::BuiltinType::LongLong:
+        chapelType = resolution::typeForSysCType(context, USTR("c_longlong"));
+        break;
+      case clang::BuiltinType::ULongLong:
+        chapelType = resolution::typeForSysCType(context, USTR("c_ulonglong"));
+        break;
+      case clang::BuiltinType::Char_S:
+      case clang::BuiltinType::SChar:
+        chapelType = resolution::typeForSysCType(context, USTR("c_schar"));
+        break;
+      case clang::BuiltinType::Char_U:
+      case clang::BuiltinType::UChar:
+        chapelType = resolution::typeForSysCType(context, USTR("c_uchar"));
+        break;
+      case clang::BuiltinType::Short:
+        chapelType = resolution::typeForSysCType(context, USTR("c_short"));
+        break;
+      case clang::BuiltinType::UShort:
+        chapelType = resolution::typeForSysCType(context, USTR("c_ushort"));
+        break;
+      case clang::BuiltinType::Float:
+        chapelType = resolution::typeForSysCType(context, USTR("c_float"));
+        break;
+      case clang::BuiltinType::Double:
+        chapelType = resolution::typeForSysCType(context, USTR("c_double"));
+        break;
+      default:
+        auto policy = clang::PrintingPolicy(clang::LangOptions());
+        std::string msg = "Unsupported builtin type '" +
+                          clangBuiltinType->getName(policy).str() +
+                          "' in extern \"C\" block";
+        context->error(Location(), "%s", msg.c_str());
+    }
+  } else {
+    CHPL_UNIMPL("Non-builtin type in extern block");
+  }
+#endif
+
+  // adjust type to value of type
+  if (!chapelType.isUnknown()) {
+    chapelType = QualifiedType(QualifiedType::CONST_VAR, chapelType.type());
+  }
+
+  return chapelType;
+}
+
 #ifdef HAVE_LLVM
 static clang::CompilerInstance* getCompilerInstanceForReadingPch(
     Context* context) {
@@ -441,13 +514,13 @@ precompiledHeaderContainsNameQuery(Context* context,
   return QUERY_END(result);
 }
 
-static const types::QualifiedType&
+static const QualifiedType&
 precompiledHeaderTypeForSymbolQuery(Context* context,
                                       const TemporaryFileResult* pch,
                                       UniqueString name) {
   QUERY_BEGIN(precompiledHeaderTypeForSymbolQuery, context, pch, name);
 
-  types::QualifiedType result;
+  QualifiedType result;
 
   if (pch) {
     clang::CompilerInstance* Clang = getCompilerInstanceForReadingPch(context);
@@ -463,7 +536,7 @@ precompiledHeaderTypeForSymbolQuery(Context* context,
       clang::IdentifierInfo* iid = astReader->get(name.c_str());
       if (iid->hasMacroDefinition()) {
         // TODO: implement
-        result = types::QualifiedType();
+        result = QualifiedType();
       } else {
         clang::DeclarationName declName(iid);
         if (declName.isIdentifier()) {
@@ -473,13 +546,11 @@ precompiledHeaderTypeForSymbolQuery(Context* context,
             if (lookupResult.isSingleResult()) {
               auto decl = lookupResult.front();
               if (llvm::isa<clang::FunctionDecl>(decl)) {
-                result = types::QualifiedType(types::QualifiedType::FUNCTION,
+                result = QualifiedType(QualifiedType::FUNCTION,
                                               nullptr);
               } else if (auto varDecl = llvm::dyn_cast<clang::VarDecl>(decl)) {
                 if (auto typePtr = varDecl->getType().getTypePtrOrNull()) {
-                  // TODO: implement
-                  (void)typePtr;
-                  result = types::QualifiedType();
+                  result = convertClangTypeToChapelType(context, typePtr);
                 }
               }
             }
@@ -500,12 +571,11 @@ bool precompiledHeaderContainsName(Context* context,
   return precompiledHeaderContainsNameQuery(context, pch, name);
 }
 
-const types::QualifiedType& precompiledHeaderTypeForSymbol(Context* context,
+const QualifiedType& precompiledHeaderTypeForSymbol(Context* context,
                                    const TemporaryFileResult* pch,
                                    UniqueString name) {
   return precompiledHeaderTypeForSymbolQuery(context, pch, name);
 }
-
 
 } // namespace util
 } // namespace chpl
