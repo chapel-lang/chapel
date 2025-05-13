@@ -68,7 +68,9 @@ const UntypedFnSignature* externBlockSigForFn(Context* context,
         createClangPrecompiledHeader(context, externBlockId);
     const TemporaryFileResult* ptr = tfs.get();
     if (ptr != nullptr) {
-      result = precompiledHeaderSigForFn(context, ptr, name);
+      ID fnId =
+          ID::fabricateId(context, externBlockId, name, ID::ExternBlockElement);
+      result = precompiledHeaderSigForFn(context, ptr, fnId);
     }
   }
 

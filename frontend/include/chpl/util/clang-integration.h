@@ -90,11 +90,11 @@ const types::QualifiedType& precompiledHeaderTypeForSymbol(Context* context,
                                    UniqueString name);
 
 /** Given a TemporaryFileResult created from createClangPrecompiledHeader,
-    generate an UntypedFnSignature from the function with the passed name
+    generate an UntypedFnSignature from the function with the passed ID
     if present, or nullptr otherwise.
  */
 const resolution::UntypedFnSignature* precompiledHeaderSigForFn(
-    Context* context, const TemporaryFileResult* pch, UniqueString name);
+    Context* context, const TemporaryFileResult* pch, ID fnId);
 
 } // end namespace util
 } // end namespace chpl

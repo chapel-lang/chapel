@@ -577,15 +577,36 @@ precompiledHeaderTypeForSymbolQuery(Context* context,
 }
 
 static const UntypedFnSignature* const& precompiledHeaderSigForFnQuery(
-    Context* context, const TemporaryFileResult* pch, UniqueString name) {
-  QUERY_BEGIN(precompiledHeaderSigForFnQuery, context, pch, name);
+    Context* context, const TemporaryFileResult* pch, ID fnId) {
+  QUERY_BEGIN(precompiledHeaderSigForFnQuery, context, pch, fnId);
 
   const UntypedFnSignature* result = nullptr;
 
+  auto name = fnId.symbolName(context);
+
   if (auto decl = getDeclForIdent(context, pch, name)) {
     if (auto fnDecl = llvm::dyn_cast<clang::FunctionDecl>(decl)) {
-      // TODO
-      (void) fnDecl;
+      std::vector<UntypedFnSignature::FormalDetail> formals;
+      for (auto clangFormal : fnDecl->parameters()) {
+        auto formalName = UniqueString::get(context, clangFormal->getName());
+        // const clang::Type* formalClangType = clangFormal->getType().getTypePtr();
+        // auto formalChplType = convertClangTypeToChapelType(context, formalClangType);
+        // auto intent = formalClangType->isArrayType() ? uast::Formal::Intent::REF
+        //                                              : uast::Formal::Intent::IN;
+        formals.emplace_back(formalName, UntypedFnSignature::DK_NO_DEFAULT,
+                             /* decl */ nullptr);
+      }
+
+      result = UntypedFnSignature::get(context, fnId, name,
+                                       /* isMethod */ false,
+                                       /* isTypeConstructor */ false,
+                                       /* isCompilerGenerated */ true,
+                                       /* throws */ false,
+                                       /* idTag */ uast::asttags::Function,
+                                       /* kind */ uast::Function::Kind::PROC,
+                                       std::move(formals),
+                                       /* whereClause */ nullptr,
+                                       /* compilerGeneratedOrigin */ fnId);
     }
   }
 
@@ -605,8 +626,8 @@ const QualifiedType& precompiledHeaderTypeForSymbol(Context* context,
 }
 
 const UntypedFnSignature* precompiledHeaderSigForFn(
-    Context* context, const TemporaryFileResult* pch, UniqueString name) {
-  return precompiledHeaderSigForFnQuery(context, pch, name);
+    Context* context, const TemporaryFileResult* pch, ID fnId) {
+  return precompiledHeaderSigForFnQuery(context, pch, fnId);
 }
 
 } // namespace util
