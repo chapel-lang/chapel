@@ -3032,6 +3032,9 @@ helpResolveFunction(ResolutionContext* rc, const TypedFnSignature* sig,
                 "Should only be called on concrete or fully "
                 "instantiated functions");
     return nullptr;
+  } else if (sig->untyped()->isTypeConstructor() &&
+             sig->untyped()->id().isExternBlockElement()) {
+    CHPL_ASSERT(false && "Should not be called on functions in extern blocks");
   }
 
   // construct the PoiInfo for this case
