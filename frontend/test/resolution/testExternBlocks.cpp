@@ -157,6 +157,52 @@ static void test7() {
          true /* foo comes from the extern block */);
 }
 
+static void test8() {
+  printf("%s\n", __FUNCTION__);
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+  QualifiedType qt =
+    resolveTypeOfXInit(context,
+                       R""""(
+                        module M {
+                          extern { int i; }
+                          var x = i;
+                        }
+                       )"""", true);
+
+  assert(!qt.isUnknownOrErroneous());
+  assert(qt.type()->isIntType());
+
+  assert(!guard.realizeErrors());
+}
+
+static void test9() {
+  printf("%s\n", __FUNCTION__);
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+  QualifiedType qt =
+    resolveTypeOfXInit(context,
+                       R""""(
+                        module M {
+                          module CDemo {
+                            extern {
+                               static double square(double num) {
+                                  return 2;
+                               }
+                            }
+                          }
+
+                          var x = CDemo.square(2.0);
+                        }
+                       )"""", true);
+
+  assert(!qt.isUnknownOrErroneous());
+  assert(qt.type()->isRealType());
+  assert(qt.type()->toRealType()->isDefaultWidth());
+
+  assert(!guard.realizeErrors());
+}
+
 
 
 
@@ -168,6 +214,8 @@ int main() {
   test5();
   test6();
   test7();
+  test8();
+  test9();
 
   return 0;
 }
