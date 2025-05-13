@@ -1240,6 +1240,7 @@ LookupResult LookupHelper::doLookupInExternBlocks(const Scope* scope,
   const std::vector<ID>& exbIds = gatherExternBlocks(context, scope->id());
 
   bool found = false;
+  bool nonFunctions = false;
 
   // Consider each extern block in turn. Does it have a symbol with that name?
   for (const auto& exbId : exbIds) {
@@ -1248,19 +1249,23 @@ LookupResult LookupHelper::doLookupInExternBlocks(const Scope* scope,
       auto newId = ID::fabricateId(context, exbId, name,
                                    ID::ExternBlockElement);
 
-      // We assume it's not a parenful function or a type,
-      // but that might not be. However, it shouldn't matter for scope
-      // resolution. Adjust this code if it does.
+      bool isParenfulFunction =
+          externBlockTypeForSymbol(context, exbId, name).kind() ==
+          QualifiedType::FUNCTION;
+
+      // We assume it's not a type, but that might not be. However, it
+      // shouldn't matter for scope resolution. Adjust this code if it does.
       auto idv = IdAndFlags(std::move(newId),
                             /* isPublic */ true,
                             /* isMethodOrField */ false,
-                            /* isParenfulFunction */ false, // maybe a lie
+                            /* isParenfulFunction */ isParenfulFunction,
                             /* isMethod */ false,
                             /* isModule */ false,
                             /* isType */ false); // maybe a lie
 
       result.append(std::move(idv));
       found = true;
+      nonFunctions |= !isParenfulFunction;
 
       if (traceCurPath && traceResult) {
         ResultVisibilityTrace t;
@@ -1273,9 +1278,6 @@ LookupResult LookupHelper::doLookupInExternBlocks(const Scope* scope,
     }
   }
 
-  /* Might be a lie, because we're lying about isParenfulFunction above.
-     Set it to the same value as 'found' to avoid spurious assertions. */
-  bool nonFunctions = found;
   return LookupResult(found, nonFunctions);
 }
 
