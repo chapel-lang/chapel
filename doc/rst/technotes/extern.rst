@@ -118,7 +118,7 @@ described in the next section.
 
 
 Pointer Types
-------------------------
+-------------
 
 Chapel supports the following C pointer types: c_ptr(T),
 c_ptrConst(T), and c_fn_ptr. In addition, it supports c_array(T,n).
@@ -839,7 +839,7 @@ types; for example:
 
 
 Pointer Types in Extern Blocks
--------------
+------------------------------
 
 See the section `Pointer Types`_ above for background on
 how the Chapel programs can work with C pointer types. Any pointer type used in
