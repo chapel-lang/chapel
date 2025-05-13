@@ -184,6 +184,7 @@ struct Converter final : UastConverter {
 
   // general functions for converting
   Expr* convertAST(const uast::AstNode* node) override;
+  Expr* convertAST(const uast::AstNode* node, ModTag modTag) override;
 
   // methods to help track what has been converted
   void noteConvertedSym(const uast::AstNode* ast, Symbol* sym);
@@ -3747,6 +3748,11 @@ struct Converter final : UastConverter {
   }
 
   Expr* convertAggregateDecl(const uast::AggregateDecl* node) {
+    if (auto it = syms.find(node->id()); it != syms.end()) {
+      // Sometimes in the typed converter we manually convert untyped AST
+      // to use as a base for instantiation. E.g., dtCPointer
+      return nullptr;
+    }
 
     const resolution::ResolutionResultByPostorderID* resolved = nullptr;
     if (shouldScopeResolve(node)) {
@@ -3821,6 +3827,18 @@ struct Converter final : UastConverter {
 Expr* Converter::convertAST(const uast::AstNode* node) {
   astlocMarker markAstLoc(node->id());
   return node->dispatch<Expr*>(*this);
+}
+
+/// Calls convertAST with a specific modTag
+Expr* Converter::convertAST(const uast::AstNode* node, ModTag modTag) {
+  auto prev = topLevelModTag;
+  topLevelModTag = modTag;
+
+  astlocMarker markAstLoc(node->id());
+  auto ret =  node->dispatch<Expr*>(*this);
+
+  topLevelModTag = prev;
+  return ret;
 }
 
 static std::string astName(const uast::AstNode* ast) {
