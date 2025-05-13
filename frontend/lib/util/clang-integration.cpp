@@ -576,8 +576,20 @@ precompiledHeaderTypeForSymbolQuery(Context* context,
   return QUERY_END(result);
 }
 
-const UntypedFnSignature* getUfsForExternFnId(Context* context, ID functionId) {
-  return nullptr;
+static const UntypedFnSignature* const& precompiledHeaderSigForFnQuery(
+    Context* context, const TemporaryFileResult* pch, UniqueString name) {
+  QUERY_BEGIN(precompiledHeaderSigForFnQuery, context, pch, name);
+
+  const UntypedFnSignature* result = nullptr;
+
+  if (auto decl = getDeclForIdent(context, pch, name)) {
+    if (auto fnDecl = llvm::dyn_cast<clang::FunctionDecl>(decl)) {
+      // TODO
+      (void) fnDecl;
+    }
+  }
+
+  return QUERY_END(result);
 }
 
 bool precompiledHeaderContainsName(Context* context,
@@ -590,6 +602,11 @@ const QualifiedType& precompiledHeaderTypeForSymbol(Context* context,
                                    const TemporaryFileResult* pch,
                                    UniqueString name) {
   return precompiledHeaderTypeForSymbolQuery(context, pch, name);
+}
+
+const UntypedFnSignature* precompiledHeaderSigForFn(
+    Context* context, const TemporaryFileResult* pch, UniqueString name) {
+  return precompiledHeaderSigForFnQuery(context, pch, name);
 }
 
 } // namespace util

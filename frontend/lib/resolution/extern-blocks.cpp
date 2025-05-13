@@ -58,6 +58,22 @@ const types::QualifiedType externBlockTypeForSymbol(Context* context,
   return result;
 }
 
+const UntypedFnSignature* externBlockSigForFn(Context* context,
+                                              ID externBlockId,
+                                              UniqueString name) {
+  const UntypedFnSignature* result = nullptr;
+
+  if (externBlockContainsName(context, externBlockId, name)) {
+    const owned<TemporaryFileResult>& tfs =
+        createClangPrecompiledHeader(context, externBlockId);
+    const TemporaryFileResult* ptr = tfs.get();
+    if (ptr != nullptr) {
+      result = precompiledHeaderSigForFn(context, ptr, name);
+    }
+  }
+
+  return result;
+}
 
 } // end namespace resolution
 } // end namespace chpl

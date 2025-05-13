@@ -23,6 +23,7 @@
 #include "chpl/framework/Context.h"
 #include "chpl/framework/ID.h"
 #include "chpl/framework/UniqueString.h"
+#include "chpl/resolution/resolution-types.h"
 #include "chpl/types/QualifiedType.h"
 
 namespace chpl {
@@ -44,6 +45,13 @@ const types::QualifiedType externBlockTypeForSymbol(Context* context,
                              ID externBlockId,
                              UniqueString name);
 
+/** Given an extern block ID and a name, returns the equivalent
+ *  Chapel UntypedFnSignature for that function with that name.
+ *  Returns nullptr if the function is not found.
+ */
+const resolution::UntypedFnSignature* externBlockSigForFn(Context* context,
+                                                          ID externBlockId,
+                                                          UniqueString name);
 
 } // end namespace resolution
 } // end namespace chpl

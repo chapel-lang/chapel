@@ -89,8 +89,12 @@ const types::QualifiedType& precompiledHeaderTypeForSymbol(Context* context,
                                    const TemporaryFileResult* pch,
                                    UniqueString name);
 
-const resolution::UntypedFnSignature* getUfsForExternFnId(Context* context,
-                                                          ID functionId);
+/** Given a TemporaryFileResult created from createClangPrecompiledHeader,
+    generate an UntypedFnSignature from the function with the passed name
+    if present, or nullptr otherwise.
+ */
+const resolution::UntypedFnSignature* precompiledHeaderSigForFn(
+    Context* context, const TemporaryFileResult* pch, UniqueString name);
 
 } // end namespace util
 } // end namespace chpl
