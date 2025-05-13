@@ -6453,6 +6453,28 @@ static void discardWorseConversions(Vec<ResolutionCandidate*>&   candidates,
   }
 }
 
+static void discardWorseEdition(Vec<ResolutionCandidate*>&   candidates,
+                                const DisambiguationContext& DC,
+                                std::vector<bool>&           discarded) {
+  for (int i = 0; i < candidates.n; i++) {
+    if (discarded[i]) {
+      continue;
+    }
+
+    ResolutionCandidate* candidate = candidates.v[i];
+    if (candidate->fn->hasFlag(FLAG_HAS_EDITION)) {
+      if (!isEditionApplicable(candidate->fn->getFirstEdition(),
+                               candidate->fn->getLastEdition(),
+                               candidate->fn)) {
+        EXPLAIN("X: Fn %d is defined for editions %s through %s, but current edition is %s",
+                i, candidate->fn->getFirstEdition(),
+                candidate->fn->getLastEdition(), fEdition.c_str());
+        discarded[i] = true;
+      }
+    }
+  }
+}
+
 // If some candidates have 'where' clauses and others do not,
 // discard those without 'where' clauses
 static void discardWorseWhereClauses(Vec<ResolutionCandidate*>&   candidates,
@@ -6733,6 +6755,9 @@ static void disambiguateDiscarding(Vec<ResolutionCandidate*>&   candidates,
   // After that, discard any candidate that has more param narrowing
   // conversions than another candidate.
   discardWorseConversions(candidates, DC, discarded);
+
+  // Discard any candidate that aren't applicable to this current edition
+  discardWorseEdition(candidates, DC, discarded);
 
   if (!ignoreWhere) {
     // If some candidates have 'where' clauses and others do not,

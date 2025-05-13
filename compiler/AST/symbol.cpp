@@ -542,8 +542,9 @@ const char* Symbol::getFirstEdition() const {
 
 const char* Symbol::getLastEdition() const {
   if (lastEdition == "") {
-    // TODO: better return value
-    return "";
+    // Should be the same as the last value in the editions array in driver.h
+    // But that array's length is going to change over time
+    return "pre-edition";
   } else {
     return lastEdition.c_str();
   }

@@ -310,6 +310,7 @@ extern std::string editions[2];
 extern std::string fEdition;
 
 bool isValidEdition(std::string maybeEdition);
+bool isEditionApplicable(std::string first, std::string last, BaseAST* loc);
 
 // This flag is useful for testing
 // the compiler but breaks the language!

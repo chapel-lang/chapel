@@ -831,6 +831,53 @@ bool isValidEdition(std::string maybeEdition) {
   return result;
 }
 
+// Validates that the first and last editions are in order, and returns whether
+// or not the compiled edition is in their range.
+// True if `first < compilerEdition < last`
+bool isEditionApplicable(std::string first, std::string last, BaseAST* loc) {
+  int startLoc = -1;
+  int endLoc = -1;
+  int thisEditionLoc = -1;
+
+  // Keep end up to date with size of editions array
+  for (int i = 0; i < 2; i++) {
+    if (editions[i] == first) {
+      startLoc = i;
+    }
+
+    if (editions[i] == last) {
+      endLoc = i;
+    }
+
+    if (editions[i] == fEdition) {
+      thisEditionLoc = i;
+    }
+  }
+
+  if (startLoc == -1) {
+    USR_FATAL_CONT(loc, "unknown first edition '%s'", first.c_str());
+    return false;
+  }
+
+  if (endLoc == -1) {
+    USR_FATAL_CONT(loc, "unknown last edition '%s'", last.c_str());
+    return false;
+  }
+
+  if (thisEditionLoc == -1) {
+    // Should have been handled when resolving the compiler flags
+    INT_FATAL("unable to determine location of compiler edition");
+  }
+
+  if (endLoc < startLoc) {
+    USR_FATAL_CONT(loc, "last edition '%s' is earlier than first edition '%s'",
+                   last.c_str(), first.c_str());
+    return false;
+  }
+
+  return startLoc <= thisEditionLoc && thisEditionLoc <= endLoc;
+}
+
 static void setEdition(const ArgumentDescription* desc, const char* arg) {
   std::string val = std::string(arg);
 
