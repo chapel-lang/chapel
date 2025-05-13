@@ -35,6 +35,7 @@
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/For.h"
 #include "chpl/uast/VarArgFormal.h"
+#include "chpl/util/clang-integration.h"
 
 #include "Resolver.h"
 
@@ -155,6 +156,15 @@ const UntypedFnSignature* UntypedFnSignature::get(Context* context,
   return getUntypedFnSignatureForFn(context, function);
 }
 
+static const UntypedFnSignature*
+getUntypedFnSignatureForExternId(Context* context, ID functionId) {
+  const UntypedFnSignature* result = nullptr;
+
+  // TODO
+
+  return result;
+}
+
 static const UntypedFnSignature* const&
 getUntypedFnSignatureForIdQuery(Context* context, ID functionId) {
   QUERY_BEGIN(getUntypedFnSignatureForIdQuery, context, functionId);
@@ -164,6 +174,8 @@ getUntypedFnSignatureForIdQuery(Context* context, ID functionId) {
 
   if (ast != nullptr && ast->isFunction()) {
     result = getUntypedFnSignatureForFn(context, ast->toFunction());
+  } else if (functionId.isExternBlockElement()) {
+    result = util::getUfsForExternFnId(context, functionId);
   }
 
   return QUERY_END(result);

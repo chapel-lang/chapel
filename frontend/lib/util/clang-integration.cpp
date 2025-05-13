@@ -24,6 +24,7 @@
 #include "chpl/framework/query-impl.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
+#include "chpl/resolution/resolution-types.h"
 #include "chpl/uast/ExternBlock.h"
 
 #include "../util/filesystem_help.h"
@@ -57,6 +58,7 @@ namespace chpl {
 namespace util {
 
 using namespace types;
+using namespace resolution;
 
 
 const std::vector<std::string>& clangFlags(Context* context) {
@@ -514,13 +516,10 @@ precompiledHeaderContainsNameQuery(Context* context,
   return QUERY_END(result);
 }
 
-static const QualifiedType&
-precompiledHeaderTypeForSymbolQuery(Context* context,
-                                      const TemporaryFileResult* pch,
-                                      UniqueString name) {
-  QUERY_BEGIN(precompiledHeaderTypeForSymbolQuery, context, pch, name);
-
-  QualifiedType result;
+static const clang::Decl* getDeclForIdent(Context* context,
+                                          const TemporaryFileResult* pch,
+                                          UniqueString name) {
+  const clang::Decl* result = nullptr;
 
   if (pch) {
     clang::CompilerInstance* Clang = getCompilerInstanceForReadingPch(context);
@@ -536,7 +535,6 @@ precompiledHeaderTypeForSymbolQuery(Context* context,
       clang::IdentifierInfo* iid = astReader->get(name.c_str());
       if (iid->hasMacroDefinition()) {
         // TODO: implement
-        result = QualifiedType();
       } else {
         clang::DeclarationName declName(iid);
         if (declName.isIdentifier()) {
@@ -544,15 +542,7 @@ precompiledHeaderTypeForSymbolQuery(Context* context,
             auto tuDecl = Clang->getASTContext().getTranslationUnitDecl();
             auto lookupResult = tuDecl->lookup(declName);
             if (lookupResult.isSingleResult()) {
-              auto decl = lookupResult.front();
-              if (llvm::isa<clang::FunctionDecl>(decl)) {
-                result = QualifiedType(QualifiedType::FUNCTION,
-                                              nullptr);
-              } else if (auto varDecl = llvm::dyn_cast<clang::VarDecl>(decl)) {
-                if (auto typePtr = varDecl->getType().getTypePtrOrNull()) {
-                  result = convertClangTypeToChapelType(context, typePtr);
-                }
-              }
+              result = lookupResult.front();
             }
           }
         }
@@ -562,7 +552,32 @@ precompiledHeaderTypeForSymbolQuery(Context* context,
     delete Clang;
   }
 
+  return result;
+}
+
+static const QualifiedType&
+precompiledHeaderTypeForSymbolQuery(Context* context,
+                                      const TemporaryFileResult* pch,
+                                      UniqueString name) {
+  QUERY_BEGIN(precompiledHeaderTypeForSymbolQuery, context, pch, name);
+
+  QualifiedType result;
+
+  if (auto decl = getDeclForIdent(context, pch, name)) {
+    if (llvm::isa<clang::FunctionDecl>(decl)) {
+      result = QualifiedType(QualifiedType::FUNCTION, nullptr);
+    } else if (auto varDecl = llvm::dyn_cast<clang::VarDecl>(decl)) {
+      if (auto typePtr = varDecl->getType().getTypePtrOrNull()) {
+        result = convertClangTypeToChapelType(context, typePtr);
+      }
+    }
+  }
+
   return QUERY_END(result);
+}
+
+const UntypedFnSignature* getUfsForExternFnId(Context* context, ID functionId) {
+  return nullptr;
 }
 
 bool precompiledHeaderContainsName(Context* context,

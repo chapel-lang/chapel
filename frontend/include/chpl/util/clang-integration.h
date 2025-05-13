@@ -23,6 +23,7 @@
 #include "chpl/framework/ID.h"
 #include "chpl/types/QualifiedType.h"
 #include "chpl/util/memory.h"
+#include "chpl/resolution/resolution-types.h"
 
 #include "llvm/ADT/ArrayRef.h"
 
@@ -88,6 +89,8 @@ const types::QualifiedType& precompiledHeaderTypeForSymbol(Context* context,
                                    const TemporaryFileResult* pch,
                                    UniqueString name);
 
+const resolution::UntypedFnSignature* getUfsForExternFnId(Context* context,
+                                                          ID functionId);
 
 } // end namespace util
 } // end namespace chpl

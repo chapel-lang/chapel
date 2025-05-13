@@ -70,6 +70,7 @@ static void testIt(const char* testName,
   if (identifierIsFromExternBlock) {
     assert(foundId.isFabricatedId());
     assert(foundId.fabricatedIdKind() == ID::ExternBlockElement);
+    assert(foundId.isExternBlockElement());
   } else {
     assert(!foundId.isFabricatedId());
   }
