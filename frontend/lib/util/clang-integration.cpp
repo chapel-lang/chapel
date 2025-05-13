@@ -595,7 +595,6 @@ static const TypedFnSignature* const& precompiledHeaderSigForFnQuery(
         formals.emplace_back(formalName, UntypedFnSignature::DK_NO_DEFAULT,
                              /* decl */ nullptr);
 
-        debuggerBreakHere();
         const clang::Type* formalClangType = clangFormal->getType().getTypePtr();
         auto formalChplType = convertClangTypeToChapelType(context, formalClangType);
         auto intent = formalClangType->isArrayType() ? QualifiedType::REF
@@ -630,6 +629,24 @@ static const TypedFnSignature* const& precompiledHeaderSigForFnQuery(
   return QUERY_END(result);
 }
 
+static const QualifiedType& precompiledHeaderRetTypeForFnQuery(
+    Context* context, const TemporaryFileResult* pch, UniqueString name) {
+  QUERY_BEGIN(precompiledHeaderRetTypeForFnQuery, context, pch, name);
+
+  QualifiedType result;
+
+  if (auto decl = getDeclForIdent(context, pch, name)) {
+    if (auto fnDecl = llvm::dyn_cast<clang::FunctionDecl>(decl)) {
+      const clang::Type* clangReturnType = fnDecl->getReturnType().getTypePtr();
+      auto chplReturnType =
+          convertClangTypeToChapelType(context, clangReturnType);
+      result = chplReturnType;
+    }
+  }
+
+  return QUERY_END(result);
+}
+
 bool precompiledHeaderContainsName(Context* context,
                                    const TemporaryFileResult* pch,
                                    UniqueString name) {
@@ -645,6 +662,10 @@ const QualifiedType& precompiledHeaderTypeForSymbol(Context* context,
 const TypedFnSignature* precompiledHeaderSigForFn(
     Context* context, const TemporaryFileResult* pch, ID fnId) {
   return precompiledHeaderSigForFnQuery(context, pch, fnId);
+}
+const QualifiedType& precompiledHeaderRetTypeForFn(
+    Context* context, const TemporaryFileResult* pch, UniqueString name) {
+  return precompiledHeaderRetTypeForFnQuery(context, pch, name);
 }
 
 } // namespace util

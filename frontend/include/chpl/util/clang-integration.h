@@ -96,6 +96,13 @@ const types::QualifiedType& precompiledHeaderTypeForSymbol(Context* context,
 const resolution::TypedFnSignature* precompiledHeaderSigForFn(
     Context* context, const TemporaryFileResult* pch, ID fnId);
 
+/** Given a TemporaryFileResult created from createClangPrecompiledHeader,
+    return the Chapel equivalent of the return type of the function
+    with the passed name if present, or an empty QualifiedType otherwise.
+ */
+const types::QualifiedType& precompiledHeaderRetTypeForFn(
+    Context* context, const TemporaryFileResult* pch, UniqueString name);
+
 } // end namespace util
 } // end namespace chpl
 

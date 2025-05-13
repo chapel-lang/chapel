@@ -76,5 +76,22 @@ const TypedFnSignature* externBlockSigForFn(Context* context, ID externBlockId,
   return result;
 }
 
+const types::QualifiedType externBlockRetTypeForFn(Context* context,
+                                                   ID externBlockId,
+                                                   UniqueString name) {
+  types::QualifiedType result;
+
+  if (externBlockContainsName(context, externBlockId, name)) {
+    const owned<TemporaryFileResult>& tfs =
+        createClangPrecompiledHeader(context, externBlockId);
+    const TemporaryFileResult* ptr = tfs.get();
+    if (ptr != nullptr) {
+      result = precompiledHeaderRetTypeForFn(context, ptr, name);
+    }
+  }
+
+  return result;
+}
+
 } // end namespace resolution
 } // end namespace chpl
