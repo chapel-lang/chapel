@@ -534,12 +534,10 @@ static void test45() {
 
 static void test46() {
   printf("test46\n");
-  Context ctx;
-  Context* context = &ctx;
 
   // Param
   {
-    context->advanceToNextRevision(false);
+    Context* context = buildStdContext();
     std::string program =
       R"""(
       param a = "asdf";
@@ -553,7 +551,7 @@ static void test46() {
 
   // Non-param
   {
-    context->advanceToNextRevision(false);
+    Context* context = buildStdContext();
     std::string program =
       R"""(
       var a = "asdf";

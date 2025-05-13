@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+backend=$($CHPL_HOME/util/printchplenv --value --only CHPL_TARGET_COMPILER)
+
+if [[ "$backend" == "llvm" ]]; then
+  echo " --gdb # useBreakpoint-gdb.llvm.good"
+else
+  echo " --gdb # useBreakpoint-gdb.c.good"
+fi

@@ -602,7 +602,7 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
   // handles setting types of variables for split init with 'out' formals
   void adjustTypesForOutFormals(const CallInfo& ci,
                                 const std::vector<const uast::AstNode*>& asts,
-                                const MostSpecificCandidates& fns);
+                                const CallResolutionResult& crr);
 
   // helper for resolveTupleDecl
   // e.g. var (a, b) = mytuple

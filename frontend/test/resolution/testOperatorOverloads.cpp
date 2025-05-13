@@ -256,7 +256,7 @@ static void test5() {
       record R {
         var x : int;
       }
-      operator R.==(a: R, b: R) { return "true"; }
+      operator R.==(a: R, b: R) { return 4.2; }
 
       var a : R;
       var b : R;
@@ -265,7 +265,7 @@ static void test5() {
     )"""";
 
   QualifiedType initType = resolveTypeOfXInit(context, program);
-  assert(initType.type()->isStringType());
+  assert(initType.type()->isRealType());
   assert(initType.kind() == QualifiedType::CONST_VAR);
 }
 

@@ -27,6 +27,7 @@
 #include "llvm/IR/IRBuilder.h"
 
 #include <utility>
+#include <type_traits>
 
 struct PromotedPair {
   llvm::Value* a;
@@ -39,6 +40,32 @@ struct PromotedPair {
 };
 
 bool isArrayVecOrStruct(llvm::Type* t);
+
+
+template<typename Ty>
+constexpr static bool is_Inst_or_BBiterator() {
+  return (std::is_pointer_v<Ty> &&
+          std::is_base_of_v<llvm::Instruction, std::remove_pointer_t<Ty>>) ||
+          std::is_same_v<llvm::BasicBlock::iterator, Ty>;
+}
+
+#if HAVE_LLVM_VER >= 200
+template <typename Ty,
+          std::enable_if_t<is_Inst_or_BBiterator<Ty>(),  bool> = true>
+static llvm::BasicBlock::iterator getInsertPosition(Ty I) {
+  return llvm::BasicBlock::iterator(I);
+}
+#else
+template <typename Ty,
+          std::enable_if_t<is_Inst_or_BBiterator<Ty>(),  bool> = true>
+static llvm::Instruction* getInsertPosition(Ty I) {
+  if constexpr (std::is_same_v<llvm::BasicBlock::iterator, Ty>) {
+    return &*I;
+  } else {
+    return I;
+  }
+}
+#endif
 
 // align=0 means undefined alignment; this does not follow 'AlignmentStatus'
 // creates an alloca instruction and inserts it before insertBefore

@@ -69,9 +69,11 @@ struct FindSplitInits : VarScopeVisitor {
                        RV& rv) override;
   void handleInFormal(const FnCall* ast, const AstNode* actual,
                       const QualifiedType& formalType,
+                      const QualifiedType* actualScalarType,
                       RV& rv) override;
   void handleInoutFormal(const FnCall* ast, const AstNode* actual,
                          const QualifiedType& formalType,
+                         const QualifiedType* actualScalarType,
                          RV& rv) override;
 
   void handleReturn(const uast::Return* ast, RV& rv) override;
@@ -210,12 +212,14 @@ void FindSplitInits::handleOutFormal(const FnCall* ast, const AstNode* actual,
 
 void FindSplitInits::handleInFormal(const FnCall* ast, const AstNode* actual,
                                     const QualifiedType& formalType,
+                                    const QualifiedType* actualScalarType,
                                     RV& rv) {
   processMentions(actual, rv);
 }
 
 void FindSplitInits::handleInoutFormal(const FnCall* ast, const AstNode* actual,
                                        const QualifiedType& formalType,
+                                       const QualifiedType* actualScalarType,
                                        RV& rv) {
   processMentions(actual, rv);
 }
@@ -510,14 +514,18 @@ void FindSplitInits::propagateChildToParent(VarFrame* frame, VarFrame* parent, c
   } else {
     // some kind of scope that does not allow split init
     // (e.g., a loop)
-    if (parent != nullptr) {
-      // propagate initedVars and mentionedVars
-      // to mentionedVars in the parent
-      for (const auto& id : frame->initedVars) {
-        if (frame->eligibleVars.count(id) == 0) {
-          parent->mentionedVars.insert(id);
-        }
+    // propagate initedVars and mentionedVars
+    // to mentionedVars in the parent, and to global result if they are split-
+    // inited here.
+    for (const auto& [id, qt] : frame->initedVarsVec) {
+      if (frame->eligibleVars.count(id) == 0) {
+        if (parent) parent->mentionedVars.insert(id);
+      } else {
+        // variable declared in this scope, so save the result
+        allSplitInitedVars.insert(id);
       }
+    }
+    if (parent != nullptr) {
       for (const auto& id : frame->mentionedVars) {
         if (frame->eligibleVars.count(id) == 0) {
           parent->mentionedVars.insert(id);

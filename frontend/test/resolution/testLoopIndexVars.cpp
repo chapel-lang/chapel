@@ -1140,7 +1140,6 @@ static void pairIteratorInLoopExpression(
 static void testForLoopExpression(Context* context) {
 
   printf("%s\n", __FUNCTION__);
-  ErrorGuard guard(context);
 
   auto iters =
     R""""(
@@ -1549,7 +1548,6 @@ static void testBracketLoopExpressionUnpackedZippered(Context* context) {
 static void testForLoopExpressionTypeMethod(Context* context) {
 
   printf("%s\n", __FUNCTION__);
-  ErrorGuard guard(context);
 
   auto iters =
     R""""(

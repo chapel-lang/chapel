@@ -80,11 +80,13 @@ class VarScopeVisitor : public BranchSensitiveVisitor<VarFrame, MutatingResolved
   virtual void handleInFormal(const uast::FnCall* ast,
                               const uast::AstNode* actual,
                               const types::QualifiedType& formalType,
+                              const types::QualifiedType* actualScalarType,
                               RV& rv) = 0;
   /** Called for an actual passed to an 'out' formal */
   virtual void handleInoutFormal(const uast::FnCall* ast,
                                  const uast::AstNode* actual,
                                  const types::QualifiedType& formalType,
+                                 const types::QualifiedType* actualScalarType,
                                  RV& rv) = 0;
 
   /** Called for a 'return' */
@@ -302,7 +304,9 @@ computeActualFormalIntents(Context* context,
                            const CallInfo& ci,
                            const std::vector<const AstNode*>& actualAsts,
                            std::vector<uast::Qualifier>& actualFrmlIntents,
-                           std::vector<types::QualifiedType>& actualFrmlTypes);
+                           std::vector<types::QualifiedType>& actualFrmlTypes,
+                           std::vector<bool>& actualWasPromoted,
+                           const types::PromotionIteratorType* promoCtx);
 
 } // end namespace resolution
 

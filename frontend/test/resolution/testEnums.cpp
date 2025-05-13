@@ -690,8 +690,7 @@ static void test20() {
 
 // Non-param cast to string
 static void test21() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,

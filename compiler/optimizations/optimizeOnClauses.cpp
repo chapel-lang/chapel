@@ -335,7 +335,7 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_GPU_KERNEL_LAUNCH:
    return LOCAL_NOT_FAST;
 
-  case PRIM_BREAKPOINT:
+  case PRIM_DEBUG_TRAP:
     return FAST_AND_LOCAL;
 
   case PRIM_CONST_ARG_HASH:

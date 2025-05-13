@@ -131,9 +131,11 @@ struct CallInitDeinit : VarScopeVisitor {
                        RV& rv) override;
   void handleInFormal(const FnCall* ast, const AstNode* actual,
                       const QualifiedType& formalType,
+                      const QualifiedType* actualScalarType,
                       RV& rv) override;
   void handleInoutFormal(const FnCall* ast, const AstNode* actual,
                          const QualifiedType& formalType,
+                         const QualifiedType* actualScalarType,
                          RV& rv) override;
   void handleReturn(const uast::Return* ast, RV& rv) override;
   void handleThrow(const uast::Throw* ast, RV& rv) override;
@@ -408,9 +410,15 @@ void CallInitDeinit::processDeinitsAndPropagate(VarFrame* frame,
       ResolvedExpression& re = rv.byId(varOrDeferId);
       QualifiedType type = re.type();
       // don't deinit reference variables
-      if (isValue(type.kind())) {
-        resolveDeinit(frame->scopeAst, varOrDeferId, type, rv);
+      if (!isValue(type.kind())) continue;
+
+      // don't deinit generic variables (asuming error issued elsewhere)
+      auto g = getTypeGenericity(context, type);
+      if (g != Type::CONCRETE) {
+        return;
       }
+
+      resolveDeinit(frame->scopeAst, varOrDeferId, type, rv);
     }
   }
 
@@ -713,9 +721,10 @@ void CallInitDeinit::resolveCopyInit(const AstNode* ast,
 
   std::vector<Qualifier> intents;
   std::vector<QualifiedType> formalTypes;
+  std::vector<bool> actualPromoted;
 
   computeActualFormalIntents(context, c.result.mostSpecific(), ci, actualAsts,
-                             intents, formalTypes);
+                             intents, formalTypes, actualPromoted, /* promotionCtx */ nullptr);
 
   bool formalUsesInIntent = false;
   CHPL_ASSERT(intents.size() >= 1);
@@ -821,7 +830,9 @@ void CallInitDeinit::processInit(VarFrame* frame,
     rhsAst = r->value();
   } else if (auto y = ast->toYield()) {
     rhsAst = y->value();
-  } else {
+  }
+
+  if (rhsAst == nullptr) {
     rhsAst = ast;
   }
 
@@ -829,6 +840,12 @@ void CallInitDeinit::processInit(VarFrame* frame,
     // these are basically 'move' initialization
     resolveMoveInit(ast, rhsAst, lhsType, rhsType, rv);
   } else {
+    // check genericity; rhs must be concrete. assume error was issued elsewhere.
+    auto g = getTypeGenericity(context, rhsType);
+    if (g != Type::CONCRETE) {
+      return;
+    }
+
     if (isRef(lhsType.kind())) {
       // e.g. ref x = localVariable;
       //  or  ref y = returnAValue();
@@ -930,6 +947,7 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
   bool isCatchVariable = false;
   bool isLoopIntent = false;
   bool isRefLoopIntent = false;
+  bool isResource = false;
 
   if (ast->isFormal() || ast->isVarArgFormal()) {
 
@@ -960,24 +978,33 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
     }
   }
 
-  // Errors in Catch statements will be instantiated by the throwing function
-  // in the Try block
   auto parent = parsing::parentAst(context, ast);
-  if (parent && parent->isCatch()) {
-    auto catchNode = parent->toCatch();
-    CHPL_ASSERT(ast == catchNode->error());
-    isCatchVariable = true;
+  if (parent) {
+    // Errors in Catch statements will be instantiated by the throwing function
+    // in the Try block
+    if (parent->isCatch()) {
+      auto catchNode = parent->toCatch();
+      CHPL_ASSERT(ast == catchNode->error());
+      isCatchVariable = true;
 
-  // 'with ([const] ref x)' means to capture 'x' by ref, so no need to initialize it.
-  } else if (parent && parent->isWithClause()) {
-    if (auto tv = ast->toTaskVar()) {
-      // it's only a task intent if it names an outer variable and nothing else.
-      // Any other declaration (with type, with init) is just a task variable.
-      if (!tv->initExpression() && !tv->typeExpression()) {
-        isLoopIntent = true;
-        if (isRef(ast->storageKind())) {
-          isRefLoopIntent = true;
+      // 'with ([const] ref x)' means to capture 'x' by ref, so no need to initialize it.
+    } else if (parent->isWithClause()) {
+      if (auto tv = ast->toTaskVar()) {
+        // it's only a task intent if it names an outer variable and nothing else.
+        // Any other declaration (with type, with init) is just a task variable.
+        if (!tv->initExpression() && !tv->typeExpression()) {
+          isLoopIntent = true;
+          if (isRef(ast->storageKind())) {
+            isRefLoopIntent = true;
+          }
         }
+      }
+
+      // 'manage bla as reg x' means to capture the 'enterContext' clal by ref,
+      // no need to initialize it.
+    } else if (parent->isAs()) {
+      if (auto grandparent = parsing::parentAst(context, parent)) {
+        isResource = grandparent->isManage();
       }
     }
   }
@@ -1012,7 +1039,7 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
     ID id = ast->id();
     frame->addToInitedVars(id);
     frame->localsAndDefers.push_back(id);
-  } else if (isCatchVariable || isRefLoopIntent) {
+  } else if (isCatchVariable || isRefLoopIntent || isResource) {
     // initialized from the throw that activates this Catch, or implicitly with
     // a reference to a variable in outer scope.
     ID id = ast->id();
@@ -1104,6 +1131,7 @@ void CallInitDeinit::handleOutFormal(const FnCall* ast,
 }
 void CallInitDeinit::handleInFormal(const FnCall* ast, const AstNode* actual,
                                     const QualifiedType& formalType,
+                                    const QualifiedType* actualScalarType,
                                     RV& rv) {
   VarFrame* frame = currentFrame();
 
@@ -1123,6 +1151,7 @@ void CallInitDeinit::handleInFormal(const FnCall* ast, const AstNode* actual,
   if (elidedCopyFromIds.count(actual->id()) > 0 &&
       isValue(actualType.kind()) &&
       Type::needsInitDeinitCall(actualType.type())) {
+    CHPL_ASSERT(actualScalarType == nullptr);
     // it is move initialization
     resolveMoveInit(actual, actual, formalType, actualType, rv);
 
@@ -1133,13 +1162,15 @@ void CallInitDeinit::handleInFormal(const FnCall* ast, const AstNode* actual,
     CHPL_ASSERT(!actualId.isEmpty());
     frame->deinitedVars.emplace(actualId, ast->id());
   } else {
-    processInit(frame, actual, formalType, actualType, rv);
+    processInit(frame, actual, formalType,
+                actualScalarType ? *actualScalarType : actualType, rv);
   }
 }
 
 void CallInitDeinit::handleInoutFormal(const FnCall* ast,
                                        const AstNode* actual,
                                        const QualifiedType& formalType,
+                                       const QualifiedType* actualScalarType,
                                        RV& rv) {
   // check for use of deinited variables
   processMentions(actual, rv);
@@ -1148,7 +1179,8 @@ void CallInitDeinit::handleInoutFormal(const FnCall* ast,
   QualifiedType actualType = rv.byAst(actual).type();
 
   // resolve '=' for storing and writeback
-  resolveAssign(actual, actualType, formalType, rv);
+  resolveAssign(actual,
+                actualScalarType ? *actualScalarType : actualType, formalType, rv);
 }
 
 void CallInitDeinit::processReturnThrowYield(const uast::AstNode* ast, RV& rv) {
@@ -1266,16 +1298,9 @@ void callInitDeinit(Resolver& resolver) {
     symName = nd->name();
   }
 
-  // TODO: Run this for module initializer code as well. Currently if enabled,
-  // it breaks a large number of dyno tests that have module-initializer code
-  // containing things we can't resolve default-init for yet, such as
-  // fully-defaulted generic types. Either adjust the tests to expect the errors
-  // for unsupported code, or add the support, then enable this on modules.
-  if (!resolver.symbol->isModule()) {
-    CallInitDeinit uv(resolver.context, resolver,
-                      splitInitedVars, elidedCopyFromIds);
-    uv.process(resolver.symbol, resolver.byPostorder);
-  }
+  CallInitDeinit uv(resolver.context, resolver,
+                    splitInitedVars, elidedCopyFromIds);
+  uv.process(resolver.symbol, resolver.byPostorder);
 }
 
 

@@ -74,12 +74,12 @@ llvm::AllocaInst* makeAlloca(llvm::Type* type,
       tempVar = new llvm::AllocaInst(type,
                                      DL.getAllocaAddrSpace(),
                                      size, llvm::Align(align),
-                                     name, insertBefore);
+                                     name, getInsertPosition(insertBefore));
       trackLLVMValue(tempVar);
     } else {
       tempVar = new llvm::AllocaInst(type,
                                      DL.getAllocaAddrSpace(),
-                                     size, name, insertBefore);
+                                     size, name, getInsertPosition(insertBefore));
       trackLLVMValue(tempVar);
     }
   } else {
@@ -513,8 +513,8 @@ llvm::Value *convertValueToType(llvm::IRBuilder<>* irBuilder,
       // todo: setValueAlignment(tmp_alloc, ???, ???);
       *alloca = tmp_alloc;
       // Now cast the allocation to both fromType and toType.
-      llvm::Type* curPtrType = curType->getPointerTo();
-      llvm::Type* newPtrType = newType->getPointerTo();
+      llvm::Type* curPtrType = llvm::PointerType::getUnqual(curType);
+      llvm::Type* newPtrType = llvm::PointerType::getUnqual(newType);
       // Now get cast pointers
       llvm::Value* tmp_cur = irBuilder->CreatePointerCast(tmp_alloc, curPtrType);
       trackLLVMValue(tmp_cur);

@@ -148,8 +148,7 @@ static void test4() {
     assert(qt.type()->isIntType());
   }
   {
-    Context ctx;
-    auto context = &ctx;
+    auto context = buildStdContext();
     QualifiedType qt =  resolveQualifiedTypeOfX(context,
                            R""""(
                            proc foo(type t = int) type do return t;
