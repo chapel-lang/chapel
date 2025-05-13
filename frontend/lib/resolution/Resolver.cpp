@@ -5838,22 +5838,17 @@ void Resolver::exit(const Dot* dot) {
       // ids.numIds == 1
       const ID& id = ids.firstId();
 
-      // TODO: handle extern blocks correctly.
-      // This conditional is a workaround to leave extern block resolution
-      // to the production scope resolver.
-      if (!isExternBlock(parsing::idToTag(context, id))) {
-        QualifiedType type;
-        if (id.isEmpty()) {
-          // empty IDs from the scope resolution process are builtins
-          CHPL_ASSERT(false && "Not handled yet!");
-        } else {
-          // use the type established at declaration/initialization
-          type = typeForId(id);
-        }
-        maybeEmitWarningsForId(this, type, dot, id);
-        validateAndSetToId(r, dot, id);
-        r.setType(type);
+      QualifiedType type;
+      if (id.isEmpty()) {
+        // empty IDs from the scope resolution process are builtins
+        CHPL_UNIMPL("builtin module dot expression");
+      } else {
+        // use the type established at declaration/initialization
+        type = typeForId(id);
       }
+      maybeEmitWarningsForId(this, type, dot, id);
+      validateAndSetToId(r, dot, id);
+      r.setType(type);
     }
     return;
   }
