@@ -37,6 +37,7 @@
 #include "Resolver.h"
 #include "call-init-deinit.h"
 #include "default-functions.h"
+#include "extern-blocks.h"
 #include "maybe-const.h"
 #include "prims.h"
 #include "return-type-inference.h"
@@ -629,6 +630,15 @@ typedSignatureInitialImpl(ResolutionContext* rc,
                           bool usePlaceholders) {
   Context* context = rc->context();
   const TypedFnSignature* result = nullptr;
+
+  if (untypedSig->isCompilerGenerated() &&
+      untypedSig->id().isExternBlockElement()) {
+    auto functionId = untypedSig->id();
+    auto name = functionId.symbolName(context);
+    auto externBlockId = functionId.parentSymbolId(context);
+    return externBlockSigForFn(context, externBlockId, name);
+  }
+
   const AstNode* ast = parsing::idToAst(context, untypedSig->id());
   const Function* fn = ast->toFunction();
 

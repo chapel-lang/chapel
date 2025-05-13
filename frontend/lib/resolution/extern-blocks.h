@@ -46,12 +46,12 @@ const types::QualifiedType externBlockTypeForSymbol(Context* context,
                              UniqueString name);
 
 /** Given an extern block ID and a name, returns the equivalent
- *  Chapel UntypedFnSignature for that function with that name.
+ *  Chapel TypedFnSignature for that function with that name.
  *  Returns nullptr if the function is not found.
  */
-const resolution::UntypedFnSignature* externBlockSigForFn(Context* context,
-                                                          ID externBlockId,
-                                                          UniqueString name);
+const resolution::TypedFnSignature* externBlockSigForFn(Context* context,
+                                                        ID externBlockId,
+                                                        UniqueString name);
 
 } // end namespace resolution
 } // end namespace chpl

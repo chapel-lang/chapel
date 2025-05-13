@@ -58,10 +58,9 @@ const types::QualifiedType externBlockTypeForSymbol(Context* context,
   return result;
 }
 
-const UntypedFnSignature* externBlockSigForFn(Context* context,
-                                              ID externBlockId,
-                                              UniqueString name) {
-  const UntypedFnSignature* result = nullptr;
+const TypedFnSignature* externBlockSigForFn(Context* context, ID externBlockId,
+                                            UniqueString name) {
+  const TypedFnSignature* result = nullptr;
 
   if (externBlockContainsName(context, externBlockId, name)) {
     const owned<TemporaryFileResult>& tfs =

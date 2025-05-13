@@ -164,7 +164,9 @@ getUntypedFnSignatureForExternId(Context* context, ID functionId) {
   auto name = functionId.symbolName(context);
   auto externBlockId = functionId.parentSymbolId(context);
 
-  return externBlockSigForFn(context, externBlockId, name);
+  auto tfs = externBlockSigForFn(context, externBlockId, name);
+
+  return tfs->untyped();
 }
 
 static const UntypedFnSignature* const&
