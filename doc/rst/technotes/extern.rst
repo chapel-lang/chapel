@@ -838,10 +838,10 @@ types; for example:
  writeln(sum);
 
 
-Pointer Types
+Pointer Types in Extern Blocks
 -------------
 
-See the section `Pointer and String Types`_ above for background on
+See the section `Pointer Types`_ above for background on
 how the Chapel programs can work with C pointer types. Any pointer type used in
 an extern block will be made visible to the Chapel program as c_ptr(T),
 c_ptrConst(T).
