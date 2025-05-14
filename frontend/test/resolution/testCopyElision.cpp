@@ -181,10 +181,11 @@ static void test4() {
 }
 
 static void test5() {
-  testCopyElision("test5",
+  testCopyElision("test5a",
     R""""(
         proc test(cond: bool) {
           var x:int;
+          var z = x;
           if cond {
             var y = x;
             return;
@@ -192,7 +193,51 @@ static void test5() {
           x;
         }
     )"""",
-    {"M.test@6"});
+    {"M.test@8"});
+
+  testCopyElision("test5b",
+    R""""(
+        proc test(cond: bool) {
+          var x:int;
+          var z = x;
+          if cond {
+            var y = x;
+            return;
+          } else {
+          }
+        }
+    )"""",
+    {"M.test@8"});
+
+  testCopyElision("test5c",
+    R""""(
+        proc test(cond: bool) {
+          var x:int;
+          var z = x;
+          if cond {
+            var y = x;
+            return;
+          } else {
+            var yy = x;
+            return;
+          }
+        }
+    )"""",
+    {"M.test@8", "M.test@12"});
+
+  testCopyElision("test5d",
+    R""""(
+        proc test(cond: bool) {
+          var x:int;
+          var z = x;
+          if cond {
+            var y = x;
+            return;
+          }
+          var zz = x;
+        }
+    )"""",
+    {"M.test@8", "M.test@13"});
 }
 
 static void test6() {
@@ -286,13 +331,28 @@ static void test12() {
 }
 
 static void test13() {
-  testCopyElision("test13",
+  testCopyElision("test13a",
     R""""(
 
         proc test(cond: bool) {
           var x:int;
+          var z = x;
           if cond {
             var y = x;
+          }
+        }
+    )"""",
+    {});
+  testCopyElision("test13b",
+    R""""(
+
+        proc helper(in arg: int) { return 0; }
+        proc test(cond: bool) {
+          var x:int;
+          var z = helper(x);
+          if cond {
+          } else {
+            var y = helper(x);
           }
         }
     )"""",
