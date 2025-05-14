@@ -517,7 +517,8 @@ void FindSplitInits::propagateChildToParent(VarFrame* frame, VarFrame* parent, c
     // propagate initedVars and mentionedVars
     // to mentionedVars in the parent, and to global result if they are split-
     // inited here.
-    for (const auto& [id, qt] : frame->initedVarsVec) {
+    for (const auto& idQt : frame->initedVarsVec) {
+      auto& id = idQt.first;
       if (frame->eligibleVars.count(id) == 0) {
         if (parent) parent->mentionedVars.insert(id);
       } else {
