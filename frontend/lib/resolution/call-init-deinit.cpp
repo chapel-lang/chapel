@@ -323,8 +323,7 @@ void CallInitDeinit::checkUseOfDeinited(const AstNode* useAst, ID varId) {
     VarFrame* frame = scopeStack[i].get();
     if (frame->deinitedVars.count(varId) > 0) {
       // For vars dead after a call, don't error for uses within that call.
-      if (frame->deinitedVars[varId] ==
-          parsing::idToParentId(context, useAst->id())) {
+      if (frame->deinitedVars[varId].contains(useAst->id())) {
         continue;
       }
 
@@ -809,12 +808,6 @@ void CallInitDeinit::processInit(VarFrame* frame,
                                  const QualifiedType& lhsType,
                                  const QualifiedType& rhsType,
                                  RV& rv) {
-  if (lhsType.type() == rhsType.type() &&
-      !Type::needsInitDeinitCall(lhsType.type())) {
-    // TODO: we should resolve it anyway
-    return;
-  }
-
   // ast should be:
   //  * a '=' call
   //  * a VarLikeDecl
@@ -1149,8 +1142,7 @@ void CallInitDeinit::handleInFormal(const FnCall* ast, const AstNode* actual,
 
   // is the copy for 'in' elided?
   if (elidedCopyFromIds.count(actual->id()) > 0 &&
-      isValue(actualType.kind()) &&
-      Type::needsInitDeinitCall(actualType.type())) {
+      isValue(actualType.kind())) {
     CHPL_ASSERT(actualScalarType == nullptr);
     // it is move initialization
     resolveMoveInit(actual, actual, formalType, actualType, rv);
