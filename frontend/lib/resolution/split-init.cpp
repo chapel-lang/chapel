@@ -84,7 +84,7 @@ struct FindSplitInits : VarScopeVisitor {
   void handleDisjunction(const AstNode * node, 
                          VarFrame * currentFrame,
                          const std::vector<VarFrame*>& frames, 
-                         bool total, RV& rv) override;
+                         bool alwaysTaken, RV& rv) override;
 
   void handleScope(const AstNode* ast, RV& rv) override;
 };
@@ -301,7 +301,7 @@ std::map<ID,QualifiedType> FindSplitInits::verifyInitOrderAndType(const AstNode 
 void FindSplitInits::handleDisjunction(const AstNode * node, 
                                        VarFrame * currentFrame, 
                                        const std::vector<VarFrame*>& frames, 
-                                       bool total, RV& rv) {
+                                       bool alwaysTaken, RV& rv) {
 
   // gather the set of variables inited in any of the branches
   std::set<ID> locallyInitedVars;
@@ -342,7 +342,7 @@ void FindSplitInits::handleDisjunction(const AstNode * node,
     }
   }
 
-  if (!total) {
+  if (!alwaysTaken) {
     for (auto frame: frames) {
       propagateMentions(currentFrame, frame);
     } 

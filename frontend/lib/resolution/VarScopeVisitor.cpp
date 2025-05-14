@@ -235,15 +235,14 @@ void VarScopeVisitor::handleConditional(const Conditional* cond, RV& rv) {
   if (thenFrame) frames.push_back(thenFrame);
   if (elseFrame) frames.push_back(elseFrame);
 
-  // 'total' indicates whether a branch is always taken
-  bool total = false;
+  bool alwaysTaken = false;
   if (elseFrame) {
-    total = true;
+    alwaysTaken = true;
   } else if (thenFrame && thenFrame->knownPath) {
-    total = true;
+    alwaysTaken = true;
   }
 
-  handleDisjunction(cond, frame, frames, total, rv);
+  handleDisjunction(cond, frame, frames, alwaysTaken, rv);
   handleScope(cond, rv);
 }
 
@@ -251,14 +250,14 @@ void VarScopeVisitor::handleSelect(const Select* sel, RV& rv) {
   auto frame = currentFrame();
 
   std::vector<VarFrame*> frames;
-  bool total = sel->hasOtherwise();
+  bool alwaysTaken = sel->hasOtherwise();
   for(int i = 0; i < sel->numWhenStmts(); i++) {
     auto whenFrame = currentWhenFrame(i);
     if (!whenFrame) continue;
     frames.push_back(whenFrame);
-    total |= whenFrame->paramTrueCond;
+    alwaysTaken |= whenFrame->paramTrueCond;
   }
-  handleDisjunction(sel, frame, frames, total, rv);
+  handleDisjunction(sel, frame, frames, alwaysTaken, rv);
   handleScope(sel, rv);
 }
 

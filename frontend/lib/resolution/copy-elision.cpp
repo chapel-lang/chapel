@@ -108,7 +108,7 @@ struct FindElidedCopies : VarScopeVisitor {
   void handleDisjunction(const AstNode * node, 
                          VarFrame * currentFrame,
                          const std::vector<VarFrame*>& frames, 
-                         bool total, RV& rv) override;
+                         bool alwaysTaken, RV& rv) override;
   
   void handleScope(const AstNode* ast, RV& rv) override;
 };
@@ -438,7 +438,7 @@ static void propagateMentionsAndInits(VarFrame* parentFrame, VarFrame* childFram
 void FindElidedCopies::handleDisjunction(const AstNode * node,
                                          VarFrame * currentFrame, 
                                          const std::vector<VarFrame*>& frames,
-                                         bool total, RV& rv) {
+                                         bool alwaysTaken, RV& rv) {
   //propagate mentions to the parent
   for(auto frame: frames) {
     propagateMentionsAndInits(currentFrame, frame);
@@ -474,7 +474,7 @@ void FindElidedCopies::handleDisjunction(const AstNode * node,
   for (auto pair : idCounts) {
     // Variable did not occur in all frames, it does not get promoted. Instead,
     // consider it a 'mention' and propagate.
-    if (pair.second != nonReturningFrames.size() || !total) {
+    if (pair.second != nonReturningFrames.size() || !alwaysTaken) {
       CopyElisionState& parentState = currentFrame->copyElisionState[pair.first];
       parentState.lastIsCopy = false;
       parentState.points.clear();

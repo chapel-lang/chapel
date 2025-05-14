@@ -144,7 +144,7 @@ struct CallInitDeinit : VarScopeVisitor {
   void handleDisjunction(const AstNode * node,
                          VarFrame * currentFrame,
                          const std::vector<VarFrame*>& frames,
-                         bool total, RV& rv) override;
+                         bool alwaysTaken, RV& rv) override;
   void handleScope(const AstNode* ast, RV& rv) override;
 };
 
@@ -1255,7 +1255,7 @@ void CallInitDeinit::handleTry(const Try* t, RV& rv) {
 void CallInitDeinit::handleDisjunction(const uast::AstNode * node,
                                  VarFrame* currentFrame,
                                  const std::vector<VarFrame*>& frames,
-                                 bool total, RV& rv) {
+                                 bool alwaysTaken, RV& rv) {
 
   for (auto frame : frames) {
     if(!frame->controlFlowInfo.returnsOrThrows()) {

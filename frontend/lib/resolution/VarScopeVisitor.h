@@ -112,12 +112,12 @@ class VarScopeVisitor : public BranchSensitiveVisitor<VarFrame, MutatingResolved
   virtual void handleSelect(const uast::Select* cond, RV& rv);
   /** Generalizes processing Conditional and Select nodes after handling
       their contents. Updates currentFrame based on the frames of the
-      possible branching targets stored in frames. total indicates whether
-      a branch is taken no matter the input. */
+      possible branching targets stored in frames. 'alwaysTaken' indicates
+      whether a branch is taken no matter the input. */
   virtual void handleDisjunction(const uast::AstNode * node,
                                  VarFrame* currentFrame,
                                  const std::vector<VarFrame*>& frames,
-                                 bool total,
+                                 bool alwaysTaken,
                                  RV& rv) = 0;
   /** Called to process any other Scope after handling its contents --
       should update scopeStack.back() which is the frame for the Try.
