@@ -29,78 +29,47 @@ using namespace util;
 
 bool externBlockContainsName(Context* context, ID externBlockId,
                              UniqueString name) {
-  const owned<TemporaryFileResult>& tfs =
-      createClangPrecompiledHeader(context, externBlockId);
-  const TemporaryFileResult* ptr = tfs.get();
-  if (ptr != nullptr && precompiledHeaderContainsName(context, ptr, name)) {
-    return true;
+  if (auto& tfs = createClangPrecompiledHeader(context, externBlockId)) {
+    return precompiledHeaderContainsName(context, tfs.get(), name);
   }
-
   return false;
 }
 
 bool externBlockContainsFunction(Context* context, ID externBlockId,
                                  UniqueString name) {
-  const owned<TemporaryFileResult>& tfs =
-      createClangPrecompiledHeader(context, externBlockId);
-  const TemporaryFileResult* ptr = tfs.get();
-  if (ptr != nullptr && precompiledHeaderContainsFunction(context, ptr, name)) {
-    return true;
+  if (auto& tfs = createClangPrecompiledHeader(context, externBlockId)) {
+    return precompiledHeaderContainsFunction(context, tfs.get(), name);
   }
-
   return false;
 }
 
 const types::QualifiedType externBlockTypeForSymbol(Context* context,
                                                     ID externBlockId,
                                                     UniqueString name) {
-  types::QualifiedType result;
-
-  if (externBlockContainsName(context, externBlockId, name)) {
-    const owned<TemporaryFileResult>& tfs =
-        createClangPrecompiledHeader(context, externBlockId);
-    const TemporaryFileResult* ptr = tfs.get();
-    if (ptr != nullptr) {
-      result = precompiledHeaderTypeForSymbol(context, ptr, name);
-    }
+  if (auto& tfs = createClangPrecompiledHeader(context, externBlockId)) {
+    return precompiledHeaderTypeForSymbol(context, tfs.get(), name);
   }
-
-  return result;
+  return types::QualifiedType();
 }
 
 const TypedFnSignature* externBlockSigForFn(Context* context, ID externBlockId,
                                             UniqueString name) {
-  const TypedFnSignature* result = nullptr;
-
-  if (externBlockContainsName(context, externBlockId, name)) {
-    const owned<TemporaryFileResult>& tfs =
-        createClangPrecompiledHeader(context, externBlockId);
-    const TemporaryFileResult* ptr = tfs.get();
-    if (ptr != nullptr) {
-      ID fnId =
-          ID::fabricateId(context, externBlockId, name, ID::ExternBlockElement);
-      result = precompiledHeaderSigForFn(context, ptr, fnId);
-    }
+  if (auto& tfs = createClangPrecompiledHeader(context, externBlockId)) {
+    ID fnId =
+        ID::fabricateId(context, externBlockId, name, ID::ExternBlockElement);
+    return precompiledHeaderSigForFn(context, tfs.get(), fnId);
   }
-
-  return result;
+  return nullptr;
 }
 
 const types::QualifiedType externBlockRetTypeForFn(Context* context,
                                                    ID externBlockId,
                                                    UniqueString name) {
-  types::QualifiedType result;
-
-  if (externBlockContainsName(context, externBlockId, name)) {
-    const owned<TemporaryFileResult>& tfs =
-        createClangPrecompiledHeader(context, externBlockId);
-    const TemporaryFileResult* ptr = tfs.get();
-    if (ptr != nullptr) {
-      result = precompiledHeaderRetTypeForFn(context, ptr, name);
-    }
+  if (auto& tfs = createClangPrecompiledHeader(context, externBlockId)) {
+    return precompiledHeaderRetTypeForFn(context, tfs.get(), name);
   }
 
-  return result;
+  return types::QualifiedType();
 }
 
 }  // end namespace resolution
