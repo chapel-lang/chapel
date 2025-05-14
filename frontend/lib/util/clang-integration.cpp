@@ -363,11 +363,11 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
   return QUERY_END(result);
 }
 
+#ifdef HAVE_LLVM
 static QualifiedType convertClangTypeToChapelType(
     Context* context, const clang::Type* clangType) {
   QualifiedType chapelType;
 
-#ifdef HAVE_LLVM
   auto clangBuiltinType = clangType->getAs<clang::BuiltinType>();
   if (clangBuiltinType) {
     switch (clangBuiltinType->getKind()) {
@@ -429,7 +429,6 @@ static QualifiedType convertClangTypeToChapelType(
   } else {
     CHPL_UNIMPL("Non-builtin type in extern block");
   }
-#endif
 
   // adjust type to value of type
   if (!chapelType.isUnknown()) {
@@ -438,6 +437,7 @@ static QualifiedType convertClangTypeToChapelType(
 
   return chapelType;
 }
+#endif
 
 #ifdef HAVE_LLVM
 static clang::CompilerInstance* getCompilerInstanceForReadingPch(
@@ -490,6 +490,7 @@ static clang::CompilerInstance* getCompilerInstanceForReadingPch(
 }
 #endif
 
+#ifdef HAVE_LLVM
 static const clang::Decl* getDeclForIdent(Context* context,
                                           const TemporaryFileResult* pch,
                                           UniqueString name) {
@@ -528,6 +529,7 @@ static const clang::Decl* getDeclForIdent(Context* context,
 
   return result;
 }
+#endif
 
 static const bool&
 precompiledHeaderContainsNameQuery(Context* context,
@@ -567,6 +569,7 @@ precompiledHeaderTypeForSymbolQuery(Context* context,
 
   QualifiedType result;
 
+#ifdef HAVE_LLVM
   if (auto decl = getDeclForIdent(context, pch, name)) {
     if (llvm::isa<clang::FunctionDecl>(decl)) {
       result = QualifiedType(QualifiedType::FUNCTION, nullptr);
@@ -576,6 +579,7 @@ precompiledHeaderTypeForSymbolQuery(Context* context,
       }
     }
   }
+#endif
 
   return QUERY_END(result);
 }
@@ -586,8 +590,8 @@ static const TypedFnSignature* const& precompiledHeaderSigForFnQuery(
 
   const TypedFnSignature* result = nullptr;
 
+#ifdef HAVE_LLVM
   auto name = fnId.symbolName(context);
-
   if (auto decl = getDeclForIdent(context, pch, name)) {
     if (auto fnDecl = llvm::dyn_cast<clang::FunctionDecl>(decl)) {
       std::vector<UntypedFnSignature::FormalDetail> formals;
@@ -627,6 +631,7 @@ static const TypedFnSignature* const& precompiledHeaderSigForFnQuery(
                                      /* outerVariables */ OuterVariables());
     }
   }
+#endif
 
   return QUERY_END(result);
 }
@@ -637,6 +642,7 @@ static const QualifiedType& precompiledHeaderRetTypeForFnQuery(
 
   QualifiedType result;
 
+#ifdef HAVE_LLVM
   if (auto decl = getDeclForIdent(context, pch, name)) {
     if (auto fnDecl = llvm::dyn_cast<clang::FunctionDecl>(decl)) {
       const clang::Type* clangReturnType = fnDecl->getReturnType().getTypePtr();
@@ -645,6 +651,7 @@ static const QualifiedType& precompiledHeaderRetTypeForFnQuery(
       result = chplReturnType;
     }
   }
+#endif
 
   return QUERY_END(result);
 }
