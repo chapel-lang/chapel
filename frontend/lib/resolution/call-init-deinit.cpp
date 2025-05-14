@@ -854,7 +854,7 @@ void CallInitDeinit::processInit(VarFrame* frame,
       ID rhsDeclId = refersToId(rhsAst, rv);
       // copy elision with '=' should only apply to myVar = myOtherVar
       CHPL_ASSERT(!rhsDeclId.isEmpty());
-      frame->deinitedVars.emplace(rhsDeclId, ast->id());
+      frame->deinitedVars.emplace(rhsDeclId, currentStatement()->id());
     } else if (isCallProducingValue(rhsAst, rhsType, rv)) {
       // e.g. var x; x = callReturningValue();
       resolveMoveInit(ast, rhsAst, lhsType, rhsType, rv);
@@ -1152,7 +1152,7 @@ void CallInitDeinit::handleInFormal(const FnCall* ast, const AstNode* actual,
     ID actualId = refersToId(actual, rv);
     // copy elision should only apply to copies from variables
     CHPL_ASSERT(!actualId.isEmpty());
-    frame->deinitedVars.emplace(actualId, ast->id());
+    frame->deinitedVars.emplace(actualId, currentStatement()->id());
   } else {
     processInit(frame, actual, formalType,
                 actualScalarType ? *actualScalarType : actualType, rv);

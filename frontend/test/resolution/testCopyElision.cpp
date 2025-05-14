@@ -1261,6 +1261,20 @@ static void test45() {
   */
 }
 
+static void test46() {
+  testCopyElision("test46",
+    R""""(
+
+        proc helper(in arg: int) { return 0; }
+        proc test(cond: bool) {
+          var x:int = 0;
+          var a = x;
+          return helper(x) + helper(x);
+        }
+    )"""",
+    {"M.test@11"});
+}
+
 int main() {
   test1();
   test2();
@@ -1307,5 +1321,6 @@ int main() {
   test43();
   test44();
   test45();
+  test46();
   return 0;
 }
