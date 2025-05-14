@@ -70,8 +70,8 @@ const std::vector<std::string>& getCC1Arguments(Context* context,
 /** Given arguments to 'clang' and some code (normally, the contents of an
     extern block), create a precompiled header with clang and return
     its contents. */
-const owned<TemporaryFileResult>&
-createClangPrecompiledHeader(Context* context, ID externBlockId);
+const owned<TemporaryFileResult>& createClangPrecompiledHeader(
+    Context* context, ID externBlockId);
 
 /** Given a TemporaryFileResult created from createClangPrecompiledHeader,
     returns 'true' if the passed name is present as a defined macro
@@ -93,9 +93,8 @@ bool precompiledHeaderContainsFunction(Context* context,
     return the Chapel equivalent of the type of the symbol with the passed name
     if present, or an empty QualifiedType otherwise.
  */
-const types::QualifiedType& precompiledHeaderTypeForSymbol(Context* context,
-                                   const TemporaryFileResult* pch,
-                                   UniqueString name);
+const types::QualifiedType& precompiledHeaderTypeForSymbol(
+    Context* context, const TemporaryFileResult* pch, UniqueString name);
 
 /** Given a TemporaryFileResult created from createClangPrecompiledHeader,
     generate a TypedFnSignature from the function with the passed ID
@@ -111,7 +110,7 @@ const resolution::TypedFnSignature* precompiledHeaderSigForFn(
 const types::QualifiedType& precompiledHeaderRetTypeForFn(
     Context* context, const TemporaryFileResult* pch, UniqueString name);
 
-} // end namespace util
-} // end namespace chpl
+}  // end namespace util
+}  // end namespace chpl
 
 #endif

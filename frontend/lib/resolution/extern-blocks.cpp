@@ -19,20 +19,18 @@
 
 #include "extern-blocks.h"
 
-#include "chpl/util/clang-integration.h"
 #include "chpl/types/Type.h"
+#include "chpl/util/clang-integration.h"
 
 namespace chpl {
 namespace resolution {
 
-
 using namespace util;
 
-bool externBlockContainsName(Context* context,
-                             ID externBlockId,
+bool externBlockContainsName(Context* context, ID externBlockId,
                              UniqueString name) {
   const owned<TemporaryFileResult>& tfs =
-    createClangPrecompiledHeader(context, externBlockId);
+      createClangPrecompiledHeader(context, externBlockId);
   const TemporaryFileResult* ptr = tfs.get();
   if (ptr != nullptr && precompiledHeaderContainsName(context, ptr, name)) {
     return true;
@@ -41,11 +39,10 @@ bool externBlockContainsName(Context* context,
   return false;
 }
 
-bool externBlockContainsFunction(Context* context,
-                             ID externBlockId,
-                             UniqueString name) {
+bool externBlockContainsFunction(Context* context, ID externBlockId,
+                                 UniqueString name) {
   const owned<TemporaryFileResult>& tfs =
-    createClangPrecompiledHeader(context, externBlockId);
+      createClangPrecompiledHeader(context, externBlockId);
   const TemporaryFileResult* ptr = tfs.get();
   if (ptr != nullptr && precompiledHeaderContainsFunction(context, ptr, name)) {
     return true;
@@ -55,8 +52,8 @@ bool externBlockContainsFunction(Context* context,
 }
 
 const types::QualifiedType externBlockTypeForSymbol(Context* context,
-                                    ID externBlockId,
-                                    UniqueString name) {
+                                                    ID externBlockId,
+                                                    UniqueString name) {
   types::QualifiedType result;
 
   if (externBlockContainsName(context, externBlockId, name)) {
@@ -106,5 +103,5 @@ const types::QualifiedType externBlockRetTypeForFn(Context* context,
   return result;
 }
 
-} // end namespace resolution
-} // end namespace chpl
+}  // end namespace resolution
+}  // end namespace chpl

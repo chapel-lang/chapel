@@ -29,28 +29,25 @@
 namespace chpl {
 namespace resolution {
 
-
 /** Given an extern block ID and a name, returns 'true' if that
     extern block defines or declares something with that name.
  */
-bool externBlockContainsName(Context* context,
-                             ID externBlockId,
+bool externBlockContainsName(Context* context, ID externBlockId,
                              UniqueString name);
 
 /** Given an extern block ID and a name, returns 'true' if that
     extern block defines or declares a function with that name.
  */
-bool externBlockContainsFunction(Context* context,
-                             ID externBlockId,
-                             UniqueString name);
+bool externBlockContainsFunction(Context* context, ID externBlockId,
+                                 UniqueString name);
 
 /** Given an extern block ID and a name, returns the equivalent
  *  Chapel QualifiedType for that symbol with that name.
  *  Returns an empty QualifiedType if the symbol is not found.
  */
 const types::QualifiedType externBlockTypeForSymbol(Context* context,
-                             ID externBlockId,
-                             UniqueString name);
+                                                    ID externBlockId,
+                                                    UniqueString name);
 
 /** Given an extern block ID and a name, returns the equivalent
  *  Chapel TypedFnSignature for that function with that name.
@@ -65,10 +62,10 @@ const resolution::TypedFnSignature* externBlockSigForFn(Context* context,
  * Returns an empty QualifiedType if the function is not found.
  */
 const types::QualifiedType externBlockRetTypeForFn(Context* context,
-                                                    ID externBlockId,
-                                                    UniqueString name);
+                                                   ID externBlockId,
+                                                   UniqueString name);
 
-} // end namespace resolution
-} // end namespace chpl
+}  // end namespace resolution
+}  // end namespace chpl
 
 #endif

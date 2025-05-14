@@ -525,10 +525,8 @@ static void runFuncOnIdent(Context* context, const TemporaryFileResult* pch,
 }
 #endif
 
-static const bool&
-precompiledHeaderContainsNameQuery(Context* context,
-                                   const TemporaryFileResult* pch,
-                                   UniqueString name) {
+static const bool& precompiledHeaderContainsNameQuery(
+    Context* context, const TemporaryFileResult* pch, UniqueString name) {
   QUERY_BEGIN(precompiledHeaderContainsNameQuery, context, pch, name);
 
   bool result = false;
@@ -540,10 +538,9 @@ precompiledHeaderContainsNameQuery(Context* context,
     clang::ASTReader* astReader = Clang->getASTReader().get();
     CHPL_ASSERT(astReader);
 
-    auto readResult = astReader->ReadAST(pch->path(),
-                                    clang::serialization::MK_PCH,
-                                    clang::SourceLocation(),
-                                    clang::ASTReader::ARR_None);
+    auto readResult =
+        astReader->ReadAST(pch->path(), clang::serialization::MK_PCH,
+                           clang::SourceLocation(), clang::ASTReader::ARR_None);
     if (readResult == clang::ASTReader::Success) {
       clang::IdentifierInfo* iid = astReader->get(name.c_str());
       result = (iid != nullptr);
@@ -554,10 +551,8 @@ precompiledHeaderContainsNameQuery(Context* context,
   return QUERY_END(result);
 }
 
-static const bool&
-precompiledHeaderContainsFunctionQuery(Context* context,
-                                   const TemporaryFileResult* pch,
-                                   UniqueString name) {
+static const bool& precompiledHeaderContainsFunctionQuery(
+    Context* context, const TemporaryFileResult* pch, UniqueString name) {
   QUERY_BEGIN(precompiledHeaderContainsFunctionQuery, context, pch, name);
 
   bool result = false;
@@ -571,10 +566,8 @@ precompiledHeaderContainsFunctionQuery(Context* context,
   return QUERY_END(result);
 }
 
-static const QualifiedType&
-precompiledHeaderTypeForSymbolQuery(Context* context,
-                                      const TemporaryFileResult* pch,
-                                      UniqueString name) {
+static const QualifiedType& precompiledHeaderTypeForSymbolQuery(
+    Context* context, const TemporaryFileResult* pch, UniqueString name) {
   QUERY_BEGIN(precompiledHeaderTypeForSymbolQuery, context, pch, name);
 
   QualifiedType result;
@@ -681,14 +674,13 @@ bool precompiledHeaderContainsName(Context* context,
 }
 
 bool precompiledHeaderContainsFunction(Context* context,
-                                   const TemporaryFileResult* pch,
-                                   UniqueString name) {
+                                       const TemporaryFileResult* pch,
+                                       UniqueString name) {
   return precompiledHeaderContainsFunctionQuery(context, pch, name);
 }
 
-const QualifiedType& precompiledHeaderTypeForSymbol(Context* context,
-                                   const TemporaryFileResult* pch,
-                                   UniqueString name) {
+const QualifiedType& precompiledHeaderTypeForSymbol(
+    Context* context, const TemporaryFileResult* pch, UniqueString name) {
   return precompiledHeaderTypeForSymbolQuery(context, pch, name);
 }
 
