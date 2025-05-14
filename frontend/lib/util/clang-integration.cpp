@@ -371,6 +371,10 @@ static QualifiedType convertClangTypeToChapelType(
   auto clangBuiltinType = clangType->getAs<clang::BuiltinType>();
   if (clangBuiltinType) {
     switch (clangBuiltinType->getKind()) {
+      case clang::BuiltinType::Void:
+        chapelType = QualifiedType(QualifiedType::TYPE,
+                                   VoidType::get(context));
+        break;
       case clang::BuiltinType::Bool:
         chapelType =
             QualifiedType(QualifiedType::TYPE, BoolType::get(context));
