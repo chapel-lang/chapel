@@ -304,10 +304,9 @@ module ChapelDynamicLoading {
     proc type create(path: string, out err: owned DynLibError?) {
       var ret: unmanaged chpl_BinaryInfo? = nil;
 
-      if const error = errorIfUnsupported() {
-        err = error;
-        return ret;
-      }
+      // Check for an error and return if it was set.
+      err = errorIfUnsupported();
+      if err != nil then return ret;
 
       on Locales[0] {
         const store = chpl_binaryInfoStore.borrow();
@@ -436,7 +435,6 @@ module ChapelDynamicLoading {
     // we could add a primitive "any procedure type" to use instead.
     proc loadSymbol(sym: string, type t, out err: owned DynLibError?) {
       type P = chpl_toExternProcType(chpl_toWideProcType(t));
-      var ret = __primitive("cast", P, 0);
       var idx: int = 0;
 
       if !isProcedure(t) || isClass(t) {
@@ -453,11 +451,9 @@ module ChapelDynamicLoading {
                       'should be wide');
       }
 
-      // Check for an error and exit if it was set.
-      if const error = errorIfUnsupported() {
-        err = error;
-        return ret;
-      }
+      // Check for an error and return if it was set.
+      err = errorIfUnsupported();
+      if err != nil then return __primitive("cast", P, 0);
 
       // On the fast path, we check to see if the symbol exists on LOCALE-0.
       // If it does, then it should be in the procedure pointer cache, and
@@ -533,7 +529,7 @@ module ChapelDynamicLoading {
       }
 
       // Fine if 'ret' is '0', that is the wide-index equivalent of 'nil'.
-      ret = __primitive("cast", P, idx);
+      const ret = __primitive("cast", P, idx);
 
       return ret;
     }
