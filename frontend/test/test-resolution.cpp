@@ -517,7 +517,11 @@ module M {
 }
 
 void testArrayAssign(Context* context, const char* prelude, const char* typeExpr, const char* iterable, int expectedRank, const char* expectedStride, AssociatedAction::Action actionKind, const char* expectedCopyInitFn) {
-  std::string wholeString = std::string(prelude) + "\n\n" + "proc main() { var A" + typeExpr + " = " + iterable + "; }\n";
+  std::string ops = R"""(
+    operator =(ref lhs: int, const rhs: int) {}
+    operator =(ref lhs: real, const rhs: real) {}
+  )""";
+  std::string wholeString = ops + std::string(prelude) + "\n\n" + "proc main() { var A" + typeExpr + " = " + iterable + "; }\n";
   printf("=== Resolving program: ===\n");
   printf("%s\n", wholeString.c_str());
 

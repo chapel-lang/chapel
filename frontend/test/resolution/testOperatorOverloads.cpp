@@ -42,6 +42,7 @@ static void test1() {
   // primary operator method
   QualifiedType qt2 = resolveTypeOfXInit(context,
     R""""(
+      operator =(ref lhs: int, const rhs: int) {}
       record R {
         var field: int;
         operator :(z: R, type t: int) { return z.field; }
@@ -57,6 +58,7 @@ static void test1() {
   // secondary operator method
   QualifiedType qt3 = resolveTypeOfXInit(context,
     R""""(
+      operator =(ref lhs: int, const rhs: int) {}
       record R {
         var field: int;
       }
@@ -72,6 +74,7 @@ static void test1() {
   // non-method operator
   QualifiedType qt4 = resolveTypeOfXInit(context,
     R""""(
+      operator =(ref lhs: int, const rhs: int) {}
       record R {
         var field: int;
       }
@@ -93,6 +96,7 @@ static void test2() {
   // method and function operator definitions in the same scope should conflict (ambiguous call)
   QualifiedType qt1 = resolveTypeOfXInit(context,
     R""""(
+      operator =(ref lhs: int, const rhs: int) {}
       record R {
         var field: int;
       }
@@ -109,6 +113,7 @@ static void test2() {
   // access to R should implicitly grant access to its method operators
   QualifiedType qt2 = resolveTypeOfXInit(context,
     R""""(
+      operator =(ref lhs: int, const rhs: int) {}
       module M {
         record R {
           var field: int;
@@ -134,6 +139,7 @@ static void test3() {
   // incorrectly defined unary operator overload
   QualifiedType qt1 = resolveTypeOfXInit(context,
     R""""(
+      operator =(ref lhs: int, const rhs: int) {}
       record R {
         var field: int;
         operator !(z: R, type t: int) { return z.field; }
@@ -149,6 +155,7 @@ static void test3() {
   // correct unary operator overload
   QualifiedType qt2 = resolveTypeOfXInit(context,
     R""""(
+      operator =(ref lhs: int, const rhs: int) {}
       record R {
         var field: int;
         operator !(z: R) { return z.field; }
@@ -164,6 +171,7 @@ static void test3() {
   // overloading more operators
   QualifiedType qt3 = resolveTypeOfXInit(context,
     R""""(
+      operator =(ref lhs: int, const rhs: int) {}
       record R {
         var field: int;
         operator +(z: R, t: int) { return z.field; }
@@ -178,6 +186,7 @@ static void test3() {
 
   QualifiedType qt4 = resolveTypeOfXInit(context,
     R""""(
+      operator =(ref lhs: int, const rhs: int) {}
       record R {
         var field: int;
         operator >(z: R, t: complex) { return true; }
@@ -192,6 +201,7 @@ static void test3() {
 
   QualifiedType qt5 = resolveTypeOfXInit(context,
     R""""(
+      operator =(ref lhs: int, const rhs: int) {}
       record R {
         var field: int;
       }
@@ -208,6 +218,7 @@ static void test3() {
   // overloading operator for non-compound types
   QualifiedType qt6 = resolveTypeOfXInit(context,
     R""""(
+      operator =(ref lhs: int, const rhs: int) {}
       operator *(a: int, b: int) { return true; }
       var a: int = 2;
       var b: int = 3;
@@ -227,6 +238,7 @@ static void test4() {
 
   std::string program =
     R""""(
+      operator =(ref lhs: int, const rhs: int) {}
       record R {
         var x : int;
       }
@@ -253,6 +265,8 @@ static void test5() {
 
   std::string program =
     R""""(
+      operator =(ref lhs: real, const rhs: real) {}
+      operator =(ref lhs: int, const rhs: int) {}
       record R {
         var x : int;
       }
@@ -278,6 +292,7 @@ static void test6() {
 
   std::string program =
     R""""(
+      operator =(ref lhs: int, const rhs: int) {}
       record R {
         var x : int;
       }
@@ -302,6 +317,7 @@ static void test7() {
 
   std::string program =
     R""""(
+      operator =(ref lhs: int, const rhs: int) {}
       record R {
         var x : int;
       }

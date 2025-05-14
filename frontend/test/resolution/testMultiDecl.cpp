@@ -241,6 +241,7 @@ static void test6() {
   ErrorGuard guard(context);
 
   std::string program = R"""(
+    operator =(ref lhs: int, const rhs: int) {}
     var a, b : int;
 
     var x = a;

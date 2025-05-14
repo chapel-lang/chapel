@@ -101,7 +101,7 @@ static void runProgram(std::vector<const char*> prog, F&& f, Types... types) {
   auto context = &ctx;
   ErrorGuard guard(context);
 
-  std::string program = "module ChapelBase {\n  enum iterKind { standalone, leader, follower };\n}\n";
+  std::string program = "module ChapelBase {\n  enum iterKind { standalone, leader, follower };\noperator =(ref lhs: int, const rhs: int) {}\noperator =(ref lhs:real, const rhs:real) {}\n}\n";
 
   auto addType = [&](auto arg) {
     for (const auto& line : arg.strs())

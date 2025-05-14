@@ -1350,6 +1350,7 @@ static void test22() {
               return 5;
             }
           }
+          operator =(ref lhs: int, const rhs: int) {}
           var outer : Outer;
           param x = outer.inner(1);
         }
@@ -1374,6 +1375,7 @@ static void test23() {
   {
     std::string prog =
       R"""(
+      operator =(ref lhs: int, const rhs: int) {}
       record R {
         var x : int;
 
@@ -1405,6 +1407,7 @@ static void test23() {
     context->advanceToNextRevision(false);
     std::string prog =
       R"""(
+      operator =(ref lhs: int, const rhs: int) {}
       record Inner {
         var x : int;
 
@@ -1468,6 +1471,8 @@ static void test24() {
           return foo(x);
         }
       }
+
+      operator =(ref lhs: int, const rhs: int) {}
 
       record myRecord {}
       proc foo(r: myRecord) do return 42;
@@ -2067,6 +2072,7 @@ static void testGlobalMultiDecl() {
 
   auto xQt = resolveTypeOfXInit(context,
     R"""(
+      operator =(ref lhs: int, const rhs: int) {}
       var a, b: int;
       proc foo() do return a;
       var x = foo();

@@ -43,6 +43,8 @@ void testHeapBufferArg(const char* formalType, const char* actualType, F&& test)
 
   std::stringstream ss;
 
+  ss << "operator =(ref lhs: int, const rhs: int) {}" << std::endl;
+  ss << "operator =(ref lhs: _ddata(?t), const rhs: _ddata(t)) {}" << std::endl;
   ss << "record rec { type someType; }" << std::endl;
   ss << "proc f(x: " << formalType << ") { return 0; }" << std::endl;
   ss << "var arg: " << actualType << ";" << std::endl;
@@ -56,14 +58,14 @@ void testHeapBufferArg(const char* formalType, const char* actualType, F&& test)
 
   assert(modules.size() == 1);
   auto mainMod = modules[0];
-  assert(mainMod->numStmts() == 4);
+  assert(mainMod->numStmts() == 6);
 
-  auto fChild = mainMod->child(1);
+  auto fChild = mainMod->child(3);
   assert(fChild->isFunction());
   auto fFn = fChild->toFunction();
   assert(fFn->name() == "f");
 
-  auto fCallVar = mainMod->child(3);
+  auto fCallVar = mainMod->child(5);
   assert(fCallVar->isVariable());
 
   auto& modResResult = resolveModule(context, mainMod->id());
@@ -158,6 +160,7 @@ static void test8() {
 
   std::string program = R"""(
   module M{
+    operator =(ref lhs: int, const rhs: int) {}
     module X {
       proc foo() {
         var ret : _ddata(int);
@@ -223,6 +226,7 @@ static void test11() {
   ErrorGuard guard(context);
 
   std::string program = R"""(
+  operator =(ref lhs: _ddata(?t), const rhs: _ddata(t)) {}
   proc foo(x: _ddata(?t), y: _ddata(t)) do return y;
   var ptrInt: _ddata(int);
   var ptrReal: _ddata(real);

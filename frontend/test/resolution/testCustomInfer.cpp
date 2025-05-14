@@ -45,6 +45,7 @@ module M {
     return int;
   }
 
+  operator =(ref lhs: int, const rhs: int) {}
   operator =(ref lhs: int, const rhs: R) {
     lhs = rhs.val;
   }
