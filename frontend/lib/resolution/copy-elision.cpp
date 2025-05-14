@@ -476,8 +476,6 @@ void FindElidedCopies::handleDisjunction(const AstNode * node,
     nonReturningFrames.push_back(frame);
   }
 
-  if (!total) return;
-
   // Now, note all variables that are elided in all non-returning branches.
   std::unordered_map<ID, size_t> idCounts;
   for (auto frame : nonReturningFrames) {
@@ -487,8 +485,14 @@ void FindElidedCopies::handleDisjunction(const AstNode * node,
   }
 
   for (auto pair : idCounts) {
-    // Variable did not occur in all frames, it does not get promoted.
-    if (pair.second != nonReturningFrames.size()) continue;
+    // Variable did not occur in all frames, it does not get promoted. Instead,
+    // consider it a 'mention' and propagate.
+    if (pair.second != nonReturningFrames.size() || !total) {
+      CopyElisionState& parentState = currentFrame->copyElisionState[pair.first];
+      parentState.lastIsCopy = false;
+      parentState.points.clear();
+      continue;
+    }
 
     // Populate the parent frame
     CopyElisionState& parentState = currentFrame->copyElisionState[pair.first];
