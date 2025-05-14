@@ -243,7 +243,7 @@ module ChapelDynamicLoading {
   }
 
   private inline proc errorIfUnsupported() {
-    var ret: DynLibError?;
+    var ret: owned DynLibError?;
 
     if !isDynamicLoadingSupported {
       compilerError('Dynamic loading is not supported for your ' +
