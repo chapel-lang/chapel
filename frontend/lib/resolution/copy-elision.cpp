@@ -471,9 +471,19 @@ void FindElidedCopies::handleDisjunction(const AstNode * node,
 
   std::vector<VarFrame*> nonReturningFrames;
   for(auto frame: frames) {
-    if (frame->controlFlowInfo.returnsOrThrows()) continue;
-    saveLocalVarElidedCopies(frame);
-    nonReturningFrames.push_back(frame);
+    if (frame->controlFlowInfo.returnsOrThrows()) {
+      for (auto pair : frame->copyElisionState) {
+        if (pair.second.lastIsCopy) {
+          CopyElisionState& parentState = currentFrame->copyElisionState[pair.first];
+          parentState.lastIsCopy = true;
+          CopyElisionState& frameState = frame->copyElisionState.at(pair.first);
+          parentState.points.insert(frameState.points.begin(), frameState.points.end());
+        }
+      }
+    } else {
+      saveLocalVarElidedCopies(frame);
+      nonReturningFrames.push_back(frame);
+    }
   }
 
   // Now, note all variables that are elided in all non-returning branches.
@@ -603,6 +613,11 @@ void FindElidedCopies::propagateChildToParent(VarFrame* frame, VarFrame* parent,
         if (state.lastIsCopy && frame->eligibleVars.count(id) == 0) {
           CopyElisionState& parentState = parent->copyElisionState[id];
           parentState.lastIsCopy = true;
+
+          // If there are valid copies in a child frame, the parent's
+          // accumulated points thus far are no longer valid.
+          parentState.points.clear();
+
           parentState.points.insert(state.points.begin(), state.points.end());
         } else if (frame->eligibleVars.count(id) == 0) {
           CopyElisionState& parentState = parent->copyElisionState[id];
