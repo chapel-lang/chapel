@@ -82,6 +82,14 @@ bool precompiledHeaderContainsName(Context* context,
                                    UniqueString name);
 
 /** Given a TemporaryFileResult created from createClangPrecompiledHeader,
+    returns 'true' if the passed name is present as a defined function
+    name and 'false' otherwise.
+ */
+bool precompiledHeaderContainsFunction(Context* context,
+                                       const TemporaryFileResult* pch,
+                                       UniqueString name);
+
+/** Given a TemporaryFileResult created from createClangPrecompiledHeader,
     return the Chapel equivalent of the type of the symbol with the passed name
     if present, or an empty QualifiedType otherwise.
  */

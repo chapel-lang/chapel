@@ -1250,8 +1250,7 @@ LookupResult LookupHelper::doLookupInExternBlocks(const Scope* scope,
                                    ID::ExternBlockElement);
 
       bool isParenfulFunction =
-          externBlockTypeForSymbol(context, exbId, name).kind() ==
-          QualifiedType::FUNCTION;
+          externBlockContainsFunction(context, exbId, name);
 
       // We assume it's not a type, but that might not be. However, it
       // shouldn't matter for scope resolution. Adjust this code if it does.

@@ -41,6 +41,19 @@ bool externBlockContainsName(Context* context,
   return false;
 }
 
+bool externBlockContainsFunction(Context* context,
+                             ID externBlockId,
+                             UniqueString name) {
+  const owned<TemporaryFileResult>& tfs =
+    createClangPrecompiledHeader(context, externBlockId);
+  const TemporaryFileResult* ptr = tfs.get();
+  if (ptr != nullptr && precompiledHeaderContainsFunction(context, ptr, name)) {
+    return true;
+  }
+
+  return false;
+}
+
 const types::QualifiedType externBlockTypeForSymbol(Context* context,
                                     ID externBlockId,
                                     UniqueString name) {

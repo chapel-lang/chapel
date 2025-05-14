@@ -490,20 +490,6 @@ static clang::CompilerInstance* getCompilerInstanceForReadingPch(
 }
 #endif
 
-static const bool&
-precompiledHeaderContainsNameQuery(Context* context,
-                                   const TemporaryFileResult* pch,
-                                   UniqueString name) {
-  QUERY_BEGIN(precompiledHeaderContainsNameQuery, context, pch, name);
-
-  bool result = false;
-#ifdef HAVE_LLVM
-  result = getDeclForIdent(context, pch, name) != nullptr;
-#endif
-
-  return QUERY_END(result);
-}
-
 static const clang::Decl* getDeclForIdent(Context* context,
                                           const TemporaryFileResult* pch,
                                           UniqueString name) {
@@ -541,6 +527,36 @@ static const clang::Decl* getDeclForIdent(Context* context,
   }
 
   return result;
+}
+
+static const bool&
+precompiledHeaderContainsNameQuery(Context* context,
+                                   const TemporaryFileResult* pch,
+                                   UniqueString name) {
+  QUERY_BEGIN(precompiledHeaderContainsNameQuery, context, pch, name);
+
+  bool result = false;
+
+#ifdef HAVE_LLVM
+  result = getDeclForIdent(context, pch, name) != nullptr;
+#endif
+
+  return QUERY_END(result);
+}
+
+static const bool&
+precompiledHeaderContainsFunctionQuery(Context* context,
+                                   const TemporaryFileResult* pch,
+                                   UniqueString name) {
+  QUERY_BEGIN(precompiledHeaderContainsFunctionQuery, context, pch, name);
+
+  bool result = false;
+
+#ifdef HAVE_LLVM
+  result = llvm::isa<clang::FunctionDecl>(getDeclForIdent(context, pch, name));
+#endif
+
+  return QUERY_END(result);
 }
 
 static const QualifiedType&
@@ -637,6 +653,12 @@ bool precompiledHeaderContainsName(Context* context,
                                    const TemporaryFileResult* pch,
                                    UniqueString name) {
   return precompiledHeaderContainsNameQuery(context, pch, name);
+}
+
+bool precompiledHeaderContainsFunction(Context* context,
+                                   const TemporaryFileResult* pch,
+                                   UniqueString name) {
+  return precompiledHeaderContainsFunctionQuery(context, pch, name);
 }
 
 const QualifiedType& precompiledHeaderTypeForSymbol(Context* context,

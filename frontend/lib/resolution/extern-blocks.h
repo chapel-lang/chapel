@@ -37,6 +37,13 @@ bool externBlockContainsName(Context* context,
                              ID externBlockId,
                              UniqueString name);
 
+/** Given an extern block ID and a name, returns 'true' if that
+    extern block defines or declares a function with that name.
+ */
+bool externBlockContainsFunction(Context* context,
+                             ID externBlockId,
+                             UniqueString name);
+
 /** Given an extern block ID and a name, returns the equivalent
  *  Chapel QualifiedType for that symbol with that name.
  *  Returns an empty QualifiedType if the symbol is not found.
