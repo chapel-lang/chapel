@@ -241,7 +241,7 @@ static void test5() {
 }
 
 static void test6() {
-  testCopyElision("test6",
+  testCopyElision("test6a",
     R""""(
         proc test(cond: bool) {
           var x:int;
@@ -254,6 +254,23 @@ static void test6() {
         }
     )"""",
     {"M.test@8", "M.test@12"});
+
+  testCopyElision("test6b",
+    R""""(
+        proc test(cond: bool) {
+          var x:int;
+          if cond {
+            var y = x;
+            var z = y;
+            return;
+          } else {
+            var y = x;
+            var z = y;
+            return;
+          }
+        }
+    )"""",
+    {"M.test@6", "M.test@8", "M.test@12", "M.test@14"});
 }
 
 static void test7() {
