@@ -24,27 +24,24 @@ module ChapelDynamicLoading {
   private use Atomics;
   private use ChapelLocks;
 
-  /** If the mode is 'OFF', then dynamic loading cannot be used.
-
-      If the mode is 'EAGER', then when a library is loaded, Chapel
-      will load it on all locales, and whenever a symbol is loaded
-      Chapel will load it on all locales.
-
-      The 'LAZY' mode is not currently implemented but is declared
-      here to express the intention.
-  */
-  enum chpl_dynamicLoading { OFF, EAGER, LAZY }
-
   param chpl_defaultProcBufferSize = 512;
 
-  // Have to mark this as 'unstable' to avoid it showing up as a config in
-  // the output of some tests. It should be completely "hidden", and marking
-  // it 'private' alone does not do that.
-  @unstable()
-  private config const chpl_dynamicLoadingSupport = chpl_dynamicLoading.EAGER;
+  inline proc isDynamicLoadingSupported param {
+    use ChplConfig;
 
-  private inline proc isDynamicLoadingEnabled {
-    return chpl_dynamicLoadingSupport != chpl_dynamicLoading.OFF;
+    if CHPL_COMM == "gasnet" &&
+       CHPL_COMM_SUBSTRATE == "smp" &&
+       CHPL_GASNET_SEGMENT == "everything" {
+      // On 'smp'/'everything' we see strange behavior where the 'Locales'
+      // array does not contain unique values: LOCALE-0 can appear multiple
+      // times. So we should not support dynamic loading on that config.
+      return false;
+    }
+    return true;
+  }
+
+  inline proc isDynamicLoadingEnabled {
+    return isDynamicLoadingSupported;
   }
 
   // This counter is used to assign a unique 'wide index' to each procedure.
@@ -102,7 +99,7 @@ module ChapelDynamicLoading {
   // If we are multi-locale, then we'll need to initialize the cache on the
   // remaining locales manually, since the module initializer is only
   // running on LOCALE-0.
-  if numLocales > 1 {
+  if isDynamicLoadingSupported && numLocales > 1 {
     coforall loc in Locales[1..] {
       on loc do local do {
         assert(chpl_localPtrCache == nil);
@@ -121,8 +118,11 @@ module ChapelDynamicLoading {
   // the qthreads layer, perhaps while cleaning up TLS.
   //
   proc deinit() {
-    coforall loc in Locales do on loc {
-      if chpl_localPtrCache != nil then delete chpl_localPtrCache;
+    delete chpl_localPtrCache;
+    if isDynamicLoadingSupported {
+      coforall loc in Locales[1..] do on loc {
+        if chpl_localPtrCache != nil then delete chpl_localPtrCache;
+      }
     }
   }
 
@@ -242,6 +242,21 @@ module ChapelDynamicLoading {
     }
   }
 
+  private inline proc errorIfUnsupported() {
+    var ret: DynLibError?;
+
+    if !isDynamicLoadingSupported {
+      compilerError('Dynamic loading is not supported for your ' +
+                    'current Chapel configuration', 2);
+    }
+
+    if !isDynamicLoadingEnabled {
+      ret = new DynLibError('Dynamic loading is not enabled');
+    }
+
+    return ret;
+  }
+
   // This is one per entrypoint binary and lives on LOCALE-0.
   var chpl_binaryInfoStore = new owned chpl_BinaryInfoStore();
 
@@ -288,6 +303,11 @@ module ChapelDynamicLoading {
     // Load a binary given a path.
     proc type create(path: string, out err: owned DynLibError?) {
       var ret: unmanaged chpl_BinaryInfo? = nil;
+
+      if const error = errorIfUnsupported() {
+        err = error;
+        return ret;
+      }
 
       on Locales[0] {
         const store = chpl_binaryInfoStore.borrow();
@@ -415,6 +435,8 @@ module ChapelDynamicLoading {
     // e.g., we cannot write "type t: proc". As a short-term workaround
     // we could add a primitive "any procedure type" to use instead.
     proc loadSymbol(sym: string, type t, out err: owned DynLibError?) {
+      type P = chpl_toExternProcType(chpl_toWideProcType(t));
+      var ret = __primitive("cast", P, 0);
       var idx: int = 0;
 
       if !isProcedure(t) || isClass(t) {
@@ -429,6 +451,12 @@ module ChapelDynamicLoading {
         // we might like to allow users to load references to data as well.
         compilerError('The procedure type passed to \'loadSymbol\'' +
                       'should be wide');
+      }
+
+      // Check for an error and exit if it was set.
+      if const error = errorIfUnsupported() {
+        err = error;
+        return ret;
       }
 
       // On the fast path, we check to see if the symbol exists on LOCALE-0.
@@ -505,7 +533,7 @@ module ChapelDynamicLoading {
       }
 
       // Fine if 'ret' is '0', that is the wide-index equivalent of 'nil'.
-      var ret = __primitive("cast", chpl_toExternProcType(t), idx);
+      ret = __primitive("cast", P, idx);
 
       return ret;
     }
