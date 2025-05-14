@@ -149,7 +149,7 @@ computeAndPrintStuff(ResolutionContext* rc,
       if (candidate) {
         auto sig = candidate.fn();
         if (sig->untyped()->idIsFunction() &&
-            !sig->untyped()->id().isExternBlockElement()) {
+            !sig->untyped()->idIsExternBlockFunction()) {
           auto fn = resolveFunction(rc, sig, r->poiScope());
           calledFns.insert(fn);
         }

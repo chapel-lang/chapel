@@ -631,8 +631,7 @@ typedSignatureInitialImpl(ResolutionContext* rc,
   Context* context = rc->context();
   const TypedFnSignature* result = nullptr;
 
-  if (untypedSig->isCompilerGenerated() &&
-      untypedSig->id().isExternBlockElement()) {
+  if (untypedSig->idIsExternBlockFunction()) {
     auto functionId = untypedSig->id();
     auto name = functionId.symbolName(context);
     auto externBlockId = functionId.parentSymbolId(context);
@@ -3033,7 +3032,7 @@ helpResolveFunction(ResolutionContext* rc, const TypedFnSignature* sig,
                 "instantiated functions");
     return nullptr;
   } else if (sig->untyped()->isTypeConstructor() &&
-             sig->untyped()->id().isExternBlockElement()) {
+             sig->untyped()->idIsExternBlockFunction()) {
     CHPL_ASSERT(false && "Should not be called on functions in extern blocks");
   }
 

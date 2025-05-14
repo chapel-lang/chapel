@@ -314,6 +314,11 @@ class UntypedFnSignature {
     return idTag_ == uast::asttags::Function;
   }
 
+  /** Returns true if id() refers to a function declared in an extern block */
+  bool idIsExternBlockFunction() const {
+    return isCompilerGenerated() && id().isExternBlockElement();
+  }
+
   /** Returns true if id() refers to a Class */
   bool idIsClass() const {
     return idTag_ == uast::asttags::Class;
