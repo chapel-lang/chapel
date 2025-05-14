@@ -340,7 +340,7 @@ void FindElidedCopies::handleOutFormal(const Call* ast,
                                        const QualifiedType& formalType,
                                        RV& rv) {
   // 'out' can't be the RHS for an elided copy
-  processMentions(actual, rv);
+  actual->traverse(rv);
 
   // updated initedVars for split init
   processSplitInitOut(ast, actual, allSplitInitedVars, rv);
@@ -366,6 +366,9 @@ void FindElidedCopies::handleInFormal(const Call* ast, const AstNode* actual,
         elide = true;
       }
     }
+  } else if (actualToId.isEmpty()) {
+    actual->traverse(rv);
+    return;
   }
 
   if (elide) {
@@ -380,7 +383,7 @@ void FindElidedCopies::handleInoutFormal(const Call* ast,
                                          const QualifiedType* actualScalarType,
                                          RV& rv) {
   // 'inout' can't be the RHS for an elided copy
-  processMentions(actual, rv);
+  actual->traverse(rv);
 }
 
 void FindElidedCopies::handleReturn(const uast::Return* ast, RV& rv) {
