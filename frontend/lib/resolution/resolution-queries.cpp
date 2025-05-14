@@ -5524,6 +5524,41 @@ static bool handleReflectionFunction(ResolutionContext* rc,
   return false;
 }
 
+// handle field access constness and pragmas like REF_TO_CONST_WHEN_CONST_THIS
+static void adjustConstnessBasedOnReceiver(Context* context,
+                                           const MostSpecificCandidate& candidate,
+                                           const CallInfo& ci,
+                                           QualifiedType& rt) {
+  bool adjustConst = false;
+  if (candidate.fn()->untyped()->idIsFunction() && !candidate.fn()->isCompilerGenerated()) {
+    auto fnAst = parsing::idToAst(context, candidate.fn()->id());
+    if (auto ag = fnAst->attributeGroup()) {
+      if (ag->hasPragma(pragmatags::PRAGMA_REF_TO_CONST_WHEN_CONST_THIS)) {
+        adjustConst = true;
+      }
+    }
+  } else if (candidate.fn()->untyped()->idIsField()) {
+    // the return type computation for fields already takes care of making
+    // it ref where necessary, so just adjust constness for refs.
+    //
+    // Don't do this for classes, though: a 'const shared C' can still
+    // have its fields accessed mutably.
+
+    if (ci.methodReceiverType().type() &&
+        ci.methodReceiverType().type()->isClassType()) {
+      // don't adjust
+    } else {
+      adjustConst = rt.isRef();
+    }
+  }
+
+  if (adjustConst) {
+    auto kp = KindProperties::fromKind(rt.kind());
+    kp.setConst(ci.methodReceiverType().isConst());
+    rt = QualifiedType(kp.toKind(), rt.type());
+  }
+}
+
 // call can be nullptr. in that event ci.name() will be used to find
 // what is called.
 static CallResolutionResult
@@ -5597,36 +5632,8 @@ resolveFnCall(ResolutionContext* rc,
     rt = yieldAndRet.second;
 
 
-    // handle pragmas like REF_TO_CONST_WHEN_CONST_THIS
     if (ci.isMethodCall()) {
-      bool adjustConst = false;
-      if (candidate.fn()->untyped()->idIsFunction() && !candidate.fn()->isCompilerGenerated()) {
-        auto fnAst = parsing::idToAst(context, candidate.fn()->id());
-        if (auto ag = fnAst->attributeGroup()) {
-          if (ag->hasPragma(pragmatags::PRAGMA_REF_TO_CONST_WHEN_CONST_THIS)) {
-            adjustConst = true;
-          }
-        }
-      } else if (candidate.fn()->untyped()->idIsField()) {
-        // the return type computation for fields already takes care of making
-        // it ref where necessary, so just adjust constness for refs.
-        //
-        // Don't do this for classes, though: a 'const shared C' can still
-        // have its fields accessed mutably.
-
-        if (ci.methodReceiverType().type() &&
-            ci.methodReceiverType().type()->isClassType()) {
-          // don't adjust
-        } else {
-          adjustConst = rt.isRef();
-        }
-      }
-
-      if (adjustConst) {
-        auto kp = KindProperties::fromKind(rt.kind());
-        kp.setConst(ci.methodReceiverType().isConst());
-        rt = QualifiedType(kp.toKind(), rt.type());
-      }
+      adjustConstnessBasedOnReceiver(context, candidate, ci, rt);
     }
 
     QualifiedType yt;
