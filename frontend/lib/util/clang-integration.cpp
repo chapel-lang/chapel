@@ -571,7 +571,9 @@ precompiledHeaderContainsFunctionQuery(Context* context,
   bool result = false;
 
 #ifdef HAVE_LLVM
-  result = llvm::isa<clang::FunctionDecl>(getDeclForIdent(context, pch, name));
+  if (auto decl = getDeclForIdent(context, pch, name)) {
+    result = llvm::isa<clang::FunctionDecl>(decl);
+  }
 #endif
 
   return QUERY_END(result);
