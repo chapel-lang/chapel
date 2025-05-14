@@ -159,21 +159,40 @@ static void test7() {
 
 static void test8() {
   printf("%s\n", __FUNCTION__);
-  Context* context = buildStdContext();
-  ErrorGuard guard(context);
-  QualifiedType qt =
-    resolveTypeOfXInit(context,
-                       R""""(
-                        module M {
-                          extern { int i; }
-                          var x = i;
-                        }
-                       )"""", true);
+  {
+    Context* context = buildStdContext();
+    ErrorGuard guard(context);
+    QualifiedType qt =
+      resolveTypeOfXInit(context,
+                         R""""(
+                          module M {
+                            extern { int i; }
+                            var x = i;
+                          }
+                         )"""", true);
 
-  assert(!qt.isUnknownOrErroneous());
-  assert(qt.type()->isIntType());
+    assert(!qt.isUnknownOrErroneous());
+    assert(qt.type()->isIntType());
 
-  assert(!guard.realizeErrors());
+    assert(!guard.realizeErrors());
+  }
+
+  {
+    Context* context = buildStdContext();
+    ErrorGuard guard(context);
+    QualifiedType qt =
+      resolveTypeOfXInit(context,
+                         R""""(
+                          module M {
+                            extern { }
+                            var x = 1;
+                          }
+                         )"""", true);
+
+    assert(!qt.isUnknownOrErroneous());
+
+    assert(!guard.realizeErrors());
+  }
 }
 
 static void test9() {
@@ -203,6 +222,59 @@ static void test9() {
   assert(!guard.realizeErrors());
 }
 
+static void test10() {
+  printf("%s\n", __FUNCTION__);
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+  QualifiedType qt =
+    resolveTypeOfXInit(context,
+                       R""""(
+                        module M {
+                          module CDemo {
+                            extern {
+                               int main(void) {
+                                  return 1;
+                               }
+                            }
+                          }
+
+                          var x = CDemo.main();
+                        }
+                       )"""", true);
+
+  assert(!qt.isUnknownOrErroneous());
+  assert(qt.type()->isIntType());
+  assert(!qt.type()->toIntType()->isDefaultWidth());
+
+  assert(!guard.realizeErrors());
+}
+
+static void test11() {
+  printf("%s\n", __FUNCTION__);
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+  QualifiedType qt =
+    resolveTypeOfXInit(context,
+                       R""""(
+                        module M {
+                          module CDemo {
+                            extern {
+                               void foo(void) {
+                                  return;
+                               }
+                            }
+                          }
+
+                          var x = CDemo.foo();
+                        }
+                       )"""", true);
+
+  assert(!qt.isUnknownOrErroneous());
+  assert(qt.type()->isVoidType());
+
+  assert(!guard.realizeErrors());
+}
+
 
 
 
@@ -216,6 +288,8 @@ int main() {
   test7();
   test8();
   test9();
+  test10();
+  test11();
 
   return 0;
 }
