@@ -540,7 +540,23 @@ precompiledHeaderContainsNameQuery(Context* context,
   bool result = false;
 
 #ifdef HAVE_LLVM
-  result = getDeclForIdent(context, pch, name) != nullptr;
+  if (pch) {
+    clang::CompilerInstance* Clang = getCompilerInstanceForReadingPch(context);
+    Clang->createASTReader();
+    clang::ASTReader* astReader = Clang->getASTReader().get();
+    CHPL_ASSERT(astReader);
+
+    auto readResult = astReader->ReadAST(pch->path(),
+                                    clang::serialization::MK_PCH,
+                                    clang::SourceLocation(),
+                                    clang::ASTReader::ARR_None);
+    if (readResult == clang::ASTReader::Success) {
+      clang::IdentifierInfo* iid = astReader->get(name.c_str());
+      result = (iid != nullptr);
+    }
+
+    delete Clang;
+  }
 #endif
 
   return QUERY_END(result);
