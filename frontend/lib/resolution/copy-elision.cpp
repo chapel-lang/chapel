@@ -594,6 +594,10 @@ static bool allowsCopyElision(const AstNode* ast) {
          ast->isTry();
 }
 
+// Note: This method is expected to be called _after_ special handling of
+// branching uAST, such that the results were collected into a single 'frame'.
+// Calling this method on each branch without first collecting the results
+// could erroneously clear the parent frame's 'points'.
 void FindElidedCopies::propagateChildToParent(VarFrame* frame, VarFrame* parent, const AstNode* ast) {
   // if it's the function's body block, consider out/inout formals mentioned
   // (since they will be used by the implicit return)
