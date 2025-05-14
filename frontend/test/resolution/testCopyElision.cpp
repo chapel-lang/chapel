@@ -193,7 +193,7 @@ static void test5() {
           x;
         }
     )"""",
-    {"M.test@8"});
+    {"M.test@8"}); // ID of 'var y'
 
   testCopyElision("test5b",
     R""""(
@@ -207,7 +207,7 @@ static void test5() {
           }
         }
     )"""",
-    {"M.test@8"});
+    {"M.test@8"}); // ID of 'var y'
 
   testCopyElision("test5c",
     R""""(
@@ -223,7 +223,7 @@ static void test5() {
           }
         }
     )"""",
-    {"M.test@8", "M.test@12"});
+    {"M.test@8", "M.test@12"}); // IDs of 'var y' and 'var yy'
 
   testCopyElision("test5d",
     R""""(
@@ -237,7 +237,7 @@ static void test5() {
           var zz = x;
         }
     )"""",
-    {"M.test@8", "M.test@13"});
+    {"M.test@8", "M.test@13"}); // IDs of 'var y' and 'var zz'
 }
 
 static void test6() {
@@ -1272,7 +1272,7 @@ static void test46() {
           return helper(x) + helper(x);
         }
     )"""",
-    {"M.test@11"});
+    {"M.test@11"}); // ID of 'x' in second 'helper(x)'
 }
 
 int main() {
