@@ -303,27 +303,6 @@ void FindSplitInits::handleDisjunction(const AstNode * node,
                                        const std::vector<VarFrame*>& frames, 
                                        bool total, RV& rv) {
 
-  // first, if the branch is known at compile time, just process that one.
-  for(auto frame: frames) {
-    if (!frame->paramTrueCond) continue;
-
-    for (auto pair : frame->initedVarsVec) {
-      const auto & id = pair.first;
-      const auto & rhsType = pair.second;
-      if (frame->eligibleVars.count(id) > 0) {
-        // variable is local to this frame's scope; save the result.
-        allSplitInitedVars.insert(id);
-      } else {
-        // variable was declared in an outer scope, and this is only
-        // possible path, so its definitely a valid split init
-        addInit(currentFrame, id, rhsType);
-      }
-    }
-
-    propagateMentions(currentFrame, frame);
-    return;
-  }
-
   // gather the set of variables inited in any of the branches
   std::set<ID> locallyInitedVars;
   for(auto frame : frames) {
