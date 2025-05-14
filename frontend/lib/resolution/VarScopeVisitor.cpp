@@ -234,7 +234,16 @@ void VarScopeVisitor::handleConditional(const Conditional* cond, RV& rv) {
   std::vector<VarFrame*> frames;
   if (thenFrame) frames.push_back(thenFrame);
   if (elseFrame) frames.push_back(elseFrame);
-  handleDisjunction(cond, frame, frames, elseFrame != nullptr, rv);
+
+  // 'total' indicates whether a branch is always taken
+  bool total = false;
+  if (elseFrame) {
+    total = true;
+  } else if (thenFrame && thenFrame->knownPath) {
+    total = true;
+  }
+
+  handleDisjunction(cond, frame, frames, total, rv);
   handleScope(cond, rv);
 }
 

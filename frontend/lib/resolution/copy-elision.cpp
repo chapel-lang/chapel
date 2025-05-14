@@ -434,36 +434,11 @@ static void propagateMentionsAndInits(VarFrame* parentFrame, VarFrame* childFram
   }
 }
 
-
+// Note: caller handles param-conditional logic
 void FindElidedCopies::handleDisjunction(const AstNode * node,
                                          VarFrame * currentFrame, 
-                                         const std::vector<VarFrame*>& frames, 
+                                         const std::vector<VarFrame*>& frames,
                                          bool total, RV& rv) {
-  // if any frame is 'param true' the rest of the frames do not matter
-  for (auto frame : frames) {
-    if (!frame->knownPath) continue;
-    // yielding handled during return/throw
-    if (frame->controlFlowInfo.returnsOrThrows()) return;
-
-    //yield the local variables
-    saveLocalVarElidedCopies(frame);
-
-    //promote outer variable access
-    for (const auto& entry : frame->copyElisionState) {
-      ID id = entry.first;
-      const CopyElisionState& state = entry.second;
-      if (state.lastIsCopy && frame->eligibleVars.count(id) == 0) {
-        CopyElisionState& s = currentFrame->copyElisionState[id];
-        s.lastIsCopy = true;
-        s.points.insert(state.points.begin(), state.points.end());
-      }
-    }
-
-    propagateMentionsAndInits(currentFrame, frame);
-
-    return;
-  }
-
   //propagate mentions to the parent
   for(auto frame: frames) {
     propagateMentionsAndInits(currentFrame, frame);
@@ -472,6 +447,8 @@ void FindElidedCopies::handleDisjunction(const AstNode * node,
   std::vector<VarFrame*> nonReturningFrames;
   for(auto frame: frames) {
     if (frame->controlFlowInfo.returnsOrThrows()) {
+      // Note: assumes that ``saveElidedCopies`` is being invoked by
+      // 'handleReturn' and 'handleThrow'
       for (auto pair : frame->copyElisionState) {
         if (pair.second.lastIsCopy) {
           CopyElisionState& parentState = currentFrame->copyElisionState[pair.first];
