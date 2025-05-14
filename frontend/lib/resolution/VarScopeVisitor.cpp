@@ -154,7 +154,7 @@ VarScopeVisitor::processSplitInitAssign(const OpCall* ast,
 }
 
 bool
-VarScopeVisitor::processSplitInitOut(const FnCall* ast,
+VarScopeVisitor::processSplitInitOut(const Call* ast,
                                      const AstNode* actual,
                                      const std::set<ID>& allSplitInitedVars,
                                      RV& rv) {
@@ -346,7 +346,7 @@ bool VarScopeVisitor::enter(const OpCall* ast, RV& rv) {
 
     return false;
   } else {
-    return true;
+    return resolvedCallHelper(ast, rv);
   }
 }
 
@@ -354,9 +354,7 @@ void VarScopeVisitor::exit(const OpCall* ast, RV& rv) {
   exitAst(ast);
 }
 
-bool VarScopeVisitor::enter(const FnCall* callAst, RV& rv) {
-  enterAst(callAst);
-
+bool VarScopeVisitor::resolvedCallHelper(const Call* callAst, RV& rv) {
   auto rr = rv.byPostorder().byAstOrNull(callAst);
   if (!rr) return false;
 
@@ -477,6 +475,13 @@ bool VarScopeVisitor::enter(const FnCall* callAst, RV& rv) {
 
   return false;
 }
+
+bool VarScopeVisitor::enter(const FnCall* callAst, RV& rv) {
+  enterAst(callAst);
+
+  return resolvedCallHelper(callAst, rv);
+}
+
 
 void VarScopeVisitor::exit(const FnCall* ast, RV& rv) {
   exitAst(ast);
@@ -627,12 +632,13 @@ computeActualFormalIntents(Context* context,
     return;
   }
 
+  int methodOpOffset = ci.isMethodCall() && ci.isOpCall() ? 1 : 0;
   bool firstCandidate = true;
   for (const MostSpecificCandidate& candidate : candidates) {
     if (candidate) {
       auto& formalActualMap = candidate.formalActualMap();
-      for (int actualIdx = 0; actualIdx < nActuals; actualIdx++) {
-        const FormalActual* fa = formalActualMap.byActualIdx(actualIdx);
+      for (int actualIdx = methodOpOffset; actualIdx < nActuals; actualIdx++) {
+        const FormalActual* fa = formalActualMap.byActualIdx(actualIdx-methodOpOffset);
         auto intent  = normalizeFormalIntent(fa->formalType().kind());
         QualifiedType& aft = actualFormalTypes[actualIdx];
 

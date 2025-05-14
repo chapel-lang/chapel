@@ -73,17 +73,17 @@ class VarScopeVisitor : public BranchSensitiveVisitor<VarFrame, MutatingResolved
   /** Called for <expr> = <expr> assignment pattern */
   virtual void handleAssign(const uast::OpCall* ast, RV& rv) = 0;
   /** Called for an actual passed to an 'out' formal */
-  virtual void handleOutFormal(const uast::FnCall* ast,
+  virtual void handleOutFormal(const uast::Call* ast,
                                const uast::AstNode* actual,
                                const types::QualifiedType& formalType, RV& rv) = 0;
   /** Called for an actual passed to an 'in' formal */
-  virtual void handleInFormal(const uast::FnCall* ast,
+  virtual void handleInFormal(const uast::Call* ast,
                               const uast::AstNode* actual,
                               const types::QualifiedType& formalType,
                               const types::QualifiedType* actualScalarType,
                               RV& rv) = 0;
   /** Called for an actual passed to an 'out' formal */
-  virtual void handleInoutFormal(const uast::FnCall* ast,
+  virtual void handleInoutFormal(const uast::Call* ast,
                                  const uast::AstNode* actual,
                                  const types::QualifiedType& formalType,
                                  const types::QualifiedType* actualScalarType,
@@ -154,7 +154,7 @@ class VarScopeVisitor : public BranchSensitiveVisitor<VarFrame, MutatingResolved
 
   /** Update initedVars if a call with at 'out' formal
       represents a split-init. Returns true if it was a split init. */
-  bool processSplitInitOut(const FnCall* ast,
+  bool processSplitInitOut(const Call* ast,
                            const AstNode* actual,
                            const std::set<ID>& allSplitInitedVars,
                            RV& rv);
@@ -171,6 +171,7 @@ class VarScopeVisitor : public BranchSensitiveVisitor<VarFrame, MutatingResolved
   const types::Param* determineWhenCaseValue(const uast::AstNode* ast, RV& extraData) override;
   const types::Param* determineIfValue(const uast::AstNode* ast, RV& extraData) override;
   void traverseNode(const uast::AstNode* ast, RV& rv) override;
+  bool resolvedCallHelper(const Call* callAst, RV& rv);
 
  public:
   void enterAst(const uast::AstNode* ast);

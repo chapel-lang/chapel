@@ -64,14 +64,14 @@ struct FindSplitInits : VarScopeVisitor {
   void handleDeclaration(const VarLikeDecl* ast, RV& rv) override;
   void handleMention(const Identifier* ast, ID varId, RV& rv) override;
   void handleAssign(const OpCall* ast, RV& rv) override;
-  void handleOutFormal(const FnCall* ast, const AstNode* actual,
+  void handleOutFormal(const Call* ast, const AstNode* actual,
                        const QualifiedType& formalType,
                        RV& rv) override;
-  void handleInFormal(const FnCall* ast, const AstNode* actual,
+  void handleInFormal(const Call* ast, const AstNode* actual,
                       const QualifiedType& formalType,
                       const QualifiedType* actualScalarType,
                       RV& rv) override;
-  void handleInoutFormal(const FnCall* ast, const AstNode* actual,
+  void handleInoutFormal(const Call* ast, const AstNode* actual,
                          const QualifiedType& formalType,
                          const QualifiedType* actualScalarType,
                          RV& rv) override;
@@ -199,7 +199,7 @@ void FindSplitInits::handleAssign(const OpCall* ast, RV& rv) {
   }
 }
 
-void FindSplitInits::handleOutFormal(const FnCall* ast, const AstNode* actual,
+void FindSplitInits::handleOutFormal(const Call* ast, const AstNode* actual,
                                      const QualifiedType& formalType, RV& rv) {
   ID toId = refersToId(actual, rv);
   if (!toId.isEmpty()) {
@@ -210,14 +210,14 @@ void FindSplitInits::handleOutFormal(const FnCall* ast, const AstNode* actual,
   }
 }
 
-void FindSplitInits::handleInFormal(const FnCall* ast, const AstNode* actual,
+void FindSplitInits::handleInFormal(const Call* ast, const AstNode* actual,
                                     const QualifiedType& formalType,
                                     const QualifiedType* actualScalarType,
                                     RV& rv) {
   processMentions(actual, rv);
 }
 
-void FindSplitInits::handleInoutFormal(const FnCall* ast, const AstNode* actual,
+void FindSplitInits::handleInoutFormal(const Call* ast, const AstNode* actual,
                                        const QualifiedType& formalType,
                                        const QualifiedType* actualScalarType,
                                        RV& rv) {

@@ -88,14 +88,14 @@ struct FindElidedCopies : VarScopeVisitor {
   void handleDeclaration(const VarLikeDecl* ast, RV& rv) override;
   void handleMention(const Identifier* ast, ID varId, RV& rv) override;
   void handleAssign(const OpCall* ast, RV& rv) override;
-  void handleOutFormal(const FnCall* ast, const AstNode* actual,
+  void handleOutFormal(const Call* ast, const AstNode* actual,
                        const QualifiedType& formalType,
                        RV& rv) override;
-  void handleInFormal(const FnCall* ast, const AstNode* actual,
+  void handleInFormal(const Call* ast, const AstNode* actual,
                       const QualifiedType& formalType,
                       const QualifiedType* actualScalarType,
                       RV& rv) override;
-  void handleInoutFormal(const FnCall* ast, const AstNode* actual,
+  void handleInoutFormal(const Call* ast, const AstNode* actual,
                          const QualifiedType& formalType,
                          const QualifiedType* actualScalarType,
                          RV& rv) override;
@@ -335,7 +335,7 @@ void FindElidedCopies::handleAssign(const OpCall* ast, RV& rv) {
     processMentions(lhsAst, rv);
   }
 }
-void FindElidedCopies::handleOutFormal(const FnCall* ast,
+void FindElidedCopies::handleOutFormal(const Call* ast,
                                        const AstNode* actual,
                                        const QualifiedType& formalType,
                                        RV& rv) {
@@ -345,7 +345,7 @@ void FindElidedCopies::handleOutFormal(const FnCall* ast,
   // updated initedVars for split init
   processSplitInitOut(ast, actual, allSplitInitedVars, rv);
 }
-void FindElidedCopies::handleInFormal(const FnCall* ast, const AstNode* actual,
+void FindElidedCopies::handleInFormal(const Call* ast, const AstNode* actual,
                                       const QualifiedType& formalType,
                                       const QualifiedType* actualScalarType,
                                       RV& rv) {
@@ -374,7 +374,7 @@ void FindElidedCopies::handleInFormal(const FnCall* ast, const AstNode* actual,
     processMentions(actual, rv);
   }
 }
-void FindElidedCopies::handleInoutFormal(const FnCall* ast,
+void FindElidedCopies::handleInoutFormal(const Call* ast,
                                          const AstNode* actual,
                                          const QualifiedType& formalType,
                                          const QualifiedType* actualScalarType,

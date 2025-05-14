@@ -126,14 +126,14 @@ struct CallInitDeinit : VarScopeVisitor {
   void handleDeclaration(const VarLikeDecl* ast, RV& rv) override;
   void handleMention(const Identifier* ast, ID varId, RV& rv) override;
   void handleAssign(const OpCall* ast, RV& rv) override;
-  void handleOutFormal(const FnCall* ast, const AstNode* actual,
+  void handleOutFormal(const Call* ast, const AstNode* actual,
                        const QualifiedType& formalType,
                        RV& rv) override;
-  void handleInFormal(const FnCall* ast, const AstNode* actual,
+  void handleInFormal(const Call* ast, const AstNode* actual,
                       const QualifiedType& formalType,
                       const QualifiedType* actualScalarType,
                       RV& rv) override;
-  void handleInoutFormal(const FnCall* ast, const AstNode* actual,
+  void handleInoutFormal(const Call* ast, const AstNode* actual,
                          const QualifiedType& formalType,
                          const QualifiedType* actualScalarType,
                          RV& rv) override;
@@ -328,7 +328,8 @@ void CallInitDeinit::checkUseOfDeinited(const AstNode* useAst, ID varId) {
       }
 
       // TODO: fix this error
-      context->error(useAst, "use of dead / already deinited variable");
+      context->error(useAst, "use of dead / already deinited variable '%s'",
+                     useAst->toIdentifier()->name().str().c_str());
       break;
     }
   }
@@ -1096,7 +1097,7 @@ void CallInitDeinit::handleAssign(const OpCall* ast, RV& rv) {
     resolveAssign(ast, lhsType, rhsType, rv);
   }
 }
-void CallInitDeinit::handleOutFormal(const FnCall* ast,
+void CallInitDeinit::handleOutFormal(const Call* ast,
                                      const AstNode* actual,
                                      const QualifiedType& formalType,
                                      RV& rv) {
@@ -1122,7 +1123,7 @@ void CallInitDeinit::handleOutFormal(const FnCall* ast,
     resolveAssign(actual, actualType, formalType, rv);
   }
 }
-void CallInitDeinit::handleInFormal(const FnCall* ast, const AstNode* actual,
+void CallInitDeinit::handleInFormal(const Call* ast, const AstNode* actual,
                                     const QualifiedType& formalType,
                                     const QualifiedType* actualScalarType,
                                     RV& rv) {
@@ -1159,7 +1160,7 @@ void CallInitDeinit::handleInFormal(const FnCall* ast, const AstNode* actual,
   }
 }
 
-void CallInitDeinit::handleInoutFormal(const FnCall* ast,
+void CallInitDeinit::handleInoutFormal(const Call* ast,
                                        const AstNode* actual,
                                        const QualifiedType& formalType,
                                        const QualifiedType* actualScalarType,
