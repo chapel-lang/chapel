@@ -335,9 +335,11 @@ bool VarScopeVisitor::enter(const OpCall* ast, RV& rv) {
     rhsAst->traverse(rv);
 
     handleAssign(ast, rv);
-  }
 
-  return false;
+    return false;
+  } else {
+    return true;
+  }
 }
 
 void VarScopeVisitor::exit(const OpCall* ast, RV& rv) {
