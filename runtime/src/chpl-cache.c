@@ -1322,6 +1322,10 @@ void flush_entry(struct rdcache_s* cache,
                  chpl_cache_taskPrvData_t* task_local,
                  struct cache_entry_s* entry, int op,
                  raddr_t raddr, int32_t len_in);
+
+static
+chpl_cache_taskPrvData_t* read_reservedByTask(struct cache_entry_s* entry);
+
 static
 int try_reserve_entry(struct rdcache_s* cache,
                       chpl_cache_taskPrvData_t* task_local,
@@ -1376,10 +1380,10 @@ void ain_evict(struct rdcache_s* cache,
       return;
 
     // give up if locked
-    if (give_up_if_locked && y->entryReservedByTask != NULL)
+    if (give_up_if_locked && read_reservedByTask(y) != NULL)
       return;
 
-    assert(y->entryReservedByTask != task_local);
+    assert(read_reservedByTask(y) != task_local);
 
     if (!try_reserve_entry(cache, task_local, y)) {
       // could not "lock" entry y so try again
@@ -1443,9 +1447,9 @@ void am_evict(struct rdcache_s *cache,
     if (y==NULL)
       return;
 
-    assert(y->entryReservedByTask != task_local);
+    assert(read_reservedByTask(y) != task_local);
     // give up if locked
-    if (give_up_if_locked && y->entryReservedByTask != NULL)
+    if (give_up_if_locked && read_reservedByTask(y) != NULL)
       return;
 
     if (!try_reserve_entry(cache, task_local, y)) {
@@ -1466,7 +1470,7 @@ void am_evict(struct rdcache_s *cache,
     // immediately wait for them to complete, before we modify the contents
     // of Ain in any way (or reuse the associated page).
     flush_entry(cache, task_local, y, FLUSH_EVICT, 0, CACHEPAGE_SIZE);
-    assert(y->entryReservedByTask == task_local);
+    assert(read_reservedByTask(y) == task_local);
     assert(y->queue == QUEUE_AM && y == cache->am_lru_tail);
 
     DOUBLE_REMOVE_TAIL(cache, am_lru);
@@ -1731,8 +1735,8 @@ int validate_queue(struct rdcache_s* tree,
     }
 
     // Check that a cache operation hasn't left anything "locked"
-    if (task_local) assert(cur->entryReservedByTask != task_local);
-    else assert(cur->entryReservedByTask == NULL);
+    if (task_local) assert(read_reservedByTask(cur) != task_local);
+    else assert(read_reservedByTask(cur) == NULL);
 
     forward_count++;
   }
@@ -1985,17 +1989,24 @@ chpl_bool do_wait_for(struct rdcache_s* cache, cache_seqn_t sn)
                       chpl_nodeID, (int)chpl_task_getId(),
                       (int) cache->pending_sequence_numbers[index],
                       (int) cache->completed_request_number));
-    }
-
-    // Stop if we have an uncompleted request for a later sequence number
-    if (cache->pending_sequence_numbers[index] > sn) {
-      DEBUG_PRINT(("wait_for stopped at %i\n", index));
-      break;
+    } else {
+      // Stop if we have an uncompleted request for a later sequence number
+      if (cache->pending_sequence_numbers[index] > sn) {
+        DEBUG_PRINT(("wait_for stopped at %i\n", index));
+        break;
+      }
     }
   }
   return waited;
 }
 
+
+static
+chpl_cache_taskPrvData_t* read_reservedByTask(struct cache_entry_s* entry) {
+  // don't allow operations after this value is loaded to move before this
+  chpl_atomic_thread_fence(memory_order_acquire);
+  return entry->entryReservedByTask;
+}
 
 // try to "lock" the entry
 //  * if entry->entryReservedByTask is NULL, set it to task_local
@@ -2012,12 +2023,18 @@ int try_reserve_entry(struct rdcache_s* cache,
                       chpl_cache_taskPrvData_t* task_local,
                       struct cache_entry_s* entry) {
 
-  if (entry->entryReservedByTask != NULL) {
-    assert(entry->entryReservedByTask != task_local);
+  // read and do an aquire fence
+  chpl_cache_taskPrvData_t* v = read_reservedByTask(entry);
+
+  if (v != NULL) {
+    assert(v != task_local);
     return 0;
   } else {
     // now entry->entryReservedByTask == NULL
     entry->entryReservedByTask = task_local; // "lock"
+    // don't allow operations after this is set to move before it
+    chpl_atomic_thread_fence(memory_order_acquire);
+
     return 1;
   }
 }
@@ -2029,6 +2046,8 @@ void unreserve_entry(struct rdcache_s* cache,
                    struct cache_entry_s* entry) {
   assert(entry->entryReservedByTask == task_local);
   entry->entryReservedByTask = NULL;
+  // don't allow operations before this is set to move after it
+  chpl_atomic_thread_fence(memory_order_release);
 }
 
 
@@ -2074,7 +2093,7 @@ void flush_entry(struct rdcache_s* cache,
   chpl_comm_nb_handle_t handle;
   uintptr_t got_skip, got_len;
 
-  assert(entry->entryReservedByTask == task_local);
+  assert(read_reservedByTask(entry) == task_local);
 
   DEBUG_PRINT(("flush_entry(%p, %i, %p, %i)\n",
                entry, op, (void*) raddr, (int) len));
