@@ -1346,16 +1346,18 @@ static void test47() {
           proc helper(in arg: int) { return 0; }
           proc test(cond: bool) {
             var x:int = 0;
+            var y:int = 0;
             )"""" + loop + R""""( { // OK to elide in iterand
-              var z = x; // should not elide
+              var z = y; // should not elide
             }
           }
       )"""",
-      IDs); // ID of 'x' in call to 'helper'
+      IDs);
   };
-  test("for i in stuff(x)", {"M.test@7"});
-  test("for i in stuff(helper(x))", {"M.test@8"});
-  test("while helper(x)", {"M.test@6"});
+  test("for i in stuff(x)", {"M.test@10"});
+  test("for i in stuff(y)", {}); // 'x' used in loop, should not elide
+  test("for i in stuff(helper(x))", {"M.test@11"});
+  test("while helper(x)", {"M.test@9"});
 
   // TODO: with clause
   //test("forall i in stuff(x) with (var copy = x)", {});

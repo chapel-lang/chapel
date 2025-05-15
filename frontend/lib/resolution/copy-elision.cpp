@@ -589,24 +589,25 @@ void FindElidedCopies::propagateChildToParent(VarFrame* frame, VarFrame* parent,
   // handle any local variables
   saveLocalVarElidedCopies(frame);
 
-  auto isLoopBody = [&]() {
+  if (parent != nullptr) {
+    bool isLoopBody = false;
     if (auto loop = parent->scopeAst->toLoop()) {
       // frame might be another loop, if used as the parent's iterand:
       //   foreach i in (foreach j in 1..10 do j) do ...;
-      return loop->body() == frame->scopeAst;
+      isLoopBody = loop->body() == frame->scopeAst;
     }
-    return false;
-  };
 
-  if (parent != nullptr) {
     // propagate any non-local variables
     if (allowsCopyElision(ast) &&
-        parent != nullptr &&
-        !isLoopBody()) {
+        parent != nullptr) {
       for (const auto& pair : frame->copyElisionState) {
         ID id = pair.first;
         const CopyElisionState& state = pair.second;
-        if (state.lastIsCopy && frame->eligibleVars.count(id) == 0) {
+
+        // non-local variables cannot be elided, and so are treated as mentions
+        if (state.lastIsCopy &&
+            frame->eligibleVars.count(id) == 0 &&
+            !isLoopBody) {
           CopyElisionState& parentState = parent->copyElisionState[id];
           parentState.lastIsCopy = true;
 
