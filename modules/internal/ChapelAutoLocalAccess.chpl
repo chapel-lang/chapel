@@ -22,13 +22,24 @@ module ChapelAutoLocalAccess {
   use ChapelLocale;
   use ChapelArray;
 
+  private config param chpl__debugDynamicALA = false;
   // note that the compiler can pass an iterator to `loopDomain` argument. Make
   // sure that we don't do anything with iterators as we cannot optimize such
   // forall's and we don't want to mess up the iterator
   proc chpl__ala_staticCheck(accessBase: [], loopDomain: domain,
                              myIterand: domain, param hasOffsets=false) param {
-    if hasOffsets && !accessBase.domain.supportsOffsetAutoLocalAccess() {
-      return false;
+    if hasOffsets {
+      // basic type check
+      if !accessBase.domain.supportsOffsetAutoLocalAccess() {
+        return false;
+      }
+
+      // we currently prevent types to allow ALA with offset if they don't
+      // support ALA without one
+      if !chpl__ala_staticCheck(accessBase, loopDomain, myIterand,
+                                hasOffsets=false) {
+        return false;
+      }
     }
 
     if accessBase.domain.type == loopDomain.type {
@@ -57,6 +68,8 @@ module ChapelAutoLocalAccess {
 
   proc chpl__ala_dynamicCheck(accessBase: [], loopDomain: domain,
                               myIterand: domain, param hasOffsets=false) {
+    debuglnDynamicALA("chpl__ala_dynamicCheck called");
+
     if chpl__ala_staticCheck(accessBase, loopDomain, myIterand, hasOffsets) {
       // if they're the same domain...
       if chpl_sameDomainKind(accessBase.domain, loopDomain) &&
@@ -86,6 +99,8 @@ module ChapelAutoLocalAccess {
   }
 
   inline proc chpl__ala_offsetCheck(accessBase: [], offsets:integral...) {
+    debuglnDynamicALA("chpl__ala_offsetCheck called");
+
     if (offsets.size != accessBase.rank) {
       compilerError("Automatic local access optimization failure: ",
                     "Number of offsets doesn't match rank");
@@ -133,4 +148,9 @@ module ChapelAutoLocalAccess {
   proc chpl__ala_dynamicCheck(     a,      l, type m, param h=false) do return false;
   proc chpl__ala_dynamicCheck(     a,      l,      m, param h=false) do return false;
 
+
+  private proc debuglnDynamicALA(s...) {
+    if chpl__debugDynamicALA then
+      writeln((...s));
+  }
 }

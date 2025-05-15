@@ -32,6 +32,7 @@ Static check failed. Reverting optimization [static and dynamic ALA clone]  (mul
 Static check successful. Using localAccess with dynamic check (multipleAccessDynamic.chpl:9)
 Static check successful. Using localAccess with dynamic check (multipleAccessDynamic.chpl:9)
 Static check failed. Reverting optimization [static and dynamic ALA clone]  (multipleAccessDynamic.chpl:9)
+Static check successful. Using localAccess [static only ALA clone]  (multipleAccessDynamic.chpl:9)
 
 Numbers collected by prediff:
 	localAccess was called 24 times
