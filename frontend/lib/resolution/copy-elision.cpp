@@ -604,7 +604,8 @@ void FindElidedCopies::propagateChildToParent(VarFrame* frame, VarFrame* parent,
         ID id = pair.first;
         const CopyElisionState& state = pair.second;
 
-        // non-local variables cannot be elided, and so are treated as mentions
+        // non-local variables cannot be elided in loop bodies, and so are
+        // treated as mentions
         if (state.lastIsCopy &&
             frame->eligibleVars.count(id) == 0 &&
             !isLoopBody) {
