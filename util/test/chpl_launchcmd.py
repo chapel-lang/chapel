@@ -915,7 +915,7 @@ class PbsProJob(AbstractJob):
 
         # Always use place=scatter to get 1 PE per node (mostly). Equivalent
         # to mppnppn=1.
-        select_pattern = 'place=scatter,select={0}'
+        select_pattern = 'place=scatter:excl,select={0}'
 
         # When comm=none sub_test/start_test passes -nl -1 (i.e. num locales
         # is -1). For the tests to work, reserve one node and the regular
