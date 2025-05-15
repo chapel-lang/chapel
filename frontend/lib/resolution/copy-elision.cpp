@@ -104,12 +104,12 @@ struct FindElidedCopies : VarScopeVisitor {
   void handleThrow(const uast::Throw* ast, RV& rv) override;
   void handleYield(const uast::Yield* ast, RV& rv) override;
   void handleTry(const Try* t, RV& rv) override;
-  
-  void handleDisjunction(const AstNode * node, 
+
+  void handleDisjunction(const AstNode * node,
                          VarFrame * currentFrame,
-                         const std::vector<VarFrame*>& frames, 
+                         const std::vector<VarFrame*>& frames,
                          bool alwaysTaken, RV& rv) override;
-  
+
   void handleScope(const AstNode* ast, RV& rv) override;
 };
 
@@ -439,7 +439,7 @@ static void propagateMentionsAndInits(VarFrame* parentFrame, VarFrame* childFram
 
 // Note: caller handles param-conditional logic
 void FindElidedCopies::handleDisjunction(const AstNode * node,
-                                         VarFrame * currentFrame, 
+                                         VarFrame * currentFrame,
                                          const std::vector<VarFrame*>& frames,
                                          bool alwaysTaken, RV& rv) {
   //propagate mentions to the parent
@@ -572,7 +572,28 @@ static bool allowsCopyElision(const AstNode* ast) {
          ast->isLocal() ||
          ast->isSerial() ||
          ast->isTry() ||
-         ast->isLoop(); // For iterands
+         // Can elide some cases in iterands,
+         // need to propagate mentions in body.
+         ast->isLoop();
+}
+
+static bool turnElisionToMention(VarFrame* frame,
+                                 VarFrame* parent,
+                                 const AstNode* ast) {
+  if (auto loop = parent->scopeAst->toLoop()) {
+    // Elisions of outer variables in loop bodies should turn into mentions.
+    // This case is generally encountered when propagating from the body's
+    // frame to the loop's frame.
+    //
+    // Note: frame might be another loop, if used as the parent's iterand:
+    //   foreach i in (foreach j in 1..10 do j) do ...;
+    return loop->body() == frame->scopeAst;
+  } else if (ast->isWhile() || ast->isDoWhile()) {
+    // Also, while/do-while conditions are repeatedly executed, and so should
+    // also count as mentions.
+    return true;
+  }
+  return false;
 }
 
 // Note: This method is expected to be called _after_ special handling of
@@ -590,13 +611,7 @@ void FindElidedCopies::propagateChildToParent(VarFrame* frame, VarFrame* parent,
   saveLocalVarElidedCopies(frame);
 
   if (parent != nullptr) {
-    bool isLoopBody = false;
-    if (auto loop = parent->scopeAst->toLoop()) {
-      // frame might be another loop, if used as the parent's iterand:
-      //   foreach i in (foreach j in 1..10 do j) do ...;
-      isLoopBody = loop->body() == frame->scopeAst;
-    }
-
+    bool makeMentions = turnElisionToMention(frame, parent, ast);
     // propagate any non-local variables
     if (allowsCopyElision(ast) &&
         parent != nullptr) {
@@ -608,7 +623,7 @@ void FindElidedCopies::propagateChildToParent(VarFrame* frame, VarFrame* parent,
         // treated as mentions
         if (state.lastIsCopy &&
             frame->eligibleVars.count(id) == 0 &&
-            !isLoopBody) {
+            !makeMentions) {
           CopyElisionState& parentState = parent->copyElisionState[id];
           parentState.lastIsCopy = true;
 
