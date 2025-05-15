@@ -555,7 +555,7 @@ static void testNestedParamForLabeledBreakContinue(const std::string& control, i
   CHPL_ASSERT(guard.numErrors(/* countWarnings */ false) == 0);
   // expected warnings is multiplied by two since we track emitting AND showing
   // the warning
-  CHPL_ASSERT(guard.numErrors() == expectedWarnings * 2);
+  CHPL_ASSERT(guard.numErrors() == (size_t) expectedWarnings * 2);
   guard.realizeErrors();
 }
 

@@ -1050,8 +1050,8 @@ static void test24() {
   for (int i = 0; i < astTup->numActuals(); i++) {
     auto actual = astTup->actual(i);
     auto& actions = fnRR.byAst(actual).associatedActions();
-    assert(i != 0 || actions.size() == 1 &&
-                     actions[0].action() == AssociatedAction::ASSIGN);
+    assert(i != 0 || (actions.size() == 1 &&
+                      actions[0].action() == AssociatedAction::ASSIGN));
     assert(i != 1 || actions.size() == 0);
   }
 }
