@@ -2230,6 +2230,22 @@ static void testGenericSync() {
   // guard should have no errors
 }
 
+static void testUseOfUninitializedVar() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+  auto qt = resolveTypeOfXInit(context,
+    R"""(
+       proc foo() {
+        var y;
+        return y;
+       }
+       var x = foo();
+    )""");
+  assert(qt.isUnknownKindOrType());
+  // expect uninitialized var y, can't establish type for call expression foo()
+  assert(guard.realizeErrors() == 2);
+}
+
 int main() {
   test1();
   test2();
@@ -2287,6 +2303,8 @@ int main() {
   testEarlyRuntimeContinue();
 
   testGenericSync();
+
+  testUseOfUninitializedVar();
 
   return 0;
 }
