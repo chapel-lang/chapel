@@ -622,7 +622,7 @@ static void partitionResources(void) {
           if (numObjs == numPartitions) {
             // We should only bind locales to objects if the objects have the
             // same (non-zero) number of accessible PUs.
-            int numCoresPerObject;
+            int numCoresPerObject = -1;
             chpl_bool acceptable = true;
             for (int j = 0; j < numObjs; j++) {
               hwloc_obj_t obj;
