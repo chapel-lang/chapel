@@ -1279,7 +1279,7 @@ static void test45() {
 }
 
 static void test46() {
-  testCopyElision("test46",
+  testCopyElision("test46a",
     R""""(
 
         proc helper(in arg: int) { return 0; }
@@ -1290,6 +1290,30 @@ static void test46() {
         }
     )"""",
     {"M.test@11"}); // ID of 'x' in second 'helper(x)'
+  testCopyElision("test46b",
+    R""""(
+
+        proc double(in x: int, in y: int) { return 0; }
+        proc helper(in arg: int) { return 0; }
+        proc test(cond: bool) {
+          var x:int = 0;
+          var a = x;
+          return double(helper(x), helper(x));
+        }
+    )"""",
+    {"M.test@12"}); // ID of 'x' in second 'helper(x)'
+  testCopyElision("test46c",
+    R""""(
+
+        proc helper(in arg: int) { return 0; }
+        proc test(cond: bool) {
+          var x:int = 0;
+          var a = x;
+          var b = helper(x);
+          return b;
+        }
+    )"""",
+    {"M.test@8"}); // ID of 'x' in call to 'helper'
 }
 
 int main() {
