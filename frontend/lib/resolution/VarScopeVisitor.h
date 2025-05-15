@@ -73,17 +73,17 @@ class VarScopeVisitor : public BranchSensitiveVisitor<VarFrame, MutatingResolved
   /** Called for <expr> = <expr> assignment pattern */
   virtual void handleAssign(const uast::OpCall* ast, RV& rv) = 0;
   /** Called for an actual passed to an 'out' formal */
-  virtual void handleOutFormal(const uast::FnCall* ast,
+  virtual void handleOutFormal(const uast::Call* ast,
                                const uast::AstNode* actual,
                                const types::QualifiedType& formalType, RV& rv) = 0;
   /** Called for an actual passed to an 'in' formal */
-  virtual void handleInFormal(const uast::FnCall* ast,
+  virtual void handleInFormal(const uast::Call* ast,
                               const uast::AstNode* actual,
                               const types::QualifiedType& formalType,
                               const types::QualifiedType* actualScalarType,
                               RV& rv) = 0;
   /** Called for an actual passed to an 'out' formal */
-  virtual void handleInoutFormal(const uast::FnCall* ast,
+  virtual void handleInoutFormal(const uast::Call* ast,
                                  const uast::AstNode* actual,
                                  const types::QualifiedType& formalType,
                                  const types::QualifiedType* actualScalarType,
@@ -112,12 +112,12 @@ class VarScopeVisitor : public BranchSensitiveVisitor<VarFrame, MutatingResolved
   virtual void handleSelect(const uast::Select* cond, RV& rv);
   /** Generalizes processing Conditional and Select nodes after handling
       their contents. Updates currentFrame based on the frames of the
-      possible branching targets stored in frames. total indicates whether
-      a branch is taken no matter the input. */
+      possible branching targets stored in frames. 'alwaysTaken' indicates
+      whether a branch is taken no matter the input. */
   virtual void handleDisjunction(const uast::AstNode * node,
                                  VarFrame* currentFrame,
                                  const std::vector<VarFrame*>& frames,
-                                 bool total,
+                                 bool alwaysTaken,
                                  RV& rv) = 0;
   /** Called to process any other Scope after handling its contents --
       should update scopeStack.back() which is the frame for the Try.
@@ -154,7 +154,7 @@ class VarScopeVisitor : public BranchSensitiveVisitor<VarFrame, MutatingResolved
 
   /** Update initedVars if a call with at 'out' formal
       represents a split-init. Returns true if it was a split init. */
-  bool processSplitInitOut(const FnCall* ast,
+  bool processSplitInitOut(const Call* ast,
                            const AstNode* actual,
                            const std::set<ID>& allSplitInitedVars,
                            RV& rv);
@@ -171,6 +171,7 @@ class VarScopeVisitor : public BranchSensitiveVisitor<VarFrame, MutatingResolved
   const types::Param* determineWhenCaseValue(const uast::AstNode* ast, RV& extraData) override;
   const types::Param* determineIfValue(const uast::AstNode* ast, RV& extraData) override;
   void traverseNode(const uast::AstNode* ast, RV& rv) override;
+  bool resolvedCallHelper(const Call* callAst, RV& rv);
 
  public:
   void enterAst(const uast::AstNode* ast);

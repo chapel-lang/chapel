@@ -1139,6 +1139,7 @@ static void test28() {
     for (i, j) in myIter() {
       var z = i;
     }
+    operator=(ref lhs: int, rhs: int) {}
     )"""";
 
   auto m = resolveTypesOfVariables(context, program, { "i", "j", "z" });
@@ -1165,6 +1166,7 @@ static void test29() {
     for (i, j) in myIter() {
       var z = i;
     }
+    operator=(ref lhs: int, rhs: int) {}
     )"""";
 
   // The entire tuple (i, j) is itself a 'REF' tuple.
@@ -1208,6 +1210,7 @@ static void test30() {
     for (i, j) in myIter() {
       var z = i;
     }
+    operator=(ref lhs: int, rhs: int) {}
     )"""";
 
   // The entire tuple (i, j) is itself a 'REF' tuple.

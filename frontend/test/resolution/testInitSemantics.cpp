@@ -1933,6 +1933,7 @@ static void testGenericFieldInit() {
   {
     printf("one\n");
     std::string program = R"""(
+      operator =(ref lhs: int, const rhs: int) {}
       record G { type T; var x : T; }
 
       proc G.init=(other: this.type) {
@@ -1981,6 +1982,8 @@ static void testGenericFieldInit() {
   }
   {
     std::string program = R"""(
+      operator =(ref lhs: int, const rhs: int) {}
+      operator =(ref lhs: real, const rhs: real) {}
       record G { type T; var x : T; }
 
       proc G.init=(other: this.type) {
@@ -2022,6 +2025,7 @@ static void testGenericFieldInit() {
 static void testDefaultArgs() {
   {
     std::string program = R"""(
+      operator =(ref lhs: real, const rhs: real) {}
       class Parent {
         var x, y: real;
       }

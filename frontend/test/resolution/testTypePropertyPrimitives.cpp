@@ -580,6 +580,8 @@ static void test12() {
             class c1 { var x: int; }
             record r10 { var x: owned c1?; }
             record r11 { var x: r9(?); }
+            operator =(ref lhs: int, const rhs: int) {}
+            operator =(ref lhs: real, const rhs: real) {}
             )""",
     /* primitive */ chpl::uast::primtags::PRIM_IS_POD,
     /* calls */ {

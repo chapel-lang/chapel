@@ -88,14 +88,14 @@ struct FindElidedCopies : VarScopeVisitor {
   void handleDeclaration(const VarLikeDecl* ast, RV& rv) override;
   void handleMention(const Identifier* ast, ID varId, RV& rv) override;
   void handleAssign(const OpCall* ast, RV& rv) override;
-  void handleOutFormal(const FnCall* ast, const AstNode* actual,
+  void handleOutFormal(const Call* ast, const AstNode* actual,
                        const QualifiedType& formalType,
                        RV& rv) override;
-  void handleInFormal(const FnCall* ast, const AstNode* actual,
+  void handleInFormal(const Call* ast, const AstNode* actual,
                       const QualifiedType& formalType,
                       const QualifiedType* actualScalarType,
                       RV& rv) override;
-  void handleInoutFormal(const FnCall* ast, const AstNode* actual,
+  void handleInoutFormal(const Call* ast, const AstNode* actual,
                          const QualifiedType& formalType,
                          const QualifiedType* actualScalarType,
                          RV& rv) override;
@@ -104,12 +104,12 @@ struct FindElidedCopies : VarScopeVisitor {
   void handleThrow(const uast::Throw* ast, RV& rv) override;
   void handleYield(const uast::Yield* ast, RV& rv) override;
   void handleTry(const Try* t, RV& rv) override;
-  
-  void handleDisjunction(const AstNode * node, 
+
+  void handleDisjunction(const AstNode * node,
                          VarFrame * currentFrame,
-                         const std::vector<VarFrame*>& frames, 
-                         bool total, RV& rv) override;
-  
+                         const std::vector<VarFrame*>& frames,
+                         bool alwaysTaken, RV& rv) override;
+
   void handleScope(const AstNode* ast, RV& rv) override;
 };
 
@@ -335,17 +335,17 @@ void FindElidedCopies::handleAssign(const OpCall* ast, RV& rv) {
     processMentions(lhsAst, rv);
   }
 }
-void FindElidedCopies::handleOutFormal(const FnCall* ast,
+void FindElidedCopies::handleOutFormal(const Call* ast,
                                        const AstNode* actual,
                                        const QualifiedType& formalType,
                                        RV& rv) {
   // 'out' can't be the RHS for an elided copy
-  processMentions(actual, rv);
+  actual->traverse(rv);
 
   // updated initedVars for split init
   processSplitInitOut(ast, actual, allSplitInitedVars, rv);
 }
-void FindElidedCopies::handleInFormal(const FnCall* ast, const AstNode* actual,
+void FindElidedCopies::handleInFormal(const Call* ast, const AstNode* actual,
                                       const QualifiedType& formalType,
                                       const QualifiedType* actualScalarType,
                                       RV& rv) {
@@ -366,6 +366,9 @@ void FindElidedCopies::handleInFormal(const FnCall* ast, const AstNode* actual,
         elide = true;
       }
     }
+  } else if (actualToId.isEmpty()) {
+    actual->traverse(rv);
+    return;
   }
 
   if (elide) {
@@ -374,13 +377,13 @@ void FindElidedCopies::handleInFormal(const FnCall* ast, const AstNode* actual,
     processMentions(actual, rv);
   }
 }
-void FindElidedCopies::handleInoutFormal(const FnCall* ast,
+void FindElidedCopies::handleInoutFormal(const Call* ast,
                                          const AstNode* actual,
                                          const QualifiedType& formalType,
                                          const QualifiedType* actualScalarType,
                                          RV& rv) {
   // 'inout' can't be the RHS for an elided copy
-  processMentions(actual, rv);
+  actual->traverse(rv);
 }
 
 void FindElidedCopies::handleReturn(const uast::Return* ast, RV& rv) {
@@ -434,36 +437,11 @@ static void propagateMentionsAndInits(VarFrame* parentFrame, VarFrame* childFram
   }
 }
 
-
+// Note: caller handles param-conditional logic
 void FindElidedCopies::handleDisjunction(const AstNode * node,
-                                         VarFrame * currentFrame, 
-                                         const std::vector<VarFrame*>& frames, 
-                                         bool total, RV& rv) {
-  // if any frame is 'param true' the rest of the frames do not matter
-  for (auto frame : frames) {
-    if (!frame->knownPath) continue;
-    // yielding handled during return/throw
-    if (frame->controlFlowInfo.returnsOrThrows()) return;
-
-    //yield the local variables
-    saveLocalVarElidedCopies(frame);
-
-    //promote outer variable access
-    for (const auto& entry : frame->copyElisionState) {
-      ID id = entry.first;
-      const CopyElisionState& state = entry.second;
-      if (state.lastIsCopy && frame->eligibleVars.count(id) == 0) {
-        CopyElisionState& s = currentFrame->copyElisionState[id];
-        s.lastIsCopy = true;
-        s.points.insert(state.points.begin(), state.points.end());
-      }
-    }
-
-    propagateMentionsAndInits(currentFrame, frame);
-
-    return;
-  }
-
+                                         VarFrame * currentFrame,
+                                         const std::vector<VarFrame*>& frames,
+                                         bool alwaysTaken, RV& rv) {
   //propagate mentions to the parent
   for(auto frame: frames) {
     propagateMentionsAndInits(currentFrame, frame);
@@ -471,12 +449,22 @@ void FindElidedCopies::handleDisjunction(const AstNode * node,
 
   std::vector<VarFrame*> nonReturningFrames;
   for(auto frame: frames) {
-    if (frame->controlFlowInfo.returnsOrThrows()) continue;
-    saveLocalVarElidedCopies(frame);
-    nonReturningFrames.push_back(frame);
+    if (frame->controlFlowInfo.returnsOrThrows()) {
+      // Note: assumes that ``saveElidedCopies`` is being invoked by
+      // 'handleReturn' and 'handleThrow'
+      for (auto pair : frame->copyElisionState) {
+        if (pair.second.lastIsCopy) {
+          CopyElisionState& parentState = currentFrame->copyElisionState[pair.first];
+          parentState.lastIsCopy = true;
+          CopyElisionState& frameState = frame->copyElisionState.at(pair.first);
+          parentState.points.insert(frameState.points.begin(), frameState.points.end());
+        }
+      }
+    } else {
+      saveLocalVarElidedCopies(frame);
+      nonReturningFrames.push_back(frame);
+    }
   }
-
-  if (!total) return;
 
   // Now, note all variables that are elided in all non-returning branches.
   std::unordered_map<ID, size_t> idCounts;
@@ -487,8 +475,14 @@ void FindElidedCopies::handleDisjunction(const AstNode * node,
   }
 
   for (auto pair : idCounts) {
-    // Variable did not occur in all frames, it does not get promoted.
-    if (pair.second != nonReturningFrames.size()) continue;
+    // Variable did not occur in all frames, it does not get promoted. Instead,
+    // consider it a 'mention' and propagate.
+    if (pair.second != nonReturningFrames.size() || !alwaysTaken) {
+      CopyElisionState& parentState = currentFrame->copyElisionState[pair.first];
+      parentState.lastIsCopy = false;
+      parentState.points.clear();
+      continue;
+    }
 
     // Populate the parent frame
     CopyElisionState& parentState = currentFrame->copyElisionState[pair.first];
@@ -577,9 +571,35 @@ static bool allowsCopyElision(const AstNode* ast) {
          ast->isSelect() ||
          ast->isLocal() ||
          ast->isSerial() ||
-         ast->isTry();
+         ast->isTry() ||
+         // Can elide some cases in iterands,
+         // need to propagate mentions in body.
+         ast->isLoop();
 }
 
+static bool turnElisionToMention(VarFrame* frame,
+                                 VarFrame* parent,
+                                 const AstNode* ast) {
+  if (auto loop = parent->scopeAst->toLoop()) {
+    // Elisions of outer variables in loop bodies should turn into mentions.
+    // This case is generally encountered when propagating from the body's
+    // frame to the loop's frame.
+    //
+    // Note: frame might be another loop, if used as the parent's iterand:
+    //   foreach i in (foreach j in 1..10 do j) do ...;
+    return loop->body() == frame->scopeAst;
+  } else if (ast->isWhile() || ast->isDoWhile()) {
+    // Also, while/do-while conditions are repeatedly executed, and so should
+    // also count as mentions.
+    return true;
+  }
+  return false;
+}
+
+// Note: This method is expected to be called _after_ special handling of
+// branching uAST, such that the results were collected into a single 'frame'.
+// Calling this method on each branch without first collecting the results
+// could erroneously clear the parent frame's 'points'.
 void FindElidedCopies::propagateChildToParent(VarFrame* frame, VarFrame* parent, const AstNode* ast) {
   // if it's the function's body block, consider out/inout formals mentioned
   // (since they will be used by the implicit return)
@@ -591,14 +611,26 @@ void FindElidedCopies::propagateChildToParent(VarFrame* frame, VarFrame* parent,
   saveLocalVarElidedCopies(frame);
 
   if (parent != nullptr) {
+    bool makeMentions = turnElisionToMention(frame, parent, ast);
     // propagate any non-local variables
-    if (allowsCopyElision(ast) && parent != nullptr) {
+    if (allowsCopyElision(ast) &&
+        parent != nullptr) {
       for (const auto& pair : frame->copyElisionState) {
         ID id = pair.first;
         const CopyElisionState& state = pair.second;
-        if (state.lastIsCopy && frame->eligibleVars.count(id) == 0) {
+
+        // non-local variables cannot be elided in loop bodies, and so are
+        // treated as mentions
+        if (state.lastIsCopy &&
+            frame->eligibleVars.count(id) == 0 &&
+            !makeMentions) {
           CopyElisionState& parentState = parent->copyElisionState[id];
           parentState.lastIsCopy = true;
+
+          // If there are valid copies in a child frame, the parent's
+          // accumulated points thus far are no longer valid.
+          parentState.points.clear();
+
           parentState.points.insert(state.points.begin(), state.points.end());
         } else if (frame->eligibleVars.count(id) == 0) {
           CopyElisionState& parentState = parent->copyElisionState[id];

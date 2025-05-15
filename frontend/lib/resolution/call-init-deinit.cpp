@@ -126,14 +126,14 @@ struct CallInitDeinit : VarScopeVisitor {
   void handleDeclaration(const VarLikeDecl* ast, RV& rv) override;
   void handleMention(const Identifier* ast, ID varId, RV& rv) override;
   void handleAssign(const OpCall* ast, RV& rv) override;
-  void handleOutFormal(const FnCall* ast, const AstNode* actual,
+  void handleOutFormal(const Call* ast, const AstNode* actual,
                        const QualifiedType& formalType,
                        RV& rv) override;
-  void handleInFormal(const FnCall* ast, const AstNode* actual,
+  void handleInFormal(const Call* ast, const AstNode* actual,
                       const QualifiedType& formalType,
                       const QualifiedType* actualScalarType,
                       RV& rv) override;
-  void handleInoutFormal(const FnCall* ast, const AstNode* actual,
+  void handleInoutFormal(const Call* ast, const AstNode* actual,
                          const QualifiedType& formalType,
                          const QualifiedType* actualScalarType,
                          RV& rv) override;
@@ -144,7 +144,7 @@ struct CallInitDeinit : VarScopeVisitor {
   void handleDisjunction(const AstNode * node,
                          VarFrame * currentFrame,
                          const std::vector<VarFrame*>& frames,
-                         bool total, RV& rv) override;
+                         bool alwaysTaken, RV& rv) override;
   void handleScope(const AstNode* ast, RV& rv) override;
 };
 
@@ -323,13 +323,13 @@ void CallInitDeinit::checkUseOfDeinited(const AstNode* useAst, ID varId) {
     VarFrame* frame = scopeStack[i].get();
     if (frame->deinitedVars.count(varId) > 0) {
       // For vars dead after a call, don't error for uses within that call.
-      if (frame->deinitedVars[varId] ==
-          parsing::idToParentId(context, useAst->id())) {
+      if (frame->deinitedVars[varId].contains(useAst->id())) {
         continue;
       }
 
       // TODO: fix this error
-      context->error(useAst, "use of dead / already deinited variable");
+      context->error(useAst, "use of dead / already deinited variable '%s'",
+                     useAst->toIdentifier()->name().str().c_str());
       break;
     }
   }
@@ -809,12 +809,6 @@ void CallInitDeinit::processInit(VarFrame* frame,
                                  const QualifiedType& lhsType,
                                  const QualifiedType& rhsType,
                                  RV& rv) {
-  if (lhsType.type() == rhsType.type() &&
-      !Type::needsInitDeinitCall(lhsType.type())) {
-    // TODO: we should resolve it anyway
-    return;
-  }
-
   // ast should be:
   //  * a '=' call
   //  * a VarLikeDecl
@@ -861,7 +855,7 @@ void CallInitDeinit::processInit(VarFrame* frame,
       ID rhsDeclId = refersToId(rhsAst, rv);
       // copy elision with '=' should only apply to myVar = myOtherVar
       CHPL_ASSERT(!rhsDeclId.isEmpty());
-      frame->deinitedVars.emplace(rhsDeclId, ast->id());
+      frame->deinitedVars.emplace(rhsDeclId, currentStatement()->id());
     } else if (isCallProducingValue(rhsAst, rhsType, rv)) {
       // e.g. var x; x = callReturningValue();
       resolveMoveInit(ast, rhsAst, lhsType, rhsType, rv);
@@ -1103,7 +1097,7 @@ void CallInitDeinit::handleAssign(const OpCall* ast, RV& rv) {
     resolveAssign(ast, lhsType, rhsType, rv);
   }
 }
-void CallInitDeinit::handleOutFormal(const FnCall* ast,
+void CallInitDeinit::handleOutFormal(const Call* ast,
                                      const AstNode* actual,
                                      const QualifiedType& formalType,
                                      RV& rv) {
@@ -1129,7 +1123,7 @@ void CallInitDeinit::handleOutFormal(const FnCall* ast,
     resolveAssign(actual, actualType, formalType, rv);
   }
 }
-void CallInitDeinit::handleInFormal(const FnCall* ast, const AstNode* actual,
+void CallInitDeinit::handleInFormal(const Call* ast, const AstNode* actual,
                                     const QualifiedType& formalType,
                                     const QualifiedType* actualScalarType,
                                     RV& rv) {
@@ -1149,8 +1143,7 @@ void CallInitDeinit::handleInFormal(const FnCall* ast, const AstNode* actual,
 
   // is the copy for 'in' elided?
   if (elidedCopyFromIds.count(actual->id()) > 0 &&
-      isValue(actualType.kind()) &&
-      Type::needsInitDeinitCall(actualType.type())) {
+      isValue(actualType.kind())) {
     CHPL_ASSERT(actualScalarType == nullptr);
     // it is move initialization
     resolveMoveInit(actual, actual, formalType, actualType, rv);
@@ -1160,14 +1153,14 @@ void CallInitDeinit::handleInFormal(const FnCall* ast, const AstNode* actual,
     ID actualId = refersToId(actual, rv);
     // copy elision should only apply to copies from variables
     CHPL_ASSERT(!actualId.isEmpty());
-    frame->deinitedVars.emplace(actualId, ast->id());
+    frame->deinitedVars.emplace(actualId, currentStatement()->id());
   } else {
     processInit(frame, actual, formalType,
                 actualScalarType ? *actualScalarType : actualType, rv);
   }
 }
 
-void CallInitDeinit::handleInoutFormal(const FnCall* ast,
+void CallInitDeinit::handleInoutFormal(const Call* ast,
                                        const AstNode* actual,
                                        const QualifiedType& formalType,
                                        const QualifiedType* actualScalarType,
@@ -1263,7 +1256,7 @@ void CallInitDeinit::handleTry(const Try* t, RV& rv) {
 void CallInitDeinit::handleDisjunction(const uast::AstNode * node,
                                  VarFrame* currentFrame,
                                  const std::vector<VarFrame*>& frames,
-                                 bool total, RV& rv) {
+                                 bool alwaysTaken, RV& rv) {
 
   for (auto frame : frames) {
     if(!frame->controlFlowInfo.returnsOrThrows()) {

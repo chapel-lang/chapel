@@ -277,6 +277,7 @@ record R {
 
 var r: R;
 r.x("hello");
+operator =(ref lhs: int, const rhs: int) {}
 )""";
 
 static const char* errorOther = R"""(

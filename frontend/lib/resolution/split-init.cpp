@@ -64,14 +64,14 @@ struct FindSplitInits : VarScopeVisitor {
   void handleDeclaration(const VarLikeDecl* ast, RV& rv) override;
   void handleMention(const Identifier* ast, ID varId, RV& rv) override;
   void handleAssign(const OpCall* ast, RV& rv) override;
-  void handleOutFormal(const FnCall* ast, const AstNode* actual,
+  void handleOutFormal(const Call* ast, const AstNode* actual,
                        const QualifiedType& formalType,
                        RV& rv) override;
-  void handleInFormal(const FnCall* ast, const AstNode* actual,
+  void handleInFormal(const Call* ast, const AstNode* actual,
                       const QualifiedType& formalType,
                       const QualifiedType* actualScalarType,
                       RV& rv) override;
-  void handleInoutFormal(const FnCall* ast, const AstNode* actual,
+  void handleInoutFormal(const Call* ast, const AstNode* actual,
                          const QualifiedType& formalType,
                          const QualifiedType* actualScalarType,
                          RV& rv) override;
@@ -84,7 +84,7 @@ struct FindSplitInits : VarScopeVisitor {
   void handleDisjunction(const AstNode * node, 
                          VarFrame * currentFrame,
                          const std::vector<VarFrame*>& frames, 
-                         bool total, RV& rv) override;
+                         bool alwaysTaken, RV& rv) override;
 
   void handleScope(const AstNode* ast, RV& rv) override;
 };
@@ -199,7 +199,7 @@ void FindSplitInits::handleAssign(const OpCall* ast, RV& rv) {
   }
 }
 
-void FindSplitInits::handleOutFormal(const FnCall* ast, const AstNode* actual,
+void FindSplitInits::handleOutFormal(const Call* ast, const AstNode* actual,
                                      const QualifiedType& formalType, RV& rv) {
   ID toId = refersToId(actual, rv);
   if (!toId.isEmpty()) {
@@ -210,14 +210,14 @@ void FindSplitInits::handleOutFormal(const FnCall* ast, const AstNode* actual,
   }
 }
 
-void FindSplitInits::handleInFormal(const FnCall* ast, const AstNode* actual,
+void FindSplitInits::handleInFormal(const Call* ast, const AstNode* actual,
                                     const QualifiedType& formalType,
                                     const QualifiedType* actualScalarType,
                                     RV& rv) {
   processMentions(actual, rv);
 }
 
-void FindSplitInits::handleInoutFormal(const FnCall* ast, const AstNode* actual,
+void FindSplitInits::handleInoutFormal(const Call* ast, const AstNode* actual,
                                        const QualifiedType& formalType,
                                        const QualifiedType* actualScalarType,
                                        RV& rv) {
@@ -301,28 +301,7 @@ std::map<ID,QualifiedType> FindSplitInits::verifyInitOrderAndType(const AstNode 
 void FindSplitInits::handleDisjunction(const AstNode * node, 
                                        VarFrame * currentFrame, 
                                        const std::vector<VarFrame*>& frames, 
-                                       bool total, RV& rv) {
-
-  // first, if the branch is known at compile time, just process that one.
-  for(auto frame: frames) {
-    if (!frame->paramTrueCond) continue;
-
-    for (auto pair : frame->initedVarsVec) {
-      const auto & id = pair.first;
-      const auto & rhsType = pair.second;
-      if (frame->eligibleVars.count(id) > 0) {
-        // variable is local to this frame's scope; save the result.
-        allSplitInitedVars.insert(id);
-      } else {
-        // variable was declared in an outer scope, and this is only
-        // possible path, so its definitely a valid split init
-        addInit(currentFrame, id, rhsType);
-      }
-    }
-
-    propagateMentions(currentFrame, frame);
-    return;
-  }
+                                       bool alwaysTaken, RV& rv) {
 
   // gather the set of variables inited in any of the branches
   std::set<ID> locallyInitedVars;
@@ -363,7 +342,7 @@ void FindSplitInits::handleDisjunction(const AstNode * node,
     }
   }
 
-  if (!total) {
+  if (!alwaysTaken) {
     for (auto frame: frames) {
       propagateMentions(currentFrame, frame);
     } 
