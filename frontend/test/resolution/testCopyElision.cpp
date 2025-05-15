@@ -33,8 +33,8 @@
 // resolves the last function, or module if testModule=true
 // checks that the copy elision points match the string IDs provided
 static void testCopyElision(const char* test,
-                            const char* program,
-                            std::vector<const char*> expectedPoints,
+                            std::string program,
+                            std::vector<std::string> expectedPoints,
                             bool testModule=false,
                             bool expectErrors=false) {
   printf("%s\n", test);
@@ -238,6 +238,25 @@ static void test5() {
         }
     )"""",
     {"M.test@8", "M.test@13"}); // IDs of 'var y' and 'var zz'
+
+  // Ensure we don't ignore conditional expression for elision
+  testCopyElision("test5e",
+    R""""(
+        proc helper(in arg: int) { return true; }
+        proc test(cond: bool) {
+          var x:int;
+          var y:int;
+          var a = y;
+          if helper(x) {
+            var b = y;
+            return;
+          }
+          var c = y;
+        }
+    )"""",
+    {"M.test@9",    // ID of 'x' in 'helper(x)'
+     "M.test@12",   // ID of 'var b'
+     "M.test@17"}); // ID of 'var c'
 }
 
 static void test6() {
@@ -1237,7 +1256,7 @@ static void test44() {
 
 // test that copy elision is sensitive to control flow across several branches
 static void test45(const std::string& controlModifier1, const std::string controlModifier2, bool expectElision) {
-  std::vector<const char*> expectedPoints;
+  std::vector<std::string> expectedPoints;
   if (expectElision) expectedPoints.push_back("M.test@7");
 
   testCopyElision("test45",
@@ -1316,6 +1335,33 @@ static void test46() {
     {"M.test@8"}); // ID of 'x' in call to 'helper'
 }
 
+static void test47() {
+  int counter = 0;
+  auto test = [&counter](std::string loop, std::vector<std::string> IDs) {
+    std::string name = "test47-";
+    name += std::to_string(counter++);
+    testCopyElision(name.c_str(),
+      R""""(
+          iter stuff(in arg: int) { yield 0; }
+          proc helper(in arg: int) { return 0; }
+          proc test(cond: bool) {
+            var x:int = 0;
+            )"""" + loop + R""""( { // OK to elide in iterand
+              var z = x; // should not elide
+            }
+          }
+      )"""",
+      IDs); // ID of 'x' in call to 'helper'
+  };
+  test("for i in stuff(x)", {"M.test@7"});
+  test("for i in stuff(helper(x))", {"M.test@8"});
+  test("while helper(x)", {"M.test@6"});
+
+  // TODO: with clause
+  //test("forall i in stuff(x) with (var copy = x)", {});
+  //test("forall i in stuff(x) with (var copy = helper(x))", {});
+}
+
 int main() {
   test1();
   test2();
@@ -1363,5 +1409,6 @@ int main() {
   test44();
   test45();
   test46();
+  test47();
   return 0;
 }

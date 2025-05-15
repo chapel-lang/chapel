@@ -571,7 +571,8 @@ static bool allowsCopyElision(const AstNode* ast) {
          ast->isSelect() ||
          ast->isLocal() ||
          ast->isSerial() ||
-         ast->isTry();
+         ast->isTry() ||
+         ast->isLoop(); // For iterands
 }
 
 // Note: This method is expected to be called _after_ special handling of
@@ -588,9 +589,20 @@ void FindElidedCopies::propagateChildToParent(VarFrame* frame, VarFrame* parent,
   // handle any local variables
   saveLocalVarElidedCopies(frame);
 
+  auto isLoopBody = [&]() {
+    if (auto loop = parent->scopeAst->toLoop()) {
+      // frame might be another loop, if used as the parent's iterand:
+      //   foreach i in (foreach j in 1..10 do j) do ...;
+      return loop->body() == frame->scopeAst;
+    }
+    return false;
+  };
+
   if (parent != nullptr) {
     // propagate any non-local variables
-    if (allowsCopyElision(ast) && parent != nullptr) {
+    if (allowsCopyElision(ast) &&
+        parent != nullptr &&
+        !isLoopBody()) {
       for (const auto& pair : frame->copyElisionState) {
         ID id = pair.first;
         const CopyElisionState& state = pair.second;
