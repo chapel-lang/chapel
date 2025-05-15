@@ -44,6 +44,7 @@ do
   fi
 done
 
+exit_status=0
 for name in current/*
 do
   if [ -f $name/Vagrantfile ]
@@ -81,6 +82,7 @@ do
       echo "     " $*
       echo
       echo
+      exit_status=1
       #uncomment the below line to make errors fatal
       #exit 1
       ;;
@@ -105,3 +107,5 @@ do
     ((i++))
   fi
 done
+
+exit $exit_status
