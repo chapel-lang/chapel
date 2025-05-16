@@ -127,7 +127,7 @@ void testProgram(const std::vector<ReturnVariant>& variants, F func,
 
 static std::string buildControlFlowProgram(std::string controlFlow) {
   std::string program = "";
-  program += "proc f() {\n  // Inserted control flow\n";
+  program += "proc f() throws {\n  // Inserted control flow\n";
   program += controlFlow;
   program += "\n  // End inserted control flow\n  return \"hello\";\n}";
   program += "\nvar x = f();";
@@ -601,6 +601,29 @@ static void testControlFlow16() {
 
       var b = false;
       if b then /* fall through to the default return */
+      )"""
+  , ControlFlowResult::AllPathsReturn);
+}
+
+static void testControlFlow17() {
+  testControlFlow(
+      R"""(
+      throw new Error("nope");
+      return 1;
+      )"""
+  , ControlFlowResult::AllPathsReturn);
+}
+
+static void testControlFlow18() {
+  testControlFlow(
+      R"""(
+      var arg = false;
+      if arg {
+        return true;
+      } else {
+        throw new Error("test");
+      }
+      return 1;
       )"""
   , ControlFlowResult::AllPathsReturn);
 }
@@ -1462,6 +1485,8 @@ int main() {
   testControlFlow14();
   testControlFlow15();
   testControlFlow16();
+  testControlFlow17();
+  testControlFlow18();
 
   testControlFlowYield1();
   testControlFlowYield2();

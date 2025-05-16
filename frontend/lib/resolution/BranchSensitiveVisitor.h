@@ -38,7 +38,8 @@ namespace resolution {
 struct ControlFlowInfo {
  private:
   // has the block already encountered a return or a throw?
-  bool returnsOrThrows_ = false;
+  bool returns_ = false;
+  bool throws_ = false;
 
   // if this frame hit a 'break', the loop it broke out of
   const uast::Loop* loopBreaks_ = nullptr;
@@ -53,8 +54,9 @@ struct ControlFlowInfo {
   ControlFlowInfo() = default;
 
   /* have we hit a statement that would prevent further execution of a block? */
-  bool isDoneExecuting() const { return returnsOrThrows_ || loopBreaks_ || loopContinues_ || fatalError_; }
-  bool returnsOrThrows() const { return returnsOrThrows_; }
+  bool isDoneExecuting() const { return returns_ || loopBreaks_ || loopContinues_ || fatalError_; }
+  bool returnsOrThrows() const { return returns_ || throws_; }
+  bool throws() const { return throws_; }
   bool breaks() const { return loopBreaks_ != nullptr; }
   bool continues() const { return loopContinues_ != nullptr; }
   bool fatalError() const { return fatalError_; }
@@ -64,7 +66,8 @@ struct ControlFlowInfo {
   // to treat the code as if it continues. If we already stopped executing,
   // further changes to control flow are not recorded.
 
-  void markReturnOrThrow() { if (!isDoneExecuting()) returnsOrThrows_ = true; }
+  void markReturn() { if (!isDoneExecuting()) returns_ = true; }
+  void markThrow() { if (!isDoneExecuting()) throws_ = true; }
   void markBreak(const uast::Loop* markWith) { if (!isDoneExecuting()) loopBreaks_ = markWith; }
   void markContinue(const uast::Loop* markWith) { if (!isDoneExecuting()) loopContinues_ = markWith; }
   void markFatalError() { if (!isDoneExecuting()) fatalError_ = true; }
@@ -78,7 +81,8 @@ struct ControlFlowInfo {
 
   /* mutably combine control flow information from two branches (e.g., then/else) */
   ControlFlowInfo& operator&=(const ControlFlowInfo& other) {
-    returnsOrThrows_ &= other.returnsOrThrows_;
+    returns_ &= other.returns_;
+    throws_ &= other.throws_;
 
     if (other.loopBreaks_ == loopBreaks_) {
       // both break out of the same loop (or neither breaks), do nothing
@@ -112,7 +116,8 @@ struct ControlFlowInfo {
      been executed. */
   void sequence(const ControlFlowInfo& other) {
     if (!isDoneExecuting()) {
-      returnsOrThrows_ |= other.returnsOrThrows_;
+      returns_ |= other.returns_;
+      throws_ |= other.throws_;
       loopBreaks_ = other.loopBreaks_;
       loopContinues_ = other.loopContinues_;
       fatalError_ |= other.fatalError_;
@@ -125,7 +130,8 @@ struct ControlFlowInfo {
      loop whose body continues does not continue its parent loop. */
   void sequenceIteration(const ControlFlowInfo& other, const uast::Loop* loop) {
     if (!isDoneExecuting()) {
-      returnsOrThrows_ |= other.returnsOrThrows_;
+      returns_ |= other.returns_;
+      throws_ |= other.throws_;
       if (other.loopBreaks_ != loop) loopBreaks_ = other.loopBreaks_;
       if (other.loopContinues_ != loop) loopContinues_ = other.loopContinues_;
       fatalError_ |= other.fatalError_;
@@ -485,9 +491,14 @@ struct BranchSensitiveVisitor {
   }
 
   /** note that the current frame, if any, has returned or thrown */
-  void markReturnOrThrow() {
+  void markReturn() {
     if (scopeStack.empty()) return;
-    currentFrame()->controlFlowInfo.markReturnOrThrow();
+    currentFrame()->controlFlowInfo.markReturn();
+  }
+
+  void markThrow() {
+    if (scopeStack.empty()) return;
+    currentFrame()->controlFlowInfo.markThrow();
   }
 
   /** note that the current frame, if any, has invoked 'break' */
@@ -512,6 +523,11 @@ struct BranchSensitiveVisitor {
   bool isDoneExecuting() {
     if (scopeStack.empty()) return false;
     return currentFrame()->isDoneExecuting();
+  }
+
+  bool markedThrow() {
+    if (scopeStack.empty()) return false;
+    return currentFrame()->controlFlowInfo.throws();
   }
 
   /** code to run right after we entered a new scope and pushed a new frame.

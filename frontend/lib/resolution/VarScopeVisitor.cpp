@@ -494,7 +494,7 @@ bool VarScopeVisitor::enter(const Return* ast, RV& rv) {
 }
 void VarScopeVisitor::exit(const Return* ast, RV& rv) {
   if (!scopeStack.empty()) {
-    markReturnOrThrow();
+    markReturn();
     handleReturn(ast, rv);
   }
   exitAst(ast);
@@ -524,7 +524,7 @@ bool VarScopeVisitor::enter(const Throw* ast, RV& rv) {
 }
 void VarScopeVisitor::exit(const Throw* ast, RV& rv) {
   if (!scopeStack.empty()) {
-    markReturnOrThrow();
+    markThrow();
     handleThrow(ast, rv);
   }
   exitAst(ast);
