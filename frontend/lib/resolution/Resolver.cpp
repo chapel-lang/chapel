@@ -3479,7 +3479,6 @@ QualifiedType Resolver::typeForId(const ID& id) {
         auto name = id.symbolName(context);
         auto externBlockId = id.parentSymbolId(context);
         return externBlockTypeForSymbol(context, externBlockId, name);
-        break;
       }
       case ID::Generated: break;
       // no default case to guarantee we handle all kinds

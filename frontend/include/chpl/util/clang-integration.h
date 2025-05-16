@@ -70,8 +70,8 @@ const std::vector<std::string>& getCC1Arguments(Context* context,
 /** Given arguments to 'clang' and some code (normally, the contents of an
     extern block), create a precompiled header with clang and return
     its contents. */
-const owned<TemporaryFileResult>& createClangPrecompiledHeader(
-    Context* context, ID externBlockId);
+const owned<TemporaryFileResult>&
+createClangPrecompiledHeader(Context* context, ID externBlockId);
 
 /** Given a TemporaryFileResult created from createClangPrecompiledHeader,
     returns 'true' if the passed name is present as a defined macro

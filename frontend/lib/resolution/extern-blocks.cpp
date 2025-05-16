@@ -29,16 +29,16 @@ using namespace util;
 
 bool externBlockContainsName(Context* context, ID externBlockId,
                              UniqueString name) {
-  if (auto& tfs = createClangPrecompiledHeader(context, externBlockId)) {
-    return precompiledHeaderContainsName(context, tfs.get(), name);
+  if (auto& tfr = createClangPrecompiledHeader(context, externBlockId)) {
+    return precompiledHeaderContainsName(context, tfr.get(), name);
   }
   return false;
 }
 
 bool externBlockContainsFunction(Context* context, ID externBlockId,
                                  UniqueString name) {
-  if (auto& tfs = createClangPrecompiledHeader(context, externBlockId)) {
-    return precompiledHeaderContainsFunction(context, tfs.get(), name);
+  if (auto& tfr = createClangPrecompiledHeader(context, externBlockId)) {
+    return precompiledHeaderContainsFunction(context, tfr.get(), name);
   }
   return false;
 }
@@ -46,18 +46,18 @@ bool externBlockContainsFunction(Context* context, ID externBlockId,
 const types::QualifiedType externBlockTypeForSymbol(Context* context,
                                                     ID externBlockId,
                                                     UniqueString name) {
-  if (auto& tfs = createClangPrecompiledHeader(context, externBlockId)) {
-    return precompiledHeaderTypeForSymbol(context, tfs.get(), name);
+  if (auto& tfr = createClangPrecompiledHeader(context, externBlockId)) {
+    return precompiledHeaderTypeForSymbol(context, tfr.get(), name);
   }
   return types::QualifiedType();
 }
 
 const TypedFnSignature* externBlockSigForFn(Context* context, ID externBlockId,
                                             UniqueString name) {
-  if (auto& tfs = createClangPrecompiledHeader(context, externBlockId)) {
+  if (auto& tfr = createClangPrecompiledHeader(context, externBlockId)) {
     ID fnId =
         ID::fabricateId(context, externBlockId, name, ID::ExternBlockElement);
-    return precompiledHeaderSigForFn(context, tfs.get(), fnId);
+    return precompiledHeaderSigForFn(context, tfr.get(), fnId);
   }
   return nullptr;
 }
@@ -65,8 +65,8 @@ const TypedFnSignature* externBlockSigForFn(Context* context, ID externBlockId,
 const types::QualifiedType externBlockRetTypeForFn(Context* context,
                                                    ID externBlockId,
                                                    UniqueString name) {
-  if (auto& tfs = createClangPrecompiledHeader(context, externBlockId)) {
-    return precompiledHeaderRetTypeForFn(context, tfs.get(), name);
+  if (auto& tfr = createClangPrecompiledHeader(context, externBlockId)) {
+    return precompiledHeaderRetTypeForFn(context, tfr.get(), name);
   }
 
   return types::QualifiedType();
