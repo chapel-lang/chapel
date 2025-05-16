@@ -370,6 +370,12 @@ static QualifiedType convertClangTypeToChapelType(
 
   auto clangBuiltinType = clangType->getAs<clang::BuiltinType>();
   if (clangBuiltinType) {
+#define BUILTIN_TYPE_ENTRY(ClangType, ChapelCTypeString)               \
+  case clang::BuiltinType::ClangType:                                  \
+    chapelType =                                                       \
+        resolution::typeForSysCType(context, USTR(ChapelCTypeString)); \
+    break;
+
     switch (clangBuiltinType->getKind()) {
       case clang::BuiltinType::Void:
         chapelType = QualifiedType(QualifiedType::TYPE,
@@ -379,38 +385,18 @@ static QualifiedType convertClangTypeToChapelType(
         chapelType =
             QualifiedType(QualifiedType::TYPE, BoolType::get(context));
         break;
-      case clang::BuiltinType::Int:
-        chapelType = resolution::typeForSysCType(context, USTR("c_int"));
-        break;
-      case clang::BuiltinType::UInt:
-        chapelType = resolution::typeForSysCType(context, USTR("c_uint"));
-        break;
-      case clang::BuiltinType::Long:
-        chapelType = resolution::typeForSysCType(context, USTR("c_long"));
-        break;
-      case clang::BuiltinType::ULong:
-        chapelType = resolution::typeForSysCType(context, USTR("c_ulong"));
-        break;
-      case clang::BuiltinType::LongLong:
-        chapelType = resolution::typeForSysCType(context, USTR("c_longlong"));
-        break;
-      case clang::BuiltinType::ULongLong:
-        chapelType = resolution::typeForSysCType(context, USTR("c_ulonglong"));
-        break;
-      case clang::BuiltinType::Char_S:
-      case clang::BuiltinType::SChar:
-        chapelType = resolution::typeForSysCType(context, USTR("c_schar"));
-        break;
-      case clang::BuiltinType::Char_U:
-      case clang::BuiltinType::UChar:
-        chapelType = resolution::typeForSysCType(context, USTR("c_uchar"));
-        break;
-      case clang::BuiltinType::Short:
-        chapelType = resolution::typeForSysCType(context, USTR("c_short"));
-        break;
-      case clang::BuiltinType::UShort:
-        chapelType = resolution::typeForSysCType(context, USTR("c_ushort"));
-        break;
+      BUILTIN_TYPE_ENTRY(Int, "c_int")
+      BUILTIN_TYPE_ENTRY(UInt, "c_uint")
+      BUILTIN_TYPE_ENTRY(Long, "c_long")
+      BUILTIN_TYPE_ENTRY(ULong, "c_ulong")
+      BUILTIN_TYPE_ENTRY(LongLong, "c_longlong")
+      BUILTIN_TYPE_ENTRY(ULongLong, "c_ulonglong")
+      BUILTIN_TYPE_ENTRY(Char_S, "c_schar")
+      BUILTIN_TYPE_ENTRY(SChar, "c_schar")
+      BUILTIN_TYPE_ENTRY(Char_U, "c_uchar")
+      BUILTIN_TYPE_ENTRY(UChar, "c_uchar")
+      BUILTIN_TYPE_ENTRY(Short, "c_short")
+      BUILTIN_TYPE_ENTRY(UShort, "c_ushort")
       case clang::BuiltinType::Float:
         chapelType =
             QualifiedType(QualifiedType::TYPE, RealType::get(context, 32));
@@ -426,6 +412,7 @@ static QualifiedType convertClangTypeToChapelType(
                           "' in extern \"C\" block";
         context->error(Location(), "%s", msg.c_str());
     }
+#undef BUILTIN_TYPE_ENTRY
   } else {
     CHPL_UNIMPL("Non-builtin type in extern block");
   }
