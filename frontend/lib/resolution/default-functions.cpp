@@ -514,11 +514,10 @@ generateInitSignature(ResolutionContext* rc, const CompositeType* inCompType) {
   return typedSignatureInitial(rc, uSig);
 }
 
-struct FieldFnBuilder {
- private:
-  // inputs to the builder
+struct BinaryFnHelper {
   Context* context_;
   ID typeID_;
+  const TypeDecl* typeDecl_;
   UniqueString name_;
   Function::Kind kind_;
   Formal::Intent lhsIntent_;
@@ -532,19 +531,22 @@ struct FieldFnBuilder {
 
   AstList stmts_;
 
- public:
-  FieldFnBuilder(Context* context, ID typeID, UniqueString name,
+  BinaryFnHelper(Context* context, ID typeID, UniqueString name,
                  Function::Kind kind,
                  Formal::Intent lhsIntent = Formal::DEFAULT_INTENT,
                  Formal::Intent rhsIntent = Formal::DEFAULT_INTENT)
     : context_(context), typeID_(std::move(typeID)), name_(name), kind_(kind),
       lhsIntent_(lhsIntent), rhsIntent_(rhsIntent) {
-
     builder_ = Builder::createForGeneratedCode(context_, typeID_);
     dummyLoc_ = parsing::locateId(context_, typeID_);
 
-    auto typeDecl = parsing::idToAst(context, typeID)->toAggregateDecl();
-    CHPL_ASSERT(typeDecl);
+    typeDecl_ = parsing::idToAst(context, typeID)->toAggregateDecl();
+    CHPL_ASSERT(typeDecl_);
+  }
+
+  virtual owned<AstNode> lhsFormalTypeExpr() = 0;
+  owned<Formal>& lhsFormal() {
+    if (lhsFormal_) return lhsFormal_;
 
     // As a special rule in Chapel, operator declarations inside a type ignore
     // the 'this' formal, and instead have an 'lhs' and 'rhs' formal. Handle
@@ -552,18 +554,24 @@ struct FieldFnBuilder {
     // finalizing, we'll insert a dummy 'this' formal.
     UniqueString nameToUse = USTR("this");
     if (kind_ == Function::Kind::OPERATOR) {
-      nameToUse = UniqueString::get(context, "lhs");
+      nameToUse = UniqueString::get(context_, "lhs");
     }
-
     lhsFormal_ = Formal::build(builder(), dummyLoc_, nullptr,
                                nameToUse, lhsIntent_,
-                               identifier(typeDecl->name()), nullptr);
+                               lhsFormalTypeExpr(), nullptr);
+    return lhsFormal_;
+  }
 
-    auto otherName = UniqueString::get(context, "rhs");
-    auto thisDotType =  dot(identifier(USTR("this")), USTR("type"));
+  virtual owned<AstNode> rhsFormalTypeExpr() = 0;
+  owned<Formal>& rhsFormal() {
+    if (rhsFormal_) return rhsFormal_;
+
+
+    auto otherName = UniqueString::get(context_, "rhs");
     rhsFormal_ = Formal::build(builder(), dummyLoc_, nullptr,
                                 otherName, rhsIntent_,
-                                std::move(thisDotType), nullptr);
+                                rhsFormalTypeExpr(), nullptr);
+    return rhsFormal_;
   }
 
   Context* context() const { return context_; }
@@ -584,23 +592,15 @@ struct FieldFnBuilder {
     return Dot::build(builder(), dummyLoc_, std::move(lhs), name);
   }
 
-  owned<Dot> lhsField(const VarLikeDecl* fieldDecl) {
-    return dot(identifier(lhsFormal_->name()), fieldDecl->name());
-  }
-
-  owned<Dot> rhsField(const VarLikeDecl* fieldDecl) {
-    return dot(identifier(rhsFormal_->name()), fieldDecl->name());
-  }
-
   owned<OpCall> op(owned<AstNode> lhs, UniqueString op, owned<AstNode> rhs) {
     return OpCall::build(builder(), dummyLoc_, op,
                          std::move(lhs), std::move(rhs));
   }
 
-  owned<FnCall> call(UniqueString fn, owned<AstNode> lhs, owned<AstNode> rhs) {
+  template <typename ... Ts>
+  owned<FnCall> call(UniqueString fn, Ts&& ... varArgs) {
     AstList args;
-    args.push_back(std::move(lhs));
-    args.push_back(std::move(rhs));
+    (args.push_back(std::move(varArgs)),...);
     return FnCall::build(builder(), dummyLoc_, identifier(fn), std::move(args), /* callUsedSquareBrackets */ false);
   }
 
@@ -620,6 +620,67 @@ struct FieldFnBuilder {
     return cond;
   }
 
+  BuilderResult finalize() {
+    auto body = Block::build(builder(), dummyLoc_, std::move(stmts_));
+    AstList otherFormals;
+
+    // See comment in constructor. For operators, the left hand side formal is not really
+    // "this", and "this" is a dummy formal. Insert the "lhs" formal as a normal
+    // formal, and create the dummy.
+    if (kind_ == Function::Kind::OPERATOR) {
+      otherFormals.push_back(std::move(lhsFormal()));
+      lhsFormal_ = Formal::build(builder(), dummyLoc_, nullptr,
+                                      USTR("this"), Formal::DEFAULT_INTENT,
+                                      identifier(typeID_.symbolName(context_)), nullptr);
+    }
+    otherFormals.push_back(std::move(rhsFormal()));
+    auto genFn = Function::build(builder(),
+                                 dummyLoc_, {},
+                                 Decl::Visibility::PUBLIC,
+                                 Decl::Linkage::DEFAULT_LINKAGE,
+                                 /*linkageName=*/{},
+                                 name_,
+                                 /*inline=*/false, /*override=*/false,
+                                 kind_,
+                                 /*receiver=*/std::move(lhsFormal()),
+                                 Function::ReturnIntent::DEFAULT_RETURN_INTENT,
+                                 // throws, primaryMethod, parenless
+                                 false, false, false,
+                                 std::move(otherFormals),
+                                 // returnType, where, lifetime, body
+                                 {}, {}, {}, std::move(body));
+
+    builder_->noteChildrenLocations(genFn.get(), dummyLoc_);
+    builder_->addToplevelExpression(std::move(genFn));
+
+    return builder_->result();
+  }
+};
+
+struct FieldFnBuilder : BinaryFnHelper {
+  FieldFnBuilder(Context* context, ID typeID, UniqueString name,
+                 Function::Kind kind,
+                 Formal::Intent lhsIntent = Formal::DEFAULT_INTENT,
+                 Formal::Intent rhsIntent = Formal::DEFAULT_INTENT)
+    : BinaryFnHelper(context, typeID, name, kind, lhsIntent, rhsIntent) {}
+
+  owned<AstNode> lhsFormalTypeExpr() {
+    return identifier(typeDecl_->name());
+  }
+
+  owned<AstNode> rhsFormalTypeExpr() {
+    auto thisDotType = dot(identifier(USTR("this")), USTR("type"));
+    return thisDotType;
+  }
+
+  owned<Dot> lhsField(const VarLikeDecl* fieldDecl) {
+    return dot(identifier(lhsFormal()->name()), fieldDecl->name());
+  }
+
+  owned<Dot> rhsField(const VarLikeDecl* fieldDecl) {
+    return dot(identifier(rhsFormal()->name()), fieldDecl->name());
+  }
+
   template <typename F>
   void eachFieldPair(F&& callable) {
     auto ct = initialTypeForTypeDecl(context_, typeID_)->getCompositeType();
@@ -635,42 +696,6 @@ struct FieldFnBuilder {
       CHPL_ASSERT(fieldDecl && fieldDecl->isVariable());
       callable(this, fieldDecl->toVariable());
     }
-  }
-
-  BuilderResult finalize() {
-    auto body = Block::build(builder(), dummyLoc_, std::move(stmts_));
-    AstList otherFormals;
-
-    // See comment in constructor. For operators, the left hand side formal is not really
-    // "this", and "this" is a dummy formal. Insert the "lhs" formal as a normal
-    // formal, and create the dummy.
-    if (kind_ == Function::Kind::OPERATOR) {
-      otherFormals.push_back(std::move(lhsFormal_));
-      lhsFormal_ = Formal::build(builder(), dummyLoc_, nullptr,
-                                      USTR("this"), Formal::DEFAULT_INTENT,
-                                      identifier(typeID_.symbolName(context_)), nullptr);
-    }
-    otherFormals.push_back(std::move(rhsFormal_));
-    auto genFn = Function::build(builder(),
-                                 dummyLoc_, {},
-                                 Decl::Visibility::PUBLIC,
-                                 Decl::Linkage::DEFAULT_LINKAGE,
-                                 /*linkageName=*/{},
-                                 name_,
-                                 /*inline=*/false, /*override=*/false,
-                                 kind_,
-                                 /*receiver=*/std::move(lhsFormal_),
-                                 Function::ReturnIntent::DEFAULT_RETURN_INTENT,
-                                 // throws, primaryMethod, parenless
-                                 false, false, false,
-                                 std::move(otherFormals),
-                                 // returnType, where, lifetime, body
-                                 {}, {}, {}, std::move(body));
-
-    builder_->noteChildrenLocations(genFn.get(), dummyLoc_);
-    builder_->addToplevelExpression(std::move(genFn));
-
-    return builder_->result();
   }
 };
 
