@@ -15,6 +15,12 @@ Vagrant.configure("2") do |config|
     s.path =  "../../provision-scripts/proxy-setup.sh"
   end
 
+  # Hack to get this box to grab DNS nameservers from DHCP, rather than using
+  # the public DNS servers it for some reason has hardcoded.
+  config.vm.provision "shell",
+    inline: "sed -i 's/dns-nameserver/#dns-nameserver/' /etc/network/interfaces ;\
+             systemctl restart networking"
+
   config.vm.provision "shell",
     path: "../../provision-scripts/apt-get-deps.sh"
 
