@@ -494,32 +494,29 @@ static owned<clang::CompilerInstance> getCompilerInstanceForReadingPch(
 static void runFuncOnIdent(Context* context, const TemporaryFileResult* pch,
                            UniqueString name,
                            const std::function<void(const clang::Decl*)>& f) {
-  if (pch) {
-    auto Clang = getCompilerInstanceForReadingPch(context);
-    Clang->createASTReader();
-    clang::ASTReader* astReader = Clang->getASTReader().get();
-    CHPL_ASSERT(astReader);
+  if (!pch) return;
 
-    auto readResult =
-        astReader->ReadAST(pch->path(), clang::serialization::MK_PCH,
-                           clang::SourceLocation(), clang::ASTReader::ARR_None);
-    if (readResult == clang::ASTReader::Success) {
-      clang::IdentifierInfo* iid = astReader->get(name.c_str());
-      if (iid->hasMacroDefinition()) {
-        // TODO: implement
-      } else {
-        clang::DeclarationName declName(iid);
-        if (declName.isIdentifier()) {
-          if (Clang->hasASTContext()) {
-            auto tuDecl = Clang->getASTContext().getTranslationUnitDecl();
-            auto lookupResult = tuDecl->lookup(declName);
-            if (lookupResult.isSingleResult()) {
-              auto decl = lookupResult.front();
-              f(decl);
-            }
-          }
-        }
-      }
+  auto Clang = getCompilerInstanceForReadingPch(context);
+  Clang->createASTReader();
+  clang::ASTReader* astReader = Clang->getASTReader().get();
+  CHPL_ASSERT(astReader);
+
+  auto readResult =
+      astReader->ReadAST(pch->path(), clang::serialization::MK_PCH,
+                         clang::SourceLocation(), clang::ASTReader::ARR_None);
+  if ((readResult != clang::ASTReader::Success) || !Clang->hasASTContext())
+    return;
+  clang::IdentifierInfo* iid = astReader->get(name.c_str());
+  if (iid->hasMacroDefinition()) {
+    // TODO: implement
+  } else {
+    clang::DeclarationName declName(iid);
+    if (declName.isIdentifier()) {
+      auto tuDecl = Clang->getASTContext().getTranslationUnitDecl();
+      auto lookupResult = tuDecl->lookup(declName);
+      if (!lookupResult.isSingleResult()) return;
+      auto decl = lookupResult.front();
+      f(decl);
     }
   }
 }
