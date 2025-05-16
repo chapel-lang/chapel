@@ -501,8 +501,18 @@ static void runFuncOnIdent(Context* context, const TemporaryFileResult* pch,
     if (declName.isIdentifier()) {
       auto tuDecl = Clang->getASTContext().getTranslationUnitDecl();
       auto lookupResult = tuDecl->lookup(declName);
-      if (!lookupResult.isSingleResult()) return;
-      f(lookupResult.front());
+      if (lookupResult.empty()) return;
+      // Use the first declaration found, but if it is a function instead use
+      // the declaration that Clang considers to have the body definition.
+      auto firstDecl = lookupResult.front();
+      if (auto fnDecl = llvm::dyn_cast<clang::FunctionDecl>(firstDecl)) {
+        const clang::FunctionDecl* fnDeclWithBody = nullptr;
+        if (fnDecl->hasBody(fnDeclWithBody)) {
+          f(fnDeclWithBody);
+        }
+      } else {
+        f(firstDecl);
+      }
     }
   }
 }

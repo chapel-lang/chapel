@@ -176,6 +176,7 @@ static void test8() {
     assert(!guard.realizeErrors());
   }
 
+  // Empty extern block
   {
     Context* context = buildStdContext();
     ErrorGuard guard(context);
@@ -196,29 +197,60 @@ static void test8() {
 
 static void test9() {
   printf("%s\n", __FUNCTION__);
-  Context* context = buildStdContext();
-  ErrorGuard guard(context);
-  QualifiedType qt =
-    resolveTypeOfXInit(context,
-                       R""""(
-                        module M {
-                          module CDemo {
-                            extern {
-                               static double square(double num) {
-                                  return 2;
-                               }
+  {
+    Context* context = buildStdContext();
+    ErrorGuard guard(context);
+    QualifiedType qt =
+      resolveTypeOfXInit(context,
+                         R""""(
+                          module M {
+                            module CDemo {
+                              extern {
+                                 static double square(double num) {
+                                    return 2;
+                                 }
+                              }
                             }
+
+                            var x = CDemo.square(2.0);
                           }
+                         )"""", true);
 
-                          var x = CDemo.square(2.0);
-                        }
-                       )"""", true);
+    assert(!qt.isUnknownOrErroneous());
+    assert(qt.type()->isRealType());
+    assert(qt.type()->toRealType()->isDefaultWidth());
 
-  assert(!qt.isUnknownOrErroneous());
-  assert(qt.type()->isRealType());
-  assert(qt.type()->toRealType()->isDefaultWidth());
+    assert(!guard.realizeErrors());
+  }
 
-  assert(!guard.realizeErrors());
+  // With forward declaration(s)
+  {
+    Context* context = buildStdContext();
+    ErrorGuard guard(context);
+    QualifiedType qt =
+      resolveTypeOfXInit(context,
+                         R""""(
+                          module M {
+                            module CDemo {
+                              extern {
+                                 static double square(double num);
+                                 static double square(double num);
+                                 static double square(double num) {
+                                    return 2;
+                                 }
+                              }
+                            }
+
+                            var x = CDemo.square(2.0);
+                          }
+                         )"""", true);
+
+    assert(!qt.isUnknownOrErroneous());
+    assert(qt.type()->isRealType());
+    assert(qt.type()->toRealType()->isDefaultWidth());
+
+    assert(!guard.realizeErrors());
+  }
 }
 
 static void test10() {
