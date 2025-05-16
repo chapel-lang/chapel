@@ -4810,9 +4810,11 @@ bool Resolver::enter(const uast::Manage* manage) {
         auto overloadsIt = witness->returnIntentOverloads().find(id);
         if (overloadsIt != witness->returnIntentOverloads().end()) {
           bool ambiguity;
+          QualifiedType::Kind ignoredKind;
           auto bestCandidate =
             determineBestReturnIntentOverload(overloadsIt->second,
                                               accessContext,
+                                              ignoredKind,
                                               ambiguity);
           CHPL_ASSERT(!ambiguity);
           CHPL_ASSERT(bestCandidate);

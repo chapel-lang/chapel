@@ -5467,6 +5467,7 @@ resolutionResultFromMostSpecificCandidate(ResolutionContext* rc,
           PromotionIteratorType::get(rc->context(),
                                      instantiationPoiScope,
                                      msc.fn(),
+                                     exprType,
                                      msc.promotedFormals()));
     }
 
@@ -5521,6 +5522,41 @@ static bool handleReflectionFunction(ResolutionContext* rc,
   }
 
   return false;
+}
+
+// handle field access constness and pragmas like REF_TO_CONST_WHEN_CONST_THIS
+static void adjustConstnessBasedOnReceiver(Context* context,
+                                           const MostSpecificCandidate& candidate,
+                                           const CallInfo& ci,
+                                           QualifiedType& rt) {
+  bool adjustConst = false;
+  if (candidate.fn()->untyped()->idIsFunction() && !candidate.fn()->isCompilerGenerated()) {
+    auto fnAst = parsing::idToAst(context, candidate.fn()->id());
+    if (auto ag = fnAst->attributeGroup()) {
+      if (ag->hasPragma(pragmatags::PRAGMA_REF_TO_CONST_WHEN_CONST_THIS)) {
+        adjustConst = true;
+      }
+    }
+  } else if (candidate.fn()->untyped()->idIsField()) {
+    // the return type computation for fields already takes care of making
+    // it ref where necessary, so just adjust constness for refs.
+    //
+    // Don't do this for classes, though: a 'const shared C' can still
+    // have its fields accessed mutably.
+
+    if (ci.methodReceiverType().type() &&
+        ci.methodReceiverType().type()->isClassType()) {
+      // don't adjust
+    } else {
+      adjustConst = rt.isRef();
+    }
+  }
+
+  if (adjustConst) {
+    auto kp = KindProperties::fromKind(rt.kind());
+    kp.setConst(ci.methodReceiverType().isConst());
+    rt = QualifiedType(kp.toKind(), rt.type());
+  }
 }
 
 // call can be nullptr. in that event ci.name() will be used to find
@@ -5595,12 +5631,17 @@ resolveFnCall(ResolutionContext* rc,
       returnTypes(rc, candidate.fn(), instantiationPoiScope);
     rt = yieldAndRet.second;
 
+
+    if (ci.isMethodCall()) {
+      adjustConstnessBasedOnReceiver(context, candidate, ci, rt);
+    }
+
     QualifiedType yt;
 
     if (!candidate.promotedFormals().empty()) {
       // this is actually a promotion; construct a promotion type instead.
       yt = rt;
-      rt = QualifiedType(rt.kind(), PromotionIteratorType::get(context, instantiationPoiScope, candidate.fn(), candidate.promotedFormals()));
+      rt = QualifiedType(rt.kind(), PromotionIteratorType::get(context, instantiationPoiScope, candidate.fn(), rt, candidate.promotedFormals()));
     }
 
     if (retType && retType->type() != rt.type()) {
@@ -7133,13 +7174,13 @@ yieldTypeForIterator(ResolutionContext* rc,
 
   QualifiedType ret;
   if (auto fnIter = iter->toFnIteratorType()) {
-    ret = yieldType(rc, fnIter->iteratorFn(), iter->poiScope());
+    ret = fnIter->yieldType();
   } else if (auto loopIter = iter->toLoopExprIteratorType()) {
     ret = loopIter->yieldType();
   } else {
     CHPL_ASSERT(iter->isPromotionIteratorType());
     auto promoIter = iter->toPromotionIteratorType();
-    ret = returnType(rc, promoIter->scalarFn(), promoIter->poiScope());
+    ret = promoIter->yieldType();
   }
 
   return CHPL_RESOLUTION_QUERY_END(ret);
@@ -7351,7 +7392,7 @@ resolveTheseCallForZipperedArguments(ResolutionContext* rc,
     CHPL_ASSERT(iterType->isPromotionIteratorType());
     auto promoIt = iterType->toPromotionIteratorType();
 
-    auto scalarReturn = returnType(rc, promoIt->scalarFn(), promoIt->poiScope());
+    auto scalarReturn = promoIt->yieldType();
     auto cr = CallResolutionResult(QualifiedType(QualifiedType::CONST_VAR, promoIt),
                                    scalarReturn);
     return TheseResolutionResult::success(cr, std::move(iterandType));
@@ -7490,15 +7531,9 @@ static const types::QualifiedType& getPromotionTypeQuery(Context* context, types
   } else if (auto loopIt = qt.type()->toLoopExprIteratorType()) {
     ret = loopIt->yieldType();
   } else if (auto fnIt = qt.type()->toFnIteratorType()) {
-    // TODO, the iteratorFn could be a nested function, in which case a default
-    //       resolution context is not sufficient.
-    ResolutionContext rc(context);
-    ret = yieldType(&rc, fnIt->iteratorFn(), fnIt->poiScope());
+    ret = fnIt->yieldType();
   } else if (auto promoIt = qt.type()->toPromotionIteratorType()) {
-    // TODO, the scalarFn could be a nested function, in which case a default
-    //       resolution context is not sufficient.
-    ResolutionContext rc(context);
-    ret = returnType(&rc, promoIt->scalarFn(), promoIt->poiScope());
+    ret = promoIt->yieldType();
   } else {
     std::vector<CallInfoActual> actuals;
     actuals.push_back(CallInfoActual(qt, USTR("this")));
@@ -7613,9 +7648,12 @@ Access accessForQualifier(Qualifier q) {
   return VALUE; // including IN at least
 }
 
+// leaves outReturnKind unchanged if no return intent overload selection
+// took place.
 const MostSpecificCandidate*
 determineBestReturnIntentOverload(const MostSpecificCandidates& candidates,
                                   Access access,
+                                  QualifiedType::Kind& outReturnKind,
                                   bool& outAmbiguity) {
   outAmbiguity = false;
   const MostSpecificCandidate* best = nullptr;
@@ -7642,6 +7680,12 @@ determineBestReturnIntentOverload(const MostSpecificCandidates& candidates,
       else if (bestConstRef) best = &bestConstRef;
       else best = &bestRef;
     }
+
+    // set the determined return intent.
+    if (best == &bestRef) outReturnKind = QualifiedType::REF;
+    else if (best == &bestConstRef) outReturnKind = QualifiedType::CONST_REF;
+    else if (best == &bestValue) outReturnKind = QualifiedType::CONST_VAR;
+
   } else if (candidates.numBest() == 1) {
     best = &candidates.only();
   }

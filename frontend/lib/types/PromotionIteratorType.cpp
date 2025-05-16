@@ -29,15 +29,17 @@ void PromotionIteratorType::markUniqueStringsInner(Context* context) const {
   for (const auto& pair : promotedFormals_) {
     pair.second.mark(context);
   }
+  yieldType_.mark(context);
 }
 
 const owned<PromotionIteratorType>&
 PromotionIteratorType::getPromotionIteratorType(Context* context,
                                                 const resolution::PoiScope* poiScope,
                                                 const resolution::TypedFnSignature* scalarFn,
+                                                QualifiedType retType,
                                                 resolution::SubstitutionsMap promotedFormals) {
-  QUERY_BEGIN(getPromotionIteratorType, context, poiScope, scalarFn, promotedFormals);
-  auto result = toOwned(new PromotionIteratorType(poiScope, scalarFn, std::move(promotedFormals)));
+  QUERY_BEGIN(getPromotionIteratorType, context, poiScope, scalarFn, retType, promotedFormals);
+  auto result = toOwned(new PromotionIteratorType(poiScope, scalarFn, std::move(retType), std::move(promotedFormals)));
   return QUERY_END(result);
 }
 
@@ -45,8 +47,9 @@ const PromotionIteratorType*
 PromotionIteratorType::get(Context* context,
                            const resolution::PoiScope* poiScope,
                            const resolution::TypedFnSignature* scalarFn,
+                           QualifiedType retType,
                            resolution::SubstitutionsMap promotedFormals) {
-  return getPromotionIteratorType(context, poiScope, scalarFn, std::move(promotedFormals)).get();
+  return getPromotionIteratorType(context, poiScope, scalarFn, std::move(retType), std::move(promotedFormals)).get();
 }
 
 }  // end namespace types
