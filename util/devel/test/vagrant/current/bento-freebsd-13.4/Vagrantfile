@@ -6,18 +6,24 @@
 # backwards compatibility). Please don't change it unless you know what
 # you're doing.
 Vagrant.configure("2") do |config|
-  config.vm.box = "freebsd/FreeBSD-13.3-STABLE"
+  config.vm.box = "bento/freebsd-13.4"
 
   # needs more disk space
   # have to use this for it to work:
   # export VAGRANT_EXPERIMENTAL="disks"
   config.vm.disk :disk, size: "12GB", primary: true
 
+  config.vm.provision "shell" do |s|
+    s.env =  { http_proxy:ENV['http_proxy'], https_proxy:ENV['https_proxy'] }
+    s.path =  "../../provision-scripts/proxy-setup.sh"
+  end
+
+  config.vm.provision "shell",
+    path: "../../provision-scripts/freebsd-repo-fix.sh"
+
   config.vm.provision "shell",
     path: "../../provision-scripts/freebsd-pkg-deps.sh"
 
-  # It comes with clang 15 and pkg install llvm installs 15,
-  # but 11 - 16 are available.
   config.vm.provision "shell",
     path: "../../provision-scripts/freebsd-pkg-llvm.sh"
 
@@ -29,7 +35,7 @@ Vagrant.configure("2") do |config|
 
   config.vm.provider "virtualbox" do |vb|
     vb.memory = 4096
-    #vb.cpus = 2
+    vb.cpus = 2
   end
 
 end

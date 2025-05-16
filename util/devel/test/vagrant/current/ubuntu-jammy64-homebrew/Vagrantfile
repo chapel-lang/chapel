@@ -8,6 +8,11 @@
 Vagrant.configure("2") do |config|
   config.vm.box = "ubuntu/jammy64"
 
+  config.vm.provision "shell" do |s|
+    s.env =  { http_proxy:ENV['http_proxy'], https_proxy:ENV['https_proxy'] }
+    s.path =  "../../provision-scripts/proxy-setup.sh"
+  end
+
   config.vm.provision "shell", privileged: false,
     path: "../../provision-scripts/apt-get-and-linuxbrew.sh"
 
@@ -18,8 +23,8 @@ Vagrant.configure("2") do |config|
     path: "../../provision-scripts/make-chapel-quick.sh"
 
   config.vm.provider "virtualbox" do |vb|
-    vb.memory = 8192
-    # vb.cpus = 2
+    vb.memory = 4096
+    vb.cpus = 2
   end
 
 end
