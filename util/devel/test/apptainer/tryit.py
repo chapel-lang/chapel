@@ -4,7 +4,7 @@
     Prints a summary of the output at the end.
     Saves all of the command output in a file called 'log'. """
 
-import argparse, glob, os, subprocess, shutil
+import argparse, glob, os, subprocess, shutil, sys
 
 def gatherDirs(skip_nollvm):
     dirs = [ ]
@@ -93,6 +93,7 @@ def main():
             if len(name) > maxNameLen:
                 maxNameLen = len(name)
 
+        ok = True
         for d in dirs:
             name = dirNameToConfigName(d)
 
@@ -101,7 +102,6 @@ def main():
                         "     ---- " + name + " ---- ")
 
             statusline = ""
-            ok = True
             # Build/rebuild image.sif if needed
             if os.path.exists("image.sif") and args.rebuild:
                 printAndLog(log, "Removing {}/image.sif".format(d))
@@ -152,6 +152,9 @@ def main():
             name = dirNameToConfigName(d)
             paddedName = name.rjust(maxNameLen)
             printAndLog(log, paddedName + ": " + status[name])
+
+        if not ok:
+            sys.exit(1)
 
 
 if __name__ == '__main__':
