@@ -315,7 +315,7 @@ namespace uast {
 template <>
 struct AstVisitorPrecondition<resolution::VarScopeVisitor> {
   static bool skipSubtree(const AstNode* node, resolution::VarScopeVisitor& rv) {
-    return rv.isDoneExecuting();
+    return rv.isDoneExecuting() || rv.markedThrow();
   }
 };
 

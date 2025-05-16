@@ -7343,7 +7343,7 @@ void Resolver::exit(const Return* ret) {
   if (initResolver) {
     initResolver->checkEarlyReturn(ret);
   }
-  markReturnOrThrow();
+  markReturn();
 }
 
 static const Loop* findLastLoop(Resolver& rv) {
@@ -7425,7 +7425,7 @@ void Resolver::exit(const Throw* node) {
   if (initResolver) {
     context->error(node, "initializers are not yet allowed to throw errors");
   }
-  markReturnOrThrow();
+  markThrow();
 }
 
 bool Resolver::enter(const Try* node) {
