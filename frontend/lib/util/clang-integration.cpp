@@ -521,9 +521,9 @@ static void runFuncOnIdent(Context* context, const TemporaryFileResult* pch,
 }
 #endif
 
-static const bool& precompiledHeaderContainsNameQuery(
+const bool& precompiledHeaderContainsName(
     Context* context, const TemporaryFileResult* pch, UniqueString name) {
-  QUERY_BEGIN(precompiledHeaderContainsNameQuery, context, pch, name);
+  QUERY_BEGIN(precompiledHeaderContainsName, context, pch, name);
 
   bool result = false;
 
@@ -547,9 +547,9 @@ static const bool& precompiledHeaderContainsNameQuery(
   return QUERY_END(result);
 }
 
-static const bool& precompiledHeaderContainsFunctionQuery(
+const bool& precompiledHeaderContainsFunction(
     Context* context, const TemporaryFileResult* pch, UniqueString name) {
-  QUERY_BEGIN(precompiledHeaderContainsFunctionQuery, context, pch, name);
+  QUERY_BEGIN(precompiledHeaderContainsFunction, context, pch, name);
 
   bool result = false;
 
@@ -562,9 +562,9 @@ static const bool& precompiledHeaderContainsFunctionQuery(
   return QUERY_END(result);
 }
 
-static const QualifiedType& precompiledHeaderTypeForSymbolQuery(
+const QualifiedType& precompiledHeaderTypeForSymbol(
     Context* context, const TemporaryFileResult* pch, UniqueString name) {
-  QUERY_BEGIN(precompiledHeaderTypeForSymbolQuery, context, pch, name);
+  QUERY_BEGIN(precompiledHeaderTypeForSymbol, context, pch, name);
 
   QualifiedType result;
 
@@ -583,9 +583,9 @@ static const QualifiedType& precompiledHeaderTypeForSymbolQuery(
   return QUERY_END(result);
 }
 
-static const TypedFnSignature* const& precompiledHeaderSigForFnQuery(
+const TypedFnSignature* const& precompiledHeaderSigForFn(
     Context* context, const TemporaryFileResult* pch, ID fnId) {
-  QUERY_BEGIN(precompiledHeaderSigForFnQuery, context, pch, fnId);
+  QUERY_BEGIN(precompiledHeaderSigForFn, context, pch, fnId);
 
   const TypedFnSignature* result = nullptr;
 
@@ -636,9 +636,9 @@ static const TypedFnSignature* const& precompiledHeaderSigForFnQuery(
   return QUERY_END(result);
 }
 
-static const QualifiedType& precompiledHeaderRetTypeForFnQuery(
+const QualifiedType& precompiledHeaderRetTypeForFn(
     Context* context, const TemporaryFileResult* pch, UniqueString name) {
-  QUERY_BEGIN(precompiledHeaderRetTypeForFnQuery, context, pch, name);
+  QUERY_BEGIN(precompiledHeaderRetTypeForFn, context, pch, name);
 
   QualifiedType result;
 
@@ -654,32 +654,6 @@ static const QualifiedType& precompiledHeaderRetTypeForFnQuery(
 #endif
 
   return QUERY_END(result);
-}
-
-bool precompiledHeaderContainsName(Context* context,
-                                   const TemporaryFileResult* pch,
-                                   UniqueString name) {
-  return precompiledHeaderContainsNameQuery(context, pch, name);
-}
-
-bool precompiledHeaderContainsFunction(Context* context,
-                                       const TemporaryFileResult* pch,
-                                       UniqueString name) {
-  return precompiledHeaderContainsFunctionQuery(context, pch, name);
-}
-
-const QualifiedType& precompiledHeaderTypeForSymbol(
-    Context* context, const TemporaryFileResult* pch, UniqueString name) {
-  return precompiledHeaderTypeForSymbolQuery(context, pch, name);
-}
-
-const TypedFnSignature* precompiledHeaderSigForFn(
-    Context* context, const TemporaryFileResult* pch, ID fnId) {
-  return precompiledHeaderSigForFnQuery(context, pch, fnId);
-}
-const QualifiedType& precompiledHeaderRetTypeForFn(
-    Context* context, const TemporaryFileResult* pch, UniqueString name) {
-  return precompiledHeaderRetTypeForFnQuery(context, pch, name);
 }
 
 } // namespace util

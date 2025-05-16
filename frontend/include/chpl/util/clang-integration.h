@@ -77,17 +77,17 @@ createClangPrecompiledHeader(Context* context, ID externBlockId);
     returns 'true' if the passed name is present as a defined macro
     or declaration name and 'false' otherwise.
  */
-bool precompiledHeaderContainsName(Context* context,
-                                   const TemporaryFileResult* pch,
-                                   UniqueString name);
+const bool& precompiledHeaderContainsName(Context* context,
+                                          const TemporaryFileResult* pch,
+                                          UniqueString name);
 
 /** Given a TemporaryFileResult created from createClangPrecompiledHeader,
     returns 'true' if the passed name is present as a defined function
     name and 'false' otherwise.
  */
-bool precompiledHeaderContainsFunction(Context* context,
-                                       const TemporaryFileResult* pch,
-                                       UniqueString name);
+const bool& precompiledHeaderContainsFunction(Context* context,
+                                              const TemporaryFileResult* pch,
+                                              UniqueString name);
 
 /** Given a TemporaryFileResult created from createClangPrecompiledHeader,
     return the Chapel equivalent of the type of the symbol with the passed name
@@ -100,7 +100,7 @@ const types::QualifiedType& precompiledHeaderTypeForSymbol(
     generate a TypedFnSignature from the function with the passed ID
     if present, or nullptr otherwise.
  */
-const resolution::TypedFnSignature* precompiledHeaderSigForFn(
+const resolution::TypedFnSignature* const& precompiledHeaderSigForFn(
     Context* context, const TemporaryFileResult* pch, ID fnId);
 
 /** Given a TemporaryFileResult created from createClangPrecompiledHeader,
