@@ -4952,6 +4952,7 @@ Expr* TConverter::convertParenlessCallOrNull(const AstNode* node, RV& rv) {
       ret = new CallExpr(calledFn, codegenImplicitThis(rv));
     } else {
       auto [recvAst, fieldName] = accessExpressionDetails(node);
+      std::ignore = fieldName;
       types::QualifiedType qtRecv;
       auto recv = recvAst ? convertExpr(recvAst, rv, &qtRecv) : nullptr;
       ret = new CallExpr(calledFn, storeInTempIfNeeded(recv, qtRecv));
