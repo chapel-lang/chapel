@@ -34,6 +34,7 @@
 #include "InitResolver.h"
 #include "VarScopeVisitor.h"
 #include "resolution/BranchSensitiveVisitor.h"
+#include "resolution/extern-blocks.h"
 
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/SmallVector.h"
@@ -3475,12 +3476,12 @@ QualifiedType Resolver::typeForId(const ID& id) {
   if (id.isFabricatedId()) {
     switch (id.fabricatedIdKind()) {
       case ID::ExternBlockElement: {
-        // TODO: resolve types for extern block
-        // (will need the Identifier name for that)
-        auto unknownType = UnknownType::get(context);
-        return QualifiedType(QualifiedType::UNKNOWN, unknownType);
+        auto name = id.symbolName(context);
+        auto externBlockId = id.parentSymbolId(context);
+        return externBlockTypeForSymbol(context, externBlockId, name);
       }
       case ID::Generated: break;
+      // no default case to guarantee we handle all kinds
     }
   }
 
@@ -5836,22 +5837,17 @@ void Resolver::exit(const Dot* dot) {
       // ids.numIds == 1
       const ID& id = ids.firstId();
 
-      // TODO: handle extern blocks correctly.
-      // This conditional is a workaround to leave extern block resolution
-      // to the production scope resolver.
-      if (!isExternBlock(parsing::idToTag(context, id))) {
-        QualifiedType type;
-        if (id.isEmpty()) {
-          // empty IDs from the scope resolution process are builtins
-          CHPL_ASSERT(false && "Not handled yet!");
-        } else {
-          // use the type established at declaration/initialization
-          type = typeForId(id);
-        }
-        maybeEmitWarningsForId(this, type, dot, id);
-        validateAndSetToId(r, dot, id);
-        r.setType(type);
+      QualifiedType type;
+      if (id.isEmpty()) {
+        // empty IDs from the scope resolution process are builtins
+        CHPL_UNIMPL("builtin module dot expression");
+      } else {
+        // use the type established at declaration/initialization
+        type = typeForId(id);
       }
+      maybeEmitWarningsForId(this, type, dot, id);
+      validateAndSetToId(r, dot, id);
+      r.setType(type);
     }
     return;
   }

@@ -37,6 +37,7 @@
 #include "Resolver.h"
 #include "call-init-deinit.h"
 #include "default-functions.h"
+#include "extern-blocks.h"
 #include "maybe-const.h"
 #include "prims.h"
 #include "return-type-inference.h"
@@ -629,6 +630,14 @@ typedSignatureInitialImpl(ResolutionContext* rc,
                           bool usePlaceholders) {
   Context* context = rc->context();
   const TypedFnSignature* result = nullptr;
+
+  if (untypedSig->idIsExternBlockFunction()) {
+    auto functionId = untypedSig->id();
+    auto name = untypedSig->name();
+    auto externBlockId = functionId.parentSymbolId(context);
+    return externBlockSigForFn(context, externBlockId, name);
+  }
+
   const AstNode* ast = parsing::idToAst(context, untypedSig->id());
   const Function* fn = ast->toFunction();
 
@@ -3022,6 +3031,8 @@ helpResolveFunction(ResolutionContext* rc, const TypedFnSignature* sig,
                 "Should only be called on concrete or fully "
                 "instantiated functions");
     return nullptr;
+  } else if (sig->untyped()->idIsExternBlockFunction()) {
+    CHPL_ASSERT(false && "Should not be called on functions in extern blocks");
   }
 
   // construct the PoiInfo for this case
@@ -4707,7 +4718,8 @@ lookupCalledExpr(Context* context,
     receiverType = ci.actual(0).type();
   }
 
-  LookupConfig config = LOOKUP_DECLS | LOOKUP_IMPORT_AND_USE | LOOKUP_PARENTS;
+  LookupConfig config = LOOKUP_DECLS | LOOKUP_IMPORT_AND_USE | LOOKUP_PARENTS |
+                        LOOKUP_EXTERN_BLOCKS;
 
   // For parenless non-method calls, only find the innermost match
   if (ci.isParenless() && !ci.isMethodCall()) {
