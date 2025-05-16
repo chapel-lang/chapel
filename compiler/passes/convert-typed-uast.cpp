@@ -640,7 +640,8 @@ struct TConverter final : UastConverter {
   // that can be used in the case of recursive data structures.
   Type* convertType(const types::Type* t, bool convertRefType=false);
 
-  void noteConvertedSym(const uast::AstNode* ast, Symbol* sym);
+  void noteConvertedSym(const uast::AstNode* ast, Symbol* sym) override;
+  void noteConvertedFn(const resolution::TypedFnSignature* sig, FnSymbol* fn) override;
 
   Symbol* convertParam(const types::QualifiedType& qt);
 
@@ -2061,6 +2062,10 @@ void TConverter::noteConvertedSym(const uast::AstNode* ast, Symbol* sym) {
   }
 }
 
+void TConverter::noteConvertedFn(const resolution::TypedFnSignature* sig, FnSymbol* fn) {
+  CHPL_ASSERT(false && "currently unused");
+}
+
 Type* TConverter::findConvertedType(const types::Type* t) {
   auto it = convertedTypes.find(t);
   if (it != convertedTypes.end()) {
@@ -2361,6 +2366,8 @@ struct ConvertTypeHelper {
   }
 
   Type* visit(const types::BasicClassType* bct) {
+    if (bct->isObjectType()) return dtObject;
+
     auto rc = createDummyRC(context());
     auto& rfds = fieldsForTypeDecl(&rc, bct, DefaultsPolicy::USE_DEFAULTS);
 
@@ -2604,6 +2611,8 @@ struct ConvertTypeHelper {
     newTypeSymbol->addFlag(FLAG_RESOLVED_EARLY);
     if (t->isStarTuple()) newTypeSymbol->addFlag(FLAG_STAR_TUPLE);
 
+    ret->saveGenericSubstitutions();
+
     // Insert all tuple instantiations in the tuple module.
     tc_->modChapelTuple->block->insertAtHead(new DefExpr(newTypeSymbol));
 
@@ -2749,6 +2758,23 @@ Type* TConverter::convertType(const types::Type* t, bool convertRefType) {
 
     // Set the converted type once again.
     convertedTypes[t] = ret;
+
+    if (!isPrimitiveType(ret) &&
+        ret->symbol->hasFlag(FLAG_INSTANTIATED_GENERIC) == false &&
+        ret != dtObject) {
+      ID id;
+      if (auto ct = t->getCompositeType()) {
+        id = ct->id();
+      } else if (auto et = t->toEnumType()) {
+        id = et->id();
+      } else if (auto ext = t->toExternType()) {
+        id = ext->id();
+      }
+      if (!id.isEmpty()) {
+        auto ast = parsing::idToAst(context, id);
+        untypedConverter->noteConvertedSym(ast, ret->symbol);
+      }
+    }
 
     return ret;
   }
@@ -4750,7 +4776,6 @@ bool TConverter::enter(const Function* node, RV& rv) {
       } else {
         TC_UNIMPL("Unhandled formal");
       }
-
     }
 
     exitFormals(fn);
