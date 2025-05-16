@@ -515,8 +515,7 @@ static void runFuncOnIdent(Context* context, const TemporaryFileResult* pch,
       auto tuDecl = Clang->getASTContext().getTranslationUnitDecl();
       auto lookupResult = tuDecl->lookup(declName);
       if (!lookupResult.isSingleResult()) return;
-      auto decl = lookupResult.front();
-      f(decl);
+      f(lookupResult.front());
     }
   }
 }
@@ -571,13 +570,11 @@ static const QualifiedType& precompiledHeaderTypeForSymbolQuery(
 
 #ifdef HAVE_LLVM
   runFuncOnIdent(context, pch, name, [&](const clang::Decl* decl) {
-    if (decl) {
-      if (llvm::isa<clang::FunctionDecl>(decl)) {
-        result = QualifiedType(QualifiedType::FUNCTION, nullptr);
-      } else if (auto varDecl = llvm::dyn_cast<clang::VarDecl>(decl)) {
-        if (auto typePtr = varDecl->getType().getTypePtrOrNull()) {
-          result = convertClangTypeToChapelType(context, typePtr);
-        }
+    if (llvm::isa<clang::FunctionDecl>(decl)) {
+      result = QualifiedType(QualifiedType::FUNCTION, nullptr);
+    } else if (auto varDecl = llvm::dyn_cast<clang::VarDecl>(decl)) {
+      if (auto typePtr = varDecl->getType().getTypePtrOrNull()) {
+        result = convertClangTypeToChapelType(context, typePtr);
       }
     }
   });
@@ -595,45 +592,43 @@ static const TypedFnSignature* const& precompiledHeaderSigForFnQuery(
 #ifdef HAVE_LLVM
   auto name = fnId.symbolName(context);
   runFuncOnIdent(context, pch, name, [&](const clang::Decl* decl) {
-    if (decl) {
-      if (auto fnDecl = llvm::dyn_cast<clang::FunctionDecl>(decl)) {
-        std::vector<UntypedFnSignature::FormalDetail> formals;
-        std::vector<types::QualifiedType> formalTypes;
-        for (auto clangFormal : fnDecl->parameters()) {
-          auto formalName = UniqueString::get(context, clangFormal->getName());
-          formals.emplace_back(formalName, UntypedFnSignature::DK_NO_DEFAULT,
-                               /* decl */ nullptr);
+    if (auto fnDecl = llvm::dyn_cast<clang::FunctionDecl>(decl)) {
+      std::vector<UntypedFnSignature::FormalDetail> formals;
+      std::vector<types::QualifiedType> formalTypes;
+      for (auto clangFormal : fnDecl->parameters()) {
+        auto formalName = UniqueString::get(context, clangFormal->getName());
+        formals.emplace_back(formalName, UntypedFnSignature::DK_NO_DEFAULT,
+                             /* decl */ nullptr);
 
-          const clang::Type* formalClangType =
-              clangFormal->getType().getTypePtr();
-          auto formalChplType =
-              convertClangTypeToChapelType(context, formalClangType);
-          auto intent = formalClangType->isArrayType() ? QualifiedType::REF
-                                                       : QualifiedType::IN;
-          formalChplType = QualifiedType(intent, formalChplType.type());
-          formalTypes.push_back(formalChplType);
-        }
-
-        const UntypedFnSignature* untypedSig = UntypedFnSignature::get(
-            context, fnId, name,
-            /* isMethod */ false,
-            /* isTypeConstructor */ false,
-            /* isCompilerGenerated */ true,
-            /* throws */ false,
-            /* idTag */ uast::asttags::Function,
-            /* kind */ uast::Function::Kind::PROC, std::move(formals),
-            /* whereClause */ nullptr,
-            /* compilerGeneratedOrigin */ fnId);
-
-        result = TypedFnSignature::get(
-            context, untypedSig, std::move(formalTypes),
-            /* whereClauseResult */ TypedFnSignature::WHERE_NONE,
-            /* needsInstantiation */ false,
-            /* instantiatedFrom */ nullptr,
-            /* parentFn */ nullptr,
-            /* formalsInstantiated */ Bitmap(),
-            /* outerVariables */ OuterVariables());
+        const clang::Type* formalClangType =
+            clangFormal->getType().getTypePtr();
+        auto formalChplType =
+            convertClangTypeToChapelType(context, formalClangType);
+        auto intent = formalClangType->isArrayType() ? QualifiedType::REF
+                                                     : QualifiedType::IN;
+        formalChplType = QualifiedType(intent, formalChplType.type());
+        formalTypes.push_back(formalChplType);
       }
+
+      const UntypedFnSignature* untypedSig = UntypedFnSignature::get(
+          context, fnId, name,
+          /* isMethod */ false,
+          /* isTypeConstructor */ false,
+          /* isCompilerGenerated */ true,
+          /* throws */ false,
+          /* idTag */ uast::asttags::Function,
+          /* kind */ uast::Function::Kind::PROC, std::move(formals),
+          /* whereClause */ nullptr,
+          /* compilerGeneratedOrigin */ fnId);
+
+      result = TypedFnSignature::get(
+          context, untypedSig, std::move(formalTypes),
+          /* whereClauseResult */ TypedFnSignature::WHERE_NONE,
+          /* needsInstantiation */ false,
+          /* instantiatedFrom */ nullptr,
+          /* parentFn */ nullptr,
+          /* formalsInstantiated */ Bitmap(),
+          /* outerVariables */ OuterVariables());
     }
   });
 #endif
@@ -649,14 +644,11 @@ static const QualifiedType& precompiledHeaderRetTypeForFnQuery(
 
 #ifdef HAVE_LLVM
   runFuncOnIdent(context, pch, name, [&](const clang::Decl* decl) {
-    if (decl) {
-      if (auto fnDecl = llvm::dyn_cast<clang::FunctionDecl>(decl)) {
-        const clang::Type* clangReturnType =
-            fnDecl->getReturnType().getTypePtr();
-        auto chplReturnType =
-            convertClangTypeToChapelType(context, clangReturnType);
-        result = chplReturnType;
-      }
+    if (auto fnDecl = llvm::dyn_cast<clang::FunctionDecl>(decl)) {
+      const clang::Type* clangReturnType = fnDecl->getReturnType().getTypePtr();
+      auto chplReturnType =
+          convertClangTypeToChapelType(context, clangReturnType);
+      result = chplReturnType;
     }
   });
 #endif
