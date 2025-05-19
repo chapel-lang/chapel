@@ -28,20 +28,14 @@ def printAndLog(log, s):
 def runAndLog(log, command):
     printAndLog(log, "Running command: {}\n".format(" ".join(command)))
     try:
-        p = subprocess.Popen(command,
-                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                             encoding='utf-8')
-        lastline = ""
-        while p.poll() is None:
-            line = p.stdout.readline()
-            if line:
-                line = line.strip()
-                printAndLog(log, line)
-                if line and not line.startswith("INFO"):
-                    lastline = line
+        p = subprocess.run(command,
+                           stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                           encoding='utf-8')
+        printAndLog(log, p.stdout)
+        lastline = p.stdout.splitlines()[-1]
         return (p.returncode, lastline)
-    except OSError:
-        return (-1, "")
+    except OSError as e:
+        return (-1, str(e))
 
 def main():
     parser = argparse.ArgumentParser(
