@@ -34,6 +34,7 @@
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/all-uast.h"
 
+#include "extern-blocks.h"
 #include "Resolver.h"
 #include "resolution/BranchSensitiveVisitor.h"
 
@@ -1047,6 +1048,11 @@ static bool helpComputeCompilerGeneratedReturnType(ResolutionContext* rc,
       return helpComputeOrderToEnumReturnType(context, sig, result);
     } else if (untyped->name() == "chpl__enumToOrder") {
       return helpComputeEnumToOrderReturnType(context, sig, result);
+    } else if (untyped->idIsExternBlockFunction()) {
+      auto name = untyped->name();
+      auto externBlockId = untyped->id().parentSymbolId(context);
+      result = externBlockRetTypeForFn(context, externBlockId, name);
+      return true;
     }
     CHPL_ASSERT(false && "unhandled compiler-generated function");
     return true;
@@ -1089,7 +1095,7 @@ static bool helpComputeReturnType(ResolutionContext* rc,
     // if it needs instantiation, we don't know the return type yet.
     result = QualifiedType(QualifiedType::UNKNOWN, UnknownType::get(context));
     return true;
-  } else if (untyped->idIsFunction()) {
+  } else if (untyped->idIsFunction() && !untyped->idIsExternBlockFunction()) {
     const AstNode* ast = parsing::idToAst(context, untyped->id());
     const Function* fn = ast->toFunction();
     CHPL_ASSERT(fn);

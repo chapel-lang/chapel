@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#include "chpl/resolution/resolution-types.h"
 #include "chpl/resolution/can-pass.h"
+#include "chpl/resolution/resolution-types.h"
 
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/framework/global-strings.h"
@@ -35,8 +35,10 @@
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/For.h"
 #include "chpl/uast/VarArgFormal.h"
+#include "chpl/util/clang-integration.h"
 
 #include "Resolver.h"
+#include "extern-blocks.h"
 
 #include <iomanip>
 
@@ -155,6 +157,18 @@ const UntypedFnSignature* UntypedFnSignature::get(Context* context,
   return getUntypedFnSignatureForFn(context, function);
 }
 
+static const UntypedFnSignature*
+getUntypedFnSignatureForExternId(Context* context, ID functionId) {
+  CHPL_ASSERT(functionId.isExternBlockElement());
+
+  auto name = functionId.symbolName(context);
+  auto externBlockId = functionId.parentSymbolId(context);
+
+  auto tfs = externBlockSigForFn(context, externBlockId, name);
+
+  return tfs->untyped();
+}
+
 static const UntypedFnSignature* const&
 getUntypedFnSignatureForIdQuery(Context* context, ID functionId) {
   QUERY_BEGIN(getUntypedFnSignatureForIdQuery, context, functionId);
@@ -164,6 +178,8 @@ getUntypedFnSignatureForIdQuery(Context* context, ID functionId) {
 
   if (ast != nullptr && ast->isFunction()) {
     result = getUntypedFnSignatureForFn(context, ast->toFunction());
+  } else if (functionId.isExternBlockElement()) {
+    result = getUntypedFnSignatureForExternId(context, functionId);
   }
 
   return QUERY_END(result);
