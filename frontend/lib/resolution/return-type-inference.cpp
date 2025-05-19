@@ -586,7 +586,7 @@ bool ReturnTypeInferrer::enter(const Continue* cont, RV& rv) {
 void ReturnTypeInferrer::exit(const Continue* cont, RV& rv) {}
 
 bool ReturnTypeInferrer::enter(const Return* ret, RV& rv) {
-  markReturnOrThrow();
+  markReturn();
 
   if (functionKind == Function::ITER) {
     // Plain returns don't count towards type inference for iterators.
