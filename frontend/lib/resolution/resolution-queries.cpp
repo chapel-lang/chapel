@@ -4275,7 +4275,7 @@ static bool resolveFnCallSpecial(Context* context,
         return true;
       }
     } else if (!srcQt.isParam() &&
-               (srcTy->isEnumType() || srcTy->isStringType()) && isDstType &&
+               srcTy->isStringType() && isDstType &&
                dstTy->isStringType()) {
       // supported non-param casts to string
       exprTypeOut =
@@ -4606,12 +4606,12 @@ considerCompilerGeneratedCandidates(ResolutionContext* rc,
                                     std::vector<ApplicabilityResult>* rejected) {
   const TypedFnSignature* tfs = nullptr;
 
-  tfs = considerCompilerGeneratedMethods(rc, ci, candidates);
+  tfs = considerCompilerGeneratedOperators(rc->context(), ci, candidates);
   if (tfs == nullptr) {
-    tfs = considerCompilerGeneratedFunctions(rc, ci, candidates);
+    tfs = considerCompilerGeneratedMethods(rc, ci, candidates);
   }
   if (tfs == nullptr) {
-    tfs = considerCompilerGeneratedOperators(rc->context(), ci, candidates);
+    tfs = considerCompilerGeneratedFunctions(rc, ci, candidates);
   }
 
   if (!tfs) return;
