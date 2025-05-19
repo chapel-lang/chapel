@@ -34,7 +34,7 @@ Vagrant.configure("2") do |config|
     path: "../../provision-scripts/gmake-chapel-quick.sh"
 
   config.vm.provider "virtualbox" do |vb|
-    vb.memory = 4096
+    vb.memory = 2048
     vb.cpus = 2
   end
 
