@@ -496,23 +496,20 @@ static void runFuncOnIdent(Context* context, const TemporaryFileResult* pch,
   clang::IdentifierInfo* iid = astReader->get(name.c_str());
   if (iid->hasMacroDefinition()) {
     // TODO: implement
-  } else {
-    clang::DeclarationName declName(iid);
-    if (declName.isIdentifier()) {
-      auto tuDecl = Clang->getASTContext().getTranslationUnitDecl();
-      auto lookupResult = tuDecl->lookup(declName);
-      if (lookupResult.empty()) return;
-      // Use the first declaration found, but if it is a function instead use
-      // the declaration that Clang considers to have the body definition.
-      auto firstDecl = lookupResult.front();
-      if (auto fnDecl = llvm::dyn_cast<clang::FunctionDecl>(firstDecl)) {
-        const clang::FunctionDecl* fnDeclWithBody = nullptr;
-        if (fnDecl->hasBody(fnDeclWithBody)) {
-          f(fnDeclWithBody);
-        }
-      } else {
-        f(firstDecl);
+  } else if (clang::DeclarationName declName(iid); declName.isIdentifier()) {
+    auto tuDecl = Clang->getASTContext().getTranslationUnitDecl();
+    auto lookupResult = tuDecl->lookup(declName);
+    if (lookupResult.empty()) return;
+    // Use the first declaration found, but if it is a function instead use
+    // the declaration that Clang considers to have the body definition.
+    auto firstDecl = lookupResult.front();
+    if (auto fnDecl = llvm::dyn_cast<clang::FunctionDecl>(firstDecl)) {
+      const clang::FunctionDecl* fnDeclWithBody = nullptr;
+      if (fnDecl->hasBody(fnDeclWithBody)) {
+        f(fnDeclWithBody);
       }
+    } else {
+      f(firstDecl);
     }
   }
 }
