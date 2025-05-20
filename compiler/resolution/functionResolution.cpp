@@ -8492,6 +8492,11 @@ void resolveInitVar(CallExpr* call) {
 
   bool isParamString = dst->hasFlag(FLAG_PARAM) && isString(srcType);
 
+  bool debug = dst->name[0] == 'y' && dst->name[1] == '\0';
+
+  if (debug)
+    printf("resolving init call to %s\n", dst->name);
+  
   if (call->id == breakOnResolveID) {
     gdbShouldBreakHere();
   }
@@ -8685,10 +8690,14 @@ void resolveInitVar(CallExpr* call) {
     USR_FATAL(call, "Domains cannot be initialized using expressions of non-domain type");
   }
 
+  if (debug)
+    printf("target is array: %d\n", targetType->getValType()->symbol->hasFlag(FLAG_ARRAY));
   if (dst->hasFlag(FLAG_NO_COPY) ||
       isPrimitiveScalar(targetType) ||
       isEnumType(targetType) ||
       addedCoerce) {
+    if (debug)
+      printf("In case 1\n");
     dst->type = targetType;
 
     call->primitive = primitives[PRIM_MOVE];
@@ -8707,6 +8716,8 @@ void resolveInitVar(CallExpr* call) {
              (targetType->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
               srcType->getValType()->symbol->hasFlag(FLAG_TUPLE)) ||
              initCopyIter) {
+    if (debug)
+      printf("In case 2\n");
     // These cases require an initCopy to implement special initialization
     // semantics (e.g. reading a sync for variable initialization).
     //
@@ -8725,8 +8736,12 @@ void resolveInitVar(CallExpr* call) {
             rhsVar->addFlag(FLAG_INSERT_AUTO_DESTROY);
 
     Symbol *definedConst = dst->hasFlag(FLAG_CONST)? gTrue : gFalse;
+    // initCopy inserted for slice case here:
+    // (550958 'move' y[321959](1677855 call chpl__initCopy[1677858] call_tmp[831707] 0))
     CallExpr* initCopy = new CallExpr(astr_initCopy, srcExpr->remove(),
                                                      definedConst);
+    if (debug)
+      printf("initCopy id = %d\n", initCopy->id);
     bool wasSplitInit = call->isPrimitive(PRIM_INIT_VAR_SPLIT_INIT);
     call->insertAtTail(initCopy);
     call->primitive = primitives[PRIM_MOVE];
@@ -8762,6 +8777,8 @@ void resolveInitVar(CallExpr* call) {
           INT_FATAL("Expected different return type for this initCopy");
 
   } else if (isRecord(targetType->getValType())) {
+    if (debug)
+      printf("In case 3\n");
     AggregateType* at = toAggregateType(targetType->getValType());
 
     // If the RHS is a temp that is the result of a ContextCallExpr,
