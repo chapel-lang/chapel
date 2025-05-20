@@ -195,10 +195,16 @@ areOperatorOverloadsPresentInDefiningScope(Context* context,
     }
 
     // If this function was generic, and we couldn't instantiate it (e.g.
-    // due to a where clause), it's not an applicable candidate.
-    if (sig->needsInstantiation() &&
-        !instantiateSignature(&rcval, sig, ci, /* poiScope */ nullptr).success()) {
-      continue;
+    // due to a 'where' clause), it's not an applicable candidate.
+    if (sig->needsInstantiation()) {
+      auto result = instantiateSignature(&rcval, sig, ci, /* poiScope */ nullptr);
+
+      // function didn't apply after instantiation
+      if (!result.success()) continue;
+
+      // 'where' clause evaluated to false, so this doesn't apply
+      if (result.candidate()->whereClauseResult() == TypedFnSignature::WHERE_FALSE)
+        continue;
     }
 
     // found a candidate that matches!
