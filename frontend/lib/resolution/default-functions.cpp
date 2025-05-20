@@ -649,7 +649,7 @@ generateInitSignature(ResolutionContext* rc, const CompositeType* inCompType) {
   return typedSignatureInitial(rc, uSig);
 }
 
-struct BinaryFnHelper {
+struct BinaryFnBuilder {
   Context* context_;
   ID typeID_;
   const TypeDecl* typeDecl_;
@@ -666,7 +666,7 @@ struct BinaryFnHelper {
 
   AstList stmts_;
 
-  BinaryFnHelper(Context* context, ID typeID, UniqueString name,
+  BinaryFnBuilder(Context* context, ID typeID, UniqueString name,
                  Function::Kind kind,
                  Formal::Intent lhsIntent = Formal::DEFAULT_INTENT,
                  Formal::Intent rhsIntent = Formal::DEFAULT_INTENT)
@@ -817,12 +817,12 @@ struct BinaryFnHelper {
   }
 };
 
-struct FieldFnBuilder : BinaryFnHelper {
+struct FieldFnBuilder : BinaryFnBuilder {
   FieldFnBuilder(Context* context, ID typeID, UniqueString name,
                  Function::Kind kind,
                  Formal::Intent lhsIntent = Formal::DEFAULT_INTENT,
                  Formal::Intent rhsIntent = Formal::DEFAULT_INTENT)
-    : BinaryFnHelper(context, typeID, name, kind, lhsIntent, rhsIntent) {}
+    : BinaryFnBuilder(context, typeID, name, kind, lhsIntent, rhsIntent) {}
 
   owned<AstNode> lhsFormalTypeExpr() {
     return identifier(typeDecl_->name());
@@ -1227,12 +1227,12 @@ const BuilderResult& buildEnumToOrder(Context* context, ID typeID) {
   return QUERY_END(result);
 }
 
-struct EnumCastBuilder : BinaryFnHelper {
+struct EnumCastBuilder : BinaryFnBuilder {
   owned<AstNode> whereClause_;
 
   EnumCastBuilder(Context* context, ID typeID, UniqueString name,
                   Function::Kind kind)
-    : BinaryFnHelper(context, typeID, name, kind, Formal::DEFAULT_INTENT, Formal::TYPE) {
+    : BinaryFnBuilder(context, typeID, name, kind, Formal::DEFAULT_INTENT, Formal::TYPE) {
 
     whereClause_ = op(op(identifier(rhsFormal()->name()), USTR("=="), identifier(USTR("string"))),
                       USTR("||"),
