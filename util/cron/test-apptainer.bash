@@ -7,9 +7,9 @@ UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $UTIL_CRON_DIR/common.bash
 
 function do_cleanup {
-  log_info "Cleaning up Chapel checkout and apptainer image"
-  ./chapel-delete.sh
-  ./image-delete.sh
+  log_info "Cleaning up Chapel checkout and apptainer images"
+  ./chapel-delete-all.sh
+  ./image-delete-all.sh
 }
 
 function do_cleanup_and_exit {
@@ -23,13 +23,13 @@ log_info "Setting CHPL_HOME to: ${CHPL_HOME}"
 cd $CHPL_HOME/util/devel/test/apptainer
 
 ./chapel-quickstart-delete.sh
-if [ $? -ne 0 ] 
+if [ $? -ne 0 ]
    then
      log_error "./chapel-quickstart-delete.sh exited with error"
       do_cleanup_and_exit
    else
      log_info "./chapel-quickstart-delete.sh succeeded"
-fi 
+fi
 
 # Commented out to just test chapel-quickstart in Jenkins.
 # Will add this once we know what configurations will fail(most/all of the non-llvm) have the logic to fail the test 
