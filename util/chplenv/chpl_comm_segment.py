@@ -25,8 +25,13 @@ def get():
     else:
         segment_val = 'none'
 
-    if segment_val == 'everything' and chpl_comm_substrate.get() == 'smp':
-        error("CHPL_GASNET_SEGMENT=everything is not supported with CHPL_COMM_SUBSTRATE=smp. Please use CHPL_GASNET_SEGMENT=fast or CHPL_GASNET_SEGMENT=large instead")
+    substrate_val = chpl_comm_substrate.get()
+    if segment_val == "everything" and substrate_val in ("smp", "ucx"):
+        error(
+            "CHPL_GASNET_SEGMENT=everything is not supported with "
+            + "CHPL_COMM_SUBSTRATE={0}. Please use ".format(substrate_val)
+            + "CHPL_GASNET_SEGMENT=fast or CHPL_GASNET_SEGMENT=large instead"
+        )
 
     return segment_val
 
