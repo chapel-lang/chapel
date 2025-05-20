@@ -752,7 +752,7 @@ struct BinaryFnBuilder {
 
   owned<AstNode> conditional(owned<AstNode> condition,
                              AstList thenStmts,
-                             optional<AstList> elseStmts = std::nullopt) {
+                             optional<AstList> elseStmts = empty) {
     auto thenBlock = Block::build(builder(), dummyLoc_, std::move(thenStmts));
     auto elseBlock = elseStmts ? Block::build(builder(), dummyLoc_, std::move(*elseStmts)) : nullptr;
     auto cond = Conditional::build(builder(), dummyLoc_,
