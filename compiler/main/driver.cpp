@@ -831,7 +831,9 @@ bool isValidEdition(std::string maybeEdition) {
   return result;
 }
 
-bool isValidEditionRange(std::string first, std::string last, BaseAST* loc) {
+// Validate the editions provided.  Checks if both are actual known editions and
+// that first comes before last in the editions list.  Generates errors if not
+void checkEditionRangeValid(std::string first, std::string last, BaseAST* loc) {
   int startLoc = -1;
   int endLoc = -1;
 
@@ -848,25 +850,21 @@ bool isValidEditionRange(std::string first, std::string last, BaseAST* loc) {
 
   if (startLoc == -1) {
     USR_FATAL_CONT(loc, "unknown first edition '%s'", first.c_str());
-    return false;
+    return;
   }
 
   if (endLoc == -1) {
     USR_FATAL_CONT(loc, "unknown last edition '%s'", last.c_str());
-    return false;
+    return;
   }
 
   if (endLoc < startLoc) {
     USR_FATAL_CONT(loc, "last edition '%s' is earlier than first edition '%s'",
                    last.c_str(), first.c_str());
-    return false;
   }
-
-  return true;
 }
 
-// Validates that the first and last editions are in order, and returns whether
-// or not the compiled edition is in their range.
+// Returns whether or not the compiled edition is in their range.
 // True if `first < compilerEdition < last`
 bool isEditionApplicable(std::string first, std::string last, BaseAST* loc) {
   int startLoc = -1;
@@ -909,7 +907,6 @@ bool isEditionApplicable(std::string first, std::string last, BaseAST* loc) {
 static void setEdition(const ArgumentDescription* desc, const char* arg) {
   std::string val = std::string(arg);
 
-  // TODO: make this a helper check?  Can this be an enum?
   if (!isValidEdition(val)) {
     printf("--edition only accepts a limited set of values.  Current options");
     printf(" are:\n");

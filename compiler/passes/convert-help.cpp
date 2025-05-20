@@ -306,7 +306,7 @@ void attachSymbolAttributes(Context* context,
     }
 
     // Will generate an error if it is not
-    isValidEditionRange(sym->getFirstEdition(), sym->getLastEdition(), sym);
+    checkEditionRangeValid(sym->getFirstEdition(), sym->getLastEdition(), sym);
   } else {
     INT_ASSERT(attr->firstEdition().isEmpty() && attr->lastEdition().isEmpty());
   }
