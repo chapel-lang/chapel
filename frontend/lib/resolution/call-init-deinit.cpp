@@ -452,7 +452,15 @@ void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
     return;
   }
   if (varType.isUnknownKindOrType()) {
-    context->error(ast, "cannot default initialize variable using generic or unknown type");
+    auto& po = rv.byPostorder();
+    chpl::ID symId;
+    for (auto& [intId, re] : po) {
+      if (re.toId() == ast->id()) {
+        auto symPath = po.symbolId().symbolPath();
+        symId = ID(symPath, intId, 0);
+      }
+    }
+    CHPL_REPORT(context, VariableWithoutInitOrType, ast, symId, ast->name());
     return;
   }
   // check genericity

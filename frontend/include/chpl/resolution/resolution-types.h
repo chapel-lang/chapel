@@ -2625,7 +2625,7 @@ class ResolvedExpression {
  */
 class ResolutionResultByPostorderID {
  private:
-  ID symbolId;
+  ID symbolId_;
   // This map is generally accessed with operator[] to default-construct a new
   // ResolvedExpression if none exists for an ID. at() is used instead only
   // when const-ness is required.
@@ -2641,10 +2641,14 @@ class ResolutionResultByPostorderID {
   /** prepare to resolve the body of a For loop */
   void setupForParamLoop(const uast::For* loop, ResolutionResultByPostorderID& parent);
 
+  const ID& symbolId() const {
+    return symbolId_;
+  }
+
   /* ID query functions */
   bool hasId(const ID& id) const {
     auto postorder = id.postOrderId();
-    if (id.symbolPath() == symbolId.symbolPath() &&
+    if (id.symbolPath() == symbolId_.symbolPath() &&
         0 <= postorder && (map.count(postorder) > 0))
       return true;
 
@@ -2682,20 +2686,20 @@ class ResolutionResultByPostorderID {
   }
 
   bool operator==(const ResolutionResultByPostorderID& other) const {
-    return symbolId == other.symbolId &&
+    return symbolId_ == other.symbolId_ &&
            map == other.map;
   }
   bool operator!=(const ResolutionResultByPostorderID& other) const {
     return !(*this == other);
   }
   void swap(ResolutionResultByPostorderID& other) {
-    symbolId.swap(other.symbolId);
+    symbolId_.swap(other.symbolId_);
     map.swap(other.map);
   }
   static bool update(ResolutionResultByPostorderID& keep,
                      ResolutionResultByPostorderID& addin);
   void mark(Context* context) const {
-    symbolId.mark(context);
+    symbolId_.mark(context);
     for (auto const &elt : map) {
       // mark ResolvedExpressions
       elt.second.mark(context);
@@ -2703,6 +2707,14 @@ class ResolutionResultByPostorderID {
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+
+  auto begin() const {
+    return map.begin();
+  }
+
+  auto end() const {
+    return map.end();
+  }
 
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
