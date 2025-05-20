@@ -456,7 +456,7 @@ constant (:ref:`Implicit_Compile_Time_Constant_Conversions`), ranges
 
 In addition, these implicit conversions can be defined for record types
 by implementing ``init=`` and possibly the ``=`` operator between two
-types as described in :ref:`Advanced_Copy_Initialization` and
+types as described in :ref:`Mixed-Type_Copy_Initialization` and
 :ref:`Function_Overloading`.  ``init=`` will be called for initialization
 as described in :ref:`Split_Initialization` and the ``=`` operator will
 be invoked for other uses of assignment.

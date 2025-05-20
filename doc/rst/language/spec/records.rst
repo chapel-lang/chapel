@@ -547,19 +547,27 @@ record and its copy are the same:
 Note that the generic fields must still be manually initialized, despite
 the type already being known. Future work may allow these fields to be inferred.
 
-.. _Advanced_Copy_Initialization:
+.. _Mixed-Type_Copy_Initialization:
 
-Advanced Copy Initialization
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Mixed-Type Copy Initialization
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 A copy initializer can also be used to specify how a record should be
-initialized from a value of an arbitrary type. This kind of copy initializer is
-invoked when a variable declaration's initialization expression is not of the
-same type as the record being initialized.
+initialized from a value of a distinct type. This kind of *mixed-type
+copy initializer* is invoked when a variable declaration's
+initialization expression is not of the same type as the record being
+initialized.
 
-Defining a mixed-type copy initializer like this requires defining a cast
-operator that converts from the argument type to the record type.  The
-reason for this is TODO...
+Defining a mixed-type copy initializer like this also requires
+defining a cast operator that converts from the argument type to the
+record type.
+
+*Rationale*: Supporting a mixed-type copy initializer provides a way
+to convert an expression of one type (``T1``) into another (``T2``)
+using forms like: ``var myT1: T1 = myT2;``.  The other common way of
+converting types in this way is to use a cast, like ``myT2: T1``, so
+CHapel requires both signatures as a means of ensuring the type author
+makes both forms available.
 
 As an example:
 
@@ -577,14 +585,14 @@ As an example:
        writeln("normal init=");
      }
 
-     // initialize from a string
+     // mixed-type copy initializer, from a string
      proc MyString.init=(other: string) {
        this.s = other;
        writeln("string init=");
      }
 
      // the required cast operator (which can optionally be implemented
-     // in terms of the copy initializer, as done here)
+     // in terms of the copy initializer, as is done here)
      operator :(x: string, type t: MyString) {
        writeln("cast");
        const s: MyString = x;
@@ -592,9 +600,9 @@ As an example:
      }
   
      var a = new MyString("hello");
-     var b = a; // "normal init="
-     var c: MyString = "goodbye"; // "string init="
-     var d = "goodbye": MyString; // cast, inferring the return type
+     var b = a;                    // prints "normal init="
+     var c: MyString = "goodbye";  // prints "string init="
+     var d = "goodbye": MyString;  // prints "cast" and "string init=' due to the implementation
 
   .. BLOCK-test-chapelpost
 
