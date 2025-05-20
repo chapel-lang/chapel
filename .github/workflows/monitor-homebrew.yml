@@ -3,9 +3,9 @@ name: Monitor Homebrew Formula
 on:
   workflow_dispatch: # Allows manual triggering of the workflow
   schedule:
-    - cron: '0 14 * * *' # Runs at 7:00 AM Pacific Time (2:00 PM UTC)
-    - cron: '30 20 * * *' # Runs at 1:30 PM Pacific Time (8:30 PM UTC)
-    - cron: '30 23 * * *' # Runs at 4:30 PM Pacific Time (11:30 PM UTC)
+    - cron: '0 14 * * *' # Runs at 7:00 AM PDT (6:00 AM PST) (2:00 PM UTC)
+    - cron: '30 20 * * *' # Runs at 1:30 PM PDT (12:30 PM PST) (8:30 PM UTC)
+    - cron: '30 23 * * *' # Runs at 4:30 PM PDT (3:30 PM PST) (11:30 PM UTC)
 
 
 env:
