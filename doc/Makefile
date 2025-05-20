@@ -161,6 +161,7 @@ clean: clean-source clean-build clean-build-dir clean-doxygen clean-pycache FORC
 cleanall: clean-source clean-build clean-build-dir clean-doxygen clean-pycache FORCE
 
 clobber: clean-source clean-build clean-build-dir clean-doxygen clean-pycache FORCE
+	cd ../third-party/chpl-venv/ && make clobber
 
 clean-source: clean-module-docs clean-primers clean-examples clean-symlinks clean-collect-syntax clean-compiler-internals clean-chplcheck-docs FORCE
 
