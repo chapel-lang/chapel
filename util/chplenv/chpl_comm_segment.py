@@ -2,7 +2,7 @@
 import sys
 
 import chpl_comm, chpl_comm_substrate, chpl_platform, overrides
-from utils import memoize, check_valid_var
+from utils import memoize, check_valid_var, error
 
 
 @memoize
@@ -24,6 +24,10 @@ def get():
         check_valid_var("CHPL_GASNET_SEGMENT", segment_val, ("fast", "large", "everything"))
     else:
         segment_val = 'none'
+
+    if segment_val == 'everything' and chpl_comm_substrate.get() == 'smp':
+        error("CHPL_GASNET_SEGMENT=everything is not supported with CHPL_COMM_SUBSTRATE=smp. Please use CHPL_GASNET_SEGMENT=fast or CHPL_GASNET_SEGMENT=large instead")
+
     return segment_val
 
 
