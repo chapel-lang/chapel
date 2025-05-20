@@ -66,7 +66,12 @@ def main():
         printAndLog(sys.stderr,
                     "APPTAINER_IMAGE environment variable not set.")
         sys.exit(1)
-    only = apptainer_image if apptainer_image != "all" else None
+    elif apptainer_image == "all":
+        printAndLog(sys.stderr, "Running on all images.")
+        only = None
+    else:
+        printAndLog(sys.stderr, "Running on image: " + apptainer_image)
+        only = apptainer_image
 
     with open(logpath, 'w', encoding="utf-8") as log:
         dirs = gatherDirs(args.skip_nollvm)
