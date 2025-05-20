@@ -160,7 +160,7 @@ clean: clean-source clean-build clean-build-dir clean-doxygen clean-pycache FORC
 
 cleanall: clean-source clean-build clean-build-dir clean-doxygen clean-pycache FORCE
 
-clobber: clean-source clean-build clean-build-dir clean-doxygen clean-pycache FORCE
+clobber: clean-source clean-build clean-build-dir clean-doxygen clean-pycache clean-chpl-venv FORCE
 
 clean-source: clean-module-docs clean-primers clean-examples clean-symlinks clean-collect-syntax clean-compiler-internals clean-chplcheck-docs FORCE
 
@@ -204,6 +204,11 @@ clean-doxygen: FORCE
 clean-pycache: FORCE
 	rm -rf util/__pycache__
 	rm -rf $(SOURCEDIR)/__pycache__
+
+clean-chpl-venv: FORCE
+	@echo
+	@echo "Removing third-party/chpl-venv"
+	@(cd ../third-party/chpl-venv && $(MAKE) clobber)
 
 clean-chplcheck-docs: FORCE
 	cd ../tools/chplcheck && $(MAKE) clean-chplcheck-docs
