@@ -44,8 +44,6 @@ def main():
                         help='delete each image and checkout after using it')
     parser.add_argument('--rebuild', dest='rebuild', action='store_true',
                         help='rebuild each image before running it')
-    parser.add_argument('--only', dest='only', action='store',
-                        help='only run one configuration')
     parser.add_argument('--start', dest='start', action='store',
                         help='run configurations starting with the passed one')
     parser.add_argument('--skip-nollvm', dest='skip_nollvm', action='store_true',
@@ -60,13 +58,20 @@ def main():
 
     status = { }
 
+    apptainer_image = os.environ.get('APPTAINER_IMAGE')
+    if not apptainer_image:
+        printAndLog(sys.stderr,
+                    "APPTAINER_IMAGE environment variable not set.")
+        sys.exit(1)
+    only = apptainer_image if apptainer_image != "all" else None
+
     with open(logpath, 'w', encoding="utf-8") as log:
         dirs = gatherDirs(args.skip_nollvm)
-        if args.only != None:
+        if only != None:
             hadDirs = dirs
             dirs = [ ]
             for d in hadDirs:
-                if dirNameToConfigName(d) == dirNameToConfigName(args.only):
+                if dirNameToConfigName(d) == dirNameToConfigName(only):
                     dirs.append(d)
 
 
