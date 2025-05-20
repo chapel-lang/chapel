@@ -1964,6 +1964,8 @@ module ChapelArray {
     }
   }
 
+  config param checkReshapeDimensions = boundsChecking;
+
   pragma "reference to const when const this"
   pragma "fn returns aliasing array"
   proc _array.reshape(dom: domain(?)) {
@@ -1980,41 +1982,43 @@ module ChapelArray {
         halt("Size mismatch: Can't rehape a ", this.size,
              "-element array into a ", dom.size, "-element array");
 
-      if this.size > 0 && dom.size > 0 {
-        var arrDim, domDim = 0;
-        var arrSize, domSize = 0;
-        var arrCatchup, domCatchup, error = false;
-        do {
-          if arrSize == 0 {
-            arrSize = this.dim(arrDim).size;
-          }
-          if domSize == 0 {
-            domSize = dom.dim(domDim).size;
-          }
-          if (arrSize == domSize) {
-            arrDim += 1;
-            domDim += 1;
-            arrSize = 0;
-            domSize = 0;
-            arrCatchup = false;
-            domCatchup = false;
-          } else if (arrSize < domSize) {
-            if domCatchup then
-              error = true;
-            arrCatchup = true;
-            arrDim += 1;
-            arrSize *= this.dim(arrDim).size;
-          } else {
-            if arrCatchup then
-              error = true;
-            domCatchup = true;
-            domDim += 1;
-            domSize *= dom.dim(domDim).size;
-          }
-        } while (arrDim < this.rank && domDim < dom.rank);
+      if checkReshapeDimensions {
+        if this.size > 0 && dom.size > 0 {
+          var arrDim, domDim = 0;
+          var arrSize, domSize = 0;
+          var arrCatchup, domCatchup, error = false;
+          do {
+            if arrSize == 0 {
+              arrSize = this.dim(arrDim).size;
+            }
+            if domSize == 0 {
+              domSize = dom.dim(domDim).size;
+            }
+            if (arrSize == domSize) {
+              arrDim += 1;
+              domDim += 1;
+              arrSize = 0;
+              domSize = 0;
+              arrCatchup = false;
+              domCatchup = false;
+            } else if (arrSize < domSize) {
+              if domCatchup then
+                error = true;
+              arrCatchup = true;
+              arrDim += 1;
+              arrSize *= this.dim(arrDim).size;
+            } else {
+              if arrCatchup then
+                error = true;
+              domCatchup = true;
+              domDim += 1;
+              domSize *= dom.dim(domDim).size;
+            }
+          } while (arrDim < this.rank && domDim < dom.rank);
 
-        if error then
-          warning(this.dims(), " doesn't preserve dimensions as ", dom.dims());
+          if error then
+            warning(this.dims(), " doesn't preserve dimensions as ", dom.dims());
+        }
       }
     }
   }
