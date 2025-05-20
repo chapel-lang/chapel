@@ -3439,7 +3439,7 @@ isUntypedSignatureApplicable(Context* context,
 }
 
 // given a typed function signature, determine if it applies to a call
-static ApplicabilityResult
+ApplicabilityResult
 isInitialTypedSignatureApplicable(Context* context,
                                   const TypedFnSignature* tfs,
                                   const FormalActualMap& faMap,
@@ -4558,8 +4558,8 @@ considerCompilerGeneratedMethods(ResolutionContext* rc,
 
     // if we don't need the operator, nothing to do.
     auto& rhs = ci.actual(1).type();
-    if (!needCompilerGeneratedOperator(rc->context(), receiverType.type(),
-                                       rhs.type(), ci.name())) {
+    if (!needCompilerGeneratedOperator(rc->context(), receiverType,
+                                       rhs, ci.name())) {
       return nullptr;
     }
 

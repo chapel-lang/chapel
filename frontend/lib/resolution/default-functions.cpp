@@ -154,19 +154,58 @@ areFnOverloadsPresentInDefiningScope(Context* context,
 
 static bool
 areOperatorOverloadsPresentInDefiningScope(Context* context,
-                                           const Type* lhsType,
-                                           QualifiedType::Kind lhsKind,
-                                           const Type* rhsType,
-                                           QualifiedType::Kind rhsKind,
+                                           const QualifiedType& lhsType,
+                                           const QualifiedType& rhsType,
                                            UniqueString name) {
 
-  auto ids = getMatchingIdsInDefiningScope(context, lhsType, name);
+  CHPL_ASSERT(lhsType.type());
+  auto ids = getMatchingIdsInDefiningScope(context, lhsType.type(), name);
 
   // nothing found
   if (ids.numIds() == 0) return false;
 
-  // temporary hack for testing
-  return areFnOverloadsPresentInDefiningScope(context, lhsType, lhsKind, name);
+  for (int i = 0; i < ids.numIds(); i++) {
+    auto& idAndFlags = ids.idAndFlags(i);
+
+    // types are not operators
+    if (idAndFlags.isType()) continue;
+
+    // fields are not operators
+    if (idAndFlags.isMethodOrField() && !idAndFlags.isMethod()) continue;
+
+    // Actually simulate a call to the function to find generic but applicable
+    // instantiations and evaluate where clauses.
+    ResolutionContext rcval(context);
+    auto sig = typedSignatureInitialForId(&rcval, idAndFlags.id());
+    std::vector<CallInfoActual> actuals;
+    actuals.push_back({ lhsType, UniqueString() });
+    actuals.push_back({ rhsType, UniqueString() });
+    auto ci = CallInfo(name,
+                       QualifiedType(),
+                       /* isMethodCall */ false,
+                       /* hasQuestionArg */ false,
+                       /* isParenless */ false,
+                       std::move(actuals));
+    CHPL_ASSERT(ci.isOpCall());
+
+    // If the function doesn't apply, this isn't a relevant operator overload.
+    auto faMap = FormalActualMap(sig, ci);
+    if (!isInitialTypedSignatureApplicable(context, sig, faMap, ci).success()) {
+      continue;
+    }
+
+    // If this function was generic, and we couldn't instantiate it (e.g.
+    // due to a where clause), it's not an applicable candidate.
+    if (sig->needsInstantiation() &&
+        !instantiateSignature(&rcval, sig, ci, /* poiScope */ nullptr).success()) {
+      continue;
+    }
+
+    // found a candidate that matches!
+    return true;
+  }
+
+  return false;
 }
 
 template <typename F>
@@ -239,8 +278,6 @@ static CompositeGeneratorType generatorForCompilerGeneratedRecordOperator(Unique
     return generateRecordCompareGtSignature;
   } else if (name == USTR(">=")) {
     return generateRecordCompareGeSignature;
-  } else if (name == USTR("init=")) {
-    return generateInitCopySignature;
   } else if (name == USTR("=")) {
     return generateRecordAssignment;
   }
@@ -299,17 +336,45 @@ needCompilerGeneratedMethod(Context* context, const Type* type,
 }
 
 bool needCompilerGeneratedOperator(Context* context,
-                                   const types::Type* lhs,
-                                   const types::Type* rhs,
+                                   const types::QualifiedType& lhs,
+                                   const types::QualifiedType& rhs,
                                    UniqueString name) {
-  if (lhs == nullptr || rhs == nullptr) return false;
+  auto lhsT = lhs.type();
+  auto rhsT = rhs.type();
 
-  if (lhs->isNothingType() || rhs->isNothingType()) return false;
+  if (lhsT == nullptr || rhsT == nullptr) return false;
 
-  if ((lhs->isRecordType() && isNameOfCompilerGeneratedRecordOperator(name)) ||
-      (lhs->isEnumType() && isNameOfCompilerGeneratedEnumOperator(name)) ||
-      (lhs->isExternType() && name == USTR("="))) {
-    if (!areOperatorOverloadsPresentInDefiningScope(context, lhs, QualifiedType::INIT_RECEIVER, rhs, QualifiedType::INIT_RECEIVER, name)) {
+  if (lhsT->isNothingType() || rhsT->isNothingType()) return false;
+
+  if (lhsT->isExternType() && name == USTR("=")) {
+    // use the simpler mechanism for extern operators
+    // TODO: should we promote these areOperatorOverloads...?
+    if (!areFnOverloadsPresentInDefiningScope(context, lhs.type(), QualifiedType::INIT_RECEIVER, name)) {
+      return true;
+    }
+  }
+
+  auto lhsRec = lhsT->toRecordType(),
+       rhsRec = rhsT->toRecordType();
+  if (lhsRec && rhsRec && isNameOfCompilerGeneratedRecordOperator(name)) {
+    // record operators are only generated for same-record pairs
+    // (e.g., R1 == R2, not R1 == R2 where R1 != R2). Moreover, other overloads
+    // (like R1 == R2) do not affect the auto-generation of default comparison.
+
+    if (lhsRec != rhsRec) return false;
+
+    if (!areOperatorOverloadsPresentInDefiningScope(context, lhs, rhs, name)) {
+      return true;
+    }
+  }
+
+  if (lhsT->isEnumType() && isNameOfCompilerGeneratedEnumOperator(name)) {
+    // for enum casts in particularly, only generate casts for enum : stringLike.
+    bool generateEnumCast =
+      (lhsT->isEnumType() && (rhsT->isStringType() || rhsT->isBytesType()));
+    if (name == USTR(":") && !generateEnumCast) return false;
+
+    if (!areOperatorOverloadsPresentInDefiningScope(context, lhs, rhs, name)) {
       return true;
     }
   }
@@ -1810,7 +1875,7 @@ getCompilerGeneratedOperatorQuery(ResolutionContext* rc,
   const TypedFnSignature* result = nullptr;
   auto lhsT = lhsType.type();
 
-  if (needCompilerGeneratedOperator(context, lhsType.type(), rhsType.type(), name)) {
+  if (needCompilerGeneratedOperator(context, lhsType, rhsType, name)) {
 
     if (auto recordType = lhsT->toRecordType()) {
       if (auto generator = generatorForCompilerGeneratedRecordOperator(name)) {
@@ -1820,6 +1885,12 @@ getCompilerGeneratedOperatorQuery(ResolutionContext* rc,
       }
     } else if (lhsT->isExternType() && name == USTR("=")) {
       result = generateExternAssignment(rc, lhsT->toExternType());
+    } else if (auto enumType = lhsT->toEnumType()) {
+      if (auto generator = generatorForCompilerGeneratedEnumOperator(name)) {
+        result = generator(rc, enumType);
+      } else {
+        CHPL_UNIMPL("record method not implemented yet!");
+      }
     } else {
       CHPL_UNIMPL("should not be reachable");
     }

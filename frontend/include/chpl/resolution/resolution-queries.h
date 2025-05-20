@@ -285,6 +285,16 @@ const TypedFnSignature* typeConstructorInitial(Context* context,
                                                const types::Type* t);
 
 /**
+  Check if a signature from typedSignatureInitial matches the given CallInfo,
+  without instantiation. This is an early check before a more involved
+  instantiateSignature (if the function is generic).
+ */
+ApplicabilityResult
+isInitialTypedSignatureApplicable(Context* context,
+                                  const TypedFnSignature* tfs,
+                                  const FormalActualMap& faMap,
+                                  const CallInfo& ci);
+/**
   Instantiate a TypedFnSignature from
    * the result of typedSignatureInitial,
    * a CallInfo describing the types at the call site, and

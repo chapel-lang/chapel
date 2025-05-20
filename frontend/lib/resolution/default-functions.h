@@ -51,8 +51,8 @@ bool needCompilerGeneratedMethod(Context* context, const types::Type* type,
   determing if compiler generation is needed.
  */
 bool needCompilerGeneratedOperator(Context* context,
-                                   const types::Type* lhs,
-                                   const types::Type* rhs,
+                                   const types::QualifiedType& lhs,
+                                   const types::QualifiedType& rhs,
                                    UniqueString name);
 
 /**
