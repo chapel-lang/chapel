@@ -197,6 +197,10 @@ areOperatorOverloadsPresentInDefiningScope(Context* context,
     // If this function was generic, and we couldn't instantiate it (e.g.
     // due to a 'where' clause), it's not an applicable candidate.
     if (sig->needsInstantiation()) {
+      // note: this is pretty much the body of doIsCandidateApplicableInstantiating
+      // in resolution queries, but that function is private, and it seemed
+      // not worth it to expose it in the header.
+
       auto result = instantiateSignature(&rcval, sig, ci, /* poiScope */ nullptr);
 
       // function didn't apply after instantiation
