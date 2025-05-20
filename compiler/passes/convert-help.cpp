@@ -304,6 +304,11 @@ void attachSymbolAttributes(Context* context,
     if (!last.isEmpty()) {
       sym->lastEdition = astr(last);
     }
+
+    if (!first.isEmpty() && !last.isEmpty()) {
+      // Will generate an error if it is not
+      isValidEditionRange(sym->firstEdition, sym->lastEdition, sym);
+    }
   } else {
     INT_ASSERT(attr->firstEdition().isEmpty() && attr->lastEdition().isEmpty());
   }
