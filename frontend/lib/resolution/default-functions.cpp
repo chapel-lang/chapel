@@ -1578,10 +1578,12 @@ generateEnumMethod(ResolutionContext* rc,
                    UniqueString name) {
   const TypedFnSignature* result = nullptr;
   auto context = rc->context();
-  if (!areOverloadsPresentInDefiningScope(context, et, QualifiedType::TYPE, name)) {
-    if (auto generator = generatorForCompilerGeneratedEnumOperator(name)) {
+  if (auto generator = generatorForCompilerGeneratedEnumOperator(name)) {
+    if (!areOverloadsPresentInDefiningScope(context, et, QualifiedType::VAR, name)) {
       result = generator(rc, et);
-    } else if (name == USTR("size")) {
+    }
+  } else if (name == USTR("size")) {
+    if (!areOverloadsPresentInDefiningScope(context, et, QualifiedType::TYPE, name)) {
       // TODO: we should really have a way to just set the return type here
       std::vector<UntypedFnSignature::FormalDetail> formals;
       std::vector<QualifiedType> formalTypes;
