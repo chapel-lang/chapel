@@ -566,7 +566,7 @@ record type.
 to convert an expression of one type (``T1``) into another (``T2``)
 using forms like: ``var myT1: T1 = myT2;``.  The other common way of
 converting types in this way is to use a cast, like ``myT2: T1``, so
-Chapel requires both signatures as a means of ensuring the type author
+Chapel requires both operations as a means of ensuring the type author
 makes both forms available.
 
 As an example:
