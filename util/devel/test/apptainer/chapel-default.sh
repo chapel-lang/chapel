@@ -7,4 +7,4 @@
 # CHPL_DEVELOPER b/c it can change warning behavior
 unset CHPL_DEVELOPER
 
-./tryit.py --skip-nollvm ../../provision-scripts/chapel-default.sh
+./tryit.py "$@" --skip-nollvm ../../provision-scripts/chapel-default.sh

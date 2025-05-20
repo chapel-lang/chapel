@@ -7,4 +7,4 @@
 # CHPL_DEVELOPER b/c it can change warning behavior
 unset CHPL_DEVELOPER
 
-./tryit.py ../../provision-scripts/chapel-quickstart.sh
+./tryit.py "$@" ../../provision-scripts/chapel-quickstart.sh "$@"
