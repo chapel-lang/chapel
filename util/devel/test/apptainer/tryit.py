@@ -73,7 +73,9 @@ def main():
             for d in hadDirs:
                 if dirNameToConfigName(d) == dirNameToConfigName(only):
                     dirs.append(d)
-
+        if len(dirs) == 0:
+            printAndLog(log, "No test configs to run found, aborting.")
+            sys.exit(1)
 
         if args.start != None:
             hadDirs = dirs
