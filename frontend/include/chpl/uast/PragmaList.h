@@ -269,7 +269,6 @@ PRAGMA(FOLLOWER_INDEX, npr,
 PRAGMA(FORALL_BREAK_LABEL, npr,
        "forall break label",
        "target of error handling in the forall")
-PRAGMA(FORCE_COPY, npr, "don't remove initcopy calls for this variable", ncm)
 PRAGMA(FORMAL_TEMP, npr,
        "formal temp",
        "a formal temp requiring write-back for an out or inout argument")

@@ -41,7 +41,6 @@
 #include "virtualDispatch.h"
 
 #include "global-ast-vecs.h"
-#include "view.h"
 
 #include <vector>
 #include <algorithm>
@@ -713,12 +712,7 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
               //  * the type differs
               //  * it is a domain (for A.domain returning unowned)
               //  * if it's a sync variable (different init/auto copy)
-              //              printf("Looking for my flag\n");
-              if (copiedSe->symbol()->hasFlag(FLAG_FORCE_COPY)) {
-                printf("Found my flag: ");
-                list_view(callNext);
-              }
-              if (/*false &&*/ (actualType == returnType && isSyncType(formalType) == false))
+              if (actualType == returnType && isSyncType(formalType) == false)
               {
                 bool copyFromUnownedDomain = false;
                 if (actualType->symbol->hasFlag(FLAG_DOMAIN)) {
@@ -749,17 +743,6 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
   bool returnsAliasingArray = false;
   if (fnSym && fnSym->symbol()->hasFlag(FLAG_RETURNS_ALIASING_ARRAY)) {
     returnsAliasingArray = true;
-    /*
-    // TODO: Check for this before removing
-    tmpVar->addFlag(FLAG_FORCE_COPY);
-    useLhs->addFlag(FLAG_FORCE_COPY);
-    printf("Added my flag to %d and %d\n", tmpVar->id, useLhs->id);
-    // TODO: Also clean up the following to use PRIM_MOVE in both cases...
-    printf("In my new case\n");
-    list_view(callExpr);
-    callExpr->insertAfter(new CallExpr(PRIM_MOVE, useLhs, tmpVar));
-    //callExpr->insertAfter(new CallExpr(PRIM_ASSIGN, useLhs, tmpVar));
-    */
   }
   callExpr->insertAfter(new CallExpr(PRIM_MOVE, useLhs, tmpVar));
 
@@ -768,19 +751,9 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
   // of user variables. *or* it might come from handling `in` intent.
   if (copyExpr) {
     if (isRhsInitOrAutoCopy) {
-      if (copyExpr->id == 1751493)
-        printf("About to remove my call...\n");
       if (!returnsAliasingArray) {
-      /*
-        printf("About to remove my call...\n");
-      else
-      */
         removeInitOrAutoCopyPostResolution(copyExpr);
-      } else {
-        if (copyExpr->id == 1751493)
-          printf("...or am I?\n");
       }
-
     }
     else {
       copyExpr->replace(copyExpr->get(1)->remove());
