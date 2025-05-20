@@ -71,8 +71,8 @@ jobs:
           agenda_body: |
             This discussion is for the weekly Chapel project meeting.
             
-            **Date/Time: ${{ env.next_meeting_date }} at 10amPT**
-            **Join the meeting using [this Teams link](https://teams.microsoft.com/l/meetup-join/19%3ameeting_N2M5M2E2NTEtNTFkMi00ZjA1LThiNDQtMjFjY2U2ZDc5ODk3%40thread.v2/0?context=%7b%22Tid%22%3a%22105b2061-b669-4b31-92ac-24d304d195dc%22%2c%22Oid%22%3a%22bef28eea-6179-4f21-b284-84c6a0aeacc3%22%7d)
+            **Date/Time: ${{ env.next_meeting_date }} at 10am PT**
+            **Join the meeting using [this Teams link](https://teams.microsoft.com/l/meetup-join/19%3ameeting_N2M5M2E2NTEtNTFkMi00ZjA1LThiNDQtMjFjY2U2ZDc5ODk3%40thread.v2/0?context=%7b%22Tid%22%3a%22105b2061-b669-4b31-92ac-24d304d195dc%22%2c%22Oid%22%3a%22bef28eea-6179-4f21-b284-84c6a0aeacc3%22%7d)**
             
             ---
             
