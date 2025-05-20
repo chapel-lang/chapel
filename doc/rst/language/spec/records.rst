@@ -139,6 +139,15 @@ storage associated with a record.
         var age: uint;
       }
 
+   .. BLOCK-test-chapelpost
+
+      var r: ActorRecord;
+      writeln(r);
+
+   .. BLOCK-test-chapeloutput
+
+      (name = , age = 0)
+
    defines a new record type called ``ActorRecord`` that has two fields:
    the string field ``name`` and the unsigned integer field ``age``. The
    data contained by a record of this type is exactly the same as that
@@ -367,7 +376,7 @@ into the function’s formal argument
 Record formal arguments with ``inout`` or ``out`` intent will be updated
 by the record assignment function (:ref:`Record_Assignment`).
 
-   *Example (paramPassing.chpl)*.
+   *Example (argPassing.chpl)*.
 
    The program
 
@@ -546,61 +555,124 @@ Advanced Copy Initialization
 A copy initializer can also be used to specify how a record should be
 initialized from a value of an arbitrary type. This kind of copy initializer is
 invoked when a variable declaration's initialization expression is not of the
-same type as the record being initialized. For example:
+same type as the record being initialized.
 
-.. code-block:: chapel
+Defining a mixed-type copy initializer like this requires defining a cast
+operator that converts from the argument type to the record type.  The
+reason for this is TODO...
 
-  record MyString {
-    var s : string;
-  }
+As an example:
 
-  // normal copy initializer
-  proc MyString.init=(other: MyString) {
-    this.s = other.s;
-    writeln("normal init=");
-  }
+  *Example (copyInitMixedTypes.chpl)*.
 
-  // initialize from a string
-  proc MyString.init=(other: string) {
-    this.s = other;
-    writeln("string init=");
-  }
+  .. code-block:: chapel
 
-  var A = new MyString("hello");
-  var B = A; // "normal init="
-  var C : MyString = "goodbye"; // "string init="
+     record MyString {
+       var s : string;
+     }
+
+     // normal copy initializer
+     proc MyString.init=(other: MyString) {
+       this.s = other.s;
+       writeln("normal init=");
+     }
+
+     // initialize from a string
+     proc MyString.init=(other: string) {
+       this.s = other;
+       writeln("string init=");
+     }
+
+     // the required cast operator (which can optionally be implemented
+     // in terms of the copy initializer, as done here)
+     operator :(x: string, type t: MyString) {
+       writeln("cast");
+       const s: MyString = x;
+       return s;
+     }
+  
+     var a = new MyString("hello");
+     var b = a; // "normal init="
+     var c: MyString = "goodbye"; // "string init="
+     var d = "goodbye": MyString; // cast, inferring the return type
+
+  .. BLOCK-test-chapelpost
+
+     writeln(a);
+     writeln(b);
+     writeln(c);
+     writeln(d);
+     
+  .. BLOCK-test-chapeloutput
+
+     normal init=
+     string init=
+     cast
+     string init=
+     (s = hello)
+     (s = hello)
+     (s = goodbye)
+     (s = goodbye)
+     
 
 Generic types can rely on the ``this.type`` expression to implement these kinds
 of copy initializers with the desired type constraints. The ``this.type``
 expression will evaluate to the type provided by the user at the variable
 declaration:
 
-.. code-block:: chapel
+  *Example (copyInitGeneric.chpl)*.
 
-  record Wrapper {
-    type T;
-    var x : T;
-  }
+  .. code-block:: chapel
 
-  // normal copy initializer
-  proc Wrapper.init=(other: this.type) { ... }
+     record Wrapper {
+       type T;
+       var x: T;
+     }
 
-  // An incorrect attempt: ignores the user-specified type, and uses the
-  // value's type (which might not be the same!)
-  // i.e. 'var w : Wrapper(int) = "hi"', tries to create a 'Wrapper(string)'
-  // proc Wrapper.init=(other: ?T) {
-  //   this.T = T;
-  //   this.x = other;
-  // }
+     // normal copy initializer
+     proc Wrapper.init=(other: this.type) {
+       this.T = other.T;
+       this.x = other.x;
+     }
 
-  // initialize a Wrapper from the desired wrapped type 'T'
-  proc Wrapper.init=(other: this.type.T) {
-    this.T = other.type;
-    this.x = other;
-  }
+     // An incorrect attempt: ignores the user-specified type, and uses the
+     // value's type (which might not be the same!)
+     // i.e. 'var w: Wrapper(int) = "hi"', tries to create a 'Wrapper(string)'
+     // proc Wrapper.init=(other: ?T) {
+     //   this.T = T;
+     //   this.x = other;
+     // }
 
-  var A : Wrapper(int) = 4;
-  var B : Wrapper(string) = "hello";
+     // initialize a Wrapper from the desired wrapped type 'T'
+     proc Wrapper.init=(other: this.type.T) {
+       this.T = other.type;
+       this.x = other;
+     }
+
+     // the required cast due to the presence of a mixed-type 'init='
+     operator :(x, type t: Wrapper(x.type)) {
+       var w: Wrapper(x.type) = x;
+       return w;
+     }
+   
+     var a: Wrapper(int) = 4;
+     var b: Wrapper(string) = "hello";
+
+  .. BLOCK-test-chapelpost
+
+     var c = 5: Wrapper(int);
+     var d = "goodbye": Wrapper(string);
+     writeln(a);
+     writeln(b);
+     writeln(c);
+     writeln(d);
+
+  .. BLOCK-test-chapeloutput
+
+     (x = 4)
+     (x = hello)
+     (x = 5)
+     (x = goodbye)
 
 .. index::
    pair: records; assignment
@@ -617,7 +689,7 @@ the signature:
 
 .. code-block:: chapel
 
-   operator =(ref lhs:R, rhs:R) : void where lhs.type == rhs.type;
+   operator =(ref lhs:R, rhs:R) : void where lhs.type == rhs.type
 
 In it, the value of each field of the record on the right-hand side is
 assigned to the corresponding field of the record on the left-hand side.
