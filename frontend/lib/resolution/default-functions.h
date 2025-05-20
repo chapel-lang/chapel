@@ -46,6 +46,16 @@ bool needCompilerGeneratedMethod(Context* context, const types::Type* type,
                                  UniqueString name, bool parenless);
 
 /**
+  Same as getCompilerGeneratedMethod, but for operators. Here, we are more
+  discerning: the other argument to the oeprator is also considered when
+  determing if compiler generation is needed.
+ */
+bool needCompilerGeneratedOperator(Context* context,
+                                   const types::Type* lhs,
+                                   const types::Type* rhs,
+                                   UniqueString name);
+
+/**
   Given a type and a UniqueString representing the name of a method,
   determine if the type needs a method with such a name to be
   generated for it, and if so, generates and returns a
@@ -57,6 +67,17 @@ const TypedFnSignature*
 getCompilerGeneratedMethod(ResolutionContext* rc,
                            const types::QualifiedType receiverType,
                            UniqueString name, bool parenless);
+
+/**
+  Same as getCompilerGeneratedMethod, but for operators. Here, we are more
+  discerning: the other argument to the operator is also considered when
+  determining if compiler generation is needed.
+ */
+const TypedFnSignature*
+getCompilerGeneratedOperator(ResolutionContext* rc,
+                             const types::QualifiedType lhsType,
+                             const types::QualifiedType rhsType,
+                             UniqueString name);
 
 /**
   Given a CallInfo object describing a call, attempts to find a compiler-generated

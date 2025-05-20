@@ -61,11 +61,9 @@ static bool isNameOfCompilerGeneratedMethod(UniqueString name) {
   return false;
 }
 
-static bool
-areOverloadsPresentInDefiningScope(Context* context,
-                                   const Type* type,
-                                   QualifiedType::Kind kind,
-                                   UniqueString name) {
+static MatchingIdsWithName getMatchingIdsInDefiningScope(Context* context,
+                                                         const Type* type,
+                                                         UniqueString name) {
   const Scope* scopeForReceiverType = nullptr;
 
   if (auto compType = type->getCompositeType()) {
@@ -77,7 +75,7 @@ areOverloadsPresentInDefiningScope(Context* context,
   }
 
   // there is no defining scope
-  if (!scopeForReceiverType) return false;
+  if (!scopeForReceiverType) return {};
 
   // do not look outside the defining module
   const LookupConfig config = LOOKUP_DECLS | LOOKUP_PARENTS | LOOKUP_METHODS;
@@ -94,13 +92,24 @@ areOverloadsPresentInDefiningScope(Context* context,
     auto chapelIo =
       parsing::getToplevelModule(context,
                                  UniqueString::get(context, "ChapelIO"));
-    if (!chapelIo) return false;
+    if (!chapelIo) return ids;
 
     ids = lookupNameInScope(context, scopeForModule(context, chapelIo->id()),
                             /* methodLookupHelper */ nullptr,
                             /* receiverScopeHelper */ nullptr,
                             name, config);
   }
+
+  return ids;
+}
+
+static bool
+areFnOverloadsPresentInDefiningScope(Context* context,
+                                     const Type* type,
+                                     QualifiedType::Kind kind,
+                                     UniqueString name) {
+
+  auto ids = getMatchingIdsInDefiningScope(context, type, name);
 
   // nothing found
   if (ids.numIds() == 0) return false;
@@ -141,6 +150,23 @@ areOverloadsPresentInDefiningScope(Context* context,
   }
 
   return false;
+}
+
+static bool
+areOperatorOverloadsPresentInDefiningScope(Context* context,
+                                           const Type* lhsType,
+                                           QualifiedType::Kind lhsKind,
+                                           const Type* rhsType,
+                                           QualifiedType::Kind rhsKind,
+                                           UniqueString name) {
+
+  auto ids = getMatchingIdsInDefiningScope(context, lhsType, name);
+
+  // nothing found
+  if (ids.numIds() == 0) return false;
+
+  // temporary hack for testing
+  return areFnOverloadsPresentInDefiningScope(context, lhsType, lhsKind, name);
 }
 
 template <typename F>
@@ -247,11 +273,8 @@ needCompilerGeneratedMethod(Context* context, const Type* type,
   if (type->isNothingType()) return false;
 
   bool isAggregate = type->getCompositeType() || type->isRecordLike();
-  if ((isAggregate && isNameOfCompilerGeneratedMethod(name)) ||
-      (type->isRecordType() && isNameOfCompilerGeneratedRecordOperator(name)) ||
-      (type->isEnumType() && isNameOfCompilerGeneratedEnumOperator(name)) ||
-      (type->isExternType() && name == USTR("="))) {
-    if (!areOverloadsPresentInDefiningScope(context, type, QualifiedType::INIT_RECEIVER, name)) {
+  if ((isAggregate && isNameOfCompilerGeneratedMethod(name))) {
+    if (!areFnOverloadsPresentInDefiningScope(context, type, QualifiedType::INIT_RECEIVER, name)) {
       return true;
     }
   }
@@ -268,6 +291,25 @@ needCompilerGeneratedMethod(Context* context, const Type* type,
     }
   } else if (type->isIteratorType()) {
     if (name == "_shape_") {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool needCompilerGeneratedOperator(Context* context,
+                                   const types::Type* lhs,
+                                   const types::Type* rhs,
+                                   UniqueString name) {
+  if (lhs == nullptr || rhs == nullptr) return false;
+
+  if (lhs->isNothingType() || rhs->isNothingType()) return false;
+
+  if ((lhs->isRecordType() && isNameOfCompilerGeneratedRecordOperator(name)) ||
+      (lhs->isEnumType() && isNameOfCompilerGeneratedEnumOperator(name)) ||
+      (lhs->isExternType() && name == USTR("="))) {
+    if (!areOperatorOverloadsPresentInDefiningScope(context, lhs, QualifiedType::INIT_RECEIVER, rhs, QualifiedType::INIT_RECEIVER, name)) {
       return true;
     }
   }
@@ -299,7 +341,7 @@ static bool initHelper(Context* context,
           ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
       auto parentReceiver =
         ClassType::get(context, pct->toBasicClassType(), manager, borrowedNonnilDecor);
-      auto userDefinedExists = areOverloadsPresentInDefiningScope(context,
+      auto userDefinedExists = areFnOverloadsPresentInDefiningScope(context,
                                  parentReceiver,
                                  QualifiedType::INIT_RECEIVER,
                                  USTR("init"));
@@ -1579,11 +1621,11 @@ generateEnumMethod(ResolutionContext* rc,
   const TypedFnSignature* result = nullptr;
   auto context = rc->context();
   if (auto generator = generatorForCompilerGeneratedEnumOperator(name)) {
-    if (!areOverloadsPresentInDefiningScope(context, et, QualifiedType::VAR, name)) {
+    if (!areFnOverloadsPresentInDefiningScope(context, et, QualifiedType::VAR, name)) {
       result = generator(rc, et);
     }
   } else if (name == USTR("size")) {
-    if (!areOverloadsPresentInDefiningScope(context, et, QualifiedType::TYPE, name)) {
+    if (!areFnOverloadsPresentInDefiningScope(context, et, QualifiedType::TYPE, name)) {
       // TODO: we should really have a way to just set the return type here
       std::vector<UntypedFnSignature::FormalDetail> formals;
       std::vector<QualifiedType> formalTypes;
@@ -1741,20 +1783,43 @@ getCompilerGeneratedMethodQuery(ResolutionContext* rc, QualifiedType receiverTyp
       result = generateDeSerialize(rc, compType, name, "reader", "deserializer");
     } else if (auto tupleType = type->toTupleType()) {
       result = generateTupleMethod(context, tupleType, name);
-    } else if (auto recordType = type->toRecordType()) {
-      if (auto generator = generatorForCompilerGeneratedRecordOperator(name)) {
-        result = generator(rc, recordType);
-      } else {
-        CHPL_UNIMPL("record method not implemented yet!");
-      }
     } else if (type->isPtrType()) {
       result = generatePtrMethod(context, receiverType, name);
     } else if (auto enumType = type->toEnumType()) {
       result = generateEnumMethod(rc, enumType, name);
     } else if (auto iterType = type->toIteratorType()) {
       result = generateIteratorMethod(context, iterType, name);
-    } else if (type->isExternType() && name == USTR("=")) {
-      result = generateExternAssignment(rc, type->toExternType());
+    } else {
+      CHPL_UNIMPL("should not be reachable");
+    }
+  }
+
+  CHPL_ASSERT(result == nullptr || result->untyped()->name() == name);
+
+  return CHPL_RESOLUTION_QUERY_END(result);
+}
+
+static const TypedFnSignature* const&
+getCompilerGeneratedOperatorQuery(ResolutionContext* rc,
+                                  QualifiedType lhsType,
+                                  QualifiedType rhsType,
+                                  UniqueString name) {
+  CHPL_RESOLUTION_QUERY_BEGIN(getCompilerGeneratedOperatorQuery, rc, lhsType, rhsType, name);
+  auto context = rc->context();
+
+  const TypedFnSignature* result = nullptr;
+  auto lhsT = lhsType.type();
+
+  if (needCompilerGeneratedOperator(context, lhsType.type(), rhsType.type(), name)) {
+
+    if (auto recordType = lhsT->toRecordType()) {
+      if (auto generator = generatorForCompilerGeneratedRecordOperator(name)) {
+        result = generator(rc, recordType);
+      } else {
+        CHPL_UNIMPL("record method not implemented yet!");
+      }
+    } else if (lhsT->isExternType() && name == USTR("=")) {
+      result = generateExternAssignment(rc, lhsT->toExternType());
     } else {
       CHPL_UNIMPL("should not be reachable");
     }
@@ -1871,6 +1936,15 @@ getCompilerGeneratedMethod(ResolutionContext* rc, const QualifiedType receiverTy
     qt = QualifiedType(QualifiedType::VAR, qt.type());
   }
   return getCompilerGeneratedMethodQuery(rc, qt, name, parenless);
+}
+
+const TypedFnSignature*
+getCompilerGeneratedOperator(ResolutionContext* rc,
+                             const types::QualifiedType lhsType,
+                             const types::QualifiedType rhsType,
+                             UniqueString name) {
+
+  return getCompilerGeneratedOperatorQuery(rc, lhsType, rhsType, name);
 }
 
 static const TypedFnSignature* const&

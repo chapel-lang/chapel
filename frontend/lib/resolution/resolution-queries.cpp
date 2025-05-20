@@ -3519,8 +3519,8 @@ isInitialTypedSignatureApplicable(Context* context,
 // or the result of typedSignatureInitial if it is.
 static ApplicabilityResult
 doIsCandidateApplicableInitial(ResolutionContext* rc,
-                                const IdAndFlags& candidate,
-                                const CallInfo& ci) {
+                               const IdAndFlags& candidate,
+                               const CallInfo& ci) {
   Context* context = rc->context();
   bool isParenlessFn = !candidate.isParenfulFunction();
   bool isField = candidate.isMethodOrField() && !candidate.isMethod();
@@ -4549,14 +4549,32 @@ considerCompilerGeneratedMethods(ResolutionContext* rc,
   auto receiverType = receiver.type();
 
   // if not compiler-generated, then nothing to do
-  if (!needCompilerGeneratedMethod(rc->context(), receiverType.type(), ci.name(),
-                                   ci.isParenless())) {
-    return nullptr;
-  }
+  const TypedFnSignature* tfs = nullptr;
 
   // get the compiler-generated function, may be generic
-  auto tfs = getCompilerGeneratedMethod(rc, receiverType, ci.name(),
-                                        ci.isParenless());
+  if (ci.isOpCall()) {
+    // the only operators we generate today have 2 actuals.
+    if (ci.numActuals() != 2) return nullptr;
+
+    // if we don't need the operator, nothing to do.
+    auto& rhs = ci.actual(1).type();
+    if (!needCompilerGeneratedOperator(rc->context(), receiverType.type(),
+                                       rhs.type(), ci.name())) {
+      return nullptr;
+    }
+
+    tfs = getCompilerGeneratedOperator(rc, receiverType, rhs,
+                                       ci.name());
+  } else {
+    // if we don't need the method, nothing to do.
+    if (!needCompilerGeneratedMethod(rc->context(), receiverType.type(), ci.name(),
+                                     ci.isParenless())) {
+      return nullptr;
+    }
+
+    tfs = getCompilerGeneratedMethod(rc, receiverType, ci.name(),
+                                     ci.isParenless());
+  }
   return tfs;
 }
 
