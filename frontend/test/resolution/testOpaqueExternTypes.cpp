@@ -227,7 +227,7 @@ static void test5() {
 
   assert(notAType.isUnknown());
   assert(guard.numErrors() == 1);
-  assert(guard.errors()[0]->message() == "cannot default initialize variable using generic or unknown type");
+  assert(guard.errors()[0]->message() == "variable 'notAType' is declared without an initializer or type");
   guard.realizeErrors();
 }
 
