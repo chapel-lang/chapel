@@ -139,10 +139,9 @@ areFnOverloadsPresentInDefiningScope(Context* context,
         // * the receiver type matches
         // * the receiver type is a generic type and we have an instantiation
         // * the receiver type converts via implicit borrowing
-        auto result = canPass(context, haveQt, receiverQualType);
+        auto result = canPassScalar(context, haveQt, receiverQualType);
         if (result.passes() &&
-            (!result.converts() || result.convertsWithBorrowing()) &&
-            !result.promotes()) {
+            (!result.converts() || result.convertsWithBorrowing())) {
           return true;
         }
       }
