@@ -28,12 +28,15 @@ def printAndLog(log, s):
 def runAndLog(log, command):
     printAndLog(log, "Running command: {}\n".format(" ".join(command)))
     try:
-        p = subprocess.run(command,
-                           stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                           encoding='utf-8')
-        printAndLog(log, p.stdout)
-        lastline = p.stdout.splitlines()[-1]
-        return (p.returncode, lastline)
+        with subprocess.Popen(command,
+                              stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                              text=True) as p:
+            for line in p.stdout:
+                line = line.rstrip('\n')
+                printAndLog(log, line)
+                lastline = line
+            p.wait()
+            return (p.returncode, lastline)
     except OSError as e:
         return (-1, str(e))
 
