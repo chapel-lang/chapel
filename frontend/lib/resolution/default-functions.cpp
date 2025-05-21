@@ -2358,7 +2358,8 @@ buildTypeConstructor(Context* context, ID typeID) {
 const BuilderResult*
 builderResultForDefaultFunction(Context* context,
                                 UniqueString typePath,
-                                UniqueString name) {
+                                UniqueString name,
+                                UniqueString overloadPart) {
   auto typeID = ID(typePath);
 
   if (name == USTR("init")) {
@@ -2388,7 +2389,7 @@ builderResultForDefaultFunction(Context* context,
   } else if (name == USTR("chpl__orderToEnum")) {
     return &buildOrderToEnum(context, typeID);
   } else if (name == USTR(":")) {
-    return &EnumCastSelector::select(context, typeID, 0);
+    return &EnumCastSelector::select(context, typeID, overloadPart);
   } else if (typeID.symbolName(context) == name) {
     return &buildTypeConstructor(context, typeID);
   }

@@ -38,7 +38,14 @@ struct OverloadSelector {
     }
   }
 
-  static uast::BuilderResult const& select(Context* context, const ID& id, int targetIdx) {
+  static uast::BuilderResult const& select(Context* context, const ID& id, UniqueString overloadPart) {
+    // note: this should match the way doAssignIDs in Builder.cpp creates
+    // the overloadPart from the index of the overload.
+    int targetIdx = 0;
+    if (!overloadPart.isEmpty()) {
+      targetIdx = atoi(overloadPart.c_str());
+    }
+
     return selectImpl<Fs...>(context, id, targetIdx, 0);
   }
 };

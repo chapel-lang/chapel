@@ -681,7 +681,8 @@ TheseResolutionResult resolveTheseCall(ResolutionContext* rc,
 const uast::BuilderResult*
 builderResultForDefaultFunction(Context* context,
                                 UniqueString typePath,
-                                UniqueString name);
+                                UniqueString name,
+                                UniqueString overloadPart);
 
 /** Get the 'promotion type' for the given type. E.g., the promotion type
     for a range is the type of the range's elements. */
