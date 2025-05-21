@@ -657,8 +657,6 @@ static void doElideCopies(VarToCopyElisionState &map) {
             } else {
               //              printf("Skipping removal of %d\n", call->id);
             }
-          } else {
-            INT_FATAL("That was unexpected");
           }
 
           if (definedConst != NULL) {
