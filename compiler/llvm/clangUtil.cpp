@@ -1660,6 +1660,7 @@ void setupClang(GenInfo* info, std::string mainFile)
     clangInfo->driverArgs.push_back("-fsyntax-only");
   else
     clangInfo->driverArgs.push_back("-c");
+
   // chpl - always compile rt file
   clangInfo->driverArgs.push_back(mainFile.c_str());
 
