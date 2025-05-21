@@ -266,7 +266,7 @@ generateRecordCompareGeSignature(ResolutionContext* rc, const CompositeType* lhs
 static const TypedFnSignature*
 generateRecordAssignment(ResolutionContext* rc, const CompositeType* lhsType);
 
-using EnumCastSelector = OverloadSelector<buildEnumToStringCastImpl, buildEnumToBytesCastImpl>;
+using EnumCastSelector = OverloadSelector<buildEnumToStringCastImpl, buildEnumToBytesCastImpl, buildStringToEnumCastImpl, buildBytesToEnumCastImpl>;
 
 using CompositeGeneratorType = TypedFnSignature const* (*)(ResolutionContext*, const CompositeType*);
 using EnumGeneratorType = TypedFnSignature const* (*)(ResolutionContext*, const EnumType*);
@@ -306,6 +306,18 @@ generateEnumToStringCastSignature(ResolutionContext* rc, const EnumType* et) {
 static const TypedFnSignature*
 generateEnumToBytesCastSignature(ResolutionContext* rc, const EnumType* et) {
   auto fn = EnumCastSelector::invoke<buildEnumToBytesCastImpl>;
+  return typedSignatureFromGenerator(rc, fn, et->id());
+}
+
+static const TypedFnSignature*
+generateStringToEnumCastSignature(ResolutionContext* rc, const EnumType* et) {
+  auto fn = EnumCastSelector::invoke<buildStringToEnumCastImpl>;
+  return typedSignatureFromGenerator(rc, fn, et->id());
+}
+
+static const TypedFnSignature*
+generateBytesToEnumCastSignature(ResolutionContext* rc, const EnumType* et) {
+  auto fn = EnumCastSelector::invoke<buildBytesToEnumCastImpl>;
   return typedSignatureFromGenerator(rc, fn, et->id());
 }
 
@@ -393,6 +405,8 @@ static EnumGeneratorType generatorForCompilerGeneratedEnumOperator(UniqueString 
       if (rhsT->isIntegralType()) return generateIntegralToOrFromCastForEnum</* isFromCast */ true>;
     } else if ((outEt = rhsT->toEnumType())) {
       if (lhsT->isIntegralType()) return generateIntegralToOrFromCastForEnum</* isFromCast */ false>;
+      if (lhsT->isStringType()) return generateStringToEnumCastSignature;
+      if (lhsT->isBytesType()) return generateBytesToEnumCastSignature;
     }
   }
   return nullptr;
@@ -741,6 +755,7 @@ struct BinaryFnBuilder {
   const TypeDecl* typeDecl_;
   UniqueString name_;
   Function::Kind kind_;
+  bool throws_;
   Formal::Intent lhsIntent_;
   Formal::Intent rhsIntent_;
 
@@ -756,9 +771,10 @@ struct BinaryFnBuilder {
                  Function::Kind kind,
                  Formal::Intent lhsIntent = Formal::DEFAULT_INTENT,
                  Formal::Intent rhsIntent = Formal::DEFAULT_INTENT,
+                 bool throws = false,
                  optional<int> overloadOffset = empty)
     : context_(context), typeID_(std::move(typeID)), name_(name), kind_(kind),
-      lhsIntent_(lhsIntent), rhsIntent_(rhsIntent) {
+      throws_(throws), lhsIntent_(lhsIntent), rhsIntent_(rhsIntent) {
     builder_ = Builder::createForGeneratedCode(context_, typeID_, overloadOffset);
     dummyLoc_ = parsing::locateId(context_, typeID_);
 
@@ -890,7 +906,7 @@ struct BinaryFnBuilder {
                                  /*receiver=*/std::move(lhsFormal()),
                                  Function::ReturnIntent::DEFAULT_RETURN_INTENT,
                                  // throws, primaryMethod, parenless
-                                 false, false, false,
+                                 throws_, false, false,
                                  std::move(otherFormals),
                                  // returnType, where, lifetime, body
                                  {}, {}, {}, std::move(body));
@@ -1314,54 +1330,112 @@ const BuilderResult& buildEnumToOrder(Context* context, ID typeID) {
 
 struct EnumCastBuilder : BinaryFnBuilder {
   UniqueString otherType_;
+  bool castFromEnum_;
 
-  EnumCastBuilder(Context* context, ID typeID,
+  // when clauses with which to populate into a Select statement.
+  AstList selectWhens_;
+
+  // what to return if none of the 'when' clauses matched
+  owned<AstNode> fallback_;
+
+  EnumCastBuilder(Context* context,
+                  ID enumId,
                   UniqueString otherType,
-                  Function::Kind kind,
+                  bool castFromEnum,
                   int overloadIdx)
-    : BinaryFnBuilder(context, typeID, USTR(":"), kind,
+    : BinaryFnBuilder(context, enumId, USTR(":"),
+                      Function::Kind::OPERATOR,
                       Formal::DEFAULT_INTENT,
                       Formal::TYPE,
+                      /* throws */ true,
                       overloadIdx != 0 ? optional<int>(overloadIdx) : empty),
-      otherType_(otherType) {
+      otherType_(otherType),
+      castFromEnum_(castFromEnum) {
   }
 
   owned<AstNode> lhsFormalTypeExpr() {
-    return identifier(typeDecl_->name());
+    return identifier(castFromEnum_ ? typeDecl_->name() : otherType_);
   }
 
   owned<AstNode> rhsFormalTypeExpr() {
-    return identifier(otherType_);
+    return identifier(castFromEnum_ ? otherType_ : typeDecl_->name());
   }
   owned<AstNode> enumElt(UniqueString name) {
-    return dot(lhsFormalTypeExpr(), name);
+    return dot(identifier(typeDecl_->name()), name);
+  }
+
+  void addWhenClause(owned<AstNode> whenValue,
+                     owned<AstNode> toReturn) {
+    AstList caseExprs;
+    caseExprs.push_back(std::move(whenValue));
+    AstList stmts;
+    stmts.push_back(ret(std::move(toReturn)));
+    auto whenClause = When::build(builder(), dummyLoc_,
+                                  std::move(caseExprs),
+                                  BlockStyle::IMPLICIT,
+                                  std::move(stmts));
+    selectWhens_.push_back(std::move(whenClause));
+  }
+
+  void setFallback(owned<AstNode> fallback) {
+    fallback_ = std::move(fallback);
+  }
+
+  BuilderResult finalize() {
+    auto select = Select::build(builder(), dummyLoc_,
+                                identifier(lhsFormal()->name()),
+                                std::move(selectWhens_));
+    stmts().push_back(std::move(select));
+
+    if (fallback_) {
+      stmts().push_back(ret(std::move(fallback_)));
+    } else {
+      // inserting a throwing call to chpl_enum_cast_error, and then
+      // return the first element.
+      CHPL_ASSERT(!castFromEnum_);
+      stmts().push_back(call(UniqueString::get(context(), "chpl_enum_cast_error"),
+                             identifier(lhsFormal()->name()),
+                             stringLit(typeDecl_->name().c_str())));
+
+      // return the first element
+      auto ed = typeDecl_->toEnum();
+      CHPL_ASSERT(ed && ed->numElements() > 0);
+      stmts().push_back(ret(enumElt(ed->enumElements().begin()->name())));
+    }
+
+    return BinaryFnBuilder::finalize();
   }
 };
 
-static const uast::BuilderResult& buildEnumToStringOrBytesCastImpl(Context* context, ID typeID, bool isString, int overloadIdx) {
-  QUERY_BEGIN(buildEnumToStringOrBytesCastImpl, context, typeID, isString, overloadIdx);
+static const uast::BuilderResult& buildEnumToStringOrBytesCastImpl(Context* context, ID typeID, bool isString, bool castFromEnum, int overloadIdx) {
+  QUERY_BEGIN(buildEnumToStringOrBytesCastImpl, context, typeID, isString, castFromEnum, overloadIdx);
 
-  EnumCastBuilder builder(context, typeID, isString ? USTR("string") : USTR("bytes"), Function::Kind::OPERATOR, overloadIdx);
-  auto buildStrLiteral = [&](UniqueString str) { return builder.stringLit(str.c_str()); };
-  auto buildBytesLiteral = [&](UniqueString str) { return builder.bytesLit(str.c_str()); };
+  EnumCastBuilder builder(context, typeID, isString ? USTR("string") : USTR("bytes"), castFromEnum, overloadIdx);
+  auto buildLiteral = [&](UniqueString str) -> owned<AstNode> {
+    if (isString) {
+      return builder.stringLit(str.c_str());
+    } else {
+      return builder.bytesLit(str.c_str());
+    }
+  };
 
   auto enumDecl = parsing::idToAst(context, typeID)->toEnum();
   CHPL_ASSERT(enumDecl);
-  auto buildCast = [&, enumDecl](auto mkLiteral, AstList& into) {
-    for (auto elt : enumDecl->enumElements()) {
-      auto equalsElt =
-        builder.op(builder.identifier(builder.lhsFormal()->name()), USTR("=="),
-                   builder.enumElt(elt->name()));
-      into.push_back(builder.earlyReturn(std::move(equalsElt),
-                                         mkLiteral(elt->name())));
+  for (auto elt : enumDecl->enumElements()) {
+    if (castFromEnum) {
+      builder.addWhenClause(builder.enumElt(elt->name()),
+                            buildLiteral(elt->name()));
+    } else {
+      builder.addWhenClause(buildLiteral(elt->name()),
+                            builder.enumElt(elt->name()));
+      builder.addWhenClause(buildLiteral(UniqueString::getConcat(context, enumDecl->name().c_str(), ".", elt->name().c_str())),
+                            builder.enumElt(elt->name()));
     }
-    into.push_back(builder.ret(mkLiteral(UniqueString())));
-  };
-
-  if (isString) {
-    buildCast(buildStrLiteral, builder.stmts());
-  } else {
-    buildCast(buildBytesLiteral, builder.stmts());
+  }
+  // if we're casting from an enum, the cast should be exhaustive, but add
+  // a dummy return just in case.
+  if (castFromEnum) {
+    builder.setFallback(buildLiteral(UniqueString()));
   }
 
   auto result = builder.finalize();
@@ -1369,10 +1443,17 @@ static const uast::BuilderResult& buildEnumToStringOrBytesCastImpl(Context* cont
 }
 
 const uast::BuilderResult& buildEnumToStringCastImpl(Context* context, ID typeID, int overloadIdx) {
-  return buildEnumToStringOrBytesCastImpl(context, typeID, true, overloadIdx);
+  return buildEnumToStringOrBytesCastImpl(context, typeID, true, /* castFromEnum */ true, overloadIdx);
 }
 const uast::BuilderResult& buildEnumToBytesCastImpl(Context* context, ID typeID, int overloadIdx) {
-  return buildEnumToStringOrBytesCastImpl(context, typeID, false, overloadIdx);
+  return buildEnumToStringOrBytesCastImpl(context, typeID, false, /* castFromEnum */ true, overloadIdx);
+}
+
+const uast::BuilderResult& buildStringToEnumCastImpl(Context* context, ID typeID, int overloadIdx) {
+  return buildEnumToStringOrBytesCastImpl(context, typeID, true, /* castFromEnum */ false, overloadIdx);
+}
+const uast::BuilderResult& buildBytesToEnumCastImpl(Context* context, ID typeID, int overloadIdx) {
+  return buildEnumToStringOrBytesCastImpl(context, typeID, false, /* castFromEnum */ false, overloadIdx);
 }
 
 const BuilderResult& buildOrderToEnum(Context* context, ID typeID) {

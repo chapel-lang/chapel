@@ -108,6 +108,8 @@ const uast::BuilderResult& buildEnumToOrder(Context* context, ID typeID);
 const uast::BuilderResult& buildEnumToStringCastImpl(Context* context, ID typeID, int overloadIdx);
 const uast::BuilderResult& buildEnumToBytesCastImpl(Context* context, ID typeID, int overloadIdx);
 const uast::BuilderResult& buildOrderToEnum(Context* context, ID typeID);
+const uast::BuilderResult& buildStringToEnumCastImpl(Context* context, ID typeID, int overloadIdx);
+const uast::BuilderResult& buildBytesToEnumCastImpl(Context* context, ID typeID, int overloadIdx);
 
 } // end namespace resolution
 } // end namespace chpl
