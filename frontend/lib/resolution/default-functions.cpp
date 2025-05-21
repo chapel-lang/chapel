@@ -266,7 +266,7 @@ generateRecordCompareGeSignature(ResolutionContext* rc, const CompositeType* lhs
 static const TypedFnSignature*
 generateRecordAssignment(ResolutionContext* rc, const CompositeType* lhsType);
 
-using EnumCastSelector = OverloadSelector<buildEnumToStringOrBytesCastImpl>;
+using EnumCastSelector = OverloadSelector<buildEnumToStringCastImpl, buildEnumToBytesCastImpl>;
 
 using CompositeGeneratorType = TypedFnSignature const* (*)(ResolutionContext*, const CompositeType*);
 using EnumGeneratorType = TypedFnSignature const* (*)(ResolutionContext*, const EnumType*);
@@ -298,20 +298,35 @@ static bool isNameOfCompilerGeneratedRecordOperator(UniqueString name) {
 }
 
 static const TypedFnSignature*
-generateEnumToStringOrBytesCastSignature(ResolutionContext* rc, const EnumType* et) {
-  auto fn = EnumCastSelector::invoke<buildEnumToStringOrBytesCastImpl>;
+generateEnumToStringCastSignature(ResolutionContext* rc, const EnumType* et) {
+  auto fn = EnumCastSelector::invoke<buildEnumToStringCastImpl>;
   return typedSignatureFromGenerator(rc, fn, et->id());
 }
 
-static EnumGeneratorType generatorForCompilerGeneratedEnumOperator(UniqueString name) {
+static const TypedFnSignature*
+generateEnumToBytesCastSignature(ResolutionContext* rc, const EnumType* et) {
+  auto fn = EnumCastSelector::invoke<buildEnumToBytesCastImpl>;
+  return typedSignatureFromGenerator(rc, fn, et->id());
+}
+
+static EnumGeneratorType generatorForCompilerGeneratedEnumOperator(UniqueString name, const QualifiedType& lhs, const QualifiedType& rhs, const EnumType*& outEt) {
+  auto lhsT = lhs.type();
+  auto rhsT = rhs.type();
+  CHPL_ASSERT(lhsT && rhsT);
+
   if (name == USTR(":")) {
-    return generateEnumToStringOrBytesCastSignature;
+    if (lhsT->isEnumType()) {
+      outEt = lhsT->toEnumType();
+      if (rhsT->isStringType()) return generateEnumToStringCastSignature;
+      if (rhsT->isBytesType()) return generateEnumToBytesCastSignature;
+    }
   }
   return nullptr;
 }
 
-static bool isNameOfCompilerGeneratedEnumOperator(UniqueString name) {
-  return generatorForCompilerGeneratedEnumOperator(name) != nullptr;
+static bool isCompilerGeneratedEnumOperator(UniqueString name, const QualifiedType& lhs, const QualifiedType& rhs) {
+  const EnumType* ignoreEt = nullptr;
+  return generatorForCompilerGeneratedEnumOperator(name, lhs, rhs, ignoreEt) != nullptr;
 }
 
 bool
@@ -380,12 +395,7 @@ bool needCompilerGeneratedOperator(Context* context,
     }
   }
 
-  if (lhsT->isEnumType() && isNameOfCompilerGeneratedEnumOperator(name)) {
-    // for enum casts in particularly, only generate casts for enum : stringLike.
-    bool generateEnumCast =
-      (lhsT->isEnumType() && (rhsT->isStringType() || rhsT->isBytesType()));
-    if (name == USTR(":") && !generateEnumCast) return false;
-
+  if (isCompilerGeneratedEnumOperator(name, lhs, rhs)) {
     if (!areOperatorOverloadsPresentInDefiningScope(context, lhs, rhs, name)) {
       return true;
     }
@@ -671,10 +681,11 @@ struct BinaryFnBuilder {
   BinaryFnBuilder(Context* context, ID typeID, UniqueString name,
                  Function::Kind kind,
                  Formal::Intent lhsIntent = Formal::DEFAULT_INTENT,
-                 Formal::Intent rhsIntent = Formal::DEFAULT_INTENT)
+                 Formal::Intent rhsIntent = Formal::DEFAULT_INTENT,
+                 optional<int> overloadOffset = empty)
     : context_(context), typeID_(std::move(typeID)), name_(name), kind_(kind),
       lhsIntent_(lhsIntent), rhsIntent_(rhsIntent) {
-    builder_ = Builder::createForGeneratedCode(context_, typeID_);
+    builder_ = Builder::createForGeneratedCode(context_, typeID_, overloadOffset);
     dummyLoc_ = parsing::locateId(context_, typeID_);
 
     typeDecl_ = parsing::idToAst(context, typeID)->toTypeDecl();
@@ -780,8 +791,6 @@ struct BinaryFnBuilder {
     return cond;
   }
 
-  virtual owned<AstNode> whereClause() { return nullptr; }
-
   BuilderResult finalize() {
     auto body = Block::build(builder(), dummyLoc_, std::move(stmts_));
     AstList otherFormals;
@@ -810,7 +819,7 @@ struct BinaryFnBuilder {
                                  false, false, false,
                                  std::move(otherFormals),
                                  // returnType, where, lifetime, body
-                                 {}, whereClause(), {}, std::move(body));
+                                 {}, {}, {}, std::move(body));
 
     builder_->noteChildrenLocations(genFn.get(), dummyLoc_);
     builder_->addToplevelExpression(std::move(genFn));
@@ -1230,15 +1239,17 @@ const BuilderResult& buildEnumToOrder(Context* context, ID typeID) {
 }
 
 struct EnumCastBuilder : BinaryFnBuilder {
-  owned<AstNode> whereClause_;
+  UniqueString otherType_;
 
-  EnumCastBuilder(Context* context, ID typeID, UniqueString name,
-                  Function::Kind kind)
-    : BinaryFnBuilder(context, typeID, name, kind, Formal::DEFAULT_INTENT, Formal::TYPE) {
-
-    whereClause_ = op(op(identifier(rhsFormal()->name()), USTR("=="), identifier(USTR("string"))),
-                      USTR("||"),
-                      op(identifier(rhsFormal()->name()), USTR("=="), identifier(USTR("bytes"))));
+  EnumCastBuilder(Context* context, ID typeID,
+                  UniqueString otherType,
+                  Function::Kind kind,
+                  int overloadIdx)
+    : BinaryFnBuilder(context, typeID, USTR(":"), kind,
+                      Formal::DEFAULT_INTENT,
+                      Formal::TYPE,
+                      overloadIdx != 0 ? optional<int>(overloadIdx) : empty),
+      otherType_(otherType) {
   }
 
   owned<AstNode> lhsFormalTypeExpr() {
@@ -1246,25 +1257,17 @@ struct EnumCastBuilder : BinaryFnBuilder {
   }
 
   owned<AstNode> rhsFormalTypeExpr() {
-    return nullptr;
+    return identifier(otherType_);
   }
-
-  owned<AstNode> whereClause() {
-    return std::move(whereClause_);
-  }
-
   owned<AstNode> enumElt(UniqueString name) {
     return dot(lhsFormalTypeExpr(), name);
   }
 };
 
-const uast::BuilderResult& buildEnumToStringOrBytesCastImpl(Context* context, ID typeID, int overloadIdx) {
-  QUERY_BEGIN(buildEnumToStringOrBytesCastImpl, context, typeID, overloadIdx);
+static const uast::BuilderResult& buildEnumToStringOrBytesCastImpl(Context* context, ID typeID, bool isString, int overloadIdx) {
+  QUERY_BEGIN(buildEnumToStringOrBytesCastImpl, context, typeID, isString, overloadIdx);
 
-  AstList bytesStmts;
-  AstList stringStmts;
-
-  EnumCastBuilder builder(context, typeID, USTR(":"), Function::Kind::OPERATOR);
+  EnumCastBuilder builder(context, typeID, isString ? USTR("string") : USTR("bytes"), Function::Kind::OPERATOR, overloadIdx);
   auto buildStrLiteral = [&](UniqueString str) { return builder.stringLit(str.c_str()); };
   auto buildBytesLiteral = [&](UniqueString str) { return builder.bytesLit(str.c_str()); };
 
@@ -1281,16 +1284,21 @@ const uast::BuilderResult& buildEnumToStringOrBytesCastImpl(Context* context, ID
     into.push_back(builder.ret(mkLiteral(UniqueString())));
   };
 
-  buildCast(buildStrLiteral, stringStmts);
-  buildCast(buildBytesLiteral, bytesStmts);
+  if (isString) {
+    buildCast(buildStrLiteral, builder.stmts());
+  } else {
+    buildCast(buildBytesLiteral, builder.stmts());
+  }
 
-  auto isString = builder.op(builder.identifier(builder.rhsFormal()->name()),
-                             USTR("=="), builder.identifier(USTR("string")));
-  builder.stmts().push_back(
-    builder.conditional(std::move(isString), std::move(stringStmts), std::move(bytesStmts)));
   auto result = builder.finalize();
-
   return QUERY_END(result);
+}
+
+const uast::BuilderResult& buildEnumToStringCastImpl(Context* context, ID typeID, int overloadIdx) {
+  return buildEnumToStringOrBytesCastImpl(context, typeID, true, overloadIdx);
+}
+const uast::BuilderResult& buildEnumToBytesCastImpl(Context* context, ID typeID, int overloadIdx) {
+  return buildEnumToStringOrBytesCastImpl(context, typeID, false, overloadIdx);
 }
 
 const BuilderResult& buildOrderToEnum(Context* context, ID typeID) {
@@ -1893,12 +1901,9 @@ getCompilerGeneratedOperatorQuery(ResolutionContext* rc,
       }
     } else if (lhsT->isExternType() && name == USTR("=")) {
       result = generateExternAssignment(rc, lhsT->toExternType());
-    } else if (auto enumType = lhsT->toEnumType()) {
-      if (auto generator = generatorForCompilerGeneratedEnumOperator(name)) {
-        result = generator(rc, enumType);
-      } else {
-        CHPL_UNIMPL("record method not implemented yet!");
-      }
+    } if (const EnumType* enumType = nullptr;
+          auto generator = generatorForCompilerGeneratedEnumOperator(name, lhsType, rhsType, enumType)) {
+      result = generator(rc, enumType);
     } else {
       CHPL_UNIMPL("should not be reachable");
     }
