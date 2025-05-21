@@ -75,24 +75,7 @@ UniqueString ID::parentSymbolPath(Context* context, UniqueString symbolPath) {
   return UniqueString::get(context, path, lastDot);
 }
 
-UniqueString ID::innermostSymbolName(Context* context, UniqueString symbolPath)
-{
-  // If the symbol path is empty, return an empty string
-  if (symbolPath.isEmpty()) {
-    return UniqueString();
-  }
-
-  // find the last '.' component from the ID but don't count \.
-  const char* path = symbolPath.c_str();
-  ssize_t lastDot = findLastDot(path);
-
-  if (lastDot != -1) {
-    // skip past the final '.'
-    path = path + lastDot + 1;
-  }
-
-
-  // now find truncate it at a '#' but don't count \#
+static ssize_t findPoundOrEnd(const char* path) {
   ssize_t end = 0;
   ssize_t i = 1;
   while (true) {
@@ -103,9 +86,65 @@ UniqueString ID::innermostSymbolName(Context* context, UniqueString symbolPath)
     }
     i++;
   }
+  return end;
+}
+
+static const char* findPathAfterLastDot(const char* path) {
+  ssize_t lastDot = findLastDot(path);
+
+  if (lastDot != -1) {
+    // skip past the final '.'
+    path = path + lastDot + 1;
+  }
+
+  return path;
+}
+
+UniqueString ID::innermostSymbolName(Context* context, UniqueString symbolPath)
+{
+  // If the symbol path is empty, return an empty string
+  if (symbolPath.isEmpty()) {
+    return UniqueString();
+  }
+
+  // find the last '.' component from the ID but don't count \.
+  const char* path = findPathAfterLastDot(symbolPath.c_str());
+
+  // now find truncate it at a '#' but don't count \#
+  ssize_t end = findPoundOrEnd(path);
 
   // compute the portion of the string before the #
   auto s = std::string(path, end);
+
+  // now unquote
+  s = unescapeStringId(s);
+
+  // now get the UniqueString
+  return UniqueString::get(context, s);
+}
+
+UniqueString ID::overloadPart(Context* context,
+                              UniqueString symbolPath)
+{
+  if (symbolPath.isEmpty()) {
+    return UniqueString();
+  }
+
+  // find the last '.' component from the ID but don't count \.
+  const char* path = findPathAfterLastDot(symbolPath.c_str());
+
+  // now find truncate it at a '#' but don't count \#
+  ssize_t end = findPoundOrEnd(path);
+
+  // advance past the pound if we aren't at the end of the string.
+  // This way, we always start at the beginning of the overload part,
+  // if there is one, and otherwise we start at the end of the string.
+  if (path[end] == '#') {
+    end++;
+  }
+
+  // compute the portion of the string after the '#'
+  auto s = std::string(path + end);
 
   // now unquote
   s = unescapeStringId(s);
@@ -170,6 +209,10 @@ ID ID::parentSymbolId(Context* context) const {
 
 UniqueString ID::symbolName(Context* context) const {
   return ID::innermostSymbolName(context, symbolPath_);
+}
+
+UniqueString ID::overloadPart(Context* context) const {
+  return ID::overloadPart(context, symbolPath_);
 }
 
 bool ID::contains(const ID& other) const {

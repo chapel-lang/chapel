@@ -335,6 +335,55 @@ static void test7() {
   assert(initType.kind() == QualifiedType::CONST_VAR);
 }
 
+// test that we do get a compiler generated record method for `==`
+// even when == exists for R and another type (this matches production).
+static void test7b() {
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program =
+    R""""(
+      record R {
+        var x : int;
+      }
+      operator R.==(a:R,b:int) { return 2; }
+
+      var a : R;
+      var b : R;
+
+      var x = a == b;
+    )"""";
+
+  QualifiedType initType = resolveTypeOfXInit(context, program);
+  assert(initType.type()->isBoolType());
+  assert(initType.kind() == QualifiedType::CONST_VAR);
+}
+
+// for generic types, test that we get a compiler generated method for `==`
+// even if a specialized `==` exists for different types.
+static void test7c() {
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program =
+    R""""(
+      record R {
+        var field;
+      }
+      operator R.==(a:R(int), b:R(int)) { return 2; }
+
+      var a = new R(0);
+      var b = new R(0.0);
+
+      var x = a == a;
+      var y = b == b;
+    )"""";
+
+  auto vars = resolveTypesOfVariables(context, program, {"x", "y"});
+  assert(vars.at("x").type() && vars.at("x").type()->isIntType());
+  assert(vars.at("y").type() && vars.at("y").type()->isBoolType());
+}
+
 // test that we get compiler generated methods for = and == when inside a proc
 static void test8() {
   Context* context = buildStdContext();
@@ -526,6 +575,84 @@ static void test10() {
               "> with real", "< with real" });
 }
 
+// test that we generate enum-to-string casts if they are not present
+static void test11() {
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program =
+    R""""(
+      enum E { A, B, C }
+      var e = E.A;
+      var x = e : string;
+      var y = e : bytes;
+    )"""";
+
+  auto vars = resolveTypesOfVariables(context, program, {"x", "y"});
+  assert(vars.at("x").type() && vars.at("x").type()->isStringType());
+  assert(vars.at("y").type() && vars.at("y").type()->isBytesType());
+}
+
+// test that enum-to-string casts are skipped if user overloads are present
+static void test12() {
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program =
+    R""""(
+      enum E { A, B, C }
+      operator E.:(e: E, type t: string) { return 42; }
+      operator E.:(e: E, type t: bytes) { return 42.0; }
+      var e = E.A;
+      var x = e : string;
+      var y = e : bytes;
+    )"""";
+
+  auto vars = resolveTypesOfVariables(context, program, {"x", "y"});
+  assert(vars.at("x").type() && vars.at("x").type()->isIntType());
+  assert(vars.at("y").type() && vars.at("y").type()->isRealType());
+}
+
+// test that where-based overloads are handled appropriately when deciding
+// to generate defaults.
+static void test13a() {
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program =
+    R""""(
+      enum E { A, B, C }
+      operator E.:(e: E, type t) where isUintType(t) { return 42; }
+      operator E.:(e: E, type t) where t == bytes { return 42.0; }
+      var e = E.A;
+      var x = e : string;
+      var y = e : bytes;
+    )"""";
+
+  auto vars = resolveTypesOfVariables(context, program, {"x", "y"});
+  assert(vars.at("x").type() && vars.at("x").type()->isStringType());
+  assert(vars.at("y").type() && vars.at("y").type()->isRealType());
+}
+
+static void test13b() {
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program =
+    R""""(
+      enum E { A, B, C }
+      operator :(e: ?t, type target: string) where isIntType(t) { return 42; }
+      operator :(e: ?t, type target: bytes) where t == E { return 42.0; }
+      var e = E.A;
+      var x = e : string;
+      var y = e : bytes;
+    )"""";
+
+  auto vars = resolveTypesOfVariables(context, program, {"x", "y"});
+  assert(vars.at("x").type() && vars.at("x").type()->isStringType());
+  assert(vars.at("y").type() && vars.at("y").type()->isRealType());
+}
+
 int main() {
   test1();
   test2();
@@ -534,9 +661,15 @@ int main() {
   test5();
   test6();
   test7();
+  test7b();
+  test7c();
   test8();
   test9();
   test10();
+  test11();
+  test12();
+  test13a();
+  test13b();
 
   return 0;
 }

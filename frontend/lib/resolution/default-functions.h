@@ -46,6 +46,16 @@ bool needCompilerGeneratedMethod(Context* context, const types::Type* type,
                                  UniqueString name, bool parenless);
 
 /**
+  Same as getCompilerGeneratedMethod, but for operators. Here, we are more
+  discerning: the other argument to the oeprator is also considered when
+  determing if compiler generation is needed.
+ */
+bool needCompilerGeneratedBinaryOp(Context* context,
+                                   const types::QualifiedType& lhs,
+                                   const types::QualifiedType& rhs,
+                                   UniqueString name);
+
+/**
   Given a type and a UniqueString representing the name of a method,
   determine if the type needs a method with such a name to be
   generated for it, and if so, generates and returns a
@@ -59,6 +69,20 @@ getCompilerGeneratedMethod(ResolutionContext* rc,
                            UniqueString name, bool parenless);
 
 /**
+  Given the name of a binary operation and the types of its operands,
+  determine if the compiler needs to provide a generated implementation,
+  and if so, generates and returns a TypedFnSignature representing the
+  generated binary operation.
+
+  If no operation was generated, returns nullptr.
+ */
+const TypedFnSignature*
+getCompilerGeneratedBinaryOp(ResolutionContext* rc,
+                             const types::QualifiedType lhsType,
+                             const types::QualifiedType rhsType,
+                             UniqueString name);
+
+/**
   Given a CallInfo object describing a call, attempts to find a compiler-generated
   function that would match. This is more general than the getCompilerGeneratedMethod
   mechanism, since the signature of the compiler-generated function can't
@@ -68,20 +92,6 @@ getCompilerGeneratedMethod(ResolutionContext* rc,
 const TypedFnSignature*
 getCompilerGeneratedFunction(ResolutionContext* context,
                              const CallInfo& ci);
-
-/**
-  Given the name of a binary operation and the types of its operands,
-  determine if the compiler needs to provide a generated implementation,
-  and if so, generates and returns a TypedFnSignature representing the
-  generated binary operation.
-
-  If no operation was generated, returns nullptr.
- */
-const TypedFnSignature*
-getCompilerGeneratedBinaryOp(Context* context,
-                       const types::QualifiedType lhs,
-                       const types::QualifiedType rhs,
-                       UniqueString name);
 
 const uast::BuilderResult& buildInitializer(Context* context, ID typeID);
 const uast::BuilderResult& buildInitEquals(Context* context, ID typeID);
@@ -95,7 +105,11 @@ const uast::BuilderResult& buildTypeConstructor(Context* context, ID typeID);
 const uast::BuilderResult& buildDeinit(Context* context, ID typeID);
 const uast::BuilderResult& buildDeSerialize(Context* context, ID typeID, bool isSerializer);
 const uast::BuilderResult& buildEnumToOrder(Context* context, ID typeID);
+const uast::BuilderResult& buildEnumToStringCastImpl(Context* context, ID typeID, int overloadIdx);
+const uast::BuilderResult& buildEnumToBytesCastImpl(Context* context, ID typeID, int overloadIdx);
 const uast::BuilderResult& buildOrderToEnum(Context* context, ID typeID);
+const uast::BuilderResult& buildStringToEnumCastImpl(Context* context, ID typeID, int overloadIdx);
+const uast::BuilderResult& buildBytesToEnumCastImpl(Context* context, ID typeID, int overloadIdx);
 
 } // end namespace resolution
 } // end namespace chpl
