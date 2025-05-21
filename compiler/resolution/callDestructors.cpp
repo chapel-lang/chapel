@@ -757,10 +757,14 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
       } else {
         SymExpr* rhsExpr = toSymExpr(copyExpr->get(1));
         if (rhsExpr) {
+          /*
           printf("Adding auto destroy to %d\n", rhsExpr->symbol()->id);
+          */
           rhsExpr->symbol()->addFlag(FLAG_INSERT_AUTO_DESTROY);
+          /*
           list_view(rhsExpr->symbol());
           viewFlags(rhsExpr->symbol());
+          */
           rhsExpr->symbol()->addFlag(FLAG_IS_ARRAY_VIEW);
         } else {
           INT_FATAL(copyExpr, "copyExpr didn't have expected structure");

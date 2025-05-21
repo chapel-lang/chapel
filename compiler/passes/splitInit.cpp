@@ -655,7 +655,7 @@ static void doElideCopies(VarToCopyElisionState &map) {
               call->convertToNoop();
               call->insertBefore(new CallExpr(PRIM_ASSIGN_ELIDED_COPY, lhs, var));
             } else {
-              printf("Skipping removal of %d\n", call->id);
+              //              printf("Skipping removal of %d\n", call->id);
             }
           } else {
             INT_FATAL("That was unexpected");
