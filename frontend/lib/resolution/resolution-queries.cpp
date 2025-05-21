@@ -4541,41 +4541,19 @@ considerCompilerGeneratedMethods(ResolutionContext* rc,
                                  const CallInfo& ci,
                                  CandidatesAndForwardingInfo& candidates) {
   // only consider compiler-generated methods and opcalls, for now
-  if (!ci.isMethodCall() && !ci.isOpCall()) return nullptr;
+  if (!ci.isMethodCall()) return nullptr;
 
-  // fetch the receiver type info
   CHPL_ASSERT(ci.numActuals() >= 1);
-  auto& receiver = ci.actual(0);
-  auto receiverType = receiver.type();
+  auto receiverType = ci.methodReceiverType();
 
-  // if not compiler-generated, then nothing to do
-  const TypedFnSignature* tfs = nullptr;
-
-  // get the compiler-generated function, may be generic
-  if (ci.isOpCall()) {
-    // the only operators we generate today have 2 actuals.
-    if (ci.numActuals() != 2) return nullptr;
-
-    // if we don't need the operator, nothing to do.
-    auto& rhs = ci.actual(1).type();
-    if (!needCompilerGeneratedOperator(rc->context(), receiverType,
-                                       rhs, ci.name())) {
-      return nullptr;
-    }
-
-    tfs = getCompilerGeneratedOperator(rc, receiverType, rhs,
-                                       ci.name());
-  } else {
-    // if we don't need the method, nothing to do.
-    if (!needCompilerGeneratedMethod(rc->context(), receiverType.type(), ci.name(),
-                                     ci.isParenless())) {
-      return nullptr;
-    }
-
-    tfs = getCompilerGeneratedMethod(rc, receiverType, ci.name(),
-                                     ci.isParenless());
+  // if we don't need the method, nothing to do.
+  if (!needCompilerGeneratedMethod(rc->context(), receiverType.type(), ci.name(),
+                                   ci.isParenless())) {
+    return nullptr;
   }
-  return tfs;
+
+  return getCompilerGeneratedMethod(rc, receiverType, ci.name(),
+                                    ci.isParenless());
 }
 
 static const TypedFnSignature*
@@ -4595,25 +4573,21 @@ considerCompilerGeneratedFunctions(ResolutionContext* rc,
 // This helper serves to consider compiler-generated functions that can't
 // be guessed based on the first argument.
 static const TypedFnSignature*
-considerCompilerGeneratedOperators(Context* context,
+considerCompilerGeneratedOperators(ResolutionContext* rc,
                                    const CallInfo& ci,
                                    CandidatesAndForwardingInfo& candidates) {
-  if (!ci.isOpCall()) return nullptr;
+  if (!ci.isOpCall() || ci.numActuals() != 2) return nullptr;
 
-  // Avoid invoking the query if we don't need a binary operation here.
-  if (ci.name() != USTR(":") || ci.numActuals() != 2) {
+  CHPL_ASSERT(ci.numActuals() >= 1);
+  auto& lhs = ci.actual(0).type();
+  auto& rhs = ci.actual(1).type();
+
+  // if we don't need the operator, nothing to do.
+  if (!needCompilerGeneratedBinaryOp(rc->context(), lhs, rhs, ci.name())) {
     return nullptr;
   }
 
-  auto lhsType = ci.actual(0).type();
-  auto rhsType = ci.actual(1).type();
-  if (!(lhsType.type() && lhsType.type()->isEnumType()) &&
-      !(rhsType.type() && rhsType.type()->isEnumType())) {
-    return nullptr;
-  }
-
-  auto tfs = getCompilerGeneratedBinaryOp(context, lhsType, rhsType, ci.name());
-  return tfs;
+  return getCompilerGeneratedBinaryOp(rc, lhs, rhs, ci.name());
 }
 
 static void
@@ -4624,7 +4598,7 @@ considerCompilerGeneratedCandidates(ResolutionContext* rc,
                                     std::vector<ApplicabilityResult>* rejected) {
   const TypedFnSignature* tfs = nullptr;
 
-  tfs = considerCompilerGeneratedOperators(rc->context(), ci, candidates);
+  tfs = considerCompilerGeneratedOperators(rc, ci, candidates);
   if (tfs == nullptr) {
     tfs = considerCompilerGeneratedMethods(rc, ci, candidates);
   }

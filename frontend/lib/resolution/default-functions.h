@@ -50,7 +50,7 @@ bool needCompilerGeneratedMethod(Context* context, const types::Type* type,
   discerning: the other argument to the oeprator is also considered when
   determing if compiler generation is needed.
  */
-bool needCompilerGeneratedOperator(Context* context,
+bool needCompilerGeneratedBinaryOp(Context* context,
                                    const types::QualifiedType& lhs,
                                    const types::QualifiedType& rhs,
                                    UniqueString name);
@@ -69,12 +69,15 @@ getCompilerGeneratedMethod(ResolutionContext* rc,
                            UniqueString name, bool parenless);
 
 /**
-  Same as getCompilerGeneratedMethod, but for operators. Here, we are more
-  discerning: the other argument to the operator is also considered when
-  determining if compiler generation is needed.
+  Given the name of a binary operation and the types of its operands,
+  determine if the compiler needs to provide a generated implementation,
+  and if so, generates and returns a TypedFnSignature representing the
+  generated binary operation.
+
+  If no operation was generated, returns nullptr.
  */
 const TypedFnSignature*
-getCompilerGeneratedOperator(ResolutionContext* rc,
+getCompilerGeneratedBinaryOp(ResolutionContext* rc,
                              const types::QualifiedType lhsType,
                              const types::QualifiedType rhsType,
                              UniqueString name);
@@ -89,20 +92,6 @@ getCompilerGeneratedOperator(ResolutionContext* rc,
 const TypedFnSignature*
 getCompilerGeneratedFunction(ResolutionContext* context,
                              const CallInfo& ci);
-
-/**
-  Given the name of a binary operation and the types of its operands,
-  determine if the compiler needs to provide a generated implementation,
-  and if so, generates and returns a TypedFnSignature representing the
-  generated binary operation.
-
-  If no operation was generated, returns nullptr.
- */
-const TypedFnSignature*
-getCompilerGeneratedBinaryOp(Context* context,
-                       const types::QualifiedType lhs,
-                       const types::QualifiedType rhs,
-                       UniqueString name);
 
 const uast::BuilderResult& buildInitializer(Context* context, ID typeID);
 const uast::BuilderResult& buildInitEquals(Context* context, ID typeID);
