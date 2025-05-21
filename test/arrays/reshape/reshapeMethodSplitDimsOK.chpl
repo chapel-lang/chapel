@@ -4,3 +4,8 @@ var O = [11, 12, 13;
 var P = O.reshape(1..3, 1..2);
 writeln(P);
 
+writeln("---");
+
+var Q = O.reshape({1..3, 1..2});
+writeln(Q);
+
