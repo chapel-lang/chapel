@@ -18,13 +18,13 @@ Chapel program and talk about how the performance issues can be resolved.
 .. note::
 
    This document is focused on how Chapel users can improve the
-   performance of their applications today. There are many potential
-   areas for improvement in the compiler, runtime, and standard library
-   that can also improve the performance of Chapel programs. In fact,
-   some optimizations to the Chapel programming system have made
-   benchmarks run many times faster without needing any change to the
-   source code at all! These are important techniques as well, but they
-   are out of scope for this document.
+   performance of their applications. There are many potential areas for
+   improvement in the compiler, runtime, and standard library that can
+   also improve the performance of Chapel programs. In fact, some
+   optimizations to the Chapel programming system have made benchmarks
+   run many times faster without needing any change to the source code at
+   all! These are important techniques as well, but they are out of scope
+   for this document.
 
 A Few Words About Process
 -------------------------
@@ -33,7 +33,7 @@ Before we dive into optimization techniques, let's briefly discuss some
 good programming practices when working with Chapel. Optimization efforts
 will involve changing the code, and optimizations that cause the program
 to stop working correctly aren't any use at all. It needs to be easy to
-check that everything is working. 
+check that everything is working.
 
 Revision Control
 ~~~~~~~~~~~~~~~~
@@ -52,12 +52,12 @@ Testing
 It's important to have tests that are easy to run in order to check that
 your program is working correctly.
 
-I use the following steps when testing a new change to a parallel and
-distributed Chapel application:
+We have used the following steps when testing a new change to a parallel
+and distributed Chapel application:
 
  * Compile with checking enabled (i.e. without ``--fast``)
 
-   * Test with 1 locale and `--dataParTasksPerLocale=1`
+   * Test with 1 locale and ``--dataParTasksPerLocale=1``
 
    * Gradually increase ``--dataParTasksPerLocale`` until you are
      satisfied it is working. At a minimum, try leaving this argument off
@@ -68,9 +68,60 @@ distributed Chapel application:
      Gradually increase the number of locales and the number of tasks
      until you are satisfied it is working.
 
-   * Run on a real distributed-memory system and measure it's
-     performance. See the below section for hints as to how to use a
-     performant configuration of Chapel!
+   * Measure performance locally oversubscribed (see below) or by running
+     on a multi-node system.
+
+
+Simulating Multiple Locales on a Laptop
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+It's possible to run multiple processes on your laptop or workstation
+that simulate the communication that happens on a big multi-node
+system. This is also called running **locally oversubscribed**.
+
+In this setting, the program will generally run much slower than it would
+when running in a multi-node system. As a result, you might need to run
+with a smaller problem size to test in this way. Nonetheless, it is
+possible to identify and optimize communication.  In communication-bound
+applications, optimizing the communication can make the locally
+oversubscribed program run faster.  Another important technique is, when
+working locally oversubscribed, try to reduce the communication counts.
+The communication counts will match (or come close to matching) between
+running locally oversubscribed and running on a multi-node system with
+the same number of locales.  Reductions in communication counts will
+generally lead to improvements in the scalability of your application on
+multiple nodes.
+
+To run locally oversubscribed, build Chapel with GASNet with the UDP
+conduit. Note that GASNet with the UDP conduit is not a high-performing
+configuration; in this setting that is OK because the communication
+overhead of UDP will approximate the communication overhead on a real
+multi-node system. You can use these commands to build with the UDP
+conduit:
+
+  .. code-block:: bash
+
+    export CHPL_COMM=gasnet
+    export CHPL_COMM_SUBSTRATE=udp
+    make
+
+Then, run with these settings:
+
+  .. code-block:: bash
+
+    export CHPL_RT_OVERSUBSCRIBED=yes
+    export GASNET_SPAWNFN=L
+    export CHPL_RT_MASTERIP=127.0.0.1
+
+You might also wish to run with a lower number of threads per simulated
+locale in order to reduce interference between the processes. For
+example, if you are working on a system with 32 cores, you might run
+with ``CHPL_RT_NUM_THREADS_PER_LOCALE=8 ./application -nl 4``. That
+uses 8 threads per locale, with 4 locales, so a total of 32 threads.
+
+See also :ref:`num-threads-per-locale`,
+:ref:`oversubscribed-execution`, and :ref:`using-udp`.
+
 
 Measuring Performance
 ~~~~~~~~~~~~~~~~~~~~~
@@ -93,12 +144,35 @@ Timing Regions
   ``config const`` to make the timing only print when you are studying
   performance.
 
+Counting Communication Events
+  If you need to do most of your work by running locally oversubscribed
+  (see above) then it's particularly useful to measure performance by
+  counting the number of communication events. Counting communication
+  events can also be useful as a secondary performance metric for
+  multi-node runs.
+
+  You can use the :chpl:mod:`CommDiagnostics` module and
+  ``startCommDiagnostics()`` followed by ``getCommDiagnostics()`` to
+  count communication events. Note that the communication count
+  information will be easier to understand if you compile with
+  ``--no-cache-remote``.
+
+  Comm counts information provide a way to compare communication
+  performance independent of where you are running. For example, you
+  might measure and seek to reduce the communication counts when running
+  oversubscribed on a laptop or workstation. Reductions in communication
+  counts from such an effort should also help with multi-node performance
+  when you are able to run on a big system.
+
+
 Overall Flow
 ~~~~~~~~~~~~
 
 The general flow of performance optimization will be:
 
- * come up with a theory as to what could be improved
+ * come up with a theory as to what could be improved by thinking about
+   what is happening when your program is running and/or by looking at
+   timing or communication count information
  * make an adjustment (the adjustment only needs to be good enough to
    measure its impact on performance at this step)
  * measure its impact on performance
@@ -155,33 +229,42 @@ Settings to Adjust to Improve Performance
 This section contains some easy things to try in order to improve
 performance.
 
-``--fast`` : If you haven't been using ``--fast`` yet please do!
+``--fast``
+  If you haven't been using ``--fast`` yet please do!
 
-``--no-ieee-float`` / ``--ieee-float`` : By default, only floating point
-optimizations that are relatively benign are enabled. Depending on your
-application, you might use ``--no-ieee-float`` to enable optimizations
-that might impact the numerical accuracy. Or, if your program relies on
-floating point operations happening in the order written for numerical
-accuracy, you should use ``--ieee-float``.
+``--no-ieee-float`` / ``--ieee-float``
+  By default, only floating point optimizations that are relatively
+  benign are enabled. Depending on your application, you might use
+  ``--no-ieee-float`` to enable optimizations that might impact the
+  numerical accuracy. Or, if your program relies on floating point
+  operations happening in the order written for numerical accuracy, you
+  should use ``--ieee-float``.
 
-colocales : In some settings, running with multiple colocales per node
-can improve performance. For example, to run on 8 nodes with 2 processes
-per node, you could use ``-nl 8x2``. That will result in 16 locales;
-where each node has 2 locales. Using colocales can help with memory
-bandwidth on NUMA systems and also can better use the networking
-resources on a node to help to make communication more efficient.
+colocales
+  In some settings, running with multiple colocales per node can improve
+  performance. For example, to run on 8 nodes with 2 processes per node,
+  you could use ``-nl 8x2``. That will result in 16 locales; where each
+  node has 2 locales. Using colocales can help with memory bandwidth on
+  NUMA systems and also can better use the networking resources on a node
+  to help to make communication more efficient.
 
-``--auto-aggregation`` : This compiler flag enables an optimization that
-automatically uses aggregators to improve multilocale performance.
+``--auto-aggregation``
+  This compiler flag enables an optimization that automatically uses
+  aggregators to improve multilocale performance.
 
-``--no-cache-remote`` / ``--cache-remote`` : The cache for remote data is
-a runtime component that helps to reduce fine-grained communication. It
-is enabled by default, but in some cases, an application will run faster
-with it disabled.
+``--no-cache-remote`` / ``--cache-remote``
+  The cache for remote data is a runtime component that helps to reduce
+  fine-grained communication. It is enabled by default, but in some
+  cases, an application will run faster with it disabled. It is also
+  usually a good idea to disable it when investigating the sources
+  of communication as the communication logs are simpler when it is
+  disabled.
 
-``CHPL_TARGET_CPU`` : Using ``native`` or the CPU family that you are
-targeting, rather than ``none`` or ``unknown``, can allow using newer
-instruction sets (e.g. AVX512) and improve performance.
+
+``CHPL_TARGET_CPU``
+  Using ``native`` or the CPU family that you are targeting, rather than
+  ``none`` or ``unknown``, can allow using newer instruction sets (e.g.
+  AVX512) and improve performance.
 
 ..
   comment: cover ``--llvm-wide-opt`` when it becomes less experemental
@@ -207,7 +290,91 @@ Addressing accidental communication consists of two parts. First, the
 accidental communication needs to be identified. Second, the code needs
 to be modified to avoid the accidental communication.
 
-TODO TODO
+Here are a few strategies to identify accidental communication:
+
+ 1. Use ``local`` blocks (see also :ref:`readme-local`). ``local`` blocks
+    instruct the compiler that there should be no communication within
+    the code in that block, including in functions called from within
+    the local block. When the program is compiled with ``--fast
+    --local-checks`` (or with the default of full checking), the
+    compiler will emit code to halt if code running in a ``local`` block
+    needs to communicate. If you have compiled with :ref:`CHPL_UNWIND !=
+    none <readme-chplenv.CHPL_UNWIND>`, you can even see the stack trace
+    for the code which caused communication you did not expect.
+
+    ``local`` blocks have a secondary advantage of allowing the compiler
+    to optimize: it optimizes assuming that all code in ``local`` blocks does
+    not communicate if you compile with ``--fast``.
+
+ 2. Use :chpl:mod:`CommDiagnostics` on-the-fly reporting.  The
+    :chpl:mod:`CommDiagnostics` module provides mechanisms for
+    on-the-fly reporting with ``startVerboseComm()``.  This on-the-fly
+    reporting can even include stack traces if you compile with
+    ``-scommDiagsStacktrace=true`` and have built Chapel with
+    :ref:`CHPL_UNWIND != none <readme-chplenv.CHPL_UNWIND>`. The
+    on-the-fly reporting provides a relatively easy way to see what
+    communication events are common in your program. It can be a lot of
+    output though.  This strategy works reasonably well for finding
+    accidental communication that is a performance problem because, if
+    accidental communication is happening in a key performance-critical
+    inner loop, verbose comms reporting will report on that accidental
+    communication many times.
+
+Here are some strategies you can use to adjust your code to avoid
+accidental communication:
+
+ 1. If the value being accidentally communicated can be stored in a
+    variable outside of the distributed loop or if it can be stored in a
+    module-scope variable, storing it in a ``const`` variable can enable
+    a key compiler optimization called *remote value forwarding*. This
+    optimization allows the compiler to move the value of the variable
+    along with the message sent to a remote locale to set up work.
+    However, it only works if the compiler can prove that the value will
+    not change. ``const`` helps because it indicates to the compiler
+    that the value won't change. For example:
+
+    .. code-block:: chapel
+
+      {
+        var A = blockDist.createArray(...);
+        var x = 22;
+        forall elt in A {
+          elt = x;  // uh-oh, x might be read remotely on each iteration!
+        }
+        const y = 22;
+        forall elt in A {
+          elt = y;  // expect the value of 'y' to be sent along with tasks
+        }
+      }
+
+ 2. If the accidental communication is within a distributed ``forall``
+     loop, you can change it from being once per iteration to once per
+     task by using the ``in`` intent. For example:
+
+     .. code-block:: chapel
+
+        var A = blockDist.createArray(...);
+        var x = 22;
+        forall elt in A {
+          elt = x;  // uh-oh, x might be read remotely on each iteration!
+        }
+        forall elt in A with (in x) {
+          elt = x;  // ah, now x is only read once per task, at least
+        }
+
+ 3. If the code is using a structure like ``coforall loc in Locales``,
+    you can create a temporary local variable to store a local copy of
+    the variable. For example:
+
+     .. code-block:: chapel
+
+        var x = [1,2,3,4];
+        coforall loc in Locales {
+          on loc {
+            var myX = x;
+            f(myX); // do something with myX
+          }
+        }
 
 Fine-Grained Communication
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -222,9 +389,6 @@ Current Issues
 This section contains issues that, ideally, the Chapel compiler and
 runtime would address. However, as they may come up in practice, it's
 important to be aware of them and their workarounds.
-
-Cooperative Scheduling and Remote Tasks
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Distributed Array Field Access Can Result in Unnecessary Communication
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -257,6 +421,24 @@ Potential ways to avoid this problem:
  * create a 1D copy of the array (with ``reshape`` -- note that in the
    future, we expect to have a way to ``reshape`` without copying)
 
+Cooperative Scheduling and Remote Tasks
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Chapel's tasking model currently uses cooperative scheduling. That means
+that, once a task starts running on a core, it will be the only thing
+running on that core until the task either yields execution or ends.
+
+Occasionally, this can lead to problems when combined with ``on``
+statements. The ``on`` statements generally create a task on a remote
+locale. Those remote tasks will never get a chance to run if all of the
+cores are busy with existing tasks. This problem is rare, but it can
+cause performance issues if it comes up. The solution is to
+periodically call :ref:`currentTask.yieldExecution() <Yield_Task_Execution>`
+from any polling loops. This is already done in
+``waitFor()`` methods on atomics (see also
+:ref:`Functions_on_Atomic_Variables`).
+
+
 
 Tools for Understanding Performance
 -----------------------------------
@@ -264,7 +446,32 @@ Tools for Understanding Performance
 Tools for Understanding Communication
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Strategies for Understanding Communication
+Several tools are available to help optimize communication in order to
+improve the distributed-memory scalability of your program.
+
+``local`` blocks
+  ``local`` blocks are an unstable feature that instructs the compiler
+
+:chpl:mod:`CommDiagnostics` on-the-fly reporting
+  The :chpl:mod:`CommDiagnostics` module provides mechanisms for
+  on-the-fly reporting with ``startVerboseComm()``.  This on-the-fly
+  reporting can even include stack traces if you compile with
+  ``-scommDiagsStacktrace=true`` and have built Chapel with
+  :ref:`CHPL_UNWIND != none <readme-chplenv.CHPL_UNWIND>`. The on-the-fly
+  reporting provides a relatively easy way to see what communication
+  events are common in your program. It can be a lot of output though.
+
+:chpl:mod:`CommDiagnostics` comm counting
+  :chpl:mod:`CommDiagnostics` also provides a way to count communication
+  done when running should apply when running multi-node
+  events. Note that the communication count information will be easier to
+  understand if you compile with ``--no-cache-remote``. Comm counts
+  information provide a way to compare communication performance
+  independent of where you are running. For example, you might measure
+  and seek to reduce the communication counts when running oversubscribed
+  on a laptop or workstation. Reductions in communication counts from
+  such an effort should also help with multi-node performance when you
+  are able to run on a big system.
 
 Tools for Understanding Single-Node Performance
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
