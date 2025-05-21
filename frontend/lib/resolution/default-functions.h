@@ -116,7 +116,7 @@ const uast::BuilderResult& buildTypeConstructor(Context* context, ID typeID);
 const uast::BuilderResult& buildDeinit(Context* context, ID typeID);
 const uast::BuilderResult& buildDeSerialize(Context* context, ID typeID, bool isSerializer);
 const uast::BuilderResult& buildEnumToOrder(Context* context, ID typeID);
-const uast::BuilderResult& buildEnumToStringOrBytesCast(Context* context, ID typeID);
+const uast::BuilderResult& buildEnumToStringOrBytesCastImpl(Context* context, ID typeID, int overloadIdx);
 const uast::BuilderResult& buildOrderToEnum(Context* context, ID typeID);
 
 } // end namespace resolution

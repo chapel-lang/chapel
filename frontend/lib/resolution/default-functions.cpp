@@ -31,6 +31,7 @@
 #include "chpl/uast/all-uast.h"
 
 #include "Resolver.h"
+#include "./OverloadSelector.h"
 
 namespace chpl {
 namespace resolution {
@@ -265,11 +266,7 @@ generateRecordCompareGeSignature(ResolutionContext* rc, const CompositeType* lhs
 static const TypedFnSignature*
 generateRecordAssignment(ResolutionContext* rc, const CompositeType* lhsType);
 
-static const TypedFnSignature*
-generateEnumToStringOrBytesCastSignature(ResolutionContext* rc, const EnumType* inEnumType) {
-  return typedSignatureFromGenerator(rc, buildEnumToStringOrBytesCast, inEnumType->id());
-}
-
+using EnumCastSelector = OverloadSelector<buildEnumToStringOrBytesCastImpl>;
 
 using CompositeGeneratorType = TypedFnSignature const* (*)(ResolutionContext*, const CompositeType*);
 using EnumGeneratorType = TypedFnSignature const* (*)(ResolutionContext*, const EnumType*);
@@ -298,6 +295,12 @@ static CompositeGeneratorType generatorForCompilerGeneratedRecordOperator(Unique
 // want to generate them
 static bool isNameOfCompilerGeneratedRecordOperator(UniqueString name) {
   return generatorForCompilerGeneratedRecordOperator(name) != nullptr;
+}
+
+static const TypedFnSignature*
+generateEnumToStringOrBytesCastSignature(ResolutionContext* rc, const EnumType* et) {
+  auto fn = EnumCastSelector::invoke<buildEnumToStringOrBytesCastImpl>;
+  return typedSignatureFromGenerator(rc, fn, et->id());
 }
 
 static EnumGeneratorType generatorForCompilerGeneratedEnumOperator(UniqueString name) {
@@ -1255,8 +1258,8 @@ struct EnumCastBuilder : BinaryFnBuilder {
   }
 };
 
-const uast::BuilderResult& buildEnumToStringOrBytesCast(Context* context, ID typeID) {
-  QUERY_BEGIN(buildEnumToStringOrBytesCast, context, typeID);
+const uast::BuilderResult& buildEnumToStringOrBytesCastImpl(Context* context, ID typeID, int overloadIdx) {
+  QUERY_BEGIN(buildEnumToStringOrBytesCastImpl, context, typeID, overloadIdx);
 
   AstList bytesStmts;
   AstList stringStmts;
@@ -1694,11 +1697,7 @@ generateEnumMethod(ResolutionContext* rc,
                    UniqueString name) {
   const TypedFnSignature* result = nullptr;
   auto context = rc->context();
-  if (auto generator = generatorForCompilerGeneratedEnumOperator(name)) {
-    if (!areFnOverloadsPresentInDefiningScope(context, et, QualifiedType::VAR, name)) {
-      result = generator(rc, et);
-    }
-  } else if (name == USTR("size")) {
+  if (name == USTR("size")) {
     if (!areFnOverloadsPresentInDefiningScope(context, et, QualifiedType::TYPE, name)) {
       // TODO: we should really have a way to just set the return type here
       std::vector<UntypedFnSignature::FormalDetail> formals;
@@ -2389,7 +2388,7 @@ builderResultForDefaultFunction(Context* context,
   } else if (name == USTR("chpl__orderToEnum")) {
     return &buildOrderToEnum(context, typeID);
   } else if (name == USTR(":")) {
-    return &buildEnumToStringOrBytesCast(context, typeID);
+    return &EnumCastSelector::select(context, typeID, 0);
   } else if (typeID.symbolName(context) == name) {
     return &buildTypeConstructor(context, typeID);
   }
