@@ -55,6 +55,7 @@ function partial_checkout_release() {
 }
 
 function release_dependencies() {
+  fallback_to_bundled_llvm=$1
   # Note: Add more cases to the following 'if' whenever we need to test a
   # release that does not support our latest available LLVM. Cases can be
   # removed when we no longer care about testing against that release.
@@ -70,14 +71,27 @@ function release_dependencies() {
 
       source /hpcdc/project/chapel/setup_llvm.bash 19
     else
-      echo "CHPL_WHICH_RELEASE_FOR_ARKOUDA is set to $CHPL_WHICH_RELEASE_FOR_ARKOUDA, but no setup_llvm.bash found. Falling back to a bundled LLVM."
-      export CHPL_LLVM=bundled
-      unset CHPL_LLVM_CONFIG
+      echo "CHPL_WHICH_RELEASE_FOR_ARKOUDA is set to $CHPL_WHICH_RELEASE_FOR_ARKOUDA, but no setup_llvm.bash found."
+      if [ "$fallback_to_bundled_llvm" = "true" ]; then
+        echo "Falling back to a bundled LLVM."
+        export CHPL_LLVM=bundled
+        unset CHPL_LLVM_CONFIG
+      else
+        exit 1
+      fi
     fi
   else
-    # Default to using latest LLVM.
-    # (Shouldn't need to set it here, we are already able to access default LLVM)
-    :
+    echo "CHPL_WHICH_RELEASE_FOR_ARKOUDA is set to $CHPL_WHICH_RELEASE_FOR_ARKOUDA, but is not supported by this script."
+    exit 1
+  fi
+}
+
+function setup_release() {
+  if [ -n "$CHPL_WHICH_RELEASE_FOR_ARKOUDA" ]; then
+    release_dependencies $@
+  else
+    echo "CHPL_WHICH_RELEASE_FOR_ARKOUDA not set, cannot run Arkouda release test!"
+    exit 1
   fi
 }
 

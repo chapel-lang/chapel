@@ -8,12 +8,7 @@ export CHPL_TEST_PERF_CONFIG_NAME='chapcs'
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.arkouda.release"
 source $UTIL_CRON_DIR/common-arkouda.bash
 
-if [ -n "$CHPL_WHICH_RELEASE_FOR_ARKOUDA" ]; then
-  release_dependencies
-else
-  echo "CHPL_WHICH_RELEASE_FOR_ARKOUDA not set, cannot run Arkouda release test!"
-  exit 1
-fi
+setup_release false
 
 nightly_args="${nightly_args} -no-warnings"
 

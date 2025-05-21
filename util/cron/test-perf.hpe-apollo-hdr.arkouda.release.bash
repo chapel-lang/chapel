@@ -33,12 +33,7 @@ export GASNET_PHYSMEM_MAX="0.90"
 
 export CHPL_LLVM_GCC_PREFIX='none'
 
-if [ -n "$CHPL_WHICH_RELEASE_FOR_ARKOUDA" ]; then
-  release_dependencies
-else
-  echo "CHPL_WHICH_RELEASE_FOR_ARKOUDA not set, cannot run Arkouda release test!"
-  exit 1
-fi
+setup_release true
 
 
 nightly_args="${nightly_args} -no-buildcheck"
