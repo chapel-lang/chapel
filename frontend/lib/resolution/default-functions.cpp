@@ -154,12 +154,13 @@ areFnOverloadsPresentInDefiningScope(Context* context,
 
 static bool
 areOperatorOverloadsPresentInDefiningScope(Context* context,
+                                           const QualifiedType& typeForScope,
                                            const QualifiedType& lhsType,
                                            const QualifiedType& rhsType,
                                            UniqueString name) {
 
   CHPL_ASSERT(lhsType.type());
-  auto ids = getMatchingIdsInDefiningScope(context, lhsType.type(), name);
+  auto ids = getMatchingIdsInDefiningScope(context, typeForScope.type(), name);
 
   // nothing found
   if (ids.numIds() == 0) return false;
@@ -412,9 +413,13 @@ static EnumGeneratorType generatorForCompilerGeneratedEnumOperator(UniqueString 
   return nullptr;
 }
 
-static bool isCompilerGeneratedEnumOperator(UniqueString name, const QualifiedType& lhs, const QualifiedType& rhs) {
-  const EnumType* ignoreEt = nullptr;
-  return generatorForCompilerGeneratedEnumOperator(name, lhs, rhs, ignoreEt) != nullptr;
+static bool isCompilerGeneratedEnumOperator(UniqueString name, const QualifiedType& lhs, const QualifiedType& rhs, QualifiedType& outTypeForScope) {
+  const EnumType* et = nullptr;
+  if (generatorForCompilerGeneratedEnumOperator(name, lhs, rhs, et) != nullptr) {
+    outTypeForScope = et == lhs.type() ? lhs : rhs;
+    return true;
+  }
+  return false;
 }
 
 bool
@@ -478,13 +483,14 @@ bool needCompilerGeneratedBinaryOp(Context* context,
 
     if (lhsRec != rhsRec) return false;
 
-    if (!areOperatorOverloadsPresentInDefiningScope(context, lhs, rhs, name)) {
+    if (!areOperatorOverloadsPresentInDefiningScope(context, /* typeForScope */ lhs, lhs, rhs, name)) {
       return true;
     }
   }
 
-  if (isCompilerGeneratedEnumOperator(name, lhs, rhs)) {
-    if (!areOperatorOverloadsPresentInDefiningScope(context, lhs, rhs, name)) {
+  QualifiedType enumType;
+  if (isCompilerGeneratedEnumOperator(name, lhs, rhs, enumType)) {
+    if (!areOperatorOverloadsPresentInDefiningScope(context, /* typeForScope */ enumType, lhs, rhs, name)) {
       return true;
     }
   }
