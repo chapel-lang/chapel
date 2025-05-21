@@ -761,6 +761,7 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
           rhsExpr->symbol()->addFlag(FLAG_INSERT_AUTO_DESTROY);
           list_view(rhsExpr->symbol());
           viewFlags(rhsExpr->symbol());
+          rhsExpr->symbol()->addFlag(FLAG_IS_ARRAY_VIEW);
         } else {
           INT_FATAL(copyExpr, "copyExpr didn't have expected structure");
         }

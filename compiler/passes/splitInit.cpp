@@ -633,23 +633,33 @@ static void doElideCopies(VarToCopyElisionState &map) {
 
           // Use the result of the PRIM_ASSIGN_ELIDED_COPY in the coerceMove.
           call->get(2)->replace(new SymExpr(tmp));
-        } else if (false) {  // force disable of steals
+        } else { // if (false) {  // force disable of steals
           // Change the copy into a move and don't destroy the variable.
 
           Symbol *definedConst = NULL;
+          SymExpr* se = NULL;
           if (call->isPrimitive(PRIM_MOVE)) {
             if (CallExpr *rhsCall = toCallExpr(call->get(2))) {
               if (rhsCall->isNamedAstr(astr_initCopy) ||
                   rhsCall->isNamedAstr(astr_autoCopy)) { // can it be autoCopy?
                 definedConst = toSymExpr(rhsCall->get(2))->symbol();
                 INT_ASSERT(definedConst->getValType() == dtBool);
+                se = toSymExpr(rhsCall->get(1));
               }
 
             }
           }
 
-          call->convertToNoop();
-          call->insertBefore(new CallExpr(PRIM_ASSIGN_ELIDED_COPY, lhs, var));
+          if (se) {
+            if (!se->symbol()->hasFlag(FLAG_IS_ARRAY_VIEW)) {
+              call->convertToNoop();
+              call->insertBefore(new CallExpr(PRIM_ASSIGN_ELIDED_COPY, lhs, var));
+            } else {
+              printf("Skipping removal of %d\n", call->id);
+            }
+          } else {
+            INT_FATAL("That was unexpected");
+          }
 
           if (definedConst != NULL) {
             if (lhs->getValType()->symbol->hasFlag(FLAG_DOMAIN)) {
