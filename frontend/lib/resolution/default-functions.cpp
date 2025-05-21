@@ -1353,7 +1353,7 @@ struct EnumCastBuilder : BinaryFnBuilder {
                       Function::Kind::OPERATOR,
                       Formal::DEFAULT_INTENT,
                       Formal::TYPE,
-                      /* throws */ true,
+                      /* throws */ false,
                       overloadIdx != 0 ? optional<int>(overloadIdx) : empty),
       otherType_(otherType),
       castFromEnum_(castFromEnum) {
@@ -1398,6 +1398,7 @@ struct EnumCastBuilder : BinaryFnBuilder {
     } else {
       // inserting a throwing call to chpl_enum_cast_error, and then
       // return the first element.
+      throws_ = true;
       CHPL_ASSERT(!castFromEnum_);
       stmts().push_back(call(UniqueString::get(context(), "chpl_enum_cast_error"),
                              identifier(lhsFormal()->name()),
