@@ -145,6 +145,7 @@ directly by network hardware.  The options are:
 
 everything
   All memory is available for remote memory access.
+  This option is not supported with the ``smp`` or ``ucx`` substrates.
 fast
   A limited portion of memory is available and optimized for fastest remote
   memory access
