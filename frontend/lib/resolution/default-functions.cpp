@@ -2047,8 +2047,10 @@ getCompilerGeneratedBinaryOpQuery(ResolutionContext* rc,
   auto lhsT = lhsType.type();
 
   if (needCompilerGeneratedBinaryOp(context, lhsType, rhsType, name)) {
-
-    if (auto recordType = lhsT->toRecordType()) {
+    if (const EnumType* enumType = nullptr;
+        auto generator = generatorForCompilerGeneratedEnumOperator(name, lhsType, rhsType, enumType)) {
+      result = generator(rc, enumType);
+    } else if (auto recordType = lhsT->toRecordType()) {
       if (auto generator = generatorForCompilerGeneratedRecordOperator(name)) {
         result = generator(rc, recordType);
       } else {
@@ -2056,9 +2058,6 @@ getCompilerGeneratedBinaryOpQuery(ResolutionContext* rc,
       }
     } else if (lhsT->isExternType() && name == USTR("=")) {
       result = generateExternAssignment(rc, lhsT->toExternType());
-    } if (const EnumType* enumType = nullptr;
-          auto generator = generatorForCompilerGeneratedEnumOperator(name, lhsType, rhsType, enumType)) {
-      result = generator(rc, enumType);
     } else {
       CHPL_UNIMPL("should not be reachable");
     }
