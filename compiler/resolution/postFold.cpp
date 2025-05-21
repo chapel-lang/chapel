@@ -1002,6 +1002,7 @@ static void postFoldMoveTail(CallExpr* call, Symbol* lhsSym) {
     if (lhsSym->hasFlag(FLAG_EXPR_TEMP)     ==  true  &&
         lhsSym->hasFlag(FLAG_TYPE_VARIABLE) == false  &&
         requiresImplicitDestroy(rhs)        ==  true) {
+      if (lhsSym->id == 831768) printf("Q!!!\n");
       lhsSym->addFlag(FLAG_INSERT_AUTO_DESTROY);
     }
 

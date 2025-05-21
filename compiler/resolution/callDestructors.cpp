@@ -39,6 +39,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "virtualDispatch.h"
+#include "view.h"
 
 #include "global-ast-vecs.h"
 
@@ -753,6 +754,16 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
     if (isRhsInitOrAutoCopy) {
       if (!returnsAliasingArray) {
         removeInitOrAutoCopyPostResolution(copyExpr);
+      } else {
+        SymExpr* rhsExpr = toSymExpr(copyExpr->get(1));
+        if (rhsExpr) {
+          printf("Adding auto destroy to %d\n", rhsExpr->symbol()->id);
+          rhsExpr->symbol()->addFlag(FLAG_INSERT_AUTO_DESTROY);
+          list_view(rhsExpr->symbol());
+          viewFlags(rhsExpr->symbol());
+        } else {
+          INT_FATAL(copyExpr, "copyExpr didn't have expected structure");
+        }
       }
     }
     else {
@@ -1970,6 +1981,7 @@ static void adjustCoforallIndexVariables() {
 
                 // Remove FLAG_INSERT_AUTO_DESTROY so it will not
                 // be destroyed in the loop creating tasks.
+                if (actual->id == 831751) printf("Z!!!\n");
                 actual->removeFlag(FLAG_INSERT_AUTO_DESTROY);
 
                 // instead, add the destruction at the end of

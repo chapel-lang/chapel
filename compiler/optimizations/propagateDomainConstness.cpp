@@ -131,6 +131,7 @@ void removeInitOrAutoCopyPostResolution(CallExpr *call) {
   INT_ASSERT(argSym);
   INT_ASSERT(argType);
 
+  if (argSym->id == 831751) printf("Y!!!\n");
   if (argSym->hasFlag(FLAG_INSERT_AUTO_DESTROY))
     argSym->removeFlag(FLAG_INSERT_AUTO_DESTROY);
 

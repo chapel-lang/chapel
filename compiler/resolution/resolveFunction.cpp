@@ -2392,6 +2392,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
       tmp->addFlag(FLAG_CONST);
 
       if (isRefCountedType(formalType) == false) {
+        if (tmp->id == 831768) printf("J!!!\n");
         tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
       }
     }
@@ -2489,6 +2490,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
 
       tmp->addFlag(FLAG_FORMAL_TEMP);
       tmp->addFlag(FLAG_FORMAL_TEMP_OUT);
+      if (tmp->id == 831768) printf("K!!!\n");
       tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
       break;
      }
@@ -2505,6 +2507,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
                                          new CallExpr(astr_initCopy, formal,
                                                       definedConst)));
 
+        if (tmp->id == 831768) printf("L!!!\n");
         tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
       } else {
         // move from in intent argument to local variable to be destroyed
@@ -2521,6 +2524,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
           tmp->addFlag(FLAG_NO_AUTO_DESTROY);
         } else {
           if (!tmp->hasFlag(FLAG_NO_AUTO_DESTROY)) {
+            if (tmp->id == 831768) printf("M!!!\n");
             tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
           }
         }
@@ -2539,6 +2543,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
            // autoCopy/autoDestroy will be added later, in parallel pass
            // by insertAutoCopyDestroyForTaskArg()
            start->insertBefore(new CallExpr(PRIM_MOVE, tmp, formal));
+           if (tmp->id == 831751) printf("N!!!\n");
            tmp->removeFlag(FLAG_INSERT_AUTO_DESTROY);
 
          } else {
@@ -2583,6 +2588,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
                 ((formal->type->getModule()->modTag==MOD_INTERNAL) ||
                  (formal->type->getModule()->modTag==MOD_STANDARD))) ||
                !typeHasRefField(formal->type))
+             if (tmp->id == 831768) printf("O!!!\n");
              tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
          }
 
@@ -2591,6 +2597,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
          // If this is a simple move, then we did not call chpl__autoCopy to
          // create tmp, so then it is a bad idea to insert a call to
          // chpl__autodestroy later.
+         if (tmp->id == 831751) printf("P!!!\n");
          tmp->removeFlag(FLAG_INSERT_AUTO_DESTROY);
        }
 
@@ -2864,6 +2871,7 @@ static void insertInitConversion(Symbol* to, Symbol* toType, Symbol* from,
     // require adding an auto-destroy for a call-expr-temp,
     // add FLAG_INSERT_AUTO_DESTROY since we're
     // copy-initializing from it.
+    if (from->id == 831768) printf("P!!!\n");
     from->addFlag(FLAG_INSERT_AUTO_DESTROY);
   }
 

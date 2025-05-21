@@ -644,6 +644,7 @@ static VarSymbol* buildTupleVariable(ArgSymbol* formal) {
   if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
     retval->addFlag(FLAG_TYPE_VARIABLE);
   } else if (!formal->hasFlag(FLAG_NO_AUTO_DESTROY)) {
+    if (retval->id == 831768) printf("D!!!\n");
     retval->addFlag(FLAG_INSERT_AUTO_DESTROY);
   }
 

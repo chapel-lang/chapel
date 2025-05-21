@@ -1954,6 +1954,7 @@ module ChapelArray {
     }
   }
 
+  pragma "no promotion when by ref"
   pragma "reference to const when const this"
   pragma "fn returns aliasing array"
   proc _array.reshape(ranges: range(?)...) {
@@ -1966,6 +1967,7 @@ module ChapelArray {
 
   config param checkReshapeDimensions = boundsChecking;
 
+  pragma "no promotion when by ref"
   pragma "reference to const when const this"
   pragma "fn returns aliasing array"
   proc _array.reshape(dom: domain(?)) {

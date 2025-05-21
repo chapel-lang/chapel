@@ -633,7 +633,7 @@ static void doElideCopies(VarToCopyElisionState &map) {
 
           // Use the result of the PRIM_ASSIGN_ELIDED_COPY in the coerceMove.
           call->get(2)->replace(new SymExpr(tmp));
-        } else {
+        } else if (false) {  // force disable of steals
           // Change the copy into a move and don't destroy the variable.
 
           Symbol *definedConst = NULL;

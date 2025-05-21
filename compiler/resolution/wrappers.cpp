@@ -1548,6 +1548,7 @@ static void addArgCoercion(FnSymbol*  fn,
   VarSymbol*  castTemp   = newTemp("coerce_tmp");
 
   castTemp->addFlag(FLAG_COERCE_TEMP);
+  if (castTemp->id == 831768) printf("F!!!\n");
   castTemp->addFlag(FLAG_INSERT_AUTO_DESTROY);
 
   if (prevActual->hasFlag(FLAG_ARG_THIS) &&
@@ -1684,6 +1685,7 @@ static void addArgCoercion(FnSymbol*  fn,
     castCall = createCast(prevActual, fts);
 
     if (isString(fts)) {
+      if (castTemp->id == 831768) printf("G!!!\n");
       castTemp->addFlag(FLAG_INSERT_AUTO_DESTROY);
     }
   }
@@ -1938,6 +1940,7 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
       // to do the write-back after the call, the value would be deinited
       // already).
       if (inout) {
+        if (tmp->id == 831768) printf("H!!!\n");
         tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
         tmp->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
         tmp->addFlag(FLAG_FORMAL_TEMP_OUT_CALLSITE);
@@ -2082,6 +2085,7 @@ static void handleOutIntents(FnSymbol* fn, CallExpr* call,
         VarSymbol* tmp = newTemp(astr("_formal_tmp_out_", formal->name),
                                  formal->getValType());
         tmp->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
+        if (tmp->id == 831768) printf("I!!!\n");
         tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
         tmp->addFlag(FLAG_EXPR_TEMP);
         tmp->addFlag(FLAG_FORMAL_TEMP_OUT_CALLSITE);

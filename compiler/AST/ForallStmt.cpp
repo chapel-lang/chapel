@@ -511,6 +511,7 @@ static void fsDestructureIndex(ForallStmt* fs, AList& fIterVars,
   } else if (isCallExpr(index)) {
     // We need to create an index variable and go from there.
     VarSymbol* idxVar = createAndAddIndexVar(fIterVars, idxNum);
+    if (idxVar->id == 831751) printf("X!!!\n");
     idxVar->removeFlag(FLAG_INSERT_AUTO_DESTROY);
     destructureIndices(fs->loopBody(), index, new SymExpr(idxVar), false);
 

@@ -407,6 +407,7 @@ static CallExpr* buildInitCall(CallExpr* newExpr,
 static
 VarSymbol* resolveNewInitializerMakeTemp(const char* name, BlockStmt* block) {
   VarSymbol* tmp = newTemp(name);
+  if (tmp->id == 831768) printf("Q!!!\n");
   tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
 
   BlockStmt* inBlock = toBlockStmt(block->parentExpr);

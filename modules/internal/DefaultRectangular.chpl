@@ -2574,7 +2574,7 @@ module DefaultRectangular {
     return false;
   }
 
-  proc DefaultRectangularArr.doiReshape(dom: domain(?))
+  proc DefaultRectangularArr.doiReshape(const in dom: domain(?))
    where dom._value.isDefaultRectangular() {
     var ret = new unmanaged DefaultRectangularArr(eltType=this.eltType,
                                                   rank = dom.rank,

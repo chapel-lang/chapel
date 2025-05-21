@@ -259,6 +259,7 @@ static void insertFinalGenerate(LoopWithShadowVarsInterface* fs,
                     genTemp, gMethodToken, globalOp);
     fs->asExpr()->insertAfter(new DefExpr(genTemp));
     // TODO: Should we try to free chpl_gentemp right after the assignment?
+    if (genTemp->id == 831768) printf("R!!!\n");
     genTemp->addFlag(FLAG_INSERT_AUTO_DESTROY);
   } else {
     // Initialize, not assign. Do everything *after* 'fs'.

@@ -1900,8 +1900,10 @@ void lowerContextCall(ContextCallExpr* cc, choose_type_t which)
 
       if (requiresImplicitDestroy(useCall)) {
         if (typeNeedsCopyInitDeinit(useFn->retType) == false) {
+          if (tmp->id == 831768) printf("E!!!\n");
           tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
         } else {
+          if (tmp->id == 831768) printf("F!!!\n");
           tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
         }
       }
