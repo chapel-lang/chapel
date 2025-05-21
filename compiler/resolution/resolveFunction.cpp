@@ -2587,9 +2587,10 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
                (isRecord(formal->type) &&
                 ((formal->type->getModule()->modTag==MOD_INTERNAL) ||
                  (formal->type->getModule()->modTag==MOD_STANDARD))) ||
-               !typeHasRefField(formal->type))
+               !typeHasRefField(formal->type)) {
              if (tmp->id == 831768) printf("O!!!\n");
              tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+           }
          }
 
        } else {
