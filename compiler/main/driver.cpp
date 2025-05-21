@@ -907,10 +907,13 @@ bool isEditionApplicable(std::string first, std::string last, BaseAST* loc) {
 static void setEdition(const ArgumentDescription* desc, const char* arg) {
   std::string val = std::string(arg);
 
-  if (!isValidEdition(val)) {
+  if (val == "default") {
+    // Use the default edition, which is set at the declaration point
+  } else if (!isValidEdition(val)) {
     printf("--edition only accepts a limited set of values.  Current options");
     printf(" are:\n");
 
+    printf("default (currently '%s')\n", fEdition.c_str());
     // Iterate over all the edition names to list them
     for (int i = 0; i < 2; i++) {
       printf("%s\n", editions[i].c_str());

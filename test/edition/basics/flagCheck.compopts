@@ -1,4 +1,5 @@
  # flagCheck.good
+--edition=default
 --edition=2.0
 --edition=pre-edition
 --edition=thisHadBetterNeverBeAnActualEditionNameYall # flagCheck.badEdition.good
