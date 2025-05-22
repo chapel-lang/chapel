@@ -22,7 +22,7 @@ tags
 .idea/
 cmake-build-*/
 .cache/
-*.dSYM/*
+*.dSYM
 
 # Top level ignores.
 /BUILD_VERSION
