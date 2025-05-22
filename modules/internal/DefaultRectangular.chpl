@@ -1445,6 +1445,9 @@ module DefaultRectangular {
                                                    boundKind.both,
                                                    strides)) {
 
+      if externArr || _borrowed then
+        halt("This domain cannot be modified because it is used to define array views");
+      
       // check to see whether this realloc is actually changing the
       // bounds of the array
       var actuallyResizing = false;
@@ -2574,7 +2577,7 @@ module DefaultRectangular {
     return false;
   }
 
-  proc DefaultRectangularArr.doiReshape(const in dom: domain(?))
+  proc DefaultRectangularArr.doiReshape(dom: domain(?))
    where dom._value.isDefaultRectangular() {
     var ret = new unmanaged DefaultRectangularArr(eltType=this.eltType,
                                                   rank = dom.rank,
