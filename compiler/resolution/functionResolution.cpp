@@ -8721,11 +8721,8 @@ void resolveInitVar(CallExpr* call) {
     if (SymExpr* rhsSe = toSymExpr(srcExpr))
       if (VarSymbol* rhsVar = toVarSymbol(rhsSe->symbol()))
         if (isAliasingArrayType(rhsVar->getValType()))
-          if (rhsVar->hasFlag(FLAG_NO_AUTO_DESTROY) == false) {
-            if (rhsVar->id == 831768)
-              printf("A!!!\n");
+          if (rhsVar->hasFlag(FLAG_NO_AUTO_DESTROY) == false)
             rhsVar->addFlag(FLAG_INSERT_AUTO_DESTROY);
-          }
 
     Symbol *definedConst = dst->hasFlag(FLAG_CONST)? gTrue : gFalse;
     CallExpr* initCopy = new CallExpr(astr_initCopy, srcExpr->remove(),
@@ -8862,7 +8859,6 @@ void resolveInitVar(CallExpr* call) {
     } else {
 
       dst->type = targetType->getValType();
-      if (src->id == 831768) printf("B!!!\n");
       src->addFlag(FLAG_INSERT_AUTO_DESTROY);
 
       call->insertAtHead(gMethodToken);
@@ -13012,10 +13008,8 @@ static void insertReturnTemps() {
             VarSymbol* tmp = newTemp("_return_tmp_", fn->retType);
             DefExpr*   def = new DefExpr(tmp);
 
-            if (typeNeedsCopyInitDeinit(fn->retType) == true) {
-              if (tmp->id == 831768) printf("C!!!\n");
+            if (typeNeedsCopyInitDeinit(fn->retType) == true)
               tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
-            }
 
             tmp->addFlag(FLAG_DEAD_LAST_MENTION);
 

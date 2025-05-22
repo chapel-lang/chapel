@@ -75,7 +75,6 @@ void RemoveUnnecessaryAutoCopyCalls::process(FnSymbol* fn)
     Expr* actual = call->get(1);
     ArgSymbol* arg = actual_to_formal(actual);
     if (arg) {
-      if (arg->id == 831751) printf("Y!!!\n");
       arg->removeFlag(FLAG_INSERT_AUTO_DESTROY);
       arg->removeFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
     } else
