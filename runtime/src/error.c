@@ -59,8 +59,6 @@ static int chpl_unwind_getLineNum(void *addr){
   int rc;
   Dl_info info;
   intptr_t relativeAddr;
-  char buf[2048];
-  int i = 0;
   int line;
   char* p;
   FILE *f;
@@ -100,12 +98,6 @@ static int chpl_unwind_getLineNum(void *addr){
   int scriptLen = strlen(script);
   int llvmBinDirLen = strlen(CHPL_LLVM_BIN_DIR);
 
-  // Start the buffer out with the script + CHPL_LLVM_BIN_DIR + space
-  memcpy(buf, script, scriptLen);
-  memcpy(&buf[scriptLen], CHPL_LLVM_BIN_DIR, llvmBinDirLen);
-  memcpy(&buf[scriptLen+llvmBinDirLen], " ", 1);
-  i = scriptLen + llvmBinDirLen + 1;
-
   // Compute the object containing the address
   rc = dladdr(addr, &info);
   if (rc == 0)
@@ -115,38 +107,53 @@ static int chpl_unwind_getLineNum(void *addr){
   relativeAddr = (intptr_t)addr - (intptr_t)info.dli_fbase;
 
   // Compute the path to the file containing the object
+  char filePathBuf[512];
+  int filePathLen = 0;
   if (info.dli_fname != NULL && info.dli_fname[0] != '\0') {
     // use the path from dladdr
     path_len = strlen(info.dli_fname);
-    if (i+path_len >= sizeof(buf))
+    if (path_len >= sizeof(filePathBuf))
       return 0; // not enough room in buffer - give up
-    memcpy(&buf[i], info.dli_fname, path_len);
+    memcpy(filePathBuf, info.dli_fname, path_len);
+    filePathLen = path_len;
   } else {
     // Try using the file path from the current executable
-    path_len = readlink("/proc/self/exe", &buf[i], sizeof(buf)-i);
-    if (path_len >= sizeof(buf)-i)
+    path_len = readlink("/proc/self/exe", filePathBuf, sizeof(filePathBuf));
+    if (path_len >= sizeof(filePathBuf))
       return 0; // truncation occurred - give up.
     if (path_len == -1)
       return 0; // readlink returned error - give up.
+    filePathLen = path_len;
   }
-  i += path_len;
+  filePathBuf[filePathLen] = '\0'; // null terminate the string
 
-  rc = snprintf(&buf[i], sizeof(buf)-i,
-                " %p", (void*)relativeAddr);
-  if (rc+1 >= sizeof(buf)-i)
+  int bufSize =
+    scriptLen + llvmBinDirLen + /*space*/1 +
+    filePathLen + /*space*/1 + /*relativeAddr overestimate*/20;
+  char* buf = (char*)chpl_mem_alloc(bufSize, CHPL_RT_MD_COMMAND_BUFFER, 0, 0);
+  rc = snprintf(buf, bufSize, "%s%s %s %p",
+    script, CHPL_LLVM_BIN_DIR, filePathBuf, (void*)relativeAddr);
+  if (rc+1 >= bufSize) {
+    chpl_mem_free(buf, 0, 0);
     return 0; // command too long for buffer - give up
+  }
 
   f = popen(buf, "r");
-  if (f == NULL)
+  if (f == NULL) {
+    chpl_mem_free(buf, 0, 0);
     return 0; // popen failed - give up
+  }
 
-  p = fgets(buf, sizeof(buf), f);
+  char resultBuf[1024];
+  p = fgets(resultBuf, sizeof(resultBuf), f);
   if (p == NULL){
     // couldn't read from the pipe - close and give up
     pclose(f);
+    chpl_mem_free(buf, 0, 0);
     return 0;
   }
   pclose(f);
+  chpl_mem_free(buf, 0, 0);
   // file name is until ':'
   while (*p++ != ':') { }
   line = atoi(p);
