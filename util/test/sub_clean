@@ -37,14 +37,15 @@ def ReadCleanfiles(f, ignoreLeadingSpace=True):
             mylist.append(t)
     return mylist
 
-def unlink(f):
+def unlink(f, removeDirs=False):
     try:
-        if os.path.isdir(f) and not os.path.islink(f):
+        if removeDirs and os.path.isdir(f) and not os.path.islink(f):
             shutil.rmtree(f)
         else:
             os.unlink(f)
     except:
         pass
+
 # Clean the files associated with a Chapel test program
 def cleanChapelTest(f):
     execname = getExecname(f)
@@ -55,7 +56,7 @@ def cleanChapelTest(f):
             unlink(g)
         unlink(execname)
         unlink(execname+'_real')
-        unlink(execname+'.dSYM')
+        unlink(execname+'.dSYM', removeDirs=True)
         cleanCleanfiles(None, execname+'.cleanfiles', False)
 
 # Clean files listed in the file c, in the directory d (if given)
@@ -75,7 +76,7 @@ def cleanCleanfiles(d, c, rmCore):
                 globfiles = glob.glob(f)
             for g in globfiles:
                 print('Removing '+g)
-                unlink(g)
+                unlink(g, removeDirs=True)
 
 
 #
