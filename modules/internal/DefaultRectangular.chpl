@@ -1447,7 +1447,7 @@ module DefaultRectangular {
 
       if externArr || _borrowed then
         halt("This domain cannot be modified because it is used to define array views");
-      
+
       // check to see whether this realloc is actually changing the
       // bounds of the array
       var actuallyResizing = false;
