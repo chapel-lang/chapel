@@ -101,7 +101,10 @@ static int chpl_unwind_getLineNum(void *addr){
   int llvmBinDirLen = strlen(CHPL_LLVM_BIN_DIR);
 
   // Start the buffer out with the script + CHPL_LLVM_BIN_DIR + space
+  assert(sizeof(buf) > scriptLen);
   memcpy(buf, script, scriptLen);
+  if (llvmBinDirLen+1 >= sizeof(buf)-scriptLen)
+    return 0; // not enough room in buffer - give up
   memcpy(&buf[scriptLen], CHPL_LLVM_BIN_DIR, llvmBinDirLen);
   memcpy(&buf[scriptLen+llvmBinDirLen], " ", 1);
   i = scriptLen + llvmBinDirLen + 1;
