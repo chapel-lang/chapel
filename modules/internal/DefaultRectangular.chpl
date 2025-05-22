@@ -2657,6 +2657,7 @@ module DefaultRectangular {
   }
 
 
+
   /*
   The runtime implementation's loop over the current stride level will look
   something like this:

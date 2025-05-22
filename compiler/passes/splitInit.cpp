@@ -650,6 +650,13 @@ static void doElideCopies(VarToCopyElisionState &map) {
             }
           }
 
+          //
+          // If this is an initCopy or autoCopy of an array view,
+          // we shouldn't elide the copy because we need to make
+          // a deep copy rather than persisting the alias.  E.g.,
+          // var B = A[2..n-1]; or var B = A.reshape(2..n-1)
+          // should always deep-copy so that B becomes its own thing.
+          //
           if (!se || !se->symbol()->hasFlag(FLAG_IS_ARRAY_VIEW)) {
             call->convertToNoop();
             call->insertBefore(new CallExpr(PRIM_ASSIGN_ELIDED_COPY, lhs, var));

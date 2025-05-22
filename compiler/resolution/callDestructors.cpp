@@ -754,6 +754,13 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
       if (!returnsAliasingArray) {
         removeInitOrAutoCopyPostResolution(copyExpr);
       } else {
+        //
+        // If this call returns an aliasing array (an array view), we
+        // will need to deep-copy the result in non-'ref' situations
+        // e.g., var B = A[2..n-1]; or var B = A.reshape(2..n-1) so
+        // will need to autodestroy the result at the end of the scope
+        // and recgonize it as an array view in other situations
+        //
         SymExpr* rhsExpr = toSymExpr(copyExpr->get(1));
         if (rhsExpr) {
           rhsExpr->symbol()->addFlag(FLAG_INSERT_AUTO_DESTROY);
