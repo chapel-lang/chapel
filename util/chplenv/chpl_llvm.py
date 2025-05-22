@@ -452,14 +452,20 @@ def validate_llvm_config():
 @memoize
 def get_system_llvm_config_bindir():
     llvm_config = find_system_llvm_config()
+    return _get_llvm_config_bindir(llvm_config)
+
+@memoize
+def get_llvm_config_bindir():
+    llvm_config = get_llvm_config()
+    return _get_llvm_config_bindir(llvm_config)
+
+@memoize
+def _get_llvm_config_bindir(llvm_config):
     found_version, found_config_err = check_llvm_config(llvm_config)
-
-    bindir = None
-
     if llvm_config and found_version and not found_config_err:
-        bindir = run_command([llvm_config, '--bindir']).strip()
-
-    return bindir
+        return run_command([llvm_config, '--bindir']).strip()
+    else:
+        return None
 
 def get_llvm_clang_command_name(lang):
     lang_upper = lang.upper()
