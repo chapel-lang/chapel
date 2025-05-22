@@ -633,7 +633,7 @@ static void doElideCopies(VarToCopyElisionState &map) {
 
           // Use the result of the PRIM_ASSIGN_ELIDED_COPY in the coerceMove.
           call->get(2)->replace(new SymExpr(tmp));
-        } else { // if (false) {  // force disable of steals
+        } else {
           // Change the copy into a move and don't destroy the variable.
 
           Symbol *definedConst = NULL;
@@ -650,13 +650,9 @@ static void doElideCopies(VarToCopyElisionState &map) {
             }
           }
 
-          if (se) {
-            if (!se->symbol()->hasFlag(FLAG_IS_ARRAY_VIEW)) {
-              call->convertToNoop();
-              call->insertBefore(new CallExpr(PRIM_ASSIGN_ELIDED_COPY, lhs, var));
-            } else {
-              //              printf("Skipping removal of %d\n", call->id);
-            }
+          if (!se || !se->symbol()->hasFlag(FLAG_IS_ARRAY_VIEW)) {
+            call->convertToNoop();
+            call->insertBefore(new CallExpr(PRIM_ASSIGN_ELIDED_COPY, lhs, var));
           }
 
           if (definedConst != NULL) {
