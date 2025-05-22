@@ -59,26 +59,55 @@ static int chpl_unwind_getLineNum(void *addr){
   int rc;
   Dl_info info;
   intptr_t relativeAddr;
-  char buf[1024];
+  char buf[2048];
   int i = 0;
   int line;
   char* p;
   FILE *f;
   ssize_t path_len;
 
+
   // We use a little shell script for avoiding the case in which
-  // addr2line isn't present
-  const char* scriptPreArgs =
-    "if command -v addr2line > /dev/null 2>&1; then addr2line -e ";
+  // addr2line isn't present.
+  // We try the following commands in order. llvm-addr2line is preferred
+  // since it woks betters with LLVM/clang and also works with gnu
+  // 1. CHPL_LLVM_BIN_DIR/llvm-addr2line
+  // 2. llvm-addr2line
+  // 3. addr2line
+
+  const char* script =
+    "function my_addr2line() { "
+    "addr2line_cmd=$1/addr2line; shift; "
+    "if ! command -v $addr2line_cmd >/dev/null 2>&1; then "
+      "addr2line_cmd=llvm-addr2line; "
+      "if ! command -v $addr2line_cmd >/dev/null 2>&1; then "
+        "addr2line_cmd=addr2line; "
+        "if ! command -v $addr2line_cmd >/dev/null 2>&1; then "
+          "addr2line_cmd= ; "
+        "fi; "
+      "fi; "
+    "fi; "
+    "if [ -n \"$addr2line_cmd\" ]; then "
+      "$addr2line_cmd -e $@ ; "
+    "fi } ; my_addr2line "
+    ;
+  // then CHPL_LLVM_BIN_DIR
+  // then space
   // then the path
   // then space
   // then the address
-  // then below to close the 'if'
-  const char* scriptPostArgs = "; fi";
 
-  // Start the buffer out with the script
-  memcpy(buf, scriptPreArgs, strlen(scriptPreArgs));
-  i = strlen(scriptPreArgs);
+  int scriptLen = strlen(script);
+  int llvmBinDirLen = strlen(CHPL_LLVM_BIN_DIR);
+
+  // Start the buffer out with the script + CHPL_LLVM_BIN_DIR + space
+  assert(sizeof(buf) > scriptLen);
+  memcpy(buf, script, scriptLen);
+  if (llvmBinDirLen+1 >= sizeof(buf)-scriptLen)
+    return 0; // not enough room in buffer - give up
+  memcpy(&buf[scriptLen], CHPL_LLVM_BIN_DIR, llvmBinDirLen);
+  memcpy(&buf[scriptLen+llvmBinDirLen], " ", 1);
+  i = scriptLen + llvmBinDirLen + 1;
 
   // Compute the object containing the address
   rc = dladdr(addr, &info);
@@ -106,7 +135,7 @@ static int chpl_unwind_getLineNum(void *addr){
   i += path_len;
 
   rc = snprintf(&buf[i], sizeof(buf)-i,
-                " %p%s", (void*)relativeAddr, scriptPostArgs);
+                " %p", (void*)relativeAddr);
   if (rc+1 >= sizeof(buf)-i)
     return 0; // command too long for buffer - give up
 
