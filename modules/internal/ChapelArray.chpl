@@ -1954,23 +1954,34 @@ module ChapelArray {
     }
   }
 
+  config param checkReshapeDimsByDefault = boundsChecking;
+
   pragma "no promotion when by ref"
   pragma "reference to const when const this"
   pragma "fn returns aliasing array"
   proc _array.reshape(ranges: range(?)...) {
     if ranges.size == 1 && ranges(0).bounds == boundKind.low {
-      return this.reshape({ranges(0).low..#this.size});
+      return this.reshape({ranges(0).low..#this.size}, checkReshapeDimsByDefault);
     } else {
-      return this.reshape({(...ranges)});
+      return this.reshape({(...ranges)}, checkReshapeDimsByDefault);
     }
   }
-
-  config param checkReshapeDimensions = boundsChecking;
 
   pragma "no promotion when by ref"
   pragma "reference to const when const this"
   pragma "fn returns aliasing array"
-  proc _array.reshape(dom: domain(?)) {
+  proc _array.reshape(ranges: range(?)..., checkDims: bool) {
+    if ranges.size == 1 && ranges(0).bounds == boundKind.low {
+      return this.reshape({ranges(0).low..#this.size}, checkDims);
+    } else {
+      return this.reshape({(...ranges)}, checkDims);
+    }
+  }
+
+  pragma "no promotion when by ref"
+  pragma "reference to const when const this"
+  pragma "fn returns aliasing array"
+  proc _array.reshape(dom: domain(?), checkDims=checkReshapeDimsByDefault) {
     if !Reflection.canResolveMethod(_value, "doiSupportsReshape") {
       compilerError("This array type does not support reshaping");
       return this;
@@ -1988,7 +1999,7 @@ module ChapelArray {
         halt("Size mismatch: Can't rehape a ", this.size,
              "-element array into a ", dom.size, "-element array");
 
-      if checkReshapeDimensions {
+      if checkDims {
         if this.size > 0 && dom.size > 0 {
           var arrDim, domDim = 0;
           var arrSize, domSize = 0;
