@@ -1971,12 +1971,16 @@ module ChapelArray {
   pragma "reference to const when const this"
   pragma "fn returns aliasing array"
   proc _array.reshape(dom: domain(?)) {
-    if Reflection.canResolveMethod(_value, "doiReshape", dom) {
+    if !Reflection.canResolveMethod(_value, "doiSupportsReshape") {
+      compilerError("This array type does not support reshaping");
+      return this;
+    } else if !Reflection.canResolveMethod(_value, "doiReshape", dom) {
+      compilerError("This array cannot be reshaped using this domain type");
+      return this;
+    } else {
       if boundsChecking then
         validateReshape();
       return _value.doiReshape(dom);
-    } else {
-      compilerError("This array type does not support the '.reshape()'  method");
     }
 
     proc validateReshape() {
