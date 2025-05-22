@@ -25,12 +25,12 @@
 #include "chpl.h"
 #include "map.h"
 
+#include <array>
 #include <cstdio>
 #include <map>
 #include <set>
 #include <string>
 #include <unordered_set>
-#include <vector>
 
 class Timer;
 
@@ -306,7 +306,7 @@ extern const char* compileCommand;
 extern char compileVersion[64];
 
 // This is where the list of all supported editions goes
-extern std::vector<std::string> editions;
+extern std::array<std::string, 2> editions;
 extern std::string fEdition;
 
 bool isValidEdition(std::string maybeEdition);

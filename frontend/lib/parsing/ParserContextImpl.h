@@ -449,6 +449,10 @@ void ParserContext::noteEdition(YYLTYPE loc, MaybeNamedActualList* actuals) {
 
   if (actuals != nullptr && actuals->size() > 0) {
     for (auto& actual : *actuals) {
+      if (actual.name.isEmpty()) {
+        error(loc, "'@edition' attribute argument must be named");
+      }
+
       if (!(actual.name == UniqueString::get(context(), "first").podUniqueString() ||
             actual.name == UniqueString::get(context(), "last").podUniqueString() ||
             actual.name.isEmpty())) {
@@ -456,10 +460,6 @@ void ParserContext::noteEdition(YYLTYPE loc, MaybeNamedActualList* actuals) {
                    "'@edition' attribute only accepts 'first' and 'last' "
                    "arguments",
                    actual.name.c_str());
-      }
-
-      if (actual.name.isEmpty()) {
-        error(loc, "'@edition' attribute argument must be named");
       }
       if (!actual.expr->isStringLiteral()) {
         error(loc, "'@edition' attribute arguments must be string literals for now");
