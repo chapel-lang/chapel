@@ -619,11 +619,15 @@ static void partitionResources(void) {
                                         HWLOC_OBJ_TYPE_MAX};
         for (int i = 0; rootTypes[i] != HWLOC_OBJ_TYPE_MAX; i++) {
           int numObjs = hwloc_get_nbobjs_by_type(topology, rootTypes[i]);
-          if (numObjs == numPartitions) {
-            // We should only bind locales to objects if the objects have the
-            // same (non-zero) number of accessible PUs.
+          if (numObjs >= numPartitions) {
+
+            // We should only bind locales to objects if the number of
+            // non-empty objects equals the number of partitions, and they
+            // have the same number of accessible PUs.
+
             int numCoresPerObject = -1;
             chpl_bool acceptable = true;
+            int numNonEmptyObjects = 0;
             for (int j = 0; j < numObjs; j++) {
               hwloc_obj_t obj;
               CHK_ERR(obj = hwloc_get_obj_inside_cpuset_by_type(topology,
@@ -635,14 +639,17 @@ static void partitionResources(void) {
               _DBG_P("%s[%d] has %d cores.", objTypeString(rootTypes[i]), j,
                      numCores);
               if (numCores == 0) {
-                acceptable = false;
-                break;
-              } else if (j == 0) {
+                continue;
+              } else if (numCoresPerObject == -1) {
                 numCoresPerObject = numCores;
               } else if (numCores != numCoresPerObject) {
                 acceptable = false;
                 break;
               }
+              numNonEmptyObjects++;
+            }
+            if (numNonEmptyObjects != numPartitions) {
+              acceptable = false;
             }
             if (acceptable) {
               myRootType = rootTypes[i];
