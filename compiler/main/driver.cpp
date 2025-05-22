@@ -836,7 +836,7 @@ void checkEditionRangeValid(std::string first, std::string last, BaseAST* loc) {
   int startLoc = -1;
   int endLoc = -1;
 
-  for (std::array<std::string, 2>::size_type i = 0; i < editions.size(); i++) {
+  for (size_t i = 0; i < editions.size(); i++) {
     if (editions[i] == first) {
       startLoc = i;
     }
@@ -869,7 +869,7 @@ bool isEditionApplicable(std::string first, std::string last, BaseAST* loc) {
   int endLoc = -1;
   int thisEditionLoc = -1;
 
-  for (std::array<std::string, 2>::size_type i = 0; i < editions.size(); i++) {
+  for (size_t i = 0; i < editions.size(); i++) {
     if (editions[i] == first) {
       startLoc = i;
     }
