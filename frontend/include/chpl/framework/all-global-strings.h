@@ -193,6 +193,7 @@ X(llvmDot             , "llvm.")
 X(llvmMetadata        , "llvm.metadata")
 X(llvmAssertVectorized, "llvm.assertVectorized")
 X(deprecated          , "deprecated")
+X(edition             , "edition")
 X(unstable            , "unstable")
 
 X(stringId            , "String._string")

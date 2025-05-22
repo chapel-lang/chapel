@@ -1,4 +1,5 @@
 Unrecognized flag: '-e' (use '-h' for help)
+       Did you mean --edition ?
        Did you mean --explain-call ?
        Did you mean --explain-instantiation ?
        Did you mean --explain-verbose ?

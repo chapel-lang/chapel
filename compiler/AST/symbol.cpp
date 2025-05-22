@@ -532,6 +532,22 @@ void Symbol::maybeGenerateDeprecationWarning(Expr* context) {
   }
 }
 
+const char* Symbol::getFirstEdition() const {
+  if (firstEdition == "") {
+    return editions.front().c_str();
+  } else {
+    return firstEdition.c_str();
+  }
+}
+
+const char* Symbol::getLastEdition() const {
+  if (lastEdition == "") {
+    return editions.back().c_str();
+  } else {
+    return lastEdition.c_str();
+  }
+}
+
 static bool isInvisibleModule(Symbol* sym) {
   return sym == rootModule || sym == theProgram;
 }

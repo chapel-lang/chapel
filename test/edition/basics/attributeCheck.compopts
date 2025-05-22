@@ -1,0 +1,3 @@
+ # attributeCheck.good
+--edition=2.0 # attributeCheck.good
+--edition=pre-edition # attributeCheck.new.good

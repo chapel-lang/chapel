@@ -9,6 +9,7 @@ Module Processing Options:
       --[no-]print-search-dirs        [Don't] print module search path
 
 Warning and Language Control Options:
+      --edition <edition>             Specify the language edition to use
       --[no-]permit-unhandled-module-errors
                                       Permit unhandled thrown errors; such
                                       errors halt at runtime

@@ -45,9 +45,12 @@ class AttributeGroup final : public AstNode {
   bool isDeprecated_;
   bool isUnstable_;
   bool isParenfulDeprecated_;
+  bool hasEdition_;
   UniqueString deprecationMessage_;
   UniqueString unstableMessage_;
   UniqueString parenfulDeprecationMessage_;
+  UniqueString firstEdition_;
+  UniqueString lastEdition_;
 
   // TODO: Do we want to preserve the location of string literals used in
   // pragmas and deprecation messages?
@@ -55,17 +58,23 @@ class AttributeGroup final : public AstNode {
                  bool isDeprecated,
                  bool isUnstable,
                  bool isParenfulDeprecated,
+                 bool hasEdition,
                  UniqueString deprecationMessage,
                  UniqueString unstableMessage,
-                 UniqueString parenfulDeprecationMessage)
+                 UniqueString parenfulDeprecationMessage,
+                 UniqueString firstEdition,
+                 UniqueString lastEdition)
     : AstNode(asttags::AttributeGroup),
       pragmas_(std::move(pragmas)),
       isDeprecated_(isDeprecated),
       isUnstable_(isUnstable),
       isParenfulDeprecated_(isParenfulDeprecated),
+      hasEdition_(hasEdition),
       deprecationMessage_(deprecationMessage),
       unstableMessage_(unstableMessage),
-      parenfulDeprecationMessage_(parenfulDeprecationMessage) {
+      parenfulDeprecationMessage_(parenfulDeprecationMessage),
+      firstEdition_(firstEdition),
+      lastEdition_(lastEdition) {
     if (!deprecationMessage_.isEmpty()) {
       CHPL_ASSERT(isDeprecated_);
     }
@@ -74,6 +83,9 @@ class AttributeGroup final : public AstNode {
     }
     if (!parenfulDeprecationMessage_.isEmpty()) {
       CHPL_ASSERT(isParenfulDeprecated_);
+    }
+    if (!firstEdition_.isEmpty() || !lastEdition_.isEmpty()) {
+      CHPL_ASSERT(hasEdition_);
     }
 
     // This might already be a compile-time invariant? Not sure...
@@ -84,18 +96,24 @@ class AttributeGroup final : public AstNode {
                  bool isDeprecated,
                  bool isUnstable,
                  bool isParenfulDeprecated,
+                 bool hasEdition,
                  UniqueString deprecationMessage,
                  UniqueString unstableMessage,
                  UniqueString parenfulDeprecationMessage,
+                 UniqueString firstEdition,
+                 UniqueString lastEdition,
                  AstList attributes)
     : AstNode(asttags::AttributeGroup, std::move(attributes)),
       pragmas_(std::move(pragmas)),
       isDeprecated_(isDeprecated),
       isUnstable_(isUnstable),
       isParenfulDeprecated_(isParenfulDeprecated),
+      hasEdition_(hasEdition),
       deprecationMessage_(deprecationMessage),
       unstableMessage_(unstableMessage),
-      parenfulDeprecationMessage_(parenfulDeprecationMessage) {
+      parenfulDeprecationMessage_(parenfulDeprecationMessage),
+      firstEdition_(firstEdition),
+      lastEdition_(lastEdition) {
     if (!deprecationMessage_.isEmpty()) {
       CHPL_ASSERT(isDeprecated_);
     }
@@ -104,6 +122,9 @@ class AttributeGroup final : public AstNode {
     }
     if (!parenfulDeprecationMessage_.isEmpty()) {
       CHPL_ASSERT(isParenfulDeprecated_);
+    }
+    if (!firstEdition_.isEmpty() || !lastEdition_.isEmpty()) {
+      CHPL_ASSERT(hasEdition_);
     }
 
     // This might already be a compile-time invariant? Not sure...
@@ -115,9 +136,12 @@ class AttributeGroup final : public AstNode {
     ser.write(isDeprecated_);
     ser.write(isUnstable_);
     ser.write(isParenfulDeprecated_);
+    ser.write(hasEdition_);
     ser.write(deprecationMessage_);
     ser.write(unstableMessage_);
     ser.write(parenfulDeprecationMessage_);
+    ser.write(firstEdition_);
+    ser.write(lastEdition_);
   }
 
   explicit AttributeGroup(Deserializer& des)
@@ -126,9 +150,12 @@ class AttributeGroup final : public AstNode {
     isDeprecated_ = des.read<bool>();
     isUnstable_ = des.read<bool>();
     isParenfulDeprecated_ = des.read<bool>();
+    hasEdition_ = des.read<bool>();
     deprecationMessage_ = des.read<UniqueString>();
     unstableMessage_ = des.read<UniqueString>();
     parenfulDeprecationMessage_ = des.read<UniqueString>();
+    firstEdition_ = des.read<UniqueString>();
+    lastEdition_ = des.read<UniqueString>();
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -137,15 +164,20 @@ class AttributeGroup final : public AstNode {
            this->isDeprecated_ == rhs->isDeprecated_ &&
            this->isUnstable_ == rhs->isUnstable_ &&
            this->isParenfulDeprecated_ == rhs->isParenfulDeprecated_ &&
+           this->hasEdition_ == rhs->hasEdition_ &&
            this->deprecationMessage_ == rhs->deprecationMessage_ &&
            this->unstableMessage_ == rhs->unstableMessage_ &&
-           this->parenfulDeprecationMessage_ == rhs->parenfulDeprecationMessage_;
+           this->parenfulDeprecationMessage_ == rhs->parenfulDeprecationMessage_ &&
+           this->firstEdition_ == rhs->firstEdition_ &&
+           this->lastEdition_ == rhs->lastEdition_;
   }
 
   void markUniqueStringsInner(Context* context) const override {
     deprecationMessage_.mark(context);
     unstableMessage_.mark(context);
     parenfulDeprecationMessage_.mark(context);
+    firstEdition_.mark(context);
+    lastEdition_.mark(context);
   }
 
   void dumpInner(const DumpSettings& s) const;
@@ -158,18 +190,24 @@ class AttributeGroup final : public AstNode {
                                      bool isDeprecated,
                                      bool isUnstable,
                                      bool isParenfulDeprecated,
+                                     bool hasEdition,
                                      UniqueString deprecationMessage,
                                      UniqueString unstableMessage,
-                                     UniqueString parenfulDeprecationMessage);
+                                     UniqueString parenfulDeprecationMessage,
+                                     UniqueString firstEdition,
+                                     UniqueString lastEdition);
 
   static owned<AttributeGroup> build(Builder* builder, Location loc,
                                      std::set<PragmaTag> pragmas,
                                      bool isDeprecated,
                                      bool isUnstable,
                                      bool isParenfulDeprecated,
+                                     bool hasEdition,
                                      UniqueString deprecationMessage,
                                      UniqueString unstableMessage,
                                      UniqueString parenfulDeprecationMessage,
+                                     UniqueString firstEdition,
+                                     UniqueString lastEdition,
                                      AstList attributes);
 
   /**
@@ -233,6 +271,14 @@ class AttributeGroup final : public AstNode {
   }
 
   /**
+    Returns true if the declaration associated with this attribute has an
+    associated edition
+  */
+  bool hasEdition() const {
+    return hasEdition_;
+  }
+
+  /**
     Returns a deprecation message, or the empty string if it is not set.
   */
   UniqueString deprecationMessage() const {
@@ -251,6 +297,22 @@ class AttributeGroup final : public AstNode {
   */
   UniqueString parenfulDeprecationMessage() const {
     return parenfulDeprecationMessage_;
+  }
+
+  /**
+    Returns the first edition associated with this declaration, or the empty
+    string if it is not set.
+  */
+  UniqueString firstEdition() const {
+    return firstEdition_;
+  }
+
+  /**
+    Returns the last edition associated with this declaration, or the empty
+    string if it is not set.
+  */
+  UniqueString lastEdition() const {
+    return lastEdition_;
   }
 
   /**

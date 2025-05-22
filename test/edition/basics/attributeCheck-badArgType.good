@@ -1,0 +1,1 @@
+attributeCheck-badArgType.chpl:1: error: '@edition' attribute arguments must be string literals for now

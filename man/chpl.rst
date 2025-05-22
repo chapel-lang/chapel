@@ -123,6 +123,14 @@ OPTIONS
 
 *Warning and Language Control Options*
 
+.. _man-edition:
+
+**\--edition**
+
+    Specify the language edition to use.  Enables breaking changes that are
+    associated with the particular edition specified (as well as those that were
+    associated with earlier editions).
+
 .. _man-permit-unhandled-module-errors:
 
 **\--[no-]permit-unhandled-module-errors**
