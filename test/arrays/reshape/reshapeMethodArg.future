@@ -1,0 +1,4 @@
+bug: reshape result can't be passed to 'ref' argument
+
+We're getting an "is not an lvalue error" when I believe we should not be
+(e.g., we don't for slicing)

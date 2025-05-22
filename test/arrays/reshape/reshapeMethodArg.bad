@@ -1,0 +1,1 @@
+reshapeMethodArg.chpl:7: error: non-lvalue actual is passed to 'ref' formal 'X' of bar()
