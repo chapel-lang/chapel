@@ -30,6 +30,7 @@
 #include <set>
 #include <string>
 #include <unordered_set>
+#include <vector>
 
 class Timer;
 
@@ -304,9 +305,8 @@ extern const char* compileCommandFilename;
 extern const char* compileCommand;
 extern char compileVersion[64];
 
-// This is where the list of all supported editions goes.  Be sure to update
-// setEdition when this changes!
-extern std::string editions[2];
+// This is where the list of all supported editions goes
+extern std::vector<std::string> editions;
 extern std::string fEdition;
 
 bool isValidEdition(std::string maybeEdition);

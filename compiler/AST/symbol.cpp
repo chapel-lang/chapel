@@ -534,7 +534,7 @@ void Symbol::maybeGenerateDeprecationWarning(Expr* context) {
 
 const char* Symbol::getFirstEdition() const {
   if (firstEdition == "") {
-    return editions[0].c_str();
+    return editions.front().c_str();
   } else {
     return firstEdition.c_str();
   }
@@ -542,9 +542,7 @@ const char* Symbol::getFirstEdition() const {
 
 const char* Symbol::getLastEdition() const {
   if (lastEdition == "") {
-    // Should be the same as the last value in the editions array in driver.h
-    // But that array's length is going to change over time
-    return "pre-edition";
+    return editions.back().c_str();
   } else {
     return lastEdition.c_str();
   }

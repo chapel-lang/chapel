@@ -354,7 +354,7 @@ const char* compileCommandFilename = "compileCommand.tmp";
 const char* compileCommand = NULL;
 char compileVersion[64];
 
-std::string editions[2] = {"2.0", "pre-edition"};
+std::vector<std::string> editions ({"2.0", "pre-edition"});
 std::string fEdition = "2.0";
 
 static bool fPrintCopyright = false;
@@ -821,9 +821,9 @@ static int runDriverMakeBinaryPhase(int argc, char* argv[]) {
 bool isValidEdition(std::string maybeEdition) {
   bool result = false;
 
-  // Keep end up to date with size of editions array
-  for (int i = 0; i < 2; i++) {
-    if (maybeEdition == editions[i]) {
+  for (std::vector<std::string>::iterator it = editions.begin();
+       it != editions.end(); ++it) {
+    if (maybeEdition == *it) {
       result = true;
     }
   }
@@ -837,8 +837,7 @@ void checkEditionRangeValid(std::string first, std::string last, BaseAST* loc) {
   int startLoc = -1;
   int endLoc = -1;
 
-  // Keep end up to date with size of editions array
-  for (int i = 0; i < 2; i++) {
+  for (int i = 0; i < editions.size(); i++) {
     if (editions[i] == first) {
       startLoc = i;
     }
@@ -871,8 +870,7 @@ bool isEditionApplicable(std::string first, std::string last, BaseAST* loc) {
   int endLoc = -1;
   int thisEditionLoc = -1;
 
-  // Keep end up to date with size of editions array
-  for (int i = 0; i < 2; i++) {
+  for (int i = 0; i < editions.size(); i++) {
     if (editions[i] == first) {
       startLoc = i;
     }
@@ -915,8 +913,9 @@ static void setEdition(const ArgumentDescription* desc, const char* arg) {
 
     printf("default (currently '%s')\n", fEdition.c_str());
     // Iterate over all the edition names to list them
-    for (int i = 0; i < 2; i++) {
-      printf("%s\n", editions[i].c_str());
+    for (std::vector<std::string>::iterator it = editions.begin();
+         it != editions.end(); ++it) {
+      printf("%s\n", (*it).c_str());
     }
     clean_exit(1);
   } else {
