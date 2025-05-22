@@ -505,6 +505,21 @@ class M6inTests(TestCases.TestCase):
                     nics.append(nic)
                     break
 
+class M1ProTests(TestCases.TestCase):
+    """
+    Apple M1Pro. One socket, one NUMA domain, three L2 caches. The first L2
+    cache has two efficiency cores, the other two have four performance
+    cores.
+    """
+    def setUp(self):
+        super().setUp()
+        self.env['HWLOC_XMLFILE'] = 'm1pro.xml'
+        self.sockets = 1
+        self.numas = 1
+        self.cores = 8
+        self.threads = 1
+        self.nics= []
+
 class SuffixTests(TestFramework):
     """
     Tests functionality of "-nl" type suffix
