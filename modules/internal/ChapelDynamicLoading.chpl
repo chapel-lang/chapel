@@ -27,16 +27,7 @@ module ChapelDynamicLoading {
   param chpl_defaultProcBufferSize = 512;
 
   inline proc isDynamicLoadingSupported param {
-    use ChplConfig;
-
-    if CHPL_COMM == "gasnet" &&
-       CHPL_COMM_SUBSTRATE == "smp" &&
-       CHPL_GASNET_SEGMENT == "everything" {
-      // On 'smp'/'everything' we see strange behavior where the 'Locales'
-      // array does not contain unique values: LOCALE-0 can appear multiple
-      // times. So we should not support dynamic loading on that config.
-      return false;
-    }
+    // NOTE: Change me if there are unsupported compile-time configs.
     return true;
   }
 
