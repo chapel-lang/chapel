@@ -383,7 +383,7 @@ static Expr* walkBlockStmt(FnSymbol*         fn,
       const std::vector<VarSymbol*>& vars = lmmIt->second;
       for_vector(VarSymbol, var, vars) {
 
-        if (var->id == 832287)
+        //        if (var->id == 832287)
           //          printf("Yay, it's my formal!\n");
 
         if (isAutoDestroyedOrSplitInitedVariable(var)) {

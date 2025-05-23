@@ -1920,8 +1920,8 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
                                 call, anchor, copyMap);
     }
 
-    if (formal->id == 1696742)
-      printf("It's my formal!\n");
+    //    if (formal->id == 1696742)
+    //      printf("It's my formal!\n");
 
     // A copy might be necessary here but might not.
     if (actualSym->hasFlag(FLAG_IS_ARRAY_VIEW) ||
