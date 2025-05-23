@@ -83,6 +83,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include "AstDump.h"
 
 class DisambiguationState {
 public:
@@ -676,7 +677,7 @@ isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual,
 
     // don't emit lvalue errors for array slices
     // (we can think of these as a special kind of reference)
-    if (isAliasingArrayType(sym->type)) {
+    if (isAliasingArrayType(sym->type) || sym->hasFlag(FLAG_IS_ARRAY_VIEW)) {
       actualExprTmp = false;
     }
 
@@ -4371,6 +4372,25 @@ static FnSymbol* resolveNormalCall(CallInfo&            info,
 
     call->baseExpr->replace(new SymExpr(retval));
 
+    //
+    // Mark results to calls that return aliasing arrays as being an array view
+    //
+    if (retval->hasFlag(FLAG_RETURNS_ALIASING_ARRAY)) {
+      if (CallExpr* parent = toCallExpr(call->parentExpr)) {
+        if (parent->isPrimitive(PRIM_MOVE)) {
+          if (SymExpr* se = toSymExpr(parent->get(1))) {
+            //            printf("Adding flag to %d\n", se->symbol()->id);
+            se->symbol()->addFlag(FLAG_IS_ARRAY_VIEW);
+            //            se->symbol()->addFlag(FLAG_INSERT_AUTO_DESTROY);
+          }
+        } else {
+          printf("Huh... parent wasn't PRIM_MOVE\n");
+        }
+      } else {
+        printf("Huh... parent wasn't CallExpr\n");
+      }
+    }
+
     resolveNormalCallConstRef(call);
 
     if (checkState == CHECK_NORMAL_CALL) {
@@ -7637,6 +7657,9 @@ static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, Ar
    case INTENT_OUT:
    case INTENT_INOUT:
    case INTENT_REF:
+     if (call->id == 322120) {
+       printf("It's my call!\n");
+     }
     if (!isLegalLvalueActualArg(formal, actual, constnessError, exprTmpError)) {
       errorMsg = true;
 
@@ -7767,6 +7790,7 @@ static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, Ar
                        calleeFn->hasFlag(FLAG_OPERATOR) ? "operator " : "",
                        calleeFn->name,
                        calleeParens);
+      AstDump::view("preError", 12);
     }
 
     if (SymExpr* aSE = toSymExpr(actual)) {

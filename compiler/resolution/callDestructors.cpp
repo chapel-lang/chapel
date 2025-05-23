@@ -764,6 +764,9 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
         SymExpr* rhsExpr = toSymExpr(copyExpr->get(1));
         if (rhsExpr) {
           rhsExpr->symbol()->addFlag(FLAG_INSERT_AUTO_DESTROY);
+          if (rhsExpr->symbol()->hasFlag(FLAG_IS_ARRAY_VIEW)) {
+            //            printf("Already done, yo\n");
+          }
           rhsExpr->symbol()->addFlag(FLAG_IS_ARRAY_VIEW);
         } else {
           INT_FATAL(copyExpr, "copyExpr didn't have expected structure");

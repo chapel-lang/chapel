@@ -1920,8 +1920,12 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
                                 call, anchor, copyMap);
     }
 
+    if (formal->id == 1696742)
+      printf("It's my formal!\n");
+    
     // A copy might be necessary here but might not.
-    if (doesCopyInitializationRequireCopy(actual) || inout) {
+    if (actualSym->hasFlag(FLAG_IS_ARRAY_VIEW) ||
+        doesCopyInitializationRequireCopy(actual) || inout) {
       // Add a new formal temp at the call site that mimics variable
       // initialization from the actual.
       VarSymbol* tmp = newTemp(astr("_formal_tmp_in_", formal->name));
