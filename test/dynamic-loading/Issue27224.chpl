@@ -6,7 +6,7 @@ proc test0() {
 
   assert(!mod.isDynamicLoadingEnabled);
 
-  var err: mod.DynLibError?;
+  var err: mod.DynLoadError?;
   var bin = mod.chpl_BinaryInfo.create("somePathThatDoesNotExist", err);
   if const e = err! then writeln(e);
 
