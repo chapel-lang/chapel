@@ -1,2 +1,2 @@
---checks        # reshapeSizeMismatch.good
---checks --n=3  # reshapeSizeMismatch.n=3.good
+       # reshapeSizeMismatch.good
+--n=3  # reshapeSizeMismatch.n=3.good
