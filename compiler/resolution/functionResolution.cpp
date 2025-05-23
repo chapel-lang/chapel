@@ -4381,7 +4381,7 @@ static FnSymbol* resolveNormalCall(CallInfo&            info,
           if (SymExpr* se = toSymExpr(parent->get(1))) {
             //            printf("Adding flag to %d\n", se->symbol()->id);
             se->symbol()->addFlag(FLAG_IS_ARRAY_VIEW);
-            //            se->symbol()->addFlag(FLAG_INSERT_AUTO_DESTROY);
+            se->symbol()->addFlag(FLAG_INSERT_AUTO_DESTROY);
           }
         } else {
           printf("Huh... parent wasn't PRIM_MOVE\n");
@@ -8744,9 +8744,10 @@ void resolveInitVar(CallExpr* call) {
     // of the copy does need to be destroyed.
     if (SymExpr* rhsSe = toSymExpr(srcExpr))
       if (VarSymbol* rhsVar = toVarSymbol(rhsSe->symbol()))
-        if (isAliasingArrayType(rhsVar->getValType()))
+        if (rhsVar->hasFlag(FLAG_IS_ARRAY_VIEW) || isAliasingArrayType(rhsVar->getValType())) {
           if (rhsVar->hasFlag(FLAG_NO_AUTO_DESTROY) == false)
             rhsVar->addFlag(FLAG_INSERT_AUTO_DESTROY);
+        }
 
     Symbol *definedConst = dst->hasFlag(FLAG_CONST)? gTrue : gFalse;
     CallExpr* initCopy = new CallExpr(astr_initCopy, srcExpr->remove(),

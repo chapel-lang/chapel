@@ -712,7 +712,7 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
               //  * the type differs
               //  * it is a domain (for A.domain returning unowned)
               //  * if it's a sync variable (different init/auto copy)
-              if (actualType == returnType && isSyncType(formalType) == false)
+              if (!copiedSe->symbol()->hasFlag(FLAG_IS_ARRAY_VIEW) && actualType == returnType && isSyncType(formalType) == false)
               {
                 bool copyFromUnownedDomain = false;
                 if (actualType->symbol->hasFlag(FLAG_DOMAIN)) {
@@ -763,6 +763,7 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
         //
         SymExpr* rhsExpr = toSymExpr(copyExpr->get(1));
         if (rhsExpr) {
+          copiesToNoDestroy = false;  // Is this too big a hammer?  redundant?
           rhsExpr->symbol()->addFlag(FLAG_INSERT_AUTO_DESTROY);
           if (rhsExpr->symbol()->hasFlag(FLAG_IS_ARRAY_VIEW)) {
             //            printf("Already done, yo\n");

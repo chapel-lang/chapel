@@ -704,7 +704,11 @@ inline bool Symbol::hasFlag(Flag flag) const {
 
 inline void Symbol::addFlag(Flag flag) {
   CHECK_FLAG(flag);
+  if (id == 832287 && flag == FLAG_NO_AUTO_DESTROY) {
+    printf("Hey, wait!\n");
+  }// else {  // Skipping this closes the leak
   flags.set(flag);
+  //  }
 }
 
 inline void Symbol::copyFlags(const Symbol* other) {
