@@ -383,9 +383,6 @@ static Expr* walkBlockStmt(FnSymbol*         fn,
       const std::vector<VarSymbol*>& vars = lmmIt->second;
       for_vector(VarSymbol, var, vars) {
 
-        //        if (var->id == 832287)
-          //          printf("Yay, it's my formal!\n");
-
         if (isAutoDestroyedOrSplitInitedVariable(var)) {
           scope.destroyVariable(stmt, var, ignoredVariables);
           scope.addEarlyDeinit(var);
@@ -973,13 +970,6 @@ static Expr* findLastExprInStatement(Expr* e, VarSymbol* v) {
 
 bool isAutoDestroyedVariable(Symbol* sym) {
   bool retval = false;
-
-  if (sym && sym->id == 832287) {
-    //    printf("Here's my baby!\n");
-  }
-  if (sym && sym->id == 832279) {
-    //    printf("Here's the other!\n");
-  }
 
   if (VarSymbol* var = toVarSymbol(sym)) {
     if (var->hasFlag(FLAG_NO_AUTO_DESTROY)     == false &&

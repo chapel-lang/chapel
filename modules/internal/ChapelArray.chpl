@@ -1961,7 +1961,7 @@ module ChapelArray {
   pragma "fn returns aliasing array"
   proc _array.reshape(ranges: range(?)...) {
     if ranges.size == 1 && ranges(0).bounds == boundKind.low {
-      return this.reshape({ranges(0).low..#this.size}, checkReshapeDimsByDefault);
+      return this.reshape({ranges(0).low..#this.size}, false);
     } else {
       return this.reshape({(...ranges)}, checkReshapeDimsByDefault);
     }
@@ -1972,7 +1972,7 @@ module ChapelArray {
   pragma "fn returns aliasing array"
   proc _array.reshape(ranges: range(?)..., checkDims: bool) {
     if ranges.size == 1 && ranges(0).bounds == boundKind.low {
-      return this.reshape({ranges(0).low..#this.size}, checkDims);
+      return this.reshape({ranges(0).low..#this.size}, false);
     } else {
       return this.reshape({(...ranges)}, checkDims);
     }

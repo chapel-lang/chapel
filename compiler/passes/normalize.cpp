@@ -2780,11 +2780,6 @@ static Symbol *insertCallTempsWithStmt(CallExpr* call, Expr* stmt) {
   call->replace(new SymExpr(tmp));
 
   stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, call));
-  /* Too early... can only do this after resolution
-  if (call->findFnSymbol()->hasFlag(FLAG_RETURNS_ALIASING_ARRAY)) {
-    tmp->addFlag(FLAG_IS_ARRAY_VIEW);
-  }
-  */
 
   return tmp;
 }

@@ -712,7 +712,8 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
               //  * the type differs
               //  * it is a domain (for A.domain returning unowned)
               //  * if it's a sync variable (different init/auto copy)
-              if (!copiedSe->symbol()->hasFlag(FLAG_IS_ARRAY_VIEW) && actualType == returnType && isSyncType(formalType) == false)
+              if (!copiedSe->symbol()->hasFlag(FLAG_IS_ARRAY_VIEW) &&
+                  actualType == returnType && isSyncType(formalType) == false)
               {
                 bool copyFromUnownedDomain = false;
                 if (actualType->symbol->hasFlag(FLAG_DOMAIN)) {
