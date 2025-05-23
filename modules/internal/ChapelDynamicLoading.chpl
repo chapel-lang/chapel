@@ -120,14 +120,12 @@ module ChapelDynamicLoading {
   proc deinit() {
     delete chpl_localPtrCache;
     if isDynamicLoadingSupported {
-      coforall loc in Locales[1..] do on loc {
-        if chpl_localPtrCache != nil then delete chpl_localPtrCache;
-      }
+      coforall loc in Locales[1..] do on loc do delete chpl_localPtrCache;
     }
   }
 
   // This class wraps the errors emitted by the system 'dlopen'.
-  class DynLibError : Error {
+  class DynLoadError : Error {
     proc init(msg: string) {
       super.init(msg);
       init this;
@@ -135,7 +133,7 @@ module ChapelDynamicLoading {
   }
 
   private inline
-  proc localDynLoadWrapErrorUnlocked(): owned DynLibError? {
+  proc localDynLoadWrapErrorUnlocked(): owned DynLoadError? {
     extern proc chpl_dlerror(): c_ptrConst(c_char);
 
     const errMsg = chpl_dlerror();
@@ -145,7 +143,7 @@ module ChapelDynamicLoading {
       //       to do something if string construction fails (?) rather than
       //       just halt with a 'try!' here.
       const str = try! string.createCopyingBuffer(errMsg);
-      return new DynLibError?(str);
+      return new DynLoadError?(str);
     }
 
     return nil;
@@ -161,7 +159,7 @@ module ChapelDynamicLoading {
   private var localDynLoadGuard: chpl_lockWrapper;
 
   private inline
-  proc localDynLoadClose(ptr: c_ptr(void), out err: owned DynLibError?) {
+  proc localDynLoadClose(ptr: c_ptr(void), out err: owned DynLoadError?) {
     extern proc chpl_dlclose(handle: c_ptr(void)): c_int;
 
     manage localDynLoadGuard.withLock() {
@@ -176,7 +174,7 @@ module ChapelDynamicLoading {
   }
 
   private inline
-  proc localDynLoadOpen(path: string, out err: owned DynLibError?) {
+  proc localDynLoadOpen(path: string, out err: owned DynLoadError?) {
     extern proc chpl_dlopen(path: c_ptrConst(c_char),
                             mode: c_int): c_ptr(void);
     extern const CHPL_RTLD_LAZY: c_int;
@@ -198,7 +196,7 @@ module ChapelDynamicLoading {
 
   private inline
   proc localDynLoadSymbolLookup(sym: string, handle: c_ptr(void),
-                                out err: owned DynLibError?) {
+                                out err: owned DynLoadError?) {
     extern proc chpl_dlsym(handle: c_ptr(void),
                            symbol: c_ptrConst(c_char)): c_ptr(void);
 
@@ -243,7 +241,7 @@ module ChapelDynamicLoading {
   }
 
   private inline proc errorIfUnsupported() {
-    var ret: owned DynLibError?;
+    var ret: owned DynLoadError?;
 
     if !isDynamicLoadingSupported {
       compilerError('Dynamic loading is not supported for your ' +
@@ -251,7 +249,7 @@ module ChapelDynamicLoading {
     }
 
     if !isDynamicLoadingEnabled {
-      ret = new DynLibError('Dynamic loading is not enabled');
+      ret = new DynLoadError('Dynamic loading is not enabled');
     }
 
     return ret;
@@ -301,7 +299,7 @@ module ChapelDynamicLoading {
     }
 
     // Load a binary given a path.
-    proc type create(path: string, out err: owned DynLibError?) {
+    proc type create(path: string, out err: owned DynLoadError?) {
       var ret: unmanaged chpl_BinaryInfo? = nil;
 
       // Check for an error and return if it was set.
@@ -313,7 +311,7 @@ module ChapelDynamicLoading {
         var shouldCreateNewEntry = true;
 
         // Start by opening a system handle on LOCALE-0.
-        var err0: owned DynLibError?;
+        var err0: owned DynLoadError?;
         var ptr0 = localDynLoadOpen(path, err0);
 
         // TODO: Need to propagate/combine this error instead.
@@ -338,7 +336,7 @@ module ChapelDynamicLoading {
           // Swap in pointer on LOCALE-0. This clears the variable.
           bin._systemPtrs[0] <=> ptr0;
 
-          var errBuf = new chpl_localBuffer(owned DynLibError?, numLocales);
+          var errBuf = new chpl_localBuffer(owned DynLoadError?, numLocales);
           var numErrs: atomic int = 0;
 
           // Loop and attempt to open system handles on other locales.
@@ -346,7 +344,7 @@ module ChapelDynamicLoading {
             coforall loc in Locales[1..] with (ref errBuf) do on loc {
               const n = (here.id: int);
 
-              var err: owned DynLibError?;
+              var err: owned DynLoadError?;
               var ptr = localDynLoadOpen(path, err);
 
               // TODO: Need to propagate/combine this error instead.
@@ -414,7 +412,7 @@ module ChapelDynamicLoading {
             const loc = Locales[i];
             const ptr = _systemPtrs[i];
             if ptr != nil then on loc {
-              var err: owned DynLibError?;
+              var err: owned DynLoadError?;
               localDynLoadClose(ptr, err);
               // TODO: Figure out how to propagate this instead of halting?
               if err != nil then halt(err!.message());
@@ -433,7 +431,7 @@ module ChapelDynamicLoading {
     // TODO: 'T' must be a procedure type, but we cannot restrict it yet,
     // e.g., we cannot write "type t: proc". As a short-term workaround
     // we could add a primitive "any procedure type" to use instead.
-    proc loadSymbol(sym: string, type t, out err: owned DynLibError?) {
+    proc loadSymbol(sym: string, type t, out err: owned DynLoadError?) {
       type P = chpl_toExternProcType(chpl_toWideProcType(t));
       var idx: int = 0;
 
@@ -459,7 +457,7 @@ module ChapelDynamicLoading {
       // If it does, then it should be in the procedure pointer cache, and
       // we can immediately translate it into a wide index.
       on Locales[0] {
-        var errBuf = new chpl_localBuffer(owned DynLibError?, numLocales);
+        var errBuf = new chpl_localBuffer(owned DynLoadError?, numLocales);
         var numErrs: atomic int = 0;
         var shouldInternPointer = false;
 
@@ -497,7 +495,7 @@ module ChapelDynamicLoading {
               var handle: c_ptr(void);
               on Locales[0] do handle = _systemPtrs[n];
 
-              var err: owned DynLibError?;
+              var err: owned DynLoadError?;
               const ptr = localDynLoadSymbolLookup(sym, handle, err);
               if err {
                 on Locales[0] do errBuf[n] = err;
