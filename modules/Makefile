@@ -133,6 +133,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/DistributedBagDeprecated.chpl \
 	packages/DistributedDeque.chpl \
 	packages/DistributedIters.chpl \
+	packages/DynamicLoading.chpl \
 	packages/EpochManager.chpl \
 	packages/FFTW.chpl \
 	packages/FunctionalOperations.chpl \

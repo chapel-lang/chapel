@@ -40,7 +40,7 @@ extern record foobar {
 /** Define a "user facing" wrapper around the internal dynamic library. */
 record dynamicLibrary {
   var _bin: unmanaged chpl_BinaryInfo?;
-  var _err: owned DynLibError?;
+  var _err: owned DynLoadError?;
 
   proc init(path: string) {
     init this;
