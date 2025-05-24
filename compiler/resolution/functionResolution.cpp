@@ -676,7 +676,7 @@ isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual,
 
     // don't emit lvalue errors for array slices
     // (we can think of these as a special kind of reference)
-    if (isAliasingArrayType(sym->type)) {
+    if (sym->hasFlag(FLAG_IS_ARRAY_VIEW) || isAliasingArrayType(sym->type)) {
       actualExprTmp = false;
     }
 
@@ -4370,6 +4370,20 @@ static FnSymbol* resolveNormalCall(CallInfo&            info,
     }
 
     call->baseExpr->replace(new SymExpr(retval));
+
+    //
+    // Mark results to calls that return aliasing arrays as being an array view
+    //
+    if (retval->hasFlag(FLAG_RETURNS_ALIASING_ARRAY)) {
+      if (CallExpr* parent = toCallExpr(call->parentExpr)) {
+        if (parent->isPrimitive(PRIM_MOVE)) {
+          if (SymExpr* se = toSymExpr(parent->get(1))) {
+            se->symbol()->addFlag(FLAG_IS_ARRAY_VIEW);
+            se->symbol()->addFlag(FLAG_INSERT_AUTO_DESTROY);
+          }
+        }
+      }
+    }
 
     resolveNormalCallConstRef(call);
 
@@ -8720,9 +8734,11 @@ void resolveInitVar(CallExpr* call) {
     // of the copy does need to be destroyed.
     if (SymExpr* rhsSe = toSymExpr(srcExpr))
       if (VarSymbol* rhsVar = toVarSymbol(rhsSe->symbol()))
-        if (isAliasingArrayType(rhsVar->getValType()))
+        if (rhsVar->hasFlag(FLAG_IS_ARRAY_VIEW) ||
+            isAliasingArrayType(rhsVar->getValType())) {
           if (rhsVar->hasFlag(FLAG_NO_AUTO_DESTROY) == false)
             rhsVar->addFlag(FLAG_INSERT_AUTO_DESTROY);
+        }
 
     Symbol *definedConst = dst->hasFlag(FLAG_CONST)? gTrue : gFalse;
     CallExpr* initCopy = new CallExpr(astr_initCopy, srcExpr->remove(),
