@@ -26,8 +26,24 @@ module ChapelDynamicLoading {
 
   param chpl_defaultProcBufferSize = 512;
 
+  // This will always be run, so we can rely on it.
+  inline proc checkForConfigurationErrors() param {
+    use ChplConfig;
+
+    if fcfsUsePointerImplementation &&
+       CHPL_TARGET_COMPILER == "llvm" &&
+       CHPL_LLVM_VERSION == "14" {
+      // This could be a compiler error, but I'm lazy and putting it here.
+      compilerError('The experimental procedure pointer implementation ' +
+                    'is not supported with LLVM-14', 2);
+      return true;
+    }
+
+    return false;
+  }
+
   inline proc isDynamicLoadingSupported param {
-    // NOTE: Change me if there are unsupported compile-time configs.
+    if checkForConfigurationErrors() then return false;
     return true;
   }
 

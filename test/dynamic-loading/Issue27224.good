@@ -1,2 +1,0 @@
-Issue27224.chpl:3: In function 'test0':
-Issue27224.chpl:10: error: Dynamic loading is not supported for your current Chapel configuration

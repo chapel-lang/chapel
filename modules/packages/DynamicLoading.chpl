@@ -99,7 +99,7 @@ if !fcfsUsePointerImplementation {
   compilerError('This module cannot be used unless the experimental ' +
                 'procedure pointer implementation is activated. Set the ' +
                 'config param \'fcfsUsePointerImplementation\' to ' +
-                '\'true\' when compiling to activate it.');
+                '\'true\' when compiling to activate it');
 }
 
 /*

@@ -1,3 +1,0 @@
-CHPL_COMM!=gasnet
-CHPL_COMM_SUBSTRATE!=smp
-CHPL_GASNET_SEGMENT!=everything
