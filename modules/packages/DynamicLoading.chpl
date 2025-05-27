@@ -25,11 +25,6 @@
 /*
   Support for dynamic loading in Chapel.
 
-  .. warning::
-
-    This module is unstable. Support for dynamic loading is experimental
-    and its representation could change at any time.
-
   .. note::
 
     To ``use`` this module, the experimental procedure pointer feature
@@ -63,6 +58,9 @@
 
   .. code-block:: chapel
 
+    // Compile with: 'chpl Test.chpl -suseProcedurePointers=true'
+    //
+
     use DynamicLoading;
 
     // A binary may or may not exist at this path.
@@ -95,7 +93,7 @@
     Support for retrieving references to data stored in a binary could
     be added in the future.
 */
-@unstable()
+@unstable('Dynamic loading support is experimental and unstable!')
 module DynamicLoading {
 
 // This internal module contains the low-level implementation.
@@ -180,8 +178,8 @@ record binary {
 
     .. warning::
 
-      The procedure type ``t`` provided when calling ``binary.retrieve()`` is
-      used verbatim and is not checked against the type of the underlying
+      The procedure type ``t`` provided when calling :proc:`binary.retrieve()`
+      is used verbatim and is not checked against the type of the underlying
       symbol in any way. If the type provided does not match the actual type
       of the underlying procedure, then the resulting behavior when the
       retrieved procedure is called is undefined. Crashes or other bugs
@@ -189,7 +187,9 @@ record binary {
 
     The retrieved procedure is considered to be ``extern`` and will use an
     extern calling convention, the same as is used for other ``extern``
-    procedures declared in Chapel code.
+    procedures declared in Chapel code. This impacts how it can be used.
+    For example, it cannot currently be assigned to a procedure value that
+    is not also considered ``extern``.
 
     :arg name: The name of the procedure to retrieve
     :type name: `string`
