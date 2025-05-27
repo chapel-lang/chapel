@@ -1,1 +1,1 @@
---size=arraySize.large # distibuted-sort-large
+--size=arraySize.large --nElemsLarge=2147483648 # distibuted-sort-large
