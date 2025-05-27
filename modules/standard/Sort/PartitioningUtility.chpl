@@ -21,6 +21,7 @@
 
 /* This module contains utilities used by the sort implementation
    in Partitioning */
+@chpldoc.nodoc
 module PartitioningUtility {
 
 import BlockDist.blockDist;

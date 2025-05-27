@@ -26,6 +26,7 @@
    Building on that, it contains a parallel and distributed MSB radix sort
    and sample sort.
  */
+@chpldoc.nodoc
 module Partitioning {
 
 
