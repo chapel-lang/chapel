@@ -1637,6 +1637,7 @@ private proc partitionSortBaseCase(ref A: [], region: range, comparator) {
   if A.domain.localSubdomain().dim(0).contains(region) {
     // sort it with a stable sort
     local {
+      // TODO: use an unstable sort if requested
       sort(A.localSlice(region), comparator, region, stable=true);
     }
 
@@ -1645,6 +1646,7 @@ private proc partitionSortBaseCase(ref A: [], region: range, comparator) {
     var LocA:[region] A.eltType;
     bulkCopy(LocA, region, A, region);
     local {
+      // TODO: use an unstable sort if requested
       sort(LocA, comparator, region, stable=true);
     }
     // copy the sorted data back

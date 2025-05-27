@@ -593,24 +593,67 @@ private proc unstableSort(ref x: [], comparator, region: range(?)) {
   if region.low >= region.high then
     return;
 
-  if radixSortOkAndStrideOne(x, comparator, region) {
-    // TODO: use a sample sort if the input does not have enough
-    // randomness, according to some heuristic
-
-    var simplerSortSize=50_000;
-    if region.size < simplerSortSize {
-      // TODO: use quicksort instead in these small cases
-      MSBRadixSort.msbRadixSort(x, comparator=comparator, region=region);
-      return;
+  if !chpl_domainDistIsLayout(x.domain) {
+    // sort distributed arrays using Partitioning
+    if !isPODType(x.eltType) {
+      compilerError("distributed sort currently only works with trivially copyable types");
+    }
+    if x.domain.rank != 1 {
+      compilerError("distributed sort currently only works with rank 1 arrays");
     }
 
-    // use the two-array radix sort which is more parallel / faster
-    TwoArrayRadixSort.twoArrayRadixSort(x, comparator=comparator,
-                                        region=region);
+    // TODO: if it is small, copy it locally and sort it,
+    // without allocating these arrays
+    var Scratch: [x.domain] x.eltType;
+    var BucketBoundaries: [x.domain] uint(8);
+
+    param logBuckets = 8;
+
+    if radixSortOkAndStrideOne(x, comparator, region) {
+      var endbit:int;
+      endbit = RadixSortHelp.radixSortParamEndBit(x, comparator);
+      if endbit < 0 then
+        endbit = max(int);
+
+      Partitioning.psort(x, Scratch, BucketBoundaries,
+                         x.domain.dim(0),
+                         comparator,
+                         radixBits=logBuckets,
+                         logBuckets=logBuckets,
+                         nTasksPerLocale=PartitioningUtility.computeNumTasks(),
+                         endbit=endbit);
+    } else {
+      Partitioning.psort(x, Scratch, BucketBoundaries,
+                         x.domain.dim(0),
+                         comparator,
+                         radixBits=0,
+                         logBuckets=logBuckets,
+                         nTasksPerLocale=PartitioningUtility.computeNumTasks(),
+                         endbit=max(int));
+    }
   } else {
-    // use quick sort, which is currently in-place
-    // TODO: use a parallel sample sort instead
-    QuickSort.quickSort(x, comparator=comparator, region=region);
+    // sort local arrays using two-array or quicksort for now
+
+    if radixSortOkAndStrideOne(x, comparator, region) {
+      // TODO: use a sample sort if the input does not have enough
+      // randomness, according to some heuristic
+
+      var simplerSortSize=50_000;
+      if region.size < simplerSortSize {
+        // TODO: use quicksort instead in these small cases
+        MSBRadixSort.msbRadixSort(x, comparator=comparator, region=region);
+        return;
+      }
+
+      // use the two-array radix sort which is more parallel / faster
+      TwoArrayRadixSort.twoArrayRadixSort(x, comparator=comparator,
+                                          region=region);
+    } else {
+      // use quick sort, which is currently in-place
+      // TODO: use a parallel sample sort instead
+      // TODO: use Partitioning.psort here since that is faster
+      QuickSort.quickSort(x, comparator=comparator, region=region);
+    }
   }
 }
 
@@ -618,10 +661,52 @@ private proc stableSort(ref x: [], comparator, region: range(?)) {
   if region.low >= region.high then
     return;
 
-  // TODO: implement a stable merge sort with parallel merge
-  // TODO: create an in-place merge sort for the stable+minimizeMemory case
-  // TODO: create a stable variant of the radix sort
-  TimSort.timSort(x, comparator=comparator, region=region);
+  if !chpl_domainDistIsLayout(x.domain) {
+    // sort distributed arrays using Partitioning
+    if !isPODType(x.eltType) {
+      compilerError("distributed sort currently only works with trivially copyable types");
+    }
+    if x.domain.rank != 1 {
+      compilerError("distributed sort currently only works with rank 1 arrays");
+    }
+
+    // TODO: if it is small, copy it locally and sort it,
+    // without allocating these arrays
+    var Scratch: [x.domain] x.eltType;
+    var BucketBoundaries: [x.domain] uint(8);
+
+    param logBuckets = 8;
+
+    if radixSortOkAndStrideOne(x, comparator, region) {
+      var endbit:int;
+      endbit = RadixSortHelp.radixSortParamEndBit(x, comparator);
+      if endbit < 0 then
+        endbit = max(int);
+
+      Partitioning.psort(x, Scratch, BucketBoundaries,
+                         x.domain.dim(0),
+                         comparator,
+                         radixBits=logBuckets,
+                         logBuckets=logBuckets,
+                         nTasksPerLocale=PartitioningUtility.computeNumTasks(),
+                         endbit=endbit);
+    } else {
+      Partitioning.psort(x, Scratch, BucketBoundaries,
+                         x.domain.dim(0),
+                         comparator,
+                         radixBits=0,
+                         logBuckets=logBuckets,
+                         nTasksPerLocale=PartitioningUtility.computeNumTasks(),
+                         endbit=max(int));
+    }
+  } else {
+    // TODO: use Partitioning.psort here since that is stable
+
+    // TODO: implement a stable merge sort with parallel merge
+    // TODO: create an in-place merge sort for the stable+minimizeMemory case
+    // TODO: create a stable variant of the radix sort
+    TimSort.timSort(x, comparator=comparator, region=region);
+  }
 }
 
 /*

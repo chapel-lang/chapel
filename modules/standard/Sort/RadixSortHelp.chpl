@@ -176,6 +176,26 @@ module RadixSortHelp {
     return -1;
   }
 
+  // Returns a compile-time known key width
+  // e.g. for uint(64), returns 64
+  //
+  // Returns -1 if no such ending is known at compile-time.
+  proc radixSortParamEndBit(Data:[], comparator) param {
+    // Compute end_bit if it's known
+    // Default comparator on integers has fixed width
+    const ref element = Data[Data.domain.low];
+    if comparator.type == defaultComparator && fixedWidth(element.type) > 0 {
+      return fixedWidth(element.type);
+    } else if canResolveMethod(comparator, "key", element) {
+      type keyType = comparator.key(element).type;
+      if fixedWidth(keyType) > 0 then
+        return fixedWidth(keyType);
+    }
+
+    return -1;
+  }
+
+
   proc radixSortClz(val) {
     // This could use BitOps.clz but that adds new
     // module dependencies that confuse testing.
