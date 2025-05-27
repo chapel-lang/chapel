@@ -22,7 +22,8 @@
 #include "chpl/util/filesystem.h"
 #include <csignal>
 #include <cstdlib>
-#include <filesystem>
+#include <llvm/Support/Path.h>
+#include <llvm/Support/FileSystem.h>
 
 static ErrorGuard* currentGuard = nullptr;
 static int guardCount = 0;
@@ -56,8 +57,8 @@ static void errorGuardSignalHandler(int sig) {
       auto destPath = path + "/" + file.str();
 
       // create any needed subdirectories
-      auto destDir = std::filesystem::path(destPath).parent_path();
-      std::filesystem::create_directories(destDir);
+      auto destDir = llvm::sys::path::parent_path(destPath);
+      std::ignore = llvm::sys::fs::create_directories(destDir);
 
       auto fileText = chpl::parsing::fileText(currentGuard->context(), file);
       std::ignore = chpl::writeFile(destPath.c_str(), fileText.text());
@@ -67,7 +68,7 @@ static void errorGuardSignalHandler(int sig) {
       printf("failed to remove symlink target %s\n", symlinkTarget());
     }
 
-    std::filesystem::create_symlink(path, target);
+    std::ignore = llvm::sys::fs::create_link(path, target);
 
     printf("created Chapel file dump directory %s\n", path.c_str());
     printf("symlinked to %s\n", symlinkTarget());
