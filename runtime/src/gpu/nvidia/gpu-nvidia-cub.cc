@@ -99,15 +99,15 @@ void chpl_gpu_impl_sort_##chpl_kind##_##data_type(data_type* data_in, \
                                                   int n, void* stream) {\
   void* temp = NULL; \
   size_t temp_bytes = 0; \
-  cub::DeviceRadixSort::cub_kind(temp, temp_bytes, data_in, data_out,\
+  CUDA_CALL(cub::DeviceRadixSort::cub_kind(temp, temp_bytes, data_in, data_out,\
                                  n, /*beginBit*/0, \
                                  /*endBit*/ sizeof(data_type)*8,\
-                                 (CUstream)stream); \
+                                 (CUstream)stream)); \
   CUDA_CALL(cuMemAlloc(((CUdeviceptr*)&temp), temp_bytes)); \
-  cub::DeviceRadixSort::cub_kind(temp, temp_bytes, data_in, data_out,\
+  CUDA_CALL(cub::DeviceRadixSort::cub_kind(temp, temp_bytes, data_in, data_out,\
                                  n, /*beginBit*/0, \
                                  /*endBit*/ sizeof(data_type)*8,\
-                                 (CUstream)stream); \
+                                 (CUstream)stream)); \
   CUDA_CALL(cuMemFree((CUdeviceptr)temp)); \
 }
 
