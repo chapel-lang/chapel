@@ -532,19 +532,19 @@ void Symbol::maybeGenerateDeprecationWarning(Expr* context) {
   }
 }
 
-const char* Symbol::getFirstEdition() const {
+std::string Symbol::getFirstEdition() const {
   if (firstEdition == "") {
-    return editions.front().c_str();
+    return editions.front();
   } else {
-    return firstEdition.c_str();
+    return firstEdition;
   }
 }
 
-const char* Symbol::getLastEdition() const {
+std::string Symbol::getLastEdition() const {
   if (lastEdition == "") {
-    return editions.back().c_str();
+    return editions.back();
   } else {
-    return lastEdition.c_str();
+    return lastEdition;
   }
 }
 

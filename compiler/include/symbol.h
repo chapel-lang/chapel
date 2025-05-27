@@ -191,8 +191,8 @@ public:
   std::string firstEdition;
   std::string lastEdition;
 
-  const char* getFirstEdition() const;
-  const char* getLastEdition() const;
+  std::string getFirstEdition() const;
+  std::string getLastEdition() const;
 
 protected:
                      Symbol(AstTag      astTag,
