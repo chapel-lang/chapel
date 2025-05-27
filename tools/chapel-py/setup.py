@@ -27,6 +27,7 @@ from pathlib import Path
 
 chpl_home = Path(__file__).parent.parent.parent.resolve()
 chpl_printchplenv = chpl_home / "util" / "printchplenv"
+chpl_llvm_py = chpl_home / "util" / "chplenv" / "chpl_llvm.py"
 chpl_variables_lines = (
     subprocess.check_output(
         [chpl_printchplenv, "--internal", "--all", " --anonymize", "--simple"]
@@ -65,7 +66,7 @@ if have_llvm and have_llvm != "none":
 
 CXXFLAGS += ["-Wno-c99-designator"]
 CXXFLAGS += (
-    subprocess.check_output([llvm_config, "--cxxflags"])
+    subprocess.check_output([chpl_llvm_py, "--host-cxxflags"])
     .decode(sys.stdout.encoding)
     .strip()
     .split()
