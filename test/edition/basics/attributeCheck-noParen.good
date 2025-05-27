@@ -1,0 +1,1 @@
+attributeCheck-noParen.chpl:1: error: '@edition' attribute requires an argument

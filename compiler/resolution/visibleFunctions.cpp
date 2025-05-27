@@ -559,6 +559,15 @@ static void getVisibleMethodsFirstVisit(const char* name, CallExpr* call,
 
     if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(name)) {
       forv_Vec(FnSymbol, fn, *fns) {
+        if (fn->hasFlag(FLAG_HAS_EDITION)) {
+          // Only allow functions with a specified edition if that edition
+          // matches
+          if (!isEditionApplicable(fn->getFirstEdition(), fn->getLastEdition(),
+                                   fn)) {
+            continue;
+          }
+        }
+
         // Don't allow operators that aren't methods to be found unless they're
         // publicly visible
         if (fn->hasFlag(FLAG_METHOD) || !fn->hasFlag(FLAG_OPERATOR)) {
@@ -601,6 +610,15 @@ static void getVisibleMethodsFirstVisitFiltered(const char* name,
 
     if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(name)) {
       forv_Vec(FnSymbol, fn, *fns) {
+        if (fn->hasFlag(FLAG_HAS_EDITION)) {
+          // Only allow functions with a specified edition if that edition
+          // matches
+          if (!isEditionApplicable(fn->getFirstEdition(), fn->getLastEdition(),
+                                   fn)) {
+            continue;
+          }
+        }
+
         // When private methods and fields are supported, we'll need to extend
         // this
         if (fn->isMethod()) {
@@ -1095,6 +1113,15 @@ static void getVisibleFnsFirstVisit(const char*       name,
       bool privateOkay = false;
 
       forv_Vec(FnSymbol, fn, *fns) {
+        if (fn->hasFlag(FLAG_HAS_EDITION)) {
+          // Only allow functions with a specified edition if that edition
+          // matches
+          if (!isEditionApplicable(fn->getFirstEdition(), fn->getLastEdition(),
+                                   fn)) {
+            continue;
+          }
+        }
+
         if (fn->hasFlag(FLAG_PRIVATE)) {
           // Ensure that private functions are not used outside of their
           // proper scope
