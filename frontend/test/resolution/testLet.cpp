@@ -65,9 +65,8 @@ static void testOutOfOrder() {
   )""";
 
   resolveTypeOfXInit(context, program, /* requireType */ false);
-  assert(guard.numErrors() == 2);
+  assert(guard.numErrors() == 1);
   assert(guard.error(0)->type() == ErrorType::UseOfLaterVariable);
-  assert(guard.error(1)->type() == ErrorType::NoMatchingCandidates);
   guard.realizeErrors();
 }
 

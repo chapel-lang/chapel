@@ -961,7 +961,7 @@ void lowerContexts() {
     for_vector(BaseAST, ast, asts) {
       if (CForLoop* loop = toCForLoop(ast)) {
         CONTEXT_DEBUG(0, "encountered a C loop", loop);
-        if (loop->id == breakOnResolveID) gdbShouldBreakHere();
+        if (loop->id == breakOnResolveID) debuggerBreakHere();
 
         ContextHandler h(loop);
         h.collectHandleAndOuterContexts();

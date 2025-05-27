@@ -49,7 +49,7 @@ proc main() {
   }
   try {
     // error: bad type
-    for i in py_arr_int_3d.these(bool) {
+    for i in py_arr_int_3d.values(bool) {
       writeln(i);
     }
   } catch e {
@@ -57,7 +57,7 @@ proc main() {
   }
   try {
     // error: bad type
-    forall i in py_arr_int_3d.these(real(32)) {
+    forall i in py_arr_int_3d.values(real(32)) {
       writeln(i);
     }
   } catch e {
@@ -134,7 +134,7 @@ proc main() {
     py_arr_int_3d(int, (1, 2, 3.0));
   } else if testCase == 8 {
     // compile error: no type
-    for i in py_arr_int_3d {
+    for i in py_arr_int_3d.values() {
       writeln(i);
     }
   } else if testCase == 9 {

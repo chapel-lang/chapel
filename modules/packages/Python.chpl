@@ -2347,7 +2347,18 @@ module Python {
     proc getPyObject() do return this.obj;
 
     /*
-      Iterates over an iterable Python object.
+      Iterate over an iterable Python object. This is equivalent to calling
+      ``next`` continuously on an object until it raises ``StopIteration`` in
+      Python.
+
+      .. note::
+
+         This iterator does not support parallelism.
+
+      .. note::
+
+         If iterating over a Python array, prefer using a :type:`PyArray` object
+         and calling :iter:`PyArray.values` instead.
     */
     pragma "docs only"
     iter these(type eltType = owned Value): eltType throws do
@@ -2622,6 +2633,23 @@ module Python {
     }
   }
 
+  private inline
+  proc determineSliceBounds(bounds: range(?)): (Py_ssize_t, Py_ssize_t) {
+    if (bounds.hasLowBound() && bounds.hasHighBound()) {
+      return (bounds.low.safeCast(Py_ssize_t),
+              bounds.high.safeCast(Py_ssize_t) + 1);
+
+    } else if (!bounds.hasLowBound() && bounds.hasHighBound()) {
+      return (min(Py_ssize_t), bounds.high.safeCast(Py_ssize_t) + 1);
+
+    } else if (bounds.hasLowBound() && !bounds.hasHighBound()) {
+      return (bounds.low.safeCast(Py_ssize_t), max(Py_ssize_t));
+
+    } else {
+      return (min(Py_ssize_t), max(Py_ssize_t));
+    }
+  }
+
   /*
     Represents a Python tuple.  This provides a Chapel interface to Python
     tuples, where the Python interpreter owns the tuple.
@@ -2701,25 +2729,10 @@ module Python {
 
       var pyObj;
 
-      if (bounds.hasLowBound() && bounds.hasHighBound()) {
-        pyObj = PyTuple_GetSlice(this.getPyObject(),
-                                 bounds.low.safeCast(Py_ssize_t),
-                                 bounds.high.safeCast(Py_ssize_t) + 1);
-
-      } else if (!bounds.hasLowBound() && bounds.hasHighBound()) {
-        pyObj = PyTuple_GetSlice(this.getPyObject(), min(Py_ssize_t),
-                                 bounds.high.safeCast(Py_ssize_t) + 1);
-
-      } else if (bounds.hasLowBound() && !bounds.hasHighBound()) {
-        pyObj = PyTuple_GetSlice(this.getPyObject(),
-                                 bounds.low.safeCast(Py_ssize_t),
-                                 max(Py_ssize_t));
-
-      } else {
-        pyObj = PyTuple_GetSlice(this.getPyObject(), min(Py_ssize_t),
-                                 max(Py_ssize_t));
-      }
+      var (low, high) = determineSliceBounds(bounds);
+      pyObj = PyTuple_GetSlice(this.getPyObject(), low, high);
       this.interpreter.checkException();
+
       return interpreter.fromPythonInner(T, pyObj);
     }
 
@@ -2801,6 +2814,51 @@ module Python {
       return this.get(owned Value, idx);
 
     /*
+      Get a slice of the list indicated by ``bounds``.  Equivalent to
+      calling ``obj[bounds.low:bounds.high+1]`` in Python.
+
+      .. note::
+
+         This method does not support strided ranges or ranges with an alignment
+         other than 0.
+
+      :arg T: the Chapel type of the slice to return.
+      :arg bounds: The full slice of the list to return
+      :returns: A slice of the list for the given bounds.
+    */
+    pragma "docs only"
+    proc get(type T = owned Value, bounds: range(?)): T throws do
+      compilerError("docs only");
+
+    @chpldoc.nodoc
+    proc get(type T, bounds: range(?)): T throws {
+      if (bounds.strides != strideKind.one) {
+        compilerError("cannot call `get()` on a Python list with a range with stride other than 1");
+      }
+
+      var ctx = chpl_pythonContext.enter();
+      defer ctx.exit();
+
+      var pyObj;
+
+      var (low, high) = determineSliceBounds(bounds);
+      pyObj = PyList_GetSlice(this.getPyObject(), low, high);
+      this.interpreter.checkException();
+
+      return interpreter.fromPythonInner(T, pyObj);
+    }
+
+    @chpldoc.nodoc
+    proc get(bounds: range(?)): owned Value throws {
+      if (bounds.strides != strideKind.one) {
+        // Avoids the error from the other version reporting this function
+        // instead of the user function
+        compilerError("cannot call `get()` on a Python list with a range with stride other than 1");
+      }
+      return this.get(owned Value, bounds);
+    }
+
+    /*
       Set an item in the list. Equivalent to calling ``obj[idx] = item`` in
       Python.
 
@@ -2814,6 +2872,133 @@ module Python {
       PySequence_SetItem(this.getPyObject(),
                      idx.safeCast(Py_ssize_t),
                      interpreter.toPythonInner(item));
+      this.interpreter.checkException();
+    }
+
+    /*
+      Set an item in the list. Equivalent to calling
+      ``obj[bounds.low:bounds.high+1] = items`` in Python.
+
+      Note that providing more or less items than specified by `bounds` will
+      change the length of the list.
+
+      :arg bounds: The indices of the items to set.
+      :arg item: The item to set.
+    */
+    proc set(bounds: range(?), items: ?) throws {
+      if (bounds.strides != strideKind.one) {
+        compilerError("cannot call `set()` on a Python list with a range with stride other than 1");
+      }
+
+      var ctx = chpl_pythonContext.enter();
+      defer ctx.exit();
+
+      var (low, high) = determineSliceBounds(bounds);
+      PyList_SetSlice(this.getPyObject(), low, high,
+                      interpreter.toPythonInner(items));
+      this.interpreter.checkException();
+    }
+
+    /*
+      Insert an item into the list at the specified index.  Equivalent to
+      calling ``obj.insert(index, item)`` in Python.
+
+      :arg idx: The index to insert the item at
+      :arg item: The item to append
+    */
+    proc insert(idx: int, item: ?) throws {
+      var ctx = chpl_pythonContext.enter();
+      defer ctx.exit();
+
+      PyList_Insert(this.getPyObject(), idx.safeCast(Py_ssize_t),
+                    interpreter.toPythonInner(item));
+      this.interpreter.checkException();
+    }
+
+    /*
+      Append an item to the end of the list.  Equivalent to calling
+      ``obj.append(item)`` in Python.
+
+      :arg item: The item to append
+    */
+    proc append(item: ?) throws {
+      var ctx = chpl_pythonContext.enter();
+      defer ctx.exit();
+
+      PyList_Append(this.getPyObject(), interpreter.toPythonInner(item));
+      this.interpreter.checkException();
+    }
+
+    /*
+      Extend the list with the contents of `iterable`.  Equivalent to calling
+      ``obj.extend(iterable)`` in Python.
+
+      .. note::
+
+         This method is only support for Python 3.13 or later.  Calling it with
+         earlier versions of Python will result in a PythonException that the
+         method is not supported.
+
+      :arg iterable: something that can be iterated over to extend the list
+    */
+    proc extend(iterable: ?) throws {
+      var ctx = chpl_pythonContext.enter();
+      defer ctx.exit();
+
+      PyList_Extend(this.getPyObject(), interpreter.toPythonInner(iterable));
+      this.interpreter.checkException();
+    }
+
+    /*
+      Remove item at index from the list.  Equivalent to calling `del obj[idx]`
+      in Python.
+
+      :arg idx: The index of the item to remove.
+    */
+    proc remove(idx: int) throws {
+      var ctx = chpl_pythonContext.enter();
+      defer ctx.exit();
+
+      PyList_SetSlice(this.getPyObject(), idx.safeCast(Py_ssize_t),
+                      idx.safeCast(Py_ssize_t) + 1, nil);
+      this.interpreter.checkException();
+    }
+
+    /*
+      Remove the specified items from the list.  Equivalent to calling
+      ``obj[bounds.low:bounds.high+1] = []`` or
+      ``del obj[bounds.low:bounds.high+1]`` in Python.
+
+      :arg bounds: The indices of the items to remove.
+    */
+    proc remove(bounds: range(?)) throws {
+      if (bounds.strides != strideKind.one) {
+        compilerError("cannot call `remove()` on a Python list with a range with stride other than 1");
+      }
+
+      var ctx = chpl_pythonContext.enter();
+      defer ctx.exit();
+
+      var (low, high) = determineSliceBounds(bounds);
+      PyList_SetSlice(this.getPyObject(), low, high, nil);
+      this.interpreter.checkException();
+    }
+
+    /*
+      Remove all items from the list.  Equivalent to calling ``obj.clear()`` or
+      ``del obj[:]``
+
+      .. note::
+
+         This method is only support for Python 3.13 or later.  Calling it with
+         earlier versions of Python will result in a PythonException that the
+         method is not supported.
+    */
+    proc clear() throws {
+      var ctx = chpl_pythonContext.enter();
+      defer ctx.exit();
+
+      PyList_Clear(this.getPyObject());
       this.interpreter.checkException();
     }
   }
@@ -3329,6 +3514,39 @@ module Python {
         "index must be a single int (for 1D arrays only) " +
         "or a tuple of ints");
 
+
+    /*
+      Iterate over the elements of the Python array.
+
+      .. warning::
+
+        This invokes the Python iterator, which has considerable overhead.
+        Prefer using :iter:`PyArray.values` which is significantly faster and
+        supports parallel iteration.
+    */
+    pragma "docs only"
+    override iter these(type eltType = owned Value): eltType throws do
+      compilerError("docs only");
+    //
+    // TODO: these are meant to prevent users from calling .these on a PyArray
+    // when they probaby wanted .values. But the mere presence of these as
+    // compiler errors prevents any program using Value.these from
+    // compiling. And we can't just make them throw instead because inheritance
+    // prevents iterator inlining, which is not yet supported
+    //
+    // @chpldoc.nodoc
+    // override iter these(type eltType): eltType throws {
+    //   compilerError(
+    //     "Calling '.these(eltType)' on a PyArray is not supported."
+    //     + " Use '.values(eltType)' instead.");
+    // }
+    // @chpldoc.nodoc
+    // override iter these(): eltType throws {
+    //   compilerError(
+    //     "Calling '.these()' on a PyArray is not supported."
+    //     + " Use '.values()' instead.");
+    // }
+
     /*
       Iterate over the elements of the Python array. This results in a Chapel
       iterator that yields the elements of the Python array. This yields
@@ -3339,12 +3557,12 @@ module Python {
       ``PyArray`` object, it does not need to be specified here.
     */
     pragma "docs only"
-    override iter these(type eltType = this.eltType) ref : eltType throws {
+    iter values(type eltType = this.eltType) ref : eltType throws {
       compilerError("docs only");
     }
 
     @chpldoc.nodoc
-    override iter these(type eltType) ref : eltType throws {
+    iter values(type eltType) ref : eltType throws {
       if eltType == nothing then
         compilerError("Element type must be specified at compile time");
 
@@ -3361,12 +3579,12 @@ module Python {
       }
     }
     @chpldoc.nodoc
-    override iter these() ref : eltType throws {
-      for e in these(eltType=this.eltType) do yield e;
+    iter values() ref : eltType throws {
+      for e in values(eltType=this.eltType) do yield e;
     }
     // TODO: it should also be possible to support leader/follower here
     @chpldoc.nodoc
-    iter these(param tag: iterKind, type eltType) ref : eltType throws
+    iter values(param tag: iterKind, type eltType) ref : eltType throws
      where tag == iterKind.standalone {
       if eltType == nothing then
         compilerError("Element type must be specified at compile time");
@@ -3384,9 +3602,9 @@ module Python {
       }
     }
     @chpldoc.nodoc
-    iter these(param tag: iterKind) ref : eltType throws
+    iter values(param tag: iterKind) ref : eltType throws
     where tag == iterKind.standalone do
-      foreach e in these(tag=tag, eltType=this.eltType) do yield e;
+      foreach e in values(tag=tag, eltType=this.eltType) do yield e;
 
     /*
       Get the Chapel array from the Python array. This results in a Chapel view
@@ -4142,12 +4360,19 @@ module Python {
     extern proc PyList_SetItem(list: PyObjectPtr,
                                idx: Py_ssize_t,
                                item: PyObjectPtr);
+    extern proc PyList_SetSlice(list: PyObjectPtr, low: Py_ssize_t,
+                                high: Py_ssize_t, itemlist: PyObjectPtr);
     extern proc PyList_GetItem(list: PyObjectPtr, idx: Py_ssize_t): PyObjectPtr;
+    extern proc PyList_GetSlice(list: PyObjectPtr, low: Py_ssize_t,
+                                high: Py_ssize_t): PyObjectPtr;
     extern proc PyList_Size(list: PyObjectPtr): Py_ssize_t;
     extern proc PyList_Insert(list: PyObjectPtr,
                               idx: Py_ssize_t,
                               item: PyObjectPtr);
     extern proc PyList_Append(list: PyObjectPtr, item: PyObjectPtr);
+    extern "chpl_PyList_Clear" proc PyList_Clear(list: PyObjectPtr);
+    extern "chpl_PyList_Extend" proc PyList_Extend(list: PyObjectPtr,
+                                                   iterable: PyObjectPtr);
 
     /*
       Sets

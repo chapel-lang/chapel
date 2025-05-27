@@ -254,7 +254,8 @@ static void insertFinalGenerate(LoopWithShadowVarsInterface* fs,
 {
   if (fs->needsInitialAccumulate()) {
     VarSymbol* genTemp = newTemp("chpl_gentemp");
-    fs->asExpr()->insertAfter(new CallExpr("=", fiVarSym, genTemp));
+    fs->asExpr()->insertAfter("chpl_check_assign_reduce_result(%S,%S)",
+                              fiVarSym, genTemp);
     fs->asExpr()->insertAfter("'move'(%S, generate(%S,%S))",
                     genTemp, gMethodToken, globalOp);
     fs->asExpr()->insertAfter(new DefExpr(genTemp));
@@ -641,7 +642,7 @@ static void handleTaskPrivate(LoopWithShadowVarsInterface* fs, ShadowVarSymbol* 
 
 static void handleOneShadowVar(LoopWithShadowVarsInterface* fs, ShadowVarSymbol* svar)
 {
-  if (svar->id == breakOnResolveID) gdbShouldBreakHere();
+  if (svar->id == breakOnResolveID) debuggerBreakHere();
 
   switch (svar->intent) {
     case TFI_IN:           handleIn(fs, svar, false);   break;

@@ -489,7 +489,7 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
   ret.chplType = typeInfo();
 
   if (id == breakOnCodegenID)
-    gdbShouldBreakHere();
+    debuggerBreakHere();
 
   if( outfile ) {
     // dtString immediates don't actually codegen as immediates, we just use
@@ -908,7 +908,7 @@ void VarSymbol::codegenGlobalDef(bool isHeader) {
   if( id == breakOnCodegenID ||
       (breakOnCodegenCname[0] &&
        0 == strcmp(cname, breakOnCodegenCname)) ) {
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
 
   if( info->cfile ) {
@@ -978,7 +978,7 @@ void VarSymbol::codegenDef() {
   GenInfo* info = gGenInfo;
 
   if (id == breakOnCodegenID)
-    gdbShouldBreakHere();
+    debuggerBreakHere();
 
   // Local variable symbols should never be
   // generated for extern or void types
@@ -1153,7 +1153,7 @@ GenRet ArgSymbol::codegen() {
 
   if (this->id == breakOnCodegenID ||
       this->defPoint->id == breakOnCodegenID) {
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
 
   ret.chplType = this->type;
@@ -1482,7 +1482,7 @@ void TypeSymbol::codegenDef() {
   if( id == breakOnCodegenID ||
       (breakOnCodegenCname[0] &&
        0 == strcmp(cname, breakOnCodegenCname)) ) {
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
 
   if (!hasFlag(FLAG_EXTERN)) {
@@ -1910,7 +1910,7 @@ llvm::Type* TypeSymbol::getLLVMType() {
   if (auto* stype = llvm::dyn_cast_or_null<llvm::StructType>(llvmImplType)) {
     if (auto* aggType = toAggregateType(this->type)) {
       if (aggType->isClass()) {
-        return stype->getPointerTo();
+        return llvm::PointerType::getUnqual(stype);
       }
     }
   }
@@ -2197,7 +2197,7 @@ codegenFunctionTypeLLVMImpl(
     // Add type for inalloca argument
     if (CGI->usesInAlloca()) {
       auto argStruct = CGI->getArgStruct();
-      argTys.push_back(argStruct->getPointerTo());
+      argTys.push_back(llvm::PointerType::getUnqual(argStruct));
       outArgNames.push_back("inalloca_arg");
 
       // Adjust attributes for inalloca argument
@@ -2470,7 +2470,7 @@ GenRet FnSymbol::codegenCast(GenRet fnPtr) {
 #ifdef HAVE_LLVM
     // now cast to correct function type
     llvm::FunctionType* fnType = llvm::cast<llvm::FunctionType>(t.type);
-    llvm::PointerType *ptrToFnType = llvm::PointerType::get(fnType, 0);
+    llvm::PointerType *ptrToFnType = llvm::PointerType::getUnqual(fnType);
     fngen.val = info->irBuilder->CreateBitCast(fnPtr.val, ptrToFnType);
     trackLLVMValue(fngen.val);
 #endif
@@ -2571,9 +2571,9 @@ importPrecompiledFunctionProto(chpl::ID fnId, const char* cname) {
 #endif
 
 void FnSymbol::codegenPrototype() {
-  if (id == breakOnCodegenID) gdbShouldBreakHere();
+  if (id == breakOnCodegenID) debuggerBreakHere();
   if (breakOnCodegenCname[0] && !strcmp(cname, breakOnCodegenCname)) {
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
 
   GenInfo *info = gGenInfo;
@@ -2805,7 +2805,7 @@ void FnSymbol::codegenDef() {
   if( id == breakOnCodegenID ||
       (breakOnCodegenCname[0] &&
        0 == strcmp(cname, breakOnCodegenCname)) ) {
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
 
   if (!needsCodegenWrtGPU(this)) return;
@@ -2814,7 +2814,7 @@ void FnSymbol::codegenDef() {
   info->cLocalDecls.clear();
 
   if( outfile ) {
-    if (saveCDir.empty()) {
+    if (!saveCDir.empty()) {
      if (const char* rawname = fname()) {
       zlineToFileIfNeeded(this, outfile);
       const char* name = strrchr(rawname, '/');
@@ -2945,7 +2945,7 @@ void FnSymbol::codegenDef() {
     }
 
     for_formals(arg, this) {
-      if (arg->id == breakOnCodegenID) gdbShouldBreakHere();
+      if (arg->id == breakOnCodegenID) debuggerBreakHere();
 
       const clang::CodeGen::ABIArgInfo* argInfo = NULL;
       if (CGI) {
@@ -3276,10 +3276,19 @@ GenRet FnSymbol::codegenAsCallBaseExpr() {
       llvm::Type* Types[] = {ty.type};
 
       const llvm::TargetIntrinsicInfo *TII = info->targetMachine->getIntrinsicInfo();
+#if LLVM_VERSION_MAJOR >= 20
+      llvm::Intrinsic::ID ID = llvm::Intrinsic::lookupIntrinsicID(cname);
+#else
       llvm::Intrinsic::ID ID = llvm::Function::lookupIntrinsicID(cname);
+#endif
       if (ID == llvm::Intrinsic::not_intrinsic && TII)
         ID = static_cast<llvm::Intrinsic::ID>(TII->lookupName(cname));
+#if LLVM_VERSION_MAJOR >= 20
+      ret.val = llvm::Intrinsic::getOrInsertDeclaration(info->module, ID, Types);
+#else
       ret.val = llvm::Intrinsic::getDeclaration(info->module, ID, Types);
+#endif
+
       if (!ret.val) {
         USR_FATAL("Could not find LLVM intrinsic %s", cname);
       }

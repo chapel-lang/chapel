@@ -532,6 +532,22 @@ void Symbol::maybeGenerateDeprecationWarning(Expr* context) {
   }
 }
 
+std::string Symbol::getFirstEdition() const {
+  if (firstEdition == "") {
+    return editions.front();
+  } else {
+    return firstEdition;
+  }
+}
+
+std::string Symbol::getLastEdition() const {
+  if (lastEdition == "") {
+    return editions.back();
+  } else {
+    return lastEdition;
+  }
+}
+
 static bool isInvisibleModule(Symbol* sym) {
   return sym == rootModule || sym == theProgram;
 }
@@ -1319,6 +1335,9 @@ void TypeSymbol::verify() {
   }
   if (type->symbol != this)
     INT_FATAL(this, "TypeSymbol::type->symbol != TypeSymbol");
+
+  // Verify the 'FunctionType's since they do not have a 'gVec'.
+  if (auto ft = toFunctionType(type)) ft->verify();
 }
 
 

@@ -291,6 +291,26 @@ void attachSymbolAttributes(Context* context,
     INT_ASSERT(attr->parenfulDeprecationMessage().isEmpty());
   }
 
+  if (attr->hasEdition()) {
+    INT_ASSERT(!sym->hasFlag(FLAG_HAS_EDITION));
+    sym->addFlag(FLAG_HAS_EDITION);
+
+    auto first = attr->firstEdition();
+    if (!first.isEmpty()) {
+      sym->firstEdition = astr(first);
+    }
+
+    auto last = attr->lastEdition();
+    if (!last.isEmpty()) {
+      sym->lastEdition = astr(last);
+    }
+
+    // Will generate an error if it is not
+    checkEditionRangeValid(sym->getFirstEdition(), sym->getLastEdition(), sym);
+  } else {
+    INT_ASSERT(attr->firstEdition().isEmpty() && attr->lastEdition().isEmpty());
+  }
+
   for (auto pragma : attr->pragmas()) {
     Flag flag = convertPragmaToFlag(pragma);
     if (flag != FLAG_UNKNOWN) {
@@ -600,4 +620,28 @@ ModTag getModuleTag(Context* context, UniqueString path) {
     modTag = MOD_STANDARD;
   }
   return modTag;
+}
+
+// Note: used in 'cleanup' pass as well
+void flattenPrimaryMethod(TypeSymbol* ts, FnSymbol* fn) {
+  Expr*    insertPoint = ts->defPoint;
+  DefExpr* def         = fn->defPoint;
+
+  while (isTypeSymbol(insertPoint->parentSymbol)) {
+    insertPoint = insertPoint->parentSymbol->defPoint;
+  }
+
+  insertPoint->insertBefore(def->remove());
+
+  if (fn->userString != NULL && fn->name != ts->name) {
+    if (strncmp(fn->userString, "ref ", 4) == 0) {
+      // fn->userString of "ref foo()"
+      // Move "ref " before the type name so we end up with "ref Type.foo()"
+      // instead of "Type.ref foo()"
+      fn->userString = astr("ref ", ts->name, ".", fn->userString + 4);
+
+    } else {
+      fn->userString = astr(ts->name, ".", fn->userString);
+    }
+  }
 }

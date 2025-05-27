@@ -1465,7 +1465,7 @@ static void handleIteratorForwarders(ForallStmt* fs,
 /////////// handle one ForallStmt ///////////
 
 static void lowerOneForallStmt(ForallStmt* fs) {
-  if (fs->id == breakOnResolveID) gdbShouldBreakHere();
+  if (fs->id == breakOnResolveID) debuggerBreakHere();
 
   // If this fails, need to filter out those FSes.
   INT_ASSERT(fs->inTree() && fs->getFunction()->isResolved());

@@ -79,11 +79,11 @@ proc testArray(type eltType, shape) {
     for param i in 0..#rank do idx[i] = 1;
     writeln("pyArr_genericPyArr.this(",idx,"): ",
       pyArr_genericPyArr[eltType, idx]);
-    for e in pyArr_genericPyArr.these(eltType) {
+    for e in pyArr_genericPyArr.values(eltType) {
       writeln("element: ", e);
     }
     var sum = 0:(if eltType == bool then int else eltType);
-    forall e in pyArr_genericPyArr.these(eltType) with (+ reduce sum) {
+    forall e in pyArr_genericPyArr.values(eltType) with (+ reduce sum) {
       sum reduce= e;
     }
     writeln("sum: ", sum:eltType);
@@ -102,11 +102,11 @@ proc testArray(type eltType, shape) {
     var idx: rank*int;
     writeln("pyArr_typeSpecified.this(",idx,"): ",
       pyArr_typeSpecified[idx]);
-    for e in pyArr_typeSpecified {
+    for e in pyArr_typeSpecified.values() {
       writeln("element: ", e);
     }
     var sum = 0:(if eltType == bool then int else eltType);
-    forall e in pyArr_typeSpecified with (+ reduce sum) {
+    forall e in pyArr_typeSpecified.values() with (+ reduce sum) {
       sum reduce= e;
     }
     writeln("sum: ", sum:eltType);
@@ -126,11 +126,11 @@ proc testArray(type eltType, shape) {
     for param i in 0..#rank do idx[i] = shape(i)-1;
     writeln("pyArr_rankSpecified.this(",idx,"): ",
       pyArr_rankSpecified[eltType, idx]);
-    for e in pyArr_rankSpecified.these(eltType) {
+    for e in pyArr_rankSpecified.values(eltType) {
       writeln("element: ", e);
     }
     var sum = 0:(if eltType == bool then int else eltType);
-    forall e in pyArr_rankSpecified.these(eltType) with (+ reduce sum) {
+    forall e in pyArr_rankSpecified.values(eltType) with (+ reduce sum) {
       sum reduce= e;
     }
     writeln("sum: ", sum:eltType);
@@ -149,11 +149,11 @@ proc testArray(type eltType, shape) {
     var idx: rank*int;
     writeln("pyArr_fullySpecified.this(",idx,"): ",
       pyArr_fullySpecified[idx]);
-    for e in pyArr_fullySpecified {
+    for e in pyArr_fullySpecified.values() {
       writeln("element: ", e);
     }
     var sum = 0:(if eltType == bool then int else eltType);
-    forall e in pyArr_fullySpecified with (+ reduce sum) {
+    forall e in pyArr_fullySpecified.values() with (+ reduce sum) {
       sum reduce= e;
     }
     writeln("sum: ", sum:eltType);
@@ -194,12 +194,12 @@ proc testArray(type eltType, shape) {
       writeln("pyArr_fullySpecified.this(1): ", pyArr_fullySpecified.this(1));
     }
 
-    for e in pyArr_fullySpecified {
+    for e in pyArr_fullySpecified.values() {
       writeln("element: ", e);
       e = 0:eltType;
     }
     writeln("pyArr_fullySpecified: ", pyArr_fullySpecified);
-    forall e in pyArr_fullySpecified {
+    forall e in pyArr_fullySpecified.values() {
       e = 1:eltType;
     }
     writeln("pyArr_fullySpecified: ", pyArr_fullySpecified);

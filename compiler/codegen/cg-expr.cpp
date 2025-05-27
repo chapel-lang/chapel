@@ -183,7 +183,7 @@ GenRet SymExpr::codegen() {
   GenRet ret;
 
   if (id == breakOnCodegenID)
-    gdbShouldBreakHere();
+    debuggerBreakHere();
 
   if( outfile ) {
     if (getStmtExpr() && getStmtExpr() == this)
@@ -3524,7 +3524,21 @@ void codegenCallMemcpy(GenRet dest, GenRet src, GenRet size,
     //types[3] = llvm::Type::getInt32Ty(info->llvmContext);
     //types[4] = llvm::Type::getInt1Ty(info->llvmContext);
 
-    llvm::Function *func = llvm::Intrinsic::getDeclaration(info->module, llvm::Intrinsic::memcpy, types);
+#if LLVM_VERSION_MAJOR >= 20
+    llvm::Function *func =
+      llvm::Intrinsic::getOrInsertDeclaration(
+        info->module,
+        llvm::Intrinsic::memcpy,
+        types
+      );
+#else
+    llvm::Function *func =
+      llvm::Intrinsic::getDeclaration(
+        info->module,
+        llvm::Intrinsic::memcpy,
+        types
+      );
+#endif
     //llvm::FunctionType *fnType = func->getFunctionType();
 
     // LLVM 7 and later: memcpy has no alignment argument
@@ -4312,7 +4326,7 @@ GenRet CallExpr::codegen() {
   GenRet ret;
 
   // Note (for debugging), function name is in parentSymbol->cname.
-  if (id == breakOnCodegenID) gdbShouldBreakHere();
+  if (id == breakOnCodegenID) debuggerBreakHere();
 
   if (getStmtExpr() == this) codegenStmt(this);
 
@@ -5112,6 +5126,12 @@ DEFINE_PRIM(OR_ASSIGN) {
 }
 DEFINE_PRIM(XOR_ASSIGN) {
     codegenOpAssign(call->get(1), call->get(2), " ^= ", codegenXor);
+}
+DEFINE_PRIM(LOGICALAND_ASSIGN) {
+    codegenOpAssign(call->get(1), call->get(2), " &&= ", codegenLogicalAnd);
+}
+DEFINE_PRIM(LOGICALOR_ASSIGN) {
+    codegenOpAssign(call->get(1), call->get(2), " ||= ", codegenLogicalOr);
 }
 DEFINE_PRIM(POW) {
     ret = codegenCallExpr("pow", call->get(1), call->get(2));
@@ -6275,14 +6295,14 @@ DEFINE_PRIM(FTABLE_CALL) {
       argt = call->get(2)->typeInfo()->codegen().type;
 
       if (argMustUseCPtr(call->get(2)->typeInfo()))
-        argt = argt->getPointerTo();
+        argt = llvm::PointerType::getUnqual(argt);
 
       argumentTypes.push_back(argt);
 
       argt = call->get(3)->typeInfo()->codegen().type;
 
       if (argMustUseCPtr(call->get(3)->typeInfo()))
-        argt = argt->getPointerTo();
+        argt = llvm::PointerType::getUnqual(argt);
 
       argumentTypes.push_back(argt);
 
@@ -6292,7 +6312,7 @@ DEFINE_PRIM(FTABLE_CALL) {
 
       // OK, now cast to the fnTy.
       fngen.val = gGenInfo->irBuilder->CreateBitCast(fnPtr,
-                                                     fnTy->getPointerTo());
+                                                    llvm::PointerType::getUnqual(fnTy));
       trackLLVMValue(fngen.val);
 #endif
     }
@@ -6488,7 +6508,7 @@ DEFINE_PRIM(OPTIMIZATION_INFO) {
   // No action required here
 }
 
-DEFINE_PRIM(BREAKPOINT) {
+DEFINE_PRIM(DEBUG_TRAP) {
   GenInfo* info = gGenInfo;
   if (info->cfile) {
     ret = codegenCallExpr("chpl_debugtrap");
@@ -6744,7 +6764,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
   if(!call) return false;
 
   if (call->id == breakOnCodegenID)
-    gdbShouldBreakHere();
+    debuggerBreakHere();
 
   if (call->primitive) {
     switch (call->primitive->tag) {

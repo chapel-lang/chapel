@@ -266,7 +266,7 @@ static void addLoopMetadata(llvm::Instruction* instruction,
 GenRet CForLoop::codegen()
 {
   if (id == breakOnCodegenID)
-    gdbShouldBreakHere();
+    debuggerBreakHere();
 
   GenInfo* info    = gGenInfo;
   FILE*    outfile = info->cfile;

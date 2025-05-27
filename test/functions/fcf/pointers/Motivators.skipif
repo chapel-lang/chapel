@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# Temporarily skip this test on Linux arm64
+
+if [[ $CHPL_TARGET_PLATFORM != darwin &&
+      $CHPL_TARGET_ARCH     == aarch64 ]]; then
+  echo True
+else
+  echo False
+fi

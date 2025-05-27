@@ -863,6 +863,8 @@ initPrimitive() {
   prim_def(PRIM_AND_ASSIGN, "&=", returnInfoVoid, true);
   prim_def(PRIM_OR_ASSIGN, "|=", returnInfoVoid, true);
   prim_def(PRIM_XOR_ASSIGN, "^=", returnInfoVoid, true);
+  prim_def(PRIM_LOGICALAND_ASSIGN, "&&=", returnInfoVoid, true);
+  prim_def(PRIM_LOGICALOR_ASSIGN, "||=", returnInfoVoid, true);
   prim_def(PRIM_REDUCE_ASSIGN, "reduce=", returnInfoVoid, true);
 
   prim_def(PRIM_MIN, "_min", returnInfoFirst);
@@ -1390,7 +1392,7 @@ initPrimitive() {
   prim_def(PRIM_REAL32_AS_UINT32, "real32 as uint32", returnInfoUInt32);
   prim_def(PRIM_REAL64_AS_UINT64, "real64 as uint64", returnInfoUInt64);
 
-  prim_def(PRIM_BREAKPOINT, "breakpoint", returnInfoVoid, true);
+  prim_def(PRIM_DEBUG_TRAP, "debug trap", returnInfoVoid, true);
 
   // Expects a single argument, which will be passed by pointer to an underlying
   // runtime function, so that the memory can be hashed.

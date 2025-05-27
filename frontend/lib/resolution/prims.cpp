@@ -498,19 +498,14 @@ static QualifiedType primGetRuntimeTypeField(Context* context,
 
   const RuntimeType* rtt = nullptr;
   if (auto dt = compositeType->toDomainType()) {
-    while (dt->isSubdomain()) dt = dt->parentDomain();
+    while (dt->isSubdomain() && !dt->isSparse()) dt = dt->parentDomain();
 
-    auto domainRtt = dt->runtimeType(context);
-    CHPL_ASSERT(domainRtt);
-    CHPL_ASSERT(domainRtt->isRuntimeType());
-    rtt = domainRtt->toRuntimeType();
+    rtt = dt->runtimeType(context);
   } else if (auto at = compositeType->toArrayType()) {
-    auto arrayRtt = at->runtimeType(context);
-    CHPL_ASSERT(arrayRtt);
-    CHPL_ASSERT(arrayRtt->isRuntimeType());
-    rtt = arrayRtt->toRuntimeType();
+    rtt = at->runtimeType(context);
   }
 
+  // Might be the case if domain is the generic 'domain(?)'
   if (!rtt) return QualifiedType();
 
   for (int i = 0; i < rtt->initializer()->numFormals(); i++) {
@@ -550,6 +545,55 @@ static QualifiedType staticFieldType(ResolutionContext* rc, const CallInfo& ci) 
       compositeType = bct->parentClassType();
     }
   }
+  return QualifiedType();
+}
+
+static QualifiedType arrayGet(ResolutionContext* rc, const PrimCall* call, const CallInfo& ci) {
+  if (ci.numActuals() != 2 ||
+      ci.actual(0).type().isUnknownOrErroneous() ||
+      ci.actual(1).type().isUnknownOrErroneous()) {
+    return QualifiedType();
+  }
+
+  if (!ci.actual(1).type().type()->isIntegralType()) {
+    rc->context()->error(call, "bad call to primitive \"%s\": second argument "
+                               "must be an integral type",
+                         primTagToName(call->prim()));
+    return QualifiedType();
+  }
+
+  auto act = ci.actual(0).type();
+
+  // in production, anything with tags "data class" or "c array" has its
+  // "eltType" return by this primitive. We treat CPtrType specially, so we
+  // handle that as a separate case.
+
+  if (auto ptr = act.type()->toCPtrType()) {
+    return QualifiedType(QualifiedType::REF, ptr->eltType());
+  } else if (auto ptr = act.type()->toHeapBufferType()) {
+    return QualifiedType(QualifiedType::REF, ptr->eltType());
+  } else if (auto ct = act.type()->toCompositeType()) {
+    auto ast = parsing::idToAst(rc->context(), ct->id());
+    bool hasSupportedPragmas =
+      ast->hasPragma(rc->context(), pragmatags::PragmaTag::PRAGMA_DATA_CLASS) ||
+      ast->hasPragma(rc->context(), pragmatags::PragmaTag::PRAGMA_C_ARRAY);
+
+    if (!hasSupportedPragmas) {
+      rc->context()->error(call, "bad call to primitive \"%s\": first argument "
+          "must be a data class or C array",
+          primTagToName(call->prim()));
+      return QualifiedType();
+    }
+
+    auto fields = fieldsForTypeDecl(rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    for (int i = 0; i < fields.numFields(); i++) {
+      if (fields.fieldName(i) == "eltType") {
+        auto returnType = fields.fieldType(i).type();
+        return QualifiedType(QualifiedType::REF, returnType);
+      }
+    }
+  }
+
   return QualifiedType();
 }
 
@@ -877,6 +921,34 @@ static QualifiedType primObjectToInt(Context* context, const CallInfo& ci) {
     return QualifiedType();
 
   return QualifiedType(argType.kind(), IntType::get(context, 64));
+}
+
+static QualifiedType primAscii(ResolutionContext* rc, const PrimCall* call, const CallInfo& ci) {
+  if (ci.numActuals() != 1 && ci.numActuals() != 2) return QualifiedType();
+
+  // production's legacy handling of this primitive includes fallbacks for
+  // runtime cases. However, all uses in the standard library today are in
+  // 'param' contexts. So, here, only handle the 'param' cases.
+
+  UniqueString str;
+  if (!toParamStringActual(ci.actual(0).type(), str) &&
+      !toParamBytesActual(ci.actual(0).type(), str)) {
+    return QualifiedType();
+  }
+
+  int64_t index = 0;
+  if (ci.numActuals() == 2 && !toParamIntActual(ci.actual(1).type(), index)) {
+    return QualifiedType();
+  }
+
+  if (index < 0 || (uint64_t) index >= str.length()) {
+    rc->context()->error(call, "index out of range");
+    return QualifiedType();
+  }
+
+  return QualifiedType(QualifiedType::PARAM,
+                       UintType::get(rc->context(), 8),
+                       UintParam::get(rc->context(), str.c_str()[index]));
 }
 
 /*
@@ -1526,12 +1598,20 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
       break;
     }
     case PRIM_STRING_LENGTH_CODEPOINTS:
+      CHPL_UNIMPL("misc primitives");
+      break;
+
     case PRIM_ASCII:
+      type = primAscii(rc, call, ci);
+      break;
+
     case PRIM_STRING_ITEM:
     case PRIM_BYTES_ITEM:
     case PRIM_STRING_INDEX:
     case PRIM_STRING_COPY:
     case PRIM_STRING_SELECT:
+      CHPL_UNIMPL("misc primitives");
+      break;
 
     /* primitives that always return bool */
     case PRIM_EQUAL:
@@ -1645,6 +1725,8 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
     case PRIM_AND_ASSIGN:
     case PRIM_OR_ASSIGN:
     case PRIM_XOR_ASSIGN:
+    case PRIM_LOGICALAND_ASSIGN:
+    case PRIM_LOGICALOR_ASSIGN:
     case PRIM_REDUCE_ASSIGN:
     case PRIM_SETCID:
     case PRIM_SET_UNION_ID:
@@ -1815,19 +1897,8 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
                            CompositeType::getLocaleIDType(context));
       break;
 
-    case PRIM_ARRAY_GET: {
-        if (ci.numActuals() == 2 && ci.actual(0).type().hasTypePtr()) {
-          auto index = ci.actual(1).type();
-          if (index.hasTypePtr() && index.type()->isIntegralType()) {
-            auto act = ci.actual(0).type();
-            if (auto ptr = act.type()->toCPtrType()) {
-              type = QualifiedType(QualifiedType::REF, ptr->eltType());
-            }
-          } else {
-            context->error(call, "bad call to primitive \"%s\": second argument must be an integral type", primTagToName(prim));
-          }
-        }
-      }
+    case PRIM_ARRAY_GET:
+      type = arrayGet(rc, call, ci);
       break;
 
     case PRIM_GET_SVEC_MEMBER:
@@ -1928,7 +1999,7 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
     case PRIM_STATIC_FUNCTION_VAR_VALIDATE_TYPE:
     case PRIM_STATIC_FUNCTION_VAR_WRAPPER:
     case NUM_KNOWN_PRIMS:
-    case PRIM_BREAKPOINT:
+    case PRIM_DEBUG_TRAP:
     case PRIM_CONST_ARG_HASH:
     case PRIM_CHECK_CONST_ARG_HASH:
     case PRIM_TASK_PRIVATE_SVAR_CAPTURE:

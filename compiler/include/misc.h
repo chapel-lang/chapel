@@ -49,13 +49,13 @@
 // results in something like:
 // INTERNAL ERROR in compilerSrc.c (lineno): your text here (usrSrc:usrLineno)
 
-#define INT_FATAL      gdbShouldBreakHere(), \
+#define INT_FATAL      debuggerBreakHere(), \
                        setupError(TOSTRING(COMPILER_SUBDIR), __FILE__, __LINE__, 1), handleError
 
-#define USR_FATAL      gdbShouldBreakHere(), \
+#define USR_FATAL      debuggerBreakHere(), \
                        setupError(TOSTRING(COMPILER_SUBDIR), __FILE__, __LINE__, 2), handleError
 
-#define USR_FATAL_CONT gdbShouldBreakHere(), \
+#define USR_FATAL_CONT debuggerBreakHere(), \
                        setupError(TOSTRING(COMPILER_SUBDIR), __FILE__, __LINE__, 3), handleError
 
 #define USR_WARN       setupError(TOSTRING(COMPILER_SUBDIR), __FILE__, __LINE__, 4), handleError

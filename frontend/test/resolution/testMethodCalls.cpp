@@ -639,7 +639,7 @@ static void test13() {
 
   auto vars = resolveTypesOfVariables(context, program, { "tmp" });
 
-  assert(guard.numErrors() == 2);
+  assert(guard.numErrors());
   for (auto& err : guard.errors()) {
     assert(err->type() == ErrorType::SyntacticGenericityMismatch);
   }

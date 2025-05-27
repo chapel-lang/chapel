@@ -1693,7 +1693,11 @@ static void testArgMapHelper(const DisambiguationContext& dctx,
   // since that affects the disambiguation.
 
   if (forwardingTo.type() != nullptr) {
-    actualType = forwardingTo;
+    if (auto fmlDecl = fa.formal()->toNamedDecl()) {
+      if (fmlDecl->name() == USTR("this")) {
+        actualType = forwardingTo;
+      }
+    }
   }
   CanPassResult result = canPass(dctx.rc->context(), actualType, formalType);
   CHPL_ASSERT(result.passes());

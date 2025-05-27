@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#include "chpl/resolution/resolution-types.h"
 #include "chpl/resolution/can-pass.h"
+#include "chpl/resolution/resolution-types.h"
 
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/framework/global-strings.h"
@@ -35,8 +35,10 @@
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/For.h"
 #include "chpl/uast/VarArgFormal.h"
+#include "chpl/util/clang-integration.h"
 
 #include "Resolver.h"
+#include "extern-blocks.h"
 
 #include <iomanip>
 
@@ -155,6 +157,18 @@ const UntypedFnSignature* UntypedFnSignature::get(Context* context,
   return getUntypedFnSignatureForFn(context, function);
 }
 
+static const UntypedFnSignature*
+getUntypedFnSignatureForExternId(Context* context, ID functionId) {
+  CHPL_ASSERT(functionId.isExternBlockElement());
+
+  auto name = functionId.symbolName(context);
+  auto externBlockId = functionId.parentSymbolId(context);
+
+  auto tfs = externBlockSigForFn(context, externBlockId, name);
+
+  return tfs->untyped();
+}
+
 static const UntypedFnSignature* const&
 getUntypedFnSignatureForIdQuery(Context* context, ID functionId) {
   QUERY_BEGIN(getUntypedFnSignatureForIdQuery, context, functionId);
@@ -164,6 +178,8 @@ getUntypedFnSignatureForIdQuery(Context* context, ID functionId) {
 
   if (ast != nullptr && ast->isFunction()) {
     result = getUntypedFnSignatureForFn(context, ast->toFunction());
+  } else if (functionId.isExternBlockElement()) {
+    result = getUntypedFnSignatureForExternId(context, functionId);
   }
 
   return QUERY_END(result);
@@ -190,8 +206,6 @@ static UniqueString getCallName(const uast::Call* call) {
       name = calledDot->field();
     } else if (auto op = called->toOpCall()) {
       name = op->op();
-    } else {
-      CHPL_UNIMPL("CallInfo without a name");
     }
   }
   return name;
@@ -438,6 +452,16 @@ CallInfo CallInfo::create(Context* context,
     auto calledExprType = tryGetType(calledExpr, byPostorder);
     auto dotReceiverType = tryGetType(dotReceiver, byPostorder);
 
+    auto makeCallToDotThis = [&]() {
+      name = USTR("this");
+      // add the 'this' argument as well
+      isMethodCall = true;
+      actuals.push_back(CallInfoActual(*calledExprType, USTR("this")));
+      if (actualAsts != nullptr) {
+        actualAsts->push_back(calledExpr);
+      }
+    };
+
     if (calledExprType &&
         (isKindForFunctionalValue(calledExprType->kind()) ||
          calledExprType->isErroneousType())) {
@@ -449,13 +473,7 @@ CallInfo CallInfo::create(Context* context,
       // a value (ambiguity or other "benign" UNKNOWN would not produce errors).
       // Later, this can lead to skipping resolving the call altogether.
 
-      name = USTR("this");
-      // add the 'this' argument as well
-      isMethodCall = true;
-      actuals.push_back(CallInfoActual(*calledExprType, USTR("this")));
-      if (actualAsts != nullptr) {
-        actualAsts->push_back(calledExpr);
-      }
+      makeCallToDotThis();
     } else if (dotReceiverType && dotReceiverType->kind() == QualifiedType::MODULE) {
       // In calls like `M.f()`, where `M` is a module, we need to restrict
       // our search to `M`'s scope. Signal this by setting `moduleScopeId`.
@@ -463,7 +481,15 @@ CallInfo CallInfo::create(Context* context,
         *moduleScopeId = byPostorder.byAst(dotReceiver).toId();
       /* TODO: set calledType? */
     } else if (calledExprType && !calledExprType->isUnknown() && calledExprType->isType()) {
-      calledType = *calledExprType;
+      // normally, we would say this is a type constructor and set calledType.
+      // However, for tuples, we treat this as a regular "proc this", which
+      // enables accessing the individual element's types.
+
+      if (calledExprType->type() && calledExprType->type()->isTupleType()) {
+        makeCallToDotThis();
+      } else {
+        calledType = *calledExprType;
+      }
     } else if (!call->isOpCall() && dotReceiverType &&
                isKindForMethodReceiver(dotReceiverType->kind())) {
       // Check for normal method call, maybe construct a receiver.
@@ -536,14 +562,14 @@ CallInfo CallInfo::copyAndRename(const CallInfo &ci, UniqueString rename) {
 void ResolutionResultByPostorderID::setupForSymbol(const AstNode* ast) {
   CHPL_ASSERT(Builder::astTagIndicatesNewIdScope(ast->tag()));
 
-  symbolId = ast->id();
+  symbolId_ = ast->id();
 }
 void ResolutionResultByPostorderID::setupForSignature(const Function* func) {
-  symbolId = func->id();
+  symbolId_ = func->id();
 }
 void ResolutionResultByPostorderID::setupForParamLoop(
     const For* loop, ResolutionResultByPostorderID& parent) {
-  this->symbolId = parent.symbolId;
+  this->symbolId_ = parent.symbolId_;
 }
 void ResolutionResultByPostorderID::setupForFunction(const Function* func) {
   setupForSymbol(func);
@@ -1233,8 +1259,12 @@ MostSpecificCandidate::fromTypedFnSignature(ResolutionContext* rc,
     auto canPassFn =
       actualType.kind() == QualifiedType::INIT_RECEIVER ? canPassScalar
                                                         : canPass;
+    // An exception is made for the case where we have to convert a tuple to
+    // its referential equivalent, which doesn't count as coercion in the
+    // conventional Chapel sense.
     auto got = canPassFn(rc->context(), actualType, formalType);
-    if (got.converts() && formalType.kind() == QualifiedType::CONST_REF) {
+    if (got.converts() && formalType.kind() == QualifiedType::CONST_REF &&
+        got.conversionKind() != CanPassResult::TO_REFERENTIAL_TUPLE) {
       coercionFormal = fa.formalIdx();
       coercionActual = fa.actualIdx();
       break;
@@ -1402,13 +1432,13 @@ ResolutionResultByPostorderID::stringify(std::ostream& ss,
 
   size_t maxIdWidth = 0;
   for (auto key : keys) {
-    auto id = ID(symbolId.symbolPath(), key, -1);
+    auto id = ID(symbolId_.symbolPath(), key, -1);
     if (id.str().size() > maxIdWidth)
       maxIdWidth = id.str().size();
   }
 
   for (auto key : keys) {
-    auto id = ID(symbolId.symbolPath(), key, -1);
+    auto id = ID(symbolId_.symbolPath(), key, -1);
 
     // output the ID
     std::cout << std::setw(maxIdWidth) << std::left << id.str();

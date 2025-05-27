@@ -70,6 +70,7 @@ class UastConverter {
 
   // convert AST, in an untyped manner
   virtual Expr* convertAST(const chpl::uast::AstNode* node) = 0;
+  virtual Expr* convertAST(const chpl::uast::AstNode* node, ModTag modTag) = 0;
 
   // apply fixups to fix SymExprs to refer to Symbols that
   // might have been created in a different order.

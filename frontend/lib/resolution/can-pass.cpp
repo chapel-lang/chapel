@@ -309,7 +309,7 @@ bool CanPassResult::canConvertNumeric(Context* context,
     // don't convert bools to complexes (per spec: "unintended by programmer")
 
     // coerce any integer type to any width complex
-    if (actualT->isNumericType())
+    if (actualT->isIntegralType())
       return true;
 
     // convert smaller complex types
@@ -662,6 +662,10 @@ CanPassResult CanPassResult::canConvertTuples(Context* context,
   if (aT->isStarTuple() != fT->isStarTuple()) {
     // Star-tuple-ness differs, so not convertible.
     return fail(FAIL_INCOMPATIBLE_TUPLE_STAR);
+  }
+
+  if (aT->toReferentialTuple(context) == fT) {
+    return convert(TO_REFERENTIAL_TUPLE);
   }
 
   int n = aT->numElements();
@@ -1157,15 +1161,7 @@ CanPassResult CanPassResult::canPassScalar(Context* context,
       {
         auto actualTup = actualT->toTupleType();
         if (actualTup != nullptr  && formalT->isTupleType()) {
-          if (actualTup->isVarArgTuple() &&
-              actualTup->toReferentialTuple(context) == formalT) {
-            // Supports code like:
-            //   proc foo(args...) do
-            //     bar(args);
-            //
-            // TODO: Should this register as a conversion?
-            return passAsIs();
-          } else if (formalQT.kind() == QualifiedType::TYPE &&
+          if (formalQT.kind() == QualifiedType::TYPE &&
                 actualTup->toValueTuple(context) == formalT) {
             return passAsIs();
           } else if (formalQT.kind() != QualifiedType::TYPE) {
@@ -1370,6 +1366,20 @@ types::QualifiedType::Kind KindProperties::combineKindsMeet(
   auto kp2 = KindProperties::fromKind(kind2);
   kp1.combineWithMeet(kp2);
   return kp1.toKind();
+}
+
+QualifiedType::Kind
+KindProperties::addConstness(QualifiedType::Kind kind) {
+  auto kp = KindProperties::fromKind(kind);
+  kp.setConst(true);
+  return kp.toKind();
+}
+
+QualifiedType::Kind
+KindProperties::addRefness(QualifiedType::Kind kind) {
+  auto kp = KindProperties::fromKind(kind);
+  kp.setRef(true);
+  return kp.toKind();
 }
 
 QualifiedType::Kind KindProperties::toKind() const {

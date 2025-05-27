@@ -1,0 +1,1 @@
+ri-minmax-2-error.chpl:10: error: updating accumulation state of type '2*2*int(64)' with a value of type 'int(64)', while a value of type '2*int(64)' is expected

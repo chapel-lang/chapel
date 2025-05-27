@@ -40,6 +40,16 @@ Block opts:
 {1..6, 1..6}
 BlockDom(2,int(64),one,unmanaged DefaultDist)
 
+Block opts:
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+1 1 1 1 1 1
+1 1 1 1 1 1
+1 1 1 1 1 1
+{1..6, 1..6}
+BlockDom(2,int(64),one,unmanaged DefaultDist)
+
 Stencil:
 0 0 0 1 1 1
 0 0 0 1 1 1
@@ -57,6 +67,16 @@ Stencil:
 2 2 2 3 3 3
 2 2 2 3 3 3
 2 2 2 3 3 3
+{1..6, 1..6}
+StencilDom(2,int(64),one,false)
+
+Stencil opts:
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+1 1 1 1 1 1
+1 1 1 1 1 1
+1 1 1 1 1 1
 {1..6, 1..6}
 StencilDom(2,int(64),one,false)
 
@@ -97,6 +117,16 @@ Cyclic:
 2 3 2 3 2 3
 0 1 0 1 0 1
 2 3 2 3 2 3
+{1..6, 1..6}
+CyclicDom(2,int(64),one)
+
+Cyclic opts:
+0 0 0 0 0 0
+1 1 1 1 1 1
+0 0 0 0 0 0
+1 1 1 1 1 1
+0 0 0 0 0 0
+1 1 1 1 1 1
 {1..6, 1..6}
 CyclicDom(2,int(64),one)
 
@@ -162,6 +192,16 @@ Block opts:
 {1..6, 1..6}
 [BlockDom(2,int(64),one,unmanaged DefaultDist)] int(64)
 
+Block opts:
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+1 1 1 1 1 1
+1 1 1 1 1 1
+1 1 1 1 1 1
+{1..6, 1..6}
+[BlockDom(2,int(64),one,unmanaged DefaultDist)] int(64)
+
 Block value:
 -1 -1 -1 0 0 0
 -1 -1 -1 0 0 0
@@ -179,6 +219,26 @@ Block value:
 1 1 1 2 2 2
 1 1 1 2 2 2
 1 1 1 2 2 2
+{1..6, 1..6}
+[BlockDom(2,int(64),one,unmanaged DefaultDist)] int(64)
+
+Block value:
+-1 -1 -1 -1 -1 -1
+-1 -1 -1 -1 -1 -1
+-1 -1 -1 -1 -1 -1
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+{1..6, 1..6}
+[BlockDom(2,int(64),one,unmanaged DefaultDist)] int(64)
+
+Block value:
+-1 -1 -1 -1 -1 -1
+-1 -1 -1 -1 -1 -1
+-1 -1 -1 -1 -1 -1
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
 {1..6, 1..6}
 [BlockDom(2,int(64),one,unmanaged DefaultDist)] int(64)
 
@@ -202,6 +262,26 @@ Block iter:
 {1..6, 1..6}
 [BlockDom(2,int(64),one,unmanaged DefaultDist)] int(64)
 
+Block iter:
+2 3 4 5 6 7
+3 4 5 6 7 8
+4 5 6 7 8 9
+6 7 8 9 10 11
+7 8 9 10 11 12
+8 9 10 11 12 13
+{1..6, 1..6}
+[BlockDom(2,int(64),one,unmanaged DefaultDist)] int(64)
+
+Block iter:
+2 3 4 5 6 7
+3 4 5 6 7 8
+4 5 6 7 8 9
+6 7 8 9 10 11
+7 8 9 10 11 12
+8 9 10 11 12 13
+{1..6, 1..6}
+[BlockDom(2,int(64),one,unmanaged DefaultDist)] int(64)
+
 Block array:
 5 5 5 6 6 6
 5 5 5 6 6 6
@@ -233,12 +313,52 @@ Block array:
 [BlockDom(2,int(64),one,unmanaged DefaultDist)] int(64)
 
 Block array:
+5 5 5 5 5 5
+5 5 5 5 5 5
+5 5 5 5 5 5
+6 6 6 6 6 6
+6 6 6 6 6 6
+6 6 6 6 6 6
+{1..6, 1..6}
+[BlockDom(2,int(64),one,unmanaged DefaultDist)] int(64)
+
+Block array:
+5 5 5 5 5 5
+5 5 5 5 5 5
+5 5 5 5 5 5
+6 6 6 6 6 6
+6 6 6 6 6 6
+6 6 6 6 6 6
+{1..6, 1..6}
+[BlockDom(2,int(64),one,unmanaged DefaultDist)] int(64)
+
+Block array:
 6 6 6 7 7 7
 6 6 6 7 7 7
 6 6 6 7 7 7
 8 8 8 9 9 9
 8 8 8 9 9 9
 8 8 8 9 9 9
+{1..6, 1..6}
+[BlockDom(2,int(64),one,unmanaged DefaultDist)] int(64)
+
+Block array:
+6 6 6 6 6 6
+6 6 6 6 6 6
+6 6 6 6 6 6
+7 7 7 7 7 7
+7 7 7 7 7 7
+7 7 7 7 7 7
+{1..6, 1..6}
+[BlockDom(2,int(64),one,unmanaged DefaultDist)] int(64)
+
+Block array:
+6 6 6 6 6 6
+6 6 6 6 6 6
+6 6 6 6 6 6
+7 7 7 7 7 7
+7 7 7 7 7 7
+7 7 7 7 7 7
 {1..6, 1..6}
 [BlockDom(2,int(64),one,unmanaged DefaultDist)] int(64)
 
@@ -259,6 +379,16 @@ Stencil:
 2 2 2 3 3 3
 2 2 2 3 3 3
 2 2 2 3 3 3
+{1..6, 1..6}
+[StencilDom(2,int(64),one,false)] int(64)
+
+Stencil opts:
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+1 1 1 1 1 1
+1 1 1 1 1 1
+1 1 1 1 1 1
 {1..6, 1..6}
 [StencilDom(2,int(64),one,false)] int(64)
 
@@ -402,6 +532,16 @@ Cyclic opts:
 {1..6, 1..6}
 [CyclicDom(2,int(64),one)] int(64)
 
+Cyclic opts:
+0 0 0 0 0 0
+1 1 1 1 1 1
+0 0 0 0 0 0
+1 1 1 1 1 1
+0 0 0 0 0 0
+1 1 1 1 1 1
+{1..6, 1..6}
+[CyclicDom(2,int(64),one)] int(64)
+
 Cyclic value:
 -1 0 -1 0 -1 0
 1 2 1 2 1 2
@@ -419,6 +559,26 @@ Cyclic value:
 1 2 1 2 1 2
 -1 0 -1 0 -1 0
 1 2 1 2 1 2
+{1..6, 1..6}
+[CyclicDom(2,int(64),one)] int(64)
+
+Cyclic value:
+-1 -1 -1 -1 -1 -1
+0 0 0 0 0 0
+-1 -1 -1 -1 -1 -1
+0 0 0 0 0 0
+-1 -1 -1 -1 -1 -1
+0 0 0 0 0 0
+{1..6, 1..6}
+[CyclicDom(2,int(64),one)] int(64)
+
+Cyclic value:
+-1 -1 -1 -1 -1 -1
+0 0 0 0 0 0
+-1 -1 -1 -1 -1 -1
+0 0 0 0 0 0
+-1 -1 -1 -1 -1 -1
+0 0 0 0 0 0
 {1..6, 1..6}
 [CyclicDom(2,int(64),one)] int(64)
 
@@ -442,6 +602,26 @@ Cyclic iter:
 {1..6, 1..6}
 [CyclicDom(2,int(64),one)] int(64)
 
+Cyclic iter:
+2 3 4 5 6 7
+4 5 6 7 8 9
+4 5 6 7 8 9
+6 7 8 9 10 11
+6 7 8 9 10 11
+8 9 10 11 12 13
+{1..6, 1..6}
+[CyclicDom(2,int(64),one)] int(64)
+
+Cyclic iter:
+2 3 4 5 6 7
+4 5 6 7 8 9
+4 5 6 7 8 9
+6 7 8 9 10 11
+6 7 8 9 10 11
+8 9 10 11 12 13
+{1..6, 1..6}
+[CyclicDom(2,int(64),one)] int(64)
+
 Cyclic array:
 5 6 5 6 5 6
 7 8 7 8 7 8
@@ -473,11 +653,51 @@ Cyclic array:
 [CyclicDom(2,int(64),one)] int(64)
 
 Cyclic array:
+5 5 5 5 5 5
+6 6 6 6 6 6
+5 5 5 5 5 5
+6 6 6 6 6 6
+5 5 5 5 5 5
+6 6 6 6 6 6
+{1..6, 1..6}
+[CyclicDom(2,int(64),one)] int(64)
+
+Cyclic array:
+5 5 5 5 5 5
+6 6 6 6 6 6
+5 5 5 5 5 5
+6 6 6 6 6 6
+5 5 5 5 5 5
+6 6 6 6 6 6
+{1..6, 1..6}
+[CyclicDom(2,int(64),one)] int(64)
+
+Cyclic array:
 6 7 6 7 6 7
 8 9 8 9 8 9
 6 7 6 7 6 7
 8 9 8 9 8 9
 6 7 6 7 6 7
 8 9 8 9 8 9
+{1..6, 1..6}
+[CyclicDom(2,int(64),one)] int(64)
+
+Cyclic array:
+6 6 6 6 6 6
+7 7 7 7 7 7
+6 6 6 6 6 6
+7 7 7 7 7 7
+6 6 6 6 6 6
+7 7 7 7 7 7
+{1..6, 1..6}
+[CyclicDom(2,int(64),one)] int(64)
+
+Cyclic array:
+6 6 6 6 6 6
+7 7 7 7 7 7
+6 6 6 6 6 6
+7 7 7 7 7 7
+6 6 6 6 6 6
+7 7 7 7 7 7
 {1..6, 1..6}
 [CyclicDom(2,int(64),one)] int(64)

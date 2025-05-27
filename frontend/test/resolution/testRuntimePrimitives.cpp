@@ -35,8 +35,7 @@ static void predicatePrimTypeHelper(const char* primName, std::vector<const char
     program += arg;
   }
   program += ");";
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   QualifiedType qt =  resolveTypeOfXInit(context, std::move(program));
   assert(qt.kind() == expectedKind);
   auto typePtr = qt.type();

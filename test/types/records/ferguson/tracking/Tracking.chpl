@@ -56,8 +56,8 @@ proc trackAllocation(c: RootClass, id:int, x:int) {
   opsLock.readFE();
   ops.pushBack( (1, c:unmanaged, id, x, 1+counter.fetchAdd(1)) );
   if id == breakOnAllocateId {
-    extern proc gdbShouldBreakHere();
-    gdbShouldBreakHere();
+    extern proc debuggerBreakHere();
+    debuggerBreakHere();
   }
   opsLock.writeEF(true);
 }

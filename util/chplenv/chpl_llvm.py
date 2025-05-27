@@ -17,7 +17,7 @@ def llvm_versions():
     # Which major release - only need one number for that with current
     # llvm (since LLVM 4.0).
     # These will be tried in order.
-    return ('19','18','17','16','15','14','13','12','11',)
+    return ('20','19','18','17','16','15','14','13','12','11',)
 
 @memoize
 def get_uniq_cfg_path_for(llvm_val, llvm_support_val):
@@ -452,14 +452,20 @@ def validate_llvm_config():
 @memoize
 def get_system_llvm_config_bindir():
     llvm_config = find_system_llvm_config()
+    return _get_llvm_config_bindir(llvm_config)
+
+@memoize
+def get_llvm_config_bindir():
+    llvm_config = get_llvm_config()
+    return _get_llvm_config_bindir(llvm_config)
+
+@memoize
+def _get_llvm_config_bindir(llvm_config):
     found_version, found_config_err = check_llvm_config(llvm_config)
-
-    bindir = None
-
     if llvm_config and found_version and not found_config_err:
-        bindir = run_command([llvm_config, '--bindir']).strip()
-
-    return bindir
+        return run_command([llvm_config, '--bindir']).strip()
+    else:
+        return None
 
 def get_llvm_clang_command_name(lang):
     lang_upper = lang.upper()
@@ -759,6 +765,11 @@ def is_gcc_install_dir_supported():
 @memoize
 def get_gcc_install_dir():
     gcc_dir = overrides.get('CHPL_LLVM_GCC_INSTALL_DIR', '')
+
+    # darwin and FreeBSD default to clang, so shouldn't need GCC toolchain
+    host_platform = chpl_platform.get('host')
+    if host_platform == "darwin" or host_platform == "freebsd":
+        return gcc_dir
 
     flag_supported = is_gcc_install_dir_supported()
 

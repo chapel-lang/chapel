@@ -2,7 +2,7 @@ to-unmanaged-no-init.chpl:7: error: cannot initialize variable 'myUnmanaged' of 
 to-unmanaged-no-init.chpl:9: error: cannot initialize variable 'myUnmanaged' of type 'unmanaged A?' from a 'borrowed A'
 to-unmanaged-no-init.chpl:17: error: cannot initialize variable 'myUnmanaged' of type 'unmanaged A?' from a 'shared A?'
 to-unmanaged-no-init.chpl:19: error: cannot initialize variable 'myUnmanaged' of type 'unmanaged A?' from a 'borrowed A'
-to-unmanaged-no-init.chpl:7: error: cannot initialize 'myUnmanaged' of type 'unmanaged A?' from a 'owned A?'
+to-unmanaged-no-init.chpl:7: error: cannot initialize 'myUnmanaged' of type 'unmanaged A?' from an 'owned A?'
 to-unmanaged-no-init.chpl:9: error: cannot initialize 'myUnmanaged' of type 'unmanaged A?' from a 'borrowed A'
 to-unmanaged-no-init.chpl:17: error: cannot initialize 'myUnmanaged' of type 'unmanaged A?' from a 'shared A?'
 to-unmanaged-no-init.chpl:19: error: cannot initialize 'myUnmanaged' of type 'unmanaged A?' from a 'borrowed A'

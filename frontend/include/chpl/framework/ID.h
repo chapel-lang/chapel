@@ -141,6 +141,11 @@ class ID final {
     }
   }
 
+  bool isExternBlockElement() const {
+    return isFabricatedId() &&
+           (fabricatedIdKind() == FabricatedIdKind::ExternBlockElement);
+  }
+
   /**
     Create an ID that represents something that isn't directly contained
     in the source code but rather something created during compilation.

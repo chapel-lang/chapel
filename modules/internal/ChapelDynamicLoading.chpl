@@ -55,6 +55,7 @@ module ChapelDynamicLoading {
   record chpl_lockWrapper {
     var _lock: chpl_LocalSpinlock;
     inline proc useSpinlock param do return true;
+    inline proc const withLock() ref do return withWriteLock();
     inline proc const withReadLock() ref where useSpinlock do return _lock;
     inline proc const withWriteLock() ref where useSpinlock do return _lock;
   }
@@ -125,6 +126,97 @@ module ChapelDynamicLoading {
     }
   }
 
+  // This class wraps the errors emitted by the system 'dlopen'.
+  class DynLibError : Error {
+    proc init(msg: string) {
+      super.init(msg);
+      init this;
+    }
+  }
+
+  private inline
+  proc localDynLoadWrapErrorUnlocked(): owned DynLibError? {
+    extern proc chpl_dlerror(): c_ptrConst(c_char);
+
+    const errMsg = chpl_dlerror();
+    if errMsg != nil {
+      // TODO: The contents of this error can be ridiculous - we may want to
+      //       parse it to produce something more legible? Also, we may want
+      //       to do something if string construction fails (?) rather than
+      //       just halt with a 'try!' here.
+      const str = try! string.createCopyingBuffer(errMsg);
+      return new DynLibError?(str);
+    }
+
+    return nil;
+  }
+
+  private inline
+  proc localDynLoadClearErrorUnlocked() do localDynLoadWrapErrorUnlocked();
+
+  // All of the dynamic loading shims have to be behind this one single
+  // lock (per locale) because they all need to access the same error
+  // routine, and we need to guarantee that access to it is not racey.
+  pragma "locale private"
+  private var localDynLoadGuard: chpl_lockWrapper;
+
+  private inline
+  proc localDynLoadClose(ptr: c_ptr(void), out err: owned DynLibError?) {
+    extern proc chpl_dlclose(handle: c_ptr(void)): c_int;
+
+    manage localDynLoadGuard.withLock() {
+      localDynLoadClearErrorUnlocked();
+
+      const code = chpl_dlclose(ptr);
+      if code != 0 {
+        err = localDynLoadWrapErrorUnlocked();
+        assert(err != nil);
+      }
+    }
+  }
+
+  private inline
+  proc localDynLoadOpen(path: string, out err: owned DynLibError?) {
+    extern proc chpl_dlopen(path: c_ptrConst(c_char),
+                            mode: c_int): c_ptr(void);
+    extern const CHPL_RTLD_LAZY: c_int;
+
+    var ret: c_ptr(void) = nil;
+
+    manage localDynLoadGuard.withLock() {
+      localDynLoadClearErrorUnlocked();
+
+      ret = chpl_dlopen(path.c_str(), CHPL_RTLD_LAZY);
+      if ret == nil {
+        err = localDynLoadWrapErrorUnlocked();
+        assert(err != nil);
+      }
+    }
+
+    return ret;
+  }
+
+  private inline
+  proc localDynLoadSymbolLookup(sym: string, handle: c_ptr(void),
+                                out err: owned DynLibError?) {
+    extern proc chpl_dlsym(handle: c_ptr(void),
+                           symbol: c_ptrConst(c_char)): c_ptr(void);
+
+    var ret: c_ptr(void) = nil;
+
+    manage localDynLoadGuard.withLock() {
+      localDynLoadClearErrorUnlocked();
+
+      ret = chpl_dlsym(handle, sym.c_str());
+      if ret == nil {
+        err = localDynLoadWrapErrorUnlocked();
+        assert(err != nil);
+      }
+    }
+
+    return ret;
+  }
+
   // A store of of all loaded binaries which lives on LOCALE-0. Each time a
   // binary is loaded an entry will be made in the store. The interface to the
   // stored info is the system pointer retrieved by 'dlopen'.
@@ -152,13 +244,6 @@ module ChapelDynamicLoading {
 
   // This is one per entrypoint binary and lives on LOCALE-0.
   var chpl_binaryInfoStore = new owned chpl_BinaryInfoStore();
-
-  class DynLibError : Error {
-    proc init(msg: string) {
-      super.init(msg);
-      init this;
-    }
-  }
 
   // This class represents a "wide" binary. It contains the state necessary
   // to load a symbol from the binary on each locale.
@@ -209,9 +294,11 @@ module ChapelDynamicLoading {
         var shouldCreateNewEntry = true;
 
         // Start by opening a system handle on LOCALE-0.
-        var err0;
-        var ptr0 = _systemDynLibOpen(path, err0);
-        defer { if ptr0 then _systemDynLibClose(ptr0); }
+        var err0: owned DynLibError?;
+        var ptr0 = localDynLoadOpen(path, err0);
+
+        // TODO: Need to propagate/combine this error instead.
+        defer { if ptr0 then localDynLoadClose(ptr0, err0); }
 
         if err0 != nil || ptr0 == nil {
           if err0 != nil then err = err0;
@@ -229,9 +316,8 @@ module ChapelDynamicLoading {
         if shouldCreateNewEntry {
           var bin = new owned chpl_BinaryInfo(path, chpl_binaryInfoStore);
 
-          // Swap in the LOCALE-0 pointer and clear the local variable.
-          bin._systemPtrs[0] = ptr0;
-          ptr0 = nil;
+          // Swap in pointer on LOCALE-0. This clears the variable.
+          bin._systemPtrs[0] <=> ptr0;
 
           var errBuf = new chpl_localBuffer(owned DynLibError?, numLocales);
           var numErrs: atomic int = 0;
@@ -241,18 +327,20 @@ module ChapelDynamicLoading {
             coforall loc in Locales[1..] with (ref errBuf) do on loc {
               const n = (here.id: int);
 
-              var err;
-              var ptr = _systemDynLibOpen(path, err);
-              defer { if ptr then _systemDynLibClose(ptr); }
+              var err: owned DynLibError?;
+              var ptr = localDynLoadOpen(path, err);
+
+              // TODO: Need to propagate/combine this error instead.
+              defer { if ptr then localDynLoadClose(ptr, err); }
 
               if err {
                 // The buffer is not wide! Assignment occurs on LOCALE-0.
                 on Locales[0] do errBuf[n] = err;
                 numErrs.add(1);
               } else if ptr {
-                // The buffer is not wide!
-                on Locales[0] do bin._systemPtrs[n] = ptr;
-                // Clear the pointer to avoid closing it in the defer.
+                // Swap in pointer on LOCALE-0. This clears the variable.
+                on Locales[0] do bin._systemPtrs[n] <=> ptr;
+
                 ptr = nil;
               } else {
                 // TODO: Construct an error instead.
@@ -295,59 +383,6 @@ module ChapelDynamicLoading {
       return ret;
     }
 
-    inline proc type _systemDynLibError() {
-      extern proc chpl_dlerror(): c_ptrConst(c_char);
-      return chpl_dlerror();
-    }
-
-    inline proc type _systemDynLibClearError() do _systemDynLibError();
-
-    inline proc type _systemDynLibWrapError() {
-      const sysErr = _systemDynLibError();
-      if sysErr != nil then
-        return new DynLibError?(try! string.createCopyingBuffer(sysErr));
-      return nil;
-    }
-
-    inline proc type _systemDynLibClose(ptr: c_ptr(void)) {
-      extern proc chpl_dlclose(handle: c_ptr(void)): c_int;
-      chpl_dlclose(ptr);
-    }
-
-    inline proc type
-    _systemDynLibOpen(path: string, out err: owned DynLibError?) {
-      _systemDynLibClearError();
-
-      extern proc chpl_dlopen(path: c_ptrConst(c_char),
-                              mode: c_int): c_ptr(void);
-      extern const CHPL_RTLD_LAZY: c_int;
-
-      var ret = chpl_dlopen(path.c_str(), CHPL_RTLD_LAZY);
-      if ret == nil {
-        var tmp = _systemDynLibWrapError();
-        if tmp != nil then err = tmp;
-      }
-
-      return ret;
-    }
-
-    inline proc type
-    _systemDynLibLookup(sym: string, handle: c_ptr(void),
-                        out err: owned DynLibError?) {
-      _systemDynLibClearError();
-
-      extern proc chpl_dlsym(handle: c_ptr(void),
-                             symbol: c_ptrConst(c_char)): c_ptr(void);
-
-      var ret = chpl_dlsym(handle, sym.c_str());
-      if ret == nil {
-        var tmp = _systemDynLibWrapError();
-        if tmp != nil then err = tmp;
-      }
-
-      return ret;
-    }
-
     // TODO: Also need to evict pointer cache entries.
     proc _close() {
       assert(_refCount.read() == 0);
@@ -360,7 +395,10 @@ module ChapelDynamicLoading {
             const loc = Locales[i];
             const ptr = _systemPtrs[i];
             if ptr != nil then on loc {
-              this.type._systemDynLibClose(ptr);
+              var err: owned DynLibError?;
+              localDynLoadClose(ptr, err);
+              // TODO: Figure out how to propagate this instead of halting?
+              if err != nil then halt(err!.message());
             }
           }
         }
@@ -402,10 +440,10 @@ module ChapelDynamicLoading {
         var shouldInternPointer = false;
 
         // No need to grab the lock, this should not be modified (or nil).
-        const handle = _systemPtrs[0];
-        assert(handle != nil);
+        const handle0 = _systemPtrs[0];
+        assert(handle0 != nil);
 
-        var ptr0 = this.type._systemDynLibLookup(sym, handle, errBuf[0]);
+        const ptr0 = localDynLoadSymbolLookup(sym, handle0, errBuf[0]);
 
         if errBuf[0] == nil && ptr0 != nil {
           manage this.withReadLock() {
@@ -431,8 +469,12 @@ module ChapelDynamicLoading {
             coforall loc in Locales[1..] do on loc {
               const n = (here.id: int);
 
-              var err;
-              var ptr = this.type._systemDynLibLookup(sym, handle, err);
+              // Fetch the system handle that is stored on LOCALE-0.
+              var handle: c_ptr(void);
+              on Locales[0] do handle = _systemPtrs[n];
+
+              var err: owned DynLibError?;
+              const ptr = localDynLoadSymbolLookup(sym, handle, err);
               if err {
                 on Locales[0] do errBuf[n] = err;
                 numErrs.add(1);

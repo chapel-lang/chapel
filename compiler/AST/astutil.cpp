@@ -51,8 +51,11 @@
 #include <set>
 #include <vector>
 
+static bool shouldPruneAggregateType(TypeSymbol* ts, Vec<TypeSymbol*>& types);
+static bool shouldPruneRefType(TypeSymbol* ts, Vec<TypeSymbol*>& types);
 static void pruneUnusedAggregateTypes(Vec<TypeSymbol*>& types);
 static void pruneUnusedRefs(Vec<TypeSymbol*>& types);
+static void pruneStaleFunctionTypes(Vec<TypeSymbol*>& types);
 
 
 void collectFnCalls(BaseAST* ast, std::vector<CallExpr*>& calls) {
@@ -534,16 +537,19 @@ void addUse(Map<Symbol*,Vec<SymExpr*>*>& useMap, SymExpr* use) {
 // op= function call (such as before inlining)
 //
 bool isOpEqualPrim(CallExpr* call) {
-  if (call->isPrimitive(PRIM_ADD_ASSIGN)      ||
-      call->isPrimitive(PRIM_SUBTRACT_ASSIGN) ||
-      call->isPrimitive(PRIM_MULT_ASSIGN)     ||
-      call->isPrimitive(PRIM_DIV_ASSIGN)      ||
-      call->isPrimitive(PRIM_MOD_ASSIGN)      ||
-      call->isPrimitive(PRIM_LSH_ASSIGN)      ||
-      call->isPrimitive(PRIM_RSH_ASSIGN)      ||
-      call->isPrimitive(PRIM_AND_ASSIGN)      ||
-      call->isPrimitive(PRIM_OR_ASSIGN)       ||
-      call->isPrimitive(PRIM_XOR_ASSIGN)) {
+  if (call->isPrimitive(PRIM_ADD_ASSIGN)        ||
+      call->isPrimitive(PRIM_SUBTRACT_ASSIGN)   ||
+      call->isPrimitive(PRIM_MULT_ASSIGN)       ||
+      call->isPrimitive(PRIM_DIV_ASSIGN)        ||
+      call->isPrimitive(PRIM_MOD_ASSIGN)        ||
+      call->isPrimitive(PRIM_LSH_ASSIGN)        ||
+      call->isPrimitive(PRIM_RSH_ASSIGN)        ||
+      call->isPrimitive(PRIM_AND_ASSIGN)        ||
+      call->isPrimitive(PRIM_OR_ASSIGN)         ||
+      call->isPrimitive(PRIM_XOR_ASSIGN)        ||
+      call->isPrimitive(PRIM_LOGICALAND_ASSIGN) ||
+      call->isPrimitive(PRIM_LOGICALOR_ASSIGN)
+      ) {
     return true;
   }
   //otherwise false
@@ -1205,89 +1211,122 @@ visitVisibleFunctions(Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types)
 static void
 pruneUnusedTypes(Vec<TypeSymbol*>& types)
 {
-
+  pruneStaleFunctionTypes(types);
   pruneUnusedAggregateTypes(types);
   pruneUnusedRefs(types);
   cleanupAfterTypeRemoval();
 }
 
+static bool shouldPruneAggregateType(TypeSymbol* ts, Vec<TypeSymbol*>& types) {
+  // Do not delete reference types.
+  // We delete the reference type if the base type is dead (below).
+  if (ts->hasFlag(FLAG_REF)) return false;
 
-static void pruneUnusedAggregateTypes(Vec<TypeSymbol*>& types)
-{
+  // Ignore types flagged as primitive.
+  if (ts->hasFlag(FLAG_PRIMITIVE_TYPE)) return false;
+
+  // Ignore types that are not class types
+  if (!isAggregateType(ts->type)) return false;
+
+  // Do not delete the object class.  It's pretty crucial.
+  if (ts->hasFlag(FLAG_OBJECT_CLASS)) return false;
+
+  // Visit only those types not marked as visible.
+  if (types.set_in(ts)) return false;
+
+  return true;
+}
+
+static void pruneUnusedAggregateTypes(Vec<TypeSymbol*>& types) {
   //
   // delete unused AggregateType types, only deleting references to such
   // types when the value types are deleted
   //
-  forv_Vec(TypeSymbol, ts, gTypeSymbols)
-  {
-    // Do not delete reference types.
-    // We delete the reference type if the base type is dead (below).
-    if (ts->hasFlag(FLAG_REF))
-      continue;
-
-    // Ignore types flagged as primitive.
-    if (ts->hasFlag(FLAG_PRIMITIVE_TYPE))
-      continue;
-
-    // Ignore types that are not class types
-    if (!isAggregateType(ts->type))
-      continue;
-
-    // Do not delete the object class.  It's pretty crucial.
-    if (ts->hasFlag(FLAG_OBJECT_CLASS))
-      continue;
-
-    // Visit only those types not marked as visible.
-    if (types.set_in(ts))
-      continue;
-
-    ts->defPoint->remove();
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+    if (shouldPruneAggregateType(ts, types)) ts->defPoint->remove();
   }
 }
 
+static bool shouldPruneRefType(TypeSymbol* ts, Vec<TypeSymbol*>& types) {
+  // This pass, we are interested only in ref types.
+  if (!ts->hasFlag(FLAG_REF)) return false;
 
-static void pruneUnusedRefs(Vec<TypeSymbol*>& types)
-{
-  forv_Vec(TypeSymbol, ts, gTypeSymbols)
-  {
-    // This pass, we are interested only in ref types.
-    if (!ts->hasFlag(FLAG_REF))
-      continue;
+  // Ignore types flagged as primitive.
+  if (ts->hasFlag(FLAG_PRIMITIVE_TYPE)) return false;
 
-    // Ignore types flagged as primitive.
-    if (ts->hasFlag(FLAG_PRIMITIVE_TYPE))
-      continue;
+  // Ignore types that are not class types
+  if (!isAggregateType(ts->type)) {
+    // hilde sez: Ref types are always class types.
+    // So we can't get here.
+    INT_ASSERT(false);
+    return false;
+  }
 
-    // Ignore types that are not class types
-    if (!isAggregateType(ts->type))
-    {
-      // hilde sez: Ref types are always class types.
-      // So we can't get here.
-      INT_ASSERT(false);
-      continue;
-    }
+  // Visit only those types not marked as visible.
+  if (types.set_in(ts)) return false;
 
-    // Visit only those types not marked as visible.
-    if (types.set_in(ts))
-      continue;
+  if (Type* vt = ts->getValType()) {
+    // Don't remove a ref type if it refers to a class type
+    if (isAggregateType(vt))
+      // and the class type is still alive.
+      if (types.set_in(vt->symbol)) return false;
 
-    if (Type* vt = ts->getValType())
-    {
-      // Don't remove a ref type if it refers to a class type
-      if (isAggregateType(vt))
-        // and the class type is still alive.
-        if (types.set_in(vt->symbol))
-          continue;
+    // Don't delete nil ref as it is used in widening.
+    if (vt == dtNil) return false;
 
-      // Don't delete nil ref as it is used in widening.
-      if (vt == dtNil)
-        continue;
+    // Ok, we can remove the ref type.
+    return true;
+  }
 
+  return false;
+}
+
+static void pruneUnusedRefs(Vec<TypeSymbol*>& types) {
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+    if (shouldPruneRefType(ts, types)) {
+      Type* vt = ts->getValType();
+      INT_ASSERT(vt);
       // Unlink reference type from value type.
       vt->refType = NULL;
+      ts->defPoint->remove();
+    }
+  }
+}
+
+static void pruneStaleFunctionTypes(Vec<TypeSymbol*>& types) {
+  std::set<Type*> removed;
+
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+    auto ft = toFunctionType(ts->type);
+    if (!ft || !ts->inTree()) continue;
+
+    // Visit only those types not marked as visible.
+    if (types.set_in(ts)) continue;
+
+    // A function type should not be pruned if it is simply "unused". This is
+    // because many function types are "unused" but still exist attached to
+    // a 'FnSymbol*'. Instead, it should be pruned if it is _stale_: that is,
+    // if its return type or any formal type is unused.
+    auto shouldPrune = [&](Type* t) {
+      return !t->inTree() ||
+        shouldPruneRefType(t->symbol, types) ||
+        shouldPruneAggregateType(t->symbol, types);
+    };
+
+    bool prune = shouldPrune(ft->returnType());
+
+    if (!prune && ft->numFormals() > 0) {
+      for (int i = 0; i < ft->numFormals(); i++) {
+        auto t = ft->formal(i)->type();
+        prune = shouldPrune(t);
+        if (prune) break;
+      }
     }
 
-    ts->defPoint->remove();
+    if (prune) {
+      removed.insert(ts->type);
+      ts->defPoint->remove();
+    }
   }
 }
 
@@ -1318,10 +1357,11 @@ void cleanupAfterTypeRemoval() {
     auto sym = def->sym;
     if (!def->inTree() || !sym || !sym->type) continue;
 
-    if (!sym->type->symbol->inTree() && isAggregateType(sym->type) &&
-        !isTypeSymbol(sym)) {
-      sym->type = dtNothing;
-    }
+    bool canChange = !sym->type->symbol->inTree() &&
+                     (isAggregateType(sym->type) ||
+                      isFunctionType(sym->type)) &&
+                     !isTypeSymbol(sym);
+    if (canChange) sym->type = dtNothing;
 
     // Some types must never reach code generation, as they have no runtime
     // representation. E.g., 'uninstantiated' is one of these types.

@@ -37,6 +37,7 @@
 #include "Resolver.h"
 #include "call-init-deinit.h"
 #include "default-functions.h"
+#include "extern-blocks.h"
 #include "maybe-const.h"
 #include "prims.h"
 #include "return-type-inference.h"
@@ -498,8 +499,13 @@ formalNeedsInstantiation(Context* context,
   }
 
   bool considerGenericity = true;
-  if (substitutions != nullptr) {
-    if (formalDecl && substitutions->count(formalDecl->id())) {
+  if (substitutions != nullptr && formalDecl) {
+    if (auto vld = formalDecl->toVarLikeDecl();
+        vld && vld->name() == USTR("this") &&
+        vld->storageKind() != Qualifier::TYPE) {
+      // 'this' does not support partial instantiations, so don't bother
+      // looking at substitutions.
+    } else if (substitutions->count(formalDecl->id())) {
       // don't consider it needing a substitution - e.g. when passing
       // a generic type into a type argument.
       considerGenericity = false;
@@ -524,7 +530,10 @@ anyFormalNeedsInstantiation(Context* context,
   bool genericOrUnknown = false;
   int i = 0;
   for (const auto& qt : formalTs) {
-    if (formalNeedsInstantiation(context, qt, untypedSig->formalDecl(i),
+    if (untypedSig->isOperator() && untypedSig->formalName(i) == USTR("this")) {
+      // the 'this' formals of operators aren't really used (lhs and rhs are
+      // passed in as the first two formals), do don't check 'this'.
+    } else if (formalNeedsInstantiation(context, qt, untypedSig->formalDecl(i),
                                  substitutions)) {
       genericOrUnknown = true;
       break;
@@ -621,6 +630,14 @@ typedSignatureInitialImpl(ResolutionContext* rc,
                           bool usePlaceholders) {
   Context* context = rc->context();
   const TypedFnSignature* result = nullptr;
+
+  if (untypedSig->idIsExternBlockFunction()) {
+    auto functionId = untypedSig->id();
+    auto name = untypedSig->name();
+    auto externBlockId = functionId.parentSymbolId(context);
+    return externBlockSigForFn(context, externBlockId, name);
+  }
+
   const AstNode* ast = parsing::idToAst(context, untypedSig->id());
   const Function* fn = ast->toFunction();
 
@@ -1752,13 +1769,30 @@ QualifiedType getInstantiationType(Context* context,
       }
 
       // which BasicClassType to use?
-      const BasicClassType* bct;
+      const BasicClassType* bct = nullptr;
       auto formalBct = formalCt->basicClassType();
       if (formalBct && getTypeGenericity(context, formalBct) == Type::CONCRETE) {
         bct = formalBct;
-      } else {
-        CHPL_ASSERT(formalCt->manageableType()->toManageableType());
+      } else if (!formalBct) {
         bct = actualCt->basicClassType();
+      } else {
+        // search for a common parent. in the case of Parent(X=?) being instantiated
+        // with Child(X, Y), need to get Parent(X).
+
+        auto actualBct = actualCt->basicClassType();
+        while (actualBct) {
+          if (actualBct->id() == formalBct->id()) {
+            bct = actualBct;
+            break;
+          }
+
+          actualBct = actualBct->parentClassType();
+        }
+
+        if (!bct) {
+          // no common parent found, so use the actual's basic class type
+          bct = actualCt->basicClassType();
+        }
       }
 
       // now construct the ClassType
@@ -2482,7 +2516,8 @@ instantiateSignatureImpl(ResolutionContext* rc,
     }
 
     if (instantiateVarArgs) {
-      const TupleType* t = TupleType::getQualifiedTuple(context, varargsTypes);
+      const TupleType* t = TupleType::getQualifiedTuple(context, varargsTypes,
+                                                        /*isVarArgTuple=*/true);
       auto formal = faMap.byFormalIdx(varArgIdx).formal()->toVarArgFormal();
       QualifiedType vat = QualifiedType(formal->storageKind(), t);
       substitutions.insert({formal->id(), vat});
@@ -2996,6 +3031,8 @@ helpResolveFunction(ResolutionContext* rc, const TypedFnSignature* sig,
                 "Should only be called on concrete or fully "
                 "instantiated functions");
     return nullptr;
+  } else if (sig->untyped()->idIsExternBlockFunction()) {
+    CHPL_ASSERT(false && "Should not be called on functions in extern blocks");
   }
 
   // construct the PoiInfo for this case
@@ -3829,9 +3866,17 @@ static const Type* getNumericType(Context* context,
                                   const CallInfo& ci) {
   UniqueString name = ci.name();
 
-  if (name == USTR("int") || name == USTR("uint") || name == USTR("bool") ||
-      name == USTR("real") || name == USTR("imag") || name == USTR("complex")) {
+  bool namedCall =
+      name == USTR("int") || name == USTR("uint") || name == USTR("bool") ||
+      name == USTR("real") || name == USTR("imag") || name == USTR("complex");
 
+
+  bool calledType = false;
+  if (auto ct = ci.calledType().type()) {
+    calledType = ct->isNumericOrBoolType();
+  }
+
+  if (namedCall || calledType) {
     // Should we compute the generic version of the type (e.g. int(?))
     bool useGenericType = false;
 
@@ -4095,7 +4140,9 @@ static const Type* resolveBuiltinTypeCtor(Context* context,
     auto second = ci.actual(1).type();
     if (first.isParam() && first.type()->isIntType() &&
         second.isType()) {
-      return TupleType::getStarTuple(context, first, second);
+      auto num = first.param()->toIntParam()->value();
+      std::vector<const Type*> eltTypes(num, second.type());
+      return TupleType::getValueTuple(context, eltTypes);
     }
   }
 
@@ -4304,6 +4351,33 @@ static bool resolveFnCallSpecial(Context* context,
     }
   }
 
+  if (ci.name() == USTR("borrow") && ci.numActuals() == 1 && ci.isMethodCall()) {
+    // this is the equivalent of the production compiler's `resolveClassBorrowMethod`.
+    // A call to `isClassLike` there rejects handling `owned` and `shared`,
+    // so only handle undecorated class types here.
+
+    auto receiver = ci.methodReceiverType();
+    const ManageableType* receiverBct = nullptr;
+    const ClassType* receiverCt = nullptr;
+    bool handle =
+      (receiverBct = receiver.type()->toBasicClassType()) ||
+      ((receiverCt = receiver.type()->toClassType()) &&
+       !receiverCt->decorator().isManaged());
+
+    if (handle) {
+      auto finalBct = receiverBct ? receiverBct : receiverCt->manageableType();
+
+      auto decorator = ClassTypeDecorator(ClassTypeDecorator::BORROWED);
+      if (receiverCt) {
+        decorator = decorator.copyNilabilityFrom(receiverCt->decorator());
+      }
+
+      auto outTy = ClassType::get(context, finalBct, nullptr, decorator);
+      exprTypeOut = QualifiedType(QualifiedType::VAR, outTy);
+      return true;
+    }
+  }
+
   if (ci.name() == USTR("isCoercible")) {
     if (ci.numActuals() != 2) {
       if (!ci.isMethodCall()) {
@@ -4335,6 +4409,12 @@ static bool resolveFnCallSpecial(Context* context,
         exprTypeOut = QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
       } else {
         auto member = tup->elementType(val);
+
+        // adjust kind ensure that tupleType(idx) is also a type.
+        if (thisType.isType()) {
+          member = QualifiedType(thisType.kind(), member.type());
+        }
+
         exprTypeOut = member;
       }
       return true;
@@ -4401,6 +4481,38 @@ static bool resolveFnCallSpecialType(Context* context,
   return false;
 }
 
+static bool resolveMethodCallSpecial(Context* context,
+                                     const AstNode* astContext,
+                                     const CallInfo& ci,
+                                     const CallScopeInfo& inScopes,
+                                     CallResolutionResult& result) {
+  if (!ci.isMethodCall()) {
+    return false;
+  }
+
+  ResolutionContext rcval(context);
+  auto rc = &rcval;
+
+  // Methods that require resolving some kind of helper method to build
+  // the type.
+
+  if (ci.name() == USTR("domain") && ci.isParenless()) {
+    auto newName = UniqueString::get(context, "_dom");
+    auto ctorCall = CallInfo::copyAndRename(ci, newName);
+    result = resolveGeneratedCall(rc, astContext, ctorCall, inScopes);
+    return true;
+  }
+
+  if (ci.name() == USTR("bytes") && !ci.isParenless()) {
+    auto newName = UniqueString::get(context, "chpl_bytes");
+    auto ctorCall = CallInfo::copyAndRename(ci, newName);
+    result = resolveGeneratedCall(rc, astContext, ctorCall, inScopes);
+    return true;
+  }
+
+  return false;
+}
+
 static MostSpecificCandidates
 resolveFnCallForTypeCtor(Context* context,
                          const CallInfo& ci,
@@ -4460,13 +4572,13 @@ considerCompilerGeneratedMethods(ResolutionContext* rc,
 }
 
 static const TypedFnSignature*
-considerCompilerGeneratedFunctions(Context* context,
+considerCompilerGeneratedFunctions(ResolutionContext* rc,
                                    const CallInfo& ci,
                                    CandidatesAndForwardingInfo& candidates) {
   // methods and op calls considered elsewhere
   if (ci.isMethodCall() || ci.isOpCall()) return nullptr;
 
-  return getCompilerGeneratedFunction(context, ci);
+  return getCompilerGeneratedFunction(rc, ci);
 }
 
 // not all compiler-generated procs are method. For instance, the compiler
@@ -4507,7 +4619,7 @@ considerCompilerGeneratedCandidates(ResolutionContext* rc,
 
   tfs = considerCompilerGeneratedMethods(rc, ci, candidates);
   if (tfs == nullptr) {
-    tfs = considerCompilerGeneratedFunctions(rc->context(), ci, candidates);
+    tfs = considerCompilerGeneratedFunctions(rc, ci, candidates);
   }
   if (tfs == nullptr) {
     tfs = considerCompilerGeneratedOperators(rc->context(), ci, candidates);
@@ -4606,7 +4718,8 @@ lookupCalledExpr(Context* context,
     receiverType = ci.actual(0).type();
   }
 
-  LookupConfig config = LOOKUP_DECLS | LOOKUP_IMPORT_AND_USE | LOOKUP_PARENTS;
+  LookupConfig config = LOOKUP_DECLS | LOOKUP_IMPORT_AND_USE | LOOKUP_PARENTS |
+                        LOOKUP_EXTERN_BLOCKS;
 
   // For parenless non-method calls, only find the innermost match
   if (ci.isParenless() && !ci.isMethodCall()) {
@@ -5175,7 +5288,7 @@ gatherAndFilterCandidates(ResolutionContext* rc,
     // The 'isInsideForwarding' check below would prevent resolving a method
     // 'bar()' on 'b'.
 
-    if (typeUsesForwarding(context, receiverType) &&
+    if (receiverType && typeUsesForwarding(context, receiverType) &&
         !isInsideForwarding(context, call)) {
       CandidatesAndForwardingInfo nonPoiCandidates;
       CandidatesAndForwardingInfo poiCandidates;
@@ -5366,6 +5479,7 @@ resolutionResultFromMostSpecificCandidate(ResolutionContext* rc,
           PromotionIteratorType::get(rc->context(),
                                      instantiationPoiScope,
                                      msc.fn(),
+                                     exprType,
                                      msc.promotedFormals()));
     }
 
@@ -5420,6 +5534,41 @@ static bool handleReflectionFunction(ResolutionContext* rc,
   }
 
   return false;
+}
+
+// handle field access constness and pragmas like REF_TO_CONST_WHEN_CONST_THIS
+static void adjustConstnessBasedOnReceiver(Context* context,
+                                           const MostSpecificCandidate& candidate,
+                                           const CallInfo& ci,
+                                           QualifiedType& rt) {
+  bool adjustConst = false;
+  if (candidate.fn()->untyped()->idIsFunction() && !candidate.fn()->isCompilerGenerated()) {
+    auto fnAst = parsing::idToAst(context, candidate.fn()->id());
+    if (auto ag = fnAst->attributeGroup()) {
+      if (ag->hasPragma(pragmatags::PRAGMA_REF_TO_CONST_WHEN_CONST_THIS)) {
+        adjustConst = true;
+      }
+    }
+  } else if (candidate.fn()->untyped()->idIsField()) {
+    // the return type computation for fields already takes care of making
+    // it ref where necessary, so just adjust constness for refs.
+    //
+    // Don't do this for classes, though: a 'const shared C' can still
+    // have its fields accessed mutably.
+
+    if (ci.methodReceiverType().type() &&
+        ci.methodReceiverType().type()->isClassType()) {
+      // don't adjust
+    } else {
+      adjustConst = rt.isRef();
+    }
+  }
+
+  if (adjustConst) {
+    auto kp = KindProperties::fromKind(rt.kind());
+    kp.setConst(ci.methodReceiverType().isConst());
+    rt = QualifiedType(kp.toKind(), rt.type());
+  }
 }
 
 // call can be nullptr. in that event ci.name() will be used to find
@@ -5494,12 +5643,17 @@ resolveFnCall(ResolutionContext* rc,
       returnTypes(rc, candidate.fn(), instantiationPoiScope);
     rt = yieldAndRet.second;
 
+
+    if (ci.isMethodCall()) {
+      adjustConstnessBasedOnReceiver(context, candidate, ci, rt);
+    }
+
     QualifiedType yt;
 
     if (!candidate.promotedFormals().empty()) {
       // this is actually a promotion; construct a promotion type instead.
       yt = rt;
-      rt = QualifiedType(rt.kind(), PromotionIteratorType::get(context, instantiationPoiScope, candidate.fn(), candidate.promotedFormals()));
+      rt = QualifiedType(rt.kind(), PromotionIteratorType::get(context, instantiationPoiScope, candidate.fn(), rt, candidate.promotedFormals()));
     }
 
     if (retType && retType->type() != rt.type()) {
@@ -5642,6 +5796,10 @@ CallResolutionResult resolveCall(ResolutionContext* rc,
       return keywordRes;
     }
 
+    if (resolveMethodCallSpecial(context, call, ci, inScopes, keywordRes)) {
+      return keywordRes;
+    }
+
     // otherwise do regular call resolution
     return resolveFnCall(rc, call, call, ci, inScopes, rejected, skipForwarding);
   } else if (auto prim = call->toPrimCall()) {
@@ -5704,6 +5862,12 @@ CallResolutionResult resolveGeneratedCall(ResolutionContext* rc,
   if (resolveFnCallSpecial(rc->context(), astContext, ci, tmpRetType)) {
     return CallResolutionResult(std::move(tmpRetType));
   }
+
+  CallResolutionResult keywordRes;
+  if (resolveMethodCallSpecial(rc->context(), astContext, ci, inScopes, keywordRes)) {
+    return keywordRes;
+  }
+
   // otherwise do regular call resolution
   const Call* call = nullptr;
   return resolveFnCall(rc, astContext, call, ci, inScopes, rejected);
@@ -7022,13 +7186,13 @@ yieldTypeForIterator(ResolutionContext* rc,
 
   QualifiedType ret;
   if (auto fnIter = iter->toFnIteratorType()) {
-    ret = yieldType(rc, fnIter->iteratorFn(), iter->poiScope());
+    ret = fnIter->yieldType();
   } else if (auto loopIter = iter->toLoopExprIteratorType()) {
     ret = loopIter->yieldType();
   } else {
     CHPL_ASSERT(iter->isPromotionIteratorType());
     auto promoIter = iter->toPromotionIteratorType();
-    ret = returnType(rc, promoIter->scalarFn(), promoIter->poiScope());
+    ret = promoIter->yieldType();
   }
 
   return CHPL_RESOLUTION_QUERY_END(ret);
@@ -7240,7 +7404,7 @@ resolveTheseCallForZipperedArguments(ResolutionContext* rc,
     CHPL_ASSERT(iterType->isPromotionIteratorType());
     auto promoIt = iterType->toPromotionIteratorType();
 
-    auto scalarReturn = returnType(rc, promoIt->scalarFn(), promoIt->poiScope());
+    auto scalarReturn = promoIt->yieldType();
     auto cr = CallResolutionResult(QualifiedType(QualifiedType::CONST_VAR, promoIt),
                                    scalarReturn);
     return TheseResolutionResult::success(cr, std::move(iterandType));
@@ -7379,15 +7543,9 @@ static const types::QualifiedType& getPromotionTypeQuery(Context* context, types
   } else if (auto loopIt = qt.type()->toLoopExprIteratorType()) {
     ret = loopIt->yieldType();
   } else if (auto fnIt = qt.type()->toFnIteratorType()) {
-    // TODO, the iteratorFn could be a nested function, in which case a default
-    //       resolution context is not sufficient.
-    ResolutionContext rc(context);
-    ret = yieldType(&rc, fnIt->iteratorFn(), fnIt->poiScope());
+    ret = fnIt->yieldType();
   } else if (auto promoIt = qt.type()->toPromotionIteratorType()) {
-    // TODO, the scalarFn could be a nested function, in which case a default
-    //       resolution context is not sufficient.
-    ResolutionContext rc(context);
-    ret = returnType(&rc, promoIt->scalarFn(), promoIt->poiScope());
+    ret = promoIt->yieldType();
   } else {
     std::vector<CallInfoActual> actuals;
     actuals.push_back(CallInfoActual(qt, USTR("this")));
@@ -7502,9 +7660,12 @@ Access accessForQualifier(Qualifier q) {
   return VALUE; // including IN at least
 }
 
+// leaves outReturnKind unchanged if no return intent overload selection
+// took place.
 const MostSpecificCandidate*
 determineBestReturnIntentOverload(const MostSpecificCandidates& candidates,
                                   Access access,
+                                  QualifiedType::Kind& outReturnKind,
                                   bool& outAmbiguity) {
   outAmbiguity = false;
   const MostSpecificCandidate* best = nullptr;
@@ -7531,6 +7692,12 @@ determineBestReturnIntentOverload(const MostSpecificCandidates& candidates,
       else if (bestConstRef) best = &bestConstRef;
       else best = &bestRef;
     }
+
+    // set the determined return intent.
+    if (best == &bestRef) outReturnKind = QualifiedType::REF;
+    else if (best == &bestConstRef) outReturnKind = QualifiedType::CONST_REF;
+    else if (best == &bestValue) outReturnKind = QualifiedType::CONST_VAR;
+
   } else if (candidates.numBest() == 1) {
     best = &candidates.only();
   }

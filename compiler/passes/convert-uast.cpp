@@ -184,6 +184,7 @@ struct Converter final : UastConverter {
 
   // general functions for converting
   Expr* convertAST(const uast::AstNode* node) override;
+  Expr* convertAST(const uast::AstNode* node, ModTag modTag) override;
 
   // methods to help track what has been converted
   void noteConvertedSym(const uast::AstNode* ast, Symbol* sym);
@@ -2156,28 +2157,6 @@ struct Converter final : UastConverter {
     return new CallExpr(PRIM_TO_NILABLE_CLASS_CHECKED, expr);
   }
 
-  Expr* convertLogicalAndAssign(const uast::OpCall* node) {
-    if (node->op() != USTR("&&=")) return nullptr;
-
-    astlocMarker markAstLoc(node->id());
-
-    INT_ASSERT(node->numActuals() == 2);
-    Expr* lhs = convertAST(node->actual(0));
-    Expr* rhs = convertAST(node->actual(1));
-    return buildLAndAssignment(lhs, rhs);
-  }
-
-  Expr* convertLogicalOrAssign(const uast::OpCall* node) {
-    if (node->op() != USTR("||=")) return nullptr;
-
-    astlocMarker markAstLoc(node->id());
-
-    INT_ASSERT(node->numActuals() == 2);
-    Expr* lhs = convertAST(node->actual(0));
-    Expr* rhs = convertAST(node->actual(1));
-    return buildLOrAssignment(lhs, rhs);
-  }
-
   Expr* convertTupleAssign(const uast::OpCall* node) {
     if (node->op() != USTR("=") || node->numActuals() < 1
         || !node->actual(0)->isTuple()) return nullptr;
@@ -2225,10 +2204,6 @@ struct Converter final : UastConverter {
     } else if (auto conv = convertReduceAssign(node)) {
       ret = conv;
     } else if (auto conv = convertToNilableChecked(node)) {
-      ret = conv;
-    } else if (auto conv = convertLogicalAndAssign(node)) {
-      ret = conv;
-    } else if (auto conv = convertLogicalOrAssign(node)) {
       ret = conv;
     } else if (auto conv = convertTupleAssign(node)) {
       ret = conv;
@@ -3773,6 +3748,11 @@ struct Converter final : UastConverter {
   }
 
   Expr* convertAggregateDecl(const uast::AggregateDecl* node) {
+    if (auto it = syms.find(node->id()); it != syms.end()) {
+      // Sometimes in the typed converter we manually convert untyped AST
+      // to use as a base for instantiation. E.g., dtCPointer
+      return nullptr;
+    }
 
     const resolution::ResolutionResultByPostorderID* resolved = nullptr;
     if (shouldScopeResolve(node)) {
@@ -3847,6 +3827,18 @@ struct Converter final : UastConverter {
 Expr* Converter::convertAST(const uast::AstNode* node) {
   astlocMarker markAstLoc(node->id());
   return node->dispatch<Expr*>(*this);
+}
+
+/// Calls convertAST with a specific modTag
+Expr* Converter::convertAST(const uast::AstNode* node, ModTag modTag) {
+  auto prev = topLevelModTag;
+  topLevelModTag = modTag;
+
+  astlocMarker markAstLoc(node->id());
+  auto ret =  node->dispatch<Expr*>(*this);
+
+  topLevelModTag = prev;
+  return ret;
 }
 
 static std::string astName(const uast::AstNode* ast) {

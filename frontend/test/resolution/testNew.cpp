@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+#include "test-common.h"
 #include "test-resolution.h"
 
 #include "chpl/parsing/parsing-queries.h"
@@ -292,7 +293,8 @@ static void determineManagerAndDecorator(Context* ctx,
   return;
 }
 
-static void buildParseTestClassNewExpr(Context* ctx, const char* expr, int numErrors = 0) {
+static void buildParseTestClassNewExpr(const char* expr, int numErrors = 0) {
+  auto ctx = buildStdContext();
   ErrorGuard guard(ctx);
 
   static int testNumCounter = 0;
@@ -379,24 +381,21 @@ static void buildParseTestClassNewExpr(Context* ctx, const char* expr, int numEr
 
 // Test different combinations of management/nilability flavors.
 static void testClassManagementNilabilityInNewExpr() {
-  Context context;
-  Context* ctx = &context;
-
-  buildParseTestClassNewExpr(ctx, "new C()");
-  buildParseTestClassNewExpr(ctx, "new owned C()");
-  buildParseTestClassNewExpr(ctx, "new shared C()");
-  buildParseTestClassNewExpr(ctx, "new borrowed C()", 1);
-  buildParseTestClassNewExpr(ctx, "new unmanaged C()");
-  buildParseTestClassNewExpr(ctx, "new C?()");
-  buildParseTestClassNewExpr(ctx, "new owned C?()");
-  buildParseTestClassNewExpr(ctx, "new shared C?()");
-  buildParseTestClassNewExpr(ctx, "new borrowed C?()", 1);
-  buildParseTestClassNewExpr(ctx, "new unmanaged C?()");
-  buildParseTestClassNewExpr(ctx, "new C()?");
-  buildParseTestClassNewExpr(ctx, "new owned C()?");
-  buildParseTestClassNewExpr(ctx, "new shared C()?");
-  buildParseTestClassNewExpr(ctx, "new borrowed C()?", 1);
-  buildParseTestClassNewExpr(ctx, "new unmanaged C()?");
+  buildParseTestClassNewExpr("new C()");
+  buildParseTestClassNewExpr("new owned C()");
+  buildParseTestClassNewExpr("new shared C()");
+  buildParseTestClassNewExpr("new borrowed C()", 1);
+  buildParseTestClassNewExpr("new unmanaged C()");
+  buildParseTestClassNewExpr("new C?()");
+  buildParseTestClassNewExpr("new owned C?()");
+  buildParseTestClassNewExpr("new shared C?()");
+  buildParseTestClassNewExpr("new borrowed C?()", 1);
+  buildParseTestClassNewExpr("new unmanaged C?()");
+  buildParseTestClassNewExpr("new C()?");
+  buildParseTestClassNewExpr("new owned C()?");
+  buildParseTestClassNewExpr("new shared C()?");
+  buildParseTestClassNewExpr("new borrowed C()?", 1);
+  buildParseTestClassNewExpr("new unmanaged C()?");
 }
 
 static void testGenericRecordUserInitDependentField() {
@@ -506,8 +505,7 @@ static void testGenericRecordUserInitDependentField() {
 }
 
 static void testRecordNewSegfault(void) {
-  Context context;
-  Context* ctx = &context;
+  auto ctx = buildStdContext();
   ErrorGuard guard(ctx);
 
   auto path = TEST_NAME(ctx);

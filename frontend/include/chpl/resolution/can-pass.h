@@ -58,6 +58,8 @@ class CanPassResult {
     BORROWS_SUBTYPE,
     /** Non-subtype conversion that doesn't produce a param */
     OTHER,
+    /** A conversion from a tuple to its referential tuple type equivalent */
+    TO_REFERENTIAL_TUPLE,
   };
 
  private:
@@ -243,6 +245,8 @@ bool canInstantiateSubstitutions(Context* context,
    ref-ness, etc) each of which are processed independently from
    the others. */
 class KindProperties {
+ public:
+  using Kind = types::QualifiedType::Kind;
  private:
   bool isConst = false;
   bool isRef = false;
@@ -265,7 +269,7 @@ class KindProperties {
 
  public:
   /* Decompose a qualified type kind into its properties. */
-  static KindProperties fromKind(types::QualifiedType::Kind kind);
+  static KindProperties fromKind(Kind kind);
 
   /* Set the refness property to the given one. */
   void setRef(bool isRef);
@@ -295,12 +299,16 @@ class KindProperties {
   void strictCombineWith(const KindProperties& other);
 
   /* Combine the properties of two kinds, returning the result as a kind. */
-  static types::QualifiedType::Kind combineKindsMeet(
-      types::QualifiedType::Kind kind1,
-      types::QualifiedType::Kind kind2);
+  static Kind combineKindsMeet(Kind kind1, Kind kind2);
 
   /* Convert the set of kind properties back into a kind. */
   types::QualifiedType::Kind toKind() const;
+
+  /* Add constness to the given kind. */
+  static Kind addConstness(Kind kind);
+
+  /* Add refness to the given kind. */
+  static Kind addRefness(Kind kind);
 
   bool valid() const { return isValid; }
 

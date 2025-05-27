@@ -209,9 +209,12 @@ owned<AttributeGroup> ParserContext::buildAttributeGroup(YYLTYPE locationOfDecl)
                                 attributeGroupParts.isDeprecated,
                                 attributeGroupParts.isUnstable,
                                 attributeGroupParts.isParenfulDeprecated,
+                                attributeGroupParts.hasEdition,
                                 attributeGroupParts.deprecationMessage,
                                 attributeGroupParts.unstableMessage,
                                 attributeGroupParts.parenfulDeprecationMessage,
+                                attributeGroupParts.firstEdition,
+                                attributeGroupParts.lastEdition,
                                 std::move(attrList));
   return node;
 }
@@ -272,6 +275,8 @@ void ParserContext::noteAttribute(YYLTYPE loc, AstNode* firstIdent,
     noteDeprecation(loc, actuals);
   } else if (ident->name()==USTR("stable")) {
     noteStable(loc, actuals);
+  } else if (ident->name() == USTR("edition")) {
+    noteEdition(loc, actuals);
   }
 
   // check the actual names are not duplicates
@@ -437,11 +442,57 @@ void ParserContext::noteUnstable(YYLTYPE loc, MaybeNamedActualList* actuals) {
   }
 }
 
+void ParserContext::noteEdition(YYLTYPE loc, MaybeNamedActualList* actuals) {
+  hasAttributeGroupParts = true;
+
+  attributeGroupParts.hasEdition = true;
+
+  if (actuals != nullptr && actuals->size() > 0) {
+    for (auto& actual : *actuals) {
+      if (actual.name.isEmpty()) {
+        error(loc, "'@edition' attribute argument must be named");
+      }
+
+      if (!(actual.name == UniqueString::get(context(), "first").podUniqueString() ||
+            actual.name == UniqueString::get(context(), "last").podUniqueString() ||
+            actual.name.isEmpty())) {
+        error(loc, "unrecognized argument name '%s'. "
+                   "'@edition' attribute only accepts 'first' and 'last' "
+                   "arguments",
+                   actual.name.c_str());
+      }
+      if (!actual.expr->isStringLiteral()) {
+        error(loc, "'@edition' attribute arguments must be string literals for now");
+      }
+
+      if (actual.name == UniqueString::get(context(),
+                                           "first").podUniqueString()) {
+        AstNode* firstStr = actual.expr;
+
+        if (auto strLit = firstStr->toStringLiteral()) {
+          attributeGroupParts.firstEdition = strLit->value();
+        }
+      }
+
+      if (actual.name == UniqueString::get(context(),
+                                           "last").podUniqueString()) {
+        AstNode* lastStr = actual.expr;
+
+        if (auto strLit = lastStr->toStringLiteral()) {
+          attributeGroupParts.lastEdition = strLit->value();
+        }
+      }
+    }
+  } else {
+    error(loc, "'@edition' attribute requires an argument");
+  }
+}
+
 void ParserContext::resetAttributeGroupPartsState() {
   if (hasAttributeGroupParts) {
     auto& pragmas = attributeGroupParts.pragmas;
     if (pragmas) delete pragmas;
-    attributeGroupParts = {nullptr, nullptr, false, false, false, false, UniqueString(), UniqueString(), UniqueString() };
+    attributeGroupParts = {nullptr, nullptr, false, false, false, false, false, UniqueString(), UniqueString(), UniqueString(), UniqueString(), UniqueString() };
     hasAttributeGroupParts = false;
   }
 
@@ -451,9 +502,12 @@ void ParserContext::resetAttributeGroupPartsState() {
   CHPL_ASSERT(!attributeGroupParts.isUnstable);
   CHPL_ASSERT(!attributeGroupParts.isParenfulDeprecated);
   CHPL_ASSERT(!attributeGroupParts.isStable);
+  CHPL_ASSERT(!attributeGroupParts.hasEdition);
   CHPL_ASSERT(attributeGroupParts.deprecationMessage.isEmpty());
   CHPL_ASSERT(attributeGroupParts.unstableMessage.isEmpty());
   CHPL_ASSERT(attributeGroupParts.parenfulDeprecationMessage.isEmpty());
+  CHPL_ASSERT(attributeGroupParts.firstEdition.isEmpty());
+  CHPL_ASSERT(attributeGroupParts.lastEdition.isEmpty());
   CHPL_ASSERT(!hasAttributeGroupParts);
 
   numAttributesBuilt = 0;

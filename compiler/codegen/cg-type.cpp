@@ -510,7 +510,7 @@ void AggregateType::codegenDef() {
   llvm::Type *type = NULL;
   int structAlignment = ALIGNMENT_UNINIT;
 #endif
-  if (id == breakOnCodegenID) gdbShouldBreakHere();
+  if (id == breakOnCodegenID) debuggerBreakHere();
 
   if (symbol->hasFlag(FLAG_STAR_TUPLE)) {
     if( outfile ) {

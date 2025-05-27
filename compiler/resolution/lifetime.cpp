@@ -464,7 +464,7 @@ void checkLifetimesInFunction(FnSymbol* fn) {
       printf("Visiting function %s id %i\n", inFn->name, inFn->id);
       nprint_view(inFn);
     }
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
 
   // Figure out the scope for local variables / arguments
@@ -1109,7 +1109,7 @@ bool LifetimeState::setInferredLifetimeToMin(Symbol* sym, LifetimePair lt) {
 
   if (inferredLifetime.count(sym) == 0) {
     if (sym->id == breakOnId)
-      gdbShouldBreakHere();
+      debuggerBreakHere();
 
     inferredLifetime[sym] = lt;
     changed = true;
@@ -1119,13 +1119,13 @@ bool LifetimeState::setInferredLifetimeToMin(Symbol* sym, LifetimePair lt) {
     // with debugging code and change tracking.
     if (isLifetimeShorter(lt.referent, value.referent)) {
       if (sym->id == breakOnId)
-        gdbShouldBreakHere();
+        debuggerBreakHere();
       value.referent = lt.referent;
       changed = true;
     }
     if (isLifetimeShorter(lt.borrowed, value.borrowed)) {
       if (sym->id == breakOnId)
-        gdbShouldBreakHere();
+        debuggerBreakHere();
       value.borrowed = lt.borrowed;
       changed = true;
     }
@@ -2102,7 +2102,7 @@ bool IntrinsicLifetimesVisitor::enterDefExpr(DefExpr* def) {
       lp.borrowed = infiniteLifetime();
 
     if (sym->id == debugLifetimesForId)
-      gdbShouldBreakHere();
+      debuggerBreakHere();
 
     lifetimes->intrinsicLifetime[sym] = lp;
   }
@@ -2129,7 +2129,7 @@ static bool isCallToFunctionReturningNotOwned(CallExpr* call) {
 bool IntrinsicLifetimesVisitor::enterCallExpr(CallExpr* call) {
 
   if (call->id == debugLifetimesForId)
-    gdbShouldBreakHere();
+    debuggerBreakHere();
 
   // Traverse into task functions
   if (FnSymbol* calledFn = call->resolvedFunction())
@@ -2203,7 +2203,7 @@ bool IntrinsicLifetimesVisitor::enterCallExpr(CallExpr* call) {
   if (initSym && !lt.unknown) {
 
     if (initSym->id == debugLifetimesForId)
-      gdbShouldBreakHere();
+      debuggerBreakHere();
 
     lifetimes->intrinsicLifetime[initSym].borrowed = lt;
   }
@@ -2220,7 +2220,7 @@ bool IntrinsicLifetimesVisitor::enterCallExpr(CallExpr* call) {
 bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
 
   if (call->id == debugLifetimesForId)
-    gdbShouldBreakHere();
+    debuggerBreakHere();
 
   // Traverse into task functions
   if (FnSymbol* calledFn = call->resolvedFunction())
@@ -2266,7 +2266,7 @@ bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
         // When setting the reference, set its intrinsic lifetime.
         if (!lp.referent.unknown || !lp.borrowed.unknown) {
           if (lhs->id == debugLifetimesForId)
-            gdbShouldBreakHere();
+            debuggerBreakHere();
 
           LifetimePair & intrinsic = lifetimes->intrinsicLifetime[lhs];
           intrinsic = lifetimes->minimumLifetimePair(intrinsic, lp);
@@ -2313,7 +2313,7 @@ bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
 bool InferLifetimesVisitor::enterForLoop(ForLoop* forLoop) {
 
   if (forLoop->id == debugLifetimesForId)
-    gdbShouldBreakHere();
+    debuggerBreakHere();
 
   // Gather the loop details to understand the
   // correspondence between what was iterated over
@@ -2402,7 +2402,7 @@ bool InferLifetimesVisitor::enterForLoop(ForLoop* forLoop) {
     if (index->isRef()) {
       if (!lp.referent.unknown || !lp.borrowed.unknown) {
         if (index->id == debugLifetimesForId)
-          gdbShouldBreakHere();
+          debuggerBreakHere();
 
         LifetimePair & intrinsic = lifetimes->intrinsicLifetime[index];
         intrinsic = lifetimes->minimumLifetimePair(intrinsic, lp);
@@ -2544,7 +2544,7 @@ static void emitError(Expr* inExpr,
 bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
 
   if (call->id == debugLifetimesForId)
-    gdbShouldBreakHere();
+    debuggerBreakHere();
 
   // Traverse into task functions
   if (FnSymbol* calledFn = call->resolvedFunction())

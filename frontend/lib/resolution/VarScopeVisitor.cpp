@@ -21,6 +21,7 @@
 
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/ResolvedVisitor.h"
+#include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/resolution-types.h"
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/uast/all-uast.h"
@@ -153,7 +154,7 @@ VarScopeVisitor::processSplitInitAssign(const OpCall* ast,
 }
 
 bool
-VarScopeVisitor::processSplitInitOut(const FnCall* ast,
+VarScopeVisitor::processSplitInitOut(const Call* ast,
                                      const AstNode* actual,
                                      const std::set<ID>& allSplitInitedVars,
                                      RV& rv) {
@@ -233,7 +234,15 @@ void VarScopeVisitor::handleConditional(const Conditional* cond, RV& rv) {
   std::vector<VarFrame*> frames;
   if (thenFrame) frames.push_back(thenFrame);
   if (elseFrame) frames.push_back(elseFrame);
-  handleDisjunction(cond, frame, frames, elseFrame != nullptr, rv);
+
+  bool alwaysTaken = false;
+  if (elseFrame) {
+    alwaysTaken = true;
+  } else if (thenFrame && thenFrame->knownPath) {
+    alwaysTaken = true;
+  }
+
+  handleDisjunction(cond, frame, frames, alwaysTaken, rv);
   handleScope(cond, rv);
 }
 
@@ -241,14 +250,14 @@ void VarScopeVisitor::handleSelect(const Select* sel, RV& rv) {
   auto frame = currentFrame();
 
   std::vector<VarFrame*> frames;
-  bool total = sel->hasOtherwise();
+  bool alwaysTaken = sel->hasOtherwise();
   for(int i = 0; i < sel->numWhenStmts(); i++) {
     auto whenFrame = currentWhenFrame(i);
     if (!whenFrame) continue;
     frames.push_back(whenFrame);
-    total |= whenFrame->paramTrueCond;
+    alwaysTaken |= whenFrame->paramTrueCond;
   }
-  handleDisjunction(sel, frame, frames, total, rv);
+  handleDisjunction(sel, frame, frames, alwaysTaken, rv);
   handleScope(sel, rv);
 }
 
@@ -334,18 +343,18 @@ bool VarScopeVisitor::enter(const OpCall* ast, RV& rv) {
     rhsAst->traverse(rv);
 
     handleAssign(ast, rv);
-  }
 
-  return false;
+    return false;
+  } else {
+    return resolvedCallHelper(ast, rv);
+  }
 }
 
 void VarScopeVisitor::exit(const OpCall* ast, RV& rv) {
   exitAst(ast);
 }
 
-bool VarScopeVisitor::enter(const FnCall* callAst, RV& rv) {
-  enterAst(callAst);
-
+bool VarScopeVisitor::resolvedCallHelper(const Call* callAst, RV& rv) {
   auto rr = rv.byPostorder().byAstOrNull(callAst);
   if (!rr) return false;
 
@@ -404,13 +413,34 @@ bool VarScopeVisitor::enter(const FnCall* callAst, RV& rv) {
       actualAsts.insert(actualAsts.begin(), nullptr);
     }
 
+
     // compute a vector indicating which actuals are passed to
     // an 'out' formal in all return intent overloads
+    const PromotionIteratorType* promoCtx = nullptr;
+    if (!rr->type().isUnknownOrErroneous()) {
+      promoCtx = rr->type().type()->toPromotionIteratorType();
+    }
     std::vector<QualifiedType> actualFormalTypes;
     std::vector<Qualifier> actualFormalIntents;
+    std::vector<bool> actualPromoted;
     computeActualFormalIntents(context, candidates, ci, actualAsts,
-                               actualFormalIntents, actualFormalTypes);
+                               actualFormalIntents, actualFormalTypes,
+                               actualPromoted, promoCtx);
 
+    // for a given actual index, returns:
+    // * nullptr if no promotion ocurred
+    // * the scalar type of the given actual was used in promotion
+    // * the actual type itself if it was not
+    // This can be used to signal to handleInFormal() etc. to adjust
+    // their behavior for promotion, and to provide the additional information
+    // of the scalar type.
+    auto getScalarType = [&](int idx) {
+      auto& actualQt = ci.actual(idx).type();
+      return
+        promoCtx == nullptr ? nullptr :
+        actualPromoted[idx] ? &getPromotionType(context, actualQt) :
+        &actualQt;
+    };
     int actualIdx = 0;
     for (auto actual : ci.actuals()) {
       (void) actual; // avoid compilation error about unused variable
@@ -428,11 +458,12 @@ bool VarScopeVisitor::enter(const FnCall* callAst, RV& rv) {
                  !(ci.name() == "init" && actualIdx == 0)) {
         // don't do this for the 'this' argument to 'init', because it
         // is not getting copied.
+
         handleInFormal(callAst, actualAst,
-                       actualFormalTypes[actualIdx], rv);
+                       actualFormalTypes[actualIdx], getScalarType(actualIdx), rv);
       } else if (kind == Qualifier::INOUT) {
         handleInoutFormal(callAst, actualAst,
-                          actualFormalTypes[actualIdx], rv);
+                          actualFormalTypes[actualIdx], getScalarType(actualIdx), rv);
       } else {
         // otherwise, visit the actuals to gather mentions
         actualAst->traverse(rv);
@@ -445,6 +476,13 @@ bool VarScopeVisitor::enter(const FnCall* callAst, RV& rv) {
   return false;
 }
 
+bool VarScopeVisitor::enter(const FnCall* callAst, RV& rv) {
+  enterAst(callAst);
+
+  return resolvedCallHelper(callAst, rv);
+}
+
+
 void VarScopeVisitor::exit(const FnCall* ast, RV& rv) {
   exitAst(ast);
 }
@@ -456,7 +494,7 @@ bool VarScopeVisitor::enter(const Return* ast, RV& rv) {
 }
 void VarScopeVisitor::exit(const Return* ast, RV& rv) {
   if (!scopeStack.empty()) {
-    markReturnOrThrow();
+    markReturn();
     handleReturn(ast, rv);
   }
   exitAst(ast);
@@ -486,7 +524,7 @@ bool VarScopeVisitor::enter(const Throw* ast, RV& rv) {
 }
 void VarScopeVisitor::exit(const Throw* ast, RV& rv) {
   if (!scopeStack.empty()) {
-    markReturnOrThrow();
+    markThrow();
     handleThrow(ast, rv);
   }
   exitAst(ast);
@@ -576,13 +614,17 @@ computeActualFormalIntents(Context* context,
                            const CallInfo& ci,
                            const std::vector<const AstNode*>& actualAsts,
                            std::vector<Qualifier>& actualFormalIntents,
-                           std::vector<QualifiedType>& actualFormalTypes) {
+                           std::vector<QualifiedType>& actualFormalTypes,
+                           std::vector<bool>& actualPromoted,
+                           const types::PromotionIteratorType* promoCtx) {
 
   int nActuals = ci.numActuals();
   actualFormalIntents.clear();
   actualFormalIntents.resize(nActuals);
   actualFormalTypes.clear();
   actualFormalTypes.resize(nActuals);
+  actualPromoted.clear();
+  actualPromoted.resize(nActuals);
 
   int nFns = candidates.numBest();
   if (nFns == 0) {
@@ -590,14 +632,21 @@ computeActualFormalIntents(Context* context,
     return;
   }
 
+  int methodOpOffset = ci.isMethodCall() && ci.isOpCall() ? 1 : 0;
   bool firstCandidate = true;
   for (const MostSpecificCandidate& candidate : candidates) {
     if (candidate) {
       auto& formalActualMap = candidate.formalActualMap();
-      for (int actualIdx = 0; actualIdx < nActuals; actualIdx++) {
-        const FormalActual* fa = formalActualMap.byActualIdx(actualIdx);
+      for (int actualIdx = methodOpOffset; actualIdx < nActuals; actualIdx++) {
+        const FormalActual* fa = formalActualMap.byActualIdx(actualIdx-methodOpOffset);
         auto intent  = normalizeFormalIntent(fa->formalType().kind());
         QualifiedType& aft = actualFormalTypes[actualIdx];
+
+        // all actualPromoted are guaranteed to be the same IF all the
+        // formal types are guaranteed to be the same, which they are
+        // using the checks below.
+        actualPromoted[actualIdx] =
+          promoCtx && promoCtx->promotedFormals().count(fa->formal()->id()) > 0;
 
         if (firstCandidate) {
           actualFormalIntents[actualIdx] = intent;

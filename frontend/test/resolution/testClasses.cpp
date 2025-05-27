@@ -439,6 +439,62 @@ static void testInstantiateManagerRecord() {
   checkChplT(vars.at("y"));
 }
 
+static void testInstantiateParentClass() {
+  printf("testInstantiateParentClass\n");
+
+  // test that there's no ambiguity between a parent method and a child
+  // method (ensuring parent doesn't become child as part of instantiation).
+  {
+    std::string program = R"""(
+      class parentCls {
+        param rank: int;
+      }
+
+
+      proc parentCls.foo(): int {}
+
+      class childCls : parentCls(?) {
+      }
+
+      override proc childCls.foo(): int {}
+
+      var c = new unmanaged childCls(1);
+      var x = c.foo();
+    )""";
+    auto context = buildStdContext();
+    ErrorGuard guard(context);
+
+    auto vars = resolveTypesOfVariables(context, program, {"x"});
+    auto qt = vars.at("x");
+    assert(!qt.isUnknownOrErroneous());
+    assert(qt.type()->isIntType());
+  }
+
+  {
+    std::string program = R"""(
+      class parentCls {
+        param rank: int;
+      }
+
+      class childCls : parentCls(?) {
+        param otherThing: int;
+      }
+
+      proc parentCls.foo() type do return this.type;
+
+      var c = new unmanaged childCls(1, 2);
+      param x = c.foo() : string;
+    )""";
+    auto context = buildStdContext();
+    ErrorGuard guard(context);
+
+    auto vars = resolveTypesOfVariables(context, program, {"x"});
+    auto qt = vars.at("x");
+    assert(!qt.isUnknownOrErroneous());
+    ensureParamString(qt, "borrowed parentCls(1)");
+  }
+}
+
 int main() {
   test1();
   test2();
@@ -450,6 +506,7 @@ int main() {
   test8();
 
   testInstantiateManagerRecord();
+  testInstantiateParentClass();
 
   return 0;
 }
