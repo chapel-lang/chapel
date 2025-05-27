@@ -9,13 +9,12 @@ check_python() {
     if [ $? -eq 0 ]
     then
       MIN_MINOR_PYTHON_VERSION=5
-      if printf "Python 3.%s\n%s\n" "$MIN_MINOR_PYTHON_VERSION" "$PYTHON_VERSION_OUTPUT" | sort -V -C
+      if printf "Python 3.%s\n%s\n" "$MIN_MINOR_PYTHON_VERSION" "$PYTHON_VERSION_OUTPUT" | sort --version-sort --check &>/dev/null
       then
         echo $1
         exit 0
       else
-        vers=$($1 --version 2>&1)
-        echo "Chapel requires Python 3.$MIN_MINOR_PYTHON_VERSION or later, but found $vers" 1>&2
+        echo "Chapel requires Python 3.$MIN_MINOR_PYTHON_VERSION or later, but found $PYTHON_VERSION_OUTPUT" 1>&2
       fi
     fi
   fi
