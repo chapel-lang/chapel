@@ -39,7 +39,13 @@
 
   .. code-block:: c
 
-    // Compile with: 'cc -o TestBinary TestBinary.c'
+    // Compile with: 'cc -shared -fPIC -o TestBinary TestBinary.c'
+    //
+    // Your C compiler must support compiling a shared library as well
+    // as generating "position independent code". If your compiler
+    // offers some other way of preserving symbol tables (e.g., the
+    // '-rdynamic' flag) for use with dynamic loading, you can compile
+    // a regular executable with that flag as well.
     //
 
     #include <stdio.h>
@@ -143,7 +149,8 @@ record binary {
   /*
     Create a record representing a dynamically loaded binary using a string
     that stores the path to a binary file. The file may be any executable
-    binary, though a "shared library" or "dynamic library" is most common.
+    binary, though a "shared library" or "dynamic library" is by far the
+    most common and well supported.
 
     The implementation will attempt to load a binary on all locales. If
     loading should fail on any locale then the entire process will be

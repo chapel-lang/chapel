@@ -1,7 +1,7 @@
 use DynamicLoading;
 
 // A binary may or may not exist at this path.
-const path = './TestBinary';
+const path = './TestBinary.so';
 
 // If loading fails an error will be issued and the 'try!' will halt.
 const bin = try! binary.load(path);
