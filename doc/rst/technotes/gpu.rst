@@ -156,7 +156,7 @@ The following are further requirements for GPU support:
 
     * Note that LLVM versions older than 16 do not support CUDA 12.
 
-    * We do not yet support LLVM 20, see `this issue <https://github.com/llvm/llvm-project/issues/141626>`_.
+    * We do not yet support GPU programming with LLVM 20, see `this issue <https://github.com/llvm/llvm-project/issues/141626>`_.
 
   * If using ``CHPL_LLVM=system``, it must have been built with support for
     NVPTX target. You can check supported targets of your LLVM installation by
