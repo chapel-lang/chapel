@@ -996,6 +996,9 @@ include module TwoArrayRadixSort;
 include module TwoArrayDistributedPartitioning;
 include module TwoArrayDistributedRadixSort;
 
+// and the partitioning sort modules
+include module PartitioningUtility;
+include module Partitioning;
 
 /* Comparators */
 
