@@ -812,6 +812,7 @@ record bktCount {
 
    OutputShift is a value that can be added to each bucket position
    to adjust for the output position. It can be:
+
      * 'none' to do nothing special
      * an integer index to add to all output positions
      * an array of size nBuckets to add an amount per-bucket
@@ -831,18 +832,20 @@ record bktCount {
    or something else that behaves similarly to it.
 
    If equality buckets are not in use:
+
      Bucket 0 consists of elts with
        elts <= split.sortedSplitter(0)
      Bucket 1 consists of elts with
        split.sortedSplitter(0) < elts <= split.sortedSplitter(1)
-     ...
+
      Bucket i consists of elts with
        split.sortedSplitter(i-1) < elts <= split.sortedSplitter(i)
-     ...
+
      Bucket nBuckets-1 consits of elt with
        split.sortedSplitter(numBuckets-2) < elts
 
    If equality buckets are in use:
+
      Bucket 0 consists of elts with
        elts < split.sortedSplitter(0)
      Bucket 1 consists of elts with

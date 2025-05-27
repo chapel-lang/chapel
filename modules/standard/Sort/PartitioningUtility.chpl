@@ -77,6 +77,7 @@ proc maybeDistributed() param {
 /*
    Make a BlockDist domain usually, but just return the local 'dom' unmodified
    in some cases:
+
     * if 'targetLocales' is 'none'
     * if CHPL_COMM=none.
 */
@@ -578,6 +579,7 @@ proc bulkCopy(ref dst: [], dstRegion: range,
 /*
    Help with timing regions of code within a parallel region.
    To use this type:
+
     * start timing with startTime (which returns this type)
     * stop timing with stopTime
     * accumulate with + reduce in parallel regions
