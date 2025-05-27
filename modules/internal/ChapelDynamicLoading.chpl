@@ -27,7 +27,7 @@ module ChapelDynamicLoading {
   param chpl_defaultProcBufferSize = 512;
 
   // This will always be run, so we can rely on it.
-  inline proc checkForConfigurationErrors() param {
+  inline proc issueConfigurationErrors() param {
     use ChplConfig;
 
     if useProcedurePointers &&
@@ -43,13 +43,16 @@ module ChapelDynamicLoading {
   }
 
   inline proc isDynamicLoadingSupported param {
-    if checkForConfigurationErrors() then return false;
+    if issueConfigurationErrors() then return false;
     return true;
   }
 
   inline proc isDynamicLoadingEnabled {
     return isDynamicLoadingSupported;
   }
+
+  // Invoke immediately to issue compiler errors.
+  isDynamicLoadingSupported;
 
   // This counter is used to assign a unique 'wide index' to each procedure.
   // We start with '1' since the '0th' index is reserved to represent 'nil'.
