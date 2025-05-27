@@ -1168,6 +1168,13 @@ def set_up_executables():
         if prediff_for_ucx not in chpl_system_prediff:
             chpl_system_prediff.append(prediff_for_ucx)
 
+    # TODO: remove this when
+    # https://github.com/chapel-lang/chapel/issues/27262 is resolved
+    if 'darwin' == host_platform:
+        prediff_for_debug = os.path.join(util_dir, "test", "prediff-for-debug")
+        if prediff_for_debug not in chpl_system_prediff:
+            chpl_system_prediff.append(prediff_for_debug)
+
     if chpl_system_prediff:
         os.environ["CHPL_SYSTEM_PREDIFF"] = ','.join(chpl_system_prediff)
 

@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+outfile=$2
+grep -v 'skipping debug map object with duplicate name and timestamp' $outfile > $outfile.tmp
+mv $outfile.tmp $outfile
