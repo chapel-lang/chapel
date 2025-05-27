@@ -40,7 +40,7 @@ class Type;
 namespace fcfs {
 
 /***
-  Determine if the 'fcfsUsePointerImplementation' config param in the
+  Determine if the 'useProcedurePointers' config param in the
   'ChapelBase' module is set to 'true'. The module must be resolved.
 */
 bool usePointerImplementation(void);

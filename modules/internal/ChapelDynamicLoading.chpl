@@ -30,7 +30,7 @@ module ChapelDynamicLoading {
   inline proc checkForConfigurationErrors() param {
     use ChplConfig;
 
-    if fcfsUsePointerImplementation &&
+    if useProcedurePointers &&
        CHPL_TARGET_COMPILER == "llvm" &&
        CHPL_LLVM_VERSION == "14" {
       // This could be a compiler error, but I'm lazy and putting it here.

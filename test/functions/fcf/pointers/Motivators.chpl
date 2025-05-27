@@ -2,7 +2,7 @@ module Motivators {
   use Types;
 
   // Tests were written progressively with a pointer implementation in mind.
-  compilerAssert(fcfsUsePointerImplementation);
+  compilerAssert(useProcedurePointers);
 
   var globalCounter = 0;
 

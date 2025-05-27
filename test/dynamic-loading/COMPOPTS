@@ -1,1 +1,1 @@
--sfcfsUsePointerImplementation=true --verify
+-suseProcedurePointers=true --verify

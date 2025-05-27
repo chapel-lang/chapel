@@ -30,6 +30,12 @@
     This module is unstable. Support for dynamic loading is experimental
     and its representation could change at any time.
 
+  .. note::
+
+    To ``use`` this module, the experimental procedure pointer feature
+    must be activated. Do this by setting the ``config param`` named
+    ``useProcedurePointers`` to ``true``.
+
   This module provides the ability to load a binary at runtime. Procedures
   contained in a dynamically loaded binary can be retrieved and called on
   any locale without compile-time knowledge of their names or locations.
@@ -95,10 +101,10 @@ module DynamicLoading {
 // This internal module contains the low-level implementation.
 private use ChapelDynamicLoading;
 
-if !fcfsUsePointerImplementation {
+if !useProcedurePointers {
   compilerError('This module cannot be used unless the experimental ' +
                 'procedure pointer implementation is activated. Set the ' +
-                'config param \'fcfsUsePointerImplementation\' to ' +
+                'config param \'useProcedurePointers\' to ' +
                 '\'true\' when compiling to activate it');
 }
 
