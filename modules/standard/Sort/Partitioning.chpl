@@ -51,10 +51,13 @@ import ChplConfig.CHPL_COMM;
 
 // how much more should we sample to create splitters?
 // 1.0 would be only to sample enough for the splitters
+@unstable("'sampleRatio' is unstable and may change in the future")
 private config const sampleRatio = 1.5;
+@unstable("'seed' is unstable and may change in the future")
 private config const seed = 1;
 
 // switch to base case sort if number of elements is < nBuckets * this
+@unstable("'partitionSortBaseCaseMultiplier' is unstable and may change in the future")
 private config const partitionSortBaseCaseMultiplier = 100.0;
 
 private config param PARTITIONING_EXTRA_CHECKS = false;

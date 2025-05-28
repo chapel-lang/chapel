@@ -39,10 +39,12 @@ private config param DISTRIBUTE_EVEN_WITH_COMM_NONE = false;
 private config param BULK_COPY_WARNINGS = false;
 
 /* Bulk copy "page" size */
+@unstable("'bulkCopyPageSz' is unstable and may change in the future")
 private config const bulkCopyPageSz:uint = 8*1024;
 const BULK_COPY_PAGE_SIZE = bulkCopyPageSz;
 
 /* Yield after this many iterations */
+@unstable("'yieldPeriod' is unstable and may change in the future")
 private config const yieldPeriod = 2048;
 const YIELD_PERIOD = yieldPeriod;
 
