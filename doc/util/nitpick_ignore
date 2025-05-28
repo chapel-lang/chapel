@@ -87,6 +87,7 @@ cpp:identifier LOOKUP_DECLS
 cpp:identifier LOOKUP_IMPORT_AND_USE
 cpp:identifier LOOKUP_PARENTS
 cpp:identifier LOOKUP_EXTERN_BLOCKS
+cpp:identifier chpl::empty
 
 
 # python types
