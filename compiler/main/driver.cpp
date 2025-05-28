@@ -354,7 +354,7 @@ const char* compileCommandFilename = "compileCommand.tmp";
 const char* compileCommand = NULL;
 char compileVersion[64];
 
-std::array<std::string, 2> editions ({"2.0", "pre-edition"});
+std::array<std::string, 2> editions ({{"2.0", "pre-edition"}});
 std::string fEdition = "2.0";
 
 static bool fPrintCopyright = false;
