@@ -94,7 +94,7 @@ class Builder final {
           UniqueString startingSymbolPath,
           const libraries::LibraryFile* lib,
           bool isGenerated = false,
-          optional<int> topLevelRepeatOffset = empty)
+          optional<int> topLevelRepeatOffset = chpl::empty)
     : context_(context),
       startingSymbolPath_(startingSymbolPath),
       br(filePath, lib),
@@ -133,7 +133,7 @@ class Builder final {
 
   static owned<Builder> createForGeneratedCode(Context* context,
                                                ID generatedFrom,
-                                               optional<int> overloadOffset = empty);
+                                               optional<int> overloadOffset = chpl::empty);
 
   /** Construct a Builder for use when reading uAST from a library file. */
   static owned<Builder> createForLibraryFileModule(
