@@ -16,7 +16,7 @@ module My_foo {
 
   var My_globalActor: unmanaged My_Actor?;
 
-  proc My_sayhello(My_level: int){
+  proc My_sayhello(My_level: int) {
     writeln("Hello, Hui",My_level);
   }
     
