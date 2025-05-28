@@ -10,7 +10,6 @@ source $UTIL_CRON_DIR/common-gpu-nvidia-hpe-cray-ex.bash
 
 module load cuda/12.4
 
-export CHPL_LLVM=system
 export CHPL_COMM=none
 export CHPL_GPU=nvidia  # amd is also detected automatically
 
