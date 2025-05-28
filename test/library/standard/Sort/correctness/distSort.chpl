@@ -25,5 +25,20 @@ fillRandom(D, seed=1);
 sort(D, stable=true);
 writeln("D is sorted: ", isSorted(D));
 
-// TODO: check comparison sort
-// TODO: check stable with comparators
+
+record myComparator: relativeComparator {
+  proc compare(a, b) {
+    if a < b then return -1;
+    else if a > b then return 1;
+    else return 0;
+  }
+}
+var ELoc:[0..<N] int;
+fillRandom(ELoc, seed=1);
+sort(ELoc, comparator=new myComparator());
+writeln("ELoc is sorted: ", isSorted(ELoc));
+
+var EDist = blockDist.createArray(0..<N, int);
+fillRandom(EDist, seed=1);
+sort(EDist, comparator=new myComparator());
+writeln("EDist is sorted: ", isSorted(EDist));
