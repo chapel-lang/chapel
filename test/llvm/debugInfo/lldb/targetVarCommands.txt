@@ -1,13 +1,14 @@
 b foo
 b bar
 r
+n
 target var
 frame var
-step
-step
+n
 target var
 frame var
 c
+n
 target var
 frame var
 c
