@@ -931,11 +931,11 @@ struct FieldFnBuilder : BinaryFnBuilder {
                  Formal::Intent rhsIntent = Formal::DEFAULT_INTENT)
     : BinaryFnBuilder(context, typeID, name, kind, lhsIntent, rhsIntent) {}
 
-  owned<AstNode> lhsFormalTypeExpr() {
+  owned<AstNode> lhsFormalTypeExpr() override {
     return identifier(typeDecl_->name());
   }
 
-  owned<AstNode> rhsFormalTypeExpr() {
+  owned<AstNode> rhsFormalTypeExpr() override {
     auto thisDotType = dot(identifier(USTR("this")), USTR("type"));
     return thisDotType;
   }
@@ -1359,11 +1359,11 @@ struct EnumCastBuilder : BinaryFnBuilder {
       castFromEnum_(castFromEnum) {
   }
 
-  owned<AstNode> lhsFormalTypeExpr() {
+  owned<AstNode> lhsFormalTypeExpr() override {
     return identifier(castFromEnum_ ? typeDecl_->name() : otherType_);
   }
 
-  owned<AstNode> rhsFormalTypeExpr() {
+  owned<AstNode> rhsFormalTypeExpr() override {
     return identifier(castFromEnum_ ? otherType_ : typeDecl_->name());
   }
   owned<AstNode> enumElt(UniqueString name) {
