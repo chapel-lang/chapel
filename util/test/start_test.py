@@ -238,6 +238,12 @@ def test_directory(test, test_type):
         else:
             dir = os.path.abspath(root)
 
+        # if the directory name ends with .dSYM, skip it
+        # if a parent directory is a .dSYM, skip it
+        if (dir.endswith(".dSYM") or
+        any(e.endswith(".dSYM") for e in os.path.normpath(dir).split(os.sep))):
+            continue
+
         logger.write()
         logger.write("[Working on directory {0}]".format(root))
 
