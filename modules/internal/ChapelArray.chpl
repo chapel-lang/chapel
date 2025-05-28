@@ -2955,9 +2955,9 @@ module ChapelArray {
   @edition(first="pre-edition")
   proc reshape(arr: [], ranges: range(?)...) {
     if ranges.size == 1 && ranges(0).bounds == boundKind.low {
-      return reshape(arr, {ranges(0).low..#arr.size}, false);
+      return arr.reshapeHelp({ranges(0).low..#arr.size}, false);
     } else {
-      return reshape(arr, {(...ranges)}, checkReshapeDimsByDefault);
+      return arr.reshapeHelp({(...ranges)}, checkReshapeDimsByDefault);
     }
   }
 
@@ -2966,9 +2966,9 @@ module ChapelArray {
   @edition(first="pre-edition")
   proc reshape(arr: [], ranges: range(?)..., checkDims: bool) {
     if ranges.size == 1 && ranges(0).bounds == boundKind.low {
-      return reshape(arr, {ranges(0).low..#arr.size}, false);
+      return arr.reshapeHelp({ranges(0).low..#arr.size}, false);
     } else {
-      return reshape(arr, {(...ranges)}, checkDims);
+      return arr.reshapeHelp({(...ranges)}, checkDims);
     }
   }
 
@@ -2976,30 +2976,46 @@ module ChapelArray {
   pragma "fn returns aliasing array"
   @edition(first="pre-edition")
   proc reshape(arr: [], dom: domain(?), checkDims=checkReshapeDimsByDefault) {
-    if chpl__isArrayView(arr) ||
-       !Reflection.canResolveMethod(arr._value, "doiSupportsReshape") {
-      compilerError("This array type does not support reshaping");
-    } else if !Reflection.canResolveMethod(arr._value, "doiReshape", dom) {
+    return arr.reshapeHelp(dom, checkDims);
+  }
+
+  //
+  // I tried to just make the reshape() overload just above contain
+  // this logic rather than using this helper, but seemingly,
+  // something about returning an array view from a procedure that
+  // calls another procedure to create it didn't work (?).  Though I
+  // also wasn't easily able to reproduce this in a standalone test...
+  //
+  pragma "no promotion when by ref"
+  pragma "reference to const when const this"
+  pragma "fn returns aliasing array"
+  proc _array.reshapeHelp(dom: domain(?), checkDims=checkReshapeDimsByDefault) {
+    if chpl__isArrayView(this) ||
+       !Reflection.canResolveMethod(this._value, "doiSupportsReshape") {
+       compilerError("This array type does not support reshaping");
+       return this;
+    } else if !Reflection.canResolveMethod(this._value, "doiReshape", dom) {
       compilerError("This array cannot be reshaped using this domain type");
+      return this;
     } else {
       if boundsChecking then
         validateReshape();
-      return arr._value.doiReshape(dom);
+      return this._value.doiReshape(dom);
     }
 
     proc validateReshape() {
-      if dom.size != arr.size then
-        halt("Size mismatch: Can't rehape a ", arr.size,
+      if dom.size != this.size then
+        halt("Size mismatch: Can't rehape a ", this.size,
              "-element array into a ", dom.size, "-element array");
 
       if checkDims {
-        if arr.size > 0 && dom.size > 0 {
+        if this.size > 0 && dom.size > 0 {
           var arrDim, domDim = 0;
           var arrSize, domSize = 0;
           var arrCatchup, domCatchup, error = false;
           do {
             if arrSize == 0 {
-              arrSize = arr.dim(arrDim).size;
+              arrSize = this.dim(arrDim).size;
             }
             if domSize == 0 {
               domSize = dom.dim(domDim).size;
@@ -3016,7 +3032,7 @@ module ChapelArray {
                 error = true;
               arrCatchup = true;
               arrDim += 1;
-              arrSize *= arr.dim(arrDim).size;
+              arrSize *= this.dim(arrDim).size;
             } else {
               if arrCatchup then
                 error = true;
@@ -3024,10 +3040,10 @@ module ChapelArray {
               domDim += 1;
               domSize *= dom.dim(domDim).size;
             }
-          } while (arrDim < arr.rank && domDim < dom.rank);
+          } while (arrDim < this.rank && domDim < dom.rank);
 
           if error then
-            warning(arr.dims(), " doesn't preserve dimensions as ", dom.dims());
+            warning(this.dims(), " doesn't preserve dimensions as ", dom.dims());
         }
       }
     }
