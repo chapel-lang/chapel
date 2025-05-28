@@ -716,7 +716,7 @@ llvm::DIVariable* debug_data::construct_formal_arg(ArgSymbol *argSym, unsigned A
       modSym->llvmDIBuilder->createExpression(), llvm::DILocation::get(
         scope->getContext(), line_number, 0, scope, nullptr, false),
       gGenInfo->irBuilder->GetInsertBlock());
-    return diVariable;
+    return diParameterVariable;
   } else {
     //Empty dbg node if the symbol type is unresolved
     return NULL;
