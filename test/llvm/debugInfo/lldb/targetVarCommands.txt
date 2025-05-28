@@ -1,0 +1,14 @@
+b foo
+b bar
+r
+target var
+frame var
+step
+step
+target var
+frame var
+c
+target var
+frame var
+c
+quit
