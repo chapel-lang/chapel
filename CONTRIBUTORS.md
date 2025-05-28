@@ -11,6 +11,7 @@ Contributors to the Chapel 2.5 release
 * Soohoon Choi, [HPE]
 * Lydia Duncan, [HPE]
 * Daniel Fedorin, [HPE]
+* Emmanuel Ferdman, individual contributor
 * Michael Ferguson, [HPE]
 * [Paul H. Hargrove], [Lawrence Berkeley National Laboratory]
 * Ben Harshbarger, [HPE]
