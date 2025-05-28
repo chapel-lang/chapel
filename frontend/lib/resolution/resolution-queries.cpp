@@ -4230,6 +4230,9 @@ static bool resolveFnCallSpecial(Context* context,
           srcQt.param()->stringify(oss, chpl::StringifyKind::CHPL_SYNTAX);
           exprTypeOut = QualifiedType::makeParamString(context, oss.str());
           return true;
+        } else if (dstQtEnumType && srcTy->isStringType()) {
+          CHPL_UNIMPL("param string to enum cast");
+          return false;
         }
 
         if (srcQtEnumType && srcQtEnumType->isAbstract()) {
