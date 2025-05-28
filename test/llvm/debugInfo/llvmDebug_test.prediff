@@ -34,6 +34,8 @@ dwarfDumpTarget = target
 # On OSX we should have built a '.dSYM' archive.
 if chplenv["CHPL_TARGET_PLATFORM"] == "darwin":
     dwarfDumpTarget += ".dSYM"
+if chplenv["CHPL_LAUNCHER"] != "none":
+    dwarfDumpTarget += "_real"
 
 # Check Debug Info Existence
 debug_option = " -debug-str "
