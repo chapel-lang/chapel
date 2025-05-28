@@ -59,7 +59,7 @@ using BuilderFunc = uast::BuilderResult const&(*)(Context* context, ID typeId, i
 template <BuilderFunc... Fs>
 struct OverloadSelector {
  private:
-  static constexpr std::array<BuilderFunc, sizeof...(Fs)> overloads = {Fs...};
+  static constexpr std::array<BuilderFunc, sizeof...(Fs)> overloads = {{Fs...}};
 
  public:
   template <BuilderFunc F>
