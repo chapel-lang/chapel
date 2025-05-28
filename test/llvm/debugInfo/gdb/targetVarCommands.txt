@@ -1,0 +1,15 @@
+b foo
+b bar
+r
+n
+info args
+info locals
+n
+info args
+info locals
+c
+n
+info args
+info locals
+c
+quit
