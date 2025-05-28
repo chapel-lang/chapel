@@ -3625,6 +3625,24 @@ doIsCandidateApplicableInitial(ResolutionContext* rc,
     }
   }
 
+  if (!candidateId.isEmpty()) {
+    if (auto ast = parsing::idToAst(context, candidateId);
+        ast && ast->isFunction()) {
+      auto fn = ast->toFunction();
+      if (auto attr = fn->attributeGroup();
+          attr && attr->hasEdition()) {
+        auto first = attr->firstEdition();
+        auto last = attr->lastEdition();
+        auto two = UniqueString::get(context, "2.0");
+        if ((!first.isEmpty() && first != two) ||
+            (!last.isEmpty() && last != two)) {
+          return ApplicabilityResult::failure(candidateId,
+                                              /* TODO */ FAIL_CANDIDATE_OTHER);
+        }
+      }
+    }
+  }
+
   auto ret = typedSignatureInitialForId(rc, candidateId);
   auto ufs = ret ? ret->untyped() : nullptr;
 
