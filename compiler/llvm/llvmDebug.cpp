@@ -700,8 +700,8 @@ llvm::DIVariable* debug_data::construct_formal_arg(ArgSymbol *argSym, unsigned A
   llvm::DIFile* file = get_file(modSym, file_name);
   llvm::DIType* argSym_type = get_type(argSym->type);
 
-  if(argSym_type)
-    return modSym->llvmDIBuilder->createParameterVariable(
+  if(argSym_type) {
+    auto diParameterVariable = modSym->llvmDIBuilder->createParameterVariable(
       scope, /* Scope */
       name, /*Name*/
       ArgNo, /* ArgNo */
@@ -711,7 +711,13 @@ llvm::DIVariable* debug_data::construct_formal_arg(ArgSymbol *argSym, unsigned A
       true,/*AlwaysPreserve, won't be removed when optimized*/
       llvm::DINode::FlagZero /*Flags*/
       );
-  else {
+    auto Storage = gGenInfo->lvt->getValue(argSym->cname);
+    modSym->llvmDIBuilder->insertDeclare(Storage.val, diParameterVariable,
+      modSym->llvmDIBuilder->createExpression(), llvm::DILocation::get(
+        scope->getContext(), line_number, 0, scope, nullptr, false),
+      gGenInfo->irBuilder->GetInsertBlock());
+    return diVariable;
+  } else {
     //Empty dbg node if the symbol type is unresolved
     return NULL;
   }
