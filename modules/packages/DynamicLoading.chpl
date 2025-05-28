@@ -99,7 +99,7 @@
     Support for retrieving references to data stored in a binary could
     be added in the future.
 */
-@unstable('Dynamic loading support is experimental and unstable!')
+@unstable('Dynamic loading support is experimental and unstable.')
 module DynamicLoading {
 
 // This internal module contains the low-level implementation.
@@ -167,7 +167,6 @@ record binary {
 
     :throws DynLoadError: if dynamic loading fails
   */
-  @unstable('The \'load()\' procedure is experimental')
   proc type load(path: string) throws {
     var err: owned DynLoadError?;
     const bin = chpl_BinaryInfo.create(path, err);
@@ -204,7 +203,6 @@ record binary {
     :arg t: The type of the retrieved procedure
     :throws DynLoadError: if procedure lookup fails
   */
-  @unstable('The \'retrieve()\' method is experimental')
   proc retrieve(name: string, type t) throws where isProcedureType(t) {
     var err: owned DynLoadError?;
     var ret = if _bin then _bin!.loadSymbol(name, t, err) else nil;
@@ -223,6 +221,10 @@ record binary {
     // return a dereference of a non-nil pointer.
     //
     use CTypes;
+
+    halt('Should never reach here!');
+
+    // This produces an invalid ref, but that's OK. It will never compile.
     const ptr: c_ptr(t) = nil;
     return ptr.deref();
   }

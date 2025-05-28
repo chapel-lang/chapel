@@ -1,1 +1,0 @@
-$CHPL_HOME/modules/internal/ChapelDynamicLoading.chpl:55: error: The experimental procedure pointer implementation is not supported with LLVM-14

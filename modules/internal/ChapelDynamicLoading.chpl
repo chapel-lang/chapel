@@ -30,12 +30,15 @@ module ChapelDynamicLoading {
   inline proc issueConfigurationErrors() param {
     use ChplConfig;
 
-    if useProcedurePointers &&
-       CHPL_TARGET_COMPILER == "llvm" &&
-       CHPL_LLVM_VERSION == "14" {
+    param unsupportedLlvmVersion = CHPL_LLVM_VERSION == "11" ||
+                                   CHPL_LLVM_VERSION == "12" ||
+                                   CHPL_LLVM_VERSION == "13" ||
+                                   CHPL_LLVM_VERSION == "14";
+    if useProcedurePointers && CHPL_TARGET_COMPILER == "llvm" &&
+       unsupportedLlvmVersion {
       // This could be a compiler error, but I'm lazy and putting it here.
       compilerError('The experimental procedure pointer implementation ' +
-                    'is not supported with LLVM-14', 2);
+                    'is not supported with LLVM-' + CHPL_LLVM_VERSION, 2);
       return true;
     }
 
@@ -128,9 +131,12 @@ module ChapelDynamicLoading {
   // the qthreads layer, perhaps while cleaning up TLS.
   //
   proc deinit() {
-    delete chpl_localPtrCache;
+    on Locales[0] do delete chpl_localPtrCache;
+
     if isDynamicLoadingSupported {
-      coforall loc in Locales[1..] do on loc do delete chpl_localPtrCache;
+      coforall loc in Locales[1..] do on loc {
+        delete chpl_localPtrCache;
+      }
     }
   }
 

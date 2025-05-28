@@ -2,8 +2,8 @@
 
 import os
 
-# Skip for LLVM-14 and under.
+# Skip UNLESS it is LLVM-14 and under.
 skip = False
 skip = skip or os.getenv('CHPL_TARGET_COMPILER') != 'llvm'
-skip = skip or int(os.getenv('CHPL_LLVM_VERSION')) <= 14
+skip = skip or int(os.getenv('CHPL_LLVM_VERSION')) > 14
 print(skip)
