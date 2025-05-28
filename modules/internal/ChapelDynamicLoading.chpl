@@ -24,28 +24,38 @@ module ChapelDynamicLoading {
   private use Atomics;
   private use ChapelLocks;
 
-  /** If the mode is 'OFF', then dynamic loading cannot be used.
-
-      If the mode is 'EAGER', then when a library is loaded, Chapel
-      will load it on all locales, and whenever a symbol is loaded
-      Chapel will load it on all locales.
-
-      The 'LAZY' mode is not currently implemented but is declared
-      here to express the intention.
-  */
-  enum chpl_dynamicLoading { OFF, EAGER, LAZY }
-
   param chpl_defaultProcBufferSize = 512;
 
-  // Have to mark this as 'unstable' to avoid it showing up as a config in
-  // the output of some tests. It should be completely "hidden", and marking
-  // it 'private' alone does not do that.
-  @unstable()
-  private config const chpl_dynamicLoadingSupport = chpl_dynamicLoading.EAGER;
+  // This will always be run, so we can rely on it.
+  inline proc issueConfigurationErrors() param {
+    use ChplConfig;
 
-  private inline proc isDynamicLoadingEnabled {
-    return chpl_dynamicLoadingSupport != chpl_dynamicLoading.OFF;
+    param unsupportedLlvmVersion = CHPL_LLVM_VERSION == "11" ||
+                                   CHPL_LLVM_VERSION == "12" ||
+                                   CHPL_LLVM_VERSION == "13" ||
+                                   CHPL_LLVM_VERSION == "14";
+    if useProcedurePointers && CHPL_TARGET_COMPILER == "llvm" &&
+       unsupportedLlvmVersion {
+      // This could be a compiler error, but I'm lazy and putting it here.
+      compilerError('The experimental procedure pointer implementation ' +
+                    'is not supported with LLVM-' + CHPL_LLVM_VERSION, 2);
+      return true;
+    }
+
+    return false;
   }
+
+  inline proc isDynamicLoadingSupported param {
+    if issueConfigurationErrors() then return false;
+    return true;
+  }
+
+  inline proc isDynamicLoadingEnabled {
+    return isDynamicLoadingSupported;
+  }
+
+  // Invoke immediately to issue compiler errors.
+  isDynamicLoadingSupported;
 
   // This counter is used to assign a unique 'wide index' to each procedure.
   // We start with '1' since the '0th' index is reserved to represent 'nil'.
@@ -102,7 +112,7 @@ module ChapelDynamicLoading {
   // If we are multi-locale, then we'll need to initialize the cache on the
   // remaining locales manually, since the module initializer is only
   // running on LOCALE-0.
-  if numLocales > 1 {
+  if isDynamicLoadingSupported && numLocales > 1 {
     coforall loc in Locales[1..] {
       on loc do local do {
         assert(chpl_localPtrCache == nil);
@@ -121,13 +131,17 @@ module ChapelDynamicLoading {
   // the qthreads layer, perhaps while cleaning up TLS.
   //
   proc deinit() {
-    coforall loc in Locales do on loc {
-      if chpl_localPtrCache != nil then delete chpl_localPtrCache;
+    on Locales[0] do delete chpl_localPtrCache;
+
+    if isDynamicLoadingSupported {
+      coforall loc in Locales[1..] do on loc {
+        delete chpl_localPtrCache;
+      }
     }
   }
 
   // This class wraps the errors emitted by the system 'dlopen'.
-  class DynLibError : Error {
+  class DynLoadError : Error {
     proc init(msg: string) {
       super.init(msg);
       init this;
@@ -135,7 +149,7 @@ module ChapelDynamicLoading {
   }
 
   private inline
-  proc localDynLoadWrapErrorUnlocked(): owned DynLibError? {
+  proc localDynLoadWrapErrorUnlocked(): owned DynLoadError? {
     extern proc chpl_dlerror(): c_ptrConst(c_char);
 
     const errMsg = chpl_dlerror();
@@ -145,7 +159,7 @@ module ChapelDynamicLoading {
       //       to do something if string construction fails (?) rather than
       //       just halt with a 'try!' here.
       const str = try! string.createCopyingBuffer(errMsg);
-      return new DynLibError?(str);
+      return new DynLoadError?(str);
     }
 
     return nil;
@@ -161,7 +175,7 @@ module ChapelDynamicLoading {
   private var localDynLoadGuard: chpl_lockWrapper;
 
   private inline
-  proc localDynLoadClose(ptr: c_ptr(void), out err: owned DynLibError?) {
+  proc localDynLoadClose(ptr: c_ptr(void), out err: owned DynLoadError?) {
     extern proc chpl_dlclose(handle: c_ptr(void)): c_int;
 
     manage localDynLoadGuard.withLock() {
@@ -176,7 +190,7 @@ module ChapelDynamicLoading {
   }
 
   private inline
-  proc localDynLoadOpen(path: string, out err: owned DynLibError?) {
+  proc localDynLoadOpen(path: string, out err: owned DynLoadError?) {
     extern proc chpl_dlopen(path: c_ptrConst(c_char),
                             mode: c_int): c_ptr(void);
     extern const CHPL_RTLD_LAZY: c_int;
@@ -198,7 +212,7 @@ module ChapelDynamicLoading {
 
   private inline
   proc localDynLoadSymbolLookup(sym: string, handle: c_ptr(void),
-                                out err: owned DynLibError?) {
+                                out err: owned DynLoadError?) {
     extern proc chpl_dlsym(handle: c_ptr(void),
                            symbol: c_ptrConst(c_char)): c_ptr(void);
 
@@ -240,6 +254,21 @@ module ChapelDynamicLoading {
         if slot.val != nil then delete slot.val;
       }
     }
+  }
+
+  private inline proc errorIfUnsupported() {
+    var ret: owned DynLoadError?;
+
+    if !isDynamicLoadingSupported {
+      compilerError('Dynamic loading is not supported for your ' +
+                    'current Chapel configuration', 2);
+    }
+
+    if !isDynamicLoadingEnabled {
+      ret = new DynLoadError('Dynamic loading is not enabled');
+    }
+
+    return ret;
   }
 
   // This is one per entrypoint binary and lives on LOCALE-0.
@@ -286,15 +315,19 @@ module ChapelDynamicLoading {
     }
 
     // Load a binary given a path.
-    proc type create(path: string, out err: owned DynLibError?) {
+    proc type create(path: string, out err: owned DynLoadError?) {
       var ret: unmanaged chpl_BinaryInfo? = nil;
+
+      // Check for an error and return if it was set.
+      err = errorIfUnsupported();
+      if err != nil then return ret;
 
       on Locales[0] {
         const store = chpl_binaryInfoStore.borrow();
         var shouldCreateNewEntry = true;
 
         // Start by opening a system handle on LOCALE-0.
-        var err0: owned DynLibError?;
+        var err0: owned DynLoadError?;
         var ptr0 = localDynLoadOpen(path, err0);
 
         // TODO: Need to propagate/combine this error instead.
@@ -319,7 +352,7 @@ module ChapelDynamicLoading {
           // Swap in pointer on LOCALE-0. This clears the variable.
           bin._systemPtrs[0] <=> ptr0;
 
-          var errBuf = new chpl_localBuffer(owned DynLibError?, numLocales);
+          var errBuf = new chpl_localBuffer(owned DynLoadError?, numLocales);
           var numErrs: atomic int = 0;
 
           // Loop and attempt to open system handles on other locales.
@@ -327,7 +360,7 @@ module ChapelDynamicLoading {
             coforall loc in Locales[1..] with (ref errBuf) do on loc {
               const n = (here.id: int);
 
-              var err: owned DynLibError?;
+              var err: owned DynLoadError?;
               var ptr = localDynLoadOpen(path, err);
 
               // TODO: Need to propagate/combine this error instead.
@@ -395,7 +428,7 @@ module ChapelDynamicLoading {
             const loc = Locales[i];
             const ptr = _systemPtrs[i];
             if ptr != nil then on loc {
-              var err: owned DynLibError?;
+              var err: owned DynLoadError?;
               localDynLoadClose(ptr, err);
               // TODO: Figure out how to propagate this instead of halting?
               if err != nil then halt(err!.message());
@@ -414,7 +447,8 @@ module ChapelDynamicLoading {
     // TODO: 'T' must be a procedure type, but we cannot restrict it yet,
     // e.g., we cannot write "type t: proc". As a short-term workaround
     // we could add a primitive "any procedure type" to use instead.
-    proc loadSymbol(sym: string, type t, out err: owned DynLibError?) {
+    proc loadSymbol(sym: string, type t, out err: owned DynLoadError?) {
+      type P = chpl_toExternProcType(chpl_toWideProcType(t));
       var idx: int = 0;
 
       if !isProcedure(t) || isClass(t) {
@@ -431,11 +465,15 @@ module ChapelDynamicLoading {
                       'should be wide');
       }
 
+      // Check for an error and return if it was set.
+      err = errorIfUnsupported();
+      if err != nil then return __primitive("cast", P, 0);
+
       // On the fast path, we check to see if the symbol exists on LOCALE-0.
       // If it does, then it should be in the procedure pointer cache, and
       // we can immediately translate it into a wide index.
       on Locales[0] {
-        var errBuf = new chpl_localBuffer(owned DynLibError?, numLocales);
+        var errBuf = new chpl_localBuffer(owned DynLoadError?, numLocales);
         var numErrs: atomic int = 0;
         var shouldInternPointer = false;
 
@@ -473,7 +511,7 @@ module ChapelDynamicLoading {
               var handle: c_ptr(void);
               on Locales[0] do handle = _systemPtrs[n];
 
-              var err: owned DynLibError?;
+              var err: owned DynLoadError?;
               const ptr = localDynLoadSymbolLookup(sym, handle, err);
               if err {
                 on Locales[0] do errBuf[n] = err;
@@ -505,7 +543,7 @@ module ChapelDynamicLoading {
       }
 
       // Fine if 'ret' is '0', that is the wide-index equivalent of 'nil'.
-      var ret = __primitive("cast", chpl_toExternProcType(t), idx);
+      const ret = __primitive("cast", P, idx);
 
       return ret;
     }
