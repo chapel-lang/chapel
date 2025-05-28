@@ -2940,7 +2940,7 @@ module ChapelArray {
   }
 
   config param checkReshapeDimsByDefault = boundsChecking;
-  
+
   @chpldoc.nodoc
   @edition(last="2.0")
   proc reshape(A: _iteratorRecord, D: domain) {
