@@ -2849,7 +2849,7 @@ static std::string generateClangGpuLangArgs() {
 
     // to get old behavior: https://releases.llvm.org/19.1.0/tools/clang/docs/ReleaseNotes.html#cuda-hip-language-changes
     if (getGpuCodegenType() == GpuCodegenType::GPU_CG_NVIDIA_CUDA) {
-      args += " --cuda-include-ptx=all"
+      args += " --cuda-include-ptx=all";
     }
   }
   return args;
