@@ -316,6 +316,7 @@ def ReadFileWithComments(f, ignoreLeadingSpace=True, args=None):
             chpl_env = get_chplenv()
             file_env = os.environ.copy()
             file_env.update(chpl_env)
+            file_env["CHPLENV_SUPPRESS_WARNINGS"] = "1"
 
             # execute the file and grab its output
             tmp_args = [os.path.abspath(f)]
