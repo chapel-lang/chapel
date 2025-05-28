@@ -14,20 +14,26 @@ const D = if CHPL_COMM != "none"
 
 var R:[D] eltType;
 fillRandom(R, min=0, max=M, seed=1);
-var A:[D] (eltType, int);
+
+record myElt {
+  var key: eltType;
+  var val: int;
+}
+
+var A:[D] myElt;
 
 forall (a, r, idx) in zip(A, R, D) {
-  a(0) = r;
-  a(1) = idx;
+  a.key = r;
+  a.val = idx;
 }
 
 record myKeyComparator : keyComparator {
-  proc key(elt:(eltType, int)) { return elt(0); }
+  proc key(elt: myElt) { return elt.key; }
 }
 record myRelativeComparator : relativeComparator {
-  proc compare(a:(eltType, int), b:(eltType, int)) {
-    const a0 = a(0);
-    const b0 = b(0);
+  proc compare(a: myElt, b: myElt) {
+    const a0 = a.key;
+    const b0 = b.key;
     if a0 < b0 then return -1;
     else if a0 > b0 then return 1;
     else return 0;
@@ -39,15 +45,15 @@ proc checkSorted(B, stable:bool) {
   forall idx in D {
     if idx > 0 {
       // check that it's sorted by the key
-      assert(B[idx-1](0) <= B[idx](0));
-      if stable && B[idx-1](0) == B[idx](0) {
-        assert(B[idx-1](1) < B[idx](1));
+      assert(B[idx-1].key <= B[idx].key);
+      if stable && B[idx-1].key == B[idx].key {
+        assert(B[idx-1].val < B[idx].val);
       }
     }
   }
 }
 
-var B:[D] (eltType, int);
+var B:[D] myElt;
 
 writeln("checking unstable sort with key comparator");
 B = A;
