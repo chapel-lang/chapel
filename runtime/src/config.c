@@ -221,17 +221,21 @@ void printConfigVarTable(void) {
        configVar != NULL;
        configVar = configVar->nextInstalled) {
 
-      if (foundUserConfigs == 0) {
-        foundUserConfigs = 1;
-        moduleName = configVar->moduleName;
-      } else {
-        if (strcmp(moduleName, configVar->moduleName) != 0) {
-          foundMultipleModules = 1;
+      if ( (!configVar->deprecated || showDeprecatedConfigsWithHelp) &&
+           (!configVar->unstable || showUnstableConfigsWithHelp) ) {
+
+        if (foundUserConfigs == 0) {
+          foundUserConfigs = 1;
+          moduleName = configVar->moduleName;
+        } else {
+          if (strcmp(moduleName, configVar->moduleName) != 0) {
+            foundMultipleModules = 1;
+          }
         }
-      }
-      thisName = strlen(configVar->varName);
-      if (longestName < thisName)  {
-        longestName = thisName;
+        thisName = strlen(configVar->varName);
+        if (longestName < thisName)  {
+          longestName = thisName;
+        }
       }
   }
 
