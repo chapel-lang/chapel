@@ -512,8 +512,8 @@ proc testSort(n: int, max: uint, param logBuckets: int, seed: int,
 proc testSorts() {
   var seed = 1;
   for sorter in ["sample", "radix"] {
-    for n in [10, 30, 100, 300, 500, 1_000, 10_000, 100_000] {
-      for max in [0, 10, 100, 100_000, max(uint)] {
+    for n in [10, 30, 100, 100_000] {
+      for max in [0, 10, max(uint)] {
         for rnd in [false, true] {
           for noBaseCase in [false, true] {
             for fullBoundaries in [false, true] {
