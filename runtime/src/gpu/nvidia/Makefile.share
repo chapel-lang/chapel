@@ -26,7 +26,7 @@ GPU_OBJS = $(addprefix $(GPU_OBJDIR)/,$(addsuffix .o,$(basename $(GPU_SRCS))))
 RUNTIME_CXXFLAGS += -x cuda -Wno-unknown-cuda-version \
                     -Xclang -fcuda-allow-variadic-functions \
                     --offload-arch=$(CHPL_MAKE_GPU_ARCH) \
-										--cuda-include-ptx=all
+                    --cuda-include-ptx=all
 
 # With cuda 11, cub headers have unused typedefs
 RUNTIME_CXXFLAGS += -Wno-error=unused-local-typedef
