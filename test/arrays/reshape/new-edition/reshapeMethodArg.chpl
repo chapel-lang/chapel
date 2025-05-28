@@ -1,10 +1,10 @@
 var x = [1, 2, 3, 4];
 
-foo(x.reshape(1..2, 1..2));
+foo(reshape(x, 1..2, 1..2));
 
 writeln(x);
 
-bar(x.reshape(1..2, 1..2));
+bar(reshape(x, 1..2, 1..2));
 
 writeln(x);
 

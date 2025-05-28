@@ -1,6 +1,6 @@
 var x = [1, 2, 3, 4];
 
-ref xref = x.reshape({1..2, 1..2});
+ref xref = reshape(x, {1..2, 1..2});
 foo(xref);
 
 writeln(x);
