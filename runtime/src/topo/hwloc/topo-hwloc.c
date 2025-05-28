@@ -1325,13 +1325,13 @@ static void fillDistanceMatrix(int numObjs, hwloc_obj_t *objs,
 
   for (int i = 0; i < numPartitions; i++) {
     if (logAccSets[i] != NULL) {
+      CHK_ERR(locales[i] =  hwloc_get_obj_covering_cpuset(topology,
+                                                        logAccSets[i]));
 #ifdef DEBUG
       char buf[1024];
       hwloc_obj_attr_snprintf(buf, sizeof(buf), locales[i], ",", 1);
       _DBG_P("locales[%d]: %s", i, buf);
 #endif
-      CHK_ERR(locales[i] =  hwloc_get_obj_covering_cpuset(topology,
-                                                        logAccSets[i]));
     } else {
       locales[i] = NULL;
     }
