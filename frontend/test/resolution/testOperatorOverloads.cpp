@@ -653,6 +653,46 @@ static void test13b() {
   assert(vars.at("y").type() && vars.at("y").type()->isRealType());
 }
 
+// test that we generate string-to-enum casts if they are not present
+static void test14() {
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program =
+    R""""(
+      enum E { A, B, C }
+      var es = "A";
+      var eb = b"A";
+      var x = es : E;
+      var y = eb : E;
+    )"""";
+
+  auto vars = resolveTypesOfVariables(context, program, {"x", "y"});
+  assert(vars.at("x").type() && vars.at("x").type()->isEnumType());
+  assert(vars.at("y").type() && vars.at("y").type()->isEnumType());
+}
+
+// test that enum-to-string casts are skipped if user overloads are present
+static void test15() {
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program =
+    R""""(
+      enum E { A, B, C }
+      operator E.:(e: string, type t: E) { return 42; }
+      operator E.:(e: bytes, type t: E) { return 42.0; }
+      var es = "A";
+      var eb = b"A";
+      var x = es : E;
+      var y = eb : E;
+    )"""";
+
+  auto vars = resolveTypesOfVariables(context, program, {"x", "y"});
+  assert(vars.at("x").type() && vars.at("x").type()->isIntType());
+  assert(vars.at("y").type() && vars.at("y").type()->isRealType());
+}
+
 int main() {
   test1();
   test2();
@@ -670,6 +710,8 @@ int main() {
   test12();
   test13a();
   test13b();
+  test14();
+  test15();
 
   return 0;
 }
