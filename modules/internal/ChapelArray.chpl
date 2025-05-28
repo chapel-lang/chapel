@@ -2945,7 +2945,7 @@ module ChapelArray {
   @edition(last="2.0")
   proc reshape(A: _iteratorRecord, D: domain) {
     if !D.isRectangular() then
-      compilerError("reshape(A,D) is meaningful only when D is a rectangular domain; got D: ", D.type:string);
+      compilerError("reshape() only currently supports rectangular domains; got D: ", D.type:string);
     var B = for (i,a) in zip(D, A) do a;
     return B;
   }
@@ -2955,9 +2955,9 @@ module ChapelArray {
   @edition(first="pre-edition")
   proc reshape(arr: [], ranges: range(?)...) {
     if ranges.size == 1 && ranges(0).bounds == boundKind.low {
-      return arr.reshapeHelp({ranges(0).low..#arr.size}, false);
+      return arr.chpl_aliasReshape({ranges(0).low..#arr.size}, false);
     } else {
-      return arr.reshapeHelp({(...ranges)}, checkReshapeDimsByDefault);
+      return arr.chpl_aliasReshape({(...ranges)}, checkReshapeDimsByDefault);
     }
   }
 
@@ -2966,17 +2966,40 @@ module ChapelArray {
   @edition(first="pre-edition")
   proc reshape(arr: [], ranges: range(?)..., checkDims: bool) {
     if ranges.size == 1 && ranges(0).bounds == boundKind.low {
-      return arr.reshapeHelp({ranges(0).low..#arr.size}, false);
+      return arr.chpl_aliasReshape({ranges(0).low..#arr.size}, false);
     } else {
-      return arr.reshapeHelp({(...ranges)}, checkDims);
+      return arr.chpl_aliasReshape({(...ranges)}, checkDims);
     }
   }
 
   pragma "no promotion when by ref"
   pragma "fn returns aliasing array"
   @edition(first="pre-edition")
-  proc reshape(arr: [], dom: domain(?), checkDims=checkReshapeDimsByDefault) {
-    return arr.reshapeHelp(dom, checkDims);
+  proc reshape(arr: [], ranges: range(?)..., checkDims: bool, param copy = false) {
+    if ranges.size == 1 && ranges(0).bounds == boundKind.low {
+      return arr.chpl_aliasReshape({ranges(0).low..#arr.size}, false);
+    } else {
+      return arr.chpl_aliasReshape({(...ranges)}, checkDims);
+    }
+  }
+
+  pragma "no promotion when by ref"
+  pragma "fn returns aliasing array"
+  @edition(first="pre-edition")
+  proc reshape(arr: [], dom: domain(?), checkDims=checkReshapeDimsByDefault, param copy = false) {
+    if copy {
+      if !dom.isRectangular() then
+        compilerError("reshape(arr,D) is meaningful only supported for rectangular domains; got D: ", dom.type:string);
+      if boundsChecking then
+        validateReshape(arr, dom);
+      // TODO: Add a parallel linearize() iterator to all rectangular types
+      // and zip those instead of using this serial implementation
+      var B: [dom] arr.eltType = for (i,a) in zip(dom, arr) do a;
+      return B;
+    } else {
+      return arr.chpl_aliasReshape(dom, checkDims);
+    }
+
   }
 
   //
@@ -2989,7 +3012,8 @@ module ChapelArray {
   pragma "no promotion when by ref"
   pragma "reference to const when const this"
   pragma "fn returns aliasing array"
-  proc _array.reshapeHelp(dom: domain(?), checkDims=checkReshapeDimsByDefault) {
+  proc _array.chpl_aliasReshape(dom: domain(?),
+                                checkDims=checkReshapeDimsByDefault) {
     if chpl__isArrayView(this) ||
        !Reflection.canResolveMethod(this._value, "doiSupportsReshape") {
        compilerError("This array type does not support reshaping");
@@ -2998,54 +3022,52 @@ module ChapelArray {
       compilerError("This array cannot be reshaped using this domain type");
       return this;
     } else {
-      if boundsChecking then
-        validateReshape();
+      if boundsChecking && checkDims then
+        validateReshape(this, dom);
       return this._value.doiReshape(dom);
     }
+  }
 
-    proc validateReshape() {
-      if dom.size != this.size then
-        halt("Size mismatch: Can't rehape a ", this.size,
-             "-element array into a ", dom.size, "-element array");
+  proc validateReshape(arr, dom) {
+    if dom.size != arr.size then
+      halt("Size mismatch: Can't rehape a ", arr.size,
+           "-element array into a ", dom.size, "-element array");
 
-      if checkDims {
-        if this.size > 0 && dom.size > 0 {
-          var arrDim, domDim = 0;
-          var arrSize, domSize = 0;
-          var arrCatchup, domCatchup, error = false;
-          do {
-            if arrSize == 0 {
-              arrSize = this.dim(arrDim).size;
-            }
-            if domSize == 0 {
-              domSize = dom.dim(domDim).size;
-            }
-            if (arrSize == domSize) {
-              arrDim += 1;
-              domDim += 1;
-              arrSize = 0;
-              domSize = 0;
-              arrCatchup = false;
-              domCatchup = false;
-            } else if (arrSize < domSize) {
-              if domCatchup then
-                error = true;
-              arrCatchup = true;
-              arrDim += 1;
-              arrSize *= this.dim(arrDim).size;
-            } else {
-              if arrCatchup then
-                error = true;
-              domCatchup = true;
-              domDim += 1;
-              domSize *= dom.dim(domDim).size;
-            }
-          } while (arrDim < this.rank && domDim < dom.rank);
-
-          if error then
-            warning(this.dims(), " doesn't preserve dimensions as ", dom.dims());
+    if arr.size > 0 && dom.size > 0 {
+      var arrDim, domDim = 0;
+      var arrSize, domSize = 0;
+      var arrCatchup, domCatchup, error = false;
+      do {
+        if arrSize == 0 {
+          arrSize = arr.dim(arrDim).size;
         }
-      }
+        if domSize == 0 {
+          domSize = dom.dim(domDim).size;
+        }
+        if (arrSize == domSize) {
+          arrDim += 1;
+          domDim += 1;
+          arrSize = 0;
+          domSize = 0;
+          arrCatchup = false;
+          domCatchup = false;
+        } else if (arrSize < domSize) {
+          if domCatchup then
+            error = true;
+          arrCatchup = true;
+          arrDim += 1;
+          arrSize *= arr.dim(arrDim).size;
+        } else {
+          if arrCatchup then
+            error = true;
+          domCatchup = true;
+          domDim += 1;
+          domSize *= dom.dim(domDim).size;
+        }
+      } while (arrDim < arr.rank && domDim < dom.rank);
+
+      if error then
+        warning(arr.dims(), " doesn't preserve dimensions as ", dom.dims());
     }
   }
 
