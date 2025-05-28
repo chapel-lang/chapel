@@ -152,11 +152,9 @@ The following are further requirements for GPU support:
 
   * CUDA toolkit version 11.7+ or 12.x must be installed.
 
-  * We test with bundled LLVM 19. Older versions may work.
+  * We test with system LLVM 20. Older versions may work.
 
     * Note that LLVM versions older than 16 do not support CUDA 12.
-
-    * We do not yet support GPU programming with LLVM 20, see `this issue <https://github.com/llvm/llvm-project/issues/141626>`_.
 
   * If using ``CHPL_LLVM=system``, it must have been built with support for
     NVPTX target. You can check supported targets of your LLVM installation by
