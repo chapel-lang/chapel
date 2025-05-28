@@ -613,8 +613,8 @@ record splitters : writeSerializable {
     const paramEqualBuckets = equalBuckets;
     const paramLogBuckets = logSplitters;
     const paramNumBuckets = 1 << (paramLogBuckets + paramEqualBuckets:int);
-    var b:c_array(int, CLASSIFY_UNROLL_FACTOR);
-    var elts:c_array(Input.eltType, CLASSIFY_UNROLL_FACTOR);
+    var b:[0..<CLASSIFY_UNROLL_FACTOR] int;
+    var elts:[0..<CLASSIFY_UNROLL_FACTOR] Input.eltType;
 
     var cur = start_n;
     // Run the main (unrolled) loop
