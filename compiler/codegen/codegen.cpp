@@ -2202,10 +2202,10 @@ codegen_config() {
         fprintf(outfile,", /* private = */ %d", var->hasFlag(FLAG_PRIVATE));
         fprintf(outfile,", /* deprecated = */ %d",
                 var->hasFlag(FLAG_DEPRECATED));
-        fprintf(outfile,", \"%s\"\n", var->getDeprecationMsg());
+        fprintf(outfile,", \"%s\"\n", var->getSanitizedMsg(var->getDeprecationMsg()));
         fprintf(outfile,", /* unstable = */ %d",
                 var->hasFlag(FLAG_UNSTABLE));
-        fprintf(outfile,", \"%s\"\n", var->getUnstableMsg());
+        fprintf(outfile,", \"%s\"\n", var->getSanitizedMsg(var->getUnstableMsg()));
         fprintf(outfile,");\n");
 
       }
@@ -2281,9 +2281,9 @@ codegen_config() {
         }
         args[3] = info->irBuilder->getInt32(var->hasFlag(FLAG_PRIVATE));
         args[4] = info->irBuilder->getInt32(var->hasFlag(FLAG_DEPRECATED));
-        args[5] = genStringArg(var->getDeprecationMsg());
+        args[5] = genStringArg(var->getSanitizedMsg(var->getDeprecationMsg()));
         args[6] = info->irBuilder->getInt32(var->hasFlag(FLAG_UNSTABLE));
-        args[7] = genStringArg(var->getUnstableMsg());
+        args[7] = genStringArg(var->getSanitizedMsg(var->getUnstableMsg()));
 
         llvm::CallInst* callICF =
           info->irBuilder->CreateCall(installConfigFunc, args);
