@@ -354,7 +354,7 @@ def _get_test_time(test_case_lines):
     if time_line_idx == -1:
         msg = 'Could not find elapsed time line in: {0}'.format(
             test_case_lines)
-        logging.warn(msg)
+        logging.warning(msg)
         if DEBUG:
             raise ValueError(msg)
     time_line = test_case_lines[time_line_idx]
@@ -366,7 +366,7 @@ def _get_test_time(test_case_lines):
     else:
         time = '0.0'
         msg = 'Could not find time in: {0}'.format(time_line)
-        logging.warn(msg)
+        logging.warning(msg)
         if DEBUG:
             raise ValueError(msg)
     return max(float(time),0.0)

@@ -22,10 +22,16 @@
 #define CHPL_UTIL_FILTERING_H
 
 #include <string>
+#include "chpl/framework/UniqueString.h"
 
 namespace chpl
 {
 
+/*
+  Removes the Sphinx inline markup for printing messages to the console.
+  See https://chapel-lang.org/docs/tools/chpldoc/chpldoc.html#inline-markup-2
+*/
+std::string removeSphinxMarkup(UniqueString msg);
 /*
   Removes the Sphinx inline markup for printing messages to the console.
   See https://chapel-lang.org/docs/tools/chpldoc/chpldoc.html#inline-markup-2

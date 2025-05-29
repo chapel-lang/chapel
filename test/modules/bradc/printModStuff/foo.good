@@ -34,11 +34,31 @@ Parsing module files:
   $CHPL_HOME/modules/standard/IO.chpl
   $CHPL_HOME/modules/standard/MemMove.chpl
   $CHPL_HOME/modules/standard/List.chpl
-  $CHPL_HOME/modules/standard/Sort.chpl
   $CHPL_HOME/modules/packages/RangeChunk.chpl
   $CHPL_HOME/modules/packages/Search.chpl
-  $CHPL_HOME/modules/standard/Allocators.chpl
+  $CHPL_HOME/modules/layouts/CompressedSparseLayout.chpl
+  $CHPL_HOME/modules/dists/SparseBlockDist.chpl
+  $CHPL_HOME/modules/dists/BlockDist.chpl
   $CHPL_HOME/modules/packages/CopyAggregation.chpl
+  $CHPL_HOME/modules/standard/Map.chpl
+  $CHPL_HOME/modules/standard/JSON.chpl
+  $CHPL_HOME/modules/standard/Time.chpl
+  $CHPL_HOME/modules/standard/Random.chpl
+  $CHPL_HOME/modules/standard/BitOps.chpl
+  $CHPL_HOME/modules/standard/Collectives.chpl
+  $CHPL_HOME/modules/standard/Sort/RadixSortHelp.chpl
+  $CHPL_HOME/modules/standard/Sort/ShallowCopy.chpl
+  $CHPL_HOME/modules/standard/Sort/InsertionSort.chpl
+  $CHPL_HOME/modules/standard/Sort/TimSort.chpl
+  $CHPL_HOME/modules/standard/Sort/QuickSort.chpl
+  $CHPL_HOME/modules/standard/Sort/ShellSort.chpl
+  $CHPL_HOME/modules/standard/Sort/MSBRadixSort.chpl
+  $CHPL_HOME/modules/standard/Sort/TwoArrayPartitioning.chpl
+  $CHPL_HOME/modules/standard/Sort/TwoArrayRadixSort.chpl
+  $CHPL_HOME/modules/standard/Sort/PartitioningUtility.chpl
+  $CHPL_HOME/modules/standard/Sort/Partitioning.chpl
+  $CHPL_HOME/modules/standard/Sort.chpl
+  $CHPL_HOME/modules/standard/Allocators.chpl
   $CHPL_HOME/modules/standard/AutoGpu.chpl
   subdir/bar.chpl
   subdir/baz.chpl
