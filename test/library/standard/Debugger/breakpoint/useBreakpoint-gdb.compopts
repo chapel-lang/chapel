@@ -4,7 +4,7 @@
 vers=$(gdb --version | head -n 1 | rev | cut -d ' ' -f 1 | rev)
 major=$(echo $vers | cut -d '.' -f 1)
 if [ "$major" -ge 15 ]; then
-  echo "-g"
+  echo "--no-munge-user-idents -g"
 else
-  echo "-g --ccflags -gdwarf-4"
+  echo "--no-munge-user-idents -g --ccflags -gdwarf-4"
 fi
