@@ -49,75 +49,39 @@ module RadixSortHelp {
   inline
   proc binForRecordKeyPart(a, criterion, startbit:int)
   {
-    if canResolveMethod(criterion, "chpl_keyPartInternal", a, 0) {
-      // We have keyPart(element, start):(section:int(8), part:int/uint)
-      const testRet: criterion.chpl_keyPartInternal(a, 1).type;
-      const testPart = testRet(1);
-      param bitsPerPart = numBits(testPart.type);
-      param bitsPerPartModRadixBits = bitsPerPart % RADIX_BITS;
-      if bitsPerPartModRadixBits != 0 then
-        compilerError("part size must be a multiple of radix bits");
-        // or else the implementation below would have to handle crossing parts
+    // We have keyPart(element, start):(section:int(8), part:int/uint)
+    const testRet: criterion.keyPart(a, 1).type;
+    const testPart = testRet(1);
+    param bitsPerPart = numBits(testPart.type);
+    param bitsPerPartModRadixBits = bitsPerPart % RADIX_BITS;
+    if bitsPerPartModRadixBits != 0 then
+      compilerError("part size must be a multiple of radix bits");
+      // or else the implementation below would have to handle crossing parts
 
-      // startbit must be a multiple of RADIX_BITS because the radix
-      // sort operates RADIX_BITS at a time.
+    // startbit must be a multiple of RADIX_BITS because the radix
+    // sort operates RADIX_BITS at a time.
 
-      // startbit might be partway through a part (e.g. 16 bits into a uint(64))
-      const whichpart = startbit / bitsPerPart;
-      const bitsinpart = startbit % bitsPerPart;
+    // startbit might be partway through a part (e.g. 16 bits into a uint(64))
+    const whichpart = startbit / bitsPerPart;
+    const bitsinpart = startbit % bitsPerPart;
 
-      const (section, part) = criterion.chpl_keyPartInternal(a, whichpart);
-      var ubits = part:uint(bitsPerPart);
-      // If the number is signed, invert the top bit, so that
-      // the negative numbers sort below the positive numbers
-      if isInt(part) {
-        const one:ubits.type = 1;
-        ubits = ubits ^ (one << (bitsPerPart - 1));
-      }
-      param mask:uint = (1 << RADIX_BITS) - 1;
-      const ubin = (ubits >> (bitsPerPart - bitsinpart - RADIX_BITS)) & mask;
-
-      if section:int == 0 then
-        return (ubin:int + 1, ubits);
-      else if section:int < 0 then
-        return (0, ubits);
-      else
-        return ((1 << RADIX_BITS) + 1, ubits);
-    } else {
-      // We have keyPart(element, start):(section:int(8), part:int/uint)
-      const testRet: criterion.keyPart(a, 1).type;
-      const testPart = testRet(1);
-      param bitsPerPart = numBits(testPart.type);
-      param bitsPerPartModRadixBits = bitsPerPart % RADIX_BITS;
-      if bitsPerPartModRadixBits != 0 then
-        compilerError("part size must be a multiple of radix bits");
-        // or else the implementation below would have to handle crossing parts
-
-      // startbit must be a multiple of RADIX_BITS because the radix
-      // sort operates RADIX_BITS at a time.
-
-      // startbit might be partway through a part (e.g. 16 bits into a uint(64))
-      const whichpart = startbit / bitsPerPart;
-      const bitsinpart = startbit % bitsPerPart;
-
-      const (section, part) = criterion.keyPart(a, whichpart);
-      var ubits = part:uint(bitsPerPart);
-      // If the number is signed, invert the top bit, so that
-      // the negative numbers sort below the positive numbers
-      if isInt(part) {
-        const one:ubits.type = 1;
-        ubits = ubits ^ (one << (bitsPerPart - 1));
-      }
-      param mask:uint = (1 << RADIX_BITS) - 1;
-      const ubin = (ubits >> (bitsPerPart - bitsinpart - RADIX_BITS)) & mask;
-
-      if section:int == 0 then
-        return (ubin:int + 1, ubits);
-      else if section:int < 0 then
-        return (0, ubits);
-      else
-        return ((1 << RADIX_BITS) + 1, ubits);
+    const (section, part) = criterion.keyPart(a, whichpart);
+    var ubits = part:uint(bitsPerPart);
+    // If the number is signed, invert the top bit, so that
+    // the negative numbers sort below the positive numbers
+    if isInt(part) {
+      const one:ubits.type = 1;
+      ubits = ubits ^ (one << (bitsPerPart - 1));
     }
+    param mask:uint = (1 << RADIX_BITS) - 1;
+    const ubin = (ubits >> (bitsPerPart - bitsinpart - RADIX_BITS)) & mask;
+
+    if section:int == 0 then
+      return (ubin:int + 1, ubits);
+    else if section:int < 0 then
+      return (0, ubits);
+    else
+      return ((1 << RADIX_BITS) + 1, ubits);
   }
 
 
@@ -127,8 +91,7 @@ module RadixSortHelp {
   inline
   proc binForRecord(a, criterion, startbit:int)
   {
-    if canResolveMethod(criterion, "chpl_keyPartInternal", a, 0) ||
-       canResolveMethod(criterion, "keyPart", a, 0) {
+    if canResolveMethod(criterion, "keyPart", a, 0) {
       return binForRecordKeyPart(a, criterion, startbit);
     } else if canResolveMethod(criterion, "key", a) {
       // Try to use the default comparator to get a keyPart.

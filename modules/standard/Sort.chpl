@@ -262,38 +262,20 @@ module Sort {
 private inline
 proc compareByPart(a:?t, b:t, comparator:?rec) {
   var curPart = 0;
-  if canResolveMethod(comparator, "chpl_keyPartInternal", a, 0) {
-    while true {
-      var (aSection, aPart) = comparator.chpl_keyPartInternal(a, curPart);
-      var (bSection, bPart) = comparator.chpl_keyPartInternal(b, curPart);
-      if aSection:int != 0 || bSection:int != 0 {
-        return aSection:int - bSection:int;
-      }
-      if aPart < bPart {
-        return -1;
-      }
-      if aPart > bPart {
-        return 1;
-      }
-
-      curPart += 1;
+  while true {
+    var (aSection, aPart) = comparator.keyPart(a, curPart);
+    var (bSection, bPart) = comparator.keyPart(b, curPart);
+    if aSection:int != 0 || bSection:int != 0 {
+      return aSection:int - bSection:int;
     }
-  } else {
-    while true {
-      var (aSection, aPart) = comparator.keyPart(a, curPart);
-      var (bSection, bPart) = comparator.keyPart(b, curPart);
-      if aSection:int != 0 || bSection:int != 0 {
-        return aSection:int - bSection:int;
-      }
-      if aPart < bPart {
-        return -1;
-      }
-      if aPart > bPart {
-        return 1;
-      }
-
-      curPart += 1;
+    if aPart < bPart {
+      return -1;
     }
+    if aPart > bPart {
+      return 1;
+    }
+
+    curPart += 1;
   }
 
   // This is never reached. The return below is a workaround for issue #10447.
@@ -337,8 +319,7 @@ inline proc chpl_compare(a:?t, b:t, comparator:?rec) {
   // Use comparator.compare(a, b) if is defined by user
   } else if canResolveMethod(comparator, "compare", a, b) {
     return comparator.compare(a, b);
-  } else if canResolveMethod(comparator, "chpl_keyPartInternal", a, 0) ||
-            canResolveMethod(comparator, "keyPart", a, 0) {
+  } else if canResolveMethod(comparator, "keyPart", a, 0) {
     return compareByPart(a, b, comparator);
   } else {
     proc baseComparatorType(type c) type {
@@ -369,23 +350,7 @@ private proc chpl_check_comparator_keyPart(comparator,
                                            type eltType,
                                            param errorDepth = 2,
                                            param doDeprecationCheck = true) param {
-  if canResolveMethod(comparator, "chpl_keyPartInternal", data, 0) {
-    var idx: int = 0;
-    type partType = comparator.chpl_keyPartInternal(data, idx).type;
-    if !isTupleType(partType) then
-      compilerError(errorDepth=errorDepth, "The keyPart method in ", comparator.type:string, " must return a tuple when used with ", eltType:string, " elements");
-    var tmp: partType;
-    var expectKeyPartStatus = tmp(0);
-    var expectIntUint = tmp(1);
-    if expectKeyPartStatus.type != keyPartStatus then
-      compilerError(errorDepth=errorDepth, "The keyPart method in ", comparator.type:string, " must return a tuple with element 0 of type keyPartStatus when used with ", eltType:string, " elements");
-    if !(isInt(expectIntUint) || isUint(expectIntUint)) then
-      compilerError(errorDepth=errorDepth, "The keyPart method in ", comparator.type:string, " must return a tuple with element 1 of type int(?) or uint(?) when used with ", eltType:string, " elements");
-    // no need to check the interface,'chpl_keyPartInternal' is internal
-
-    return true;
-  }
-  else if canResolveMethod(comparator, "keyPart", data, 0) {
+  if canResolveMethod(comparator, "keyPart", data, 0) {
     if comparatorImplementsKeyPart(comparator) {
       var idx: int = 0;
       type partType = comparator.keyPart(data, idx).type;
@@ -575,14 +540,12 @@ proc radixSortOkAndStrideOne(Data: [] ?eltType,
                              region: range(?)) param {
   if region.strides == strideKind.one {
     var tmp:Data[Data.domain.low].type;
-    if canResolveMethod(comparator, "chpl_keyPartInternal", tmp, 0) ||
-       canResolveMethod(comparator, "keyPart", tmp, 0) {
+    if canResolveMethod(comparator, "keyPart", tmp, 0) {
       return true;
     } else if canResolveMethod(comparator, "key", tmp) {
       var key:comparator.key(tmp).type;
       // Does the defaultComparator have a keyPart for this?
-      if canResolveMethod(new defaultComparator(), "chpl_keyPartInternal", key, 0) ||
-         canResolveMethod(new defaultComparator(), "keyPart", key, 0) then
+      if canResolveMethod(new defaultComparator(), "keyPart", key, 0) then
         return true;
     }
   }
@@ -1185,7 +1148,8 @@ private proc comparatorImplementsKeyPart(cmp) param do
   return __primitive("implements interface", cmp, keyPartComparator) != 2;
 
 @chpldoc.nodoc
-config param useKeyPartStatus = false;
+@deprecated("'useKeyPartStatus' is deprecated and inactive. comparator keyPart methods must now return the keyPartStatus enum rather than an integer")
+config param useKeyPartStatus = true;
 
 // TODO: this is a hack to workaround issues with interfaces
 /*
@@ -1237,13 +1201,6 @@ record defaultComparator: keyPartComparator {
     else return 0;
   }
 
-  // TODO: remove and inline into `keyPart` when `useKeyPartStatus` is deprecated
-  @chpldoc.nodoc
-  inline proc chpl_keyPartInternal(elt: integral, i: int): (keyPartStatus, elt.type) {
-    var section = if i > 0 then keyPartStatus.pre else keyPartStatus.returned;
-    return (section, elt);
-  }
-
   /*
     Default ``keyPart`` method for integral values.
     See also `The .keyPart method`_.
@@ -1254,29 +1211,25 @@ record defaultComparator: keyPartComparator {
     :returns: ``(keyPartStatus.returned, x)`` if ``i==0``, or
               ``(keyPartStatus.pre, x)`` otherwise
    */
-  inline proc keyPart(elt: integral, i: int): (keyPartStatus, elt.type)
-    where useKeyPartStatus {
-    return chpl_keyPartInternal(elt, i);
+  inline proc keyPart(elt: integral, i: int): (keyPartStatus, elt.type) {
+    var section = if i > 0 then keyPartStatus.pre else keyPartStatus.returned;
+    return (section, elt);
   }
+
   /*
-    Default ``keyPart`` method for integral values.
+    Default ``keyPart`` method for `real` values.
     See also `The .keyPart method`_.
 
-    :arg x: the `int` or `uint` of any size to sort
+    :arg elt: the `real` of any width to sort
     :arg i: the part number requested
 
-    :returns: ``(0, x)`` if ``i==0``, or ``(-1, x)`` otherwise
-   */
-  @deprecated("Using :proc:`keyPart` without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary")
-  inline proc keyPart(x: integral, i: int): (int(8), x.type)
-    where !useKeyPartStatus {
-    var (section, part) = chpl_keyPartInternal(x, i);
-    return (section:int(8), part);
-  }
-
-  // TODO: remove and inline into `keyPart` when `useKeyPartStatus` is deprecated
-  @chpldoc.nodoc
-  inline proc chpl_keyPartInternal(elt: real(?), i:int): (keyPartStatus, uint(numBits(elt.type))) {
+    :returns: ``(keyPartStatus.returned, u)`` if ``i==0``, or
+              ``(keyPartStatus.pre, u)`` otherwise,
+              where `u` is a `uint` storing the bits of the `real`
+              but with some transformations applied to produce the
+              correct sort order.
+  */
+  inline proc keyPart(elt: real(?), i:int): (keyPartStatus, uint(numBits(elt.type))) {
     import OS.POSIX.memcpy;
     var section = if i > 0 then keyPartStatus.pre else keyPartStatus.returned;
 
@@ -1298,85 +1251,14 @@ record defaultComparator: keyPartComparator {
   }
 
   /*
-    Default ``keyPart`` method for `real` values.
-    See also `The .keyPart method`_.
-
-    :arg elt: the `real` of any width to sort
-    :arg i: the part number requested
-
-    :returns: ``(keyPartStatus.returned, u)`` if ``i==0``, or
-              ``(keyPartStatus.pre, u)`` otherwise,
-              where `u` is a `uint` storing the bits of the `real`
-              but with some transformations applied to produce the
-              correct sort order.
-  */
-  inline proc keyPart(elt: real(?), i:int): (keyPartStatus, uint(numBits(elt.type)))
-    where useKeyPartStatus {
-    return chpl_keyPartInternal(elt, i);
-  }
-
-  /*
-    Default ``keyPart`` method for `real` values.
-    See also `The .keyPart method`_.
-
-    :arg x: the `real` of any width to sort
-    :arg i: the part number requested
-
-    :returns: ``(0, u)`` if ``i==0``, or ``(-1, u)`` otherwise,
-              where `u` is a `uint` storing the bits of the `real`
-              but with some transformations applied to produce the
-              correct sort order.
-  */
-  @deprecated("Using :proc:`keyPart` without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary")
-  inline proc keyPart(x: chpl_anyreal, i:int): (int(8), uint(numBits(x.type)))
-    where !useKeyPartStatus {
-    var (section, part) = chpl_keyPartInternal(x, i);
-    return (section:int(8), part);
-  }
-
-  // TODO: remove and inline into `keyPart` when `useKeyPartStatus` is deprecated
-  @chpldoc.nodoc
-  inline proc chpl_keyPartInternal(elt: imag(?), i: int): (keyPartStatus, uint(numBits(elt.type))) {
-    return chpl_keyPartInternal(elt:real(numBits(elt.type)), i);
-  }
-  /*
     Default ``keyPart`` method for `imag` values.
     See also `The .keyPart method`_.
 
     This method works by calling keyPart with the corresponding `real` value.
   */
-  inline proc keyPart(elt: imag(?), i: int): (keyPartStatus, uint(numBits(elt.type)))
-    where useKeyPartStatus {
-    return chpl_keyPartInternal(elt, i);
+  inline proc keyPart(elt: imag(?), i: int): (keyPartStatus, uint(numBits(elt.type))) {
+    return keyPart(elt:real(numBits(elt.type)), i);
   }
-
-  /*
-    Default ``keyPart`` method for `imag` values.
-    See also `The .keyPart method`_.
-
-    This method works by calling keyPart with the corresponding `real` value.
-  */
-  @deprecated("Using :proc:`keyPart` without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary")
-  inline proc keyPart(x: chpl_anyimag, i:int):(int(8), uint(numBits(x.type)))
-    where !useKeyPartStatus {
-    var (section, part) = chpl_keyPartInternal(x, i);
-    return (section:int(8), part);
-  }
-
-  // TODO: remove and inline into `keyPart` when `useKeyPartStatus` is deprecated
-  @chpldoc.nodoc
-  inline proc chpl_keyPartInternal(elt: _tuple, i: int) where
-                                        isHomogeneousTuple(elt) &&
-                                       (isInt(elt(0)) || isUint(elt(0)) ||
-                                        isReal(elt(0)) || isImag(elt(0))) {
-    // Re-use the keyPart for imag, real
-    const (_,part) = this.chpl_keyPartInternal(elt(i), 1);
-    if i >= elt.size then
-      return (keyPartStatus.pre, 0:part.type);
-    else
-      return (keyPartStatus.returned, part);
-  }
-
 
   /*
     Default ``keyPart`` method for tuples of `int`, `uint`, `real`, or `imag`
@@ -1392,52 +1274,18 @@ record defaultComparator: keyPartComparator {
               For `real` and `imag`, uses ``keyPart`` to find the `uint`
               to provide the sorting order.
   */
-  inline proc keyPart(elt: _tuple, i: int) where useKeyPartStatus &&
-                                        isHomogeneousTuple(elt) &&
+  inline proc keyPart(elt: _tuple, i: int) where isHomogeneousTuple(elt) &&
                                        (isInt(elt(0)) || isUint(elt(0)) ||
                                         isReal(elt(0)) || isImag(elt(0))) {
-    return chpl_keyPartInternal(elt, i);
+    // Re-use the keyPart for imag, real
+    if i >= elt.size {
+      const (_,part) = this.keyPart(elt(0), 0); // calling just to get type
+      return (keyPartStatus.pre, 0:part.type);
+    } else {
+      const (_,part) = this.keyPart(elt(i), 0); // retrieve the value
+      return (keyPartStatus.returned, part);
+    }
   }
-
-  /*
-    Default ``keyPart`` method for tuples of `int`, `uint`, `real`, or `imag`
-    values.
-    See also `The .keyPart method`_.
-
-    :arg x: homogeneous tuple of the numeric type (of any bit width) to sort
-    :arg i: the part number requested
-
-    :returns: For `int` and `uint`, returns
-              ``(0, x(i))`` if ``i < x.size``, or ``(-1, 0)`` otherwise.
-              For `real` and `imag`, uses ``keyPart`` to find the `uint`
-              to provide the sorting order.
-  */
-  @deprecated("Using :proc:`keyPart` without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary")
-  inline proc keyPart(x: _tuple, i:int) where !useKeyPartStatus &&
-                                        isHomogeneousTuple(x) &&
-                                       (isInt(x(0)) || isUint(x(0)) ||
-                                        isReal(x(0)) || isImag(x(0))) {
-    var (section, part) = chpl_keyPartInternal(x, i);
-    return (section:int(8), part);
-  }
-
-  // TODO: remove and inline into `keyPart` when `useKeyPartStatus` is deprecated
-  @chpldoc.nodoc
-  inline proc chpl_keyPartInternal(elt: string, i: int): (keyPartStatus, uint(8)) {
-    // This assumes that the string is local, which should
-    // be OK for the sort module (because the array containing
-    // the string must currently be local).
-    // In the future it should use bytes access into the string.
-    if boundsChecking then
-      assert(elt.locale_id == here.id);
-
-    var ptr = elt.c_str():c_ptr(uint(8));
-    var len = elt.numBytes;
-    var section = if i < len then keyPartStatus.returned else keyPartStatus.pre;
-    var part =    if i < len then ptr[i]                 else 0:uint(8);
-    return (section, part);
-  }
-
 
   /*
     Default ``keyPart`` method for sorting strings.
@@ -1452,37 +1300,18 @@ record defaultComparator: keyPartComparator {
     :returns: ``(keyPartStatus.returned, byte i of string)`` or
               ``(keyPartStatus.pre, 0)`` if ``i > elt.size``
   */
-  inline proc keyPart(elt: string, i: int): (keyPartStatus, uint(8))
-    where useKeyPartStatus {
-    return chpl_keyPartInternal(elt, i);
-  }
+  inline proc keyPart(elt: string, i: int): (keyPartStatus, uint(8)) {
+    // This assumes that the string is local, which should
+    // be OK for the sort module (because distributed sort currently
+    // only works for POD data types)
+    // In the future it should use bytes access into the string.
+    if boundsChecking then
+      assert(elt.locale_id == here.id);
 
-  /*
-    Default ``keyPart`` method for sorting strings.
-    See also `The .keyPart method`_.
-
-    .. note::
-      Currently assumes that the string is local.
-
-    :arg x: the string to sort
-    :arg i: the part number requested
-
-    :returns: ``(0, byte i of string)`` or ``(-1, 0)`` if ``i > x.size``
-  */
-  @deprecated("Using :proc:`keyPart` without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary")
-  inline proc keyPart(x:string, i:int): (int(8), uint(8))
-    where !useKeyPartStatus {
-    var (section, part) = chpl_keyPartInternal(x, i);
-    return (section:int(8), part);
-  }
-
-  // TODO: remove and inline into `keyPart` when `useKeyPartStatus` is deprecated
-  @chpldoc.nodoc
-  inline proc chpl_keyPartInternal(elt: c_ptrConst(c_char), i: int): (keyPartStatus, uint(8)) {
-    var ptr = elt:c_ptr(uint(8));
-    var byte = ptr[i];
-    var section = if byte != 0 then keyPartStatus.returned else keyPartStatus.pre;
-    var part = byte;
+    var ptr = elt.c_str():c_ptr(uint(8));
+    var len = elt.numBytes;
+    var section = if i < len then keyPartStatus.returned else keyPartStatus.pre;
+    var part =    if i < len then ptr[i]                 else 0:uint(8);
     return (section, part);
   }
 
@@ -1496,23 +1325,12 @@ record defaultComparator: keyPartComparator {
     :returns: ``(keyPartStatus.returned, byte i of string)`` or
               ``(keyPartStatus.pre, 0)`` if byte ``i`` is ``0``
   */
-  inline proc keyPart(elt: c_ptrConst(c_char), i: int): (keyPartStatus, uint(8))
-    where useKeyPartStatus {
-    return chpl_keyPartInternal(elt, i);
-  }
-
-  /*
-    Default ``keyPart`` method for sorting `c_ptrConst(c_char)`.
-    See also `The .keyPart method`_.
-    :arg x: the `c_ptrConst(c_char)` to sort
-    :arg i: the part number requested
-    :returns: ``(0, byte i of string)`` or ``(-1, 0)`` if byte ``i`` is ``0``
-  */
-  @deprecated("Using :proc:`keyPart` without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary")
-  inline proc keyPart(x:c_ptrConst(c_char), i:int):(int(8), uint(8))
-    where !useKeyPartStatus {
-    var (section, part) = chpl_keyPartInternal(x, i);
-    return (section:int(8), part);
+  inline proc keyPart(elt: c_ptrConst(c_char), i: int): (keyPartStatus, uint(8)) {
+    var ptr = elt:c_ptr(uint(8));
+    var byte = ptr[i];
+    var section = if byte != 0 then keyPartStatus.returned else keyPartStatus.pre;
+    var part = byte;
+    return (section, part);
   }
 }
 
@@ -1585,16 +1403,14 @@ record reverseComparator: keyPartComparator {
 
   @chpldoc.nodoc
   proc hasKeyPart(a) param {
-    return canResolveMethod(this.comparator, "chpl_keyPartInternal", a, 0) ||
-           canResolveMethod(this.comparator, "keyPart", a, 0);
+    return canResolveMethod(this.comparator, "keyPart", a, 0);
   }
   @chpldoc.nodoc
   proc hasKeyPartFromKey(a) param {
     if canResolveMethod(this.comparator, "key", a) {
       var key:comparator.key(a).type;
       // Does the defaultComparator have a keyPart for this?
-      return canResolveMethod(new defaultComparator(), "chpl_keyPartInternal", key, 0) ||
-             canResolveMethod(new defaultComparator(), "keyPart", key, 0);
+      return canResolveMethod(new defaultComparator(), "keyPart", key, 0);
     }
     return false;
   }
@@ -1615,56 +1431,27 @@ record reverseComparator: keyPartComparator {
 
   @chpldoc.nodoc
   inline proc getKeyPart(cmp, elt, i) {
-    if canResolveMethod(cmp, "chpl_keyPartInternal", elt, 0) {
-      var (section, part) = cmp.chpl_keyPartInternal(elt, i);
-      if typeIsBitReversible(part.type) {
-        return (reverseKeyPartStatus(section), ~part);
-      } else if typeIsNegateReversible(part.type) {
-        return (reverseKeyPartStatus(section), -part);
-      } else {
-        compilerError("keyPart must return int or uint");
-      }
+    var (section, part) = cmp.keyPart(elt, i);
+    if typeIsBitReversible(part.type) {
+      return (reverseKeyPartStatus(section), ~part);
+    } else if typeIsNegateReversible(part.type) {
+      return (reverseKeyPartStatus(section), -part);
     } else {
-      var (section, part) = cmp.keyPart(elt, i);
-      if typeIsBitReversible(part.type) {
-        return (reverseKeyPartStatus(section), ~part);
-      } else if typeIsNegateReversible(part.type) {
-        return (reverseKeyPartStatus(section), -part);
-      } else {
-        compilerError("keyPart must return int or uint");
-      }
+      compilerError("keyPart must return int or uint");
     }
   }
 
-  // TODO: remove and inline into `keyPart` when `useKeyPartStatus` is deprecated
-  @chpldoc.nodoc
-  inline proc chpl_keyPartInternal(elt, i)
-    where (hasKeyPart(elt) || hasKeyPartFromKey(elt)) {
+  /*
+    Reverses ``comparator.keyPart``. See also `The .keyPart method`_.
+  */
+  inline proc keyPart(elt, i) where (hasKeyPart(elt) ||
+                                     hasKeyPartFromKey(elt)) {
     chpl_check_comparator(this.comparator, elt.type, doDeprecationCheck=false);
     if hasKeyPartFromKey(elt) {
       return getKeyPart(new defaultComparator(), this.comparator.key(elt), i);
     } else {
       return getKeyPart(this.comparator, elt, i);
     }
-  }
-
-  /*
-    Reverses ``comparator.keyPart``. See also `The .keyPart method`_.
-  */
-  inline proc keyPart(elt, i) where useKeyPartStatus &&
-                                    (hasKeyPart(elt) ||
-                                     hasKeyPartFromKey(elt)) {
-    return chpl_keyPartInternal(elt, i);
-  }
-
-  /*
-    Reverses ``comparator.keyPart``. See also `The .keyPart method`_.
-  */
-  @deprecated("Using :proc:`keyPart` without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary")
-  inline proc keyPart(a, i) where !useKeyPartStatus &&
-                                  (hasKeyPart(a) || hasKeyPartFromKey(a)) {
-    var (section, part) = chpl_keyPartInternal(a, i);
-    return (section:int(8), part);
   }
 
   @chpldoc.nodoc

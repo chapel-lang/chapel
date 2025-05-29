@@ -13,7 +13,7 @@ import BlockDist;
 
 config const skipslow = false;
 
-const myDefaultComparator = new integralKeyPartComparator();
+const myDefaultComparator = new defaultComparator();
 
 // nSplit positive: create that many splitters
 // nSplit negative: create a sample from the Input array
