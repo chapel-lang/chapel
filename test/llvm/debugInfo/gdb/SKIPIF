@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 
 if command -v gdb >/dev/null ; then
-
-  # check the gdb version, if its less major version 15 skip
+  # check the gdb version, if it is <15 skip
   vers=$(gdb --version | head -n 1 | cut -d ' ' -f 4)
   major=$(echo $vers | cut -d '.' -f 1)
   if [ "$major" -ge 15 ]; then
