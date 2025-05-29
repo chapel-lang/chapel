@@ -2994,12 +2994,30 @@ module ChapelArray {
   @edition(first="pre-edition")
   proc reshape(arr: [], ranges: range(?)..., param copy: bool) {
     if copy {
-      return reshape(arr, {(...ranges)}, checkReshapeDimsByDefault, copy);
+      return arr.chpl_copyReshape({(...ranges)}, checkReshapeDimsByDefault);
     } else {
       if ranges.size == 1 && ranges(0).bounds == boundKind.low {
         return arr.chpl_aliasReshape({ranges(0).low..#arr.size}, false);
       } else {
         return arr.chpl_aliasReshape({(...ranges)}, checkReshapeDimsByDefault);
+      }
+    }
+  }
+
+  pragma "no promotion when by ref"
+  pragma "fn returns aliasing array"
+  pragma "last resort"
+  @chpldoc.nodoc
+  @edition(first="pre-edition")
+  proc reshape(arr: [], ranges: range(?)...,
+               checkDims = checkReshapeDimsByDefault, param copy = false) {
+    if copy {
+      return arr.chpl_copyReshape({(...ranges)}, checkDims);
+    } else {
+      if ranges.size == 1 && ranges(0).bounds == boundKind.low {
+        return arr.chpl_aliasReshape({ranges(0).low..#arr.size}, false);
+      } else {
+        return arr.chpl_aliasReshape({(...ranges)}, checkDims);
       }
     }
   }
@@ -3027,12 +3045,27 @@ module ChapelArray {
   }
 
   //
-  // I tried to just make the reshape() overload just above contain
-  // this logic rather than using this helper, but seemingly,
-  // something about returning an array view from a procedure that
-  // calls another procedure to create it didn't work (?).  Though I
-  // also wasn't easily able to reproduce this in a standalone test...
+  // I tried to just make the reshape() overloads above just contain
+  // the logic in the following two methods rather than using these
+  // helpers, but seemingly, something about returning an array view
+  // from a procedure that calls another procedure to create it didn't
+  // work (?).  Though I also wasn't easily able to reproduce this in
+  // a standalone test, so not sure what's going on there...
   //
+  pragma "no promotion when by ref"
+  pragma "reference to const when const this"
+  proc _array.chpl_copyReshape(dom: domain(?),
+                               checkDims=checkReshapeDimsByDefault) {
+    if !dom.isRectangular() then
+      compilerError("reshape() with copying is currently only supported for rectangular domains");
+    if boundsChecking then
+      validateReshape(this, dom);
+    // TODO: Add a parallel linearize() iterator to all rectangular types
+    // and zip those instead of using this serial implementation
+    var B: [dom] this.eltType = for (i,a) in zip(dom, this) do a;
+    return B;
+  }
+
   pragma "no promotion when by ref"
   pragma "reference to const when const this"
   pragma "fn returns aliasing array"
