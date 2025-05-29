@@ -1,10 +1,6 @@
-b foo
-b bar
+b targetVar.chpl:5
+b bar_chpl
 r
-n
-info args
-info locals
-n
 info args
 info locals
 c
