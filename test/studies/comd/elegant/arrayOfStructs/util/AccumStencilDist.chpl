@@ -37,7 +37,6 @@ config param debugAccumStencilDist = false;
 config param debugAccumStencilDistBulkTransfer = false;
 
 // Re-uses these flags from BlockDist:
-//   - disableAliasedBulkTransfer
 //   - sanityCheckDistribution
 //   - testFastFollowerOptimization
 
