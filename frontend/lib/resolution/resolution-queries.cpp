@@ -3450,7 +3450,7 @@ isUntypedSignatureApplicable(Context* context,
 }
 
 // given a typed function signature, determine if it applies to a call
-static ApplicabilityResult
+ApplicabilityResult
 isInitialTypedSignatureApplicable(Context* context,
                                   const TypedFnSignature* tfs,
                                   const FormalActualMap& faMap,
@@ -3530,8 +3530,8 @@ isInitialTypedSignatureApplicable(Context* context,
 // or the result of typedSignatureInitial if it is.
 static ApplicabilityResult
 doIsCandidateApplicableInitial(ResolutionContext* rc,
-                                const IdAndFlags& candidate,
-                                const CallInfo& ci) {
+                               const IdAndFlags& candidate,
+                               const CallInfo& ci) {
   Context* context = rc->context();
   bool isParenlessFn = !candidate.isParenfulFunction();
   bool isField = candidate.isMethodOrField() && !candidate.isMethod();
@@ -4241,6 +4241,9 @@ static bool resolveFnCallSpecial(Context* context,
           srcQt.param()->stringify(oss, chpl::StringifyKind::CHPL_SYNTAX);
           exprTypeOut = QualifiedType::makeParamString(context, oss.str());
           return true;
+        } else if (dstQtEnumType && srcTy->isStringType()) {
+          CHPL_UNIMPL("param string to enum cast");
+          return false;
         }
 
         if (srcQtEnumType && srcQtEnumType->isAbstract()) {
@@ -4286,7 +4289,7 @@ static bool resolveFnCallSpecial(Context* context,
         return true;
       }
     } else if (!srcQt.isParam() &&
-               (srcTy->isEnumType() || srcTy->isStringType()) && isDstType &&
+               srcTy->isStringType() && isDstType &&
                dstTy->isStringType()) {
       // supported non-param casts to string
       exprTypeOut =
@@ -4552,23 +4555,19 @@ considerCompilerGeneratedMethods(ResolutionContext* rc,
                                  const CallInfo& ci,
                                  CandidatesAndForwardingInfo& candidates) {
   // only consider compiler-generated methods and opcalls, for now
-  if (!ci.isMethodCall() && !ci.isOpCall()) return nullptr;
+  if (!ci.isMethodCall()) return nullptr;
 
-  // fetch the receiver type info
   CHPL_ASSERT(ci.numActuals() >= 1);
-  auto& receiver = ci.actual(0);
-  auto receiverType = receiver.type();
+  auto receiverType = ci.methodReceiverType();
 
-  // if not compiler-generated, then nothing to do
+  // if we don't need the method, nothing to do.
   if (!needCompilerGeneratedMethod(rc->context(), receiverType.type(), ci.name(),
                                    ci.isParenless())) {
     return nullptr;
   }
 
-  // get the compiler-generated function, may be generic
-  auto tfs = getCompilerGeneratedMethod(rc, receiverType, ci.name(),
-                                        ci.isParenless());
-  return tfs;
+  return getCompilerGeneratedMethod(rc, receiverType, ci.name(),
+                                    ci.isParenless());
 }
 
 static const TypedFnSignature*
@@ -4588,25 +4587,21 @@ considerCompilerGeneratedFunctions(ResolutionContext* rc,
 // This helper serves to consider compiler-generated functions that can't
 // be guessed based on the first argument.
 static const TypedFnSignature*
-considerCompilerGeneratedOperators(Context* context,
+considerCompilerGeneratedOperators(ResolutionContext* rc,
                                    const CallInfo& ci,
                                    CandidatesAndForwardingInfo& candidates) {
-  if (!ci.isOpCall()) return nullptr;
+  if (!ci.isOpCall() || ci.numActuals() != 2) return nullptr;
 
-  // Avoid invoking the query if we don't need a binary operation here.
-  if (ci.name() != USTR(":") || ci.numActuals() != 2) {
+  CHPL_ASSERT(ci.numActuals() >= 1);
+  auto& lhs = ci.actual(0).type();
+  auto& rhs = ci.actual(1).type();
+
+  // if we don't need the operator, nothing to do.
+  if (!needCompilerGeneratedBinaryOp(rc->context(), lhs, rhs, ci.name())) {
     return nullptr;
   }
 
-  auto lhsType = ci.actual(0).type();
-  auto rhsType = ci.actual(1).type();
-  if (!(lhsType.type() && lhsType.type()->isEnumType()) &&
-      !(rhsType.type() && rhsType.type()->isEnumType())) {
-    return nullptr;
-  }
-
-  auto tfs = getCompilerGeneratedBinaryOp(context, lhsType, rhsType, ci.name());
-  return tfs;
+  return getCompilerGeneratedBinaryOp(rc, lhs, rhs, ci.name());
 }
 
 static void
@@ -4617,12 +4612,12 @@ considerCompilerGeneratedCandidates(ResolutionContext* rc,
                                     std::vector<ApplicabilityResult>* rejected) {
   const TypedFnSignature* tfs = nullptr;
 
-  tfs = considerCompilerGeneratedMethods(rc, ci, candidates);
+  tfs = considerCompilerGeneratedOperators(rc, ci, candidates);
   if (tfs == nullptr) {
-    tfs = considerCompilerGeneratedFunctions(rc, ci, candidates);
+    tfs = considerCompilerGeneratedMethods(rc, ci, candidates);
   }
   if (tfs == nullptr) {
-    tfs = considerCompilerGeneratedOperators(rc->context(), ci, candidates);
+    tfs = considerCompilerGeneratedFunctions(rc, ci, candidates);
   }
 
   if (!tfs) return;
