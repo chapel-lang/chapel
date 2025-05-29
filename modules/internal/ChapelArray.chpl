@@ -2923,6 +2923,10 @@ module ChapelArray {
     }
   }
 
+  // The following are the historical reshape() procedures that rely
+  // on copying the array's elements, proposed to be replaced by the
+  // pre-edition variants that follow
+
   /* Return a copy of the array ``A`` containing the same values but
      in the shape of the domain ``D``. The number of indices in the
      domain must equal the number of elements in the array. The
@@ -2939,8 +2943,6 @@ module ChapelArray {
     return B;
   }
 
-  config param checkReshapeDimsByDefault = boundsChecking;
-
   @chpldoc.nodoc
   @edition(last="2.0")
   proc reshape(A: _iteratorRecord, D: domain) {
@@ -2950,8 +2952,20 @@ module ChapelArray {
     return B;
   }
 
+  // The following is the proposed new reshape() implementation that
+  // supports aliasing by default, currently part of a pre-edition
+
+  @chpldoc.nodoc
+  config param checkReshapeDimsByDefault = boundsChecking;
+
+  // The following overloads take a varargs list of ranges.  The fact
+  // that there are three distinct overloads is regrettable, and a
+  // result of working around:
+  //   https://github.com/chapel-lang/chapel/issues/17188
+
   pragma "no promotion when by ref"
   pragma "fn returns aliasing array"
+  @chpldoc.nodoc
   @edition(first="pre-edition")
   proc reshape(arr: [], ranges: range(?)...) {
     if ranges.size == 1 && ranges(0).bounds == boundKind.low {
@@ -2963,6 +2977,7 @@ module ChapelArray {
 
   pragma "no promotion when by ref"
   pragma "fn returns aliasing array"
+  @chpldoc.nodoc
   @edition(first="pre-edition")
   proc reshape(arr: [], ranges: range(?)..., checkDims: bool) {
     if ranges.size == 1 && ranges(0).bounds == boundKind.low {
@@ -2974,17 +2989,26 @@ module ChapelArray {
 
   pragma "no promotion when by ref"
   pragma "fn returns aliasing array"
+  pragma "last resort"
+  @chpldoc.nodoc
   @edition(first="pre-edition")
-  proc reshape(arr: [], ranges: range(?)..., checkDims: bool, param copy = false) {
-    if ranges.size == 1 && ranges(0).bounds == boundKind.low {
-      return arr.chpl_aliasReshape({ranges(0).low..#arr.size}, false);
+  proc reshape(arr: [], ranges: range(?)..., param copy: bool) {
+    if copy {
+      return reshape(arr, {(...ranges)}, checkReshapeDimsByDefault, copy);
     } else {
-      return arr.chpl_aliasReshape({(...ranges)}, checkDims);
+      if ranges.size == 1 && ranges(0).bounds == boundKind.low {
+        return arr.chpl_aliasReshape({ranges(0).low..#arr.size}, false);
+      } else {
+        return arr.chpl_aliasReshape({(...ranges)}, checkReshapeDimsByDefault);
+      }
     }
   }
 
+  // This version takes a domain
+
   pragma "no promotion when by ref"
   pragma "fn returns aliasing array"
+  @chpldoc.nodoc
   @edition(first="pre-edition")
   proc reshape(arr: [], dom: domain(?), checkDims=checkReshapeDimsByDefault, param copy = false) {
     if copy {
