@@ -1,10 +1,6 @@
-b foo
+b targetVar.chpl:5
 b bar
 r
-n
-target var
-frame var
-n
 target var
 frame var
 c

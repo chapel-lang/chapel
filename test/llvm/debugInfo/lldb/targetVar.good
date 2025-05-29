@@ -1,50 +1,20 @@
 (lldb) target create "./targetVar"
 Current executable set to targetVar
 (lldb) b debuggerBreakHere
-Breakpoint 1: where = targetVar`debuggerBreakHere + 12 at gdb.c:28:31, address = 0xXXXX
+Breakpoint
 (lldb) command source -s 0 'targetVarCommands.txt'
 Executing commands in targetVarCommands.txt
-(lldb) b foo
-Breakpoint 2: where = targetVar`foo_chpl + 8 at targetVar.chpl:3, address = 0xXXXX
+(lldb) b targetVar.chpl:5
+Breakpoint
 (lldb) b bar
-Breakpoint 3: where = targetVar`bar_chpl + 8 at targetVar.chpl:10, address = 0xXXXX
+Breakpoint
 (lldb) r
 myLocal: 59
 myGlobal: 42
 Process XXXX launched: targetVar
 Process XXXX stopped
 * Thread #X, stop reason = breakpoint 2.1
-    frame #0: 0xXXXX targetVar`foo_chpl(myFormal=0) at targetVar.chpl:3
-   1   	const myGlobal = 42;
-   2
--> 3   	proc foo(myFormal) {
-   4   	  const localVar = myFormal + 1;
-   5   	  writeln("printing from foo");
-   6   	  writeln("myFormal: ", myFormal);
-   7   	  writeln("localVar: ", localVar);
-Target 0: (targetVar) stopped.
-(lldb) n
-Process XXXX stopped
-* Thread #X, stop reason = step over
-    frame #0: 0xXXXX targetVar`foo_chpl(myFormal=59) at targetVar.chpl:4
-   1   	const myGlobal = 42;
-   2
-   3   	proc foo(myFormal) {
--> 4   	  const localVar = myFormal + 1;
-   5   	  writeln("printing from foo");
-   6   	  writeln("myFormal: ", myFormal);
-   7   	  writeln("localVar: ", localVar);
-Target 0: (targetVar) stopped.
-(lldb) target var
-Global variables for targetVar.chpl
-(long) myGlobal_chpl = 42
-(lldb) frame var
-(long) myFormal = 59
-(long) localVar = 0
-(lldb) n
-Process XXXX stopped
-* Thread #X, stop reason = step over
-    frame #0: 0xXXXX targetVar`foo_chpl(myFormal=59) at targetVar.chpl:5
+    frame #0: 0xXXXX targetVar`foo_chpl(myFormal=XX) at targetVar.chpl:5
    2
    3   	proc foo(myFormal) {
    4   	  const localVar = myFormal + 1;
@@ -52,7 +22,6 @@ Process XXXX stopped
    6   	  writeln("myFormal: ", myFormal);
    7   	  writeln("localVar: ", localVar);
    8   	}
-Target 0: (targetVar) stopped.
 (lldb) target var
 Global variables for targetVar.chpl
 (long) myGlobal_chpl = 42
@@ -66,7 +35,7 @@ localVar: 60
 Process XXXX resuming
 Process XXXX stopped
 * Thread #X, stop reason = breakpoint 3.1
-    frame #0: 0xXXXX targetVar`bar_chpl(myFormal=59) at targetVar.chpl:10
+    frame #0: 0xXXXX targetVar`bar_chpl(myFormal=XX) at targetVar.chpl:10
    7   	  writeln("localVar: ", localVar);
    8   	}
    9
@@ -74,11 +43,10 @@ Process XXXX stopped
    11  	  writeln("printing from bar");
    12  	  writeln("myFormal: ", myFormal);
    13  	}
-Target 0: (targetVar) stopped.
 (lldb) n
 Process XXXX stopped
 * Thread #X, stop reason = step over
-    frame #0: 0xXXXX targetVar`bar_chpl(myFormal=59) at targetVar.chpl:11
+    frame #0: 0xXXXX targetVar`bar_chpl(myFormal=XX) at targetVar.chpl:11
    8   	}
    9
    10  	proc bar(myFormal) {
@@ -86,7 +54,6 @@ Process XXXX stopped
    12  	  writeln("myFormal: ", myFormal);
    13  	}
    14
-Target 0: (targetVar) stopped.
 (lldb) target var
 Global variables for targetVar.chpl
 (long) myGlobal_chpl = 42

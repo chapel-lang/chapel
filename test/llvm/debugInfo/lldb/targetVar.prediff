@@ -15,12 +15,22 @@ sed -E -e '/OpenCL/d' $file > $file.tmp
 mv $file.tmp $file
 
 # clean addresses
-sed -E -e 's/0x[0-9a-fA-F]+/0xXXXX/g' $file > $file.tmp
+sed -E -e 's/0x[0-9a-fA-F]+/0xXXXX/g' \
+       -e 's/myFormal=[0-9]+/myFormal=XX/' $file > $file.tmp
 mv $file.tmp $file
 
 # clean Process and thread
 sed -E -e 's/Process [0-9]+/Process XXXX/g' \
     -e 's/thread #[0-9]+/Thread #X/g' $file > $file.tmp
+mv $file.tmp $file
+
+# Clean Breakpoint lines
+sed -E -e 's/Breakpoint.*where.*at.*/Breakpoint/' \
+       -e 's/name = .*, //' $file > $file.tmp
+mv $file.tmp $file
+
+# remove Target stopped
+sed -e '/Target 0: (targetVar) stopped./d' $file > $file.tmp
 mv $file.tmp $file
 
 # remove empty lines and space
