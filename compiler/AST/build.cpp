@@ -277,44 +277,6 @@ BlockStmt* buildErrorStandin() {
   return new BlockStmt(new CallExpr(PRIM_ERROR), BLOCK_SCOPELESS);
 }
 
-DefExpr* buildDeprecated(DefExpr* def) {
-  const char* msg = "";
-  return buildDeprecated(def, msg);
-}
-
-DefExpr* buildDeprecated(DefExpr* def, const char* msg) {
-  Symbol* sym = def->sym;
-  sym->addFlag(FLAG_DEPRECATED);
-  sym->deprecationMsg = msg;
-
-  if (sym->hasFlag(FLAG_CONFIG)) {
-    // Trigger a warning now if the deprecated config has been set via the
-    // compilation line
-    if (isUsedCmdLineConfig(sym->name)) {
-      USR_WARN("%s", sym->getDeprecationMsg());
-      USR_PRINT("'%s' was set via a compiler flag", sym->name);
-    }
-  }
-  return def;
-}
-
-BlockStmt* buildDeprecated(BlockStmt* block) {
-  const char* msg = "";
-  return buildDeprecated(block, msg);
-}
-
-BlockStmt* buildDeprecated(BlockStmt* block, const char* msg) {
-  if (DefExpr* def = toDefExpr(block->body.head)) {
-    buildDeprecated(def, msg);
-  } else if (ForwardingStmt* forward = toForwardingStmt(block->body.head)) {
-    USR_FATAL_CONT(forward, "Can't deprecate a forwarding statement");
-  } else {
-    INT_FATAL("Unexpected deprecation case");
-  }
-  return block;
-}
-
-
 static BlockStmt* buildUseList(BaseAST* module, const char* newName,
                                BlockStmt* list, bool privateUse) {
   UseStmt* newUse = new UseStmt(module, newName, privateUse);
