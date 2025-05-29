@@ -240,8 +240,9 @@ def test_directory(test, test_type):
 
         # if the directory name ends with .dSYM, skip it
         # if a parent directory is a .dSYM, skip it
-        if (dir.endswith(".dSYM") or
-        any(e.endswith(".dSYM") for e in os.path.normpath(dir).split(os.sep))):
+        if dir.endswith(".dSYM") or any(
+            e.endswith(".dSYM") for e in os.path.normpath(dir).split(os.sep)
+        ):
             continue
 
         logger.write()
@@ -311,7 +312,6 @@ def test_directory(test, test_type):
                 if os.path.isfile(os.path.join(dir, "NOTEST")):
                     continue
 
-
         # run tests in directory
         # don't run if only doing performance graphs
         if not test_type == "graph":
@@ -360,7 +360,7 @@ def test_directory(test, test_type):
         else:
             with cd(dir):
                 # generate graphs for all testsin dir
-                    generate_graphs()
+                generate_graphs()
 
 
 def summarize():
