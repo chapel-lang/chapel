@@ -73,7 +73,6 @@ private config param allowDuplicateTargetLocales = false;
 config const stencilDistPackedUpdateMinChunks = 1;
 
 // Re-uses these flags from BlockDist:
-//   - disableAliasedBulkTransfer
 //   - sanityCheckDistribution
 //   - testFastFollowerOptimization
 
