@@ -2451,6 +2451,7 @@ module Python {
       return _castHelper(x, t);
     }
 
+    @chpldoc.nodoc
     proc type _castHelper(x: borrowed Value, type t): t throws {
       var ctx = chpl_pythonContext.enter();
       defer ctx.exit();
