@@ -56,10 +56,12 @@ with open(output_file, "w") as f:
         print("checking module --FAIL", file=f)
 
     # Verify the functions
-    if "My_sayhello" in output:
-        if "My_factorial" in output:
-            if "main" in output:
-                print("checking functions --PASS", file=f)
+    if (
+        "My_sayhello" in output
+        and "My_factorial" in output
+        and "main" in output
+    ):
+        print("checking functions --PASS", file=f)
     else:
         print("checking functions --FAIL", file=f)
 
@@ -70,26 +72,29 @@ with open(output_file, "w") as f:
         print("checking types --FAIL", file=f)
 
     # Verify the global variables
-    if "My_message" in output:
-        if "My_gv_t" in output:
-            if "My_gv_b" in output:
-                if "My_globalActor" in output:
-                    print("checking global variables --PASS", file=f)
+    if (
+        "My_message" in output
+        and "My_gv_t" in output
+        and "My_gv_b" in output
+        and "My_globalActor" in output
+    ):
+        print("checking global variables --PASS", file=f)
     else:
         print("checking global variables --FAIL", file=f)
 
     # Verify the local variables
-    if "My_anything" in output:
-        if "My_localActor" in output:
-            if "My_Number" in output:
-                print("checking local variables --PASS", file=f)
+    if (
+        "My_anything" in output
+        and "My_localActor" in output
+        and "My_Number" in output
+    ):
+        print("checking local variables --PASS", file=f)
     else:
         print("checking local variables --FAIL", file=f)
 
     # Verify the formal arguments
-    if "My_level" in output:
-        if "My_x" in output:
-            print("checking formal arguments --PASS", file=f)
+    if "My_level" in output and "My_x" in output:
+        print("checking formal arguments --PASS", file=f)
     else:
         print("checking formal arguments --FAIL", file=f)
 
