@@ -1,5 +1,5 @@
 (lldb) p/d myVariable
-(void *) 0
+(long) 0
 --
 (lldb) p/d myVariable
-(void *) 17
+(long) 17

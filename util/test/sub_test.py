@@ -1453,12 +1453,10 @@ def main():
                     catfiles=execcatfiles
 
             elif (suffix=='.lastcompopts' and os.access(f, os.R_OK)):
-                lastcompopts+=run_process(['cat', f], stdout=subprocess.PIPE)[1].strip().split()
-                # sys.stdout.write("lastcompopts=%s\n"%(lastcompopts))
+                lastcompopts+=ReadFileWithComments(f)[0].strip().split()
 
             elif (suffix=='.lastexecopts' and os.access(f, os.R_OK)):
-                lastexecopts+=run_process(['cat', f], stdout=subprocess.PIPE)[1].strip().split()
-                # sys.stdout.write("lastexecopts=%s\n"%(lastexecopts))
+                lastexecopts+=ReadFileWithComments(f)[0].strip().split()
 
             elif (suffix==PerfSfx('numlocales') and os.access(f, os.R_OK)):
                 numlocales=ReadIntegerValue(f, localdir)
