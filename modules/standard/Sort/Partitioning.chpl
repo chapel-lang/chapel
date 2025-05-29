@@ -117,21 +117,11 @@ private inline proc myCompareByPart(a, b, comparator) {
   return 1;
 }
 
-// TODO: this is a workaround for warnings along the lines of
-// warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
-// It should be removed and defaultComparator should be used instead.
-record integralKeyPartComparator : keyPartComparator {
-  inline proc keyPart(elt: integral, i: int): (keyPartStatus, elt.type) {
-    var section = if i > 0 then keyPartStatus.pre else keyPartStatus.returned;
-    return (section, elt);
-  }
-}
-
 inline proc myGetKeyPart(a, comparator, i:int) {
   if canResolveMethod(comparator, "keyPart", a, 0) {
     return comparator.keyPart(a, i);
   } else if canResolveMethod(comparator, "key", a) {
-    const ikp = new integralKeyPartComparator();
+    const ikp = new defaultComparator();
     return ikp.keyPart(comparator.key(a), i);
   } else {
     compilerError("Bad comparator for radix sort ", comparator.type:string,
@@ -144,7 +134,7 @@ inline proc myGetBin(a, comparator, startbit:int, param radixBits:int) {
     return myGetBinForKeyPart(a, comparator, startbit, radixBits);
   } else if canResolveMethod(comparator, "key", a) {
     return myGetBinForKeyPart(comparator.key(a),
-                              new integralKeyPartComparator(),
+                              new defaultComparator(),
                               startbit, radixBits);
   } else {
     compilerError("Bad comparator for radix sort ", comparator.type:string,
@@ -1663,7 +1653,7 @@ proc bitsInCommon(a, b, comparator) {
     return bitsInCommonForKeyPart(a, b, comparator);
   } else if canResolveMethod(comparator, "key", a) {
     return bitsInCommonForKeyPart(comparator.key(a), comparator.key(b),
-                                  new integralKeyPartComparator());
+                                  new defaultComparator());
   } else {
     compilerError("Bad comparator for radix sort ", comparator.type:string,
                   " with eltType ", a.type:string);
