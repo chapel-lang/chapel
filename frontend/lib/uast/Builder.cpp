@@ -32,6 +32,7 @@
 #include "chpl/parsing/parser-error.h"
 #include "chpl/uast/OpCall.h"
 #include "chpl/framework/query-impl.h"
+#include "chpl/util/filtering.h"
 
 #include <cstring>
 #include <string>
@@ -58,13 +59,13 @@ useConfigSetting(Context* context, std::string name, ID id) {
 // in command line
 static void
 generateConfigWarning(std::string varName, std::string kind,
-                      UniqueString message) {
+                      const std::string& message) {
   // TODO: Need proper message handling here
   std::string msg = "'" + varName + "' was set via a compiler flag";
-  if (message.isEmpty()) {
+  if (message.empty()) {
     std::cerr << "warning: " + varName + " is " + kind << std::endl;
   } else {
-    std::cerr << "warning: " + message.str() << std::endl;
+    std::cerr << "warning: " << message << std::endl;
   }
   std::cerr << "note: " + msg << std::endl;
 }
@@ -623,11 +624,15 @@ Builder::lookupConfigSettingsForVar(Variable* var, pathVecT& pathVec,
       // found a config that was set via cmd line
       // handle deprecations/unstability
       if (auto attribs = var->attributeGroup()) {
-        if (attribs->isDeprecated())
-          generateConfigWarning(varName, "deprecated", attribs->deprecationMessage());
+        if (attribs->isDeprecated()) {
+          auto msg = removeSphinxMarkup(attribs->deprecationMessage());
+          generateConfigWarning(varName, "deprecated", msg);
+        }
         if (attribs->isUnstable() &&
-            isCompilerFlagSet(this->context(), CompilerFlags::WARN_UNSTABLE))
-          generateConfigWarning(varName, "unstable", attribs->unstableMessage());
+            isCompilerFlagSet(this->context(), CompilerFlags::WARN_UNSTABLE)) {
+          auto msg = removeSphinxMarkup(attribs->unstableMessage());
+          generateConfigWarning(varName, "unstable", msg);
+        }
       }
       if (!configMatched.first.empty() &&
           configMatched.first != configPair.first) {
