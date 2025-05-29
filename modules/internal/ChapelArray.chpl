@@ -2989,7 +2989,6 @@ module ChapelArray {
 
   pragma "no promotion when by ref"
   pragma "fn returns aliasing array"
-  pragma "last resort"
   @chpldoc.nodoc
   @edition(first="pre-edition")
   proc reshape(arr: [], ranges: range(?)..., param copy: bool) {
@@ -3006,7 +3005,6 @@ module ChapelArray {
 
   pragma "no promotion when by ref"
   pragma "fn returns aliasing array"
-  pragma "last resort"
   @chpldoc.nodoc
   @edition(first="pre-edition")
   proc reshape(arr: [], ranges: range(?)...,
