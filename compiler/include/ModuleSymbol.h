@@ -100,7 +100,6 @@ public:
   const char*             filename;
   const char*             doc;
 
-  // LLVM uses this for extern C blocks.
 #ifdef HAVE_LLVM
   ExternBlockInfo*        extern_info;
   llvm::DIBuilder*        llvmDIBuilder;
