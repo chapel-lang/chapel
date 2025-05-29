@@ -121,12 +121,12 @@ void debug_data::create_compile_unit(ModuleSymbol* modSym, const char *file, con
   modSym->llvmDIBuilder = new llvm::DIBuilder(*info->module);
   auto llvmFile = modSym->llvmDIBuilder->createFile(file, directory);
   modSym->llvmDICompileUnit =
-  modSym->llvmDIBuilder->createCompileUnit(llvm::dwarf::DW_LANG_C99, /* Lang */
-                                          llvmFile, /* File */
-                                          chapel_string, /* Producer */
-                                          is_optimized, /* isOptimized */
-                                          flags, /* Flags */
-                                          0 /* RV */ );
+    modSym->llvmDIBuilder->createCompileUnit(llvm::dwarf::DW_LANG_C99, /* Lang */
+                                             llvmFile, /* File */
+                                             chapel_string, /* Producer */
+                                             is_optimized, /* isOptimized */
+                                             flags, /* Flags */
+                                             0 /* RV */ );
 }
 
 
