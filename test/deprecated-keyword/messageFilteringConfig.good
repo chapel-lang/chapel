@@ -18,4 +18,4 @@ messageFilteringConfig.chpl:n: warning: I am deprecated: spam
 0
 <command-line arg>:1: warning: x000 is deprecated
 <command-line arg>:2: warning: I am deprecated
-<command-line arg>:3: warning: I am deprecated: :mod:`spam`
+<command-line arg>:3: warning: I am deprecated: spam
