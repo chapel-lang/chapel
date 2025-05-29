@@ -709,6 +709,7 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
               Type*      returnType = rhsFn->retType->getValType();
 
               // Skip this transformation if
+              //  * the expression is an array view
               //  * the type differs
               //  * it is a domain (for A.domain returning unowned)
               //  * if it's a sync variable (different init/auto copy)
@@ -760,15 +761,13 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
         // will need to deep-copy the result in non-'ref' situations
         // e.g., var B = A[2..n-1]; or var B = A.reshape(2..n-1) so
         // will need to autodestroy the result at the end of the scope
-        // and recgonize it as an array view in other situations
+        // and recgonize it as an array view in other situations.  Mark
+        // it as an array view to help with this in later passes.
         //
         SymExpr* rhsExpr = toSymExpr(copyExpr->get(1));
         if (rhsExpr) {
           copiesToNoDestroy = false;  // Is this too big a hammer?  redundant?
           rhsExpr->symbol()->addFlag(FLAG_INSERT_AUTO_DESTROY);
-          if (rhsExpr->symbol()->hasFlag(FLAG_IS_ARRAY_VIEW)) {
-            //            printf("Already done, yo\n");
-          }
           rhsExpr->symbol()->addFlag(FLAG_IS_ARRAY_VIEW);
         } else {
           INT_FATAL(copyExpr, "copyExpr didn't have expected structure");

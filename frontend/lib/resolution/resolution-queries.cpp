@@ -3625,6 +3625,11 @@ doIsCandidateApplicableInitial(ResolutionContext* rc,
     }
   }
 
+  // For now, ignore any candidates that are not part of the 2.0 edition
+  // Going forward, we'll need to teach Dyno's resolver to respect the
+  // --edition flag.
+  //
+  // Developed by @benharsh
   if (!candidateId.isEmpty()) {
     if (auto ast = parsing::idToAst(context, candidateId);
         ast && ast->isFunction()) {
