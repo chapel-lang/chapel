@@ -2989,7 +2989,7 @@ module ChapelArray {
   proc reshape(arr: [], dom: domain(?), checkDims=checkReshapeDimsByDefault, param copy = false) {
     if copy {
       if !dom.isRectangular() then
-        compilerError("reshape(arr,D) is meaningful only supported for rectangular domains; got D: ", dom.type:string);
+        compilerError("reshape() with copying is currently only supported for rectangular domains");
       if boundsChecking then
         validateReshape(arr, dom);
       // TODO: Add a parallel linearize() iterator to all rectangular types
@@ -3016,10 +3016,10 @@ module ChapelArray {
                                 checkDims=checkReshapeDimsByDefault) {
     if chpl__isArrayView(this) ||
        !Reflection.canResolveMethod(this._value, "doiSupportsReshape") {
-       compilerError("This array type does not support reshaping");
+         compilerError("This array type does not support alias-based reshaping; consider passing 'copy=true' to get a copy-based reshape");
        return this;
     } else if !Reflection.canResolveMethod(this._value, "doiReshape", dom) {
-      compilerError("This array cannot be reshaped using this domain type");
+      compilerError("This array cannot be reshaped using this domain type; consider passing 'copy=true' to get a copy-based reshape");
       return this;
     } else {
       if boundsChecking && checkDims then
