@@ -2931,7 +2931,54 @@ module ChapelArray {
      in the shape of the domain ``D``. The number of indices in the
      domain must equal the number of elements in the array. The
      elements of ``A`` are copied into the new array using the
-     default iteration orders over ``D`` and ``A``.  */
+     default iteration orders over ``D`` and ``A``.
+
+     .. note::
+
+        In addition to the above version of reshape(), there is
+        another experimental version that is available when compiling
+        with ``--edition=pre-edition`` that provides new features
+        including:
+
+        * creating a reshape() that aliases the original array rather
+          than copying it
+        * reshaping using a series of ranges rather than a domain
+        * reshaping to a 1D inferred-size array using an unbounded
+          range like ``1..``
+
+        Note that in order to capture an alias in a named variable, a
+        ``ref`` declaration must be used, like:
+
+        .. code-block:: chapel
+
+           var A = [1, 2, 3, 4];
+           ref B = reshape(A, 1..2, 1..2);
+
+        In addition, an aliasing reshape() expression can be passed as
+        a ``ref`` argument.  Aliasing reshapes are only supported for
+        local, default rectangular arrays and domains at present.  To
+        reshape other array types, see the ``copy`` argument below.
+
+        The prototypes of these new versions are essentially:
+
+        .. code-block:: chapel
+
+           proc reshape(arr: [], dom: domain(?),
+                        checkDims=checkReshapeDimsByDefault, param copy=false);
+           proc reshape(arr: [], ranges: range(?)...,
+                        checkDims=checkReshapeDimsByDefault, param copy=false);
+
+        This new version supports checking for likely mistakes in
+        which an existing dimension is split across multiple
+        dimensions as a result of the reshape.  This is controlled by
+        the ``checkDims`` argument, where ``checkReshapeDimsByDefault`` is
+        a ``config param`` whose default is ``true`` when bounds checks
+        are on and ``false`` when they're off.
+
+        The ``copy`` argument can be used to request a copy, rather than
+        an alias of the array.
+
+ */
   @edition(last="2.0")
   proc reshape(A: [], D: domain) {
     if !D.isRectangular() then
@@ -3032,7 +3079,7 @@ module ChapelArray {
       if !dom.isRectangular() then
         compilerError("reshape() with copying is currently only supported for rectangular domains");
       if boundsChecking then
-        validateReshape(arr, dom);
+        chpl__validateReshape(arr, dom);
       // TODO: Add a parallel linearize() iterator to all rectangular types
       // and zip those instead of using this serial implementation
       var B: [dom] arr.eltType = for (i,a) in zip(dom, arr) do a;
@@ -3058,7 +3105,7 @@ module ChapelArray {
     if !dom.isRectangular() then
       compilerError("reshape() with copying is currently only supported for rectangular domains");
     if boundsChecking then
-      validateReshape(this, dom);
+      chpl__validateReshape(this, dom);
     // TODO: Add a parallel linearize() iterator to all rectangular types
     // and zip those instead of using this serial implementation
     var B: [dom] this.eltType = for (i,a) in zip(dom, this) do a;
@@ -3079,12 +3126,12 @@ module ChapelArray {
       return this;
     } else {
       if boundsChecking && checkDims then
-        validateReshape(this, dom);
+        chpl__validateReshape(this, dom);
       return this._value.doiReshape(dom);
     }
   }
 
-  proc validateReshape(arr, dom) {
+  proc chpl__validateReshape(arr, dom) {
     if dom.size != arr.size then
       halt("Size mismatch: Can't rehape a ", arr.size,
            "-element array into a ", dom.size, "-element array");
@@ -3176,6 +3223,7 @@ module ChapelArray {
   // locale to another will also copy the array's domain if we believe
   // it's safe to do so.  The optimization is currently on by default.
   //
+  @chpldoc.nodoc
   config param localizeConstDomains = true,
                debugLocalizedConstDomains = false;
 
