@@ -24,7 +24,7 @@ sed -E -e 's/0x[0-9a-fA-F]+/0xXXXX/g' \
 mv $file.tmp $file
 
 # clean Process and thread
-sed -E -e 's/([P|p])rocess [0-9]+/\1rocess XXXX/g' \
+sed -E -e 's/([Pp])rocess [0-9]+/\1rocess XXXX/g' \
     -e 's/thread #[0-9]+/Thread #X/g' \
     -e 's/LWP [0-9]+/LWP XXXX/g' $file > $file.tmp
 mv $file.tmp $file
