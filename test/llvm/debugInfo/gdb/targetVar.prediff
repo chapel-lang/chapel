@@ -7,11 +7,16 @@ sed -E -e 's/^(Current executable set to).*$/\1 targetVar/' \
     -e 's/^(Executing commands in).*$/\1 targetVarCommands.txt/' \
     -e 's/^(Global variables for).*$/\1 targetVar.chpl/' \
     -e 's/(launched:).*/\1 targetVar/' \
+    -e 's/\.\/targetVar/targetVar/g' \
     $file > $file.tmp
 mv $file.tmp $file
 
 # remove the thread info
 sed -E -e '/\[New Thread.*/d' -e '/\[Thread.*/d' -e '/libthread_db/d' $file > $file.tmp
+mv $file.tmp $file
+
+# remove debug_names warning
+sed -e '/warning: .debug_names not created by gdb; ignoring/d' $file > $file.tmp
 mv $file.tmp $file
 
 # remove the OpenCL warnings
