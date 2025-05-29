@@ -62,8 +62,7 @@ public use SparseBlockDist;
 config param debugBlockDist = false;
 config param debugBlockDistBulkTransfer = false;
 
-// TODO: This is no longer used, deprecate with warning because it is used
-// in miniMD's release Makefile and compopts.
+@deprecated("'disableAliasedBulkTransfer' is deprecated and has no effect")
 config const disableAliasedBulkTransfer = true;
 
 config param disableBlockDistBulkTransfer = false;

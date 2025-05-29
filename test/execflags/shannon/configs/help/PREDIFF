@@ -22,7 +22,7 @@ for line in myLines:
     # ignore blank lines
     if not line.strip(): continue
     # replace all white space with a single space
-    fh.write(re.sub("\s+", " ", line)+'\n')
+    fh.write(re.sub(r"\s+", " ", line)+'\n')
 fh.close()
 
 del myLines
@@ -54,5 +54,5 @@ for line in myLines:
     if line.strip().find('Built-in config vars:') != -1:
         inBuiltIns = True
     # replace all white space with a single space
-    fh.write(re.sub("\s+", " ", line)+'\n')
+    fh.write(re.sub(r"\s+", " ", line)+'\n')
 fh.close()
