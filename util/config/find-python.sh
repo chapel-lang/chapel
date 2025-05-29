@@ -9,7 +9,13 @@ check_python() {
     if [ $? -eq 0 ]
     then
       MIN_MINOR_PYTHON_VERSION=5
-      if printf "Python 3.%s\n%s\n" "$MIN_MINOR_PYTHON_VERSION" "$PYTHON_VERSION_OUTPUT" | sort --version-sort --check &>/dev/null
+      EXPECTED_ORDER=$(printf "Python 3.%s\n%s\n" "$MIN_MINOR_PYTHON_VERSION" "$PYTHON_VERSION_OUTPUT")
+
+      # note: sort -V is not available on all systems, so we use a workaround: https://stackoverflow.com/a/4495368
+      # note: the first key below is not '-n'. This helps with the Python prefix,
+      #       but will stop working when Python 10+ is released.
+      ACTUAL_ORDER=$(echo "$EXPECTED_ORDER" | sort -t. -k1,1 -k2,2n -k3,3n)
+      if [ "$EXPECTED_ORDER" = "$ACTUAL_ORDER" ]
       then
         echo $1
         exit 0
