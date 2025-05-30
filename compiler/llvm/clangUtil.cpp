@@ -2846,6 +2846,11 @@ static std::string generateClangGpuLangArgs() {
     if (gpuArches.size() >= 1) {
       args += " " + std::string("--offload-arch=") + *gpuArches.begin();
     }
+
+    // to get old behavior: https://releases.llvm.org/19.1.0/tools/clang/docs/ReleaseNotes.html#cuda-hip-language-changes
+    if (getGpuCodegenType() == GpuCodegenType::GPU_CG_NVIDIA_CUDA) {
+      args += " --cuda-include-ptx=all";
+    }
   }
   return args;
 }
