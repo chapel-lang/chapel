@@ -3018,9 +3018,12 @@ module ChapelArray {
   config param checkReshapeDimsByDefault = boundsChecking;
 
   // The following overloads take a varargs list of ranges.  The fact
-  // that there are three distinct overloads is regrettable, and a
-  // result of working around:
+  // that there are multiple distinct overloads is regrettable, and is
+  // primarily a result of working around:
   //   https://github.com/chapel-lang/chapel/issues/17188
+  // In addition, the copy=true vs. false cases needed to be distinct
+  // in order to selectively apply the "fn returns aliasing array"
+  // pragma.
 
   pragma "no promotion when by ref"
   pragma "fn returns aliasing array"
@@ -3097,14 +3100,7 @@ module ChapelArray {
   @edition(first="pre-edition")
   proc reshape(arr: [], dom: domain(?), checkDims=checkReshapeDimsByDefault,
                param copy = false) where copy == true {
-    if !dom.isRectangular() then
-      compilerError("reshape() with copying is currently only supported for rectangular domains");
-    if boundsChecking && checkDims then
-      chpl__validateReshape(arr, dom);
-    // TODO: Add a parallel linearize() iterator to all rectangular types
-    // and zip those instead of using this serial implementation
-    var B: [dom] arr.eltType = for (i,a) in zip(dom, arr) do a;
-    return B;
+    return arr.chpl_copyReshape(dom, checkDims);
   }
 
   pragma "no promotion when by ref"
@@ -3117,12 +3113,12 @@ module ChapelArray {
   }
 
   //
-  // I tried to just make the reshape() overloads above just contain
-  // the logic in the following two methods rather than using these
-  // helpers, but seemingly, something about returning an array view
-  // from a procedure that calls another procedure to create it didn't
-  // work (?).  Though I also wasn't easily able to reproduce this in
-  // a standalone test, so not sure what's going on there...
+  // These helpers implement the copy/alias semantics needed by the
+  // above overloads to avoid code duplication.  Interestingly, my
+  // first attempt to make these helpers standalone procedures rather
+  // than methods didn't seem to work, though I'm not sure why.  I
+  // also wasn't able to easily reproduce the behavior in a simple,
+  // standalone test, so it could be worth another shot.
   //
   pragma "no promotion when by ref"
   pragma "reference to const when const this"
