@@ -431,6 +431,25 @@ bool BaseAST::wasResolvedEarly() {
   return false;
 }
 
+bool BaseAST::canMutateEarly() {
+  // OK, we are at a point where everything can be mutated.
+  if (canMutateEarlyResolvedSymbols) return true;
+
+  // OK, this was not created by the typed converter.
+  if (!wasResolvedEarly()) return true;
+
+  // OK, this is a module, so we can mutate its contents.
+  if (isModuleSymbol(this)) return true;
+
+  // OK, it's an expression contained in a module.
+  if (auto e = toExpr(this)) {
+    if (isModuleSymbol(e->parentSymbol)) return true;
+  }
+
+  // NO, cannot mutate.
+  return false;
+}
+
 bool BaseAST::isRef() {
   return this->qualType().isRef();
 }

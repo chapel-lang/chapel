@@ -270,6 +270,11 @@ public:
   // symbols inserted into it that the old compiler generated).
   bool              wasResolvedEarly();
 
+  // This AST was created by the typed converter but it is allowed to be
+  // mutated (e.g., it is a 'ModuleSymbol', which can contain a mix of
+  // early-resolved and late-resolved symbols).
+  bool              canMutateEarly();
+
   // Set to 'true' after a specific point in the 'callDestructors' pass to
   // indicate that AST marked with 'FLAG_RESOLVED_EARLY' can be mutated.
   static bool       canMutateEarlyResolvedSymbols;

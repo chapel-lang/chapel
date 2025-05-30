@@ -3323,9 +3323,7 @@ void runClang(const char* just_parse_filename) {
   }
 }
 
-static
-void saveExternBlock(ModuleSymbol* module, const char* extern_code)
-{
+void saveExternBlock(ModuleSymbol* module, const char* externCode) {
   if( ! gAllExternCode.filename ) {
     openCFile(&gAllExternCode, "extern-code", "c");
     INT_ASSERT(gAllExternCode.fptr);
@@ -3341,7 +3339,7 @@ void saveExternBlock(ModuleSymbol* module, const char* extern_code)
   FILE* f = module->extern_info->file.fptr;
   INT_ASSERT(f);
   // Append the C code to that file.
-  fputs(extern_code, f);
+  fputs(externCode, f);
   // Always make sure it ends in a close semi (solves errors)
   fputs("\n;\n", f);
   // Add this module to the set of modules needing extern compilation.

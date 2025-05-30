@@ -1175,8 +1175,6 @@ void parseAndConvertUast() {
   reorderInternalModules();
   gatherWellKnown();
 
-  // add the default uses for all modules
-  // TODO: why do we need to do this?
   forv_Vec(ModuleSymbol, mod, allModules) {
     mod->addDefaultUses();
   }

@@ -4037,6 +4037,7 @@ Converter::convertToplevelModule(const chpl::uast::Module* mod,
 
   topLevelModTag = modTag;
   ModuleSymbol* ret = convertModule(mod);
+
   return ret;
 }
 

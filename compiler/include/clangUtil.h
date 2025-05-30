@@ -111,6 +111,7 @@ void initializeGenInfo(void);
 // appends clang arguments to be used to the provided vector
 void computeClangArgs(std::vector<std::string>& clangCCArgs);
 void runClang(const char* just_parse_filename);
+void saveExternBlock(ModuleSymbol* module, const char* externCode);
 
 bool lookupInExternBlock(ModuleSymbol* module, const char* name,
                          clang::TypeDecl** cTypeOut,

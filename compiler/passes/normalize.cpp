@@ -1761,6 +1761,9 @@ bool AddEndOfStatementMarkers::enterCallExpr(CallExpr* node) {
 bool AddEndOfStatementMarkers::enterDefExpr(DefExpr* node) {
   VarSymbol* var = toVarSymbol(node->sym);
 
+  // Do not descend into symbols we cannot mutate.
+  if (!node->sym->canMutateEarly()) return false;
+
   if (var != NULL && !var->hasFlag(FLAG_TEMP)) {
     // Scroll forward to find a PRIM_END_OF_STATEMENT
     // (these are added in the parser along with DefExprs)
@@ -1795,6 +1798,9 @@ static void addEndOfStatementMarkers(BaseAST* base) {
 // non-normalized expression is also non-normalizable. Locate the root of
 // the non-normalized expression.
 Expr* partOfNonNormalizableExpr(Expr* expr) {
+
+  // The expression cannot be mutated early, so do not.
+  if (!expr->canMutateEarly()) return expr;
 
   // Anything contained in a non-normalizable expr is non-normalizable.
   for (Expr* node = expr; node; node = node->parentExpr) {

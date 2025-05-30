@@ -51,7 +51,7 @@ class FnSymbol;
 
 // Macro to crash if the AST being mutated was resolved by the frontend.
 #define BASE_AST_CRASH_IF_RESOLVED_EARLY(ast__) do { \
-  if (!BaseAST::canMutateEarlyResolvedSymbols && ast__->wasResolvedEarly()) { \
+  if (!ast__->canMutateEarly()) { \
     INT_FATAL(ast__, "Cannot mutate AST that is or is contained in an " \
                      "early resolved symbol!"); \
   } \

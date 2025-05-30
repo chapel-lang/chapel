@@ -65,6 +65,11 @@
 
 #include <iostream>
 
+#if defined HAVE_LLVM
+  #define TC_HAVE_LLVM 1
+  #include "clangUtil.h"
+#endif
+
 // If defined as 1, dump debug output from the converter to stdout.
 #define TC_DEBUG_TRACE 0
 
@@ -411,6 +416,12 @@ struct TConverter final : UastConverter,
     static constexpr bool trace = false;
   #endif
 
+  #if defined(TC_HAVE_LLVM) && TC_HAVE_LLVM != 0
+    static constexpr bool flagHaveLlvm = true;
+  #else
+    static constexpr bool flagHaveLlvm = false;
+  #endif
+
   // The 'dyno' compiler context.
   Context* context = nullptr;
 
@@ -484,9 +495,9 @@ struct TConverter final : UastConverter,
     using Entry = std::tuple<ModuleSymbol**, ModuleSymbol**, const char*>;
 
     std::vector<Entry> v {
-      Entry { &modChapelBase,  &baseModule,    "ChapelBase"  },
-      Entry { &modChapelTuple, nullptr,        "ChapelTuple" },
-      Entry { &modIO,          &ioModule,      "IO"          },
+      Entry { &modChapelBase,       &baseModule,    "ChapelBase"      },
+      Entry { &modChapelTuple,      nullptr,        "ChapelTuple"     },
+      Entry { &modIO,               &ioModule,      "IO"              },
     };
 
     for (auto [ptr1, ptr2, str] : v) {
@@ -739,7 +750,6 @@ struct TConverter final : UastConverter,
   /// Expression Conversion ///
   /// --------------------- ///
 
-
   Expr* placeholder(const char* function, int line) {
     if constexpr(trace) {
       DebugPrinter(function, line)(this, "Generating placeholder AST!");
@@ -779,7 +789,7 @@ struct TConverter final : UastConverter,
 
   // Helper that constructs AST to produce the default value for a type.
   //
-  // The argument 'pin' is an uAST node used to ground any generated calls
+  // The argument 'pin' is a uAST node used to ground any generated calls
   // needed to resolve and construct the default value. If it is 'nullptr',
   // then the currently converted symbol will be used instead. In addition
   // to providing context about the default value, 'pin' is also used to
@@ -1678,6 +1688,10 @@ FnSymbol* TConverter::findOrConvertTupleInit(const types::TupleType* tt) {
 
   Type* newType = convertType(tt);
 
+  // Should always exist. Need it to fetch 'SymExpr' for fields.
+  auto at = toAggregateType(newType);
+  INT_ASSERT(at);
+
   // Otherwise, construct it.
   FnSymbol* ret = new FnSymbol("chpl__tuple_init");
 
@@ -1710,10 +1724,13 @@ FnSymbol* TConverter::findOrConvertTupleInit(const types::TupleType* tt) {
     // Mark the arg as 'no auto destroy' since we will be moving it.
     arg->addFlag(FLAG_NO_AUTO_DESTROY);
 
-    // Move the formal into the field.
+    // Shift two over to account for the 'size' field and 1-based indexing.
+    const int fieldIdx = (i + 2);
+
+    // Move the formal into the field. TODO: Replace with a 'setField' helper.
     ret->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
                                    _this,
-                                   new_CStringSymbol(name),
+                                   at->getField(fieldIdx),
                                    new SymExpr(arg)));
   }
 
@@ -5533,11 +5550,26 @@ void TConverter::exit(const Conditional* node, RV& rv) {
   TC_DEBUGF(this, "exit conditional %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 }
 
+// TODO: See the pass 'readExternC', if we want to remove it we'll need to:
+//
+// -- Build the 'gAllExternCode' file with the '#include extern_block_mod'
+// -- Close all the files and the global file
+// -- Call 'runClang' on each module's 'extern_info->file.filename'
+// -- Swap what went into the global LVT into the module's private LVT
+//
+// Right now all we are doing is placing the extern block directly into the
+// 'extern_block_mod.c' file instead of creating AST for the extern block.
+//
 bool TConverter::enter(const ExternBlock* node, RV& rv) {
-  // TODO: Remove dependency on this + 'build.cpp'.
-  auto stmt = convertAstUntyped(node);
-  INT_ASSERT(isBlockStmt(stmt));
-  insertStmt(stmt);
+  ModuleSymbol* mod = cur.moduleSymbol;
+  INT_ASSERT(mod);
+
+  if constexpr(flagHaveLlvm) {
+    // Save the extern block in the C source file associated with the module.
+    auto text = astr(node->code());
+    saveExternBlock(mod, text);
+  }
+
   return false;
 }
 
