@@ -3030,11 +3030,7 @@ module ChapelArray {
   @chpldoc.nodoc
   @edition(first="pre-edition")
   proc reshape(arr: [], ranges: range(?)...) {
-    if ranges.size == 1 && ranges(0).bounds == boundKind.low {
-      return arr.chpl_aliasReshape({ranges(0).low..#arr.size}, false);
-    } else {
-      return arr.chpl_aliasReshape({(...ranges)}, checkReshapeDimsByDefault);
-    }
+    return arr.chpl_aliasReshape(ranges);
   }
 
   pragma "no promotion when by ref"
@@ -3042,11 +3038,7 @@ module ChapelArray {
   @chpldoc.nodoc
   @edition(first="pre-edition")
   proc reshape(arr: [], ranges: range(?)..., checkDims: bool) {
-    if ranges.size == 1 && ranges(0).bounds == boundKind.low {
-      return arr.chpl_aliasReshape({ranges(0).low..#arr.size}, false);
-    } else {
-      return arr.chpl_aliasReshape({(...ranges)}, checkDims);
-    }
+    return arr.chpl_aliasReshape(ranges, checkDims);
   }
 
   pragma "last resort"
@@ -3064,11 +3056,7 @@ module ChapelArray {
   @edition(first="pre-edition")
   proc reshape(arr: [], ranges: range(?)..., param copy: bool)
    where copy == false {
-    if ranges.size == 1 && ranges(0).bounds == boundKind.low {
-      return arr.chpl_aliasReshape({ranges(0).low..#arr.size}, false);
-    } else {
-      return arr.chpl_aliasReshape({(...ranges)}, checkReshapeDimsByDefault);
-    }
+    return arr.chpl_aliasReshape({(...ranges)}, checkReshapeDimsByDefault);
   }
 
   @chpldoc.nodoc
@@ -3086,11 +3074,7 @@ module ChapelArray {
   proc reshape(arr: [], ranges: range(?)...,
                checkDims = checkReshapeDimsByDefault, param copy = false)
    where copy == false {
-    if ranges.size == 1 && ranges(0).bounds == boundKind.low {
-      return arr.chpl_aliasReshape({ranges(0).low..#arr.size}, false);
-    } else {
-      return arr.chpl_aliasReshape({(...ranges)}, checkDims);
-    }
+    return arr.chpl_aliasReshape({(...ranges)}, checkDims);
   }
 
   // These versions take a domain; there are two because the copy version
@@ -3132,6 +3116,18 @@ module ChapelArray {
     // and zip those instead of using this serial implementation
     var B: [dom] this.eltType = for (i,a) in zip(dom, this) do a;
     return B;
+  }
+
+  pragma "no promotion when by ref"
+  pragma "reference to const when const this"
+  pragma "fn returns aliasing array"
+  proc _array.chpl_aliasReshape(ranges: ?d*range,
+                                checkDims=checkReshapeDimsByDefault) {
+    if d == 1 && ranges(0).bounds == boundKind.low {
+      return this.chpl_aliasReshape({ranges(0).low..#this.size}, false);
+    } else {
+      return this.chpl_aliasReshape({(...ranges)}, checkDims);
+    }
   }
 
   pragma "no promotion when by ref"
