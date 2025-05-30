@@ -233,11 +233,12 @@ OPTIONS
 
 **\--[no-]warn-param-implicit-numeric-conversions**
 
-    When used in conjunction with ``warn-int-uint``,
-    ``--warn-real-real``, or ``--warn-integral-integral``, this flag
-    enables [or disables] these compilation warnings about implicitly
-    converting between numeric types to also apply when the converted
-    value is a ``param``.
+    When used in conjunction with ``--warn-int-to-uint``,
+    ``--warn-small-integral-to-float``, ``--warn-integral-to-float``,
+    ``--warn-float-to-float``, or ``--warn-integral-to-integral``,
+    this flag enables [or disables] these compilation warnings about
+    implicitly converting between numeric types to also apply when the
+    converted value is a ``param``.
 
 *Parallelism Control Options*
 
