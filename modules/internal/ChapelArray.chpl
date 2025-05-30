@@ -3068,26 +3068,28 @@ module ChapelArray {
     }
   }
 
-  // This version takes a domain
+  // These versions take a domain; there are two because the copy version
+  // doesn't alias, so can't use the "fn returns aliasing array" pragma
+
+  @chpldoc.nodoc
+  @edition(first="pre-edition")
+  proc reshape(arr: [], dom: domain(?), checkDims=checkReshapeDimsByDefault, param copy = false) where copy == true {
+    if !dom.isRectangular() then
+      compilerError("reshape() with copying is currently only supported for rectangular domains");
+    if boundsChecking && checkDims then
+      chpl__validateReshape(arr, dom);
+    // TODO: Add a parallel linearize() iterator to all rectangular types
+    // and zip those instead of using this serial implementation
+    var B: [dom] arr.eltType = for (i,a) in zip(dom, arr) do a;
+    return B;
+  }
 
   pragma "no promotion when by ref"
   pragma "fn returns aliasing array"
   @chpldoc.nodoc
   @edition(first="pre-edition")
-  proc reshape(arr: [], dom: domain(?), checkDims=checkReshapeDimsByDefault, param copy = false) {
-    if copy {
-      if !dom.isRectangular() then
-        compilerError("reshape() with copying is currently only supported for rectangular domains");
-      if boundsChecking then
-        chpl__validateReshape(arr, dom);
-      // TODO: Add a parallel linearize() iterator to all rectangular types
-      // and zip those instead of using this serial implementation
-      var B: [dom] arr.eltType = for (i,a) in zip(dom, arr) do a;
-      return B;
-    } else {
-      return arr.chpl_aliasReshape(dom, checkDims);
-    }
-
+  proc reshape(arr: [], dom: domain(?), checkDims=checkReshapeDimsByDefault, param copy = false) where copy == false {
+    return arr.chpl_aliasReshape(dom, checkDims);
   }
 
   //
@@ -3104,7 +3106,7 @@ module ChapelArray {
                                checkDims=checkReshapeDimsByDefault) {
     if !dom.isRectangular() then
       compilerError("reshape() with copying is currently only supported for rectangular domains");
-    if boundsChecking then
+    if boundsChecking && checkDims then
       chpl__validateReshape(this, dom);
     // TODO: Add a parallel linearize() iterator to all rectangular types
     // and zip those instead of using this serial implementation

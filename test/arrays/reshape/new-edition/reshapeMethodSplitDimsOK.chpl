@@ -9,3 +9,13 @@ writeln("---");
 var Q = reshape(O, {1..3, 1..2});
 writeln(Q);
 
+writeln("---");
+
+var R = reshape(O, 1..3, 1..2, copy=true);
+writeln(R);
+
+writeln("---");
+
+var S = reshape(O, {1..3, 1..2}, copy=true);
+writeln(S);
+
