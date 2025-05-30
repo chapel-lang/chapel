@@ -63,8 +63,9 @@ and distributed Chapel application:
      satisfied it is working. At a minimum, try leaving this argument off
      to run with number of tasks == number of cores.
 
-   * Test with multiple locales locally (e.g. with
-     ``CHPL_COMM=gasnet`` and ``CHPL_COMM_SEGMENT=udp``).
+   * Test while simulating multiple locales on your development system
+     (see the next section)
+
      Gradually increase the number of locales and the number of tasks
      until you are satisfied it is working.
 
@@ -85,7 +86,8 @@ with a smaller problem size to test in this way. Nonetheless, it is
 possible to identify and optimize communication.  In communication-bound
 applications, optimizing the communication can make the locally
 oversubscribed program run faster.  Another important technique is, when
-working locally oversubscribed, try to reduce the communication counts.
+working locally oversubscribed, try to reduce the communication counts
+(communication counts are discussed below).
 The communication counts will match (or come close to matching) between
 running locally oversubscribed and running on a multi-node system with
 the same number of locales.  Reductions in communication counts will
@@ -153,11 +155,12 @@ Counting Communication Events
 
   You can use the :chpl:mod:`CommDiagnostics` module and
   ``startCommDiagnostics()`` followed by ``getCommDiagnostics()`` to
-  count communication events. Note that the communication count
+  count communication events. It's common to
+  ``writeln(getCommDiagnostics()``.  Note that the communication count
   information will be easier to understand if you compile with
   ``--no-cache-remote``.
 
-  Comm counts information provide a way to compare communication
+  Communication counts provide a way to compare communication
   performance independent of where you are running. For example, you
   might measure and seek to reduce the communication counts when running
   oversubscribed on a laptop or workstation. Reductions in communication
@@ -170,6 +173,9 @@ Overall Flow
 
 The general flow of performance optimization will be:
 
+ * use techniques like timing the different phases of your computation to
+   try to understand which parts are the slow or not getting faster as you
+   add more locales or cores
  * come up with a theory as to what could be improved by thinking about
    what is happening when your program is running and/or by looking at
    timing or communication count information
@@ -222,6 +228,9 @@ highest-performing configuration for your system.
      * For Omni-Path systems, use ``CHPL_COMM=gasnet`` and
        ``CHPL_COMM_SUBSTRATE=ofi``.
 
+     Please see the relevant Platform-Specific Notes for more
+     information.
+
 
 Settings to Adjust to Improve Performance
 -----------------------------------------
@@ -230,7 +239,10 @@ This section contains some easy things to try in order to improve
 performance.
 
 ``--fast``
-  If you haven't been using ``--fast`` yet please do!
+  If you haven't been using ``--fast`` yet please do! It should be used
+  when measuring performance. Since it disables bounds checking, make
+  sure that your development flow includes correctness tests that aren't
+  compiled with ``--fast``.
 
 ``--no-ieee-float`` / ``--ieee-float``
   By default, only floating point optimizations that are relatively
@@ -376,6 +388,33 @@ accidental communication:
           }
         }
 
+Wide Pointer Overhead
+~~~~~~~~~~~~~~~~~~~~~
+
+When the Chapel compiler is unable to prove that a pointer is local, it
+will emit a wide pointer. The wide pointer encodes an address along with
+a locale where the value is stored. In cases where the code is working
+with local memory but the compiler can't prove that, there will be
+additional overhead due to the code working with a wide pointer.
+
+It is relatively easy to detect if this is a performance problem for a
+Chapel program because it has a pretty clear symptom. Measure the
+performance of your program compiled with ``CHPL_COMM=none`` and/or
+``--local``. Compare that performance with the performance of your
+program with ``CHPL_COMM`` other than ``none`` and/or with
+``--no-local``. You are seeing this overhead if the ``--local`` version
+is significantly faster than the ``--no-local`` version.
+
+What can be done about it?
+
+ * use ``local`` blocks to tell the compiler that code within a block
+   will not communicate. That allows it to remove wide pointers for that
+   code.
+ * use ``localAccess`` to access local elements of an array
+ * use ``localSubdomain`` to compute the local index set as a local domain
+ * use ``localSlice`` to compute a non-distributed array slice that refers
+   to the local portion
+
 Fine-Grained Communication
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -439,7 +478,6 @@ depends on optimizations in the implementations of these domain/array
 distributions. These optimizations are present and reasonably well tuned
 for the Block distribution. Other distributions might not be optimized
 and have scaling issues.
-
 
 Performance Problems with Multidimensional Zippered Iteration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
