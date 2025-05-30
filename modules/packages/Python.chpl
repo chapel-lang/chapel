@@ -3982,9 +3982,9 @@ module Python {
     lhs.interpreter.checkException();
     return new Value(lhs.interpreter, res, isOwned=true);
   }
-  inline proc _binaryOpInPlace(param op: string,
-                                lhs: borrowed Value,
-                                rhs: borrowed Value) throws {
+  private inline proc _binaryOpInPlace(param op: string,
+                                       lhs: borrowed Value,
+                                       rhs: borrowed Value) throws {
     var ctx = chpl_pythonContext.enter();
     defer ctx.exit();
     var res = PyObject_CallMethod(
