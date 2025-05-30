@@ -2937,29 +2937,40 @@ module ChapelArray {
 
         In addition to the above version of reshape(), there is
         another experimental version that is available when compiling
-        with ``--edition=pre-edition`` that provides new features
-        including:
+        with ``--edition=pre-edition``.  Its main feature is that, by
+        default, it creates a reshaped version of the array that
+        aliases the original elements rather than making a copy of
+        them.  Other new features include:
 
-        * creating a reshape() that aliases the original array rather
-          than copying it
-        * reshaping using a series of ranges rather than a domain
+        * reshaping using a list of range arguments rather than a
+          domain
         * reshaping to a 1D inferred-size array using an unbounded
-          range like ``1..``
+          range like ``0..`` or ``1..``
 
-        Note that in order to capture an alias in a named variable, a
-        ``ref`` declaration must be used, like:
+        Note that in order to capture an alias in a named variable
+        without creating a new copy of the reshaped values, a ``ref``
+        declaration must be used, for example:
 
         .. code-block:: chapel
 
            var A = [1, 2, 3, 4];
            ref B = reshape(A, 1..2, 1..2);
+           B[1,1] = 5;   // this will change the initial element of A
 
-        In addition, an aliasing reshape() expression can be passed as
-        a ``ref`` argument.  Aliasing reshapes are only supported for
-        local, default rectangular arrays and domains at present.  To
-        reshape other array types, see the ``copy`` argument below.
+        In contrast, if a ``var`` or ``const`` declaration is used,
+        that will create a new array whose values will be initialized
+        by copying the reshaped expression into it.
 
-        The prototypes of these new versions are essentially:
+        Passing a ``reshape()`` expression to a ``ref`` argument is
+        another way to alias the original array rather than making
+        a copy of it.
+
+        At present, aliasing reshapes are only supported for local,
+        default rectangular arrays and domains.  To reshape other
+        array types, see the ``copy`` argument below.
+
+        The prototypes for this new edition of ``reshape()`` are
+        essentially:
 
         .. code-block:: chapel
 
@@ -2968,15 +2979,16 @@ module ChapelArray {
            proc reshape(arr: [], ranges: range(?)...,
                         checkDims=checkReshapeDimsByDefault, param copy=false);
 
-        This new version supports checking for likely mistakes in
+        The implementation supports checking for potential mistakes in
         which an existing dimension is split across multiple
         dimensions as a result of the reshape.  This is controlled by
         the ``checkDims`` argument, where ``checkReshapeDimsByDefault`` is
         a ``config param`` whose default is ``true`` when bounds checks
         are on and ``false`` when they're off.
 
-        The ``copy`` argument can be used to request a copy, rather than
-        an alias of the array.
+        The ``copy`` argument can be used to request a copy, rather
+        than an alias of the array, resulting in behavior more like
+        the original, 2.0 procedure..
 
  */
   @edition(last="2.0")
@@ -3073,7 +3085,8 @@ module ChapelArray {
 
   @chpldoc.nodoc
   @edition(first="pre-edition")
-  proc reshape(arr: [], dom: domain(?), checkDims=checkReshapeDimsByDefault, param copy = false) where copy == true {
+  proc reshape(arr: [], dom: domain(?), checkDims=checkReshapeDimsByDefault,
+               param copy = false) where copy == true {
     if !dom.isRectangular() then
       compilerError("reshape() with copying is currently only supported for rectangular domains");
     if boundsChecking && checkDims then
@@ -3088,7 +3101,8 @@ module ChapelArray {
   pragma "fn returns aliasing array"
   @chpldoc.nodoc
   @edition(first="pre-edition")
-  proc reshape(arr: [], dom: domain(?), checkDims=checkReshapeDimsByDefault, param copy = false) where copy == false {
+  proc reshape(arr: [], dom: domain(?), checkDims=checkReshapeDimsByDefault,
+               param copy = false) where copy == false {
     return arr.chpl_aliasReshape(dom, checkDims);
   }
 
@@ -3149,14 +3163,14 @@ module ChapelArray {
         if domSize == 0 {
           domSize = dom.dim(domDim).size;
         }
-        if (arrSize == domSize) {
+        if arrSize == domSize {
           arrDim += 1;
           domDim += 1;
           arrSize = 0;
           domSize = 0;
           arrCatchup = false;
           domCatchup = false;
-        } else if (arrSize < domSize) {
+        } else if arrSize < domSize {
           if domCatchup then
             error = true;
           arrCatchup = true;
@@ -3169,7 +3183,7 @@ module ChapelArray {
           domDim += 1;
           domSize *= dom.dim(domDim).size;
         }
-      } while (arrDim < arr.rank && domDim < dom.rank);
+      } while arrDim < arr.rank && domDim < dom.rank;
 
       if error then
         warning(arr.dims(), " doesn't preserve dimensions as ", dom.dims());
