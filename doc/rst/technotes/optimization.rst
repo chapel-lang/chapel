@@ -405,6 +405,42 @@ refers to the distributed array. This ``ref`` or ``const ref`` can be
 created outside of the ``forall`` loop and reused within it to avoid the
 problem.
 
+Creating Too Many Distributed Objects / Unoptimized Slice Assignments
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In principle, distributed array creation does some work on each locale. As a
+result, it's not going to go faster when adding more locales. That can
+cause performance or scaling issues if a program tries to create too many
+distributed arrays.
+
+One aspect of the current implementation is that array slices of
+distributed arrays are also distributed objects and work is required on
+each locale to create one. That means that creating a slice, as in
+``MyDistributedArray[1..10]`` can actually be quite slow.
+
+One common scenario is that data needs to be copied between regions of
+arrays. For example
+``MyDistributedArray[1..10] = MyOtherArray[11..20];``.
+The compiler can optimize this kind of
+assignment in many cases today with Array View Elision (AVE). However, in
+order to optimize it in this way, both sides of the ``=`` need to be
+slice expressions. Note that in some cases, one might create a local
+array to store the contents of a remote slice; that can be done with AVE
+by redundantly slicing the local array, e.g.:
+``var Loc:[1..10] int; Loc[1..10] = MyDistributedArray[1..10];```
+
+Unoptimized Distributions
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The Chapel programming language is designed to support many distributions
+for domains and arrays. That includes distributions created by users.
+However, the present situation is that performance of Chapel programs
+depends on optimizations in the implementations of these domain/array
+distributions. These optimizations are present and reasonably well tuned
+for the Block distribution. Other distributions might not be optimized
+and have scaling issues.
+
+
 Performance Problems with Multidimensional Zippered Iteration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -438,8 +474,6 @@ from any polling loops. This is already done in
 ``waitFor()`` methods on atomics (see also
 :ref:`Functions_on_Atomic_Variables`).
 
-
-
 Tools for Understanding Performance
 -----------------------------------
 
@@ -451,6 +485,12 @@ improve the distributed-memory scalability of your program.
 
 ``local`` blocks
   ``local`` blocks are an unstable feature that instructs the compiler
+  to assume that there will be no communication in the body of the
+  ``local`` block. Moreover, if compiling with ``--checks`` (generally
+  the case without ``--fast``) the program will halt if code in a
+  ``local`` block requires communication. As a result, ``local`` blocks
+  are useful both as an optimization tool and a way of discovering
+  unintended communication.
 
 :chpl:mod:`CommDiagnostics` on-the-fly reporting
   The :chpl:mod:`CommDiagnostics` module provides mechanisms for
@@ -475,5 +515,3 @@ improve the distributed-memory scalability of your program.
 
 Tools for Understanding Single-Node Performance
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
