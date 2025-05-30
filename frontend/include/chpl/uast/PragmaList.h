@@ -318,6 +318,7 @@ PRAGMA(INCLUDED_MODULE, npr, "included sub-module", ncm)
 PRAGMA(INCOMPLETE, npr, "incomplete", "an extern type that is incomplete in the C/C++ sense")
 PRAGMA(INDEX_VAR, npr, "index var", ncm)
 PRAGMA(INFER_CUSTOM_TYPE, ypr, "infer custom type", ncm)
+PRAGMA(IS_ARRAY_VIEW, npr, "is array view", "this expression is an array view")
 
 PRAGMA(MANAGER_HANDLE, npr, "manager handle", ncm)
 PRAGMA(MANAGER_RESOURCE_INFER_STORAGE, npr, "manager resource infer storage", ncm)

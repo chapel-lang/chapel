@@ -2923,11 +2923,75 @@ module ChapelArray {
     }
   }
 
+  // The following are the historical reshape() procedures that rely
+  // on copying the array's elements, proposed to be replaced by the
+  // pre-edition variants that follow
+
   /* Return a copy of the array ``A`` containing the same values but
      in the shape of the domain ``D``. The number of indices in the
      domain must equal the number of elements in the array. The
      elements of ``A`` are copied into the new array using the
-     default iteration orders over ``D`` and ``A``.  */
+     default iteration orders over ``D`` and ``A``.
+
+     .. note::
+
+        In addition to the above version of reshape(), there is
+        another experimental version that is available when compiling
+        with ``--edition=pre-edition``.  Its main feature is that, by
+        default, it creates a reshaped version of the array that
+        aliases the original elements rather than making a copy of
+        them.  Other new features include:
+
+        * reshaping using a list of range arguments rather than a
+          domain
+        * reshaping to a 1D inferred-size array using an unbounded
+          range like ``0..`` or ``1..``
+
+        Note that in order to capture an alias in a named variable
+        without creating a new copy of the reshaped values, a ``ref``
+        declaration must be used, for example:
+
+        .. code-block:: chapel
+
+           var A = [1, 2, 3, 4];
+           ref B = reshape(A, 1..2, 1..2);
+           B[1,1] = 5;   // this will change the initial element of A
+
+        In contrast, if a ``var`` or ``const`` declaration is used,
+        that will create a new array whose values will be initialized
+        by copying the reshaped expression into it.
+
+        Passing a ``reshape()`` expression to a ``ref`` argument is
+        another way to alias the original array rather than making
+        a copy of it.
+
+        At present, aliasing reshapes are only supported for local,
+        default rectangular arrays and domains.  To reshape other
+        array types, see the ``copy`` argument below.
+
+        The prototypes for this new edition of ``reshape()`` are
+        essentially:
+
+        .. code-block:: chapel
+
+           proc reshape(arr: [], dom: domain(?),
+                        checkDims=checkReshapeDimsByDefault, param copy=false);
+           proc reshape(arr: [], ranges: range(?)...,
+                        checkDims=checkReshapeDimsByDefault, param copy=false);
+
+        The implementation supports checking for potential mistakes in
+        which an existing dimension is split across multiple
+        dimensions as a result of the reshape.  This is controlled by
+        the ``checkDims`` argument, where ``checkReshapeDimsByDefault`` is
+        a ``config param`` whose default is ``true`` when bounds checks
+        are on and ``false`` when they're off.
+
+        The ``copy`` argument can be used to request a copy, rather
+        than an alias of the array, resulting in behavior more like
+        the original, 2.0 procedure..
+
+ */
+  @edition(last="2.0")
   proc reshape(A: [], D: domain) {
     if !D.isRectangular() then
       compilerError("reshape(A,D) is meaningful only when D is a rectangular domain; got D: ", D.type:string);
@@ -2939,11 +3003,191 @@ module ChapelArray {
   }
 
   @chpldoc.nodoc
+  @edition(last="2.0")
   proc reshape(A: _iteratorRecord, D: domain) {
     if !D.isRectangular() then
-      compilerError("reshape(A,D) is meaningful only when D is a rectangular domain; got D: ", D.type:string);
+      compilerError("reshape() only currently supports rectangular domains; got D: ", D.type:string);
     var B = for (i,a) in zip(D, A) do a;
     return B;
+  }
+
+  // The following is the proposed new reshape() implementation that
+  // supports aliasing by default, currently part of a pre-edition
+
+  @chpldoc.nodoc
+  config param checkReshapeDimsByDefault = boundsChecking;
+
+  // The following overloads take a varargs list of ranges.  The fact
+  // that there are three distinct overloads is regrettable, and a
+  // result of working around:
+  //   https://github.com/chapel-lang/chapel/issues/17188
+
+  pragma "no promotion when by ref"
+  pragma "fn returns aliasing array"
+  @chpldoc.nodoc
+  @edition(first="pre-edition")
+  proc reshape(arr: [], ranges: range(?)...) {
+    if ranges.size == 1 && ranges(0).bounds == boundKind.low {
+      return arr.chpl_aliasReshape({ranges(0).low..#arr.size}, false);
+    } else {
+      return arr.chpl_aliasReshape({(...ranges)}, checkReshapeDimsByDefault);
+    }
+  }
+
+  pragma "no promotion when by ref"
+  pragma "fn returns aliasing array"
+  @chpldoc.nodoc
+  @edition(first="pre-edition")
+  proc reshape(arr: [], ranges: range(?)..., checkDims: bool) {
+    if ranges.size == 1 && ranges(0).bounds == boundKind.low {
+      return arr.chpl_aliasReshape({ranges(0).low..#arr.size}, false);
+    } else {
+      return arr.chpl_aliasReshape({(...ranges)}, checkDims);
+    }
+  }
+
+  pragma "no promotion when by ref"
+  pragma "fn returns aliasing array"
+  pragma "last resort"
+  @chpldoc.nodoc
+  @edition(first="pre-edition")
+  proc reshape(arr: [], ranges: range(?)..., param copy: bool) {
+    if copy {
+      return arr.chpl_copyReshape({(...ranges)}, checkReshapeDimsByDefault);
+    } else {
+      if ranges.size == 1 && ranges(0).bounds == boundKind.low {
+        return arr.chpl_aliasReshape({ranges(0).low..#arr.size}, false);
+      } else {
+        return arr.chpl_aliasReshape({(...ranges)}, checkReshapeDimsByDefault);
+      }
+    }
+  }
+
+  pragma "no promotion when by ref"
+  pragma "fn returns aliasing array"
+  @chpldoc.nodoc
+  @edition(first="pre-edition")
+  proc reshape(arr: [], ranges: range(?)...,
+               checkDims = checkReshapeDimsByDefault, param copy = false) {
+    if copy {
+      return arr.chpl_copyReshape({(...ranges)}, checkDims);
+    } else {
+      if ranges.size == 1 && ranges(0).bounds == boundKind.low {
+        return arr.chpl_aliasReshape({ranges(0).low..#arr.size}, false);
+      } else {
+        return arr.chpl_aliasReshape({(...ranges)}, checkDims);
+      }
+    }
+  }
+
+  // These versions take a domain; there are two because the copy version
+  // doesn't alias, so can't use the "fn returns aliasing array" pragma
+
+  @chpldoc.nodoc
+  @edition(first="pre-edition")
+  proc reshape(arr: [], dom: domain(?), checkDims=checkReshapeDimsByDefault,
+               param copy = false) where copy == true {
+    if !dom.isRectangular() then
+      compilerError("reshape() with copying is currently only supported for rectangular domains");
+    if boundsChecking && checkDims then
+      chpl__validateReshape(arr, dom);
+    // TODO: Add a parallel linearize() iterator to all rectangular types
+    // and zip those instead of using this serial implementation
+    var B: [dom] arr.eltType = for (i,a) in zip(dom, arr) do a;
+    return B;
+  }
+
+  pragma "no promotion when by ref"
+  pragma "fn returns aliasing array"
+  @chpldoc.nodoc
+  @edition(first="pre-edition")
+  proc reshape(arr: [], dom: domain(?), checkDims=checkReshapeDimsByDefault,
+               param copy = false) where copy == false {
+    return arr.chpl_aliasReshape(dom, checkDims);
+  }
+
+  //
+  // I tried to just make the reshape() overloads above just contain
+  // the logic in the following two methods rather than using these
+  // helpers, but seemingly, something about returning an array view
+  // from a procedure that calls another procedure to create it didn't
+  // work (?).  Though I also wasn't easily able to reproduce this in
+  // a standalone test, so not sure what's going on there...
+  //
+  pragma "no promotion when by ref"
+  pragma "reference to const when const this"
+  proc _array.chpl_copyReshape(dom: domain(?),
+                               checkDims=checkReshapeDimsByDefault) {
+    if !dom.isRectangular() then
+      compilerError("reshape() with copying is currently only supported for rectangular domains");
+    if boundsChecking && checkDims then
+      chpl__validateReshape(this, dom);
+    // TODO: Add a parallel linearize() iterator to all rectangular types
+    // and zip those instead of using this serial implementation
+    var B: [dom] this.eltType = for (i,a) in zip(dom, this) do a;
+    return B;
+  }
+
+  pragma "no promotion when by ref"
+  pragma "reference to const when const this"
+  pragma "fn returns aliasing array"
+  proc _array.chpl_aliasReshape(dom: domain(?),
+                                checkDims=checkReshapeDimsByDefault) {
+    if chpl__isArrayView(this) ||
+       !Reflection.canResolveMethod(this._value, "doiSupportsReshape") {
+         compilerError("This array type does not support alias-based reshaping; consider passing 'copy=true' to get a copy-based reshape");
+       return this;
+    } else if !Reflection.canResolveMethod(this._value, "doiReshape", dom) {
+      compilerError("This array cannot be reshaped using this domain type; consider passing 'copy=true' to get a copy-based reshape");
+      return this;
+    } else {
+      if boundsChecking && checkDims then
+        chpl__validateReshape(this, dom);
+      return this._value.doiReshape(dom);
+    }
+  }
+
+  proc chpl__validateReshape(arr, dom) {
+    if dom.size != arr.size then
+      halt("Size mismatch: Can't rehape a ", arr.size,
+           "-element array into a ", dom.size, "-element array");
+
+    if arr.size > 0 && dom.size > 0 {
+      var arrDim, domDim = 0;
+      var arrSize, domSize = 0;
+      var arrCatchup, domCatchup, error = false;
+      do {
+        if arrSize == 0 {
+          arrSize = arr.dim(arrDim).size;
+        }
+        if domSize == 0 {
+          domSize = dom.dim(domDim).size;
+        }
+        if arrSize == domSize {
+          arrDim += 1;
+          domDim += 1;
+          arrSize = 0;
+          domSize = 0;
+          arrCatchup = false;
+          domCatchup = false;
+        } else if arrSize < domSize {
+          if domCatchup then
+            error = true;
+          arrCatchup = true;
+          arrDim += 1;
+          arrSize *= arr.dim(arrDim).size;
+        } else {
+          if arrCatchup then
+            error = true;
+          domCatchup = true;
+          domDim += 1;
+          domSize *= dom.dim(domDim).size;
+        }
+      } while arrDim < arr.rank && domDim < dom.rank;
+
+      if error then
+        warning(arr.dims(), " doesn't preserve dimensions as ", dom.dims());
+    }
   }
 
   @chpldoc.nodoc
@@ -2995,6 +3239,7 @@ module ChapelArray {
   // locale to another will also copy the array's domain if we believe
   // it's safe to do so.  The optimization is currently on by default.
   //
+  @chpldoc.nodoc
   config param localizeConstDomains = true,
                debugLocalizedConstDomains = false;
 

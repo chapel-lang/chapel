@@ -339,12 +339,6 @@ void addNoAliasSetsInFn(FnSymbol* fn) {
                   call->isPrimitive(PRIM_ASSIGN)) {
                 if (defSe == call->get(1))
                   createdByMove = true;
-              } else {
-                FnSymbol* fn = call->resolvedOrVirtualFunction();
-                if (fn && fn->hasFlag(FLAG_RETURNS_ALIASING_ARRAY))
-                  INT_FATAL("Aliasing arrays should have different type");
-                  // Should have been ruled out by
-                  // shouldAddNoAliasSetForVariable (check for array views)
               }
             }
           }
