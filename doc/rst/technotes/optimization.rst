@@ -360,50 +360,52 @@ accidental communication:
       }
 
  2. If the accidental communication is within a distributed ``forall``
-     loop, you can change it from being once per iteration to once per
-     task by using the ``in`` intent. For example:
+    loop, you can change it from being once per iteration to once per
+    task by using the ``in`` intent. For example:
 
-     .. code-block:: chapel
+    .. code-block:: chapel
 
-        var A = blockDist.createArray(...);
-        var x = 22;
-        forall elt in A {
-          elt = x;  // uh-oh, x might be read remotely on each iteration!
-        }
-        forall elt in A with (in x) {
-          elt = x;  // ah, now x is only read once per task, at least
-        }
+       var A = blockDist.createArray(...);
+       var x = 22;
+       forall elt in A {
+         elt = x;  // uh-oh, x might be read remotely on each iteration!
+       }
+       forall elt in A with (in x) {
+         elt = x;  // ah, now x is only read once per task, at least
+       }
 
  3. If the code is using a structure like ``coforall loc in Locales``,
     you can create a temporary local variable to store a local copy of
     the variable. For example:
 
-     .. code-block:: chapel
+    .. code-block:: chapel
 
-        var x = [1,2,3,4];
-        coforall loc in Locales {
-          on loc {
-            var myX = x;
-            f(myX); // do something with myX
-          }
-        }
+       var x = [1,2,3,4];
+       coforall loc in Locales {
+         on loc {
+           var myX = x;
+           f(myX); // do something with myX
+         }
+       }
 
 Wide Pointer Overhead
 ~~~~~~~~~~~~~~~~~~~~~
 
-When the Chapel compiler is unable to prove that a pointer is local, it
-will emit a wide pointer. The wide pointer encodes an address along with
-a locale where the value is stored. In cases where the code is working
-with local memory but the compiler can't prove that, there will be
-additional overhead due to the code working with a wide pointer.
+The Chapel compiler will emit code working with pointers in many cases
+(for array elements, references, class instances, ...). When the Chapel
+compiler is unable to prove that a pointer is local, it will emit a wide
+pointer. The wide pointer encodes an address along with a locale where
+the value is stored. In cases where the code is working with local memory
+but the compiler can't prove that, there will be additional overhead due
+to the code working with a wide pointer.
 
 It is relatively easy to detect if this is a performance problem for a
 Chapel program because it has a pretty clear symptom. Measure the
 performance of your program compiled with ``CHPL_COMM=none`` and/or
 ``--local``. Compare that performance with the performance of your
 program with ``CHPL_COMM`` other than ``none`` and/or with
-``--no-local``. You are seeing this overhead if the ``--local`` version
-is significantly faster than the ``--no-local`` version.
+``--no-local``. You are seeing wide pointer overhead if the ``--local``
+version is significantly faster than the ``--no-local`` version.
 
 What can be done about it?
 
@@ -417,6 +419,27 @@ What can be done about it?
 
 Fine-Grained Communication
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+It's easy to write Chapel programs that use fine-grained communication.
+Such programs will work with many small messages and the performance will
+be sensitive to the latency of a message in the network. To make such
+programs perform and scale better, try to get the communication to use
+larger messages so that the network is operating more in a
+bandwidth-bound way rather than a latency-bound way.
+
+Let's look at an example of permuting an array. Suppose that we have
+three distributed arrays:
+
+ * ``OriginalValues`` stores ``real`` values
+
+ * ``NewIndices`` stores a permutation; if ``NewIndices[i]`` is ``j``
+   then we will set ``PermutedValues[NewIndices[i]] =
+   OriginalValues[j];``.
+
+ * ``PermutedValues`` stores ``real`` values that are the result of the
+   permutation
+
+TODO copy aggregator and non-copy-aggregator
 
 Load Imbalance
 ~~~~~~~~~~~~~~
