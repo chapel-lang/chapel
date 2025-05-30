@@ -315,6 +315,8 @@ stack size.
      | ``g``, ``G``: GiB (2**30 bytes)
 
 
+.. _num-threads-per-locale:
+
 ---------------------------------
 Controlling the Number of Threads
 ---------------------------------
