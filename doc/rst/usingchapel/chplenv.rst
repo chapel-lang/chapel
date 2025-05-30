@@ -502,6 +502,7 @@ CHPL_MEM
         ========= =======================================================
         cstdlib   use the standard C malloc/free commands
         jemalloc  use Jason Evan's memory allocator
+        mimalloc  use the mimalloc memory allocator
         ========= =======================================================
 
    If unset, ``CHPL_MEM`` defaults to ``jemalloc`` for most configurations.
@@ -527,6 +528,7 @@ CHPL_TARGET_MEM
         ========= =======================================================
         cstdlib   use the standard C malloc/free commands
         jemalloc  use Jason Evan's memory allocator
+        mimalloc  use the mimalloc memory allocator
         ========= =======================================================
 
    If unset, ``CHPL_TARGET_MEM`` defaults to ``jemalloc`` for most configurations.
@@ -572,6 +574,7 @@ CHPL_HOST_MEM
         ========= =======================================================
         cstdlib   use the standard C malloc/free commands
         jemalloc  use Jason Evan's memory allocator
+        mimalloc  use the mimalloc memory allocator
         ========= =======================================================
 
    If unset, ``CHPL_HOST_MEM`` defaults to ``jemalloc`` everywhere except
