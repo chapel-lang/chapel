@@ -3046,21 +3046,34 @@ module ChapelArray {
     }
   }
 
+  pragma "last resort"
+  @chpldoc.nodoc
+  @edition(first="pre-edition")
+  proc reshape(arr: [], ranges: range(?)..., param copy: bool)
+   where copy == true {
+    return arr.chpl_copyReshape({(...ranges)}, checkReshapeDimsByDefault);
+  }
+
   pragma "no promotion when by ref"
   pragma "fn returns aliasing array"
   pragma "last resort"
   @chpldoc.nodoc
   @edition(first="pre-edition")
-  proc reshape(arr: [], ranges: range(?)..., param copy: bool) {
-    if copy {
-      return arr.chpl_copyReshape({(...ranges)}, checkReshapeDimsByDefault);
+  proc reshape(arr: [], ranges: range(?)..., param copy: bool)
+   where copy == false {
+    if ranges.size == 1 && ranges(0).bounds == boundKind.low {
+      return arr.chpl_aliasReshape({ranges(0).low..#arr.size}, false);
     } else {
-      if ranges.size == 1 && ranges(0).bounds == boundKind.low {
-        return arr.chpl_aliasReshape({ranges(0).low..#arr.size}, false);
-      } else {
-        return arr.chpl_aliasReshape({(...ranges)}, checkReshapeDimsByDefault);
-      }
+      return arr.chpl_aliasReshape({(...ranges)}, checkReshapeDimsByDefault);
     }
+  }
+
+  @chpldoc.nodoc
+  @edition(first="pre-edition")
+  proc reshape(arr: [], ranges: range(?)...,
+               checkDims = checkReshapeDimsByDefault, param copy = false)
+   where copy == true {
+    return arr.chpl_copyReshape({(...ranges)}, checkDims);
   }
 
   pragma "no promotion when by ref"
@@ -3068,15 +3081,12 @@ module ChapelArray {
   @chpldoc.nodoc
   @edition(first="pre-edition")
   proc reshape(arr: [], ranges: range(?)...,
-               checkDims = checkReshapeDimsByDefault, param copy = false) {
-    if copy {
-      return arr.chpl_copyReshape({(...ranges)}, checkDims);
+               checkDims = checkReshapeDimsByDefault, param copy = false)
+   where copy == false {
+    if ranges.size == 1 && ranges(0).bounds == boundKind.low {
+      return arr.chpl_aliasReshape({ranges(0).low..#arr.size}, false);
     } else {
-      if ranges.size == 1 && ranges(0).bounds == boundKind.low {
-        return arr.chpl_aliasReshape({ranges(0).low..#arr.size}, false);
-      } else {
-        return arr.chpl_aliasReshape({(...ranges)}, checkDims);
-      }
+      return arr.chpl_aliasReshape({(...ranges)}, checkDims);
     }
   }
 
