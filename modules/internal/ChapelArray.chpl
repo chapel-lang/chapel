@@ -3030,7 +3030,7 @@ module ChapelArray {
   @chpldoc.nodoc
   @edition(first="pre-edition")
   proc reshape(arr: [], ranges: range(?)...) {
-    return arr.chpl_aliasReshape(ranges);
+    return arr.chpl_aliasReshape(ranges, checkReshapeDimsByDefault);
   }
 
   pragma "no promotion when by ref"
@@ -3106,8 +3106,7 @@ module ChapelArray {
   //
   pragma "no promotion when by ref"
   pragma "reference to const when const this"
-  proc _array.chpl_copyReshape(dom: domain(?),
-                               checkDims=checkReshapeDimsByDefault) {
+  proc _array.chpl_copyReshape(dom: domain(?), checkDims: bool) {
     if !dom.isRectangular() then
       compilerError("reshape() with copying is currently only supported for rectangular domains");
     if boundsChecking && checkDims then
@@ -3121,8 +3120,7 @@ module ChapelArray {
   pragma "no promotion when by ref"
   pragma "reference to const when const this"
   pragma "fn returns aliasing array"
-  proc _array.chpl_aliasReshape(ranges: ?d*range,
-                                checkDims=checkReshapeDimsByDefault) {
+  proc _array.chpl_aliasReshape(ranges: ?d*range, checkDims: bool) {
     if d == 1 && ranges(0).bounds == boundKind.low {
       return this.chpl_aliasReshape({ranges(0).low..#this.size}, false);
     } else {
@@ -3133,8 +3131,7 @@ module ChapelArray {
   pragma "no promotion when by ref"
   pragma "reference to const when const this"
   pragma "fn returns aliasing array"
-  proc _array.chpl_aliasReshape(dom: domain(?),
-                                checkDims=checkReshapeDimsByDefault) {
+  proc _array.chpl_aliasReshape(dom: domain(?), checkDims: bool) {
     if chpl__isArrayView(this) ||
        !Reflection.canResolveMethod(this._value, "doiSupportsReshape") {
          compilerError("This array type does not support alias-based reshaping; consider passing 'copy=true' to get a copy-based reshape");
