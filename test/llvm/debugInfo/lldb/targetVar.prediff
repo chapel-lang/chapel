@@ -33,6 +33,10 @@ mv $file.tmp $file
 sed -e '/Target 0: (targetVar) stopped./d' $file > $file.tmp
 mv $file.tmp $file
 
+# remove 'settings set'
+sed -e '/settings set/d' $file > $file.tmp
+mv $file.tmp $file
+
 # remove empty lines and space
 sed -e '/^[[:space:]]*$/d' -e 's/[[:space:]]*$//' $file > $file.tmp
 mv $file.tmp $file
