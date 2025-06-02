@@ -62,7 +62,7 @@ __build_packages() {
   # with that version.
   if [ -z "$(docker image ls -q $docker_image_base)" ]; then
     echo "Error: Failed to pull image $docker_image_base and a copy does not exist locally"
-    # exit 1
+    exit 1
   fi
   local docker_image_name_full="$(docker inspect --format='{{index .RepoDigests 0}}' $docker_image_base)"
   echo "Using image digest ${docker_image_name_full} for $docker_image_base"
