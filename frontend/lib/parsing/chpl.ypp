@@ -1369,14 +1369,6 @@ assignment_stmt:
     {
       $$ = STMT(@$, context->buildBinOp(@$, $1, $2, $3));
     }
-| lhs_expr TASSIGNLAND     opt_try_expr TSEMI
-    {
-      $$ = STMT(@$, context->buildBinOp(@$, $1, $2, $3));
-    }
-| lhs_expr TASSIGNLOR      opt_try_expr TSEMI
-    {
-      $$ = STMT(@$, context->buildBinOp(@$, $1, $2, $3));
-    }
 | lhs_expr TASSIGN         TNOINIT TSEMI
     {
       $$ = STMT(@$, context->buildBinOp(@$, $1, $2, context->buildIdent(@3, $3)));
