@@ -28,4 +28,11 @@ The ``@edition`` attribute requires one or both of the following arguments:
 
 When using the attribute, the old behavior should be marked with
 ``@edition(last="<most recent edition name>")``, while the new behavior should
-be marked with ``@edition(first="pre-edition")``.  This will
+be marked with ``@edition(first="pre-edition")``.  This will ensure that the
+old behavior remains available with previous editions, while the new behavior
+becomes available in the ``pre-edition``.  E.g.,
+
+.. literalinclude:: ../../../../test/edition/basics/attributeCheck.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE
+   :end-before: STOP_EXAMPLE

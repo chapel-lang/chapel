@@ -1,3 +1,4 @@
+/* START_EXAMPLE */
 @edition(first="pre-edition")
 proc foo(x: int) {
   writeln("in new edition foo with arg x=", x);
@@ -7,6 +8,7 @@ proc foo(x: int) {
 proc foo(x: int) {
   writeln("in old edition foo with arg x=", x);
 }
+/* STOP_EXAMPLE */
 
 // Check specifying both first and last works
 @edition(first="2.0", last="pre-edition")
