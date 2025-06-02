@@ -36,3 +36,10 @@ becomes available in the ``pre-edition``.  E.g.,
    :language: chapel
    :start-after: START_EXAMPLE
    :end-before: STOP_EXAMPLE
+
+.. note::
+
+   Though ``default`` is a supported value for the ``--edition`` compilation
+   flag, it is not supported for either the ``first`` or ``last`` argument of
+   the edition attribute.  These arguments must be concrete, specific editions.
+
