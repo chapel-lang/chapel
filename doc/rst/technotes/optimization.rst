@@ -26,6 +26,12 @@ Chapel program and talk about how the performance issues can be resolved.
    all! These are important techniques as well, but they are out of scope
    for this document.
 
+.. note::
+
+   This document is a draft and a work in progress. Updates to it based
+   on experience with optimization are welcome!
+
+
 A Few Words About Process
 -------------------------
 
@@ -151,7 +157,8 @@ Counting Communication Events
   (see above) then it's particularly useful to measure performance by
   counting the number of communication events. Counting communication
   events can also be useful as a secondary performance metric for
-  multi-node runs.
+  multi-node runs. Reducing the number of communication events is a useful
+  strategy for optimizing communication.
 
   You can use the :chpl:mod:`CommDiagnostics` module and
   ``startCommDiagnostics()`` followed by ``getCommDiagnostics()`` to
@@ -428,21 +435,88 @@ larger messages so that the network is operating more in a
 bandwidth-bound way rather than a latency-bound way.
 
 Let's look at an example of permuting an array. Suppose that we have
-three distributed arrays:
+three distributed arrays all over the distributed domain ``D``:
 
- * ``OriginalValues`` stores ``real`` values
+ * ``In`` stores input values
 
- * ``NewIndices`` stores a permutation; if ``NewIndices[i]`` is ``j``
-   then we will set ``PermutedValues[NewIndices[i]] =
-   OriginalValues[j];``.
+ * ``Idx`` stores a permutation; each index in ``D`` occurs exactly once
+   in ``Idx``.
 
- * ``PermutedValues`` stores ``real`` values that are the result of the
-   permutation
+ * ``Out`` stores the result of permuting ``In`` according to ``Idx``
 
-TODO copy aggregator and non-copy-aggregator
+In particular, we will set ``Out[Idx[i]] = In[i];`` for each ``i`` in ``D``.
+
+If we write that in the simplest way, we get this code:
+
+.. literalinclude:: ../../../test/technotes/optimization/aggregation.chpl
+   :language: chapel
+   :start-after: START_UNOPT
+   :end-before: END_UNOPT
+
+However that code will do fine-grained PUT operations on the network;
+``Out[Idx[i]]`` will refer to the array element to store into, and since
+that array element is typically stored on a different locale, the
+compiler will generate a PUT operation for ``Out[Idx[i]] = In[i]``.
+
+We can optimize this by using the :chpl:mod:`CopyAggregation` module.
+Here is the optimized version:
+
+.. literalinclude:: ../../../test/technotes/optimization/aggregation.chpl
+   :language: chapel
+   :start-after: START_OPT
+   :end-before: END_OPT
+
+In this case, the optimization required two changes to the program:
+
+ 1. Create a copy aggregator per-task. Here, we use the ``forall`` intent
+    ``with`` clause to create a ``DstAggregator`` per task. The
+    ``DstAggregator`` will optimize the PUT operations by combining PUT
+    operations destined for the same locale.
+
+ 2. Use the copy aggregator instead of plain old assignment. The call
+    ``agg.copy(X, Y)`` is functionally similar to ``X = Y``.
+
+How much does optimizing this example improve performance? With a quick
+test on 16 nodes, we can see (through use of the CommDiagnostics module)
+that the number of PUTs is approximately 1000 times less with the
+optimized version, and the performance is approximately 30 times better.
 
 Load Imbalance
 ~~~~~~~~~~~~~~
+
+The term *load imbalance* describes a situation where a parallel program
+won't run as fast as it could because the parallel work is not evenly
+divided up among the hardware elements doing the location. As a contrived
+example of load imbalance, suppose you have 4 locales, and locale 0 does
+4 times as much work as the other locales.
+
+Load imbalance can be a particularly problematic issue when working with
+a parallel computation that has different phases. For Chapel programs,
+these phases are probably represented by different parallel loops or with
+barriers. If one task in a parallel region (such as a ``forall`` or
+``coforall`` loop) takes a significantly longer time than the other
+tasks, the time the loop takes will be this long time, since the program
+cannot proceed with the code after the loop until all of the tasks have
+completed.
+
+How can load imbalance be identified?
+
+ * Within a parallel region, different tasks are taking very different
+   amounts of time
+ * When profiling, the program spends a lot of time waiting for tasks to
+   complete or waiting for barriers
+
+How can load imbalance be addressed?
+
+ * There are often ways to improve the algorthim to address load
+   imbalance. For example, graph partitioners are important technology
+   that can help one balance the storage of a data structure and the
+   computation that goes with it. More generally, you might be able to
+   rearrange the data and the computation to be performed, in to a
+   strategy that has better load balance.
+
+ * In some cases, :chpl:mod:`DynamicIters` might help. You can use it to
+   write parallel loops that dynamically load balance.
 
 
 Current Issues
@@ -576,3 +650,13 @@ improve the distributed-memory scalability of your program.
 
 Tools for Understanding Single-Node Performance
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. note::
+
+   This section still needs to be written. Some ideas for what to
+   include:
+
+     * comparing against other implementations
+     * timing different regions
+     * using a profiler
+     * how to look at LLVM IR or assembly for a function
