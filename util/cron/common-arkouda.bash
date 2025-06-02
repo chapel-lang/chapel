@@ -52,6 +52,9 @@ function partial_checkout_release() {
   git checkout $currentSha -- $CHPL_HOME/util/cron/
   git checkout $currentSha -- $CHPL_HOME/util/test/
   git checkout $currentSha -- $CHPL_HOME/third-party/chpl-venv/test-requirements.txt
+  if [ "$CHPL_WHICH_RELEASE_FOR_ARKOUDA" = "2.4.0" ]; then
+    git checkout $currentSha -- $CHPL_HOME/third-party/llvm/Makefile
+  fi
 }
 
 function release_dependencies() {
