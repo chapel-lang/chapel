@@ -75,9 +75,10 @@ and distributed Chapel application:
      Gradually increase the number of locales and the number of tasks
      until you are satisfied it is working.
 
-   * Measure performance locally oversubscribed (see below) or by running
-     on a multi-node system.
-
+You can compile with ``--fast`` and measure performance before or after
+this process. If you are targeting distributed memory, measure
+performance locally oversubscribed (see below) or by running on a
+multi-node system.
 
 Simulating Multiple Locales on a Laptop
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -162,10 +163,12 @@ Counting Communication Events
 
   You can use the :chpl:mod:`CommDiagnostics` module and
   ``startCommDiagnostics()`` followed by ``getCommDiagnostics()`` to
-  count communication events. It's common to
-  ``writeln(getCommDiagnostics()``.  Note that the communication count
-  information will be easier to understand if you compile with
-  ``--no-cache-remote``.
+  count communication events. It's common to print out the communication
+  counts with ``writeln(getCommDiagnostics())``. Note that the
+  communication count information will be easier to understand if you
+  compile with ``--no-cache-remote`` because the cache for remote data,
+  which is enabled by default, will cause the counts to include more
+  categories.
 
   Communication counts provide a way to compare communication
   performance independent of where you are running. For example, you
@@ -200,22 +203,32 @@ Configuration Matters
 The first thing to check is that you are using Chapel in its
 highest-performing configuration for your system.
 
- * use ``--fast`` when compiling Chapel programs for performance
+ * use ``--fast`` when compiling Chapel programs for performance to tell
+   the compiler to optimize instead of adding correctness checks
 
  * use the default configuration rather than the quickstart configuration
 
+   .. note::
+
+     You can show the current configuration with ``printchplenv`` or
+     ``chpl --print-chpl-settings``
+
    * In particular, ``CHPL_TASKS=qthreads`` is generally faster than
      ``CHPL_TASKS=fifo``, and ``CHPL_TARGET_MEM=jemalloc`` is generally
-     faster than ``CHPL_TARGET_MEM=cstdlib``
+     faster than ``CHPL_TARGET_MEM=cstdlib`` (see also
+     :ref:`readme-chplenv.CHPL_TASKS` and
+     :ref:`readme-chplenv.CHPL_TARGET_MEM`)
 
    * ``CHPL_TARGET_COMPILER=llvm`` might or might not be faster than
      using the C backend with something like
      ``CHPL_TARGET_COMPILER=gnu``; however the performance of the LLVM
-     backend is more reliable
+     backend is more reliable (see also
+     :ref:`readme-chplenv.CHPL_COMPILER`)
 
-     * if you are using a system LLVM, it's a good idea to match the
+     * if you are using ``CHPL_LLVM=system``, it's a good idea to match the
        version of LLVM bundled in the Chapel release if possible as this
-       has recieved the most attention and testing
+       has recieved the most attention and testing (see also
+       :ref:`readme-chplenv.CHPL_LLVM`)
 
  * For multi-locale programs, use a high-performance networking configuration
 
@@ -229,14 +242,11 @@ highest-performing configuration for your system.
    * High-performance networking configuration will depend on your
      system:
 
-     * For HPE Cray EX, use ``CHPL_COMM=ofi``
+     * For HPE Cray EX, use ``CHPL_COMM=ofi`` (see also :ref:`readme-cray`)
      * For InfiniBand systems, use ``CHPL_COMM=gasnet``
-       ``CHPL_COMM_SUBSTRATE=ibv``
+       ``CHPL_COMM_SUBSTRATE=ibv`` (see also :ref:`readme-infiniband`)
      * For Omni-Path systems, use ``CHPL_COMM=gasnet`` and
-       ``CHPL_COMM_SUBSTRATE=ofi``.
-
-     Please see the relevant Platform-Specific Notes for more
-     information.
+       ``CHPL_COMM_SUBSTRATE=ofi`` (see also :ref:`readme-omnipath`)
 
 
 Settings to Adjust to Improve Performance
@@ -269,7 +279,8 @@ colocales
 
 ``--auto-aggregation``
   This compiler flag enables an optimization that automatically uses
-  aggregators to improve multilocale performance.
+  aggregators to improve multilocale performance. It is not on by default
+  because it can slow down some applications.
 
 ``--no-cache-remote`` / ``--cache-remote``
   The cache for remote data is a runtime component that helps to reduce
@@ -477,18 +488,28 @@ In this case, the optimization required two changes to the program:
     ``agg.copy(X, Y)`` is functionally similar to ``X = Y``.
 
 How much does optimizing this example improve performance? With a quick
-test on 16 nodes, we can see (through use of the CommDiagnostics module)
-that the number of PUTs is approximately 1000 times less with the
-optimized version, and the performance is approximately 30 times better.
+test on 16 nodes, we can see (through use of the
+:chpl:mod:`CommDiagnostics` module) that the number of PUTs is
+approximately 1000 times less with the optimized version. By timing the
+relevant loop, we can see that the performance is approximately 30 times
+better. In this simple case, with the ``--auto-aggregation`` flag, the
+compiler can even make these adjustments automatically.
+
+Also note that the CopyAggregation module used here is most applicable
+when working with random access. If you are copying contiguous regions of
+arrays, using an optimized slice assignment can perform well as well to
+perform bulk communication. See :ref:`optimization-slices` for some
+important caveats.
 
 Load Imbalance
 ~~~~~~~~~~~~~~
 
 The term *load imbalance* describes a situation where a parallel program
 won't run as fast as it could because the parallel work is not evenly
-divided up among the hardware elements doing the location. As a contrived
+divided up among the hardware elements doing the work. As a contrived
 example of load imbalance, suppose you have 4 locales, and locale 0 does
-4 times as much work as the other locales.
+4 times as much work as the other locales. Locales 1, 2, and 3 will spend
+most of their time waiting for locale 0, which is not ideal.
 
 Load imbalance can be a particularly problematic issue when working with
 a parallel computation that has different phases. For Chapel programs,
@@ -509,11 +530,11 @@ How can load imbalance be identified?
 How can load imbalance be addressed?
 
  * There are often ways to improve the algorthim to address load
-   imbalance. For example, graph partitioners are important technology
+   imbalance. For example, graph partitioners are an important technology
    that can help one balance the storage of a data structure and the
    computation that goes with it. More generally, you might be able to
-   rearrange the data and the computation to be performed, in to a
-   strategy that has better load balance.
+   rearrange the data and the computation to be performed so that when
+   working with the new arrangement there is better load balance.
 
  * In some cases, :chpl:mod:`DynamicIters` might help. You can use it to
    write parallel loops that dynamically load balance.
@@ -540,6 +561,8 @@ This issue can be avoided by creating a ``ref`` or ``const ref`` that
 refers to the distributed array. This ``ref`` or ``const ref`` can be
 created outside of the ``forall`` loop and reused within it to avoid the
 problem.
+
+.. _optimization-slices:
 
 Creating Too Many Distributed Objects / Unoptimized Slice Assignments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -573,13 +596,13 @@ for domains and arrays. That includes distributions created by users.
 However, the present situation is that performance of Chapel programs
 depends on optimizations in the implementations of these domain/array
 distributions. These optimizations are present and reasonably well tuned
-for the Block distribution. Other distributions might not be optimized
-and have scaling issues.
+for the :chpl:mod:`BlockDist` distribution. Other distributions might not
+be optimized and have scaling issues.
 
 Performance Problems with Multidimensional Zippered Iteration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Issue: https://github.com/chapel-lang/chapel/issues/13147)
+Issue: https://github.com/chapel-lang/chapel/issues/13147
 
 Zippered iteration for multidimensional arrays/domains is much slower
 than zippered iteration for 1D arrays/domains. Since promoted calls, such
@@ -587,6 +610,7 @@ as ``MyArray + MyOtherArray`` are implemented with zippered iteration,
 this problem also applies to that case.
 
 Potential ways to avoid this problem:
+ * use loops over a multidimensional domain that avoid zippering
  * express the computation with nested loops per dimension
  * use 1D arrays and explicitly compute 1D indices from 2D conceptual indices
  * create a 1D copy of the array (with ``reshape`` -- note that in the
@@ -612,6 +636,10 @@ from any polling loops. This is already done in
 Tools for Understanding Performance
 -----------------------------------
 
+.. note::
+
+   This section is under construction. Contributions are welcome!
+
 Tools for Understanding Communication
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -632,15 +660,16 @@ improve the distributed-memory scalability of your program.
   on-the-fly reporting with ``startVerboseComm()``.  This on-the-fly
   reporting can even include stack traces if you compile with
   ``-scommDiagsStacktrace=true`` and have built Chapel with
-  :ref:`CHPL_UNWIND != none <readme-chplenv.CHPL_UNWIND>`. The on-the-fly
-  reporting provides a relatively easy way to see what communication
-  events are common in your program. It can be a lot of output though.
+  ``CHPL_UNWIND != none`` (see :ref:`readme-chplenv.CHPL_UNWIND`).
+  The on-the-fly reporting provides a relatively easy way to see what
+  communication events are common in your program. It can be a lot of output,
+  though.
 
 :chpl:mod:`CommDiagnostics` comm counting
   :chpl:mod:`CommDiagnostics` also provides a way to count communication
-  done when running should apply when running multi-node
   events. Note that the communication count information will be easier to
-  understand if you compile with ``--no-cache-remote``. Comm counts
+  understand if you compile with ``--no-cache-remote`` since that will
+  reduce the number of categories of events. Comm counts
   information provide a way to compare communication performance
   independent of where you are running. For example, you might measure
   and seek to reduce the communication counts when running oversubscribed
