@@ -658,16 +658,10 @@ llvm::DIVariable* debug_data::construct_variable(VarSymbol *varSym)
       true/*AlwaysPreserve, won't be removed when optimized*/
       ); //omit the  Flags and ArgNo
 
-#if HAVE_LLVM_VER >= 120
     modSym->llvmDIBuilder->insertDeclare(varSym->codegen().val, localVariable,
       modSym->llvmDIBuilder->createExpression(), llvm::DILocation::get(
         scope->getContext(), line_number, 0, scope, nullptr, false),
       gGenInfo->irBuilder->GetInsertBlock());
-#else
-    modSym->llvmDIBuilder->insertDeclare(varSym->codegen().val, localVariable,
-      modSym->llvmDIBuilder->createExpression(), llvm::DebugLoc::get(line_number, 0, scope),
-      gGenInfo->irBuilder->GetInsertBlock());
-#endif
     return localVariable;
   }
   else {

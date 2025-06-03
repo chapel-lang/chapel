@@ -32,12 +32,7 @@
 #include "llvm/Support/Path.h"
 #include "llvm/Support/Process.h"
 
-// LLVM 13 introduced SHA256. Use that if it is available.
-#if LLVM_VERSION_MAJOR >= 13
 #include "llvm/Support/SHA256.h"
-#else
-#include "llvm/Support/SHA1.h"
-#endif
 
 #include <cerrno>
 
@@ -406,11 +401,7 @@ llvm::ErrorOr<HashFileResult> hashFile(const llvm::Twine& path) {
     return errorCodeFromCError(errno);
   }
 
-#if LLVM_VERSION_MAJOR >= 13
   llvm::SHA256 hasher;
-#else
-  llvm::SHA1 hasher;
-#endif
 
   uint8_t buf[256];
   while (true) {
@@ -444,11 +435,7 @@ llvm::ErrorOr<HashFileResult> hashFile(const llvm::Twine& path) {
 }
 
 HashFileResult hashString(llvm::StringRef data) {
-#if LLVM_VERSION_MAJOR >= 13
   llvm::SHA256 hasher;
-#else
-  llvm::SHA1 hasher;
-#endif
 
   hasher.update(data);
 

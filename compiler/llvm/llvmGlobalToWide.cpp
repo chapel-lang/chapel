@@ -172,35 +172,13 @@ namespace {
                              std::is_base_of_v<CallBase, BaseTy>,  bool> = true>
   void removeInvalidRetAttrs(BaseTy* V, Type* type) {
     auto mask = typeIncompatible(type);
-#if HAVE_LLVM_VER >= 140
     V->removeRetAttrs(mask);
-#else
-#if HAVE_LLVM_VER >= 120
-    V->removeAttributes(AttributeList::ReturnIndex, mask);
-#else
-    auto& ctx = V->getContext();
-    for (auto attr: AttributeSet::get(ctx, mask)) {
-      V->removeAttribute(AttributeList::ReturnIndex, attr.getKindAsEnum());
-    }
-#endif
-#endif
   }
   template <typename BaseTy, std::enable_if_t<std::is_base_of_v<Function, BaseTy> ||
                              std::is_base_of_v<CallBase, BaseTy>,  bool> = true>
   void removeInvalidParamAttrs(BaseTy* V, size_t idx, Type* type) {
     auto mask = typeIncompatible(type);
-#if HAVE_LLVM_VER >= 140
     V->removeParamAttrs(idx, mask);
-#else
-#if HAVE_LLVM_VER >= 120
-    V->removeAttributes(idx+1, mask);
-#else
-    auto& ctx = V->getContext();
-    for (auto attr: AttributeSet::get(ctx, mask)) {
-      V->removeAttribute(idx+1, attr.getKindAsEnum());
-    }
-#endif
-#endif
   }
 
   // Like the version in BasicBlockUtils but assumes New is already
@@ -1184,17 +1162,10 @@ namespace {
 
       if (newSrcTy != srcTy || newResTy != resTy) {
         // gather the indices
-#if HAVE_LLVM_VER >= 130
         SmallVector<Constant*> idxList;
         for (const auto& v : gepOp->indices()) {
           idxList.push_back(cast<Constant>(v));
         }
-#else
-        SmallVector<Constant*, 8> idxList;
-        for (auto it = gepOp->idx_begin(); it != gepOp->idx_end(); ++it) {
-          idxList.push_back(cast<Constant>(*it));
-        }
-#endif
         // Create a new GetElementPtrConstantExpr while changing the types
 #if HAVE_LLVM_VER >= 190
         auto inRangeIdx = gepOp->getInRange();
@@ -1354,12 +1325,8 @@ bool GlobalToWide::run(Module &M) {
         info->globalSpace = 100;
         info->wideSpace = 101;
         info->globalPtrBits = 128;
-#if HAVE_LLVM_VER >= 120
         info->localeIdType = StructType::getTypeByName(M.getContext(),
                                                        "struct.c_localeid_t");
-#else
-        info->localeIdType = M.getTypeByName("struct.c_localeid_t");
-#endif
         if( ! info->localeIdType ) {
           StructType* t = StructType::create(M.getContext(), "struct.c_localeid_t");
           t->setBody(Type::getInt32Ty(M.getContext()),
@@ -2185,11 +2152,7 @@ void populateFunctionsForGlobalType(Module *module, GlobalToWideInfo* info, Type
   GlobalPointerInfo & r = info->gTypes[globalPtrTy];
 
   if (isOpaquePointer(globalPtrTy)) {
-#if HAVE_LLVM_VER >= 140
     ptrTy = llvm::PointerType::getUnqual(module->getContext());
-#else
-    assert(false && "Should not be reachable");
-#endif
   } else {
 #ifdef HAVE_LLVM_TYPED_POINTERS
     ptrTy = llvm::PointerType::getUnqual(globalPtrTy->getPointerElementType());
@@ -2359,11 +2322,7 @@ Type* createWidePointerToType(Module* module, GlobalToWideInfo* i, Type* eltTy)
     assert(false && "Should not be reachable");
 #endif
   } else {
-#if HAVE_LLVM_VER >= 140
     ptrTy = llvm::PointerType::getUnqual(context);
-#else
-    assert(false && "Should not be reachable");
-#endif
   }
   assert(ptrTy);
   fields[1] = ptrTy;
@@ -2451,7 +2410,6 @@ Type* convertTypeGlobalToWide(Module* module, GlobalToWideInfo* info, Type* t)
 
   if (t->isPointerTy()) {
     if (isOpaquePointer(t)) {
-#if HAVE_LLVM_VER >= 140
       if (t->getPointerAddressSpace() == info->globalSpace ||
           t->getPointerAddressSpace() == info->wideSpace) {
           // Replace the pointer with a struct containing {locale, address}
@@ -2459,9 +2417,6 @@ Type* convertTypeGlobalToWide(Module* module, GlobalToWideInfo* info, Type* t)
       } else {
           return llvm::PointerType::get(context, t->getPointerAddressSpace());
       }
-#else
-      assert(false && "Should not be reachable");
-#endif
     } else {
 #ifdef HAVE_LLVM_TYPED_POINTERS
       Type* eltType = t->getPointerElementType();
@@ -2504,11 +2459,7 @@ Type* convertTypeGlobalToWide(Module* module, GlobalToWideInfo* info, Type* t)
       wideEltType = Type::getInt128Ty(context);
     }
 
-#if HAVE_LLVM_VER >= 110
     return VectorType::get(wideEltType, vecTy);
-#else
-    return VectorType::get(wideEltType, vecTy->getNumElements());
-#endif
   }
 
   assert(false && "should not be reached");

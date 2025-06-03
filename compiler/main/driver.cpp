@@ -61,11 +61,7 @@
 #ifdef HAVE_LLVM
 #include "llvm/Config/llvm-config.h"
 #include "llvm/Support/CommandLine.h"
-#if HAVE_LLVM_VER >= 140
 #include "llvm/MC/TargetRegistry.h"
-#else
-#include "llvm/Support/TargetRegistry.h"
-#endif
 #include "llvm/Support/TargetSelect.h"
 #endif
 
