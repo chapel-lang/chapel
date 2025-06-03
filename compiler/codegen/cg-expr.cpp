@@ -402,13 +402,8 @@ static llvm::Value* createInBoundsGEP(llvm::Type* gepType,
       // consider calling extendToPointerSize at the call site
     }
   }
-#if HAVE_LLVM_VER >= 130
   llvm::Value* gep = info->irBuilder->CreateInBoundsGEP(gepType, ptr, idxList);
   trackLLVMValue(gep);
-#else
-  llvm::Value* gep = info->irBuilder->CreateInBoundsGEP(ptr, idxList);
-  trackLLVMValue(gep);
-#endif
   return gep;
 }
 
@@ -532,9 +527,7 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
     llvm::Type* locAddrType = nullptr;
 
     if (isOpaquePointer(addrType)) {
-#if HAVE_LLVM_VER >= 140
       locAddrType = llvm::PointerType::getUnqual(gContext->llvmContext());
-#endif
     } else {
 #ifdef HAVE_LLVM_TYPED_POINTERS
       locAddrType =
@@ -2658,14 +2651,9 @@ GenRet codegenGlobalArrayElement(const char* table_name,
     llvm::Value* elementPtr;
     elementPtr = createInBoundsGEP(global->getValueType(), table.val, GEPLocs);
 
-#if HAVE_LLVM_VER >= 130
     llvm::Instruction* element =
       info->irBuilder->CreateLoad(eltTy.type, elementPtr);
     trackLLVMValue(element);
-#else
-    llvm::Instruction* element = info->irBuilder->CreateLoad(elementPtr);
-    trackLLVMValue(element);
-#endif
 
     // I don't think it matters, but we could provide TBAA metadata
     // here to indicate global constant variable loads are constant...
@@ -2950,11 +2938,9 @@ static GenRet codegenCallExprInner(GenRet function,
             INT_FATAL("inalloca arguments not yet implemented");
             break;
 
-#if HAVE_LLVM_VER >= 120
           case clang::CodeGen::ABIArgInfo::Kind::IndirectAliased:
             INT_FATAL("IndirectAliased not yet implemented");
             break;
-#endif
 
           case clang::CodeGen::ABIArgInfo::Kind::Indirect:
           {
@@ -3013,19 +2999,12 @@ static GenRet codegenCallExprInner(GenRet function,
                 unsigned nElts = sTy->getNumElements();
                 for (unsigned i = 0; i < nElts; i++) {
                   // load to produce the next LLVM argument
-#if HAVE_LLVM_VER >= 130
                   llvm::Value* eltPtr =
                     irBuilder->CreateStructGEP(sTy, ptr, i);
                   trackLLVMValue(eltPtr);
                   llvm::Value* loaded =
                     irBuilder->CreateLoad(sTy->getElementType(i), eltPtr);
                   trackLLVMValue(loaded);
-#else
-                  llvm::Value* eltPtr = irBuilder->CreateStructGEP(ptr, i);
-                  trackLLVMValue(eltPtr);
-                  llvm::Value* loaded = irBuilder->CreateLoad(eltPtr);
-                  trackLLVMValue(loaded);
-#endif
                   llArgs.push_back(loaded);
                 }
               } else {
@@ -3062,17 +3041,10 @@ static GenRet codegenCallExprInner(GenRet function,
                 continue;
 
               // load to produce the next LLVM argument
-#if HAVE_LLVM_VER >= 130
               llvm::Value* eltPtr = irBuilder->CreateStructGEP(sTy, ptr, i);
               trackLLVMValue(eltPtr);
               llvm::Value* loaded = irBuilder->CreateLoad(ty, eltPtr);
               trackLLVMValue(loaded);
-#else
-              llvm::Value* eltPtr = irBuilder->CreateStructGEP(ptr, i);
-              trackLLVMValue(eltPtr);
-              llvm::Value* loaded = irBuilder->CreateLoad(eltPtr);
-              trackLLVMValue(loaded);
-#endif
               llArgs.push_back(loaded);
             }
             break;
@@ -3085,15 +3057,9 @@ static GenRet codegenCallExprInner(GenRet function,
       } else {
 
         if (func && fnType && llArgs.size() < fnType->getNumParams()) {
-#if HAVE_LLVM_VER >= 140
           bool funcHasAttribute =
             func->getAttributes().hasAttributeAtIndex(llArgs.size()+1,
                                                       llvm::Attribute::ByVal);
-#else
-          bool funcHasAttribute =
-            func->getAttributes().hasAttribute(llArgs.size()+1,
-                                               llvm::Attribute::ByVal);
-#endif
           if (funcHasAttribute)
             INT_FATAL("byval without ABI info not implemented");
         }
@@ -4569,18 +4535,12 @@ DEFINE_PRIM(RETURN) {
             trackLLVMValue(sret);
 
             llvm::MaybeAlign align = getPointerAlign();
-#if HAVE_LLVM_VER >= 130
             llvm::Value* v = irBuilder->CreateAlignedLoad(sret->getType(),
                                                           sret,
                                                           align,
                                                           "sret");
             trackLLVMValue(v);
-#else
-            llvm::Value* v = irBuilder->CreateAlignedLoad(sret,
-                                                          align,
-                                                          "sret");
-            trackLLVMValue(v);
-#endif
+
             returnInst = irBuilder->CreateRet(v);
             trackLLVMValue(returnInst);
           } else {
@@ -4589,13 +4549,11 @@ DEFINE_PRIM(RETURN) {
           }
           break;
         }
-#if HAVE_LLVM_VER >= 120
         case clang::CodeGen::ABIArgInfo::Kind::IndirectAliased:
         {
           INT_FATAL("IndirectAliased not implemented yet");
           break;
         }
-#endif
         case clang::CodeGen::ABIArgInfo::Kind::Indirect:
         {
           auto ii = curFn->arg_begin();
@@ -6276,13 +6234,8 @@ DEFINE_PRIM(FTABLE_CALL) {
       GEPLocs[1] = index.val;
       fnPtrPtr   = createInBoundsGEP(global->getValueType(),
                                      ftable.val, GEPLocs);
-#if HAVE_LLVM_VER >= 130
       fnPtr      = gGenInfo->irBuilder->CreateLoad(genericFnPtr, fnPtrPtr);
       trackLLVMValue(fnPtr);
-#else
-      fnPtr      = gGenInfo->irBuilder->CreateLoad(fnPtrPtr);
-      trackLLVMValue(fnPtr);
-#endif
 
       // Generate an LLVM function type based upon the arguments.
       std::vector<llvm::Type*> argumentTypes;
@@ -6372,14 +6325,9 @@ DEFINE_PRIM(VIRTUAL_METHOD_CALL) {
           llvm::IntegerType::getInt64Ty(gGenInfo->module->getContext()));
       GEPLocs[1] = index.val;
       fnPtrPtr = createInBoundsGEP(global->getValueType(), table.val, GEPLocs);
-#if HAVE_LLVM_VER >= 130
       llvm::Instruction* fnPtrV =
         gGenInfo->irBuilder->CreateLoad(genericFnPtr, fnPtrPtr);
       trackLLVMValue(fnPtrV);
-#else
-      llvm::Instruction* fnPtrV = gGenInfo->irBuilder->CreateLoad(fnPtrPtr);
-      trackLLVMValue(fnPtrV);
-#endif
       fnPtr.val = fnPtrV;
 #endif
     }
