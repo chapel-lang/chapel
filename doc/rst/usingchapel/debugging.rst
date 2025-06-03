@@ -62,16 +62,9 @@ either ``gdb`` or ``lldb``. See :ref:`vscode-debugging` for more information.
 The `Debugger.breakpoint` statement
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The :any:`Debugger` module provides a parenless function called `breakpoint`.
+The :any:`Debugger` module provides a parenless function called :proc:`~Debuggr.breakpoint`.
 When the code is compiled and run with debug symbols, i.e. ``-g``, the attached
 debugger will automatically stop at calls to this function as a breakpoint.
-Code that contains `breakpoint` that is compiled without ``-g`` will work as
-normal with no side effects. Saving the generated code to as temporary
-directory with ``--savec DIRECTORY`` will also allow the debugger to read and
-display Chapel source code. This works well with either the LLVM or C backends.
-
-.. note::
-   Executables will not run as expected if `breakpoint` is used in code compiled with ``-g`` and not run attached to a debugger.
 
 .. _readme-debugging-bkc:
 
