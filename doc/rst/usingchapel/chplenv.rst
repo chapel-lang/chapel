@@ -979,6 +979,11 @@ CHPL_UNWIND
 
    If unset, ``CHPL_UNWIND`` defaults to ``none``
 
+   .. note::
+
+      At present, ``CHPL_UWIND=bundled`` does not work on Mac OS X.
+      ``CHPL_UNWIND=system`` should be used instead on that system.
+
 .. _readme-chplenv.CHPL_LIB_PIC:
 
 CHPL_LIB_PIC
