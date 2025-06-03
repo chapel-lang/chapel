@@ -13,8 +13,8 @@ The options for getting started, in order of preference, are:
 
 1) `Binary Release via a Package Manager`_
 2) `Containers (Docker)`_
-3) `From Source Builds via Spack`_
-4) `From Source`_
+3) `Building From Source via Spack`_
+4) `Building From Source`_
 
 Binary Release via a Package Manager
 ------------------------------------
@@ -59,12 +59,11 @@ containerized environment. This is a good option if you want to try Chapel
 without installing it on your host system or if you want to ensure that you
 have a consistent environment across different machines.
 
-We currently provide three different Docker images: chapel, chapel-gasnet, and
-chapel-gasnet-smp. The `chapel` image is the most basic and includes the Chapel
-compiler and standard library. The `chapel-gasnet` image includes support for
-multi-locale (distributed memory) programming using GASNet over ethernet, while
-the `chapel-gasnet-smp` image includes support for multi-locale programming
-using shared memory.
+We currently provide three different Docker images:
+
+* chapel - basic Chapel compiler and standard library
+* chapel-gasnet - Chapel with support for multi-locale (distributed memory) programming using GASNet over ethernet
+* chapel-gasnet-smp - Chapel with support for multi-locale programming using shared memory
 
 For example, the following is a minimal Dockerfile that uses the `chapel` image
 to run a simple Chapel program:
@@ -80,7 +79,7 @@ to run a simple Chapel program:
 Github Codespaces
 ~~~~~~~~~~~~~~~~~
 
-Github Codespaces are a great way to quickly setup a develop environment for
+Github Codespaces are a great way to quickly setup a developer environment for
 Chapel without needing to install anything on your local machine. The
 `chapel-hello-world <https://github.com/chapel-lang/chapel-hello-world>`_
 repository provides a simple example of how to set up a Codespace for Chapel
@@ -98,8 +97,8 @@ To start using Chapel with a Codespace, use the following steps:
    :align: center
    :alt: Screenshot of creating a Codespace for Chapel development
 
-From Source Builds via Spack
-----------------------------
+Building From Source via Spack
+------------------------------
 
 Chapel provides a `Spack <https://spack.io/>`_ package that can be used to
 build Chapel from source. This is a good option if you want to use Chapel on a
@@ -107,8 +106,8 @@ system where a binary release is not available or if you want to customize the
 build options. See `this page <https://chapel-lang.org/download/#spack>`_ for
 more information on how to use Spack to install Chapel.
 
-From Source
------------
+Building From Source
+--------------------
 
 These instructions are only intended to get a minimal, low-performance
 configuration of Chapel up and running quickly to reduce build times and the
@@ -258,7 +257,7 @@ available including a ``./configure`` + ``make install`` option.  See
 Using Chapel in Multi-Locale Mode
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-All of the from source instructions above describe how to run Chapel programs in
+All of the "from source" instructions above describe how to run Chapel programs in
 a single-locale (shared-memory) mode. To run using multiple locales
 (multiple compute nodes with distributed memory), please refer to
 :ref:`readme-multilocale`.
