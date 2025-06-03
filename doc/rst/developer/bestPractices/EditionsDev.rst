@@ -8,11 +8,18 @@ Editions
 New Editions Process
 --------------------
 
-When creating new editions, be sure to add the new edition name to the array of
-editions in the compiler just **before** ``pre-edition``.  Update all desired
-changes that are currently associated with ``pre-edition`` to be linked with
-this new edition name, and update :ref:`edition-changes` to list those changes
-under this new release name instead of under :ref:`pre-edition-changes`.
+When creating new editions, be sure to:
+
+- Add the new edition name to the array of editions in the compiler just
+  **before** ``pre-edition``.
+- Update all desired changes that are currently associated with ``pre-edition``
+  to be linked with this new edition name.
+
+  - Update :ref:`edition-changes` to list those changes under this new release
+    name instead of under :ref:`pre-edition-changes`.
+
+- When https://github.com/chapel-lang/chapel/issues/27336 gets implemented, be
+  sure to update it as well.
 
 -----------------------------------
 Associating Changes With An Edition

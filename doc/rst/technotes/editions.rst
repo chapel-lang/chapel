@@ -46,8 +46,7 @@ sufficient quantity of them to justify a new edition.
 The Default Edition
 -------------------
 
-``2.0`` is the default edition and will remain the default for the foreseeable
-future.
+``2.0`` is the default edition.
 
 When no ``--edition`` flag is used at compilation, the default edition will be
 relied upon.  It can also be specified via ``--edition=default``, or by
@@ -62,8 +61,14 @@ immediately become the default upon its creation.  There will always be at least
 one release cycle between an edition's creation and becoming the default
 edition, if not more.
 
-.. TODO: link to information about flag to see changes between editions, when it
-   exists
+.. note::
+
+   We anticipate adding a compilation flag to aid in transitioning between
+   editions.  The design on that flag has not been finalized, but any ideas
+   along those lines are welcome, see
+   https://github.com/chapel-lang/chapel/issues/27336 for the most recent
+   discussion on that subject.
+
 
 .. _pre-edition:
 
