@@ -1061,7 +1061,8 @@ def rules(driver: LintDriver):
     def LineLength(_: chapel.Context, path: str, lines: List[str], Max=None):
         """
         Warn for lines that exceed a maximum length.
-        By default, the maximum line length is 80 characters.
+        By default, the maximum line length is 80 characters. This can be
+        configured with `--setting LineLength.Max=<number>`.
         """
 
         Max = Max or "80"  # default to 80 characters
