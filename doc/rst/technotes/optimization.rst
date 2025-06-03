@@ -567,6 +567,8 @@ problem.
 Creating Too Many Distributed Objects / Unoptimized Slice Assignments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Issue: https://github.com/chapel-lang/chapel/issues/16133
+
 In principle, distributed array creation does some work on each locale. As a
 result, it's not going to go faster when adding more locales. That can
 cause performance or scaling issues if a program tries to create too many
@@ -590,6 +592,8 @@ by redundantly slicing the local array, e.g.:
 
 Unoptimized Distributions
 ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Issue: https://github.com/chapel-lang/chapel/issues/27334
 
 The Chapel programming language is designed to support many distributions
 for domains and arrays. That includes distributions created by users.
@@ -618,6 +622,8 @@ Potential ways to avoid this problem:
 
 Cooperative Scheduling and Remote Tasks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Issue: https://github.com/chapel-lang/chapel/issues/27332
 
 Chapel's tasking model currently uses cooperative scheduling. That means
 that, once a task starts running on a core, it will be the only thing
