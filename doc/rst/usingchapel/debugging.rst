@@ -62,8 +62,8 @@ either ``gdb`` or ``lldb``. See :ref:`vscode-debugging` for more information.
 The `Debugger.breakpoint` statement
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The :any:`Debugger` module provides a parenless function called
-:proc:`~Debugger.breakpoint`. When the code is compiled and run with debug
+The :chpl:mod:`Debugger` module provides a parenless function called
+:chpl:proc:`~Debugger.breakpoint`. When the code is compiled and run with debug
 symbols, i.e. ``-g``, the attached debugger will automatically stop at calls to
 this function as a breakpoint.
 
