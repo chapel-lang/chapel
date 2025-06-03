@@ -148,7 +148,7 @@ Configuration Files
 configuration file. This file can be specified using the ``--config`` (also
 ``-c``) flag. The configuration file can either be a YAML file or a specific
 TOML file. For example, running ``chpl-language-server -c config.yaml`` will load the
-configuration from ``config.yaml``. Additionally, ``chpl-language-server`` will look for a
+configuration from ``config.yaml``. Additionally, ``chpl-language-server`` will look for
 configuration files in the current directory named ``chpl-language-server.cfg`` or
 ``.chpl-language-server.cfg`` (in that order).
 

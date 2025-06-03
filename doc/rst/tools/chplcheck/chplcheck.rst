@@ -155,7 +155,7 @@ Configuration Files
 configuration file. This file can be specified using the ``--config`` (also
 ``-c``) flag. The configuration file can either be a YAML file or a specific
 TOML file. For example, running ``chplcheck -c config.yaml`` will load the
-configuration from ``config.yaml``. Additionally, ``chplcheck`` will look for a
+configuration from ``config.yaml``. Additionally, ``chplcheck`` will look for
 configuration files in the current directory named ``chplcheck.cfg`` or
 ``.chplcheck.cfg`` (in that order).
 
