@@ -160,7 +160,9 @@ The default compare method for a signed integral type can look like this:
 .. code-block:: chapel
 
     proc defaultComparator.compare(x, y) {
-      return x - y;
+      if x < y then return -1;
+      else if x > y then return 1;
+      else return 0;
     }
 
 
