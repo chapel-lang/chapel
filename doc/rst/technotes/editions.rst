@@ -91,6 +91,8 @@ edition being considered old and that edition having its support removed.
 
 .. TODO: list old editions and their final release here, in a chart
 
+.. _edition-changes:
+
 -------
 Changes
 -------
