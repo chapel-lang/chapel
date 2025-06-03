@@ -29,6 +29,7 @@ For example, on Ubuntu 24 with x86_64, you can use the following to install
 Chapel 2.4:
 
 .. code-block:: bash
+
    wget https://github.com/chapel-lang/chapel/releases/download/2.4.0/chapel-2.4.0-1.ubuntu24.amd64.deb
    sudo apt-get update
    sudo agt-get install ./chapel-2.4.0-1.ubuntu24.amd64.deb
@@ -37,6 +38,7 @@ For example, on Fedora 41 with aarch64, you can use the following to install
 Chapel 2.4:
 
 .. code-block:: bash
+
    wget https://github.com/chapel-lang/chapel/releases/download/2.4.0/chapel-2.4.0-1.fc41.aarch64.rpm
    sudo dnf update
    sudo dnf install ./chapel-2.4.0-1.fc41.aarch64.rpm
