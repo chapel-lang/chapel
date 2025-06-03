@@ -43,13 +43,13 @@ Chapel 2.4:
    sudo dnf update
    sudo dnf install ./chapel-2.4.0-1.fc41.aarch64.rpm
 
-See `this page <https://chapel-lang.org/download/#linux>`_ for the most
+See `this page <https://chapel-lang.org/download/#linux>`__ for the most
 up-to-date list of supported OSes and platforms.
 
 brew
 ~~~~
 
-If you are using `brew <https://brew.sh/>`_, you can also install Chapel
+If you are using `brew <https://brew.sh/>`__, you can also install Chapel
 directly with ``brew install chapel``. This will install the latest Chapel
 release available in the brew repository.
 
@@ -83,14 +83,14 @@ Github Codespaces
 
 Github Codespaces are a great way to quickly setup a developer environment for
 Chapel without needing to install anything on your local machine. The
-`chapel-hello-world <https://github.com/chapel-lang/chapel-hello-world>`_
+`chapel-hello-world <https://github.com/chapel-lang/chapel-hello-world>`__
 repository provides a simple example of how to set up a Codespace for Chapel
 development. This repository also provides a template that you can use to
 create your own Codespace for Chapel development.
 
 To start using Chapel with a Codespace, use the following steps:
 
-1. Go to the `chapel-hello-world <https://github.com/chapel-lang/chapel-hello-world>`_ repository.
+1. Go to the `chapel-hello-world <https://github.com/chapel-lang/chapel-hello-world>`__ repository.
 2. Click on "Use this template" to create a new repository based on the template.
 3. In the new repository, click on the "Code" button, select "Codespaces", and then click on "Create codespace on main".
 
@@ -102,10 +102,10 @@ To start using Chapel with a Codespace, use the following steps:
 Building From Source via Spack
 ------------------------------
 
-Chapel provides a `Spack <https://spack.io/>`_ package that can be used to
+Chapel provides a `Spack <https://spack.io/>`__ package that can be used to
 build Chapel from source. This is a good option if you want to use Chapel on a
 system where a binary release is not available or if you want to customize the
-build options. See `this page <https://chapel-lang.org/download/#spack>`_ for
+build options. See `this page <https://chapel-lang.org/download/#spack>`__ for
 more information on how to use Spack to install Chapel.
 
 Building From Source
