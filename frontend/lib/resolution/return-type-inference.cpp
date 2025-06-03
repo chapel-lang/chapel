@@ -34,6 +34,7 @@
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/all-uast.h"
 
+#include "extern-blocks.h"
 #include "Resolver.h"
 #include "resolution/BranchSensitiveVisitor.h"
 
@@ -54,7 +55,8 @@ using namespace uast;
 using namespace types;
 
 // forward declarations
-static QualifiedType adjustForReturnIntent(uast::Function::ReturnIntent ri,
+static QualifiedType adjustForReturnIntent(Context* context,
+                                           uast::Function::ReturnIntent ri,
                                            QualifiedType retType);
 
 
@@ -468,7 +470,7 @@ QualifiedType ReturnTypeInferrer::returnedType() {
       context->error(fnAst, "could not determine return type for function");
       retType = QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
     }
-    auto adjType = adjustForReturnIntent(returnIntent, *retType);
+    auto adjType = adjustForReturnIntent(context, returnIntent, *retType);
     return adjType;
   }
 }
@@ -499,7 +501,11 @@ void ReturnTypeInferrer::doExitScope(const uast::AstNode* node, RV& rv) {
 }
 
 const types::Param* ReturnTypeInferrer::determineWhenCaseValue(const uast::AstNode* ast, RV& rv) {
-  return rv.byAst(ast).type().param();
+  if (auto action = rv.byAst(ast).getAction(AssociatedAction::COMPARE)) {
+    return action->type().param();
+  } else {
+    return nullptr;
+  }
 }
 const types::Param* ReturnTypeInferrer::determineIfValue(const uast::AstNode* ast, RV& rv) {
   return rv.byAst(ast).type().param();
@@ -580,7 +586,7 @@ bool ReturnTypeInferrer::enter(const Continue* cont, RV& rv) {
 void ReturnTypeInferrer::exit(const Continue* cont, RV& rv) {}
 
 bool ReturnTypeInferrer::enter(const Return* ret, RV& rv) {
-  markReturnOrThrow();
+  markReturn();
 
   if (functionKind == Function::ITER) {
     // Plain returns don't count towards type inference for iterators.
@@ -746,14 +752,23 @@ static QualifiedType computeTypeOfField(ResolutionContext* rc,
   return QualifiedType(QualifiedType::VAR, ErroneousType::get(context));
 }
 
-static QualifiedType adjustForReturnIntent(uast::Function::ReturnIntent ri,
+static QualifiedType adjustForReturnIntent(Context* context,
+                                           uast::Function::ReturnIntent ri,
                                            QualifiedType retType) {
 
   QualifiedType::Kind kind = (QualifiedType::Kind) ri;
-  // adjust default / const return intent to 'var'
-  if (kind == QualifiedType::DEFAULT_INTENT ||
-      kind == QualifiedType::VAR) {
+  // adjust const return intent to 'var'
+  if (kind == QualifiedType::VAR) {
     kind = QualifiedType::CONST_VAR;
+  // do the same for default intent, except for aliasing arrays, which
+  // are non-const by default.
+  } else if (kind == QualifiedType::DEFAULT_INTENT) {
+    const ArrayType* at = nullptr;
+    if (retType.type() && (at = retType.type()->toArrayType()) && at->isAliasingArray(context)) {
+      kind = QualifiedType::VAR;
+    } else {
+      kind = QualifiedType::CONST_VAR;
+    }
   }
   return QualifiedType(kind, retType.type(), retType.param());
 }
@@ -1033,6 +1048,11 @@ static bool helpComputeCompilerGeneratedReturnType(ResolutionContext* rc,
       return helpComputeOrderToEnumReturnType(context, sig, result);
     } else if (untyped->name() == "chpl__enumToOrder") {
       return helpComputeEnumToOrderReturnType(context, sig, result);
+    } else if (untyped->idIsExternBlockFunction()) {
+      auto name = untyped->name();
+      auto externBlockId = untyped->id().parentSymbolId(context);
+      result = externBlockRetTypeForFn(context, externBlockId, name);
+      return true;
     }
     CHPL_ASSERT(false && "unhandled compiler-generated function");
     return true;
@@ -1075,7 +1095,7 @@ static bool helpComputeReturnType(ResolutionContext* rc,
     // if it needs instantiation, we don't know the return type yet.
     result = QualifiedType(QualifiedType::UNKNOWN, UnknownType::get(context));
     return true;
-  } else if (untyped->idIsFunction()) {
+  } else if (untyped->idIsFunction() && !untyped->idIsExternBlockFunction()) {
     const AstNode* ast = parsing::idToAst(context, untyped->id());
     const Function* fn = ast->toFunction();
     CHPL_ASSERT(fn);
@@ -1096,7 +1116,7 @@ static bool helpComputeReturnType(ResolutionContext* rc,
 
       auto g = getTypeGenericity(context, result.type());
       if (g == Type::CONCRETE) {
-        result = adjustForReturnIntent(fn->returnIntent(), result);
+        result = adjustForReturnIntent(context, fn->returnIntent(), result);
         return true;
       }
     }
@@ -1140,17 +1160,17 @@ static bool helpComputeReturnType(ResolutionContext* rc,
   return false;
 }
 
-static const QualifiedType&
-returnTypeWithoutIterableQuery(ResolutionContext* rc,
-                               const TypedFnSignature* sig,
-                               const PoiScope* poiScope) {
-  CHPL_RESOLUTION_QUERY_BEGIN(returnTypeWithoutIterableQuery, rc, sig, poiScope);
+const std::pair<QualifiedType, QualifiedType>&
+returnTypes(ResolutionContext* rc,
+            const TypedFnSignature* sig,
+            const PoiScope* poiScope) {
+  CHPL_RESOLUTION_QUERY_BEGIN(returnTypes, rc, sig, poiScope);
 
   Context* context = rc->context();
   const UntypedFnSignature* untyped = sig->untyped();
-  QualifiedType result;
+  std::pair<QualifiedType, QualifiedType> result;
 
-  bool computed = helpComputeReturnType(rc, sig, poiScope, result);
+  bool computed = helpComputeReturnType(rc, sig, poiScope, result.first);
   if (!computed) {
     const AstNode* ast = parsing::idToAst(context, untyped->id());
     const Function* fn = ast->toFunction();
@@ -1160,25 +1180,14 @@ returnTypeWithoutIterableQuery(ResolutionContext* rc,
     // resolveFunction will arrange to call computeReturnType
     // and store the return type in the result.
     if (auto rFn = resolveFunction(rc, sig, poiScope)) {
-      result = rFn->returnType();
+      result.first = rFn->returnType();
     }
   }
 
-  return CHPL_RESOLUTION_QUERY_END(result);
-}
-
-static const QualifiedType& returnTypeQuery(ResolutionContext* rc,
-                                            const TypedFnSignature* sig,
-                                            const PoiScope* poiScope) {
-  CHPL_RESOLUTION_QUERY_BEGIN(returnTypeQuery, rc, sig, poiScope);
-
-  Context* context = rc->context();
-  auto result = returnTypeWithoutIterableQuery(rc, sig, poiScope);
-
-  if (sig->isIterator() && !result.isUnknownOrErroneous()) {
-    result = QualifiedType(result.kind(),
-                           FnIteratorType::get(context, poiScope, sig));
-
+  result.second = result.first;
+  if (sig->isIterator() && !result.second.isUnknownOrErroneous()) {
+    result.second = QualifiedType(result.second.kind(),
+                                  FnIteratorType::get(context, poiScope, sig, result.second));
   }
 
   return CHPL_RESOLUTION_QUERY_END(result);
@@ -1187,14 +1196,14 @@ static const QualifiedType& returnTypeQuery(ResolutionContext* rc,
 QualifiedType returnType(ResolutionContext* rc,
                          const TypedFnSignature* sig,
                          const PoiScope* poiScope) {
-  return returnTypeQuery(rc, sig, poiScope);
+  return returnTypes(rc, sig, poiScope).second;
 }
 
 QualifiedType yieldType(ResolutionContext* rc,
                         const TypedFnSignature* sig,
                         const PoiScope* poiScope) {
   CHPL_ASSERT(sig->isIterator());
-  return returnTypeWithoutIterableQuery(rc, sig, poiScope);
+  return returnTypes(rc, sig, poiScope).first;
 }
 
 static const TypedFnSignature* const&

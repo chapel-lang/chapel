@@ -598,7 +598,7 @@ static void resolveInitCall(CallExpr* call, bool emitCallResolutionErrors,
   if (call->id == breakOnResolveID) {
     printf("breaking on resolve call %d:\n", call->id);
     print_view(call);
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
 
   if (info.isWellFormed(call) == true) {
@@ -742,7 +742,7 @@ static void doGatherInitCandidates(CallInfo&                  info,
         USR_PRINT(visibleFn, "Considering function: %s", toString(visibleFn));
 
         if (info.call->id == breakOnResolveID) {
-          gdbShouldBreakHere();
+          debuggerBreakHere();
         }
       }
 
@@ -786,7 +786,7 @@ static void resolveInitializerMatch(FnSymbol* fn) {
     if (fn->id == breakOnResolveID) {
       printf("breaking on resolve fn %s[%d] (%d args)\n",
              fn->name, fn->id, fn->numFormals());
-      gdbShouldBreakHere();
+      debuggerBreakHere();
     }
 
     insertFormalTemps(fn);

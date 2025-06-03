@@ -33,11 +33,10 @@ if [[ "$SKIP_ML_PLAYGROUND" == "1" ]]; then
   exit
 fi
 
-# Test performance with the latest qthreads release.
-GITHUB_USER=insertinterestingnamehere
-GITHUB_BRANCH=qthread
-SHORT_NAME=qthread122
-START_DATE=03/10/25
+GITHUB_USER=chapel-lang
+GITHUB_BRANCH=main
+SHORT_NAME=main
+START_DATE=05/09/25
 
 set -e
 checkout_branch $GITHUB_USER $GITHUB_BRANCH
@@ -49,4 +48,5 @@ perf_args="-performance-description $SHORT_NAME -perflabel ml-"
 perf_args="${perf_args} -performance-configs gn-ibv-large:v,gn-ibv-fast:v,$SHORT_NAME:v -sync-dir-suffix $SHORT_NAME"
 perf_args="${perf_args} -numtrials 1 -startdate $START_DATE"
 
-$UTIL_CRON_DIR/nightly -cron ${perf_args} ${nightly_args}
+$UTIL_CRON_DIR/nightly -cron ${perf_args} ${nightly_args} -compopts '--mllvm -vector-library=LIBMVEC-X86'
+

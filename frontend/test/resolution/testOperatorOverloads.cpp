@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+#include "test-common.h"
 #include "test-resolution.h"
 
 // basic definition tests with cast operator
@@ -41,6 +42,7 @@ static void test1() {
   // primary operator method
   QualifiedType qt2 = resolveTypeOfXInit(context,
     R""""(
+      operator =(ref lhs: int, const rhs: int) {}
       record R {
         var field: int;
         operator :(z: R, type t: int) { return z.field; }
@@ -56,6 +58,7 @@ static void test1() {
   // secondary operator method
   QualifiedType qt3 = resolveTypeOfXInit(context,
     R""""(
+      operator =(ref lhs: int, const rhs: int) {}
       record R {
         var field: int;
       }
@@ -71,6 +74,7 @@ static void test1() {
   // non-method operator
   QualifiedType qt4 = resolveTypeOfXInit(context,
     R""""(
+      operator =(ref lhs: int, const rhs: int) {}
       record R {
         var field: int;
       }
@@ -92,6 +96,7 @@ static void test2() {
   // method and function operator definitions in the same scope should conflict (ambiguous call)
   QualifiedType qt1 = resolveTypeOfXInit(context,
     R""""(
+      operator =(ref lhs: int, const rhs: int) {}
       record R {
         var field: int;
       }
@@ -108,6 +113,7 @@ static void test2() {
   // access to R should implicitly grant access to its method operators
   QualifiedType qt2 = resolveTypeOfXInit(context,
     R""""(
+      operator =(ref lhs: int, const rhs: int) {}
       module M {
         record R {
           var field: int;
@@ -133,6 +139,7 @@ static void test3() {
   // incorrectly defined unary operator overload
   QualifiedType qt1 = resolveTypeOfXInit(context,
     R""""(
+      operator =(ref lhs: int, const rhs: int) {}
       record R {
         var field: int;
         operator !(z: R, type t: int) { return z.field; }
@@ -148,6 +155,7 @@ static void test3() {
   // correct unary operator overload
   QualifiedType qt2 = resolveTypeOfXInit(context,
     R""""(
+      operator =(ref lhs: int, const rhs: int) {}
       record R {
         var field: int;
         operator !(z: R) { return z.field; }
@@ -163,6 +171,7 @@ static void test3() {
   // overloading more operators
   QualifiedType qt3 = resolveTypeOfXInit(context,
     R""""(
+      operator =(ref lhs: int, const rhs: int) {}
       record R {
         var field: int;
         operator +(z: R, t: int) { return z.field; }
@@ -177,6 +186,7 @@ static void test3() {
 
   QualifiedType qt4 = resolveTypeOfXInit(context,
     R""""(
+      operator =(ref lhs: int, const rhs: int) {}
       record R {
         var field: int;
         operator >(z: R, t: complex) { return true; }
@@ -191,6 +201,7 @@ static void test3() {
 
   QualifiedType qt5 = resolveTypeOfXInit(context,
     R""""(
+      operator =(ref lhs: int, const rhs: int) {}
       record R {
         var field: int;
       }
@@ -207,6 +218,7 @@ static void test3() {
   // overloading operator for non-compound types
   QualifiedType qt6 = resolveTypeOfXInit(context,
     R""""(
+      operator =(ref lhs: int, const rhs: int) {}
       operator *(a: int, b: int) { return true; }
       var a: int = 2;
       var b: int = 3;
@@ -220,12 +232,13 @@ static void test3() {
 
 // test that we get a compiler generated record method for `==` when none exist
 static void test4() {
-  Context ctx;
-  Context* context = &ctx;
+  // generated field comparison uses chpl_field_neq, which is part of the stdib.
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program =
     R""""(
+      operator =(ref lhs: int, const rhs: int) {}
       record R {
         var x : int;
       }
@@ -252,10 +265,12 @@ static void test5() {
 
   std::string program =
     R""""(
+      operator =(ref lhs: real, const rhs: real) {}
+      operator =(ref lhs: int, const rhs: int) {}
       record R {
         var x : int;
       }
-      operator R.==(a: R, b: R) { return "true"; }
+      operator R.==(a: R, b: R) { return 4.2; }
 
       var a : R;
       var b : R;
@@ -264,7 +279,7 @@ static void test5() {
     )"""";
 
   QualifiedType initType = resolveTypeOfXInit(context, program);
-  assert(initType.type()->isStringType());
+  assert(initType.type()->isRealType());
   assert(initType.kind() == QualifiedType::CONST_VAR);
 }
 
@@ -277,6 +292,7 @@ static void test6() {
 
   std::string program =
     R""""(
+      operator =(ref lhs: int, const rhs: int) {}
       record R {
         var x : int;
       }
@@ -296,12 +312,12 @@ static void test6() {
 // test that we do get a compiler generated record method for `==`
 // when other operators exist
 static void test7() {
-  Context ctx;
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program =
     R""""(
+      operator =(ref lhs: int, const rhs: int) {}
       record R {
         var x : int;
       }
@@ -319,10 +335,58 @@ static void test7() {
   assert(initType.kind() == QualifiedType::CONST_VAR);
 }
 
+// test that we do get a compiler generated record method for `==`
+// even when == exists for R and another type (this matches production).
+static void test7b() {
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program =
+    R""""(
+      record R {
+        var x : int;
+      }
+      operator R.==(a:R,b:int) { return 2; }
+
+      var a : R;
+      var b : R;
+
+      var x = a == b;
+    )"""";
+
+  QualifiedType initType = resolveTypeOfXInit(context, program);
+  assert(initType.type()->isBoolType());
+  assert(initType.kind() == QualifiedType::CONST_VAR);
+}
+
+// for generic types, test that we get a compiler generated method for `==`
+// even if a specialized `==` exists for different types.
+static void test7c() {
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program =
+    R""""(
+      record R {
+        var field;
+      }
+      operator R.==(a:R(int), b:R(int)) { return 2; }
+
+      var a = new R(0);
+      var b = new R(0.0);
+
+      var x = a == a;
+      var y = b == b;
+    )"""";
+
+  auto vars = resolveTypesOfVariables(context, program, {"x", "y"});
+  assert(vars.at("x").type() && vars.at("x").type()->isIntType());
+  assert(vars.at("y").type() && vars.at("y").type()->isBoolType());
+}
+
 // test that we get compiler generated methods for = and == when inside a proc
 static void test8() {
-  Context ctx;
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program =
@@ -377,6 +441,258 @@ static void test9() {
   assert(qt.kind() == QualifiedType::CONST_VAR);
 }
 
+static void helpTestGeneratedComparisons(std::string program, std::vector<std::string> trace) {
+  std::string wrapper = R"""(
+    record wrapper {
+      var x;
+
+      operator <(lhs: wrapper, rhs: wrapper) {
+        compilerWarning("operator < with " + (lhs.x.type : string));
+        return lhs.x < rhs.x;
+      }
+
+      operator >(lhs: wrapper, rhs: wrapper) {
+        compilerWarning("operator > with " + (lhs.x.type : string));
+        return lhs.x > rhs.x;
+      }
+
+      operator ==(lhs: wrapper, rhs: wrapper) {
+        compilerWarning("operator == with " + (lhs.x.type : string));
+        return lhs.x == rhs.x;
+      }
+
+      operator !=(lhs: wrapper, rhs: wrapper) {
+        compilerWarning("operator != with " + (lhs.x.type : string));
+        return lhs.x != rhs.x;
+      }
+    }
+  )""";
+
+  auto wholeProg = wrapper + program;
+
+  auto ctx = buildStdContext();
+  ErrorGuard guard(ctx);
+  auto result = resolveTypesOfVariables(ctx, wholeProg, {});
+
+  int index = 0;
+  assert(guard.numErrors() == trace.size() * 2);
+  for (auto& op : trace) {
+    assert(guard.error(index)->message().find(op) != std::string::npos);
+    index += 2;
+  }
+
+  assert(guard.realizeErrors(/* countWarnings */ false) == 0);
+}
+
+// test compiler-generated comparison operators
+static void test10() {
+  helpTestGeneratedComparisons(
+      R"""(
+      record R {
+        var x: wrapper(int);
+      }
+      var tmp = new R() == new R();
+      )""", { "!= with int" });
+
+  helpTestGeneratedComparisons(
+      R"""(
+      record R {
+        var x: wrapper(int);
+        var y: wrapper(bool);
+      }
+      var tmp = new R() == new R();
+      )""", { "!= with int", "!= with bool" });
+
+  helpTestGeneratedComparisons(
+      R"""(
+      record R {
+        var x: wrapper(int);
+        var y: wrapper(bool);
+        var z: wrapper(real);
+      }
+      var tmp = new R() == new R();
+      )""", { "!= with int", "!= with bool", "!= with real" });
+
+  helpTestGeneratedComparisons(
+      R"""(
+      record R {
+        var x: wrapper(int);
+        var y: wrapper(bool);
+        var z: wrapper(real);
+      }
+      var tmp = new R() < new R();
+      )""", { "< with int", "> with int",
+              "< with bool", "> with bool",
+              "< with real", "> with real" });
+
+  helpTestGeneratedComparisons(
+      R"""(
+      record R {
+        var x: wrapper(int);
+        var y: wrapper(bool);
+        var z: wrapper(real);
+      }
+      var tmp = new R() > new R();
+      )""", { "> with int", "< with int",
+              "> with bool", "< with bool",
+              "> with real", "< with real" });
+
+  helpTestGeneratedComparisons(
+      R"""(
+      record R {
+        var x: wrapper(int);
+        var y: wrapper(bool);
+        var z: wrapper(real);
+      }
+      var tmp = new R() <= new R();
+      )""", { "< with int", "> with int",
+              "< with bool", "> with bool",
+              "< with real", "> with real" });
+
+  helpTestGeneratedComparisons(
+      R"""(
+      record R {
+        var x: wrapper(int);
+        var y: wrapper(bool);
+        var z: wrapper(real);
+      }
+      var tmp = new R() >= new R();
+      )""", { "> with int", "< with int",
+              "> with bool", "< with bool",
+              "> with real", "< with real" });
+
+  helpTestGeneratedComparisons(
+      R"""(
+      record R {
+        type typeField = int;
+        var x: wrapper(int);
+        var y: wrapper(bool);
+        var z: wrapper(real);
+      }
+      var tmp = new R() >= new R();
+      )""", { "> with int", "< with int",
+              "> with bool", "< with bool",
+              "> with real", "< with real" });
+}
+
+// test that we generate enum-to-string casts if they are not present
+static void test11() {
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program =
+    R""""(
+      enum E { A, B, C }
+      var e = E.A;
+      var x = e : string;
+      var y = e : bytes;
+    )"""";
+
+  auto vars = resolveTypesOfVariables(context, program, {"x", "y"});
+  assert(vars.at("x").type() && vars.at("x").type()->isStringType());
+  assert(vars.at("y").type() && vars.at("y").type()->isBytesType());
+}
+
+// test that enum-to-string casts are skipped if user overloads are present
+static void test12() {
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program =
+    R""""(
+      enum E { A, B, C }
+      operator E.:(e: E, type t: string) { return 42; }
+      operator E.:(e: E, type t: bytes) { return 42.0; }
+      var e = E.A;
+      var x = e : string;
+      var y = e : bytes;
+    )"""";
+
+  auto vars = resolveTypesOfVariables(context, program, {"x", "y"});
+  assert(vars.at("x").type() && vars.at("x").type()->isIntType());
+  assert(vars.at("y").type() && vars.at("y").type()->isRealType());
+}
+
+// test that where-based overloads are handled appropriately when deciding
+// to generate defaults.
+static void test13a() {
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program =
+    R""""(
+      enum E { A, B, C }
+      operator E.:(e: E, type t) where isUintType(t) { return 42; }
+      operator E.:(e: E, type t) where t == bytes { return 42.0; }
+      var e = E.A;
+      var x = e : string;
+      var y = e : bytes;
+    )"""";
+
+  auto vars = resolveTypesOfVariables(context, program, {"x", "y"});
+  assert(vars.at("x").type() && vars.at("x").type()->isStringType());
+  assert(vars.at("y").type() && vars.at("y").type()->isRealType());
+}
+
+static void test13b() {
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program =
+    R""""(
+      enum E { A, B, C }
+      operator :(e: ?t, type target: string) where isIntType(t) { return 42; }
+      operator :(e: ?t, type target: bytes) where t == E { return 42.0; }
+      var e = E.A;
+      var x = e : string;
+      var y = e : bytes;
+    )"""";
+
+  auto vars = resolveTypesOfVariables(context, program, {"x", "y"});
+  assert(vars.at("x").type() && vars.at("x").type()->isStringType());
+  assert(vars.at("y").type() && vars.at("y").type()->isRealType());
+}
+
+// test that we generate string-to-enum casts if they are not present
+static void test14() {
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program =
+    R""""(
+      enum E { A, B, C }
+      var es = "A";
+      var eb = b"A";
+      var x = es : E;
+      var y = eb : E;
+    )"""";
+
+  auto vars = resolveTypesOfVariables(context, program, {"x", "y"});
+  assert(vars.at("x").type() && vars.at("x").type()->isEnumType());
+  assert(vars.at("y").type() && vars.at("y").type()->isEnumType());
+}
+
+// test that enum-to-string casts are skipped if user overloads are present
+static void test15() {
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program =
+    R""""(
+      enum E { A, B, C }
+      operator E.:(e: string, type t: E) { return 42; }
+      operator E.:(e: bytes, type t: E) { return 42.0; }
+      var es = "A";
+      var eb = b"A";
+      var x = es : E;
+      var y = eb : E;
+    )"""";
+
+  auto vars = resolveTypesOfVariables(context, program, {"x", "y"});
+  assert(vars.at("x").type() && vars.at("x").type()->isIntType());
+  assert(vars.at("y").type() && vars.at("y").type()->isRealType());
+}
+
 int main() {
   test1();
   test2();
@@ -385,8 +701,17 @@ int main() {
   test5();
   test6();
   test7();
+  test7b();
+  test7c();
   test8();
   test9();
+  test10();
+  test11();
+  test12();
+  test13a();
+  test13b();
+  test14();
+  test15();
 
   return 0;
 }

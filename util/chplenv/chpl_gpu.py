@@ -457,6 +457,9 @@ def _validate_cuda_llvm_version_impl(gpu: gpu_type):
             "LLVM not built for %s, consider setting CHPL_LLVM to 'bundled'." %
             gpu.llvm_target, allowExempt=False
         )
+    if int(chpl_llvm.get_llvm_version()) >= 20:
+        error("Chapel does not support LLVM 20+ with CHPL_GPU=nvidia. "
+              "Please use CHPL_LLVM=bundled or LLVM 19 or earlier.")
 
 def _validate_rocm_llvm_version_impl(gpu: gpu_type):
     major_version = get_sdk_version().split('.')[0]
@@ -539,9 +542,12 @@ def _validate_rocm_version_impl():
     """Check that the installed ROCM version is >= MIN_REQ_VERSION and <
        MAX_REQ_VERSION"""
     MIN_REQ_VERSION = "5.0"
-    MAX_REQ_VERSION = "5.5"
-    MIN_ROCM6_REQ_VERSION = "6"
-    MAX_ROCM6_REQ_VERSION = "6.3"
+    MAX_REQ_VERSION = "5.5" # upper bound non-inclusive
+    MAX_REQ_VERSION_NICE = "5.4.x"
+
+    MIN_ROCM6_REQ_VERSION = "6.0"
+    MAX_ROCM6_REQ_VERSION = "6.3" # upper bound non-inclusive
+    MAX_ROCM6_REQ_VERSION_NICE = "6.2.x"
 
     rocm_version = get_sdk_version()
 
@@ -551,9 +557,9 @@ def _validate_rocm_version_impl():
 
     if not is_ver_in_range(rocm_version, MIN_REQ_VERSION, MAX_REQ_VERSION) and not is_ver_in_range(rocm_version, MIN_ROCM6_REQ_VERSION, MAX_ROCM6_REQ_VERSION):
         _reportMissingGpuReq(
-            "Chapel requires ROCm to be a version between %s and %s or between %s and %s, "
+            "Chapel requires ROCm versions %s to %s or %s to %s, "
             "detected version %s on system." %
-            (MIN_REQ_VERSION, MAX_REQ_VERSION, MIN_ROCM6_REQ_VERSION, MAX_ROCM6_REQ_VERSION, rocm_version))
+            (MIN_REQ_VERSION, MAX_REQ_VERSION_NICE, MIN_ROCM6_REQ_VERSION, MAX_ROCM6_REQ_VERSION_NICE, rocm_version))
         return False
 
     return True

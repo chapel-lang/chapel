@@ -183,6 +183,10 @@ module ChplConfig {
   param CHPL_LLVM:string;
   CHPL_LLVM = __primitive("get compiler variable", "CHPL_LLVM");
 
+  @unstable("'ChplConfig.CHPL_LLVM_VERSION' is unstable and may be replaced with a different way to access this information in the future")
+  param CHPL_LLVM_VERSION:string;
+  CHPL_LLVM_VERSION = __primitive("get compiler variable", "CHPL_LLVM_VERSION");
+
   @chpldoc.nodoc
   @unstable("'ChplConfig.CHPL_GPU_MEM_STRATEGY' is unstable and may be replaced with a different way to access this information in the future")
   param CHPL_GPU_MEM_STRATEGY:string;

@@ -90,8 +90,7 @@ pbs-gasnetrun_ibv     queue jobs using PBS (qsub)
 lsf-gasnetrun_ibv     queue jobs using LSF (bsub)
 ===================  ======================================
 
-``CHPL_LAUNCHER`` will typically default to ``gasnetrun_ibv`` unless
-``CHPL_HOST_PLATFORM`` is ``cray-cs`` or ``hpe-apollo`` and ``srun``
+``CHPL_LAUNCHER`` will typically default to ``gasnetrun_ibv`` unless ``salloc``
 is in your path, in which case it will default to
 ``slurm-gasnetrun_ibv``
 
@@ -282,6 +281,10 @@ an absolute value with something like
 Setting ``GASNET_PHYSMEM_MAX`` to a small value can limit
 communication performance so it is highly recommended to use the value
 GASNet suggests.
+
+.. index::
+   single: colocale
+   single: co-locale
 
 ----------
 Co-locales

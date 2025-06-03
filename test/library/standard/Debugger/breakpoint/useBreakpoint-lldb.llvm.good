@@ -1,0 +1,5 @@
+(lldb) p/d myVariable
+(long) 0
+--
+(lldb) p/d myVariable
+(long) 17

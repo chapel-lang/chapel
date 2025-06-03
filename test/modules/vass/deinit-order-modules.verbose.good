@@ -20,16 +20,18 @@ uv1a.deinit
 uv3a.deinit
   UM4implicitDeinit
 uv4bi.deinit
-  Time
   UM2
 uv2a.deinit
   UM4explicitDeinit
 UM4explicitDeinit.deinit user
 uv4ae.deinit UC
+  ChapelDynamicLoading
   MemTracking
   LocalesArray
   LocaleModel
   DefaultRectangular
   ChapelArray
+  Time
+  CompressedSparseLayout
   IO
   ChapelLocale

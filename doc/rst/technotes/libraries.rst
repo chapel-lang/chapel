@@ -92,18 +92,18 @@ Library Name
 
 The generated library name will be the same as the file being compiled, except
 it will start with ``lib`` if the name does not already, and it will be followed
-by a ``.so`` or ``.a`` suffix.  Thus, in the example above, the generated
-library will be named ``libfoo.so`` or ``libfoo.a``.
+by a ``.so``/``.dylib`` or ``.a`` suffix.  Thus, in the example above, the generated
+library will be named ``libfoo.so``/``libfoo.dylib`` or ``libfoo.a``.
 
 .. code-block:: bash
 
    # Builds library as lib/libfoo.a
    chpl --library --static foo.chpl
 
-   # Builds library as lib/libfoo.so
+   # Builds library as lib/libfoo.so (On MacOS, lib/libfoo.dylib)
    chpl --library --dynamic foo.chpl
 
-   # Builds library as lib/libfoo.so (note: file named libfoo.chpl)
+   # Builds library as lib/libfoo.so (On MacOS, lib/libfoo.dylib) (note: file named libfoo.chpl)
    chpl --library --dynamic libfoo.chpl
 
 The basename used (the ``foo`` portion) can be changed with the ``-o`` or

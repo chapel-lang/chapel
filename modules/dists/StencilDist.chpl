@@ -73,7 +73,6 @@ private config param allowDuplicateTargetLocales = false;
 config const stencilDistPackedUpdateMinChunks = 1;
 
 // Re-uses these flags from BlockDist:
-//   - disableAliasedBulkTransfer
 //   - sanityCheckDistribution
 //   - testFastFollowerOptimization
 
@@ -938,6 +937,7 @@ proc type stencilDist.createDomain(
 }
 
 // create a domain over a Stencil Distribution constructed from a series of ranges
+pragma "last resort"
 proc type stencilDist.createDomain(
   rng: range(?)...,
   targetLocales: [] locale = Locales,
@@ -1005,6 +1005,7 @@ proc type stencilDist.createArray(
 
 // create an array over a Stencil Distribution constructed from a series of ranges, default initialized
 pragma "no copy return"
+pragma "last resort"
 proc type stencilDist.createArray(
   rng: range(?)...,
   type eltType,
@@ -1030,6 +1031,7 @@ proc type stencilDist.createArray(rng: range(?)..., type eltType, initExpr: ?t)
 }
 
 pragma "no copy return"
+pragma "last resort"
 proc type stencilDist.createArray(
   rng: range(?)...,
   type eltType,
@@ -1053,6 +1055,7 @@ proc type stencilDist.createArray(
 }
 
 pragma "no copy return"
+pragma "last resort"
 proc type stencilDist.createArray(
   rng: range(?)...,
   type eltType,

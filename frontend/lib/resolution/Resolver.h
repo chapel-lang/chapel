@@ -37,7 +37,12 @@ namespace resolution {
 
 struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
   // types used below
-  using ActionAndId = std::tuple<AssociatedAction::Action, ID>;
+  struct ActionInfo {
+    public:
+      AssociatedAction::Action action;
+      ID id;
+      types::QualifiedType type;
+  };
   using SubstitutionsMap = types::CompositeType::SubstitutionsMap;
   using ReceiverScopesVec = SimpleMethodLookupHelper::ReceiverScopesVec;
   using IgnoredExtraData = std::variant<std::monostate>;
@@ -528,17 +533,17 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
     //
     // Instead, returns 'true' if an error needs to be issued.
     bool noteResultWithoutError(ResolvedExpression* r,
-                                optional<ActionAndId> associatedActionAndId = {});
+                                optional<ActionInfo> associatedActionInfo = {});
 
     static bool noteResultWithoutError(Resolver& resolver,
                                        ResolvedExpression* r,
                                        const uast::AstNode* astForContext,
                                        const CallResolutionResult& c,
-                                       optional<ActionAndId> associatedActionAndId = {});
+                                       optional<ActionInfo> associatedActionInfo = {});
 
     // Same as noteResultWithoutError, but also issues errors.
     void noteResult(ResolvedExpression* r,
-                    optional<ActionAndId> associatedActionAndId = {});
+                    optional<ActionInfo> associatedActionInfo = {});
 
     // Issues a more specific error (listing rejected candidates) if possible.
     // To collect the candidates, re-runs the call. Returns true if an error
@@ -548,7 +553,7 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
     // Like noteResult, except attempts to do more work to print fancier errors
     // (see rerunCallAndPrintCandidates).
     void noteResultPrintCandidates(ResolvedExpression* r,
-                                   optional<ActionAndId> associatedActionAndId = {});
+                                     optional<ActionInfo> associatedActionInfo = {});
   };
 
   /* The resolver's wrapper of resolution::resolveGeneratedCall.
@@ -597,26 +602,18 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
   // handles setting types of variables for split init with 'out' formals
   void adjustTypesForOutFormals(const CallInfo& ci,
                                 const std::vector<const uast::AstNode*>& asts,
-                                const MostSpecificCandidates& fns);
-
-  // e.g. (a, b) = mytuple
-  // checks that tuple size matches and that the elements are assignable
-  // saves any '=' called into r.associatedFns
-  void resolveTupleUnpackAssign(ResolvedExpression& r,
-                                const uast::AstNode* astForErr,
-                                const uast::Tuple* lhsTuple,
-                                types::QualifiedType lhsType,
-                                types::QualifiedType rhsType);
+                                const CallResolutionResult& crr);
 
   // helper for resolveTupleDecl
   // e.g. var (a, b) = mytuple
   // checks that tuple size matches and establishes types for a and b
   void resolveTupleUnpackDecl(const uast::TupleDecl* lhsTuple,
-                              types::QualifiedType rhsType);
+                              const types::QualifiedType& rhsType);
 
   // e.g. var (a, b) = mytuple
+  void resolveTupleDecl(const uast::TupleDecl* td);
   void resolveTupleDecl(const uast::TupleDecl* td,
-                        const types::Type* useType);
+                        types::QualifiedType useType);
 
   void validateAndSetToId(ResolvedExpression& r,
                           const uast::AstNode* exr,

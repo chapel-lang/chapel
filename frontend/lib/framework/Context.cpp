@@ -721,7 +721,8 @@ void Context::setFilePathForModuleId(ID moduleID, UniqueString path) {
                        tupleOfArgs, path,
                        "filePathForModuleIdSymbolPathQuery",
                        /* isInputQuery */ false,
-                       /* forSetter */ true);
+                       /* forSetter */ true,
+                       /* markExternallySet */ false);
 
   if (enableDebugTrace) {
     printf("%i SETTING FILE PATH FOR MODULE %s -> %s\n", queryTraceDepth,
@@ -784,7 +785,7 @@ bool Context::pathIsInLibrary(UniqueString filePath,
     return true;
   }
 
-  pathOut = UniqueString::get(this, "<unknown library path>");
+  pathOut = USTR("<unknown library path>");
   return false;
 }
 
@@ -810,7 +811,8 @@ void Context::registerLibraryForModule(ID moduleId,
                        tupleOfArgs, libPath,
                        "pathHasLibraryQuery",
                        /* isInputQuery */ false,
-                       /* forSetter */ true);
+                       /* forSetter */ true,
+                       /* markExternallySet */ false);
 
   // also update the lookup by module ID
   setFilePathForModuleId(moduleId, filePath);
@@ -912,7 +914,7 @@ void Context::collectGarbage() {
 
 void Context::report(owned<ErrorBase> error) {
   if (!config_.disableErrorBreakpoints) {
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
 
   // If errorCollectionStack is not empty, errors are being collected, and
@@ -1041,6 +1043,9 @@ void Context::recomputeIfNeeded(const QueryMapResultBase* resultEntry) {
   //         resultEntry->parentQueryMap->queryName);
   //}
 
+  // we should not be trying to recompute a query that's set by other queries.
+  CHPL_ASSERT(!resultEntry->externallySet);
+
   if (this->currentRevisionNumber == resultEntry->lastChecked) {
     // No need to check the dependencies again.
     // We already know that we can reuse the result.
@@ -1064,7 +1069,7 @@ void Context::recomputeIfNeeded(const QueryMapResultBase* resultEntry) {
   resultEntry->beingTestedForReuse = true;
   for (auto& dependency : resultEntry->dependencies) {
     const QueryMapResultBase* dependencyQuery = dependency.query;
-    if (dependencyQuery->lastChanged > resultEntry->lastChanged) {
+    if (dependencyQuery->externallySet || dependencyQuery->lastChanged > resultEntry->lastChanged) {
       useSaved = false;
       break;
     } else if (this->currentRevisionNumber == dependencyQuery->lastChecked) {
@@ -1144,6 +1149,10 @@ bool Context::queryCanUseSavedResult(
   } else if (this->currentRevisionNumber == resultEntry->lastChecked) {
     // the query was already checked/run in this revision
     useSaved = true;
+  } else if (resultEntry->externallySet) {
+    // queries set externally in the previous generation are not safe to re-use,
+    // we should re-run the code that sets them.
+    useSaved = false;
   } else if (resultEntry->recursionErrors.size()) {
     // If the query had recursion, don't re-use its result
     // in subsequent generations.
@@ -1169,6 +1178,11 @@ bool Context::queryCanUseSavedResult(
     resultEntry->beingTestedForReuse = true;
     for (auto& dependency: resultEntry->dependencies) {
       const QueryMapResultBase* dependencyQuery = dependency.query;
+
+      if (dependencyQuery->externallySet) {
+        useSaved = false;
+        break;
+      }
 
       if (dependency.errorCollectionRoot) {
         errorCollectionStack.push_back(
@@ -1281,13 +1295,13 @@ void Context::saveDependencyInParent(const QueryMapResultBase* resultEntry) {
       // Should only happen if recursion occurred, in which case do not add it
       // to dependencies, in which case code below will skip it.
       CHPL_ASSERT(resultEntry->recursionErrors.count(resultEntry) > 0);
-    } else if (resultEntry->recursionErrors.count(resultEntry) > 0) {
+    } else if (resultEntry->recursionErrors.contains(resultEntry)) {
       // Skip adding recursion error triggers to the dependency graph
       // to avoid creating cycles.
     } else {
       bool errorCollectionRoot = !errorCollectionStack.empty() &&
                                  errorCollectionStack.back().collectingQuery() == parentQuery;
-      parentQuery->dependencies.push_back(QueryDependency(resultEntry, errorCollectionRoot));
+      parentQuery->dependencies.emplace_back(resultEntry, errorCollectionRoot);
       if (!errorCollectionRoot) {
         parentQuery->errorsPresentInSelfOrDependencies |=
           resultEntry->errorsPresentInSelfOrDependencies;
@@ -1295,8 +1309,10 @@ void Context::saveDependencyInParent(const QueryMapResultBase* resultEntry) {
     }
 
     // Propagate query errors that occurred in the child query to the parent
-    parentQuery->recursionErrors.insert(resultEntry->recursionErrors.begin(),
-                                        resultEntry->recursionErrors.end());
+    if (!resultEntry->recursionErrors.empty()) {
+      parentQuery->recursionErrors.insert(resultEntry->recursionErrors.begin(),
+                                          resultEntry->recursionErrors.end());
+    }
   }
 
   // The resultEntry might have been a query that silences errors. However,
@@ -1398,6 +1414,7 @@ void queryArgsPrintSep(std::ostream& s) {
 QueryMapResultBase::QueryMapResultBase(RevisionNumber lastChecked,
                    RevisionNumber lastChanged,
                    bool beingTestedForReuse,
+                   bool externallySet,
                    bool emittedErrors,
                    size_t oldResultForErrorContents,
                    llvm::SmallPtrSet<const QueryMapResultBase*, 2> recursionErrors,
@@ -1405,6 +1422,7 @@ QueryMapResultBase::QueryMapResultBase(RevisionNumber lastChecked,
   : lastChecked(lastChecked),
     lastChanged(lastChanged),
     beingTestedForReuse(beingTestedForReuse),
+    externallySet(externallySet),
     emittedErrors(emittedErrors),
     errorsPresentInSelfOrDependencies(0),
     oldResultForErrorContents(oldResultForErrorContents),

@@ -39,6 +39,9 @@
 #include "llvm/Support/raw_ostream.h"
 
 #ifdef HAVE_LLVM
+
+#include "clangUtil.h"
+
 // Forward declare MDNode.
 namespace llvm
 {
@@ -174,12 +177,22 @@ public:
   const char* getDeprecationMsg() const;
   void maybeGenerateDeprecationWarning(Expr* context);
 
+  QualifiedType
+  static computeQualifiedType(bool isFormal, IntentTag intent, Type* type,
+                              Qualifier qual,
+                              bool isConst);
 
   std::string unstableMsg;
   const char* getUnstableMsg() const;
   void maybeGenerateUnstableWarning(Expr* context);
 
   const char* getSanitizedMsg(std::string msg) const;
+
+  std::string firstEdition;
+  std::string lastEdition;
+
+  std::string getFirstEdition() const;
+  std::string getLastEdition() const;
 
 protected:
                      Symbol(AstTag      astTag,
@@ -334,10 +347,7 @@ public:
 
   bool   isVisible(BaseAST* scope)                 const override;
 
-  bool            requiresCPtr();
   const char*     intentDescrString() const;
-
-  GenRet          codegenType();
 
   std::string     getPythonType(PythonFileType pxd);
   std::string     getPythonDefaultValue();
@@ -449,12 +459,14 @@ enum AlignmentStatus {
   // >1 ==> the ABI alignment
 };
 
-// These map from Chapel function types to LLVM function types. They
-// live here rather than in 'llvmUtil.h' because of a name conflict
-// between 'Type' and 'llvm::Type'.
+// Given a Chapel function type, fetch the associated local LLVM type.
 #ifdef HAVE_LLVM
-bool llvmMapUnderlyingFunctionType(FunctionType* k, llvm::FunctionType* v);
-llvm::FunctionType* llvmGetUnderlyingFunctionType(FunctionType* t);
+struct LlvmFunctionInfo {
+  llvm::FunctionType* type = nullptr;
+  llvm::AttributeList attrs;
+};
+
+const LlvmFunctionInfo& fetchLocalFunctionTypeLlvm(FunctionType* t);
 #endif
 
 class TypeSymbol final : public Symbol {

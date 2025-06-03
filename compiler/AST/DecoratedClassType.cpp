@@ -402,68 +402,9 @@ static Type* convertToCanonical(Type* a) {
   return canonicalDecoratedClassType(a);
 }
 
-
 static void convertClassTypes(void) {
-
-  forv_Vec(VarSymbol, var, gVarSymbols) {
-    Type* newT = convertToCanonical(var->type);
-    if (newT != var->type) var->type = newT;
-  }
-
-  forv_Vec(ArgSymbol, arg, gArgSymbols) {
-    Type* newT = convertToCanonical(arg->type);
-    if (newT != arg->type) arg->type = newT;
-  }
-
-  forv_Vec(ShadowVarSymbol, sv, gShadowVarSymbols) {
-    Type* newT = convertToCanonical(sv->type);
-    if (newT != sv->type) sv->type = newT;
-  }
-
-  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    Type* newT = convertToCanonical(ts->type);
-    if (newT != ts->type) {
-      TypeSymbol* newTS = newT->symbol;
-      for_SymbolSymExprs(se, ts) {
-        se->setSymbol(newTS);
-      }
-    }
-
-    size_t n = ts->type->substitutionsPostResolve.size();;
-    for (size_t i = 0; i < n; i++) {
-      NameAndSymbol& ns = ts->type->substitutionsPostResolve[i];
-      if (TypeSymbol* ets = toTypeSymbol(ns.value)) {
-        Type* newT = convertToCanonical(ets->type);
-        if (newT != ets->type) {
-          TypeSymbol* newTS = newT->symbol;
-          ns.value = newTS;
-        }
-      }
-    }
-  }
-
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    Type* newRetT = convertToCanonical(fn->retType);
-    if (newRetT != fn->retType) fn->retType = newRetT;
-
-    if (fn->iteratorInfo) {
-      Type* newYieldT = convertToCanonical(fn->iteratorInfo->yieldedType);
-      if (newYieldT != fn->iteratorInfo->yieldedType)
-        fn->iteratorInfo->yieldedType = newYieldT;
-    }
-
-    size_t n = fn->substitutionsPostResolve.size();
-    for (size_t i = 0; i < n; i++) {
-      NameAndSymbol& ns = fn->substitutionsPostResolve[i];
-      if (TypeSymbol* ets = toTypeSymbol(ns.value)) {
-        Type* newT = convertToCanonical(ets->type);
-        if (newT != ets->type) {
-          TypeSymbol* newTS = newT->symbol;
-          ns.value = newTS;
-        }
-      }
-    }
-  }
+  AdjustTypeFn adjustTypeFn = convertToCanonical;
+  adjustAllSymbolTypes(adjustTypeFn);
 }
 
 void convertClassTypesToCanonical() {

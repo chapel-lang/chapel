@@ -72,7 +72,7 @@ proc main() {
     writeln("tolist: ", lst);
 
     var pyArray = arrRef.value(owned PyArray(real(32), 3));
-    var result = pyArray.these();
+    var result = pyArray.values();
     writeln("Round tripped array:\n", result);
   }
 

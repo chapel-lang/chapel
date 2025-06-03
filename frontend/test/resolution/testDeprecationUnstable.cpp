@@ -222,6 +222,8 @@ static void test0(void) {
   std::string contents =
     R""""(
     module testDeprecationWarningsForTypes {
+      operator =(ref lhs: int, const rhs: int) {}
+      inline operator =(ref a:enum, b:enum) where (a.type == b.type) {}
 
       @deprecated
       record r1 { var x: int; }
@@ -275,8 +277,8 @@ static void test0(void) {
 
       var v1 = new r1();
       var v2 = new r2();
-      var v3 = new c1();
-      var v4 = new c2();
+      var v3 = new unmanaged c1();
+      var v4 = new unmanaged c2();
       var v5 = new u1();
       var v6 = new u2();
       var v7 = foo1;
@@ -469,7 +471,7 @@ static void test2(void) {
       proc C.baz() {}   // Tertiary
       proc r.baz() {}   // Tertiary
 
-      var a = new C();  // Unstable warning for this mention
+      var a = new unmanaged C();  // Unstable warning for this mention
       a.foo();
       a.bar();
       a.baz();
@@ -515,6 +517,8 @@ static void test3(void) {
     R""""(
 
     module testNoWarningsForUnstableMentionsInUnstable {
+      operator =(ref lhs: int, const rhs: int) {}
+
       @unstable("this variable is unstable")
       var x: int = 0;
       var y: int = 1;
@@ -561,8 +565,8 @@ static void test3(void) {
   assert(mod);
 
   // Force resolve 'main' since we may not always do that yet.
-  assert(mod->numStmts() == 5);
-  const Function* mainFn = mod->stmt(4)->toFunction();
+  assert(mod->numStmts() == 6);
+  const Function* mainFn = mod->stmt(5)->toFunction();
   std::ignore = resolveConcreteFunction(ctx, mainFn->id());
 
   assert(guard.numErrors() == 2);
@@ -572,10 +576,10 @@ static void test3(void) {
 
   auto& e0 = guard.error(0);
   assert(e0->message() == "this module is unstable");
-  assert(e0->location(ctx).line() == 32);
+  assert(e0->location(ctx).line() == 34);
   auto& e1 = guard.error(1);
   assert(e1->message() == "this module is unstable");
-  assert(e1->location(ctx).line() == 33);
+  assert(e1->location(ctx).line() == 35);
 
   assert(guard.realizeErrors());
 }
@@ -603,7 +607,7 @@ static void test4(ErrorType expectedError) {
     proc foo(x: C) {}
 
     proc main() {
-      var x = new C();
+      var x = new unmanaged C();
       foo(x);
     }
     )"""";
@@ -645,6 +649,8 @@ static void test5(void) {
 
   std::string contents =
     R""""(
+    operator =(ref lhs: int, const rhs: int) {}
+
     @deprecated
     var x = 0;
     @unstable
@@ -683,12 +689,12 @@ static void test5(void) {
   assert(mod);
 
   // Force resolve 'main' since we may not always do that yet.
-  assert(mod->numStmts() == 9);
-  const Function* f1 = mod->stmt(4)->toFunction();
+  assert(mod->numStmts() == 10);
+  const Function* f1 = mod->stmt(5)->toFunction();
   std::ignore = resolveConcreteFunction(ctx, f1->id());
-  const Function* f2 = mod->stmt(6)->toFunction();
+  const Function* f2 = mod->stmt(7)->toFunction();
   std::ignore = resolveConcreteFunction(ctx, f2->id());
-  const Function* f3 = mod->stmt(8)->toFunction();
+  const Function* f3 = mod->stmt(9)->toFunction();
   std::ignore = resolveConcreteFunction(ctx, f3->id());
 
 

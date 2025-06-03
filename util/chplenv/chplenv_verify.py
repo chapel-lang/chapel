@@ -293,6 +293,11 @@ class TestHostCanFindLLVM(TestCompile):
             self.chplenv.get("CHPL_HOST_BUNDLED_LINK_ARGS", "") + " " +
             self.chplenv.get("CHPL_HOST_SYSTEM_LINK_ARGS", "")
         )
+
+        # strip out jemalloc to avoid linker warnings on some systems
+        if "jemalloc" in link_args:
+            link_args = link_args.replace("-ljemalloc", "")
+
         return (
             super()._compiler_args()
             + shlex.split(comp_args)
@@ -300,7 +305,8 @@ class TestHostCanFindLLVM(TestCompile):
         )
 
     def _program(self):
-        return """
+        if self.chplenv.get("CHPL_LLVM") != "none":
+            return """
 #include "clang/Basic/Version.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/LLVMContext.h"
@@ -312,6 +318,17 @@ int main() {
     return 0;
 }
 """
+        else:
+            return """
+#include "llvm/Support/raw_ostream.h"
+#include <iostream>
+int main() {
+    std::cout << "Hello, World!" << std::endl;
+    llvm::outs() << "Hello, LLVM!\\n";
+    return 0;
+}
+"""
+
 
     def explain(self):
         compiler = self._compiler()

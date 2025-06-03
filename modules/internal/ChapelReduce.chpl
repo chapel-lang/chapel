@@ -126,10 +126,18 @@ module ChapelReduce {
       if ! canResolve("+", x, x) then
         // Issue a user-friendly error.
         compilerError("+ reduce cannot be used on values of the type ",
-                      eltType:string);
+            eltType:string, " because they cannot be summed using '+'");
       return (x + x).type;
     }
    }
+  }
+
+  proc chpl_check_assign_reduce_result(ref target, in value) {
+    if __primitive("call resolves", "=", target, value) then
+      target = value;
+    else
+      compilerError("cannot store reduction result of type ", value.type:string,
+                    " into a variable of type ", target.type:string);
   }
 
   pragma "ReduceScanOp"
@@ -225,6 +233,14 @@ module ChapelReduce {
     proc accumulateOntoState(ref state, other: 2*eltType) {
       state[0] = min(state[0], other[0]);
       state[1] = max(state[1], other[1]);
+    }
+    // we could move it to 'class ReduceScanOp', then have to omit 'eltType'
+    pragma "last resort"
+    proc accumulateOntoState(state, x) {
+      compilerError("updating accumulation state of type '", state.type:string,
+                    "' with a value of type '", x.type:string,
+                    "', while a value of type '", eltType:string,
+                    "' is expected");
     }
     inline proc accumulate(x: eltType) {
       accumulateOntoState(value, x);

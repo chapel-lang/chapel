@@ -28,16 +28,18 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-# Test performance with the latest qthreads release.
 GITHUB_USER=chapel-lang
 GITHUB_BRANCH=main
 SHORT_NAME=main
-START_DATE=03/20/25
+START_DATE=05/09/25
+
+source /hpcdc/project/chapel/setup_llvm.bash 20
 
 set -e
 checkout_branch $GITHUB_USER $GITHUB_BRANCH
 set +e
 
+
 perf_args="-performance-description $SHORT_NAME -performance-configs default:v,$SHORT_NAME:v -sync-dir-suffix $SHORT_NAME"
 perf_args="${perf_args} -numtrials 1 -startdate $START_DATE"
-$UTIL_CRON_DIR/nightly -cron ${perf_args} ${nightly_args}
+$UTIL_CRON_DIR/nightly -cron ${perf_args} ${nightly_args} -compopts '--mllvm -vector-library=LIBMVEC-X86'

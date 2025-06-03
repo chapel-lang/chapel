@@ -154,10 +154,10 @@ static void markImplicitThrows(FnSymbol* fn, std::set<FnSymbol*>* visited, impli
 static bool canBlockStmtThrow(BlockStmt* block);
 static void checkErrorHandling(FnSymbol* fn, implicitThrowsReasons_t * reasons);
 static bool isCompilerGeneratedFunction(FnSymbol* fn);
-static bool isUncheckedThrowsFunction(FnSymbol* fn);
 
 static Type* dtErrorNilable() {
-  return getDecoratedClass(dtError, ClassTypeDecorator::UNMANAGED_NILABLE);
+  auto details = FunctionType::constructErrorHandlingFormal();
+  return details.type();
 }
 
 namespace {
@@ -356,72 +356,83 @@ static VarSymbol* createAndInsertErrorVar(Expr* insert) {
   return errorVar;
 }
 
+static bool isCallToThrowingFunction(CallExpr* node) {
+  if (auto calledFn = node->resolvedOrVirtualFunction()) {
+    return calledFn->throwsError();
+  } else if (auto calledFt = node->functionType()) {
+    return calledFt->throws();
+  }
+  return false;
+}
+
 bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
   bool insideTry = !tryStack.empty();
 
-  // The common case of a user-level call to a resolved function
-  FnSymbol* calledFn = node->resolvedOrVirtualFunction();
+  if (isCallToThrowingFunction(node)) {
+    FnSymbol* calledFn = node->resolvedFunction();
 
-  if (calledFn != NULL) {
-    if (calledFn->throwsError()) {
-      checkThrowingFuncInInit(node, insideTry);
+    checkThrowingFuncInInit(node, insideTry);
 
-      SET_LINENO(node);
+    SET_LINENO(node);
 
-      VarSymbol* errorVar    = NULL;
-      BlockStmt* errorPolicy = new BlockStmt();
-      Expr*      insert      = node->getStmtExpr();
+    VarSymbol* errorVar    = NULL;
+    BlockStmt* errorPolicy = new BlockStmt();
+    Expr*      insert      = node->getStmtExpr();
 
-      if (insideTry && node->tryTag != TRY_TAG_IN_TRYBANG) {
-        TryInfo info = tryStack.top();
-        errorVar = info.errorVar;
+    if (insideTry && node->tryTag != TRY_TAG_IN_TRYBANG) {
+      TryInfo info = tryStack.top();
+      errorVar = info.errorVar;
 
-        // (a) an enclosing try/try!
-        errorPolicy->insertAtTail(gotoHandler());
-      } else {
-        // without try, need an error variable
-        errorVar = createAndInsertErrorVar(insert);
+      // (a) an enclosing try/try!
+      errorPolicy->insertAtTail(gotoHandler());
+    } else {
+      // without try, need an error variable
+      errorVar = createAndInsertErrorVar(insert);
 
-        // TODO: if deferDepth > 0, either implement error handling
-        // or make the program halt regardless of insideTry or outError.
-        if (outError != NULL && node->tryTag != TRY_TAG_IN_TRYBANG &&
-            deferDepth == 0 && !node->parentSymbol->hasFlag(FLAG_OUTSIDE_TRY)) {
-          // (b) throw from the enclosing function
-          errorPolicy->insertAtTail(setOutGotoEpilogue(errorVar));
-        }
-        else if (calledFn->hasFlag(FLAG_TASK_JOIN_IMPL_FN)) {
-          if (node->parentSymbol->hasFlag(FLAG_ITERATOR_FN))
-            // (c) coforall or similar in a non-throwing iterator
-            // ==> we will propagate the error when the iterator is inlined
-            errorPolicy->insertAtTail(haltExpr(errorVar, false));
-          else if (node->parentSymbol->hasFlag(FLAG_TASK_FN_FROM_ITERATOR_FN))
-            // (d) coforall/... in a task function in a non-throwing iterator
-            // ==> propagate the error through the task function
-            errorPolicy->insertAtTail(setOutGotoEpilogue(errorVar));
-          else
-            // (e) coforall or similar in a non-throwing procedure
-            // ==> halt right away
-            errorPolicy->insertAtTail(haltExpr(errorVar, true));
-        }
-        else {
-          // (f) a throwing call in a non-throwing function ==> halt right away
-          errorPolicy->insertAtTail(haltExpr(errorVar, true));
-        }
+      // TODO: if deferDepth > 0, either implement error handling
+      // or make the program halt regardless of insideTry or outError.
+      if (outError != NULL && node->tryTag != TRY_TAG_IN_TRYBANG &&
+          deferDepth == 0 && !node->parentSymbol->hasFlag(FLAG_OUTSIDE_TRY)) {
+        // (b) throw from the enclosing function
+        errorPolicy->insertAtTail(setOutGotoEpilogue(errorVar));
       }
+      else if (calledFn && calledFn->hasFlag(FLAG_TASK_JOIN_IMPL_FN)) {
+        if (node->parentSymbol->hasFlag(FLAG_ITERATOR_FN))
+          // (c) coforall or similar in a non-throwing iterator
+          // ==> we will propagate the error when the iterator is inlined
+          errorPolicy->insertAtTail(haltExpr(errorVar, false));
+        else if (node->parentSymbol->hasFlag(FLAG_TASK_FN_FROM_ITERATOR_FN))
+          // (d) coforall/... in a task function in a non-throwing iterator
+          // ==> propagate the error through the task function
+          errorPolicy->insertAtTail(setOutGotoEpilogue(errorVar));
+        else
+          // (e) coforall or similar in a non-throwing procedure
+          // ==> halt right away
+          errorPolicy->insertAtTail(haltExpr(errorVar, true));
+      }
+      else {
+        // (f) a throwing call in a non-throwing function ==> halt right away
+        errorPolicy->insertAtTail(haltExpr(errorVar, true));
+      }
+    }
 
-      node->insertAtTail(errorVar); // adding error argument to call
+    node->insertAtTail(errorVar); // adding error argument to call
 
-      // If we are calling a non-blocking task function,
-      // we'll lower the error handling in parallel.cpp,
-      // at the end of parallel(),  using lowerCheckErrorPrimitive.
+    // If we are calling a non-blocking task function,
+    // we'll lower the error handling in parallel.cpp,
+    // at the end of parallel(),  using lowerCheckErrorPrimitive.
+    bool skipCheck = false;
+    if (calledFn) {
       if (calledFn->hasFlag(FLAG_NON_BLOCKING) ||
           calledFn->hasFlag(FLAG_BEGIN) ||
           calledFn->hasFlag(FLAG_COBEGIN_OR_COFORALL)) {
         // Don't add errorPolicy block or conditional.
-      } else {
-        // Regular operation
-        insert->insertAfter(new CondStmt(new CallExpr(PRIM_CHECK_ERROR, errorVar), errorPolicy));
+        skipCheck = true;
       }
+    }
+    if (!skipCheck) {
+      // Regular operation
+      insert->insertAfter(new CondStmt(new CallExpr(PRIM_CHECK_ERROR, errorVar), errorPolicy));
     }
   } else if (node->isPrimitive(PRIM_THROW)) {
     SET_LINENO(node);
@@ -665,14 +676,14 @@ void ErrorHandlingVisitor::checkThrowingFuncInInit(CallExpr* node,
           }
         }
       } else {
-        if (!state->isPhase2() && fn->throwsError() == true) {
+        if (!state->isPhase2() && fn->throwsError()) {
           USR_FATAL_CONT(node,
                          "cannot call a throwing function outside of a try! before phase 2");
         }
       }
     } else {
       if (!state->isPhase2() && node->tryTag != TRY_TAG_IN_TRYBANG &&
-          fn->throwsError() == true) {
+          fn->throwsError()) {
         USR_FATAL_CONT(node,
                        "cannot call a throwing function outside of a try! before phase 2");
       }
@@ -792,24 +803,26 @@ static bool catchesNotExhaustive(TryStmt* tryStmt) {
 // Returns true if we should raise strict-mode errors
 // for this call.
 static bool shouldEnforceStrict(CallExpr* node, int taskFunctionDepth) {
-  if (FnSymbol* calledFn = node->resolvedFunction()) {
-    bool inCompilerGeneratedFn = false;
-    bool inDefaultActualFn = false;
-    if (FnSymbol* parentFn = toFnSymbol(node->parentSymbol)) {
-      // Don't check wrapper functions in strict mode, unless they are task
-      // functions and we know the caller of the task function is not declared
-      // as throws.
-      inCompilerGeneratedFn = isCompilerGeneratedFunction(parentFn) &&
-        !(isTaskFun(parentFn) && taskFunctionDepth > 0);
-      inDefaultActualFn = parentFn->hasFlag(FLAG_DEFAULT_ACTUAL_FUNCTION);
-    }
-    bool callsUncheckedThrowsFn = isUncheckedThrowsFunction(calledFn);
-    bool strictError = !((inCompilerGeneratedFn && !inDefaultActualFn) ||
-                         callsUncheckedThrowsFn);
+  if (!isCallToThrowingFunction(node)) return false;
 
-    return strictError;
+  auto calledFn = node->resolvedFunction();
+  bool inCompilerGeneratedFn = false;
+  bool inDefaultActualFn = false;
+
+  if (FnSymbol* parentFn = toFnSymbol(node->parentSymbol)) {
+    // Don't check wrapper functions in strict mode, unless they are task
+    // functions and we know the caller of the task function is not declared
+    // as throws.
+    inCompilerGeneratedFn = isCompilerGeneratedFunction(parentFn) &&
+                            !(isTaskFun(parentFn) &&
+                            taskFunctionDepth > 0);
+    inDefaultActualFn = parentFn->hasFlag(FLAG_DEFAULT_ACTUAL_FUNCTION);
   }
-  return false;
+
+  bool uncheckedCall = calledFn && calledFn->hasFlag(FLAG_UNCHECKED_THROWS);
+  bool ret = !((inCompilerGeneratedFn && !inDefaultActualFn) ||
+               (uncheckedCall));
+  return ret;
 }
 
 
@@ -1043,14 +1056,19 @@ static void issueThrowingFnError(FnSymbol* calledFn,
                                  CallExpr* node,
                                  implicitThrowsReasons_t* reasons,
                                  const char* problem) {
+  auto calledFt = node->isIndirectCall() ? node->functionType() : nullptr;
   const char* desc = "cast";
   bool cast = true;
-  if (calledFn->name != astrScolon) {
+
+  if (calledFn && calledFn->name != astrScolon) {
     desc = astr("function ", calledFn->name);
     cast = false;
+  } else if (calledFt) {
+    desc = astr("function value of type '", calledFt->toString(), "'");
   }
+
   USR_FATAL_CONT(node, "call to throwing %s %s", desc, problem);
-  if (!cast) {
+  if (calledFn && !cast) {
     USR_PRINT(calledFn, "throwing function %s defined here", calledFn->name);
   }
   printReason(node, reasons);
@@ -1085,64 +1103,58 @@ to determine whether the enclosing function is non-throwing.
 bool ErrorCheckingVisitor::enterCallExpr(CallExpr* node) {
   bool insideTry = (tryDepth > 0);
 
-  if (FnSymbol* calledFn = node->resolvedFunction()) {
-    if (calledFn->throwsError()) {
+  if (isCallToThrowingFunction(node)) {
+    auto calledFn = node->resolvedFunction();
+    auto parentFn = toFnSymbol(node->parentSymbol);
+    bool inThrowingFunction = parentFn ? parentFn->throwsError() : false;
 
-      bool inThrowingFunction = false;
-      if (FnSymbol* parentFn = toFnSymbol(node->parentSymbol)) {
-        inThrowingFunction = parentFn->throwsError();
-
-        if (!inThrowingFunction && isTaskFun(calledFn)) {
-          taskFunctionDepth++;
-          calledFn->body->accept(this);
-
-          taskFunctionDepth--;
-          return true;
-        } else if (taskFunctionDepth > 0) {
-          if (isTaskFun(calledFn)) {
-            taskFunctionDepth++;
-            calledFn->body->accept(this);
-
-            taskFunctionDepth--;
-            return true;
-          } else {
-            // The above logic never descends into a task function - therefore
-            // never gets to this point - unless the top-most non-task parentFn
-            // is non-throwing. Cf. at this point we are in a throwing task fn.
-            // So, adjust 'inThrowingFunction' to correspond to the top-most
-            // non-task parentFn. This will make it equivalent to 'fnCanThrow'.
-            inThrowingFunction = false;
-          }
-        } else if (isTaskFun(calledFn)) {
-          // One way or another, we should not be going further
-          // if it is a task function.
-          return true;
-        } else {
-        }
-      }
-      INT_ASSERT(inThrowingFunction == fnCanThrow);
-
-      if (insideTry || node->tryTag == TRY_TAG_IN_TRYBANG) {
-
-        // OK, in a try { } or marked with try!
-
-      } else if(node->tryTag == TRY_TAG_IN_TRY) {
-        if (!inThrowingFunction) {
-          issueThrowingFnError(calledFn, node, reasons,
-                               "is in a try but not handled");
-        }
-
-        // Otherwise, OK, a try in a throwing function
-
+    if (!inThrowingFunction && calledFn && isTaskFun(calledFn)) {
+      taskFunctionDepth++;
+      calledFn->body->accept(this);
+      taskFunctionDepth--;
+      return true;
+    } else if (taskFunctionDepth > 0) {
+      if (calledFn && isTaskFun(calledFn)) {
+        taskFunctionDepth++;
+        calledFn->body->accept(this);
+        taskFunctionDepth--;
+        return true;
       } else {
-        if (shouldEnforceStrict(node, taskFunctionDepth)) {
-          if (mode == ERROR_MODE_STRICT) {
-            issueThrowingFnError(calledFn, node, reasons,
-                                 "without try or try! (strict mode)");
-          } else if (mode == ERROR_MODE_RELAXED && !inThrowingFunction) {
-            issueThrowingFnError(calledFn, node, reasons,
-                                 "without throws, try, or try! (relaxed mode)");
-          }
+        // The above logic never descends into a task function - therefore
+        // never gets to this point - unless the top-most non-task parentFn
+        // is non-throwing. Cf. at this point we are in a throwing task fn.
+        // So, adjust 'inThrowingFunction' to correspond to the top-most
+        // non-task parentFn. This will make it equivalent to 'fnCanThrow'.
+        inThrowingFunction = false;
+      }
+    } else if (calledFn && isTaskFun(calledFn)) {
+      // One way or another, we should not be going further
+      // if it is a task function.
+      return true;
+    }
+
+    INT_ASSERT(inThrowingFunction == fnCanThrow);
+
+    if (insideTry || node->tryTag == TRY_TAG_IN_TRYBANG) {
+
+      // OK, in a try { } or marked with try!
+
+    } else if(node->tryTag == TRY_TAG_IN_TRY) {
+      if (!inThrowingFunction) {
+        issueThrowingFnError(calledFn, node, reasons,
+                             "is in a try but not handled");
+      }
+
+      // Otherwise, OK, a try in a throwing function
+
+    } else {
+      if (shouldEnforceStrict(node, taskFunctionDepth)) {
+        if (mode == ERROR_MODE_STRICT) {
+          issueThrowingFnError(calledFn, node, reasons,
+                               "without try or try! (strict mode)");
+        } else if (mode == ERROR_MODE_RELAXED && !inThrowingFunction) {
+          issueThrowingFnError(calledFn, node, reasons,
+                               "without throws, try, or try! (relaxed mode)");
         }
       }
     }
@@ -1402,11 +1414,10 @@ static void checkErrorHandling(FnSymbol* fn, implicitThrowsReasons_t* reasons)
 
 static ArgSymbol* addOutErrorArg(FnSymbol* fn)
 {
-  ArgSymbol* outError = NULL;
-
   SET_LINENO(fn);
-
-  outError = new ArgSymbol(INTENT_REF, "error_out", dtErrorNilable());
+  auto f = FunctionType::constructErrorHandlingFormal();
+  auto outError = new ArgSymbol(f.intent(), f.name(), f.type());
+  outError->qual = f.qual();
   outError->addFlag(FLAG_ERROR_VARIABLE);
   fn->insertFormalAtTail(outError);
 
@@ -1440,6 +1451,15 @@ static void lowerErrorHandling(FnSymbol* fn)
     visitor.state->removeInitDone();
     visitor.state = NULL;
     delete state;
+  }
+
+  if (fn->throwsError()) {
+    INT_ASSERT(fn->isErrorHandlingLowered());
+    if (fn->hasFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION)) {
+      // Recompute the types of roots used to initialize procedure values.
+      auto ft = fn->computeAndSetType();
+      INT_ASSERT(!ft->throws());
+    }
   }
 }
 
@@ -1502,11 +1522,17 @@ static bool isCompilerGeneratedFunction(FnSymbol* fn)
          fn->hasFlag(FLAG_COMPILER_GENERATED);
 }
 
-static bool isUncheckedThrowsFunction(FnSymbol* fn)
-{
-  return fn->hasFlag(FLAG_UNCHECKED_THROWS);
+static Type* adjustThrowingFunctionTypeToNonThrowing(Type* t) {
+  if (auto ft = toFunctionType(t)) {
+    if (ft->throws()) return ft->getWithLoweredErrorHandling();
+  }
+  return t;
 }
 
+static void adjustFunctionTypesToBeNonThrowing() {
+  AdjustTypeFn adjustTypeFn = adjustThrowingFunctionTypeToNonThrowing;
+  adjustAllSymbolTypes(adjustTypeFn);
+}
 
 void lowerErrorHandling() {
   if (!fMinimalModules)
@@ -1533,6 +1559,9 @@ void lowerErrorHandling() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     lowerErrorHandling(fn);
   }
+
+  // After lowering, all function types must be adjusted to remove 'throws'.
+  adjustFunctionTypesToBeNonThrowing();
 
   // Note, PRIM_CHECK_ERROR will be lowered when a later
   // pass calls lowerCheckErrorPrimitive().

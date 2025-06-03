@@ -352,21 +352,29 @@ static void test35() {
 //   testHelper(&ctx, program, ComplexType::get(&ctx, 0), ComplexParam::get(&ctx, Param::ComplexDouble(1.1, 2.2)));
 // }
 
-// TODO: enum to int cast
-// static void test37() {
-//   printf("test37\n");
-//   Context ctx;
-//   std::string program = "enum E { A=0, B, C } param x = E.A : int; ";
-//   testHelper(&ctx, program, IntType::get(&ctx, 0), IntParam::get(&ctx, 0));
-// }
+static void test37() {
+  printf("test37\n");
+  Context ctx;
+  std::string program = "enum E { A=0, B, C } param x = E.A : int; ";
+  testHelper(&ctx, program, IntType::get(&ctx, 0), IntParam::get(&ctx, 0));
+}
 
-// TODO: int to enum cast
-// static void test38() {
-//   printf("test38\n");
-//   Context ctx;
-//   std::string program = "enum E { A=0, B, C } param x = 0 : E; ";
-//   testHelper(&ctx, program, EnumType::get(&ctx, 0), EnumParam::get(&ctx, 0));
-// }
+static void test38() {
+  printf("test38\n");
+  Context ctx;
+  std::string program = "enum E { A=0, B, C } param x = 0 : E; ";
+
+  auto enumId = ID(UniqueString::get(&ctx, "input.E"), -1, 0);
+  auto eltId = ID(enumId.symbolPath(), 1, 1);
+
+  // invoking 'EnumType::get' prior to resolving a program causes problems,
+  // so don't use the helper in order to defer constructing the EnumType.
+  QualifiedType qt = resolveQualifiedTypeOfX(&ctx, program);
+
+  assert(qt.hasTypePtr());
+  assert(qt.type() == EnumType::get(&ctx, enumId, UniqueString::get(&ctx, "E")));
+  assert(qt.param() == EnumParam::get(&ctx, {eltId, "A"}));
+}
 
 
 // enum to nothing cast (error)
@@ -526,12 +534,10 @@ static void test45() {
 
 static void test46() {
   printf("test46\n");
-  Context ctx;
-  Context* context = &ctx;
 
   // Param
   {
-    context->advanceToNextRevision(false);
+    Context* context = buildStdContext();
     std::string program =
       R"""(
       param a = "asdf";
@@ -545,7 +551,7 @@ static void test46() {
 
   // Non-param
   {
-    context->advanceToNextRevision(false);
+    Context* context = buildStdContext();
     std::string program =
       R"""(
       var a = "asdf";
@@ -557,6 +563,29 @@ static void test46() {
     assert(!xInit.isParam());
     assert(xInit.type()->isStringType());
   }
+}
+
+static void test47() {
+  printf("test47\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto testBorrow = [context](std::string buildC, bool expectNilable) {
+    context->advanceToNextRevision(false);
+    ErrorGuard guard(context);
+
+    auto fullProg = "class C{}\n" + buildC + "\nvar x = c.borrow();";
+    auto xInit = resolveTypeOfXInit(context, fullProg);
+    assert(xInit.type());
+    assert(xInit.type()->isClassType());
+    assert(xInit.type()->toClassType()->decorator().isBorrowed());
+    assert(xInit.type()->toClassType()->decorator().isNilable() == expectNilable);
+  };
+
+  testBorrow("var cu = new unmanaged C();\n var c = cu : borrowed;", false);
+  testBorrow("var cu = new unmanaged C?();\n var c = cu : borrowed;", true);
+  testBorrow("var c = new unmanaged C();", false);
+  testBorrow("var c = new unmanaged C?();", true);
 }
 
 int main() {
@@ -596,8 +625,8 @@ int main() {
   test34();
   test35();
   // test36();
-  // test37();
-  // test38();
+  test37();
+  test38();
   test39();
   test40();
   test41();
@@ -606,6 +635,7 @@ int main() {
   test44();
   test45();
   test46();
+  test47();
 
   return 0;
 }

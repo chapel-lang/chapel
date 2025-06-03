@@ -2,8 +2,7 @@ MAKEFLAGS = --no-print-directory
 
 CHPL = chpl
 
-CHPL_FLAGS = --fast -sprintOriginal=true -sprintPerf=false -sdisableAliasedBulkTransfer=false
-
+CHPL_FLAGS = --fast -sprintOriginal=true -sprintPerf=false
 TARGETS = \
 	miniMD \
 

@@ -1120,7 +1120,7 @@ const char* clearErrorFormat() {
 
 void clean_exit(int status) {
   if (status != 0) {
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
 
   cleanup_for_exit();

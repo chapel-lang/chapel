@@ -74,6 +74,7 @@ pbs-gasnetrun_ibv        GASNet launcher for PBS (qsub) and the Infiniband subst
 slurm |-| gasnetrun_ibv  GASNet launcher for SLURM and the Infiniband substrate
 slurm |-| gasnetrun_mpi  GASNet launcher for SLURM and the MPI substrate
 slurm |-| gasnetrun_ofi  GASNet launcher for SLURM and the OFI substrate
+slurm |-| gasnetrun_ucx  GASNet launcher for SLURM and the UCX substrate
 slurm-srun               native SLURM launcher
 smp                      GASNet launcher for the shared-memory substrate
 none                     do not use a launcher
@@ -89,7 +90,24 @@ If ``CHPL_LAUNCHER`` is left unset, a default is picked as follows:
 * if ``CHPL_COMM`` is gasnet and ``CHPL_COMM_SUBSTRATE`` is udp
   ``CHPL_LAUNCHER`` is set to amudprun
 
-* otherwise, if ``CHPL_TARGET_PLATFORM`` is cray-xc or hpe-cray-ex:
+* otherwise, if ``CHPL_COMM`` is gasnet and ``CHPL_COMM_SUBSTRATE`` is smp
+  ``CHPL_LAUNCHER`` is set to smp
+
+* otherwise, if ``CHPL_COMM`` is gasnet:
+
+  =======================  ==============================================
+  If                       CHPL_LAUNCHER
+  =======================  ==============================================
+  CHPL_COMM_SUBSTRATE=ibv  [slurm-]gasnetrun_ibv
+  CHPL_COMM_SUBSTRATE=mpi  [slurm-]gasnetrun_mpi
+  CHPL_COMM_SUBSTRATE=ucx  [slurm-]gasnetrun_ucx
+  CHPL_COMM_SUBSTRATE=ofi  [slurm-]gasnetrun_ofi
+  =======================  ==============================================
+
+  If salloc is in the user's path, then the slurm version of these launchers
+  will be used. Otherwise, the base ``gasnetrun_*`` launcher is used.
+
+* otherwise, if ``CHPL_TARGET_PLATFORM`` is a HPE system or a Cray system:
 
   ==================================  ===================================
   If                                  CHPL_LAUNCHER
@@ -100,29 +118,8 @@ If ``CHPL_LAUNCHER`` is left unset, a default is picked as follows:
   otherwise                           none
   ==================================  ===================================
 
-* otherwise, if ``CHPL_TARGET_PLATFORM`` is cray-cs and ``CHPL_COMM`` is gasnet and
-  salloc is in the user's path:
-
-  =======================  ==============================================
-  If                       CHPL_LAUNCHER
-  =======================  ==============================================
-  CHPL_COMM_SUBSTRATE=ibv  slurm-gasnetrun_ibv
-  CHPL_COMM_SUBSTRATE=mpi  slurm-gasnetrun_mpi
-  =======================  ==============================================
-
-* otherwise, if ``CHPL_TARGET_PLATFORM`` is cray-cs and srun is in the users path
+* otherwise, if ``CHPL_COMM`` is not none and srun is in the user's path, then 
   ``CHPL_LAUNCHER`` is set to slurm-srun
-
-* otherwise, if ``CHPL_COMM`` is gasnet:
-
-  =======================  ==============================================
-  If                       CHPL_LAUNCHER
-  =======================  ==============================================
-  CHPL_COMM_SUBSTRATE=ibv  gasnetrun_ibv
-  CHPL_COMM_SUBSTRATE=mpi  gasnetrun_mpi
-  CHPL_COMM_SUBSTRATE=smp  smp
-  otherwise                none
-  =======================  ==============================================
 
 * otherwise ``CHPL_LAUNCHER`` is set to none
 

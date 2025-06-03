@@ -489,7 +489,7 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
   ret.chplType = typeInfo();
 
   if (id == breakOnCodegenID)
-    gdbShouldBreakHere();
+    debuggerBreakHere();
 
   if( outfile ) {
     // dtString immediates don't actually codegen as immediates, we just use
@@ -908,7 +908,7 @@ void VarSymbol::codegenGlobalDef(bool isHeader) {
   if( id == breakOnCodegenID ||
       (breakOnCodegenCname[0] &&
        0 == strcmp(cname, breakOnCodegenCname)) ) {
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
 
   if( info->cfile ) {
@@ -967,7 +967,10 @@ void VarSymbol::codegenGlobalDef(bool isHeader) {
       setValueAlignment(gVar, type, this);
 
       if(debug_info){
-        debug_info->get_global_variable(this);
+        auto di = debug_info->get_global_variable(this);
+        if (di) {
+          gVar->addDebugInfo(di);
+        }
       }
     }
 #endif
@@ -978,7 +981,7 @@ void VarSymbol::codegenDef() {
   GenInfo* info = gGenInfo;
 
   if (id == breakOnCodegenID)
-    gdbShouldBreakHere();
+    debuggerBreakHere();
 
   // Local variable symbols should never be
   // generated for extern or void types
@@ -1036,6 +1039,7 @@ void VarSymbol::codegenDef() {
     }
 
     llvm::Type *varType = type->getLLVMType();
+
     llvm::AllocaInst *varAlloca = createVarLLVM(varType, type, this, cname);
     info->lvt->addValue(cname, varAlloca, GEN_PTR, ! is_signed(type));
 
@@ -1076,18 +1080,8 @@ bool argMustUseCPtr(Type* type) {
          isUnion(type);
 }
 
-bool ArgSymbol::requiresCPtr(void) {
-  /* This used to be true for INTENT_REF, but that is handled with the "_ref"
-     class and we don't need to generate a pointer for it directly */
-  if (hasFlag(FLAG_ARG_THIS)) {
-      if (is_complex_type(type))
-        return true;
-  }
-  return argMustUseCPtr(type);
-}
-
-static Type* getArgSymbolCodegenType(ArgSymbol* arg) {
-  QualifiedType q = arg->qualType();
+static Type* getFormalCodegenType(Qualifier qual, Type* type) {
+  QualifiedType q(qual, type);
   Type* useType = q.type();
   // TODO: this is a hack to make python module generation work by substituting
   // `const char *` instead of `int8_t *` or `uint8_t *` in the exported header
@@ -1102,6 +1096,10 @@ static Type* getArgSymbolCodegenType(ArgSymbol* arg) {
     useType = getOrMakeWideTypeDuringCodegen(refType);
   }
   return useType;
+}
+
+static Type* getFormalCodegenType(ArgSymbol* formal) {
+  return getFormalCodegenType(formal->qual, formal->type);
 }
 
 // Alter the C code type to avoid _ref_, c_ptr_ prefixes and instead use a
@@ -1127,12 +1125,12 @@ transformTypeForPointer(Type* type) {
   return typeName;
 }
 
-GenRet ArgSymbol::codegenType() {
+static GenRet codegenFormalType(Qualifier qual, Type* type) {
   GenInfo* info = gGenInfo;
   FILE* outfile = info->cfile;
   GenRet ret;
 
-  Type* useType = getArgSymbolCodegenType(this);
+  Type* useType = getFormalCodegenType(qual, type);
 
   if( outfile ) {
     std::string argType = transformTypeForPointer(useType);
@@ -1147,6 +1145,10 @@ GenRet ArgSymbol::codegenType() {
   return ret;
 }
 
+static GenRet codegenFormalType(ArgSymbol* formal) {
+  return codegenFormalType(formal->qual, formal->type);
+}
+
 GenRet ArgSymbol::codegen() {
   GenInfo* info = gGenInfo;
   FILE* outfile = info->cfile;
@@ -1154,7 +1156,7 @@ GenRet ArgSymbol::codegen() {
 
   if (this->id == breakOnCodegenID ||
       this->defPoint->id == breakOnCodegenID) {
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
 
   ret.chplType = this->type;
@@ -1187,11 +1189,14 @@ GenRet ArgSymbol::codegen() {
   } else {
 #ifdef HAVE_LLVM
     ret = info->lvt->getValue(cname);
+    // Set the type again since it will be overwritten by the LVT entry,
+    // which for some reason does not have a type.
+    ret.chplType = this->type;
 #endif
   }
 
   // BHARSH TODO: Is this still necessary?
-  //if( requiresCPtr() ) {
+  //if( argRequiresCPtr(this) ) {
   //  // Don't try to use chplType.
   //  ret.chplType = NULL;
   //  ret = codegenLocalDeref(ret);
@@ -1243,7 +1248,7 @@ static std::string getFortranKindName(Type* type, Symbol* sym) {
 }
 
 std::string ArgSymbol::getPythonType(PythonFileType pxd) {
-  Type* t = getArgSymbolCodegenType(this);
+  Type* t = getFormalCodegenType(this);
 
   if (t->getValType() == dtExternalArray &&
       (pxd == PYTHON_PYX || pxd == C_PYX)
@@ -1391,7 +1396,7 @@ static std::string pythonArgToOpaqueArray(ArgSymbol* as) {
 // elements.
 //
 static std::string pythonArgToChapelArrayOrPtr(ArgSymbol* as) {
-  Type* t = getArgSymbolCodegenType(as);
+  Type* t = getFormalCodegenType(as);
   std::string strname = as->cname;
 
   // Lydia TODO 12/04/18: Might be good to use a template where we can
@@ -1445,7 +1450,7 @@ static std::string pythonArgToChapelArrayOrPtr(ArgSymbol* as) {
 // Some Python type instances need to be translated into C level type instances.
 // Generate code to perform that translation when this is the case
 std::string ArgSymbol::getPythonArgTranslation() {
-  Type* t = getArgSymbolCodegenType(this);
+  Type* t = getFormalCodegenType(this);
   Type* valType = t->getValType();
 
   if (t == dtStringC) {
@@ -1480,7 +1485,7 @@ void TypeSymbol::codegenDef() {
   if( id == breakOnCodegenID ||
       (breakOnCodegenCname[0] &&
        0 == strcmp(cname, breakOnCodegenCname)) ) {
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
 
   if (!hasFlag(FLAG_EXTERN)) {
@@ -1505,7 +1510,6 @@ void TypeSymbol::codegenDef() {
     }
 #endif
   }
-
 
   this->addFlag(FLAG_CODEGENNED);
 
@@ -1647,7 +1651,8 @@ void TypeSymbol::codegenMetadata() {
     llvmTbaaTypeDescriptor = llvmTbaaAggTypeDescriptor;
   } else if (!ct || hasFlag(FLAG_STAR_TUPLE) ||
              isClass(type) || hasEitherFlag(FLAG_REF,FLAG_WIDE_REF) ||
-             hasEitherFlag(FLAG_DATA_CLASS,FLAG_WIDE_CLASS)) {
+             hasEitherFlag(FLAG_DATA_CLASS,FLAG_WIDE_CLASS) ||
+             isFunctionType(type)) {
     if (is_imag_type(type)) {
       // At present, imaginary often aliases with real,
       // so make real the parent of imaginary.
@@ -1908,7 +1913,7 @@ llvm::Type* TypeSymbol::getLLVMType() {
   if (auto* stype = llvm::dyn_cast_or_null<llvm::StructType>(llvmImplType)) {
     if (auto* aggType = toAggregateType(this->type)) {
       if (aggType->isClass()) {
-        return stype->getPointerTo();
+        return llvm::PointerType::getUnqual(stype);
       }
     }
   }
@@ -1930,10 +1935,11 @@ int TypeSymbol::getLLVMStructureAlignment() {
 // for a class type, get its pointer alignment; otherwise:
 // must be invoked after a codegenDef()/getLLVMType()/getLLVMStructureType()
 int TypeSymbol::getLLVMAlignment() {
-  if (isClass(this->type))
+  if (isFunctionType(this->type) || isClass(this->type)) {
     return ALIGNMENT_DEFER; // pointer alignment from LLVM
-  else
+  } else {
     return getLLVMStructureAlignment();
+  }
 }
 
 // return the alignment stored in 'this' or,
@@ -1984,23 +1990,24 @@ GenRet TypeSymbol::codegen() {
 
 #ifdef HAVE_LLVM
 
-static void pushAllFieldTypesRecursively(const char* name,
-                                         Type* t,
-                                         std::vector<llvm::Type*>& argTys,
-                                         std::vector<const char*>& argNames) {
+static void
+pushAllFieldTypesRecursively(const char* name,
+                             Type* t,
+                             std::vector<llvm::Type*>& outArgTys,
+                             std::vector<const char*>& outArgNames) {
   if (isRecord(t)) {
     if (AggregateType* at = toAggregateType(t)) {
       for_fields(field, at) {
         pushAllFieldTypesRecursively(astr(name, "_", field->name),
                                      field->type,
-                                     argTys,
-                                     argNames);
+                                     outArgTys,
+                                     outArgNames);
       }
     }
   } else {
     llvm::Type* ty = t->codegen().type;
-    argTys.push_back(ty);
-    argNames.push_back(name);
+    outArgTys.push_back(ty);
+    outArgNames.push_back(name);
   }
 }
 
@@ -2087,38 +2094,93 @@ llvmAttachReturnInfo(llvm::LLVMContext& ctx,
   }
 }
 
+// Additional info that needs to be captured such as flags on formals.
+struct AddedFormalInfo {
+  const char* cname = nullptr;
+  bool isGenerated = true;
+};
+
 static llvm::FunctionType*
-codegenFunctionTypeLLVM(FnSymbol* fn, llvm::AttributeList& attrs,
-                        std::vector<const char*>& argNames) {
+codegenFunctionTypeLLVMImpl(
+                      FunctionType* ft,
+                      const std::vector<AddedFormalInfo>& addedFormalInfos,
+                      llvm::AttributeList& outAttrs,
+                      std::vector<const char*>& outArgNames,
+                      bool isNoAliasOnReturn);
+
+llvm::FunctionType*
+codegenFunctionTypeLLVM(FnSymbol* fn,
+                        llvm::AttributeList& outAttrs,
+                        std::vector<const char*>& outArgNames) {
+  auto ft = fn->computeAndSetType();
+  bool isNoAliasOnReturn = fn->hasFlag(FLAG_LLVM_RETURN_NOALIAS);
+  std::vector<AddedFormalInfo> addedFormalInfos;
+  for_formals(formal, fn) {
+    bool isGenerated = !formal->hasFlag(FLAG_NO_CODEGEN);
+    addedFormalInfos.push_back({ formal->cname, isGenerated });
+  }
+  return codegenFunctionTypeLLVMImpl(ft, addedFormalInfos, outAttrs,
+                                     outArgNames,
+                                     isNoAliasOnReturn);
+}
+
+llvm::FunctionType*
+codegenFunctionTypeLLVM(FunctionType* ft,
+                        llvm::AttributeList& outAttrs,
+                        std::vector<const char*>& outArgNames) {
+  // This is false since we cannot check for 'FLAG_LLVM_RETURN_NOALIAS'.
+  const bool isNoAliasOnReturn = false;
+  std::vector<AddedFormalInfo> addedFormalInfos;
+
+  for (int i = 0; i < ft->numFormals(); i++) {
+    auto formal = ft->formal(i);
+    bool isGenerated = true;
+    // TODO: How to get 'cname' from the function type?
+    addedFormalInfos.push_back({ formal->name(), isGenerated });
+  }
+  return codegenFunctionTypeLLVMImpl(ft, addedFormalInfos, outAttrs,
+                                     outArgNames,
+                                     isNoAliasOnReturn);
+}
+
+// TODO: Maybe this code can be collapsed with other CGI code.
+static llvm::FunctionType*
+codegenFunctionTypeLLVMImpl(
+                      FunctionType* ft,
+                      const std::vector<AddedFormalInfo>& addedFormalInfos,
+                      llvm::AttributeList& outAttrs,
+                      std::vector<const char*>& outArgNames,
+                      bool isNoAliasOnReturn) {
+
   // This function is inspired by clang's CodeGenTypes::GetFunctionType
   // and CodeGenModule::ConstructAttributeList
-
   llvm::LLVMContext& ctx = gContext->llvmContext();
   const llvm::DataLayout& layout = gGenInfo->module->getDataLayout();
   const clang::CodeGen::CGFunctionInfo* CGI = nullptr;
 
-  if (fn->hasFlag(FLAG_EXPORT)) {
-    CGI = &getClangABIInfo(fn);
+  if (ft->hasForeignLinkage()) {
+    CGI = &getClangABIInfo(ft);
   }
 
   const unsigned int stackSpace = layout.getAllocaAddrSpace();
-  llvm::Type* chapelReturnTy; // Chapel return type as an llvm type
-  llvm::Type* returnTy;
+  llvm::Type* chapelReturnTy = nullptr; // Chapel return type as an llvm type
+  llvm::Type* returnTy = nullptr;
   std::vector<llvm::Type *> argTys;
 
   // Void type handled here since LLVM complains about a
   // void type defined in a module
-  if (fn->retType == dtVoid || fn->retType == dtNothing) {
+  auto retType = ft->returnType();
+  if (retType == dtVoid || retType == dtNothing) {
     returnTy = llvm::Type::getVoidTy(ctx);
   } else {
-    returnTy = fn->retType->codegen().type;
+    returnTy = retType->codegen().type;
 
     // Add NoAlias on return for allocator-like functions
-    if (fn->hasFlag(FLAG_LLVM_RETURN_NOALIAS)) {
+    if (isNoAliasOnReturn) {
       if (returnTy->isPointerTy()) {
         auto b = llvmPrepareAttrBuilder(ctx);
         b.addAttribute(llvm::Attribute::NoAlias);
-        llvmAddAttr(ctx, attrs, llvm::AttributeList::ReturnIndex, b);
+        llvmAddAttr(ctx, outAttrs, llvm::AttributeList::ReturnIndex, b);
       }
     }
   }
@@ -2130,50 +2192,58 @@ codegenFunctionTypeLLVM(FnSymbol* fn, llvm::AttributeList& attrs,
   if (CGI) {
     const clang::CodeGen::ABIArgInfo& returnInfo = CGI->getReturnInfo();
 
-    llvmAttachReturnInfo(ctx, attrs, returnInfo, returnTy, chapelReturnTy,
+    llvmAttachReturnInfo(ctx, outAttrs, returnInfo, returnTy, chapelReturnTy,
                          argTys,
-                         argNames,
+                         outArgNames,
                          stackSpace);
 
     // Add type for inalloca argument
     if (CGI->usesInAlloca()) {
       auto argStruct = CGI->getArgStruct();
-      argTys.push_back(argStruct->getPointerTo());
-      argNames.push_back("inalloca_arg");
+      argTys.push_back(llvm::PointerType::getUnqual(argStruct));
+      outArgNames.push_back("inalloca_arg");
 
       // Adjust attributes for inalloca argument
       auto b = llvmPrepareAttrBuilder(ctx);
       b.addAttribute(llvm::Attribute::InAlloca);
-      llvmAddAttr(ctx, attrs, argTys.size(), b);
+      llvmAddAttr(ctx, outAttrs, argTys.size(), b);
     }
   }
 
-  for_formals(formal, fn) {
-    const clang::CodeGen::ABIArgInfo* argInfo = NULL;
+  for (int i = 0; i < ft->numFormals(); i++) {
+    auto formalInfo = ft->formal(i);
+    auto addedInfo = addedFormalInfos[i];
+
+    // TODO: How to recreate 'cname' computation for ArgSymbol?
+    auto cname = formalInfo->name();
+
+    const clang::CodeGen::ABIArgInfo* argInfo = nullptr;
     if (CGI) {
+      FnSymbol* fn = nullptr;
       argInfo = getCGArgInfo(CGI, clangArgNum, fn);
-    } else if (useDarwinArmFix(formal->type)) {
-      argInfo = getSingleCGArgInfo(formal->type);
+    } else if (useDarwinArmFix(formalInfo->type())) {
+      argInfo = getSingleCGArgInfo(formalInfo->type());
     }
 
-    if (formal->hasFlag(FLAG_NO_CODEGEN))
-      continue; // do not print locale argument, end count, dummy class
+    // do not print locale argument, end count, dummy class
+    if (!addedInfo.isGenerated) continue;
 
     if (argInfo) {
       if (argInfo->isIgnore() || argInfo->isInAlloca())
         continue; // ignore - inalloca handled separately
     }
 
-    llvm::Type* argTy = formal->codegenType().type;
-
+    auto argTy = codegenFormalType(formalInfo->qual(),
+                                   formalInfo->type()).type;
     if (argInfo) {
       if (llvm::Type* paddingTy = argInfo->getPaddingType()) {
         argTys.push_back(paddingTy);
-        argNames.push_back(astr(formal->cname, ".padding"));
+        // TODO: Need to figure out how 'name' is mangled?
+        outArgNames.push_back(astr(cname, ".padding"));
 
         if (argInfo->getPaddingInReg()) {
           auto b = llvmPrepareAttrBuilder(ctx);
-          llvmAddAttr(ctx, attrs, argTys.size(), b);
+          llvmAddAttr(ctx, outAttrs, argTys.size(), b);
         }
       }
 
@@ -2192,7 +2262,7 @@ codegenFunctionTypeLLVM(FnSymbol* fn, llvm::AttributeList& attrs,
         case clang::CodeGen::ABIArgInfo::Kind::Indirect: {
           // Emit indirect argument
           argTys.push_back(llvm::PointerType::get(argTy, stackSpace));
-          argNames.push_back(astr(formal->cname, ".indirect"));
+          outArgNames.push_back(astr(cname, ".indirect"));
 
           // Adjust attributes for indirect argument
           auto b = llvmPrepareAttrBuilder(ctx);
@@ -2207,7 +2277,7 @@ codegenFunctionTypeLLVM(FnSymbol* fn, llvm::AttributeList& attrs,
             b.addAlignmentAttr(align.getQuantity());
           }
 
-          llvmAddAttr(ctx, attrs, argTys.size(), b);
+          llvmAddAttr(ctx, outAttrs, argTys.size(), b);
         } break;
 
         case clang::CodeGen::ABIArgInfo::Kind::Extend:
@@ -2220,7 +2290,7 @@ codegenFunctionTypeLLVM(FnSymbol* fn, llvm::AttributeList& attrs,
             for (int i = 0; i < nElts; i++) {
               // Emit flattened argument
               argTys.push_back(sTy->getElementType(i));
-              argNames.push_back(astr(formal->cname, ".", istr(i)));
+              outArgNames.push_back(astr(cname, ".", istr(i)));
               // Adjust attributes
               auto b = llvmPrepareAttrBuilder(ctx);
               if (argInfo->isExtend()) {
@@ -2233,20 +2303,20 @@ codegenFunctionTypeLLVM(FnSymbol* fn, llvm::AttributeList& attrs,
               if (argInfo->getInReg()) {
                 b.addAttribute(llvm::Attribute::InReg);
               }
-              llvmAddAttr(ctx, attrs, argTys.size(), b);
+              llvmAddAttr(ctx, outAttrs, argTys.size(), b);
             }
           } else {
             // Emit argument
             argTys.push_back(toTy);
-            const char* name = formal->cname;
+            const char* name = cname;
             if (argTy != toTy)
               name = astr(name, ".coerce");
-            argNames.push_back(name);
+            outArgNames.push_back(name);
             // Adjust attributes
             auto b = llvmPrepareAttrBuilder(ctx);
-            if (formal->isRef() && argTy == toTy) {
+            if (formalInfo->isRef() && argTy == toTy) {
               b.addAttribute(llvm::Attribute::NonNull);
-              llvm::Type* valType = formal->getValType()->codegen().type;
+              auto valType = formalInfo->type()->getValType()->codegen().type;
               int64_t sz = getTypeSizeInBytes(layout, valType);
               b.addDereferenceableAttr(sz);
             }
@@ -2260,7 +2330,7 @@ codegenFunctionTypeLLVM(FnSymbol* fn, llvm::AttributeList& attrs,
             if (argInfo->getInReg()) {
               b.addAttribute(llvm::Attribute::InReg);
             }
-            llvmAddAttr(ctx, attrs, argTys.size(), b);
+            llvmAddAttr(ctx, outAttrs, argTys.size(), b);
           }
         } break;
 
@@ -2268,7 +2338,7 @@ codegenFunctionTypeLLVM(FnSymbol* fn, llvm::AttributeList& attrs,
           int i = 0;
           for (auto ty : argInfo->getCoerceAndExpandTypeSequence()) {
             argTys.push_back(ty);
-            argNames.push_back(astr(formal->cname, istr(i)));
+            outArgNames.push_back(astr(cname, istr(i)));
             i++;
           }
         } break;
@@ -2276,22 +2346,22 @@ codegenFunctionTypeLLVM(FnSymbol* fn, llvm::AttributeList& attrs,
         case clang::CodeGen::ABIArgInfo::Kind::Expand: {
           // TODO: check this for complex
           // TODO: should this be applying to C types not Chapel ones?
-          pushAllFieldTypesRecursively(formal->name,
-                                       getArgSymbolCodegenType(formal),
-                                       argTys, argNames);
+          auto t = getFormalCodegenType(formalInfo->qual(),
+                                        formalInfo->type());
+          pushAllFieldTypesRecursively(cname, t, argTys, outArgNames);
         } break;
       }
 
     } else {
       argTys.push_back(argTy);
-      argNames.push_back(formal->cname);
-      if(formal->isRef()) {
+      outArgNames.push_back(cname);
+      if(formalInfo->isRef()) {
         auto b = llvmPrepareAttrBuilder(ctx);
         b.addAttribute(llvm::Attribute::NonNull);
-        llvm::Type* valType = formal->getValType()->codegen().type;
+        auto valType = formalInfo->type()->getValType()->codegen().type;
         int64_t sz = getTypeSizeInBytes(layout, valType);
         b.addDereferenceableAttr(sz);
-        llvmAddAttr(ctx, attrs, argTys.size(), b);
+        llvmAddAttr(ctx, outAttrs, argTys.size(), b);
       }
     }
 
@@ -2347,7 +2417,7 @@ GenRet FnSymbol::codegenFunctionType(bool forHeader) {
           continue; // do not print locale argument, end count, dummy class
         if (count > 0)
           str += ",\n";
-        str += formal->codegenType().c;
+        str += codegenFormalType(formal).c;
         if( forHeader ) {
           str += " ";
           str += formal->cname;
@@ -2403,7 +2473,7 @@ GenRet FnSymbol::codegenCast(GenRet fnPtr) {
 #ifdef HAVE_LLVM
     // now cast to correct function type
     llvm::FunctionType* fnType = llvm::cast<llvm::FunctionType>(t.type);
-    llvm::PointerType *ptrToFnType = llvm::PointerType::get(fnType, 0);
+    llvm::PointerType *ptrToFnType = llvm::PointerType::getUnqual(fnType);
     fngen.val = info->irBuilder->CreateBitCast(fnPtr.val, ptrToFnType);
     trackLLVMValue(fngen.val);
 #endif
@@ -2504,9 +2574,9 @@ importPrecompiledFunctionProto(chpl::ID fnId, const char* cname) {
 #endif
 
 void FnSymbol::codegenPrototype() {
-  if (id == breakOnCodegenID) gdbShouldBreakHere();
+  if (id == breakOnCodegenID) debuggerBreakHere();
   if (breakOnCodegenCname[0] && !strcmp(cname, breakOnCodegenCname)) {
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
 
   GenInfo *info = gGenInfo;
@@ -2533,27 +2603,18 @@ void FnSymbol::codegenPrototype() {
                                                       argAttrs,
                                                       argNames);
 
-    llvm::Function *existing;
-
-    // Look for the function in the LayeredValueTable
-    // or in the module.
-    existing = getFunctionLLVM(cname);
-
-    // Check to see if another function already exists.
-    if( existing ) {
-      // other function with the same name exists!
-      // check that the prototype matches.
+    if (auto existing = getFunctionLLVM(cname)) {
+      // Another function with the same name exists, so emit last ditch errors.
       if(!existing->empty()) {
-        INT_FATAL(this, "Redefinition of a function");
+        USR_FATAL(this, "Redefinition of a function");
       }
       if(existing->arg_size() != argNames.size()) {
-        INT_FATAL(this,
+        USR_FATAL(this,
                   "Redefinition of a function with different number of args");
       }
       if(fTy != existing->getFunctionType()) {
-        INT_FATAL(this, "Redefinition of a function with different arg types");
+        USR_FATAL(this, "Redefinition of a function with different arg types");
       }
-
       return;
     }
 
@@ -2747,7 +2808,7 @@ void FnSymbol::codegenDef() {
   if( id == breakOnCodegenID ||
       (breakOnCodegenCname[0] &&
        0 == strcmp(cname, breakOnCodegenCname)) ) {
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
 
   if (!needsCodegenWrtGPU(this)) return;
@@ -2756,7 +2817,7 @@ void FnSymbol::codegenDef() {
   info->cLocalDecls.clear();
 
   if( outfile ) {
-    if (saveCDir.empty()) {
+    if (!saveCDir.empty()) {
      if (const char* rawname = fname()) {
       zlineToFileIfNeeded(this, outfile);
       const char* name = strrchr(rawname, '/');
@@ -2887,7 +2948,7 @@ void FnSymbol::codegenDef() {
     }
 
     for_formals(arg, this) {
-      if (arg->id == breakOnCodegenID) gdbShouldBreakHere();
+      if (arg->id == breakOnCodegenID) debuggerBreakHere();
 
       const clang::CodeGen::ABIArgInfo* argInfo = NULL;
       if (CGI) {
@@ -2927,7 +2988,7 @@ void FnSymbol::codegenDef() {
       Type* argType = arg->typeInfo();
       llvm::Type* chapelArgTy = argType->codegen().type;
 
-      if (arg->requiresCPtr() || (argInfo && argInfo->isIndirect())) {
+      if (argRequiresCPtr(arg) || (argInfo && argInfo->isIndirect())) {
         // consume the next LLVM argument
         llvm::Argument& llArg = *ai++;
         info->lvt->addValue(arg->cname, &llArg,  GEN_PTR, !is_signed(argType));
@@ -3141,17 +3202,75 @@ void FnSymbol::codegenDef() {
   return;
 }
 
+static GenRet codegenFnSymbolToWideCacheIndex(FnSymbol* fn) {
+  auto ft = fn->computeAndSetType();
+
+  // This should not be possible, a function type derived from a 'FnSymbol*'
+  // always starts with a wide type (that can be casted to narrow later after
+  // it is constructed).
+  INT_ASSERT(!ft->isLocal());
+  INT_ASSERT(!ft->isExtern() || fn->hasFlag(FLAG_EXTERN));
+
+  std::vector<GenRet> args(1);
+  int64_t index = 0;
+
+  auto it = ftableMap.find(fn);
+  if (it != ftableMap.end()) {
+    index = it->second;
+  } else {
+    INT_FATAL(fn, "Failed to look up 'ftable' index!");
+  }
+
+  args[0] = new_IntSymbol(index, INT_SIZE_64);
+
+  auto fname = "chpl_staticToDynamicProcIdx";
+  auto ret = codegenCallExprWithArgs(fname, args);
+
+  INT_ASSERT(ret.isLVPtr == GEN_VAL);
+
+  // But make sure that the type is still the function pointer type.
+  ret.chplType = ft;
+
+  return ret;
+}
+
 GenRet FnSymbol::codegen() {
+  // Without context, the best we can do is convert it as a base expression.
+  return this->codegenAsCallBaseExpr();
+}
+
+GenRet FnSymbol::codegenAsValue() {
+  // If the FnSymbol is being used as a first class function, then it is
+  // a "wide value" index into the dynamic procedure pointer cache.
+  if (this->hasFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION)) {
+    return codegenFnSymbolToWideCacheIndex(this);
+  }
+
+  return codegenAsCallBaseExpr();
+}
+
+GenRet FnSymbol::codegenAsCallBaseExpr() {
   GenInfo *info = gGenInfo;
   GenRet ret;
-  if( info->cfile ) ret.c = cname;
-  else {
+
+  // TODO: When can this path be called? Do we need to let the caller
+  // control whether this branch or the above is called? Is this just
+  // the local pointer path?
+  if (info->cfile) {
+      ret.c = cname;
+  } else {
 #ifdef HAVE_LLVM
-    if (cname[0] == 'l' &&
+    bool isNameForLlvmIntrinsic = false;
+    if (HAVE_LLVM &&
+        cname[0] == 'l' &&
         cname[1] == 'l' &&
         cname[2] == 'v' &&
         cname[3] == 'm' &&
         cname[4] == '.') {
+      isNameForLlvmIntrinsic  = true;
+    }
+
+    if (isNameForLlvmIntrinsic) {
       // Find intrinsic.
 
       Type* formalType = getFormal(1)->type;
@@ -3160,10 +3279,19 @@ GenRet FnSymbol::codegen() {
       llvm::Type* Types[] = {ty.type};
 
       const llvm::TargetIntrinsicInfo *TII = info->targetMachine->getIntrinsicInfo();
+#if LLVM_VERSION_MAJOR >= 20
+      llvm::Intrinsic::ID ID = llvm::Intrinsic::lookupIntrinsicID(cname);
+#else
       llvm::Intrinsic::ID ID = llvm::Function::lookupIntrinsicID(cname);
+#endif
       if (ID == llvm::Intrinsic::not_intrinsic && TII)
         ID = static_cast<llvm::Intrinsic::ID>(TII->lookupName(cname));
+#if LLVM_VERSION_MAJOR >= 20
+      ret.val = llvm::Intrinsic::getOrInsertDeclaration(info->module, ID, Types);
+#else
       ret.val = llvm::Intrinsic::getDeclaration(info->module, ID, Types);
+#endif
+
       if (!ret.val) {
         USR_FATAL("Could not find LLVM intrinsic %s", cname);
       }

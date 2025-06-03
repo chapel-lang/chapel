@@ -2,10 +2,9 @@
 import sys
 import os
 import re
-import shutil
 
-import chpl_platform, overrides
-from utils import memoize, check_valid_var
+import overrides
+from utils import memoize, check_valid_var, which
 
 
 @memoize
@@ -66,7 +65,7 @@ def _is_ibv():
     """
     Look for '/dev/infiniband/uverbs0' and '/sys/class/net/ib*'
     """
-    return (shutil.which('ibstat') and
+    return (which('ibstat') and
             os.path.exists('/dev/infiniband/uverbs0') and
             any(dev.startswith('ib') for dev in os.listdir('/sys/class/net/')))
 
@@ -75,7 +74,7 @@ def _is_cxi():
     """
     Look for '/sys/class/net/hsn*', '/sys/class/cxi/', and '/dev/cxi*'
     """
-    return (shutil.which('cxi_stat') and
+    return (which('cxi_stat') and
             any(dev.startswith('hsn') for dev in os.listdir('/sys/class/net/')) and
             os.path.exists('/sys/class/cxi/') and
             any(dev.startswith('cxi') for dev in os.listdir('/dev/')))

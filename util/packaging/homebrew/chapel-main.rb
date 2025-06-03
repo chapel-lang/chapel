@@ -16,7 +16,7 @@ class Chapel < Formula
   depends_on "gmp"
   depends_on "hwloc"
   depends_on "jemalloc"
-  depends_on "llvm@19"
+  depends_on "llvm"
   depends_on "pkgconf"
   depends_on "python@3.13"
 
@@ -92,6 +92,7 @@ class Chapel < Formula
     bin.install libexec.glob("bin/#{platform}/*")
     bin.env_script_all_files libexec/"bin"/platform, CHPL_HOME: libexec
     man1.install_symlink libexec.glob("man/man1/*.1")
+    (lib/"cmake/chpl").install libexec.glob("lib/cmake/chpl/*")
   end
 
   test do

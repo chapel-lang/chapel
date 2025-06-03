@@ -1,0 +1,101 @@
+#!/usr/bin/env python3
+
+# Python test script to verify the llvm debug info
+# is generated properly during Chapel compilation
+
+import os, subprocess as sp, sys
+
+
+target = sys.argv[1]
+output_file = sys.argv[2]
+
+chplenv_lines = (
+    sp.check_output(
+        [
+            os.environ["CHPL_HOME"] + "/util/printchplenv",
+            "--all",
+            "--internal",
+            "--simple",
+        ]
+    )
+    .decode()
+    .splitlines()
+)
+
+
+chplenv = {k: v for k, v in [line.split("=", 1) for line in chplenv_lines]}
+llvm_bin = (
+    sp.check_output([chplenv["CHPL_LLVM_CONFIG"], "--bindir"]).decode().strip()
+)
+llvm_dwarfdump = llvm_bin + "/llvm-dwarfdump"
+
+dwarfDumpTarget = target
+
+# On OSX we should have built a '.dSYM' archive.
+if chplenv["CHPL_TARGET_PLATFORM"] == "darwin":
+    dwarfDumpTarget += ".dSYM"
+if chplenv["CHPL_LAUNCHER"] != "none":
+    dwarfDumpTarget += "_real"
+
+# Check Debug Info Existence
+debug_option = " -debug-str "
+Command_check = llvm_dwarfdump + debug_option + dwarfDumpTarget
+
+output = sp.check_output(Command_check, shell=True).decode().strip()
+
+with open(output_file, "r") as o:
+    original = o.read()
+
+with open(output_file, "w") as f:
+    f.write(original)
+
+    # Verify the module
+    if "My_foo" in output:
+        print("checking module --PASS", file=f)
+    else:
+        print("checking module --FAIL", file=f)
+
+    # Verify the functions
+    if (
+        "My_sayhello" in output
+        and "My_factorial" in output
+        and "main" in output
+    ):
+        print("checking functions --PASS", file=f)
+    else:
+        print("checking functions --FAIL", file=f)
+
+    # Verify the struct types
+    if "My_Actor" in output and "My_name" in output and "My_age" in output:
+        print("checking types --PASS", file=f)
+    else:
+        print("checking types --FAIL", file=f)
+
+    # Verify the global variables
+    if (
+        "My_message" in output
+        and "My_gv_t" in output
+        and "My_gv_b" in output
+        and "My_globalActor" in output
+    ):
+        print("checking global variables --PASS", file=f)
+    else:
+        print("checking global variables --FAIL", file=f)
+
+    # Verify the local variables
+    if (
+        "My_anything" in output
+        and "My_localActor" in output
+        and "My_Number" in output
+    ):
+        print("checking local variables --PASS", file=f)
+    else:
+        print("checking local variables --FAIL", file=f)
+
+    # Verify the formal arguments
+    if "My_level" in output and "My_x" in output:
+        print("checking formal arguments --PASS", file=f)
+    else:
+        print("checking formal arguments --FAIL", file=f)
+
+    print("DONE with debug checking", file=f)

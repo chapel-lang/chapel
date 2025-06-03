@@ -258,17 +258,17 @@ static void test6a() {
       }
 
       record Middle1 {
-        forwarding var field: Inner1;
-        forwarding var field: Inner2;
+        forwarding var field1: Inner1;
+        forwarding var field2: Inner2;
       }
       record Middle2 {
-        forwarding var field: Inner3;
-        forwarding var field: Inner4;
+        forwarding var field1: Inner3;
+        forwarding var field2: Inner4;
       }
 
       record Outer {
-        forwarding var impl: Middle1;
-        forwarding var impl: Middle2;
+        forwarding var impl1: Middle1;
+        forwarding var impl2: Middle2;
       }
 
       var rec: Outer;
@@ -408,7 +408,7 @@ static void forwardForwardHelper(std::string stmt, bool isVar = false) {
   auto qt = resolveQualifiedTypeOfX(context, contents);
   assert(qt.type()->isErroneousType());
 
-  unsigned int numExpected = isVar ? 3 : 2;
+  unsigned int numExpected = isVar ? 4 : 2;
   assert(guard.numErrors() == numExpected);
 
   assert(guard.error(0)->type() == chpl::NoMatchingCandidates);

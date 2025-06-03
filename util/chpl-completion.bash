@@ -79,6 +79,7 @@ _chpl ()
 --dyno-timing \
 --dyno-verify-serialization \
 --early-deinit \
+--edition \
 --exit-leaks \
 --explain-call \
 --explain-call-id \
@@ -465,6 +466,7 @@ _chpl ()
 --div-by-zero-checks \
 --dynamic \
 --dynamic-auto-local-access \
+--edition \
 --explain-call \
 --explain-instantiation \
 --explain-verbose \

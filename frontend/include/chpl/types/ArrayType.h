@@ -73,8 +73,6 @@ class ArrayType final : public CompositeType {
                                        const QualifiedType& domainType,
                                        const QualifiedType& eltType);
 
-  const RuntimeType* getDomainRuntimeType() const;
-
   const Type* substitute(Context* context,
                          const PlaceholderMap& subs) const override {
     return getArrayTypeQuery(context,
@@ -102,6 +100,8 @@ class ArrayType final : public CompositeType {
   }
 
   const RuntimeType* runtimeType(Context* context) const;
+
+  bool isAliasingArray(Context* context) const;
 
   ~ArrayType() = default;
 

@@ -709,10 +709,12 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
               Type*      returnType = rhsFn->retType->getValType();
 
               // Skip this transformation if
+              //  * the expression is an array view
               //  * the type differs
               //  * it is a domain (for A.domain returning unowned)
               //  * if it's a sync variable (different init/auto copy)
-              if (actualType == returnType && isSyncType(formalType) == false)
+              if (!copiedSe->symbol()->hasFlag(FLAG_IS_ARRAY_VIEW) &&
+                  actualType == returnType && isSyncType(formalType) == false)
               {
                 bool copyFromUnownedDomain = false;
                 if (actualType->symbol->hasFlag(FLAG_DOMAIN)) {
@@ -739,6 +741,11 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
   callExpr->insertAtTail(tmpVar);
 
   callExpr->insertBefore(new DefExpr(tmpVar));
+  SymExpr* fnSym = toSymExpr(callExpr->baseExpr);
+  bool returnsAliasingArray = false;
+  if (fnSym && fnSym->symbol()->hasFlag(FLAG_RETURNS_ALIASING_ARRAY)) {
+    returnsAliasingArray = true;
+  }
   callExpr->insertAfter(new CallExpr(PRIM_MOVE, useLhs, tmpVar));
 
   // Possibly reduce a copy operation to a simple move
@@ -746,7 +753,26 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
   // of user variables. *or* it might come from handling `in` intent.
   if (copyExpr) {
     if (isRhsInitOrAutoCopy) {
-      removeInitOrAutoCopyPostResolution(copyExpr);
+      if (!returnsAliasingArray) {
+        removeInitOrAutoCopyPostResolution(copyExpr);
+      } else {
+        //
+        // If this call returns an aliasing array (an array view), we
+        // will need to deep-copy the result in non-'ref' situations
+        // e.g., var B = A[2..n-1]; or var B = A.reshape(2..n-1) so
+        // will need to autodestroy the result at the end of the scope
+        // and recgonize it as an array view in other situations.  Mark
+        // it as an array view to help with this in later passes.
+        //
+        SymExpr* rhsExpr = toSymExpr(copyExpr->get(1));
+        if (rhsExpr) {
+          copiesToNoDestroy = false;  // Is this too big a hammer?  redundant?
+          rhsExpr->symbol()->addFlag(FLAG_INSERT_AUTO_DESTROY);
+          rhsExpr->symbol()->addFlag(FLAG_IS_ARRAY_VIEW);
+        } else {
+          INT_FATAL(copyExpr, "copyExpr didn't have expected structure");
+        }
+      }
     }
     else {
       copyExpr->replace(copyExpr->get(1)->remove());

@@ -11,13 +11,20 @@ extern {
   #include <stdint.h>
   #include <inttypes.h>
   #include <stdio.h>
+  #include <stdbool.h>
 
   void printMyChar(int8_t x);
   void printMyInt64(int64_t x);
+  void printMyUint64(uint64_t x);
   void printMyReal64(double x);
+  void printMyBool(bool x);
 
   void printMyInt64(int64_t x) {
     printf("%" PRId64, x);
+  }
+
+  void printMyUint64(uint64_t x) {
+    printf("%" PRIu64, x);
   }
 
   void printMyReal64(double x) {
@@ -27,38 +34,33 @@ extern {
   void printMyChar(int8_t x) {
     printf("%c", x);
   }
+
+  void printMyBool(bool x) {
+    if (x) {
+      printf("true");
+    } else {
+      printf("false");
+    }
+  }
 }
 
 extern proc printMyChar(x: real(64));
 extern proc printMyInt64(x: int(64));
+extern proc printMyUint64(x: uint(64));
 extern proc printMyReal64(x: real(64));
+extern proc printMyBool(x: bool);
 
 proc doPrintSpace() do printMyChar(32);
 proc doPrintNewline() do printMyChar(10);
 
-private proc doPrintBool(x: bool) {
-  if x {
-    // Lol...
-    printMyChar(116);
-    printMyChar(114);
-    printMyChar(117);
-    printMyChar(101);
-  } else {
-    // Insert Picard 'facepalm' GIF...
-    printMyChar(102);
-    printMyChar(97);
-    printMyChar(108);
-    printMyChar(115);
-    printMyChar(101);
-  }
-}
-
 proc print(x: ?t) {
   if t == bool {
-    doPrintBool(x);
-  } else if t == int {
+    printMyBool(x);
+  } else if isIntType(t) {
     printMyInt64(x);
-  } else if t == real {
+  } else if isUintType(t) {
+    printMyUint64(x);
+  } else if isRealType(t) {
     printMyReal64(x);
   } else if isTupleType(t) {
     // TODO: Param loop this...
@@ -72,6 +74,9 @@ proc print(x: ?t) {
     if x.size >= 7 { doPrintSpace(); print(x[6]); }
     if x.size >= 8 { doPrintSpace(); print(x[7]); }
     if x.size >= 9 { doPrintSpace(); print(x[8]); }
+  } else if isEnumType(t) {
+    var temp : int = chpl__enumToOrder(x);
+    printMyInt64(temp);
   } else {
     // TODO: 'halt()'
   }

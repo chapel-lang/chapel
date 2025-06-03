@@ -110,6 +110,8 @@ PRIMITIVE_G(RSH_ASSIGN, ">>=")
 PRIMITIVE_G(AND_ASSIGN, "&=")
 PRIMITIVE_G(OR_ASSIGN, "|=")
 PRIMITIVE_G(XOR_ASSIGN, "^=")
+PRIMITIVE_G(LOGICALAND_ASSIGN, "&&=")
+PRIMITIVE_G(LOGICALOR_ASSIGN, "||=")
 PRIMITIVE_R(REDUCE_ASSIGN, "reduce=")
 
 PRIMITIVE_G(MIN, "_min")
@@ -344,7 +346,10 @@ PRIMITIVE_R(IS_CLASS_TYPE, "is class type")
 PRIMITIVE_R(IS_NILABLE_CLASS_TYPE, "is nilable class type")
 PRIMITIVE_R(IS_NON_NILABLE_CLASS_TYPE, "is non nilable class type")
 PRIMITIVE_R(IS_RECORD_TYPE, "is record type")
-PRIMITIVE_R(IS_FCF_TYPE, "is fcf type")
+
+PRIMITIVE_R(IS_PROC_TYPE, "is proc type")
+PRIMITIVE_R(TO_PROC_TYPE, "to proc type")
+
 PRIMITIVE_R(IS_UNION_TYPE, "is union type")
 PRIMITIVE_R(IS_EXTERN_UNION_TYPE, "is extern union type")
 PRIMITIVE_R(IS_ATOMIC_TYPE, "is atomic type")
@@ -402,6 +407,7 @@ PRIMITIVE_R(TO_BORROWED_CLASS, "to borrowed class")
 PRIMITIVE_R(TO_UNDECORATED_CLASS, "to undecorated class")
 PRIMITIVE_R(TO_NILABLE_CLASS, "to nilable class")
 PRIMITIVE_R(TO_NON_NILABLE_CLASS, "to non nilable class")
+PRIMITIVE_R(TO_EXTERN_LINKAGE, "to extern linkage")
 
 PRIMITIVE_R(SET_ALIASING_ARRAY_ON_TYPE, "set aliasing array on type")
 
@@ -427,7 +433,7 @@ PRIMITIVE_R(UINT64_AS_REAL64, "uint64 as real64")
 PRIMITIVE_R(REAL32_AS_UINT32, "real32 as uint32")
 PRIMITIVE_R(REAL64_AS_UINT64, "real64 as uint64")
 
-PRIMITIVE_G(BREAKPOINT, "breakpoint")
+PRIMITIVE_G(DEBUG_TRAP, "debug trap")
 
 PRIMITIVE_G(CONST_ARG_HASH, "hash const arguments")
 PRIMITIVE_G(CHECK_CONST_ARG_HASH, "check hashes of const arguments")

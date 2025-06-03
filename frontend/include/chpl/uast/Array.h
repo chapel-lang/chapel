@@ -55,6 +55,7 @@ class Array final : public AstNode {
         trailingComma_(trailingComma),
         associative_(associative) {
     isMultiDim_ = this->numExprs() > 0 && this->expr(0)->isArrayRow();
+    CHPL_ASSERT(!(isMultiDim_ && associative_));
   }
 
   void serializeInner(Serializer& ser) const override {

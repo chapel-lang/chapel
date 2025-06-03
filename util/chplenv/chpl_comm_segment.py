@@ -2,7 +2,7 @@
 import sys
 
 import chpl_comm, chpl_comm_substrate, chpl_platform, overrides
-from utils import memoize, check_valid_var
+from utils import memoize, check_valid_var, error
 
 
 @memoize
@@ -13,7 +13,7 @@ def get():
         if not segment_val:
             substrate_val = chpl_comm_substrate.get()
             platform_val = chpl_platform.get('target')
-            if substrate_val in ('aries', 'smp', 'ucx'):
+            if substrate_val in ('smp', 'ucx'):
                 segment_val = 'fast'
             elif substrate_val == 'ofi' and chpl_platform.is_hpe_cray('target'):
                 segment_val = 'fast'
@@ -24,6 +24,15 @@ def get():
         check_valid_var("CHPL_GASNET_SEGMENT", segment_val, ("fast", "large", "everything"))
     else:
         segment_val = 'none'
+
+    substrate_val = chpl_comm_substrate.get()
+    if segment_val == "everything" and substrate_val in ("smp", "ucx"):
+        error(
+            "CHPL_GASNET_SEGMENT=everything is not supported with "
+            + "CHPL_COMM_SUBSTRATE={0}. Please use ".format(substrate_val)
+            + "CHPL_GASNET_SEGMENT=fast or CHPL_GASNET_SEGMENT=large instead"
+        )
+
     return segment_val
 
 

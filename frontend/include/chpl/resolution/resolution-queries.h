@@ -285,6 +285,16 @@ const TypedFnSignature* typeConstructorInitial(Context* context,
                                                const types::Type* t);
 
 /**
+  Check if a signature from typedSignatureInitial matches the given CallInfo,
+  without instantiation. This is an early check before a more involved
+  instantiateSignature (if the function is generic).
+ */
+ApplicabilityResult
+isInitialTypedSignatureApplicable(Context* context,
+                                  const TypedFnSignature* tfs,
+                                  const FormalActualMap& faMap,
+                                  const CallInfo& ci);
+/**
   Instantiate a TypedFnSignature from
    * the result of typedSignatureInitial,
    * a CallInfo describing the types at the call site, and
@@ -364,6 +374,14 @@ types::QualifiedType returnType(ResolutionContext* rc,
 types::QualifiedType yieldType(ResolutionContext* rc,
                                const TypedFnSignature* sig,
                                const PoiScope* poiScope);
+
+/* Returns a pair of (yieldType(), returnType()) for the function.
+   These can differ if the function has ITER kind, which may
+   have an 'int' return type but creates an iterable yielding 'int' when called. */
+const std::pair<types::QualifiedType, types::QualifiedType>&
+returnTypes(ResolutionContext* rc,
+            const TypedFnSignature* sig,
+            const PoiScope* poiScope);
 
 /**
   Compute the types for any generic 'out' formal types after instantiation
@@ -663,19 +681,24 @@ TheseResolutionResult resolveTheseCall(ResolutionContext* rc,
 const uast::BuilderResult*
 builderResultForDefaultFunction(Context* context,
                                 UniqueString typePath,
-                                UniqueString name);
+                                UniqueString name,
+                                UniqueString overloadPart);
 
 /** Get the 'promotion type' for the given type. E.g., the promotion type
     for a range is the type of the range's elements. */
 const types::QualifiedType& getPromotionType(Context* context, types::QualifiedType qt, bool skipIfRunning = false);
 
+/// \cond DO_NOT_DOCUMENT
+// Common helper for ArrayType and DomainType
 const types::RuntimeType* getRuntimeType(Context* context, const types::CompositeType* ct);
+/// \endcond
 
 Access accessForQualifier(uast::Qualifier q);
 
 const MostSpecificCandidate*
 determineBestReturnIntentOverload(const MostSpecificCandidates& candidates,
                                   Access access,
+                                  types::QualifiedType::Kind &outReturnKind,
                                   bool& outAmbiguity);
 
 /**

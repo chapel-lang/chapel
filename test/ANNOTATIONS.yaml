@@ -624,6 +624,9 @@ all:
   03/20/25:
     - text: Update bundled qthreads to 1.22 (#26823)
       config: chapcs, 16-node-apollo-hdr, 16-node-hpe-cray-ex, 1-node-hpe-cray-ex
+  05/21/25:
+    - text: Update system LLVM to 20
+      config: chapcs, 16-node-apollo-hdr, 16-node-hpe-cray-ex, 1-node-hpe-cray-ex, 1-node-a100, 1-node-mi250x
 
 # End all
 
@@ -2578,7 +2581,7 @@ arkouda: &arkouda-base
   03/06/25:
     - text: Suspected systems changes
       config: 16-node-xc
-  03/28/25:
+  03/20/25:
     - text: Add ARKOUDA_DEFAULT_TEMP_DIRECTORY for arkouda perf tests (#26949)
       config: 16-node-hpe-apollo-hdr
 

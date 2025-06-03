@@ -1,0 +1,22 @@
+Reading symbols from targetVar...
+Breakpoint 1 at 0xXXXX: file gdb.c, line 28.
+Breakpoint 2 at 0xXXXX: file targetVar.chpl, line 5.
+Breakpoint 3 at 0xXXXX: file targetVar.chpl, line 10.
+[Switching to Thread 0xXXXX (LWP XXXX)]
+Thread 2 "targetVar" hit Breakpoint 2, foo_chpl (myFormal=59)
+5	  writeln("printing from foo");
+myFormal = 59
+localVar = 60
+Thread 2 "targetVar" hit Breakpoint 3, bar_chpl (myFormal=uninit)
+10	proc bar(myFormal) {
+11	  writeln("printing from bar");
+myFormal = 59
+No locals.
+myLocal: 59
+myGlobal: 42
+printing from foo
+myFormal: 59
+localVar: 60
+printing from bar
+myFormal: 59
+[Inferior 1 (process XXXX) exited normally]

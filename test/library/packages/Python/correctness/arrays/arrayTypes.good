@@ -49,16 +49,6 @@ Python array: [[ True]
 Chapel array: true
 false
 Testing numpy type (1d array): np.byte
-Python array: [96 97 98]
-Chapel array: 96 97 98
-Testing numpy type (nd array): np.byte
-Python array: [[96]
- [97]
- [98]]
-Chapel array: 96
-97
-98
-Testing numpy type (1d array): np.byte
 Python array: [-1 -2 -3]
 Chapel array: -1 -2 -3
 Testing numpy type (nd array): np.byte

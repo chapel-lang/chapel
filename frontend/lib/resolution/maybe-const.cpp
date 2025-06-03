@@ -231,18 +231,20 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
   // is it return intent overloading? resolve that
   if (candidates.numBest() > 1) {
     Access access = currentAccess();
+    auto kind = QualifiedType::UNKNOWN;
     bool ambiguity;
-    auto best = determineBestReturnIntentOverload(candidates, access, ambiguity);
+    auto best = determineBestReturnIntentOverload(candidates, access, kind, ambiguity);
+    if (kind == QualifiedType::UNKNOWN)
+      kind = re.type().kind();
     if (ambiguity)
       context->error(ast, "Too much recursion to infer return intent overload");
 
     CHPL_ASSERT(best);
-    auto fn = best->fn();
     resolver.validateAndSetMostSpecific(re, ast, MostSpecificCandidates::getOnly(*best));
 
-    // recompute the return type
-    // (all that actually needs to change is the return intent)
-    re.setType(returnType(rc, fn, re.poiScope()));
+    // adjust the return intent to one corresponding to the overload
+    CHPL_ASSERT(re.type().param() == nullptr);
+    re.setType(QualifiedType(kind, re.type().type()));
   }
 
   // there should be only one candidate at this point

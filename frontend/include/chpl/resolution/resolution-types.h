@@ -314,6 +314,11 @@ class UntypedFnSignature {
     return idTag_ == uast::asttags::Function;
   }
 
+  /** Returns true if id() refers to a function declared in an extern block */
+  bool idIsExternBlockFunction() const {
+    return isCompilerGenerated() && id().isExternBlockElement();
+  }
+
   /** Returns true if id() refers to a Class */
   bool idIsClass() const {
     return idTag_ == uast::asttags::Class;
@@ -410,6 +415,11 @@ class UntypedFnSignature {
   DECLARE_DUMP;
   /// \endcond DO_NOT_DOCUMENT
 };
+
+const UntypedFnSignature*
+getUntypedFnSignatureForFn(Context* context,
+                           const uast::Function* fn,
+                           ID const* compilerGeneratedOrigin = nullptr);
 
 /**
   This type stores the outer variables used by a function. For each mention
@@ -561,6 +571,9 @@ class CallInfo {
  public:
   using CallInfoActualIterable = Iterable<std::vector<CallInfoActual>>;
 
+  /** default constructor for the query system */
+  CallInfo() : name_(), calledType_() {}
+
   /** Construct a CallInfo that contains QualifiedTypes for actuals */
   CallInfo(UniqueString name, types::QualifiedType calledType,
            bool isMethodCall,
@@ -576,6 +589,7 @@ class CallInfo {
     if (isMethodCall) {
       CHPL_ASSERT(numActuals() >= 1);
       CHPL_ASSERT(this->actual(0).byName() == "this");
+      CHPL_ASSERT(calledType.isUnknown());
     }
     if (isParenless) {
       if (isMethodCall) {
@@ -675,6 +689,14 @@ class CallInfo {
                             const uast::AstNode*& questionArg,
                             std::vector<const uast::AstNode*>* actualAsts);
 
+  /** return the type of the 'this' actual, aka the receiver of a method call. */
+  types::QualifiedType methodReceiverType() const {
+    CHPL_ASSERT(isMethodCall());
+    CHPL_ASSERT(numActuals() > 0);
+    auto& firstActual = actual(0);
+    CHPL_ASSERT(firstActual.byName() == "this");
+    return firstActual.type();
+  }
 
   /** return the name of the called thing */
   const UniqueString name() const { return name_; }
@@ -731,6 +753,20 @@ class CallInfo {
     return chpl::hash(name_, calledType_, isMethodCall_, isOpCall_,
                       hasQuestionArg_, isParenless_,
                       actuals_);
+  }
+  static bool update(CallInfo& keep,
+                     CallInfo& addin) {
+    return defaultUpdate(keep, addin);
+  }
+
+  void swap(CallInfo& other) {
+    std::swap(name_, other.name_);
+    std::swap(calledType_, other.calledType_);
+    std::swap(isMethodCall_, other.isMethodCall_);
+    std::swap(isOpCall_, other.isOpCall_);
+    std::swap(hasQuestionArg_, other.hasQuestionArg_);
+    std::swap(isParenless_, other.isParenless_);
+    actuals_.swap(other.actuals_);
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
@@ -1226,9 +1262,10 @@ struct CandidatesAndForwardingInfo {
 
   // Compute and fill in forwarding info for a range of newly-added candidates.
   void helpComputeForwardingTo(const CallInfo& fci, size_t start) {
+    CHPL_ASSERT(fci.isMethodCall());
     CHPL_ASSERT(forwardingInfo.size() <= start);
     forwardingInfo.resize(start);
-    types::QualifiedType forwardingReceiverActualType = fci.calledType();
+    types::QualifiedType forwardingReceiverActualType = fci.methodReceiverType();
     for (size_t i = start; i < candidates.size(); i++) {
       forwardingInfo.push_back(forwardingReceiverActualType);
     }
@@ -2378,15 +2415,18 @@ class AssociatedAction {
   Action action_;
   const TypedFnSignature* fn_;
   ID id_;
+  types::QualifiedType type_;
 
  public:
-  AssociatedAction(Action action, const TypedFnSignature* fn, ID id)
-    : action_(action), fn_(fn), id_(id) {
+  AssociatedAction(Action action, const TypedFnSignature* fn, ID id,
+                   types::QualifiedType type)
+    : action_(action), fn_(fn), id_(id), type_(type) {
   }
   bool operator==(const AssociatedAction& other) const {
     return action_ == other.action_ &&
            fn_ == other.fn_ &&
-           id_ == other.id_;
+           id_ == other.id_ &&
+           type_ == other.type_;
   }
   bool operator!=(const AssociatedAction& other) const {
     return !(*this == other);
@@ -2400,9 +2440,12 @@ class AssociatedAction {
   /** Return the ID is associated with the action */
   const ID& id() const { return id_; }
 
+  const types::QualifiedType type() const { return type_; }
+
   void mark(Context* context) const {
     if (fn_ != nullptr) fn_->mark(context);
     id_.mark(context);
+    type_.mark(context);
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
@@ -2478,6 +2521,19 @@ class ResolvedExpression {
     return associatedActions_;
   }
 
+  // TODO: Expected to be a placeholder as we look towards updating the
+  // representation of associated actions.
+  std::optional<AssociatedAction> getAction(AssociatedAction::Action action) const {
+    // TODO: what if there are multiple instances of the same action?
+    auto it = std::find_if(associatedActions_.begin(), associatedActions_.end(),
+                [&](const AssociatedAction a) { return a.action() == action; });
+    if (it != associatedActions_.end()) {
+      return *it;
+    } else {
+      return {};
+    }
+  }
+
   const ResolvedParamLoop* paramLoop() const {
     return paramLoop_;
   }
@@ -2491,8 +2547,13 @@ class ResolvedExpression {
   /** set the toId */
   void setToId(ID toId) { toId_ = toId; }
 
-  /** set the type */
+  /** set the qualified type */
   void setType(const types::QualifiedType& type) { type_ = type; }
+
+  /** set the kind of the qualified type */
+  void setKind(types::QualifiedType::Kind kind) {
+    type_ = { kind, type_.type(), type_.param() };
+  }
 
   /** set the most specific */
   void setMostSpecific(const MostSpecificCandidates& mostSpecific) {
@@ -2505,8 +2566,9 @@ class ResolvedExpression {
   /** add an associated function */
   void addAssociatedAction(AssociatedAction::Action action,
                            const TypedFnSignature* fn,
-                           ID id) {
-    associatedActions_.push_back(AssociatedAction(action, fn, id));
+                           ID id,
+                           types::QualifiedType type) {
+    associatedActions_.push_back(AssociatedAction(action, fn, id, type));
   }
 
   void setParamLoop(const ResolvedParamLoop* paramLoop) { paramLoop_ = paramLoop; }
@@ -2563,7 +2625,7 @@ class ResolvedExpression {
  */
 class ResolutionResultByPostorderID {
  private:
-  ID symbolId;
+  ID symbolId_;
   // This map is generally accessed with operator[] to default-construct a new
   // ResolvedExpression if none exists for an ID. at() is used instead only
   // when const-ness is required.
@@ -2579,10 +2641,14 @@ class ResolutionResultByPostorderID {
   /** prepare to resolve the body of a For loop */
   void setupForParamLoop(const uast::For* loop, ResolutionResultByPostorderID& parent);
 
+  const ID& symbolId() const {
+    return symbolId_;
+  }
+
   /* ID query functions */
   bool hasId(const ID& id) const {
     auto postorder = id.postOrderId();
-    if (id.symbolPath() == symbolId.symbolPath() &&
+    if (id.symbolPath() == symbolId_.symbolPath() &&
         0 <= postorder && (map.count(postorder) > 0))
       return true;
 
@@ -2620,20 +2686,20 @@ class ResolutionResultByPostorderID {
   }
 
   bool operator==(const ResolutionResultByPostorderID& other) const {
-    return symbolId == other.symbolId &&
+    return symbolId_ == other.symbolId_ &&
            map == other.map;
   }
   bool operator!=(const ResolutionResultByPostorderID& other) const {
     return !(*this == other);
   }
   void swap(ResolutionResultByPostorderID& other) {
-    symbolId.swap(other.symbolId);
+    symbolId_.swap(other.symbolId_);
     map.swap(other.map);
   }
   static bool update(ResolutionResultByPostorderID& keep,
                      ResolutionResultByPostorderID& addin);
   void mark(Context* context) const {
-    symbolId.mark(context);
+    symbolId_.mark(context);
     for (auto const &elt : map) {
       // mark ResolvedExpressions
       elt.second.mark(context);
@@ -2641,6 +2707,14 @@ class ResolutionResultByPostorderID {
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+
+  auto begin() const {
+    return map.begin();
+  }
+
+  auto end() const {
+    return map.end();
+  }
 
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;

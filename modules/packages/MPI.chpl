@@ -124,12 +124,9 @@ follows:
   CHPL_TARGET_COMPILER=cray-prgenv-{gnu, intel}
   CHPL_TASKS={qthreads, fifo}   # see discussion below
   CHPL_COMM={ugni, gasnet}
-  CHPL_COMM_SUBSTRATE={aries, mpi}   # if CHPL_COMM=gasnet
+  CHPL_COMM_SUBSTRATE=mpi   # if CHPL_COMM=gasnet
   MPICH_MAX_THREAD_SAFETY=multiple
   AMMPI_MPI_THREAD=multiple         # if CHPL_COMM_SUBSTRATE=mpi
-
-Running under ``gasnet+aries`` might require setting ``MPICH_GNI_DYNAMIC_CONN=disabled``.
-This is discussed :ref:`here <readme-cray-constraints>`.
 
 These are the configurations in which this module is currently tested. Any
 launcher should work fine for this mode. Support is expected to expand in
@@ -142,7 +139,7 @@ Since MPI is not natively Qthread-aware, some care is required to avoid deadlock
 section describes current recommendations on using ``CHPL_TASKS=qthreads`` and the MPI
 module.
 
-We assume that ``CHPL_COMM`` is either ``ugni`` or ``gasnet+aries``.
+We assume that ``CHPL_COMM`` is ``ugni``.
 We do not recommend using the MPI module with the ``gasnet+mpi`` communication backend
 and ``qthreads``.
 

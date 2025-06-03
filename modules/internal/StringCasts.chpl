@@ -302,7 +302,4 @@ operator :(x: string, type t:chpl_anycomplex) throws {
 
     return retVal;
   }
-
-  // Catch all cast anything -> string is in ChapelIO
-
 }

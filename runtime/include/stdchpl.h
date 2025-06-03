@@ -46,6 +46,7 @@
 #include "chpl-comm-diags.h"
 #include "chpl-const-arg-check.h"
 #include "chpldirent.h"
+#include "chpl-dynamic-loading.h"
 #include "chplexit.h"
 #include "chpl-export-wrappers.h"
 #include "chpl-external-array.h"

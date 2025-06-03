@@ -487,6 +487,9 @@ static void populateScopeWithBuiltins(Context* context, Scope* scope) {
   scope->addBuiltinVar(USTR("nil"));
   scope->addBuiltinVar(USTR("none"));
 
+  scope->addBuiltinFunction(USTR("chpl__orderToEnum"));
+  scope->addBuiltinFunction(USTR("chpl__enumToOrder"));
+
   populateScopeWithBuiltinKeywords(context, scope);
 }
 
@@ -1237,6 +1240,7 @@ LookupResult LookupHelper::doLookupInExternBlocks(const Scope* scope,
   const std::vector<ID>& exbIds = gatherExternBlocks(context, scope->id());
 
   bool found = false;
+  bool nonFunctions = false;
 
   // Consider each extern block in turn. Does it have a symbol with that name?
   for (const auto& exbId : exbIds) {
@@ -1245,19 +1249,22 @@ LookupResult LookupHelper::doLookupInExternBlocks(const Scope* scope,
       auto newId = ID::fabricateId(context, exbId, name,
                                    ID::ExternBlockElement);
 
-      // We assume it's not a parenful function or a type,
-      // but that might not be. However, it shouldn't matter for scope
-      // resolution. Adjust this code if it does.
+      bool isParenfulFunction =
+          externBlockContainsFunction(context, exbId, name);
+
+      // We assume it's not a type, but that might not be. However, it
+      // shouldn't matter for scope resolution. Adjust this code if it does.
       auto idv = IdAndFlags(std::move(newId),
                             /* isPublic */ true,
                             /* isMethodOrField */ false,
-                            /* isParenfulFunction */ false, // maybe a lie
+                            /* isParenfulFunction */ isParenfulFunction,
                             /* isMethod */ false,
                             /* isModule */ false,
                             /* isType */ false); // maybe a lie
 
       result.append(std::move(idv));
       found = true;
+      nonFunctions |= !isParenfulFunction;
 
       if (traceCurPath && traceResult) {
         ResultVisibilityTrace t;
@@ -1270,8 +1277,6 @@ LookupResult LookupHelper::doLookupInExternBlocks(const Scope* scope,
     }
   }
 
-  /* might be a lie, because we're lying about isParenfulFunction above */
-  bool nonFunctions = true;
   return LookupResult(found, nonFunctions);
 }
 
@@ -3238,11 +3243,25 @@ struct GatherMentionedModules {
   const Module* inMod = nullptr;
   std::set<const Scope*> scopes;
   std::set<ID> idSet;
-  std::vector<ID> idVec;
+  std::vector<ID>idVec;
+  std::vector<std::pair<const Scope*, const AstNode*>> scopeStack;
 
   GatherMentionedModules(Context* context, const Module* inMod)
     : context(context), inMod(inMod)
   { }
+
+  void enterScope(const AstNode* node);
+  void exitScope(const AstNode* node);
+
+  const Scope* currentScope() {
+    CHPL_ASSERT(!scopeStack.empty());
+    if (scopeStack.back().first == nullptr) {
+      scopeStack.back().first =
+        scopeForId(context, scopeStack.back().second->id());
+    }
+
+    return scopeStack.back().first;
+  }
 
   void gatherModuleId(const ID& id);
   const Scope* lookupAndGather(const Scope* scope, const AstNode* ast,
@@ -3273,16 +3292,35 @@ struct GatherMentionedModules {
 
   // do not delve into submodules
   bool enter(const Module* m) {
+    enterScope(m);
     return (m == inMod); // visit the requested module only
   }
-  void exit(const Module* m) { }
+  void exit(const Module* m) {
+    exitScope(m);
+  }
 
   // traverse through anything else
   bool enter(const AstNode* ast) {
+    enterScope(ast);
     return true;
   }
-  void exit(const AstNode* ast) { }
+  void exit(const AstNode* ast) {
+    exitScope(ast);
+  }
 };
+
+void GatherMentionedModules::enterScope(const AstNode* node) {
+  if (resolution::createsScope(node->tag())) {
+    scopeStack.emplace_back(nullptr, node);
+  }
+}
+
+void GatherMentionedModules::exitScope(const AstNode* node) {
+  if (resolution::createsScope(node->tag())) {
+    CHPL_ASSERT(!scopeStack.empty());
+    scopeStack.pop_back();
+  }
+}
 
 // save the module used/imported to idSet / idVec
 void GatherMentionedModules::gatherModuleId(const ID& id) {
@@ -3433,12 +3471,12 @@ void GatherMentionedModules::processDot(const Dot* d) {
   // TODO: ideally this would use the result of scope resolution.
   // It does not yet because running the scope resolver in all
   // these cases would currently lead to compilation slowdowns
-  const Scope* scope = scopeForId(context, d->id());
+  const Scope* scope = currentScope();
   gatherAndFindScope(scope, d);
 }
 
 void GatherMentionedModules::processUseImport(const AstNode* ast) {
-  const Scope* scope = scopeForId(context, ast->id());
+  const Scope* scope = currentScope();
   if (scope && scope->containsUseImport()) {
     auto p = scopes.insert(scope);
     if (p.second) {

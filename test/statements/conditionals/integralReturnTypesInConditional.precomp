@@ -1,0 +1,173 @@
+#!/usr/bin/env python3
+
+integral_types = [
+    "int(8)", "int(16)", "int(32)", "int(64)",
+    "uint(8)", "uint(16)", "uint(32)", "uint(64)"
+]
+
+boolean_strs = ["true", "false"]
+
+output_file = "integralTests.chpl"
+# open the input file to read the expected results of each test case
+input_file = "integralReturnTypesInConditional.expected"
+
+# read the input file into a map where the key is made up of the test name, bool_str, type1, and type2.
+# The value is the expected result
+test_map = {}
+with open(input_file, "r") as f:
+    for line in f:
+        parts = line.strip().split()
+        if len(parts) == 7:
+            test_name, _, bool_str, type1, type2, _, expected_result = parts
+            key = (test_name, bool_str, type1, type2)
+            test_map[key] = expected_result
+        else:
+            raise ValueError(f"Unexpected line format: {line.strip()}")
+
+
+with open(output_file, "w") as f:
+    for bool_str in boolean_strs:
+        for type1 in integral_types:
+            for type2 in integral_types:
+                f.write("{\n")
+                f.write(f"  proc testProcCastZero(arg: bool) {{\n")
+                f.write(f"    if arg then return 0:{type1}; else return 0:{type2};\n")
+                f.write("  }\n")
+                f.write(f"  var x = testProcCastZero({bool_str});\n")
+                # Check if the test case exists in the map
+                if (f"testProcCastZero:", bool_str, type1, type2) in test_map:
+                    expected_result = test_map[(f"testProcCastZero:", bool_str, type1, type2)]
+                    f.write(f"  assert(x.type:string == \"{expected_result}\");\n")
+                # f.write(f"  writeln(\"testProcCastZero: when {bool_str} {type1} {type2} then \", x.type:string);\n")
+                f.write("}\n\n")
+
+                f.write("{\n")
+                f.write(f"  proc testProcZero(arg: bool) {{\n")
+                f.write(f"    var i: {type1} = 0;\n")
+                f.write(f"    var u: {type2} = 0;\n")
+                f.write(f"    if arg then return i; else return u;\n")
+                f.write("  }\n")
+                f.write(f"  var x = testProcZero({bool_str});\n")
+                # Check if the test case exists in the map
+                if (f"testProcZero:", bool_str, type1, type2) in test_map:
+                    expected_result = test_map[(f"testProcZero:", bool_str, type1, type2)]
+                    f.write(f"  assert(x.type:string == \"{expected_result}\");\n")
+                # f.write(f"  writeln(\"testProcZero: when {bool_str} {type1} {type2} then \", x.type:string);\n")
+                f.write("}\n\n")
+
+                f.write("{\n")
+                f.write(f"  proc testProcCastMax(arg: bool) {{\n")
+                f.write(f"    if arg then return max({type1}):{type1}; else return max({type2}):{type2};\n")
+                f.write("  }\n")
+                f.write(f"  var x = testProcCastMax({bool_str});\n")
+                # Check if the test case exists in the map
+                if (f"testProcCastMax:", bool_str, type1, type2) in test_map:
+                    expected_result = test_map[(f"testProcCastMax:", bool_str, type1, type2)]
+                    f.write(f"  assert(x.type:string == \"{expected_result}\");\n")
+                # f.write(f"  writeln(\"testProcCastMax: when {bool_str} {type1} {type2} then \", x.type:string);\n")
+                f.write("}\n\n")
+
+                f.write("{\n")
+                f.write(f"  proc testProcMax(arg: bool) {{\n")
+                f.write(f"    var i: {type1} = max({type1});\n")
+                f.write(f"    var u: {type2} = max({type2});\n")
+                f.write(f"    if arg then return i; else return u;\n")
+                f.write("  }\n")
+                f.write(f"  var x = testProcMax({bool_str});\n")
+                # Check if the test case exists in the map
+                if (f"testProcMax:", bool_str, type1, type2) in test_map:
+                    expected_result = test_map[(f"testProcMax:", bool_str, type1, type2)]
+                    f.write(f"  assert(x.type:string == \"{expected_result}\");\n")
+                # f.write(f"  writeln(\"testProcMax: when {bool_str} {type1} {type2} then \", x.type:string);\n")
+                f.write("}\n\n")
+
+                f.write("{\n")
+                f.write(f"  proc testParamProcCastZero(param arg: bool) param {{\n")
+                f.write(f"    if arg then return 0:{type1}; else return 0:{type2};\n")
+                f.write("  }\n")
+                f.write(f"  param x = testParamProcCastZero({bool_str});\n")
+                # Check if the test case exists in the map
+                if (f"testParamProcCastZero:", bool_str, type1, type2) in test_map:
+                    expected_result = test_map[(f"testParamProcCastZero:", bool_str, type1, type2)]
+                    f.write(f"  assert(x.type:string == \"{expected_result}\");\n")
+                # f.write(f"  writeln(\"testParamProcCastZero: when {bool_str} {type1} {type2} then \", x.type:string);\n")
+                f.write("}\n\n")
+
+                f.write("{\n")
+                f.write(f"  proc testParamProcZero(param arg: bool) param {{\n")
+                f.write(f"    param i: {type1} = 0;\n")
+                f.write(f"    param u: {type2} = 0;\n")
+                f.write(f"    if arg then return i; else return u;\n")
+                f.write("  }\n")
+                f.write(f"  param x = testParamProcZero({bool_str});\n")
+                # Check if the test case exists in the map
+                if (f"testParamProcZero:", bool_str, type1, type2) in test_map:
+                    expected_result = test_map[(f"testParamProcZero:", bool_str, type1, type2)]
+                    f.write(f"  assert(x.type:string == \"{expected_result}\");\n")
+                # f.write(f"  writeln(\"testParamProcZero: when {bool_str} {type1} {type2} then \", x.type:string);\n")
+                f.write("}\n\n")
+
+                f.write("{\n")
+                f.write(f"  proc testParamProcCastMax(param arg: bool) param {{\n")
+                f.write(f"    if arg then return max({type1}):{type1}; else return max({type2}):{type2};\n")
+                f.write("  }\n")
+                f.write(f"  param x = testParamProcCastMax({bool_str});\n")
+                # Check if the test case exists in the map
+                if (f"testParamProcCastMax:", bool_str, type1, type2) in test_map:
+                    expected_result = test_map[(f"testParamProcCastMax:", bool_str, type1, type2)]
+                    f.write(f"  assert(x.type:string == \"{expected_result}\");\n")
+                # f.write(f"  writeln(\"testParamProcCastMax: when {bool_str} {type1} {type2} then \", x.type:string);\n")
+                f.write("}\n\n")
+
+                f.write("{\n")
+                f.write(f"  proc testParamProcMax(param arg: bool) param {{\n")
+                f.write(f"    param i: {type1} = max({type1});\n")
+                f.write(f"    param u: {type2} = max({type2});\n")
+                f.write(f"    if arg then return i; else return u;\n")
+                f.write("  }\n")
+                f.write(f"  param x = testParamProcMax({bool_str});\n")
+                # Check if the test case exists in the map
+                if (f"testParamProcMax:", bool_str, type1, type2) in test_map:
+                    expected_result = test_map[(f"testParamProcMax:", bool_str, type1, type2)]
+                    f.write(f"  assert(x.type:string == \"{expected_result}\");\n")
+                # f.write(f"  writeln(\"testParamProcMax: when {bool_str} {type1} {type2} then \", x.type:string);\n")
+                f.write("}\n\n")
+
+                f.write("{\n")
+                f.write(f"  var b: bool = {bool_str};\n")
+                f.write(f"  var x = if b then 0:{type1} else 0:{type2};\n")
+                # Check if the test case exists in the map
+                if (f"testExpressionZero:", bool_str, type1, type2) in test_map:
+                    expected_result = test_map[(f"testExpressionZero:", bool_str, type1, type2)]
+                    f.write(f"  assert(x.type:string == \"{expected_result}\");\n")
+                # f.write(f"  writeln(\"testExpressionZero: when {bool_str} {type1} {type2} then \", x.type:string);\n")
+                f.write("}\n\n")
+
+                f.write("{\n")
+                f.write(f"  var b: bool = {bool_str};\n")
+                f.write(f"  var x = if b then max({type1}):{type1} else max({type2}):{type2};\n")
+                # Check if the test case exists in the map
+                if (f"testExpressionMax:", bool_str, type1, type2) in test_map:
+                    expected_result = test_map[(f"testExpressionMax:", bool_str, type1, type2)]
+                    f.write(f"  assert(x.type:string == \"{expected_result}\");\n")
+                # f.write(f"  writeln(\"testExpressionMax: when {bool_str} {type1} {type2} then \", x.type:string);\n")
+                f.write("}\n\n")
+
+                f.write("{\n")
+                f.write(f"  param x = if {bool_str} then 0:{type1} else 0:{type2};\n")
+                # Check if the test case exists in the map
+                if (f"testParamExpressionZero:", bool_str, type1, type2) in test_map:
+                    expected_result = test_map[(f"testParamExpressionZero:", bool_str, type1, type2)]
+                    f.write(f"  assert(x.type:string == \"{expected_result}\");\n")
+                # f.write(f"  writeln(\"testParamExpressionZero: when {bool_str} {type1} {type2} then \", x.type:string);\n")
+                f.write("}\n\n")
+
+                f.write("{\n")
+                f.write(f"  param x = if {bool_str} then max({type1}):{type1} else max({type2}):{type2};\n")
+                # Check if the test case exists in the map
+                if (f"testParamExpressionMax:", bool_str, type1, type2) in test_map:
+                    expected_result = test_map[(f"testParamExpressionMax:", bool_str, type1, type2)]
+                    f.write(f"  assert(x.type:string == \"{expected_result}\");\n")
+
+                # f.write(f"  writeln(\"testParamExpressionMax: when {bool_str} {type1} {type2} then \", x.type:string);\n")
+                f.write("}\n\n")

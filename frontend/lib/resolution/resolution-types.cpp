@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#include "chpl/resolution/resolution-types.h"
 #include "chpl/resolution/can-pass.h"
+#include "chpl/resolution/resolution-types.h"
 
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/framework/global-strings.h"
@@ -35,8 +35,10 @@
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/For.h"
 #include "chpl/uast/VarArgFormal.h"
+#include "chpl/util/clang-integration.h"
 
 #include "Resolver.h"
+#include "extern-blocks.h"
 
 #include <iomanip>
 
@@ -101,8 +103,8 @@ UntypedFnSignature::get(Context* context, ID id,
                                compilerGeneratedOrigin).get();
 }
 
-static const UntypedFnSignature*
-getUntypedFnSignatureForFn(Context* context, const uast::Function* fn) {
+const UntypedFnSignature*
+getUntypedFnSignatureForFn(Context* context, const uast::Function* fn, ID const* compilerGeneratedOrigin) {
   const UntypedFnSignature* result = nullptr;
 
   if (fn != nullptr) {
@@ -134,11 +136,13 @@ getUntypedFnSignatureForFn(Context* context, const uast::Function* fn) {
     result = UntypedFnSignature::get(context, fn->id(), fn->name(),
                                      fn->isMethod(),
                                      /* isTypeConstructor */ false,
-                                     /* isCompilerGenerated */ false,
+                                     /* isCompilerGenerated */ compilerGeneratedOrigin != nullptr,
                                      /* throws */ fn->throws(),
                                      /* idTag */ asttags::Function,
                                      fn->kind(),
-                                     std::move(formals), fn->whereClause());
+                                     std::move(formals), fn->whereClause(),
+                                     compilerGeneratedOrigin ? *compilerGeneratedOrigin
+                                                             : ID());
   }
 
   return result;
@@ -153,6 +157,18 @@ const UntypedFnSignature* UntypedFnSignature::get(Context* context,
   return getUntypedFnSignatureForFn(context, function);
 }
 
+static const UntypedFnSignature*
+getUntypedFnSignatureForExternId(Context* context, ID functionId) {
+  CHPL_ASSERT(functionId.isExternBlockElement());
+
+  auto name = functionId.symbolName(context);
+  auto externBlockId = functionId.parentSymbolId(context);
+
+  auto tfs = externBlockSigForFn(context, externBlockId, name);
+
+  return tfs->untyped();
+}
+
 static const UntypedFnSignature* const&
 getUntypedFnSignatureForIdQuery(Context* context, ID functionId) {
   QUERY_BEGIN(getUntypedFnSignatureForIdQuery, context, functionId);
@@ -162,6 +178,8 @@ getUntypedFnSignatureForIdQuery(Context* context, ID functionId) {
 
   if (ast != nullptr && ast->isFunction()) {
     result = getUntypedFnSignatureForFn(context, ast->toFunction());
+  } else if (functionId.isExternBlockElement()) {
+    result = getUntypedFnSignatureForExternId(context, functionId);
   }
 
   return QUERY_END(result);
@@ -188,8 +206,6 @@ static UniqueString getCallName(const uast::Call* call) {
       name = calledDot->field();
     } else if (auto op = called->toOpCall()) {
       name = op->op();
-    } else {
-      CHPL_UNIMPL("CallInfo without a name");
     }
   }
   return name;
@@ -228,7 +244,6 @@ CallInfo CallInfo::createSimple(UniqueString calledFnName,
 CallInfo CallInfo::createUnknown(const uast::FnCall* call) {
   // Pieces of the CallInfo we need to prepare.
   UniqueString name;
-  QualifiedType calledType;
   bool isMethodCall = false;
   bool hasQuestionArg = false;
   std::vector<CallInfoActual> actuals;
@@ -250,7 +265,7 @@ CallInfo CallInfo::createUnknown(const uast::FnCall* call) {
     }
   }
 
-  auto ret = CallInfo(name, calledType, isMethodCall, hasQuestionArg,
+  auto ret = CallInfo(name, QualifiedType(), isMethodCall, hasQuestionArg,
                       /* isParenless */ false, actuals);
 
   return ret;
@@ -437,6 +452,16 @@ CallInfo CallInfo::create(Context* context,
     auto calledExprType = tryGetType(calledExpr, byPostorder);
     auto dotReceiverType = tryGetType(dotReceiver, byPostorder);
 
+    auto makeCallToDotThis = [&]() {
+      name = USTR("this");
+      // add the 'this' argument as well
+      isMethodCall = true;
+      actuals.push_back(CallInfoActual(*calledExprType, USTR("this")));
+      if (actualAsts != nullptr) {
+        actualAsts->push_back(calledExpr);
+      }
+    };
+
     if (calledExprType &&
         (isKindForFunctionalValue(calledExprType->kind()) ||
          calledExprType->isErroneousType())) {
@@ -448,22 +473,23 @@ CallInfo CallInfo::create(Context* context,
       // a value (ambiguity or other "benign" UNKNOWN would not produce errors).
       // Later, this can lead to skipping resolving the call altogether.
 
-      name = USTR("this");
-      // add the 'this' argument as well
-      isMethodCall = true;
-      actuals.push_back(CallInfoActual(*calledExprType, USTR("this")));
-      if (actualAsts != nullptr) {
-        actualAsts->push_back(calledExpr);
-      }
-      // and reset calledType
-      calledType = QualifiedType(QualifiedType::FUNCTION, nullptr);
+      makeCallToDotThis();
     } else if (dotReceiverType && dotReceiverType->kind() == QualifiedType::MODULE) {
       // In calls like `M.f()`, where `M` is a module, we need to restrict
       // our search to `M`'s scope. Signal this by setting `moduleScopeId`.
       if (moduleScopeId != nullptr)
         *moduleScopeId = byPostorder.byAst(dotReceiver).toId();
-    } else if (calledExprType && !calledExprType->isUnknown()) {
-      calledType = *calledExprType;
+      /* TODO: set calledType? */
+    } else if (calledExprType && !calledExprType->isUnknown() && calledExprType->isType()) {
+      // normally, we would say this is a type constructor and set calledType.
+      // However, for tuples, we treat this as a regular "proc this", which
+      // enables accessing the individual element's types.
+
+      if (calledExprType->type() && calledExprType->type()->isTupleType()) {
+        makeCallToDotThis();
+      } else {
+        calledType = *calledExprType;
+      }
     } else if (!call->isOpCall() && dotReceiverType &&
                isKindForMethodReceiver(dotReceiverType->kind())) {
       // Check for normal method call, maybe construct a receiver.
@@ -479,7 +505,6 @@ CallInfo CallInfo::create(Context* context,
       if (actualAsts != nullptr) {
         actualAsts->push_back(dotReceiver);
       }
-      calledType = dotReceiverQt;
       isMethodCall = true;
     }
   }
@@ -521,14 +546,8 @@ CallInfo CallInfo::createWithReceiver(const CallInfo& ci,
   // append the other actuals
   newActuals.insert(newActuals.end(), ci.actuals_.begin() + off, ci.actuals_.end());
 
-  if (ci.name() == USTR("init")) {
-    // For calls to 'init', tag the receiver with a special intent to
-    // relax some checks on its genericity.
-    receiverType = convertToInitReceiverType(receiverType);
-  }
-
   auto name = rename.isEmpty() ? ci.name_ : rename;
-  return CallInfo(name, receiverType,
+  return CallInfo(name, QualifiedType(),
                   /* isMethodCall */ true,
                   ci.hasQuestionArg_,
                   ci.isParenless_,
@@ -543,14 +562,14 @@ CallInfo CallInfo::copyAndRename(const CallInfo &ci, UniqueString rename) {
 void ResolutionResultByPostorderID::setupForSymbol(const AstNode* ast) {
   CHPL_ASSERT(Builder::astTagIndicatesNewIdScope(ast->tag()));
 
-  symbolId = ast->id();
+  symbolId_ = ast->id();
 }
 void ResolutionResultByPostorderID::setupForSignature(const Function* func) {
-  symbolId = func->id();
+  symbolId_ = func->id();
 }
 void ResolutionResultByPostorderID::setupForParamLoop(
     const For* loop, ResolutionResultByPostorderID& parent) {
-  this->symbolId = parent.symbolId;
+  this->symbolId_ = parent.symbolId_;
 }
 void ResolutionResultByPostorderID::setupForFunction(const Function* func) {
   setupForSymbol(func);
@@ -1190,6 +1209,16 @@ void PoiInfo::accumulateRecursive(const TypedFnSignature* signature,
 bool PoiInfo::canReuse(const PoiInfo& check) const {
   CHPL_ASSERT(resolved_ && !check.resolved_);
 
+  if (poiScope_ == check.poiScope_) {
+    // if the POI scopes are the same, then we can reuse
+    return true;
+  }
+
+  if (poiFnIdsUsed_.empty() && recursiveFnsUsed_.empty()) {
+    // if we have no POI functions used, then we can reuse
+    return true;
+  }
+
   // Performance TODO: consider function names etc -- see PR #16261
   return false;
 }
@@ -1230,8 +1259,12 @@ MostSpecificCandidate::fromTypedFnSignature(ResolutionContext* rc,
     auto canPassFn =
       actualType.kind() == QualifiedType::INIT_RECEIVER ? canPassScalar
                                                         : canPass;
+    // An exception is made for the case where we have to convert a tuple to
+    // its referential equivalent, which doesn't count as coercion in the
+    // conventional Chapel sense.
     auto got = canPassFn(rc->context(), actualType, formalType);
-    if (got.converts() && formalType.kind() == QualifiedType::CONST_REF) {
+    if (got.converts() && formalType.kind() == QualifiedType::CONST_REF &&
+        got.conversionKind() != CanPassResult::TO_REFERENTIAL_TUPLE) {
       coercionFormal = fa.formalIdx();
       coercionActual = fa.actualIdx();
       break;
@@ -1364,6 +1397,10 @@ void AssociatedAction::stringify(std::ostream& ss,
     ss << " id=";
     id_.stringify(ss, stringKind);
   }
+  if (!type_.isUnknown()) {
+    ss << " type=";
+    type_.stringify(ss, stringKind);
+  }
 }
 
 void ResolvedExpression::stringify(std::ostream& ss,
@@ -1395,13 +1432,13 @@ ResolutionResultByPostorderID::stringify(std::ostream& ss,
 
   size_t maxIdWidth = 0;
   for (auto key : keys) {
-    auto id = ID(symbolId.symbolPath(), key, -1);
+    auto id = ID(symbolId_.symbolPath(), key, -1);
     if (id.str().size() > maxIdWidth)
       maxIdWidth = id.str().size();
   }
 
   for (auto key : keys) {
-    auto id = ID(symbolId.symbolPath(), key, -1);
+    auto id = ID(symbolId_.symbolPath(), key, -1);
 
     // output the ID
     std::cout << std::setw(maxIdWidth) << std::left << id.str();

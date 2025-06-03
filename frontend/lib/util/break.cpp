@@ -20,10 +20,6 @@
 #include "chpl/util/break.h"
 
 // must be non-static to avoid dead-code elim. when compiling -O3
-void gdbShouldBreakHere() {
-
-}
-
 void debuggerBreakHere() {
-  gdbShouldBreakHere();
+
 }

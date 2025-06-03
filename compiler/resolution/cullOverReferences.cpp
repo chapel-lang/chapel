@@ -73,7 +73,7 @@ static const int breakOnId3 = 0;
   do { \
     if (sym->id == breakOnId1 || sym->id == breakOnId2 || \
         sym->id == breakOnId3) { \
-      gdbShouldBreakHere(); \
+      debuggerBreakHere(); \
     } \
   } while (0)
 

@@ -1,0 +1,1 @@
+RetrieveDataSymbol.chpl:13: error: The 'retrieve()' method currently only works with procedure types (tried to retrieve type 'int(32)')

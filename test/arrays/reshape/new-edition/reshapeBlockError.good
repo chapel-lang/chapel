@@ -1,0 +1,4 @@
+reshapeBlockError.chpl:6: error: This array type does not support alias-based reshaping; consider passing 'copy=true' to get a copy-based reshape
+reshapeBlockError.chpl:7: error: This array type does not support alias-based reshaping; consider passing 'copy=true' to get a copy-based reshape
+reshapeBlockError.chpl:8: error: This array type does not support alias-based reshaping; consider passing 'copy=true' to get a copy-based reshape
+reshapeBlockError.chpl:11: error: This array cannot be reshaped using this domain type; consider passing 'copy=true' to get a copy-based reshape

@@ -56,9 +56,9 @@ def get(flag='target'):
     var_name = 'CHPL_{0}_JEMALLOC'.format(flag.upper())
     mem_var_name = 'CHPL_{0}_MEM'.format(flag.upper())
     if mem_val == 'jemalloc' and jemalloc_val == 'none':
-        error("{0} must not be 'none' when {0} is jemalloc".format(var_name, mem_var_name))
+        error("{0} must not be 'none' when {1} is jemalloc".format(var_name, mem_var_name))
     elif mem_val != 'jemalloc' and jemalloc_val != 'none':
-        error("{0} must be 'none' when {0} is not jemalloc".format(var_name, mem_var_name))
+        error("{0} must be 'none' when {1} is not jemalloc".format(var_name, mem_var_name))
 
     check_valid_var(var_name, jemalloc_val, ["none", "bundled", "system"])
     return jemalloc_val
