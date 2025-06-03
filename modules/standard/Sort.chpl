@@ -687,11 +687,29 @@ The choice of sorting algorithm used is made by the implementation.
 
 .. note::
 
-  This function currently either uses a parallel radix sort or a parallel
-  improved quick sort. For stable sort, it uses Timsort.
-  The algorithms used will change over time.
+  This function chooses among the following algorithms based on the arguments:
 
-  It currently uses parallel radix sort if the following conditions are met:
+   * a local, parallel radix sort
+   * a parallel improved quick sort
+   * TimSort
+   * a distributed, parallel radix sort
+   * a distributed, parallel sample sort
+
+  The algorithms used will change over time. Currently, the choice process is:
+
+   * use the local radix sort for ``stable=false`` sorting a non-distributed
+     array where radix sorting is possible (see below)
+   * use the improved quick sort for ``stable=false`` sorting of a
+     non-distributed array when radix sorting is not possible
+   * use TimSort for ``stable=true`` sorting of a non-distributed array
+   * use a distributed, parallel radix sort when sorting a distributed array
+     where radix sorting is possible (for both ``stable=true`` and
+     ``stable=false``)
+   * use a distributed, parallel sample sort when sorting a distributed array
+     and radix sorting is not possible (for both ``stable=true`` and
+     ``stable=false``).
+
+  Radix sorting is possible if the following conditions are met:
 
     * the array being sorted is over a non-strided domain
     * ``comparator`` includes a ``keyPart`` method for ``eltType``
