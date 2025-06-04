@@ -26,6 +26,8 @@ Language Feature Improvements
 -----------------------------
 * made `init()`/`postinit()` calls that `throw` deinit the object's fields  
   (see https://chapel-lang.org/docs/2.5/technotes/throwingInit.html#declaring-throwing-initializers)
+* added support for `noinit` remote variable declarations  
+  (e.g., `on someLocale var A: [1..10] real = noinit;`)
 
 Semantic Changes / Changes to the Language Definition
 -----------------------------------------------------
@@ -45,7 +47,6 @@ New Standard Library Features
 
 Changes / Feature Improvements in Standard Libraries
 ----------------------------------------------------
-* improved the portability of `breakpoint` in the `Debugger` module  
 
 New Package Module Features
 ---------------------------
@@ -94,9 +95,11 @@ Tool Improvements
 -----------------
 * improved support for debugging within VSCode  
   (see https://chapel-lang.org/docs/2.5/usingchapel/editor-support.html#debugging-in-vscode)
+* enabled displaying 'dyno' resolution errors in `chpl-language-server` (CLS)
 * added support for editor-agnostic config files in CLS and `chplcheck`  
   (see https://chapel-lang.org/docs/2.5/tools/chplcheck/chplcheck.html#configuration-files  
    and https://chapel-lang.org/docs/2.5/tools/chpl-language-server/chpl-language-server.html#configuration-files)
+* enabled Python `str` and `repr` methods on AST nodes in `chapel-py`
 * added external library linking support to Chapel's CMake support  
   (see https://chapel-lang.org/docs/2.5/usingchapel/compiling.html#cmake)
 * added a script to generate argumentss when compiling Python interop code  
@@ -276,6 +279,7 @@ Developer-oriented changes: Syntactic / Naming Changes
 
 Developer-oriented changes: Module changes
 ------------------------------------------
+* improved the portability of `breakpoint` in the `Debugger` module  
 
 Developer-oriented changes: Performance improvements
 ----------------------------------------------------
@@ -296,16 +300,28 @@ Developer-oriented changes: Compiler improvements / changes
 Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
 * added an error message for variables declared without an initializer or type
+* made significant improvements to the 'dyno' resolver's performance
 * made numerous improvements to the 'dyno' resolver for types and calls:
   - added support for nD rectangular and associative array literals
   - added support for array indexing and slicing
+  - added support for resolving domain / element type queries in array formals
+  - enabled resolving calls to `new blockDist`
+  - added support for `reduce=`
+  - added support for labeled `break` and `continue` statements
+  - added support for `.bytes()` on various types
+  - enabled generic `sync` formal types
   - added basic support for nested types
   - added support for assignment between `extern` types
   - added call resolution for basic functions in `extern` blocks
   - implemented `&&=` and `||=` compound assignment operators
+  - implemented compiler-generated `.borrow()` methods for class types
+  - implemented field access promotion
+  - enhanced constness analysis for field access and array indexing
+  - enabled constness checks, split-init, and copy elision at module scope
   - fixed generated inits where a parent field's type is only visible in parent
   - added support for `chpl__orderToEnum()` and `chpl__enumToOrder()`
   - added support for `_` and de-tupled loop index variables
+  - unified the handling of control flow across resolution, type inference, ...
   - significantly improved copy-elision correctness
 * made numerous improvements when converting 'dyno' AST to production AST
   - implemented generation of `select` statements
