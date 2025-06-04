@@ -130,6 +130,7 @@ OPTIONS
     Specify the language edition to use.  Enables breaking changes that are
     associated with the particular edition specified (as well as those that were
     associated with earlier editions).  See
+    https://chapel-lang.org/docs/technotes/editions.html or
     $CHPL\_HOME/doc/rst/technotes/editions.rst for more information.
 
 .. _man-permit-unhandled-module-errors:

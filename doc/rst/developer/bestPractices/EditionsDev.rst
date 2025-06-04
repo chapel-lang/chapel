@@ -127,4 +127,5 @@ like:
 
 This will make use of the existing edition computations in the compiler (saving
 execution time performance), and allow the runtime code to use a descriptive
-name for the argument that reflects the behavior being changed.
+name for the argument that reflects the behavior being changed.  Alternatively,
+a separate overload could be added to the runtime to handle the change.
