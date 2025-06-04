@@ -330,6 +330,8 @@ This section covers issues that are fundamental to the Chapel programming
 model. As a result, people optimizing Chapel programs should be aware of
 them.
 
+.. _optimization-accidental-comm:
+
 Accidental Communication
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -470,11 +472,66 @@ What can be done about it?
 
  * use ``local`` blocks to tell the compiler that code within a block
    will not communicate. That allows it to remove wide pointers for that
-   code.
- * use ``localAccess`` to access local elements of an array
+   code. See also :ref:`optimization-accidental-comm`.
  * use ``localSubdomain`` to compute the local index set as a local domain
  * use ``localSlice`` to compute a non-distributed array slice that refers
    to the local portion
+ * compile with ``--report-auto-local-access`` to see which local array
+   accesses are optimized by the compiler. Use ``localAccess`` for
+   accesses that aren't optimized.
+
+
+   .. note::
+
+      A bit more about the Automatic Local Access (ALA) optimization
+
+      The Chapel compiler can optimize distributed array accesses inside
+      ``forall`` loops if it can determine that they can be always local.
+      Here are some cases that it can optimize:
+
+      .. code-block:: chapel
+
+        var A, B: [D] int;
+        var OtherDomain = ...
+
+        forall i in A.domain { ... A[i] ... }
+        forall i in B.domain { ... A[i] ... }
+        forall i in D { ... A[i] ... }
+        forall i in D.expand(-1) { ... A[i] ... }
+        forall i in OtherDomain { ... A[i] ... } // with some execution time checks
+
+
+      This optimization can also be effective when Stencil operations
+      when Stencil-distributed arrays are used:
+
+      .. code-block:: chapel
+
+        use StencilDist;
+
+        var A = stencilDist.createArray({0..<n}, fluff=(1,), int);
+
+        forall i in A.domain { ... A[i-1] ... A[i] ... A[i+1] ... }
+
+      The following compiler flags can be used to investigate and modify
+      ALA behavior
+
+        * ``--report-auto-local-access``: Generates a report showing
+          which accesses are optimized and which are not, with some
+          explanation as to what caused the final decision for the
+          optimization.
+
+        * ``--no-auto-local-access``: Disables the optimization. We are not
+          aware of a case where ALA hurts performance. There could be a
+          slight improvement in compilation time by disabling the
+          optimization, but we haven't observed it to have a significant
+          impact.
+
+        * ``--no-dynamic-auto-local-access``: Disables the dynamic portion
+          of the optimization. In some cases, the compiler can introduce
+          loop clones, where the executed clone will be chosen at
+          execution time depending on some dynamic checks. This behavior
+          can be turned off with this flag, where the optimization will
+          be effective only when it can be proven statically
 
 .. _optimization-fine-comm:
 
