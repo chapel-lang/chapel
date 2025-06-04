@@ -17,6 +17,8 @@ Syntactic / Naming Changes
 
 New Language Features
 ---------------------
+* added an 'edition' feature that enables opting in to breaking changes  
+  (see TODO)
 * added a new, prototype `reshape()` implementation that aliases array data  
   (see https://chapel-lang.org/docs/2.5/language/spec/arrays.html#ChapelArray.reshape)
 
@@ -42,7 +44,13 @@ Changes / Feature Improvements in Standard Libraries
 
 New Package Module Features
 ---------------------------
- 
+* added support for Python tuple types to the `Python` module  
+  (see https://chapel-lang.org/docs/2.5/modules/packages/Python.html#Python.PyTuple)
+* added support for casting from various Python types to Chapel types  
+  (see https://chapel-lang.org/docs/2.5/modules/packages/Python.html#Python.Value.:)
+* added additional methods for Python `list` types to the `Python` module  
+  (see https://chapel-lang.org/docs/2.5/modules/packages/Python.html#Python.PyList)
+
 Changes / Feature Improvements in Package Modules
 -------------------------------------------------
 
@@ -57,6 +65,10 @@ Name Changes in Libraries
 
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
+* removed the previously deprecated `.sort()` method on the `list` type
+* removed the previously deprecated `.compare()` methods in the `Sort` module
+* removed the previously deprecated `[Default|Reverse]Comparator` types
+
 
 Tool Improvements
 -----------------
@@ -71,6 +83,7 @@ Language Specification Improvements
 -----------------------------------
 * updated some tests and descriptions of `init=` to bring them up-to-date  
   (see https://chapel-lang.org/docs/2.5/language/spec/records.html#mixed-type-copy-initialization)
+* fixed a typo with exponentiation in the spec
 
 Documentation Improvements for Libraries
 ----------------------------------------
@@ -124,6 +137,8 @@ Compiler Improvements
 
 Compiler Flags
 --------------
+* added a new `--edition` flag to control the edition used at compile-time  
+  (see https://chapel-lang.org/docs/2.5/usingchapel/man.html#man-edition)
 
 Generated Executable Flags
 --------------------------
@@ -146,6 +161,7 @@ Bug Fixes
 
 Bug Fixes for Libraries
 -----------------------
+* fixed a segfault with the Python interpreter for `CHPL_COMM=gasnet`
 
 Bug Fixes for GPU Computing
 ---------------------------
