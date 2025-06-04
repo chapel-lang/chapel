@@ -53,6 +53,9 @@ Changes / Feature Improvements in Standard Libraries
 
 New Package Module Features
 ---------------------------
+* added a new 'DynamicLoading' package module to load dynamic libraries  
+  (see https://chapel-lang.org/docs/main/modules/packages/DynamicLoading.html)
+
 * added support for anonymous Python modules to the `Python` interop module  
   (see https://chapel-lang.org/docs/2.5/modules/packages/Python.html#Python.Interpreter.createModule)
 * added support for Python tuple types to the `Python` module  
@@ -285,6 +288,7 @@ Developer-oriented changes: Syntactic / Naming Changes
 
 Developer-oriented changes: Module changes
 ------------------------------------------
+* added support for cross-locale calls to dynamically loaded procedure pointers
 * improved the portability of `breakpoint` in the `Debugger` module  
 
 Developer-oriented changes: Performance improvements
@@ -300,6 +304,7 @@ Developer-oriented changes: Compiler Flags
 
 Developer-oriented changes: Compiler improvements / changes
 -----------------------------------------------------------
+* expanded support for the prototypical procedure pointer type
 * added debugger printers for LLVM metadata
 * renamed `gdbShouldBreakHere()` to `debuggerBreakHere()`
 
@@ -333,6 +338,7 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
   - implemented generation of `select` statements
   - implemented generation of `enum` and `c_ptr` types
   - implemented generation of variable argument indexing with `param` integrals
+  - added support for generating many other language features as well (TODO?)
 
 Developer-oriented changes: GPU support
 ---------------------------------------
