@@ -246,7 +246,21 @@ module BytesCasts {
   //
   // complex
   //
+  @edition(first="pre-edition")
   operator :(x: chpl_anycomplex, type t:bytes) {
+    return chpl_bytesCastHelper(x);
+  }
+
+  @edition(last="2.0")
+  operator :(x: chpl_anycomplex, type t:bytes) {
+    if isNan(x.re) || isNan(x.im) then
+      return b"nan";
+    return chpl_bytesCastHelper(x);
+  }
+
+  // TODO: when 2.0 edition is removed, merge this back into the `:` operator
+  // above
+  private proc chpl_bytesCastHelper(x: chpl_anycomplex) {
     var re = (x.re):bytes;
     var im: bytes;
     var op: bytes;

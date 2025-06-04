@@ -4125,12 +4125,13 @@ static qioerr maybe_right_pad(qio_channel_t* restrict ch, int gotsize)
   return err;
 }
 
-
+// TODO: When 2.0 edition is removed, can remove `full_nan` argument and the
+// variables and if statement it supports
 qioerr qio_channel_print_complex(const int threadsafe,
                                  qio_channel_t* restrict ch,
                                  const void* restrict re_ptr,
                                  const void* restrict im_ptr,
-                                 size_t len)
+                                 size_t len, int full_nan)
 {
   char* re_buf = NULL;
   char* im_buf = NULL;
@@ -4143,6 +4144,8 @@ qioerr qio_channel_print_complex(const int threadsafe,
   int re_got, im_got;
   qioerr err;
   int im_neg = 0;
+  int re_isnan = 0;
+  int im_isnan = 0;
   style_char_t pos_char;
   style_char_t neg_char;
   qio_style_t* style;
@@ -4168,6 +4171,9 @@ qioerr qio_channel_print_complex(const int threadsafe,
     default:
       QIO_GET_CONSTANT_ERROR(err, EINVAL, "bad floating point type");
   }
+
+  re_isnan = full_nan & isnan(re_num);
+  im_isnan = full_nan & isnan(im_num);
 
   // Lock before reading any style information from the
   // channel.
@@ -4271,22 +4277,32 @@ qioerr qio_channel_print_complex(const int threadsafe,
   style->min_width_columns = save_min_columns;
 
   if( (style->complex_style & QIO_COMPLEX_FORMAT_PART) == QIO_COMPLEX_FORMAT_ABI ) {
-    width = re_got + im_got + 3;
-    err = maybe_left_pad(ch, width);
-    if( err ) goto rewind;
-    if( ch->style.centjustify ) width += (ch->style.min_width_columns - width) / 2;
-    err = qio_channel_write_amt(false, ch, re_buf, re_got);
-    if( err ) goto rewind;
-    err = qio_channel_write_char(false, ch, ' ');
-    if( err ) goto rewind;
-    err = qio_channel_write_char(false, ch, im_neg?neg_char:pos_char);
-    if( err ) goto rewind;
-    err = qio_channel_write_char(false, ch, ' ');
-    if( err ) goto rewind;
-    err = qio_channel_write_amt(false, ch, im_buf, im_got);
-    if( err ) goto rewind;
-    err = maybe_right_pad(ch, width);
-    if( err ) goto rewind;
+    // If real or imag part is NAN, just write one NAN number.
+    if( re_isnan ) {
+      err = qio_channel_print_float(false, ch, re_ptr, len);
+      if( err ) goto rewind;
+    } else if( im_isnan ) {
+      err = qio_channel_print_float(false, ch, im_ptr, len);
+      if( err ) goto rewind;
+    } else {
+      // write a + bi
+      width = re_got + im_got + 3;
+      err = maybe_left_pad(ch, width);
+      if( err ) goto rewind;
+      if( ch->style.centjustify ) width += (ch->style.min_width_columns - width) / 2;
+      err = qio_channel_write_amt(false, ch, re_buf, re_got);
+      if( err ) goto rewind;
+      err = qio_channel_write_char(false, ch, ' ');
+      if( err ) goto rewind;
+      err = qio_channel_write_char(false, ch, im_neg?neg_char:pos_char);
+      if( err ) goto rewind;
+      err = qio_channel_write_char(false, ch, ' ');
+      if( err ) goto rewind;
+      err = qio_channel_write_amt(false, ch, im_buf, im_got);
+      if( err ) goto rewind;
+      err = maybe_right_pad(ch, width);
+      if( err ) goto rewind;
+    }
   } else if( (style->complex_style & QIO_COMPLEX_FORMAT_PART) == QIO_COMPLEX_FORMAT_PARENS ) {
     // write (a,b)
     width = re_got + im_got + 3;

@@ -255,7 +255,21 @@ module StringCasts {
   //
   // complex
   //
+  @edition(first="pre-edition")
   operator :(x: chpl_anycomplex, type t:string) {
+    return chpl_stringCastHelper(x);
+  }
+
+  @edition(last="2.0")
+  operator :(x: chpl_anycomplex, type t:string) {
+    if isNan(x.re) || isNan(x.im) then
+      return "nan";
+    return chpl_stringCastHelper(x);
+  }
+
+  // TODO: when 2.0 edition is removed, merge this back into the `:` operator
+  // above
+  private proc chpl_stringCastHelper(x: chpl_anycomplex) {
     var re = (x.re):string;
     var im: string;
     var op: string;
