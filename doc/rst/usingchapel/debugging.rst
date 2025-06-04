@@ -21,8 +21,8 @@ Running in gdb/lldb
 The compiler-generated executable has a ``--gdb`` flag that can be used to
 launch the program within a ``gdb`` session.  A similar flag, ``--lldb``,
 exists to launch the program within a ``lldb`` session. For best results, you
-should follow `Best Known Configuration`_ to build Chapel and build your
-application.
+should read :ref:`this section <readme-debugging-bkc>` to build Chapel and
+build your application.
 
 Running in gdb/lldb with a launcher
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
