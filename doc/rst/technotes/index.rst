@@ -94,3 +94,12 @@ Tool Details
    :maxdepth: 1
 
    Protocol Buffers Support - Generated Chapel Code <protoGenCodeGuide>
+
+
+Performance Optimization
+------------------------
+
+.. toctree::
+   :maxdepth: 1
+
+   Optimizing Performance of Chapel Programs <optimization>
