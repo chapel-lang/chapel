@@ -148,6 +148,9 @@ Generated Executable Flags
 
 Error Messages / Semantic Checks
 --------------------------------
+* improved error message for incorrect typing with `minmax` reduce intents
+* improved error message when storing reduce intent result into outer variable
+* yield type is now often printed for iterators and promoted expressions
 
 Launchers
 ---------
@@ -161,6 +164,7 @@ Third-Party Software Changes
 Bug Fixes
 ---------
 * fixed a bug caused by the `--auto-local-access` (ALA) optimization
+* fixed an internal error for a reduce intent like `minmax(2*int) reduce sum`
 * fixed a bug causing line number comments to be omitted in generated C code
 
 Bug Fixes for Libraries
