@@ -11,6 +11,7 @@ RUN dnf upgrade -y && \
       which diffutils wget vim sudo \
       llvm-devel clang clang-devel \
       jemalloc jemalloc-devel gmp-devel hwloc hwloc-devel \
+      pmix-devel slurm-devel libfabric libfabric-devel \
       rpm-build rpm-devel rpmlint coreutils patch rpmdevtools chrpath
 
 @@{USER_CREATION}
