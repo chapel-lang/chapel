@@ -22,9 +22,9 @@ Chapel program and talk about how the performance issues can be resolved.
    improvement in the compiler, runtime, and standard library that can
    also improve the performance of Chapel programs. In fact, some
    optimizations to the Chapel programming system have made benchmarks
-   run many times faster without needing any change to the source code at
-   all! These are important techniques as well, but they are out of scope
-   for this document.
+   run many times faster without needing any change to the application
+   source code at all! These are important techniques as well, but they
+   are out of scope for this document.
 
 .. note::
 
@@ -61,9 +61,10 @@ your program is working correctly.
 We have used the following steps when testing a new change to a parallel
 and distributed Chapel application:
 
- * Compile with checking enabled (i.e. without ``--fast``)
+ * Compile with checks enabled (i.e. without ``--fast``)
 
    * Test with 1 locale and ``--dataParTasksPerLocale=1``
+     (``dataParTasksPerLocale`` is described in :ref:`data_parallel_knobs`)
 
    * Gradually increase ``--dataParTasksPerLocale`` until you are
      satisfied it is working. At a minimum, try leaving this argument off
@@ -94,16 +95,19 @@ system. This is also called running **locally oversubscribed**.
 In this setting, the program will generally run much slower than it would
 when running in a multi-node system. As a result, you might need to run
 with a smaller problem size to test in this way. Nonetheless, it is
-possible to identify and optimize communication.  In communication-bound
-applications, optimizing the communication can make the locally
-oversubscribed program run faster.  Another important technique is, when
-working locally oversubscribed, try to reduce the communication counts
-(communication counts are discussed below).  The communication counts
-will match (or come close to matching) between running locally
-oversubscribed and running on a multi-node system with the same number of
-locales.  Significant reductions in communication counts will generally
-lead to improvements in the scalability of your application on multiple
-nodes.
+possible to identify and optimize communication. Communication occurs in
+Chapel programs when using ``on`` statements and also when reading or
+writing data (such as array elements) that are stored on a remote locale.
+
+In communication-bound applications, optimizing the communication can
+make the locally oversubscribed program run faster.  Another important
+technique is, when working locally oversubscribed, try to reduce the
+communication counts (communication counts are discussed below).  The
+communication counts will match (or come close to matching) between
+running locally oversubscribed and running on a multi-node system with
+the same number of locales.  Significant reductions in communication
+counts will generally lead to improvements in the scalability of your
+application on multiple nodes.
 
 To run locally oversubscribed, build Chapel with GASNet with the UDP
 conduit. Note that GASNet with the UDP conduit is not a high-performing
@@ -349,14 +353,15 @@ to be modified to avoid the accidental communication.
 Here are a few strategies to identify accidental communication:
 
  1. Use ``local`` blocks (see also :ref:`readme-local`). ``local`` blocks
-    instruct the compiler that there should be no communication within
-    the code in that block, including in functions called from within
-    the local block. When the program is compiled with ``--fast
-    --local-checks`` (or with the default of full checking), the
-    compiler will emit code to halt if code running in a ``local`` block
-    needs to communicate. If you have compiled with :ref:`CHPL_UNWIND !=
-    none <readme-chplenv.CHPL_UNWIND>`, you can even see the stack trace
-    for the code which caused communication you did not expect.
+    are an unstable feature that instructs the compiler that there
+    should be no communication within the code in that block, including
+    in functions called from within the local block. When the program is
+    compiled with ``--fast --local-checks`` (or with the default of full
+    checking), the compiler will emit code to halt if code running in a
+    ``local`` block needs to communicate. If you have compiled with
+    :ref:`CHPL_UNWIND != none <readme-chplenv.CHPL_UNWIND>`, you can
+    even see the stack trace for the code which caused communication you
+    did not expect.
 
     ``local`` blocks have a secondary advantage of allowing the compiler
     to optimize: it optimizes assuming that all code in ``local`` blocks does
