@@ -18,7 +18,7 @@ Syntactic / Naming Changes
 New Language Features
 ---------------------
 * added an 'edition' feature that enables opting in to breaking changes  
-  (see TODO)
+  (see https://chapel-lang.org/docs/2.5/technotes/editions.html)
 * added a new, prototype `reshape()` implementation that aliases array data  
   (see https://chapel-lang.org/docs/2.5/language/spec/arrays.html#ChapelArray.reshape)
 
@@ -302,8 +302,8 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
 * added an error message for variables declared without an initializer or type
 * made significant improvements to the 'dyno' resolver's performance
 * made numerous improvements to the 'dyno' resolver for types and calls:
-  - added support for nD rectangular and associative array literals
-  - added support for array indexing and slicing
+  - added support for array indexing and slicing via internal module code
+  - added support for nD rectangular and associative array literals via modules
   - added support for resolving domain / element type queries in array formals
   - enabled resolving calls to `new blockDist`
   - added support for `reduce=`
