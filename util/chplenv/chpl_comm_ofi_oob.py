@@ -6,6 +6,7 @@ import optparse
 import chpl_comm, chpl_launcher, chpl_platform
 import overrides
 import third_party_utils
+import glob
 
 from utils import error, memoize, check_valid_var
 
