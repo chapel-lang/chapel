@@ -225,6 +225,7 @@ Runtime Library Improvements
 Third-Party Software Changes
 ----------------------------
 * updated the bundled version of Qthreads to 1.22
+* updated the bundled hwloc to version 2.11.2
 * added a bundled version of `mimalloc` 2.1.7 as a memory allocator option  
   (see https://github.com/chapel-lang/chapel/blob/main/third-party/mimalloc/README)
 
