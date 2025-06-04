@@ -118,6 +118,8 @@ Documentation Improvements
 --------------------------
 * added a draft technote describing how to optimize Chapel programs  
   (see https://chapel-lang.org/docs/technotes/optimization.html)
+* fixed a misleading comment in the stopwatch primer and clarified wording
+  (see https://chapel-lang.org/docs/2.5/primers/timers.html)
 * TODO docs for quickstart
 * TODO docs for multilocale
 * TODO improved debugger docs
