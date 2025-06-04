@@ -2212,8 +2212,7 @@ static void checkRuntimeBuilt(void) {
 
       std::string buf = CHPL_HOME + "/util/printchplenv --diagnose-lib=runtime";
       fflush(stdout); // make sure output is flushed before running subprocess
-      int status = mysystem(buf.c_str(), "running printchplenv", false);
-      clean_exit(status);
+      mysystem(buf.c_str(), "running printchplenv", false);
 
       USR_PRINT("Run $CHPL_HOME/util/chplenv/printchplbuilds.py for more information on available runtimes.");
     }
@@ -2227,7 +2226,8 @@ static void checkRuntimeBuilt(void) {
   launcher_dir += "/";
   launcher_dir += CHPL_LAUNCHER_SUBDIR;
 
-  if (!isDirectory(launcher_dir.c_str())) {
+  if (strcmp(CHPL_LAUNCHER, "none") != 0 &&
+      !isDirectory(launcher_dir.c_str())) {
     USR_FATAL_CONT("There is no CHPL_LAUNCHER=%s for the current configuration.",
                    CHPL_LAUNCHER);
     if (developer) {
