@@ -184,6 +184,16 @@ Developer-oriented changes: Compiler improvements / changes
 
 Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
+* made numerous improvements to the 'dyno' resolver for types and calls:
+  - added basic support for nested types
+  - added support for assignment between `extern` types
+  - added support for `chpl__orderToEnum()` and `chpl__enumToOrder()`
+  - added support for `_` and de-tupled loop index variables
+  - significantly improved copy-elision correctness
+* made numerous improvements when converting 'dyno' AST to production AST
+  - implemented generation of `select` statements
+  - implemented generation of `enum` and `c_ptr` types
+  - implemented generation of variable argument indexing with `param` integrals
 
 Developer-oriented changes: GPU support
 ---------------------------------------
