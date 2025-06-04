@@ -9,7 +9,7 @@ if chpl_home is None:
     raise ValueError("CHPL_HOME is not set")
 sys.path.append(os.path.join(chpl_home, "util", "packaging", "common"))
 try:
-    from fill_docker_template_common import common_substitutions
+    from fill_docker_template_common import common_substitutions, filter_substitutions
 except ImportError:
     raise ImportError("fill_docker_template_common.py not found")
 
@@ -65,6 +65,8 @@ COPY --from=build /home/user/*.rpm /
 
 FROM build AS release
 """
+
+substitutions = filter_substitutions(substitutions)
 
 
 def fill_docker_template(template_file):
