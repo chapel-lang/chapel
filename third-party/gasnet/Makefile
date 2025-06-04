@@ -116,6 +116,9 @@ GASNET_CFLAGS += -fPIE
 endif
 endif
 
+# workaround for https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4787
+GASNET_CFLAGS += -Wno-incompatible-pointer-types
+
 CHPL_GASNET_ENV_VARS:= CC='$(CC)' CXX='$(CXX)' MPI_CC='$(MPI_CC)' CFLAGS='$(GASNET_CFLAGS)' CXXFLAGS='$(GASNET_CFLAGS)'
 
 CHPL_GASNET_CFG_OPTIONS += $(CHPL_GASNET_MORE_CFG_OPTIONS)
