@@ -17,9 +17,13 @@ Syntactic / Naming Changes
 
 New Language Features
 ---------------------
+* added a new, prototype `reshape()` implementation that aliases array data  
+  (see https://chapel-lang.org/docs/2.5/language/spec/arrays.html#ChapelArray.reshape)
 
 Language Feature Improvements
 -----------------------------
+* made `init()`/`postinit()` calls that `throw` deinit the object's fields  
+  (see https://chapel-lang.org/docs/2.5/technotes/throwingInit.html#declaring-throwing-initializers)
 
 Semantic Changes / Changes to the Language Definition
 -----------------------------------------------------
@@ -65,6 +69,8 @@ Documentation Improvements
 
 Language Specification Improvements
 -----------------------------------
+* updated some tests and descriptions of `init=` to bring them up-to-date  
+  (see https://chapel-lang.org/docs/2.5/language/spec/records.html#mixed-type-copy-initialization)
 
 Documentation Improvements for Libraries
 ----------------------------------------
@@ -167,6 +173,8 @@ Developer-oriented changes: Performance improvements
 
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
+* added a 'docs-release' Makefile target for making docs for releases
+* improved use of `const char*` in slurm launcher code
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
