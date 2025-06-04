@@ -681,6 +681,8 @@ After the call, ``x`` will store elements in sorted order.
 
 The choice of sorting algorithm used is made by the implementation.
 
+At present, non-distributed arrays and Block-distributed arrays can be sorted.
+
 .. note::
 
   When reordering elements, the sort implementation might use assignment, memory
