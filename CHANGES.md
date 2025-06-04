@@ -34,12 +34,15 @@ Semantic Changes / Changes to the Language Definition
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
+* removed support for `keyPart` methods that return an integral section
 
 Namespace Changes
 -----------------
 
 New Standard Library Features
 -----------------------------
+* extended the standard `sort()` routine to handle block-distributed arrays  
+  (https://chapel-lang.org/docs/modules/standard/Sort.html#Sort.sort)
 * added `debugTrap` to the `Debugger` module to generate a HW debug exception  
   (see https://chapel-lang.org/docs/2.5/modules/standard/Debugger.html#Debugger.debugTrap)
 * added a `disableDebugTrap` config to turn a `debugTrap` into a no-op  
@@ -110,6 +113,8 @@ Syntax Highlighters
 
 Documentation Improvements
 --------------------------
+* added a draft technote describing how to optimize Chapel programs  
+  (see https://chapel-lang.org/docs/technotes/optimization.html)
 * TODO docs for quickstart
 * TODO docs for multilocale
 * TODO improved debugger docs
@@ -224,6 +229,7 @@ Launchers
 
 Runtime Library Improvements
 ----------------------------
+* made minor improvements to memory and fencing behavior in ``--cache-remote`` 
 
 Third-Party Software Changes
 ----------------------------
