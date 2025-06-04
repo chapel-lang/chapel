@@ -24,7 +24,9 @@ import os
 import sys
 import glob
 
-chpl_home = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+chpl_home = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
 chpl_printchplenv = os.path.join(chpl_home, "util", "printchplenv")
 chpl_variables_lines = (
     subprocess.check_output(
