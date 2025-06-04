@@ -172,10 +172,11 @@ Updates to Chapel's Release Formats
 Configuration / Build Changes
 -----------------------------
 * added `mimalloc` as a new option for `CHPL_*_MEM`  
-  (see https://chapel-lang.org/docs/2.5/usingchapel/chplenv.html#chpl-target-mem)
-* added `CHPL_TARGET_PLATFORM=hpe-cray-xd` to represent HPE Cray XD systems  
-  (see https://chapel-lang.org/docs/2.5/usingchapel/chplenv.html#chpl-target-mem
+  (see https://chapel-lang.org/docs/2.5/usingchapel/chplenv.html#chpl-target-mem  
    and https://chapel-lang.org/docs/2.5/usingchapel/chplenv.html#chpl-host-mem)
+* added `hpe-cray-xd` as a `CHPL_*_PLATFORM` option for HPE Cray XD systems  
+  (see https://chapel-lang.org/docs/2.5/usingchapel/chplenv.html#chpl-host-platform  
+   and https://chapel-lang.org/docs/2.5/usingchapel/chplenv.html#chpl-target-platform)
 * added errors for setting `CHPL_*` environment variables to invalid values
 * added a build-time check to catch misconfigurations in the host environment
 * fixed a bug preventing using the bundled LLVM with `cmake` major version > 3
