@@ -6,7 +6,7 @@ From: quay.io/fedora/fedora:42
 
 %post
     /provision-scripts/dnf-deps.sh
-    # installs llvm / clang version ???
+    # installs llvm / clang version 20
     /provision-scripts/dnf-llvm.sh
 
 %runscript
