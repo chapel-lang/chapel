@@ -108,7 +108,7 @@ Tool Improvements
 * enabled Python `str` and `repr` methods on AST nodes in `chapel-py`
 * added external library linking support to Chapel's CMake support  
   (see https://chapel-lang.org/docs/2.5/usingchapel/compiling.html#cmake)
-* added a script to generate argumentss when compiling Python interop code  
+* added a script to generate arguments when compiling Python interop code  
   (see https://chapel-lang.org/docs/2.5/modules/packages/Python.html#compiling-chapel-code)
 
 Syntax Highlighters
@@ -147,7 +147,6 @@ Platform-Specific Documentation Improvements
 Technical Note Improvements
 ---------------------------
 * removed stale mention of `c_string` from the C Interoperability technote
-* GPU (TODO)
 
 Example Codes
 -------------
