@@ -266,6 +266,7 @@ Bug Fixes for the Runtime
 
 Developer-oriented changes: Process
 -----------------------------------
+* started publishing Chapel docs through GitHub actions
 
 Developer-oriented changes: Documentation
 -----------------------------------------
@@ -294,6 +295,7 @@ Developer-oriented changes: Compiler improvements / changes
 
 Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
+* added an error message for variables declared without an initializer or type
 * made numerous improvements to the 'dyno' resolver for types and calls:
   - added support for nD rectangular and associative array literals
   - added support for array indexing and slicing
