@@ -86,6 +86,7 @@ Platform-Specific Documentation Improvements
 
 Technical Note Improvements
 ---------------------------
+* removed stale mention of `c_string` from the C Interoperability technote
 
 Example Codes
 -------------
@@ -107,6 +108,7 @@ Updates to Chapel's Release Formats
 
 Configuration / Build Changes
 -----------------------------
+* fixed bug preventing use of bundled LLVM with `cmake` major version > 3
 
 GPU Computing
 -------------
@@ -140,6 +142,7 @@ Third-Party Software Changes
 
 Bug Fixes
 ---------
+* fixed a bug causing line number comments to be omitted in generated C code
 
 Bug Fixes for Libraries
 -----------------------
@@ -152,6 +155,7 @@ Bug Fixes for Tools
 
 Bug Fixes for Build Issues
 --------------------------
+* removed extraneous Clang `--gcc-install-dir` argument on macOS and FreeBSD
 
 Bug Fixes for the Runtime
 -------------------------
@@ -185,8 +189,13 @@ Developer-oriented changes: Compiler improvements / changes
 Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
 * made numerous improvements to the 'dyno' resolver for types and calls:
+  - added support for nD rectangular and associative array literals
+  - added support for array indexing and slicing
   - added basic support for nested types
   - added support for assignment between `extern` types
+  - added call resolution for basic functions in `extern` blocks
+  - implemented `&&=` and `||=` compound assignment operators
+  - fixed generated inits where a parent field's type is only visible in parent
   - added support for `chpl__orderToEnum()` and `chpl__enumToOrder()`
   - added support for `_` and de-tupled loop index variables
   - significantly improved copy-elision correctness
