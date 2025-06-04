@@ -84,17 +84,11 @@ Installation
 
 We have used the following commands to install the above prerequisites:
 
-  * Alma Linux 8, 9.3, 9.4, 9.5::
+  * Alma Linux 8, 9.6, 10.0::
 
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake
       sudo dnf install which diffutils
       sudo dnf install llvm-devel clang clang-devel
-
-
-  * Alpine 3.17::
-
-      sudo apk add gcc g++ m4 perl python3 python3-dev bash make gawk git cmake
-      sudo apk add llvm-dev clang-dev clang-static llvm-static
 
 
   * Alpine 3.18, 3.19::
@@ -145,13 +139,6 @@ We have used the following commands to install the above prerequisites:
       sudo dnf install llvm-devel clang clang-devel
 
 
-  * Debian 10 "Buster" (but note `Newer CMake required to build LLVM`_)::
-
-      sudo apt-get update
-      sudo apt-get install gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config cmake
-      sudo apt-get install llvm-13-dev llvm-13 llvm-13-tools clang-13 libclang-13-dev libclang-cpp13-dev libedit-dev
-
-
   * Debian 11 "Bullseye" (but note `Newer CMake required to build LLVM`_)::
 
       sudo apt-get update
@@ -166,41 +153,30 @@ We have used the following commands to install the above prerequisites:
       sudo apt-get install llvm-dev llvm clang libclang-dev libclang-cpp-dev libedit-dev
 
 
-  * Fedora 39, 40, 41 (but note `Fedora CHPL_LLVM=system incompatibilities`_)::
+  * Fedora 41, 42 (but note `Fedora CHPL_LLVM=system incompatibilities`_)::
 
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake
       sudo dnf install which diffutils
       sudo dnf install llvm-devel clang clang-devel
 
 
-  * FreeBSD 13.3, 13.4, 14.0, 14.1, 14.2::
+  * FreeBSD 13.5, 14.2::
 
       sudo pkg install gcc m4 perl5 python3 bash gmake gawk git pkgconf cmake
       sudo pkg install llvm
 
 
-  * OpenSuse Leap 15.4, 15.5, 15.6::
+  * OpenSuse Leap 15.6::
 
       sudo zypper install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git pkg-config cmake
       sudo zypper install llvm-devel clang-devel clang
 
 
-  * Rocky Linux 8, 8.10, 9.3, 9.4, 9.5::
+  * Rocky Linux 8.10, 9.5::
 
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake
       sudo dnf install which diffutils
       sudo dnf install llvm-devel clang clang-devel
-
-
-  * Ubuntu 20.04 "Focal Fossa" (but note `Newer CMake required to build LLVM`_)::
-
-      sudo apt-get update
-      sudo apt-get install software-properties-common
-      sudo add-apt-repository universe
-      sudo apt-get update
-      sudo apt-get update
-      sudo apt-get install gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config cmake
-      sudo apt-get install llvm-12-dev llvm-12 llvm-12-tools clang-12 libclang-12-dev libclang-cpp12-dev libedit-dev
 
 
   * Ubuntu 22.04 "Jammy Jellyfish", 24.04 "Noble Numbat", 24.10 "Oracular Oriole", 25.04 "Plucky Puffin"::
