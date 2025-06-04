@@ -76,9 +76,13 @@ and distributed Chapel application:
      until you are satisfied it is working.
 
 You can compile with ``--fast`` and measure performance before or after
-this process. If you are targeting distributed memory, measure
-performance locally oversubscribed (see below) or by running on a
+this process. If you are targeting distributed memory, it's ideal to test
+performance on a multi-node system. Occasionally, it's useful to simulate
+multiple locales on a laptop (described below). Be aware that the
+performance of such a simulation won't necessarily match a real
 multi-node system.
+
+.. _optimization-oversubscribed:
 
 Simulating Multiple Locales on a Laptop
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -94,12 +98,12 @@ possible to identify and optimize communication.  In communication-bound
 applications, optimizing the communication can make the locally
 oversubscribed program run faster.  Another important technique is, when
 working locally oversubscribed, try to reduce the communication counts
-(communication counts are discussed below).
-The communication counts will match (or come close to matching) between
-running locally oversubscribed and running on a multi-node system with
-the same number of locales.  Reductions in communication counts will
-generally lead to improvements in the scalability of your application on
-multiple nodes.
+(communication counts are discussed below).  The communication counts
+will match (or come close to matching) between running locally
+oversubscribed and running on a multi-node system with the same number of
+locales.  Significant reductions in communication counts will generally
+lead to improvements in the scalability of your application on multiple
+nodes.
 
 To run locally oversubscribed, build Chapel with GASNet with the UDP
 conduit. Note that GASNet with the UDP conduit is not a high-performing
@@ -155,25 +159,37 @@ Timing Regions
 
 Counting Communication Events
   If you need to do most of your work by running locally oversubscribed
-  (see above) then it's particularly useful to measure performance by
-  counting the number of communication events. Counting communication
-  events can also be useful as a secondary performance metric for
-  multi-node runs. Reducing the number of communication events is a useful
-  strategy for optimizing communication.
+  (see :ref:`optimization-oversubscribed`) then it's particularly
+  useful to measure performance by counting the number of communication
+  events. Counting communication events can also be useful as a secondary
+  performance metric for multi-node runs. Reducing the number of
+  communication events is a useful strategy for optimizing communication.
 
   You can use the :chpl:mod:`CommDiagnostics` module and
   ``startCommDiagnostics()`` followed by ``getCommDiagnostics()`` to
   count communication events. It's common to print out the communication
-  counts with ``writeln(getCommDiagnostics())``. Note that the
-  communication count information will be easier to understand if you
-  compile with ``--no-cache-remote`` because the cache for remote data,
-  which is enabled by default, will cause the counts to include more
-  categories.
+  counts with ``writeln(getCommDiagnostics())``.
 
-  Communication counts provide a way to compare communication
-  performance independent of where you are running. For example, you
-  might measure and seek to reduce the communication counts when running
-  oversubscribed on a laptop or workstation. Reductions in communication
+  When measuring communication counts, it's important to be aware of
+  these best practices:
+
+    * Compile with ``--fast`` to avoid communication events related to
+      error checking
+
+    * Communication count information will be easier to understand if you
+      compile with ``--no-cache-remote`` because the cache for remote
+      data, which is enabled by default, will cause the counts to include
+      more categories.
+
+    * Counting communication events can slow down execution time
+      significantly. As a result, it's a good practice to control
+      communication diagnostics with a ``config const`` and to measure
+      timing only when communication counting is off.
+
+  Communication counts provide a way to compare communication performance
+  independent of where you are running. For example, you might measure
+  and seek to reduce the communication counts when running oversubscribed
+  on a laptop or workstation. Significant reductions in communication
   counts from such an effort should also help with multi-node performance
   when you are able to run on a big system.
 
@@ -248,6 +264,9 @@ highest-performing configuration for your system.
      * For Omni-Path systems, use ``CHPL_COMM=gasnet`` and
        ``CHPL_COMM_SUBSTRATE=ofi`` (see also :ref:`readme-omnipath`)
 
+ * If you are not using multiple locales, set ``CHPL_COMM=none`` or
+   compile your application with ``--local`` for the best performance
+   (see :ref:`optimization-wide-pointers`).
 
 Settings to Adjust to Improve Performance
 -----------------------------------------
@@ -279,8 +298,13 @@ colocales
 
 ``--auto-aggregation``
   This compiler flag enables an optimization that automatically uses
-  aggregators to improve multilocale performance. It is not on by default
-  because it can slow down some applications.
+  :chpl:mod:`CopyAggregation` to improve multilocale performance. It is
+  not on by default because it can slow down some applications. In
+  particular, this optimization can be beneficial if your application has
+  small forall loops that do a lot of random remote accesses, but if the
+  forall loops do mostly local accesses, it can hurt performance. See also
+  :ref:`optimization-fine-comm` which discusses the problem that
+  aggregators solve.
 
 ``--no-cache-remote`` / ``--cache-remote``
   The cache for remote data is a runtime component that helps to reduce
@@ -336,6 +360,10 @@ Here are a few strategies to identify accidental communication:
     to optimize: it optimizes assuming that all code in ``local`` blocks does
     not communicate if you compile with ``--fast``.
 
+    Note that ``local`` blocks can slow down compilation significantly if
+    not used sparingly. If compilation time is important, consider using
+    them as a debugging tool and then removing to improve compilation speed.
+
  2. Use :chpl:mod:`CommDiagnostics` on-the-fly reporting.  The
     :chpl:mod:`CommDiagnostics` module provides mechanisms for
     on-the-fly reporting with ``startVerboseComm()``.  This on-the-fly
@@ -348,7 +376,9 @@ Here are a few strategies to identify accidental communication:
     accidental communication that is a performance problem because, if
     accidental communication is happening in a key performance-critical
     inner loop, verbose comms reporting will report on that accidental
-    communication many times.
+    communication many times.  With some light scripting to process the
+    verbose comms reporting, you can identify which parts of the code
+    have the most communication.
 
 Here are some strategies you can use to adjust your code to avoid
 accidental communication:
@@ -376,6 +406,13 @@ accidental communication:
           elt = y;  // expect the value of 'y' to be sent along with tasks
         }
       }
+
+    .. note::
+
+      Actually, in this specific example, ``x`` will be copied to each
+      task implementing the first ``forall`` loop due to
+      :ref:`Forall_Intents`. The unnecessary communication described
+      could occur if ``x`` were a record.
 
  2. If the accidental communication is within a distributed ``forall``
     loop, you can change it from being once per iteration to once per
@@ -406,19 +443,23 @@ accidental communication:
          }
        }
 
+.. _optimization-wide-pointers:
+
 Wide Pointer Overhead
 ~~~~~~~~~~~~~~~~~~~~~
 
 The Chapel compiler will emit code working with pointers in many cases
 (for array elements, references, class instances, ...). When the Chapel
-compiler is unable to prove that a pointer is local, it will emit a wide
-pointer. The wide pointer encodes an address along with a locale where
-the value is stored. In cases where the code is working with local memory
-but the compiler can't prove that, there will be additional overhead due
-to the code working with a wide pointer.
+compiler is compiling for multiple locales and it is unable to prove that
+a pointer is local, it will emit a wide pointer. The wide pointer encodes
+an address along with a locale where the value is stored. In cases where
+the code is working with local memory but the compiler can't prove that,
+there will be additional overhead due to the code working with a wide
+pointer.
 
 It is relatively easy to detect if this is a performance problem for a
-Chapel program because it has a pretty clear symptom. Measure the
+Chapel program because it has a pretty clear symptom that you can see by
+compiling two different ways and running on 1 locale. Measure the
 performance of your program compiled with ``CHPL_COMM=none`` and/or
 ``--local``. Compare that performance with the performance of your
 program with ``CHPL_COMM`` other than ``none`` and/or with
@@ -434,6 +475,8 @@ What can be done about it?
  * use ``localSubdomain`` to compute the local index set as a local domain
  * use ``localSlice`` to compute a non-distributed array slice that refers
    to the local portion
+
+.. _optimization-fine-comm:
 
 Fine-Grained Communication
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -495,11 +538,11 @@ relevant loop, we can see that the performance is approximately 30 times
 better. In this simple case, with the ``--auto-aggregation`` flag, the
 compiler can even make these adjustments automatically.
 
-Also note that the CopyAggregation module used here is most applicable
-when working with random access. If you are copying contiguous regions of
-arrays, using an optimized slice assignment can perform well as well to
-perform bulk communication. See :ref:`optimization-slices` for some
-important caveats.
+Also note that the :chpl:mod:`CopyAggregation` module used here is most
+applicable when working with random access. If you are copying contiguous
+regions of arrays, using an optimized slice assignment can perform well
+as well to perform bulk communication. See :ref:`optimization-slices` for
+some important caveats.
 
 Load Imbalance
 ~~~~~~~~~~~~~~
@@ -683,10 +726,10 @@ improve the distributed-memory scalability of your program.
   such an effort should also help with multi-node performance when you
   are able to run on a big system.
 
-Tools for Understanding Single-Node Performance
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+..
+   comment: consider adding
 
-.. note::
+   Tools for Understanding Single-Node Performance
 
    This section still needs to be written. Some ideas for what to
    include:
