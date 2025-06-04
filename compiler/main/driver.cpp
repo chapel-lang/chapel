@@ -2208,12 +2208,30 @@ static void checkRuntimeBuilt(void) {
                 "$CHPL_HOME/util/printchplenv and request support for this "
                 "configuration.");
     } else {
-      USR_FATAL_CONT("The runtime has not been built for this configuration. "
-                     "Run $CHPL_HOME/util/chplenv/printchplbuilds.py for information "
-                     "on available runtimes.");
+      USR_FATAL_CONT("The runtime has not been built for this configuration.");
+
+      std::string buf = CHPL_HOME + "/util/printchplenv --diagnose-lib=runtime";
+      fflush(stdout); // make sure output is flushed before running subprocess
+      int status = mysystem(buf.c_str(), "running printchplenv", false);
+      clean_exit(status);
+
+      USR_PRINT("Run $CHPL_HOME/util/chplenv/printchplbuilds.py for more information on available runtimes.");
     }
     if (developer) {
       USR_PRINT("Expected runtime library in %s", runtime_dir.c_str());
+    }
+    USR_STOP();
+  }
+
+  std::string launcher_dir(CHPL_RUNTIME_LIB);
+  launcher_dir += "/";
+  launcher_dir += CHPL_LAUNCHER_SUBDIR;
+
+  if (!isDirectory(launcher_dir.c_str())) {
+    USR_FATAL_CONT("There is no CHPL_LAUNCHER=%s for the current configuration.",
+                   CHPL_LAUNCHER);
+    if (developer) {
+      USR_PRINT("Expected launcher library in %s", launcher_dir.c_str());
     }
     USR_STOP();
   }
