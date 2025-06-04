@@ -719,6 +719,7 @@ as ``MyArray + MyOtherArray`` are implemented with zippered iteration,
 this problem also applies to that case.
 
 Potential ways to avoid this problem:
+
  * use loops over a multidimensional domain that avoid zippering
  * express the computation with nested loops per dimension
  * use 1D arrays and explicitly compute 1D indices from 2D conceptual indices
