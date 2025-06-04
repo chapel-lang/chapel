@@ -83,6 +83,7 @@ Compiler Features
    Checking Overload Sets <overloadSets>
    Checking Variable Lifetimes <lifetimeChecking>
    Compiler Driver Mode <driver>
+   Editions <editions>
    LLVM Support <llvm>
    Variables to Detect Compilation Configuration <globalvars>
 
