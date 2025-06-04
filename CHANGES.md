@@ -50,6 +50,8 @@ New Package Module Features
   (see https://chapel-lang.org/docs/2.5/modules/packages/Python.html#Python.Value.:)
 * added additional methods for Python `list` types to the `Python` module  
   (see https://chapel-lang.org/docs/2.5/modules/packages/Python.html#Python.PyList)
+* added an `assertRegexMatch()` procedure to the `UnitTest` module  
+  (see https://chapel-lang.org/docs/2.5/modules/packages/UnitTest.html#UnitTest.Test.assertRegexMatch)
 
 Changes / Feature Improvements in Package Modules
 -------------------------------------------------
@@ -125,6 +127,7 @@ Configuration / Build Changes
 
 GPU Computing
 -------------
+* added a warning when `gpuClock()` is called from a host processor
 
 Portability / Platform-specific Improvements
 --------------------------------------------
@@ -157,6 +160,7 @@ Third-Party Software Changes
 
 Bug Fixes
 ---------
+* fixed a bug caused by the `--auto-local-access` (ALA) optimization
 * fixed a bug causing line number comments to be omitted in generated C code
 
 Bug Fixes for Libraries
@@ -231,6 +235,7 @@ Developer-oriented changes: Platform-specific bug fixes
 
 Developer-oriented changes: Testing System
 ------------------------------------------
+* improved `chpl_launchcmd` to handle co-locales with PBS
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
