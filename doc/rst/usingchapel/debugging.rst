@@ -175,7 +175,8 @@ debugging. Any of them can be omitted as desired.
   Flag                                 Description
   ===================================  =========================================
   ``-g``                               Generate debug symbols in the executable
-  ``--target-compiler=gnu``            Target the C backend
+  ``--target-compiler=gnu``            Target the C backend with GCC
+  ``--target-compiler=clang``          Target the C backend with Clang
   ``--savec <dir>``                    Write out the generated C to a given
                                        directory
   ``--preserve-inlined-line-numbers``  When code gets inlined (e.g. replacing a
