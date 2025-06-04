@@ -2827,6 +2827,7 @@ module ChapelDomain {
          It is recommended to use :proc:`Sort.sorted` instead of this method.
 
     */
+    @edition(last="2.0")
     iter sorted(comparator:?t = chpl_defaultComparator()) {
       if !this.isAssociative() then
         compilerError("'.sorted()' is only supported on associative domains");
