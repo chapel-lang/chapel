@@ -476,10 +476,10 @@ def read_bundled_pkg_config_file(pkg, ucp='', pcfile=''):
 
 
 def could_not_find_pkgconfig_pkg(pkg, envname):
-    if homebrew_utils.homebrew_exists() and homebrew_utils.homebrew_pkg_exists(pkg):
+    if homebrew_utils.homebrew_exists() and homebrew_utils.homebrew_pkg_exists(pkg) and not homebrew_utils.homebrew_pkg_exists('pkg-config'):
         # tell user to install pkg-config as well
         error("{0} is installed via homebrew, but pkg-config is not installed. Please install pkg-config with `brew install pkg-config`.".format(pkg))
     else:
         install_str = " with `brew install {0}`".format(pkg) if homebrew_utils.homebrew_exists() else ""
-        error("Could not find a suitable {0} installation. Please install {0}{1} or set {2}=bundled.".format(pkg, install_str, envname))
+        error("Could not find a suitable {0} installation with pkg-config. Please install {0}{1} or set {2}=bundled, or fix pkg-config configuration.".format(pkg, install_str, envname))
 
