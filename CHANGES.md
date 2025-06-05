@@ -223,6 +223,7 @@ Portability / Platform-specific Improvements
 * added an error for trying to use a Cray XC with GASNet (no longer supported)
 * improved detection of the PMI2 library for OFI OOB communication
 * started emitting dSYM archives on MacOS platforms with the C backend
+* fixed a portability issue building GASNet with GCC 15
 
 Portability / Build Improvements for GPUs
 -----------------------------------------
