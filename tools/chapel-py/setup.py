@@ -23,11 +23,10 @@ import subprocess
 import os
 import sys
 import glob
+from pathlib import Path
 
-chpl_home = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-)
-chpl_printchplenv = os.path.join(chpl_home, "util", "printchplenv")
+chpl_home = Path(__file__).parent.parent.parent.resolve()
+chpl_printchplenv = chpl_home / "util" / "printchplenv"
 chpl_variables_lines = (
     subprocess.check_output(
         [chpl_printchplenv, "--internal", "--all", " --anonymize", "--simple"]
@@ -48,12 +47,10 @@ host_cc = str(chpl_variables.get("CHPL_HOST_CC"))
 host_cxx = str(chpl_variables.get("CHPL_HOST_CXX"))
 
 host_bin_subdir = str(chpl_variables.get("CHPL_HOST_BIN_SUBDIR"))
-chpl_lib_path = os.path.join(chpl_home, "lib", "compiler", host_bin_subdir)
+chpl_lib_path = chpl_home / "lib" / "compiler" / host_bin_subdir
 # For installations using --prefix, the build and final lib paths are going to
 #  differ figure out the install location now and write it to the rpath
-chpl_home_utils = os.path.join(
-    chpl_home, "util", "chplenv", "chpl_home_utils.py"
-)
+chpl_home_utils = chpl_home / "util" / "chplenv" / "chpl_home_utils.py"
 chpl_install_lib_path = (
     subprocess.check_output(
         ["python", chpl_home_utils, "--configured-install-lib-prefix"],
