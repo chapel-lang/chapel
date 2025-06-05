@@ -32,3 +32,11 @@ endif
 # Remove -Winline from GASNet's provided flags
 # (might not be needed if it always comes in GASNET_OPT_CFLAGS)
 CHPL_GASNET_CFLAGS = $(CHPL_GASNET_CFLAGS_ALL:-Winline=)
+
+# Prevent GCC 15+ fatal errors on AM handler table initialization
+# (see https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4787)
+ifeq ($(CHPL_MAKE_TARGET_COMPILER),gnu)
+ifeq ($(shell test $(GNU_GCC_MAJOR_VERSION) -ge 15; echo "$$?"),0)
+CHPL_GASNET_CFLAGS += -Wno-incompatible-pointer-types
+endif
+endif
