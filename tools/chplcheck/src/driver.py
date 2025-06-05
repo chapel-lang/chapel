@@ -133,7 +133,7 @@ class LintDriver:
         path = os.path.abspath(path)
 
         if self.config.skip_bundled:
-            return chapel.is_bundled_module(path)
+            return context.is_bundled_path(path)
         elif len(self.config.skip_files) > 0:
             for skip_pattern in self.config.skip_files:
                 abs_skip_pattern = os.path.abspath(skip_pattern)
@@ -367,7 +367,7 @@ class LintDriver:
                         not self.config.check_internal_prefixes
                         and node
                         and self.has_internal_prefix(node)
-                    ):
+                    ) or (self._should_skip_path(context, node or toreport[0].path())):
                         continue
 
                     yield toreport

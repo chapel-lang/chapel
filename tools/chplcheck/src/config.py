@@ -110,8 +110,14 @@ class Config:
             f"--{prefix}skip-bundled-modules",
             action="store_true",
             dest="chplcheck_skip_bundled_modules",
-            default=False,
+            default=True,
             help="Skip standard modules when linting",
+        )
+        parser.add_argument(
+            f"--no-{prefix}skip-bundled-modules",
+            action="store_false",
+            dest="chplcheck_skip_bundled_modules",
+            help="Do not skip standard modules when linting",
         )
         parser.add_argument(
             f"--{prefix}skip",
