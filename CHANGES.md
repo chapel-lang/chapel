@@ -84,7 +84,7 @@ New Package Module Features
 * added support for native Chapel operators on Python objects  
   (see https://chapel-lang.org/docs/2.5/modules/packages/Python.html#Python.+)
 * added support for casting from various Python types to Chapel types  
-  (see https://chapel-lang.org/docs/2.5/modules/packages/Python.html#Python.Value.:)
+  (see [https://chapel-lang.org/docs/2.5/modules/packages/Python.html#Python.Value.:](https://chapel-lang.org/docs/2.5/modules/packages/Python.html#Python.Value.:))
 * added additional methods for Python `list` types to the `Python` module  
   (see https://chapel-lang.org/docs/2.5/modules/packages/Python.html#Python.PyList)
 * added `.repr()` to get the debug string representation of a Python object  
