@@ -17,7 +17,7 @@ TODO:
 * check for 'see:'
 * check for changes put too far down in file
 o add highlights
-o spellcheck
+* spellcheck
 o remove empty sections
 o check links
 
@@ -28,6 +28,18 @@ released June 12, 2025
 
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
+* extended the standard `sort()` routine to support block-distributed arrays
+* added a new package module supporting dynamic loading/calling of C functions
+* improved debugging support through compiler, library, and VSCode features
+* added a new 'edition' feature in support of experimental breaking changes
+* added a new `reshape()` implementation that supports aliasing of arrays
+* made several improvements to the `Python` module for Python interoperability
+* added a draft technical note describing optimization of Chapel programs
+* added new `CHPL_*MEM=mimalloc` and `CHPL_*PLATFORM=hpe-cray-xd` options
+* added validation checks of `CHPL_*` values to make sure they are legal
+* updated the compiler to support LLVM 20 when targeting CPUs
+* improved the new 'dyno' front-end's ability to resolve and lower features
+* made many other improvements in terms of bug fixes, errors, docs, etc.
 
 Updates to Chapel Prerequisites
 -------------------------------
@@ -255,10 +267,10 @@ Runtime Library Improvements
 
 Third-Party Software Changes
 ----------------------------
-* updated the bundled version of Qthreads to 1.22
-* updated the bundled hwloc to version 2.11.2
 * added a bundled version of `mimalloc` 2.1.7 as a memory allocator option  
   (see https://github.com/chapel-lang/chapel/blob/main/third-party/mimalloc/README)
+* updated the bundled version of Qthreads to 1.22
+* updated the bundled hwloc to version 2.11.2
 
 Bug Fixes
 ---------
