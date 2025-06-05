@@ -16,9 +16,9 @@ TODO:
 * check for initial 'A-Z'
 * check for 'see:'
 * check for changes put too far down in file
-o add highlights
+* add highlights
 * spellcheck
-o remove empty sections
+* remove empty sections
 o check links
 
 version 2.5
@@ -41,12 +41,6 @@ Highlights (see subsequent sections for further details)
 * improved the new 'dyno' front-end's ability to resolve and lower features
 * made many other improvements in terms of bug fixes, errors, docs, etc.
 
-Updates to Chapel Prerequisites
--------------------------------
-
-Syntactic / Naming Changes
---------------------------
-
 New Language Features
 ---------------------
 * added an 'edition' feature that enables opting in to breaking changes  
@@ -61,15 +55,9 @@ Language Feature Improvements
 * added support for `noinit` remote variable declarations  
   (e.g., `on someLocale var A: [1..10] real = noinit;`)
 
-Semantic Changes / Changes to the Language Definition
------------------------------------------------------
-
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
 * removed support for `keyPart` methods that return an integral section
-
-Namespace Changes
------------------
 
 New Standard Library Features
 -----------------------------
@@ -79,9 +67,6 @@ New Standard Library Features
   (see https://chapel-lang.org/docs/2.5/modules/standard/Debugger.html#Debugger.debugTrap)
 * added a `disableDebugTrap` config to turn `debugTrap` into a no-op  
   (see https://chapel-lang.org/docs/2.5/modules/standard/Debugger.html#Debugger.disableDebugTraps)
-
-Changes / Feature Improvements in Standard Libraries
-----------------------------------------------------
 
 New Package Module Features
 ---------------------------
@@ -113,15 +98,6 @@ Changes / Feature Improvements in Package Modules
 -------------------------------------------------
 * improved memory allocation in the `Image` module
 
-New Standard Layout and Distribution Features
----------------------------------------------
-
-Name Changes for Standard Layouts and Distributions
----------------------------------------------------
-
-Name Changes in Libraries
--------------------------
-
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
 * removed the previously deprecated `.sort()` method on the `list` type
@@ -142,9 +118,6 @@ Compiler Improvements
 * based the suffix used for `--library --dynamic` files on the target platform
 * resolved warnings about unused `-c` flags when parsing `extern` blocks
 
-GPU Computing
--------------
-
 Tool Improvements
 -----------------
 * improved support for debugging within VSCode  
@@ -159,9 +132,6 @@ Tool Improvements
 * enabled Python `str` and `repr` methods on AST nodes in `chapel-py`
 * added a script to generate arguments when compiling Python interop code  
   (see https://chapel-lang.org/docs/2.5/modules/packages/Python.html#compiling-chapel-code)
-
-Syntax Highlighters
--------------------
 
 Documentation Improvements
 --------------------------
@@ -181,34 +151,10 @@ Documentation Improvements for Libraries
 ----------------------------------------
 * made the `Sort` and `Image` module code examples testable
 
-Documentation Improvements for Tools
-------------------------------------
-
-Documentation Improvements to the 'man' Pages
----------------------------------------------
-
-Platform-Specific Documentation Improvements
---------------------------------------------
-
 Technical Note Improvements
 ---------------------------
 * added a draft technote describing how to optimize Chapel programs  
   (see https://chapel-lang.org/docs/2.5/technotes/optimization.html)
-
-Example Codes
--------------
-
-Performance Optimizations / Improvements
-----------------------------------------
-
-Improvements to Compile Times
------------------------------
-
-Generated Code Improvements
----------------------------
-
-Memory Improvements
--------------------
 
 Configuration / Build Changes
 -----------------------------
@@ -241,9 +187,6 @@ Portability / Build Improvements for GPUs
 -----------------------------------------
 * improved the wording of error messages for unsupported ROCm versions
 
-Generated Executable Flags
---------------------------
-
 Error Messages / Semantic Checks
 --------------------------------
 * improved error messages for incorrect types with `minmax` reduce intents
@@ -257,9 +200,6 @@ Error Messages / Semantic Checks for Libraries
 * added a warning when `gpuClock()` is called from a host processor
 * improved errors for invalid inputs and too-large images in the `Image` module
 * improved the error message for `numBits(bool)`
-
-Launchers
----------
 
 Runtime Library Improvements
 ----------------------------
@@ -289,9 +229,6 @@ Bug Fixes for GPU Computing
 ---------------------------
 * added missing checks for errors in reduction kernel wrappers
 
-Bug Fixes for Tools
--------------------
-
 Bug Fixes for Build Issues
 --------------------------
 * made failures in `printchplenv` cause `./configure` to fail
@@ -309,27 +246,15 @@ Developer-oriented changes: Process
 -----------------------------------
 * started publishing the `main` version of Chapel docs using GitHub actions
 
-Developer-oriented changes: Documentation
------------------------------------------
-
-Developer-oriented changes: Syntactic / Naming Changes
-------------------------------------------------------
-
 Developer-oriented changes: Module changes
 ------------------------------------------
 * added support for cross-locale calls to dynamically loaded procedure pointers
 * improved the portability of `breakpoint` in the `Debugger` module  
 
-Developer-oriented changes: Performance improvements
-----------------------------------------------------
-
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
 * added a `docs-release` Makefile target for making docs snapshots for releases
 * fixed problematic `const char*` declarations in slurm launcher code
-
-Developer-oriented changes: Compiler Flags
-------------------------------------------
 
 Developer-oriented changes: Compiler improvements / changes
 -----------------------------------------------------------
@@ -369,15 +294,6 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
   - implemented generation of variable argument indexing with `param` integrals
   - added support for generating many other language features as well
 
-Developer-oriented changes: GPU support
----------------------------------------
-
-Developer-oriented changes: Runtime improvements
-------------------------------------------------
-
-Developer-oriented changes: Platform-specific bug fixes
--------------------------------------------------------
-
 Developer-oriented changes: Testing System
 ------------------------------------------
 * dramatically improved the performance of `start_test`
@@ -386,12 +302,6 @@ Developer-oriented changes: Testing System
 * added better handling of dSYM to `sub_clean`
 * added checks for `paratest` to prevent using unsupported launchers
 * improved `chpl_launchcmd` to handle co-locales with PBS
-
-Developer-oriented changes: Tool Improvements
----------------------------------------------
-
-Developer-oriented changes: Utilities
--------------------------------------
 
 
 version 2.4
