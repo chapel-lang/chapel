@@ -135,9 +135,9 @@ Tool Improvements
 
 Documentation Improvements
 --------------------------
-* improved quickstart documentation to suggest binary releases
+* improved quickstart documentation to suggest binary releases  
   (see https://chapel-lang.org/docs/2.5/usingchapel/QUICKSTART.html)
-* improved documentation for debugging programs with the LLVM backend
+* improved documentation for debugging programs with the LLVM backend  
   (see https://chapel-lang.org/docs/2.5/usingchapel/debugging.html#best-known-configuration-llvm-backend)
 * made the co-locale documentation more searchable
 * generally fixed typos, mistakes, and other small issues in the docs
