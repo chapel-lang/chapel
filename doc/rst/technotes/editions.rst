@@ -131,6 +131,5 @@ remain in the pre-edition until they are deemed sufficiently complete.
   - the (default-on) check to make sure dimensions don’t get split or combined
     in surprising (potentially buggy) ways
 
-  See the note on ``reshape`` in
-  :ref:`Predefined_Functions_and_Methods_on_Arrays` for more information.
+  See the note on :chpl:proc:`~ChapelArray.reshape` for more information.
 
