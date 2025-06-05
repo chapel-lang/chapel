@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -29,8 +29,7 @@
 #include "chpl/uast/Variable.h"
 
 static void test1() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   QualifiedType qt =  resolveTypeOfXInit(context,
                          R""""(
                          enum color {
@@ -45,16 +44,15 @@ static void test1() {
 
   auto et = qt.type()->toEnumType();
   auto ep = qt.param()->toEnumParam();
-  assert(et->id().contains(ep->value()));
+  assert(et->id().contains(ep->value().id));
   auto enumAst = parsing::idToAst(context, et->id());
   assert(enumAst && enumAst->isEnum());
-  auto elemAst = parsing::idToAst(context, ep->value());
+  auto elemAst = parsing::idToAst(context, ep->value().id);
   assert(elemAst && elemAst->isEnumElement());
 }
 
 static void test2() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   QualifiedType qt =  resolveTypeOfXInit(context,
                          R""""(
                          enum color {
@@ -68,8 +66,7 @@ static void test2() {
 }
 
 static void test3() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   QualifiedType qt =  resolveTypeOfXInit(context,
                          R""""(
                          enum color {
@@ -84,8 +81,7 @@ static void test3() {
 
 // Test numeric conversions of enums
 static void test4() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
@@ -132,8 +128,7 @@ enumConstantValues(Context* context, const QualifiedType& qt) {
 }
 
 static void test5() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
@@ -174,8 +169,7 @@ static void test5() {
 }
 
 static void test6() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
@@ -208,8 +202,7 @@ static void test6() {
 }
 
 static void test7() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
@@ -242,8 +235,7 @@ static void test7() {
 }
 
 static void test8() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
@@ -276,8 +268,7 @@ static void test8() {
 }
 
 static void test9() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
@@ -310,8 +301,7 @@ static void test9() {
 }
 
 static void test10() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
@@ -338,8 +328,7 @@ static void test10() {
 }
 
 static void test11() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   // Production allows multiple constants to have the same numeric value.
@@ -366,16 +355,15 @@ static void test11() {
 
   auto param0 = vars.at("a").param();
   assert(param0 && param0->isEnumParam());
-  assert(param0->toEnumParam()->value().postOrderId() == 1);
+  assert(param0->toEnumParam()->value().id.postOrderId() == 1);
 
   auto param1 = vars.at("b").param();
   assert(param1 && param1->isEnumParam());
-  assert(param1->toEnumParam()->value().postOrderId() == 5);
+  assert(param1->toEnumParam()->value().id.postOrderId() == 5);
 }
 
 static void test12() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   // Production allows multiple constants to have the same numeric value.
@@ -405,8 +393,7 @@ static void test12() {
 }
 
 static void test13() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   // Production allows multiple constants to have the same numeric value.
@@ -434,8 +421,7 @@ static void test13() {
 }
 
 static void test14() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   // Production allows multiple constants to have the same numeric value.
@@ -471,8 +457,7 @@ static void test14() {
 
 
 static void test15() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   // Production allows multiple constants to have the same numeric value.
@@ -503,6 +488,258 @@ static void test15() {
   guard.realizeErrors();
 }
 
+static void test16() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+      enum property {
+        shape, color, size
+      }
+      enum color {
+        red, green, blue
+      }
+      enum colorDifferent {
+        magenta, cyan, yellow
+      }
+      proc type colorDifferent.size param do return 2;
+
+      var a = property.size;
+      param b = property.size;
+      var c = color.size;
+      param d = color.size;
+      var e = colorDifferent.size;
+      param f = colorDifferent.size;
+      )""", {"a", "b", "c", "d", "e", "f"});
+
+  assert(vars.at("a").type());
+  assert(vars.at("a").type()->isEnumType());
+  assert(vars.at("b").type());
+  assert(vars.at("b").type()->isEnumType());
+  assert(vars.at("b").param());
+  assert(vars.at("b").param()->isEnumParam());
+  assert(vars.at("c").type());
+  assert(vars.at("c").type()->isIntType());
+  assert(vars.at("d").type());
+  assert(vars.at("d").type()->isIntType());
+  assert(vars.at("d").param());
+  assert(vars.at("d").param()->isIntParam());
+  assert(vars.at("d").param()->toIntParam()->value() == 3);
+  assert(vars.at("e").type());
+  assert(vars.at("e").type()->isIntType());
+  assert(vars.at("f").type());
+  assert(vars.at("f").type()->isIntType());
+  assert(vars.at("f").param());
+  assert(vars.at("f").param()->isIntParam());
+  assert(vars.at("f").param()->toIntParam()->value() == 2);
+}
+
+static void test17() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+      enum color {
+        red, green, blue
+      }
+      var tmp = 0;
+      param tmpParam = 0;
+      var a = chpl__orderToEnum(tmp, color);
+      param b = chpl__orderToEnum(tmp, color); // error
+      param c = chpl__orderToEnum(tmpParam, color);
+      param d = chpl__orderToEnum(0, color);
+      param e = chpl__orderToEnum(1, color);
+      param f = chpl__orderToEnum(2, color);
+      )""", {"a", "b", "c", "d", "e", "f"});
+
+  assert(vars.at("a").type());
+  assert(vars.at("a").type()->isEnumType());
+  assert(!vars.at("a").param());
+  assert(vars.at("b").isErroneousType());
+  assert(vars.at("c").type());
+  assert(vars.at("c").type()->isEnumType());
+  assert(vars.at("c").param());
+  assert(vars.at("c").param()->isEnumParam());
+  assert(vars.at("c").param()->toEnumParam()->value().id.postOrderId() == 0);
+  assert(vars.at("d").type());
+  assert(vars.at("d").type()->isEnumType());
+  assert(vars.at("d").param());
+  assert(vars.at("d").param()->isEnumParam());
+  assert(vars.at("d").param()->toEnumParam()->value().id.postOrderId() == 0);
+  assert(vars.at("e").type());
+  assert(vars.at("e").type()->isEnumType());
+  assert(vars.at("e").param());
+  assert(vars.at("e").param()->isEnumParam());
+  assert(vars.at("e").param()->toEnumParam()->value().id.postOrderId() == 1);
+  assert(vars.at("f").type());
+  assert(vars.at("f").type()->isEnumType());
+  assert(vars.at("f").param());
+  assert(vars.at("f").param()->isEnumParam());
+  assert(vars.at("f").param()->toEnumParam()->value().id.postOrderId() == 2);
+
+  assert(guard.realizeErrors() == 1);
+}
+
+static void test18() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+      enum color {
+        red, green, blue
+      }
+      var tmp = color.red;
+      param tmpParam = color.red;
+      var a = chpl__enumToOrder(tmp);
+      param b = chpl__enumToOrder(tmp); // error
+      param c = chpl__enumToOrder(tmpParam);
+      param d = chpl__enumToOrder(color.red);
+      param e = chpl__enumToOrder(color.green);
+      param f = chpl__enumToOrder(color.blue);
+      )""", {"a", "b", "c", "d", "e", "f"});
+
+  assert(vars.at("a").type());
+  assert(vars.at("a").type()->isIntType());
+  assert(!vars.at("a").param());
+  assert(vars.at("b").isErroneousType());
+  assert(vars.at("c").type());
+  assert(vars.at("c").type()->isIntType());
+  assert(vars.at("c").param());
+  assert(vars.at("c").param()->isIntParam());
+  assert(vars.at("c").param()->toIntParam()->value() == 0);
+  assert(vars.at("d").type());
+  assert(vars.at("d").type()->isIntType());
+  assert(vars.at("d").param());
+  assert(vars.at("d").param()->isIntParam());
+  assert(vars.at("d").param()->toIntParam()->value() == 0);
+  assert(vars.at("e").type());
+  assert(vars.at("e").type()->isIntType());
+  assert(vars.at("e").param());
+  assert(vars.at("e").param()->isIntParam());
+  assert(vars.at("e").param()->toIntParam()->value() == 1);
+  assert(vars.at("f").type());
+  assert(vars.at("f").type()->isIntType());
+  assert(vars.at("f").param());
+  assert(vars.at("f").param()->isIntParam());
+  assert(vars.at("f").param()->toIntParam()->value() == 2);
+
+  assert(guard.realizeErrors() == 1);
+}
+
+static void test19() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+      enum color {
+        red, green, blue
+      }
+      for c in color {
+        var res = c;
+      }
+      )""", {"res"});
+
+  assert(guard.realizeErrors() == 0);
+  assert(vars.at("res").type());
+  assert(vars.at("res").type()->isEnumType());
+}
+
+// Param cast to string
+static void test20() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+        enum colors {red, green, blue};
+
+        param c = colors.red;
+        param s = c:string;
+
+        param x = colors.red:string;
+        param y = colors.green:string;
+        param z = colors.blue:string;
+
+        record R {
+          param p : colors;
+        }
+
+        var r = new R(colors.green);
+      )""", {"s", "x", "y", "z", "r"});
+
+  assert(guard.realizeErrors() == 0);
+
+  auto check = [] (QualifiedType qt, std::string text) {
+    assert(qt.type()->isStringType());
+    assert(qt.param()->toStringParam()->value() == text);
+  };
+
+  check(vars.at("s"), "red");
+  check(vars.at("x"), "red");
+  check(vars.at("y"), "green");
+  check(vars.at("z"), "blue");
+
+  std::ostringstream oss;
+  vars.at("r").type()->stringify(oss, StringifyKind::CHPL_SYNTAX);
+  assert(oss.str() == "R(green)");
+}
+
+// Non-param cast to string
+static void test21() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+        enum colors {red, green, blue};
+
+        param c = colors.red;
+        var s = c:string;
+
+        var x = colors.red:string;
+        var y = colors.green:string;
+        var z = colors.blue:string;
+      )""", {"s", "x", "y", "z"});
+
+  assert(guard.realizeErrors() == 0);
+
+  auto check = [] (QualifiedType qt, std::string text) {
+    assert(qt.type()->isStringType());
+    assert(!qt.isParam());
+  };
+
+  check(vars.at("s"), "red");
+  check(vars.at("x"), "red");
+  check(vars.at("y"), "green");
+  check(vars.at("z"), "blue");
+}
+
+static void test22() {
+  auto context = buildStdContext();
+  QualifiedType qt =  resolveTypeOfXInit(context,
+                         R""""(
+                         proc id(param x) param do return x;
+                         proc foo() param {
+                           enum color {
+                             red, green, blue
+                           }
+
+                           return id(color.red);
+                         }
+
+                         var x = foo();
+                         )"""");
+  assert(qt.kind() == QualifiedType::PARAM);
+  assert(qt.type() && qt.type()->isEnumType());
+  assert(qt.param() && qt.param()->isEnumParam());
+
+  ensureParamEnumStr(qt, "red");
+}
+
 int main() {
   test1();
   test2();
@@ -519,5 +756,13 @@ int main() {
   test13();
   test14();
   test15();
+  test16();
+  test17();
+  test18();
+  test19();
+  test20();
+  test21();
+  test22();
+
   return 0;
 }

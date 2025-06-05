@@ -1,0 +1,2 @@
+-scase=0 # blockSize.stmt.good
+-scase=1 # blockSize.var.good

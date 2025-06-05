@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+if [[ $CHPL_TARGET_PLATFORM == hpe-apollo ]]; then
+    cp "$2" "$2".raw
+fi
+

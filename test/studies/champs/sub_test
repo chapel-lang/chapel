@@ -64,10 +64,6 @@ for p in $CHAMPS_PATCH_PATH/*patch; do
   apply_patch $p
 done
 
-if [ "${CHPL_LLVM}" != "none" ] ; then
-  apply_patch $CHAMPS_PATCH_PATH/optional/llvm.patch
-fi
-
 if [ ! -z "$CHAMPS_QUICKSTART" ]; then
   git checkout -b quickstart-triage
   echo "[New branch (quickstart-triage) created]"
@@ -80,6 +76,10 @@ fi
 # some debugging output before starting the run
 echo "contents of $CHAMPS_HOME"
 ls $CHAMPS_HOME
+
+if [ "${CHPL_TARGET_COMPILER}" == "gnu" ] ; then
+  echo "[Warning: CHPL_TARGET_COMPILER is gnu, some compilations may time out. Prefer CHPL_TARGET_COMPILER=clang]"
+fi
 
 # Compile CHAMPS executables
 test_compile icing

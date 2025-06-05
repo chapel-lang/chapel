@@ -107,7 +107,7 @@ class LevelVariable {
 //-------------------------------------------------------
 
 proc LevelVariable.setToFunction(
-  f: func(dimension*real, real)
+  f: proc(_:dimension*real): real
 ){
 
   for grid in level.grids do

@@ -1,7 +1,2 @@
-string_from_c_string.chpl:2: In function 'returns_c_string':
-string_from_c_string.chpl:2: warning: the type 'c_string' is deprecated; please 'use CTypes' and replace 'c_string' with 'c_ptrConst(c_char)'
-string_from_c_string.chpl:5: warning: the type 'c_string' is deprecated; please use the variant of 'string.createCopyingBuffer' that takes a 'c_ptrConst(c_char)' instead
-Should be returned_c_string
-returned_c_string
 Should be returned_c_ptrConst
 returned_c_ptrConst

@@ -1,0 +1,35 @@
+module UnusedTaskIntent {
+  var A: [1..10] int = 10;
+  var B: int = 1;
+
+  forall 1..10 with (var x: int) {}
+
+  forall 1..10 with (var x = B) {}
+
+  @chplcheck.ignore("UnusedTaskIntent")
+  foreach 1..10
+    with (ref A,
+          in B) {}
+
+  coforall 1..10 {}
+
+  begin with (ref A,
+  + reduce B) {}
+
+  begin {}
+
+  cobegin { }
+
+  [1..10] { ; }
+
+  @chplcheck.ignore("UnusedTaskIntent")
+  [1..10 with (in A,
+  const in B)] { ; }
+
+  @chplcheck.ignore("UnusedTaskIntent")
+  [1..10 with(ref A)] { ; }
+
+  forall 1..10 { }
+  forall 1..10 with (const x: int) { }
+  forall 1..10 with (const x = 1) { }
+}

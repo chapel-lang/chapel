@@ -11,7 +11,3 @@ CHPL_TARGET_COMPILER==pgi
 CHPL_TARGET_COMPILER==cray-prgenv-cray
 CHPL_TARGET_COMPILER==intel
 CHPL_TARGET_COMPILER==cray-prgenv-intel
-
-# The concurrentMap leaks memory
-CHPL_NIGHTLY_TEST_CONFIG_NAME==memleaks
-CHPL_NIGHTLY_TEST_CONFIG_NAME==valgrind

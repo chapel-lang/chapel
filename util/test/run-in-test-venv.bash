@@ -4,7 +4,7 @@
 
 if [ -z "$CHPL_HOME" ]; then
   # compute the chpl home directory
-  export CHPL_HOME=$(cd $(dirname $0) ; cd ..; cd ..; pwd)
+  export CHPL_HOME=$(cd $(dirname ${BASH_SOURCE[0]}) ; cd ..; cd ..; pwd)
 fi
 
 python=$($CHPL_HOME/util/config/find-python.sh)
@@ -21,11 +21,11 @@ then
 else
   if [ ! -z "$CHPL_TEST_VENV_DIR" ]
   then
-    echo "Using custom virtualenv because CHPL_TEST_VENV_DIR=$venv_dir."\
+    echo "Using custom virtualenv because CHPL_TEST_VENV_DIR=$CHPL_TEST_VENV_DIR."\
          "test-venv requirements must be available"
 
-    if [ ! -f "$venv_dir/bin/python3" ]; then
-      echo "python3 wrapper file $venv_dir/bin/python3 is missing" 1>&2
+    if [ ! -f "$CHPL_TEST_VENV_DIR/bin/python3" ]; then
+      echo "python3 wrapper file $CHPL_TEST_VENV_DIR/bin/python3 is missing" 1>&2
       exit 1
     fi
 

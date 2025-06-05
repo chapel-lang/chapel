@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -226,6 +226,9 @@ static void test5() {
   auto notAType = types.at("notAType");
 
   assert(notAType.isUnknown());
+  assert(guard.numErrors() == 1);
+  assert(guard.errors()[0]->message() == "variable 'notAType' is declared without an initializer or type");
+  guard.realizeErrors();
 }
 
 

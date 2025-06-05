@@ -1,0 +1,1 @@
+sortDomainArray.chpl:39: error: '.sorted()' is only supported on associative domains

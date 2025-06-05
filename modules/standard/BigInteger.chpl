@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -151,7 +151,7 @@ module BigInteger {
   use GMP;
   use HaltWrappers;
   use OS;
-  use ChplConfig only compiledForSingleLocale;
+  use ChplConfig only compiledForSingleLocale, CHPL_TARGET_PLATFORM;
 
   /*
    Local copy of IO.EFORMAT as it is being phased out and is private in IO
@@ -209,7 +209,7 @@ module BigInteger {
     }
 
     /* See :proc:`init` */
-    proc init(x: int) {
+    proc init(x: int(?)) {
       init this;
       mpz_init_set_si(this.mpz, x.safeCast(c_long));
 
@@ -217,7 +217,7 @@ module BigInteger {
     }
 
     /* See :proc:`init` */
-    proc init(x: uint) {
+    proc init(x: uint(?)) {
       init this;
       mpz_init_set_ui(this.mpz, x.safeCast(c_ulong));
 
@@ -308,7 +308,7 @@ module BigInteger {
         ret = mpz_sizeinbase(this.mpz, base_);
 
       } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_none);
 
         on __primitive("chpl_on_locale_num", thisLoc) {
           ret = mpz_sizeinbase(this.mpz, base_);
@@ -333,7 +333,7 @@ module BigInteger {
         ret = this.mpz[0];
 
       } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_none);
 
         on __primitive("chpl_on_locale_num", thisLoc) {
           ret = this.mpz[0];
@@ -378,7 +378,7 @@ module BigInteger {
         exp = tmp;
 
       } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_none);
 
         on __primitive("chpl_on_locale_num", thisLoc) {
           var tmp: c_long;
@@ -401,7 +401,7 @@ module BigInteger {
         var tmpvar = chpl_gmp_mpz_get_str(base_, this.mpz);
         try! ret = string.createAdoptingBuffer(tmpvar);
       } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_none);
         on __primitive("chpl_on_locale_num", thisLoc) {
           var tmpvar = chpl_gmp_mpz_get_str(base_, this.mpz);
           try! ret = string.createAdoptingBuffer(tmpvar);
@@ -480,7 +480,7 @@ module BigInteger {
     if compiledForSingleLocale() || x.localeId == chpl_nodeID {
       ret = mpz_get_si(x.mpz);
     } else {
-      const xLoc = chpl_buildLocaleID(x.localeId, c_sublocid_any);
+      const xLoc = chpl_buildLocaleID(x.localeId, c_sublocid_none);
 
       on __primitive("chpl_on_locale_num", xLoc) {
         ret = mpz_get_si(x.mpz);
@@ -504,7 +504,7 @@ module BigInteger {
     if compiledForSingleLocale() || x.localeId == chpl_nodeID {
       ret = mpz_get_ui(x.mpz);
     } else {
-      const xLoc = chpl_buildLocaleID(x.localeId, c_sublocid_any);
+      const xLoc = chpl_buildLocaleID(x.localeId, c_sublocid_none);
 
       on __primitive("chpl_on_locale_num", xLoc) {
         ret = mpz_get_ui(x.mpz);
@@ -533,7 +533,7 @@ module BigInteger {
     if compiledForSingleLocale() || x.localeId == chpl_nodeID {
       ret = mpz_get_d(x.mpz);
     } else {
-      const xLoc = chpl_buildLocaleID(x.localeId, c_sublocid_any);
+      const xLoc = chpl_buildLocaleID(x.localeId, c_sublocid_none);
 
       on __primitive("chpl_on_locale_num", xLoc) {
         ret = mpz_get_d(x.mpz);
@@ -554,12 +554,12 @@ module BigInteger {
   }
 
   /* See :proc:`bigint.set` */
-  operator bigint.=(ref lhs: bigint, rhs: int) {
+  operator bigint.=(ref lhs: bigint, rhs: int(?)) {
     lhs.set(rhs);
   }
 
   /* See :proc:`bigint.set` */
-  operator bigint.=(ref lhs: bigint, rhs: uint) {
+  operator bigint.=(ref lhs: bigint, rhs: uint(?)) {
     lhs.set(rhs);
   }
 
@@ -614,28 +614,28 @@ module BigInteger {
   }
 
   /* See :proc:`~BigInteger.add` */
-  operator bigint.+(const ref a: bigint, b: int): bigint {
+  operator bigint.+(const ref a: bigint, b: int(?)): bigint {
     var c = new bigint();
     BigInteger.add(c, a, b);
     return c;
   }
 
   /* See :proc:`~BigInteger.add` */
-  operator bigint.+(const ref a: bigint, b: uint): bigint {
+  operator bigint.+(const ref a: bigint, b: uint(?)): bigint {
     var c = new bigint();
     BigInteger.add(c, a, b);
     return c;
   }
 
   /* See :proc:`~BigInteger.add` */
-  operator bigint.+(a: int, const ref b: bigint): bigint {
+  operator bigint.+(a: int(?), const ref b: bigint): bigint {
     var c = new bigint();
     BigInteger.add(c, b, a);
     return c;
   }
 
   /* See :proc:`~BigInteger.add` */
-  operator bigint.+(a: uint, const ref b: bigint): bigint {
+  operator bigint.+(a: uint(?), const ref b: bigint): bigint {
     var c = new bigint();
     BigInteger.add(c, b, a);
     return c;
@@ -649,28 +649,28 @@ module BigInteger {
   }
 
   /* See :proc:`~BigInteger.sub` */
-  operator bigint.-(const ref a: bigint, b: int): bigint {
+  operator bigint.-(const ref a: bigint, b: int(?)): bigint {
     var c = new bigint();
     BigInteger.sub(c, a, b);
     return c;
   }
 
   /* See :proc:`~BigInteger.sub` */
-  operator bigint.-(const ref a: bigint, b: uint): bigint {
+  operator bigint.-(const ref a: bigint, b: uint(?)): bigint {
     var c = new bigint();
     BigInteger.sub(c, a, b);
     return c;
   }
 
   /* See :proc:`~BigInteger.sub` */
-  operator bigint.-(a: int, const ref b: bigint): bigint {
+  operator bigint.-(a: int(?), const ref b: bigint): bigint {
     var c = new bigint();
     BigInteger.sub(c, a, b);
     return c;
   }
 
   /* See :proc:`~BigInteger.sub` */
-  operator bigint.-(a: uint, const ref b: bigint): bigint {
+  operator bigint.-(a: uint(?), const ref b: bigint): bigint {
     var c = new bigint();
     BigInteger.sub(c, a, b);
     return c;
@@ -684,28 +684,28 @@ module BigInteger {
   }
 
   /* See :proc:`~BigInteger.mul` */
-  operator bigint.*(const ref a: bigint, b: int): bigint {
+  operator bigint.*(const ref a: bigint, b: int(?)): bigint {
     var c = new bigint();
     BigInteger.mul(c, a, b);
     return c;
   }
 
   /* See :proc:`~BigInteger.mul` */
-  operator bigint.*(const ref a: bigint, b: uint): bigint {
+  operator bigint.*(const ref a: bigint, b: uint(?)): bigint {
     var c = new bigint();
     BigInteger.mul(c, a, b);
     return c;
   }
 
   /* See :proc:`~BigInteger.mul` */
-  operator bigint.*(a: int, const ref b: bigint): bigint {
+  operator bigint.*(a: int(?), const ref b: bigint): bigint {
     var c = new bigint();
     BigInteger.mul(c, b, a);
     return c;
   }
 
   /* See :proc:`~BigInteger.mul` */
-  operator bigint.*(a: uint, const ref b: bigint): bigint {
+  operator bigint.*(a: uint(?), const ref b: bigint): bigint {
     var c = new bigint();
     BigInteger.mul(c, b, a);
     return c;
@@ -744,7 +744,7 @@ module BigInteger {
   }
 
   /* See :proc:`~BigInteger.pow` */
-  operator bigint.**(const ref base: bigint, exp: int): bigint {
+  operator bigint.**(const ref base: bigint, exp: int(?)): bigint {
     var c = new bigint();
 
     if exp >= 0 {
@@ -757,7 +757,7 @@ module BigInteger {
   }
 
   /* See :proc:`~BigInteger.pow` */
-  operator bigint.**(const ref base: bigint, exp: uint): bigint {
+  operator bigint.**(const ref base: bigint, exp: uint(?)): bigint {
     const exp_ = exp.safeCast(c_ulong);
     var   c    = new bigint();
 
@@ -787,7 +787,7 @@ module BigInteger {
         mpz_tdiv_r_ui(res.mpz, x_.mpz, y);
 
       } else {
-        const resLoc = chpl_buildLocaleID(res.localeId, c_sublocid_any);
+        const resLoc = chpl_buildLocaleID(res.localeId, c_sublocid_none);
         on __primitive("chpl_on_locale_num", resLoc) {
           const x_ = x;
           mpz_tdiv_r_ui(res.mpz, x_.mpz, y);
@@ -795,7 +795,8 @@ module BigInteger {
       }
     }
 
-    if y.type == uint {
+    param intSize = if CHPL_TARGET_PLATFORM == "linux32" then 32 else 64;
+    if y.type == uint(intSize) {
       helper(result, x, y);
     }
     else {
@@ -825,42 +826,42 @@ module BigInteger {
   }
 
   /* See :proc:`bigint.%` */
-  operator bigint.%(const ref a: bigint, b: int): bigint {
+  operator bigint.%(const ref a: bigint, b: int(?)): bigint {
     var c = new bigint();
     BigInteger.modTrunc(c, a, b);
     return c;
   }
 
   /* See :proc:`bigint.%` */
-  operator bigint.%(const ref a: bigint, b: uint): bigint {
+  operator bigint.%(const ref a: bigint, b: uint(?)): bigint {
     var c = new bigint();
     BigInteger.modTrunc(c, a, b);
     return c;
   }
 
   /* See :proc:`~BigInteger.shiftLeft` */
-  operator bigint.<<(const ref a: bigint, b: int): bigint {
+  operator bigint.<<(const ref a: bigint, b: int(?)): bigint {
     var c = new bigint();
     BigInteger.shiftLeft(c, a, b);
     return c;
   }
 
   /* See :proc:`~BigInteger.shiftLeft` */
-  operator bigint.<<(const ref a: bigint, b: uint): bigint {
+  operator bigint.<<(const ref a: bigint, b: uint(?)): bigint {
     var c = new bigint();
     BigInteger.shiftLeft(c, a, b);
     return c;
   }
 
   /* See :proc:`~BigInteger.shiftRight` */
-  operator bigint.>>(const ref a: bigint, b: int): bigint {
+  operator bigint.>>(const ref a: bigint, b: int(?)): bigint {
     var c = new bigint();
     BigInteger.shiftRight(c, a, b);
     return c;
   }
 
   /* See :proc:`~BigInteger.shiftRight` */
-  operator bigint.>>(const ref a: bigint, b: uint): bigint {
+  operator bigint.>>(const ref a: bigint, b: uint(?)): bigint {
     var c = new bigint();
     BigInteger.shiftRight(c, a, b);
     return c;
@@ -890,14 +891,14 @@ module BigInteger {
   private inline proc cmp(const ref x: bigint, const ref y: bigint)
     do return x.cmp(y);
 
-  private inline proc cmp(const ref x: bigint, y: int)
+  private inline proc cmp(const ref x: bigint, y: int(?))
     do return x.cmp(y);
-  private inline proc cmp(const ref x: bigint, y: uint)
+  private inline proc cmp(const ref x: bigint, y: uint(?))
     do return x.cmp(y);
 
-  private inline proc cmp(x: int, const ref y: bigint)
+  private inline proc cmp(x: int(?), const ref y: bigint)
     do return 0 - (y.cmp(x));
-  private inline proc cmp(x: uint, const ref y: bigint)
+  private inline proc cmp(x: uint(?), const ref y: bigint)
     do return 0 - (y.cmp(x));
 
 
@@ -906,19 +907,19 @@ module BigInteger {
     do return BigInteger.cmp(a, b) == 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.==(const ref a: bigint, b: int): bool
+  operator bigint.==(const ref a: bigint, b: int(?)): bool
     do return BigInteger.cmp(a, b) == 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.==(const ref a: bigint, b: uint): bool
+  operator bigint.==(const ref a: bigint, b: uint(?)): bool
     do return BigInteger.cmp(a, b) == 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.==(a: int, const ref b: bigint): bool
+  operator bigint.==(a: int(?), const ref b: bigint): bool
     do return BigInteger.cmp(a, b) == 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.==(a: uint, const ref b: bigint): bool
+  operator bigint.==(a: uint(?), const ref b: bigint): bool
     do return BigInteger.cmp(a, b) == 0;
 
   /* See :proc:`bigint.cmp` */
@@ -926,19 +927,19 @@ module BigInteger {
     do return BigInteger.cmp(a, b) != 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.!=(const ref a: bigint, b: int): bool
+  operator bigint.!=(const ref a: bigint, b: int(?)): bool
     do return BigInteger.cmp(a, b) != 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.!=(const ref a: bigint, b: uint): bool
+  operator bigint.!=(const ref a: bigint, b: uint(?)): bool
     do return BigInteger.cmp(a, b) != 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.!=(a: int, const ref b: bigint): bool
+  operator bigint.!=(a: int(?), const ref b: bigint): bool
     do return BigInteger.cmp(a, b) != 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.!=(a: uint, const ref b: bigint): bool
+  operator bigint.!=(a: uint(?), const ref b: bigint): bool
     do return BigInteger.cmp(a, b) != 0;
 
   /* See :proc:`bigint.cmp` */
@@ -946,19 +947,19 @@ module BigInteger {
     do return BigInteger.cmp(a, b) > 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.>(const ref a: bigint, b: int): bool
+  operator bigint.>(const ref a: bigint, b: int(?)): bool
     do return BigInteger.cmp(a, b) > 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.>(const ref a: bigint, b: uint): bool
+  operator bigint.>(const ref a: bigint, b: uint(?)): bool
     do return BigInteger.cmp(a, b) > 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.>(a: int, const ref b: bigint): bool
+  operator bigint.>(a: int(?), const ref b: bigint): bool
     do return BigInteger.cmp(a, b) > 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.>(a: uint, const ref b: bigint): bool
+  operator bigint.>(a: uint(?), const ref b: bigint): bool
     do return BigInteger.cmp(a, b) > 0;
 
   /* See :proc:`bigint.cmp` */
@@ -966,19 +967,19 @@ module BigInteger {
     do return BigInteger.cmp(a, b) < 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.<(const ref a: bigint, b: int): bool
+  operator bigint.<(const ref a: bigint, b: int(?)): bool
     do return BigInteger.cmp(a, b) < 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.<(const ref a: bigint, b: uint): bool
+  operator bigint.<(const ref a: bigint, b: uint(?)): bool
     do return BigInteger.cmp(a, b) < 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.<(a: int, const ref b: bigint): bool
+  operator bigint.<(a: int(?), const ref b: bigint): bool
     do return BigInteger.cmp(a, b) < 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.<(a: uint, const ref b: bigint): bool
+  operator bigint.<(a: uint(?), const ref b: bigint): bool
     do return BigInteger.cmp(a, b) < 0;
 
   /* See :proc:`bigint.cmp` */
@@ -986,19 +987,19 @@ module BigInteger {
     do return BigInteger.cmp(a, b) >= 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.>=(const ref a: bigint, b: int): bool
+  operator bigint.>=(const ref a: bigint, b: int(?)): bool
     do return BigInteger.cmp(a, b) >= 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.>=(const ref a: bigint, b: uint): bool
+  operator bigint.>=(const ref a: bigint, b: uint(?)): bool
     do return BigInteger.cmp(a, b) >= 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.>=(a: int, const ref b: bigint): bool
+  operator bigint.>=(a: int(?), const ref b: bigint): bool
     do return BigInteger.cmp(a, b) >= 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.>=(a: uint, const ref b: bigint): bool
+  operator bigint.>=(a: uint(?), const ref b: bigint): bool
     do return BigInteger.cmp(a, b) >= 0;
 
   /* See :proc:`bigint.cmp` */
@@ -1006,19 +1007,19 @@ module BigInteger {
     do return BigInteger.cmp(a, b) <= 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.<=(const ref a: bigint, b: int): bool
+  operator bigint.<=(const ref a: bigint, b: int(?)): bool
     do return BigInteger.cmp(a, b) <= 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.<=(const ref a: bigint, b: uint): bool
+  operator bigint.<=(const ref a: bigint, b: uint(?)): bool
     do return BigInteger.cmp(a, b) <= 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.<=(a: int, const ref b: bigint): bool
+  operator bigint.<=(a: int(?), const ref b: bigint): bool
     do return BigInteger.cmp(a, b) <= 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.<=(a: uint, const ref b: bigint): bool
+  operator bigint.<=(a: uint(?), const ref b: bigint): bool
     do return BigInteger.cmp(a, b) <= 0;
 
   /* See :proc:`~BigInteger.add` */
@@ -1026,11 +1027,11 @@ module BigInteger {
     do BigInteger.add(a, a, b);
 
   /* See :proc:`~BigInteger.add` */
-  operator bigint.+=(ref a: bigint, b: int)
+  operator bigint.+=(ref a: bigint, b: int(?))
     do BigInteger.add(a, a, b);
 
   /* See :proc:`~BigInteger.add` */
-  operator bigint.+=(ref a: bigint, b: uint)
+  operator bigint.+=(ref a: bigint, b: uint(?))
     do BigInteger.add(a, a, b);
 
   /* See :proc:`~BigInteger.sub` */
@@ -1038,11 +1039,11 @@ module BigInteger {
     do BigInteger.sub(a, a, b);
 
   /* See :proc:`~BigInteger.sub` */
-  operator bigint.-=(ref a: bigint, b: int)
+  operator bigint.-=(ref a: bigint, b: int(?))
     do BigInteger.sub(a, a, b);
 
   /* See :proc:`~BigInteger.sub` */
-  operator bigint.-=(ref a: bigint, b: uint)
+  operator bigint.-=(ref a: bigint, b: uint(?))
     do BigInteger.sub(a, a, b);
 
   /* See :proc:`~BigInteger.mul` */
@@ -1050,11 +1051,11 @@ module BigInteger {
     do BigInteger.mul(a, a, b);
 
   /* See :proc:`~BigInteger.mul` */
-  operator bigint.*=(ref a: bigint, b:  int)
+  operator bigint.*=(ref a: bigint, b: int(?))
     do BigInteger.mul(a, a, b);
 
   /* See :proc:`~BigInteger.mul` */
-  operator bigint.*=(ref a: bigint, b: uint)
+  operator bigint.*=(ref a: bigint, b: uint(?))
     do BigInteger.mul(a, a, b);
 
   /* See :proc:`~BigInteger.div` */
@@ -1073,12 +1074,12 @@ module BigInteger {
   }
 
   /* See :proc:`~BigInteger.pow` */
-  operator bigint.**=(ref base: bigint, exp: int) {
+  operator bigint.**=(ref base: bigint, exp: int(?)) {
     BigInteger.pow(base, base, exp);
   }
 
   /* See :proc:`~BigInteger.pow` */
-  operator bigint.**=(ref base: bigint, exp: uint) {
+  operator bigint.**=(ref base: bigint, exp: uint(?)) {
     BigInteger.pow(base, base, exp);
   }
 
@@ -1087,11 +1088,11 @@ module BigInteger {
     do BigInteger.modTrunc(a, a, b);
 
   /* See :proc:`bigint.%` */
-  operator bigint.%=(ref a: bigint, b: int)
+  operator bigint.%=(ref a: bigint, b: int(?))
     do BigInteger.modTrunc(a, a, b);
 
   /* See :proc:`bigint.%` */
-  operator bigint.%=(ref a: bigint, b: uint)
+  operator bigint.%=(ref a: bigint, b: uint(?))
     do BigInteger.modTrunc(a, a, b);
 
   /* See :proc:`~BigInteger.and` */
@@ -1110,19 +1111,19 @@ module BigInteger {
   }
 
   /* See :proc:`~BigInteger.shiftLeft` */
-  operator bigint.<<=(ref a: bigint, b: int)
+  operator bigint.<<=(ref a: bigint, b: int(?))
     do BigInteger.shiftLeft(a, a, b);
 
   /* See :proc:`~BigInteger.shiftLeft` */
-  operator bigint.<<=(ref a: bigint, b: uint)
+  operator bigint.<<=(ref a: bigint, b: uint(?))
     do BigInteger.shiftLeft(a, a, b);
 
   /* See :proc:`~BigInteger.shiftRight` */
-  operator bigint.>>=(ref a: bigint, b:  int)
+  operator bigint.>>=(ref a: bigint, b: int(?))
     do BigInteger.shiftRight(a, a, b);
 
   /* See :proc:`~BigInteger.shiftRight` */
-  operator bigint.>>=(ref a: bigint, b: uint)
+  operator bigint.>>=(ref a: bigint, b: uint(?))
     do BigInteger.shiftRight(a, a, b);
 
   /* See :proc:`bigint.swap` */
@@ -1135,8 +1136,8 @@ module BigInteger {
       mpz_set(b.mpz, t.mpz);
 
     } else {
-      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
-      const bLoc = chpl_buildLocaleID(b.localeId, c_sublocid_any);
+      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_none);
+      const bLoc = chpl_buildLocaleID(b.localeId, c_sublocid_none);
 
       const aTmp = a;
 
@@ -1224,7 +1225,7 @@ module BigInteger {
 
   /* See :proc:`kronecker` */
   @unstable("kronecker is unstable and may change in the future")
-  proc kronecker(const ref a: bigint, b: int) : int {
+  proc kronecker(const ref a: bigint, b: int(?)) : int {
     const a_ = a.localize();
     const b_ = b.safeCast(c_long);
     var  ret : c_int;
@@ -1236,7 +1237,7 @@ module BigInteger {
 
   /* See :proc:`kronecker` */
   @unstable("kronecker is unstable and may change in the future")
-  proc kronecker(a: int, const ref b: bigint) : int {
+  proc kronecker(a: int(?), const ref b: bigint) : int {
     const a_ = a.safeCast(c_long);
     const b_ = b.localize();
     var  ret : c_int;
@@ -1248,7 +1249,7 @@ module BigInteger {
 
   /* See :proc:`kronecker` */
   @unstable("kronecker is unstable and may change in the future")
-  proc kronecker(const ref a: bigint, b: uint) : int {
+  proc kronecker(const ref a: bigint, b: uint(?)) : int {
     const a_ = a.localize();
     const b_ = b.safeCast(c_ulong);
     var  ret : c_int;
@@ -1260,7 +1261,7 @@ module BigInteger {
 
   /* See :proc:`kronecker` */
   @unstable("kronecker is unstable and may change in the future")
-  proc kronecker(a: uint, const ref b: bigint) : int {
+  proc kronecker(a: uint(?), const ref b: bigint) : int {
     const a_ = a.safeCast(c_ulong);
     const b_ = b.localize();
     var  ret : c_int;
@@ -1302,7 +1303,7 @@ module BigInteger {
       const denom_ = denom;
       mpz_divexact(result.mpz, numer_.mpz, denom_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const numer_ = numer;
         const denom_ = denom;
@@ -1345,7 +1346,7 @@ module BigInteger {
   }
 
   /* See :proc:`~bigint.isDivisible` */
-  proc bigint.isDivisible(div: int) : bool {
+  proc bigint.isDivisible(div: int(?)) : bool {
     const t_ = this.localize();
     var div_ = 0 : c_ulong;
     var ret: c_int;
@@ -1364,7 +1365,7 @@ module BigInteger {
   }
 
   /* See :proc:`~bigint.isDivisible` */
-  proc bigint.isDivisible(div: uint) : bool {
+  proc bigint.isDivisible(div: uint(?)) : bool {
     const t_ = this.localize();
     const div_ = div.safeCast(c_ulong);
     var   ret: c_int;
@@ -1527,7 +1528,7 @@ module BigInteger {
       const mod_ = mod;
       mpz_powm(result.mpz, base_.mpz, exp_.mpz, mod_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const base_ = base;
         const exp_ = exp;
@@ -1540,7 +1541,7 @@ module BigInteger {
   /* See :proc:`~BigInteger.powMod` */
   proc powMod(ref result: bigint,
               const ref base: bigint,
-              exp: int,
+              exp: int(?),
               const ref mod: bigint)  {
     if exp >= 0 {
       BigInteger.powMod(result, base, exp:uint, mod);
@@ -1553,7 +1554,7 @@ module BigInteger {
   /* See :proc:`~BigInteger.powMod` */
   proc powMod(ref result: bigint,
               const ref base: bigint,
-              exp: uint,
+              exp: uint(?),
               const ref mod: bigint)  {
     const exp_ = exp.safeCast(c_ulong);
 
@@ -1564,7 +1565,7 @@ module BigInteger {
       const mod_ = mod;
       mpz_powm_ui(result.mpz, base_.mpz, exp, mod_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const base_ = base;
         const mod_  = mod;
@@ -1614,7 +1615,7 @@ module BigInteger {
        :proc:`GMP.mpz_pow_ui` and
        `mpz_pow_ui <https://gmplib.org/manual/Integer-Exponentiation#index-mpz_005fpow_005fui>`_.
   */
-  proc pow(ref result: bigint, const ref base: bigint, exp: int) {
+  proc pow(ref result: bigint, const ref base: bigint, exp: int(?)) {
     if exp >= 0 {
       BigInteger.pow(result, base, exp : uint);
     } else {
@@ -1624,7 +1625,7 @@ module BigInteger {
         const base_ = base;
         powNegativeExpHelper(result, base_, exp);
       } else {
-        const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+        const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
         on __primitive("chpl_on_locale_num", resultLoc) {
           const base_ = base;
           powNegativeExpHelper(result, base_, exp);
@@ -1634,7 +1635,7 @@ module BigInteger {
   }
 
   /* See :proc:`~BigInteger.pow` */
-  proc pow(ref result: bigint, const ref base: bigint, exp: uint) {
+  proc pow(ref result: bigint, const ref base: bigint, exp: uint(?)) {
     const exp_ = exp.safeCast(c_ulong);
     if compiledForSingleLocale() {
       mpz_pow_ui(result.mpz, base.mpz, exp_);
@@ -1642,7 +1643,7 @@ module BigInteger {
       const base_ = base;
       mpz_pow_ui(result.mpz, base_.mpz, exp_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const base_ = base;
         mpz_pow_ui(result.mpz, base_.mpz, exp_);
@@ -1651,10 +1652,10 @@ module BigInteger {
   }
 
   /* See :proc:`~BigInteger.pow` */
-  proc pow(ref result: bigint, base: int, exp: int) {
+  proc pow(ref result: bigint, base: int(?), exp: int(?)) {
     if base >= 0 && exp >= 0 {
       BigInteger.pow(result, base : uint, exp : uint);
-    } else if base <  0 && exp >= 0 {
+    } else if base < 0 && exp >= 0 {
       BigInteger.pow(result, (0 - base) : uint, exp : uint);
 
       if (exp % 2) == 1 {
@@ -1666,7 +1667,7 @@ module BigInteger {
   }
 
   /* See :proc:`~BigInteger.pow` */
-  proc pow(ref result: bigint, base: uint, exp: uint) {
+  proc pow(ref result: bigint, base: uint(?), exp: uint(?)) {
     const base_ = base.safeCast(c_ulong);
     const exp_  = exp.safeCast(c_ulong);
 
@@ -1675,7 +1676,7 @@ module BigInteger {
     } else if result.localeId == chpl_nodeID {
       mpz_ui_pow_ui(result.mpz, base_, exp_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         mpz_ui_pow_ui(result.mpz, base_, exp_);
       }
@@ -1706,7 +1707,7 @@ module BigInteger {
       const x_ = x;
       ret = mpz_root(result.mpz, x_.mpz, n_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         ret = mpz_root(result.mpz, x_.mpz, n_);
@@ -1742,7 +1743,7 @@ module BigInteger {
       mpz_rootrem(result.mpz, remain_.mpz, x_.mpz, n_);
       remain = remain_;
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         var remain_: bigint;
         const x_ = x;
@@ -1771,7 +1772,7 @@ module BigInteger {
       const x_ = x;
       mpz_sqrt(result.mpz, x_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         mpz_sqrt(result.mpz, x_.mpz);
@@ -1806,7 +1807,7 @@ module BigInteger {
       mpz_sqrtrem(result.mpz, remain_.mpz, x_.mpz);
       remain = remain_;
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         var remain_ : bigint;
         const x_ = x;
@@ -1951,7 +1952,7 @@ module BigInteger {
       const x_ = x;
       mpz_nextprime(result.mpz, x_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         mpz_nextprime(result.mpz, x_.mpz);
@@ -1981,7 +1982,7 @@ module BigInteger {
       const b_ = b;
       mpz_gcd(result.mpz, a_.mpz, b_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const a_ = a;
         const b_ = b;
@@ -1992,7 +1993,7 @@ module BigInteger {
 
   /* See :proc:`gcd` */
   @unstable("gcd is unstable and may change in the future")
-  proc gcd(ref result: bigint, const ref a: bigint, b: int) {
+  proc gcd(ref result: bigint, const ref a: bigint, b: int(?)) {
     if b >= 0 {
       BigInteger.gcd(result, a, b : uint);
 
@@ -2003,7 +2004,7 @@ module BigInteger {
 
   /* See :proc:`gcd` */
   @unstable("gcd is unstable and may change in the future")
-  proc gcd(ref result: bigint, const ref a: bigint, b: uint) {
+  proc gcd(ref result: bigint, const ref a: bigint, b: uint(?)) {
     const b_ = b.safeCast(c_ulong);
     if compiledForSingleLocale() {
       mpz_gcd_ui(result.mpz, a.mpz, b_);
@@ -2011,7 +2012,7 @@ module BigInteger {
       const a_ = a;
       mpz_gcd_ui(result.mpz, a_.mpz, b_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const a_ = a;
         mpz_gcd_ui(result.mpz, a_.mpz, b_);
@@ -2056,7 +2057,7 @@ module BigInteger {
       s = s_;
       t = t_;
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         var s_ : bigint;
         var t_ : bigint;
@@ -2091,7 +2092,7 @@ module BigInteger {
       const b_ = b;
       mpz_lcm(result.mpz, a_.mpz, b_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const a_ = a;
         const b_ = b;
@@ -2102,7 +2103,7 @@ module BigInteger {
 
   /* See :proc:`lcm` */
   @unstable("lcm is unstable and may change in the future")
-  proc lcm(ref result: bigint, const ref a: bigint, b: int) {
+  proc lcm(ref result: bigint, const ref a: bigint, b: int(?)) {
     if b >= 0 then
       BigInteger.lcm(result, a, b:uint);
     else
@@ -2111,7 +2112,7 @@ module BigInteger {
 
   /* See :proc:`lcm` */
   @unstable("lcm is unstable and may change in the future")
-  proc lcm(ref result: bigint, const ref a: bigint, b: uint) {
+  proc lcm(ref result: bigint, const ref a: bigint, b: uint(?)) {
     const b_ = b.safeCast(c_ulong);
 
     if compiledForSingleLocale() {
@@ -2120,7 +2121,7 @@ module BigInteger {
       const a_ = a;
       mpz_lcm_ui(result.mpz, a_.mpz, b_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const a_ = a;
         mpz_lcm_ui(result.mpz, a_.mpz, b_);
@@ -2166,7 +2167,7 @@ module BigInteger {
       const y_ = y;
       ret = mpz_invert(result.mpz, x_.mpz, y_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         const y_ = y;
@@ -2215,7 +2216,7 @@ module BigInteger {
           const fac_ = fac;
           ret = mpz_remove(result.mpz, x_.mpz, fac_.mpz);
       } else {
-        const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+        const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
         on __primitive("chpl_on_locale_num", resultLoc) {
           const x_ = x;
           const fac_ = fac;
@@ -2248,7 +2249,7 @@ module BigInteger {
     } else if result.localeId == chpl_nodeID {
       mpz_fac_ui(result.mpz, a_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         mpz_fac_ui(result.mpz, a_);
       }
@@ -2278,7 +2279,7 @@ module BigInteger {
       const n_ = n;
       mpz_bin_ui(result.mpz, n_.mpz, k_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const n_ = n;
         mpz_bin_ui(result.mpz, n_.mpz, k_);
@@ -2296,7 +2297,7 @@ module BigInteger {
       if compiledForSingleLocale() || result.localeId == chpl_nodeID {
         mpz_bin_uiui(result.mpz, n_, k_);
       } else {
-        const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+        const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
         on __primitive("chpl_on_locale_num", resultLoc) {
           mpz_bin_uiui(result.mpz, n_, k_);
         }
@@ -2325,7 +2326,7 @@ module BigInteger {
     if compiledForSingleLocale() || result.localeId == chpl_nodeID {
       mpz_fib_ui(result.mpz, n_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         mpz_fib_ui(result.mpz, n_);
       }
@@ -2360,7 +2361,7 @@ module BigInteger {
       mpz_fib2_ui(result.mpz, fnsub1_.mpz, n_);
       fnsub1 = fnsub1_;
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         var fnsub1_ : bigint;
         mpz_fib2_ui(result.mpz, fnsub1_.mpz, n_);
@@ -2387,7 +2388,7 @@ module BigInteger {
     if compiledForSingleLocale() || result.localeId == chpl_nodeID {
       mpz_lucnum_ui(result.mpz, n_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         mpz_lucnum_ui(result.mpz, n_);
       }
@@ -2422,7 +2423,7 @@ module BigInteger {
       mpz_lucnum2_ui(result.mpz, fnsub1_.mpz, n_);
       fnsub1 = fnsub1_;
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         var fnsub1_ : bigint;
         mpz_lucnum2_ui(result.mpz, fnsub1_.mpz, n_);
@@ -2544,7 +2545,7 @@ module BigInteger {
     if compiledForSingleLocale() || this.localeId == chpl_nodeID {
       mpz_setbit(this.mpz, bi_);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_none);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
         mpz_setbit(this.mpz, bi_);
@@ -2568,7 +2569,7 @@ module BigInteger {
     if compiledForSingleLocale() || this.localeId == chpl_nodeID {
       mpz_clrbit(this.mpz, bi_);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_none);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
         mpz_clrbit(this.mpz, bi_);
@@ -2593,7 +2594,7 @@ module BigInteger {
     if compiledForSingleLocale() || this.localeId == chpl_nodeID {
       mpz_combit(this.mpz, bi_);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_none);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
         mpz_combit(this.mpz, bi_);
@@ -2726,7 +2727,7 @@ module BigInteger {
       const y_ = y;
       mpz_add(result.mpz, x_.mpz, y_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         const y_ = y;
@@ -2736,7 +2737,7 @@ module BigInteger {
   }
 
   /* See :proc:`add` */
-  proc add(ref result: bigint, const ref x: bigint, y: int) {
+  proc add(ref result: bigint, const ref x: bigint, y: int(?)) {
     if y >= 0 {
       BigInteger.add(result, x, y:uint);
     }
@@ -2751,7 +2752,7 @@ module BigInteger {
         mpz_sub_ui(result.mpz, x_.mpz, y_);
       }
       else {
-        const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+        const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
         on __primitive("chpl_on_locale_num", resultLoc) {
           const x_ = x;
           mpz_sub_ui(result.mpz, x_.mpz, y_);
@@ -2761,7 +2762,7 @@ module BigInteger {
   }
 
   /* See :proc:`add` */
-  proc add(ref result: bigint, const ref x: bigint, y: uint) {
+  proc add(ref result: bigint, const ref x: bigint, y: uint(?)) {
     const y_ = y.safeCast(c_ulong);
     if compiledForSingleLocale() {
       mpz_add_ui(result.mpz, x.mpz, y_);
@@ -2771,7 +2772,7 @@ module BigInteger {
       mpz_add_ui(result.mpz, x_.mpz, y_);
     }
     else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         mpz_add_ui(result.mpz, x_.mpz, y_);
@@ -2802,7 +2803,7 @@ module BigInteger {
       const y_ = y;
       mpz_sub(result.mpz, x_.mpz, y_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         const y_ = y;
@@ -2812,7 +2813,7 @@ module BigInteger {
   }
 
   /* See :proc:`sub` */
-  proc sub(ref result: bigint, const ref x: bigint, y: int) {
+  proc sub(ref result: bigint, const ref x: bigint, y: int(?)) {
     if y >= 0 {
       BigInteger.sub(result, x, y:uint);
     } else {
@@ -2821,7 +2822,7 @@ module BigInteger {
   }
 
   /* See :proc:`sub` */
-  proc sub(ref result:bigint, const ref x: bigint, y: uint) {
+  proc sub(ref result:bigint, const ref x: bigint, y: uint(?)) {
     const y_ = y.safeCast(c_ulong);
 
     if compiledForSingleLocale() {
@@ -2830,7 +2831,7 @@ module BigInteger {
       const x_ = x;
       mpz_sub_ui(result.mpz, x_.mpz, y_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         mpz_sub_ui(result.mpz, x_.mpz, y_);
@@ -2839,7 +2840,7 @@ module BigInteger {
   }
 
   /* See :proc:`sub` */
-  proc sub(ref result: bigint, x: int, const ref y: bigint) {
+  proc sub(ref result: bigint, x: int(?), const ref y: bigint) {
     if x >= 0 {
       BigInteger.sub(result, x:uint, y);
     } else {
@@ -2853,7 +2854,7 @@ module BigInteger {
         mpz_add_ui(result.mpz, y_.mpz, x_);
         mpz_neg(result.mpz, result.mpz);
       } else {
-        const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+        const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
         on __primitive("chpl_on_locale_num", resultLoc) {
           const y_ = y;
           mpz_add_ui(result.mpz, y_.mpz, x_);
@@ -2864,7 +2865,7 @@ module BigInteger {
   }
 
   /* See :proc:`sub` */
-  proc sub(ref result: bigint, x: uint, const ref y: bigint) {
+  proc sub(ref result: bigint, x: uint(?), const ref y: bigint) {
     const x_ = x.safeCast(c_ulong);
 
     if compiledForSingleLocale() {
@@ -2873,7 +2874,7 @@ module BigInteger {
       const y_ = y;
       mpz_ui_sub(result.mpz, x_, y_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const y_ = y;
         mpz_ui_sub(result.mpz, x_, y_.mpz);
@@ -2905,7 +2906,7 @@ module BigInteger {
       const y_ = y;
       mpz_mul(result.mpz, x_.mpz, y_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         const y_ = y;
@@ -2915,7 +2916,7 @@ module BigInteger {
   }
 
   /* See :proc:`mul` */
-  proc mul(ref result: bigint, const ref x: bigint, y: int) {
+  proc mul(ref result: bigint, const ref x: bigint, y: int(?)) {
     const y_ = y.safeCast(c_long);
 
     if compiledForSingleLocale() {
@@ -2924,7 +2925,7 @@ module BigInteger {
       const x_ = x;
       mpz_mul_si(result.mpz, x_.mpz, y_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         mpz_mul_si(result.mpz, x_.mpz, y_);
@@ -2933,8 +2934,8 @@ module BigInteger {
   }
 
   /* See :proc:`mul` */
-  proc mul(ref result: bigint, const ref x: bigint, y: uint) {
-    const y_ = y.safeCast(c_long);
+  proc mul(ref result: bigint, const ref x: bigint, y: uint(?)) {
+    const y_ = y.safeCast(c_ulong);
 
     if compiledForSingleLocale() {
       mpz_mul_ui(result.mpz, x.mpz, y_);
@@ -2942,7 +2943,7 @@ module BigInteger {
       const x_ = x;
       mpz_mul_ui(result.mpz, x_.mpz, y_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         mpz_mul_ui(result.mpz, x_.mpz, y_);
@@ -2974,7 +2975,7 @@ module BigInteger {
       const y_ = y;
       mpz_addmul(result.mpz, x_.mpz, y_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         const y_ = y;
@@ -2984,14 +2985,14 @@ module BigInteger {
   }
 
   /* See :proc:`addMul` */
-  proc addMul(ref result: bigint, const ref x: bigint, y: int) {
+  proc addMul(ref result: bigint, const ref x: bigint, y: int(?)) {
     if y >= 0
       then addMul(result, x, y:uint);
       else subMul(result, x, (0 - y):uint);
   }
 
   /* See :proc:`addMul` */
-  proc addMul(ref result: bigint, const ref x: bigint, y: uint) {
+  proc addMul(ref result: bigint, const ref x: bigint, y: uint(?)) {
     const y_ = y.safeCast(c_ulong);
 
     if compiledForSingleLocale() {
@@ -3000,7 +3001,7 @@ module BigInteger {
       const x_ = x;
       mpz_addmul_ui(result.mpz, x_.mpz, y_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         mpz_addmul_ui(result.mpz, x_.mpz, y_);
@@ -3032,7 +3033,7 @@ module BigInteger {
       const y_ = y;
       mpz_submul(result.mpz, x_.mpz, y_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         const y_ = y;
@@ -3042,14 +3043,14 @@ module BigInteger {
   }
 
   /* See :proc:`addMul` */
-  proc subMul(ref result: bigint, const ref x: bigint, y: int) {
+  proc subMul(ref result: bigint, const ref x: bigint, y: int(?)) {
     if y >= 0
       then subMul(result, x, y:uint);
       else addMul(result, x, (0 - y):uint);
   }
 
   /* See :proc:`addMul` */
-  proc subMul(ref result: bigint, const ref x: bigint, y: uint) {
+  proc subMul(ref result: bigint, const ref x: bigint, y: uint(?)) {
     const y_ = y.safeCast(c_ulong);
 
     if compiledForSingleLocale() {
@@ -3058,7 +3059,7 @@ module BigInteger {
       const x_ = x;
       mpz_submul_ui(result.mpz, x_.mpz, y_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         mpz_submul_ui(result.mpz, x_.mpz, y_);
@@ -3092,7 +3093,7 @@ module BigInteger {
       const x_ = x;
       mpz_mul_2exp(result.mpz, x_.mpz, exp_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         mpz_mul_2exp(result.mpz, x_.mpz, exp_);
@@ -3119,7 +3120,7 @@ module BigInteger {
       const x_ = x;
       mpz_neg(result.mpz, x_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         mpz_neg(result.mpz, x_.mpz);
@@ -3146,7 +3147,7 @@ module BigInteger {
       const x_ = x;
       mpz_abs(result.mpz, x_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         mpz_abs(result.mpz, x_.mpz);
@@ -3200,7 +3201,7 @@ module BigInteger {
       const denom_ = denom;
       helper(result, numer_, denom_, rounding);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const numer_ = numer;
         const denom_ = denom;
@@ -3267,7 +3268,7 @@ module BigInteger {
       const denom_ = denom;
       helper(result, numer_, denom_, rounding);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const numer_ = numer;
         const denom_ = denom;
@@ -3343,7 +3344,7 @@ module BigInteger {
       helper(result, remain_, numer_, denom_, rounding);
       remain = remain_;
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         var   remain_ : bigint;
         const numer_ = numer;
@@ -3407,7 +3408,7 @@ module BigInteger {
       const numer_ = numer;
       helper(result, numer_, exp_, rounding);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const numer_ = numer;
         helper(result, numer_, exp_, rounding);
@@ -3457,7 +3458,7 @@ module BigInteger {
       const numer_ = numer;
       helper(result, numer_, exp_, rounding);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const numer_ = numer;
         helper(result, numer_, exp_, rounding);
@@ -3540,7 +3541,7 @@ module BigInteger {
         const x_ = x;
         rem = mpz_fdiv_r_ui(res.mpz, x_.mpz, y);
       } else {
-        const resLoc = chpl_buildLocaleID(res.localeId, c_sublocid_any);
+        const resLoc = chpl_buildLocaleID(res.localeId, c_sublocid_none);
         on __primitive("chpl_on_locale_num", resLoc) {
           const x_ = x;
           rem = mpz_fdiv_r_ui(res.mpz, x_.mpz, y);
@@ -3598,7 +3599,7 @@ module BigInteger {
   }
 
   /* See :proc:`~bigint.cmp` */
-  proc bigint.cmp(x: int) : int {
+  proc bigint.cmp(x: int(?)) : int {
     const this_ = this.localize();
     const x_ = x.safeCast(c_long);
     var ret : c_int;
@@ -3609,7 +3610,7 @@ module BigInteger {
   }
 
   /* See :proc:`~bigint.cmp` */
-  proc bigint.cmp(x: uint) : int {
+  proc bigint.cmp(x: uint(?)) : int {
     const this_ = this.localize();
     const x_ = x.safeCast(c_ulong);
     var ret : c_int;
@@ -3718,7 +3719,7 @@ module BigInteger {
       const y_ = y;
       mpz_and(result.mpz, x_.mpz, y_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         const y_ = y;
@@ -3750,7 +3751,7 @@ module BigInteger {
       const y_ = y;
       mpz_ior(result.mpz, x_.mpz, y_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         const y_ = y;
@@ -3782,7 +3783,7 @@ module BigInteger {
       const y_ = y;
       mpz_xor(result.mpz, x_.mpz, y_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         const y_ = y;
@@ -3810,7 +3811,7 @@ module BigInteger {
       const x_ = x;
       mpz_com(result.mpz, x_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         mpz_com(result.mpz, x_.mpz);
@@ -3838,7 +3839,7 @@ module BigInteger {
       chpl_gmp_get_mpz(this.mpz, x.localeId, x.mpz[0]);
     }
     else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_none);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
         if x.localeId == chpl_nodeID {
@@ -3853,13 +3854,13 @@ module BigInteger {
   }
 
   /* See :proc:`bigint.set` */
-  proc ref bigint.set(x : int) {
+  proc ref bigint.set(x: int(?)) {
     const x_ = x.safeCast(c_long);
 
     if compiledForSingleLocale() || this.localeId == chpl_nodeID {
       mpz_set_si(this.mpz, x_);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_none);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
         mpz_set_si(this.mpz, x_);
@@ -3868,13 +3869,13 @@ module BigInteger {
   }
 
   /* See :proc:`bigint.set` */
-  proc ref bigint.set(x : uint) {
+  proc ref bigint.set(x: uint(?)) {
     const x_ = x.safeCast(c_ulong);
 
     if compiledForSingleLocale() || this.localeId == chpl_nodeID {
       mpz_set_ui(this.mpz, x_);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_none);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
         mpz_set_ui(this.mpz, x_);
@@ -3889,7 +3890,7 @@ module BigInteger {
     if compiledForSingleLocale() || this.localeId == chpl_nodeID {
       mpz_set_d(this.mpz, x_);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_none);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
         mpz_set_d(this.mpz, x_);
@@ -3904,7 +3905,7 @@ module BigInteger {
     if compiledForSingleLocale() || this.localeId == chpl_nodeID {
       mpz_set_str(this.mpz, x.localize().c_str(), base_);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_none);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
         mpz_set_str(this.mpz, x.localize().c_str(), base_);
@@ -3927,7 +3928,7 @@ module BigInteger {
       (this.localeId == chpl_nodeID && x.localeId == chpl_nodeID) {
       mpz_swap(this.mpz, x.mpz);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_none);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
         var tmp = new bigint(x);
@@ -4000,7 +4001,7 @@ module BigInteger {
     if compiledForSingleLocale() || this.localeId == chpl_nodeID {
       hashHelper();
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_none);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
         hashHelper();

@@ -16,7 +16,7 @@ if messageObj.b != 564:
 else:
     print("true")
     
-lst = [];
+lst = []
 lst.append(enums_pb2.color.blue)
 lst.append(enums_pb2.color.green)
 if messageObj.c != lst:
@@ -29,7 +29,7 @@ if messageObj.d != messageObj.fruit.orange:
 else:
     print("true")
     
-lst = [];
+lst = []
 lst.append(messageObj.fruit.orange)
 lst.append(messageObj.fruit.apple)
 if messageObj.e != lst:

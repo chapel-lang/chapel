@@ -1,0 +1,3 @@
+use Recursive;
+
+proc main() { }

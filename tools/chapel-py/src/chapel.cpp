@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2023-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -17,8 +17,7 @@
  * limitations under the License.
  */
 
-#define PY_SSIZE_T_CLEAN
-#include "Python.h"
+#include "PythonWrapper.h"
 #include "chpl/framework/check-build.h"
 #include "chpl/framework/Context.h"
 #include "chpl/parsing/parsing-queries.h"
@@ -34,33 +33,29 @@ static PyMethodDef ChapelMethods[] = {
 static PyModuleDef ChapelModule {
   PyModuleDef_HEAD_INIT,
   .m_name="core",
-  .m_doc="A Python bridge for the Chapel frontend library",
+  .m_doc=PyDoc_STR("A Python bridge for the Chapel frontend library"),
   .m_size=-1 /* Per-interpreter memory (not used currently) */,
   .m_methods=ChapelMethods,
 };
 
 extern "C" {
 
-PyMODINIT_FUNC PyInit_core() {
+PyMODINIT_FUNC PyInit_core(void) {
   PyObject* chapelModule = nullptr;
 
-  setupAstIterType();
-  setupAstCallIterType();
-  setupGeneratedTypes();
+  if(!setupAstIterType()) return nullptr;
+  if(!setupAstCallIterType()) return nullptr;
 
-#define READY_TYPE(NAME) if (PyType_Ready(&NAME##Type) < 0) return nullptr;
-#define GENERATED_TYPE(ROOT, ROOT_TYPE, NAME, TYPE, TAG, FLAGS) READY_TYPE(NAME)
-#include "generated-types-list.h"
-#undef GENERATED_TYPE
-  READY_TYPE(AstIter)
-  READY_TYPE(AstCallIter)
+  // these must be called before setupGeneratedTypes, since they are base classes
+  if (AstNodeObject::ready() < 0) return nullptr;
+  if (ChapelTypeObject::ready() < 0) return nullptr;
+  if (ParamObject::ready() < 0) return nullptr;
+
+  if (!setupGeneratedTypes()) return nullptr;
 
   if (ContextObject::ready() < 0) return nullptr;
   if (LocationObject::ready() < 0) return nullptr;
   if (ScopeObject::ready() < 0) return nullptr;
-  if (AstNodeObject::ready() < 0) return nullptr;
-  if (ChapelTypeObject::ready() < 0) return nullptr;
-  if (ParamObject::ready() < 0) return nullptr;
   if (ErrorObject::ready() < 0) return nullptr;
   if (ErrorManagerObject::ready() < 0) return nullptr;
   if (ResolvedExpressionObject::ready() < 0) return nullptr;
@@ -70,7 +65,7 @@ PyMODINIT_FUNC PyInit_core() {
   chapelModule = PyModule_Create(&ChapelModule);
   if (!chapelModule) return nullptr;
 
-#define ADD_TYPE(NAME) if (PyModule_AddObject(chapelModule, #NAME, (PyObject*) &NAME##Type) < 0) return nullptr;
+#define ADD_TYPE(NAME) if (PyModule_AddObject(chapelModule, #NAME, (PyObject*) NAME##Type) < 0) return nullptr;
 #define GENERATED_TYPE(ROOT, ROOT_TYPE, NAME, TYPE, TAG, FLAGS) ADD_TYPE(NAME)
 #include "generated-types-list.h"
 #undef GENERATED_TYPE

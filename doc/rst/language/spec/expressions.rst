@@ -498,28 +498,19 @@ precedence than those listed later.
    favor of the C approach, we would likely reverse this decision in
    order to more closely match C.
 
-   We were tempted to diverge from the C precedence rules for the binary
-   bitwise operators to make them bind less tightly than comparisons.
-   This would allow us to interpret:
+   C precedence rules for the binary bitwise operators make them bind
+   less tightly than comparisons. The typical rationale for the C
+   ordering is to allow these operators to be used as
+   non-short-circuiting logical operations.
 
-   ============== == ================
-   ``a | b == 0`` as ``(a | b) == 0``
-   ============== == ================
-
-   However, given that no other popular modern language has made this
-   change, we felt it unwise to stray from the pack. The typical
-   rationale for the C ordering is to allow these operators to be used
-   as non-short-circuiting logical operations.
-
-   In contrast to C, we give bitwise operations a higher precedence than
-   binary addition/subtraction and comparison operators. This enables
-   using the shift operators as shorthand for multiplication/division by
-   powers of 2, and also makes it easier to extract and test a bitmapped
-   field:
+   In contrast to C, we give bitwise operations a higher precedence than binary
+   addition/subtraction and comparison operators. This enables shift operators
+   to be used as shorthand for multiplication/division of integers by powers of
+   2, and also makes it easier to extract and test a bitmapped field:
 
    ======================= == =====================
    ``(x & MASK) == MASK``  as ``x & MASK == MASK``
-   ``a + b * pow(2,y)``    as ``a * b << y``
+   ``a + b * 2 ** y``      as ``a + b << y``
    ======================= == =====================
 
    One final area of note is the precedence of reductions. Two common

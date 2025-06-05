@@ -1,4 +1,2 @@
 -sfuncToTest='"c_ptrTo"'       # c_ptrTo_domain.1.good
 -sfuncToTest='"c_ptrToConst"'  # c_ptrTo_domain.2.good
--sfuncToTest='"c_addrOf"'      # c_ptrTo_domain.3.good
--sfuncToTest='"c_addrOfConst"' # c_ptrTo_domain.4.good

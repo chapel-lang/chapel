@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -387,6 +387,8 @@ static bool isUse(SymExpr* se)
      case PRIM_AND_ASSIGN:
      case PRIM_OR_ASSIGN:
      case PRIM_XOR_ASSIGN:
+     case PRIM_LOGICALAND_ASSIGN:
+     case PRIM_LOGICALOR_ASSIGN:
       if (isFirstActual)
       {
         return false;
@@ -478,9 +480,9 @@ static bool isUse(SymExpr* se)
     }
 
     INT_ASSERT(0 <= idx && idx < ft->numFormals());
-    auto intent = ft->formal(idx)->intent;
-
+    auto intent = ft->formal(idx)->intent();
     if (intent == INTENT_OUT || (intent & INTENT_FLAG_REF)) return false;
+
   } else {
     INT_FATAL(se, "unhandled");
   }

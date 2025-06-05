@@ -1,0 +1,8 @@
+passTypeArguments.chpl:13: error: unresolved call 'newWithAllocator(owned mallocWrapper, type unmanaged MyClass?, type int(64), 17)'
+$CHPL_HOME/modules/standard/Allocators.chpl:nnnn: note: this candidate did not match: newWithAllocator(ref alloc: record, type T, args ...)
+passTypeArguments.chpl:13: note: because actual argument #1 with type 'owned mallocWrapper'
+$CHPL_HOME/modules/standard/Allocators.chpl:nnnn: note: is passed to formal 'ref alloc: record'
+passTypeArguments.chpl:13: note: other candidates are:
+$CHPL_HOME/modules/standard/Allocators.chpl:nnnn: note:   newWithAllocator(const ref alloc: class, type T, args ...)
+$CHPL_HOME/modules/standard/Allocators.chpl:nnnn: note:   newWithAllocator(ref alloc: record, type T)
+$CHPL_HOME/modules/standard/Allocators.chpl:nnnn: note:   newWithAllocator(const ref alloc: class, type T)

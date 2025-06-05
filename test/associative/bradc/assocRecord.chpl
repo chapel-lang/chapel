@@ -1,3 +1,4 @@
+import Sort;
 record Coord {
   var x: int;
   var y: int;
@@ -20,7 +21,7 @@ Name(c1) = "z basis coordinate";
 Name(c2) = "y basis coordinate";
 Name(c3) = "x basis coordinate";
 
-for coord in D.sorted() {
+for coord in Sort.sorted(D) {
   writeln("coord ", coord, " is called ", Name(coord));
 }
 

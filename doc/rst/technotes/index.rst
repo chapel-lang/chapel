@@ -83,6 +83,7 @@ Compiler Features
    Checking Overload Sets <overloadSets>
    Checking Variable Lifetimes <lifetimeChecking>
    Compiler Driver Mode <driver>
+   Editions <editions>
    LLVM Support <llvm>
    Variables to Detect Compilation Configuration <globalvars>
 
@@ -93,3 +94,12 @@ Tool Details
    :maxdepth: 1
 
    Protocol Buffers Support - Generated Chapel Code <protoGenCodeGuide>
+
+
+Performance Optimization
+------------------------
+
+.. toctree::
+   :maxdepth: 1
+
+   Optimizing Performance of Chapel Programs <optimization>

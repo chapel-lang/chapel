@@ -6,7 +6,7 @@ record C {
 }
 
 proc test() {
-  var m = new sortedMap(string, C, false, new DefaultComparator());
+  var m = new sortedMap(string, C, false, new defaultComparator());
 
   m.add("one", new C(1));
   m.add("two", new C(2));

@@ -1,5 +1,5 @@
-// See: https://chapel-lang.org/docs/latest/tools/chpldoc/chpldoc.html#inline-markup-2
-// and: https://chapel-lang.org/docs/latest/tools/chpldoc/chpldoc.html#paragraph-level-markup
+// See: https://chapel-lang.org/docs/tools/chpldoc/chpldoc.html#inline-markup-2
+// and: https://chapel-lang.org/docs/tools/chpldoc/chpldoc.html#paragraph-level-markup
 
 // No filtering should be applied:
 @deprecated(notes="--- No filtering should be applied: ---")

@@ -182,8 +182,8 @@ module IncorrectIndentation {
     writeln("hi");
   }
 
-  // Note: 'cobegins' with one statement throw warning, so all tests here include
-  // at least two statements.
+  // Note: 'cobegins' with one statement throw warning, so all tests here
+  // include at least two statements.
 
   cobegin
   {
@@ -305,7 +305,8 @@ module IncorrectIndentation {
     proc firstProc() {} proc secondProc() {}
   }
 
-  enum color { red, green, blue }; // semicolon warning does not issue bad indentation
+  // semicolon warning does not issue bad indentation
+  enum color { red, green, blue };
 
   // Since locations are incorrectly reported with 'public' and 'private',
   // these shouldn't warn.
@@ -323,5 +324,65 @@ module IncorrectIndentation {
       public use super.M2;
     private use super.M2;
       private use super.M2;
+  }
+
+
+  @chplcheck.ignore("IncorrectIndentation")
+  module DirectChildrenNotIndented {
+  proc f1()
+  {
+    writeln("hi");
+    writeln("??");
+  }
+
+  proc f2()
+  {
+  writeln("hi");
+  }
+
+  @chplcheck.ignore("IncorrectIndentation")
+  proc f3() {
+  writeln("hi");
+  }
+
+  proc f4() {
+    writeln("hi");
+      writeln("hi");
+  }
+
+  proc f5() {
+    writeln("hi"); writeln("hi");
+  }
+
+  proc f6() {
+    for 1..10 do
+    writeln("hi");
+  }
+  }
+
+
+if 1 < 2 {
+  writeln("hi");
+  if 2 < 3 {
+    writeln("hi");
+    writeln("??");
+  }
+}
+  // since else statements aren't reported correctly only the misaligned child
+  // statements should warn
+  if 1 < 2 {
+    writeln("hi");
+      writeln("??");
+  } else if 2 < 3 {
+      writeln("hi");
+    writeln("??");
+ } else {
+      writeln("hi");
+    writeln("??");
+  }
+  if 1 < 2 {
+  if 3 < 4 {
+
+  }
   }
 }

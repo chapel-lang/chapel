@@ -248,7 +248,7 @@ module DataFrames {
       var idxWidth = writeIdxWidth() + 1;
       for space in 1..idxWidth do
         f.write(" ");
-      const labelsSorted = d.labels.sorted();
+      const labelsSorted = sorted(d.labels);
       for lab in labelsSorted {
         f.write(lab + "   ");
       }
@@ -832,7 +832,7 @@ module DataFrames {
         var n = nrows();
         var nStr = n: string;
         var idxWidth = nStr.size + 1;
-        const labelsSorted = labels.sorted();
+        const labelsSorted = sorted(labels);
 
         for space in 1..idxWidth do
           writer.write(" ");

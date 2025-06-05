@@ -26,10 +26,7 @@ CHPL_HWLOC_CFG_OPTIONS += --enable-static \
                           --disable-gl \
                           --disable-rsmi
 
-# PCI support is needed for NIC selection, which currently is only supported
-# with the ofi comm layer
-
-ifneq ($(CHPL_MAKE_COMM), ofi)
+ifeq ($(CHPL_MAKE_HWLOC_PCI), disable)
 	CHPL_HWLOC_CFG_OPTIONS += --disable-pci
 endif
 
@@ -78,7 +75,7 @@ hwloc-config: FORCE
 	mkdir -p $(HWLOC_BUILD_DIR)
 	cd $(HWLOC_BUILD_DIR) && $(HWLOC_SUBDIR)/configure CC='$(CC)' \
 		CFLAGS='$(CFLAGS)' CXX='$(CXX)' CXXFLAGS='$(CFLAGS)' \
-		LDFLAGS='$(RUNTIME_LFLAGS)' --prefix=$(HWLOC_INSTALL_DIR) \
+		LDFLAGS='$(RUNTIME_LFLAGS) $(LDFLAGS)' --prefix=$(HWLOC_INSTALL_DIR) \
 		$(CHPL_HWLOC_CFG_OPTIONS)
 
 hwloc-build: FORCE

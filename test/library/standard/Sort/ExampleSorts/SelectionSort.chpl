@@ -13,7 +13,7 @@ module SelectionSort {
 
    */
   proc selectionSort(ref Data: [?Dom] ?eltType,
-                     comparator:?rec = new DefaultComparator()) {
+                     comparator:?rec = new defaultComparator()) {
     // note: selection sort is not a stable sort
 
     if Dom.rank != 1 {

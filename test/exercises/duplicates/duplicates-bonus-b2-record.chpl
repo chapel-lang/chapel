@@ -18,7 +18,7 @@ record HashedPath {
 // stumbling block: no < for record
 // stumbling block: comparator increases complexity
 // stumbling block: need to know SHA256Hash has compare and/or <
-record HashedPathComparator {
+record HashedPathComparator: relativeComparator {
   proc compare(a: HashedPath, b: HashedPath) {
     if a.hash < b.hash {
       return -1;

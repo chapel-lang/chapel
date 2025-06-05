@@ -258,7 +258,7 @@ endif
 
 " Chapel extensions
 syn keyword chplStatement	break return continue compilerWarning
-syn keyword chplStatement	new delete this these super use except only require import
+syn keyword chplStatement	new delete this these super use except only require import include
 syn keyword chplStatement	noinit init postinit deinit
 syn keyword chplStatement	manage implements
 syn keyword chplStatement	as module yield compilerError zip

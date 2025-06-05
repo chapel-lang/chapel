@@ -1,0 +1,10 @@
+#!/bin/sh
+#
+
+chpl=$3
+chpl_home=$($chpl --print-chpl-home)
+compiler=$($chpl_home/util/printchplenv --value --only CHPL_HOST_CC)
+binname="TestBinary"
+
+echo Building binary: $binname
+$compiler -o $binname $binname.c

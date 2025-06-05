@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -30,8 +30,8 @@
 
 // test num fields and field num to name
 static void test1() {
-  Context context;
-  auto variables = resolveTypesOfVariables(&context,
+  auto context = buildStdContext();
+  auto variables = resolveTypesOfVariables(context,
       R"""(
       record R {
          var a, b: int;
@@ -58,8 +58,8 @@ static void test1() {
 //
 // test field num to name
 static void test2() {
-  Context context;
-  auto variables = resolveTypesOfVariables(&context,
+  auto context = buildStdContext();
+  auto variables = resolveTypesOfVariables(context,
       R"""(
       record R {
          var a, b: int;
@@ -76,7 +76,7 @@ static void test2() {
   ensureParamInt(variables.at("r1"), 1);
   ensureParamInt(variables.at("r2"), 2);
   ensureParamInt(variables.at("r3"), 3);
-  ensureErroneousType(variables.at("r4"));
+  ensureParamInt(variables.at("r4"), -1);
   ensureErroneousType(variables.at("r5"));
   ensureErroneousType(variables.at("r6"));
   ensureErroneousType(variables.at("r7"));
@@ -84,8 +84,8 @@ static void test2() {
 
 // Test field by num
 static void test3() {
-  Context context;
-  auto variables = resolveTypesOfVariables(&context,
+  auto context = buildStdContext();
+  auto variables = resolveTypesOfVariables(context,
       R"""(
       record R {
          var a, b: int;
@@ -111,8 +111,8 @@ static void test3() {
 
 // Test is bound
 static void test4() {
-  Context context;
-  auto variables = resolveTypesOfVariables(&context,
+  auto context = buildStdContext();
+  auto variables = resolveTypesOfVariables(context,
       R"""(
       record R {
          var a, b: int;
@@ -146,8 +146,8 @@ static void test4() {
 
 // Test call resolves
 static void test5() {
-  Context context;
-  auto variables = resolveTypesOfVariables(&context,
+  auto context = buildStdContext();
+  auto variables = resolveTypesOfVariables(context,
       R"""(
       proc f(x: int) {}
       proc f(x: bool) {}
@@ -177,10 +177,10 @@ static void test5() {
 
 // Test call resolves
 static void test6() {
-  Context context;
+  auto context = buildStdContext();
   // Make sure no errors make it to the user, even though we will get errors.
-  ErrorGuard guard(&context);
-  auto variables = resolveTypesOfVariables(&context,
+  ErrorGuard guard(context);
+  auto variables = resolveTypesOfVariables(context,
       R"""(
       proc f(x: int) {}
       proc f(x: bool) {}
@@ -210,8 +210,8 @@ static void test6() {
 //
 // Test call resolves
 static void test7() {
-  Context context;
-  auto variables = resolveTypesOfVariables(&context,
+  auto context = buildStdContext();
+  auto variables = resolveTypesOfVariables(context,
       R"""(
       record R {
         proc f(x: int) {}
@@ -244,10 +244,10 @@ static void test7() {
 
 // Test call resolves
 static void test8() {
-  Context context;
+  auto context = buildStdContext();
   // Make sure no errors make it to the user, even though we will get errors.
-  ErrorGuard guard(&context);
-  auto variables = resolveTypesOfVariables(&context,
+  ErrorGuard guard(context);
+  auto variables = resolveTypesOfVariables(context,
       R"""(
       record R {
         proc f(x: int) {}
@@ -279,10 +279,10 @@ static void test8() {
 }
 
 static void test9() {
-  Context context;
+  auto context = buildStdContext();
   // Make sure no errors make it to the user, even though we will get errors.
-  ErrorGuard guard(&context);
-  auto variables = resolveTypesOfVariables(&context,
+  ErrorGuard guard(context);
+  auto variables = resolveTypesOfVariables(context,
       R"""(
       record R {
           proc f() {}
@@ -312,6 +312,36 @@ static void test9() {
   ensureParamBool(variables.at("r7"), false);
 }
 
+static void test10() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto variables = resolveTypesOfVariables(context,
+      R"""(
+      module M {
+        use Reflection;
+
+        param lineno = getLineNumber();
+
+        param toplevelFn = getRoutineName();
+
+        proc bar() param {
+          return getRoutineName();
+        }
+        param fn = bar();
+
+        param filename = getFileName();
+
+        param modname = getModuleName();
+      }
+      )""", {"lineno", "filename", "toplevelFn", "fn", "modname"});
+  ensureParamInt(variables["lineno"], 5);
+  ensureParamString(variables["filename"], "input.chpl");
+  ensureParamString(variables["toplevelFn"], "chpl__init_M");
+  ensureParamString(variables["fn"], "bar");
+  ensureParamString(variables["modname"], "M");
+}
+
 int main() {
   test1();
   test2();
@@ -322,5 +352,6 @@ int main() {
   test7();
   test8();
   test9();
+  test10();
   return 0;
 }

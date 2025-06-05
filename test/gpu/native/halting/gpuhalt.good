@@ -1,0 +1,3 @@
+I shall not halt
+I shall halt
+gpuhalt.chpl:9: error: halt reached in GPU kernel

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -25,4 +25,4 @@
 #include <stdio.h>
 
 
-void gdbShouldBreakHere(void) {printf("%s", "");}
+void debuggerBreakHere(void) {printf("%s", "");}

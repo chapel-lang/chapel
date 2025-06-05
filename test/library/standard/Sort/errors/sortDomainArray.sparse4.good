@@ -1,0 +1,1 @@
+sortDomainArray.chpl:36: error: sort() is currently only supported for 1D rectangular arrays

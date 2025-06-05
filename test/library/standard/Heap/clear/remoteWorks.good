@@ -1,0 +1,4 @@
+Before: isEmpty = false
+Before: size = 1
+After: isEmpty = true
+After: size = 0

@@ -5,8 +5,7 @@ use CTypes;
 
 param VALS_PER_THREAD=13;
 
-pragma "codegen for GPU"
-pragma "always resolve function"
+pragma "GPU kernel"
 export proc add_nums(dst_ptr: c_ptr(real(32))){
   var tid_x = __primitive("gpu threadIdx x");
   var tid_y = __primitive("gpu threadIdx y");

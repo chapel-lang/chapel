@@ -1,4 +1,5 @@
 use GpuDiagnostics;
+use ChplConfig;
 
 config const N = 32;
 config const verbose = false;
@@ -33,10 +34,16 @@ forall i in 0..<Locales.size with (&& reduce correct) {
   if verbose then
     writeln("On locale ", i, " diags = ", diags[i]);
 
-  correct &&=
-    diags[i].kernel_launch  == numGpusPerLocale &&
-    diags[i].host_to_device == numGpusPerLocale &&
-    diags[i].device_to_host == numGpusPerLocale;
+  if CHPL_GPU != "cpu" then
+    correct &&=
+      diags[i].kernel_launch  == numGpusPerLocale &&
+      diags[i].host_to_device == numGpusPerLocale &&
+      diags[i].device_to_host == numGpusPerLocale;
+  else
+    correct &&=
+      diags[i].kernel_launch  == numGpusPerLocale &&
+      diags[i].host_to_device == 0 &&
+      diags[i].device_to_host == 0;
 }
 
 writeln("CORRECT = ", correct);

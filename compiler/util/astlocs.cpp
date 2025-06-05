@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -184,6 +184,9 @@ Expr* findLocationIgnoringInternalInlining(Expr* cur) {
     if (preserveInlinedLineNumbers ||
         (startsWithChpl==false && inlined==false))
       return cur;
+
+    // If we're in a module init function, we can't go any further
+    if (curFn->hasFlag(FLAG_MODULE_INIT)) return cur;
 
     // Look for a call to that function
     CallExpr* anyCall = NULL;

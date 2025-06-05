@@ -1,0 +1,6 @@
+Testing blosclz
+Testing lz4
+Testing lz4hc
+Testing zlib
+Testing zstd
+Pass

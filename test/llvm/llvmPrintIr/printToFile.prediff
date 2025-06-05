@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+# keep only top 4 lines
+head -n 4 $2 > $2.tmp
+mv $2.tmp $2

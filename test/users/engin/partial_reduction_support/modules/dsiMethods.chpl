@@ -3,7 +3,7 @@ use BlockDist;
 use CyclicDist;
 use BlockCycDist;
 use Search;
-use LayoutCS;
+use CompressedSparseLayout;
 use DSIUtil;
 
 //
@@ -267,7 +267,7 @@ iter DefaultSparseArr.dsiPartialThese(param onlyDim, otherIdx,
 //
 
 //
-// LayoutCS support
+// CompressedSparseLayout support
 //
 
 proc CSDom.dsiPartialDomain(param exceptDim) where rank > 1 {
@@ -421,7 +421,7 @@ iter CSArr.dsiPartialThese(param onlyDim, otherIdx,
   }
 }
 //
-// end LayoutCS support
+// end CompressedSparseLayout support
 //
 
 //

@@ -141,6 +141,40 @@ async def test_go_to_definition_use_standard(client: LanguageClient):
 
 
 @pytest.mark.asyncio
+async def test_go_to_definition_use_across_modules(client: LanguageClient):
+    """
+    Ensure that go-to-definition works on symbols that reference other modules
+    """
+
+    fileA = """
+            module A {
+              var x = 42;
+            }
+            """
+    fileB = """
+            module B {
+              use A;
+              var y = x;
+            }
+            """
+
+    async def check(docs):
+        docA = docs("A")
+        docB = docs("B")
+
+        await check_goto_decl_def_module(client, docB, pos((1, 6)), docA)
+        await check_goto_decl_def(
+            client, docB, pos((2, 10)), (docA, pos((1, 6)))
+        )
+
+    async with source_files(client, A=fileA, B=fileB) as docs:
+        await check(docs)
+
+    async with unrelated_source_files(client, A=fileA, B=fileB) as docs:
+        await check(docs)
+
+
+@pytest.mark.asyncio
 async def test_go_to_definition_standard_rename(client: LanguageClient):
     """
     Ensure that go-to-definition works with using/importing symbols,
@@ -219,7 +253,7 @@ async def test_list_references(client: LanguageClient):
            var y = x;
            for i in 1..10 {
                 var z = x;
-                var x = 42 + i;
+                var y = 42 + i;
 
                 while true {
                     var i = 0;
@@ -232,7 +266,7 @@ async def test_list_references(client: LanguageClient):
         # 'find references' on definitions;
         # the cross checking will also validate the references.
         await check_references_and_cross_check(
-            client, doc, pos((0, 4)), [pos((0, 4)), pos((1, 8))]
+            client, doc, pos((0, 4)), [pos((0, 4)), pos((1, 8)), pos((3, 13))]
         )
         await check_references_and_cross_check(
             client, doc, pos((1, 4)), [pos((1, 4))]
@@ -244,7 +278,7 @@ async def test_list_references(client: LanguageClient):
             client, doc, pos((3, 9)), [pos((3, 9))]
         )
         await check_references_and_cross_check(
-            client, doc, pos((4, 9)), [pos((3, 13)), pos((4, 9))]
+            client, doc, pos((4, 9)), [pos((4, 9))]
         )
         await check_references_and_cross_check(
             client, doc, pos((7, 13)), [pos((7, 13)), pos((8, 17))]
@@ -320,3 +354,73 @@ async def test_list_references_standard(client: LanguageClient):
 
         assert references is not None
         assert len(references) > 10
+
+
+@pytest.mark.asyncio
+async def test_go_to_def_inherit(client: LanguageClient):
+    """
+    Test cases for go-to-definition on inherit expression.
+    """
+
+    file = """
+            module foo {
+            interface II { }
+            record R: II { }
+
+            class CC { }
+            class C: CC, II { }
+
+            module M {
+              class CC {}
+            }
+            class C2: M.CC { }
+            }
+           """
+
+    async with source_file(client, file) as doc:
+        # Definitions link to themselves
+        await check_goto_decl_def(client, doc, pos((0, 7)), pos((0, 7)))
+        await check_goto_decl_def(client, doc, pos((1, 10)), pos((1, 10)))
+        await check_goto_decl_def(client, doc, pos((2, 7)), pos((2, 7)))
+        await check_goto_decl_def(client, doc, pos((4, 6)), pos((4, 6)))
+        await check_goto_decl_def(client, doc, pos((5, 6)), pos((5, 6)))
+        await check_goto_decl_def(client, doc, pos((7, 7)), pos((7, 7)))
+        await check_goto_decl_def(client, doc, pos((8, 8)), pos((8, 8)))
+        await check_goto_decl_def(client, doc, pos((10, 6)), pos((10, 6)))
+
+        # check the inherit expressions
+        await check_goto_decl_def(client, doc, pos((2, 10)), pos((1, 10)))
+        await check_goto_decl_def(client, doc, pos((5, 9)), pos((4, 6)))
+        await check_goto_decl_def(client, doc, pos((5, 13)), pos((1, 10)))
+        await check_goto_decl_def(client, doc, pos((10, 10)), pos((7, 7)))
+        await check_goto_decl_def(client, doc, pos((10, 12)), pos((8, 8)))
+
+
+@pytest.mark.asyncio
+async def test_go_to_enum(client: LanguageClient):
+    """
+    Test cases for go-to-definition on enums.
+    """
+
+    file = """
+            proc bar param do return 1;
+            enum A {
+              a = bar,
+              b = 1,
+            }
+            var e = A.a;
+           """
+
+    async with source_file(client, file) as doc:
+        # Definitions link to themselves
+        await check_goto_decl_def(client, doc, pos((0, 5)), pos((0, 5)))
+        await check_goto_decl_def(client, doc, pos((1, 5)), pos((1, 5)))
+        await check_goto_decl_def(client, doc, pos((2, 2)), pos((2, 2)))
+        await check_goto_decl_def(client, doc, pos((3, 2)), pos((3, 2)))
+        await check_goto_decl_def(client, doc, pos((5, 4)), pos((5, 4)))
+
+        # check bar
+        await check_goto_decl_def(client, doc, pos((2, 6)), pos((0, 5)))
+        # check A.a
+        await check_goto_decl_def(client, doc, pos((5, 8)), pos((1, 5)))
+        await check_goto_decl_def(client, doc, pos((5, 10)), pos((2, 2)))

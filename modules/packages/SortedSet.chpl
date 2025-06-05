@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -40,16 +40,7 @@ module SortedSet {
   private use Treap;
   private use Reflection;
   private use IO;
-  public use Sort only DefaultComparator;
-
-  // TODO: remove this module and its public use when the deprecations have been
-  // removed
-  pragma "ignore deprecated use"
-  private module HideDeprecatedReexport {
-    public use Sort only defaultComparator;
-  }
-
-  public use HideDeprecatedReexport;
+  public use Sort only defaultComparator;
 
   record sortedSet : writeSerializable {
     /* The type of the elements contained in this sortedSet. */
@@ -58,7 +49,7 @@ module SortedSet {
     /* If `true`, this sortedSet will perform parallel safe operations. */
     param parSafe = false;
 
-    type comparatorType = DefaultComparator;
+    type comparatorType = defaultComparator;
 
     /* The underlying implementation */
     @chpldoc.nodoc
@@ -72,7 +63,7 @@ module SortedSet {
       :arg comparatorType: The comparator type
     */
     proc init(type eltType, param parSafe = false,
-              type comparatorType = DefaultComparator) {
+              type comparatorType = defaultComparator) {
       this.eltType = eltType;
       this.parSafe = parSafe;
       this.comparatorType = comparatorType;
@@ -108,7 +99,7 @@ module SortedSet {
       :arg comparator: The comparator used to compare elements.
     */
     proc init(type eltType, iterable, param parSafe=false,
-              comparator: record = new DefaultComparator())
+              comparator: record = new defaultComparator())
     where canResolveMethod(iterable, "these") lifetime this < iterable {
       this.eltType = eltType;
       this.parSafe = parSafe;

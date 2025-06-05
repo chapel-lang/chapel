@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -41,8 +41,8 @@ static char* walltime = NULL;
 #define basePBSFilename ".chpl-pbs-qsub-"
 #define baseExpectFilename ".chpl-expect-"
 
-char pbsFilename[FILENAME_MAX];
-char expectFilename[FILENAME_MAX];
+char* pbsFilename = NULL;
+char* expectFilename = NULL;
 
 #define launcherAccountEnvvar "CHPL_LAUNCHER_ACCOUNT"
 
@@ -167,10 +167,17 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 #else
   mypid = 0;
 #endif
-  snprintf(expectFilename, sizeof(expectFilename), "%s%d", baseExpectFilename,
+  int expectFilenameLen =
+      strlen(baseExpectFilename) + snprintf(NULL, 0, "%d", (int)mypid) + 1;
+  expectFilename = (char*)chpl_mem_allocMany(expectFilenameLen, sizeof(char),
+                                             CHPL_RT_MD_FILENAME, -1, 0);
+  int pbsFilenameLen =
+      strlen(basePBSFilename) + snprintf(NULL, 0, "%d", (int)mypid) + 1;
+  pbsFilename = (char*)chpl_mem_allocMany(pbsFilenameLen, sizeof(char),
+                                          CHPL_RT_MD_FILENAME, -1, 0);
+  snprintf(expectFilename, expectFilenameLen, "%s%d", baseExpectFilename,
            (int)mypid);
-  snprintf(pbsFilename, sizeof(pbsFilename), "%s%d", basePBSFilename,
-           (int)mypid);
+  snprintf(pbsFilename, pbsFilenameLen, "%s%d", basePBSFilename, (int)mypid);
 
   pbsFile = fopen(pbsFilename, "w");
   fprintf(pbsFile, "#!/bin/sh\n\n");
@@ -238,22 +245,30 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   return command;
 }
 
+static void unlinkFile(char *name) {
+  int rc = unlink(name);
+  if (rc) {
+    char *fmt = "Unlink of \"%s\" failed: %s\n";
+    char *err = strerror(errno);
+    int msgSize = strlen(name) + strlen(err) + strlen(fmt) + 1;
+    char *msg = chpl_mem_alloc(msgSize, CHPL_RT_MD_ERROR_MSG, 0, 0);
+    snprintf(msg, msgSize, fmt, name, err);
+    chpl_internal_error(msg);
+    // Not reached.
+    chpl_mem_free(msg, 0, 0);
+  }
+}
+
+
 static void chpl_launch_cleanup(void) {
 #ifndef DEBUG_LAUNCH
   if (!chpl_doDryRun()) {
-    {
-      char command[sizeof(pbsFilename) + 4];
-      (void) snprintf(command, sizeof(command), "rm %s", pbsFilename);
-      system(command);
-    }
-
-    {
-      char command[sizeof(expectFilename) + 4];
-      (void) snprintf(command, sizeof(command), "rm %s", expectFilename);
-      system(command);
-    }
+    unlinkFile(pbsFilename);
+    unlinkFile(expectFilename);
   }
 #endif
+  chpl_mem_free(pbsFilename, 0, 0);
+  chpl_mem_free(expectFilename, 0, 0);
 }
 
 

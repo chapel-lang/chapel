@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+CHPL_ATOMICS=locks \
+  CHPL_TARGET_PLATFORM=darwin \
+  $CHPL_HOME/util/printchplenv &>$2

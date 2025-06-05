@@ -1,2 +1,2 @@
-config_use_before_decl.chpl:1: error: 'x' used before defined
-config_use_before_decl.chpl:3: note: defined here
+config_use_before_decl.chpl:1: error: statement references variable 'x' before it is defined
+config_use_before_decl.chpl:3: note: the variable 'x' is defined here

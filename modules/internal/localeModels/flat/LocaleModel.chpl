@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -32,6 +32,10 @@ module LocaleModel {
   public use LocaleModelHelpFlat;
   public use LocaleModelHelpMem;
 
+  use ChapelBase;
+  use ChapelIOSerialize;
+  use ChapelLocale;
+  use ChapelNumLocales;
   use IO;
 
   //
@@ -96,7 +100,7 @@ module LocaleModel {
     override proc chpl_id() do return _node_id;
 
     override proc chpl_localeid() {
-      return chpl_buildLocaleID(_node_id:chpl_nodeID_t, c_sublocid_any);
+      return chpl_buildLocaleID(_node_id:chpl_nodeID_t, c_sublocid_none);
     }
     override proc chpl_name() do return local_name;
 
@@ -151,6 +155,7 @@ module LocaleModel {
       nPUsLogAcc = 0;
       nPUsLogAll = 0;
       maxTaskPar = 0;
+      numColocales = 0;
     }
 
     // The setup() function must use chpl_initOnLocales() to iterate (in

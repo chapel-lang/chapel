@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -37,7 +37,8 @@ private use ChapelUtil;
 private use BlockDist;
 private use RangeChunk;
 private use HaltWrappers;
-private use LayoutCS;
+private use CompressedSparseLayout;
+import Sort.{keyComparator};
 
 //
 // These flags are used to output debug information and run extra
@@ -52,14 +53,15 @@ config param debugSparseBlockDistBulkTransfer = false;
 // just use Block.
 
 // Helper type for sorting locales
-record targetLocaleComparator {
+record targetLocaleComparator: keyComparator {
   param rank;
   type idxType;
   type sparseLayoutType;
   var dist: unmanaged BlockImpl(rank, idxType, sparseLayoutType);
   proc key(a: index(rank, idxType)) {
     if rank == 2 { // take special care for CSC/CSR
-      if sparseLayoutType == unmanaged CS(compressRows=false) then
+      if sparseLayoutType == cscLayout(true) ||
+         sparseLayoutType == cscLayout(false) then
         return (dist.targetLocsIdx(a), a[1], a[0]);
       else
         return (dist.targetLocsIdx(a), a[0], a[1]);
@@ -342,6 +344,8 @@ class SparseBlockDom: BaseSparseDomImpl(?) {
 private proc getDefaultSparseDist(type sparseLayoutType) {
   if isSubtype(_to_nonnil(sparseLayoutType), DefaultDist) {
     return defaultDist;
+  } else if isRecord(sparseLayoutType) {
+    return new sparseLayoutType();
   } else {
     return new dmap(new sparseLayoutType());
   }
@@ -549,12 +553,28 @@ class SparseBlockArr: BaseSparseArr(?) {
     return true;
   }
 
+  proc getLocalSubarray(localeRow, localeCol) ref {
+    return this.locArr[localeRow, localeCol]!.myElems;
+  }
+
   proc getLocalSubarray(localeRow, localeCol) const ref {
     return this.locArr[localeRow, localeCol]!.myElems;
   }
 
+  proc getLocalSubarray(localeIdx) ref {
+    return this.locArr[localeIdx]!.myElems;
+  }
+
   proc getLocalSubarray(localeIdx) const ref {
     return this.locArr[localeIdx]!.myElems;
+  }
+
+  proc getLocalSubarray() ref {
+    return myLocArr!.myElems;
+  }
+
+  proc getLocalSubarray() const ref {
+    return myLocArr!.myElems;
   }
 
   proc setLocalSubarray(locNonzeroes, loc: locale = here) {
@@ -566,6 +586,22 @@ class SparseBlockArr: BaseSparseArr(?) {
                     myBlock.type:string);
     else
       myBlock.data = locNonzeroes.data;
+  }
+
+  iter localSubarrays() ref {
+    for locIdx in dom.dist.targetLocDom {
+      on locArr[locIdx] {
+        yield getLocalSubarray(locIdx);
+      }
+    }
+  }
+
+  iter localSubarrays(param tag: iterKind) ref where tag == iterKind.standalone {
+    coforall locIdx in dom.dist.targetLocDom {
+      on locArr[locIdx] {
+        yield getLocalSubarray(locIdx);
+      }
+    }
   }
 }
 

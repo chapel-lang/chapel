@@ -1,4 +1,4 @@
-# Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2025 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -31,7 +31,7 @@ add_custom_command(
   COMMENT "writing COPYRIGHT file updates..."
   VERBATIM)
 add_executable(chpldoc EXCLUDE_FROM_ALL chpldoc.cpp arg.cpp arg-helpers.cpp COPYRIGHT)
-target_link_libraries(chpldoc ChplFrontend)
+target_link_libraries(chpldoc PRIVATE ChplFrontend)
 target_include_directories(chpldoc PRIVATE
                            ${CHPL_MAIN_INCLUDE_DIR}
                            ${CHPL_INCLUDE_DIR}

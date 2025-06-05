@@ -106,7 +106,12 @@ def parse_lines(fname):
 
     with open(fname) as fh:
         for line in fh:
-            depth, fn, time = line.strip().split()
+            depth, fn, time_and_args = line.strip().split(maxsplit=2)
+            tup = time_and_args.split(maxsplit=1)
+            time = tup[0]
+            args = ""
+            if len(tup) > 1:
+                args = tup[1]
             d = int(depth)
             t = int(time)
             node = Node(d, fn, t, [])
@@ -186,7 +191,7 @@ def to_dot(root: Forest, buf=sys.stdout, min_show_percent=1):
 
     fastest = fastest_self(root)
     slowest = slowest_self(root)
-    fastest_elapsed = fastest.self_elapsed
+    fastest_elapsed = fastest.self_elapsed + 0.001  # avoid div by zero
 
     # Print all the nodes and their labels
     for x in visit_forest(root):

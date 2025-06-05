@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -17,9 +17,9 @@
  * limitations under the License.
  */
 
-/*
- The ObjectSerialization module provides an objectSerializer and
- objectDeserializer that implement a simple binary IO format.
+/* Provides serialization for Chapel data types in a binary format.
+
+Intended for use with :ref:`IO support for serializers and deserializers <serialize-deserialize>`.
  */
 @unstable("The ObjectSerialization module is unstable. The module's name, its types, and serialization format are subject to change.")
 module ObjectSerialization {

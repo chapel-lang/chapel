@@ -2,7 +2,7 @@ use SortedMap;
 
 
 
-var m = new sortedMap(int, int, false, new DefaultComparator());
+var m = new sortedMap(int, int, false, new defaultComparator());
 assert(m.isEmpty());
 
 for i in 1..3 do

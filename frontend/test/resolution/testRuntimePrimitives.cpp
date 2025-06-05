@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -35,8 +35,7 @@ static void predicatePrimTypeHelper(const char* primName, std::vector<const char
     program += arg;
   }
   program += ");";
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   QualifiedType qt =  resolveTypeOfXInit(context, std::move(program));
   assert(qt.kind() == expectedKind);
   auto typePtr = qt.type();
@@ -235,6 +234,10 @@ static void test22() {
   primTypeHelper<VoidType>("gpu set blockSize", {"128"});
   primTypeHelper<VoidType>("gpu set blockSize", {"v"}, "var v = 128;");
   primTypeHelper<ErroneousType>("gpu set blockSize", {"v"}, "var v: string;", QualifiedType::UNKNOWN);
+
+  primTypeHelper<VoidType>("gpu set itersPerThread", {"128"});
+  primTypeHelper<VoidType>("gpu set itersPerThread", {"v"}, "var v = 128;");
+  primTypeHelper<ErroneousType>("gpu set itersPerThread", {"v"}, "var v: string;", QualifiedType::UNKNOWN);
 }
 
 static void test23() {

@@ -2,9 +2,9 @@ use SortedMap;
 
 
 
-var m0 = new sortedMap(int, int, false, new DefaultComparator());
-var m1 = new sortedMap(int, int, false, new DefaultComparator());
-var m2 = new sortedMap(int, int, false, new DefaultComparator());
+var m0 = new sortedMap(int, int, false, new defaultComparator());
+var m1 = new sortedMap(int, int, false, new defaultComparator());
+var m2 = new sortedMap(int, int, false, new defaultComparator());
 
 m0[1] = 1;
 m0[2] = 2;

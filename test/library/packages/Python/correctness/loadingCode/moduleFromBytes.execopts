@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+# respect CHPL_TEST_VENV_DIR if it is set and not none
+if [ -n "$CHPL_TEST_VENV_DIR" ] && [ "$CHPL_TEST_VENV_DIR" != "none" ]; then
+  chpl_python=$CHPL_TEST_VENV_DIR/bin/python3
+else
+  chpl_python=$($CHPL_HOME/util/config/find-python.sh)
+fi
+
+# compile the module, the module will now be in __pycache__
+$chpl_python -m compileall -q moduleFromBytes.py
+
+pyc_name=$($chpl_python -c "import importlib.util; print(importlib.util.cache_from_source('moduleFromBytes.py'))")
+echo "--pycPath $pyc_name"

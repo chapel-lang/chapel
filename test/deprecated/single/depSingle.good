@@ -1,8 +1,0 @@
-depSingle.chpl:1: warning: 'single' variables are deprecated - please use 'sync' variables instead
-depSingle.chpl:2: warning: 'single' variables are deprecated - please use 'sync' variables instead
-depSingle.chpl:3: warning: 'single' variables are deprecated - please use 'sync' variables instead
-depSingle.chpl:5: warning: 'single' variables are deprecated - please use 'sync' variables instead
-depSingle.chpl:6: warning: 'single' variables are deprecated - please use 'sync' variables instead
-depSingle.chpl:7: warning: 'single' variables are deprecated - please use 'sync' variables instead
-depSingle.chpl:9: warning: 'single' variables are deprecated - please use 'sync' variables instead
-depSingle.chpl:15: warning: 'single' variables are deprecated - please use 'sync' variables instead

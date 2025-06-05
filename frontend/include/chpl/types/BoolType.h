@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -27,9 +27,7 @@ namespace types {
 
 
 /**
-  This class represents a bool type, e.g. `bool` or `bool(32)`.
-
-  Note that `bool` normally has width `8` but `bool(8)` is a separate type.
+  This class represents the `bool` type.
  */
 class BoolType final : public PrimitiveType {
  private:

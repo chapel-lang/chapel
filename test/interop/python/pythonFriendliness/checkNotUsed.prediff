@@ -1,0 +1,12 @@
+#!/bin/bash
+
+sed '/from checkNotUsed.c:[0-9]*/d' $2 > $2.tmp
+sed '/^ *$/d' $2.tmp > $2
+rm $2.tmp
+# Get error output of the Python module help command with our library impacting
+# it
+python3 -c "help('modules')" 2>> $2
+# Get error output of the Python module help command without our library
+# impacting it, by moving it somewhere else
+mv lib bufferDir/
+python3 -c "help('modules')" 2> $1.good

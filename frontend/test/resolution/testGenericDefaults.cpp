@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -46,7 +46,8 @@ static void test1() {
   auto ct = qt.type()->toRecordType();
   auto baseCt = ct->instantiatedFrom();
   assert(baseCt != nullptr);
-  auto& fields = chpl::resolution::fieldsForTypeDecl(context, baseCt,
+  auto rc = createDummyRC(context);
+  auto& fields = chpl::resolution::fieldsForTypeDecl(&rc, baseCt,
       chpl::resolution::DefaultsPolicy::IGNORE_DEFAULTS);
   assert(fields.numFields() == 2);
   assert(fields.fieldName(0) == "typeWithDefault");
@@ -83,7 +84,8 @@ static void test2() {
   auto ct = qt.type()->toRecordType();
   auto baseCt = ct->instantiatedFrom();
   assert(baseCt == nullptr);
-  auto& fields = chpl::resolution::fieldsForTypeDecl(context, ct,
+  auto rc = createDummyRC(context);
+  auto& fields = chpl::resolution::fieldsForTypeDecl(&rc, ct,
       chpl::resolution::DefaultsPolicy::IGNORE_DEFAULTS);
   assert(fields.numFields() == 2);
   assert(fields.fieldName(0) == "typeWithDefault");
@@ -116,7 +118,8 @@ static void test3() {
   auto ct = qt.type()->toRecordType();
   auto baseCt = ct->instantiatedFrom();
   assert(baseCt == nullptr);
-  auto& fields = chpl::resolution::fieldsForTypeDecl(context, ct,
+  auto rc = createDummyRC(context);
+  auto& fields = chpl::resolution::fieldsForTypeDecl(&rc, ct,
       chpl::resolution::DefaultsPolicy::IGNORE_DEFAULTS);
   assert(fields.numFields() == 2);
   assert(fields.fieldName(0) == "typeWithDefault");
@@ -145,8 +148,7 @@ static void test4() {
     assert(qt.type()->isIntType());
   }
   {
-    Context ctx;
-    auto context = &ctx;
+    auto context = buildStdContext();
     QualifiedType qt =  resolveQualifiedTypeOfX(context,
                            R""""(
                            proc foo(type t = int) type do return t;
@@ -160,10 +162,6 @@ static void test4() {
 
 static void test5() {
   std::string common = R"""(
-    operator =(ref lhs: int, rhs : int) {
-      __primitive("=", lhs, rhs);
-    }
-
     record R {
       type T = int;
       var field : T;
@@ -181,8 +179,7 @@ static void test5() {
 
   {
     // Test methods on generics with defaults
-    Context ctx;
-    auto context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
     std::string program = common + R"""(
       proc blah(x: R(string)) {
@@ -199,8 +196,7 @@ static void test5() {
   }
   {
     // Test passing to generic arguments with types that are generic-with-defaults
-    Context ctx;
-    auto context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
     std::string program = common + R"""(
       //
@@ -230,8 +226,7 @@ static void test5() {
   }
   {
     // Test passing to generic arguments with types that are generic-with-defaults
-    Context ctx;
-    auto context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
     std::string program = common + R"""(
       proc copy(arg) {

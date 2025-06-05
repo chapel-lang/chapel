@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -68,6 +68,8 @@ AggregateType::AggregateType(AggregateTag initTag) :
   mIsGenericWithDefaults = false;
   mIsGenericWithSomeDefaults = false;
   foundGenericFields = false;
+  postinit           = nullptr;
+
   typeSignature      = NULL;
 
 
@@ -132,6 +134,7 @@ AggregateType* AggregateType::copyInner(SymbolMap* map) {
   }
 
   copy_type->genericField = genericField;
+  copy_type->postinit = postinit;
 
   return copy_type;
 }
@@ -233,6 +236,12 @@ void AggregateType::verify() {
       if (ns.value && !ns.value->inTree())
         INT_FATAL(this, "Substitution value not in tree");
     }
+  }
+
+  // Should we just change all checks of this flag to a check against
+  // postinit being non-nullptr?  Or a nice method query?
+  if ((postinit != nullptr) != this->symbol->hasFlag(FLAG_HAS_POSTINIT)) {
+    INT_FATAL(this, "postinit state is inconsistent");
   }
 }
 
@@ -1359,7 +1368,7 @@ AggregateType* AggregateType::generateType(SymbolMap& subs, CallExpr* call, cons
 }
 
 void AggregateType::resolveConcreteType() {
-  if (this->id == breakOnResolveID) gdbShouldBreakHere();
+  if (this->id == breakOnResolveID) debuggerBreakHere();
 
   if (resolveStatus == RESOLVING || resolveStatus == RESOLVED) {
     // Recursively constructing this type
@@ -1655,9 +1664,6 @@ void AggregateType::renameInstantiation() {
   } else if (!developer && symbol->hasFlag(FLAG_SYNC)) {
     name = "sync ";
     buildFieldNames(this, name, false);
-  } else if (!developer && symbol->hasFlag(FLAG_SINGLE)) {
-    name = "single ";
-    buildFieldNames(this, name, false);
   } else if (!developer && symbol->hasFlag(FLAG_ATOMIC_TYPE)) {
     name = "atomic ";
     buildFieldNames(this, name, false);
@@ -1862,9 +1868,6 @@ AggregateType* AggregateType::getNewInstantiation(Symbol* sym, Type* symType, Ex
   instantiations.push_back(retval);
 
   checkSurprisingGenericDecls(field, field->defPoint->exprType, this);
-
-  handleDefaultAssociativeWarnings(field, field->defPoint->exprType,
-                                   /*initExpr*/ nullptr, this);
 
   return retval;
 }
@@ -2720,15 +2723,22 @@ void AggregateType::buildCopyInitializer() {
     SET_LINENO(this);
 
     bool isGeneric = false;
-    // If this type is generic, then the 'other' formal needs to be generic as
-    // well
-    // TODO: Why can't we use 'fieldIsGeneric' here?
-    for_fields(fieldDefExpr, this) {
-      if (VarSymbol* field = toVarSymbol(fieldDefExpr)) {
-        if (field->hasFlag(FLAG_SUPER_CLASS) == false) {
-          if (field->hasFlag(FLAG_PARAM) || field->isType() ||
-              (field->defPoint->init == NULL && field->defPoint->exprType == NULL)) {
-            isGeneric = true;
+
+    // If the function has this flag, it was created by the frontend and
+    // is fully resolved even if it doesn't have all the information the
+    // old resolver normally expects to find.
+    if (!this->symbol->hasFlag(FLAG_RESOLVED_EARLY)) {
+      // If this type is generic, then the 'other' formal needs to be generic as
+      // well
+      // TODO: Why can't we use 'fieldIsGeneric' here?
+      for_fields(fieldDefExpr, this) {
+        if (VarSymbol* field = toVarSymbol(fieldDefExpr)) {
+          if (field->hasFlag(FLAG_SUPER_CLASS) == false) {
+            if (field->hasFlag(FLAG_PARAM) || field->isType() ||
+                (field->defPoint->init == NULL &&
+                 field->defPoint->exprType == NULL)) {
+              isGeneric = true;
+            }
           }
         }
       }
@@ -2903,6 +2913,21 @@ void AggregateType::addClassToHierarchy() {
   addClassToHierarchy(localSeen);
 }
 
+static BlockStmt* getEnclosingBlockForImplements(Symbol* sym) {
+  auto parentSym = sym->defPoint->parentSymbol;
+  if (auto fn = toFnSymbol(parentSym)) {
+    return fn->body;
+  } else if (auto mod = toModuleSymbol(parentSym)) {
+    return mod->block;
+  } else if( auto ty = toTypeSymbol(parentSym)) {
+    return getEnclosingBlockForImplements(ty);
+  } else {
+    // Fallback, this shouldn't happen but if it does, we'll just return the
+    // module's block
+    return sym->getModule()->block;
+  }
+}
+
 void AggregateType::addClassToHierarchy(std::set<AggregateType*>& localSeen) {
   // classes already in hierarchy
   static std::set<AggregateType*> globalSeen;
@@ -2943,8 +2968,8 @@ void AggregateType::addClassToHierarchy(std::set<AggregateType*>& localSeen) {
       }
 
       auto ifcActuals = new CallExpr(PRIM_ACTUALS_LIST, new SymExpr(implementFor));
-      auto istmt = ImplementsStmt::build(isym->name, ifcActuals, nullptr);
-      this->symbol->getModule()->block->insertAtTail(istmt);
+      auto istmt = ImplementsStmt::build(isym, ifcActuals, nullptr);
+      getEnclosingBlockForImplements(this->symbol)->insertAtTail(istmt);
 
       expr->remove();
       continue;
@@ -3213,6 +3238,32 @@ Symbol* AggregateType::getSubstitution(const char* name) const {
   }
 
   return retval;
+}
+
+void AggregateType::saveGenericSubstitutions() {
+  if (this->substitutions.n > 0) {
+    // Generate substitutionsPostResolve which should not be generated yet
+    INT_ASSERT(this->substitutionsPostResolve.size() == 0);
+    for_fields(field, this) {
+      if (Symbol* value = this->getSubstitutionWithName(field->name)) {
+        NameAndSymbol ns;
+        ns.name = field->name;
+        ns.value = value;
+        ns.isParam = field->isParameter();
+        ns.isType = field->hasFlag(FLAG_TYPE_VARIABLE);
+        this->substitutionsPostResolve.push_back(ns);
+      }
+    }
+    // Clear substitutions since keys might refer to deleted AST nodes
+    this->substitutions.clear();
+  }
+
+  if (this->instantiatedFrom != NULL) {
+    // Clear instantiatedFrom since it would refer to a deleted AST node
+    this->instantiatedFrom = NULL;
+
+    symbol->addFlag(FLAG_INSTANTIATED_GENERIC);
+  }
 }
 
 Type* AggregateType::getDecoratedClass(ClassTypeDecoratorEnum d) {

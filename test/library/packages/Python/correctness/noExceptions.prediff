@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+$CHPL_HOME/util/test/prediff-obscure-module-linenos $@

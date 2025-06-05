@@ -93,7 +93,7 @@ def on_build_finish(app, exc):
 
     # remove 'Search.setIndex(' as well as the trailing )
     searchindex = remove_prefix(searchindex, 'Search.setIndex(')
-    searchindex = remove_suffix(searchindex, ')');
+    searchindex = remove_suffix(searchindex, ')')
 
     # parse the result as a json object
     index = json.loads(searchindex)

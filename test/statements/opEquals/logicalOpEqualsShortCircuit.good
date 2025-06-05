@@ -1,0 +1,9 @@
+shouldn't short-circuit for &&= with LHS true
+evaluated
+
+should short-circuit for &&= with LHS false
+
+should short-circuit for ||= with LHS true
+
+shouldn't short-circuit for ||= with LHS false
+evaluated

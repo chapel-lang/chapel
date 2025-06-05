@@ -1,1 +1,1 @@
-listPopIndexHaltEmpty.chpl:5: error: halt reached - Called "list.getAndRemove" on an empty list.
+listPopIndexHaltEmpty.chpl:5: error: halt reached - Called "list.popBack" on an empty list.

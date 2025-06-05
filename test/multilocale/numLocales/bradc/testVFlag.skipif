@@ -1,1 +1,3 @@
 CHPL_LAUNCHER == slurm-gasnetrun_ibv
+CHPL_LAUNCHER == slurm-srun
+CHPL_COMM == gasnet

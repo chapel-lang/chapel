@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+# replace all uses of the value of CHPL_HOME with CHPL_HOME
+sed "s|$CHPL_HOME|\$CHPL_HOME|g" $2 > $2.tmp
+mv $2.tmp $2
+
+# replace all address of the form 0x[0-9a-fA-F]* with 0xXXXXXXXX
+sed -E "s|0x[0-9a-fA-F]*|0xXXXXXXXX|g" $2 > $2.tmp
+mv $2.tmp $2

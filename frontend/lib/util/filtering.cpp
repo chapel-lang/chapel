@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -26,7 +26,7 @@ namespace chpl {
 namespace {
   std::string buildSphinxMarkupRegexp() {
     // See documentation on inline Sphinx markup here:
-    // https://chapel-lang.org/docs/latest/tools/chpldoc/chpldoc.html#inline-markup-2
+    // https://chapel-lang.org/docs/tools/chpldoc/chpldoc.html#inline-markup-2
     // There are some details involved in this, but the main idea is to match
     // strings of the form:
     // 
@@ -59,6 +59,13 @@ namespace {
 
     return reSphinxMrkp;
   }
+}
+
+std::string removeSphinxMarkup(UniqueString msg) {
+  // This function is a wrapper around the string version, to allow for
+  // UniqueString usage in the compiler.
+  std::string filteredMsg = removeSphinxMarkup(msg.str());
+  return filteredMsg;
 }
 
 std::string removeSphinxMarkup(const std::string& msg) {

@@ -1,0 +1,19 @@
+bar.chpl:11: In initializer:
+bar.chpl:5: warning: partial instantiation without '?' argument
+bar.chpl:5: note: opt in to partial instantiation explicitly with a trailing '?' argument
+bar.chpl:5: note: or, add arguments to instantiate the following fields in generic type 'Inner(false)':
+bar.chpl:19: note:   generic field 'fullyGenericField'
+bar.chpl:5: warning: field is declared with generic memory management
+note: consider adding 'owned', 'shared', or 'borrowed'
+note: if generic memory management is desired, use a 'type' field to store the class type
+bar.chpl:5: warning: please use '?' when declaring a field with generic type
+bar.chpl:5: note: for example with 'Inner(false,?)'
+  bar.chpl:1: called as Outer.init(param flag = false, val: int(64))
+note: generic instantiations are underlined in the above callstack
+bar.chpl:11: In initializer:
+bar.chpl:5: note: partial instantiation without '?' argument
+bar.chpl:5: note: opt in to partial instantiation explicitly with a trailing '?' argument
+bar.chpl:5: note: or, add arguments to instantiate the following fields in generic type 'Inner(false)':
+bar.chpl:19: note:   generic field 'fullyGenericField'
+{partialGenericField = {fullyGenericField = 5}}
+{partialGenericField = {fullyGenericField = five}}

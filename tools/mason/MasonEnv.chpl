@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -110,6 +110,16 @@ proc MASON_REGISTRY {
     }
   }
   return registries;
+}
+
+/* Returns the path to use when caching the list of licenses, if provided by the
+   user.  This is useful for systems where internet connectivity can be erratic
+   or slow.
+ */
+proc MASON_LICENSE_CACHE_PATH: string {
+  const licenseCache = getEnv("MASON_LICENSE_CACHE_PATH");
+
+  return licenseCache;
 }
 
 proc masonEnv(args) {

@@ -6,6 +6,4 @@
 
  */
 
-writeln("\
-Warning: No chplconfig or .chplconfig file is found in the defined $CHPL_CONFIG\
-");
+writeln("\n\nWarning: No chplconfig or .chplconfig file is found in the defined $CHPL_CONFIG");

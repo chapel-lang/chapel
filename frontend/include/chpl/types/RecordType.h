@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -20,6 +20,7 @@
 #ifndef CHPL_TYPES_RECORD_TYPE_H
 #define CHPL_TYPES_RECORD_TYPE_H
 
+#include "chpl/resolution/resolution-types.h"
 #include "chpl/types/CompositeType.h"
 
 namespace chpl {
@@ -34,9 +35,11 @@ class RecordType final : public CompositeType {
  private:
   RecordType(ID id, UniqueString name,
              const RecordType* instantiatedFrom,
-             SubstitutionsMap subs)
+             SubstitutionsMap subs,
+             CompositeType::Linkage linkage)
     : CompositeType(typetags::RecordType, id, name,
-                    instantiatedFrom, std::move(subs))
+                    instantiatedFrom, std::move(subs),
+                    linkage)
   { }
 
   bool contentsMatchInner(const Type* other) const override {
@@ -50,7 +53,8 @@ class RecordType final : public CompositeType {
   static const owned<RecordType>&
   getRecordType(Context* context, ID id, UniqueString name,
                 const RecordType* instantiatedFrom,
-                SubstitutionsMap subs);
+                SubstitutionsMap subs,
+                CompositeType::Linkage linkage);
 
  public:
 
@@ -58,6 +62,13 @@ class RecordType final : public CompositeType {
   static const RecordType* get(Context* context, ID id, UniqueString name,
                                const RecordType* instantiatedFrom,
                                CompositeType::SubstitutionsMap subs);
+
+  const Type* substitute(Context* context,
+                         const PlaceholderMap& subs) const override {
+    return get(context, id(), name(),
+               Type::substitute(context, (const RecordType*) instantiatedFrom_, subs),
+               resolution::substituteInMap(context, subs_, subs));
+  }
 
 
   ~RecordType() = default;

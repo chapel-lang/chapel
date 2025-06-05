@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -70,7 +70,7 @@
     */
     proc oddTimeSeed(): int(64) {
       use Time;
-      const seed = (timeSinceEpoch().totalSeconds()*1_000_000): int;
+      const seed = timeSinceEpoch().totalMicroseconds();
       const oddseed = if seed % 2 == 0 then seed + 1 else seed;
       return oddseed;
     }

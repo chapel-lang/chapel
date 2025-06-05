@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2023-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -39,12 +39,6 @@ CLASS_BEGIN(CompositeType)
                // They don't have code-level declarations, so return 'None'.
                auto& id = node->id();
                if (id.isEmpty()) return nullptr;
-
-               // If running without the standard library, builtin types
-               // that we expect to find in module code could be missing.
-               bool missingId =
-                 chpl::types::CompositeType::isMissingBundledType(context, id);
-               if (missingId) return nullptr;
 
                return parsing::idToAst(context, id))
 CLASS_END(CompositeType)

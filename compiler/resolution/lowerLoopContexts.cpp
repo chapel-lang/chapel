@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -961,7 +961,7 @@ void lowerContexts() {
     for_vector(BaseAST, ast, asts) {
       if (CForLoop* loop = toCForLoop(ast)) {
         CONTEXT_DEBUG(0, "encountered a C loop", loop);
-        if (loop->id == breakOnResolveID) gdbShouldBreakHere();
+        if (loop->id == breakOnResolveID) debuggerBreakHere();
 
         ContextHandler h(loop);
         h.collectHandleAndOuterContexts();

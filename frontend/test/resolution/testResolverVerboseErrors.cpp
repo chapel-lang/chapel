@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -49,7 +49,7 @@ class Child : Parent {}
 
 proc f(ref x: owned Parent) {}
 
-var x: owned Child;
+var x = new Child();
 f(x);
 )""";
 
@@ -63,7 +63,7 @@ static const char* errorExactMatch = R"""(
   The following candidate didn't match because an actual couldn't be passed to a formal:
       |
     4 | proc f(ref x: owned Parent) {}
-      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
   The formal 'x' expects a value of type 'owned Parent', but the actual was a value of type 'owned Child'.
       |
@@ -89,7 +89,7 @@ static const char* errorExpectedSubType = R"""(
   The following candidate didn't match because an actual couldn't be passed to a formal:
       |
     1 | proc f(type x: string) {}
-      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
   The formal 'x' expects the type 'string', but the actual was the type 'int(64)'.
       |
@@ -104,7 +104,7 @@ class C {}
 
 proc f(x: owned C) {}
 
-var x: shared C;
+var x = new shared C();
 f(x);
 )""";
 
@@ -118,7 +118,7 @@ static const char* errorIncompatibleMgr = R"""(
   The following candidate didn't match because an actual couldn't be passed to a formal:
       |
     3 | proc f(x: owned C) {}
-      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
   The formal 'x' expects a value of type 'owned C', but the actual was a value of type 'shared C'.
       |
@@ -147,7 +147,7 @@ static const char* errorIncompatibleNilability = R"""(
   The following candidate didn't match because an actual couldn't be passed to a formal:
       |
     3 | proc f(x: owned C) {}
-      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
   The formal 'x' expects a value of type 'owned C', but the actual was a value of type 'owned C?'.
       |
@@ -174,7 +174,7 @@ static const char* errorTupleSize = R"""(
   The following candidate didn't match because an actual couldn't be passed to a formal:
       |
     1 | proc f(x: (?, ?, ?)) {}
-      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
   The formal 'x' expects a value of type '(?, ?, ?)', but the actual was a value of type '(int(64), int(64))'.
       |
@@ -200,14 +200,14 @@ static const char* errorStarVsNotStar = R"""(
   The following candidate didn't match because an actual couldn't be passed to a formal:
       |
     1 | proc f(in x: 3*real) {}
-      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
   The formal 'x' expects a value of type '(real(64), real(64), real(64))', but the actual was a value of type '(real(64), real(64), bool)'.
       |
     3 | f((1.0, 1.0, true));
       |   ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
-  A formal that is a star tuple cannot accept an actual actual that is not.
+  A formal that is a star tuple cannot accept an actual that is not.
 )""";
 
 static const char* progVarArgMismatch = R"""(
@@ -264,7 +264,7 @@ static const char* errorBasic = R"""(
     3 | f(a=42);
       |
   
-  The following candidate didn't match:
+  The following candidate didn't match because actual 1 was named 'a', but no formal with that name was found.
       |
     1 | proc f(x: int) {}
       |
@@ -277,6 +277,7 @@ record R {
 
 var r: R;
 r.x("hello");
+operator =(ref lhs: int, const rhs: int) {}
 )""";
 
 static const char* errorOther = R"""(
@@ -309,10 +310,10 @@ static const char* errorManyCandidates = R"""(
   
   The following candidate didn't match because an actual couldn't be passed to a formal:
       |
-    1 | proc f(x: int(8)) {}
-      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+    8 | proc f(x: uint(64)) {}
+      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
-  The formal 'x' expects a value of type 'int(8)', but the actual was a param of type 'string'.
+  The formal 'x' expects a value of type 'uint(64)', but the actual was a param of type 'string'.
        |
     10 | f("hello");
        |   ⎺⎺⎺⎺⎺⎺⎺
@@ -320,10 +321,10 @@ static const char* errorManyCandidates = R"""(
   
   The following candidate didn't match because an actual couldn't be passed to a formal:
       |
-    2 | proc f(x: int(16)) {}
+    7 | proc f(x: uint(32)) {}
       |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
-  The formal 'x' expects a value of type 'int(16)', but the actual was a param of type 'string'.
+  The formal 'x' expects a value of type 'uint(32)', but the actual was a param of type 'string'.
        |
     10 | f("hello");
        |   ⎺⎺⎺⎺⎺⎺⎺
@@ -332,9 +333,69 @@ static const char* errorManyCandidates = R"""(
   Omitting 6 more candidates that didn't match.
 )""";
 
-static void testResolverError(const char* program, const char* error) {
+static const char* progBreakNonLoop = R"""(
+label outer
+for i in 0..3 {
+  for j in 0..3 {
+   {
+     var outer = 42;
+     continue outer;
+   }
+  }
+}
+)""";
+
+static const char* errorBreakNonLoop = R"""(
+─── error in file.chpl:6 [InvalidContinueBreakTarget] ───
+  Invalid target for 'continue' statement.
+      |
+    6 |      continue outer;
+      |               ⎺⎺⎺⎺⎺
+      |
+  A 'continue' statement can only refer to a loop. This is done by using the loop's label.
+  However, the target is declared as a value of type 'int(64)' here:
+      |
+    5 |      var outer = 42;
+      |          ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+)""";
+
+static const char* progLabelAsValue = R"""(
+proc foo(x) {}
+
+label outer
+for i in 0..3 {
+  for j in 0..3 {
+   foo(outer);
+  }
+}
+)""";
+
+static const char* errorLabelAsValue = R"""(
+─── error in file.chpl:6 [LoopLabelOutsideBreakOrContinue] ───
+  Invalid reference to loop label outside of a 'break' or 'continue' statement.
+  Loop labels can only be referenced in 'break' or 'continue' statements.
+  However, the expression here references a loop label in another context:
+      |
+    6 |    foo(outer);
+      |        ⎺⎺⎺⎺⎺
+      |
+  The expression in question refers to a labeled loop declared here:
+      |
+    4 | for i in 0..3 {
+      |
+)""";
+
+static void testResolverError(const char* program, const char* error,
+                              bool standard = true,
+                              ErrorType expectedType = ErrorType::NoMatchingCandidates) {
+  Context* context = nullptr;
   Context ctx;
-  Context* context = &ctx;
+  if (standard) {
+    context = buildStdContext();
+  } else {
+    context = &ctx;
+  }
   ErrorGuard guard(context);
 
   while (*error == '\n') error++;
@@ -347,7 +408,7 @@ static void testResolverError(const char* program, const char* error) {
   auto resolutionResult = resolveModule(context, mod->id());
 
   assert(guard.numErrors() == 1);
-  assert(guard.error(0)->type() == ErrorType::NoMatchingCandidates);
+  assert(guard.error(0)->type() == expectedType);
 
   std::ostringstream oss;
   ErrorWriter detailedWriter(context, oss, ErrorWriter::DETAILED, /* useColor */ false);
@@ -370,8 +431,12 @@ int main() {
   testResolverError(progVarArgMismatch, errorVarArgMismatch);
   testResolverError(progWhereClauseFalse, errorWhereClauseFalse);
   testResolverError(progBasic, errorBasic);
-  testResolverError(progOther, errorOther);
+  // Avoid standard modules for now to prevent very long list of candidates
+  testResolverError(progOther, errorOther, false);
   testResolverError(progManyCandidates, errorManyCandidates);
+
+  testResolverError(progBreakNonLoop, errorBreakNonLoop, true,  ErrorType::InvalidContinueBreakTarget);
+  testResolverError(progLabelAsValue, errorLabelAsValue, true, ErrorType::LoopLabelOutsideBreakOrContinue);
 
   return 0;
 }

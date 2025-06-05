@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -48,26 +48,12 @@ module CTypes {
   /* The Chapel type corresponding to the C 'double' type */
   extern type c_double = real(64);
 
-  @chpldoc.nodoc
-  @deprecated("'cFileTypeHasPointer' is deprecated and no longer affects the behavior of the 'c_FILE' type. A 'FILE*' should be represented by 'c_ptr(c_FILE)'")
-  config param cFileTypeHasPointer = false;
-
   /*
     Chapel type alias for a C ``FILE``
 
     A ``FILE*`` can be represented with ``c_ptr(c_FILE)``
   */
   extern "_cfiletype" type c_FILE;
-
-  /*
-    A Chapel type alias for ``void*`` in C. Casts from integral types to
-    ``c_void_ptr`` as well as casts from ``c_void_ptr`` to integral types are
-    supported and behave similarly to those operations in C.
-
-  */
-  pragma "last resort"
-  @deprecated(notes="c_void_ptr is deprecated, use 'c_ptr(void)' instead.")
-  type c_void_ptr = c_ptr(void);
 
   /*
 
@@ -403,6 +389,14 @@ module CTypes {
     __primitive("=", lhs, nil);
   }
 
+  @chpldoc.nodoc
+  inline operator :(x: ?t1, type t2: c_ptr(void))
+                   where chpl_enableProcPtrs(t1) {
+    var localProc = chpl_toLocalProc(x);
+    // The cast will go through because 'localProc' is a pointer.
+    var ret = __primitive("cast", t2, localProc);
+    return ret;
+  }
 
   @chpldoc.nodoc
   inline operator :(x:c_fn_ptr, type t:c_ptr(void)) {
@@ -597,17 +591,6 @@ module CTypes {
   }
 
   @chpldoc.nodoc
-  @deprecated(notes="Casting from class types directly to c_ptr(void) is deprecated. Please use c_ptrTo/c_ptrToConst instead.")
-  inline operator :(x:borrowed, type t:c_ptr(void)) {
-    return __primitive("cast", t, x);
-  }
-  @chpldoc.nodoc
-  @deprecated(notes="Casting from class types directly to c_ptr(void) is deprecated. Please use c_ptrTo/c_ptrToConst instead.")
-  inline operator :(x:unmanaged, type t:c_ptr(void)) {
-    return __primitive("cast", t, x);
-  }
-
-  @chpldoc.nodoc
   inline operator :(x:c_ptr, type t:_ddata)
       where t.eltType == x.eltType || x.eltType == void {
     return __primitive("cast", t, x);
@@ -768,12 +751,6 @@ module CTypes {
   extern proc c_pointer_diff(a:c_ptr(void), b:c_ptr(void),
                              eltSize:c_ptrdiff):c_ptrdiff;
 
-  // Transition symbol for 1.31 c_ptrTo behavior deprecations,
-  // itself deprecated in 1.33.
-  @chpldoc.nodoc
-  @deprecated("'cPtrToLogicalValue' is deprecated and no longer affects the behavior of 'c_ptrTo'")
-  config param cPtrToLogicalValue = true;
-
   // Begin c_ptrTo overloads
 
   /*
@@ -795,9 +772,10 @@ module CTypes {
       the ``bytes``.
 
     To avoid this special behavior and just get the variable address naively
-    regardless of type, use :proc:`c_addrOf` instead. ``c_ptrTo`` has identical
-    behavior to ``c_addrOf`` on types other than those with special behavior
-    listed above.
+    regardless of type, use :proc:`c_addrOf` instead.
+
+    Domains, non-local arrays, and non-rectangular arrays are not supported,
+    and will cause a compiler error.
 
     .. note::
 
@@ -805,8 +783,7 @@ module CTypes {
       of the object it points to. In many cases the object will be stack
       allocated and could go out of scope even if this ``c_ptr`` remains.
 
-    :arg x:   The by-reference argument to get a pointer to. Domains are not
-              supported, and will cause a compiler error.
+    :arg x:   The by-reference argument to get a pointer to.
     :returns: A :type:`c_ptr` to the argument passed by reference, with address
               and element type potentially depending on special behavior for the
               the type as described above.
@@ -997,10 +974,11 @@ module CTypes {
   @chpldoc.nodoc
   inline proc c_addrOf(ref arr: []) {
     if (boundsChecking && arr._value.locale != here) then
-      halt(
-          "c_addrOf() can only be applied to an array from the locale on " +
-          "which it lives (array is on locale " + arr._value.locale.id:string +
-          ", call was made on locale " + here.id:string + ")");
+      // Changed from error to unstable warning in 2.4. Warning can be removed
+      // once we're confident it's not causing problems.
+      if chpl_warnUnstable then
+        compilerWarning(
+            "calling c_addrOf on an array from another locale is unstable");
 
     return c_pointer_return(arr);
   }
@@ -1012,10 +990,10 @@ module CTypes {
   @chpldoc.nodoc
   inline proc c_addrOfConst(const arr: []) {
     if (boundsChecking && arr._value.locale != here) then
-      halt(
-          "c_addrOfConst() can only be applied to an array from the locale on " +
-          "which it lives (array is on locale " + arr._value.locale.id:string +
-          ", call was made on locale " + here.id:string + ")");
+      // See note on corresponding c_addrOf overload
+      if chpl_warnUnstable then
+        compilerWarning(
+            "calling c_addrOfConst on an array from another locale is unstable");
 
     return c_pointer_return_const(arr);
   }
@@ -1026,11 +1004,20 @@ module CTypes {
     Note that the behavior of this procedure is identical to :proc:`c_ptrTo`
     for scalar types and records. It only differs for arrays, strings, bytes,
     and class variables; see documentation of :proc:`c_ptrTo` for special
-    behavior on those types.
+    behavior on those types. It also allows passing in any type, including those
+    disallowed by :proc:`c_ptrTo`.
   */
   inline proc c_addrOf(ref x: ?t): c_ptr(t) {
     if isDomainType(t) then
       compilerError("c_addrOf domain type not supported");
+    return c_pointer_return(x);
+  }
+
+  // Added as unstable for 2.4, can be merged into stable version once we're
+  // confident in it.
+  @chpldoc.nodoc
+  @unstable("using 'c_addrOf' with a domain argument is unstable")
+  inline proc c_addrOf(ref x: ?t): c_ptr(t) where isDomainType(t) {
     return c_pointer_return(x);
   }
 
@@ -1041,6 +1028,14 @@ module CTypes {
   inline proc c_addrOfConst(const ref x: ?t): c_ptrConst(t) {
     if isDomainType(t) then
       compilerError("c_addrOfConst domain type not supported");
+    return c_pointer_return_const(x);
+  }
+
+  // See note on corresponding c_addrOf overload
+  @chpldoc.nodoc
+  @unstable("using 'c_addrOfConst' with a domain argument is unstable")
+  inline proc c_addrOfConst(const ref x: ?t): c_ptrConst(t)
+      where isDomainType(t) {
     return c_pointer_return_const(x);
   }
 

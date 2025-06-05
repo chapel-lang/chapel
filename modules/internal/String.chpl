@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -490,15 +490,6 @@ module String {
     return ret;
   }
 
-  @chpldoc.nodoc
-  @deprecated("the type 'c_string' is deprecated; please use the variant of 'string.createBorrowingBuffer' that takes a 'c_ptrConst(c_char)' instead")
-  inline proc type string.createBorrowingBuffer(x: chpl_c_string,
-                                                length=x.size) : string throws {
-    return string.createBorrowingBuffer(x:bufferType,
-                                        length=length,
-                                        size=length+1);
-  }
-
   /*
     Creates a new :type:`string` which takes ownership of the memory allocated for a
     :class:`~CTypes.c_ptr`. The buffer will be freed when the :type:`string` is deinitialized.
@@ -518,15 +509,6 @@ module String {
   */
   proc type string.createAdoptingBuffer(x: c_ptr(?t),
                                         length=strLen(x)) : string throws {
-    return string.createAdoptingBuffer(x:bufferType,
-                                       length=length,
-                                       size=length+1);
-  }
-
-  @chpldoc.nodoc
-  @deprecated("the type 'c_string' is deprecated; please use the variant of 'string.createAdoptingBuffer' that takes a 'c_ptrConst(c_char)' instead")
-  inline proc type string.createAdoptingBuffer(x: chpl_c_string,
-                                               length=x.size) : string throws {
     return string.createAdoptingBuffer(x:bufferType,
                                        length=length,
                                        size=length+1);
@@ -658,18 +640,6 @@ module String {
     return decodeByteBuffer(x:bufferType, length, policy);
   }
 
-  @chpldoc.nodoc
-  @deprecated("the type 'c_string' is deprecated; please use the variant of 'string.createCopyingBuffer' that takes a 'c_ptrConst(c_char)' instead")
-  inline proc type string.createCopyingBuffer(x: chpl_c_string,
-                                              length=x.size,
-                                              policy=decodePolicy.strict
-                                              ) : string throws {
-    return string.createCopyingBuffer(x:bufferType,
-                                      length=length,
-                                      size=length+1,
-                                      policy);
-  }
-
   // non-validating string factory functions are in this submodule. This
   // submodule can be `private use`d from other String-supporting modules.
   @chpldoc.nodoc
@@ -764,7 +734,7 @@ module String {
       // a null-terminator.
       if isOwned && this.buff != nil {
         on __primitive("chpl_on_locale_num",
-                       chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                       chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
           chpl_here_free(this.buff);
         }
       }
@@ -1001,7 +971,7 @@ module String {
       // pattern.len is <= than this.buffLen, so go to the home locale
       var ret: int = -1;
       on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                     chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
         // any value >= 0 means we have a solution
         // used because we cant break out of an on-clause early
         var localRet: int = -2;
@@ -1165,38 +1135,6 @@ module String {
       const x:string = this; // assignment makes it local
       return x;
     }
-  }
-
-  /*
-    Get a `c_ptrConst(c_char)` from a :type:`string`. The returned
-    :class:`~CTypes.c_ptrConst` shares the buffer with the :type:`string`.
-
-    .. warning::
-
-        This can only be called safely on a :type:`string` whose home is
-        the current locale.  This property can be enforced by calling
-        :proc:`string.localize()` before :proc:`string.c_str()`. If the
-        string is remote, the program will halt.
-
-    For example:
-
-    .. code-block:: chapel
-
-      var my_string = "Hello!";
-      on different_locale {
-        printf("%s", my_string.localize().c_str());
-      }
-
-    :returns:
-        A `c_ptrConst(c_char)` that points to the underlying buffer used by this
-        :type:`string`. The returned `c_ptrConst(c_char)` is only valid when used
-        on the same locale as the string.
-   */
-  pragma "last resort"
-  @deprecated("'string.c_str()' has moved to 'CTypes'. Please 'use CTypes' to access ':proc:`~CTypes.string.c_str`'")
-  inline proc string.c_str() : c_ptrConst(c_char) {
-    use CTypes only c_str;
-    return this.c_str();
   }
 
   /*
@@ -1818,7 +1756,7 @@ module String {
 
     var result: bool;
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       var locale_result = false;
       for cp in this.codepoints() {
         if codepoint_isLower(cp) {
@@ -1845,7 +1783,7 @@ module String {
 
     var result: bool;
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       var locale_result = false;
       for cp in this.codepoints() {
         if codepoint_isUpper(cp) {
@@ -1872,7 +1810,7 @@ module String {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       for cp in this.codepoints() {
         if !(codepoint_isWhitespace(cp)) {
           result = false;
@@ -1894,7 +1832,7 @@ module String {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       for cp in this.codepoints() {
         if !codepoint_isAlpha(cp) {
           result = false;
@@ -1916,7 +1854,7 @@ module String {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       for cp in this.codepoints() {
         if !codepoint_isDigit(cp) {
           result = false;
@@ -1938,7 +1876,7 @@ module String {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       for cp in this.codepoints() {
         if !(codepoint_isAlpha(cp) || codepoint_isDigit(cp)) {
           result = false;
@@ -1960,7 +1898,7 @@ module String {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       for cp in this.codepoints() {
         if !codepoint_isPrintable(cp) {
           result = false;
@@ -1983,7 +1921,7 @@ module String {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       param UN = 0, UPPER = 1, LOWER = 2;
       var last = UN;
       for cp in this.codepoints() {
@@ -2323,7 +2261,7 @@ module String {
     /* if a.locale_id == b.locale_id {
       var ret: bool = false;
       on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(a.locale_id, c_sublocid_any)) {
+                     chpl_buildLocaleID(a.locale_id, c_sublocid_none)) {
         ret = doEq(a, b);
       }
       return ret;
@@ -2433,18 +2371,6 @@ module String {
   //
   // Casts (casts to & from other primitive types are in StringCasts)
   //
-
-  // Cast from c_string to string
-  @chpldoc.nodoc
-  @deprecated("the type 'c_string' is deprecated; please use one of the 'string.create*ingBuffer' methods that takes a 'c_ptrConst(c_char)' instead")
-  operator :(cs: c_string, type t: string)  {
-    try {
-      return string.createCopyingBuffer(cs:c_ptrConst(c_char));
-    }
-    catch {
-      halt("Casting a non-UTF-8 c_string to string");
-    }
-  }
 
   // Cast from byteIndex to int
   @chpldoc.nodoc

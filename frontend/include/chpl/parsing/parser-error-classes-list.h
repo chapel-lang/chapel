@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -61,10 +61,10 @@ PARSER_SYNTAX_CLASS(ParseSyntax, std::string)
 POSTPARSE_ERROR_CLASS(CantApplyPrivate, std::string)
 POSTPARSE_ERROR_CLASS(WhenAfterOtherwise, const uast::When*, const uast::When*)
 ERROR_CLASS(DisallowedControlFlow, const uast::AstNode*, const uast::AstNode*, const uast::AstNode*)
+ERROR_CLASS(InvalidReturns, const uast::Return*, const uast::Return*)
 ERROR_CLASS(IllegalUseImport, const uast::AstNode*, const uast::AstNode*)
 ERROR_CLASS(InvalidThrowaway, const uast::AstNode*, const uast::AstNode*)
-ERROR_CLASS(InvalidGpuAssertion, const uast::AstNode*, const uast::Attribute*)
-ERROR_CLASS(InvalidBlockSize, const uast::AstNode*, const uast::Attribute*)
+ERROR_CLASS(InvalidGpuAttribute, const uast::AstNode*, const uast::Attribute*)
 ERROR_CLASS(InvalidImplementsIdent, const uast::Implements*, const uast::Identifier*)
 ERROR_CLASS(InvalidParenfulDeprecation, const uast::AttributeGroup*, const uast::AstNode*)
 POSTPARSE_ERROR_CLASS(MultipleManagementStrategies, const uast::New::Management, const uast::New::Management)

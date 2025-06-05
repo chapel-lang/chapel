@@ -4,19 +4,27 @@ import sys
 
 import chpl_comm, chpl_compiler, chpl_platform, overrides
 from compiler_utils import CompVersion, get_compiler_version, has_std_atomics
-from utils import error, memoize, warning
+from utils import error, memoize, warning, check_valid_var
 
 
 @memoize
 def get(flag='target'):
     if flag == 'network':
+        valid = ['none', 'ofi', 'ugni']
         atomics_val = overrides.get('CHPL_NETWORK_ATOMICS')
+        comm_val = chpl_comm.get()
         if not atomics_val:
-            comm_val = chpl_comm.get()
             if comm_val in ['ofi', 'ugni'] and get('target') != 'locks':
                 atomics_val = comm_val
             else:
                 atomics_val = 'none'
+        elif atomics_val == 'gasnet':
+            error("CHPL_NETWORK_ATOMICS=gasnet is not supported")
+        elif atomics_val not in valid:
+            check_valid_var("CHPL_NETWORK_ATOMICS", atomics_val, valid)
+        elif atomics_val != 'none' and atomics_val != comm_val:
+            error("CHPL_NETWORK_ATOMICS=%s is incompatible with CHPL_COMM=%s"
+                  % (atomics_val, comm_val))
     elif flag == 'target':
         atomics_val = overrides.get('CHPL_ATOMICS')
         is_user_specified = atomics_val is not None
@@ -74,6 +82,9 @@ def get(flag='target'):
             # we can't use intrinsics, fall back to locks
             if not atomics_val:
                 atomics_val = 'locks'
+
+        check_valid_var("CHPL_ATOMICS", atomics_val, ['cstdlib', 'intrinsics', 'locks'])
+
     else:
         error("Invalid flag: '{0}'".format(flag), ValueError)
 
@@ -84,6 +95,11 @@ def get(flag='target'):
         elif is_user_specified:
             msg += ": please consider using CHPL_ATOMICS=cstdlib"
         warning(msg)
+
+    if flag == 'target' and atomics_val == 'locks':
+        platform_val = chpl_platform.get('target')
+        if platform_val == 'darwin':
+            error("CHPL_ATOMICS=locks is not supported on MacOS")
 
     return atomics_val
 

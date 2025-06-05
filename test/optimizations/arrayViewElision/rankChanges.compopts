@@ -1,1 +1,4 @@
---report-array-view-elision -sdebugShortArrayTransfer
+--report-array-view-elision -sdist='"default"' -sdebugShortArrayTransfer=true # rankChanges
+--report-array-view-elision -sdist='"block"' -sdebugShortArrayTransfer=false # rankChanges-no-sat
+--report-array-view-elision -sdist='"stencil"' -sdebugShortArrayTransfer=false # rankChanges-no-sat
+--report-array-view-elision -sdist='"cyclic"' -sdebugShortArrayTransfer=false # rankChanges-no-sat

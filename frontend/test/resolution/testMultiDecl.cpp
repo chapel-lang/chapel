@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+#include "test-common.h"
 #include "test-resolution.h"
 
 #include "chpl/parsing/parsing-queries.h"
@@ -94,8 +95,7 @@ static void test2() {
 
 static void test3() {
   printf("test3\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto M = parseModule(context,
                 R""""(
@@ -241,6 +241,7 @@ static void test6() {
   ErrorGuard guard(context);
 
   std::string program = R"""(
+    operator =(ref lhs: int, const rhs: int) {}
     var a, b : int;
 
     var x = a;
@@ -250,6 +251,34 @@ static void test6() {
   assert(xt->isIntType());
 }
 
+static void test7() {
+  printf("test7\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto M = parseModule(context,
+                R""""(
+                  operator +(lhs: int, rhs: int) do return __primitive("+", lhs, rhs);
+                  var a = 1, b = (1 + a);
+                )"""");
+
+  assert(M->numStmts() == 2);
+  const MultiDecl* md = M->stmt(1)->toMultiDecl();
+  assert(md);
+  auto a = md->declOrComment(0)->toVariable();
+  assert(a);
+  auto b = md->declOrComment(1)->toVariable();
+  assert(b);
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, M->id());
+  auto aQt = rr.byAst(a).type();
+  auto bQt = rr.byAst(b).type();
+  assert(aQt.kind() == QualifiedType::VAR);
+  assert(aQt.type()->isIntType());
+  assert(bQt.kind() == QualifiedType::VAR);
+  assert(bQt.type()->isIntType());
+}
+
 int main() {
   test1();
   test2();
@@ -257,6 +286,7 @@ int main() {
   test4();
   test5();
   test6();
+  test7();
 
   return 0;
 }

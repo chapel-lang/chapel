@@ -1,4 +1,4 @@
-# Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2025 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -17,7 +17,7 @@
 
 # define target for the common code for all dyno tests
 add_library(tests-common OBJECT EXCLUDE_FROM_ALL
-            test-common.cpp test-parsing.cpp test-resolution.cpp)
+            test-common.cpp ErrorGuard.cpp test-parsing.cpp test-resolution.cpp)
 target_link_libraries(tests-common ChplFrontend)
 
 add_custom_target(tests)

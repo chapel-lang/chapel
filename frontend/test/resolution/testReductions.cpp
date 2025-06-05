@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -122,13 +122,77 @@ static void test4(Context* context) {
   assert(qt.type()->isBoolType());
 }
 
-int main() {
-  Context::Configuration config;
-  config.chplHome = getenv("CHPL_HOME");
-  Context context(config);
+// test 'minloc' and 'maxloc' reductions
+static void test5(Context* context) {
+  context->advanceToNextRevision(false);
+  setupModuleSearchPaths(context, false, false, {}, {});
+  auto qts = resolveTypesOfVariablesInit(context,
+                        R""""(
+                        iter f() {
+                          yield (1, 0);
+                          yield (2, 1);
+                          yield (3, 2);
+                        }
+                        var x = maxloc reduce f();
+                        var y = minloc reduce f();
+                        )"""", {"x", "y"});
+  for (auto& pair : qts) {
+    auto& qt = pair.second;
+    assert(qt.type());
+    assert(qt.type()->isTupleType());
+    assert(qt.type()->toTupleType()->numElements() == 2);
+    assert(qt.type()->toTupleType()->elementType(0).type()->isIntType());
+    assert(qt.type()->toTupleType()->elementType(1).type()->isIntType());
+  }
+}
 
-  test1(&context);
-  test2(&context);
-  test3(&context);
-  test4(&context);
+// test 'zip' forms for reductions (serial and parallel)
+static void test6(Context* context) {
+  context->advanceToNextRevision(false);
+  setupModuleSearchPaths(context, false, false, {}, {});
+  auto qts = resolveTypesOfVariablesInit(context,
+                        R""""(
+                        iter f() { yield 1; yield 2; yield 3; }
+
+                        var x = maxloc reduce zip(1..10, 1..10);
+                        var y = maxloc reduce zip(f(), f());
+                        )"""", {"x", "y"});
+  for (auto& pair : qts) {
+    auto& qt = pair.second;
+    assert(qt.type());
+    assert(qt.type()->isTupleType());
+    assert(qt.type()->toTupleType()->numElements() == 2);
+    assert(qt.type()->toTupleType()->elementType(0).type()->isIntType());
+    assert(qt.type()->toTupleType()->elementType(1).type()->isIntType());
+  }
+}
+
+// test 'reduce' with parallel-only iterators
+static void test7(Context* context) {
+  context->advanceToNextRevision(false);
+  setupModuleSearchPaths(context, false, false, {}, {});
+  auto qts = resolveTypesOfVariablesInit(context,
+                        R""""(
+                        iter f(param tag) where tag == iterKind.standalone { yield 1; yield 2; yield 3; }
+
+                        var x = + reduce f();
+                        )"""", {"x"});
+  for (auto& pair : qts) {
+    auto& qt = pair.second;
+    assert(qt.type());
+    assert(qt.type()->isIntType());
+  }
+}
+
+int main() {
+  // Use a single context instance to avoid re-resolving internal modules.
+  auto context = buildStdContext();
+
+  test1(context);
+  test2(context);
+  test3(context);
+  test4(context);
+  test5(context);
+  test6(context);
+  test7(context);
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -62,7 +62,7 @@ extern const char* CHPL_COMM_OFI_OOB;
 extern const char* CHPL_TASKS;
 extern const char* CHPL_LAUNCHER;
 extern const char* CHPL_TIMERS;
-extern const char* CHPL_MEM;
+extern const char* CHPL_TARGET_MEM;
 extern const char* CHPL_MAKE;
 extern const char* CHPL_ATOMICS;
 extern const char* CHPL_NETWORK_ATOMICS;
@@ -70,6 +70,7 @@ extern const char* CHPL_GMP;
 extern const char* CHPL_HWLOC;
 extern const char* CHPL_RE2;
 extern const char* CHPL_LLVM;
+extern const char* CHPL_LLVM_BIN_DIR;
 extern const char* CHPL_AUX_FILESYS;
 extern const char* CHPL_UNWIND;
 extern const char* CHPL_RUNTIME_LIB;

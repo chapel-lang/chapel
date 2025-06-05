@@ -199,7 +199,7 @@ class AbstractJob(object):
         logging.debug('Job name prefix is: {0}'.format(prefix))
 
         cmd_basename = os.path.basename(self.test_command[0])
-        logging.debug('Test command basname: {0}'.format(cmd_basename))
+        logging.debug('Test command basename: {0}'.format(cmd_basename))
 
         job_name = '{0}-{1}'.format(prefix, cmd_basename)
         logging.debug('Job name is: {0}'.format(job_name))
@@ -508,7 +508,7 @@ class AbstractJob(object):
         os.environ["LMOD_QUIET"] = "1"
 
         logging.info(
-            'Starting {0} job "{1}" on {2} nodes with walltime {3} '
+            'Starting {0} job "{1}" on {2} locales with walltime {3} '
             'and output file: {4}'.format(
                 self.submit_bin, self.job_name, self.num_locales,
                 self.walltime, output_file))
@@ -887,7 +887,7 @@ class PbsProJob(AbstractJob):
 
         # Use regex to find position of status. Then extract the one character
         # status from the job line.
-        pattern = re.compile('\sS\s')
+        pattern = re.compile(r'\sS\s')
         match = pattern.search(header_line)
         if match is not None:
             status_char = match.start() + 1
@@ -920,16 +920,35 @@ class PbsProJob(AbstractJob):
         # When comm=none sub_test/start_test passes -nl -1 (i.e. num locales
         # is -1). For the tests to work, reserve one node and the regular
         # ncpus (this does not happen by default).
-        num_locales = self.num_locales
-        if num_locales == -1:
-            num_locales = 1
+        num_nodes = self.num_locales
+        if num_nodes == -1:
+            num_nodes = 1
+
+        loc_per_node = int(os.environ.get('CHPL_RT_LOCALES_PER_NODE', '1'))
+
+        logging.debug("Locales per node: {}".format(loc_per_node))
+        if num_nodes%loc_per_node != 0:
+            raise RuntimeError('Requested number of locales ({}) is not '
+                               'divisible by CHPL_RT_LOCALES_PER_NODE '
+                               '({}).'.format(num_nodes, loc_per_node))
+
+        num_nodes = int(num_nodes/loc_per_node)
 
         if self.hostlist is not None:
+            if loc_per_node != 1:
+                # Engin: I am not sure if this code path is still needed, nor
+                # can't tell how to handle colocales here. So, for now, I am
+                # just adding a warning. If this path is needed, we can make
+                # adjustments here.
+                logging.warning('Hostlist and the CHPL_RT_LOCALES_PER_NODE '
+                                'environment are set. You may not get correct '
+                                'number of nodes allocated')
+                                
             # This relies on the caller to use the correct select syntax.
             select_stmt = select_pattern.format(self.hostlist)
-            select_stmt = select_stmt.replace('<num_locales>', str(num_locales))
-        elif num_locales > 0:
-            select_stmt = select_pattern.format(num_locales)
+            select_stmt = select_stmt.replace('<num_nodes>', str(num_nodes))
+        elif num_nodes > 0:
+            select_stmt = select_pattern.format(num_nodes)
 
             if self.num_cpus_resource is not None:
                 select_stmt += ':{0}={1}'.format(

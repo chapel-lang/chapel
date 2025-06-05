@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -155,7 +155,7 @@ template <>
 struct Writer<types::QualifiedType> {
   void operator()(Context* context, std::ostream& oss, const types::QualifiedType& qt) {
     if (!qt.hasTypePtr()) {
-      oss << "a value of unknown type" << std::endl;
+      oss << "a value of unknown type";
     } else if (qt.kind() == types::QualifiedType::TYPE) {
       oss << "the type '";
       qt.type()->stringify(oss, CHPL_SYNTAX);

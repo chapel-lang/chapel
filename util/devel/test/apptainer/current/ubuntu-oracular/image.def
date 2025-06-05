@@ -1,0 +1,13 @@
+BootStrap: docker
+From: ubuntu:oracular
+
+%files
+    ../../provision-scripts/* /provision-scripts/
+
+%post
+    /provision-scripts/apt-get-deps.sh
+    # installs LLVM 19
+    /provision-scripts/apt-get-llvm.sh
+
+%runscript
+    ../../provision-scripts/run.sh "$@"

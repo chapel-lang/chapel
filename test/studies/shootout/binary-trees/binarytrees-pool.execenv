@@ -1,0 +1,2 @@
+# this value has been shown to cause the most problems for this test
+CHPL_RT_NUM_THREADS_PER_LOCALE=3

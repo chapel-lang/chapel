@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.  *
  * The entirety of this work is licensed under the Apache License,
@@ -34,10 +34,17 @@
 #include <stdbool.h>
 
 
-void chpl_gpu_impl_init(int* num_devices) {
+void chpl_gpu_impl_begin_init(int* num_all_devices) {
   CHPL_GPU_DEBUG("Initializing none GPU layer.\n");
-  *num_devices = 1;
+  *num_all_devices = 1;
 }
+
+void chpl_gpu_impl_collect_topo_addr_info(chpl_topo_pci_addr_t* into,
+                                          int device_num) {}
+
+void chpl_gpu_impl_setup_with_device_count(int num_my_devices) {}
+
+void chpl_gpu_impl_setup_device(int my_index, int global_index) {}
 
 void chpl_gpu_impl_load_global(const char* global_name, void** ptr,
                                size_t* size) {
@@ -149,22 +156,10 @@ bool chpl_gpu_impl_stream_ready(void* stream) {
 void chpl_gpu_impl_stream_synchronize(void* stream) {
 }
 
-bool chpl_gpu_impl_can_reduce(void) {
-  return false;
-}
-
-bool chpl_gpu_impl_can_sort(void){
-  return false;
-}
-
 #define DEF_ONE_REDUCE_RET_VAL(impl_kind, chpl_kind, data_type) \
 void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
                                                     data_type* val, int* idx,\
-                                                    void* stream) {\
-  chpl_internal_error("This function shouldn't have been called. "\
-                      "cpu-as-device mode should handle reductions in "\
-                      "the module code\n");\
-}
+                                                    void* stream) {}
 
 GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL, Sum, sum)
 GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL, Min, min)
@@ -175,11 +170,7 @@ GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL, Max, max)
 #define DEF_ONE_REDUCE_RET_VAL_IDX(cub_kind, chpl_kind, data_type) \
 void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
                                                     data_type* val, int* idx,\
-                                                    void* stream) {\
-  chpl_internal_error("This function shouldn't have been called. "\
-                      "cpu-as-device mode should handle reductions in "\
-                      "the module code\n");\
-}
+                                                    void* stream) {}
 
 GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL_IDX, ArgMin, minloc)
 GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL_IDX, ArgMax, maxloc)
@@ -189,11 +180,7 @@ GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL_IDX, ArgMax, maxloc)
 #define DEF_ONE_SORT(cub_kind, chpl_kind, data_type) \
 void chpl_gpu_impl_sort_##chpl_kind##_##data_type(data_type* data_in, \
                                                   data_type* data_out, \
-                                                  int n, void* stream) {\
-  chpl_internal_error("This function shouldn't have been called. "\
-                      "cpu-as-device mode should handle sorting in "\
-                      "the module code\n");\
-}
+                                                  int n, void* stream) {}
 
 GPU_DEV_CUB_WRAP(DEF_ONE_SORT, SortKeys, keys)
 
@@ -201,4 +188,59 @@ void* chpl_gpu_impl_host_register(void* var, size_t size) { return var; }
 void chpl_gpu_impl_host_unregister(void* var) { }
 
 #undef DEF_ONE_SORT
+
+void chpl_gpu_impl_name(int dev, char *resultBuffer, int bufferSize) {
+  strcpy(resultBuffer, "chapel-cpu-as-device-gpu");
+}
+
+const int CHPL_GPU_ATTRIBUTE__MAX_THREADS_PER_BLOCK = 0;
+const int CHPL_GPU_ATTRIBUTE__MAX_BLOCK_DIM_X = 1;
+const int CHPL_GPU_ATTRIBUTE__MAX_BLOCK_DIM_Y = 2;
+const int CHPL_GPU_ATTRIBUTE__MAX_BLOCK_DIM_Z = 3;
+const int CHPL_GPU_ATTRIBUTE__MAX_GRID_DIM_X = 4;
+const int CHPL_GPU_ATTRIBUTE__MAX_GRID_DIM_Y = 5;
+const int CHPL_GPU_ATTRIBUTE__MAX_GRID_DIM_Z = 6;
+const int CHPL_GPU_ATTRIBUTE__MAX_SHARED_MEMORY_PER_BLOCK = 7;
+const int CHPL_GPU_ATTRIBUTE__TOTAL_CONSTANT_MEMORY = 8;
+const int CHPL_GPU_ATTRIBUTE__WARP_SIZE = 9;
+const int CHPL_GPU_ATTRIBUTE__MAX_PITCH = 10;
+const int CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE1D_WIDTH = 11;
+const int CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE2D_WIDTH = 12;
+const int CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE2D_HEIGHT = 13;
+const int CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE3D_WIDTH = 14;
+const int CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE3D_HEIGHT = 15;
+const int CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE3D_DEPTH = 16;
+const int CHPL_GPU_ATTRIBUTE__MAX_REGISTERS_PER_BLOCK = 17;
+const int CHPL_GPU_ATTRIBUTE__CLOCK_RATE = 18;
+const int CHPL_GPU_ATTRIBUTE__TEXTURE_ALIGNMENT = 19;
+const int CHPL_GPU_ATTRIBUTE__TEXTURE_PITCH_ALIGNMENT = 20;
+const int CHPL_GPU_ATTRIBUTE__MULTIPROCESSOR_COUNT = 21;
+const int CHPL_GPU_ATTRIBUTE__KERNEL_EXEC_TIMEOUT = 22;
+const int CHPL_GPU_ATTRIBUTE__INTEGRATED = 23;
+const int CHPL_GPU_ATTRIBUTE__CAN_MAP_HOST_MEMORY = 24;
+const int CHPL_GPU_ATTRIBUTE__COMPUTE_MODE = 25;
+const int CHPL_GPU_ATTRIBUTE__CONCURRENT_KERNELS = 26;
+const int CHPL_GPU_ATTRIBUTE__ECC_ENABLED = 27;
+const int CHPL_GPU_ATTRIBUTE__PCI_BUS_ID = 28;
+const int CHPL_GPU_ATTRIBUTE__PCI_DEVICE_ID = 29;
+const int CHPL_GPU_ATTRIBUTE__MEMORY_CLOCK_RATE = 30;
+const int CHPL_GPU_ATTRIBUTE__GLOBAL_MEMORY_BUS_WIDTH = 31;
+const int CHPL_GPU_ATTRIBUTE__L2_CACHE_SIZE = 32;
+const int CHPL_GPU_ATTRIBUTE__MAX_THREADS_PER_MULTIPROCESSOR = 33;
+const int CHPL_GPU_ATTRIBUTE__COMPUTE_CAPABILITY_MAJOR = 34;
+const int CHPL_GPU_ATTRIBUTE__COMPUTE_CAPABILITY_MINOR = 35;
+const int CHPL_GPU_ATTRIBUTE__MAX_SHARED_MEMORY_PER_MULTIPROCESSOR = 36;
+const int CHPL_GPU_ATTRIBUTE__MANAGED_MEMORY = 37;
+const int CHPL_GPU_ATTRIBUTE__MULTI_GPU_BOARD = 38;
+const int CHPL_GPU_ATTRIBUTE__PAGEABLE_MEMORY_ACCESS = 39;
+const int CHPL_GPU_ATTRIBUTE__CONCURRENT_MANAGED_ACCESS = 40;
+const int CHPL_GPU_ATTRIBUTE__PAGEABLE_MEMORY_ACCESS_USES_HOST_PAGE_TABLES = 41;
+const int CHPL_GPU_ATTRIBUTE__DIRECT_MANAGED_MEM_ACCESS_FROM_HOST = 42;
+
+int chpl_gpu_impl_query_attribute(int dev, int attribute) {
+  chpl_warning(
+    "querying gpu attributes is currently unsupported in cpu-as-device mode.",0,0);
+  return -1;
+}
+
 #endif // HAS_GPU_LOCALE

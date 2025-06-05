@@ -43,124 +43,114 @@
 
 #if defined(USING_QTHREADS) && !defined(CXX_LAMBDAS)
 
-class ddot_square
-{
-public: ddot_square(const double *const X) :
-        ret(0.0), x(X) {}
-    void operator() (const size_t startat,
-                     const size_t stopat)
-    {
-        double sum = x[startat] * x[startat];
+class ddot_square {
+public:
+  ddot_square(double const *const X): ret(0.0), x(X) {}
 
-        for (size_t i = startat + 1; i < stopat; i++) {
-            sum += x[i] * x[i];
-        }
-        qthread_dincr(&ret, sum);
-    }
+  void operator()(size_t const startat, size_t const stopat) {
+    double sum = x[startat] * x[startat];
 
-    double ret;
+    for (size_t i = startat + 1; i < stopat; i++) { sum += x[i] * x[i]; }
+    qthread_dincr(&ret, sum);
+  }
+
+  double ret;
 private:
-    const double *const x;
+  double const *const x;
 };
 
-class ddot_mult
-{
-public: ddot_mult(const double *const X,
-                  const double *const Y) :
-        ret(0.0), x(X), y(Y) {}
-    void operator() (const size_t startat,
-                     const size_t stopat)
-    {
-        double sum = x[startat] * y[startat];
+class ddot_mult {
+public:
+  ddot_mult(double const *const X, double const *const Y):
+    ret(0.0), x(X), y(Y) {}
 
-        for (size_t i = startat + 1; i < stopat; i++) {
-            sum += x[i] * y[i];
-        }
-        qthread_dincr(&ret, sum);
-    }
+  void operator()(size_t const startat, size_t const stopat) {
+    double sum = x[startat] * y[startat];
 
-    double ret;
+    for (size_t i = startat + 1; i < stopat; i++) { sum += x[i] * y[i]; }
+    qthread_dincr(&ret, sum);
+  }
+
+  double ret;
 private:
-    const double *const x;
-    const double *const y;
+  double const *const x;
+  double const *const y;
 };
 
-int ddot (const int           n,
-          const double *const x,
-          const double *const y,
-          double *const       result,
-          double &            time_allreduce)
-{
-    double local_result = 0.0;
+int ddot(int const n,
+         double const *const x,
+         double const *const y,
+         double *const result,
+         double &time_allreduce) {
+  double local_result = 0.0;
 
-    extern int tcount;
+  extern int tcount;
 
-    if (tcount > 0) {
-        if (y == x) {
-            ddot_square loop(x);
-            qt_loop_balance(0, n, loop);
-            local_result = loop.ret;
-        } else {
-            ddot_mult loop(x, y);
-            qt_loop_balance(0, n, loop);
-            local_result = loop.ret;
-        }
+  if (tcount > 0) {
+    if (y == x) {
+      ddot_square loop(x);
+      qt_loop_balance(0, n, loop);
+      local_result = loop.ret;
     } else {
-        if (y == x) {
-            for (int i = 0; i < n; i++) local_result += x[i] * x[i];
-        } else {
-            for (int i = 0; i < n; i++) local_result += x[i] * y[i];
-        }
+      ddot_mult loop(x, y);
+      qt_loop_balance(0, n, loop);
+      local_result = loop.ret;
     }
+  } else {
+    if (y == x) {
+      for (int i = 0; i < n; i++) local_result += x[i] * x[i];
+    } else {
+      for (int i = 0; i < n; i++) local_result += x[i] * y[i];
+    }
+  }
 
-# ifdef USING_MPI
-    // Use MPI's reduce function to collect all partial sums
-    double t0            = mytimer();
-    double global_result = 0.0;
-    MPI_Allreduce(&local_result, &global_result, 1, MPI_DOUBLE, MPI_SUM,
-                  MPI_COMM_WORLD);
-    *result         = global_result;
-    time_allreduce += mytimer() - t0;
-# else
-    *result = local_result;
-# endif
+#ifdef USING_MPI
+  // Use MPI's reduce function to collect all partial sums
+  double t0 = mytimer();
+  double global_result = 0.0;
+  MPI_Allreduce(
+    &local_result, &global_result, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  *result = global_result;
+  time_allreduce += mytimer() - t0;
+#else
+  *result = local_result;
+#endif
 
-    return(0);
+  return (0);
 }
 
 #else // if defined(USING_QTHREADS) && !defined(CXX_LAMBDAS)
 
-int ddot (const int           n,
-          const double *const x,
-          const double *const y,
-          double *const       result,
-          double &            time_allreduce)
-{
-    double local_result = 0.0;
+int ddot(int const n,
+         double const *const x,
+         double const *const y,
+         double *const result,
+         double &time_allreduce) {
+  double local_result = 0.0;
 
-    if (y == x) {
-        LOOP_BEGIN(0, n, start, stop);
-        for (unsigned int i = start; i < stop; ++i) local_result += x[i] * x[i];
-        LOOP_END();
-    } else {
-        LOOP_BEGIN(0, n, start, stop);
-        for (unsigned int i = start; i < stop; ++i) local_result += x[i] * y[i];
-        LOOP_END();
-    }
+  if (y == x) {
+    LOOP_BEGIN(0, n, start, stop);
+    for (unsigned int i = start; i < stop; ++i) local_result += x[i] * x[i];
+    LOOP_END();
+  } else {
+    LOOP_BEGIN(0, n, start, stop);
+    for (unsigned int i = start; i < stop; ++i) local_result += x[i] * y[i];
+    LOOP_END();
+  }
 
-# ifdef USING_MPI
-    // Use MPI's reduce function to collect all partial sums
-    double t0            = mytimer();
-    double global_result = 0.0;
-    MPI_Allreduce(&local_result, &global_result, 1, MPI_DOUBLE, MPI_SUM,
-                  MPI_COMM_WORLD);
-    *result         = global_result;
-    time_allreduce += mytimer() - t0;
-# else
-    *result = local_result;
-# endif
+#ifdef USING_MPI
+  // Use MPI's reduce function to collect all partial sums
+  double t0 = mytimer();
+  double global_result = 0.0;
+  MPI_Allreduce(
+    &local_result, &global_result, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  *result = global_result;
+  time_allreduce += mytimer() - t0;
+#else
+  *result = local_result;
+#endif
 
-    return(0);
+  return (0);
 }
 
 #endif // if defined(USING_QTHREADS) && !defined(CXX_LAMBDAS)

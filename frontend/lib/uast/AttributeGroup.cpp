@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -30,9 +30,12 @@ owned<AttributeGroup> AttributeGroup::build(Builder* builder, Location loc,
                                             bool isDeprecated,
                                             bool isUnstable,
                                             bool isParenfulDeprecated,
+                                            bool hasEdition,
                                             UniqueString deprecationMessage,
                                             UniqueString unstableMessage,
-                                            UniqueString parenfulDeprecationMessage) {
+                                            UniqueString parenfulDeprecationMessage,
+                                            UniqueString firstEdition,
+                                            UniqueString lastEdition) {
   #ifndef NDEBUG
     for (auto tag : pragmas) {
       CHPL_ASSERT(tag >= 0 && tag < NUM_KNOWN_PRAGMAS);
@@ -41,10 +44,11 @@ owned<AttributeGroup> AttributeGroup::build(Builder* builder, Location loc,
 
   AttributeGroup* ret = new AttributeGroup(std::move(pragmas), isDeprecated,
                                            isUnstable,
-                                           isParenfulDeprecated,
+                                           isParenfulDeprecated, hasEdition,
                                            deprecationMessage,
                                            unstableMessage,
-                                           parenfulDeprecationMessage);
+                                           parenfulDeprecationMessage,
+                                           firstEdition, lastEdition);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
@@ -54,9 +58,12 @@ owned<AttributeGroup> AttributeGroup::build(Builder* builder, Location loc,
                                             bool isDeprecated,
                                             bool isUnstable,
                                             bool isParenfulDeprecated,
+                                            bool hasEdition,
                                             UniqueString deprecationMessage,
                                             UniqueString unstableMessage,
                                             UniqueString parenfulDeprecationMessage,
+                                            UniqueString firstEdition,
+                                            UniqueString lastEdition,
                                             AstList attributes) {
   #ifndef NDEBUG
     for (auto tag : pragmas) {
@@ -66,10 +73,11 @@ owned<AttributeGroup> AttributeGroup::build(Builder* builder, Location loc,
 
   AttributeGroup* ret = new AttributeGroup(std::move(pragmas), isDeprecated,
                                            isUnstable,
-                                           isParenfulDeprecated,
+                                           isParenfulDeprecated, hasEdition,
                                            deprecationMessage,
                                            unstableMessage,
                                            parenfulDeprecationMessage,
+                                           firstEdition, lastEdition,
                                            std::move(attributes));
   builder->noteLocation(ret, loc);
   return toOwned(ret);

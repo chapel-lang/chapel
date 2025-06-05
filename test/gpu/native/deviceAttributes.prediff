@@ -1,0 +1,3 @@
+#!/bin/sh
+
+./deviceAttributes -nl 1 --runBaseline=true > deviceAttributes.good

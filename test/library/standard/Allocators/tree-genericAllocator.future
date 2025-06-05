@@ -1,0 +1,3 @@
+feature request: be able to have a generic allocator class member
+
+This fails because we can't pass named arguments to the primitive

@@ -1,0 +1,82 @@
+
+Arrays:
+
+Stencil value:
+-1 -1 -1 -1 -1 -1
+-1 -1 -1 -1 -1 -1
+-1 -1 -1 -1 -1 -1
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+{1..6, 1..6}
+[StencilDom(2,int(64),one,false)] int(64)
+
+Stencil value:
+-1 -1 -1 -1 -1 -1
+-1 -1 -1 -1 -1 -1
+-1 -1 -1 -1 -1 -1
+0 0 0 0 0 0
+0 0 0 0 0 0
+0 0 0 0 0 0
+{1..6, 1..6}
+[StencilDom(2,int(64),one,false)] int(64)
+
+Stencil iter:
+2 3 4 5 6 7
+3 4 5 6 7 8
+4 5 6 7 8 9
+6 7 8 9 10 11
+7 8 9 10 11 12
+8 9 10 11 12 13
+{1..6, 1..6}
+[StencilDom(2,int(64),one,false)] int(64)
+
+Stencil iter:
+2 3 4 5 6 7
+3 4 5 6 7 8
+4 5 6 7 8 9
+6 7 8 9 10 11
+7 8 9 10 11 12
+8 9 10 11 12 13
+{1..6, 1..6}
+[StencilDom(2,int(64),one,false)] int(64)
+
+Stencil array:
+5 5 5 5 5 5
+5 5 5 5 5 5
+5 5 5 5 5 5
+6 6 6 6 6 6
+6 6 6 6 6 6
+6 6 6 6 6 6
+{1..6, 1..6}
+[StencilDom(2,int(64),one,false)] int(64)
+
+Stencil array:
+5 5 5 5 5 5
+5 5 5 5 5 5
+5 5 5 5 5 5
+6 6 6 6 6 6
+6 6 6 6 6 6
+6 6 6 6 6 6
+{1..6, 1..6}
+[StencilDom(2,int(64),one,false)] int(64)
+
+Stencil array:
+6 6 6 6 6 6
+6 6 6 6 6 6
+6 6 6 6 6 6
+7 7 7 7 7 7
+7 7 7 7 7 7
+7 7 7 7 7 7
+{1..6, 1..6}
+[StencilDom(2,int(64),one,false)] int(64)
+
+Stencil array:
+6 6 6 6 6 6
+6 6 6 6 6 6
+6 6 6 6 6 6
+7 7 7 7 7 7
+7 7 7 7 7 7
+7 7 7 7 7 7
+{1..6, 1..6}
+[StencilDom(2,int(64),one,false)] int(64)

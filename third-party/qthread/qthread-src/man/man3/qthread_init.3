@@ -45,12 +45,6 @@ QTHREAD_AFFINITY
 If this variable is set to "no", then the shepherds will not pin themselves to
 specific locations.
 .TP
-QTHREAD_DEBUG_LEVEL
-This variable is used to control the verbosity of debug messages that get
-printed at runtime. Higher numbers increase the verbosity; a value of 0 is the
-same as being unset, which prevents debug messages from being printed. This is
-only applicable if debugging has been enabled when the library was built.
-.TP
 QTHREAD_STACK_SIZE
 This variable specifies, in bytes, the size of the stacks that will be created for each
 thread. Changes to this value during the course of the program run are ignored;

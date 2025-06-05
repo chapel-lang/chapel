@@ -22,6 +22,7 @@ proc main() {
 
 // Return class 'foobar'
 record rec { }
+rec implements keyComparator;
 class foobar { };
 
 proc rec.key(a) {

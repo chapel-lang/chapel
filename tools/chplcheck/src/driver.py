@@ -1,5 +1,5 @@
 #
-# Copyright 2023-2024 Hewlett Packard Enterprise Development LP
+# Copyright 2023-2025 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -66,13 +66,21 @@ class LintDriver:
         self.SilencedRules: List[str] = []
         self.BasicRules: List[rule_types.BasicRule] = []
         self.AdvancedRules: List[rule_types.AdvancedRule] = []
+        self.LocationRules: List[rule_types.LocationRule] = []
 
     def rules_and_descriptions(self):
         # Use a dict in case a rule is registered multiple times.
         to_return = {}
 
-        for rule in itertools.chain(self.BasicRules, self.AdvancedRules):
-            to_return[rule.name] = rule.check_func.__doc__
+        for rule in itertools.chain(
+            self.BasicRules, self.AdvancedRules, self.LocationRules
+        ):
+            doc = rule.check_func.__doc__ or ""
+
+            # if there is an escaped underscore, remove the escape
+            doc = doc.replace("\\_", "_")
+
+            to_return[rule.name] = doc
 
         to_return = list(to_return.items())
         to_return.sort()
@@ -104,7 +112,10 @@ class LintDriver:
 
         return True
 
-    def _has_internal_name(self, node: chapel.AstNode):
+    def has_internal_prefix(self, node: chapel.AstNode) -> bool:
+        """
+        Check if a node has a name that starts with one of the internal prefixes.
+        """
         if not hasattr(node, "name"):
             return False
         return any(
@@ -135,7 +146,11 @@ class LintDriver:
         self,
         context: chapel.Context,
         root: chapel.AstNode,
-        rule: Union[rule_types.BasicRule, rule_types.AdvancedRule],
+        rule: Union[
+            rule_types.BasicRule,
+            rule_types.AdvancedRule,
+            rule_types.LocationRule,
+        ],
     ) -> Iterator[rule_types.CheckResult]:
 
         # If we should ignore the rule no matter the node, no reason to run
@@ -145,7 +160,7 @@ class LintDriver:
 
         yield from rule.check(context, root)
 
-    def basic_rule(self, pat, default=True):
+    def basic_rule(self, pat, default: bool = True, settings: List[str] = []):
         """
         This method is a decorator factory for adding 'basic' rules to the
         driver. A basic rule is a function returning a boolean that gets called
@@ -163,6 +178,7 @@ class LintDriver:
                     name=func.__name__,
                     pattern=pat,
                     check_func=func,
+                    settings=settings,
                 )
             )
             if not default:
@@ -188,7 +204,9 @@ class LintDriver:
 
         def decorator_fixit(func):
             found = False
-            for rule in itertools.chain(self.BasicRules, self.AdvancedRules):
+            for rule in itertools.chain(
+                self.BasicRules, self.AdvancedRules, self.LocationRules
+            ):
                 if rule.name == checkfunc.__name__:
                     rule.fixit_funcs.append(func)
                     found = True
@@ -208,7 +226,9 @@ class LintDriver:
 
         return decorator_fixit
 
-    def advanced_rule(self, _func=None, *, default=True):
+    def advanced_rule(
+        self, _func=None, *, default=True, settings: List[str] = []
+    ):
         """
         This method is a decorator for adding 'advanced' rules to the driver.
         An advanced rule is a function that gets called on a root AST node,
@@ -228,6 +248,7 @@ class LintDriver:
                     driver=self,
                     name=func.__name__,
                     check_func=func,
+                    settings=settings,
                 )
             )
             if not default:
@@ -245,18 +266,82 @@ class LintDriver:
         else:
             return decorator_advanced_rule(_func)
 
+    def location_rule(
+        self, _func=None, *, default=True, settings: List[str] = []
+    ):
+        """
+        This method is a decorator for adding location-only based rules to the
+        driver. A location rule is a function that gets called on a filepath
+        and list of source lines, and is expected to look for places where
+        warnings need to be emitted.
+
+        The name of the decorated function is used as the name of the rule.
+        """
+
+        def decorator_location_rule(func):
+            self.LocationRules.append(
+                rule_types.LocationRule(
+                    driver=self,
+                    name=func.__name__,
+                    check_func=func,
+                    settings=settings,
+                )
+            )
+            if not default:
+                self.SilencedRules.append(func.__name__)
+
+            @functools.wraps(func)
+            def wrapper_location_rule(*args, **kwargs):
+                return func(*args, **kwargs)
+
+            return wrapper_location_rule
+
+        # this allows the usage of either `@location_rule` or `@location_rule()`
+        if _func is None:
+            return decorator_location_rule
+        else:
+            return decorator_location_rule(_func)
+
+    def validate_rule_settings(self) -> List[str]:
+        """
+        Validate that all rule settings are valid. Checks if user has specified a
+        setting that is not recognized by any rule.
+
+        Returns a list of unrecognized settings.
+        """
+
+        all_rule_settings = set()
+        for rule in itertools.chain(
+            self.BasicRules, self.AdvancedRules, self.LocationRules
+        ):
+            all_rule_settings.update(rule.settings)
+
+        unrecognized_settings = []
+        for setting in self.config.rule_settings:
+            if setting not in all_rule_settings:
+                unrecognized_settings.append(setting)
+
+        return unrecognized_settings
+
     def run_checks(
         self, context: chapel.Context, asts: List[chapel.AstNode]
-    ) -> Iterator[Tuple[chapel.AstNode, str, Optional[List[Fixit]]]]:
+    ) -> Iterator[rule_types.CheckResult]:
         """
         Runs all the rules registered with this node, yielding warnings for
         all non-silenced rules that are violated in the given ASTs.
         """
 
         for ast in asts:
-            for rule in itertools.chain(self.BasicRules, self.AdvancedRules):
+            for rule in itertools.chain(
+                self.BasicRules, self.AdvancedRules, self.LocationRules
+            ):
                 for toreport in self._check_rule(context, ast, rule):
-                    if self._has_internal_name(toreport[0]):
+                    node = toreport[1]
+                    if (
+                        not self.config.check_internal_prefixes
+                        and node
+                        and self.has_internal_prefix(node)
+                    ):
                         continue
 
                     yield toreport

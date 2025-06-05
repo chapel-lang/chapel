@@ -1,5 +1,5 @@
 # skip cstdlib allocator since fragmentation handling will be system specific
-CHPL_MEM == cstdlib
+CHPL_TARGET_MEM == cstdlib
 
 # most tests use a lot of memory, so skip for configs that might share nodes
 CHPL_LAUNCHER == none

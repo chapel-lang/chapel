@@ -14,7 +14,7 @@ config const op = opGet;
 config type elemType = int(8);
 
 config const memFraction = 10;
-config const maxMem = here.physicalMemory(unit = MemUnits.Bytes) / memFraction;
+config const maxMem = here.physicalMemory(unit = MemUnits.Bytes) / memFraction / here.numColocales;
 
 config const xferMB = maxMem / 2**20;
 config var xferMem = xferMB * 2**20;

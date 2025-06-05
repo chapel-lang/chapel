@@ -552,6 +552,9 @@ all:
   06/01/23:
     - text: Remove calls to codegenInvariantStart (#22439)
       config: chapcs
+  07/31/23:
+    - text: Changed nightly testing machine used for 16-node-xc
+      config: 16-node-xc
   08/09/23:
     - text: Deprecate c_string in user facing modules (#22622)
       config: chapcs
@@ -579,6 +582,51 @@ all:
   06/17/24:
     - text: Revert to default GASNET_SND_THREAD=0 (#25307)
       config: 16-node-apollo-hdr
+  08/12/24:
+    - text: Update bundled qthreads to 1.20 (#25210)
+      config: chapcs
+  08/28/24:
+    - text: Qthreads Adjust Fences To Fix Perf Regression (#25833)
+      config: chapcs
+  10/15/24:
+    - text: Update bundled qthreads to 1.21 (#26086)
+      config: chapcs, 16-node-apollo-hdr, 16-node-hpe-cray-ex, 1-node-hpe-cray-ex
+  10/24/24:
+    - text: Backport Fix For Performance Regression in Qthreads 1.21 (#26138)
+      config: chapcs, 16-node-apollo-hdr, 16-node-hpe-cray-ex, 1-node-hpe-cray-ex
+  11/05/24:
+    - text: Asynchronous GETs (#26179)
+      config: 16-node-hpe-cray-ex
+  11/18/24:
+    - text: Update system LLVM to 19
+      config: chapcs, 16-node-apollo-hdr, 16-node-hpe-cray-ex, 1-node-hpe-cray-ex, 1-node-a100, 1-node-mi250x
+  10/29/24:
+    - text: resolve failing tests in nightly cray ex perf job by updating max heap size (#26069)
+      config: 16-node-hpe-cray-ex
+  10/30/24:
+    - text: bump up heap size for nightly cray ex perf job again (#26176)
+      config: 16-node-hpe-cray-ex
+  12/12/24:
+    - text: Backport Fix For Performance Regression in Qthreads 1.21 (#26328)
+      config: chapcs, 16-node-apollo-hdr, 16-node-hpe-cray-ex, 1-node-hpe-cray-ex
+  01/06/25:
+    - text: Partially revert Qthreads patch from #26328 (#26468)
+      config: chapcs, 16-node-apollo-hdr, 16-node-hpe-cray-ex, 1-node-hpe-cray-ex
+  01/24/25:
+    - text: OS and file system update
+      config: chapcs
+  02/03/25:
+    - text: Started using ROCm 6.x
+      config: 1-node-mi250x
+  02/27/25:
+    - text: Avoid Overriding Clang Sysroot (#26761)
+      config: chapcs
+  03/20/25:
+    - text: Update bundled qthreads to 1.22 (#26823)
+      config: chapcs, 16-node-apollo-hdr, 16-node-hpe-cray-ex, 1-node-hpe-cray-ex
+  05/21/25:
+    - text: Update system LLVM to 20
+      config: chapcs, 16-node-apollo-hdr, 16-node-hpe-cray-ex, 1-node-hpe-cray-ex, 1-node-a100, 1-node-mi250x
 
 # End all
 
@@ -599,6 +647,8 @@ arguments:
     - Three way refpair (#5561)
   09/20/17:
     - Adjust string pass/return test (#7360)
+  02/04/25:
+    - Avoid passing 'size=0' to memalign (#26645)
 
 arrayInitDeinitPerf:
   02/28/23:
@@ -898,7 +948,6 @@ empty-chpl-barrier.ml-time:
   06/26/21:
     - Optimize allLocalesBarrier by reducing communication (#17978)
 
-
 exchange:
   04/18/19:
     - Enable bulk-transfer for BlockDist by default (#12797)
@@ -906,6 +955,8 @@ exchange:
     - Fix some issues with constant domain optimization (#16397)
   09/29/20:
     - Remove an unneeded assignment from array view slice initializer (#16477)
+  09/04/24:
+    - Extend array view elision to Block, Cyclic and Stencil (#25869)
 
 fannkuch-redux:
   07/22/14:
@@ -995,6 +1046,14 @@ ft-a:
 heat_2d_dist.ml-time:
   08/31/23:
     - Optimize swap operation for Cyclic and Stencil distributions (#23019)
+  08/13/24:
+    - Expand auto local access optimization to support basic offsets (#25712)
+  08/19/24:
+    - Stencil Distribution performance improvements (#25701)
+  09/04/24:
+    - Extend array view elision to Block, Cyclic and Stencil (#25869)
+  09/11/24:
+    - Prevent offset access with block arrays to thwart dynamic ALA (#25933)
 
 hpl:
   12/11/15:
@@ -1178,6 +1237,8 @@ listBenchmark1:
     - Reduce uses of Math by automatically included modules (#19885)
   06/07/22:
     - Fix performance of list benchmark by making these helpers inlined (#19947)
+  12/12/24:
+    - Remove check on 'log' input with --no-checks (#26368)
 
 lulesh:
   03/15/14:
@@ -1212,7 +1273,10 @@ mandelbrot:
     - Mandelbrot tweaks (#5188)
   05/08/24:
     - Remove complex math function wrappers for LLVM 16+ (#25019)
-
+  10/09/24:
+    - Fix complex support with CHPL_LOCALE_MODEL=gpu (#26048)
+  10/15/24:
+    - Resolve performance regression with complex math functions (#26080)
 
 mandelbrot-extras:
   01/03/14:
@@ -1295,6 +1359,8 @@ memleaks:
     - Fix problem with new applied to a borrowed nilable type argument (#16380)
   09/17/20:
     - Fix some issues with constant domain optimization (#16397)
+  11/18/24:
+    - Add microbenchmarks useful for exploring performance (#26240)
 # End memleaks
 
 memleaksfull:
@@ -1569,6 +1635,8 @@ mg: &mg-base
 
 mg-b:
   <<: *mg-base
+  08/19/24:
+    - Stencil Distribution performance improvements (#25701)
 
 mg.ml-time:
   05/11/17:
@@ -1603,6 +1671,9 @@ miniMD:
     - Enable bulk-transfer for BlockDist by default (#12797)
   03/13/20:
     -  Reallocate 1D arrays in place, when possible (#15177)
+  07/08/24:
+    - Implement array view elision (#24390)
+
 
 miniMD.ml-time:
   09/14/17:
@@ -1611,6 +1682,9 @@ miniMD.ml-time:
     - Manually hoist loop-invariant array access in miniMD (#7432)
   09/26/17:
     - Prevent certain data races upon 'in' forall intents (#7467)
+  01/06/25:
+    - text: Suspect - Raise number of threads used by GASNet by default + add warning if exceeded (#26448)
+      config: 16-node-apollo-hdr
 
 ml-memleaksfull:
   04/04/20:
@@ -1646,7 +1720,9 @@ nbody:
     - Codegen sqrt and fabs directly to llvm intrinsics when possible (#24455)
   04/03/24:
     - Change param-based nbody to foreach-based (#24745)
-
+  10/06/24:
+    - Update my study version of nbody to be like nbody#2, but using foreach loops (#26044)
+ 
 no-op:
   02/24/17:
     - upgrade hwloc to 1.11.6 (#5411)
@@ -1767,6 +1843,10 @@ ra.ml-perf:
     - machine changes, cannot reproduce old numbers
   02/28/20:
     - Use localAccess for ra-on (#15001)
+  10/09/24:
+    - Non-blocking PUT in CHPL_COMM=ofi (#25977)
+  10/23/24:
+    - Make amPutDone non-blocking (#26123)
 
 ra-atomics.ml-perf:
   10/03/17:
@@ -1841,6 +1921,9 @@ return-array-8: &return-array-base
     - remove unnecessary return from array-return tests (#5486)
   05/01/18:
     - Enable variables declared with generic type (#9355)
+  09/10/24:
+    - Avoid array allocation for moving to equal domain (#25896)
+
 return-array-20000000:
   <<: *return-array-base
 return-array-40000000:
@@ -1883,6 +1966,8 @@ revcomp: &revcomp-base
     - Deprecate 'iokind' type and 'kind' field (#23007)
   08/30/23:
     - Improve performance of readBinary and writeBinary for dense arrays (#23162)
+  12/12/24:
+    - Remove check on 'log' input with --no-checks (#26368)
 
 revcomp-submitted:
   06/07/22:
@@ -1938,6 +2023,16 @@ search-throughput:
     - Optimize ASCII strings (#16092)
   09/03/20:
     - Improve string to numerical casts' compilation and execution performance (#16278)
+
+sinlut-ml:
+  11/12/24:
+    - text: Unknown, no merges that day
+      config: 16-node-xc
+
+sinlut-ml-locale0:
+  11/12/24:
+    - text: Unknown, no merges that day
+      config: 16-node-xc
 
 spectralnorm:
   01/21/15:
@@ -2463,12 +2558,40 @@ arkouda: &arkouda-base
     - Closes 3334, 3351 Simplify server side string code and added fixed length (Bears-R-Us/arkouda#3335)
   6/27/24:
     - Remove number of files multiplication for IO benchmark (Bears-R-Us/arkouda#3368)
-
+  8/19/24:
+    - Array transfer perf fix (Bears-R-Us/arkouda#3671)
+  8/27/24:
+    - Fix performance regression in to_ndarray (Bears-R-Us/arkouda#3697)
+  09/26/24:
+    - Closes 3757 ak.array gives unexpected results on a transposed numpy multi dimensional array (Bears-R-Us/arkouda#3761)
+  09/27/24:
+    - Use Chapel 2.2 for Arkouda "release" nightly testing (#26014)
+  10/09/24:
+    - Fix array transfer performance regression (Bears-R-Us/arkouda#3826)
+  10/16/24:
+    - Part of argTypeReductionMessage refactor (Bears-R-Us/arkouda#3845)
+  10/29/24:
+    - Fix performance regression in reductions benchmark (Bears-R-Us/arkouda#3874)
+  12/25/24:
+    - text: Running tests with --isolated
+      config: 16-node-xc
+  01/02/25:
+    - text: No longer running tests with --isolated
+      config:  16-node-xc
+  03/06/25:
+    - text: Suspected systems changes
+      config: 16-node-xc
+  03/20/25:
+    - text: Add ARKOUDA_DEFAULT_TEMP_DIRECTORY for arkouda perf tests (#26949)
+      config: 16-node-hpe-apollo-hdr
 
 arkouda-string:
   <<: *arkouda-base
+
 arkouda-bigint:
   <<: *arkouda-base
+  09/27/24:
+    - Fixes 3783, 3784, 3788 multilocale io test failures (Bears-R-Us/arkouda#3790)
 
 arkouda-comp:
   <<: *arkouda-base
@@ -2507,6 +2630,11 @@ arkouda-array_create:
   <<: *arkouda-base
   04/05/24:
     - Closes 3071 Add permutation to our generators (Bears-R-Us/arkouda#3078)
+
+arkouda-sort-cases:
+  <<: *arkouda-base
+  08/07/24:
+    - Closes 3526 refactor argsortMsg to remove registerND annotation (Bears-R-Us/#3602)
 
 shoc-triad-all-lg:
   11/10/22:

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -21,8 +21,10 @@
 #ifndef CODEGEN_H
 #define CODEGEN_H
 
+#include "intents.h"
 #include "baseAST.h"
 #include "LayeredValueTable.h"
+#include "type.h"
 
 #include <list>
 #include <map>
@@ -57,6 +59,7 @@ namespace chpl {
 #include "llvm/Analysis/CGSCCPassManager.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/MDBuilder.h"
+#include "llvm/IR/Module.h"
 #include "llvm/IR/PassManager.h"
 #include "llvm/Passes/StandardInstrumentations.h"
 #include "llvm/Target/TargetMachine.h"
@@ -212,7 +215,18 @@ void initializeGenInfo(void);
 void setupClang(GenInfo* info, std::string rtmain);
 #endif
 
+// These typedefs exist just to avoid needing ifdefs in fn prototypes
+#ifdef HAVE_LLVM
+#include "clang/CodeGen/CGFunctionInfo.h"
+typedef clang::FunctionDecl* ClangFunctionDeclPtr;
+typedef llvm::FunctionType* LlvmFunctionTypePtr;
+#else
+typedef void* ClangFunctionDeclPtr;
+typedef void* LlvmFunctionTypePtr;
+#endif
+
 bool isBuiltinExternCFunction(const char* cname);
+bool needsCodegenWrtGPU(FnSymbol* fn);
 
 const char* legalizeName(const char* name);
 
@@ -229,6 +243,22 @@ void flushStatements(void);
 GenRet codegenCallExpr(const char* fnName);
 GenRet codegenCallExpr(const char* fnName, GenRet a1);
 GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2);
+GenRet codegenCallExprWithArgs(const char* fnName,
+                               std::vector<GenRet> & args,
+                               FnSymbol* fnSym = nullptr,
+                               ClangFunctionDeclPtr FD = nullptr,
+                               bool defaultToValues = true);
+GenRet codegenGetLocaleID(void);
+GenRet codegenUseGlobal(const char* global);
+GenRet codegenProcedurePointerFetch(Expr* baseExpr);
+GenRet codegenValueMaybeDeref(Expr* baseExpr);
+void   codegenGlobalInt64(const char* cname, int64_t value, bool isHeader,
+                          bool isConstant=true);
+
+bool argRequiresCPtr(IntentTag intent, Type* t, bool isReceiver);
+bool argRequiresCPtr(ArgSymbol* formal);
+bool argRequiresCPtr(const FunctionType::Formal* formal);
+
 Type* getNamedTypeDuringCodegen(const char* name);
 void setupDefaultFilenames(void);
 void gatherTypesForCodegen(void);

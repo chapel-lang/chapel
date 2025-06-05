@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -130,6 +130,18 @@ class Enum final : public TypeDecl {
           : children_.end();
     auto end = begin + numDeclOrComments();
     return AstListNoCommentsIteratorPair<EnumElement>(begin, end);
+  }
+
+  /**
+   Return the number of EnumElements in this Enum.
+   */
+  int numElements() const {
+    int numElts = 0;
+    for (auto elt : this->enumElements()) {
+      (void) elt;
+      numElts++;
+    }
+    return numElts;
   }
 };
 

@@ -1,0 +1,17 @@
+test with no sep
+123
+testln with no sep
+456
+test with sep
+1.0, 2, true
+testln with sep
+4.0, 5, false
+testln with record with no sep
+(x = 1, y = 2)(x = 3, y = 4)
+testln with record with sep
+(x = 1, y = 2);(x = 3, y = 4)
+testln with class with no sep
+{a = 1.0, b = 2.0, c = (x = 3, y = 4)}{a = 5.0, b = 6.0, c = (x = 7, y = 8)}
+testln with class with sep
+{a = 1.0, b = 2.0, c = (x = 3, y = 4)}
+{a = 5.0, b = 6.0, c = (x = 7, y = 8)}

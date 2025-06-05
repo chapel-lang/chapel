@@ -3,7 +3,7 @@ use SortedMap;
 
 
 {
-  var m = new sortedMap(string, int, false, new DefaultComparator());
+  var m = new sortedMap(string, int, false, new defaultComparator());
   m["one"] = 1;
   writeln(m);
 }

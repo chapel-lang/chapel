@@ -312,7 +312,7 @@ static unsigned long long       maybe_multi_recv = FI_MULTI_RECV;
 
 static int using_psm_provider = 0;
 
-static char *gasnetc_ofi_device = NULL;
+static const char *gasnetc_ofi_device = NULL;
 static const char *supported_providers = GASNETC_OFI_PROVIDER_LIST;
 
 static int gasnetc_high_perf_prov = 0;
@@ -747,25 +747,81 @@ static void gasnetc_info_foreach(struct fi_info *info, gasnetc_info_visitor_t ca
   }
 }
 
+// Extract an hwloc device (PCI or O/S) name from a struct fi_info
+// Returned value belongs to the library and should be gasneti_free()ed
+//
+// Priority order (best to worst):
+// 1. PCI address of the "nic", if available
+//    This is the most precise naming available, and is notably the only option
+//    on this list which currently works with the cxi provider.
+// 2. Device attributes "name" field of the "nic"
+// 3. The "domain"
+//    This *may* be the same as #2, but can also have suffixes.
+//    For instance, the verbs provider may expose 'mlx5_0' and 'mlx5_0-xrc'
+//    as distinct "domain" names even though they are the same device.
+static const char* gasnetc_info_to_device(const struct fi_info *p)
+{
+  char *name;
+
+#if FI_VERSION(FI_MAJOR_VERSION, FI_MINOR_VERSION) >= FI_VERSION(1, 7)
+  // The `nic` member of struct fi_info first appears in libfabric 1.7.0
+  if (p->nic &&
+      p->nic->bus_attr &&
+      p->nic->bus_attr->bus_type == FI_BUS_PCI) {
+    name = gasneti_sappendf(NULL, "%x:%x:%x.%x",
+                  p->nic->bus_attr->attr.pci.domain_id,
+                  p->nic->bus_attr->attr.pci.bus_id,
+                  p->nic->bus_attr->attr.pci.device_id,
+                  p->nic->bus_attr->attr.pci.function_id);
+  } else if (p->nic &&
+             p->nic->device_attr &&
+             p->nic->device_attr->name) {
+    name = gasneti_strdup(p->nic->device_attr->name);
+  } else
+#endif
+  {
+    name = gasneti_strdup(p->domain_attr->name);
+  }
+
+  return name;
+}
+
 // List available devices, grouped by provider from most to least preferred
+#define GASNETC_LIST_DEVICES_GROWTH 8
+static struct gasnetc_list_devices_state_s {
+  int count;
+  int alloc_count;
+  const char **provider_name;
+  const char **domain_name;
+  const char **device_name;
+} gasnetc_list_devices_state;
 static int gasnetc_list_devices_visitor(const struct fi_info *p, void *context)
 {
-  // This visitor adds one line to a multi-line message for each struct visted, with de-duplication
-  char **msg_p = (char **)context;
-  char *msg = *msg_p;
-  const char *prov_name = p->fabric_attr->prov_name;
-  const char *dev_name = p->domain_attr->name;
-  char line[128];
-  snprintf(line, sizeof(line)-1, "\n        %-16s %s", prov_name, dev_name);
-  if (!msg) {
-    *msg_p = gasneti_strdup(line);
-  } else if (!strstr(msg, line)) {
-    // append 'line' to 'msg'
-    size_t old_len = strlen(msg);
-    size_t new_len = old_len + strlen(line) + 1;
-    *msg_p = msg = gasneti_realloc(msg, new_len);
-    strcpy(msg + old_len, line);
+  // This visitor collects necessary data from each struct visited, with de-duplication
+  struct gasnetc_list_devices_state_s *state = context;
+
+  const char *provider_name = p->fabric_attr->prov_name;
+  const char *domain_name = p->domain_attr->name;
+  for (int i = 0; i < state->count; ++i) {
+    if (!strcmp(provider_name, state->provider_name[i]) &&
+        !strcmp(domain_name, state->domain_name[i])) {
+      return 0; // skip duplicate and continue traversal
+    }
   }
+
+  int idx = state->count++;
+  if (state->count > state->alloc_count) {
+    state->alloc_count += GASNETC_LIST_DEVICES_GROWTH;
+    size_t alloc_sz = sizeof(char *) * state->alloc_count;
+    state->provider_name = gasneti_realloc(state->provider_name, alloc_sz);
+    state->domain_name = gasneti_realloc(state->domain_name, alloc_sz);
+    state->device_name = gasneti_realloc(state->device_name, alloc_sz);
+  }
+
+  state->provider_name[idx] = provider_name;
+  state->domain_name[idx] = domain_name;
+  state->device_name[idx] = gasnetc_info_to_device(p);
+
   return 0; // continue traversal
 }
 static void gasnetc_list_devices(struct fi_info *hints)
@@ -777,11 +833,47 @@ static void gasnetc_list_devices(struct fi_info *hints)
     return;
   }
 
+  struct gasnetc_list_devices_state_s *state = &gasnetc_list_devices_state;
+  gasneti_assert(!state->count);
+
+  gasnetc_info_foreach(info, gasnetc_list_devices_visitor, state);
+
+  int count = state->count;
+
+  uint32_t *distances = gasneti_malloc(sizeof(uint32_t) * count);
+  if (0 > gasneti_hwloc_distances(count, distances, state->device_name, GASNETI_HWLOC_DISTANCES_NORMALIZE)) {
+    gasneti_free(distances);
+    distances = NULL;
+  }
+
   char *msg = NULL;
-  gasnetc_info_foreach(info, gasnetc_list_devices_visitor, &msg);
-  gasneti_console_message("INFO", "Detected the following provider and device pair(s)%s", msg);
-  gasneti_free(msg);
+  for (int i = 0; i < count; ++i) {
+    msg = gasneti_sappendf(msg, "\n        %-16s %-16s",
+                           state->provider_name[i], state->domain_name[i]);
+    if (distances) {
+      if (distances[i] == GASNETI_HWLOC_DISTANCE_UNKNOWN) {
+        msg = gasneti_sappendf(msg, " distance ranking unknown");
+      } else {
+        msg = gasneti_sappendf(msg, " distance ranking %d", 1 + (int)distances[i]);
+      }
+    }
+  }
   fi_freeinfo(info);
+
+  gasneti_console_message("INFO", "Detected the following provider and device pair(s)%s", msg);
+
+  gasneti_free(msg);
+  gasneti_free(distances);
+
+  for (int i = 0; i < state->count; ++i) {
+    gasneti_free((void*) state->device_name[i]);
+  }
+  gasneti_free(state->provider_name);
+  gasneti_free(state->domain_name);
+  gasneti_free(state->device_name);
+  state->alloc_count = 0;
+  state->count = 0;
+
   return;
 }
 
@@ -851,7 +943,7 @@ static void *gasnetc_alloc_pages(size_t len, const char *desc)
 
 static void gasnetc_check_version(const char *prov_name, unsigned int major, unsigned int minor)
 {
-  if (strcmp(prov_name,gasnetc_ofi_provider)) return;
+  if (gasneti_strcasecmp(prov_name,gasnetc_ofi_provider)) return;
 
   uint32_t have = fi_version();
   uint32_t want = FI_VERSION(major,minor);
@@ -918,15 +1010,13 @@ int gasnetc_ofi_init(void)
   if (!hints) gasneti_fatalerror("fi_allocinfo for hints failed\n");
 
   // constrain the device/domain if provided by the user
-  gasnetc_ofi_device = gasneti_getenv_hwloc_withdefault("GASNET_OFI_DEVICE", "", "Socket");
+  (void) gasneti_hwloc_init(); // TODO: messages on error?
+  gasnetc_ofi_device = gasneti_getenv_hwloc_withdefault("GASNET_OFI_DEVICE", "", "Socket", 0);
   if (!strlen(gasnetc_ofi_device)) gasnetc_ofi_device = NULL;
-  hints->domain_attr->name = gasnetc_ofi_device;
+  hints->domain_attr->name = (/*no const*/ char *)gasnetc_ofi_device;
 
   /* caps: fabric interface capabilities */
   hints->caps           = FI_RMA | FI_MSG | FI_MULTI_RECV;
-#if GASNET_HAVE_MK_CLASS_MULTIPLE
-  hints->caps          |= FI_HMEM;
-#endif
   /* mode: convey requirements for application to use fabric interfaces */
   hints->mode           = FI_CONTEXT;   /* fi_context is used for per
                                            operation context parameter */
@@ -977,14 +1067,15 @@ int gasnetc_ofi_init(void)
   hints->domain_attr->mr_mode |= FI_MR_PROV_KEY;
 #endif
 
-  // If user has requested, list devices prior to adding FI_MR_HMEM which
-  // is optional (we eventually retry w/o it if it leads to no matches).
+  // If user has requested, list devices prior to adding FI_HMEM/FI_MR_HMEM which
+  // are optional (we eventually retry w/o if there are no matches with).
   if (gasneti_getenv_yesno_withdefault("GASNET_OFI_LIST_DEVICES", 0) &&
       gasneti_check_node_list("GASNET_OFI_LIST_DEVICES_NODES")) {
       gasnetc_list_devices(hints);
   }
 
 #if GASNET_HAVE_MK_CLASS_MULTIPLE
+  hints->caps                 |= FI_HMEM;
   hints->domain_attr->mr_mode |= FI_MR_HMEM;
 #endif
 
@@ -1082,12 +1173,12 @@ int gasnetc_ofi_init(void)
   }
 
   // Balk if provider was explicitly chosen at configure time and is not available now
-  if (!strchr(supported_providers,' ') && strcmp(supported_providers, info->fabric_attr->prov_name)) {
+  if (!strchr(supported_providers,' ') && gasneti_strcasecmp(supported_providers, info->fabric_attr->prov_name)) {
       if (gasnetc_ofi_device) {
         // Retry to rule out invalid device choice
         hints->domain_attr->name = NULL;
         info = gasnetc_ofi_getinfo(hints);
-        if (info && !strcmp(supported_providers, info->fabric_attr->prov_name)) {
+        if (info && !gasneti_strcasecmp(supported_providers, info->fabric_attr->prov_name)) {
           gasneti_fatalerror("Specifed device '%s' is not available or not usable", gasnetc_ofi_device);
         }
       }
@@ -1103,14 +1194,14 @@ int gasnetc_ofi_init(void)
   // Check if this provider is one we consider "high performance"
   const char *high_perf_providers[] = { "psm2", "cxi", "verbs;ofi_rxm" };
   for (i = 0; i < sizeof(high_perf_providers)/sizeof(high_perf_providers[0]); ++i) {
-    if (!strcmp(info->fabric_attr->prov_name, high_perf_providers[i])) {
+    if (!gasneti_strcasecmp(info->fabric_attr->prov_name, high_perf_providers[i])) {
       gasnetc_high_perf_prov = 1;
       break;
     }
   }
 
   // psm2 provider needs some special handling
-  if (!strcmp(info->fabric_attr->prov_name, "psm2")){
+  if (!gasneti_strcasecmp(info->fabric_attr->prov_name, "psm2")){
       using_psm_provider = 1;
   } else if (set_psm2_lazy_conn) {
       /* If we set this variable and are not using psm2, unset it in the
@@ -1119,7 +1210,7 @@ int gasnetc_ofi_init(void)
       unsetenv("FI_PSM2_LAZY_CONN");
   }
 
-  if (!strcmp(info->fabric_attr->prov_name, "cxi") && !set_cxi_match_mode) {
+  if (!gasneti_strcasecmp(info->fabric_attr->prov_name, "cxi") && !set_cxi_match_mode) {
     const char *str0 = (initial_CXI_RX_MATCH_MODE && initial_CXI_RX_MATCH_MODE[0])
                      ? gasneti_dynsprintf("='%s'", initial_CXI_RX_MATCH_MODE)
                      : "";
@@ -1172,6 +1263,9 @@ int gasnetc_ofi_init(void)
   // the other hints, and the first match is not the one we want.
   hints->fabric_attr->prov_name = gasnetc_ofi_provider;
   hints->domain_attr->name = gasnetc_ofi_domain;
+
+  // With the provider now chosen, we are done with hwloc
+  (void) gasneti_hwloc_fini();
 
   // Check provider-specific minimum library versions (before checking modes)
   // REMINDER: these are documented in README and also enforced in configure.in
@@ -1264,7 +1358,7 @@ int gasnetc_ofi_init(void)
                            info->fabric_attr->prov_name,
                            (unsigned int)FI_MAJOR(info->fabric_attr->prov_version),
                            (unsigned int)FI_MINOR(info->fabric_attr->prov_version)));
-  gasneti_assert(! strcmp(gasnetc_ofi_provider, info->fabric_attr->prov_name));
+  gasneti_assert(! gasneti_strcasecmp(gasnetc_ofi_provider, info->fabric_attr->prov_name));
 
   /* Open a fabric access domain, also referred to as a resource domain */
   ret = fi_domain(gasnetc_ofi_fabricfd, info, &gasnetc_ofi_domainfd, NULL);
@@ -1472,7 +1566,7 @@ int gasnetc_ofi_init(void)
 
   // Low-water mark for multi-receive buffer, if any
   if (maybe_multi_recv) {
-    GASNETI_TRACE_PRINTF(I, ("Setting multi-recv low-water mark to %"PRIuSZ, min_multi_recv));
+    GASNETI_TRACE_PRINTF(I, ("Setting multi-recv low-water mark to %"PRIu64, min_multi_recv));
     optval = min_multi_recv;
     ret    = fi_setopt(&gasnetc_ofi_request_epfd->fid, FI_OPT_ENDPOINT, FI_OPT_MIN_MULTI_RECV,
                        &optval, sizeof(optval));
@@ -1565,8 +1659,9 @@ int gasnetc_ofi_init(void)
   gasneti_semaphore_init(&num_unallocated_request_buffers, max_am_request_buffs - num_init_am_request_buffs, 0);
   gasneti_semaphore_init(&num_unallocated_reply_buffers, max_am_reply_buffs - num_init_am_reply_buffs, 0);
 
+  size_t am_buf_alloc_sz = GASNETI_ALIGNUP(GASNETC_SIZEOF_AM_BUF_T, GASNETI_MEDBUF_ALIGNMENT);
   size_t total_init = num_init_am_request_buffs + num_init_am_reply_buffs;
-  am_buffers_region_size = GASNETI_PAGE_ALIGNUP(total_init*GASNETC_SIZEOF_AM_BUF_T);
+  am_buffers_region_size = GASNETI_PAGE_ALIGNUP(total_init*am_buf_alloc_sz);
   am_buffers_region_start = gasnetc_alloc_pages(am_buffers_region_size, "for AM send buffers");
   { char valstr[16];
     gasneti_format_number(am_buffers_region_size, valstr, sizeof(valstr), 1);
@@ -1576,20 +1671,20 @@ int gasnetc_ofi_init(void)
 
   /* Add the buffers to the stack in reverse order to be friendly to the cache. */
   gasnetc_ofi_send_ctxt_t * bufp = (gasnetc_ofi_send_ctxt_t*)
-      ((uintptr_t)am_buffers_region_start + GASNETC_SIZEOF_AM_BUF_T*(total_init - 1));
+      ((uintptr_t)am_buffers_region_start + am_buf_alloc_sz*(total_init - 1));
 
   GASNETC_STAT_EVENT_VAL(ALLOC_REQ_BUFF, num_init_am_request_buffs);
   for (i = 0; i < (int)num_init_am_request_buffs; i++) {
      bufp->pool = &ofi_am_request_pool;
      gasneti_lifo_push(bufp->pool, bufp);
-     bufp = (gasnetc_ofi_send_ctxt_t*)((uintptr_t)bufp - GASNETC_SIZEOF_AM_BUF_T);
+     bufp = (gasnetc_ofi_send_ctxt_t*)((uintptr_t)bufp - am_buf_alloc_sz);
   }  
 
   GASNETC_STAT_EVENT_VAL(ALLOC_REP_BUFF, num_init_am_reply_buffs);
   for (i = 0; i < (int)num_init_am_reply_buffs; i++) {
       bufp->pool = &ofi_am_reply_pool;
       gasneti_lifo_push(bufp->pool, bufp);
-      bufp = (gasnetc_ofi_send_ctxt_t*)((uintptr_t)bufp - GASNETC_SIZEOF_AM_BUF_T);
+      bufp = (gasnetc_ofi_send_ctxt_t*)((uintptr_t)bufp - am_buf_alloc_sz);
   }
 
   gasnetc_ofi_inited = 1;
@@ -1833,8 +1928,8 @@ gasnetc_ofi_send_ctxt_t *gasnetc_ofi_get_am_header(int isreq, gex_Flags_t flags 
                                       : &num_unallocated_reply_buffers;
     if (gasneti_semaphore_trydown(sema)) {
         // TODO: cache-align and allocate more than one at a time
-        header = gasneti_malloc(GASNETC_SIZEOF_AM_BUF_T);
-        gasneti_leak(header);
+        header = gasneti_malloc_aligned(GASNETI_MEDBUF_ALIGNMENT, GASNETC_SIZEOF_AM_BUF_T);
+        gasneti_leak_aligned(header);
         header->pool = pool;
         if (isreq) {
             GASNETC_STAT_EVENT_VAL(ALLOC_REQ_BUFF, 1);
@@ -1860,6 +1955,7 @@ gasnetc_ofi_send_ctxt_t *gasnetc_ofi_get_am_header(int isreq, gex_Flags_t flags 
                              GASNETC_OFI_POLL_SELECTIVE(OFI_POLL_REPLY));
     }
 
+    gasneti_assert_uint((uintptr_t)&header->sendbuf.buf.medium_buf.data % GASNETI_MEDBUF_ALIGNMENT ,==, 0);
     return header;
 }
 
@@ -2243,7 +2339,7 @@ void gasnetc_ofi_am_recv_poll(int is_request)
 
     int count;
     for (count = 0; count < GASNETC_OFI_EVENTS_PER_POLL; ++count) {
-        if(EBUSY == GASNETC_OFI_PAR_TRYLOCK(lock_p)) goto out;
+        if(EBUSY == GASNETC_OFI_PAR_TRYLOCK(lock_p)) break;
 
         /* Read from Completion Queue */
         struct fi_cq_data_entry re = {0};
@@ -2251,13 +2347,13 @@ void gasnetc_ofi_am_recv_poll(int is_request)
 
         if (ret == -FI_EAGAIN) {
             GASNETC_OFI_PAR_UNLOCK(lock_p);
-            goto out;
+            break;
         } 
         if_pf (ret < 0) {
             struct fi_cq_err_entry e = {0};
             gasnetc_fi_cq_readerr(cq, &e ,0);
             GASNETC_OFI_PAR_UNLOCK(lock_p);
-            if_pf (gasnetc_is_exit_error(e)) goto out;
+            if_pf (gasnetc_is_exit_error(e)) goto exiting;
             gasnetc_ofi_fatalerror("fi_cq_read for am_recv_poll failed with error", -e.err);
         }
 
@@ -2296,15 +2392,21 @@ void gasnetc_ofi_am_recv_poll(int is_request)
 
         // Repost if either not using FI_MULTI_RECV
         // OR matched "final" and "consumed" counters indicate last AM handler has completed
+        uint64_t consumed;
         if (!maybe_multi_recv ||
-            ((GASNETI_ATOMIC_MAX & header->final_cntr) ==
-             (uint64_t) gasnetc_paratomic_add(&header->consumed_cntr, 1, GASNETI_ATOMIC_ACQ))) {
+            // Note: use of ACQ fence and comma operator ensure the read of final_cntr
+            // cannot be "stale" relative to the increment of consumed_cntr.
+            ((consumed = gasnetc_paratomic_add(&header->consumed_cntr, 1, GASNETI_ATOMIC_ACQ)),
+             ((GASNETI_ATOMIC_MAX & header->final_cntr) == consumed))) {
             struct fi_msg* am_buff_msg = &metadata->am_buff_msg;
             GASNETC_OFI_LOCK(&gasnetc_ofi_locks.am_rx);
             int post_ret = fi_recvmsg(ep, am_buff_msg, maybe_multi_recv);
             GASNETC_OFI_UNLOCK(&gasnetc_ofi_locks.am_rx);
 #if GASNETC_OFI_RETRY_RECVMSG
             if_pf (post_ret == -FI_EAGAIN) {
+                // TODO: add accounting (debug only?) to enable warnings if the
+                // number of buffers posted to a given FI_MSG EP falls to some
+                // threshold (possibly zero).
                 GASNETC_OFI_PAR_LOCK(lock_p);
                 header->next = buffs_to_retry[is_request];
                 buffs_to_retry[is_request] = header;
@@ -2345,6 +2447,9 @@ void gasnetc_ofi_am_recv_poll(int is_request)
         #endif
             if (post_ret == -FI_EAGAIN) {
                 prev_p = &curr->next; // retain curr in the list
+                // TODO: "break" here if either (a) we can be certain that EAGAIN failure
+                // is *not* buffer-specific or (b) we "rotate" the list to ensure that no
+                // buffer can hold the head-of-list indefinitely.
             } else {
                 GASNETC_OFI_CHECK_RET(post_ret, "deferred fi_recvmsg failed");
                 if (is_request) {
@@ -2360,7 +2465,7 @@ void gasnetc_ofi_am_recv_poll(int is_request)
     }
 #endif
 
-out:
+exiting:
     if (is_request) {
         GASNETI_TRACE_EVENT_VAL(X, CQ_READ_REQ, count);
     } else {

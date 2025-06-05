@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -55,7 +55,6 @@ static void checkIsIterator(); // Ensure each iterator is flagged so.
 static void check_afterInlineFunctions();
 static void checkResolveRemovedPrims(void); // Checks that certain primitives
                                             // are removed after resolution
-static void checkNoRecordDeletes();  // No 'delete' on records.
 static void checkTaskRemovedPrims(); // Checks that certain primitives are
                                      // removed after task functions are
                                      // created.
@@ -547,7 +546,6 @@ static void check_afterResolution()
   checkReturnTypesHaveRefTypes();
   if (fVerify)
   {
-    checkNoRecordDeletes();
     checkTaskRemovedPrims();
     checkResolveRemovedPrims();
 // Disabled for now because user warnings should not be logged multiple times:
@@ -599,10 +597,16 @@ static void check_afterLowerErrorHandling()
     // TODO: check no more CatchStmt
 
     // check no more PRIM_THROW
-    forv_Vec(CallExpr, call, gCallExprs)
-    {
-      if (call->isPrimitive(PRIM_THROW) && call->inTree())
+    forv_Vec(CallExpr, call, gCallExprs) {
+      if (call->isPrimitive(PRIM_THROW) && call->inTree()) {
         INT_FATAL(call, "PRIM_THROW should no longer exist");
+      }
+
+      auto ft = call->isIndirectCall() ? call->functionType() : nullptr;
+      if (ft && ft->throws()) {
+        INT_FATAL(call, "Indirect calls to throwing functions should not "
+                        "appear after this point!");
+      }
     }
   }
 }
@@ -638,6 +642,8 @@ static void check_afterInlineFunctions() {
           def->parentSymbol->hasFlag(FLAG_WIDE_REF) == false) {
         if (sym->type->symbol->hasFlag(FLAG_REF) ||
             sym->type->symbol->hasFlag(FLAG_WIDE_REF)) {
+         // "_interim" args added in gpuTransforms.cpp have ref types
+         if (! def->parentSymbol->hasFlag(FLAG_GPU_CODEGEN))
           INT_FATAL("Found reference type: %s[%d]\n", sym->cname, sym->id);
         }
       }
@@ -693,16 +699,6 @@ checkResolveRemovedPrims(void) {
       }
     }
   }
-}
-
-static void checkNoRecordDeletes() {
-  // No need to do for_alive_in_Vec - there shouldn't be any, period.
-  // User errors are to be detected by chpl__delete() in the modules.
-  forv_Vec(CallExpr, call, gCallExprs)
-    if (FnSymbol* fn = call->resolvedFunction())
-      if(fn->hasFlag(FLAG_DESTRUCTOR))
-        if (!isClassLike(call->get(1)->typeInfo()->getValType()))
-          INT_FATAL(call, "delete not on a class");
 }
 
 static void

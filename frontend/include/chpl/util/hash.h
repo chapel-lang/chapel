@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -23,6 +23,8 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <map>
+#include <unordered_map>
 #include <set>
 #include <string>
 #include <tuple>
@@ -30,6 +32,8 @@
 #include <vector>
 
 #include "chpl/util/memory.h"
+#include "chpl/util/compare.h"
+#include "llvm/ADT/SmallVector.h"
 
 namespace chpl {
 
@@ -109,7 +113,6 @@ static inline size_t hash(const std::tuple<>& tuple) {
   return 0;
 }
 
-// Hash function for vector
 template<typename T>
 inline size_t hashVector(const std::vector<T>& key) {
   size_t ret = 0;
@@ -119,7 +122,15 @@ inline size_t hashVector(const std::vector<T>& key) {
   return ret;
 }
 
-// Hash function for set
+template <typename T, unsigned i>
+inline size_t hashSmallVector(const llvm::SmallVector<T, i>& key) {
+  size_t ret = 0;
+  for (const auto& elt : key) {
+    ret = hash_combine(ret, hash(elt));
+  }
+  return ret;
+}
+
 template<typename T>
 inline size_t hashSet(const std::set<T>& key) {
   size_t ret = 0;
@@ -127,6 +138,13 @@ inline size_t hashSet(const std::set<T>& key) {
     ret = hash_combine(ret, hash(elt));
   }
   return ret;
+}
+
+template <typename K, typename V>
+inline size_t hashUnorderedMap(const std::unordered_map<K, V>& key) {
+  std::vector<std::pair<K, V>> sorted(key.begin(), key.end());
+  std::sort(sorted.begin(), sorted.end(), FirstElementComparator<K, V>());
+  return hashVector(sorted);
 }
 
 template<typename T>
@@ -138,7 +156,6 @@ inline size_t hashOwned(const chpl::owned<T>& key) {
   return ret;
 }
 
-// Hash function for pair
 template<typename T, typename U>
 inline size_t hashPair(const std::pair<T, U>& key) {
   size_t ret = 0;
@@ -147,6 +164,18 @@ inline size_t hashPair(const std::pair<T, U>& key) {
   return ret;
 }
 
+template <typename Map>
+inline size_t hashMap(const Map& key) {
+  size_t ret = 0;
+
+  // Just iterate and hash, relying on std::map being a sorted container.
+  for (auto& [k, v] : key) {
+    ret = hash_combine(ret, hash(k));
+    ret = hash_combine(ret, hash(v));
+  }
+
+  return ret;
+}
 
 namespace detail {
 
@@ -157,9 +186,21 @@ template<typename T> struct hasher<std::vector<T>> {
     return chpl::hashVector(key);
   }
 };
+
+template<typename T, unsigned i> struct hasher<llvm::SmallVector<T, i>> {
+  size_t operator()(const llvm::SmallVector<T, i>& key) const {
+    return chpl::hashSmallVector(key);
+  }
+};
+
 template<typename T> struct hasher<std::set<T>> {
   size_t operator()(const std::set<T>& key) const {
     return chpl::hashSet(key);
+  }
+};
+template<typename K, typename V> struct hasher<std::map<K, V>> {
+  size_t operator()(const std::map<K, V>& key) const {
+    return chpl::hashMap(key);
   }
 };
 template<typename T> struct hasher<chpl::owned<T>> {
@@ -183,5 +224,19 @@ template <typename ... Ts> struct hasher<std::tuple<Ts...>> {
 
 
 } // end namespace chpl
+
+namespace std {
+  template <typename T, typename U> struct hash<std::pair<T,U>> {
+    size_t operator()(const std::pair<T,U>& key) const {
+      return chpl::hashPair(key);
+    }
+  };
+
+  template <typename... Ts> struct hash<std::tuple<Ts...>> {
+    size_t operator()(const std::tuple<Ts...>& key) const {
+      return chpl::hash(key);
+    }
+  };
+} // end namespace std
 
 #endif

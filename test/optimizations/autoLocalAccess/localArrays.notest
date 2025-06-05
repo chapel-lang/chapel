@@ -1,0 +1,6 @@
+We are disabling ALA for DR due to some challenges.
+
+See https://github.com/chapel-lang/chapel/pull/25754#issuecomment-2316297947
+
+The symmetric of this test is in autoAggregation/localArrays.chpl. That test
+will be futurized.

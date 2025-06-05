@@ -14,7 +14,6 @@ then
 fi
 
 DIR=regex/ferguson/ctests
-CXX=g++
 DEFS=`$CHPL_HOME/util/config/compileline --includes-and-defines`
 RSRC="$CHPL_HOME/runtime/src/qio"
 RE2_INSTALL_DIR=$($CHPL_HOME/util/config/compileline --libraries | \
@@ -45,6 +44,7 @@ else
 fi
 
 COMP=`$CHPL_HOME/util/chplenv/chpl_compiler.py --target`
+CC=`$CHPL_HOME/util/printchplenv --all --simple | grep CHPL_TARGET_CC | cut -d = -f 2-`
 CXX=`$CHPL_HOME/util/printchplenv --all --simple | grep CHPL_TARGET_CXX | cut -d = -f 2-`
 ASAN=`$CHPL_HOME/util/printchplenv --all --simple | grep CHPL_SANITIZE_EXE | cut -d = -f 2-`
 if [ "$COMP" = "gnu" ]
@@ -63,6 +63,7 @@ fi
 
 if [ "$ASAN" = "address" ]
 then
+  CC="$CC -fsanitize=address"
   CXX="$CXX -fsanitize=address"
 fi
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1465,7 +1465,7 @@ static void handleIteratorForwarders(ForallStmt* fs,
 /////////// handle one ForallStmt ///////////
 
 static void lowerOneForallStmt(ForallStmt* fs) {
-  if (fs->id == breakOnResolveID) gdbShouldBreakHere();
+  if (fs->id == breakOnResolveID) debuggerBreakHere();
 
   // If this fails, need to filter out those FSes.
   INT_ASSERT(fs->inTree() && fs->getFunction()->isResolved());

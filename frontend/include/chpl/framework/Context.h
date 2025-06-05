@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -129,20 +129,26 @@ class Context {
     void swap(Configuration& other);
   };
 
-  class RunResultBase {
+  class CapturingRunResultBase {
+    friend class Context;
+
    private:
     std::vector<owned<ErrorBase>> errors_;
 
-   public:
-    ~RunResultBase();
+    std::vector<owned<ErrorBase>>& value() { return errors_; };
 
-    RunResultBase();
-    // Should not be called due to copy elision, but it's not guaranteed..
-    RunResultBase(const RunResultBase& other);
+   public:
+    ~CapturingRunResultBase();
+    CapturingRunResultBase();
+    CapturingRunResultBase(const CapturingRunResultBase& other);
+    // ^ should not be called due to copy elision, but it's not guaranteed..
 
     /** The errors that occurred while running. */
-    std::vector<owned<ErrorBase>>& errors() { return errors_; };
     const std::vector<owned<ErrorBase>>& errors() const { return errors_; };
+
+    /** Steal the errors that occurred while running, leaving this result empty. */
+    std::vector<owned<ErrorBase>> consumeErrors();
+
     /**
       Checks if any syntax errors or errors occurred while running.
       Warnings do not cause this method to return false.
@@ -150,8 +156,29 @@ class Context {
     bool ranWithoutErrors() const;
   };
 
-  template <typename T>
-  class RunResult : public RunResultBase {
+  class ObservingRunResultBase {
+    friend class Context;
+
+   private:
+    bool hadErrors_ = false;
+
+    bool& value() { return hadErrors_; };
+
+   public:
+    ~ObservingRunResultBase();
+    ObservingRunResultBase();
+    ObservingRunResultBase(const ObservingRunResultBase& other);
+    // ^ should not be called due to copy elision, but it's not guaranteed..
+
+    /**
+      Checks if any syntax errors or errors occurred while running.
+      Warnings do not cause this method to return false.
+    */
+    bool ranWithoutErrors() const;
+  };
+
+  template <typename T, typename Base>
+  class RunResult : public Base {
    private:
     T result_;
 
@@ -163,12 +190,17 @@ class Context {
   class ErrorCollectionEntry {
    private:
     std::vector<owned<ErrorBase>>* storeInto_;
+    bool* noteErrorOccurredInto_;
     const querydetail::QueryMapResultBase* collectingQuery_;
 
     ErrorCollectionEntry(std::vector<owned<ErrorBase>>* storeInto,
+                         bool* noteErrorOccurredInto,
                          const querydetail::QueryMapResultBase* collectingQuery) :
-      storeInto_(storeInto), collectingQuery_(collectingQuery) {}
+      storeInto_(storeInto), noteErrorOccurredInto_(noteErrorOccurredInto),
+      collectingQuery_(collectingQuery) {}
 
+    void storeErrorsFromHelp(const querydetail::QueryMapResultBase* result,
+                            std::unordered_set<const querydetail::QueryMapResultBase*>& visited);
    public:
     /**
       When a parent query starts tracking errors, the tracking entry contains
@@ -178,6 +210,14 @@ class Context {
     static ErrorCollectionEntry
     createForTrackingQuery(std::vector<owned<ErrorBase>>*,
                            const querydetail::QueryMapResultBase*);
+
+    /**
+      Like the vector-based overload above, except set up for merely
+      detecting whether or not an error occurred instead of storing
+      the errors.
+     */
+    static ErrorCollectionEntry
+    createForTrackingQuery(bool*, const querydetail::QueryMapResultBase*);
 
     /**
       When recomputing queries (to determine if a cached result should be used),
@@ -191,7 +231,10 @@ class Context {
     createForRecomputing(const querydetail::QueryMapResultBase*);
 
     const querydetail::QueryMapResultBase* collectingQuery() const { return collectingQuery_; }
+
     void storeError(owned<ErrorBase> toStore) const;
+
+    void storeErrorsFrom(const querydetail::QueryMapResultBase* result);
   };
 
   class RecomputeMarker {
@@ -203,10 +246,12 @@ class Context {
 
     RecomputeMarker(Context* context, bool isRecomputing) :
       context_(context), oldValue_(isRecomputing) {
-        std::swap(context_->isRecomputing, oldValue_);
+        if (context) std::swap(context_->isRecomputing, oldValue_);
     }
 
    public:
+    RecomputeMarker() : RecomputeMarker(nullptr, false) {}
+
     RecomputeMarker(RecomputeMarker&& other) {
       *this = std::move(other);
     }
@@ -223,6 +268,10 @@ class Context {
         std::swap(context_->isRecomputing, oldValue_);
       }
       context_ = nullptr;
+    }
+
+    bool isCleared() {
+      return context_ == nullptr;
     }
 
     ~RecomputeMarker() {
@@ -417,7 +466,8 @@ class Context {
       const querydetail::QueryMapResult<ResultType, ArgTs...>* r,
       const std::tuple<ArgTs...>& tupleOfArgs,
       ResultType result,
-      bool forSetter);
+      bool forSetter,
+      bool markExternallySet);
 
   template<typename ResultType,
            typename... ArgTs>
@@ -426,7 +476,8 @@ class Context {
       querydetail::QueryMap<ResultType, ArgTs...>* queryMap,
       const std::tuple<ArgTs...>& tupleOfArgs,
       ResultType result,
-      bool forSetter);
+      bool forSetter,
+      bool markExternallySet);
 
   template<typename ResultType,
            typename... ArgTs>
@@ -437,7 +488,8 @@ class Context {
        ResultType result,
        const char* traceQueryName,
        bool isInputQuery,
-       bool forSetter);
+       bool forSetter,
+       bool markExternallySet);
 
   void recomputeIfNeeded(const querydetail::QueryMapResultBase* resultEntry);
   void updateForReuse(const querydetail::QueryMapResultBase* resultEntry);
@@ -480,6 +532,17 @@ class Context {
   // the hashtable. Is there a way to adjust the hashing function and
   // tune the hashtable bucket size, or something? Do we need a custom
   // hashtable?
+
+  template <typename F, typename ResultBase>
+  auto runAndHandleErrors(F&& f) -> RunResult<decltype(f(this)), ResultBase> {
+    RunResult<decltype(f(this)), ResultBase> result;
+    auto collectionRoot = queryStack.empty() ? nullptr : queryStack.back();
+    errorCollectionStack.push_back(
+        ErrorCollectionEntry::createForTrackingQuery(&result.value(), collectionRoot));
+    result.result() = f(this);
+    errorCollectionStack.pop_back();
+    return result;
+  }
 
  public:
   /** Report the error to standard error output. */
@@ -573,14 +636,13 @@ class Context {
     not shown to the user.
    */
   template <typename F>
-  auto runAndTrackErrors(F&& f) -> RunResult<decltype(f(this))> {
-    RunResult<decltype(f(this))> result;
-    auto collectionRoot = queryStack.empty() ? nullptr : queryStack.back();
-    errorCollectionStack.push_back(
-        ErrorCollectionEntry::createForTrackingQuery(&result.errors(), collectionRoot));
-    result.result() = f(this);
-    errorCollectionStack.pop_back();
-    return result;
+  auto runAndCaptureErrors(F&& f) -> RunResult<decltype(f(this)), CapturingRunResultBase> {
+    return runAndHandleErrors<F, CapturingRunResultBase>(std::forward<F>(f));
+  }
+
+  template <typename F>
+  auto runAndDetectErrors(F&& f) -> RunResult<decltype(f(this)), ObservingRunResultBase> {
+    return runAndHandleErrors<F, ObservingRunResultBase>(std::forward<F>(f));
   }
 
   optional<std::vector<TraceElement>> recoverFromSelfRecursion() const;
@@ -878,6 +940,47 @@ class Context {
   ;
 
   /**
+    Note an warning for the currently running query.
+    This is a convenience overload.
+    This version takes in a Location and a printf-style format string.
+   */
+  void warning(Location loc, const char* fmt, ...)
+  #ifndef DOXYGEN
+    // docs generator has trouble with the attribute applied to 'build'
+    // so the above ifndef works around the issue.
+    __attribute__ ((format (printf, 3, 4)))
+  #endif
+  ;
+
+  /**
+    Note an warning for the currently running query.
+    This is a convenience overload.
+    This version takes in an ID and a printf-style format string.
+    The ID is used to compute a Location using parsing::locateId.
+   */
+  void warning(ID id, const char* fmt, ...)
+  #ifndef DOXYGEN
+    // docs generator has trouble with the attribute applied to 'build'
+    // so the above ifndef works around the issue.
+    __attribute__ ((format (printf, 3, 4)))
+  #endif
+  ;
+
+  /**
+    Note an warning for the currently running query.
+    This is a convenience overload.
+    This version takes in an AST node and a printf-style format string.
+    The AST node is used to compute a Location by using a parsing::locateAst.
+   */
+  void warning(const uast::AstNode* ast, const char* fmt, ...)
+  #ifndef DOXYGEN
+    // docs generator has trouble with the attribute applied to 'build'
+    // so the above ifndef works around the issue.
+    __attribute__ ((format (printf, 3, 4)))
+  #endif
+  ;
+
+  /**
     Sets the enableDebugTrace flag. This was needed because the context
     in main gets created before the arguments to the compiler are parsed.
   */
@@ -1008,7 +1111,8 @@ class Context {
       const std::tuple<ArgTs...>& tupleOfArgs,
       ResultType result,
       const char* traceQueryName,
-      bool isInputQuery);
+      bool isInputQuery,
+      bool markExternallySet);
 
 
   /**
@@ -1016,33 +1120,62 @@ class Context {
    */
   void queryTimingReport(std::ostream& os);
 
+  void finishQueryStopwatch(querydetail::QueryMapBase* base,
+                            size_t depth,
+                            const std::string& args,
+                            querydetail::QueryTimingDuration elapsed);
+
+  template<typename... ArgTs>
+  struct ReportOnExit {
+    using Stopwatch = querydetail::QueryTimingStopwatch<ReportOnExit>;
+    Context* context = nullptr;
+    querydetail::QueryMapBase* base = nullptr;
+    const std::tuple<ArgTs...>* tupleOfArgs = nullptr;
+    bool enableQueryTiming = false;
+    size_t depth = 0;
+    bool enableQueryTimingTrace = false;
+
+    explicit ReportOnExit(Context *ctx = nullptr,
+                          querydetail::QueryMapBase *base_ = nullptr,
+                          const std::tuple<ArgTs...> *tup = nullptr,
+                          bool enableQueryTiming_ = false, size_t dep = 0,
+                          bool enableQueryTimingTrace_ = false)
+        : context(ctx), base(base_), tupleOfArgs(tup),
+          enableQueryTiming(enableQueryTiming_), depth(dep),
+          enableQueryTimingTrace(enableQueryTimingTrace_) {}
+
+    ReportOnExit(const ReportOnExit& rhs) = delete;
+    ReportOnExit(ReportOnExit&& rhs) = default;
+    ReportOnExit& operator=(const ReportOnExit& rhs) = delete;
+    ReportOnExit& operator=(ReportOnExit&& rhs) = default;
+
+    bool enabled() { return enableQueryTiming || enableQueryTimingTrace; }
+
+    void operator()(Stopwatch& stopwatch) {
+      // Return if the map is empty (to allow for default-construction).
+      if (base == nullptr) return;
+      bool enabled = enableQueryTiming || enableQueryTimingTrace;
+      if (enabled) {
+        auto elapsed = stopwatch.elapsed();
+        std::ostringstream oss;
+        if (tupleOfArgs) querydetail::queryArgsPrint(oss, *tupleOfArgs);
+        context->finishQueryStopwatch(base, depth, oss.str(), elapsed);
+      }
+    };
+  };
+
   // Used in the in QUERY_BEGIN_TIMING macro. Creates a stopwatch that starts
   // timing if we are enabled. And then on scope exit we conditionally stop the
   // timing and add it to the total or log it.
   // Semi-public method because we only expect it to be used in the macro
-  auto makeQueryTimingStopwatch(querydetail::QueryMapBase* base) {
-    size_t depth = queryStack.size();
-    bool enabled = enableQueryTiming || enableQueryTimingTrace;
-
-    return querydetail::makeQueryTimingStopwatch(
-        enabled,
-        // This lambda gets called when the stopwatch object (which lives on the
-        // stack of the query function) is destructed
-        [this, base, depth, enabled](auto& stopwatch) {
-          querydetail::QueryTimingDuration elapsed;
-          if (enabled) {
-            elapsed = stopwatch.elapsed();
-          }
-          if (enableQueryTiming) {
-            base->timings.query.update(elapsed);
-          }
-          if (enableQueryTimingTrace) {
-            auto ticks = elapsed.count();
-            auto os = queryTimingTraceOutput.get();
-            CHPL_ASSERT(os != nullptr);
-            *os << depth << ' ' << base->queryName << ' ' << ticks << '\n';
-          }
-        });
+  template<typename... ArgTs>
+  auto makeQueryTimingStopwatch(querydetail::QueryMapBase* base,
+                           const std::tuple<ArgTs...>& tupleOfArgs) {
+    ReportOnExit<ArgTs...> s {
+      this, base, &tupleOfArgs, enableQueryTiming, queryStack.size(),
+      enableQueryTimingTrace
+    };
+    return querydetail::makeQueryTimingStopwatch(s.enabled(), std::move(s));
   }
   /// \endcond
 };

@@ -2,8 +2,8 @@
 #
 # Test default configuration on examples only, on linux64, with compiler gcc-10.1
 
-CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
-source $CWD/common.bash
+UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+source $UTIL_CRON_DIR/common.bash
 
 # Use CHPL_LLVM=none to avoid using a system LLVM potentially linked
 # with a different and incompatible version of GCC
@@ -11,7 +11,7 @@ export CHPL_LLVM=none
 export CHPL_LLVM_SUPPORT=bundled
 unset CHPL_LLVM_CONFIG
 
-source /data/cf/chapel/setup_gcc101.bash     # host-specific setup for target compiler
+source /hpcdc/project/chapel/setup_gcc.bash 10.1
 
 # Set environment variables to nudge cmake towards GCC 10.1
 export CHPL_CMAKE_USE_CC_CXX=1
@@ -25,6 +25,8 @@ if [ "$gcc_version" != "10.1.0" ]; then
   exit 2
 fi
 
+export CHPL_LAUNCHER=none
+
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="linux64-gcc101"
 
-$CWD/nightly -cron -examples ${nightly_args}
+$UTIL_CRON_DIR/nightly -cron -examples -blog ${nightly_args}

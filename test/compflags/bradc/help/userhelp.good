@@ -9,6 +9,7 @@ Module Processing Options:
       --[no-]print-search-dirs        [Don't] print module search path
 
 Warning and Language Control Options:
+      --edition <edition>             Specify the language edition to use
       --[no-]permit-unhandled-module-errors
                                       Permit unhandled thrown errors; such
                                       errors halt at runtime
@@ -109,6 +110,8 @@ Optimization Control Options:
       --[no-]dynamic-auto-local-access
                                       Enable [disable] using local access
                                       automatically (dynamic only)
+      --[no-]offset-auto-local-access Enable [disable] using local access
+                                      automatically with offset indices
       --[no-]auto-aggregation         Enable [disable] automatically
                                       aggregating remote accesses in foralls
       --[no-]array-view-elision       Enable [disable] array view elision
@@ -201,7 +204,7 @@ Compiler Configuration Options:
                                       position-independent code
       --locale-model <locale-model>   Specify locale model to use
       --make <make utility>           Make utility for generated code
-      --mem <mem-impl>                Specify the memory manager
+      --target-mem <mem-impl>         Specify the memory manager
       --re2 <re2-version>             Specify RE2 library
       --target-arch <architecture>    Target architecture / machine type
       --target-compiler <compiler>    Compiler for generated code

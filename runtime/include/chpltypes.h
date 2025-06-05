@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -30,6 +30,7 @@
 #include <stddef.h> // for ptrdiff_t
 #include <string.h>
 #include <sys/time.h> // for struct timeval
+#include <wchar.h> // for wchar_t
 
 #include <complex.h>
 typedef float _Complex        _complex64;
@@ -70,6 +71,7 @@ typedef intptr_t c_intptr;
 typedef ptrdiff_t c_ptrdiff;
 typedef size_t c_size_t;
 typedef ssize_t c_ssize_t;
+typedef wchar_t c_wchar_t;
 
 // C++ does not support c99 bools
 #ifndef __cplusplus
@@ -95,15 +97,11 @@ typedef int32_t c_sublocid_t;
 #define SCN_c_sublocid_t SCNi32
 typedef int64_t c_localeid_t;
 
-// These are special values that mean "no", "any", and "all sublocales",
+// These are special values that mean "no" and "all sublocales",
 // respectively.
 #define c_sublocid_none_val -1
-#define c_sublocid_any_val  -2
-#define c_sublocid_all_val  -3
 
 static const c_sublocid_t c_sublocid_none = c_sublocid_none_val;
-static const c_sublocid_t c_sublocid_any  = c_sublocid_any_val;
-static const c_sublocid_t c_sublocid_all  = c_sublocid_all_val;
 
 static inline int isActualSublocID(c_sublocid_t subloc) {
   return subloc >= 0;

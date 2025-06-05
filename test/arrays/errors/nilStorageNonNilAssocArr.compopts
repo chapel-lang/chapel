@@ -1,3 +1,3 @@
--snoParSafeWarning -sTestClass=OwnedC        # nilStorageNonNilAssocArr.0.good
--snoParSafeWarning -sTestClass=SharedC       # nilStorageNonNilAssocArr.1.good
--snoParSafeWarning -sTestClass=UnmanagedC    # nilStorageNonNilAssocArr.2.good
+-sTestClass=OwnedC        # nilStorageNonNilAssocArr.0.good
+-sTestClass=SharedC       # nilStorageNonNilAssocArr.1.good
+-sTestClass=UnmanagedC    # nilStorageNonNilAssocArr.2.good

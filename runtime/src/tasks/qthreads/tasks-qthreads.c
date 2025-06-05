@@ -8,7 +8,7 @@
 //
 
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -164,7 +164,7 @@ chpl_task_bundle_t chpl_qthread_process_bundle = {
                                    .is_executeOn = false,
                                    .lineno = 0,
                                    .filename = CHPL_FILE_IDX_MAIN_TASK,
-                                   .requestedSubloc = c_sublocid_any_val,
+                                   .requestedSubloc = c_sublocid_none_val,
                                    .requested_fid = FID_NONE,
                                    .requested_fn = NULL,
                                    .id = chpl_nullTaskID };
@@ -174,7 +174,7 @@ chpl_task_bundle_t chpl_qthread_comm_task_bundle_template = {
                                    .is_executeOn = false,
                                    .lineno = 0,
                                    .filename = CHPL_FILE_IDX_COMM_TASK,
-                                   .requestedSubloc = c_sublocid_any_val,
+                                   .requestedSubloc = c_sublocid_none_val,
                                    .requested_fid = FID_NONE,
                                    .requested_fn = NULL,
                                    .id = chpl_nullTaskID };
@@ -502,7 +502,18 @@ static void setupAvailableParallelism(int32_t maxThreads) {
     if (hwpar > 0) {
         // Limit the parallelism to the maximum imposed by the comm layer.
         if (0 < maxThreads && maxThreads < hwpar) {
-            hwpar = maxThreads;
+          if (chpl_nodeID == 0) {
+            char msg[1024];
+            snprintf(msg, sizeof(msg),
+                     "The CHPL_COMM setting is limiting the number of threads "
+                     "to %d, rather than the hardware's preference of %d.%s",
+                     maxThreads, hwpar,
+                     (strcmp(CHPL_COMM, "gasnet") ? "" :
+                      "  To increase this limit, set 'GASNET_MAX_THREADS' to "
+                      "a larger value in your environment."));
+            chpl_warning(msg, 0, 0);
+          }
+          hwpar = maxThreads;
         }
 
         //
@@ -937,7 +948,7 @@ void chpl_task_callMain(void (*chpl_main)(void))
         (chpl_task_bundle_t)
         { .kind            = CHPL_ARG_BUNDLE_KIND_TASK,
           .is_executeOn    = false,
-          .requestedSubloc = c_sublocid_any_val,
+          .requestedSubloc = c_sublocid_none_val,
           .requested_fid   = FID_NONE,
           .requested_fn    = (void(*)(void*)) chpl_main,
           .lineno          = 0,
@@ -986,7 +997,7 @@ void chpl_task_addTask(chpl_fn_int_t       fid,
 
     // We allow using c_sublocid_none to represent the CPU in the gpu locale
     // model. This isn't currently used by the numa (or other locale) models.
-    assert(isActualSublocID(full_subloc) || full_subloc == c_sublocid_any ||
+    assert(isActualSublocID(full_subloc) || full_subloc == c_sublocid_none ||
         !strcmp(CHPL_LOCALE_MODEL, "gpu"));
 
     PROFILE_INCR(profile_task_addTask,1);
@@ -1008,7 +1019,7 @@ void chpl_task_addTask(chpl_fn_int_t       fid,
 
     wrap_callbacks(chpl_task_cb_event_kind_create, arg);
 
-    if (execution_subloc == c_sublocid_any) {
+    if (execution_subloc == c_sublocid_none) {
         qthread_fork_copyargs(chapel_wrapper, arg, arg_size, NULL);
     } else {
         qthread_fork_copyargs_to(chapel_wrapper, arg, arg_size, NULL,

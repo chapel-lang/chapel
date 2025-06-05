@@ -11,67 +11,67 @@ use BitOps;
 
  var chplout = stdout.withSerializer(chplSerializer);
 
- record uintCriterion8 {
+ record uintCriterion8: keyPartComparator {
    inline
-   proc keyPart(x, start:int):(int(8),uint(8)) {
-     if start >= 8 then return (-1:int(8), 0:uint(8));
+   proc keyPart(x, start:int):(keyPartStatus,uint(8)) {
+     if start >= 8 then return (keyPartStatus.pre, 0:uint(8));
      var key:uint = (x:uint) >> (64 - 8*(start+1));
      //writef("in keyPart8(%016xu, %u)\n", x, start);
-     return (0:int(8), (key & 0xff):uint(8));
+     return (keyPartStatus.returned, (key & 0xff):uint(8));
    }
  }
- record uintCriterion16 {
+ record uintCriterion16: keyPartComparator {
    inline
-   proc keyPart(x, start:int):(int(8),uint(16)) {
-     if start >= 4 then return (-1:int(8), 0:uint(8));
+   proc keyPart(x, start:int):(keyPartStatus,uint(16)) {
+     if start >= 4 then return (keyPartStatus.pre, 0:uint(8));
      var key:uint = (x:uint) >> (64 - 16*(start+1));
      //writef("in keyPart16(%016xu, %u)\n", x, start);
-     return (0:int(8), (key & 0xffff):uint(16));
+     return (keyPartStatus.returned, (key & 0xffff):uint(16));
    }
  }
- record uintCriterion32 {
+ record uintCriterion32: keyPartComparator {
    inline
-   proc keyPart(x, start:int):(int, uint(32)) {
-     if start >= 2 then return (-1:int, 0:uint(32));
+   proc keyPart(x, start:int):(keyPartStatus, uint(32)) {
+     if start >= 2 then return (keyPartStatus.pre, 0:uint(32));
      var key:uint = (x:uint) >> (64 - 32*(start+1));
      //writef("in keyPart32(%016xu, %u)\n", x, start);
-     return (0:int, (key & 0xffffffff):uint(32));
+     return (keyPartStatus.returned, (key & 0xffffffff):uint(32));
    }
  }
- record uintCriterion64 {
+ record uintCriterion64: keyPartComparator {
    inline
-   proc keyPart(x, start:int):(int(8), uint(64)) {
-     if start >= 1 then return (-1:int(8), 0:uint(64));
+   proc keyPart(x, start:int):(keyPartStatus, uint(64)) {
+     if start >= 1 then return (keyPartStatus.pre, 0:uint(64));
      var key:uint = x:uint;
      //writef("in keyPart64(%016xu, %u)\n", x, start);
-     return (0:int(8), key);
+     return (keyPartStatus.returned, key);
    }
  }
- record intCriterion {
+ record intCriterion: keyPartComparator {
    inline
-   proc keyPart(x, start:int):(int, int) {
-     if start >= 1 then return (-1:int, 0:int);
+   proc keyPart(x, start:int):(keyPartStatus, int) {
+     if start >= 1 then return (keyPartStatus.pre, 0:int);
      //writef("in intCriterion64(%016xu, %u)\n", x, start);
-     return (0:int, x);
+     return (keyPartStatus.returned, x);
    }
  }
- record intTupleCriterion {
+ record intTupleCriterion: keyPartComparator {
    inline
-   proc keyPart(x:2*int, start:int):(int, int) {
+   proc keyPart(x:2*int, start:int):(keyPartStatus, int) {
      if start >= 2 then
-       return (-1, 0);
+       return (keyPartStatus.pre, 0);
 
      //writef("in intTupleCriterion(%016xu %016xu %u)\n", x(1), x(2), start);
-     return (0, x(start));
+     return (keyPartStatus.returned, x(start));
    }
  }
- record stringCriterion {
+ record stringCriterion: keyPartComparator {
    inline
-   proc keyPart(x:string, start:int):(int(8), uint(8)) {
+   proc keyPart(x:string, start:int):(keyPartStatus, uint(8)) {
      var ptr = x.c_str():c_ptr(uint(8));
      var len = x.numBytes;
-     var section = if start < len then 0:int(8)     else -1:int(8);
-     var part =    if start < len then ptr[start]   else  0:uint(8);
+     var section = if start < len then keyPartStatus.returned else keyPartStatus.pre;
+     var part =    if start < len then ptr[start]             else 0:uint(8);
      return (section, part);
    }
  }
@@ -81,8 +81,8 @@ use BitOps;
    assert(isSorted(A));
  }
  proc testReverseSorted(A, comparator) {
-   assert(isSorted(A, new ReverseComparator(comparator)));
-   assert(isSorted(A, new ReverseComparator()));
+   assert(isSorted(A, new reverseComparator(comparator)));
+   assert(isSorted(A, new reverseComparator()));
  }
 
 
@@ -112,7 +112,7 @@ use BitOps;
    testSorted(A, comparator);
 
    var Ar = input;
-   ShellSort.shellSort(Ar, new ReverseComparator(comparator));
+   ShellSort.shellSort(Ar, new reverseComparator(comparator));
    chplout.writef("shellSort- %?\n", Ar);
    testReverseSorted(Ar, comparator);
 
@@ -127,7 +127,7 @@ use BitOps;
 
      var Br = input;
      MSBRadixSort.msbRadixSort(Br, start, end,
-                               new ReverseComparator(comparator),
+                               new reverseComparator(comparator),
                                0, max(int), s);
      if i == 1 then
       chplout.writef("radixSort- %?\n", Br);
@@ -169,9 +169,9 @@ proc testSortsUnsigned(input) {
    assert(chpl_compare(9,3, new uintCriterion8()) > 0);
    assert(chpl_compare(2,3, new uintCriterion8()) < 0);
    assert(chpl_compare(0,0, new uintCriterion8()) == 0);
-   assert(chpl_compare(9,3, new ReverseComparator(new uintCriterion8())) < 0);
-   assert(chpl_compare(2,3, new ReverseComparator(new uintCriterion8())) > 0);
-   assert(chpl_compare(0,0, new ReverseComparator(new uintCriterion8())) == 0);
+   assert(chpl_compare(9,3, new reverseComparator(new uintCriterion8())) < 0);
+   assert(chpl_compare(2,3, new reverseComparator(new uintCriterion8())) > 0);
+   assert(chpl_compare(0,0, new reverseComparator(new uintCriterion8())) == 0);
 
    testSortsPositive([2,1]);
 

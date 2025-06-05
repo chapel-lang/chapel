@@ -12,6 +12,9 @@
 
 #include <stddef.h> // for size_t
 
+#include <gasnetex.h>
+#include <gasnet_coll.h>
+
 size_t max_payload = 0;
 int depth = 0;
 #ifndef TEST_SEGSZ
@@ -30,6 +33,7 @@ int peerproc;
 int fromproc;
 int numprocs;
 int iters = 0;
+unsigned int seed = 0;
 size_t maxmed;
 size_t maxlong;
 size_t least_payload_req_med_client;
@@ -326,6 +330,7 @@ int main(int argc, char **argv) {
   if (argc > arg) { depth = atoi(argv[arg]); arg++; }
   if (!depth) depth = 16;
   depth = MIN(depth, (1<<CHUNK_BITS)-1);
+  if (argc > arg) { seed = atoi(argv[arg]); ++arg; }
 
   /* limit max_payload to largest allowed with 2 arguments */
   maxmed  = MIN4(gex_AM_MaxRequestMedium(myteam,GEX_RANK_INVALID,GEX_EVENT_NOW,0,2),
@@ -371,7 +376,7 @@ int main(int argc, char **argv) {
 
   GASNET_Safe(gex_Segment_Attach(&mysegment, myteam, TEST_SEGSZ_REQUEST));
   GASNET_Safe(gex_EP_RegisterHandlers(myep, htable, sizeof(htable)/sizeof(gex_AM_Entry_t)));
-  test_init("testcore2",0,"[options] (iters) (max_payload) (depth)\n"
+  test_init("testcore2",0,"[options] (iters) (max_payload) (depth) (seed)\n"
                  "  -m   test AMMedium    (defaults to all types)\n"
                  "  -l   test AMLong      (defaults to all types)\n"
                  "  -p   prime the AMLong transfer areas with puts, to encourage pinning\n"
@@ -387,6 +392,12 @@ int main(int argc, char **argv) {
   /* get SPMD info */
   myproc = gex_TM_QueryRank(myteam);
   numprocs = gex_TM_QuerySize(myteam);
+
+  if (seed == 0) {
+    seed = (((unsigned int)TIME()) & 0xFFFF);
+    TEST_BCAST(&seed, 0, &seed, sizeof(seed));
+  }
+  TEST_SRAND(seed+myproc);
 
   if (numprocs%2) {
     // w/ odd # of ranks, last one talks to self
@@ -433,7 +444,7 @@ void *doit(void *id) {
     return 0;
   } 
 
-  MSG0("Running %sAM%s%s%s correctness test %s%swith %i iterations, max_payload=%" PRIu64 ", depth=%i...",
+  MSG0("Running %sAM%s%s%s correctness test %s%swith %i iterations, max_payload=%" PRIu64 ", depth=%i, seed=%u ...",
 #if GASNET_PAR
     (domultith?"multi-threaded ":"single-threaded "),
 #else
@@ -443,7 +454,7 @@ void *doit(void *id) {
     ((doinseg^dooutseg)?(doinseg?" in-segment":" out-of-segment"):""),
     (dosizesync?"":"loosely-synced "),
     (doprime?"with priming ":""),
-    iters,(uint64_t)max_payload,depth);
+    iters,(uint64_t)max_payload,depth,seed);
 
   BARRIER();
   if (doprime) { /* issue some initial puts that cover the Long regions, to try and trigger dynamic pinning */

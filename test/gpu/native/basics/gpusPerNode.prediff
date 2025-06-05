@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+# make sure the output starts with srun/salloc and has the correct flag
+
+
+if cat $2 | grep -E '^(srun|salloc)' | grep -E '\--gpus-per-node=[0-9]+x'; then
+  echo 'Missing flag' > $2
+else
+  echo 'Success' > $2
+fi

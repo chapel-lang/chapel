@@ -3,8 +3,8 @@
 # Configure environment for quickstart testing. This should be sourced by other
 # scripts that wish to make use of the variables set here.
 
-CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
-source $CWD/common.bash
+UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+source $UTIL_CRON_DIR/common.bash
 source ${CHPL_HOME}/util/quickstart/setchplenv.bash
 
 # Skip $CHPL_HOME/test/regex/elliot/I-fail-without-re2

@@ -61,19 +61,19 @@ module SimpleDomainAsRange {
 
   @chplcheck.ignore("UnusedLoopIndex")
   forall i in {1..#10 by 2 align 2} with (ref A) {
-
+    A;
   }
 
   forall {1..10} with (ref A) {
-
+    A;
   }
 
   forall {1..<10} with (ref A) {
-
+    A;
   }
 
   foreach {1..#10 by 2 align 2} with (ref A) {
-
+    A;
   }
 
   foreach {1..10, 1..10 by 2} {}

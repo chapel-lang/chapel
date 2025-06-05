@@ -1,4 +1,4 @@
-.TH "hwlocality_levelzero" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_levelzero" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -26,11 +26,20 @@ This interface offers ways to retrieve topology information about devices manage
 .PP
 Get the CPU set of logical processors that are physically close to the Level Zero device \fCdevice\fP\&. Store in \fCset\fP the CPU-set describing the locality of the Level Zero device \fCdevice\fP\&.
 .PP
-Topology \fCtopology\fP and device \fCdevice\fP must match the local machine\&. The Level Zero must have been initialized with Sysman enabled (ZES_ENABLE_SYSMAN=1 in the environment)\&. I/O devices detection and the Level Zero component are not needed in the topology\&.
+Topology \fCtopology\fP and device \fCdevice\fP must match the local machine\&. The Level Zero library must have been initialized with Sysman enabled (by calling zesInit(0) if supported, or by setting ZES_ENABLE_SYSMAN=1 in the environment)\&. I/O devices detection and the Level Zero component are not needed in the topology\&.
 .PP
 The function only returns the locality of the device\&. If more information about the device is needed, OS objects should be used instead, see \fBhwloc_levelzero_get_device_osdev()\fP\&.
 .PP
-This function is currently only implemented in a meaningful way for Linux; other systems will simply get a full cpuset\&. 
+This function is currently only implemented in a meaningful way for Linux; other systems will simply get a full cpuset\&.
+.PP
+\fBReturns\fP
+.RS 4
+0 on success\&. 
+.PP
+-1 on error, for instance if device information could not be found\&. 
+.RE
+.PP
+
 .SS "static \fBhwloc_obj_t\fP hwloc_levelzero_get_device_osdev (\fBhwloc_topology_t\fP topology, ze_device_handle_t device)\fC [inline]\fP, \fC [static]\fP"
 
 .PP

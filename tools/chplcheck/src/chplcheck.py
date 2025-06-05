@@ -1,7 +1,5 @@
-#!/usr/bin/env python3
-
 #
-# Copyright 2023-2024 Hewlett Packard Enterprise Development LP
+# Copyright 2023-2025 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -19,28 +17,29 @@
 # limitations under the License.
 #
 
-import argparse
+import configargparse
 from collections import defaultdict
 import importlib.util
 import os
 import sys
+import glob
+import itertools
+import functools
 from typing import List, Tuple, Optional
 
 import chapel
 import chapel.replace
 from driver import LintDriver
 from lsp import run_lsp
-from rules import register_rules
+from rules import rules
 from fixits import Fixit, Edit
+from rule_types import CheckResult, RuleLocation
 from config import Config
 
 
-def print_violation(node: chapel.AstNode, name: str):
-    location = node.location()
-    first_line, _ = location.start()
-    print(
-        "{}:{}: node violates rule {}".format(location.path(), first_line, name)
-    )
+def print_violation(loc: RuleLocation, name: str):
+    first_line, _ = loc.start()
+    print("{}:{}: node violates rule {}".format(loc.path(), first_line, name))
 
 
 def load_module(driver: LintDriver, file_path: str):
@@ -84,20 +83,20 @@ def int_to_nth(n: int) -> str:
 
 
 def apply_fixits(
-    violations: List[Tuple[chapel.AstNode, str, Optional[List[Fixit]]]],
+    violations: List[CheckResult],
     suffix: Optional[str],
     interactive: bool,
-) -> List[Tuple[chapel.AstNode, str, Optional[List[Fixit]]]]:
+) -> List[CheckResult]:
     """
     Apply fixits to the Chapel source code based on user input
     Any violations not applied are returned
     """
     not_applied = []
     edits_to_apply = []
-    for node, rule, fixits in violations:
+    for loc, node, rule, fixits in violations:
         if fixits is None or len(fixits) == 0:
             # no fixits to apply, skip
-            not_applied.append((node, rule, None))
+            not_applied.append((loc, node, rule, []))
             continue
         if not interactive:
             # apply the first fixit
@@ -111,7 +110,7 @@ def apply_fixits(
             else:
                 s = int_to_nth(idx)
                 options.append(f"Apply {s} Fix")
-        print_violation(node, rule)
+        print_violation(loc, rule)
         for i, opt in enumerate(options):
             print(f"  {i}. {opt}")
         done = False
@@ -119,7 +118,7 @@ def apply_fixits(
             try:
                 choice = input("Choose an option: ")
                 if choice == "0":
-                    not_applied.append((node, rule, fixits))
+                    not_applied.append((loc, node, rule, fixits))
                     done = True
                 else:
                     try:
@@ -182,7 +181,8 @@ def print_rules(driver: LintDriver, show_all=True):
     for rule, description in driver.rules_and_descriptions():
         if description is None:
             description = ""
-        description = description.strip()
+        # Only show the first line of the description
+        description = description.strip().split("\n")[0].strip()
 
         prefix = ""
         if rule not in driver.SilencedRules:
@@ -198,10 +198,27 @@ def print_rules(driver: LintDriver, show_all=True):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        prog="chplcheck", description="A linter for the Chapel language"
+    parser = configargparse.ArgParser(
+        default_config_files=[
+            os.path.join(os.getcwd(), "chplcheck.cfg"),
+            os.path.join(os.getcwd(), ".chplcheck.cfg"),
+            os.path.join(os.getcwd(), "Mason.toml"),
+        ],
+        config_file_parser_class=configargparse.CompositeConfigParser(
+            [
+                configargparse.YAMLConfigFileParser,
+                configargparse.TomlConfigParser(["tool.chplcheck"]),
+            ]
+        ),
+        args_for_setting_config_path=["--config", "-c"],
     )
     parser.add_argument("filenames", nargs="*")
+    parser.add_argument(
+        "--file",
+        action="append",
+        default=[],
+        help="Add a file to the list of 'filenames' to lint",
+    )
     Config.add_arguments(parser)
     parser.add_argument("--lsp", action="store_true", default=False)
     parser.add_argument(
@@ -235,19 +252,23 @@ def main():
         help="Apply fixits interactively, requires --fixit",
     )
     args = parser.parse_args()
+    args.filenames.extend(args.file)
+    args.filenames = itertools.chain(
+        *map(functools.partial(glob.glob, recursive=True), args.filenames)
+    )
 
     config = Config.from_args(args)
     driver = LintDriver(config)
 
     # register rules before enabling/disabling
-    register_rules(driver)
+    rules(driver)
     for p in config.add_rules:
         load_module(driver, os.path.abspath(p))
 
     if args.list_rules:
         print("Available rules (default rules marked with *):")
         print_rules(driver)
-        return
+        return 0
 
     driver.disable_rules(*config.disabled_rules)
     driver.enable_rules(*config.enabled_rules)
@@ -255,11 +276,18 @@ def main():
     if args.list_active_rules:
         print("Active rules:")
         print_rules(driver, show_all=False)
-        return
+        return 0
+
+    invalid_settings = driver.validate_rule_settings()
+    if invalid_settings:
+        print("Invalid rule settings:")
+        for r in invalid_settings:
+            print(f"  {r}")
+        return 2
 
     if args.lsp:
         run_lsp(driver)
-        return
+        return 0
 
     printed_warning = False
 
@@ -270,20 +298,20 @@ def main():
             violations = list(driver.run_checks(context, asts))
 
             # sort the failures in order of appearance
-            violations.sort(key=lambda f: f[0].location().start()[0])
+            violations.sort(key=lambda f: f[0].start()[0])
 
             if args.fixit:
                 violations = apply_fixits(
                     violations, args.fixit_suffix, args.interactive
                 )
 
-            for node, rule, _ in violations:
-                print_violation(node, rule)
+            for loc, _, rule, _ in violations:
+                print_violation(loc, rule)
                 printed_warning = True
 
     if printed_warning:
-        sys.exit(1)
+        return 1
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

@@ -319,6 +319,9 @@ else
         local target_compiler="gcc"
         #local target_version=$gen_version_gcc
 
+        # unload cce, let the PrgEnv module load it if necessary
+        unload_module_re cce
+
         # unload any existing PrgEnv
         unload_module_re PrgEnv-
 

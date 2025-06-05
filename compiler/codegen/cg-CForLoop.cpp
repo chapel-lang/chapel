@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -266,7 +266,7 @@ static void addLoopMetadata(llvm::Instruction* instruction,
 GenRet CForLoop::codegen()
 {
   if (id == breakOnCodegenID)
-    gdbShouldBreakHere();
+    debuggerBreakHere();
 
   GenInfo* info    = gGenInfo;
   FILE*    outfile = info->cfile;

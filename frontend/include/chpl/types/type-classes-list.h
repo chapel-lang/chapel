@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -44,16 +44,27 @@ TYPE_NODE(CStringType)
 TYPE_NODE(ErroneousType)
 TYPE_NODE(NilType)
 TYPE_NODE(NothingType)
+TYPE_NODE(PlaceholderType)
+TYPE_NODE(RuntimeType)
 TYPE_NODE(UnknownType)
 TYPE_NODE(VoidType)
-TYPE_NODE(CPtrType)
+
+TYPE_BEGIN_SUBCLASSES(PtrType)
+  TYPE_NODE(CPtrType)
+  TYPE_NODE(HeapBufferType)
+TYPE_END_SUBCLASSES(PtrType)
+
+TYPE_BEGIN_SUBCLASSES(IteratorType)
+  TYPE_NODE(LoopExprIteratorType)
+  TYPE_NODE(FnIteratorType)
+  TYPE_NODE(PromotionIteratorType)
+TYPE_END_SUBCLASSES(IteratorType)
+
 
 // TODO:
-// migrate BytesType / StringType to something backed by the modules
-// (if the modules are parsed) and also do the same for array, domain,
-// distribution.
-//
-// c_ptr
+// migrate array and distribution to something backed by the modules
+// (if the modules are parsed)
+
 // c_array
 
 TYPE_BEGIN_SUBCLASSES(BuiltinType)
@@ -62,7 +73,6 @@ TYPE_BEGIN_SUBCLASSES(BuiltinType)
   BUILTIN_TYPE_NODE(CVoidPtrType, "chpl__c_void_ptr")
   BUILTIN_TYPE_NODE(OpaqueType, "opaque")
   BUILTIN_TYPE_NODE(SyncAuxType, "_sync_aux_t")
-  BUILTIN_TYPE_NODE(SingleAuxType, "_single_aux_t")
   BUILTIN_TYPE_NODE(TaskIdType, "chpl_taskID_t")
 
   // generic builtin types. AnyComplexType must be the first of these
@@ -91,7 +101,8 @@ TYPE_BEGIN_SUBCLASSES(DeclaredType)
   TYPE_NODE(ClassType)
   TYPE_NODE(EnumType)
   TYPE_NODE(ExternType)
-  TYPE_NODE(FunctionType)
+  // TYPE_NODE(FunctionType)
+  TYPE_NODE(InterfaceType)
 
   TYPE_BEGIN_SUBCLASSES(CompositeType)
     TYPE_NODE(ArrayType)

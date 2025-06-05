@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -44,7 +44,7 @@ namespace uast {
   \endrst
 
   Each of the lines above is represented by a TupleDecl containing a
-  list of VariableDecls.  Note that the initial value and/or type is inferred
+  list of Variables.  Note that the initial value and/or type is inferred
   from later declarations.
 
   Since the Tuple does not itself have a name, it is not

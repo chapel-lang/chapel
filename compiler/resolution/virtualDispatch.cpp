@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -450,7 +450,8 @@ static void resolveOverrideAndAdjustMaps(FnSymbol* pfn, FnSymbol* cfn) {
 
   if (signaturesMatch(pfn, cfn) &&
       evaluateWhereClause(cfn) &&
-      evaluateWhereClause(pfn)) {
+      evaluateWhereClause(pfn) &&
+      !pfn->isPostInitializer()) {  // postinits don't override
 
     resolveSpecifiedReturnType(cfn);
     resolveFunction(cfn);

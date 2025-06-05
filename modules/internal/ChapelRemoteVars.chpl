@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2024-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -20,9 +20,15 @@
 module ChapelRemoteVars {
   use OwnedObject;
   use ChapelIteratorSupport;
+  use Errors;
 
   class _remoteVarContainer {
     var containedValue;
+
+    proc type _noinit(type containedValueType) {
+      var tmp: containedValueType = noinit;
+      return new _remoteVarContainer(tmp);
+    }
   }
 
   record _remoteVarWrapper {
@@ -45,12 +51,17 @@ module ChapelRemoteVars {
   }
 
   @unstable("remote variables are unstable")
-  inline proc chpl__buildRemoteWrapper(loc: locale, type inType) {
+  inline proc chpl__buildRemoteWrapper(const ref loc) {
+    compilerError("remote variables must have an initializer or type expression");
+  }
+
+  @unstable("remote variables are unstable")
+  inline proc chpl__buildRemoteWrapper(const ref loc, type inType) {
     return chpl__buildRemoteWrapper(loc, inType, __primitive("create thunk", __defaultValueForType(inType)));
   }
 
   @unstable("remote variables are unstable")
-  inline proc chpl__buildRemoteWrapper(loc: locale, in tr: _thunkRecord) {
+  inline proc chpl__buildRemoteWrapper(const ref loc, in tr: _thunkRecord) {
     // Does not call the (locale, type, thunk) version of this function, because
     // `thunkToReturnType` could return an uninitialized runtime type
     // (same as chpl_buildStandInRTT), which will cause memory issues
@@ -73,7 +84,17 @@ module ChapelRemoteVars {
   }
 
   @unstable("remote variables are unstable")
-  inline proc chpl__buildRemoteWrapper(loc: locale, type inType, in tr: _thunkRecord) {
+  inline proc chpl__buildRemoteWrapper(const ref loc, type inType, type noinitMarker) where noinitMarker == void {
+    // This is a special case to create a noinit remote variable.
+    // We use a specific overload of the _remoteVarContainer constructor
+    // which accepts a type and uses noinit.
+    var c: owned _remoteVarContainer(inType)?;
+    on loc do c = _remoteVarContainer._noinit(inType);
+    return new _remoteVarWrapper(try! c : owned _remoteVarContainer(inType));
+  }
+
+  @unstable("remote variables are unstable")
+  inline proc chpl__buildRemoteWrapper(const ref loc, type inType, in tr: _thunkRecord) {
     var c: owned _remoteVarContainer(inType)?;
     on loc {
       // If a type was explicitly specified, perform assignment to a variable

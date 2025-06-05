@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,22 +23,20 @@
 #include <set>
 #include <queue>
 #include <list>
-#include "stmt.h"
 #include "stlUtil.h"
 #include "passes.h"
 #include "ModuleSymbol.h"
 #include "LoopStmt.h"
 #include "ForLoop.h"
-#include "expr.h"
 #include "driver.h"
 #include "CForLoop.h"
+#include "WhileDoStmt.h"
 #include "bb.h"
 #include "astutil.h"
 #include "optimizations.h"
 #include "timer.h"
 #include "misc.h"
 #include "view.h"
-#include "expr.h"
 
 #include "global-ast-vecs.h"
 
@@ -49,14 +47,14 @@ static bool allowFnCallsFromGPU = true;
 static int indentGPUChecksLevel = 0;
 
 // Ideally, if we do gpuSpecialization, we could safely assume that any function
-// that isn't marked with FLAG_GPU_SPECIALIZE would be executed on a CPU locale.
+// that isn't marked with FLAG_GPU_SPECIALIZATION would be executed on a CPU locale.
 // Unfortunately, as of today, this isn't the case because these functions can
 // be reached by virtual dispatch and our specialization cloning isn't
 // sophisticated enough to clone these functions and update the dispatch calls
 // as appropriate.
 //
 // The good news is it's still safe to assume that anything marked with
-// FLAG_GPU_SPECIALIZE must execute on the gpu.
+// FLAG_GPU_SPECIALIZATION must execute on the gpu.
 //
 // Anyway, of course, our hope would be to make things handle virtual dispatch
 // properly, but, in the meantime, if you want to ignore this and make
@@ -107,14 +105,17 @@ static SymExpr* hasOuterVarAccesses(FnSymbol* fn) {
           // we're covering this elsewhere
           continue;
         }
-        if (!var->isParameter() && var != gVoid && var != gNil) {
-          if (CallExpr* parent = toCallExpr(se->parentExpr)) {
-            if (isFieldAccessPrimitive(parent)) {
-              continue;
-            }
-          }
-          return se;
+        if (var == gVoid || var == gNil || var == gCpuVsGpuToken
+            || var->isParameter()) {
+          continue;
         }
+        if (CallExpr* parent = toCallExpr(se->parentExpr)) {
+          if (isFieldAccessPrimitive(parent)) {
+            continue;
+          }
+        }
+        // found an undesirable outer var
+        return se;
       }
     }
   }
@@ -150,25 +151,18 @@ static VarSymbol* generateAssignmentToPrimitive(FnSymbol* fn,
   return var;
 }
 
-template <size_t Size>
-bool isEqualToAnyOfTheLoops(LoopStmt* loop, CForLoop* const (&loops)[Size]) {
-  for (size_t i = 0; i < Size; i++) {
-    if (loops[i] == loop) return true;
-  }
-  return false;
-}
+static bool isDefinedInTheLoop(Symbol* sym, CForLoop* loop) {
+  // shortcut for global variables
+  if (isModuleSymbol(sym->defPoint->parentSymbol))
+    return false;
 
-template <size_t Size>
-static bool isDefinedInTheLoops(Symbol* sym, CForLoop* const (&loops)[Size]) {
   LoopStmt* curLoop = LoopStmt::findEnclosingLoop(sym->defPoint);
-
-  while (curLoop != nullptr) {
-    if (isEqualToAnyOfTheLoops(curLoop, loops)) {
+  while (curLoop) {
+    if (curLoop == loop) {
       return true;
     }
     curLoop = LoopStmt::findEnclosingLoop(curLoop->parentExpr);
   }
-
   return false;
 }
 
@@ -181,23 +175,16 @@ static bool isDefinedInTheLoops(Symbol* sym, CForLoop* const (&loops)[Size]) {
 // passing that as an argument to the GPU kernel.  TODO: investigate whether
 // that def is removed later in the compilation.  Ideally move GPU transforms
 // after that pass
-template <size_t Size>
-static bool isDegenerateOuterRef(Symbol* sym, CForLoop* const (&loops)[Size]) {
-  if (isDefinedInTheLoops(sym, loops) ||
+static bool isDegenerateOuterRef(Symbol* sym, CForLoop* loop) {
+  if (isDefinedInTheLoop(sym, loop) ||
       !sym->hasFlag(FLAG_TEMP)        ||
       !sym->isRef()                   ||
       !isVarSymbol(sym)) {
     return false;
   }
 
-  for_SymbolUses(use, sym) {
-    if (!isEqualToAnyOfTheLoops(LoopStmt::findEnclosingLoop(use), loops)) {
-      return false;
-    }
-  }
-
-  for_SymbolDefs(def, sym) {
-    if (!isEqualToAnyOfTheLoops(LoopStmt::findEnclosingLoop(def), loops)) {
+  for_SymbolSymExprs(use, sym) {
+    if (LoopStmt::findEnclosingLoop(use) != loop) {
       return false;
     }
   }
@@ -421,10 +408,10 @@ class GpuAssertionReporter {
 
   void printNonGpuizableError(CallExpr* assertion, Expr* loc) const {
     debuggerBreakHere();
-    const char* reason = "contains assertOnGpu()";
-    auto isAttributeSym = toSymExpr(assertion->get(1));
-    INT_ASSERT(isAttributeSym);
-    if (isAttributeSym->symbol() == gTrue) {
+    const char* reason = nullptr;
+    if (assertion->isPrimitive(PRIM_ASSERT_GPU_ELIGIBLE)) {
+      reason = "is marked with @gpu.assertEligible";
+    } else {
       reason = "is marked with @assertOnGpu";
     }
     USR_FATAL_CONT(loc, "Loop %s but is not eligible for execution on a GPU", reason);
@@ -532,11 +519,6 @@ class GpuizableLoop {
 
   GpuAssertionReporter assertionReporter_;
 
-  CondStmt* gpuCond_ = nullptr;
-  BlockStmt* cpuBlock_ = nullptr;
-  BlockStmt* gpuBlock_ = nullptr;
-  CForLoop* gpuLoop_ = nullptr;
-
   std::vector<CallExpr*> pidGets_;
 
   // To allow move constructor
@@ -546,32 +528,10 @@ public:
   GpuizableLoop(GpuizableLoop&&) = default;
   GpuizableLoop(const GpuizableLoop&) = default;
 
-  static GpuizableLoop fromEligibleClone(BlockStmt* blk) {
-    GpuizableLoop loop{blk};
-    std::swap(loop.gpuLoop_, loop.loop_);
-
-    // Try to recover some fields from existing AST structure.
-    loop.gpuBlock_ = toBlockStmt(loop.gpuLoop_->parentExpr);
-    INT_ASSERT(loop.gpuBlock_ != nullptr);
-    loop.gpuCond_ = toCondStmt(loop.gpuBlock_->parentExpr);
-    INT_ASSERT(loop.gpuCond_);
-    loop.cpuBlock_ = loop.gpuCond_->elseStmt;
-    INT_ASSERT(loop.cpuBlock_);
-
-    // LICM might've moved a few things outside of the loop.
-    for_alist(expr, loop.cpuBlock_->body) {
-      loop.loop_ = toCForLoop(expr);
-      if (loop.loop_) break;
-    }
-    INT_ASSERT(loop.loop_);
-
-    return loop;
-  }
 
   bool isReportWorthy();
 
-  CForLoop* cpuLoop() const { return loop_; }
-  CForLoop* gpuLoop() const { return gpuLoop_; }
+  CForLoop* loop() const { return loop_; }
 
   bool isEligible() const { return isEligible_; }
   Symbol* upperBound() const { return upperBound_; }
@@ -582,15 +542,16 @@ public:
       loopIndices_.end();
   }
 
-  CForLoop* generateGpuAndNonGpuPaths();
-  void makeCpuOnly() const;
-  void makeGpuOnly() const;
-  void fixupNonGpuPath() const;
-
   const std::vector<CallExpr*>& pidGets() const { return pidGets_; }
 
   inline void reportNotGpuizable(BaseAST* ast, const char* msg) {
     assertionReporter_.reportNotGpuizable(loop_, ast, msg);
+  }
+
+  inline void reportNotGpuizableFnCall(CallExpr* call, FnSymbol* fn, const char* msg) {
+    assertionReporter_.pushCall(call);
+    assertionReporter_.reportNotGpuizable(loop_, fn, msg);
+    assertionReporter_.popCall();
   }
 
 private:
@@ -609,7 +570,7 @@ private:
 
   bool callsInBodyAreGpuizableHelp(BlockStmt* blk,
                                    std::set<FnSymbol*>& okFns,
-                                   std::set<FnSymbol*> visitedFns);
+                                   std::set<FnSymbol*>& visitedFns);
 
   FnSymbol* createErroringStubForGpu(FnSymbol* fn);
 };
@@ -660,6 +621,16 @@ bool GpuizableLoop::isReportWorthy() {
   return true;
 }
 
+static CallExpr* toCallToGpuEligibilityPrimitive(Expr* expr) {
+  CallExpr *call = toCallExpr(expr);
+  if (call &&
+      (call->isPrimitive(PRIM_ASSERT_ON_GPU) ||
+       call->isPrimitive(PRIM_ASSERT_GPU_ELIGIBLE))) {
+    return call;
+  }
+  return nullptr;
+}
+
 CallExpr* GpuizableLoop::findCompileTimeGpuAssertions() {
   CForLoop *cfl = this->loop_;
   INT_ASSERT(cfl);
@@ -672,8 +643,7 @@ CallExpr* GpuizableLoop::findCompileTimeGpuAssertions() {
   // assign to the loop iteration variable if we're iterating
   // over values rather than indices)
   for_alist(expr, cfl->body) {
-    CallExpr *call = toCallExpr(expr);
-    if (call && call->isPrimitive(PRIM_ASSERT_ON_GPU)) {
+    if (auto call = toCallToGpuEligibilityPrimitive(expr)) {
       return call;
     }
 
@@ -682,8 +652,7 @@ CallExpr* GpuizableLoop::findCompileTimeGpuAssertions() {
     BlockStmt *blk = toBlockStmt(expr);
     if (blk && blk->isGpuPrimitivesBlock()) {
       for_alist(expr, blk->body) {
-        CallExpr *call = toCallExpr(expr);
-        if (call && call->isPrimitive(PRIM_ASSERT_ON_GPU)) {
+        if (auto call = toCallToGpuEligibilityPrimitive(expr)) {
           return call;
         }
       }
@@ -694,7 +663,7 @@ CallExpr* GpuizableLoop::findCompileTimeGpuAssertions() {
 }
 
 bool GpuizableLoop::isAlreadyInGpuKernel() {
-  return this->parentFn_->hasFlag(FLAG_GPU_CODEGEN);
+  return this->parentFn_->hasFlag(FLAG_GPU_KERNEL);
 }
 
 bool GpuizableLoop::evaluateLoop() {
@@ -718,7 +687,7 @@ bool GpuizableLoop::parentFnAllowsGpuization() {
   FnSymbol *cur = this->parentFn_;
   while (cur) {
     if (cur->hasFlag(FLAG_NO_GPU_CODEGEN)) {
-      assertionReporter_.reportNotGpuizable(loop_, cur, "parent function disallows execution on a GPU");
+      reportNotGpuizable(cur, "parent function disallows execution on a GPU");
       return false;
     }
 
@@ -748,7 +717,7 @@ static bool symbolIsAField(SymExpr* expr) {
 
 Symbol* GpuizableLoop::getPidFieldForPrivatizationOffload(SymExpr* symExpr) {
   Symbol* sym = symExpr->symbol();
-  if (!isDefinedInTheLoops(sym, {this->loop_}) &&
+  if (!isDefinedInTheLoop(sym, this->loop_) &&
       !symbolIsAField(symExpr) &&
       isRecordWrappedType(sym->type)) {
     AggregateType* aggType = toAggregateType(sym->type);
@@ -780,7 +749,7 @@ bool GpuizableLoop::symsInBodyAreGpuizable() {
     // gotos that jump outside the loop cannot be gpuized
     if (GotoStmt* gotostmt = toGotoStmt(symExpr->parentExpr)) {
       if (auto label = toSymExpr(gotostmt->label)) {
-        if (!isDefinedInTheLoops(label->symbol(), {this->loop_}))
+        if (!isDefinedInTheLoop(label->symbol(), this->loop_))
           return false;
       }
     }
@@ -810,13 +779,59 @@ bool GpuizableLoop::symsInBodyAreGpuizable() {
   return true;
 }
 
+// Given a statement-level 'cpuCall', replace it with this conditional:
+//  if gCpuVsGpuToken { cpuCall; } else { call gpuFn(); }
+// If 'cpuCall' is within a 'move', set up a similar conditional
+// whose 'else' contains a copy of the 'move' with 'cpuCall' replaced.
+static void setupCpuVsGpuCalls(CallExpr* cpuCall, FnSymbol* gpuFn) {
+  SET_LINENO(cpuCall);
+  CallExpr* cpuStmt = nullptr;
+  CallExpr* gpuStmt = nullptr;
+  CallExpr* gpuCall = nullptr;
+
+  if (cpuCall->isStmtExpr()) {
+    cpuStmt = cpuCall;
+    gpuCall = cpuCall->copy();
+    gpuStmt = gpuCall;
+  } else {
+    if (CallExpr* move = toCallExpr(cpuCall->parentExpr)) {
+      if (move->isPrimitive(PRIM_MOVE)) {
+        cpuStmt = move;
+        gpuStmt = cpuStmt->copy();
+        gpuCall = toCallExpr(gpuStmt->get(2));
+      }
+    }
+  }
+  if (gpuCall == nullptr)
+    USR_FATAL_CONT(cpuCall, "such calls to %s are currently not implemented",
+                   gpuFn->name);
+
+  gpuCall->setResolvedFunction(gpuFn);
+
+  BlockStmt* thenBlock = new BlockStmt();
+  BlockStmt* elseBlock = new BlockStmt();
+  CondStmt* cond = new CondStmt(new SymExpr(gCpuVsGpuToken),
+                                thenBlock, elseBlock);
+  cpuStmt->replace(cond);
+  thenBlock->insertAtTail(cpuStmt);
+  elseBlock->insertAtTail(gpuStmt);
+}
+
+static SymbolMap erroringStubCache;
+
 FnSymbol* GpuizableLoop::createErroringStubForGpu(FnSymbol* fn) {
+  FnSymbol* cached = toFnSymbol(erroringStubCache.get(fn));
+  if (cached != nullptr) return cached;
+
   SET_LINENO(fn);
 
   // set up the new function
   FnSymbol* gpuCopy = fn->copy();
+  gpuCopy->name = astr(gpuCopy->name, "_gpuError");
+  gpuCopy->cname = astr(gpuCopy->cname, "_gpuError");
   gpuCopy->addFlag(FLAG_GPU_CODEGEN);
-  fn->defPoint->insertBefore(new DefExpr(gpuCopy));
+  gpuCopy->removeFlag(FLAG_NOT_CALLED_FROM_GPU);
+  fn->defPoint->insertAfter(new DefExpr(gpuCopy));
 
   // modify its body
   BlockStmt* gpuCopyBody = new BlockStmt();
@@ -828,6 +843,7 @@ FnSymbol* GpuizableLoop::createErroringStubForGpu(FnSymbol* fn) {
 
   gpuCopy->body->replace(gpuCopyBody);
 
+  erroringStubCache.put(fn, gpuCopy);
   return gpuCopy;
 }
 
@@ -839,22 +855,22 @@ bool GpuizableLoop::callsInBodyAreGpuizable() {
 
 bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
                                                 std::set<FnSymbol*>& okFns,
-                                                std::set<FnSymbol*> visitedFns) {
-  FnSymbol* fn = blk->getFunction();
+                                           std::set<FnSymbol*>& visitedFns) {
+  FnSymbol* parentFn = blk->getFunction();
   if (debugPrintGPUChecks) {
-    printf("%*s%s:%d: %s[%d]\n", indentGPUChecksLevel, "",
-           fn->fname(), fn->linenum(), fn->name, fn->id);
+    printf("%*s%s: %s[%d]\n", indentGPUChecksLevel, "",
+           debugLoc(parentFn), parentFn->name, parentFn->id);
   }
 
-  if (visitedFns.count(blk->getFunction()) != 0) {
+  if (visitedFns.count(parentFn) != 0) {
     return true; // allow recursive functions
   }
 
-  visitedFns.insert(blk->getFunction());
+  visitedFns.insert(parentFn);
 
   std::vector<CallExpr*> calls;
 
-  collectCallExprsExceptInGpuBlock(blk, calls);
+  collectCallExprsForGpuEligibilityAnalysis(blk, calls);
 
   for_vector(CallExpr, call, calls) {
     if (call->primitive) {
@@ -868,7 +884,7 @@ bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
       bool inLocal = inLocalBlock(call);
       int is = classifyPrimitive(call, inLocal);
       if ((is != FAST_AND_LOCAL)) {
-        assertionReporter_.reportNotGpuizable(loop_, call, "call to a primitive that is not fast and local");
+        reportNotGpuizable(call, "call to a primitive that is not fast and local");
         return false;
       }
     } else if (call->isResolved()) {
@@ -887,16 +903,16 @@ bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
       // GPU-driven communication.
       if (fn->hasFlag(FLAG_NOT_CALLED_FROM_GPU)) {
         FnSymbol* gpuCopy = createErroringStubForGpu(fn);
-        call->setResolvedFunction(gpuCopy);
+        // Set up the AST so that the call invokes different functions
+        // when executing on CPU vs. GPU
+        setupCpuVsGpuCalls(call, gpuCopy);
 
         // now, this call is safe
         continue;
       }
 
       if (fn->hasFlag(FLAG_NO_GPU_CODEGEN)) {
-        assertionReporter_.pushCall(call);
-        assertionReporter_.reportNotGpuizable(loop_, fn, "function is marked as not eligible for GPU execution");
-        assertionReporter_.popCall();
+        reportNotGpuizableFnCall(call, fn, "function is marked as not eligible for GPU execution");
         return false;
       }
 
@@ -907,30 +923,31 @@ bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
         std::string msg = "function calls out to extern function (";
         msg += fn->name;
         msg += "), which is not marked as GPU eligible";
-        assertionReporter_.reportNotGpuizable(loop_, fn, msg.c_str());
+        reportNotGpuizable(fn, msg.c_str());
         return false;
       }
 
       if (hasOuterVarAccesses(fn)) {
-        assertionReporter_.pushCall(call);
-        assertionReporter_.reportNotGpuizable(loop_, fn, "called function has outer var access");
-        assertionReporter_.popCall();
+        reportNotGpuizableFnCall(call, fn, "called function has outer var access");
         return false;
       }
 
-      indentGPUChecksLevel += 2;
-      bool ok = okFns.count(fn) != 0;
-      if (!ok) {
+      if (okFns.count(fn) == 0) {
+        indentGPUChecksLevel += 2;
         assertionReporter_.pushCall(call);
-        ok = callsInBodyAreGpuizableHelp(fn->body, okFns, visitedFns);
+        bool ok = callsInBodyAreGpuizableHelp(fn->body, okFns, visitedFns);
         assertionReporter_.popCall();
-      }
-      if (ok) {
         indentGPUChecksLevel -= 2;
-        okFns.insert(fn);
-      } else {
-        indentGPUChecksLevel -= 2;
-        return false;
+        if (ok) {
+          // If this is a recursive call to 'fn', 'ok' will be true and we will
+          // okFns.insert(fn) even though we are not done analyzing 'fn'.
+          // This avoids re-analyzing any subsequent calls to 'fn'.
+          // We will still see bad calls in 'fn', if any, while working
+          // through the first encountered call to 'fn'.
+          okFns.insert(fn);
+        } else {
+          return false;
+        }
       }
     }
   }
@@ -965,7 +982,7 @@ bool GpuizableLoop::extractIndicesAndLowerBounds() {
     INT_ASSERT(bs->body.length == (int)this->loopIndices_.size());
     INT_ASSERT(bs->body.length == (int)this->lowerBounds_.size());
   } else {
-    assertionReporter_.reportNotGpuizable(loop_, loop_, "loop indices do not match expected pattern for GPU execution");
+    reportNotGpuizable(loop_, "loop indices do not match expected pattern for GPU execution");
     return false;
   }
 
@@ -992,7 +1009,7 @@ bool GpuizableLoop::extractUpperBound() {
   }
 
   if(upperBound_ == nullptr) {
-    assertionReporter_.reportNotGpuizable(loop_, loop_, "upper bound does not match expected pattern for GPU execution");
+    reportNotGpuizable(loop_, "upper bound does not match expected pattern for GPU execution");
     return false;
   }
   return true;
@@ -1016,10 +1033,10 @@ class GpuKernel;
 
 class KernelArg {
   private:
-    Symbol* actual_;
+    Symbol*    actual_;  // pre-existing AST
     GpuKernel* kernel_;
-    ArgSymbol* formal_;
-    int8_t kind_; // formed by |'ing values of GpuArgKind
+    ArgSymbol* formal_;  // newly-created for this kernel / outlined function
+    int8_t     kind_;    // formed by |'ing values of GpuArgKind
     ReductionInfo redInfo_;
 
   public:
@@ -1048,6 +1065,9 @@ class KernelArg {
 
 static bool isCallToPrimitiveWeShouldNotCopyIntoKernel(CallExpr *call);
 static bool isCallToPrimitiveWithHostRuntimeEffect(CallExpr *call);
+static VarSymbol* generateNumThreads(BlockStmt* gpuLaunchBlock,
+                                     GpuKernel* kernel,
+                                     const GpuizableLoop& gpuLoop);
 
 // Given a GpuizableLoop that was determined to be "eligible" we generate an
 // outlined function
@@ -1058,22 +1078,31 @@ static bool isCallToPrimitiveWithHostRuntimeEffect(CallExpr *call);
 //    - Passes in any variables that are declared outside of the loop as
 //      parameters to this new function.
 class GpuKernel {
-  GpuizableLoop &gpuLoop;
-  FnSymbol* fn_;
+  // these fields reference pre-existing AST nodes
+  GpuizableLoop& gpuLoop;
+  BlockStmt*     gpuPrimitivesBlock_;
+  CallExpr*      blockSizeCall_;
+  Symbol*        blockSize_;
+  CallExpr*      itersPerThreadCall_;
+  Symbol*        itersPerThread_;
+  // these fields reference newly-created AST nodes
+  std::string name_;
+  FnSymbol*  fn_;
+  BlockStmt* launchBlock_;
   std::vector<Symbol*> kernelIndices_;
   std::vector<KernelArg> kernelActuals_;
-  SymbolMap copyMap_;
-  bool lateGpuizationFailure_;
-  CallExpr* blockSizeCall_;
-  BlockStmt* gpuPrimitivesBlock_;
-  Symbol* blockSize_;
-  std::string name_;
+  SymbolMap  copyMap_;
+  VarSymbol* numThreads_;
+  Symbol*    localNumThreads_;
+  Symbol*    localItersPerThread_;
+  Symbol*    localGlobalThreadIdx_;
+  BlockStmt* userBody_; // where the loop's body goes
+  BlockStmt* postBody_; // executed by all GPU threads (even if oob) at the end
 
   int nReductionBufs_ = 0;
   int nHostRegisteredVars_ = 0;
-
-  BlockStmt* userBody_; // where the loop's body goes
-  BlockStmt* postBody_; // executed by all GPU threads (even if oob) at the end
+  bool lateGpuizationFailure_ = false;
+  bool cyclicIPT_ = false;
 
   public:
   GpuKernel(GpuizableLoop &gpuLoop, DefExpr* insertionPoint);
@@ -1082,16 +1111,24 @@ class GpuKernel {
   std::string name();
   const std::vector<KernelArg>& kernelActuals() { return kernelActuals_; }
   bool lateGpuizationFailure() const { return lateGpuizationFailure_; }
-  CallExpr* blockSizeCall() const {return blockSizeCall_; }
   BlockStmt* gpuPrimitivesBlock() const { return gpuPrimitivesBlock_; }
+  CallExpr* blockSizeCall() const {return blockSizeCall_; }
   Symbol* blockSize() const {return blockSize_; }
+  CallExpr* itersPerThreadCall() const {return itersPerThreadCall_; }
+  Symbol* itersPerThread() const {return itersPerThread_; }
+  bool hasItersPerThread() const { return itersPerThread_ != nullptr; }
+  bool blockIPT() const { return !cyclicIPT_; }
+  bool cyclicIPT() const { return cyclicIPT_; }
   int nReductionBufs() const {return nReductionBufs_; }
   int nHostRegisteredVars() const {return nHostRegisteredVars_; }
   void incNumHostRegisteredVars() { nHostRegisteredVars_ += 1; }
 
+  void generateGpuAndNonGpuPaths();
+
   private:
+  void processGpuPrimitivesBlock();
   void buildStubOutlinedFunction(DefExpr* insertionPoint);
-  void findGpuPrimitives();
+  void generateKernelLaunch();
   void populateBody();
   void normalizeOutlinedFunction();
   void setLateGpuizationFailure(bool flag);
@@ -1099,10 +1136,15 @@ class GpuKernel {
 
   void generateIndexComputation();
   void generateOobCond();
+  Expr* generateIptLoopHelp(Symbol* upperBound0, Symbol* increment);
+  void generateBlockedLoopOverIPT(Symbol* upperBound);
+  void generateCyclicLoopOverIPT(Symbol* upperBound);
+  void generateOobCondNoIPT(Symbol* upperBound);
   void generatePostBody();
   void markGPUSubCalls(FnSymbol* fn);
   Symbol* addUserVarKernelArgument(Symbol* symInLoop);
-  Symbol* addCompilerGeneratedKernelArgument(Symbol* symInLoop);
+  Symbol* maybeAddCompilerGeneratedKernelArgument(Symbol* symInLoop,
+                                                  const char* name);
   Symbol* addKernelArgument(Symbol* symInLoop, bool isCompilerGenerated);
   Symbol* addLocalVariable(Symbol* symInLoop);
 
@@ -1111,15 +1153,23 @@ class GpuKernel {
 
 GpuKernel::GpuKernel(GpuizableLoop &gpuLoop, DefExpr* insertionPoint)
   : gpuLoop(gpuLoop)
-  , lateGpuizationFailure_(false)
-  , blockSizeCall_(nullptr)
   , gpuPrimitivesBlock_(nullptr)
+  , blockSizeCall_(nullptr)
   , blockSize_(nullptr)
+  , itersPerThreadCall_(nullptr)
+  , itersPerThread_(nullptr)
   , name_("")
+  , launchBlock_(new BlockStmt())
+  , numThreads_(nullptr)
+  , localNumThreads_(nullptr)
+  , localItersPerThread_(nullptr)
+  , localGlobalThreadIdx_(nullptr)
+  , userBody_(nullptr)
+  , postBody_(nullptr)
 {
+  processGpuPrimitivesBlock();
   buildStubOutlinedFunction(insertionPoint);
   normalizeOutlinedFunction();
-  findGpuPrimitives();
   populateBody();
   if(!lateGpuizationFailure_) {
     finalize();
@@ -1128,8 +1178,8 @@ GpuKernel::GpuKernel(GpuizableLoop &gpuLoop, DefExpr* insertionPoint)
 
 std::string GpuKernel::name() {
   if (name_ == "") {
-    auto filename = gpuLoop.gpuLoop()->astloc.filename();
-    auto line = gpuLoop.gpuLoop()->astloc.stringLineno();
+    auto filename = gpuLoop.loop()->astloc.filename();
+    auto line = gpuLoop.loop()->astloc.stringLineno();
     auto moduleName = chpl::uast::Builder::filenameToModulename(filename);
     name_ = std::string("chpl_gpu_kernel_") +
             moduleName +
@@ -1146,10 +1196,11 @@ void GpuKernel::buildStubOutlinedFunction(DefExpr* insertionPoint) {
 
   fn_->body->blockInfoSet(new CallExpr(PRIM_BLOCK_LOCAL));
 
-  fn_->addFlag(FLAG_RESOLVED);
-  fn_->addFlag(FLAG_ALWAYS_RESOLVE);
+  fn_->addFlag(FLAG_GPU_KERNEL);
   fn_->addFlag(FLAG_GPU_CODEGEN);
+  fn_->addFlag(FLAG_RESOLVED);
 
+  numThreads_ = generateNumThreads(launchBlock_, this, gpuLoop);
   generateIndexComputation();
   generateOobCond();
   generatePostBody();
@@ -1167,7 +1218,7 @@ void KernelArg::findReduceKind() {
   // do some pattern matching in the AST to find the reduce kind
   // This should be OK except that `accumulate` in SumReduceScanOp is the only
   // accumulate proc that's inlined. So, we'll have to do some matching on the
-  // inlined function, which is never great. Morever, if we inline another
+  // inlined function, which is never great. Moreover, if we inline another
   // accumulate function in one of the other reduction types, it'll probably be
   // an unsupported reduction.
   //
@@ -1263,6 +1314,7 @@ FnSymbol* KernelArg::generateFinalReductionWrapper() {
   FnSymbol* ret = new FnSymbol(fnName.c_str());
   ret->addFlag(FLAG_RESOLVED);
   ret->addFlag(FLAG_EXPORT);
+  ret->addFlag(FLAG_LOCAL_ARGS);
 
   ArgSymbol* inData = new ArgSymbol(INTENT_IN, "in_data", dtCVoidPtr);
   ArgSymbol* numElems = new ArgSymbol(INTENT_IN, "num_elems",
@@ -1351,6 +1403,7 @@ KernelArg::KernelArg(Symbol* symInLoop, GpuKernel* kernel, bool isCompilerGenera
     this->kind_ |= GpuArgKind::REDUCE;
 
     this->redInfo_.symInLoop = symInLoop;
+    // note that this ref type violates check_afterInlineFunctions()
     this->redInfo_.buffer = new ArgSymbol(INTENT_IN,
                                          astr(symInLoop->name, "_interim"),
                                          symInLoop->getRefType());
@@ -1420,6 +1473,7 @@ CallExpr* KernelArg::generatePrimGpuArg(Symbol* cfg) const {
 
 CallExpr* KernelArg::generatePrimGpuBlockReduce(Symbol* blockSize) const {
   if (this->isReduce()) {
+    INT_ASSERT(blockSize);
     std::string devFnName = this->generateDevFnName();
     return new CallExpr(PRIM_GPU_BLOCK_REDUCE,
                         new_CStringSymbol(devFnName.c_str()),
@@ -1434,8 +1488,15 @@ Symbol* GpuKernel::addUserVarKernelArgument(Symbol* symInLoop) {
   return addKernelArgument(symInLoop, false);
 }
 
-Symbol* GpuKernel::addCompilerGeneratedKernelArgument(Symbol* symInLoop) {
-  return addKernelArgument(symInLoop, true);
+// returns 'symInLoop' if it is a literal
+// todo: should we do the same for addUserVarKernelArgument() ?
+Symbol* GpuKernel::maybeAddCompilerGeneratedKernelArgument(Symbol* symInLoop,
+                                                           const char* name) {
+  if (symInLoop->isParameter()) return symInLoop;
+
+  Symbol* result = addKernelArgument(symInLoop, true);
+  result->name = result->cname = astr(name);
+  return result;
 }
 
 Symbol* GpuKernel::addKernelArgument(Symbol* symInLoop, bool isCompilerGenerated) {
@@ -1459,7 +1520,7 @@ Symbol* GpuKernel::addKernelArgument(Symbol* symInLoop, bool isCompilerGenerated
       this->incReductionBufs();
     }
 
-    // if reduction variable, add the function definiton for the final reduction
+    // if reduction variable, add the function definition for the final reduction
     // wrapper
     if (FnSymbol* reduceWrapper = arg.reduceWrapper()) {
       fn_->defPoint->insertBefore(new DefExpr(reduceWrapper));
@@ -1489,8 +1550,12 @@ Symbol* GpuKernel::addLocalVariable(Symbol* symInLoop) {
  *  blockDimX  = __primitive('gpu blockDim x')
  *  threadIdxX = __primitive('gpu threadIdx x')
  *  t0 = varBlockIdxX * varBlockDimX
- *  t1 = t0 + threadIdxX
- *  index = t1 + lowerBound
+ *  t1 = t0 + threadIdxX      // aka `global thread idx`
+ *  index = t1 + lowerBound   // aka `calculated thread idx`
+ *
+ *  If we have @gpu.itersPerThread with block policy, instead generates:
+ *
+ *  index = lowerBound + t1 * itersPerThread
  *
  *  Also adds the loopIndex->index to the copyMap_
  **/
@@ -1498,36 +1563,58 @@ void GpuKernel::generateIndexComputation() {
   std::vector<Symbol*>::size_type numIndices = gpuLoop.loopIndices().size();
   INT_ASSERT(gpuLoop.lowerBounds().size() == numIndices);
 
+  // we want some of these variables to be 64-bits to be able to avoid
+  // overflows in number of threads.
+  VarSymbol *varBlockIdxX = generateAssignmentToPrimitive(fn_, "blockIdxX",
+    PRIM_GPU_BLOCKIDX_X, dtInt[INT_SIZE_64]);
+  VarSymbol *varBlockDimX = generateAssignmentToPrimitive(fn_, "blockDimX",
+    PRIM_GPU_BLOCKDIM_X, dtInt[INT_SIZE_32]);
+  VarSymbol *varThreadIdxX = generateAssignmentToPrimitive(fn_, "threadIdxX",
+    PRIM_GPU_THREADIDX_X, dtInt[INT_SIZE_32]);
+
+  VarSymbol *tempVar = insertNewVarAndDef(fn_->body, "t0",
+    dtInt[INT_SIZE_64]);
+  CallExpr *c1 = new CallExpr(PRIM_MOVE, tempVar, new CallExpr(
+    PRIM_MULT, varBlockIdxX, varBlockDimX));
+  fn_->insertAtTail(c1);
+
+  VarSymbol *tempVar1 = insertNewVarAndDef(fn_->body, "t1",
+    dtInt[INT_SIZE_64]);
+  CallExpr *c2 = new CallExpr(PRIM_MOVE, tempVar1, new CallExpr(
+    PRIM_ADD, tempVar, varThreadIdxX));
+  fn_->insertAtTail(c2);
+
+  if (hasItersPerThread() && blockIPT()) {
+    localItersPerThread_ = maybeAddCompilerGeneratedKernelArgument(
+                               itersPerThread_, "chpl_itersPerThread");
+  }
+
+  if (hasItersPerThread() && cyclicIPT()) {
+    localNumThreads_ = maybeAddCompilerGeneratedKernelArgument(
+                               numThreads_, "chpl_numThreads");
+    localGlobalThreadIdx_ = tempVar1;
+  }
+
   for (std::vector<Symbol*>::size_type i=0 ; i<numIndices ; i++) {
     Symbol* loopIndex  = gpuLoop.loopIndices()[i];
     Symbol* lowerBound = gpuLoop.lowerBounds()[i];
+    Symbol* startOffset = maybeAddCompilerGeneratedKernelArgument(lowerBound,
+                                                           "chpl_lowerBound");
+    VarSymbol* addend = tempVar1;
 
-    // we want some of these variables to be 64-bits to be able to avoid
-    // overflows in number of threads.
-    VarSymbol *varBlockIdxX = generateAssignmentToPrimitive(fn_, "blockIdxX",
-      PRIM_GPU_BLOCKIDX_X, dtInt[INT_SIZE_64]);
-    VarSymbol *varBlockDimX = generateAssignmentToPrimitive(fn_, "blockDimX",
-      PRIM_GPU_BLOCKDIM_X, dtInt[INT_SIZE_32]);
-    VarSymbol *varThreadIdxX = generateAssignmentToPrimitive(fn_, "threadIdxX",
-      PRIM_GPU_THREADIDX_X, dtInt[INT_SIZE_32]);
+    if (hasItersPerThread() && blockIPT()) {
+      VarSymbol* tempVar2 = insertNewVarAndDef(fn_->body, "t2",
+                                               tempVar1->type);
+      fn_->insertAtTail(new CallExpr(PRIM_MOVE, tempVar2, new CallExpr(
+        PRIM_MULT, tempVar1, localItersPerThread_)));
 
-    VarSymbol *tempVar = insertNewVarAndDef(fn_->body, "t0",
-      dtInt[INT_SIZE_64]);
-    CallExpr *c1 = new CallExpr(PRIM_MOVE, tempVar, new CallExpr(
-      PRIM_MULT, varBlockIdxX, varBlockDimX));
-    fn_->insertAtTail(c1);
+      addend = tempVar2;
+    }
 
-    VarSymbol *tempVar1 = insertNewVarAndDef(fn_->body, "t1",
-      dtInt[INT_SIZE_64]);
-    CallExpr *c2 = new CallExpr(PRIM_MOVE, tempVar1, new CallExpr(
-      PRIM_ADD, tempVar, varThreadIdxX));
-    fn_->insertAtTail(c2);
-
-    Symbol* startOffset = addCompilerGeneratedKernelArgument(lowerBound);
     VarSymbol* index = insertNewVarAndDef(fn_->body, "chpl_simt_index",
-                                          dtInt[INT_SIZE_64]);
+                                          loopIndex->type);
     fn_->insertAtTail(new CallExpr(PRIM_MOVE, index, new CallExpr(
-      PRIM_ADD, tempVar1, startOffset)));
+      PRIM_ADD, addend, startOffset)));
 
     kernelIndices_.push_back(index);
     copyMap_.put(loopIndex, index);
@@ -1536,19 +1623,32 @@ void GpuKernel::generateIndexComputation() {
   INT_ASSERT(kernelIndices_.size() == gpuLoop.loopIndices().size());
 }
 
+void GpuKernel::generateOobCond() {
+  Symbol* localUpperBound = maybeAddCompilerGeneratedKernelArgument(
+                              gpuLoop.upperBound(), "chpl_upperBound");
+  this->userBody_ = new BlockStmt();
+
+  if (hasItersPerThread()) {
+    if (blockIPT())
+      generateBlockedLoopOverIPT(localUpperBound);
+    if (cyclicIPT())
+      generateCyclicLoopOverIPT(localUpperBound);
+  }
+  else
+    generateOobCondNoIPT(localUpperBound);
+}
+
 /*
  * Adds the following AST to a GPU kernel
  *
  * def chpl_is_in_bounds;
  * chpl_is_in_bounds = `calculated thread idx` <= upperBound
  * if (chpl_is_in_bounds) {
- *   // this BlockStmt is now userBody_
+ *   // empty block stored in this->userBody_
  * }
  *
  */
-void GpuKernel::generateOobCond() {
-  Symbol* localUpperBound = addCompilerGeneratedKernelArgument(gpuLoop.upperBound());
-
+void GpuKernel::generateOobCondNoIPT(Symbol* localUpperBound) {
   VarSymbol* isInBounds = new VarSymbol("chpl_is_in_bounds", dtBool);
   fn_->insertAtTail(new DefExpr(isInBounds));
 
@@ -1557,10 +1657,94 @@ void GpuKernel::generateOobCond() {
                                       localUpperBound);
   fn_->insertAtTail(new CallExpr(PRIM_MOVE, isInBounds, comparison));
 
-  BlockStmt* thenBlock = new BlockStmt();
-  fn_->insertAtTail(new CondStmt(new SymExpr(isInBounds), thenBlock));
+  fn_->insertAtTail(new CondStmt(new SymExpr(isInBounds), this->userBody_));
+}
 
-  this->userBody_ = thenBlock;
+Expr* GpuKernel::generateIptLoopHelp(Symbol* upperBound0, Symbol* increment) {
+  // while loop condition variable
+  VarSymbol* whileVar = insertNewVarAndDef(fn_->body, "whileVar", dtBool);
+  Expr* whileExpr = new_Expr("'move'(%S,'<='(%S,%S))",
+                             whileVar, kernelIndices_[0], upperBound0);
+  fn_->insertAtTail(whileExpr);
+
+  // while loop to execute userBody_ then increment all indices
+  BlockStmt* whileBody = new BlockStmt();
+  whileBody->insertAtTail(this->userBody_);
+
+  for_vector(Symbol, index, kernelIndices_) {
+    whileBody->insertAtTail("'+='(%S,%S)", index, increment);
+  }
+
+  whileBody->insertAtTail(whileExpr->copy());
+
+  Expr* loop = new WhileDoStmt(new SymExpr(whileVar), whileBody);
+  fn_->insertAtTail(loop);
+  return loop;
+}
+
+/* Adds the following AST to a GPU kernel
+ * to implement *block* IPT partitioning.
+ *
+ * // recall index[0] = lowerBound + `global thread idx` * itersPerThread
+ * def threadBound = min(index[0] + itersPerThread - 1, upperBound)
+ * for(; index[0] <= threadBound; for all i: index[i] += 1) {
+ *   // empty block stored in this->userBody_
+ * }
+ *
+ * If we turn the for-loop into CForLoop, it will be treated as a CPU-only
+ * loop in cleanupForeachLoopsGuaranteedToRunOnCpu() that will come later
+ * and replace ex. GPU primitives like "gpu threadIdx x" with chpl_error.
+ * Not to mention that the latter will break codegen.
+ * TODO: fix that, so we can generate CForLoop instead of WhileDoStmt:
+ * So use WhileDoStmt instead as follows:
+ *
+ * def whileVar = index[0] <= threadBound
+ * WhileDoStmt(whileVar, {
+ *   {  // empty block stored in this->userBody_
+ *   }
+ *   for all i: index[i] += 1;
+ *   whileVar = index[0] <= threadBound
+ * })
+ */
+void GpuKernel::generateBlockedLoopOverIPT(Symbol* upperBound) {
+  // calculate 'threadBound'
+  Symbol* index0 = kernelIndices_[0];
+
+  VarSymbol* iptMinus1 = insertNewVarAndDef(fn_->body, "iptMinus1",
+                                            localItersPerThread_->type);
+  fn_->insertAtTail("'move'(%S,'-'(%S,%S))", iptMinus1,
+                    localItersPerThread_, new_IntSymbol(1));
+
+  VarSymbol* threadBound = insertNewVarAndDef(fn_->body, "threadBound",
+                                              index0->type);
+  fn_->insertAtTail("'move'(%S,'+'(%S,%S))", threadBound, index0, iptMinus1);
+
+  VarSymbol* switchToLB = insertNewVarAndDef(fn_->body, "switchToLB", dtBool);
+  fn_->insertAtTail("'move'(%S,'<'(%S,%S))", switchToLB,
+                                             upperBound, threadBound);
+  BlockStmt* switchBlock = new BlockStmt();
+  switchBlock->insertAtTail("'move'(%S,%S)", threadBound, upperBound);
+  fn_->insertAtTail(new CondStmt(new SymExpr(switchToLB), switchBlock));
+
+  generateIptLoopHelp(threadBound, new_IntSymbol(1));
+}
+
+/* Adds the AST for *cyclic* IPT partitioning,
+ * analogously to generateBlockedLoopOverIPT():
+ *
+ *   if global thread idx < numThreads then
+ *     for(; index[0] <= upperBound; for all i: index[i] += numThreads) {
+ *       // empty block stored in this->userBody_
+ *     }
+ *
+ * Currently implemented as a while loop.
+ */
+void GpuKernel::generateCyclicLoopOverIPT(Symbol* upperBound) {
+  Expr* loop = generateIptLoopHelp(upperBound, localNumThreads_);
+  VarSymbol* execIters = insertNewVarAndDef(fn_->body, "execIters", dtBool);
+  fn_->insertAtTail("'move'(%S,'<'(%S,%S))", execIters,
+                    localGlobalThreadIdx_, localNumThreads_);
+  fn_->insertAtTail(new CondStmt(new SymExpr(execIters), loop->remove()));
 }
 
 void GpuKernel::generatePostBody() {
@@ -1568,48 +1752,81 @@ void GpuKernel::generatePostBody() {
   fn_->insertAtTail(this->postBody_);
 }
 
-void GpuKernel::findGpuPrimitives() {
-  std::vector<CallExpr*> callExprsInBody;
-  for_alist(node, gpuLoop.gpuLoop()->body) {
-    collectCallExprs(node, callExprsInBody);
-  }
+// Returns the GPU primitives block within 'body', or null if none.
+// Note: this searches inside nested loops - needed for multi-dim arrays, ex:
+//   var A: [1..n,1..n] int;
+//   @gpu.blockSize foreach A {}
+// Otherwise we could simply traverse the alist body->body.
+static BlockStmt* getGpuPrimitivesBlock(CForLoop* body) {
+  std::vector<BlockStmt*> blocksInBody;
+  collectBlockStmts(body, blocksInBody);
+  for (auto block : blocksInBody)
+    if (block->isGpuPrimitivesBlock())
+      return block;
+  return nullptr;
+}
 
-  for_vector(CallExpr, callExpr, callExprsInBody) {
-    if (callExpr->isPrimitive(PRIM_GPU_SET_BLOCKSIZE)) {
-      if (blockSizeCall_ != nullptr) {
-        // Check if the blockSize calls are clones of each other by comparing
-        // their unique identifier actuals. blockSize calls created for
-        // attributes get unique number as a second actual, and for clones,
-        // that number should match.
-        if (blockSizeCall_->numActuals() == 2 &&
-            callExpr->numActuals() == 2) {
-          auto sym1 = toSymExpr(blockSizeCall_->get(2))->symbol();
-          auto sym2 = toSymExpr(callExpr->get(2))->symbol();
+// Returns true if 'recordedAttr' already has information.
+// If so and this information is not a duplicate of 'call', report an error.
+static bool isAttrCloneOrError(CallExpr* recordedAttr, CallExpr* call) {
+  if (recordedAttr == nullptr) return false;
 
-          if (sym1 == sym2) continue;
-        }
+  // Check if the two attribute calls are clones of each other by comparing
+  // their unique identifier actuals. Calls created for blockSize and other
+  // attributes get unique number as a second actual, and for clones,
+  // that number should match.
+  // See convert-uast.cpp / convertAttributeCall().
+  auto sym1 = toSymExpr(recordedAttr->get(1))->symbol();
+  auto sym2 = toSymExpr(call->get(1))->symbol();
+  if (sym1 == sym2) return true;
 
-        USR_FATAL(callExpr, "Can only set GPU block size once per GPU-eligible loop.");
+  USR_FATAL_CONT(call, "can apply this attribute only once per loop");
+  USR_PRINT(recordedAttr, "the attribute is previously applied here");
+  return true;
+}
+
+// Detect attributes if any, store them in 'this', remove them from the tree.
+void GpuKernel::processGpuPrimitivesBlock() {
+  BlockStmt* origPrimBlock = getGpuPrimitivesBlock(gpuLoop.loop());
+  if (origPrimBlock == nullptr) return; // no attributes in this loop
+
+  // to make sure that DefExprs are also properly copied
+  // (in most cases we can move 'origPrimBlock' instead of creating a copy)
+  BlockStmt* newGpuPrimBlock = origPrimBlock->copy();
+  launchBlock_->insertAtTail(newGpuPrimBlock);
+  for_alist(expr, newGpuPrimBlock->body) {
+    // process any important primitives before we remove them from this new
+    // block
+    if (CallExpr* call = toCallExpr(expr)) {
+      if (call->isPrimitive(PRIM_GPU_SET_BLOCKSIZE)) {
+        if (isAttrCloneOrError(blockSizeCall_, call)) continue;
+        INT_ASSERT(call->numActuals() == 2); // see chpl__gpuBlockSizeAttr()
+        blockSizeCall_ = call;
+        blockSize_ = toSymExpr(call->get(2))->symbol();
       }
-      blockSizeCall_ = callExpr;
-      blockSize_ = toSymExpr(callExpr->get(1))->symbol();
-    } else if (callExpr->isPrimitive(PRIM_GPU_PRIMITIVE_BLOCK)) {
-      gpuPrimitivesBlock_ = toBlockStmt(callExpr->parentExpr);
+      else if (call->isPrimitive(PRIM_GPU_SET_ITERS_PER_THREAD)) {
+        if (isAttrCloneOrError(itersPerThreadCall_, call)) continue;
+        INT_ASSERT(call->numActuals() == 3); // see chpl__gpuItersPerThreadAttr
+        itersPerThreadCall_ = call;
+        itersPerThread_ = toSymExpr(call->get(2))->symbol();
+        cyclicIPT_ = toSymExpr(call->get(3))->symbol() == gTrue;
+      }
+
+      if (isCallToPrimitiveWeShouldNotCopyIntoKernel(call))
+        call->remove();
     }
   }
 
-  if (blockSize_ == nullptr) {
-    blockSize_ = new_IntSymbol(fGPUBlockSize != 0 ? fGPUBlockSize : 512);
-  }
-
-  INT_ASSERT(blockSize_ != nullptr);
+  newGpuPrimBlock->flattenAndRemove();
 }
 
 bool isCallToPrimitiveWeShouldNotCopyIntoKernel(CallExpr *call) {
   if (!call) return false;
 
   return call->isPrimitive(PRIM_ASSERT_ON_GPU) ||
+         call->isPrimitive(PRIM_ASSERT_GPU_ELIGIBLE) ||
          call->isPrimitive(PRIM_GPU_SET_BLOCKSIZE) ||
+         call->isPrimitive(PRIM_GPU_SET_ITERS_PER_THREAD) ||
          call->isPrimitive(PRIM_GPU_PRIMITIVE_BLOCK);
 }
 
@@ -1622,12 +1839,7 @@ bool isCallToPrimitiveWithHostRuntimeEffect(CallExpr *call) {
 void GpuKernel::populateBody() {
   std::set<Symbol*> handledSymbols;
 
-  // Some of the conditions below are intended to check for "things that
-  // only happen in the loop body". However, the pre-LICM cloning means
-  // there are actually two loop bodies. Use both for these checks to avoid
-  // throwing off various checks.
-  CForLoop* loopForBody = gpuLoop.gpuLoop();
-  CForLoop* cloneOfLoop = gpuLoop.cpuLoop();
+  CForLoop* loopForBody = gpuLoop.loop();
 
   for_alist(node, loopForBody->body) {
     bool copyNode = true;
@@ -1639,6 +1851,9 @@ void GpuKernel::populateBody() {
 
     CallExpr* call = toCallExpr(node);
     if(isCallToPrimitiveWeShouldNotCopyIntoKernel(call)) {
+      // with the GpuPrimitivesBlock check below this can only be hit with a
+      // bare __primitive("gpu set blocksize"). That should be seen as illegal
+      // code and this branch should be removed
       copyNode = false;
     }
     else if (DefExpr* def = toDefExpr(node)) {
@@ -1667,19 +1882,17 @@ void GpuKernel::populateBody() {
       for_vector(SymExpr, symExpr, symExprsInBody) {
         Symbol* sym = symExpr->symbol();
 
-        if (handledSymbols.count(sym) == 1) {
-          continue;
-        }
-        handledSymbols.insert(sym);
+        if (!  handledSymbols.insert(sym).second)
+          continue; // 'sym' was already in 'handleSymbols'
 
-        if (isDefinedInTheLoops(sym, {loopForBody})) {
+        if (isDefinedInTheLoop(sym, loopForBody)) {
           // looks like this symbol was declared within the loop body,
           // so do nothing. TODO: I am hoping that we don't need to
           // check the type of the variable here, and we'll know that it
           // is a valid variable to declare on the gpu via the loop body
           // analysis
         }
-        else if (isDegenerateOuterRef(sym, {loopForBody, cloneOfLoop})) {
+        else if (isDegenerateOuterRef(sym, loopForBody)) {
           addLocalVariable(sym);
         }
         else if (sym->isImmediate()) {
@@ -1693,6 +1906,10 @@ void GpuKernel::populateBody() {
         }
         else if (sym->name == astr("chpl_privateObjects")) {
           // we are covering this elsewhere
+        }
+        else if (sym == gCpuVsGpuToken) {
+          // codegen will never reference gCpuVsGpuToken
+          // we could generalize this check to 'sym->hasFlag(FLAG_NO_CODEGEN)'
         }
         else {
           if (CallExpr* parent = toCallExpr(symExpr->parentExpr)) {
@@ -1717,9 +1934,7 @@ void GpuKernel::populateBody() {
                 addUserVarKernelArgument(sym);
               }
 
-              if (!calledFn->hasFlag(FLAG_GPU_AND_CPU_CODEGEN)) {
-                 markGPUSubCalls(calledFn);
-              }
+              markGPUSubCalls(calledFn);
             }
             else {
               this->setLateGpuizationFailure(true);
@@ -1741,9 +1956,15 @@ void GpuKernel::populateBody() {
     }
   }
 
+  if (blockSize_ == nullptr) {
+    blockSize_ = new_IntSymbol(fGPUBlockSize != 0 ? fGPUBlockSize : 512);
+  }
 
   for (auto actual: this->kernelActuals()) {
     if (CallExpr* reduceCall = actual.generatePrimGpuBlockReduce(blockSize())) {
+      if (itersPerThreadCall() != nullptr)
+        USR_FATAL_CONT(loopForBody, "'gpu.itersPerThread' is not implemented"
+                       " for reduction kernels");
       // this should be executed even if the thread was OOB, that's why we put
       // it in postBody
       this->postBody_->insertAtTail(reduceCall);
@@ -1798,19 +2019,22 @@ void GpuKernel::finalize() {
   deadExpressionElimination(this->fn_);
 }
 
+// mark 'fn' and all functions it calls with GPU_AND_CPU_CODEGEN
 void GpuKernel::markGPUSubCalls(FnSymbol* fn) {
-  if (!fn->hasFlag(FLAG_GPU_AND_CPU_CODEGEN)) {
-    fn->addFlag(FLAG_GPU_AND_CPU_CODEGEN);
-    fn->addFlag(FLAG_GPU_CODEGEN);
-  } else {
-    // this function has already been handled
-    return;
-  }
+  if (fn->hasFlag(FLAG_GPU_AND_CPU_CODEGEN) ||
+      fn->hasFlag(FLAG_GPU_CODEGEN))
+    return;  // this function has already been handled
+  if (fn->hasFlag(FLAG_NOT_CALLED_FROM_GPU))
+    return;  // this function will not be codegen-ed for GPUs, ignore it
+
+  // Currently we do not check whether 'fn' is also invoked from a non-kernel.
+  // Conservatively assume that it is.
+  fn->addFlag(FLAG_GPU_AND_CPU_CODEGEN);
 
   errorForOuterVarAccesses(fn);
 
   std::vector<CallExpr*> calls;
-  collectCallExprs(fn, calls);
+  collectCallExprsForGpuEligibilityAnalysis(fn, calls);
   for_vector(CallExpr, call, calls) {
     if (FnSymbol* fn = call->resolvedFunction()) {
       markGPUSubCalls(fn);
@@ -1924,6 +2148,7 @@ const std::unordered_map<PrimitiveTag, const char *>
 const std::unordered_set<PrimitiveTag>
     CpuBoundLoopCleanup::gpuPrimitivesStripOnHost = {
       PRIM_GPU_SET_BLOCKSIZE
+    , PRIM_GPU_SET_ITERS_PER_THREAD
     };
 
 // ----------------------------------------------------------------------------
@@ -1937,8 +2162,17 @@ const std::unordered_set<PrimitiveTag>
  *
  *   chpl_block_delta = ub - lb
  *   chpl_gpu_num_threads = chpl_block_delta + 1
+ *
+ *  If we have @gpu.itersPerThread, chpl_gpu_num_threads should be
+ *      ceil( (ub-lb) / itersPerThread )
+ *  so generate the following instead:
+ *
+ *   chpl_block_delta = ub - lb
+ *   chpl_block_delta_plus = chpl_block_delta + itersPerThread
+ *   chpl_gpu_num_threads = chpl_block_delta_plus / itersPerThread
  */
 static VarSymbol* generateNumThreads(BlockStmt* gpuLaunchBlock,
+                                     GpuKernel* kernel,
                                      const GpuizableLoop& gpuLoop) {
 
   VarSymbol *varBoundDelta = insertNewVarAndDef(gpuLaunchBlock,
@@ -1948,100 +2182,129 @@ static VarSymbol* generateNumThreads(BlockStmt* gpuLaunchBlock,
                                              "chpl_num_gpu_threads",
                                              dtInt[INT_SIZE_64]);
 
-  CallExpr *c1 = new CallExpr(PRIM_ASSIGN, varBoundDelta,
+  CallExpr *c1 = new CallExpr(PRIM_MOVE, varBoundDelta,
                               new CallExpr(PRIM_SUBTRACT,
                                            gpuLoop.upperBound(),
                                            gpuLoop.lowerBounds()[0]));
   gpuLaunchBlock->insertAtTail(c1);
 
-  CallExpr *c2 = new CallExpr(PRIM_ASSIGN, numThreads,
-                              new CallExpr(PRIM_ADD, varBoundDelta,
-                                           new_IntSymbol(1)));
-  gpuLaunchBlock->insertAtTail(c2);
+  if (kernel->itersPerThread() == nullptr) {
+
+    CallExpr *c2 = new CallExpr(PRIM_MOVE, numThreads,
+                                new CallExpr(PRIM_ADD, varBoundDelta,
+                                             new_IntSymbol(1)));
+      gpuLaunchBlock->insertAtTail(c2);
+
+  } else {
+
+    VarSymbol* varBoundDeltaPlus = insertNewVarAndDef(gpuLaunchBlock,
+                          "chpl_block_delta_plus", dtInt[INT_SIZE_64]);
+
+    gpuLaunchBlock->insertAtTail(new CallExpr(PRIM_MOVE, varBoundDeltaPlus,
+      new CallExpr(PRIM_ADD, varBoundDelta, kernel->itersPerThread())));
+
+    gpuLaunchBlock->insertAtTail(new CallExpr(PRIM_MOVE, numThreads,
+      new CallExpr(PRIM_DIV, varBoundDeltaPlus, kernel->itersPerThread())));
+
+  }
 
   return numThreads;
 }
 
-static void generateGPUKernelCall(const GpuizableLoop &gpuLoop,
-                                  GpuKernel &kernel) {
-  BlockStmt* gpuBlock = new BlockStmt();
-
-  VarSymbol* cfg = insertNewVarAndDef(gpuBlock, "kernel_cfg", dtCVoidPtr);
-
-  VarSymbol* numThreads = generateNumThreads(gpuBlock, gpuLoop);
-
-  // If the parent of the call is 'gpu primitives' block, it was constructed
-  // specifically to 'fence off' GPU primitives. There may be
-  // some additional temps etc. that are used for computing block size.
-  // We need to lift them, too. Since we're "consuming" the GPU loop,
-  // just modify the parent block in place.
-  if (auto primitivesBlock = kernel.gpuPrimitivesBlock()) {
-    INT_ASSERT(primitivesBlock->isGpuPrimitivesBlock());
-    for_alist(expr, primitivesBlock->body) {
-      if (isCallToPrimitiveWeShouldNotCopyIntoKernel(toCallExpr(expr))) {
-        expr->remove();
-      }
-    }
-
-    gpuBlock->insertAtTail(primitivesBlock->remove());
-    primitivesBlock->flattenAndRemove();
-  }
+void GpuKernel::generateKernelLaunch() {
+  VarSymbol* cfg = insertNewVarAndDef(launchBlock_, "kernel_cfg", dtCVoidPtr);
 
   CallExpr* initCfgCall = new CallExpr(PRIM_GPU_INIT_KERNEL_CFG);
-  initCfgCall->insertAtTail(kernel.fn());
-  initCfgCall->insertAtTail(numThreads);
-  initCfgCall->insertAtTail(kernel.blockSize());
-  initCfgCall->insertAtTail(new_IntSymbol(kernel.kernelActuals().size()));
+  initCfgCall->insertAtTail(fn());
+  initCfgCall->insertAtTail(numThreads_);
+  initCfgCall->insertAtTail(blockSize());
+  initCfgCall->insertAtTail(new_IntSymbol(kernelActuals().size()));
   initCfgCall->insertAtTail(new_IntSymbol(gpuLoop.pidGets().size()));
-  initCfgCall->insertAtTail(new_IntSymbol(kernel.nReductionBufs()));
-  initCfgCall->insertAtTail(new_IntSymbol(kernel.nHostRegisteredVars()));
-  gpuBlock->insertAtTail(new CallExpr(PRIM_MOVE, cfg, initCfgCall));
+  initCfgCall->insertAtTail(new_IntSymbol(nReductionBufs()));
+  initCfgCall->insertAtTail(new_IntSymbol(nHostRegisteredVars()));
+  launchBlock_->insertAtTail(new CallExpr(PRIM_MOVE, cfg, initCfgCall));
 
   // first, add pids
   for (auto pidGet: gpuLoop.pidGets()) {
     Type* pidType = pidGet->get(2)->typeInfo();
     Symbol* pid = new VarSymbol("pid_tmp", pidType);
-    gpuBlock->insertAtTail(new DefExpr(pid));
-    gpuBlock->insertAtTail(new CallExpr(PRIM_MOVE, pid, pidGet->copy()));
+    launchBlock_->insertAtTail(new DefExpr(pid));
+    launchBlock_->insertAtTail(new CallExpr(PRIM_MOVE, pid, pidGet->copy()));
 
     AggregateType* privUserType = toAggregateType(pidGet->get(1)->typeInfo());
     Symbol* instanceSym = privUserType->getField("_instance");
     Symbol* instanceSize = new VarSymbol("instance_size", dtInt[INT_SIZE_64]);
 
-    gpuBlock->insertAtTail(new DefExpr(instanceSize));
-    gpuBlock->insertAtTail(new CallExpr(PRIM_MOVE, instanceSize,
+    launchBlock_->insertAtTail(new DefExpr(instanceSize));
+    launchBlock_->insertAtTail(new CallExpr(PRIM_MOVE, instanceSize,
                                         new CallExpr(PRIM_SIZEOF_BUNDLE,
                                                      instanceSym)));
 
-    gpuBlock->insertAtTail(new CallExpr(PRIM_GPU_PID_OFFLOAD, cfg, pid,
+    launchBlock_->insertAtTail(new CallExpr(PRIM_GPU_PID_OFFLOAD, cfg, pid,
                                         instanceSize));
   }
 
   // now, add kernel actuals
-  for (auto actual: kernel.kernelActuals()) {
-    gpuBlock->insertAtTail(actual.generatePrimGpuArg(cfg));
+  for (auto actual: kernelActuals()) {
+    launchBlock_->insertAtTail(actual.generatePrimGpuArg(cfg));
   }
 
-  // populate the gpu block
-  CallExpr* gpuCall = new CallExpr(PRIM_GPU_KERNEL_LAUNCH, cfg);
+  launchBlock_->insertAtTail(new CallExpr(PRIM_GPU_KERNEL_LAUNCH, cfg));
+  launchBlock_->insertAtTail(new CallExpr(PRIM_GPU_DEINIT_KERNEL_CFG, cfg));
+}
 
-  gpuBlock->insertAtTail(gpuCall);
-  gpuBlock->insertAtTail(new CallExpr(PRIM_GPU_DEINIT_KERNEL_CFG, cfg));
-  gpuLoop.gpuLoop()->replace(gpuBlock);
+static void processUserGpuPragmas() {
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols)
+  {
+    if (fn->hasFlag(FLAG_GPU_KERNEL)) {
+      if (fn->hasFlag(FLAG_GPU_AND_CPU_CODEGEN))
+        USR_FATAL_CONT(fn, "pragmas \"GPU kernel\" and"
+                           "\"codegen for CPU and GPU\"on the same function");
+      fn->addFlag(FLAG_GPU_CODEGEN);
+    }
+    else if (fn->hasFlag(FLAG_GPU_AND_CPU_CODEGEN) &&
+             fn->hasFlag(FLAG_GPU_CODEGEN)) {
+      USR_FATAL_CONT(fn, "pragmas \"codegen for CPU and GPU\" and"
+                         "\"codegen for GPU\" on the same function");
+    }
+  }
+  USR_STOP();
+}
 
-  FnSymbol *fnContainingLoop = gpuBlock->getFunction();
-  bool canAssumeFnWillRunOnGpu =
-    fGpuSpecialization && (assumeNonGpuSpecFnsAreOnCpu || isFnGpuSpecialized(fnContainingLoop));
+// Check that all references to gCpuVsGpuToken occur only within conditionals.
+// We could do it in the front end for earlier detection, however doing it here
+// allows us to catch compiler-introduced bugs as well.
+static void checkUsesOf_cpuVsGpuToken() {
+  for_SymbolSymExprs(se, gCpuVsGpuToken) {
+    bool useOK = false;
+    if (CondStmt* cond = toCondStmt(se->parentExpr))
+      if (se == cond->condExpr)
+        useOK = true;
+    if (! useOK)
+      USR_FATAL_CONT(se, "%s is used outside of an if-condition",
+                     gCpuVsGpuToken->name);
+  }
+}
 
-  if(canAssumeFnWillRunOnGpu) {
-    // If we are creating GPU specializations then we already know we're on a GPU
-    // sublocale and can just generate the kernel launch call (or, in the case
-    // of CPU-as-device, a kernel launch followed by the CPU loop).
-    gpuLoop.makeGpuOnly();
-  } else {
-    // we don't know if we're in a specialization, so we need to keep
-    // the conditional.
-    gpuLoop.fixupNonGpuPath();
+static void verifyCodegenFlags() {
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols)
+  {
+    // GPU_CODEGEN and GPU_AND_CPU_CODEGEN are mutually-exclusive
+    INT_ASSERT(fn, !( fn->hasFlag(FLAG_GPU_CODEGEN) &&
+                      fn->hasFlag(FLAG_GPU_AND_CPU_CODEGEN) ));
+
+    // GPU_KERNEL implies GPU_CODEGEN
+    if (fn->hasFlag(FLAG_GPU_KERNEL)) {
+      INT_ASSERT(fn, fn->hasFlag(FLAG_GPU_CODEGEN));
+    }
+
+    // NOT_CALLED_FROM_GPU and NO_GPU_CODEGEN imply
+    // no GPU_CODEGEN and no GPU_AND_CPU_CODEGEN
+    if (fn->hasFlag(FLAG_NOT_CALLED_FROM_GPU) ||
+        fn->hasFlag(FLAG_NO_GPU_CODEGEN)) {
+      INT_ASSERT(fn, !fn->hasFlag(FLAG_GPU_CODEGEN));
+      INT_ASSERT(fn, !fn->hasFlag(FLAG_GPU_AND_CPU_CODEGEN));
+    }
   }
 }
 
@@ -2057,20 +2320,20 @@ static CallExpr* getGpuEligibleMarker(CForLoop* loop) {
 }
 
 static void outlineEligibleLoop(FnSymbol *fn, GpuizableLoop &gpuLoop) {
-  SET_LINENO(gpuLoop.gpuLoop());
+  SET_LINENO(gpuLoop.loop());
 
   // The marker is a compile-time only primitive; remove it now.
-  if (auto marker = getGpuEligibleMarker(gpuLoop.gpuLoop())) {
+  if (auto marker = getGpuEligibleMarker(gpuLoop.loop())) {
+    // TODO probably won't need this anymore
     marker->remove();
   }
 
   // Construction of the GpuKernel will create the outlined function
   GpuKernel kernel(gpuLoop, fn->defPoint);
   if(!kernel.lateGpuizationFailure()) {
-    generateGPUKernelCall(gpuLoop, kernel);
+    kernel.generateGpuAndNonGpuPaths();
   } else {
     kernel.fn()->defPoint->remove();
-    gpuLoop.makeCpuOnly();
   }
 }
 
@@ -2086,25 +2349,10 @@ static void outlineGpuKernelsInFn(FnSymbol *fn) {
       continue;
     }
 
-    auto foundLoop = eligibleLoops.find(loop);
-    if (foundLoop != eligibleLoops.end()) {
-      // Even though the original eligible loops are not in the GPU specialized
-      // copies, they need to be outlined to account for virtual dispatch.
-      auto& eligibleLoop = foundLoop->second;
-      outlineEligibleLoop(fn, eligibleLoop);
-    } else if (fGpuSpecialization && getGpuEligibleMarker(loop)) {
-      // Even if this wasn't a loop originally marked eligible, it could
-      // be a copy of one. If that's the case, we inserted a primitive
-      // into its body.
+    GpuizableLoop gpuLoop(loop);
 
-      // TODO: sometimes, this loop can be made no longer eligible by
-      // other transformations. Is that okay?
-      auto gpuLoop = GpuizableLoop::fromEligibleClone(loop);
-      if (gpuLoop.isEligible()) {
-        outlineEligibleLoop(fn, gpuLoop);
-      } else {
-        gpuLoop.makeCpuOnly();
-      }
+    if (gpuLoop.isEligible()) {
+      outlineEligibleLoop(fn, gpuLoop);
     }
   }
 }
@@ -2119,12 +2367,13 @@ static void cleanupForeachLoopsGuaranteedToRunOnCpu(FnSymbol *fn) {
 }
 
 static void doGpuTransforms() {
+  processUserGpuPragmas();
   if(fGpuSpecialization) {
     CreateGpuFunctionSpecializations().doit();
   }
 
   // Outline all eligible loops; cleanup CPU bound loops
-  forv_Vec(FnSymbol*, fn, gFnSymbols) {
+  for_alive_in_Vec(FnSymbol*, fn, gFnSymbols) {
     bool canAssumeFnWillRunOnCpu = fGpuSpecialization &&
                                    !isFnGpuSpecialized(fn) &&
                                    assumeNonGpuSpecFnsAreOnCpu;
@@ -2142,6 +2391,9 @@ static void doGpuTransforms() {
       cleanupForeachLoopsGuaranteedToRunOnCpu(fn);
     }
   }
+
+  checkUsesOf_cpuVsGpuToken();
+  verifyCodegenFlags(); // todo: hide behind 'if (fVerify)'
 }
 
 static void logGpuizableLoops() {
@@ -2190,68 +2442,36 @@ static void logGpuizableLoops() {
   }
 }
 
-static void cleanupTaskIndependentCapturePrimitive(CallExpr *call) {
-  Expr* snippedChild = call->get(1)->remove();
-  call->replace(snippedChild);
-}
-
-// iterator lowering inserts AST like this in order to carry information about 'in'
-// intent variables to gpu lowering.
-//
-//   (given an 'in' intent for a variable 'x'):
-//     var taskIndX = PRIM_TASK_IND_CAPTURE_OF(copy-of(x));
-//
-// For gpuized loops GPU lowering rewrites this as needed to ensure each thread
-// has an indpendent copy-of x, loops that are not gpuized will have remaining
-// uses of the primitive, which we process by removing the primitive but keeping
-// the copy.
-static void cleanupTaskIndependentCapturePrimitives() {
-  for_alive_in_Vec(CallExpr, callExpr, gCallExprs)
-    if(callExpr->isPrimitive(PRIM_TASK_PRIVATE_SVAR_CAPTURE))
-      cleanupTaskIndependentCapturePrimitive(callExpr);
-}
-
-static void reportErrorsForBadBlockSizeCalls() {
-  CallExpr* explainAnchor = nullptr;
+static void cleanupPrimitives() {
   for_alive_in_Vec(CallExpr, callExpr, gCallExprs) {
-    if(callExpr->isPrimitive(PRIM_GPU_SET_BLOCKSIZE)) {
-      if (callExpr->getFunction()->hasFlag(FLAG_GPU_SPECIALIZATION)) {
-        // Assume that this primitive got here by being copied, and that the
-        // other location will error about it. Since both copies of the primitive
-        // will have the same location, erroring here would lead to duplicates.
-        continue;
-      }
-
-      USR_FATAL_CONT(callExpr, "'setBlockSize' can only be used in bodies of GPU-eligible loops");
-      explainAnchor = callExpr;
-
-      // Search forward to try find the CForLoop corresponding to the GPU loop.
-      // This is just a heuristic to detect common erroneous uses for setBlockSize.
-      auto search = callExpr->next;
-      while (search) {
-        // Try recognizing a GPU-eligible loop that the blockSize call could've
-        // applied to by detecting the loop's dynamic launch check (i.e.,
-        // the "if runningOnGpuLocale()" conditional).
-
-        auto condStmt = toCondStmt(search);
-        if (gpuBranches.count(condStmt) > 0) {
-          USR_PRINT(condStmt, "if you meant to set the block size of this GPU "
-                              "loop, move the 'setBlockSize' call into the loop "
-                              "body");
-          break;
-        }
-
-        search = search->next;
-      }
+    if(callExpr->isPrimitive(PRIM_TASK_PRIVATE_SVAR_CAPTURE)) {
+      // iterator lowering inserts AST like this in order to carry information about 'in'
+      // intent variables to gpu lowering.
+      //
+      //   (given an 'in' intent for a variable 'x'):
+      //     var taskIndX = PRIM_TASK_IND_CAPTURE_OF(copy-of(x));
+      //
+      // For gpuized loops GPU lowering rewrites this as needed to ensure each thread
+      // has an independent copy-of x, loops that are not gpuized will have remaining
+      // uses of the primitive, which we process by removing the primitive but keeping
+      // the copy.
+      callExpr->replace(callExpr->get(1)->remove());
+    } else if (callExpr->isPrimitive(PRIM_GPU_SET_BLOCKSIZE) ||
+               callExpr->isPrimitive(PRIM_GPU_SET_ITERS_PER_THREAD) ||
+               callExpr->isPrimitive(PRIM_ASSERT_GPU_ELIGIBLE)) {
+      callExpr->remove();
+    } else if(callExpr->isPrimitive(PRIM_GPU_PRIMITIVE_BLOCK)) {
+      auto parentBlock = toBlockStmt(callExpr->parentExpr);
+      INT_ASSERT(parentBlock);
+      parentBlock->flattenAndRemove();
+      callExpr->remove();
     }
   }
-  if (explainAnchor) {}
-  USR_STOP();
 }
 
 // ----------------------------------------------------------------------------
 
-void lateGpuTransforms() {
+void gpuTransforms() {
   if (fReportGpu) {
     logGpuizableLoops();
   }
@@ -2270,34 +2490,15 @@ void lateGpuTransforms() {
     }
   }
 
-  cleanupTaskIndependentCapturePrimitives();
-  reportErrorsForBadBlockSizeCalls();
+  cleanupPrimitives();
 }
 
 bool isLoopGpuBound(CForLoop* loop) {
   return eligibleLoops.find(loop) != eligibleLoops.end();
 }
 
-// TODO: is LICM required for some loops to be eligible? thonk.
-
-/* Eligible loops are immediately placed into a conditional with a copy of
-   the loop, like:
-
-       if runningOnGpuLocale() {
-          // loop
-       } else {
-          // loop
-       }
-
-   This way, the GPU-bound loop can be LICM'ed differently. Normally, LICM
-   is not a fan of reference variables, etc. However, we relax these
-   restrictions for GPU-bound loops to make it possible to save on
-   shiftedData access etc.
-
- */
-
-CForLoop* GpuizableLoop::generateGpuAndNonGpuPaths() {
-  SET_LINENO(cpuLoop());
+void GpuKernel::generateGpuAndNonGpuPaths() {
+  SET_LINENO(gpuLoop.loop());
 
   // Without GPU specialization, every time, before doing a kernel launch, we
   // need to check and see if we are on a GPU sublocale. The code to do this
@@ -2321,99 +2522,37 @@ CForLoop* GpuizableLoop::generateGpuAndNonGpuPaths() {
   // one of its branches; this doesn't work if there might be more code after
   // the conditional).
 
+  // this will finalize the launchBlock_
+  generateKernelLaunch();
+
+  FnSymbol *fnContainingLoop = gpuLoop.loop()->getFunction();
+  bool canAssumeFnWillRunOnGpu = !isFullGpuCodegen() &&
+                                 fGpuSpecialization &&
+                                 (assumeNonGpuSpecFnsAreOnCpu ||
+                                  isFnGpuSpecialized(fnContainingLoop));
+  if (canAssumeFnWillRunOnGpu) {
+    gpuLoop.loop()->replace(launchBlock_);
+    return;
+  }
+
   BlockStmt* cpuBlock = new BlockStmt();
-  BlockStmt* gpuBlock = new BlockStmt();
 
   CallExpr* condExpr = new CallExpr(PRIM_GREATEROREQUAL,
                                     new CallExpr(PRIM_GET_REQUESTED_SUBLOC),
                                     new_IntSymbol(0));
 
-  // Create a copy of the CPU loop for LICM purposes
-  CForLoop* gpuLoop = cpuLoop()->copy();
-  gpuBlock->insertAtTail(gpuLoop);
-
-  // later on, if we're using CPU-as-device, the CPU block will be moved
-  // to follow the if-statement. For now, leave it as-is to make it
-  // easier to wrangle the CondStmt AST elsewhere (c.f. makeCpuOnly,
-  // makeGpuOnly).
-  CondStmt* cond = new CondStmt(condExpr, gpuBlock, cpuBlock);
+  CondStmt* cond = new CondStmt(condExpr, launchBlock_,
+                                isFullGpuCodegen() ? cpuBlock : nullptr);
   gpuBranches.insert(cond);
 
   // first, make sure the conditional is in place
-  cpuLoop()->insertBefore(cond);
+  gpuLoop.loop()->insertBefore(cond);
 
   // then relocate the loop
-  cpuBlock->insertAtHead(cpuLoop()->remove());
-
-  // Save the new AST nodes we created so we can operate on them later.
-  cpuBlock_ = cpuBlock;
-  gpuBlock_ = gpuBlock;
-  gpuLoop_ = gpuLoop;
-  gpuCond_ = cond;
-
-  return gpuLoop;
-}
-
-void GpuizableLoop::makeCpuOnly() const {
-  cpuBlock_->remove();
-  gpuCond_->replace(cpuBlock_);
-  cpuBlock_->flattenAndRemove();
-}
-
-void GpuizableLoop::makeGpuOnly() const {
-  cpuBlock_->remove();
-  gpuBlock_->remove();
-  gpuCond_->replace(gpuBlock_);
+  cpuBlock->insertAtHead(gpuLoop.loop()->remove());
 
   if (!isFullGpuCodegen()) {
-    // put the CPU loop right after where the kernel launch would
-    // be to make CPU-as-device work.
-    gpuBlock_->insertAfter(cpuBlock_);
-    cpuBlock_->flattenAndRemove();
-  }
-
-  gpuBlock_->flattenAndRemove();
-}
-
-void GpuizableLoop::fixupNonGpuPath() const {
-  // In the CPU-as-device mode, instead of the plain loop being in an "else",
-  // it's always executed. This will make sure that we call the runtime support
-  // as if there's a GPU, yet still executing the loop always.
-  //
-  // So, take it from its else branch and put it after the conditional.
-
-  if (!isFullGpuCodegen()) {
-    cpuBlock_->remove();
-    gpuCond_->insertAfter(cpuBlock_);
+    cond->insertAfter(cpuBlock);
   }
 }
 
-static void duplicateEligibleLoopsForAdjustedLICM(FnSymbol* fn) {
-  std::vector<CForLoop*> asts;
-  collectCForLoopStmtsPreorder(fn, asts);
-
-  for_vector(CForLoop, loop, asts) {
-    // In the case of a nested foreach loop we may end up replacing the
-    // outer loop with a kernel call and in doing so making the loop no
-    // longer in the tree.
-    if (!loop->inTree()) {
-      continue;
-    }
-
-    GpuizableLoop gpuLoop(loop);
-    if (gpuLoop.isEligible()) {
-      SET_LINENO(loop);
-      auto gpuCopy = gpuLoop.generateGpuAndNonGpuPaths();
-      eligibleLoops.insert({ gpuCopy, std::move(gpuLoop) });
-      gpuCopy->body.insertAtHead(new CallExpr(PRIM_GPU_ELIGIBLE));
-    }
-  }
-}
-
-void earlyGpuTransforms() {
-  if (usingGpuLocaleModel()) {
-    forv_Vec(FnSymbol*, fn, gFnSymbols) {
-      duplicateEligibleLoopsForAdjustedLICM(fn);
-    }
-  }
-}

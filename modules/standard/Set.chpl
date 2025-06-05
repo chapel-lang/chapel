@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -563,8 +563,7 @@ module Set {
 
     @chpldoc.nodoc
     iter const these(param tag) where tag == iterKind.leader {
-      var space = 0..#_htb.tableSize;
-      for followThis in space.these(tag) {
+      for followThis in _htb._evenSlots(tag) {
         yield followThis;
       }
     }
@@ -572,8 +571,9 @@ module Set {
     @chpldoc.nodoc
     iter const these(param tag, followThis) const ref
     where tag == iterKind.follower {
-      foreach idx in followThis(0) do
-        if _htb.isSlotFull(idx) then yield _htb.table[idx].key;
+      foreach val in _htb._evenSlots(followThis, tag) {
+        yield val.key;
+      }
     }
 
     @chpldoc.nodoc

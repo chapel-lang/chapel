@@ -1,4 +1,4 @@
-# Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2025 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -78,6 +78,10 @@ endif
 ifneq (, $(filter $(THIRD_PARTY_PKGS),jemalloc))
 	@echo "Making jemalloc..."
 	@$(MAKE) -C $(THIRD_PARTY_DIR) CHPL_MAKE_HOST_TARGET=--target jemalloc
+endif
+ifneq (, $(filter $(THIRD_PARTY_PKGS),mimalloc))
+	@echo "Making mimalloc..."
+	@$(MAKE) -C $(THIRD_PARTY_DIR) CHPL_MAKE_HOST_TARGET=--target mimalloc
 endif
 	@echo "Making third-party-packages..."
 	@$(MAKE) -C $(THIRD_PARTY_DIR) $(THIRD_PARTY_PKGS)

@@ -1,1 +1,3 @@
 CHPL_COMM == none
+# CHPL_TEST_GPU sets --no-checks which disables "local"
+CHPL_TEST_GPU == true

@@ -1,1 +1,1 @@
-anotherModuleForTesting.chpl --main-module anotherModuleForTesting
+anotherModuleForTesting.chpl --main-module anotherModuleForTesting -o implicitModule

@@ -14,7 +14,7 @@ if [[ "$chpl_gpu" == "nvidia" ]]; then
 elif [[ "$chpl_gpu" == "amd" ]]; then
   gpu_flags="-x hip"
 fi
-$cxx $gpu_flags test_udf2.cpp -Ilib -Llib/ -ludf2 $libs -o test_udf2_compileline
+$cxx $CXXFLAGS $gpu_flags test_udf2.cpp -Ilib -Llib/ -ludf2 $libs -o test_udf2_compileline
 echo "Running test_udf2_compileline" >> $OUTFILE
 ./test_udf2_compileline >> $OUTFILE
 

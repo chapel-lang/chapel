@@ -1,1 +1,5 @@
-CHPL_RT_CALL_STACK_SIZE=1m
+#!/usr/bin/env bash
+echo CHPL_RT_CALL_STACK_SIZE=1m
+if [[ $CHPL_TARGET_PLATFORM == hpe-apollo ]]; then
+    echo CHPL_LAUNCHCMD_DEBUG=1
+fi

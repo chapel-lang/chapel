@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -20,8 +20,7 @@
 #ifndef CHAPEL_PY_ITERATOR_SUPPORT_H
 #define CHAPEL_PY_ITERATOR_SUPPORT_H
 
-#define PY_SSIZE_T_CLEAN
-#include "Python.h"
+#include "PythonWrapper.h"
 #include "chpl/framework/Context.h"
 #include "core-types.h"
 
@@ -67,9 +66,9 @@ struct AstIterObject {
   IterAdapterBase* iterAdapter;
   PyObject* contextObject;
 };
-extern PyTypeObject AstIterType;
+extern PyTypeObject* AstIterType;
 
-void setupAstIterType();
+bool setupAstIterType();
 
 int AstIterObject_init(AstIterObject* self, PyObject* args, PyObject* kwargs);
 void AstIterObject_dealloc(AstIterObject* self);
@@ -85,9 +84,9 @@ struct AstCallIterObject {
   const chpl::uast::AstNode* (*childGetter)(const void*, int);
   PyObject* contextObject;
 };
-extern PyTypeObject AstCallIterType;
+extern PyTypeObject* AstCallIterType;
 
-void setupAstCallIterType();
+bool setupAstCallIterType();
 
 int AstCallIterObject_init(AstCallIterObject* self, PyObject* args, PyObject* kwargs);
 void AstCallIterObject_dealloc(AstCallIterObject* self);

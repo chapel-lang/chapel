@@ -1,0 +1,24 @@
+Start analyzing forall for automatic aggregation [static only ALA clone]  (negativeImpactCorrectness.chpl:12)
+| Found an aggregation candidate (negativeImpactCorrectness.chpl:13)
+|  Potential source aggregation (negativeImpactCorrectness.chpl:13)
+|  Potential destination aggregation (negativeImpactCorrectness.chpl:13)
+End analyzing forall for automatic aggregation [static only ALA clone]  (negativeImpactCorrectness.chpl:12)
+
+Start analyzing forall for automatic aggregation [no ALA clone]  (negativeImpactCorrectness.chpl:12)
+End analyzing forall for automatic aggregation [no ALA clone]  (negativeImpactCorrectness.chpl:12)
+
+Aggregation candidate has confirmed local child [static only ALA clone] (negativeImpactCorrectness.chpl:13)
+Aggregation candidate has reverted local child [static only ALA clone] (negativeImpactCorrectness.chpl:14)
+LHS is local, RHS is nonlocal. Will use source aggregation [static only ALA clone] (negativeImpactCorrectness.chpl:13)
+Replaced assignment with aggregation [static only ALA clone]  (negativeImpactCorrectness.chpl:13)
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+1 1 1 1 1 1 1 1 1 1

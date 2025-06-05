@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -86,9 +86,12 @@ static void checkScopeContentsViaLookup(Context* context, const Module* mod,
     // ditto for the module's name
     if (name == mod->name()) continue;
 
-    auto result = lookupNameInScope(context, scope, {}, name, IDENTIFIER_LOOKUP_CONFIG);
+    auto result = lookupNameInScope(context, scope,
+                                    /* methodLookupHelper */ nullptr,
+                                    /* receiverScopeHelper */ nullptr,
+                                    name, IDENTIFIER_LOOKUP_CONFIG);
 
-    if (result.empty()) {
+    if (result.isEmpty()) {
       assert(allSyms.find(name) == allSyms.end());
     } else {
       assert(allSyms.find(name) != allSyms.end());

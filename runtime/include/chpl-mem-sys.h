@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -40,7 +40,7 @@ static inline void* sys_malloc(size_t size) {
 
 static inline void* sys_memalign(size_t boundary, size_t size) {
 #ifdef __GLIBC__
-  return memalign(boundary, size);
+  return (size == 0) ? NULL : memalign(boundary, size);
 #else
   void* ret = NULL;
   int rc;

@@ -1,0 +1,163 @@
+osx_m1_task:
+  macos_instance:
+    image: ghcr.io/cirruslabs/macos-sequoia-xcode:latest
+  timeout_in: 5m
+  matrix:
+    env:
+      QTHREADS_SCHEDULER: nemesis
+      QTHREADS_TOPOLOGY: no
+    env:
+      QTHREADS_SCHEDULER: nemesis
+      QTHREADS_TOPOLOGY: hwloc
+    env:
+      QTHREADS_SCHEDULER: nemesis
+      QTHREADS_TOPOLOGY: binders
+    env:
+      QTHREADS_SCHEDULER: sherwood
+      QTHREADS_TOPOLOGY: no
+    env:
+      QTHREADS_SCHEDULER: sherwood
+      QTHREADS_TOPOLOGY: hwloc
+    env:
+      QTHREADS_SCHEDULER: sherwood
+      QTHREADS_TOPOLOGY: binders
+    env:
+      QTHREADS_SCHEDULER: distrib
+      QTHREADS_TOPOLOGY: no
+    env:
+      QTHREADS_SCHEDULER: distrib
+      QTHREADS_TOPOLOGY: hwloc
+    env:
+      QTHREADS_SCHEDULER: distrib
+      QTHREADS_TOPOLOGY: binders
+  install_deps_script: |
+    brew install cmake coreutils # coreutils is to get gtimeout for CI and is not universally required by qthreads.
+    if [ "$QTHREADS_TOPOLOGY" != "no" ]; then brew install hwloc; fi
+  build_script: |
+    export CFLAGS="-g -I$(brew --prefix)/include $CFLAGS"
+    export CXXFLAGS="-g -I$(brew --prefix)/include $CXXFLAGS"
+    export LDFLAGS="-g -L$(brew --prefix)/lib $LDFLAGS"
+    mkdir build
+    pushd build
+    cmake -DCMAKE_BUILD_TYPE=Release -DQTHREADS_SCHEDULER=$QTHREADS_SCHEDULER -DQTHREADS_TOPOLOGY=$QTHREADS_TOPOLOGY ..
+    make -j$CIRRUS_CPU VERBOSE=1
+    popd
+  test_script: |
+    # commented example for how to get a backtrace from CI usign lldb on OSX:
+    #echo "settings set target.process.stop-on-exec false" > ~/.lldbinit
+    #QT_NUM_SHEPHERDS=2 QT_NUM_WORKERS_PER_SHEPHERD=1 lldb bash --batch --one-line 'process launch' --one-line-on-crash 'bt' --one-line-on-crash 'quit' -- test/basics/hello_world
+    pushd build
+    CTEST_OUTPUT_ON_FAILURE=1 gtimeout --foreground 3m make test VERBOSE=1
+    popd
+
+freebsd_task:
+  freebsd_instance:
+    image_family: freebsd-14-2
+  timeout_in: 5m
+  matrix:
+    env:
+      QTHREADS_SCHEDULER: nemesis
+    env:
+      QTHREADS_SCHEDULER: sherwood
+    env:
+      QTHREADS_SCHEDULER: distrib
+  install_deps_script: |
+    pkg install -y llvm cmake
+    pkg install -y coreutils # to get gtimeout for CI. The built-in timeout sometimes fails to kill the process.
+  build_script: |
+    mkdir build
+    cd build
+    cmake -DCMAKE_BUILD_TYPE=Release -DQTHREADS_SCHEDULER=$QTHREADS_SCHEDULER -DQTHREADS_TOPOLOGY=no -DQTHREADS_CONTEXT_SWAP_IMPL=system ..
+    make -j$CIRRUS_CPU VERBOSE=1
+  test_script: |
+    CTEST_OUTPUT_ON_FAILURE=1 gtimeout --foreground -k 10s 2m make test VERBOSE=1
+
+arm_linux_task:
+  arm_container:
+    image: gcc:14-bookworm
+  timeout_in: 5m
+  matrix:
+    env:
+      QTHREADS_SCHEDULER: nemesis
+      QTHREADS_TOPOLOGY: no
+    env:
+      QTHREADS_SCHEDULER: nemesis
+      QTHREADS_TOPOLOGY: hwloc
+    env:
+      QTHREADS_SCHEDULER: nemesis
+      QTHREADS_TOPOLOGY: binders
+    env:
+      QTHREADS_SCHEDULER: sherwood
+      QTHREADS_TOPOLOGY: no
+    env:
+      QTHREADS_SCHEDULER: distrib
+      QTHREADS_TOPOLOGY: no
+  install_deps_script: |
+    apt-get update -y
+    apt-get install -y cmake
+    apt-get install -y hwloc libhwloc-dev
+  build_script: |
+    mkdir build
+    pushd build
+    cmake -DCMAKE_BUILD_TYPE=Release -DQTHREADS_SCHEDULER=$QTHREADS_SCHEDULER -DQTHREADS_TOPOLOGY=$QTHREADS_TOPOLOGY ..
+    make -j$CIRRUS_CPU VERBOSE=1
+    popd
+  test_script: |
+    pushd build
+    CTEST_OUTPUT_ON_FAILURE=1 timeout --foreground -k 10s 5m make test VERBOSE=1
+    popd
+
+arm_linux_clang_task:
+  arm_container:
+    image: gcc:14-bookworm
+  timeout_in: 5m
+  matrix:
+    env:
+      CC: clang-19
+      CXX: clang++-19
+      QTHREADS_SCHEDULER: nemesis
+      QTHREADS_TOPOLOGY: no
+    env:
+      CC: clang-19
+      CXX: clang++-19
+      QTHREADS_SCHEDULER: nemesis
+      QTHREADS_TOPOLOGY: hwloc
+    env:
+      CC: clang-19
+      CXX: clang++-19
+      QTHREADS_SCHEDULER: nemesis
+      QTHREADS_TOPOLOGY: binders
+    env:
+      CC: clang-19
+      CXX: clang++-19
+      QTHREADS_SCHEDULER: sherwood
+      QTHREADS_TOPOLOGY: no
+    env:
+      CC: clang-19
+      CXX: clang++-19
+      QTHREADS_SCHEDULER: distrib
+      QTHREADS_TOPOLOGY: no
+  install_deps_script: |
+    apt-get update -y
+    apt-get install -y software-properties-common
+    wget https://apt.llvm.org/llvm-snapshot.gpg.key
+    gpg --no-default-keyring --keyring ./tmp.gpg --import llvm-snapshot.gpg.key
+    gpg --no-default-keyring --keyring ./tmp.gpg --export --output llvm-snapshot.gpg
+    rm tmp.gpg
+    cp llvm-snapshot.gpg /etc/apt/trusted.gpg.d/llvm-snapshot.gpg # This is for CI so no need to do something more complicated to restrict key use to a specific repo.
+    apt-add-repository -y 'deb https://apt.llvm.org/bookworm/ llvm-toolchain-bookworm-19 main'
+    apt-add-repository -y 'deb https://apt.llvm.org/bookworm/ llvm-toolchain-bookworm-19 main' # Something's buggy upstream but running this twice fixes it.
+    apt-get install -y clang-19
+    apt-get install -y cmake
+    apt-get install -y hwloc libhwloc-dev
+  build_script: |
+    mkdir build
+    pushd build
+    cmake -DCMAKE_BUILD_TYPE=Release -DQTHREADS_SCHEDULER=$QTHREADS_SCHEDULER -DQTHREADS_TOPOLOGY=$QTHREADS_TOPOLOGY ..
+    make -j$CIRRUS_CPU VERBOSE=1
+    popd
+  test_script: |
+    pushd build
+    CTEST_OUTPUT_ON_FAILURE=1 timeout --foreground -k 10s 5m make test VERBOSE=1
+    popd
+

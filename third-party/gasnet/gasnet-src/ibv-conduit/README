@@ -212,12 +212,14 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
     gasnetrun_ibv -n <n> [options] [--] prog [program args]
     options:
       -n <n>                 number of processes to run (required)
-      -N <N>                 number of nodes to run on (not supported by all MPIs)
+      -N <N>                 number of nodes to run on (not always supported)
+      -c <n>                 number of cpus per process (not always supported)
       -E <VAR1[,VAR2...]>    list of environment vars to propagate
       -v                     be verbose about what is happening
       -t                     test only, don't execute anything (implies -v)
       -k                     keep any temporary files created (implies -v)
-      -spawner=(ssh|mpi|pmi) force use of a specific spawner (if available)
+      -spawner=<name>        force use of a specific spawner ([supported spawners])
+      --                     ends option parsing
 
   There are as many as three possible methods (ssh, mpi and pmi) by which one
   can launch an ibv-conduit application.  Ssh-based spawning is always
@@ -367,6 +369,20 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
     of a node of OLCF's Summit, and should not be considered as generic advice
     for use of all multi-HCA systems.
     Of course, even on the same system, your mileage may vary.
+    There is currently limited support for GASNET_IBV_PORTS_TYPE == "auto", in
+    which each process will be assigned exactly one HCA.  This assignment will
+    be based on the HCAs available after filtering by 'GASNET_IBV_PORTS', but
+    currently ignoring computed-name variables, such as 'GASNET_IBV_PORTS_0'.
+    Subject to that filtering (if any) assignments will be made to an HCA
+    "nearest" to a given process based on hwloc's metrics.  Such assignments
+    will spread processes over eligible HCAs to minimize processes sharing any
+    given HCA, subject to the other constraints.  Additional details of the
+    assignment algorithm are intentionally unspecified and subject to change.
+    Details of ibv-conduit's "auto" behavior are subject to change in future
+    releases, but efforts will be made to avoid incompatible changes.  In
+    particular, any characters after "auto" (case insensitive) are reserved for
+    future enhancements, and are currently ignored.
+    See "Bug 4769" in the Known Problems section for some important caveats.
     By default 'GASNET_IBV_PORTS_TYPE' is "Socket" and all other variables in
     this family are unset.
 
@@ -380,13 +396,17 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
     warning is issued if more HCAs are detected than supported by
     '--with-ibv-max-hcas=N' (where N defaults to 2 when configured using
     `--enable-ibv-multirail`, and 1 otherwise).
-    Values of 2 or higher are reserved to request printing additional
-    details in future releases.
+    Values of 2 or higher request printing additional information.
     This setting defaults to 1.
 
   + GASNET_IBV_LIST_PORTS
     The value is a boolean: "0" to disable or "1" to enable the reporting of
     all detectable HCAs and the status of their ports.
+    If libhwloc 2.0 or higher was detected at configure time, then this output
+    includes a distance ranking for each HCA port for which the information can
+    be found.  A ranking of "1" denotes the topologically nearest HCAs (i.e.
+    "first place").  If present, "2" will denote any HCA(s) less near than the
+    "1" HCA(s) but nearer than any "3"s, etc.  Note that ties are possible.
     See 'GASNET_IBV_LIST_PORTS_NODES' for how to limit which nodes report.
     The default is "0" (no report).
 
@@ -1454,15 +1474,6 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   That bug report describes more about the problem, and provides more detail
   regarding the recommended work-around(s).
 
-+ Bug 3997
-  When using ibv-conduit on Linux/AARCH64 (aka ARM64 or ARMv8) systems, it has
-  been observed that some traffic patterns may lead to crashes of the IB HCA
-  or of the compute node.
-  The most up-to-date information on this bug is maintained at:
-    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3997
-  That bug report describes more about the problem, and provides more detail
-  regarding the recommended work-around(s).
-
 + Bugs 4008 and 4009
   On some systems, RMA Puts and AM Longs with source buffers on read-only pages
   (such as those that might be generated for const-qualified static variables)
@@ -1520,6 +1531,28 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   under heavy load when application thread(s) are also actively polling.
   The most up-to-date information on this issue is maintained at:
     https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4691
+
++ Bug 4769
+  Currently the implementation of GASNET_IBV_PORTS_TYPE=auto has limitations,
+  some of which may result in unexpected loss of performance relative to a
+  manual assignment using other settings.
+  1. Each process will be assigned only a single HCA, even when the most
+     desirable configuration might utilize multiple HCAs.
+     Example: On a host with two processes and four HCAs, the current algorithm
+     will never use more than half of the HCAs.
+  2. Each process will only be assigned an HCA from among those which are
+     (according to hwloc) topologically nearest to it.  Consequently, any HCAs
+     not "nearest" to at least one process will go unused.
+     Example: On a host with two sockets, each with one associated HCA, pinning
+     all process to a *single* socket (for instance to provide affinity to a
+     GPU) will cause the current algorithm to ignore the HCA associated with the
+     other socket.
+  These limitations are specific to the current automatic HCA assignment
+  algorithm activated by GASNET_IBV_PORTS_TYPE=auto.
+  Both situations described above can be avoided by instead applying settings for
+  "manual assignment" of HCAs, see the documentation above for GASNET_IBV_PORTS.
+  The most up-to-date information on this bug is maintained at:
+    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4769
 
 + See the GASNet Bugzilla server for details on other known bugs:
   https://gasnet-bugs.lbl.gov/

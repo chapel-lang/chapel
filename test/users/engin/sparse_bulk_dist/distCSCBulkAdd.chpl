@@ -1,11 +1,11 @@
 use BlockDist;
-use LayoutCS;
+use CompressedSparseLayout;
 use List;
 
 var space = {1..10, 1..10};
-var parentDomCSR = space dmapped new blockDist(space, sparseLayoutType=CS(compressRows=true));
+var parentDomCSR = space dmapped new blockDist(space, sparseLayoutType=csrLayout);
 var spsDomCSR: sparse subdomain(parentDomCSR);
-var parentDomCSC = space dmapped new blockDist(space, sparseLayoutType=CS(compressRows=false));
+var parentDomCSC = space dmapped new blockDist(space, sparseLayoutType=cscLayout);
 var spsDomCSC: sparse subdomain(parentDomCSC);
 
 var indices: list(2*int);

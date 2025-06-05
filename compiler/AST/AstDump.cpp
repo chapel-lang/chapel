@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -114,7 +114,7 @@ bool AstDump::open(const ModuleSymbol* module, const char* passName, int passNum
   snprintf(numBuf, 4, "%02d", passNum);
 
   mName      = astr(module->name, "_", numBuf, passName, ".ast");
-  mPath      = astr(log_dir, mName);
+  mPath      = astr(log_dir.c_str(), mName);
   mFP        = fopen(mPath, "w");
   mIndent    = 0;
   mNeedSpace = false;
@@ -234,9 +234,6 @@ bool AstDump::enterDefExpr(DefExpr* node) {
       if (isAggregateType(sym->type)) {
         if (sym->hasFlag(FLAG_SYNC))
           write("sync");
-
-        if (sym->hasFlag(FLAG_SINGLE))
-          write("single");
       }
 
       writeSymbol("type", sym, true);
@@ -245,8 +242,6 @@ bool AstDump::enterDefExpr(DefExpr* node) {
       if (isSyncType(vs->type)) {
         write("sync");
 
-      } else if (isSingleType(vs->type)) {
-        write("single");
       }
 
       write(true, sym->qualType().qualStr(), false);
@@ -852,6 +847,17 @@ void AstDump::exitCatchStmt(CatchStmt* node) {
   --mIndent;
   newline();
   write("}");
+}
+
+//
+// ImplementsStmt
+//
+bool AstDump::enterImplementsStmt(ImplementsStmt* node) {
+  newline();
+  write("ifc");
+  if (fLogIds)
+    fprintf(mFP, "[%d]", node->id);
+  return true;
 }
 
 //

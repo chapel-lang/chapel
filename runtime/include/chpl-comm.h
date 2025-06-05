@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -154,6 +154,9 @@ void chpl_comm_wait_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles);
 // on them returns nonzero.  Returns nonzero iff at least one completion is
 // detected.
 int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles);
+
+// Free a handle returned by chpl_comm_*_nb.
+void chpl_comm_free_nb_handle(chpl_comm_nb_handle_t h);
 
 // Returns whether or not the passed wide address is known to be in
 // a communicable memory region and known to be readable. That is,
@@ -423,7 +426,7 @@ static inline void chpl_comm_barrier(const char *msg) {
     return;
   }
 
-  chpl_rmem_consist_fence(memory_order_seq_cst, 0, 0);
+  chpl_rmem_consist_fence(chpl_memory_order_seq_cst, 0, 0);
   chpl_comm_impl_barrier(msg);
 }
 
@@ -607,6 +610,12 @@ void chpl_set_local_rank(int32_t rank);
 // Returns our local rank on the node, -1 if chpl_set_local_rank has
 // not been called.
 int32_t chpl_get_local_rank(void);
+
+// Sets the number of colocales on the local node.
+void chpl_set_num_colocales_on_node(int32_t count);
+
+// Returns the number of colocales on the local node.
+int32_t chpl_get_num_colocales_on_node(void);
 
 #ifdef __cplusplus
 }

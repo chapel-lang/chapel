@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -213,7 +213,7 @@ module Map {
       :arg other: The map to initialize from.
       :type other: map
     */
-    proc init=(ref other: map(?kt, ?vt, ?ps)) lifetime this < other {
+    proc init=(const ref other: map(?kt, ?vt, ?ps)) lifetime this < other {
 
       // TODO: There has got to be some way that we can abstract this!
       // Arguably this is something that the compiler should be
@@ -454,67 +454,9 @@ module Map {
       return result;
     }
 
-    /* Get a borrowed reference to the element at position `k`.
-     */
-    @deprecated(notes="'map.getBorrowed' is deprecated. Please rely on '[]' accessors instead.")
-    proc getBorrowed(k: keyType) where isClass(valType) {
-      _enter(); defer _leave();
-      var (found, slot) = table.findFullSlot(k);
-      if !found then
-        boundsCheckHalt(try! "map index %? out of bounds".format(k));
-      try! {
-        var result = table.table[slot].val.borrow();
-        if isNonNilableClass(valType) {
-          return result!;
-        } else {
-          return result;
-        }
-      }
-    }
-
-    /* Get a reference to the element at position `k`. This method is not
-       available for maps initialized with `parSafe=true`.
-     */
-    @deprecated(notes="'map.getReference' is deprecated. Please rely on '[]' accessors instead.")
-    proc getReference(k: keyType) ref {
-      if parSafe then
-        compilerError('cannot call `getReference()` on maps initialized ',
-                      'with `parSafe=true`');
-
-      _enter(); defer _leave();
-      var (found, slot) = table.findFullSlot(k);
-      if !found then
-        boundsCheckHalt(try! "map index %? out of bounds".format(k));
-      ref result = table.table[slot].val;
-      return result;
-    }
-
-    /* Get a copy of the element stored at position `k`.
-
-      :arg k: The key to lookup in the map
-
-      :throws KeyNotFoundError: if `k` not in map
-
-      :returns: A copy of the value at position `k`
-     */
-    @deprecated(notes="'map.getValue' is deprecated. Please rely on '[]' accessors instead.")
-    proc getValue(k: keyType) throws {
-      if !isCopyableType(valType) then
-        compilerError('cannot call `getValue()` for non-copyable ' +
-                      'map value type: ' + valType:string);
-
-      _enter(); defer _leave();
-      var (found, slot) = table.findFullSlot(k);
-      if !found then
-        throw new KeyNotFoundError(k);
-      try! {
-        const result = table.table[slot].val: valType;
-        return result;
-      }
-    }
-
-    /* Get a copy of the element stored at position `k` or a sentinel
-       value if an element at position `k` does not exist.
+    /*
+      Get a copy of the element stored at position `k` or a sentinel
+      value if an element at position `k` does not exist.
 
       :arg k: The key to lookup in the map
       :arg sentinel: The value to return if the map does not contain an
@@ -526,22 +468,6 @@ module Map {
     proc get(k: keyType, const sentinel: valType) {
       if !isCopyableType(valType) then
         compilerError('cannot call `get()` for non-copyable ' +
-                      'map value type: ' + valType:string);
-
-      _enter(); defer _leave();
-      var (found, slot) = table.findFullSlot(k);
-      if !found then
-        return sentinel;
-      try! {
-        const result = table.table[slot].val: valType;
-        return result;
-      }
-    }
-
-    @deprecated(notes="'map.getValue' is deprecated. Please use 'map.get' instead.")
-    proc getValue(k: keyType, const sentinel: valType) {
-      if !isCopyableType(valType) then
-        compilerError('cannot call `getValue()` for non-copyable ' +
                       'map value type: ' + valType:string);
 
       _enter(); defer _leave();
@@ -569,6 +495,7 @@ module Map {
       }
     }
 
+    // NOTE: this is deprecated but being kept due to weirdness with return intents
     /*
       Iterates over the keys of this map. This is a shortcut for :iter:`keys`.
 
@@ -587,12 +514,34 @@ module Map {
       :yields: A reference to one of the keys contained in this map.
     */
     iter keys() const ref {
-      foreach slot in table.allSlots() {
-        if table.isSlotFull(slot) then
-          yield table.table[slot].key;
+      foreach idx in 0..#table.tableSize {
+        if table.isSlotFull(idx) then
+          yield table.table[idx].key;
+      }
+    }
+    @chpldoc.nodoc
+    iter keys(param tag: iterKind) const ref where tag == iterKind.standalone {
+      const space = 0..#table.tableSize;
+      foreach idx in space.these(tag) {
+        if table.isSlotFull(idx) then
+          yield table.table[idx].key;
+      }
+    }
+    @chpldoc.nodoc
+    iter keys(param tag: iterKind) where tag == iterKind.leader {
+      for followThis in table._evenSlots(tag) {
+        yield followThis;
+      }
+    }
+    @chpldoc.nodoc
+    iter keys(param tag: iterKind, followThis) const ref
+      where tag == iterKind.follower {
+      foreach val in table._evenSlots(followThis, tag) {
+        yield val.key;
       }
     }
 
+    // NOTE: this is deprecated but being kept due to weirdness with return intents
     /*
       Iterates over the key-value pairs of this map.
 
@@ -622,11 +571,31 @@ module Map {
 
       :yields: A reference to one of the values contained in this map.
     */
-    iter values() ref
-    {
-      foreach slot in table.allSlots() {
-        if table.isSlotFull(slot) then
-          yield table.table[slot].val;
+    iter values() ref {
+      foreach idx in 0..#table.tableSize {
+        if table.isSlotFull(idx) then
+          yield table.table[idx].val;
+      }
+    }
+    @chpldoc.nodoc
+    iter values(param tag: iterKind) ref where tag == iterKind.standalone {
+      const space = 0..#table.tableSize;
+      foreach idx in space.these(tag) {
+        if table.isSlotFull(idx) then
+          yield table.table[idx].val;
+      }
+    }
+    @chpldoc.nodoc
+    iter values(param tag: iterKind) where tag == iterKind.leader {
+      for followThis in table._evenSlots(tag) {
+        yield followThis;
+      }
+    }
+    @chpldoc.nodoc
+    iter values(param tag: iterKind, followThis) ref
+      where tag == iterKind.follower {
+      foreach val in table._evenSlots(followThis, tag) {
+        yield val.val;
       }
     }
 
@@ -708,15 +677,15 @@ module Map {
       Adds a key-value pair to the map. If the key `k` is already present
       in the map, makes no changes and returns `false`.
 
-     :arg k: The key to add to the map
-     :type k: ``keyType``
+      :arg k: The key to add to the map
+      :type k: ``keyType``
 
-     :arg v: The value that maps to ``k``
-     :type v: ``valType``
+      :arg v: The value that maps to ``k``
+      :type v: ``valType``
 
-     :returns: `true` if `k` was not in the map and added with value `v`.
+      :returns: `true` if `k` was not in the map and added with value `v`.
                `false` otherwise.
-     :rtype: bool
+      :rtype: bool
     */
     proc ref add(in k: keyType, in v: valType): bool lifetime this < v {
       _enter(); defer _leave();
@@ -730,24 +699,19 @@ module Map {
       return true;
     }
 
-    @deprecated(notes="'map.set' is deprecated. Please use 'map.replace' instead.")
-    proc ref set(k: keyType, in v: valType): bool {
-      return this.replace(k, v);
-    }
-
     /*
       Replaces the value associated with the key `k` with `v`. If the
       key `k` is not in the map, makes no changes and returns `false`.
 
-     :arg k: The key whose value needs to change
-     :type k: ``keyType``
+      :arg k: The key whose value needs to change
+      :type k: ``keyType``
 
-     :arg v: The desired value to the key ``k``
-     :type v: ``valType``
+      :arg v: The desired value to the key ``k``
+      :type v: ``valType``
 
-     :returns: `true` if `k` was in the map and its value is updated with `v`.
+      :returns: `true` if `k` was in the map and its value is updated with `v`.
                `false` otherwise.
-     :rtype: bool
+      :rtype: bool
     */
     proc ref replace(k: keyType, in v: valType): bool {
       _enter(); defer _leave();
@@ -769,11 +733,6 @@ module Map {
       _enter(); defer _leave();
       var (found, slot) = table.findAvailableSlot(k);
       table.fillSlot(slot, k, v);
-    }
-
-    @deprecated(notes="'map.addOrSet' is deprecated. Please use 'map.addOrReplace' instead.")
-    proc ref addOrSet(in k: keyType, in v: valType) {
-      addOrReplace(k, v);
     }
 
     /*
@@ -958,7 +917,7 @@ module Map {
   /*
    A `KeyNotFoundError` is thrown at runtime if an attempt is made
    to access a map value at a given key that is not in the current
-   state of the `map`. An example of this is calling `map.getValue()`.
+   state of the `map`. An example of this is calling :proc:`map.get`.
    */
   class KeyNotFoundError : Error {
     @chpldoc.nodoc

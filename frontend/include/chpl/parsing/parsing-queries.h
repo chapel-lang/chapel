@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -21,6 +21,7 @@
 #define CHPL_PARSING_PARSING_QUERIES_H
 
 #include "chpl/framework/Context.h"
+#include "chpl/framework/global-strings.h"
 #include "chpl/framework/ID.h"
 #include "chpl/framework/Location.h"
 #include "chpl/parsing/FileContents.h"
@@ -106,9 +107,13 @@ introspectParsedFiles(Context* context);
 /**
   Like parseFileToBuilderResult but parses whatever file contained 'id'.
   Useful for projection queries.
+
+  If setParentSymbolPath is not nullptr, sets it to the parentSymbolPath used
+  when creating the BuilderResult.
  */
 const uast::BuilderResult*
-parseFileContainingIdToBuilderResult(Context* context, ID id);
+parseFileContainingIdToBuilderResult(Context* context, ID id,
+                                     UniqueString* setParentSymbolPath=nullptr);
 
 /**
   A function for counting the tokens when parsing
@@ -178,6 +183,15 @@ const ModuleVec& parseToplevel(Context* context, UniqueString path);
  */
 const std::vector<ID>& toplevelModulesInFile(Context* context,
                                              UniqueString path);
+
+/** Given a module ID, returns the ID of a 'main' function
+    provided in that module, or the empty ID if none was present.
+
+    If there were multiple 'main' functions in that module, this
+    function returns the first one. Other parts of compilation should
+    produce a compilation error in that case.
+ */
+ID findProcMainInModule(Context* context, ID modId);
 
 /**
   Given the modules from files named on the command line,
@@ -285,6 +299,11 @@ void setBundledModulePath(Context* context, UniqueString path);
     chplSysModulesSubdir -- CHPL_SYS_MODULES_SUBDIR
     chplModulePath       -- CHPL_MODULE_PATH
 
+  The 'moduleRoot' argument allows overriding the default module root. If
+  'moduleRoot' is the empty string, then the default of 'CHPL_HOME/modules' is
+  used. Regardless, if 'minimalModules' is true '/minimal' is appended to the
+  'moduleRoot'.
+
   The arguments 'prependInternalModulePaths' and 'prependStandardModulePaths',
   if non-empty, allow one to override where the context will search for
   internal and standard modules, respectively. It will search each successive
@@ -298,6 +317,7 @@ void setBundledModulePath(Context* context, UniqueString path);
 void setupModuleSearchPaths(
                   Context* context,
                   const std::string& chplHome,
+                  const std::string& moduleRoot,
                   bool minimalModules,
                   const std::string& chplLocaleModel,
                   bool enableTaskTracking,
@@ -309,6 +329,18 @@ void setupModuleSearchPaths(
                   const std::vector<std::string>& prependStandardModulePaths,
                   const std::vector<std::string>& cmdLinePaths,
                   const std::vector<std::string>& inputFilenames);
+
+/**
+  Overload of the more general setupModuleSearchPaths that uses the
+  context's stored chplHome and chplEnv to determine the values of most
+  arguments.
+*/
+void setupModuleSearchPaths(Context* context,
+                            const std::string& moduleRoot,
+                            bool minimalModules,
+                            bool enableTaskTracking,
+                            const std::vector<std::string>& cmdLinePaths,
+                            const std::vector<std::string>& inputFilenames);
 
 /**
   Overload of the more general setupModuleSearchPaths that uses the
@@ -435,15 +467,29 @@ std::string getExistingFileInModuleSearchPath(Context* context,
  */
 const uast::Module* getToplevelModule(Context* context, UniqueString name);
 
+struct IdAndName {
+  ID id;
+  UniqueString name;
+};
+
+
 /**
- Given a particular (presumably standard) module, return the ID of a symbol
- with the given name in that module. Beyond creating the ID, this also ensures
- that the standard module is parsed, and thus, that 'idToAst' on the returned
- ID will return a non-null value.
+ Given a particular (presumably standard) module, return the ID of a
+ symbol with the given name in that module. Beyond creating the ID, this also
+ ensures that the standard module is parsed, and thus, that 'idToAst' on the
+ returned ID will return a non-null value.
  */
-ID getSymbolFromTopLevelModule(Context* context,
-                               const char* modName,
-                               const char* symName);
+ID getSymbolIdFromTopLevelModule(Context* context,
+                                 const char* modName,
+                                 const char* symName);
+
+/**
+ Like getSymbolId..., but return also contains the name of the given symbol for
+ convenience.
+ */
+IdAndName getSymbolFromTopLevelModule(Context* context,
+                                      const char* modName,
+                                      const char* symName);
 
 /**
  This query parses a submodule for 'include submodule'.
@@ -469,6 +515,11 @@ uast::AstTag idToTag(Context* context, ID id);
 bool idIsModule(Context* context, ID id);
 
 /**
+  Returns true if the ID is a module-scope variable.
+ */
+bool idIsModuleScopeVar(Context* context, ID id);
+
+/**
  Returns true if the ID is a parenless function.
  */
 bool idIsParenlessFunction(Context* context, ID id);
@@ -487,6 +538,11 @@ bool idIsPrivateDecl(Context* context, ID id);
  Returns true if the ID is a function.
  */
 bool idIsFunction(Context* context, ID id);
+
+/**
+ Returns true if the ID is an interface
+ */
+bool idIsInterface(Context* context, ID id);
 
 /**
  Returns true if the ID is marked 'extern'.
@@ -520,6 +576,16 @@ bool idIsField(Context* context, ID id);
 const ID& idToParentId(Context* context, ID id);
 
 /**
+ Returns the parent function ID given an ID.
+ */
+ID idToParentFunctionId(Context* context, ID id);
+
+/**
+ Returns the parent interface ID given an ID.
+ */
+ID idToParentInterfaceId(Context* context, ID id);
+
+/**
  Returns the parent AST node given an AST node
  */
 const uast::AstNode* parentAst(Context* context, const uast::AstNode* node);
@@ -529,6 +595,13 @@ const uast::AstNode* parentAst(Context* context, const uast::AstNode* node);
   or the empty ID when given a toplevel module.
  */
 ID idToParentModule(Context* context, ID id);
+
+/**
+  Given an ID 'id', attempt to lookup the declared linkage of the composite
+  type associated with 'id'. Returns 'DEFAULT_LINKAGE' if no such AST was
+  found.
+ */
+uast::Decl::Linkage idToDeclLinkage(Context* context, ID id);
 
 /**
   Returns 'true' if ID refers to a toplevel module.
@@ -550,6 +623,7 @@ bool idIsFunctionWithWhere(Context* context, ID id);
 /**
   Given an ID for a Variable, returns the ID of the containing
   MultiDecl or TupleDecl, if any, and the ID of the variable otherwise.
+  For other IDs, returns the original ID.
  */
 ID idToContainingMultiDeclId(Context* context, ID id);
 
@@ -561,8 +635,28 @@ bool idContainsFieldWithName(Context* context, ID typeDeclId,
                              UniqueString fieldName);
 
 /**
+  Given an AST node for a (multi-)declaration, find a Variable
+  node that declares a field of the given name. Returns whether the field
+  was found. Sets outFieldId to the ID of the Variable, or empty if one
+  was not found.
+
+  Performs a search for AST nodes covered by fieldIdWithName's documentation.
+ */
+bool findFieldIdInDeclaration(const uast::AstNode* varDecl,
+                              UniqueString fieldName,
+                              ID& outFieldId);
+
+/**
   Given an ID for a Record/Union/Class Decl,
   and a field name, returns the ID for the Variable declaring that field.
+  Does so by looking recursively for either:
+
+  * the Variable declaration directly: 'var x: int'
+  * A MultiDecl containing the name: 'var x: int, y: int'
+  * A TupleDecl with the name as a component: 'var ((x, y), z) = ...'
+  * A ForwardingDecl that forwards methods from the variable: 'forwarding var x: R'
+
+  Ignores all other AST nodes in the Record/Union/Class.
  */
 ID fieldIdWithName(Context* context, ID typeDeclId,
                    UniqueString fieldName);
@@ -655,6 +749,17 @@ void reportUnstableWarningForId(Context* context, ID idMention,
   Given an ID, returns the module kind for the ID.
 */
 uast::Module::Kind idToModuleKind(Context* context, ID id);
+
+/*
+  Given a unique string, determine if it matches the name of a known special
+  method.
+*/
+bool isSpecialMethodName(UniqueString name);
+
+/*
+  Given a function call, determine if it is a call to a class manager.
+*/
+bool isCallToClassManager(const uast::FnCall* call);
 
 } // end namespace parsing
 } // end namespace chpl

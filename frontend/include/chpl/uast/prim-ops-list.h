@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -58,6 +58,7 @@ PRIMITIVE_R(INIT_FIELD, "init field")
 PRIMITIVE_R(INIT_VAR, "init var")
 PRIMITIVE_R(INIT_VAR_SPLIT_DECL, "init var split decl")
 PRIMITIVE_R(INIT_VAR_SPLIT_INIT, "init var split init")
+PRIMITIVE_R(SPLIT_INIT_UPDATE_TYPE, "split init update type")
 PRIMITIVE_R(INIT_REF_DECL, "init ref decl")
 PRIMITIVE_R(INIT_DONE, "init done")
 
@@ -109,6 +110,8 @@ PRIMITIVE_G(RSH_ASSIGN, ">>=")
 PRIMITIVE_G(AND_ASSIGN, "&=")
 PRIMITIVE_G(OR_ASSIGN, "|=")
 PRIMITIVE_G(XOR_ASSIGN, "^=")
+PRIMITIVE_G(LOGICALAND_ASSIGN, "&&=")
+PRIMITIVE_G(LOGICALOR_ASSIGN, "||=")
 PRIMITIVE_R(REDUCE_ASSIGN, "reduce=")
 
 PRIMITIVE_G(MIN, "_min")
@@ -129,6 +132,7 @@ PRIMITIVE_G(CHECK_NIL, "_check_nil")
 PRIMITIVE_R(IF_VAR, "if var")
 
 PRIMITIVE_R(NEW, "new")
+PRIMITIVE_R(NEW_WITH_ALLOCATOR, "new with allocator")
 
 PRIMITIVE_G(GET_REAL, "complex_get_real")
 PRIMITIVE_G(GET_IMAG, "complex_get_imag")
@@ -136,8 +140,6 @@ PRIMITIVE_G(GET_IMAG, "complex_get_imag")
 PRIMITIVE_R(QUERY, "query")
 PRIMITIVE_R(QUERY_PARAM_FIELD, "query param field")
 PRIMITIVE_R(QUERY_TYPE_FIELD, "query type field")
-
-PRIMITIVE_R(STATIC_DOMAIN_TYPE, "static domain type")
 
 PRIMITIVE_R(STATIC_FUNCTION_VAR, "static function var")
 PRIMITIVE_R(STATIC_FUNCTION_VAR_VALIDATE_TYPE, "static function validate type")
@@ -148,6 +150,7 @@ PRIMITIVE_G(DEREF, "deref")
 PRIMITIVE_G(SET_REFERENCE, "set reference")
 
 PRIMITIVE_G(LOCAL_CHECK, "local_check")
+PRIMITIVE_G(IS_LOCAL, "is_local")
 
 PRIMITIVE_R(GET_END_COUNT, "get end count")
 PRIMITIVE_R(SET_END_COUNT, "set end count")
@@ -171,7 +174,9 @@ PRIMITIVE_G(GPU_GRIDDIM_Z, "gpu gridDim z")
 PRIMITIVE_G(GPU_ALLOC_SHARED, "gpu allocShared")
 PRIMITIVE_G(GPU_SYNC_THREADS, "gpu syncThreads")
 PRIMITIVE_R(GPU_SET_BLOCKSIZE, "gpu set blockSize")
+PRIMITIVE_R(GPU_SET_ITERS_PER_THREAD, "gpu set itersPerThread")
 PRIMITIVE_G(ASSERT_ON_GPU, "chpl_assert_on_gpu")
+PRIMITIVE_R(ASSERT_GPU_ELIGIBLE, "assert gpu eligible")
 PRIMITIVE_R(GPU_ELIGIBLE, "gpu eligible")
 PRIMITIVE_G(GPU_INIT_KERNEL_CFG, "gpu init kernel cfg")
 PRIMITIVE_G(GPU_INIT_KERNEL_CFG_3D, "gpu init kernel cfg 3d")
@@ -307,6 +312,7 @@ PRIMITIVE_G(CHPL_EXIT_ANY, "chpl_exit_any")
 
 PRIMITIVE_G(RT_ERROR, "chpl_error")
 PRIMITIVE_G(RT_WARNING, "chpl_warning")
+PRIMITIVE_G(RT_GPU_HALT, "chpl_gpu_halt")
 
 PRIMITIVE_G(NEW_PRIV_CLASS, "chpl_newPrivatizedClass")
 
@@ -340,7 +346,10 @@ PRIMITIVE_R(IS_CLASS_TYPE, "is class type")
 PRIMITIVE_R(IS_NILABLE_CLASS_TYPE, "is nilable class type")
 PRIMITIVE_R(IS_NON_NILABLE_CLASS_TYPE, "is non nilable class type")
 PRIMITIVE_R(IS_RECORD_TYPE, "is record type")
-PRIMITIVE_R(IS_FCF_TYPE, "is fcf type")
+
+PRIMITIVE_R(IS_PROC_TYPE, "is proc type")
+PRIMITIVE_R(TO_PROC_TYPE, "to proc type")
+
 PRIMITIVE_R(IS_UNION_TYPE, "is union type")
 PRIMITIVE_R(IS_EXTERN_UNION_TYPE, "is extern union type")
 PRIMITIVE_R(IS_ATOMIC_TYPE, "is atomic type")
@@ -398,6 +407,7 @@ PRIMITIVE_R(TO_BORROWED_CLASS, "to borrowed class")
 PRIMITIVE_R(TO_UNDECORATED_CLASS, "to undecorated class")
 PRIMITIVE_R(TO_NILABLE_CLASS, "to nilable class")
 PRIMITIVE_R(TO_NON_NILABLE_CLASS, "to non nilable class")
+PRIMITIVE_R(TO_EXTERN_LINKAGE, "to extern linkage")
 
 PRIMITIVE_R(SET_ALIASING_ARRAY_ON_TYPE, "set aliasing array on type")
 
@@ -423,7 +433,7 @@ PRIMITIVE_R(UINT64_AS_REAL64, "uint64 as real64")
 PRIMITIVE_R(REAL32_AS_UINT32, "real32 as uint32")
 PRIMITIVE_R(REAL64_AS_UINT64, "real64 as uint64")
 
-PRIMITIVE_G(BREAKPOINT, "breakpoint")
+PRIMITIVE_G(DEBUG_TRAP, "debug trap")
 
 PRIMITIVE_G(CONST_ARG_HASH, "hash const arguments")
 PRIMITIVE_G(CHECK_CONST_ARG_HASH, "check hashes of const arguments")

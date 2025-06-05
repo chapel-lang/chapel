@@ -1,10 +1,13 @@
 LEGION_GIT_REPO   ?= StanfordLegion/legion
 LEGION_GIT_COMMIT ?= stable
-LEGION_BLDDIR     ?= $(TOP_BUILDDIR)/legion
-LEGION_TMPDIR     ?= $(TOP_BUILDDIR)/legion-tmp
+LEGION_BLDDIR     ?= $(HARNESS_WORKDIR)/legion
+LEGION_TMPDIR     ?= $(HARNESS_WORKDIR)/legion-tmp
 LEGION_GASNET     ?= # Path to an existing installation, if any
 LEGION_CONDUIT    ?= $(NETWORK) # Default to same conduit as the enclosing harness run
 LEGION_MAKE_ARGS  ?= -j4
+
+# legacy harness support
+GASNET_BLDDIR ?= $(TOP_BUILDDIR)/gasnet
 
 HARNESS_LOGDIR    ?= .
 LOGFILE = $(HARNESS_LOGDIR)/legion.log
@@ -115,7 +118,7 @@ legion-gasnet: force
 	  rm -f "$(LEGION_GASNET_INST)";  \
 	fi
 	@echo ======== Installing GASNet at $(LEGION_GASNET_INST) ========
-	$(MAKE) install -C $(TOP_BUILDDIR)/gasnet prefix="$(LEGION_GASNET_INST)"
+	$(MAKE) install -C $(GASNET_BLDDIR) prefix="$(LEGION_GASNET_INST)"
 else
 export LEGION_GASNET_INST = $(LEGION_GASNET)
 legion-gasnet: force

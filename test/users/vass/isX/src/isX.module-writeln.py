@@ -84,8 +84,8 @@ def predShow(varname, pred):
   say("report(%s(%s), \"%s\");\n" % (pred, varname, pred))
 
 for (varname, vartype) in varList:
-  say("\n");
-  say("write(\"%s (%s)\");\n" % (vartype, varname));
+  say("\n")
+  say("write(\"%s (%s)\");\n" % (vartype, varname))
 
   for pred in predList:
     predShow(varname,           pred)

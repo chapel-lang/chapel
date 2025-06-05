@@ -1,0 +1,3 @@
+$CHPL_HOME/modules/packages/Python.chpl:nnnn: In method 'array':
+$CHPL_HOME/modules/packages/Python.chpl:nnnn: error: Rank must be specified at compile time
+  arrayErrors.chpl:145: called as (PyArray(nothing,-1)).array(type eltType = int(64))

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -17,9 +17,9 @@
  * limitations under the License.
  */
 
-/*
- The Json module provides a ``jsonSerializer`` and ``jsonDeserializer`` that
- allow for reading and writing data in the JSON format.
+/* Provides serialization in the JSON format.
+
+Intended for use with :ref:`IO support for serializers and deserializers <serialize-deserialize>`.
  */
 module JSON {
   private use IO;
@@ -1180,12 +1180,31 @@ module JSON {
      :arg loadAs: The type to deserialize the JSON string into
 
      :returns: A value of type ``loadAs``.
+
+     .. warning::
+
+       Errors thrown from this function can only be caught if ``loadAs`` is a
+       default-initializable type.
    */
   @unstable
   proc fromJson(jsonString: string, type loadAs): loadAs throws {
     var fileReader = openStringReader(jsonString,
                                       deserializer=new jsonDeserializer());
     return fileReader.read(loadAs);
+  }
+
+  @chpldoc.nodoc
+  @unstable
+  proc fromJson(jsonString: string, type loadAs): loadAs throws
+      where isDefaultInitializable(loadAs) {
+    var fileReader = openStringReader(jsonString,
+                                      deserializer=new jsonDeserializer());
+    // we want `return fileReader.read(loadAs)`. But that ends up using a
+    // non-throwing compiler-generated initializer. That prevents the user to
+    // catch errors that are due to malformed jsonString.
+    var ret: loadAs;
+    fileReader.read(ret);
+    return ret;
   }
 
   /* Given a Chapel value, serialize it into a JSON string using the

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -20,6 +20,9 @@
 #include "chpl/framework/ID.h"
 
 #include "chpl/framework/update-functions.h"
+#include "chpl/resolution/scope-types.h"
+#include "chpl/resolution/scope-queries.h"
+#include "chpl/uast/AstTag.h"
 
 #include <cstring>
 
@@ -72,24 +75,7 @@ UniqueString ID::parentSymbolPath(Context* context, UniqueString symbolPath) {
   return UniqueString::get(context, path, lastDot);
 }
 
-UniqueString ID::innermostSymbolName(Context* context, UniqueString symbolPath)
-{
-  // If the symbol path is empty, return an empty string
-  if (symbolPath.isEmpty()) {
-    return UniqueString();
-  }
-
-  // find the last '.' component from the ID but don't count \.
-  const char* path = symbolPath.c_str();
-  ssize_t lastDot = findLastDot(path);
-
-  if (lastDot != -1) {
-    // skip past the final '.'
-    path = path + lastDot + 1;
-  }
-
-
-  // now find truncate it at a '#' but don't count \#
+static ssize_t findPoundOrEnd(const char* path) {
   ssize_t end = 0;
   ssize_t i = 1;
   while (true) {
@@ -100,9 +86,65 @@ UniqueString ID::innermostSymbolName(Context* context, UniqueString symbolPath)
     }
     i++;
   }
+  return end;
+}
+
+static const char* findPathAfterLastDot(const char* path) {
+  ssize_t lastDot = findLastDot(path);
+
+  if (lastDot != -1) {
+    // skip past the final '.'
+    path = path + lastDot + 1;
+  }
+
+  return path;
+}
+
+UniqueString ID::innermostSymbolName(Context* context, UniqueString symbolPath)
+{
+  // If the symbol path is empty, return an empty string
+  if (symbolPath.isEmpty()) {
+    return UniqueString();
+  }
+
+  // find the last '.' component from the ID but don't count \.
+  const char* path = findPathAfterLastDot(symbolPath.c_str());
+
+  // now find truncate it at a '#' but don't count \#
+  ssize_t end = findPoundOrEnd(path);
 
   // compute the portion of the string before the #
   auto s = std::string(path, end);
+
+  // now unquote
+  s = unescapeStringId(s);
+
+  // now get the UniqueString
+  return UniqueString::get(context, s);
+}
+
+UniqueString ID::overloadPart(Context* context,
+                              UniqueString symbolPath)
+{
+  if (symbolPath.isEmpty()) {
+    return UniqueString();
+  }
+
+  // find the last '.' component from the ID but don't count \.
+  const char* path = findPathAfterLastDot(symbolPath.c_str());
+
+  // now find truncate it at a '#' but don't count \#
+  ssize_t end = findPoundOrEnd(path);
+
+  // advance past the pound if we aren't at the end of the string.
+  // This way, we always start at the beginning of the overload part,
+  // if there is one, and otherwise we start at the end of the string.
+  if (path[end] == '#') {
+    end++;
+  }
+
+  // compute the portion of the string after the '#'
+  auto s = std::string(path + end);
 
   // now unquote
   s = unescapeStringId(s);
@@ -126,24 +168,51 @@ ID ID::fabricateId(Context* context,
   return newId;
 }
 
+ID ID::generatedId(UniqueString symbolPath,
+                 int postOrderId,
+                 int numChildIds) {
+  int pid;
+  if (postOrderId == -1) {
+    pid = ID_GEN_START;
+  } else {
+    pid = ID_GEN_START - 1 - postOrderId;
+  }
+
+  return ID(symbolPath, pid, numChildIds);
+}
+
+
 ID ID::parentSymbolId(Context* context) const {
-  if (postOrderId_ >= 0) {
-    // Create an ID with postorder id -1 instead
-    return ID(symbolPath_, -1, 0);
+  UniqueString pathToUse;
+  if (postOrderId() >= 0) {
+    pathToUse = symbolPath_;
+  } else {
+    pathToUse = ID::parentSymbolPath(context, symbolPath_);
+    if (pathToUse.isEmpty()) {
+      // no parent symbol path so return an empty ID
+      return ID();
+    }
   }
 
-  UniqueString parentSymPath = ID::parentSymbolPath(context, symbolPath_);
-  if (parentSymPath.isEmpty()) {
-    // no parent symbol path so return an empty ID
-    return ID();
+  // Assumption: Generated uAST symbols that define a scope do not themselves
+  // contain symbols that define a scope. This means that if we see a generated
+  // scope-defining symbol, its parent must not be generated uAST.
+  if (this->isFabricatedId() &&
+      this->fabricatedIdKind() == FabricatedIdKind::Generated &&
+      !isSymbolDefiningScope()) {
+    return ID(pathToUse, ID_GEN_START, 0);
+  } else {
+    // Otherwise, construct an ID for the parent symbol
+    return ID(pathToUse, -1, 0);
   }
-
-  // Otherwise, construct an ID for the parent symbol
-  return ID(parentSymPath, -1, 0);
 }
 
 UniqueString ID::symbolName(Context* context) const {
   return ID::innermostSymbolName(context, symbolPath_);
+}
+
+UniqueString ID::overloadPart(Context* context) const {
+  return ID::overloadPart(context, symbolPath_);
 }
 
 bool ID::contains(const ID& other) const {

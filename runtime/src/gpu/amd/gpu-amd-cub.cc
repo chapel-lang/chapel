@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.  *
  * The entirety of this work is licensed under the Apache License,
@@ -21,20 +21,15 @@
 
 
 #include <hip/hip_common.h>
-#include "gpu/amd/rocm-version.h"
 
-#if ROCM_VERSION_MAJOR >= 5
-// if we include this all the time, we get unused function errors
 #include "gpu/amd/rocm-utils.h"
 #include <hipcub/hipcub.hpp>
-#endif
 
 
 #include "chpl-gpu.h"
 #include "chpl-gpu-impl.h"
 #include "gpu/chpl-gpu-reduce-util.h"
 
-#if ROCM_VERSION_MAJOR >= 5
 #define DEF_ONE_REDUCE_RET_VAL(impl_kind, chpl_kind, data_type) \
 void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
                                                     data_type* val, int* idx,\
@@ -55,14 +50,6 @@ void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
   ROCM_CALL(hipFree(result)); \
   ROCM_CALL(hipFree(temp)); \
 }
-#else
-#define DEF_ONE_REDUCE_RET_VAL(impl_kind, chpl_kind, data_type) \
-void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
-                                                    data_type* val, int* idx,\
-                                                    void* stream) {\
-  chpl_internal_error("Reduction via runtime calls is not supported with AMD GPUs using ROCm version <5\n");\
-}
-#endif // 1
 
 GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL, Sum, sum)
 GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL, Min, min)
@@ -70,7 +57,6 @@ GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL, Max, max)
 
 #undef DEF_ONE_REDUCE_RET_VAL
 
-#if ROCM_VERSION_MAJOR >= 5
 #define DEF_ONE_REDUCE_RET_VAL_IDX(impl_kind, chpl_kind, data_type) \
 void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
                                                     data_type* val, int* idx,\
@@ -93,21 +79,12 @@ void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
   ROCM_CALL(hipFree(result)); \
   ROCM_CALL(hipFree(temp)); \
 }
-#else
-#define DEF_ONE_REDUCE_RET_VAL_IDX(impl_kind, chpl_kind, data_type) \
-void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
-                                                    data_type* val, int* idx,\
-                                                    void* stream) {\
-  chpl_internal_error("Reduction via runtime calls is not supported with AMD GPUs using ROCm version <5\n");\
-}
-#endif // 1
 
 GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL_IDX, ArgMin, minloc)
 GPU_DEV_CUB_WRAP(DEF_ONE_REDUCE_RET_VAL_IDX, ArgMax, maxloc)
 
 #undef DEF_ONE_REDUCE_RET_VAL_IDX
 
-#if ROCM_VERSION_MAJOR >= 5
 #define DEF_ONE_SORT(cub_kind, chpl_kind, data_type) \
 void chpl_gpu_impl_sort_##chpl_kind##_##data_type(data_type* data_in, \
                                                   data_type* data_out, \
@@ -125,14 +102,6 @@ void chpl_gpu_impl_sort_##chpl_kind##_##data_type(data_type* data_in, \
                                  (hipStream_t)stream)); \
   ROCM_CALL(hipFree(temp)); \
 }
-#else
-#define DEF_ONE_SORT(impl_kind, chpl_kind, data_type) \
-void chpl_gpu_impl_sort_##chpl_kind##_##data_type(data_type* data_in, \
-                                                  data_type* data_out, \
-                                                  int n, void* stream) {\
-  chpl_internal_error("Sorting via runtime calls is not supported with AMD GPUs using ROCm version <5\n");\
-}
-#endif // ROCM version Check
 
 GPU_DEV_CUB_WRAP(DEF_ONE_SORT, SortKeys, keys)
 

@@ -1,1 +1,4 @@
-CHPL_COMM != gasnet
+#!/usr/bin/env python3
+
+import os
+print(os.getenv('CHPL_COMM') not in ('gasnet', 'ofi'))

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -20,6 +20,7 @@
 #include "chpl/uast/post-parse-checks.h"
 
 #include "chpl/framework/compiler-configuration.h"
+#include "chpl/framework/ErrorBase.h"
 #include "chpl/framework/global-strings.h"
 #include "chpl/framework/query-impl.h"
 #include "chpl/parsing/parser-error.h"
@@ -111,6 +112,11 @@ struct Visitor {
 
   // Checks.
   void checkForArraysOfRanges(const Array* node);
+  void checkDimension(const ArrayRow* node,
+                      const std::vector<int>& shape,
+                      size_t index);
+  void checkShapeOfArray(const Array* node);
+  void checkUnstableNDArray(const Array* node);
   void checkDomainTypeQueryUsage(const TypeQuery* node);
   void checkNoDuplicateNamedArguments(const FnCall* node);
   bool handleNestedDecoratorsInNew(const FnCall* node);
@@ -123,13 +129,11 @@ struct Visitor {
   void checkBorrowFromNew(const FnCall* node);
   void checkSparseKeyword(const FnCall* node);
   void checkSparseDomainArgCount(const FnCall* node);
-  void checkPrimCallInUserCode(const PrimCall* node);
   void checkDmappedKeyword(const OpCall* node);
   void checkNonAssociativeComparisons(const OpCall* node);
   void checkConstVarNoInit(const Variable* node);
   void checkConfigVar(const Variable* node);
   void checkExportVar(const Variable* node);
-  void checkRemoteVar(const Variable* node);
   void checkOperatorNameValidity(const Function* node);
   void checkEmptyProcedureBody(const Function* node);
   void checkExternProcedure(const Function* node);
@@ -152,7 +156,6 @@ struct Visitor {
   void checkParenfulDeprecation(const AttributeGroup* node);
   void checkExternBlockAtModuleScope(const ExternBlock* node);
   void checkLambdaDeprecated(const Function* node);
-  void checkCStringLiteral(const CStringLiteral* node);
   void checkAllowedImplementsTypeIdent(const Implements* impl, const Identifier* node);
   void checkOtherwiseAfterWhens(const Select* sel);
   void checkUnstableSerial(const Serial* ser);
@@ -162,15 +165,15 @@ struct Visitor {
   void checkImplicitModuleSameName(const Module* node);
   void checkModuleNotInModule(const Module* node);
   void checkInheritExprValid(const AstNode* node);
+  void checkIterNames(const Function* node);
+  void checkFunctionReturnsYields(const Function* node);
+  void checkForwardingInNonRecordOrClass(const ForwardingDecl* node);
+  void checkMainFunctions(const Function* node);
 
   /*
   TODO
   void checkProcedureFormalsAgainstRetType(const Function* node);
-  void checkFunctionReturnsYields(const Function* node);
-  void checkReturnHelper(const Return* node);
-  void checkYieldHelper(const Yield* node);
   void checkIncludeModuleStrictName(const Module* node);
-  void checkModuleReturnsYields(const Module* node);
   void checkPointlessUse(const Use* node);
   */
 
@@ -180,6 +183,7 @@ struct Visitor {
   void checkExportedName(const NamedDecl* node);
   void checkReservedSymbolName(const NamedDecl* node);
   void checkLinkageName(const NamedDecl* node);
+  void checkRemoteVar(const Decl* node);
 
   void checkTupleDeclFormalIntent(const TupleDecl* node);
 
@@ -198,9 +202,9 @@ struct Visitor {
   void visit(const BracketLoop* node);
   void visit(const Break* node);
   void visit(const Continue* node);
-  void visit(const CStringLiteral* node);
   void visit(const ExternBlock* node);
   void visit(const Foreach* node);
+  void visit(const ForwardingDecl* node);
   void visit(const FnCall* node);
   void visit(const Function* node);
   void visit(const FunctionSignature* node);
@@ -210,7 +214,6 @@ struct Visitor {
   void visit(const Local* node);
   void visit(const Module* node);
   void visit(const OpCall* node);
-  void visit(const PrimCall* node);
   void visit(const Return* node);
   void visit(const Select* node);
   void visit(const Serial* node);
@@ -428,7 +431,10 @@ Visitor::searchParentsForDecl(const AstNode* start, const AstNode** last,
 void Visitor::check(const AstNode* node) {
 
   // First run blanket checks over superclass node types.
-  if (auto decl = node->toDecl()) checkPrivateDecl(decl);
+  if (auto decl = node->toDecl()) {
+    checkPrivateDecl(decl);
+    checkRemoteVar(decl);
+  }
   if (auto named = node->toNamedDecl()) {
     checkUnderscoreName(named);
     checkExportedName(named);
@@ -467,6 +473,65 @@ void Visitor::checkForArraysOfRanges(const Array* node) {
          "that was your intention, add a trailing comma or recompile with "
          "'--no-warn-array-of-range' to avoid this warning; if it wasn't, "
          "you may want to use a range instead");
+  }
+}
+
+void Visitor::checkDimension(const ArrayRow* row,
+                             const std::vector<int>& shape, size_t index) {
+  if (row->numExprs() != shape[index]) {
+    error(row, "expected %d elements in this row, but found %d",
+          shape[index], row->numExprs());
+  }
+  if (index + 1 < shape.size()) {
+    for (size_t i = 0; i < (size_t)row->numExprs(); i++) {
+      if (!row->expr(i)->isArrayRow()) {
+        error(row->expr(i), "missing a row of elements");
+        return;
+      }
+      checkDimension(row->expr(i)->toArrayRow(), shape, index + 1);
+    }
+  }
+}
+
+void Visitor::checkShapeOfArray(const Array* node) {
+  if (node->numExprs() == 0) {
+    return;
+  }
+  // if the first child of the array is not an ArrayRow, its just a 1D array
+  if (!node->expr(0)->isArrayRow()) {
+    return;
+  }
+
+  // determine the shape of the array
+  std::vector<int> shape;
+  shape.push_back(node->numExprs()); // first dimension
+
+  const AstNode* cur = node->expr(0);
+  while (cur->isArrayRow()) {
+    auto row = cur->toArrayRow();
+    shape.push_back(row->numExprs());
+    cur = row->expr(0);
+  }
+
+  // check the dimensions of the array
+  // no need to check the first dimension, we assume it to be correct
+  for (size_t i = 0; i < (size_t)node->numExprs(); i++) {
+    if (!node->expr(i)->isArrayRow()) {
+      error(node->expr(i), "missing a row of elements");
+      return;
+    }
+    checkDimension(node->expr(i)->toArrayRow(), shape, 1);
+  }
+
+}
+
+void Visitor::checkUnstableNDArray(const Array* node) {
+  if (shouldEmitUnstableWarning(node)) {
+    // all we need to check is if the array has an ArrayRow
+    if (node->numExprs() > 0 && node->expr(0)->isArrayRow()) {
+      warn(node, "multi-dimensional array literals are unstable"
+                 " while the syntax is finalized");
+    }
   }
 }
 
@@ -684,6 +749,7 @@ void Visitor::checkExplicitDeinitCalls(const FnCall* node) {
   if (auto foundFn = searchParents(asttags::Function, nullptr)) {
     auto fn = foundFn->toFunction();
     if (fn->name() == "chpl__delete") return;
+    if (fn->name() == "chpl__deleteWithAllocator") return;
   }
 
   error(node, "explicit calls to deinit() are not allowed.");
@@ -749,25 +815,16 @@ void Visitor::checkSparseKeyword(const FnCall* node) {
 
 void Visitor::checkSparseDomainArgCount(const FnCall* node) {
   if (isCallWithName(node, USTR("sparse"))) {
-    if (node->numActuals() == 1)
-      if (auto childCall = node->actual(0)->toFnCall())
-        if (isCallWithName(childCall, USTR("subdomain")))
-          if (childCall->numActuals() != 1)
-            error(childCall, "the 'sparse subdomain' expression expects exactly one argument (the parent domain)");
-  }
-}
+    // At the time of writing, the grammar only allows this nesting structure.
+    // Do not do anything else.
 
-// TODO: remove this check and warning after 2.0?
-void Visitor::checkPrimCallInUserCode(const PrimCall* node) {
-  // suppress this warning from chpldoc
-  if (isUserCode())
-    if ((node->prim() == PrimitiveTag::PRIM_CHPL_COMM_GET ||
-         node->prim() == PrimitiveTag::PRIM_CHPL_COMM_PUT) &&
-        context_->configuration().toolName != "chpldoc")
-          warn(node, "the primitives 'chpl_comm_get' and 'chpl_comm_put',"
-               " have changed behavior in Chapel 1.32. Please use"
-               " the 'Communication' module's 'get' and 'put' procedures"
-               " as replacements for calling the primitives directly");
+    CHPL_ASSERT(node->numActuals() == 1);
+    auto childCall = node->actual(0)->toFnCall();
+    CHPL_ASSERT(childCall);
+    CHPL_ASSERT(isCallWithName(childCall, USTR("subdomain")));
+    if (childCall->numActuals() != 1)
+      error(childCall, "the 'sparse subdomain' expression expects exactly one argument (the parent domain)");
+  }
 }
 
 void Visitor::checkDmappedKeyword(const OpCall* node) {
@@ -792,7 +849,7 @@ static void collectEqualPrecedenceOpsWithoutParens(Context* context,
     if (auto childOp = child->toOpCall()) {
       if (childOp->numActuals() == 2 && binOpPrecedence(childOp->op()) == prec) {
         // The child only counts as a 'problem' if it's not parenthesized.
-        if (parsing::locateExprParenthWithAst(context, childOp).line() == -1) {
+        if (parsing::locateExprParenWithAst(context, childOp).line() == -1) {
           collectEqualPrecedenceOpsWithoutParens(context, childOp, prec, ops, operands);
           return;
         }
@@ -902,7 +959,7 @@ void Visitor::checkExportVar(const Variable* node) {
   }
 }
 
-void Visitor::checkRemoteVar(const Variable* node) {
+void Visitor::checkRemoteVar(const Decl* node) {
   // These checks only apply to remote variables.
   if (!node->destination()) return;
 
@@ -912,12 +969,28 @@ void Visitor::checkRemoteVar(const Variable* node) {
     }
   }
 
-  if (node->kind() != Variable::VAR && node->kind() != Variable::CONST) {
-    error(node, "unsupported intent for remote variable.");
+  optional<uast::Variable::Kind> kind;
+  bool isField = false;
+  if (auto var = node->toVariable()) {
+    kind = var->kind();
+    isField = var->isField();
+  } else if (auto multivar = node->toMultiDecl()) {
+    for (auto child : multivar->decls()) {
+      if (auto var = child->toVariable()) {
+        kind = var->kind();
+        isField = var->isField();
+      } else {
+        error(child, "only (multi)variable declarations can target a specific locale.");
+      }
+    }
   }
 
-  if (!node->initExpression() && !node->typeExpression()) {
-    error(node, "remote variables must have an initializer or type expression.");
+  if (isField) {
+    error(node, "fields cannot be declared as remote variables");
+  }
+
+  if (kind && kind != Variable::VAR && kind != Variable::CONST) {
+    error(node, "unsupported intent for remote variable.");
   }
 }
 
@@ -926,6 +999,10 @@ void Visitor::checkOperatorNameValidity(const Function* node) {
     // operators must have valid operator names
     if (!isOpName(node->name())) {
       error(node, "'%s' is not a legal operator name.", node->name().c_str());
+    }
+    if ((node->name() == USTR("&&=") || node->name() == USTR("||=")) &&
+        isUserCode()) {
+      error(node, "'%s' operator may not be overloaded.", node->name().c_str());
     }
   } else {
     // functions with operator names must be declared as operators
@@ -1385,7 +1462,6 @@ static bool isNameReservedType(UniqueString name) {
       name == USTR("bytes")     ||
       name == USTR("string")    ||
       name == USTR("sync")      ||
-      name == USTR("single")    ||
       name == USTR("owned")     ||
       name == USTR("shared")    ||
       name == USTR("borrowed")  ||
@@ -1538,6 +1614,8 @@ void Visitor::visit(const AggregateDecl* node) {
 
 void Visitor::visit(const Array* node) {
   checkForArraysOfRanges(node);
+  checkShapeOfArray(node);
+  checkUnstableNDArray(node);
 }
 
 void Visitor::visit(const BracketLoop* node) {
@@ -1598,19 +1676,22 @@ void Visitor::checkAttributeNameRecognizedOrToolSpaced(const Attribute* node) {
   } else if (node->name() == USTR("deprecated") ||
              node->name() == USTR("unstable") ||
              node->name() == USTR("stable") ||
+             node->name() == USTR("edition") ||
              node->name() == USTR("functionStatic") ||
              node->name() == USTR("assertOnGpu") ||
+             node->name() == USTR("gpu.assertEligible") ||
              node->name() == USTR("gpu.blockSize") ||
+             node->name() == USTR("gpu.itersPerThread") ||
              node->name().startsWith(USTR("chpldoc.")) ||
+             node->name().startsWith(USTR("chplcheck.")) ||
              node->name().startsWith(USTR("llvm."))) {
     // TODO: should we match chpldoc.nodoc or anything toolspaced with chpldoc.?
     return;
   } else if (node->fullyQualifiedAttributeName().find('.') == std::string::npos) {
     // we don't recognize the top-level attribute that we found (no toolspace)
     error(node, "Unknown top-level attribute '%s'", node->name().c_str());
-  } else {
+  } else if (isFlagSet(CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS)) {
     // Check for other possible tool name given from command line
-    bool doWarn = isFlagSet(CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS);
     auto toolNames = chpl::parsing::AttributeToolNames(this->context_);
     for (auto toolName : toolNames) {
       auto nameDot = UniqueString::getConcat(this->context_, toolName.c_str(), ".");
@@ -1619,9 +1700,11 @@ void Visitor::checkAttributeNameRecognizedOrToolSpaced(const Attribute* node) {
         return;
       }
     }
-    if (doWarn) {
-      auto pos = node->fullyQualifiedAttributeName().find_last_of('.');
-      auto toolName = node->fullyQualifiedAttributeName().substr(0, pos);
+    auto pos = node->fullyQualifiedAttributeName().find_last_of('.');
+    auto toolName = node->fullyQualifiedAttributeName().substr(0, pos);
+    if (toolName == "gpu") {
+      warn(node, "Unknown gpu attribute '%s'", node->name().c_str());
+    } else {
       warn(node, "Unknown attribute tool name '%s'", toolName.c_str());
     }
   }
@@ -1632,18 +1715,16 @@ void Visitor::checkAttributeAppliedToCorrectNode(const Attribute* attr) {
   auto attributeGroup = parents_[parents_.size() - 1];
   CHPL_ASSERT(attributeGroup->isAttributeGroup());
   auto node = parents_[parents_.size() - 2];
-  if (attr->name() == USTR("assertOnGpu") || attr->name() == USTR("gpu.blockSize")) {
+  if (attr->name() == USTR("assertOnGpu") ||
+      attr->name() == USTR("gpu.blockSize") ||
+      attr->name() == USTR("gpu.itersPerThread") ||
+      attr->name() == USTR("gpu.assertEligible")) {
     if (node->isForall() || node->isForeach()) return;
     if (auto var = node->toVariable()) {
        if (!var->isField()) return;
     }
+    CHPL_REPORT(context_, InvalidGpuAttribute, node, attr);
 
-    if (attr->name() == USTR("assertOnGpu")) {
-      CHPL_REPORT(context_, InvalidGpuAssertion, node, attr);
-    } else {
-      CHPL_ASSERT(attr->name() == USTR("gpu.blockSize"));
-      CHPL_REPORT(context_, InvalidBlockSize, node, attr);
-    }
   } else if (attr->name() == USTR("functionStatic")) {
     if (!node->isVariable()) {
       error(node, "the '@functionStatic' attribute can only be applied to variables.");
@@ -1697,10 +1778,6 @@ void Visitor::visit(const FnCall* node) {
 
 }
 
-void Visitor::visit(const PrimCall* node) {
-  checkPrimCallInUserCode(node);
-}
-
 void Visitor::visit(const OpCall* node) {
   checkDmappedKeyword(node);
   checkNonAssociativeComparisons(node);
@@ -1711,7 +1788,6 @@ void Visitor::visit(const Variable* node) {
   checkConstVarNoInit(node);
   checkConfigVar(node);
   checkExportVar(node);
-  checkRemoteVar(node);
 }
 
 void Visitor::visit(const TypeQuery* node) {
@@ -1731,6 +1807,9 @@ void Visitor::visit(const Function* node) {
   checkLambdaReturnIntent(node);
   checkConstReturnIntent(node);
   checkProcDefFormalsAreNamed(node);
+  checkIterNames(node);
+  checkFunctionReturnsYields(node);
+  checkMainFunctions(node);
 }
 
 void Visitor::visit(const FunctionSignature* node) {
@@ -1743,6 +1822,10 @@ void Visitor::visit(const Union* node) {
 
 void Visitor::visit(const Foreach* node) {
   warnUnstableForeachLoops(node);
+}
+
+void Visitor::visit(const ForwardingDecl* node) {
+  checkForwardingInNonRecordOrClass(node);
 }
 
 void Visitor::visit(const Use* node) {
@@ -1927,6 +2010,107 @@ void Visitor::checkInheritExprValid(const AstNode* node) {
   }
 }
 
+void Visitor::checkIterNames(const Function* node) {
+  if (node->kind() == Function::ITER && node->isMethod()) {
+    auto name = node->name();
+
+    if (name == USTR("init")) {
+      error(node,
+            "iterators can't be initializers, please rename this iterator");
+    } else if (name == USTR("deinit")) {
+      error(node,
+            "iterators can't be deinitializers, please rename this iterator");
+    } else if (name == USTR("init=")) {
+      error(node,
+            "iterators can't be copy initializers, please rename this iterator");
+    } else if (chpl::parsing::isSpecialMethodName(name)) {
+      error(node,
+            "iterators can't be the '%s' method, please rename this iterator",
+            name.c_str());
+    }
+  }
+  return;
+}
+
+struct CountReturns {
+  const Function* symbol = nullptr;
+  int nReturnSomething = 0;
+  int nReturnEmpty = 0;
+  const Return* firstReturnSomething = nullptr;
+  const Return* firstReturnEmpty = nullptr;
+
+  CountReturns(const Function* symbol)
+    : symbol(symbol) {
+  }
+
+  bool enter(const Function* fn) {
+    if (fn != symbol) {
+      // don't visit nested functions here
+      return false;
+    }
+    return true;
+  }
+  void exit(const Function* fn) { }
+
+  bool enter(const Return* node) {
+    if (node->value() != nullptr) {
+      nReturnSomething++;
+      if (firstReturnSomething == nullptr) {
+        firstReturnSomething = node;
+      }
+    } else {
+      nReturnEmpty++;
+      if (firstReturnEmpty == nullptr) {
+        firstReturnEmpty = node;
+      }
+    }
+    return true;
+  }
+  void exit(const Return* node) { }
+
+  bool enter(const AstNode* node) { return true; }
+  void exit(const AstNode* node) { }
+};
+
+void Visitor::checkFunctionReturnsYields(const Function* node) {
+  auto counter = CountReturns(node);
+  node->traverse(counter);
+
+  if (counter.nReturnSomething > 0 && counter.nReturnEmpty > 0) {
+    CHPL_REPORT(context_, InvalidReturns,
+                counter.firstReturnSomething, counter.firstReturnEmpty);
+  }
+}
+
+void Visitor::checkForwardingInNonRecordOrClass(const ForwardingDecl* node) {
+  auto parent = parents_.back();
+  bool validParent = false;
+  if (parent) {
+    if (auto ad = parent->toAggregateDecl()) {
+      validParent = !ad->isUnion();
+    }
+  }
+
+  if (!validParent) {
+    context_->error(node, "forwarding declarations are only allowed in records and classes");
+  }
+}
+
+void Visitor::checkMainFunctions(const Function* fn) {
+  if (fn->name() == USTR("main") &&
+      fn->kind() == Function::PROC &&
+      !fn->isMethod()) {
+    const AstNode* p = parent();
+    if (p != nullptr && !p->isModule()) {
+      error(fn, "'proc main' must be defined at module scope");
+    }
+    if (fn->returnIntent() == Function::PARAM ||
+        fn->returnIntent() == Function::TYPE) {
+      error(fn, "'proc main' cannot return a 'type' or 'param'");
+    }
+  }
+}
+
 void Visitor::visit(const Module* node){
   checkImplicitModuleSameName(node);
   checkModuleNotInModule(node);
@@ -1961,18 +2145,9 @@ void Visitor::checkExternBlockAtModuleScope(const ExternBlock* node) {
   }
 }
 
-void Visitor::checkCStringLiteral(const CStringLiteral* node) {
-  warn(node, "the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst(\"string\")' or 'string.c_str()' from the 'CTypes' module instead");
-}
-
 void Visitor::visit(const ExternBlock* node) {
   checkExternBlockAtModuleScope(node);
 }
-
-void Visitor::visit(const CStringLiteral* node) {
-  checkCStringLiteral(node);
-}
-
 
 } // end anonymous namespace
 
@@ -1983,17 +2158,14 @@ namespace uast {
 // in practice the relevant result is an error/warning being generated
 static
 const bool& checkBuilderResultQuery(Context* context, UniqueString path,
-                                    const BuilderResult* builderResult) {
-  QUERY_BEGIN(checkBuilderResultQuery, context, path, builderResult);
+                                    const AstNode* topLevelExpr) {
+  QUERY_BEGIN(checkBuilderResultQuery, context, path, topLevelExpr);
 
   bool warnUnstable = parsing::shouldWarnUnstableForPath(context, path);
   bool isUserCode  = !parsing::filePathIsInBundledModule(context, path);
   auto v = Visitor(context, warnUnstable, isUserCode);
 
-  for (auto ast : builderResult->topLevelExpressions()) {
-    if (ast->isComment()) continue;
-    v.check(ast);
-  }
+  v.check(topLevelExpr);
 
   bool result = false;
   return QUERY_END(result);
@@ -2001,7 +2173,12 @@ const bool& checkBuilderResultQuery(Context* context, UniqueString path,
 
 void checkBuilderResult(Context* context, UniqueString path,
                         const BuilderResult& builderResult) {
-  checkBuilderResultQuery(context, path, &builderResult);
+  // note: const BuilderResult& should not be used as a query argument,
+  // since it might not change even if the contents change
+  for (auto ast : builderResult.topLevelExpressions()) {
+    if (ast->isComment()) continue;
+    checkBuilderResultQuery(context, path, ast);
+  }
 }
 
 

@@ -1,1 +1,4 @@
-error-void-nonvoid-returns-types-1.chpl:2: error: Not all returns in this function return a value
+error-void-nonvoid-returns-types-1.chpl:2: In function 'p11f':
+error-void-nonvoid-returns-types-1.chpl:3: error: Invalid mix of 'return' statements
+error-void-nonvoid-returns-types-1.chpl:3: note: this statement does not return anything
+error-void-nonvoid-returns-types-1.chpl:3: note: this statement returns something

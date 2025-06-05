@@ -1,0 +1,3 @@
+assertOnNotGpuEligible.chpl:32: error: Loop is marked with @gpu.assertEligible but is not eligible for execution on a GPU
+assertOnNotGpuEligible.chpl:23: note: function is marked as not eligible for GPU execution
+assertOnNotGpuEligible.chpl:33: note:   reached via call to 'funcMarkedNotGpuizable' in loop body here

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -352,21 +352,29 @@ static void test35() {
 //   testHelper(&ctx, program, ComplexType::get(&ctx, 0), ComplexParam::get(&ctx, Param::ComplexDouble(1.1, 2.2)));
 // }
 
-// TODO: enum to int cast
-// static void test37() {
-//   printf("test37\n");
-//   Context ctx;
-//   std::string program = "enum E { A=0, B, C } param x = E.A : int; ";
-//   testHelper(&ctx, program, IntType::get(&ctx, 0), IntParam::get(&ctx, 0));
-// }
+static void test37() {
+  printf("test37\n");
+  Context ctx;
+  std::string program = "enum E { A=0, B, C } param x = E.A : int; ";
+  testHelper(&ctx, program, IntType::get(&ctx, 0), IntParam::get(&ctx, 0));
+}
 
-// TODO: int to enum cast
-// static void test38() {
-//   printf("test38\n");
-//   Context ctx;
-//   std::string program = "enum E { A=0, B, C } param x = 0 : E; ";
-//   testHelper(&ctx, program, EnumType::get(&ctx, 0), EnumParam::get(&ctx, 0));
-// }
+static void test38() {
+  printf("test38\n");
+  Context ctx;
+  std::string program = "enum E { A=0, B, C } param x = 0 : E; ";
+
+  auto enumId = ID(UniqueString::get(&ctx, "input.E"), -1, 0);
+  auto eltId = ID(enumId.symbolPath(), 1, 1);
+
+  // invoking 'EnumType::get' prior to resolving a program causes problems,
+  // so don't use the helper in order to defer constructing the EnumType.
+  QualifiedType qt = resolveQualifiedTypeOfX(&ctx, program);
+
+  assert(qt.hasTypePtr());
+  assert(qt.type() == EnumType::get(&ctx, enumId, UniqueString::get(&ctx, "E")));
+  assert(qt.param() == EnumParam::get(&ctx, {eltId, "A"}));
+}
 
 
 // enum to nothing cast (error)
@@ -453,6 +461,133 @@ static void test44() {
                       ErroneousType::get(context), nullptr);
 }
 
+static void test45() {
+  printf("test45\n");
+  auto config = getConfigWithHome();
+  Context ctx(config);
+  Context* context = &ctx;
+
+  // Non-nilable
+  {
+    context->advanceToNextRevision(false);
+    setupModuleSearchPaths(context, false, false, {}, {});
+
+    std::string program =
+      R"""(
+      class Foo { }
+
+      var f = new owned Foo();
+      var b : borrowed Foo = f.borrow();
+      var x = b:unmanaged;
+
+      var y = x:borrowed;
+      )""";
+
+    auto types = resolveTypesOfVariables(context, program, {"x", "y"});
+
+    auto xInit = types["x"];
+    assert(xInit.type());
+    auto ct = xInit.type()->toClassType();
+    assert(ct);
+    assert(ct->decorator().isUnmanaged());
+    assert(!ct->decorator().isUnknownNilability());
+    assert(ct->decorator().isNonNilable());
+
+    auto yt = types["y"].type()->toClassType();
+    assert(yt->decorator().isBorrowed());
+    assert(!yt->decorator().isUnknownNilability());
+    assert(yt->decorator().isNonNilable());
+  }
+
+  // Nilable
+  {
+    context->advanceToNextRevision(false);
+    setupModuleSearchPaths(context, false, false, {}, {});
+
+    std::string program =
+      R"""(
+      class Foo { }
+
+      var f = new owned Foo();
+      var b : borrowed Foo? = f.borrow();
+      var x = b:unmanaged;
+
+      var y = x:borrowed;
+      )""";
+
+    auto types = resolveTypesOfVariables(context, program, {"x", "y"});
+
+    auto xInit = types["x"];
+    assert(xInit.type());
+    auto ct = xInit.type()->toClassType();
+    assert(ct);
+    assert(ct->decorator().isUnmanaged());
+    assert(!ct->decorator().isUnknownNilability());
+    assert(ct->decorator().isNilable());
+
+    auto yt = types["y"].type()->toClassType();
+    assert(yt->decorator().isBorrowed());
+    assert(!yt->decorator().isUnknownNilability());
+    assert(yt->decorator().isNilable());
+  }
+}
+
+static void test46() {
+  printf("test46\n");
+
+  // Param
+  {
+    Context* context = buildStdContext();
+    std::string program =
+      R"""(
+      param a = "asdf";
+      param x = a:string;
+      )""";
+
+    auto xInit = resolveTypeOfXInit(context, program);
+    assert(xInit.type());
+    ensureParamString(xInit, "asdf");
+  }
+
+  // Non-param
+  {
+    Context* context = buildStdContext();
+    std::string program =
+      R"""(
+      var a = "asdf";
+      var x = a:string;
+      )""";
+
+    auto xInit = resolveTypeOfXInit(context, program);
+    assert(xInit.type());
+    assert(!xInit.isParam());
+    assert(xInit.type()->isStringType());
+  }
+}
+
+static void test47() {
+  printf("test47\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto testBorrow = [context](std::string buildC, bool expectNilable) {
+    context->advanceToNextRevision(false);
+    ErrorGuard guard(context);
+
+    auto fullProg = "class C{}\n" + buildC + "\nvar x = c.borrow();";
+    auto xInit = resolveTypeOfXInit(context, fullProg);
+    assert(xInit.type());
+    assert(xInit.type()->isClassType());
+    assert(xInit.type()->toClassType()->decorator().isBorrowed());
+    assert(xInit.type()->toClassType()->decorator().isNilable() == expectNilable);
+  };
+
+  testBorrow("var cu = new unmanaged C();\n var c = cu : borrowed;", false);
+  testBorrow("var cu = new unmanaged C?();\n var c = cu : borrowed;", true);
+  testBorrow("var c = new unmanaged C();", false);
+  testBorrow("var c = new unmanaged C?();", true);
+}
+
 int main() {
   test1();
   test2();
@@ -490,14 +625,17 @@ int main() {
   test34();
   test35();
   // test36();
-  // test37();
-  // test38();
+  test37();
+  test38();
   test39();
   test40();
   test41();
   test42();
   test43();
   test44();
+  test45();
+  test46();
+  test47();
 
   return 0;
 }

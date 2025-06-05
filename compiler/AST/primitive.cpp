@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -176,6 +176,11 @@ returnInfoFirst(CallExpr* call) {
 }
 
 static QualifiedType
+returnInfoSecond(CallExpr* call) {
+  return call->get(2)->qualType();
+}
+
+static QualifiedType
 returnInfoFirstAsValue(CallExpr* call) {
   return QualifiedType(Qualifier::QUAL_CONST_VAL, call->get(1)->qualType().type());
 }
@@ -257,6 +262,26 @@ returnInfoCast(CallExpr* call) {
   }
   INT_ASSERT(!isReferenceType(t1));
   return QualifiedType(t1, QUAL_VAL);
+}
+
+static QualifiedType
+returnInfoForProcTypeConverter(CallExpr* call) {
+  Type* t = call->get(1)->typeInfo();
+  int64_t mask = 0;
+
+  // Get the second arg as a 'param int' if it exists.
+  auto arg2 = call->numActuals() >= 2 ? call->get(2) : nullptr;
+  bool got = get_int(arg2, &mask);
+  INT_ASSERT(got || !arg2);
+
+  Type* typeToUse = dtUnknown;
+  if (auto ft1 = toFunctionType(t)) {
+    bool maskConflicts = false;
+    typeToUse = ft1->getWithMask(mask, maskConflicts);
+    std::ignore = maskConflicts;
+  }
+
+  return QualifiedType(typeToUse, QUAL_VAL);
 }
 
 static QualifiedType
@@ -774,6 +799,9 @@ initPrimitive() {
   // if the optional type is provided, it should match PRIM_INIT_VAR_SPLIT_DECL.
   prim_def(PRIM_INIT_VAR_SPLIT_INIT, "init var split init",   returnInfoVoid);
 
+  prim_def(PRIM_SPLIT_INIT_UPDATE_TYPE, "split init update type",
+           returnInfoVoid);
+
   prim_def(PRIM_INIT_REF_DECL, "init ref decl", returnInfoVoid);
 
   // indicates the body of the initializer is now in Phase 2
@@ -835,6 +863,8 @@ initPrimitive() {
   prim_def(PRIM_AND_ASSIGN, "&=", returnInfoVoid, true);
   prim_def(PRIM_OR_ASSIGN, "|=", returnInfoVoid, true);
   prim_def(PRIM_XOR_ASSIGN, "^=", returnInfoVoid, true);
+  prim_def(PRIM_LOGICALAND_ASSIGN, "&&=", returnInfoVoid, true);
+  prim_def(PRIM_LOGICALOR_ASSIGN, "||=", returnInfoVoid, true);
   prim_def(PRIM_REDUCE_ASSIGN, "reduce=", returnInfoVoid, true);
 
   prim_def(PRIM_MIN, "_min", returnInfoFirst);
@@ -871,6 +901,7 @@ initPrimitive() {
 
   // new keyword
   prim_def(PRIM_NEW, "new", returnInfoFirst);
+  prim_def(PRIM_NEW_WITH_ALLOCATOR, "new with allocator", returnInfoSecond);
   // given a complex value, produce a reference to the real component
   prim_def(PRIM_GET_REAL, "complex_get_real", returnInfoComplexField);
   // given a complex value, produce a reference to the imag component
@@ -891,6 +922,7 @@ initPrimitive() {
   // local block primitives
   // assert that a wide ref is on this locale
   prim_def(PRIM_LOCAL_CHECK, "local_check", returnInfoVoid, true, true);
+  prim_def(PRIM_IS_LOCAL, "is_local", returnInfoBool, true, false);
 
   // get/set end count for 'begin' -
   // manipulates task-local storage
@@ -964,8 +996,13 @@ initPrimitive() {
   // for that loop launches.
   prim_def(PRIM_GPU_SET_BLOCKSIZE, "gpu set blockSize", returnInfoVoid, true);
 
+  // If embedded inside a gpuizable loop, perform this many loop iterations
+  // within a single thread of the kernel.
+  prim_def(PRIM_GPU_SET_ITERS_PER_THREAD, "gpu set itersPerThread", returnInfoVoid, true);
+
   // Generates call that produces runtime error when not run by a GPU
   prim_def(PRIM_ASSERT_ON_GPU, "chpl_assert_on_gpu", returnInfoVoid, true, true);
+  prim_def(PRIM_ASSERT_GPU_ELIGIBLE, "assert gpu eligible", returnInfoVoid, true, true);
   prim_def(PRIM_GPU_ELIGIBLE, "gpu eligible", returnInfoVoid, true, true);
   prim_def(PRIM_GPU_REDUCE_WRAPPER, "gpu reduce wrapper", returnInfoVoid, true);
 
@@ -1171,7 +1208,8 @@ initPrimitive() {
   prim_def(PRIM_STRING_COPY, "string_copy", returnInfoStringC, false, true);
   // Cast the object argument to void*.
   prim_def(PRIM_CAST_TO_VOID_STAR, "cast_to_void_star", returnInfoCVoidPtr, true, false);
-  // Cast to the second argument at codegen time.
+  // Cast to the second argument. The conversion is done at codegen time.
+  // In most cases the cast is effectively a bitcast/'reinterpret_cast'.
   prim_def(PRIM_CAST_TO_TYPE, "cast_to_type", returnInfoSecondActualTypeSymbol, true, false);
   prim_def(PRIM_STRING_SELECT, "string_select", returnInfoStringC, true, true);
   prim_def(PRIM_SLEEP, "sleep", returnInfoVoid, true);
@@ -1181,6 +1219,7 @@ initPrimitive() {
 
   prim_def(PRIM_RT_ERROR, "chpl_error", returnInfoVoid, true, true);
   prim_def(PRIM_RT_WARNING, "chpl_warning", returnInfoVoid, true, true);
+  prim_def(PRIM_RT_GPU_HALT, "chpl_gpu_halt", returnInfoVoid, true, true);
 
   prim_def(PRIM_NEW_PRIV_CLASS, "chpl_newPrivatizedClass", returnInfoVoid);
 
@@ -1217,7 +1256,8 @@ initPrimitive() {
   prim_def(PRIM_IS_NILABLE_CLASS_TYPE, "is nilable class type", returnInfoBool);
   prim_def(PRIM_IS_NON_NILABLE_CLASS_TYPE, "is non nilable class type", returnInfoBool);
   prim_def(PRIM_IS_RECORD_TYPE, "is record type", returnInfoBool);
-  prim_def(PRIM_IS_FCF_TYPE, "is fcf type", returnInfoBool);
+  prim_def(PRIM_IS_PROC_TYPE, "is proc type", returnInfoBool);
+  prim_def(PRIM_TO_PROC_TYPE, "to proc type", returnInfoForProcTypeConverter);
   prim_def(PRIM_IS_UNION_TYPE, "is union type", returnInfoBool);
   prim_def(PRIM_IS_EXTERN_UNION_TYPE, "is extern union type", returnInfoBool);
   prim_def(PRIM_IS_ATOMIC_TYPE, "is atomic type", returnInfoBool);
@@ -1352,7 +1392,7 @@ initPrimitive() {
   prim_def(PRIM_REAL32_AS_UINT32, "real32 as uint32", returnInfoUInt32);
   prim_def(PRIM_REAL64_AS_UINT64, "real64 as uint64", returnInfoUInt64);
 
-  prim_def(PRIM_BREAKPOINT, "breakpoint", returnInfoVoid, true);
+  prim_def(PRIM_DEBUG_TRAP, "debug trap", returnInfoVoid, true);
 
   // Expects a single argument, which will be passed by pointer to an underlying
   // runtime function, so that the memory can be hashed.

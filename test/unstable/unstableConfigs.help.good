@@ -1,6 +1,6 @@
 unstableConfigs.chpl:XX: warning: Hey it's unstable!
 Built-in config vars:
-  defaultHashTableResizeThreshold: real(64)
                        numLocales: int(64) (configured to 1)
+  defaultHashTableResizeThreshold: real(64)
 unstableConfigs config vars:
                      myUserConfig: int(64)

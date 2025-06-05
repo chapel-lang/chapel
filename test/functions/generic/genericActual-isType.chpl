@@ -1,13 +1,13 @@
 // a test that eventually calls `isType` should not have warnings about `(?)`
 // from https://github.com/chapel-lang/chapel/issues/25492
-use Sort only DefaultComparator, ReverseComparator;
+use Sort only defaultComparator, reverseComparator;
 config param copyinit = false;
 
 record heap {
     type eltType;
-    type comparator = DefaultComparator; 
+    type comparator = defaultComparator;
 
-    proc init(type eltType, type comparator=DefaultComparator) {
+    proc init(type eltType, type comparator=defaultComparator) {
       this.eltType = eltType;
       this.comparator = comparator;
     }
@@ -19,6 +19,6 @@ record heap {
 }
 
 var h1;
-h1 = new heap(int, ReverseComparator(?));
+h1 = new heap(int, reverseComparator(?));
 writeln(h1.type:string);
 writeln(h1);

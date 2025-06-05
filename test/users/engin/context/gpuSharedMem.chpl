@@ -12,8 +12,8 @@ config const n = 20;
 on here.gpus[0] {
   var A : [0..<N] uint;
 
+  @assertOnGpu
   foreach i in simpleOneDim(N) {  // context should be coming from a new syntax
-    assertOnGpu();
     const context = new Context();
     const vectorContext = __primitive("outer context", context);
 

@@ -1,5 +1,5 @@
 #
-# Copyright 2024-2024 Hewlett Packard Enterprise Development LP
+# Copyright 2024-2025 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -16,6 +16,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
+"""
+=============
+LSP Utilities
+=============
+
+This module contains utility functions for working with Chapel compiler types
+and the Language Server Protocol.
+"""
 
 from lsprotocol.types import Position, Range, Diagnostic, DiagnosticSeverity
 

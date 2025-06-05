@@ -1,4 +1,4 @@
 $CHPL_HOME/modules/packages/SortedSet.chpl:nnnn: In method 'kth':
 $CHPL_HOME/modules/packages/SortedSet.chpl:nnnn: error: kth is not available on types that can't be 
                       default-initialized, here: shared Foo
-  noDefaultValue.chpl:30: called as (sortedSet(shared Foo,false,DefaultComparator)).kth(k: int(64))
+  noDefaultValue.chpl:30: called as (sortedSet(shared Foo,false,defaultComparator)).kth(k: int(64))

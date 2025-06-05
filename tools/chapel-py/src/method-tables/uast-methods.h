@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2023-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -66,6 +66,8 @@ CLASS_BEGIN(AstNode)
                std::optional<ScopeObject*>,
 
                return ScopeObject::tryCreate(contextObject, resolution::scopeForId(context, node->id())))
+  PLAIN_GETTER(AstNode, creates_scope, "Returns true if this AST node creates a scope",
+               bool, return chpl::resolution::createsScope(node->tag()))
   PLAIN_GETTER(AstNode, type, "Get the type of this AST node, as a 3-tuple of (kind, type, param).",
                std::optional<QualifiedTypeTuple>,
 
@@ -91,7 +93,9 @@ CLASS_BEGIN(AstNode)
          std::optional<ResolvedExpressionObject*>(TypedSignatureObject*),
 
          auto sigObj = std::get<0>(args);
-         auto resolvedFn = resolution::resolveFunction(context, sigObj->value_.signature, sigObj->value_.poiScope);
+         // TODO: Might need to do frame rewinding here.
+         resolution::ResolutionContext rcval(context);
+         auto resolvedFn = resolution::resolveFunction(&rcval, sigObj->value_.signature, sigObj->value_.poiScope);
          if (!resolvedFn) return {};
 
          auto r = resolvedFn->byAstOrNull(node);
@@ -104,9 +108,9 @@ CLASS_BEGIN(AstNode)
                std::optional<chpl::Location>,
                auto loc = chpl::parsing::locateCurlyBracesWithAst(context, node);
                return getValidLocation(loc))
-  PLAIN_GETTER(AstNode, parenth_location, "Get the Location of the parentheses of this AstNode node",
+  PLAIN_GETTER(AstNode, paren_location, "Get the Location of the parentheses of this AstNode node",
                std::optional<chpl::Location>,
-               auto loc = chpl::parsing::locateExprParenthWithAst(context, node);
+               auto loc = chpl::parsing::locateExprParenWithAst(context, node);
                return getValidLocation(loc))
 CLASS_END(AstNode)
 
@@ -341,6 +345,10 @@ CLASS_END(Use)
 CLASS_BEGIN(VisibilityClause)
   PLAIN_GETTER(VisibilityClause, symbol, "Get the symbol referenced by this VisibilityClause node",
                const chpl::uast::AstNode*, return node->symbol())
+  PLAIN_GETTER(VisibilityClause, limitation_kind, "Get the limitation kind of this VisibilityClause node",
+               const char*, return VisibilityClause::limitationKindToString(node->limitationKind()))
+  PLAIN_GETTER(VisibilityClause, limitations, "Get the limitations of this VisibilityClause node",
+               IterAdapterBase*, return mkIterPair(node->limitations()))
 CLASS_END(VisibilityClause)
 
 CLASS_BEGIN(WithClause)

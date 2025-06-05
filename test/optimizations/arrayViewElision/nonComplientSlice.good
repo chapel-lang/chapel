@@ -1,0 +1,8 @@
+ArrayViewElision not supported nonComplientSlice.chpl:12
+	lhsBaseType: [BlockDom(1,int(64),one,unmanaged DefaultDist)] int(64)
+	lhsIndexingExprs: 
+		BlockDom(1,int(64),one,unmanaged DefaultDist)
+	rhsBaseType: 
+	rhsIndexingExprs: 
+
+0 1 1 1 1 1 1 1 1 0

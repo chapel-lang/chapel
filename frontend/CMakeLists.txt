@@ -1,4 +1,4 @@
-# Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2025 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -37,7 +37,7 @@ if (NOT DEFINED CHPL_HOST_BUNDLED_COMPILE_ARGS)
   set(CHPL_HOST_BUNDLED_COMPILE_ARGS CACHE STRING "Override LLVM=bundled compile args")
 endif()
 if (NOT DEFINED CHPL_HOST_SYSTEM_COMPILE_ARGS)
-  set(CHPL_HOST_SYSTEM_COMPILE_ARGS CACHE STRING "Overide LLVM=system compile args")
+  set(CHPL_HOST_SYSTEM_COMPILE_ARGS CACHE STRING "Override LLVM=system compile args")
 endif()
 if (NOT DEFINED CHPL_HOST_BUNDLED_LINK_ARGS)
   set(CHPL_HOST_BUNDLED_LINK_ARGS CACHE STRING "Override LLVM=bundled link args")
@@ -66,6 +66,16 @@ endif()
 
 # Don't pass through jemalloc for the time being.
 string(REPLACE "-ljemalloc" "" CHPL_LLVM_LINK_ARGS "${CHPL_LLVM_LINK_ARGS}")
+string(STRIP "${CHPL_LLVM_LINK_ARGS}" CHPL_LLVM_LINK_ARGS)
+
+if (CHPL_HOST_MEM STREQUAL "mimalloc")
+if (APPLE)
+    # filter mimalloc out of CHPL_LLVM_LINK_ARGS
+    # this is a hack to avoid linking mimalloc twice
+    string(REPLACE "-lmimalloc" "" CHPL_LLVM_LINK_ARGS "${CHPL_LLVM_LINK_ARGS}")
+    string(STRIP "${CHPL_LLVM_LINK_ARGS}" CHPL_LLVM_LINK_ARGS)
+endif()
+endif()
 
 
 set(CHPL_MAIN_SRC_DIR     ${CMAKE_CURRENT_SOURCE_DIR})

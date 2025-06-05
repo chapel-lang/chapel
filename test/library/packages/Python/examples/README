@@ -1,0 +1,5 @@
+Many of these tests use python dependencies from pip.
+To facilitate running these tests with those dependencies in a custom virtual
+environment, these tests respect the `CHPL_TEST_VENV_DIR` environment variable.
+If this variable exists in the environment and is set to a valid virtual
+environment directory, these tests will use that to find dependencies

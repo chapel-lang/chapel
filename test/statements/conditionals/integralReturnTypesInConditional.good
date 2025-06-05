@@ -1,0 +1,4 @@
+# any assertion failure should be looked into. The assertions will need to be
+# adjusted in the .precomp script if/when #26991 is resolved. A good result should
+# look like all or most of the existing assertions for testExpressionZero
+# and testProcCastZero failing

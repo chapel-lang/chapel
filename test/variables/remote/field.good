@@ -1,0 +1,2 @@
+field.chpl:2: error: fields cannot be declared as remote variables
+field.chpl:3: error: fields cannot be declared as remote variables

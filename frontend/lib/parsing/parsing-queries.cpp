@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -26,6 +26,7 @@
 #include "chpl/libraries/LibraryFile.h"
 #include "chpl/parsing/Parser.h"
 #include "chpl/resolution/scope-queries.h" // for moduleInitializationOrder
+#include "chpl/resolution/resolution-queries.h"
 #include "chpl/types/RecordType.h"
 #include "chpl/uast/AggregateDecl.h"
 #include "chpl/uast/AstNode.h"
@@ -194,17 +195,35 @@ introspectParsedFiles(Context* context) {
 
 // parses whatever file exists that contains the passed ID and returns it
 const BuilderResult*
-parseFileContainingIdToBuilderResult(Context* context, ID id) {
-  UniqueString path;
-  UniqueString parentSymbolPath;
-  bool found = context->filePathForId(id, path, parentSymbolPath);
-  if (found) {
-    const BuilderResult& p = parseFileToBuilderResult(context, path,
-                                                      parentSymbolPath);
-    return &p;
-  }
+parseFileContainingIdToBuilderResult(Context* context,
+                                     ID id,
+                                     UniqueString* setParentSymbolPath) {
+  if (id.isFabricatedId() &&
+      id.fabricatedIdKind() == ID::FabricatedIdKind::Generated) {
+    // Symbol path for the type from which this ID was generated
+    auto symbolPath = ID::parentSymbolPath(context, id.symbolPath());
+    auto symbolName = id.symbolName(context);
+    auto overloadPart = id.overloadPart(context);
 
-  return nullptr;
+    const BuilderResult* br = resolution::builderResultForDefaultFunction(context, symbolPath, symbolName, overloadPart);
+    if (br != nullptr) {
+      if (setParentSymbolPath) *setParentSymbolPath = symbolPath;
+    }
+
+    return br;
+  } else  {
+    UniqueString path;
+    UniqueString parentSymbolPath;
+    bool found = context->filePathForId(id, path, parentSymbolPath);
+    if (found) {
+      const BuilderResult& p = parseFileToBuilderResult(context, path,
+                                                        parentSymbolPath);
+      if (setParentSymbolPath) *setParentSymbolPath = parentSymbolPath;
+      return &p;
+    }
+
+    return nullptr;
+  }
 }
 
 void countTokens(Context* context, UniqueString path, ParserStats* parseStats) {
@@ -333,23 +352,50 @@ struct FindMain {
         !fn->isMethod()) {
       mainProcsFound.push_back(fn);
     }
-    return true;
+    // no need to consider nested functions or
+    // modules nested within functions
+    return false;
   }
   void exit(const Function* fn) { }
 
   bool enter(const Module* mod) {
     modulesFound.push_back(mod);
-    return true;
+    return true; // to look for submodules or main functions
   }
   void exit(const Module* mod) { }
 
-  // traverse through anything else
   bool enter(const AstNode* ast) {
-    return true;
+    return false;
   }
   void exit(const AstNode* ast) { }
 };
 
+static const ID& findProcMainInModuleImpl(Context* context, ID modId) {
+  QUERY_BEGIN(findProcMainInModuleImpl, context, modId);
+
+  ID result;
+
+  auto findMain = FindMain(context);
+  if (const AstNode* ast = idToAst(context, modId)) {
+    if (auto mod = ast->toModule()) {
+      mod->traverse(findMain);
+    }
+  }
+
+  if (findMain.mainProcsFound.size() > 0) {
+    result = findMain.mainProcsFound[0]->id();
+  }
+
+  return QUERY_END(result);
+}
+
+ID findProcMainInModule(Context* context, ID modId) {
+  if (modId.isEmpty()) {
+    return ID();
+  }
+
+  return findProcMainInModuleImpl(context, modId);
+}
 
 static const ID& findMainModuleImpl(Context* context,
                                     std::vector<ID> commandLineModules,
@@ -607,6 +653,7 @@ addCommandLineFileDirectories(std::vector<std::string>& searchPath,
 void setupModuleSearchPaths(
                   Context* context,
                   const std::string& chplHome,
+                  const std::string& moduleRoot,
                   bool minimalModules,
                   const std::string& chplLocaleModel,
                   bool enableTaskTracking,
@@ -623,10 +670,13 @@ void setupModuleSearchPaths(
       "setupModuleSearchPaths should be called before any queries are run");
 
   std::string modRoot;
-  if (!minimalModules) {
+  if (moduleRoot.empty()) {
     modRoot = chplHome + "/modules";
   } else {
-    modRoot = chplHome + "/modules/minimal";
+    modRoot = moduleRoot;
+  }
+  if (minimalModules) {
+    modRoot += "/minimal";
   }
 
   std::string internal = modRoot + "/internal";
@@ -711,6 +761,7 @@ void setupModuleSearchPaths(
 
 
 void setupModuleSearchPaths(Context* context,
+                            const std::string& moduleRoot,
                             bool minimalModules,
                             bool enableTaskTracking,
                             const std::vector<std::string>& cmdLinePaths,
@@ -725,7 +776,8 @@ void setupModuleSearchPaths(Context* context,
   auto chplModulePath = (it != chplEnv->end()) ? it->second : "";
   setupModuleSearchPaths(context,
                          chplHomeStr,
-                         false,
+                         moduleRoot,
+                         minimalModules,
                          chplEnv->at("CHPL_LOCALE_MODEL"),
                          false,
                          chplEnv->at("CHPL_TASKS"),
@@ -736,6 +788,15 @@ void setupModuleSearchPaths(Context* context,
                          {},  // prependStandardModulePaths
                          cmdLinePaths,
                          inputFilenames);
+}
+
+void setupModuleSearchPaths(Context* context,
+                            bool minimalModules,
+                            bool enableTaskTracking,
+                            const std::vector<std::string>& cmdLinePaths,
+                            const std::vector<std::string>& inputFilenames) {
+  setupModuleSearchPaths(context, "", minimalModules, enableTaskTracking,
+                                      cmdLinePaths, inputFilenames);
 }
 
 bool
@@ -1067,9 +1128,9 @@ const Module* getToplevelModule(Context* context, UniqueString name) {
   return getToplevelModuleQuery(context, name);
 }
 
-ID getSymbolFromTopLevelModule(Context* context,
-                               const char* modName,
-                               const char* symName) {
+ID getSymbolIdFromTopLevelModule(Context* context,
+                                 const char* modName,
+                                 const char* symName) {
   std::ignore = getToplevelModule(context, UniqueString::get(context, modName));
 
   // Performance: this has to concatenate the two strings at runtime.
@@ -1083,6 +1144,13 @@ ID getSymbolFromTopLevelModule(Context* context,
   fullPath += symName;
 
   return ID(UniqueString::get(context, fullPath));
+}
+
+IdAndName getSymbolFromTopLevelModule(Context* context,
+                               const char* modName,
+                               const char* symName) {
+  return {getSymbolIdFromTopLevelModule(context, modName, symName),
+          UniqueString::get(context, symName)};
 }
 
 static const Module* const&
@@ -1205,14 +1273,11 @@ static const AstTag& idToTagQuery(Context* context, ID id) {
 
   AstTag result = asttags::AST_TAG_UNKNOWN;
 
-  if (!id.isFabricatedId()) {
+  if (!id.isFabricatedId() ||
+      id.fabricatedIdKind() == ID::FabricatedIdKind::Generated) {
     const AstNode* ast = astForIdQuery(context, id);
     if (ast != nullptr) {
       result = ast->tag();
-    } else if (types::CompositeType::isMissingBundledRecordType(context, id)) {
-      result = asttags::Record;
-    } else if (types::CompositeType::isMissingBundledClassType(context, id)) {
-      result = asttags::Class;
     }
   }
 
@@ -1224,13 +1289,49 @@ AstTag idToTag(Context* context, ID id) {
 }
 
 bool idIsModule(Context* context, ID id) {
-  if (id.postOrderId() >= 0) {
-    // it can't possibly be a module if it's got a positive post-order ID
-    // since all modules have post-order ID -1
+  if (!id.isSymbolDefiningScope()) {
+    // it can't possibly be a module if it doesn't define a scope
     return false;
   }
   AstTag tag = idToTag(context, id);
   return asttags::isModule(tag);
+}
+
+static const bool& idIsModuleScopeVarQuery(Context* context, ID id) {
+  QUERY_BEGIN(idIsModuleScopeVarQuery, context, id);
+
+  bool result = false;
+
+  AstTag tag = idToTag(context, id);
+  if (asttags::isVariable(tag)) {
+    result = true;
+    for (ID p = idToParentId(context, id);
+         !p.isEmpty();
+         p = idToParentId(context, p)) {
+      tag = idToTag(context, p);
+      if (asttags::isModule(tag)) {
+        break; // exit, result is true
+      } else if (asttags::isTupleDecl(tag) || asttags::isMultiDecl(tag)) {
+        // these are OK and still declare a top-level variable
+      } else {
+        result = false;
+        break;
+      }
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+uast::Decl::Linkage idToDeclLinkage(Context* context, ID id) {
+  auto ast = id ? parsing::idToAst(context, id) : nullptr;
+  auto decl = ast ? ast->toDecl() : nullptr;
+  auto ret = decl ? decl->linkage() : uast::Decl::DEFAULT_LINKAGE;
+  return ret;
+}
+
+bool idIsModuleScopeVar(Context* context, ID id) {
+  return idIsModuleScopeVarQuery(context, id);
 }
 
 static const bool& idIsParenlessFunctionQuery(Context* context, ID id) {
@@ -1255,24 +1356,51 @@ bool idIsParenlessFunction(Context* context, ID id) {
   return idIsFunction(context, id) && idIsParenlessFunctionQuery(context, id);
 }
 
-bool idIsNestedFunction(Context* context, ID id) {
-  if (id.isEmpty() || !idIsFunction(context, id)) return false;
-  if (auto up = id.parentSymbolId(context)) {
-    return idIsFunction(context, up);
+static bool const& idIsNestedFunctionQuery(Context* context, ID id) {
+  QUERY_BEGIN(idIsNestedFunctionQuery, context, id);
+
+  bool result = false;
+  if (id.isEmpty() || !idIsFunction(context, id)) {
+    result = false;
+  } else {
+    for (auto up = id.parentSymbolId(context); up;
+              up = up.parentSymbolId(context)) {
+      if (idIsFunction(context, up) || idIsInterface(context, up)) {
+        result = true;
+        break;
+      }
+    }
   }
-  return false;
+
+  return QUERY_END(result);
+}
+
+bool idIsNestedFunction(Context* context, ID id) {
+  return idIsNestedFunctionQuery(context, id);
+}
+
+template <typename Predicate>
+bool idIsSymbolDefiningScope(Context* context, ID id, Predicate&& predicate) {
+  if (!id.isSymbolDefiningScope()) {
+    return false;
+  }
+
+  AstTag tag = idToTag(context, id);
+  return predicate(tag);
 }
 
 bool idIsFunction(Context* context, ID id) {
   // Functions always have their own ID symbol scope,
   // and if it's not a function, we can return false
   // without doing further work.
-  if (id.postOrderId() != -1) {
-    return false;
-  }
+  return idIsSymbolDefiningScope(context, id, asttags::isFunction);
+}
 
-  AstTag tag = idToTag(context, id);
-  return asttags::isFunction(tag);
+bool idIsInterface(Context* context, ID id) {
+  // Interfaces always have their own ID symbol scope,
+  // and if it's not an interface, we can return false
+  // without doing further work.
+  return idIsSymbolDefiningScope(context, id, asttags::isInterface);
 }
 
 static bool
@@ -1369,7 +1497,17 @@ UniqueString fieldIdToName(Context* context, ID id) {
 
 bool idIsField(Context* context, ID id) {
   UniqueString name = fieldIdToName(context, id);
-  return !name.isEmpty();
+  if (!name.isEmpty()) return true;
+
+  // Multi-decls don't have names but their elements can be fields
+  if (idToTag(context, id) == asttags::MultiDecl) {
+    auto md = parsing::idToAst(context, id)->toMultiDecl();
+    for (auto decl : md->decls()) {
+      if (idIsField(context, decl->id())) return true;
+    }
+  }
+
+  return false;
 }
 
 const ID& idToParentId(Context* context, ID id) {
@@ -1379,14 +1517,47 @@ const ID& idToParentId(Context* context, ID id) {
   // set this query as an alternative to computing maps
   // in Builder::Result and then redundantly setting them here?
 
+  // Performance: Could this query use id.parentSymbolId in many cases?
+
   ID result;
 
-  const BuilderResult* r = parseFileContainingIdToBuilderResult(context, id);
+  UniqueString parentSymbolPath;
+  const BuilderResult* r =
+    parseFileContainingIdToBuilderResult(context, id, &parentSymbolPath);
+
   if (r != nullptr) {
     result = r->idToParentId(id);
+    // For a submodule in a separate file, the BuilderResult's idToParentId
+    // will return an empty ID for the submodule.
+    // Detect that and return the parent module in that case.
+    if (result.isEmpty() && !parentSymbolPath.isEmpty()) {
+      ID parentSymbolId = id.parentSymbolId(context);
+      CHPL_ASSERT(!parentSymbolId.isEmpty());
+      CHPL_ASSERT(parentSymbolId.symbolPath() == parentSymbolPath);
+      result = parentSymbolId;
+    }
   }
 
   return QUERY_END(result);
+}
+
+template <typename Predicate>
+ID idToParentSymbolId(Context* context, ID id, Predicate&& predicate) {
+  if (id.isEmpty()) return {};
+  for (auto up = id; up; up = up.parentSymbolId(context)) {
+    if (up == id) continue;
+    // Get the first matching symbol
+    if (predicate(context, up)) return up;
+  }
+  return {};
+}
+
+ID idToParentFunctionId(Context* context, ID id) {
+  return idToParentSymbolId(context, id, parsing::idIsFunction);
+}
+
+ID idToParentInterfaceId(Context* context, ID id) {
+  return idToParentSymbolId(context, id, parsing::idIsInterface);
 }
 
 const uast::AstNode* parentAst(Context* context, const uast::AstNode* node) {
@@ -1484,13 +1655,6 @@ idToContainingMultiDeclIdQuery(Context* context, ID id) {
   QUERY_BEGIN(idToContainingMultiDeclIdQuery, context, id);
 
   ID cur = id;
-  AstTag tagForId = idToTag(context, id);
-  // TODO: do we really need this assert? In which cases do we arrive here unexpectedly?
-  CHPL_ASSERT(isVariable(tagForId)  ||
-              isMultiDecl(tagForId) ||
-              isTupleDecl(tagForId) ||
-              isForwardingDecl(tagForId));
-
   while (true) {
     ID parent = idToParentId(context, cur);
     AstTag parentTag = idToTag(context, parent);
@@ -1562,29 +1726,34 @@ bool idContainsFieldWithName(Context* context, ID typeDeclId, UniqueString field
   return idContainsFieldWithNameQuery(context, typeDeclId, fieldName);
 }
 
-static bool helpFindFieldId(const AstNode* ast,
-                            UniqueString fieldName,
-                            ID& fieldId) {
+bool findFieldIdInDeclaration(const AstNode* ast,
+                              UniqueString fieldName,
+                              ID& outFieldId) {
   if (auto var = ast->toVarLikeDecl()) {
     if (var->name() == fieldName) {
-      fieldId = var->id();
+      outFieldId = var->id();
       return true;
     }
   } else if (auto mult = ast->toMultiDecl()) {
     for (auto decl : mult->decls()) {
-      bool found = helpFindFieldId(decl, fieldName, fieldId);
+      bool found = findFieldIdInDeclaration(decl, fieldName, outFieldId);
       if (found) {
         return true;
       }
     }
   } else if (auto tup = ast->toTupleDecl()) {
     for (auto decl : tup->decls()) {
-      bool found = helpFindFieldId(decl, fieldName, fieldId);
+      bool found = findFieldIdInDeclaration(decl, fieldName, outFieldId);
       if (found) {
         return true;
       }
     }
+  } else if (auto fwd = ast->toForwardingDecl()) {
+    if (auto fwdVar = fwd->expr()->toVariable()) {
+      return findFieldIdInDeclaration(fwdVar, fieldName, outFieldId);
+    }
   }
+  outFieldId = ID();
   return false;
 }
 
@@ -1598,11 +1767,12 @@ fieldIdWithNameQuery(Context* context, ID typeDeclId, UniqueString fieldName) {
     auto ad = ast->toAggregateDecl();
 
     for (auto child: ad->children()) {
-      // Ignore everything other than VarLikeDecl, MultiDecl, TupleDecl
+      // Ignore everything other than VarLikeDecl, MultiDecl, TupleDecl, ForwardingDecl
       if (child->isVarLikeDecl() ||
           child->isMultiDecl() ||
-          child->isTupleDecl()) {
-        bool found = helpFindFieldId(child, fieldName, result);
+          child->isTupleDecl() ||
+          child->isForwardingDecl()) {
+        bool found = findFieldIdInDeclaration(child, fieldName, result);
         if (found) {
           break;
         }
@@ -1994,6 +2164,28 @@ Module::Kind idToModuleKind(Context* context, ID id) {
   return getModuleKindQuery(context, modID);
 }
 
+bool isSpecialMethodName(UniqueString name) {
+  if (name == USTR("init") || name == USTR("deinit") || name == USTR("init=") ||
+      name == USTR("postinit") || name == USTR("enterContext") ||
+      name == USTR("exitContext") || name == USTR("serialize") ||
+      name == USTR("deserialize") || name == USTR("hash")) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool isCallToClassManager(const uast::FnCall* call) {
+  if (auto ident = call->calledExpression()->toIdentifier()) {
+    auto name = ident->name();
+    return name == USTR("owned") || name == USTR("_owned") ||
+           name == USTR("shared") || name == USTR("_shared") ||
+           name == USTR("unmanaged") ||
+           name == USTR("borrowed");
+  }
+
+  return false;
+}
 
 } // end namespace parsing
 } // end namespace chpl

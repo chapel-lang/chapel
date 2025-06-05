@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -498,6 +498,22 @@ module ChapelDistribution {
       return false;
     }
 
+    proc dsiSupportsOffsetAutoLocalAccess() param {
+      return false;
+    }
+
+    proc dsiAutoLocalAccessOffsetCheck(offsets) {
+      return false;
+    }
+
+    proc dsiSupportsArrayViewElision() param {
+      return false;
+    }
+
+    proc dsiSupportsShortArrayTransfer() param {
+      return false;
+    }
+
     proc dsiIteratorYieldsLocalElements() param {
       return false;
     }
@@ -618,6 +634,11 @@ module ChapelDistribution {
           nnzDom = {0..#_newNNZDomSize};
         }
       }
+    }
+
+    /* make the domain "just the right size" */
+    inline proc _fit(size: int) {
+      nnzDom = {0..<size};
     }
 
     // This method assumes nnz is updated according to the size

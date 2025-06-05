@@ -8,10 +8,8 @@ var f = infile.reader(deserializer = new chplDeserializer(), locking=false);
 
 f.readf("%?", A);
 writeln(A);
-try {
-  f.readf("%?", B);
-} catch e {
-  writeln("Caught: ", e);
-}
 
-stdin.withDeserializer(chplDeserializer).readf("%?", B);
+writeln("======");
+
+f.readf("%?", B);
+writeln(B);

@@ -47,6 +47,7 @@ Options:
 
   [misc]
   --ignore-errors  Continue processing even if an error occurs
+   --verify        Run verification tests on the current Chapel configuration
 """
 
 from collections import namedtuple
@@ -58,6 +59,7 @@ import unittest
 from sys import stdout, path
 
 from chplenv import *
+import chplenv_verify
 
 ChapelEnv = namedtuple('ChapelEnv', ['name', 'content', 'shortname'])
 
@@ -101,15 +103,17 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_TARGET_BACKEND_CPU', INTERNAL),
     ChapelEnv('CHPL_LOCALE_MODEL', RUNTIME | LAUNCHER | DEFAULT, 'loc'),
     ChapelEnv('  CHPL_GPU', RUNTIME | DEFAULT, 'gpu'),
+    ChapelEnv('  CHPL_GPU_SDK_VERSION', RUNTIME, 'gpu_vers'),
     ChapelEnv('  CHPL_GPU_ARCH', INTERNAL),
-    ChapelEnv('  CHPL_GPU_MEM_STRATEGY', RUNTIME , 'gpu_mem' ),
+    ChapelEnv('  CHPL_GPU_MEM_STRATEGY', RUNTIME , 'gpu_mem'),
     ChapelEnv('  CHPL_CUDA_PATH', INTERNAL),
     ChapelEnv('  CHPL_ROCM_PATH', INTERNAL),
     ChapelEnv('  CHPL_CUDA_LIBDEVICE_PATH', INTERNAL),
+    ChapelEnv('  CHPL_ROCM_LLVM_PATH', INTERNAL),
+    ChapelEnv('  CHPL_ROCM_AMDGCN_PATH', INTERNAL),
     ChapelEnv('CHPL_COMM', RUNTIME | LAUNCHER | DEFAULT, 'comm'),
     ChapelEnv('  CHPL_COMM_SUBSTRATE', RUNTIME | LAUNCHER | DEFAULT),
     ChapelEnv('  CHPL_GASNET_SEGMENT', RUNTIME | LAUNCHER | DEFAULT),
-    ChapelEnv('  CHPL_GASNET_VERSION', RUNTIME | LAUNCHER),
     ChapelEnv('  CHPL_LIBFABRIC', RUNTIME | INTERNAL | DEFAULT),
     ChapelEnv('  CHPL_COMM_OFI_OOB', RUNTIME | INTERNAL | DEFAULT),
     ChapelEnv('CHPL_TASKS', RUNTIME | LAUNCHER | DEFAULT, 'tasks'),
@@ -117,16 +121,19 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_TIMERS', RUNTIME | LAUNCHER | DEFAULT, 'tmr'),
     ChapelEnv('CHPL_UNWIND', RUNTIME | LAUNCHER | DEFAULT, 'unwind'),
     ChapelEnv('CHPL_HOST_MEM', COMPILER, 'hostmem'),
-    ChapelEnv('  CHPL_HOST_JEMALLOC', RUNTIME | NOPATH, 'hostjemalloc'),
-    ChapelEnv('CHPL_MEM', RUNTIME | LAUNCHER | DEFAULT, 'mem'),
-    ChapelEnv('CHPL_TARGET_MEM', INTERNAL, 'mem'),
+    ChapelEnv('  CHPL_HOST_JEMALLOC', COMPILER | NOPATH, 'hostjemalloc'),
+    ChapelEnv('  CHPL_HOST_MIMALLOC', COMPILER | NOPATH, 'hostmimalloc'),
+    ChapelEnv('CHPL_MEM', INTERNAL, 'mem'), # deprecated and will be removed
+    ChapelEnv('CHPL_TARGET_MEM', RUNTIME | LAUNCHER | DEFAULT, 'mem'),
     ChapelEnv('  CHPL_TARGET_JEMALLOC', RUNTIME | NOPATH, 'tgtjemalloc'),
+    ChapelEnv('  CHPL_TARGET_MIMALLOC', RUNTIME | NOPATH, 'tgtmimalloc'),
     ChapelEnv('CHPL_MAKE', INTERNAL, 'make'),
     ChapelEnv('CHPL_ATOMICS', RUNTIME | LAUNCHER | DEFAULT, 'atomics'),
     ChapelEnv('  CHPL_NETWORK_ATOMICS', INTERNAL | DEFAULT),
     ChapelEnv('CHPL_GMP', INTERNAL | DEFAULT, 'gmp'),
     ChapelEnv('  CHPL_GMP_IS_OVERRIDDEN', INTERNAL),
     ChapelEnv('CHPL_HWLOC', RUNTIME | DEFAULT, 'hwloc'),
+    ChapelEnv('  CHPL_HWLOC_PCI', RUNTIME | INTERNAL, 'pci'),
     ChapelEnv('CHPL_RE2', RUNTIME | DEFAULT, 're2'),
     ChapelEnv('  CHPL_RE2_IS_OVERRIDDEN', INTERNAL),
     ChapelEnv('CHPL_LLVM', COMPILER | DEFAULT, 'llvm'),
@@ -136,6 +143,7 @@ CHPL_ENVS = [
     ChapelEnv('  CHPL_LLVM_CLANG_C', INTERNAL),
     ChapelEnv('  CHPL_LLVM_CLANG_CXX', INTERNAL),
     ChapelEnv('  CHPL_LLVM_STATIC_DYNAMIC', INTERNAL),
+    ChapelEnv('  CHPL_LLVM_BIN_DIR', INTERNAL),
     ChapelEnv('  CHPL_LLVM_TARGET_CPU', INTERNAL),
     ChapelEnv('CHPL_AUX_FILESYS', RUNTIME | DEFAULT, 'fs'),
     ChapelEnv('CHPL_LIB_PIC', RUNTIME | LAUNCHER, 'lib_pic'),
@@ -153,6 +161,8 @@ CHPL_ENVS = [
     ChapelEnv('  CHPL_HWLOC_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_HOST_JEMALLOC_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_TARGET_JEMALLOC_UNIQ_CFG_PATH', INTERNAL),
+    ChapelEnv('  CHPL_HOST_MIMALLOC_UNIQ_CFG_PATH', INTERNAL),
+    ChapelEnv('  CHPL_TARGET_MIMALLOC_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_LIBFABRIC_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_LIBUNWIND_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_QTHREAD_UNIQ_CFG_PATH', INTERNAL),
@@ -201,12 +211,14 @@ def compute_all_values():
 
     ENV_VALS['CHPL_LOCALE_MODEL'] = chpl_locale_model.get()
     ENV_VALS['  CHPL_GPU'] = chpl_gpu.get()
+    ENV_VALS['  CHPL_GPU_SDK_VERSION'] = chpl_gpu.get_sdk_version()
     ENV_VALS['  CHPL_CUDA_LIBDEVICE_PATH'] = chpl_gpu.get_cuda_libdevice_path()
+    ENV_VALS['  CHPL_ROCM_LLVM_PATH'] = chpl_gpu.get_rocm_llvm_path()
+    ENV_VALS['  CHPL_ROCM_AMDGCN_PATH'] = chpl_gpu.get_rocm_amdgcn_path()
     ENV_VALS['  CHPL_GPU_MEM_STRATEGY'] = chpl_gpu.get_gpu_mem_strategy()
     ENV_VALS['CHPL_COMM'] = chpl_comm.get()
     ENV_VALS['  CHPL_COMM_SUBSTRATE'] = chpl_comm_substrate.get()
     ENV_VALS['  CHPL_GASNET_SEGMENT'] = chpl_comm_segment.get()
-    ENV_VALS['  CHPL_GASNET_VERSION'] = chpl_gasnet.get_version()
     ENV_VALS['  CHPL_LIBFABRIC'] = chpl_libfabric.get()
     ENV_VALS['  CHPL_COMM_OFI_OOB'] = chpl_comm_ofi_oob.get()
     ENV_VALS['CHPL_TASKS'] = chpl_tasks.get()
@@ -214,15 +226,18 @@ def compute_all_values():
     ENV_VALS['CHPL_TIMERS'] = chpl_timers.get()
     ENV_VALS['CHPL_UNWIND'] = chpl_unwind.get()
     ENV_VALS['CHPL_HOST_MEM'] = chpl_mem.get('host')
-    ENV_VALS['CHPL_MEM'] = chpl_mem.get('target')
+    ENV_VALS['CHPL_TARGET_MEM'] = chpl_mem.get('target')
     ENV_VALS['  CHPL_HOST_JEMALLOC'] = chpl_jemalloc.get('host')
     ENV_VALS['  CHPL_TARGET_JEMALLOC'] = chpl_jemalloc.get('target')
+    ENV_VALS['  CHPL_HOST_MIMALLOC'] = chpl_mimalloc.get('host')
+    ENV_VALS['  CHPL_TARGET_MIMALLOC'] = chpl_mimalloc.get('target')
     ENV_VALS['CHPL_MAKE'] = chpl_make.get()
     ENV_VALS['CHPL_ATOMICS'] = chpl_atomics.get()
     ENV_VALS['  CHPL_NETWORK_ATOMICS'] = chpl_atomics.get('network')
     ENV_VALS['CHPL_GMP'] = chpl_gmp.get()
     ENV_VALS['  CHPL_GMP_IS_OVERRIDDEN'] = chpl_gmp.is_overridden()
     ENV_VALS['CHPL_HWLOC'] = chpl_hwloc.get()
+    ENV_VALS['  CHPL_HWLOC_PCI'] = chpl_hwloc_pci.get()
     ENV_VALS['CHPL_RE2'] = chpl_re2.get()
     ENV_VALS['  CHPL_RE2_IS_OVERRIDDEN'] = chpl_re2.is_overridden()
     ENV_VALS['CHPL_LLVM'] = chpl_llvm.get()
@@ -234,6 +249,7 @@ def compute_all_values():
     ENV_VALS['  CHPL_LLVM_CLANG_C'] = " ".join(llvm_clang_c)
     ENV_VALS['  CHPL_LLVM_CLANG_CXX'] = " ".join(llvm_clang_cxx)
     ENV_VALS['  CHPL_LLVM_STATIC_DYNAMIC'] = chpl_llvm.get_static_dynamic()
+    ENV_VALS['  CHPL_LLVM_BIN_DIR'] = chpl_llvm.get_llvm_config_bindir()
     aux_filesys = chpl_aux_filesys.get()
     ENV_VALS['CHPL_AUX_FILESYS'] = '_'.join(sorted(aux_filesys.split(' ')))
     ENV_VALS['CHPL_LIB_PIC'] = chpl_lib_pic.get()
@@ -260,7 +276,7 @@ def compute_internal_values():
     ENV_VALS['CHPL_TARGET_BACKEND_CPU'] = backend_info.cpu
     ENV_VALS['  CHPL_LLVM_TARGET_CPU'] = chpl_cpu.get_llvm_target_cpu().cpu
 
-    ENV_VALS['CHPL_TARGET_MEM'] = chpl_mem.get('target')
+    ENV_VALS['CHPL_MEM'] = chpl_mem.get('target')
     ENV_VALS['CHPL_RUNTIME_SUBDIR'] = printchplenv(set(['runtime']), print_format='path').rstrip('\n')
     ENV_VALS['CHPL_LAUNCHER_SUBDIR'] = printchplenv(set(['launcher']), print_format='path').rstrip('\n')
     ENV_VALS['CHPL_COMPILER_SUBDIR'] = printchplenv(set(['compiler']), print_format='path').rstrip('\n')
@@ -282,6 +298,8 @@ def compute_internal_values():
 
     ENV_VALS['  CHPL_HOST_JEMALLOC_UNIQ_CFG_PATH'] = chpl_jemalloc.get_uniq_cfg_path('host')
     ENV_VALS['  CHPL_TARGET_JEMALLOC_UNIQ_CFG_PATH'] = chpl_jemalloc.get_uniq_cfg_path('target')
+    ENV_VALS['  CHPL_HOST_MIMALLOC_UNIQ_CFG_PATH'] = chpl_mimalloc.get_uniq_cfg_path('host')
+    ENV_VALS['  CHPL_TARGET_MIMALLOC_UNIQ_CFG_PATH'] = chpl_mimalloc.get_uniq_cfg_path('target')
     ENV_VALS['  CHPL_LIBFABRIC_UNIQ_CFG_PATH'] = chpl_libfabric.get_uniq_cfg_path()
     ENV_VALS['  CHPL_LIBUNWIND_UNIQ_CFG_PATH'] = chpl_unwind.get_uniq_cfg_path()
 
@@ -314,6 +332,7 @@ def compute_internal_values():
     ENV_VALS['  CHPL_ROCM_PATH'] = chpl_gpu.get_sdk_path("amd")
 
 
+
 """Return non-empty string if var is set via environment or chplconfig"""
 def user_set(env):
     env_stripped = env.strip()
@@ -341,13 +360,12 @@ def filter_tidy(chpl_env):
     locale = ENV_VALS['CHPL_LOCALE_MODEL']
     gpu = ENV_VALS['  CHPL_GPU']
     host_mem = ENV_VALS['CHPL_HOST_MEM']
-    tgt_mem = ENV_VALS['CHPL_MEM']
+    tgt_mem = ENV_VALS['CHPL_TARGET_MEM']
+    hwloc = ENV_VALS['CHPL_HWLOC']
 
     if chpl_env.name == '  CHPL_COMM_SUBSTRATE':
         return comm == 'gasnet'
     elif chpl_env.name == '  CHPL_GASNET_SEGMENT':
-        return comm == 'gasnet'
-    elif chpl_env.name == '  CHPL_GASNET_VERSION':
         return comm == 'gasnet'
     elif chpl_env.name == '  CHPL_LIBFABRIC':
         return comm == 'ofi'
@@ -363,14 +381,26 @@ def filter_tidy(chpl_env):
         return gpu == 'nvidia'
     elif chpl_env.name == '  CHPL_CUDA_LIBDEVICE_PATH':
         return gpu == 'nvidia'
+    elif chpl_env.name == '  CHPL_ROCM_LLVM_PATH':
+        return gpu == 'amd'
+    elif chpl_env.name == '  CHPL_ROCM_AMDGCN_PATH':
+        return gpu == 'amd'
     elif chpl_env.name == '  CHPL_ROCM_PATH':
         return gpu == 'amd'
     elif chpl_env.name == '  CHPL_GPU_ARCH':
         return gpu == 'nvidia' or gpu == 'amd'
+    elif chpl_env.name == '  CHPL_GPU_SDK_VERSION':
+        return gpu != 'none'
     elif chpl_env.name == '  CHPL_HOST_JEMALLOC':
         return host_mem == 'jemalloc'
     elif chpl_env.name == '  CHPL_TARGET_JEMALLOC':
         return tgt_mem == 'jemalloc'
+    elif chpl_env.name == '  CHPL_HOST_MIMALLOC':
+        return host_mem == 'mimalloc'
+    elif chpl_env.name == '  CHPL_TARGET_MIMALLOC':
+        return tgt_mem == 'mimalloc'
+    elif chpl_env.name == '  CHPL_HWLOC_PCI':
+        return hwloc == 'bundled'
     return True
 
 
@@ -549,10 +579,13 @@ def parse_args():
 
     #[misc]
     parser.add_option('--ignore-errors', action='store_true', dest='ignore_errors')
+    parser.add_option('--verify', action='store_true', dest='verify')
 
     #[hidden]
+    parser.add_option('--devel', action='store_true', dest='devel')
+    parser.add_option('--no-devel', action='store_true', dest='nodevel')
+    parser.add_option('--verify-verbose', action='store_true', dest='verify_verbose')
     parser.add_option('--unit-tests', action='store_true', dest='do_unit_tests')
-
     # Hijack the help message to use the module docstring
     # optparse is not robust enough to support help msg sections for args.
     parser.print_help = lambda: stdout.write(__doc__)
@@ -562,6 +595,13 @@ def parse_args():
 
 def main():
     (options, args) = parse_args()
+
+    utils.init_CHPL_DEVELOPER()
+    # let the command line override the environment variable
+    if options.devel:
+        utils.set_CHPL_DEVELOPER(True)
+    if options.nodevel:
+        utils.set_CHPL_DEVELOPER(False)
 
     # If passed hidden --unit-tests flag, perform all PyUnit tests that can we
     # can find and exit.
@@ -613,11 +653,21 @@ def main():
     compute_all_values()
 
     # Don't populate internal ENV_VALS unless specified
-    if 'internal' in contents:
+    if 'internal' in contents or options.verify or options.verify_verbose:
         compute_internal_values()
 
     ret = printchplenv(contents, filters, options.format, only=only)
     stdout.write(ret)
+
+    utils.flush_warnings()
+
+    # at this point, we should run the verification tests
+    if options.verify or options.verify_verbose:
+        global ENV_VALS
+
+        success, reason = chplenv_verify.verify(ENV_VALS, verbose=options.verify_verbose)
+        if not success:
+            utils.error("Verification failed: {}".format(reason))
 
 
 if __name__ == '__main__':

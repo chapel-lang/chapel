@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -173,6 +173,8 @@ public:
   GenRet                     codegenFunctionType(bool forHeader);
   GenRet                     codegenCast(GenRet fnPtr);
 
+  GenRet                     codegenAsValue();
+  GenRet                     codegenAsCallBaseExpr();
   GenRet                     codegen() override;
   void                       codegenHeaderC();
   void                       codegenPrototype() override;
@@ -233,6 +235,7 @@ public:
   void                       setNormalized(bool value);
 
   bool                       isResolved()                                const;
+  bool                       isErrorHandlingLowered()                    const;
 
   bool                       isMethod()                                  const;
   bool                       isMethodOnClass()                           const;
@@ -277,7 +280,6 @@ public:
 
   void                       throwsErrorInit();
   bool                       throwsError()                               const;
-
   bool                       retExprDefinesNonVoid()                     const;
 
   Symbol*                    getSubstitutionWithName(const char* name)   const;
@@ -310,6 +312,8 @@ extern FnSymbol*                gAddModuleFn;
 extern FnSymbol*                gGenericTupleTypeCtor;
 extern FnSymbol*                gGenericTupleDestroy;
 
+extern const char*              ftableName;
+extern const char*              ftableSizeName;
 extern std::map<FnSymbol*, int> ftableMap;
 extern std::vector<FnSymbol*>   ftableVec;
 

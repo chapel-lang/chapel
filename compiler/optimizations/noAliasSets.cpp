@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -339,12 +339,6 @@ void addNoAliasSetsInFn(FnSymbol* fn) {
                   call->isPrimitive(PRIM_ASSIGN)) {
                 if (defSe == call->get(1))
                   createdByMove = true;
-              } else {
-                FnSymbol* fn = call->resolvedOrVirtualFunction();
-                if (fn && fn->hasFlag(FLAG_RETURNS_ALIASING_ARRAY))
-                  INT_FATAL("Aliasing arrays should have different type");
-                  // Should have been ruled out by
-                  // shouldAddNoAliasSetForVariable (check for array views)
               }
             }
           }

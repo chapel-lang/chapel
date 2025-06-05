@@ -1,12 +1,14 @@
-Running test 1
+Running test 1 numPrefetches=32
 	cache_num_prefetches: 32
 	cache_prefetch_unused: 32
 	cache_prefetch_waited: 0
 Running test 2
+Running test 2 numPrefetches=32
 	cache_num_prefetches: 32
 	cache_prefetch_unused: 16
 	cache_prefetch_waited: 0
 Running test 3
+Running test 3 numPrefetches=32
 	cache_num_prefetches: 32
 	cache_prefetch_unused: 0
 	cache_prefetch_waited: 32

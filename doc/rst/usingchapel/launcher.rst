@@ -74,6 +74,7 @@ pbs-gasnetrun_ibv        GASNet launcher for PBS (qsub) and the Infiniband subst
 slurm |-| gasnetrun_ibv  GASNet launcher for SLURM and the Infiniband substrate
 slurm |-| gasnetrun_mpi  GASNet launcher for SLURM and the MPI substrate
 slurm |-| gasnetrun_ofi  GASNet launcher for SLURM and the OFI substrate
+slurm |-| gasnetrun_ucx  GASNet launcher for SLURM and the UCX substrate
 slurm-srun               native SLURM launcher
 smp                      GASNet launcher for the shared-memory substrate
 none                     do not use a launcher
@@ -89,7 +90,24 @@ If ``CHPL_LAUNCHER`` is left unset, a default is picked as follows:
 * if ``CHPL_COMM`` is gasnet and ``CHPL_COMM_SUBSTRATE`` is udp
   ``CHPL_LAUNCHER`` is set to amudprun
 
-* otherwise, if ``CHPL_TARGET_PLATFORM`` is cray-xc or hpe-cray-ex:
+* otherwise, if ``CHPL_COMM`` is gasnet and ``CHPL_COMM_SUBSTRATE`` is smp
+  ``CHPL_LAUNCHER`` is set to smp
+
+* otherwise, if ``CHPL_COMM`` is gasnet:
+
+  =======================  ==============================================
+  If                       CHPL_LAUNCHER
+  =======================  ==============================================
+  CHPL_COMM_SUBSTRATE=ibv  [slurm-]gasnetrun_ibv
+  CHPL_COMM_SUBSTRATE=mpi  [slurm-]gasnetrun_mpi
+  CHPL_COMM_SUBSTRATE=ucx  [slurm-]gasnetrun_ucx
+  CHPL_COMM_SUBSTRATE=ofi  [slurm-]gasnetrun_ofi
+  =======================  ==============================================
+
+  If salloc is in the user's path, then the slurm version of these launchers
+  will be used. Otherwise, the base ``gasnetrun_*`` launcher is used.
+
+* otherwise, if ``CHPL_TARGET_PLATFORM`` is a HPE system or a Cray system:
 
   ==================================  ===================================
   If                                  CHPL_LAUNCHER
@@ -100,29 +118,8 @@ If ``CHPL_LAUNCHER`` is left unset, a default is picked as follows:
   otherwise                           none
   ==================================  ===================================
 
-* otherwise, if ``CHPL_TARGET_PLATFORM`` is cray-cs and ``CHPL_COMM`` is gasnet and
-  salloc is in the user's path:
-
-  =======================  ==============================================
-  If                       CHPL_LAUNCHER
-  =======================  ==============================================
-  CHPL_COMM_SUBSTRATE=ibv  slurm-gasnetrun_ibv
-  CHPL_COMM_SUBSTRATE=mpi  slurm-gasnetrun_mpi
-  =======================  ==============================================
-
-* otherwise, if ``CHPL_TARGET_PLATFORM`` is cray-cs and srun is in the users path
+* otherwise, if ``CHPL_COMM`` is not none and srun is in the user's path, then 
   ``CHPL_LAUNCHER`` is set to slurm-srun
-
-* otherwise, if ``CHPL_COMM`` is gasnet:
-
-  =======================  ==============================================
-  If                       CHPL_LAUNCHER
-  =======================  ==============================================
-  CHPL_COMM_SUBSTRATE=ibv  gasnetrun_ibv
-  CHPL_COMM_SUBSTRATE=mpi  gasnetrun_mpi
-  CHPL_COMM_SUBSTRATE=smp  smp
-  otherwise                none
-  =======================  ==============================================
 
 * otherwise ``CHPL_LAUNCHER`` is set to none
 
@@ -191,7 +188,7 @@ UDP or InfiniBand conduits. So, for these configurations please see:
 Common Slurm Settings
 *********************
 
-* Optionally, you can  specify a node access mode by setting the environment
+* Optionally, you can specify a node access mode by setting the environment
   variable ``CHPL_LAUNCHER_NODE_ACCESS``. It will default to ``exclusive``
   access, but can be overridden to:
 
@@ -205,20 +202,32 @@ Common Slurm Settings
 
     export CHPL_LAUNCHER_NODE_ACCESS=shared
 
-* Optionally, you can specify a slurm partition by setting the environment
-  variable ``CHPL_LAUNCHER_PARTITION``. For example, to use the 'debug'
-  partition, set:
+* Optionally, you can specify a slurm partition using either the environment
+  variable ``CHPL_LAUNCHER_PARTITION`` or the ``--partition`` flag. For
+  example, to use the 'debug' partition for all runs, set:
 
   .. code-block:: bash
 
     export CHPL_LAUNCHER_PARTITION=debug
 
-* Optionally, you can specify a slurm nodelist by setting the environment
-  variable ``CHPL_LAUNCHER_NODELIST``. For example, to use node nid00001, set:
+  Or, to use the 'debug' partition for a single run, use:
+
+  .. code-block:: bash
+
+    ./myprogram --partition=debug
+
+* Optionally, you can specify a slurm nodelist using either the environment
+  variable ``CHPL_LAUNCHER_NODELIST`` or the ``--nodelist`` flag. For example, to use node nid00001 for all runs, set:
 
   .. code-block:: bash
 
     export CHPL_LAUNCHER_NODELIST=nid00001
+
+  Or, to use node nid00001 for a single run, use:
+
+  .. code-block:: bash
+
+    ./myprogram --nodelist=nid00001
 
 * Optionally, you can specify a slurm constraint by setting the environment
   variable ``CHPL_LAUNCHER_CONSTRAINT``. For example, to use nodes with the
@@ -236,13 +245,24 @@ Common Slurm Settings
 
     export CHPL_LAUNCHER_ACCOUNT=acct
 
-* If the environment variable ``CHPL_LAUNCHER_USE_SBATCH`` is defined then
-  sbatch is used to launch the job to the queue system, rather than
-  running it interactively as usual. In this mode, the output will be
+* If you wish wish to use sbatch to launch the job to the queue system, either
+  set the environment variable ``CHPL_LAUNCHER_USE_SBATCH`` or pass the
+  ``--generate-sbatch-script`` flag to the executable. In this mode, the output will be
   written by default to a file called <executableName>.<jobID>.out. The
   environment variable ``CHPL_LAUNCHER_SLURM_OUTPUT_FILENAME`` can be used
   to specify a different filename for the output.
 
+* Optionally, you can specify the number of GPUs required per node using either the environment variable ``CHPL_LAUNCHER_GPUS_PER_NODE`` or the ``--gpus-per-node`` flag. For example, to request 2 GPUs per node for all runs, set:
+
+  .. code-block:: bash
+
+    export CHPL_LAUNCHER_GPUS_PER_NODE=2
+
+  Or, to request 2 GPUs per node for a single run, use:
+
+  .. code-block:: bash
+
+    ./myprogram --gpus-per-node=2
 
 .. _ssh-launchers-with-slurm:
 

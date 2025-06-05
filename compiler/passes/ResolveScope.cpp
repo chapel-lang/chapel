@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -192,6 +192,7 @@ void ResolveScope::addBuiltIns() {
 
   extend(gNoInit);
   extend(gSplitInit);
+  extend(gCpuVsGpuToken);
 
   extend(dtUnknown->symbol);
   extend(dtAnyRecord->symbol);
@@ -232,9 +233,6 @@ void ResolveScope::addBuiltIns() {
 
   extend(dtSyncVarAuxFields->symbol);
   extend(gSyncVarAuxFields);
-
-  extend(dtSingleVarAuxFields->symbol);
-  extend(gSingleVarAuxFields);
 
   extend(dtAny->symbol);
   extend(dtAnyComplex->symbol);

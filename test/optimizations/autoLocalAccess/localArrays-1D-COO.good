@@ -15,4 +15,6 @@ Testing 1D COO
 1 2
 End testing 1D COO
 
-localAccess was called 2 times
+
+Numbers collected by prediff:
+	localAccess was called 2 times

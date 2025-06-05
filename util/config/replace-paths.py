@@ -14,7 +14,7 @@ we replace references to that absolute path with $CHPL_RUNTIME_LIB.
 if __name__ == '__main__':
 
   parser = optparse.OptionParser(usage='usage: %prog [--fixpath key path]')
-  parser.add_option('--fixpath', nargs=2, dest='fixpath', action='append');
+  parser.add_option('--fixpath', nargs=2, dest='fixpath', action='append')
   
   (options, args) = parser.parse_args()
 
@@ -24,14 +24,14 @@ if __name__ == '__main__':
     for kv in options.fixpath:
 
       key = kv[0]
-      val = kv[1];
+      val = kv[1]
 
       val = os.path.realpath(val)
       tofix.append([key, val])
 
     #for kv in tofix:
     #  key = kv[0]
-    #  val = kv[1];
+    #  val = kv[1]
     #  sys.stdout.write("will replace {0} with {1}\n".format(val,key))
 
     for line in sys.stdin.readlines():
@@ -61,7 +61,7 @@ if __name__ == '__main__':
         for kv in tofix:
 
           key = kv[0]
-          val = kv[1];
+          val = kv[1]
 
           #sys.stdout.write("does it start with {0}\n".format(val))
           if path.startswith(val):

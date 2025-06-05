@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -43,9 +43,11 @@ void chpl_unimpl(const char* filename, const char* func, int lineno,
 // release mode
 #define CHPL_ASSERT(expr__) \
   do { \
-    bool ignore = expr__; \
-    (void) ignore; \
-   } while (0)
+    if constexpr (false) { \
+      auto res = expr__; \
+      (void) res; \
+    } \
+  } while (0)
 
 #else
 // debug mode

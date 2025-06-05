@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -31,6 +31,8 @@
 // Potential extensions:
 // - support other kinds of domains
 // - allow run-time change in locales
+
+/* Draft support for replicating complete domains/arrays across target locales. */
 
 @unstable("ReplicatedDist is unstable and may change in the future")
 prototype module ReplicatedDist {

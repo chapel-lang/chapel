@@ -72,11 +72,14 @@ _chpl ()
 --dyno-debug-trace \
 --dyno-gen-lib \
 --dyno-gen-std \
+--dyno-resolve-only \
 --dyno-scope-bundled \
 --dyno-scope-production \
 --dyno-scope-resolve \
+--dyno-timing \
 --dyno-verify-serialization \
 --early-deinit \
+--edition \
 --exit-leaks \
 --explain-call \
 --explain-call-id \
@@ -145,6 +148,7 @@ _chpl ()
 --live-analysis \
 --lldb \
 --llvm-print-ir \
+--llvm-print-ir-file \
 --llvm-print-ir-stage \
 --llvm-print-passes \
 --llvm-remarks \
@@ -166,7 +170,6 @@ _chpl ()
 --main-module \
 --make \
 --max-c-ident-len \
---mem \
 --memory-frees \
 --minimal-modules \
 --mllvm \
@@ -204,6 +207,7 @@ _chpl ()
 --no-dyno-break-error \
 --no-dyno-debug-print-parsed-files \
 --no-dyno-debug-trace \
+--no-dyno-resolve-only \
 --no-dyno-scope-bundled \
 --no-dyno-scope-production \
 --no-dyno-scope-resolve \
@@ -251,6 +255,7 @@ _chpl ()
 --no-munge-user-idents \
 --no-munge-with-ids \
 --no-nil-checks \
+--no-offset-auto-local-access \
 --no-optimize \
 --no-optimize-forall-unordered-ops \
 --no-optimize-loop-iterators \
@@ -313,6 +318,7 @@ _chpl ()
 --no-warn-unstable-internal \
 --no-warn-unstable-standard \
 --no-warnings \
+--offset-auto-local-access \
 --optimize \
 --optimize-forall-unordered-ops \
 --optimize-loop-iterators \
@@ -391,6 +397,7 @@ _chpl ()
 --target-arch \
 --target-compiler \
 --target-cpu \
+--target-mem \
 --target-platform \
 --task-tracking \
 --tasks \
@@ -459,6 +466,7 @@ _chpl ()
 --div-by-zero-checks \
 --dynamic \
 --dynamic-auto-local-access \
+--edition \
 --explain-call \
 --explain-instantiation \
 --explain-verbose \
@@ -495,7 +503,6 @@ _chpl ()
 --main-module \
 --make \
 --max-c-ident-len \
---mem \
 --mllvm \
 --module-dir \
 --munge-user-idents \
@@ -534,6 +541,7 @@ _chpl ()
 --no-loop-invariant-code-motion \
 --no-munge-user-idents \
 --no-nil-checks \
+--no-offset-auto-local-access \
 --no-optimize \
 --no-optimize-forall-unordered-ops \
 --no-optimize-loop-iterators \
@@ -569,6 +577,7 @@ _chpl ()
 --no-warn-unknown-attribute-toolname \
 --no-warn-unstable \
 --no-warnings \
+--offset-auto-local-access \
 --optimize \
 --optimize-forall-unordered-ops \
 --optimize-loop-iterators \
@@ -603,6 +612,7 @@ _chpl ()
 --target-arch \
 --target-compiler \
 --target-cpu \
+--target-mem \
 --target-platform \
 --task-tracking \
 --tasks \

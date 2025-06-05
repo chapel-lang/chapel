@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -289,6 +289,13 @@ void IfcConstraint::prettyPrint(std::ostream* o) {
 //
 
 Symbol* gDummyWitness = NULL;
+
+ImplementsStmt* ImplementsStmt::build(InterfaceSymbol* isym, CallExpr* actuals,
+                                      BlockStmt* body) {
+ if (body == NULL) body = new BlockStmt();
+ IfcConstraint* icon = IfcConstraint::build(isym, actuals);
+ return new ImplementsStmt(icon, body);
+}
 
 ImplementsStmt* ImplementsStmt::build(const char* name, CallExpr* actuals,
                                       BlockStmt* body) {

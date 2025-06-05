@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -101,6 +101,9 @@ enum struct Qualifier {
 
   /** A module */
   MODULE,
+
+  /** A loop */
+  LOOP,
 
   /** An 'imaginary' actual to 'init''s this to represent the type being constructed. */
   INIT_RECEIVER,

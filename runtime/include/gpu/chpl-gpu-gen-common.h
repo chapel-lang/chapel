@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -92,6 +92,16 @@ __device__ static inline void chpl_gen_comm_put_unordered(void *addr,
   // TODO
 }
 
+__device__ static inline void chpl_gen_comm_getput_unordered(
+                                            c_nodeid_t dstnode, void* dstaddr,
+                                            c_nodeid_t srcnode, void* srcaddr,
+                                            size_t size, int32_t commID,
+                                            int ln, int32_t fn)
+{
+  printf("Warning: chpl_gen_comm_getput_unordered called inside a GPU kernel. This shouldn't have happened.\n");
+  // TODO
+}
+
 MAYBE_GPU static inline void chpl_gpu_write(const char *str) { printf("%s", str); }
 
 MAYBE_GPU static inline void chpl_gpu_printf0(const char *fmt) {
@@ -144,10 +154,14 @@ __host__ static inline void chpl_assert_on_gpu(int32_t lineno, int32_t filenameI
   chpl_error("assertOnGpu() failed", lineno, filenameIdx);
 }
 
-__device__ static inline unsigned int chpl_gpu_clock(void) {
+__device__ static inline unsigned int chpl_gpu_clock(int32_t lineno,
+                                                     int32_t filenameIdx) {
   return (unsigned int)clock();
 }
-__host__ static inline unsigned int chpl_gpu_clock(void) {
+__host__ static inline unsigned int chpl_gpu_clock(int32_t lineno,
+                                                   int32_t filenameIdx) {
+  chpl_warning("gpuClock was called from the host, it will return 0.",
+               lineno, filenameIdx);
   return 0;
 }
 
@@ -189,6 +203,13 @@ __device__ static inline
 void chpl_internal_error(const char* message) {
   printf("%s\n", message);
   // TODO actually error
+}
+
+__device__ extern int chpl_haltFlag;
+
+__device__ static inline
+void chpl_gpu_halt(int lineno, int32_t filenameIdx) {
+  chpl_haltFlag = 1;
 }
 
 #endif // HAS_GPU_LOCALE

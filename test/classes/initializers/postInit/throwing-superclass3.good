@@ -1,0 +1,5 @@
+In Bar's postinit
+{x = 3}
+uncaught Error: x too large
+  throwing-superclass3.chpl:9: thrown here
+  throwing-superclass3.chpl:19: uncaught here

@@ -26,7 +26,7 @@ MYMANPATH=`$CHPL_PYTHON "$CHPL_HOME"/util/config/fixpath.py "$MANPATH"`
 # Double check $MYPATH before overwriting $PATH
 if [ -z "${MYPATH}" -o "${exitcode}" -ne 0 ]; then
     echo "Error:  util/config/fixpath.py failed"
-    echo "        Make sure you have Python 2.5+"
+    echo "        Make sure you have Python 3.5+"
     return 1
 fi
 
@@ -57,9 +57,9 @@ export CHPL_TASKS
 echo "                           ...fifo"
 echo " "
 
-echo "Setting CHPL_MEM to..."
-CHPL_MEM=cstdlib
-export CHPL_MEM
+echo "Setting CHPL_TARGET_MEM to..."
+CHPL_TARGET_MEM=cstdlib
+export CHPL_TARGET_MEM
 echo "                           ...cstdlib"
 echo " "
 

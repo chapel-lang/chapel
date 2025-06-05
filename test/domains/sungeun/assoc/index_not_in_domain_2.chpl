@@ -1,3 +1,4 @@
+import Sort;
 config param parSafe = true;
 
 var D1: domain(int, parSafe=parSafe);
@@ -27,5 +28,5 @@ assert(retval == 0);
 
 proc printDomainSorted() {
   write("Indices in domain: ");
-  writeln(D1.sorted());
+  writeln(Sort.sorted(D1));
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -27,7 +27,7 @@
 
 PARAM_NODE(BoolParam, bool)
 PARAM_NODE(ComplexParam, ComplexDouble)
-PARAM_NODE(EnumParam, ID)
+PARAM_NODE(EnumParam, EnumValue)
 PARAM_NODE(IntParam, int64_t)
 PARAM_NODE(NoneParam, NoneValue)
 PARAM_NODE(RealParam, double)

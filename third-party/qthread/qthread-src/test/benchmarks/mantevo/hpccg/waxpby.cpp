@@ -48,109 +48,100 @@
 
 #if defined(USING_QTHREADS) && !defined(CXX_LAMBDAS)
 
-class waxpby_both
-{
-public: waxpby_both(const double *const X,
-                    const double        BETA,
-                    const double        ALPHA,
-                    const double *const Y,
-                    double *const       W) :
-        x(X), y(Y), beta(BETA), alpha(ALPHA), w(W) {}
-    void operator() (const size_t startat,
-                     const size_t stopat)
-    {
-        for (size_t i = startat; i < stopat; ++i) {
-            w[i] = alpha * x[i] + beta * y[i];
-        }
-    }
+class waxpby_both {
+public:
+  waxpby_both(double const *const X,
+              double const BETA,
+              double const ALPHA,
+              double const *const Y,
+              double *const W): x(X), y(Y), beta(BETA), alpha(ALPHA), w(W) {}
 
+  void operator()(size_t const startat, size_t const stopat) {
+    for (size_t i = startat; i < stopat; ++i) {
+      w[i] = alpha * x[i] + beta * y[i];
+    }
+  }
 private:
-    const double *const x;
-    const double *const y;
-    const double        beta;
-    const double        alpha;
-    double *const       w;
+  double const *const x;
+  double const *const y;
+  double const beta;
+  double const alpha;
+  double *const w;
 };
 
-class waxpby_shortcut
-{
-public: waxpby_shortcut(const double *const X,
-                        const double        BA,
-                        const double *const Y,
-                        double *const       W) :
-        x(X), y(Y), ba(BA), w(W) {}
-    void operator()(const size_t startat,
-                    const size_t stopat)
-    {
-        for (size_t i = startat; i < stopat; ++i) {
-            w[i] = ba * x[i] + y[i];
-        }
-    }
+class waxpby_shortcut {
+public:
+  waxpby_shortcut(double const *const X,
+                  double const BA,
+                  double const *const Y,
+                  double *const W): x(X), y(Y), ba(BA), w(W) {}
 
+  void operator()(size_t const startat, size_t const stopat) {
+    for (size_t i = startat; i < stopat; ++i) { w[i] = ba * x[i] + y[i]; }
+  }
 private:
-    const double *const x;
-    const double *const y;
-    const double        ba;
-    double *const       w;
+  double const *const x;
+  double const *const y;
+  double const ba;
+  double *const w;
 };
 
-int waxpby (const int           n,
-            const double        alpha,
-            const double *const x,
-            const double        beta,
-            const double *const y,
-            double *const       w)
-{
-    extern int tcount;
+int waxpby(int const n,
+           double const alpha,
+           double const *const x,
+           double const beta,
+           double const *const y,
+           double *const w) {
+  extern int tcount;
 
-    if (tcount > 0) {
-        if (alpha == 1.0) {
-            waxpby_shortcut loop(y, beta, x, w);
-            qt_loop_balance(0, n, loop);
-        } else if (beta == 1.0) {
-            waxpby_shortcut loop(x, alpha, y, w);
-            qt_loop_balance(0, n, loop);
-        } else {
-            waxpby_both loop(x, beta, alpha, y, w);
-            qt_loop_balance(0, n, loop);
-        }
+  if (tcount > 0) {
+    if (alpha == 1.0) {
+      waxpby_shortcut loop(y, beta, x, w);
+      qt_loop_balance(0, n, loop);
+    } else if (beta == 1.0) {
+      waxpby_shortcut loop(x, alpha, y, w);
+      qt_loop_balance(0, n, loop);
     } else {
-        if (alpha == 1.0) {
-            for (int i = 0; i < n; i++) w[i] = x[i] + beta * y[i];
-        } else if(beta == 1.0) {
-            for (int i = 0; i < n; i++) w[i] = alpha * x[i] + y[i];
-        } else {
-            for (int i = 0; i < n; i++) w[i] = alpha * x[i] + beta * y[i];
-        }
+      waxpby_both loop(x, beta, alpha, y, w);
+      qt_loop_balance(0, n, loop);
     }
+  } else {
+    if (alpha == 1.0) {
+      for (int i = 0; i < n; i++) w[i] = x[i] + beta * y[i];
+    } else if (beta == 1.0) {
+      for (int i = 0; i < n; i++) w[i] = alpha * x[i] + y[i];
+    } else {
+      for (int i = 0; i < n; i++) w[i] = alpha * x[i] + beta * y[i];
+    }
+  }
 
-    return(0);
+  return (0);
 }
 
 #else // if defined(USING_QTHREADS) && !defined(CXX_LAMBDAS)
 
-int waxpby (const int           n,
-            const double        alpha,
-            const double *const x,
-            const double        beta,
-            const double *const y,
-            double *const       w)
-{
-    if (alpha == 1.0) {
-        LOOP_BEGIN(0, n, start, stop);
-        for (unsigned int i = start; i < stop; ++i) w[i] = x[i] + beta * y[i];
-        LOOP_END();
-    } else if(beta == 1.0) {
-        LOOP_BEGIN(0, n, start, stop);
-        for (unsigned int i = start; i < stop; ++i) w[i] = alpha * x[i] + y[i];
-        LOOP_END();
-    } else {
-        LOOP_BEGIN(0, n, start, stop);
-        for (unsigned int i = start; i < stop; ++i) w[i] = alpha * x[i] + beta * y[i];
-        LOOP_END();
-    }
+int waxpby(int const n,
+           double const alpha,
+           double const *const x,
+           double const beta,
+           double const *const y,
+           double *const w) {
+  if (alpha == 1.0) {
+    LOOP_BEGIN(0, n, start, stop);
+    for (unsigned int i = start; i < stop; ++i) w[i] = x[i] + beta * y[i];
+    LOOP_END();
+  } else if (beta == 1.0) {
+    LOOP_BEGIN(0, n, start, stop);
+    for (unsigned int i = start; i < stop; ++i) w[i] = alpha * x[i] + y[i];
+    LOOP_END();
+  } else {
+    LOOP_BEGIN(0, n, start, stop);
+    for (unsigned int i = start; i < stop; ++i)
+      w[i] = alpha * x[i] + beta * y[i];
+    LOOP_END();
+  }
 
-    return(0);
+  return (0);
 }
 
 #endif // if defined(USING_QTHREADS) && !defined(CXX_LAMBDAS)

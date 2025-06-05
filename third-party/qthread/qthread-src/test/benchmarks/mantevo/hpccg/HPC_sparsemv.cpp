@@ -38,97 +38,87 @@
 // ///////////////////////////////////////////////////////////////////////
 
 #include <iostream>
-using std::cout;
 using std::cerr;
+using std::cout;
 using std::endl;
-#include <cstdio>
-#include <cstdlib>
-#include <cctype>
-#include <cassert>
-#include <string>
-#include <cmath>
 #include "HPC_sparsemv.hpp"
 #include "loop_defines.h"
+#include <cassert>
+#include <cctype>
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <string>
 
 #if defined(USING_QTHREADS) && !defined(CXX_LAMBDAS)
 
-class HPC_sparsemv_outerloop
-{
-public: HPC_sparsemv_outerloop(HPC_Sparse_Matrix *const a,
-                               const double *const      x,
-                               double *const            y) :
-        A(a), x(x), y(y),
-        ptr_to_vals_in_row(a->ptr_to_vals_in_row),
-        ptr_to_inds_in_row(a->ptr_to_inds_in_row),
-        nnz_in_row(a->nnz_in_row)
-    {}
-    void operator()(const size_t startat,
-                    const size_t stopat)
-    {
-        for (size_t i = startat; i < stopat; ++i) {
-            double              sum      = 0.0;
-            const unsigned int  cur_nnz  = nnz_in_row[i];
-            const double *const cur_vals = ptr_to_vals_in_row[i];
-            const int *const    cur_inds = ptr_to_inds_in_row[i];
-            /* this inner-loop is too small to be worth parallelizing for now */
-            for (unsigned int j = 0; j < cur_nnz; j++) sum += cur_vals[j] * x[cur_inds[j]];
-            y[i] = sum;
-        }
-    }
+class HPC_sparsemv_outerloop {
+public:
+  HPC_sparsemv_outerloop(HPC_Sparse_Matrix *const a,
+                         double const *const x,
+                         double *const y):
+    A(a), x(x), y(y), ptr_to_vals_in_row(a->ptr_to_vals_in_row),
+    ptr_to_inds_in_row(a->ptr_to_inds_in_row), nnz_in_row(a->nnz_in_row) {}
 
+  void operator()(size_t const startat, size_t const stopat) {
+    for (size_t i = startat; i < stopat; ++i) {
+      double sum = 0.0;
+      unsigned int const cur_nnz = nnz_in_row[i];
+      double const *const cur_vals = ptr_to_vals_in_row[i];
+      int const *const cur_inds = ptr_to_inds_in_row[i];
+      /* this inner-loop is too small to be worth parallelizing for now */
+      for (unsigned int j = 0; j < cur_nnz; j++)
+        sum += cur_vals[j] * x[cur_inds[j]];
+      y[i] = sum;
+    }
+  }
 private:
-    HPC_Sparse_Matrix *const   A;
-    const double *const        x;
-    double *const              y;
-    const double *const *const ptr_to_vals_in_row;
-    const int *const *const    ptr_to_inds_in_row;
-    const int *const           nnz_in_row;
+  HPC_Sparse_Matrix *const A;
+  double const *const x;
+  double *const y;
+  double const *const *const ptr_to_vals_in_row;
+  int const *const *const ptr_to_inds_in_row;
+  int const *const nnz_in_row;
 };
 
-int HPC_sparsemv(HPC_Sparse_Matrix  *A,
-                 const double *const x,
-                 double *const       y)
-{
-    const int nrow = (int)A->local_nrow;
-    extern int tcount;
+int HPC_sparsemv(HPC_Sparse_Matrix *A, double const *const x, double *const y) {
+  int const nrow = (int)A->local_nrow;
+  extern int tcount;
 
-    if (tcount > 0) {
-        HPC_sparsemv_outerloop loop(A, x, y);
-        qt_loop_balance(0, nrow, loop);
-    } else {
-        for (int i = 0; i < nrow; i++) {
-            double              sum      = 0.0;
-            const double *const cur_vals = (const double *)A->ptr_to_vals_in_row[i];
-            const int *const    cur_inds = (const int *)A->ptr_to_inds_in_row[i];
-            const int           cur_nnz  = (int)A->nnz_in_row[i];
+  if (tcount > 0) {
+    HPC_sparsemv_outerloop loop(A, x, y);
+    qt_loop_balance(0, nrow, loop);
+  } else {
+    for (int i = 0; i < nrow; i++) {
+      double sum = 0.0;
+      double const *const cur_vals = (double const *)A->ptr_to_vals_in_row[i];
+      int const *const cur_inds = (int const *)A->ptr_to_inds_in_row[i];
+      int const cur_nnz = (int)A->nnz_in_row[i];
 
-            for (int j = 0; j < cur_nnz; j++) sum += cur_vals[j] * x[cur_inds[j]];
-            y[i] = sum;
-        }
+      for (int j = 0; j < cur_nnz; j++) sum += cur_vals[j] * x[cur_inds[j]];
+      y[i] = sum;
     }
-    return(0);
+  }
+  return (0);
 }
 
 #else // if defined(USING_QTHREADS) && !defined(CXX_LAMBDAS)
 
-int HPC_sparsemv(HPC_Sparse_Matrix  *A,
-                 const double *const x,
-                 double *const       y)
-{
-    const int nrow = (int)A->local_nrow;
+int HPC_sparsemv(HPC_Sparse_Matrix *A, double const *const x, double *const y) {
+  int const nrow = (int)A->local_nrow;
 
-    LOOP_BEGIN(0, nrow, start, stop);
-    for (unsigned int i = start; i < stop; ++i) {
-        double              sum      = 0.0;
-        const double *const cur_vals = (const double *)A->ptr_to_vals_in_row[i];
-        const int *const    cur_inds = (const int *)A->ptr_to_inds_in_row[i];
-        const int           cur_nnz  = (int)A->nnz_in_row[i];
+  LOOP_BEGIN(0, nrow, start, stop);
+  for (unsigned int i = start; i < stop; ++i) {
+    double sum = 0.0;
+    double const *const cur_vals = (double const *)A->ptr_to_vals_in_row[i];
+    int const *const cur_inds = (int const *)A->ptr_to_inds_in_row[i];
+    int const cur_nnz = (int)A->nnz_in_row[i];
 
-        for (int j = 0; j < cur_nnz; j++) sum += cur_vals[j] * x[cur_inds[j]];
-        y[i] = sum;
-    }
-    LOOP_END();
-    return(0);
+    for (int j = 0; j < cur_nnz; j++) sum += cur_vals[j] * x[cur_inds[j]];
+    y[i] = sum;
+  }
+  LOOP_END();
+  return (0);
 }
 
 #endif // if defined(USING_QTHREADS) && !defined(CXX_LAMBDAS)

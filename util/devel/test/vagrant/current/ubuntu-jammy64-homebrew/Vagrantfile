@@ -11,15 +11,15 @@ Vagrant.configure("2") do |config|
   config.vm.provision "shell", privileged: false,
     path: "../../provision-scripts/apt-get-and-linuxbrew.sh"
 
-  config.vm.provision "shell", privileged: false,
+  config.vm.provision "shell", privileged: false, run: "always",
     path: "../../provision-scripts/git-clone-chapel.sh"
 
   config.vm.provision "shell", privileged: false,
     path: "../../provision-scripts/make-chapel-quick.sh"
 
   config.vm.provider "virtualbox" do |vb|
-    vb.memory = 8192
-    vb.cpus = 4
+    vb.memory = 4096
+    # vb.cpus = 2
   end
 
 end

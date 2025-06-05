@@ -3,7 +3,7 @@
 # Configure environment for CHPL_COMM=ofi testing.
 
 if [[ $($CHPL_HOME/util/chplenv/chpl_platform.py --target) != *cray-* ]] ; then
-  source $CWD/common-oversubscribed.bash
+  source $UTIL_CRON_DIR/common-oversubscribed.bash
 fi
 
 export CHPL_COMM=ofi

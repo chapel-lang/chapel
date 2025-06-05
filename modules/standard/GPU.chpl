@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -30,6 +30,10 @@
 
     For the most up-to-date information about GPU support see the
     :ref:`technical note <readme-gpu>` about it.
+
+  .. include:: AutoGpu.rst
+     :start-line: 7
+     :start-after: Automatically included GPU symbols
 */
 @unstable("The GPU module is unstable and its interface is subject to change in the future.")
 module GPU
@@ -60,6 +64,8 @@ module GPU
   extern proc chpl_gpu_printf8(fmt, x1, x2, x3, x4, x5, x6, x7, x8) : void;
 
   pragma "codegen for CPU and GPU"
+  pragma "insert line file info"
+  pragma "always propagate line file info"
   extern proc chpl_gpu_clock() : uint;
 
   pragma "codegen for CPU and GPU"
@@ -134,22 +140,11 @@ module GPU
   }
 
   /*
-    Will halt execution at runtime if called from outside a GPU.  If used on
-    first line in ``foreach`` or ``forall`` loop will also do a compile time
-    check that the loop is eligible for execution on a GPU.
-  */
-  pragma "insert line file info"
-  pragma "always propagate line file info"
-  @deprecated(notes="the functional form of assertOnGpu() is deprecated. Please use the @assertOnGpu loop attribute instead.")
-  inline proc assertOnGpu() {
-    __primitive("chpl_assert_on_gpu", false);
-  }
-
-  /*
     Returns value of a per-multiprocessor counter that increments every clock cycle.
     This function is meant to be called to time sections of code within a GPU
     enabled loop.
   */
+  pragma "insert line file info"
   proc gpuClock() : uint {
     return chpl_gpu_clock();
   }
@@ -227,7 +222,7 @@ module GPU
     pragma "codegen for GPU"
     extern "chpl_gpu_force_warp_sync" proc chpl_syncWarp(mask);
 
-    __primitive("chpl_assert_on_gpu", false);
+    __primitive("chpl_assert_on_gpu");
     chpl_syncWarp(mask);
   }
 
@@ -265,14 +260,6 @@ module GPU
     var voidPtr = __primitive("gpu allocShared", numBytes(t) * k);
     var arrayPtr = voidPtr : c_ptr(theType);
     return arrayPtr.deref();
-  }
-
-  /*
-    Set the block size for kernels launched on the GPU.
-   */
-  @deprecated(notes="the functional form of setBlockSize(size) is deprecated. Please use the @gpu.blockSize(size) loop attribute instead.")
-  inline proc setBlockSize(blockSize: integral) {
-    __primitive("gpu set blockSize", blockSize);
   }
 
   @chpldoc.nodoc
@@ -385,7 +372,7 @@ module GPU
     pragma "codegen for GPU"
     extern rtName proc chpl_atomicBinOp(x, val) : T;
 
-    __primitive("chpl_assert_on_gpu", false);
+    __primitive("chpl_assert_on_gpu");
     return chpl_atomicBinOp(c_ptrTo(x), val);
   }
 
@@ -396,7 +383,7 @@ module GPU
     pragma "codegen for GPU"
     extern rtName proc chpl_atomicTernOp(x, cmp, val) : T;
 
-    __primitive("chpl_assert_on_gpu", false);
+    __primitive("chpl_assert_on_gpu");
     return chpl_atomicTernOp(c_ptrTo(x), cmp, val);
   }
 
@@ -507,7 +494,7 @@ module GPU
         // because of this hack.
         extern proc chpl_task_getRequestedSubloc(): int(32);
         const curSubloc = chpl_task_getRequestedSubloc();
-        chpl_task_setSubloc(-2);
+        chpl_task_setSubloc(c_sublocid_none);
         var HostArr = A;
         res = doCpuReduceHelp(op, HostArr): res.type;
         chpl_task_setSubloc(curSubloc);
@@ -579,9 +566,7 @@ module GPU
       }
     }
 
-    use CTypes;
-    extern proc chpl_gpu_can_reduce(): bool;
-    if gpuAlwaysFallBackToCpuReduce || !chpl_gpu_can_reduce() {
+    if CHPL_GPU=="cpu" || gpuAlwaysFallBackToCpuReduce {
       return doCpuReduce(op, A);
     }
 
@@ -944,8 +929,7 @@ module GPU
     }
 
     // Only useful when calling gpuExternSort directly
-    extern proc chpl_gpu_can_sort(): bool;
-    if !chpl_gpu_can_sort() {
+    if CHPL_GPU=="cpu" {
       gpuSort(gpuInputArr);
       return;
     }
@@ -1001,28 +985,11 @@ module GPU
     if CHPL_GPU=="cpu" {
       use Sort only sort;
       sort(gpuInputArr);
-      return;
-    }
-
-    extern proc chpl_gpu_can_sort(): bool;
-    if chpl_gpu_can_sort() {
+    } else {
       gpuExternSort(gpuInputArr);
-      return;
     }
-
-    fallBackRadixSort(gpuInputArr);
   }
 
-  private proc fallBackRadixSort(ref gpuInputArr : [] ?t) where isCoercible(t, uint){
-    // Based on the inputArr size, get a chunkSize such that numChunks is on the order of thousands
-    // TODO better heuristic here?
-    var chunkSize = Math.divCeil(gpuInputArr.size, 2000);
-    parallelRadixSort(gpuInputArr, bitsAtATime=8, chunkSize, noisy=false, distributed=false);
-  }
-
-  private proc fallBackRadixSort(ref gpuInputArr : [] ?t) where !isCoercible(t, uint){
-    compilerError("GPU Based sorting is only supported for arrays of type uint for ROCm version <5.0.0. Upgrade your ROCm install to sort all primitive numeric types");
-  }
   // We no doc it so we can test this independently to simulate all cases that can happen with sort
   @chpldoc.nodoc
   proc parallelRadixSort(ref gpuInputArr : [] ?t, const bitsAtATime : int = 8,
@@ -1232,4 +1199,185 @@ module GPU
     gpuInputArr = gpuOutputArr;
   }
 
+  /*
+    Returns a :record:`DeviceAttributes` record containing various properties describing
+    the GPU associated with a sublocale.  The available properties reflect a subset
+    of those available in both the `CUDA API documentation
+    <https://docs.nvidia.com/cuda/cuda-runtime-api/structcudaDeviceProp.html#structcudaDeviceProp>`_
+    and `HIP API documentation
+    <https://rocm.docs.amd.com/projects/HIP/en/docs-6.0.0/doxygen/html/group___global_defs.html#gacc0acd7b9bda126c6bb3dfd6e2796d7c>`_.
+
+    :arg loc: GPU sublocale to get device attributes on.
+   */
+  proc deviceAttributes(loc) {
+    return new DeviceAttributes(loc);
+  }
+
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__MAX_THREADS_PER_BLOCK : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__MAX_BLOCK_DIM_X : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__MAX_BLOCK_DIM_Y : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__MAX_BLOCK_DIM_Z : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__MAX_GRID_DIM_X : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__MAX_GRID_DIM_Y : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__MAX_GRID_DIM_Z : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__MAX_SHARED_MEMORY_PER_BLOCK : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__TOTAL_CONSTANT_MEMORY : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__WARP_SIZE : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__MAX_PITCH : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE1D_WIDTH : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE2D_WIDTH : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE2D_HEIGHT : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE3D_WIDTH : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE3D_HEIGHT : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE3D_DEPTH : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__MAX_REGISTERS_PER_BLOCK : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__CLOCK_RATE : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__TEXTURE_ALIGNMENT : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__TEXTURE_PITCH_ALIGNMENT : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__MULTIPROCESSOR_COUNT : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__KERNEL_EXEC_TIMEOUT : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__INTEGRATED : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__CAN_MAP_HOST_MEMORY : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__COMPUTE_MODE : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__PROCESS : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__CONCURRENT_KERNELS : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__ECC_ENABLED : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__PCI_BUS_ID : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__PCI_DEVICE_ID : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__MEMORY_CLOCK_RATE : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__GLOBAL_MEMORY_BUS_WIDTH : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__L2_CACHE_SIZE : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__MAX_THREADS_PER_MULTIPROCESSOR : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__COMPUTE_CAPABILITY_MAJOR : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__COMPUTE_CAPABILITY_MINOR : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__MAX_SHARED_MEMORY_PER_MULTIPROCESSOR : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__MANAGED_MEMORY : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__MULTI_GPU_BOARD : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__PAGEABLE_MEMORY_ACCESS : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__CONCURRENT_MANAGED_ACCESS : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__PAGEABLE_MEMORY_ACCESS_USES_HOST_PAGE_TABLES : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__DIRECT_MANAGED_MEM_ACCESS_FROM_HOST : c_int;
+
+  @chpldoc.nodoc
+  extern proc chpl_gpu_query_attribute(dev : c_int, attribute : c_int) : c_int;
+
+  /*
+    Record returned by :proc:`deviceAttributes` that properties reflect a
+    subset of device properties available in both the `CUDA API documentation
+    <https://docs.nvidia.com/cuda/cuda-runtime-api/structcudaDeviceProp.html#structcudaDeviceProp>`_
+    and `HIP API documentation
+    <https://rocm.docs.amd.com/projects/HIP/en/docs-6.0.0/doxygen/html/group___global_defs.html#gacc0acd7b9bda126c6bb3dfd6e2796d7c>`_.
+   */
+  record DeviceAttributes {
+    @chpldoc.nodoc
+    var gpuId : int;
+
+    @chpldoc.nodoc
+    proc init(loc) {
+      if !loc.isGpu() then halt("gpuDeviceInfo must be passed gpu locale");
+      this.gpuId = 0; // TODO: Should be loc.gpuId
+    }
+
+    proc name : string {
+      extern proc chpl_gpu_name(dev : c_int, ref result : c_ptrConst(c_char));
+      var ret : string;
+      var tmp : c_ptrConst(c_char);
+
+      chpl_gpu_name(this.gpuId : c_int, tmp);
+      try! {
+        ret = string.createCopyingBuffer(tmp, policy=decodePolicy.escape);
+      }
+      deallocate(tmp);
+
+      return ret;
+    }
+
+    proc maxThreadsPerBlock : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MAX_THREADS_PER_BLOCK);
+    proc maxBlockDimX : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MAX_BLOCK_DIM_X);
+    proc maxBlockDimY : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MAX_BLOCK_DIM_Y);
+    proc maxBlockDimZ : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MAX_BLOCK_DIM_Z);
+    proc MaxGridDimX : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MAX_GRID_DIM_X);
+    proc maxGridDimY : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MAX_GRID_DIM_Y);
+    proc maxGridDimZ : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MAX_GRID_DIM_Z);
+    proc maxSharedMemoryPerBlock : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MAX_SHARED_MEMORY_PER_BLOCK);
+    proc totalConstantMemory : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__TOTAL_CONSTANT_MEMORY);
+    proc warpSize : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__WARP_SIZE);
+    proc maxPitch : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MAX_PITCH);
+    proc maximumTexture1dWidth : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE1D_WIDTH);
+    proc maximumTexture2dWidth : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE2D_WIDTH);
+    proc maximumTexture2dHeight : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE2D_HEIGHT);
+    proc maximumTexture3dWidth : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE3D_WIDTH);
+    proc maximumTexture3dHeight : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE3D_HEIGHT);
+    proc maximumTexture3dDepth : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE3D_DEPTH);
+    proc maxRegistersPerBlock : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MAX_REGISTERS_PER_BLOCK);
+    proc clockRate : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__CLOCK_RATE);
+    proc textureAlignment : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__TEXTURE_ALIGNMENT);
+    proc texturePitch_alignment : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__TEXTURE_PITCH_ALIGNMENT);
+    proc multiprocessorCount : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MULTIPROCESSOR_COUNT);
+    proc kernelExecTimeout : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__KERNEL_EXEC_TIMEOUT);
+    proc integrated : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__INTEGRATED);
+    proc canMapHostMemory : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__CAN_MAP_HOST_MEMORY);
+    proc computeMode : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__COMPUTE_MODE);
+    proc concurrentKernels : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__CONCURRENT_KERNELS);
+    proc eccEnabled : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__ECC_ENABLED);
+    proc pciBusId : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__PCI_BUS_ID);
+    proc pciDeviceId : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__PCI_DEVICE_ID);
+    proc memoryClockRate : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MEMORY_CLOCK_RATE);
+    proc globalMemoryBusWidth : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__GLOBAL_MEMORY_BUS_WIDTH);
+    proc l2CacheSize : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__L2_CACHE_SIZE);
+    proc maxThreadsPerMultiprocessor : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MAX_THREADS_PER_MULTIPROCESSOR);
+    proc computeCapabilityMajor : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__COMPUTE_CAPABILITY_MAJOR);
+    proc computeCapabilityMinor : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__COMPUTE_CAPABILITY_MINOR);
+    proc maxSharedMemoryPerMultiprocessor : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MAX_SHARED_MEMORY_PER_MULTIPROCESSOR);
+    proc managedMemory : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MANAGED_MEMORY);
+    proc multiGpuBoard : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MULTI_GPU_BOARD);
+    proc pageableMemoryAccess : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__PAGEABLE_MEMORY_ACCESS);
+    proc concurrentManagedAccess : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__CONCURRENT_MANAGED_ACCESS);
+    proc pageableMemoryAccessUsesHostPageTables : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__PAGEABLE_MEMORY_ACCESS_USES_HOST_PAGE_TABLES);
+    proc directManagedMemAccessFromHost : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__DIRECT_MANAGED_MEM_ACCESS_FROM_HOST);
+  }
 }

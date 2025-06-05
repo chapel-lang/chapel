@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -58,6 +58,8 @@ class CanPassResult {
     BORROWS_SUBTYPE,
     /** Non-subtype conversion that doesn't produce a param */
     OTHER,
+    /** A conversion from a tuple to its referential tuple type equivalent */
+    TO_REFERENTIAL_TUPLE,
   };
 
  private:
@@ -95,6 +97,8 @@ class CanPassResult {
 
   static bool isTypeGeneric(Context* context, const types::QualifiedType& qt);
   static bool isTypeGeneric(Context* context, const types::Type* t);
+
+  static CanPassResult ensureSubtypeConversionInstantiates(CanPassResult r);
 
   static bool
   canConvertNumeric(Context* context,
@@ -171,12 +175,31 @@ class CanPassResult {
       Does not include borrowing with implicit subtyping. */
   bool convertsWithBorrowing() const { return conversionKind_ == BORROWS; }
 
+  static CanPassResult canPassScalar(Context* context,
+                                     const types::QualifiedType& actualType,
+                                     const types::QualifiedType& formalType);
+
   // implementation of canPass to allow use of private fields
   static CanPassResult canPass(Context* context,
                                const types::QualifiedType& actualType,
                                const types::QualifiedType& formalType);
 
 };
+
+/**
+  Helper function that handles the automatic coalescing of e.g. the `_owned`
+  record implementing managed types and the `owned C` type used in user code.
+  Only does this if mightBeManagerRecord is a `_owned`-like record type,
+  and mightBeClass is a class type. In other words, only does something if
+  the coalescing is necessary.
+
+  Sets mightBeClass to its record equivalent if the conversion is possible,
+  and returns true. Otherwise returns false.
+ */
+bool
+tryConvertClassTypeIntoManagerRecordIfNeeded(Context* context,
+                                             const types::Type* const & mightBeManagerRecord,
+                                             const types::Type*& mightBeClass);
 
 /**
   Given an argument with QualifiedType actualType,
@@ -193,6 +216,24 @@ CanPassResult canPass(Context* context,
   return CanPassResult::canPass(context, actualType, formalType);
 }
 
+static inline
+CanPassResult canPassScalar(Context* context,
+                            const types::QualifiedType& actualType,
+                            const types::QualifiedType& formalType) {
+  return CanPassResult::canPassScalar(context, actualType, formalType);
+}
+
+/* Returns true if, all other things equal, a type with substitutions
+   'instances' is an instantiation of a type with substitutions 'generics'.
+
+   If 'allowMissing' is true, considers missing substitutions in 'generics'
+   to be "any type". Otherwise, requires that each susbtitution in
+   instances is matched by an existing substitution in generics. */
+bool canInstantiateSubstitutions(Context* context,
+                                 const SubstitutionsMap& instances,
+                                 const SubstitutionsMap& generics,
+                                 bool allowMissing);
+
 /* When trying to combine two kinds, you can't just pick one.
    For instance, if any type in the list is a value, the result
    should be a value, and if any type in the list is const, the
@@ -204,6 +245,8 @@ CanPassResult canPass(Context* context,
    ref-ness, etc) each of which are processed independently from
    the others. */
 class KindProperties {
+ public:
+  using Kind = types::QualifiedType::Kind;
  private:
   bool isConst = false;
   bool isRef = false;
@@ -226,13 +269,16 @@ class KindProperties {
 
  public:
   /* Decompose a qualified type kind into its properties. */
-  static KindProperties fromKind(types::QualifiedType::Kind kind);
+  static KindProperties fromKind(Kind kind);
 
   /* Set the refness property to the given one. */
   void setRef(bool isRef);
 
   /* Set the paramness property to the given one. */
   void setParam(bool isParam);
+
+  /* Set the constness property to the given one. */
+  void setConst(bool isConst);
 
   /* Combine two sets of kind properties into this one. The resulting
      set of properties is compatible with both arguments (e.g. ref + val = val,
@@ -253,14 +299,24 @@ class KindProperties {
   void strictCombineWith(const KindProperties& other);
 
   /* Combine the properties of two kinds, returning the result as a kind. */
-  static types::QualifiedType::Kind combineKindsMeet(
-      types::QualifiedType::Kind kind1,
-      types::QualifiedType::Kind kind2);
+  static Kind combineKindsMeet(Kind kind1, Kind kind2);
 
   /* Convert the set of kind properties back into a kind. */
   types::QualifiedType::Kind toKind() const;
 
+  /* Add constness to the given kind. */
+  static Kind addConstness(Kind kind);
+
+  /* Add refness to the given kind. */
+  static Kind addRefness(Kind kind);
+
   bool valid() const { return isValid; }
+
+  /* Creates a corresponding kind that is const */
+  static types::QualifiedType::Kind makeConst(types::QualifiedType::Kind kind);
+
+  /* Creates a corresponding kind that is not a reference */
+  static types::QualifiedType::Kind removeRef(types::QualifiedType::Kind kind);
 };
 
 /**

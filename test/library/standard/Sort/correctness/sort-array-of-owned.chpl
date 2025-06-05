@@ -8,14 +8,16 @@ class Value {
 }
 
 
-record ValueComparator {
-  proc key(v: Value?) where useKeyComparator {
+record keyValueComparator: keyComparator {
+  proc key(v: Value?) {
     if v == nil then
       return 0;
     else
       return v!.x;
   }
-  proc compare(a: Value?, b: Value?) where !useKeyComparator {
+}
+record compareValueComparator: relativeComparator {
+  proc compare(a: Value?, b: Value?) {
     var aNum = 0;
     if a != nil then
       aNum = a!.x;
@@ -25,7 +27,8 @@ record ValueComparator {
     return aNum - bNum;
   }
 }
-
+proc ValueComparator type do
+  return if useKeyComparator then keyValueComparator else compareValueComparator;
 
 // TEST 1: SORTING OWNED ELEMENTS
 {
@@ -55,14 +58,16 @@ operator Wrapper.=(ref lhs: Wrapper, ref rhs: Wrapper) {
   lhs.elt = rhs.elt;
 }
 
-record WrapperComparator {
-  proc key(v: Wrapper) where useKeyComparator {
+record keyWrapperComparator: keyComparator {
+  proc key(v: Wrapper) {
     if v.elt == nil then
       return 0;
     else
       return v.elt!.x;
   }
-  proc compare(a: Wrapper, b: Wrapper) where !useKeyComparator {
+}
+record compareWrapperComparator: relativeComparator {
+  proc compare(a: Wrapper, b: Wrapper) {
     var aNum = 0;
     if a.elt != nil then
       aNum = a.elt!.x;
@@ -73,6 +78,8 @@ record WrapperComparator {
   }
 
 }
+proc WrapperComparator type do
+  return if useKeyComparator then keyWrapperComparator else compareWrapperComparator;
 
 {
   writeln("Testing sorting record containing owned");
@@ -101,14 +108,16 @@ record ArrayWrapper {
     elts[1] = arg;
   }
 }
-record ArrayWrapperComparator {
-  proc key(v: ArrayWrapper) where useKeyComparator {
+record keyArrayWrapperComparator: keyComparator {
+  proc key(v: ArrayWrapper) {
     if v.elts[1] == nil then
       return 0;
     else
       return v.elts[1]!.x;
   }
-  proc compare(a: ArrayWrapper, b: ArrayWrapper) where !useKeyComparator {
+}
+record compareArrayWrapperComparator: relativeComparator {
+  proc compare(a: ArrayWrapper, b: ArrayWrapper) {
     var aNum = 0;
     if a.elts[1] != nil then
       aNum = a.elts[1]!.x;
@@ -118,6 +127,9 @@ record ArrayWrapperComparator {
     return aNum - bNum;
   }
 }
+proc ArrayWrapperComparator type do
+  return if useKeyComparator then keyArrayWrapperComparator
+                             else compareArrayWrapperComparator;
 
 {
   writeln("Testing sorting record containing array of owned");
@@ -136,14 +148,16 @@ record ArrayWrapperComparator {
 
 // TEST 4: SORTING ARRAY CONTAINING ARRAY OF OWNED ELEMENTS
 
-record ArrayComparator {
-  proc key(v: [] owned Value?) where useKeyComparator {
+record keyArrayComparator: keyComparator {
+  proc key(v: [] owned Value?) {
     if v[1] == nil then
       return 0;
     else
       return v[1]!.x;
   }
-  proc compare(a: [] owned Value?, b: [] owned Value?) where !useKeyComparator {
+}
+record compareArrayComparator: relativeComparator {
+  proc compare(a: [] owned Value?, b: [] owned Value?) {
     var aNum = 0;
     if a[1] != nil then
       aNum = a[1]!.x;
@@ -153,6 +167,8 @@ record ArrayComparator {
     return aNum - bNum;
   }
 }
+proc ArrayComparator type do
+  return if useKeyComparator then keyArrayComparator else compareArrayComparator;
 
 {
   writeln("Testing sorting array containing array of owned");

@@ -20,7 +20,7 @@ writeln(i);
     ("second thing");
 
   // the only fixit here is ignore, don't know the indentation level
-  @chplcheck.ignore("MisleadingIndentation")
+  @chplcheck.ignore("IncorrectIndentation")
   for i in 1..10 do
   writeln(i);
   writeln("second thing");
@@ -30,4 +30,55 @@ writeln(i);
           writeln("Hello, world!");
       var unrelated = "hi";
   }
+
+  on Locale[0] do
+    writeln("Hello, world!");
+  writeln("Hello, world!");
+
+  for 1..10 do
+    for 1..10 do
+      writeln("Hello, world!");
+  writeln("Hello, world!");
+
+  for 1..10 do
+    on Locale[0] do
+      writeln("Hello, world!");
+  writeln("Hello, world!");
+
+  on Locale[0] do
+    for 1..10 do
+      writeln("Hello, world!");
+  writeln("Hello, world!");
+
+  on Locale[0] do
+    on Locale[0] do
+      writeln("Hello, world!");
+  writeln("Hello, world!");
+
+
+  for 1..10 do
+    for 1..10 do
+      for 1..10 do
+        writeln("Hello, world!");
+  writeln("Hello, world!");
+
+  for 1..10 do
+    for 1..10 do
+      for 1..10 do
+        for 1..10 do
+          writeln("Hello, world!");
+  writeln("Hello, world!");
+
+  for 1..10 do
+    for 1..10 do
+      on Locale[0] do
+        writeln("Hello, world!");
+  writeln("Hello, world!");
+
+  on Locale[0] do
+    on Locale[0] do
+      on Locale[0] do
+        writeln("Hello, world!");
+  writeln("Hello, world!");
+
 }

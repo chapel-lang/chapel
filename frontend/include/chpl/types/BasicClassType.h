@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -20,6 +20,7 @@
 #ifndef CHPL_TYPES_BASIC_CLASS_TYPE_H
 #define CHPL_TYPES_BASIC_CLASS_TYPE_H
 
+#include "chpl/resolution/resolution-types.h"
 #include "chpl/types/ManageableType.h"
 #include "chpl/framework/global-strings.h"
 
@@ -38,9 +39,11 @@ class BasicClassType final : public ManageableType {
   BasicClassType(ID id, UniqueString name,
                  const BasicClassType* parentType,
                  const BasicClassType* instantiatedFrom,
-                 SubstitutionsMap subs)
+                 SubstitutionsMap subs,
+                 CompositeType::Linkage linkage)
     : ManageableType(typetags::BasicClassType, id, name,
-                     instantiatedFrom, std::move(subs)),
+                     instantiatedFrom, std::move(subs),
+                     linkage),
       parentType_(parentType)
   {
     // all classes should have a parent type, except for object
@@ -62,7 +65,8 @@ class BasicClassType final : public ManageableType {
   getBasicClassType(Context* context, ID id, UniqueString name,
                     const BasicClassType* parentType,
                     const BasicClassType* instantiatedFrom,
-                    SubstitutionsMap subs);
+                    SubstitutionsMap subs,
+                    CompositeType::Linkage linkage);
 
  public:
 
@@ -73,6 +77,19 @@ class BasicClassType final : public ManageableType {
       const BasicClassType* parentType,
       const BasicClassType* instantiatedFrom,
       CompositeType::SubstitutionsMap subs);
+
+  const Type* substitute(Context* context,
+                         const PlaceholderMap& subs) const override {
+    if (!parentType_) {
+      CHPL_ASSERT(name() == USTR("RootClass"));
+      return this;
+    }
+
+    return get(context, id(), name(),
+               Type::substitute(context, parentType_, subs),
+               Type::substitute(context, (const BasicClassType*) instantiatedFrom_, subs),
+               resolution::substituteInMap(context, subs_, subs));
+  }
 
   static const BasicClassType* getRootClassType(Context* context);
 
@@ -96,7 +113,8 @@ class BasicClassType final : public ManageableType {
       using a parent type and 'instantiates' is set to true if
       it requires instantiation.
    */
-  bool isSubtypeOf(const BasicClassType* parentType,
+  bool isSubtypeOf(Context* context,
+                   const BasicClassType* parentType,
                    bool& converts,
                    bool& instantiates) const;
 

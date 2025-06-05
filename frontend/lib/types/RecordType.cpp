@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -28,11 +28,14 @@ namespace types {
 const owned<RecordType>&
 RecordType::getRecordType(Context* context, ID id, UniqueString name,
                           const RecordType* instantiatedFrom,
-                          SubstitutionsMap subs) {
-  QUERY_BEGIN(getRecordType, context, id, name, instantiatedFrom, subs);
+                          SubstitutionsMap subs,
+                          CompositeType::Linkage linkage) {
+  QUERY_BEGIN(getRecordType, context, id, name, instantiatedFrom, subs,
+              linkage);
 
   auto result = toOwned(new RecordType(id, name,
-                                       instantiatedFrom, std::move(subs)));
+                                       instantiatedFrom, std::move(subs),
+                                       linkage));
 
   return QUERY_END(result);
 }
@@ -41,8 +44,9 @@ const RecordType*
 RecordType::get(Context* context, ID id, UniqueString name,
                 const RecordType* instantiatedFrom,
                 SubstitutionsMap subs) {
+  auto linkage = parsing::idToDeclLinkage(context, id);
   return getRecordType(context, id, name,
-                       instantiatedFrom, std::move(subs)).get();
+                       instantiatedFrom, std::move(subs), linkage).get();
 }
 
 

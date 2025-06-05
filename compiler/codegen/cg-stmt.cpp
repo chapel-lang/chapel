@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -187,11 +187,26 @@ GenRet BlockStmt::codegen() {
 *                                                                   *
 ********************************* | ********************************/
 
+// If this is 'if gCpuVsGpuToken then ... else ...'
+// then return the appropriate branch, else nil.
+static BlockStmt* chooseCpuVsGpuBranch(CondStmt* cond) {
+  if (SymExpr* se = toSymExpr(cond->condExpr))
+    if (se->symbol() == gCpuVsGpuToken)
+      return gCodegenGPU ? cond->elseStmt : cond->thenStmt;
+  return nullptr;
+}
+
 GenRet
 CondStmt::codegen() {
   GenInfo* info    = gGenInfo;
   FILE*    outfile = info->cfile;
   GenRet   ret;
+
+  if (BlockStmt* chosenBlock = chooseCpuVsGpuBranch(this)) {
+    for_alist(node, chosenBlock->body)
+      node->codegen();
+    return ret;
+  }
 
   codegenStmt(this);
 

@@ -1,1 +1,1 @@
-main-returns-type.chpl:4: error: main function cannot return a type or a param
+main-returns-type.chpl:4: error: 'proc main' cannot return a 'type' or 'param'

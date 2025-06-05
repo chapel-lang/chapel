@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -24,6 +24,8 @@
 module ChapelLocks {
   private use Atomics, ChapelBase;
   private use MemConsistency;
+  import CTypes.{c_ptr, c_ptrTo};
+
   /*
    * Local processor atomic spinlock. Intended for situations with minimal
    * contention or very short critical sections.
@@ -53,5 +55,13 @@ module ChapelLocks {
     inline proc ref unlock() {
       l.clear(memoryOrder.release);
     }
+
+    inline proc ref enterContext() do lock();
+    inline proc ref exitContext(in e: owned Error?) {
+      defer unlock();
+      if e then halt();
+    }
   }
+
+  chpl_LocalSpinlock implements contextManager;
 }

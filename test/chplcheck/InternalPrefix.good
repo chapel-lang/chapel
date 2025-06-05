@@ -1,0 +1,6 @@
+InternalPrefix.chpl:2: node violates rule CamelCaseFunctions
+InternalPrefix.chpl:3: node violates rule CamelCaseFunctions
+InternalPrefix.chpl:6: node violates rule CamelCaseRecords
+InternalPrefix.chpl:7: node violates rule CamelCaseRecords
+InternalPrefix.chpl:10: node violates rule PascalCaseClasses
+InternalPrefix.chpl:12: node violates rule PascalCaseClasses

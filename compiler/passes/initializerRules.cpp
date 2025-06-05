@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -80,6 +80,7 @@ static DefExpr* toLocalField(AggregateType* at, CallExpr* expr);
 
 static Type*          typeForExpr(Expr* expr);
 static AggregateType* typeForNewExpr(CallExpr* newExpr);
+static AggregateType* typeForNewWithAllocatorExpr(CallExpr* newExpr);
 
 void preNormalizeFields(AggregateType* at) {
   for_alist(field, at->fields) {
@@ -144,16 +145,18 @@ static Type* typeForExpr(Expr* expr) {
   } else if (CallExpr* initCall = toCallExpr(expr)) {
     if (initCall->isPrimitive(PRIM_NEW) == true) {
       retval = typeForNewExpr(initCall);
+    } else if (initCall->isPrimitive(PRIM_NEW_WITH_ALLOCATOR) == true) {
+      retval = typeForNewWithAllocatorExpr(initCall);
     }
   }
 
   return retval;
 }
 
-static AggregateType* typeForNewExpr(CallExpr* newExpr) {
+static AggregateType* typeForNewExprHelper(CallExpr* newExpr, int type_idx) {
   AggregateType* retval = NULL;
 
-  if (CallExpr* constructor = toCallExpr(newExpr->get(1))) {
+  if (CallExpr* constructor = toCallExpr(newExpr->get(type_idx))) {
     if (SymExpr* baseExpr = toSymExpr(constructor->baseExpr)) {
       if (TypeSymbol* sym = toTypeSymbol(baseExpr->symbol())) {
         if (AggregateType* type = toAggregateType(sym->type)) {
@@ -166,6 +169,12 @@ static AggregateType* typeForNewExpr(CallExpr* newExpr) {
   }
 
   return retval;
+}
+static AggregateType* typeForNewExpr(CallExpr* newExpr) {
+  return typeForNewExprHelper(newExpr, 1);
+}
+static AggregateType* typeForNewWithAllocatorExpr(CallExpr* newExpr) {
+  return typeForNewExprHelper(newExpr, 2);
 }
 
 /************************************* | **************************************
@@ -504,7 +513,10 @@ static InitNormalize preNormalize(AggregateType* at,
         } else if (isSuperInit(callExpr) == true) {
           Expr* next = callExpr->next;
 
-          INT_ASSERT(state.isPhase0() == true);
+          if (state.isPhase0() != true) {
+            USR_FATAL(callExpr,
+                       "duplicate use of 'super.init()' in initializer, this should only be called once");
+          }
           state.completePhase0(callExpr);
 
           if (at->isRecord() == true) {
@@ -1177,8 +1189,13 @@ static bool findPostinitAndMark(AggregateType* at) {
     int size = at->methods.n;
 
     for (int i = 0; i < size && retval == false; i++) {
-      if (at->methods.v[i] != NULL)
-        retval = at->methods.v[i]->isPostInitializer();
+      FnSymbol* methodi = at->methods.v[i];
+      if (methodi != nullptr && methodi->isPostInitializer()) {
+        // capture the post-initializer upon finding it
+        at->postinit = methodi;
+        retval = true;
+        break;
+      }
     }
 
   } else {
@@ -1434,10 +1451,23 @@ static void buildPostInit(AggregateType* at) {
   fn->addFlag(FLAG_METHOD_PRIMARY);
 
   if (at->isClass()) {
+    // If our parent class's postinit() is throwing, ours needs to be as well
+    forv_Vec(AggregateType, pt, at->dispatchParents) {
+      if (pt->hasPostInitializer()) {
+        if (pt->postinit->throwsError()) {
+          fn->throwsErrorInit();
+          break;
+        }
+      }
+    }
+
+    // Insert call to parent class postinit()
     insertSuperPostInit(fn);
   }
 
   at->methods.add(fn);
+
+  at->postinit = fn;
 }
 
 //
@@ -1456,11 +1486,9 @@ static int insertPostInit(AggregateType* at, bool insertSuper) {
     if (method == nullptr) continue;
 
     if (method->isPostInitializer()) {
-      if (method->throwsError() == true) {
-        USR_FATAL_CONT(method, "postinit cannot be declared as throws yet");
-      }
       if (method->where == NULL) {
         found = true;
+        at->postinit = method;
       }
       if (method->formals.length > 2) {
         // Only accept method token and 'this'

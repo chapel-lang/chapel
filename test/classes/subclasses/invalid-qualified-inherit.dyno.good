@@ -1,0 +1,1 @@
+invalid-qualified-inherit.chpl:5: error: could not find parent class or target interface 'Other.CC' for inheritance expression

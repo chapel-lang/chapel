@@ -1,0 +1,13 @@
+BootStrap: docker
+From: alpine:3.21
+
+%files
+    ../../provision-scripts/* /provision-scripts/
+
+%post
+    /provision-scripts/apk-deps.sh
+    # For Alpine 3.21, default llvm/clang version is 19
+    /provision-scripts/apk-llvm.sh
+
+%runscript
+    ../../provision-scripts/run.sh "$@"

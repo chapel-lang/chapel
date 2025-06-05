@@ -32,9 +32,6 @@ alloc int test6
 alloc int test6t
 *** DR alloc int(64) 10
 *** DR calling postalloc int(64) 10
-*** DR alloc int(64) 10
-*** DR calling dealloc int(64)
-*** DR calling postalloc int(64) 10
 *** DR calling dealloc int(64)
 alloc int test7
 *** DR alloc int(64) 10

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -20,21 +20,23 @@
 #ifndef CHAPEL_PY_ERROR_TRACKER_H
 #define CHAPEL_PY_ERROR_TRACKER_H
 
-#include "Python.h"
+#include "PythonWrapper.h"
 #include "chpl/framework/Context.h"
 #include "chpl/framework/ErrorBase.h"
 #include "python-class.h"
 
 struct ContextObject;
 
-struct ErrorObject : public PythonClassWithObject<ErrorObject, chpl::owned<chpl::ErrorBase>> {
+struct ErrorObject : public PythonClassWithContext<ErrorObject, chpl::owned<chpl::ErrorBase>> {
+  static constexpr const char* QualifiedName = "chapel.Error";
   static constexpr const char* Name = "Error";
   static constexpr const char* DocStr = "An error that occurred as part of processing a file with the Chapel compiler frontend";
 };
 
 using LocationAndNote = std::tuple<chpl::Location, std::string>;
 
-struct ErrorManagerObject : public PythonClassWithObject<ErrorManagerObject, std::tuple<>> {
+struct ErrorManagerObject : public PythonClassWithContext<ErrorManagerObject, std::tuple<>> {
+  static constexpr const char* QualifiedName = "chapel.ErrorManager";
   static constexpr const char* Name = "ErrorManager";
   static constexpr const char* DocStr = "A wrapper container to help track the errors from a Context.";
 };

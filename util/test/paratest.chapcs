@@ -73,7 +73,7 @@ def get_exclusive_nodes():
                  '--noheader',
                  '--responding',
                  '--format="NO;%D;%N;%N;None"',
-                 '--states=DRAINING']
+                 '--states=DRAIN']
     sinfo_out = run_command_wrapper(sinfo_cmd)
 
     num_exclusive_nodes = 0
@@ -167,8 +167,19 @@ def running_during_nightly():
     return nightly_start_exclusive <= now <= nightly_end_exclusive
 
 
+def using_a_slurm_launcher():
+    import chpl_launcher
+    launcher = chpl_launcher.get()
+    return "slurm" in launcher
+
+
 def main(paratest_args):
     """ Just run paratest with the user's args """
+
+    if using_a_slurm_launcher():
+        print("This script is not intended to be run with a slurm-based launcher")
+        exit(1)
+
     if running_during_nightly():
         print('Please avoid running when nightly has exclusive access')
         exit(1)

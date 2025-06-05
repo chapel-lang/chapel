@@ -42,15 +42,15 @@ proc stringToTwoRepeated(arg:string) {
   }
 }
 
-record MyComparator {
+record MyComparator: keyPartComparator {
   proc keyPart(arg:TwoRepeated, i:int) {
     var sum = arg.nFirst + arg.nSecond;
     if i < arg.nFirst then
-      return (0, arg.first);
+      return (keyPartStatus.returned, arg.first);
     else if i < sum then
-      return (0, arg.second);
+      return (keyPartStatus.returned, arg.second);
     else
-      return (-1, 0);
+      return (keyPartStatus.pre, 0);
   }
 }
 
@@ -63,9 +63,9 @@ proc testSort(arr) {
 
   // Then, sort the array as reverse strings
   var b = arr;
-  sort(a, new ReverseComparator(new DefaultComparator()));
+  sort(a, new reverseComparator(new defaultComparator()));
   writeln(b);
-  assert(isSorted(a, new ReverseComparator(new DefaultComparator())));
+  assert(isSorted(a, new reverseComparator(new defaultComparator())));
 
   // Then, sort the array as records
   var c = for s in arr do stringToTwoRepeated(s);
@@ -77,9 +77,9 @@ proc testSort(arr) {
 
   // And reverse
   var d = forall s in arr do stringToTwoRepeated(s);
-  sort(d, new ReverseComparator(new MyComparator()));
+  sort(d, new reverseComparator(new MyComparator()));
   writeln(d);
-  assert(isSorted(d, new ReverseComparator(new MyComparator())));
+  assert(isSorted(d, new reverseComparator(new MyComparator())));
 }
 
 var t = stringToTwoRepeated("00011111");

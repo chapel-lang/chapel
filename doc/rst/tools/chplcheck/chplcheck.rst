@@ -10,7 +10,7 @@ It is also intended to be customizable and extensible, using a system of named
 'rules' that lead to warnings.
 
 ``chplcheck`` supports the Language Server Protocol, allowing it to be used as
-part of your favorite editor. The following image demonstrates its' use in
+part of your favorite editor. The following image demonstrates its use in
 Neovim:
 
 .. image:: neovim.png
@@ -133,6 +133,54 @@ fixits are applied:
 * ``--interactive``: Starts an interactive session where you can choose which
   fixits to apply.
 
+Rule Specific Settings
+----------------------
+
+Some rules have individual settings that can be adjusted to customize their
+behavior. These are specified from the command line as
+``--setting RuleName.SettingName=Value``.For example, a rule like
+``NoFuncNamed`` could have a setting called ``Name`` to select what function
+names are disallowed. This setting could be adjusted as follows:
+``--setting NoFuncNamed.Name="foo"``.
+
+These settings are local to a given rule. Settings can also be global, as long
+as at least 1 rule opts in to using them. For example, custom rules could conform
+to the setting ``MyIgnoreList``, which could be set as
+``--setting MyIgnoreList="foo,bar"``.
+
+Configuration Files
+-------------------
+
+``chplcheck`` can be configured without passing command line flags using a
+configuration file. This file can be specified using the ``--config`` (also
+``-c``) flag. The configuration file can either be a YAML file or a specific
+TOML file. For example, running ``chplcheck -c config.yaml`` will load the
+configuration from ``config.yaml``. Additionally, ``chplcheck`` will look for
+configuration files in the current directory named ``chplcheck.cfg`` or
+``.chplcheck.cfg`` (in that order).
+
+Most command line options can be specified in the configuration file. For
+example, the following YAML configuration file will explicitly enable the
+``UseExplicitModules`` rule and disable the ``UnusedLoopIndex`` and
+``UnusedFormal`` rules:
+
+.. code-block:: yaml
+
+   enable-rule: ["UseExplicitModules"]
+   disable-rule: ["UnusedLoopIndex", "UnusedFormal"]
+
+TOML configuration files can also be used, for example the following is the same configuration as above:
+
+.. code-block:: toml
+
+   [tool.chplcheck]
+   enable-rule = ["UseExplicitModules"]
+   disable-rule = ["UnusedLoopIndex", "UnusedFormal"]
+
+This configuration can also be added to a :ref:`Mason <readme-mason>`
+configuration file. ``chplcheck`` will automatically use a configuration file
+contained in a ``Mason.toml`` file in the current directory.
+
 Setting Up In Your Editor
 -------------------------
 
@@ -202,7 +250,7 @@ checking for unused formals.
 
 .. code-block:: python
 
-   @driver.advanced_rule(default=False)
+   @driver.advanced_rule
    def UnusedFormal(context, root):
        formals = dict()
        uses = set()
@@ -232,6 +280,32 @@ checking for unused formals.
 This function performs _two_ pattern-based searches: one for formals, and one
 for identifiers that might reference the formals. It then emits a warning for
 each formal for which there wasn't a corresponding identifier.
+
+Location Rules
+~~~~~~~~~~~~~~
+
+Sometimes, a linter rule is not based on a pattern of AST nodes, but rather on a
+textual pattern in the source code. For example, a rule might check that all lines
+in a file are indented with spaces, not tabs. To support this, ``chplcheck`` has
+a third type of rule: location rules. These rules are specified using the
+``driver.location_rule`` decorator. Location rules yield a ``RuleLocation``
+object that specifies the textual location of the issue. A ``RuleLocation`` has
+a path, a start position, and an end position. The start and end positions are
+tuples of line and column numbers, where the first character in the file is at
+line 1, column 1.
+
+Alternatively, a location rule can yield a ``LocationRuleResult`` object which
+wraps a ``RuleLocation`` object along with other data, like fixits.
+
+The following example demonstrates a location rule that checks for tabs:
+
+.. code-block:: python
+
+   @driver.location_rule
+   def NoTabs(context: chapel.Context, path: str, lines: List[str])
+       for line, text in enumerate(lines, start=1):
+           if '\t' in text:
+               yield RuleLocation(line, (i, 1), (i, len(line) + 1))
 
 Making Rules Ignorable
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -275,10 +349,11 @@ Since loop indices can't have attributes applied to them directly, the rule abov
 Fixits
 ~~~~~~
 
-Rules can have fixits associated with them. To define a fixit, the rule should
-construct a ``Fixit`` object and add it to the ``fixits`` field of
-``BasicRuleResult`` or ``AdvancedRuleResult`` for basic and advanced rules,
-respectively.
+Rules can have fixits associated with them, which allow ``chplcheck`` to
+automatically resolve issues it encounters. To define a fixit, the rule should
+construct a ``Fixit`` object and associate it with its result
+(``BasicRuleResult`` or ``AdvancedRuleResult`` for basic and advanced rules,
+respectively). This can be done in two ways (see below).
 
 A ``Fixit`` contains a list of ``Edit`` objects to apply to the code and an
 optional description, which is shown to the user when the fixit is applied.
@@ -301,8 +376,102 @@ For example, the following defines a rule that has a fixit associated with it:
 
 .. note::
 
+    The fixit for 'NoFunctionFoo' demonstrated here is not production-ready.
+    It does not rename the uses of the function, nor does it check for conflicts
+    with other names in the file. It is intended only to demonstrate the API for
+    defining fixits. The same is true for various other versions of this
+    example in this section.
+
+
+The above code snippet directly uses a ``fixits=`` argument to the
+``BasicRuleResult`` constructor. This is one of two ways to associate fixits with
+rules. Both advanced and basic rule results support this constructor argument.
+
+Constructing the ``Edit`` objects can become relatively complicated for more
+powerful auto-fixes. In practice, ``chplcheck`` developers have observed
+that the code to construct the necessary edits can be longer than the code
+implementing the rule. To provide a separation of concerns between
+"what should be warned about" and "how to fix the warning", ``chplcheck``
+provides a second mechanism to attach fixits to rules: the ``@driver.fixit``
+decorator.
+
+This decorator accepts the rule-to-be-fixed as an argument, and wraps a function
+that accepts the result of the rule. The wrapped function should use
+the information returned by the rule to construct a ``Fixit`` object or a list of
+``Fixit`` objects.
+
+For example, the snippet above can be written using the decorator as follows:
+
+.. code-block:: python
+
+   @driver.basic_rule(chapel.Function)
+   def NoFunctionFoo(context, node):
+       return node.name() != "foo"
+
+   @driver.fixit(NoFunctionFoo)
+   def FixNoFunctionFoo(context, result: BasicRuleResult):
+       fixit = Fixit.build(Edit.build(result.node.name_location(), "bar"))
+       fixit.description = "Replace 'foo' with 'bar'"
+       return fixit
+
+Multiple fixits can be attached to a rule by using the ``@driver.fixit`` decorator
+several times.
+
+Particularly complicated rules can do a number of AST traversals and computations
+to determine whether a warning should be emitted. The information gathered
+in the process of these computations may be required to issue a fixit. When
+using the ``@driver.fixit`` decorator, it appears as though this information
+is lost. To address this, both ``BasicRuleResult`` and ``AdvancedRuleResult``
+accept an additional ``data`` argument. This argument can be of any type.
+When decorator-based fixit functions are invoked, this ``data`` can be accessed
+as a field on the result object.
+
+.. code-block:: python
+
+   @driver.basic_rule(chapel.Function)
+   def NoFunctionFoo(context, node):
+       if node.name() == "foo":
+           return BasicRuleResult(node, data="some data")
+       return
+
+   @driver.fixit(NoFunctionFoo)
+   def FixNoFunctionFoo(context, result: BasicRuleResult):
+       print(result.data)  # prints "some data"
+       fixit = Fixit.build(Edit.build(result.node.name_location(), "bar"))
+       fixit.description = "Replace 'foo' with 'bar'"
+       return fixit
+
+.. note::
+
    The API for defining fixits is still under development and may change in the
    future.
+
+Settings
+~~~~~~~~
+
+Some rules may need to be configurable from the command line. For example, a
+``TabSize`` rule might need to know what the tab size is set to. Rules can
+declare what settings they need with the ``settings`` argument, which is a list
+of setting names. Settings that begin with ``.`` are consided local to the rule,
+while settings that do not are considered global. For example, the following
+rule declares rule ``TabSize`` with a setting ``Size``:
+
+.. code-block:: python
+
+   @driver.basic_rule(chapel.Function, settings=[".Size"])
+   def TabSize(context, node, Size = None):
+       s = int(Size)
+       print("Tab size is", s)
+
+       # ...logic to check tab size...
+
+
+The setting is then accessed as a keyword argument to the rule function.
+If the setting is not provided, a default value of ``None`` is used. The setting is
+always provided as a string, if a different type is required (like an integer or
+a comma-separated-list) the rule author must write code to convert the types.
+
+The ``TabSize.Size`` setting can now be set from the command line with ``--setting TabSize.Size=4``.
 
 Adding Custom Rules
 -------------------
@@ -350,3 +519,24 @@ The linter is run as follows:
    path/to/myfile/myfile.chpl:1: node violates rule NoFunctionFoo
    path/to/myfile/myfile.chpl:2: node violates rule NoVariableBar
 
+
+Developers may also find it helpful to maintain documentation for their custom
+rules. Adding a Python docstring to the rule function will include the
+documentation in the ``--list-rules`` output. This docstring can also be used to
+generate Sphinx documentation for the rule. This can be done by running the
+``chplcheck-docs.py`` script. For example:
+
+.. code-block:: bash
+
+   > $CHPL_HOME/doc/util/chplcheck-docs.py path/to/my/myrules.py -o my/out/directory
+
+This will generate a ``rules.rst`` file in ``my/out/directory`` that contains
+the documentation for the rules in ``myrules.py``. Note that this script is
+currently only available in the Chapel source tree.
+
+Current Rules
+-------------
+
+The following is a list of all the rules currently implemented in ``chplcheck``:
+
+.. include:: generated/rules.rst

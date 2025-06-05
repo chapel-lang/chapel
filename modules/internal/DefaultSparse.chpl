@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -274,7 +274,7 @@ module DefaultSparse {
       }
 
       bulkAdd_prepareInds(inds, dataSorted, isUnique,
-                          new Sort.DefaultComparator());
+                          new Sort.defaultComparator());
 
       if _nnz == 0 {
 
@@ -406,6 +406,16 @@ module DefaultSparse {
 
     override proc dsiSupportsAutoLocalAccess() param {
       return defaultSparseSupportsAutoLocalAccess;
+    }
+
+    proc getCoordinates() const ref : [] rank*idxType {
+      _fit(_nnz);  // shrink the coordinate array to be "just the right size"
+      return _indices;
+    }
+
+    proc getCoordinates() ref : [] rank*idxType {
+      _fit(_nnz);  // shrink the coordinate array to be "just the right size"
+      return _indices;
     }
   }
 

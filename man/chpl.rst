@@ -25,7 +25,8 @@ Options or C Code Generation Options below.
 SOURCE FILES
 ------------
 
-Chapel recognizes four source file types: **.chpl**, .c, .h, and .o.
+Chapel recognizes the following source file types: **.chpl**, .c, .h, .o,
+.a, .so, and .dylib.
 
 **foo.chpl**
 
@@ -42,6 +43,14 @@ Chapel recognizes four source file types: **.chpl**, .c, .h, and .o.
 **foo.o**
 
     Object file.
+
+**foo.a**
+
+    Static library.
+
+**foo.so/foo.dylib**
+
+    Shared library.
 
 OPTIONS
 -------
@@ -113,6 +122,16 @@ OPTIONS
     Print the module search path used to resolve module for further details.
 
 *Warning and Language Control Options*
+
+.. _man-edition:
+
+**\--edition <edition>**
+
+    Specify the language edition to use.  Enables breaking changes that are
+    associated with the particular edition specified (as well as those that were
+    associated with earlier editions).  See
+    https://chapel-lang.org/docs/technotes/editions.html or
+    $CHPL\_HOME/doc/rst/technotes/editions.rst for more information.
 
 .. _man-permit-unhandled-module-errors:
 
@@ -216,11 +235,10 @@ OPTIONS
 
 **\--[no-]warn-param-implicit-numeric-conversions**
 
-    When used in conjunction with ``warn-int-uint``,
-    ``--warn-real-real``, or ``--warn-integral-integral``, this flag
-    enables [or disables] these compilation warnings about implicitly
-    converting between numeric types to also apply when the converted
-    value is a ``param``.
+    When used in conjunction with any of the preceding flags enabling
+    compilation warnings for numeric implicit conversions, this flag
+    enables [or disables] that set of warnings for cases where the
+    converted value is a ``param``.
 
 *Parallelism Control Options*
 
@@ -459,6 +477,14 @@ OPTIONS
     `\--[no-]auto-local-access`.  This dynamic analysis can result in loop
     duplication that increases executable size and compilation time. There
     may also be execution time overheads independent of loop domain size.
+
+.. _man-offset-auto-local-access:
+
+**\--[no-]offset-auto-local-access**
+
+    Enable [disable] automatic local access optimization for array accesses with
+    simple offsets like `A[i+1]`. This optimization only applies to
+    stencil-distributed arrays.
 
 .. _man-auto-aggregation:
 
@@ -854,7 +880,7 @@ OPTIONS
 Note that the flags in this section all have corresponding environment
 variables.  Details on those environment variables, including potential values
 for them, can be found at
-https://chapel-lang.org/docs/latest/usingchapel/chplenv.html or at
+https://chapel-lang.org/docs/usingchapel/chplenv.html or at
 doc/rst/usingchapel/chplenv.rst in your Chapel installation.
 
 .. _man-home:
@@ -969,13 +995,14 @@ doc/rst/usingchapel/chplenv.rst in your Chapel installation.
     overrides the $CHPL\_MAKE environment variable (defaults to a best guess
     based on $CHPL\_HOST\_PLATFORM).
 
+.. _man-target-mem:
 .. _man-mem:
 
-**\--mem <mem-impl>**
+**\--target-mem <mem-impl>**
 
     Specify the memory allocator used for dynamic memory management. This
-    flag corresponds with and overrides the $CHPL\_MEM environment variable
-    (defaults to a best guess based on $CHPL\_COMM).
+    flag corresponds with and overrides the $CHPL\_TARGET\_MEM environment
+    variable (defaults to a best guess based on $CHPL\_COMM).
 
 .. _man-re2:
 
@@ -1135,5 +1162,5 @@ See $CHPL\_HOME/CONTRIBUTORS.md for a list of contributors to Chapel.
 COPYRIGHT
 ---------
 
-| Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+| Copyright 2020-2025 Hewlett Packard Enterprise Development LP
 | Copyright 2004-2019 Cray Inc.

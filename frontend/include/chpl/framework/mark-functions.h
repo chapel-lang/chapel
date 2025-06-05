@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -31,8 +31,8 @@
 #include <vector>
 
 #include "chpl/framework/Context.h"
-#include "chpl/types/QualifiedType.h"
 #include "chpl/util/memory.h"
+#include "llvm/ADT/SmallVector.h"
 
 namespace chpl {
 
@@ -90,6 +90,15 @@ template<typename T> struct mark<std::vector<T>> {
   }
 };
 
+template<typename T, size_t i> struct mark<llvm::SmallVector<T, i>> {
+  void operator()(Context* context, const llvm::SmallVector<T, i>& keep) const {
+    for (auto const &elt : keep) {
+      chpl::mark<T> marker;
+      marker(context, elt);
+    }
+  }
+};
+
 template<typename T> struct mark<chpl::optional<T>> {
   void operator()(Context* context, const chpl::optional<T>& keep) const {
     if (keep) {
@@ -121,7 +130,7 @@ template<typename T> struct mark<std::set<T>> {
 };
 
 template<typename K, typename V> struct mark<std::unordered_map<K,V>> {
-  void operator()(Context* context, std::unordered_map<K,V>& keep) const {
+  void operator()(Context* context, const std::unordered_map<K,V>& keep) const {
     for (auto const &pair : keep) {
       chpl::mark<K> keyMarker;
       chpl::mark<V> valMarker;
@@ -159,11 +168,9 @@ template<typename ... Ts> struct mark<std::tuple<Ts...>> {
     mark_tuple_impl(context, keep, std::index_sequence_for<Ts...>());
   }
 };
-
-template <>
-struct mark<types::QualifiedType::Kind> {
-  void operator()(Context* context, types::QualifiedType::Kind t) {
-    // No need to mark enums
+template<typename ... Ts> struct mark<const std::tuple<Ts...>> {
+  void operator()(Context* context, const std::tuple<Ts...>& keep) const {
+    mark_tuple_impl(context, keep, std::index_sequence_for<Ts...>());
   }
 };
 

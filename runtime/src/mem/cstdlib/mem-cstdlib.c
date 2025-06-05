@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -37,7 +37,7 @@ void chpl_mem_layerInit(void) {
 
   chpl_comm_regMemHeapInfo(&start, &size);
   if (start || size) {
-    chpl_error("Your CHPL_MEM setting doesn't support the registered heap "
+    chpl_error("Your CHPL_TARGET_MEM setting doesn't support the registered heap "
                "required by your CHPL_COMM setting. You'll need to change one "
                "of these configurations.", 0, 0);
   }

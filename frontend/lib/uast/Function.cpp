@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -92,6 +92,17 @@ const char* Function::kindToString(Kind kind) {
     case Function::ITER:     return "iter";
     case Function::OPERATOR: return "operator";
     case Function::LAMBDA:   return "lambda";
+  }
+
+  return "<unknown>";
+}
+
+const char* Function::iteratorKindToString(IteratorKind kind) {
+  switch (kind) {
+    case Function::SERIAL:     return "serial";
+    case Function::STANDALONE: return "standalone";
+    case Function::LEADER:     return "leader";
+    case Function::FOLLOWER:   return "follower";
   }
 
   return "<unknown>";

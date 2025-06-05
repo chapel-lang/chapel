@@ -76,8 +76,7 @@ inline proc transposeClever(original, ref output) {
   }
 }
 
-pragma "codegen for GPU"
-pragma "always resolve function"
+pragma "GPU kernel"
 export proc transposeMatrix(odata: c_ptr(dataType), idata: c_ptr(dataType), width: int, height: int) {
   // Allocate extra columns for the shared 2D array to avoid bank conflicts.
   param paddedBlockSize = blockSize + blockPadding;

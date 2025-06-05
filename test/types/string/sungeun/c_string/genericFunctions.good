@@ -1,4 +1,0 @@
-genericFunctions.chpl:111: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'string.c_str()' from the 'CTypes' module instead
-genericFunctions.chpl:112: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'string.c_str()' from the 'CTypes' module instead
-genericFunctions.chpl:107: In function 'g':
-genericFunctions.chpl:108: warning: the type 'c_string' is deprecated; please 'use CTypes' and replace 'c_string' with 'c_ptrConst(c_char)'

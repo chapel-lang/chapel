@@ -1,0 +1,10 @@
+unmanaged C1: {}
+unmanaged C1?: {}
+unmanaged C2: {x = 1}
+unmanaged C2?: {x = 1}
+unmanaged C3(int(64)): {x = 1}
+unmanaged C3(int(64))?: {x = 1}
+unmanaged C3(real(64)): {x = 1.0}
+unmanaged C3(real(64))?: {x = 1.0}
+unmanaged C4(4): {x = 4}
+unmanaged C4(4)?: {x = 4}

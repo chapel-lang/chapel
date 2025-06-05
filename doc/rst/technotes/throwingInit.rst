@@ -65,15 +65,32 @@ cause the program to halt.
 
 .. _init_declaring_init_as_throws:
 
-Declaring Initializers as throws
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Declaring throwing Initializers
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Initializers can be declared with the ``throws`` keyword.  This enables uncaught
-errors in the initializer body to be propagated outside of the initializer (see
-:ref:`init_calling_throwing_funcs`).  When an error is thrown, the memory that
-would have been used for the result of the initializer call will be cleaned up
-before the error is thrown back to the caller.
+Like typical routines, initializers and post-initializers
+(``postinit()`` procedures) can be declared with the ``throws``
+keyword.  This enables errors encountered during object initialization
+to be thrown back to the calling context.  When an error is thrown
+during either of these calls, the compiler ensures that the
+``deinit()`` routine for each initialized field is called, and that
+the memory allocated to store the object is freed.
 
+Note that, at present, this feature has the following limitations:
+
+* Initializers can only throw errors after the ``init this`` statement
+  (see :ref:`Limitations_on_Instance_Usage_in_Initializers` for more
+  information about ``init this``).  One implication of this is that
+  the initializer of a superclass may not ``throw`` since its
+  invocation precedes the ``init this;`` statement.
+
+* Initializers can only throw errors by making calls to throwing
+  routines, not by directly executing ``throws`` statements.
+
+The following is an example of a throwing initializer that relies on a
+throwing helper procedure, ``validate()``, called after its `init
+this;` statement:
+  
 *Example (init-declared-throws.chpl)*.
 
 .. code-block:: chapel
@@ -89,7 +106,7 @@ before the error is thrown back to the caller.
 
      proc init(xVal: int) throws {
        x = xVal;
-       this.complete();
+       init this;
        validate(this);
      }
    }
@@ -109,28 +126,11 @@ before the error is thrown back to the caller.
    (x = 4)
    Caught error: x too large
 
-.. _init_calling_throwing_funcs:
 
-Calling Throwing Functions
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-When an initializer is declared with the ``throws`` keyword, calls to throwing
-functions may be made in the body of the initializer after ``this.complete()``
-(see :ref:`Limitations_on_Instance_Usage_in_Initializers` for information on
-``this.complete()`` and the example in :ref:`init_declaring_init_as_throws`).
-As a result, thrown errors will be propagated outside of the initializer.  The
-memory that would have been used to store the instance created by the
-initializer will be cleaned up prior to propagating the error.
-
-.. note::
-
-   Calls to throwing functions are not currently allowed prior to
-   ``this.complete()``.
-
-When an initializer is not declared with the ``throws`` keyword, calls to
-throwing functions may be made anywhere in the body of the initializer.  Such
-calls will cause the program to halt (see :ref:`Chapter-Error_Handling`) if
-errors are encountered.
+As in typical procedures, if an initializer is not declared with the
+``throws`` keyword, yet makes a call that throws an error, the program
+will halt if errors are encountered (see
+:ref:`Chapter-Error_Handling`).
 
 Future Work
 -----------
@@ -141,7 +141,7 @@ include:
 - being able to ``throw`` from anywhere in the body of an initializer
 - being able to write ``try`` / ``try!`` with ``catch`` blocks anywhere in the
   body of an initializer
-- being able to call functions that ``throw`` prior to ``this.complete()``
+- being able to call functions that ``throw`` prior to ``init this``
   (see :ref:`Limitations_on_Instance_Usage_in_Initializers` for a description)
   - including ``super.init`` calls when the parent initializer throws, e.g.,
 
@@ -152,7 +152,7 @@ include:
 
          proc init(xVal: int) throws {
            x = xVal;
-           this.complete();
+           init this;
            someThrowingFunc(this);
          }
        }
@@ -163,6 +163,6 @@ include:
          proc init(xVal: int, yVal: bool) throws {
            super.init(xVal); // This call is not valid today
            y = yVal;
-           this.complete();
+           init this;
          }
        }

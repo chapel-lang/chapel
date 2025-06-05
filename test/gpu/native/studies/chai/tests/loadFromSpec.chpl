@@ -1,0 +1,1 @@
+../ChAI/test/loadFromSpec.chpl

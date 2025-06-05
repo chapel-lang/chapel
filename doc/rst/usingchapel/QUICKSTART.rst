@@ -3,26 +3,127 @@
 Chapel Quickstart Instructions
 ==============================
 
-These instructions are designed to help users get started with a
-single-locale (shared-memory) implementation of Chapel from the source
-distribution of the release as quickly as possible.  If you want to
-understand Chapel's configuration options, build process, and
-installation more thoroughly, please refer to :ref:`readme-chplenv`
-and :ref:`readme-building` instead.
+These instructions are designed to help users get started with a single-locale
+(shared-memory) implementation of Chapel as quickly as possible. If you want to
+understand Chapel's configuration options, build process, and installation more
+thoroughly, please refer to :ref:`readme-chplenv` and :ref:`readme-building`
+instead.
 
-These instructions first have you build a minimal, low-performance
-configuration of Chapel to reduce build times and the potential for
-third-party portability issues.  Once you are interested in getting
-better performance or using a full-featured version of Chapel, refer
-to :ref:`using-a-more-full-featured-chapel` below.
+The options for getting started, in order of preference, are:
+
+1) `Binary Release via a Package Manager`_
+2) `Containers (Docker)`_
+3) `Building From Source via Spack`_
+4) `Building From Source`_
+
+Binary Release via a Package Manager
+------------------------------------
+
+Chapel provides binary releases for several platforms and operating systems. If
+you are using a platform for which Chapel provides a binary release, we
+recommend using it to get the easiest and fastest start with Chapel. To install
+Chapel this way, download the appropriate package for your OS and platform and
+install it using your system's package manager.
+
+For example, on Ubuntu 24 with x86_64, you can use the following to install
+Chapel 2.4:
+
+.. code-block:: bash
+
+   wget https://github.com/chapel-lang/chapel/releases/download/2.4.0/chapel-2.4.0-1.ubuntu24.amd64.deb
+   sudo apt-get update
+   sudo agt-get install ./chapel-2.4.0-1.ubuntu24.amd64.deb
+
+For example, on Fedora 41 with aarch64, you can use the following to install
+Chapel 2.4:
+
+.. code-block:: bash
+
+   wget https://github.com/chapel-lang/chapel/releases/download/2.4.0/chapel-2.4.0-1.fc41.aarch64.rpm
+   sudo dnf update
+   sudo dnf install ./chapel-2.4.0-1.fc41.aarch64.rpm
+
+See `this page <https://chapel-lang.org/download/#linux>`__ for the most
+up-to-date list of supported OSes and platforms.
+
+brew
+~~~~
+
+If you are using `brew <https://brew.sh/>`__, you can also install Chapel
+directly with ``brew install chapel``. This will install the latest Chapel
+release available in the brew repository.
+
+Containers (Docker)
+-------------------
+
+Chapel provides a number of Docker images that can be used to run Chapel in a
+containerized environment. This is a good option if you want to try Chapel
+without installing it on your host system or if you want to ensure that you
+have a consistent environment across different machines.
+
+We currently provide three different Docker images:
+
+* chapel - basic Chapel compiler and standard library
+* chapel-gasnet - Chapel with support for multi-locale (distributed memory) programming using GASNet over ethernet
+* chapel-gasnet-smp - Chapel with support for multi-locale programming using shared memory
+
+For example, the following is a minimal Dockerfile that uses the `chapel` image
+to run a simple Chapel program:
+
+.. code-block:: dockerfile
+
+   FROM chapel/chapel:latest
+   COPY hello.chpl /app/hello.chpl
+   WORKDIR /app
+   RUN chpl hello.chpl
+   CMD ["./hello"]
+
+Github Codespaces
+~~~~~~~~~~~~~~~~~
+
+Github Codespaces are a great way to quickly setup a developer environment for
+Chapel without needing to install anything on your local machine. The
+`chapel-hello-world <https://github.com/chapel-lang/chapel-hello-world>`__
+repository provides a simple example of how to set up a Codespace for Chapel
+development. This repository also provides a template that you can use to
+create your own Codespace for Chapel development.
+
+To start using Chapel with a Codespace, use the following steps:
+
+1. Go to the `chapel-hello-world <https://github.com/chapel-lang/chapel-hello-world>`__ repository.
+2. Click on "Use this template" to create a new repository based on the template.
+3. In the new repository, click on the "Code" button, select "Codespaces", and then click on "Create codespace on main".
+
+.. image:: codespaceCreation.png
+   :width: 50%
+   :align: center
+   :alt: Screenshot of creating a Codespace for Chapel development
+
+Building From Source via Spack
+------------------------------
+
+Chapel provides a `Spack <https://spack.io/>`__ package that can be used to
+build Chapel from source. This is a good option if you want to use Chapel on a
+system where a binary release is not available or if you want to customize the
+build options. See `this page <https://chapel-lang.org/download/#spack>`__ for
+more information on how to use Spack to install Chapel.
+
+Building From Source
+--------------------
+
+These instructions are only intended to get a minimal, low-performance
+configuration of Chapel up and running quickly to reduce build times and the
+potential for third-party portability issues. For a more performant and fully
+featured version of Chapel from source, refer to
+:ref:`using-a-more-full-featured-chapel` below.
 
 
 0) See :ref:`readme-prereqs` for information about system tools and
    packages you should have available to build and run Chapel.
 
 
-1) If you don't already have the Chapel 2.1 source release, see
-   https://chapel-lang.org/download.html.
+1) If you don't already have the Chapel 2.5 source release, see
+   https://chapel-lang.org/download/
 
 
 2) Build Chapel in its 'Quickstart' configuration:
@@ -31,14 +132,14 @@ to :ref:`using-a-more-full-featured-chapel` below.
 
       .. code-block:: bash
 
-         tar xzf chapel-2.1.0.tar.gz
+         tar xzf chapel-2.5.0.tar.gz
 
    b. Make sure that you are in the directory that was created when
       unpacking the source release, for example:
 
       .. code-block:: bash
 
-         cd chapel-2.1.0
+         cd chapel-2.5.0
 
    c. Set up your environment for Chapel's Quickstart mode.
       If you are using a shell other than ``bash`` or ``zsh``,
@@ -81,7 +182,7 @@ to :ref:`using-a-more-full-featured-chapel` below.
 .. _using-a-more-full-featured-chapel:
 
 Using Chapel in its Preferred Configuration
--------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To use Chapel in its preferred, full-featured mode, you will need to
 rebuild Chapel from source in a different configuration:
@@ -104,8 +205,7 @@ rebuild Chapel from source in a different configuration:
 
   - Or, use ``export CHPL_LLVM=bundled`` to have Chapel build and use the
     bundled version of LLVM. Note that building the bundled version of
-    LLVM can take a long time and requires CMake version 3.13.4 or
-    higher.
+    LLVM can take a long time.
 
   - Use ``export CHPL_LLVM=none`` to continue using the C back-end rather
     than LLVM
@@ -144,7 +244,7 @@ rebuild Chapel from source in a different configuration:
 .. _using-chapel-in-another-shell:
 
 Using Chapel in a Different Shell or Terminal
----------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Note that in both the Quickstart and preferred modes above, any
 environment settings made by ``setchplenv.bash`` will not persist
@@ -157,16 +257,16 @@ available including a ``./configure`` + ``make install`` option.  See
 
 
 Using Chapel in Multi-Locale Mode
----------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-All of the instructions above describe how to run Chapel programs in a
-single-locale (shared-memory) mode. To run using multiple locales
+All of the "from source" instructions above describe how to run Chapel programs in
+a single-locale (shared-memory) mode. To run using multiple locales
 (multiple compute nodes with distributed memory), please refer to
 :ref:`readme-multilocale`.
 
 
 Notes on Performance
---------------------
+~~~~~~~~~~~~~~~~~~~~
 
 If you plan to do performance studies of Chapel programs, be sure to
 use the full-featured version above, to compile with ``--fast`` once
@@ -177,7 +277,7 @@ https://chapel-lang.org/perf-tips.html for other tips.
 .. _quickstart-with-other-shells:
 
 Quickstart with Other Shells
-----------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Use the table below to identify the location of an appropriate
 Quickstart ``setchplenv`` script, based on the shell you use.

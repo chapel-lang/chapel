@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -120,8 +120,8 @@ void printStatistics(const char* pass) {
     kTemporaryConversionThunk;
   int nSymbol = nModuleSymbol+nVarSymbol+nArgSymbol+nShadowVarSymbol+nTypeSymbol+nFnSymbol+nInterfaceSymbol+nEnumSymbol+nLabelSymbol+nTemporaryConversionSymbol;
   int kSymbol = kModuleSymbol+kVarSymbol+kArgSymbol+kShadowVarSymbol+kTypeSymbol+kFnSymbol+kInterfaceSymbol+kEnumSymbol+kLabelSymbol+kTemporaryConversionSymbol;
-  int nType = nPrimitiveType+nConstrainedType+nEnumType+nAggregateType+nFunctionType+nDecoratedClassType;
-  int kType = kPrimitiveType+kConstrainedType+kEnumType+kAggregateType+kFunctionType+kDecoratedClassType;
+  int nType = nPrimitiveType+nConstrainedType+nEnumType+nAggregateType+nFunctionType+nTemporaryConversionType+nDecoratedClassType;
+  int kType = kPrimitiveType+kConstrainedType+kEnumType+kAggregateType+kFunctionType+kTemporaryConversionType+kDecoratedClassType;
 
   fprintf(stderr, "%7d asts (%6dK) %s\n", nStmt+nExpr+nSymbol+nType, kStmt+kExpr+kSymbol+kType, pass);
 
@@ -142,33 +142,33 @@ void printStatistics(const char* pass) {
             kStmt, kCondStmt, kBlockStmt, kGotoStmt);
 
   if (strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Expr %9d  Unre %9d  Sym  %9d  Def   %9d  Call  %9d  Forall %9d  Named %9d  If %9d  Thunk %9d\n",
+    fprintf(stderr, "    Expr %9d  Unre %9d  Sym   %9d  Def   %9d  Call  %9d  Forall %9d  Named %9d  If   %9d  Thunk %9d\n",
             nExpr, nUnresolvedSymExpr, nSymExpr, nDefExpr, nCallExpr, nLoopExpr, nNamedExpr, nIfExpr, nTemporaryConversionThunk);
   if (strstr(fPrintStatistics, "k") && strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Expr %9dK Unre %9dK Sym  %9dK Def   %9dK Call  %9dK Forall %9dk Named %9dK If %9d  Thunk %9dK\n",
+    fprintf(stderr, "    Expr %9dK Unre %9dK Sym   %9dK Def   %9dK Call  %9dK Forall %9dk Named %9dK If   %9d  Thunk %9dK\n",
             kExpr, kUnresolvedSymExpr, kSymExpr, kDefExpr, kCallExpr, kLoopExpr, kNamedExpr, kIfExpr, kTemporaryConversionThunk);
   if (strstr(fPrintStatistics, "k") && !strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Expr %6dK Unre %6dK Sym  %6dK Def   %6dK Call  %6dK Forall %6dk Named %6dK If %6d  Thunk %9dK\n",
+    fprintf(stderr, "    Expr %6dK Unre %6dK Sym   %6dK Def   %6dK Call  %6dK Forall %6dk Named %6dK If   %6d  Thunk %9dK\n",
             kExpr, kUnresolvedSymExpr, kSymExpr, kDefExpr, kCallExpr, kLoopExpr, kNamedExpr, kIfExpr, kTemporaryConversionThunk);
 
   if (strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Sym  %9d  Mod  %9d  Var   %9d  Arg   %9d  Shd   %9d  Type %9d  Fn %9d  Enum %9d  Label %9d\n",
+    fprintf(stderr, "    Sym  %9d  Mod  %9d  Var   %9d  Arg   %9d  Shd   %9d  Type   %9d  Fn    %9d  Enum %9d  Label %9d\n",
             nSymbol, nModuleSymbol, nVarSymbol, nArgSymbol, nShadowVarSymbol, nTypeSymbol, nFnSymbol, nEnumSymbol, nLabelSymbol);
   if (strstr(fPrintStatistics, "k") && strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Sym  %9dK Mod  %9dK Var   %9dK Arg   %9dK Shd   %9dK Type %9dK Fn %9dK Enum %9dK Label %9dK\n",
+    fprintf(stderr, "    Sym  %9dK Mod  %9dK Var   %9dK Arg   %9dK Shd   %9dK Type   %9dK Fn    %9dK Enum %9dK Label %9dK\n",
             kSymbol, kModuleSymbol, kVarSymbol, kArgSymbol, kShadowVarSymbol, kTypeSymbol, kFnSymbol, kEnumSymbol, kLabelSymbol);
   if (strstr(fPrintStatistics, "k") && !strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Sym  %6dK Mod  %6dK Var   %6dK Arg  %6dK Shd    %6dK Type %6dK Fn %6dK Enum %6dK Label %6dK\n",
+    fprintf(stderr, "    Sym  %6dK Mod  %6dK Var   %6dK Arg   %6dK Shd   %6dK Type   %6dK Fn    %6dK Enum %6dK Label %6dK\n",
             kSymbol, kModuleSymbol, kVarSymbol, kArgSymbol, kShadowVarSymbol, kTypeSymbol, kFnSymbol, kEnumSymbol, kLabelSymbol);
 
   if (strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Type %9d  Prim  %9d  Enum %9d  Class %9d \n",
+    fprintf(stderr, "    Type %9d  Prim %9d  Enum  %9d  Class %9d \n",
             nType, nPrimitiveType, nEnumType, nAggregateType);
   if (strstr(fPrintStatistics, "k") && strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Type %9dK Prim  %9dK Enum %9dK Class %9dK\n",
+    fprintf(stderr, "    Type %9dK Prim %9dK Enum  %9dK Class %9dK\n",
             kType, kPrimitiveType, kEnumType, kAggregateType);
   if (strstr(fPrintStatistics, "k") && !strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Type %6dK Prim  %6dK Enum %6dK Class %6dK\n",
+    fprintf(stderr, "    Type %6dK Prim %6dK Enum  %6dK Class %6dK\n",
             kType, kPrimitiveType, kEnumType, kAggregateType);
   last_nasts = nasts;
 }
@@ -195,7 +195,7 @@ void trace_remove(BaseAST* ast, char flag) {
   }
   if (ast->id == breakOnRemoveID) {
     if (deletedIdON() == true) fflush(deletedIdHandle);
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
   // There should never be an attempt to delete a global type.
   if (flag != 'z' && // At least, not before compiler shutdown.
@@ -232,7 +232,6 @@ static void clean_modvec(Vec<ModuleSymbol*>& modvec) {
 }
 
 void cleanAst() {
-
   std::vector<Type*> keysToRm;
 
   for (auto it = serializeMap.begin() ; it != serializeMap.end() ; it++) {
@@ -245,10 +244,16 @@ void cleanAst() {
     serializeMap.erase(key);
   }
 
+  std::set<FunctionType*> functionTypesToRemove;
+
   //
   // clear back pointers to dead ast instances
   //
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+    if (auto ft = toFunctionType(ts->type)) {
+      if (!ft->inTree()) functionTypesToRemove.insert(ft);
+    }
+
     for (int i = 0; i < ts->type->methods.n; i++) {
       FnSymbol* method = ts->type->methods.v[i];
 
@@ -288,6 +293,18 @@ void cleanAst() {
     }
   }
 
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    auto ft = toFunctionType(fn->type);
+    if (ft && !ft->inTree()) {
+      // Set the type to 'nullptr', it can be recomputed later.
+      fn->type = nullptr;
+
+      // We should be removing the type.
+      INT_ASSERT(functionTypesToRemove.find(ft) !=
+                 functionTypesToRemove.end());
+    }
+  }
+
   removedIterResumeLabels.clear();
 
   copiedIterResumeGotos.clear();
@@ -301,6 +318,12 @@ void cleanAst() {
   // clean global vectors and delete dead ast instances
   //
   foreach_ast(clean_gvec);
+
+  // Finally, clean up any 'FunctionType' since they do not have a 'gvec'.
+  for (auto ast : functionTypesToRemove) {
+    trace_remove(ast, 'x');
+    delete ast;
+  }
 }
 
 
@@ -344,7 +367,7 @@ int lastNodeIDUsed() {
 // BaseAST instance in gdb.
 static void checkid(int id) {
   if (id == breakOnID) {
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
 }
 
@@ -409,6 +432,25 @@ ModuleSymbol* BaseAST::getModule() {
   }
 
   return retval;
+}
+
+bool BaseAST::wasResolvedEarly() {
+  if (auto sym = toSymbol(this)) {
+    if (sym->hasFlag(FLAG_RESOLVED_EARLY)) {
+      INT_ASSERT(!isModuleSymbol(sym));
+      return true;
+    }
+  }
+
+  if (auto t = toType(this)) {
+    if (t->symbol->hasFlag(FLAG_RESOLVED_EARLY)) return true;
+  }
+
+  // Check to see if the AST is in a dyno-generated function symbol.
+  auto fn = this->getFunction();
+  if (fn && fn->hasFlag(FLAG_RESOLVED_EARLY)) return true;
+
+  return false;
 }
 
 bool BaseAST::isRef() {
@@ -481,6 +523,7 @@ Type* BaseAST::getWideRefType() {
 const char* BaseAST::astTagAsString() const {
   switch (astTag) {
     case E_TemporaryConversionThunk: return "TemporaryConversionThunk";
+    case E_TemporaryConversionType:  return "TemporaryConversionType";
     case E_PrimitiveType:      return "PrimitiveType";
     case E_ConstrainedType:    return "ConstrainedType";
     case E_EnumType:           return "EnumType";
@@ -551,7 +594,7 @@ static Symbol* lookupTransitively(SymbolMap* map, Symbol* sym) {
   Symbol* x = map->get(sym);
   if (!x) return x;
 
-  // If the symbol is re-maped again (e.g., x was y and y was z),
+  // If the symbol is re-mapped again (e.g., x was y and y was z),
   // we need to keep looking until we find the final symbol.
   while (Symbol* y = map->get(x)) {
     // Detect naive cycles. Note that this will not find multi-step cycles,

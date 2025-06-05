@@ -1,5 +1,5 @@
 #
-# Copyright 2023-2024 Hewlett Packard Enterprise Development LP
+# Copyright 2023-2025 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -47,6 +47,18 @@ host_cxx = str(chpl_variables.get("CHPL_HOST_CXX"))
 
 host_bin_subdir = str(chpl_variables.get("CHPL_HOST_BIN_SUBDIR"))
 chpl_lib_path = os.path.join(chpl_home, "lib", "compiler", host_bin_subdir)
+# For installations using --prefix, the build and final lib paths are going to
+#  differ figure out the install location now and write it to the rpath
+chpl_home_utils = os.path.join(
+    chpl_home, "util", "chplenv", "chpl_home_utils.py"
+)
+chpl_install_lib_path = (
+    subprocess.check_output(
+        ["python", chpl_home_utils, "--configured-install-lib-prefix"],
+    )
+    .decode(sys.stdout.encoding)
+    .strip()
+)
 
 CXXFLAGS = []
 if have_llvm and have_llvm != "none":
@@ -64,13 +76,33 @@ CXXFLAGS += ["-std=c++17", "-I{}/frontend/include".format(chpl_home)]
 LDFLAGS = []
 LDFLAGS += [
     "-L{}".format(chpl_lib_path),
+    "-Wl,-rpath,{}".format(chpl_lib_path),
     "-lChplFrontendShared",
-    "-Wl,-rpath",
-    chpl_lib_path,
 ]
+
+if chpl_install_lib_path != "None":
+    LDFLAGS += [
+        "-L{}".format(chpl_install_lib_path),
+        "-Wl,-rpath,{}".format(chpl_install_lib_path),
+    ]
+
+if str(chpl_variables.get("CHPL_SANITIZE")) == "address":
+    if str(chpl_variables.get("CHPL_HOST_PLATFORM")) == "darwin":
+        sys.exit(
+            "Cannot use chapel-py on Mac OS when address sanitization is enabled; "
+            + "please unset 'CHPL_SANITIZE' then rebuild Chapel"
+        )
+
+    CXXFLAGS += ["-fsanitize=address"]
+    LDFLAGS += ["-fsanitize=address"]
+
+    if "clang" in host_cc:
+        CXXFLAGS += ["-shared-libasan"]
+        LDFLAGS += ["-shared-libasan"]
 
 os.environ["CC"] = host_cc
 os.environ["CXX"] = host_cxx
+
 setup(
     name="chapel",
     version="0.1",
@@ -83,6 +115,7 @@ setup(
             depends=glob.glob("src/**/*.h", recursive=True),
             extra_compile_args=CXXFLAGS,
             extra_link_args=LDFLAGS,
+            py_limited_api=True,
         )
     ],
 )

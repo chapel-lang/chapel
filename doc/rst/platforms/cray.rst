@@ -95,7 +95,8 @@ Building Chapel for an HPE Cray System from Source
        System         CHPL_HOST_PLATFORM
        =============  ==================
        EX series      hpe-cray-ex
-       Apollo series  hpe-apollo   
+       Apollo series  hpe-apollo
+       XD series      hpe-cray-xd
        XC series      cray-xc
        CS series      cray-cs
        =============  ==================
@@ -382,18 +383,17 @@ best performance it should be used with native substrates and fixed
 segments, though even then its performance will rarely match that of the
 ugni communication layer.  The relevant configurations are:
 
-.. code-block:: bash
-
-   CHPL_COMM=gasnet
-   CHPL_COMM_SUBSTRATE=aries # (for XC)
-   CHPL_GASNET_SEGMENT=fast
-   # OR
-   CHPL_GASNET_SEGMENT=large
+  CHPL_COMM=gasnet
+    CHPL_GASNET_SEGMENT=fast or large
 
 In these configurations the heap is created with a fixed size at the
 beginning of execution.  The default size works well in most cases but
 if it doesn't a different size can be specified, as discussed in the
 following section.
+
+Note that as of Chapel 2.4, the 'aries' substrate is no longer supported by
+GASNet. It is still possible to use the 'ofi' or 'mpi' substrates to target a
+Cray XC with GASNet, but this is not well supported or tested.
 
 
 gasnet Communication Layer and the Heap

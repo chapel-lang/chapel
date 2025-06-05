@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -19,8 +19,10 @@
 
 #include "chpl/types/DomainType.h"
 
+#include "chpl/types/RuntimeType.h"
 #include "chpl/framework/query-impl.h"
 #include "chpl/parsing/parsing-queries.h"
+#include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/intents.h"
 #include "chpl/types/Param.h"
 #include "chpl/types/TupleType.h"
@@ -28,16 +30,37 @@
 namespace chpl {
 namespace types {
 
+const ID DomainType::rankId = ID(UniqueString(), 0, 0);
+const ID DomainType::rectangularIdxTypeId = ID(UniqueString(), 1, 0);
+const ID DomainType::nonRectangularIdxTypeId = ID(UniqueString(), 0, 0);
+const ID DomainType::stridesId = ID(UniqueString(), 2, 0);
+const ID DomainType::parSafeId = ID(UniqueString(), 1, 0);
+const ID DomainType::parentDomainId = ID(UniqueString(), 0, 0);
+
+const RuntimeType* DomainType::runtimeType(Context* context) const {
+  // generic domains do not have a runtime type
+  if (kind() == DomainType::Kind::Unknown) return nullptr;
+
+  return resolution::getRuntimeType(context, this);
+}
 
 void DomainType::stringify(std::ostream& ss,
                            chpl::StringifyKind stringKind) const {
-  if (kind_ == Kind::Rectangular) {
+  if (isSparse()) {
+    ss << "sparse subdomain(";
+    parentDomain()->stringify(ss, stringKind);
+    ss << ")";
+  } else if (isSubdomain()) {
+    ss << "subdomain(";
+    parentDomain()->stringify(ss, stringKind);
+    ss << ")";
+  } else if (kind_ == Kind::Rectangular) {
     ss << "domain(";
     rank().param()->stringify(ss, stringKind);
     ss << ",";
     idxType().type()->stringify(ss, stringKind);
     ss << ",";
-    stridable().param()->stringify(ss, stringKind);
+    strides().param()->stringify(ss, stringKind);
     ss << ")";
   } else if (kind_ == Kind::Associative) {
     ss << "domain(";
@@ -53,7 +76,8 @@ void DomainType::stringify(std::ostream& ss,
 }
 
 static ID getDomainID(Context* context) {
-  return parsing::getSymbolFromTopLevelModule(context, "ChapelDomain", "_domain");
+  return parsing::getSymbolIdFromTopLevelModule(context, "ChapelDomain",
+                                                "_domain");
 }
 
 const owned<DomainType>&
@@ -69,41 +93,129 @@ DomainType::getDomainType(Context* context, ID id, UniqueString name,
 
 const DomainType*
 DomainType::getGenericDomainType(Context* context) {
-  auto name = UniqueString::get(context, "_domain");
   auto id = getDomainID(context);
+  auto name = id.symbolName(context);
   SubstitutionsMap subs;
   const DomainType* instantiatedFrom = nullptr;
   return getDomainType(context, id, name, instantiatedFrom, subs).get();
 }
 
+static void insertInstanceIntoSubs(Context* context,
+                                   resolution::SubstitutionsMap& subs,
+                                   const DomainType* genericDomain,
+                                   const QualifiedType& instance) {
+  // Add substitution for _instance field
+  resolution::ResolutionContext rc(context);
+  auto& rf = fieldsForTypeDecl(&rc, genericDomain,
+                               resolution::DefaultsPolicy::IGNORE_DEFAULTS,
+                               /* syntaxOnly */ true);
+  ID instanceFieldId;
+  for (int i = 0; i < rf.numFields(); i++) {
+    if (rf.fieldName(i) == USTR("_instance")) {
+      instanceFieldId = rf.fieldDeclId(i);
+      break;
+    }
+  }
+  subs.emplace(instanceFieldId, instance);
+}
+
 const DomainType*
 DomainType::getRectangularType(Context* context,
+                               const QualifiedType& instance,
                                const QualifiedType& rank,
                                const QualifiedType& idxType,
-                               const QualifiedType& stridable) {
+                               const QualifiedType& strides) {
+  auto genericDomain = getGenericDomainType(context);
+
   SubstitutionsMap subs;
-  subs.emplace(ID(UniqueString(), 0, 0), rank);
-  subs.emplace(ID(UniqueString(), 1, 0), idxType);
-  subs.emplace(ID(UniqueString(), 2, 0), stridable);
+  CHPL_ASSERT(rank.isParam() && rank.param()->isIntParam());
+  subs.emplace(rankId, rank);
+  CHPL_ASSERT(idxType.isType());
+  subs.emplace(rectangularIdxTypeId, idxType);
+  CHPL_ASSERT(strides.isParam() && strides.param()->isEnumParam() &&
+              strides.param()->toEnumParam()->value().id.symbolPath() ==
+                  "ChapelRange.strideKind");
+  subs.emplace(stridesId, strides);
+
+  insertInstanceIntoSubs(context, subs, genericDomain, instance);
+
   auto name = UniqueString::get(context, "_domain");
   auto id = getDomainID(context);
-  auto instantiatedFrom = getGenericDomainType(context);
-  return getDomainType(context, id, name, instantiatedFrom, subs,
-                       DomainType::Kind::Rectangular).get();
+  return getDomainType(context, id, name, /* instantiatedFrom*/ genericDomain,
+                       subs, DomainType::Kind::Rectangular).get();
 }
 
 const DomainType*
 DomainType::getAssociativeType(Context* context,
+                               const QualifiedType& instance,
                                const QualifiedType& idxType,
                                const QualifiedType& parSafe) {
+  auto genericDomain = getGenericDomainType(context);
+
   SubstitutionsMap subs;
-  subs.emplace(ID(UniqueString(), 0, 0), idxType);
-  subs.emplace(ID(UniqueString(), 1, 0), parSafe);
+  subs.emplace(nonRectangularIdxTypeId, idxType);
+  CHPL_ASSERT(idxType.isType());
+  subs.emplace(parSafeId, parSafe);
+  CHPL_ASSERT(parSafe.isParam() && parSafe.param() &&
+              parSafe.param()->isBoolParam());
+
+  insertInstanceIntoSubs(context, subs, genericDomain, instance);
+
   auto name = UniqueString::get(context, "_domain");
   auto id = getDomainID(context);
-  auto instantiatedFrom = getGenericDomainType(context);
-  return getDomainType(context, id, name, instantiatedFrom, subs,
-                       DomainType::Kind::Associative).get();
+  return getDomainType(context, id, name, /* instantiatedFrom */ genericDomain,
+                       subs, DomainType::Kind::Associative).get();
+}
+
+const DomainType* DomainType::getSubdomainType(Context* context,
+                                               const QualifiedType& instance,
+                                               const QualifiedType& parentDomain) {
+  auto genericDomain = getGenericDomainType(context);
+
+  SubstitutionsMap subs;
+  subs.emplace(parentDomainId, parentDomain);
+
+  insertInstanceIntoSubs(context, subs, genericDomain, instance);
+
+  auto name = UniqueString::get(context, "_domain");
+  auto id = getDomainID(context);
+  return getDomainType(context, id, name, /* instantiatedFrom */ genericDomain,
+                       subs, DomainType::Kind::Subdomain).get();
+}
+
+const DomainType* DomainType::getSparseType(Context* context,
+                                            const QualifiedType& instance,
+                                            const QualifiedType& parentDomain) {
+  auto genericDomain = getGenericDomainType(context);
+
+  SubstitutionsMap subs;
+  subs.emplace(parentDomainId, parentDomain);
+
+  insertInstanceIntoSubs(context, subs, genericDomain, instance);
+
+  auto name = UniqueString::get(context, "_domain");
+  auto id = getDomainID(context);
+  return getDomainType(context, id, name, /* instantiatedFrom */ genericDomain,
+                       subs, DomainType::Kind::Sparse).get();
+}
+
+const QualifiedType& DomainType::getDefaultDistType(Context* context) {
+  QUERY_BEGIN(getDefaultDistType, context);
+
+  QualifiedType result;
+
+  if (auto mod = parsing::getToplevelModule(
+          context, UniqueString::get(context, "DefaultRectangular"))) {
+    for (auto stmt : mod->children()) {
+      auto decl = stmt->toNamedDecl();
+      if (decl && decl->name() == USTR("defaultDist")) {
+        auto res = resolution::resolveModuleStmt(context, stmt->id());
+        result = res.byId(stmt->id()).type();
+      }
+    }
+  }
+
+  return QUERY_END(result);
 }
 
 int DomainType::rankInt() const {

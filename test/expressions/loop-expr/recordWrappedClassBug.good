@@ -1,2 +1,2 @@
-recordWrappedClassBug.chpl:15: warning: elt.type: R
+recordWrappedClassBug.chpl:16: warning: elt.type: R
 (c = {x = 0}) (c = {x = 1}) (c = {x = 2})

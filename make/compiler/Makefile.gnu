@@ -1,4 +1,4 @@
-# Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2025 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -209,6 +209,8 @@ endif
 #
 ifeq ($(shell test $(GNU_GCC_MAJOR_VERSION) -gt 7; echo "$$?"),0)
 SQUASH_WARN_GEN_CFLAGS += -Wno-stringop-overflow -Wno-array-bounds
+# also squash it for the runtime build to avoid a problem with mpicc
+WARN_CFLAGS += -Wno-error=stringop-overflow
 endif
 
 #
@@ -344,6 +346,16 @@ endif
 #
 ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -ge 13; echo "$$?"),0)
 WARN_CXXFLAGS += -Wno-dangling-reference
+endif
+
+# Avoid warning about atomic alignment e.g.
+# the alignment of ‘_Atomic long long unsigned int’ fields changed in GCC 11.1
+ifeq ($(CHPL_MAKE_TARGET_PLATFORM), linux32)
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -ge 11; echo "$$?"),0)
+RUNTIME_CFLAGS += -Wno-psabi
+WARN_CXXFLAGS += -Wno-psabi
+SQUASH_WARN_GEN_CFLAGS += -Wno-psabi
+endif
 endif
 
 #

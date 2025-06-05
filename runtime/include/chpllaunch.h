@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -45,6 +45,9 @@ typedef struct {
 int chpl_doDryRun(void);
 void chpl_append_to_largv(int* largc, const char*** largv, int* largv_len,
                           const char* arg);
+void chpl_append_to_cmd(char** cmdBufPtr, int* charsWritten,
+                        const char* format, ...)
+  __attribute__((format(printf, 3, 4)));
 int chpl_run_utility1K(const char *command, char *const argv[],
                        char *outbuf, int outbuflen);
 int chpl_run_cmdstr(const char *commandStr, char *outbuf, int outbuflen);

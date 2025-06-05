@@ -5,7 +5,7 @@
 
 Q_STARTCXX                             /* */
 int qthread_cacheline(void);
-Q_ENDCXX                             /* */
+Q_ENDCXX /* */
 
 #endif // ifndef QTHREAD_CACHELINE_H
-/* vim:set expandtab: */
+  /* vim:set expandtab: */

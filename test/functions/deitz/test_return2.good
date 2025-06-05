@@ -1,1 +1,4 @@
-test_return2.chpl:1: error: Not all returns in this function return a value
+test_return2.chpl:1: In function 'foo':
+test_return2.chpl:4: error: Invalid mix of 'return' statements
+test_return2.chpl:4: note: this statement returns something
+test_return2.chpl:6: note: this statement does not return anything

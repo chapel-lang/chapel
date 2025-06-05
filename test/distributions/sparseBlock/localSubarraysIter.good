@@ -1,0 +1,60 @@
+DS target locales:
+LOCALE0 LOCALE1
+LOCALE2 LOCALE3
+
+locale 0 owns:
+0.0
+1.1
+2.2
+3.3
+4.4
+
+locale 1 owns:
+0.5
+1.6
+2.7
+3.8
+4.9
+
+locale 2 owns:
+5.0
+6.1
+7.2
+8.3
+9.4
+
+locale 3 owns:
+5.5
+6.6
+7.7
+8.8
+9.9
+
+locale 0 owns:
+0.0
+11.0
+22.0
+33.0
+44.0
+
+locale 1 owns:
+5.0
+16.0
+27.0
+38.0
+49.0
+
+locale 2 owns:
+50.0
+61.0
+72.0
+83.0
+94.0
+
+locale 3 owns:
+55.0
+66.0
+77.0
+88.0
+99.0
+

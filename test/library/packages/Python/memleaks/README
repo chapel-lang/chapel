@@ -1,0 +1,8 @@
+
+Python is very leaky, the following code results in leftover references that we can't control
+```
+import foo
+del foo
+```
+
+Because of this, the testing we do here is mostly to make sure any python objects we create we cleanup

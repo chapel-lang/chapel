@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -27,13 +27,11 @@
 module ChapelLocale {
 
   public use LocaleModel as _; // let LocaleModel refer to the class
+  use ChapelIOSerialize;
   import HaltWrappers;
   use CTypes;
-
-  compilerAssert(!(!localeModelHasSublocales &&
-   localeModelPartitionsIterationOnSublocales),
-   "Locale model without sublocales can not have " +
-   "localeModelPartitionsIterationOnSublocales set to true.");
+  use ChapelBase;
+  use ChapelNumLocales;
 
   //
   // Node and sublocale types and special sublocale values.
@@ -43,15 +41,9 @@ module ChapelLocale {
 
   @chpldoc.nodoc
   extern const c_sublocid_none: chpl_sublocID_t;
-  @chpldoc.nodoc
-  extern const c_sublocid_any: chpl_sublocID_t;
-  @chpldoc.nodoc
-  extern const c_sublocid_all: chpl_sublocID_t;
 
   inline proc chpl_isActualSublocID(subloc: chpl_sublocID_t) do
-    return (subloc != c_sublocid_none
-            && subloc != c_sublocid_any
-            && subloc != c_sublocid_all);
+    return (subloc != c_sublocid_none);
 
   /*
     regular: Has a concrete BaseLocale instance
@@ -208,6 +200,18 @@ module ChapelLocale {
   }
 
   /*
+    If using a gpu locale, return its position in the parent locale's ``gpus``
+    array.
+
+    :returns: index of this gpu sublocale in the parent locale's ``gpus`` array.
+    :rtype: int
+  */
+  @unstable("'locale.gpuId' is unstable")
+  inline proc locale.gpuId : int {
+    return this._value.gpuId;
+  }
+
+  /*
     Get the maximum task concurrency that one can expect to
     achieve on this locale.
 
@@ -218,9 +222,26 @@ module ChapelLocale {
     Note that the value is an estimate by the runtime tasking layer.
     Typically it is the number of physical processor cores available
     to the program.  Executing a data-parallel construct with more
-    tasks this that is unlikely to improve performance.
+    tasks than this is unlikely to improve performance.
   */
   inline proc locale.maxTaskPar: int { return this._value.maxTaskPar; }
+
+  /*
+    Get the number of co-locales on the locale's node, inclusive.
+
+    Note that this may not be equal to the number of locales on the node due
+    to oversubscription. The value is one in the typical case in which there
+    is only one locale per node. For example, if a job is launched with ``-nl
+    2`` then ``numColocales`` will be one, and if it is launched with ``-nl
+    1x2`` ``numColocales`` will be two.
+
+    More information about co-locales can be found here: :ref:`readme-colocale`
+
+    :returns: the number of co-locales on the locale's node
+    :rtype: int
+  */
+  @unstable("'locale.numColocales' is unstable")
+  inline proc locale.numColocales: int { return this._value.numColocales; }
 
   // the following are normally taken care of by `forwarding`. However, they
   // don't work if they are called in a promoted expression. See 15148
@@ -321,6 +342,8 @@ module ChapelLocale {
              else if accessible then nPUsPhysAcc else nPUsPhysAll;
 
     var maxTaskPar: int;
+
+    var numColocales: int;
 
     proc id : int do return chpl_nodeFromLocaleID(__primitive("_wide_get_locale", this));
 
@@ -439,6 +462,15 @@ module ChapelLocale {
 
     @chpldoc.nodoc
     proc isGpu() : bool { return false; }
+
+    @chpldoc.nodoc
+    proc gpuId : int do return gpuIdImpl();
+
+    @chpldoc.nodoc
+    proc gpuIdImpl() : int {
+      halt("Can not use 'gpuId' field on a non gpu locale");
+      return -1;
+    }
 
 // Part of the required locale interface.
 // Commented out because presently iterators are statically bound.
@@ -594,7 +626,7 @@ module ChapelLocale {
       coforall locIdx in 0..#numLocales {
         on __primitive("chpl_on_locale_num",
                        chpl_buildLocaleID(locIdx:chpl_nodeID_t,
-                                          c_sublocid_any)) {
+                                          c_sublocid_none)) {
           chpl_defaultDistInitPrivate();
           yield locIdx;
         }
@@ -602,7 +634,7 @@ module ChapelLocale {
       coforall locIdx in 0..#numLocales  {
         on __primitive("chpl_on_locale_num",
                        chpl_buildLocaleID(locIdx:chpl_nodeID_t,
-                                          c_sublocid_any)) {
+                                          c_sublocid_none)) {
           chpl_rootLocaleInitPrivate(locIdx);
           chpl_defaultLocaleInitPrivate();
           chpl_singletonCurrentLocaleInitPrivate(locIdx);
@@ -727,7 +759,7 @@ module ChapelLocale {
     if localeModelHasSublocales then
       return chpl_rt_buildLocaleID(chpl_nodeID, chpl_task_getRequestedSubloc());
     else
-      return chpl_rt_buildLocaleID(chpl_nodeID, c_sublocid_any);
+      return chpl_rt_buildLocaleID(chpl_nodeID, c_sublocid_none);
   }
 
   // Returns a wide pointer to the locale with the given id.

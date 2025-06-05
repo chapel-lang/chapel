@@ -1,0 +1,8 @@
+typeMethodsBroken.chpl:22: error: unresolved call 'type stencilDist.createArray(range(int(64),both,one), range(int(64),both,one), type int(64), int(64), targetLocales=[domain(1,int(64),one)] locale)'
+$CHPL_HOME/modules/dists/StencilDist.chpl:957: note: this candidate did not match: type stencilDist.createArray(dom: domain(?), type eltType, targetLocales: [] locale = Locales, fluff = makeZero(dom.rank, dom.idxType), periodic = false)
+typeMethodsBroken.chpl:22: note: because actual argument #1 with type 'range(int(64),both,one)'
+$CHPL_HOME/modules/dists/StencilDist.chpl:958: note: is passed to formal 'dom: domain(?)'
+typeMethodsBroken.chpl:22: note: other candidates are:
+$CHPL_HOME/modules/dists/StencilDist.chpl:971: note:   type stencilDist.createArray(dom: domain(?), type eltType, initExpr: ?t, targetLocales: [] locale = Locales, fluff = makeZero(dom.rank, dom.idxType), periodic = false)
+$CHPL_HOME/modules/dists/StencilDist.chpl:988: note:   type stencilDist.createArray(dom: domain(?), type eltType, initExpr: [?arrayDom] ?arrayEltType, targetLocales: [] locale = Locales, fluff = makeZero(dom.rank, dom.idxType), periodic = false)
+note: and 24 other candidates, use --print-all-candidates to see them

@@ -26,11 +26,11 @@ cleanall: FORCE clean
 clobber: FORCE clean
 	rm -rf install
 
-OLD_PYTHON_ERROR="python3 version 3.5 or later is required to install chpldoc and start_test dependencies. See https://www.python.org/"
+OLD_PYTHON_ERROR="python3 version 3.9 or later is required to install chpldoc and start_test dependencies. See https://www.python.org/"
 
 $(CHPL_VENV_VIRTUALENV_DIR_DEPS1_OK):
 	@# First check the python version is OK
-	@if $(PYTHON) -c 'import sys; sys.exit(int(sys.version_info[:2] >= (3, 5)))'; then \
+	@if $(PYTHON) -c 'import sys; sys.exit(int(sys.version_info[:2] >= (3, 9)))'; then \
 	  echo $(OLD_PYTHON_ERROR); \
 	  exit 1; \
 	fi
@@ -117,8 +117,9 @@ chapel-py-venv: FORCE $(CHPL_VENV_VIRTUALENV_DIR_OK)
 	mkdir -p $(CHPL_MAKE_HOME)/tools/chapel-py/src/chapel/core
 	CHPL_HOME=$(CHPL_MAKE_HOME) bash \
 		$(CHPL_MAKE_HOME)/util/config/run-in-venv-with-python-bindings.bash \
-		python3 -c 'import chapel; print(chapel.Context()._get_pyi_file())' \
-		>$(CHPL_MAKE_HOME)/tools/chapel-py/src/chapel/core/__init__.pyi
+		$(CHPL_MAKE_PYTHON) -c 'import chapel; print(chapel.Context()._get_pyi_file())' \
+		>$(CHPL_MAKE_HOME)/tools/chapel-py/src/chapel/core/__init__.pyi && \
+		cp $(CHPL_MAKE_HOME)/tools/chapel-py/src/chapel/core/__init__.pyi $(CHPL_VENV_CHPL_FRONTEND_PY_DEPS)/chapel/core.pyi
 
 cls-test-venv: chapel-py-venv
 	export PATH="$(CHPL_VENV_VIRTUALENV_BIN):$$PATH" && \

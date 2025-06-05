@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -40,7 +40,7 @@ class Type;
 namespace fcfs {
 
 /***
-  Determine if the 'fcfsUsePointerImplementation' config param in the
+  Determine if the 'useProcedurePointers' config param in the
   'ChapelBase' module is set to 'true'. The module must be resolved.
 */
 bool usePointerImplementation(void);

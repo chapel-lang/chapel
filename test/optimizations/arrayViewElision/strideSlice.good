@@ -1,0 +1,42 @@
+ArrayViewElision supported (dynamic locality check required) strideSlice.chpl:5
+	lhsBaseType: [domain(1,int(64),one)] int(64)
+	lhsIndexingExprs: 
+		range(int(64),both,positive)
+	rhsBaseType: [domain(1,int(64),one)] int(64)
+	rhsIndexingExprs: 
+		range(int(64),both,positive)
+
+ArrayViewElision supported (dynamic locality check required) strideSlice.chpl:11
+	lhsBaseType: [domain(1,int(64),one)] int(64)
+	lhsIndexingExprs: 
+		range(int(64),both,one)
+	rhsBaseType: [domain(1,int(64),one)] int(64)
+	rhsIndexingExprs: 
+		range(int(64),both,positive)
+
+ArrayViewElision supported (dynamic locality check required) strideSlice.chpl:17
+	lhsBaseType: [domain(1,int(64),one)] int(64)
+	lhsIndexingExprs: 
+		range(int(64),both,positive)
+	rhsBaseType: [domain(1,int(64),one)] int(64)
+	rhsIndexingExprs: 
+		range(int(64),both,one)
+
+Performing protoSlice bulk transfer
+operator =(a:[],b:[]): in chpl__bulkTransferArray
+operator =(a:[],b:[]): attempting doiBulkTransferFromKnown
+BulkTransferStride: On LHS - GET from 0
+operator =(a:[],b:[]): successfully completed bulk transfer
+1 0 1 0 1 0 1 0 1 0
+Performing protoSlice bulk transfer
+operator =(a:[],b:[]): in chpl__bulkTransferArray
+operator =(a:[],b:[]): attempting doiBulkTransferFromKnown
+BulkTransferStride: On LHS - GET from 0
+operator =(a:[],b:[]): successfully completed bulk transfer
+1 1 1 1 1 0 0 0 0 0
+Performing protoSlice bulk transfer
+operator =(a:[],b:[]): in chpl__bulkTransferArray
+operator =(a:[],b:[]): attempting doiBulkTransferFromKnown
+BulkTransferStride: On LHS - GET from 0
+operator =(a:[],b:[]): successfully completed bulk transfer
+1 0 1 0 1 0 1 0 1 0

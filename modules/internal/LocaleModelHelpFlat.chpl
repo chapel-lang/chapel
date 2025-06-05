@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -26,6 +26,8 @@ module LocaleModelHelpFlat {
   public use LocaleModelHelpSetup;
   public use LocaleModelHelpRuntime;
   use CTypes;
+  use ChapelBase;
+  use ChapelLocale;
 
   //////////////////////////////////////////
   //
@@ -121,14 +123,14 @@ module LocaleModelHelpFlat {
         chpl_ftable_call(fn, args);
       } else {
         chpl_task_data_setup(chpl_comm_on_bundle_task_bundle(args), tls);
-        chpl_comm_taskCallFTable(fn, args, args_size, c_sublocid_any);
+        chpl_comm_taskCallFTable(fn, args, args_size, c_sublocid_none);
       }
     } else {
       chpl_task_data_setup(chpl_comm_on_bundle_task_bundle(args), tls);
       if isSerial {
-        chpl_comm_execute_on(node, c_sublocid_any, fn, args, args_size);
+        chpl_comm_execute_on(node, c_sublocid_none, fn, args, args_size);
       } else {
-        chpl_comm_execute_on_nb(node, c_sublocid_any, fn, args, args_size);
+        chpl_comm_execute_on_nb(node, c_sublocid_none, fn, args, args_size);
       }
     }
   }

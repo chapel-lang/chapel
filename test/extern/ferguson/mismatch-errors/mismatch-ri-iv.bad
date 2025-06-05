@@ -1,8 +1,9 @@
 Incorrect number of arguments passed to called function!
   %n = call i32 @returnIntFromIntArg() #0
-internal error: COD-CG--BOL-nnnn chpl version mmmm
+mismatch-ri-iv.chpl:6: internal error: COD-CG--BOL-nnnn chpl version mmmm
 
 Internal errors indicate a bug in the Chapel compiler,
 and we're sorry for the hassle.  We would appreciate your reporting this bug --
-please see https://chapel-lang.org/bugs.html for instructions.
+please see https://chapel-lang.org/bugs.html for instructions.  In the meantime,
+the filename + line number above may be useful in working around the issue.
 

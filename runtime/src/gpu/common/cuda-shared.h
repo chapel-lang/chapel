@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.  *
  * The entirety of this work is licensed under the Apache License,
@@ -29,7 +29,7 @@
 #include "cuda-utils.h"
 
 static inline
-void* chpl_gpu_load_module(const char* fatbin_data) {
+void* chpl_gpu_load_module(const char* fatbin_data, const uint64_t fatbin_size) {
   CUmodule cuda_module;
 
   CUDA_CALL(cuModuleLoadData(&cuda_module, fatbin_data));

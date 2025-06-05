@@ -1,4 +1,4 @@
-# Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2025 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -20,7 +20,9 @@
 # settings for the build
 #
 DEPEND=1
-ifdef CHPL_DEVELOPER
+CHPL_DEVELOPER ?= 0
+include $(CHPL_MAKE_HOME)/make/Makefile.isTrue
+ifneq (, $(call isTrue, $(CHPL_DEVELOPER)))
 DEBUG=1
 WARNINGS=1
 TAGS=1
@@ -58,6 +60,10 @@ endif
 ifneq ($(MAKE_LAUNCHER),1)
   ifeq ($(CHPL_MAKE_TARGET_MEM),jemalloc)
     LAUNCHER_CFLAGS += -DCHPL_TARGET_MEM_JEMALLOC
+    LAUNCHER_INCLS += -I$(RUNTIME_ROOT)/include/mem/$(CHPL_MAKE_TARGET_MEM)
+  endif
+  ifeq ($(CHPL_MAKE_TARGET_MEM),mimalloc)
+    LAUNCHER_CFLAGS += -DCHPL_TARGET_MEM_MIMALLOC
     LAUNCHER_INCLS += -I$(RUNTIME_ROOT)/include/mem/$(CHPL_MAKE_TARGET_MEM)
   endif
 endif

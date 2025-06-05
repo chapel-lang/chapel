@@ -5,7 +5,7 @@ record myRec {
   var x: int;
   var creationIndex: int;
 }
-record myRecComparator {
+record myRecComparator: keyComparator {
   proc key(rec: myRec): int do
     return rec.x;
 }
@@ -16,7 +16,7 @@ proc factory(x: int): myRec {
   return new myRec(x, next);
 }
 
-record myRecComparatorByCreationIndex {
+record myRecComparatorByCreationIndex: keyComparator {
   proc key(rec: myRec): int do
     return rec.creationIndex;
 }

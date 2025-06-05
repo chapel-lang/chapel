@@ -1,0 +1,3 @@
+real
+verify:1: stretch tree of depth \d+\t check: 8388607
+verify: long lived tree of depth \d+\t check: 4194303

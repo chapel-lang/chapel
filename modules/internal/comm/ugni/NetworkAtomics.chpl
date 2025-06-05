@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -323,6 +323,22 @@ module NetworkAtomics {
 
       var v = val;
       atomic_xor(v, _localeid(), _addr(), c_memory_order(order));
+    }
+
+    inline proc fetchMin(val:valType, param order: memoryOrder = memoryOrder.seqCst): valType {
+      compilerError("fetchMin is not supported by CHPL_NETWORK_ATOMICS=ugni");
+    }
+
+    inline proc min(val:valType, param order: memoryOrder = memoryOrder.seqCst): void {
+      compilerError("min is not supported by CHPL_NETWORK_ATOMICS=ugni");
+    }
+
+    inline proc fetchMax(val:valType, param order: memoryOrder = memoryOrder.seqCst): valType {
+      compilerError("fetchMax is not supported by CHPL_NETWORK_ATOMICS=ugni");
+    }
+
+    inline proc max(val:valType, param order: memoryOrder = memoryOrder.seqCst): valType {
+      compilerError("max is not supported by CHPL_NETWORK_ATOMICS=ugni");
     }
 
     inline proc const waitFor(val:valType, param order: memoryOrder = memoryOrder.seqCst): void {

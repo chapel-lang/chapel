@@ -1,8 +1,8 @@
 /* The Computer Language Benchmarks Game
    https://salsa.debian.org/benchmarksgame-team/benchmarksgame/
 
-   contributed by Brad Chamberlain
-   derived from the Chapel version by Albert Sidelnik and myself
+   contributed by Michael Ferguson
+   derived from the Chapel# version by Brad Chamberlain
 */
 
 use Math;                     // to get access to 'pi'
@@ -94,7 +94,8 @@ proc advance(dt) {
   for param i in 0..<numBodies {
     for param j in i+1..<numBodies {
       const dpos = bodies[i].pos - bodies[j].pos,
-            mag = dt / sqrt(sumOfSquares(dpos))**3;
+            dposNormSq = sumOfSquares(dpos),
+            mag = dt / (dposNormSq * sqrt(dposNormSq));
 
       bodies[i].vel -= dpos * bodies[j].mass * mag;
       bodies[j].vel += dpos * bodies[i].mass * mag;

@@ -13,6 +13,9 @@ UPCXX_CONFIGURE_EXTRA ?=# extra flags to add to UPC++ configure command line
 UPCXX_MAKE_J     ?= -j4 # concurrency of GNU Make steps
 UPCXX_FC         ?= $(shell which gfortran)
 
+# legacy harness support
+GASNET_BLDDIR ?= $(TOP_BUILDDIR)/gasnet
+
 # ensure all child invocations see the same conduit defined by UPCXX_CONDUIT,
 # even if the enclosing environment contains conflicting values
 export UPCXX_NETWORK := $(UPCXX_CONDUIT)
@@ -20,12 +23,12 @@ export UPCXX_GASNET_CONDUIT := $(UPCXX_CONDUIT)
 
 # Options for providing GASNET:
 # 1. set UPCXX_GASNET to an existing build path to use.
-# The remaining options assume $(TOP_BUILDDIR)/gasnet is a valid build dir
+# The remaining options assume $(GASNET_BLDDIR) is a valid build dir
 # 2. set UPCXX_GASNET to an existing source path to use.
 #    This one notably implies this CI will configure and build GASNet.
 # 3. set UPCXX_TARBALL_GASNET=1 to create a GASNet tarball and use it
 #    This one notably implies this CI will configure and build GASNet.
-# 4. Default is to point at the existing $(TOP_BUILDDIR)/gasnet build.
+# 4. Default is to point at the existing $(GASNET_BLDDIR) build.
 #
 # All three options will use the provided build directory only in the
 # '_upcxx' test (the UPC++ configure step) and not after.
@@ -40,12 +43,12 @@ ifneq ($(strip $(UPCXX_TARBALL_GASNET)),)
   CONFIGURE_GASNET:=$(UPCXX_BLDDIR)/gasnet.tar.gz  # actual filename will vary
   UPCXX_GASNET_SOURCES:=1
 else # default to using builddir
-  CONFIGURE_GASNET:=$(TOP_BUILDDIR)/gasnet
+  CONFIGURE_GASNET:=$(GASNET_BLDDIR)
 endif
 endif
 ifeq ($(UPCXX_GASNET_SOURCES),1)
   # UPCXX_GASNET=srcdir and UPCXX_TARBALL_GASNET configure GASNet
-  CONFIGURE_FRAGMENTS:=$(TOP_BUILDDIR)/gasnet
+  CONFIGURE_FRAGMENTS:=$(GASNET_BLDDIR)
   # Don't pollute configure with harness flags
   UNSET_VARS = CFLAGS CXXFLAGS CPPFLAGS LDFLAGS LIBS
 endif
@@ -67,14 +70,10 @@ TAR               ?= tar
 UNZIP             ?= unzip
 P7ZIP             ?= 7za
 GIT               ?= git
-PERL              ?= perl  # only used as a launcher-mpi fallback
+PERL              ?= perl  # only used in the check-testsuite target
 
-# GASNET_CODEMODE
-ifeq ($(strip $(UPCXX_CODEMODE)),O3)
-GASNET_CODEMODE=opt
-else
-GASNET_CODEMODE=debug
-endif
+# GASNET_CODEMODE currently simply follows UPCXX_CODEMODE
+GASNET_CODEMODE=$(UPCXX_CODEMODE)
 
 # Logic to extract GASNet's compiler variables.
 # intentionally ignore the environment here because it is set by harness
@@ -216,12 +215,9 @@ launcher-mpi:
 	 else \
 	  conduit_launcher=$$gasnet_bindir/gasnetrun_$(UPCXX_CONDUIT); \
 	  case "$(UPCXX_CONDUIT)" in \
-	    aries) \
-	      set -x ; ln -s $$conduit_launcher $@ \
-	      ;; \
 	    *) \
 	      if test -r $$conduit_launcher-mpi.pl ; then \
-	        mpi_launcher="$(PERL) $$conduit_launcher-mpi.pl"; \
+	        mpi_launcher="$$conduit_launcher -spawner=mpi"; \
 	      else \
 	        mpi_launcher=mpirun; \
 	      fi; \
@@ -246,7 +242,7 @@ _upcxx: force
 	  echo ======== UPCXX_GASNET:external ========; set -x; \
 	elif test -n "$(UPCXX_TARBALL_GASNET)" ; then \
 	  echo ======== UPCXX_GASNET:tarball ========; set -x; \
-	  $(MAKE) dist -C $(TOP_BUILDDIR)/gasnet ; \
+	  $(MAKE) dist -C $(GASNET_BLDDIR) ; \
 	else \
 	  echo ======== UPCXX_GASNET:builddir ========; set -x; \
 	fi $(TO_LOG)
@@ -257,7 +253,7 @@ _upcxx: force
 	@-( $(CONFIGURE_ENV) ; set -x ; $(CMAKE) --version ) 2>&1 | egrep -i -v -e error -e warning $(TO_LOG)
 	@( echo ======== Configure UPCXX ========; set -x; \
 	   if test -n "$(UPCXX_TARBALL_GASNET)" ; then \
-	     gasnet=`ls -1t $(TOP_BUILDDIR)/gasnet/GASNet-*.tar.gz | head -1` ; \
+	     gasnet=`ls -1t $(GASNET_BLDDIR)/GASNet-*.tar.gz | head -1` ; \
 	   else \
 	     gasnet=$(CONFIGURE_GASNET); \
 	   fi ; \

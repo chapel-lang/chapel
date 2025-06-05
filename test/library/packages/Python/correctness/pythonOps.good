@@ -1,0 +1,156 @@
+lhs: 1
+rhs: 2
+ binary ops:
+  +: 3 owned Value <class 'int'>
+  -: -1 owned Value <class 'int'>
+  *: 2 owned Value <class 'int'>
+  /: 0.5 owned Value <class 'float'>
+  %: 1 owned Value <class 'int'>
+  **: 1 owned Value <class 'int'>
+  &: 0 owned Value <class 'int'>
+  |: 3 owned Value <class 'int'>
+  ^: 3 owned Value <class 'int'>
+  <<: 4 owned Value <class 'int'>
+  >>: 0 owned Value <class 'int'>
+ comparison ops:
+  ==: false bool
+  !=: true bool
+  <: true bool
+  <=: true bool
+  >: false bool
+  >=: false bool
+ unary ops:
+  +: 1 owned Value <class 'int'>
+  -: -1 owned Value <class 'int'>
+  ~: -2 owned Value <class 'int'>
+  !: False owned Value <class 'bool'>
+ assignment ops:
+  +=: 3 owned Value <class 'int'>
+  -=: -1 owned Value <class 'int'>
+  *=: 2 owned Value <class 'int'>
+  /=: 0.5 owned Value <class 'float'>
+  %=: 1 owned Value <class 'int'>
+  **=: 1 owned Value <class 'int'>
+  &=: 0 owned Value <class 'int'>
+  |=: 3 owned Value <class 'int'>
+  ^=: 3 owned Value <class 'int'>
+  <<=: 4 owned Value <class 'int'>
+  >>=: 0 owned Value <class 'int'>
+========================
+lhs: 2.0
+rhs: 1.0
+ binary ops:
+  +: 3.0 owned Value <class 'float'>
+  -: 1.0 owned Value <class 'float'>
+  *: 2.0 owned Value <class 'float'>
+  /: 2.0 owned Value <class 'float'>
+  %: 0.0 owned Value <class 'float'>
+  **: 2.0 owned Value <class 'float'>
+  &: Exception: unsupported operand type(s) for &: 'float' and 'float'
+  |: Exception: unsupported operand type(s) for |: 'float' and 'float'
+  ^: Exception: unsupported operand type(s) for ^: 'float' and 'float'
+  <<: Exception: unsupported operand type(s) for <<: 'float' and 'float'
+  >>: Exception: unsupported operand type(s) for >>: 'float' and 'float'
+ comparison ops:
+  ==: false bool
+  !=: true bool
+  <: false bool
+  <=: false bool
+  >: true bool
+  >=: true bool
+ unary ops:
+  +: 2.0 owned Value <class 'float'>
+  -: -2.0 owned Value <class 'float'>
+  ~: Exception: bad operand type for unary ~: 'float'
+  !: False owned Value <class 'bool'>
+ assignment ops:
+  +=: 3.0 owned Value <class 'float'>
+  -=: 1.0 owned Value <class 'float'>
+  *=: 2.0 owned Value <class 'float'>
+  /=: 2.0 owned Value <class 'float'>
+  %=: 0.0 owned Value <class 'float'>
+  **=: 2.0 owned Value <class 'float'>
+  &=: Exception: unsupported operand type(s) for &=: 'float' and 'float'
+  |=: Exception: unsupported operand type(s) for |=: 'float' and 'float'
+  ^=: Exception: unsupported operand type(s) for ^=: 'float' and 'float'
+  <<=: Exception: unsupported operand type(s) for <<=: 'float' and 'float'
+  >>=: Exception: unsupported operand type(s) for >>=: 'float' and 'float'
+========================
+lhs: hello
+rhs: world
+ binary ops:
+  +: helloworld owned Value <class 'str'>
+  -: Exception: unsupported operand type(s) for -: 'str' and 'str'
+  *: Exception: can't multiply sequence by non-int of type 'str'
+  /: Exception: unsupported operand type(s) for /: 'str' and 'str'
+  %: Exception: not all arguments converted during string formatting
+  **: Exception: unsupported operand type(s) for ** or pow(): 'str' and 'str'
+  &: Exception: unsupported operand type(s) for &: 'str' and 'str'
+  |: Exception: unsupported operand type(s) for |: 'str' and 'str'
+  ^: Exception: unsupported operand type(s) for ^: 'str' and 'str'
+  <<: Exception: unsupported operand type(s) for <<: 'str' and 'str'
+  >>: Exception: unsupported operand type(s) for >>: 'str' and 'str'
+ comparison ops:
+  ==: false bool
+  !=: true bool
+  <: true bool
+  <=: true bool
+  >: false bool
+  >=: false bool
+ unary ops:
+  +: Exception: bad operand type for unary +: 'str'
+  -: Exception: bad operand type for unary -: 'str'
+  ~: Exception: bad operand type for unary ~: 'str'
+  !: False owned Value <class 'bool'>
+ assignment ops:
+  +=: helloworld owned Value <class 'str'>
+  -=: Exception: unsupported operand type(s) for -=: 'str' and 'str'
+  *=: Exception: can't multiply sequence by non-int of type 'str'
+  /=: Exception: unsupported operand type(s) for /=: 'str' and 'str'
+  %=: Exception: not all arguments converted during string formatting
+  **=: Exception: unsupported operand type(s) for **=: 'str' and 'str'
+  &=: Exception: unsupported operand type(s) for &=: 'str' and 'str'
+  |=: Exception: unsupported operand type(s) for |=: 'str' and 'str'
+  ^=: Exception: unsupported operand type(s) for ^=: 'str' and 'str'
+  <<=: Exception: unsupported operand type(s) for <<=: 'str' and 'str'
+  >>=: Exception: unsupported operand type(s) for >>=: 'str' and 'str'
+========================
+lhs: False
+rhs: True
+ binary ops:
+  +: 1 owned Value <class 'int'>
+  -: -1 owned Value <class 'int'>
+  *: 0 owned Value <class 'int'>
+  /: 0.0 owned Value <class 'float'>
+  %: 0 owned Value <class 'int'>
+  **: 0 owned Value <class 'int'>
+  &: False owned Value <class 'bool'>
+  |: True owned Value <class 'bool'>
+  ^: True owned Value <class 'bool'>
+  <<: 0 owned Value <class 'int'>
+  >>: 0 owned Value <class 'int'>
+ comparison ops:
+  ==: false bool
+  !=: true bool
+  <: true bool
+  <=: true bool
+  >: false bool
+  >=: false bool
+ unary ops:
+  +: 0 owned Value <class 'int'>
+  -: 0 owned Value <class 'int'>
+  ~: -1 owned Value <class 'int'>
+  !: True owned Value <class 'bool'>
+ assignment ops:
+  +=: 1 owned Value <class 'int'>
+  -=: -1 owned Value <class 'int'>
+  *=: 0 owned Value <class 'int'>
+  /=: 0.0 owned Value <class 'float'>
+  %=: 0 owned Value <class 'int'>
+  **=: 0 owned Value <class 'int'>
+  &=: False owned Value <class 'bool'>
+  |=: True owned Value <class 'bool'>
+  ^=: True owned Value <class 'bool'>
+  <<=: 0 owned Value <class 'int'>
+  >>=: 0 owned Value <class 'int'>
+========================

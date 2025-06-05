@@ -1,1 +1,5 @@
+# to pass testing, we need GPUs enabled
 CHPL_LOCALE_MODEL != gpu
+
+# skip "cpu as gpu" mode because comm counts differ
+CHPL_GPU == cpu

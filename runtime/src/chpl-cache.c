@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -146,7 +146,7 @@ semantics (meaning that they imply an acquire and a release barrier). So in a
 real Chapel program, the required barriers would probably be hidden in whatever
 technique was used to 'notify' or 'wait'. Atomic operations on atomic-type
 variables can specify the required memory semantics (e.g., you could do
-myatomic.fetchAdd(1, memory_order_acquire) but without the order= argument
+myatomic.fetchAdd(1, chpl_memory_order_acquire) but without the order= argument
 you get a full barrier ).
 
 == Implementation Notes ==
@@ -1242,7 +1242,7 @@ void tree_remove(struct rdcache_s* tree, struct cache_entry_s* element)
   struct cache_entry_s* next;
 
   DEBUG_PRINT(("%d: Removing %p element %p\n", chpl_nodeID,
-               (void*) element->raddr, element));
+               (void*) element->base.raddr, element));
 
   raddr = element->base.raddr;
   node = element->base.node;
@@ -1322,6 +1322,10 @@ void flush_entry(struct rdcache_s* cache,
                  chpl_cache_taskPrvData_t* task_local,
                  struct cache_entry_s* entry, int op,
                  raddr_t raddr, int32_t len_in);
+
+static
+chpl_cache_taskPrvData_t* read_reservedByTask(struct cache_entry_s* entry);
+
 static
 int try_reserve_entry(struct rdcache_s* cache,
                       chpl_cache_taskPrvData_t* task_local,
@@ -1376,10 +1380,10 @@ void ain_evict(struct rdcache_s* cache,
       return;
 
     // give up if locked
-    if (give_up_if_locked && y->entryReservedByTask != NULL)
+    if (give_up_if_locked && read_reservedByTask(y) != NULL)
       return;
 
-    assert(y->entryReservedByTask != task_local);
+    assert(read_reservedByTask(y) != task_local);
 
     if (!try_reserve_entry(cache, task_local, y)) {
       // could not "lock" entry y so try again
@@ -1395,9 +1399,11 @@ void ain_evict(struct rdcache_s* cache,
 
     // "lock"ed entry y
 
+    INFO_PRINT(("%i ain_evict %p\n", (int) chpl_nodeID, (void*) y->base.raddr));
+
 #ifdef DEBUG
-    DEBUG_PRINT(("Ain is evicting entry for raddr %p\n", (void*) y->raddr));
-    cache_entry_print( y, " ain evict ", 1);
+    DEBUG_PRINT(("Ain is evicting entry for raddr %p\n", (void*) y->base.raddr));
+    cache_entry_print( cache, y, " ain evict ", 1);
     rdcache_print(cache);
 #endif
     // If the entry in Ain has any pending/dirty requests, we must
@@ -1441,9 +1447,9 @@ void am_evict(struct rdcache_s *cache,
     if (y==NULL)
       return;
 
-    assert(y->entryReservedByTask != task_local);
+    assert(read_reservedByTask(y) != task_local);
     // give up if locked
-    if (give_up_if_locked && y->entryReservedByTask != NULL)
+    if (give_up_if_locked && read_reservedByTask(y) != NULL)
       return;
 
     if (!try_reserve_entry(cache, task_local, y)) {
@@ -1464,7 +1470,7 @@ void am_evict(struct rdcache_s *cache,
     // immediately wait for them to complete, before we modify the contents
     // of Ain in any way (or reuse the associated page).
     flush_entry(cache, task_local, y, FLUSH_EVICT, 0, CACHEPAGE_SIZE);
-    assert(y->entryReservedByTask == task_local);
+    assert(read_reservedByTask(y) == task_local);
     assert(y->queue == QUEUE_AM && y == cache->am_lru_tail);
 
     DOUBLE_REMOVE_TAIL(cache, am_lru);
@@ -1729,8 +1735,8 @@ int validate_queue(struct rdcache_s* tree,
     }
 
     // Check that a cache operation hasn't left anything "locked"
-    if (task_local) assert(cur->entryReservedByTask != task_local);
-    else assert(cur->entryReservedByTask == NULL);
+    if (task_local) assert(read_reservedByTask(cur) != task_local);
+    else assert(read_reservedByTask(cur) == NULL);
 
     forward_count++;
   }
@@ -1948,6 +1954,10 @@ chpl_bool do_wait_for(struct rdcache_s* cache, cache_seqn_t sn)
       // (this could cause a different task body to run)
       chpl_comm_wait_nb_some(&cache->pending[index], last - index + 1);
 
+      // TODO: set 'waited=true' only if the time elapsed is sufficiently
+      // long. The comms layer might need wait_nb_some to be called in order
+      // to realize anything is completed, even though the network part is
+      // already done.
       waited = true;
 
       if (EXTRA_YIELDS) {
@@ -1967,6 +1977,7 @@ chpl_bool do_wait_for(struct rdcache_s* cache, cache_seqn_t sn)
     // Whether we waited above or not, if the first entry's event
     // is already complete, then remove it from the queue.
     if (chpl_comm_test_nb_complete(cache->pending[index])) {
+      chpl_comm_free_nb_handle(cache->pending[index]);
       fifo_circleb_pop(&cache->pending_first_entry,
                        &cache->pending_last_entry,
                        cache->pending_len);
@@ -1978,17 +1989,24 @@ chpl_bool do_wait_for(struct rdcache_s* cache, cache_seqn_t sn)
                       chpl_nodeID, (int)chpl_task_getId(),
                       (int) cache->pending_sequence_numbers[index],
                       (int) cache->completed_request_number));
-    }
-
-    // Stop if we have an uncompleted request for a later sequence number
-    if (cache->pending_sequence_numbers[index] > sn) {
-      DEBUG_PRINT(("wait_for stopped at %i\n", index));
-      break;
+    } else {
+      // Stop if we have an uncompleted request for a later sequence number
+      if (cache->pending_sequence_numbers[index] > sn) {
+        DEBUG_PRINT(("wait_for stopped at %i\n", index));
+        break;
+      }
     }
   }
   return waited;
 }
 
+
+static
+chpl_cache_taskPrvData_t* read_reservedByTask(struct cache_entry_s* entry) {
+  // don't allow operations after this value is loaded to move before this
+  chpl_atomic_thread_fence(memory_order_acquire);
+  return entry->entryReservedByTask;
+}
 
 // try to "lock" the entry
 //  * if entry->entryReservedByTask is NULL, set it to task_local
@@ -2005,12 +2023,18 @@ int try_reserve_entry(struct rdcache_s* cache,
                       chpl_cache_taskPrvData_t* task_local,
                       struct cache_entry_s* entry) {
 
-  if (entry->entryReservedByTask != NULL) {
-    assert(entry->entryReservedByTask != task_local);
+  // read and do an aquire fence
+  chpl_cache_taskPrvData_t* v = read_reservedByTask(entry);
+
+  if (v != NULL) {
+    assert(v != task_local);
     return 0;
   } else {
     // now entry->entryReservedByTask == NULL
     entry->entryReservedByTask = task_local; // "lock"
+    // don't allow operations after this is set to move before it
+    chpl_atomic_thread_fence(memory_order_acquire);
+
     return 1;
   }
 }
@@ -2022,6 +2046,8 @@ void unreserve_entry(struct rdcache_s* cache,
                    struct cache_entry_s* entry) {
   assert(entry->entryReservedByTask == task_local);
   entry->entryReservedByTask = NULL;
+  // don't allow operations before this is set to move after it
+  chpl_atomic_thread_fence(memory_order_release);
 }
 
 
@@ -2067,7 +2093,7 @@ void flush_entry(struct rdcache_s* cache,
   chpl_comm_nb_handle_t handle;
   uintptr_t got_skip, got_len;
 
-  assert(entry->entryReservedByTask == task_local);
+  assert(read_reservedByTask(entry) == task_local);
 
   DEBUG_PRINT(("flush_entry(%p, %i, %p, %i)\n",
                entry, op, (void*) raddr, (int) len));
@@ -2105,7 +2131,7 @@ void flush_entry(struct rdcache_s* cache,
           start = got_skip;
           // Start a put for len bytes starting at page + start
           DEBUG_PRINT(("chpl_comm_start_put(%p, %i, %p, %i)\n",
-                 page+start, entry->base.node, (void*) (entry->raddr+start),
+                 page+start, entry->base.node, (void*) (entry->base.raddr+start),
                  (int) got_len));
 
           // Note: chpl_comm_put_nb, pending_push can yield
@@ -2680,11 +2706,11 @@ void cache_get_trigger_readahead(struct rdcache_s* cache,
 
   if( len == 0 ) return;
 
-  INFO_PRINT(("%i trigger readahead(%i, %p, %p, %i, %i, %i, %i)\n",
+  INFO_PRINT(("%i trigger readahead(%i, %p, %p, %i, %i, %i)\n",
               (int) chpl_nodeID, (int) node,
               (void*) page_raddr, (void*) request_raddr,
               (int) request_size,
-              (int) skip, (int) len, (int) last_acquire));
+              (int) skip, (int) len));
 
   // If we are accessing a page that has a readahead condition,
   // trigger that readahead.
@@ -3055,7 +3081,8 @@ int cache_get_in_page(struct rdcache_s* cache,
   // Now we need to start a get into page.
   // We'll get within ra_page from ra_line to ra_line_end.
   INFO_PRINT(("%i chpl_comm_start_get(%p, %i, %p, %i)\n",
-               (int) chpl_nodeID, page+(ra_line-ra_page), node, (void*) ra_line,
+               (int) chpl_nodeID,
+               entry->page+(ra_line-ra_page), node, (void*) ra_line,
                (int) (ra_line_end - ra_line)));
 
   // Note: chpl_comm_get_nb could cause a different task body to run.
@@ -3133,7 +3160,7 @@ int cache_get_in_page(struct rdcache_s* cache,
   if( ENABLE_READAHEAD && readahead_len ) {
 
     INFO_PRINT(("%i saving for %i:%p skip %i len %i\n",
-                 (int) chpl_nodeID, (int) node, (void*) entry->raddr,
+                 (int) chpl_nodeID, (int) node, (void*) entry->base.raddr,
                  (int) readahead_skip, (int) readahead_len));
 
     entry->readahead_skip = readahead_skip;
@@ -3329,8 +3356,8 @@ int mock_get(struct rdcache_s* cache,
 #endif
   int all_in_cache;
 
-  INFO_PRINT(("%i mock_get addr %p from %i:%p len %i ra_len %i\n",
-               (int) chpl_nodeID, addr, (int) node, (void*) raddr, (int) size, sequential_readahead_length));
+  INFO_PRINT(("%i mock_get from %i:%p len %i ra_len %i\n",
+               (int) chpl_nodeID, (int) node, (void*) raddr, (int) size, sequential_readahead_length));
 
   if (chpl_nodeID == node)
     return 1;
@@ -3557,7 +3584,7 @@ void cache_invalidate(struct rdcache_s* cache,
   raddr_t requested_start, requested_end, requested_size;
 
   DEBUG_PRINT(("invalidate from %i:%p len %i\n",
-               (int) node, raddr, (int) size));
+               (int) node, (void*) raddr, (int) size));
 
   if (chpl_nodeID == node) {
     // Do nothing if we're on the same node.
@@ -3758,7 +3785,8 @@ void chpl_cache_fence(int acquire, int release, int ln, int32_t fn)
 
   if( acquire == 0 && release == 0 ) return;
 
-  INFO_PRINT(("%i fence acquire %i release %i %s:%i\n", chpl_nodeID, acquire, release, fn, ln));
+  INFO_PRINT(("%i fence acquire %i release %i %s:%i\n",
+              chpl_nodeID, acquire, release, chpl_lookupFilename(fn), ln));
 
   TRACE_FENCE_PRINT(("%d: task %d in chpl_cache_fence(acquire=%i,release=%i)"
                      " on cache %p from %s:%d\n",

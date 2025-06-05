@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -65,6 +65,9 @@ class Bitmap {
   }
   bool operator!=(const Bitmap& other) const {
     return !(*this == other);
+  }
+  bool operator<(const Bitmap& other) const {
+    return bits_ < other.bits_;
   }
   void swap(Bitmap& other) {
     bits_.swap(other.bits_);

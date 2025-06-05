@@ -6,41 +6,80 @@
 // support methods, for --minimal-modules
 extern type c_string = chpl_c_string;
 inline operator :(x: int(?w), type t) do
-    return __primitive(c"cast", t, x);
+    return __primitive("cast", t, x);
 inline operator :(x: uint(?w), type t) do
-    return __primitive(c"cast", t, x);
+    return __primitive("cast", t, x);
 
 proc chpl__autoCopy(x:uint(?w)) do return x;
 proc chpl__initCopy(x:uint(?w)) do return x;
 proc chpl__initCopy(x:R(?)) { return x; }
 proc chpl__autoDestroy(r:R(?)) { }
 
+// minimal modules can't support Chapel strings, so define all string literals
+// as CStrings.
+extern {
+    const char* cstr_int8 = "int(8)";
+    const char* cstr_int16 = "int(16)";
+    const char* cstr_int32 = "int(32)";
+    const char* cstr_int = "int";
+    const char* cstr_uint8 = "uint(8)";
+    const char* cstr_uint16 = "uint(16)";
+    const char* cstr_uint32 = "uint(32)";
+    const char* cstr_uint = "uint";
+    const char* cstr_expect = "%s expect %s, found %s\n";
+    const char* cstr_p8 = "p8";
+    const char* cstr_p16 = "p16";
+    const char* cstr_p32 = "p32";
+    const char* cstr_pu32 = "pu32";
+    const char* cstr_pi = "pi";
+    const char* cstr_pu = "pu";
+    const char* cstr_v8 = "v8";
+    const char* cstr_v16 = "v16";
+    const char* cstr_vu = "vu";
+    const char* cstr_foo1 = "foo1";
+    const char* cstr_foo2 = "foo2";
+    const char* cstr_foo3 = "foo3";
+    const char* cstr_foo4 = "foo4";
+    const char* cstr_foo5 = "foo5";
+    const char* cstr_foo6 = "foo6";
+    const char* cstr_foo7 = "foo7";
+    const char* cstr_bar1 = "bar1";
+    const char* cstr_bar2 = "bar2";
+    const char* cstr_bar3 = "bar3";
+    const char* cstr_bar4 = "bar4";
+    const char* cstr_baz1 = "baz1";
+    const char* cstr_boo1 = "boo1";
+    const char* cstr_bok1 = "bok1";
+    const char* cstr_bok2 = "bok2";
+    const char* cstr_boz1 = "boz1";
+}
+
 
 // support methods that work with or without --minimal-modules
 
 proc typeToCStringHelp(x:int(8)) {
-  return c"int(8)";
+  return cstr_int8;
 }
 proc typeToCStringHelp(x:int(16)) {
-  return c"int(16)";
+  return cstr_int16;
 }
 proc typeToCStringHelp(x:int(32)) {
-  return c"int(32)";
+  return cstr_int32;
 }
 proc typeToCStringHelp(x:int) {
-  return c"int";
+  return cstr_int;
 }
 proc typeToCStringHelp(x:uint(8)) {
-  return c"uint(8)";
+  return cstr_uint8;
 }
 proc typeToCStringHelp(x:uint(16)) {
-  return c"uint(16)";
+  return cstr_uint16;
 }
 proc typeToCStringHelp(x:uint(32)) {
-  return c"uint(32)";
+  return cstr_uint32;
 }
 proc typeToCStringHelp(x:uint) {
-  return c"uint";
+  return cstr_uint;
 }
 
 proc typeToCString(type t) {
@@ -48,9 +87,9 @@ proc typeToCString(type t) {
   return typeToCStringHelp(x);
 }
 
-proc check(msg:c_string, type expect, type t) {
-  extern proc printf(f:c_string, a:c_string, b:c_string, c:c_string);
-  printf(c"%s expect %s, found %s\n", msg, typeToCString(expect), typeToCString(t));
+proc check(msg, type expect, type t) {
+  extern proc printf(f, a, b, c);
+  printf(cstr_expect, msg, typeToCString(expect), typeToCString(t));
 }
 
 proc foo(x:int(8), y:int(8)) {
@@ -179,62 +218,62 @@ var v16 = p16;
 var vu32 = pu32;
 var vu = pu;
 
-check(c"p8", int(8), p8.type);
-check(c"p16", int(16), p16.type);
-check(c"p32", int(32), p32.type);
-check(c"pu32", uint(32), pu32.type);
-check(c"pi", int, pi.type);
-check(c"pu", uint, pu.type);
-check(c"v8", int(8), v8.type);
-check(c"v16", int(16), v16.type);
-check(c"vu", uint, vu.type);
+check(cstr_p8, int(8), p8.type);
+check(cstr_p16, int(16), p16.type);
+check(cstr_p32, int(32), p32.type);
+check(cstr_pu32, uint(32), pu32.type);
+check(cstr_pi, int, pi.type);
+check(cstr_pu, uint, pu.type);
+check(cstr_v8, int(8), v8.type);
+check(cstr_v16, int(16), v16.type);
+check(cstr_vu, uint, vu.type);
 
 var foo1 = foo(v8, pi);
-check(c"foo1", int(8), foo1.type);
+check(cstr_foo1, int(8), foo1.type);
 
 var foo2 = foo(p8, pi);
-check(c"foo2", int(64), foo2.type);
+check(cstr_foo2, int(64), foo2.type);
 
 var foo3 = foo(v8, p16);
-check(c"foo3", int(8), foo3.type);
+check(cstr_foo3, int(8), foo3.type);
 
 var foo4 = foo(p8, p16);
-check(c"foo4", int(16), foo4.type);
+check(cstr_foo4, int(16), foo4.type);
 
 var foo5 = foo(p32, pu32);
-check(c"foo5", int(32), foo5.type);
+check(cstr_foo5, int(32), foo5.type);
 
 var foo6 = foo(p32, pi);
-check(c"foo6", int(64), foo6.type);
+check(cstr_foo6, int(64), foo6.type);
 
 var foo7 = foo(p8, p32);
-check(c"foo7", int(32), foo7.type);
+check(cstr_foo7, int(32), foo7.type);
 
 var bar1 = bar(p8, p16);
-check(c"bar1", int(16), bar1.type);
+check(cstr_bar1, int(16), bar1.type);
 
 var bar2 = bar(p32, pu32);
-check(c"bar2", int(32), bar2.type);
+check(cstr_bar2, int(32), bar2.type);
 
 var bar3 = bar(p8, p16);
-check(c"bar3", int(16), bar3.type);
+check(cstr_bar3, int(16), bar3.type);
 
 var bar4 = bar(p8, p32);
-check(c"bar4", int(32), bar4.type);
+check(cstr_bar4, int(32), bar4.type);
 
 var baz1 = baz(vu, pi);
-check(c"baz1", uint, baz1.type);
+check(cstr_baz1, uint, baz1.type);
 
 var boo1 = boo(pi);
-check(c"boo1", int(8), boo1.type);
+check(cstr_boo1, int(8), boo1.type);
 
 var bok1 = bok(pu, pi);
-check(c"bok1", uint, bok1.type);
+check(cstr_bok1, uint, bok1.type);
 
 var bok2 = bok(p8, p32);
-check(c"bok2", int(32), bok2.type);
+check(cstr_bok2, int(32), bok2.type);
 
 
 var r = new R(vu32);
 var boz1 = boz(r, pi);
-check(c"boz1", uint(32), boz1.type);
+check(cstr_boz1, uint(32), boz1.type);

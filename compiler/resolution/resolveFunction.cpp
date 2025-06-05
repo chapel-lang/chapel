@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -458,9 +458,6 @@ void resolveSpecifiedReturnType(FnSymbol* fn) {
 
   checkSurprisingGenericDecls(fn, fn->retExprType->body.tail, nullptr);
 
-  handleDefaultAssociativeWarnings(fn, fn->retExprType->body.tail,
-                                   /*initExpr*/ nullptr, /*field*/ nullptr);
-
   retType = fn->retExprType->body.tail->typeInfo();
 
   if (SymExpr* se = toSymExpr(fn->retExprType->body.tail)) {
@@ -539,7 +536,7 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
     if (fn->id == breakOnResolveID) {
       printf("breaking on resolve fn %s[%d] (%d args)\n",
              fn->name, fn->id, fn->numFormals());
-      gdbShouldBreakHere();
+      debuggerBreakHere();
     }
 
     fn->addFlag(FLAG_RESOLVED);
@@ -1286,7 +1283,8 @@ bool SplitInitVisitor::enterCallExpr(CallExpr* call) {
     bool isOutFormal = sym->hasFlag(FLAG_FORMAL_TEMP_OUT);
 
     SymExpr* typeSe = toSymExpr(call->get(2));
-    bool requireSplitInit = (typeSe->symbol() == dtSplitInitType->symbol);
+    bool requireSplitInit = (typeSe->symbol() ==
+                             dtSplitInitType->symbol);
 
     // Don't allow an out-formal to be split-init after a return because
     // that would leave the out-formal uninitialized.
@@ -2304,7 +2302,7 @@ void insertFormalTemps(FnSymbol* fn) {
 }
 
 // Returns true if the formal needs an internal temporary, false otherwise.
-// See also ArgSymbol::requiresCPtr
+// See also argRequiresCPtr
 bool formalRequiresTemp(ArgSymbol* formal, FnSymbol* fn) {
   return
     //
@@ -2698,6 +2696,18 @@ Type* arrayElementType(Type* arrayType) {
   return eltType;
 }
 
+// some simple cases, not exhaustive
+static const char* chooseSeparatorForType(const char* type) {
+  if (startsWith(type, "i") ||
+      startsWith(type, "a") ||
+      startsWith(type, "own") ||
+      startsWith(type, "[") )
+    return "an ";
+  else
+    // todo: perhaps switch this to "a(n) "; need to update many .good files
+    return "a ";
+}
+
 static void issueInitConversionError(Symbol* to, Symbol* toType, Symbol* from,
                                      Expr* where) {
 
@@ -2735,8 +2745,8 @@ static void issueInitConversionError(Symbol* to, Symbol* toType, Symbol* from,
     sep = "";
     fromStr = "nil";
   } else {
-    sep = "a ";
     fromStr = toString(fromValType);
+    sep = chooseSeparatorForType(fromStr);
   }
 
   USR_FATAL_CONT(where,
@@ -2901,23 +2911,17 @@ static void insertInitConversion(Symbol* to, Symbol* toType, Symbol* from,
     } else if (toType->type == getCopyTypeDuringResolution(fromValType)) {
 
       // for sync/single, getCopyTypeDuringResolution returns the valType.
-      if (isSyncType(fromValType) || isSingleType(fromValType)) {
+      if (isSyncType(fromValType)) {
         Type* valType = getCopyTypeDuringResolution(fromValType);
 
         VarSymbol* tmp = newTemp("_cast_tmp_", valType);
         insertBefore->insertBefore(new DefExpr(tmp));
 
         CallExpr* readCall = NULL;
-        if (isSyncType(fromValType)) {
-          readCall = new CallExpr("readFE", gMethodToken, from);
-          USR_WARN(to, "implicitly reading from a sync is deprecated; "
-                       "apply a 'read\?\?()' method to the actual");
-        } else {
-          INT_ASSERT(isSingleType(fromValType));
-          readCall = new CallExpr("readFF", gMethodToken, from);
-          USR_WARN(to, "implicitly reading from a single is deprecated; "
-                       "apply a 'read\?\?()' method to the actual");
-        }
+        INT_ASSERT(isSyncType(fromValType));
+        readCall = new CallExpr("readFE", gMethodToken, from);
+        USR_WARN(to, "implicitly reading from a sync is deprecated; "
+                      "apply a 'read\?\?()' method to the actual");
 
         newCalls.push_back(readCall);
         CallExpr* setTmp = new CallExpr(PRIM_ASSIGN, tmp, readCall);
@@ -3012,7 +3016,7 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn,
             lhsType = lhsType->getValType();
 
           if (call->id == breakOnResolveID)
-            gdbShouldBreakHere();
+            debuggerBreakHere();
 
           Symbol* to = lhs->symbol();
           Symbol* toType = NULL;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -95,7 +95,9 @@ const char* tagToString(TypeTag tag);
 } // end namespace typetags
 
 // Enable AstTag to be used as chpl::types::TypeTag
+/// \cond DO_NOT_DOCUMENT
 using chpl::types::typetags::TypeTag;
+/// \endcond
 
 } // end namespace types
 } // end namespace chpl

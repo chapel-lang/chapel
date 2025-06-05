@@ -1,0 +1,28 @@
+I have not been able to match the output from Pytorch for this linear layer.
+The output I get from Pytorch is something like:
+
+❯ python3 layerTest.py
+Testing Conv2d layer
+tensor([[[ 0.,  1.,  2.],
+         [ 3.,  4.,  5.],
+         [ 6.,  7.,  8.]],
+
+        [[ 9., 10., 11.],
+         [12., 13., 14.],
+         [15., 16., 17.]],
+
+        [[18., 19., 20.],
+         [21., 22., 23.],
+         [24., 25., 26.]]])
+tensor([[[  4.5767]],
+
+        [[ 10.8795]],
+
+        [[ 12.7140]],
+
+        [[-18.3031]],
+
+        [[ -9.7831]]])
+
+See the layerTest.py file in the same directory for the Pytorch code.
+I have tried to match the output from Pytorch by using the same seed, but I have not been able to do so.

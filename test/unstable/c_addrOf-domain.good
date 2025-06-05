@@ -1,0 +1,2 @@
+c_addrOf-domain.chpl:5: warning: using 'c_addrOf' with a domain argument is unstable
+c_addrOf-domain.chpl:6: warning: using 'c_addrOfConst' with a domain argument is unstable

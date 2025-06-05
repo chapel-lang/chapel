@@ -1,0 +1,2 @@
+# __device__ and __host__ are not available with CHPL_GPU=cpu
+CHPL_GPU==cpu

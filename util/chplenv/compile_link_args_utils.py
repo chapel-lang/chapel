@@ -23,7 +23,7 @@ def get_runtime_includes_and_defines():
 
     incl = chpl_home_utils.get_chpl_runtime_incl()
     locale_model = chpl_locale_model.get()
-    comm = chpl_comm.get();
+    comm = chpl_comm.get()
     tasks = chpl_tasks.get()
     atomics = chpl_atomics.get()
     mem = chpl_mem.get('target')
@@ -50,29 +50,9 @@ def get_runtime_includes_and_defines():
         # this is needed since it affects code inside of headers
         bundled.append("-DCHPL_COMM_DEBUG")
 
-    if locale_model == "gpu":
-        # this -D is needed since it affects code inside of headers
-        bundled.append("-DHAS_GPU_LOCALE")
-        if chpl_gpu.get() == "cpu":
-            bundled.append("-DGPU_RUNTIME_CPU")
-        memtype = chpl_gpu.get_gpu_mem_strategy()
-
-        # If compiling for GPU locales, add CUDA runtime headers to include path
-        gpu_type = chpl_gpu.get()
-        sdk_path = chpl_gpu.get_sdk_path(gpu_type)
-
-        bundled.append("-I" + os.path.join(incl, "gpu", chpl_gpu.get()))
-        if gpu_type == "nvidia":
-            system.append("-I" + os.path.join(sdk_path, "include"))
-
-            # workaround an issue with __float128 not being supported by clang in device code
-            system.append("-D__STRICT_ANSI__=1")
-
-        elif gpu_type == "amd":
-            # -isystem instead of -I silences warnings from inside these includes.
-            system.append("-isystem" + os.path.join(sdk_path, "include"))
-            system.append("-isystem" + os.path.join(sdk_path, "hip", "include"))
-            system.append("-isystem" + os.path.join(sdk_path, "hsa", "include"))
+    gpu_bundled, gpu_system = chpl_gpu.get_runtime_compile_args()
+    bundled.extend(gpu_bundled)
+    system.extend(gpu_system)
 
     if mem == "jemalloc" and chpl_jemalloc.get('target') == "bundled":
         # set -DCHPL_JEMALLOC_PREFIX=chpl_je_
@@ -89,34 +69,20 @@ def get_runtime_link_args(runtime_subdir):
     system = [ ]
 
     lib = chpl_home_utils.get_chpl_runtime_lib()
-    locale_model = chpl_locale_model.get()
 
     bundled.append("-L" + os.path.join(lib, runtime_subdir))
     bundled.append("-lchpl")
 
-    if locale_model == "gpu":
-        # If compiling for GPU locales, add CUDA to link path,
-        # and add cuda libraries
-        gpu_type = chpl_gpu.get()
-        sdk_path = chpl_gpu.get_sdk_path(gpu_type)
-        if gpu_type == "nvidia":
-            system.append("-L" + os.path.join(sdk_path, "lib64"))
-            system.append("-lcudart")
-            if chpl_platform.is_wsl():
-                # WSL needs to link with libcuda that belongs to the driver hosted in Windows
-                system.append("-L" + os.path.join("/usr", "lib", "wsl", "lib"))
-            system.append("-lcuda")
-        elif gpu_type == "amd":
-            lib_path = os.path.join(sdk_path, "lib")
-            system.append("-L" + lib_path)
-            system.append("-Wl,-rpath," + lib_path)
-            system.append("-lamdhip64")
-            system.append("-lhsa-runtime64")
+    gpu_bundled, gpu_system = chpl_gpu.get_runtime_link_args()
+    bundled.extend(gpu_bundled)
+    system.extend(gpu_system)
 
     # always link with the math library
     system.append("-lm")
     # always link with the pthreads library
     system.append("-lpthread")
+    # always link with the dlopen library
+    system.append("-ldl")
 
     return (bundled, system)
 
@@ -168,6 +134,12 @@ def compute_internal_compile_link_args(runtime_subdir):
         extend2(host_compile, chpl_jemalloc.get_compile_args('host'))
         extend2(host_link, chpl_jemalloc.get_link_args('host'))
 
+    extend2(tgt_compile, chpl_mimalloc.get_compile_args('target'))
+    extend2(tgt_link, chpl_mimalloc.get_link_args('target'))
+    if not skip_host:
+        extend2(host_compile, chpl_mimalloc.get_compile_args('host'))
+        extend2(host_link, chpl_mimalloc.get_link_args('host'))
+
     if chpl_re2.get() != 'none':
         extend2(tgt_compile, chpl_re2.get_compile_args())
         extend2(tgt_link, chpl_re2.get_link_args())
@@ -181,6 +153,8 @@ def compute_internal_compile_link_args(runtime_subdir):
     if chpl_comm.get() == 'ofi':
         extend2(tgt_compile, chpl_libfabric.get_compile_args())
         extend2(tgt_link, chpl_libfabric.get_link_args())
+        extend2(tgt_compile, chpl_comm_ofi_oob.get_compile_args())
+        extend2(tgt_link, chpl_comm_ofi_oob.get_link_args())
     elif chpl_comm.get() == 'gasnet':
         extend2(tgt_compile, chpl_gasnet.get_compile_args())
         extend2(tgt_link, chpl_gasnet.get_link_args())

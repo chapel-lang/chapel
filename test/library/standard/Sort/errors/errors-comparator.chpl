@@ -25,25 +25,29 @@ record empty { }
 
 // Wrong function
 record wrong { }
+wrong implements keyComparator;
 proc wrong.Key(a) {
   return abs(a);
 }
 
 // Invalid key args -- should have 1 arg
-record keyargs{ }
+record keyargs { }
+keyargs implements keyComparator;
 proc keyargs.key(a, b) {
   return a - b;
 }
 
 // Invalid compareargs -- should have 2 args
 record compareargs { }
+compareargs implements relativeComparator;
 proc compareargs.compare(a) {
   return a;
 }
 
 // Bad keyPart args -- need 2 args
 record keyPartArgs { }
-proc keyAndCompare.keyPart(a) {
+keyPartArgs implements keyPartComparator;
+proc keyPartArgs.keyPart(a) {
   return a;
 }
 

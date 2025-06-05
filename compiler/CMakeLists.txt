@@ -1,4 +1,4 @@
-# Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2025 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -25,6 +25,17 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED True)
 
 set(SRC_DIR     ${CMAKE_CURRENT_SOURCE_DIR})
+
+
+if (CHPL_HOST_MEM STREQUAL "mimalloc")
+if (APPLE)
+    # filter mimalloc out of CHPL_HOST_BUNDLED_LINK_ARGS
+    # this is a hack to avoid linking mimalloc twice
+    string(REPLACE "-lmimalloc" "" CHPL_HOST_BUNDLED_LINK_ARGS "${CHPL_HOST_BUNDLED_LINK_ARGS}")
+    string(STRIP "${CHPL_HOST_BUNDLED_LINK_ARGS}" CHPL_HOST_BUNDLED_LINK_ARGS)
+endif()
+endif()
+
 
 # TODO: See if we can use these directly, I am not sure we can because
 # the CMake way to concat strings requires an output variable

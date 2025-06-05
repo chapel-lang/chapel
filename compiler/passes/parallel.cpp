@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -307,7 +307,7 @@ static bool needsAutoCopyAutoDestroyForArg(ArgSymbol* formal, Expr* arg,
   // where we might take the reference of a sync on the stack, and that stack
   // is about to go away.
   //
-  if (isSyncType(baseType) || isSingleType(baseType)) {
+  if (isSyncType(baseType)) {
     return true;
   }
 
@@ -954,7 +954,6 @@ static void findHeapVarsAndRefs(Map<Symbol*, Vec<SymExpr*>*>& defMap,
            (isRecord(def->sym->type)             &&
             !isRecordWrappedType(def->sym->type) &&
             !isSyncType(def->sym->type)          &&
-            !isSingleType(def->sym->type)        &&
             // Dont try to broadcast string literals, they'll get fixed in
             // another manner
             !(def->sym->type == dtString && def->sym->isImmediate())))) {
@@ -1146,6 +1145,12 @@ makeHeapAllocations() {
           call->getStmtExpr()->insertBefore(new DefExpr(tmp));
           call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, use->symbol(), heapType->getField(1))));
           use->replace(new SymExpr(tmp));
+          if (call->isPrimitive(PRIM_ZERO_VARIABLE)) {
+            // aftering zeroing the value, we need to set it back
+            // otherwise its a dead store
+            call->getStmtExpr()->insertAfter(
+              new CallExpr(PRIM_SET_MEMBER, use->symbol(), heapType->getField(1), tmp));
+          }
         }
       } else if (use->parentExpr)
         INT_FATAL(var, "unexpected case");
@@ -1481,7 +1486,7 @@ Type* getOrMakeRefTypeDuringCodegen(Type* type) {
   refType = type->refType;
   if( ! refType ) {
     SET_LINENO(type->symbol);
-    AggregateType* ref = new AggregateType(AGGREGATE_RECORD);
+    AggregateType* ref = new AggregateType(AGGREGATE_CLASS);
     TypeSymbol* refTs = new TypeSymbol(astr("_ref_", type->symbol->cname), ref);
     refTs->addFlag(FLAG_REF);
     refTs->addFlag(FLAG_NO_DEFAULT_FUNCTIONS);

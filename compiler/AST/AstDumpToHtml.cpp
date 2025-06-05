@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -57,8 +57,9 @@ AstDumpToHtml::~AstDumpToHtml() {
 }
 
 void AstDumpToHtml::init() {
-  if (!(sIndexFP = fopen(astr(log_dir, "index.html"), "w"))) {
-    USR_FATAL("cannot open html index file \"%s\" for writing", astr(log_dir, "index.html"));
+  if (!(sIndexFP = fopen(astr(log_dir.c_str(), "index.html"), "w"))) {
+    USR_FATAL("cannot open html index file \"%s\" for writing",
+              astr(log_dir.c_str(), "index.html"));
   }
 
   fprintf(sIndexFP, "<HTML>\n");
@@ -118,7 +119,7 @@ void AstDumpToHtml::view(const char* passName) {
 
 bool AstDumpToHtml::open(ModuleSymbol* module, const char* passName) {
   const char* name = html_file_name(sPassIndex, module->name);
-  const char* path = astr(log_dir, name);
+  const char* path = astr(log_dir.c_str(), name);
 
   mFP = fopen(path, "w");
 
@@ -251,9 +252,6 @@ bool AstDumpToHtml::enterDefExpr(DefExpr* node) {
       if (node->sym->hasFlag(FLAG_SYNC))
         fprintf(mFP, "<B>sync</B> ");
 
-      if (node->sym->hasFlag(FLAG_SINGLE))
-        fprintf(mFP, "<B>single</B> ");
-
       fprintf(mFP, "<B>type ");
       writeSymbol(node->sym, true);
       fprintf(mFP, "</B><UL>\n");
@@ -267,8 +265,6 @@ bool AstDumpToHtml::enterDefExpr(DefExpr* node) {
     if (isSyncType(vs->type)) {
       fprintf(mFP, "<B>sync </B>");
 
-    } else if (isSingleType(vs->type)) {
-      fprintf(mFP, "<B>single </B>");
     }
 
     fprintf(mFP, "<B>var </B> ");

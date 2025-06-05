@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -54,10 +54,13 @@ static std::vector<ModuleSymbol*>  sTopLevelModules;
 *                                                                             *
 ************************************** | *************************************/
 
-void ModuleSymbol::addTopLevelModule(ModuleSymbol* module) {
-  sTopLevelModules.push_back(module);
-
-  theProgram->block->insertAtTail(new DefExpr(module));
+void ModuleSymbol::addTopLevelModule(ModuleSymbol* mod) {
+  if (!mod->defPoint) {
+    sTopLevelModules.push_back(mod);
+    theProgram->block->insertAtTail(new DefExpr(mod));
+  } else {
+    INT_ASSERT(mod->defPoint->parentSymbol == theProgram);
+  }
 }
 
 void ModuleSymbol::getTopLevelModules(std::vector<ModuleSymbol*>& mods) {
@@ -92,7 +95,11 @@ const char* ModuleSymbol::modTagToString(ModTag modTag) {
 *                                                                             *
 ************************************** | *************************************/
 
-void ModuleSymbol::mainModuleNameSet(const ArgumentDescription* desc,
+void ModuleSymbol::setMainModule(ModuleSymbol* mainModule) {
+  sMainModule = mainModule;
+}
+
+void ModuleSymbol::setMainModuleName(const ArgumentDescription* desc,
                                      const char*                arg) {
   sMainModuleName = arg;
 }
@@ -250,6 +257,8 @@ ModuleSymbol::ModuleSymbol(const char* iName,
   deinitFn            = NULL;
   filename            = NULL;
   extern_info         = NULL;
+  llvmDIBuilder       = NULL;
+  llvmDICompileUnit   = NULL;
   llvmDINameSpace     = NULL;
 
   registerModule(this);

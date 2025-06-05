@@ -1,0 +1,2 @@
+# program attempts to allocate and address more than 4GB of memory
+CHPL_TARGET_PLATFORM==linux32

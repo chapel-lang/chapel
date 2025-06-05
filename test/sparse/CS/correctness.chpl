@@ -1,8 +1,8 @@
-use LayoutCS;
+use CompressedSparseLayout;
 use Random;
 
 /*
-  Tests used for development of LayoutCS
+  Tests used for development of CompressedSparseLayout
 
   Matrix originated from Colorado State's useful example:
 
@@ -12,11 +12,11 @@ use Random;
 proc main() {
   var D = {1..6, 1..6};
 
-  const csrsDmap = new dmap(new CS(compressRows=true,sortedIndices=true)),
-        cscsDmap = new dmap(new CS(compressRows=false,sortedIndices=true)),
-        csruDmap = new dmap(new CS(compressRows=true,sortedIndices=false)),
-        cscuDmap = new dmap(new CS(compressRows=false,sortedIndices=false)),
-        csDmap  = new dmap(new CS());
+  const csrsDmap = new csrLayout(sortedIndices=true),
+        cscsDmap = new cscLayout(sortedIndices=true),
+        csruDmap = new csrLayout(sortedIndices=false),
+        cscuDmap = new cscLayout(sortedIndices=false),
+        csDmap  = new csrLayout();
 
   var csrsDom: sparse subdomain(D) dmapped csrsDmap,
       cscsDom: sparse subdomain(D) dmapped cscsDmap,
@@ -87,7 +87,7 @@ proc main() {
   }
 
   // dsiEqualsDmap && default value
-  if LayoutCSDefaultToSorted {
+  if csLayoutSortByDefault {
     assert(csDmap == csrsDmap);
   } else {
     assert(csDmap == csruDmap);

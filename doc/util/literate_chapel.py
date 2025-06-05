@@ -82,7 +82,7 @@ def to_pieces(handle, islearnChapelInYMinutes=False):
             state = 'blockcomment'
             if commentstarts > 0:
                 # reset indentation at the start of a block comment
-                #indentation = -1;
+                #indentation = -1
                 pass
         elif line.startswith('//'):
             state = 'linecomment'

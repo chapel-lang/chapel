@@ -5,7 +5,7 @@
 # for a really long time and nevertheless may not fail.
 
 import os
-print(os.getenv('CHPL_MEM') != 'jemalloc' or
+print(os.getenv('CHPL_TARGET_MEM') != 'jemalloc' or
       os.getenv('HUGETLB_DEFAULT_PAGE_SIZE') == None or
       os.getenv('CHPL_RT_MAX_HEAP_SIZE') != None or 
       os.getenv('CHPL_TARGET_CPU', '') in ['aarch64',

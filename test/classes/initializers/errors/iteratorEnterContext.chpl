@@ -1,0 +1,3 @@
+class IteratorEnterContext {
+  iter enterContext() {}
+}

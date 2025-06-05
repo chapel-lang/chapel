@@ -13,6 +13,7 @@ import chpl_gasnet
 import chpl_gmp
 import chpl_hwloc
 import chpl_hwloc_debug
+import chpl_hwloc_pci
 import chpl_jemalloc
 import chpl_launcher
 import chpl_libfabric
@@ -22,6 +23,7 @@ import chpl_locale_model
 import chpl_gpu
 import chpl_arch
 import chpl_mem
+import chpl_mimalloc
 import chpl_qthreads
 import chpl_re2
 import chpl_tasks

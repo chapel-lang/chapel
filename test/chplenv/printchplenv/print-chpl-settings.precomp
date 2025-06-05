@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+$CHPL_HOME/util/printchplenv --all > print-chpl-settings.1.good
+CHPL_TASKS=qthreads $CHPL_HOME/util/printchplenv --all > print-chpl-settings.2.good
+CHPL_TASKS=fifo $CHPL_HOME/util/printchplenv --all > print-chpl-settings.3.good

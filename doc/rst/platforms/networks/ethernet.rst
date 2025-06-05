@@ -130,11 +130,12 @@ I'm seeing login banners mixed with my program's output
 
 If you are using SSH to launch jobs, you might get a
 login banner printed out along with your program's output. We have
-found the following setting useful to disable such printing:
+found the following setting useful to disable such printing (where
+``-x`` is retained from the instructions above):
 
 .. code-block:: bash
 
-   export GASNET_SSH_OPTIONS="-o LogLevel=Error"
+   export GASNET_SSH_OPTIONS="-x -o LogLevel=Error"
 
 My console output seems to be jumbled or missing
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -191,6 +192,14 @@ the local machine, use:
 
   export CHPL_RT_MASTERIP=127.0.0.1
   export CHPL_RT_WORKERIP=127.0.0.0  # may be optional
+
+
+I get ``worker failed DNSLookup on master host name`` error messages
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+When running in a local, oversubscribed setting, this error can often
+be resolved by setting ``CHPL_RT_MASTERIP`` as described in the
+previous section.
 
 
 .. _using-ofi-tcp:

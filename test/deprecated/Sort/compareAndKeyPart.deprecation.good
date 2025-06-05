@@ -1,0 +1,4 @@
+compareAndKeyPart.chpl:29: warning: Defining a comparator with both a 'compare' method and a 'keyPart' without implementing the keyPartComparator interface is deprecated. Please implement the keyPartComparator interface (i.e. 'record R1: relativeComparator').
+compareAndKeyPart.chpl:32: warning: Defining a comparator with both a 'compare' method and a 'keyPart' without implementing the keyPartComparator interface is deprecated. Please implement the keyPartComparator interface (i.e. 'record R1: relativeComparator').
+isSorted before false
+isSorted after true

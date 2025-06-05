@@ -1,112 +1,84 @@
 ArrayViewElision supported (dynamic locality check required) slices.chpl:26
-	lhsBaseType: [domain(1,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		range(int(64),both,one)
-	rhsBaseType: [domain(1,int(64),one)] int(64)
 	rhsIndexingExprs: 
 		range(int(64),both,one)
 
 ArrayViewElision supported (dynamic locality check required) slices.chpl:26
-	lhsBaseType: [domain(1,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		range(int(64),both,one)
-	rhsBaseType: [domain(1,int(64),one)] int(64)
 	rhsIndexingExprs: 
 		range(int(64),both,one)
 
 ArrayViewElision supported (dynamic locality check required) slices.chpl:26
-	lhsBaseType: [domain(1,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		range(int(64),both,one)
-	rhsBaseType: [domain(1,int(64),one)] int(64)
 	rhsIndexingExprs: 
 		range(int(64),both,one)
 
 ArrayViewElision supported (dynamic locality check required) slices.chpl:26
-	lhsBaseType: [domain(1,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		range(int(64),high,one)
-	rhsBaseType: [domain(1,int(64),one)] int(64)
 	rhsIndexingExprs: 
 		range(int(64),high,one)
 
 ArrayViewElision supported (dynamic locality check required) slices.chpl:26
-	lhsBaseType: [domain(1,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		range(int(64),high,one)
-	rhsBaseType: [domain(1,int(64),one)] int(64)
 	rhsIndexingExprs: 
 		range(int(64),high,one)
 
 ArrayViewElision supported (dynamic locality check required) slices.chpl:26
-	lhsBaseType: [domain(1,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		range(int(64),high,one)
-	rhsBaseType: [domain(1,int(64),one)] int(64)
 	rhsIndexingExprs: 
 		range(int(64),high,one)
 
 ArrayViewElision supported (dynamic locality check required) slices.chpl:26
-	lhsBaseType: [domain(1,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		range(int(64),low,one)
-	rhsBaseType: [domain(1,int(64),one)] int(64)
 	rhsIndexingExprs: 
 		range(int(64),low,one)
 
 ArrayViewElision supported (dynamic locality check required) slices.chpl:26
-	lhsBaseType: [domain(1,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		range(int(64),low,one)
-	rhsBaseType: [domain(1,int(64),one)] int(64)
 	rhsIndexingExprs: 
 		range(int(64),low,one)
 
 ArrayViewElision supported (dynamic locality check required) slices.chpl:26
-	lhsBaseType: [domain(1,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		range(int(64),low,one)
-	rhsBaseType: [domain(1,int(64),one)] int(64)
 	rhsIndexingExprs: 
 		range(int(64),low,one)
 
 ArrayViewElision supported (dynamic locality check required) slices.chpl:26
-	lhsBaseType: [domain(1,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		range(int(64),both,one)
-	rhsBaseType: [domain(1,int(64),one)] int(64)
 	rhsIndexingExprs: 
 		range(int(64),both,one)
 
 ArrayViewElision supported (dynamic locality check required) slices.chpl:26
-	lhsBaseType: [domain(1,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		range(int(64),low,one)
-	rhsBaseType: [domain(1,int(64),one)] int(64)
 	rhsIndexingExprs: 
 		range(int(64),low,one)
 
 ArrayViewElision supported (dynamic locality check required) slices.chpl:26
-	lhsBaseType: [domain(1,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		range(int(64),neither,one)
-	rhsBaseType: [domain(1,int(64),one)] int(64)
 	rhsIndexingExprs: 
 		range(int(64),neither,one)
 
 ArrayViewElision supported (dynamic locality check required) slices.chpl:26
-	lhsBaseType: [domain(1,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		range(int(64),neither,one)
-	rhsBaseType: [domain(1,int(64),one)] int(64)
 	rhsIndexingExprs: 
 		range(int(64),neither,one)
 
 ArrayViewElision supported (dynamic locality check required) slices.chpl:26
-	lhsBaseType: [domain(1,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		range(int(64),neither,one)
-	rhsBaseType: [domain(1,int(64),one)] int(64)
 	rhsIndexingExprs: 
 		range(int(64),neither,one)
 

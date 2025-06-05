@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -130,6 +130,23 @@
     WhereAndLifetime ret = {w, lt};
     return ret;
   }
+
+  struct NDArrayElement {
+    ParserExprList* exprs;
+    int nSeparator;
+    TextLocation location;
+  };
+  static inline
+  NDArrayElement makeNDArrayElement(ParserExprList* exprs, TextLocation loc) {
+    NDArrayElement ret = {exprs, 0, loc};
+    return ret;
+  }
+  static inline
+  NDArrayElement makeNDArrayElementSep(int nSeparator, TextLocation loc) {
+    NDArrayElement ret = {nullptr, nSeparator, loc};
+    return ret;
+  }
+  using ParserNDArrayList = std::vector<NDArrayElement>;
 
   // This is used to propagate any comments that hug the top of a statement
   // upwards through parser rules.
@@ -305,8 +322,11 @@
     MaybeNamedActualList* maybeNamedActualList;
     ModuleParts moduleParts;
     ParserExprList* exprList;
+    ParserNDArrayList* ndArrayList;
     UniqueStrList* uniqueStrList;
     WhereAndLifetime lifetimeAndWhere;
+
+    int counter;
   };
 
   // Put our types in a different namespace to avoid conflicting with the
@@ -401,7 +421,6 @@
 %token <uniqueStr> IMAGLITERAL
 %token <expr> STRINGLITERAL
 %token <expr> BYTESLITERAL
-%token <expr> CSTRINGLITERAL
 %token <sizedStr> EXTERNCODE
 
 //
@@ -424,7 +443,7 @@
 %token <uniqueStr> TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPRIVATE
 %token <uniqueStr> TPROC TPROTOTYPE TPUBLIC TPROCLP
 %token <uniqueStr> TREAL TRECORD TREDUCE TREF TREQUIRE TRETURN
-%token <uniqueStr> TSCAN TSELECT TSERIAL TSHARED TSINGLE TSPARSE
+%token <uniqueStr> TSCAN TSELECT TSERIAL TSHARED TSPARSE
 %token <uniqueStr> TSTRING TSUBDOMAIN TSYNC
 %token <uniqueStr> TTHEN TTHIS TTHROW TTHROWS TTRUE TTRY TTRYBANG TTYPE
 %token <uniqueStr> TUINT TUNION TUNMANAGED TUSE
@@ -481,7 +500,7 @@
           TDOMAIN TINDEX TLOCALE TNOTHING TVOID TIDENT TINIT
 %nonassoc TFALSE TNONE TTHIS TTRUE
 
-%left TFOR TFORALL TFOREACH TIF TATOMIC TSYNC TSINGLE
+%left TFOR TFORALL TFOREACH TIF TATOMIC TSYNC
 %left TIN
 %left TALIGN TBY THASH
 %left TOR
@@ -551,6 +570,7 @@
 %type <exprList> import_ls
 %type <exprList> renames_ls use_renames_ls opt_only_ls
 
+%type <typeDeclParts> interface_start
 // These are exprList so that they can include preceeding comments
 %type <commentsAndStmt> implements_stmt interface_stmt
 %type <exprList>  ifc_formal_ls
@@ -573,7 +593,7 @@
 %type <commentsAndStmt> class_level_stmt
 %type <commentsAndStmt> inner_class_level_stmt
 %type <commentsAndStmt> forwarding_decl_stmt
-%type <attributeGroup> forwarding_decl_start
+%type <attributeGroup> forwarding_decl_start var_decl_start extern_export_kind_inner
 %type <commentsAndStmt> extern_export_decl_stmt
 %type <commentsAndStmt> extern_block_stmt
 %type <commentsAndStmt> return_stmt
@@ -586,7 +606,7 @@
 %type <variableKind> var_decl_type
 
 %type <commentsAndStmt> type_alias_decl_stmt
-%type <variableKind> type_alias_decl_stmt_start
+%type <attributeGroup> type_alias_decl_stmt_start
 %type <exprList> type_alias_decl_stmt_inner_ls
 %type <commentsAndStmt> type_alias_decl_stmt_inner
 
@@ -642,6 +662,7 @@
 
 %type <newManagement> new_maybe_decorated
 %type <exprList> opt_inherit expr_ls assoc_expr_ls tuple_expr_ls
+%type <ndArrayList> expr_ls_semi expr_ls_end_semi
 %type <maybeNamedActualList> opt_actual_ls actual_ls
 %type <exprList> task_intent_ls
 %type <withClause> opt_task_intent_ls task_intent_clause
@@ -657,6 +678,7 @@
 %type <linkageTag> extern_or_export extern_export_decl_stmt_start
 %type <expr> intent_expr
 %type <taskIntent> task_var_prefix
+%type <counter> semicolon_list
 
 %%
 
@@ -715,7 +737,6 @@ stmt_base:
 | require_stmt              { $$ = context->finishStmt($1); }
 | extern_block_stmt         { $$ = context->finishStmt($1); }
 | implements_stmt           { $$ = context->finishStmt($1); }
-| interface_stmt            { $$ = context->finishStmt($1); }
 | TDEFER stmt
   {
     std::vector<ParserComment>* comments;
@@ -924,15 +945,12 @@ tryable_stmt:
 decl_base:
   module_decl_stmt
 | class_level_stmt
+| interface_stmt
 ;
 
 collect_attributes:
   {
-    auto attributeGroup = context->buildAttributeGroup(@$);
-    if (attributeGroup != nullptr) {
-      context->resetAttributeGroupPartsState();
-    }
-    context->loopAttributes.push_back(std::move(attributeGroup));
+    context->buildAndPushAttributeGroup(@$);
   }
 ;
 
@@ -1278,7 +1296,6 @@ import_internal_type_ident:
 | TBYTES
 | TSTRING
 | TSYNC
-| TSINGLE
 | TOWNED
 | TSHARED
 | TBORROWED
@@ -1352,14 +1369,6 @@ assignment_stmt:
     {
       $$ = STMT(@$, context->buildBinOp(@$, $1, $2, $3));
     }
-| lhs_expr TASSIGNLAND     opt_try_expr TSEMI
-    {
-      $$ = STMT(@$, context->buildBinOp(@$, $1, $2, $3));
-    }
-| lhs_expr TASSIGNLOR      opt_try_expr TSEMI
-    {
-      $$ = STMT(@$, context->buildBinOp(@$, $1, $2, $3));
-    }
 | lhs_expr TASSIGN         TNOINIT TSEMI
     {
       $$ = STMT(@$, context->buildBinOp(@$, $1, $2, context->buildIdent(@3, $3)));
@@ -1413,7 +1422,6 @@ internal_type_ident_def:
 | TBYTES
 | TSTRING
 | TSYNC
-| TSINGLE
 | TOWNED
 | TSHARED
 | TBORROWED
@@ -1445,7 +1453,6 @@ reserved_type_ident_use:
      places in the parser. Additionally their type versions have
      different names. */
   TSYNC
-| TSINGLE
 | TDOMAIN
 | TINDEX
 ;
@@ -1551,6 +1558,18 @@ extern_export_decl_stmt_start:
   }
 ;
 
+// this is a wrapper around the 'type' intent so that we can build the
+// attribute group. Attribute groups are always built right after the
+// declaration intent (or where it would be) so that they are not accidentally
+// applied to the initialization or type expression instead.
+extern_export_kind_inner:
+  TTYPE
+  {
+    $$ = context->buildAttributeGroup(@$).release();
+    context->resetAttributeGroupPartsState();
+  }
+;
+
 extern_export_decl_stmt:
   extern_export_decl_stmt_start class_start opt_inherit
   TLCBR class_level_stmt_ls TRCBR
@@ -1590,19 +1609,19 @@ extern_export_decl_stmt:
   {
     context->storeVarDeclLinkageName($2);
   }
-  var_decl_type var_decl_stmt_inner_ls TSEMI
+  var_decl_start var_decl_stmt_inner_ls TSEMI
   {
-    $$ = context->buildVarOrMultiDeclStmt(@$, $5);
+    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @2), $4, $5);
     context->resetDeclState();
   }
-| extern_export_decl_stmt_start opt_expr TTYPE
+| extern_export_decl_stmt_start opt_expr extern_export_kind_inner
   {
     context->storeVarDeclLinkageName($2);
     context->noteVarDeclKind(Variable::TYPE);
   }
   type_alias_decl_stmt_inner_ls TSEMI
   {
-    $$ = context->buildVarOrMultiDeclStmt(@$, $5);
+    $$ = context->buildVarOrMultiDeclStmt(@1, $3, $5);
     context->resetDeclState();
   }
 ;
@@ -1614,7 +1633,11 @@ extern_block_stmt:
   }
 ;
 
-no_loop_attributes: { context->loopAttributes.push_back(nullptr); }
+no_loop_attributes:
+  {
+    // Even though there are no attributes, there could be loop pragmas.
+    context->buildAndPushAttributeGroup(@$);
+  }
 
 loop_stmt:
   attribute_group collect_attributes loop_stmt_base { $$ = $3; }
@@ -1630,6 +1653,7 @@ for_loop_kw :
   TFOR
 | TFORALL
 | TFOREACH
+| TCOFORALL
 ;
 
 loop_stmt_base:
@@ -1693,21 +1717,6 @@ loop_stmt_base:
     }
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(cs);
-  }
-| TCOFORALL expr TIN expr opt_task_intent_ls do_stmt
-  {
-    auto locHeader = context->makeSpannedLocation(@1, @4);
-    $$ = context->buildCoforallLoopStmt(@$, locHeader, @2, @6, $2, $4, $5, $6);
-  }
-| TCOFORALL expr TIN zippered_iterator opt_task_intent_ls do_stmt
-  {
-    auto locHeader = context->makeSpannedLocation(@1, @4);
-    $$ = context->buildCoforallLoopStmt(@$, locHeader, @2, @6, $2, $4, $5, $6);
-  }
-| TCOFORALL expr opt_task_intent_ls do_stmt
-  {
-    auto locHeader = context->makeSpannedLocation(@1, @2);
-    $$ = context->buildCoforallLoopStmt(@$, locHeader, @1, @4, nullptr, $2, $3, $4);
   }
 | TFOR TPARAM ident_def TIN expr do_stmt
   {
@@ -1890,13 +1899,13 @@ ifvar:
                                    Decl::DEFAULT_VISIBILITY,
                                    Decl::DEFAULT_LINKAGE,
                                    /*linkageName*/ nullptr,
-                                   /*destinationExpr*/ nullptr,
                                    /*name*/ $2,
                                    Variable::VAR,
                                    /*isConfig*/ false,
                                    context->currentScopeIsAggregate(),
                                    /*typeExpression*/ nullptr,
                                    toOwned($4));
+    BUILDER->noteDeclNameLocation(varDecl.get(), LOC(@2));
     $$ = varDecl.release();
   }
 | TCONST ident_def TASSIGN expr
@@ -1906,25 +1915,36 @@ ifvar:
                                    Decl::DEFAULT_VISIBILITY,
                                    Decl::DEFAULT_LINKAGE,
                                    /*linkageName*/ nullptr,
-                                   /*destinationExpr*/ nullptr,
                                    /*name*/ $2,
                                    Variable::CONST,
                                    /*isConfig*/ false,
                                    context->currentScopeIsAggregate(),
                                    /*typeExpression*/ nullptr,
                                    toOwned($4));
+    BUILDER->noteDeclNameLocation(varDecl.get(), LOC(@2));
     $$ = varDecl.release();
   }
 ;
 
-interface_stmt:
-  TINTERFACE ident_def TLP ifc_formal_ls TRP block_stmt
+interface_start:
+  TINTERFACE ident_def
   {
-    $$ = context->buildInterfaceStmt(@$, @2, $2, $4, @6, $6);
+    $$ = context->enterScopeAndBuildTypeDeclParts(@1, @2, $2, asttags::Interface);
   }
-| TINTERFACE ident_def                       block_stmt
+;
+
+interface_stmt:
+  interface_start TLP ifc_formal_ls TRP block_stmt
   {
-    $$ = context->buildInterfaceStmt(@$, @2, $2, nullptr, @3, $3);
+    TypeDeclParts parts = $1;
+    $$ = context->buildInterfaceStmt(@$, @1, parts, $3, @5, $5);
+    context->exitScope(asttags::Interface, parts.name);
+  }
+| interface_start                       block_stmt
+  {
+    TypeDeclParts parts = $1;
+    $$ = context->buildInterfaceStmt(@$, @1, parts, nullptr, @2, $2);
+    context->exitScope(asttags::Interface, parts.name);
   }
 ;
 
@@ -1967,7 +1987,6 @@ implements_type_error_ident:
 | TTRUE
 /* it would be nice to include these, alas they cause shift/reduce conflicts:
 | TSYNC
-| TSINGLE
 | TOWNED
 | TSHARED
 | TBORROWED
@@ -2049,31 +2068,33 @@ catch_expr:
 catch_expr_inner:
   ident_def
   {
-    $$ = Variable::build(BUILDER, LOC(@$), /*attributeGroup*/ nullptr,
+    auto varDecl = Variable::build(BUILDER, LOC(@$), /*attributeGroup*/ nullptr,
                          Decl::DEFAULT_VISIBILITY,
                          Decl::DEFAULT_LINKAGE,
                          /*linkageName*/ nullptr,
-                         /*destinationExpr*/ nullptr,
                          /*name*/ $1,
                          Variable::VAR,
                          /*isConfig*/ false,
                          /*isField*/ false,
                          /*typeExpression*/ nullptr,
-                         /*initExpression*/ nullptr).release();
+                         /*initExpression*/ nullptr);
+    BUILDER->noteDeclNameLocation(varDecl.get(), LOC(@1));
+    $$ = varDecl.release();
   }
 | ident_def TCOLON expr
   {
-    $$ = Variable::build(BUILDER, LOC(@$), /*attributeGroup*/ nullptr,
+    auto varDecl = Variable::build(BUILDER, LOC(@$), /*attributeGroup*/ nullptr,
                          Decl::DEFAULT_VISIBILITY,
                          Decl::DEFAULT_LINKAGE,
                          /*linkageName*/ nullptr,
-                         /*destinationExpr*/ nullptr,
                          /*name*/ $1,
                          Variable::VAR,
                          /*isConfig*/ false,
                          /*isField*/ false,
                          /*typeExpression*/ toOwned($3),
-                         /*initExpression*/ nullptr).release();
+                         /*initExpression*/ nullptr);
+    BUILDER->noteDeclNameLocation(varDecl.get(), LOC(@1));
+    $$ = varDecl.release();
   }
 ;
 
@@ -2300,6 +2321,7 @@ enum_item:
       auto decl = EnumElement::build(BUILDER, LOC(@$),
                                      context->buildAttributeGroup(@$),
                                      $1);
+      BUILDER->noteDeclNameLocation(decl.get(), LOC(@1));
       $$ = STMT(@$, decl.release());
     }
 | ident_def TASSIGN expr
@@ -2308,6 +2330,7 @@ enum_item:
                                      context->buildAttributeGroup(@$),
                                      $1,
                                      toOwned($3));
+      BUILDER->noteDeclNameLocation(decl.get(), LOC(@1));
       $$ = STMT(@$, decl.release());
       context->clearCommentsBefore(@3);
     }
@@ -2553,7 +2576,11 @@ fn_decl_stmt_start:
 
 fn_decl_receiver_expr:
   ident_expr
-| TLP expr TRP        { $$ = $2; }
+| TLP expr TRP
+  {
+    BUILDER->tryNoteExprParenLocation($2, LOC(@$));
+    $$ = $2;
+  }
 ;
 
 fn_ident:
@@ -2606,6 +2633,8 @@ assignop_ident:
 | TASSIGNBAND
 | TASSIGNBOR
 | TASSIGNBXOR
+| TASSIGNLAND
+| TASSIGNLOR
 | TASSIGNSR
 | TASSIGNSL
 ;
@@ -2800,7 +2829,7 @@ lifetime_ident:
 type_alias_decl_stmt:
   type_alias_decl_stmt_start type_alias_decl_stmt_inner_ls TSEMI
   {
-    $$ = context->buildVarOrMultiDeclStmt(@$, $2);
+    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @2), $1, $2);
     context->resetDeclState();
   }
 ;
@@ -2809,12 +2838,16 @@ type_alias_decl_stmt:
 type_alias_decl_stmt_start:
   TTYPE
   {
-    $$ = context->noteVarDeclKind(Variable::TYPE);
+    context->noteVarDeclKind(Variable::TYPE);
+    $$ = context->buildAttributeGroup(@$).release();
+    context->resetAttributeGroupPartsState();
   }
 | TCONFIG TTYPE
   {
-    $$ = context->noteVarDeclKind(Variable::TYPE);
+    context->noteVarDeclKind(Variable::TYPE);
     context->noteIsVarDeclConfig(true);
+    $$ = context->buildAttributeGroup(@$).release();
+    context->resetAttributeGroupPartsState();
   }
 ;
 
@@ -2838,7 +2871,6 @@ type_alias_decl_stmt_inner:
                                 context->visibility,
                                 context->linkage,
                                 context->consumeVarDeclLinkageName(),
-                                context->consumeVarDestinationExpr(),
                                 /*name*/ $1,
                                 context->varDeclKind,
                                 context->isVarDeclConfig,
@@ -2866,14 +2898,22 @@ var_decl_type:
 | TVAR        { $$ = context->noteVarDeclKind(Variable::VAR); }
 ;
 
+var_decl_start:
+  var_decl_type
+  {
+    $$ = context->buildAttributeGroup(@$).release();
+    context->resetAttributeGroupPartsState();
+  }
+;
+
 var_decl_stmt:
   TCONFIG
   {
     // Use a mid-rule action to thread along 'isVarDeclConfig'.
     context->noteIsVarDeclConfig(true);
   }
-  var_decl_type var_decl_stmt_inner_ls TSEMI {
-    $$ = context->buildVarOrMultiDeclStmt(@$, $4);
+  var_decl_start var_decl_stmt_inner_ls TSEMI {
+    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @2), $3, $4);
     context->resetDeclState();
   }
 | TON expr
@@ -2881,19 +2921,20 @@ var_decl_stmt:
     // Use a mid-rule action to preserve the 'on' expr
     context->noteVarDestinationExpr($2);
   }
-  var_decl_type var_decl_stmt_inner_ls TSEMI
+  var_decl_start var_decl_stmt_inner_ls TSEMI
   {
-    $$ = context->buildVarOrMultiDeclStmt(@$, $5);
+    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @2), $4, $5);
     context->resetDeclState();
   }
-| var_decl_type var_decl_stmt_inner_ls TSEMI
+| var_decl_start var_decl_stmt_inner_ls TSEMI
   {
-    $$ = context->buildVarOrMultiDeclStmt(@$, $2);
+    $$ = context->buildVarOrMultiDeclStmt(YLOC2(@1, @2), $1, $2);
     context->resetDeclState();
   }
-| var_decl_type error TSEMI
+| var_decl_start error TSEMI
   {
     $$ = { .comments=nullptr, .stmt=ErroneousExpression::build(BUILDER, LOC(@2)).release() };
+    delete $1;
     context->resetDeclStateOnError();
   }
 ;
@@ -2919,7 +2960,6 @@ var_decl_stmt_inner:
                                      context->visibility,
                                      context->linkage,
                                      context->consumeVarDeclLinkageName(),
-                                     context->consumeVarDestinationExpr(),
                                      /*name*/ $1,
                                      context->varDeclKind,
                                      context->isVarDeclConfig,
@@ -2971,7 +3011,7 @@ tuple_var_decl_stmt_inner_ls:
 /** TYPES ********************************************************************/
 
 opt_init_expr:
-                        { $$ = nullptr; }
+                        { $$ = nullptr; CHPL_NULL_YYLLOC(@$); }
 | TASSIGN TNOINIT       { $$ = context->buildIdent(@2, $2); }
 | TASSIGN opt_try_expr  { $$ = $2; }
 ;
@@ -2997,7 +3037,7 @@ opt_ret_type:
 ;
 
 opt_type:
-                                 { $$ = nullptr; }
+                                 { $$ = nullptr; CHPL_NULL_YYLLOC(@$); }
 | TCOLON expr                    { $$ = $2; }
 | TCOLON reserved_type_ident_use { $$ = context->buildIdent(@2, $2); }
 | error                          { $$ = ErroneousExpression::build(BUILDER, LOC(@1)).release(); }
@@ -3013,7 +3053,7 @@ colon_formal_type:
 ;
 
 opt_colon_formal_type:
-                        { $$ = nullptr; }
+                        { $$ = nullptr; CHPL_NULL_YYLLOC(@$); }
 | colon_formal_type     { $$ = $1; }
 ;
 
@@ -3023,6 +3063,40 @@ expr_ls:
   expr                       { $$ = context->makeList($1); }
 | expr_ls TCOMMA expr        { $$ = context->appendList($1, $3); }
 ;
+
+expr_ls_end_semi:
+  expr_ls semicolon_list {
+    $$ = context->makeNDArrayList();
+    $$ = context->appendNDArrayList($$, makeNDArrayElement($1, @1));
+    $$ = context->appendNDArrayList($$, makeNDArrayElementSep($2, @2));
+  }
+| expr_ls TCOMMA semicolon_list {
+    $$ = context->makeNDArrayList();
+    $$ = context->appendNDArrayList($$, makeNDArrayElement($1, @1));
+    $$ = context->appendNDArrayList($$, makeNDArrayElementSep($3, @3));
+  }
+| expr_ls_semi semicolon_list
+  {
+    $$ = $1;
+    $$ = context->appendNDArrayList($$, makeNDArrayElementSep($2, @2));
+  }
+;
+
+expr_ls_semi:
+  expr_ls_end_semi expr_ls {
+    $$ = context->appendNDArrayList($1, makeNDArrayElement($2, @2));
+  }
+| expr_ls_end_semi expr_ls TCOMMA {
+    $$ = context->appendNDArrayList($1, makeNDArrayElement($2, @2));
+  }
+;
+
+semicolon_list:
+  TSEMI                { $$ = 1; }
+| semicolon_list TSEMI { $$ = $1 + 1; }
+;
+
+
 
 tuple_component:
   opt_try_expr  { $$ = $1; }
@@ -3077,8 +3151,6 @@ sub_type_level_expr:
 | cond_expr                 // type b = if b then uint else int
 | unary_op_expr             // We allow binary exprs as types...why not unary?
 | binary_op_expr            // tuples, expr dmapped expr, overloaded binary ops
-| TSINGLE expr
-  { $$ = context->buildTypeConstructor(@$, $1, $2); }
 | TINDEX TLP opt_actual_ls TRP
   { $$ = context->buildTypeConstructor(@$, $1, $3); }
 | TDOMAIN TLP opt_actual_ls TRP
@@ -3134,6 +3206,10 @@ for_expr_base:
 | for_loop_kw expr TDO expr %prec TFOR
   {
     $$ = context->buildGeneralLoopExpr(@$, @2, @4, $1, nullptr, $2, $4);
+  }
+| for_loop_kw zippered_iterator TDO expr %prec TFOR
+  {
+    $$ = context->syntax(@$, "expression-level loops with 'zip' must have an index.");
   }
 | for_loop_kw expr TIN expr TDO TIF expr TTHEN expr %prec TNOELSE
   {
@@ -3325,6 +3401,7 @@ new_expr:
                 see if we can remove them. */
 | TNEW TOWNED TLP expr TRP TLP opt_actual_ls TRP %prec TNOELSE
   {
+    BUILDER->tryNoteExprParenLocation($4, LOC2(@3, @5));
     AstList actuals;
     std::vector<UniqueString> actualNames;
     context->consumeNamedActuals($7, actuals, actualNames);
@@ -3337,6 +3414,7 @@ new_expr:
   }
 | TNEW TSHARED TLP expr TRP TLP opt_actual_ls TRP %prec TNOELSE
   {
+    BUILDER->tryNoteExprParenLocation($4, LOC2(@3, @5));
     AstList actuals;
     std::vector<UniqueString> actualNames;
     context->consumeNamedActuals($7, actuals, actualNames);
@@ -3349,6 +3427,7 @@ new_expr:
   }
 | TNEW TOWNED TLP expr TRP TLP opt_actual_ls TRP TQUESTION
   {
+    BUILDER->tryNoteExprParenLocation($4, LOC2(@3, @5));
     AstList actuals;
     std::vector<UniqueString> actualNames;
     context->consumeNamedActuals($7, actuals, actualNames);
@@ -3362,6 +3441,7 @@ new_expr:
   }
 | TNEW TSHARED TLP expr TRP TLP opt_actual_ls TRP TQUESTION
   {
+    BUILDER->tryNoteExprParenLocation($4, LOC2(@3, @5));
     AstList actuals;
     std::vector<UniqueString> actualNames;
     context->consumeNamedActuals($7, actuals, actualNames);
@@ -3571,7 +3651,7 @@ parenthesized_expr:
   TLP opt_try_expr TRP
   {
     // Use 'tryNote' here in case an expression like ((x)) comes along.
-    BUILDER->tryNoteExprParenthLocation($2, LOC(@$));
+    BUILDER->tryNoteExprParenLocation($2, LOC(@$));
     $$ = $2;
   }
 | TLP tuple_component TCOMMA TRP
@@ -3604,7 +3684,6 @@ literal_expr:
 | INTLITERAL     { $$ = context->buildNumericLiteral(@$, $1, INTLITERAL); }
 | REALLITERAL    { $$ = context->buildNumericLiteral(@$, $1, REALLITERAL); }
 | IMAGLITERAL    { $$ = context->buildNumericLiteral(@$, $1, IMAGLITERAL); }
-| CSTRINGLITERAL      { $$ = $1; }
 | TNONE               { $$ = context->buildIdent(@$, $1); }
 | TLCBR expr_ls TRCBR
   {
@@ -3624,6 +3703,39 @@ literal_expr:
 | no_loop_attributes TLSBR expr_ls TCOMMA TRSBR
   {
     $$ = Array::build(BUILDER, LOC(@$), context->consumeList($3), true).release();
+    context->popLoopAttributeGroup();
+  }
+| no_loop_attributes TLSBR expr_ls_semi TRSBR
+  {
+    $$ = context->buildNDArray(@$, $3);
+    context->popLoopAttributeGroup();
+  }
+| no_loop_attributes TLSBR expr_ls_semi semicolon_list TRSBR
+  {
+    if ($4 > 1) {
+      context->syntax(@4, "multiple trailing semicolons in array literal");
+    }
+    $$ = context->buildNDArray(@$, $3);
+    context->popLoopAttributeGroup();
+  }
+| no_loop_attributes TLSBR expr_ls semicolon_list TRSBR
+  {
+    if ($4 > 1) {
+      context->syntax(@4, "multiple trailing semicolons in array literal");
+    }
+    AstList lst;
+    lst.push_back(ArrayRow::build(BUILDER, LOC(@$), context->consumeList($3)));
+    $$ = Array::build(BUILDER, LOC(@$), std::move(lst)).release();
+    context->popLoopAttributeGroup();
+  }
+| no_loop_attributes TLSBR expr_ls TCOMMA semicolon_list TRSBR
+  {
+    if ($5 > 1) {
+      context->syntax(@5, "multiple trailing semicolons in array literal");
+    }
+    AstList lst;
+    lst.push_back(ArrayRow::build(BUILDER, LOC(@$), context->consumeList($3)));
+    $$ = Array::build(BUILDER, LOC(@$), std::move(lst)).release();
     context->popLoopAttributeGroup();
   }
 | no_loop_attributes TLSBR assoc_expr_ls TRSBR

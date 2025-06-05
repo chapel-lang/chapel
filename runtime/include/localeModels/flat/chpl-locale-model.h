@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -57,7 +57,7 @@ chpl_localeID_t chpl__initCopy_chpl_rt_localeID_t(chpl_localeID_t initial) {
 static inline
 chpl_localeID_t chpl_rt_buildLocaleID(c_nodeid_t node, c_sublocid_t subloc) {
   chpl_localeID_t loc = { node };
-  //assert(subloc == c_sublocid_any);
+  //assert(subloc == c_sublocid_none);
   return loc;
 }
 
@@ -68,7 +68,7 @@ c_nodeid_t chpl_rt_nodeFromLocaleID(chpl_localeID_t loc) {
 
 static inline
 c_sublocid_t chpl_rt_sublocFromLocaleID(chpl_localeID_t loc) {
-  return c_sublocid_any;
+  return c_sublocid_none;
 }
 
 static inline

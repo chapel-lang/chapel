@@ -61,7 +61,7 @@ proc testBucketizer(nBuckets:int, equalBuckets:bool) {
                      0x2222222222222222:uint,
                      0xffffffffffffffff:uint];
 
-  var criterion = new DefaultComparator();
+  var criterion = new defaultComparator();
 
   if debug then
     writeln("nBuckets=", nBuckets,
@@ -170,7 +170,7 @@ proc testBucketizerRandomized(nelts:int, nBuckets:int, equalBuckets:bool) {
   var A:[0..#nelts] uint;
   Random.fillRandom(A);
 
-  var criterion = new DefaultComparator();
+  var criterion = new defaultComparator();
   var b = makeBucketizerTest(nBuckets, equalBuckets, A, criterion);
 
   var src = A;

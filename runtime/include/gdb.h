@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -27,7 +27,7 @@
 extern "C" {
 #endif
 
-void gdbShouldBreakHere(void);  // must be in separate file to avoid elimination
+void debuggerBreakHere(void);  // must be in separate file to avoid elimination
 
 inline static void chpl_debugtrap(void) {
   #ifdef __has_builtin

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 #
-# Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2025 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -85,6 +85,7 @@ c2chapel["uintptr_t"]          = "c_uintptr"
 c2chapel["ptrdiff_t"]          = "c_ptrdiff"
 c2chapel["ssize_t"]            = "c_ssize_t"
 c2chapel["size_t"]             = "c_size_t"
+c2chapel["wchar_t"]            = "c_wchar_t"
 c2chapel["long double"]        = "c_longlong"
 c2chapel["signed short"]       = "c_short"
 c2chapel["signed int"]         = "c_int"
@@ -121,13 +122,13 @@ chapelKeywords = set(["align","as","atomic","begin","break","by","class",
     "in","index","inline","inout","iter","label","lambda","let","local","module","new",
     "nil","noinit","on","only","otherwise","out","param","private","proc",
     "public","record","reduce","ref","require","return","scan","select",
-    "serial","single","sparse","subdomain","sync","then","type","union","use",
+    "serial","sparse","subdomain","sync","then","type","union","use",
     "var","when","where","while","with","yield","zip", "string", "bytes", "locale"])
 
 
 def getArgs():
     parser = argparse.ArgumentParser(description="Generate C bindings for Chapel", prog="c2chapel")
-    parser.add_argument("file", help="C99 file for which to generate bindings")
+    parser.add_argument("file", help="C99 file for which to generate bindings. Additional arguments are forwarded to the C preprocessor (invoked with 'cc -E')")
     parser.add_argument("--no-typedefs",
                         help="do not generate extern types for C typedefs",
                         action="store_true")
@@ -141,10 +142,13 @@ def getArgs():
                         help="instruct c2chapel to not generate comments",
                         action="store_true")
     parser.add_argument("-V", "--version", action="version", version="%(prog)s " + __version__)
-    parser.add_argument("cppFlags", nargs="*", help="flags forwarded to the C preprocessor (invoked with cc -E)")
     parser.add_argument("--gnu-extensions",
                         help="allow GNU extensions in C99 files",
                         action="store_true")
+
+    usage = parser.format_usage()
+    parser.usage = usage.rstrip().removeprefix("usage: ") + " ..."
+
     return parser.parse_known_args()
 
 # s - string to print out.
@@ -667,7 +671,7 @@ def preamble(args, fakes):
 
 # TODO: accept file from stdin?
 if __name__=="__main__":
-    (args, unknowns)  = getArgs()
+    args, unknown = getArgs()
     fname      = args.file
     noComments = args.no_comments
     DEBUG      = args.debug
@@ -683,10 +687,11 @@ if __name__=="__main__":
         ignores = findIgnores()
 
     try:
+        cpp_args = ["-E"] + fakes + unknown
         if useGnu:
-            ast = parse_file(fname, use_cpp=True, cpp_path="cc", cpp_args=["-E"] + fakes + unknowns, parser=ext_c_parser.GnuCParser())
+            ast = parse_file(fname, use_cpp=True, cpp_path="cc", cpp_args=cpp_args, parser=ext_c_parser.GnuCParser())
         else:
-            ast = parse_file(fname, use_cpp=True, cpp_path="cc", cpp_args=["-E"] + fakes + unknowns)
+            ast = parse_file(fname, use_cpp=True, cpp_path="cc", cpp_args=cpp_args)
     except c_parser.ParseError as e:
         sys.exit("Unable to parse file: " + str(e))
 

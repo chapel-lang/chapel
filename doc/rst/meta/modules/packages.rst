@@ -69,6 +69,14 @@ File Formats and I/O
    YAML <packages/YAML>
    Zarr <packages/Zarr>
 
+Interoperability
+----------------
+.. toctree::
+   :maxdepth: 1
+
+   Dynamic Loading <packages/DynamicLoading>
+   Python <packages/Python>
+
 Math / Numerical Computing
 --------------------------
 .. toctree::

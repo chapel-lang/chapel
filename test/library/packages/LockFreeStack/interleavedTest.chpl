@@ -4,7 +4,7 @@ const InitialStackSize = 1024;
 const OperationsPerThread = 1024;
 
 proc main() {
-  var lfs = new unmanaged LockFreeStack(int);
+  var lfs = new LockFreeStack(int);
 
   // Fill the stack and warm up the cache.
   forall i in 1..InitialStackSize with (var tok = lfs.getToken()) do lfs.push(i, tok);

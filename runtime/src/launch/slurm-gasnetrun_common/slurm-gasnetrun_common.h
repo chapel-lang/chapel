@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -46,6 +46,7 @@
 #define CHPL_NODELIST_FLAG "--nodelist"
 #define CHPL_PARTITION_FLAG "--partition"
 #define CHPL_EXCLUDE_FLAG "--exclude"
+#define CHPL_GPUS_PER_NODE_FLAG "--gpus-per-node"
 
 #define CHPL_LPN_VAR "LOCALES_PER_NODE"
 
@@ -54,7 +55,8 @@ static char* walltime = NULL;
 static char* nodelist = NULL;
 static char* partition = NULL;
 static char* exclude = NULL;
-char slurmFilename[FILENAME_MAX];
+static char* gpusPerNode = NULL;
+char* slurmFilename = NULL;
 
 /* copies of binary to run per node */
 #define procsPerNode 1
@@ -137,6 +139,12 @@ static void genNumLocalesOptions(FILE* slurmFile, sbatchVersion sbatch,
     exclude = getenv("CHPL_LAUNCHER_EXCLUDE");
   }
 
+  // command line gpus per node takes precedence over env var
+  if (!gpusPerNode) {
+    gpusPerNode = getenv("CHPL_LAUNCHER_GPUS_PER_NODE");
+  }
+
+
   if (walltime)
     fprintf(slurmFile, "#SBATCH --time=%s\n", walltime);
   if (nodelist)
@@ -145,6 +153,8 @@ static void genNumLocalesOptions(FILE* slurmFile, sbatchVersion sbatch,
     fprintf(slurmFile, "#SBATCH --partition=%s\n", partition);
   if (exclude)
     fprintf(slurmFile, "#SBATCH --exclude=%s\n", exclude);
+  if (gpusPerNode)
+    fprintf(slurmFile, "#SBATCH --gpus-per-node=%s\n", gpusPerNode);
   switch (sbatch) {
   case slurm: {
     fprintf(slurmFile, "#SBATCH --nodes=%d\n", numNodes);
@@ -163,17 +173,21 @@ static void genNumLocalesOptions(FILE* slurmFile, sbatchVersion sbatch,
   }
 }
 
-static int propagate_environment(char* buf, size_t size)
+// Append environment variables using chpl_append_to_cmd.
+// charsWritten may be NULL, in which case it is ignored.
+static void propagate_environment(char** buf, int* charsWritten)
 {
-  int len = 0;
+  int ignoredCharsWritten;
+  if (!charsWritten) {
+    charsWritten = &ignoredCharsWritten;
+  }
 
   // Indiscriminately propagate all environment variables.
   // We could do this more selectively, but we would be likely
   // to leave out something important.
   char *enviro_keys = chpl_get_enviro_keys(',');
   if (enviro_keys)
-    len += snprintf(buf, size, " -E '%s'", enviro_keys);
-  return len;
+    chpl_append_to_cmd(buf, charsWritten, " -E '%s'", enviro_keys);
 }
 
 static char* chpl_launch_create_command(int argc, char* argv[],
@@ -182,8 +196,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
   int i;
   int size;
-  char baseCommand[2*FILENAME_MAX];
-  char envProp[2*FILENAME_MAX];
+  char* baseCommand = NULL;
   char* command;
   FILE* slurmFile;
   char* projectString = getenv(launcherAccountEnvvar);
@@ -237,6 +250,11 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     exclude = getenv("CHPL_LAUNCHER_EXCLUDE");
   }
 
+  // command line gpus per node takes precedence over env var
+  if (!gpusPerNode) {
+    gpusPerNode = getenv("CHPL_LAUNCHER_GPUS_PER_NODE");
+  }
+
   // request exclusive node access by default, but allow user to override
   nodeAccessEnv = getenv("CHPL_LAUNCHER_NODE_ACCESS");
   if (nodeAccessEnv == NULL || strcmp(nodeAccessEnv, "exclusive") == 0) {
@@ -258,7 +276,12 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   } else {
     mypid = getpid();
   }
-  snprintf(slurmFilename, sizeof(slurmFilename), "%s%d", baseSBATCHFilename, (int)mypid);
+  int slurmFilenameLen =
+      strlen(baseSBATCHFilename) + snprintf(NULL, 0, "%d", (int)mypid) + 1;
+  slurmFilename = (char*)chpl_mem_allocMany(slurmFilenameLen, sizeof(char),
+                                            CHPL_RT_MD_FILENAME, -1, 0);
+  snprintf(slurmFilename, slurmFilenameLen, "%s%d", baseSBATCHFilename,
+           (int)mypid);
 
   if (getenv("CHPL_LAUNCHER_USE_SBATCH") != NULL) {
     slurmFile = fopen(slurmFilename, "w");
@@ -282,8 +305,10 @@ static char* chpl_launch_create_command(int argc, char* argv[],
             CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), GASNETRUN_LAUNCHER,
             numLocales, numLocales);
 
-    propagate_environment(envProp, sizeof(envProp));
+    char* envProp = NULL;
+    propagate_environment(&envProp, NULL);
     fprintf(slurmFile, "%s", envProp);
+    chpl_mem_free(envProp, 0, 0);
 
     fprintf(slurmFile, " %s %s", chpl_get_real_binary_wrapper(), chpl_get_real_binary_name());
 
@@ -294,54 +319,54 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
     fclose(slurmFile);
     chmod(slurmFilename, 0755);
-
-    snprintf(baseCommand, sizeof(baseCommand), "sbatch %s\n", slurmFilename);
+    const char* format="sbatch %s\n";
+    int baseCommandLen = strlen(slurmFilename) + strlen(format);
+    baseCommand = (char*)chpl_mem_allocMany(baseCommandLen, sizeof(char),
+                                            CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+    snprintf(baseCommand, baseCommandLen, format, slurmFilename);
   } else {
-    char iCom[2*FILENAME_MAX-10];
+    char* iCom = NULL;
     int len = 0;
 
     if (!getSlurmDebug()) {
-      len += snprintf(iCom+len, sizeof(iCom)-len, "--quiet ");
+      chpl_append_to_cmd(&iCom, &len, "--quiet ");
     }
-    len += snprintf(iCom+len, sizeof(iCom)-len, "-J %s ", jobName);
-    len += snprintf(iCom+len, sizeof(iCom)-len, "-N %d ", numNodes);
-    len += snprintf(iCom+len, sizeof(iCom)-len, "--ntasks=%d ", numLocales);
-    if (nodeAccessStr != NULL)
-      len += snprintf(iCom+len, sizeof(iCom)-len, "--%s ", nodeAccessStr);
-    if (walltime)
-      len += snprintf(iCom+len, sizeof(iCom)-len, "--time=%s ", walltime);
-    if (nodelist)
-      len += snprintf(iCom+len, sizeof(iCom)-len, "--nodelist=%s ", nodelist);
-    if(partition)
-      len += snprintf(iCom+len, sizeof(iCom)-len, "--partition=%s ", partition);
-    if(exclude)
-      len += snprintf(iCom+len, sizeof(iCom)-len, "--exclude=%s ", exclude);
-    if(projectString && strlen(projectString) > 0)
-      len += snprintf(iCom+len, sizeof(iCom)-len, "--account=%s ",
-                     projectString);
-    if (constraint)
-      len += snprintf(iCom+len, sizeof(iCom)-len, " -C %s", constraint);
-    len += snprintf(iCom+len, sizeof(iCom)-len,
-                   " %s/%s/%s -n %d -N %d -c 0",
+    chpl_append_to_cmd(&iCom, &len, "-J %s ", jobName);
+    chpl_append_to_cmd(&iCom, &len, "-N %d ", numNodes);
+    chpl_append_to_cmd(&iCom, &len, "--ntasks=%d ", numLocales);
+    if (nodeAccessStr != NULL) chpl_append_to_cmd(&iCom, &len, "--%s ", nodeAccessStr);
+    if (walltime) chpl_append_to_cmd(&iCom, &len, "--time=%s ", walltime);
+    if (nodelist) chpl_append_to_cmd(&iCom, &len, "--nodelist=%s ", nodelist);
+    if (partition) chpl_append_to_cmd(&iCom, &len, "--partition=%s ", partition);
+    if (exclude) chpl_append_to_cmd(&iCom, &len, "--exclude=%s ", exclude);
+    if (gpusPerNode) chpl_append_to_cmd(&iCom, &len, "--gpus-per-node=%s ", gpusPerNode);
+    if (projectString && strlen(projectString) > 0)
+      chpl_append_to_cmd(&iCom, &len, "--account=%s ", projectString);
+    if (constraint) chpl_append_to_cmd(&iCom, &len, "-C %s", constraint);
+    chpl_append_to_cmd(&iCom, &len, " %s/%s/%s -n %d -N %d -c 0",
                    CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH),
                    GASNETRUN_LAUNCHER, numLocales, numNodes);
-    len += propagate_environment(iCom+len, sizeof(iCom) - len);
-    len += snprintf(iCom+len, sizeof(iCom)-len, " %s %s",
-                   chpl_get_real_binary_wrapper(),
+    propagate_environment(&iCom, &len);
+    chpl_append_to_cmd(&iCom, &len, " %s %s", chpl_get_real_binary_wrapper(),
                    chpl_get_real_binary_name());
     for (i=1; i<argc; i++) {
-      len += snprintf(iCom+len, sizeof(iCom)-len, " %s", argv[i]);
+      chpl_append_to_cmd(&iCom, &len, " '%s'", argv[i]);
     }
-
-    snprintf(baseCommand, sizeof(baseCommand), "salloc %s", iCom);
+    const char* format = "salloc %s";
+    int baseCommandLen = strlen(format) + len + 1;
+    baseCommand = (char*)chpl_mem_allocMany(baseCommandLen, sizeof(char),
+                                            CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+    snprintf(baseCommand, baseCommandLen, format, iCom);
+    chpl_mem_free(iCom, 0, 0);
   }
 
   size = strlen(baseCommand) + 1;
 
-  command = chpl_mem_allocMany(size, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+  command =
+      chpl_mem_allocMany(size, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
 
-  snprintf(command, size * sizeof(char), "%s", baseCommand);
-
+  snprintf(command, size, "%s", baseCommand);
+  chpl_mem_free(baseCommand, 0, 0);
   if (strlen(command)+1 > size) {
     chpl_internal_error("buffer overflow");
   }
@@ -368,6 +393,7 @@ int chpl_launch(int argc, char* argv[], int32_t numLocales,
                                           numLocales, numLocalesPerNode),
             argv[0]);
   chpl_launch_cleanup();
+  chpl_mem_free(slurmFilename, 0, 0);
   return retcode;
 }
 
@@ -410,6 +436,16 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
     exclude = &(argv[argNum][strlen(CHPL_EXCLUDE_FLAG)+1]);
     return 1;
   }
+
+  // handle --gpus-per-node <gpus> or --gpus-per-node=<gpus>
+  if (!strcmp(argv[argNum], CHPL_GPUS_PER_NODE_FLAG)) {
+    gpusPerNode = argv[argNum+1];
+    return 2;
+  } else if (!strncmp(argv[argNum], CHPL_GPUS_PER_NODE_FLAG"=", strlen(CHPL_GPUS_PER_NODE_FLAG))) {
+    gpusPerNode = &(argv[argNum][strlen(CHPL_GPUS_PER_NODE_FLAG)+1]);
+    return 1;
+  }
+
   return 0;
 }
 
@@ -440,6 +476,13 @@ const argDescTuple_t* chpl_launch_get_help(void) {
       },
       { "",
         "(or use $CHPL_LAUNCHER_EXCLUDE)"
+      },
+      {
+        CHPL_GPUS_PER_NODE_FLAG " <gpus>",
+        "specify the number of GPUs per node"
+      },
+      { "",
+        "(or use $CHPL_LAUNCHER_GPUS_PER_NODE)"
       },
       { NULL, NULL },
     };

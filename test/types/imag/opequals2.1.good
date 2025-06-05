@@ -5,4 +5,4 @@ $CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: is passed to formal 'ref
 opequals2.chpl:5: note: other candidates are:
 $CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   +=(ref lhs: int(8), rhs: int(8))
 $CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   +=(ref lhs: int(16), rhs: int(16))
-note: and 24 other candidates, use --print-all-candidates to see them
+note: and 23 other candidates, use --print-all-candidates to see them

@@ -1,6 +1,6 @@
 /*
  * Copyright 2017 Advanced Micro Devices, Inc.
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -130,7 +130,7 @@ public:
 
     bool isGpuBound() const {
       auto cLoop = toCForLoop(loopAST);
-      return cLoop && isLoopGpuBound(cLoop);
+      return usingGpuLocaleModel() && cLoop && cLoop->isOrderIndependent();
     }
 
     //Set the header, insert the header into the loop blocks, and build up the
@@ -437,6 +437,8 @@ static bool isLoopInvariantPrimitive(PrimitiveOp* primitiveOp)
       case PRIM_AND_ASSIGN:
       case PRIM_OR_ASSIGN:
       case PRIM_XOR_ASSIGN:
+      case PRIM_LOGICALAND_ASSIGN:
+      case PRIM_LOGICALOR_ASSIGN:
 
       case PRIM_MIN:
       case PRIM_MAX:
@@ -1134,11 +1136,9 @@ static bool containsSynchronizationVar(BaseAST* ast) {
       Type* valType = symType->getValType();
 
       if (isSyncType(symType)    ||
-          isSingleType(symType)  ||
           isAtomicType(symType)  ||
 
           isSyncType(valType)    ||
-          isSingleType(valType)  ||
           isAtomicType(valType)) {
 
         return true;
@@ -1360,8 +1360,6 @@ void loopInvariantCodeMotion(void) {
   // optimize certain statements in foralls to unordered
   optimizeForallUnorderedOps();
 
-  earlyGpuTransforms();
-
   loopInvariantCodeMotionImpl();
 
   // We run gpuTransforms after LICM since we can benefit from invariant
@@ -1370,7 +1368,7 @@ void loopInvariantCodeMotion(void) {
   // rather than in its own pass in order to avoid disruption/overhead of
   // adding a new pass (though we may wish to change this at some point in the
   // future).
-  lateGpuTransforms();
+  gpuTransforms();
 
   // Compute array element alias sets.
   //

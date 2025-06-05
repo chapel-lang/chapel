@@ -1,9 +1,3 @@
-tupleModifyConstArgElem.chpl:51: In function 'modifyConstArgElement':
-tupleModifyConstArgElem.chpl:53: warning: the type 'c_string' is deprecated; please use one of the 'bytes.create*ingBuffer' methods that takes a 'c_ptrConst(c_char)' instead
-tupleModifyConstArgElem.chpl:53: warning: the type 'c_string' is deprecated; please use one of the 'bytes.create*ingBuffer' methods that takes a 'c_ptrConst(c_char)' instead
-tupleModifyConstArgElem.chpl:53: warning: the type 'c_string' is deprecated; please use one of the 'bytes.create*ingBuffer' methods that takes a 'c_ptrConst(c_char)' instead
-  tupleModifyConstArgElem.chpl:79: called as modifyConstArgElement(tup: 1*bytes) from function 'run'
-  tupleModifyConstArgElem.chpl:135: called as run(elem: bytes)
 tupleModifyConstArgElem.chpl:7: In function 'modifyConstArgElement':
 tupleModifyConstArgElem.chpl:8: error: const actual is passed to 'ref' formal 'a' of =
 note: to formal of type bool

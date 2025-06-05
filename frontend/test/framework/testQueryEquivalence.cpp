@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2024-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -63,7 +63,8 @@ static MostSpecificCandidate const& mscQuery(Context* context) {
       /* needsInstantiation */ false,
       /* instantiatedFrom */ nullptr,
       /* parentFn */ nullptr,
-      /* instantiatedFormals */ Bitmap{});
+      /* instantiatedFormals */ Bitmap{},
+      {});
 
   auto ci = CallInfo(
       /* name */ UniqueString::get(context, "foo"),
@@ -79,10 +80,12 @@ static MostSpecificCandidate const& mscQuery(Context* context) {
       });
 
   auto faMap = FormalActualMap(typed, ci);
+  auto promotedFormals = SubstitutionsMap();
 
   assert(faMap.isValid());
 
-  auto msc = MostSpecificCandidate::fromTypedFnSignature(context, typed, std::move(faMap));
+  ResolutionContext rc(context);
+  auto msc = MostSpecificCandidate::fromTypedFnSignature(&rc, typed, std::move(faMap), nullptr, nullptr, std::move(promotedFormals));
 
   return QUERY_END(msc);
 }

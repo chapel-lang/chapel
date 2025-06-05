@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2023-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -38,7 +38,7 @@ CLASS_END(BoolParam)
 
 CLASS_BEGIN(EnumParam)
   PLAIN_GETTER(EnumParam, value, "Get the value of this enum Param",
-               const chpl::uast::AstNode*, return parsing::idToAst(context, node->value()))
+               const chpl::uast::AstNode*, return parsing::idToAst(context, node->value().id))
 CLASS_END(EnumParam)
 
 CLASS_BEGIN(IntParam)

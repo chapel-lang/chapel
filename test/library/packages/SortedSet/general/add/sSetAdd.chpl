@@ -3,7 +3,7 @@ use Random;
 use Sort;
 
 config param testIters = 137;
-var oset = new sortedSet(int, false, new DefaultComparator());
+var oset = new sortedSet(int, false, new defaultComparator());
 var a: [0..#testIters] int;
 fillRandom(a);
 for x in a {

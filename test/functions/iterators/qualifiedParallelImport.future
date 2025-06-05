@@ -1,0 +1,2 @@
+bug: cannot resolve parallel iterator with qualified import
+#26362

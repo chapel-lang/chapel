@@ -1,7 +1,7 @@
 # Split into 3 files to work around problems with CHPL_PIP_FROM_SOURCE
-Jinja2==3.1.3
-Pygments==2.17.2
+Jinja2==3.1.4
+Pygments==2.18.0
 Sphinx==7.2.6
-urllib3==2.2.1
+urllib3==2.2.3
 docutils==0.20.1
-babel==2.14.0
+babel==2.16.0

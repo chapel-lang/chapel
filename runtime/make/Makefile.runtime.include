@@ -1,4 +1,4 @@
-# Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2025 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -97,6 +97,11 @@ endif
 
 ifeq ($(MAKE_LAUNCHER),1)
   ifeq ($(CHPL_MAKE_TARGET_MEM),jemalloc)
+    TARGET_MEM_INCLUDE=\
+      $(RUNTIME_ROOT)/make/Makefile.runtime.mem-$(CHPL_MAKE_TARGET_MEM)
+    -include $(TARGET_MEM_INCLUDE)
+  endif
+  ifeq ($(CHPL_MAKE_TARGET_MEM),mimalloc)
     TARGET_MEM_INCLUDE=\
       $(RUNTIME_ROOT)/make/Makefile.runtime.mem-$(CHPL_MAKE_TARGET_MEM)
     -include $(TARGET_MEM_INCLUDE)

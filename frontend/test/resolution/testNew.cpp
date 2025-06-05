@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+#include "test-common.h"
 #include "test-resolution.h"
 
 #include "chpl/parsing/parsing-queries.h"
@@ -148,7 +149,7 @@ static void testEmptyRecordCompilerGenInit() {
   auto& associatedActions = reNewCall.associatedActions();
   assert(associatedActions.size() == 1);
   auto initTfs = associatedActions[0].fn();
-  assert(initTfs->id() == r->id());
+  assert(initTfs->untyped()->compilerGeneratedOrigin() == r->id());
   assert(initTfs->numFormals() == 1);
   assert(initTfs->formalName(0) == "this");
 
@@ -158,8 +159,7 @@ static void testEmptyRecordCompilerGenInit() {
 }
 
 static void testTertMethodCallCrossModule() {
-  Context context;
-  Context* ctx = &context;
+  Context* ctx = buildStdContext();
   ErrorGuard guard(ctx);
 
   auto path = TEST_NAME(ctx);
@@ -241,8 +241,7 @@ static void testTertMethodCallCrossModule() {
   assert(tfsInit);
   auto ufsInit = tfsInit->untyped();
   assert(ufsInit);
-  assert(!tfsInit->id().isEmpty());
-  assert(tfsInit->id().symbolPath() == "A.C");
+  assert(tfsInit->untyped()->compilerGeneratedOrigin().symbolPath() == "A.C");
   assert(ufsInit->isCompilerGenerated());
   assert(tfsInit->numFormals() == 1);
   assert(tfsInit->formalName(0) == "this");
@@ -294,7 +293,8 @@ static void determineManagerAndDecorator(Context* ctx,
   return;
 }
 
-static void buildParseTestClassNewExpr(Context* ctx, const char* expr, int numErrors = 0) {
+static void buildParseTestClassNewExpr(const char* expr, int numErrors = 0) {
+  auto ctx = buildStdContext();
   ErrorGuard guard(ctx);
 
   static int testNumCounter = 0;
@@ -381,37 +381,29 @@ static void buildParseTestClassNewExpr(Context* ctx, const char* expr, int numEr
 
 // Test different combinations of management/nilability flavors.
 static void testClassManagementNilabilityInNewExpr() {
-  Context context;
-  Context* ctx = &context;
-
-  buildParseTestClassNewExpr(ctx, "new C()");
-  buildParseTestClassNewExpr(ctx, "new owned C()");
-  buildParseTestClassNewExpr(ctx, "new shared C()");
-  buildParseTestClassNewExpr(ctx, "new borrowed C()", 1);
-  buildParseTestClassNewExpr(ctx, "new unmanaged C()");
-  buildParseTestClassNewExpr(ctx, "new C?()");
-  buildParseTestClassNewExpr(ctx, "new owned C?()");
-  buildParseTestClassNewExpr(ctx, "new shared C?()");
-  buildParseTestClassNewExpr(ctx, "new borrowed C?()", 1);
-  buildParseTestClassNewExpr(ctx, "new unmanaged C?()");
-  buildParseTestClassNewExpr(ctx, "new C()?");
-  buildParseTestClassNewExpr(ctx, "new owned C()?");
-  buildParseTestClassNewExpr(ctx, "new shared C()?");
-  buildParseTestClassNewExpr(ctx, "new borrowed C()?", 1);
-  buildParseTestClassNewExpr(ctx, "new unmanaged C()?");
+  buildParseTestClassNewExpr("new C()");
+  buildParseTestClassNewExpr("new owned C()");
+  buildParseTestClassNewExpr("new shared C()");
+  buildParseTestClassNewExpr("new borrowed C()", 1);
+  buildParseTestClassNewExpr("new unmanaged C()");
+  buildParseTestClassNewExpr("new C?()");
+  buildParseTestClassNewExpr("new owned C?()");
+  buildParseTestClassNewExpr("new shared C?()");
+  buildParseTestClassNewExpr("new borrowed C?()", 1);
+  buildParseTestClassNewExpr("new unmanaged C?()");
+  buildParseTestClassNewExpr("new C()?");
+  buildParseTestClassNewExpr("new owned C()?");
+  buildParseTestClassNewExpr("new shared C()?");
+  buildParseTestClassNewExpr("new borrowed C()?", 1);
+  buildParseTestClassNewExpr("new unmanaged C()?");
 }
 
 static void testGenericRecordUserInitDependentField() {
-  Context context;
-  Context* ctx = &context;
-  ErrorGuard guard(ctx);
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
 
-  auto path = TEST_NAME(ctx);
+  auto path = TEST_NAME(context);
   std::string contents = R""""(
-    operator =(ref lhs: int, rhs: int) {
-      __primitive("=", lhs, rhs);
-    }
-
     record r {
       type f1;
       param f2: int;
@@ -424,23 +416,23 @@ static void testGenericRecordUserInitDependentField() {
     var obj = new r(int, 8);
     )"""";
 
-  setFileText(ctx, path, contents);
+  setFileText(context, path, contents);
 
   // Get the module and the UAST we need.
-  auto& br = parseAndReportErrors(ctx, path);
+  auto& br = parseAndReportErrors(context, path);
   assert(!guard.realizeErrors());
 
   assert(br.numTopLevelExpressions() == 1);
   auto mod = br.singleModule();
   assert(mod);
-  assert(mod->numStmts() == 3);
-  auto rec = mod->stmt(1)->toRecord();
+  assert(mod->numStmts() == 2);
+  auto rec = mod->stmt(0)->toRecord();
   assert(rec);
-  auto obj = mod->stmt(2)->toVariable();
+  auto obj = mod->stmt(1)->toVariable();
   assert(obj);
 
   // Resolve the module.
-  auto& rr = resolveModule(ctx, mod->id());
+  auto& rr = resolveModule(context, mod->id());
 
   // Inspect the type of the variable 'obj'.
   auto& reObj = rr.byAst(obj);
@@ -455,41 +447,42 @@ static void testGenericRecordUserInitDependentField() {
   assert(rt->substitutions().size() == 2);
 
   // Check the first field of the instantiated record via substitutions.
-  auto idf1 = parsing::fieldIdWithName(ctx, rt->id(),
-                                       UniqueString::get(ctx, "f1"));
+  auto idf1 = parsing::fieldIdWithName(context, rt->id(),
+                                       UniqueString::get(context, "f1"));
   assert(!idf1.isEmpty());
   auto qtf1 = rt->substitution(idf1);
   assert(qtf1.kind() == QualifiedType::TYPE);
-  assert(qtf1.type() == IntType::get(ctx, 0));
+  assert(qtf1.type() == IntType::get(context, 0));
   assert(qtf1.param() == nullptr);
 
   // Check the second field of the instantiated record via substitutions.
-  auto idf2 = parsing::fieldIdWithName(ctx, rt->id(),
-                                       UniqueString::get(ctx, "f2"));
+  auto idf2 = parsing::fieldIdWithName(context, rt->id(),
+                                       UniqueString::get(context, "f2"));
   assert(!idf2.isEmpty());
   auto qtf2 = rt->substitution(idf2);
   assert(qtf2.kind() == QualifiedType::PARAM);
-  assert(qtf2.type() == IntType::get(ctx, 0));
+  assert(qtf2.type() == IntType::get(context, 0));
   assert(qtf2.param()->isIntParam());
   assert(qtf2.param()->toIntParam()->value() == 8);
 
   // Now check all fields via the resolved fields query.
-  auto& rf = fieldsForTypeDecl(ctx, rt, DefaultsPolicy::USE_DEFAULTS);
+  auto rc = createDummyRC(context);
+  auto& rf = fieldsForTypeDecl(&rc, rt, DefaultsPolicy::USE_DEFAULTS);
   assert(rf.numFields() == 3);
   assert(!rf.isGeneric());
   assert(!rf.isGenericWithDefaults());
 
   // First field is 'type int(64)'
-  auto ft1 = QualifiedType(QualifiedType::TYPE, IntType::get(ctx, 0));
+  auto ft1 = QualifiedType(QualifiedType::TYPE, IntType::get(context, 0));
   assert(rf.fieldType(0) == ft1);
 
   // Second is 'param int = 8'
-  auto ft2 = QualifiedType(QualifiedType::PARAM, IntType::get(ctx, 0),
-                           IntParam::get(ctx, 8));
+  auto ft2 = QualifiedType(QualifiedType::PARAM, IntType::get(context, 0),
+                           IntParam::get(context, 8));
   assert(rf.fieldType(1) == ft2);
 
   // Last is 'var int'
-  auto ft3 = QualifiedType(QualifiedType::VAR, IntType::get(ctx, 0));
+  auto ft3 = QualifiedType(QualifiedType::VAR, IntType::get(context, 0));
   assert(rf.fieldType(2) == ft3);
 
   // Confirm that the TFS for the initializer is correct.
@@ -512,8 +505,7 @@ static void testGenericRecordUserInitDependentField() {
 }
 
 static void testRecordNewSegfault(void) {
-  Context context;
-  Context* ctx = &context;
+  auto ctx = buildStdContext();
   ErrorGuard guard(ctx);
 
   auto path = TEST_NAME(ctx);
@@ -564,7 +556,8 @@ static void testGenericRecordUserSecondaryInitDependentField() {
   assert(ct->name() == "r");
 
   // It should already be instantiated, no need to use defaults.
-  auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+  auto rc = createDummyRC(context);
+  auto fields = fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
   assert(fields.numFields() == 3);
 
   auto f1 = fields.fieldType(0);
@@ -613,7 +606,8 @@ static void testNewGenericWithDefaults() {
     assert(ct->name() == "r");
 
     // It should already be instantiated, no need to use defaults.
-    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(context);
+    auto fields = fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
     assert(fields.numFields() == 1);
 
     auto f1 = fields.fieldType(0);
@@ -628,7 +622,8 @@ static void testNewGenericWithDefaults() {
     assert(ct->name() == "r");
 
     // It should already be instantiated, no need to use defaults.
-    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(context);
+    auto fields = fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
     assert(fields.numFields() == 1);
 
     auto f1 = fields.fieldType(0);
@@ -638,8 +633,7 @@ static void testNewGenericWithDefaults() {
 }
 
 static void testCompilerGeneratedGenericNewWithDefaultInit() {
-  Context ctx;
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
@@ -660,7 +654,8 @@ static void testCompilerGeneratedGenericNewWithDefaultInit() {
     assert(ct->name() == "r");
 
     // It should already be instantiated, no need to use defaults.
-    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(context);
+    auto fields = fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
     assert(fields.numFields() == 2);
 
     auto f1 = fields.fieldType(0);
@@ -678,7 +673,8 @@ static void testCompilerGeneratedGenericNewWithDefaultInit() {
     assert(ct->name() == "r");
 
     // It should already be instantiated, no need to use defaults.
-    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(context);
+    auto fields = fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
     assert(fields.numFields() == 2);
 
     auto f1 = fields.fieldType(0);
@@ -692,8 +688,7 @@ static void testCompilerGeneratedGenericNewWithDefaultInit() {
 }
 
 static void testCompilerGeneratedGenericNew() {
-  Context ctx;
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
@@ -716,7 +711,8 @@ static void testCompilerGeneratedGenericNew() {
     assert(ct->name() == "r");
 
     // It should already be instantiated, no need to use defaults.
-    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(context);
+    auto fields = fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
     assert(fields.numFields() == 2);
 
     auto f1 = fields.fieldType(0);
@@ -734,7 +730,8 @@ static void testCompilerGeneratedGenericNew() {
     assert(ct->name() == "r");
 
     // It should already be instantiated, no need to use defaults.
-    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(context);
+    auto fields = fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
     assert(fields.numFields() == 2);
 
     auto f1 = fields.fieldType(0);
@@ -757,7 +754,8 @@ static void testCompilerGeneratedGenericNew() {
     assert(ct->name() == "r");
 
     // It should already be instantiated, no need to use defaults.
-    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(context);
+    auto fields = fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
     assert(fields.numFields() == 2);
 
     auto f1 = fields.fieldType(0);
@@ -773,8 +771,7 @@ static void testCompilerGeneratedGenericNew() {
 }
 
 static void testCompilerGeneratedGenericNewWithDefaultInitClass() {
-  Context ctx;
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
@@ -790,12 +787,15 @@ static void testCompilerGeneratedGenericNewWithDefaultInitClass() {
 
 
   {
-    auto ct = vars.at("x1").type()->toCompositeType();
+    auto clt = vars.at("x1").type()->toClassType();
+    assert(clt);
+    auto ct = clt->basicClassType();
     assert(ct);
     assert(ct->name() == "C");
 
     // It should already be instantiated, no need to use defaults.
-    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(context);
+    auto fields = fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
     assert(fields.numFields() == 2);
 
     auto f1 = fields.fieldType(0);
@@ -808,12 +808,15 @@ static void testCompilerGeneratedGenericNewWithDefaultInitClass() {
   }
 
   {
-    auto ct = vars.at("x2").type()->toCompositeType();
+    auto clt = vars.at("x2").type()->toClassType();
+    assert(clt);
+    auto ct = clt->basicClassType();
     assert(ct);
     assert(ct->name() == "C");
 
     // It should already be instantiated, no need to use defaults.
-    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(context);
+    auto fields = fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
     assert(fields.numFields() == 2);
 
     auto f1 = fields.fieldType(0);
@@ -827,8 +830,7 @@ static void testCompilerGeneratedGenericNewWithDefaultInitClass() {
 }
 
 static void testCompilerGeneratedGenericNewClass() {
-  Context ctx;
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
@@ -846,12 +848,14 @@ static void testCompilerGeneratedGenericNewClass() {
 
 
   {
-    auto ct = vars.at("x1").type()->toCompositeType();
+    auto clt = vars.at("x1").type()->toClassType();
+    assert(clt);
+    auto ct = clt->basicClassType();
     assert(ct);
-    assert(ct->name() == "C");
 
     // It should already be instantiated, no need to use defaults.
-    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(context);
+    auto fields = fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
     assert(fields.numFields() == 2);
 
     auto f1 = fields.fieldType(0);
@@ -864,12 +868,14 @@ static void testCompilerGeneratedGenericNewClass() {
   }
 
   {
-    auto ct = vars.at("x2").type()->toCompositeType();
+    auto clt = vars.at("x2").type()->toClassType();
+    assert(clt);
+    auto ct = clt->basicClassType();
     assert(ct);
-    assert(ct->name() == "C");
 
     // It should already be instantiated, no need to use defaults.
-    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(context);
+    auto fields = fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
     assert(fields.numFields() == 2);
 
     auto f1 = fields.fieldType(0);
@@ -887,12 +893,14 @@ static void testCompilerGeneratedGenericNewClass() {
   }
 
   {
-    auto ct = vars.at("x4").type()->toCompositeType();
+    auto clt = vars.at("x4").type()->toClassType();
+    assert(clt);
+    auto ct = clt->basicClassType();
     assert(ct);
-    assert(ct->name() == "C");
 
     // It should already be instantiated, no need to use defaults.
-    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(context);
+    auto fields = fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
     assert(fields.numFields() == 2);
 
     auto f1 = fields.fieldType(0);
@@ -908,17 +916,11 @@ static void testCompilerGeneratedGenericNewClass() {
 }
 
 static void testSimpleUserGenericNew() {
-  Context ctx;
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
     R"""(
-    // Need an operator= for non-compile-time values to be assigned.
-    operator =(ref lhs: numeric, rhs: numeric) {
-      __primitive("=", lhs, rhs);
-    }
-
     class C {
       var x;
 
@@ -938,7 +940,8 @@ static void testSimpleUserGenericNew() {
     assert(ct->name() == "C");
 
     // It should already be instantiated, no need to use defaults.
-    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(context);
+    auto fields = fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
     assert(fields.numFields() == 1);
 
     auto f1 = fields.fieldType(0);
@@ -954,7 +957,8 @@ static void testSimpleUserGenericNew() {
     assert(ct->name() == "C");
 
     // It should already be instantiated, no need to use defaults.
-    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(context);
+    auto fields = fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
     assert(fields.numFields() == 1);
 
     auto f1 = fields.fieldType(0);
@@ -966,17 +970,11 @@ static void testSimpleUserGenericNew() {
 }
 
 static void testUserGenericNew() {
-  Context ctx;
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
     R"""(
-    // Need an operator= for non-compile-time values to be assigned.
-    operator =(ref lhs: numeric, rhs: numeric) {
-      __primitive("=", lhs, rhs);
-    }
-
     record r {
       param flag : bool;
       var x : if flag then int else real;
@@ -1000,7 +998,8 @@ static void testUserGenericNew() {
     assert(ct->name() == "r");
 
     // It should already be instantiated, no need to use defaults.
-    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(context);
+    auto fields = fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
     assert(fields.numFields() == 2);
 
     auto f1 = fields.fieldType(0);
@@ -1018,7 +1017,8 @@ static void testUserGenericNew() {
     assert(ct->name() == "r");
 
     // It should already be instantiated, no need to use defaults.
-    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(context);
+    auto fields = fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
     assert(fields.numFields() == 2);
 
     auto f1 = fields.fieldType(0);
@@ -1041,7 +1041,8 @@ static void testUserGenericNew() {
     assert(ct->name() == "r");
 
     // It should already be instantiated, no need to use defaults.
-    auto fields = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(context);
+    auto fields = fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
     assert(fields.numFields() == 2);
 
     auto f1 = fields.fieldType(0);
@@ -1054,6 +1055,23 @@ static void testUserGenericNew() {
   }
 
   assert(guard.realizeErrors() == 1);
+}
+
+static void testExplicitManagementNew() {
+  auto ctx = buildStdContext();
+  ErrorGuard guard(ctx);
+
+  auto var = resolveTypeOfXInit(ctx,
+      R"""(
+      class C{}
+
+      proc getType() type do return unmanaged C;
+
+      var x = new (getType())();
+      )""");
+
+  assert(var.type()->isClassType());
+  assert(var.type()->toClassType()->decorator().isUnmanaged());
 }
 
 
@@ -1072,6 +1090,7 @@ int main() {
   testCompilerGeneratedGenericNewClass();
   testSimpleUserGenericNew();
   testUserGenericNew();
+  testExplicitManagementNew();
 
   return 0;
 }

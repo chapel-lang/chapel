@@ -1,1 +1,1 @@
-fft.chpl -M ../../../release/examples/benchmarks/hpcc/
+fft.chpl -M ../../../release/examples/benchmarks/hpcc/ -o fft-testPow4

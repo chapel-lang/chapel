@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+# ignore the first 5 lines of the `--print-chpl-settings` output
+tail -n +6 $2 > $2.prediff.tmp
+mv $2.prediff.tmp $2

@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2021 Inria.  All rights reserved.
+ * Copyright © 2009-2024 Inria.  All rights reserved.
  * Copyright © 2009-2010, 2012 Université Bordeaux
  * Copyright © 2009-2018 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -42,7 +42,7 @@ void usage(const char *name, FILE *where)
   fprintf(where, "Options:\n");
   fprintf(where, "  --cpubind      Use following arguments for cpu binding (default)\n");
   fprintf(where, "  --membind      Use following arguments for memory binding\n");
-  fprintf(where, "  --mempolicy <default|firsttouch|bind|interleave|nexttouch>\n"
+  fprintf(where, "  --mempolicy <default|firsttouch|bind|interleave|weighted|nexttouch>\n"
 		 "                 Change policy that --membind applies (default is bind)\n");
   fprintf(where, "  --best-memattr <attr>\n");
   fprintf(where, "                 Select the best target node in the given memory binding\n");
@@ -58,7 +58,9 @@ void usage(const char *name, FILE *where)
 #ifdef HWLOC_LINUX_SYS
   fprintf(where, "  --tid <tid>    Operate on thread <tid>\n");
 #endif
-  fprintf(where, "  --taskset      Use taskset-specific format when displaying cpuset strings\n");
+  fprintf(where, "  --cpuset-output-format <hwloc|list|taskset>\n"
+                 "  --cof <hwloc|list|taskset>\n"
+                 "                 Change the format of cpuset outputs\n");
   fprintf(where, "Miscellaneous options:\n");
   fprintf(where, "  -f --force     Launch the command even if binding failed\n");
   fprintf(where, "  -q --quiet     Hide non-fatal error messages\n");
@@ -85,7 +87,7 @@ int main(int argc, char *argv[])
   int no_smt = -1;
   int only_hbm = -1;
   int logical = 1;
-  int taskset = 0;
+  enum hwloc_utils_cpuset_format_e cpuset_output_format = HWLOC_UTILS_CPUSET_FORMAT_HWLOC;
   unsigned cpubind_flags = 0;
   hwloc_membind_policy_t membind_policy = HWLOC_MEMBIND_BIND;
   int got_mempolicy = 0;
@@ -96,7 +98,7 @@ int main(int argc, char *argv[])
   int tid_number = -1;
   hwloc_pid_t pid = 0; /* only valid when pid_number > 0, but gcc-4.8 still reports uninitialized warnings */
   hwloc_memattr_id_t best_memattr_id = (hwloc_memattr_id_t) -1;
-  const char *best_memattr_str = NULL;
+  char *best_memattr_str = NULL;
   char *callname;
   char *restrictstring = NULL;
   struct hwloc_calc_location_context_s lcontext;
@@ -180,10 +182,18 @@ int main(int argc, char *argv[])
     argv += opt+1;
   }
 
+  /* show all error messages, e.g. PREFERRED_MANY not supported by Linux kernel */
+  if (!getenv("HWLOC_HIDE_ERRORS"))
+    putenv((char *) "HWLOC_HIDE_ERRORS=0");
+
   hwloc_topology_init(&topology);
   hwloc_topology_set_all_types_filter(topology, HWLOC_TYPE_FILTER_KEEP_ALL);
   hwloc_topology_set_flags(topology, flags);
   ret = hwloc_topology_load(topology);
+  if (ret < 0) {
+    perror("Couldn't load the topology");
+    return EXIT_FAILURE;
+  }
   if (restrictstring) {
     hwloc_bitmap_t restrictset = hwloc_bitmap_alloc();
     hwloc_bitmap_sscanf(restrictset, restrictstring);
@@ -194,8 +204,6 @@ int main(int argc, char *argv[])
     hwloc_bitmap_free(restrictset);
     free(restrictstring);
   }
-  if (ret < 0)
-    return EXIT_FAILURE;
   depth = hwloc_topology_get_depth(topology);
 
   while (argc >= 1) {
@@ -268,8 +276,21 @@ int main(int argc, char *argv[])
         logical = 0;
         goto next;
       }
+      if (!strcmp(argv[0], "--cpuset-output-format") || !strcmp(argv[0], "--cof")) {
+        if (argc < 2) {
+          usage (callname, stderr);
+          exit(EXIT_FAILURE);
+        }
+        cpuset_output_format = hwloc_utils_parse_cpuset_format(argv[1]);
+        if (HWLOC_UTILS_CPUSET_FORMAT_UNKNOWN == cpuset_output_format) {
+          fprintf(stderr, "Unrecognized %s argument %s\n", argv[0], argv[1]);
+          exit(EXIT_FAILURE);
+        }
+        opt = 1;
+        goto next;
+      }
       if (!strcmp(argv[0], "--taskset")) {
-        taskset = 1;
+        cpuset_output_format = HWLOC_UTILS_CPUSET_FORMAT_TASKSET;
         goto next;
       }
       if (!strcmp (argv[0], "-e") || !strncmp (argv[0], "--get-last-cpu-location", 10)) {
@@ -301,6 +322,8 @@ int main(int argc, char *argv[])
 	  membind_policy = HWLOC_MEMBIND_BIND;
 	else if (!strncmp(argv[1], "interleave", 2))
 	  membind_policy = HWLOC_MEMBIND_INTERLEAVE;
+	else if (!strncmp(argv[1], "weighted", 2))
+	  membind_policy = HWLOC_MEMBIND_WEIGHTED_INTERLEAVE;
 	else if (!strncmp(argv[1], "nexttouch", 2))
 	  membind_policy = HWLOC_MEMBIND_NEXTTOUCH;
 	else {
@@ -332,11 +355,11 @@ int main(int argc, char *argv[])
     lcontext.verbose = verbose;
     scontext.nodeset_input = use_nodeset || nodeset_location;
     scontext.nodeset_output = working_on_cpubind ? 0 : 1;
+    scontext.cpuset_input_format = HWLOC_UTILS_CPUSET_FORMAT_UNKNOWN;
     scontext.output_set = working_on_cpubind ? cpubind_set : membind_set;
     ret = hwloc_calc_process_location_as_set(&lcontext, &scontext, location);
     if (ret < 0) {
-      if (verbose > 0)
-	fprintf(stderr, "assuming the command starts at %s\n", argv[0]);
+      fprintf(stderr, "argument `%s' unrecognized, assuming this is the executable.\n", argv[0]);
       break;
     }
     if (working_on_cpubind)
@@ -372,6 +395,11 @@ int main(int argc, char *argv[])
     /* doesn't work because get_binding/get_last_cpu_location overwrites cpubind_set */
     fprintf(stderr, "Cannot display and set binding at the same time.\n");
     return EXIT_FAILURE;
+  }
+
+  if (!got_cpubind && !got_membind && !get_binding && !get_last_cpu_location) {
+    if (verbose >= 0)
+      fprintf(stderr, "got neither CPU nor memory binding locations.\n");
   }
 
   if (get_binding || get_last_cpu_location) {
@@ -411,16 +439,10 @@ int main(int argc, char *argv[])
       if (use_nodeset) {
 	hwloc_bitmap_t nset = hwloc_bitmap_alloc();
 	hwloc_cpuset_to_nodeset(topology, cpubind_set, nset);
-	if (taskset)
-	  hwloc_bitmap_taskset_asprintf(&s, nset);
-	else
-	  hwloc_bitmap_asprintf(&s, nset);
+        hwloc_utils_cpuset_format_asprintf(&s, nset, cpuset_output_format);
 	hwloc_bitmap_free(nset);
       } else {
-	if (taskset)
-	  hwloc_bitmap_taskset_asprintf(&s, cpubind_set);
-	else
-	  hwloc_bitmap_asprintf(&s, cpubind_set);
+        hwloc_utils_cpuset_format_asprintf(&s, cpubind_set, cpuset_output_format);
       }
 
       } else {
@@ -440,14 +462,12 @@ int main(int argc, char *argv[])
 	  fprintf(stderr, "hwloc_get_membind failed (errno %d %s)\n", errno, errmsg);
 	return EXIT_FAILURE;
       }
-      if (taskset)
-	hwloc_bitmap_taskset_asprintf(&s, membind_set);
-      else
-	hwloc_bitmap_asprintf(&s, membind_set);
+      hwloc_utils_cpuset_format_asprintf(&s, membind_set, cpuset_output_format);
       switch (policy) {
       case HWLOC_MEMBIND_FIRSTTOUCH: policystr = "firsttouch"; break;
       case HWLOC_MEMBIND_BIND: policystr = "bind"; break;
       case HWLOC_MEMBIND_INTERLEAVE: policystr = "interleave"; break;
+      case HWLOC_MEMBIND_WEIGHTED_INTERLEAVE: policystr = "weighted interleave"; break;
       case HWLOC_MEMBIND_NEXTTOUCH: policystr = "nexttouch"; break;
       default: fprintf(stderr, "unknown memory policy %d\n", policy); assert(0); break;
       }
@@ -467,9 +487,17 @@ int main(int argc, char *argv[])
 	goto failed_binding;
     }
 
-    if (best_memattr_str) {
+    if (best_memattr_str && !hwloc_bitmap_iszero(membind_set)) {
+      unsigned nrnodes = hwloc_bitmap_weight(membind_set);
+      hwloc_obj_t *nodes;
+      unsigned i;
+      int j;
+      unsigned long best_node_flags;
       struct hwloc_location loc;
       char *s;
+
+      best_node_flags = hwloc_utils_parse_best_node_flags(best_memattr_str);
+
       best_memattr_id = hwloc_utils_parse_memattr_name(topology, best_memattr_str);
       if (best_memattr_id == (hwloc_memattr_id_t) -1) {
         fprintf(stderr, "unrecognized memattr %s\n", best_memattr_str);
@@ -483,16 +511,32 @@ int main(int argc, char *argv[])
         fprintf(stderr, "memory binding set was %s before filtering by best memattr\n", s);
         free(s);
       }
-      hwloc_utils_get_best_node_in_nodeset_by_memattr(topology, best_memattr_id, membind_set, &loc);
+
+      nodes = malloc(nrnodes *sizeof(*nodes));
+      if (!nodes) {
+        fprintf(stderr, "failed to allocate nodes array for finding best node(s).\n");
+        return EXIT_FAILURE;
+      }
+
+      for(i=0, j=hwloc_bitmap_first(membind_set);
+          i<nrnodes;
+          i++, j=hwloc_bitmap_next(membind_set, j))
+        nodes[i] = hwloc_get_numanode_obj_by_os_index(topology, j);
+
+      ret = hwloc_utils_get_best_node_in_array_by_memattr(topology, best_memattr_id, nrnodes, nodes, &loc, best_node_flags, membind_set);
+
+      free(nodes);
+
+      if (ret < 0 || hwloc_bitmap_iszero(membind_set)) {
+        fprintf(stderr, "failed to find best memory node(s) for memory attribute `%s' among the given membind set.\n", best_memattr_str);
+        return EXIT_FAILURE;
+      }
+
       if (verbose > 0) {
         hwloc_bitmap_asprintf(&s, membind_set);
         /* double-space before %s for alignment with previous verbose message */
         fprintf(stderr, "memory binding is now  %s after filtering by best memattr\n", s);
         free(s);
-      }
-      if (hwloc_bitmap_iszero(membind_set)) {
-        fprintf(stderr, "failed to find a best memory node for memory attribute `%s' among the given membind set.\n", best_memattr_str);
-        return EXIT_FAILURE;
       }
     }
 

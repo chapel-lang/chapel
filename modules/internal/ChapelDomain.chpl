@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -45,6 +45,9 @@ module ChapelDomain {
      to suppress the warning about arrays and slices with negative strides. */
   @chpldoc.nodoc
   config param noNegativeStrideWarnings = false;
+
+  @chpldoc.nodoc
+  config param noSortedWarnings = false;
 
   pragma "no copy return"
   pragma "return not owned"
@@ -101,7 +104,7 @@ module ChapelDomain {
 
   pragma "runtime type init fn"
   proc chpl__buildDomainRuntimeType(dist, type idxType,
-                                    param parSafe: bool = assocParSafeDefault) type {
+                                    param parSafe: bool = false) type {
     if isDomainType(idxType) then
       compilerError("Values of 'domain' type do not support hash functions yet, so cannot be used as an associative domain's index type");
     return new _domain(dist, idxType, parSafe);
@@ -1109,7 +1112,7 @@ module ChapelDomain {
     @chpldoc.nodoc
     proc init(d,
               type idxType,
-              param parSafe: bool = true,
+              param parSafe: bool = false,
               definedConst: bool = false) {
       this.init(d.newAssociativeDom(idxType, parSafe));
     }
@@ -1569,11 +1572,9 @@ module ChapelDomain {
     proc chpl_checkEltType(type eltType) /*private*/ {
       if eltType == void {
         compilerError("array element type cannot be 'void'");
-      }
-      if eltType == nothing {
+      } else if eltType == nothing {
         compilerError("array element type cannot be 'nothing'");
-      }
-      if isGenericType(eltType) {
+      } else if isGenericType(eltType) {
         compilerWarning("creating an array with element type " +
                         eltType:string);
         if isClassType(eltType) && !isGenericType(eltType:borrowed) {
@@ -1727,6 +1728,7 @@ module ChapelDomain {
     }
 
     // assumes that data is already initialized
+    // this function is used in Fortran interop
     pragma "no copy return"
     @chpldoc.nodoc
     proc buildArrayWith(type eltType, data:_ddata(eltType), allocSize:int) {
@@ -1743,6 +1745,31 @@ module ChapelDomain {
       chpl_incRefCountsForDomainsInArrayEltTypes(x, x.eltType);
 
       return _newArray(x);
+    }
+
+    // assumes that the caller has checked:
+    //  * that 'from' and the receiver domain match & have compatible types
+    //  * that the distributions match as well
+    //  * that the 'from array is not unowned
+    //  * that the domain/array implementation supports doiBuildArrayMoving
+    pragma "no copy return"
+    @chpldoc.nodoc
+    proc buildArrayMoving(from) {
+      var x = _value.doiBuildArrayMoving(from);
+      pragma "dont disable remote value forwarding"
+      proc help() {
+        _value.add_arr(x);
+      }
+      help();
+
+      chpl_incRefCountsForDomainsInArrayEltTypes(x, x.eltType);
+
+      return _newArray(x);
+
+      // note: 'from' will be deinited here, normally leading to
+      // deleting the array instance. The array implementation needs
+      // to have set anything stolen to 'nil' in doiBuildArrayMoving
+      // and then to take no action on it when deleting.
     }
 
     /*
@@ -2791,11 +2818,23 @@ module ChapelDomain {
     }
 
     // associative array interface
-    /* Yields the domain indices in sorted order. */
+    /*
+      Yields the domain indices in sorted order. This method is only supported
+      on associative domains.
+
+      .. warning::
+
+         It is recommended to use :proc:`Sort.sorted` instead of this method.
+
+    */
     iter sorted(comparator:?t = chpl_defaultComparator()) {
-      for i in _value.dsiSorted(comparator) {
-        yield i;
-      }
+      if !this.isAssociative() then
+        compilerError("'.sorted()' is only supported on associative domains");
+      if !noSortedWarnings then
+        compilerWarning(
+          "It is recommended to use 'Sort.sorted' instead of this method. ",
+          "Compile with '-snoSortedWarnings' to suppress this warning.");
+      for x in this._value.dsiSorted(comparator) do yield x;
     }
 
     @chpldoc.nodoc
@@ -2855,6 +2894,26 @@ module ChapelDomain {
     @chpldoc.nodoc
     proc supportsAutoLocalAccess() param {
       return _value.dsiSupportsAutoLocalAccess();
+    }
+
+    @chpldoc.nodoc
+    proc supportsOffsetAutoLocalAccess() param {
+      return _value.dsiSupportsOffsetAutoLocalAccess();
+    }
+
+    @chpldoc.nodoc
+    proc autoLocalAccessOffsetCheck(offsets) {
+      return _value.dsiAutoLocalAccessOffsetCheck(offsets);
+    }
+
+    @chpldoc.nodoc
+    proc supportsArrayViewElision() param {
+      return _value.dsiSupportsArrayViewElision();
+    }
+
+    @chpldoc.nodoc
+    proc supportsShortArrayTransfer() param {
+      return _value.dsiSupportsShortArrayTransfer();
     }
 
     @chpldoc.nodoc
@@ -3055,7 +3114,7 @@ module ChapelDomain {
                        (if high(0).type == low.type then high(0).type else (low + high(0)).type);
       var ranges: size*range(eltType);
       if isTuple(low) {
-        if !isHomogeneousTuple(low) then compilerError("Domains defined using tuple bounds must use homogenous tuples, but got '" + low.type:string + "'");
+        if !isHomogeneousTuple(low) then compilerError("Domains defined using tuple bounds must use homogeneous tuples, but got '" + low.type:string + "'");
         for param i in 0..<size {
           if inclusive then
             ranges[i] = low[i]..high;
@@ -3063,7 +3122,7 @@ module ChapelDomain {
             ranges[i] = low[i]..<high;
         }
       } else {
-        if !isHomogeneousTuple(high) then compilerError("Domains defined using tuple bounds must use homogenous tuples, but got '" + high.type:string + "'");
+        if !isHomogeneousTuple(high) then compilerError("Domains defined using tuple bounds must use homogeneous tuples, but got '" + high.type:string + "'");
         for param i in 0..<size {
           if inclusive then
             ranges[i] = low..high[i];
@@ -3081,7 +3140,7 @@ module ChapelDomain {
     where isTuple(low) && isTuple(high)
   {
     if !isHomogeneousTuple(low) || !isHomogeneousTuple(high) then
-      compilerError("Domains defined using tuple bounds must use homogenous tuples, but got '" +
+      compilerError("Domains defined using tuple bounds must use homogeneous tuples, but got '" +
                     low.type:string + "' and '" + high.type:string + "'");
     else if low.size != high.size then
       compilerError("Domains defined using tuple bounds must use tuples of the same length, " +

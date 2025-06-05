@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -34,16 +34,6 @@ module ChapelRange {
 
   @chpldoc.nodoc
   config param useOptimizedRangeIterators = true;
-
-  /* This flag, when set to `true`, used to switch to using the new slicing rule
-     and to turn off the deprecation warning for using the old rule.
-     Now the new rule is always enabled regardless of this flag's value.
-     When slicing with a range with a negative stride, the old rule
-     preserves the direction of the original range or domain/array dimension
-     whereas the new rule reverses such direction. */
-  @chpldoc.nodoc
-  @deprecated("'newSliceRule' is deprecated and will be removed in a future release; it is now 'true' by default; slicing with a range with a negative stride now always reverses the direction of the original range or domain/array dimension, regardless of the value of 'newSliceRule'")
-  config param newSliceRule = true;
 
   /* Compile with ``-snewRangeLiteralType`` to switch to using the new rule
      for determining the idxType of a range literal with param integral bounds
@@ -2348,18 +2338,12 @@ private proc isBCPindex(type t) param do
     if isPositiveStride(newStrides, st) then
       // start from the low index
       return if hasLowBoundForIter(r)
-             // inlined: newAlignedRange(r.chpl_alignedLowAsIntForIter)
-             // because Dyno can't helper capturing nested functions.
-             then new range(i, b, newStrides, lw, hh, st,
-                            r.chpl_alignedLowAsIntForIter, true, true)
+             then newAlignedRange(r.chpl_alignedLowAsIntForIter)
              else if st == 1 then newZeroAlmtRange() else newUnalignedRange();
     else
       // start from the high index
       return if hasHighBoundForIter(r)
-             // inlined: newAlignedRange(r.chpl_alignedHighAsIntForIter)
-             // because Dyno can't helper capturing nested functions.
-             then new range(i, b, newStrides, lw, hh, st,
-                            r.chpl_alignedHighAsIntForIter, true, true)
+             then newAlignedRange(r.chpl_alignedHighAsIntForIter)
              else if st == -1 then newZeroAlmtRange() else newUnalignedRange();
 
     proc newAlignedRange(alignment) do
@@ -2729,7 +2713,7 @@ private proc isBCPindex(type t) param do
     type resultType = r.chpl_integralIdxType;
     type strType = chpl__rangeStrideType(resultType);
 
-    proc absSameType(r, type resultType) {
+    proc absSameType() {
       if r.hasNegativeStride() {
         return (-r.stride):resultType;
       } else {
@@ -2743,14 +2727,14 @@ private proc isBCPindex(type t) param do
                          bounds = boundKind.both,
                          strides = r.strides,
                          _low = r._low,
-                         _high = r._low - absSameType(r, resultType),
+                         _high = r._low - absSameType(),
                          _stride = r.stride,
                          alignmentValue = r._alignment);
       } else if (r.hasHighBound()) {
         return new range(idxType = r.idxType,
                          bounds = boundKind.both,
                          strides = r.strides,
-                         _low = r._high + absSameType(r, resultType),
+                         _low = r._high + absSameType(),
                          _high = r._high,
                          _stride = r.stride,
                          alignmentValue = r._alignment);
@@ -3513,8 +3497,7 @@ private proc isBCPindex(type t) param do
   //#
 
   @chpldoc.nodoc
-  iter range.these(param tag: iterKind) where tag == iterKind.standalone &&
-    !localeModelPartitionsIterationOnSublocales
+  iter range.these(param tag: iterKind) where tag == iterKind.standalone
   {
     if !(hasLowBoundForIter(this) && hasHighBoundForIter(this)) {
       compilerError("parallel iteration is not currently supported over ranges without bounds");
@@ -3569,83 +3552,22 @@ private proc isBCPindex(type t) param do
       chpl_debug_writeln("*** In range leader:"); // ", this);
     const numSublocs = here._getChildCount();
 
-    if localeModelPartitionsIterationOnSublocales && numSublocs != 0 {
-      const len = this.sizeAs(chpl_integralIdxType);
-      const tasksPerLocale = dataParTasksPerLocale;
-      const ignoreRunning = dataParIgnoreRunningTasks;
-      const minIndicesPerTask = dataParMinGranularity;
-      var dptpl = if tasksPerLocale==0 then here.maxTaskPar
-                  else tasksPerLocale;
-      if !ignoreRunning {
-        const otherTasks = here.runningTasks() - 1; // don't include self
-        dptpl = if otherTasks < dptpl then (dptpl-otherTasks):int else 1;
-      }
+    var v = this.chpl_sizeAsForIter(chpl_integralIdxType);
+    const numChunks = if __primitive("task_get_serial") then
+                      1 else _computeNumChunks(v);
 
-      // Make sure we don't use more sublocales than the numbers of
-      // tasksPerLocale requested
-      const numSublocTasks = min(numSublocs, dptpl);
-      // For serial tasks, we will only have a single chunk
-      const numChunks =  if __primitive("task_get_serial") then
-                         1 else _computeNumChunks(numSublocTasks,
-                                                  ignoreRunning=true,
-                                                  minIndicesPerTask,
-                                                  len);
-      if debugDataParNuma {
-        chpl_debug_writeln("### numSublocs = ", numSublocs, "\n",
-                           "### numTasksPerSubloc = ", numSublocTasks, "\n",
-                           "### ignoreRunning = ", ignoreRunning, "\n",
-                           "### minIndicesPerTask = ", minIndicesPerTask, "\n",
-                           "### numChunks = ", numChunks);
-      }
+    if debugChapelRange
+    {
+      chpl_debug_writeln("*** RI: length=", v, " numChunks=", numChunks);
+      chpl_debug_writeln("*** RI: Using ", numChunks, " chunk(s)");
+    }
 
-      coforall chunk in 0..#numChunks {
-        local do on here._getChild(chunk) {
-          if debugDataParNuma {
-            if chunk!=chpl_getSubloc() then
-              chpl_debug_writeln("*** ERROR: ON WRONG SUBLOC (should be ",
-                                 chunk, ", on ", chpl_getSubloc(), ") ***");
-          }
-          const (lo,hi) = _computeBlock(len, numChunks, chunk, len-1);
-          const locRange = lo..hi;
-          const locLen = locRange.sizeAs(chpl_integralIdxType);
-          // Divide the locale's tasks approximately evenly
-          // among the sublocales
-          const numSublocTasks = (if chunk < dptpl % numChunks
-                                  then dptpl / numChunks + 1
-                                  else dptpl / numChunks);
-          const numTasks = _computeNumChunks(numSublocTasks,
-                                             ignoreRunning=true,
-                                             minIndicesPerTask,
-                                             locLen);
-          coforall core in 0..#numTasks {
-            const (low, high) = _computeBlock(locLen, numTasks, core, hi, lo, lo);
-            if debugDataParNuma {
-              chpl_debug_writeln("### chunk = ", chunk, "  core = ", core, "  ",
-                                 "locRange = ", locRange, "  coreRange = ", low..high);
-            }
-            yield (low..high,);
-          }
-        }
-      }
-
-    } else {
-      var v = this.chpl_sizeAsForIter(chpl_integralIdxType);
-      const numChunks = if __primitive("task_get_serial") then
-                        1 else _computeNumChunks(v);
-
-      if debugChapelRange
-      {
-        chpl_debug_writeln("*** RI: length=", v, " numChunks=", numChunks);
-        chpl_debug_writeln("*** RI: Using ", numChunks, " chunk(s)");
-      }
-
-      coforall chunk in 0..#numChunks
-      {
-        const (lo,hi) = _computeBlock(v, numChunks, chunk, v-1);
-        if debugChapelRange then
-          chpl_debug_writeln("*** RI: tuple = ", (lo..hi,));
-        yield (lo..hi,);
-      }
+    coforall chunk in 0..#numChunks
+    {
+      const (lo,hi) = _computeBlock(v, numChunks, chunk, v-1);
+      if debugChapelRange then
+        chpl_debug_writeln("*** RI: tuple = ", (lo..hi,));
+      yield (lo..hi,);
     }
   }
 

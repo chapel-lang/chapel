@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -78,9 +78,9 @@ static inline void chpl_assert_on_gpu(int32_t lineno, int32_t filenameIdx) {
   }
 }
 
-static inline unsigned int chpl_gpu_clock(void) {
+static inline unsigned int chpl_gpu_clock(int32_t lineno, int32_t filenameIdx) {
   if (!chpl_gpu_no_cpu_mode_warning) {
-    chpl_warning("chpl_gpu_clock was called.", 0, 0);
+    chpl_warning("chpl_gpu_clock was called.", lineno, filenameIdx);
   }
   return (unsigned int)clock();
 }

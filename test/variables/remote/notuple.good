@@ -1,0 +1,2 @@
+notuple.chpl:1: error: only (multi)variable declarations can target a specific locale
+notuple.chpl:2: error: only (multi)variable declarations can target a specific locale

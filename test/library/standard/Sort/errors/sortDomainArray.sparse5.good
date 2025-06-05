@@ -1,0 +1,1 @@
+sortDomainArray.chpl:37: error: isSorted() is currently only supported for 1D rectangular arrays

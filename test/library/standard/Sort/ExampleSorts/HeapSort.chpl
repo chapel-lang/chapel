@@ -1,7 +1,7 @@
 // heap sort has good n*log(n) worst case performance
 // it is in-place but not stable.
 module HeapSort {
-  import Sort.{DefaultComparator, chpl_check_comparator, chpl_compare};
+  import Sort.{defaultComparator, chpl_check_comparator, chpl_compare};
   /*
 
    Sort the 1D array `Data` in-place using a sequential heap sort algorithm.
@@ -13,7 +13,7 @@ module HeapSort {
 
    */
   proc heapSort(ref Data: [?Dom] ?eltType,
-                comparator:?rec = new DefaultComparator()) {
+                comparator:?rec = new defaultComparator()) {
     chpl_check_comparator(comparator, eltType);
 
     if Dom.rank != 1 {
@@ -43,7 +43,7 @@ module HeapSort {
       siftDown(low, end, comparator);
     }
 
-    proc siftDown(start, end, comparator:?rec = new DefaultComparator()) {
+    proc siftDown(start, end, comparator:?rec = new defaultComparator()) {
       var root = start;
       while (2*root - low + stride) <= end {
         const child = 2*root - low + stride;

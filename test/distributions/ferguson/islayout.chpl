@@ -1,5 +1,5 @@
 use CTypes;
-use LayoutCS;
+use CompressedSparseLayout;
 use BlockDist;
 use ExternalArray;
 
@@ -9,9 +9,8 @@ proc main() {
   var blk = new blockDist(boundingBox={1..10});
   assert(!blk.dsiIsLayout());
   
-  var cs = new unmanaged CS();
-  assert(cs.dsiIsLayout());
-  delete cs;
+  var mycs = new csrLayout();
+  assert(mycs.dsiIsLayout());
 
   // Check also the distribution for default arrays,
   // array slices, array reindexes, and array rank-changes.

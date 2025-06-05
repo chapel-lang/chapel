@@ -916,7 +916,7 @@ class GraphClass:
                             self.datfilenames.append(myDatFile)
                             self.perfkeys.append(perf)
                             self.graphkeys.append(graph)
-                            break;
+                            break
                     # it's possible we still didn't fine the file, but if
                     # that's the case the test wasn't run for any configuration
                     # and we won't generate data for any series which won't
@@ -1002,7 +1002,7 @@ def main():
             conf = temp[0]
             multiConf.append(conf)
             if len(temp) > 1 and temp[1] == 'v':
-                defaultMultiConf.append(conf);
+                defaultMultiConf.append(conf)
         if len(defaultMultiConf) == 0:
             defaultMultiConf.append(multiConf[0])
     else:

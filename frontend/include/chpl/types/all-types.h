@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -33,15 +33,24 @@
 #include "chpl/types/EnumType.h"
 #include "chpl/types/ErroneousType.h"
 #include "chpl/types/ExternType.h"
+#include "chpl/types/FnIteratorType.h"
+#include "chpl/types/HeapBufferType.h"
 #include "chpl/types/ImagType.h"
+#include "chpl/types/InterfaceType.h"
 #include "chpl/types/IntType.h"
+#include "chpl/types/IteratorType.h"
+#include "chpl/types/LoopExprIteratorType.h"
 #include "chpl/types/NilType.h"
 #include "chpl/types/NothingType.h"
 #include "chpl/types/Param.h"
+#include "chpl/types/PlaceholderType.h"
 #include "chpl/types/PrimitiveType.h"
+#include "chpl/types/PtrType.h"
+#include "chpl/types/PromotionIteratorType.h"
 #include "chpl/types/QualifiedType.h"
 #include "chpl/types/RealType.h"
 #include "chpl/types/RecordType.h"
+#include "chpl/types/RuntimeType.h"
 #include "chpl/types/TupleType.h"
 #include "chpl/types/Type.h"
 #include "chpl/types/Type.h"

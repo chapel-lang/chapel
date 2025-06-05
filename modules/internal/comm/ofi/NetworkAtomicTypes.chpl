@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,14 +23,16 @@ module NetworkAtomicTypes {
 
   private proc isSupported(type T) param {
     return T == bool     ||
+           T ==  int(8)  || T ==  int(16) ||
            T ==  int(32) || T ==  int(64) ||
+           T == uint(8)  || T == uint(16) ||
            T == uint(32) || T == uint(64) ||
            T == real(32) || T == real(64);
   }
 
   proc chpl__networkAtomicType(type T) type {
-    if T == bool           then return RAtomicBool;
-    else if isSupported(T) then return RAtomicT(T);
-    else                        return chpl__processorAtomicType(T);
+    if T == bool            then return RAtomicBool;
+    else if isSupported(T)  then return RAtomicT(T);
+    else                         return chpl__processorAtomicType(T);
   }
 }

@@ -1,0 +1,49 @@
+.. default-domain:: chpl
+
+.. module:: interface.doc
+
+interface.doc
+=============
+**Usage**
+
+.. code-block:: chapel
+
+   use interface.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import interface.doc;
+
+.. interface:: interface myInterface
+
+   
+   An interface without formals
+
+   .. method:: proc Self.foo()
+
+   The foo method 
+
+   .. method:: proc Self.bar()
+
+   .. warning::
+
+      bar is deprecated
+
+.. interface:: interface myInterfaceWithFormals(type T1, type T2)
+
+   .. warning::
+
+      I am unstable
+
+   
+   An interface with formals
+
+   .. method:: proc Self.foo(x: T1)
+
+   .. method:: proc Self.bar(y: T2)
+
+   The bar method 
+

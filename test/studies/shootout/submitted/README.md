@@ -30,7 +30,8 @@ that have been submitted across time to the website. For Chapel versions that ar
 * [fasta3.chpl](https://benchmarksgame-team.pages.debian.net/benchmarksgame/program/fasta-chapel-3.html) |
   [fasta5.chpl](https://benchmarksgame-team.pages.debian.net/benchmarksgame/program/fasta-chapel-5.html)
     * Generates and writes random DNA sequences.
-* [knucleotide3.chpl](https://benchmarksgame-team.pages.debian.net/benchmarksgame/program/knucleotide-chapel-3.html)
+* [knucleotide3.chpl](https://benchmarksgame-team.pages.debian.net/benchmarksgame/program/knucleotide-chapel-3.html) |
+  [knucleotide4.chpl](https://benchmarksgame-team.pages.debian.net/benchmarksgame/program/knucleotide-chapel-4.html)
     * Count the frequencies of specific nucleotide sequences.
 * [mandelbrot.chpl](https://benchmarksgame-team.pages.debian.net/benchmarksgame/program/mandelbrot-chapel-1.html) |
   [mandelbrot3.chpl](https://benchmarksgame-team.pages.debian.net/benchmarksgame/program/mandelbrot-chapel-3.html)

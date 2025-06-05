@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -471,6 +471,15 @@ static void expandVarArgsBody(FnSymbol*      fn,
 
   if (formal->intent == INTENT_OUT || formal->intent == INTENT_INOUT) {
     needTuple = true;
+  }
+
+  if (formal->intent == INTENT_CONST || formal->intent == INTENT_CONST_IN ||
+      formal->intent == INTENT_CONST_REF || formal->intent == INTENT_BLANK) {
+    // TODO: Note that this will be overly strict for arrays, syncs, and
+    // atomics, since their default is "pass-by-ref".  However, we think this is
+    // okay for now, in part due to thinking it's unlikely to be relied upon and
+    // in part to avoid letting other types get modified illegally.
+    var->addFlag(FLAG_CONST);
   }
 
   if (needTuple == true) {

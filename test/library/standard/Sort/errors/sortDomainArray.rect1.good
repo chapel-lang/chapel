@@ -1,0 +1,1 @@
+sortDomainArray.chpl:65: error: sort() is not supported on domains

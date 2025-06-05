@@ -42,6 +42,8 @@ def title(name):
         name = '13 "Trixie"'
     if name == "Forky":
         name = '14 "Forky"'
+    if name == "Duke":
+        name = '15 "Duke"'
     # handle Ubuntu nicknames
     if name == "Bionic":
         name = '18.04 "Bionic Beaver"'
@@ -59,6 +61,10 @@ def title(name):
         name = '23.10 "Mantic Minotaur"'
     if name == "Noble":
         name = '24.04 "Noble Numbat"'
+    if name == "Oracular":
+        name = '24.10 "Oracular Oriole"'
+    if name == "Plucky":
+        name = '25.04 "Plucky Puffin"'
     return name
 
 def fixname(subdir):
@@ -206,7 +212,7 @@ for subpath in subdirs:
 
 tab = { }
 
-i = 0;
+i = 0
 while i < len(subdirs):
   subpath = subdirs[i]
   names = [ ]

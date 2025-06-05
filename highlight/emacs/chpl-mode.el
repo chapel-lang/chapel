@@ -87,7 +87,7 @@ not the type face."
   chpl '("as"
          "const" "config"
          "except" "export" "extern"
-         "import" "inline" "iter"
+         "implements" "import" "include" "inline" "iter"
          "lambda"
          "module"
          "only" "operator" "override"
@@ -110,11 +110,11 @@ will be handled.
 Note that presence on this list does not automatically treat the
 following identifier as a type; the keyword must also be present on
 `c-type-prefix-kwds' or `c-type-list-kwds' to accomplish that."
-  chpl '("class" "record" "union"))
+  chpl '("class" "record" "union" "interface"))
 
 (c-lang-defconst c-type-start-kwds
   "Keywords that can start a type."
-  chpl '("class" "enum" "record" "type" "union"))
+  chpl '("class" "enum" "record" "type" "union" "interface"))
 
 ;; Type aliases
 (c-lang-defconst c-typedef-decl-kwds
@@ -184,7 +184,7 @@ or variable identifier (that's being defined)."
 
 (c-lang-defconst c-other-kwds
   "Keywords not accounted for by any other `*-kwds' language constant."
-  chpl '("align" "atomic" "begin" "borrowed" "by" "catch" "cobegin" "coforall" "deinit" "dmapped" "for" "forall" "if" "in" "init" "inout" "lifetime" "local" "noinit" "on" "out" "owned" "prototype" "reduce" "ref" "scan" "serial" "shared" "single" "sparse" "sync" "throw" "throws" "try" "unmanaged" "where" "while" "with" "zip"))
+  chpl '("align" "atomic" "begin" "borrowed" "by" "catch" "cobegin" "coforall" "deinit" "dmapped" "for" "forall" "if" "in" "init" "inout" "lifetime" "local" "noinit" "on" "out" "owned" "prototype" "reduce" "ref" "scan" "serial" "shared" "sparse" "sync" "throw" "throws" "try" "unmanaged" "where" "while" "with" "zip"))
 
 ;;; Chpl.
 

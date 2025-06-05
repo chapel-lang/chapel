@@ -1,6 +1,6 @@
 use Time;
 
-use LayoutCS;
+use CompressedSparseLayout;
 
 var t = new stopwatch();
 
@@ -32,9 +32,9 @@ proc stopDiag(key, dom) {
 }
 
 {
-  var csrDomBase: sparse subdomain(parentDom) dmapped new dmap(new CS(compressRows=true));
+  var csrDomBase: sparse subdomain(parentDom) dmapped new csrLayout();
   csrDomBase += sparseIndices;
-  var cscDom: sparse subdomain(parentDom) dmapped new dmap(new CS(compressRows=false));
+  var cscDom: sparse subdomain(parentDom) dmapped new cscLayout();
   startDiag();
   cscDom = csrDomBase;
   stopDiag("CSR to CSC", cscDom);
@@ -42,7 +42,7 @@ proc stopDiag(key, dom) {
 
 // assignment from csc
 {
-  var cscDomBase: sparse subdomain(parentDom) dmapped new dmap(new CS(compressRows=false));
+  var cscDomBase: sparse subdomain(parentDom) dmapped new cscLayout();
   cscDomBase += sparseIndices;
   var cooDom: sparse subdomain(parentDom);
   startDiag();
@@ -51,9 +51,9 @@ proc stopDiag(key, dom) {
 }
 
 {
-  var cscDomBase: sparse subdomain(parentDom) dmapped new dmap(new CS(compressRows=false));
+  var cscDomBase: sparse subdomain(parentDom) dmapped new cscLayout();
   cscDomBase += sparseIndices;
-  var csrDom: sparse subdomain(parentDom) dmapped new dmap(new CS(compressRows=true));
+  var csrDom: sparse subdomain(parentDom) dmapped new csrLayout();
   startDiag();
   csrDom = cscDomBase;
   stopDiag("CSC to CSR", csrDom);
@@ -62,7 +62,7 @@ proc stopDiag(key, dom) {
 {
   var cooDomBase: sparse subdomain(parentDom);
   cooDomBase += sparseIndices;
-  var cscDom: sparse subdomain(parentDom) dmapped new dmap(new CS(compressRows=false));
+  var cscDom: sparse subdomain(parentDom) dmapped new cscLayout();
   startDiag();
   cscDom = cooDomBase;
   stopDiag("COO to CSC", cscDom);

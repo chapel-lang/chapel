@@ -1,0 +1,3 @@
+$CHPL_HOME/modules/packages/Python.chpl:nnnn: In method 'this':
+$CHPL_HOME/modules/packages/Python.chpl:nnnn: error: Attempting to index an array of rank 3 with a 1-dimensional index
+  arrayErrors.chpl:128: called as (PyArray(int(64),3)).this(idx: int(64))

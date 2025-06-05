@@ -1,8 +1,6 @@
 refToSubclassInternalError-shared.chpl:17: In function 'populate':
 refToSubclassInternalError-shared.chpl:23: error: initializing a reference using an expression whose type 'shared GenProperty?' is not an instantiation of the declared type 'shared Property'
-refToSubclassInternalError-shared.chpl:23: error: initializing a reference using an expression whose type 'shared GenProperty?' is not an instantiation of the declared type 'shared Property'
   refToSubclassInternalError-shared.chpl:87: called as populate(dataArray: [domain(1,int(64),one)] int(64), inputVertices: [domain(1,int(64),one)] int(64), vertexProps: [BlockDom(2,int(64),one,unmanaged DefaultDist)] shared GenProperty?, dataTypeMap: [domain(1,int(64),one)] string, colId: int(64))
 refToSubclassInternalError-shared.chpl:17: In function 'populate':
-refToSubclassInternalError-shared.chpl:23: error: initializing a reference using an expression whose type 'shared GenProperty?' is not an instantiation of the declared type 'shared Property'
 refToSubclassInternalError-shared.chpl:23: error: initializing a reference using an expression whose type 'shared GenProperty?' is not an instantiation of the declared type 'shared Property'
   refToSubclassInternalError-shared.chpl:88: called as populate(dataArray: [domain(1,int(64),one)] bool, inputVertices: [domain(1,int(64),one)] int(64), vertexProps: [BlockDom(2,int(64),one,unmanaged DefaultDist)] shared GenProperty?, dataTypeMap: [domain(1,int(64),one)] string, colId: int(64))

@@ -196,7 +196,7 @@ initial value. Subsequent changes to the static variable are only visible to
 the locale. The purpose for this approach is to support the pre-computation of
 values "near" where the computation takes place. This way, each locale can
 reference its own copy of the pre-computed data, without the need for
-any communication. By changing the sharing kind to ``comutePerLocale``:
+any communication. By changing the sharing kind to ``computePerLocale``:
 
 .. code-block:: chapel
 

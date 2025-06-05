@@ -21,7 +21,7 @@ def main():
   Passes.lapacke_include = Passes.lapack_root + "/lapacke/include"
   Passes.blas_src = Passes.lapack_root + "/BLAS/SRC"
 
-  root = ET.Element( "root" );
+  root = ET.Element( "root" )
   DumpCodePass.apply( root )
 
 if __name__ == "__main__": main()

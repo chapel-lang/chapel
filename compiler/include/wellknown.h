@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -71,6 +71,11 @@ extern AggregateType* dtString;
 extern AggregateType* dtTaskBundleRecord;
 extern AggregateType* dtTuple;
 
+// these are only used when the dyno resolver is active
+extern AggregateType* dtCPointer;
+extern AggregateType* dtCPointerConst;
+extern AggregateType* dtHeapBuffer;
+
 extern Type* dt_c_int;
 extern Type* dt_c_uint;
 extern Type* dt_c_long;
@@ -87,6 +92,7 @@ extern Type* dt_c_uintptr;
 extern Type* dt_c_ptrdiff;
 extern Type* dt_ssize_t;
 extern Type* dt_size_t;
+extern Type* dt_wchar;
 
 // The well-known functions
 extern FnSymbol *gChplHereAlloc;

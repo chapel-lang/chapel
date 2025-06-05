@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -177,9 +177,6 @@ size_t chpl_gpu_get_alloc_size(void* ptr);
 bool chpl_gpu_can_access_peer(int dev1, int dev2);
 void chpl_gpu_set_peer_access(int dev1, int dev2, bool enable);
 
-bool chpl_gpu_can_reduce(void);
-bool chpl_gpu_can_sort(void);
-
 #define DECL_ONE_REDUCE(chpl_kind, data_type) \
 void chpl_gpu_##chpl_kind##_reduce_##data_type(void* data, int n,\
                                                void* val, int* idx);
@@ -200,6 +197,63 @@ void chpl_gpu_sort_##chpl_kind##_##data_type(data_type* data_in, \
 GPU_CUB_WRAP(DECL_ONE_SORT, keys);
 
 #undef DECL_ONE_SORT
+
+void chpl_gpu_name(int dev, char **result);
+
+extern const int CHPL_GPU_ATTRIBUTE__MAX_THREADS_PER_BLOCK;
+extern const int CHPL_GPU_ATTRIBUTE__MAX_BLOCK_DIM_X;
+extern const int CHPL_GPU_ATTRIBUTE__MAX_BLOCK_DIM_Y;
+extern const int CHPL_GPU_ATTRIBUTE__MAX_BLOCK_DIM_Z;
+extern const int CHPL_GPU_ATTRIBUTE__MAX_GRID_DIM_X;
+extern const int CHPL_GPU_ATTRIBUTE__MAX_GRID_DIM_Y;
+extern const int CHPL_GPU_ATTRIBUTE__MAX_GRID_DIM_Z;
+extern const int CHPL_GPU_ATTRIBUTE__MAX_SHARED_MEMORY_PER_BLOCK;
+extern const int CHPL_GPU_ATTRIBUTE__TOTAL_CONSTANT_MEMORY;
+extern const int CHPL_GPU_ATTRIBUTE__WARP_SIZE;
+extern const int CHPL_GPU_ATTRIBUTE__MAX_PITCH;
+extern const int CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE1D_WIDTH;
+extern const int CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE2D_WIDTH;
+extern const int CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE2D_HEIGHT;
+extern const int CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE3D_WIDTH;
+extern const int CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE3D_HEIGHT;
+extern const int CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE3D_DEPTH;
+extern const int CHPL_GPU_ATTRIBUTE__MAX_REGISTERS_PER_BLOCK;
+extern const int CHPL_GPU_ATTRIBUTE__CLOCK_RATE;
+extern const int CHPL_GPU_ATTRIBUTE__TEXTURE_ALIGNMENT;
+extern const int CHPL_GPU_ATTRIBUTE__TEXTURE_PITCH_ALIGNMENT;
+extern const int CHPL_GPU_ATTRIBUTE__MULTIPROCESSOR_COUNT;
+extern const int CHPL_GPU_ATTRIBUTE__KERNEL_EXEC_TIMEOUT;
+extern const int CHPL_GPU_ATTRIBUTE__INTEGRATED;
+extern const int CHPL_GPU_ATTRIBUTE__CAN_MAP_HOST_MEMORY;
+extern const int CHPL_GPU_ATTRIBUTE__COMPUTE_MODE;
+extern const int CHPL_GPU_ATTRIBUTE__CONCURRENT_KERNELS;
+extern const int CHPL_GPU_ATTRIBUTE__ECC_ENABLED;
+extern const int CHPL_GPU_ATTRIBUTE__PCI_BUS_ID;
+extern const int CHPL_GPU_ATTRIBUTE__PCI_DEVICE_ID;
+extern const int CHPL_GPU_ATTRIBUTE__MEMORY_CLOCK_RATE;
+extern const int CHPL_GPU_ATTRIBUTE__GLOBAL_MEMORY_BUS_WIDTH;
+extern const int CHPL_GPU_ATTRIBUTE__L2_CACHE_SIZE;
+extern const int CHPL_GPU_ATTRIBUTE__MAX_THREADS_PER_MULTIPROCESSOR;
+extern const int CHPL_GPU_ATTRIBUTE__COMPUTE_CAPABILITY_MAJOR;
+extern const int CHPL_GPU_ATTRIBUTE__COMPUTE_CAPABILITY_MINOR;
+extern const int CHPL_GPU_ATTRIBUTE__MAX_SHARED_MEMORY_PER_MULTIPROCESSOR;
+extern const int CHPL_GPU_ATTRIBUTE__MANAGED_MEMORY;
+extern const int CHPL_GPU_ATTRIBUTE__MULTI_GPU_BOARD;
+extern const int CHPL_GPU_ATTRIBUTE__PAGEABLE_MEMORY_ACCESS;
+extern const int CHPL_GPU_ATTRIBUTE__CONCURRENT_MANAGED_ACCESS;
+extern const int CHPL_GPU_ATTRIBUTE__PAGEABLE_MEMORY_ACCESS_USES_HOST_PAGE_TABLES;
+extern const int CHPL_GPU_ATTRIBUTE__DIRECT_MANAGED_MEM_ACCESS_FROM_HOST;
+
+int chpl_gpu_query_attribute(int dev, int attribute);
+
+#else // HAS_GPU_LOCALE
+
+// Provide a fallback for the chpl_assert_on_gpu function for non-GPU locales.
+// This works exactly the same as the standard one.
+
+static inline void chpl_assert_on_gpu(int32_t ln, int32_t fn) {
+  chpl_error("assertOnGpu() failed", ln, fn);
+}
 
 #endif // HAS_GPU_LOCALE
 

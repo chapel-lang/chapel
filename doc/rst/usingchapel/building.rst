@@ -112,11 +112,11 @@ Chapel can be built and installed to a specific location as follows:
   make
   make install
 
-Running ``./configure`` will save your current configuration of
-``$CHPL_`` settings into a ``chplconfig`` file.  Running it with the
-``--prefix`` or ``--chpl-home`` options permits you to specify where
-and how Chapel should be installed during the ``make install`` step.
-Specifically:
+Running ``./configure`` will save your current configuration of ``$CHPL_``
+settings into a ``chplconfig`` file. This ``chplconfig`` file will be installed
+wherever ``CHPL_HOME`` is. Running ``./configure`` with the ``--prefix`` or
+``--chpl-home`` options permits you to specify where and how Chapel should be
+installed during the ``make install`` step. Specifically:
 
 * ``--prefix=/dir/for/install/`` causes the Chapel compiler,
   libraries, and supporting code to be installed into the directories:
@@ -128,13 +128,14 @@ Specifically:
   This technique is designed to install Chapel using a standard
   directory structure for the purposes of integrating it into a
   standard location that is already in your path, such as
-  ``/usr/local/`` or ``~/``.  Note that elevated privileges are likely
+  ``/usr/local/``.  Note that elevated privileges are likely
   to be required for any system-wide installation locations.
 
-  Please note that for any prefix-installed version of Chapel, the
-  meaning of ``$CHPL_HOME`` (e.g., as printed by compiler messages)
-  typically refers to ``/dir/for/install/share/chapel/x.yz`` where
-  ``x.yz`` is the Chapel version that was installed.
+  Please note that for any prefix-installed version of Chapel, the meaning of
+  ``$CHPL_HOME`` (e.g., as printed by compiler messages) is the path printed by
+  ``chpl --print-chpl-home``. This is typically
+  ``/dir/for/install/share/chapel/x.yz`` where ``x.yz`` is the Chapel version
+  that was installed.
 
 * ``--chpl-home=/dir/for/install`` copies key files and directories
   from the Chapel source tree into ``/dir/for/install``, preserving

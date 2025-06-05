@@ -8,7 +8,7 @@
   Leading to the definition here:
       |
     2 |   var a: int;
-      |       ⎺⎺⎺⎺⎺⎺⎺
+      |       ⎺⎺⎺⎺⎺⎺
       |
   Redefined through the 'use' of 'Lib2' here:
        |
@@ -18,6 +18,6 @@
   Leading to the definition here:
       |
     6 |   var b: real;
-      |       ⎺⎺⎺⎺⎺⎺⎺⎺
+      |       ⎺⎺⎺⎺⎺⎺⎺
       |
 

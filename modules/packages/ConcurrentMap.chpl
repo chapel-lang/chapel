@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -30,6 +30,7 @@
       - The implementation relies on using either ``GCC`` style inline assembly
         (for x86-64) or a GCC/clang builtin, and so is restricted to a
         ``CHPL_TARGET_COMPILER`` value of ``gnu``, ``clang``, or ``llvm``.
+      - The implementation does not work with ``CHPL_ATOMICS=locks``.
 
   This module was
   inspired by the Interlocked Hash Table [#]_. It allows large critical
@@ -250,6 +251,11 @@ module ConcurrentMap {
       this.size = round(parent.buckets.size * MULTIPLIER_NUM_BUCKETS):int;
       this.bucketsDom = {0..#round(parent.buckets.size * MULTIPLIER_NUM_BUCKETS):int};
     }
+    proc deinit() {
+      [i in bucketsDom] {
+        if var bb = buckets[i].read() then delete bb;
+      }
+    }
 
     // _gen_key will generate the hash on the combined seed and hash of original key
     // which ensures a better distribution of keys from varying seeds.
@@ -292,6 +298,9 @@ module ConcurrentMap {
       root = new unmanaged Buckets(keyType, valType);
       root.lock.write(P_INNER);
     }
+    proc deinit() {
+      delete root;
+    }
 
     /*
       Register the task to epoch manager.
@@ -307,10 +316,10 @@ module ConcurrentMap {
       var shouldYield = false;
       const defaultHash = key.hash();
       var idx = (curr._hash(defaultHash) % (curr.buckets.size):uint):int;
-      while (true) {
+      while true {
         var next = curr.buckets[idx].read();
         // writeln("stuck");
-        if (next == nil) {
+        if next == nil {
           // If we're not inserting something, I.E we are removing
           // or retrieving, we are done.
           if !isInsertion then return nil;
@@ -320,20 +329,20 @@ module ConcurrentMap {
           newList.lock.write(E_LOCK);
 
           // We set our Bucket, we also own it so return it
-          if (curr.buckets[idx].compareAndSwap(nil, newList)) {
+          if curr.buckets[idx].compareAndSwap(nil, newList) {
             return newList;
           } else {
             // Someone else set their bucket, reload.
             delete newList;
           }
         }
-        else if (next!.lock.read() == P_INNER) {
+        else if next!.lock.read() == P_INNER {
           curr = next : unmanaged Buckets(keyType, valType);
           idx = (curr._hash(defaultHash) % (curr.buckets.size):uint):int;
         }
-        else if (next!.lock.read() == E_AVAIL) {
+        else if next!.lock.read() == E_AVAIL {
           // We now own the bucket...
-          if (next!.lock.compareAndSwap(E_AVAIL, E_LOCK)) {
+          if next!.lock.compareAndSwap(E_AVAIL, E_LOCK) {
             // Non-insertions don't care.
             if !isInsertion then return next : unmanaged Bucket(keyType, valType);
             // Insertions cannot have a full bucket...
@@ -567,7 +576,8 @@ module ConcurrentMap {
       :yields: A copy of one of the keys contained in this map.
     */
     iter keys() : keyType {
-      for (key, _) in this {
+      // dummy variable to workaround: https://github.com/chapel-lang/chapel/issues/25926
+      for (key, val) in this {
         yield key;
       }
     }
@@ -578,7 +588,8 @@ module ConcurrentMap {
       :yields: A copy of one of the values contained in this map.
     */
     iter values() : valType {
-      for (_, val) in this {
+      // dummy variable to workaround: https://github.com/chapel-lang/chapel/issues/25926
+      for (dummy, val) in this {
         yield val;
       }
     }
@@ -711,17 +722,17 @@ module ConcurrentMap {
       Adds a key-value pair to the map. Method returns `false` if the key
       already exists in the map.
 
-     :arg key: The key to add to the map
-     :type key: keyType
+      :arg key: The key to add to the map
+      :type key: keyType
 
-     :arg val: The value that maps to ``k``
-     :type kal: valueType
+      :arg val: The value that maps to ``k``
+      :type kal: valueType
 
-     :arg tok: Token for EpochManager
+      :arg tok: Token for EpochManager
 
-     :returns: `true` if `key` was not in the map and added with value `val`.
+      :returns: `true` if `key` was not in the map and added with value `val`.
                `false` otherwise.
-     :rtype: bool
+      :rtype: bool
     */
     proc add(key : keyType, val : valType, tok : owned TokenWrapper = getToken()) : bool throws {
       tok.pin();
@@ -745,17 +756,17 @@ module ConcurrentMap {
       Sets the value associated with a key. Method returns `false` if the key
       does not exist in the map.
 
-     :arg key: The key whose value needs to change
-     :type key: keyType
+      :arg key: The key whose value needs to change
+      :type key: keyType
 
-     :arg val: The desired value to the key ``key``
-     :type val: valueType
+      :arg val: The desired value to the key ``key``
+      :type val: valueType
 
-     :arg tok: Token for EpochManager
+      :arg tok: Token for EpochManager
 
-     :returns: `true` if `key` was in the map and its value is updated with `val`.
-               `false` otherwise.
-     :rtype: bool
+      :returns: `true` if `key` was in the map and its value is updated with `val`.
+             `false` otherwise.
+      :rtype: bool
     */
     proc set(key: keyType, in val: valType, tok : owned TokenWrapper = getToken()): bool throws {
       tok.pin();
@@ -853,7 +864,7 @@ module ConcurrentMap {
       tok.pin();
       var elist = getEList(key, true, tok);
       for i in 0..#elist!.count {
-        if (elist!.keys[i] == key) {
+        if elist!.keys[i] == key {
           elist!.values[i] = val;
           elist!.lock.write(E_AVAIL);
           tok.unpin();

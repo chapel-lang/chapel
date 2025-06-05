@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -41,6 +41,10 @@
 #include "chpl/util/filesystem.h"
 #include "chpl/util/filtering.h"
 
+#ifdef HAVE_LLVM
+  #include "clangUtil.h"
+#endif
+
 #include "global-ast-vecs.h"
 
 #include <algorithm>
@@ -70,17 +74,17 @@ Symbol *gOpaque = NULL;
 Symbol *gTimer = NULL;
 Symbol *gTaskID = NULL;
 Symbol *gSyncVarAuxFields = NULL;
-Symbol *gSingleVarAuxFields = NULL;
 Symbol *gIgnoredPromotionToken = NULL;
 
 VarSymbol *gTrue = NULL;
 VarSymbol *gFalse = NULL;
-VarSymbol* gIteratorBreakToken = NULL;
 VarSymbol* gNodeID = NULL;
 VarSymbol *gModuleInitIndentLevel = NULL;
 VarSymbol *gInfinity = NULL;
 VarSymbol *gNan = NULL;
 VarSymbol *gUninstantiated = NULL;
+VarSymbol *gCpuVsGpuToken = NULL;
+VarSymbol *gIteratorBreakToken = NULL;
 
 llvm::SmallVector<VarSymbol*, 10> gCompilerGlobalParams;
 
@@ -192,11 +196,13 @@ static Qualifier qualifierForArgIntent(IntentTag intent)
   return QUAL_UNKNOWN;
 }
 
-QualifiedType Symbol::qualType() {
+QualifiedType
+Symbol::computeQualifiedType(bool isFormal, IntentTag intent, Type* type,
+                             Qualifier qual,
+                             bool isConst) {
   QualifiedType ret(dtUnknown, QUAL_UNKNOWN);
-
-  if (ArgSymbol* arg = toArgSymbol(this)) {
-    Qualifier q = qualifierForArgIntent(arg->intent);
+  if (isFormal) {
+    Qualifier q = qualifierForArgIntent(intent);
     if (qual == QUAL_WIDE_REF && (q == QUAL_REF || q == QUAL_CONST_REF)) {
       q = QUAL_WIDE_REF;
       // MPF: Should this be CONST_WIDE_REF in some cases?
@@ -204,11 +210,24 @@ QualifiedType Symbol::qualType() {
     ret = QualifiedType(type, q);
   } else {
     ret = QualifiedType(type, qual);
-    if (hasFlag(FLAG_CONST))
-      ret = ret.toConst();
+    if (isConst) ret = ret.toConst();
   }
 
   return ret;
+
+}
+
+QualifiedType Symbol::qualType() {
+  bool isConst = hasFlag(FLAG_CONST);
+  IntentTag intent = INTENT_BLANK;
+  bool isFormal = false;
+
+  if (auto formal = toArgSymbol(this)) {
+    intent = formal->intent;
+    isFormal = true;
+  }
+
+  return computeQualifiedType(isFormal, intent, type, qual, isConst);
 }
 
 
@@ -462,7 +481,7 @@ const char* Symbol::getUnstableMsg() const {
 // When printing the deprecation message to the console we typically
 // want to filter out inline markup used for Sphinx (which is useful
 // for when generating the docs). See:
-// https://chapel-lang.org/docs/latest/tools/chpldoc/chpldoc.html#inline-markup-2
+// https://chapel-lang.org/docs/tools/chpldoc/chpldoc.html#inline-markup-2
 // for information on the markup.
 const char* Symbol::getSanitizedMsg(std::string msg) const {
   return astr(chpl::removeSphinxMarkup(msg));
@@ -510,6 +529,22 @@ void Symbol::maybeGenerateDeprecationWarning(Expr* context) {
       USR_WARN(context, "%s", getSanitizedMsg(getDeprecationMsg()));
       dedupDeprecationWarnings.insert(key);
     }
+  }
+}
+
+std::string Symbol::getFirstEdition() const {
+  if (firstEdition == "") {
+    return editions.front();
+  } else {
+    return firstEdition;
+  }
+}
+
+std::string Symbol::getLastEdition() const {
+  if (lastEdition == "") {
+    return editions.back();
+  } else {
+    return lastEdition;
   }
 }
 
@@ -1255,20 +1290,22 @@ bool isOuterVarOfShadowVar(Expr* expr) {
 ********************************* | ********************************/
 
 #ifdef HAVE_LLVM
-static std::map<FunctionType*, llvm::FunctionType*>
+
+static std::map<FunctionType*, LlvmFunctionInfo>
 chapelFunctionTypeToLlvmFunctionType;
 
-bool llvmMapUnderlyingFunctionType(FunctionType* k, llvm::FunctionType* v) {
-  auto it = chapelFunctionTypeToLlvmFunctionType.find(k);
-  if (it != chapelFunctionTypeToLlvmFunctionType.end()) return false;
-  chapelFunctionTypeToLlvmFunctionType.emplace_hint(it, k, v);
-  return true;
-}
-
-llvm::FunctionType* llvmGetUnderlyingFunctionType(FunctionType* t) {
-  auto it = chapelFunctionTypeToLlvmFunctionType.find(t);
+const LlvmFunctionInfo& fetchLocalFunctionTypeLlvm(FunctionType* ft) {
+  auto it = chapelFunctionTypeToLlvmFunctionType.find(ft);
   if (it != chapelFunctionTypeToLlvmFunctionType.end()) return it->second;
-  return nullptr;
+
+  // Generate the LLVM function info.
+  LlvmFunctionInfo info;
+  std::vector<const char*> argNames;
+  info.type = codegenFunctionTypeLLVM(ft, info.attrs, argNames);
+
+  // Insert the info into the map.
+  it = chapelFunctionTypeToLlvmFunctionType.emplace_hint(it, ft, info);
+  return it->second;
 }
 #endif
 
@@ -1298,6 +1335,9 @@ void TypeSymbol::verify() {
   }
   if (type->symbol != this)
     INT_FATAL(this, "TypeSymbol::type->symbol != TypeSymbol");
+
+  // Verify the 'FunctionType's since they do not have a 'gVec'.
+  if (auto ft = toFunctionType(type)) ft->verify();
 }
 
 
@@ -1451,15 +1491,15 @@ void LabelSymbol::accept(AstVisitor* visitor) {
 
 TemporaryConversionSymbol::TemporaryConversionSymbol(chpl::ID symId)
   : Symbol(E_TemporaryConversionSymbol, "<conv>", nullptr),
-    symId(symId), sig(nullptr)
+    symId(symId), rfn(nullptr)
 {
   gTemporaryConversionSymbols.add(this);
 }
 
 TemporaryConversionSymbol::TemporaryConversionSymbol(
-    const chpl::resolution::TypedFnSignature* sig)
+    const chpl::resolution::ResolvedFunction* rfn)
   : Symbol(E_TemporaryConversionSymbol, "<conv>", nullptr),
-    symId(), sig(sig)
+    symId(), rfn(rfn)
 {
   gTemporaryConversionSymbols.add(this);
 }
@@ -1470,8 +1510,8 @@ void TemporaryConversionSymbol::verify() {
 TemporaryConversionSymbol*
 TemporaryConversionSymbol::copyInner(SymbolMap* map) {
   TemporaryConversionSymbol* copy = nullptr;
-  if (sig) {
-    copy = new TemporaryConversionSymbol(sig);
+  if (rfn) {
+    copy = new TemporaryConversionSymbol(rfn);
   } else {
     copy = new TemporaryConversionSymbol(symId);
   }
@@ -1787,20 +1827,8 @@ VarSymbol *new_CStringSymbol(const char *str) {
 
 
 VarSymbol* new_BoolSymbol(bool b) {
-  Immediate imm;
-  imm.v_bool = b;
-  imm.const_kind = NUM_KIND_BOOL;
-  imm.num_index = BOOL_SIZE_SYS;
-  VarSymbol *s;
-  // doesn't use uniqueConstantsHash because new_BoolSymbol is only
-  // called to initialize dtBools[i]->defaultValue.
   // gTrue and gFalse are set up directly in initPrimitiveTypes.
-  PrimitiveType* dtRetType = dtBool;
-  s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
-  rootModule->block->insertAtTail(new DefExpr(s));
-  s->immediate = new Immediate;
-  *s->immediate = imm;
-  return s;
+  return b ? gTrue : gFalse;
 }
 
 VarSymbol *new_IntSymbol(int64_t b, IF1_int_type size) {

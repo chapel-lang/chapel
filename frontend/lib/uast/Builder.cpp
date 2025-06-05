@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -32,6 +32,7 @@
 #include "chpl/parsing/parser-error.h"
 #include "chpl/uast/OpCall.h"
 #include "chpl/framework/query-impl.h"
+#include "chpl/util/filtering.h"
 
 #include <cstring>
 #include <string>
@@ -58,13 +59,13 @@ useConfigSetting(Context* context, std::string name, ID id) {
 // in command line
 static void
 generateConfigWarning(std::string varName, std::string kind,
-                      UniqueString message) {
+                      const std::string& message) {
   // TODO: Need proper message handling here
   std::string msg = "'" + varName + "' was set via a compiler flag";
-  if (message.isEmpty()) {
+  if (message.empty()) {
     std::cerr << "warning: " + varName + " is " + kind << std::endl;
   } else {
-    std::cerr << "warning: " + message.str() << std::endl;
+    std::cerr << "warning: " << message << std::endl;
   }
   std::cerr << "note: " + msg << std::endl;
 }
@@ -116,6 +117,20 @@ owned<Builder> Builder::createForIncludedModule(Context* context,
   auto uniqueFilename = UniqueString::get(context, filepath);
   auto b = new Builder(context, uniqueFilename, parentSymbolPath,
                        /* LibraryFile */ nullptr);
+  return toOwned(b);
+}
+
+owned<Builder> Builder::createForGeneratedCode(Context* context,
+                                               ID generatedFrom,
+                                               optional<int> overloadOffset) {
+  // Note: currently filePath only appears to be used when modules are
+  // involved, and generated uAST is currently expected to be a single
+  // top-level function. Locations will be set manually by caller.
+  auto uniqueFilename = UniqueString::get(context, "<dummy>");
+  auto b = new Builder(context, uniqueFilename, generatedFrom.symbolPath(),
+                       /* LibraryFile */ nullptr,
+                       /* isGenerated=*/true,
+                       overloadOffset);
   return toOwned(b);
 }
 
@@ -194,13 +209,23 @@ void Builder::deleteAdditionalLocation(AstLocMap& m, const AstNode* ast) {
 #include "chpl/uast/all-location-maps.h"
 #undef LOCATION_MAP
 
+void Builder::deleteAllLocations(const AstNode* ast) {
+  notedLocations_.erase(ast);
+  #define LOCATION_MAP(ast__, location__) \
+    CHPL_AST_LOC_MAP(ast__, location__).erase(ast);
+  #include "chpl/uast/all-location-maps.h"
+  #undef LOCATION_MAP
+}
+
 void Builder::noteSymbolTableSymbols(SymbolTableVec vec) {
   symbolTableVec_ = std::move(vec);
   expectSymbolTableVec_ = false;
 }
 
 BuilderResult Builder::result() {
-  this->createImplicitModuleIfNeeded();
+  if (isGenerated() == false) {
+    this->createImplicitModuleIfNeeded();
+  }
   this->assignIDs();
 
   // if we have a symbolTableVec, use it to compute
@@ -308,6 +333,42 @@ void Builder::createImplicitModuleIfNeeded() {
   }
 }
 
+UniqueString Builder::getNameForDecl(const AstNode* ast) {
+  // for scoping constructs, adjust the symbolPath and
+  // then visit the defined symbol
+  UniqueString declName;
+
+  if (auto nd = ast->toNamedDecl()) {
+    declName = nd->name();
+  } else if (ast->isExternBlock()) {
+    declName = UniqueString::get(context_, "-externblock");
+  }
+
+  // For anonymous functions, just use the 'kind' as the name.
+  if (auto fn = ast->toFunction()) {
+    if (fn->isAnonymous()) {
+      assert(declName.isEmpty());
+      auto str = Function::kindToString(fn->kind());
+      declName = UniqueString::get(context_, str);
+    }
+  }
+  return declName;
+}
+
+int Builder::getRepeatCount(declaredHereT& duplicates, UniqueString declName) {
+  int repeat = 0;
+  auto search = duplicates.find(declName);
+  if (search != duplicates.end()) {
+    // it's already there, so increment the repeat counter
+    repeat = search->second;
+    repeat++;
+    search->second = repeat;
+  } else {
+    duplicates.insert(search, std::make_pair(declName, 0));
+  }
+  return repeat;
+}
+
 void Builder::assignIDs() {
   pathVecT pathVec;
   declaredHereT duplicates;
@@ -319,9 +380,28 @@ void Builder::assignIDs() {
     pathVec = ID::expandSymbolPath(context_, startingSymbolPath_);
   }
 
+  if (topLevelRepeatOffset_) {
+    // this is a special way to get a builder that creates a numbered overload
+    // for a particular function when compler-generating AST. Thus,
+    // ensure we are marked as generated, and that there's only one symbol,
+    // whose offset we are now going to adjust.
+    CHPL_ASSERT(isGenerated());
+    CHPL_ASSERT(br.topLevelExpressions_.size() == 1);
+    int offsetVal = *topLevelRepeatOffset_;
+    CHPL_ASSERT(offsetVal > 0);
+
+    // repeatedly fetch the repeat count, which bumps the number in the duplicates
+    // map.
+    auto declName = getNameForDecl(br.topLevelExpressions_[0].get());
+    while (offsetVal-- > 0) {
+      getRepeatCount(duplicates, declName);
+    }
+  }
+
   for (auto const& ownedExpression: br.topLevelExpressions_) {
     AstNode* ast = ownedExpression.get();
-    if (ast->isModule() || ast->isComment()) {
+    bool isModuleOrComment = ast->isModule() || ast->isComment();
+    if (isGenerated() || isModuleOrComment) {
       UniqueString emptyString;
       doAssignIDs(ast, emptyString, i, commentIndex, pathVec, duplicates);
     } else {
@@ -405,35 +485,18 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
   bool newScope = Builder::astTagIndicatesNewIdScope(ast->tag());
 
   if (newScope) {
-    // for scoping constructs, adjust the symbolPath and
-    // then visit the defined symbol
-    UniqueString declName;
+    auto declName = getNameForDecl(ast);
 
-    if (auto nd = ast->toNamedDecl()) {
-      declName = nd->name();
-    } else if (ast->isExternBlock()) {
-      declName = UniqueString::get(context_, "-externblock");
+    // Assumption: doAssignIDs is invoked on top-level uAST with an empty
+    // string for the symbolPath. If the symbolPath is not empty, and this
+    // builder is for generated uAST, then we have violated the assumption that
+    // there is only one scope-defining symbol.
+    if (isGenerated() && !symbolPath.isEmpty()) {
+      CHPL_ASSERT(false && "generated uAST may not contain scope-defining "
+                           "symbols other than the top-level symbol");
     }
 
-    // For anonymous functions, just use the 'kind' as the name.
-    if (auto fn = ast->toFunction()) {
-      if (fn->isAnonymous()) {
-        assert(declName.isEmpty());
-        auto str = Function::kindToString(fn->kind());
-        declName = UniqueString::get(context_, str);
-      }
-    }
-
-    int repeat = 0;
-    auto search = duplicates.find(declName);
-    if (search != duplicates.end()) {
-      // it's already there, so increment the repeat counter
-      repeat = search->second;
-      repeat++;
-      search->second = repeat;
-    } else {
-      duplicates.insert(search, std::make_pair(declName, 0));
-    }
+    auto repeat = getRepeatCount(duplicates, declName);
 
     // compute an escaped version of the name
     // (in case it contains special characters used in ID like . and #)
@@ -470,7 +533,13 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
     }
 
     int numContainedIds = freshId;
-    ast->setID(ID(newSymbolPath, -1, numContainedIds));
+    ID id;
+    if (isGenerated()) {
+      id = ID::generatedId(newSymbolPath, -1, numContainedIds);
+    } else {
+      id = ID(newSymbolPath, -1, numContainedIds);
+    }
+    ast->setID(id);
 
     // Note: when creating a new symbol (e.g. fn), we're not incrementing i.
     // The new symbol ID has the updated path (e.g. function name)
@@ -491,10 +560,15 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
     }
 
     int afterChildID = i;
-    int myID = afterChildID;
     i++; // count the ID for the node we are currently visiting
     int numContainedIDs = afterChildID - firstChildID;
-    ast->setID(ID(symbolPath, myID, numContainedIDs));
+    ID id;
+    if (isGenerated()) {
+      id = ID::generatedId(symbolPath, afterChildID, numContainedIDs);
+    } else {
+      id = ID(symbolPath, afterChildID, numContainedIDs);
+    }
+    ast->setID(id);
   }
 
   // update idToAst_ for the visited AST node
@@ -580,11 +654,15 @@ Builder::lookupConfigSettingsForVar(Variable* var, pathVecT& pathVec,
       // found a config that was set via cmd line
       // handle deprecations/unstability
       if (auto attribs = var->attributeGroup()) {
-        if (attribs->isDeprecated())
-          generateConfigWarning(varName, "deprecated", attribs->deprecationMessage());
+        if (attribs->isDeprecated()) {
+          auto msg = removeSphinxMarkup(attribs->deprecationMessage());
+          generateConfigWarning(varName, "deprecated", msg);
+        }
         if (attribs->isUnstable() &&
-            isCompilerFlagSet(this->context(), CompilerFlags::WARN_UNSTABLE))
-          generateConfigWarning(varName, "unstable", attribs->unstableMessage());
+            isCompilerFlagSet(this->context(), CompilerFlags::WARN_UNSTABLE)) {
+          auto msg = removeSphinxMarkup(attribs->unstableMessage());
+          generateConfigWarning(varName, "unstable", msg);
+        }
       }
       if (!configMatched.first.empty() &&
           configMatched.first != configPair.first) {

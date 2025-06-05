@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -134,9 +134,13 @@ static TypeSymbol* expandTypeAlias(SymExpr* se);
 *                                                                             *
 ************************************** | *************************************/
 
+static bool shouldSkipNormalizing(BaseAST* ast) {
+  return ast->wasResolvedEarly();
+}
+
 static void handleSharedCArrays() {
-  forv_expanding_Vec(CallExpr, call, gCallExprs)
-   if (call->isPrimitive(PRIM_HOIST_TO_CONTEXT))
+  forv_expanding_Vec(CallExpr, call, gCallExprs) {
+    if (shouldSkipNormalizing(call)) continue;
 
     // The particular definition we expect is a default-init c_array, which is:
     //
@@ -144,27 +148,28 @@ static void handleSharedCArrays() {
     //    unknown call_tmp;
     //    call_tmp = c_array(t, k);
     //    __primitive("default init var", myArray, call_tmp);
-
-    if (DefExpr* hoistDefExpr = toSymExpr(call->get(2))->symbol()->defPoint)
-     if (DefExpr* typeDefExpr = toDefExpr(hoistDefExpr->next))
-      if (CallExpr* typeAssign = toCallExpr(typeDefExpr->next))
-       if (typeAssign->isPrimitive(PRIM_MOVE))
-        if (CallExpr* typeCall = toCallExpr(typeAssign->get(2)))
-         if (CallExpr* initCall = toCallExpr(typeAssign->next))
-          if (initCall->isPrimitive(PRIM_DEFAULT_INIT_VAR))
-           if (SymExpr* typeConstructor = toSymExpr(typeCall->baseExpr))
-            if (typeConstructor->symbol()->hasFlag(FLAG_C_ARRAY))
-   // if all the above conditions succeeded, add a shared variant
-   {
-    SET_LINENO(hoistDefExpr);
-    auto newBlock = new BlockStmt();
-    auto newArr = new VarSymbol(astr("shared_", hoistDefExpr->sym->name));
-    newArr->qual = Qualifier::QUAL_REF;
-    newBlock->insertAtTail(new DefExpr(newArr));
-    newBlock->insertAtTail(new CallExpr(PRIM_MOVE, newArr,
-                new CallExpr("createSharedCArray", typeDefExpr->sym)));
-    initCall->insertAfter(newBlock);
-   }
+    if (call->isPrimitive(PRIM_HOIST_TO_CONTEXT))
+     if (DefExpr* hoistDefExpr = toSymExpr(call->get(2))->symbol()->defPoint)
+      if (DefExpr* typeDefExpr = toDefExpr(hoistDefExpr->next))
+       if (CallExpr* typeAssign = toCallExpr(typeDefExpr->next))
+        if (typeAssign->isPrimitive(PRIM_MOVE))
+         if (CallExpr* typeCall = toCallExpr(typeAssign->get(2)))
+          if (CallExpr* initCall = toCallExpr(typeAssign->next))
+           if (initCall->isPrimitive(PRIM_DEFAULT_INIT_VAR))
+            if (SymExpr* typeConstructor = toSymExpr(typeCall->baseExpr))
+              if (typeConstructor->symbol()->hasFlag(FLAG_C_ARRAY)) {
+                SET_LINENO(hoistDefExpr);
+                auto newBlock = new BlockStmt();
+                auto newArr = new VarSymbol(astr("shared_",
+                                            hoistDefExpr->sym->name));
+                newArr->qual = Qualifier::QUAL_REF;
+                newBlock->insertAtTail(new DefExpr(newArr));
+                newBlock->insertAtTail(new CallExpr(PRIM_MOVE, newArr,
+                            new CallExpr("createSharedCArray",
+                                         typeDefExpr->sym)));
+                initCall->insertAfter(newBlock);
+              }
+  }
 }
 
 
@@ -185,6 +190,8 @@ void normalize() {
   checkReduceAssign();
 
   forv_Vec(AggregateType, at, gAggregateTypes) {
+    if (shouldSkipNormalizing(at)) continue;
+
     if (isClassWithInitializers(at)  == true ||
         isRecordOrUnionWithInitializers(at) == true) {
       preNormalizeFields(at);
@@ -194,6 +201,7 @@ void normalize() {
   }
 
   forv_expanding_Vec(FnSymbol, fn, gFnSymbols) {
+    if (shouldSkipNormalizing(fn)) continue;
 
     // Some functions can get removed by code in the loop - and if they
     // contain nested functions, then those functions will get removed
@@ -236,6 +244,8 @@ void normalize() {
     // function resolution to ensure that sync vars are in the correct
     // state (empty) if they are used but not assigned to anything.
     forv_Vec(SymExpr, se, gSymExprs) {
+      if (shouldSkipNormalizing(se)) continue;
+
       if (FnSymbol* parentFn = toFnSymbol(se->parentSymbol)) {
         if (se == se->getStmtExpr()) {
           // Don't add these calls for the return type, since
@@ -264,6 +274,8 @@ void normalize() {
 
   // perform some checks on destructors
   forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (shouldSkipNormalizing(fn)) continue;
+
     if (fn->hasFlag(FLAG_DESTRUCTOR)) {
       if (fn->formals.length           <  2 ||
           fn->getFormal(1)->typeInfo() != gMethodToken->typeInfo()) {
@@ -330,6 +342,8 @@ void normalize(Expr* expr) {
 
 static void preNormalizeHandleStaticVars() {
   forv_Vec(CallExpr, call, gCallExprs) {
+    if (shouldSkipNormalizing(call)) continue;
+
     if (call->isPrimitive(PRIM_STATIC_FUNCTION_VAR)) {
       SET_LINENO(call);
 
@@ -404,7 +418,7 @@ static void preNormalizeHandleStaticVars() {
       // Don't put the reset call into the function body right away because
       // at this time, myStaticVar is a non-global variable, so the function
       // is capturing it. We use the function as an FCF argument to
-      // 'executeStaticWraperCleanup', and capturing FCFs do not work. The
+      // 'executeStaticWrapperCleanup', and capturing FCFs do not work. The
       // relocation of the reset call will happen after the static variable has
       // been hoisted to the module level.
       //
@@ -464,6 +478,10 @@ static void preNormalizeHandleStaticVars() {
 static void insertModuleInit() {
   // Insert an init function into every module
   forv_Vec(ModuleSymbol, mod, allModules) {
+    if (mod->initFn != nullptr) {
+      continue;
+    }
+
     SET_LINENO(mod);
 
     mod->initFn          = new FnSymbol(astr("chpl__init_", mod->name));
@@ -657,14 +675,10 @@ static void transformLogicalShortCircuit() {
 
   // Collect the distinct stmts that contain logical AND/OR expressions
   for_alive_in_Vec(CallExpr, call, gCallExprs) {
-    if (call->primitive == 0) {
-      if (UnresolvedSymExpr* expr = toUnresolvedSymExpr(call->baseExpr)) {
-        if (strcmp(expr->unresolved, "&&") == 0 ||
-            strcmp(expr->unresolved, "||") == 0) {
-          // Don't normalize lifetime constraint clauses
-          if (isInLifetimeClause(call) == false)
-            stmts.insert(call->getStmtExpr());
-        }
+    if (TransformLogicalShortCircuit::shouldTransformCall(call)) {
+      // Don't normalize lifetime constraint clauses
+      if (isInLifetimeClause(call) == false) {
+        stmts.insert(call->getStmtExpr());
       }
     }
   }
@@ -736,6 +750,12 @@ static void insertCallTempsForRiSpecs(BaseAST* base) {
 
   for_vector(ForallStmt, fs, forallStmts) {
     for_shadow_vars(svar, temp, fs) {
+      if (svar->specBlock == nullptr)
+        continue;
+      // hoist the details, if any out of the ForallStmt
+      for (AList& sbody = svar->specBlock->body;
+           sbody.head != sbody.tail;
+           fs->insertBefore(sbody.head->remove()));
       if (CallExpr* specCall = toCallExpr(svar->reduceOpExpr())) {
         insertCallTempsWithStmt(specCall, fs);
       }
@@ -751,6 +771,8 @@ static void insertCallTempsForRiSpecs(BaseAST* base) {
 ************************************** | *************************************/
 
 static void normalizeBase(BaseAST* base, bool addEndOfStatements) {
+  if (shouldSkipNormalizing(base)) return;
+
   //
   // Phase 0
   //
@@ -1189,6 +1211,8 @@ static bool isInsideDefExpr(Expr* expr) {
 }
 
 void LowerIfExprVisitor::exitIfExpr(IfExpr* ife) {
+  if (shouldSkipNormalizing(ife)) return;
+
   if (isAlive(ife) == false) return;
   if (isInsideDefExpr(ife)) return;
   if (isLoopExpr(ife->parentExpr)) return;
@@ -1524,6 +1548,16 @@ static void insertDestructureStatements(Expr*     S1,
         S1->insertBefore(new CallExpr(PRIM_MOVE, lhsTmp, addrOf));
 
         S2->insertBefore(new CallExpr("=", lhsTmp, nextRHS));
+
+        if (SymExpr* orig = toSymExpr(expr)) {
+          if (SymExpr* origInit = toSymExpr(orig->symbol()->defPoint->init)) {
+            if (origInit->symbol() == gSplitInit) {
+              S2->insertBefore(new CallExpr(PRIM_SPLIT_INIT_UPDATE_TYPE,
+                                            orig->copy(),
+                                            new SymExpr(lhsTmp)));
+            }
+          }
+        }
       }
     }
     index = index + 1;
@@ -1766,7 +1800,7 @@ Expr* partOfNonNormalizableExpr(Expr* expr) {
       Expr* root = nullptr;
       if (call->isPrimitive(PRIM_RESOLVES) ||
 
-          // Static resolution calls are not normalizeable so that they
+          // Static resolution calls are not normalizable so that they
           // don't "spill" their call temps outside of the primitive call.
           // If they are "spilled", replacing the primitive with its result
           // will still leave behind the temps; normally these would be
@@ -1884,6 +1918,7 @@ static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret,
 
 static void normalizeReturns(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_NO_FN_BODY)) return;
+  if (shouldSkipNormalizing(fn)) return;
 
   SET_LINENO(fn);
 
@@ -2281,7 +2316,7 @@ static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret,
 static void fixPrimNew(CallExpr* primNewToFix);
 
 static bool isCallToConstructor(CallExpr* call) {
-  return call->isPrimitive(PRIM_NEW);
+  return isNewLike(call);
 }
 
 static void normalizeCallToConstructor(CallExpr* call) {
@@ -2768,7 +2803,7 @@ static bool shouldInsertCallTemps(CallExpr* call) {
 
       // Avoid normalizing the type expression in a new call, because
       // this gets handled later by fixPrimNew.
-      (parentCall && parentCall->isPrimitive(PRIM_NEW)
+      (parentCall && isNewLike(parentCall)
                   && parentCall->get(1) == call) )
     return false;
 

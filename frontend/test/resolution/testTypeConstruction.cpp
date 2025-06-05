@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -30,8 +30,7 @@
 
 static void test1() {
   printf("test1\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto m = parseModule(context, "var i: int;\n"
                                 "var i8: int(8);\n"
@@ -90,8 +89,7 @@ static void test1() {
 
 static void test2() {
   printf("test2\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto m = parseModule(context, "var b: bool;\n");
 
@@ -106,8 +104,7 @@ static void test2() {
 
 static void test3() {
   printf("test3\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto m = parseModule(context, "var r: real;\n"
                                 "var r32: real(32);\n"
@@ -187,7 +184,8 @@ parseTypeAndFieldsOfX(Context* context, const char* program) {
   assert(ct != nullptr);
 
   auto defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
-  const ResolvedFields& f = fieldsForTypeDecl(context, ct,
+  auto rc = createDummyRC(context);
+  const ResolvedFields& f = fieldsForTypeDecl(&rc, ct,
                                               defaultsPolicy);
 
   return std::make_pair(t, &f);
@@ -195,8 +193,7 @@ parseTypeAndFieldsOfX(Context* context, const char* program) {
 
 static void test4a() {
   printf("test4a\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context, "record R { var field: int; }\n"
                                  "var x: R;\n");
@@ -214,8 +211,7 @@ static void test4a() {
 
 static void test4b() {
   printf("test4b\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context, "record R { var field; }\n"
                                  "var x: R(int);\n");
@@ -233,8 +229,7 @@ static void test4b() {
 
 static void test5() {
   printf("test5\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context, "record R { type t; }\n"
                                  "var x: R(int);\n");
@@ -242,7 +237,8 @@ static void test5() {
   assert(rt);
   assert(rt->instantiatedFrom());
 
-  auto& initialFields = fieldsForTypeDecl(context,
+  auto rc = createDummyRC(context);
+  auto& initialFields = fieldsForTypeDecl(&rc,
                                           rt->instantiatedFrom(),
                                           DefaultsPolicy::IGNORE_DEFAULTS);
   assert(rt->instantiatedFrom()->instantiatedFrom() == nullptr);
@@ -264,8 +260,7 @@ static void test5() {
 
 static void test6() {
   printf("test6\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context, "record R { param p; }\n"
                                  "var x: R(1);\n");
@@ -284,8 +279,7 @@ static void test6() {
 
 static void test7() {
   printf("test7\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context, "record R { type t = int; }\n"
                                  "var x: R(real);\n");
@@ -303,8 +297,7 @@ static void test7() {
 
 static void test8() {
   printf("test8\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context, "record R { type t = int; }\n"
                                  "var x: R;\n");
@@ -322,8 +315,7 @@ static void test8() {
 
 static void test9() {
   printf("test9\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context, "record R { param p = 1; }\n"
                                  "var x: R(2);\n");
@@ -342,8 +334,7 @@ static void test9() {
 
 static void test10() {
   printf("test10\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context, "record R { param p = 1; }\n"
                                  "var x: R;\n");
@@ -362,8 +353,7 @@ static void test10() {
 
 static void test11() {
   printf("test11\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context, "record R { type t = int; }\n"
                                  "var x: R();\n");
@@ -381,8 +371,7 @@ static void test11() {
 
 static void test12() {
   printf("test12\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context, "record R { type t = int; }\n"
                                  "var x: R(?);\n");
@@ -400,8 +389,7 @@ static void test12() {
 
 static void test13() {
   printf("test13\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context, "record R { param p = 1; }\n"
                                  "var x: R();\n");
@@ -419,8 +407,7 @@ static void test13() {
 
 static void test14() {
   printf("test14\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context, "record R { param p = 1; }\n"
                                  "var x: R(?);\n");
@@ -439,8 +426,7 @@ static void test14() {
 
 static void test15() {
   printf("test15\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context, "class C { var field: int; }\n"
                                  "var x: C;\n");
@@ -464,8 +450,7 @@ static void test15() {
 
 static void test16() {
   printf("test16\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context, "class C { var field: int; }\n"
                                  "var x: C?;\n");
@@ -490,8 +475,7 @@ static void test16() {
 
 static void test17() {
   printf("test17\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context, "class C { var field: int; }\n"
                                  "var x: borrowed C;\n");
@@ -514,8 +498,7 @@ static void test17() {
 
 static void test18() {
   printf("test18\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context, "class C { var field: int; }\n"
                                  "var x: borrowed C?;\n");
@@ -538,8 +521,7 @@ static void test18() {
 
 static void test19() {
   printf("test19\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context, "class C { var field: int; }\n"
                                  "var x: unmanaged C;\n");
@@ -562,8 +544,7 @@ static void test19() {
 
 static void test20() {
   printf("test20\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context, "class C { var field: int; }\n"
                                  "var x: unmanaged C?;\n");
@@ -586,8 +567,7 @@ static void test20() {
 
 static void test21() {
   printf("test21\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context, "class C { var field: int; }\n"
                                  "var x: owned C;\n");
@@ -610,8 +590,7 @@ static void test21() {
 
 static void test22() {
   printf("test22\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context, "class C { var field: int; }\n"
                                  "var x: owned C?;\n");
@@ -634,8 +613,7 @@ static void test22() {
 
 static void test23() {
   printf("test23\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context, "class C { var field: int; }\n"
                                  "var x: shared C;\n");
@@ -658,8 +636,7 @@ static void test23() {
 
 static void test23q() {
   printf("test23q\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context, "class C { var field: int; }\n"
                                  "var x: shared C?;\n");
@@ -682,8 +659,7 @@ static void test23q() {
 
 static void test24() {
   printf("test24\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context, "class C { var field; }\n"
                                  "var x: C(int);\n");
@@ -706,8 +682,7 @@ static void test24() {
 
 static void test25() {
   printf("test25\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context, "class C { var field; }\n"
                                  "var x: C(int)?;\n");
@@ -730,8 +705,7 @@ static void test25() {
 
 static void test26() {
   printf("test26\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context, "class C { var field; }\n"
                                  "var x: borrowed C(int)?;\n");
@@ -754,8 +728,7 @@ static void test26() {
 
 static void test27() {
   printf("test27\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context, "class C { type t; }\n"
                                  "var x: owned C(int)?;\n");
@@ -778,8 +751,7 @@ static void test27() {
 
 static void test28() {
   printf("test28\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context, "class C { type t = int; }\n"
                                  "var x: C;\n");
@@ -802,8 +774,7 @@ static void test28() {
 
 static void test29() {
   printf("test29\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context, "class C { type t = int; }\n"
                                  "var x: C();\n");
@@ -826,8 +797,7 @@ static void test29() {
 
 static void test30() {
   printf("test30\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context, "class C { type t = int; }\n"
                                  "var x: borrowed C?;\n");
@@ -850,8 +820,7 @@ static void test30() {
 
 static void test31() {
   printf("test31\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context, "class C { type t = int; }\n"
                                  "var x: borrowed C()?;\n");
@@ -874,8 +843,7 @@ static void test31() {
 
 static void test32() {
   printf("test32\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context, "class C { type t = int; }\n"
                                  "var x: shared C(real)?;\n");
@@ -898,8 +866,7 @@ static void test32() {
 
 static void test33() {
   printf("test33\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context, "class C { type t = int; }\n"
                                  "var x: C(real)?;\n");
@@ -922,8 +889,7 @@ static void test33() {
 
 static void test34() {
   printf("test34\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context, "class C { type t = int; }\n"
                                  "var x: unmanaged C(real);\n");
@@ -950,8 +916,7 @@ static void test34() {
 // see issue #18817.
 static void testTypeAndFnSameName() {
   printf("testTypeAndFnSameName\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto m = parseModule(context, R""""(
                                   record R {
@@ -996,8 +961,7 @@ static void testTypeAndFnSameName() {
 
 static void test35() {
   printf("test35\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context,
                         R""""(
@@ -1045,8 +1009,7 @@ static void test35() {
 
 static void test36() {
   printf("test36\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context,
                         R""""(
@@ -1078,8 +1041,7 @@ static void test36() {
 
 static void test37() {
   printf("test37\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context,
                         R""""(
@@ -1114,8 +1076,7 @@ static void test37() {
 
 static void test38() {
   printf("test38\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context,
                         R""""(
@@ -1152,7 +1113,8 @@ static void test38() {
   assert(pct->parentClassType()->isObjectType());
   assert(pct->parentClassType() == BasicClassType::getRootClassType(context));
 
-  auto& parentFields = fieldsForTypeDecl(context, pct, DefaultsPolicy::IGNORE_DEFAULTS);
+  auto rc = createDummyRC(context);
+  auto& parentFields = fieldsForTypeDecl(&rc, pct, DefaultsPolicy::IGNORE_DEFAULTS);
   assert(parentFields.numFields() == 1);
   assert(parentFields.fieldName(0) == "parentField");
   assert(parentFields.fieldHasDefaultValue(0) == false);
@@ -1162,8 +1124,7 @@ static void test38() {
 
 static void test39() {
   printf("test39\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context,
                         R""""(
@@ -1192,8 +1153,7 @@ static void test39() {
 
 static void test40() {
   printf("test40\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context,
                         R""""(
@@ -1218,8 +1178,7 @@ static void test40() {
 
 static void test41() {
   printf("test41\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context,
                         R""""(
@@ -1252,8 +1211,7 @@ static void test41() {
 
 static void test42() {
   printf("test42\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context,
                         R""""(
@@ -1283,6 +1241,267 @@ static void test42() {
   assert(fields->fieldType(0).param() == IntParam::get(context, 1));
 }
 
+static void testRecursiveTypeConstructor() {
+  printf("testRecursiveTypeConstructor\n");
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto p = parseTypeAndFieldsOfX(context,
+      R"""(
+      class Node {
+        type eltType = int;
+        var data: eltType;
+        var next: unmanaged Node(eltType)?;
+      }
+      var x = new unmanaged Node(real, 3.14);
+      )""");
+
+  auto ct = p.first->toClassType();
+  assert(ct);
+  assert(ct->basicClassType());
+  assert(ct->basicClassType()->instantiatedFrom());
+
+  auto fields = p.second;
+  assert(fields);
+  assert(fields->numFields() == 3);
+  assert(fields->fieldName(0) == "eltType");
+  assert(fields->fieldHasDefaultValue(0) == true);
+  assert(fields->fieldType(0).kind() == QualifiedType::TYPE);
+  assert(fields->fieldType(0).type() == RealType::get(context, 0));
+  assert(fields->fieldName(1) == "data");
+  assert(fields->fieldHasDefaultValue(1) == false);
+  assert(fields->fieldType(1).kind() == QualifiedType::VAR);
+  assert(fields->fieldType(1).type() == RealType::get(context, 0));
+  assert(fields->fieldName(2) == "next");
+  assert(fields->fieldHasDefaultValue(2) == false);
+  assert(fields->fieldType(2).kind() == QualifiedType::VAR);
+  assert(fields->fieldType(2).type()->toClassType());
+  assert(fields->fieldType(2).type()->toClassType()->basicClassType() == ct->basicClassType());
+}
+
+static void testRecursiveTypeConstructorAlias() {
+  printf("testRecursiveTypeConstructorAlias\n");
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto p = parseTypeAndFieldsOfX(context,
+      R"""(
+      class Node {
+          type eltType = int;
+          var data: eltType;
+          var next: UnmanagedIntNode;
+      }
+      proc UnmanagedIntNode type do return unmanaged Node(int)?;
+      var x = new unmanaged Node(int, 314);
+      )""");
+
+  auto ct = p.first->toClassType();
+  assert(ct);
+  assert(ct->basicClassType());
+  assert(ct->basicClassType()->instantiatedFrom());
+
+  auto fields = p.second;
+  assert(fields);
+  assert(fields->numFields() == 3);
+  assert(fields->fieldName(0) == "eltType");
+  assert(fields->fieldHasDefaultValue(0) == true);
+  assert(fields->fieldType(0).kind() == QualifiedType::TYPE);
+  assert(fields->fieldType(0).type() == IntType::get(context, 0));
+  assert(fields->fieldName(1) == "data");
+  assert(fields->fieldHasDefaultValue(1) == false);
+  assert(fields->fieldType(1).kind() == QualifiedType::VAR);
+  assert(fields->fieldType(1).type() == IntType::get(context, 0));
+  assert(fields->fieldName(2) == "next");
+  assert(fields->fieldHasDefaultValue(2) == false);
+  assert(fields->fieldType(2).kind() == QualifiedType::VAR);
+  assert(fields->fieldType(2).type()->toClassType());
+  assert(fields->fieldType(2).type()->toClassType()->basicClassType() == ct->basicClassType());
+}
+
+static void testRecursiveTypeConstructorGeneric() {
+  printf("testRecursiveTypeConstructorGeneric\n");
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::ignore = resolveTypeOfXInit(context,
+      R"""(
+      class Node {
+          type eltType = int;
+          var data: eltType;
+          var next: Node(eltType)?;
+      }
+      var x = new unmanaged Node(int, 314);
+      )""", /* requireTypeKnown */ false);
+
+  bool foundError = false;
+  for (auto& err : guard.errors()) {
+    if (err->type() == ErrorType::MissingFormalInstantiation) {
+      foundError = true;
+      break;
+    }
+  }
+  assert(foundError);
+  assert(guard.realizeErrors() > 0);
+}
+
+static void testRecursiveTypeConstructorMutual() {
+  printf("testRecursiveTypeConstructorMutual\n");
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto p = parseTypeAndFieldsOfX(context,
+      R"""(
+      class MutA {
+        type eltType;
+        var data: eltType;
+        var next: owned MutB(eltType)?;
+      }
+
+      class MutB {
+        type eltType;
+        var data: eltType;
+        var next: owned MutA(eltType)?;
+      }
+
+      var x = new MutA(real, 3.14, new MutB(real, 2.71));
+      )""");
+
+  auto ctA = p.first->toClassType();
+  assert(ctA);
+  assert(ctA->basicClassType());
+  assert(ctA->basicClassType()->instantiatedFrom());
+
+  auto fieldsA = p.second;
+  assert(fieldsA);
+  assert(fieldsA->numFields() == 3);
+  assert(fieldsA->fieldName(0) == "eltType");
+  assert(fieldsA->fieldHasDefaultValue(0) == false);
+  assert(fieldsA->fieldType(0).kind() == QualifiedType::TYPE);
+  assert(fieldsA->fieldType(0).type() == RealType::get(context, 0));
+  assert(fieldsA->fieldName(1) == "data");
+  assert(fieldsA->fieldHasDefaultValue(1) == false);
+  assert(fieldsA->fieldType(1).kind() == QualifiedType::VAR);
+  assert(fieldsA->fieldType(1).type() == RealType::get(context, 0));
+  assert(fieldsA->fieldName(2) == "next");
+  assert(fieldsA->fieldHasDefaultValue(2) == false);
+  assert(fieldsA->fieldType(2).kind() == QualifiedType::VAR);
+  assert(fieldsA->fieldType(2).type()->toClassType());
+
+  auto ctB = fieldsA->fieldType(2).type()->toClassType();
+  assert(ctB);
+  assert(ctB->basicClassType());
+  assert(ctB->basicClassType()->instantiatedFrom());
+
+  auto defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
+  auto rc = createDummyRC(context);
+  const ResolvedFields& fieldsB = fieldsForTypeDecl(&rc, ctB->basicClassType(),
+                                                    defaultsPolicy);
+
+  assert(fieldsB.numFields() == 3);
+  assert(fieldsB.fieldName(0) == "eltType");
+  assert(fieldsB.fieldHasDefaultValue(0) == false);
+  assert(fieldsB.fieldType(0).kind() == QualifiedType::TYPE);
+  assert(fieldsB.fieldType(0).type() == RealType::get(context, 0));
+  assert(fieldsB.fieldName(1) == "data");
+  assert(fieldsB.fieldHasDefaultValue(1) == false);
+  assert(fieldsB.fieldType(1).kind() == QualifiedType::VAR);
+  assert(fieldsB.fieldType(1).type() == RealType::get(context, 0));
+  assert(fieldsB.fieldName(2) == "next");
+  assert(fieldsB.fieldHasDefaultValue(2) == false);
+  assert(fieldsB.fieldType(2).kind() == QualifiedType::VAR);
+  assert(fieldsB.fieldType(2).type()->toClassType());
+  assert(fieldsB.fieldType(2).type()->toClassType()->basicClassType() == ctA->basicClassType());
+}
+
+static void test43() {
+  printf("test43\n");
+  auto context = buildStdContext();
+  auto p = parseTypeAndFieldsOfX(context,
+                        R""""(
+                        class A {
+                          type TX;
+                          var x : TX;
+                        }
+
+                        class B : A {
+                          type TY;
+                          var y : TY;
+                        }
+
+                        var x : unmanaged B(int, real)?;
+                        )"""");
+
+  auto rt = p.first->toClassType();
+  assert(rt);
+  assert(rt->decorator().isUnmanaged());
+
+  auto fields = p.second;
+  assert(fields);
+  assert(fields->numFields() == 2);
+  assert(fields->fieldType(0).type()->isRealType());
+
+  auto parent = rt->basicClassType()->parentClassType();
+  auto pf = parent->substitutions();
+  assert(pf.size() == 1);
+  assert(pf.begin()->second.type()->isIntType());
+}
+
+static void test44() {
+  printf("test44\n");
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  // Test that symbols referred to in type constructors are visible, including:
+  // - types declared as a sibling to the type being constructed
+  // - types visible through a 'private use'
+  std::string program = R"""(
+  module M {
+    module Other {
+      enum color {red, green, blue}
+
+      class Parent {
+        param col : color;
+      }
+    }
+
+    private use Other;
+
+    enum coords {x, y};
+
+    class Child : Parent {
+      type T;
+      param p : coords;
+    }
+
+    // Type constructor should be able to see 'coords' and 'foobar'
+    var x : unmanaged Child(color.red, int, coords.x)?;
+    }
+    )""";
+
+  auto p = parseTypeAndFieldsOfX(context, program.c_str());
+
+  auto xt = p.first->toClassType();
+  assert(xt->decorator().isUnmanaged());
+  assert(xt->decorator().isNilable());
+
+  auto fields = p.second;
+  assert(fields);
+  assert(fields->numFields() == 2);
+  assert(fields->fieldType(0).type()->isIntType());
+
+  auto pt = fields->fieldType(1);
+  assert(pt.type()->isEnumType());
+  assert(pt.param()->isEnumParam());
+  auto param = pt.param()->toEnumParam();
+  assert(param->value().str == "x");
+
+
+  auto parent = xt->basicClassType()->parentClassType();
+  auto pf = parent->substitutions();
+  assert(pf.size() == 1);
+  assert(pf.begin()->second.type()->isEnumType());
+  assert(pf.begin()->second.param()->toEnumParam()->value().str == "red");
+}
 
 int main() {
   test1();
@@ -1330,6 +1549,12 @@ int main() {
   test40();
   test41();
   test42();
+  testRecursiveTypeConstructor();
+  testRecursiveTypeConstructorAlias();
+  testRecursiveTypeConstructorGeneric();
+  testRecursiveTypeConstructorMutual();
+  test43();
+  test44();
 
   return 0;
 }

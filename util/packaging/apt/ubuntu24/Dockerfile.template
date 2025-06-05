@@ -1,4 +1,4 @@
-FROM ubuntu:24.04 AS build
+@@{FROM}
 
 @@{ARGUMENTS}
 ARG DEBIAN_FRONTEND=noninteractive

@@ -1,0 +1,3 @@
+class IteratorDeinit {
+  iter deinit() {}
+}

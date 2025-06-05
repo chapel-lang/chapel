@@ -69,12 +69,15 @@ docs: FORCE
 	  echo " Try 'make frontend-docs'" ; \
 	fi
 
+docs-release: FORCE
+	$(MAKE) docs
+	cd html && rm versionButton.php && ln -s ../versionButton.php .
 
 man-chapel: FORCE
 	$(MAKE) man
 
 
-source: collect-syntax module-docs primers examples symlinks compiler-internals
+source: collect-syntax module-docs primers examples symlinks compiler-internals chplcheck-docs
 
 
 collect-syntax:
@@ -135,6 +138,11 @@ compiler-internals: FORCE
 	  ln -s ../meta/compiler-internals-no-doxygen "$(COMPILER_INTERNALS)" ; \
 	fi
 
+chplcheck-docs: FORCE
+	@echo
+	@echo "Generating docs for chplcheck"
+	@(cd ../tools/chplcheck && $(MAKE) chplcheck-docs)
+
 checkdocs: FORCE
 	$(MAKE) check
 
@@ -153,8 +161,9 @@ clean: clean-source clean-build clean-build-dir clean-doxygen clean-pycache FORC
 cleanall: clean-source clean-build clean-build-dir clean-doxygen clean-pycache FORCE
 
 clobber: clean-source clean-build clean-build-dir clean-doxygen clean-pycache FORCE
+	cd ../third-party/chpl-venv/ && make clobber
 
-clean-source: clean-module-docs clean-primers clean-examples clean-symlinks clean-collect-syntax clean-compiler-internals FORCE
+clean-source: clean-module-docs clean-primers clean-examples clean-symlinks clean-collect-syntax clean-compiler-internals clean-chplcheck-docs FORCE
 
 clean-build-dir: FORCE
 	rm -rf ../build/doc
@@ -196,6 +205,9 @@ clean-doxygen: FORCE
 clean-pycache: FORCE
 	rm -rf util/__pycache__
 	rm -rf $(SOURCEDIR)/__pycache__
+
+clean-chplcheck-docs: FORCE
+	cd ../tools/chplcheck && $(MAKE) clean-chplcheck-docs
 
 FORCE:
 

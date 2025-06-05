@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -59,6 +59,7 @@ static int reservedCore = -1;
 static chpl_bool defer_gasnet_progress_threads = false;
 
 static gasnet_seginfo_t* seginfo_table = NULL;
+static uintptr_t segsize_request;
 static gex_Client_t      myclient;
 static gex_EP_t          myep;
 static gex_TM_t          myteam;
@@ -147,9 +148,9 @@ void* get_ptr_from_args(gasnet_handlerarg_t a0, gasnet_handlerarg_t a1 )
 // of an AM handler.)
 //
 typedef struct {
-  atomic_uint_least32_t count;
-  uint_least32_t        target;
-  volatile int          flag;
+  chpl_atomic_uint_least32_t count;
+  uint_least32_t             target;
+  volatile int               flag;
 } done_t;
 
 //
@@ -501,7 +502,7 @@ static void AM_signal(gasnet_token_t token, gasnet_handlerarg_t a0, gasnet_handl
   done_t* done = (done_t*) get_ptr_from_args(a0, a1);
   uint_least32_t prev;
   prev = atomic_fetch_add_explicit_uint_least32_t(&done->count, 1,
-                                                  memory_order_seq_cst);
+                                                  chpl_memory_order_seq_cst);
   if (prev + 1 == done->target)
     done->flag = 1;
 }
@@ -511,7 +512,7 @@ static void AM_signal_long(gasnet_token_t token, void *buf, size_t nbytes,
   done_t* done = (done_t*) get_ptr_from_args(a0, a1);
   uint_least32_t prev;
   prev = atomic_fetch_add_explicit_uint_least32_t(&done->count, 1,
-                                                  memory_order_seq_cst);
+                                                  chpl_memory_order_seq_cst);
   if (prev + 1 == done->target)
     done->flag = 1;
 }
@@ -685,6 +686,8 @@ int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
   return gex_Event_TestSome((gex_Event_t*) h, nhandles, GEX_NO_FLAGS) == GASNET_OK;
 }
 
+void chpl_comm_free_nb_handle(chpl_comm_nb_handle_t h) { }
+
 // TODO GEX could be scalable query to gasnet itself
 int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
 {
@@ -712,7 +715,15 @@ int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
 
 
 int32_t chpl_comm_getMaxThreads(void) {
-  return GASNETI_MAX_THREADS-1;
+  uint64_t maxGasnetThreads = gex_System_QueryMaxThreads();
+  if (maxGasnetThreads > INT32_MAX) {
+    if (chpl_nodeID == 0) {
+      chpl_warning("GASNet's maximum number of threads exceeds Chapel's "
+                   "'int32_t' value, so capping it at INT32_MAX.", 0, 0);
+    }
+    maxGasnetThreads = INT32_MAX;
+  }
+  return maxGasnetThreads - 1; // reserve one thread for the primordial thread
 }
 
 //
@@ -728,7 +739,7 @@ int32_t chpl_comm_getMaxThreads(void) {
 static volatile int pollingRunning;
 static volatile int pollingQuit;
 static chpl_bool pollingRequired = false;
-static atomic_spinlock_t pollingLock;
+static chpl_atomic_spinlock_t pollingLock;
 static chpl_bool pshmInUse = false;
 static chpl_bool haveSendThread = false;
 static chpl_bool haveReceiveThread = false;
@@ -884,8 +895,12 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   // For configurations that register a fixed heap at startup use a gasnet hook
   // to allow us to fault and interleave in the memory in parallel for faster
   // startup and better NUMA affinity.
-#if defined(GASNET_CONDUIT_IBV) || defined(GASNET_CONDUIT_UCX) || defined(GASNET_CONDUIT_ARIES) || defined(GASNET_CONDUIT_OFI)
+#if defined(GASNET_CONDUIT_IBV)
 #if defined(GASNET_SEGMENT_FAST)
+  gasnet_client_attach_hook = &chpl_comm_regMemHeapTouch;
+#endif
+#elif defined(GASNET_CONDUIT_UCX) || defined(GASNET_CONDUIT_ARIES) || defined(GASNET_CONDUIT_OFI)
+#if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
   gasnet_client_attach_hook = &chpl_comm_regMemHeapTouch;
 #endif
 #endif
@@ -919,7 +934,13 @@ void chpl_comm_pre_mem_init(void) {
   if (chpl_env_rt_get_bool("COMM_GASNET_DEDICATED_PROGRESS_CORE", false)) {
     reservedCore = chpl_topo_reserveCPUPhysical();
   }
-  GASNET_Safe(gex_Segment_Attach(&mysegment, myteam, gasnet_getMaxLocalSegmentSize()));
+
+  // Allocate and establish the GASNet shared memory segment
+  // TODO: Should Chapel unconditionally request the largest available segment?
+  segsize_request = gasnet_getMaxLocalSegmentSize();
+  GASNET_Safe(gex_Segment_Attach(&mysegment, myteam, segsize_request));
+
+  // Register AM handlers
   GASNET_Safe(gex_EP_RegisterHandlers(myep, ftable, sizeof(ftable)/sizeof(gex_AM_Entry_t)));
 
   seginfo_table = (gasnet_seginfo_t*)sys_malloc(chpl_numNodes*sizeof(gasnet_seginfo_t));
@@ -1027,6 +1048,25 @@ void chpl_comm_post_task_init(void) {
       printf("GASNet send progress thread is %s.\n", haveSendThread ?
              "enabled" : "disabled");
     }
+  }
+  if (verbosity >= 2) { // print segment size information for each locale
+  #if GASNET_SEGMENT_EVERYTHING
+    if (!chpl_nodeID) {
+      printf("GASNet segment everything.\n");
+    }
+  #else
+    char size_str[80], request_str[80];
+    uintptr_t size = gex_Segment_QuerySize(mysegment);
+    gasnett_format_number(size, size_str, sizeof(size_str), 1);
+    if (size < segsize_request) { // we got less than we asked for
+      const char *prefix = " (requested ";
+      strcpy(request_str, prefix);
+      gasnett_format_number(segsize_request, request_str+strlen(prefix),
+                            sizeof(request_str)-strlen(prefix)-1, 1);
+      strcat(request_str, ")");
+    } else request_str[0] = '\0';
+    printf("%i: GASNet segment size: %s%s\n", chpl_nodeID, size_str, request_str);
+  #endif
   }
 }
 

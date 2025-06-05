@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -54,7 +54,7 @@ static const bool doPrintDebugInfo = false;
   do { \
     if (sym__->id == breakOnId1 || sym__->id == breakOnId2 || \
         sym__->id == breakOnId3) { \
-      gdbShouldBreakHere(); \
+      debuggerBreakHere(); \
     } \
   } while (0)
 
@@ -875,7 +875,7 @@ void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst) {
         if (formal->intent == INTENT_REF) {
           Type* vt = formal->getValType();
           if (vt->scalarPromotionType == NULL &&
-              !(isAtomicType(vt) || isSyncType(vt) || isSingleType(vt)) &&
+              !(isAtomicType(vt) || isSyncType(vt)) &&
               !formal->hasFlag(FLAG_ERROR_VARIABLE)) {
             if (formal == fn->_this)
               USR_FATAL_CONT(fn, "Racy promotion of scalar method receiver");

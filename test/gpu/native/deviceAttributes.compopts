@@ -1,0 +1,15 @@
+#!/usr/bin/env python3
+
+import os
+
+chpl_gpu = os.getenv('CHPL_GPU')
+
+res = 'deviceAttributes.h'
+if chpl_gpu == 'amd':
+  res += ' deviceAttributes.hip.c'
+elif chpl_gpu == 'nvidia':
+  res += ' deviceAttributes.cuda.c'
+elif chpl_gpu == 'cpu':
+  res += ' deviceAttributes.cpu.c'
+
+print(res)

@@ -1,4 +1,4 @@
-use LayoutCS;
+use CompressedSparseLayout;
 
 var baseDom1D = {1..10};
 var baseDom2D = {1..10, 1..10};
@@ -21,13 +21,13 @@ var baseDom2D = {1..10, 1..10};
 }
 
 {
-  var csrDom: sparse subdomain(baseDom2D) dmapped new dmap(new CS());
+  var csrDom: sparse subdomain(baseDom2D) dmapped new csrLayout();
   csrDom += [(1,1),(2,2)];
   test(csrDom, "CSR");
 }
 
 {
-  var cscDom: sparse subdomain(baseDom2D) dmapped new dmap(new CS(compressRows=false));
+  var cscDom: sparse subdomain(baseDom2D) dmapped new cscLayout();
   cscDom += [(1,1),(2,2)];
   test(cscDom, "CSC");
 }

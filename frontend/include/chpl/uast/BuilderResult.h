@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -159,8 +159,10 @@ class BuilderResult final {
  public:
   /** Construct an empty BuilderResult */
   BuilderResult();
-  /** Construct a BuilderResult that records a particular file path,
-      and optionally refers to a LibraryFile. */
+  /** Construct a BuilderResult that records a particular file path.
+      Optional arguments include:
+        - a LibraryFile to refer to in place of a file
+      */
   BuilderResult(UniqueString filePath,
                 const libraries::LibraryFile* lib = nullptr);
 

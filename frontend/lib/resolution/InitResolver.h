@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -20,6 +20,7 @@
 #ifndef CHPL_LIB_RESOLUTION_INIT_RESOLVER_H
 #define CHPL_LIB_RESOLUTION_INIT_RESOLVER_H
 
+#include "chpl/framework/ErrorBase.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/resolution-types.h"
@@ -34,8 +35,6 @@ namespace resolution {
 struct Resolver;
 
 class InitResolver {
-  using NameVec = std::vector<BorrowedIdsWithName>;
-
   // Used over 'ResolutionResultsByPostorderID' due to additional fields.
   struct FieldInitState {
     int ordinalPos = -1;
@@ -43,7 +42,6 @@ class InitResolver {
     types::QualifiedType qt;
     UniqueString name;
     bool isInitialized;
-    FieldInitState() = default;
   };
 
   enum Phase {
@@ -56,6 +54,7 @@ class InitResolver {
   Resolver& initResolver_;
   const uast::Function* fn_;
   const types::Type* initialRecvType_;
+  const uast::AggregateDecl* aggregateDecl_;
 
   std::map<ID, FieldInitState> fieldToInitState_;
   std::vector<ID> fieldIdsByOrdinal_;
@@ -65,6 +64,20 @@ class InitResolver {
   bool isDescendingIntoAssignment_ = false;
   const types::Type* currentRecvType_ = initialRecvType_;
 
+  const types::BasicClassType* superType_ = nullptr;
+
+  bool explicitSuperInit = false;
+
+  // Uses of parent fields before a super.init is seen.
+  // Stores field ID and ID of the uAST referencing the field.
+  std::vector<std::pair<ID, ID>> useOfSuperFields_;
+  // These errors are captured but deferred until we know we haven't found
+  // a "real" super.init call.
+  std::vector<owned<ErrorBase>> errorsFromImplicitSuperInit;
+
+  //initialization points to guide handling `=` operators
+  std::set<const uast::AstNode*> initPoints;
+
   InitResolver(Context* ctx, Resolver& visitor,
                const uast::Function* fn,
                const types::Type* recvType)
@@ -72,6 +85,8 @@ class InitResolver {
         initResolver_(visitor),
         fn_(fn),
         initialRecvType_(recvType) {
+    auto typeID = initialRecvType_->getCompositeType()->id();
+    aggregateDecl_ = parsing::idToAst(ctx_, typeID)->toAggregateDecl();
     return;
   }
 
@@ -99,17 +114,20 @@ class InitResolver {
   FieldInitState* fieldStateFromId(ID id);
   FieldInitState* fieldStateFromIndex(int idx);
   bool isMentionOfNodeInLhsOfAssign(const uast::AstNode* node);
-  ID fieldIdFromName(UniqueString name);
-  ID fieldIdFromPossibleMentionOfField(const uast::AstNode* node);
+  std::pair<ID,bool> fieldIdFromPossibleMentionOfField(const uast::AstNode* node);
   bool isFieldInitialized(ID fieldId);
 
   // handle a call to this.complete() or init this.
   void handleInitMarker(const uast::AstNode* node);
   bool handleCallToThisComplete(const uast::FnCall* node);
+
   bool handleCallToSuperInit(const uast::FnCall* node, const CallResolutionResult* c);
+  void resolveImplicitSuperInit();
+  void updateSuperType(const CallResolutionResult* c);
+
   bool handleCallToInit(const uast::FnCall* node, const CallResolutionResult* c);
   bool handleAssignmentToField(const uast::OpCall* node);
-  ID solveNameConflictByIgnoringField(const NameVec& vec);
+  ID solveNameConflictByIgnoringField(const MatchingIdsWithName& vec);
 
   static Phase getMaxPhase(Phase A, Phase B);
   void copyState(InitResolver& other);
@@ -138,14 +156,13 @@ public:
   // Called in exit for dot expressions and identifiers.
   bool handleUseOfField(const uast::AstNode* node);
 
-  // Called on entry for dot expressions and identifiers.
-  bool handleResolvingFieldAccess(const uast::Identifier* node);
-  bool handleResolvingFieldAccess(const uast::Dot* node);
-
   // Called to produce the final function signature.
   const TypedFnSignature* finalize(void);
 
   void checkEarlyReturn(const uast::Return* ret);
+
+  // Returns true if the AST node is an initialization point
+  bool isInitPoint(const uast::AstNode* node);
 };
 
 } // end namespace resolution

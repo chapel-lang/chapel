@@ -37,7 +37,7 @@ CHPL_HOME
 
     .. code-block:: sh
 
-        export CHPL_HOME=~/chapel-2.1.0
+        export CHPL_HOME=~/chapel-2.5.0
 
    .. note::
      This, and all other examples in the Chapel documentation, assumes you're
@@ -106,6 +106,7 @@ CHPL_HOST_PLATFORM
         cray-xc      Cray XC\ |trade|
         hpe-cray-ex  HPE Cray EX
         hpe-apollo   HPE Apollo
+        hpe-cray-xd  HPE Cray XD
         ===========  ==================================
 
    Platform-specific documentation is available for most of these platforms in
@@ -488,6 +489,11 @@ CHPL_COMM
 
 CHPL_MEM
 ~~~~~~~~
+
+   .. warning::
+
+      ``CHPL_MEM`` has been deprecated and renamed to :ref:`readme-chplenv.CHPL_TARGET_MEM`
+
    Optionally, the ``CHPL_MEM`` environment variable can be used to select
    a memory management layer.  Current options are:
 
@@ -496,13 +502,37 @@ CHPL_MEM
         ========= =======================================================
         cstdlib   use the standard C malloc/free commands
         jemalloc  use Jason Evan's memory allocator
+        mimalloc  use the mimalloc memory allocator
         ========= =======================================================
 
    If unset, ``CHPL_MEM`` defaults to ``jemalloc`` for most configurations.
    If the target platform is ``cygwin*`` it defaults to ``cstdlib``
 
-   ``CHPL_TARGET_MEM`` will be replacing ``CHPL_MEM`` in the
-   future. ``CHPL_TARGET_MEM`` takes precedence over ``CHPL_MEM``.
+   .. note::
+     Certain ``CHPL_COMM`` settings (e.g. ugni, gasnet segment fast/large,
+     ofi with the gni provider) register the heap to improve communication
+     performance.  Registering the heap requires special allocator support
+     that not all allocators provide.  Currently only ``jemalloc`` is capable
+     of supporting configurations that require a registered heap.
+
+.. _readme-chplenv.CHPL_TARGET_MEM:
+
+CHPL_TARGET_MEM
+~~~~~~~~~~~~~~~
+
+   Optionally, the ``CHPL_TARGET_MEM`` environment variable can be used to select
+   a memory management layer.  Current options are:
+
+        ========= =======================================================
+        Value     Description
+        ========= =======================================================
+        cstdlib   use the standard C malloc/free commands
+        jemalloc  use Jason Evan's memory allocator
+        mimalloc  use the mimalloc memory allocator
+        ========= =======================================================
+
+   If unset, ``CHPL_TARGET_MEM`` defaults to ``jemalloc`` for most configurations.
+   If the target platform is ``cygwin*`` it defaults to ``cstdlib``
 
    .. note::
      Certain ``CHPL_COMM`` settings (e.g. ugni, gasnet segment fast/large,
@@ -544,6 +574,7 @@ CHPL_HOST_MEM
         ========= =======================================================
         cstdlib   use the standard C malloc/free commands
         jemalloc  use Jason Evan's memory allocator
+        mimalloc  use the mimalloc memory allocator
         ========= =======================================================
 
    If unset, ``CHPL_HOST_MEM`` defaults to ``jemalloc`` everywhere except
@@ -617,6 +648,32 @@ CHPL_ATOMICS
    .. warning::
 
      Using ``CHPL_ATOMICS=intrinsics`` is a known performance issue. Please consider using ``CHPL_ATOMICS=cstdlib`` for better performance, if possible. If not, please open an issue on GitHub.
+
+
+.. _readme-chplenv.CHPL_NETWORK_ATOMICS:
+
+CHPL_NETWORK_ATOMICS
+~~~~~~~~~~~~~~~~~~~~
+   Optionally, the ``CHPL_NETWORK_ATOMICS`` environment variable can be used
+   to select whether atomic operations are performed by the network or the
+   processor. This is only applicable when ``CHPL_COMM != none`` and only for
+   networks that support atomic operations. If ``CHPL_NETWORK_ATOMICS=none``
+   then atomics are implemented using active messages and processor atomics,
+   otherwise ``CHPL_NETWORK_ATOMICS`` must have the same value as
+   ``CHPL_COMM``. Note that with ``CHPL_NETWORK_ATOMICS=ofi`` support for
+   network atomics is provider-specific, and the provider is selected at
+   runtime. If the selected provider does not support network atomics then
+   atomics will be implemeted using active messages and processor atomics.
+
+   Current options are:
+
+        ======  ==============================================================
+        Value   Description
+        ======  ==============================================================
+        none    implement atomics using active messages and processor atomics
+        ofi     use network atomics if supported by the provider
+        ugni    use network atomics
+        ======  ==============================================================
 
 .. _readme-chplenv.CHPL_TIMERS:
 
@@ -860,6 +917,54 @@ CHPL_LLVM_GCC_PREFIX
    ``--gcc-toolchain`` flag; or you can set it to a particular directory
    to pass to ``clang`` with the ``--gcc-toolchain`` flag.
 
+   Please note that, on some systems, it's possible to install multiple
+   versions of gcc to ``/usr``. In that event, ``CHPL_LLVM_GCC_PREFIX``
+   and ``--gcc-toolchain`` cannot distinguish between these multiple versions.
+   Use the next option, ``CHPL_LLVM_GCC_INSTALL_DIR``, instead for such
+   cases.
+
+.. _readme-chplenv.CHPL_LLVM_GCC_INSTALL_DIR:
+
+CHPL_LLVM_GCC_INSTALL_DIR
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Sometimes it's necessary to request that ``clang`` work with a
+   particular version of GCC. If many versions are installed at the same
+   prefix (e.g. ``/usr``) then ``CHPL_LLVM_GCC_PREFIX`` won't be able to
+   differentiate between them. The Chapel compiler tries to infer
+   this flag based upon the ``gcc`` currently available in your ``PATH``
+   but sometimes that strategy does not work. That is where
+   ``CHPL_LLVM_GCC_INSTALL_DIR`` comes in!
+
+   To understand what to set ``CHPL_LLVM_GCC_INSTALL_DIR`` to in such
+   cases, try a test compile:
+
+      * ``echo int main() { return 0; } > hello.cc``
+      * ``clang++ -v hello.cc``
+
+   This will print out lines along these lines::
+
+      Found candidate GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/11
+      Found candidate GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/12
+      Found candidate GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/13
+      Found candidate GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/14
+      Selected GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/14
+
+   The paths printed here are suitable for use with
+   ``CHPL_LLVM_GCC_INSTALL_DIR``. Choose the path that corresponds to the
+   ``g++`` version that you are trying to use. If you are not sure which
+   ``g++`` version to use -- the version that comes with your system is a
+   good starting point. You can use
+   ``/usr/bin/g++ --version`` or just ``g++ --version`` to find that
+   version.
+
+   .. note::
+
+      ``CHPL_LLVM_GCC_INSTALL_DIR`` works with the clang flag
+      ``--gcc-install-dir`` which was added in LLVM / clang 16. As a
+      result, ``CHPL_LLVM_GCC_INSTALL_DIR`` will not work for earlier
+      versions of LLVM / clang.
+
 .. _readme-chplenv.CHPL_UNWIND:
 
 CHPL_UNWIND
@@ -876,6 +981,11 @@ CHPL_UNWIND
        ========= =======================================================
 
    If unset, ``CHPL_UNWIND`` defaults to ``none``
+
+   .. note::
+
+      At present, ``CHPL_UWIND=bundled`` does not work on Mac OS X.
+      ``CHPL_UNWIND=system`` should be used instead on that system.
 
 .. _readme-chplenv.CHPL_LIB_PIC:
 
@@ -1034,15 +1144,22 @@ Chapel configuration file is found, the definitions of that file are used.
     The ``$CHPL_CONFIG`` variable is the path to the *enclosing*
     directory - not the full path including ``chplconfig`` itself.
 
+.. note::
+
+   In a prefix install, a ``chplconfig`` file is installed in ``$CHPL_HOME``.
+   See :ref:`readme-installing`.
+
 Variable Priority
 ~~~~~~~~~~~~~~~~~
 
 Variable precedence goes in the following order:
 
-1. Explicit compiler flags: ``chpl --env=value``
-2. Environment variables: ``CHPL_ENV=value``
-3. Chapel configuration file: ``~/.chplconfig``
-4. Inferred environment variables: ``printchplenv``
+1. Explicit compiler flags specified as ``chpl --env=value```
+2. Environment variables set by the user (``export CHPL_ENV=value`` or
+   ``CHPL_ENV=value chpl ...``)
+3. Chapel configuration file settings from a ``chplconfig`` file, as described
+   above
+4. Inferred environment variables from ``printchplenv``
 
 
 .. |trade|  unicode:: U+02122 .. TRADE MARK SIGN

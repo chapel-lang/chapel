@@ -1,0 +1,3 @@
+assertOnNotGpuEligible.chpl:39: error: Loop is marked with @gpu.assertEligible but is not eligible for execution on a GPU
+assertOnNotGpuEligible.chpl:12: note: called function has outer var access
+assertOnNotGpuEligible.chpl:40: note:   reached via call to 'usesOutsideVar' in loop body here

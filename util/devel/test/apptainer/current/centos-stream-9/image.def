@@ -6,8 +6,8 @@ From: quay.io/centos/centos:stream9
 
 %post
     /provision-scripts/dnf-deps.sh
-    # installing llvm-devel installs LLVM 17
-    /provision-scripts/dnf-llvm-16.sh
+    # installing llvm-devel installs LLVM 18
+    /provision-scripts/dnf-llvm.sh
 
 %runscript
     ../../provision-scripts/run.sh "$@"

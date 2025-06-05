@@ -1,0 +1,2 @@
+-j 4
+--parallel-make 4

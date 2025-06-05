@@ -1,4 +1,4 @@
-use GPU;
+use GPU, ChplConfig;
 
 config param withLoc = false;
 
@@ -14,8 +14,7 @@ config var setIdx = n-1;
 // 2. times out testing if we use CPU-based reduction, especially if it is a
 //    fallback.
 // So, override n/setIdx to be something smaller
-extern proc chpl_gpu_can_reduce(): bool;
-if !chpl_gpu_can_reduce() {
+if CHPL_GPU=="cpu" {
   n = 100;
   setIdx = n-1;
 }

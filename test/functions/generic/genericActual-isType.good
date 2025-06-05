@@ -1,2 +1,2 @@
-heap(int(64),ReverseComparator)
+heap(int(64),reverseComparator)
 ()

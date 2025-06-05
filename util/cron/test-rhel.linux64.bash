@@ -2,9 +2,9 @@
 #
 # Test default configuration against examples on RHEL linux64 system.
 
-CWD=$(cd $(dirname $0) ; pwd)
-source $CWD/common.bash
+UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+source $UTIL_CRON_DIR/common.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="rhel.linux64"
 
-$CWD/nightly -cron -examples
+$UTIL_CRON_DIR/nightly -cron -examples

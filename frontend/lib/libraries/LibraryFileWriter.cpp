@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -21,10 +21,7 @@
 
 #include "chpl/libraries/LibraryFileFormat.h"
 #include "chpl/parsing/parsing-queries.h"
-#include "chpl/uast/Include.h"
-#include "chpl/uast/MultiDecl.h"
-#include "chpl/uast/NamedDecl.h"
-#include "chpl/uast/TupleDecl.h"
+#include "chpl/uast/all-uast.h"
 #include "chpl/util/filesystem.h"
 #include "chpl/util/version-info.h"
 

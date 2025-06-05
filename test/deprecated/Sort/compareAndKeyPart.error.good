@@ -1,0 +1,1 @@
+compareAndKeyPart.chpl:29: error: The keyPart method in R2 must return a tuple with element 0 of type keyPartStatus when used with int(64) elements

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -141,7 +141,9 @@ pragma "atomic module"
 module Atomics {
 
   use ChapelBase;
+  use CTypes;
   public use MemConsistency;  // OK: to get and propagate memoryOrder
+  import AutoMath;
 
   pragma "local fn" pragma "fast-on safe extern function"
   extern proc chpl_atomic_thread_fence(order:memory_order);
@@ -160,27 +162,33 @@ module Atomics {
     atomic_fence(c_memory_order(order));
   }
 
-  private proc isSupported(type valType) param {
-    return valType == bool || isInt(valType) || isUint(valType) || isReal(valType);
+  proc isSupportedType(type valType) param {
+    return valType == bool    ||
+           isInt(valType)     ||
+           isUint(valType)    ||
+           isAnyCPtr(valType) ||
+           isReal(valType);
   }
 
   // Compute the C/Runtime type from the Chapel type
-  // TODO support extern type renaming?
   private proc externT(type valType) type {
-    extern type atomic_bool;
+    extern "chpl_atomic_bool" type atomic_bool;
 
-    extern type atomic_int_least8_t;
-    extern type atomic_int_least16_t;
-    extern type atomic_int_least32_t;
-    extern type atomic_int_least64_t;
+    extern "chpl_atomic_int_least8_t" type atomic_int_least8_t;
+    extern "chpl_atomic_int_least16_t" type atomic_int_least16_t;
+    extern "chpl_atomic_int_least32_t" type atomic_int_least32_t;
+    extern "chpl_atomic_int_least64_t" type atomic_int_least64_t;
 
-    extern type atomic_uint_least8_t;
-    extern type atomic_uint_least16_t;
-    extern type atomic_uint_least32_t;
-    extern type atomic_uint_least64_t;
+    extern "chpl_atomic_uint_least8_t" type atomic_uint_least8_t;
+    extern "chpl_atomic_uint_least16_t" type atomic_uint_least16_t;
+    extern "chpl_atomic_uint_least32_t" type atomic_uint_least32_t;
+    extern "chpl_atomic_uint_least64_t" type atomic_uint_least64_t;
 
-    extern type atomic__real64;
-    extern type atomic__real32;
+    extern "chpl_atomic__real64" type atomic__real64;
+    extern "chpl_atomic__real32" type atomic__real32;
+    extern "chpl_atomic_uintptr_t" type atomic_uintptr_t;
+
+    if isAnyCPtr(valType) then return atomic_uintptr_t;
 
     select valType {
       when bool     do return atomic_bool;
@@ -198,6 +206,9 @@ module Atomics {
       when real(32) do return atomic__real32;
       when real(64) do return atomic__real64;
     }
+
+    compilerError('Should not reach here!');
+    return nothing;
   }
 
   private proc externTString(type valType) param {
@@ -205,6 +216,7 @@ module Atomics {
     if isInt(valType)  then return "int_least"  + numBits(valType):string + "_t";
     if isUint(valType) then return "uint_least" + numBits(valType):string + "_t";
     if isReal(valType) then return "_real"      + numBits(valType):string;
+    if isPointerType(valType) then return "uintptr_t";
   }
 
   private proc externFunc(param s: string, type valType, param explicit=true) param {
@@ -214,7 +226,7 @@ module Atomics {
 
   proc chpl__processorAtomicType(type valType) type {
     if valType == bool           then return AtomicBool;
-    else if isSupported(valType) then return AtomicT(valType);
+    else if isSupportedType(valType) then return AtomicT(valType);
     else compilerError("Unsupported atomic type: " + valType:string);
   }
 
@@ -740,6 +752,42 @@ module Atomics {
         proc atomic_fetch_xor(ref obj:externT(valType), operand:valType, order:memory_order): valType;
 
       on this do atomic_fetch_xor(_v, val, c_memory_order(order));
+    }
+
+    @unstable("'fetchMin' on an atomic is unstable")
+    inline proc ref fetchMin(val:valType, param order: memoryOrder = memoryOrder.seqCst): valType {
+      var t = if orderIncludesRelease(order)
+              then fetchAdd(0, order)
+              else read(readableOrder(order));
+      while AutoMath.min(val, t) != t {
+        if compareExchangeWeak(t, val, order) {
+          return t;
+        }
+      }
+      return t;
+    }
+
+    @unstable("'min' on an atomic is unstable")
+    inline proc ref min(val:valType, param order: memoryOrder = memoryOrder.seqCst): void {
+      fetchMin(val, order=order);
+    }
+
+    @unstable("'fetchMax' on an atomic is unstable")
+    inline proc ref fetchMax(val:valType, param order: memoryOrder = memoryOrder.seqCst): valType {
+      var t = if orderIncludesRelease(order)
+              then fetchAdd(0, order)
+              else read(readableOrder(order));
+      while AutoMath.max(val, t) != t {
+        if compareExchangeWeak(t, val, order) {
+          return t;
+        }
+      }
+      return t;
+    }
+
+    @unstable("'max' on an atomic is unstable")
+    inline proc ref max(val:valType, param order: memoryOrder = memoryOrder.seqCst): void {
+      fetchMax(val, order=order);
     }
 
     /*

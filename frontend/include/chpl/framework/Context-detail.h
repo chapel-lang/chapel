@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -24,6 +24,8 @@
 #include "chpl/framework/UniqueString.h"
 #include "chpl/util/memory.h"
 #include "chpl/util/hash.h"
+
+#include "llvm/ADT/SmallPtrSet.h"
 
 #include <chrono>
 #include <cstdint>
@@ -151,25 +153,24 @@ struct QueryMapArgTupleEqual final {
 };
 
 // define a way to debug-print out a tuple
-void queryArgsPrintSep();
+void queryArgsPrintSep(std::ostream& s);
 
 template<typename T>
-static void queryArgsPrintOne(const T& v) {
+static void queryArgsPrintOne(std::ostream& s, const T& v) {
   stringify<T> tString;
-  std::ostringstream ss;
-  tString(ss, chpl::StringifyKind::DEBUG_SUMMARY, v);
-  printf("%s", ss.str().c_str() );
+  tString(s, chpl::StringifyKind::DEBUG_SUMMARY, v);
 }
 
 
 template<typename TUP, size_t... I>
-static inline void queryArgsPrintImpl(const TUP& tuple,
+static inline void queryArgsPrintImpl(std::ostream& s,
+                                      const TUP& tuple,
                                       std::index_sequence<I...>) {
   // lambda to optionally print separator, then print element
-  auto print = [](bool printsep, const auto& elem) {
+  auto print = [](std::ostream& s, bool printsep, const auto& elem) {
       if(printsep)
-        queryArgsPrintSep();
-      queryArgsPrintOne(elem);
+        queryArgsPrintSep(s);
+      queryArgsPrintOne(s, elem);
   };
 
   // TODO: C++17 comma fold expression
@@ -179,9 +180,17 @@ static inline void queryArgsPrintImpl(const TUP& tuple,
   // This prints the elements in order, with a separator in-between.
   // The comma (, 0) is used to initialize a dummy initializer_list.
   // The compiler optimizes away the dummy variable and list of 0s.
-  auto dummy = { (print(I != 0, std::get<I>(tuple)), 0) ... };
+  auto dummy = { (print(s, I != 0, std::get<I>(tuple)), 0) ... };
   (void) dummy; // avoid unused variable warning
 }
+
+template<typename... Ts>
+void queryArgsPrint(std::ostream& s, const std::tuple<Ts...>& tuple) {
+  queryArgsPrintImpl(s, tuple, std::index_sequence_for<Ts...>{});
+}
+static inline void queryArgsPrint(std::ostream& s, const std::tuple<>& tuple) {
+}
+
 
 // taken from https://codereview.stackexchange.com/questions/193420/apply-a-function-to-each-element-of-a-tuple-map-a-tuple
 // when the queryArgsToStringsImpl is dropped we can remove these too
@@ -221,13 +230,6 @@ auto queryArgsToStrings(const std::tuple<Ts...>& tuple) {
   // return ss.str();
 }
 
-template<typename... Ts>
-void queryArgsPrint(const std::tuple<Ts...>& tuple) {
-  queryArgsPrintImpl(tuple, std::index_sequence_for<Ts...>{});
-}
-static inline void queryArgsPrint(const std::tuple<>& tuple) {
-}
-
 // Performance: this struct only contains a pointer and an additional bit
 // field. We could probably get away with storing `errorCollectionRoot`
 // in the last bit of the result pointer, and and thus reduce the overhead
@@ -242,10 +244,7 @@ struct QueryDependency {
 };
 
 using QueryDependencyVec = std::vector<QueryDependency>;
-// The first component is the error emitted by the query, while the second
-// component stores whether or not the error was silenced (i.e. not reported).
-// The query contains all errors, but only prints the non-silenced ones.
-using QueryErrorVec = std::vector<std::pair<owned<ErrorBase>, bool>>;
+using QueryErrorVec = std::vector<owned<ErrorBase>>;
 
 class QueryMapResultBase {
  public:
@@ -260,21 +259,72 @@ class QueryMapResultBase {
   // lastChanged indicates the last revision in which the query result
   // has changed
   mutable RevisionNumber lastChanged = -1;
-
-  mutable QueryDependencyVec dependencies;
+  // This field exists to support isQueryRunning. When traversing the dependencies
+  // of a query, we may re-run dependency queries to see if their results change.
+  // Sometimes, these queries will check isQueryRunning. At this time, the
+  // actual query (this) is not running, but we want to return 'true' to hide
+  // the details of the query system from the query author. This field is set to
+  // 'true' when the query is being tested for re-computation, so that
+  // we can return 'true' when isQueryRunning is called in that case.
+  //
+  // Note (Daniel 10/08/2024): there may be a way to combine this field with
+  // lastChanged somehow, since that's what we use for isQueryRunning while
+  // the query really is running. However, the semantics of that are nontrivial,
+  // and that field is used for a lot of things, so for the time being, the
+  // extra boolean is fine.
+  mutable bool beingTestedForReuse = false;
+  // queries that aren't set in "usual" ways (e.g., ones that are set by
+  // another query) should be marked externallySet. This ensures that these queries,
+  // which would have no dependencies and thus always look like their result
+  // can be reused, are treated properly. For the most part, this means that
+  // queries that rely on an externally set query will be recomputed, possibly
+  // prompting the externally-set query to be set again.
+  mutable bool externallySet = false;
 
   // Whether or not errors from this query result have been shown to the
   // user (they may not have been if some query checked for errors).
   mutable bool emittedErrors = false;
-  mutable std::set<const QueryMapResultBase*> recursionErrors;
+  // Whether or not any errors were produced by this query or its dependencies.
+  // This is useful to short-circuit collecting errors (emitted or not)
+  // when they are being tracked and stored in a list.
+  //
+  // This is not too strongly connected to emittedErrors (which tracks whether
+  // errors --- if any --- were shown to the user for this query result only)
+  //
+  // Bit 0 tracks if errors occurred, bit 1 tracks warnings.
+  mutable unsigned int errorsPresentInSelfOrDependencies:2;
+  // Errors emitted when re-computing a query can refer to memory and data
+  // that's temporarily allocated while running the computation. Then, if the
+  // output of the query is the same as before, that temporary data can
+  // be discarded, since we'll keep our old value in the query system.
+  // This is bad because we want error messages to be valid when emitted,
+  // and not refer to any deallocated data.
+  //
+  // To keep this data allocated, keep it in parentQueryMap->oldResults. But
+  // that gets cleared on garbage collection, so also store an additional index
+  // into the oldResults list that indicates we should keep that entry while
+  // we have error messages.
+  //
+  // See https://github.com/chapel-lang/chapel/pull/26319 for a description
+  // of the memory error.
+  //
+  // TODO: is there a better way to ensure error messages refer to valid
+  // data without keeping around discarded query results?
+  mutable ssize_t oldResultForErrorContents = -1;
+
+  mutable QueryDependencyVec dependencies;
+  mutable llvm::SmallPtrSet<const QueryMapResultBase*, 2> recursionErrors;
   mutable QueryErrorVec errors;
 
   QueryMapBase* parentQueryMap;
 
   QueryMapResultBase(RevisionNumber lastChecked,
                      RevisionNumber lastChanged,
+                     bool beingTestedForReuse,
+                     bool externallySet,
                      bool emittedErrors,
-                     std::set<const QueryMapResultBase*> recursionErrors,
+                     size_t oldResultForErrorContents,
+                     llvm::SmallPtrSet<const QueryMapResultBase*, 2> recursionErrors,
                      QueryMapBase* parentQueryMap);
   virtual ~QueryMapResultBase() = 0; // this is an abstract base class
   virtual void recompute(Context* context) const = 0;
@@ -294,18 +344,22 @@ class QueryMapResult final : public QueryMapResultBase {
   //  * a default-constructed result
   QueryMapResult(QueryMap<ResultType, ArgTs...>* parentQueryMap,
                  std::tuple<ArgTs...> tupleOfArgs)
-    : QueryMapResultBase(-1, -1, false, {}, parentQueryMap),
+    : QueryMapResultBase(-1, -1, false, false, false, -1, {}, parentQueryMap),
       tupleOfArgs(std::move(tupleOfArgs)),
       result() {
   }
   QueryMapResult(RevisionNumber lastChecked,
                  RevisionNumber lastChanged,
+                 bool beingTestedForReuse,
                  bool emittedErrors,
-                 std::set<const QueryMapResultBase*> recursionErrors,
+                 size_t oldResultForErrorContents,
+                 llvm::SmallPtrSet<const QueryMapResultBase*, 2> recursionErrors,
                  QueryMap<ResultType, ArgTs...>* parentQueryMap,
                  std::tuple<ArgTs...> tupleOfArgs,
                  ResultType result)
-    : QueryMapResultBase(lastChecked, lastChanged, emittedErrors,
+    : QueryMapResultBase(lastChecked, lastChanged, beingTestedForReuse,
+                         emittedErrors,
+                         oldResultForErrorContents,
                          std::move(recursionErrors), parentQueryMap),
       tupleOfArgs(std::move(tupleOfArgs)),
       result(std::move(result)) {
@@ -397,11 +451,21 @@ class QueryMap final : public QueryMapBase {
   void clearOldResults(RevisionNumber currentRevisionNumber) override {
     // Performance: Would it be better to move everything to a new map
     // rather than modify it in place as is done here?
+    std::vector<ResultType> keptOldResults;
+
     auto iter = map.begin();
     while (iter != map.end()) {
       const TheResultType& result = *iter;
       if (result.lastChecked == currentRevisionNumber) {
         // Keep the result
+
+        // if we're keeping around old data for the sake of error messages,
+        // save it here.
+        if (result.oldResultForErrorContents >= 0) {
+          keptOldResults.push_back(std::move(oldResults[result.oldResultForErrorContents]));
+          result.oldResultForErrorContents = keptOldResults.size() - 1;
+        }
+
         ++iter;
       } else {
         // Remove the result
@@ -409,7 +473,7 @@ class QueryMap final : public QueryMapBase {
       }
     }
 
-    oldResults.clear();
+    std::swap(keptOldResults, oldResults);
   }
 
   template <typename F>
@@ -434,11 +498,16 @@ struct QueryTimingStopwatch {
   typename Clock::time_point start_;
 
   QueryTimingStopwatch(bool enabled, F onExit)
-      : onExit_(onExit) {
+      : onExit_(std::move(onExit)) {
     if (enabled) {
       start_ = Clock::now();
     }
   }
+
+  QueryTimingStopwatch(QueryTimingStopwatch&& rhs) = default;
+  QueryTimingStopwatch(const QueryTimingStopwatch& rhs) = delete;
+  QueryTimingStopwatch& operator=(const QueryTimingStopwatch& rhs) = delete;
+  QueryTimingStopwatch& operator=(QueryTimingStopwatch&& rhs) = default;
 
   QueryTimingDuration elapsed() {
     auto stop = Clock::now();
@@ -451,7 +520,7 @@ struct QueryTimingStopwatch {
 // Helper function to sort out the templates over lambda's
 template <typename F> QueryTimingStopwatch<F>
 makeQueryTimingStopwatch(bool enabled, F onExit) {
-  return QueryTimingStopwatch<F>(enabled, onExit);
+  return QueryTimingStopwatch<F>(enabled, std::move(onExit));
 }
 
 inline auto

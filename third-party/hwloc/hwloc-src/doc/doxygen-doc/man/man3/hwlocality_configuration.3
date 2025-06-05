@@ -1,4 +1,4 @@
-.TH "hwlocality_configuration" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_configuration" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -155,14 +155,14 @@ This flag is also a strict way to make sure the process binding will not change 
 Ignore distances\&. Ignore distance information from the operating systems (and from XML) and hence do not use distances for grouping\&. 
 .TP
 \fB\fIHWLOC_TOPOLOGY_FLAG_NO_MEMATTRS \fP\fP
-Ignore memory attributes\&. Ignore memory attribues from the operating systems (and from XML)\&. 
+Ignore memory attributes and tiers\&. Ignore memory attribues from the operating systems (and from XML) Hence also do not try to build memory tiers\&. 
 .TP
 \fB\fIHWLOC_TOPOLOGY_FLAG_NO_CPUKINDS \fP\fP
 Ignore CPU Kinds\&. Ignore CPU kind information from the operating systems (and from XML)\&. 
 .SS "enum \fBhwloc_type_filter_e\fP"
 
 .PP
-Type filtering flags\&. By default, most objects are kept (\fBHWLOC_TYPE_FILTER_KEEP_ALL\fP)\&. Instruction caches, I/O and Misc objects are ignored by default (\fBHWLOC_TYPE_FILTER_KEEP_NONE\fP)\&. Die and Group levels are ignored unless they bring structure (\fBHWLOC_TYPE_FILTER_KEEP_STRUCTURE\fP)\&.
+Type filtering flags\&. By default, most objects are kept (\fBHWLOC_TYPE_FILTER_KEEP_ALL\fP)\&. Instruction caches, memory-side caches, I/O and Misc objects are ignored by default (\fBHWLOC_TYPE_FILTER_KEEP_NONE\fP)\&. Group levels are ignored unless they bring structure (\fBHWLOC_TYPE_FILTER_KEEP_STRUCTURE\fP)\&.
 .PP
 Note that group objects are also ignored individually (without the entire level) when they do not bring structure\&. 
 .PP
@@ -197,11 +197,16 @@ If \fBhwloc_topology_set_flags()\fP was not called earlier, no flags are set (\f
 .PP
 \fBReturns\fP
 .RS 4
-the flags previously set with \fBhwloc_topology_set_flags()\fP\&. 
+the flags previously set with \fBhwloc_topology_set_flags()\fP\&.
+.RE
+.PP
+\fBNote\fP
+.RS 4
+This function may also be called after \fBhwloc_topology_load()\fP\&. 
 .RE
 .PP
 
-.SS "const struct \fBhwloc_topology_support\fP* hwloc_topology_get_support (\fBhwloc_topology_t\fP restrict topology)"
+.SS "const struct \fBhwloc_topology_support\fP * hwloc_topology_get_support (\fBhwloc_topology_t\fP restrict topology)"
 
 .PP
 Retrieve the topology support\&. Each flag indicates whether a feature is supported\&. If set to 0, the feature is not supported\&. If set to 1, the feature is supported, but the corresponding call may still fail in some corner cases\&.
@@ -210,15 +215,47 @@ These features are also listed by hwloc-info --support
 .PP
 The reported features are what the current topology supports on the current machine\&. If the topology was exported to XML from another machine and later imported here, support still describes what is supported for this imported topology after import\&. By default, binding will be reported as unsupported in this case (see \fBHWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM\fP)\&.
 .PP
-Topology flag \fBHWLOC_TOPOLOGY_FLAG_IMPORT_SUPPORT\fP may be used to report the supported features of the original remote machine instead\&. If it was successfully imported, \fCimported_support\fP will be set in the struct \fBhwloc_topology_misc_support\fP array\&. 
+Topology flag \fBHWLOC_TOPOLOGY_FLAG_IMPORT_SUPPORT\fP may be used to report the supported features of the original remote machine instead\&. If it was successfully imported, \fCimported_support\fP will be set in the struct \fBhwloc_topology_misc_support\fP array\&.
+.PP
+\fBReturns\fP
+.RS 4
+A pointer to a support structure\&.
+.RE
+.PP
+\fBNote\fP
+.RS 4
+The function cannot return \fCNULL\fP\&. 
+.PP
+The returned pointer should not be freed, it belongs to the hwloc library\&.
+.PP
+This function may be called before or after \fBhwloc_topology_load()\fP but the support structure only contains valid information after\&. 
+.RE
+.PP
+
 .SS "int hwloc_topology_get_type_filter (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_type_t\fP type, enum \fBhwloc_type_filter_e\fP * filter)"
 
 .PP
 Get the current filtering for the given object type\&. 
-.SS "void* hwloc_topology_get_userdata (\fBhwloc_topology_t\fP topology)"
+.PP
+\fBReturns\fP
+.RS 4
+0 on success, -1 on error\&. 
+.RE
+.PP
+
+.SS "void * hwloc_topology_get_userdata (\fBhwloc_topology_t\fP topology)"
 
 .PP
-Retrieve the topology-specific userdata pointer\&. Retrieve the application-given private data pointer that was previously set with \fBhwloc_topology_set_userdata()\fP\&. 
+Retrieve the topology-specific userdata pointer\&. Retrieve the application-given private data pointer that was previously set with \fBhwloc_topology_set_userdata()\fP\&.
+.PP
+\fBReturns\fP
+.RS 4
+A pointer to the private-data if any\&. 
+.PP
+\fCNULL\fP if no private-data was previoulsy set\&. 
+.RE
+.PP
+
 .SS "int hwloc_topology_is_thissystem (\fBhwloc_topology_t\fP restrict topology)"
 
 .PP
@@ -228,18 +265,37 @@ Does the topology context come from this system?
 .RS 4
 1 if this topology context was built using the system running this program\&. 
 .PP
-0 instead (for instance if using another file-system root, a XML topology file, or a synthetic topology)\&. 
+0 instead (for instance if using another file-system root, a XML topology file, or a synthetic topology)\&.
+.RE
+.PP
+\fBNote\fP
+.RS 4
+This function may also be called after \fBhwloc_topology_load()\fP\&. 
 .RE
 .PP
 
 .SS "int hwloc_topology_set_all_types_filter (\fBhwloc_topology_t\fP topology, enum \fBhwloc_type_filter_e\fP filter)"
 
 .PP
-Set the filtering for all object types\&. If some types do not support this filtering, they are silently ignored\&. 
+Set the filtering for all object types\&. If some types do not support this filtering, they are silently ignored\&.
+.PP
+\fBReturns\fP
+.RS 4
+0 on success, -1 on error\&. 
+.RE
+.PP
+
 .SS "int hwloc_topology_set_cache_types_filter (\fBhwloc_topology_t\fP topology, enum \fBhwloc_type_filter_e\fP filter)"
 
 .PP
-Set the filtering for all CPU cache object types\&. Memory-side caches are not involved since they are not CPU caches\&. 
+Set the filtering for all CPU cache object types\&. Memory-side caches are not involved since they are not CPU caches\&.
+.PP
+\fBReturns\fP
+.RS 4
+0 on success, -1 on error\&. 
+.RE
+.PP
+
 .SS "int hwloc_topology_set_flags (\fBhwloc_topology_t\fP topology, unsigned long flags)"
 
 .PP
@@ -249,19 +305,49 @@ If this function is called multiple times, the last invocation will erase and re
 .PP
 By default, no flags are set (\fC0\fP)\&.
 .PP
-The flags set in a topology may be retrieved with \fBhwloc_topology_get_flags()\fP\&. 
+The flags set in a topology may be retrieved with \fBhwloc_topology_get_flags()\fP\&.
+.PP
+\fBReturns\fP
+.RS 4
+0 on success\&. 
+.PP
+-1 on error, for instance if flags are invalid\&. 
+.RE
+.PP
+
 .SS "int hwloc_topology_set_icache_types_filter (\fBhwloc_topology_t\fP topology, enum \fBhwloc_type_filter_e\fP filter)"
 
 .PP
-Set the filtering for all CPU instruction cache object types\&. Memory-side caches are not involved since they are not CPU caches\&. 
+Set the filtering for all CPU instruction cache object types\&. Memory-side caches are not involved since they are not CPU caches\&.
+.PP
+\fBReturns\fP
+.RS 4
+0 on success, -1 on error\&. 
+.RE
+.PP
+
 .SS "int hwloc_topology_set_io_types_filter (\fBhwloc_topology_t\fP topology, enum \fBhwloc_type_filter_e\fP filter)"
 
 .PP
 Set the filtering for all I/O object types\&. 
+.PP
+\fBReturns\fP
+.RS 4
+0 on success, -1 on error\&. 
+.RE
+.PP
+
 .SS "int hwloc_topology_set_type_filter (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_type_t\fP type, enum \fBhwloc_type_filter_e\fP filter)"
 
 .PP
 Set the filtering for the given object type\&. 
+.PP
+\fBReturns\fP
+.RS 4
+0 on success, -1 on error\&. 
+.RE
+.PP
+
 .SS "void hwloc_topology_set_userdata (\fBhwloc_topology_t\fP topology, const void * userdata)"
 
 .PP

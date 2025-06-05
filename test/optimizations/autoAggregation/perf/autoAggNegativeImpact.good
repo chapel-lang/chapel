@@ -1,12 +1,14 @@
 Start analyzing forall for automatic aggregation [static only ALA clone]  (autoAggNegativeImpact.chpl:39)
 | Found an aggregation candidate (autoAggNegativeImpact.chpl:40)
 |  Potential source aggregation (autoAggNegativeImpact.chpl:40)
+|  Potential destination aggregation (autoAggNegativeImpact.chpl:40)
 End analyzing forall for automatic aggregation [static only ALA clone]  (autoAggNegativeImpact.chpl:39)
 
 Start analyzing forall for automatic aggregation [no ALA clone]  (autoAggNegativeImpact.chpl:39)
 End analyzing forall for automatic aggregation [no ALA clone]  (autoAggNegativeImpact.chpl:39)
 
 Aggregation candidate has confirmed local child [static only ALA clone] (autoAggNegativeImpact.chpl:40)
+Aggregation candidate has reverted local child [static only ALA clone] (autoAggNegativeImpact.chpl:40)
 LHS is local, RHS is nonlocal. Will use source aggregation [static only ALA clone] (autoAggNegativeImpact.chpl:40)
 Replaced assignment with aggregation [static only ALA clone]  (autoAggNegativeImpact.chpl:40)
 SrcAggregator.copy is called

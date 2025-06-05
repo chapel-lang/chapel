@@ -5,5 +5,5 @@ CONFIG VAR FLAGS:
 
 CONFIG VARS:
 ============
-  defaultHashTableResizeThreshold: real(64)
                        numLocales: int(64)
+  defaultHashTableResizeThreshold: real(64)

@@ -1,0 +1,4 @@
+0
+22
+tuple-out-of-bounds-access.chpl:8: error: halt reached - tuple index out of bounds
+note: index was 23 but the tuple type 23*int(64) has bounds 0..22

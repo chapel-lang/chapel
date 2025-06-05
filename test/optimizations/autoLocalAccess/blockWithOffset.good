@@ -1,0 +1,42 @@
+
+Start analyzing forall (blockWithOffset.chpl:8)
+| Found loop domain (blockWithOffset.chpl:4)
+| Will attempt static and dynamic optimizations (blockWithOffset.chpl:8)
+|
+|  Start analyzing call (blockWithOffset.chpl:10)
+|   Can optimize: Access base is the iterator's base (blockWithOffset.chpl:10)
+|  This call is a static optimization candidate (blockWithOffset.chpl:10)
+|
+|  Start analyzing call (blockWithOffset.chpl:11)
+|   Call has offset(s), this will require dynamic check (blockWithOffset.chpl:11)
+|   Can optimize: Access base is the iterator's base (blockWithOffset.chpl:11)
+|  This call is a static optimization candidate (blockWithOffset.chpl:11)
+|
+End analyzing forall (blockWithOffset.chpl:8)
+
+
+Start analyzing forall (blockWithOffset.chpl:16)
+| Found loop domain (blockWithOffset.chpl:6)
+| Will attempt static and dynamic optimizations (blockWithOffset.chpl:16)
+|
+|  Start analyzing call (blockWithOffset.chpl:17)
+|   Can't determine the domain of access base (blockWithOffset.chpl:4)
+|  This call is a dynamic optimization candidate (blockWithOffset.chpl:17)
+|
+|  Start analyzing call (blockWithOffset.chpl:18)
+|   Call has offset(s), this will require dynamic check (blockWithOffset.chpl:18)
+|   Can't determine the domain of access base (blockWithOffset.chpl:4)
+|  This call is a dynamic optimization candidate (blockWithOffset.chpl:18)
+|
+End analyzing forall (blockWithOffset.chpl:16)
+
+Static check successful. Using localAccess [static only ALA clone]  (blockWithOffset.chpl:10)
+Static check failed. Reverting optimization [static only ALA clone]  (blockWithOffset.chpl:11)
+Static check successful. Using localAccess with dynamic check (blockWithOffset.chpl:17)
+Static check failed. Reverting optimization [static and dynamic ALA clone]  (blockWithOffset.chpl:18)
+0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0
+
+Numbers collected by prediff:
+	localAccess was called 17 times
+	this was called 17 times

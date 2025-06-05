@@ -1,0 +1,4 @@
+In Foo's postinit
+{x = 3}
+In Foo's postinit
+x too large

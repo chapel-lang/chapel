@@ -1,0 +1,1 @@
+castChapelArray-sizemismatch.chpl:23: error: halt reached - casting between arrays of different shapes in dimension 0: 4 vs. 3

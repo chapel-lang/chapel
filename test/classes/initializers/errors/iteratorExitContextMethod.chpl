@@ -1,0 +1,3 @@
+class IteratorExitContext {
+  iter exitContext() {}
+}

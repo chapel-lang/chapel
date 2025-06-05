@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -938,30 +938,6 @@ enum iostringformatInternal {
 }
 
 @chpldoc.nodoc
-proc stringStyleWithVariableLengthInternal() {
-  return iostringstyleInternal.lenVb_data: int(64);
-}
-
-// Replacement for stringStyleWithLength, though it shouldn't be relied upon by
-// users as it will likely be replaced in the future
-@chpldoc.nodoc
-proc stringStyleWithLengthInternal(lengthBytes:int) throws {
-  var x = iostringstyleInternal.lenVb_data;
-  select lengthBytes {
-    when 0 do x = iostringstyleInternal.lenVb_data;
-    when 1 do x = iostringstyleInternal.len1b_data;
-    when 2 do x = iostringstyleInternal.len2b_data;
-    when 4 do x = iostringstyleInternal.len4b_data;
-    when 8 do x = iostringstyleInternal.len8b_data;
-    otherwise
-      throw createSystemError(EINVAL,
-                              "Invalid string length prefix " +
-                              lengthBytes:string);
-  }
-  return x;
-}
-
-@chpldoc.nodoc
 extern const QIO_FDFLAG_UNK:c_int;
 @chpldoc.nodoc
 extern const QIO_FDFLAG_READABLE:c_int;
@@ -1326,6 +1302,7 @@ private extern proc qio_file_isopen(f:qio_file_ptr_t):bool;
 private extern proc qio_file_sync(f:qio_file_ptr_t):errorCode;
 
 private extern proc qio_channel_end_offset_unlocked(ch:qio_channel_ptr_t):int(64);
+private extern proc qio_channel_start_offset_unlocked(ch:qio_channel_ptr_t):int(64);
 private extern proc qio_file_get_style(f:qio_file_ptr_t, ref style:iostyleInternal);
 private extern proc qio_file_get_plugin(f:qio_file_ptr_t):c_ptr(void);
 private extern proc qio_channel_get_plugin(ch:qio_channel_ptr_t):c_ptr(void);
@@ -1558,47 +1535,6 @@ proc defaultIOStyleInternal(): iostyleInternal {
   qio_style_init_default(ret);
   return ret;
 }
-
-/* Get an iostyleInternal indicating binary I/O in native byte order. */
-@chpldoc.nodoc
-proc iostyleInternal.native(str_style:int(64)=stringStyleWithVariableLengthInternal()):iostyleInternal {
-  var ret = this;
-  ret.binary = 1;
-  ret.byteorder = _iokind.native:uint(8);
-  ret.str_style = str_style;
-  return ret;
-}
-
-/* Get an iostyleInternal indicating binary I/O in big-endian byte order.*/
-@chpldoc.nodoc
-proc iostyleInternal.big(str_style:int(64)=stringStyleWithVariableLengthInternal()):iostyleInternal {
-  var ret = this;
-  ret.binary = 1;
-  ret.byteorder = _iokind.big:uint(8);
-  ret.str_style = str_style;
-  return ret;
-}
-
-/* Get an iostyleInternal indicating binary I/O in little-endian byte order. */
-@chpldoc.nodoc
-proc iostyleInternal.little(str_style:int(64)=stringStyleWithVariableLengthInternal()):iostyleInternal {
-  var ret = this;
-  ret.binary = 1;
-  ret.byteorder = _iokind.little:uint(8);
-  ret.str_style = str_style;
-  return ret;
-}
-
-// TODO -- add arguments to this function
-/* Get an iostyleInternal indicating text I/O. */
-@chpldoc.nodoc
-proc iostyleInternal.text(/* args coming later */):iostyleInternal {
-  var ret = this;
-  ret.binary = 0;
-  return ret;
-}
-
-
 
 /* fdflag_t specifies how a file can be used. It can be:
   QIO_FDFLAG_UNK,
@@ -1847,8 +1783,6 @@ operations
 
   This is an alternative way to create a :record:`file`.  The main way to do so
   is via the :proc:`open` function.
-
-The system file descriptor will be closed when the Chapel file is closed.
 
 .. note::
 
@@ -2506,6 +2440,17 @@ record defaultSerializer {
       writer.writeLiteral("nil");
     } else if isClassType(t) {
       x!.serialize(writer=writer, serializer=this);
+    } else if isProcedureType(t) {
+      // The legacy procedure classes should have been handled by above.
+      compilerAssert(!isClassType(t));
+
+      // TODO: We might like to print the symbol name instead, here, and
+      // that may be achievable since the names of loaded symbols are
+      // stored in the binary cache (though they won't necessarily be
+      // retrievable without comm). So we'd just have to arrange to store
+      // the names of 'ftable' entries as well.
+      const ptr = x : c_ptr(void);
+      ptr.serialize(writer=writer, serializer=this);
     } else {
       x.serialize(writer=writer, serializer=this);
     }
@@ -2548,12 +2493,9 @@ record defaultSerializer {
       writer._writeOne(_iokind.dynamic, val, writer.getLocaleOfIoRequest());
     } else if t == _nilType {
       writer.writeLiteral("nil");
-    } else if isClassType(t) || isAnyCPtr(t) || chpl_isDdata(t) {
+    } else if isClassType(t) || isAnyCPtr(t) || chpl_isDdata(t) ||
+              isProcedureType(t) {
       _serializeClassOrPtr(writer, val);
-    } else if isUnionType(t) {
-      // From ChapelIO
-      // Note: Some kind of weird resolution bug with ChapelIO.writeThis...
-      writeThisDefaultImpl(writer, val);
     } else {
       val.serialize(writer=writer, serializer=this);
     }
@@ -4951,10 +4893,6 @@ inline proc fileWriter.unlock() {
   }
 }
 
-@chpldoc.nodoc
-@deprecated("'fileReader.offset' and 'fileWriter.offset' will not automatically acquire a lock, this config no longer impacts code and will be removed in a future release")
-config param fileOffsetWithoutLocking = false;
-
 /*
    Return the current offset of a :record:`fileReader`.
 
@@ -6601,31 +6539,6 @@ private proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
   return err;
 }
 
-@chpldoc.nodoc
-proc fileReader.readIt(ref x) throws {
-  const origLocale = this.getLocaleOfIoRequest();
-
-  on this._home {
-    try! this.lock(); defer { this.unlock(); }
-
-    if deserializerType != nothing {
-      _deserializeOne(x, origLocale);
-    } else {
-      _readOne(_iokind.dynamic, x, origLocale);
-    }
-  }
-}
-
-@chpldoc.nodoc
-proc fileWriter.writeIt(const x) throws {
-  const origLocale = this.getLocaleOfIoRequest();
-
-  on this._home {
-    try! this.lock(); defer { this.unlock(); }
-    try _writeOne(_iokind.dynamic, x, origLocale);
-  }
-}
-
 private proc literalErrorHelper(x: ?t, action: string,
                                 isLiteral: bool): string {
   // Error message construction is handled here so that messages are
@@ -6762,13 +6675,6 @@ proc fileReader._readNewlineCommon(param isMatch:bool) throws {
     const action = if isMatch then "matching" else "reading";
     try _checkLiteralError("", err, action, isLiteral=false);
   }
-}
-
-// non-unstable version we can use internally
-@chpldoc.nodoc
-inline proc fileReader._readNewline() : void throws {
-  var ionl = new chpl_ioNewline(true);
-  this.readIt(ionl);
 }
 
 // TODO: How does this differ from readln() ?
@@ -6972,23 +6878,112 @@ proc fileWriter.styleElement(element:int):int {
   Iterate over all of the lines ending in ``\n`` in a :record:`fileReader` - the
   fileReader lock will be held while iterating over the lines.
 
-  Only serial iteration is supported. This iterator will halt on internal
-  system errors.
+  This iterator will halt on internal :ref:`system errors<io-general-sys-error>`.
+  In the future, iterators are intended to be able to throw in such cases.
+
+  **Example:**
+
+  .. code-block:: chapel
+
+    var r = openReader("ints.txt"),
+        sum = 0;
+
+    forall line in r.lines() with (+ reduce sum) {
+      sum += line:int
+    }
 
   .. warning::
 
-    This iterator executes on the current locale. This may impact multilocale
-    performance if the current locale is not the same locale on which the
-    fileReader was created.
+    This iterator executes on the current locale. This may impact performance if
+    the current locale is not the same locale on which the fileReader was created.
 
-  :arg stripNewline: Whether to strip the trailing ``\n`` from the line. Defaults to false
+  .. warning::
+
+    Parallel iteration is not supported for sockets, pipes, or other
+    non-file-based sources
+
+  .. warning::
+
+    Zippered parallel iteration is not yet supported for this iterator.
+
+  :arg stripNewline: Whether to strip the trailing ``\n`` from the line —
+                     defaults to false
+  :arg t: The type of the lines to read (either :type:`~String.string` or
+          :type:`~Bytes.bytes`) — defaults to ``string``
   :yields: lines from the fileReader, by default with a trailing ``\n``
 
- */
-iter fileReader.lines(stripNewline = false) {
-
+*/
+iter fileReader.lines(
+  stripNewline = false,
+  type t = string
+): t
+  where t == string || t == bytes
+{
   try! this.lock();
+  for line in this._lines_serial(stripNewline, t) do yield line;
+  this.unlock();
+}
 
+/*
+  Iterate over all of the lines ending in ``\n`` in a :record:`fileReader` using
+  multiple locales - the fileReader lock will be held while iterating over the lines.
+
+  This iterator will halt on internal :ref:`system errors<io-general-sys-error>`.
+  In the future, iterators are intended to be able to throw in such cases.
+
+  **Example:**
+
+  .. code-block:: chapel
+
+    var r = openReader("ints.txt"),
+        sum = 0;
+
+    forall line in r.lines(targetLocales=Locales) with (+ reduce sum) {
+      sum += line:int
+    }
+
+  .. warning::
+
+    Parallel iteration is not supported for sockets, pipes, or other
+    non-file-based sources
+
+  .. warning::
+
+    This procedure does not support reading from a memory-file (e.g.,
+    files opened with :proc:`openMemFile`)
+
+  .. warning::
+
+    Zippered parallel iteration is not yet supported for this iterator.
+
+  :arg stripNewline: Whether to strip the trailing ``\n`` from the line —
+                     defaults to false
+  :arg targetLocales: The locales on which to read the lines (parallel
+                      iteration only)
+  :arg t: The type of the lines to read (either :type:`~String.string` or
+          :type:`~Bytes.bytes`) — defaults to ``string``
+  :yields: lines from the fileReader, by default with a trailing ``\n``
+
+*/
+iter fileReader.lines(
+  stripNewline = false,
+  type t = string,
+  targetLocales: [] locale
+): t
+  where t == string || t == bytes
+{
+  try! this.lock();
+  for line in this._lines_serial(stripNewline, t) do yield line;
+  this.unlock();
+}
+
+@chpldoc.nodoc
+iter fileReader._lines_serial(
+  stripNewline = false,
+  type t = string
+): t
+  where t == string || t == bytes
+{
   // Save iostyleInternal
   const saved_style: iostyleInternal = this._styleInternal();
   // Update iostyleInternal
@@ -7001,7 +6996,7 @@ iter fileReader.lines(stripNewline = false) {
   this._set_styleInternal(newline_style);
 
   // Iterate over lines
-  var itemReader = new itemReaderInternal(string, locking, deserializerType, this);
+  var itemReader = new itemReaderInternal(t, locking, deserializerType, this);
   for line in itemReader {
     if !stripNewline then yield line;
     else {
@@ -7014,8 +7009,147 @@ iter fileReader.lines(stripNewline = false) {
 
   // Set the iostyle back to original state
   this._set_styleInternal(saved_style);
+}
 
-  this.unlock();
+// single locale parallel 'lines'
+@chpldoc.nodoc
+iter fileReader.lines(
+  param tag: iterKind,
+  stripNewline = false,
+  type t = string
+): t
+  where tag == iterKind.standalone && (t == string || t == bytes)
+{
+  on this._home {
+    try! this.lock();
+
+    const f = chpl_fileFromReaderOrWriter(this),
+          myStart = qio_channel_start_offset_unlocked(this._channel_internal),
+          myEnd = qio_channel_end_offset_unlocked(this._channel_internal),
+          myBounds = myStart..min(myEnd, try! f.size),
+          nTasks = if dataParTasksPerLocale>0 then dataParTasksPerLocale
+                                              else here.maxTaskPar;
+    try {
+      // try to break the file into chunks and read the lines in parallel
+      // can fail if the file is too small to break into 'nTasks' chunks
+      const byteOffsets = findFileChunks(f, nTasks, myBounds);
+
+      coforall tid in 0..<nTasks {
+        const taskBounds = byteOffsets[tid]..<byteOffsets[tid+1],
+              r = try! f.reader(region=taskBounds);
+
+        var line: t;
+        while (try! r.readLine(line, stripNewline=stripNewline)) do
+          yield line;
+      }
+    } catch {
+      // fall back to serial iteration if 'findFileChunks' fails
+      for line in this._lines_serial(stripNewline, t) do yield line;
+    }
+
+    this.unlock();
+  }
+}
+
+// multi-locale parallel 'lines'
+@chpldoc.nodoc
+iter fileReader.lines(
+  param tag: iterKind,
+  stripNewline = false,
+  type t = string,
+  targetLocales: [?tld] locale
+): t
+  where tag == iterKind.standalone && (t == string || t == bytes)
+{
+  on this._home {
+    try! this.lock();
+
+    const f = chpl_fileFromReaderOrWriter(this),
+          myStart = qio_channel_start_offset_unlocked(this._channel_internal),
+          myEnd = qio_channel_end_offset_unlocked(this._channel_internal),
+          myBounds = myStart..min(myEnd, try! f.size),
+          fpath = try! f.path;
+
+    try {
+      // try to break the file into chunks and read the lines in parallel
+      // can fail if the file is too small to break into 'targetLocales.size' chunks
+      const byteOffsets = findFileChunks(f, targetLocales.size, myBounds);
+      coforall lid in 0..<targetLocales.size do on targetLocales[tld.orderToIndex(lid)] {
+        const locBounds = byteOffsets[lid]..byteOffsets[lid+1];
+
+        // if byteOffsets looks like [0, 10, 10, 14, 21], then don't try to read 10..10 (locale 1)
+        if locBounds.size > 1 {
+          const locFile = try! open(fpath, ioMode.r),
+                nTasks = if dataParTasksPerLocale>0 then dataParTasksPerLocale
+                                                    else here.maxTaskPar;
+          try {
+            // try to break this locale's chunk into 'nTasks' chunks and read the lines in parallel
+            const locByteOffsets = findFileChunks(locFile, nTasks, locBounds);
+            coforall tid in 0..<nTasks {
+              const taskBounds = locByteOffsets[tid]..<locByteOffsets[tid+1],
+                    r = try! locFile.reader(region=taskBounds);
+
+              if taskBounds.size > 0 {
+                var line: t;
+                while (try! r.readLine(line, stripNewline=stripNewline)) do
+                  yield line;
+              }
+            }
+          } catch {
+            // fall back to serial iteration for this locale if 'findFileChunks' fails
+            for line in locFile.reader(region=locBounds)._lines_serial(stripNewline, t) do yield line;
+          }
+        }
+      }
+    } catch {
+      // fall back to serial iteration if 'findFileChunks' fails
+      for line in this._lines_serial(stripNewline, t) do yield line;
+    }
+
+    this.unlock();
+  }
+}
+
+/*
+  Get an array of ``n+1`` byte offsets that divide the file ``f`` into ``n``
+  roughly equally sized chunks, where each byte offset comes immediately after
+  a newline.
+
+  :arg f: the file to search
+  :arg n: the number of chunks to find
+  :arg bounds: a range of byte offsets to break into chunks
+
+  :returns: a length ``n+1`` array of byte offsets (the first offset is
+            ``bounds.low`` and the last is ``bounds.high``)
+
+  :throws: if a valid byte offset cannot be found for one or more chunks
+*/
+@chpldoc.nodoc
+private proc findFileChunks(const ref f: file, n: int, bounds: range): [] int throws {
+  const nDataBytes = bounds.high - bounds.low,
+        approxBytesPerChunk = nDataBytes / n;
+
+  var chunkOffsets: [0..n] int;
+  chunkOffsets[0] = bounds.low;
+  chunkOffsets[n] = bounds.high;
+
+  forall i in 1..<n with (ref chunkOffsets) {
+    const estOffset = bounds.low + i * approxBytesPerChunk,
+          r = f.reader(region=estOffset..);
+
+    try {
+      r.advanceThroughNewline(); // advance past the next newline
+    } catch e {
+      // there wasn't an offset in this chunk
+      throw new Error(
+        "Failed to find byte offset in the range (" + bounds.low:string + ".." + bounds.high:string +
+        ") for chunk " + i:string + " of " + n:string + ". Try using fewer tasks."
+      );
+    }
+    chunkOffsets[i] = r.offset(); // record the offset for this chunk
+  }
+
+  return chunkOffsets;
 }
 
 public use ChapelIOStringifyHelper;
@@ -7055,22 +7189,6 @@ proc chpl_stringify(const args ...?k):string {
       return ret;
     }
   }
-}
-
-private var _arg_to_proto_names = ("a", "b", "c", "d", "e", "f");
-
-private proc _args_to_proto(const args ...?k, preArg:string) {
-  // FIX ME: lot of potential leaking going on here with string concat
-  // But this is used for error handling so maybe we don't care.
-  var err_args: string;
-  for param i in 0..k-1 {
-    var name: string;
-    if i < _arg_to_proto_names.size then name = _arg_to_proto_names[i];
-    else name = "x" + i:string;
-    err_args += preArg + name + ":" + args(i).type:string;
-    if i != k-1 then err_args += ", ";
-  }
-  return err_args;
 }
 
 @chpldoc.nodoc
@@ -8292,7 +8410,7 @@ private proc readBytesImpl(ch: fileReader, ref out_var: bytes, len: int(64)) : (
         // if we need more room in the buffer, grow it
         // this will happen if we have not read all of 'maxBytes' yet
         // but there is more data in the file (as when guessReadSize
-        // was innacurate for one reason or another)
+        // was inaccurate for one reason or another)
         var requestSz = 2*buffSz;
         // make sure to at least request 16 bytes
         if requestSz < n + 16 then requestSz = n + 16;
@@ -9473,6 +9591,7 @@ proc fileReader.read(type t ...?numTypes) throws where numTypes > 1 {
   return tupleVal;
 }
 
+
 /*
    Write values to a :record:`fileWriter`. The output will be produced
    atomically - the ``fileWriter`` lock will be held while writing all of the
@@ -9481,6 +9600,9 @@ proc fileReader.read(type t ...?numTypes) throws where numTypes > 1 {
    :arg args: a list of arguments to write. Basic types are handled
               internally, but for other types this function will call
               value.serialize() with the ``fileWriter`` as an argument.
+   :arg sep: a string separator that is printed in between each argument.
+             Defaults to the empty string. Note that specifying ``sep`` is
+             currently an unstable feature pending further design.
 
    :throws EofError: If EOF is reached before all the arguments could be
                      written.
@@ -9489,23 +9611,20 @@ proc fileReader.read(type t ...?numTypes) throws where numTypes > 1 {
    :throws SystemError: If data could not be written to the ``fileWriter``
                         due to a :ref:`system error<io-general-sys-error>`.
  */
+pragma "last resort"
 pragma "fn exempt instantiation limit"
-inline proc fileWriter.write(const args ...?k) throws {
-  const origLocale = this.getLocaleOfIoRequest();
-  on this._home {
-    try this.lock(); defer { this.unlock(); }
-    for param i in 0..k-1 {
-      if serializerType != nothing {
-        if serializerType == binarySerializer {
-          warnBinary(args(i).type, 2);
-        }
-        this._serializeOne(args(i), origLocale);
-      } else {
-        try _writeOne(_iokind.dynamic, args(i), origLocale);
-      }
-    }
-  }
+inline proc fileWriter.write(const args ...?k, sep: string = "") throws {
+  if chpl_warnUnstable then
+    compilerWarning("specifying 'sep' is an unstable feature");
+  this.writeHelper(none, sep, (...args));
 }
+
+pragma "fn exempt instantiation limit"
+@chpldoc.nodoc
+inline proc fileWriter.write(const args ...?k) throws {
+  this.writeHelper(none, none, (...args));
+}
+
 
 // documented in varargs version
 @chpldoc.nodoc
@@ -9523,6 +9642,9 @@ proc fileWriter.writeln() throws {
               called with zero or more arguments. Basic types are handled
               internally, but for other types this function will call
               value.serialize() with the fileWriter as an argument.
+   :arg sep: a string separator that is printed in between each argument.
+             Defaults to the empty string. Note that specifying ``sep`` is
+             currently an unstable feature pending further design.
 
    :throws EofError: If EOF is reached before all the arguments
                      could be written.
@@ -9531,8 +9653,40 @@ proc fileWriter.writeln() throws {
    :throws SystemError: If data could not be written to the ``fileWriter``
                         due to a :ref:`system error<io-general-sys-error>`.
  */
+pragma "last resort"
+proc fileWriter.writeln(const args ...?k, sep:string="") throws {
+  if chpl_warnUnstable then
+    compilerWarning("specifying 'sep' is an unstable feature");
+  this.writeHelper(new chpl_ioNewline(), sep, (...args));
+}
+
+@chpldoc.nodoc
 proc fileWriter.writeln(const args ...?k) throws {
-  try this.write((...args), new chpl_ioNewline());
+  this.writeHelper(new chpl_ioNewline(), none, (...args));
+}
+
+@chpldoc.nodoc
+inline proc fileWriter.writeHelper(endl: ?endlType, sep: ?sepType, const args...) throws {
+  const origLocale = this.getLocaleOfIoRequest();
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+
+    for param i in 0..<args.size {
+      if i != 0 && sepType != nothing then
+        try _writeOne(_iokind.dynamic, sep, origLocale);
+
+      if serializerType != nothing {
+        if serializerType == binarySerializer {
+          warnBinary(args(i).type, 2);
+        }
+        this._serializeOne(args(i), origLocale);
+      } else {
+        try _writeOne(_iokind.dynamic, args(i), origLocale);
+      }
+    }
+    if endlType != nothing then
+      try _writeOne(_iokind.dynamic, endl, origLocale);
+  }
 }
 
 /*
@@ -11329,7 +11483,7 @@ proc fileReader._read_complex(width:uint(32), out t:complex, i:int)
 // arguments from writef. This way, we can use the same code for an `arg` type
 // for which we have already created and instantiation of this.
 @chpldoc.nodoc
-proc fileWriter._writefOne(fmtStr, ref arg, i: int,
+proc fileWriter._writefOne(fmtStr, const ref arg, i: int,
                            ref cur: c_size_t, ref j: int,
                            argType: c_ptr(c_int), argTypeLen: int,
                            ref conv: qio_conv_t, ref gotConv: bool,
@@ -11928,22 +12082,6 @@ proc readf(fmt:string):bool throws {
   return try stdin.readf(fmt);
 }
 
-
-@chpldoc.nodoc
-proc fileReader._skipField() throws {
-  var err:errorCode = 0;
-  on this._home {
-    try this.lock(); defer { this.unlock(); }
-    var st = this.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
-    if st == QIO_AGGREGATE_FORMAT_JSON {
-      err = qio_channel_skip_json_field(false, _channel_internal);
-    } else {
-      err = ENOTSUP;
-    }
-  }
-  if err then try this._ch_ioerror(err, "in skipField");
-}
-
 /*
 
   Return a new string consisting of values formatted according to a
@@ -12153,7 +12291,11 @@ proc fileReader._extractMatch(m:regexMatch, ref arg:?t, ref error:errorCode)
       }
     }
     else {
-      arg = s:arg.type;
+      try {
+        arg = s:arg.type;
+      } catch {
+        error = EFORMAT;
+      }
     }
   } else {
     var empty:arg.type;
@@ -12185,6 +12327,25 @@ proc fileReader.extractMatch(m:regexMatch, ref arg) throws {
     try this._ch_ioerror(err, "in fileReader.extractMatch(m:regexMatch, ref " +
                               arg.type:string + ")");
   }
+}
+
+/*  Returns the value of a match
+
+    Assumes that the :record:`~IO.fileReader` has been marked before where
+    the captures are being returned. Will change the fileReader
+    offset to just after the match. Will not do anything
+    if error is set.
+
+    :arg m: a :record:`Regex.regexMatch` storing a location that matched
+    :arg t: the type of the value to return, defaults to string
+
+    :throws SystemError: If a match could not be extracted.
+ */
+@unstable("this overload of extractMatch is unstable pending a design discussion")
+proc fileReader.extractMatch(m: regexMatch, type t = string): t throws {
+  var arg:t;
+  try this.extractMatch(m, arg);
+  return arg;
 }
 
 // Assumes that the fileReader has been marked where the search began

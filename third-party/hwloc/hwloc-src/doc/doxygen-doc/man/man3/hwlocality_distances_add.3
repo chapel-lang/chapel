@@ -1,4 +1,4 @@
-.TH "hwlocality_distances_add" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_distances_add" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -39,7 +39,7 @@ The usual way to add distances is:
 .PP
 .nf
 hwloc_distances_add_handle_t handle;
-int err = -1;
+int err = \-1;
 handle = hwloc_distances_add_create(topology, "name", kind, 0);
 if (handle) {
   err = hwloc_distances_add_values(topology, handle, nbobjs, objs, values, 0);
@@ -67,7 +67,7 @@ Flags for adding a new distances to a topology\&.
 .in +1c
 .TP
 \fB\fIHWLOC_DISTANCES_ADD_FLAG_GROUP \fP\fP
-Try to group objects based on the newly provided distance information\&. This is ignored for distances between objects of different types\&. 
+Try to group objects based on the newly provided distance information\&. Grouping is only performed when the distances structure contains latencies, and when all objects are of the same type\&. 
 .TP
 \fB\fIHWLOC_DISTANCES_ADD_FLAG_GROUP_INACCURATE \fP\fP
 If grouping, consider the distance values as inaccurate and relax the comparisons during the grouping algorithms\&. The actual accuracy may be modified through the HWLOC_GROUPING_ACCURACY environment variable (see \fBEnvironment Variables\fP)\&. 
@@ -86,9 +86,9 @@ On error, the temporary distances structure and its content are destroyed\&.
 .PP
 \fBReturns\fP
 .RS 4
-\fC0\fP on success\&. 
+0 on success\&. 
 .PP
-\fC-1\fP on error\&. 
+-1 on error\&. 
 .RE
 .PP
 
@@ -99,7 +99,7 @@ Create a new empty distances structure\&. Create an empty distances structure to
 .PP
 Parameter \fCname\fP is optional, it may be \fCNULL\fP\&. Otherwise, it will be copied internally and may later be freed by the caller\&.
 .PP
-\fCkind\fP specifies the kind of distance as a OR'ed set of \fBhwloc_distances_kind_e\fP\&. Kind \fBHWLOC_DISTANCES_KIND_HETEROGENEOUS_TYPES\fP will be automatically set according to objects having different types in \fBhwloc_distances_add_values()\fP\&.
+\fCkind\fP specifies the kind of distance as a OR'ed set of \fBhwloc_distances_kind_e\fP\&. Only one kind of meaning and one kind of provenance may be given if appropriate (e\&.g\&. \fBHWLOC_DISTANCES_KIND_MEANS_BANDWIDTH\fP and \fBHWLOC_DISTANCES_KIND_FROM_USER\fP)\&. Kind \fBHWLOC_DISTANCES_KIND_HETEROGENEOUS_TYPES\fP will be automatically set according to objects having different types in \fBhwloc_distances_add_values()\fP\&.
 .PP
 \fCflags\fP must be \fC0\fP for now\&.
 .PP
@@ -128,9 +128,9 @@ On error, the temporary distances structure and its content are destroyed\&.
 .PP
 \fBReturns\fP
 .RS 4
-\fC0\fP on success\&. 
+0 on success\&. 
 .PP
-\fC-1\fP on error\&. 
+-1 on error\&. 
 .RE
 .PP
 

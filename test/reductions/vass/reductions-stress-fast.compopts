@@ -1,1 +1,1 @@
--snoParSafeWarning --fast  -s n=100000  -s r=1000
+--fast  -s n=100000  -s r=1000

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -144,6 +144,15 @@ void buildDefaultFunctions() {
     // Here we build default functions that are always generated (even when
     // the type symbol has FLAG_NO_DEFAULT_FUNCTIONS attached).
     if (AggregateType* ct = toAggregateType(type->type)) {
+
+      if (ct->symbol->hasFlag(FLAG_RESOLVED_EARLY)) {
+        if (ct->symbol->hasFlag(FLAG_REF)) {
+          // The frontend will generate '_ref' types early. These types
+          // really shouldn't have 'init=' (etc) generated for them...
+          continue;
+        }
+      }
+
       buildFieldAccessorFunctions(ct);
 
       if (ct->wantsDefaultInitializer()) {
@@ -736,7 +745,16 @@ static void buildChplEntryPoints() {
   // chpl_user_main is the (user) programmatic portion of the app
   //
   ModuleSymbol* mainModule   = ModuleSymbol::mainModule();
-  chplUserMain = chplGenMainExists();
+  if (chplUserMain == nullptr) {
+    chplUserMain = chplGenMainExists();
+  } else if (chplUserMain->hasFlag(FLAG_RESOLVED_EARLY)) {
+    // set mainReturnsSomething according to the return type of main
+    if (chplUserMain->retType &&
+        chplUserMain->retType != dtUnknown &&
+        chplUserMain->retType != dtVoid) {
+      mainReturnsSomething = true;
+    }
+  }
 
   if (fLibraryCompile == true && chplUserMain != NULL) {
     USR_WARN(chplUserMain,

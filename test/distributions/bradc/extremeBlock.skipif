@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# Our darwin testing machine cannot handle 32 locales
+# under gasnet with segment=fast, so skip this test in that config.
+
+if [[ $CHPL_TARGET_PLATFORM == darwin &&
+      $CHPL_COMM            == gasnet &&
+      $CHPL_GASNET_SEGMENT  == fast   ]]; then
+  echo True
+else
+  echo False
+fi

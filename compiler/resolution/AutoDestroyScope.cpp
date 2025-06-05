@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -165,6 +165,11 @@ void AutoDestroyScope::addEarlyDeinit(VarSymbol* var) {
   }
 
   INT_FATAL("could not find scope declaring var");
+}
+
+
+size_t AutoDestroyScope::numLocalsAndDefers() const {
+  return mLocalsAndDefers.size();
 }
 
 VarSymbol* AutoDestroyScope::findVariableUsedBeforeInitialized(Expr* stmt) {

@@ -4,7 +4,7 @@
 Using the Chapel Allocator from C
 =================================
 
-The Chapel runtime will select an allocator according to the ``CHPL_MEM``
+The Chapel runtime will select an allocator according to the ``CHPL_TARGET_MEM``
 environment variable. See :ref:`readme-chplenv` for details on how that
 works.  The default is usually the system allocator (ie malloc/free as
 supported by the C compiler and runtime) but some configurations use a

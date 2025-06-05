@@ -1,4 +1,4 @@
-.TH "hwlocality_helper_nodeset_convert" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_helper_nodeset_convert" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -28,7 +28,16 @@ Convert a NUMA node set into a CPU set\&. For each NUMA node included in the inp
 .PP
 If some CPUs have no local NUMA nodes, this function never sets their indexes in the output CPU set, even if a full node set is given in input\&.
 .PP
-Hence the entire topology node set is converted into the set of all CPUs that have some local NUMA nodes\&. 
+Hence the entire topology node set is converted into the set of all CPUs that have some local NUMA nodes\&.
+.PP
+\fBReturns\fP
+.RS 4
+0 on success\&. 
+.PP
+-1 with errno set to \fCENOMEM\fP on internal reallocation failure\&. 
+.RE
+.PP
+
 .SS "static int hwloc_cpuset_to_nodeset (\fBhwloc_topology_t\fP topology, \fBhwloc_const_cpuset_t\fP _cpuset, \fBhwloc_nodeset_t\fP nodeset)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
@@ -36,7 +45,16 @@ Convert a CPU set into a NUMA node set\&. For each PU included in the input \fC_
 .PP
 If some NUMA nodes have no CPUs at all, this function never sets their indexes in the output node set, even if a full CPU set is given in input\&.
 .PP
-Hence the entire topology CPU set is converted into the set of all nodes that have some local CPUs\&. 
+Hence the entire topology CPU set is converted into the set of all nodes that have some local CPUs\&.
+.PP
+\fBReturns\fP
+.RS 4
+0 on success\&. 
+.PP
+-1 with errno set to \fCENOMEM\fP on internal reallocation failure\&. 
+.RE
+.PP
+
 .SH "Author"
 .PP 
 Generated automatically by Doxygen for Hardware Locality (hwloc) from the source code\&.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -39,9 +39,11 @@ testMaybeRef(const char* test,
              bool expectErrors=false) {
   printf("\n### %s\n", test);
 
-  Context ctx;
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
+
+  ResolutionContext rcval(context);
+  auto rc = &rcval;
 
   std::string testname = test;
   testname += ".chpl";
@@ -67,7 +69,7 @@ testMaybeRef(const char* test,
     auto parentAst = idToAst(context, parentId);
     assert(parentAst && parentAst->isFunction());
     const ResolvedFunction* r = resolveConcreteFunction(context, parentId);
-    auto sig = inferRefMaybeConstFormals(context,
+    auto sig = inferRefMaybeConstFormals(rc,
                                          r->signature(),
                                          /* poiScope */ nullptr);
     auto untyped = sig->untyped();
@@ -275,9 +277,6 @@ static void test3h() {
   testMaybeRef("test3h",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) { }
-
         var global: int;
         proc foo() ref { return global; }         // M.foo
         proc foo() const ref { return global; }   // M.foo#1
@@ -295,9 +294,6 @@ static void test3i() {
   testMaybeRef("test3i",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) { }
-
         var global: int;
         proc foo() ref { return global; }         // M.foo
         proc foo() const ref { return global; }   // M.foo#1
@@ -431,9 +427,6 @@ static void test4h() {
   testMaybeRef("test4h",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) { }
-
         var global: int;
         proc foo() ref { return global; }         // M.foo
         proc foo() { return global; }             // M.foo#1
@@ -451,9 +444,6 @@ static void test4i() {
   testMaybeRef("test4i",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) { }
-
         var global: int;
         proc foo() ref { return global; }         // M.foo
         proc foo() { return global; }             // M.foo#1
@@ -748,9 +738,6 @@ static void test6h() {
   testMaybeRef("test6h",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) { }
-
         var global: int;
         proc foo() const ref { return global; }     // M.foo
         proc foo() { return global; }               // M.foo#1
@@ -769,9 +756,6 @@ static void test6i() {
   testMaybeRef("test6i",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) { }
-
         var global: int;
         proc foo() ref { return global; }        // M.foo
         proc foo() const ref { return global; }  // M.foo#1

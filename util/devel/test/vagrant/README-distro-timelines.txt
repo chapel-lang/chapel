@@ -1,25 +1,31 @@
 x means reached end of life
 - means end of life soon
-  (last updated: 2024-06-13)
+  (last updated: 2025-05-30)
 
 Alma Linux -- see https://wiki.almalinux.org/release-notes/
-           -- EOL dates probably match Rocky linux
-  8.x EOL 2029
-  9.x EOL 2032
-x 9.0 released May 2022
-x 9.1 released Nov 2022
-x 9.2 released May 2023
-  9.3 released Nov 2023
-  9.4 released May 2024
+           -- Version 9 will have active support until 31 May 2027, and security support until 31 May 2032.
+              Each minor version reaches end of life when the new version is released.
+              For example, AlmaLinux OS 9.2 reached end of life with the release of AlmaLinux OS 9.3.
+  8.x  EOL 2029
+  9.x  EOL 2032
+x 9.0  released May 2022
+x 9.1  released Nov 2022
+x 9.2  released May 2023
+x 9.3  released Nov 2023
+x 9.4  released May 2024
+x 9.5  released Nov 2024
+  9.6  released May 2025
+  10.0 released May 2025
 
 Alpine Linux -- see https://www.alpinelinux.org/releases/
 x 3.14  EOL 2023-05-01
 x 3.15  EOL 2023-11-01
 x 3.16  EOL 2024-05-23
-  3.17  EOL 2024-11-22
+x 3.17  EOL 2024-11-22
   3.18  EOL 2025-05-09
   3.19  EOL 2025-11-01
   3.20  EOL 2026-04-01
+  3.21  EOL 2026-11-01
 
 Amazon Linux
        -- see https://docs.aws.amazon.com/linux/al2022/ug/release-cadence.html
@@ -33,18 +39,19 @@ Arch
 * currently just testing the current release
 
 CentOS -- see https://wiki.centos.org/About/Product
+ * All CentOS non-stream versions are dead :(
 x 5 full updates until Jan 2014, maintenance until Mar 2017
 x 6 full updates until May 2017, maintenance until Nov 2020
 x   6.9      released Apr 2017
 x   6.10     released Jul 2018
-- 7 full updates until Dec 2020, maintenance until Jun 2024
+x 7 full updates until Dec 2020, maintenance until Jun 2024
 x   7.3      released Dec 2016
 x   7.4      released Sep 2017
 x   7.5      released May 2018
 x   7.6      released Dec 2018
 x   7.7      released Sep 2019
 x   7.8-2003 released Apr 2020
--   7.9-2009 released Nov 2020 EOL Jun 2024
+x   7.9-2009 released Nov 2020 EOL Jun 2024
     # note -- gcc 11 is available with devtoolset-11
       https://stackoverflow.com/questions/36327805/how-to-install-gcc-5-3-with-yum-on-centos-7-2/37355018
 x 8 not-stream - EOL 2021-12-31
@@ -55,7 +62,7 @@ CentOS Stream
        -- dnf list --showduplicates llvm && dnf install llvm-devel-14.0.6
 x 8 - EOL May 2024
   9 - EOL May 2027
-
+ 10 - EOL May 2030
 
 Debian -- see https://wiki.debian.org/DebianReleases
        -- and https://app.vagrantup.com/debian
@@ -63,11 +70,12 @@ x  6 "squeeze"  long-term support until Feb 2016
 x  7 "wheezy"   long-term support until May 2018
 x  8 "jessie"   long-term support until May 2020
 x  9 "stretch"  long-term support until Jun 2022
-- 10 "buster"   long-term support until Jun 2024
+x 10 "buster"   long-term support until Jun 2024
   11 "bullseye" long-term support until Jun 2026
   12 "bookworm" released June 2023
   13 "trixie"   expected release ?
   14 "forky"    expected release ?
+  15 "duke"     expected release ?
 
 Fedora -- see https://en.wikipedia.org/wiki/Fedora_Linux_release_history
        -- and https://fedoraproject.org/wiki/End_of_life
@@ -89,11 +97,14 @@ x 35 EOL Dec 2022
 x 36 EOL May 2023
 x 37 EOL Nov 2023
 x 38 EOL May 2024
-- 39 EOL Nov 2024
-  40 EOL May 2025
-  41 release Oct 2024
+x 39 EOL Nov 2024
+x 40 EOL May 2025
+  41 EOL Nov 2025
+  42 EOL May 2026
+  43 release Nov 2025
 
-FreeBSD -- see https://www.freebsd.org/security/unsupported.html
+FreeBSD -- see https://www.freebsd.org/security/unsupported.html (unsupported releases)
+        -- and https://www.freebsd.org/releases/ (all releases)
         -- and https://app.vagrantup.com/freebsd
         -- also note https://docs.freebsd.org/en/books/handbook/virtualization/#virtualization-guest-virtualbox
            has instructions for installing virtualbox guest additions, in
@@ -112,10 +123,13 @@ x 12.3 EOL Mar 2023
 x 12.4 EOL Dec 2023
 x 13.0 EOL Aug 2022
 x 13.1 EOL Jul 2023
-- 13.2 EOL Jul 2024
-  13.3 released Mar 2024
-  14.0 released Nov 2023
-  14.1 released Jun 2024
+x 13.2 EOL Jul 2024
+x 13.3 EOL Dec 2024
+x 14.0 EOL Sep 2024
+x 14.1 EOL Mar 2025
+- 13.4 EOL Jun 2025
+  14.2 released Dec 2024 (as of 3/5/25 there was no 14.2-STABLE vagrant box available from freebsd)
+  13.5 released Mar 2024
 
 OpenSuse -- see https://en.opensuse.org/Lifetime
          -- and https://app.vagrantup.com/opensuse
@@ -129,7 +143,7 @@ x 15.1 EOL Nov 2020
 x 15.2 EOL Dec 2021
 x 15.3 EOL Nov 2022
 x 15.4 EOL Nov 2023
-  15.5 EOL Dec 2024
+x 15.5 EOL Dec 2024
   15.6 EOL Dec 2025
 
 Rocky Linux -- see https://wiki.rockylinux.org/rocky/version/
@@ -143,7 +157,8 @@ x 9.0 EOL Nov 2022
 x 9.1 EOL May 2023
 x 9.2 EOL Nov 2023
 x 9.3 EOL May 2024
-  9.4 EOL May 2032
+x 9.4 EOL Nov 2024
+  9.5 EOL May 2024
 
 Ubuntu -- see https://wiki.ubuntu.com/Releases
        -- and https://app.vagrantup.com/ubuntu
@@ -152,7 +167,7 @@ x 12.04 "Precise Pangolin"  LTS until Apr 2017, EOL Apr 2017
 x 14.04 "Trusty Tahir"      LTS until Apr 2019, EOL Apr 2024
 x 16.04 "Xenial Xerus"      LTS until Apr 2021, EOL Apr 2026
 x 18.04 "Bionic Beaver"     LTS until Jun 2023, EOL Apr 2028
-  20.04 "Focal Fossa"       LTS until Apr 2025, EOL Apr 2030
+x 20.04 "Focal Fossa"       LTS until Apr 2025, EOL Apr 2030
   22.04 "Jammy Jellyfish"   LTS until Jun 2027, EOL Apr 2032
   24.04 "Noble Numbat"      LTS until Jun 2029, EOL Apr 2036
 
@@ -171,5 +186,6 @@ x 21.04 "Hirsute Hippo"     EOL Jan 2022
 x 21.10 "Impish Indri"      EOL July 2022
 x 22.10 "Kinetic Kudu"      EOL July 2023
 x 23.04 "Lunar Lobster"     EOL Jan 2024
-- 23.10 "Mantic Minotaur"   EOL Jul 2024
-  24.10 "Oracular Oriole"   EOL Jul 2025 (to be released)
+x 23.10 "Mantic Minotaur"   EOL Jul 2024
+  24.10 "Oracular Oriole"   EOL Jul 2025
+  25.04 "Plucky Puffin"     EOL Jan 2026

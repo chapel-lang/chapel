@@ -1,7 +1,7 @@
 import random
 import time
 
-n = 128*1024*1024;
+n = 128*1024*1024
 
 t1 = time.time()
 array = [random.randint(0, 0xffffffffffffffff) for _ in range(n)]

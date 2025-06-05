@@ -1,7 +1,7 @@
 # This is a container used to run homebrew-ci
 
-# Get the homebrew ubuntu container, set the platform to avoid warnings when on M1
-FROM --platform=linux/amd64 ghcr.io/homebrew/ubuntu22.04:master
+# Get the homebrew ubuntu container
+FROM ghcr.io/homebrew/ubuntu22.04:master
 
 # Redundant to brew_install.bash but imporant for anyone working in this container
 # which can be ran without brew_install.bash
@@ -11,9 +11,15 @@ ENV HOMEBREW_DEVELOPER=1
 
 RUN mkdir -p /home/linuxbrew
 # only really needed for interactive debugging
-# RUN sudo apt-get update
-# RUN sudo apt-get install -y vim
+# RUN sudo apt-get update && sudo apt-get install -y vim
 # ENV EDITOR=vim
+
+# Do the updates before applying our chapel.rb changes
+# Update Homebrew itself
+RUN brew update
+# Upgrade to the latest version of all installed formulae
+RUN brew upgrade
+
 
 # necessary so that updated chapel.rb formula can be committed, which is only way it
 # will be tested

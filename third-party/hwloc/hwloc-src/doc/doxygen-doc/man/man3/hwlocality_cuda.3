@@ -1,4 +1,4 @@
-.TH "hwlocality_cuda" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_cuda" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -39,7 +39,16 @@ Topology \fCtopology\fP and device \fCcudevice\fP must match the local machine\&
 .PP
 The function only returns the locality of the device\&. If more information about the device is needed, OS objects should be used instead, see \fBhwloc_cuda_get_device_osdev()\fP and \fBhwloc_cuda_get_device_osdev_by_index()\fP\&.
 .PP
-This function is currently only implemented in a meaningful way for Linux; other systems will simply get a full cpuset\&. 
+This function is currently only implemented in a meaningful way for Linux; other systems will simply get a full cpuset\&.
+.PP
+\fBReturns\fP
+.RS 4
+0 on success\&. 
+.PP
+-1 on error, for instance if device information could not be found\&. 
+.RE
+.PP
+
 .SS "static \fBhwloc_obj_t\fP hwloc_cuda_get_device_osdev (\fBhwloc_topology_t\fP topology, CUdevice cudevice)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
@@ -87,7 +96,16 @@ This function is identical to \fBhwloc_cudart_get_device_osdev_by_index()\fP\&.
 .SS "static int hwloc_cuda_get_device_pci_ids (\fBhwloc_topology_t\fP topology, CUdevice cudevice, int * domain, int * bus, int * dev)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
-Return the domain, bus and device IDs of the CUDA device \fCcudevice\fP\&. Device \fCcudevice\fP must match the local machine\&. 
+Return the domain, bus and device IDs of the CUDA device \fCcudevice\fP\&. Device \fCcudevice\fP must match the local machine\&.
+.PP
+\fBReturns\fP
+.RS 4
+0 on success\&. 
+.PP
+-1 on error, for instance if device information could not be found\&. 
+.RE
+.PP
+
 .SS "static \fBhwloc_obj_t\fP hwloc_cuda_get_device_pcidev (\fBhwloc_topology_t\fP topology, CUdevice cudevice)\fC [inline]\fP, \fC [static]\fP"
 
 .PP

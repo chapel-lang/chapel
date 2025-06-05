@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -29,8 +29,7 @@
 #include "chpl/uast/Variable.h"
 
 static void test1() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   QualifiedType qt =  resolveQualifiedTypeOfX(context,
                          R""""(
                          var x : if true then string else "not-a-type";
@@ -39,8 +38,7 @@ static void test1() {
 }
 
 static void test2() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   QualifiedType qt =  resolveQualifiedTypeOfX(context,
                          R""""(
                          var x : if false then "not-a-type" else int;
@@ -49,8 +47,7 @@ static void test2() {
 }
 
 static void test3() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   QualifiedType qt =  resolveQualifiedTypeOfX(context,
                          R""""(
                          var b : bool;
@@ -62,8 +59,7 @@ static void test3() {
 }
 
 static void test4() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   QualifiedType qt =  resolveTypeOfXInit(context,
                          R""""(
                          var b : bool;
@@ -76,8 +72,7 @@ static void test4() {
 }
 
 static void test5() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   QualifiedType qt =  resolveTypeOfXInit(context,
                          R""""(
                          record r {}
@@ -93,8 +88,7 @@ static void test5() {
 }
 
 static void test6() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   QualifiedType qt =  resolveTypeOfXInit(context,
                          R""""(
                          param b : bool;
@@ -106,8 +100,7 @@ static void test6() {
 }
 
 static void testIfVarErrorUseInElseBranch1() {
-  Context context;
-  auto ctx = &context;
+  auto ctx = buildStdContext();
   ErrorGuard guard(ctx);
 
   auto path = TEST_NAME_FROM_FN_NAME(ctx);
@@ -153,8 +146,7 @@ static void testIfVarErrorUseInElseBranch1() {
 
 // In this variation the use is in a 'else-if'.
 static void testIfVarErrorUseInElseBranch2() {
-  Context context;
-  auto ctx = &context;
+  auto ctx = buildStdContext();
   ErrorGuard guard(ctx);
 
   auto path = TEST_NAME_FROM_FN_NAME(ctx);
@@ -205,8 +197,7 @@ static void testIfVarErrorUseInElseBranch2() {
 
 // In this variation the use is in a deeply nested block.
 static void testIfVarErrorUseInElseBranch3() {
-  Context context;
-  auto ctx = &context;
+  auto ctx = buildStdContext();
   ErrorGuard guard(ctx);
 
   auto path = TEST_NAME_FROM_FN_NAME(ctx);
@@ -250,8 +241,7 @@ static void testIfVarErrorUseInElseBranch3() {
 
 // Uses of two if-vars with the same name across multiple branches.
 static void testIfVarErrorUseInElseBranch4() {
-  Context context;
-  auto ctx = &context;
+  auto ctx = buildStdContext();
   ErrorGuard guard(ctx);
 
   auto path = TEST_NAME_FROM_FN_NAME(ctx);
@@ -321,8 +311,7 @@ static void testIfVarErrorUseInElseBranch4() {
 }
 
 static void testIfVarErrorNonClassType() {
-  Context context;
-  auto ctx = &context;
+  auto ctx = buildStdContext();
   ErrorGuard guard(ctx);
 
   auto path = TEST_NAME_FROM_FN_NAME(ctx);
@@ -354,8 +343,7 @@ static void testIfVarErrorNonClassType() {
 }
 
 static void testIfVarNonNilInThen() {
-  Context context;
-  auto ctx = &context;
+  auto ctx = buildStdContext();
   ErrorGuard guard(ctx);
 
   auto path = TEST_NAME_FROM_FN_NAME(ctx);
@@ -390,8 +378,7 @@ static void testIfVarNonNilInThen() {
 }
 
 static void testIfVarBorrow() {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program =
@@ -417,6 +404,34 @@ static void testIfVarBorrow() {
   assert(obj->basicClassType()->name() == "C");
 }
 
+// ensure assigning to an unmanaged doesn't borrow
+static void testIfVarUnmanaged() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program =
+    R"""(
+    class C {
+      var i : int;
+    }
+
+    proc retClass() : unmanaged C? {
+      return new unmanaged C(5);
+    }
+
+    if const obj = retClass() {
+      var x = obj.i;
+    }
+    )""";
+
+  auto vars = resolveTypesOfVariables(context, program, {"x", "obj"});
+  assert(vars["x"].type()->isIntType());
+  auto obj = vars["obj"].type()->toClassType();
+  assert(obj->decorator().isNonNilable());
+  assert(obj->decorator().isUnmanaged());
+  assert(obj->basicClassType()->name() == "C");
+}
+
 int main() {
   test1();
   test2();
@@ -431,6 +446,7 @@ int main() {
   testIfVarErrorUseInElseBranch4();
   testIfVarErrorNonClassType();
   testIfVarNonNilInThen();
+  testIfVarUnmanaged();
 
   return 0;
 }

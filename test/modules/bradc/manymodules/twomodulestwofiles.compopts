@@ -1,1 +1,1 @@
-modules/main.chpl
+modules/main.chpl -o twomodulestwofiles

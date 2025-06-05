@@ -1,0 +1,7 @@
+testLayoutCS.chpl:1: warning: 'LayoutCS' and its 'CS' layout are deprecated; please use 'CompressedSparseLayout' and its 'csrLayout' or 'cscLayout' layouts instead
+testLayoutCS.chpl:4: warning: 'CS' is deprecated, please use 'CompressedSparseLayout.[csrLayout|cscLayout]' instead
+{
+ (1, 1)
+ (10, 10)
+}
+

@@ -1,0 +1,12 @@
+diff --git a/registration-config.json b/registration-config.json
+--- a/registration-config.json
++++ b/registration-config.json
+@@ -1,7 +1,7 @@
+ {
+     "parameter_classes": {
+         "array": {
+-            "nd": [1],
++            "nd": [1,2,3],
+             "dtype": [
+                 "int",
+                 "uint",

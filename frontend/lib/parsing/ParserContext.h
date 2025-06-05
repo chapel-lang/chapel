@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -37,9 +37,12 @@ struct AttributeGroupParts {
   bool isUnstable;
   bool isParenfulDeprecated;
   bool isStable;
+  bool hasEdition;
   UniqueString deprecationMessage;
   UniqueString unstableMessage;
   UniqueString parenfulDeprecationMessage;
+  UniqueString firstEdition;
+  UniqueString lastEdition;
 };
 
 struct ParserContext {
@@ -111,7 +114,7 @@ struct ParserContext {
     this->isBuildingFormal        = false;
     this->isVarDeclConfig         = false;
     this->varDestinationExpr      = nullptr;
-    this->attributeGroupParts     = {nullptr, nullptr, false, false, false, false, UniqueString(), UniqueString(), UniqueString() };
+    this->attributeGroupParts     = {nullptr, nullptr, false, false, false, false, false, UniqueString(), UniqueString(), UniqueString(), UniqueString(), UniqueString() };
     this->hasAttributeGroupParts  = false;
     this->numAttributesBuilt      = 0;
     YYLTYPE emptyLoc = {0};
@@ -153,10 +156,14 @@ struct ParserContext {
 
   // If attributes do not exist yet, returns nullptr.
   owned<AttributeGroup> buildAttributeGroup(YYLTYPE locationOfDecl);
+  // Same as buildAttributeGroup, but resets the state and pushes onto group stack
+  void buildAndPushAttributeGroup(YYLTYPE locationOfDecl);
+
   PODUniqueString notePragma(YYLTYPE loc, AstNode* pragmaStr);
   void noteDeprecation(YYLTYPE loc, MaybeNamedActualList* actuals);
   void noteUnstable(YYLTYPE loc, MaybeNamedActualList* actuals);
   void noteStable(YYLTYPE loc, MaybeNamedActualList* actuals);
+  void noteEdition(YYLTYPE loc, MaybeNamedActualList* actuals);
   void resetAttributeGroupPartsState();
 
   CommentsAndStmt buildPragmaStmt(YYLTYPE loc, CommentsAndStmt stmt);
@@ -256,6 +263,11 @@ struct ParserContext {
   ParserExprList* appendList(ParserExprList* dst, CommentsAndStmt cs);
   AstList consumeList(ParserExprList* lst);
   AstList consume(AstNode* e);
+
+  ParserNDArrayList* makeNDArrayList();
+  ParserNDArrayList* appendNDArrayList(ParserNDArrayList* dst,
+                                       NDArrayElement e);
+  Array* buildNDArray(YYLTYPE location, ParserNDArrayList* lst);
 
   void consumeNamedActuals(MaybeNamedActualList* lst,
                            AstList& actualsOut,
@@ -641,7 +653,7 @@ struct ParserContext {
 
   // Given a list of vars, build either a single var or a multi-decl.
   CommentsAndStmt
-  buildVarOrMultiDeclStmt(YYLTYPE locEverything, ParserExprList* vars);
+  buildVarOrMultiDeclStmt(YYLTYPE locEverything, AttributeGroup* attributeGroup, ParserExprList* vars);
 
   TypeDeclParts enterScopeAndBuildTypeDeclParts(YYLTYPE locStart,
                                                 YYLTYPE locName,
@@ -742,8 +754,8 @@ struct ParserContext {
                                 PODUniqueString name);
 
   CommentsAndStmt buildInterfaceStmt(YYLTYPE location,
-                                     YYLTYPE identLocation,
-                                     PODUniqueString name,
+                                     YYLTYPE headerLoc,
+                                     TypeDeclParts parts,
                                      ParserExprList* formals,
                                      YYLTYPE locBody,
                                      CommentsAndStmt body);

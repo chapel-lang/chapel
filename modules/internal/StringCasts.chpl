@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -304,7 +304,4 @@ operator :(x: string, type t:chpl_anycomplex) throws {
 
     return retVal;
   }
-
-  // Catch all cast anything -> string is in ChapelIO
-
 }

@@ -8,6 +8,6 @@
   Redefined here:
       |
     3 |   var foo: int;
-      |       ⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |       ⎺⎺⎺⎺⎺⎺⎺⎺
       |
 

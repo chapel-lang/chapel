@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -39,12 +39,17 @@
 // 1. refactor pid fields from distribution, domain, and array classes
 //
 
+/* Support for block-distributing arrays and domains to target locales. */
+
+@chplcheck.ignore("IncorrectIndentation")
+module BlockDist {
+
 private use DSIUtil;
 private use ChapelUtil;
 private use CommDiagnostics;
 private use ChapelLocks;
 private use ChapelDebugPrint;
-private use LayoutCS;
+private use CompressedSparseLayout;
 
 public use SparseBlockDist;
 //
@@ -57,11 +62,11 @@ public use SparseBlockDist;
 config param debugBlockDist = false;
 config param debugBlockDistBulkTransfer = false;
 
-// TODO: This is no longer used, deprecate with warning because it is used
-// in miniMD's release Makefile and compopts.
+@deprecated("'disableAliasedBulkTransfer' is deprecated and has no effect")
 config const disableAliasedBulkTransfer = true;
 
 config param disableBlockDistBulkTransfer = false;
+config param disableBlockDistArrayViewElision = false;
 
 config param sanityCheckDistribution = false;
 
@@ -944,10 +949,35 @@ iter BlockImpl.activeTargetLocales(const space : domain = boundingBox) {
   // The subset {1..10 by 4} will involve locales 0, 1, and 3.
   foreach i in {(...dims)} {
     const chunk = chpl__computeBlock(i, targetLocDom, boundingBox, boundingBox.dims());
-    // TODO: Want 'contains' for a domain. Slicing is a workaround.
+    // TODO: Want 'overlaps' for a domain. Slicing is a workaround.
     if locSpace[(...chunk)].sizeAs(int) > 0 then
       yield i;
   }
+}
+
+iter BlockImpl.activeTargetLocales(const space : range(?)) {
+  compilerAssert(rank==1);
+  const dims = targetLocsIdx(space.first)..targetLocsIdx(space.last);
+
+  // In case 'space' is a strided domain we need to check that the locales
+  // in 'dims' actually contain indices in 'locSpace'.
+  //
+  // Note that we cannot use a simple stride here because it is not guaranteed
+  // that each locale contains the same number of indices. For example, the
+  // domain {1..10} over four locales will split like:
+  //   L0: -max(int)..3
+  //   L1: 4..5
+  //   L2: 6..8
+  //   L3: 9..max(int)
+  //
+  // The subset {1..10 by 4} will involve locales 0, 1, and 3.
+  foreach i in dims {
+    const chunk = chpl__computeBlock(i, targetLocDom, boundingBox, boundingBox.dims());
+    // TODO: Want 'overlaps' for a domain. Slicing is a workaround.
+    if space[chunk[0]].sizeAs(int) > 0 then
+      yield i;
+  }
+
 }
 
 // create a domain over an existing blockDist Distribution
@@ -966,6 +996,7 @@ proc type blockDist.createDomain(dom: domain(?), targetLocales: [] locale = Loca
 }
 
 // create a domain over a blockDist Distribution constructed from a series of ranges
+pragma "last resort"
 proc type blockDist.createDomain(rng: range(?)..., targetLocales: [] locale = Locales) {
   return createDomain({(...rng)}, targetLocales);
 }
@@ -1024,6 +1055,7 @@ proc type blockDist.createArray(
 
 // create an array over a blockDist Distribution constructed from a series of ranges, default initialized
 pragma "no copy return"
+pragma "last resort"
 proc type blockDist.createArray(
   rng: range(?)...,
   type eltType,
@@ -1039,6 +1071,7 @@ proc type blockDist.createArray(rng: range(?)..., type eltType) {
 
 // create an array over a blockDist Distribution constructed from a series of ranges, initialized with the given value or iterator
 pragma "no copy return"
+pragma "last resort"
 @unstable("'blockDist.createArray' with an 'initExpr' formal is unstable and may change in a future release")
 proc type blockDist.createArray(
   rng: range(?)...,
@@ -1060,6 +1093,7 @@ proc type blockDist.createArray(rng: range(?)..., type eltType, initExpr: ?t)
 
 // create an array over a blockDist Distribution constructed from a series of ranges, initialized from the given array
 pragma "no copy return"
+pragma "last resort"
 @unstable("'blockDist.createArray' with an 'initExpr' formal is unstable and may change in a future release")
 proc type blockDist.createArray(
   rng: range(?)...,
@@ -1336,7 +1370,7 @@ proc BlockDom.dsiDims() do        return whole.dims();
 proc BlockDom.dsiGetIndices() do  return whole.getIndices();
 proc BlockDom.dsiMember(i) do     return whole.contains(i);
 proc BlockDom.doiToString() do    return whole:string;
-proc BlockDom.dsiSerialWrite(x) { x.write(whole); }
+proc BlockDom.dsiSerialWrite(x) throws { x.write(whole); }
 proc BlockDom.dsiLocalSlice(param strides, ranges) do return whole((...ranges));
 override proc BlockDom.dsiIndexOrder(i) do              return whole.indexOrder(i);
 override proc BlockDom.dsiMyDist() do                   return dist;
@@ -1500,6 +1534,7 @@ inline proc BlockArr.dsiBoundsCheck(i: rank*idxType) {
   return dom.dsiMember(i);
 }
 
+pragma "not called from gpu"
 pragma "fn unordered safe"
 proc BlockArr.nonLocalAccess(i: rank*idxType) ref {
   if doRADOpt {
@@ -1635,14 +1670,14 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
   }
 }
 
-proc BlockArr.dsiSerialRead(f) {
+proc BlockArr.dsiSerialRead(f) throws {
   chpl_serialReadWriteRectangular(f, this);
 }
 
 //
 // output array
 //
-proc BlockArr.dsiSerialWrite(f) {
+proc BlockArr.dsiSerialWrite(f) throws {
   chpl_serialReadWriteRectangular(f, this);
 }
 
@@ -1723,6 +1758,10 @@ inline proc LocBlockArr.this(i) ref {
 
 override proc BlockDom.dsiSupportsAutoLocalAccess() param {
   return true;
+}
+
+override proc BlockDom.dsiSupportsArrayViewElision() param {
+  return !disableBlockDistArrayViewElision;
 }
 
 ///// Privatization and serialization ///////////////////////////////////////
@@ -2298,3 +2337,5 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
   delete op;
   return res;
 }
+
+} // module BlockDist

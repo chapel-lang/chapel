@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -391,8 +391,7 @@ static void test6() {
 
 static void test7() {
   printf("test7\n");
-  Context ctx;
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   Context* c = context;
 
   // test that we can pass a child class to its parent class type
@@ -606,12 +605,36 @@ static void test9() {
         var x;
       }
 
-      var a : Bar(int);
+      type t = Bar(int);
       var b = new Bar(3);
-      )""", {"a", "b"});
+      )""", {"t", "b"});
 
   CanPassResult r;
-  r = canPass(context, vars.at("b"), vars.at("a")); assert(passesAsIs(r));
+  QualifiedType t = vars.at("t");
+  auto formal = QualifiedType(QualifiedType::IN, t.type());
+  r = canPass(context, vars.at("b"), formal); assert(passesAsIs(r));
+}
+
+static void test10() {
+  printf("test9\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+      class C {
+        type A, B;
+      }
+
+      type a = Bar(int);
+      type b = Bar(int, int);
+      )""", {"a", "b"});
+
+
+  // test that partial instantiation passing works with classes
+  CanPassResult r;
+  r = canPass(context, vars.at("b"), vars.at("a"));
+  assert(passesInstantiates(r));
 }
 
 int main() {
@@ -624,6 +647,7 @@ int main() {
   test7();
   test8();
   test9();
+  test10();
 
   return 0;
 }

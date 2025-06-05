@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+# skip if printchplbuilds finds more than 1 build
+# this messes up the parsing in the prediff
+chpl_python=$($CHPL_HOME/util/config/find-python.sh)
+printchplbuilds=$CHPL_HOME/util/chplenv/printchplbuilds.py
+
+if $chpl_python $printchplbuilds --bash 1 &>/dev/null; then
+  echo True
+else
+  echo False
+fi

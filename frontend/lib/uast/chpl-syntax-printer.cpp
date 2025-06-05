@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -298,7 +298,6 @@ struct ChplSyntaxVisitor {
        || callee->toIdentifier()->name() == USTR("unmanaged")
        || callee->toIdentifier()->name() == USTR("shared")
        || callee->toIdentifier()->name() == USTR("sync")
-       || callee->toIdentifier()->name() == USTR("single")
        || callee->toIdentifier()->name() == USTR("atomic")))
         return true;
       return false;
@@ -639,10 +638,6 @@ struct ChplSyntaxVisitor {
     if (auto ident = node->target()) {
       printAst(ident);
     }
-  }
-
-  void visit(const CStringLiteral* node) {
-    ss_ << "c\"" << escapeStringC(node->value().str()) << '"';
   }
 
   void visit(const Defer* node) {

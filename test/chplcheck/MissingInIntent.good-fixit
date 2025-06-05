@@ -1,0 +1,38 @@
+module MissingInIntent {
+
+  record myData {
+    var x: int;
+    proc init() {
+      x = 0;
+    }
+    proc init(in d: int) {
+      x = d;
+    }
+  }
+
+
+  record R {
+    var x: int;
+    var y: myData;
+    proc init(in newX: int) {
+      x = newX;
+      y = new myData();
+    }
+    proc init(in newY: myData) {
+      x = 0;
+      y = newY;
+    }
+    @chplcheck.ignore("UnusedFormal")
+    proc init(newY: myData, dummy: int) {
+      x = newY.x;
+      y = new myData();
+    }
+    @chplcheck.ignore("UnusedFormal")
+    proc init(newY: myData, dummy: int, dummy2: int) {
+      init this;
+      x = 0;
+      y = newY;
+    }
+  }
+
+}

@@ -192,7 +192,7 @@ assert(v6.eltType == real);
   .. note::
 
       The base LinearAlgebra module strictly supports ``DefaultRectangular``
-      arrays for matrix operations. Other layouts (such as ``LayoutCS``) and
+      arrays for matrix operations. Other layouts (such as ``CompressedSparseLayout``) and
       distributions (such as ``BlockDist``) will be supported through
       LinearAlgebra submodules.
 
@@ -405,16 +405,16 @@ use LinearAlgebra.Sparse;
 
   Currently only CSR matrices are supported. A CSR matrix is
   composed of a 2D array that is domain-mapped to a ``CS()`` layout, from
-  the :mod:`LayoutCS` layout module.
+  the :mod:`CompressedSparseLayout` layout module.
 
   For example, the following CSR matrix (``CS(compressRows=true)``)
   **is supported** by this submodule:
 */
 
 {
-  use LayoutCS;
+  use CompressedSparseLayout;
   const parentDom = {1..100, 1..100};
-  var csrDom: sparse subdomain(parentDom) dmapped new dmap(new CS());
+  var csrDom: sparse subdomain(parentDom) dmapped new csrLayout();
   var csrMatrix: [csrDom] real; // Supported by LinearAlgebra.Sparse
 }
 
@@ -474,9 +474,9 @@ use LinearAlgebra.Sparse;
 
 { // Factory functions scope
 // Creating CSR domains & arrays in Chapel without ``LinearAlgebra.Sparse``:
-use LayoutCS;
+use CompressedSparseLayout;
 var parentDom = {0..#3, 0..#3}; // Parent domain
-var csrDom: sparse subdomain(parentDom) dmapped new dmap(new CS()); // CSR domain
+var csrDom: sparse subdomain(parentDom) dmapped new csrLayout(); // CSR domain
 var csrArr: [csrDom] real; // CSR array
 
 // Adding indices to a sparse domain:

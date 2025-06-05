@@ -1,0 +1,1 @@
+gpuId.chpl:1: error: halt reached - Can not use 'gpuId' field on a non gpu locale

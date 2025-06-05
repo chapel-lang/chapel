@@ -1,3 +1,4 @@
+import Sort;
 use HashedDist;
 
 record MyMapper {
@@ -37,7 +38,7 @@ D += 3.5;
 
 // check .sorted()
 writeln("D is:");
-for d in D.sorted() {
+for d in Sort.sorted(D) {
   writeln(d);
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -36,9 +36,10 @@ module ChapelShortArrayTransfer {
 
 
   proc chpl__staticCheckShortArrayTransfer(a, b) param {
-    // Engin: this is the case I'm focusing on in the initial PR. This can
-    // definitely be loosened up... by a lot.
-    return !disableShortArrayTransfer && isProtoSlice(a) && isProtoSlice(b);
+    // This can be loosened up as we expand SAT
+    return !disableShortArrayTransfer &&
+           isProtoSlice(a) && a.supportsShortArrayTransfer() &&
+           isProtoSlice(b) && b.supportsShortArrayTransfer();
   }
 
   inline proc chpl__dynamicCheckShortArrayTransfer(a, b) {

@@ -1,0 +1,2 @@
+Warning: CHPL_MEM is deprecated, please unset it and use CHPL_TARGET_MEM
+Warning: CHPL_JEMALLOC is deprecated, please unset it and use CHPL_TARGET_JEMALLOC

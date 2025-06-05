@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -30,7 +30,7 @@
 
   The heap accepts a :ref:`comparator <comparators>` to determine how elements
   are compared. The default comparator is an instance of
-  :record:`~Sort.DefaultComparator` and makes a max-heap. In this case, ``top``
+  :record:`~Sort.defaultComparator` and makes a max-heap. In this case, ``top``
   will return the greatest element in the heap.
 
   If a ``reverseComparator`` is passed to ``init``,
@@ -43,16 +43,7 @@ module Heap {
   private use List;
   private use IO;
 
-  public use Sort only DefaultComparator, reverseComparator, ReverseComparator;
-
-  // TODO: remove this module and its public use when the deprecations have been
-  // removed
-  pragma "ignore deprecated use"
-  private module HideDeprecatedReexport {
-    public use Sort only defaultComparator;
-  }
-
-  public use HideDeprecatedReexport;
+  public use Sort only defaultComparator, reverseComparator;
   private use Sort;
 
   // The locker is borrowed from List.chpl
@@ -145,7 +136,7 @@ module Heap {
       :arg comparator: The comparator to use
     */
     proc init(type eltType, param parSafe = false,
-              comparator: record = new DefaultComparator()) {
+              comparator: record = new defaultComparator()) {
       _checkType(eltType);
       this.eltType = eltType;
       this.parSafe = parSafe;
@@ -346,6 +337,21 @@ module Heap {
     }
 
     /*
+      Clear the contents of this heap.
+
+      .. warning::
+
+        Clearing the contents of this heap will invalidate all existing
+        references to the elements contained in this heap.
+    */
+    proc ref clear() {
+      on this {
+        _enter(); defer _leave();
+        _data.clear();
+      }
+    }
+
+    /*
       Iterate over the elements of this heap in an arbitrary order.
     */
     iter these() ref {
@@ -417,7 +423,7 @@ module Heap {
     :rtype: heap(t, comparator)
   */
   proc createHeap(const ref x: list(?t), param parSafe: bool = false,
-                  comparator: ? = new DefaultComparator()) {
+                  comparator: ? = new defaultComparator()) {
     var h = new heap(t, parSafe, comparator);
     h._commonInitFromIterable(x);
     return h;
@@ -437,7 +443,7 @@ module Heap {
     :rtype: heap(t, comparator)
   */
   proc createHeap(const ref x: [?d] ?t, param parSafe: bool = false,
-                  comparator: ? = new DefaultComparator()) {
+                  comparator: ? = new defaultComparator()) {
     var h = new heap(t, parSafe, comparator);
     h._commonInitFromIterable(x);
     return h;

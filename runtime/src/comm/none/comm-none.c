@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -41,6 +41,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <assert.h>
+#include <unistd.h>
 
 // Helper functions
 
@@ -98,6 +99,10 @@ int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
   return 0;
 }
 
+void chpl_comm_free_nb_handle(chpl_comm_nb_handle_t h) {
+  assert(h == NULL);
+}
+
 int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
 {
   return 0;
@@ -117,11 +122,42 @@ void chpl_comm_pre_mem_init(void) { }
 
 void chpl_comm_post_mem_init(void) { }
 
+static const char* chpl_get_debugger_cmd_file(void);
+static const char* chpl_get_debugger_cmd_file(void) {
+  //
+  // WARNING: while it would be nicer for users to just be able to specify
+  // arbitrary arguments, this is susceptible to injection. By forcing the
+  // user to specify a debugger command file (which we then pass via
+  // --command/--source) we can avoid this problem.
+  //
+  const char* debuggerCmdFile = chpl_env_rt_get("DEBUGGER_CMD_FILE", NULL);
+  if (debuggerCmdFile != NULL) {
+    if (access(debuggerCmdFile, R_OK) != 0) {
+      chpl_warning("CHPL_RT_DEBUGGER_CMD_FILE file not found, it will be ignored", 0,
+                   CHPL_FILE_IDX_COMMAND_LINE);
+      debuggerCmdFile = NULL;
+    }
+  }
+  return debuggerCmdFile;
+}
+
 int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
-  int i;
-  char* command = chpl_glom_strings(2, "gdb -q -ex 'break gdbShouldBreakHere' --args ",
-                                    argv[0]);
-  for (i=1; i<argc; i++) {
+
+  const char* debuggerCmdFile = chpl_get_debugger_cmd_file();
+  char* command;
+  if (debuggerCmdFile != NULL) {
+    command = chpl_glom_strings(4,
+      "gdb -q -ex 'break debuggerBreakHere' --command ",
+      debuggerCmdFile,
+      " --args ",
+      argv[0]);
+  } else {
+    command = chpl_glom_strings(2,
+      "gdb -q -ex 'break debuggerBreakHere' --args ",
+      argv[0]);
+  }
+
+  for (int i=1; i<argc; i++) {
     if (i != gdbArgnum) {
       command = chpl_glom_strings(3, command, " ", argv[i]);
     }
@@ -132,10 +168,22 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
 }
 
 int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status) {
-  int i;
-  char* command = chpl_glom_strings(2, "lldb -o 'b gdbShouldBreakHere' -- ",
-                                    argv[0]);
-  for (i=1; i<argc; i++) {
+
+  const char* debuggerCmdFile = chpl_get_debugger_cmd_file();
+  char* command;
+  if (debuggerCmdFile != NULL) {
+    command = chpl_glom_strings(4,
+      "lldb -o 'b debuggerBreakHere' --source ",
+      debuggerCmdFile,
+      " -- ",
+      argv[0]);
+  } else {
+    command = chpl_glom_strings(2,
+      "lldb -o 'b debuggerBreakHere' -- ",
+      argv[0]);
+  }
+
+  for (int i=1; i<argc; i++) {
     if (i != lldbArgnum) {
       command = chpl_glom_strings(3, command, " ", argv[i]);
     }

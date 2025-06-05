@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -120,7 +120,7 @@ Expr* preFold(CallExpr* call) {
           symExpr->getValType()->symbol->hasFlag(FLAG_TUPLE) == false) {
 
       } else if (isLcnSymbol(symExpr->symbol())) {
-        if (!isFunctionType(symExpr->symbol()->type)) {
+        if (!isFunctionType(symExpr->symbol()->getValType())) {
           baseExpr->replace(new UnresolvedSymExpr("this"));
           call->insertAtHead(baseExpr);
           call->insertAtHead(gMethodToken);
@@ -150,15 +150,45 @@ Expr* preFold(CallExpr* call) {
 
       thisTemp->addFlag(FLAG_EXPR_TEMP);
 
-      callExpr->replace(new UnresolvedSymExpr("this"));
+      // toCallExpr(baseExpr) lies and returns a CallExpr for ContextCall.
+      // In this case, we want to store the whole ContextCall in a temp;
+      // so, check if we were lied to.
+      Expr* receiver = nullptr;
+      if (auto cc = toContextCallExpr(callExpr->parentExpr)) {
+        receiver = cc;
+      } else {
+        receiver = callExpr;
+      }
 
-      retval = new CallExpr(PRIM_MOVE, thisTemp, callExpr);
-
-      call->insertAtHead(new SymExpr(thisTemp));
-      call->insertAtHead(gMethodToken);
-
+      // Insert the definition of the temp.
       call->getStmtExpr()->insertBefore(new DefExpr(thisTemp));
+
+      SymExpr* useToDerefAndRetarget = nullptr;
+      if (isFunctionType(receiver->typeInfo()->getValType())) {
+        // If it is a function, the compiler can handle it in the base
+        // expression, and there is no 'this' method defined for it.
+        auto se = new SymExpr(thisTemp);
+        if (receiver->typeInfo()->isRef()) useToDerefAndRetarget = se;
+        receiver->replace(se);
+
+      } else {
+        // Otherwise, construct a call to '<receiver>.this(...)'.
+        receiver->replace(new UnresolvedSymExpr("this"));
+        call->insertAtHead(new SymExpr(thisTemp));
+        call->insertAtHead(gMethodToken);
+      }
+
+      retval = new CallExpr(PRIM_MOVE, thisTemp, receiver);
       call->getStmtExpr()->insertBefore(retval);
+
+      if (auto se = useToDerefAndRetarget) {
+        auto derefTemp = newTemp();
+        call->getStmtExpr()->insertBefore(new DefExpr(derefTemp));
+        auto deref = new CallExpr(PRIM_DEREF, se->symbol());
+        auto move = new CallExpr(PRIM_MOVE, derefTemp, deref);
+        call->getStmtExpr()->insertBefore(move);
+        se->setSymbol(derefTemp);
+      }
     }
 
   } else {
@@ -273,7 +303,7 @@ static void setRecordCopyableFlags(AggregateType* at) {
       // special case since while implicit reads of sync/single are not yet removed
       // with their removal, the init= that throws a warning will be gone
       FnSymbol* initEq = NULL;
-      if(!ts->hasFlag(FLAG_SYNC) && !ts->hasFlag(FLAG_SINGLE)) {
+      if(!ts->hasFlag(FLAG_SYNC)) {
         // Try resolving a test init= to set the flags
         const char* err = NULL;
         initEq = findCopyInitFn(at, err);
@@ -551,7 +581,7 @@ static Expr* preFoldPrimInitVarForManagerResource(CallExpr* call) {
       INT_ASSERT(isSymExpr(call->get(2)));
 
       if (call->id == breakOnResolveID) {
-        gdbShouldBreakHere();
+        debuggerBreakHere();
       }
 
       Symbol* lhs = se->symbol();
@@ -697,7 +727,7 @@ static Expr* preFoldPrimInitVarForManagerResource(CallExpr* call) {
 }
 
 static Expr* preFoldPrimResolves(CallExpr* call) {
-  if (call->id == breakOnResolveID) gdbShouldBreakHere();
+  if (call->id == breakOnResolveID) debuggerBreakHere();
 
   // This primitive should only have one actual.
   INT_ASSERT(call && call->numActuals() == 1);
@@ -1306,6 +1336,24 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
+  case PRIM_SPLIT_INIT_UPDATE_TYPE: {
+    INT_ASSERT(call->numActuals() == 2);
+
+    SymExpr* lhs = toSymExpr(call->get(1));
+    SymExpr* rhs = toSymExpr(call->get(2));
+
+    INT_ASSERT(lhs != NULL);
+    INT_ASSERT(rhs != NULL);
+
+    if (lhs->typeInfo() == dtSplitInitType) {
+      if (rhs->typeInfo()->getValType() != dtSplitInitType) {
+        lhs->symbol()->type = rhs->typeInfo()->getValType();
+      }
+    }
+    retval = new CallExpr(PRIM_NOOP);
+    call->replace(retval);
+  }
+
   case PRIM_COERCE: {
     if (SymExpr* se = toSymExpr(call->get(2))) {
       if (dtDomain && se->symbol() == dtDomain->symbol) {
@@ -1707,14 +1755,54 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
-  case PRIM_IS_FCF_TYPE: {
+  case PRIM_IS_PROC_TYPE: {
     Type* t = call->get(1)->typeInfo();
+    int64_t mask = 0;
 
-    if (t->symbol->hasFlag(FLAG_FUNCTION_CLASS))
-      retval = new SymExpr(gTrue);
-    else
-      retval = new SymExpr(gFalse);
+    // Get the second arg as a 'param int' if it exists.
+    auto arg2 = call->numActuals() >= 2 ? call->get(2) : nullptr;
+    bool got = get_int(arg2, &mask);
+    INT_ASSERT(got || !arg2);
 
+    bool flag = false;
+    if (mask == 0 && t->symbol->hasFlag(FLAG_FUNCTION_CLASS)) {
+      INT_ASSERT(!got);
+      flag = true;
+
+    } else if (auto ft1 = toFunctionType(t)) {
+      bool maskConflicts = false;
+      auto ft2 = ft1->getWithMask(mask, maskConflicts);
+      INT_ASSERT(!maskConflicts);
+
+      // If nothing changed after applying the mask, then we have a match.
+      flag = (ft2 == ft1);
+    }
+
+    retval = new SymExpr(flag ? gTrue : gFalse);
+    call->replace(retval);
+
+    break;
+  }
+
+  case PRIM_TO_PROC_TYPE: {
+    Type* t = call->get(1)->typeInfo();
+    int64_t mask = 0;
+
+    // Get the second arg as a 'param int' if it exists.
+    auto arg2 = call->numActuals() >= 2 ? call->get(2) : nullptr;
+    bool got = get_int(arg2, &mask);
+    INT_ASSERT(got || !arg2);
+
+    if (auto ft1 = toFunctionType(t)) {
+      bool maskConflicts = false;
+      auto ft2 = ft1->getWithMask(mask, maskConflicts);
+      INT_ASSERT(!maskConflicts);
+      retval = new SymExpr(ft2->symbol);
+    } else {
+      INT_FATAL(call, "Expected a function type!");
+    }
+
+    INT_ASSERT(retval);
     call->replace(retval);
 
     break;
@@ -2341,15 +2429,6 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
-  case PRIM_BREAKPOINT: {
-    if (!debugCCode) {
-      // if not in debug mode, remove the primitive
-      retval = new CallExpr(PRIM_NOOP);
-      call->replace(retval);
-    }
-    break;
-  }
-
   case PRIM_FORCE_THUNK: {
     auto sizeSym = toSymExpr(call->get(1));
     auto sizeType = sizeSym->symbol()->typeInfo()->getValType();
@@ -2597,6 +2676,45 @@ static Expr* unrollHetTupleLoop(CallExpr* call, Expr* tupExpr, Type* iterType) {
   return noop;
 }
 
+
+// helper for inlineArgIntoCond()
+static bool tempIsUsedOnlyInMoveAndCond(Symbol* temp,
+                                        CallExpr* move, CondStmt* cond) {
+  for_SymbolSymExprs(se, temp)
+    if (se != move->get(1) && se != cond->condExpr)
+      return false;
+  return true;
+}
+
+//
+// This helps replace:
+//   def temp
+//   move temp <- _cond_test(argSym)
+//   if temp then ....
+// with
+//   if argSym then ....
+// where replacement is done by caller. 'argSym' is in 'retval'.
+//
+// Why not use this on all eligible boolean 'argSym's? That would break code
+// that expects the 'move', ex. test/functions/vass/ref-intent-bug-2big.chpl
+// with --no-local and test/classes/nilability/if-object-2.chpl.
+//
+static void inlineArgIntoCond(CallExpr*& call, Expr*& retval) {
+  if (CallExpr* move = toCallExpr(call->parentExpr))
+   if (CondStmt* cond = toCondStmt(move->next))
+    if (move->isPrimitive(PRIM_MOVE))
+     if (Symbol* temp = toSymExpr(move->get(1))->symbol())
+      if (call == move->get(2))
+       if (tempIsUsedOnlyInMoveAndCond(temp, move, cond))
+        {
+          temp->defPoint->remove();
+          cond->condExpr->replace(retval);
+          // set up for 'call->replace(retval)' in caller
+          // to replace 'move' with a no-op
+          call = move;
+          retval = new CallExpr(PRIM_NOOP);
+        }
+}
 
 static bool isMethodCall(CallExpr* call) {
   // The first argument could be DefExpr for a query expr, see
@@ -2953,6 +3071,8 @@ static Expr* preFoldNamed(CallExpr* call) {
         if (argType == dtBool) {
           // use the argument directly
           retval = argSE->remove();
+          if (argSym == gCpuVsGpuToken)
+            inlineArgIntoCond(call, retval); // modifies call, retval
 
         } else if (argType == dtBool->refType) {
           // dereference it so later passes get a value
@@ -3083,7 +3203,8 @@ static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar) {
         // And it's not an array (arrays are always yielded by reference)
         // - see boundaries() in release/examples/benchmarks/miniMD/miniMD.
         if (!fieldType->symbol->hasFlag(FLAG_ARRAY) &&
-            !fieldType->symbol->hasFlag(FLAG_COPY_MUTATES)) {
+            !fieldType->symbol->hasFlag(FLAG_COPY_MUTATES) &&
+            !destSE->symbol()->hasFlag(FLAG_LOOP_INDEX_MUTABLE)) {
           destSE->symbol()->addFlag(FLAG_CONST);
         }
       } else {

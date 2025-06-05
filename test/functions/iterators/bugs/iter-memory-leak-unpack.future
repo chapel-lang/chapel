@@ -1,0 +1,2 @@
+bug: ignoring a value in a tuple unpack doesn't invoke the destructor
+#25926

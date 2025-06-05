@@ -1,6 +1,6 @@
 /*
  * Copyright 2017 Advanced Micro Devices, Inc.
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -31,8 +31,8 @@
 module LocaleModelHelpSetup {
 
   use ChapelLocale;
-  public use DefaultRectangular;
-  public use ChapelNumLocales;
+  use DefaultRectangular;
+  use ChapelNumLocales;
   use OS.POSIX;
   use CTypes;
 
@@ -97,29 +97,13 @@ module LocaleModelHelpSetup {
     var root_accum:chpl_root_locale_accum;
 
     forall locIdx in dst.chpl_initOnLocales() with (ref root_accum) {
-      chpl_task_setSubloc(c_sublocid_any);
+      chpl_task_setSubloc(c_sublocid_none);
       const node = new locale(new unmanaged LocaleModel(new locale (dst)));
       dst.myLocales[locIdx] = node;
       root_accum.accum(node);
     }
 
     root_accum.setRootLocaleValues(dst);
-  }
-
-  proc helpSetupRootLocaleAPU(dst:borrowed RootLocale) {
-    extern proc chpl_task_setSubloc(subloc: int(32));
-
-    var root_accum:chpl_root_locale_accum;
-
-    forall locIdx in dst.chpl_initOnLocales() with (ref root_accum) {
-      chpl_task_setSubloc(c_sublocid_any);
-      const node = new locale(new unmanaged LocaleModel(new locale(dst)));
-      dst.myLocales[locIdx] = node;
-      root_accum.accum(node);
-    }
-
-    root_accum.setRootLocaleValues(dst);
-    here.runningTaskCntSet(0);  // locale init parallelism mis-sets this
   }
 
   proc helpSetupRootLocaleGPU(dst:borrowed RootLocale) {
@@ -185,6 +169,9 @@ module LocaleModelHelpSetup {
 
     extern proc chpl_task_getMaxPar(): uint(32);
     dst.maxTaskPar = chpl_task_getMaxPar();
+
+    extern proc chpl_get_num_colocales_on_node(): c_int;
+    dst.numColocales = chpl_get_num_colocales_on_node();
   }
 
   proc helpSetupLocaleNUMA(dst:borrowed LocaleModel, out local_name:string, numSublocales, type NumaDomain) {
@@ -216,34 +203,6 @@ module LocaleModelHelpSetup {
     }
   }
 
-  proc helpSetupLocaleAPU(dst:borrowed LocaleModel, out local_name:string, out
-      numSublocales, type CPULocale, type GPULocale) {
-    helpSetupLocaleFlat(dst, local_name);
-
-    extern proc chpl_task_getMaxPar(): uint(32);
-
-    // Comment out HSA initialization until runtime HSA support is checked in
-
-    //    extern proc chpl_hsa_initialize(): c_int;
-    //    var initHsa =  chpl_hsa_initialize();
-    //    if (initHsa == 1) {
-    //      halt("Could not initialize HSA");
-    //    }
-
-    // Hardcode two sublocales, 1 CPU and 1 GPU
-    numSublocales = 2;
-
-    const origSubloc = chpl_task_getRequestedSubloc();
-
-    chpl_task_setSubloc(0:chpl_sublocID_t);
-    dst.CPU = new unmanaged CPULocale(0:chpl_sublocID_t, dst);
-
-    chpl_task_setSubloc(1:chpl_sublocID_t);
-
-    dst.GPU = new unmanaged GPULocale(1:chpl_sublocID_t, dst);
-    chpl_task_setSubloc(origSubloc);
-  }
-
   proc helpSetupLocaleGPU(dst: borrowed LocaleModel, out local_name:string,
       numSublocales: int, type GPULocale){
 
@@ -262,6 +221,9 @@ module LocaleModelHelpSetup {
     // then we end up not processing things in the first locale.
     extern proc chpl_task_getMaxPar(): uint(32);
     dst.maxTaskPar = chpl_task_getMaxPar();
+
+    extern proc chpl_get_num_colocales_on_node(): c_int;
+    dst.numColocales = chpl_get_num_colocales_on_node();
 
     var childSpace = {0..#numSublocales};
 

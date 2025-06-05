@@ -17,7 +17,7 @@ module MergeSort {
 
    */
   proc mergeSort(ref Data: [?Dom] ?eltType, minlen=16,
-                 comparator:?rec = new DefaultComparator()) {
+                 comparator:?rec = new defaultComparator()) {
     chpl_check_comparator(comparator, eltType);
 
     if Dom.rank != 1 {
@@ -44,7 +44,7 @@ module MergeSort {
    * _Merge(), then is moved back and forth as we return up the chain.
    */
   private proc _MergeSort(ref Data: [?Dom], ref Scratch: [], lo:int, hi:int,
-                          minlen=16, comparator:?rec = new DefaultComparator(),
+                          minlen=16, comparator:?rec = new defaultComparator(),
                           depth: int)
     where Dom.rank == 1 {
     import Sort.InsertionSort;
@@ -97,7 +97,7 @@ module MergeSort {
   }
 
   private proc _Merge(ref Dst: [?Dom] ?eltType, Src: [], lo:int, mid:int,
-                      hi:int, comparator:?rec = new DefaultComparator()) {
+                      hi:int, comparator:?rec = new defaultComparator()) {
     /* Data[lo..mid by stride] is much slower than Data[lo..mid] when
      * Dom is unstrided.  So specify the latter explicitly when possible. */
     const stride = abs(Dom.stride): Dom.idxType;

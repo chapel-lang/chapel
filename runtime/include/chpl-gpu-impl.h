@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.  *
  * The entirety of this work is licensed under the Apache License,
@@ -20,12 +20,20 @@
 #ifndef chpl_gpu_impl_h
 #define chpl_gpu_impl_h
 
+#include "chpl-topo.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void chpl_gpu_impl_init(int* num_devices);
+void chpl_gpu_impl_begin_init(int* num_all_devices);
+
+void chpl_gpu_impl_collect_topo_addr_info(chpl_topo_pci_addr_t* into,
+                                          int device_num);
+
+void chpl_gpu_impl_setup_with_device_count(int num_my_devices);
+
+void chpl_gpu_impl_setup_device(int my_index, int global_index);
 
 void* chpl_gpu_impl_load_function(const char* kernel_name);
 void chpl_gpu_impl_load_global(const char* global_name, void** ptr,
@@ -73,9 +81,6 @@ void chpl_gpu_impl_stream_destroy(void* stream);
 bool chpl_gpu_impl_stream_ready(void* stream);
 void chpl_gpu_impl_stream_synchronize(void* stream);
 
-bool chpl_gpu_impl_can_reduce(void);
-bool chpl_gpu_impl_can_sort(void);
-
 void* chpl_gpu_impl_host_register(void* var, size_t size);
 void chpl_gpu_impl_host_unregister(void* var);
 
@@ -99,6 +104,10 @@ GPU_CUB_WRAP(DECL_ONE_SORT_IMPL, keys)
 // TODO: GPU_SORT(DECL_ONE_SORT_IMPL, keysDesc/ DoubleBuffer/Pairs etc)
 
 #undef DECL_ONE_SORT_IMPL
+
+void chpl_gpu_impl_name(int dev, char *resultBuffer, int bufferSize);
+
+int chpl_gpu_impl_query_attribute(int dev, int attribute);
 
 #ifdef __cplusplus
 }

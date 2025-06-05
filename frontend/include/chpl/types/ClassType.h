@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -83,6 +83,13 @@ class ClassType final : public Type {
                               const Type* manager,
                               ClassTypeDecorator decorator);
 
+  const Type* substitute(Context* context,
+                         const PlaceholderMap& subs) const override {
+    return get(context,
+               Type::substitute(context, manageableType_, subs),
+               Type::substitute(context, manager_, subs), decorator_);
+  }
+
   /** Returns the ClassTypeDecorator for this ClassType.
       This decorator indicates the memory management strategy. */
   ClassTypeDecorator decorator() const { return decorator_; }
@@ -110,6 +117,11 @@ class ClassType final : public Type {
   /** Returns the version of this ClassType with the passed decorator */
   const ClassType* withDecorator(Context* context,
                                  ClassTypeDecorator decorator) const;
+
+  /** Returns the recordType for the manager. This will be instantiated,
+      e.g. as '_owned(C)' for some class C. */
+  const RecordType* managerRecordType(Context* context) const;
+
 };
 
 

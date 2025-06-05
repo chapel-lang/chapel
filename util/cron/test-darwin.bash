@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 #
-# Test examples for default configuration on darwin
+# Test full suite for default configuration on darwin
 
-CWD=$(cd $(dirname $0) ; pwd)
-source $CWD/common.bash
-source $CWD/common-darwin.bash
+UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+source $UTIL_CRON_DIR/common.bash
+source $UTIL_CRON_DIR/common-darwin.bash
+source $UTIL_CRON_DIR/common-localnode-paratest.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="darwin"
 
-$CWD/nightly -cron -examples
+$UTIL_CRON_DIR/nightly -cron -blog $(get_nightly_paratest_args)

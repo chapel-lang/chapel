@@ -1,30 +1,11 @@
-#ifdef HAVE_CONFIG_H
-# include "config.h"
-#endif
-
 #include "qthread/qthread.h"
-#include "qt_visibility.h"
+
 #include "qt_shepherd_innards.h"
+#include "qt_visibility.h"
 
 #ifndef QTHREAD_SHEPHERD_TYPEDEF
-# define QTHREAD_SHEPHERD_TYPEDEF
+#define QTHREAD_SHEPHERD_TYPEDEF
 typedef struct qthread_shepherd_s qthread_shepherd_t;
-#endif
-
-#if defined(QTHREAD_HAVE_LIBNUMA)
-# define QTHREAD_HAVE_MEM_AFFINITY
-#endif
-
-#if defined(QTHREAD_HAVE_HWLOC) && (HWLOC_API_VERSION > 0x00010000)
-# define QTHREAD_HAVE_MEM_AFFINITY
-#endif
-
-#ifdef QTHREAD_HAVE_MEM_AFFINITY
-# define MEM_AFFINITY_ONLY_ARG(x) x,
-# define MEM_AFFINITY_ONLY(x)     x
-#else
-# define MEM_AFFINITY_ONLY_ARG(x)
-# define MEM_AFFINITY_ONLY(x)
 #endif
 
 /**
@@ -41,9 +22,11 @@ typedef struct qthread_shepherd_s qthread_shepherd_t;
  * - QT_NUM_WORKERS_PER_SHEPHERD: The number of workers per shepherd.
  * - QT_HWPAR:                    The number of workers.
  */
-void INTERNAL qt_topology_init(qthread_shepherd_id_t * nshepherds,
-                               qthread_worker_id_t   * nworkerspershep,
-                               size_t                * hw_par);
+void INTERNAL qt_topology_init(qthread_shepherd_id_t *nshepherds,
+                               qthread_worker_id_t *nworkerspershep,
+                               size_t *hw_par);
+
+void INTERNAL qt_topology_deinit(void);
 
 /**
  * qt_affinity_init() - initialize affinity layer
@@ -55,8 +38,11 @@ void INTERNAL qt_topology_init(qthread_shepherd_id_t * nshepherds,
  * querying the physical system topology layer.
  */
 void INTERNAL qt_affinity_init(qthread_shepherd_id_t *nbshepherds,
-                               qthread_worker_id_t   *nbworkers,
-                               size_t                *hw_par);
+                               qthread_worker_id_t *nbworkers,
+                               size_t *hw_par);
+
+void INTERNAL qt_affinity_deinit(void);
+
 /**
  * qt_affinity_set() - bind a worker to a set of resources
  * @me:             The worker to bind.
@@ -64,12 +50,12 @@ void INTERNAL qt_affinity_init(qthread_shepherd_id_t *nbshepherds,
  *
  * Bind the specified worker to a set of resources. Usually this is a PU,
  * but might be a collection of PUs depending on the support provided by the
- * physical layer. Note that binding is actually done between the calling OS 
+ * physical layer. Note that binding is actually done between the calling OS
  * thead and the underlying hardware.
  *
  * TODO: remove `nworkerspershep` in favor of qt_topo structure.
  */
-void INTERNAL qt_affinity_set(qthread_worker_t * me,
+void INTERNAL qt_affinity_set(qthread_worker_t *me,
                               unsigned int nworkerspershep);
 
 /**
@@ -86,17 +72,13 @@ void INTERNAL qt_affinity_set(qthread_worker_t * me,
  *       physical layers?
  * TODO: remove `nshepherds` argument in favor of qt_topo structure.
  */
-int qt_affinity_gendists(qthread_shepherd_t   *sheps,
+int qt_affinity_gendists(qthread_shepherd_t *sheps,
                          qthread_shepherd_id_t nshepherds);
 
-#ifdef QTHREAD_HAVE_MEM_AFFINITY
+#ifdef USE_HWLOC_MEM_AFFINITY
 void INTERNAL *qt_affinity_alloc(size_t bytes);
-void INTERNAL *qt_affinity_alloc_onnode(size_t bytes,
-                                        int    node);
-void INTERNAL qt_affinity_mem_tonode(void  *addr,
-                                     size_t bytes,
-                                     int    node);
-void INTERNAL qt_affinity_free(void  *ptr,
-                               size_t bytes);
+void INTERNAL *qt_affinity_alloc_onnode(size_t bytes, int node);
+void INTERNAL qt_affinity_mem_tonode(void *addr, size_t bytes, int node);
+void INTERNAL qt_affinity_free(void *ptr, size_t bytes);
 #endif
 /* vim:set expandtab: */

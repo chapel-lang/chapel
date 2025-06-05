@@ -26,7 +26,7 @@ Keywords={
          "param", "private", "proc", "prototype", "public",
          "record", "reduce", "ref", "require", "return",
          "scan", "select", "serial", "shared",
-         "single", "sparse", "sync",
+         "sparse", "sync",
          "then", "throw", "throws", "true", "try", "type",
          "union", "unmanaged", "use",
          "var", "when", "where", "while", "with", "yield", "zip"

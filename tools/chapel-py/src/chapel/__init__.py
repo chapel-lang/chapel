@@ -1,5 +1,5 @@
 #
-# Copyright 2023-2024 Hewlett Packard Enterprise Development LP
+# Copyright 2023-2025 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -16,6 +16,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
+"""
+======
+chapel
+======
+
+Chapel's Python bindings provide an API to interact with Chapel's frontend
+compiler from Python.
+"""
 
 from . import core
 from .core import *
@@ -79,7 +88,8 @@ def is_docstring_comment(comment: Comment) -> bool:
 
 class SiblingMap:
     """
-    Represents a mapping of nodes to their siblings
+    Represents a mapping of nodes to their siblings. This is most useful for
+    finding the docstring of a node.
     """
 
     @visitor.visitor
@@ -109,6 +119,9 @@ class SiblingMap:
         self.siblings = vis.map
 
     def get_sibling(self, node: AstNode) -> Optional[AstNode]:
+        """
+        Get the sibling of a node, if it exists
+        """
         return self.siblings.get(node.unique_id(), None)
 
 
@@ -126,7 +139,9 @@ def get_docstring(node: AstNode, sibling_map: SiblingMap) -> Optional[str]:
     return None
 
 
-def parse_attribute(attr, attribute):
+def parse_attribute(
+    attr: Attribute, attribute: typing.Tuple[str, typing.Sequence[str]]
+):
     """
     Given an Attribute AST node, and a description of the attribute in
     the form (name, formal_names), return a mapping of formal names to their
@@ -335,7 +350,7 @@ def each_matching(node, pattern, iterator=preorder):
 
 
 def files_with_contexts(
-    files, setup: Optional[typing.Callable[[Context], None]] = None
+    files: List[str], setup: Optional[typing.Callable[[Context], None]] = None
 ):
     """
     Some files might have the same name, which Dyno really doesn't like.
@@ -370,7 +385,7 @@ def files_with_contexts(
 
 
 def files_with_stdlib_contexts(
-    files, setup: Optional[typing.Callable[[Context], None]] = None
+    files: List[str], setup: Optional[typing.Callable[[Context], None]] = None
 ):
     """
     Like files_with_contexts, but also includes the standard library in the

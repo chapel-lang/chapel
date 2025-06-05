@@ -3,13 +3,13 @@ use IO;
 use PrecisionSerializer;
 use FormatHelper;
 
-proc makeND(param rank : int) {
+proc makeND(param rank : int, type T) {
   var dims : rank*range;
   for d in dims do d = 1..4;
   var dom = {(...dims)};
-  var A : [dom] real;
+  var A : [dom] T;
   for i in 0..<A.size {
-    A[dom.orderToIndex(i)] = i:real + 0.123456789;
+    A[dom.orderToIndex(i)] = i:T + 0.123456789:T;
   }
   return A;
 }
@@ -45,12 +45,13 @@ proc test(A, ser) {
   }
 }
 
+config type T = real;
 proc main() {
   for (pre, pad) in [(8, 0), (4, 12)] {
     writeln("##### precision=", pre, ", padding=", pad, " ######");
     for param i in 1..4 {
       writeln("----- ", i:string, "D -----");
-      var A = makeND(i);
+      var A = makeND(i, T);
       test(A, new precisionSerializer(pre, pad));
     }
   }

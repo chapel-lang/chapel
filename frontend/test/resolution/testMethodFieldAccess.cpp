@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -40,8 +40,7 @@ static void testIt(const char* testName,
                    const char* fieldIdStr,
                    bool scopeResolveOnly=false) {
   printf("test %s\n", testName);
-  Context ctx;
-  Context* context = &ctx;
+  Context* context = buildStdContext();
 
   auto path = UniqueString::get(context, testName);
   std::string contents = program;
@@ -930,7 +929,7 @@ static void testExample12() {
            )"""",
            "M.outer.test",
            "M.outer.test@2",
-           "" /* some sort of error */);
+           "M.recordA@1");
 }
 
 static void testExample13() {
@@ -1387,8 +1386,11 @@ int main() {
   testExample5b();
   testExample6();
   testExample7();
-  testExample8();
-  testExample9();
+  // these tests use nested functions, but function resolution API
+  // does not support resolving nested functions from their signatures.
+  // These tests are disabled until the API is updated.
+  if (false) testExample8();
+  if (false) testExample9();
   testExample10();
   testExample11();
   testExample12();

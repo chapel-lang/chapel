@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2023-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -17,11 +17,11 @@
  * limitations under the License.
  */
 
-/*
-  Support for distributed reading and writing of Zarr stores. Support is
-  limited to v2 Zarr arrays stored on local filesystems. NFS is not supported.
-  The module uses c-blosc to compress and decompress chunks. Zarr
-  specification: https://zarr-specs.readthedocs.io/en/latest/v2/v2.0.html
+/* Support for reading and writing of Zarr stores.
+
+  Support is limited to v2 Zarr arrays stored on local filesystems. NFS
+  is not supported. The module uses c-blosc to compress and decompress chunks.
+  Zarr specification: https://zarr-specs.readthedocs.io/en/latest/v2/v2.0.html
 */
 module Zarr {
   use IO;
@@ -83,6 +83,18 @@ module Zarr {
     var chunks: list(int);
     var dtype: string;
     var shape: list(int);
+    var compressor: string;
+  }
+
+  record zarrMetadataV2Required {
+    var zarr_format: int;
+    var chunks: list(int);
+    var dtype: string;
+    var shape: list(int);
+  }
+
+  record zarrMetadataV2Optional {
+    var compressor: string;
   }
 
   /* Unused until support is added for v3.0 stores */
@@ -107,8 +119,18 @@ module Zarr {
   private proc getMetadata(directoryPath: string) throws {
     var metadataPath = joinPath(directoryPath, ".zarray");
     var r = openReader(metadataPath, deserializer = new jsonDeserializer(), locking=false);
-    var md: zarrMetadataV2;
-    r.readf("%?", md);
+    var mdRequired: zarrMetadataV2Required;
+    r.readf("%?", mdRequired);
+
+    r.seek(0..);
+    var mdOptional: zarrMetadataV2Optional;
+    try {
+      r.readf("%?", mdOptional);
+    } catch {
+      mdOptional.compressor = "blosclz";
+    }
+
+    var md = new zarrMetadataV2(mdRequired.zarr_format, mdRequired.chunks, mdRequired.dtype, mdRequired.shape, mdOptional.compressor);
     return md;
   }
 
@@ -141,6 +163,13 @@ module Zarr {
       throw new Error("Expected entries of type %s. Found %s".format(dtype:string, chplType));
   }
 
+  private proc validateCompressor(compressor) throws {
+    const supportedCompressors = ["blosclz", "lz4", "lz4hc", "zlib", "zstd"];
+    if supportedCompressors.find(compressor) == -1 {
+      throw new IllegalArgumentError("Unsupported compressor: %s.".format(compressor) +
+                                     " Supported compressors are: blosclz, lz4, lz4hc, zlib, and zstd.");
+    }
+  }
 
   private proc buildChunkPath(directoryPath: string, delimiter: string, const chunkIndex: ?dimCount * int) {
     var indexStrings: dimCount*string;
@@ -241,7 +270,7 @@ module Zarr {
     if zarrProfiling then times["Initializing copyIn"].add(s.elapsed());
 
     if zarrProfiling then s.restart();
-    var numRead = blosc_decompress_ctx(compressedChunk.c_str(), c_ptrTo(copyIn), copyIn.size*c_sizeof(t), 1);
+    var numRead = blosc_decompress_ctx(compressedChunk.c_str(), c_ptrTo(copyIn), (copyIn.size*c_sizeof(t)) : c_size_t, 1: c_int);
     if numRead <= 0 {
       throw new Error("Failed to decompress data from %?. Blosc error code: %?".format(chunkPath, numRead));
     }
@@ -277,7 +306,7 @@ module Zarr {
 
     :throws Error: If the compression fails
   */
-  proc writeChunk(param dimCount, chunkPath: string, chunkDomain: domain(dimCount), ref arraySlice: [] ?t, bloscLevel: int(32) = 9) throws {
+  proc writeChunk(param dimCount, chunkPath: string, chunkDomain: domain(dimCount), ref arraySlice: [] ?t, bloscLevel: int(32) = 9, compressor: string="blosclz") throws {
     var s: stopwatch;
 
     // bloscLevel must be between 0 and 9
@@ -297,15 +326,15 @@ module Zarr {
 
     // Create buffer for compressed bytes
     if zarrProfiling then s.restart();
-    var compressedBuffer = allocate(t, copyOut.size + 16);
+    var compressedBuffer = allocate(t, (copyOut.size + 16): c_size_t);
     if zarrProfiling then times["Creating Compressed Buffer"].add(s.elapsed());
 
     // Compress the chunk's data
     if zarrProfiling then s.restart();
     var bytesCompressed = blosc_compress_ctx(_bloscLevel, 0, c_sizeof(t),
-                                             copyOut.size*c_sizeof(t), c_ptrTo(copyOut),
-                                             compressedBuffer, (copyOut.size + 16) * c_sizeof(t),
-                                             "blosclz", 0, 1);
+                                             (copyOut.size*c_sizeof(t)) : c_size_t, c_ptrTo(copyOut),
+                                             compressedBuffer, ((copyOut.size + 16) * c_sizeof(t)) : c_size_t,
+                                             compressor.c_str(), 0 : c_size_t, 1 : c_size_t);
     if bytesCompressed == 0 then
       throw new Error("Failed to compress bytes");
     if zarrProfiling then times["Compression"].add(s.elapsed());
@@ -338,50 +367,21 @@ module Zarr {
 
     :arg dimCount: Dimensionality of the zarr array
 
+    :arg bloscThreads: The number of threads to use during compression (default=1)
+
+    :arg targetLocales: The locales to use for reading the array in the shape the
+      array will be distributed
   */
-  proc readZarrArray(directoryPath: string, type dtype, param dimCount: int, bloscThreads: int(32) = 1) throws {
+  proc readZarrArray(directoryPath: string, type dtype, param dimCount: int, bloscThreads: int(32) = 1, targetLocales: [] locale = Locales) throws {
     var md = getMetadata(directoryPath);
     validateMetadata(md, dtype, dimCount);
-    // Size and shape tuples
-    var totalShape, chunkShape : dimCount*int;
-    var chunkCounts: dimCount*int;
-    var totalRanges,chunkRanges: dimCount*range(int);
+    var totalRanges: dimCount*range(int);
     for i in 0..<dimCount {
-      totalShape[i] = md.shape[i];
-      chunkShape[i] = md.chunks[i];
-      chunkCounts[i] = ceil(totalShape[i]:real / chunkShape[i]:real) : int;
-      totalRanges[i] = 0..<totalShape[i];
-      chunkRanges[i] = 0..<chunkCounts[i];
+      totalRanges[i] = 0..<md.shape[i];
     }
-    const fullChunkDomain: domain(dimCount) = chunkRanges;
+    const fullDomain: domain(dimCount) = totalRanges;
 
-    // Initialize the distributed domain and array
-    const undistD : domain(dimCount) = totalRanges;
-    const Dist = new blockDist(boundingBox=undistD);
-    const D = Dist.createDomain(undistD);
-    var A: [D] dtype;
-
-
-    coforall loc in Locales do on loc {
-      blosc_init();
-      blosc_set_nthreads(bloscThreads);
-      const hereD = A.localSubdomain();
-      ref hereA = A[hereD];
-
-      const localChunks = getLocalChunks(D, hereD, chunkShape);
-      forall chunkIndex in localChunks {
-
-        const chunkPath = buildChunkPath(directoryPath, ".", chunkIndex);
-
-        const thisChunkDomain = getChunkDomain(chunkShape, chunkIndex);
-        const thisChunkHere = hereD[thisChunkDomain];
-
-        ref thisChunkSlice = hereA.localSlice(thisChunkHere);
-        readChunk(dimCount, chunkPath, thisChunkDomain, thisChunkSlice);
-      }
-      blosc_destroy();
-    }
-    return A;
+    return readZarrArrayPartial(directoryPath, dtype, dimCount, fullDomain, bloscThreads=bloscThreads, targetLocales=targetLocales);
   }
 
 
@@ -404,14 +404,18 @@ module Zarr {
 
     :arg bloscLevel: Compression level to use. 0 indicates no compression,
       9 (default) indicates maximum compression.
+
+    :arg compressor: Compression algorithm to use. Supported values are "blosclz" (default),
+      "lz4", "lz4hc", "zlib", and "zstd".
   */
-  proc writeZarrArray(directoryPath: string, const ref A: [?domainType] ?dtype, chunkShape: ?dimCount*int, bloscLevel: int(32) = 9) throws {
+  proc writeZarrArray(directoryPath: string, const ref A: [?domainType] ?dtype, chunkShape: ?dimCount*int, bloscLevel: int(32) = 9, compressor="blosclz") throws {
 
     // Create the metadata record that is written before the chunks
     var shape, chunks: list(int);
     for size in A.shape do shape.pushBack(size);
     for size in chunkShape do chunks.pushBack(size);
-    const md: zarrMetadataV2 = new zarrMetadataV2(2, chunks, dtypeString(dtype), shape);
+    validateCompressor(compressor);
+    const md: zarrMetadataV2 = new zarrMetadataV2(2, chunks, dtypeString(dtype), shape, compressor);
 
     // Clear the directory before writing
     if exists(directoryPath) then rmTree(directoryPath);
@@ -454,12 +458,78 @@ module Zarr {
         ref thisChunkSlice = hereA.localSlice(thisChunkHere);
         const chunkPath = buildChunkPath(directoryPath, ".", chunkIndex);
         locks[chunkIndex].writeEF(true);
-        writeChunk(dimCount, chunkPath, thisChunkDomain, thisChunkSlice, bloscLevel=bloscLevel);
+        writeChunk(dimCount, chunkPath, thisChunkDomain, thisChunkSlice, bloscLevel=bloscLevel, compressor=compressor);
         locks[chunkIndex].readFE();
       }
     }
   }
 
+  /*
+    Reads part of a v2.0 zarr store from storage using all locales, returning a
+    block distributed array. Each locale reads and decompresses the chunks
+    with elements in its subdomain. This method assumes a shared filesystem
+    where all nodes can access the store directory.
+
+    :arg directoryPath: Relative or absolute path to the root of the zarr
+      store. The store is expected to contain a '.zarray' metadata file
+
+    :arg dtype: Chapel type of the store's data
+
+    :arg dimCount: Dimensionality of the zarr array
+
+    :arg partialDomain: The domain of the elements of the array that should be read
+
+    :arg bloscThreads: The number of threads to use during compression (default=1)
+
+    :arg targetLocales: The locales to use for reading the array in the shape the
+      array will be distributed
+  */
+  proc readZarrArrayPartial(directoryPath: string, type dtype, param dimCount: int, partialDomain,
+                            bloscThreads: int(32) = 1, targetLocales: [] locale = Locales) throws {
+    var md = getMetadata(directoryPath);
+    validateMetadata(md, dtype, dimCount);
+    // Size and shape tuples
+    var totalShape, chunkShape : dimCount*int;
+    var chunkCounts: dimCount*int;
+    var totalRanges,chunkRanges: dimCount*range(int);
+    for i in 0..<dimCount {
+      totalShape[i] = md.shape[i];
+      chunkShape[i] = md.chunks[i];
+      chunkCounts[i] = ceil(totalShape[i]:real / chunkShape[i]:real) : int;
+      totalRanges[i] = 0..<totalShape[i];
+      chunkRanges[i] = 0..<chunkCounts[i];
+    }
+    const fullChunkDomain: domain(dimCount) = chunkRanges;
+
+    // Initialize the distributed domain and array
+    const undistD : domain(dimCount) = totalRanges;
+    if ! undistD.contains(partialDomain) then
+      throw new IllegalArgumentError("Partial domain is out of bounds of the array domain.");
+    const Dist = new blockDist(boundingBox=undistD, targetLocales=targetLocales);
+    const D = Dist.createDomain(partialDomain);
+    var A: [D] dtype;
+
+    coforall loc in Locales do on loc {
+      blosc_init();
+      blosc_set_nthreads(bloscThreads);
+      const hereD = A.localSubdomain();
+      ref hereA = A[hereD];
+
+      const localChunks = getLocalChunks(D, hereD, chunkShape);
+      forall chunkIndex in localChunks {
+
+        const chunkPath = buildChunkPath(directoryPath, ".", chunkIndex);
+
+        const thisChunkDomain = getChunkDomain(chunkShape, chunkIndex);
+        const thisChunkHere = hereD[thisChunkDomain];
+
+        ref thisChunkSlice = hereA.localSlice(thisChunkHere);
+        readChunk(dimCount, chunkPath, thisChunkDomain, thisChunkSlice);
+      }
+      blosc_destroy();
+    }
+    return A;
+  }
 
   /*
     Reads a v2.0 zarr store from storage using a single locale, returning a
@@ -521,14 +591,18 @@ module Zarr {
 
     :arg bloscLevel: Compression level to use. 0 indicates no compression,
       9 (default) indicates maximum compression.
+
+    :arg compressor: Compression algorithm to use. Supported values are "blosclz" (default),
+      "lz4", "lz4hc", "zlib", and "zstd".
   */
-  proc writeZarrArrayLocal(directoryPath: string, ref A: [?domainType] ?dtype, chunkShape: ?dimCount*int, bloscLevel: int(32) = 9) throws {
+  proc writeZarrArrayLocal(directoryPath: string, ref A: [?domainType] ?dtype, chunkShape: ?dimCount*int, bloscLevel: int(32) = 9, compressor="blosclz") throws {
 
     // Create the metadata record that is written before the chunks
     var shape, chunks: list(int);
     for size in A.shape do shape.pushBack(size);
     for size in chunkShape do chunks.pushBack(size);
-    const md: zarrMetadataV2 = new zarrMetadataV2(2, chunks, dtypeString(dtype), shape);
+    validateCompressor(compressor);
+    const md: zarrMetadataV2 = new zarrMetadataV2(2, chunks, dtypeString(dtype), shape, compressor);
 
     // Clear the directory before writing
     if exists(directoryPath) then rmTree(directoryPath);
@@ -555,7 +629,7 @@ module Zarr {
       const chunkForDomain = D[chunkBounds];
       ref chunkData = normA[chunkForDomain];
       const chunkPath = buildChunkPath(directoryPath, ".", chunkIndex);
-      writeChunk(dimCount, chunkPath, chunkBounds, chunkData, bloscLevel=bloscLevel);
+      writeChunk(dimCount, chunkPath, chunkBounds, chunkData, bloscLevel=bloscLevel, compressor=compressor);
     }
 
     blosc_destroy();
@@ -593,7 +667,7 @@ module Zarr {
     const chunkPath = buildChunkPath(directoryPath, ".", chunkIndex);
 
     blosc_init();
-    writeChunk(dimCount, chunkPath, chunkData.domain, chunkData);
+    writeChunk(dimCount, chunkPath, chunkData.domain, chunkData, compressor=md.compressor);
     blosc_destroy();
   }
 

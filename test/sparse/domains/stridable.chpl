@@ -1,4 +1,4 @@
-use BlockDist, LayoutCS;
+use BlockDist, CompressedSparseLayout;
 
 config const n = 10;
 
@@ -11,7 +11,7 @@ const SD2: sparse subdomain(D2);
 const BD = D dmapped new blockDist({1..n});
 const BSD: sparse subdomain(BD);
 
-const SDCS: sparse subdomain({1..n, 1..n by 2}) dmapped new dmap(new CS());
+const SDCS: sparse subdomain({1..n, 1..n by 2}) dmapped new csrLayout();
 
 if SD.strides != strideKind.one then
   compilerError("SD should not be stridable");

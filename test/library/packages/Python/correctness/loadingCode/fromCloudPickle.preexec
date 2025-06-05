@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+# export everything from ./EXECENV
+FILE_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+for l in $($FILE_DIR/EXECENV | grep -v "^#"); do
+  export $l
+done
+
+# respect CHPL_TEST_VENV_DIR if it is set and not none
+if [ -n "$CHPL_TEST_VENV_DIR" ] && [ "$CHPL_TEST_VENV_DIR" != "none" ]; then
+  chpl_python=$CHPL_TEST_VENV_DIR/bin/python3
+else
+  chpl_python=$($CHPL_HOME/util/config/find-python.sh)
+fi
+
+$chpl_python fromCloudPickle.py

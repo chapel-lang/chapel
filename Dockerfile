@@ -1,39 +1,38 @@
 # Common stage: install dependencies, set up the Debian image
 # ===========================================================
 
-FROM debian:11 AS chapel-base
+FROM debian:latest AS chapel-base
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     bash \
     ca-certificates \
-    clang-11 \
-    cmake \
     curl \
+    wget \
     file \
-    gcc \
-    git \
-    g++ \
-    libclang-11-dev \
-    libclang-cpp11-dev \
-    libedit-dev \
-    libgmp10 \
-    libgmp-dev \
-    llvm-11-dev \
-    llvm-11 \
-    llvm-11-tools \
     locales \
-    make \
+    libedit-dev \
+    git \
     mawk \
+    make \
+    cmake \
     m4 \
     perl \
     pkg-config \
+    gcc \
+    g++ \
+    clang \
+    libclang-dev \
+    libclang-cpp-dev \
+    llvm \
+    llvm-dev \
+    libgmp10 \
+    libgmp-dev \
     protobuf-compiler \
-    python-setuptools \
     python3 \
+    python3-dev \
+    python3-setuptools \
     python3-pip \
     python3-venv \
-    python3-dev \
-    wget \
     && rm -rf /var/lib/apt/lists/*
 
 # configure locale
@@ -72,7 +71,7 @@ RUN make cleanall
 # Hack to get access to Chapel binaries
 RUN cd $CHPL_HOME/bin && ln -s */* .
 
-# The .git folder is huge and we really don't need it.
+# Remove some unneeded files to reduce image size
 RUN rm -rf .git
 RUN for subdir in `ls test || true`; do \
       if [ "$subdir" != "release" ]; then \

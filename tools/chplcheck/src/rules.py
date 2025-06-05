@@ -1,5 +1,5 @@
 #
-# Copyright 2023-2024 Hewlett Packard Enterprise Development LP
+# Copyright 2023-2025 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -24,11 +24,16 @@ import chapel
 from chapel import *
 from driver import LintDriver
 from fixits import Fixit, Edit
-from rule_types import BasicRuleResult, AdvancedRuleResult
+from rule_types import (
+    BasicRuleResult,
+    AdvancedRuleResult,
+    LocationRuleResult,
+    RuleLocation,
+)
 
 
 def variables(node: AstNode):
-    if isinstance(node, Variable):
+    if isinstance(node, (Variable, Formal)):
         if node.name() != "_":
             yield node
     elif isinstance(node, TupleDecl):
@@ -57,6 +62,20 @@ def might_incorrectly_report_location(node: AstNode) -> bool:
     # https://github.com/chapel-lang/chapel/issues/24818
     elif isinstance(node, (Function, Use, Import)) and node.visibility() != "":
         return True
+
+    # 'else if' statements do not have proper locations
+    #
+    # https://github.com/chapel-lang/chapel/issues/25256
+    elif isinstance(node, Conditional):
+        parent = node.parent()
+        grandparent = parent.parent() if parent else None
+        if (
+            isinstance(parent, Block)
+            and parent.block_style() == "implicit"
+            and grandparent
+            and isinstance(grandparent, Conditional)
+        ):
+            return True
 
     return False
 
@@ -99,30 +118,42 @@ def fixit_remove_unused_node(
     return None
 
 
-def name_for_linting(context: Context, node: NamedDecl) -> str:
+def name_for_linting(
+    context: Context, node: NamedDecl, internal_prefixes: List[str] = []
+) -> str:
     name = node.name()
 
     # Strip dollar signs.
     name = name.replace("$", "")
 
-    # TODO: thread `internal_prefixes` through to this and strip them for linting
+    # Strip internal prefixes.
+    for p in internal_prefixes:
+        if name.startswith(p):
+            name = name[len(p) :]
+            break
 
     return name
 
 
-def check_camel_case(context: Context, node: NamedDecl):
+def check_camel_case(
+    context: Context, node: NamedDecl, internal_prefixes: List[str] = []
+):
     return re.fullmatch(
-        r"([a-z]+([A-Z][a-z]*|\d+)*|[A-Z]+)?", name_for_linting(context, node)
+        r"([a-z]+([A-Z][a-z]*|\d+)*|[A-Z]+)?",
+        name_for_linting(context, node, internal_prefixes),
     )
 
 
-def check_pascal_case(context: Context, node: NamedDecl):
+def check_pascal_case(
+    context: Context, node: NamedDecl, internal_prefixes: List[str] = []
+):
     return re.fullmatch(
-        r"(([A-Z][a-z]*|\d+)+|[A-Z]+)?", name_for_linting(context, node)
+        r"(([A-Z][a-z]*|\d+)+|[A-Z]+)?",
+        name_for_linting(context, node, internal_prefixes),
     )
 
 
-def register_rules(driver: LintDriver):
+def rules(driver: LintDriver):
     @driver.basic_rule(VarLikeDecl, default=False)
     def CamelOrPascalCaseVariables(context: Context, node: VarLikeDecl):
         """
@@ -131,11 +162,12 @@ def register_rules(driver: LintDriver):
 
         if node.name() == "_":
             return True
-        if node.linkage() == "extern":
+        if node.linkage() == "extern" and node.linkage_name() is None:
             return True
-        return check_camel_case(context, node) or check_pascal_case(
-            context, node
-        )
+        internal_prefixes = driver.config.internal_prefixes
+        return check_camel_case(
+            context, node, internal_prefixes
+        ) or check_pascal_case(context, node, internal_prefixes)
 
     @driver.basic_rule(Record)
     def CamelCaseRecords(context: Context, node: Record):
@@ -143,7 +175,11 @@ def register_rules(driver: LintDriver):
         Warn for records that are not 'camelCase'.
         """
 
-        return check_camel_case(context, node)
+        if node.linkage() == "extern" and node.linkage_name() is None:
+            return True
+
+        internal_prefixes = driver.config.internal_prefixes
+        return check_camel_case(context, node, internal_prefixes)
 
     @driver.basic_rule(Function)
     def CamelCaseFunctions(context: Context, node: Function):
@@ -156,14 +192,15 @@ def register_rules(driver: LintDriver):
         if node.is_override():
             return True
 
-        if node.linkage() == "extern":
+        if node.linkage() == "extern" and node.linkage_name() is None:
             return True
         if node.kind() == "operator":
             return True
         if node.name() == "init=":
             return True
 
-        return check_camel_case(context, node)
+        internal_prefixes = driver.config.internal_prefixes
+        return check_camel_case(context, node, internal_prefixes)
 
     @driver.basic_rule(Class)
     def PascalCaseClasses(context: Context, node: Class):
@@ -171,7 +208,8 @@ def register_rules(driver: LintDriver):
         Warn for classes that are not 'PascalCase'.
         """
 
-        return check_pascal_case(context, node)
+        internal_prefixes = driver.config.internal_prefixes
+        return check_pascal_case(context, node, internal_prefixes)
 
     @driver.basic_rule(Module)
     def PascalCaseModules(context: Context, node: Module):
@@ -179,7 +217,10 @@ def register_rules(driver: LintDriver):
         Warn for modules that are not 'PascalCase'.
         """
 
-        return node.kind() == "implicit" or check_pascal_case(context, node)
+        internal_prefixes = driver.config.internal_prefixes
+        return node.kind() == "implicit" or check_pascal_case(
+            context, node, internal_prefixes
+        )
 
     @driver.basic_rule(Module, default=False)
     def UseExplicitModules(_, node: Module):
@@ -259,23 +300,23 @@ def register_rules(driver: LintDriver):
             return True
 
         # No parentheses to speak of
-        paren_loc = subject.parenth_location()
+        paren_loc = subject.paren_location()
         if paren_loc is None:
             return True
 
         # Now, we should warn: there's a node in a conditional or
         # if/else, it has parentheses at the top level, but it doesn't need them.
-        return BasicRuleResult(node, data=subject)
+        return BasicRuleResult(subject, data=subject)
 
     @driver.fixit(ControlFlowParentheses)
     def RemoveControlFlowParentheses(context: Context, result: BasicRuleResult):
         # Since we're here, these should already be non-None.
         subject = result.data
         assert subject
-        paren_loc = subject.parenth_location()
+        paren_loc = subject.paren_location()
         assert paren_loc
 
-        # If parentheeses span multiple lines, don't provide a fixit,
+        # If parentheses span multiple lines, don't provide a fixit,
         # since the indentation would need more thought.
         start_line, start_col = paren_loc.start()
         end_line, end_col = paren_loc.end()
@@ -317,7 +358,7 @@ def register_rules(driver: LintDriver):
         """
         Warn for boolean literals like 'true' in a conditional statement.
         """
-        return BasicRuleResult(node)
+        return BasicRuleResult(node.condition(), data=node)
 
     # TODO: at some point, we should support a fixit that removes the
     # conditions and the braces, but the way locations work right now makes
@@ -330,7 +371,7 @@ def register_rules(driver: LintDriver):
         """
         Remove the unused branch of a conditional statement, keeping the braces.
         """
-        node = result.node
+        node = result.data
         lines = chapel.get_file_lines(context, node)
 
         cond = node.condition()
@@ -353,8 +394,11 @@ def register_rules(driver: LintDriver):
     @driver.basic_rule(NamedDecl)
     def ChplPrefixReserved(context: Context, node: NamedDecl):
         """
-        Warn for user-defined names that start with the 'chpl_' reserved prefix.
+        Warn for user-defined names that start with the 'chpl\\_' reserved prefix.
         """
+
+        if node.linkage() == "extern":
+            return True
 
         if node.name().startswith("chpl_"):
             path = node.location().path()
@@ -521,8 +565,8 @@ def register_rules(driver: LintDriver):
         """
         if isinstance(root, Comment):
             return
-
-        prev, prevloop = None, None
+        prev = []
+        fix = None
         for child in root:
             if isinstance(child, Comment):
                 continue
@@ -530,24 +574,35 @@ def register_rules(driver: LintDriver):
                 continue
             yield from MisleadingIndentation(context, child)
 
-            if prev is not None:
-                loc = child.location()
-                prev_loc = prev.location()
-                if loc.start()[1] == prev_loc.start()[1]:
-                    yield AdvancedRuleResult(child, prevloop)
+            if prev and any(
+                p.location().start()[1] == child.location().start()[1]
+                for p in prev
+            ):
+                yield AdvancedRuleResult(child, fix)
 
-            prev, prevloop = None, None
-            if isinstance(child, Loop) and child.block_style() == "implicit":
-                grandchildren = list(child)
-                # safe to access [-1], loops must have at least 1 child
-                for blockchild in reversed(list(grandchildren[-1])):
-                    if isinstance(blockchild, Comment):
-                        continue
-                    if might_incorrectly_report_location(blockchild):
-                        continue
-                    prev = blockchild
-                    prevloop = child
-                    break
+            prev = []
+            fix = append_nested_single_stmt(child, prev)
+
+    def append_nested_single_stmt(node, prev: List[AstNode]):
+        if isinstance(node, Loop) and node.block_style() == "implicit":
+            children = list(node)
+            # safe to access [-1], loops must have at least 1 child
+            inblock = reversed(list(children[-1]))
+        elif isinstance(node, On) and node.block_style() == "implicit":
+            inblock = node.stmts()
+        else:
+            # Should we also check for Conditionals here?
+            return None
+        for stmt in inblock:
+            if isinstance(stmt, Comment):
+                continue
+            if might_incorrectly_report_location(stmt):
+                continue
+            prev.append(stmt)
+            append_nested_single_stmt(stmt, prev)
+            return node  # Return the outermost on to use an anchor
+
+        return None
 
     @driver.fixit(MisleadingIndentation)
     def FixMisleadingIndentation(context: Context, result: AdvancedRuleResult):
@@ -572,7 +627,7 @@ def register_rules(driver: LintDriver):
             fixit = Fixit.build(Edit(loc.path(), line_start, loc.end(), text))
         return [fixit] if fixit else []
 
-    @driver.advanced_rule(default=False)
+    @driver.advanced_rule
     def UnusedFormal(context: Context, root: AstNode):
         """
         Warn for unused formals in functions.
@@ -589,9 +644,13 @@ def register_rules(driver: LintDriver):
             # 'this' formals.
             if formal.name() == "this":
                 continue
+            # ignore `_`, like from a TupleDecl
+            if formal.name() == "_":
+                continue
 
             # extern functions have no bodies that can use their formals.
-            if formal.parent().linkage() == "extern":
+            parent = formal.parent()
+            if isinstance(parent, NamedDecl) and parent.linkage() == "extern":
                 continue
 
             formals[formal.unique_id()] = formal
@@ -603,7 +662,109 @@ def register_rules(driver: LintDriver):
 
         for unused in formals.keys() - uses:
             anchor = formals[unused].parent()
+            while isinstance(anchor, (Variable, TupleDecl)):
+                anchor = anchor.parent()
             yield AdvancedRuleResult(formals[unused], anchor)
+
+    @driver.advanced_rule
+    def UnusedTaskIntent(context: Context, root: AstNode):
+        """
+        Warn for unused task intents in functions.
+        """
+        if isinstance(root, Comment):
+            return
+
+        intents = dict()
+        uses = set()
+
+        for intent, _ in chapel.each_matching(
+            root, set([TaskVar, ReduceIntent])
+        ):
+            # task private variables may have side effects,
+            # so we don't want to warn on them
+            if isinstance(intent, TaskVar):
+                if intent.intent() == "var":
+                    continue
+                if intent.intent() == "<const-var>" and (
+                    intent.type_expression() is not None
+                    or intent.init_expression() is not None
+                ):
+                    continue
+            intents[intent.unique_id()] = intent
+
+        for use, _ in chapel.each_matching(root, Identifier):
+            refersto = use.to_node()
+            if refersto:
+                uses.add(refersto.unique_id())
+
+        for unused in intents.keys() - uses:
+            taskvar = intents[unused]
+            with_clause = taskvar.parent()
+            task_block = with_clause.parent()
+
+            # only loops can be anchors for attributes
+            anchor = None
+            if isinstance(task_block, chapel.Loop):
+                anchor = task_block
+            yield AdvancedRuleResult(
+                taskvar, anchor, data=(with_clause, task_block)
+            )
+
+    @driver.fixit(UnusedTaskIntent)
+    def RemoveTaskIntent(context: Context, result: AdvancedRuleResult):
+        """
+        Remove the unused task intent from the function.
+        """
+        assert isinstance(result.data, tuple)
+        with_clause, task_block = result.data
+
+        fixit = None
+        # if the with clause only has one expr, remove the entire with clause
+        if len(list(with_clause.exprs())) == 1:
+            with_loc = with_clause.location()
+            # header_loc is the location of the block header without the `with`
+            # e.g. `forall i in 1..10`, `begin`, `cobegin`
+            header_loc = (
+                task_block.header_location()
+                if isinstance(task_block, Loop)
+                else task_block.block_header()
+            )
+            if header_loc is not None:
+                start = header_loc.end()
+                end = with_loc.end()
+            else:
+                start = with_loc.start()
+                end = with_loc.end()
+
+            fixit = Fixit.build(Edit(with_loc.path(), start, end, ""))
+
+        else:
+            # for now, locations are messy enough that we can't easily cleanly
+            # remove the taskvar
+            pass
+        return [fixit] if fixit else []
+
+    @driver.advanced_rule
+    def UnusedTypeQuery(context: Context, root: AstNode):
+        """
+        Warn for unused type queries in functions.
+        """
+        if isinstance(root, Comment):
+            return
+
+        typequeries = dict()
+        uses = set()
+
+        for tq, _ in chapel.each_matching(root, TypeQuery):
+            typequeries[tq.unique_id()] = tq
+
+        for use, _ in chapel.each_matching(root, Identifier):
+            refersto = use.to_node()
+            if refersto:
+                uses.add(refersto.unique_id())
+
+        for unused in typequeries.keys() - uses:
+            yield AdvancedRuleResult(typequeries[unused])
 
     @driver.advanced_rule
     def UnusedLoopIndex(context: Context, root: AstNode):
@@ -797,7 +958,7 @@ def register_rules(driver: LintDriver):
                 # MisleadingIndentation
                 if not (
                     prev
-                    and isinstance(prev, Loop)
+                    and (isinstance(prev, Loop) or isinstance(prev, On))
                     and prev.block_style() == "implicit"
                 ):
                     yield child
@@ -813,8 +974,103 @@ def register_rules(driver: LintDriver):
             #   var x: int;
             #   }
             elif parent_depth and depth == parent_depth:
-                yield child
+                # only loops and NamedDecls can be anchors for indentation
+                anchor = (
+                    parent_for_indentation
+                    if isinstance(parent_for_indentation, (Loop, NamedDecl))
+                    else None
+                )
+                yield AdvancedRuleResult(child, anchor=anchor)
 
             prev_depth = depth
             prev = child
             prev_line = line
+
+    @driver.advanced_rule
+    def MissingInIntent(_, root: chapel.AstNode):
+        """
+        Warn for formals used to initialize fields that are missing an 'in' intent.
+        """
+        if isinstance(root, chapel.Comment):
+            return
+
+        for agg, _ in chapel.each_matching(root, chapel.AggregateDecl):
+            assert isinstance(agg, chapel.AggregateDecl)
+            fields: Dict[str, chapel.Variable] = {}
+            inits: List[chapel.Function] = []
+            for nd in agg:
+                if isinstance(nd, chapel.Variable) and nd.is_field():
+                    fields[nd.unique_id()] = nd
+                if isinstance(nd, chapel.Function) and nd.name() in (
+                    "init",
+                    "init=",
+                ):
+                    inits.append(nd)
+
+            for init in inits:
+                formals: Dict[str, chapel.Formal] = {}
+                for f, _ in chapel.each_matching(init, chapel.Formal):
+                    assert isinstance(f, chapel.Formal)
+                    if f.intent() != "<default-intent>":
+                        continue
+                    formals[f.unique_id()] = f
+
+                for stmt in chapel.preorder(init):
+                    if isinstance(stmt, chapel.Init):
+                        break
+
+                    if not isinstance(stmt, chapel.OpCall):
+                        continue
+
+                    if stmt.op() != "=":
+                        continue
+
+                    lhs = stmt.actual(0)
+                    lhs_is_field = False
+                    if isinstance(lhs, (chapel.Identifier, chapel.Dot)):
+                        to = lhs.to_node()
+                        if to and to.unique_id() in fields:
+                            lhs_is_field = True
+                    rhs = stmt.actual(1)
+                    rhs_is_formal = None
+                    if isinstance(rhs, chapel.Identifier):
+                        to = rhs.to_node()
+                        if to and to.unique_id() in formals:
+                            rhs_is_formal = to
+
+                    if lhs_is_field and rhs_is_formal:
+                        yield AdvancedRuleResult(rhs_is_formal)
+
+    @driver.fixit(MissingInIntent)
+    def FixMissingInIntent(context: Context, result: AdvancedRuleResult):
+        """
+        Add the 'in' intent to the formal parameter.
+        """
+        assert isinstance(result.node, chapel.Formal)
+        lines = chapel.get_file_lines(context, result.node)
+
+        fixit = Fixit.build(
+            Edit.build(
+                result.node.location(),
+                "in " + range_to_text(result.node.location(), lines),
+            )
+        )
+        return [fixit]
+
+    @driver.location_rule(settings=[".Max"])
+    def LineLength(_: chapel.Context, path: str, lines: List[str], Max=None):
+        """
+        Warn for lines that exceed a maximum length.
+        By default, the maximum line length is 80 characters. This can be
+        configured with `--setting LineLength.Max=<number>`.
+        """
+
+        Max = Max or "80"  # default to 80 characters
+        try:
+            max_line_length = int(Max)
+        except ValueError:
+            raise ValueError("Invalid value for Max: '{}'".format(Max))
+
+        for i, line in enumerate(lines, start=1):
+            if len(line) > max_line_length:
+                yield RuleLocation(path, (i, 1), (i, len(line) + 1))

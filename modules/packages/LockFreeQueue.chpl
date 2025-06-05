@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -30,6 +30,7 @@
       - The implementation relies on using either ``GCC`` style inline assembly
         (for x86-64) or a GCC/clang builtin, and so is restricted to a
         ``CHPL_TARGET_COMPILER`` value of ``gnu``, ``clang``, or ``llvm``.
+      - The implementation does not work with ``CHPL_ATOMICS=locks``.
 
   An implementation of the Michael & Scott [#]_, a lock-free queue. Concurrent safe
   memory reclamation is handled by an internal :record:`EpochManager`. Usage of the
@@ -137,6 +138,12 @@ module LockFreeQueue {
       _head.write(_node);
       _tail.write(_node);
     }
+    proc deinit() {
+      drain();
+      if var head = _head.read() {
+        delete head;
+      }
+    }
 
     proc getToken() : owned TokenWrapper {
       return _manager.register();
@@ -145,11 +152,11 @@ module LockFreeQueue {
     proc enqueue(newObj : objType, tok : owned TokenWrapper = getToken()) {
       var n = new unmanaged Node(newObj);
       tok.pin();
-      while (true) {
+      while true {
         var curr_tail = _tail.read()!;
         var next = curr_tail.next.read();
-        if (next == nil) {
-          if (curr_tail.next.compareAndSwap(next, n)) {
+        if next == nil {
+          if curr_tail.next.compareAndSwap(next, n) {
             _tail.compareAndSwap(curr_tail, n);
             break;
           }
@@ -164,13 +171,13 @@ module LockFreeQueue {
 
     proc dequeue(tok : owned TokenWrapper = getToken()) : (bool, objTypeOpt) {
       tok.pin();
-      while (true) {
+      while true {
         var curr_head = _head.read()!;
         var curr_tail = _tail.read();
         var next_node = curr_head.next.read();
 
-        if (curr_head == curr_tail) {
-          if (next_node == nil) {
+        if curr_head == curr_tail {
+          if next_node == nil {
             tok.unpin();
             var retval : objTypeOpt;
             return (false, retval);
@@ -179,7 +186,7 @@ module LockFreeQueue {
         }
         else {
           var ret_val = next_node!.val;
-          if (_head.compareAndSwap(curr_head, next_node)) {
+          if _head.compareAndSwap(curr_head, next_node) {
             tok.deferDelete(curr_head);
             tok.unpin();
             return (true, ret_val);

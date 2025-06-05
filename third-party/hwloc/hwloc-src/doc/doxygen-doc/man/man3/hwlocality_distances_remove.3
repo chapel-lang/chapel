@@ -1,4 +1,4 @@
-.TH "hwlocality_distances_remove" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_distances_remove" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -30,21 +30,49 @@ hwlocality_distances_remove \- Remove distances between objects
 .SS "int hwloc_distances_release_remove (\fBhwloc_topology_t\fP topology, struct \fBhwloc_distances_s\fP * distances)"
 
 .PP
-Release and remove the given distance matrice from the topology\&. This function includes a call to \fBhwloc_distances_release()\fP\&. 
+Release and remove the given distance matrice from the topology\&. This function includes a call to \fBhwloc_distances_release()\fP\&.
+.PP
+\fBReturns\fP
+.RS 4
+0 on success, -1 on error\&. 
+.RE
+.PP
+
 .SS "int hwloc_distances_remove (\fBhwloc_topology_t\fP topology)"
 
 .PP
 Remove all distance matrices from a topology\&. Remove all distance matrices, either provided by the user or gathered through the OS\&.
 .PP
-If these distances were used to group objects, these additional Group objects are not removed from the topology\&. 
+If these distances were used to group objects, these additional Group objects are not removed from the topology\&.
+.PP
+\fBReturns\fP
+.RS 4
+0 on success, -1 on error\&. 
+.RE
+.PP
+
 .SS "int hwloc_distances_remove_by_depth (\fBhwloc_topology_t\fP topology, int depth)"
 
 .PP
-Remove distance matrices for objects at a specific depth in the topology\&. Identical to \fBhwloc_distances_remove()\fP but only applies to one level of the topology\&. 
+Remove distance matrices for objects at a specific depth in the topology\&. Identical to \fBhwloc_distances_remove()\fP but only applies to one level of the topology\&.
+.PP
+\fBReturns\fP
+.RS 4
+0 on success, -1 on error\&. 
+.RE
+.PP
+
 .SS "static int hwloc_distances_remove_by_type (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_type_t\fP type)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
-Remove distance matrices for objects of a specific type in the topology\&. Identical to \fBhwloc_distances_remove()\fP but only applies to one level of the topology\&. 
+Remove distance matrices for objects of a specific type in the topology\&. Identical to \fBhwloc_distances_remove()\fP but only applies to one level of the topology\&.
+.PP
+\fBReturns\fP
+.RS 4
+0 on success, -1 on error\&. 
+.RE
+.PP
+
 .SH "Author"
 .PP 
 Generated automatically by Doxygen for Hardware Locality (hwloc) from the source code\&.

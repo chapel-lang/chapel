@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -18,9 +18,11 @@
  * limitations under the License.
  */
 
-@unstable("LayoutCS is unstable and may change in the future")
-prototype module LayoutCS {
+/* Draft support for storing sparse 2D domains/arrays using CSR/CSC layouts. */
 
+@deprecated("'LayoutCS' and its 'CS' layout are deprecated; please use ':mod:`CompressedSparseLayout`' and its 'csrLayout' or 'cscLayout' layouts instead")
+prototype module LayoutCS {
+import Sort.{keyComparator};
 import RangeChunk;
 
 @chpldoc.nodoc
@@ -36,7 +38,7 @@ config param LayoutCSDefaultToSorted = true;
 
 @chpldoc.nodoc
 /* Comparator used for sorting by columns */
-record _ColumnComparator {
+record _ColumnComparator: keyComparator {
   proc key(idx: _tuple) { return (idx(1), idx(0));}
 }
 
@@ -66,11 +68,6 @@ defaults to ``true`` if omitted. For example:
     var CSC_Domain : sparse subdomain(D) dmapped new dmap(new CS(compressRows=false));
 
 
-.. note::
-
-    In an upcoming release, it will be possible to declare CS domains without
-    using the unstable ``new dmap`` syntax.
-
 To declare a CSR or CSC array, use a CSR or CSC domain, respectively.
 For example:
 
@@ -88,6 +85,7 @@ be changed for a program by compiling with ``-sLayoutCSDefaultToSorted=false``,
 or for a specific domain by passing ``sortedIndices=false`` as an argument
 to the ``CS()`` initializer.
 */
+@deprecated("'CS' is deprecated, please use 'CompressedSparseLayout.[csrLayout|cscLayout]' instead")
 class CS: BaseDist {
   param compressRows: bool = true;
   param sortedIndices: bool = LayoutCSDefaultToSorted;
@@ -435,7 +433,7 @@ class CSDom: BaseSparseDomImpl(?) {
 
     if this.compressRows then
       bulkAdd_prepareInds(inds, dataSorted, isUnique,
-                          cmp = new Sort.DefaultComparator());
+                          cmp = new Sort.defaultComparator());
     else
       bulkAdd_prepareInds(inds, dataSorted, isUnique, cmp=_columnComparator);
 

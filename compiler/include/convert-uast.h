@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -24,23 +24,64 @@
 #include "alist.h"
 #include "baseAST.h"
 #include "ModuleSymbol.h"
+
 #include "chpl/framework/Context.h"
+#include "chpl/framework/ID.h"
+#include "chpl/resolution/call-graph.h"
 #include "chpl/uast/BuilderResult.h"
 #include "chpl/uast/Module.h"
+#include "chpl/util/memory.h"
 
-// when converting, only convert modules in this set
-// TODO: switch to converting a module-at-a-time (including submodules)
-extern std::set<chpl::ID> gConvertFilterModuleIds;
+#include <vector>
+#include <unordered_set>
 
-ModuleSymbol*
-convertToplevelModule(chpl::Context* context,
-                      const chpl::uast::Module* mod,
-                      ModTag modTag);
+// base class for Converter and TConverter (typed Converter)
+class UastConverter {
+ public:
+  virtual ~UastConverter();
 
-// apply fixups to fix SymExprs to refer to Symbols that
-// might have been created in a different order.
-// TODO: in the future, this should be a method on Converter,
-// and there should be 1 Converter to convert a module and its dependencies.
-void postConvertApplyFixups(chpl::Context* context);
+  // Provide a vector of modules / submodules to be converted.
+  // When converting, only convert modules listed here.
+  // It will help performance if the order of the modules in the vector
+  // matches the order in which they are converted.
+  virtual void setModulesToConvert(const std::vector<chpl::ID>& vec) = 0;
+
+  // Provide the set of functions that should be converted with full
+  // type information.
+  // This doesn't do anything for the untyped Converter.
+  virtual void
+  setFunctionsToConvertWithTypes(const chpl::resolution::CalledFnsSet& calledFns) = 0;
+
+  virtual void setSymbolsToIgnore(std::unordered_set<chpl::ID> ignore) = 0;
+
+  // Indicate which module is the main module
+  virtual void setMainModule(chpl::ID mainModule) = 0;
+
+  // This function helps the TConverter to work with an untyped Converter.
+  // It informs the untyped Converter about the ModuleSymbol* for the
+  // given module ID. This allows it to update a map to support mentions
+  // of that module in code that is converted in an untyped way.
+  virtual void useModuleWhenConverting(const chpl::ID& modId,
+                                       ModuleSymbol* modSym) = 0;
+
+  // convert a toplevel module
+  virtual ModuleSymbol*
+  convertToplevelModule(const chpl::uast::Module* mod, ModTag modTag) = 0;
+
+  // convert AST, in an untyped manner
+  virtual Expr* convertAST(const chpl::uast::AstNode* node) = 0;
+  virtual Expr* convertAST(const chpl::uast::AstNode* node, ModTag modTag) = 0;
+
+  // apply fixups to fix SymExprs to refer to Symbols that
+  // might have been created in a different order.
+  virtual void postConvertApplyFixups() = 0;
+
+  // Generate main functions (for use with TConverter)
+  virtual void createMainFunctions() = 0;
+};
+
+chpl::owned<UastConverter> createUntypedConverter(chpl::Context* context);
+
+chpl::owned<UastConverter> createTypedConverter(chpl::Context* context);
 
 #endif

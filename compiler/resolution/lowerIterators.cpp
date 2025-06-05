@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -272,8 +272,7 @@ static bool doesFnHaveVectorHazard(FnSymbol* fn,
     hazard = true;
   } else if (thisTypeSymbol != NULL &&
              (thisTypeSymbol->hasFlag(FLAG_ATOMIC_TYPE) ||
-              thisTypeSymbol->hasFlag(FLAG_SYNC) ||
-              thisTypeSymbol->hasFlag(FLAG_SINGLE))) {
+              thisTypeSymbol->hasFlag(FLAG_SYNC))) {
     // methods on synchronization constructs do synchronization!
     hazard = true;
   } else {
@@ -1665,6 +1664,7 @@ static void processShadowVariables(ForLoop* forLoop, SymbolMap *map) {
           VarSymbol* refVar = new VarSymbol(
             astr("ref_", svar->name), svar->type->getRefType());
           refVar->addFlag(FLAG_EXEMPT_REF_PROPAGATION);
+          refVar->addFlag(FLAG_REF_VAR);
           forLoop->insertBefore(new DefExpr(refVar));
           forLoop->insertBefore(new CallExpr(
             PRIM_MOVE, refVar, new CallExpr(

@@ -1,4 +1,4 @@
-The Chapel runtime atomics interface is modelled after the
+The Chapel runtime atomics interface is modeled after the
 C11 standard. See: http://en.cppreference.com/w/c/atomic
 
 Currently we have a cstdlib, an intrinsics, and a locks

@@ -1,4 +1,4 @@
-# Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2025 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -15,12 +15,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 set(SRCS
+    InitErrorHandling.cpp
+    InitNormalize.cpp
+    ResolveScope.cpp
     addInitGuards.cpp
     buildDefaultFunctions.cpp
+    checkGeneratedAst.cpp
     checkNormalized.cpp
     checkResolved.cpp
-    checkGeneratedAst.cpp
     cleanup.cpp
+    convert-typed-uast.cpp
+    convert-help.cpp
     convert-uast.cpp
     createTaskFunctions.cpp
     denormalize.cpp
@@ -29,9 +34,7 @@ set(SRCS
     externCResolve.cpp
     flattenClasses.cpp
     flattenFunctions.cpp
-    InitErrorHandling.cpp
     initializerRules.cpp
-    InitNormalize.cpp
     insertLineNumbers.cpp
     insertWideReferences.cpp
     normalize.cpp
@@ -39,7 +42,6 @@ set(SRCS
     parallel.cpp
     parseAndConvert.cpp
     resolveIntents.cpp
-    ResolveScope.cpp
     returnStarTuplesByRefArgs.cpp
     scopeResolve.cpp
     splitInit.cpp

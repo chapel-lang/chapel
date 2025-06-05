@@ -2,13 +2,13 @@
 #
 # Test quickstart + gasnet configuration on full suite on linux64.
 
-CWD=$(cd $(dirname $0) ; pwd)
-source $CWD/common.bash
-source $CWD/common-quickstart.bash
-source $CWD/common-gasnet.bash # must come after quickstart source
+UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+source $UTIL_CRON_DIR/common.bash
+source $UTIL_CRON_DIR/common-quickstart.bash
+source $UTIL_CRON_DIR/common-gasnet.bash # must come after quickstart source
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="gasnet.quickstart"
 
 export GASNET_QUIET=Y
 
-$CWD/nightly -cron -multilocale
+$UTIL_CRON_DIR/nightly -cron -multilocale

@@ -1,0 +1,2 @@
+bug: owned objects are supported with associative array literals
+#26035

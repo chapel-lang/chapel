@@ -93,6 +93,12 @@ second contains the program code itself. The ``-v`` and ``--dry-run``
 command line options are a good way to learn about what the launcher is
 doing.
 
+
+.. index::
+   single: colocale
+   single: co-locale
+.. _readme-colocale:
+
 Co-locales
 ++++++++++
 

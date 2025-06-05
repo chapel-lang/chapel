@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -25,6 +25,7 @@
 #include "chpl.h"
 #include "map.h"
 
+#include <array>
 #include <cstdio>
 #include <map>
 #include <set>
@@ -63,6 +64,7 @@ extern bool fLLVMWideOpt;
 
 extern bool fAutoLocalAccess;
 extern bool fDynamicAutoLocalAccess;
+extern bool fOffsetAutoLocalAccess;
 extern bool fReportAutoLocalAccess;
 
 extern bool fAutoAggregation;
@@ -102,10 +104,10 @@ bool useDefaultEnv(std::string key, bool isCrayPrgEnv);
 
 extern std::map<std::string, const char*> envMap;
 
-extern char CHPL_HOME[FILENAME_MAX+1];
-extern char CHPL_RUNTIME_LIB[FILENAME_MAX+1];
-extern char CHPL_RUNTIME_INCL[FILENAME_MAX+1];
-extern char CHPL_THIRD_PARTY[FILENAME_MAX+1];
+extern std::string CHPL_HOME;
+extern std::string CHPL_RUNTIME_LIB;
+extern std::string CHPL_RUNTIME_INCL;
+extern std::string CHPL_THIRD_PARTY;
 
 extern const char* CHPL_HOST_PLATFORM;
 extern const char* CHPL_HOST_ARCH;
@@ -127,7 +129,7 @@ extern const char* CHPL_COMM_OFI_OOB;
 extern const char* CHPL_TASKS;
 extern const char* CHPL_LAUNCHER;
 extern const char* CHPL_TIMERS;
-extern const char* CHPL_MEM;
+extern const char* CHPL_TARGET_MEM;
 extern const char* CHPL_MAKE;
 extern const char* CHPL_ATOMICS;
 extern const char* CHPL_NETWORK_ATOMICS;
@@ -152,6 +154,8 @@ extern const char* CHPL_TARGET_BUNDLED_LINK_ARGS;
 extern const char* CHPL_TARGET_SYSTEM_LINK_ARGS;
 
 extern const char* CHPL_CUDA_LIBDEVICE_PATH;
+extern const char* CHPL_ROCM_LLVM_PATH;
+extern const char* CHPL_ROCM_AMDGCN_PATH;
 extern const char* CHPL_GPU;
 extern const char* CHPL_GPU_ARCH;
 
@@ -171,7 +175,7 @@ extern bool fParseOnly;
 extern bool fDriverDoMonolithic;
 extern bool fDriverCompilationPhase;
 extern bool fDriverMakeBinaryPhase;
-extern char driverTmpDir[FILENAME_MAX];
+extern std::string driverTmpDir;
 // end compiler driver control flags
 extern bool fExitLeaks;
 extern bool fPrintAllCandidates;
@@ -301,6 +305,14 @@ extern const char* compileCommandFilename;
 extern const char* compileCommand;
 extern char compileVersion[64];
 
+// This is where the list of all supported editions goes
+extern std::array<std::string, 2> editions;
+extern std::string fEdition;
+
+bool isValidEdition(std::string maybeEdition);
+void checkEditionRangeValid(std::string first, std::string last, BaseAST* loc);
+bool isEditionApplicable(std::string first, std::string last, BaseAST* loc);
+
 // This flag is useful for testing
 // the compiler but breaks the language!
 extern bool fMinimalModules;
@@ -322,7 +334,8 @@ extern bool fLlvmPrintPasses;
 
 extern bool fPrintAdditionalErrors;
 
-extern bool fDynoCompilerLibrary;
+extern bool fDynoResolver;
+extern bool fDynoResolveOnly;
 extern bool fDynoScopeResolve;
 extern bool fDynoScopeProduction;
 extern bool fDynoScopeBundled;
@@ -334,6 +347,7 @@ extern bool fDynoGenStdLib;
 extern bool fDynoLibGenOrUse;
 
 extern size_t fDynoBreakOnHash;
+extern bool   fDynoBreakOnHashSet;
 
 extern bool fResolveConcreteFns;
 extern bool fIdBasedMunging;

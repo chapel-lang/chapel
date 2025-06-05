@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -52,6 +52,11 @@ AggregateType* dtString;
 AggregateType* dtTaskBundleRecord;
 AggregateType* dtTuple;
 
+// these are only used when the dyno resolver is active
+AggregateType* dtCPointer;
+AggregateType* dtCPointerConst;
+AggregateType* dtHeapBuffer;
+
 Type* dt_c_int;
 Type* dt_c_uint;
 Type* dt_c_long;
@@ -68,6 +73,7 @@ Type* dt_c_uintptr;
 Type* dt_c_ptrdiff;
 Type* dt_ssize_t;
 Type* dt_size_t;
+Type* dt_wchar;
 
 // The well-known functions
 FnSymbol *gChplHereAlloc;
@@ -186,17 +192,19 @@ struct WellKnownAggregateTypeNeededEarly
 // These types are a required part of the compiler/module interface.
 static WellKnownAggregateTypeNeededEarly sWellKnownAggregateTypesNeededEarly[]=
 {
-  // name        userFacingName  global       isClass
-  { "_bytes",    "bytes",        &dtBytes,    false },
-  { "_locale",   "locale",       &dtLocale,   false },
-  { "_object",   "RootClass",    &dtObject,   true  },
-  { "_owned",    nullptr,        &dtOwned,    false },
-  { "_range",    "range",        &dtRange,    false },
-  { "_shared",   nullptr,        &dtShared,   false },
-  { "_string",   "string",       &dtString,   false },
-  { "_tuple",    nullptr,        &dtTuple,    false },
+  // name         userFacingName  global            isClass
+  { "_bytes",     "bytes",        &dtBytes,         false },
+  { "_locale",    "locale",       &dtLocale,        false },
+  { "_object",    "RootClass",    &dtObject,        true  },
+  { "_owned",     nullptr,        &dtOwned,         false },
+  { "_range",     "range",        &dtRange,         false },
+  { "_shared",    nullptr,        &dtShared,        false },
+  { "_string",    "string",       &dtString,        false },
+  { "_tuple",     nullptr,        &dtTuple,         false },
+  { "c_ptr",      "c_ptr",        &dtCPointer,      true },
+  { "c_ptrConst", "c_ptrConst",   &dtCPointerConst, true },
+  { "_ddata",     "_ddata",       &dtHeapBuffer,    true },
 };
-
 
 struct WellKnownType
 {
@@ -223,6 +231,7 @@ static WellKnownType sWellKnownTypes[] = {
   { "c_ptrdiff",             &dt_c_ptrdiff   },
   { "c_ssize_t",             &dt_ssize_t     },
   { "c_size_t",              &dt_size_t      },
+  { "c_wchar_t",             &dt_wchar       },
 };
 
 static void initializeWellKnownTypes() {

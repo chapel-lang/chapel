@@ -1,14 +1,14 @@
-#!/bin/csh -f
-set testname = $1
-set outfile = $2
+#!/bin/bash
 
-set tmpfile = $outfile.raw.tmp
+outfile=$2
+
+tmpfile=$outfile.raw.tmp
 
 #
 # some lldbs print out extra stuff.  This filters it out
 #
 mv $outfile $tmpfile
-grep -v "Breakpoint 1: where" $tmpfile | grep -v "target create" | grep -v "Current executable set to" | grep -v "b gdbShouldBreakHere" > $outfile
+grep -v "Breakpoint 1: where" $tmpfile | grep -v "target create" | grep -v "Current executable set to" | grep -v "b debuggerBreakHere" > $outfile
 # Also filter out line about memleaks arguments to executable
 mv $outfile $tmpfile
 grep -v 'settings set -- target.run-args  "--memLeaks"' $tmpfile > $outfile
@@ -18,7 +18,7 @@ rm $tmpfile
 # some greps don't add a linefeed onto the end; others do
 # this ensures that a linefeed is added
 #
-set numlines = `wc -l $outfile`
-if ("$numlines" == "0 $outfile") then
+numlines=`wc -l $outfile`
+if [[ "$numlines" == "0 $outfile" ]]; then
   echo >> $outfile
-endif
+fi

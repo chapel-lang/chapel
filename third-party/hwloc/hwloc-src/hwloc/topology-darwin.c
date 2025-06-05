@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2022 Inria.  All rights reserved.
+ * Copyright © 2009-2023 Inria.  All rights reserved.
  * Copyright © 2009-2013 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -85,7 +85,7 @@ static void hwloc__darwin_cpukinds_add_cpu(struct hwloc_darwin_cpukinds *kinds,
         if (!kinds->kinds[i].compatible)
           kinds->kinds[i].compatible = strdup(compatible);
         else if (strcmp(kinds->kinds[i].compatible, compatible))
-          fprintf(stderr, "got a different compatible string inside same cluster type %c\n", cluster_type);
+          fprintf(stderr, "hwloc/darwin/cpukinds: got a different compatible string inside same cluster type %c\n", cluster_type);
       }
       kind = &kinds->kinds[i];
       goto found;
@@ -108,8 +108,6 @@ static void hwloc__darwin_cpukinds_add_cpu(struct hwloc_darwin_cpukinds *kinds,
 #define kIOMainPortDefault kIOMasterPortDefault
 #endif
 
-#define DT_PLANE "IODeviceTree"
-
 static int hwloc__darwin_look_iokit_cpukinds(struct hwloc_darwin_cpukinds *kinds,
                                              int *matched_perflevels)
 {
@@ -118,16 +116,19 @@ static int hwloc__darwin_look_iokit_cpukinds(struct hwloc_darwin_cpukinds *kinds
   io_registry_entry_t cpus_child;
   kern_return_t kret;
   unsigned i;
+#define DT_PLANE "IODeviceTree"
+  io_string_t cpu_plane_string = DT_PLANE ":/cpus";
+  io_name_t dt_plane_name = DT_PLANE;
 
-  hwloc_debug("\nLooking at cpukinds under " DT_PLANE ":/cpus ...\n");
+  hwloc_debug("\nLooking at cpukinds under %s\n", (const char *) cpu_plane_string);
 
-  cpus_root = IORegistryEntryFromPath(kIOMainPortDefault, DT_PLANE ":/cpus");
+  cpus_root = IORegistryEntryFromPath(kIOMainPortDefault, cpu_plane_string);
   if (!cpus_root) {
-    fprintf(stderr, "hwloc/darwin/cpukinds: failed to find " DT_PLANE ":/cpus\n");
+    fprintf(stderr, "hwloc/darwin/cpukinds: failed to find %s\n", (const char *) cpu_plane_string);
     return -1;
   }
 
-  kret = IORegistryEntryGetChildIterator(cpus_root, DT_PLANE, &cpus_iter);
+  kret = IORegistryEntryGetChildIterator(cpus_root, dt_plane_name, &cpus_iter);
   if (kret != KERN_SUCCESS) {
     if (HWLOC_SHOW_ALL_ERRORS())
       fprintf(stderr, "hwloc/darwin/cpukinds: failed to create iterator\n");
@@ -145,7 +146,7 @@ static int hwloc__darwin_look_iokit_cpukinds(struct hwloc_darwin_cpukinds *kinds
     {
       /* get the name */
       io_name_t name;
-      kret = IORegistryEntryGetNameInPlane(cpus_child, DT_PLANE, name);
+      kret = IORegistryEntryGetNameInPlane(cpus_child, dt_plane_name, name);
       if (kret != KERN_SUCCESS) {
         hwloc_debug("failed to find cpu name\n");
       } else {
@@ -155,7 +156,7 @@ static int hwloc__darwin_look_iokit_cpukinds(struct hwloc_darwin_cpukinds *kinds
 #endif
 
     /* get logical-cpu-id */
-    ref = IORegistryEntrySearchCFProperty(cpus_child, DT_PLANE, CFSTR("logical-cpu-id"), kCFAllocatorDefault, kNilOptions);
+    ref = IORegistryEntrySearchCFProperty(cpus_child, dt_plane_name, CFSTR("logical-cpu-id"), kCFAllocatorDefault, kNilOptions);
     if (!ref) {
       /* this may happen on old/x86 systems that aren't hybrid, don't warn */
       hwloc_debug("failed to find logical-cpu-id\n");
@@ -183,7 +184,7 @@ static int hwloc__darwin_look_iokit_cpukinds(struct hwloc_darwin_cpukinds *kinds
 
 #ifdef HWLOC_DEBUG
     /* get logical-cluster-id */
-    ref = IORegistryEntrySearchCFProperty(cpus_child, DT_PLANE, CFSTR("logical-cluster-id"), kCFAllocatorDefault, kNilOptions);
+    ref = IORegistryEntrySearchCFProperty(cpus_child, dt_plane_name, CFSTR("logical-cluster-id"), kCFAllocatorDefault, kNilOptions);
     if (!ref) {
       hwloc_debug("failed to find logical-cluster-id\n");
       continue;
@@ -207,7 +208,7 @@ static int hwloc__darwin_look_iokit_cpukinds(struct hwloc_darwin_cpukinds *kinds
 #endif
 
     /* get cluster-type */
-    ref = IORegistryEntrySearchCFProperty(cpus_child, DT_PLANE, CFSTR("cluster-type"), kCFAllocatorDefault, kNilOptions);
+    ref = IORegistryEntrySearchCFProperty(cpus_child, dt_plane_name, CFSTR("cluster-type"), kCFAllocatorDefault, kNilOptions);
     if (!ref) {
       if (HWLOC_SHOW_ALL_ERRORS())
         fprintf(stderr, "hwloc/darwin/cpukinds: failed to find cluster-type\n");
@@ -244,7 +245,7 @@ static int hwloc__darwin_look_iokit_cpukinds(struct hwloc_darwin_cpukinds *kinds
     CFRelease(ref);
 
     /* get compatible */
-    ref = IORegistryEntrySearchCFProperty(cpus_child, DT_PLANE, CFSTR("compatible"), kCFAllocatorDefault, kNilOptions);
+    ref = IORegistryEntrySearchCFProperty(cpus_child, dt_plane_name, CFSTR("compatible"), kCFAllocatorDefault, kNilOptions);
     if (!ref) {
       if (HWLOC_SHOW_ALL_ERRORS())
         fprintf(stderr, "hwloc/darwin/cpukinds: failed to find compatible\n");
@@ -456,7 +457,8 @@ static void hwloc__darwin_look_perflevel_caches(struct hwloc_topology *topology,
   int64_t size;
 
   snprintf(name, sizeof(name), "hw.perflevel%u.l1icachesize", level);
-  if (!hwloc_get_sysctlbyname(name, &size)) {
+  if (hwloc_filter_check_keep_object_type(topology, HWLOC_OBJ_L1ICACHE)
+      && !hwloc_get_sysctlbyname(name, &size)) {
     /* hw.perflevel%u.cpusperl1i missing, assume it's per PU */
     hwloc_debug("found perflevel %u l1icachesize %ld, assuming width 1\n", level, (long) size);
     hwloc__darwin_build_perflevel_cache_level(topology, cpuset, 1, HWLOC_OBJ_L1ICACHE, 1, size, linesize);
@@ -464,7 +466,8 @@ static void hwloc__darwin_look_perflevel_caches(struct hwloc_topology *topology,
   }
 
   snprintf(name, sizeof(name), "hw.perflevel%u.l1dcachesize", level);
-  if (!hwloc_get_sysctlbyname(name, &size)) {
+  if (hwloc_filter_check_keep_object_type(topology, HWLOC_OBJ_L1CACHE)
+      && !hwloc_get_sysctlbyname(name, &size)) {
     /* hw.perflevel%u.cpusperl1d missing, assume it's per PU */
     hwloc_debug("found perflevel %u l1dcachesize %ld, assuming width 1\n", level, (long) size);
     hwloc__darwin_build_perflevel_cache_level(topology, cpuset, 1, HWLOC_OBJ_L1CACHE, 1, size, linesize);
@@ -472,7 +475,8 @@ static void hwloc__darwin_look_perflevel_caches(struct hwloc_topology *topology,
   }
 
   snprintf(name, sizeof(name), "hw.perflevel%u.l2cachesize", level);
-  if (!hwloc_get_sysctlbyname(name, &size)) {
+  if (hwloc_filter_check_keep_object_type(topology, HWLOC_OBJ_L2CACHE)
+      && !hwloc_get_sysctlbyname(name, &size)) {
     int64_t cpus;
 
     hwloc_debug("found perflevel %u l2cachesize %ld\n", level, (long) size);
@@ -493,16 +497,17 @@ static void hwloc__darwin_look_perflevel_caches(struct hwloc_topology *topology,
       snprintf(name, sizeof(name), "hw.perflevel%u.l2perflevels", level);
       if (!sysctlbyname(name, NULL, &s, NULL, 0))
         if (HWLOC_SHOW_ALL_ERRORS())
-          fprintf(stderr, "hwloc/darwin: key %s succeeded size %lu, please report to hwloc developers.\n", name, s);
+          fprintf(stderr, "hwloc/darwin: key %s succeeded size %lu, please report to hwloc developers.\n", name, (unsigned long) s);
     }
 
     /* assume PUs are contigous for now. */
     hwloc__darwin_build_perflevel_cache_level(topology, cpuset, cpus, HWLOC_OBJ_L2CACHE, 2, size, linesize);
     gothybrid->l2++;
-}
+  }
 
   snprintf(name, sizeof(name), "hw.perflevel%u.l3cachesize", level);
-  if (!hwloc_get_sysctlbyname(name, &size)) {
+  if (hwloc_filter_check_keep_object_type(topology, HWLOC_OBJ_L3CACHE)
+      && !hwloc_get_sysctlbyname(name, &size)) {
     int64_t cpus;
 
     hwloc_debug("found perflevel %u l3cachesize %ld\n", level, (long) size);
@@ -523,7 +528,7 @@ static void hwloc__darwin_look_perflevel_caches(struct hwloc_topology *topology,
       snprintf(name, sizeof(name), "hw.perflevel%u.l3perflevels", level);
       if (!sysctlbyname(name, NULL, &s, NULL, 0))
         if (HWLOC_SHOW_ALL_ERRORS())
-          fprintf(stderr, "hwloc/darwin: key %s succeeded size %lu, please report to hwloc developers.\n", name, s);
+          fprintf(stderr, "hwloc/darwin: key %s succeeded size %lu, please report to hwloc developers.\n", name, (unsigned long) s);
     }
 
     hwloc__darwin_build_perflevel_cache_level(topology, cpuset, cpus, HWLOC_OBJ_L3CACHE, 3, size, linesize);

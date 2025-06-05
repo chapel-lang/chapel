@@ -67,5 +67,5 @@ record adder {
 }
 
 // used to sort tempData records by city name
-record comparator { }
+record comparator: keyComparator { }
 proc comparator.key(k: (bytes, tempData)) { return k[0]; }

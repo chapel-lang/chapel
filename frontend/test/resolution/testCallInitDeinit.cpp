@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -109,8 +109,7 @@ static void testActions(const char* test,
                         bool expectErrors=false) {
   printf("### %s\n\n", test);
 
-  Context ctx;
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string testname = test;
@@ -550,9 +549,6 @@ static void test5d() {
   testActions("test5d",
     R""""(
       module M {
-        operator =(ref lhs: numeric, const in rhs: numeric) {
-          __primitive("=", lhs, rhs);
-        }
         record R { type T; var field : T; }
         proc R.init(type T, field = 0) {
           this.T = T;
@@ -1583,14 +1579,14 @@ static void test20a() {
         proc C.deinit() { }
 
         proc foo() {
-          var x : owned C = new C();
+          var x = new C();
           return x;
         }
       }
     )"""",
     {
-      {AssociatedAction::NEW_INIT, "M.foo@5",          ""},
-      {AssociatedAction::DEINIT,   "M.foo@9",          "x"},
+      {AssociatedAction::NEW_INIT, "M.foo@2",          ""},
+      {AssociatedAction::DEINIT,   "M.foo@6",          "x"},
     });
 }
 
@@ -1609,15 +1605,15 @@ static void test20a() {
 /*         proc C.deinit() { } */
 
 /*         proc foo() { */
-/*           var x : owned C = new C(3); */
+/*           var x = new C(3); */
 /*           return x; */
 /*         } */
 /*       } */
 /*     )"""", */
 /*     { */
-/*       {AssociatedAction::NEW_INIT,   "M.foo@6",    ""}, */
-/*       {AssociatedAction::INIT_OTHER, "x",          ""}, */
-/*       {AssociatedAction::DEINIT,     "M.foo@10",   "x"}, */
+/*       {AssociatedAction::NEW_INIT,   "M.foo@3",    ""},  */
+/*       {AssociatedAction::INIT_OTHER, "x",          ""},  */
+/*       {AssociatedAction::DEINIT,     "M.foo@7",    "x"}, */
 /*     }); */
 /* } */
 
@@ -1632,14 +1628,14 @@ static void test20c() {
         proc C.deinit() { }
 
         proc foo() {
-          var x : owned C? = new C();
+          var x = new C?();
           return x;
         }
       }
     )"""",
     {
-      {AssociatedAction::NEW_INIT,   "M.foo@6",    ""},
-      {AssociatedAction::DEINIT,     "M.foo@10",   "x"},
+      {AssociatedAction::NEW_INIT,   "M.foo@3",    ""},
+      {AssociatedAction::DEINIT,     "M.foo@7",    "x"},
     });
 }
 
@@ -1675,8 +1671,6 @@ static void test22() {
       R"""(
       module M {
         // call-init-deinit wants this to transmute R.c into the reciever of C.helper
-        operator =(ref lhs: borrowed C, rhs: unmanaged C) {
-        }
 
         class C {
           var x : int;
@@ -1705,6 +1699,209 @@ static void test22() {
         {AssociatedAction::DEFAULT_INIT, "r",          ""},
         {AssociatedAction::DEINIT,       "M.test@6",   "r"}
       });
+}
+
+static void test23a() {
+  // Ensure the copy-elided in formal doesn't error for its final use.
+  testActions("test23a",
+      R"""(
+      module M {
+        record Foo {}
+
+        proc doSomething(in x) {
+          return doSomethingElse(x);
+        }
+
+        proc doSomethingElse(in x) {
+          return 1;
+        }
+
+        proc test() {
+          var f : Foo;
+          var x = doSomething(f);
+        }
+      }
+      )""", {
+        {AssociatedAction::DEFAULT_INIT, "f",          ""}
+      });
+}
+
+static void test23b() {
+  // Ensure the copy-elided in formal doesn't error for multiple uses in the
+  // same call.
+  testActions("test23b",
+      R"""(
+      module M {
+        record Foo {}
+
+        proc doSomething(in x) {
+          return doSomethingElse(x, x);
+        }
+
+        proc doSomethingElse(in x, in y) {
+          return 1;
+        }
+
+        proc test() {
+          var f : Foo;
+          var x = doSomething(f);
+        }
+      }
+      )""", {
+        {AssociatedAction::DEFAULT_INIT, "f",          ""}
+      });
+}
+
+static void test23c() {
+  // Ensure the copy-elided in formal doesn't error for uses across multiple
+  // calls in the same statement.
+  testActions("test23c",
+      R"""(
+      module M {
+        // necessary to resolve + operator
+        operator +(a: int, b: int) do return __primitive("+", a, b);
+
+        record Foo {}
+
+        proc doSomething(in x) {
+          return doSomethingElse(x) + doSomethingElse(x);
+        }
+
+        proc doSomethingElse(in x) {
+          return 1;
+        }
+
+        proc test() {
+          var f : Foo;
+          var x = doSomething(f);
+        }
+      }
+      )""", {
+        {AssociatedAction::DEFAULT_INIT, "f",          ""}
+      });
+}
+
+static void test23d() {
+  // Ensure the copy-elided in formal doesn't error when used in nested function
+  // calls.
+  testActions("test23d",
+      R"""(
+      module M {
+        record Foo {}
+
+        proc returnConstRef(const ref x) {
+          return x;
+        }
+
+        proc returnIn(in x) {
+          return x;
+        }
+
+        proc doSomething(in x) {
+          return doSomethingElse(returnConstRef(returnIn(x)));
+        }
+
+        proc doSomethingElse(in x) {
+          return 1;
+        }
+
+        proc test() {
+          var f : Foo;
+          var x = doSomething(f);
+        }
+      }
+      )""", {
+        {AssociatedAction::DEFAULT_INIT, "f",          ""}
+      });
+}
+
+// Test if var declaration
+static void test24() {
+  testActions("test24",
+    R""""(
+      module M {
+        class R { }
+        proc test() {
+          var y = new unmanaged R?();
+          if var x = y {
+            x;
+          }
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::NEW_INIT, "M.test@3",    ""},
+      {AssociatedAction::ASSIGN,   "x",           ""},
+    });
+}
+
+// test that we don't invoke code after continue / break (including initializers)
+static void test25(const std::string& controlModifier) {
+  testActions("test25",
+    (
+    R"""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.deinit() { }
+        proc test() {
+          for i in 1..10 {
+            )""" + controlModifier + R"""(;
+            var x:R;
+          }
+        }
+      }
+    )""").c_str(), {
+      {AssociatedAction::ITERATE, "M.test@3", "" },
+    });
+}
+
+static void test25() {
+  test25("continue");
+  test25("break");
+}
+
+// test that we don't invoke code after continue / break (including initializers)
+static void test26(const std::string& controlModifier1, const std::string& controlModifier2, bool expectInit) {
+  Actions expectedActions = {{AssociatedAction::ITERATE, "M.test@3", "" }};
+  if (expectInit) {
+    expectedActions.push_back({AssociatedAction::DEFAULT_INIT, "x", ""});
+    expectedActions.push_back({AssociatedAction::DEINIT, "M.test@14", "x"});
+  }
+  testActions("test26",
+    (
+    R"""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.deinit() { }
+        proc test() {
+          for i in 1..10 {
+            var cond: bool;
+            if (cond) {
+              )""" + controlModifier1 + R"""(;
+            } else {
+              )""" + controlModifier2 + R"""(;
+            }
+            var x:R;
+          }
+        }
+      }
+    )""").c_str(), std::move(expectedActions));
+}
+
+static void test26() {
+  test26("continue", "continue", false);
+  test26("break", "break", false);
+  test26("continue", "", true);
+  test26("", "continue", true);
+  test26("break", "", true);
+  test26("", "break", true);
+
+  /* TODO: mixing control flow requires more intelligence.
+    test26("continue", "continue", false);
+    test26("break", "break", false);
+  */
 }
 
 // calling function with 'out' intent formal
@@ -1797,6 +1994,16 @@ int main() {
   test21();
 
   test22();
+
+  test23a();
+  test23b();
+  test23c();
+  test23d();
+
+  test24();
+
+  test25();
+  test26();
 
   return 0;
 }

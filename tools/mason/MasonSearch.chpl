@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -134,7 +134,7 @@ proc masonSearch(ref args: list(string)) {
   }
 }
 
-record RankResultsComparator {
+record RankResultsComparator: relativeComparator {
   var query: string;
   var packageScores;
   proc compare(a, b) {

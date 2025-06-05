@@ -1,8 +1,6 @@
 refToSubclassInternalError.chpl:17: In function 'populate':
 refToSubclassInternalError.chpl:23: error: initializing a reference using an expression whose type 'unmanaged GenProperty?' is not an instantiation of the declared type 'unmanaged Property'
-refToSubclassInternalError.chpl:23: error: initializing a reference using an expression whose type 'unmanaged GenProperty?' is not an instantiation of the declared type 'unmanaged Property'
   refToSubclassInternalError.chpl:87: called as populate(dataArray: [domain(1,int(64),one)] int(64), inputVertices: [domain(1,int(64),one)] int(64), vertexProps: [BlockDom(2,int(64),one,unmanaged DefaultDist)] unmanaged GenProperty?, dataTypeMap: [domain(1,int(64),one)] string, colId: int(64))
 refToSubclassInternalError.chpl:17: In function 'populate':
-refToSubclassInternalError.chpl:23: error: initializing a reference using an expression whose type 'unmanaged GenProperty?' is not an instantiation of the declared type 'unmanaged Property'
 refToSubclassInternalError.chpl:23: error: initializing a reference using an expression whose type 'unmanaged GenProperty?' is not an instantiation of the declared type 'unmanaged Property'
   refToSubclassInternalError.chpl:88: called as populate(dataArray: [domain(1,int(64),one)] bool, inputVertices: [domain(1,int(64),one)] int(64), vertexProps: [BlockDom(2,int(64),one,unmanaged DefaultDist)] unmanaged GenProperty?, dataTypeMap: [domain(1,int(64),one)] string, colId: int(64))

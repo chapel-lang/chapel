@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -56,7 +56,7 @@ module OwnedObject {
   @chpldoc.nodoc // hide init/record impl details
   proc _owned.init(type chpl_t) {
     // TODO: today (06/15/2024), the compiler has a special check for a non-class type
-    // being used to instnatiate _owned, so this check is likely redundant and
+    // being used to instantiate _owned, so this check is likely redundant and
     // should be removed. See other _shared.init methods for similar checks that
     // are likely also redundant.
     if !isClass(chpl_t) then
@@ -289,7 +289,7 @@ module OwnedObject {
   // This is a workaround - compiler was resolving
   // chpl__autoDestroy(x:object) from internal coercions.
   pragma "auto destroy fn"
-  proc chpl__autoDestroy(ref x: _owned) {
+  proc chpl__autoDestroy(const ref x: _owned) {
     __primitive("call destructor", __primitive("deref", x));
   }
 

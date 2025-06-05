@@ -40,6 +40,9 @@ def main():
 
     syncLocation = os.environ.get('SYNC_LOCATION', 'LOCAL')
 
+    if os.environ.get('CHPL_NIGHTLY_DO_NOTHING'):
+        exit(0)
+
     with contextlib.closing(logFile):
         if syncLocation == "LOCAL":
             sync = syncToCrayWebhost(dirToSync, destDir, logFile, numRetries)
@@ -64,7 +67,7 @@ def syncToCrayWebhost(dirToSync, destDir, logFile, numRetries):
 
     # Assumes correct username and authentication for iad1-shared-b8-21.dreamhost.com is
     # configured for the current system.
-    webHost = 'chapcs11.us.cray.com'
+    webHost = 'chapcs11.hpc.amslabs.hpecorp.net'
     perfBaseDir = '/hpcdc/data/users/chapelu/public_html/perf'
     perfDir = posixpath.join(perfBaseDir, destDir)
 

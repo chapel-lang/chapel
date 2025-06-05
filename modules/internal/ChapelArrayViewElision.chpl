@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -19,11 +19,11 @@
  */
 
 module ChapelArrayViewElision {
-  use ChapelBase only iterKind;
+  use ChapelArray;
+  use ChapelBase;
   use ChapelRange;
   use DefaultRectangular;
   use CTypes;
-  use ChapelArray only _validRankChangeArgs;
 
   //
   // compiler interface
@@ -33,7 +33,7 @@ module ChapelArrayViewElision {
   // of these functions.
 
   proc chpl__createProtoSlice(ref Arr, slicingExprs ...)
-      where chpl__createProtoSliceArgCheck(Arr, slicingExprs) {
+      where chpl__createProtoSliceArgCheck(Arr, slicingExprs, isConst=false) {
 
     if slicingExprs.size == 1 then
       return new chpl__protoSlice(isConst=false, c_addrOf(Arr),
@@ -43,7 +43,7 @@ module ChapelArrayViewElision {
   }
 
   proc chpl__createConstProtoSlice(const ref Arr, slicingExprs ...)
-      where chpl__createProtoSliceArgCheck(Arr, slicingExprs) {
+      where chpl__createProtoSliceArgCheck(Arr, slicingExprs, isConst=true) {
 
     if slicingExprs.size == 1 {
       return new chpl__protoSlice(isConst=true, c_addrOfConst(Arr),
@@ -68,28 +68,31 @@ module ChapelArrayViewElision {
     return new chpl__protoSlice();
   }
 
-  proc chpl__ave_exprCanBeProtoSlice(base, idxExprs...) param: bool {
-    return chpl__ave_baseTypeSupports(base) &&
-           chpl__ave_idxExprsSupport(base.idxType, (...idxExprs));
+  proc chpl__ave_exprCanBeProtoSlice(param isConst: bool,
+                                     base, idxExprs...) param: bool {
+    return chpl__ave_baseTypeSupports(base, isConst) &&
+           chpl__ave_idxExprsSupport(base.idxType, (...idxExprs)) &&
+           !chpl__ave_nonCompliantSlice(base, (...idxExprs));
   }
 
   proc chpl__ave_protoSlicesSupportAssignment(a: chpl__protoSlice,
                                               b: chpl__protoSlice) param: bool {
-    if a.isRankChange != b.isRankChange then return false; //or assert?
+    // either both sides are rank-changes, or neither is
+    if a.isRankChange != b.isRankChange then return false;
 
-    if !a.isRankChange then return true; // nothing else to check
-
-    // we want to check that if there are integrals in the original slicing
-    // expressions, they are at the same rank. In other words, if we are working
-    // with rank-changes, we want to make sure that the collapsed dims on both
-    // sides match
-    type aType = a.slicingExprType;
-    type bType = b.slicingExprType;
-    compilerAssert(a.slicingExprType.size == b.slicingExprType.size);
-    for param i in 0..<a.slicingExprType.size {
-      if ( ( isRangeType(aType[i]) && !isRangeType(bType[i])) ||
-           (!isRangeType(aType[i]) &&  isRangeType(bType[i])) ) {
-        return false;
+    if a.isRankChange {
+      // we want to check that if there are integrals in the original slicing
+      // expressions, they are at the same rank. In other words, if we are
+      // working with rank-changes, we want to make sure that the collapsed dims
+      // on both sides match
+      type aType = a.slicingExprType;
+      type bType = b.slicingExprType;
+      compilerAssert(a.slicingExprType.size == b.slicingExprType.size);
+      for param i in 0..<a.slicingExprType.size {
+        if ( ( isRangeType(aType[i]) && !isRangeType(bType[i])) ||
+             (!isRangeType(aType[i]) &&  isRangeType(bType[i])) ) {
+          return false;
+        }
       }
     }
 
@@ -196,8 +199,12 @@ module ChapelArrayViewElision {
       halt("protoSlice copy initializer should never be called");
     }
 
+    // 1D always returns a range
     inline proc domOrRange where rank==1 {
-      return ranges; // doesn't matter whether it is a domain or a range
+      if isDomain(ranges) then
+        return ranges.dim[0];
+      else
+        return ranges;
     }
 
     inline proc domOrRange where rank>1 {
@@ -222,7 +229,6 @@ module ChapelArrayViewElision {
       }
     }
 
-    inline proc rank param { return ptrToArr.deref().rank; }
     inline proc eltType type { return ptrToArr.deref().eltType; }
     inline proc _value { return ptrToArr.deref()._value; }
 
@@ -319,6 +325,10 @@ module ChapelArrayViewElision {
         yield arr[i];
       }
     }
+
+    proc supportsShortArrayTransfer() param {
+      return ptrToArr.deref().domain.supportsShortArrayTransfer();
+    }
   }
 
   // we need this as otherwise compiler-generated equality operator requires
@@ -349,19 +359,23 @@ module ChapelArrayViewElision {
   // private interface
   //
 
-  private proc chpl__createProtoSliceArgCheck(Arr, slicingExprs) param: bool {
+  private proc chpl__createProtoSliceArgCheck(Arr, slicingExprs,
+                                              param isConst) param: bool {
     compilerAssert(isTuple(slicingExprs));
 
-    return chpl__ave_baseTypeSupports(Arr) &&
+    return chpl__ave_baseTypeSupports(Arr, isConst) &&
            (chpl__isTupleOfRanges(slicingExprs) ||
             (slicingExprs.size == 1 && isDomain(slicingExprs[0])) ||
             _validRankChangeArgs(slicingExprs, Arr.idxType));
   }
 
-  private proc chpl__ave_baseTypeSupports(base) param: bool {
+  private proc chpl__ave_baseTypeSupports(base,
+                                          param isConst: bool) param: bool {
     import Reflection;
-    return isArray(base) && // also could be a view?
-           isSubtype(base._instance.type, DefaultRectangularArr) &&
+    return isArray(base) && !chpl__isArrayView(base) && // we could allow views
+           // See https://github.com/chapel-lang/chapel/issues/26626 for below
+           (!isConst || base.rank == 1) &&
+           base.domain.supportsArrayViewElision() &&
            Reflection.canResolve("c_addrOf", base);
   }
 
@@ -394,6 +408,17 @@ module ChapelArrayViewElision {
       return false;
     }
     return true;
+  }
+
+  private proc chpl__ave_nonCompliantSlice(base, idxExprs: domain) param {
+    // distributed array sliced with a distributed domain is non-compliant.
+    // such slices imply "redistribution" of the data. Right now, let's ignore
+    // those
+    return !chpl__isDROrDRView(base) && !chpl__isDROrDRView(idxExprs);
+  }
+
+  private proc chpl__ave_nonCompliantSlice(base, idxExprs...) param {
+    return false;
   }
 
   private proc chpl__ave_idxExprsSupport(type idxType,

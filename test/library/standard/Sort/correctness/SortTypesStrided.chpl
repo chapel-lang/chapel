@@ -3,28 +3,28 @@ config const verbose = false;
 
 use Sort;
 
-record UselessKeyComparator {
+record UselessKeyComparator: keyComparator {
   proc key(x) {
     return x;
   }
 }
 
-record UselessKeyPartComparator {
+record UselessKeyPartComparator: keyPartComparator {
   proc keyPart(x, i:int) {
     if isTuple(x) {
       type tt = x(0).type;
       if i < x.size then
-        return (0, x(i));
+        return (keyPartStatus.returned, x(i));
       else
-        return (-1, 0:tt);
+        return (keyPartStatus.pre, 0:tt);
 
     } else if x.type == string {
-      return (new DefaultComparator()).keyPart(x, i);
+      return (new defaultComparator()).keyPart(x, i);
     } else if isNumericType(x.type) {
       if i == 0 then
-        return (0, x);
+        return (keyPartStatus.returned, x);
       else
-        return (-1, x);
+        return (keyPartStatus.pre, x);
     } else {
       compilerError("not handled");
     }
@@ -79,13 +79,13 @@ proc checkSorts(arr, comparator) {
 }
 
 proc checkSorts(arr) {
-  checkSorts(arr, new DefaultComparator());
-  checkSorts(arr, new ReverseComparator());
+  checkSorts(arr, new defaultComparator());
+  checkSorts(arr, new reverseComparator());
   checkSorts(arr, new UselessKeyComparator());
-  checkSorts(arr, new ReverseComparator(new UselessKeyComparator()));
+  checkSorts(arr, new reverseComparator(new UselessKeyComparator()));
   if !isRealOrTupleOfReal(arr[1].type) && !isTupleOfString(arr[1].type) {
     checkSorts(arr, new UselessKeyPartComparator());
-    checkSorts(arr, new ReverseComparator(new UselessKeyPartComparator()));
+    checkSorts(arr, new reverseComparator(new UselessKeyPartComparator()));
   }
 }
 

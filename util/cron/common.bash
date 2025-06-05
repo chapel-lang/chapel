@@ -3,10 +3,10 @@
 # This should be sourced by other scripts that wish to make use of the
 # variables set here.
 
-CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
-source $CWD/functions.bash
+UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+source $UTIL_CRON_DIR/functions.bash
 
-source $CWD/load-base-deps.bash
+source $UTIL_CRON_DIR/load-base-deps.bash
 
 log_info "gcc version: $(which gcc)"
 gcc --version
@@ -63,7 +63,7 @@ function with_logging()
 if [ "${CHPL_HOME+x}" = "x" ] ; then
     log_info "CHPL_HOME is already set to: ${CHPL_HOME}"
 else
-    export CHPL_HOME=$(cd $CWD/../.. ; pwd)
+    export CHPL_HOME=$(cd $UTIL_CRON_DIR/../.. ; pwd)
     log_info "CHPL_HOME is not set. Defaulting to: ${CHPL_HOME}"
 fi
 log_info "CHPL_HOME is: ${CHPL_HOME}"
@@ -84,6 +84,10 @@ export CHPL_TARGET_CPU=none
 explicit_prefix=${CHPL_NIGHTLY_LOG_PREFIX}
 default_prefix=${TMPDIR:-/tmp}/chapel_logs
 css_prefix=/hpcdc/project/chapel
+log_info "About to set log prefix. explicit: ${explicit_prefix}"
+log_info "About to set log prefix. default: ${default_prefix}"
+log_info "About to set log prefix. css: ${css_prefix}"
+
 if [ -n "$explicit_prefix" ]; then
     LOGDIR_PREFIX=$explicit_prefix
 elif [ -d $css_prefix ] ; then
@@ -119,5 +123,7 @@ fi
 
 # Work-around to remove git submodules
 #   See Cray/chapel-private#1050 for long term solution
-log_info "Clearing out git submodules in test/mason/"
-git clean -ffdx ${CHPL_HOME}/test/mason
+if [ -z "${CHPL_NIGHTLY_DO_NOTHING:-}" ]; then
+  log_info "Clearing out git submodules in test/mason/"
+  git clean -ffdx ${CHPL_HOME}/test/mason
+fi

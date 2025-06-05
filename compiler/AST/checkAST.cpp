@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -111,7 +111,8 @@ void checkPrimitives()
      case PRIM_FIELD_NAME_TO_NUM:
      case PRIM_FIELD_BY_NUM:
      case PRIM_IS_RECORD_TYPE:
-     case PRIM_IS_FCF_TYPE:
+     case PRIM_IS_PROC_TYPE:
+     case PRIM_TO_PROC_TYPE:
      case PRIM_IS_UNION_TYPE:
      case PRIM_IS_EXTERN_UNION_TYPE:
      case PRIM_IS_ATOMIC_TYPE:
@@ -123,6 +124,7 @@ void checkPrimitives()
      case PRIM_IS_INSTANTIATION_ALLOW_VALUES:
      case PRIM_IS_PROPER_SUBTYPE:
      case PRIM_NEW:                 // new keyword
+     case PRIM_NEW_WITH_ALLOCATOR:
      case PRIM_ERROR:
      case PRIM_WARNING:
       if (resolved)
@@ -216,6 +218,8 @@ void checkPrimitives()
      case PRIM_AND_ASSIGN:
      case PRIM_OR_ASSIGN:
      case PRIM_XOR_ASSIGN:
+     case PRIM_LOGICALAND_ASSIGN:
+     case PRIM_LOGICALOR_ASSIGN:
      case PRIM_MIN:
      case PRIM_MAX:
      case PRIM_SETCID:

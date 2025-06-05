@@ -1,0 +1,3 @@
+-scomparator=R1 # compareAndKeyPart.deprecation.good
+-scomparator=R2 # compareAndKeyPart.error.good
+-scomparator=R3 # compareAndKeyPart.good

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -18,6 +18,7 @@
  * limitations under the License.
  */
 
+/* Distributed associative arrays. */
 @unstable("HashedDist is unstable and may change in the future")
 prototype module HashedDist {
 

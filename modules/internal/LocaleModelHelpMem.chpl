@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -65,6 +65,26 @@ module LocaleModelHelpMem {
     pragma "insert line file info"
       extern proc chpl_mem_alloc(size:c_size_t, md:chpl_mem_descInt_t) : c_ptr(void);
     return chpl_mem_alloc(size.safeCast(c_size_t), md + chpl_memhook_md_num());
+  }
+
+  import Allocators;
+  pragma "allocator"
+  pragma "llvm return noalias"
+  pragma "always propagate line file info"
+  proc chpl_here_alloc_with_allocator(size:int(64),
+                                      md:chpl_mem_descInt_t,
+                                      ref allocator: record): c_ptr(void) {
+    // TODO: what to do with `md`?
+    return allocator.allocate(size);
+  }
+  pragma "allocator"
+  pragma "llvm return noalias"
+  pragma "always propagate line file info"
+  proc chpl_here_alloc_with_allocator(size:int(64),
+                                      md:chpl_mem_descInt_t,
+                                      const ref allocator: class): c_ptr(void) {
+    // TODO: what to do with `md`?
+    return allocator.allocate(size);
   }
 
   pragma "allocator"

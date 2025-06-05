@@ -1,0 +1,5 @@
+In bar: csrLayout(false)
+In baz: csrLayout(false)
+In foo: csrLayout(true)
+In bar: csrLayout(true)
+In baz: csrLayout(true)

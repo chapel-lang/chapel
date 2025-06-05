@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -25,7 +25,8 @@
 static std::tuple<QualifiedType, std::string, std::string>
 getRangeInfo(Context* context, const RecordType* r) {
   assert(r->name() == "_range");
-  auto fields = fieldsForTypeDecl(context, r, DefaultsPolicy::IGNORE_DEFAULTS);
+  auto rc = createDummyRC(context);
+  auto fields = fieldsForTypeDecl(&rc, r, DefaultsPolicy::IGNORE_DEFAULTS);
 
   assert(fields.fieldName(0) == "idxType");
   assert(fields.fieldName(1) == "bounds");
@@ -36,7 +37,7 @@ getRangeInfo(Context* context, const RecordType* r) {
   assert(bounded.type()->isEnumType());
   assert(bounded.param() != nullptr);
   auto boundedValue = bounded.param()->toEnumParam();
-  auto id = boundedValue->value();
+  auto id = boundedValue->value().id;
   auto astNode = idToAst(context, id)->toNamedDecl();
   assert(astNode != nullptr);
   std::string boundTypeStr = astNode->name().str();
@@ -46,7 +47,7 @@ getRangeInfo(Context* context, const RecordType* r) {
   assert(stridable.type()->isEnumType());
   assert(stridable.param() != nullptr);
   auto stridableValue = stridable.param()->toEnumParam();
-  auto idS = stridableValue->value();
+  auto idS = stridableValue->value().id;
   auto astNodeS = idToAst(context, idS)->toNamedDecl();
   assert(astNodeS != nullptr);
   std::string stridesStr = astNodeS->name().str();
@@ -322,6 +323,23 @@ static void test11(Context* context) {
   check("y5", "positive");
 }
 
+static void test12(Context* context) {
+  context->advanceToNextRevision(false);
+  setupModuleSearchPaths(context, false, false, {}, {});
+  QualifiedType qt =  resolveTypeOfXInit(context,
+                         R""""(
+                         proc foo(arg: range(?) = 0..) do return arg;
+                         var x = foo(0..#10);
+                         )"""", true);
+  assert(qt.type() != nullptr);
+  auto rangeType = qt.type()->toRecordType();
+  assert(rangeType != nullptr);
+  auto idxType = getRangeIndexType(context, rangeType, "both");
+  assert(idxType.type() != nullptr);
+  assert(idxType.type()->isIntType());
+
+}
+
 int main() {
   // first test runs without environment and stdlib.
   test1();
@@ -340,5 +358,6 @@ int main() {
   test9(ctx);
   test10(ctx);
   test11(ctx);
+  test12(ctx);
   return 0;
 }

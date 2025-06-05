@@ -1,0 +1,43 @@
+{ start 'on'
+'on' on gpu - 1
+'on' on gpu - 1
+'on' on gpu - 1
+'on' on gpu - 1
+'on' on gpu - 1
+notRunOnGPUs()
+'on' on gpu - 2
+'on' on gpu - 2
+'on' on gpu - 2
+'on' on gpu - 2
+'on' on gpu - 2
+cpuInteger = 5
+} finish 'on'
+{ start either()
+either() on gpu - 1
+either() on gpu - 1
+either() on gpu - 1
+either() on gpu - 1
+either() on gpu - 1
+compiler generated error
+notRunOnGPUs()
+either() on gpu - 2
+either() on gpu - 2
+either() on gpu - 2
+either() on gpu - 2
+either() on gpu - 2
+cpuInteger = 6
+} finish either()
+{ start either()
+notRunOnGPUs()
+notRunOnGPUs()
+notRunOnGPUs()
+notRunOnGPUs()
+notRunOnGPUs()
+notRunOnGPUs()
+cpu: cpuInteger=1
+cpu: cpuInteger=1
+cpu: cpuInteger=1
+cpu: cpuInteger=1
+cpu: cpuInteger=1
+cpuInteger = 6
+} finish either()

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -75,7 +75,7 @@ void collectDefExprs(BaseAST* ast, llvm::SmallVectorImpl<DefExpr*>& defExprs);
 void collectForallStmts(BaseAST* ast, std::vector<ForallStmt*>& forallStmts);
 void collectCForLoopStmtsPreorder(BaseAST* ast, std::vector<CForLoop*>& cforloopStmts);
 void collectCallExprs(BaseAST* ast, std::vector<CallExpr*>& callExprs);
-void collectCallExprsExceptInGpuBlock(BaseAST* ast, std::vector<CallExpr*>& callExprs);
+void collectCallExprsForGpuEligibilityAnalysis(BaseAST* ast, std::vector<CallExpr*>& callExprs);
 void collectBlockStmts(BaseAST* ast, std::vector<BlockStmt*>& blockStmts);
 void collectForLoops(BaseAST* ast, std::vector<ForLoop*>& forLoops);
 void collectMyCallExprs(BaseAST* ast,
@@ -101,6 +101,14 @@ void reset_ast_loc(BaseAST* destNode, BaseAST* sourceNode);
 void compute_call_sites();
 void computeNonvirtualCallSites(FnSymbol* fn);
 void computeAllCallSites(FnSymbol* fn);
+
+// The type of a function that takes a type and produces a type.
+using AdjustTypeFn = Type*(*)(Type* t);
+
+// Given 'adjustTypeFn', walk all symbols and re-assign the type of symbol if
+// the type produced by 'adjustTypeFn' differs from the symbol's current type.
+void adjustAllSymbolTypes(AdjustTypeFn adjustTypeFn,
+                          bool preserveRefLevels=true);
 
 //
 // collect set of symbols and vector of SymExpr; can be used to
@@ -130,6 +138,8 @@ bool isOpEqualPrim(CallExpr* call);
 bool isMoveOrAssign(CallExpr* call);
 
 bool isDerefMove(CallExpr* call);
+
+bool isNewLike(CallExpr* call);
 
 //
 // Checks if a callExpr is a relational operator (<, <=, >, >=, ==, !=)

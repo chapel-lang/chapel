@@ -1,16 +1,12 @@
 ArrayViewElision supported slices.chpl:24
-	lhsBaseType: [domain(2,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		domain(2,int(64),one)
-	rhsBaseType: [domain(2,int(64),one)] int(64)
 	rhsIndexingExprs: 
 		domain(2,int(64),one)
 
 ArrayViewElision supported slices.chpl:24
-	lhsBaseType: [domain(2,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		domain(2,int(64),one)
-	rhsBaseType: [domain(2,int(64),one)] int(64)
 	rhsIndexingExprs: 
 		domain(2,int(64),one)
 

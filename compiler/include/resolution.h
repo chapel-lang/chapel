@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -404,10 +404,6 @@ void checkDuplicateDecorators(Type* decorator, Type* decorated, Expr* ctx);
 // as a field or variable (it should be, var x: domain(?)).
 void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
                                  AggregateType* forFieldInHere);
-
-void handleDefaultAssociativeWarnings(Symbol* sym,
-                                      Expr* typeExpr, Expr* initExpr,
-                                      AggregateType* forFieldInHere);
 
 // These enable resolution for functions that don't really match
 // according to the language definition in order to get more errors

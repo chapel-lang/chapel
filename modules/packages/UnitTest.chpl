@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -49,6 +49,7 @@ Here are the assert functions available in the UnitTest module:
 - :proc:`~Test.assertNotEqual`
 - :proc:`~Test.assertGreaterThan`
 - :proc:`~Test.assertLessThan`
+- :proc:`~Test.assertRegexMatch`
 
 Test Metadata Functions
 -----------------------
@@ -242,6 +243,7 @@ Output:
 */
 module UnitTest {
   use Reflection;
+  use Regex;
   use TestError;
   use List, Map;
   private use IO, IO.FormattedIO;
@@ -534,6 +536,52 @@ module UnitTest {
     pragma "always propagate line file info"
     proc assertEqual(first, second) throws {
       checkAssertEquality(first, second);
+    }
+
+    /*
+      Assert that x matches the regular expression pattern.
+
+      .. warning::
+
+        This method requires Chapel to be built with `CHPL_RE2=bundled`.
+
+      :arg x: The first string or bytes to match.
+      :arg pattern: The regular expression pattern.
+      :throws AssertionError: If x doesn't match the regex
+    */
+    pragma "insert line file info"
+    pragma "always propagate line file info"
+    proc assertRegexMatch(x: ?t, pattern: t) throws {
+      var re = new regex(pattern);
+      checkAssertRegexMatch(x, re);
+    }
+
+    /*
+      Assert that x matches the pre-compiled regular expression object.
+
+      .. warning::
+
+        This method requires Chapel to be built with `CHPL_RE2=bundled`.
+
+      :arg x: The first string or bytes to match.
+      :arg pattern: The pre-compiled regular expression object.
+      :throws AssertionError: If x doesn't match the regex
+    */
+    pragma "insert line file info"
+    pragma "always propagate line file info"
+    proc assertRegexMatch(x: ?t, re: regex(t)) throws {
+      checkAssertRegexMatch(x, re);
+    }
+
+    pragma "insert line file info"
+    pragma "always propagate line file info"
+    @chpldoc.nodoc
+    proc checkAssertRegexMatch(x: ?t, re: regex(t)) throws {
+      if !re.match(x) {
+        const errorMsg = "assert failed - '%?' doesn't match\
+                          the regular expression '%?'".format(x, re:t);
+        throw new owned AssertionError(errorMsg);
+      }
     }
 
     pragma "insert line file info"

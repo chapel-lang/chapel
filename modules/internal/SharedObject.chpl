@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -136,7 +136,7 @@ module SharedObject {
   @chpldoc.nodoc // hide init/record impl details
   proc _shared.init(type chpl_t) {
     // TODO: today (06/15/2024), the compiler has a special check for a non-class type
-    // being used to instnatiate _shared, so this check is likely redundant and
+    // being used to instantiate _shared, so this check is likely redundant and
     // should be removed. See other _shared.init methods for similar checks that
     // are likely also redundant.
     if !isClass(chpl_t) then
@@ -442,7 +442,7 @@ proc _shared.init=(pragma "nil from arg" in take: owned) {
 
   // This is a workaround
   pragma "auto destroy fn"
-  proc chpl__autoDestroy(ref x: _shared) {
+  proc chpl__autoDestroy(const ref x: _shared) {
     __primitive("call destructor", __primitive("deref", x));
   }
 

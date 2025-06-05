@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -92,8 +92,7 @@ void setDefinedConstForDefExprIfApplicable(DefExpr* defExpr,
 void setDefinedConstForPrimSetMemberIfApplicable(CallExpr *call);
 void setDefinedConstForFieldsInInitializer(FnSymbol *fn);
 
-void earlyGpuTransforms();
 bool isLoopGpuBound(CForLoop* loop);
-void lateGpuTransforms();
+void gpuTransforms();
 
 #endif

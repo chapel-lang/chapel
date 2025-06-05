@@ -1,2 +1,0 @@
-warning: 'cPtrToLogicalValue' is deprecated and no longer affects the behavior of 'c_ptrTo'
-note: 'cPtrToLogicalValue' was set via a compiler flag

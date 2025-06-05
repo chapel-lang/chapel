@@ -1,0 +1,5 @@
+(lldb) p/d myVariable
+(int64_t) 0
+--
+(lldb) p/d myVariable
+(int64_t) 17

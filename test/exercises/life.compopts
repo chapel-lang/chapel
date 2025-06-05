@@ -1,0 +1,3 @@
+-sdist=distType.na
+-sdist=distType.block
+-sdist=distType.stencil

@@ -1,0 +1,10 @@
+dictionary size 3
+map size 3
+map[one] 1
+map[two] 2
+map[three] 3
+Checking Value version
+map size 3
+map[one] 1
+map[two] 2
+map[three] 3

@@ -8,12 +8,21 @@ config const n = 1000,
 proc main() {
     const sumActual = makeIntsFile(fileName, n);
 
+    // single-locale read
     var sum = 0;
     forall line in readLines(fileName, nTasks=nTasks) with (+ reduce sum) do
         sum += line:int;
 
+    // multi-locale read
+    var sum2 = 0;
+    forall line in readLines(fileName, nTasks=nTasks, targetLocales=Locales) with (+ reduce sum2) {
+        sum2 += line:int;
+    }
+
     // ensure the file was read correctly
-    assert(sum == sumActual, "sums don't match");
+    assert(sum == sumActual, "single-locale sums don't match");
+    assert(sum2 == sumActual, "multi-locale sums don't match");
+
     remove(fileName);
 }
 

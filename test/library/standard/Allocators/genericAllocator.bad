@@ -1,0 +1,6 @@
+internal error: UTI-MIS-1049 chpl version 2.2.0 pre-release (a1a79dafff)
+
+Internal errors indicate a bug in the Chapel compiler,
+and we're sorry for the hassle.  We would appreciate your reporting this bug --
+please see https://chapel-lang.org/bugs.html for instructions.
+

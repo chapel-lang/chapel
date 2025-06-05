@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -32,6 +32,7 @@
 #include "config.h"
 #include "driver.h"
 #include "expr.h"
+#include "fcf-support.h"
 #include "files.h"
 #include "fixupExports.h"
 #include "insertLineNumbers.h"
@@ -306,8 +307,7 @@ static void genGlobalRawString(const char *cname, std::string &value, size_t len
 static void
 genGlobalVoidPtr(const char* cname, bool isHeader, bool isConstant=true) {
   GenInfo* info = gGenInfo;
-  llvm::Type* voidPtrTy = llvm::PointerType::get(llvm::Type::getVoidTy(
-                                          info->module->getContext()), 1);
+  llvm::Type* voidPtrTy = getPointerType(info->module->getContext(), 1);
   llvm::GlobalVariable *global = llvm::cast<llvm::GlobalVariable>(
       info->module->getOrInsertGlobal(cname, voidPtrTy));
   global->setInitializer(llvm::Constant::getNullValue(voidPtrTy));
@@ -337,6 +337,26 @@ genGlobalInt(const char* cname, int value, bool isHeader,
   }
 }
 
+void codegenGlobalInt64(const char* cname, int64_t value, bool isHeader,
+                        bool isConstant) {
+  GenInfo* info = gGenInfo;
+  if( info->cfile ) {
+    if(isHeader)
+      fprintf(info->cfile, "extern const int64_t %s;\n", cname);
+    else
+    fprintf(info->cfile, "const int64_t %s = %" PRId64 ";\n", cname, value);
+  } else {
+#ifdef HAVE_LLVM
+    llvm::GlobalVariable *globalInt = llvm::cast<llvm::GlobalVariable>(
+        info->module->getOrInsertGlobal(
+          cname, llvm::IntegerType::getInt64Ty(info->module->getContext())));
+    globalInt->setInitializer(info->irBuilder->getInt64(value));
+    globalInt->setConstant(isConstant);
+    info->lvt->addGlobalValue(cname, globalInt, GEN_PTR, false, dtInt[INT_SIZE_64]);
+#endif
+  }
+}
+
 static void genGlobalInt32(const char *cname, int value) {
   GenInfo *info = gGenInfo;
   if (info->cfile) {
@@ -352,6 +372,26 @@ static void genGlobalInt32(const char *cname, int value) {
 #endif
   }
 }
+
+// this is currently only used for GPU compilation, and gets unused function
+// warnings without HAVE_LLVM
+#ifdef HAVE_LLVM
+static void genGlobalUInt64(const char *cname, uint64_t value) {
+  GenInfo *info = gGenInfo;
+  if (info->cfile) {
+    fprintf(info->cfile, "const uint64_t %s = %" PRIu64 ";\n", cname, value);
+  } else {
+#ifdef HAVE_LLVM
+    llvm::GlobalVariable *globalInt =
+        llvm::cast<llvm::GlobalVariable>(info->module->getOrInsertGlobal(
+            cname, llvm::IntegerType::getInt64Ty(info->module->getContext())));
+    globalInt->setInitializer(info->irBuilder->getInt64(value));
+    globalInt->setConstant(true);
+    info->lvt->addGlobalValue(cname, globalInt, GEN_PTR, false, dtInt[INT_SIZE_64]);
+#endif
+  }
+}
+#endif
 
 static bool
 isObjectOrSubclass(Type* t)
@@ -638,12 +678,14 @@ static void
 genFtable(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
   GenInfo* info = gGenInfo;
 
+  // TODO: Change this to be 'void*' instead.
   const char* eltType = "chpl_fn_p";
-  const char* name = "chpl_ftable";
+  const char* name = ftableName;
 
   if (isHeader) {
     // Just pass NULL when generating header
     codegenGlobalConstArray(name, eltType, NULL, true);
+    codegenGlobalInt64(ftableSizeName, 0, true);
     return;
   }
 
@@ -673,14 +715,15 @@ genFtable(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
     ftable.push_back(gen);
   }
 
-  // make sure ftable always contains at least 1 element
-  if (ftable.empty()) {
-    GenRet nullFn = codegenTypedNull(funcPtrType);
-    ftable.push_back(nullFn);
-  }
+  // Make sure there is a NULL sentinel at the end.
+  GenRet nullFn = codegenTypedNull(funcPtrType);
+  ftable.push_back(nullFn);
 
   // Now emit the global array declaration
   codegenGlobalConstArray(name, eltType, &ftable, false);
+
+  // Now emit the size
+  codegenGlobalInt64(ftableSizeName, ftable.size(), false);
 }
 
 static void
@@ -815,7 +858,7 @@ genVirtualMethodTable(std::vector<TypeSymbol*>& types, bool isHeader) {
         if (Vec<FnSymbol*>* vfns = virtualMethodTable.get(ct)) {
           int i = 0;
           forv_Vec(FnSymbol, vfn, *vfns) {
-            if (vfn->hasFlag(FLAG_GPU_CODEGEN) == gCodegenGPU) {
+            if (needsCodegenWrtGPU(vfn)) {
               int classId = ct->classId;
               int fnId = i;
               int index = gMaxVMT * classId + fnId;
@@ -882,9 +925,9 @@ static void genFilenameTable() {
     std::string & path = (*it);
     std::string genPath;
 
-    if(!strncmp(CHPL_HOME, path.c_str(), strlen(CHPL_HOME))) {
+    if(!strncmp(CHPL_HOME.c_str(), path.c_str(), CHPL_HOME.length())) {
       genPath = "$CHPL_HOME";
-      genPath += (path.c_str()+strlen(CHPL_HOME));
+      genPath += (path.c_str()+CHPL_HOME.length());
     } else {
       genPath = path;
     }
@@ -1228,7 +1271,7 @@ static void genConfigGlobalsAndAbout() {
 
   // if we are running as compiler-driver, retrieve compile command saved to tmp
   if (!fDriverDoMonolithic) {
-    restoreDriverTmp(compileCommandFilename, [](const char* restoredCommand) {
+    restoreDriverTmp(compileCommandFilename, [](std::string_view restoredCommand) {
       compileCommand = astr(restoredCommand);
     });
   }
@@ -1236,14 +1279,14 @@ static void genConfigGlobalsAndAbout() {
   genGlobalString("chpl_compileCommand", compileCommand);
   genGlobalString("chpl_compileVersion", compileVersion);
   genGlobalString("chpl_compileDirectory", getCwd());
-  if (strcmp(saveCDir, "") != 0) {
-    char *actualPath = realpath(saveCDir, NULL);
+  if (!saveCDir.empty()) {
+    char *actualPath = realpath(saveCDir.c_str(), NULL);
     genGlobalString("chpl_saveCDir", actualPath);
   } else {
     genGlobalString("chpl_saveCDir", "");
   }
 
-  genGlobalString("CHPL_HOME", CHPL_HOME);
+  genGlobalString("CHPL_HOME", CHPL_HOME.c_str());
 
   genGlobalInt("CHPL_STACK_CHECKS", !fNoStackChecks, false);
   genGlobalInt("CHPL_CACHE_REMOTE", fCacheRemote, false);
@@ -1285,7 +1328,7 @@ static void genConfigGlobalsAndAbout() {
   codegenCallPrintf(astr("Compilation command: ", compileCommand, "\\n"));
   codegenCallPrintf(astr("Chapel compiler version: ", compileVersion, "\\n"));
   codegenCallPrintf("Chapel environment:\\n");
-  codegenCallPrintf(astr("  CHPL_HOME: ", CHPL_HOME, "\\n"));
+  codegenCallPrintf(astr("  CHPL_HOME: ", CHPL_HOME.c_str(), "\\n"));
   for (std::map<std::string, const char*>::iterator env=envMap.begin(); env!=envMap.end(); ++env) {
     if (env->first != "CHPL_HOME") {
       codegenCallPrintf(astr("  ", env->first.c_str(), ": ", env->second, "\\n"));
@@ -1602,7 +1645,8 @@ static void uniquify_names(std::set<const char*> & cnames,
   // collect types and apply canonical sort
   //
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (ts->defPoint->parentExpr != rootModule->block) {
+    if (ts->defPoint->parentExpr != rootModule->block ||
+        isFunctionType(ts->type)) {
       legalizeSymbolName(ts);
       types.push_back(ts);
     }
@@ -1781,6 +1825,15 @@ static void codegen_header(std::set<const char*> & cnames,
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (ts->defPoint->parentExpr != rootModule->block) {
       types.push_back(ts);
+    } else if (isFunctionType(ts->type)) {
+      if (!fcfs::usePointerImplementation()) {
+        INT_ASSERT(!ts->isUsed());
+      } else if (ts->isUsed()) {
+        // Types will still exist in the tree even if they are not used
+        // by any variables/etc because many computations will run over
+        // the function type rather than the function itself.
+        types.push_back(ts);
+      }
     }
   }
   std::sort(types.begin(), types.end(), compareSymbol);
@@ -1802,8 +1855,7 @@ static void codegen_header(std::set<const char*> & cnames,
   // collect functions and apply canonical sort
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if ((fn->hasFlag(FLAG_GPU_CODEGEN) == gCodegenGPU) ||
-        fn->hasFlag(FLAG_GPU_AND_CPU_CODEGEN)) {
+    if (needsCodegenWrtGPU(fn)) {
       functions.push_back(fn);
     }
   }
@@ -1917,15 +1969,17 @@ static void codegen_header(std::set<const char*> & cnames,
   if(!info->cfile) {
 #ifdef HAVE_LLVM
     // Codegen any type annotations that are necessary.
-    // Start with primitive types in case they are referenced by
-    // records or classes.
-    forv_Vec(TypeSymbol, typeSymbol, gTypeSymbols) {
-      if (typeSymbol->defPoint->parentExpr == rootModule->block &&
-          isPrimitiveType(typeSymbol->type) &&
-          typeSymbol->hasLLVMType()) {
-        typeSymbol->codegenMetadata();
+    // Start with primitive types and function types in case they are used
+    // by records or classes.
+    forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+      bool isInRootModule = ts->defPoint->parentExpr == rootModule->block;
+      if (isInRootModule && ts->hasLLVMType()) {
+        if (isPrimitiveType(ts->type) || isFunctionType(ts->type)) {
+          ts->codegenMetadata();
+        }
       }
     }
+
     forv_Vec(TypeSymbol, typeSymbol, types) {
       if (!isDecoratedClassType(typeSymbol->type))
         typeSymbol->codegenMetadata();
@@ -1948,6 +2002,7 @@ static void codegen_header(std::set<const char*> & cnames,
   for_vector(FnSymbol, fn2, functions) {
     if (fn2->hasFlag(FLAG_BEGIN_BLOCK) ||
         fn2->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK) ||
+        fn2->hasFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION) ||
         fn2->hasFlag(FLAG_ON_BLOCK)) {
       ftableVec.push_back(fn2);
       ftableMap[fn2] = ftableVec.size()-1;
@@ -2147,10 +2202,10 @@ codegen_config() {
         fprintf(outfile,", /* private = */ %d", var->hasFlag(FLAG_PRIVATE));
         fprintf(outfile,", /* deprecated = */ %d",
                 var->hasFlag(FLAG_DEPRECATED));
-        fprintf(outfile,", \"%s\"\n", var->getDeprecationMsg());
+        fprintf(outfile,", \"%s\"\n", var->getSanitizedMsg(var->getDeprecationMsg()));
         fprintf(outfile,", /* unstable = */ %d",
                 var->hasFlag(FLAG_UNSTABLE));
-        fprintf(outfile,", \"%s\"\n", var->getUnstableMsg());
+        fprintf(outfile,", \"%s\"\n", var->getSanitizedMsg(var->getUnstableMsg()));
         fprintf(outfile,");\n");
 
       }
@@ -2226,9 +2281,9 @@ codegen_config() {
         }
         args[3] = info->irBuilder->getInt32(var->hasFlag(FLAG_PRIVATE));
         args[4] = info->irBuilder->getInt32(var->hasFlag(FLAG_DEPRECATED));
-        args[5] = genStringArg(var->getDeprecationMsg());
+        args[5] = genStringArg(var->getSanitizedMsg(var->getDeprecationMsg()));
         args[6] = info->irBuilder->getInt32(var->hasFlag(FLAG_UNSTABLE));
-        args[7] = genStringArg(var->getUnstableMsg());
+        args[7] = genStringArg(var->getSanitizedMsg(var->getUnstableMsg()));
 
         llvm::CallInst* callICF =
           info->irBuilder->CreateCall(installConfigFunc, args);
@@ -2242,56 +2297,63 @@ codegen_config() {
   }
 }
 
-static const char* generateFileName(ChainHashMap<char*, StringHashFns, int>& filenames, const char* name, const char* currentModuleName){
+static const char* generateFileName(ChainHashMap<const char*, StringHashFns, int>& filenames, const char* name, const char* currentModuleName){
   // Macs are case-insensitive when it comes to files, so
   // the following bit of code creates a unique filename
   // with case-insensitivity taken into account
 
   // create the lowercase filename
-  char lowerFilename[FILENAME_MAX];
-  snprintf(lowerFilename, sizeof(lowerFilename), "%s", currentModuleName);
-  for (unsigned int i=0; i<strlen(lowerFilename); i++) {
+  std::string lowerFilename = currentModuleName;
+  for (unsigned int i = 0; i < lowerFilename.length(); i++) {
     lowerFilename[i] = tolower(lowerFilename[i]);
   }
 
   // create a filename by bumping a version number until we get a
   // filename we haven't seen before
-  char filename[FILENAME_MAX];
-  snprintf(filename, sizeof(filename), "%s", lowerFilename);
+  std::string filename = lowerFilename;
   int version = 1;
-  while (filenames.get(filename)) {
+  while (filenames.get(astr(filename))) {
     version++;
-    int wanted_to_write = snprintf(filename, sizeof(filename), "%s%d",
-                                   lowerFilename, version);
-    if (wanted_to_write < 0) {
-      USR_FATAL("character encoding error while generating file name");
-    } else if ((size_t)wanted_to_write >= sizeof(filename)) {
-      USR_FATAL("module name '%s' is too long to be the basis for a file name",
-                currentModuleName);
-    }
+    filename = lowerFilename + std::to_string(version);
   }
-  filenames.put(filename, 1);
+  filenames.put(astr(filename), 1);
 
   // build the real filename using that version number -- preserves
   // case by default by going back to currentModule->name rather
   // than using the lowercase filename
   if (version == 1) {
-    snprintf(filename, sizeof(filename), "%s", currentModuleName);
+    filename = currentModuleName;
   } else {
-    snprintf(filename, sizeof(filename), "%s%d", currentModuleName, version);
+    filename = currentModuleName + std::to_string(version);
   }
 
   name = astr(filename);
   return name;
 }
 
+bool argRequiresCPtr(IntentTag intent, Type* t, bool isReceiver) {
+  /* This used to be true for INTENT_REF, but that is handled with the "_ref"
+     class and we don't need to generate a pointer for it directly */
+  if (isReceiver && is_complex_type(t)) return true;
+  return argMustUseCPtr(t);
+}
+
+bool argRequiresCPtr(ArgSymbol* formal) {
+  bool isReceiver = formal->hasFlag(FLAG_ARG_THIS);
+  return argRequiresCPtr(formal->intent, formal->type, isReceiver);
+}
+
+bool argRequiresCPtr(const FunctionType::Formal* formal) {
+  bool isReceiver = !strcmp(formal->name(), "this");
+  return argRequiresCPtr(formal->intent(), formal->type(), isReceiver);
+}
 
 static bool
 shouldChangeArgumentTypeToRef(ArgSymbol* arg) {
   FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
 
   bool shouldPassRef = (arg->intent & INTENT_FLAG_REF) ||
-                       arg->requiresCPtr();
+                       argRequiresCPtr(arg);
 
   bool alreadyRef = arg->typeInfo()->symbol->hasFlag(FLAG_REF) ||
                     arg->isRef() ||
@@ -2390,10 +2452,10 @@ static const char* getClangBuiltinWrappedName(const char* name)
 static const char* getMainModuleFilename() {
   static const char* mainModTmpFilename = "mainmodpath.tmp";
 
-  const char* filename;
+  const char* filename = nullptr;
   if (fDriverMakeBinaryPhase) {
     // Retrieve saved main module filename
-    restoreDriverTmp(mainModTmpFilename, [&filename](const char* mainModName) {
+    restoreDriverTmp(mainModTmpFilename, [&filename](std::string_view mainModName) {
       filename = astr(mainModName);
     });
   } else {
@@ -2411,6 +2473,10 @@ static const char* getMainModuleFilename() {
              "compilation phase");
       saveDriverTmp(mainModTmpFilename, filename);
     }
+  }
+
+  if (filename == nullptr) {
+    USR_FATAL("error getting main module filename from compilation process");
   }
 
   return filename;
@@ -2433,82 +2499,65 @@ void setupDefaultFilenames() {
     // and just the main module name in normal compilation.
     if (fLibraryCompile) {
       // If the header name isn't set either, don't use the prefix version
-      if (libmodeHeadername[0] == '\0') {
-        // copy from that slash onwards into the libmodeHeadername,
-        // saving space for a `\0` terminator
-        if (strlen(filename) >= sizeof(libmodeHeadername)) {
-          INT_FATAL("input filename exceeds header filename buffer size");
-        }
-        strncpy(libmodeHeadername, filename, sizeof(libmodeHeadername)-1);
-        libmodeHeadername[sizeof(libmodeHeadername)-1] = '\0';
+      if (libmodeHeadername.empty()) {
+        // copy from that slash onwards into the libmodeHeadername
+        libmodeHeadername = filename;
         // remove the filename extension from the library header name.
-        char* lastDot = strrchr(libmodeHeadername, '.');
-        if (lastDot == NULL) {
+        size_t lastDot = libmodeHeadername.find_last_of('.');
+        if (lastDot == std::string::npos) {
           INT_ASSERT(!fDriverMakeBinaryPhase &&
                      "encountered error in makeBinary phase that should only be "
                      "reachable in compilation phase");
           INT_FATAL(mainMod,
                     "main module filename is missing its extension: %s\n",
-                    libmodeHeadername);
+                    libmodeHeadername.c_str());
         }
-        *lastDot = '\0';
+        libmodeHeadername = libmodeHeadername.substr(0, lastDot);
       }
-      if (strlen(filename) >= sizeof(executableFilename) - 3) {
-        INT_FATAL("input filename exceeds executable filename buffer size");
-      }
-      strncpy(executableFilename, filename,
-              sizeof(executableFilename)-1);
+      executableFilename = filename;
 
-      if (fLibraryPython && pythonModulename[0] == '\0') {
-        strncpy(pythonModulename, filename, sizeof(pythonModulename)-1);
-        pythonModulename[sizeof(pythonModulename)-1] = '\0';
-        char* lastDot = strrchr(pythonModulename, '.');
-        if (lastDot == NULL) {
+      if (fLibraryPython && pythonModulename.empty()) {
+        pythonModulename = filename;
+        size_t lastDot = pythonModulename.find_last_of('.');
+        if (lastDot == std::string::npos) {
           INT_ASSERT(!fDriverMakeBinaryPhase &&
                      "encountered error in makeBinary phase that should only be "
                      "reachable in compilation phase");
           INT_FATAL(mainMod,
                     "main module filename is missing its extension: %s\n",
-                    pythonModulename);
+                    pythonModulename.c_str());
         }
-        *lastDot = '\0';
+        pythonModulename = pythonModulename.substr(0, lastDot);
       }
 
     } else {
-      // copy from that slash onwards into the executableFilename,
-      // saving space for a `\0` terminator
-      if (strlen(filename) >= sizeof(executableFilename)) {
-        INT_FATAL("input filename exceeds executable filename buffer size");
-      }
-      strncpy(executableFilename, filename, sizeof(executableFilename)-1);
-      executableFilename[sizeof(executableFilename)-1] = '\0';
+      // copy from that slash onwards into the executableFilename
+      executableFilename = filename;
     }
 
     // remove the filename extension from the executable filename
-    char* lastDot = strrchr(executableFilename, '.');
-    if (lastDot == NULL) {
+    size_t lastDot = executableFilename.find_last_of('.');
+    if (lastDot == std::string::npos) {
       INT_ASSERT(!fDriverMakeBinaryPhase &&
                  "encountered error in makeBinary phase that should only be "
                  "reachable in compilation phase");
       INT_FATAL(mainMod, "main module filename is missing its extension: %s\n",
-                executableFilename);
+                executableFilename.c_str());
     }
-    *lastDot = '\0';
+    executableFilename = executableFilename.substr(0, lastDot);
 
   }
 
   // If we're in library mode and the executable name was set but the header
   // name wasn't, use the executable name for the header name as well
-  if (fLibraryCompile && libmodeHeadername[0] == '\0') {
-    strncpy(libmodeHeadername, executableFilename, sizeof(libmodeHeadername)-1);
-    libmodeHeadername[sizeof(libmodeHeadername)-1] = '\0';
+  if (fLibraryCompile && libmodeHeadername.empty()) {
+    libmodeHeadername = executableFilename;
   }
 
   // If we're in library mode and the library name was explicitly set, use that
   // name for the python module.
-  if (fLibraryCompile && fLibraryPython && pythonModulename[0] == '\0') {
-    strncpy(pythonModulename, executableFilename, sizeof(pythonModulename)-1);
-    pythonModulename[sizeof(pythonModulename)-1] = '\0';
+  if (fLibraryCompile && fLibraryPython && pythonModulename.empty()) {
+    pythonModulename = executableFilename;
   }
 
   // Set the name of the library dir in library mode.
@@ -2637,10 +2686,12 @@ static void embedGpuCode() {
   }
 
   genGlobalRawString("chpl_gpuBinary", buffer, buffer.length());
+  genGlobalUInt64("chpl_gpuBinarySize", uint64_t(buffer.length()));
 }
 
 static void codegenGpuGlobals() {
   genGlobalInt("chpl_nodeID", -1, false, false);
+  genGlobalInt("chpl_haltFlag", 0, false, false);
   genGlobalVoidPtr("chpl_privateObjects", false, false);
 }
 #endif
@@ -3076,17 +3127,21 @@ static void codegenPartTwo() {
       debug_info = new debug_data(*info->module);
     }
     if(debug_info) {
-      // first find the main module, this will be the compile unit.
+      // every module gets its own compile unit
       forv_Vec(ModuleSymbol, currentModule, allModules) {
-        if(currentModule->hasFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE)) {
-          //So, this is pretty quick. I'm assuming that the main module is in the current dir, no optimization (need to figure out how to get this)
-          // and no compile flags, since I can't figure out how to get that either.
-          const char *current_dir = "./";
-          const char *empty_string = "";
-          debug_info->create_compile_unit(currentModule->astloc.filename(), current_dir, false, empty_string);
-          break;
-        }
+        // So, this is pretty quick. I'm assuming that the main module is in the current dir, no optimization (need to figure out how to get this)
+        // and no compile flags, since I can't figure out how to get that either.
+        const char *current_dir = "./";
+        const char *empty_string = "";
+        debug_info->create_compile_unit(currentModule,
+          currentModule->astloc.filename(), current_dir,
+          false, empty_string
+        );
       }
+      debug_info->create_compile_unit(rootModule,
+        rootModule->astloc.filename(), "./",
+        false, ""
+      );
     }
 
     // When doing codegen for programs that have GPU kernels we fork the
@@ -3113,15 +3168,13 @@ static void codegenPartTwo() {
 
     std::vector<const char*> userFileName;
     if(fIncrementalCompilation) {
-      ChainHashMap<char*, StringHashFns, int> fileNameHashMap;
+      ChainHashMap<const char*, StringHashFns, int> fileNameHashMap;
       forv_Vec(ModuleSymbol, currentModule, allModules) {
         const char* filename = NULL;
         filename = generateFileName(fileNameHashMap, filename, currentModule->name);
         openCFile(&modulefile, filename, "c");
-        int modulePathLen = strlen(astr(modulefile.pathname));
-        char path[FILENAME_MAX];
-        strncpy(path, astr(modulefile.pathname), modulePathLen-2);
-        path[modulePathLen-2]='\0';
+        // cut off .o extension
+        std::string path(modulefile.pathname, strlen(modulefile.pathname) - 2);
         userFileName.push_back(astr(path));
         closeCFile(&modulefile);
       }
@@ -3184,7 +3237,7 @@ static void codegenPartTwo() {
 
 #endif
   } else {
-    ChainHashMap<char*, StringHashFns, int> fileNameHashMap;
+    ChainHashMap<const char*, StringHashFns, int> fileNameHashMap;
     forv_Vec(ModuleSymbol, currentModule, allModules) {
       const char* filename = NULL;
       filename = generateFileName(fileNameHashMap, filename,currentModule->name);

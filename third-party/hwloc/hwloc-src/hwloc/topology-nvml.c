@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2022 Inria.  All rights reserved.
+ * Copyright © 2012-2024 Inria.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
@@ -26,8 +26,15 @@ hwloc__nvml_get_peer_gpu_by_pci(nvmlPciInfo_t peer, unsigned nb, nvmlPciInfo_t *
   return (unsigned)-1;
 }
 
+#if !HAVE_DECL_NVMLDEVICEGETNVLINKREMOTEDEVICETYPE
+typedef unsigned nvmlIntNvLinkDeviceType_t;
+#define NVML_NVLINK_DEVICE_TYPE_IBMNPU  0x01
+#define NVML_NVLINK_DEVICE_TYPE_SWITCH  0x02
+#define NVML_NVLINK_DEVICE_TYPE_UNKNOWN 0xFF
+#endif
+
 static hwloc_obj_t
-hwloc__nvml_get_peer_obj_by_pci(struct hwloc_topology *topology, hwloc_obj_t gpu, nvmlPciInfo_t peer_bdf)
+hwloc__nvml_get_peer_obj_by_pci(struct hwloc_topology *topology, hwloc_obj_t gpu, nvmlPciInfo_t peer_bdf, nvmlIntNvLinkDeviceType_t dtype)
 {
   hwloc_obj_t obj;
 
@@ -42,7 +49,7 @@ hwloc__nvml_get_peer_obj_by_pci(struct hwloc_topology *topology, hwloc_obj_t gpu
     if (pfilter != HWLOC_TYPE_FILTER_KEEP_NONE) {
       static int warned = 0;
       if (!warned && HWLOC_SHOW_ALL_ERRORS())
-        fprintf(stderr, "hwloc failed to find NVLink peer %04x:%02x:%02x\n",
+        fprintf(stderr, "hwloc/nvml: failed to find NVLink peer %04x:%02x:%02x\n",
                 peer_bdf.domain, peer_bdf.bus, peer_bdf.device);
       warned = 1;
     } else {
@@ -55,17 +62,26 @@ hwloc__nvml_get_peer_obj_by_pci(struct hwloc_topology *topology, hwloc_obj_t gpu
     return NULL;
   }
 
-  /* We want a non-PCI bridge.
-   * On POWER8/9, it's class 0680 vendor 1014 (IBM) model 04ea prog-if 00.
-   * For NVSwitch, it's class 0680 with prog-if 01 vendor 10de (NVIDIA).
-   * Baseclass 0x06 is enough to avoid GPUs (baseclass 0x03),
-   * and that's needed because some GPUs may be hidden from us because of cgroups.
-   */
-  if (obj->type != HWLOC_OBJ_PCI_DEVICE || (obj->attr->pcidev.class_id >> 8 != 0x06))
-    return NULL;
+  if (dtype == NVML_NVLINK_DEVICE_TYPE_UNKNOWN) {
+    /* We want a non-PCI bridge.
+     * On POWER8/9, it's class 0680 vendor 1014 (IBM) model 04ea prog-if 00.
+     * For NVSwitch, it's class 0680 with prog-if 01 vendor 10de (NVIDIA).
+     * Baseclass 0x06 is enough to avoid GPUs (baseclass 0x03),
+     * and that's needed because some GPUs may be hidden from us because of cgroups.
+     */
+    if (obj->type != HWLOC_OBJ_PCI_DEVICE || (obj->attr->pcidev.class_id >> 8 != 0x06))
+      return NULL;
 
-  switch (obj->attr->pcidev.vendor_id) {
-  case 0x1014: {
+    /* try to guess from the PCI info */
+    switch (obj->attr->pcidev.vendor_id) {
+    case 0x1014: dtype = NVML_NVLINK_DEVICE_TYPE_IBMNPU; break;
+    case 0x10de: dtype = NVML_NVLINK_DEVICE_TYPE_SWITCH; break;
+    default: break;
+    }
+  }
+
+  switch (dtype) {
+  case NVML_NVLINK_DEVICE_TYPE_IBMNPU: {
     /* IBM OpenCAPI port, return the CPU object. */
     if (!getenv("HWLOC_NVML_USE_OPENCAPI_LOCALITY")) {
       /* OpenCAPI Bridge PCI locality is wrong on POWER8 (equal to the entire machine).
@@ -79,7 +95,7 @@ hwloc__nvml_get_peer_obj_by_pci(struct hwloc_topology *topology, hwloc_obj_t gpu
       obj = obj->parent;
     return obj;
   }
-  case 0x10de: {
+  case NVML_NVLINK_DEVICE_TYPE_SWITCH: {
     /* NVIDIA NVSwitch, return the PCI object, we don't have anything better.
      * Mark it as subtype NVSwitch so that the core doesn't remove it.
      */
@@ -90,7 +106,7 @@ hwloc__nvml_get_peer_obj_by_pci(struct hwloc_topology *topology, hwloc_obj_t gpu
   default: {
     static int warned = 0;
     if (!warned && HWLOC_SHOW_ALL_ERRORS())
-      fprintf(stderr, "hwloc failed to recognize NVLink peer %04x:%02x:%02x class %04x vendor %04x device %04x\n",
+      fprintf(stderr, "hwloc/nvml: failed to recognize NVLink peer %04x:%02x:%02x class %04x vendor %04x device %04x\n",
               peer_bdf.domain, peer_bdf.bus, peer_bdf.device,
               obj->attr->pcidev.class_id, obj->attr->pcidev.vendor_id, obj->attr->pcidev.device_id);
     warned = 1;
@@ -248,20 +264,12 @@ hwloc_nvml_discover(struct hwloc_backend *backend, struct hwloc_disc_status *dst
       gpu_bdfs[i] = pci;
 #endif
       parent = hwloc_pci_find_parent_by_busid(topology, pci.domain, pci.bus, pci.device, 0);
-#if HAVE_DECL_NVMLDEVICEGETMAXPCIELINKGENERATION
+#if HAVE_DECL_NVMLDEVICEGETCURRPCIELINKGENERATION
       if (parent && parent->type == HWLOC_OBJ_PCI_DEVICE) {
 	unsigned maxwidth = 0, maxgen = 0;
-	float lanespeed;
-	nvmlDeviceGetMaxPcieLinkWidth(device, &maxwidth);
-	nvmlDeviceGetMaxPcieLinkGeneration(device, &maxgen);
-	/* PCIe Gen1 = 2.5GT/s signal-rate per lane with 8/10 encoding    = 0.25GB/s data-rate per lane
-	 * PCIe Gen2 = 5  GT/s signal-rate per lane with 8/10 encoding    = 0.5 GB/s data-rate per lane
-	 * PCIe Gen3 = 8  GT/s signal-rate per lane with 128/130 encoding = 1   GB/s data-rate per lane
-	 */
-	lanespeed = maxgen <= 2 ? 2.5 * maxgen * 0.8 : 8.0 * 128/130; /* Gbit/s per lane */
-	if (lanespeed * maxwidth != 0.)
-	  /* we found the max link speed, replace the current link speed found by pci (or none) */
-	  parent->attr->pcidev.linkspeed = lanespeed * maxwidth / 8; /* GB/s */
+	nvmlDeviceGetCurrPcieLinkWidth(device, &maxwidth);
+	nvmlDeviceGetCurrPcieLinkGeneration(device, &maxgen);
+        parent->attr->pcidev.linkspeed = hwloc__pci_link_speed(maxgen, maxwidth);
       }
 #endif
     }
@@ -289,6 +297,7 @@ hwloc_nvml_discover(struct hwloc_backend *backend, struct hwloc_disc_status *dst
     hwloc_debug("looking at NVLinks for NVML GPU #%u...\n", i);
     for(j=0; j<NVML_NVLINK_MAX_LINKS; j++) {
       nvmlEnableState_t isActive;
+      nvmlIntNvLinkDeviceType_t dtype;
 
       /* mark the peer as unknown for now */
       peer_indexes[i*NVML_NVLINK_MAX_LINKS+j] = (unsigned) -1;
@@ -301,13 +310,21 @@ hwloc_nvml_discover(struct hwloc_backend *backend, struct hwloc_disc_status *dst
       found_nvlinks++;
       hwloc_debug("  NVLink #%u is active\n", j);
 
+#if HAVE_DECL_NVMLDEVICEGETNVLINKREMOTEDEVICETYPE
+      ret = nvmlDeviceGetNvLinkRemoteDeviceType(device, j, &dtype);
+      if (ret != NVML_SUCCESS)
+        dtype = NVML_NVLINK_DEVICE_TYPE_UNKNOWN;
+#else
+      dtype = NVML_NVLINK_DEVICE_TYPE_UNKNOWN;
+#endif
+
       ret = nvmlDeviceGetNvLinkRemotePciInfo(device, j, &pci);
       if (ret == NVML_SUCCESS) {
         unsigned peer_index;
         hwloc_debug("    goes to PCI %04x:%02x:%02x\n", pci.domain, pci.bus, pci.device);
         peer_index = hwloc__nvml_get_peer_gpu_by_pci(pci, nb, gpu_bdfs);
         if (peer_index == (unsigned)-1) {
-          hwloc_obj_t peer_obj = hwloc__nvml_get_peer_obj_by_pci(topology, objs[i], pci);
+          hwloc_obj_t peer_obj = hwloc__nvml_get_peer_obj_by_pci(topology, objs[i], pci, dtype);
           if (!peer_obj)
             continue;
 
@@ -352,17 +369,22 @@ hwloc_nvml_discover(struct hwloc_backend *backend, struct hwloc_disc_status *dst
           continue;
 
         hwloc_debug("GPU #%u NVLink #%u has version %u\n", i, j, version);
-        /* version1 = 20GB/s, version2=25GB/s */
+        /* NVIDIA often shows bidirection bandwidths,
+         * or even the bidirectional bandwidth of all links agregated for a single GPU
+         * 160GB/s on P100 (4 links), 300 on V100 (6), 600 on A100 (12), 900 on H100 (18 links).
+         *
+         * The actual unidirectional bandwidth we want is 20GB/s for v1, and 25GB/s for v2+.
+         * v3 has twice bigger pairs than v2 but half the number of pairs per (sub-)link.
+         * v4 and v3 seem identical.
+         */
         if (version == 1) {
           bw = 20000; /* multiple links may connect same GPUs */
-        } else if (version == 2) {
+        } else if (version >= 2 && version <= 4) {
           bw = 25000; /* multiple links may connect same GPUs */
-        } else if (version == 3 || version == 4) {
-          bw = 50000; /* multiple links may connect same GPUs */
         } else {
           static int warned = 0;
           if (!warned && HWLOC_SHOW_ALL_ERRORS())
-            fprintf(stderr, "Failed to recognize NVLink version %u\n", version);
+            fprintf(stderr, "hwloc/nvml: Failed to recognize NVLink version %u\n", version);
           warned = 1;
           continue;
         }

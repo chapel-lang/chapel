@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -19,9 +19,11 @@
  */
 
 /*
-  This module contains the ``precisionSerializer`` type which provides
-  formatting like the :record:`~IO.defaultSerializer`, but with finer control
-  over the precision and padding of numerical values.
+  Support for controlling I/O precision and padding.
+
+  Provides the ``precisionSerializer`` type, whose formatting is identical to
+  the :record:`~IO.defaultSerializer`, except numbers are printed with the
+  specified precision and padding.
 */
 module PrecisionSerializer {
   use IO;
@@ -139,6 +141,18 @@ module PrecisionSerializer {
         } else {
           writer.writef("%.*dr", this.precision, val);
         }
+      } else if isComplexType(t) {
+        if this.padding > 0 {
+          writer.writef("%*.*dz", this.padding, this.precision, val);
+        } else {
+          writer.writef("%.*dz", this.precision, val);
+        }
+      } else if isImagType(t) {
+        if this.padding > 0 {
+          writer.writef("%*.*dm", this.padding, this.precision, val);
+        } else {
+          writer.writef("%.*dm", this.precision, val);
+        }
       } else if isIntegralType(t) {
         if this.padding > 0 {
           writer.writef("%*i", this.padding, val);
@@ -152,10 +166,6 @@ module PrecisionSerializer {
         writer.writeLiteral("nil");
       } else if isClassType(t) || isAnyCPtr(t) || chpl_isDdata(t) {
         _serializeClassOrPtr(writer, val);
-      } else if isUnionType(t) {
-        // From ChapelIO
-        // Note: Some kind of weird resolution bug with ChapelIO.writeThis...
-        writeThisDefaultImpl(writer, val);
       } else {
         val.serialize(writer=writer, serializer=this);
       }

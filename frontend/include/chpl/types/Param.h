@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -56,6 +56,9 @@ class Param {
     ComplexDouble(double re, double im)
       : re(re), im(im)
     { }
+    explicit operator bool() const { // supporting isNonZero / isZero
+      return this->re != 0 || this->im != 0;
+    }
     bool operator==(const ComplexDouble& other) const {
       return this->re == other.re && this->im == other.im;
     }
@@ -67,6 +70,9 @@ class Param {
     }
   };
   struct NoneValue {
+    explicit operator bool() const { // supporting isNonZero / isZero
+      return false;
+    }
     bool operator==(const NoneValue& other) const {
       return true;
     }
@@ -75,6 +81,26 @@ class Param {
     }
     size_t hash() const {
       return 0;
+    }
+  };
+  struct EnumValue {
+    ID id;
+    std::string str;
+
+    EnumValue(ID id, std::string str)
+      : id(id), str(str)
+    { }
+    explicit operator bool() const { // supporting isNonZero / isZero
+      return true; // TODO: is this correct?
+    }
+    bool operator==(const EnumValue& other) const {
+      return this->id == other.id && this->str == other.str;
+    }
+    bool operator!=(const EnumValue& other) const {
+      return !(*this == other);
+    }
+    size_t hash() const {
+      return chpl::hash(id, str);
     }
   };
 
@@ -114,8 +140,8 @@ class Param {
   static std::string valueToString(NoneValue v) {
     return "none";
   }
-  static std::string valueToString(ID id) {
-    return id.str();
+  static std::string valueToString(EnumValue v) {
+    return v.str;
   }
   static std::string valueToString(bool v) {
     return v ? "true" : "false";
@@ -211,6 +237,13 @@ class Param {
   #undef PARAM_NODE
   #undef PARAM_TO
 
+  // returns 'true' if the param is nonzero / true
+  virtual bool isNonZero() const = 0;
+  // returns 'true' if the param is zero / false
+  virtual bool isZero() const = 0;
+
+  static const EnumParam* getEnumParam(Context* context, ID id);
+
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
   /// \endcond DO_NOT_DOCUMENT
@@ -241,6 +274,12 @@ class Param {
     } \
     VALTYPE value() const { \
       return value_; \
+    } \
+    bool isNonZero() const override { \
+      return !!value_; \
+    } \
+    bool isZero() const override { \
+      return !value_; \
     } \
     void serialize(Serializer& ser) const override { \
       Param::serialize(ser); \
@@ -278,6 +317,19 @@ template<> struct stringify<chpl::types::Param::NoneValue> {
   }
 };
 
+template<> struct stringify<chpl::types::Param::EnumValue> {
+  void operator()(std::ostream& streamOut,
+                  chpl::StringifyKind stringKind,
+                  const chpl::types::Param::EnumValue& stringMe) const {
+    if (stringKind == chpl::StringifyKind::CHPL_SYNTAX) {
+      streamOut << stringMe.str;
+    } else {
+      streamOut << stringMe.str;
+      streamOut << " (" << stringMe.id.str() << ")";
+    }
+  }
+};
+
 template<> struct serialize<types::Param::ComplexDouble> {
   void operator()(Serializer& ser, types::Param::ComplexDouble val) const {
     ser.write(val.re);
@@ -305,6 +357,21 @@ template<> struct deserialize<types::Param::NoneValue> {
   }
 };
 
+template<> struct serialize<types::Param::EnumValue> {
+  void operator()(Serializer& ser, types::Param::EnumValue val) const {
+    ser.write(val.id);
+    ser.write(val.str);
+  }
+};
+
+template<> struct deserialize<types::Param::EnumValue> {
+  types::Param::EnumValue operator()(Deserializer& des) {
+    auto id = des.read<ID>();
+    auto str = des.read<std::string>();
+    return types::Param::EnumValue(id, str);
+  }
+};
+
 /// \endcond DO_NOT_DOCUMENT
 } // end namespace chpl
 
@@ -318,6 +385,11 @@ namespace std {
   };
   template<> struct hash<chpl::types::Param::NoneValue> {
     size_t operator()(const chpl::types::Param::NoneValue key) const {
+      return key.hash();
+    }
+  };
+  template<> struct hash<chpl::types::Param::EnumValue> {
+    size_t operator()(const chpl::types::Param::EnumValue key) const {
       return key.hash();
     }
   };

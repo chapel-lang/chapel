@@ -62,8 +62,7 @@ See also :ref:`Creating_General_and_Specialized_Versions_of_a_Function`.
 
 Method calls are described in :ref:`Method_Calls`.
 
-The use of ``this-intent`` is described in
-:ref:`Method_receiver_and_this`.
+The use of ``this-intent`` is described in :ref:`Method_receiver_and_this`.
 
 .. index::
    single: method calls
@@ -79,7 +78,8 @@ call expression, but it can include a receiver clause. The receiver
 clause syntactically identifies a single argument by putting it before
 the method name. That argument is the method receiver. When calling a
 method from another method, or from within a class or record
-declaration, the receiver clause can be omitted.
+declaration, the receiver clause can be omitted. See
+:ref:`Implicit_this_dot_in_methods`.
 
 
 
@@ -329,6 +329,103 @@ entirely, the receiver will be passed with a default intent. The default
 
    Given a variable ``x = 2``, a call to ``x.doubleMe()`` will set ``x``
    to ``4``.
+
+.. index::
+   single: methods; implicit this.
+.. _Implicit_this_dot_in_methods:
+
+Implicit *this.* in Methods
+---------------------------
+
+Within a method, an identifier can implicitly refer to a field or another
+method. The compiler will implicitly add a ``this.`` in such cases.
+
+   *Example (implicitThis.chpl)*.
+
+   In the below example, within ``proc R.method()``, the identifiers ``field``,
+   ``parenlessMethod``, and ``parenfulMethod`` will implicitly refer to
+   ``this.field``, ``this.parenlessMethod``, and ``this.parenfulMethod``.
+
+   .. code-block:: chapel
+
+      record R {
+        var field: int = 1;
+        proc parenlessMethod { return 10; }
+        proc parenfulMethod() { return 100; }
+      }
+
+      proc R.method() {
+        var x = field + parenlessMethod + parenfulMethod();
+        // the above behaves the same as the following:
+        // var x = this.field + this.parenlessMethod + this.parenfulMethod();
+        writeln(x);
+      }
+
+   .. BLOCK-test-chapelpost
+
+      var r: R;
+      r.method();
+
+   .. BLOCK-test-chapeloutput
+
+      111
+
+When considering what an identifier might refer to in a method, the
+compiler will consider scopes and parent scopes in turn and choose the
+closest applicable match. During this process, it will consider fields
+and methods available from the receiver type's definition point just
+after considering a method scope.  This process does not apply to
+parenful method calls; instead those are handled through overload
+resolution (see :ref:`Determining_Most_Specific_Functions`).
+
+   *Example (shadowingAndImplicitThis.chpl)*.
+
+   In the below example, within ``proc R.method()``, the identifiers
+   ``a``, ``b``, and ``c`` could all refer to a field or to a variable.
+   In the example, the variables ``a`` and ``b`` are considered closer
+   than the fields, but the variable ``c`` is considered further away.
+
+   .. code-block:: chapel
+
+      record R {
+        var a: int = 100;
+        var b: int = 10;
+        var c: int = 1;
+      }
+
+      var c: int = 2;
+
+      proc R.method(b=20) {
+        var a = 200;
+
+        var x = a;
+        // 'a' here refers to the local variable 'a', because the lookup
+        // process considers the method body before considering
+        // fields and methods.
+
+        var y = b;
+        // 'b' here refers to the formal argument 'b', because the
+        // lookup process considers formal arguments before considering
+        // fields and methods.
+
+        var z = c;
+        // 'c' here refers to 'this.c', because the lookup process
+        // considers fields and methods just after reaching the method
+        // declaration. Since a match is found with the field, it is used
+        // before the 'var c' declared outside this method is considered.
+
+        writeln(x+y+z);
+      }
+
+   .. BLOCK-test-chapelpost
+
+      var r: R;
+      r.method();
+
+   .. BLOCK-test-chapeloutput
+
+      221
+
 
 .. index::
    single: methods; indexing

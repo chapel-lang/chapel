@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,6 +23,13 @@
 
 #include "symbol.h"
 
+#ifdef HAVE_LLVM
+namespace llvm {
+  class DIBuilder;
+  class DICompileUnit;
+}
+#endif
+
 enum ModTag {
   MOD_INTERNAL,  // an internal module that the user shouldn't know about
   MOD_STANDARD,  // a standard module from the Chapel libraries
@@ -42,7 +49,8 @@ public:
 
   static ModuleSymbol*    mainModule();
 
-  static void             mainModuleNameSet(const ArgumentDescription* desc,
+  static void             setMainModule(ModuleSymbol* mainModule);
+  static void             setMainModuleName(const ArgumentDescription* desc,
                                             const char*                arg);
 private:
   static ModuleSymbol*    findMainModuleByName();
@@ -92,12 +100,15 @@ public:
   const char*             filename;
   const char*             doc;
 
-  // LLVM uses this for extern C blocks.
 #ifdef HAVE_LLVM
   ExternBlockInfo*        extern_info;
+  llvm::DIBuilder*        llvmDIBuilder;
+  llvm::DICompileUnit*    llvmDICompileUnit;
   llvm::MDNode*           llvmDINameSpace;
 #else
   void*                   extern_info;
+  void*                   llvmDIBuilder;
+  void*                   llvmDICompileUnit;
   void*                   llvmDINameSpace;
 #endif
 

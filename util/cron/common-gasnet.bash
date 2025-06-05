@@ -3,13 +3,14 @@
 # Configure environment for GASNet testing. This should be sourced by other
 # scripts that wish to make use of the variables set here.
 
-CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
-source $CWD/common.bash
-source $CWD/common-oversubscribed.bash
+source $UTIL_CRON_DIR/common.bash
+source $UTIL_CRON_DIR/common-oversubscribed.bash
 
 export CHPL_COMM=gasnet
 export GASNET_SPAWNFN=L
+export CHPL_RT_MASTERIP=127.0.0.1
 export GASNET_ROUTE_OUTPUT=0
 export CHPL_GASNET_CFG_OPTIONS=--disable-ibv
 

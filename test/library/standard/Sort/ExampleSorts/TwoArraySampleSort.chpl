@@ -7,7 +7,7 @@ module TwoArraySampleSort {
   private use CTypes;
 
   proc twoArraySampleSort(ref Data:[],
-                          comparator:?rec = new DefaultComparator()) {
+                          comparator:?rec = new defaultComparator()) {
 
     var baseCaseSize=16;
     var distributedBaseCaseSize=1024;

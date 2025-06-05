@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -54,7 +54,6 @@ IntentTag constIntentForType(Type* t) {
     return INTENT_CONST_IN;
 
   } else if (isSyncType(t)          ||
-             isSingleType(t)        ||
              isRecordWrappedType(t) ||  // domain, array, or distribution
              isManagedPtrType(t) ||
              isConstrainedType(t) ||
@@ -107,10 +106,6 @@ static bool isTupleContainingSyncType(Type* t) {
   return isTupleContainingTypeWithFlag(t, FLAG_SYNC);
 }
 
-static bool isTupleContainingSingleType(Type* t) {
-  return isTupleContainingTypeWithFlag(t, FLAG_SINGLE);
-}
-
 static bool isTupleContainingAtomicType(Type* t) {
   return isTupleContainingTypeWithFlag(t, FLAG_ATOMIC_TYPE);
 }
@@ -128,7 +123,6 @@ IntentTag blankIntentForType(Type* t) {
   } else if (t->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST)
             || isTupleContainingRefMaybeConst(t)
             || isTupleContainingSyncType(t)
-            || isTupleContainingSingleType(t)
             || isTupleContainingAtomicType(t)) {
     retval = INTENT_REF_MAYBE_CONST;
 
@@ -438,6 +432,8 @@ static void resolveVarIntent(VarSymbol* sym) {
 
 void resolveIntents() {
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
+    if (arg->defPoint->sym->hasFlag(FLAG_RESOLVED_EARLY))
+      continue;
     resolveArgIntent(arg);
   }
 

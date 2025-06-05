@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -100,7 +100,9 @@ const char* tagToString(AstTag tag);
 } // end namespace asttags
 
 // Enable AstTag to be used as chpl::uast::AstTag
+/// \cond DO_NOT_DOCUMENT
 using chpl::uast::asttags::AstTag;
+/// \endcond
 
 } // end namespace uast
 

@@ -19,11 +19,11 @@ dmapType.chpl:72: warning: 'BlockCyclic' is deprecated, please use 'blockCycDist
 dmapType.chpl:72: warning: 'BlockCyclic' is deprecated, please use 'blockCycDist' instead
 dmapType.chpl:84: warning: 'DimensionalDist2D' is deprecated, please use 'dimensionalDist2D' instead
 dmapType.chpl:85: warning: 'DimensionalDist2D' is deprecated, please use 'dimensionalDist2D' instead
+dmapType.chpl:92: warning: 'DimensionalDist2D' is deprecated, please use 'dimensionalDist2D' instead
 dmapType.chpl:93: warning: 'DimensionalDist2D' is deprecated, please use 'dimensionalDist2D' instead
 dmapType.chpl:99: warning: 'Hashed' is deprecated, please use 'hashedDist' instead
 dmapType.chpl:103: warning: 'Hashed' is deprecated, please use 'hashedDist' instead
 dmapType.chpl:103: warning: 'Hashed' is deprecated, please use 'hashedDist' instead
-dmapType.chpl:92: warning: 'DimensionalDist2D' is deprecated, please use 'dimensionalDist2D' instead
 dmapType.chpl:4: warning: The use of 'dmap' is deprecated for this distribution; please replace 'new dmap(new <DistName>(<args>))' with 'new <DistName>(<args>)'
 dmapType.chpl:8: warning: The use of 'dmap' is deprecated for this distribution; please replace 'dmap(<DistName>(<args>))' with '<DistName>(<args>)'
 dmapType.chpl:14: warning: The use of 'dmap' is deprecated for this distribution; please replace 'new dmap(new <DistName>(<args>))' with 'new <DistName>(<args>)'

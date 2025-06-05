@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -19,9 +19,12 @@
 
 #include "chpl/util/clang-integration.h"
 
+#include "chpl/framework/ErrorBase.h"
 #include "chpl/framework/TemporaryFileResult.h"
 #include "chpl/framework/query-impl.h"
 #include "chpl/parsing/parsing-queries.h"
+#include "chpl/resolution/resolution-queries.h"
+#include "chpl/resolution/resolution-types.h"
 #include "chpl/uast/ExternBlock.h"
 
 #include "../util/filesystem_help.h"
@@ -42,6 +45,7 @@
 
 #include "llvm/Config/llvm-config.h"
 #include "llvm/Support/TargetSelect.h"
+#include "llvm/Support/Casting.h"
 
 #if LLVM_VERSION_MAJOR >= 16
 #include "llvm/TargetParser/Host.h"
@@ -52,6 +56,9 @@
 
 namespace chpl {
 namespace util {
+
+using namespace types;
+using namespace resolution;
 
 
 const std::vector<std::string>& clangFlags(Context* context) {
@@ -281,10 +288,18 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
 
     auto diagOptions = wrapCreateAndPopulateDiagOpts(cc1argsCstrs);
     auto diagClient = new clang::TextDiagnosticBuffer();
+#if LLVM_VERSION_MAJOR >= 20
+      auto clangDiags =
+      clang::CompilerInstance::createDiagnostics(*llvm::vfs::getRealFileSystem(),
+                                                 diagOptions.release(),
+                                                 diagClient,
+                                                 /* owned */ true);
+#else
     auto clangDiags =
       clang::CompilerInstance::createDiagnostics(diagOptions.release(),
                                                  diagClient,
                                                  /* owned */ true);
+#endif
     Clang->setDiagnostics(&*clangDiags);
 
     // replace current compiler invocation with one including args and diags
@@ -348,80 +363,292 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
   return QUERY_END(result);
 }
 
-static const bool&
-precompiledHeaderContainsNameQuery(Context* context,
-                                   const TemporaryFileResult* pch,
-                                   UniqueString name) {
-  QUERY_BEGIN(precompiledHeaderContainsNameQuery, context, pch, name);
+#ifdef HAVE_LLVM
+static QualifiedType convertClangTypeToChapelType(
+    Context* context, const clang::Type* clangType) {
+  QualifiedType chapelType;
+
+  auto clangBuiltinType = clangType->getAs<clang::BuiltinType>();
+  if (clangBuiltinType) {
+#define BUILTIN_TYPE_ENTRY(ClangType, ChapelCTypeString)               \
+  case clang::BuiltinType::ClangType:                                  \
+    chapelType =                                                       \
+        resolution::typeForSysCType(context, USTR(ChapelCTypeString)); \
+    break;
+
+    switch (clangBuiltinType->getKind()) {
+      case clang::BuiltinType::Void:
+        chapelType = QualifiedType(QualifiedType::TYPE,
+                                   VoidType::get(context));
+        break;
+      case clang::BuiltinType::Bool:
+        chapelType =
+            QualifiedType(QualifiedType::TYPE, BoolType::get(context));
+        break;
+      BUILTIN_TYPE_ENTRY(Int, "c_int")
+      BUILTIN_TYPE_ENTRY(UInt, "c_uint")
+      BUILTIN_TYPE_ENTRY(Long, "c_long")
+      BUILTIN_TYPE_ENTRY(ULong, "c_ulong")
+      BUILTIN_TYPE_ENTRY(LongLong, "c_longlong")
+      BUILTIN_TYPE_ENTRY(ULongLong, "c_ulonglong")
+      BUILTIN_TYPE_ENTRY(Char_S, "c_schar")
+      BUILTIN_TYPE_ENTRY(SChar, "c_schar")
+      BUILTIN_TYPE_ENTRY(Char_U, "c_uchar")
+      BUILTIN_TYPE_ENTRY(UChar, "c_uchar")
+      BUILTIN_TYPE_ENTRY(Short, "c_short")
+      BUILTIN_TYPE_ENTRY(UShort, "c_ushort")
+      case clang::BuiltinType::Float:
+        chapelType =
+            QualifiedType(QualifiedType::TYPE, RealType::get(context, 32));
+        break;
+      case clang::BuiltinType::Double:
+        chapelType =
+            QualifiedType(QualifiedType::TYPE, RealType::get(context, 64));
+        break;
+      default:
+        auto policy = clang::PrintingPolicy(clang::LangOptions());
+        std::string msg = "Unsupported builtin type '" +
+                          clangBuiltinType->getName(policy).str() +
+                          "' in extern \"C\" block";
+        context->error(Location(), "%s", msg.c_str());
+    }
+#undef BUILTIN_TYPE_ENTRY
+  } else {
+    CHPL_UNIMPL("Non-builtin type in extern block");
+  }
+
+  // adjust type to value of type
+  if (!chapelType.isUnknown()) {
+    chapelType = QualifiedType(QualifiedType::CONST_VAR, chapelType.type());
+  }
+
+  return chapelType;
+}
+#endif
+
+#ifdef HAVE_LLVM
+static owned<clang::CompilerInstance> getCompilerInstanceForReadingPch(
+    Context* context) {
+  std::vector<std::string> clFlags = clangFlags(context);
+
+  std::string dummyFile = context->chplHome() + "/runtime/etc/rtmain.c";
+  clFlags.push_back(dummyFile);
+
+  const std::vector<std::string>& cc1args =
+    getCC1Arguments(context, clFlags, /* forGpuCodegen */ false);
+
+  std::vector<const char*> cc1argsCstrs;
+  cc1argsCstrs.push_back("clang-cc1");
+  for (const auto& arg : cc1args) {
+    if (arg != dummyFile) {
+      cc1argsCstrs.push_back(arg.c_str());
+    }
+  }
+
+  clang::CompilerInstance* Clang = new clang::CompilerInstance();
+  auto diagOptions = wrapCreateAndPopulateDiagOpts(cc1argsCstrs);
+  auto diagClient = new clang::TextDiagnosticPrinter(llvm::errs(),
+                                                     &*diagOptions);
+#if LLVM_VERSION_MAJOR >= 20
+  auto clangDiags =
+    clang::CompilerInstance::createDiagnostics(*llvm::vfs::getRealFileSystem(),
+                                               diagOptions.release(),
+                                               diagClient,
+                                               /* owned */ true);
+#else
+  auto clangDiags =
+    clang::CompilerInstance::createDiagnostics(diagOptions.release(),
+                                               diagClient,
+                                               /* owned */ true);
+#endif
+  Clang->setDiagnostics(&*clangDiags);
+
+  bool success =
+    clang::CompilerInvocation::CreateFromArgs(Clang->getInvocation(),
+                                              cc1argsCstrs, *clangDiags);
+  CHPL_ASSERT(success);
+
+  Clang->setTarget(clang::TargetInfo::CreateTargetInfo(Clang->getDiagnostics(), Clang->getInvocation().TargetOpts));
+  Clang->createFileManager();
+  Clang->createSourceManager(Clang->getFileManager());
+  Clang->createPreprocessor(clang::TU_Complete);
+
+  return toOwned(Clang);
+}
+#endif
+
+#ifdef HAVE_LLVM
+static void runFuncOnIdent(Context* context, const TemporaryFileResult* pch,
+                           UniqueString name,
+                           const std::function<void(const clang::Decl*)>& f) {
+  if (!pch) return;
+
+  auto Clang = getCompilerInstanceForReadingPch(context);
+  Clang->createASTReader();
+  clang::ASTReader* astReader = Clang->getASTReader().get();
+  CHPL_ASSERT(astReader);
+
+  auto readResult =
+      astReader->ReadAST(pch->path(), clang::serialization::MK_PCH,
+                         clang::SourceLocation(), clang::ASTReader::ARR_None);
+  if ((readResult != clang::ASTReader::Success) || !Clang->hasASTContext())
+    return;
+  clang::IdentifierInfo* iid = astReader->get(name.c_str());
+  if (iid->hasMacroDefinition()) {
+    // TODO: implement
+  } else if (clang::DeclarationName declName(iid); declName.isIdentifier()) {
+    auto tuDecl = Clang->getASTContext().getTranslationUnitDecl();
+    auto lookupResult = tuDecl->lookup(declName);
+    if (lookupResult.empty()) return;
+    // Use the first declaration found, but if it is a function instead use
+    // the declaration that Clang considers to have the body definition.
+    auto firstDecl = lookupResult.front();
+    if (auto fnDecl = llvm::dyn_cast<clang::FunctionDecl>(firstDecl)) {
+      const clang::FunctionDecl* fnDeclWithBody = nullptr;
+      if (fnDecl->hasBody(fnDeclWithBody)) {
+        f(fnDeclWithBody);
+      }
+    } else {
+      f(firstDecl);
+    }
+  }
+}
+#endif
+
+const bool& precompiledHeaderContainsName(
+    Context* context, const TemporaryFileResult* pch, UniqueString name) {
+  QUERY_BEGIN(precompiledHeaderContainsName, context, pch, name);
 
   bool result = false;
 
 #ifdef HAVE_LLVM
-
-  if (pch != nullptr) {
-    std::vector<std::string> clFlags = clangFlags(context);
-
-    std::string dummyFile = context->chplHome() + "/runtime/etc/rtmain.c";
-    clFlags.push_back(dummyFile);
-
-    const std::vector<std::string>& cc1args =
-      getCC1Arguments(context, clFlags, /* forGpuCodegen */ false);
-
-    std::vector<const char*> cc1argsCstrs;
-    cc1argsCstrs.push_back("clang-cc1");
-    for (const auto& arg : cc1args) {
-      if (arg != dummyFile) {
-        cc1argsCstrs.push_back(arg.c_str());
-      }
-    }
-
-    clang::CompilerInstance* Clang = new clang::CompilerInstance();
-    auto diagOptions = wrapCreateAndPopulateDiagOpts(cc1argsCstrs);
-    auto diagClient = new clang::TextDiagnosticPrinter(llvm::errs(),
-                                                       &*diagOptions);
-    auto clangDiags =
-      clang::CompilerInstance::createDiagnostics(diagOptions.release(),
-                                                 diagClient,
-                                                 /* owned */ true);
-    Clang->setDiagnostics(&*clangDiags);
-
-    bool success =
-      clang::CompilerInvocation::CreateFromArgs(Clang->getInvocation(),
-                                                cc1argsCstrs, *clangDiags);
-    CHPL_ASSERT(success);
-
-    Clang->setTarget(clang::TargetInfo::CreateTargetInfo(Clang->getDiagnostics(), Clang->getInvocation().TargetOpts));
-    Clang->createFileManager();
-    Clang->createSourceManager(Clang->getFileManager());
-    Clang->createPreprocessor(clang::TU_Complete);
-
+  if (pch) {
+    auto Clang = getCompilerInstanceForReadingPch(context);
     Clang->createASTReader();
+    clang::ASTReader* astReader = Clang->getASTReader().get();
+    CHPL_ASSERT(astReader);
 
-    clang::ASTReader* astr = Clang->getASTReader().get();
-    CHPL_ASSERT(astr);
-
-    auto readResult = astr->ReadAST(pch->path(),
-                                    clang::serialization::MK_PCH,
-                                    clang::SourceLocation(),
-                                    clang::ASTReader::ARR_None);
+    auto readResult =
+        astReader->ReadAST(pch->path(), clang::serialization::MK_PCH,
+                           clang::SourceLocation(), clang::ASTReader::ARR_None);
     if (readResult == clang::ASTReader::Success) {
-      clang::IdentifierInfo* iid = astr->get(name.c_str());
+      clang::IdentifierInfo* iid = astReader->get(name.c_str());
       result = (iid != nullptr);
     }
-
-    delete Clang;
   }
 #endif
 
   return QUERY_END(result);
 }
 
-bool precompiledHeaderContainsName(Context* context,
-                                   const TemporaryFileResult* pch,
-                                   UniqueString name) {
-  return precompiledHeaderContainsNameQuery(context, pch, name);
+const bool& precompiledHeaderContainsFunction(
+    Context* context, const TemporaryFileResult* pch, UniqueString name) {
+  QUERY_BEGIN(precompiledHeaderContainsFunction, context, pch, name);
+
+  bool result = false;
+
+#ifdef HAVE_LLVM
+  runFuncOnIdent(context, pch, name, [&](const clang::Decl* decl) {
+    result = llvm::isa<clang::FunctionDecl>(decl);
+  });
+#endif
+
+  return QUERY_END(result);
 }
 
+const QualifiedType& precompiledHeaderTypeForSymbol(
+    Context* context, const TemporaryFileResult* pch, UniqueString name) {
+  QUERY_BEGIN(precompiledHeaderTypeForSymbol, context, pch, name);
+
+  QualifiedType result;
+
+#ifdef HAVE_LLVM
+  runFuncOnIdent(context, pch, name, [&](const clang::Decl* decl) {
+    if (llvm::isa<clang::FunctionDecl>(decl)) {
+      result = QualifiedType(QualifiedType::FUNCTION, nullptr);
+    } else if (auto varDecl = llvm::dyn_cast<clang::VarDecl>(decl)) {
+      if (auto typePtr = varDecl->getType().getTypePtrOrNull()) {
+        result = convertClangTypeToChapelType(context, typePtr);
+      }
+    }
+  });
+#endif
+
+  return QUERY_END(result);
+}
+
+const TypedFnSignature* const& precompiledHeaderSigForFn(
+    Context* context, const TemporaryFileResult* pch, ID fnId) {
+  QUERY_BEGIN(precompiledHeaderSigForFn, context, pch, fnId);
+
+  const TypedFnSignature* result = nullptr;
+
+#ifdef HAVE_LLVM
+  auto name = fnId.symbolName(context);
+  runFuncOnIdent(context, pch, name, [&](const clang::Decl* decl) {
+    if (auto fnDecl = llvm::dyn_cast<clang::FunctionDecl>(decl)) {
+      std::vector<UntypedFnSignature::FormalDetail> formals;
+      std::vector<types::QualifiedType> formalTypes;
+      for (auto clangFormal : fnDecl->parameters()) {
+        auto formalName = UniqueString::get(context, clangFormal->getName());
+        formals.emplace_back(formalName, UntypedFnSignature::DK_NO_DEFAULT,
+                             /* decl */ nullptr);
+
+        const clang::Type* formalClangType =
+            clangFormal->getType().getTypePtr();
+        auto formalChplType =
+            convertClangTypeToChapelType(context, formalClangType);
+        auto intent = formalClangType->isArrayType() ? QualifiedType::REF
+                                                     : QualifiedType::IN;
+        formalChplType = QualifiedType(intent, formalChplType.type());
+        formalTypes.push_back(formalChplType);
+      }
+
+      const UntypedFnSignature* untypedSig = UntypedFnSignature::get(
+          context, fnId, name,
+          /* isMethod */ false,
+          /* isTypeConstructor */ false,
+          /* isCompilerGenerated */ true,
+          /* throws */ false,
+          /* idTag */ uast::asttags::Function,
+          /* kind */ uast::Function::Kind::PROC, std::move(formals),
+          /* whereClause */ nullptr,
+          /* compilerGeneratedOrigin */ fnId);
+
+      result = TypedFnSignature::get(
+          context, untypedSig, std::move(formalTypes),
+          /* whereClauseResult */ TypedFnSignature::WHERE_NONE,
+          /* needsInstantiation */ false,
+          /* instantiatedFrom */ nullptr,
+          /* parentFn */ nullptr,
+          /* formalsInstantiated */ Bitmap(),
+          /* outerVariables */ OuterVariables());
+    }
+  });
+#endif
+
+  return QUERY_END(result);
+}
+
+const QualifiedType& precompiledHeaderRetTypeForFn(
+    Context* context, const TemporaryFileResult* pch, UniqueString name) {
+  QUERY_BEGIN(precompiledHeaderRetTypeForFn, context, pch, name);
+
+  QualifiedType result;
+
+#ifdef HAVE_LLVM
+  runFuncOnIdent(context, pch, name, [&](const clang::Decl* decl) {
+    if (auto fnDecl = llvm::dyn_cast<clang::FunctionDecl>(decl)) {
+      const clang::Type* clangReturnType = fnDecl->getReturnType().getTypePtr();
+      auto chplReturnType =
+          convertClangTypeToChapelType(context, clangReturnType);
+      result = chplReturnType;
+    }
+  });
+#endif
+
+  return QUERY_END(result);
+}
 
 } // namespace util
 } // namespace chpl

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -46,21 +46,18 @@ const char* ErrorBase::getTypeName(ErrorType type) {
 }
 
 std::string ErrorBase::message() const {
-  std::ostringstream oss;
   CompatibilityWriter ew(/* context */ nullptr);
   write(ew);
   return ew.message();
 }
 
 Location ErrorBase::location(Context* context) const {
-  std::ostringstream oss;
   CompatibilityWriter ew(context);
   write(ew);
   return ew.computedLocation();
 }
 
 ErrorMessage ErrorBase::toErrorMessage(Context* context) const {
-  std::ostringstream oss;
   CompatibilityWriter ew(context);
   write(ew);
   ErrorMessage::Kind kind = ErrorMessage::NOTE;

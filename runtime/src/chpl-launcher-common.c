@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -27,6 +27,7 @@
 #include <sys/select.h>
 #include <errno.h>
 #include <string.h>
+#include <assert.h>
 #include "chplcgfns.h"
 #include "chpl-comm-launch.h"
 #include "chpl-comm-locales.h"
@@ -100,6 +101,45 @@ void chpl_append_to_largv(int* largc, const char*** largv, int* largv_len,
                               CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
   }
   (*largv)[(*largc)++] = (arg);
+}
+
+// Helper for appending arguments to a variable-size command buffer.
+// - Requires cmdBufPtr points to an uninitialized pointer on first call, and
+//   charsWritten is 0.
+// - After exceeding an initial allocated size estimate, each call will allocate
+//   additional memory as needed.
+void chpl_append_to_cmd(char** cmdBufPtr, int* charsWritten,
+                        const char* format, ...) {
+  // Estimate of a buffer size that probably won't require extending, to avoid
+  // reallocations and copying.
+  static const int initialSize = 2048;
+
+  va_list argsForLen, argsForPrint;
+  va_start(argsForLen, format);
+  va_copy(argsForPrint, argsForLen);
+
+  // Allocate buffer to initial size on first call
+  if (*cmdBufPtr == NULL) {
+    assert(*charsWritten == 0);
+    *cmdBufPtr = (char*)chpl_mem_allocMany(initialSize, sizeof(char),
+                                    CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+  }
+
+  // Determine additional characters to be written
+  const int addedLen = vsnprintf(NULL, 0, format, argsForLen);
+  va_end(argsForLen);
+  int newLen = *charsWritten + addedLen;
+
+  // Allocate more memory if needed
+  if (newLen >= initialSize) {
+    *cmdBufPtr = (char*)chpl_mem_realloc(*cmdBufPtr, newLen * sizeof(char),
+                                        CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+  }
+
+  // Write the new characters
+  vsnprintf(*cmdBufPtr + *charsWritten, addedLen + 1, format, argsForPrint);
+  va_end(argsForPrint);
+  *charsWritten = newLen;
 }
 
 //
@@ -538,41 +578,44 @@ int chpl_launch_using_system(char* command, char* argv0) {
 
 char* chpl_get_enviro_keys(char sep)
 {
-  int pass;
-  int i;
-  int j;
-  int k = 0;
-  char* ret = NULL;
+  // count the variables in environ, and how many characters in each name
+  int numVars = 0;
+  int numChars = 0;
+  for(int i = 0; environ && environ[i]; i++) {
+    numVars++;
+    int keyLen = strstr(environ[i], "=") - environ[i];
 
-  for( pass = 0; pass < 2; pass++ ) {
-    k = 0;
-    for( i = 0; environ && environ[i]; i++ ) {
-      // We could do this for only some environment
-      // variables if we wanted to; that would amount
-      // to an if statement checking environ[i];
-      // but we find it to be more similar to MPI/SLURM
-      // to forward all environment variables.
-      // Count/store the separator
-      if( k > 0 ) {
-        if( pass == 0 ) k++;
-        else ret[k++] = sep;
-      }
-
-      for( j = 0; environ[i][j] && environ[i][j] != '='; j++ ) {
-        if( pass == 0 ) {
-          // on first pass, just count.
-          k++;
-        } else {
-          // on second pass, add to buffer.
-          ret[k++] = environ[i][j];
-        }
-      }
+    // if the key ends with _modshare, skip it
+    if (keyLen > 8 && strncmp(environ[i] + keyLen - 9, "_modshare", 9) == 0) {
+      continue;
     }
-    if( pass == 0 ) ret = chpl_mem_allocMany(k+1, sizeof(char),
-                                             CHPL_RT_MD_COMMAND_BUFFER,-1,0);
+    numVars++;
+    numChars += keyLen;
   }
+  // allocate space for the keys, the separators, and the null terminator
+  int bufferLength = numChars + numVars + 1;
+  char* buffer = chpl_mem_allocMany(bufferLength, sizeof(char),
+                                 CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
 
-  return ret;
+  // copy the keys into the buffer
+  int bufferOffset = 0;
+  for(int i = 0; environ && environ[i]; i++) {
+
+    int keyLen = strstr(environ[i], "=") - environ[i];
+    // skip keys that end with _modshare
+    if (keyLen > 8 && strncmp(environ[i] + keyLen - 9, "_modshare", 9) == 0) {
+      continue;
+    }
+    strncpy(buffer + bufferOffset, environ[i], keyLen);
+    bufferOffset += keyLen;
+
+    buffer[bufferOffset] = sep;
+    bufferOffset++;
+  }
+  buffer[bufferOffset] = '\0';
+  buffer[bufferLength-1] = '\0';
+
+  return buffer;
 }
 
 

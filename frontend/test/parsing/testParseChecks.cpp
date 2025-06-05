@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -586,6 +586,42 @@ static void test18(void) {
   assert(guard.realizeErrors());
 }
 
+
+// bug reproducer for an issue where post-parse-checks was not
+// being run after the first revision
+static void test19() {
+  Context context;
+  Context* ctx = &context;
+
+  std::string text1 =
+    R""""(
+    var x = 5;
+    )"""";
+  std::string text2 =
+    R""""(
+    var this = 5;
+    )"""";
+
+  {
+    auto path = UniqueString::get(ctx, "test19.chpl");
+    ErrorGuard guard(ctx);
+    setFileText(ctx, path, text1);
+    parseFileToBuilderResultAndCheck(ctx, path, UniqueString());
+    assert(guard.numErrors() == 0);
+  }
+
+  ctx->advanceToNextRevision(true);
+
+  {
+    auto path = UniqueString::get(ctx, "test19.chpl");
+    ErrorGuard guard(ctx);
+    setFileText(ctx, path, text2);
+    parseFileToBuilderResultAndCheck(ctx, path, UniqueString());
+    assert(guard.numErrors() == 1);
+    guard.realizeErrors();
+  }
+}
+
 int main() {
   test0();
   test1();
@@ -606,6 +642,7 @@ int main() {
   test16();
   test17();
   test18();
+  test19();
 
   return 0;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -434,18 +434,38 @@ public:
 class FunctionType final : public Type {
  public:
   enum Kind { PROC, ITER, OPERATOR };
+  enum Width { LOCAL, WIDE };
+  enum Linkage { DEFAULT, EXTERN, EXPORT };
 
-  struct Formal {
-    Type* type = nullptr;
-    IntentTag intent = INTENT_BLANK;
-    const char* name = nullptr;
+  // Masks are used to select options when implementing primitives.
+  static constexpr int MASK_WIDTH_LOCAL     = 0b00001;
+  static constexpr int MASK_WIDTH_WIDE      = 0b00010;
+  static constexpr int MASK_LINKAGE_EXTERN  = 0b00100;
+  static constexpr int MASK_LINKAGE_DEFAULT = 0b01000;
+
+  class Formal {
+    Qualifier qual_;
+    Type* type_;
+    IntentTag intent_ = INTENT_BLANK;
+    const char* name_ = nullptr;
+   public:
+    Formal(Qualifier qual, Type* type, IntentTag intent, const char* name);
     bool operator==(const Formal& other) const;
     size_t hash() const;
     bool isGeneric() const;
+    Qualifier qual() const;
+    Type* type() const;
+    IntentTag intent() const;
+    const char* name() const;
+    QualifiedType qualType() const;
+    bool isAnonymous() const;
+    bool isRef() const;
   };
 
  private:
   Kind kind_;
+  Width width_;
+  Linkage linkage_;
   std::vector<Formal> formals_;
   RetTag returnIntent_;
   Type* returnType_;
@@ -454,25 +474,30 @@ class FunctionType final : public Type {
   const char* userTypeString_;
 
   static const char*
-  buildUserFacingTypeString(Kind kind,
-                            const std::vector<Formal>& formals,
-                            RetTag returnIntent,
-                            Type* returnType,
-                            bool throws);
+  buildUserTypeString(Kind kind,
+                      Width width,
+                      Linkage linkage,
+                      const std::vector<Formal>& formals,
+                      RetTag returnIntent,
+                      Type* returnType,
+                      bool throws);
 
-  FunctionType(Kind kind, std::vector<Formal> formals,
+  FunctionType(Kind kind, Width width, Linkage linkage,
+               std::vector<Formal> formals,
                RetTag returnIntent,
                Type* returnType,
                bool throws,
                bool isAnyFormalNamed,
                const char* userTypeString);
 
-  static FunctionType* create(Kind kind, std::vector<Formal> formals,
+  static FunctionType* create(Kind kind, Width width, Linkage linkage,
+                              std::vector<Formal> formals,
                               RetTag returnIntent,
                               Type* returnType,
                               bool throws);
-
  public:
+ ~FunctionType() override;
+
   void verify() override;
   void accept(AstVisitor* visitor) override;
   DECLARE_COPY(FunctionType);
@@ -481,41 +506,86 @@ class FunctionType final : public Type {
   void codegenDef() override;
 
   /*** Result is shared by functions of the same type. */
-  static FunctionType* get(Kind kind, std::vector<Formal> formals,
+  static FunctionType* get(Kind kind, Width width, Linkage linkage,
+                           std::vector<Formal> formals,
                            RetTag returnIntent,
                            Type* returnType,
                            bool throws);
 
-  /*** Result is shared by functions of the same type. Does not resolve. */
+  /*** Result is shared by functions of the same type. */
   static FunctionType* get(FnSymbol* fn);
 
+  FunctionType* getWithWidth(Width width) const;
+  FunctionType* getWithLinkage(Linkage linkage) const;
+  FunctionType* getWithLoweredErrorHandling() const;
+  FunctionType* getWithMask(int64_t mask, bool& outMaskConflicts) const;
+  FunctionType* getAsLocal() const;
+  FunctionType* getAsWide() const;
+  FunctionType* getAsExtern() const;
+
   Kind kind() const;
+  Width width() const;
+  Linkage linkage() const;
   int numFormals() const;
   const Formal* formal(int idx) const;
+  const Formal* formalByOrdinal(Expr* actual, int* outIdx=nullptr) const;
   RetTag returnIntent() const;
   Type* returnType() const;
   bool throws() const;
   bool isAnyFormalNamed() const;
   bool isGeneric() const;
+  bool isLocal() const;
+  bool isWide() const;
+  bool isExtern() const;
+  bool isExport() const;
+  bool hasForeignLinkage() const;
   const char* toString() const;
   const char* toStringMangledForCodegen() const;
   size_t hash() const;
   bool equals(const FunctionType* rhs) const;
+  bool equals(FnSymbol* fn) const;
 
   static FunctionType::Kind determineKind(FnSymbol* fn);
-  static bool isIntentSameAsDefault(IntentTag intent, Type* t);
+  static FunctionType::Linkage determineLinkage(FnSymbol* fn);
+  static Formal constructErrorHandlingFormal();
 
   // Prints things in a 'user facing' fashion, no mangling.
   static const char* kindToString(Kind kind);
+  static const char* widthToString(Width width);
+  static const char* linkageToString(Linkage linkage);
   static const char* intentToString(IntentTag intent);
   static const char* typeToString(Type* t);
   static const char* returnIntentToString(RetTag intent);
 
   // Intended for codegen.
   static const char* intentTagMnemonicMangled(IntentTag tag);
+  static const char* qualifierMnemonicMangled(Qualifier qual);
   static const char* typeToStringMangled(Type* t);
   static const char* retTagMnemonicMangled(RetTag tag);
 };
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+
+// Similar to TemporaryConversionSymbol and works with it for
+// temporarily representing a Type.
+class TemporaryConversionType final : public Type {
+ public:
+  chpl::types::QualifiedType qt;
+  explicit TemporaryConversionType(const chpl::types::Type* t);
+  explicit TemporaryConversionType(chpl::types::QualifiedType qt);
+  void verify()                                         override;
+  void accept(AstVisitor* visitor)                      override;
+  DECLARE_COPY(TemporaryConversionType);
+  TemporaryConversionType* copyInner(SymbolMap* map)    override;
+  void replaceChild(BaseAST* old_ast, BaseAST* new_ast) override;
+};
+
+
 
 /************************************* | **************************************
 *                                                                             *
@@ -573,7 +643,6 @@ TYPE_EXTERN PrimitiveType*    dtImag[FLOAT_SIZE_NUM];
 TYPE_EXTERN PrimitiveType*    dtOpaque;
 TYPE_EXTERN PrimitiveType*    dtTaskID;
 TYPE_EXTERN PrimitiveType*    dtSyncVarAuxFields;
-TYPE_EXTERN PrimitiveType*    dtSingleVarAuxFields;
 
 TYPE_EXTERN PrimitiveType*    dtStringC; // the type of a C string (unowned)
 // TODO: replace raw dtCVoidPtr with a well-known AggregateType for c_ptr(void)
@@ -641,11 +710,9 @@ bool isManagedPtrType(const Type* t);
 Type* getManagedPtrBorrowType(const Type* t);
 AggregateType* getManagedPtrManagerType(Type* t);
 bool isSyncType(const Type* t);
-bool isSingleType(const Type* t);
 bool isAtomicType(const Type* t);
 
 bool isOrContainsSyncType(Type* t, bool checkRefs = true);
-bool isOrContainsSingleType(Type* t, bool checkRefs = true);
 bool isOrContainsAtomicType(Type* t, bool checkRefs = true);
 
 bool isRefIterType(Type* t);
@@ -706,6 +773,7 @@ llvm::SmallVector<std::string, 2> explainGeneric(Type* t);
 #define UNION_ID_TYPE dtInt[INT_SIZE_64]
 #define SIZE_TYPE dtInt[INT_SIZE_64]
 #define NODE_ID_TYPE dtInt[INT_SIZE_32]
+#define HALT_FLAG_TYPE dtInt[INT_SIZE_32]
 #define SUBLOC_ID_TYPE dtInt[INT_SIZE_32]
 #define LOCALE_ID_TYPE dtLocaleID->typeInfo()
 

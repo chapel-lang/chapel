@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -55,6 +55,7 @@
   macro(EnumType) sep                              \
   macro(AggregateType) sep                         \
   macro(FunctionType) sep                          \
+  macro(TemporaryConversionType)  sep              \
   macro(DecoratedClassType) sep                    \
                                                    \
   macro(ModuleSymbol) sep                          \
@@ -100,6 +101,7 @@ class Expr;
 class GenRet;
 class LcnSymbol;
 class Symbol;
+class TemporaryConversionType;
 class Type;
 
 class BlockStmt;
@@ -189,7 +191,8 @@ enum AstTag {
   E_EnumType,
   E_AggregateType,
   E_FunctionType,
-  E_DecoratedClassType
+  E_TemporaryConversionType,
+  E_DecoratedClassType,
 };
 
 static inline bool isExpr(AstTag tag)
@@ -258,6 +261,14 @@ public:
   const char*       fname()                                      const;
   int               linenum()                                    const;
   const char*       stringLoc()                                  const;
+
+  // This AST is a symbol with the flag 'FLAG_RESOLVED_EARLY' or it is
+  // contained in a symbol marked with that flag. It should be handled
+  // differently by compiler passes prior to the end of 'callDestructors',
+  // in particular it should not be mutated by those passes (except in
+  // rare cases, e.g., the symbol is a module and needs to have other
+  // symbols inserted into it that the old compiler generated).
+  bool              wasResolvedEarly();
 
   bool              isRef();
   bool              isWideRef();
@@ -360,6 +371,7 @@ def_is_ast(FunctionType)
 def_is_ast(ConstrainedType)
 def_is_ast(EnumType)
 def_is_ast(AggregateType)
+def_is_ast(TemporaryConversionType)
 def_is_ast(DecoratedClassType)
 #undef def_is_ast
 
@@ -419,6 +431,7 @@ def_to_ast(FunctionType)
 def_to_ast(ConstrainedType)
 def_to_ast(EnumType)
 def_to_ast(AggregateType)
+def_to_ast(TemporaryConversionType)
 def_to_ast(DecoratedClassType)
 def_to_ast(Type)
 
@@ -481,6 +494,7 @@ def_less_ast(PrimitiveType)
 def_less_ast(ConstrainedType)
 def_less_ast(EnumType)
 def_less_ast(AggregateType)
+def_less_ast(TemporaryConversionType)
 def_less_ast(DecoratedClassType)
 def_less_ast(Type)
 

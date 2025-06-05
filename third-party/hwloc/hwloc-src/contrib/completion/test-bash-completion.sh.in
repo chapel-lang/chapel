@@ -1,0 +1,161 @@
+#!@BASH@
+
+#
+# Copyright © 2024 Inria.  All rights reserved.
+# See COPYING in top-level directory.
+#
+
+set -e
+
+# the real _filedir() defined in /usr/share/bash-completion/bash_completion seems to fail here,
+# and we won't actually test it anyway, so just redefine it to empty
+_filedir() {
+  return
+}
+
+# the real compopt doesn't work outside of actual completion
+compopt() {
+  return
+}
+
+# load completions
+HWLOC_top_srcdir="@HWLOC_top_srcdir@"
+source $HWLOC_top_srcdir/contrib/completion/bash/hwloc
+
+COMP_WORDS=( "lstopo" "--o" )
+COMP_CWORD=${#COMP_WORDS[*]}-1
+echo "Completing ${COMP_WORDS[*]}<tab>"
+_lstopo
+echo "Got ${COMPREPLY[*]}"
+test "${COMPREPLY[*]}" == "--os-index-prefix --output-format --of --only"
+echo "OK"
+
+COMP_WORDS=( "lstopo" "--palette" "" )
+COMP_CWORD=${#COMP_WORDS[*]}-1
+echo "Completing ${COMP_WORDS[*]}<tab>"
+_lstopo
+echo "Got ${COMPREPLY[*]}"
+test "${COMPREPLY[*]}" == "grey greyscale default colors white none"
+echo "OK"
+
+COMP_WORDS=( "lstopo" "--filter" "i" )
+COMP_CWORD=${#COMP_WORDS[*]}-1
+echo "Completing ${COMP_WORDS[*]}<tab>"
+_lstopo
+echo "Got ${COMPREPLY[*]}"
+test "${COMPREPLY[*]}" == "icache: io:"
+echo "OK"
+
+# "--filter type:kind" must be split into "--filter" "type" ":" "kind" outside of actual completion
+COMP_WORDS=( "lstopo" "--filter" "io" ":" "" )
+COMP_CWORD=${#COMP_WORDS[*]}-1
+echo "Completing ${COMP_WORDS[*]}<tab>"
+_lstopo
+echo "Got ${COMPREPLY[*]}"
+test "${COMPREPLY[*]}" == "none all structure important"
+echo "OK"
+
+# "--foo=bar" must be split into "--foo" "=" "bar" outside of actual completion
+COMP_WORDS=( "lstopo" "--horiz" "=" "M" )
+COMP_CWORD=${#COMP_WORDS[*]}-1
+echo "Completing ${COMP_WORDS[*]}<tab>"
+_lstopo
+echo "Got ${COMPREPLY[*]}"
+test "${COMPREPLY[*]}" == "Machine Misc MemCache"
+echo "OK"
+
+COMP_WORDS=( "hwloc-info" "--ancestor" )
+COMP_CWORD=${#COMP_WORDS[*]}-1
+echo "Completing ${COMP_WORDS[*]}<tab>"
+_hwloc_info
+echo "Got ${COMPREPLY[*]}"
+test "${COMPREPLY[*]}" == "--ancestors --ancestor"
+echo "OK"
+
+COMP_WORDS=( "hwloc-info" "--ancestor" "P" )
+COMP_CWORD=${#COMP_WORDS[*]}-1
+echo "Completing ${COMP_WORDS[*]}<tab>"
+_hwloc_info
+echo "Got ${COMPREPLY[*]}"
+test "${COMPREPLY[*]}" == "Package PCIDev PU"
+echo "OK"
+
+COMP_WORDS=( "hwloc-bind" "--membind" "--get" "--cof" "" )
+COMP_CWORD=${#COMP_WORDS[*]}-1
+echo "Completing ${COMP_WORDS[*]}<tab>"
+_hwloc_bind
+echo "Got ${COMPREPLY[*]}"
+test "${COMPREPLY[*]}" == "hwloc list taskset"
+echo "OK"
+
+COMP_WORDS=( "hwloc-calc" "--cpukind" "" )
+COMP_CWORD=${#COMP_WORDS[*]}-1
+echo "Completing ${COMP_WORDS[*]}<tab>"
+_hwloc_calc
+echo "Got ${COMPREPLY[*]}"
+test "${COMPREPLY[*]}" == "<name>=<value> <n> "
+echo "OK"
+
+COMP_WORDS=( "hwloc-annotate" "-" )
+COMP_CWORD=${#COMP_WORDS[*]}-1
+echo "Completing ${COMP_WORDS[*]}<tab>"
+_hwloc_annotate
+echo "Got ${COMPREPLY[*]}"
+test "${COMPREPLY[*]}" = "--ci --ri --cu --cd --version -h --help"
+echo "OK"
+
+COMP_WORDS=( "hwloc-diff" "--re" )
+COMP_CWORD=${#COMP_WORDS[*]}-1
+echo "Completing ${COMP_WORDS[*]}<tab>"
+_hwloc_diff
+echo "Got ${COMPREPLY[*]}"
+test "${COMPREPLY[*]}" = "--refname"
+echo "OK"
+
+COMP_WORDS=( "hwloc-patch" "--" )
+COMP_CWORD=${#COMP_WORDS[*]}-1
+echo "Completing ${COMP_WORDS[*]}<tab>"
+_hwloc_patch
+echo "Got ${COMPREPLY[*]}"
+test "${COMPREPLY[*]}" = "--reverse --version --help"
+echo "OK"
+
+COMP_WORDS=( "hwloc-compress-dir" "--v" )
+COMP_CWORD=${#COMP_WORDS[*]}-1
+echo "Completing ${COMP_WORDS[*]}<tab>"
+_hwloc_compress_dir
+echo "Got ${COMPREPLY[*]}"
+test "${COMPREPLY[*]}" = "--verbose --version"
+echo "OK"
+
+COMP_WORDS=( "hwloc-distrib" "--if" "" )
+COMP_CWORD=${#COMP_WORDS[*]}-1
+echo "Completing ${COMP_WORDS[*]}<tab>"
+_hwloc_distrib
+echo "Got ${COMPREPLY[*]}"
+test "${COMPREPLY[*]}" = "xml synthetic fsroot cpuid"
+echo "OK"
+
+COMP_WORDS=( "hwloc-ps" "--children-of-pid" "" )
+COMP_CWORD=${#COMP_WORDS[*]}-1
+echo "Completing ${COMP_WORDS[*]}<tab>"
+_hwloc_ps
+echo "Got ${COMPREPLY[*]}"
+test "${COMPREPLY[*]}" = "<pid> "
+echo "OK"
+
+COMP_WORDS=( "hwloc-gather-cpuid" "-c" "" )
+COMP_CWORD=${#COMP_WORDS[*]}-1
+echo "Completing ${COMP_WORDS[*]}<tab>"
+_hwloc_gather_cpuid
+echo "Got ${COMPREPLY[*]}"
+test "${COMPREPLY[*]}" = "<index of cpu to operate on> "
+echo "OK"
+
+COMP_WORDS=( "hwloc-gather-topology" "-" )
+COMP_CWORD=${#COMP_WORDS[*]}-1
+echo "Completing ${COMP_WORDS[*]}<tab>"
+_hwloc_gather_topology
+echo "Got ${COMPREPLY[*]}"
+test "${COMPREPLY[*]}" = "--io --dmi --dt --no-cpuid --keep --version -h --help"
+echo "OK"

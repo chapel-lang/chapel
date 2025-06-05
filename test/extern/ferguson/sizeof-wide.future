@@ -1,2 +1,4 @@
 bug: sizeof a wide class instance gets narrow size
 #6786
+
+Note: when resolving this future, remove sizeof-wide.numlocales

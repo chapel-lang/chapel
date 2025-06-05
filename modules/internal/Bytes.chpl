@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -51,15 +51,6 @@ module Bytes {
     var ret: bytes;
     initWithBorrowedBuffer(ret, x);
     return ret;
-  }
-
-  @chpldoc.nodoc
-  @deprecated("the type 'c_string' is deprecated; please use the variant of 'bytes.createBorrowingBuffer' that takes a 'c_ptrConst(c_char)' instead")
-  inline proc type bytes.createBorrowingBuffer(x: chpl_c_string,
-                                               length=x.size) : bytes {
-    return bytes.createBorrowingBuffer(x:bufferType,
-                                       length=length,
-                                       size=length+1);
   }
 
   /*
@@ -171,15 +162,6 @@ module Bytes {
                                       size=length+1);
   }
 
-  @chpldoc.nodoc
-  @deprecated("the type 'c_string' is deprecated; please use the variant of 'bytes.createAdoptingBuffer' that takes a 'c_ptrConst(c_char)' instead")
-  inline proc type bytes.createAdoptingBuffer(x: chpl_c_string,
-                                              length=x.size) : bytes {
-    return bytes.createAdoptingBuffer(x: bufferType,
-                                      length=length,
-                                      size=length+1);
-  }
-
     /*
     Creates a new :type:`bytes` which takes ownership of the memory
     allocated for a :class:`~CTypes.c_ptrConst`. The buffer will be freed when the
@@ -246,15 +228,6 @@ module Bytes {
                                      size=length+1);
   }
 
-  @chpldoc.nodoc
-  @deprecated("the type 'c_string' is deprecated; please use the variant of 'bytes.createCopyingBuffer' that takes a 'c_ptrConst(c_char)' instead")
-  inline proc type bytes.createCopyingBuffer(x: chpl_c_string,
-                                             length=x.size) : bytes {
-    return bytes.createCopyingBuffer(x: bufferType,
-                                        length=length,
-                                        size=length+1);
-  }
-
   /*
      Creates a new :type:`bytes` by creating a copy of a buffer.
 
@@ -298,7 +271,7 @@ module Bytes {
     proc ref deinit() {
       if isOwned && this.buff != nil {
         on __primitive("chpl_on_locale_num",
-                       chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                       chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
           chpl_here_free(this.buff);
         }
       }
@@ -347,13 +320,6 @@ module Bytes {
     proc init=(b: string) {
       init this;
       initWithNewBuffer(this, b.buff, length=b.numBytes, size=b.numBytes+1);
-    }
-
-    @deprecated("the type 'c_string' is deprecated; please use one of the 'bytes.create*ingBuffer' methods that takes a 'c_ptrConst(c_char)' instead")
-    proc init=(b: c_string) {
-      init this;
-      var length = b.size;
-      initWithNewBuffer(this, b: bufferType, length=length, size=length+1);
     }
 
     inline proc byteIndices do return 0..<size;
@@ -447,38 +413,6 @@ module Bytes {
       const x:bytes = this; // assignment makes it local
       return x;
     }
-  }
-
-
-  /*
-    Gets a `c_ptrConst(c_char)` from a :type:`bytes`. The returned
-    :class:`~CTypes.c_ptrConst` shares the buffer with the :type:`bytes`.
-
-    .. warning::
-
-      This can only be called safely on a :type:`bytes` whose home is
-      the current locale.  This property can be enforced by calling
-      :proc:`bytes.localize()` before :proc:`~bytes.c_str()`. If the
-      bytes is remote, the program will halt.
-
-    For example:
-
-    .. code-block:: chapel
-
-        var myBytes = b"Hello!";
-        on differentLocale {
-          printf("%s", myBytes.localize().c_str());
-        }
-
-    :returns: A `c_ptrConst(c_char)` that points to the underlying buffer used
-              by this :type:`bytes`. The returned `c_ptrConst(c_char)` is only
-              valid when used on the same locale as the bytes.
-   */
-  pragma "last resort"
-  @deprecated("'bytes.c_str()' has moved to 'CTypes'. Please 'use CTypes' to access ':proc:`~CTypes.bytes.c_str`'")
-  inline proc bytes.c_str(): c_ptrConst(c_char) {
-    use CTypes only c_str;
-    return this.c_str();
   }
 
   /*
@@ -859,7 +793,7 @@ module Bytes {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       for b in this.bytes() {
         if !(byte_isUpper(b)) {
           result = false;
@@ -883,7 +817,7 @@ module Bytes {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       for b in this.bytes() {
         if !(byte_isLower(b)) {
           result = false;
@@ -907,7 +841,7 @@ module Bytes {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       for b in this.bytes() {
         if !(byte_isWhitespace(b)) {
           result = false;
@@ -930,7 +864,7 @@ module Bytes {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       for b in this.bytes() {
         if !byte_isAlpha(b) {
           result = false;
@@ -953,7 +887,7 @@ module Bytes {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       for b in this.bytes() {
         if !byte_isDigit(b) {
           result = false;
@@ -976,7 +910,7 @@ module Bytes {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       for b in this.bytes() {
         if !byte_isAlnum(b) {
           result = false;
@@ -1000,7 +934,7 @@ module Bytes {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       for b in this.bytes() {
         if !byte_isPrintable(b) {
           result = false;
@@ -1024,7 +958,7 @@ module Bytes {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       param UN = 0, UPPER = 1, LOWER = 2;
       var last = UN;
       for b in this.bytes() {
@@ -1121,12 +1055,6 @@ module Bytes {
   inline operator :(x: string, type t: bytes) {
     return bytes.createCopyingBuffer(x.buff, length=x.numBytes, size=x.numBytes+1);
   }
-  @chpldoc.nodoc
-  @deprecated("the type 'c_string' is deprecated; please use one of the 'bytes.create*ingBuffer' methods that takes a 'c_ptrConst(c_char)' instead")
-  inline operator :(x: c_string, type t: bytes) {
-    var length = x.size;
-    return bytes.createCopyingBuffer(x: bufferType, length=length, size=length+1);
-  }
 
 
   /*
@@ -1191,16 +1119,6 @@ module Bytes {
   */
   operator bytes.=(ref lhs: bytes, rhs: bytes) : void {
     doAssign(lhs, rhs);
-  }
-
-  /*
-     Copies the c_string `rhs_c` into the bytes `lhs`.
-
-     Halts if `lhs` is a remote bytes.
-  */
-  @deprecated("the type 'c_string' is deprecated; please use one of the 'bytes.create*ingBuffer' methods that takes a 'c_ptrConst(c_char)' instead")
-  operator bytes.=(ref lhs: bytes, rhs_c: c_string) : void {
-    lhs = bytes.createCopyingBuffer(rhs_c:c_ptrConst(c_char));
   }
 
   //

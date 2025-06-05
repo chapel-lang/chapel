@@ -1,4 +1,0 @@
-# test will fail with memleaks and not match the bad file
-CHPL_TEST_VGRND_EXE != on
-EXECOPTS <= memLeaks
-CHPL_SANITIZE_EXE != none

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -195,7 +195,6 @@ scan             return processToken(yyscanner, TSCAN);
 select           return processToken(yyscanner, TSELECT);
 serial           return processToken(yyscanner, TSERIAL);
 shared           return processToken(yyscanner, TSHARED);
-single           return processToken(yyscanner, TSINGLE);
 sparse           return processToken(yyscanner, TSPARSE);
 string           return processToken(yyscanner, TSTRING);
 subdomain        return processToken(yyscanner, TSUBDOMAIN);
@@ -318,8 +317,6 @@ zip              return processToken(yyscanner, TZIP);
 "'"              return processStringLiteral(yyscanner, "'", STRINGLITERAL);
 "b\""            return processStringLiteral(yyscanner, "\"", BYTESLITERAL);
 "b'"             return processStringLiteral(yyscanner, "'", BYTESLITERAL);
-"c\""            return processStringLiteral(yyscanner, "\"", CSTRINGLITERAL);
-"c'"             return processStringLiteral(yyscanner, "'", CSTRINGLITERAL);
 "//"             return processSingleLineComment(yyscanner);
 "/*"             return processBlockComment(yyscanner);
 

@@ -48,7 +48,8 @@ The Chapel implementation is composed of two categories of code:
      jemalloc         alternative memory allocator                 BSD-like
      libfabric        portable networking library                  BSD
      libunwind        used for runtime stack tracing               MIT
-     llvm             CLANG C parsing/optional back-end compiler   U of I/NCSA
+     llvm             CLANG C parsing/optional back-end compiler   Apache 2.0
+     mimalloc         alternative memory allocator                 MIT
      qthread          alternative lightweight tasking option       new BSD
      re2              optional regular expression parsing library  new BSD
      utf8-decoder     used for runtime UTF-8 string decoding       MIT
@@ -74,7 +75,7 @@ The Chapel implementation is composed of two categories of code:
      gasnet           only used when CHPL_COMM is 'gasnet'
      gmp              only used when CHPL_GMP is 'gmp'
      hwloc            only used when CHPL_HWLOC is 'hwloc'
-     jemalloc         only used when CHPL_MEM is 'jemalloc'
+     jemalloc         only used when CHPL_TARGET_MEM/CHPL_HOST_MEM is 'jemalloc'
      libfabric        only used when CHPL_COMM is 'ofi'
      libunwind        only used when CHPL_UNWIND is 'libunwind'
      llvm             only used when CHPL_LLVM is 'llvm'

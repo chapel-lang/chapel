@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -212,10 +212,10 @@ optional<Immediate> paramToImmediate(Context* context,
 
         if (ep) {
           auto numericValueOpt =
-            computeNumericValueOfEnumElement(context, ep->value());
+            computeNumericValueOfEnumElement(context, ep->value().id);
 
           if (!numericValueOpt) {
-            auto eltAst = parsing::idToAst(context, ep->value())->toEnumElement();
+            auto eltAst = parsing::idToAst(context, ep->value().id)->toEnumElement();
             auto qt = CHPL_TYPE_ERROR(context, EnumValueAbstract, astForErr, et, eltAst);
 
             // In order to be able to compose multiple calls to this function,
@@ -482,7 +482,7 @@ static QualifiedType enumParamFromNumericValue(Context* context,
     if (elemId) {
       return QualifiedType(QualifiedType::PARAM,
                            enumType,
-                           EnumParam::get(context, elemId));
+                           Param::getEnumParam(context, elemId));
     } else {
       return CHPL_TYPE_ERROR(context, NoMatchingEnumValue,
                              astForErr, enumType, numericValue);
@@ -624,13 +624,26 @@ QualifiedType Param::fold(Context* context,
 
 void Param::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
 
+  // for debug output, remove newlines so that we don't break output
+  // that expects to be printed on a single line.
+  auto cleanStr = [stringKind](std::string& toClean) {
+    if (stringKind != CHPL_SYNTAX) {
+      std::string::size_type pos = 0;
+      while ((pos = toClean.find('\n', pos)) != std::string::npos) {
+        toClean.replace(pos, 1, "\\n");
+        pos += 2;
+      }
+    }
+    return toClean;
+  };
 
   switch (tag_) {
 #define PARAM_NODE(NAME, VALTYPE) \
     case paramtags::NAME: { \
       const NAME* casted = (const NAME*) this; \
       auto value = casted->value(); \
-      ss << Param::valueToString(value); \
+      std::string valueStr = Param::valueToString(value); \
+      ss << cleanStr(valueStr); \
       break; \
     }
 // Apply the above macros to param-classes-list.h
@@ -946,6 +959,12 @@ IMPLEMENT_DUMP(Param);
 // clear the macros
 #undef PARAM_NODE
 
+const EnumParam* Param::getEnumParam(Context* context, ID id) {
+  auto ast = parsing::idToAst(context, id)->toEnumElement();
+  CHPL_ASSERT(ast && "expecting EnumElement");
+  auto value = EnumValue(id, ast->name().str());
+  return EnumParam::get(context, value);
+}
 
 } // end namespace types
 } // end namespace chpl

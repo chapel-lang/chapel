@@ -25,7 +25,7 @@ class SegmentProducer ( CodeProducer ):
     self.value = str( string )
     
   def generate( self ):
-    return self.value;
+    return self.value
   
   def scope(self):
     pass
@@ -79,7 +79,7 @@ class SequenceOfProducers ( CodeProducer ):
     string = str()
     for producer in self.producers:
       string += producer.generate()
-    return string;
+    return string
 
 class ListProducer ( SequenceOfProducers ):
   def __init__( self, sep=", ", prefix = "", suffix = "" ):
@@ -95,7 +95,7 @@ class ListProducer ( SequenceOfProducers ):
       producer = self.producers[i]
       string += producer.generate() + (self.sep if i < count_producers - 1 else "")
     string += self.suffix
-    return string;
+    return string
 
 class ScopeProducer ( SequenceOfProducers ):
 
@@ -140,7 +140,7 @@ class ScopeProducer ( SequenceOfProducers ):
       else:
         string += CodeProducer.tab*(self.depth+1) + producer.generate()
     string += CodeProducer.tab*(self.depth) + LineProducer("}").generate()
-    return string;
+    return string
     
   
 

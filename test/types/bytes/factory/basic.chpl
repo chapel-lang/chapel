@@ -20,10 +20,10 @@ cPtrTmp[0] = 65:uint(8);
 cPtrTmp[1] = 66:uint(8);
 cPtrTmp[2] = 67:uint(8);
 cPtrTmp[3] = 0:uint(8);
-var cStr = cPtrTmp:c_string;
+var cStr = cPtrTmp:c_ptrConst(c_char);
 {
   // there should be 1 allocation 1 free
-  writeln("Initialize from c_string");
+  writeln("Initialize from c_ptrConst(c_char)");
   var sNew = bytes.createCopyingBuffer(cStr);
   var sBorrowed = bytes.createBorrowingBuffer(cStr);
   var sOwned = bytes.createAdoptingBuffer(cStr);

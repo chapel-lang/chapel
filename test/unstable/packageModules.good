@@ -13,13 +13,13 @@ packageModules.chpl:XX: warning: Curl is unstable
 packageModules.chpl:XX: warning: DistributedBag is unstable
 packageModules.chpl:XX: warning: DistributedDeque is unstable
 packageModules.chpl:XX: warning: DistributedIters is unstable
+packageModules.chpl:XX: warning: Dynamic loading support is experimental and unstable.
 packageModules.chpl:XX: warning: EpochManager is unstable
 packageModules.chpl:XX: warning: ExplicitRefCount is unstable
 packageModules.chpl:XX: warning: FFTW is unstable
 packageModules.chpl:XX: warning: FunctionalOperations is unstable
 packageModules.chpl:XX: warning: Futures is unstable
 packageModules.chpl:XX: warning: HDF5 is unstable
-packageModules.chpl:XX: warning: HDFS is unstable
 packageModules.chpl:XX: warning: Image is unstable
 packageModules.chpl:XX: warning: LAPACK is unstable
 packageModules.chpl:XX: warning: LinearAlgebra is unstable
@@ -33,6 +33,7 @@ packageModules.chpl:XX: warning: NetCDF is unstable
 packageModules.chpl:XX: warning: PeekPoke is unstable
 packageModules.chpl:XX: warning: Prefetch is unstable
 packageModules.chpl:XX: warning: ProtobufProtocolSupport is unstable
+packageModules.chpl:XX: warning: The Python module's interface is under active development and may change
 packageModules.chpl:XX: warning: RangeChunk is unstable
 packageModules.chpl:XX: warning: RecordParser is unstable
 packageModules.chpl:XX: warning: ReplicatedVar is unstable

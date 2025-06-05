@@ -1,0 +1,15 @@
+$CHPL_HOME/modules/standard/Allocators.chpl:nnnn: warning: please use '?' when declaring a routine with a generic return type
+$CHPL_HOME/modules/standard/Allocators.chpl:nnnn: note: for example with 'Tree(?)'
+tree-genericAllocator.chpl:50: warning: please add '(?)' to type 'Tree' because it is generic
+tree-genericAllocator.chpl:9: In initializer:
+tree-genericAllocator.chpl:11: error: const actual is passed to a 'ref' formal of init=()
+  $CHPL_HOME/modules/standard/Allocators.chpl:nnnn: called as Tree.init(value: int(64), pool: owned mallocWrapper) from function 'newWithAllocator'
+  tree-genericAllocator.chpl:50: called as newWithAllocator(alloc: owned mallocWrapper, type T = unmanaged Tree?, args(0): int(64), args(1): owned mallocWrapper)
+$CHPL_HOME/modules/standard/Allocators.chpl:nnnn: In function 'newWithAllocator':
+$CHPL_HOME/modules/standard/Allocators.chpl:nnnn: error: Unable to resolve new-expression with type alias 'Tree(owned mallocWrapper)'
+$CHPL_HOME/modules/standard/Allocators.chpl:nnnn: error: unresolved call 'Tree.init(poolType=type owned mallocWrapper, int(64), owned mallocWrapper)'
+tree-genericAllocator.chpl:9: note: this candidate did not match: Tree.init(value, pool)
+$CHPL_HOME/modules/standard/Allocators.chpl:nnnn: note: because call uses named argument poolType
+tree-genericAllocator.chpl:9: note: but function contains no formal named poolType
+  tree-genericAllocator.chpl:25: called as newWithAllocator(alloc: owned mallocWrapper, type T = unmanaged Tree(owned mallocWrapper), args(0): int(64), args(1): owned mallocWrapper) from method 'insert'
+  tree-genericAllocator.chpl:51: called as (Tree(owned mallocWrapper)).insert(value: int(64))

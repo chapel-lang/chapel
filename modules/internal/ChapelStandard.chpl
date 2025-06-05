@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -54,6 +54,7 @@ module ChapelStandard {
   public use ChapelLocale;
   public use ChapelPrivatization;
   public use DefaultRectangular;
+  public use ChapelNumLocales;
   public use LocalesArray;
   public use ChapelArray;
   public use ChapelDistribution;
@@ -81,6 +82,8 @@ module ChapelStandard {
   // Standard modules.
   public use Types as Types;
   public use AutoMath as AutoMath;
+  public use AutoGpu as AutoGpu;
 
-  use stopInitCommDiags;  // Internal, but uses standard/CommDiagnostics
+  use stopInitCommDiags;      // Internal, but uses standard/CommDiagnostics
+  use ChapelDynamicLoading;   // Internal, but the compiler uses this
 }

@@ -199,7 +199,7 @@ proc sad4OneMacroblock(ref macroblockSad: [] uint(16), frame: [] uint(16), refer
               var refy = min(height - 1, max(0, framey + posy + blky*4 + y));
               var b = reference[rlow + refy*width + refx];
               var a = frame[flow + (blky*4 + y) * width + (blkx*4 + x)];
-              sad += abs(a:int - b:int):uint(16); // danger, need these casts
+              sad += if a > b then a - b else b - a;
             }
           }
           macroblockSad[mlow + MAX_POS_PADDED*(4*blky + blkx) + pos] = sad;

@@ -1,0 +1,2 @@
+--dry-run --gpus-per-node 1
+--dry-run --gpus-per-node=1

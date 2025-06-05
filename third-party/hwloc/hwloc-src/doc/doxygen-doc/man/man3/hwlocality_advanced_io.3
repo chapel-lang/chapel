@@ -1,4 +1,4 @@
-.TH "hwlocality_advanced_io" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_advanced_io" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -46,6 +46,10 @@ Get the next bridge in the system\&.
 \fBReturns\fP
 .RS 4
 the first bridge if \fCprev\fP is \fCNULL\fP\&. 
+.PP
+the next bridge if \fCprev\fP is not \fCNULL\fP\&. 
+.PP
+\fCNULL\fP if there is no next bridge\&. 
 .RE
 .PP
 
@@ -57,6 +61,10 @@ Get the next OS device in the system\&.
 \fBReturns\fP
 .RS 4
 the first OS device if \fCprev\fP is \fCNULL\fP\&. 
+.PP
+the next OS device if \fCprev\fP is not \fCNULL\fP\&. 
+.PP
+\fCNULL\fP if there is no next OS device\&. 
 .RE
 .PP
 
@@ -68,6 +76,10 @@ Get the next PCI device in the system\&.
 \fBReturns\fP
 .RS 4
 the first PCI device if \fCprev\fP is \fCNULL\fP\&. 
+.PP
+the next PCI device if \fCprev\fP is not \fCNULL\fP\&. 
+.PP
+\fCNULL\fP if there is no next PCI device\&. 
 .RE
 .PP
 
@@ -76,8 +88,15 @@ the first PCI device if \fCprev\fP is \fCNULL\fP\&.
 .PP
 Get the first non-I/O ancestor object\&. Given the I/O object \fCioobj\fP, find the smallest non-I/O ancestor object\&. This object (normal or memory) may then be used for binding because it has non-NULL CPU and node sets and because its locality is the same as \fCioobj\fP\&.
 .PP
+\fBReturns\fP
+.RS 4
+a non-I/O object\&.
+.RE
+.PP
 \fBNote\fP
 .RS 4
+This function cannot return \fCNULL\fP\&.
+.PP
 The resulting object is usually a normal object but it could also be a memory object (e\&.g\&. NUMA node) in future platforms if I/O objects ever get attached to memory instead of CPUs\&. 
 .RE
 .PP
@@ -86,10 +105,24 @@ The resulting object is usually a normal object but it could also be a memory ob
 
 .PP
 Find the PCI device object matching the PCI bus id given domain, bus device and function PCI bus id\&. 
+.PP
+\fBReturns\fP
+.RS 4
+a matching PCI device object if any, \fCNULL\fP otherwise\&. 
+.RE
+.PP
+
 .SS "static \fBhwloc_obj_t\fP hwloc_get_pcidev_by_busidstring (\fBhwloc_topology_t\fP topology, const char * busid)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
 Find the PCI device object matching the PCI bus id given as a string xxxx:yy:zz\&.t or yy:zz\&.t\&. 
+.PP
+\fBReturns\fP
+.RS 4
+a matching PCI device object if any, \fCNULL\fP otherwise\&. 
+.RE
+.PP
+
 .SH "Author"
 .PP 
 Generated automatically by Doxygen for Hardware Locality (hwloc) from the source code\&.

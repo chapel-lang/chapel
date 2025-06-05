@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -77,6 +77,9 @@ class Builder final {
   // These are removed in the astToLocation_ map.
   AstLocMap notedLocations_;
 
+  bool isGenerated_;
+  optional<int> topLevelRepeatOffset_;
+
   // These map AST to additional locations while the builder is building.
   // This is an equivalent to notedLocations for the additional locations.
   // The key type is just 'AstNode' so that we can use generic functions.
@@ -89,14 +92,20 @@ class Builder final {
 
   Builder(Context* context, UniqueString filePath,
           UniqueString startingSymbolPath,
-          const libraries::LibraryFile* lib)
+          const libraries::LibraryFile* lib,
+          bool isGenerated = false,
+          optional<int> topLevelRepeatOffset = chpl::empty)
     : context_(context),
       startingSymbolPath_(startingSymbolPath),
-      br(filePath, lib)
+      br(filePath, lib),
+      isGenerated_(isGenerated),
+      topLevelRepeatOffset_(topLevelRepeatOffset)
   {
   }
 
   void createImplicitModuleIfNeeded();
+  UniqueString getNameForDecl(const AstNode* ast);
+  int getRepeatCount(declaredHereT& duplicates, UniqueString declName);
   void assignIDs();
   void doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
                    int& commentIndex, pathVecT& pathVec,
@@ -106,6 +115,8 @@ class Builder final {
   void tryNoteAdditionalLocation(AstLocMap& m, AstNode* ast, Location loc);
   void copyAdditionalLocation(AstLocMap& m, const AstNode* from, const AstNode* to);
   void deleteAdditionalLocation(AstLocMap& m, const AstNode* ast);
+
+  bool isGenerated() { return isGenerated_; }
 
  public:
   /** Construct a Builder for parsing a top-level module */
@@ -119,6 +130,10 @@ class Builder final {
   static owned<Builder> createForIncludedModule(Context* context,
                                                 const char* filepath,
                                                 UniqueString parentSymbolPath);
+
+  static owned<Builder> createForGeneratedCode(Context* context,
+                                               ID generatedFrom,
+                                               optional<int> overloadOffset = chpl::empty);
 
   /** Construct a Builder for use when reading uAST from a library file. */
   static owned<Builder> createForLibraryFileModule(
@@ -150,6 +165,12 @@ class Builder final {
     void delete##location__##Location(const ast__* ast);
   #include "all-location-maps.h"
   #undef LOCATION_MAP
+
+  /** Delete all the locations stored for the current AST. This is useful if the
+      AST is being deallocated, which means future uses of this pointer
+      (the memory could be re-used) must not have locations out of the box.
+    */
+  void deleteAllLocations(const AstNode* ast);
 
   /** Note the symbol table symbols so that the resulting
       BuilderResult will have a working 'isSymbolTableSymbol' function. */

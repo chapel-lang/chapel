@@ -171,6 +171,18 @@ var branchInfo = [
                     "releaseDate": "2024-06-27",
                     "branchDate" : "2024-06-24",
                     "revision": -1},
+                  { "release": "2.2.0",
+                    "releaseDate": "2024-09-26",
+                    "branchDate" : "2024-09-20",
+                    "revision": -1},
+                  { "release": "2.3.0",
+                    "releaseDate": "2024-12-12",
+                    "branchDate" : "2024-12-06",
+                    "revision": -1},
+                  { "release": "2.4.0",
+                    "releaseDate": "2025-03-20",
+                    "branchDate" : "2025-03-14",
+                    "revision": -1},
                   ];
 
 var indexMap = {};

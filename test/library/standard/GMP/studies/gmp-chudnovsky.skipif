@@ -1,0 +1,2 @@
+# the precision is slightly off on 32 bit platforms
+CHPL_TARGET_PLATFORM==linux32

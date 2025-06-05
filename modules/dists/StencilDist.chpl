@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -33,6 +33,8 @@
 // mapped to by the distribution.
 //
 
+/* Draft support for stencil computations using a Block-style distribution. */
+
 @unstable("StencilDist is unstable and may change in the future")
 prototype module StencilDist {
 
@@ -58,6 +60,7 @@ config param debugStencilDistBulkTransfer = false;
 config param stencilDistAllowPackedUpdateFluff = true;
 
 config param disableStencilDistBulkTransfer = false;
+config param disableStencilDistArrayViewElision = false;
 
 private config param allowDuplicateTargetLocales = false;
 // Instructs the _packedUpdate method to only perform the optimized buffer
@@ -70,7 +73,6 @@ private config param allowDuplicateTargetLocales = false;
 config const stencilDistPackedUpdateMinChunks = 1;
 
 // Re-uses these flags from BlockDist:
-//   - disableAliasedBulkTransfer
 //   - sanityCheckDistribution
 //   - testFastFollowerOptimization
 
@@ -124,24 +126,33 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
 //
 
 /*
-  The ``stencilDist`` distribution is a variant of the :mod:`blockDist
-  <BlockDist>` distribution that attempts to improve performance for
-  stencil computations by reducing the amount of communication
-  necessary during array accesses. From the user's perspective, it
-  behaves very similarly to ``blockDist`` in terms of reads, writes,
-  and iteration.
+  The ``stencilDist`` distribution is an enhanced functionality variant of the
+  :mod:`blockDist<BlockDist>` distribution. Both refer to an array partitioned
+  into blocks, but ``stencilDist`` will help the user to improve
+  performance for stencil computations by reducing the amount of communication
+  necessary for array accesses across locales. A ``stencilDist`` array would
+  most commonly be used in computations based on a numerical stencil formula.
+  For example, solving banded linear equations by the Gauss-Seidel or Jacobi
+  method.
 
-  This distribution reduces communication by creating read-only caches for
-  elements adjacent to the block of elements owned by each locale. This
-  documentation may refer to these cached regions as 'ghost cells' or 'fluff'.
-  This approach can avoid many fine-grained GETs and PUTs when performing a
-  stencil computation near the boundary of the current locale's chunk of array
-  elements. The user must manually refresh these caches after writes by calling
-  the ``updateFluff`` method. Otherwise, reading and writing array elements
-  behaves the same as a block-distributed array.
+  Like ``blockDist``, each block in a ``stencilDist`` array is owned by a
+  (potentially) different locale. But when communication needs to occur between
+  a given block and its set of immediately neighboring or adjacent blocks, the
+  more feature-rich ``stencilDist`` is typically the better choice. This is
+  because, for any given block, a ``stencilDist`` transparently creates a
+  read-only cache of selected array elements from its adjacent blocks,
+  specifically those array elements from the band of array elements just
+  outside the edge of the locally-owned block. This band of array elements is
+  sometimes referred to as a 'halo' or 'overlap region' in other languages
+  and technologies, but in this documentation will be referred to as either
+  'ghost cells' or more strictly, as 'fluff'.
 
-  The indices are partitioned in the same way as the :mod:`blockDist
-  <BlockDist>` distribution.
+  This approach can  avoid many instances of reading a remote array element
+  when performing a stencil computation near the boundary of the current
+  locale's chunk of array elements. Note that the user must manually refresh
+  these caches after writes by calling the ``updateFluff`` method. The writing
+  of array elements and partitioning of indices both behave the same as in a
+  block-distributed array.
 
   The ``stencilDist`` initializer is defined as follows:
 
@@ -301,7 +312,7 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
 
     A.updateFluff();
 
-    // ghost caches are now up-to-date
+    // ghost cell caches are now up-to-date
 
   After updating, any read from the array should be up-to-date. The
   ``updateFluff`` method does not currently accept any arguments.
@@ -311,7 +322,7 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
   The ``stencilDist`` distribution uses ghost cells as cached
   read-only values from other locales. When reading from a
   stencil-distributed array, the distribution will attempt to read
-  from the local ghost cache first. If the index is not within the
+  from the local ghost cell cache first. If the index is not within the
   cached index set of the current locale, then we default to a remote
   read from the locale on which the element is located.
 
@@ -874,10 +885,35 @@ iter StencilImpl.activeTargetLocales(const space : domain = boundingBox) {
   // The subset {1..10 by 4} will involve locales 0, 1, and 3.
   foreach i in {(...dims)} {
     const chunk = chpl__computeBlock(i, targetLocDom, boundingBox);
-    // TODO: Want 'contains' for a domain. Slicing is a workaround.
+    // TODO: Want 'overlaps' for a domain. Slicing is a workaround.
     if locSpace[(...chunk)].sizeAs(int) > 0 then
       yield i;
   }
+}
+
+iter StencilImpl.activeTargetLocales(const space : range(?)) {
+  compilerAssert(rank==1);
+  const dims = targetLocsIdx(space.first)..targetLocsIdx(space.last);
+
+  // In case 'space' is a strided domain we need to check that the locales
+  // in 'dims' actually contain indices in 'locSpace'.
+  //
+  // Note that we cannot use a simple stride here because it is not guaranteed
+  // that each locale contains the same number of indices. For example, the
+  // domain {1..10} over four locales will split like:
+  //   L0: -max(int)..3
+  //   L1: 4..5
+  //   L2: 6..8
+  //   L3: 9..max(int)
+  //
+  // The subset {1..10 by 4} will involve locales 0, 1, and 3.
+  foreach i in dims {
+    const chunk = chpl__computeBlock(i, targetLocDom, boundingBox);
+    // TODO: Want 'overlaps' for a domain. Slicing is a workaround.
+    if space[chunk[0]].sizeAs(int) > 0 then
+      yield i;
+  }
+
 }
 
 // create a domain over an existing Stencil Distribution
@@ -901,6 +937,7 @@ proc type stencilDist.createDomain(
 }
 
 // create a domain over a Stencil Distribution constructed from a series of ranges
+pragma "last resort"
 proc type stencilDist.createDomain(
   rng: range(?)...,
   targetLocales: [] locale = Locales,
@@ -968,6 +1005,7 @@ proc type stencilDist.createArray(
 
 // create an array over a Stencil Distribution constructed from a series of ranges, default initialized
 pragma "no copy return"
+pragma "last resort"
 proc type stencilDist.createArray(
   rng: range(?)...,
   type eltType,
@@ -993,6 +1031,7 @@ proc type stencilDist.createArray(rng: range(?)..., type eltType, initExpr: ?t)
 }
 
 pragma "no copy return"
+pragma "last resort"
 proc type stencilDist.createArray(
   rng: range(?)...,
   type eltType,
@@ -1016,6 +1055,7 @@ proc type stencilDist.createArray(
 }
 
 pragma "no copy return"
+pragma "last resort"
 proc type stencilDist.createArray(
   rng: range(?)...,
   type eltType,
@@ -1983,17 +2023,16 @@ proc StencilArr.naiveUpdateFluff() {
 //    c) Copy elements from the local buffer into the cache
 //
 proc StencilArr._packedUpdate() {
+  const mypid = this.pid;
   coforall i in dom.dist.targetLocDom {
     on dom.dist.targetLocales(i) {
-      var myLocDom = locArr[i].locDom;
+      const privArr = if _privatization then chpl_getPrivatizedCopy(this.type, mypid) else this;
+      var myLocDom = privArr.locArr[i].locDom;
 
       proc translateIdx(idx) {
         return -1 * chpl__tuplify(idx);
       }
 
-      // BHARSH TODO: can we fuse these two foralls? My current concern is that
-      // by waiting we might prevent another iteration running and possibly
-      // find ourselves in a deadlock.
       forall (D, S, recvIdx, sendBufIdx) in zip(myLocDom.sendDest, myLocDom.sendSrc,
                                                 myLocDom.Neighs,
                                                 myLocDom.NeighDom) {
@@ -2005,19 +2044,18 @@ proc StencilArr._packedUpdate() {
             const recvBufIdx = translateIdx(sendBufIdx);
 
             // Pack the buffer
-            //
-            // TODO: Should we have a serialization helper for N-dimensional
-            // DefaultRectangulars into 1-dimension arrays?
-            ref src = locArr[i].myElems[S];
-            ref buf = locArr[i].sendBufs[sendBufIdx];
+            ref src = privArr.locArr[i].myElems[S];
+            ref buf = privArr.locArr[i].sendBufs[sendBufIdx];
+
+            // TODO: parallelize for larger buffers? Other forms for this loop?
             local do for (s, i) in zip(src, buf.domain.first..#src.sizeAs(int)) do buf[i] = s;
 
             if debugStencilDist then
               writeln("Filled ", here, ".", S, " for ", dom.dist.targetLocales(recvIdx), "::", recvBufIdx);
-            locArr[recvIdx].sendRecvFlag[recvBufIdx].write(true);
+            privArr.locArr[recvIdx].sendRecvFlag[recvBufIdx].write(true);
           } else {
             // 'naive' update
-            locArr[recvIdx].myElems[D] = locArr[i].myElems[S];
+            privArr.locArr[recvIdx].myElems[D] = privArr.locArr[i].myElems[S];
           }
         }
       }
@@ -2033,13 +2071,16 @@ proc StencilArr._packedUpdate() {
           const srcBufIdx = translateIdx(recvBufIdx);
           if debugStencilDist then
             writeln(here, "::", recvBufIdx, " WAITING");
-          locArr[i].sendRecvFlag[recvBufIdx].waitFor(true); // Can we read yet?
-          locArr[i].sendRecvFlag[recvBufIdx].write(false);  // reset for next call
 
-          locArr[i].recvBufs[recvBufIdx][1..D.sizeAs(int)] = locArr[srcIdx].sendBufs[srcBufIdx][1..D.sizeAs(int)];
+          privArr.locArr[i].sendRecvFlag[recvBufIdx].waitFor(true); // Can we read yet?
+          privArr.locArr[i].sendRecvFlag[recvBufIdx].write(false);  // reset for next call
 
-          ref dest = locArr[i].myElems[D];
-          ref buf = locArr[i].recvBufs[recvBufIdx];
+          privArr.locArr[i].recvBufs[recvBufIdx][1..D.sizeAs(int)] = privArr.locArr[srcIdx].sendBufs[srcBufIdx][1..D.sizeAs(int)];
+
+          // unpack buffer
+          ref dest = privArr.locArr[i].myElems[D];
+          ref buf = privArr.locArr[i].recvBufs[recvBufIdx];
+
           local do for (d, i) in zip(dest, buf.domain.first..#dest.sizeAs(int)) do d = buf[i];
         }
       }
@@ -2110,6 +2151,21 @@ inline proc LocStencilArr.this(i) ref {
 }
 
 override proc StencilDom.dsiSupportsAutoLocalAccess() param { return true; }
+override proc StencilDom.dsiSupportsOffsetAutoLocalAccess() param {
+  return true;
+}
+// offsets is always a tuple
+override proc StencilDom.dsiAutoLocalAccessOffsetCheck(offsets) {
+  var ret = true;
+  for param i in 0..<rank {
+    ret &&= fluff[i] >= abs(offsets[i]);
+  }
+  return ret;
+}
+
+override proc StencilDom.dsiSupportsArrayViewElision() param {
+  return !disableStencilDistArrayViewElision;
+}
 
 //
 // Privatization
@@ -2291,8 +2347,12 @@ proc StencilArr.dsiLocalSubdomain(loc: locale) {
 proc StencilDom.dsiLocalSubdomain(loc: locale) {
   const (gotit, locid) = dist.chpl__locToLocIdx(loc);
   if (gotit) {
-    var inds = chpl__computeBlock(locid, dist.targetLocDom, dist.boundingBox);
-    return whole[(...inds)];
+    if loc == here {
+      return locDoms[locid].myBlock;
+    } else {
+      var inds = chpl__computeBlock(locid, dist.targetLocDom, dist.boundingBox);
+      return whole[(...inds)];
+    }
   } else {
     var d: domain(rank, idxType, strides);
     return d;

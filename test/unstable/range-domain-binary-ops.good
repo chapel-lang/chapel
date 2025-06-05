@@ -5,12 +5,6 @@ range-domain-binary-ops.chpl:12: warning: '-' on ranges is unstable and may chan
 range-domain-binary-ops.chpl:13: warning: '-=' on ranges is unstable and may change in the future
 range-domain-binary-ops.chpl:15: warning: (range * range) is unstable and may change in the future
 range-domain-binary-ops.chpl:16: warning: (range ** integer) is unstable and may change in the future
-range-domain-binary-ops.chpl:22: warning: The default parSafe mode for associative domains and arrays (like 'd2') is changing from 'true' to 'false'.
-range-domain-binary-ops.chpl:22: note: To suppress this warning you can make your domain const, use an explicit parSafe argument (ex: domain(int, parSafe=false)), or compile with '-snoParSafeWarning'.
-range-domain-binary-ops.chpl:22: note: To use the old default of parSafe=true, compile with '-sassocParSafeDefault=true'.
-range-domain-binary-ops.chpl:22: warning: The default parSafe mode for associative domains and arrays (like 'd3') is changing from 'true' to 'false'.
-range-domain-binary-ops.chpl:22: note: To suppress this warning you can make your domain const, use an explicit parSafe argument (ex: domain(int, parSafe=false)), or compile with '-snoParSafeWarning'.
-range-domain-binary-ops.chpl:22: note: To use the old default of parSafe=true, compile with '-sassocParSafeDefault=true'.
 range-domain-binary-ops.chpl:25: warning: '+' on domains is unstable and may change in the future
 range-domain-binary-ops.chpl:26: warning: '+' on domains is unstable and may change in the future
 range-domain-binary-ops.chpl:27: warning: '+=' on domains is unstable and may change in the future

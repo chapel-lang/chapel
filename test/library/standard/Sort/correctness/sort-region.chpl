@@ -1,10 +1,10 @@
 use Sort;
 
-record AbsCompCmp {
+record AbsCompCmp: relativeComparator {
   proc compare(a, b) { return abs(a) - abs(b); }
   proc name() { return 'AbsCompCmp'; }
 }
-record AbsKeyCmp {
+record AbsKeyCmp: keyComparator {
   proc key(a) { return abs(a); }
   proc name() { return 'AbsKeyCmp'; }
 }
@@ -21,7 +21,7 @@ proc checkComparisonSort(n: int) {
   assert(isSorted(A[2..n/2]));
   assert(A[1] == n);
   assert(A[n] == 1);
-  assert(isSorted(A[n/2+1..n], reverseComparator));
+  assert(isSorted(A[n/2+1..n], new reverseComparator()));
 }
 
 proc checkKeySort(n: int) {
@@ -32,7 +32,7 @@ proc checkKeySort(n: int) {
   assert(isSorted(A[2..n/2]));
   assert(A[1] == n);
   assert(A[n] == 1);
-  assert(isSorted(A[n/2+1..n], reverseComparator));
+  assert(isSorted(A[n/2+1..n], new reverseComparator()));
 }
 
 checkComparisonSort(smallN);

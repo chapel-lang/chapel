@@ -27,7 +27,7 @@ proc testBucketizer() {
                     0x11,
                     0x00];
 
-  var criterion = new DefaultComparator();
+  var criterion = new defaultComparator();
   var ASorted = A;
   sort(ASorted, criterion);
   assert(isSorted(ASorted));
@@ -162,7 +162,7 @@ proc testBucketizerRandomized(nelts:int, seed:int) {
   Random.fillRandom(A, seed=seed);
 
   var b = new RadixBucketizer();
-  var criterion = new DefaultComparator();
+  var criterion = new defaultComparator();
 
   var ASorted = A;
   sort(ASorted, criterion);

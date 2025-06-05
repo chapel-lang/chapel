@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -36,7 +36,12 @@
 #include <vector>
 #include <map>
 
+#include "llvm/Support/raw_ostream.h"
+
 #ifdef HAVE_LLVM
+
+#include "clangUtil.h"
+
 // Forward declare MDNode.
 namespace llvm
 {
@@ -172,12 +177,22 @@ public:
   const char* getDeprecationMsg() const;
   void maybeGenerateDeprecationWarning(Expr* context);
 
+  QualifiedType
+  static computeQualifiedType(bool isFormal, IntentTag intent, Type* type,
+                              Qualifier qual,
+                              bool isConst);
 
   std::string unstableMsg;
   const char* getUnstableMsg() const;
   void maybeGenerateUnstableWarning(Expr* context);
 
   const char* getSanitizedMsg(std::string msg) const;
+
+  std::string firstEdition;
+  std::string lastEdition;
+
+  std::string getFirstEdition() const;
+  std::string getLastEdition() const;
 
 protected:
                      Symbol(AstTag      astTag,
@@ -332,10 +347,7 @@ public:
 
   bool   isVisible(BaseAST* scope)                 const override;
 
-  bool            requiresCPtr();
   const char*     intentDescrString() const;
-
-  GenRet          codegenType();
 
   std::string     getPythonType(PythonFileType pxd);
   std::string     getPythonDefaultValue();
@@ -447,12 +459,14 @@ enum AlignmentStatus {
   // >1 ==> the ABI alignment
 };
 
-// These map from Chapel function types to LLVM function types. They
-// live here rather than in 'llvmUtil.h' because of a name conflict
-// between 'Type' and 'llvm::Type'.
+// Given a Chapel function type, fetch the associated local LLVM type.
 #ifdef HAVE_LLVM
-bool llvmMapUnderlyingFunctionType(FunctionType* k, llvm::FunctionType* v);
-llvm::FunctionType* llvmGetUnderlyingFunctionType(FunctionType* t);
+struct LlvmFunctionInfo {
+  llvm::FunctionType* type = nullptr;
+  llvm::AttributeList attrs;
+};
+
+const LlvmFunctionInfo& fetchLocalFunctionTypeLlvm(FunctionType* t);
 #endif
 
 class TypeSymbol final : public Symbol {
@@ -667,10 +681,10 @@ public:
 class TemporaryConversionSymbol final : public Symbol {
 public:
   chpl::ID symId;
-  const chpl::resolution::TypedFnSignature* sig;
+  const chpl::resolution::ResolvedFunction* rfn;
 
-  TemporaryConversionSymbol(chpl::ID symId);
-  TemporaryConversionSymbol(const chpl::resolution::TypedFnSignature* sig);
+  explicit TemporaryConversionSymbol(chpl::ID symId);
+  explicit TemporaryConversionSymbol(const chpl::resolution::ResolvedFunction* rfn);
 
   void  verify()                                          override;
   void  accept(AstVisitor* visitor)                       override;
@@ -924,21 +938,22 @@ extern Symbol *gDummyWitness;
 extern Symbol *gDummyRef;
 // used in convert-uast to mark a SymExpr needing future adjustment
 extern Symbol *gFixupRequiredToken;
+// used to disambiguate promotion cache entries
 extern Symbol *gIgnoredPromotionToken;
 
 extern VarSymbol *gTrue;
 extern VarSymbol *gFalse;
-extern VarSymbol *gIteratorBreakToken;
 extern VarSymbol *gNodeID;
 extern VarSymbol *gModuleInitIndentLevel;
 extern VarSymbol *gInfinity;
 extern VarSymbol *gNan;
 extern VarSymbol *gUninstantiated;
+extern VarSymbol *gCpuVsGpuToken;  // true branch runs on CPU
+extern VarSymbol *gIteratorBreakToken;
 
 extern llvm::SmallVector<VarSymbol*, 10> gCompilerGlobalParams;
 
 extern Symbol *gSyncVarAuxFields;
-extern Symbol *gSingleVarAuxFields;
 
 extern FnSymbol* chplUserMain;
 
@@ -973,6 +988,10 @@ typedef enum {
 using llvmStageNum::llvmStageNum_t;
 
 extern llvmStageNum_t llvmPrintIrStageNum;
+extern std::string llvmPrintIrFileName;
+bool shouldLlvmPrintIrToFile();
+extern chpl::owned<llvm::raw_fd_ostream> llvmPrintIrFile;
+llvm::raw_fd_ostream* getLlvmPrintIrFile();
 
 const char *llvmStageNameFromLlvmStageNum(llvmStageNum_t stageNum);
 llvmStageNum_t llvmStageNumFromLlvmStageName(const char* stageName);

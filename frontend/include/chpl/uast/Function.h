@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -56,6 +56,13 @@ class Function final : public NamedDecl {
     ITER,
     OPERATOR,
     LAMBDA
+  };
+
+  enum IteratorKind {
+    SERIAL,
+    STANDALONE,
+    LEADER,
+    FOLLOWER,
   };
 
   enum ReturnIntent {
@@ -428,6 +435,8 @@ class Function final : public NamedDecl {
   static const char* returnIntentToString(ReturnIntent intent);
 
   static const char* kindToString(Kind kind);
+
+  static const char* iteratorKindToString(IteratorKind kind);
 };
 
 } // end namespace uast
@@ -459,6 +468,28 @@ template<> struct stringify<uast::Function::ReturnIntent> {
   }
 };
 
+template<> struct update<uast::Function::IteratorKind> {
+  bool operator()(uast::Function::IteratorKind& keep,
+                  uast::Function::IteratorKind& addin) const {
+    return defaultUpdateBasic(keep, addin);
+  }
+};
+
+template<> struct mark<uast::Function::IteratorKind> {
+  void operator()(Context* context,
+                  const uast::Function::IteratorKind& keep) const {
+    // nothing to do for enum
+  }
+};
+
+template<> struct stringify<uast::Function::IteratorKind> {
+  void operator()(std::ostream& streamOut,
+                  StringifyKind stringKind,
+                  const uast::Function::IteratorKind& stringMe) const {
+    streamOut << uast::Function::iteratorKindToString(stringMe);
+  }
+};
+
 template<> struct stringify<uast::Function::Kind> {
   void operator()(std::ostream& streamOut,
                   StringifyKind stringKind,
@@ -481,6 +512,12 @@ namespace std {
   template<> struct hash<chpl::uast::Function::Kind> {
     inline size_t operator()(const chpl::uast::Function::Kind& key) const {
       return (size_t) key;
+    }
+  };
+
+  template<> struct hash<chpl::uast::Function::IteratorKind> {
+    inline size_t operator()(const chpl::uast::Function::IteratorKind& k) const{
+      return (size_t) k;
     }
   };
 } // end namespace std

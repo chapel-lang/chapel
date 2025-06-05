@@ -1,0 +1,3 @@
+feature request: LLVM compilation doesn't yet support '-j'
+
+Currently the parallel compilation feature has not been implemented for llvm.

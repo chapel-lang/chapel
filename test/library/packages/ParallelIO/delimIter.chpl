@@ -8,6 +8,7 @@ config const n = 1000,
 proc main() {
     const thingsActual = makeThingsFile(fileName, n);
 
+    // single-locale read
     var things = new map(int, int, parSafe=true);
     forall t in readDelimited(fileName, t=thing, delim=",", nTasks=nTasks)
         with (ref things) do
@@ -15,7 +16,17 @@ proc main() {
 
     // ensure the file was read correctly
     for (k, v) in zip(things.keys(), things.values()) do
-        assert(thingsActual[k] == v);
+        assert(thingsActual[k] == v, "single-locale mismatch");
+
+    // multi-locale read
+    var things2 = new map(int, int, parSafe=true);
+    forall t in readDelimited(fileName, t=thing, delim=",", nTasks=nTasks, targetLocales=Locales)
+        with (ref things2) do
+            mapAddOrSet(things2, t.k, t.v);
+
+    // ensure the file was read correctly
+    for (k, v) in zip(things2.keys(), things2.values()) do
+        assert(thingsActual[k] == v, "multi-locale mismatch");
 }
 
 record thing: serializable {
@@ -52,18 +63,20 @@ proc makeThingsFile(path: string, n: int): map(int, int) {
 }
 
 proc mapAddOrSet(ref m: map(int, int), k: int, v: int) {
-    record adder {
-        const val: int;
+    on Locales[0] {
+        record adder {
+            const val: int;
 
-        proc this(k: int, ref v: int) {
-            v += this.val;
-            return none;
+            proc this(k: int, ref v: int) {
+                v += this.val;
+                return none;
+            }
         }
-    }
 
-    if m.contains(k)
-        then m.update(k, new adder(v)); // update 'v' in place
-        else if !m.add(k, v)            // try to add 'k' and 'v'
-            // another task added 'k' in the meantime, so update it instead
-            then m.update(k, new adder(v));
+        if m.contains(k)
+            then m.update(k, new adder(v)); // update 'v' in place
+            else if !m.add(k, v)            // try to add 'k' and 'v'
+                // another task added 'k' in the meantime, so update it instead
+                then m.update(k, new adder(v));
+    }
 }

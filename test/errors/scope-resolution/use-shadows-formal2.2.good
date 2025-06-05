@@ -3,12 +3,12 @@
   It was first defined here:
       |
     2 |   var b: int;
-      |       ⎺⎺⎺⎺⎺⎺⎺
+      |       ⎺⎺⎺⎺⎺⎺
       |
   Redefined here:
       |
     3 |   var b: real;
-      |       ⎺⎺⎺⎺⎺⎺⎺⎺
+      |       ⎺⎺⎺⎺⎺⎺⎺
       |
 
 ─── warning in use-shadows-formal2.chpl:16 [PotentiallySurprisingShadowing] ───
@@ -30,11 +30,11 @@
   Leading to 'b' defined here:
       |
     2 |   var b: int;
-      |       ⎺⎺⎺⎺⎺⎺⎺
+      |       ⎺⎺⎺⎺⎺⎺
       |
   But, there is a shadowed symbol 'a' defined here:
        |
     14 |   proc foo(a: real) {
-       |            ⎺⎺⎺⎺⎺⎺⎺⎺
+       |            ⎺⎺⎺⎺⎺⎺⎺
        |
 

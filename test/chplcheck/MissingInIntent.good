@@ -1,0 +1,3 @@
+MissingInIntent.chpl:17: node violates rule MissingInIntent
+MissingInIntent.chpl:21: node violates rule MissingInIntent
+[Success matching fixit for MissingInIntent]

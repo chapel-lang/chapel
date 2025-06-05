@@ -9,7 +9,7 @@ module TwoArrayDistributedSampleSort {
   private use CTypes;
 
   proc twoArrayDistributedSampleSort(ref Data:[],
-                                     comparator:?rec = new DefaultComparator()) {
+                                     comparator:?rec = new defaultComparator()) {
 
     // just run the local version if Data isn't distributed
     if Data._instance.isDefaultRectangular() {

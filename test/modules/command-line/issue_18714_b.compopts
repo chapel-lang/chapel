@@ -1,1 +1,1 @@
-issue_18714_a.chpl
+issue_18714_a.chpl -o issue_18714_b

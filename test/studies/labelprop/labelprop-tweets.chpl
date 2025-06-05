@@ -59,6 +59,7 @@ use HashedDist;
 use LinkedLists;
 use BlockDist;
 use JSON;
+use Sort;
 
 // packing twitter user IDs to numbers
 var total_tweets_processed : atomic int;
@@ -319,7 +320,7 @@ proc create_and_analyze_graph(ref Pairs)
 
   // reduction intent would help here to compute max node id
   // TODO -- bug: this loop is not working with a forall (compile error)
-  for (node, id) in zip(1..userIds.size, userIds.sorted()) {
+  for (node, id) in zip(1..userIds.size, Sort.sorted(userIds)) {
     idToNode[id] = node:int(32);
     nodeToId[node] = id;
   }

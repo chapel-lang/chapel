@@ -1,15 +1,18 @@
 #!/usr/bin/env bash
 
-CWD=$(cd $(dirname $0) ; pwd)
+UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
 export CHPL_TEST_PERF_CONFIG_NAME='16-node-xc'
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="cray-xc-arkouda.release"
 
-source $CWD/common.bash
+source $UTIL_CRON_DIR/common.bash
 
 # setup arkouda
-source $CWD/common-arkouda.bash
+source $UTIL_CRON_DIR/common-arkouda.bash
 export ARKOUDA_NUMLOCALES=16
+
+# The parquetMultiIO test may exceed the default 300-second timeout
+export CHPL_TEST_TIMEOUT=500
 
 module list
 
@@ -28,6 +31,9 @@ export CHPL_LAUNCHER_CONSTRAINT="CL48,192GB"
 export CHPL_LAUNCHER_CORES_PER_LOCALE=96
 export CHPL_LAUNCHER=slurm-srun
 nightly_args="${nightly_args} -no-buildcheck"
+
+export CHPL_TEST_PERF_DESCRIPTION=release
+export CHPL_TEST_PERF_CONFIGS="release:v,nightly:v"
 
 test_release
 sync_graphs

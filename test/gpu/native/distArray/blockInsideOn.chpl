@@ -20,7 +20,13 @@ on here.gpus[0] {
 
   */
 
-  writeln(arr);
+  writeln(arr[1]);
+
+  /* The following does not work yet:
+
+     writeln(arr);
+
+  */
 }
 
 stopGpuDiagnostics();

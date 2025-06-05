@@ -3,7 +3,7 @@ export CHPL_MAKE_HOME=$(shell pwd)/..
 endif
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
-ifdef CHPL_DEVELOPER
+ifneq (, $(call isTrue, $(CHPL_DEVELOPER)))
 DEBUG=1
 export DEBUG
 WARNINGS=1
@@ -16,7 +16,7 @@ endif
 default: all
 
 all: test-venv chpldoc-venv \
-     gasnet gmp hwloc jemalloc libfabric libunwind qthread llvm
+     gasnet gmp hwloc jemalloc mimalloc libfabric libunwind qthread llvm
 
 clean: FORCE
 	cd chpl-venv && $(MAKE) clean
@@ -24,12 +24,12 @@ clean: FORCE
 	cd gmp && $(MAKE) clean
 	cd hwloc && $(MAKE) clean
 	cd jemalloc && $(MAKE) clean
+	cd mimalloc && $(MAKE) clean
 	cd libfabric && $(MAKE) clean
 	cd libunwind && $(MAKE) clean
 	cd llvm && $(MAKE) clean
 	cd qthread && $(MAKE) clean
 	cd re2 && $(MAKE) clean
-	cd fltk && $(MAKE) clean
 
 cleanall: FORCE
 	cd chpl-venv && $(MAKE) cleanall
@@ -37,12 +37,12 @@ cleanall: FORCE
 	cd gmp && $(MAKE) cleanall
 	cd hwloc && $(MAKE) cleanall
 	cd jemalloc && $(MAKE) cleanall
+	cd mimalloc && $(MAKE) cleanall
 	cd libfabric && $(MAKE) cleanall
 	cd libunwind && $(MAKE) cleanall
 	cd llvm && $(MAKE) cleanall
 	cd qthread && $(MAKE) cleanall
 	cd re2 && $(MAKE) cleanall
-	cd fltk && $(MAKE) cleanall
 
 clobber: FORCE
 	cd chpl-venv && $(MAKE) clobber
@@ -50,12 +50,12 @@ clobber: FORCE
 	cd gmp && $(MAKE) clobber
 	cd hwloc && $(MAKE) clobber
 	cd jemalloc && $(MAKE) clobber
+	cd mimalloc && $(MAKE) clobber
 	cd libfabric && $(MAKE) clobber
 	cd libunwind && $(MAKE) clobber
 	cd llvm && $(MAKE) clobber
 	cd qthread && $(MAKE) clobber
 	cd re2 && $(MAKE) clobber
-	cd fltk && $(MAKE) clobber
 
 depend:
 
@@ -74,6 +74,7 @@ GASNET_DEPEND         := $(call find_3p_depend, $(GASNET_DIR))
 GMP_DEPEND            := $(call find_3p_depend, $(GMP_DIR))
 HWLOC_DEPEND          := $(call find_3p_depend, $(HWLOC_DIR))
 JEMALLOC_DEPEND       := $(call find_3p_depend, $(JEMALLOC_DIR))
+MIMALLOC_DEPEND       := $(call find_3p_depend, $(MIMALLOC_DIR))
 LIBFABRIC_DEPEND      := $(call find_3p_depend, $(LIBFABRIC_DIR))
 LIBUNWIND_DEPEND      := $(call find_3p_depend, $(LIBUNWIND_DIR))
 LLVM_DEPEND           := $(call find_3p_depend, $(LLVM_DIR))
@@ -134,6 +135,11 @@ jemalloc: $(JEMALLOC_INSTALL_DIR)
 $(JEMALLOC_INSTALL_DIR): $(JEMALLOC_DEPEND)
 	rm -rf $(JEMALLOC_INSTALL_DIR) && rm -rf $(JEMALLOC_BUILD_DIR)
 	cd jemalloc && $(MAKE)
+
+mimalloc: $(MIMALLOC_INSTALL_DIR)
+$(MIMALLOC_INSTALL_DIR): $(MIMALLOC_DEPEND)
+	rm -rf $(MIMALLOC_INSTALL_DIR) && rm -rf $(MIMALLOC_BUILD_DIR)
+	cd mimalloc && $(MAKE)
 
 libfabric: $(LIBFABRIC_INSTALL_DIR)
 $(LIBFABRIC_INSTALL_DIR): $(LIBFABRIC_DEPEND)

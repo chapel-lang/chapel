@@ -1,3 +1,4 @@
+import Sort;
 use printHelp;
 
 type t = (int, int);
@@ -8,5 +9,5 @@ writelnSorted(D);
 var A: [D] int;
 A((1, 2)) = 5;
 A((3, 4)) = 6;
-for i in D.sorted() do
+for i in Sort.sorted(D) do
   writeln((i, A(i)));

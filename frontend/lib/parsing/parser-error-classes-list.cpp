@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -480,6 +480,30 @@ void ErrorDisallowedControlFlow::write(ErrorWriterBase& wr) const {
   }
 }
 
+void ErrorInvalidReturns::write(ErrorWriterBase& wr) const {
+  const uast::Return* firstReturnSomething = std::get<0>(info_);
+  const uast::Return* firstReturnEmpty = std::get<1>(info_);
+
+  // figure out which appears first syntactically
+  const uast::Return* first = nullptr;
+  const uast::Return* second = nullptr;
+  if (firstReturnSomething->id() < firstReturnEmpty->id()) {
+    first = firstReturnSomething;
+    second = firstReturnEmpty;
+  } else {
+    first = firstReturnEmpty;
+    second = firstReturnSomething;
+  }
+
+  wr.heading(kind_, type_, first, "Invalid mix of 'return' statements");
+  const char* something = "this statement returns something:";
+  const char* nothing = "this statement does not return anything:";
+  wr.note(first, first->value()?something:nothing);
+  wr.code(first);
+  wr.note(second, second->value()?something:nothing);
+  wr.code(second);
+}
+
 void ErrorIllegalUseImport::write(ErrorWriterBase& wr) const {
   auto clause = std::get<0>(info_);
   auto parent = std::get<1>(info_);
@@ -511,11 +535,12 @@ void ErrorInvalidThrowaway::write(ErrorWriterBase& wr) const {
   }
 }
 
-static void printInvalidGpuAttributeMessage(ErrorWriterBase& wr,
-                                            const uast::AstNode* node,
-                                            const uast::Attribute* attr,
-                                            ErrorBase::Kind kind,
-                                            ErrorType type) {
+void ErrorInvalidGpuAttribute::write(ErrorWriterBase& wr) const {
+  const uast::AstNode*   node = std::get<const uast::AstNode*>(info_);
+  const uast::Attribute* attr = std::get<const uast::Attribute*>(info_);
+  ErrorBase::Kind        kind = kind_;
+  ErrorType              type = type_;
+
   const char* loopTypes = nullptr;
   if (node->isFor()) {
     loopTypes = "for";
@@ -550,20 +575,6 @@ static void printInvalidGpuAttributeMessage(ErrorWriterBase& wr,
 
   wr.message("The affected ", whatIsAffected, " is here:");
   wr.codeForLocation(node);
-}
-
-void ErrorInvalidGpuAssertion::write(ErrorWriterBase& wr) const {
-  auto node = std::get<const uast::AstNode*>(info_);
-  auto attr = std::get<const uast::Attribute*>(info_);
-
-  printInvalidGpuAttributeMessage(wr, node, attr, kind_, type_);
-}
-
-void ErrorInvalidBlockSize::write(ErrorWriterBase& wr) const {
-  auto node = std::get<const uast::AstNode*>(info_);
-  auto attr = std::get<const uast::Attribute*>(info_);
-
-  printInvalidGpuAttributeMessage(wr, node, attr, kind_, type_);
 }
 
 void ErrorInvalidImplementsIdent::write(ErrorWriterBase& wr) const {

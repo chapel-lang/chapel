@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -43,6 +43,9 @@ public:
   void                     addInitialization(VarSymbol* var);
 
   void                     addEarlyDeinit(VarSymbol* var);
+
+  // Counts how many local declarations and defers are in the scope
+  size_t                   numLocalsAndDefers() const;
 
   VarSymbol*               findVariableUsedBeforeInitialized(Expr* stmt);
 

@@ -1,4 +1,4 @@
-.TH "hwloc_obj_attr_u::hwloc_bridge_attr_s" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwloc_obj_attr_u::hwloc_bridge_attr_s" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -60,22 +60,34 @@ Bridge specific Object Attributes\&.
 
 .SS "unsigned short hwloc_obj_attr_u::hwloc_bridge_attr_s::domain"
 
-.SS "union { \&.\&.\&. }  hwloc_obj_attr_u::hwloc_bridge_attr_s::downstream"
+.PP
+Domain number the downstream PCI buses\&. Only 16bits PCI domains are supported by default\&. 
+.SS "union  { \&.\&.\&. }  hwloc_obj_attr_u::hwloc_bridge_attr_s::downstream"
 
 .SS "\fBhwloc_obj_bridge_type_t\fP hwloc_obj_attr_u::hwloc_bridge_attr_s::downstream_type"
 
-.SS "struct { \&.\&.\&. }  hwloc_obj_attr_u::hwloc_bridge_attr_s::pci"
-
+.PP
+Downstream Bridge type\&. 
 .SS "struct \fBhwloc_pcidev_attr_s\fP hwloc_obj_attr_u::hwloc_bridge_attr_s::pci"
+
+.PP
+PCI attribute of the upstream part as a PCI device\&. 
+.SS "struct  { \&.\&.\&. }  hwloc_obj_attr_u::hwloc_bridge_attr_s::pci"
 
 .SS "unsigned char hwloc_obj_attr_u::hwloc_bridge_attr_s::secondary_bus"
 
+.PP
+First PCI bus number below the bridge\&. 
 .SS "unsigned char hwloc_obj_attr_u::hwloc_bridge_attr_s::subordinate_bus"
 
-.SS "union { \&.\&.\&. }  hwloc_obj_attr_u::hwloc_bridge_attr_s::upstream"
+.PP
+Highest PCI bus number below the bridge\&. 
+.SS "union  { \&.\&.\&. }  hwloc_obj_attr_u::hwloc_bridge_attr_s::upstream"
 
 .SS "\fBhwloc_obj_bridge_type_t\fP hwloc_obj_attr_u::hwloc_bridge_attr_s::upstream_type"
 
+.PP
+Upstream Bridge type\&. 
 
 .SH "Author"
 .PP 

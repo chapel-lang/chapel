@@ -1,0 +1,1 @@
+nonHomogeneous.chpl:1: error: Domains defined using tuple bounds must use homogeneous tuples, but got '(int(64),real(64))' and '2*int(64)'

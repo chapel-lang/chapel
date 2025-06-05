@@ -1,0 +1,7 @@
+castChapelArray-errors.chpl:3: error: Casts between arrays require matching ranks
+castChapelArray-errors.chpl:12: error: Casts between arrays only support rectangular arrays
+castChapelArray-errors.chpl:13: error: Casts between arrays only support rectangular arrays
+castChapelArray-errors.chpl:14: error: Casts between arrays only support rectangular arrays
+castChapelArray-errors.chpl:15: error: Casts between arrays only support rectangular arrays
+castChapelArray-errors.chpl:16: error: Casts between arrays only support rectangular arrays
+castChapelArray-errors.chpl:17: error: Casts between arrays only support rectangular arrays

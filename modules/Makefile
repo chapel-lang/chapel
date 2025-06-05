@@ -1,4 +1,4 @@
-# Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2025 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -21,7 +21,9 @@ export CHPL_MAKE_HOME=$(shell pwd)/..
 endif
 
 # Generate tags only if $TAGS turned on explicitly, or if $CHPL_DEVELOPER is on
-ifdef CHPL_DEVELOPER
+CHPL_DEVELOPER ?= 0
+include $(CHPL_MAKE_HOME)/make/Makefile.isTrue
+ifneq (, $(call isTrue, $(CHPL_DEVELOPER)))
 TAGS=1
 endif
 
@@ -34,8 +36,10 @@ CHPL_MAKE_HOST_TARGET = --target
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
 SYS_MODULES_DIR=standard/gen/$(CHPL_MAKE_SYS_MODULES_SUBDIR)
+SYS_MODULES_DIR_MINIMAL=minimal/standard/gen/$(CHPL_MAKE_SYS_MODULES_SUBDIR)
 SYS_CTYPES_MODULE_DOC=standard/ChapelSysCTypes.chpl
 SYS_CTYPES_MODULE=$(SYS_MODULES_DIR)/ChapelSysCTypes.chpl
+SYS_CTYPES_MODULE_MINIMAL=$(SYS_MODULES_DIR_MINIMAL)/ChapelSysCTypes.chpl
 
 MODULE_SPHINX=${CHPL_MAKE_HOME}/modules/sphinx
 DOC_BUILD=${CHPL_MAKE_HOME}/build/doc
@@ -44,7 +48,7 @@ COPY_IF_DIFFERENT = $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/config/update-if-
 
 default: all
 
-all: $(SYS_CTYPES_MODULE)
+all: $(SYS_CTYPES_MODULE) $(SYS_CTYPES_MODULE_MINIMAL)
 	$(TAGS_COMMAND)
 
 clean: FORCE
@@ -63,11 +67,17 @@ $(SYS_CTYPES_MODULE): $(MAKE_SYS_BASIC_TYPES)
 	mkdir -p $(@D)
 	cd $(@D) && $(CHPL_MAKE_PYTHON) $(MAKE_SYS_BASIC_TYPES) $(@F)
 
+$(SYS_CTYPES_MODULE_MINIMAL): $(MAKE_SYS_BASIC_TYPES)
+	mkdir -p $(@D)
+	cd $(@D) && $(CHPL_MAKE_PYTHON) $(MAKE_SYS_BASIC_TYPES) --minimal $(@F)
+
 $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
 	mkdir -p $(@D)
 	cd $(@D) && $(CHPL_MAKE_PYTHON) $(MAKE_SYS_BASIC_TYPES) --doc $(@F)
 
 MODULES_TO_DOCUMENT = \
+	standard/Allocators.chpl \
+	standard/AutoGpu.chpl \
 	standard/AutoMath.chpl \
 	standard/BigInteger.chpl \
 	standard/BitOps.chpl \
@@ -123,6 +133,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/DistributedBagDeprecated.chpl \
 	packages/DistributedDeque.chpl \
 	packages/DistributedIters.chpl \
+	packages/DynamicLoading.chpl \
 	packages/EpochManager.chpl \
 	packages/FFTW.chpl \
 	packages/FunctionalOperations.chpl \
@@ -143,6 +154,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/ParallelIO.chpl \
 	packages/PeekPoke.chpl \
 	packages/PrecisionSerializer.chpl \
+	packages/Python.chpl \
 	packages/RangeChunk.chpl \
 	packages/RecordParser.chpl \
 	packages/ReplicatedVar.chpl \
@@ -175,6 +187,7 @@ DISTS_TO_DOCUMENT = \
 	dists/dims/BlockDim.chpl \
 	dists/dims/ReplicatedDim.chpl \
 	layouts/LayoutCS.chpl \
+	layouts/CompressedSparseLayout.chpl \
 
 
 #

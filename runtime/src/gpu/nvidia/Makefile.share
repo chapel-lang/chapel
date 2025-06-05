@@ -1,4 +1,4 @@
-# Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2025 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -32,6 +32,13 @@ RUNTIME_CXXFLAGS += -x cuda -Wno-unknown-cuda-version \
 
 # With cuda 11, cub headers have unused typedefs
 RUNTIME_CXXFLAGS += -Wno-error=unused-local-typedef
+
+
+ifeq ($(shell test $(CHPL_MAKE_LLVM_VERSION) -ge 15; echo "$$?"),0)
+	# With cuda 11, cub headers have deprecated builtins
+	RUNTIME_CXXFLAGS += -Wno-error=deprecated-builtins \
+			    -Wno-error=unknown-pragmas
+endif
 
 $(RUNTIME_OBJ_DIR)/gpu-nvidia-cub.o: gpu-nvidia-cub.cc \
                                          $(RUNTIME_OBJ_DIR_STAMP)

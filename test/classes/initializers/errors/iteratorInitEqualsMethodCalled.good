@@ -1,0 +1,1 @@
+iteratorInitEqualsMethodCalled.chpl:2: error: iterators can't be copy initializers, please rename this iterator

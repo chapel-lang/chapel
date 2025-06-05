@@ -9,6 +9,8 @@ librng_la_SOURCES = \
 	brg_endian.h \
 	brg_sha1.h \
 	brg_types.h \
+        rng_brg.c \
+        rng_brg.h \
 	rng.h
 
 CLEANFILES = $(EXTRA_LTLIBRARIES)

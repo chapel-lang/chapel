@@ -10,3 +10,13 @@ init= from int(64)
 init= from string
 R(int(64)): (x = 5)
 R(string): (x = a string)
+----- init= generic type expression -----
+int!
+int(64) :: GR(int(64)) :: (x = 5)
+uint(64) :: GR(uint(64)) :: (x = 10)
+string :: GR(string) :: (x = foo)
+----- init= generic type field -----
+int!
+int(64) :: X(GR(int(64))) :: (x = (x = 5))
+uint(64) :: X(GR(uint(64))) :: (x = (x = 10))
+string :: X(GR(string)) :: (x = (x = test))
