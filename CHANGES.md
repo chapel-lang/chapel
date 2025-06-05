@@ -7,7 +7,7 @@ TODO:
 * check placement of items into categories
 * check ordering of categories relative to one another
 * check for ' vs `
-o fulfill TODOs
+* fulfill TODOs
 * check man page or util/chpl-completion.bash for new compiler flags
 * check test/release/examples
 * check for docs/2.4/ links
@@ -153,9 +153,10 @@ Syntax Highlighters
 
 Documentation Improvements
 --------------------------
-* TODO docs for quickstart
-* TODO docs for multilocale
-* TODO improved debugger docs
+* improved quickstart documentation to suggest binary releases
+  (see https://chapel-lang.org/docs/2.5/usingchapel/QUICKSTART.html)
+* improved documentation for debugging programs with the LLVM backend
+  (see https://chapel-lang.org/docs/2.5/usingchapel/debugging.html#best-known-configuration-llvm-backend)
 * made the co-locale documentation more searchable
 * generally fixed typos, mistakes, and other small issues in the docs
 
