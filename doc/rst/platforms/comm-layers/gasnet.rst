@@ -37,8 +37,13 @@ aries
     (see :ref:`Using Chapel on Cray Systems <readme-cray>`)
 mpi
     MPI - portable conduit, works on any network with MPI 1.1 or newer
+    (see :ref:`readme-gasnet-mpi`)
 smp
     Simulates multiple locales on a single shared-memory machine
+    (see :ref:)
+ofi
+    OpenFabrics Interface (libfabric) for Slingshot and Omni-Path.
+    (see :ref:)
 
 See the `GASNet website <https://gasnet.lbl.gov/>`_ for more
 information on each of these conduits.
@@ -94,13 +99,42 @@ smp                  fast
 other                everything
 ===================  ====================
 
-.._readme-gasnet-emulating-multilocale:
+.. _readme-gasnet-emulating-multilocale:
 
 Emulating Multilocale Execution
 +++++++++++++++++++++++++++++++
 
 When running Chapel programs with ``CHPL_COMM=gasnet``, you can emulate
-TODO
+
+TODO: oversubscription with GASNet+udp
+TODO: smp
+
+
+
+.. _readme-gasnet-mpi:
+
+Using MPI for Portable Job Launching
++++++++++++++++++++++++++++++++++++++
+
+
+TODO: GASNNet+mpi
+
+When using ``CHPL_COMM=gasnet`` with ``CHPL_COMM_SUBSTRATE=mpi``,
+  .. code-block:: bash
+
+     export GASNET_NODEFILE="$(pwd)"/nodes
+     export MPIRUN_CMD='mpirun -np %N -machinefile %H %C'
+
+.. code-block:: bash
+
+  export CHPL_COMM=gasnet
+  export CHPL_COMM_SUBSTRATE=mpi
+  export CHPL_LAUNCHER=mpirun
+  make
+
+.. note::
+
+
 
 
 .. _readme-gasnet-troubleshooting:
