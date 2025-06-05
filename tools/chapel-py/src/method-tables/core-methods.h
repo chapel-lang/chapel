@@ -79,6 +79,8 @@ CLASS_BEGIN(Context)
          std::string(chpl::UniqueString), return parsing::fileText(node, std::get<0>(args)).text())
   METHOD(Context, get_compiler_version, "Get the version of the Chapel compiler",
          std::string(), std::ignore = node; return chpl::getVersion())
+  METHOD(Context, get_chpl_home, "Get the CHPL_HOME path for this Context",
+         std::string(), std::ignore = node; return context.chplHome())
 CLASS_END(Context)
 
 CLASS_BEGIN(Location)

@@ -33,7 +33,25 @@ using namespace uast;
 
 int ContextObject::init(ContextObject* self, PyObject* args, PyObject* kwargs) {
   Context::Configuration config;
-  config.chplHome = getenv("CHPL_HOME");
+
+  std::string chplHome;
+  bool installed = false;
+  bool fromEnv = false;
+  std::string diagnosticMsg;
+  auto error = findChplHome(nullptr, nullptr, config.chplHome, installed, fromEnv, diagnosticMsg);
+  if (!diagnosticMsg.empty()) {
+    if (error) {
+      PyErr_SetString(PyExc_RuntimeError, diagnosticMsg.c_str());
+      return -1;
+    } else {
+      PyErr_WarnEx(PyExc_RuntimeWarning, diagnosticMsg.c_str(), 1);
+    }
+  } else if (error) {
+    PyErr_SetString(PyExc_RuntimeError, "Unknown error while finding CHPL_HOME");
+    return -1;
+  }
+
+  config.chplHome = chplHome;
   new (&self->value_) Context(std::move(config));
   self->value_.installErrorHandler(owned<PythonErrorHandler>(new PythonErrorHandler((PyObject*) self)));
 
