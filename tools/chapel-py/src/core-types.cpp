@@ -38,7 +38,7 @@ int ContextObject::init(ContextObject* self, PyObject* args, PyObject* kwargs) {
   bool installed = false;
   bool fromEnv = false;
   std::string diagnosticMsg;
-  auto error = findChplHome(nullptr, nullptr, config.chplHome, installed, fromEnv, diagnosticMsg);
+  auto error = findChplHome(nullptr, nullptr, chplHome, installed, fromEnv, diagnosticMsg);
   if (!diagnosticMsg.empty()) {
     if (error) {
       PyErr_SetString(PyExc_RuntimeError, diagnosticMsg.c_str());
