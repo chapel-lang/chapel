@@ -100,7 +100,7 @@ __build_image() {
   local docker_image_base=$7
 
   # default to 1 core
-  local para=${7:-1}
+  local para=${8:-1}
 
   __wget_chpl_release $chapel_version
 
