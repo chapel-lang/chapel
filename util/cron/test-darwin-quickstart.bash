@@ -7,6 +7,6 @@ source $UTIL_CRON_DIR/common-quickstart.bash
 source $UTIL_CRON_DIR/common-darwin.bash
 source $UTIL_CRON_DIR/common-localnode-paratest.bash
 
-export CHPL_NIGHTLY_TEST_CONFIG_NAME="darwin"
+export CHPL_NIGHTLY_TEST_CONFIG_NAME="darwin-quickstart"
 
 $UTIL_CRON_DIR/nightly -cron -examples $(get_nightly_paratest_args)
