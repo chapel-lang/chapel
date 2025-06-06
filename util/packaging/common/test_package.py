@@ -193,7 +193,7 @@ def main():
 
     # TODO: need to figure out how to test the ofi-slurm package automatically
     if "ofi-slurm" in package:
-        print("Skipping ofi-slurm package")
+        print("Skipping testing of ofi-slurm package")
         return
 
     docker_os = args.dockeros
