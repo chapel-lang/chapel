@@ -52,7 +52,6 @@ New Package Module Features
 ---------------------------
 * added a new `DynamicLoading` package module to load dynamic libraries  
   (see https://chapel-lang.org/docs/2.5/modules/packages/DynamicLoading.html)
-
 * added support for anonymous Python modules to the `Python` interop module  
   (see https://chapel-lang.org/docs/2.5/modules/packages/Python.html#Python.Interpreter.createModule)
 * added support for Python tuple types to the `Python` module  
