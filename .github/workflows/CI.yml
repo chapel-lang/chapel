@@ -173,6 +173,13 @@ jobs:
           commitIdx=0
           for commit in $(git rev-list $baseSHA..$headSHA)
           do
+
+            # if the commit has more than 1 parent (i.e. is a merge commit), skip it
+            if git rev-parse -q --verify "$commit^2" >/dev/null; then
+              echo "Skipping merge commit: $commit"
+              continue
+            fi
+
             echo "Checking commit: $commit"
             git checkout -q $commit
 
@@ -181,10 +188,6 @@ jobs:
             while read -r file; do
               if [ "$file" = "" ]; then
                   continue
-              fi
-              if [ "$file" = "modules/packages/LAPACK.chpl" ]; then
-                echo "Skipping file: $file"
-                continue
               fi
               echo "Checking file: $file"
 
