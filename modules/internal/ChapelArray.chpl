@@ -3018,20 +3018,19 @@ module ChapelArray {
   config param checkReshapeDimsByDefault = boundsChecking;
 
   // The following overloads take a varargs list of ranges.  The fact
-  // that there are three distinct overloads is regrettable, and a
-  // result of working around:
+  // that there are multiple distinct overloads is regrettable, and is
+  // primarily a result of working around:
   //   https://github.com/chapel-lang/chapel/issues/17188
+  // In addition, the copy=true vs. false cases needed to be distinct
+  // in order to selectively apply the "fn returns aliasing array"
+  // pragma.
 
   pragma "no promotion when by ref"
   pragma "fn returns aliasing array"
   @chpldoc.nodoc
   @edition(first="pre-edition")
   proc reshape(arr: [], ranges: range(?)...) {
-    if ranges.size == 1 && ranges(0).bounds == boundKind.low {
-      return arr.chpl_aliasReshape({ranges(0).low..#arr.size}, false);
-    } else {
-      return arr.chpl_aliasReshape({(...ranges)}, checkReshapeDimsByDefault);
-    }
+    return arr.chpl_aliasReshape(ranges, checkReshapeDimsByDefault);
   }
 
   pragma "no promotion when by ref"
@@ -3039,11 +3038,15 @@ module ChapelArray {
   @chpldoc.nodoc
   @edition(first="pre-edition")
   proc reshape(arr: [], ranges: range(?)..., checkDims: bool) {
-    if ranges.size == 1 && ranges(0).bounds == boundKind.low {
-      return arr.chpl_aliasReshape({ranges(0).low..#arr.size}, false);
-    } else {
-      return arr.chpl_aliasReshape({(...ranges)}, checkDims);
-    }
+    return arr.chpl_aliasReshape(ranges, checkDims);
+  }
+
+  pragma "last resort"
+  @chpldoc.nodoc
+  @edition(first="pre-edition")
+  proc reshape(arr: [], ranges: range(?)..., param copy: bool)
+   where copy == true {
+    return arr.chpl_copyReshape({(...ranges)}, checkReshapeDimsByDefault);
   }
 
   pragma "no promotion when by ref"
@@ -3051,16 +3054,17 @@ module ChapelArray {
   pragma "last resort"
   @chpldoc.nodoc
   @edition(first="pre-edition")
-  proc reshape(arr: [], ranges: range(?)..., param copy: bool) {
-    if copy {
-      return arr.chpl_copyReshape({(...ranges)}, checkReshapeDimsByDefault);
-    } else {
-      if ranges.size == 1 && ranges(0).bounds == boundKind.low {
-        return arr.chpl_aliasReshape({ranges(0).low..#arr.size}, false);
-      } else {
-        return arr.chpl_aliasReshape({(...ranges)}, checkReshapeDimsByDefault);
-      }
-    }
+  proc reshape(arr: [], ranges: range(?)..., param copy: bool)
+   where copy == false {
+    return arr.chpl_aliasReshape({(...ranges)}, checkReshapeDimsByDefault);
+  }
+
+  @chpldoc.nodoc
+  @edition(first="pre-edition")
+  proc reshape(arr: [], ranges: range(?)...,
+               checkDims = checkReshapeDimsByDefault, param copy = false)
+   where copy == true {
+    return arr.chpl_copyReshape({(...ranges)}, checkDims);
   }
 
   pragma "no promotion when by ref"
@@ -3068,16 +3072,9 @@ module ChapelArray {
   @chpldoc.nodoc
   @edition(first="pre-edition")
   proc reshape(arr: [], ranges: range(?)...,
-               checkDims = checkReshapeDimsByDefault, param copy = false) {
-    if copy {
-      return arr.chpl_copyReshape({(...ranges)}, checkDims);
-    } else {
-      if ranges.size == 1 && ranges(0).bounds == boundKind.low {
-        return arr.chpl_aliasReshape({ranges(0).low..#arr.size}, false);
-      } else {
-        return arr.chpl_aliasReshape({(...ranges)}, checkDims);
-      }
-    }
+               checkDims = checkReshapeDimsByDefault, param copy = false)
+   where copy == false {
+    return arr.chpl_aliasReshape({(...ranges)}, checkDims);
   }
 
   // These versions take a domain; there are two because the copy version
@@ -3087,14 +3084,7 @@ module ChapelArray {
   @edition(first="pre-edition")
   proc reshape(arr: [], dom: domain(?), checkDims=checkReshapeDimsByDefault,
                param copy = false) where copy == true {
-    if !dom.isRectangular() then
-      compilerError("reshape() with copying is currently only supported for rectangular domains");
-    if boundsChecking && checkDims then
-      chpl__validateReshape(arr, dom);
-    // TODO: Add a parallel linearize() iterator to all rectangular types
-    // and zip those instead of using this serial implementation
-    var B: [dom] arr.eltType = for (i,a) in zip(dom, arr) do a;
-    return B;
+    return arr.chpl_copyReshape(dom, checkDims);
   }
 
   pragma "no promotion when by ref"
@@ -3107,17 +3097,16 @@ module ChapelArray {
   }
 
   //
-  // I tried to just make the reshape() overloads above just contain
-  // the logic in the following two methods rather than using these
-  // helpers, but seemingly, something about returning an array view
-  // from a procedure that calls another procedure to create it didn't
-  // work (?).  Though I also wasn't easily able to reproduce this in
-  // a standalone test, so not sure what's going on there...
+  // These helpers implement the copy/alias semantics needed by the
+  // above overloads to avoid code duplication.  Interestingly, my
+  // first attempt to make these helpers standalone procedures rather
+  // than methods didn't seem to work, though I'm not sure why.  I
+  // also wasn't able to easily reproduce the behavior in a simple,
+  // standalone test, so it could be worth another shot.
   //
   pragma "no promotion when by ref"
   pragma "reference to const when const this"
-  proc _array.chpl_copyReshape(dom: domain(?),
-                               checkDims=checkReshapeDimsByDefault) {
+  proc _array.chpl_copyReshape(dom: domain(?), checkDims: bool) {
     if !dom.isRectangular() then
       compilerError("reshape() with copying is currently only supported for rectangular domains");
     if boundsChecking && checkDims then
@@ -3131,8 +3120,18 @@ module ChapelArray {
   pragma "no promotion when by ref"
   pragma "reference to const when const this"
   pragma "fn returns aliasing array"
-  proc _array.chpl_aliasReshape(dom: domain(?),
-                                checkDims=checkReshapeDimsByDefault) {
+  proc _array.chpl_aliasReshape(ranges: ?d*range, checkDims: bool) {
+    if d == 1 && ranges(0).bounds == boundKind.low {
+      return this.chpl_aliasReshape({ranges(0).low..#this.size}, false);
+    } else {
+      return this.chpl_aliasReshape({(...ranges)}, checkDims);
+    }
+  }
+
+  pragma "no promotion when by ref"
+  pragma "reference to const when const this"
+  pragma "fn returns aliasing array"
+  proc _array.chpl_aliasReshape(dom: domain(?), checkDims: bool) {
     if chpl__isArrayView(this) ||
        !Reflection.canResolveMethod(this._value, "doiSupportsReshape") {
          compilerError("This array type does not support alias-based reshaping; consider passing 'copy=true' to get a copy-based reshape");
