@@ -18,31 +18,49 @@ compiling and running multilocale Chapel programs.
 
      $CHPL_HOME/util/printchplenv
 
-#. Configure the Chapel runtime appropriately.
+#. Configure the Chapel runtime appropriately. This should be done based on what
+   network you intend to target.
 
-   For GASNet:
+   Generally speaking, the following table describes the best way to configure
+   the Chapel runtime for different networks. See the documentation for
+   :ref:`networks <platforms-networks>` for more information.
 
-   .. code-block:: bash
+   =============  ====================================
+   Network        Chapel Communication Layer
+   =============  ====================================
+    Slingshot     :ref:`libfabric <readme-libfabric>`
+    InfiniBand    :ref:`GASNet <readme-gasnet>`
+    EFA           :ref:`libfabric <readme-libfabric>`
+    Ethernet      :ref:`GASNet <readme-gasnet>` or
+                  :ref:`libfabric <readme-libfabric>`
+   =============  ====================================
 
-     export CHPL_COMM=gasnet
+   If you wish to emulated multilocale execution on a single machine, you should
+   use :ref:`GASNet <readme-gasnet>`.
 
-   Then, consider changing these variables:
+   * To build :ref:`GASNet <readme-gasnet>`, set the following:
 
-     * :ref:`CHPL_LAUNCHER <readme-launcher>` controls job launch
-     * :ref:`CHPL_COMM_SUBSTRATE <set-comm-conduit>` selects a GASNet conduit
-     * :ref:`CHPL_GASNET_SEGMENT <set-comm-segment>` indicates a memory segment
+      .. code-block:: bash
 
-   For libfabric:
+        export CHPL_COMM=gasnet
 
-   .. code-block:: bash
+      Then, consider changing these variables to target your specific system:
 
-     export CHPL_COMM=ofi
+        * :ref:`CHPL_LAUNCHER <readme-launcher>` controls job launch
+       * :ref:`CHPL_COMM_SUBSTRATE <set-comm-conduit>` selects a GASNet conduit
+        * :ref:`CHPL_GASNET_SEGMENT <set-comm-segment>` indicates a memory segment
 
-   Then, consider changing these variables:
+   * To build :ref:`libfabric <readme-libfabric>`, set the following:
 
-     * :ref:`CHPL_LAUNCHER <readme-launcher>` controls job launch
-     * :ref:`CHPL_RT_COMM_OFI_PROVIDER <readme-libfabric-providers>` forces a specific libfabric provider
-     * :ref:`CHPL_COMM_OFI_OOB <set-comm-ofi-oob>` selects the out-of-band communication method
+      .. code-block:: bash
+
+        export CHPL_COMM=ofi
+
+      Then, consider changing these variables to target your specific system:
+
+        * :ref:`CHPL_LAUNCHER <readme-launcher>` controls job launch
+        * :ref:`CHPL_RT_COMM_OFI_PROVIDER <readme-libfabric-providers>` forces a specific libfabric provider
+        * :ref:`CHPL_COMM_OFI_OOB <set-comm-ofi-oob>` selects the out-of-band communication method
 
    Note that the runtime libraries used by the Chapel compiler are
    based on these settings.
