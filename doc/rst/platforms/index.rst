@@ -9,6 +9,7 @@ Major Platforms
 .. toctree::
    :maxdepth: 1
 
+   linux
    macosx
    cray
    windows
