@@ -821,7 +821,9 @@ class FileInfo:
         self.context.global_uses[uid].append(refs)
         return refs
 
-    def _note_reference(self, node: Union[chapel.Dot, chapel.Identifier, chapel.Include]):
+    def _note_reference(
+        self, node: Union[chapel.Dot, chapel.Identifier, chapel.Include]
+    ):
         """
         Given a node that can refer to another node, note what it refers
         to in by updating the 'use' segment table and the list of uses.
