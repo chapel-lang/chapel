@@ -18,10 +18,10 @@ Package Install
 
 Chapel provides prebuilt apt/rpm packages for several Linux distributions. These packages can be downloaded and installed using the package manager for your distribution. For example, on x86 Ubuntu 24, you can install Chapel 2.4.0 with the following commands:
 
-    .. code-block:: bash
+.. code-block:: bash
 
-        wget https://github.com/chapel-lang/chapel/releases/download/2.4.0/chapel-2.4.0-1.ubuntu24.amd64.deb
-        sudo apt-get install ./chapel-2.4.0-1.ubuntu24.amd64.deb
+   wget https://github.com/chapel-lang/chapel/releases/download/2.4.0/chapel-2.4.0-1.ubuntu24.amd64.deb
+   sudo apt-get install ./chapel-2.4.0-1.ubuntu24.amd64.deb
 
 See the full list of supported packages `here
 <https://chapel-lang.org/download/#linux>`__. In addition to these apt/apm
@@ -34,4 +34,4 @@ Building from Source
 
 Chapel can be built from source on Linux systems using the normal build steps.
 See :ref:`readme-prereqs` for a list of prerequisites and follow
-:ref:`readme-build` for the build instructions.
+:ref:`readme-building` for the build instructions.
