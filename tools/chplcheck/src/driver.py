@@ -20,6 +20,7 @@
 import functools
 import itertools
 from typing import Any, Callable, Iterator, List, Optional, Tuple, Union
+import os, fnmatch
 
 import chapel
 from fixits import Fixit
@@ -121,6 +122,31 @@ class LintDriver:
         return any(
             node.name().startswith(p) for p in self.config.internal_prefixes
         )
+
+    def _should_skip_path(
+        self, context: chapel.Context, node: Union[chapel.AstNode, str]
+    ) -> bool:
+        """
+        Check if a node should be skipped based on its path.
+        """
+        path = node if isinstance(node, str) else node.location().path()
+        path = os.path.abspath(path)
+
+        if self.config.skip_bundled:
+            return context.is_bundled_path(path)
+        elif len(self.config.skip_files) > 0:
+            for skip_pattern in self.config.skip_files:
+                abs_skip_pattern = os.path.abspath(skip_pattern)
+                return (
+                    (
+                        os.path.exists(skip_pattern)
+                        and os.path.samefile(skip_pattern, path)
+                    )
+                    or os.path.commonprefix([abs_skip_pattern, path])
+                    == abs_skip_pattern
+                    or fnmatch.fnmatch(path, skip_pattern)
+                )
+        return False
 
     def _preorder_skip_unstable_modules(self, node):
         if not self.config.skip_unstable:
@@ -341,7 +367,7 @@ class LintDriver:
                         not self.config.check_internal_prefixes
                         and node
                         and self.has_internal_prefix(node)
-                    ):
+                    ) or (self._should_skip_path(context, node or toreport[0].path())):
                         continue
 
                     yield toreport
