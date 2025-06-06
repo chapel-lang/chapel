@@ -272,6 +272,8 @@ CLASS_BEGIN(Include)
                bool, return node->isPrototype())
   PLAIN_GETTER(Include, visibility, "Get the visibility of this Include node",
                const char*, return Decl::visibilityToString(node->visibility()))
+  PLAIN_GETTER(Include, to_node, "Get the AST node that this Include node refers to",
+               Nilable<const chpl::uast::AstNode*>, return nodeOrNullFromToId(context, node))
 CLASS_END(Include)
 
 CLASS_BEGIN(Init)
