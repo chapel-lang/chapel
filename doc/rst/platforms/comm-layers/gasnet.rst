@@ -40,10 +40,9 @@ mpi
     (see :ref:`readme-gasnet-mpi`)
 smp
     Simulates multiple locales on a single shared-memory machine
-    (see :ref:)
+    (see :ref:`readme-gasnet-smp`)
 ofi
     OpenFabrics Interface (libfabric) for Slingshot and Omni-Path.
-    (see :ref:)
 
 See the `GASNet website <https://gasnet.lbl.gov/>`_ for more
 information on each of these conduits.
@@ -100,43 +99,62 @@ smp                  fast
 other                everything
 ===================  ====================
 
-.. _readme-gasnet-emulating-multilocale:
+.. _readme-gasnet-smp:
 
-Emulating Multilocale Execution
-+++++++++++++++++++++++++++++++
+Multilocale Execution with Shared-Memory
+++++++++++++++++++++++++++++++++++++++++
 
-When running Chapel programs with ``CHPL_COMM=gasnet``, you can emulate
-
-TODO: oversubscription with GASNet+udp
-TODO: smp
-
-
-
-.. _readme-gasnet-mpi:
-
-Using MPI for Portable Job Launching
-+++++++++++++++++++++++++++++++++++++
-
-
-TODO: GASNNet+mpi
-
-When using ``CHPL_COMM=gasnet`` with ``CHPL_COMM_SUBSTRATE=mpi``,
-  .. code-block:: bash
-
-     export GASNET_NODEFILE="$(pwd)"/nodes
-     export MPIRUN_CMD='mpirun -np %N -machinefile %H %C'
+When running Chapel programs with ``CHPL_COMM=gasnet``, you can use the
+``smp`` conduit to simulate multilocale execution on a single shared-memory
+machine. This allows you to run Chapel programs that are designed for
+multilocale execution without needing a distributed system. To do this,
+set the environment variable ``CHPL_COMM_SUBSTRATE`` to ``smp`` before
+running your Chapel program:
 
 .. code-block:: bash
 
-  export CHPL_COMM=gasnet
-  export CHPL_COMM_SUBSTRATE=mpi
-  export CHPL_LAUNCHER=mpirun
-  make
+    export CHPL_COMM=gasnet
+    export CHPL_COMM_SUBSTRATE=smp
 
-.. note::
+Using Chapel in this way will partition the machine's resources into
+multiple locales.
 
+.. _readme-gasnet-emulating-multilocale:
 
+Emulating Multilocale Execution with the UDP Conduit
+++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+While the `UDP conduit <using-udp>`_ is primarily intended for portable multilocale execution over ethernet, it can be modified to emulate multiple locales locally by `oversubscribing <oversubscribed-execution>`_ the machine's resources.
+
+With a build of Chapel with ``CHPL_COMM=gasnet`` and
+``CHPL_COMM_SUBSTRATE=udp``, you can run a Chapel program on multiple locales
+on a single machine with the following environment variable settings:
+
+.. code-block:: bash
+
+    export GASNET_SPAWNFN=L
+    export GASNET_ROUTE_OUTPUT=0
+    export GASNET_MASTERIP=127.0.0.1
+    export GASNET_WORKERIP=127.0.0.0
+    export CHPL_RT_OVERSUBSCRIBED=yes
+
+See the documentation for the `UDP conduit <using-udp>`_ for more details on
+what these environment variables do.
+
+.. _readme-gasnet-mpi:
+
+Using the GASNet MPI Conduit
+++++++++++++++++++++++++++++++++++++
+
+To use the MPI directly with GASNet, you must set the
+``CHPL_COMM_SUBSTRATE`` environment variable to ``mpi`` and rebuild Chapel. This will
+configure Chapel to use the MPI conduit of GASNet, which allows you to
+run Chapel programs using the MPI library for communication between locales.
+
+For best practices about how to configure/use GASNet to avoid
+such conflicts with MPI, please see the `GASNet docs for the MPI Conduit <https://bitbucket.org/berkeleylab/gasnet/src/master/mpi-conduit/README>`_
+(also available at
+``$CHPL_HOME/third-party/gasnet/gasnet-src/mpi-conduit/README``).
 
 .. _readme-gasnet-troubleshooting:
 
