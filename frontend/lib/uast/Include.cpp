@@ -33,7 +33,7 @@ void Include::dumpFieldsInner(const DumpSettings& s) const {
   if (isPrototype_) {
     s.out << " prototype";
   }
-  s.out << name_.str();
+  s.out << " " << name_.str();
 }
 
 owned<Include> Include::build(Builder* builder, Location loc,
