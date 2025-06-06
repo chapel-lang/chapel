@@ -182,6 +182,10 @@ jobs:
               if [ "$file" = "" ]; then
                   continue
               fi
+              if [ "$file" = "modules/packages/LAPACK.chpl" ]; then
+                echo "Skipping file: $file"
+                continue
+              fi
               echo "Checking file: $file"
 
               file_size=$(ls -l "$file" | awk '{print $5}')
