@@ -121,7 +121,7 @@ values are:
   compute nodes, which is not supported by all systems, depending on
   how they are configured.  See :ref:`the following
   sub-section<using-ssh>` for details on this option.
-  
+
 * ``pmi``: When GASNet's configure step detects a PMI-capable job
   scheduler like Slurm, ``pmi`` can be the next best choice because it
   often "just works" and can reduce overhead compared to ``mpi``.  For
@@ -131,7 +131,7 @@ values are:
   <https://bitbucket.org/berkeleylab/gasnet/src/master/other/pmi-spawner/README>`_
   (also available at
   ``$CHPL_HOME/third-party/gasnet/gasnet-src/other/pmi-spawner/README``).
-  
+
 * ``mpi``: When the previous cases are not options, ``mpi`` serves as
   a reasonable last resort.  Note that it may, depending on its
   configuration, incur a performance penalty due to competition

@@ -1,7 +1,7 @@
 .. _readme-omnipath:
 
 ===========================
-Using Chapel with Omni-Path 
+Using Chapel with Omni-Path
 ===========================
 
 This document describes how to run Chapel across multiple nodes of
@@ -67,7 +67,7 @@ values are:
   compute nodes, which is not supported by all systems, depending on
   how they are configured.  See :ref:`the following
   sub-section<using-ssh>` for details on this option.
-  
+
 * ``pmi``: When GASNet's configure step detects a PMI-capable job
   scheduler like Slurm, ``pmi`` can be the next best choice because it
   often "just works" and can reduce overhead compared to ``mpi``.  For
