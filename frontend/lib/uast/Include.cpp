@@ -39,9 +39,10 @@ void Include::dumpFieldsInner(const DumpSettings& s) const {
 owned<Include> Include::build(Builder* builder, Location loc,
                               Decl::Visibility visibility,
                               bool isPrototype,
-                              UniqueString name) {
+                              UniqueString name, Location nameLoc) {
   Include* ret = new Include(visibility, isPrototype, name);
   builder->noteLocation(ret, loc);
+  builder->noteIncludeNameLocation(ret, nameLoc);
   return toOwned(ret);
 }
 

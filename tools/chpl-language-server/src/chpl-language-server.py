@@ -558,6 +558,8 @@ class NodeAndRange:
             self.rng = location_to_range(self.node.field_location())
         elif isinstance(self.node, chapel.NamedDecl):
             self.rng = location_to_range(self.node.name_location())
+        elif isinstance(self.node, chapel.Include):
+            self.rng = location_to_range(self.node.name_location())
         else:
             self.rng = location_to_range(self.node.location())
 
