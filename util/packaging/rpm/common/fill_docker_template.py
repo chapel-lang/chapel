@@ -104,7 +104,7 @@ COPY --chown=user ./rpm/common/make_spec.py /home/user/make_spec.py
 COPY --chown=user ./common/package_name.py /home/user/package_name.py
 RUN python3 make_spec.py $BASENAME $CHAPEL_VERSION $PACKAGE_VERSION $OS_NAME $TARGETARCH
 
-COPY --chown=user ./rpm/common/rpmlintrc /home/user/.rpmlintrc
+COPY --chown=user ./rpm/$DOCKER_DIR_NAME/rpmlintrc /home/user/.rpmlintrc
 RUN rpmdev-setuptree && \\
     cp chapel-$CHAPEL_VERSION.tar.gz $(rpm --eval '%{_sourcedir}') && \\
     ignore_unused=$([[ "$(rpm --eval '%{dist_name}')" == "Fedora Linux" ]] && echo "--ignore-unused-rpmlintrc") || echo "" && \\
