@@ -1226,7 +1226,8 @@ struct HashFnBuilder : public FnBuilder {
 
     if (!hashExpr) {
       // no fields, use a constant hash value
-      hashExpr = this->intLit(0);
+      // Dyno has no "uint literals", so perform a cast to uint from int.
+      hashExpr = this->op(this->intLit(0), USTR(":"), this->identifier(USTR("uint")));
       isInline_ = true;
     }
 
