@@ -1,0 +1,2 @@
+from Config import *
+addFilter("E: hardcoded-library-path")
