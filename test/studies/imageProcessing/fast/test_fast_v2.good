@@ -1,0 +1,20 @@
+
+Starting test bench for circumference
+  checking radius 3
+  checking radius 4
+  checking radius 5
+  checking radius 6
+  checking radius 7
+  checking radius 8
+  checking radius 9
+  all tests passed
+
+Starting test bench for is_corner
+  all tests passed
+
+Starting test bench for is_corner_with_details
+  all tests passed
+
+Test Bench Summary
+  all tests passed
+
