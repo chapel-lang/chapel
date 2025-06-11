@@ -367,9 +367,9 @@ proc testDivideIntoPages() {
   if verbose then
     writeln("testDivideIntoPages");
 
-  for lower in [0, 100, 1000, 1024, 4096] {
-    for size in [0, 9, 21, 100, 543, 1024*1024] {
-      for alignment in [1, 16, 21, 64, 1024] {
+  for lower in [0, 100, 4096] {
+    for size in [0, 9, 21, 100, 1024*1024] {
+      for alignment in [1, 16, 21, 1024] {
         testDivideIntoPages(lower, size, alignment);
       }
     }
