@@ -60,12 +60,16 @@ echo " "
 echo "Setting CHPL_TARGET_MEM to..."
 CHPL_TARGET_MEM=cstdlib
 export CHPL_TARGET_MEM
+unset CHPL_TARGET_JEMALLOC
+unset CHPL_TARGET_MIMALLOC
 echo "                           ...cstdlib"
 echo " "
 
 echo "Setting CHPL_HOST_MEM to..."
 CHPL_HOST_MEM=cstdlib
 export CHPL_HOST_MEM
+unset CHPL_HOST_JEMALLOC
+unset CHPL_HOST_MIMALLOC
 echo "                           ...cstdlib"
 echo " "
 
