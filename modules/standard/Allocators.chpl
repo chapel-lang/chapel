@@ -121,6 +121,8 @@ module Allocators {
      :start-after: START_EXAMPLE
      :end-before: STOP_EXAMPLE
 
+    .. note::
+
        Named argument passing will not work with this function currently.
   */
   pragma "docs only"
