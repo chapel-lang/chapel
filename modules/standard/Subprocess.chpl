@@ -62,62 +62,19 @@ Here is an example program that provides input to a subprocess in addition to
 capturing its output.  This version uses the ``cat`` command, which just prints
 back its input.
 
-.. code-block:: chapel
-
-  use Subprocess;
-
-  var sub = spawn(["cat"], stdin=pipeStyle.bufferAll, stdout=pipeStyle.pipe);
-
-  sub.stdin.writeln("Hello");
-  sub.stdin.writeln("World");
-
-  sub.communicate();
-
-  var line:string;
-  while sub.stdout.readLine(line) {
-    write("Got line: ", line);
-  }
-
-  // prints out:
-  // Got line: Hello
-  // Got line: World
-
+.. literalinclude:: ../../../../test/library/standard/Spawn/doc-examples/example_readWrite.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE
+ :end-before: STOP_EXAMPLE
 
 Here is a final example in which the Chapel program uses 2 tasks
 to work with a subprocess. One task is producing data and the
 other task is consuming it.
 
-.. code-block:: chapel
-
-  use Subprocess;
-
-  var input = ["a", "b", "c"];
-
-  var sub = spawn(["cat"], stdin=pipeStyle.pipe, stdout=pipeStyle.pipe);
-  cobegin {
-    {
-      // one task writes data to the subprocess
-      for x in input {
-        sub.stdin.writeln(x);
-      }
-      // this close is important; otherwise the other task blocks forever
-      sub.stdin.close();
-    }
-
-    {
-      var line:string;
-      while sub.stdout.readln(line) {
-        writeln("Got line ", line);
-      }
-    }
-  }
-  sub.wait();
-
-  // prints out:
-  // Got line: a
-  // Got line: b
-  // Got line: c
-
+.. literalinclude:: ../../../../test/library/standard/Spawn/doc-examples/example_readWriteTwoTasks.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE
+ :end-before: STOP_EXAMPLE
 
 .. note::
 
@@ -136,22 +93,10 @@ methods to create binary-serializing aliases of ``stdin`` and ``stdout``. For
 example, consider the following program that writes the numbers ``1`` through
 ``10`` in binary to the ``hexdump`` utility:
 
-.. code-block:: chapel
-
-  use IO, Subprocess;
-
-  var sub = spawn(["hexdump", "-C"], stdin=pipeStyle.pipe, stdout=pipeStyle.pipe);
-
-  // Use 'withSerializer' to create a binary-serializing alias of 'sub.stdin'
-  var bin = sub.stdin.withSerializer(binarySerializer);
-
-  for i in 1..10 do bin.write(i:uint(8));
-
-  sub.communicate();
-
-  var line : string;
-  while sub.stdout.readLine(line) do
-    write(line);
+.. literalinclude:: ../../../../test/library/standard/Spawn/doc-examples/example_writeBinary.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE
+ :end-before: STOP_EXAMPLE
 
 This program prints:
 
