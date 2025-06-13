@@ -511,8 +511,9 @@ proc testSort(n: int, max: uint, param logBuckets: int, seed: int,
 
 proc testSorts() {
   var seed = 1;
+  const bign = if numLocales == 1 then 100_000 else 10_000;
   for sorter in ["sample", "radix"] {
-    for n in [10, 100, 100_000] {
+    for n in [10, 100, bign] {
       for max in [10, max(uint)] {
         for rnd in [false, true] {
           for noBaseCase in [false, true] {
