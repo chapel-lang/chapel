@@ -6889,7 +6889,7 @@ proc fileWriter.styleElement(element:int):int {
         sum = 0;
 
     forall line in r.lines() with (+ reduce sum) {
-      sum += line:int
+      sum += line:int;
     }
 
   .. warning::
@@ -6939,7 +6939,7 @@ iter fileReader.lines(
         sum = 0;
 
     forall line in r.lines(targetLocales=Locales) with (+ reduce sum) {
-      sum += line:int
+      sum += line:int;
     }
 
   .. warning::

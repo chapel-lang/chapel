@@ -31,13 +31,10 @@
   For example, the following code demonstrates how the :type:`mallocWrapper`
   allocator can be used to allocate a Chapel class.
 
-  .. code-block:: chapel
-
-     class MyClass { var x: int; }
-     var alloc = new mallocWrapper(1024);
-     var x = newWithAllocator(alloc, unmanaged MyClass, 1);
-     writeln(x);
-     deleteWithAllocator(alloc, x);
+  .. literalinclude:: ../../../../test/library/standard/Allocators/doc-examples/example_mallocWrapper.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE
+   :end-before: STOP_EXAMPLE
 
   Custom allocators can be defined as classes or records that implement the
   :interface:`allocator` interface. The interface has two methods:
@@ -119,13 +116,10 @@ module Allocators {
 
     Example:
 
-    .. code-block:: chapel
-
-       class MyClass { var x: int; }
-       var allocator = new bumpPtrMemPool(1024);
-       // The following two lines are equivalent, but the second one uses the allocator
-       var x = new unmanaged MyClass(1);
-       var x = newWithAllocator(allocator, unmanaged MyClass, 1);
+    .. literalinclude:: ../../../../test/library/standard/Allocators/doc-examples/example_newWithAllocator.chpl
+     :language: chapel
+     :start-after: START_EXAMPLE
+     :end-before: STOP_EXAMPLE
 
     .. note::
 
