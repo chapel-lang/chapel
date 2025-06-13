@@ -31,32 +31,22 @@ To start a subprocess, use :proc:`spawn` or :proc:`spawnshell`.  To wait for
 the subprocess process to finish, use the :proc:`subprocess.wait` or
 :proc:`subprocess.communicate` functions.
 
-This example program produces a listing of files in the current directory with
-names that begin with ``test.`` by using the ``ls`` command. The
+This example program produces a listing of files in the ``test_directory``
+directory by using the ``ls`` command. The
 output will be mixed in with the Chapel program's output.
 
-.. code-block:: chapel
-
-  use Subprocess;
-
-  var sub = spawn(["ls", "test.*"]);
-  sub.wait();
+.. literalinclude:: ../../../../test/library/standard/Spawn/doc-examples/example_spawn.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE
+ :end-before: STOP_EXAMPLE
 
 This version also runs the ``ls`` command but uses a pipe
 to read the output from the ``ls`` command.
 
-.. code-block:: chapel
-
-  use Subprocess;
-
-  var sub = spawn(["ls", "test.*"], stdout=pipeStyle.pipe);
-
-  var line:string;
-  while sub.stdout.readLine(line) {
-    write("ls returned: ", line);
-  }
-
-  sub.wait();
+.. literalinclude:: ../../../../test/library/standard/Spawn/doc-examples/example_spawn_pipe.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE
+ :end-before: STOP_EXAMPLE
 
 Here is an example program that provides input to a subprocess in addition to
 capturing its output.  This version uses the ``cat`` command, which just prints
