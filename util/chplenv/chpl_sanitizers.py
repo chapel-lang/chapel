@@ -4,7 +4,8 @@ import os
 import sys
 
 import overrides
-from utils import memoize
+from utils import memoize, error
+import chpl_tasks, chpl_mem, chpl_compiler
 
 @memoize
 def get(flag=''):
@@ -13,6 +14,16 @@ def get(flag=''):
         sanitizers_val = overrides.get('CHPL_SANITIZE_EXE', get(''))
     if not sanitizers_val:
         sanitizers_val = overrides.get('CHPL_SANITIZE', 'none')
+
+    if sanitizers_val != 'none':
+        if chpl_tasks.get() != 'fifo':
+            error("CHPL_TASKS=fifo is required for sanitizers")
+        if flag == 'exe' and chpl_mem.get('target') != 'cstdlib':
+            error("CHPL_TARGET_MEM=cstdlib is required for sanitizers")
+        if flag == 'exe' and chpl_compiler.get() == 'llvm':
+            error("CHPL_TARGET_COMPILER=llvm is not supported with sanitizers")
+        if flag == '' and chpl_mem.get('host') != 'none':
+            error("CHPL_HOST_MEM=none is required for sanitizers")
     return sanitizers_val
 
 
