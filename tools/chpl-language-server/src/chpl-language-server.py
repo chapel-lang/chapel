@@ -173,8 +173,8 @@ class ChplcheckProxy:
             if os.environ.get("CHPL_DEVELOPER", None):
                 print("Error loading chplcheck: ", str(msg), file=sys.stderr)
 
-        chpl_home = os.environ.get("CHPL_HOME")
-        if chpl_home is None:
+        chpl_home = chapel.Context().get_chpl_home()
+        if not chpl_home:
             error("CHPL_HOME not set")
             return None
 

@@ -124,7 +124,7 @@ std::error_code findChplHome(const char* argv0, void* mainAddr,
                              bool& installed, bool& fromEnv,
                              std::string& diagnosticMessage) {
   std::string versionString = getMajorMinorVersion();
-  std::string guessFromBinaryPath = getExecutablePath(argv0, mainAddr);
+  std::string guessFromBinaryPath = argv0 && mainAddr ? getExecutablePath(argv0, mainAddr) : "";
   chplHomeOut = std::string();
 
   const char* chplHomeEnv = getenv("CHPL_HOME");
