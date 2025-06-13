@@ -422,8 +422,11 @@ proc bulkCopy(ref dst: [], dstRegion: range,
           const srcPartPtr =
             (srcPtr + (dstPg.low - dstPtr)):c_uintptr:c_ptr(void);
           if BULK_COPY_EXTRA_CHECKS {
-            assert((dstPtr..#nBytes).contains(dstPartPtr:uint..#dstPg.size));
-            assert((srcPtr..#nBytes).contains(srcPartPtr:uint..#dstPg.size));
+            const dstPartPtrU = dstPartPtr:c_uintptr:uint;
+            const srcPartPtrU = srcPartPtr:c_uintptr:uint;
+            const dstSize = dstPg.size:uint;
+            assert((dstPtr..#nBytes).contains(dstPartPtrU..#dstSize));
+            assert((srcPtr..#nBytes).contains(srcPartPtrU..#dstSize));
           }
           memcpy(dstPartPtr, srcPartPtr, dstPg.size:c_size_t);
         }
@@ -439,8 +442,11 @@ proc bulkCopy(ref dst: [], dstRegion: range,
           const srcPartPtr =
             (srcPtr + (dstPg.low - dstPtr)):c_uintptr:c_ptr(void);
           if BULK_COPY_EXTRA_CHECKS {
-            assert((dstPtr..#nBytes).contains(dstPartPtr:uint..#dstPg.size));
-            assert((srcPtr..#nBytes).contains(srcPartPtr:uint..#dstPg.size));
+            const dstPartPtrU = dstPartPtr:c_uintptr:uint;
+            const srcPartPtrU = srcPartPtr:c_uintptr:uint;
+            const dstSize = dstPg.size:uint;
+            assert((dstPtr..#nBytes).contains(dstPartPtrU..#dstSize));
+            assert((srcPtr..#nBytes).contains(srcPartPtrU..#dstSize));
           }
           Communication.put(dstPartPtr, srcPartPtr, startLocale, dstPg.size);
         }
@@ -478,8 +484,11 @@ proc bulkCopy(ref dst: [], dstRegion: range,
           const srcPartPtr =
             (srcPtr + (dstPg.low - dstPtr)):c_uintptr:c_ptr(void);
           if BULK_COPY_EXTRA_CHECKS {
-            assert((dstPtr..#nBytes).contains(dstPartPtr:uint..#dstPg.size));
-            assert((srcPtr..#nBytes).contains(srcPartPtr:uint..#dstPg.size));
+            const dstPartPtrU = dstPartPtr:c_uintptr:uint;
+            const srcPartPtrU = srcPartPtr:c_uintptr:uint;
+            const dstSize = dstPg.size:uint;
+            assert((dstPtr..#nBytes).contains(dstPartPtrU..#dstSize));
+            assert((srcPtr..#nBytes).contains(srcPartPtrU..#dstSize));
           }
           memcpy(dstPartPtr, srcPartPtr, dstPg.size:c_size_t);
         }
@@ -495,8 +504,11 @@ proc bulkCopy(ref dst: [], dstRegion: range,
           const srcPartPtr =
             (srcPtr + (dstPg.low - dstPtr)):c_uintptr:c_ptr(void);
           if BULK_COPY_EXTRA_CHECKS {
-            assert((dstPtr..#nBytes).contains(dstPartPtr:uint..#dstPg.size));
-            assert((srcPtr..#nBytes).contains(srcPartPtr:uint..#dstPg.size));
+            const dstPartPtrU = dstPartPtr:c_uintptr:uint;
+            const srcPartPtrU = srcPartPtr:c_uintptr:uint;
+            const dstSize = dstPg.size:uint;
+            assert((dstPtr..#nBytes).contains(dstPartPtrU..#dstSize));
+            assert((srcPtr..#nBytes).contains(srcPartPtrU..#dstSize));
           }
           Communication.get(dstPartPtr, srcPartPtr, startLocale, dstPg.size);
         }
