@@ -30,10 +30,7 @@ module ChapelDynamicLoading {
   inline proc issueConfigurationErrors() param {
     use ChplConfig;
 
-    param unsupportedLlvmVersion = CHPL_LLVM_VERSION == "11" ||
-                                   CHPL_LLVM_VERSION == "12" ||
-                                   CHPL_LLVM_VERSION == "13" ||
-                                   CHPL_LLVM_VERSION == "14";
+    param unsupportedLlvmVersion = CHPL_LLVM_VERSION == "14";
     if useProcedurePointers && CHPL_TARGET_COMPILER == "llvm" &&
        unsupportedLlvmVersion {
       // This could be a compiler error, but I'm lazy and putting it here.
