@@ -38,6 +38,9 @@ def common_substitutions():
     RUN tar xf chapel-$CHAPEL_VERSION.tar.gz
     """
 
+    # generate_run_command_default_config must go last to ensure the package's
+    # default configuration is the chapel default configuration, which all the
+    # necessary tools.
     substitutions[
         "BUILD_DEFAULT"
     ] = f"""
@@ -77,12 +80,11 @@ default_config = {
     "CHPL_LOCALE_MODEL": "flat",
     "CHPL_COMM": "none",
     "CHPL_TASKS": "qthreads",
-    "CHPL_LAUNCHER": ["none", "slurm-srun"],
+    "CHPL_LAUNCHER": [None, "slurm-srun"],
     "CHPL_UNWIND": ["none", "bundled"],
     "CHPL_HOST_MEM": "jemalloc",
     "CHPL_TARGET_MEM": ["jemalloc", "cstdlib"],
     "CHPL_ATOMICS": "cstdlib",
-    "CHPL_NETWORK_ATOMICS": "none",
     "CHPL_GMP": "bundled",
     "CHPL_HWLOC": "bundled",
     "CHPL_RE2": "bundled",
@@ -106,7 +108,6 @@ gasnet_udp_config = {
     "CHPL_HOST_MEM": "jemalloc",
     "CHPL_TARGET_MEM": ["jemalloc", "cstdlib"],
     "CHPL_ATOMICS": "cstdlib",
-    "CHPL_NETWORK_ATOMICS": "none",
     "CHPL_GMP": "bundled",
     "CHPL_HWLOC": "bundled",
     "CHPL_RE2": "bundled",
@@ -125,7 +126,7 @@ ofi_pmi2_config = {
     "CHPL_LIBFABRIC": "bundled",
     "CHPL_COMM_OFI_OOB": "pmi2",
     "CHPL_TASKS": "qthreads",
-    "CHPL_LAUNCHER": ["none", "slurm-srun"],
+    "CHPL_LAUNCHER": [None, "slurm-srun"],
     "CHPL_UNWIND": ["none", "bundled"],
     "CHPL_HOST_MEM": "jemalloc",
     "CHPL_TARGET_MEM": "jemalloc",
@@ -148,12 +149,10 @@ gpu_cpu_config = {
     "CHPL_GPU": "cpu",
     "CHPL_COMM": "none",
     "CHPL_TASKS": "qthreads",
-    "CHPL_LAUNCHER": "none",
     "CHPL_UNWIND": "none",
     "CHPL_HOST_MEM": "cstdlib",
     "CHPL_TARGET_MEM": "jemalloc",
     "CHPL_ATOMICS": "cstdlib",
-    "CHPL_NETWORK_ATOMICS": "none",
     "CHPL_GMP": "bundled",
     "CHPL_HWLOC": "bundled",
     "CHPL_RE2": "bundled",
@@ -184,7 +183,7 @@ def generate_configs(base_config: Dict[str, Union[str,List[str]]]) -> List[Dict[
 
 def generate_run_command_default_config() -> str:
     """
-    Generate a default configuration string for Chapel.
+    Generate a default configuration string for Chapel. This only has 1 runtime
     """
     config = default_config.copy()
     for key, value in config.items():
@@ -207,7 +206,7 @@ def generate_run_command(base_config: Dict[str, Union[str,List[str]]], build_cmd
 
             command_body = "\n".join(
                 f'echo "{key}={value}" >> $CHPL_HOME/chplconfig && \\'
-                for key, value in config.items()
+                for key, value in config.items() if value is not None
             )
             run_command = f"{command_prefix}\n{command_body}\n{command_postfix}"
             run_commands.append(run_command)
