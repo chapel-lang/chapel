@@ -114,14 +114,14 @@ record privateDist: writeSerializable {
 
   @chpldoc.nodoc
   inline operator ==(d1: privateDist, d2: privateDist) {
-    if (d1._value == d2._value) then
-      return true;
-    return d1._value.dsiEqualDMaps(d2._value);
+    // privateDists never differ, so these are inherently equal
+    return true;
   }
 
   @chpldoc.nodoc
   inline operator !=(d1: privateDist, d2: privateDist) {
-    return !(d1 == d2);
+    // privateDists never differ, so these are inherently equal
+    return false;
   }
 
   proc serialize(writer, ref serializer) throws {
