@@ -4,7 +4,7 @@
     Prints a summary of the output at the end.
     Saves all of the command output in a file called 'log'. """
 
-import argparse, glob, os, subprocess, shutil
+import argparse, glob, os, subprocess, shutil, sys
 
 def gatherDirs(skip_nollvm):
     dirs = [ ]
@@ -28,20 +28,17 @@ def printAndLog(log, s):
 def runAndLog(log, command):
     printAndLog(log, "Running command: {}\n".format(" ".join(command)))
     try:
-        p = subprocess.Popen(command,
-                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                             encoding='utf-8')
-        lastline = ""
-        while p.poll() is None:
-            line = p.stdout.readline()
-            if line:
-                line = line.strip()
+        with subprocess.Popen(command,
+                              stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                              text=True) as p:
+            for line in p.stdout:
+                line = line.rstrip('\n')
                 printAndLog(log, line)
-                if line and not line.startswith("INFO"):
-                    lastline = line
-        return (p.returncode, lastline)
-    except OSError:
-        return (-1, "")
+                lastline = line
+            p.wait()
+            return (p.returncode, lastline)
+    except OSError as e:
+        return (-1, str(e))
 
 def main():
     parser = argparse.ArgumentParser(
@@ -50,8 +47,6 @@ def main():
                         help='delete each image and checkout after using it')
     parser.add_argument('--rebuild', dest='rebuild', action='store_true',
                         help='rebuild each image before running it')
-    parser.add_argument('--only', dest='only', action='store',
-                        help='only run one configuration')
     parser.add_argument('--start', dest='start', action='store',
                         help='run configurations starting with the passed one')
     parser.add_argument('--skip-nollvm', dest='skip_nollvm', action='store_true',
@@ -66,15 +61,29 @@ def main():
 
     status = { }
 
+    apptainer_image = os.environ.get('APPTAINER_IMAGE')
+    if not apptainer_image:
+        printAndLog(sys.stderr,
+                    "APPTAINER_IMAGE environment variable not set.")
+        sys.exit(1)
+    elif apptainer_image == "all":
+        printAndLog(sys.stderr, "Running on all images.")
+        only = None
+    else:
+        printAndLog(sys.stderr, "Running on image: " + apptainer_image)
+        only = apptainer_image
+
     with open(logpath, 'w', encoding="utf-8") as log:
         dirs = gatherDirs(args.skip_nollvm)
-        if args.only != None:
+        if only != None:
             hadDirs = dirs
             dirs = [ ]
             for d in hadDirs:
-                if dirNameToConfigName(d) == dirNameToConfigName(args.only):
+                if dirNameToConfigName(d) == dirNameToConfigName(only):
                     dirs.append(d)
-
+        if len(dirs) == 0:
+            printAndLog(log, "No test configs to run found, aborting.")
+            sys.exit(1)
 
         if args.start != None:
             hadDirs = dirs
@@ -93,6 +102,7 @@ def main():
             if len(name) > maxNameLen:
                 maxNameLen = len(name)
 
+        ok = True
         for d in dirs:
             name = dirNameToConfigName(d)
 
@@ -101,7 +111,6 @@ def main():
                         "     ---- " + name + " ---- ")
 
             statusline = ""
-            ok = True
             # Build/rebuild image.sif if needed
             if os.path.exists("image.sif") and args.rebuild:
                 printAndLog(log, "Removing {}/image.sif".format(d))
@@ -152,6 +161,9 @@ def main():
             name = dirNameToConfigName(d)
             paddedName = name.rjust(maxNameLen)
             printAndLog(log, paddedName + ": " + status[name])
+
+        if not ok:
+            sys.exit(1)
 
 
 if __name__ == '__main__':
