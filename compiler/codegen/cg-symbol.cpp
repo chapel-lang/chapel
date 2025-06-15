@@ -2022,11 +2022,9 @@ llvmAttachReturnInfo(llvm::LLVMContext& ctx,
                      const unsigned int stackSpace) {
   switch (returnInfo.getKind()) {
 
-    #if HAVE_LLVM_VER >= 120
     case clang::CodeGen::ABIArgInfo::Kind::IndirectAliased: {
       INT_FATAL("IndirectAliased not handled yet");
     } break;
-    #endif
 
     case clang::CodeGen::ABIArgInfo::Kind::Indirect:
     case clang::CodeGen::ABIArgInfo::Kind::Ignore: {
@@ -2253,11 +2251,9 @@ codegenFunctionTypeLLVMImpl(
         case clang::CodeGen::ABIArgInfo::Kind::InAlloca: {
         } break;
 
-        #if HAVE_LLVM_VER >= 120
         case clang::CodeGen::ABIArgInfo::Kind::IndirectAliased: {
           INT_FATAL("IndirectAliased not handled yet");
         } break;
-        #endif
 
         case clang::CodeGen::ABIArgInfo::Kind::Indirect: {
           // Emit indirect argument
@@ -2894,14 +2890,9 @@ void FnSymbol::codegenDef() {
 
     if(debug_info) {
       llvm::DISubprogram* dbgScope = debug_info->get_function(this);
-#if HAVE_LLVM_VER >= 120
       info->irBuilder->SetCurrentDebugLocation(
         llvm::DILocation::get(dbgScope->getContext(), linenum(), 0,
                               dbgScope, nullptr, false));
-#else
-      info->irBuilder->SetCurrentDebugLocation(
-        llvm::DebugLoc::get(linenum(),0,dbgScope));
-#endif
       func->setSubprogram(dbgScope);
     }
 
