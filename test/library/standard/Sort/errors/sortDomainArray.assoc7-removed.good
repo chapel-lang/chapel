@@ -1,0 +1,6 @@
+sortDomainArray.chpl:55: error: unresolved call 'DefaultAssociativeDom(string,false).sorted()'
+$CHPL_HOME/modules/standard/Sort.chpl:nnnn: note: this candidate did not match: sorted(x: domain, comparator: ? = new defaultComparator())
+sortDomainArray.chpl:55: note: because call is written as a method call
+$CHPL_HOME/modules/standard/Sort.chpl:nnnn: note: but candidate function is not a method
+sortDomainArray.chpl:55: note: other candidates are:
+$CHPL_HOME/modules/standard/Sort.chpl:nnnn: note:   sorted(x, comparator: ? = new defaultComparator())
