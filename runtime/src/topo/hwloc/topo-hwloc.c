@@ -619,9 +619,42 @@ static void partitionResources(void) {
                                         HWLOC_OBJ_TYPE_MAX};
         for (int i = 0; rootTypes[i] != HWLOC_OBJ_TYPE_MAX; i++) {
           int numObjs = hwloc_get_nbobjs_by_type(topology, rootTypes[i]);
-          if (numObjs == numPartitions) {
-            myRootType = rootTypes[i];
-            break;
+          if (numObjs >= numPartitions) {
+
+            // We should only bind locales to objects if the number of
+            // non-empty objects equals the number of partitions, and they
+            // have the same number of accessible PUs.
+
+            int numCoresPerObject = -1;
+            chpl_bool acceptable = true;
+            int numNonEmptyObjects = 0;
+            for (int j = 0; j < numObjs; j++) {
+              hwloc_obj_t obj;
+              CHK_ERR(obj = hwloc_get_obj_inside_cpuset_by_type(topology,
+                                    root->cpuset, rootTypes[i], j));
+              hwloc_cpuset_t s = hwloc_bitmap_dup(obj->cpuset);
+              hwloc_bitmap_and(s,s,logAccSet);
+              int numCores = hwloc_bitmap_weight(s);
+              hwloc_bitmap_free(s);
+              _DBG_P("%s[%d] has %d cores.", objTypeString(rootTypes[i]), j,
+                     numCores);
+              if (numCores == 0) {
+                continue;
+              } else if (numCoresPerObject == -1) {
+                numCoresPerObject = numCores;
+              } else if (numCores != numCoresPerObject) {
+                acceptable = false;
+                break;
+              }
+              numNonEmptyObjects++;
+            }
+            if (numNonEmptyObjects != numPartitions) {
+              acceptable = false;
+            }
+            if (acceptable) {
+              myRootType = rootTypes[i];
+              break;
+            }
           }
         }
       }
@@ -667,6 +700,7 @@ static void partitionResources(void) {
                    numPartitions, numCPUsPhysAcc);
           chpl_error(msg, 0, 0);
         }
+        _DBG_P("coresPerPartition: %d", coresPerPartition);
         unusedCores = numCPUsPhysAcc % numPartitions;
         int count = 0;
         int locale = -1;
@@ -699,6 +733,15 @@ static void partitionResources(void) {
 
       hwloc_bitmap_and(logAccSet, logAccSet, logAccSets[rank]);
       numCPUsLogAcc = hwloc_bitmap_weight(logAccSet);
+      if (debug) {
+        char buf[1024];
+        for (int i = 0; i < numPartitions; i++) {
+          hwloc_bitmap_list_snprintf(buf, sizeof(buf), logAccSets[i]);
+          _DBG_P("logAccSets[%d]: %s", i, buf);
+        }
+        hwloc_bitmap_list_snprintf(buf, sizeof(buf), logAccSet);
+        _DBG_P("numCPUsLogAcc: %d logAccSet: %s", numCPUsLogAcc, buf);
+      }
       CHK_ERR(numCPUsLogAcc > 0);
 
       hwloc_bitmap_and(physAccSet, physAccSet, logAccSets[rank]);
@@ -707,8 +750,6 @@ static void partitionResources(void) {
 
       if (debug) {
         char buf[1024];
-        hwloc_bitmap_list_snprintf(buf, sizeof(buf), logAccSet);
-        _DBG_P("numCPUsLogAcc: %d logAccSet: %s", numCPUsLogAcc, buf);
         hwloc_bitmap_list_snprintf(buf, sizeof(buf), physAccSet);
         _DBG_P("numCPUsPhysAcc: %d physAccSet: %s", numCPUsPhysAcc, buf);
       }
@@ -1286,19 +1327,23 @@ static void fillDistanceMatrix(int numObjs, hwloc_obj_t *objs,
     if (logAccSets[i] != NULL) {
       CHK_ERR(locales[i] =  hwloc_get_obj_covering_cpuset(topology,
                                                         logAccSets[i]));
+#ifdef DEBUG
       char buf[1024];
       hwloc_obj_attr_snprintf(buf, sizeof(buf), locales[i], ",", 1);
       _DBG_P("locales[%d]: %s", i, buf);
+#endif
     } else {
       locales[i] = NULL;
     }
   }
 
+#ifdef DEBUG
   for (int i = 0; i < numObjs; i++) {
     char buf[1024];
     hwloc_obj_attr_snprintf(buf, sizeof(buf), objs[i], ",", 1);
     _DBG_P("objs[%d]: %s", i, buf);
   }
+#endif
 
   // Compute the distances between locales and objects. If locales[j]
   // is NULL then we don't know which PUs that locale is using, so
