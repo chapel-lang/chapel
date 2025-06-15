@@ -1128,7 +1128,6 @@ module ChapelArray {
     // dense case because we can represent a domain by a tuple of
     // ranges, but in the sparse case, is there a general representation?
     //
-    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     @chpldoc.nodoc
@@ -1163,7 +1162,6 @@ module ChapelArray {
     }
 
     // array slicing by a tuple of ranges
-    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     @chpldoc.nodoc
@@ -1202,7 +1200,6 @@ module ChapelArray {
     }
 
     // array rank change
-    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     @chpldoc.nodoc
@@ -1267,7 +1264,6 @@ module ChapelArray {
 
     // Special cases of local slices for DefaultRectangularArrs because
     // we can't take an alias of the ddata class within that class
-    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     @chpldoc.nodoc
@@ -1279,7 +1275,6 @@ module ChapelArray {
       return chpl__localSliceDefaultArithArrHelp(dom);
     }
 
-    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     @chpldoc.nodoc
@@ -1309,7 +1304,6 @@ module ChapelArray {
              _value.locale.id, " from locale ", here.id);
       return this(d);
     }
-    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     @chpldoc.nodoc
@@ -1320,7 +1314,6 @@ module ChapelArray {
       return _value.dsiLocalSlice(r);
     }
 
-    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     @chpldoc.nodoc
@@ -3022,7 +3015,6 @@ module ChapelArray {
   // result of working around:
   //   https://github.com/chapel-lang/chapel/issues/17188
 
-  pragma "no promotion when by ref"
   pragma "fn returns aliasing array"
   @chpldoc.nodoc
   @edition(first="pre-edition")
@@ -3034,7 +3026,6 @@ module ChapelArray {
     }
   }
 
-  pragma "no promotion when by ref"
   pragma "fn returns aliasing array"
   @chpldoc.nodoc
   @edition(first="pre-edition")
@@ -3046,7 +3037,6 @@ module ChapelArray {
     }
   }
 
-  pragma "no promotion when by ref"
   pragma "fn returns aliasing array"
   pragma "last resort"
   @chpldoc.nodoc
@@ -3063,7 +3053,6 @@ module ChapelArray {
     }
   }
 
-  pragma "no promotion when by ref"
   pragma "fn returns aliasing array"
   @chpldoc.nodoc
   @edition(first="pre-edition")
@@ -3097,7 +3086,6 @@ module ChapelArray {
     return B;
   }
 
-  pragma "no promotion when by ref"
   pragma "fn returns aliasing array"
   @chpldoc.nodoc
   @edition(first="pre-edition")
@@ -3114,7 +3102,6 @@ module ChapelArray {
   // work (?).  Though I also wasn't easily able to reproduce this in
   // a standalone test, so not sure what's going on there...
   //
-  pragma "no promotion when by ref"
   pragma "reference to const when const this"
   proc _array.chpl_copyReshape(dom: domain(?),
                                checkDims=checkReshapeDimsByDefault) {
@@ -3128,7 +3115,6 @@ module ChapelArray {
     return B;
   }
 
-  pragma "no promotion when by ref"
   pragma "reference to const when const this"
   pragma "fn returns aliasing array"
   proc _array.chpl_aliasReshape(dom: domain(?),
