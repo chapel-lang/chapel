@@ -50,9 +50,13 @@ set -x CHPL_TASKS fifo
 
 echo "Setting CHPL_TARGET_MEM to cstdlib"
 set -x CHPL_TARGET_MEM cstdlib
+set -e CHPL_TARGET_JEMALLOC
+set -e CHPL_TARGET_MIMALLOC
 
 echo "Setting CHPL_HOST_MEM to cstdlib"
 set -x CHPL_HOST_MEM cstdlib
+set -e CHPL_HOST_JEMALLOC
+set -e CHPL_HOST_MIMALLOC
 
 echo "Setting CHPL_GMP to none"
 set -x CHPL_GMP none

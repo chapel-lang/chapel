@@ -57,9 +57,13 @@ export CHPL_TASKS=fifo
 
 echo "Setting CHPL_TARGET_MEM to cstdlib"
 export CHPL_TARGET_MEM=cstdlib
+unset CHPL_TARGET_JEMALLOC
+unset CHPL_TARGET_MIMALLOC
 
 echo "Setting CHPL_HOST_MEM to cstdlib"
 export CHPL_HOST_MEM=cstdlib
+unset CHPL_HOST_JEMALLOC
+unset CHPL_HOST_MIMALLOC
 
 echo "Setting CHPL_GMP to none"
 export CHPL_GMP=none
