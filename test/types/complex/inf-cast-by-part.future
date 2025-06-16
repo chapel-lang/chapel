@@ -1,4 +1,4 @@
 bug: can't always cast strings with inf parts to complex numbers
-#TBD
+#27399
 
 When this issue is resolved, the skipif should be removed
