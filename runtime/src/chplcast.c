@@ -189,7 +189,7 @@ _define_string_to_float_precise(real, 64, "%lf")
       numitems = 2;                                                     \
     }                                                                   \
     if (numitems == 0) {                                                \
-      if (0 == strncmp(str, "infi", 4)) {                               \
+      if (0 == strcmp(str, "infi")) {                                   \
         val = INFINITY;                                                 \
         *invalid = 0;                                                   \
         *invalidCh = '\0';                                              \
