@@ -64,16 +64,23 @@ const std::vector<std::string>& clangFlags(Context* context) {
   QUERY_BEGIN_INPUT(clangFlags, context);
 
   std::vector<std::string> ret;
+  ret.push_back("clang");
 
   if (auto chplEnvRes = context->getChplEnv()) {
     const auto& chplEnv = chplEnvRes.get();
-    static const std::vector<const char*> chplEnvKeys = {
-        "CHPL_LLVM_CLANG_C",
-        "CHPL_TARGET_BUNDLED_COMPILE_ARGS",
-        "CHPL_TARGET_SYSTEM_COMPILE_ARGS"
-    };
 
-    for (const auto& key : chplEnvKeys) {
+    // Use CHPL_LLVM_CLANG_C as the clang to invoke if it exists
+    if (chplEnv.find("CHPL_LLVM_CLANG_C") != chplEnv.end()) {
+      auto clangC = chplEnv.at("CHPL_LLVM_CLANG_C");
+      if (!clangC.empty()) {
+        ret.at(0) = clangC;  // replace default value
+      }
+    }
+
+    // Append target compile args
+    static const char* compileArgsKeys[] = {"CHPL_TARGET_BUNDLED_COMPILE_ARGS",
+                                            "CHPL_TARGET_SYSTEM_COMPILE_ARGS"};
+    for (const auto& key : compileArgsKeys) {
       if (chplEnv.find(key) != chplEnv.end()) {
         auto value = chplEnv.at(key);
         if (!value.empty()) {
@@ -85,11 +92,6 @@ const std::vector<std::string>& clangFlags(Context* context) {
         }
       }
     }
-  }
-
-  if (ret.empty()) {
-    // dummy argv[0] to make this callable in C++ tests
-    ret.push_back("clang");
   }
 
   return QUERY_END(ret);
