@@ -62,29 +62,26 @@ using namespace resolution;
 
 const std::vector<std::string>& clangFlags(Context* context) {
   QUERY_BEGIN_INPUT(clangFlags, context);
+
   std::vector<std::string> ret;
 
-  auto chplEnvRes = context->getChplEnv();
-  if (chplEnvRes) {
+  if (auto chplEnvRes = context->getChplEnv()) {
     const auto& chplEnv = chplEnvRes.get();
-    static const char* chplLlvmClangC = "CHPL_LLVM_CLANG_C";
-    std::string clangc;
-    if (chplEnv.find(chplLlvmClangC) != chplEnv.end()) {
-      clangc = chplEnv.at(chplLlvmClangC);
-      if (!clangc.empty()) {
-        ret.push_back(clangc);
-      }
-    }
+    static const std::vector<const char*> chplEnvKeys = {
+        "CHPL_LLVM_CLANG_C",
+        "CHPL_TARGET_BUNDLED_COMPILE_ARGS",
+        "CHPL_TARGET_SYSTEM_COMPILE_ARGS"
+    };
 
-    static const char* chplTargetSystemCompileArgs = "CHPL_TARGET_SYSTEM_COMPILE_ARGS";
-    if (chplEnv.find(chplTargetSystemCompileArgs) != chplEnv.end()) {
-      auto compileArgs = chplEnv.at(chplTargetSystemCompileArgs);
-      if (!compileArgs.empty()) {
-        // split compileArgs by whitespace
-        std::istringstream iss(compileArgs);
-        std::string arg;
-        while (iss >> arg) {
-          ret.push_back(arg);
+    for (const auto& key : chplEnvKeys) {
+      if (chplEnv.find(key) != chplEnv.end()) {
+        auto value = chplEnv.at(key);
+        if (!value.empty()) {
+          std::istringstream iss(value);
+          std::string arg;
+          while (iss >> arg) {
+            ret.push_back(arg);
+          }
         }
       }
     }
