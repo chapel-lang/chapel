@@ -97,7 +97,7 @@ implementation based on ``mpz_t``.  So, for example:
 
 .. code-block:: chapel
 
-  x  = b
+  x  = b;
   x *= c;
   x += a;
 
@@ -135,7 +135,7 @@ truncated.  GMP primitives are used to first cast to platform-specific C
 types, which are then cast to Chapel types.  As a result, casting to
 64-bit types on 32-bit platforms may result in additional truncation.
 Additionally, casting a negative ``bigint`` to a ``uint`` will result in
-the absolute value truncated to fit within the type.:
+the absolute value truncated to fit within the type:
 
 .. code-block:: chapel
 
