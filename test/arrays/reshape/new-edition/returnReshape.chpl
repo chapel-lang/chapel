@@ -1,19 +1,19 @@
 var A = [1, 2, 3, 4];
 
 proc foo() {
-  return reshape(A, 1..2, 1..2);  // 3032
+  return reshape(A, 1..2, 1..2);
 }
 
 proc bar() {
-  return reshape(A, {1..2, 1..2});  // 3094
+  return reshape(A, {1..2, 1..2});
 }
 
 proc baz() {
-  return reshape(A, 1..2, 1..2, copy=true);  // 3047
+  return reshape(A, 1..2, 1..2, copy=true);
 }
 
 proc bam() {
-  return reshape(A, {1..2, 1..2}, copy=true);  //  3085
+  return reshape(A, {1..2, 1..2}, copy=true);
 }
 
 var B = foo();
