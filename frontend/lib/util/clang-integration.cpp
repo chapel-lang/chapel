@@ -64,23 +64,36 @@ const std::vector<std::string>& clangFlags(Context* context) {
   QUERY_BEGIN_INPUT(clangFlags, context);
   std::vector<std::string> ret;
 
-  // dummy argv[0] to make this callable in C++ tests
-  std::string clangName = "clang";
-
   auto chplEnvRes = context->getChplEnv();
   if (chplEnvRes) {
     const auto& chplEnv = chplEnvRes.get();
-    static const char* clangEnvName = "CHPL_LLVM_CLANG_C";
+    static const char* chplLlvmClangC = "CHPL_LLVM_CLANG_C";
     std::string clangc;
-    if (chplEnv.find(clangEnvName) != chplEnv.end()) {
-      clangc = chplEnv.at(clangEnvName);
+    if (chplEnv.find(chplLlvmClangC) != chplEnv.end()) {
+      clangc = chplEnv.at(chplLlvmClangC);
+      if (!clangc.empty()) {
+        ret.push_back(clangc);
+      }
     }
-    if (!clangc.empty()) {
-      clangName = clangc;
+
+    static const char* chplTargetSystemCompileArgs = "CHPL_TARGET_SYSTEM_COMPILE_ARGS";
+    if (chplEnv.find(chplTargetSystemCompileArgs) != chplEnv.end()) {
+      auto compileArgs = chplEnv.at(chplTargetSystemCompileArgs);
+      if (!compileArgs.empty()) {
+        // split compileArgs by whitespace
+        std::istringstream iss(compileArgs);
+        std::string arg;
+        while (iss >> arg) {
+          ret.push_back(arg);
+        }
+      }
     }
   }
 
-  ret.push_back(clangName);
+  if (ret.empty()) {
+    // dummy argv[0] to make this callable in C++ tests
+    ret.push_back("clang");
+  }
 
   return QUERY_END(ret);
 }
