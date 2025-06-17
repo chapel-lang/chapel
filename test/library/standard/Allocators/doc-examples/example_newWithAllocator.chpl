@@ -13,3 +13,6 @@ var y = newWithAllocator(allocator, unmanaged MyClass, 1);
 
 writeln(x);
 writeln(y);
+
+delete x;
+deleteWithAllocator(allocator, y);
