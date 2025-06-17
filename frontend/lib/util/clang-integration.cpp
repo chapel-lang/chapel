@@ -60,11 +60,28 @@ namespace util {
 using namespace types;
 using namespace resolution;
 
-
 const std::vector<std::string>& clangFlags(Context* context) {
   QUERY_BEGIN_INPUT(clangFlags, context);
   std::vector<std::string> ret;
-  ret.push_back("clang"); // dummy argv[0] to make this callable in C++ tests
+
+  // dummy argv[0] to make this callable in C++ tests
+  std::string clangName = "clang";
+
+  auto chplEnvRes = context->getChplEnv();
+  if (chplEnvRes) {
+    const auto& chplEnv = chplEnvRes.get();
+    static const char* clangEnvName = "CHPL_LLVM_CLANG_C";
+    std::string clangc;
+    if (chplEnv.find(clangEnvName) != chplEnv.end()) {
+      clangc = chplEnv.at(clangEnvName);
+    }
+    if (!clangc.empty()) {
+      clangName = clangc;
+    }
+  }
+
+  ret.push_back(clangName);
+
   return QUERY_END(ret);
 }
 
