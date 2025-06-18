@@ -171,6 +171,21 @@ std::error_code findChplHome(const char* argv0, void* mainAddr,
       // The pre-configured prefix path matches the variable in the environment;
       // this indicates that the CHPL_HOME is from a prefix-based installation.
       installed = true;
+    } else if (llvm::sys::fs::exists(chplHomeEnv) &&
+               llvm::sys::fs::is_directory(chplHomeEnv) &&
+               llvm::sys::fs::exists(guessFromPrefix) &&
+               llvm::sys::fs::is_directory(guessFromPrefix)) {
+      auto chplHomeEnvChplConfig = std::string(chplHomeEnv) + "/chplconfig";
+      auto guessFromPrefixChplConfig = guessFromPrefix + "/chplconfig";
+      // checking isSameFile on a directory is not always reliable,
+      // so we check the chplconfig file inside the directories. This file should exist
+      // if both directories are valid CHPL_HOMEs for a prefix install
+      // this can occur if a user creates a "view" of a prefix install by creating
+      // new directories and symlinking files into them.
+      if (isSameFile(chplHomeEnvChplConfig, guessFromPrefixChplConfig)) {
+        // The chplconfig files match, so this is a prefix-based installation.
+        installed = true;
+      }
     }
 
     // Emit a warning if we could guess the CHPL_HOME from the binary's path,
