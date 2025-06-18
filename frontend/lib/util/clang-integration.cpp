@@ -60,11 +60,37 @@ namespace util {
 using namespace types;
 using namespace resolution;
 
-
 const std::vector<std::string>& clangFlags(Context* context) {
   QUERY_BEGIN_INPUT(clangFlags, context);
+
   std::vector<std::string> ret;
-  ret.push_back("clang"); // dummy argv[0] to make this callable in C++ tests
+  ret.push_back("clang");
+
+  if (auto chplEnvRes = context->getChplEnv()) {
+    const auto& chplEnv = chplEnvRes.get();
+    // Append target compile args
+    static std::string compileArgsKeys[] = {"CHPL_LLVM_CLANG_C",
+                                            "CHPL_TARGET_BUNDLED_COMPILE_ARGS",
+                                            "CHPL_TARGET_SYSTEM_COMPILE_ARGS"};
+    for (const auto& key : compileArgsKeys) {
+      if (chplEnv.find(key) != chplEnv.end()) {
+        auto value = chplEnv.at(key);
+        if (!value.empty()) {
+          // If CHPL_LLVM_CLANG_C exists use it as the clang to invoke,
+          // removing the default value we started with first.
+          if (key == "CHPL_LLVM_CLANG_C") {
+            ret.clear();
+          }
+          std::istringstream iss(value);
+          std::string arg;
+          while (iss >> arg) {
+            ret.push_back(arg);
+          }
+        }
+      }
+    }
+  }
+
   return QUERY_END(ret);
 }
 
