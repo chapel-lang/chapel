@@ -466,6 +466,13 @@ module BigInteger {
     return new bigint(x:int);
   }
 
+  /* Constructs a new :record:`bigint` from ``x`` */
+  inline operator :(x: real, type t: bigint): bigint {
+    var bi: bigint;
+    bi.set(x);
+    return bi;
+  }
+
   /*
     Convert ``x`` to a signed integer. If ``x`` is larger than ``t``, the value
     returned is the least significant part of ``x`` with the same sign as ``x``.
