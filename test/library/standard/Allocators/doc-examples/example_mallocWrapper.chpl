@@ -10,5 +10,3 @@ var x = newWithAllocator(allocator, unmanaged MyClass, 1);
 writeln(x);
 deleteWithAllocator(allocator, x);
 /* STOP_EXAMPLE */
-
-writeln(x);
