@@ -6612,7 +6612,7 @@ yyreduce:
   case 73: /* include_module_stmt: TINCLUDE opt_access_control opt_prototype TMODULE ident_def TSEMI  */
 #line 1119 "chpl.ypp"
   {
-    auto node = Include::build(BUILDER, LOC((yyloc)), context->visibility, (yyvsp[-3].moduleKind), (yyvsp[-1].uniqueStr));
+    auto node = Include::build(BUILDER, LOC((yyloc)), context->visibility, (yyvsp[-3].moduleKind), (yyvsp[-1].uniqueStr), LOC((yylsp[-1])));
     (yyval.commentsAndStmt) = STMT((yyloc), node.release());
     context->visibility = Decl::DEFAULT_VISIBILITY;
   }
