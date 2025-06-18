@@ -175,8 +175,6 @@ class PrivateImpl: BaseDist, writeSerializable {
   proc trackDomains() param do return false;
 
   override proc dsiTrackDomains() do    return false;
-
-  override proc singleton() param do return true;
 }
 
 class PrivateDom: BaseRectangularDom(?) {
