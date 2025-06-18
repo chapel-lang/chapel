@@ -4,6 +4,11 @@
 
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
+if [ -z "$CHPL_HOME" ]; then
+  # compute the chpl home directory
+  CHPL_HOME=$(cd "$CWD" ; cd ..; cd ..; pwd)
+fi
+
 CC=$("$CHPL_HOME/util/printchplenv" --value --only CHPL_HOST_CC)
 PLATFORM=$("$CHPL_HOME/util/printchplenv" --value --only CHPL_HOST_PLATFORM)
 
