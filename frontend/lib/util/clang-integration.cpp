@@ -68,22 +68,19 @@ const std::vector<std::string>& clangFlags(Context* context) {
 
   if (auto chplEnvRes = context->getChplEnv()) {
     const auto& chplEnv = chplEnvRes.get();
-
-    // Use CHPL_LLVM_CLANG_C as the clang to invoke if it exists
-    if (chplEnv.find("CHPL_LLVM_CLANG_C") != chplEnv.end()) {
-      auto clangC = chplEnv.at("CHPL_LLVM_CLANG_C");
-      if (!clangC.empty()) {
-        ret.at(0) = clangC;  // replace default value
-      }
-    }
-
     // Append target compile args
-    static const char* compileArgsKeys[] = {"CHPL_TARGET_BUNDLED_COMPILE_ARGS",
+    static std::string compileArgsKeys[] = {"CHPL_LLVM_CLANG_C",
+                                            "CHPL_TARGET_BUNDLED_COMPILE_ARGS",
                                             "CHPL_TARGET_SYSTEM_COMPILE_ARGS"};
     for (const auto& key : compileArgsKeys) {
       if (chplEnv.find(key) != chplEnv.end()) {
         auto value = chplEnv.at(key);
         if (!value.empty()) {
+          // If CHPL_LLVM_CLANG_C exists use it as the clang to invoke,
+          // removing the default value we started with first.
+          if (key == "CHPL_LLVM_CLANG_C") {
+            ret.clear();
+          }
           std::istringstream iss(value);
           std::string arg;
           while (iss >> arg) {
