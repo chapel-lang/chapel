@@ -22,3 +22,5 @@ RUN mason build
 RUN mason run -- -nl 1
 RUN mkdir test && touch test/test.chpl mason test
 WORKDIR /home/user
+
+# TODO: shallow clone start_test and some tests to run in a few configs
