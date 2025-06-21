@@ -5411,7 +5411,7 @@ static SymExpr* makeCaseCond(TConverter* tc, TConverter::RV& rv,
   // TODO: handle case where passing to '==' has an associated action
   auto call = new CallExpr(fn, selectExpr->copy(), caseExpr);
 
-  auto cond = tc->storeInTempIfNeeded(call, re.type());
+  auto cond = tc->storeInTempIfNeeded(call, action->type());
 
   return cond;
 }
