@@ -5193,6 +5193,7 @@ void TConverter::exit(const Call* node, RV& rv) {
 }
 
 bool TConverter::enter(const Conditional* node, RV& rv) {
+  enterScope(node, rv);
   TC_DEBUGF(this, "enter conditional %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 
   // Not param-known condition; visit both branches as normal.
@@ -5231,24 +5232,12 @@ bool TConverter::enter(const Conditional* node, RV& rv) {
     // The result of the 'if-expr' will be stored in 'temp'.
     insertExpr(new SymExpr(temp));
   } else {
-    auto condRE = rv.byAst(node->condition());
-    if (condRE.type().isParamTrue()) {
-      // Don't need to process the false branch.
-      auto block = pushNewBlock();
-      node->thenBlock()->traverse(rv);
-      popBlock();
-      insertStmt(block);
-      return false;
-    } else if (condRE.type().isParamFalse()) {
-      if (auto elseBlock = node->elseBlock()) {
-        auto block = pushNewBlock();
-        elseBlock->traverse(rv);
-        popBlock();
-        insertStmt(block);
-      }
-      return false;
-    }
+    // Branch-sensitive traversal doesn't really work for the expression-level
+    // case because we need to build the 'move'. So just rely on this for
+    // statement-level conditionals.
+    if (!branchSensitivelyTraverse(node, rv)) return false;
 
+    auto condRE = rv.byAst(node->condition());
     astlocMarker markAstLoc(node->id());
 
     types::QualifiedType qtCond;
@@ -5379,6 +5368,7 @@ bool TConverter::enter(const Conditional* node, RV& rv) {
 }
 
 void TConverter::exit(const Conditional* node, RV& rv) {
+  exitScope(node, rv);
   TC_DEBUGF(this, "exit conditional %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 }
 
