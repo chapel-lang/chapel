@@ -48,6 +48,7 @@
 #include "chpl/framework/compiler-configuration.h"
 #include "chpl/framework/global-strings.h"
 #include "chpl/parsing/parsing-queries.h"
+#include "chpl/resolution/BranchSensitiveVisitor.h"
 #include "chpl/resolution/can-pass.h"
 #include "chpl/resolution/ResolvedVisitor.h"
 #include "chpl/resolution/resolution-queries.h"
@@ -125,7 +126,8 @@ using namespace uast;
 //    lazily generate only the functions that are needed, but we cannot take
 //    advantage of that until this pass generates all old AST.
 //
-struct TConverter final : UastConverter {
+struct TConverter final : UastConverter,
+                          chpl::resolution::BranchSensitiveVisitor<chpl::resolution::DefaultFrame, ResolvedVisitor<TConverter>&> {
 
   /// ------------ ///
   /// Nested Types ///
@@ -585,6 +587,28 @@ struct TConverter final : UastConverter {
   UniqueString ustr(const std::string& str) {
     return UniqueString::get(context, str);
   }
+
+  // BranchSensitiveVisitor methods
+  const chpl::types::Param* determineWhenCaseValue(const uast::AstNode* ast,
+                                                   RV& rv) override {
+    if (auto action = rv.byAst(ast).getAction(AssociatedAction::COMPARE)) {
+      return action->type().param();
+    }
+
+    return nullptr;
+  }
+  const types::Param* determineIfValue(const uast::AstNode* ast,
+                                       RV& rv) override {
+    if (auto rr = rv.byAst(ast); rr.type().kind() == types::QualifiedType::PARAM) {
+      return rr.type().param();
+    }
+    return nullptr;
+  }
+  void traverseNode(const uast::AstNode* ast, RV& rv) override {
+    ast->traverse(rv);
+  }
+
+
 
   /// -------------------------- ///
   /// Symbol and Type Conversion ///
@@ -4682,6 +4706,7 @@ static void attachFunctionFlags(TConverter* tc, const Function* node,
 }
 
 bool TConverter::enter(const Function* node, RV& rv) {
+  enterScope(node, rv);
   TC_DEBUGF(this, "enter function %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 
   if (node != cur.symbol) {
@@ -4897,6 +4922,7 @@ bool TConverter::enter(const Function* node, RV& rv) {
 }
 
 void TConverter::exit(const Function* node, RV& rv) {
+  exitScope(node, rv);
   TC_DEBUGF(this, "exit function %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 }
 
@@ -5133,6 +5159,7 @@ void TConverter::exit(const Return* node, RV& rv) {
   // replace with GOTO(epilogue)
   auto jump = new GotoStmt(GOTO_RETURN, cur.epilogueLabel);
   insertStmt(jump);
+  markReturn();
 }
 
 bool TConverter::enter(const Call* node, RV& rv) {
@@ -5510,6 +5537,7 @@ bool TConverter::enter(const Select* node, RV& rv) {
 void TConverter::exit(const Select* node, RV& rv) {}
 
 bool TConverter::enter(const Block* node, RV& rv) {
+  enterScope(node, rv);
   // Necessary for explicit standalone block-statements
   auto block = new BlockStmt();
   pushBlock(block);
@@ -5517,18 +5545,31 @@ bool TConverter::enter(const Block* node, RV& rv) {
 }
 
 void TConverter::exit(const Block* node, RV& rv) {
+  exitScope(node, rv);
   auto cur = popBlock();
   insertStmt(cur);
 }
 
 bool TConverter::enter(const AstNode* node, RV& rv) {
+  enterScope(node, rv);
   TC_DEBUGF(this, "enter ast %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
   return true;
 }
 void TConverter::exit(const AstNode* node, RV& rv) {
+  exitScope(node, rv);
   TC_DEBUGF(this, "exit ast %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 }
 
 chpl::owned<UastConverter> createTypedConverter(chpl::Context* context) {
   return toOwned(new TConverter(context));
 }
+
+namespace chpl::uast {
+template <>
+struct AstVisitorPrecondition<TConverter> {
+  static bool skipSubtree(const AstNode* node, TConverter& rv) {
+    return rv.isDoneExecuting() || rv.markedThrow();
+  }
+};
+
+};
