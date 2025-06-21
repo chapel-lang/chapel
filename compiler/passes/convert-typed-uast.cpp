@@ -4918,6 +4918,15 @@ bool TConverter::enter(const Function* node, RV& rv) {
   cur.retVar = nullptr;
   cur.epilogueLabel = nullptr;
 
+  if (auto attr = node->attributeGroup()) {
+    UniqueString name = UniqueString::get(context, "dyno.printConvertedAst");
+    if (attr->getAttributeNamed(name)) {
+      // If the dyno attribute is set, print the converted AST.
+      TC_DEBUGF(this, "Converted AST for %s:\n", node->id().str().c_str());
+      print_view(fn);
+    }
+  }
+
   return false;
 }
 
