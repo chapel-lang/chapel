@@ -5463,20 +5463,32 @@ static SymExpr* getWhenCond(TConverter* tc, TConverter::RV& rv,
 }
 
 bool TConverter::enter(const Select* node, RV& rv) {
+  enterScope(node, rv);
   // TODO:
   // - test case-exprs where the '==' operators have associated actions
   //   (e.g. in-intent on record argument)
 
   //Note: out-of-order otherwise is an error addressed by post-parse-checks
 
+  // TODO: Trying to convert this with the branch sensitive traversal is a bit
+  // awkward because we want to have only one generated select expression, and
+  // would need to store that somehow between when-stmt traversals. It also
+  // feels easier to manage the stacking of CondStmts here.
+
   types::QualifiedType selectQT;
   auto selectExpr = convertExpr(node->expr(), rv, &selectQT);
   auto selectSym = storeInTempIfNeeded(selectExpr, selectQT);
 
+  auto traverse = [this,&rv](const When* when) {
+    enterScope(when->body(), rv);
+    when->body()->traverse(rv);
+    exitScope(when->body(), rv);
+  };
+
   int count = 0;
   for (auto when : node->whenStmts()) {
     if (when->isOtherwise()) {
-      when->body()->traverse(rv);
+      traverse(when);
     } else {
       bool anyParamTrue = false;
       bool allParamFalse = true;
@@ -5495,7 +5507,7 @@ bool TConverter::enter(const Select* node, RV& rv) {
       // Note: this differs from traditional behavior in production, where each
       // comparison was made.
       if (anyParamTrue) {
-        when->body()->traverse(rv);
+        traverse(when);
 
         // Nothing else can match after this, so we're done
         break;
@@ -5503,7 +5515,7 @@ bool TConverter::enter(const Select* node, RV& rv) {
         auto cond = getWhenCond(this, rv, when, selectSym);
 
         // Traversing the body creates a BlockStmt we can remove
-        when->body()->traverse(rv);
+        traverse(when);
         auto thenBlock = cur.lastList()->last()->remove();
 
         auto elseBlock = new BlockStmt();
@@ -5524,7 +5536,10 @@ bool TConverter::enter(const Select* node, RV& rv) {
   return false;
 }
 
-void TConverter::exit(const Select* node, RV& rv) {}
+void TConverter::exit(const Select* node, RV& rv) {
+  exitScope(node, rv);
+  TC_DEBUGF(this, "exit select %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+}
 
 bool TConverter::enter(const Block* node, RV& rv) {
   enterScope(node, rv);
