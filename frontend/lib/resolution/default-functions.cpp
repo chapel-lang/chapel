@@ -1888,6 +1888,12 @@ generateIteratorMethod(Context* context,
   return result;
 }
 
+// Note: Generating uAST for extern assignment isn't possible at the moment
+// because types like ``extern type my_struct_t;`` don't have a symbol path
+// we can use. It's just something like ``MyMod@42``, which we can't use to
+// make , e.g., ``MyMod@42.=``. We could generate a function like for
+// extern records like ``extern record R { var x : int; }``, but it seems
+// simpler to handle both in the same way.
 static const TypedFnSignature*
 generateExternAssignment(ResolutionContext* rc, const ExternType* type) {
   auto context = rc->context();
