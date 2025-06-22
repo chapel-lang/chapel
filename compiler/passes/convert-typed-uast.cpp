@@ -2181,6 +2181,13 @@ struct ConvertTypeHelper {
 
     ts->addFlag(FLAG_RESOLVED_EARLY);
     at->resolveStatus = RESOLVED;
+
+    auto rc = createDummyRC(context());
+    if (types::Type::isPod(&rc, ct)) {
+      ts->addFlag(FLAG_POD);
+    } else {
+      ts->addFlag(FLAG_NOT_POD);
+    }
   }
 
   DefExpr* insertTypeIntoModule(ID idToInsertAt, Type* converted) {
@@ -4655,8 +4662,9 @@ bool TConverter::enter(const Function* node, RV& rv) {
     // TODO: gather the formals we want to create
     // to un-pack tuples etc.
 
-    int formalIdx = 0;
+    int formalIdx = -1;
     for (auto decl : node->formals()) {
+      formalIdx += 1;
       astlocMarker markAstLoc(decl->id());
 
       // Some formals (e.g., `type`/`param`) can be skipped.
@@ -4699,7 +4707,6 @@ bool TConverter::enter(const Function* node, RV& rv) {
         TC_UNIMPL("Unhandled formal");
       }
 
-      formalIdx += 1;
     }
 
     exitFormals(fn);

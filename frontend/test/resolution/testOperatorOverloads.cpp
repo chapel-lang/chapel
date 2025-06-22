@@ -384,6 +384,30 @@ static void test7c() {
   assert(vars.at("y").type() && vars.at("y").type()->isBoolType());
 }
 
+static void test7d() {
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program =
+    R""""(
+      record R {
+        type t = int;
+        var field : t;
+      }
+      operator R.==(a:R(int), b:R(int)) { return 2; }
+
+      var a = new R();
+      var b = new R(real, 0.0);
+
+      var x = a == a;
+      var y = b == b;
+    )"""";
+
+  auto vars = resolveTypesOfVariables(context, program, {"x", "y"});
+  assert(vars.at("x").type() && vars.at("x").type()->isIntType());
+  assert(vars.at("y").type() && vars.at("y").type()->isBoolType());
+}
+
 // test that we get compiler generated methods for = and == when inside a proc
 static void test8() {
   Context* context = buildStdContext();
@@ -703,6 +727,7 @@ int main() {
   test7();
   test7b();
   test7c();
+  test7d();
   test8();
   test9();
   test10();
