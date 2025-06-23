@@ -2477,38 +2477,69 @@ int main(int argc, char** argv) {
                          {}, //prependStandardModulePaths,
                          {}, //cmdLinePaths
                          args.files);
-  GatherModulesVisitor gather(gContext);
   printStuff(argv[0], (void*)main);
-  // evaluate all the files and gather the modules
-  for (auto cpath : args.files) {
-    UniqueString path = UniqueString::get(gContext, cpath);
-    UniqueString emptyParent;
 
-    std::vector<UniqueString> paths;
-    size_t location = cpath.rfind("/");
-    paths.push_back(UniqueString::get(gContext,"./"));
-    if (location != std::string::npos) {
-      paths.push_back(UniqueString::get(gContext, cpath.substr(0, location + 1)));
+  // gather command line files as unique strings
+  std::vector<UniqueString> commandLineModulePaths;
+  for (auto path : args.files) {
+    auto cleanPath = chpl::cleanLocalPath(path);
+    auto uPath = UniqueString::get(gContext, cleanPath);
+    commandLineModulePaths.push_back(uPath);
+  }
+
+  // compute the main module
+  ID mainModule;
+  std::vector<ID> commandLineModuleIDs;
+  UniqueString requestedMainModuleName;
+
+  commandLineModuleIDs =
+    findMainAndCommandLineModules(gContext,
+                                  commandLineModulePaths,
+                                  requestedMainModuleName,
+                                  /* libraryMode (ignore errors) */ true,
+                                  mainModule);
+
+  // compute the module initialization order
+  // (the order doesn't particularly matter here, but calling this function
+  //  finds the modules used/imported, transitively)
+  std::vector<ID> modIds;
+
+  if (processUsedModules_) {
+    // backup strategy for finding the main module
+    // (the main module should not be relevant for chpldoc)
+    if (mainModule.isEmpty() && commandLineModuleIDs.size() > 0) {
+      mainModule = commandLineModuleIDs[0];
     }
-    setModuleSearchPath(gContext, paths);
 
-    // TODO: Change which query we use to parse files as suggested by @mppf
-    // parseFileContainingIdToBuilderResult(Context* context, ID id);
-    // and then work with the module ID to find the preceding comment.
-    const BuilderResult& builderResult =
-      parseFileToBuilderResultAndCheck(gContext, path, emptyParent);
+    auto ids = resolution::moduleInitializationOrder(gContext,
+                                                     mainModule,
+                                                     commandLineModuleIDs);
 
-    if (erroHandler->numErrors() > 0) {
-      erroHandler->printAndExitIfError(gContext);
+    // Add the transitive modules, but don't add bundled modules
+    for (auto id : ids) {
+      if (idIsInBundledModule(gContext, id)) {
+        continue;
+      }
+
+      modIds.push_back(id);
     }
-    // gather all the top level and used/imported/included module IDs
-    for (const chpl::uast::AstNode* ast : builderResult.topLevelExpressions()) {
-      /* note the use of the above pattern rather than `const auto& ast:`
-          was motivated by a compiler error from chapelmac during smoketests
-          that complained about the pattern and suggested this replacement,
-          which it seems satisfied with.
-      */
-      ast->traverse(gather);
+  } else {
+    modIds = commandLineModuleIDs;
+  }
+
+  // Gather modules/submodules according to which to be documented;
+  // and also report errors for attributes that are invalid
+  auto gather = GatherModulesVisitor(gContext);
+  for (auto id : modIds) {
+    const AstNode* node = idToAst(gContext, id);
+    if (node) {
+      if (auto m = node->toModule()) {
+        if (m->visibility() == Decl::Visibility::PRIVATE || isNoDoc(m)) {
+          // skip
+        } else {
+          node->traverse(gather);
+        }
+      }
     }
   }
 
