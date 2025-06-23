@@ -25,8 +25,11 @@ proc main() {
   // test assignment between extern types
   var x : b;
   var y : b;
-  x.x = 5;
-  y.x = 42;
+
+  // initialize some values
+  // (use 'c_int' as a workaround for bug where coercion doesn't work yet)
+  x.x = 5:c_int;
+  y.x = 42:c_int;
 
   println(x.x);
 
