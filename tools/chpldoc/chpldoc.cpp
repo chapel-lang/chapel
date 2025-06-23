@@ -1912,53 +1912,29 @@ struct GatherModulesVisitor {
   std::set<ID> modules;
   Context* context_;
   GatherModulesVisitor(Context* context) {
-      context_ = context;
+    context_ = context;
   }
 
-  void handleUseOrImport(const AstNode* node) {
-    if (processUsedModules_) {
-      auto scope = resolution::scopeForId(context_, node->id());
-      if (scope != nullptr && scope->containsUseImport()) {
-        if (auto r = resolveVisibilityStmts(context_, scope)) {
-          for (auto id: r->modulesNamedInUseOrImport()) {
-            if (idIsInBundledModule(context_, id)) {
-              continue;
-            }
-            // only add it and visit its children if we haven't seen it already
-            if (modules.find(id) == modules.end()) {
-              modules.insert(id);
-              auto ast = idToAst(context_, id);
-              ast->traverse(*this);
-            }
-          }
-        }
-      }
-    }
-  }
-
-  bool enter(const Module* m) {
+  static bool shouldGatherModule(const Module* m) {
     if (m->visibility() == Decl::Visibility::PRIVATE || isNoDoc(m)) {
       return false;
     }
-    modules.insert(m->id());
+
     return true;
   }
 
-  // will handle a use or import multiple times in the case that a module has
-  // multiple use statements.
-  // every time handleUseOrImport is called, it will try to add the module
-  // to the set
-  void exit(const Use* node) {
-    handleUseOrImport(node);
-  }
+  bool enter(const Module* m) {
+    if (shouldGatherModule(m)) {
+      modules.insert(m->id());
+      return true;
+    }
 
-  void exit(const Import* node) {
-    handleUseOrImport(node);
+    return false;
   }
 
   void exit(const Include* node) {
     if (auto mod = getIncludedSubmodule(context_, node->id())) {
-      if (!isNoDoc(mod)) {
+      if (shouldGatherModule(mod)) {
         modules.insert(mod->id());
       }
     }
@@ -1970,7 +1946,7 @@ struct GatherModulesVisitor {
   }
 
   bool enter(const AstNode* n) {
-    return true;
+    return true; // to check attributes
   }
 
   void exit(const AstNode* n) {
@@ -2534,11 +2510,7 @@ int main(int argc, char** argv) {
     const AstNode* node = idToAst(gContext, id);
     if (node) {
       if (auto m = node->toModule()) {
-        if (m->visibility() == Decl::Visibility::PRIVATE || isNoDoc(m)) {
-          // skip
-        } else {
-          node->traverse(gather);
-        }
+        m->traverse(gather);
       }
     }
   }
