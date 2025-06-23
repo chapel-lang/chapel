@@ -3,6 +3,7 @@
 # Test quickstart configuration on examples only, on darwin
 
 UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+source $UTIL_CRON_DIR/common.bash
 source $UTIL_CRON_DIR/common-quickstart.bash
 source $UTIL_CRON_DIR/common-darwin.bash
 source $UTIL_CRON_DIR/common-localnode-paratest.bash
