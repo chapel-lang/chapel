@@ -20,7 +20,7 @@ Chapel provides the following expressions:
      enum-constant-expression
      call-expression
      type-expression
-     iteratable-call-expression
+     iterable-call-expression
      member-access-expression
      new-expression
      query-expression
@@ -1729,8 +1729,8 @@ A for expression is given by the following syntax:
 .. code-block:: syntax
 
    for-expression:
-     'for' index-var-declaration 'in' iteratable-expression 'do' expression
-     'for' iteratable-expression 'do' expression
+     'for' index-var-declaration 'in' iterable-expression 'do' expression
+     'for' iterable-expression 'do' expression
 
 A for expression is an iterator that executes a for loop
 (:ref:`The_For_Loop`), evaluates the body expression on each
