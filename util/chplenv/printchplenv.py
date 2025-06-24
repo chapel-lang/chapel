@@ -450,7 +450,7 @@ def _print_var(key, value, print_format=None, shortname=None, raw=False):
     elif print_format == 'verbose':
         reason = " (inferred)"
         if env_set(key_stripped):
-            reason = " (environment)"
+            reason = " (environment/cli)"
         elif config_set(key_stripped):
             reason = " (chplconfig)"
         return "{}: {}{}\n".format(key_stripped, value, reason)
@@ -578,7 +578,7 @@ def diagnose_missing_library(lib_type):
                 print("Valid options: {}".format(", ".join(options)))
             chplconfig_path = overrides.get_chplconfig_path()
             if env_set(varname):
-                print("This variable is set in the environment, consider unsetting it.")
+                print("This variable is either set in the environment or via a command line argument, consider unsetting it.")
             elif config_set(varname):
                 if chplconfig_path:
                     print("This variable is set in '{}', consider removing it.".format(chplconfig_path))
