@@ -165,7 +165,7 @@ get comparison operators by default. While that might change in the
 future, this is a good opportunity to learn about how to sort with a
 custom comparator. See
 
- https://chapel-lang.org/docs/modules/packages/Sort.html
+ https://chapel-lang.org/docs/modules/standard/Sort.html
 
 Bonus Task B3: Sort Output by File Size
 ---------------------------------------

@@ -21,7 +21,6 @@ Algorithms
    Crypto <packages/Crypto>
    NPBRandom <packages/NPBRandom>
    Search <packages/Search>
-   Sort <packages/Sort>
 
 Communication (Inter-Locale)
 ----------------------------
