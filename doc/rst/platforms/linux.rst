@@ -28,6 +28,19 @@ See the full list of supported packages `here
 packages, there is also a Chapel `AUR
 <https://aur.archlinux.org/packages/chapel>`__.
 
+---------
+Linuxbrew
+---------
+
+For users of Linuxbrew_, Chapel can be installed with the following commands:
+
+.. code-block:: bash
+
+   brew update
+   brew install chapel
+
+For more information on using Chapel with Linuxbrew, see the `docs on using Homebrew <macosx-homebrew>`_ with Chapel.
+
 --------------------
 Building from Source
 --------------------
@@ -35,3 +48,6 @@ Building from Source
 Chapel can be built from source on Linux systems using the normal build steps.
 See :ref:`readme-prereqs` for a list of prerequisites and follow
 :ref:`readme-building` for the build instructions.
+
+
+.. _Linuxbrew: https://docs.brew.sh/Homebrew-on-Linux
