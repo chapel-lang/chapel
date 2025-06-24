@@ -142,6 +142,17 @@ if [ $LINT -eq 1 ]; then
         exit 1
     fi
 
+    # check that the docs have don't use literal .. code-block:: chpl
+    # TODO: improve the script so it does not have to ignore the spec explicitly
+    echo "Checking for literal .. code-block:: chpl"
+    $($CHPL_HOME/util/config/find-python.sh) \
+      $CHPL_HOME/util/devel/lookForCodeBlocks modules doc/rst/ \
+      --ignore doc/rst/language/spec
+    if [ $? -ne 0 ] ; then
+        echo "Found literal code blocks"
+        exit 1
+    fi
+
     # done with lint checks
 fi
 
