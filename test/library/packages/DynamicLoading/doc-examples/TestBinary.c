@@ -1,3 +1,8 @@
+//
+// THIS TEST CASE IS AUTO-INCLUDED IN THE DOCUMENTATION
+//
+
+/* START_EXAMPLE */
 // Compile with: 'cc -shared -fPIC -o TestBinary TestBinary.c'
 //
 // Your C compiler must support compiling a shared library as well
@@ -18,3 +23,4 @@ int main(void) {
   foo();
   return 0;
 }
+/* STOP_EXAMPLE */
