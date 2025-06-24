@@ -6,6 +6,7 @@ Documentation Options:
       --author <author>               Documentation author string.
       --comment-style <indicator>     Only includes comments that start with
                                       <indicator>
+  -M, --module-dir <directory>        Add directory to module search path
       --process-used-modules          Also parse and document 'use'd modules
       --save-sphinx <directory>       Save generated Sphinx project in
                                       directory

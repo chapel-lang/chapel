@@ -1,0 +1,4 @@
+--process-used-modules A.chpl B-dummy.chpl
+--process-used-modules B-dummy.chpl A.chpl
+A.chpl B-dummy.chpl
+B-dummy.chpl A.chpl

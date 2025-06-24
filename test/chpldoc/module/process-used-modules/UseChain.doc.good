@@ -1,0 +1,108 @@
+.. default-domain:: chpl
+
+.. module:: UseChain
+
+UseChain
+========
+**Usage**
+
+.. code-block:: chapel
+
+   use UseChain;
+
+
+or
+
+.. code-block:: chapel
+
+   import UseChain;
+
+**Submodules**
+
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   UseChain/*
+
+.. default-domain:: chpl
+
+.. module:: PublicSubmodule
+
+PublicSubmodule
+===============
+**Usage**
+
+.. code-block:: chapel
+
+   use UseChain.PublicSubmodule;
+
+
+or
+
+.. code-block:: chapel
+
+   import UseChain.PublicSubmodule;
+
+cat: docs/source/modules/UseChain/NoDocSubmodule.rst: No such file or directory
+cat: docs/source/modules/UseChain/PrivateSubmodule.rst: No such file or directory
+.. default-domain:: chpl
+
+.. module:: Used1
+
+Used1
+=====
+**Usage**
+
+.. code-block:: chapel
+
+   use Used1;
+
+
+or
+
+.. code-block:: chapel
+
+   import Used1;
+
+.. default-domain:: chpl
+
+.. module:: Used2
+
+Used2
+=====
+**Usage**
+
+.. code-block:: chapel
+
+   use Used2;
+
+
+or
+
+.. code-block:: chapel
+
+   import Used2;
+
+.. default-domain:: chpl
+
+.. module:: Used3
+
+Used3
+=====
+**Usage**
+
+.. code-block:: chapel
+
+   use Used3;
+
+
+or
+
+.. code-block:: chapel
+
+   import Used3;
+
+.. data:: var x: int
+
+cat: docs/source/modules/used-subdir/Used4.rst: No such file or directory
