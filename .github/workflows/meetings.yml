@@ -3,7 +3,7 @@ name: Weekly Meeting Topics
 on:
   workflow_dispatch: # Allows manual triggering of the workflow
   schedule:
-    - cron: '0 18 * * 2' # Runs every week on Tuesday at 11 PT
+    - cron: '0 17 * * 2' # Runs every week on Tuesday at 11 PT
 
 jobs:
   create-discussion:
