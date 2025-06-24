@@ -208,4 +208,29 @@ previous section.
 Using the libfabric ``tcp`` provider
 ------------------------------------
 
-TODO
+Chapel built with the ``ofi`` communication layer can use the libfabric ``tcp``
+provider for communication over Ethernet. A Chapel build with ``CHPL_COMM=ofi``
+will work with the ``tcp`` provider if it is available on the system. Unlike
+the GASNet UDP conduit, running Chapel in this way requires a separate launcher
+to spawn a Chapel program across multiple locales and requires a little more
+configuration.
+
+* If you are using a system launcher like Slurm (e.g.
+  ``CHPL_LAUNCHER=slurm-srun`` or ``CHPL_LAUNCHER=none`` with explicit Slurm
+  commands), you should make sure to build Chapel with
+  ``CHPL_COMM_OFI_OOB=pmi2``. It may also be necessary to set
+  ``SLURM_MPI_TYPE=pmi2`` in the environment at runtime. ``pmi2`` is an
+  external dependency that is typically provided by Slurm installations.
+* If you plan to run Chapel over an existing MPI installation, you can use the
+  ``mpirun4ofi`` launcher.
+
+Make sure to read the documentation for `libfabric <readme-libfabric>`_ to
+ensure your Chapel installation is configured correctly for the ``tcp``
+provider.
+
+.. note::
+
+   By setting ``FI_PROVIDER=tcp`` in the environment, you can force Chapel to
+   use the ``tcp`` provider. See :ref:`readme-libfabric-providers` for more
+   information on setting this environment variable.
+
