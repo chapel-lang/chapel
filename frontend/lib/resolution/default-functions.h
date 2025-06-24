@@ -101,6 +101,7 @@ const uast::BuilderResult& buildRecordCompareLt(Context* context, ID typeID);
 const uast::BuilderResult& buildRecordCompareLe(Context* context, ID typeID);
 const uast::BuilderResult& buildRecordCompareGt(Context* context, ID typeID);
 const uast::BuilderResult& buildRecordCompareGe(Context* context, ID typeID);
+const uast::BuilderResult& buildRecordAssign(Context* context, ID typeID);
 const uast::BuilderResult& buildTypeConstructor(Context* context, ID typeID);
 const uast::BuilderResult& buildDeinit(Context* context, ID typeID);
 const uast::BuilderResult& buildDeSerialize(Context* context, ID typeID, bool isSerializer);
