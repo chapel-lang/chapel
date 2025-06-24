@@ -2521,6 +2521,9 @@ int main(int argc, char** argv) {
     }
   }
 
+  // exit if there were fatal errors in the processing done so far
+  erroHandler->printAndExitIfError(gContext);
+
   for (auto id : gather.modules) {
     if (auto& r = rstDoc(gContext, id)) {
         // given a module ID we can get the path to the file that we parsed
