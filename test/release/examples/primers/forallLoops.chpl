@@ -365,20 +365,20 @@ forall i in 1..n with (
   var scratch: [1..n] real,
   // Cf. `[const] in` without a type or initializer shows a shadow variable.
   in outerRealVariable,
-  // A `ref` outer variable lets me choose explicitly what to reference.
+  // A `ref` task-private variable lets me choose explicitly what to reference.
   ref myRef = A[1],
   // It can also reference something task-specific.
-  ref myB = A[taskId],
+  ref myB = B[taskId],
   // Cf. `[const] ref` without a type or initializer shows a shadow variable.
   ref outerIntVariable
 ) {
   scratch[1] += 0.1;         // ok: never accessed concurrently
   outerRealVariable += 0.1;  // ditto
 
-  if i == 1 {                // ensure only one task accesses outerIntVariable
-    myRef *= 3;              // to avoid the risk of a data race
-    outerIntVariable *= 3;   // ditto
-  }
+  if i == 1 {                // ensure only one task accesses the outer:
+    myRef *= 3;              //   `A[1]` and
+    outerIntVariable *= 3;   //   `outerIntVariable`
+  }                          // to avoid the risk of a data race
 }
 
 writeln("After a loop with task-private variables:");
