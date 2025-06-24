@@ -457,9 +457,6 @@ def _validate_cuda_llvm_version_impl(gpu: gpu_type):
             "LLVM not built for %s, consider setting CHPL_LLVM to 'bundled'." %
             gpu.llvm_target, allowExempt=False
         )
-    if int(chpl_llvm.get_llvm_version()) >= 20:
-        error("Chapel does not support LLVM 20+ with CHPL_GPU=nvidia. "
-              "Please use CHPL_LLVM=bundled or LLVM 19 or earlier.")
 
 def _validate_rocm_llvm_version_impl(gpu: gpu_type):
     major_version = get_sdk_version().split('.')[0]
