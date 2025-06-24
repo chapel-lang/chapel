@@ -120,6 +120,11 @@ ifndef GNU_GCC_MINOR_VERSION
 export GNU_GCC_MINOR_VERSION := $(shell $(CC) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[2]);}')
 endif
 ifndef GNU_GPP_MAJOR_VERSION
+#
+# When using this makefile to build a launcher, we don't use C++. Since g++ may
+# not be available, we default to minimum dummy versions to avoid errors about
+# missing g++.
+#
 ifneq ($(MAKE_LAUNCHER),1)
 export GNU_GPP_MAJOR_VERSION := $(shell $(CXX) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[1]);}';)
 else
