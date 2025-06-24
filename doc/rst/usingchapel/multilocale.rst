@@ -47,7 +47,7 @@ compiling and running multilocale Chapel programs.
       Then, consider changing these variables to target your specific system:
 
         * :ref:`CHPL_LAUNCHER <readme-launcher>` controls job launch
-       * :ref:`CHPL_COMM_SUBSTRATE <set-comm-conduit>` selects a GASNet conduit
+        * :ref:`CHPL_COMM_SUBSTRATE <set-comm-conduit>` selects a GASNet conduit
         * :ref:`CHPL_GASNET_SEGMENT <set-comm-segment>` indicates a memory segment
 
    * To build :ref:`libfabric <readme-libfabric>`, set the following:
