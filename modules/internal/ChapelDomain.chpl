@@ -832,7 +832,7 @@ module ChapelDomain {
   }
 
   @chpldoc.nodoc
-  operator =(ref a: domain, b) {  // b is iteratable
+  operator =(ref a: domain, b) {  // b is iterable
     if a.isRectangular() then
       compilerError("assigning ", b.type:string, " to a rectangular domain");
     if ! canBeIteratedOver(b) then
