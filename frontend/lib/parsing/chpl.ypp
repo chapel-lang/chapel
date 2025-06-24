@@ -2451,7 +2451,7 @@ fn_expr:
     context->resetDeclState();
     context->enterScope(asttags::Function, STR("proc"));
   }
-  block_stmt_body
+  function_body_stmt
   {
     FunctionParts fp = $1;
     fp.isBodyNonBlockExpression = false;
