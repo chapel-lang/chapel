@@ -80,6 +80,7 @@ std::string CHPL_THIRD_PARTY;
 
 std::vector<UniqueString> usingAttributeToolNames;
 std::vector<std::string> usingAttributeToolNamesStr;
+std::vector<std::string> cmdLineModPaths;
 
 Context* gContext;
 
@@ -145,6 +146,10 @@ static void addUsingAttributeToolNameStr(const ArgumentDescription* desc,
   usingAttributeToolNamesStr.push_back(name);
 }
 
+static void addModulePath(const ArgumentDescription* desc, const char* newpath) {
+  cmdLineModPaths.push_back(std::string(newpath));
+}
+
 #define DRIVER_ARG_COPYRIGHT \
   {"copyright", ' ', NULL, "Show copyright", "F", &fPrintCopyright, NULL, NULL}
 
@@ -182,6 +187,7 @@ ArgumentDescription docs_arg_desc[] = {
  {"output-dir", 'o', "<dirname>", "Sets the documentation directory to <dirname>", "S256", fDocsFolder, NULL, NULL},
  {"author", ' ', "<author>", "Documentation author string.", "S256", fDocsAuthor, "CHPLDOC_AUTHOR", NULL},
  {"comment-style", ' ', "<indicator>", "Only includes comments that start with <indicator>", "S256", fDocsCommentLabel, NULL, docsArgSetCommentLabel},
+ {"module-dir", 'M', "<directory>", "Add directory to module search path", "P", NULL, NULL, addModulePath},
  {"process-used-modules", ' ', NULL, "Also parse and document 'use'd modules", "F", &fDocsProcessUsedModules, NULL, NULL},
  {"save-sphinx",  ' ', "<directory>", "Save generated Sphinx project in directory", "S256", fDocsSphinxDir, NULL, NULL},
  {"text-only", ' ', NULL, "Generate text documentation only", "F", &fDocsTextOnly, NULL, NULL},
@@ -2451,7 +2457,7 @@ int main(int argc, char** argv) {
                          chplModulePath,
                          {}, //prependInternalModulePaths,
                          {}, //prependStandardModulePaths,
-                         {}, //cmdLinePaths
+                         cmdLineModPaths, // -M etc
                          args.files);
   printStuff(argv[0], (void*)main);
 
