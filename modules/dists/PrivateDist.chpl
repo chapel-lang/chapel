@@ -38,26 +38,28 @@ The index set of a domain distributed over ``privateDist``
 is always ``0..numLocales-1``, regardless of the domain's rank,
 and cannot be changed.
 
-The following domain is available as a convenience,
-so user programs do not need to declare their own:
+This module declares a module-level constant of type ``privateDist``
+named ``PrivateSpace`` for use as a convenience (so that user programs
+do not need to declare their own).
 
   .. code-block:: chapel
 
     const PrivateSpace: domain(1) dmapped new privateDist();
 
-
 **Example**
 
 The following code declares a Private-distributed array ``A``.
 The `forall` loop visits each locale and sets the array element
-corresponding to that locale to that locale's number of cores.
+corresponding to that locale to that locale's ID.
 
-  .. code-block:: chapel
+.. literalinclude:: ../../../../test/distributions/doc-examples/PrivateDistExamples.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE
+   :end-before: STOP_EXAMPLE
 
-    var A: [PrivateSpace] int;
-    forall a in A do
-      a = here.numPUs();
+When run on 6 locales, the output is:
 
+.. literalinclude:: ../../../../test/distributions/doc-examples/PrivateDistExamples.good
 
 **Data-Parallel Iteration**
 
