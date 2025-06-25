@@ -325,30 +325,26 @@ of forall loop.
 Task-Private Variables
 ----------------------
 
-A task-private variable is similar to an in-intent or ref-intent
-shadow variable in that it is set up at the beginning of its
-task before the task executes any loop iterations, and deallocated
-at the end of the task after the task completes all "its" iterations.
-Each task created by the parallel iterator gets its own set
-of task-private variable(s).
-Task-private variables are different in that they have no corresponding
+A task-private variable exists for the duration of a task.
+Like with shadow variables, each task created by the parallel iterator
+of a forall-loop gets its own set of task-private variable(s).
+Unlike shadow variables, task-private variables do not correspond to
 outer variables.
 
-A task-private variable is introduced using a with-clause
+Task-private variables are introduced in a with-clause
 in a way similar to a regular ``var``, ``const``, ``ref``,
 or ``const ref`` variable.
 
-A ``var`` or ``const`` variable in a with-clause
-must have either its type or initializing expression, or both.
-As with a regular variable, a task-private variable is initialized
-to the default value of its type if the initializing expression
-is not given. 
+A ``var`` or ``const`` task-private variable must have either its type
+or initializing expression, or both.  As with a regular variable, a
+task-private variable is default-initialized if the initializing
+expression is not given.
 
 A ``ref`` or ``const ref`` variable must have an initializing expression
 and cannot declare its type. This expression defines what such a
 task-private variable is an alias for.
 
-The next examples highlights some uses of task-private variables
+The next example highlights some uses of task-private variables
 and their syntactic differences from explicit task intents for
 shadow varialbes.
 */
