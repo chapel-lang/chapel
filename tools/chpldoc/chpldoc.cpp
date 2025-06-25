@@ -1647,7 +1647,11 @@ struct RstResultBuilder {
 
   owned<RstResult> visit(const Interface* i) {
     if (isNoDoc(i)) return {};
-    show("interface", i);
+    if (isHideImplType(i)) {
+      show("type", i);
+    } else {
+      show("interface", i);
+    }
     visitChildren(i);
     return getResult(true);
   }
