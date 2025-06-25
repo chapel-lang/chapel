@@ -233,7 +233,6 @@ file=OwnedObject.rst
 removeTitle $file
 replace "_owned" "owned" $file
 replace "chpl_t" "t" $file
-replace ".. record:: owned" ".. type:: owned" $file
 removeUsage $file
 ## End of OwnedObject ##
 
@@ -243,6 +242,5 @@ removeTitle $file
 replace "_owned" "owned" $file
 replace "_shared" "shared" $file
 replace "chpl_t" "t" $file
-replace ".. record:: shared" ".. type:: shared" $file
 removeUsage $file
 ## End of SharedObject ##
