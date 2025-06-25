@@ -59,7 +59,6 @@ compiling and running multilocale Chapel programs.
       Then, consider changing these variables to target your specific system:
 
         * :ref:`CHPL_LAUNCHER <readme-launcher>` controls job launch
-        * :ref:`CHPL_RT_COMM_OFI_PROVIDER <readme-libfabric-providers>` forces a specific libfabric provider
         * :ref:`CHPL_COMM_OFI_OOB <set-comm-ofi-oob>` selects the out-of-band communication method
 
    Note that the runtime libraries used by the Chapel compiler are
