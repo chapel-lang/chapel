@@ -201,6 +201,7 @@ module CTypes {
   */
   pragma "c_array record"
   pragma "default intent is ref if modified"
+  @chpldoc.hideImplType
   record c_array : writeSerializable {
     /*
        The array element type, which can be queried like so:
