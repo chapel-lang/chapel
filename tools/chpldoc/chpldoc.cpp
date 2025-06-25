@@ -306,6 +306,8 @@ static void checkKnownAttributes(const AttributeGroup* attrs) {
         // ignore, it's a known attribute
       } else if (name == UniqueString::get(gContext, "chpldoc.attributeSignature")) {
         // ignore, it's a known attribute
+      } else if (name == UniqueString::get(gContext, "chpldoc.hideImplType")) {
+        // ignore, it's a known attribute
       } else {
         // process the Error about unknown Attribute
         std::string msg = "Unknown attribute '";
@@ -390,6 +392,17 @@ static bool isNoWhereDoc(const Function* f) {
   if (auto attrs = f->attributeGroup())
     if (attrs->hasPragma(pragmatags::PRAGMA_NO_WHERE_DOC))
       return true;
+  return false;
+}
+
+static bool isHideImplType(const Decl* e) {
+  if (auto attrs = e->attributeGroup()) {
+    auto attr = attrs->getAttributeNamed(
+        UniqueString::get(gContext, "chpldoc.hideImplType"));
+    if (attr) {
+      return true;
+    }
+  }
   return false;
 }
 
@@ -1625,7 +1638,11 @@ struct RstResultBuilder {
     bool isNested = parent->isRecord() || parent->isClass();
 
     if (isNested) indentDepth_ += 1;
-    show("class", c);
+    if (isHideImplType(c)) {
+      show("type", c);
+    } else {
+      show("class", c);
+    }
     visitChildren(c);
     if (isNested) indentDepth_ -= 1;
 
@@ -1642,7 +1659,11 @@ struct RstResultBuilder {
 
   owned<RstResult> visit(const Enum* e) {
     if (isNoDoc(e)) return {};
-    show("enum", e);
+    if (isHideImplType(e)) {
+      show("type", e);
+    } else {
+      show("enum", e);
+    }
     visitChildren(e);
     return getResult(true);
   }
@@ -1891,7 +1912,11 @@ struct RstResultBuilder {
     bool isNested = parent->isRecord() || parent->isClass();
 
     if (isNested) indentDepth_ += 1;
-    show("record", r);
+    if (isHideImplType(r)) {
+      show("type", r);
+    } else {
+      show("record", r);
+    }
     visitChildren(r);
     if (isNested) indentDepth_ -= 1;
 
