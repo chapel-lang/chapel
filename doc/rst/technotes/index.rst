@@ -35,7 +35,6 @@ Initializers and Generic Programming
    :maxdepth: 1
 
    Forwarding Methods Calls <forwarding>
-   The ‘init=’ Method <initequals>
    Invoking Initializers with a Generic Instantiation <initTypeAlias>
    Partial Instantiations <partialInstantiations>
    Throwing Initializers <throwingInit>
