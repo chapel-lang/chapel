@@ -8,7 +8,8 @@ RUN dnf upgrade -y && \
     dnf install -y --allowerasing \
       gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake \
       which diffutils wget vim sudo \
-      llvm-devel clang clang-devel && \
+      llvm-devel clang clang-devel \
+      pmix-devel slurm-devel libfabric libfabric-devel && \
     dnf install -y --allowerasing epel-release && \
     dnf upgrade -y && \
     dnf install -y --allowerasing \
