@@ -107,34 +107,14 @@ and declares an array ``A`` over that domain.
 The `forall` loop sets each array element
 to the ID of the locale to which it is mapped.
 
-  .. code-block:: chapel
-
-    use BlockCycDist;
-
-    const Space = {1..8, 1..8};
-    const D: domain(2)
-      dmapped new blockCycDist(startIdx=Space.lowBound,blocksize=(2,3))
-      = Space;
-    var A: [D] int;
-
-    forall a in A do
-      a = a.here.id;
-
-    writeln(A);
+.. literalinclude:: ../../../../test/distributions/doc-examples/BlockCycDistExample0.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE
+   :end-before: STOP_EXAMPLE
 
 When run on 6 locales, the output is:
 
-  ::
-
-    0 0 0 1 1 1 0 0
-    0 0 0 1 1 1 0 0
-    2 2 2 3 3 3 2 2
-    2 2 2 3 3 3 2 2
-    4 4 4 5 5 5 4 4
-    4 4 4 5 5 5 4 4
-    0 0 0 1 1 1 0 0
-    0 0 0 1 1 1 0 0
-
+.. literalinclude:: ../../../../test/distributions/doc-examples/BlockCycDistExample0.good
 
 **Initializer Arguments**
 

@@ -98,32 +98,14 @@ and declares an array ``A`` over that domain.
 The `forall` loop sets each array element
 to the ID of the locale to which it is mapped.
 
-  .. code-block:: chapel
-
-    use CyclicDist;
-
-    const Dist = new cyclicDist(startIdx=(1,1));
-    const D = Dist.createDomain({1..8, 1..8});
-    var A: [D] int;
-
-    forall a in A do
-      a = here.id;
-
-    writeln(A);
+.. literalinclude:: ../../../../test/distributions/doc-examples/CyclicDistExample0.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE
+   :end-before: STOP_EXAMPLE
 
 When run on 6 locales, the output is:
 
-  ::
-
-    0 1 0 1 0 1 0 1
-    2 3 2 3 2 3 2 3
-    4 5 4 5 4 5 4 5
-    0 1 0 1 0 1 0 1
-    2 3 2 3 2 3 2 3
-    4 5 4 5 4 5 4 5
-    0 1 0 1 0 1 0 1
-    2 3 2 3 2 3 2 3
-
+.. literalinclude:: ../../../../test/distributions/doc-examples/CyclicDistExample0.good
 
 **Data-Parallel Iteration**
 
