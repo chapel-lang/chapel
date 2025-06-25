@@ -166,7 +166,6 @@ removeUsage $file
 ## ChapelArray ##
 file="./ChapelArray.rst"
 replace "_array" "array" $file
-replace "record" "type" $file
 
 removePrefixFunctions $file
 removePrefixVariables $file
@@ -178,7 +177,6 @@ removeUsage $file
 ## ChapelDomain ##
 file="./ChapelDomain.rst"
 replace "_domain" "domain" $file
-replace "record" "type" $file
 
 removePrefixFunctions $file
 removePrefixVariables $file
@@ -193,8 +191,8 @@ file="./Atomics.rst"
 
 removePrefixFunctions $file
 
-replace "record:: AtomicBool" "type:: atomic \(bool\)" $file
-replace "record:: AtomicT"    "type:: atomic \(valType\)" $file
+replace "AtomicBool" "atomic \(bool\)" $file
+replace "AtomicT"    "atomic \(valType\)" $file
 
 removeTitle $file
 removeUsage $file
