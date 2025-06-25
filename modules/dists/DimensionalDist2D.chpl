@@ -107,14 +107,14 @@ using a 2D Dimensional distribution that
 replicates over 2 locales (when available) in the first dimension
 and distributes using block-cyclic distribution in the second dimension.
 
-.. literalinclude:: ../../../../test/distributions/doc-examples/DimensionalDist2DExample0.chpl
+.. literalinclude:: ../../../../test/distributions/doc-examples/DimensionalDist2DExamples.chpl
    :language: chapel
    :start-after: START_EXAMPLE
    :end-before: STOP_EXAMPLE
 
 When run on 6 locales, the output is:
 
-.. literalinclude:: ../../../../test/distributions/doc-examples/DimensionalDist2DExample0.good
+.. literalinclude:: ../../../../test/distributions/doc-examples/DimensionalDist2DExamples.good
 
 **Initializer Arguments**
 

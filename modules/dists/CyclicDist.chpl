@@ -98,14 +98,14 @@ and declares an array ``A`` over that domain.
 The `forall` loop sets each array element
 to the ID of the locale to which it is mapped.
 
-.. literalinclude:: ../../../../test/distributions/doc-examples/CyclicDistExample0.chpl
+.. literalinclude:: ../../../../test/distributions/doc-examples/CyclicDistExamples.chpl
    :language: chapel
    :start-after: START_EXAMPLE
    :end-before: STOP_EXAMPLE
 
 When run on 6 locales, the output is:
 
-.. literalinclude:: ../../../../test/distributions/doc-examples/CyclicDistExample0.good
+.. literalinclude:: ../../../../test/distributions/doc-examples/CyclicDistExamples.good
 
 **Data-Parallel Iteration**
 

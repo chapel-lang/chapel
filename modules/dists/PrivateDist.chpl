@@ -52,14 +52,14 @@ The following code declares a Private-distributed array ``A``.
 The `forall` loop visits each locale and sets the array element
 corresponding to that locale to that locale's ID.
 
-.. literalinclude:: ../../../../test/distributions/doc-examples/PrivateDistExample0.chpl
+.. literalinclude:: ../../../../test/distributions/doc-examples/PrivateDistExamples.chpl
    :language: chapel
    :start-after: START_EXAMPLE
    :end-before: STOP_EXAMPLE
 
 When run on 6 locales, the output is:
 
-.. literalinclude:: ../../../../test/distributions/doc-examples/PrivateDistExample0.good
+.. literalinclude:: ../../../../test/distributions/doc-examples/PrivateDistExamples.good
 
 **Data-Parallel Iteration**
 

@@ -175,14 +175,14 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
   is not strided, you can consider indices for dimension ``i`` over a
   domain named ``boundingBox`` to be:
 
-  .. literalinclude:: ../../../../test/distributions/doc-examples/StencilDistExample0.chpl
+  .. literalinclude:: ../../../../test/distributions/doc-examples/StencilDistExamples.chpl
      :language: chapel
      :start-after: START_EXAMPLE_0
      :end-before: STOP_EXAMPLE_0
 
   If the domain is strided:
 
-  .. literalinclude:: ../../../../test/distributions/doc-examples/StencilDistExample0.chpl
+  .. literalinclude:: ../../../../test/distributions/doc-examples/StencilDistExamples.chpl
      :language: chapel
      :start-after: START_EXAMPLE_1
      :end-before: STOP_EXAMPLE_1
@@ -216,7 +216,7 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
   arguments.  In such cases, factory procedures can be used for
   convenience and to avoid repetition.
 
-  .. literalinclude:: ../../../../test/distributions/doc-examples/StencilDistExample0.chpl
+  .. literalinclude:: ../../../../test/distributions/doc-examples/StencilDistExamples.chpl
      :language: chapel
      :start-after: START_EXAMPLE_2
      :end-before: STOP_EXAMPLE_2
@@ -294,7 +294,7 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
   call the ``updateFluff`` method to update the cached elements for each
   locale. Here is a simple example:
 
-  .. literalinclude:: ../../../../test/distributions/doc-examples/StencilDistExample0.chpl
+  .. literalinclude:: ../../../../test/distributions/doc-examples/StencilDistExamples.chpl
      :language: chapel
      :start-after: START_EXAMPLE_3
      :end-before: STOP_EXAMPLE_3

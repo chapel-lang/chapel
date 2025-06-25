@@ -70,7 +70,7 @@ called, it will be passed the index and the ``targetLocales`` array that the
 ``hashedDist`` distribution was initialized with. For example, the following
 record declares a custom mapper:
 
-.. literalinclude:: ../../../../test/distributions/doc-examples/HashedDistExample0.chpl
+.. literalinclude:: ../../../../test/distributions/doc-examples/HashedDistExamples.chpl
    :language: chapel
    :start-after: START_EXAMPLE_0
    :end-before: STOP_EXAMPLE_0
@@ -84,14 +84,17 @@ mapper computes the target locale based upon a hash of the index.
 
 **Example**
 
-.. literalinclude:: ../../../../test/distributions/doc-examples/HashedDistExample0.chpl
+The following example uses the custom mapper that was defined earlier in
+order to add ``string`` keys to a distributed domain:
+
+.. literalinclude:: ../../../../test/distributions/doc-examples/HashedDistExamples.chpl
    :language: chapel
    :start-after: START_EXAMPLE_1
    :end-before: STOP_EXAMPLE_1
 
 When run on 6 locales, the output is:
 
-.. literalinclude:: ../../../../test/distributions/doc-examples/HashedDistExample0.good
+.. literalinclude:: ../../../../test/distributions/doc-examples/HashedDistExamples.good
 
 **Initializer Arguments**
 

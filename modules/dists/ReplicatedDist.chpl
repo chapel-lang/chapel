@@ -76,14 +76,14 @@ referring to the domain or array.
 
 **Example**
 
-.. literalinclude:: ../../../../test/distributions/doc-examples/ReplicatedDistExample0.chpl
+.. literalinclude:: ../../../../test/distributions/doc-examples/ReplicatedDistExamples.chpl
    :language: chapel
    :start-after: START_EXAMPLE
    :end-before: STOP_EXAMPLE
 
 When run on 6 locales, the output is:
 
-.. literalinclude:: ../../../../test/distributions/doc-examples/ReplicatedDistExample0.good
+.. literalinclude:: ../../../../test/distributions/doc-examples/ReplicatedDistExamples.good
 
 See the :ref:`primers-replicated` primer for more examples of the Replicated
 distribution.
