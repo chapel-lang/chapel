@@ -95,17 +95,15 @@ This distribution is work in progress and so has significant limitations.
 
 It has not been tuned for performance.
 
-The only ``idxType`` currently supported is `int` or `int(64)`.
-
+The only ``idxType`` currently supported is ``int`` or ``int(64)``.
 
 **Example**
 
-The following code declares a domain ``D`` distributed over
-a Block-Cyclic distribution with a start index of ``(1,1)``
-and a block size of ``(2,3)``,
-and declares an array ``A`` over that domain.
-The `forall` loop sets each array element
-to the ID of the locale to which it is mapped.
+The following code declares a domain ``D`` distributed over a
+Block-Cyclic distribution with a start index of ``(1,1)`` and a block
+size of ``(2,3)``, and declares an array ``A`` over that domain.
+The ``forall`` loop sets each array element to the ID of the locale to
+which it is mapped.
 
 .. literalinclude:: ../../../../test/distributions/doc-examples/BlockCycDistExample0.chpl
    :language: chapel
