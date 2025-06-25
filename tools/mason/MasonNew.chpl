@@ -156,7 +156,7 @@ proc gitInit(dirName: string, show: bool) throws {
 
 /* Adds .gitignore to library project */
 proc addGitIgnore(dirName: string) {
-  var toIgnore = "target/\nMason.lock\n";
+  var toIgnore = "target/\nMason.lock\ndoc/\n";
   var gitIgnore = open(dirName+"/.gitignore", ioMode.cw);
   var GIwriter = gitIgnore.writer(locking=false);
   GIwriter.write(toIgnore);
