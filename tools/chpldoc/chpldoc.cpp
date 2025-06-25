@@ -1421,6 +1421,8 @@ struct RstResult {
   }
 
   private: void output(std::ostream& os, int indentPerDepth, int depth) {
+    // Note: this only indents the first line of the docstring. Anything on
+    // subsequent lines needs to have its indentation already correct.
     os << indentLines(doc, indentPerDepth * depth);
     if (indentChildren) depth += 1;
     for (auto& child : children) {
@@ -1430,7 +1432,7 @@ struct RstResult {
 };
 
 
-static const owned<RstResult>& rstDoc(Context * context, ID id);
+static const owned<RstResult>& rstDoc(Context * context, ID id, int indentDepth);
 static const Comment* const& previousComment(Context* context, ID id);
 static const std::vector<UniqueString>& getModulePath(Context* context, ID id);
 
@@ -1450,6 +1452,9 @@ struct RstResultBuilder {
       os_ << '\n';
       return false;
     }
+
+    // Note: RstResult::output currently does not indent comments, so we have
+    // to manually keep track of the indent depth.
     int addDepth = textOnly_ ? 1 : 0;
     int indentChars = indent ? (addDepth + indentDepth_) * commentIndent : 0;
     std::vector<std::string> lines;
@@ -1471,15 +1476,7 @@ struct RstResultBuilder {
     std::string errMsg;
     auto lastComment = previousComment(context_, node->id());
 
-    bool isNested = false;
-    if (node->isRecord() || node->isClass()) {
-      auto parent = parentAst(context_, node);
-      isNested = parent->isRecord() || parent->isClass();
-    }
-
-    if (isNested) indentDepth_ += 1;
     bool commentShown = showComment(lastComment, errMsg, indent);
-    if (isNested) indentDepth_ -= 1;
 
     if (!errMsg.empty()) {
       // process the warning about comments
@@ -1593,7 +1590,7 @@ struct RstResultBuilder {
     for (auto child : n->children()) {
       // don't visit child modules as they were gathered earlier
       if (!child->isModule()) {
-        if (auto &r = rstDoc(context_, child->id())) {
+        if (auto &r = rstDoc(context_, child->id(), indentDepth_)) {
           children_.push_back(r.get());
         }
       }
@@ -1623,8 +1620,15 @@ struct RstResultBuilder {
   owned<RstResult> visit(const Class* c) {
     if (isNoDoc(c) || c->visibility() == chpl::uast::Decl::PRIVATE) return {};
     if (textOnly_) os_ << "Class: ";
+
+    auto parent = parentAst(context_, c);
+    bool isNested = parent->isRecord() || parent->isClass();
+
+    if (isNested) indentDepth_ += 1;
     show("class", c);
     visitChildren(c);
+    if (isNested) indentDepth_ -= 1;
+
     return getResult(true);
   }
 
@@ -1883,8 +1887,14 @@ struct RstResultBuilder {
 
   owned<RstResult> visit(const Record* r) {
     if (isNoDoc(r)) return {};
+    auto parent = parentAst(context_, r);
+    bool isNested = parent->isRecord() || parent->isClass();
+
+    if (isNested) indentDepth_ += 1;
     show("record", r);
     visitChildren(r);
+    if (isNested) indentDepth_ -= 1;
+
     return getResult(true);
   }
 
@@ -2068,13 +2078,14 @@ static const Comment* const& previousComment(Context* context, ID id) {
   return QUERY_END(result);
 }
 
-static const owned<RstResult>& rstDoc(Context* context, ID id) {
-  QUERY_BEGIN(rstDoc, context, id);
+static const owned<RstResult>& rstDoc(Context* context, ID id, int indentDepth) {
+  QUERY_BEGIN(rstDoc, context, id, indentDepth);
   owned<RstResult> result;
   // Comments have empty id
   if (!id.isEmpty()) {
     const AstNode* node = idToAst(context, id);
     RstResultBuilder cqv{context};
+    cqv.indentDepth_ = indentDepth;
     result = node->dispatch<owned<RstResult>>(cqv);
   }
 
@@ -2525,7 +2536,7 @@ int main(int argc, char** argv) {
   erroHandler->printAndExitIfError(gContext);
 
   for (auto id : gather.modules) {
-    if (auto& r = rstDoc(gContext, id)) {
+    if (auto& r = rstDoc(gContext, id, 1)) {
         // given a module ID we can get the path to the file that we parsed
         UniqueString filePath;
         UniqueString parentSymbol;
