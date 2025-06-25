@@ -1141,11 +1141,10 @@ module OS {
    value of a :type:`CTypes.c_int` or another :type:`errorCode`. In addition,
    :type:`errorCode` can be checked directly in an if statement like so:
 
-   .. code-block:: chapel
-
-     var err: errorCode;
-     if err then writeln("err contains an error, ie err != 0");
-     else writeln("err does not contain an error; err == 0");
+   .. literalinclude:: ../../../../test/library/standard/OS/doc-examples/example_errorCode.chpl
+    :language: chapel
+    :start-after: START_EXAMPLE
+    :end-before: STOP_EXAMPLE
 
    The default intent for a formal of type :type:`errorCode` is `const in`.
 
