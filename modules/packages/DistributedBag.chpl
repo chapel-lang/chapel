@@ -99,11 +99,12 @@
 
   To use :record:`distBag`, the initializer must be invoked explicitly to
   properly initialize the data structure. By default, one bag instance is
-  initialized per locale, and one segment per task.
+  initialized per target locale, and one segment per task.
 
-  .. code-block:: chapel
-
-    var bag = new distBag(int, targetLocales=ourTargetLocales);
+  .. literalinclude:: ../../../../test/library/packages/DistributedBag/doc-examples/example_distBag.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_1
+   :end-before: STOP_EXAMPLE_1
 
   The basic methods that distBag supports require a ``taskId`` argument. This
   ``taskId`` will serve as an index to the segment to be updated and it must be
@@ -111,11 +112,10 @@
   segment, which ensures the parallel-safety of the data structure, as well as the
   local DFS ordering.
 
-  .. code-block:: chapel
-
-    bag.add(0, taskId);
-    bag.addBulk(1..100, taskId);
-    var (hasElt, elt) = bag.remove(taskId)
+  .. literalinclude:: ../../../../test/library/packages/DistributedBag/doc-examples/example_distBag.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_2
+   :end-before: STOP_EXAMPLE_2
 
   While the bag is safe to use in a distributed manner, each locale always operates
   on its privatized instance. This means that it is easy to add data in bulk,
@@ -123,30 +123,19 @@
   data, it will steal work on-demand. Here is an example of concurrent operations
   on distBag across multiple locales and tasks:
 
-  .. code-block:: chapel
-
-    coforall loc in Locales do on loc {
-      coforall taskId in 0..<here.maxTaskPar {
-        var (hasElt, elt) = bag.remove(taskId);
-        if hasElt {
-          elt += 1;
-          bag.add(elt, taskId);
-        }
-      }
-    }
+  .. literalinclude:: ../../../../test/library/packages/DistributedBag/doc-examples/example_distBag.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_3
+   :end-before: STOP_EXAMPLE_3
 
   Finally, distBag supports serial and parallel iteration, as well as a set of
   global operations. Here is an example of a distributed parallel iteration and a
   few global operations working with a ``distBag``:
 
-  .. code-block:: chapel
-
-    forall elts in bag do
-      body();
-
-    const size = bag.getSize();
-    const foundElt = bag.contains(elt);
-    bag.clear();
+  .. literalinclude:: ../../../../test/library/packages/DistributedBag/doc-examples/example_distBag.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_4
+   :end-before: STOP_EXAMPLE_4
 
   Methods
   _______
