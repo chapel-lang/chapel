@@ -30,9 +30,9 @@
    Chapel programs can declare main to take arguments like this:
 
    .. literalinclude:: ../../../../test/library/standard/Help/doc-examples/example_read_args.chpl
-   :language: chapel
-   :start-after: START_EXAMPLE
-   :end-before: STOP_EXAMPLE
+    :language: chapel
+    :start-after: START_EXAMPLE
+    :end-before: STOP_EXAMPLE
 
    Programs that use this feature might need to expand upon the usage message
    that explains which config variables are available. To do so, this module
@@ -54,9 +54,9 @@ module Help {
      filenames in addition to handling config variable arguments:
 
      .. literalinclude:: ../../../../test/library/standard/Help/doc-examples/example_print_usage.chpl
-     :language: chapel
-     :start-after: START_EXAMPLE
-     :end-before: STOP_EXAMPLE
+      :language: chapel
+      :start-after: START_EXAMPLE
+      :end-before: STOP_EXAMPLE
    */
   proc printUsage() {
     extern proc printHelpTable();

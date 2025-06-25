@@ -32,9 +32,9 @@
    "past the barrier" messages.
 
    .. literalinclude:: ../../../../test/library/standard/Collectives/doc-examples/example_barrier.chpl
-   :language: chapel
-   :start-after: START_EXAMPLE
-   :end-before: STOP_EXAMPLE
+    :language: chapel
+    :start-after: START_EXAMPLE
+    :end-before: STOP_EXAMPLE
 
    Note: When a barrier instance goes out of scope it is automatically deleted.
    After it is deleted, any copies of the barrier that remain are invalid.
