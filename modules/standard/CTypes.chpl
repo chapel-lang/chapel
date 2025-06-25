@@ -97,6 +97,7 @@ module CTypes {
   pragma "no default functions"
   pragma "no wide class"
   pragma "c_ptr class"
+  @chpldoc.hideImplType
   class c_ptr : writeSerializable {
     //   Similar to _ddata from ChapelBase, but differs
     //   from _ddata because it can never be wide.
@@ -147,6 +148,7 @@ module CTypes {
   pragma "no wide class"
   pragma "c_ptr class"
   pragma "c_ptrConst class"
+  @chpldoc.hideImplType
   class c_ptrConst : writeSerializable {
     /*
        The type that this pointer points to, which can be queried like so:
