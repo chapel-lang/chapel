@@ -439,7 +439,7 @@ struct ParserContext {
 
   void enterScopeForFunctionDecl(FunctionParts& fp,
                                  AstNode* retType);
-  void exitScopeForFunctionDecl(FunctionParts& fp);
+  void exitScopeForFunctionDecl(YYLTYPE bodyLocation, FunctionParts& fp);
 
   AstNode* buildLambda(YYLTYPE location, FunctionParts& fp);
 
@@ -791,5 +791,5 @@ struct ParserContext {
   CommentsAndStmt buildLabelStmt(YYLTYPE location, PODUniqueString name,
                                  CommentsAndStmt cs);
 
-  ParserExprList* buildSingleStmtRoutineBody(CommentsAndStmt cs);
+  ParserExprList* buildSingleStmtRoutineBody(YYLTYPE location, CommentsAndStmt cs);
 };
