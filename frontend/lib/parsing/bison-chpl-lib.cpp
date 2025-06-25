@@ -6017,7 +6017,7 @@ yyreduce:
 
   case 12: /* stmt_base: decl_base  */
 #line 732 "chpl.ypp"
-                            { (yyval.commentsAndStmt) = context->finishStmt((yyvsp[0].commentsAndStmt)); }
+                            { (yyval.commentsAndStmt) = context->finishStmt((yylsp[0]), (yyvsp[0].commentsAndStmt)); }
 #line 6022 "bison-chpl-lib.cpp"
     break;
 
@@ -7068,7 +7068,7 @@ yyreduce:
 #line 1488 "chpl.ypp"
     {
       // visibility should be default when inner_class_level_stmt is parsed
-      (yyval.commentsAndStmt) = context->finishStmt((yyvsp[0].commentsAndStmt));
+      (yyval.commentsAndStmt) = context->finishStmt((yylsp[0]), (yyvsp[0].commentsAndStmt));
       context->visibility = Decl::DEFAULT_VISIBILITY;
     }
 #line 7075 "bison-chpl-lib.cpp"
@@ -8460,7 +8460,7 @@ yyreduce:
       (yyvsp[-3].throwsTag) != ThrowsTag_DEFAULT ? (yylsp[-3]) :
         ((yyvsp[-4].expr) != nullptr ? (yylsp[-4]) :
           ((yyvsp[-5].returnTag).isValid && (Function::ReturnIntent)(yyvsp[-5].returnTag).intent != Function::DEFAULT_RETURN_INTENT ? (yylsp[-5]) : (yylsp[-6]))));
-    context->exitScopeForFunctionDecl(fp);
+    context->exitScopeForFunctionDecl((yylsp[0]), fp);
     (yyval.functionParts) = fp;
   }
 #line 8467 "bison-chpl-lib.cpp"
@@ -8933,7 +8933,7 @@ yyreduce:
 
   case 465: /* function_body_stmt: TDO toplevel_stmt  */
 #line 2779 "chpl.ypp"
-                    { (yyval.exprList) = context->buildSingleStmtRoutineBody((yyvsp[0].commentsAndStmt)); }
+                    { (yyval.exprList) = context->buildSingleStmtRoutineBody((yylsp[0]), (yyvsp[0].commentsAndStmt)); }
 #line 8938 "bison-chpl-lib.cpp"
     break;
 
