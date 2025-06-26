@@ -297,7 +297,7 @@ module Curl {
   proc setopt(ch, args ...?k) throws
   where isSubtype(ch.type, fileReader) || isSubtype(ch.type, fileWriter) {
     for param i in 0..k-1 {
-      setopt(ch, args(i)(0), args(i)(1));
+      try setopt(ch, args(i)(0), args(i)(1));
     }
   }
 
