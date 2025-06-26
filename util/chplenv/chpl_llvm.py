@@ -6,7 +6,7 @@ import sys
 import re
 
 import chpl_bin_subdir, chpl_arch, chpl_compiler, chpl_platform, overrides
-from chpl_home_utils import get_chpl_third_party, get_chpl_home
+from chpl_home_utils import get_chpl_third_party, get_chpl_runtime_incl
 import chpl_gpu
 import homebrew_utils
 from utils import which, memoize, error, run_command, try_run_command, warning, check_valid_var
@@ -598,7 +598,7 @@ def get_system_llvm_clang(lang):
 # returns [] list with the first element the clang command,
 # then necessary arguments
 @memoize
-def get_llvm_clang(lang):
+def get_llvm_clang(lang, only_clang=False):
 
     # if it was provided by a user setting, just use that
     provided = get_overriden_llvm_clang(lang)
@@ -618,7 +618,11 @@ def get_llvm_clang(lang):
         return ['']
 
     # tack on arguments that control clang's function
-    result = [clang] + get_clang_basic_args(clang)
+    # the if statement is to avoid infinite recursion
+    if not only_clang:
+        result = [clang] + get_clang_basic_args(clang)
+    else:
+        result = [clang]
     return result
 
 
@@ -799,6 +803,18 @@ def get_gcc_install_dir():
     return gcc_dir
 
 
+@memoize
+def _clang_verbose_on_sys_basic(clang='clang'):
+    # Add -isysroot and -resourcedir based upon what 'clang' uses
+    cfile = os.path.join(get_chpl_runtime_incl(), "sys_basic.h")
+    if not os.path.isfile(cfile):
+        error("error computing isysroot -- sys_basic.h is missing")
+
+    (out, err) = run_command([clang, '-###', cfile],
+                                stdout=True, stderr=True)
+    out += err
+    return out
+
 # The bundled LLVM does not currently know to look in a particular Mac OS X SDK
 # so we provide a -isysroot arg to indicate which is used.
 #
@@ -818,15 +834,7 @@ def get_sysroot_resource_dir_args():
     args = [ ]
     llvm_val = get()
     if llvm_val == "bundled":
-        # Add -isysroot and -resourcedir based upon what 'clang' uses
-        cfile = os.path.join(get_chpl_home(),
-                             "runtime", "include", "sys_basic.h")
-        if not os.path.isfile(cfile):
-            error("error computing isysroot -- sys_basic.h is missing")
-
-        (out, err) = run_command(['clang', '-###', cfile],
-                                 stdout=True, stderr=True)
-        out += err
+        out = _clang_verbose_on_sys_basic()
 
         found = re.search('"-isysroot" "([^"]+)"', out)
         if found:
@@ -874,6 +882,16 @@ def get_sysroot_linux_args():
                 args.append('--start-no-unused-arguments')
                 args.append('-Wl,-dynamic-linker,' + dyn_linker)
                 args.append('--end-no-unused-arguments')
+
+    # workaround for fedora
+    if chpl_platform.get_linux_distribution() == 'fedora':
+        clang = get_llvm_clang('c', only_clang=True)[0]
+        out = _clang_verbose_on_sys_basic(clang)
+        found = re.search('"-resource-dir" "([^"]+)"', out)
+        if found:
+            args.append('-resource-dir')
+            args.append(found.group(1).strip())
+
     return args
 
 # When a system LLVM is installed with Homebrew, it's very important
