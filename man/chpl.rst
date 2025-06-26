@@ -58,6 +58,8 @@ OPTIONS
 *Module Processing Options*
 
 .. _man-count-tokens:
+.. index:: --count-tokens
+.. index:: --no-count-tokens
 
 **\--[no-]count-tokens**
 
@@ -65,6 +67,7 @@ OPTIONS
     files named on the command line.
 
 .. _man-main-module:
+.. index:: --main-module
 
 **\--main-module <module>**
 
@@ -74,6 +77,7 @@ OPTIONS
     point for program execution.
 
 .. _man-module-dir:
+.. index:: --module-dir
 
 **-M, \--module-dir <**\ *directory*\ **>**
 
@@ -94,6 +98,8 @@ OPTIONS
     module search path.
 
 .. _man-print-code-size:
+.. index:: --print-code-size
+.. index:: --no-print-code-size
 
 **\--[no-]print-code-size**
 
@@ -110,12 +116,15 @@ OPTIONS
     displayed.
 
 .. _man-print-module-files:
+.. index:: --print-module-files
 
 **\--print-module-files**
 
     Prints the Chapel module source files parsed by the Chapel compiler.
 
 .. _man-print-search-dirs:
+.. index:: --print-search-dirs
+.. index:: --no-print-search-dirs
 
 **\--[no-]print-search-dirs**
 
@@ -124,6 +133,7 @@ OPTIONS
 *Warning and Language Control Options*
 
 .. _man-edition:
+.. index:: --edition
 
 **\--edition <edition>**
 
@@ -134,6 +144,8 @@ OPTIONS
     $CHPL\_HOME/doc/rst/technotes/editions.rst for more information.
 
 .. _man-permit-unhandled-module-errors:
+.. index:: --permit-unhandled-module-errors
+.. index:: --no-permit-unhandled-module-errors
 
 **\--[no-]permit-unhandled-module-errors**
 
@@ -144,6 +156,8 @@ OPTIONS
     error comes up during execution, it will cause the program to halt.
 
 .. _man-warn-unstable:
+.. index:: --warn-unstable
+.. index:: --no-warn-unstable
 
 **\--[no-]warn-unstable**
 
@@ -151,6 +165,8 @@ OPTIONS
     change in meaning due to language changes.
 
 .. _man-warnings:
+.. index:: --warnings
+.. index:: --no-warnings
 
 **\--[no-]warnings**
 
@@ -158,6 +174,8 @@ OPTIONS
     warnings.
 
 .. _man-warn-unknown-attribute-toolname:
+.. index:: --warn-unknown-attribute-toolname
+.. index:: --no-warn-unknown-attribute-toolname
 
 **\--[no-]warn-unknown-attribute-toolname**
 
@@ -166,6 +184,7 @@ OPTIONS
     The default is to warn about all unknown tool names.
 
 .. _man-using-attribute-toolname:
+.. index:: --using-attribute-toolname
 
 **\--using-attribute-toolname <**\ *toolname*\ **>**
 
@@ -174,6 +193,8 @@ OPTIONS
     **\--using-attribute-toolname** flag per name.
 
 .. _man-warn-potential-races:
+.. index:: --warn-potential-races
+.. index:: --no-warn-potential-races
 
 **\--[no-]warn-potential-races**
 
@@ -183,6 +204,8 @@ OPTIONS
     not printing race condition warnings.
 
 .. _man-warn-int-to-uint:
+.. index:: --warn-int-to-uint
+.. index:: --no-warn-int-to-uint
 
 **\--[no-]warn-int-to-uint**
 
@@ -190,6 +213,8 @@ OPTIONS
     from a value of ``int`` type of any width to a ``uint`` value.
 
 .. _man-warn-small-integral-to-float:
+.. index:: --warn-small-integral-to-float
+.. index:: --no-warn-small-integral-to-float
 
 **\--[no-]warn-small-integral-to-float**
 
@@ -200,6 +225,8 @@ OPTIONS
     type ``real(u)`` or ``complex(2*u)`` where ``u<64``.
 
 .. _man-warn-integral-to-float:
+.. index:: --warn-integral-to-float
+.. index:: --no-warn-integral-to-float
 
 **\--[no-]warn-integral-to-float**
 
@@ -208,6 +235,8 @@ OPTIONS
     or ``complex`` type of any width.
 
 .. _man-warn-float-to-float:
+.. index:: --warn-float-to-float
+.. index:: --no-warn-float-to-float
 
 **\--[no-]warn-float-to-float**
 
@@ -217,6 +246,8 @@ OPTIONS
     similar cases with ``imag`` and ``complex`` types.
 
 .. _man-warn-integral-to-integral:
+.. index:: --warn-integral-to-integral
+.. index:: --no-warn-integral-to-integral
 
 **\--[no-]warn-integral-to-integral**
 
@@ -225,6 +256,8 @@ OPTIONS
     (An integral type is an ``int`` or ``uint`` type).
 
 .. _man-warn-implicit-numeric-conversions:
+.. index:: --warn-implicit-numeric-conversions
+.. index:: --no-warn-implicit-numeric-conversions
 
 **\--[no-]warn-implicit-numeric-conversions**
 
@@ -232,6 +265,8 @@ OPTIONS
     converting between numeric types.
 
 .. _man-warn-param-implicit-numeric-conversions:
+.. index:: --warn-param-implicit-numeric-conversions
+.. index:: --no-warn-param-implicit-numeric-conversions
 
 **\--[no-]warn-param-implicit-numeric-conversions**
 
@@ -243,6 +278,8 @@ OPTIONS
 *Parallelism Control Options*
 
 .. _man-local:
+.. index:: --local
+.. index:: --no-local
 
 **\--[no-]local**
 
@@ -255,6 +292,7 @@ OPTIONS
 *Optimization Control Options*
 
 .. _man-baseline:
+.. index:: --baseline
 
 **\--baseline**
 
@@ -262,6 +300,8 @@ OPTIONS
     code with many temporaries.
 
 .. _man-cache-remote:
+.. index:: --cache-remote
+.. index:: --no-cache-remote
 
 **\--[no-]cache-remote**
 
@@ -270,18 +310,23 @@ OPTIONS
     read ahead.
 
 .. _man-copy-propagation:
+.. index:: --copy-propagation
+.. index:: --no-copy-propagation
 
 **\--[no-]copy-propagation**
 
     Enable [disable] copy propagation.
 
 .. _man-dead-code-elimination:
+.. index:: --dead-code-elimination
+.. index:: --no-dead-code-elimination
 
 **\--[no-]dead-code-elimination**
 
     Enable [disable] dead code elimination.
 
 .. _man-fast:
+.. index:: --fast
 
 **\--fast**
 
@@ -289,6 +334,8 @@ OPTIONS
     **\--specialize**.
 
 .. _man-fast-followers:
+.. index:: --fast-followers
+.. index:: --no-fast-followers
 
 **\--[no-]fast-followers**
 
@@ -296,6 +343,8 @@ OPTIONS
     implementations of followers will be invoked for specific leaders.
 
 .. _man-ieee-float:
+.. index:: --ieee-float
+.. index:: --no-ieee-float
 
 **\--[no-]ieee-float**
 
@@ -305,6 +354,8 @@ OPTIONS
     provided by '\ **chpl**\ '.
 
 .. _man-loop-invariant-code-motion:
+.. index:: --loop-invariant-code-motion
+.. index:: --no-loop-invariant-code-motion
 
 **\--[no-]loop-invariant-code-motion**
 
@@ -314,6 +365,8 @@ OPTIONS
     may not identify all code that is truly invariant.
 
 .. _man-optimize-forall-unordered-ops:
+.. index:: --optimize-forall-unordered-ops
+.. index:: --no-optimize-forall-unordered-ops
 
 **\--[no-]optimize-forall-unordered-ops**
 
@@ -322,18 +375,24 @@ OPTIONS
     support for unordered operations with CHPL_COMM=ugni.
 
 .. _man-ignore-local-classes:
+.. index:: --ignore-local-classes
+.. index:: --no-ignore-local-classes
 
 **\--[no-]ignore-local-classes**
 
     Disable [enable] local classes
 
 .. _man-inline:
+.. index:: --inline
+.. index:: --no-inline
 
 **\--[no-]inline**
 
     Enable [disable] function inlining.
 
 .. _man-inline-iterators:
+.. index:: --inline-iterators
+.. index:: --no-inline-iterators
 
 **\--[no-]inline-iterators**
 
@@ -342,6 +401,7 @@ OPTIONS
     iterator's definition around the loop body.
 
 .. _man-inline-iterators-yield-limit:
+.. index:: --inline-iterators-yield-limit
 
 **\--inline-iterators-yield-limit**
 
@@ -349,6 +409,8 @@ OPTIONS
     The default value is 10.
 
 .. _man-live-analysis:
+.. index:: --live-analysis
+.. index:: --no-live-analysis
 
 **\--[no-]live-analysis**
 
@@ -356,6 +418,8 @@ OPTIONS
     optimize iterators that are not inlined.
 
 .. _man-optimize-range-iteration:
+.. index:: --optimize-range-iteration
+.. index:: --no-optimize-range-iteration
 
 **\--[no-]optimize-range-iteration**
 
@@ -364,6 +428,8 @@ OPTIONS
     By default this is enabled.
 
 .. _man-optimize-loop-iterators:
+.. index:: --optimize-loop-iterators
+.. index:: --no-optimize-loop-iterators
 
 **\--[no-]optimize-loop-iterators**
 
@@ -371,6 +437,8 @@ OPTIONS
     are defined in terms of a single loop. By default this is enabled.
 
 .. _man-vectorize:
+.. index:: --vectorize
+.. index:: --no-vectorize
 
 **\--[no-]vectorize**
 
@@ -379,6 +447,8 @@ OPTIONS
     (and in some cases correctness) will vary based on the target compiler.
 
 .. _man-optimize-on-clauses:
+.. index:: --optimize-on-clauses
+.. index:: --no-optimize-on-clauses
 
 **\--[no-]optimize-on-clauses**
 
@@ -387,6 +457,7 @@ OPTIONS
     $CHPL\_COMM layer.
 
 .. _man-optimize-on-clause-limit:
+.. index:: --optimize-on-clause-limit
 
 **\--optimize-on-clause-limit**
 
@@ -394,6 +465,8 @@ OPTIONS
     The default value is 20.
 
 .. _man-privatization:
+.. index:: --privatization
+.. index:: --no-privatization
 
 **\--[no-]privatization**
 
@@ -401,6 +474,8 @@ OPTIONS
     distribution supports it.
 
 .. _man-remove-copy-calls:
+.. index:: --remove-copy-calls
+.. index:: --no-remove-copy-calls
 
 **\--[no-]remove-copy-calls**
 
@@ -409,6 +484,8 @@ OPTIONS
     which can often be optimized away.
 
 .. _man-remote-value-forwarding:
+.. index:: --remote-value-forwarding
+.. index:: --no-remote-value-forwarding
 
 **\--[no-]remote-value-forwarding**
 
@@ -416,12 +493,16 @@ OPTIONS
     threads if reading them early does not violate program semantics.
 
 .. _man-remote-serialization:
+.. index:: --remote-serialization
+.. index:: --no-remote-serialization
 
 **\--[no-]remote-serialization**
 
     Enable [disable] serialization for globals and remote constants.
 
 .. _man-scalar-replacement:
+.. index:: --scalar-replacement
+.. index:: --no-scalar-replacement
 
 **\--[no-]scalar-replacement**
 
@@ -430,6 +511,7 @@ OPTIONS
     as tuples and iterators.
 
 .. _man-scalar-replace-limit:
+.. index:: --scalar-replace-limit
 
 **\--scalar-replace-limit**
 
@@ -437,6 +519,8 @@ OPTIONS
     The default value is 8.
 
 .. _man-tuple-copy-opt:
+.. index:: --tuple-copy-opt
+.. index:: --no-tuple-copy-opt
 
 **\--[no-]tuple-copy-opt**
 
@@ -445,6 +529,7 @@ OPTIONS
     tuple component.
 
 .. _man-tuple-copy-limit:
+.. index:: --tuple-copy-limit
 
 **\--tuple-copy-limit**
 
@@ -452,6 +537,8 @@ OPTIONS
     The default value is 8.
 
 .. _man-infer-local-fields:
+.. index:: --infer-local-fields
+.. index:: --no-infer-local-fields
 
 **\--[no-]infer-local-fields**
 
@@ -459,6 +546,8 @@ OPTIONS
     (experimental)
 
 .. _man-auto-local-access:
+.. index:: --auto-local-access
+.. index:: --no-auto-local-access
 
 **\--[no-]auto-local-access**
 
@@ -470,6 +559,8 @@ OPTIONS
     execution time.
 
 .. _man-dynamic-auto-local-access:
+.. index:: --dynamic-auto-local-access
+.. index:: --no-dynamic-auto-local-access
 
 **\--[no-]dynamic-auto-local-access**
 
@@ -479,6 +570,8 @@ OPTIONS
     may also be execution time overheads independent of loop domain size.
 
 .. _man-offset-auto-local-access:
+.. index:: --offset-auto-local-access
+.. index:: --no-offset-auto-local-access
 
 **\--[no-]offset-auto-local-access**
 
@@ -487,6 +580,8 @@ OPTIONS
     stencil-distributed arrays.
 
 .. _man-auto-aggregation:
+.. index:: --auto-aggregation
+.. index:: --no-auto-aggregation
 
 **\--[no-]auto-aggregation**
 
@@ -494,6 +589,8 @@ OPTIONS
     use aggregated communication. This optimization is disabled by default.
 
 .. _man-array-view-elision:
+.. index:: --array-view-elision
+.. index:: --no-array-view-elision
 
 **\--[no-]array-view-elision**
 
@@ -502,6 +599,8 @@ OPTIONS
 *Run-time Semantic Check Options*
 
 .. _man-checks:
+.. index:: --checks
+.. index:: --no-checks
 
 **\--[no-]checks**
 
@@ -511,6 +610,8 @@ OPTIONS
     hand-coded C or Fortran.
 
 .. _man-bounds-checks:
+.. index:: --bounds-checks
+.. index:: --no-bounds-checks
 
 **\--[no-]bounds-checks**
 
@@ -518,6 +619,8 @@ OPTIONS
     indexing.
 
 .. _man-cast-checks:
+.. index:: --cast-checks
+.. index:: --no-cast-checks
 
 **\--[no-]cast-checks**
 
@@ -525,6 +628,8 @@ OPTIONS
     wouldn't preserve the logical value being cast.
 
 .. _man-const-arg-checks:
+.. index:: --const-arg-checks
+.. index:: --no-const-arg-checks
 
 **\--[no-]const-arg-checks**
 
@@ -536,6 +641,8 @@ OPTIONS
     modification behavior should be preserved or avoided).
 
 .. _man-div-by-zero-checks:
+.. index:: --div-by-zero-checks
+.. index:: --no-div-by-zero-checks
 
 **\--[no-]div-by-zero-checks**
 
@@ -543,6 +650,8 @@ OPTIONS
     to guard against dividing by zero.
 
 .. _man-formal-domain-checks:
+.. index:: --formal-domain-checks
+.. index:: --no-formal-domain-checks
 
 **\--[no-]formal-domain-checks**
 
@@ -552,6 +661,8 @@ OPTIONS
     map (if the formal domain explicitly specifies a domain map).
 
 .. _man-local-checks:
+.. index:: --local-checks
+.. index:: --no-local-checks
 
 **\--[no-]local-checks**
 
@@ -559,12 +670,16 @@ OPTIONS
     local blocks.
 
 .. _man-nil-checks:
+.. index:: --nil-checks
+.. index:: --no-nil-checks
 
 **\--[no-]nil-checks**
 
     Enable [disable] run-time checking for accessing nil object references.
 
 .. _man-stack-checks:
+.. index:: --stack-checks
+.. index:: --no-stack-checks
 
 **\--[no-]stack-checks**
 
@@ -573,6 +688,8 @@ OPTIONS
 *C Code Generation Options*
 
 .. _man-codegen:
+.. index:: --codegen
+.. index:: --no-codegen
 
 **\--[no-]codegen**
 
@@ -581,6 +698,8 @@ OPTIONS
     only Chapel compiler warnings/errors are of interest.
 
 .. _man-cpp-lines:
+.. index:: --cpp-lines
+.. index:: --no-cpp-lines
 
 **\--[no-]cpp-lines**
 
@@ -590,6 +709,7 @@ OPTIONS
     off.
 
 .. _man-max-c-ident-len:
+.. index:: --max-c-ident-len
 
 **\--max-c-ident-len**
 
@@ -599,6 +719,8 @@ OPTIONS
     1020.
 
 .. _man-munge-user-idents:
+.. index:: --munge-user-idents
+.. index:: --no-munge-user-idents
 
 **\--[no-]munge-user-idents**
 
@@ -611,6 +733,7 @@ OPTIONS
     or for other reasons.
 
 .. _man-savec:
+.. index:: --savec
 
 **\--savec <dir>**
 
@@ -621,6 +744,7 @@ OPTIONS
 *C Code Compilation Options*
 
 .. _man-ccflags:
+.. index:: --ccflags
 
 **\--ccflags <flags>**
 
@@ -630,6 +754,8 @@ OPTIONS
     compiler.
 
 .. _man-debug:
+.. index:: --debug
+.. index:: --no-debug
 
 **-g, \--[no-]debug**
 
@@ -640,6 +766,7 @@ OPTIONS
     **\--devel**).
 
 .. _man-dynamic:
+.. index:: --dynamic
 
 **\--dynamic**
 
@@ -648,6 +775,7 @@ OPTIONS
     default.
 
 .. _man-hdr-search-path:
+.. index:: --hdr-search-path
 
 **-I, \--hdr-search-path <dir>**
 
@@ -658,6 +786,7 @@ OPTIONS
     directories.
 
 .. _man-ldflags:
+.. index:: --ldflags
 
 **\--ldflags <flags>**
 
@@ -667,6 +796,7 @@ OPTIONS
     forwarded to the C compiler.
 
 .. _man-lib-linkage:
+.. index:: --lib-linkage
 
 **-l, \--lib-linkage <library>**
 
@@ -674,6 +804,7 @@ OPTIONS
     line.
 
 .. _man-lib-search-path:
+.. index:: --lib-search-path
 
 **-L, \--lib-search-path <dir>**
 
@@ -684,6 +815,8 @@ OPTIONS
     directories.
 
 .. _man-optimize:
+.. index:: --optimize
+.. index:: --no-optimize
 
 **-O, \--[no-]optimize**
 
@@ -694,6 +827,8 @@ OPTIONS
     with the C compiler command, use the **\--ccflags** option.
 
 .. _man-specialize:
+.. index:: --specialize
+.. index:: --no-specialize
 
 **\--[no-]specialize**
 
@@ -703,6 +838,7 @@ OPTIONS
     of back-end compiler and the value of CHPL\_TARGET\_CPU.
 
 .. _man-output:
+.. index:: --output
 
 **-o, \--output <filename>**
 
@@ -711,6 +847,7 @@ OPTIONS
     unspecified.
 
 .. _man-static:
+.. index:: --static
 
 **\--static**
 
@@ -721,6 +858,8 @@ OPTIONS
 *LLVM Code Generation Options*
 
 .. _man-llvm-wide-opt:
+.. index:: --llvm-wide-opt
+.. index:: --no-llvm-wide-opt
 
 **\--[no-]llvm-wide-opt**
 
@@ -732,6 +871,7 @@ OPTIONS
     $CHPL\_HOME/doc/rst/technotes/llvm.rst for details.
 
 .. _man-mllvm:
+.. index:: --mllvm
 
 **\--mllvm <option>**
 
@@ -742,6 +882,8 @@ OPTIONS
 *Compilation Trace Options*
 
 .. _man-print-commands:
+.. index:: --print-commands
+.. index:: --no-print-commands
 
 **\--[no-]print-commands**
 
@@ -749,6 +891,8 @@ OPTIONS
     compile the Chapel program.
 
 .. _man-print-passes:
+.. index:: --print-passes
+.. index:: --no-print-passes
 
 **\--[no-]print-passes**
 
@@ -761,6 +905,7 @@ OPTIONS
     the pass in descending order.
 
 .. _man-print-passes-file:
+.. index:: --print-passes-file
 
 **\--print-passes-file <filename>**
 
@@ -771,6 +916,8 @@ OPTIONS
 *Miscellaneous Options*
 
 .. _man-detailed-errors:
+.. index:: --detailed-errors
+.. index:: --no-detailed-errors
 
 **\--[no-]detailed-errors**
 
@@ -780,6 +927,8 @@ OPTIONS
     segments of code, or providing suggestions for how to fix the error.
 
 .. _man-devel:
+.. index:: --devel
+.. index:: --no-devel
 
 **\--[no-]devel**
 
@@ -789,6 +938,7 @@ OPTIONS
     questions to the Chapel team.
 
 .. _man-explain-call:
+.. index:: --explain-call
 
 **\--explain-call <call>[:<module>][:<line>]**
 
@@ -798,6 +948,7 @@ OPTIONS
     a specific module or at a particular line number.
 
 .. _man-explain-instantiation:
+.. index:: --explain-instantiation
 
 **\--explain-instantiation <function\|type>[:<module>][:<line>]**
 
@@ -807,6 +958,8 @@ OPTIONS
     within a specific module or at a particular line number.
 
 .. _man-explain-verbose:
+.. index:: --explain-verbose
+.. index:: --no-explain-verbose
 
 **\--[no-]explain-verbose**
 
@@ -814,6 +967,7 @@ OPTIONS
     compiler to output more debug information related to disambiguation.
 
 .. _man-instantiate-max:
+.. index:: --instantiate-max
 
 **\--instantiate-max <max>**
 
@@ -823,6 +977,8 @@ OPTIONS
     instantiation is being pruned too aggressively.
 
 .. _man-print-all-candidates:
+.. index:: --print-all-candidates
+.. index:: --no-print-all-candidates
 
 **\--[no-]print-all-candidates**
 
@@ -831,6 +987,8 @@ OPTIONS
     not be resolved.
 
 .. _man-print-callgraph:
+.. index:: --print-callgraph
+.. index:: --no-print-callgraph
 
 **\--[no-]print-callgraph**
 
@@ -841,6 +999,8 @@ OPTIONS
     parent function.
 
 .. _man-print-callstack-on-error:
+.. index:: --print-callstack-on-error
+.. index:: --no-print-callstack-on-error
 
 **\--[no-]print-callstack-on-error**
 
@@ -850,6 +1010,8 @@ OPTIONS
     one of the callers.
 
 .. _man-print-unused-functions:
+.. index:: --print-unused-functions
+.. index:: --no-print-unused-functions
 
 **\--[no-]print-unused-functions**
 
@@ -857,6 +1019,7 @@ OPTIONS
     user program.
 
 .. _man-set:
+.. index:: --set
 
 **-s, \--set <config>[=<value>]**
 
@@ -865,6 +1028,8 @@ OPTIONS
     to the value `true`.
 
 .. _man-task-tracking:
+.. index:: --task-tracking
+.. index:: --no-task-tracking
 
 **\--[no-]task-tracking**
 
@@ -884,6 +1049,7 @@ https://chapel-lang.org/docs/usingchapel/chplenv.html or at
 doc/rst/usingchapel/chplenv.rst in your Chapel installation.
 
 .. _man-home:
+.. index:: --home
 
 **\--home <path>**
 
@@ -891,6 +1057,7 @@ doc/rst/usingchapel/chplenv.rst in your Chapel installation.
     corresponds with and overrides the $CHPL\_HOME environment variable.
 
 .. _man-atomics:
+.. index:: --atomics
 
 **\--atomics <atomics-impl>**
 
@@ -900,6 +1067,7 @@ doc/rst/usingchapel/chplenv.rst in your Chapel installation.
     $CHPL\_TARGET\_PLATFORM, and $CHPL\_COMM)
 
 .. _man-network-atomics:
+.. index:: --network-atomics
 
 **\--network-atomics <network>**
 
@@ -908,6 +1076,7 @@ doc/rst/usingchapel/chplenv.rst in your Chapel installation.
     environment variable (defaults to best guess based on $CHPL\_COMM).
 
 .. _man-aux-filesys:
+.. index:: --aux-filesys
 
 **\--aux-filesys <aio-system>**
 
@@ -916,6 +1085,7 @@ doc/rst/usingchapel/chplenv.rst in your Chapel installation.
     variable (defaults to 'none').
 
 .. _man-comm:
+.. index:: --comm
 
 **\--comm <comm-impl>**
 
@@ -924,6 +1094,7 @@ doc/rst/usingchapel/chplenv.rst in your Chapel installation.
     environment variable (defaults to 'none').
 
 .. _man-comm-substrate:
+.. index:: --comm-substrate
 
 **\--comm-substrate <conduit>**
 
@@ -933,6 +1104,7 @@ doc/rst/usingchapel/chplenv.rst in your Chapel installation.
     $CHPL\_TARGET\_PLATFORM).
 
 .. _man-gasnet-segment:
+.. index:: --gasnet-segment
 
 **\--gasnet-segment <segment>**
 
@@ -941,6 +1113,7 @@ doc/rst/usingchapel/chplenv.rst in your Chapel installation.
     to best guess based on $CHPL\_COMM\_SUBSTRATE).
 
 .. _man-gmp:
+.. index:: --gmp
 
 **\--gmp <gmp-version>**
 
@@ -951,6 +1124,7 @@ doc/rst/usingchapel/chplenv.rst in your Chapel installation.
     *directory*).
 
 .. _man-hwloc:
+.. index:: --hwloc
 
 **\--hwloc <hwloc-impl>**
 
@@ -960,6 +1134,7 @@ doc/rst/usingchapel/chplenv.rst in your Chapel installation.
     third-party hwloc *directory*).
 
 .. _man-launcher:
+.. index:: --launcher
 
 **\--launcher <launcher-system>**
 
@@ -969,6 +1144,7 @@ doc/rst/usingchapel/chplenv.rst in your Chapel installation.
     $CHPL\_TARGET\_PLATFORM).
 
 .. _man-lib-pic:
+.. index:: --lib-pic
 
 **\--lib-pic <pic>**
 
@@ -980,6 +1156,7 @@ doc/rst/usingchapel/chplenv.rst in your Chapel installation.
     'none').
 
 .. _man-locale-model:
+.. index:: --locale-model
 
 **\--locale-model <locale-model>**
 
@@ -988,6 +1165,7 @@ doc/rst/usingchapel/chplenv.rst in your Chapel installation.
     $CHPL\_LOCALE\_MODEL environment variable (defaults to 'flat').
 
 .. _man-make:
+.. index:: --make
 
 **\--make <make utility>**
 
@@ -997,6 +1175,7 @@ doc/rst/usingchapel/chplenv.rst in your Chapel installation.
 
 .. _man-target-mem:
 .. _man-mem:
+.. index:: --target-mem
 
 **\--target-mem <mem-impl>**
 
@@ -1005,6 +1184,7 @@ doc/rst/usingchapel/chplenv.rst in your Chapel installation.
     variable (defaults to a best guess based on $CHPL\_COMM).
 
 .. _man-re2:
+.. index:: --re2
 
 **\--re2 <re2>**
 
@@ -1013,6 +1193,7 @@ doc/rst/usingchapel/chplenv.rst in your Chapel installation.
     you've installed the re2 package in the third-party *directory*).
 
 .. _man-target-arch:
+.. index:: --target-arch
 
 **\--target-arch <architecture>**
 
@@ -1021,6 +1202,7 @@ doc/rst/usingchapel/chplenv.rst in your Chapel installation.
     environment variable (defaults to the result of `uname -m`).
 
 .. _man-target-compiler:
+.. index:: --target-compiler
 
 **\--target-compiler <compiler>**
 
@@ -1031,6 +1213,7 @@ doc/rst/usingchapel/chplenv.rst in your Chapel installation.
     $CHPL\_TARGET\_PLATFORM, and $CHPL\_HOST\_COMPILER).
 
 .. _man-target-cpu:
+.. index:: --target-cpu
 
 **\--target-cpu <cpu>**
 
@@ -1041,6 +1224,7 @@ doc/rst/usingchapel/chplenv.rst in your Chapel installation.
     and $CHPL\_TARGET\_PLATFORM).
 
 .. _man-target-platform:
+.. index:: --target-platform
 
 **\--target-platform <platform>**
 
@@ -1050,6 +1234,7 @@ doc/rst/usingchapel/chplenv.rst in your Chapel installation.
     $CHPL\_HOST\_PLATFORM).
 
 .. _man-tasks:
+.. index:: --tasks
 
 **\--tasks <task-impl>**
 
@@ -1058,6 +1243,7 @@ doc/rst/usingchapel/chplenv.rst in your Chapel installation.
     (defaults to a best guess based on $CHPL\_TARGET\_PLATFORM).
 
 .. _man-timers:
+.. index:: --timers
 
 **\--timers <timer-impl>**
 
@@ -1068,12 +1254,14 @@ doc/rst/usingchapel/chplenv.rst in your Chapel installation.
 *Compiler Information Options*
 
 .. _man-copyright:
+.. index:: --copyright
 
 **\--copyright**
 
     Print the compiler's copyright information.
 
 .. _man-help:
+.. index:: --help
 
 **-h, \--help**
 
@@ -1081,6 +1269,7 @@ doc/rst/usingchapel/chplenv.rst in your Chapel installation.
     that they expect and a brief summary of their purpose.
 
 .. _man-help-env:
+.. index:: --help-env
 
 **\--help-env**
 
@@ -1089,6 +1278,7 @@ doc/rst/usingchapel/chplenv.rst in your Chapel installation.
     value.
 
 .. _man-help-settings:
+.. index:: --help-settings
 
 **\--help-settings**
 
@@ -1097,18 +1287,21 @@ doc/rst/usingchapel/chplenv.rst in your Chapel installation.
     the command line.
 
 .. _man-license:
+.. index:: --license
 
 **\--license**
 
     Print the compiler's license information.
 
 .. _man-print-chpl-home:
+.. index:: --print-chpl-home
 
 **\--print-chpl-home**
 
     Prints the compiler's notion of $CHPL\_HOME.
 
 .. _man-version:
+.. index:: --version
 
 **\--version**
 
