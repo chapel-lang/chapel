@@ -22,8 +22,8 @@ def get(flag=''):
             error("CHPL_TARGET_MEM=cstdlib is required for sanitizers")
         if flag == 'exe' and chpl_compiler.get() == 'llvm':
             error("CHPL_TARGET_COMPILER=llvm is not supported with sanitizers")
-        if flag == '' and chpl_mem.get('host') != 'none':
-            error("CHPL_HOST_MEM=none is required for sanitizers")
+        if flag == '' and chpl_mem.get('host') != 'cstdlib':
+            error("CHPL_HOST_MEM=cstdlib is required for sanitizers")
     return sanitizers_val
 
 
