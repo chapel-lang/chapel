@@ -172,6 +172,8 @@ module Curl {
 
   /* Returns the ``CURL`` handle connected to a channel opened with
      :proc:`URL.openUrlReader` or :proc:`URL.openUrlWriter`.
+
+     :throws SystemError: If the channel is non-local or not a Curl channel.
    */
   proc getCurlHandle(ch):c_ptr(CURL) throws
   where isSubtype(ch.type, fileReader) || isSubtype(ch.type, fileWriter) {
@@ -198,6 +200,9 @@ module Curl {
      :arg opt: the curl option to set.
      :arg arg: the value to set the curl option specified by opt.
      :type arg: `int`, `string`, `bool`, or `slist`
+     :throws SystemError: If the channel and args list are not on the same
+                          locale, or if the channel is not a curl channel.
+     :throws IoError: If an error occurs setting the option.
   */
   proc setopt(ch, opt:c_int, arg):bool throws
   where isSubtype(ch.type, fileReader) || isSubtype(ch.type, fileWriter) {
@@ -293,6 +298,9 @@ module Curl {
      :arg ch: a :record:`IO.fileReader` or :record:`IO.fileWriter`
      :arg args: any number of tuples of the form (curl_option, value).
                 This function will call ``setopt`` on each pair in turn.
+     :throws SystemError: If the channel and an args list are not on the same
+                          locale, or if the channel is not a curl channel.
+     :throws IoError: If an error occurs setting the option.
    */
   proc setopt(ch, args ...?k) throws
   where isSubtype(ch.type, fileReader) || isSubtype(ch.type, fileWriter) {
@@ -328,6 +336,7 @@ module Curl {
      support returning an error code instead of halting.
 
      :arg str: a string argument to append
+     :throws IoError: If an error occurs appending to the slist.
     */
   proc ref slist.append(str:string) throws {
     var err: errorCode = 0;
