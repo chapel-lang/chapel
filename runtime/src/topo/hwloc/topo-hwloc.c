@@ -517,6 +517,17 @@ static const char *objTypeString(hwloc_obj_type_t t) {
 }
 
 //
+// Returns a cpuset of only the useable PUs An unuseable PU is one that is
+// either inaccessible, or is not of the proper kind. The cpuset is stored
+// in the object's userdata field, which avoids having to free it 
+//
+static int useableCpuset(hwloc_obj_t obj) {
+  hwloc_cpuset_t s = hwloc_bitmap_dup(obj->cpuset);
+  hwloc_bitmap_and(s,s,logAccSet);
+  return s;
+}
+
+//
 // Partition resources when running with co-locales. This is complicated a bit
 // by oversubscription and that the number of locales might not be evenly
 // divisible by the number of nodes. If the number of colocales is zero, then
@@ -539,6 +550,8 @@ static void partitionResources(void) {
   int numLocalesOnNode = chpl_get_num_locales_on_node();
   int numColocales = chpl_env_rt_get_int("LOCALES_PER_NODE", 0);
   int unusedCores = 0;
+  int numCores = 0;
+  int numNonEmptyObjects = 0;
 
   const char *t = chpl_env_rt_get("COLOCALE_OBJ_TYPE", NULL);
   if (t != NULL) {
@@ -565,6 +578,18 @@ static void partitionResources(void) {
                "CHPL_RT_COLOCALE_OBJ_TYPE is not a valid type: \"%s\"", t);
       chpl_error(msg, 0, 0);
     }
+    // Determine how many non-empty objects there are of the same type, and
+    // how many useable cores they have.
+    int numObjs = hwloc_get_nbobjs_by_type(topology, myRootType);
+    for (int i = 0; i < numObjs; i++) {
+      hwloc_obj_t obj;
+      CHK_ERR(obj = hwloc_get_obj_inside_cpuset_by_type(topology,
+                                    root->cpuset, myRootType, i));
+      int n = numUseableCores(obj);
+      if (n > 0) {
+        numNonEmptyObjects++;
+      }
+      numCores += n;
   }
 
 
@@ -625,34 +650,38 @@ static void partitionResources(void) {
             // non-empty objects equals the number of partitions, and they
             // have the same number of accessible PUs.
 
+            numCores = 0;
             int numCoresPerObject = -1;
             chpl_bool acceptable = true;
-            int numNonEmptyObjects = 0;
+            numNonEmptyObjects = 0;
             for (int j = 0; j < numObjs; j++) {
               hwloc_obj_t obj;
               CHK_ERR(obj = hwloc_get_obj_inside_cpuset_by_type(topology,
                                     root->cpuset, rootTypes[i], j));
-              hwloc_cpuset_t s = hwloc_bitmap_dup(obj->cpuset);
-              hwloc_bitmap_and(s,s,logAccSet);
-              int numCores = hwloc_bitmap_weight(s);
-              hwloc_bitmap_free(s);
+              int n = numUseableCores(obj);
               _DBG_P("%s[%d] has %d cores.", objTypeString(rootTypes[i]), j,
-                     numCores);
-              if (numCores == 0) {
+                     n);
+              if (n == 0) {
                 continue;
               } else if (numCoresPerObject == -1) {
-                numCoresPerObject = numCores;
+                numCoresPerObject = n;
               } else if (numCores != numCoresPerObject) {
                 acceptable = false;
                 break;
+              }
+              numCores += n;
+              if (numNonEmptyObjects == rank) {
+                myRoot = obj;
               }
               numNonEmptyObjects++;
             }
             if (numNonEmptyObjects != numPartitions) {
               acceptable = false;
+              myRoot = NULL;
             }
             if (acceptable) {
               myRootType = rootTypes[i];
+              _DBG_P("using objects of type %s", rootTypes[i]);
               break;
             }
           }
@@ -660,28 +689,44 @@ static void partitionResources(void) {
       }
       if (myRootType != HWLOC_OBJ_TYPE_MAX) {
         _DBG_P("myRootType: %s", objTypeString(myRootType));
-        int numCores = hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_CORE);
-        int numObjs = hwloc_get_nbobjs_by_type(topology, myRootType);
-        if (numObjs < numPartitions) {
+        if (numNonEmptyObjects < numPartitions) {
           char msg[200];
-          snprintf(msg, sizeof(msg), "Node only has %d %s(s)", numObjs,
-                   objTypeString(myRootType));
+          snprintf(msg, sizeof(msg), "Node only has %d %s(s)",
+                   numNonEmptyObjects, objTypeString(myRootType));
           chpl_error(msg, 0, 0);
         }
-        if (numObjs > numPartitions) {
-          int coresPerPartition = numCores / numObjs;
-          unusedCores = (numObjs - numPartitions) * coresPerPartition;
+        if (numNonEmptyObjects > numPartitions) {
+          int coresPerPartition = numCores / numNonEmptyObjects;
+          unusedCores = (numNonEmptyObjects - numPartitions) *
+                        coresPerPartition;
         }
-
-        // Use the object whose logical index corresponds to our local rank.
-        CHK_ERR(myRoot = hwloc_get_obj_inside_cpuset_by_type(topology,
-                                  root->cpuset, myRootType, rank));
-
-        _DBG_P("confining ourself to %s %d", objTypeString(myRootType), rank);
 
         // Compute the accessible PUs for all partitions based on the object
         // each occupies. This is used to determine which NIC each locale
-        // should use.
+        // should use. We will use the rank-th non-empty object.
+
+        int j = 0;
+        for (int i = 0; i < hwloc_get_nbobjs_by_type(topology, myRootType);
+             i++) {
+          hwloc_obj_t obj;
+          CHK_ERR(obj = hwloc_get_obj_inside_cpuset_by_type(topology,
+                                  root->cpuset, myRootType, i));
+          int n = 
+          hwloc_cpuset_t s = hwloc_bitmap_dup(obj->cpuset);
+          hwloc_bitmap_and(s, s, logAccSet);
+          logAccSets[i] = s;
+        }
+
+#ifdef FOO
+
+; i++) {
+          hwloc_obj_t obj;
+          CHK_ERR(obj = hwloc_get_obj_inside_cpuset_by_type(topology,
+                                  root->cpuset, myRootType, i));
+          hwloc_cpuset_t s = hwloc_bitmap_dup(obj->cpuset);
+          hwloc_bitmap_and(s, s, logAccSet);
+          logAccSets[i] = s;
+        }
 
         for (int i = 0; i < numPartitions; i++) {
           hwloc_obj_t obj;
@@ -691,6 +736,14 @@ static void partitionResources(void) {
           hwloc_bitmap_and(s, s, logAccSet);
           logAccSets[i] = s;
         }
+
+        // Use rank-th non-empty object.
+        CHK_ERR(myRoot = hwloc_get_obj_inside_cpuset_by_type(topology,
+                                  root->cpuset, myRootType, rank));
+#endif
+
+        _DBG_P("confining ourself to %s %d", objTypeString(myRootType), rank);
+
       } else {
         // Cores not tied to a root object
         int coresPerPartition = numCPUsPhysAcc / numPartitions;
