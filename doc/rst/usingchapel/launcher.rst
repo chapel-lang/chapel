@@ -320,6 +320,25 @@ To run this job, use:
 and when it completes, the output will be available in `job.output` as
 specified in `job.bash`.
 
+Troubleshooting with slurm
+**************************
+
+I'm seeing srun errors like `Memory required by task is not available`
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+When using the ``slurm-srun`` launcher, you may see errors like this
+(especially on HPE Cray EX systems):
+
+.. code-block::
+
+   srun: error: Unable to allocate resources: Memory required by task is not available
+
+If you are seeing this error, try setting the following environment variable:
+
+.. code-block:: bash
+
+  export CHPL_LAUNCHER_MEM=unset
+
 Changing the _real binary suffix
 ++++++++++++++++++++++++++++++++
 
