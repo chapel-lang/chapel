@@ -188,6 +188,8 @@ Building Chapel for an HPE Cray System from Source
    between any of these configurations without rebuilding.
 
 
+.. _readme-hpe-cray-ex:
+
 ----------------------------------
 Using Chapel on an HPE Cray System
 ----------------------------------
