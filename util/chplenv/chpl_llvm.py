@@ -1520,12 +1520,6 @@ def _main():
     parser.add_option('--host-ldflags', dest='action',
                       action='store_const',
                       const='host-ldflags', default='')
-    parser.add_option('--tgt-ccflags', dest='action',
-                      action='store_const',
-                      const='tgt-ccflags', default='')
-    parser.add_option('--tgt-ldflags', dest='action',
-                      action='store_const',
-                      const='tgt-ldflags', default='')
     parser.add_option('--llvm-vesion', dest='action',
                       action='store_const',
                       const='llvmversion', default='')
@@ -1552,17 +1546,13 @@ def _main():
         sys.stdout.write("{0}\n".format(llvm_config))
         validate_llvm_config()
     elif options.action == 'host-cxxflags':
+        flags = get_host_compile_args()
         sys.stdout.write("{0}\n".format(
-            ' '.join(get_host_compile_args()[1])))
+            ' '.join(flags[0] + flags[1])))
     elif options.action == 'host-ldflags':
+        flags = get_host_link_args()
         sys.stdout.write("{0}\n".format(
-            ' '.join(get_host_link_args()[1])))
-    elif options.action == 'tgt-ccflags':
-        sys.stdout.write("{0}\n".format(
-            ' '.join(get_host_compile_args()[0])))
-    elif options.action == 'tgt-ldflags':
-        sys.stdout.write("{0}\n".format(
-            ' '.join(get_host_link_args()[0])))
+            ' '.join(flags[0] + flags[1])))
     elif options.action == 'llvmversion':
         llvm_version = get_llvm_version()
         sys.stdout.write("{0}\n".format(llvm_version))
