@@ -223,7 +223,7 @@ module Crypto {
        :rtype: `[] string`
 
     */
-    proc toHex() throws {
+    proc toHex() {
       var buffHex: [this.buffDomain] string;
       for i in this.buffDomain {
         const byte = this.buff[i];
@@ -241,7 +241,7 @@ module Crypto {
        :rtype: `string`
 
     */
-    proc toHexString() throws {
+    proc toHexString() {
       var buffHexString: string;
       for i in this.buffDomain {
         const byte = this.buff[i];
@@ -865,6 +865,9 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
        :return: An `owned CryptoBuffer` representing the ciphertext.
        :rtype: `owned CryptoBuffer`
 
+       :throws IllegalArgumentError: If the key is less than 10 bytes long, or
+                                     if the IV is not 8 bytes long.
+
     */
     proc encrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer): owned CryptoBuffer throws {
       var ivLen = IV.getBuffSize();
@@ -944,6 +947,8 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
 
        :return: An `owned CryptoBuffer` representing the generated values.
        :rtype: `owned CryptoBuffer`
+
+       :throws IllegalArgumentError: If the `buffLen` is less than 1.
 
     */
     proc getRandomBuffer(buffLen: int): owned CryptoBuffer throws {
@@ -1206,6 +1211,8 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
 
        :return: An `owned CryptoBuffer` representing the obtained plaintext.
        :rtype: `owned CryptoBuffer`
+
+       :throws IllegalArgumentError: If the `key` is not a match.
 
     */
     proc decrypt(envp: Envelope, key: RSAKey): owned CryptoBuffer throws {
