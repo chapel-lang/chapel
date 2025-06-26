@@ -58,8 +58,7 @@ OPTIONS
 *Module Processing Options*
 
 .. _man-count-tokens:
-.. index:: --count-tokens
-.. index:: --no-count-tokens
+.. index:: --count-tokens, --no-count-tokens
 
 **\--[no-]count-tokens**
 
@@ -98,8 +97,7 @@ OPTIONS
     module search path.
 
 .. _man-print-code-size:
-.. index:: --print-code-size
-.. index:: --no-print-code-size
+.. index:: --print-code-size, --no-print-code-size
 
 **\--[no-]print-code-size**
 
@@ -123,8 +121,7 @@ OPTIONS
     Prints the Chapel module source files parsed by the Chapel compiler.
 
 .. _man-print-search-dirs:
-.. index:: --print-search-dirs
-.. index:: --no-print-search-dirs
+.. index:: --print-search-dirs, --no-print-search-dirs
 
 **\--[no-]print-search-dirs**
 
@@ -144,8 +141,7 @@ OPTIONS
     $CHPL\_HOME/doc/rst/technotes/editions.rst for more information.
 
 .. _man-permit-unhandled-module-errors:
-.. index:: --permit-unhandled-module-errors
-.. index:: --no-permit-unhandled-module-errors
+.. index:: --permit-unhandled-module-errors, --no-permit-unhandled-module-errors
 
 **\--[no-]permit-unhandled-module-errors**
 
@@ -156,8 +152,7 @@ OPTIONS
     error comes up during execution, it will cause the program to halt.
 
 .. _man-warn-unstable:
-.. index:: --warn-unstable
-.. index:: --no-warn-unstable
+.. index:: --warn-unstable, --no-warn-unstable
 
 **\--[no-]warn-unstable**
 
@@ -165,8 +160,7 @@ OPTIONS
     change in meaning due to language changes.
 
 .. _man-warnings:
-.. index:: --warnings
-.. index:: --no-warnings
+.. index:: --warnings, --no-warnings
 
 **\--[no-]warnings**
 
@@ -174,8 +168,7 @@ OPTIONS
     warnings.
 
 .. _man-warn-unknown-attribute-toolname:
-.. index:: --warn-unknown-attribute-toolname
-.. index:: --no-warn-unknown-attribute-toolname
+.. index:: --warn-unknown-attribute-toolname, --no-warn-unknown-attribute-toolname
 
 **\--[no-]warn-unknown-attribute-toolname**
 
@@ -193,8 +186,7 @@ OPTIONS
     **\--using-attribute-toolname** flag per name.
 
 .. _man-warn-potential-races:
-.. index:: --warn-potential-races
-.. index:: --no-warn-potential-races
+.. index:: --warn-potential-races, --no-warn-potential-races
 
 **\--[no-]warn-potential-races**
 
@@ -204,8 +196,7 @@ OPTIONS
     not printing race condition warnings.
 
 .. _man-warn-int-to-uint:
-.. index:: --warn-int-to-uint
-.. index:: --no-warn-int-to-uint
+.. index:: --warn-int-to-uint, --no-warn-int-to-uint
 
 **\--[no-]warn-int-to-uint**
 
@@ -213,8 +204,7 @@ OPTIONS
     from a value of ``int`` type of any width to a ``uint`` value.
 
 .. _man-warn-small-integral-to-float:
-.. index:: --warn-small-integral-to-float
-.. index:: --no-warn-small-integral-to-float
+.. index:: --warn-small-integral-to-float, --no-warn-small-integral-to-float
 
 **\--[no-]warn-small-integral-to-float**
 
@@ -225,8 +215,7 @@ OPTIONS
     type ``real(u)`` or ``complex(2*u)`` where ``u<64``.
 
 .. _man-warn-integral-to-float:
-.. index:: --warn-integral-to-float
-.. index:: --no-warn-integral-to-float
+.. index:: --warn-integral-to-float, --no-warn-integral-to-float
 
 **\--[no-]warn-integral-to-float**
 
@@ -235,8 +224,7 @@ OPTIONS
     or ``complex`` type of any width.
 
 .. _man-warn-float-to-float:
-.. index:: --warn-float-to-float
-.. index:: --no-warn-float-to-float
+.. index:: --warn-float-to-float, --no-warn-float-to-float
 
 **\--[no-]warn-float-to-float**
 
@@ -246,8 +234,7 @@ OPTIONS
     similar cases with ``imag`` and ``complex`` types.
 
 .. _man-warn-integral-to-integral:
-.. index:: --warn-integral-to-integral
-.. index:: --no-warn-integral-to-integral
+.. index:: --warn-integral-to-integral, --no-warn-integral-to-integral
 
 **\--[no-]warn-integral-to-integral**
 
@@ -256,8 +243,7 @@ OPTIONS
     (An integral type is an ``int`` or ``uint`` type).
 
 .. _man-warn-implicit-numeric-conversions:
-.. index:: --warn-implicit-numeric-conversions
-.. index:: --no-warn-implicit-numeric-conversions
+.. index:: --warn-implicit-numeric-conversions, --no-warn-implicit-numeric-conversions
 
 **\--[no-]warn-implicit-numeric-conversions**
 
@@ -265,8 +251,7 @@ OPTIONS
     converting between numeric types.
 
 .. _man-warn-param-implicit-numeric-conversions:
-.. index:: --warn-param-implicit-numeric-conversions
-.. index:: --no-warn-param-implicit-numeric-conversions
+.. index:: --warn-param-implicit-numeric-conversions, --no-warn-param-implicit-numeric-conversions
 
 **\--[no-]warn-param-implicit-numeric-conversions**
 
@@ -278,8 +263,7 @@ OPTIONS
 *Parallelism Control Options*
 
 .. _man-local:
-.. index:: --local
-.. index:: --no-local
+.. index:: --local, --no-local
 
 **\--[no-]local**
 
@@ -300,8 +284,7 @@ OPTIONS
     code with many temporaries.
 
 .. _man-cache-remote:
-.. index:: --cache-remote
-.. index:: --no-cache-remote
+.. index:: --cache-remote, --no-cache-remote
 
 **\--[no-]cache-remote**
 
@@ -310,16 +293,14 @@ OPTIONS
     read ahead.
 
 .. _man-copy-propagation:
-.. index:: --copy-propagation
-.. index:: --no-copy-propagation
+.. index:: --copy-propagation, --no-copy-propagation
 
 **\--[no-]copy-propagation**
 
     Enable [disable] copy propagation.
 
 .. _man-dead-code-elimination:
-.. index:: --dead-code-elimination
-.. index:: --no-dead-code-elimination
+.. index:: --dead-code-elimination, --no-dead-code-elimination
 
 **\--[no-]dead-code-elimination**
 
@@ -334,8 +315,7 @@ OPTIONS
     **\--specialize**.
 
 .. _man-fast-followers:
-.. index:: --fast-followers
-.. index:: --no-fast-followers
+.. index:: --fast-followers, --no-fast-followers
 
 **\--[no-]fast-followers**
 
@@ -343,8 +323,7 @@ OPTIONS
     implementations of followers will be invoked for specific leaders.
 
 .. _man-ieee-float:
-.. index:: --ieee-float
-.. index:: --no-ieee-float
+.. index:: --ieee-float, --no-ieee-float
 
 **\--[no-]ieee-float**
 
@@ -354,8 +333,7 @@ OPTIONS
     provided by '\ **chpl**\ '.
 
 .. _man-loop-invariant-code-motion:
-.. index:: --loop-invariant-code-motion
-.. index:: --no-loop-invariant-code-motion
+.. index:: --loop-invariant-code-motion, --no-loop-invariant-code-motion
 
 **\--[no-]loop-invariant-code-motion**
 
@@ -365,8 +343,7 @@ OPTIONS
     may not identify all code that is truly invariant.
 
 .. _man-optimize-forall-unordered-ops:
-.. index:: --optimize-forall-unordered-ops
-.. index:: --no-optimize-forall-unordered-ops
+.. index:: --optimize-forall-unordered-ops, --no-optimize-forall-unordered-ops
 
 **\--[no-]optimize-forall-unordered-ops**
 
@@ -375,24 +352,21 @@ OPTIONS
     support for unordered operations with CHPL_COMM=ugni.
 
 .. _man-ignore-local-classes:
-.. index:: --ignore-local-classes
-.. index:: --no-ignore-local-classes
+.. index:: --ignore-local-classes, --no-ignore-local-classes
 
 **\--[no-]ignore-local-classes**
 
     Disable [enable] local classes
 
 .. _man-inline:
-.. index:: --inline
-.. index:: --no-inline
+.. index:: --inline, --no-inline
 
 **\--[no-]inline**
 
     Enable [disable] function inlining.
 
 .. _man-inline-iterators:
-.. index:: --inline-iterators
-.. index:: --no-inline-iterators
+.. index:: --inline-iterators, --no-inline-iterators
 
 **\--[no-]inline-iterators**
 
@@ -409,8 +383,7 @@ OPTIONS
     The default value is 10.
 
 .. _man-live-analysis:
-.. index:: --live-analysis
-.. index:: --no-live-analysis
+.. index:: --live-analysis, --no-live-analysis
 
 **\--[no-]live-analysis**
 
@@ -418,8 +391,7 @@ OPTIONS
     optimize iterators that are not inlined.
 
 .. _man-optimize-range-iteration:
-.. index:: --optimize-range-iteration
-.. index:: --no-optimize-range-iteration
+.. index:: --optimize-range-iteration, --no-optimize-range-iteration
 
 **\--[no-]optimize-range-iteration**
 
@@ -428,8 +400,7 @@ OPTIONS
     By default this is enabled.
 
 .. _man-optimize-loop-iterators:
-.. index:: --optimize-loop-iterators
-.. index:: --no-optimize-loop-iterators
+.. index:: --optimize-loop-iterators, --no-optimize-loop-iterators
 
 **\--[no-]optimize-loop-iterators**
 
@@ -437,8 +408,7 @@ OPTIONS
     are defined in terms of a single loop. By default this is enabled.
 
 .. _man-vectorize:
-.. index:: --vectorize
-.. index:: --no-vectorize
+.. index:: --vectorize, --no-vectorize
 
 **\--[no-]vectorize**
 
@@ -447,8 +417,7 @@ OPTIONS
     (and in some cases correctness) will vary based on the target compiler.
 
 .. _man-optimize-on-clauses:
-.. index:: --optimize-on-clauses
-.. index:: --no-optimize-on-clauses
+.. index:: --optimize-on-clauses, --no-optimize-on-clauses
 
 **\--[no-]optimize-on-clauses**
 
@@ -465,8 +434,7 @@ OPTIONS
     The default value is 20.
 
 .. _man-privatization:
-.. index:: --privatization
-.. index:: --no-privatization
+.. index:: --privatization, --no-privatization
 
 **\--[no-]privatization**
 
@@ -474,8 +442,7 @@ OPTIONS
     distribution supports it.
 
 .. _man-remove-copy-calls:
-.. index:: --remove-copy-calls
-.. index:: --no-remove-copy-calls
+.. index:: --remove-copy-calls, --no-remove-copy-calls
 
 **\--[no-]remove-copy-calls**
 
@@ -484,8 +451,7 @@ OPTIONS
     which can often be optimized away.
 
 .. _man-remote-value-forwarding:
-.. index:: --remote-value-forwarding
-.. index:: --no-remote-value-forwarding
+.. index:: --remote-value-forwarding, --no-remote-value-forwarding
 
 **\--[no-]remote-value-forwarding**
 
@@ -493,16 +459,14 @@ OPTIONS
     threads if reading them early does not violate program semantics.
 
 .. _man-remote-serialization:
-.. index:: --remote-serialization
-.. index:: --no-remote-serialization
+.. index:: --remote-serialization, --no-remote-serialization
 
 **\--[no-]remote-serialization**
 
     Enable [disable] serialization for globals and remote constants.
 
 .. _man-scalar-replacement:
-.. index:: --scalar-replacement
-.. index:: --no-scalar-replacement
+.. index:: --scalar-replacement, --no-scalar-replacement
 
 **\--[no-]scalar-replacement**
 
@@ -519,8 +483,7 @@ OPTIONS
     The default value is 8.
 
 .. _man-tuple-copy-opt:
-.. index:: --tuple-copy-opt
-.. index:: --no-tuple-copy-opt
+.. index:: --tuple-copy-opt, --no-tuple-copy-opt
 
 **\--[no-]tuple-copy-opt**
 
@@ -537,8 +500,7 @@ OPTIONS
     The default value is 8.
 
 .. _man-infer-local-fields:
-.. index:: --infer-local-fields
-.. index:: --no-infer-local-fields
+.. index:: --infer-local-fields, --no-infer-local-fields
 
 **\--[no-]infer-local-fields**
 
@@ -546,8 +508,7 @@ OPTIONS
     (experimental)
 
 .. _man-auto-local-access:
-.. index:: --auto-local-access
-.. index:: --no-auto-local-access
+.. index:: --auto-local-access, --no-auto-local-access
 
 **\--[no-]auto-local-access**
 
@@ -559,8 +520,7 @@ OPTIONS
     execution time.
 
 .. _man-dynamic-auto-local-access:
-.. index:: --dynamic-auto-local-access
-.. index:: --no-dynamic-auto-local-access
+.. index:: --dynamic-auto-local-access, --no-dynamic-auto-local-access
 
 **\--[no-]dynamic-auto-local-access**
 
@@ -570,8 +530,7 @@ OPTIONS
     may also be execution time overheads independent of loop domain size.
 
 .. _man-offset-auto-local-access:
-.. index:: --offset-auto-local-access
-.. index:: --no-offset-auto-local-access
+.. index:: --offset-auto-local-access, --no-offset-auto-local-access
 
 **\--[no-]offset-auto-local-access**
 
@@ -580,8 +539,7 @@ OPTIONS
     stencil-distributed arrays.
 
 .. _man-auto-aggregation:
-.. index:: --auto-aggregation
-.. index:: --no-auto-aggregation
+.. index:: --auto-aggregation, --no-auto-aggregation
 
 **\--[no-]auto-aggregation**
 
@@ -589,8 +547,7 @@ OPTIONS
     use aggregated communication. This optimization is disabled by default.
 
 .. _man-array-view-elision:
-.. index:: --array-view-elision
-.. index:: --no-array-view-elision
+.. index:: --array-view-elision, --no-array-view-elision
 
 **\--[no-]array-view-elision**
 
@@ -599,8 +556,7 @@ OPTIONS
 *Run-time Semantic Check Options*
 
 .. _man-checks:
-.. index:: --checks
-.. index:: --no-checks
+.. index:: --checks, --no-checks
 
 **\--[no-]checks**
 
@@ -610,8 +566,7 @@ OPTIONS
     hand-coded C or Fortran.
 
 .. _man-bounds-checks:
-.. index:: --bounds-checks
-.. index:: --no-bounds-checks
+.. index:: --bounds-checks, --no-bounds-checks
 
 **\--[no-]bounds-checks**
 
@@ -619,8 +574,7 @@ OPTIONS
     indexing.
 
 .. _man-cast-checks:
-.. index:: --cast-checks
-.. index:: --no-cast-checks
+.. index:: --cast-checks, --no-cast-checks
 
 **\--[no-]cast-checks**
 
@@ -628,8 +582,7 @@ OPTIONS
     wouldn't preserve the logical value being cast.
 
 .. _man-const-arg-checks:
-.. index:: --const-arg-checks
-.. index:: --no-const-arg-checks
+.. index:: --const-arg-checks, --no-const-arg-checks
 
 **\--[no-]const-arg-checks**
 
@@ -641,8 +594,7 @@ OPTIONS
     modification behavior should be preserved or avoided).
 
 .. _man-div-by-zero-checks:
-.. index:: --div-by-zero-checks
-.. index:: --no-div-by-zero-checks
+.. index:: --div-by-zero-checks, --no-div-by-zero-checks
 
 **\--[no-]div-by-zero-checks**
 
@@ -650,8 +602,7 @@ OPTIONS
     to guard against dividing by zero.
 
 .. _man-formal-domain-checks:
-.. index:: --formal-domain-checks
-.. index:: --no-formal-domain-checks
+.. index:: --formal-domain-checks, --no-formal-domain-checks
 
 **\--[no-]formal-domain-checks**
 
@@ -661,8 +612,7 @@ OPTIONS
     map (if the formal domain explicitly specifies a domain map).
 
 .. _man-local-checks:
-.. index:: --local-checks
-.. index:: --no-local-checks
+.. index:: --local-checks, --no-local-checks
 
 **\--[no-]local-checks**
 
@@ -670,16 +620,14 @@ OPTIONS
     local blocks.
 
 .. _man-nil-checks:
-.. index:: --nil-checks
-.. index:: --no-nil-checks
+.. index:: --nil-checks, --no-nil-checks
 
 **\--[no-]nil-checks**
 
     Enable [disable] run-time checking for accessing nil object references.
 
 .. _man-stack-checks:
-.. index:: --stack-checks
-.. index:: --no-stack-checks
+.. index:: --stack-checks, --no-stack-checks
 
 **\--[no-]stack-checks**
 
@@ -688,8 +636,7 @@ OPTIONS
 *C Code Generation Options*
 
 .. _man-codegen:
-.. index:: --codegen
-.. index:: --no-codegen
+.. index:: --codegen, --no-codegen
 
 **\--[no-]codegen**
 
@@ -698,8 +645,7 @@ OPTIONS
     only Chapel compiler warnings/errors are of interest.
 
 .. _man-cpp-lines:
-.. index:: --cpp-lines
-.. index:: --no-cpp-lines
+.. index:: --cpp-lines, --no-cpp-lines
 
 **\--[no-]cpp-lines**
 
@@ -719,8 +665,7 @@ OPTIONS
     1020.
 
 .. _man-munge-user-idents:
-.. index:: --munge-user-idents
-.. index:: --no-munge-user-idents
+.. index:: --munge-user-idents, --no-munge-user-idents
 
 **\--[no-]munge-user-idents**
 
@@ -754,8 +699,7 @@ OPTIONS
     compiler.
 
 .. _man-debug:
-.. index:: --debug
-.. index:: --no-debug
+.. index:: --debug, --no-debug
 
 **-g, \--[no-]debug**
 
@@ -815,8 +759,7 @@ OPTIONS
     directories.
 
 .. _man-optimize:
-.. index:: --optimize
-.. index:: --no-optimize
+.. index:: --optimize, --no-optimize
 
 **-O, \--[no-]optimize**
 
@@ -827,8 +770,7 @@ OPTIONS
     with the C compiler command, use the **\--ccflags** option.
 
 .. _man-specialize:
-.. index:: --specialize
-.. index:: --no-specialize
+.. index:: --specialize, --no-specialize
 
 **\--[no-]specialize**
 
@@ -858,8 +800,7 @@ OPTIONS
 *LLVM Code Generation Options*
 
 .. _man-llvm-wide-opt:
-.. index:: --llvm-wide-opt
-.. index:: --no-llvm-wide-opt
+.. index:: --llvm-wide-opt, --no-llvm-wide-opt
 
 **\--[no-]llvm-wide-opt**
 
@@ -882,8 +823,7 @@ OPTIONS
 *Compilation Trace Options*
 
 .. _man-print-commands:
-.. index:: --print-commands
-.. index:: --no-print-commands
+.. index:: --print-commands, --no-print-commands
 
 **\--[no-]print-commands**
 
@@ -891,8 +831,7 @@ OPTIONS
     compile the Chapel program.
 
 .. _man-print-passes:
-.. index:: --print-passes
-.. index:: --no-print-passes
+.. index:: --print-passes, --no-print-passes
 
 **\--[no-]print-passes**
 
@@ -916,8 +855,7 @@ OPTIONS
 *Miscellaneous Options*
 
 .. _man-detailed-errors:
-.. index:: --detailed-errors
-.. index:: --no-detailed-errors
+.. index:: --detailed-errors, --no-detailed-errors
 
 **\--[no-]detailed-errors**
 
@@ -927,8 +865,7 @@ OPTIONS
     segments of code, or providing suggestions for how to fix the error.
 
 .. _man-devel:
-.. index:: --devel
-.. index:: --no-devel
+.. index:: --devel, --no-devel
 
 **\--[no-]devel**
 
@@ -958,8 +895,7 @@ OPTIONS
     within a specific module or at a particular line number.
 
 .. _man-explain-verbose:
-.. index:: --explain-verbose
-.. index:: --no-explain-verbose
+.. index:: --explain-verbose, --no-explain-verbose
 
 **\--[no-]explain-verbose**
 
@@ -977,8 +913,7 @@ OPTIONS
     instantiation is being pruned too aggressively.
 
 .. _man-print-all-candidates:
-.. index:: --print-all-candidates
-.. index:: --no-print-all-candidates
+.. index:: --print-all-candidates, --no-print-all-candidates
 
 **\--[no-]print-all-candidates**
 
@@ -987,8 +922,7 @@ OPTIONS
     not be resolved.
 
 .. _man-print-callgraph:
-.. index:: --print-callgraph
-.. index:: --no-print-callgraph
+.. index:: --print-callgraph, --no-print-callgraph
 
 **\--[no-]print-callgraph**
 
@@ -999,8 +933,7 @@ OPTIONS
     parent function.
 
 .. _man-print-callstack-on-error:
-.. index:: --print-callstack-on-error
-.. index:: --no-print-callstack-on-error
+.. index:: --print-callstack-on-error, --no-print-callstack-on-error
 
 **\--[no-]print-callstack-on-error**
 
@@ -1010,8 +943,7 @@ OPTIONS
     one of the callers.
 
 .. _man-print-unused-functions:
-.. index:: --print-unused-functions
-.. index:: --no-print-unused-functions
+.. index:: --print-unused-functions, --no-print-unused-functions
 
 **\--[no-]print-unused-functions**
 
@@ -1028,8 +960,7 @@ OPTIONS
     to the value `true`.
 
 .. _man-task-tracking:
-.. index:: --task-tracking
-.. index:: --no-task-tracking
+.. index:: --task-tracking, --no-task-tracking
 
 **\--[no-]task-tracking**
 
