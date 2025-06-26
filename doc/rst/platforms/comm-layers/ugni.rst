@@ -35,7 +35,8 @@ To use ugni communications:
    *hugepages*.  Performance for remote variable references is much
    better when hugepages are used.  The only downside of using hugepages
    is that the tasking layer may not be able to detect task stack
-   overflows by means of guard pages (see below).
+   overflows by means of guard pages, `see below <ugni-hugepages-tasking>`_ for
+   more information.
 
    To use hugepages, you must have a ``craype-hugepages`` module loaded
    both when building your program and when running it.  There are
@@ -70,6 +71,8 @@ To use ugni communications:
    achieving the best performance for any given program may require
    striking a balance between using larger hugepages to reduce NIC page
    table cache refills and using smaller ones to improve NUMA locality.
+
+   .. _ugni-hugepages-tasking:
 
    Note that when hugepages are used with the ugni comm layer, tasking
    layers cannot use guard pages for stack overflow detection.  Qthreads

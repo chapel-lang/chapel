@@ -113,6 +113,9 @@ existing SSH keys or generating new ones with the following:
 
       ssh-keygen -t rsa # use default location and empty passphrase
       cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+      # alternatively, using ed25519 keys
+      ssh-keygen -t ed25519
+      cat ~/.ssh/id_ed25519.pub >> ~/.ssh/authorized_keys
 
 If you see the same error message this may indicate ssh connections
 to compute nodes are not allowed, in which case using the MPI

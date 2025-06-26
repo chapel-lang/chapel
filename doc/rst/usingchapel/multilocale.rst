@@ -212,5 +212,5 @@ you used for your initial Chapel install).
 
 .. note::
 
-   When using GASNet, setting ``CHPL_COMM_DEBUG`` will also enable additional
+   When using GASNet, setting ``CHPL_COMM_DEBUG`` will also enable
    some of GASNet's internal sanity checking (off by default).

@@ -5,7 +5,7 @@ Using Chapel with libfabric
 ============================
 
 This document describes how to run Chapel across multiple compute nodes using
-the OpenFabrics Interfaces libfabric-based ``ofi`` communication layer.
+the OpenFabrics Interfaces (``ofi``) communication layer.
 :ref:`readme-multilocale` gives general information about running Chapel
 in a multilocale configuration.
 

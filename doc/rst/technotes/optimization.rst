@@ -137,7 +137,8 @@ with ``CHPL_RT_NUM_THREADS_PER_LOCALE=8 ./application -nl 4``. That
 uses 8 threads per locale, with 4 locales, so a total of 32 threads.
 
 See also :ref:`num-threads-per-locale`,
-:ref:`oversubscribed-execution`, and :ref:`using-udp`.
+:ref:`oversubscribed-execution`, :ref:`readme-gasnet-emulating-multilocale`,
+and :ref:`using-udp`.
 
 
 Measuring Performance
