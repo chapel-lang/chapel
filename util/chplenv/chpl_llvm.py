@@ -817,6 +817,24 @@ def _clang_verbose_on_sys_basic(clang='clang'):
     out += err
     return out
 
+@memoize
+def _clang_get_isysroot(clang='clang'):
+    out = _clang_verbose_on_sys_basic(clang)
+    found = re.search('"-isysroot" "([^"]+)"', out)
+    if found:
+        return ['-isysroot', found.group(1).strip()]
+    else:
+        return []
+
+@memoize
+def _clang_get_resourcedir(clang='clang'):
+    out = _clang_verbose_on_sys_basic(clang)
+    found = re.search('"-resource-dir" "([^"]+)"', out)
+    if found:
+        return ['-resource-dir', found.group(1).strip()]
+    else:
+        return []
+
 # The bundled LLVM does not currently know to look in a particular Mac OS X SDK
 # so we provide a -isysroot arg to indicate which is used.
 #
@@ -836,17 +854,8 @@ def get_sysroot_resource_dir_args():
     args = [ ]
     llvm_val = get()
     if llvm_val == "bundled":
-        out = _clang_verbose_on_sys_basic()
-
-        found = re.search('"-isysroot" "([^"]+)"', out)
-        if found:
-            args.append('-isysroot')
-            args.append(found.group(1).strip())
-
-        found = re.search('"-resource-dir" "([^"]+)"', out)
-        if found:
-            args.append('-resource-dir')
-            args.append(found.group(1).strip())
+        args.extend(_clang_get_isysroot())
+        args.extend(_clang_get_resourcedir())
 
     return args
 
@@ -888,11 +897,7 @@ def get_sysroot_linux_args():
     # workaround for fedora
     if chpl_platform.get_linux_distribution() == 'fedora':
         clang = get_llvm_clang_noargs('c')
-        out = _clang_verbose_on_sys_basic(clang)
-        found = re.search('"-resource-dir" "([^"]+)"', out)
-        if found:
-            args.append('-resource-dir')
-            args.append(found.group(1).strip())
+        args.extend(_clang_get_resourcedir(clang))
 
     return args
 
