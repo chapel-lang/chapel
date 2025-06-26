@@ -895,7 +895,7 @@ def get_sysroot_linux_args():
                 args.append('--end-no-unused-arguments')
 
     # workaround for fedora
-    if chpl_platform.get_linux_distribution() == 'fedora':
+    if chpl_platform.is_fedora():
         clang = get_llvm_clang_noargs('c')
         args.extend(_clang_get_resourcedir(clang))
 

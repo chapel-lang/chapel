@@ -68,7 +68,7 @@ def get(flag='host'):
     return platform_val
 
 @memoize
-def get_linux_distribution():
+def _get_linux_distribution():
     distribution = 'unknown'
     try:
         os_release = platform.freedesktop_os_release()
@@ -77,6 +77,11 @@ def get_linux_distribution():
 
     distribution = os_release.get('ID', distribution).lower()
     return distribution
+
+@memoize
+def is_fedora():
+    distribution = _get_linux_distribution()
+    return distribution.startswith('fedora')
 
 @memoize
 def is_wsl():
