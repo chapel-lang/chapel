@@ -191,6 +191,7 @@ module HDFS {
   :arg nameNode: the hostname for an HDFS name node to connect to
   :arg port: the port on which the HDFS service is running on the name node
   :returns: a :record:`hdfs` representing the connected filesystem.
+  :throws SystemError: If the connection fails.
   */
 
   proc connect(nameNode: string = "default", port:int=0) throws {
@@ -283,6 +284,7 @@ module HDFS {
       :arg bufferSize: buffer size to pass to the HDFS open call.  Uses the HDFS default value if not provided.
       :arg replication: replication factor to pass to the HDFS open call.  Uses the HDFS default value if not provided.
       :arg blockSize: blockSize to pass to the HDFS open call.  Uses the HDFS default value if not provided.
+      :throws SystemError: If opening the file fails.
      */
     proc open(path:string, mode:ioMode,
               in flags:c_int = 0, // default to based on mode
