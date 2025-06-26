@@ -777,6 +777,7 @@ module ChapelArray {
   // the serialize routines to fire, when their where-clause permits.
   pragma "always RVF"
   /* The array type */
+  @chpldoc.hideImplType
   record _array : writeSerializable, readDeserializable {
     var _pid:int;  // only used when privatized
     pragma "owned"
