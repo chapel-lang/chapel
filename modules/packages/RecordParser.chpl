@@ -202,7 +202,12 @@ class RecordReader {
     }
   }
 
-  /* Read the next record */
+  /*
+     Read the next record
+
+     :throws SystemError: If an error is encountered extracting the a regex
+                          match, including an IO error.
+  */
   proc get() throws {
     var (rec, once) = _get_internal();
     if(!once) // We havent gotten everything that we should have.
@@ -228,6 +233,9 @@ class RecordReader {
 
      HDFS specific when offst and len are given. Checks for block boundaries
      for parallel file IO
+
+     :throws SystemError: If an error is encountered extracting the a regex
+                          match, including an IO error.
 
    */
   @chpldoc.nodoc
