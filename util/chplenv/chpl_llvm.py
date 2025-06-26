@@ -601,7 +601,7 @@ def get_llvm_clang_noargs(lang):
     # if it was provided by a user setting, just use that
     provided = get_overriden_llvm_clang(lang)
     if provided:
-        return provided
+        return provided[0]
 
     clang = None
     llvm_val = get()
@@ -619,6 +619,11 @@ def get_llvm_clang_noargs(lang):
 # then necessary arguments
 @memoize
 def get_llvm_clang(lang):
+
+    # if it was provided by a user setting, just use that
+    provided = get_overriden_llvm_clang(lang)
+    if provided:
+        return provided
 
     clang = get_llvm_clang_noargs(lang)
     if not clang:
