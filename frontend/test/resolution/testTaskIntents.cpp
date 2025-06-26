@@ -337,6 +337,7 @@ static void testTaskVar() {
   assert(guard.realizeErrors() == 0);
 
   for (auto& [name, var] : vars) {
+    std::ignore = name; // avoid unused variable warning with old GCC (7.5)
     assert(!var.isUnknownOrErroneous() && var.type()->isIntType());
   }
 }
