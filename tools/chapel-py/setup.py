@@ -60,6 +60,7 @@ chpl_install_lib_path = (
     .strip()
 )
 
+# TODO: -DHAVE_LLVM is also included in --host-cxxflags, can we remove it here?
 CXXFLAGS = []
 if have_llvm and have_llvm != "none":
     CXXFLAGS += ["-DHAVE_LLVM"]
