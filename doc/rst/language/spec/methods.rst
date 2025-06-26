@@ -22,6 +22,8 @@ Methods are declared with the following syntax:
    method-declaration-statement:
      procedure-kind[OPT] proc-or-iter this-intent[OPT] type-binding[OPT] identifier argument-list[OPT]
        return-intent[OPT] return-type[OPT] where-clause[OPT] function-body
+     procedure-kind[OPT] 'operator' type-binding[OPT] identifier argument-list[OPT]
+       return-intent[OPT] return-type[OPT] where-clause[OPT] function-body
 
    proc-or-iter:
      'proc'
