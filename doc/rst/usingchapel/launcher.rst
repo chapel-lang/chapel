@@ -320,7 +320,7 @@ To run this job, use:
 and when it completes, the output will be available in `job.output` as
 specified in `job.bash`.
 
-Troubleshooting with slurm
+Troubleshooting with Slurm
 **************************
 
 I'm seeing srun errors like `Memory required by task is not available`
