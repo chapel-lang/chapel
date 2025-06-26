@@ -124,7 +124,10 @@ multiple locales.
 Emulating Multilocale Execution with the UDP Conduit
 ++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-While the `UDP conduit <using-udp>`_ is primarily intended for portable multilocale execution over ethernet, it can be modified to emulate multiple locales locally by `oversubscribing <oversubscribed-execution>`_ the machine's resources.
+While the :ref:`UDP conduit <using-udp>` is primarily intended for portable
+multilocale execution over ethernet, it can be modified to emulate multiple
+locales locally by :ref:`oversubscribing <oversubscribed-execution>` the machine's
+resources.
 
 With a build of Chapel with ``CHPL_COMM=gasnet`` and
 ``CHPL_COMM_SUBSTRATE=udp``, you can run a Chapel program on multiple locales
@@ -138,7 +141,7 @@ on a single machine with the following environment variable settings:
     export GASNET_WORKERIP=127.0.0.0
     export CHPL_RT_OVERSUBSCRIBED=yes
 
-See the documentation for the `UDP conduit <using-udp>`_ for more details on
+See the documentation for the :ref:`UDP conduit <using-udp>` for more details on
 what these environment variables do.
 
 .. _readme-gasnet-mpi:
@@ -146,13 +149,14 @@ what these environment variables do.
 Using the GASNet MPI Conduit
 ++++++++++++++++++++++++++++++++++++
 
-To use the MPI directly with GASNet, you must set the
+To use MPI directly with GASNet, you must set the
 ``CHPL_COMM_SUBSTRATE`` environment variable to ``mpi`` and rebuild Chapel. This will
 configure Chapel to use the MPI conduit of GASNet, which allows you to
 run Chapel programs using the MPI library for communication between locales.
 
-For best practices about how to configure/use GASNet to avoid
-such conflicts with MPI, please see the `GASNet docs for the MPI Conduit <https://bitbucket.org/berkeleylab/gasnet/src/master/mpi-conduit/README>`_
+For best practices about how to configure/use GASNet to avoid such conflicts
+with MPI, please see the
+`GASNet docs for the MPI Conduit <https://bitbucket.org/berkeleylab/gasnet/src/master/mpi-conduit/README>`_
 (also available at
 ``$CHPL_HOME/third-party/gasnet/gasnet-src/mpi-conduit/README``).
 

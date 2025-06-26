@@ -16,7 +16,8 @@ environment variables before building Chapel:
 
 .. code-block:: bash
 
-   export CHPL_COMM=ofi export CHPL_COMM_OFI_OOB=pmi2
+   export CHPL_COMM=ofi
+   export CHPL_COMM_OFI_OOB=pmi2
 
 The current best practice for using Chapel on AWS with EFA is to use
 ``pcluster`` to create a cluster for you. See :ref:`readme-aws` for more

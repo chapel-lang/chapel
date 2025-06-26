@@ -22,7 +22,7 @@ Major Platforms
 Networks
 --------
 
-Chapel is portable across many different networks. The following sections
+Chapel is portable across many different networks. The following pages
 provide information on the different networks available in Chapel and how to
 target them.
 
@@ -44,7 +44,7 @@ Communication Layers
 
 The Chapel runtime can be built with different communication layers, controlled
 with ``CHPL_COMM``. Different layers are preferred depending on the
-platform/network. The following sections provide information on the different
+platform/network. The following pages provide information on the different
 communication layers available in Chapel.
 
 .. toctree::

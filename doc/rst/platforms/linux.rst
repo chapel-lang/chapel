@@ -16,7 +16,10 @@ There are two main approaches for using Chapel on Linux:
 Package Install
 ---------------
 
-Chapel provides prebuilt apt/rpm packages for several Linux distributions. These packages can be downloaded and installed using the package manager for your distribution. For example, on x86 Ubuntu 24, you can install Chapel 2.4.0 with the following commands:
+Chapel provides prebuilt apt/rpm packages for several Linux distributions.
+These packages can be downloaded and installed using the package manager for
+your distribution. For example, on x86 Ubuntu 24, you can install Chapel 2.4.0
+with the following commands:
 
 .. code-block:: bash
 
@@ -39,7 +42,8 @@ For users of Linuxbrew_, Chapel can be installed with the following commands:
    brew update
    brew install chapel
 
-For more information on using Chapel with Linuxbrew, see the `docs on using Homebrew <macosx-homebrew>`_ with Chapel.
+For more information on using Chapel with Linuxbrew, see the
+:ref:`docs on using Homebrew <macosx-homebrew>` with Chapel.
 
 --------------------
 Building from Source

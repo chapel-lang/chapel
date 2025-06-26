@@ -4,10 +4,11 @@
 Using Chapel with ugni
 ======================
 
-Chapel supports a Cray-specific ``ugni`` communication layer. The ugni
-communication layer interacts with the system's network interface very closely
-through a lightweight interface called uGNI (user Generic Network Interface).
-On Cray XC systems the ugni communication layer is the default.
+Chapel supports a Cray-specific ``ugni`` communication layer for targeting the
+Aries network on Cray-XC's. The ugni communication layer interacts with the
+system's network interface very closely through a lightweight interface called
+uGNI (user Generic Network Interface). On Cray XC systems the ugni
+communication layer is the default.
 
 
 Using the ugni Communications Layer
@@ -83,21 +84,29 @@ _______________
 The Aries networks on Cray XC series systems support remote atomic
 memory operations (AMOs).  When the ``CHPL_NETWORK_ATOMICS`` environment
 variable is set to ``ugni``, the following operations on remote atomics
-are done using the network::
+are done using the network:
 
-    32- and 64-bit signed and unsigned integer types:
-    32- and 64-bit real types:
-      read()
-      write()
-      exchange()
-      compareAndSwap()
-      add(), fetchAdd()
-      sub(), fetchSub()
+   * 32- and 64-bit signed and unsigned integer types and real types:
 
-    32- and 64-bit signed and unsigned integer types:
-      or(),  fetchOr()
-      and(), fetchAnd()
-      xor(), fetchXor()
+      * ``read()``
+
+      * ``write()``
+
+      * ``exchange()``
+
+      * ``compareAndSwap()``
+
+      * ``add()``, ``fetchAdd()``
+
+      * ``sub()``, ``fetchSub()``
+
+   * 32- and 64-bit signed and unsigned integer types:
+      
+      * ``or()``,  ``fetchOr()``
+      
+      * ``and()``, ``fetchAnd()``
+      
+      * ``xor()``, ``fetchXor()``
 
 All of the operations shown above are done natively by the network
 hardware except 64-bit real add, which is disabled in hardware and thus
@@ -154,7 +163,7 @@ Any of the following would specify an approximately 1 GiB heap on a
 
 Note that the resulting heap size may get rounded up to match the page
 alignment.  How much this will add, if any, depends on the hugepage size
-in any ``craype-hugepage`` module you have loaded at the time you
+in any ``craype-hugepages`` module you have loaded at the time you
 execute the program.  It may also be reduced, if some resource
 limitation prevents making the heap as large as requested.
 

@@ -95,17 +95,22 @@ Building Chapel with the ofi Communication Layer
 
 .. _set-comm-ofi-oob:
 
-#. If you are not on a Cray XC or HPE Cray EX system and you are not using the ``mpirun4ofi`` launcher, you may need to set ``CHPL_COMM_OFI_OOB``.
+#. If you are not on a Cray XC or HPE Cray EX system and you are not using the
+   ``mpirun4ofi`` launcher, you may need to set ``CHPL_COMM_OFI_OOB``.
 
        =======  ====================================================
        Value     Description
        =======  ====================================================
-       pmi2     use the PMI2 (Process Management Interface) out-of-band (OOB) mechanism
+       pmi2     use the PMI2 (Process Management Interface)
+                out-of-band (OOB) mechanism
        mpi      use the MPI out-of-band (OOB) mechanism
        sockets  use the sockets out-of-band (OOB) mechanism
        =======  ====================================================
 
-   On Cray XC and HPE Cray EX systems, the default is ``pmi2``. If the launcher is ``mpirun4ofi``, the default is ``mpi``. Otherwise, Chapel will fallback to ``sockets``, which is not recommended. If you are using a slurm-based launcher, you should set ``CHPL_COMM_OFI_OOB=pmi2``.
+   On Cray XC and HPE Cray EX systems, the default is ``pmi2``. If the launcher
+   is ``mpirun4ofi``, the default is ``mpi``. Otherwise, Chapel will fallback
+   to ``sockets``, which is not recommended. If you are using a slurm-based
+   launcher, you should set ``CHPL_COMM_OFI_OOB=pmi2``.
 
 #. Re-make the compiler and runtime from ``CHPL_HOME`` (see
    :ref:`readme-building`).
@@ -265,8 +270,7 @@ your program, and you must have a ``craype-hugepages`` module loaded
 and ``CHPL_RT_COMM_OFI_USE_HUGEPAGES=true`` when you run your program
 (note that these are not the same variable.)
 
-For
-example::
+For example::
 
      module load craype-hugepages16M
      CHPL_COMM_OFI_USE_HUGEPAGES=true
@@ -287,11 +291,11 @@ Transparent Hugepages
 _____________________
 
 With some providers, the use of transparent hugepages is required to register
-more memory. This is default when using the EFA provider on AWS. To explicitly
-enable transparent hugepages, set the ``CHPL_RT_COMM_OFI_THP_HINT`` environment
-variable to true. This will enable transparent hugepages for the duration of
-the program. Note that this requires the kernel to have transparent hugepages
-enabled and enough free hugepages to be available.
+more memory. This is the default when using the EFA provider on AWS. To
+explicitly enable transparent hugepages, set the ``CHPL_RT_COMM_OFI_THP_HINT``
+environment variable to true. This will enable transparent hugepages for the
+duration of the program. Note that this requires the kernel to have transparent
+hugepages enabled and enough free hugepages to be available.
 
 .. _mpirun4ofi-launcher:
 

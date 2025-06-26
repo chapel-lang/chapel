@@ -4,7 +4,10 @@
 Multilocale Chapel Execution
 ============================
 
-This document outlines the steps to get started with multilocale Chapel. Chapel provides several multilocale configurations. See :ref:`platforms-comm-layers` for more information on the different communication layers available in Chapel.
+This document outlines the steps to get started with multilocale Chapel.
+Chapel provides several multilocale configurations.
+See :ref:`platforms-comm-layers` for more information on the different
+communication layers available in Chapel.
 
 Steps 2-3 describe how to build a multilocale Chapel, and steps 4-6 cover
 compiling and running multilocale Chapel programs.
@@ -33,6 +36,8 @@ compiling and running multilocale Chapel programs.
     EFA           :ref:`libfabric <readme-libfabric>`
     Ethernet      :ref:`GASNet <readme-gasnet>` or
                   :ref:`libfabric <readme-libfabric>`
+    Aries         :ref:`UGNI <readme-ugni>`
+    Omni-Path     :ref:`GASNet <readme-gasnet>`
    =============  ====================================
 
    If you wish to emulated multilocale execution on a single machine, you should
@@ -44,7 +49,9 @@ compiling and running multilocale Chapel programs.
 
         export CHPL_COMM=gasnet
 
-      Then, consider changing these variables to target your specific system:
+      Then, consider changing these variables to target your specific system.
+      For most systems, these are inferred to sensible defaults automatically
+      and do not need to be set:
 
         * :ref:`CHPL_LAUNCHER <readme-launcher>` controls job launch
         * :ref:`CHPL_COMM_SUBSTRATE <set-comm-conduit>` selects a GASNet conduit
@@ -56,7 +63,9 @@ compiling and running multilocale Chapel programs.
 
         export CHPL_COMM=ofi
 
-      Then, consider changing these variables to target your specific system:
+      Then, consider changing these variables to target your specific system.
+      For most systems, these are inferred to sensible defaults automatically
+      and do not need to be set:
 
         * :ref:`CHPL_LAUNCHER <readme-launcher>` controls job launch
         * :ref:`CHPL_COMM_OFI_OOB <set-comm-ofi-oob>` selects the out-of-band communication method
@@ -188,13 +197,20 @@ If you are trying to debug job launch, try adding ``-v`` or
 ``--dry-run`` to your program's command-line to see the command(s)
 that the Chapel launcher is executing to get things running.
 
-See :ref:`readme-gasnet-troubleshooting` for additional tips on debugging GASNet.
+.. note::
+
+   For GASNet-based multilocale runs, see :ref:`readme-gasnet-troubleshooting`
+   for additional tips on debugging GASNet.
 
 .. _set-comm-debugging:
 
-Advanced users may also want to set ``CHPL_COMM_DEBUG`` in order to
-enable GASNet's internal sanity checking (it is off by default).  Note
-that you'll need to re-build GASNet and runtime when changing this
-setting (i.e., re-run the ``make`` command you used for your initial
-Chapel install).
+Advanced users may also want to set ``CHPL_COMM_DEBUG``. This enables a number
+of debugging features in the Chapel runtime. After setting this variable, you
+will need to rebuild the Chapel runtime and any third-party comm layers (e.g.,
+GASNet, libfabric, etc.) that you are using (i.e., re-run the ``make`` command
+you used for your initial Chapel install).
 
+.. note::
+
+   When using GASNet, setting ``CHPL_COMM_DEBUG`` will also enable additional
+   some of GASNet's internal sanity checking (off by default).

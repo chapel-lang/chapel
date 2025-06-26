@@ -224,7 +224,7 @@ configuration.
 * If you plan to run Chapel over an existing MPI installation, you can use the
   ``mpirun4ofi`` launcher.
 
-Make sure to read the documentation for `libfabric <readme-libfabric>`_ to
+Make sure to read the documentation for :ref:`libfabric <readme-libfabric>` to
 ensure your Chapel installation is configured correctly for the ``tcp``
 provider.
 
