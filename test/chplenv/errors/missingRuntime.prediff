@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+complog=$2
+chpl=$3
+
+$chpl --tasks=fifo missingRuntime.chpl >>$complog 2>&1
+echo "====" >>$complog
+
+CHPL_TASKS=fifo $chpl missingRuntime.chpl >>$complog 2>&1
+echo "====" >>$complog
+
+unset CHPL_TASKS
+CHPL_CONFIG=. $chpl missingRuntime.chpl >>$complog 2>&1
+echo "====" >>$complog
