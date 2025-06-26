@@ -360,6 +360,8 @@ module Buffers {
 
      :arg bufRange: the region of the buffer to copy, for example buffer.all()
      :returns: a newly initialized bytes object on the current locale
+     :throws IoError: If an error occurs creating the new buffer and copying
+                      data.
    */
   proc buffer.flatten(bufRange:buffer_range) throws {
     var ret: byteBuffer  = new byteBuffer();
@@ -464,6 +466,7 @@ module Buffers {
      :arg b: the :record:`byteBuffer` object to append
      :arg skip_bytes: how many bytes at the front of b to skip
      :arg len_bytes: how many bytes to append to the buffer
+     :throws IoError: If an error occurs appending to the buffer.
   */
   proc buffer.append(b:byteBuffer, skip_bytes:int(64) = 0, len_bytes:int(64) = b.len) throws {
     var err:errorCode = 0;
@@ -482,6 +485,7 @@ module Buffers {
      :arg buf: the :record:`buffer` object to append
      :arg part: a :record:`buffer_range` indicating which section of the
                 buffer to copy. Defaults to all of the buffer.
+     :throws IoError: If an error occurs appending to the buffer.
    */
   proc buffer.append(buf:buffer, part:buffer_range = buf.all()) throws {
     var err:errorCode = 0;
@@ -501,6 +505,7 @@ module Buffers {
      :arg b: the :record:`byteBuffer` object to prepend
      :arg skip_bytes: how many bytes at the front of b to skip
      :arg len_bytes: how many bytes to append to the buffer
+     :throws IoError: If an error occurs prepending to the buffer.
   */
   proc buffer.prepend(b:byteBuffer, skip_bytes:int(64) = 0, len_bytes:int(64) = b.len) throws {
     var err:errorCode = 0;
@@ -594,6 +599,7 @@ module Buffers {
      :arg value: a basic type or `string`
      :returns: a buffer iterator storing the position immediately after
                the read value.
+     :throws IoError: If an error occurs copying from the buffer.
   */
   proc buffer.copyout(it:buffer_iterator, ref value: ?T):buffer_iterator throws where isNumericType(T) {
     var ret:buffer_iterator;
@@ -653,6 +659,7 @@ module Buffers {
      :arg value: a basic type or `string`
      :returns: a buffer iterator storing the position immediately after
                the written value.
+     :throws IoError: If an error occurs copying to the buffer.
   */
   proc buffer.copyin(it:buffer_iterator, value: ?T): buffer_iterator
                      throws where isNumericType(T) {
