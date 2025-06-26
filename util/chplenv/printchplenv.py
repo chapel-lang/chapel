@@ -578,8 +578,8 @@ def diagnose_missing_library(lib_type):
                 print("Valid options: {}".format(", ".join(options)))
             chplconfig_path = overrides.get_chplconfig_path()
             if env_set(varname):
-                # TODO: is there a way to distibguish between an env var set
-                # or a compiler argiment?
+                # TODO: is there a way to distinguish between an env var set
+                # or a compiler argument?
                 # i.e. `CHPL_TARGET_COMPILER=xxx vs --target-compiler=xxx`
                 print("This variable is either set in the environment or via a command line argument, consider unsetting it.")
             elif config_set(varname):

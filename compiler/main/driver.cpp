@@ -2212,7 +2212,7 @@ static void checkRuntimeBuilt(void) {
 
       std::string buf = CHPL_HOME + "/util/printchplenv --diagnose-lib=runtime";
       fflush(stdout); // make sure output is flushed before running subprocess
-      mysystem(buf.c_str(), "running printchplenv", false);
+      mysystem(buf.c_str(), "running printchplenv to diagnose missing runtime", false);
 
       USR_PRINT("Run $CHPL_HOME/util/chplenv/printchplbuilds.py for more information on available runtimes.");
     }
