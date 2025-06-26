@@ -55,13 +55,13 @@ Mason understands specific fields in the TOML file, which are described below.
 
         .. code-block:: text
 
-           "1.16.0"         # 1.16.0 or later
-           "1.16"           # 1.16.0 or later
-           "1.16.0..1.19.0" # 1.16 through 1.19, inclusive
+           "2.1.0"         # 2.1.0 or later
+           "2.1"           # 2.1.0 or later
+           "2.1.0..2.4.0" # 2.1 through 2.4, inclusive
 
      By default, ``chplVersion`` is set to represent the current Chapel release or
-     later. For example, if you are using the 1.16 release, chplVersion will be
-     ``1.16.0``.
+     later. For example, if you are using the 2.1 release, chplVersion will be
+     ``2.1.0``.
 
    * ``license``: Indicates the software license under which the package is
      distributed. Any of the licenses available at the
@@ -87,7 +87,7 @@ Mason understands specific fields in the TOML file, which are described below.
 
         .. code-block:: text
 
-           myDep = { git = "https://githib.com/username/myDep" }
+           myDep = { git = "https://github.com/username/myDep" }
 
      This specifies that the package depends on the `myDep` package located at
      the specified git repository URL. You can also specify a branch or a
@@ -96,8 +96,8 @@ Mason understands specific fields in the TOML file, which are described below.
 
         .. code-block:: text
 
-           myDep = { git = "https://githib.com/username/myDep", branch = "main" }
-           myDep = { git = "https://githib.com/username/myDep", rev = "43d462682851dd2fed6edf123e8fb699db124183" }
+           myDep = { git = "https://github.com/username/myDep", branch = "main" }
+           myDep = { git = "https://github.com/username/myDep", rev = "43d462682851dd2fed6edf123e8fb699db124183" }
 
      Instead of using the inline subtable syntax, you can also use the subtable
      syntax to specify git dependencies:
@@ -105,7 +105,7 @@ Mason understands specific fields in the TOML file, which are described below.
         .. code-block:: text
 
            [dependencies.myDep]
-           git = "https://githib.com/username/myDep"
+           git = "https://github.com/username/myDep"
            branch = "main"  # or rev = "43d462682851dd2fed6edf123e8fb699db124183"
 
      See :ref:`mason-git-dependencies` for more information.
