@@ -1740,12 +1740,12 @@ struct RstResultBuilder {
       }
       os_ << ".. module:: " << m->name().c_str() << '\n';
       // Don't index internal modules since that will make them show up
-      // in the module index (chpl-modindex.html).  This has the side
-      // effect of making references to the :mod: tag for the module
-      // illegal, which is appropriate since the modules are not
-      // user-facing.
+      // in the module index (chpl-modindex.html).
+      // Use :noindexentry: rather than :noindex: to still allow making
+      // references to the modules. This is desirable for some no-doc internal
+      // implementation types for which we have module-level docs.
       if (idIsInInternalModule(context_, m->id())) {
-        os_ << "   :noindex:" << std::endl;
+        os_ << "   :noindexentry:" << std::endl;
       } else {
         lastComment = previousComment(context_, m->id());
         if (lastComment) {
