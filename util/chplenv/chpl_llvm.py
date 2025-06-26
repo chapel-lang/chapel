@@ -410,8 +410,8 @@ def validate_llvm_config():
         if not noPackageErrors:
             error(package_err)
 
-        clang_c = get_llvm_clang('c')[0]
-        clang_cxx = get_llvm_clang('c++')[0]
+        clang_c = get_llvm_clang_noargs('c')
+        clang_cxx = get_llvm_clang_noargs('c++')
         if clang_c == '':
             error("Could not find clang with the same version as "
                   "CHPL_LLVM_CONFIG={}. Please try setting CHPL_TARGET_CC.".format(llvm_config))
@@ -595,10 +595,8 @@ def get_system_llvm_clang(lang):
     return ''
 
 # lang should be C or CXX
-# returns [] list with the first element the clang command,
-# then necessary arguments
 @memoize
-def get_llvm_clang(lang, only_clang=False):
+def get_llvm_clang_noargs(lang):
 
     # if it was provided by a user setting, just use that
     provided = get_overriden_llvm_clang(lang)
@@ -614,16 +612,20 @@ def get_llvm_clang(lang, only_clang=False):
         llvm_subdir = get_bundled_llvm_dir()
         clang = os.path.join(llvm_subdir, 'bin', clang_name)
 
+    return clang if clang else ''
+
+# lang should be C or CXX
+# returns [] list with the first element the clang command,
+# then necessary arguments
+@memoize
+def get_llvm_clang(lang):
+
+    clang = get_llvm_clang_noargs(lang)
     if not clang:
         return ['']
-
-    # tack on arguments that control clang's function
-    # the if statement is to avoid infinite recursion
-    if not only_clang:
-        result = [clang] + get_clang_basic_args(clang)
     else:
-        result = [clang]
-    return result
+        # tack on arguments that control clang's function
+        return [clang] + get_clang_basic_args(clang)
 
 
 def has_compatible_installed_llvm():
@@ -885,7 +887,7 @@ def get_sysroot_linux_args():
 
     # workaround for fedora
     if chpl_platform.get_linux_distribution() == 'fedora':
-        clang = get_llvm_clang('c', only_clang=True)[0]
+        clang = get_llvm_clang_noargs('c')
         out = _clang_verbose_on_sys_basic(clang)
         found = re.search('"-resource-dir" "([^"]+)"', out)
         if found:
