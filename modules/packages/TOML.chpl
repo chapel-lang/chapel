@@ -42,15 +42,13 @@ private use Sort;
 use IO;
 
 
-/* Receives a TOML file as a parameter and outputs a Toml object.
+/* Receives a TOML file as a parameter and outputs a ``Toml`` object.
 
 
-.. code-block:: chapel
-
-     use TOML;
-
-     const tomlFile = open("example.toml", ioMode.r);
-     const toml = parseToml(tomlFile);
+.. literalinclude:: ../../../../test/library/packages/TOML/doc-examples/example_parseToml.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE
+ :end-before: STOP_EXAMPLE
 
 To read tables of a TOML file, use the same syntax as accessing associative arrays. For example,
 to access to the following TOML file's project name,
@@ -64,19 +62,14 @@ to access to the following TOML file's project name,
 
 Use the following code in Chapel.
 
-.. code-block:: chapel
-
-     use TOML;
-
-     const tomlFile = open("example.toml", ioMode.r);
-     const toml = parseToml(tomlFile);
-     const projectName = ["root"]["name"] // returns a TOML object
-     writeln(projectName.toString());     // to turn TOML object into string representation
-
+.. literalinclude:: ../../../../test/library/packages/TOML/doc-examples/example_access_Toml_attribut.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE
+ :end-before: STOP_EXAMPLE
 
 .. note::
 
-  As of Chapel 1.26.0, TOML objects will print their values in the following manner:
+  As of Chapel 1.26.0, ``Toml`` objects will print their values in the following manner:
   If the object contains a `root` table, it will be printed first.
   Keys within the root table will be printed in sorted order.
   All other tables will be printed in a sorted order after `root`, if it exists.
@@ -93,7 +86,7 @@ proc parseToml(input: file) : shared Toml {
   return parseToml(tomlStr);
 }
 
-/* Receives a channel to a TOML file as a parameter and outputs a Toml object.
+/* Receives a channel to a TOML file as a parameter and outputs a ``Toml`` object.
 */
 proc parseToml(input: fileReader) : shared Toml {
   var tomlStr: string;
@@ -101,7 +94,7 @@ proc parseToml(input: fileReader) : shared Toml {
   return parseToml(tomlStr);
 }
 
- /* Receives a string of TOML format as a parameter and outputs a Toml object */
+ /* Receives a string of TOML format as a parameter and outputs a ``Toml`` object */
 proc parseToml(input: string) : shared Toml {
   var D: domain(string);
   var table: [D] shared Toml?;

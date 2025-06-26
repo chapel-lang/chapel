@@ -41,14 +41,10 @@ implementations by setting the ``blasImpl`` and ``lapackImpl`` flags to ``off``.
 
 **Building programs with no dependencies**
 
-.. code-block:: chpl
-
-  // example1.chpl
-  var A = Matrix([0.0, 1.0, 1.0],
-                 [1.0, 0.0, 1.0],
-                 [1.0, 1.0, 0.0]);
-  var I = eye(3,3);
-  var B = A + I;
+.. literalinclude:: ../../../../test/library/packages/LinearAlgebra/doc-examples/example_compilation_no_dep.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE
+ :end-before: STOP_EXAMPLE
 
 The program above has no dependencies and can therefore be compiled without
 the ``BLAS`` or ``LAPACK`` headers and libraries available:
@@ -639,16 +635,10 @@ proc Matrix(const Arrays ...?n) {
 
     For example:
 
-    .. code-block:: chapel
-
-        var A = Matrix([1, 2, 3],
-                       [4, 5, 6],
-                       [7, 8, 9]);
-        /* Produces the 3x3 matrix of integers:
-             1 2 3
-             4 5 6
-             7 8 9
-         */
+    .. literalinclude:: ../../../../test/library/packages/LinearAlgebra/doc-examples/example_matrix_allocation.chpl
+     :language: chapel
+     :start-after: START_EXAMPLE
+     :end-before: STOP_EXAMPLE
 
 */
 proc Matrix(const Arrays ...?n, type eltType) {
@@ -1354,37 +1344,10 @@ private proc _diag_mat(A:[?Adom] ?eltType){
    where ``k = 0`` includes the diagonal, and ``k = -1`` does *not* include
    the diagonal. For example:
 
-   .. code-block:: chapel
-
-    var A = Matrix(4, 4, eltType=int);
-    A = 1;
-
-    tril(A);
-    /* Returns:
-
-        1    0    0    0
-        1    1    0    0
-        1    1    1    0
-        1    1    1    1
-    */
-
-    tril(A, 1);
-    /* Returns:
-
-        1    1    0    0
-        1    1    1    0
-        1    1    1    1
-        1    1    1    1
-    */
-
-    tril(A, -1);
-    /* Returns:
-
-        0    0    0    0
-        1    0    0    0
-        1    1    0    0
-        1    1    1    0
-    */
+   .. literalinclude:: ../../../../test/library/packages/LinearAlgebra/doc-examples/example_tril.chpl
+    :language: chapel
+    :start-after: START_EXAMPLE
+    :end-before: STOP_EXAMPLE
  */
 proc tril(A: [?D] ?eltType, k=0) {
   if D.rank != 2 then
@@ -1401,37 +1364,10 @@ proc tril(A: [?D] ?eltType, k=0) {
    where ``k = 0`` includes the diagonal, and ``k = 1`` does *not* include
    the diagonal. For example:
 
-   .. code-block:: chapel
-
-      var A = Matrix(4, 4, eltType=int);
-      A = 1;
-
-      triu(A);
-      /* Returns:
-
-          1    1    1    1
-          0    1    1    1
-          0    0    1    1
-          0    0    0    1
-      */
-
-      triu(A, 1);
-      /* Returns:
-
-          0    1    1    1
-          0    0    1    1
-          0    0    0    1
-          0    0    0    0
-      */
-
-      triu(A, -1);
-      /* Returns:
-
-          1    1    1    1
-          1    1    1    1
-          0    1    1    1
-          0    0    1    1
-      */
+   .. literalinclude:: ../../../../test/library/packages/LinearAlgebra/doc-examples/example_triu.chpl
+    :language: chapel
+    :start-after: START_EXAMPLE
+    :end-before: STOP_EXAMPLE
  */
 proc triu(A: [?D] ?eltType, k=0) {
   if D.rank != 2 then
