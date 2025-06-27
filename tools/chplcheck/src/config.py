@@ -22,6 +22,7 @@ from typing import List, Union, Dict, Any, Optional
 import argparse
 import re
 
+
 @dataclass(frozen=True)
 class RuleSetting:
     """

@@ -367,7 +367,11 @@ class LintDriver:
                         not self.config.check_internal_prefixes
                         and node
                         and self.has_internal_prefix(node)
-                    ) or (self._should_skip_path(context, node or toreport[0].path())):
+                    ) or (
+                        self._should_skip_path(
+                            context, node or toreport[0].path()
+                        )
+                    ):
                         continue
 
                     yield toreport
