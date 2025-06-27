@@ -1206,6 +1206,9 @@ iter StencilDom.these(param tag: iterKind, followThis) where tag == iterKind.fol
 // how to allocate a new array over this domain
 //
 proc StencilDom.dsiBuildArray(type eltType, param initElts:bool) {
+  if isOwnedClassType(eltType) {
+    compilerWarning("Creating a 'stencilDist'-distributed array of 'owned' classes is discouraged, since any calls to 'updateFluff()' will transfer the ownership of boundary values from one locale to the other, leaving the original with the value 'nil'");
+  }
   const dom = this;
   const creationLocale = here.id;
   const dummyLSD = new unmanaged LocStencilDom(rank, idxType, strides);
