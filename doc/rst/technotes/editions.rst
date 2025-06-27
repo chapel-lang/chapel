@@ -133,3 +133,8 @@ remain in the pre-edition until they are deemed sufficiently complete.
 
   See the note on :chpl:proc:`~ChapelArray.reshape` for more information.
 
+- The ``domain.sorted`` iterator method has been removed. It was only
+  implemented for associative domains (as that was the only type of domain that
+  could be sorted) and all other ``sort`` / ``sorted`` methods have been
+  removed. The intended replacement is to import ``Sort`` and call
+  :chpl:proc:`Sort.sorted(domain)<Sort.sorted>`.
