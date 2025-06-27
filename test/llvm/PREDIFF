@@ -13,7 +13,7 @@ TMPFILE="$OUTFILE.prediff.tmp"
 LLVM_CONFIG=`${CHPL_HOME}/util/chplenv/chpl_llvm.py --llvm-config`
 BINDIR=`${LLVM_CONFIG} --bindir`
 FILECHECK="${BINDIR}/FileCheck"
-if [ command -v $FILECHECK >/dev/null ]; then
+if command -v $FILECHECK >/dev/null; then
   FILECHECK=`command -v $FILECHECK`
 else
   PREFIX=`${LLVM_CONFIG} --prefix`
