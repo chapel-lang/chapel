@@ -73,6 +73,8 @@ def main():
             flags = splitline[0].strip()
             goodfile = None
         allFlags.append((goodfile, f"{globalFlags} {flags}"))
+    if not allFlags:
+        allFlags.append((None, globalFlags))
 
     # because this is a prediff and we have no way of running the diff multiple
     # times, if there are multiple sets of flags to run, just dump them all
@@ -91,9 +93,9 @@ def main():
     def run_fixit(out, file, flags, suffix):
         run_chplcheck(file, f"{flags} --fixit --fixit-suffix {suffix}")
         if diff(good_fixit, f"{file}{suffix}"):
-            out.write(f"[Success matching fixit for {file}]")
+            out.write(f"[Success matching fixit for {file.with_suffix('')}]\n")
         else:
-            out.write(f"[Error matching fixit for {file}]\n")
+            out.write(f"[Error matching fixit for {file.with_suffix('')}]\n")
 
     good_fixit = file.with_suffix(".good-fixit")
     if good_fixit.exists():
