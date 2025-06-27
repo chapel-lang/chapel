@@ -948,22 +948,20 @@ module ChapelRange {
     this._high = chpl__idxToInt(high): this.chpl_integralIdxType;
   }
 
-  /* Returns the range's aligned low bound. If this bound is
-     undefined (e.g., ``..10 by -2``), the behavior is undefined.
+  /*
+    Returns the range's aligned low bound. If this bound is
+    undefined (e.g., ``..10 by -2``), the behavior is undefined.
 
-     Example:
+    Example:
 
-     .. code-block:: chapel
+    .. literalinclude:: ../../../../test/types/range/doc-examples/RangeLow.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE
+       :end-before: STOP_EXAMPLE
 
-       var r = 1..10 by -2;
-       writeln(r.low);
+    produces the output
 
-     produces the output
-
-     .. code-block:: printoutput
-
-       2
-
+    .. literalinclude:: ../../../../test/types/range/doc-examples/RangeLow.good
   */
   inline proc range.low: idxType {
     if !hasLowBound() {
@@ -1023,21 +1021,20 @@ module ChapelRange {
   }
 
 
-  /* Returns the range's aligned high bound. If the aligned high bound is
-     undefined (e.g., ``1.. by 2``), the behavior is undefined.
+  /*
+    Returns the range's aligned high bound. If the aligned high bound is
+    undefined (e.g., ``1.. by 2``), the behavior is undefined.
 
-     Example:
+    Example:
 
-     .. code-block:: chapel
+    .. literalinclude:: ../../../../test/types/range/doc-examples/RangeHigh.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE
+       :end-before: STOP_EXAMPLE
 
-       var r = 1..10 by 2;
-       writeln(r.high);
+    produces the output
 
-     produces the output
-
-     .. code-block:: printoutput
-
-       9
+    .. literalinclude:: ../../../../test/types/range/doc-examples/RangeHigh.good
   */
   inline proc range.high: idxType {
     if !hasHighBound() {
@@ -1915,21 +1912,18 @@ private proc isBCPindex(type t) param do
   }
 
   /*
-     Returns an integer representing the zero-based ordinal value of
-     ``ind`` within the range's sequence of values if it is a member
-     of the sequence.  Otherwise, returns -1.  It is an error to
-     invoke ``indexOrder`` if the represented sequence is not defined
-     or the range does not have a first index.
+    Returns an integer representing the zero-based ordinal value of
+    ``ind`` within the range's sequence of values if it is a member
+    of the sequence.  Otherwise, returns -1.  It is an error to
+    invoke ``indexOrder`` if the represented sequence is not defined
+    or the range does not have a first index.
 
-     The following calls show the order of index 4 in each of the given ranges:
+    The following calls show the order of index 4 in each of the given ranges:
 
-.. code-block:: chapel
-
-       (0..10).indexOrder(4) == 4
-       (1..10).indexOrder(4) == 3
-       (3..5).indexOrder(4) == 1
-       (0..10 by 2).indexOrder(4) == 2
-       (3..5 by 2).indexOrder(4) == -1
+    .. literalinclude:: ../../../../test/types/range/doc-examples/RangeIndexOrder.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE
+       :end-before: STOP_EXAMPLE
    */
   @unstable("range.indexOrder() is unstable and its behavior may change in the future")
   proc range.indexOrder(ind: idxType)
@@ -1951,19 +1945,18 @@ private proc isBCPindex(type t) param do
     return (-1):chpl_integralIdxType;
   }
 
-  /* Returns the zero-based ``ord``-th element of this range's represented
-     sequence. It is an error to invoke ``orderToIndex`` if the range is not
-     defined, or if ``ord`` is negative or greater than the range's size.
-     The ``orderToIndex`` procedure is the reverse of ``indexOrder``.
+  /*
+    Returns the zero-based ``ord``-th element of this range's represented
+    sequence. It is an error to invoke ``orderToIndex`` if the range is not
+    defined, or if ``ord`` is negative or greater than the range's size.
+    The ``orderToIndex`` procedure is the reverse of ``indexOrder``.
 
-     Example:
+    Example:
 
-     .. code-block:: chapel
-
-       0..10.orderToIndex(4) == 4
-       1..10.orderToIndex(3) == 4
-       3..5.orderToIndex(1)  == 4
-       0..10 by 2.orderToIndex(2) == 4
+    .. literalinclude:: ../../../../test/types/range/doc-examples/RangeOrderToIndex.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE
+       :end-before: STOP_EXAMPLE
    */
   @unstable("range.orderToIndex() is unstable and its behavior may change in the future")
   proc range.orderToIndex(ord: integral): idxType
@@ -1999,19 +1992,18 @@ private proc isBCPindex(type t) param do
   // we need to handle more generally in the future, so for
   // consistency, we are not handling it here at all :-P
   //
-  /* Returns a range with elements shifted from this range by ``offset``.
-     Formally, the range's low bound, high bound, and alignment values
-     will be shifted while the stride value will be preserved.  If the
-     range's alignment is ambiguous, the behavior is undefined.
+  /*
+    Returns a range with elements shifted from this range by ``offset``.
+    Formally, the range's low bound, high bound, and alignment values
+    will be shifted while the stride value will be preserved.  If the
+    range's alignment is ambiguous, the behavior is undefined.
 
-     Example:
+    Example:
 
-     .. code-block:: chapel
-
-       0..9.translate(1) == 1..10
-       0..9.translate(2) == 2..11
-       0..9.translate(-1) == -1..8
-       0..9.translate(-2) == -2..7
+    .. literalinclude:: ../../../../test/types/range/doc-examples/RangeTranslate.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE
+       :end-before: STOP_EXAMPLE
    */
    @unstable("range.translate() is unstable and its behavior may change in the future")
   inline proc range.translate(offset: integral) do
@@ -2038,23 +2030,21 @@ private proc isBCPindex(type t) param do
   {
     compilerError("expand() is not supported on unbounded ranges");
   }
-  /* Returns a range expanded by ``offset`` elements from each end.  If
-     ``offset`` is negative, the range will be contracted.  The stride
-     and alignment of the original range are preserved.
+  /*
+    Returns a range expanded by ``offset`` elements from each end.  If
+    ``offset`` is negative, the range will be contracted.  The stride
+    and alignment of the original range are preserved.
 
-     Example:
+    Example:
 
-     .. code-block:: chapel
+    .. literalinclude:: ../../../../test/types/range/doc-examples/RangeExpand.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE
+       :end-before: STOP_EXAMPLE
 
-       0..9.expand(1)  == -1..10
-       0..9.expand(2)  == -2..11
-       0..9.expand(-1) == 1..8
-       0..9.expand(-2) == 2..7
-
-
-     Formally, for a range represented by the tuple :math:`(l,h,s,a)`,
-     the result is :math:`(l-i,h+i,s,a)`.  If the operand range is
-     ambiguously aligned, then so is the resulting range.
+    Formally, for a range represented by the tuple :math:`(l,h,s,a)`,
+    the result is :math:`(l-i,h+i,s,a)`.  If the operand range is
+    ambiguously aligned, then so is the resulting range.
   */
   @unstable("range.expand() is unstable and its behavior may change in the future")
   proc range.expand(offset: integral)
@@ -2080,32 +2070,31 @@ private proc isBCPindex(type t) param do
     compilerError("interior is not supported on unbounded ranges");
   }
 
-  /* Returns a range with ``offset`` elements from the interior portion of this
-     range. If ``offset`` is positive, take elements from the high end, and if
-     ``offset`` is negative, take elements from the low end.
+  /*
+    Returns a range with ``offset`` elements from the interior portion of this
+    range. If ``offset`` is positive, take elements from the high end, and if
+    ``offset`` is negative, take elements from the low end.
 
-     Example:
+    Example:
 
-     .. code-block:: chapel
+    .. literalinclude:: ../../../../test/types/range/doc-examples/RangeInterior.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE
+       :end-before: STOP_EXAMPLE
 
-       0..9.interior(1)  == 9..9
-       0..9.interior(2)  == 8..9
-       0..9.interior(-1) == 0..0
-       0..9.interior(-2) == 0..1
+    Formally, given a range denoted by the tuple :math:`(l,h,s,a)`,
 
-     Formally, given a range denoted by the tuple :math:`(l,h,s,a)`,
+    -  if :math:`i < 0`, the result is :math:`(l,l-(i-1),s,a)`,
 
-     -  if :math:`i < 0`, the result is :math:`(l,l-(i-1),s,a)`,
+    -  if :math:`i > 0`, the result is :math:`(h-(i-1),h,s,a)`, and
 
-     -  if :math:`i > 0`, the result is :math:`(h-(i-1),h,s,a)`, and
+    -  if :math:`i = 0`, the result is :math:`(l,h,s,a)`.
 
-     -  if :math:`i = 0`, the result is :math:`(l,h,s,a)`.
-
-     This differs from the behavior of the count operator, in that
-     ``interior()`` preserves the alignment, and it uses the low and
-     high bounds rather than ``first`` and ``last`` to establish the
-     bounds of the resulting range. If the operand range is
-     ambiguously aligned, then so is the resulting range.
+    This differs from the behavior of the count operator, in that
+    ``interior()`` preserves the alignment, and it uses the low and
+    high bounds rather than ``first`` and ``last`` to establish the
+    bounds of the resulting range. If the operand range is
+    ambiguously aligned, then so is the resulting range.
    */
    @unstable("range.interior() is unstable and its behavior may change in the future")
   proc range.interior(offset: integral)
@@ -2136,29 +2125,28 @@ private proc isBCPindex(type t) param do
     compilerError("exterior is not supported on unbounded ranges");
   }
 
-  /* Returns a range with ``offset`` elements from the exterior portion of this
-     range. If ``offset`` is positive, take elements from the high end, and if
-     ``offset`` is negative, take elements from the low end.
+  /*
+    Returns a range with ``offset`` elements from the exterior portion of this
+    range. If ``offset`` is positive, take elements from the high end, and if
+    ``offset`` is negative, take elements from the low end.
 
-     Example:
+    Example:
 
-     .. code-block:: chapel
+    .. literalinclude:: ../../../../test/types/range/doc-examples/RangeExterior.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE
+       :end-before: STOP_EXAMPLE
 
-       0..9.exterior(1)  = 10..10
-       0..9.exterior(2)  = 10..11
-       0..9.exterior(-1) = -1..-1
-       0..9.exterior(-2) = -2..-1
+    Formally, given a range denoted by the tuple :math:`(l,h,s,a)`,
 
-     Formally, given a range denoted by the tuple :math:`(l,h,s,a)`,
+    -  if :math:`i < 0`, the result is :math:`(l+i,l-1,s,a)`,
 
-     -  if :math:`i < 0`, the result is :math:`(l+i,l-1,s,a)`,
+    -  if :math:`i > 0`, the result is :math:`(h+1,h+i,s,a)`, and
 
-     -  if :math:`i > 0`, the result is :math:`(h+1,h+i,s,a)`, and
+    -  if :math:`i = 0`, the result is :math:`(l,h,s,a)`.
 
-     -  if :math:`i = 0`, the result is :math:`(l,h,s,a)`.
-
-     If the operand range is ambiguously aligned, then so is the resulting
-     range.
+    If the operand range is ambiguously aligned, then so is the resulting
+    range.
    */
   @unstable("range.exterior() is unstable and its behavior may change in the future")
   proc range.exterior(offset: integral)
