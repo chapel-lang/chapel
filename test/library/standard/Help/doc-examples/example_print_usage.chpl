@@ -9,6 +9,8 @@ config const x = 5;
 proc main(args: [] string) {
   var filenames: list(string);
 
+  // Note that the program name obtained will vary between single locale and
+  // multilocale programs.  See our multilocale documentation for more details.
   var programName = args[0];
 
   for a in args[1..] {
