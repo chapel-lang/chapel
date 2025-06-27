@@ -182,6 +182,7 @@ exclude_patterns = ['Makefile',
                     'builtins/SharedObject.rst',
                     'builtins/String.rst',
                     'modules/standard/AutoMath.rst',
+                    'modules/standard/AutoGpu.rst',
                     'modules/standard/ChapelIO.rst',
                     'modules/standard/ChapelSysCTypes.rst',
 
