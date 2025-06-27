@@ -436,9 +436,9 @@ resolution (see :ref:`Determining_Most_Specific_Functions`).
 Operator Methods
 ----------------
 
-Operators may be overloaded to support new behavior on one or more types using
-the ``operator`` keyword.  Such overloads may be defined as standalone
-functions, e.g.
+Operators may be overloaded (see :ref:`Function_Overloading`) to support new
+behavior on one or more types using the ``operator`` keyword.  Such overloads
+may be defined as standalone functions, e.g.
 
 .. code-block:: chapel
 
@@ -508,7 +508,7 @@ any type definition points for parent classes.  However, operator invocations
 compiler uses the types of all the operator's arguments to find operator methods
 defined along with the type.
 
-As with tertiary methods, ``import`` and ``use`` statements can be used to
+As with other tertiary methods, ``import`` and ``use`` statements can be used to
 control the visibility of tertiary operator methods.
 
 .. index::
