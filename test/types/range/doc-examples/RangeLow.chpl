@@ -1,0 +1,8 @@
+//
+// THIS TEST CASE IS AUTO-INCLUDED IN THE DOCUMENTATION
+//
+
+/* START_EXAMPLE */
+var r = 1..10 by -2;
+writeln(r.low);
+/* STOP_EXAMPLE */
