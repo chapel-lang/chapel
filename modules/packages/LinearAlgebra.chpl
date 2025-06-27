@@ -1822,6 +1822,9 @@ proc solve(const ref A: [?Adom] ?eltType, const ref b: [?bdom] eltType) {
 
     - ``s`` is the singular values of ``a``
 
+   :throws LinearAlgebraError: If the number of rows in ``A`` does not match
+                               the size of ``b``, or if either is empty.
+
    .. note::
 
      This procedure depends on the :mod:`LAPACK` module, and will generate a
@@ -1954,6 +1957,9 @@ proc cholesky(A: [] ?t, lower = true)
    true, on exiting, this part
    of the matrix, including the diagonal is overwritten.
 
+   :throws LinearAlgebraError: If ``A`` is not square, or if the
+                               eigenvalue computation does not converge.
+
    .. note::
 
      This procedure currently just returns all eigenvalues.
@@ -1988,6 +1994,9 @@ proc eigvalsh(ref A: [] ?t, lower=true, param overwrite=false) throws where (A.d
      This procedure currently returns all eigenvalues and eigenvectors.
      To selectively return certain eigenvalues/eigenvectors, the user should call the
      LAPACK routine directly.
+
+   :throws LinearAlgebraError: If ``A`` is not square, or if the
+                               eigenvalue computation does not converge.
 
    .. note::
 

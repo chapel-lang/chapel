@@ -560,7 +560,7 @@ proc locale.cwd(): string throws {
             symbolic links.
    :rtype: `bool`
 
-   :throws SystemError: Thrown to describe an error if one occurs.
+   :throws IoError: Thrown to describe an error if one occurs.
 */
 proc exists(name: string): bool throws {
   extern proc chpl_fs_exists(ref result:c_int, name: c_ptrConst(c_char)): errorCode;
