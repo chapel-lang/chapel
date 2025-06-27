@@ -132,8 +132,8 @@ class LintDriver:
         path = node if isinstance(node, str) else node.location().path()
         path = os.path.abspath(path)
 
-        if self.config.skip_bundled:
-            return context.is_bundled_path(path)
+        if self.config.skip_bundled and context.is_bundled_path(path):
+            return True
         elif len(self.config.skip_files) > 0:
             for skip_pattern in self.config.skip_files:
                 abs_skip_pattern = os.path.abspath(skip_pattern)
