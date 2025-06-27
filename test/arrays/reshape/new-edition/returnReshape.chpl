@@ -17,14 +17,16 @@ proc bam() {
 }
 
 var B = foo();
-//var C = bar();
+B[1,1] = 5;
+var C = bar();
+C[1,2] = 6;
 var D = baz();
+D[2,1] = 7;
 var E = bam();
+E[2,2] = 8;
 
 writeln(A);
 writeln(B);
-//writeln(C);
+writeln(C);
 writeln(D);
 writeln(E);
-
-
