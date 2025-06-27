@@ -57,6 +57,11 @@ module Help {
       :language: chapel
       :start-after: START_EXAMPLE
       :end-before: STOP_EXAMPLE
+
+     .. note::
+        A Chapel program's executable name (the 0-th argument to main) will
+        vary between multilocale and single locale settings.  See
+        :ref:`readme-multilocale` for more details.
    */
   proc printUsage() {
     extern proc printHelpTable();
