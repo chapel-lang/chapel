@@ -1407,18 +1407,18 @@ def compute_host_link_settings():
         if shared_mode.strip() == 'static':
             llvm_dynamic = False
 
+        libdir = run_command([llvm_config, '--libdir'])
+        if libdir:
+            libdir = libdir.strip()
+            system.append('-L' + libdir)
+            system.append('-Wl,-rpath,' + libdir)
+
         # Make sure to put clang first on the link line
         # because depends on LLVM libraries
         if llvm_dynamic:
             system.append('-lclang-cpp')
         else:
             system.extend(clang_static_libs)
-
-        libdir = run_command([llvm_config, '--libdir'])
-        if libdir:
-            libdir = libdir.strip()
-            system.append('-L' + libdir)
-            system.append('-Wl,-rpath,' + libdir)
 
         ldflags = run_command([llvm_config,
                                '--ldflags', '--system-libs', '--libs'] +
@@ -1514,6 +1514,12 @@ def _main():
     parser.add_option('--llvm-config', dest='action',
                       action='store_const',
                       const='llvmconfig', default='')
+    parser.add_option('--host-cxxflags', dest='action',
+                      action='store_const',
+                      const='host-cxxflags', default='')
+    parser.add_option('--host-ldflags', dest='action',
+                      action='store_const',
+                      const='host-ldflags', default='')
     parser.add_option('--llvm-vesion', dest='action',
                       action='store_const',
                       const='llvmversion', default='')
@@ -1539,6 +1545,14 @@ def _main():
     elif options.action == 'llvmconfig':
         sys.stdout.write("{0}\n".format(llvm_config))
         validate_llvm_config()
+    elif options.action == 'host-cxxflags':
+        flags = get_host_compile_args()
+        sys.stdout.write("{0}\n".format(
+            ' '.join(flags[0] + flags[1])))
+    elif options.action == 'host-ldflags':
+        flags = get_host_link_args()
+        sys.stdout.write("{0}\n".format(
+            ' '.join(flags[0] + flags[1])))
     elif options.action == 'llvmversion':
         llvm_version = get_llvm_version()
         sys.stdout.write("{0}\n".format(llvm_version))

@@ -27,6 +27,7 @@ from pathlib import Path
 
 chpl_home = Path(__file__).parent.parent.parent.resolve()
 chpl_printchplenv = chpl_home / "util" / "printchplenv"
+chpl_llvm_py = chpl_home / "util" / "chplenv" / "chpl_llvm.py"
 chpl_variables_lines = (
     subprocess.check_output(
         [chpl_printchplenv, "--internal", "--all", " --anonymize", "--simple"]
@@ -59,13 +60,14 @@ chpl_install_lib_path = (
     .strip()
 )
 
+# TODO: -DHAVE_LLVM is also included in --host-cxxflags, can we remove it here?
 CXXFLAGS = []
 if have_llvm and have_llvm != "none":
     CXXFLAGS += ["-DHAVE_LLVM"]
 
 CXXFLAGS += ["-Wno-c99-designator"]
 CXXFLAGS += (
-    subprocess.check_output([llvm_config, "--cxxflags"])
+    subprocess.check_output([chpl_llvm_py, "--host-cxxflags"])
     .decode(sys.stdout.encoding)
     .strip()
     .split()
