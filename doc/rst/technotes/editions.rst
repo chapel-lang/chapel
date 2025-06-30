@@ -138,3 +138,6 @@ remain in the pre-edition until they are deemed sufficiently complete.
   could be sorted) and all other ``sort`` / ``sorted`` methods have been
   removed. The intended replacement is to import ``Sort`` and call
   :chpl:proc:`Sort.sorted(domain)<Sort.sorted>`.
+
+  The temporary config ``noSortedWarnings`` has also been removed, as its only
+  purpose was to suppress warnings about the ``domain.sorted`` method.
