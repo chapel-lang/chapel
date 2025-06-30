@@ -3,4 +3,4 @@
 # Check if default (util/setchplenv) Chapel build passes make check
 # Prints summary at the end
 
-./tryit.sh 'bash -c '\''cd chapel && source util/setchplenv.bash && export GMAKE=`which gmake` && export MAKE=${GMAKE:-make} && $MAKE -j$(nproc) && $MAKE -j$(nproc) check'\'
+./tryit.sh 'bash -c '\''cd chapel && source util/setchplenv.bash && export GMAKE=`which gmake` && export MAKE=${GMAKE:-make} && $MAKE $MAKEJ && $MAKE $MAKEJ check'\'
