@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Checks if a default build basses make check
+# Checks if a fresh default build basses make check
 # Prints a summary at the end.
 
 # apptainer forwards env vars to container by default, so unset
