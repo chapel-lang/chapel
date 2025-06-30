@@ -690,7 +690,11 @@ used to recursively hold tables and respective values
     }
 
 
-    /* Returns the index of the table path given as a parameter */
+    /*
+       Returns the index of the table path given as a parameter.
+
+       :throws TomlError: If no index could be found for the given table path.
+    */
     proc this(tbl: string) ref : shared Toml? throws {
       const indx = tbl.split('.');
       var top = indx.domain.first;
@@ -831,7 +835,12 @@ used to recursively hold tables and respective values
     }
 
 
-    /* Write a Table to channel f in TOML format */
+    /*
+       Write a Table to channel f in TOML format.
+
+       :throws TomlError: If an error occurred serializing the table, such as
+                          due to missing values or unsupported types.
+    */
     override proc serialize(writer, ref serializer) throws {
       writeTOML(writer);
     }
@@ -1086,6 +1095,8 @@ used to recursively hold tables and respective values
        - *array*
        - *toml* (inline table)
 
+       :throws TomlError: If this is not a known TOML type.
+
      */
     proc tomlType: string throws {
       select this.tag {
@@ -1121,7 +1132,11 @@ module TomlReader {
 
  config const debugTomlReader = false;
 
-  /* Returns the next token in the current line without removing it */
+  /*
+     Returns the next token in the current line without removing it.
+
+     :throws TomlError: If the end of the file is reached.
+  */
   proc top(source) throws {
     if !source.nextLine() {
       throw new owned TomlError("Reached end of file unexpectedly");
@@ -1274,7 +1289,11 @@ module TomlReader {
     }
 
 
-    /* retrieves next token in currentLine */
+    /*
+       Retrieves next token in currentLine.
+
+       :throws TomlError: If the end of the file is reached.
+    */
     proc nextToke() throws {
       if !nextLine() {
         throw new owned TomlError("Reached end of file unexpectedly");
