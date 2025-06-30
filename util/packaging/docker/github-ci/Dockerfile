@@ -2,7 +2,7 @@
 # tzdata is necessary for util/test/check_annotations.py to function properly (get the right dates)
 # locales is necessary for util/buildRelease/smokeTest docs
 
-FROM ubuntu:24.10
+FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
