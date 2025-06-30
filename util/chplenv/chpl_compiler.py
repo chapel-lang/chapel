@@ -373,6 +373,16 @@ def get_compiler_command(flag, lang):
     elif lang_upper == 'CXX':
         command = [get_compiler_name_cxx(compiler_val)]
 
+    # if CHPL_*_COMPILER is clang, we may need to adjust the command, because
+    # 'clang' may not exist (it might be clang-VERSION)
+    if compiler_val == 'clang' and (lang_upper == 'CC' or lang_upper == 'CXX') and not which(command[0]):
+        from  chpl_llvm import llvm_versions
+        for v in llvm_versions():
+            newcommand = command[0] + '-' + v
+            if which(newcommand):
+                command[0] = newcommand
+                break
+
     # Adjust the path in two situations:
     #  CHPL_TARGET_COMPILER=llvm -- means use the selected llvm/clang
     #  CHPL_TARGET_COMPILER=clang with CHPL_LLVM=bundled -- use bundled clang
