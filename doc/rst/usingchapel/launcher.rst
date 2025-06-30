@@ -368,6 +368,29 @@ launcher may be changed with the ``CHPL_LAUNCHER_SUFFIX`` environment
 variable. If this variable is unset, the suffix defaults to "_real",
 matching the compiler's output.
 
+Changing the created job name
++++++++++++++++++++++++++++++
+
+The name of the job created by the launcher can be changed by setting
+the ``CHPL_LAUNCHER_JOB_NAME`` and ``CHPL_LAUNCHER_JOB_PREFIX``
+environment variables.
+
+* ``CHPL_LAUNCHER_JOB_NAME`` sets the name of the job, which is typically used
+  by the queueing system to identify the job. If this variable is unset, the
+  default is executable name, up to the first 10 characters. Note that even if
+  this variable is set, only the first 10 characters will be used.
+
+* ``CHPL_LAUNCHER_JOB_PREFIX`` sets a prefix for the job name. If this variable
+  is unset, the default is "CHPL-". This prefix is prepended to the job name
+  (either the default or the value of ``CHPL_LAUNCHER_JOB_NAME``) to form the
+  final job name.
+
+For example, to set the job name to "myprefix-myjob", you can set:
+.. code-block:: bash
+
+  export CHPL_LAUNCHER_JOB_PREFIX=myprefix-
+  export CHPL_LAUNCHER_JOB_NAME=myjob
+
 
 Bypassing the launcher
 ++++++++++++++++++++++
