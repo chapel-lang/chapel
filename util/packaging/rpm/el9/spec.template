@@ -8,8 +8,7 @@ License: Apache-2.0
 Source0: chapel-%{version}.tar.gz
 
 Requires: bash perl git llvm-devel clang clang-devel python3 python3-devel make
-Requires: jemalloc jemalloc-devel gmp-devel hwloc hwloc-devel
-Requires: pmix-devel slurm-devel libfabric libfabric-devel
+Requires: pmix-devel
 
 %description
 Chapel Programming Language
