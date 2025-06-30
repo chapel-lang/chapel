@@ -147,7 +147,7 @@ class AstListNoCommentsIterator {
            this->end == rhs.end;
   }
   bool operator!=(const AstListNoCommentsIterator<CastToType> rhs) const {
-    return this->it != rhs.it;
+    return !(*this == rhs);
   }
 
   // needs to support * and ->
