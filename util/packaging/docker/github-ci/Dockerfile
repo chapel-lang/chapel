@@ -8,19 +8,19 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update -y && apt-get install -y --no-install-recommends \
     bash \
-    clang \
+    clang-19 \
     cmake \
     cscope \
     doxygen \
     g++ \
     gcc \
     git \
-    libclang-dev \
-    libclang-cpp-dev \
+    libclang-19-dev \
+    libclang-cpp19-dev \
     libedit-dev \
-    llvm \
-    llvm-dev \
-    llvm-tools \
+    llvm-19 \
+    llvm-19-dev \
+    llvm-19-tools \
     locales \
     m4 \
     make \
