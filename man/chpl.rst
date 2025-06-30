@@ -123,6 +123,16 @@ OPTIONS
 
 *Warning and Language Control Options*
 
+.. _man-edition:
+
+**\--edition <edition>**
+
+    Specify the language edition to use.  Enables breaking changes that are
+    associated with the particular edition specified (as well as those that were
+    associated with earlier editions).  See
+    https://chapel-lang.org/docs/technotes/editions.html or
+    $CHPL\_HOME/doc/rst/technotes/editions.rst for more information.
+
 .. _man-permit-unhandled-module-errors:
 
 **\--[no-]permit-unhandled-module-errors**
@@ -225,11 +235,10 @@ OPTIONS
 
 **\--[no-]warn-param-implicit-numeric-conversions**
 
-    When used in conjunction with ``warn-int-uint``,
-    ``--warn-real-real``, or ``--warn-integral-integral``, this flag
-    enables [or disables] these compilation warnings about implicitly
-    converting between numeric types to also apply when the converted
-    value is a ``param``.
+    When used in conjunction with any of the preceding flags enabling
+    compilation warnings for numeric implicit conversions, this flag
+    enables [or disables] that set of warnings for cases where the
+    converted value is a ``param``.
 
 *Parallelism Control Options*
 

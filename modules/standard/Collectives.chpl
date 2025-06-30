@@ -31,18 +31,10 @@
    "entering the barrier" messages will be printed before any of the
    "past the barrier" messages.
 
-   .. code-block:: chapel
-
-     use Collectives;
-
-     config const numTasks = here.maxTaskPar;
-     var b = new barrier(numTasks);
-
-     coforall tid in 1..numTasks {
-       writeln("Task ", tid, " is entering the barrier");
-       b.barrier();
-       writeln("Task ", tid, " is past the barrier");
-     }
+   .. literalinclude:: ../../../../test/library/standard/Collectives/doc-examples/example_barrier.chpl
+    :language: chapel
+    :start-after: START_EXAMPLE
+    :end-before: STOP_EXAMPLE
 
    Note: When a barrier instance goes out of scope it is automatically deleted.
    After it is deleted, any copies of the barrier that remain are invalid.

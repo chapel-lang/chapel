@@ -142,6 +142,8 @@ class AstListNoCommentsIterator {
 
   // needs to be support == and !=
   bool operator==(const AstListNoCommentsIterator<CastToType> rhs) const {
+    (void)begin; // quiet linter
+    (void)end; // quiet linter
     return this->it == rhs.it;
   }
   bool operator!=(const AstListNoCommentsIterator<CastToType> rhs) const {

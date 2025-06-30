@@ -57,6 +57,7 @@ import os
 import re
 import unittest
 from sys import stdout, path
+import textwrap
 
 from chplenv import *
 import chplenv_verify
@@ -143,6 +144,7 @@ CHPL_ENVS = [
     ChapelEnv('  CHPL_LLVM_CLANG_C', INTERNAL),
     ChapelEnv('  CHPL_LLVM_CLANG_CXX', INTERNAL),
     ChapelEnv('  CHPL_LLVM_STATIC_DYNAMIC', INTERNAL),
+    ChapelEnv('  CHPL_LLVM_BIN_DIR', INTERNAL),
     ChapelEnv('  CHPL_LLVM_TARGET_CPU', INTERNAL),
     ChapelEnv('CHPL_AUX_FILESYS', RUNTIME | DEFAULT, 'fs'),
     ChapelEnv('CHPL_LIB_PIC', RUNTIME | LAUNCHER, 'lib_pic'),
@@ -248,6 +250,7 @@ def compute_all_values():
     ENV_VALS['  CHPL_LLVM_CLANG_C'] = " ".join(llvm_clang_c)
     ENV_VALS['  CHPL_LLVM_CLANG_CXX'] = " ".join(llvm_clang_cxx)
     ENV_VALS['  CHPL_LLVM_STATIC_DYNAMIC'] = chpl_llvm.get_static_dynamic()
+    ENV_VALS['  CHPL_LLVM_BIN_DIR'] = chpl_llvm.get_llvm_config_bindir()
     aux_filesys = chpl_aux_filesys.get()
     ENV_VALS['CHPL_AUX_FILESYS'] = '_'.join(sorted(aux_filesys.split(' ')))
     ENV_VALS['CHPL_LIB_PIC'] = chpl_lib_pic.get()
@@ -333,14 +336,21 @@ def compute_internal_values():
 
 """Return non-empty string if var is set via environment or chplconfig"""
 def user_set(env):
-    env_stripped = env.strip()
-    env_set = overrides.get_environ(env_stripped, '')
-    config_set = overrides.get_chplconfig(env_stripped, '')
-    if env_set:
+    if env_set(env):
         return ' *'
-    elif config_set:
+    elif config_set(env):
         return ' +'
     return ''
+
+def env_set(env):
+    env_stripped = env.strip()
+    var = overrides.get_environ(env_stripped, None)
+    return var is not None
+
+def config_set(env):
+    env_stripped = env.strip()
+    var = overrides.get_chplconfig(env_stripped, None)
+    return var is not None
 
 """Filter out variables that are marked with NOPATH"""
 def filter_path(chpl_env):
@@ -432,11 +442,18 @@ def forShell(value):
 """Return string to be printed for a given variable and print_format
 Requires a print_format argument
 """
-def _print_var(key, value, print_format=None, shortname=None):
+def _print_var(key, value, print_format=None, shortname=None, raw=False):
     key_stripped = key.strip()
     if print_format == 'pretty':
         user_set_symbol = user_set(key_stripped)
         return "{0}: {1}{2}\n".format(key, value, user_set_symbol)
+    elif print_format == 'verbose':
+        reason = " (inferred)"
+        if env_set(key_stripped):
+            reason = " (environment/cli)"
+        elif config_set(key_stripped):
+            reason = " (chplconfig)"
+        return "{}: {}{}\n".format(key_stripped, value, reason)
     elif print_format == 'simple':
         return "{0}={1}\n".format(key_stripped, value)
     elif print_format == 'cmake':
@@ -449,7 +466,10 @@ def _print_var(key, value, print_format=None, shortname=None):
             ret = "{0}-{1}".format(shortname, value)
         else:
             ret = "{0}".format(value)
-        return ret + '/'
+        if not raw:
+            return ret + '/'
+        else:
+            return (key, value, shortname, ret)
     elif print_format == 'bash':
         return "export {0}={1}\n".format(key_stripped, forShell(value))
     elif print_format == 'csh':
@@ -461,7 +481,7 @@ def _print_var(key, value, print_format=None, shortname=None):
 
 
 """Return a string that contains the Chapel configuration variable info"""
-def printchplenv(contents, print_filters=None, print_format='pretty', only=None):
+def printchplenv(contents, print_filters=None, print_format='pretty', only=None, raw=False):
     global CHPL_ENVS
 
     if print_filters is None:
@@ -493,7 +513,7 @@ def printchplenv(contents, print_filters=None, print_format='pretty', only=None)
             envs = filter(filter_tidy, envs)
 
     # Specialize _print_var to use print_format as default arg
-    print_var = partial(_print_var, print_format=print_format)
+    print_var = partial(_print_var, print_format=print_format, raw=raw)
 
     # List of strings that will be concatenated and returned
     ret = []
@@ -526,12 +546,53 @@ def printchplenv(contents, print_filters=None, print_format='pretty', only=None)
         ret.append(print_var(name, value, shortname=env.shortname))
 
     # Handle special formatting case for --path
-    if print_format == 'path':
+    if print_format == 'path' and not raw:
         # Remove trailing '/' and add a newline
         ret[-1] = ret[-1].rstrip('/')
         ret.append('\n')
 
-    return ''.join(ret)
+    if not raw:
+        return ''.join(ret)
+    else:
+        return ret
+
+def diagnose_missing_library(lib_type):
+    libdir = chpl_home_utils.get_chpl_runtime_lib()
+    subdir = ENV_VALS['CHPL_{}_SUBDIR'.format(lib_type.upper())]
+    runtime_libdir = os.path.join(libdir, subdir)
+    if not os.path.exists(runtime_libdir):
+        variables = printchplenv(set([lib_type]), print_format='path', raw=True)
+        current_path = libdir
+        for var in variables:
+            new_path = os.path.join(current_path, var[3])
+            shortname = var[2]
+            if os.path.exists(new_path):
+                current_path = new_path
+                continue
+
+            varname = var[0].strip()
+            print("There is no {} for '{}={}'".format(lib_type, varname, var[1]))
+            others = os.listdir(current_path)
+            options = [o if not shortname else o.removeprefix("{}-".format(shortname)) for o in others]
+            if options:
+                print("Valid options: {}".format(", ".join(options)))
+            chplconfig_path = overrides.get_chplconfig_path()
+            if env_set(varname):
+                # TODO: is there a way to distinguish between an env var set
+                # or a compiler argument?
+                # i.e. `CHPL_TARGET_COMPILER=xxx vs --target-compiler=xxx`
+                print("This variable is either set in the environment or via a command line argument, consider unsetting it.")
+            elif config_set(varname):
+                if chplconfig_path:
+                    print("This variable is set in '{}', consider removing it.".format(chplconfig_path))
+                else:
+                    print("This variable is set in a chplconfig, consider removing it.")
+            else:
+                print("This variable was inferred from the current system and currently set variables:")
+                affecting_env = printchplenv(set(['runtime', 'launcher', 'compiler', 'default', 'internal']), print_filters=set(["overrides", "anonymize"]), print_format="verbose")
+                affecting_env = textwrap.indent(affecting_env, '  ')
+                stdout.write(affecting_env)
+            break
 
 
 """Define argument to parse"""
@@ -578,6 +639,7 @@ def parse_args():
     #[misc]
     parser.add_option('--ignore-errors', action='store_true', dest='ignore_errors')
     parser.add_option('--verify', action='store_true', dest='verify')
+    parser.add_option('--diagnose-lib', nargs=1, type=str, dest='diagnose_lib', default=None,)
 
     #[hidden]
     parser.add_option('--devel', action='store_true', dest='devel')
@@ -651,11 +713,14 @@ def main():
     compute_all_values()
 
     # Don't populate internal ENV_VALS unless specified
-    if 'internal' in contents or options.verify or options.verify_verbose:
+    if 'internal' in contents or options.verify or options.verify_verbose or options.diagnose_lib:
         compute_internal_values()
 
-    ret = printchplenv(contents, filters, options.format, only=only)
-    stdout.write(ret)
+    print_values = not options.diagnose_lib
+
+    if print_values:
+        ret = printchplenv(contents, filters, options.format, only=only)
+        stdout.write(ret)
 
     utils.flush_warnings()
 
@@ -666,6 +731,9 @@ def main():
         success, reason = chplenv_verify.verify(ENV_VALS, verbose=options.verify_verbose)
         if not success:
             utils.error("Verification failed: {}".format(reason))
+
+    if options.diagnose_lib:
+        diagnose_missing_library(options.diagnose_lib)
 
 
 if __name__ == '__main__':

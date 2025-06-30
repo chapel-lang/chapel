@@ -42,6 +42,7 @@ def determine_arch(package):
 def infer_docker_os(package):
     os_tag_to_docker = {
         "el9": "rockylinux/rockylinux:9",
+        "el10": "almalinux:10",
         "amzn2023": "amazonlinux:2023",
         "ubuntu22": "ubuntu:22.04",
         "ubuntu24": "ubuntu:24.04",
@@ -193,7 +194,7 @@ def main():
 
     # TODO: need to figure out how to test the ofi-slurm package automatically
     if "ofi-slurm" in package:
-        print("Skipping ofi-slurm package")
+        print("Skipping testing of ofi-slurm package")
         return
 
     docker_os = args.dockeros

@@ -257,6 +257,8 @@ ModuleSymbol::ModuleSymbol(const char* iName,
   deinitFn            = NULL;
   filename            = NULL;
   extern_info         = NULL;
+  llvmDIBuilder       = NULL;
+  llvmDICompileUnit   = NULL;
   llvmDINameSpace     = NULL;
 
   registerModule(this);

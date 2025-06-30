@@ -964,7 +964,7 @@ bool usePointerImplementation(void) {
   static bool fcfsUsePointerImplementationLegal = false;
   if(!fcfsUsePointerImplementationLegal) {
     fcfsUsePointerImplementation = getConfigParamBool(baseModule,
-        "fcfsUsePointerImplementation") == gTrue;
+        "useProcedurePointers") == gTrue;
     fcfsUsePointerImplementationLegal = true;
   }
   return fcfsUsePointerImplementation;

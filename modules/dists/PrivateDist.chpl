@@ -38,26 +38,28 @@ The index set of a domain distributed over ``privateDist``
 is always ``0..numLocales-1``, regardless of the domain's rank,
 and cannot be changed.
 
-The following domain is available as a convenience,
-so user programs do not need to declare their own:
+This module declares a module-level constant of type ``privateDist``
+named ``PrivateSpace`` for use as a convenience (so that user programs
+do not need to declare their own).
 
   .. code-block:: chapel
 
     const PrivateSpace: domain(1) dmapped new privateDist();
 
-
 **Example**
 
 The following code declares a Private-distributed array ``A``.
 The `forall` loop visits each locale and sets the array element
-corresponding to that locale to that locale's number of cores.
+corresponding to that locale to that locale's ID.
 
-  .. code-block:: chapel
+.. literalinclude:: ../../../../test/distributions/doc-examples/PrivateDistExamples.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE
+   :end-before: STOP_EXAMPLE
 
-    var A: [PrivateSpace] int;
-    forall a in A do
-      a = here.numPUs();
+When run on 6 locales, the output is:
 
+.. literalinclude:: ../../../../test/distributions/doc-examples/PrivateDistExamples.good
 
 **Data-Parallel Iteration**
 
@@ -114,14 +116,14 @@ record privateDist: writeSerializable {
 
   @chpldoc.nodoc
   inline operator ==(d1: privateDist, d2: privateDist) {
-    if (d1._value == d2._value) then
-      return true;
-    return d1._value.dsiEqualDMaps(d2._value);
+    // privateDists never differ, so these are inherently equal
+    return true;
   }
 
   @chpldoc.nodoc
   inline operator !=(d1: privateDist, d2: privateDist) {
-    return !(d1 == d2);
+    // privateDists never differ, so these are inherently equal
+    return false;
   }
 
   proc serialize(writer, ref serializer) throws {
@@ -175,8 +177,6 @@ class PrivateImpl: BaseDist, writeSerializable {
   proc trackDomains() param do return false;
 
   override proc dsiTrackDomains() do    return false;
-
-  override proc singleton() param do return true;
 }
 
 class PrivateDom: BaseRectangularDom(?) {
@@ -425,28 +425,6 @@ proc PrivateArr.doiScan(op, dom) where (rank == 1) &&
   return res;
 }
 
-// TODO: Fix 'new Private()' leak -- Discussed in #6726
-// ENGIN: below is my workaround to close the leak:
-// 1. Declare a module-scope record variable with an unmanaged nilable Private
-//    field
-//    1.a. Make sure that this variable is defined *before* PrivateSpace, so
-//         that compiler injects its cleanup *after* PrivateSpace
-// 2. In module deinitializer, set the field of this record variable to
-//    chpl_privateDist
-// This way we cleanup the unmanaged, module-scope variable after module
-// deinitializer, which is called before deinitializing module-scope variables
-// which would cause use-after-free during the cleanup of PrivateSpace
-var chpl_privateCW = new chpl_privateDistCleanupWrapper();
-var chpl_privateDist = new unmanaged PrivateImpl();
-const PrivateSpace: domain(1) dmapped new privateDist(chpl_privateDist);
-
-record chpl_privateDistCleanupWrapper {
-  var val = nil : unmanaged PrivateImpl?;
-  proc deinit() { delete val!; }
-}
-
-proc deinit() {
-  chpl_privateCW.val = chpl_privateDist;
-}
+const PrivateSpace: domain(1) dmapped new privateDist();
 
 } // PrivateDist

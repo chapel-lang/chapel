@@ -188,6 +188,12 @@ public:
 
   const char* getSanitizedMsg(std::string msg) const;
 
+  std::string firstEdition;
+  std::string lastEdition;
+
+  std::string getFirstEdition() const;
+  std::string getLastEdition() const;
+
 protected:
                      Symbol(AstTag      astTag,
                             const char* init_name,

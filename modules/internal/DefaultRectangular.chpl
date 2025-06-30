@@ -1445,6 +1445,9 @@ module DefaultRectangular {
                                                    boundKind.both,
                                                    strides)) {
 
+      if externArr || _borrowed then
+        halt("This domain cannot be modified because it is used to define array views");
+
       // check to see whether this realloc is actually changing the
       // bounds of the array
       var actuallyResizing = false;
@@ -2572,6 +2575,25 @@ module DefaultRectangular {
   proc DefaultRectangularArr.doiOptimizedSwap(other) where debugOptimizedSwap {
     writeln("DefaultRectangularArr doing unoptimized swap. Type mismatch");
     return false;
+  }
+
+  proc DefaultRectangularArr.doiSupportsReshape() param {
+    return true;
+  }
+
+  proc DefaultRectangularArr.doiReshape(dom: domain(?))
+   where dom._value.isDefaultRectangular() {
+    var ret = new unmanaged DefaultRectangularArr(eltType=this.eltType,
+                                                  rank = dom.rank,
+                                                  idxType=dom.idxType,
+                                                  strides=dom.strides,
+                                                  dom=dom._value,
+                                                  data=this.data,
+                                                  externFreeFunc=nil,
+                                                  externArr=true,
+                                                  _borrowed=true);
+    dom._value.add_arr(ret, locking = false);
+    return _newArray(ret);
   }
 
   // A helper routine to take the first parallel scan over a vector

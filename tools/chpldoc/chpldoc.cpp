@@ -80,6 +80,7 @@ std::string CHPL_THIRD_PARTY;
 
 std::vector<UniqueString> usingAttributeToolNames;
 std::vector<std::string> usingAttributeToolNamesStr;
+std::vector<std::string> cmdLineModPaths;
 
 Context* gContext;
 
@@ -145,6 +146,10 @@ static void addUsingAttributeToolNameStr(const ArgumentDescription* desc,
   usingAttributeToolNamesStr.push_back(name);
 }
 
+static void addModulePath(const ArgumentDescription* desc, const char* newpath) {
+  cmdLineModPaths.push_back(std::string(newpath));
+}
+
 #define DRIVER_ARG_COPYRIGHT \
   {"copyright", ' ', NULL, "Show copyright", "F", &fPrintCopyright, NULL, NULL}
 
@@ -182,6 +187,7 @@ ArgumentDescription docs_arg_desc[] = {
  {"output-dir", 'o', "<dirname>", "Sets the documentation directory to <dirname>", "S256", fDocsFolder, NULL, NULL},
  {"author", ' ', "<author>", "Documentation author string.", "S256", fDocsAuthor, "CHPLDOC_AUTHOR", NULL},
  {"comment-style", ' ', "<indicator>", "Only includes comments that start with <indicator>", "S256", fDocsCommentLabel, NULL, docsArgSetCommentLabel},
+ {"module-dir", 'M', "<directory>", "Add directory to module search path", "P", NULL, NULL, addModulePath},
  {"process-used-modules", ' ', NULL, "Also parse and document 'use'd modules", "F", &fDocsProcessUsedModules, NULL, NULL},
  {"save-sphinx",  ' ', "<directory>", "Save generated Sphinx project in directory", "S256", fDocsSphinxDir, NULL, NULL},
  {"text-only", ' ', NULL, "Generate text documentation only", "F", &fDocsTextOnly, NULL, NULL},
@@ -1415,6 +1421,8 @@ struct RstResult {
   }
 
   private: void output(std::ostream& os, int indentPerDepth, int depth) {
+    // Note: this only indents the first line of the docstring. Anything on
+    // subsequent lines needs to have its indentation already correct.
     os << indentLines(doc, indentPerDepth * depth);
     if (indentChildren) depth += 1;
     for (auto& child : children) {
@@ -1424,7 +1432,7 @@ struct RstResult {
 };
 
 
-static const owned<RstResult>& rstDoc(Context * context, ID id);
+static const owned<RstResult>& rstDoc(Context * context, ID id, int indentDepth);
 static const Comment* const& previousComment(Context* context, ID id);
 static const std::vector<UniqueString>& getModulePath(Context* context, ID id);
 
@@ -1444,6 +1452,9 @@ struct RstResultBuilder {
       os_ << '\n';
       return false;
     }
+
+    // Note: RstResult::output currently does not indent comments, so we have
+    // to manually keep track of the indent depth.
     int addDepth = textOnly_ ? 1 : 0;
     int indentChars = indent ? (addDepth + indentDepth_) * commentIndent : 0;
     std::vector<std::string> lines;
@@ -1465,15 +1476,7 @@ struct RstResultBuilder {
     std::string errMsg;
     auto lastComment = previousComment(context_, node->id());
 
-    bool isNested = false;
-    if (node->isRecord() || node->isClass()) {
-      auto parent = parentAst(context_, node);
-      isNested = parent->isRecord() || parent->isClass();
-    }
-
-    if (isNested) indentDepth_ += 1;
     bool commentShown = showComment(lastComment, errMsg, indent);
-    if (isNested) indentDepth_ -= 1;
 
     if (!errMsg.empty()) {
       // process the warning about comments
@@ -1587,7 +1590,7 @@ struct RstResultBuilder {
     for (auto child : n->children()) {
       // don't visit child modules as they were gathered earlier
       if (!child->isModule()) {
-        if (auto &r = rstDoc(context_, child->id())) {
+        if (auto &r = rstDoc(context_, child->id(), indentDepth_)) {
           children_.push_back(r.get());
         }
       }
@@ -1617,8 +1620,15 @@ struct RstResultBuilder {
   owned<RstResult> visit(const Class* c) {
     if (isNoDoc(c) || c->visibility() == chpl::uast::Decl::PRIVATE) return {};
     if (textOnly_) os_ << "Class: ";
+
+    auto parent = parentAst(context_, c);
+    bool isNested = parent->isRecord() || parent->isClass();
+
+    if (isNested) indentDepth_ += 1;
     show("class", c);
     visitChildren(c);
+    if (isNested) indentDepth_ -= 1;
+
     return getResult(true);
   }
 
@@ -1877,8 +1887,14 @@ struct RstResultBuilder {
 
   owned<RstResult> visit(const Record* r) {
     if (isNoDoc(r)) return {};
+    auto parent = parentAst(context_, r);
+    bool isNested = parent->isRecord() || parent->isClass();
+
+    if (isNested) indentDepth_ += 1;
     show("record", r);
     visitChildren(r);
+    if (isNested) indentDepth_ -= 1;
+
     return getResult(true);
   }
 
@@ -1912,53 +1928,29 @@ struct GatherModulesVisitor {
   std::set<ID> modules;
   Context* context_;
   GatherModulesVisitor(Context* context) {
-      context_ = context;
+    context_ = context;
   }
 
-  void handleUseOrImport(const AstNode* node) {
-    if (processUsedModules_) {
-      auto scope = resolution::scopeForId(context_, node->id());
-      if (scope != nullptr && scope->containsUseImport()) {
-        if (auto r = resolveVisibilityStmts(context_, scope)) {
-          for (auto id: r->modulesNamedInUseOrImport()) {
-            if (idIsInBundledModule(context_, id)) {
-              continue;
-            }
-            // only add it and visit its children if we haven't seen it already
-            if (modules.find(id) == modules.end()) {
-              modules.insert(id);
-              auto ast = idToAst(context_, id);
-              ast->traverse(*this);
-            }
-          }
-        }
-      }
-    }
-  }
-
-  bool enter(const Module* m) {
+  static bool shouldGatherModule(const Module* m) {
     if (m->visibility() == Decl::Visibility::PRIVATE || isNoDoc(m)) {
       return false;
     }
-    modules.insert(m->id());
+
     return true;
   }
 
-  // will handle a use or import multiple times in the case that a module has
-  // multiple use statements.
-  // every time handleUseOrImport is called, it will try to add the module
-  // to the set
-  void exit(const Use* node) {
-    handleUseOrImport(node);
-  }
+  bool enter(const Module* m) {
+    if (shouldGatherModule(m)) {
+      modules.insert(m->id());
+      return true;
+    }
 
-  void exit(const Import* node) {
-    handleUseOrImport(node);
+    return false;
   }
 
   void exit(const Include* node) {
     if (auto mod = getIncludedSubmodule(context_, node->id())) {
-      if (!isNoDoc(mod)) {
+      if (shouldGatherModule(mod)) {
         modules.insert(mod->id());
       }
     }
@@ -1970,7 +1962,7 @@ struct GatherModulesVisitor {
   }
 
   bool enter(const AstNode* n) {
-    return true;
+    return true; // to check attributes
   }
 
   void exit(const AstNode* n) {
@@ -2086,13 +2078,14 @@ static const Comment* const& previousComment(Context* context, ID id) {
   return QUERY_END(result);
 }
 
-static const owned<RstResult>& rstDoc(Context* context, ID id) {
-  QUERY_BEGIN(rstDoc, context, id);
+static const owned<RstResult>& rstDoc(Context* context, ID id, int indentDepth) {
+  QUERY_BEGIN(rstDoc, context, id, indentDepth);
   owned<RstResult> result;
   // Comments have empty id
   if (!id.isEmpty()) {
     const AstNode* node = idToAst(context, id);
     RstResultBuilder cqv{context};
+    cqv.indentDepth_ = indentDepth;
     result = node->dispatch<owned<RstResult>>(cqv);
   }
 
@@ -2475,45 +2468,75 @@ int main(int argc, char** argv) {
                          chplModulePath,
                          {}, //prependInternalModulePaths,
                          {}, //prependStandardModulePaths,
-                         {}, //cmdLinePaths
+                         cmdLineModPaths, // -M etc
                          args.files);
-  GatherModulesVisitor gather(gContext);
   printStuff(argv[0], (void*)main);
-  // evaluate all the files and gather the modules
-  for (auto cpath : args.files) {
-    UniqueString path = UniqueString::get(gContext, cpath);
-    UniqueString emptyParent;
 
-    std::vector<UniqueString> paths;
-    size_t location = cpath.rfind("/");
-    paths.push_back(UniqueString::get(gContext,"./"));
-    if (location != std::string::npos) {
-      paths.push_back(UniqueString::get(gContext, cpath.substr(0, location + 1)));
+  // gather command line files as unique strings
+  std::vector<UniqueString> commandLineModulePaths;
+  for (auto path : args.files) {
+    auto cleanPath = chpl::cleanLocalPath(path);
+    auto uPath = UniqueString::get(gContext, cleanPath);
+    commandLineModulePaths.push_back(uPath);
+  }
+
+  // compute the main module
+  ID mainModule;
+  std::vector<ID> commandLineModuleIDs;
+  UniqueString requestedMainModuleName;
+
+  commandLineModuleIDs =
+    findMainAndCommandLineModules(gContext,
+                                  commandLineModulePaths,
+                                  requestedMainModuleName,
+                                  /* libraryMode (ignore errors) */ true,
+                                  mainModule);
+
+  // compute the module initialization order
+  // (the order doesn't particularly matter here, but calling this function
+  //  finds the modules used/imported, transitively)
+  std::vector<ID> modIds;
+
+  if (processUsedModules_) {
+    // backup strategy for finding the main module
+    // (the main module should not be relevant for chpldoc)
+    if (mainModule.isEmpty() && commandLineModuleIDs.size() > 0) {
+      mainModule = commandLineModuleIDs[0];
     }
-    setModuleSearchPath(gContext, paths);
 
-    // TODO: Change which query we use to parse files as suggested by @mppf
-    // parseFileContainingIdToBuilderResult(Context* context, ID id);
-    // and then work with the module ID to find the preceding comment.
-    const BuilderResult& builderResult =
-      parseFileToBuilderResultAndCheck(gContext, path, emptyParent);
+    auto ids = resolution::moduleInitializationOrder(gContext,
+                                                     mainModule,
+                                                     commandLineModuleIDs);
 
-    if (erroHandler->numErrors() > 0) {
-      erroHandler->printAndExitIfError(gContext);
+    // Add the transitive modules, but don't add bundled modules
+    for (auto id : ids) {
+      if (idIsInBundledModule(gContext, id)) {
+        continue;
+      }
+
+      modIds.push_back(id);
     }
-    // gather all the top level and used/imported/included module IDs
-    for (const chpl::uast::AstNode* ast : builderResult.topLevelExpressions()) {
-      /* note the use of the above pattern rather than `const auto& ast:`
-          was motivated by a compiler error from chapelmac during smoketests
-          that complained about the pattern and suggested this replacement,
-          which it seems satisfied with.
-      */
-      ast->traverse(gather);
+  } else {
+    modIds = commandLineModuleIDs;
+  }
+
+  // Gather modules/submodules according to which to be documented;
+  // and also report errors for attributes that are invalid
+  auto gather = GatherModulesVisitor(gContext);
+  for (auto id : modIds) {
+    const AstNode* node = idToAst(gContext, id);
+    if (node) {
+      if (auto m = node->toModule()) {
+        m->traverse(gather);
+      }
     }
   }
 
+  // exit if there were fatal errors in the processing done so far
+  erroHandler->printAndExitIfError(gContext);
+
   for (auto id : gather.modules) {
-    if (auto& r = rstDoc(gContext, id)) {
+    if (auto& r = rstDoc(gContext, id, 1)) {
         // given a module ID we can get the path to the file that we parsed
         UniqueString filePath;
         UniqueString parentSymbol;

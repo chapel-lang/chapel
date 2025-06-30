@@ -1656,12 +1656,13 @@ void setupClang(GenInfo* info, std::string mainFile)
     clangInfo->driverArgs.push_back(clangInfo->clangOtherArgs[i]);
   }
 
-  clangInfo->driverArgs.push_back("-c");
-  // chpl - always compile rt file
-  clangInfo->driverArgs.push_back(mainFile.c_str());
-
   if (!fLlvmCodegen)
     clangInfo->driverArgs.push_back("-fsyntax-only");
+  else
+    clangInfo->driverArgs.push_back("-c");
+
+  // chpl - always compile rt file
+  clangInfo->driverArgs.push_back(mainFile.c_str());
 
   if( printSystemCommands && developer ) {
     for( size_t i = 0; i < clangInfo->driverArgs.size(); i++ ) {
@@ -2844,6 +2845,11 @@ static std::string generateClangGpuLangArgs() {
 
     if (gpuArches.size() >= 1) {
       args += " " + std::string("--offload-arch=") + *gpuArches.begin();
+    }
+
+    // to get old behavior: https://releases.llvm.org/19.1.0/tools/clang/docs/ReleaseNotes.html#cuda-hip-language-changes
+    if (getGpuCodegenType() == GpuCodegenType::GPU_CG_NVIDIA_CUDA) {
+      args += " --cuda-include-ptx=all";
     }
   }
   return args;

@@ -36,12 +36,12 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # These values will be written to <build_dir>/frontend/include/chpl/config/config.h
 
 set(CHPL_MAJOR_VERSION 2)
-set(CHPL_MINOR_VERSION 5)
+set(CHPL_MINOR_VERSION 6)
 set(CHPL_PATCH_VERSION 0)
 set(CHPL_BUILD_VERSION 0)
 
 set(CHPL_PREV_MAJOR_VERSION 2)
-set(CHPL_PREV_MINOR_VERSION 4)
+set(CHPL_PREV_MINOR_VERSION 5)
 set(CHPL_PREV_PATCH_VERSION 0)
 
 # Flip this to 'true' when we're ready to roll out a release; then back
@@ -146,6 +146,7 @@ set(CHPL_LLVM_VERSION CACHE INTERNAL "Description")
 set(CHPL_LLVM_CLANG_C CACHE INTERNAL "Description")
 set(CHPL_LLVM_CLANG_CXX CACHE INTERNAL "Description")
 set(CHPL_LLVM_STATIC_DYNAMIC CACHE INTERNAL "Description")
+set(CHPL_LLVM_BIN_DIR CACHE INTERNAL "Description")
 set(CHPL_LLVM_TARGET_CPU CACHE INTERNAL "Description")
 set(CHPL_RUNTIME_SUBDIR CACHE INTERNAL "Description")
 set(CHPL_LAUNCHER_SUBDIR CACHE INTERNAL "Description")

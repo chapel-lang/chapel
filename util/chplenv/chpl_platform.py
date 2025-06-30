@@ -67,6 +67,37 @@ def get(flag='host'):
 
     return platform_val
 
+@memoize
+def _get_linux_distribution():
+    distribution = 'unknown'
+
+    uname = platform.uname()
+    platform_val = uname[0].lower().replace('_', '')
+    if platform_val != 'linux':
+        return distribution
+
+    os_release = dict()
+    try:
+        # freedesktop_os_release was added in Python 3.10
+        if hasattr(platform, 'freedesktop_os_release'):
+            os_release = platform.freedesktop_os_release()
+        elif os.path.exists('/etc/os-release'):
+            # Fallback for older Python versions
+            with open('/etc/os-release') as f:
+                for line in f:
+                    if '=' in line:
+                        key, value = line.strip().split('=', 1)
+                        os_release[key] = value.strip('"')
+    except OSError:
+        pass
+
+    distribution = os_release.get('ID', distribution).lower()
+    return distribution
+
+@memoize
+def is_fedora():
+    distribution = _get_linux_distribution()
+    return distribution.startswith('fedora')
 
 @memoize
 def is_wsl():

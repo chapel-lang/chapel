@@ -277,7 +277,7 @@ def get_chpl_misc(opts, args, build_env):
     if chpl_home_env:
         chpl_home_env = os.path.abspath(chpl_home_env)
         if chpl_home_env != chpl_home_opt:
-            logging.warn('Resetting build_env[CHPL_HOME],\nfrom\t{0}\nto\t{1}'.format(chpl_home_env, chpl_home_opt))
+            logging.warning('Resetting build_env[CHPL_HOME],\nfrom\t{0}\nto\t{1}'.format(chpl_home_env, chpl_home_opt))
 
     chpl_home = chpl_home_opt
     logging.info('Using CHPL_HOME={0}'.format(chpl_home))
@@ -311,7 +311,7 @@ def get_chpl_misc(opts, args, build_env):
         logging.error('From {0}\n{1}\n{2}\nexit code {3}'.format(chplenv_cmd, error, output, result))
         sys.exit(2)
     if error:
-        logging.warn('From {0}\n{1}\n{2}'.format(chplenv_cmd, error, output))
+        logging.warning('From {0}\n{1}\n{2}'.format(chplenv_cmd, error, output))
     elif not output:
         logging.error('{0}\nreturns no output'.format(chplenv_cmd))
         sys.exit(2)
@@ -494,7 +494,7 @@ def build_chpl(counter, build_config, env, chpl_misc, parallel=False, verbose=Fa
         with elapsed_time('Config number {0}'.format(counter)):
             result, output, error = check_output(dryrun_cmd, chpl_home, build_env)
         if result or error:
-            logging.warn('Errors/Warnings from printchplenv, config {0}\n{1}\n{2}\nExit code {3}'.format(
+            logging.warning('Errors/Warnings from printchplenv, config {0}\n{1}\n{2}\nExit code {3}'.format(
                 build_config_name, output, error, result))
         elif verbose:
             logging.debug('Results from printchplenv, config {0}\n{1}\n{2}\nExit code {3}'.format(

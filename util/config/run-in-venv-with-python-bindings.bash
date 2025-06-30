@@ -3,12 +3,11 @@
 # usage: ./run-in-venv-with-python-bindings prog [args]
 
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+# Perform checks and set up environment variables for virtual env.
+source $CWD/run-in-venv-common.bash
 
 CC=$("$CHPL_HOME/util/printchplenv" --value --only CHPL_HOST_CC)
 PLATFORM=$("$CHPL_HOME/util/printchplenv" --value --only CHPL_HOST_PLATFORM)
-
-# Perform checks and set up environment variables for virtual env.
-source $CWD/run-in-venv-common.bash
 
 chpl_frontend_py_deps=$("$python" "$CHPL_HOME/util/chplenv/chpl_home_utils.py" --chpldeps-chapel-py)
 export PYTHONPATH="$chpl_frontend_py_deps":$PYTHONPATH

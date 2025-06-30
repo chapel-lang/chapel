@@ -5,16 +5,22 @@
 check_python() {
   if command -v $1 > /dev/null 2>&1
   then
-    if $1 --version > /dev/null 2>&1
+    PYTHON_VERSION_OUTPUT=$($1 --version 2>&1)
+    if [ $? -eq 0 ]
     then
       MIN_MINOR_PYTHON_VERSION=5
-      if $1 -c "import sys; sys.exit(int(sys.version_info[:2] >= (3, $MIN_MINOR_PYTHON_VERSION)))" >/dev/null 2>&1
+      EXPECTED_ORDER=$(printf "Python 3.%s\n%s\n" "$MIN_MINOR_PYTHON_VERSION" "$PYTHON_VERSION_OUTPUT")
+
+      # note: sort -V is not available on all systems, so we use a workaround: https://stackoverflow.com/a/4495368
+      # note: the first key below is not '-n'. This helps with the Python prefix,
+      #       but will stop working when Python 10+ is released.
+      ACTUAL_ORDER=$(echo "$EXPECTED_ORDER" | sort -t. -k1,1 -k2,2n -k3,3n)
+      if [ "$EXPECTED_ORDER" = "$ACTUAL_ORDER" ]
       then
-        vers=$($1 --version 2>&1)
-        echo "Chapel requires Python 3.$MIN_MINOR_PYTHON_VERSION or later, but found $vers" 1>&2
-      else
         echo $1
         exit 0
+      else
+        echo "Chapel requires Python 3.$MIN_MINOR_PYTHON_VERSION or later, but found $PYTHON_VERSION_OUTPUT" 1>&2
       fi
     fi
   fi

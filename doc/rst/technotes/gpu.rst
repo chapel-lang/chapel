@@ -152,7 +152,7 @@ The following are further requirements for GPU support:
 
   * CUDA toolkit version 11.7+ or 12.x must be installed.
 
-  * We test with system LLVM 19. Older versions may work.
+  * We test with LLVM 20. Older versions may work.
 
     * Note that LLVM versions older than 16 do not support CUDA 12.
 

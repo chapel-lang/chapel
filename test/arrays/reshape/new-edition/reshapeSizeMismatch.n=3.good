@@ -1,0 +1,1 @@
+reshapeSizeMismatch.chpl:3: error: halt reached - Size mismatch: Can't rehape a 4-element array into a 9-element array

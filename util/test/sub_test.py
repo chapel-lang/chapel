@@ -316,6 +316,7 @@ def ReadFileWithComments(f, ignoreLeadingSpace=True, args=None):
             chpl_env = get_chplenv()
             file_env = os.environ.copy()
             file_env.update(chpl_env)
+            file_env["CHPLENV_SUPPRESS_WARNINGS"] = "1"
 
             # execute the file and grab its output
             tmp_args = [os.path.abspath(f)]
@@ -1452,12 +1453,10 @@ def main():
                     catfiles=execcatfiles
 
             elif (suffix=='.lastcompopts' and os.access(f, os.R_OK)):
-                lastcompopts+=run_process(['cat', f], stdout=subprocess.PIPE)[1].strip().split()
-                # sys.stdout.write("lastcompopts=%s\n"%(lastcompopts))
+                lastcompopts+=ReadFileWithComments(f)[0].strip().split()
 
             elif (suffix=='.lastexecopts' and os.access(f, os.R_OK)):
-                lastexecopts+=run_process(['cat', f], stdout=subprocess.PIPE)[1].strip().split()
-                # sys.stdout.write("lastexecopts=%s\n"%(lastexecopts))
+                lastexecopts+=ReadFileWithComments(f)[0].strip().split()
 
             elif (suffix==PerfSfx('numlocales') and os.access(f, os.R_OK)):
                 numlocales=ReadIntegerValue(f, localdir)

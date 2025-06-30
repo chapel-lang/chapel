@@ -39,7 +39,6 @@ GitHub:                https://github.com/chapel-lang/chapel
 Discussion forums:     https://chapel.discourse.group
 Gitter chat room:      https://gitter.im/chapel-lang/chapel
 Stack Overflow:        http://stackoverflow.com/questions/tagged/chapel
-Twitter:               https://twitter.com/ChapelLanguage
+X (Twitter):           https://x.com/ChapelLanguage
 Facebook:              https://www.facebook.com/ChapelLanguage
 =====================  ========================================================
-

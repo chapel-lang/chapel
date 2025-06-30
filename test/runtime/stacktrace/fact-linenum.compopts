@@ -1,1 +1,1 @@
--g --cpp-lines --ccflags -gdwarf-4
+-g --cpp-lines
