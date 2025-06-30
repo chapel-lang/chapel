@@ -9,5 +9,5 @@ fi
 
 source $PROVISION_SCRIPTS_DIR/chapel-setmakej.sh
 
-echo "cd chapel && source util/quickstart/setchplenv.bash && make $MAKEJ && make check"
-cd chapel && source util/quickstart/setchplenv.bash && make $MAKEJ && make check
+echo "cd chapel && source util/quickstart/setchplenv.bash && make $MAKEJ && make $MAKEJ check"
+cd chapel && source util/quickstart/setchplenv.bash && make $MAKEJ && make $MAKEJ check
