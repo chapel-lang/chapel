@@ -133,7 +133,6 @@ proc verifyResults() {
   //
   // Print the table, if requested
   //
-  var OldArray = T;
   if (printArrays) then writeln("After updates, T is: ", T, "\n");
 
   //
@@ -156,16 +155,6 @@ proc verifyResults() {
   const numErrors = + reduce [i in TableSpace] (T(i) != i);
   if (printStats) then writeln("Number of errors is: ", numErrors, "\n");
 
-  // Temporary debugging output to help diagnose validation failure
-  if numErrors > (errorTolerance * N_U) {
-    writeln("------ Validation failed! ---");
-    writeln("number of errors = ", numErrors);
-    writeln("error tolerance = ", errorTolerance * N_U);
-    writeln("After updates, T was: ", OldArray);
-    writeln("After verification, T is: ", T);
-    writeln("-----------------------------");
-  }
-
   //
   // Return whether or not the number of errors was within the benchmark's
   // tolerance.
@@ -178,7 +167,7 @@ proc verifyResults() {
 //
 proc printResults(successful, execTime) {
   writeln("Validation: ", if successful then "SUCCESS" else "FAILURE");
-  if !successful || printStats {
+  if (printStats) {
     writeln("Execution time = ", execTime);
     writeln("Performance (GUPS) = ", (N_U / execTime) * 1e-9);
   }
