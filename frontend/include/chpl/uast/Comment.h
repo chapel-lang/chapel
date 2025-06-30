@@ -142,7 +142,9 @@ class AstListNoCommentsIterator {
 
   // needs to be support == and !=
   bool operator==(const AstListNoCommentsIterator<CastToType> rhs) const {
-    return this->it == rhs.it;
+    return this->it == rhs.it &&
+           this->begin == rhs.begin &&
+           this->end == rhs.end;
   }
   bool operator!=(const AstListNoCommentsIterator<CastToType> rhs) const {
     return this->it != rhs.it;
