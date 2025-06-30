@@ -47,6 +47,7 @@ module ChapelDomain {
   config param noNegativeStrideWarnings = false;
 
   @chpldoc.nodoc
+  @edition(last="2.0")
   config param noSortedWarnings = false;
 
   pragma "no copy return"
