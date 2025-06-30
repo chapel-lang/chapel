@@ -214,6 +214,12 @@ class ID final {
   UniqueString symbolName(Context* context) const;
 
   /**
+    Get the part after the '#' in this ID, which distinguishes IDs
+    with the same name.
+   */
+  UniqueString overloadPart(Context* context) const;
+
+  /**
     returns 'true' if the AST node with this ID contains the AST
     node with the other ID, including if they refer to the same AST node.
    */
@@ -236,6 +242,10 @@ class ID final {
   /** Given a symbol path, return the name of the innermost symbol */
   static UniqueString innermostSymbolName(Context* context,
                                           UniqueString symbolPath);
+
+  /** Given a symbol path, return the portion after the '#'. */
+  static UniqueString overloadPart(Context* context,
+                                   UniqueString symbolPath);
 
   /**
     Given a symbol path, expand it into a vector

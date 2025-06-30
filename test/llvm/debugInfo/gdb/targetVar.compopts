@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+# check the gdb version, if it is <15 use dwarf4
+vers=$(gdb --version | head -n 1 | rev | cut -d ' ' -f 1 | rev)
+major=$(echo $vers | cut -d '.' -f 1)
+if [ "$major" -ge 15 ]; then
+  echo "-g"
+else
+  echo "-g --ccflags -gdwarf-4"
+fi

@@ -1676,6 +1676,7 @@ void Visitor::checkAttributeNameRecognizedOrToolSpaced(const Attribute* node) {
   } else if (node->name() == USTR("deprecated") ||
              node->name() == USTR("unstable") ||
              node->name() == USTR("stable") ||
+             node->name() == USTR("edition") ||
              node->name() == USTR("functionStatic") ||
              node->name() == USTR("assertOnGpu") ||
              node->name() == USTR("gpu.assertEligible") ||

@@ -301,6 +301,8 @@ PRAGMA(NO_GPU_CODEGEN, ypr, "no gpu codegen", "this function is GPU-ineligible")
 PRAGMA(NOT_CALLED_FROM_GPU, ypr, "not called from gpu", "runtime error if this function is called from a gpu")
 PRAGMA(ASSERT_ON_GPU, ypr, "assert on gpu", "triggers runtime assertion if not running on device")
 
+PRAGMA(HAS_EDITION, npr, "has edition",
+       "applied to breaking changes to indicate which edition they are associated with")
 PRAGMA(HAS_POSTINIT, ypr, "has postinit", "type that has a postinit method")
 PRAGMA(HAS_RUNTIME_TYPE, ypr, "has runtime type", "type that has an associated runtime type")
 PRAGMA(IGNORE_RUNTIME_TYPE, ypr, "ignore runtime type", "use the static type only in the return value")
@@ -316,6 +318,7 @@ PRAGMA(INCLUDED_MODULE, npr, "included sub-module", ncm)
 PRAGMA(INCOMPLETE, npr, "incomplete", "an extern type that is incomplete in the C/C++ sense")
 PRAGMA(INDEX_VAR, npr, "index var", ncm)
 PRAGMA(INFER_CUSTOM_TYPE, ypr, "infer custom type", ncm)
+PRAGMA(IS_ARRAY_VIEW, npr, "is array view", "this expression is an array view")
 
 PRAGMA(MANAGER_HANDLE, npr, "manager handle", ncm)
 PRAGMA(MANAGER_RESOURCE_INFER_STORAGE, npr, "manager resource infer storage", ncm)

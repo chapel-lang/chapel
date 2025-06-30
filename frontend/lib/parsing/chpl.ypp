@@ -729,7 +729,13 @@ stmt:
 
 stmt_base:
   tryable_stmt      // (no '->finishStmt()' required b/c 'tryable_stmt' did it)
-| decl_base                 { $$ = context->finishStmt($1); }
+
+// 'decl_base' passes its location because in the case of a single-stmt
+// proceduring using 'do', the parser might scoop up a comment following the
+// procedure. If we don't pass in the location, the comment will be cleared by
+// 'finishStmt'.
+| decl_base                 { $$ = context->finishStmt(@1, $1); }
+
 | include_module_stmt       { $$ = context->finishStmt($1); }
 | block_stmt                { $$ = context->finishStmt($1); }
 | use_stmt                  { $$ = context->finishStmt($1); }
@@ -1369,14 +1375,6 @@ assignment_stmt:
     {
       $$ = STMT(@$, context->buildBinOp(@$, $1, $2, $3));
     }
-| lhs_expr TASSIGNLAND     opt_try_expr TSEMI
-    {
-      $$ = STMT(@$, context->buildBinOp(@$, $1, $2, $3));
-    }
-| lhs_expr TASSIGNLOR      opt_try_expr TSEMI
-    {
-      $$ = STMT(@$, context->buildBinOp(@$, $1, $2, $3));
-    }
 | lhs_expr TASSIGN         TNOINIT TSEMI
     {
       $$ = STMT(@$, context->buildBinOp(@$, $1, $2, context->buildIdent(@3, $3)));
@@ -1495,7 +1493,7 @@ class_level_stmt:
 | inner_class_level_stmt
     {
       // visibility should be default when inner_class_level_stmt is parsed
-      $$ = context->finishStmt($1);
+      $$ = context->finishStmt(@1, $1);
       context->visibility = Decl::DEFAULT_VISIBILITY;
     }
 | TPUBLIC {context->noteDeclStartLoc(@1);
@@ -2459,7 +2457,7 @@ fn_expr:
     context->resetDeclState();
     context->enterScope(asttags::Function, STR("proc"));
   }
-  block_stmt_body
+  function_body_stmt
   {
     FunctionParts fp = $1;
     fp.isBodyNonBlockExpression = false;
@@ -2515,7 +2513,7 @@ fn_decl_stmt:
       $4 != ThrowsTag_DEFAULT ? @4 :
         ($3 != nullptr ? @3 :
           ($2.isValid && (Function::ReturnIntent)$2.intent != Function::DEFAULT_RETURN_INTENT ? @2 : @1)));
-    context->exitScopeForFunctionDecl(fp);
+    context->exitScopeForFunctionDecl(@7, fp);
     $$ = fp;
   }
 ;
@@ -2784,7 +2782,7 @@ opt_function_body_stmt:
 
 function_body_stmt:
   block_stmt_body   { $$ = $1; }
-| TDO toplevel_stmt { $$ = context->buildSingleStmtRoutineBody($2); }
+| TDO toplevel_stmt { $$ = context->buildSingleStmtRoutineBody(@2, $2); }
 ;
 
 query_expr:

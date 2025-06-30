@@ -37,9 +37,12 @@ struct AttributeGroupParts {
   bool isUnstable;
   bool isParenfulDeprecated;
   bool isStable;
+  bool hasEdition;
   UniqueString deprecationMessage;
   UniqueString unstableMessage;
   UniqueString parenfulDeprecationMessage;
+  UniqueString firstEdition;
+  UniqueString lastEdition;
 };
 
 struct ParserContext {
@@ -111,7 +114,7 @@ struct ParserContext {
     this->isBuildingFormal        = false;
     this->isVarDeclConfig         = false;
     this->varDestinationExpr      = nullptr;
-    this->attributeGroupParts     = {nullptr, nullptr, false, false, false, false, UniqueString(), UniqueString(), UniqueString() };
+    this->attributeGroupParts     = {nullptr, nullptr, false, false, false, false, false, UniqueString(), UniqueString(), UniqueString(), UniqueString(), UniqueString() };
     this->hasAttributeGroupParts  = false;
     this->numAttributesBuilt      = 0;
     YYLTYPE emptyLoc = {0};
@@ -160,6 +163,7 @@ struct ParserContext {
   void noteDeprecation(YYLTYPE loc, MaybeNamedActualList* actuals);
   void noteUnstable(YYLTYPE loc, MaybeNamedActualList* actuals);
   void noteStable(YYLTYPE loc, MaybeNamedActualList* actuals);
+  void noteEdition(YYLTYPE loc, MaybeNamedActualList* actuals);
   void resetAttributeGroupPartsState();
 
   CommentsAndStmt buildPragmaStmt(YYLTYPE loc, CommentsAndStmt stmt);
@@ -435,7 +439,7 @@ struct ParserContext {
 
   void enterScopeForFunctionDecl(FunctionParts& fp,
                                  AstNode* retType);
-  void exitScopeForFunctionDecl(FunctionParts& fp);
+  void exitScopeForFunctionDecl(YYLTYPE bodyLocation, FunctionParts& fp);
 
   AstNode* buildLambda(YYLTYPE location, FunctionParts& fp);
 
@@ -787,5 +791,5 @@ struct ParserContext {
   CommentsAndStmt buildLabelStmt(YYLTYPE location, PODUniqueString name,
                                  CommentsAndStmt cs);
 
-  ParserExprList* buildSingleStmtRoutineBody(CommentsAndStmt cs);
+  ParserExprList* buildSingleStmtRoutineBody(YYLTYPE location, CommentsAndStmt cs);
 };

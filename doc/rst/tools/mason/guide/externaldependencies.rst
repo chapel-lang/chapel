@@ -1,5 +1,7 @@
 :title: Mason Guide: *External Dependencies*
 
+.. _mason-external-dependencies:
+
 Using Non-Chapel Dependencies
 =============================
 Mason allows for specification of external, non-Chapel dependencies through two

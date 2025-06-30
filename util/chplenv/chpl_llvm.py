@@ -6,7 +6,7 @@ import sys
 import re
 
 import chpl_bin_subdir, chpl_arch, chpl_compiler, chpl_platform, overrides
-from chpl_home_utils import get_chpl_third_party, get_chpl_home
+from chpl_home_utils import get_chpl_third_party, get_chpl_runtime_incl
 import chpl_gpu
 import homebrew_utils
 from utils import which, memoize, error, run_command, try_run_command, warning, check_valid_var
@@ -410,8 +410,8 @@ def validate_llvm_config():
         if not noPackageErrors:
             error(package_err)
 
-        clang_c = get_llvm_clang('c')[0]
-        clang_cxx = get_llvm_clang('c++')[0]
+        clang_c = get_llvm_clang_noargs('c')
+        clang_cxx = get_llvm_clang_noargs('c++')
         if clang_c == '':
             error("Could not find clang with the same version as "
                   "CHPL_LLVM_CONFIG={}. Please try setting CHPL_TARGET_CC.".format(llvm_config))
@@ -595,15 +595,13 @@ def get_system_llvm_clang(lang):
     return ''
 
 # lang should be C or CXX
-# returns [] list with the first element the clang command,
-# then necessary arguments
 @memoize
-def get_llvm_clang(lang):
+def get_llvm_clang_noargs(lang):
 
     # if it was provided by a user setting, just use that
     provided = get_overriden_llvm_clang(lang)
     if provided:
-        return provided
+        return provided[0]
 
     clang = None
     llvm_val = get()
@@ -614,12 +612,25 @@ def get_llvm_clang(lang):
         llvm_subdir = get_bundled_llvm_dir()
         clang = os.path.join(llvm_subdir, 'bin', clang_name)
 
+    return clang if clang else ''
+
+# lang should be C or CXX
+# returns [] list with the first element the clang command,
+# then necessary arguments
+@memoize
+def get_llvm_clang(lang):
+
+    # if it was provided by a user setting, just use that
+    provided = get_overriden_llvm_clang(lang)
+    if provided:
+        return provided
+
+    clang = get_llvm_clang_noargs(lang)
     if not clang:
         return ['']
-
-    # tack on arguments that control clang's function
-    result = [clang] + get_clang_basic_args(clang)
-    return result
+    else:
+        # tack on arguments that control clang's function
+        return [clang] + get_clang_basic_args(clang)
 
 
 def has_compatible_installed_llvm():
@@ -799,6 +810,36 @@ def get_gcc_install_dir():
     return gcc_dir
 
 
+@memoize
+def _clang_verbose_on_sys_basic(clang='clang'):
+    # Add -isysroot and -resourcedir based upon what 'clang' uses
+    cfile = os.path.join(get_chpl_runtime_incl(), "sys_basic.h")
+    if not os.path.isfile(cfile):
+        error("error computing isysroot -- sys_basic.h is missing")
+
+    (out, err) = run_command([clang, '-###', cfile],
+                                stdout=True, stderr=True)
+    out += err
+    return out
+
+@memoize
+def _clang_get_isysroot(clang='clang'):
+    out = _clang_verbose_on_sys_basic(clang)
+    found = re.search('"-isysroot" "([^"]+)"', out)
+    if found:
+        return ['-isysroot', found.group(1).strip()]
+    else:
+        return []
+
+@memoize
+def _clang_get_resourcedir(clang='clang'):
+    out = _clang_verbose_on_sys_basic(clang)
+    found = re.search('"-resource-dir" "([^"]+)"', out)
+    if found:
+        return ['-resource-dir', found.group(1).strip()]
+    else:
+        return []
+
 # The bundled LLVM does not currently know to look in a particular Mac OS X SDK
 # so we provide a -isysroot arg to indicate which is used.
 #
@@ -818,25 +859,8 @@ def get_sysroot_resource_dir_args():
     args = [ ]
     llvm_val = get()
     if llvm_val == "bundled":
-        # Add -isysroot and -resourcedir based upon what 'clang' uses
-        cfile = os.path.join(get_chpl_home(),
-                             "runtime", "include", "sys_basic.h")
-        if not os.path.isfile(cfile):
-            error("error computing isysroot -- sys_basic.h is missing")
-
-        (out, err) = run_command(['clang', '-###', cfile],
-                                 stdout=True, stderr=True)
-        out += err
-
-        found = re.search('"-isysroot" "([^"]+)"', out)
-        if found:
-            args.append('-isysroot')
-            args.append(found.group(1).strip())
-
-        found = re.search('"-resource-dir" "([^"]+)"', out)
-        if found:
-            args.append('-resource-dir')
-            args.append(found.group(1).strip())
+        args.extend(_clang_get_isysroot())
+        args.extend(_clang_get_resourcedir())
 
     return args
 
@@ -874,6 +898,12 @@ def get_sysroot_linux_args():
                 args.append('--start-no-unused-arguments')
                 args.append('-Wl,-dynamic-linker,' + dyn_linker)
                 args.append('--end-no-unused-arguments')
+
+    # workaround for fedora
+    if chpl_platform.is_fedora():
+        clang = get_llvm_clang_noargs('c')
+        args.extend(_clang_get_resourcedir(clang))
+
     return args
 
 # When a system LLVM is installed with Homebrew, it's very important

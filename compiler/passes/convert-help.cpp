@@ -291,6 +291,26 @@ void attachSymbolAttributes(Context* context,
     INT_ASSERT(attr->parenfulDeprecationMessage().isEmpty());
   }
 
+  if (attr->hasEdition()) {
+    INT_ASSERT(!sym->hasFlag(FLAG_HAS_EDITION));
+    sym->addFlag(FLAG_HAS_EDITION);
+
+    auto first = attr->firstEdition();
+    if (!first.isEmpty()) {
+      sym->firstEdition = astr(first);
+    }
+
+    auto last = attr->lastEdition();
+    if (!last.isEmpty()) {
+      sym->lastEdition = astr(last);
+    }
+
+    // Will generate an error if it is not
+    checkEditionRangeValid(sym->getFirstEdition(), sym->getLastEdition(), sym);
+  } else {
+    INT_ASSERT(attr->firstEdition().isEmpty() && attr->lastEdition().isEmpty());
+  }
+
   for (auto pragma : attr->pragmas()) {
     Flag flag = convertPragmaToFlag(pragma);
     if (flag != FLAG_UNKNOWN) {

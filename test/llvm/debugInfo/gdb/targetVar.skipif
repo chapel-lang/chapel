@@ -1,0 +1,6 @@
+# this can remove too much of the debug info
+COMPOPTS <= --fast
+# baseline testing has extra call_temps left behind that mess up the good file
+COMPOPTS <= --baseline
+# valgrind messes up output
+CHPL_TEST_VGRND_EXE == on

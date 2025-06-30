@@ -33,8 +33,21 @@ Initializing Modules:
           MemMove
          Sort
           List
+          RadixSortHelp
+          Partitioning
+           PartitioningUtility
+            BlockDist
+             ChapelUtil
+             CompressedSparseLayout
+              RangeChunk
+            CopyAggregation
+             AggregationPrimitives
+            Time
+             ChapelHashtable
+           Random
+            PCGRandomLib
+           Collectives
           MSBRadixSort
-           RadixSortHelp
            ShellSort
             ShallowCopy
           TwoArrayRadixSort
@@ -43,22 +56,17 @@ Initializing Modules:
            InsertionSort
           TimSort
         ChapelDistribution
-         ChapelHashtable
         ExternalArray
-        RangeChunk
         ChapelHashing
       LocaleModelHelpRuntime
      LocaleModelHelpMem
     LocalesArray
     ChapelTaskTable
     MemTracking
-    ChapelUtil
     ExportWrappers
     ChapelContext
     ChapelStaticVars
     ChapelDynamicLoading
     AlignedTSupport
-    CopyAggregation
-     AggregationPrimitives
    printModuleInitOrder
     moduleInitTest

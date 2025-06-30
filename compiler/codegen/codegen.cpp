@@ -2202,10 +2202,10 @@ codegen_config() {
         fprintf(outfile,", /* private = */ %d", var->hasFlag(FLAG_PRIVATE));
         fprintf(outfile,", /* deprecated = */ %d",
                 var->hasFlag(FLAG_DEPRECATED));
-        fprintf(outfile,", \"%s\"\n", var->getDeprecationMsg());
+        fprintf(outfile,", \"%s\"\n", var->getSanitizedMsg(var->getDeprecationMsg()));
         fprintf(outfile,", /* unstable = */ %d",
                 var->hasFlag(FLAG_UNSTABLE));
-        fprintf(outfile,", \"%s\"\n", var->getUnstableMsg());
+        fprintf(outfile,", \"%s\"\n", var->getSanitizedMsg(var->getUnstableMsg()));
         fprintf(outfile,");\n");
 
       }
@@ -2281,9 +2281,9 @@ codegen_config() {
         }
         args[3] = info->irBuilder->getInt32(var->hasFlag(FLAG_PRIVATE));
         args[4] = info->irBuilder->getInt32(var->hasFlag(FLAG_DEPRECATED));
-        args[5] = genStringArg(var->getDeprecationMsg());
+        args[5] = genStringArg(var->getSanitizedMsg(var->getDeprecationMsg()));
         args[6] = info->irBuilder->getInt32(var->hasFlag(FLAG_UNSTABLE));
-        args[7] = genStringArg(var->getUnstableMsg());
+        args[7] = genStringArg(var->getSanitizedMsg(var->getUnstableMsg()));
 
         llvm::CallInst* callICF =
           info->irBuilder->CreateCall(installConfigFunc, args);
@@ -3127,17 +3127,21 @@ static void codegenPartTwo() {
       debug_info = new debug_data(*info->module);
     }
     if(debug_info) {
-      // first find the main module, this will be the compile unit.
+      // every module gets its own compile unit
       forv_Vec(ModuleSymbol, currentModule, allModules) {
-        if(currentModule->hasFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE)) {
-          //So, this is pretty quick. I'm assuming that the main module is in the current dir, no optimization (need to figure out how to get this)
-          // and no compile flags, since I can't figure out how to get that either.
-          const char *current_dir = "./";
-          const char *empty_string = "";
-          debug_info->create_compile_unit(currentModule->astloc.filename(), current_dir, false, empty_string);
-          break;
-        }
+        // So, this is pretty quick. I'm assuming that the main module is in the current dir, no optimization (need to figure out how to get this)
+        // and no compile flags, since I can't figure out how to get that either.
+        const char *current_dir = "./";
+        const char *empty_string = "";
+        debug_info->create_compile_unit(currentModule,
+          currentModule->astloc.filename(), current_dir,
+          false, empty_string
+        );
       }
+      debug_info->create_compile_unit(rootModule,
+        rootModule->astloc.filename(), "./",
+        false, ""
+      );
     }
 
     // When doing codegen for programs that have GPU kernels we fork the

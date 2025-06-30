@@ -132,12 +132,12 @@ master_doc = 'index'
 # 'version' adds a redundant version number onto the top of the sidebar
 # automatically (rtd-theme). We also don't use |version| anywhere in rst
 
-chplversion = '2.5'
+chplversion = '2.6'
 shortversion = chplversion.replace('-', '&#8209') # prevent line-break at hyphen, if any
 html_context = {"chplversion":chplversion}
 
 # The full version, including alpha/beta/rc tags.
-release = '2.5.0 (pre-release)'
+release = '2.6.0 (pre-release)'
 
 # General information about the project.
 project = u'Chapel Documentation'
@@ -182,6 +182,7 @@ exclude_patterns = ['Makefile',
                     'builtins/SharedObject.rst',
                     'builtins/String.rst',
                     'modules/standard/AutoMath.rst',
+                    'modules/standard/AutoGpu.rst',
                     'modules/standard/ChapelIO.rst',
                     'modules/standard/ChapelSysCTypes.rst',
 

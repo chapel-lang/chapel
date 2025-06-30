@@ -61,6 +61,13 @@ namespace {
   }
 }
 
+std::string removeSphinxMarkup(UniqueString msg) {
+  // This function is a wrapper around the string version, to allow for
+  // UniqueString usage in the compiler.
+  std::string filteredMsg = removeSphinxMarkup(msg.str());
+  return filteredMsg;
+}
+
 std::string removeSphinxMarkup(const std::string& msg) {
   static const auto reStr = buildSphinxMarkupRegexp();
 

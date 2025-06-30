@@ -19,5 +19,6 @@ fi
 export CHPL_LAUNCHER=none
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="linux64-llvm19"
+export CHPL_NIGHTLY_TEST_DIRS="llvm/"
 
-$UTIL_CRON_DIR/nightly -cron -examples ${nightly_args}
+$UTIL_CRON_DIR/nightly -cron -examples -blog ${nightly_args}

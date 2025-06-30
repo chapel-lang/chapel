@@ -1,0 +1,4 @@
+-h # example_print_usage.help.good
+--help # example_print_usage.help.good
+file1.txt file2.txt # example_print_usage.no_help.good
+file1.txt --x 10 file2.txt # example_print_usage.no_help_10.good

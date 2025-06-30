@@ -35,8 +35,8 @@ Chapel array: 1.0 2.0 3.0
 Testing format: d
 Python array: array('d', [1.0, 2.0, 3.0])
 Chapel array: 1.0 2.0 3.0
-Caught expected error: PythonException: bad typecode (must be b, B, u, h, H, i, I, l, L, q, Q, f or d)
-Caught expected error: PythonException: bad typecode (must be b, B, u, h, H, i, I, l, L, q, Q, f or d)
+Caught expected error: PythonException: bad typecode
+Caught expected error: PythonException: bad typecode
 Caught expected error: ChapelException: Source array's format does not match requested element type
 Caught expected error: ChapelException: Source array's format does not match requested element type
 Caught expected error: ChapelException: Source array's format does not match requested element type

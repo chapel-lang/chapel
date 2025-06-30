@@ -23,6 +23,13 @@
 
 #include "symbol.h"
 
+#ifdef HAVE_LLVM
+namespace llvm {
+  class DIBuilder;
+  class DICompileUnit;
+}
+#endif
+
 enum ModTag {
   MOD_INTERNAL,  // an internal module that the user shouldn't know about
   MOD_STANDARD,  // a standard module from the Chapel libraries
@@ -93,12 +100,15 @@ public:
   const char*             filename;
   const char*             doc;
 
-  // LLVM uses this for extern C blocks.
 #ifdef HAVE_LLVM
   ExternBlockInfo*        extern_info;
+  llvm::DIBuilder*        llvmDIBuilder;
+  llvm::DICompileUnit*    llvmDICompileUnit;
   llvm::MDNode*           llvmDINameSpace;
 #else
   void*                   extern_info;
+  void*                   llvmDIBuilder;
+  void*                   llvmDICompileUnit;
   void*                   llvmDINameSpace;
 #endif
 

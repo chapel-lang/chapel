@@ -29,19 +29,10 @@
    is not required. For example they can be used to initialize an array of
    atomics or perform a reduction when no concurrent updates are occurring.
 
-   .. code-block:: chapel
-
-     use BlockDist, PeekPoke;
-
-     const space = {1..1000};
-     const D = space dmapped new blockDist(space);
-     var A: [D] atomic int;
-
-     forall i in D do
-       A[i].poke(i);
-
-     const sum = + reduce A.peek();
-     writeln(sum); // 500500
+   .. literalinclude:: ../../../../test/library/packages/PeekPoke/doc-examples/example_poke.chpl
+    :language: chapel
+    :start-after: START_EXAMPLE
+    :end-before: STOP_EXAMPLE
  */
 module PeekPoke {
   /*

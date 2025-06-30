@@ -21,14 +21,12 @@ SRCS = $(GPU_SRCS)
 
 GPU_OBJS = $(addprefix $(GPU_OBJDIR)/,$(addsuffix .o,$(basename $(GPU_SRCS))))
 
-# 1. our bundled clang (15 as of today) doesn't support warp-reductions which
-# came in with 8.x. So, we are limiting our runtime binary to 7.5. This seems to
-# work fine even if the user code is compiled with >7.5.
-# 2. clang-14 wants offload-arch to be passed multiple times and doesn't accept
+# TODO: clang-14 wants offload-arch to be passed multiple times and doesn't accept
 # a comma-separated list.
 RUNTIME_CXXFLAGS += -x cuda -Wno-unknown-cuda-version \
                     -Xclang -fcuda-allow-variadic-functions \
-                    --offload-arch=$(CHPL_MAKE_GPU_ARCH)
+                    --offload-arch=$(CHPL_MAKE_GPU_ARCH) \
+                    --cuda-include-ptx=all
 
 # With cuda 11, cub headers have unused typedefs
 RUNTIME_CXXFLAGS += -Wno-error=unused-local-typedef

@@ -40,48 +40,31 @@ The primary benefits of ``bigint`` over ``mpz_t`` are
 In addition to the expected set of operations, this record provides
 a number of methods that wrap GMP functions in a natural way:
 
-.. code-block:: chapel
-
- use BigInteger;
-
- var   a = new bigint(234958444);
- const b = new bigint("4847382292989382987395534934347");
- var   c = new bigint();
-
- writeln(a * b);
-
- fac(c, 00);
- writeln(c);
+.. literalinclude:: ../../../../test/library/standard/BigInteger/doc-examples/BigIntegerExample1.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE
+   :end-before: STOP_EXAMPLE
 
 Casting and declarations can be used to create ``bigint`` records as
 well:
 
-.. code-block:: chapel
-
- use BigInteger;
-
- var   a = 234958444: bigint;
- const b = "4847382292989382987395534934347": bigint;
- var   c: bigint;
+.. literalinclude:: ../../../../test/library/standard/BigInteger/doc-examples/BigIntegerExample2.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE
+   :end-before: STOP_EXAMPLE
 
 .. warning::
 
-  Creating a ``bigint`` from an integer literal that is larger than
-  ``max(uint(64))`` would cause integer overflow before the
-  ``bigint`` is created, and so results in a compile-time error.
-  Strings should be used instead of integer literals for cases
-  like this:
+   Creating a ``bigint`` from an integer literal that is larger than
+   ``max(uint(64))`` would cause integer overflow before the
+   ``bigint`` is created, and so results in a compile-time error.
+   Strings should be used instead of integer literals for cases
+   like this:
 
-  .. code-block:: chapel
-
-    // These would result in integer overflow and cause compile-time errors
-    var bad1 = 4847382292989382987395534934347: bigint;
-    var bad2 = new bigint(4847382292989382987395534934347);
-
-    // These give the desired result
-    var good1 = "4847382292989382987395534934347": bigint;
-    var good2 = new bigint("4847382292989382987395534934347");
-
+   .. literalinclude:: ../../../../test/library/standard/BigInteger/doc-examples/BigIntegerExample3.chpl
+      :language: chapel
+      :start-after: START_EXAMPLE
+      :end-before: STOP_EXAMPLE
 
 Wrapping an ``mpz_t`` in a ``bigint`` record may introduce a
 measurable overhead in some cases.
@@ -95,17 +78,17 @@ Matching this style using ``bigint`` records and the compound
 assignment operators is likely to provide comparable performance to an
 implementation based on ``mpz_t``.  So, for example:
 
-.. code-block:: chapel
-
-  x  = b
-  x *= c;
-  x += a;
+.. literalinclude:: ../../../../test/library/standard/BigInteger/doc-examples/BigIntegerExample4.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_FAST
+   :end-before: STOP_EXAMPLE_FAST
 
 is likely to achieve better performance than:
 
-.. code-block:: chapel
-
-  x = a + b * c;
+.. literalinclude:: ../../../../test/library/standard/BigInteger/doc-examples/BigIntegerExample4.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_SLOW
+   :end-before: STOP_EXAMPLE_SLOW
 
 The Chapel compiler currently introduces two short lived temporaries for the
 intermediate results of the binary operators.
@@ -113,10 +96,10 @@ intermediate results of the binary operators.
 The operators on ``bigint`` include variations that accept Chapel
 integers e.g.:
 
-.. code-block:: chapel
-
-  var a = new bigint("9738639463465935");
-  var b = 9395739153 * a;
+.. literalinclude:: ../../../../test/library/standard/BigInteger/doc-examples/BigIntegerExample5.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE
+   :end-before: STOP_EXAMPLE
 
 The Chapel int(64) literal is converted to an underlying,
 platform-specific C integer, to invoke the underlying GMP primitive
@@ -135,12 +118,12 @@ truncated.  GMP primitives are used to first cast to platform-specific C
 types, which are then cast to Chapel types.  As a result, casting to
 64-bit types on 32-bit platforms may result in additional truncation.
 Additionally, casting a negative ``bigint`` to a ``uint`` will result in
-the absolute value truncated to fit within the type.:
+the absolute value truncated to fit within the type:
 
-.. code-block:: chapel
-
-  var a = new bigint(-1);
-  writeln(a:uint);        // prints "1"
+.. literalinclude:: ../../../../test/library/standard/BigInteger/doc-examples/BigIntegerExample6.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE
+   :end-before: STOP_EXAMPLE
 
 See :mod:`GMP` for more information on how to use GMP with Chapel.
 
@@ -464,6 +447,13 @@ module BigInteger {
   /* Constructs a new :record:`bigint` from ``x``, see :proc:`bigint.init`. */
   inline operator :(x: bool, type t: bigint): bigint throws {
     return new bigint(x:int);
+  }
+
+  /* Constructs a new :record:`bigint` from ``x`` */
+  inline operator :(x: real, type t: bigint): bigint {
+    var bi: bigint;
+    bi.set(x);
+    return bi;
   }
 
   /*

@@ -1,0 +1,1 @@
+reshapeMethodSlice.chpl:5: error: This array type does not support alias-based reshaping; consider passing 'copy=true' to get a copy-based reshape

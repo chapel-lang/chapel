@@ -1,0 +1,10 @@
+# this can remove too much of the debug info
+COMPOPTS <= --fast
+# baseline testing has extra call_temps left behind that mess up the good file
+COMPOPTS <= --baseline
+# valgrind messes up output
+CHPL_TEST_VGRND_EXE == on
+
+# older LLVM's don't support the right dwarf info
+CHPL_LLVM_VERSION==11
+CHPL_LLVM_VERSION==12

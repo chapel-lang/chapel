@@ -1,0 +1,1 @@
+$CHPL_HOME/modules/packages/DynamicLoading.chpl:n: error: This module cannot be used unless the experimental procedure pointer implementation is activated. Set the config param 'useProcedurePointers' to 'true' when compiling to activate it

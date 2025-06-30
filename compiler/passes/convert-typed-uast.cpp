@@ -862,6 +862,14 @@ struct TConverter final : UastConverter {
                                 const resolution::CallInfo& ci,
                                 RV& rv);
 
+  // Primitive assignment between extern types
+  Expr* convertExternAssignmentOrNull(
+                                const Call* node,
+                                const ResolvedExpression* re,
+                                const std::vector<const AstNode*>& actualAsts,
+                                const resolution::CallInfo& ci,
+                                RV& rv);
+
   // Try to elide a call to a specific signature at compile-time. If so,
   // generate and return a NOOP. Sets 'outRf' to the results of the
   // lookup process for 'sig' if 'outRf' is a non-null pointer.
@@ -2181,6 +2189,13 @@ struct ConvertTypeHelper {
 
     ts->addFlag(FLAG_RESOLVED_EARLY);
     at->resolveStatus = RESOLVED;
+
+    auto rc = createDummyRC(context());
+    if (types::Type::isPod(&rc, ct)) {
+      ts->addFlag(FLAG_POD);
+    } else {
+      ts->addFlag(FLAG_NOT_POD);
+    }
   }
 
   DefExpr* insertTypeIntoModule(ID idToInsertAt, Type* converted) {
@@ -2820,8 +2835,8 @@ struct ConvertDefaultValueHelper {
     // For extern records, just zero-initialize a temporary.
     if (t->linkage() == uast::Decl::EXTERN) {
       auto temp = tc_->makeNewTemp(qt);
-      auto ret = new CallExpr(PRIM_ZERO_VARIABLE, temp);
-      return ret;
+      tc_->insertStmt(new CallExpr(PRIM_ZERO_VARIABLE, temp));
+      return new SymExpr(temp);;
     }
 
     // Otherwise, construct a 'CallInfo' representing 't.init()'...
@@ -4070,6 +4085,39 @@ Expr* TConverter::convertIntrinsicLogicalOrNull(
   return ret;
 }
 
+Expr* TConverter::convertExternAssignmentOrNull(
+                                const Call* node,
+                                const ResolvedExpression* re,
+                                const std::vector<const AstNode*>& actualAsts,
+                                const resolution::CallInfo& ci,
+                                RV& rv) {
+  if (ci.name() != USTR("=")) return nullptr;
+
+  bool isExtern = false;
+  if (ci.actual(0).type().type()->isExternType() &&
+      ci.actual(1).type().type()->isExternType()) {
+    isExtern = true;
+  } else if (ci.actual(0).type() == ci.actual(1).type()) {
+    auto type = ci.actual(0).type().type();
+    if (auto ct = type->toCompositeType()) {
+      isExtern = ct->linkage() == uast::Decl::Linkage::EXTERN;
+    }
+  }
+
+  if (!isExtern) return nullptr;
+
+  types::QualifiedType rhs;
+  auto rhsExpr = convertExpr(node->actual(1), rv, &rhs);
+  rhsExpr = storeInTempIfNeeded(rhsExpr, rhs);
+  types::QualifiedType lhs;
+  auto lhsExpr = convertExpr(node->actual(0), rv, &lhs);
+  lhsExpr = storeInTempIfNeeded(lhsExpr, lhs);
+
+  auto assign = new CallExpr(PRIM_ASSIGN, lhsExpr, rhsExpr);
+
+  return assign;
+}
+
 Expr* TConverter::convertNamedCallOrNull(const Call* node, RV& rv) {
   auto re = rv.byAstOrNull(node);
 
@@ -4122,6 +4170,9 @@ Expr* TConverter::convertNamedCallOrNull(const Call* node, RV& rv) {
     if (ret) return ret;
 
     ret = convertIntrinsicLogicalOrNull(node, re, actualAsts, ci, rv);
+    if (ret) return ret;
+
+    ret = convertExternAssignmentOrNull(node, re, actualAsts, ci, rv);
     if (ret) return ret;
 
     TC_UNIMPL("Unhandled named call with no candidate!");
@@ -4655,8 +4706,9 @@ bool TConverter::enter(const Function* node, RV& rv) {
     // TODO: gather the formals we want to create
     // to un-pack tuples etc.
 
-    int formalIdx = 0;
+    int formalIdx = -1;
     for (auto decl : node->formals()) {
+      formalIdx += 1;
       astlocMarker markAstLoc(decl->id());
 
       // Some formals (e.g., `type`/`param`) can be skipped.
@@ -4699,7 +4751,6 @@ bool TConverter::enter(const Function* node, RV& rv) {
         TC_UNIMPL("Unhandled formal");
       }
 
-      formalIdx += 1;
     }
 
     exitFormals(fn);

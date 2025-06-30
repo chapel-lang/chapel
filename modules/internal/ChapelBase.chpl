@@ -87,10 +87,10 @@ module ChapelBase {
 
   // This flag toggles on the new pointer-based implementation.
   // It is unstable and experimental.
-  config param fcfsUsePointerImplementation = false;
+  config param useProcedurePointers = false;
 
   proc chpl_enableProcPtrs(type t) param {
-    if !fcfsUsePointerImplementation then return false;
+    if !useProcedurePointers then return false;
     return isProcedure(t) && !isClass(t);
   }
 
