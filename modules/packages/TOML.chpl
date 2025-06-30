@@ -836,7 +836,7 @@ used to recursively hold tables and respective values
 
 
     /*
-       Write a Table to channel f in TOML format
+       Write a Table to channel f in TOML format.
 
        :throws TomlError: If an error occurred serializing the table, such as
                           due to missing values or unsupported types.
@@ -1133,7 +1133,7 @@ module TomlReader {
  config const debugTomlReader = false;
 
   /*
-     Returns the next token in the current line without removing it
+     Returns the next token in the current line without removing it.
 
      :throws TomlError: If the end of the file is reached.
   */
@@ -1290,7 +1290,7 @@ module TomlReader {
 
 
     /*
-       Retrieves next token in currentLine
+       Retrieves next token in currentLine.
 
        :throws TomlError: If the end of the file is reached.
     */
