@@ -17,12 +17,9 @@
 # Arguments
 #
 if [ -z "$CHPL_VERSION" ]; then echo "CHPL_VERSION must be set."; exit 1; fi
-if [ -z "$PACKAGE_TYPE" ]; then echo "PACKAGE_TYPE must be set."; exit 1; fi
 if [ -z "$OS" ]; then echo "OS must be set."; exit 1; fi
 if [ -z "$PACKAGE_NAME" ]; then echo "PACKAGE_NAME must be set."; exit 1; fi
 if [ -z "$PACKAGE_VERSION" ]; then echo "PACKAGE_VERSION must be set."; exit 1; fi
-if [ -z "$DOCKER_DIR_NAME" ]; then echo "DOCKER_DIR_NAME must be set."; exit 1; fi
-if [ -z "$DOCKER_IMAGE_BASE" ]; then echo "DOCKER_IMAGE_BASE must be set."; exit 1; fi
 PARALLEL=${PARALLEL:-1}
 
 
@@ -55,10 +52,10 @@ fi
 # if BUILD_CROSS_PLATFORM is set, build the cross-platform package
 if [ -n "$BUILD_CROSS_PLATFORM" ]; then
   log_info "Building cross-platform $PACKAGE_NAME $PACKAGE_TYPE package on $OS"
-  __build_all_packages $PACKAGE_TYPE $OS $PACKAGE_NAME $CHPL_VERSION $PACKAGE_VERSION $DOCKER_DIR_NAME $DOCKER_IMAGE_BASE $PARALLEL
+  __build_all_packages $OS $PACKAGE_NAME $CHPL_VERSION $PACKAGE_VERSION $PARALLEL
 else
   log_info "Building $PACKAGE_NAME $PACKAGE_TYPE package on $OS"
-  __build_native_package $PACKAGE_TYPE $OS $PACKAGE_NAME $CHPL_VERSION $PACKAGE_VERSION $DOCKER_DIR_NAME $DOCKER_IMAGE_BASE $PARALLEL
+  __build_native_package $OS $PACKAGE_NAME $CHPL_VERSION $PACKAGE_VERSION $PARALLEL
 fi
 
 log_info "Testing $PACKAGE_NAME"
