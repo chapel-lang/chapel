@@ -252,7 +252,10 @@ Common Slurm Settings
   environment variable ``CHPL_LAUNCHER_SLURM_OUTPUT_FILENAME`` can be used
   to specify a different filename for the output.
 
-* Optionally, you can specify the number of GPUs required per node using either the environment variable ``CHPL_LAUNCHER_GPUS_PER_NODE`` or the ``--gpus-per-node`` flag. For example, to request 2 GPUs per node for all runs, set:
+* Optionally, you can specify the number of GPUs required per node using either
+  the environment variable ``CHPL_LAUNCHER_GPUS_PER_NODE`` or the
+  ``--gpus-per-node`` flag. For example, to request 2 GPUs per node for all
+  runs, set:
 
   .. code-block:: bash
 
@@ -263,6 +266,23 @@ Common Slurm Settings
   .. code-block:: bash
 
     ./myprogram --gpus-per-node=2
+
+* Optionally, you can specify the number of cores required per node using either
+  the environment variable ``CHPL_LAUNCHER_CORES_PER_LOCALE``. For example,
+  to request at least 16 cores per node, set:
+
+  .. code-block:: bash
+
+    export CHPL_LAUNCHER_CORES_PER_NODE=16
+
+
+* Optionally, you can specify wall clock time limit for the job using
+  ``CHPL_LAUNCHER_WALLTIME``. For example to specify a 10-minute time limit,
+  set:
+
+  .. code-block:: bash
+
+    export CHPL_LAUNCHER_WALLTIME=00:10:00
 
 .. _ssh-launchers-with-slurm:
 
