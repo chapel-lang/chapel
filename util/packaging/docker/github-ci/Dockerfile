@@ -2,26 +2,25 @@
 # tzdata is necessary for util/test/check_annotations.py to function properly (get the right dates)
 # locales is necessary for util/buildRelease/smokeTest docs
 
-# We use 22.04 to get llvm-13
-FROM ubuntu:22.04
+FROM ubuntu:24.10
 
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update -y && apt-get install -y --no-install-recommends \
     bash \
-    clang-13 \
+    clang \
     cmake \
     cscope \
     doxygen \
     g++ \
     gcc \
     git \
-    libclang-13-dev \
-    libclang-cpp13-dev \
+    libclang-dev \
+    libclang-cpp-dev \
     libedit-dev \
-    llvm-13 \
-    llvm-13-dev \
-    llvm-13-tools \
+    llvm \
+    llvm-dev \
+    llvm-tools \
     locales \
     m4 \
     make \
