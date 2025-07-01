@@ -1502,7 +1502,10 @@ struct RstResultBuilder {
   bool show(const std::string& kind, const T* node, bool indentComment=true) {
     if (isNoDoc(node)) return false;
 
-    if (!textOnly_) os_ << ".. " << kind << ":: ";
+    std::string useKind = kind;
+    if (isHideImplType(node)) useKind = "type";
+
+    if (!textOnly_) os_ << ".. " << useKind << ":: ";
     RstSignatureVisitor ppv{os_};
 
     if (node->isEnumElement()) {
@@ -1629,11 +1632,7 @@ struct RstResultBuilder {
     bool isNested = parent->isRecord() || parent->isClass();
 
     if (isNested) indentDepth_ += 1;
-    if (isHideImplType(c)) {
-      show("type", c);
-    } else {
-      show("class", c);
-    }
+    show("class", c);
     visitChildren(c);
     if (isNested) indentDepth_ -= 1;
 
@@ -1642,11 +1641,7 @@ struct RstResultBuilder {
 
   owned<RstResult> visit(const Interface* i) {
     if (isNoDoc(i)) return {};
-    if (isHideImplType(i)) {
-      show("type", i);
-    } else {
-      show("interface", i);
-    }
+    show("interface", i);
     visitChildren(i);
     return getResult(true);
   }
@@ -1654,11 +1649,7 @@ struct RstResultBuilder {
 
   owned<RstResult> visit(const Enum* e) {
     if (isNoDoc(e)) return {};
-    if (isHideImplType(e)) {
-      show("type", e);
-    } else {
-      show("enum", e);
-    }
+    show("enum", e);
     visitChildren(e);
     return getResult(true);
   }
@@ -1907,11 +1898,7 @@ struct RstResultBuilder {
     bool isNested = parent->isRecord() || parent->isClass();
 
     if (isNested) indentDepth_ += 1;
-    if (isHideImplType(r)) {
-      show("type", r);
-    } else {
-      show("record", r);
-    }
+    show("record", r);
     visitChildren(r);
     if (isNested) indentDepth_ -= 1;
 
