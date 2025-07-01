@@ -216,10 +216,10 @@ module Heap {
                       " with elements of an owned type, here: ",
                       eltType: string);
       }
-      _enter();
       if (boundsChecking && isEmpty()) {
         boundsCheckHalt("Called \"heap.top\" on an empty heap.");
       }
+      _enter();
       var result = _data[0];
       _leave();
       return result;
@@ -322,11 +322,10 @@ module Heap {
       :rtype: eltType
     */
     proc ref pop(): eltType {
-      _enter();
       if (boundsChecking && isEmpty()) {
         boundsCheckHalt("Called \"heap.pop\" on an empty heap.");
       }
-
+      _enter();
       if _data.size != 1 then
         _data(0) <=> _data(_data.size-1);
 
