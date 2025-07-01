@@ -369,8 +369,9 @@ static UniqueString nameOfAttributeSignature(const AstNode* node) {
 
 static bool isNoDoc(const Decl* e) {
   auto attrs = parsing::astToAttributeGroup(gContext, e);
-  if (attrs) {
-    return attrs->hasAttribute(UniqueString::get(gContext, "chpldoc.nodoc"));
+  if (attrs &&
+      attrs->hasAttribute(UniqueString::get(gContext, "chpldoc.nodoc"))) {
+    return true;
   }
   if (symbolNameBeginsWithChpl(e) && nameOfAttributeSignature(e).isEmpty()) {
     // TODO: Remove this check and the pragma once we have an attribute that
