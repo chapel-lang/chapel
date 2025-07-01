@@ -14,6 +14,8 @@ There are two main approaches for using Chapel on Mac OS X:
    system.  This is slightly more involved, but supports Chapel's full
    feature set.
 
+.. _macosx-homebrew:
+
 --------
 Homebrew
 --------
@@ -25,13 +27,14 @@ following commands::
     brew install chapel
 
 These commands install the latest release of Chapel.  When using a
-Homebrew installation of Chapel, the ``CHPL_HOME`` directory is here::
+Homebrew installation of Chapel, the ``CHPL_HOME`` directory can be found by
+running the following command::
 
-    `brew --cellar`/chapel/<chapel-version>/libexec/
+    chpl --print-chpl-home
 
 Compile and run a test program::
 
-    chpl `brew --cellar`/chapel/<chapel-version>/libexec/examples/hello.chpl
+    chpl `chpl --print-chpl-home`/examples/hello.chpl
     ./hello
 
 If you're new to Chapel, refer to the `What's Next?

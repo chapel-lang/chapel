@@ -644,25 +644,36 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
                                     const char* passedThing,
                                     const char* expectedThingArticle,
                                     const char* expectedThing,
-                                    GetActual&& getActual) {
+                                    GetActual&& getActual,
+                                    const std::vector<const uast::VarLikeDecl*>& actualDecls) {
+  bool noActuals =
+    (ci.numActuals() == 0 && !ci.isMethodCall()) ||
+    (ci.numActuals() == 1 && ci.isMethodCall());
+
+  // "decent" candidates are rejected with some explanation (as opposed
+  // to a generic 'didn't match'). If we found a candidate with a decent
+  // explanation, don't print other ones since they're unlikely to be
+  // helpful.
+  bool printedDecentCandidate = false;
+
   unsigned int printCount = 0;
   static const unsigned int maxPrintCount = 2;
   for (auto& candidate : rejected) {
     if (printCount == maxPrintCount) break;
-    printCount++;
+
+    bool isThisCandidateDecent = true;
 
     auto reason = candidate.reason();
-    wr.message("");
-    if (reason == resolution::FAIL_CANNOT_PASS &&
-        /* skip printing detailed info_ here because computing the formal-actual
-           map will go poorly with an unknown formal. */
-        candidate.formalReason() != resolution::FAIL_UNKNOWN_FORMAL_TYPE) {
+    if (/* skip printing detailed info_ here because computing the formal-actual
+        map will go poorly with an unknown formal. */
+        candidate.failedDueToWrongActual()) {
       auto fn = candidate.initialForErr();
       resolution::FormalActualMap fa(fn, ci);
       auto badPass = fa.byFormalIdx(candidate.formalIdx());
       auto formalDecl = badPass.formal();
       const uast::AstNode* actualExpr = getActual(badPass.actualIdx());
 
+      wr.message("");
       wr.note(fn->id(), "the following candidate didn't match because ", passedThingArticle, " ", passedThing, " couldn't be passed to ", expectedThingArticle, " ", expectedThing, ":");
       wr.code(fn->id(), { formalDecl });
 
@@ -672,22 +683,39 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
       } else if (formalDecl->isTupleDecl()) {
         formalName = "'" + buildTupleDeclName(formalDecl->toTupleDecl()) + "'";
       }
-
+      bool actualPrinted = false;
+      const uast::VarLikeDecl* offendingActual = actualDecls.at(printCount);
       if (badPass.formalType().isUnknown()) {
         // The formal type can be unknown in an initial instantiation if it
         // depends on the previous formals' types. In that case, don't print it
         // and say something nicer.
         wr.message("The instantiated type of ", expectedThing, " ", formalName,
                    " does not allow ", passedThing, "s of type '", badPass.actualType().type(), "'.");
+      } else if (badPass.actualType().isUnknown() &&
+                 offendingActual &&
+                 !offendingActual->initExpression() &&
+                 !offendingActual->typeExpression()) {
+        auto formalKind = badPass.formalType().kind();
+        auto actualName = "'" + actualExpr->toIdentifier()->name().str() + "'";
+        wr.note(offendingActual->id(), "The actual ", actualName,
+                   " expects to be split-initialized because it is declared without a type or initialization expression here:");
+        wr.codeForDef(offendingActual);
+        wr.note(actualExpr, "The call to '", ci.name() ,"' occurs before any valid initialization points:");
+        wr.code(actualExpr, { actualExpr });
+        actualPrinted = true;
+        wr.message("The call to '", ci.name(), "' cannot initialize ",
+                   actualName,
+                   " because only 'out' formals can be used to split-initialize. However, ",
+                   actualName, " is passed to formal ", formalName, " which has intent '", formalKind, "'.");
+
       } else {
         wr.message("The ", expectedThing, " ", formalName, " expects ", badPass.formalType(),
                    ", but the ", passedThing, " was ", badPass.actualType(), ".");
       }
 
-      if (actualExpr) {
+      if (!actualPrinted && actualExpr) {
         wr.code(actualExpr, { actualExpr });
       }
-
       auto formalReason = candidate.formalReason();
       if (formalReason == resolution::FAIL_INCOMPATIBLE_NILABILITY) {
         auto formalDec = badPass.formalType().type()->toClassType()->decorator();
@@ -730,16 +758,24 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
         if (fa.failingActualIdx() != -1 && fa.failingFormalIdx() == -1) {
           auto& actual = ci.actual(fa.failingActualIdx());
           if (!actual.byName().isEmpty()) {
+            wr.message("");
             wr.note(candidate.idForErr(), "the following candidate didn't match"
                     " because ", passedThing, " ", fa.failingActualIdx() + 1,
                     " was named '", actual.byName(), "', but no ", expectedThing,
                     " with that name was found.");
             printedSpecial = true;
           }
+        } else if (noActuals) {
+          auto numFormals = fn->numFormals() - (int) fn->isMethod();
+          const char* usePlural = numFormals > 1 ? "s" : "";
+          wr.message("");
+          wr.note(candidate.idForErr(), "the following candidate didn't match because it expects ", numFormals, " ", passedThing, usePlural, ", but none were provided.");
+          printedSpecial = true;
         }
       }
 
       if (!printedSpecial) {
+        wr.message("");
         wr.note(candidate.idForErr(), "the following candidate didn't match ",
                 "because the provided ", passedThing, "s could not be mapped to its ",
                 expectedThing, "s:");
@@ -762,13 +798,22 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
       }
 
       if (reasonStr.empty()) {
-        wr.note(candidate.idForErr(), "the following candidate didn't match:");
+        isThisCandidateDecent = false;
+        if (!printedDecentCandidate) {
+          wr.message("");
+          wr.note(candidate.idForErr(), "the following candidate didn't match:");
+        } else {
+          continue;
+        }
       } else {
+        wr.message("");
         wr.note(candidate.idForErr(), "the following candidate didn't match ",
                 "because ", reasonStr);
       }
       wr.code(candidate.idForErr());
     }
+    printedDecentCandidate |= isThisCandidateDecent;
+    printCount++;
   }
 
   if (printCount < rejected.size()) {
@@ -824,7 +869,7 @@ void ErrorInterfaceMissingAssociatedType::write(ErrorWriterBase& wr) const {
   auto var = std::get<const uast::Variable*>(info_);
   auto ci = std::get<resolution::CallInfo>(info_);
   auto rejected = std::get<std::vector<resolution::ApplicabilityResult>>(info_);
-
+  auto actualDecls = std::vector<const uast::VarLikeDecl*>(rejected.size(), nullptr);
   wr.heading(kind_, type_, implPoint, "unable to find matching candidates for associated type '", var->name(), "'.");
   wr.codeForDef(var->id());
   wr.message("Required by the interface '", interface->name(), "':");
@@ -832,10 +877,9 @@ void ErrorInterfaceMissingAssociatedType::write(ErrorWriterBase& wr) const {
   wr.note(implPoint, "while checking the implementation point here:");
   wr.code<ID>(implPoint, { implPoint });
   wr.message("Associated types are resolved as 'type' calls on types constrained by the interface.");
-
   printRejectedCandidates(wr, implPoint, ci, rejected, "an", "actual", "a", "formal", [](int) -> const uast::AstNode* {
     return nullptr;
-  });
+  }, actualDecls);
 }
 
 void ErrorInterfaceMissingFn::write(ErrorWriterBase& wr) const {
@@ -844,20 +888,19 @@ void ErrorInterfaceMissingFn::write(ErrorWriterBase& wr) const {
   auto fn = std::get<const resolution::TypedFnSignature*>(info_);
   auto ci = std::get<resolution::CallInfo>(info_);
   auto rejected = std::get<std::vector<resolution::ApplicabilityResult>>(info_);
-
+  auto actualDecls = std::vector<const uast::VarLikeDecl*>(rejected.size(), nullptr);
   wr.heading(kind_, type_, implPoint, "unable to find matching candidates for function '", fn->untyped()->name(), "'.");
   wr.codeForDef(fn->id());
   wr.message("Required by the interface '", interface->name(), "':");
   wr.codeForDef(interface->id());
   wr.note(implPoint, "while checking the implementation point here:");
   wr.code<ID>(implPoint, { implPoint });
-
-  printRejectedCandidates(wr, implPoint, ci, rejected, "a", "required formal", "a", "cadidate formal", [fn](int idx) -> const uast::AstNode* {
+  printRejectedCandidates(wr, implPoint, ci, rejected, "a", "required formal", "a", "candidate formal", [fn](int idx) -> const uast::AstNode* {
     if (idx >= 0 && idx < fn->numFormals()) {
       return fn->untyped()->formalDecl(idx);
     }
     return nullptr;
-  });
+  }, actualDecls);
 }
 
 void ErrorInterfaceMultipleImplements::write(ErrorWriterBase& wr) const {
@@ -944,6 +987,31 @@ void ErrorInvalidClassCast::write(ErrorWriterBase& wr) const {
   }
 }
 
+void ErrorInvalidContinueBreakTarget::write(ErrorWriterBase& wr) const {
+  auto stmt = std::get<const uast::AstNode*>(info_);
+  auto target = std::get<ID>(info_);
+  auto& qt = std::get<types::QualifiedType>(info_);
+
+  const uast::AstNode* targetNode;
+  const char* stmtType = nullptr;
+  if (auto cont = stmt->toContinue()) {
+    targetNode = cont->target();
+    stmtType = "'continue'";
+  } else if (auto brk = stmt->toBreak()) {
+    targetNode = brk->target();
+    stmtType = "'break'";
+  } else {
+    targetNode = stmt;
+    stmtType = "'continue' or 'break'";
+    CHPL_ASSERT(false && "invalid AST in error report");
+  }
+  wr.heading(kind_, type_, stmt, "invalid target for ", stmtType, " statement.");
+  wr.code(stmt, { targetNode });
+  wr.message("A ", stmtType, " statement can only refer to a loop. This is done by using the loop's label.");
+  wr.message("However, the target is declared as ", qt, " here:");
+  wr.codeForDef(target);
+}
+
 void ErrorInvalidDomainCall::write(ErrorWriterBase& wr) const {
   auto fnCall = std::get<const uast::FnCall*>(info_);
   auto actualTypes = std::get<std::vector<types::QualifiedType>>(info_);
@@ -1024,24 +1092,52 @@ void ErrorInvalidImplementsInterface::write(ErrorWriterBase& wr) const {
   wr.message("The statement attempts to implement ", qt, ", which is not an interface.");
 }
 
+static void printErrorInvalidDomainKeywordCall(ErrorWriterBase& wr,
+                                               ErrorBase::Kind kind,
+                                               ErrorType errType,
+                                               const char* keyword,
+                                               const uast::FnCall* fnCallLocation,
+                                               const uast::FnCall* fnCallActuals,
+                                               const types::QualifiedType& type) {
+  wr.heading(kind, errType, fnCallLocation,
+             "invalid use of the '", keyword, "' keyword.");
+  wr.codeForLocation(fnCallLocation);
+  wr.message("The '", keyword, "' keyword should be used with a domain: '", keyword, "(D)'.");
+
+  if (fnCallActuals->numActuals() == 0) {
+    wr.message("However, '", keyword, "' here did not have any actuals.");
+  } else if (fnCallActuals->numActuals() > 1) {
+    wr.message("However, '", keyword, "' here had more than one actual.");
+    wr.code(fnCallLocation, { fnCallActuals->actual(1) });
+  } else if (type.type() && !type.type()->isDomainType()) {
+    wr.message("However, '", keyword, "' here is not called with a domain argument, but with ", decayToValue(type), ".");
+    wr.code(fnCallLocation, { fnCallActuals->actual(0) });
+  }
+
+}
+
 void ErrorInvalidIndexCall::write(ErrorWriterBase& wr) const {
   auto fnCall = std::get<const uast::FnCall*>(info_);
   auto& type = std::get<types::QualifiedType>(info_);
 
-  wr.heading(kind_, type_, fnCall,
-             "invalid use of the 'index' keyword.");
-  wr.codeForLocation(fnCall);
-  wr.message("The 'index' keyword should be used with a domain: 'index(D)'.");
+  printErrorInvalidDomainKeywordCall(wr, kind_, type_, "index", fnCall, fnCall, type);
+}
 
-  if (fnCall->numActuals() == 0) {
-    wr.message("However, 'index' here did not have any actuals.");
-  } else if (fnCall->numActuals() > 1) {
-    wr.message("However, 'index' here had more than one actual.");
-    wr.code(fnCall, { fnCall->actual(1) });
-  } else if (type.type() && !type.type()->isDomainType()) {
-    wr.message("However, 'index' here is not called with a domain argument, but with ", decayToValue(type), ".");
-    wr.code(fnCall, { fnCall->actual(0) });
-  }
+void ErrorInvalidSubdomainCall::write(ErrorWriterBase& wr) const {
+  auto fnCall = std::get<const uast::FnCall*>(info_);
+  auto& type = std::get<types::QualifiedType>(info_);
+
+  printErrorInvalidDomainKeywordCall(wr, kind_, type_, "subdomain", fnCall, fnCall, type);
+}
+
+void ErrorInvalidSparseSubdomainCall::write(ErrorWriterBase& wr) const {
+  auto fnCallLocation = std::get<const uast::FnCall*>(info_);
+  CHPL_ASSERT(fnCallLocation->numActuals() == 1);
+  auto fnCallActuals = fnCallLocation->actual(0)->toFnCall();
+  CHPL_ASSERT(fnCallActuals);
+  auto& type = std::get<types::QualifiedType>(info_);
+
+  printErrorInvalidDomainKeywordCall(wr, kind_, type_, "sparse subdomain", fnCallLocation, fnCallActuals, type);
 }
 
 void ErrorInvalidNewTarget::write(ErrorWriterBase& wr) const {
@@ -1129,6 +1225,18 @@ void ErrorIteratorsInOtherScopes::write(ErrorWriterBase& wr) const {
   }
 }
 
+void ErrorLoopLabelOutsideBreakOrContinue::write(ErrorWriterBase& wr) const {
+  auto label = std::get<const uast::AstNode*>(info_);
+  auto loop = std::get<ID>(info_);
+
+  wr.heading(kind_, type_, label, "invalid reference to loop label outside of a 'break' or 'continue' statement.");
+  wr.message("Loop labels can only be referenced in 'break' or 'continue' statements.");
+  wr.message("However, the expression here references a loop label in another context:");
+  wr.code(label, { label });
+  wr.message("The expression in question refers to a labeled loop declared here:");
+  wr.codeForLocation(loop);
+}
+
 void ErrorMemManagementNonClass::write(ErrorWriterBase& wr) const {
   auto newCall = std::get<const uast::New*>(info_);
   auto type = std::get<const types::Type*>(info_);
@@ -1196,6 +1304,32 @@ void ErrorMissingFormalInstantiation::write(ErrorWriterBase& wr) const {
     }
 
     wr.message("");
+  }
+}
+
+void ErrorMismatchedInitializerResult::write(ErrorWriterBase& wr) const {
+  auto node = std::get<0>(info_);
+  auto initialCT = std::get<1>(info_);
+  auto finalCT = std::get<2>(info_);
+  auto& mismatches = std::get<3>(info_);
+
+  wr.heading(kind_, type_, node, "final result of initialization does not match the initial type.");
+  wr.message("In the following initialization: ");
+  wr.code(justOneLine(node), { node });
+  wr.message("The initializer was invoked with an instantiated type '", initialCT, "'.");
+  wr.message("However, the initializer resulted in a value of type '", finalCT, "'.");
+
+  for (auto& mismatch : mismatches) {
+    auto& id = std::get<0>(mismatch);
+    auto fieldName = std::get<1>(mismatch);
+    auto& expectedType = std::get<2>(mismatch);
+    auto& actualType = std::get<3>(mismatch);
+
+    wr.message("");
+    wr.note(id, "field '", fieldName, "' started with type '", expectedType.type(),
+            "', but had incompatible type '", actualType.type(), "' "
+            "after initialization.");
+    wr.codeForDef(id);
   }
 }
 
@@ -1313,6 +1447,7 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
   auto call = node->toCall();
   auto& ci = std::get<resolution::CallInfo>(info_);
   auto& rejected = std::get<std::vector<resolution::ApplicabilityResult>>(info_);
+  auto& actualDecls = std::get<std::vector<const uast::VarLikeDecl*>>(info_);
 
   wr.heading(kind_, type_, node, "unable to resolve call to '", ci.name(), "': no matching candidates.");
   wr.code(node);
@@ -1322,7 +1457,35 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
       return call->actual(idx);
     }
     return nullptr;
-  });
+  }, actualDecls);
+}
+
+void ErrorNoMatchingSuper::write(ErrorWriterBase& wr) const {
+  auto node = std::get<const uast::AstNode*>(info_);
+  auto& ci = std::get<resolution::CallInfo>(info_);
+  auto& rejected = std::get<std::vector<resolution::ApplicabilityResult>>(info_);
+  auto& actualDecls = std::get<std::vector<const uast::VarLikeDecl*>>(info_);
+  auto& superUses = std::get<std::vector<std::pair<ID, ID>>>(info_);
+
+  wr.heading(kind_, type_, node, "failed to resolve implicit call to 'super.init': no matching candidates.");
+  wr.code(node);
+  wr.message("The call to 'super.init' was triggered by the use of fields from the parent type.");
+
+  for (auto& superUse : superUses) {
+    wr.note(superUse.first, "the field defined in a parent class here...");
+    wr.codeForLocation(superUse.first);
+    wr.note(superUse.second, "...was used in the child initializer here:");
+    wr.codeForLocation(superUse.second);
+  }
+
+  wr.message("In order to use fields from a parent class, the parent's initializer must have been called.");
+  wr.message("Chapel attempts to automatically call a zero-argument initializer on the parent class if an explicit call is not present.");
+
+  printRejectedCandidates(wr, node->id(), ci, rejected, "an", "actual", "a", "formal", [](int idx) -> const uast::AstNode* {
+    return nullptr;
+  }, actualDecls);
+
+  wr.message("If the parent type's initializer has formals, consider invoking it explicitly.");
 }
 
 void ErrorNonClassInheritance::write(ErrorWriterBase& wr) const {
@@ -1762,6 +1925,55 @@ void ErrorRedefinition::write(ErrorWriterBase& wr) const {
   }
 }
 
+void ErrorReductionAssignNonIdentifier::write(ErrorWriterBase& wr) const {
+  auto opCall = std::get<const uast::OpCall*>(info_);
+  wr.heading(kind_, type_, opCall, "invalid reduction assignment to non-identifier:");
+  wr.message("The left-hand side of a 'reduce=' statement must be an identifier referring to a variable with a 'reduce' intent.");
+  wr.message("However, the left-hand side is not an identifier here:");
+  wr.code(opCall, { opCall->actual(0) });
+}
+
+void ErrorReductionAssignNotReduceIntent::write(ErrorWriterBase& wr) const {
+  auto opCall = std::get<const uast::OpCall*>(info_);
+  auto lhs = std::get<const uast::AstNode*>(info_);
+  wr.heading(kind_, type_, opCall, "invalid reduction assignment to variable declared outside of 'reduce' intent:");
+  wr.codeForLocation(opCall);
+  wr.message("The left-hand side of a 'reduce=' statement must be an identifier referring to a variable with a 'reduce' intent.");
+  wr.message("However, the left-hand side is declared (outside a 'reduce' intent) here:");
+  wr.codeForDef(lhs);
+  wr.message("The 'reduce=' operator uses the 'reduce' intent to determine the reduction operation.");
+}
+
+void ErrorReductionAssignInvalidRhs::write(ErrorWriterBase& wr) const {
+  auto opCall = std::get<const uast::OpCall*>(info_);
+  auto reduceIntent = std::get<const uast::ReduceIntent*>(info_);
+  auto shadowed = std::get<const uast::AstNode*>(info_);
+  auto& ci = std::get<resolution::CallInfo>(info_);
+  wr.heading(kind_, type_, opCall, "invalid reduction assignment:");
+  wr.codeForLocation(opCall);
+  wr.message("The right-hand side of the 'reduce=' statement refers to a variable '",
+              reduceIntent->name(), "' declared '", reduceIntent->op(), " reduce' here:");
+  wr.codeForDef(reduceIntent);
+  wr.message("This shadows the declaration of '", reduceIntent->name(), "' with type '", ci.actual(1).type().type(), "' here:");
+  wr.codeForDef(shadowed);
+  wr.message("However, the reduction '", reduceIntent->op(), "' does not support an assignment from ", decayToValue(ci.actual(2).type()), ".");
+  wr.code(opCall, { opCall->actual(1) });
+}
+
+void ErrorReductionIntentChangesType::write(ErrorWriterBase& wr) const {
+  auto reduceIntent = std::get<const uast::ReduceIntent*>(info_);
+  auto shadowed = std::get<const uast::AstNode*>(info_);
+  auto& oldType = std::get<2>(info_);
+  auto& newType = std::get<3>(info_);
+  wr.heading(kind_, type_, reduceIntent, "cannot use non-closed reduction in intent:");
+  wr.codeForLocation(reduceIntent);
+  wr.message("A reduction is closed if it produces values of the same type as the values it operates on.");
+  wr.message("The reduce intent shadows the declaration of '", reduceIntent->name(), "' with type '", oldType.type(), "' here:");
+  wr.codeForDef(shadowed);
+  wr.message("However, the reduction '", reduceIntent->op(), "' produces values of type '", newType.type(), "'.");
+  wr.message("The reduced type of a variable cannot change, as the final reduced value is assigned back into the variable.");
+}
+
 static const uast::AstNode* getReduceOrScanOp(const uast::AstNode* reduceOrScan) {
   if (auto reduce = reduceOrScan->toReduce()) {
     return reduce->op();
@@ -1812,6 +2024,19 @@ void ErrorReductionNotReduceScanOp::write(ErrorWriterBase& wr) const {
     wr.message("Did you mean for class '", actualClassType,
         "' to extend 'ReduceScanOp'?");
   }
+}
+
+void ErrorSelfDefinition::write(ErrorWriterBase& wr) const {
+  const uast::NamedDecl* decl = std::get<0>(info_);
+  const uast::Identifier* ident = std::get<1>(info_);
+  auto name = ident->name();
+  wr.heading(kind_, type_, decl,
+            "statement uses variable '", name, "' to define itself.");
+  wr.message("The following statement uses the variable '", name, "' to define itself:");
+  wr.code(decl);
+  wr.note(ident, "the variable '", name, "' is used to define itself here:");
+  wr.codeForDef(ident);
+  wr.message("Variables cannot be used to define themselves.");
 }
 
 void ErrorSplitInitMismatchedConditionalTypes::write(
@@ -2178,13 +2403,59 @@ void ErrorUseImportUnknownSym::write(ErrorWriterBase& wr) const {
 void ErrorUseOfLaterVariable::write(ErrorWriterBase& wr) const {
   auto stmt = std::get<const uast::AstNode*>(info_);
   auto laterId = std::get<ID>(info_);
+  auto name = std::get<UniqueString>(info_);
   wr.heading(kind_, type_, stmt,
-             "statement references a variable before it is defined.");
-  wr.message("In the following statement:");
+             "statement references variable '", name, "' before it is defined.");
+  wr.message("The following statement references the variable '", name, "', which is defined later:");
   wr.code(stmt);
-  wr.message("there is a reference to a variable defined later:");
+  wr.note(laterId, "the variable '", name, "' is defined here:");
   wr.codeForDef(laterId);
   wr.message("Variables cannot be referenced before they are defined.");
+}
+
+
+void ErrorVariableWithoutInitOrType::write(ErrorWriterBase& wr) const {
+  auto decl = std::get<const uast::AstNode*>(info_);
+  auto& useOf = std::get<ID>(info_);
+  auto name = std::get<UniqueString>(info_);
+  wr.heading(kind_, type_, decl,
+             "variable '", name, "' is declared without an initializer or type.");
+  if (!useOf.isEmpty()) {
+    wr.note(useOf, "cannot find initialization point to split-init this variable");
+  }
+  wr.codeForDef(decl);
+  if (!useOf.isEmpty()) {
+    wr.note(useOf, "the variable '", name, "' is used here");
+    wr.codeForLocation(useOf);
+  }
+}
+
+void ErrorUserDiagnosticEncounterError::write(ErrorWriterBase& wr) const {
+  auto msg = std::get<UniqueString>(info_);
+  auto& node = std::get<ID>(info_);
+  wr.heading(kind_, type_, node, msg);
+  wr.codeForLocation(node);
+}
+
+void ErrorUserDiagnosticEncounterWarning::write(ErrorWriterBase& wr) const {
+  auto msg = std::get<UniqueString>(info_);
+  auto& node = std::get<ID>(info_);
+  wr.heading(kind_, type_, node, msg);
+  wr.codeForLocation(node);
+}
+
+void ErrorUserDiagnosticEmitError::write(ErrorWriterBase& wr) const {
+  auto msg = std::get<UniqueString>(info_);
+  auto& node = std::get<ID>(info_);
+  wr.heading(kind_, type_, node, msg);
+  wr.codeForLocation(node);
+}
+
+void ErrorUserDiagnosticEmitWarning::write(ErrorWriterBase& wr) const {
+  auto msg = std::get<UniqueString>(info_);
+  auto& node = std::get<ID>(info_);
+  wr.heading(kind_, type_, node, msg);
+  wr.codeForLocation(node);
 }
 
 void ErrorValueUsedAsType::write(ErrorWriterBase& wr) const {

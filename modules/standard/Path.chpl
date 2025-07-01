@@ -168,10 +168,10 @@ proc absPath(f: file): string throws {
 
 /* Returns the file name portion of the path provided.  For instance:
 
-   .. code-block:: Chapel
-
-      writeln(basename("/foo/bar/baz")); // Prints "baz"
-      writeln(basename("/foo/bar/")); // Prints "", because of the empty string
+   .. literalinclude:: ../../../../test/library/standard/Path/doc-examples/example_basename.chpl
+    :language: chapel
+    :start-after: START_EXAMPLE
+    :end-before: STOP_EXAMPLE
 
    Note that this is different from the Unix ``basename`` function.
 
@@ -334,10 +334,10 @@ proc commonPath(paths: []): string {
 
 /* Returns the parent directory portion of the path provided.  For instance:
 
-   .. code-block:: Chapel
-
-      writeln(dirname("/foo/bar/baz")); // Prints "/foo/bar"
-      writeln(dirname("/foo/bar/")); // Also prints "/foo/bar"
+   .. literalinclude:: ../../../../test/library/standard/Path/doc-examples/example_dirname.chpl
+    :language: chapel
+    :start-after: START_EXAMPLE
+    :end-before: STOP_EXAMPLE
 
    Note that this is different from the Unix ``dirname`` function.
 
@@ -471,11 +471,10 @@ private proc joinPathComponent(comp: string, ref result: string) {
    directory separator following each non-empty argument except the last.
    Examples:
 
-   .. code-block:: chapel
-
-      writeln(joinPath("/foo/bar", "/baz")); // Prints "/baz"
-      writeln(joinPath("/foo", "./baz")); // Prints "/foo/./baz"
-      writeln(joinPath("/foo/", "", "./baz")); // Prints "/foo/./baz"
+   .. literalinclude:: ../../../../test/library/standard/Path/doc-examples/example_joinPath.chpl
+    :language: chapel
+    :start-after: START_EXAMPLE
+    :end-before: STOP_EXAMPLE
 
    :arg paths: Any number of paths.
    :type paths: `string`
@@ -848,26 +847,20 @@ proc splitExt(path:string): (string, string) {
    :proc:`basename`).  The second part of the tuple will never contain a slash.
    Examples:
 
-   .. code-block:: Chapel
-
-      writeln(splitPath("foo/bar")); // Prints "(foo, bar)"
-      writeln(splitPath("bar")); // Prints "(, bar)"
-      writeln(splitPath("foo/")); // Prints "(foo, )"
-      writeln(splitPath("")); // Prints "(, )"
-      writeln(splitPath("/")); // Prints "(/, )"
+   .. literalinclude:: ../../../../test/library/standard/Path/doc-examples/example_splitPath1.chpl
+    :language: chapel
+    :start-after: START_EXAMPLE
+    :end-before: STOP_EXAMPLE
 
    With the exception of a path of the empty string or just "/", the original
    path can be recreated from this function's returned parts by joining them
    with the path separator character, either explicitly or by calling
    :proc:`joinPath`:
 
-   .. code-block:: Chapel
-
-      var res = splitPath("foo/bar");
-      var dirnameVar = res(0);
-      var basenameVar = res(1);
-      writeln(dirnameVar + "/" + basenameVar); // Prints "foo/bar"
-      writeln(joinPath(dirnameVar, basenameVar)); // Prints "foo/bar"
+   .. literalinclude:: ../../../../test/library/standard/Path/doc-examples/example_splitPath2.chpl
+    :language: chapel
+    :start-after: START_EXAMPLE
+    :end-before: STOP_EXAMPLE
 
    :arg path: Path to be split.
    :type name: `string`

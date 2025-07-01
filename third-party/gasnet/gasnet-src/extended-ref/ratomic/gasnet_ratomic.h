@@ -301,7 +301,7 @@ GASNETI_RATOMIC_UNION(64) {
           if (gasneti_atomic##bits##_compare_and_swap(_ratgt, _ratmp, _operand2, _fences)) { \
             break;                                                               \
           }                                                                      \
-          _ratmp = gasneti_atomic##bits##_read(_ratgt, 0);                       \
+          _ratmp = gasneti_atomic##bits##_read(_ratgt, _fences & GEX_FLAG_AD_ACQ); \
         } while (_ratmp == _operand1);                                           \
         _result = _ratmp;                                                        \
         break;                                                                   \
@@ -346,7 +346,7 @@ GASNETI_RATOMIC_UNION(64) {
           if (gasneti_atomic##bits##_compare_and_swap(_ratgt, _raold._gex_ui, _ranew._gex_ui, _fences)) { \
             break;                                                               \
           }                                                                      \
-          _raold._gex_ui = gasneti_atomic##bits##_read(_ratgt, 0);               \
+          _raold._gex_ui = gasneti_atomic##bits##_read(_ratgt, _fences & GEX_FLAG_AD_ACQ); \
         } while (_raold._gex_fp == _operand1);                                   \
         _result = _raold._gex_fp;                                                \
         break;                                                                   \

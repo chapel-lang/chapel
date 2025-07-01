@@ -254,6 +254,18 @@ struct GatherDecls {
   }
   void exit(const MultiDecl* d) { }
 
+  bool enter(const ForwardingDecl* d) {
+    return true;
+  }
+  void exit(const ForwardingDecl* d) { }
+
+  bool enter(const Label* l) {
+    gather(declared, l->name(), l->loop(), Decl::DEFAULT_VISIBILITY, atFieldLevel);
+    return true;
+  }
+  void exit(const Label* l) { }
+
+
   // make note of use/import
   bool enter(const Use* d) {
     containsUseImport = true;
@@ -350,7 +362,8 @@ bool createsScope(asttags::AstTag tag) {
          || asttags::isWhen(tag)
          || asttags::isTry(tag)
          || asttags::isCatch(tag)
-         || asttags::isSync(tag);
+         || asttags::isSync(tag)
+         || asttags::isLet(tag);
 }
 
 static const bool&
@@ -473,6 +486,9 @@ static void populateScopeWithBuiltins(Context* context, Scope* scope) {
   // TODO: maybe we can represent these as 'NilLiteral' and 'NoneLiteral' nodes?
   scope->addBuiltinVar(USTR("nil"));
   scope->addBuiltinVar(USTR("none"));
+
+  scope->addBuiltinFunction(USTR("chpl__orderToEnum"));
+  scope->addBuiltinFunction(USTR("chpl__enumToOrder"));
 
   populateScopeWithBuiltinKeywords(context, scope);
 }
@@ -690,6 +706,7 @@ struct LookupHelper {
                                         IdAndFlags::Flags filterFlags,
                                         const IdAndFlags::FlagSet& excludeFilter,
                                         VisibilitySymbols::ShadowScope shadowScope,
+                                        std::vector<const MethodLookupHelper*>* receiversForTertiaryLookup,
                                         bool* foundInAllContents,
                                         std::unordered_set<ID>* foundInClauses,
                                         std::unordered_set<ID>* ignoreClauses);
@@ -715,7 +732,8 @@ struct LookupHelper {
 
   LookupResult doLookupInScope(const Scope* scope,
                                UniqueString name,
-                               LookupConfig config);
+                               LookupConfig config,
+                               std::vector<const MethodLookupHelper*>* receiversForTertiaryLookup = nullptr);
 };
 
 bool LookupHelper::shouldStopLookup(const LookupResult& got, bool onlyInnermost, bool stopNonFn) {
@@ -801,6 +819,7 @@ LookupResult LookupHelper::doLookupInImportsAndUses(
                                    IdAndFlags::Flags filterFlags,
                                    const IdAndFlags::FlagSet& excludeFlagSet,
                                    VisibilitySymbols::ShadowScope shadowScope,
+                                   std::vector<const MethodLookupHelper*>* receiversForTertiaryLookup,
                                    bool* foundInAllContents,
                                    std::unordered_set<ID>* foundInClauses,
                                    std::unordered_set<ID>* ignoreClauses) {
@@ -842,11 +861,24 @@ LookupResult LookupHelper::doLookupInImportsAndUses(
       int firstResultThisClause = result.numIds();
       UniqueString from = name;
       bool named = is.lookupName(name, from);
+
+      bool searchScope = false;
       if (named && is.kind() == VisibilitySymbols::CONTENTS_EXCEPT) {
         // mentioned in an except clause, so don't return it
       } else if (named // e.g. ONLY_CONTENTS
           || is.kind() == VisibilitySymbols::ALL_CONTENTS
           || is.kind() == VisibilitySymbols::CONTENTS_EXCEPT) {
+        searchScope = true;
+      } else if (receiversForTertiaryLookup) {
+        for (auto receiver : *receiversForTertiaryLookup) {
+          if (receiver->shouldCheckForTertiaryMethods(context, &is)) {
+            searchScope = true;
+            break;
+          }
+        }
+      }
+
+      if (searchScope) {
         // find it in the contents
         const Scope* symScope = is.scope();
         LookupConfig newConfig = LOOKUP_DECLS |
@@ -1208,6 +1240,7 @@ LookupResult LookupHelper::doLookupInExternBlocks(const Scope* scope,
   const std::vector<ID>& exbIds = gatherExternBlocks(context, scope->id());
 
   bool found = false;
+  bool nonFunctions = false;
 
   // Consider each extern block in turn. Does it have a symbol with that name?
   for (const auto& exbId : exbIds) {
@@ -1216,19 +1249,22 @@ LookupResult LookupHelper::doLookupInExternBlocks(const Scope* scope,
       auto newId = ID::fabricateId(context, exbId, name,
                                    ID::ExternBlockElement);
 
-      // We assume it's not a parenful function or a type,
-      // but that might not be. However, it shouldn't matter for scope
-      // resolution. Adjust this code if it does.
+      bool isParenfulFunction =
+          externBlockContainsFunction(context, exbId, name);
+
+      // We assume it's not a type, but that might not be. However, it
+      // shouldn't matter for scope resolution. Adjust this code if it does.
       auto idv = IdAndFlags(std::move(newId),
                             /* isPublic */ true,
                             /* isMethodOrField */ false,
-                            /* isParenfulFunction */ false, // maybe a lie
+                            /* isParenfulFunction */ isParenfulFunction,
                             /* isMethod */ false,
                             /* isModule */ false,
                             /* isType */ false); // maybe a lie
 
       result.append(std::move(idv));
       found = true;
+      nonFunctions |= !isParenfulFunction;
 
       if (traceCurPath && traceResult) {
         ResultVisibilityTrace t;
@@ -1241,8 +1277,6 @@ LookupResult LookupHelper::doLookupInExternBlocks(const Scope* scope,
     }
   }
 
-  /* might be a lie, because we're lying about isParenfulFunction above */
-  bool nonFunctions = true;
   return LookupResult(found, nonFunctions);
 }
 
@@ -1272,12 +1306,14 @@ static const IdAndFlags* getReservedIdentifier(UniqueString name) {
     {USTR("complex"),   IdAndFlags::createForBuiltinType()},
     {USTR("domain"),    IdAndFlags::createForBuiltinType()},
     {USTR("int"),       IdAndFlags::createForBuiltinType()},
+    {USTR("integral"),  IdAndFlags::createForBuiltinType()},
     {USTR("locale"),    IdAndFlags::createForBuiltinType()},
     {USTR("nil"),       IdAndFlags::createForBuiltinVar()},
     {USTR("real"),      IdAndFlags::createForBuiltinType()},
     {USTR("sparse"),    IdAndFlags::createForBuiltinType()},
     {USTR("string"),    IdAndFlags::createForBuiltinType()},
     {USTR("subdomain"), IdAndFlags::createForBuiltinType()},
+    {USTR("range"),     IdAndFlags::createForBuiltinType()},
     {USTR("uint"),      IdAndFlags::createForBuiltinType()},
     {USTR("void"),      IdAndFlags::createForBuiltinType()},
   };
@@ -1305,7 +1341,8 @@ static const IdAndFlags* getReservedIdentifier(UniqueString name) {
 // that provided that element in result.
 LookupResult LookupHelper::doLookupInScope(const Scope* scope,
                                            UniqueString name,
-                                           LookupConfig config) {
+                                           LookupConfig config,
+                                           std::vector<const MethodLookupHelper*>* receiversForTertiaryLookup) {
   bool checkDecls = (config & LOOKUP_DECLS) != 0;
   bool checkUseImport = (config & LOOKUP_IMPORT_AND_USE) != 0;
   bool checkParents = (config & LOOKUP_PARENTS) != 0;
@@ -1394,6 +1431,25 @@ LookupResult LookupHelper::doLookupInScope(const Scope* scope,
     skipShadowScopes = true;
   }
 
+  // If we are at a method scope, we will need to consider the receiver in two
+  // ways:
+  //
+  // 1. Via its own scope (e.g., x.foo() might need to consult x's scope for foo)
+  // 2. Via use/import statements like `import M.someType`, which per spec
+  //    brings in all methods defined on someType, and not any of the others.
+  //
+  // Case (2) is more niche, but in terms of lookup it happens earlier. As a result,
+  // fetch the receiver's scope now, and push it into the list.
+  const MethodLookupHelper* rcvScopes = nullptr;
+  if (scope->isMethodScope() && receiverScopeHelper != nullptr) {
+    rcvScopes =
+      receiverScopeHelper->methodLookupForMethodId(context, scope->id());
+
+    if (rcvScopes && receiversForTertiaryLookup) {
+      receiversForTertiaryLookup->push_back(rcvScopes);
+    }
+  }
+
   const ModulePublicSymbols* modPublicSyms = nullptr;
   const ResolvedVisibilityScope* r = nullptr;
 
@@ -1461,6 +1517,7 @@ LookupResult LookupHelper::doLookupInScope(const Scope* scope,
         got |= doLookupInImportsAndUses(scope, r, name, config,
                                         curFilter, excludeFilter,
                                         VisibilitySymbols::REGULAR_SCOPE,
+                                        receiversForTertiaryLookup,
                                         &foundInAll,
                                         /* foundInClauses */ nullptr,
                                         /* ignoreClauses */ nullptr);
@@ -1484,6 +1541,7 @@ LookupResult LookupHelper::doLookupInScope(const Scope* scope,
     gotInSS1 |= doLookupInImportsAndUses(scope, r, name, config,
                                          curFilter, excludeFilter,
                                          VisibilitySymbols::SHADOW_SCOPE_ONE,
+                                         receiversForTertiaryLookup,
                                          &foundInAll,
                                          &foundInShadowScopeOneClauses,
                                          /* ignoreClauses */ nullptr);
@@ -1518,6 +1576,7 @@ LookupResult LookupHelper::doLookupInScope(const Scope* scope,
     gotInSS2 = doLookupInImportsAndUses(scope, r, name, config,
                                         curFilter, excludeFilter,
                                         VisibilitySymbols::SHADOW_SCOPE_TWO,
+                                        receiversForTertiaryLookup,
                                         /* foundInAllContents */ nullptr,
                                         /* foundInClauses */ nullptr,
                                         ignoreClausesForShadowScopeTwo);
@@ -1531,13 +1590,9 @@ LookupResult LookupHelper::doLookupInScope(const Scope* scope,
     if (shouldStopLookup(got, onlyInnermost, stopNonFn)) return got;
   }
 
-  // If we are at a method scope, consider receiver scopes now
-  // (so we imagine them to be just outside of the method scope).
-  // If we are not at a method scope (but within a method), it
-  // will be handled later.
-  if (scope->isMethodScope() && receiverScopeHelper != nullptr) {
-    auto rcvScopes =
-      receiverScopeHelper->methodLookupForMethodId(context, scope->id());
+  // Consider receiver scopes now (so we imagine them to be just outside of the method scope).
+  // If we are not at a method scope (but within a method), it will be handled later.
+  if (rcvScopes) {
     got |= doLookupInReceiverScopes(scope, rcvScopes, name, config);
     if (shouldStopLookup(got, onlyInnermost, stopNonFn)) return got;
   }
@@ -1579,7 +1634,7 @@ LookupResult LookupHelper::doLookupInScope(const Scope* scope,
 
         // search without considering receiver scopes
         // (considered separately below)
-        got |= doLookupInScope(cur, name, newConfig);
+        got |= doLookupInScope(cur, name, newConfig, receiversForTertiaryLookup);
 
         if (trace) {
           traceCurPath->pop_back();
@@ -1606,7 +1661,7 @@ LookupResult LookupHelper::doLookupInScope(const Scope* scope,
         traceCurPath->push_back(std::move(elt));
       }
 
-      got |= doLookupInScope(cur, name, newConfig);
+      got |= doLookupInScope(cur, name, newConfig, receiversForTertiaryLookup);
 
       if (trace) {
         traceCurPath->pop_back();
@@ -1615,13 +1670,16 @@ LookupResult LookupHelper::doLookupInScope(const Scope* scope,
       if (shouldStopLookup(got, onlyInnermost, stopNonFn)) return got;
     }
 
-    if (!goPastModules && (reachedModule || isModule(scope->tag()))) {
+    if (!goPastModules && !onlyMethodsFields &&
+        (reachedModule || isModule(scope->tag()))) {
       // If we reached a module or we already were in a module,
       // check for a match with the containing module's name for e.g.
       //   module M { ...M.xyz... }
       //
       // Don't do this when goPastModules is used, because we will find
       // the enclosing module when visiting its parent.
+      //
+      // Also skip if we're only looking for methods and fields.
       const Scope* modScope = isModule(scope->tag()) ? scope : cur;
       CHPL_ASSERT(modScope && isModule(modScope->tag()));
       if (trace) {
@@ -1758,8 +1816,13 @@ helpLookupInScope(Context* context,
 
   auto got = LookupResult::empty();
 
+  std::vector<const MethodLookupHelper*> receiversForTertiaryLookup;
+  if (methodLookupHelper != nullptr) {
+    receiversForTertiaryLookup.push_back(methodLookupHelper);
+  }
+
   if (scope) {
-    got |= helper.doLookupInScope(scope, name, config);
+    got |= helper.doLookupInScope(scope, name, config, &receiversForTertiaryLookup);
   }
 
   // When resolving a Dot expression like myRecord.foo, we might not be inside
@@ -3180,11 +3243,25 @@ struct GatherMentionedModules {
   const Module* inMod = nullptr;
   std::set<const Scope*> scopes;
   std::set<ID> idSet;
-  std::vector<ID> idVec;
+  std::vector<ID>idVec;
+  std::vector<std::pair<const Scope*, const AstNode*>> scopeStack;
 
   GatherMentionedModules(Context* context, const Module* inMod)
     : context(context), inMod(inMod)
   { }
+
+  void enterScope(const AstNode* node);
+  void exitScope(const AstNode* node);
+
+  const Scope* currentScope() {
+    CHPL_ASSERT(!scopeStack.empty());
+    if (scopeStack.back().first == nullptr) {
+      scopeStack.back().first =
+        scopeForId(context, scopeStack.back().second->id());
+    }
+
+    return scopeStack.back().first;
+  }
 
   void gatherModuleId(const ID& id);
   const Scope* lookupAndGather(const Scope* scope, const AstNode* ast,
@@ -3215,16 +3292,35 @@ struct GatherMentionedModules {
 
   // do not delve into submodules
   bool enter(const Module* m) {
+    enterScope(m);
     return (m == inMod); // visit the requested module only
   }
-  void exit(const Module* m) { }
+  void exit(const Module* m) {
+    exitScope(m);
+  }
 
   // traverse through anything else
   bool enter(const AstNode* ast) {
+    enterScope(ast);
     return true;
   }
-  void exit(const AstNode* ast) { }
+  void exit(const AstNode* ast) {
+    exitScope(ast);
+  }
 };
+
+void GatherMentionedModules::enterScope(const AstNode* node) {
+  if (resolution::createsScope(node->tag())) {
+    scopeStack.emplace_back(nullptr, node);
+  }
+}
+
+void GatherMentionedModules::exitScope(const AstNode* node) {
+  if (resolution::createsScope(node->tag())) {
+    CHPL_ASSERT(!scopeStack.empty());
+    scopeStack.pop_back();
+  }
+}
 
 // save the module used/imported to idSet / idVec
 void GatherMentionedModules::gatherModuleId(const ID& id) {
@@ -3375,12 +3471,12 @@ void GatherMentionedModules::processDot(const Dot* d) {
   // TODO: ideally this would use the result of scope resolution.
   // It does not yet because running the scope resolver in all
   // these cases would currently lead to compilation slowdowns
-  const Scope* scope = scopeForId(context, d->id());
+  const Scope* scope = currentScope();
   gatherAndFindScope(scope, d);
 }
 
 void GatherMentionedModules::processUseImport(const AstNode* ast) {
-  const Scope* scope = scopeForId(context, ast->id());
+  const Scope* scope = currentScope();
   if (scope && scope->containsUseImport()) {
     auto p = scopes.insert(scope);
     if (p.second) {

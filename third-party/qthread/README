@@ -2,7 +2,7 @@
 Qthreads README for Chapel
 ==========================
 
-This copy of Qthreads 1.21 is being released with Chapel for
+This copy of Qthreads 1.22 is being released with Chapel for
 convenience and was obtained from:
 
   https://github.com/sandialabs/qthreads
@@ -11,95 +11,102 @@ Any Chapel issues that seem to be related to Qthreads should be directed
 to the Chapel team at https://chapel-lang.org/bugs.html.
 
 
-Upgrading qthread versions
+Upgrading versions
 ============================
 
-The directory $CHPL_HOME/third-party/qthread/qthread-src contains the
-un-tarballed qthread package contents. Version updates should be done as
-follows, assuming the CWD is $CHPL_HOME/third-party/qthread/:
+The directory $CHPL_HOME/third-party/qthread/qthread-src contains
+a copy of the Qthreads repository. Version updates should be done
+as follows, assuming the CWD is $CHPL_HOME/third-party/qthread/:
 
-1. download the latest qthread version: e.g. `wget https://github.com/sandialabs/qthreads/releases/download/1.21/qthreads-1.21.tar.gz`
-2. `tar xf qthreads-1.21.tar.gz`
-3. `git rm -r qthread-src`
-4. `mv qthreads-1.21 qthread-src`
-5. `git add --force qthread-src` (--force to ignore our .gitignore)
-6. update the version number mentioned above
-7. test
-8. commit, PR, merge, etc
-
-Chapel modifications to Qthreads
-================================
+1. download the latest qthread version: e.g. `wget https://github.com/sandialabs/qthreads/archive/refs/tags/1.22.tar.gz -O qthread-src.tar.gz`
+2. `git rm -r qthread-src`
+3. `tar xf qthread-src.tar.gz`
+4. `git add --force qthread-src` (--force to ignore our .gitignore)
+5. update the version number mentioned above
+6. test
+7. commit, PR, merge, etc
 
 The modifications that we have made to the official Qthreads release are
 as follows:
 
-* Do not #include "qthread.hpp" ifdef CHPL_AVOID_CPP_CODE
-  https://github.com/chapel-lang/chapel/pull/25507
-
-```
-diff --git a/third-party/qthread/qthread-src/include/qthread/qthread.h b/third-party/qthread/qthread-src/include/qthread/qthread.h
-index 8269aa0949..bf022bc243 100644
---- a/third-party/qthread/qthread-src/include/qthread/qthread.h
-+++ b/third-party/qthread/qthread-src/include/qthread/qthread.h
-@@ -709,7 +709,7 @@ uint64_t qthread_syncvar_incrF(syncvar_t *restrict operand, uint64_t inc);
- 
- Q_ENDCXX /* */
- 
--#ifndef __cplusplus
-+#if !defined __cplusplus || defined CHPL_AVOID_CPP_CODE
- 
- #define qthread_incr(ADDR, INCVAL) __sync_fetch_and_add(ADDR, INCVAL)
-
-```
-* Backport a few performance fixes from the development version of qthreads.
-  https://github.com/chapel-lang/chapel/pull/26138
-
-```
-diff --git a/include/qt_atomics.h b/include/qt_atomics.h
-index 2ac887ed..2312c954 100644
---- a/include/qt_atomics.h
-+++ b/include/qt_atomics.h
-@@ -21,8 +21,24 @@
- #define THREAD_FENCE_MEM_RELEASE THREAD_FENCE_MEM_RELEASE_IMPL
- #endif
-
-+#if QTHREAD_ASSEMBLY_ARCH == QTHREAD_IA32 ||                                   \
-+  QTHREAD_ASSEMBLY_ARCH == QTHREAD_AMD64
- #define SPINLOCK_BODY()                                                        \
--  do { MACHINE_FENCE; } while (0)
-+  do { __asm__ __volatile__("pause" ::: "memory"); } while (0)
-+#elif QTHREAD_ASSEMBLY_ARCH == QTHREAD_ARM ||                                  \
-+  QTHREAD_ASSEMBLY_ARCH == QTHREAD_ARMV8_A64
-+#define SPINLOCK_BODY()                                                        \
-+  do { __asm__ __volatile__("yield" ::: "memory"); } while (0)
-+#elif QTHREAD_ASSEMBLY_ARCH == QTHREAD_POWERPC64 ||                            \
-+  QTHREAD_ASSEMBLY_ARCH == QTHREAD_POWERPC32
-+// For whatever reason the 29 (mdoio) version of this instruction performed
-+// better in some back-of-the-envelope benchmarking so we're using that.
-+#define SPINLOCK_BODY()                                                        \
-+  do { __asm__ __volatile__("or 29,29,29" ::: "memory"); } while (0)
-+#else
-+#define SPINLOCK_BODY()                                                        \
-+  do { atomic_thread_fence(memory_order_acq_rel); } while (0)
+Route HWLOC_GET_TOPOLOGY_FUNCTION option properly to the relevant source files.
+This fixes a minor performance regression in the startup time.
+--- a/src/affinity/binders.c
++++ b/src/affinity/binders.c
+@@ -87,6 +87,10 @@ static int qt_affinity_compact(int num_workers, hwloc_obj_t obj) {
+ void INTERNAL qt_affinity_init(qthread_shepherd_id_t *nbshepherds,
+                                qthread_worker_id_t *nbworkers,
+                                size_t *hw_par) {
++#ifdef HWLOC_GET_TOPOLOGY_FUNCTION
++  extern void *HWLOC_GET_TOPOLOGY_FUNCTION;
++  topology = (hwloc_topology_t)HWLOC_GET_TOPOLOGY_FUNCTION;
 +#endif
+   // Note: the lack of a teardown routine will cause topology initialization
+   // to be skipped if qthreads is re-initialized
+   if (topology == NULL) {
+diff --git a/src/affinity/hwloc.c b/src/affinity/hwloc.c
+index eb8ac5b1..ea03ed6d 100644
+--- a/src/affinity/hwloc.c
++++ b/src/affinity/hwloc.c
+@@ -86,6 +86,10 @@ void INTERNAL qt_affinity_init(qthread_shepherd_id_t *nbshepherds,
+                                qthread_worker_id_t *nbworkers,
+                                size_t *hw_par) {
+   if (qthread_cas(&initialized, 0, 1) == 0) {
++#ifdef HWLOC_GET_TOPOLOGY_FUNCTION
++    extern void *HWLOC_GET_TOPOLOGY_FUNCTION;
++    topology = (hwloc_topology_t)HWLOC_GET_TOPOLOGY_FUNCTION;
++#endif
+     if (topology == NULL) {
+       qassert(hwloc_topology_init(&topology), 0);
+       qassert(hwloc_topology_load(topology), 0);
 
- #define QTHREAD_FASTLOCK_SETUP()                                               \
-   do {                                                                         \
-```
 
-* Backport a few performance fixes from the development version of qthreads.
-  part of https://github.com/chapel-lang/chapel/pull/26328, the rest was
-  reverted in https://github.com/chapel-lang/chapel/pull/26468
+Prevent CMake from overriding the OSX deployment target
+--- a/third-party/qthread/qthread-src/CMakeLists.txt
++++ b/third-party/qthread/qthread-src/CMakeLists.txt
+@@ -16,6 +16,11 @@ else()
+     LANGUAGES C ASM CXX)
+ endif()
+ 
++# This must be done after `project` or it gets overridden by cmake
++if(APPLE)
++  set(CMAKE_OSX_DEPLOYMENT_TARGET "" CACHE STRING "" FORCE)
++endif()
++
+ include(GNUInstallDirs)
+ 
+ set(THREADS_PREFER_PTHREAD_FLAG ON)
 
-```
---- a/src/io.c
-+++ b/src/io.c
-@@ -74,7 +74,6 @@ static void qt_blocking_subsystem_internal_freemem(void) { /*{{{*/
- static void *qt_blocking_subsystem_proxy_thread(void *Q_UNUSED(arg)) { /*{{{*/
-   while (!atomic_load_explicit(&proxy_exit, memory_order_relaxed)) {
-     if (qt_process_blocking_call()) { break; }
--    MACHINE_FENCE;
-   }
-   atomic_fetch_sub_explicit(&io_worker_count, 1, memory_order_relaxed);
-   pthread_exit(NULL);
-```
+
+Backport a patch from qthreads that switches to the fallback implementation of context swapping on ppc64le since the fast one is broken there.
+--- a/third-party/qthread/qthread-src/src/CMakeLists.txt
++++ b/third-party/qthread/qthread-src/src/CMakeLists.txt
+@@ -8,7 +8,26 @@ set(QTHREADS_DEFAULT_STACK_SIZE 32768 CACHE STRING "Default qthread stack size."
+ set(QTHREADS_HASHMAP hashmap CACHE STRING "Which hashmap implementation to use. Valid values are \"hashmap\" and \"lf_hashmap\".")
+ set(QTHREADS_DICT_TYPE shavit CACHE STRING "Which dictionary implementation to use. Valid values are \"shavit\", \"trie\", and \"simple\".")
+ set(QTHREADS_TIMER_TYPE gettimeofday CACHE STRING "Which timer implementation to use. Valid values are \"clock_gettime\", \"mach\", \"gettimeofday\", and \"gethrtime\".")
+-set(QTHREADS_CONTEXT_SWAP_IMPL fastcontext CACHE STRING "Which context swap implementation to use. Valid values are \"system\" and \"fastcontext\".")
++# Only default to the fastcontext implementation in cases where it's confirmed to work.
++# Note: apparently 32-bit x86 may show up as i386, i486, i586, or i686.
++# Little-endian powerpc variants are excluded here as they're known not to work
++# due to an unresolved bug in our fastcontext code.
++if ("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64" OR
++    "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "amd64" OR
++    "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "aarch64" OR
++    "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "arm64" OR
++    "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "arm" OR
++    "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "i386" OR
++    "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "i486" OR
++    "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "i586" OR
++    "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "i686" OR
++    "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "ppc64" OR
++    "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "ppc")
++  set(QTHREADS_CONTEXT_SWAP_IMPL fastcontext CACHE STRING "Which context swap implementation to use. Valid values are \"system\" and \"fastcontext\".")
++else()
++  message(WARNING "No fast context swap available on this system, falling back to the system-provided one.")
++  set(QTHREADS_CONTEXT_SWAP_IMPL system CACHE STRING "Which context swap implementation to use. Valid values are \"system\" and \"fastcontext\".")
++endif()
+ set(QTHREADS_HWLOC_GET_TOPOLOGY_FUNCTION "" CACHE STRING "function to get hwloc topology (otherwise uses hwloc_topology_init and hwloc_topology_load)")
+ set(QTHREADS_GUARD_PAGES OFF CACHE BOOL "Whether or not to guard memory pages to help with debugging stack overflows. Default is OFF.")
+ set(QTHREADS_CONDWAIT_QUEUE OFF CACHE BOOL "Use a waiting queue based on pthread condition variables instead of a spin-based queue for inter-thread communication. Default is OFF.")
+

@@ -20,7 +20,6 @@
 
 
 use ArgumentParser;
-use ChplConfig;
 use FileSystem;
 use List;
 use Map;
@@ -422,14 +421,16 @@ proc getTestPath(fullPath: string, testPath = "") : string {
 proc getRuntimeComm() throws {
   var line: string;
   var python: string;
-  var findPython = spawn([CHPL_HOME:string+"/util/config/find-python.sh"],
-                         stdout = pipeStyle.pipe);
+  var findPython = spawn(
+    [MasonUtils.CHPL_HOME:string+"/util/config/find-python.sh"],
+    stdout = pipeStyle.pipe);
   while findPython.stdout.readLine(line) {
     python = line.strip();
   }
 
-  var checkComm = spawn([python, CHPL_HOME:string+"/util/chplenv/chpl_comm.py"],
-                        stdout = pipeStyle.pipe);
+  var checkComm = spawn(
+    [python, MasonUtils.CHPL_HOME:string+"/util/chplenv/chpl_comm.py"],
+    stdout = pipeStyle.pipe);
   while checkComm.stdout.readLine(line) {
     comm = line.strip();
   }

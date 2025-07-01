@@ -195,15 +195,13 @@ GASNET_PSHM_CFLAGS = @GASNET_PSHM_CFLAGS@
 GASNET_PSHM_ENABLED = @GASNET_PSHM_ENABLED@
 GASNET_PSHM_LDFLAGS = @GASNET_PSHM_LDFLAGS@
 GASNET_PSHM_LIBS = @GASNET_PSHM_LIBS@
+GASNET_SMP_SPAWNER_CONF = @GASNET_SMP_SPAWNER_CONF@
 GASNET_THREAD_DEFINES = @GASNET_THREAD_DEFINES@
 GASNET_THREAD_LIBS = @GASNET_THREAD_LIBS@
 GASNET_UCX_SPAWNER_CONF = @GASNET_UCX_SPAWNER_CONF@
 GASNET_UDP_LIBS = @GASNET_UDP_LIBS@
 GDB_PATH = @GDB_PATH@
 GMAKE = @GMAKE@
-GNI_CFLAGS = @GNI_CFLAGS@
-GNI_LDFLAGS = @GNI_LDFLAGS@
-GNI_LIBS = @GNI_LIBS@
 GREP = @GREP@
 GSTACK_PATH = @GSTACK_PATH@
 HAVE_INTTYPES_H = @HAVE_INTTYPES_H@
@@ -213,6 +211,7 @@ HIP_CFLAGS = @HIP_CFLAGS@
 HIP_LDFLAGS = @HIP_LDFLAGS@
 HIP_LIBS = @HIP_LIBS@
 HIP_guess_prog = @HIP_guess_prog@
+HUGETLBFS_guess_prog = @HUGETLBFS_guess_prog@
 HWLOC_CFLAGS = @HWLOC_CFLAGS@
 HWLOC_LDFLAGS = @HWLOC_LDFLAGS@
 HWLOC_LIBS = @HWLOC_LIBS@
@@ -502,13 +501,13 @@ info: info-am
 
 info-am:
 
-install-data-am:
+install-data-am: install-data-local
 
 install-dvi: install-dvi-am
 
 install-dvi-am:
 
-install-exec-am:
+install-exec-am: install-exec-local
 
 install-html: install-html-am
 
@@ -553,19 +552,27 @@ uninstall-am:
 .PHONY: all all-am check check-am clean clean-generic cscopelist-am \
 	ctags-am distclean distclean-generic distclean-local distdir \
 	dvi dvi-am html html-am info info-am install install-am \
-	install-data install-data-am install-dvi install-dvi-am \
-	install-exec install-exec-am install-html install-html-am \
-	install-info install-info-am install-man install-pdf \
-	install-pdf-am install-ps install-ps-am install-strip \
-	installcheck installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-generic pdf \
-	pdf-am ps ps-am tags-am uninstall uninstall-am
+	install-data install-data-am install-data-local install-dvi \
+	install-dvi-am install-exec install-exec-am install-exec-local \
+	install-html install-html-am install-info install-info-am \
+	install-man install-pdf install-pdf-am install-ps \
+	install-ps-am install-strip installcheck installcheck-am \
+	installdirs maintainer-clean maintainer-clean-generic \
+	mostlyclean mostlyclean-generic pdf pdf-am ps ps-am tags-am \
+	uninstall uninstall-am
 
 .PRECIOUS: Makefile
 
 
 distclean-local:
 	rm -f Makefile
+
+# These appear here to enforce check-prefix-vars early in the top-level recursive install traversal
+install-data-local: 
+	@$(MAKE) -C ..  check-prefix-vars
+
+install-exec-local: 
+	@$(MAKE) -C ..  check-prefix-vars
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

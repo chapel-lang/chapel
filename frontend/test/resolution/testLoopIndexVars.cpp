@@ -354,7 +354,7 @@ struct ParamLoopTester {
   }
 };
 
-static ParamLoopTester helpTestParam(const char* rangeExpr) {
+static ParamLoopTester helpTestParam(const char* rangeExpr, const char* extraCode = "") {
   printf("testParamFor with %s\n", rangeExpr);
   auto context = buildStdContext();
   ErrorGuard guard(context);
@@ -368,6 +368,7 @@ static ParamLoopTester helpTestParam(const char* rangeExpr) {
                   for param i in )""" + std::string(rangeExpr) + R"""( {
                     param n = __primitive("+", i, i);
                     __primitive("+=", x, n);
+                    )""" + std::string(extraCode) + R"""(
                   }
                   )""";
 
@@ -455,6 +456,24 @@ static void testParamFor() {
     }
     test.assertMatch();
   }
+
+  {
+    auto test = helpTestParam("1..10", "break;");
+    for (int i = 1; i <= 10; i++) {
+      test.noteExpectedIteration(i);
+      break;
+    }
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestParam("1..10", "continue;");
+    for (int i = 1; i <= 10; i++) {
+      test.noteExpectedIteration(i);
+      continue;
+    }
+    test.assertMatch();
+  }
 }
 
 //
@@ -513,6 +532,126 @@ static void testNestedParamFor() {
 
   assert(resolvedIdents == pc.resolvedIdents);
   assert(resolvedVals == pc.resolvedVals);
+}
+
+static void testNestedParamForLabeledBreakContinue(const std::string& control, int expectedWarnings) {
+  auto program =
+    R"""(
+      label outer
+      for param i in 0..3 {
+
+        label inner
+        for param j in 0..3 {
+         compilerWarning("Start iteration i = " + (i : string) + ", j = " + (j : string));
+         )""" + control + R"""(
+         compilerWarning("End iteration i = " + (i : string) + ", j = " + (j : string));
+        }
+      }
+  )""";
+  auto ctx = buildStdContext();
+  ErrorGuard guard(ctx);
+
+  std::ignore = resolveTypesOfVariables(ctx, program, {});
+  CHPL_ASSERT(guard.numErrors(/* countWarnings */ false) == 0);
+  // expected warnings is multiplied by two since we track emitting AND showing
+  // the warning
+  CHPL_ASSERT(guard.numErrors() == (size_t) expectedWarnings * 2);
+  guard.realizeErrors();
+}
+
+static void testNestedParamForLabeledBreakContinue() {
+  // when not breaking or continuing, should print 2 * 4 * 4 = 32 warnings
+  testNestedParamForLabeledBreakContinue("", 32);
+
+  // when continuing without a label, we only print the start but not
+  // the end warning. The same should be true if we explicitly list
+  // the inner label.
+  testNestedParamForLabeledBreakContinue("continue;", 16);
+  testNestedParamForLabeledBreakContinue("continue inner;", 16);
+
+  // when breaking without a label, we should print one "start iteration"
+  // per outer loop invcation, and no "end iteration" warnings.
+  testNestedParamForLabeledBreakContinue("break;", 4);
+  testNestedParamForLabeledBreakContinue("break inner;", 4);
+
+  // Since there's no code after the inner loop, breaking the inner loop
+  // is the same as continuing the outer loop.
+  testNestedParamForLabeledBreakContinue("continue outer;", 4);
+
+  // breaking the outer loop should stop all iterations
+  testNestedParamForLabeledBreakContinue("break outer;", 1);
+
+  // test conditionally breaking the outer loop. This will break on the 8th
+  // iteration of the inner body.
+  testNestedParamForLabeledBreakContinue("if i * 4 + j == 7 { break outer; }", 15);
+
+  // test conditionally continuing the outer loop. This will continue on the 8th
+  // iteration of the inner body.
+  testNestedParamForLabeledBreakContinue("if i * 4 + j == 7 { continue outer; }", 31);
+}
+
+struct TupleCollector {
+  using RV = ResolvedVisitor<TupleCollector>;
+
+  std::multimap<std::string, const Type*> resolvedVals;
+
+  TupleCollector() { }
+
+  bool enter(const uast::VarLikeDecl* decl, RV& rv) {
+    if (decl->storageKind() == Qualifier::PARAM ||
+        decl->storageKind() == Qualifier::INDEX) {
+      const ResolvedExpression& rr = rv.byAst(decl);
+      if (!rr.type().isUnknownOrErroneous()) {
+        resolvedVals.emplace(decl->name().str(), rr.type().type());
+      }
+    }
+    return true;
+  }
+
+  bool enter(const uast::AstNode* ast, RV& rv) {
+    return true;
+  }
+  void exit(const uast::AstNode* ast, RV& rv) {}
+};
+
+static void testHeteroTuples() {
+  printf("testHeteroTuples\n");
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+  ResolutionContext rcval(context);
+  auto rc = &rcval;
+
+  auto loopText = R"""(
+  var tmp = (1.0, 1, true);
+
+  for x in tmp {
+    for y in tmp {
+
+    }
+  }
+  )""";
+  const Module* m = parseModule(context, loopText);
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+  TupleCollector pc;
+  ResolvedVisitor<TupleCollector> rv(rc, m, pc, rr);
+  m->traverse(rv);
+
+  std::multimap<std::string, const Type*> expected;
+  expected.emplace("x", RealType::get(context, 0));
+  expected.emplace("y", RealType::get(context, 0));
+  expected.emplace("y", IntType::get(context, 0));
+  expected.emplace("y", BoolType::get(context));
+  expected.emplace("x", IntType::get(context, 0));
+  expected.emplace("y", RealType::get(context, 0));
+  expected.emplace("y", IntType::get(context, 0));
+  expected.emplace("y", BoolType::get(context));
+  expected.emplace("x", BoolType::get(context));
+  expected.emplace("y", RealType::get(context, 0));
+  expected.emplace("y", IntType::get(context, 0));
+  expected.emplace("y", BoolType::get(context));
+
+  assert(expected == pc.resolvedVals);
 }
 
 static void testIndexScope0() {
@@ -973,7 +1112,7 @@ static void pairIteratorInLoopExpression(
   ADVANCE_PRESERVING_STANDARD_MODULES_(context);
 
   std::string program = std::string(iterators) + "\n";
-  program = program + "var r1 = " + loopExprType[0] + " i in " + iterCall + " " + loopExprType[1] + " (i, i);\n";
+  program = program + "var r1: _iteratorRecord = " + loopExprType[0] + " i in " + iterCall + " " + loopExprType[1] + " (i, i);\n";
   program = program + loopType[0] + " j in r1 "  + loopType[1] + " j;\n";
 
   printf("===== Resolving program =====\n");
@@ -1001,7 +1140,6 @@ static void pairIteratorInLoopExpression(
 static void testForLoopExpression(Context* context) {
 
   printf("%s\n", __FUNCTION__);
-  ErrorGuard guard(context);
 
   auto iters =
     R""""(
@@ -1410,7 +1548,6 @@ static void testBracketLoopExpressionUnpackedZippered(Context* context) {
 static void testForLoopExpressionTypeMethod(Context* context) {
 
   printf("%s\n", __FUNCTION__);
-  ErrorGuard guard(context);
 
   auto iters =
     R""""(
@@ -1469,6 +1606,8 @@ int main() {
   testCForLoop();
   testParamFor();
   testNestedParamFor();
+  testNestedParamForLabeledBreakContinue();
+  testHeteroTuples();
   testIndexScope0();
   testIndexScope1();
 

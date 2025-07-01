@@ -213,7 +213,7 @@ module Map {
       :arg other: The map to initialize from.
       :type other: map
     */
-    proc init=(ref other: map(?kt, ?vt, ?ps)) lifetime this < other {
+    proc init=(const ref other: map(?kt, ?vt, ?ps)) lifetime this < other {
 
       // TODO: There has got to be some way that we can abstract this!
       // Arguably this is something that the compiler should be
@@ -391,10 +391,21 @@ module Map {
                       '`parSafe=true`', 2);
     }
 
+    @chpldoc.nodoc
+    proc ref this(k: keyType) ref
+      where isDefaultInitializable(valType) {
+      _warnForParSafeIndexing();
 
-    // TODO (Jade 11/6/23): This doc comment should go on the `this` overload
-    // without `where` that is marked `throws`. However, there is a current
-    // limitation in chpldoc with return intents and `throws` (#23776)
+      _enter(); defer _leave();
+
+      var (_, slot) = table.findAvailableSlot(k);
+      if !table.isSlotFull(slot) {
+        var val: valType;
+        table.fillSlot(slot, k, val);
+      }
+      return table.table[slot].val;
+    }
+
     /*
       If the key exists in the map, get a reference to the value mapped
       to the given key. If the key does not exist in the map, the value
@@ -414,21 +425,6 @@ module Map {
 
       :returns: Reference to the value mapped to the given key.
     */
-    proc ref this(k: keyType) ref
-      where isDefaultInitializable(valType) {
-      _warnForParSafeIndexing();
-
-      _enter(); defer _leave();
-
-      var (_, slot) = table.findAvailableSlot(k);
-      if !table.isSlotFull(slot) {
-        var val: valType;
-        table.fillSlot(slot, k, val);
-      }
-      return table.table[slot].val;
-    }
-
-    @chpldoc.nodoc
     proc ref this(k: keyType) ref throws {
       _warnForParSafeIndexing();
 
@@ -514,9 +510,30 @@ module Map {
       :yields: A reference to one of the keys contained in this map.
     */
     iter keys() const ref {
-      foreach slot in table.allSlots() {
-        if table.isSlotFull(slot) then
-          yield table.table[slot].key;
+      foreach idx in 0..#table.tableSize {
+        if table.isSlotFull(idx) then
+          yield table.table[idx].key;
+      }
+    }
+    @chpldoc.nodoc
+    iter keys(param tag: iterKind) const ref where tag == iterKind.standalone {
+      const space = 0..#table.tableSize;
+      foreach idx in space.these(tag) {
+        if table.isSlotFull(idx) then
+          yield table.table[idx].key;
+      }
+    }
+    @chpldoc.nodoc
+    iter keys(param tag: iterKind) where tag == iterKind.leader {
+      for followThis in table._evenSlots(tag) {
+        yield followThis;
+      }
+    }
+    @chpldoc.nodoc
+    iter keys(param tag: iterKind, followThis) const ref
+      where tag == iterKind.follower {
+      foreach val in table._evenSlots(followThis, tag) {
+        yield val.key;
       }
     }
 
@@ -550,11 +567,31 @@ module Map {
 
       :yields: A reference to one of the values contained in this map.
     */
-    iter values() ref
-    {
-      foreach slot in table.allSlots() {
-        if table.isSlotFull(slot) then
-          yield table.table[slot].val;
+    iter values() ref {
+      foreach idx in 0..#table.tableSize {
+        if table.isSlotFull(idx) then
+          yield table.table[idx].val;
+      }
+    }
+    @chpldoc.nodoc
+    iter values(param tag: iterKind) ref where tag == iterKind.standalone {
+      const space = 0..#table.tableSize;
+      foreach idx in space.these(tag) {
+        if table.isSlotFull(idx) then
+          yield table.table[idx].val;
+      }
+    }
+    @chpldoc.nodoc
+    iter values(param tag: iterKind) where tag == iterKind.leader {
+      for followThis in table._evenSlots(tag) {
+        yield followThis;
+      }
+    }
+    @chpldoc.nodoc
+    iter values(param tag: iterKind, followThis) ref
+      where tag == iterKind.follower {
+      foreach val in table._evenSlots(followThis, tag) {
+        yield val.val;
       }
     }
 

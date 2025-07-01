@@ -64,9 +64,13 @@ class ErrorGuard {
   }
 
  public:
+  void installSignalHandler();
+  void removeSignalHandler();
+
   ErrorGuard(chpl::Context* ctx) : ctx_(ctx) {
     auto handler = prepareAndStoreHandler();
     oldErrorHandler_ = ctx_->installErrorHandler(std::move(handler));
+    installSignalHandler();
   }
 
   inline chpl::Context* context() const { return ctx_; }
@@ -131,6 +135,7 @@ class ErrorGuard {
   /** The guard destructor will assert that no errors have occurred. */
   ~ErrorGuard() {
     assert(!this->realizeErrors());
+    removeSignalHandler();
     std::ignore = ctx_->installErrorHandler(std::move(oldErrorHandler_));
   }
 };

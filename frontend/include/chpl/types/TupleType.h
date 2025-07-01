@@ -45,7 +45,8 @@ class TupleType final : public CompositeType {
             SubstitutionsMap subs,
             bool isVarArgTuple)
     : CompositeType(typetags::TupleType, id, name,
-                    instantiatedFrom, std::move(subs)),
+                    instantiatedFrom, std::move(subs),
+                    uast::Decl::DEFAULT_LINKAGE),
       isVarArgTuple_(isVarArgTuple)
   {
     assert(!id.isEmpty());
@@ -94,12 +95,14 @@ class TupleType final : public CompositeType {
   getReferentialTuple(Context* context, std::vector<const Type*> eltTypes, bool makeConst=false);
 
   static const TupleType*
-  getQualifiedTuple(Context* context, std::vector<QualifiedType> eltTypes);
+  getQualifiedTuple(Context* context,
+                    std::vector<QualifiedType> eltTypes,
+                    bool isVarArgTuple = false);
 
   static const TupleType*
-  getStarTuple(Context* context,
-               QualifiedType paramSize,
-               QualifiedType starEltType);
+  getVarArgTuple(Context* context,
+                 QualifiedType paramSize,
+                 QualifiedType starEltType);
 
   const Type* substitute(Context* context,
                          const PlaceholderMap& subs) const override {
@@ -128,7 +131,7 @@ class TupleType final : public CompositeType {
   }
 
   /** Return the type of the i'th element */
-  QualifiedType elementType(int i) const;
+  const QualifiedType& elementType(int i) const;
 
   /** Return true if this is a *star tuple* - that is, all of the
       element types are the same. */

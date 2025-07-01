@@ -47,6 +47,7 @@ module ChapelDomain {
   config param noNegativeStrideWarnings = false;
 
   @chpldoc.nodoc
+  @edition(last="2.0")
   config param noSortedWarnings = false;
 
   pragma "no copy return"
@@ -832,7 +833,7 @@ module ChapelDomain {
   }
 
   @chpldoc.nodoc
-  operator =(ref a: domain, b) {  // b is iteratable
+  operator =(ref a: domain, b) {  // b is iterable
     if a.isRectangular() then
       compilerError("assigning ", b.type:string, " to a rectangular domain");
     if ! canBeIteratedOver(b) then
@@ -1112,7 +1113,7 @@ module ChapelDomain {
     @chpldoc.nodoc
     proc init(d,
               type idxType,
-              param parSafe: bool = true,
+              param parSafe: bool = false,
               definedConst: bool = false) {
       this.init(d.newAssociativeDom(idxType, parSafe));
     }
@@ -1572,11 +1573,9 @@ module ChapelDomain {
     proc chpl_checkEltType(type eltType) /*private*/ {
       if eltType == void {
         compilerError("array element type cannot be 'void'");
-      }
-      if eltType == nothing {
+      } else if eltType == nothing {
         compilerError("array element type cannot be 'nothing'");
-      }
-      if isGenericType(eltType) {
+      } else if isGenericType(eltType) {
         compilerWarning("creating an array with element type " +
                         eltType:string);
         if isClassType(eltType) && !isGenericType(eltType:borrowed) {
@@ -2202,17 +2201,18 @@ module ChapelDomain {
      */
     proc ref add(in idx) {
       // ensure that the rest of add() deals only with irregular domains
-      if isRectangular() {
+      if isRectangular() then
         compilerError("Cannot add indices to a rectangular domain");
 
       // 'idx' is an index
-      } else if isCoercible(idx.type, fullIdxType) ||
+      if isCoercible(idx.type, fullIdxType) ||
           // sparse 1-d domains also allow adding 1-tuples
-          isSparse() && rank == 1 && isCoercible(idx.type, 1*idxType) {
+          isSparse() && rank == 1 && isCoercible(idx.type, 1*idxType) then
         return _value.dsiAdd(idx);
 
       // allow promotion
-      } else if isCoercible(__primitive("scalar promotion type", idx), fullIdxType) {
+      type promoType = __primitive("scalar promotion type", idx);
+      if isCoercible(promoType, fullIdxType) {
         if isSparse() || (isAssociative() && ! this.parSafe) then
           compilerWarning("this promoted addition of indices to ",
             if isSparse() then "a sparse" else "an associative",
@@ -2222,12 +2222,11 @@ module ChapelDomain {
               " or declaring the domain type with 'parSafe=true'");
         // we could force serial execution in non-parSafe cases, see #24565
         return + reduce [oneIdx in idx] _value.dsiAdd(oneIdx);
+      }
 
       // for now, disallow calling add() in any other way
-      } else {
-        compilerError("cannot add a ", idx.type:string, " to ",
-                      domainDescription(this), " with idxType ", idxType:string);
-      }
+      compilerError("cannot add a ", idx.type:string, " to ",
+                    domainDescription(this), " with idxType ", idxType:string);
     }
 
     @chpldoc.nodoc
@@ -2829,6 +2828,7 @@ module ChapelDomain {
          It is recommended to use :proc:`Sort.sorted` instead of this method.
 
     */
+    @edition(last="2.0")
     iter sorted(comparator:?t = chpl_defaultComparator()) {
       if !this.isAssociative() then
         compilerError("'.sorted()' is only supported on associative domains");

@@ -53,6 +53,16 @@ CLASS_BEGIN(Context)
          if (auto autoUseScope = resolution::scopeForAutoModule(node)) {
            std::ignore = resolution::resolveVisibilityStmts(node, autoUseScope, false);
          })
+  METHOD(Context, _set_module_paths, "Set the module path arguments to the given lists of module paths and filenames, using a potentially different module root",
+          void(std::string, std::vector<std::string>, std::vector<std::string>),
+
+          auto& modRoot = std::get<0>(args);
+          auto& paths = std::get<1>(args);
+          auto& filenames = std::get<2>(args);
+          parsing::setupModuleSearchPaths(node, modRoot, false, false, paths, filenames);
+          if (auto autoUseScope = resolution::scopeForAutoModule(node)) {
+            std::ignore = resolution::resolveVisibilityStmts(node, autoUseScope, false);
+          })
   METHOD(Context, is_bundled_path, "Check if the given file path is within the bundled (built-in) Chapel files",
          bool(chpl::UniqueString),
 
@@ -69,6 +79,8 @@ CLASS_BEGIN(Context)
          std::string(chpl::UniqueString), return parsing::fileText(node, std::get<0>(args)).text())
   METHOD(Context, get_compiler_version, "Get the version of the Chapel compiler",
          std::string(), std::ignore = node; return chpl::getVersion())
+  METHOD(Context, get_chpl_home, "Get the CHPL_HOME path for this Context",
+         std::string(), std::ignore = node; return context->chplHome())
 CLASS_END(Context)
 
 CLASS_BEGIN(Location)

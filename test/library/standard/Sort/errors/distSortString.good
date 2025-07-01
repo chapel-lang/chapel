@@ -1,0 +1,3 @@
+$CHPL_HOME/modules/standard/Sort.chpl:nnnn: In function 'sort':
+$CHPL_HOME/modules/standard/Sort.chpl:nnnn: error: distributed sort currently only works with trivially copyable types
+  distSortString.chpl:8: called as sort(x: [BlockDom(1,int(64),one,unmanaged DefaultDist)] string, comparator: defaultComparator, param stable = false)

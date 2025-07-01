@@ -203,8 +203,9 @@ parseFileContainingIdToBuilderResult(Context* context,
     // Symbol path for the type from which this ID was generated
     auto symbolPath = ID::parentSymbolPath(context, id.symbolPath());
     auto symbolName = id.symbolName(context);
+    auto overloadPart = id.overloadPart(context);
 
-    const BuilderResult* br = resolution::builderResultForDefaultFunction(context, symbolPath, symbolName);
+    const BuilderResult* br = resolution::builderResultForDefaultFunction(context, symbolPath, symbolName, overloadPart);
     if (br != nullptr) {
       if (setParentSymbolPath) *setParentSymbolPath = symbolPath;
     }
@@ -652,6 +653,7 @@ addCommandLineFileDirectories(std::vector<std::string>& searchPath,
 void setupModuleSearchPaths(
                   Context* context,
                   const std::string& chplHome,
+                  const std::string& moduleRoot,
                   bool minimalModules,
                   const std::string& chplLocaleModel,
                   bool enableTaskTracking,
@@ -668,10 +670,13 @@ void setupModuleSearchPaths(
       "setupModuleSearchPaths should be called before any queries are run");
 
   std::string modRoot;
-  if (!minimalModules) {
+  if (moduleRoot.empty()) {
     modRoot = chplHome + "/modules";
   } else {
-    modRoot = chplHome + "/modules/minimal";
+    modRoot = moduleRoot;
+  }
+  if (minimalModules) {
+    modRoot += "/minimal";
   }
 
   std::string internal = modRoot + "/internal";
@@ -756,6 +761,7 @@ void setupModuleSearchPaths(
 
 
 void setupModuleSearchPaths(Context* context,
+                            const std::string& moduleRoot,
                             bool minimalModules,
                             bool enableTaskTracking,
                             const std::vector<std::string>& cmdLinePaths,
@@ -770,6 +776,7 @@ void setupModuleSearchPaths(Context* context,
   auto chplModulePath = (it != chplEnv->end()) ? it->second : "";
   setupModuleSearchPaths(context,
                          chplHomeStr,
+                         moduleRoot,
                          minimalModules,
                          chplEnv->at("CHPL_LOCALE_MODEL"),
                          false,
@@ -781,6 +788,15 @@ void setupModuleSearchPaths(Context* context,
                          {},  // prependStandardModulePaths
                          cmdLinePaths,
                          inputFilenames);
+}
+
+void setupModuleSearchPaths(Context* context,
+                            bool minimalModules,
+                            bool enableTaskTracking,
+                            const std::vector<std::string>& cmdLinePaths,
+                            const std::vector<std::string>& inputFilenames) {
+  setupModuleSearchPaths(context, "", minimalModules, enableTaskTracking,
+                                      cmdLinePaths, inputFilenames);
 }
 
 bool
@@ -1307,6 +1323,13 @@ static const bool& idIsModuleScopeVarQuery(Context* context, ID id) {
   return QUERY_END(result);
 }
 
+uast::Decl::Linkage idToDeclLinkage(Context* context, ID id) {
+  auto ast = id ? parsing::idToAst(context, id) : nullptr;
+  auto decl = ast ? ast->toDecl() : nullptr;
+  auto ret = decl ? decl->linkage() : uast::Decl::DEFAULT_LINKAGE;
+  return ret;
+}
+
 bool idIsModuleScopeVar(Context* context, ID id) {
   return idIsModuleScopeVarQuery(context, id);
 }
@@ -1333,13 +1356,27 @@ bool idIsParenlessFunction(Context* context, ID id) {
   return idIsFunction(context, id) && idIsParenlessFunctionQuery(context, id);
 }
 
-bool idIsNestedFunction(Context* context, ID id) {
-  if (id.isEmpty() || !idIsFunction(context, id)) return false;
-  for (auto up = id.parentSymbolId(context); up;
-            up = up.parentSymbolId(context)) {
-    if (idIsFunction(context, up) || idIsInterface(context, up)) return true;
+static bool const& idIsNestedFunctionQuery(Context* context, ID id) {
+  QUERY_BEGIN(idIsNestedFunctionQuery, context, id);
+
+  bool result = false;
+  if (id.isEmpty() || !idIsFunction(context, id)) {
+    result = false;
+  } else {
+    for (auto up = id.parentSymbolId(context); up;
+              up = up.parentSymbolId(context)) {
+      if (idIsFunction(context, up) || idIsInterface(context, up)) {
+        result = true;
+        break;
+      }
+    }
   }
-  return false;
+
+  return QUERY_END(result);
+}
+
+bool idIsNestedFunction(Context* context, ID id) {
+  return idIsNestedFunctionQuery(context, id);
 }
 
 template <typename Predicate>
@@ -1618,13 +1655,6 @@ idToContainingMultiDeclIdQuery(Context* context, ID id) {
   QUERY_BEGIN(idToContainingMultiDeclIdQuery, context, id);
 
   ID cur = id;
-  AstTag tagForId = idToTag(context, id);
-  // TODO: do we really need this assert? In which cases do we arrive here unexpectedly?
-  CHPL_ASSERT(isVariable(tagForId)  ||
-              isMultiDecl(tagForId) ||
-              isTupleDecl(tagForId) ||
-              isForwardingDecl(tagForId));
-
   while (true) {
     ID parent = idToParentId(context, cur);
     AstTag parentTag = idToTag(context, parent);
@@ -1696,29 +1726,34 @@ bool idContainsFieldWithName(Context* context, ID typeDeclId, UniqueString field
   return idContainsFieldWithNameQuery(context, typeDeclId, fieldName);
 }
 
-static bool helpFindFieldId(const AstNode* ast,
-                            UniqueString fieldName,
-                            ID& fieldId) {
+bool findFieldIdInDeclaration(const AstNode* ast,
+                              UniqueString fieldName,
+                              ID& outFieldId) {
   if (auto var = ast->toVarLikeDecl()) {
     if (var->name() == fieldName) {
-      fieldId = var->id();
+      outFieldId = var->id();
       return true;
     }
   } else if (auto mult = ast->toMultiDecl()) {
     for (auto decl : mult->decls()) {
-      bool found = helpFindFieldId(decl, fieldName, fieldId);
+      bool found = findFieldIdInDeclaration(decl, fieldName, outFieldId);
       if (found) {
         return true;
       }
     }
   } else if (auto tup = ast->toTupleDecl()) {
     for (auto decl : tup->decls()) {
-      bool found = helpFindFieldId(decl, fieldName, fieldId);
+      bool found = findFieldIdInDeclaration(decl, fieldName, outFieldId);
       if (found) {
         return true;
       }
     }
+  } else if (auto fwd = ast->toForwardingDecl()) {
+    if (auto fwdVar = fwd->expr()->toVariable()) {
+      return findFieldIdInDeclaration(fwdVar, fieldName, outFieldId);
+    }
   }
+  outFieldId = ID();
   return false;
 }
 
@@ -1732,11 +1767,12 @@ fieldIdWithNameQuery(Context* context, ID typeDeclId, UniqueString fieldName) {
     auto ad = ast->toAggregateDecl();
 
     for (auto child: ad->children()) {
-      // Ignore everything other than VarLikeDecl, MultiDecl, TupleDecl
+      // Ignore everything other than VarLikeDecl, MultiDecl, TupleDecl, ForwardingDecl
       if (child->isVarLikeDecl() ||
           child->isMultiDecl() ||
-          child->isTupleDecl()) {
-        bool found = helpFindFieldId(child, fieldName, result);
+          child->isTupleDecl() ||
+          child->isForwardingDecl()) {
+        bool found = findFieldIdInDeclaration(child, fieldName, result);
         if (found) {
           break;
         }

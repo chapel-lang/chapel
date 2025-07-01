@@ -81,6 +81,8 @@ def get_runtime_link_args(runtime_subdir):
     system.append("-lm")
     # always link with the pthreads library
     system.append("-lpthread")
+    # always link with the dlopen library
+    system.append("-ldl")
 
     return (bundled, system)
 
@@ -132,6 +134,12 @@ def compute_internal_compile_link_args(runtime_subdir):
         extend2(host_compile, chpl_jemalloc.get_compile_args('host'))
         extend2(host_link, chpl_jemalloc.get_link_args('host'))
 
+    extend2(tgt_compile, chpl_mimalloc.get_compile_args('target'))
+    extend2(tgt_link, chpl_mimalloc.get_link_args('target'))
+    if not skip_host:
+        extend2(host_compile, chpl_mimalloc.get_compile_args('host'))
+        extend2(host_link, chpl_mimalloc.get_link_args('host'))
+
     if chpl_re2.get() != 'none':
         extend2(tgt_compile, chpl_re2.get_compile_args())
         extend2(tgt_link, chpl_re2.get_link_args())
@@ -145,6 +153,8 @@ def compute_internal_compile_link_args(runtime_subdir):
     if chpl_comm.get() == 'ofi':
         extend2(tgt_compile, chpl_libfabric.get_compile_args())
         extend2(tgt_link, chpl_libfabric.get_link_args())
+        extend2(tgt_compile, chpl_comm_ofi_oob.get_compile_args())
+        extend2(tgt_link, chpl_comm_ofi_oob.get_link_args())
     elif chpl_comm.get() == 'gasnet':
         extend2(tgt_compile, chpl_gasnet.get_compile_args())
         extend2(tgt_link, chpl_gasnet.get_link_args())

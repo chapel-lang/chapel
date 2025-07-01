@@ -1,4 +1,4 @@
-.TH "hwlocality_creation" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_creation" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -101,6 +101,11 @@ Terminate and free a topology context\&.
 Duplicate a topology\&. The entire topology structure as well as its objects are duplicated into a new one\&.
 .PP
 This is useful for keeping a backup while modifying a topology\&.
+.PP
+\fBReturns\fP
+.RS 4
+0 on success, -1 on error\&.
+.RE
 .PP
 \fBNote\fP
 .RS 4

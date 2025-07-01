@@ -4,11 +4,14 @@ all:
 	@echo For information on downloading and using Berkeley UPC, see: https://upc.lbl.gov
 	@exit 1
 
+# legacy harness support
+GASNET_BLDDIR ?= $(TOP_BUILDDIR)/gasnet
+
 PERL ?= perl
 AMX_FLAVOR=mpi
-CONDUIT_DIR=$(TOP_BUILDDIR)/gasnet/$(AMX_FLAVOR)-conduit
+CONDUIT_DIR=$(GASNET_BLDDIR)/$(AMX_FLAVOR)-conduit
 CONDUIT_FRAG=$(CONDUIT_DIR)/$(AMX_FLAVOR)-seq.mak
-AMX_DIR=$(TOP_BUILDDIR)/gasnet/other/am$(AMX_FLAVOR)
+AMX_DIR=$(GASNET_BLDDIR)/other/am$(AMX_FLAVOR)
 SPAWNER_DIR=$(CONDUIT_DIR)/contrib
 SPAWNER=gasnetrun_mpi gasnetrun_mpi.pl
 

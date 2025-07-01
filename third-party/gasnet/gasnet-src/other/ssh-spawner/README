@@ -17,7 +17,11 @@ which allows applications using many GASNet conduits to utilize ssh (or rsh)
 to perform job launch.  If installing GASNet on system which allows remote
 shell connections to the compute nodes, this may be a lower-overhead mechanism
 for job launch than use of the default mpi-spawner.  This is also the default
-spawner when MPI support is not present (or is disabled).
+spawner for many conduits when MPI support is not present (or is disabled).
+
+This document does *not* cover ssh-based job spawning in udp-conduit, which uses
+distinct code.  For information on spawning udp-conduit jobs, please see
+udp-conduit/README (source) or share/doc/gasnet/README-udp (installed).
 
 @ Section: Basic Usage @
 
@@ -36,12 +40,14 @@ spawner when MPI support is not present (or is disabled).
     gasnetrun_[conduit] -n <n> [options] [--] prog [program args]
     options:
       -n <n>                 number of processes to run (required)
-      -N <N>                 number of nodes to run on (not supported by all MPIs)
+      -N <N>                 number of nodes to run on (not always supported)
+      -c <n>                 number of cpus per process (not always supported)
       -E <VAR1[,VAR2...]>    list of environment vars to propagate
       -v                     be verbose about what is happening
       -t                     test only, don't execute anything (implies -v)
       -k                     keep any temporary files created (implies -v)
-      -spawner=(ssh|mpi|pmi) force use of a specific spawner (if available)
+      -spawner=<name>        force use of a specific spawner ([supported spawners])
+      --                     ends option parsing
 
   The ssh-spawner described in this README is used if selected by one of the
   following three mechanisms, in order from greatest to least precedence:
@@ -233,3 +239,13 @@ using gethostbynname().
       compute nodes.
     - Unless the out-degree has been set to zero, compute nodes must
       able to resolve the hostnames of the other compute nodes.
+
+@ Section: Known Problems @
+
++ Use of the -E option to propagate environment variables currently
+  has two limitations:
+    - Will silently discard variables with non-conforming names.
+      Specifically, names must match '[A-Za-z_][A-Za-z0-9_]*'.
+    - Will silently discard variables with newline characters
+      in their value.
+  See Bug 4723 for the motivation behind these constraints.

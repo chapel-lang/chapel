@@ -62,8 +62,7 @@ public use SparseBlockDist;
 config param debugBlockDist = false;
 config param debugBlockDistBulkTransfer = false;
 
-// TODO: This is no longer used, deprecate with warning because it is used
-// in miniMD's release Makefile and compopts.
+@deprecated("'disableAliasedBulkTransfer' is deprecated and has no effect")
 config const disableAliasedBulkTransfer = true;
 
 config param disableBlockDistBulkTransfer = false;
@@ -189,33 +188,14 @@ the non-distributed domain ``Space``.  It then declares an array ``A``
 over that domain.  The `forall` loop sets each array element to the ID
 of the locale to which it is mapped.
 
-  .. code-block:: chapel
-
-    use BlockDist;
-
-    const Space = {1..8, 1..8};
-    const Dist = new blockDist(boundingBox=Space);
-    const D = Dist.createDomain(Space);
-    var A: [D] int;
-
-    forall a in A do
-      a = here.id;
-
-    writeln(A);
+.. literalinclude:: ../../../../test/distributions/doc-examples/BlockDistExamples.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE
+   :end-before: STOP_EXAMPLE
 
 When run on 6 locales, the output is:
 
-  ::
-
-    0 0 0 0 1 1 1 1
-    0 0 0 0 1 1 1 1
-    0 0 0 0 1 1 1 1
-    2 2 2 2 3 3 3 3
-    2 2 2 2 3 3 3 3
-    2 2 2 2 3 3 3 3
-    4 4 4 4 5 5 5 5
-    4 4 4 4 5 5 5 5
-
+.. literalinclude:: ../../../../test/distributions/doc-examples/BlockDistExamples.good
 
 **Data-Parallel Iteration**
 
@@ -997,6 +977,7 @@ proc type blockDist.createDomain(dom: domain(?), targetLocales: [] locale = Loca
 }
 
 // create a domain over a blockDist Distribution constructed from a series of ranges
+pragma "last resort"
 proc type blockDist.createDomain(rng: range(?)..., targetLocales: [] locale = Locales) {
   return createDomain({(...rng)}, targetLocales);
 }
@@ -1055,6 +1036,7 @@ proc type blockDist.createArray(
 
 // create an array over a blockDist Distribution constructed from a series of ranges, default initialized
 pragma "no copy return"
+pragma "last resort"
 proc type blockDist.createArray(
   rng: range(?)...,
   type eltType,
@@ -1070,6 +1052,7 @@ proc type blockDist.createArray(rng: range(?)..., type eltType) {
 
 // create an array over a blockDist Distribution constructed from a series of ranges, initialized with the given value or iterator
 pragma "no copy return"
+pragma "last resort"
 @unstable("'blockDist.createArray' with an 'initExpr' formal is unstable and may change in a future release")
 proc type blockDist.createArray(
   rng: range(?)...,
@@ -1091,6 +1074,7 @@ proc type blockDist.createArray(rng: range(?)..., type eltType, initExpr: ?t)
 
 // create an array over a blockDist Distribution constructed from a series of ranges, initialized from the given array
 pragma "no copy return"
+pragma "last resort"
 @unstable("'blockDist.createArray' with an 'initExpr' formal is unstable and may change in a future release")
 proc type blockDist.createArray(
   rng: range(?)...,

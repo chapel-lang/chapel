@@ -26,13 +26,32 @@
 #include "python-types.h"
 #include "error-tracker.h"
 #include "resolution.h"
+#include "python-type-helper.h"
 
 using namespace chpl;
 using namespace uast;
 
 int ContextObject::init(ContextObject* self, PyObject* args, PyObject* kwargs) {
   Context::Configuration config;
-  config.chplHome = getenv("CHPL_HOME");
+
+  std::string chplHome;
+  bool installed = false;
+  bool fromEnv = false;
+  std::string diagnosticMsg;
+  auto error = findChplHome(nullptr, nullptr, chplHome, installed, fromEnv, diagnosticMsg);
+  if (!diagnosticMsg.empty()) {
+    if (error) {
+      PyErr_SetString(PyExc_RuntimeError, diagnosticMsg.c_str());
+      return -1;
+    } else {
+      PyErr_WarnEx(PyExc_RuntimeWarning, diagnosticMsg.c_str(), 1);
+    }
+  } else if (error) {
+    PyErr_SetString(PyExc_RuntimeError, "Unknown error while finding CHPL_HOME");
+    return -1;
+  }
+
+  config.chplHome = chplHome;
   new (&self->value_) Context(std::move(config));
   self->value_.installErrorHandler(owned<PythonErrorHandler>(new PythonErrorHandler((PyObject*) self)));
 
@@ -105,7 +124,7 @@ std::string generatePyiFile() {
     printedAnything = false; \
     generated.insert(NODE##Object::Name); \
     if (auto parentType = ParentTypeInfo<NODE##Object>::parentTypeObject()) { \
-      ss << "(" << parentType->tp_name << ")"; \
+      ss << "(" << getTypeName(parentType) << ")"; \
     } \
     ss << ":" << std::endl;
   #define METHOD(NODE, NAME, DOCSTR, TYPEFN, BODY) \
@@ -132,7 +151,7 @@ std::string generatePyiFile() {
     if(generated.find(NODE##Object::Name) == generated.end()) { \
       ss << "class " << NODE##Object::Name; \
       if (auto parentType = ParentTypeInfo<NODE##Object>::parentTypeObject()) { \
-        ss << "(" << parentTypeFor(TAG)->tp_name << ")"; \
+        ss << "(" << getTypeName(parentType) << ")"; \
       } \
       ss << ":" << std::endl; \
       ss << "    pass" << std::endl; \
@@ -153,9 +172,33 @@ PyObject* AstNodeObject::iter(AstNodeObject *self) {
   return wrapIterPair((ContextObject*) self->contextObject, self->value_->children());
 }
 
+PyObject* AstNodeObject::str(AstNodeObject *self) {
+  if (!self->value_) {
+    raiseExceptionForIncorrectlyConstructedType("AstNode");
+    return nullptr;
+  }
+
+  std::stringstream ss;
+  self->value_->stringify(ss, CHPL_SYNTAX);
+  auto typeString = ss.str();
+  return Py_BuildValue("s", typeString.c_str());
+}
+
+PyObject* AstNodeObject::repr(AstNodeObject *self) {
+  if (!self->value_) {
+    raiseExceptionForIncorrectlyConstructedType("AstNode");
+    return nullptr;
+  }
+
+  std::stringstream ss;
+  self->value_->stringify(ss, DEBUG_DETAIL);
+  auto typeString = ss.str();
+  return Py_BuildValue("s", typeString.c_str());
+}
+
 void ChapelTypeObject_dealloc(ChapelTypeObject* self) {
   Py_XDECREF(self->contextObject);
-  Py_TYPE(self)->tp_free((PyObject *) self);
+  callPyTypeSlot_tp_free(ChapelTypeObject::PythonType, (PyObject*) self);
 }
 
 PyObject* ChapelTypeObject::str(ChapelTypeObject* self) {
@@ -186,14 +229,14 @@ PyTypeObject* parentTypeFor(asttags::AstTag tag) {
 #define AST_BEGIN_SUBCLASSES(NAME)
 #define AST_END_SUBCLASSES(NAME) \
   if (tag > asttags::START_##NAME && tag < asttags::END_##NAME) { \
-    return &NAME##Type; \
+    return NAME##Type; \
   }
 #include "chpl/uast/uast-classes-list.h"
 #undef AST_NODE
 #undef AST_LEAF
 #undef AST_BEGIN_SUBCLASSES
 #undef AST_END_SUBCLASSES
-  return &AstNodeObject::PythonType;
+  return AstNodeObject::PythonType;
 }
 
 PyTypeObject* parentTypeFor(types::typetags::TypeTag tag) {
@@ -202,18 +245,18 @@ PyTypeObject* parentTypeFor(types::typetags::TypeTag tag) {
 #define TYPE_BEGIN_SUBCLASSES(NAME)
 #define TYPE_END_SUBCLASSES(NAME) \
   if (tag > types::typetags::START_##NAME && tag < types::typetags::END_##NAME) { \
-    return &NAME##Type; \
+    return NAME##Type; \
   }
 #include "chpl/types/type-classes-list.h"
 #undef TYPE_NODE
 #undef BUILTIN_TYPE_NODE
 #undef TYPE_BEGIN_SUBCLASSES
 #undef TYPE_END_SUBCLASSES
-  return &ChapelTypeObject::PythonType;
+  return ChapelTypeObject::PythonType;
 }
 
 PyTypeObject* parentTypeFor(chpl::types::paramtags::ParamTag tag) {
-  return &ParamObject::PythonType;
+  return ParamObject::PythonType;
 }
 
 PyObject* wrapGeneratedType(ContextObject* context, const AstNode* node) {
@@ -226,7 +269,7 @@ PyObject* wrapGeneratedType(ContextObject* context, const AstNode* node) {
   switch (node->tag()) {
 #define CAST_TO(NAME) \
     case asttags::NAME: \
-      toReturn = PyObject_CallObject((PyObject*) &NAME##Type, args); \
+      toReturn = PyObject_CallObject((PyObject*) NAME##Type, args); \
       ((NAME##Object*) toReturn)->parent.value_ = node->to##NAME(); \
       break;
 #define AST_NODE(NAME) CAST_TO(NAME)
@@ -256,7 +299,7 @@ PyObject* wrapGeneratedType(ContextObject* context, const types::Type* node) {
   switch (node->tag()) {
 #define CAST_TO(NAME) \
     case types::typetags::NAME: \
-      toReturn = PyObject_CallObject((PyObject*) &NAME##Type, args); \
+      toReturn = PyObject_CallObject((PyObject*) NAME##Type, args); \
       ((NAME##Object*) toReturn)->parent.value_ = (const types::Type*) node->to##NAME(); \
       break;
 #define TYPE_NODE(NAME) CAST_TO(NAME)
@@ -286,7 +329,7 @@ PyObject* wrapGeneratedType(ContextObject* context, const chpl::types::Param* no
   switch (node->tag()) {
 #define PARAM_NODE(NAME, TYPE) \
     case chpl::types::paramtags::NAME: \
-      toReturn = PyObject_CallObject((PyObject*) &NAME##Type, args); \
+      toReturn = PyObject_CallObject((PyObject*) NAME##Type, args); \
       ((NAME##Object*) toReturn)->parent.value_ = node->to##NAME(); \
       break;
 #include "chpl/types/param-classes-list.h"

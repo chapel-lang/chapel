@@ -664,6 +664,15 @@ static void test20() {
   });
 }
 
+static void test21() {
+  testPrimitive("is_subtype", {
+    { "borrowed class", "borrowed class?", shouldReturnFalse },
+    { "borrowed class?", "borrowed class", shouldReturnTrue },
+    { "borrowed Parent", "borrowed class", shouldReturnFalse },
+    { "borrowed class", "borrowed Parent", shouldReturnTrue },
+  });
+}
+
 int main() {
   test1();
   test2();
@@ -685,4 +694,5 @@ int main() {
   test18();
   test19();
   test20();
+  test21();
 }

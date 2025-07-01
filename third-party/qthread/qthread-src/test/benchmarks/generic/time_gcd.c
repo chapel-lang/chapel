@@ -1,6 +1,3 @@
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 #include "argparsing.h"
 #include "qt_gcd.h"
 #include <assert.h>

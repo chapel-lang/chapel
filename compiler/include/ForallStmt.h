@@ -108,8 +108,8 @@ class ForallOptimizationInfo {
     std::vector< std::vector<Symbol *> > multiDIndices;
 
     // calls in the loop that are candidates for ALA optimization
-    std::vector<ALACandidate> staticCandidates;
-    std::vector<ALACandidate> dynamicCandidates;
+    std::deque<ALACandidate> staticCandidates;
+    std::deque<ALACandidate> dynamicCandidates;
 
     // the static check control symbol added for symbol
     std::map<Symbol *, Symbol *> staticCheckSymForSymMap;

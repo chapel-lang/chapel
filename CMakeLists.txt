@@ -36,9 +36,13 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # These values will be written to <build_dir>/frontend/include/chpl/config/config.h
 
 set(CHPL_MAJOR_VERSION 2)
-set(CHPL_MINOR_VERSION 4)
+set(CHPL_MINOR_VERSION 6)
 set(CHPL_PATCH_VERSION 0)
 set(CHPL_BUILD_VERSION 0)
+
+set(CHPL_PREV_MAJOR_VERSION 2)
+set(CHPL_PREV_MINOR_VERSION 5)
+set(CHPL_PREV_PATCH_VERSION 0)
 
 # Flip this to 'true' when we're ready to roll out a release; then back
 # after branching
@@ -122,6 +126,7 @@ set(CHPL_HOST_SYSTEM_COMPILE_ARGS CACHE INTERNAL "Description")
 set(CHPL_HOST_BUNDLED_LINK_ARGS CACHE INTERNAL "Description")
 set(CHPL_HOST_SYSTEM_LINK_ARGS CACHE INTERNAL "Description")
 set(CHPL_HOST_JEMALLOC CACHE INTERNAL "Description")
+set(CHPL_HOST_MIMALLOC CACHE INTERNAL "Description")
 set(CHPL_TARGET_COMPILER_PRGENV CACHE INTERNAL "Description")
 set(CHPL_TARGET_BUNDLED_COMPILE_ARGS CACHE INTERNAL "Description")
 set(CHPL_TARGET_SYSTEM_COMPILE_ARGS CACHE INTERNAL "Description")
@@ -129,6 +134,7 @@ set(CHPL_TARGET_BUNDLED_LINK_ARGS CACHE INTERNAL "Description")
 set(CHPL_TARGET_SYSTEM_LINK_ARGS CACHE INTERNAL "Description")
 set(CHPL_TARGET_MEM CACHE INTERNAL "Description")
 set(CHPL_TARGET_JEMALLOC CACHE INTERNAL "Description")
+set(CHPL_TARGET_MIMALLOC CACHE INTERNAL "Description")
 set(CHPL_TARGET_CPU_FLAG CACHE INTERNAL "Description")
 set(CHPL_TARGET_BACKEND_CPU CACHE INTERNAL "Description")
 set(CHPL_MAKE CACHE INTERNAL "Description")
@@ -140,6 +146,7 @@ set(CHPL_LLVM_VERSION CACHE INTERNAL "Description")
 set(CHPL_LLVM_CLANG_C CACHE INTERNAL "Description")
 set(CHPL_LLVM_CLANG_CXX CACHE INTERNAL "Description")
 set(CHPL_LLVM_STATIC_DYNAMIC CACHE INTERNAL "Description")
+set(CHPL_LLVM_BIN_DIR CACHE INTERNAL "Description")
 set(CHPL_LLVM_TARGET_CPU CACHE INTERNAL "Description")
 set(CHPL_RUNTIME_SUBDIR CACHE INTERNAL "Description")
 set(CHPL_LAUNCHER_SUBDIR CACHE INTERNAL "Description")
@@ -153,6 +160,8 @@ set(CHPL_GMP_UNIQ_CFG_PATH CACHE INTERNAL "Description")
 set(CHPL_HWLOC_UNIQ_CFG_PATH CACHE INTERNAL "Description")
 set(CHPL_HOST_JEMALLOC_UNIQ_CFG_PATH CACHE INTERNAL "Description")
 set(CHPL_TARGET_JEMALLOC_UNIQ_CFG_PATH CACHE INTERNAL "Description")
+set(CHPL_TARGET_MIMALLOC_UNIQ_CFG_PATH CACHE INTERNAL "Description")
+set(CHPL_LLVM_CLANG_C_UNIQ_CFG_PATH CACHE INTERNAL "Description")
 set(CHPL_LIBFABRIC_UNIQ_CFG_PATH CACHE INTERNAL "Description")
 set(CHPL_LIBUNWIND_UNIQ_CFG_PATH CACHE INTERNAL "Description")
 set(CHPL_QTHREAD_UNIQ_CFG_PATH CACHE INTERNAL "Description")
@@ -355,12 +364,33 @@ add_subdirectory(compiler)
 add_subdirectory(frontend)
 add_subdirectory(tools/chpldoc)
 
+
+if (CHPL_HOST_MEM STREQUAL "mimalloc")
+  if (CHPL_HOST_MIMALLOC STREQUAL "bundled")
+    find_package(mimalloc REQUIRED PATHS ${CMAKE_CURRENT_SOURCE_DIR}/third-party/mimalloc/install/${CHPL_HOST_MIMALLOC_UNIQ_CFG_PATH} NO_DEFAULT_PATH)
+  elseif (CHPL_HOST_MIMALLOC STREQUAL "system")
+    find_package(mimalloc REQUIRED)
+  else()
+    message(FATAL_ERROR "Invalid CHPL_HOST_MIMALLOC value: ${CHPL_HOST_MIMALLOC}")
+  endif()
+
+  # static linking results in much faster compile times, but causes crashes on Mac
+  if (APPLE)
+    target_link_libraries(ChplFrontend PRIVATE mimalloc)
+    target_link_libraries(ChplFrontendShared PRIVATE mimalloc)
+  else()
+    target_link_libraries(ChplFrontend PRIVATE mimalloc-static)
+    target_link_libraries(ChplFrontendShared PRIVATE mimalloc-static)
+  endif()
+endif()
+
 # Adjust the install rpath for chpl and chpldoc
 if (INSTALLATION_MODE STREQUAL "prefix")
   # let the build and install rpaths be absolute (which is the default)
   set_target_properties(chpl chpldoc ChplFrontendShared
                         PROPERTIES
                         INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib/chapel/${CHPL_MAJOR_VERSION}.${CHPL_MINOR_VERSION}/compiler")
+  # TODO: handle rpath for mimalloc in prefix installs
   install(TARGETS chpl
           RUNTIME DESTINATION bin)
   install(TARGETS chpldoc OPTIONAL
@@ -383,10 +413,23 @@ else()
       set(CHPL_INSTALL_RPATH "@executable_path/../../lib/compiler/${CHPL_HOST_BIN_SUBDIR}")
     endif()
 
+    if (CHPL_HOST_MEM STREQUAL "mimalloc")
+      if (CHPL_HOST_MIMALLOC STREQUAL "bundled")
+        if(APPLE)
+          set(CHPL_INSTALL_RPATH "${CHPL_INSTALL_RPATH};@executable_path/../../third-party/mimalloc/install/${CHPL_HOST_MIMALLOC_UNIQ_CFG_PATH}/lib")
+        else()
+          # TODO: this adds both lib and lib64 but should only add the correct one
+          set(CHPL_INSTALL_RPATH "${CHPL_INSTALL_RPATH};$ORIGIN/../../third-party/mimalloc/install/${CHPL_HOST_MIMALLOC_UNIQ_CFG_PATH}/lib;$ORIGIN/../../third-party/mimalloc/install/${CHPL_HOST_MIMALLOC_UNIQ_CFG_PATH}/lib64")
+        endif()
+      elseif (CHPL_HOST_MIMALLOC STREQUAL "system")
+        set(CHPL_INSTALL_RPATH "${CHPL_INSTALL_RPATH};${MIMALLOC_LIBRARY_DIR}")
+      endif()
+    endif()
+
     set_target_properties(chpl chpldoc ChplFrontendShared
                           PROPERTIES
                           BUILD_WITH_INSTALL_RPATH TRUE
-                          INSTALL_RPATH ${CHPL_INSTALL_RPATH})
+                          INSTALL_RPATH "${CHPL_INSTALL_RPATH}")
   endif()
 
   install(TARGETS chpl
@@ -394,3 +437,51 @@ else()
   install(TARGETS chpldoc OPTIONAL
           RUNTIME DESTINATION "bin/${CHPL_HOST_BIN_SUBDIR}")
 endif()
+
+set(SRC_DIR     ${CMAKE_CURRENT_SOURCE_DIR})
+if (${CHPL_OFFICIAL_RELEASE})
+  set(RELEASE_FLAG "--official-release")
+else()
+  set(RELEASE_FLAG "")
+endif()
+
+# Gather files that are sensitive to version number changes and update them.
+# Check if they exist here because in the release tarball, some of these
+# files will not be present.
+set(VERSION_FILES "")
+list(APPEND VERSION_FILES
+  "${SRC_DIR}/doc/rst/conf.py"
+  "${SRC_DIR}/doc/rst/language/archivedSpecs.rst"
+  "${SRC_DIR}/doc/rst/usingchapel/QUICKSTART.rst"
+  "${SRC_DIR}/doc/rst/usingchapel/chplenv.rst"
+  "${SRC_DIR}/man/confchpl.rst"
+  "${SRC_DIR}/man/confchpldoc.rst"
+  "${SRC_DIR}/test/compflags/bradc/printstuff/versionhelp.sh"
+  "${SRC_DIR}/test/chpldoc/compflags/combinations/versionhelp-chpldoc.sh"
+  "${SRC_DIR}/test/compflags/bradc/printstuff/version.goodstart"
+)
+
+set(EXISTING_VERSION_FILES "")
+foreach(FILE ${VERSION_FILES})
+  if(EXISTS ${FILE})
+    list(APPEND EXISTING_VERSION_FILES ${FILE})
+  endif()
+endforeach()
+
+add_custom_target(update-release-and-version-info ALL
+  COMMAND ${CHPL_CMAKE_PYTHON}
+          ${SRC_DIR}/util/config/update-release-and-version-info
+          ${CHPL_MAJOR_VERSION}
+          ${CHPL_MINOR_VERSION}
+          ${CHPL_PATCH_VERSION}
+          ${CHPL_PREV_MAJOR_VERSION}
+          ${CHPL_PREV_MINOR_VERSION}
+          ${CHPL_PREV_PATCH_VERSION}
+          "--files"
+          ${EXISTING_VERSION_FILES}
+          ${RELEASE_FLAG}
+  COMMENT "checking sensitive files for version changes..."
+  VERBATIM)
+add_dependencies(chpl update-release-and-version-info)
+add_dependencies(chpldoc update-release-and-version-info)
+add_dependencies(ChplFrontend-obj update-release-and-version-info)

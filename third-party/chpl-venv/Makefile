@@ -26,11 +26,11 @@ cleanall: FORCE clean
 clobber: FORCE clean
 	rm -rf install
 
-OLD_PYTHON_ERROR="python3 version 3.5 or later is required to install chpldoc and start_test dependencies. See https://www.python.org/"
+OLD_PYTHON_ERROR="python3 version 3.9 or later is required to install chpldoc and start_test dependencies. See https://www.python.org/"
 
 $(CHPL_VENV_VIRTUALENV_DIR_DEPS1_OK):
 	@# First check the python version is OK
-	@if $(PYTHON) -c 'import sys; sys.exit(int(sys.version_info[:2] >= (3, 5)))'; then \
+	@if $(PYTHON) -c 'import sys; sys.exit(int(sys.version_info[:2] >= (3, 9)))'; then \
 	  echo $(OLD_PYTHON_ERROR); \
 	  exit 1; \
 	fi

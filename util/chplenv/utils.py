@@ -13,6 +13,21 @@ except ImportError:
     # Backport for pre Python 3.2
     from distutils.spawn import find_executable as which
 
+
+_CHPL_DEVELOPER = False
+
+def CHPL_DEVELOPER():
+    global _CHPL_DEVELOPER
+    return _CHPL_DEVELOPER
+
+def init_CHPL_DEVELOPER():
+    global _CHPL_DEVELOPER
+    _CHPL_DEVELOPER = is_true(os.environ.get('CHPL_DEVELOPER', False))
+
+def set_CHPL_DEVELOPER(value):
+    global _CHPL_DEVELOPER
+    _CHPL_DEVELOPER = is_true(value)
+
 # should not need this outside of this class
 _warning_buffer = []
 _buffer_warnings = True
@@ -42,8 +57,7 @@ ignore_errors = False
 
 def error(msg, exception=Exception):
     """Exception raising wrapper that differentiates developer-mode output"""
-    developer = os.environ.get('CHPL_DEVELOPER')
-    if developer and developer != "0" and not ignore_errors:
+    if CHPL_DEVELOPER() and not ignore_errors:
         # before rasing the exception, flush the warnings
         flush_warnings()
         raise exception(msg)
@@ -180,6 +194,34 @@ def is_ver_in_range(versionStr, minimumStr, maximumStr):
             return False
 
     return False
+
+def check_valid_var(varname, value, valid_values):
+    """
+    Check that a variable is set to a valid value
+
+    :param varname: The name of the variable, used for printing the error message
+    :param value: The value of the variable as set by the user or as inferred
+    :param valid_values: A sequence of valid values for the variable, e.g. a tuple or a list
+    """
+
+    def join_words(words, conjunction='or'):
+        if len(words) == 1:
+            return words[0]
+        elif len(words) == 2:
+            return "{0} {2} {1}".format(words[0], words[1], conjunction)
+        else:
+            return "{0}, {2} {1}".format(", ".join(words[:-1]), words[-1], conjunction)
+
+    if value not in valid_values:
+        error(
+            "{0}={1} is not valid, {0} must be {2}".format(
+                varname, value, join_words(valid_values)
+            )
+        )
+
+def is_true(value):
+    truthy = ('yes', 'Yes', 'YES', 'y', 'Y', 'true', 'True', 'TRUE', 't', 'T', '1', True)
+    return value in truthy
 
 
 class _UtilsTests(unittest.TestCase):

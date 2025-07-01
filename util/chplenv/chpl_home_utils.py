@@ -55,6 +55,46 @@ install_path_regex = re.compile(
                                                   os.path.sep))
 
 @memoize
+def get_chpl_configured_install_lib_prefix():
+    # gets the path to the lib directory for a prefix install, or None if not
+    # a prefix install
+    chpl_home = str(os.getenv("CHPL_HOME"))
+    if os.path.exists(os.path.join(chpl_home, "configured-prefix")):
+        with open(os.path.join(chpl_home, "CMakeLists.txt"), "r") as f:
+            # read CMakeLists.txt to get the CHPL_MAJOR_VERSION and
+            # CHPL_MINOR_VERSION and then construct the path from that
+            chpl_major_version = None
+            chpl_minor_version = None
+            for line in f:
+                if "set(CHPL_MAJOR_VERSION" in line:
+                    chpl_major_version = line.split()[1].strip(")")
+                if "set(CHPL_MINOR_VERSION" in line:
+                    chpl_minor_version = line.split()[1].strip(")")
+                if (
+                    chpl_major_version is not None
+                    and chpl_minor_version is not None
+                ):
+                    break
+        assert chpl_major_version is not None and chpl_minor_version is not None
+        chpl_version_string = "{}.{}".format(
+            chpl_major_version,
+            chpl_minor_version,
+        )
+        chpl_prefix = None
+        with open(os.path.join(chpl_home, "configured-prefix"), "r") as f:
+            chpl_prefix = f.read().strip()
+        # Problems with the configured-prefix file - maybe empty
+        assert chpl_prefix != "" and chpl_prefix is not None
+        return os.path.join(
+            chpl_prefix,
+            "lib",
+            "chapel",
+            chpl_version_string,
+            "compiler",
+        )
+    return None
+
+@memoize
 def get_chpl_version_from_install():
     if get_prefix_install_prefix():
         chpl_home = get_chpl_home()
@@ -154,12 +194,12 @@ def add_vars_to_paths(s):
 # Get the chpl-venv install directory:
 # $CHPL_HOME/third-party/chpl-venv/install/chpldeps
 @memoize
-def get_chpldeps(version=None):
+def get_chpldeps(chapel_py=False):
     base = os.path.join(get_chpl_third_party(), "chpl-venv", "install")
-    if version is None:
+    if not chapel_py:
         chpl_venv = os.path.join(base, "chpldeps")
     else:
-        chpl_venv = os.path.join(base, "chpl-frontend-py-deps-py" + str(version))
+        chpl_venv = os.path.join(base, "chpl-frontend-py-deps")
     return chpl_venv
 
 @memoize
@@ -180,15 +220,19 @@ def _main():
     parser.add_option('--chpldeps', action='store_const',
                       dest='func', const=get_chpldeps)
     parser.add_option(
-        "--chpldeps-version",
+        "--chpldeps-chapel-py",
         action="store_const",
         dest="func",
-        const=lambda: get_chpldeps(
-            str(sys.version_info.major) + str(sys.version_info.minor)
-        ),
+        const=lambda: get_chpldeps(True),
     )
     parser.add_option('--using-module', action='store_const',
                       dest='func', const=using_chapel_module)
+    parser.add_option('--configured-install-lib-prefix', action='store_const',
+                      dest='func', const=get_chpl_configured_install_lib_prefix)
+    parser.add_option('--runtime-lib', action='store_const',
+                      dest='func', const=get_chpl_runtime_lib)
+    parser.add_option('--runtime-incl', action='store_const',
+                      dest='func', const=get_chpl_runtime_incl)
     (options, args) = parser.parse_args()
 
     if options.func:

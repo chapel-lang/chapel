@@ -76,22 +76,14 @@ referring to the domain or array.
 
 **Example**
 
-  .. code-block:: chapel
+.. literalinclude:: ../../../../test/distributions/doc-examples/ReplicatedDistExamples.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE
+   :end-before: STOP_EXAMPLE
 
-    const Dbase = {1..5};  // A default-distributed domain
-    const Drepl = Dbase dmapped new replicatedDist();
-    var Abase: [Dbase] int;
-    var Arepl: [Drepl] int;
+When run on 6 locales, the output is:
 
-    // Only the current locale's replicand is accessed
-    Arepl[3] = 4;
-
-    // Only the current locale's replicand is accessed
-    forall (b,r) in zip(Abase,Arepl) do b = r;
-    Abase = Arepl;
-
-    // Access other locales' replicand with the replicand(loc) method
-    Arepl.replicand(Locales[1]) = Arepl;
+.. literalinclude:: ../../../../test/distributions/doc-examples/ReplicatedDistExamples.good
 
 See the :ref:`primers-replicated` primer for more examples of the Replicated
 distribution.

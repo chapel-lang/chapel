@@ -146,7 +146,7 @@ import re
 import shlex
 import datetime
 import errno
-from functools import reduce
+from functools import reduce, cache
 import atexit
 
 def elapsed_sub_test_time():
@@ -316,6 +316,7 @@ def ReadFileWithComments(f, ignoreLeadingSpace=True, args=None):
             chpl_env = get_chplenv()
             file_env = os.environ.copy()
             file_env.update(chpl_env)
+            file_env["CHPLENV_SUPPRESS_WARNINGS"] = "1"
 
             # execute the file and grab its output
             tmp_args = [os.path.abspath(f)]
@@ -849,6 +850,7 @@ def main():
     # purpose. compileline will not work correctly in some configurations when run
     # outside of its directory tree.
     compileline = os.path.join(chpl_home, 'util', 'config', 'compileline')
+    @cache
     def run_compileline(flag, lookingfor):
         (returncode, result, _) = run_process([compileline, flag],
                                               stdout=subprocess.PIPE,
@@ -857,13 +859,6 @@ def main():
         if returncode != 0:
             Fatal('Cannot find ' + lookingfor)
         return result
-
-    c_compiler = run_compileline('--compile', 'c compiler')
-    cpp_compiler = run_compileline('--compile-c++', 'c++ compiler')
-    host_c_compiler = run_compileline('--host-c-compiler', 'host c compiler')
-    host_cpp_compiler = run_compileline('--host-cxx-compiler', 'host c++ compiler')
-    runtime_includes_and_defines = run_compileline('--includes-and-defines',
-                                                   'runtime includes and defines')
 
     # Use timedexec
     # As much as I hate calling out to another script for the time out stuff,
@@ -1379,6 +1374,8 @@ def main():
             elif (suffix=='.skipif' and (os.access(f, os.R_OK) and
                    (os.getenv('CHPL_TEST_SINGLES')=='0'))):
                 testskipiffile=True
+                sys.stdout.write('[Checking skipif: %s.skipif]\n'%(test_filename))
+                sys.stdout.flush()
                 try:
                     skipme=False
                     skiptest=runSkipIf(f)
@@ -1398,6 +1395,9 @@ def main():
                     break
 
             elif ((suffix=='.suppressif' or name == 'SUPPRESSIF') and (os.access(f, os.R_OK))):
+                logname = "SUPPRESSIF" if name == "SUPPRESSIF" else "%s.suppressif" % (test_filename)
+                sys.stdout.write('[Checking suppressif: %s]\n'%(logname))
+                sys.stdout.flush()
                 try:
                     suppressme=False
                     suppresstest=runSkipIf(f)
@@ -1453,12 +1453,10 @@ def main():
                     catfiles=execcatfiles
 
             elif (suffix=='.lastcompopts' and os.access(f, os.R_OK)):
-                lastcompopts+=run_process(['cat', f], stdout=subprocess.PIPE)[1].strip().split()
-                # sys.stdout.write("lastcompopts=%s\n"%(lastcompopts))
+                lastcompopts+=ReadFileWithComments(f)[0].strip().split()
 
             elif (suffix=='.lastexecopts' and os.access(f, os.R_OK)):
-                lastexecopts+=run_process(['cat', f], stdout=subprocess.PIPE)[1].strip().split()
-                # sys.stdout.write("lastexecopts=%s\n"%(lastexecopts))
+                lastexecopts+=ReadFileWithComments(f)[0].strip().split()
 
             elif (suffix==PerfSfx('numlocales') and os.access(f, os.R_OK)):
                 numlocales=ReadIntegerValue(f, localdir)
@@ -1535,7 +1533,7 @@ def main():
                                              numlocales, maxLocalesAvailable))
                     continue
             if os.getenv('CHPL_TEST_MULTILOCALE_ONLY') and (numlocales <= 1) and not is_ml_c_or_cpp_test:
-                sys.stdout.write('[Skipping {0} because it does not '
+                sys.stdout.write('[Skipping test {0} because it does not '
                                  'use more than one locale]\n'
                                  .format(os.path.join(localdir, test_filename)))
                 continue
@@ -1679,13 +1677,17 @@ def main():
                 args = ['-o', test_filename]+shlex.split(compopts)+[testname]
                 cmd = None
                 if is_c_test:
-                    cmd = c_compiler
+                    cmd = run_compileline('--compile', 'c compiler')
                 elif is_ml_c_test:
+                    host_c_compiler = run_compileline('--host-c-compiler', 'host c compiler')
+                    runtime_includes_and_defines = run_compileline('--includes-and-defines', 'runtime includes and defines')
                     cmd_pieces = [host_c_compiler, runtime_includes_and_defines]
                     cmd = ' '.join(cmd_pieces)
                 elif is_cpp_test:
-                    cmd = cpp_compiler
+                    cmd = run_compileline('--compile-c++', 'c++ compiler')
                 elif is_ml_cpp_test:
+                    host_cpp_compiler = run_compileline('--host-cxx-compiler', 'host c++ compiler')
+                    runtime_includes_and_defines = run_compileline('--includes-and-defines', 'runtime includes and defines')
                     cmd_pieces = [host_cpp_compiler, runtime_includes_and_defines]
                     cmd = ' '.join(cmd_pieces)
             else:
@@ -2483,6 +2485,8 @@ def main():
                         # only notify for a failed execution if launching the test was successful
                         elif (not launcher_error):
                             sys.stdout.write('%s[Error execution failed for %s]\n'%(futuretest,test_name))
+                            sys.stdout.write('[Execution output was as follows:]\n')
+                            sys.stdout.write(trim_output(output))
 
                         if exectimeout or status != 0 or exec_status != 0:
                             break

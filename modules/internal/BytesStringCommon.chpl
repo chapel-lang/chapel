@@ -1200,7 +1200,7 @@ module BytesStringCommon {
         var remote_buf:bufferType = nil;
         if len != 0 then
           remote_buf = bufferCopyRemote(rhs.locale_id, rhs.buff, len);
-        if t==string {
+        if t == string {
           reinitWithOwnedBuffer(lhs, remote_buf, len, len+1,
                                 rhs.cachedNumCodepoints);
         }

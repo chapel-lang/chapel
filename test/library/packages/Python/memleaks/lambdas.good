@@ -3,4 +3,4 @@
 [[1, 2, 3], [1, 2, 3]]
 skipping potentially leaking print
 [1]
-()
+None

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2011-2021 Inria.  All rights reserved.
+ * Copyright © 2011-2023 Inria.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
@@ -31,10 +31,23 @@ int main(void)
   hwloc_topology_load(topology);
   root = hwloc_get_root_obj(topology);
   assert(hwloc_topology_get_depth(topology) == 3);
+  /* free instead of inserting */
+  group = hwloc_topology_alloc_group_object(topology);
+  assert(group);
+  group->cpuset = hwloc_bitmap_dup(root->cpuset);
+  err = hwloc_topology_free_group_object(topology, group);
+  assert(err == 0);
+  /* insert without sets, fails */
+  group = hwloc_topology_alloc_group_object(topology);
+  assert(group);
+  res = hwloc_topology_insert_group_object(topology, group);
+  assert(res == NULL);
   /* insert a group identical to root, will be merged */
   group = hwloc_topology_alloc_group_object(topology);
   assert(group);
   group->cpuset = hwloc_bitmap_dup(root->cpuset);
+  err = hwloc_obj_set_subtype(topology, group, "will be merged");
+  assert(!err);
   res = hwloc_topology_insert_group_object(topology, group);
   assert(res);
   assert(res == root);
@@ -45,6 +58,13 @@ int main(void)
   obj = hwloc_get_obj_by_type(topology, HWLOC_OBJ_PACKAGE, 1);
   assert(obj);
   group->cpuset = hwloc_bitmap_dup(obj->cpuset);
+  /* play with its subtype first */
+  err = hwloc_obj_set_subtype(topology, group, NULL);
+  assert(!err);
+  err = hwloc_obj_set_subtype(topology, group, "will be merged");
+  assert(!err);
+  err = hwloc_obj_set_subtype(topology, group, NULL);
+  assert(!err);
   res = hwloc_topology_insert_group_object(topology, group);
   assert(res);
   assert(res == obj);
@@ -58,6 +78,8 @@ int main(void)
   obj = hwloc_get_obj_by_type(topology, HWLOC_OBJ_PU, 12);
   assert(obj);
   hwloc_bitmap_or(group->cpuset, group->cpuset, obj->cpuset);
+  err = hwloc_obj_set_subtype(topology, group, "will fail");
+  assert(!err);
   res = hwloc_topology_insert_group_object(topology, group);
   assert(!res);
   assert(hwloc_topology_get_depth(topology) == 3);
@@ -71,6 +93,8 @@ int main(void)
   assert(obj);
   hwloc_bitmap_or(group->cpuset, group->cpuset, obj->cpuset);
   group->attr->group.kind = (unsigned)-1;
+  err = hwloc_obj_set_subtype(topology, group, "will be merged later");
+  assert(!err);
   res = hwloc_topology_insert_group_object(topology, group);
   assert(res == group);
   saved = group;
@@ -85,9 +109,13 @@ int main(void)
   assert(obj);
   hwloc_bitmap_or(group->cpuset, group->cpuset, obj->cpuset);
   group->attr->group.kind = 0;
+  err = hwloc_obj_set_subtype(topology, group, "will replace previous one");
+  assert(!err);
   res = hwloc_topology_insert_group_object(topology, group);
   assert(res == saved); /* the core should move the contents of this new group into a previous one */
   assert(res != group);
+  assert(res->subtype);
+  assert(!strcmp(res->subtype, "will replace previous one"));
   assert(hwloc_topology_get_depth(topology) == 4);
   /* insert yet another same group with higher kind, it will be dropped in favor of the previous-previous one */
   group = hwloc_topology_alloc_group_object(topology);
@@ -99,9 +127,13 @@ int main(void)
   assert(obj);
   hwloc_bitmap_or(group->cpuset, group->cpuset, obj->cpuset);
   group->attr->group.kind = (unsigned)-1;
+  err = hwloc_obj_set_subtype(topology, group, "will be merged in previous one");
+  assert(!err);
   res = hwloc_topology_insert_group_object(topology, group);
   assert(res == saved);
   assert(res != group);
+  assert(res->subtype);
+  assert(!strcmp(res->subtype, "will replace previous one"));
   assert(hwloc_topology_get_depth(topology) == 4);
   /* insert a conflict group of two packages by nodeset, will fail */
   group = hwloc_topology_alloc_group_object(topology);

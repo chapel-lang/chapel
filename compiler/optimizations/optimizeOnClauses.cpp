@@ -141,6 +141,7 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_ADDR_OF:
   case PRIM_SET_REFERENCE:
   case PRIM_LOCAL_CHECK:
+  case PRIM_IS_LOCAL:
 
   case PRIM_PTR_EQUAL:
   case PRIM_PTR_NOTEQUAL:
@@ -185,6 +186,8 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_AND_ASSIGN:
   case PRIM_OR_ASSIGN:
   case PRIM_XOR_ASSIGN:
+  case PRIM_LOGICALAND_ASSIGN:
+  case PRIM_LOGICALOR_ASSIGN:
     if (isCallExpr(call->get(2))) { // callExprs checked in calling function
       // Not necessarily true, but we return true because
       // the callExpr will be checked in the calling function
@@ -332,7 +335,7 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_GPU_KERNEL_LAUNCH:
    return LOCAL_NOT_FAST;
 
-  case PRIM_BREAKPOINT:
+  case PRIM_DEBUG_TRAP:
     return FAST_AND_LOCAL;
 
   case PRIM_CONST_ARG_HASH:

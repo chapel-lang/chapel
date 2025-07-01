@@ -5,6 +5,7 @@
  */
 
 #include <gasnetex.h>
+#include <gasnet_coll.h>
 #include <gasnet_tools.h>
 
 #include <test.h>
@@ -26,9 +27,9 @@ int main(int argc, char **argv) {
   GASNET_Safe(gex_Segment_Attach(&mysegment, myteam, TEST_SEGSZ_REQUEST));
   GASNET_Safe(gex_EP_RegisterHandlers(myep, htable, htable_cnt));
   #if GASNET_PAR
-    test_init("testinternal",0,"(iters) (threadcnt) (test_sections)");
+    test_init("testinternal",0,"(iters) (threadcnt) (test_sections) (seed)");
   #else
-    test_init("testinternal",0,"(iters) (test_sections)");
+    test_init("testinternal",0,"(iters) (test_sections) (seed)");
   #endif
   TEST_PRINT_CONDUITINFO();
 
@@ -43,10 +44,18 @@ int main(int argc, char **argv) {
   #endif
   if (argc > arg) test_sections = argv[arg++];
 
+  unsigned int seed = 0;
+  if (argc > arg) seed = atoi(argv[arg++]);
+  if (seed == 0) {
+    seed = (((unsigned int)TIME()) & 0xFFFF);
+    TEST_BCAST(&seed, 0, &seed, sizeof(seed));
+  }
+  // NOTE: Because TEST_RAND state is per-TU, TEST_SRAND() call is in gasnett_run_diagnostics()
+
   #if GASNET_PAR
-    MSG0("Running GASNet internal diagnostics with iters=%i and threads=%i", iters, threads);
+    MSG0("Running GASNet internal diagnostics with iters=%i and threads=%i (seed %u)", iters, threads, seed);
   #else
-    MSG0("Running GASNet internal diagnostics with iters=%i", iters);
+    MSG0("Running GASNet internal diagnostics with iters=%i (seed %u)", iters, seed);
   #endif
 
 
@@ -58,7 +67,7 @@ int main(int argc, char **argv) {
   void *myseg = TEST_SEG(myrank);
   void *peerseg = TEST_SEG(peer);
   test_errs = gasnett_run_diagnostics(iters, threads, test_sections, myteam,
-                                      myseg, peer, peerseg);
+                                      myseg, peer, peerseg, seed);
   BARRIER();
 
   if (test_errs) ERR("gasnett_run_diagnostics(%i) failed.", iters);

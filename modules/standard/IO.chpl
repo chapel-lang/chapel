@@ -938,30 +938,6 @@ enum iostringformatInternal {
 }
 
 @chpldoc.nodoc
-proc stringStyleWithVariableLengthInternal() {
-  return iostringstyleInternal.lenVb_data: int(64);
-}
-
-// Replacement for stringStyleWithLength, though it shouldn't be relied upon by
-// users as it will likely be replaced in the future
-@chpldoc.nodoc
-proc stringStyleWithLengthInternal(lengthBytes:int) throws {
-  var x = iostringstyleInternal.lenVb_data;
-  select lengthBytes {
-    when 0 do x = iostringstyleInternal.lenVb_data;
-    when 1 do x = iostringstyleInternal.len1b_data;
-    when 2 do x = iostringstyleInternal.len2b_data;
-    when 4 do x = iostringstyleInternal.len4b_data;
-    when 8 do x = iostringstyleInternal.len8b_data;
-    otherwise
-      throw createSystemError(EINVAL,
-                              "Invalid string length prefix " +
-                              lengthBytes:string);
-  }
-  return x;
-}
-
-@chpldoc.nodoc
 extern const QIO_FDFLAG_UNK:c_int;
 @chpldoc.nodoc
 extern const QIO_FDFLAG_READABLE:c_int;
@@ -1560,47 +1536,6 @@ proc defaultIOStyleInternal(): iostyleInternal {
   return ret;
 }
 
-/* Get an iostyleInternal indicating binary I/O in native byte order. */
-@chpldoc.nodoc
-proc iostyleInternal.native(str_style:int(64)=stringStyleWithVariableLengthInternal()):iostyleInternal {
-  var ret = this;
-  ret.binary = 1;
-  ret.byteorder = _iokind.native:uint(8);
-  ret.str_style = str_style;
-  return ret;
-}
-
-/* Get an iostyleInternal indicating binary I/O in big-endian byte order.*/
-@chpldoc.nodoc
-proc iostyleInternal.big(str_style:int(64)=stringStyleWithVariableLengthInternal()):iostyleInternal {
-  var ret = this;
-  ret.binary = 1;
-  ret.byteorder = _iokind.big:uint(8);
-  ret.str_style = str_style;
-  return ret;
-}
-
-/* Get an iostyleInternal indicating binary I/O in little-endian byte order. */
-@chpldoc.nodoc
-proc iostyleInternal.little(str_style:int(64)=stringStyleWithVariableLengthInternal()):iostyleInternal {
-  var ret = this;
-  ret.binary = 1;
-  ret.byteorder = _iokind.little:uint(8);
-  ret.str_style = str_style;
-  return ret;
-}
-
-// TODO -- add arguments to this function
-/* Get an iostyleInternal indicating text I/O. */
-@chpldoc.nodoc
-proc iostyleInternal.text(/* args coming later */):iostyleInternal {
-  var ret = this;
-  ret.binary = 0;
-  return ret;
-}
-
-
-
 /* fdflag_t specifies how a file can be used. It can be:
   QIO_FDFLAG_UNK,
   QIO_FDFLAG_READABLE,
@@ -1848,8 +1783,6 @@ operations
 
   This is an alternative way to create a :record:`file`.  The main way to do so
   is via the :proc:`open` function.
-
-The system file descriptor will be closed when the Chapel file is closed.
 
 .. note::
 
@@ -2507,6 +2440,17 @@ record defaultSerializer {
       writer.writeLiteral("nil");
     } else if isClassType(t) {
       x!.serialize(writer=writer, serializer=this);
+    } else if isProcedureType(t) {
+      // The legacy procedure classes should have been handled by above.
+      compilerAssert(!isClassType(t));
+
+      // TODO: We might like to print the symbol name instead, here, and
+      // that may be achievable since the names of loaded symbols are
+      // stored in the binary cache (though they won't necessarily be
+      // retrievable without comm). So we'd just have to arrange to store
+      // the names of 'ftable' entries as well.
+      const ptr = x : c_ptr(void);
+      ptr.serialize(writer=writer, serializer=this);
     } else {
       x.serialize(writer=writer, serializer=this);
     }
@@ -2549,12 +2493,9 @@ record defaultSerializer {
       writer._writeOne(_iokind.dynamic, val, writer.getLocaleOfIoRequest());
     } else if t == _nilType {
       writer.writeLiteral("nil");
-    } else if isClassType(t) || isAnyCPtr(t) || chpl_isDdata(t) {
+    } else if isClassType(t) || isAnyCPtr(t) || chpl_isDdata(t) ||
+              isProcedureType(t) {
       _serializeClassOrPtr(writer, val);
-    } else if isUnionType(t) {
-      // From ChapelIO
-      // Note: Some kind of weird resolution bug with ChapelIO.writeThis...
-      writeThisDefaultImpl(writer, val);
     } else {
       val.serialize(writer=writer, serializer=this);
     }
@@ -6598,31 +6539,6 @@ private proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
   return err;
 }
 
-@chpldoc.nodoc
-proc fileReader.readIt(ref x) throws {
-  const origLocale = this.getLocaleOfIoRequest();
-
-  on this._home {
-    try! this.lock(); defer { this.unlock(); }
-
-    if deserializerType != nothing {
-      _deserializeOne(x, origLocale);
-    } else {
-      _readOne(_iokind.dynamic, x, origLocale);
-    }
-  }
-}
-
-@chpldoc.nodoc
-proc fileWriter.writeIt(const x) throws {
-  const origLocale = this.getLocaleOfIoRequest();
-
-  on this._home {
-    try! this.lock(); defer { this.unlock(); }
-    try _writeOne(_iokind.dynamic, x, origLocale);
-  }
-}
-
 private proc literalErrorHelper(x: ?t, action: string,
                                 isLiteral: bool): string {
   // Error message construction is handled here so that messages are
@@ -6759,13 +6675,6 @@ proc fileReader._readNewlineCommon(param isMatch:bool) throws {
     const action = if isMatch then "matching" else "reading";
     try _checkLiteralError("", err, action, isLiteral=false);
   }
-}
-
-// non-unstable version we can use internally
-@chpldoc.nodoc
-inline proc fileReader._readNewline() : void throws {
-  var ionl = new chpl_ioNewline(true);
-  this.readIt(ionl);
 }
 
 // TODO: How does this differ from readln() ?
@@ -6980,7 +6889,7 @@ proc fileWriter.styleElement(element:int):int {
         sum = 0;
 
     forall line in r.lines() with (+ reduce sum) {
-      sum += line:int
+      sum += line:int;
     }
 
   .. warning::
@@ -7030,7 +6939,7 @@ iter fileReader.lines(
         sum = 0;
 
     forall line in r.lines(targetLocales=Locales) with (+ reduce sum) {
-      sum += line:int
+      sum += line:int;
     }
 
   .. warning::
@@ -7280,22 +7189,6 @@ proc chpl_stringify(const args ...?k):string {
       return ret;
     }
   }
-}
-
-private var _arg_to_proto_names = ("a", "b", "c", "d", "e", "f");
-
-private proc _args_to_proto(const args ...?k, preArg:string) {
-  // FIX ME: lot of potential leaking going on here with string concat
-  // But this is used for error handling so maybe we don't care.
-  var err_args: string;
-  for param i in 0..k-1 {
-    var name: string;
-    if i < _arg_to_proto_names.size then name = _arg_to_proto_names[i];
-    else name = "x" + i:string;
-    err_args += preArg + name + ":" + args(i).type:string;
-    if i != k-1 then err_args += ", ";
-  }
-  return err_args;
 }
 
 @chpldoc.nodoc
@@ -9707,6 +9600,9 @@ proc fileReader.read(type t ...?numTypes) throws where numTypes > 1 {
    :arg args: a list of arguments to write. Basic types are handled
               internally, but for other types this function will call
               value.serialize() with the ``fileWriter`` as an argument.
+   :arg sep: a string separator that is printed in between each argument.
+             Defaults to the empty string. Note that specifying ``sep`` is
+             currently an unstable feature pending further design.
 
    :throws EofError: If EOF is reached before all the arguments could be
                      written.
@@ -9715,23 +9611,20 @@ proc fileReader.read(type t ...?numTypes) throws where numTypes > 1 {
    :throws SystemError: If data could not be written to the ``fileWriter``
                         due to a :ref:`system error<io-general-sys-error>`.
  */
+pragma "last resort"
 pragma "fn exempt instantiation limit"
-inline proc fileWriter.write(const args ...?k) throws {
-  const origLocale = this.getLocaleOfIoRequest();
-  on this._home {
-    try this.lock(); defer { this.unlock(); }
-    for param i in 0..k-1 {
-      if serializerType != nothing {
-        if serializerType == binarySerializer {
-          warnBinary(args(i).type, 2);
-        }
-        this._serializeOne(args(i), origLocale);
-      } else {
-        try _writeOne(_iokind.dynamic, args(i), origLocale);
-      }
-    }
-  }
+inline proc fileWriter.write(const args ...?k, sep: string = "") throws {
+  if chpl_warnUnstable then
+    compilerWarning("specifying 'sep' is an unstable feature");
+  this.writeHelper(none, sep, (...args));
 }
+
+pragma "fn exempt instantiation limit"
+@chpldoc.nodoc
+inline proc fileWriter.write(const args ...?k) throws {
+  this.writeHelper(none, none, (...args));
+}
+
 
 // documented in varargs version
 @chpldoc.nodoc
@@ -9749,6 +9642,9 @@ proc fileWriter.writeln() throws {
               called with zero or more arguments. Basic types are handled
               internally, but for other types this function will call
               value.serialize() with the fileWriter as an argument.
+   :arg sep: a string separator that is printed in between each argument.
+             Defaults to the empty string. Note that specifying ``sep`` is
+             currently an unstable feature pending further design.
 
    :throws EofError: If EOF is reached before all the arguments
                      could be written.
@@ -9757,8 +9653,40 @@ proc fileWriter.writeln() throws {
    :throws SystemError: If data could not be written to the ``fileWriter``
                         due to a :ref:`system error<io-general-sys-error>`.
  */
+pragma "last resort"
+proc fileWriter.writeln(const args ...?k, sep:string="") throws {
+  if chpl_warnUnstable then
+    compilerWarning("specifying 'sep' is an unstable feature");
+  this.writeHelper(new chpl_ioNewline(), sep, (...args));
+}
+
+@chpldoc.nodoc
 proc fileWriter.writeln(const args ...?k) throws {
-  try this.write((...args), new chpl_ioNewline());
+  this.writeHelper(new chpl_ioNewline(), none, (...args));
+}
+
+@chpldoc.nodoc
+inline proc fileWriter.writeHelper(endl: ?endlType, sep: ?sepType, const args...) throws {
+  const origLocale = this.getLocaleOfIoRequest();
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+
+    for param i in 0..<args.size {
+      if i != 0 && sepType != nothing then
+        try _writeOne(_iokind.dynamic, sep, origLocale);
+
+      if serializerType != nothing {
+        if serializerType == binarySerializer {
+          warnBinary(args(i).type, 2);
+        }
+        this._serializeOne(args(i), origLocale);
+      } else {
+        try _writeOne(_iokind.dynamic, args(i), origLocale);
+      }
+    }
+    if endlType != nothing then
+      try _writeOne(_iokind.dynamic, endl, origLocale);
+  }
 }
 
 /*
@@ -12152,22 +12080,6 @@ proc readf(fmt:string, ref args ...?k):bool throws {
 @chpldoc.nodoc
 proc readf(fmt:string):bool throws {
   return try stdin.readf(fmt);
-}
-
-
-@chpldoc.nodoc
-proc fileReader._skipField() throws {
-  var err:errorCode = 0;
-  on this._home {
-    try this.lock(); defer { this.unlock(); }
-    var st = this.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
-    if st == QIO_AGGREGATE_FORMAT_JSON {
-      err = qio_channel_skip_json_field(false, _channel_internal);
-    } else {
-      err = ENOTSUP;
-    }
-  }
-  if err then try this._ch_ioerror(err, "in skipField");
 }
 
 /*

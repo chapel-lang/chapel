@@ -1,0 +1,18 @@
+.TH "hwlocality_api_error_reporting" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+hwlocality_api_error_reporting \- Error reporting in the API
+.SH SYNOPSIS
+.br
+.PP
+.SH "Detailed Description"
+.PP 
+Most functions in the hwloc API return an integer value\&. Unless documentated differently, they return 0 on success and -1 on error\&. Functions that return a pointer type return \fCNULL\fP on error\&.
+.PP
+\fCerrno\fP will be set to a meaningful value whenever possible\&. This includes the usual \fCEINVAL\fP when invalid function parameters are passed or \fCENOMEM\fP when an internal allocation fails\&. Some specific \fCerrno\fP value are also used, for instance for binding errors as documented in \fBCPU binding\fP\&.
+.PP
+Some modules describe return values of their functions in their introduction, for instance in \fBThe bitmap API\fP\&. 
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Hardware Locality (hwloc) from the source code\&.

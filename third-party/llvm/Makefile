@@ -86,12 +86,6 @@ clobber: FORCE
 
 llvm-config: FORCE
 	mkdir -p $(LLVM_BUILD_DIR)
-	@if ./cmake-ok.sh $(CMAKE); then \
-	  echo ; \
-	else \
-	  echo Error: Chapel requires cmake 3 to build; \
-	  exit 1; \
-	fi
 	
 	@if [ "$(CHPL_MAKE_LLVM)" = "bundled" ] && \
 	    [ "$(CHPL_MAKE_COMPILER)" = "llvm" ]; then \
@@ -110,6 +104,7 @@ llvm-config: FORCE
 	    $(CHPL_LLVM_DEBUG) \
 	    -DLLVM_ENABLE_WARNINGS=0 \
 	    -DLLVM_ENABLE_PEDANTIC=0 \
+	    -DLLVM_ENABLE_LIBXML2=OFF \
 	    -DCLANG_ENABLE_ARCMT=0 \
 	    -DCLANG_ANALYZER_ENABLE_Z3_SOLVER=0 \
 	    -DCLANG_ENABLE_STATIC_ANALYZER=0 \
@@ -124,12 +119,6 @@ llvm-config: FORCE
 
 llvm-config-support-only: FORCE
 	mkdir -p $(LLVM_SUPPORT_BUILD_DIR)
-	@if ./cmake-ok.sh $(CMAKE); then \
-	  echo ; \
-	else \
-	  echo Error: Chapel requires cmake 3 to build; \
-	  exit 1; \
-	fi
 	
 	@if [ "$(CHPL_MAKE_LLVM)" = "bundled" ] && \
 	    [ "$(CHPL_MAKE_COMPILER)" = "llvm" ]; then \
@@ -148,6 +137,7 @@ llvm-config-support-only: FORCE
 	    $(CHPL_LLVM_DEBUG) \
 	    -DLLVM_ENABLE_WARNINGS=0 \
 	    -DLLVM_ENABLE_PEDANTIC=0 \
+	    -DLLVM_ENABLE_LIBXML2=OFF \
 	    -DCLANG_ENABLE_ARCMT=0 \
 	    -DCLANG_ANALYZER_ENABLE_Z3_SOLVER=0 \
 	    -DCLANG_ENABLE_STATIC_ANALYZER=0 \

@@ -19,7 +19,6 @@
 
 
 #include "test-resolution.h"
-#include "test-minimal-modules.h"
 
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
@@ -44,8 +43,10 @@ void testHeapBufferArg(const char* formalType, const char* actualType, F&& test)
 
   std::stringstream ss;
 
+  ss << "operator =(ref lhs: int, const rhs: int) {}" << std::endl;
+  ss << "operator =(ref lhs: _ddata(?t), const rhs: _ddata(t)) {}" << std::endl;
   ss << "record rec { type someType; }" << std::endl;
-  ss << "proc f(x: " << formalType << ") {}" << std::endl;
+  ss << "proc f(x: " << formalType << ") { return 0; }" << std::endl;
   ss << "var arg: " << actualType << ";" << std::endl;
   ss << "var x = f(arg);" << std::endl;
 
@@ -57,14 +58,14 @@ void testHeapBufferArg(const char* formalType, const char* actualType, F&& test)
 
   assert(modules.size() == 1);
   auto mainMod = modules[0];
-  assert(mainMod->numStmts() == 4);
+  assert(mainMod->numStmts() == 6);
 
-  auto fChild = mainMod->child(1);
+  auto fChild = mainMod->child(3);
   assert(fChild->isFunction());
   auto fFn = fChild->toFunction();
   assert(fFn->name() == "f");
 
-  auto fCallVar = mainMod->child(3);
+  auto fCallVar = mainMod->child(5);
   assert(fCallVar->isVariable());
 
   auto& modResResult = resolveModule(context, mainMod->id());
@@ -121,7 +122,8 @@ static void test4() {
     assert(eltT && eltT->isRecordType());
     auto rt = eltT->toRecordType();
     assert(rt->name() == "rec");
-    auto& fields = fieldsForTypeDecl(eg.context(), rt, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(eg.context());
+    auto& fields = fieldsForTypeDecl(&rc, rt, DefaultsPolicy::IGNORE_DEFAULTS);
     assert(fields.numFields() == 1 && fields.fieldType(0).type()->isIntType());
   });
 }
@@ -158,6 +160,7 @@ static void test8() {
 
   std::string program = R"""(
   module M{
+    operator =(ref lhs: int, const rhs: int) {}
     module X {
       proc foo() {
         var ret : _ddata(int);
@@ -199,7 +202,48 @@ static void test9() {
   assert(guard.realizeErrors() == 0);
 }
 
-static void runAllTests() {
+static void test10() {
+  testHeapBufferArg("_ddata(int)", "_nilType", [](const TypedFnSignature* fn, const HeapBufferType* t, ErrorGuard& eg) {
+    assert(fn);
+    assert(t);
+    auto eltT = t->eltType();
+    assert(eltT && eltT->isIntType());
+    assert(eltT == IntType::get(eg.context(), 64));
+  });
+}
+
+static void test11() {
+  // regression test for an issue with nil and generic formals.
+  // during initial candidate selection, information from previous formals'
+  // instantiation is not available for subsequent formal. Thus,
+  // y will have a generic type. This should not preclude the candidate from
+  // being considered when 'nil' is passed (because later, y will be instantiated
+  // and only a conversion from nil will be needed).
+
+  context->advanceToNextRevision(false);
+  if (!context->chplHome().empty())
+    setupModuleSearchPaths(context, false, false, {}, {});
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+  operator =(ref lhs: _ddata(?t), const rhs: _ddata(t)) {}
+  proc foo(x: _ddata(?t), y: _ddata(t)) do return y;
+  var ptrInt: _ddata(int);
+  var ptrReal: _ddata(real);
+  var x = foo(ptrInt, nil);
+  var y = foo(ptrReal, nil);
+  )""";
+
+  auto vars = resolveTypesOfVariables(context, program, {"x", "y"});
+  assert(vars["x"].type()->isHeapBufferType());
+  assert(vars["x"].type()->toHeapBufferType()->eltType()->isIntType());
+  assert(vars["y"].type()->isHeapBufferType());
+  assert(vars["y"].type()->toHeapBufferType()->eltType()->isRealType());
+
+  assert(guard.realizeErrors() == 0);
+}
+
+static void runCommonTests() {
   test1();
   test2();
   test3();
@@ -209,20 +253,26 @@ static void runAllTests() {
   test7();
   test8();
   test9();
+  test11();
+}
+
+static void runTestsThatRequireStdlib() {
+  test10();
 }
 
 int main() {
   // With stdlib
   {
     context = new Context(getConfigWithHome());
-    runAllTests();
+    runCommonTests();
+    runTestsThatRequireStdlib();
     delete context;
   }
 
   // Without stdlib
   {
     context = new Context();
-    runAllTests();
+    runCommonTests();
     delete context;
   }
 

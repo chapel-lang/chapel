@@ -253,7 +253,7 @@ async def test_list_references(client: LanguageClient):
            var y = x;
            for i in 1..10 {
                 var z = x;
-                var x = 42 + i;
+                var y = 42 + i;
 
                 while true {
                     var i = 0;
@@ -266,7 +266,7 @@ async def test_list_references(client: LanguageClient):
         # 'find references' on definitions;
         # the cross checking will also validate the references.
         await check_references_and_cross_check(
-            client, doc, pos((0, 4)), [pos((0, 4)), pos((1, 8))]
+            client, doc, pos((0, 4)), [pos((0, 4)), pos((1, 8)), pos((3, 13))]
         )
         await check_references_and_cross_check(
             client, doc, pos((1, 4)), [pos((1, 4))]
@@ -278,7 +278,7 @@ async def test_list_references(client: LanguageClient):
             client, doc, pos((3, 9)), [pos((3, 9))]
         )
         await check_references_and_cross_check(
-            client, doc, pos((4, 9)), [pos((3, 13)), pos((4, 9))]
+            client, doc, pos((4, 9)), [pos((4, 9))]
         )
         await check_references_and_cross_check(
             client, doc, pos((7, 13)), [pos((7, 13)), pos((8, 17))]

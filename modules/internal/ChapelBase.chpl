@@ -87,7 +87,16 @@ module ChapelBase {
 
   // This flag toggles on the new pointer-based implementation.
   // It is unstable and experimental.
-  config param fcfsUsePointerImplementation = false;
+  config param useProcedurePointers = false;
+
+  proc chpl_enableProcPtrs(type t) param {
+    if !useProcedurePointers then return false;
+    return isProcedure(t) && !isClass(t);
+  }
+
+  proc chpl_enableProcPtrs(type t1, type t2) param {
+    return chpl_enableProcPtrs(t1) && chpl_enableProcPtrs(t2);
+  }
 
   //
   // assignment on primitive types
@@ -173,6 +182,33 @@ module ChapelBase {
     compilerError("Comparisons between mixed enumerated types not supported by default");
     return false;
   }
+
+  inline operator !=(a: ?t, b: _nilType) where chpl_enableProcPtrs(t) {
+    // Fine for either local or wide since 'NULL' is '0'.
+    return __primitive("!=", a, 0);
+  }
+  inline operator !=(a: _nilType, b: ?t) where chpl_enableProcPtrs(t) {
+    // Fine for either local or wide since 'NULL' is '0'.
+    return __primitive("!=", b, 0);
+  }
+
+  inline operator ==(a: ?t1, b: ?t2) where chpl_enableProcPtrs(t1, t2) {
+    if chpl_isLocalProc(t1) && chpl_isLocalProc(t2) {
+      // Fine, both are pointers.
+      return __primitive("==", a, b);
+    } else if chpl_isWideProc(t1) && chpl_isWideProc(t2) {
+      // Fine, both are integers.
+      return __primitive("==", a, b);
+    } else {
+      // Translate both to pointers then compare.
+      const ptr1 = chpl_toLocalProc(a);
+      const ptr2 = chpl_toLocalProc(b);
+      return __primitive("==", ptr1, ptr2);
+    }
+  }
+
+  inline operator !=(a: ?t1, b: ?t2) where chpl_enableProcPtrs(t1, t2) do
+    return !(a == b);
 
   inline operator !=(a: _nilType, b: _nilType) param do return false;
   inline operator !=(a: bool, b: bool) do return __primitive("!=", a, b);
@@ -2862,6 +2898,10 @@ module ChapelBase {
     lhs = lhs ^ rhs;
   }
 
+  inline operator &&=(ref lhs: bool, rhs: bool) do __primitive("&&=", lhs, rhs);
+
+  inline operator ||=(ref lhs: bool, rhs: bool) do __primitive("||=", lhs, rhs);
+
   inline operator >>=(ref lhs:int(?w), rhs:integral) {
     __primitive(">>=", lhs, rhs);
   }
@@ -3406,6 +3446,7 @@ module ChapelBase {
 
   proc chpl_field_lt(a: [] ?t, b: [] t) {
     compilerError("ordered comparisons not supported by default on records with array fields");
+    return false;
   }
 
   inline proc chpl_field_lt(a, b) where !isArrayType(a.type) {
@@ -3414,6 +3455,7 @@ module ChapelBase {
 
   proc chpl_field_gt(a: [] ?t, b: [] t) {
     compilerError("ordered comparisons not supported by default on records with array fields");
+    return false;
   }
 
   inline proc chpl_field_gt(a, b) where !isArrayType(a.type) {
@@ -3421,13 +3463,27 @@ module ChapelBase {
   }
 
   // check if both arguments are local without `.locale` or `here`
-  proc chpl__bothLocal(const ref a, const ref b) {
+  inline proc chpl__bothLocal(const ref a, const ref b) {
+    // this implementation is a bit tricky. There are two checks that make
+    // different cases work fine. I do not know what the difference between the
+    // two approaches are, but I can reproduce the behavior I can't explain in
+    // isolated cases, too. Probably it has something to do with some
+    // implementation subtlety of these primitives. Following are the tests
+    // where each of these checks help with
+    //
+    // (1) _wide_get_locale: optimizations/arrayViewElision/remoteDr.chpl
+    // (2) is_local: optimizations/arrayViewElision/distributedToLocalNoRvf.chpl
     extern proc chpl_equals_localeID(const ref x, const ref y): bool;
 
     const aLoc = __primitive("_wide_get_locale", a._value);
     const bLoc = __primitive("_wide_get_locale", b._value);
 
-    return chpl_equals_localeID(aLoc, bLoc) &&
-           chpl_equals_localeID(aLoc, here_id);
+    const locIdCheck =  chpl_equals_localeID(aLoc, bLoc) &&
+                        chpl_equals_localeID(aLoc, here_id);
+
+    const isLocalCheck =  __primitive("is_local", a) &&
+                          __primitive("is_local", b);
+
+    return locIdCheck && isLocalCheck;
   }
 }

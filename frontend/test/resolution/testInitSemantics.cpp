@@ -794,7 +794,8 @@ static void testInitFromInit(void) {
     assert(recType);
     assert(recType->name() == "pair");
 
-    auto fields = fieldsForTypeDecl(context, recType, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto rc = createDummyRC(context);
+    auto fields = fieldsForTypeDecl(&rc, recType, DefaultsPolicy::IGNORE_DEFAULTS);
 
     assert(fields.fieldName(0) == "fst");
     assert(fields.fieldName(1) == "snd");
@@ -859,7 +860,8 @@ static void testInitInParamBranchFromInit(void) {
       assert(recType);
       assert(recType->name() == "pair");
 
-      auto fields = fieldsForTypeDecl(context, recType, DefaultsPolicy::IGNORE_DEFAULTS);
+      auto rc = createDummyRC(context);
+      auto fields = fieldsForTypeDecl(&rc, recType, DefaultsPolicy::IGNORE_DEFAULTS);
 
       assert(fields.fieldName(0) == "fst");
       assert(fields.fieldName(1) == "snd");
@@ -887,7 +889,8 @@ static void testInitInParamBranchFromInit(void) {
       assert(recType);
       assert(recType->name() == "pair");
 
-      auto fields = fieldsForTypeDecl(context, recType, DefaultsPolicy::IGNORE_DEFAULTS);
+      auto rc = createDummyRC(context);
+      auto fields = fieldsForTypeDecl(&rc, recType, DefaultsPolicy::IGNORE_DEFAULTS);
 
       assert(fields.fieldName(0) == "fst");
       assert(fields.fieldName(1) == "snd");
@@ -943,7 +946,8 @@ static void testInitInBranchFromInit(void) {
       assert(recType);
       assert(recType->name() == "pair");
 
-      auto fields = fieldsForTypeDecl(context, recType, DefaultsPolicy::IGNORE_DEFAULTS);
+      auto rc = createDummyRC(context);
+      auto fields = fieldsForTypeDecl(&rc, recType, DefaultsPolicy::IGNORE_DEFAULTS);
 
       assert(fields.fieldName(0) == "fst");
       assert(fields.fieldName(1) == "snd");
@@ -971,7 +975,8 @@ static void testInitInBranchFromInit(void) {
       assert(recType);
       assert(recType->name() == "pair");
 
-      auto fields = fieldsForTypeDecl(context, recType, DefaultsPolicy::IGNORE_DEFAULTS);
+      auto rc = createDummyRC(context);
+      auto fields = fieldsForTypeDecl(&rc, recType, DefaultsPolicy::IGNORE_DEFAULTS);
 
       assert(fields.fieldName(0) == "fst");
       assert(fields.fieldName(1) == "snd");
@@ -1129,6 +1134,113 @@ static void testInitEqOther(void) {
   assert(yt.type()->isRecordType());
   yt.type()->stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
   assert(ss.str() == "R(real(64))");
+}
+
+static void testInitEqOtherIncomplete(void) {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    record R {
+      type T;
+      var field : T;
+    }
+    proc R.init=(other: ?) {}
+    var x:R(int) = 4;
+  )""";
+
+  auto results = resolveTypesOfVariables(context, program, {"x"});
+  auto xt = results["x"];
+  assert(xt.type()->isRecordType());
+  std::stringstream ss;
+  xt.type()->stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
+  assert(ss.str() == "R(int(64))");
+
+  // There should be an error, since we never initialized the field T in
+  // the init= call.
+  assert(guard.realizeErrors() == 1);
+}
+
+static void testInitEqOtherChangeType(void) {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    record R {
+      type T;
+      var field : T;
+    }
+    proc R.init=(other: ?) {
+      this.T = (other.type, other.type);
+      this.field = (other, other);
+    }
+    var x:R(?) = 4;
+  )""";
+
+  auto results = resolveTypesOfVariables(context, program, {"x"});
+  auto xt = results["x"];
+  assert(xt.type()->isRecordType());
+  std::stringstream ss;
+  xt.type()->stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
+  assert(ss.str() == "R((int(64), int(64)))");
+}
+
+static void testInitEqOtherChangeTypeBad(void) {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    record R {
+      type T;
+      var field : T;
+    }
+    proc R.init=(other: ?) {
+      this.T = (other.type, other.type);
+      this.field = (other, other);
+    }
+    var x:R(int) = 4;
+  )""";
+
+  auto results = resolveTypesOfVariables(context, program, {"x"});
+  auto xt = results["x"];
+  assert(xt.type()->isRecordType());
+  std::stringstream ss;
+  xt.type()->stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
+  assert(ss.str() == "R((int(64), int(64)))");
+
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->type() == ErrorType::MismatchedInitializerResult);
+  guard.realizeErrors();
+}
+
+static void testInitEqOtherThisType(void) {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    record R {
+      type T;
+      var field : T;
+    }
+    proc R.init=(other: this.type.T) {
+      this.T = other.type;
+      this.field = other;
+    }
+    var x: R(int) = 4;
+    var y: R(int) = 4.0;
+  )""";
+
+  auto results = resolveTypesOfVariables(context, program, {"x", "y"});
+  auto xt = results["x"];
+  assert(xt.type()->isRecordType());
+  std::stringstream ss;
+  xt.type()->stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
+  assert(ss.str() == "R(int(64))");
+
+  auto yt = results["y"];
+  assert(yt.type()->isErroneousType());
+
+  assert(guard.realizeErrors());
 }
 
 static void testInheritance() {
@@ -1605,6 +1717,42 @@ static void testImplicitSuperInit() {
   }
 }
 
+static void testImplicitSuperInitErrors() {
+  // use 'test' to ensure 'q' has the right type
+  std::string program = R"""(
+    class Parent {
+      var x : int = 42;
+      proc init(x: int) {
+        this.x = x;
+      }
+    }
+
+    class Child : Parent {
+      var y : string;
+      proc init() {
+        // tries to resolve 'super.init()', but parent 'init' requires an argument!
+        this.y = x:string;
+      }
+    }
+
+    var w = new Child();
+  )""";
+
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context, program, {"w"});
+  auto qt = vars.at("w");
+
+  auto t = qt.type();
+  assert(t);
+  assert(t->isClassType());
+
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->type() == ErrorType::NoMatchingSuper);
+  guard.realizeErrors();
+}
+
 static void testInitGenericAfterConcrete() {
   // With generic var initialized properly
   {
@@ -1671,6 +1819,33 @@ static void testNilFieldInit() {
       var x: unmanaged C?;
       proc init() {
         x = nil;
+      }
+    }
+
+    // exists to work around current lack of default-init at module scope
+    proc test() {
+      var x: R;
+      return x;
+    }
+    var a = test();
+    var b = new R();
+  )""";
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context, program, {"a", "b"});
+
+  assert(toString(vars["a"]) == "R");
+  assert(toString(vars["b"]) == "R");
+}
+
+static void testForwardingFieldInit() {
+  std::string program = R"""(
+    record Inner { proc foo() {} }
+    record R {
+      forwarding var x: Inner;
+      proc init() {
+        this.x = new Inner();
       }
     }
 
@@ -1758,6 +1933,7 @@ static void testGenericFieldInit() {
   {
     printf("one\n");
     std::string program = R"""(
+      operator =(ref lhs: int, const rhs: int) {}
       record G { type T; var x : T; }
 
       proc G.init=(other: this.type) {
@@ -1806,6 +1982,8 @@ static void testGenericFieldInit() {
   }
   {
     std::string program = R"""(
+      operator =(ref lhs: int, const rhs: int) {}
+      operator =(ref lhs: real, const rhs: real) {}
       record G { type T; var x : T; }
 
       proc G.init=(other: this.type) {
@@ -1847,6 +2025,7 @@ static void testGenericFieldInit() {
 static void testDefaultArgs() {
   {
     std::string program = R"""(
+      operator =(ref lhs: real, const rhs: real) {}
       class Parent {
         var x, y: real;
       }
@@ -1871,6 +2050,266 @@ static void testDefaultArgs() {
     assert(toString(vars["B"]) == "owned Child");
     assert(toString(vars["C"]) == "owned Child");
   }
+}
+
+static void testInitInstantiation(void) {
+  std::string prog =
+      R"""(
+      AGGREGATE pair {
+        type fst;
+        type snd;
+
+        proc init(type fst, type snd) {
+          this.fst = fst;
+          this.snd = snd;
+        }
+      }
+
+      type intPairFirst = pair(int, ?);
+      var x = new intPairFirst(real);
+
+      type intPairSecond = pair(snd=int, ?);
+      var y = new intPairSecond(real);
+
+      type intPairBoth = pair(int, int);
+      var z = new intPairBoth();
+      )""";
+
+  auto getPairComponents = [](Context* context, const QualifiedType& qt) {
+    CHPL_ASSERT(!qt.isUnknownOrErroneous());
+    auto ct = qt.type()->getCompositeType();
+    CHPL_ASSERT(ct);
+    auto rc = createDummyRC(context);
+    auto fields = fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+
+    assert(fields.fieldName(0) == "fst");
+    assert(fields.fieldName(1) == "snd");
+
+    auto fstType = fields.fieldType(0);
+    assert(!fstType.isUnknownOrErroneous());
+
+    auto sndType = fields.fieldType(1);
+    assert(!sndType.isUnknownOrErroneous());
+
+    return std::make_pair(fstType, sndType);
+  };
+
+  for (auto version : getAllVersions(prog)) {
+    auto context = buildStdContext();
+    ErrorGuard guard(context);
+    auto qt = resolveTypesOfVariables(context, version, {"x", "y", "z"});
+
+    auto [xFst, xSnd] = getPairComponents(context, qt.at("x"));
+    assert(xFst.type()->isIntType());
+    assert(xSnd.type()->isRealType());
+
+    auto [yFst, ySnd] = getPairComponents(context, qt.at("y"));
+    assert(yFst.type()->isRealType());
+    assert(ySnd.type()->isIntType());
+
+    auto [zFst, zSnd] = getPairComponents(context, qt.at("z"));
+    assert(zFst.type()->isIntType());
+    assert(zSnd.type()->isIntType());
+  }
+}
+
+static void testInitInstantiationInherit() {
+  std::string program =
+    R"""(
+    class A {
+      type TA;
+    }
+
+    class B : A(?) {
+      type TB;
+
+      proc init(type TA, type TB) {
+        super.init(TA);
+        this.TB = TB;
+      }
+    }
+
+    type tmp = B(real, int);
+    var x = new tmp();
+    )""";
+
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+  auto qt = resolveTypeOfXInit(context, program);
+
+  assert(qt.type());
+  auto recType = qt.type()->getCompositeType();
+  assert(recType);
+  assert(recType->name() == "B");
+
+  auto rc = createDummyRC(context);
+  auto childFields = fieldsForTypeDecl(&rc, recType, DefaultsPolicy::IGNORE_DEFAULTS);
+  assert(childFields.fieldName(0) == "TB");
+  assert(childFields.fieldType(0).type()->isIntType());
+
+  auto parent = recType->toBasicClassType()->parentClassType();
+  auto parentFields = fieldsForTypeDecl(&rc, parent, DefaultsPolicy::IGNORE_DEFAULTS);
+  assert(parentFields.fieldName(0) == "TA");
+  assert(parentFields.fieldType(0).type()->isRealType());
+}
+
+static void testInitInstantiationInheritWrong() {
+  // this program isn't correct, since while trying to init B(real, int),
+  // we end up with B(real, real) because this.TB = TA and not this.TB = TB.
+  std::string program =
+    R"""(
+    class A {
+      type TA;
+    }
+
+    class B : A(?) {
+      type TB;
+
+      proc init(type TA, type TB) {
+        super.init(TA);
+        this.TB = TA;
+      }
+    }
+
+    type tmp = B(real, int);
+    var x = new tmp();
+    )""";
+
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+  auto qt = resolveTypeOfXInit(context, program);
+
+  assert(qt.type());
+  auto recType = qt.type()->getCompositeType();
+  assert(recType);
+  assert(recType->name() == "B");
+
+  auto rc = createDummyRC(context);
+  auto childFields = fieldsForTypeDecl(&rc, recType, DefaultsPolicy::IGNORE_DEFAULTS);
+  assert(childFields.fieldName(0) == "TB");
+  assert(childFields.fieldType(0).type()->isRealType());
+
+  auto parent = recType->toBasicClassType()->parentClassType();
+  auto parentFields = fieldsForTypeDecl(&rc, parent, DefaultsPolicy::IGNORE_DEFAULTS);
+  assert(parentFields.fieldName(0) == "TA");
+  assert(parentFields.fieldType(0).type()->isRealType());
+
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->type() == ErrorType::MismatchedInitializerResult);
+  guard.realizeErrors();
+}
+
+static void testInitEqRecursion() {
+  // this comes up in prod: an `init=` that calls a function that uses the
+  // `init=` (see: string -> buffer operations -> new Error -> string).
+  // test that the recursion doesn't kill us.
+  std::string program =
+    R"""(
+    proc compilerError(param msg: string...) {
+      __primitive("error");
+    }
+
+    proc useX(x) {}
+
+    record R {
+      proc init=(const ref rhs: R) {
+        foo();
+      }
+    }
+
+    proc bar(r1: R) {
+      var r2 = r1;
+      return r1;
+    }
+    bar(new R());
+
+    proc foo() {
+      var tmp: R;
+      var other = tmp;
+      useX(tmp);
+    }
+
+    )""";
+
+  Context ctx;
+  auto context = &ctx;
+  ErrorGuard guard(context);
+
+  auto filename = UniqueString::get(context, "temp.chpl");
+  setFileText(context, filename, program);
+  auto modules = parse(context, filename, UniqueString());
+  CHPL_ASSERT(modules.size() == 1);
+  auto r2 = findVariable(modules, "r2");
+  auto barId = idToParentFunctionId(context, r2->id());
+  CHPL_ASSERT(r2);
+  auto& barRr = resolveConcreteFunction(context, barId)->resolutionById();
+  auto& resolvedR2 = barRr.byAst(r2);
+
+  for (auto& aa : resolvedR2.associatedActions()) {
+    if (aa.action() == AssociatedAction::COPY_INIT) {
+      auto fn = aa.fn();
+      ResolutionContext rc(context);
+      std::ignore = resolveFunction(&rc, fn, resolvedR2.poiScope());
+    }
+  }
+}
+
+static void testInitEqRecursionError() {
+  // same as testInitEqRecursion, but lock down that although we avoid
+  // resolving `init=` in some cases (to prevent recursion), we do resolve
+  // its body and this issue compilerErrors if they are present.
+  std::string program =
+    R"""(
+    proc compilerError(param msg: string...) {
+      __primitive("error");
+    }
+
+    proc useX(x) {}
+
+    record R {
+      proc init=(const ref rhs: R) {
+        foo();
+        compilerError("I should be issued eventually!");
+      }
+    }
+
+    proc bar(r1: R) {
+      var r2 = r1;
+      return r1;
+    }
+    bar(new R());
+
+    proc foo() {
+      var tmp: R;
+      var other = tmp;
+      useX(tmp);
+    }
+
+    )""";
+
+  Context ctx;
+  auto context = &ctx;
+  ErrorGuard guard(context);
+
+  auto filename = UniqueString::get(context, "temp.chpl");
+  setFileText(context, filename, program);
+  auto modules = parse(context, filename, UniqueString());
+  CHPL_ASSERT(modules.size() == 1);
+  auto r2 = findVariable(modules, "r2");
+  auto barId = idToParentFunctionId(context, r2->id());
+  CHPL_ASSERT(r2);
+  auto& barRr = resolveConcreteFunction(context, barId)->resolutionById();
+  auto& resolvedR2 = barRr.byAst(r2);
+
+  for (auto& aa : resolvedR2.associatedActions()) {
+    if (aa.action() == AssociatedAction::COPY_INIT) {
+      auto fn = aa.fn();
+      ResolutionContext rc(context);
+      std::ignore = resolveFunction(&rc, fn, resolvedR2.poiScope());
+    }
+  }
+
+  assert(guard.realizeErrors() > 0);
 }
 
 // TODO:
@@ -1912,18 +2351,32 @@ int main() {
   testUseAfterInit();
 
   testInitEqOther();
+  testInitEqOtherIncomplete();
+  testInitEqOtherChangeType();
+  testInitEqOtherChangeTypeBad();
+  testInitEqOtherThisType();
 
   testInheritance();
 
   testImplicitSuperInit();
+  testImplicitSuperInitErrors();
 
   testInitGenericAfterConcrete();
 
   testNilFieldInit();
 
+  testForwardingFieldInit();
+
   testGenericFieldInit();
 
   testDefaultArgs();
+
+  testInitInstantiation();
+  testInitInstantiationInherit();
+  testInitInstantiationInheritWrong();
+
+  testInitEqRecursion();
+  testInitEqRecursionError();
 
   return 0;
 }

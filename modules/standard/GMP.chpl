@@ -114,42 +114,13 @@ module GMP {
 
   require "GMPHelper/chplgmp.h";
 
-  pragma "chpldoc ignore chpl prefix"
-  proc chpl_gmp_alloc(size:c_size_t) : c_ptr(void) {
-    pragma "insert line file info"
-    extern proc chpl_mem_alloc(size:c_size_t, md:chpl_mem_descInt_t) : c_ptr(void);
-    extern const CHPL_RT_MD_GMP:chpl_mem_descInt_t;
-    return chpl_mem_alloc(size, CHPL_RT_MD_GMP);
-  }
-
-  pragma "chpldoc ignore chpl prefix"
-  proc chpl_gmp_realloc(ptr:c_ptr(void),
-                               old_size:c_size_t, new_size:c_size_t) : c_ptr(void) {
-    pragma "insert line file info"
-    extern proc chpl_mem_realloc(ptr:c_ptr(void), size:c_size_t, md:chpl_mem_descInt_t) : c_ptr(void);
-    extern const CHPL_RT_MD_GMP:chpl_mem_descInt_t;
-    return chpl_mem_realloc(ptr, new_size, CHPL_RT_MD_GMP);
-  }
-
-  pragma "chpldoc ignore chpl prefix"
-  proc chpl_gmp_free(ptr:c_ptr(void), old_size:c_size_t) {
-    pragma "insert line file info"
-      extern proc chpl_mem_free(ptr:c_ptr(void)) : void;
-    chpl_mem_free(ptr);
-  }
-
-
   //
   // Initialize GMP to use Chapel's allocator
   //
   pragma "chpldoc ignore chpl prefix"
   proc chpl_gmp_init() {
-    extern proc chpl_gmp_mp_set_memory_functions(alloc:c_fn_ptr,
-                                                 realloc:c_fn_ptr,
-                                                 free:c_fn_ptr);
-    chpl_gmp_mp_set_memory_functions(c_ptrTo(chpl_gmp_alloc),
-                                     c_ptrTo(chpl_gmp_realloc),
-                                     c_ptrTo(chpl_gmp_free));
+    extern proc chpl_gmp_mp_set_memory_functions();
+    chpl_gmp_mp_set_memory_functions();
   }
 
   // Initialize GMP library on all locales

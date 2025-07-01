@@ -9,8 +9,8 @@ dnl -*- m4 -*-
 define([cv_prefix],[gasnet_cv_])
 
 dnl Public release version packaging identifier:
-define([GASNET_RELEASE_VERSION_MAJOR_D],[2024])
-define([GASNET_RELEASE_VERSION_MINOR_D],[5])
+define([GASNET_RELEASE_VERSION_MAJOR_D],[2025])
+define([GASNET_RELEASE_VERSION_MINOR_D],[2])
 define([GASNET_RELEASE_VERSION_PATCH_D],[0])
 dnl GASNet-EX spec version:
 define([GASNETEX_SPEC_VERSION_MAJOR_D],[0])
@@ -1500,7 +1500,10 @@ case "$target_os" in
             GASNET_PLATFORM=crayex
             AC_DEFINE(GASNETI_ARCH_CRAYEX)
             # some defaults:
-            if test "${enable_ofi-unset}" = unset; then enable_ofi=yes; fi
+            if test "${enable_ofi-unset}" = unset; then 
+              enable_ofi=$enabled_auto_detect
+              _conduit_reason_ofi=$_conduit_auto_reason
+            fi
             if test "${enable_ibv-unset}" = unset; then enable_ibv=no; fi
             if test "${enable_udp-unset}" = unset; then enable_udp=no; fi
             if test "${with_ofi_spawner-unset}" = unset; then with_ofi_spawner=pmi; fi
@@ -1774,11 +1777,9 @@ AC_DEFUN([GASNET_CRAY_FIX_LINK_OPTS],[
   popdef([varname])
   GASNET_FUN_END([$0])
 ])
-# Fix the POST_LINK_OPTS for libs required by aries-conduit
+# Fix the POST_LINK_OPTS for libs used with Cray Programming Environments
 GASNET_IF_DISABLED_NOHELP(cray-post-link-rewrite,[],[
   GASNET_CRAY_FIX_LINK_OPTS([pmi])
-  GASNET_CRAY_FIX_LINK_OPTS([udreg])
-  GASNET_CRAY_FIX_LINK_OPTS([ugni])
   GASNET_CRAY_FIX_LINK_OPTS([xpmem])
 ])
 
@@ -1961,20 +1962,41 @@ GASNET_IF_ENABLED_WITH_AUTO(hugetlbfs,
   [Enable/disable huegtlbfs support (default is system dependent)],
   [enabled_hugetlbfs=yes], [enabled_hugetlbfs=no], [enabled_hugetlbfs=probe])
 if test "$enabled_hugetlbfs" != 'no'; then
- AC_CHECK_HEADERS(hugetlbfs.h, [
-  GASNET_PUSHVAR(LIBS,"$LIBS -lhugetlbfs")
-  AC_CHECK_FUNCS([hugetlbfs_unlinked_fd],
-                 [have_hugetlbfs=yes
-                  AC_DEFINE(HAVE_HUGETLBFS)])
-  GASNET_POPVAR(LIBS)
- ])
+ GASNET_PACKAGE_HOME(HUGETLBFS, [hugetlbfs], [hugectl], [/usr/local], [include/hugetlbfs.h])
+ GASNET_PACKAGE_CFLAGS(HUGETLBFS)
+ GASNET_ENV_DEFAULT(HUGETLBFS_LIBS, -lhugetlbfs)
+ GASNET_PACKAGE_LDFLAGS(HUGETLBFS, hugetlbfs)
+ GASNET_SPLIT_LINKER_OPTS(HUGETLBFS_LDFLAGS,HUGETLBFS_LIBS)
+
+ GASNET_PUSHVAR(CFLAGS,"$CFLAGS $HUGETLBFS_CFLAGS")
+ GASNET_PUSHVAR(LDFLAGS,"$LDFLAGS $HUGETLBFS_LDFLAGS")
+ GASNET_PUSHVAR(LIBS,"$LIBS $HUGETLBFS_LIBS")
+
+ GASNET_TRY_CACHE_LINK([for usable libhugetlbfs], hugetlbfs_works,
+      [ #include <hugetlbfs.h> ],
+      [ int rc1 = hugetlbfs_unlinked_fd();
+        const char * rc2 = hugetlbfs_find_path();
+        long rc3 = gethugepagesize();
+      ],
+      [ have_hugetlbfs=yes
+        AC_DEFINE(HAVE_HUGETLBFS)])
+
+ GASNET_POPVAR(LIBS)
+ GASNET_POPVAR(LDFLAGS)
+ GASNET_POPVAR(CFLAGS)
+
  if test "$enabled_hugetlbfs$have_hugetlbfs" = 'yesno'; then
    GASNET_MSG_ERROR([User requested --enable-hugetlbfs but the header and/or library could not be found])
  fi
  if test "$have_hugetlbfs" = 'yes'; then
-   GASNET_IF_ENABLED(hugetlbfs-whole-archive, [Use --whole-archive with libhugetlbfs],
-                     [HUGETLBFS_LIBS='-Wl,--whole-archive,-lhugetlbfs,--no-whole-archive'],
-                     [HUGETLBFS_LIBS='-lhugetlbfs'])
+   GASNET_IF_ENABLED_NOHELP(hugetlbfs-whole-archive,
+                     [ if test "$HUGETLBFS_LIBS" = '-lhugetlbfs'; then
+                         HUGETLBFS_LIBS="-Wl,--whole-archive,-lhugetlbfs,--no-whole-archive"
+                       else
+                         GASNET_MSG_ERROR([dnl
+User requested --enable-hugetlbfs-whole-archive, which is a deprecated option available only when libhugetlbfs is the only library required.  Please configure using the fully-general --with-hugetlbfs-libs option instead.])
+                       fi
+                     ])
  fi
 fi
 with_pshm=no
@@ -2146,6 +2168,8 @@ if test "$enabled_pshm" != no; then
   fi
   AC_DEFINE(GASNETI_PSHM_FILE)
   AC_DEFINE(GASNETI_USE_HUGETLBFS)
+  GASNET_PSHM_CFLAGS="$HUGETLBFS_CFLAGS"
+  GASNET_PSHM_LDFLAGS="$HUGETLBFS_LDFLAGS"
   GASNET_PSHM_LIBS="$HUGETLBFS_LIBS"
   with_pshm=hugetlbfs
  fi
@@ -2179,13 +2203,15 @@ if test "$with_pshm" != no; then
   AC_DEFINE_UNQUOTED(GASNETI_CONFIG_PSHM_MAX_NODES, $gasnet_pshm_max_nodes)
 elif test "$enabled_pshm" = yes; then
   GASNET_MSG_ERROR([User requested --enable-pshm but no supported implementation was found])
-elif test "$have_hugetlbfs" = yes && \
-     ( test "$enable_aries" = yes || test "$GASNET_PLATFORM" = crayex ); then
+elif test "$have_hugetlbfs" = yes && test "$GASNET_PLATFORM" = crayex ; then
   # If PSHM is disabled or not found, but hugetlbfs is present on a supported
   # system, then ensure use of hugetlfs for segment allocation.
   # To do so, we (ab)use GASNET_PSHM_LIBS which would otherwise be empty.
   # Currently the supported systems are the Cray XC and HPE Cray EX
+  # However, we are not doing anything here for the former
   AC_DEFINE(GASNETI_USE_HUGETLBFS)
+  GASNET_PSHM_CFLAGS="$HUGETLBFS_CFLAGS"
+  GASNET_PSHM_LDFLAGS="$HUGETLBFS_LDFLAGS"
   GASNET_PSHM_LIBS="$HUGETLBFS_LIBS"
 fi
 GASNET_SPLIT_LINKER_OPTS(GASNET_PSHM_LDFLAGS,GASNET_PSHM_LIBS)
@@ -3707,6 +3733,30 @@ if test "$enabled_smp" = yes; then
 
     GASNET_POPVAR(LIBS)
   fi
+
+  dnl TODO: reduce duplication w/ CONDUIT_SPAWNER
+  GASNET_WITH(smp-spawner,
+     [smp job spawner ("fork", "ssh", "mpi" or "pmi", default is fork)],
+     [case "$withval" in
+        fork|ssh|mpi|pmi)
+             gasnet_spawner_conf=$withval
+             ;;
+        yes) AC_MSG_ERROR([--with-smp-spawner requires an argument ("fork", "ssh", "mpi" or "pmi")])
+             ;;
+        *)   AC_MSG_ERROR([--with-smp-spawner argument must be "fork", "ssh", "mpi" or "pmi"])
+             ;;
+      esac],
+     [AC_MSG_ERROR([--with-smp-spawner argument must be "fork", "ssh", "mpi" or "pmi"])],
+     [gasnet_spawner_conf=fork])
+  if test "$gasnet_spawner_conf$have_mpi_compat" = mpino; then
+    AC_MSG_ERROR([--with-smp-spawner=mpi requires MPI compatibility support which $mpi_compat_reason])
+  elif test "$gasnet_spawner_conf" = pmi; then
+    force_pmi=yes
+  fi
+  AC_DEFINE_UNQUOTED(GASNETC_SMP_SPAWNER_CONF, "$gasnet_spawner_conf")
+  GASNET_SMP_SPAWNER_CONF=$gasnet_spawner_conf
+  AC_SUBST(GASNET_SMP_SPAWNER_CONF)
+  unset gasnet_spawner_conf
 fi
 AC_SUBST(SMP_LIBS)
 CONDUIT_END([test "$enabled_smp" = yes])
@@ -3751,7 +3801,7 @@ else
     GASNET_POPVAR(LDFLAGS)
     GASNET_POPVAR(LIBS)
 
-    ucx_max_med_dflt=`expr 4096 - 40 - 64`  # 40 = fixed header, 64 = 16x 4-byte args
+    ucx_max_med_dflt=`expr 65536 - 16 - 64`  # 16 = fixed Medium header, 64 = 16x 4-byte args
     GASNET_WITH(ucx-max-medium,[Specify gex_LUB*Medium() for ucx-conduit (default $ucx_max_med_dflt)],
       [if expr "$withval" : '[[0-9]]*$' >/dev/null 2>&1 && \
           expr "$withval" '>=' 512  >/dev/null 2>&1 ; then
@@ -4039,143 +4089,6 @@ AC_SUBST(IBV_LIBS)
 AM_CONDITIONAL(IBV_SEQ_THREADS, test "$enabled_ibv_rcv_thread$enabled_ibv_snd_thread$enabled_ibv_conn_thread" != nonono)
 CONDUIT_END([test "$enabled_ibv$have_ibv" = yesyes])
 AM_CONDITIONAL(USE_IBV_CONDUIT, test "$enabled_ibv$have_ibv" = yesyes)
-
-#--------------------------------------------------------------------------------------------------------
-# Aries Conduit
-
-CONDUIT_BEGIN(aries,yes,[Cray XC Aries conduit *DEPRECATED* (aries)])
-CONDUIT_DISALLOW_SEGMENT(everything)
-# gni only supported on compute node linux for now (cnl)
-case "$target" in
-  *-cnl-*) ;;
-  *) if test "$force_aries" != "yes"; then
-       enabled_aries=no
-     fi
-  ;;
-esac
-# Now only on Aries (not Gemini)
-if test "$enabled_aries$GASNET_PLATFORM" = yescrayex; then
-  GASNET_MSG_WARN([HPE Cray EX platform detected.  Please --enable-ofi rather than using aries-conduit])
-  enabled_aries=no
-elif test "$enabled_aries" = yes; then
-  AC_MSG_CHECKING(for GNI network type)
-  if test "${CRAYPE_NETWORK_TARGET+set}" = set ; then
-    gni_network=${CRAYPE_NETWORK_TARGET}
-  elif test "${XTPE_NETWORK_TARGET+set}" = set ; then
-    gni_network=${XTPE_NETWORK_TARGET}
-  else
-    gni_network="unknown"
-  fi
-  AC_MSG_RESULT($gni_network)
-  if test $gni_network = gemini; then
-    GASNET_MSG_WARN([Cray gemini network software detected, but gemini-conduit has been removed.])
-    enabled_aries=no
-  fi
-fi
-if test "$enabled_aries" = yes; then
-  have_aries=yes # start by assuming we have it
-
-  GNI_CFLAGS=
-  GNI_LDFLAGS=
-  GNI_LIBS=
-
-  # We previously setup PMI spawning here, but now the probe for Cray PMI
-  # support has been unified with the generic pmi-spawner probe.
-  # That logic will still ensure lack of Cray PMI will be fatal.
-
-  # Look for gni_pub.h, allowing for the possibility we are not using the wrapper compiler
-  GASNET_CHECK_CRAY_HEADER([gni_pub.h],[CRAY_GNI_HEADERS_INCLUDE_OPTS],[:],[
-      GNI_CFLAGS="$GNI_CFLAGS $CRAY_GNI_HEADERS_INCLUDE_OPTS"
-    ])
-  GNI_LDFLAGS="$GNI_LDFLAGS $CRAY_UGNI_POST_LINK_OPTS"
-  GNI_LIBS="$GNI_LIBS -lugni"
-
-  if test $have_aries = yes; then
-    # PSHM must be XPMEM, HUGETLBFS or none.
-    AC_MSG_CHECKING(for appropriate pshm support required by Aries)
-    case "$with_pshm" in
-      no) # If none, then we do still get hugetlbfs, fwiw
-        AC_MSG_RESULT(none)
-        ;;
-      xpmem|hugetlbfs)
-        AC_MSG_RESULT(yes - $with_pshm)
-        ;;
-      *)
-        have_aries=no
-        AC_MSG_RESULT(no - have '$with_pshm' but require xpmem or hugetlbfs)
-        ;;
-    esac
-  fi
-
-  if test $have_aries = yes; then
-    GASNET_SPLIT_LINKER_OPTS(GNI_LDFLAGS,GNI_LIBS)
-    GASNET_PUSHVAR(LDFLAGS,"$LDFLAGS ${GNI_LDFLAGS}")
-    GASNET_PUSHVAR(LIBS,"$LIBS ${GNI_LIBS}")
-    GASNET_PUSHVAR(CPPFLAGS,"$CPPFLAGS $GNI_CFLAGS")
-    GASNET_TRY_CACHE_LINK(for working Aries configuration, aries_works, [
-      #include <stddef.h>
-      #include <stdint.h>
-      #include <gni_pub.h>
-    ], [
-      gni_cdm_handle_t cdm_hndl;
-      gni_return_t rc = GNI_CdmDestroy(cdm_hndl);
-    ], [ : ], [ have_aries=no; GASNET_ERR_SAVE() ] )
-    GASNET_POPVAR(LDFLAGS)
-    GASNET_POPVAR(LIBS)
-    GASNET_POPVAR(CPPFLAGS)
-  fi
-
-  if test $have_aries = yes; then
-    # require PMI spawner probe to find Cray's version
-    force_pmi=yes
-  fi
-
-  GASNET_IF_ENABLED_WITH_AUTO(aries-udreg,
-     [Use Cray's UDREG to cache memory registration (enabled by default if available)],
-     [gni_udreg=yes], [gni_udreg=no], [gni_udreg=probe])
-  if test $gni_udreg != no; then
-    # Look for udreg_pub.h, allowing for the possibility we are not using the wrapper compiler
-    GASNET_CHECK_CRAY_HEADER([udreg_pub.h],[CRAY_UDREG_INCLUDE_OPTS],[
-        AC_DEFINE(GASNETC_GNI_UDREG)
-      ],[
-        AC_DEFINE(GASNETC_GNI_UDREG)
-        GNI_CFLAGS="$GNI_CFLAGS $CRAY_UDREG_INCLUDE_OPTS"
-      ],[
-        if test "$gni_udreg" = yes; then
-          AC_MSG_ERROR([--enable-aries-udreg was passed but udreg_pub.h header was not found])
-        fi
-      ])
-    GNI_LIBS="$GNI_LIBS $CRAY_UDREG_POST_LINK_OPTS -ludreg"
-  fi
-
-  GASNET_WITH(aries-max-medium,
-     [specify default value of gasnet_AMMaxMedium() (default 4032)],
-     [tmpval=`echo "$withval" | $AWK '{sub(/^\+/,"");}1'` # strip leading '+'
-      if expr "$tmpval" : '[[0-9]]*$' >/dev/null 2>&1 && \
-         expr \( "$tmpval" / 64 \) \* 64 = "$tmpval" >/dev/null 2>&1 &&
-         expr "$tmpval" '>=' 512  >/dev/null 2>&1 &&
-         expr "$tmpval" '<=' 65408  >/dev/null 2>&1 ; then
-        gni_max_medium="$withval"
-      else
-        AC_MSG_ERROR([--with-aries-max-medium="$withval" is invalid.  Value must be a multiple of 64, between 512 and 65408, inclusive. Unless prefixed with '+', the value will be rounded-down to the next recommended value. See the aries-conduit README for additional details.])
-      fi
-     ],
-     [AC_MSG_ERROR([--with-aries-max-medium must be a multiple of 64 and no smaller than 512])],
-     [gni_max_medium=4032])
-  AC_DEFINE_UNQUOTED(GASNETC_GNI_MAX_MEDIUM_DFLT, ["$gni_max_medium"])
-
-  GASNET_IF_ENABLED(aries-multi-domain, [Use experimental multi-domain support in PAR builds], [AC_DEFINE(GASNETC_GNI_MULTI_DOMAIN)])
-
-  AC_SUBST(GNI_LDFLAGS)
-  AC_SUBST(GNI_LIBS)
-  AC_SUBST(GNI_CFLAGS)
-fi
-CONDUIT_END([test "$enabled_aries$have_aries" = yesyes])
-AM_CONDITIONAL(USE_ARIES_CONDUIT, test "$enabled_aries$have_aries" = yesyes)
-if test "$enabled_aries$have_aries" = yesyes; then
-  GASNET_MSG_WARN([aries-conduit has been deprecated.  Please see the aries-conduit README for more information.])
-fi
-
 
 #--------------------------------------------------------------------------------------------------------
 # Libfabric Conduit
@@ -4625,7 +4538,6 @@ EOF
 
 CONDUIT_OUTPUT(ucx)
 CONDUIT_OUTPUT(ibv)
-CONDUIT_OUTPUT(aries)
 
 #--------------------------------------------------------------------------------------------------------
 
@@ -4785,12 +4697,7 @@ GASNET_WITH(pmi-version, [PMI version (x, 1, 2 or cray)] , [
 ], [
     GASNET_MSG_WARN([Ignoring --without-pmi-version])
 ])
-if test "$enabled_aries$have_aries" = yesyes; then
-  if test -n "$using_pmi_version" && test "$using_pmi_version" != 'cray'; then
-    GASNET_MSG_WARN([Ignoring --with-pmi-version=$using_pmi_version in favor of Cray PMI required by aries-conduit])
-  fi
-  using_pmi_version=cray
-elif test "$GASNET_PLATFORM" = crayex && test -z "$using_pmi_version"; then
+if test "$GASNET_PLATFORM" = crayex && test -z "$using_pmi_version"; then
   using_pmi_version=cray
 fi
 
@@ -5010,9 +4917,6 @@ elif test -z "$force_pmi"; then
   PMI_SPAWNER_LIBS=""
   PMI_SPAWNER_LDFLAGS=""
   PMI_SPAWNER_CFLAGS=""
-elif test "$enabled_aries$have_aries" = yesyes; then
-  AC_MSG_RESULT(no)
-  GASNET_MSG_ERROR([Cray PMI could not be found, but is required by aries-conduit.  Try loading the pmi environment module.])
 elif test -n "${using_pmi_version+set}"; then
   AC_MSG_RESULT(no)
   if test "$using_pmi_version" = cray; then
@@ -5690,6 +5594,17 @@ GASNET_TRY_CACHE_CHECK(for sched_yield(), cc_has_sched_yield, [
 ],
   AC_SEARCH_LIBS(sched_yield, posix4, AC_DEFINE(HAVE_SCHED_YIELD), AC_MSG_RESULT(entry point not found - disabled)))
 
+# Check for sigaction() *and* a definition of the SA_RESTART flag
+GASNET_TRY_CACHE_CHECK(for SA_RESTART, cc_has_sa_restart, [
+#include <signal.h>
+], [
+  struct sigaction act;
+  act.sa_flags = SA_RESTART;
+  int rc = sigaction(SIGTERM, &act, NULL);
+], [
+  AC_DEFINE(GASNETI_HAVE_SA_RESTART)
+])
+
 # timer setup
 case "$target_os" in
   freebsd* | netbsd*)  
@@ -5844,6 +5759,14 @@ if test "$enabled_hwloc_utils" != no; then
   fi
 fi
 
+if test "$have_hwloc_lib" = 'yes'; then
+  hwloc_support='lib'
+elif test "$have_hwloc_utils" = 'yes'; then
+  hwloc_support='utils'
+else
+  hwloc_support='no'
+fi
+
 #  AC_FUNC_MMAP
 # Check for mmap functionality we actually use
 if test "$cross_compiling" = "yes" ; then
@@ -5932,7 +5855,7 @@ if test "$HAVE_MMAP" != "0" ; then
      [ #include <sys/mman.h> ],[ void *junk = mmap(0, 0, 0, MAP_ANON, 0, 0); ],
      [ AC_DEFINE(HAVE_MAP_ANON) ] )
 dnl GASNET_TOOLSONLY_FALSE_BEGIN
-  GASNET_IF_ENABLED(bug3480-workaround,[See Aries conduit README],[
+  GASNET_IF_ENABLED(bug3480-workaround,[See smp-conduit README],[
       AC_DEFINE(GASNETI_BUG3480_WORKAROUND)
       if test "$GASNETI_DISABLE_ALIGNED_SEGMENTS" != 1 && \
          test "$segconfig" != everything; then
@@ -6221,9 +6144,9 @@ if test -n "$warn_missing_rpath"; then
 Had support been present, the following conduits or packages would have used an RPATH:$warn_missing_rpath.])
 fi
 
+GASNET_FIX_EXEC(smp-conduit/contrib/gasnetrun_smp)
 GASNET_FIX_EXEC(mpi-conduit/contrib/gasnetrun_mpi)
 GASNET_FIX_EXEC(ibv-conduit/contrib/gasnetrun_ibv)
-GASNET_FIX_EXEC(aries-conduit/contrib/gasnetrun_aries)
 GASNET_FIX_EXEC(ofi-conduit/contrib/gasnetrun_ofi)
 GASNET_FIX_EXEC(ucx-conduit/contrib/gasnetrun_ucx)
 GASNET_FIX_EXEC(other/contrib/gasnet_trace)
@@ -6243,6 +6166,7 @@ cat >>$CONDUIT_LIST <<EOF
   PSHM support:           $with_pshm
   Atomics support:        $atomics_config
   PMI support:            $have_pmi$pretty_pmi_version
+  Hwloc support:          $hwloc_support
 EOF
 else
 cat >>$CONDUIT_LIST <<EOF
@@ -6313,6 +6237,8 @@ udp-conduit/conduit.mak
 
 smp-conduit/Makefile
 smp-conduit/conduit.mak
+smp-conduit/contrib/Makefile
+smp-conduit/contrib/gasnetrun_smp
 
 ibv-conduit/Makefile
 ibv-conduit/conduit.mak
@@ -6323,11 +6249,6 @@ ucx-conduit/Makefile
 ucx-conduit/conduit.mak
 ucx-conduit/contrib/Makefile
 ucx-conduit/contrib/gasnetrun_ucx
-
-aries-conduit/Makefile
-aries-conduit/conduit.mak
-aries-conduit/contrib/Makefile
-aries-conduit/contrib/gasnetrun_aries
 
 ofi-conduit/Makefile
 ofi-conduit/conduit.mak

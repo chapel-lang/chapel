@@ -1,5 +1,5 @@
 /*
- * Copyright © 2009-2022 Inria.  All rights reserved.
+ * Copyright © 2009-2023 Inria.  All rights reserved.
  * Copyright © 2009-2012 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -57,7 +57,7 @@ int hwloc_ps_read_process(hwloc_topology_t topology, hwloc_const_bitmap_t topocp
     free(path);
     goto out;
   }
-  proc->name[n] = 0;
+  proc->name[n] = '\0';
 
   if (flags & HWLOC_PS_FLAG_SHORTNAME) {
     /* try to get a small name from comm */
@@ -68,9 +68,9 @@ int hwloc_ps_read_process(hwloc_topology_t topology, hwloc_const_bitmap_t topocp
       n = read(fd, comm, sizeof(comm) - 1);
       close(fd);
       if (n > 0) {
-	comm[n] = 0;
+	comm[n] = '\0';
 	if (n > 1 && comm[n-1] == '\n')
-	  comm[n-1] = 0;
+	  comm[n-1] = '\0';
       }
 
     } else {
@@ -85,12 +85,12 @@ int hwloc_ps_read_process(hwloc_topology_t topology, hwloc_const_bitmap_t topocp
 	n = read(fd, stats, sizeof(stats) - 1);
 	close(fd);
 	if (n > 0) {
-	  stats[n] = 0;
+	  stats[n] = '\0';
 	  parenl = strchr(stats, '(');
 	  parenr = strchr(stats, ')');
 	  if (!parenr)
 	    parenr = &stats[sizeof(stats)-1];
-	  *parenr = 0;
+	  *parenr = '\0';
 	  if (parenl)
 	    snprintf(comm, sizeof(comm), "%s", parenl+1);
 	}
@@ -115,12 +115,13 @@ int hwloc_ps_read_process(hwloc_topology_t topology, hwloc_const_bitmap_t topocp
     if (fd >= 0) {
       char status[1024];
       char *uid;
-      (void) read(fd, &status, sizeof(status));
-      status[1023] = '\0';
-      uid = strstr(status, "Uid:");
-      if (uid)
-	proc->uid = strtoul(uid+4, NULL, 0);
-      close(fd);
+      if (read(fd, &status, sizeof(status)) > 0) {
+        status[1023] = '\0';
+        uid = strstr(status, "Uid:");
+        if (uid)
+          proc->uid = strtoul(uid+4, NULL, 0);
+        close(fd);
+      }
     }
     free(path);
 #endif
@@ -387,6 +388,66 @@ int hwloc_ps_foreach_process(hwloc_topology_t topology, hwloc_const_bitmap_t top
   }
 
   closedir(dir);
+  return 0;
+#else /* HAVE_DIRENT_H */
+  return -1;
+#endif /* HAVE_DIRENT_H */
+}
+
+int hwloc_ps_foreach_child(hwloc_topology_t topology, hwloc_const_bitmap_t topocpuset,
+                           long pid,
+                           void (*callback)(hwloc_topology_t topology, struct hwloc_ps_process *proc, void *cbdata),
+                           void *cbdata,
+                           unsigned long flags, const char *only_name, long uid)
+{
+#ifdef HAVE_DIRENT_H
+  struct hwloc_ps_process proc;
+  DIR *taskdir;
+  char path[512];
+
+  proc.pid = pid;
+  proc.cpuset = NULL;
+  proc.nthreads = 0;
+  proc.nboundthreads = 0;
+  proc.threads = NULL;
+  if (hwloc_ps_read_process(topology, topocpuset, &proc, flags) < 0)
+    goto next;
+  if (only_name && !strstr(proc.name, only_name))
+    goto next;
+  if (uid != HWLOC_PS_ALL_UIDS && proc.uid != HWLOC_PS_ALL_UIDS && proc.uid != uid)
+    goto next;
+  callback(topology, &proc, cbdata);
+ next:
+  hwloc_ps_free_process(&proc);
+
+  snprintf(path, sizeof(path), "/proc/%ld/task", proc.pid);
+  taskdir = opendir(path); /* should be enough for the vast majority of cases */
+  if (taskdir) {
+    struct dirent *taskdirent;
+    while ((taskdirent = readdir(taskdir))) {
+      char pidline[4096];
+      FILE *file;
+      char *begin;
+      size_t len;
+      snprintf(path, sizeof(path), "/proc/%ld/task/%s/children", proc.pid, taskdirent->d_name);
+      file = fopen(path, "r");
+      if (!file)
+        continue;
+      len = fread(pidline, 1, sizeof(pidline)-1, file);
+      fclose(file);
+      pidline[len] = '\0';
+      begin = pidline;
+      while (1) {
+        char *end;
+        long childpid = strtoul(begin, &end, 10);
+        if (end == begin)
+          break;
+        hwloc_ps_foreach_child(topology, topocpuset, childpid, callback, cbdata, flags, only_name, uid);
+        begin = end;
+      }
+    }
+    closedir(taskdir);
+  }
   return 0;
 #else /* HAVE_DIRENT_H */
   return -1;

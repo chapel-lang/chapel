@@ -1,4 +1,4 @@
-.TH "hwlocality_xmlexport" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_xmlexport" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -64,9 +64,18 @@ When importing this XML file, the import() callback (if set) will be called exac
 .PP
 \fCreserved\fP, \fCtopology\fP and \fCobj\fP must be the first three parameters that were given to the export callback\&.
 .PP
-Only printable characters may be exported to XML string attributes\&. If a non-printable character is passed in \fCname\fP or \fCbuffer\fP, the function returns -1 with errno set to EINVAL\&.
+Only printable characters may be exported to XML string attributes\&.
 .PP
-If exporting binary data, the application should first encode into printable characters only (or use \fBhwloc_export_obj_userdata_base64()\fP)\&. It should also take care of portability issues if the export may be reimported on a different architecture\&. 
+If exporting binary data, the application should first encode into printable characters only (or use \fBhwloc_export_obj_userdata_base64()\fP)\&. It should also take care of portability issues if the export may be reimported on a different architecture\&.
+.PP
+\fBReturns\fP
+.RS 4
+0 on success\&. 
+.PP
+-1 with errno set to \fCEINVAL\fP if a non-printable character is passed in \fCname\fP or \fBbuffer\fP\&. 
+.RE
+.PP
+
 .SS "int hwloc_export_obj_userdata_base64 (void * reserved, \fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP obj, const char * name, const void * buffer, size_t length)"
 
 .PP
@@ -74,7 +83,18 @@ Encode and export some object userdata to XML\&. This function is similar to \fB
 .PP
 This function may only be called from within the export() callback passed to \fBhwloc_topology_set_userdata_export_callback()\fP\&.
 .PP
-The function does not take care of portability issues if the export may be reimported on a different architecture\&. 
+The name must be made of printable characters for export to XML string attributes\&.
+.PP
+The function does not take care of portability issues if the export may be reimported on a different architecture\&.
+.PP
+\fBReturns\fP
+.RS 4
+0 on success\&. 
+.PP
+-1 with errno set to \fCEINVAL\fP if a non-printable character is passed in \fCname\fP\&. 
+.RE
+.PP
+
 .SS "void hwloc_free_xmlbuffer (\fBhwloc_topology_t\fP topology, char * xmlbuffer)"
 
 .PP
@@ -90,7 +110,7 @@ By default, the latest export format is used, which means older hwloc releases (
 .PP
 \fBReturns\fP
 .RS 4
--1 if a failure occured\&.
+0 on success, or -1 on error\&.
 .RE
 .PP
 \fBNote\fP
@@ -120,7 +140,7 @@ The returned buffer ends with a \\0 that is included in the returned length\&.
 .PP
 \fBReturns\fP
 .RS 4
--1 if a failure occured\&.
+0 on success, or -1 on error\&.
 .RE
 .PP
 \fBNote\fP

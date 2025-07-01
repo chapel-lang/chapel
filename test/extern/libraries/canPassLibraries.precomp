@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+chpl=$3
+tgt_cc=$($($chpl --print-chpl-home)/util/printchplenv --value --only CHPL_TARGET_CC)
+
+
+$tgt_cc -o myLib.o -c myLib.c -fPIC
+ar crs libmyStaticLib.a myLib.o
+$tgt_cc -o libmySharedLib.$(./platformExtension.sh) -shared -fPIC myLib.o

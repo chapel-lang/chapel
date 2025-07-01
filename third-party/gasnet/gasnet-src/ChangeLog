@@ -13,10 +13,83 @@ GASNet-EX ChangeLog
   - Shared-memory (smp-conduit)
   - Portable UDP (udp-conduit)
   - Portable MPI (mpi-conduit)
-  - Cray uGNI (aries-conduits) [DEPRECATED]
   - Unified Communication X (ucx-conduit) [EXPERIMENTAL]
   Users wishing to use other retired conduits may need to download 
   the GASNet v1.x distribution from https://gasnet.lbl.gov.
+
+----------------------------------------------------------------------
+2025-02-26: GASNet-EX 2025.2.0-snapshot
+
+* Memory Kinds (support for non-host memory)
+  - Fixed support for device memory allocated via cuMemMap (bug 4767)
+
+* Cray XC uGNI (aries-conduit)
+  - This conduit, deprecated since 2023.9.0, has been removed.
+  - Users of Cray XC systems are advised to use the renamed cross-configure
+    scripts `cross-configure-cray-xc-slurm` and `cross-configure-cray-xc-alps`,
+    which enable ofi-conduit with libfabric's "gni" provider.
+
+* InfiniBand Verbs (details in ibv-conduit README)
+  - Setting `GASNET_IBV_PORTS_TYPE=auto` can now be used to automate
+    topology-aware assignment of HCAs to processes on a multi-rail system.
+    See the description of the `GASNET_IBV_PORTS_*` family of environment
+    variables in the conduit `README` for more details.
+
+* Unified Communication X framework (details in ucx-conduit README) [EXPERIMENTAL]
+  - Reduced on-the-wire overheads of Active Messages
+  - Improved AM Medium bandwidth (bug 4165)
+  - Increased default GASNET_UCX_MAX_MEDIUM to 65456
+
+* Shared-memory without a network (details in smp-conduit README)
+  - New `gasnetrun_smp` script provides consistency with most other conduits.
+    This enables launch of (single-node) smp-conduit jobs using the ssh-, mpi-
+    and pmi-spawners, in addition to legacy fork-based job launch.
+
+* Intra-node Shared Memory (PSHM)
+  - Existing support for libhugetlbfs can now use an installation outside of
+    the default header and library search paths via a the configure option
+    `--with-hugetlbfs-home=`, or via the environment variable `HUGETLBFS_HOME`
+    set at configure time.
+  - The configure option `--enable-hugetlbfs-whole-archive` has been deprecated,
+    having been supersede by the more general `--with-hugetlbfs-libs` option.
+  - The implementation of PSHM now defaults to avoiding allocation of shared
+    memory when there can be no sharing (i.e. in a single-process neighborhood),
+    instead using `mmap(MAP_ANONYNOUS)` or similar.
+    See the description of the environment variable `GASNET_USE_PSHM_SINGLETON`
+    in `README` for more details, including use of this variable to restore
+    the old behavior.
+
+* General and Misc.
+  - Support for hwloc, used conditionally by ibv- and ofi-conduits, now
+    defaults to thread-scope (not process-scope) for the cpuset query.
+    See GASNET_HWLOC_QUERY in the top-level GASNet README for details.
+  - Improved pseudo-random number generation used in many tests.
+
+* Notable bugs fixed in this release: (details at https://gasnet-bugs.lbl.gov)
+  - bug4165 - ucx: AMMediumRequest bandwidth problems
+  - bug4280 - ucx: investigate use of is_sync in AM injection
+  - bug4335 - ucx: inefficient AM header layout
+  - bug4718 - Diagnose invalid segment binding to primordial endpoint
+  - bug4723 - (partial fix) Chapel over ssh-spawner w/ environment modules chokes tcsh
+  - bug4726 - RFE: smp-conduit support for conduit-independent spawner
+  - bug4732 - configure not respecting disable-auto-conduit-detect for ofi-conduit on Cray EX
+  - bug4733 - Intermittent exitcode=9 from ssh-spawner
+  - bug4734 - incorrect hwloc-based NIC selection with cxi provider
+  - bug4743 - prohibit space characters in $(prefix) and $(DESTDIR) for `make install`
+  - bug4744 - uninitialized use of PRNG in some tests
+  - bug4746 - support pedantic compiler options in gasnet_portable_platform.h
+  - bug4749 - ofi-conduit NPAM support broken on ILP32
+  - bug4751 - incorrect segment limit computation on ILP32
+  - bug4752 - Incomplete work-around for bug 4376 (FI_EAGAIN when reposting multi-recv buffer)
+  - bug4753 - ofi: race condition in multi-receive message accounting
+  - bug4754 - intermittent testratomic validation failures on Apple M1 h/w
+  - bug4757 - Undefined behavior in ibv-conduit legacy initialization
+  - bug4760 - ibv: assertion failure with single-process and GASNET_NUM_QPS>1
+  - bug4764 - ibv: progress functions may send AMs in an NPAM prepare/commit interval
+  - bug4765 - ucx-conduit flaw in gex_AD_OpNBI for GEX_OP_SET and _GET
+  - bug4766 - Executing a NULL pointer via gasnete_barrier_pf
+  - bug4767 - CUDA framebuffer memory allocated by cuMemMap failed when registering with GASNet-EX
+  - bug4768 - memcpy with NULL destination in collectives
 
 ----------------------------------------------------------------------
 2024-05-23: GASNet-EX 2024.5.0
@@ -32,6 +105,9 @@ GASNet-EX ChangeLog
     for ofi-conduit, replacing use of a portable reference implementation.
     This was measured to improve bandwidth on the HPE Slingshot network when
     using NPAM interfaces with a GASNet-allocated buffer.
+  - Output generated by setting `GASNET_OFI_LIST_DEVICES` now includes
+    information ranking the distance of a device from the generating process,
+    when hwloc 2.0 libraries (or newer) are located by `configure`.
 
 * InfiniBand Verbs (details in ibv-conduit README)
   - A new send progress thread can be enabled to process completion events
@@ -45,6 +121,9 @@ GASNet-EX ChangeLog
   - Previously, setting environment variable `GASNET_RCV_THREAD` to a true
     value with a library build configured using `--disable-ibv-rcv-thread`
     was a fatal error.  It now produces a suppressible warning.
+  - Output generated by setting `GASNET_IBV_LIST_PORTS` now includes information
+    ranking the distance of a device from the generating process, when hwloc
+    2.0 libraries (or newer) are located by `configure`.
 
 * Portable UDP support (details in udp-conduit README)
   - Correct the behavior of the `dest_addr` of Long AMs when `nbytes==0`

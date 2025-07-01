@@ -226,6 +226,9 @@ static void test5() {
   auto notAType = types.at("notAType");
 
   assert(notAType.isUnknown());
+  assert(guard.numErrors() == 1);
+  assert(guard.errors()[0]->message() == "variable 'notAType' is declared without an initializer or type");
+  guard.realizeErrors();
 }
 
 

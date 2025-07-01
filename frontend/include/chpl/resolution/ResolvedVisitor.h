@@ -31,41 +31,43 @@ using namespace uast;
 template <typename ResolvedVisitorImpl>
 static bool resolvedVisitorEnterFor(ResolvedVisitorImpl& v,
                                     const uast::For* loop) {
-  if (loop->isParam()) {
-    // Enter the param for-loop with the current resolution results, so that
-    // the user-defined visitor can choose to do something custom if it
-    // wants.
-    bool goInto = v.userVisitor().enter(loop, v);
+  bool goInto = v.userVisitor().enter(loop, v);
+  if (!goInto) return false;
 
-    if (goInto) {
-      const ResolvedExpression& rr = v.byAst(loop);
-      const ResolvedParamLoop* resolvedLoop = rr.paramLoop();
+  // don't return 'true' if it's a param loop, we'll enter it below if able.
+  if (loop->isParam()) goInto = false;
 
-      if (resolvedLoop == nullptr) return false;
+  // some loops have 'paramLoop' info (param loops, loops over heterogeneous tuples)
+  // but most don't, so check hasAst and bail if it's not there.
+  if (!v.hasAst(loop)) {
+    return goInto;
+  }
 
-      const AstNode* iterand = loop->iterand();
-      iterand->traverse(v);
+  const ResolvedExpression& rr = v.byAst(loop);
+  const ResolvedParamLoop* resolvedLoop = rr.paramLoop();
 
-      // TODO: Should there be some kind of function the UserVisitor can
-      // implement to observe a new iteration of the loop body?
-      for (const auto& loopBody : resolvedLoop->loopBodies()) {
-        ResolvedVisitorImpl loopVis(v.rc(), loop,
-                                    v.userVisitor(), loopBody);
+  // no param resolution results, act like a normal loop
+  if (resolvedLoop == nullptr) return goInto;
 
-        for (const AstNode* child : loop->children()) {
-          // Written to visit "all but the iterand" in case we add more
-          // fields/children to the For class later.
-          if (child != iterand) {
-            child->traverse(loopVis);
-          }
-        }
+  const AstNode* iterand = loop->iterand();
+  iterand->traverse(v);
+
+  // TODO: Should there be some kind of function the UserVisitor can
+  // implement to observe a new iteration of the loop body?
+  for (const auto& loopBody : resolvedLoop->loopBodies()) {
+    ResolvedVisitorImpl loopVis(v.rc(), loop,
+                                v.userVisitor(), loopBody);
+
+    for (const AstNode* child : loop->children()) {
+      // Written to visit "all but the iterand" in case we add more
+      // fields/children to the For class later.
+      if (child != iterand) {
+        child->traverse(loopVis);
       }
     }
-
-    return false;
-  } else {
-    return v.userVisitor().enter(loop, v);
   }
+
+  return false;
 }
 
 template <typename ResolvedVisitorImpl>
@@ -128,6 +130,18 @@ static bool resolvedVisitorEnterAst(ResolvedVisitorImpl& v,
   return false;
 
 }
+
+static inline const uast::Loop*
+getBreakOrContinueTarget(Context* context,
+                         const ResolutionResultByPostorderID& byPostorder,
+                         const uast::AstNode* ast) {
+  auto toId = byPostorder.byAst(ast).toId();
+  CHPL_ASSERT(!toId.isEmpty());
+  auto loop = parsing::idToAst(context, toId)->toLoop();
+  CHPL_ASSERT(loop);
+  return loop;
+}
+
 
 /**
   This class enables visiting resolved uAST nodes.
@@ -225,6 +239,10 @@ public:
     return byPostorder_.byId(id);
   }
 
+  /** Given a Break or Continue statement, returns its target. */
+  const uast::Loop* getBreakOrContinueTarget(const uast::AstNode* ast) const {
+    return resolution::getBreakOrContinueTarget(context(), byPostorder(), ast);
+  }
 
   /*
    * Visiting a param for-loop has special behavior. The user's visitor
@@ -319,6 +337,10 @@ public:
     return byPostorder_.byId(id);
   }
 
+  /** Given a Break or Continue statement, returns its target. */
+  const uast::Loop* getBreakOrContinueTarget(const uast::AstNode* ast) const {
+    return resolution::getBreakOrContinueTarget(context(), byPostorder(), ast);
+  }
 
   /*
    * Visiting a param for-loop has special behavior. The user's visitor
@@ -351,6 +373,27 @@ public:
 
 } // end namespace resolution
 
+namespace uast {
+
+/// \cond DO_NOT_DOCUMENT
+template <typename UV>
+struct AstVisitorPrecondition<resolution::ResolvedVisitor<UV>> {
+  static bool skipSubtree(const uast::AstNode* ast,
+                          resolution::ResolvedVisitor<UV>& v) {
+    return AstVisitorPrecondition<UV>::skipSubtree(ast, v.userVisitor());
+  }
+};
+
+template <typename UV>
+struct AstVisitorPrecondition<resolution::MutatingResolvedVisitor<UV>> {
+  static bool skipSubtree(const uast::AstNode* ast,
+                          resolution::MutatingResolvedVisitor<UV>& v) {
+    return AstVisitorPrecondition<UV>::skipSubtree(ast, v.userVisitor());
+  }
+};
+/// \endcond
+
+} // end namespace uast
 
 } // end namespace chpl
 

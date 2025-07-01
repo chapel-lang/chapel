@@ -430,6 +430,15 @@ gasneti_EP_t gasneti_i_tm_to_i_ep(gasneti_TM_t i_tm) {
 
 /* ------------------------------------------------------------------------------------ */
 // Internal conduit interface to spawner
+//
+// NOTE: Though NbrhdBroadcast and HostBroadcast have semantics which require only
+// local data movement, implementations are peritted to use global communication
+// (such as via AM{MPI,UDP}_SPMDBroadcast()).  Consequently, calls must be
+// collective across *all* ranks, not just across ranks in the same neighborhood
+// or host.  The `len` argument must be single-valued across every rank in the
+// job.  The `root` arguent need only be single-valued within the {nbrhd, host}
+// scope of the broadcast, but must identify a root process in the caller's
+// {nbrhd, host}.
 
 typedef void (*gasneti_bootstrapExchangefn_t)(void *src, size_t len, void *dest);
 typedef void (*gasneti_bootstrapBroadcastfn_t)(void *src, size_t len, void *dest, int rootnode);
@@ -439,7 +448,8 @@ typedef struct {
   gasneti_bootstrapBarrierfn_t Barrier;
   gasneti_bootstrapExchangefn_t Exchange;
   gasneti_bootstrapBroadcastfn_t Broadcast;
-  void (*SNodeBroadcast)(void *src, size_t len, void *dest, int rootnode);
+  gasneti_bootstrapBroadcastfn_t NbrhdBroadcast;
+  gasneti_bootstrapBroadcastfn_t HostBroadcast;
   void (*Alltoall)(void *src, size_t len, void *dest);
   void (*Abort)(int exitcode);
   void (*Cleanup)(void);
@@ -478,6 +488,10 @@ uintptr_t gasneti_max_segsize(void);
     /* GASNETI_MMAP_GRANULARITY is the minimum increment used by the mmap binary search */
     #define GASNETI_MMAP_GRANULARITY  (((size_t)2)<<21)  /* 4 MB */
   #endif
+#endif
+
+#if GASNET_PSHM
+  extern int gasneti_use_shared_allocator;
 #endif
 
 // Allocate/map memory intended for use as segment.
@@ -655,6 +669,10 @@ extern int gasnetc_ep_publishboundsegment_hook(
 // in terms of gex_Segment_Create() and gex_EP_PublishBoundSegment().
 extern int gasnetc_segment_attach_hook(gex_Segment_t e_segment, gex_TM_t e_tm);
 #endif
+
+// Conduit-specific "primary attach" logic for use in the conduit-independent
+// implementation of `gasnet_attach()`.
+extern int gasnetc_attach_primary(gex_Flags_t);
 
 /* ------------------------------------------------------------------------------------ */
 /* GASNET-Internal OP Interface - provides a mechanism for conduit-independent services (like VIS)
@@ -1008,6 +1026,7 @@ extern gex_Rank_t gasneti_get_dissem_peers_pshm(const gex_Rank_t **out_p);
 
 #if GASNET_DEBUG
 void gasneti_checknpam(int for_reply GASNETI_THREAD_FARG);
+void gasneti_checknpam_disarm(void);
 #endif
 
 /* ------------------------------------------------------------------------------------ */

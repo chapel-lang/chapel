@@ -354,6 +354,9 @@ const char* compileCommandFilename = "compileCommand.tmp";
 const char* compileCommand = NULL;
 char compileVersion[64];
 
+std::array<std::string, 2> editions ({{"2.0", "pre-edition"}});
+std::string fEdition = "2.0";
+
 static bool fPrintCopyright = false;
 static bool fPrintEnvHelp = false;
 static bool fPrintHelp = false;
@@ -389,6 +392,7 @@ bool fDynoGenLib = false;
 bool fDynoGenStdLib = false;
 bool fDynoLibGenOrUse = false; // .dyno file or --dyno-gen-lib/std
 size_t fDynoBreakOnHash = 0;
+bool   fDynoBreakOnHashSet = false;
 bool fDynoNoBreakError = false;
 static std::string fDynoTimingPath;
 
@@ -814,6 +818,109 @@ static int runDriverMakeBinaryPhase(int argc, char* argv[]) {
                             "invoking driver makeBinary phase");
 }
 
+bool isValidEdition(std::string maybeEdition) {
+  bool result = false;
+
+  for (auto e: editions) {
+    if (maybeEdition == e) {
+      result = true;
+    }
+  }
+
+  return result;
+}
+
+// Validate the editions provided.  Checks if both are actual known editions and
+// that first comes before last in the editions list.  Generates errors if not
+void checkEditionRangeValid(std::string first, std::string last, BaseAST* loc) {
+  int startLoc = -1;
+  int endLoc = -1;
+
+  for (size_t i = 0; i < editions.size(); i++) {
+    if (editions[i] == first) {
+      startLoc = i;
+    }
+
+    if (editions[i] == last) {
+      endLoc = i;
+    }
+  }
+
+  if (startLoc == -1) {
+    USR_FATAL_CONT(loc, "unknown first edition '%s'", first.c_str());
+    return;
+  }
+
+  if (endLoc == -1) {
+    USR_FATAL_CONT(loc, "unknown last edition '%s'", last.c_str());
+    return;
+  }
+
+  if (endLoc < startLoc) {
+    USR_FATAL_CONT(loc, "last edition '%s' is earlier than first edition '%s'",
+                   last.c_str(), first.c_str());
+  }
+}
+
+// Returns whether or not the compiled edition is in their range.
+// True if `first < compilerEdition < last`
+bool isEditionApplicable(std::string first, std::string last, BaseAST* loc) {
+  int startLoc = -1;
+  int endLoc = -1;
+  int thisEditionLoc = -1;
+
+  for (size_t i = 0; i < editions.size(); i++) {
+    if (editions[i] == first) {
+      startLoc = i;
+    }
+
+    if (editions[i] == last) {
+      endLoc = i;
+    }
+
+    if (editions[i] == fEdition) {
+      thisEditionLoc = i;
+    }
+  }
+
+  if (startLoc == -1) {
+    // Should have been handled when validating the edition range
+    INT_FATAL("unable to determine first edition");
+  }
+
+  if (endLoc == -1) {
+    // Should have been handled when validating the edition range
+    INT_FATAL("unable to determine last edition");
+  }
+
+  if (thisEditionLoc == -1) {
+    // Should have been handled when resolving the compiler flags
+    INT_FATAL("unable to determine location of compiler edition");
+  }
+
+  return startLoc <= thisEditionLoc && thisEditionLoc <= endLoc;
+}
+
+static void setEdition(const ArgumentDescription* desc, const char* arg) {
+  std::string val = std::string(arg);
+
+  if (val == "default") {
+    // Use the default edition, which is set at the declaration point
+  } else if (!isValidEdition(val)) {
+    printf("--edition only accepts a limited set of values.  Current options");
+    printf(" are:\n");
+
+    printf("default (currently '%s')\n", fEdition.c_str());
+    // Iterate over all the edition names to list them
+    for (auto e: editions) {
+      printf("%s\n", e.c_str());
+    }
+    clean_exit(1);
+  } else {
+    fEdition = val;
+  }
+}
+
 static void runCompilerInGDB(int argc, char* argv[]) {
   const char* gdbCommandFilename = createDebuggerFile("gdb", argc, argv);
   const char* command = astr("gdb -q ", argv[0]," -x ", gdbCommandFilename);
@@ -1049,6 +1156,10 @@ static void setWarnSpecial(const ArgumentDescription* desc, const char* unused) 
   setWarnTupleIteration(desc, unused);
 }
 
+static void setDynoBreakOnHash(const ArgumentDescription* desc, const char* arg) {
+  fDynoBreakOnHashSet = true;
+}
+
 static void setLogDir(const ArgumentDescription* desc, const char* arg) {
   fLogDir = true;
 }
@@ -1206,6 +1317,7 @@ static ArgumentDescription arg_desc[] = {
  {"print-search-dirs", ' ', NULL, "[Don't] print module search path", "N", &printSearchDirs, "CHPL_PRINT_SEARCH_DIRS", NULL},
 
  {"", ' ', NULL, "Warning and Language Control Options", NULL, NULL, NULL, NULL},
+ {"edition", ' ', "<edition>", "Specify the language edition to use", "S", NULL, NULL, &setEdition},
  {"permit-unhandled-module-errors", ' ', NULL, "Permit unhandled thrown errors; such errors halt at runtime", "N", &fPermitUnhandledModuleErrors, "CHPL_PERMIT_UNHANDLED_MODULE_ERRORS", NULL},
  {"warn-unstable", ' ', NULL, "Enable [disable] warnings for uses of language features that are in flux", "N", &fWarnUnstable, "CHPL_WARN_UNSTABLE", NULL},
  {"warnings", ' ', NULL, "Enable [disable] output of warnings", "n", &ignore_warnings, "CHPL_WARNINGS", NULL},
@@ -1487,7 +1599,7 @@ static ArgumentDescription arg_desc[] = {
  {"dyno-debug-trace", ' ', NULL, "Enable [disable] debug-trace output when using dyno compiler library", "N", &fDynoDebugTrace, "CHPL_DYNO_DEBUG_TRACE", NULL},
  {"dyno-timing", ' ', NULL, "Enable [disable] timing output when using dyno compiler library", "P", &fDynoTimingPath, "CHPL_DYNO_TIMING", NULL},
  {"dyno-debug-print-parsed-files", ' ', NULL, "Enable [disable] printing all files that were parsed by Dyno", "N", &fDynoDebugPrintParsedFiles, "CHPL_DYNO_DEBUG_PRINT_PARSED_FILES", NULL},
- {"dyno-break-on-hash", ' ' , NULL, "Break when query with given hash value is executed when using dyno compiler library", "X", &fDynoBreakOnHash, "CHPL_DYNO_BREAK_ON_HASH", NULL},
+ {"dyno-break-on-hash", ' ' , NULL, "Break when query with given hash value is executed when using dyno compiler library", "X", &fDynoBreakOnHash, "CHPL_DYNO_BREAK_ON_HASH", setDynoBreakOnHash},
  {"dyno-gen-lib", ' ', "<path>", "Specify files named on the command line should be saved into a .dyno library", "P", NULL, NULL, addDynoGenLib},
  {"dyno-gen-std", ' ', NULL, "Generate a .dyno library file for the standard library", "F", &fDynoGenStdLib, NULL, setDynoGenStdLib},
  {"dyno-verify-serialization", ' ', NULL, "Enable [disable] verification of serialization", "N", &fDynoVerifySerialization, NULL, NULL},
@@ -2096,12 +2208,30 @@ static void checkRuntimeBuilt(void) {
                 "$CHPL_HOME/util/printchplenv and request support for this "
                 "configuration.");
     } else {
-      USR_FATAL_CONT("The runtime has not been built for this configuration. "
-                     "Run $CHPL_HOME/util/chplenv/printchplbuilds.py for information "
-                     "on available runtimes.");
+      USR_FATAL_CONT("The runtime has not been built for this configuration.");
+
+      std::string buf = CHPL_HOME + "/util/printchplenv --diagnose-lib=runtime";
+      fflush(stdout); // make sure output is flushed before running subprocess
+      mysystem(buf.c_str(), "running printchplenv to diagnose missing runtime", false);
+
+      USR_PRINT("Run $CHPL_HOME/util/chplenv/printchplbuilds.py for more information on available runtimes.");
     }
     if (developer) {
       USR_PRINT("Expected runtime library in %s", runtime_dir.c_str());
+    }
+    USR_STOP();
+  }
+
+  std::string launcher_dir(CHPL_RUNTIME_LIB);
+  launcher_dir += "/";
+  launcher_dir += CHPL_LAUNCHER_SUBDIR;
+
+  if (strcmp(CHPL_LAUNCHER, "none") != 0 &&
+      !isDirectory(launcher_dir.c_str())) {
+    USR_FATAL_CONT("There is no CHPL_LAUNCHER=%s for the current configuration.",
+                   CHPL_LAUNCHER);
+    if (developer) {
+      USR_PRINT("Expected launcher library in %s", launcher_dir.c_str());
     }
     USR_STOP();
   }
@@ -2341,6 +2471,7 @@ static void dynoConfigureContext(std::string chpl_module_path) {
 
   chpl::parsing::setupModuleSearchPaths(gContext,
                                         CHPL_HOME,
+                                        "", //moduleRoot
                                         fMinimalModules,
                                         CHPL_LOCALE_MODEL,
                                         fEnableTaskTracking,
@@ -2353,7 +2484,7 @@ static void dynoConfigureContext(std::string chpl_module_path) {
                                         cmdLineModPaths,
                                         getChplFilenames());
   gContext->setDebugTraceFlag(fDynoDebugTrace);
-  gContext->setBreakOnHash(fDynoBreakOnHash);
+  if (fDynoBreakOnHashSet) gContext->setBreakOnHash(fDynoBreakOnHash);
 
   // set whether dyno assertions should fire based on developer flag
   chpl::setAssertions(developer);

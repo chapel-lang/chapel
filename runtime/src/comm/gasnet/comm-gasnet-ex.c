@@ -59,6 +59,7 @@ static int reservedCore = -1;
 static chpl_bool defer_gasnet_progress_threads = false;
 
 static gasnet_seginfo_t* seginfo_table = NULL;
+static uintptr_t segsize_request;
 static gex_Client_t      myclient;
 static gex_EP_t          myep;
 static gex_TM_t          myteam;
@@ -571,22 +572,22 @@ void AM_copy_payload(gasnet_token_t token, void* buf, size_t nbytes,
 }
 
 static gex_AM_Entry_t ftable[] = {
-  {FORK,             AM_fork,             GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork"             },
-  {FORK_SMALL,       AM_fork_small,       GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork_small"       },
-  {FORK_LARGE,       AM_fork_large,       GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork_large"       },
-  {FORK_NB,          AM_fork_nb,          GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork_nb"          },
-  {FORK_NB_SMALL,    AM_fork_nb_small,    GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork_nb_small"    },
-  {FORK_NB_LARGE,    AM_fork_nb_large,    GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork_nb_large"    },
-  {FORK_FAST,        AM_fork_fast,        GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork_fast"        },
-  {FORK_FAST_SMALL,  AM_fork_fast_small,  GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork_fast_small"  },
-  {SIGNAL,           AM_signal,           GEX_FLAG_AM_REQREP  | GEX_FLAG_AM_SHORT,  2, NULL, "AM_signal"           },
-  {SIGNAL_LONG,      AM_signal_long,      GEX_FLAG_AM_REPLY   | GEX_FLAG_AM_LONG,   2, NULL, "AM_signal_long"      },
-  {PRIV_BCAST,       AM_priv_bcast,       GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_priv_bcast"       },
-  {PRIV_BCAST_LARGE, AM_priv_bcast_large, GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_priv_bcast_large" },
-  {FREE,             AM_free,             GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_SHORT,  2, NULL, "AM_free"             },
-  {SHUTDOWN,         AM_shutdown,         GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_SHORT,  0, NULL, "AM_shutdown"         },
-  {DO_REPLY_PUT,     AM_reply_put,        GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_reply_put"        },
-  {DO_COPY_PAYLOAD,  AM_copy_payload,     GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 4, NULL, "AM_copy_payload"     }
+  {FORK,             (gex_AM_Fn_t)AM_fork,             GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork"             },
+  {FORK_SMALL,       (gex_AM_Fn_t)AM_fork_small,       GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork_small"       },
+  {FORK_LARGE,       (gex_AM_Fn_t)AM_fork_large,       GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork_large"       },
+  {FORK_NB,          (gex_AM_Fn_t)AM_fork_nb,          GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork_nb"          },
+  {FORK_NB_SMALL,    (gex_AM_Fn_t)AM_fork_nb_small,    GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork_nb_small"    },
+  {FORK_NB_LARGE,    (gex_AM_Fn_t)AM_fork_nb_large,    GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork_nb_large"    },
+  {FORK_FAST,        (gex_AM_Fn_t)AM_fork_fast,        GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork_fast"        },
+  {FORK_FAST_SMALL,  (gex_AM_Fn_t)AM_fork_fast_small,  GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork_fast_small"  },
+  {SIGNAL,           (gex_AM_Fn_t)AM_signal,           GEX_FLAG_AM_REQREP  | GEX_FLAG_AM_SHORT,  2, NULL, "AM_signal"           },
+  {SIGNAL_LONG,      (gex_AM_Fn_t)AM_signal_long,      GEX_FLAG_AM_REPLY   | GEX_FLAG_AM_LONG,   2, NULL, "AM_signal_long"      },
+  {PRIV_BCAST,       (gex_AM_Fn_t)AM_priv_bcast,       GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_priv_bcast"       },
+  {PRIV_BCAST_LARGE, (gex_AM_Fn_t)AM_priv_bcast_large, GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_priv_bcast_large" },
+  {FREE,             (gex_AM_Fn_t)AM_free,             GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_SHORT,  2, NULL, "AM_free"             },
+  {SHUTDOWN,         (gex_AM_Fn_t)AM_shutdown,         GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_SHORT,  0, NULL, "AM_shutdown"         },
+  {DO_REPLY_PUT,     (gex_AM_Fn_t)AM_reply_put,        GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_reply_put"        },
+  {DO_COPY_PAYLOAD,  (gex_AM_Fn_t)AM_copy_payload,     GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 4, NULL, "AM_copy_payload"     }
 };
 
 //
@@ -933,7 +934,13 @@ void chpl_comm_pre_mem_init(void) {
   if (chpl_env_rt_get_bool("COMM_GASNET_DEDICATED_PROGRESS_CORE", false)) {
     reservedCore = chpl_topo_reserveCPUPhysical();
   }
-  GASNET_Safe(gex_Segment_Attach(&mysegment, myteam, gasnet_getMaxLocalSegmentSize()));
+
+  // Allocate and establish the GASNet shared memory segment
+  // TODO: Should Chapel unconditionally request the largest available segment?
+  segsize_request = gasnet_getMaxLocalSegmentSize();
+  GASNET_Safe(gex_Segment_Attach(&mysegment, myteam, segsize_request));
+
+  // Register AM handlers
   GASNET_Safe(gex_EP_RegisterHandlers(myep, ftable, sizeof(ftable)/sizeof(gex_AM_Entry_t)));
 
   seginfo_table = (gasnet_seginfo_t*)sys_malloc(chpl_numNodes*sizeof(gasnet_seginfo_t));
@@ -1041,6 +1048,25 @@ void chpl_comm_post_task_init(void) {
       printf("GASNet send progress thread is %s.\n", haveSendThread ?
              "enabled" : "disabled");
     }
+  }
+  if (verbosity >= 2) { // print segment size information for each locale
+  #if GASNET_SEGMENT_EVERYTHING
+    if (!chpl_nodeID) {
+      printf("GASNet segment everything.\n");
+    }
+  #else
+    char size_str[80], request_str[80];
+    uintptr_t size = gex_Segment_QuerySize(mysegment);
+    gasnett_format_number(size, size_str, sizeof(size_str), 1);
+    if (size < segsize_request) { // we got less than we asked for
+      const char *prefix = " (requested ";
+      strcpy(request_str, prefix);
+      gasnett_format_number(segsize_request, request_str+strlen(prefix),
+                            sizeof(request_str)-strlen(prefix)-1, 1);
+      strcat(request_str, ")");
+    } else request_str[0] = '\0';
+    printf("%i: GASNet segment size: %s%s\n", chpl_nodeID, size_str, request_str);
+  #endif
   }
 }
 

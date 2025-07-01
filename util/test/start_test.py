@@ -212,11 +212,10 @@ def test_file(test):
             if args.performance or not args.gen_graphs:
                 error = run_sub_test(test)
 
-            # check for errors - 173 is an internal sub_test error that would
-            # have already reported.
-            if error != 0 and error != 173:
-                logger.write("[Error running sub_test for {0}]"
-                        .format(path_to_test))
+            # check for errors:
+            if error != 0:
+                logger.write("[Error running sub_test (code {1}) for {0}]"
+                        .format(path_to_test, error))
 
             if args.progress:
                 sys.stderr.write("[done]\n")
@@ -238,6 +237,13 @@ def test_directory(test, test_type):
             continue
         else:
             dir = os.path.abspath(root)
+
+        # if the directory name ends with .dSYM, skip it
+        # if a parent directory is a .dSYM, skip it
+        if dir.endswith(".dSYM") or any(
+            e.endswith(".dSYM") for e in os.path.normpath(dir).split(os.sep)
+        ):
+            continue
 
         logger.write()
         logger.write("[Working on directory {0}]".format(root))
@@ -306,7 +312,6 @@ def test_directory(test, test_type):
                 if os.path.isfile(os.path.join(dir, "NOTEST")):
                     continue
 
-
         # run tests in directory
         # don't run if only doing performance graphs
         if not test_type == "graph":
@@ -343,10 +348,9 @@ def test_directory(test, test_type):
                     if not args.clean_only:
                         # run all tests in dir
                         error = run_sub_test()
-                        # check for errors - 173 is an internal sub_test
-                        # error that would have already reported.
-                        if not error == 0 and not error == 173:
-                            logger.write("[Error {1} running sub_test in {0}]"
+                        # check for errors:
+                        if not error == 0:
+                            logger.write("[Error running sub_test (code {1}) in {0}]"
                                     .format(root, error))
 
             # let user know no tests were found
@@ -356,7 +360,7 @@ def test_directory(test, test_type):
         else:
             with cd(dir):
                 # generate graphs for all testsin dir
-                    generate_graphs()
+                generate_graphs()
 
 
 def summarize():
@@ -1169,6 +1173,13 @@ def set_up_executables():
         prediff_for_ucx = os.path.join(util_dir, "test", "prediff-for-ucx")
         if prediff_for_ucx not in chpl_system_prediff:
             chpl_system_prediff.append(prediff_for_ucx)
+
+    # TODO: remove this when
+    # https://github.com/chapel-lang/chapel/issues/27262 is resolved
+    if 'darwin' == host_platform:
+        prediff_for_debug = os.path.join(util_dir, "test", "prediff-for-debug")
+        if prediff_for_debug not in chpl_system_prediff:
+            chpl_system_prediff.append(prediff_for_debug)
 
     if chpl_system_prediff:
         os.environ["CHPL_SYSTEM_PREDIFF"] = ','.join(chpl_system_prediff)

@@ -12,6 +12,9 @@ HWLOC_DECLSPEC extern const struct hwloc_component hwloc_xml_libxml_component;
 #ifdef HWLOC_HAVE_OPENCL
 HWLOC_DECLSPEC extern const struct hwloc_component hwloc_opencl_component;
 #endif
+#ifdef HWLOC_HAVE_CUDART
+HWLOC_DECLSPEC extern const struct hwloc_component hwloc_cuda_component;
+#endif
 
 static const struct hwloc_component * hwloc_static_components[] = {
   &hwloc_noos_component,
@@ -24,6 +27,9 @@ static const struct hwloc_component * hwloc_static_components[] = {
 #endif
 #ifdef HWLOC_HAVE_OPENCL
   &hwloc_opencl_component,
+#endif
+#ifdef HWLOC_HAVE_CUDART
+  &hwloc_cuda_component,
 #endif
 #ifdef HWLOC_HAVE_LIBXML2
   &hwloc_xml_libxml_component,

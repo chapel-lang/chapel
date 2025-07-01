@@ -49,15 +49,15 @@ class debug_data
 #ifdef HAVE_LLVM
  public:
   static bool can_debug() { return true; }
-  debug_data(llvm::Module &m) : dibuilder(m){}
+  debug_data(llvm::Module &m) {}
   void finalize();
-  void create_compile_unit(const char *file, const char *directory, bool is_optimized, const char *flags);
+  void create_compile_unit(ModuleSymbol* modSym, const char *file, const char *directory, bool is_optimized, const char *flags);
 
   llvm::DIType* construct_type(Type *type);
   llvm::DIType* get_type(Type *type);
 
-  llvm::DIFile* construct_file(const char *file);
-  llvm::DIFile* get_file(const char *file);
+  llvm::DIFile* construct_file(ModuleSymbol* modSym, const char *file);
+  llvm::DIFile* get_file(ModuleSymbol* modSym, const char *file);
 
   llvm::DINamespace* construct_module_scope(ModuleSymbol* modSym);
   llvm::DINamespace* get_module_scope(ModuleSymbol* modSym);
@@ -74,7 +74,6 @@ class debug_data
   llvm::DIVariable* get_formal_arg(ArgSymbol *argSym, unsigned int ArgNo);
 
  private:
-  llvm::DIBuilder dibuilder;
   bool optimized;
   //std::vector<llvm::DIFile>files;
   std::map<const char*,llvm::DIFile*,lessAstr> filesByName;

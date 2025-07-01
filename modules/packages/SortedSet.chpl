@@ -42,15 +42,6 @@ module SortedSet {
   private use IO;
   public use Sort only defaultComparator;
 
-  // TODO: remove this module and its public use when the deprecations have been
-  // removed
-  pragma "ignore deprecated use"
-  private module HideDeprecatedReexport {
-    public use Sort only DefaultComparator;
-  }
-
-  public use HideDeprecatedReexport;
-
   record sortedSet : writeSerializable {
     /* The type of the elements contained in this sortedSet. */
     type eltType;

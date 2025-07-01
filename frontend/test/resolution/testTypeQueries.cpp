@@ -589,6 +589,97 @@ static void test19() {
   assert(!guard.realizeErrors());
 }
 
+static void test20() {
+  printf("%s\n", __FUNCTION__);
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto varTypes = resolveTypesOfVariables(context,
+                R""""(
+                class C {
+                  type elementType;
+                  type indexType;
+                  type containerType;
+                }
+                class Container {
+                  type containedType;
+                }
+                proc f(c: C(real,?t,?u)) type {
+                  return t;
+                }
+                proc g(c: C(?t,?u,Container(?))) type {
+                  return t;
+                }
+                proc h(c: C(?t,?u,Container(?v)), x: t, y: u, z: v) {
+                  return z;
+                }
+                var cc = new Container(int);
+                var c = new C(real, int, cc.type);
+                type r1 = f(c);
+                type r2 = g(c);
+                var r3 = h(c, 1.0, 2, 3);
+                var r4 = h(c, 1.0, 1.0, 3);
+                var r5 = h(c, 1.0, 1, 3.0);
+                )"""", {"r1", "r2", "r3", "r4", "r5"});
+
+  assert(!varTypes.at("r1").isUnknownOrErroneous() && varTypes.at("r1").type()->isIntType());
+  assert(!varTypes.at("r2").isUnknownOrErroneous() && varTypes.at("r2").type()->isRealType());
+  assert(!varTypes.at("r3").isUnknownOrErroneous() && varTypes.at("r3").type()->isIntType());
+  assert(varTypes.at("r4").isErroneousType());
+  assert(varTypes.at("r5").isErroneousType());
+
+  assert(guard.realizeErrors() == 2);
+}
+
+static void test21() {
+  printf("%s\n", __FUNCTION__);
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+                R""""(
+                  proc f(arg: [?D] ?t) { return D; }
+                  proc g(arg: [?D] ?t) type { return t; }
+
+                  var A: [1..10] int;
+                  var D = f(A);
+                  type t = g(A);
+                )"""", {"D", "t"});
+
+  assert(!vars.at("D").isUnknownOrErroneous());
+  assert(vars.at("D").type()->isDomainType());
+  assert(vars.at("D").type()->toDomainType()->rankInt() == 1);
+  ensureParamEnumStr(vars.at("D").type()->toDomainType()->strides(), "one");
+
+  assert(!vars.at("t").isUnknownOrErroneous());
+  assert(vars.at("t").type()->isIntType());
+}
+
+static void test22() {
+  printf("%s\n", __FUNCTION__);
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+                R""""(
+                  proc f(arg: [?D]) { return D; }
+
+                  var A: [1..10] int,
+                      B: [1..10] real;
+                  var D1 = f(A);
+                  var D2 = f(B);
+                )"""", {"D1", "D2"});
+
+  auto check = [&vars](const std::string& name) {
+    assert(!vars.at(name).isUnknownOrErroneous());
+    assert(vars.at(name).type()->isDomainType());
+    assert(vars.at(name).type()->toDomainType()->rankInt() == 1);
+    ensureParamEnumStr(vars.at(name).type()->toDomainType()->strides(), "one");
+  };
+  check("D1");
+  check("D2");
+}
+
 int main() {
   test1();
   test2();
@@ -611,6 +702,9 @@ int main() {
   test17();
   test18();
   test19();
+  test20();
+  test21();
+  test22();
 
   return 0;
 }

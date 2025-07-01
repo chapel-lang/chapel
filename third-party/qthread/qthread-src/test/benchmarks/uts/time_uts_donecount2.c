@@ -4,10 +4,6 @@
  *     http://sourceforge.net/projects/uts-benchmark  *
  ******************************************************/
 
-#ifdef HAVE_CONFIG_H
-#include "config.h" /* for _GNU_SOURCE */
-#endif
-
 #include "argparsing.h"
 #include <assert.h>
 #include <limits.h> /* for INT_MAX */
@@ -59,20 +55,20 @@ static double shift_depth = 0.5;
 static uint64_t tree_height = 0;
 static uint64_t num_leaves = 0;
 
-static double normalize(int n) { /*{{{*/
+static double normalize(int n) {
   if (n < 0) { printf("*** toProb: rand n = %d out of range\n", n); }
 
   return ((n < 0) ? 0.0 : ((double)n) / (double)INT_MAX);
-} /*}}}*/
+}
 
-static int calc_num_children_bin(node_t *parent) { /*{{{*/
+static int calc_num_children_bin(node_t *parent) {
   int v = rng_rand(parent->state.state);
   double d = normalize(v);
 
   return (d < non_leaf_prob) ? non_leaf_bf : 0;
-} /*}}}*/
+}
 
-static int calc_num_children(node_t *parent) { /*{{{*/
+static int calc_num_children(node_t *parent) {
   int num_children = 0;
 
   if (parent->height == 0) {
@@ -99,7 +95,7 @@ static int calc_num_children(node_t *parent) { /*{{{*/
   }
 
   return num_children;
-} /*}}}*/
+}
 
 // Notes:
 // -    Each task receives distinct copy of parent
@@ -155,7 +151,7 @@ static aligned_t visit(void *args_) {
 }
 
 #ifdef PRINT_STATS
-static void print_stats(void) { /*{{{*/
+static void print_stats(void) {
   printf("tree-type %d\ntree-type-name %s\n", tree_type, type_names[tree_type]);
   printf("root-bf %.1f\nroot-seed %d\n", bf_0, root_seed);
 
@@ -192,10 +188,10 @@ static void print_stats(void) { /*{{{*/
   printf("\n");
 
   fflush(stdout);
-} /*}}}*/
+}
 
 #else /* ifdef PRINT_STATS */
-static void print_banner(void) { /*{{{*/
+static void print_banner(void) {
   printf("UTS - Unbalanced Tree Search 2.1 (C/Qthreads)\n");
   printf("Tree type:%3d (%s)\n", tree_type, type_names[tree_type]);
   printf("Tree shape parameters:\n");
@@ -243,7 +239,7 @@ static void print_banner(void) { /*{{{*/
   printf("\n");
 
   fflush(stdout);
-} /*}}}*/
+}
 
 #endif /* ifdef PRINT_STATS */
 

@@ -124,6 +124,21 @@ struct Collector {
     }
   }
 
+  bool enter(const uast::OpCall* op, RV& rv) {
+    if (op->op() == "reduce=") {
+      bool foundAction = false;
+      for (auto& aa : rv.byAst(op).associatedActions()) {
+        if (aa.action() == AssociatedAction::REDUCE_ASSIGN) {
+          foundAction = true;
+        }
+      }
+      assert(foundAction);
+    }
+    return true;
+  }
+  void exit(const uast::OpCall* op, RV& rv) {
+  }
+
   bool enter(const uast::AstNode* ast, RV& rv) {
     return true;
   }
@@ -221,13 +236,16 @@ static Collector customHelper(std::string program, ResolutionContext* rc, Module
 }
 
 // helper for running task intent tests
-static void kindHelper(Qualifier kind, const std::string& constructName) {
+static void kindHelper(Qualifier kind, const std::string& constructName, const std::string& initializerValue, const std::string& expectedType) {
   Context* context = buildStdContext();
   ResolutionContext rcval(context);
   auto rc = &rcval;
 
   std::string program;
-  program += "var x = 0;\n";
+  program += "class C {}\n";
+  program += "var x = ";
+  program += initializerValue;
+  program += ";\n";
   program += constructName;
   if (constructName == "forall" || constructName == "coforall") {
     program += " i in 1..10";
@@ -239,7 +257,6 @@ static void kindHelper(Qualifier kind, const std::string& constructName) {
   program += "}\n";
 
   auto col = customHelper(program, rc);
-  const auto intType = IntType::get(context, 0);
 
   // Test shadow variable type is as expected
   {
@@ -248,16 +265,21 @@ static void kindHelper(Qualifier kind, const std::string& constructName) {
     if (useKind == Qualifier::CONST_INTENT) {
       useKind = Qualifier::CONST_VAR;
     }
-    QualifiedType expected = QualifiedType(useKind, intType);
+    auto expected = qualifierToString(useKind) + std::string(" ") + expectedType;
     QualifiedType shadowX = col.onlyIdent("x").type();
-    assert(expected == shadowX);
+
+    std::ostringstream stream;
+    shadowX.stringify(stream, chpl::StringifyKind::CHPL_SYNTAX);
+    assert(stream.str() == expected);
   }
 
 
   // Test type of variable assigned value of shadow variable
   {
     QualifiedType yType = col.onlyDecl("y");
-    assert(yType.type() == intType);
+    std::ostringstream stream;
+    yType.type()->stringify(stream, chpl::StringifyKind::CHPL_SYNTAX);
+    assert(stream.str() == expectedType);
   }
 
   // Test that the shadow variable points to the original
@@ -292,13 +314,36 @@ static void testKinds() {
   // for each construct, test all intent kinds
   for (const auto& constructName : constructNames) {
     for (const auto& qualifier : qualifiers) {
-      kindHelper(qualifier, constructName);
+      kindHelper(qualifier, constructName, "0", "int(64)");
+      kindHelper(qualifier, constructName, "new unmanaged C()", "unmanaged C");
     }
   }
 }
 
+static void testTaskVar() {
+  auto ctx = buildStdContext();
+  ErrorGuard guard(ctx);
+  auto program =
+    R"""(
+      var outer : int;
+      forall i in 1..10 with (var x : int,
+                              ref outer) {
+        outer = x;
+        var y = x;
+      }
+    )""";
+
+  auto vars = resolveTypesOfVariables(ctx, program, {"x", "y"});
+  assert(guard.realizeErrors() == 0);
+
+  for (auto& [name, var] : vars) {
+    std::ignore = name; // avoid unused variable warning with old GCC (7.5)
+    assert(!var.isUnknownOrErroneous() && var.type()->isIntType());
+  }
+}
+
 // helper for running reduce intent tests
-static void reduceHelper(const std::string& constructName) {
+static void reduceHelper(const std::string& constructName, const char* op, const char* opAssign) {
   assert(constructName == "forall" || constructName == "coforall");
 
   Context* context = buildStdContext();
@@ -307,16 +352,15 @@ static void reduceHelper(const std::string& constructName) {
 
   // Very simple test focusing on scope resolution
   std::string program;
-  program += R"""(operator +=(ref lhs: int, rhs: int) {
-  __primitive("+=", lhs, rhs);
-}
-
-var x = 0;
-)""";
+  program += "var x = 0;\n";
   program += constructName;
-  program += R"""( i in 1..10 with (+ reduce x) {
-  x += 1;
-})""";
+  program += " i in 1..10 with (";
+  program += op;
+  program += " reduce x) {\n";
+  program += "x ";
+  program += opAssign;
+  program += " i;\n";
+  program += "}\n";
 
   auto col = customHelper(program, rc);
 
@@ -344,8 +388,50 @@ static void testReduce() {
       // "begin"
   };
   for (const auto& constructName : constructNames) {
-    reduceHelper(constructName);
+    reduceHelper(constructName, "+", "+=");
+    reduceHelper(constructName, "+", "reduce=");
   }
+}
+
+static void testReduceAssignNotVariable() {
+  auto ctx = buildStdContext();
+  auto program = "foreach 1..10 { (1) reduce= 1; }";
+  ErrorGuard guard(ctx);
+  std::ignore = resolveTypesOfVariables(ctx, program, {});
+
+  assert(guard.numErrors() == 1);
+  assert(guard.errors()[0]->type() == ErrorType::ReductionAssignNonIdentifier);
+  guard.realizeErrors();
+}
+
+static void testReduceAssignNotReduceIntent() {
+  auto ctx = buildStdContext();
+  auto program = "var x = 0; forall 1..10 { x reduce= 1; }";
+  ErrorGuard guard(ctx);
+  std::ignore = resolveTypesOfVariables(ctx, program, {});
+
+  assert(guard.numErrors() == 1);
+  assert(guard.errors()[0]->type() == ErrorType::ReductionAssignNotReduceIntent);
+  guard.realizeErrors();
+}
+
+static void testReduceAssignChangesType() {
+  auto ctx = buildStdContext();
+  auto program =
+    R"""(
+      var a = 0;
+      forall i in 1..10 with (minmax reduce a) {
+        a reduce= i;
+      }
+      var x = 0;
+    )""";
+
+  ErrorGuard guard(ctx);
+  std::ignore = resolveTypesOfVariables(ctx, program, {});
+
+  assert(guard.numErrors() == 1);
+  assert(guard.errors()[0]->type() == ErrorType::ReductionIntentChangesType);
+  guard.realizeErrors();
 }
 
 //
@@ -365,7 +451,11 @@ int main(int argc, char** argv) {
 
   // perform actual tests
   testKinds();
+  testTaskVar();
   testReduce();
+  testReduceAssignNotVariable();
+  testReduceAssignNotReduceIntent();
+  testReduceAssignChangesType();
 
   printf("\nAll tests passed successfully.\n");
 

@@ -89,14 +89,14 @@ x:
 
 printincludesanddefines:
 	@echo $(CHPL_MAKE_TARGET_BUNDLED_COMPILE_ARGS) \
-	      -I. \
+	      -iquote. \
 	      $(CHPL_MAKE_TARGET_SYSTEM_COMPILE_ARGS)
 
 printcompileline:
 	@echo $(CC) \
 	      $(SANITIZER_CFLAGS) $(CHPL_MAKE_BASE_CFLAGS) $(COMP_GEN_CFLAGS) \
 	      $(CHPL_MAKE_TARGET_BUNDLED_COMPILE_ARGS) \
-	      -I. \
+	      -iquote. \
 				$(CHPL_MAKE_TARGET_SYSTEM_COMPILE_ARGS)
 
 printcxxcompileline:

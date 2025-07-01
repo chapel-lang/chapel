@@ -105,8 +105,7 @@ am__aclocal_m4_deps = $(top_srcdir)/config/hwloc.m4 \
 	$(top_srcdir)/config/ltoptions.m4 \
 	$(top_srcdir)/config/ltsugar.m4 \
 	$(top_srcdir)/config/ltversion.m4 \
-	$(top_srcdir)/config/lt~obsolete.m4 \
-	$(top_srcdir)/config/netloc.m4 $(top_srcdir)/configure.ac
+	$(top_srcdir)/config/lt~obsolete.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 DIST_COMMON = $(srcdir)/Makefile.am $(am__DIST_COMMON)
@@ -348,7 +347,6 @@ ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
 AR = @AR@
-ARCHIVEMOUNT = @ARCHIVEMOUNT@
 AS = @AS@
 AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
@@ -475,17 +473,6 @@ MAKEINDEX = @MAKEINDEX@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
 MKDIR_P = @MKDIR_P@
-MPI_CPPFLAGS = @MPI_CPPFLAGS@
-MPI_LDADD = @MPI_LDADD@
-NETLOC_CFLAGS = @NETLOC_CFLAGS@
-NETLOC_CPPFLAGS = @NETLOC_CPPFLAGS@
-NETLOC_EMBEDDED_CFLAGS = @NETLOC_EMBEDDED_CFLAGS@
-NETLOC_EMBEDDED_CPPFLAGS = @NETLOC_EMBEDDED_CPPFLAGS@
-NETLOC_EMBEDDED_LDADD = @NETLOC_EMBEDDED_LDADD@
-NETLOC_EMBEDDED_LIBS = @NETLOC_EMBEDDED_LIBS@
-NETLOC_LDFLAGS = @NETLOC_LDFLAGS@
-NETLOC_LIBS = @NETLOC_LIBS@
-NETLOC_LIBS_PRIVATE = @NETLOC_LIBS_PRIVATE@
 NM = @NM@
 NMEDIT = @NMEDIT@
 OBJDUMP = @OBJDUMP@
@@ -554,7 +541,6 @@ libdir = @libdir@
 libexecdir = @libexecdir@
 libhwloc_so_name = @libhwloc_so_name@
 libhwloc_so_version = @libhwloc_so_version@
-libnetloc_so_version = @libnetloc_so_version@
 localedir = @localedir@
 localstatedir = @localstatedir@
 mandir = @mandir@
@@ -577,8 +563,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-xz = @xz@
-@HWLOC_HAVE_BUNZIPP_TRUE@@HWLOC_HAVE_LINUX_TRUE@@HWLOC_HAVE_OPENAT_TRUE@TESTS = test-gather-topology.sh
+@HWLOC_CROSS_COMPILING_FALSE@@HWLOC_HAVE_BUNZIPP_TRUE@@HWLOC_HAVE_LINUX_TRUE@@HWLOC_HAVE_OPENAT_TRUE@TESTS = test-gather-topology.sh
 all: all-am
 
 .SUFFIXES:

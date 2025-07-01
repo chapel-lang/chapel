@@ -1,2 +1,2 @@
-semicolon_typeo_error.chpl:3: error: 's' used before defined
-semicolon_typeo_error.chpl:1: note: defined here
+semicolon_typeo_error.chpl:1: error: statement uses variable 's' to define itself
+semicolon_typeo_error.chpl:3: note: the variable 's' is used to define itself here

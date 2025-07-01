@@ -88,9 +88,11 @@ void gasnetc_bootstrapBroadcast(void *src, size_t len, void *dest, int rootnode)
   GASNETI_AM_SAFE_NORETURN(retval,AMMPI_SPMDBroadcast(dest, len, rootnode));
   if_pf (retval) gasneti_fatalerror("failure in gasnetc_bootstrapBroadcast()");
 }
-#if GASNET_PSHM /* Used only in call to gasneti_pshm_init() */
-/* Naive (poorly scaling) "reference" implementation via gasnetc_bootstrapExchange() */
-static void gasnetc_bootstrapSNodeBroadcast(void *src, size_t len, void *dest, int rootnode) {
+#if GASNET_PSHM // Currently used only in call to gasneti_pshm_init()
+// Naive (poorly scaling) "reference" SubsetBroadcast via AMMPI_SPMDAllGather()
+// Since every caller extracts the desired rootnode's contribution from an
+// AllGather, the NbrhdBroadcast and HostBroadcast are identical.
+static void gasnetc_bootstrapSubsetBroadcast(void *src, size_t len, void *dest, int rootnode) {
   void *tmp = gasneti_malloc(len * gasneti_nodes);
   void *self = src ? src : gasneti_malloc(len); /* Ensure never NULL */
   if (gasneti_mynode != rootnode) {
@@ -102,6 +104,8 @@ static void gasnetc_bootstrapSNodeBroadcast(void *src, size_t len, void *dest, i
   if (self != src) gasneti_free(self);
   gasneti_free(tmp);
 }
+#define gasnetc_bootstrapNbrhdBroadcast gasnetc_bootstrapSubsetBroadcast
+#define gasnetc_bootstrapHostBroadcast gasnetc_bootstrapSubsetBroadcast
 #endif
 
 #define INITERR(type, reason) do {                                      \
@@ -211,7 +215,7 @@ static int gasnetc_init(
     gasneti_nodemapInit(&gasnetc_bootstrapExchange, NULL, 0, 0);
 
     #if GASNET_PSHM
-      gasneti_pshm_init(&gasnetc_bootstrapSNodeBroadcast, 0);
+      gasneti_pshm_init(&gasnetc_bootstrapNbrhdBroadcast, 0);
     #endif
 
     //  Create first Client, EP and TM *here*, for use in subsequent bootstrap communication
@@ -282,7 +286,7 @@ extern int gasnetc_amregister(gex_AM_Index_t index, gex_AM_Entry_t *entry) {
   return GASNET_OK;
 }
 /* ------------------------------------------------------------------------------------ */
-extern int gasnetc_attach_primary(void) {
+extern int gasnetc_attach_primary(gex_Flags_t flags) {
   int retval = GASNET_OK;
   
   AMLOCK();
@@ -385,7 +389,7 @@ extern int gasnetc_Client_Init(
 
   if (0 == (flags & GASNETI_FLAG_INIT_LEGACY)) {
     /*  primary attach  */
-    if (GASNET_OK != gasnetc_attach_primary())
+    if (GASNET_OK != gasnetc_attach_primary(flags))
       GASNETI_RETURN_ERRR(RESOURCE,"Error in primary attach");
 
     /* ensure everything is initialized across all nodes */

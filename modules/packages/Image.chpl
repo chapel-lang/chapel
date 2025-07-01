@@ -23,35 +23,18 @@ For example, the following code creates a 3x3 array of pixels and writes it to
 a BMP file. The array is then scaled by a factor of 2 (creating a 9x9 image)
 and written to a second BMP file.
 
-.. code-block:: chapel
-
-   use Image;
-
-   var color: [1..3, 1..3] 3*int;
-
-   colors[1, ..] = [(0xFF,0,0), (0,0xFF,0), (0,0,0xFF)];
-   colors[2, ..] = [(0,0xFF,0), (0,0,0xFF), (0xFF,0,0)];
-   colors[3, ..] = [(0,0,0xFF), (0xFF,0,0), (0,0xFF,0)];
-
-   var format = (rgbColor.blue, rgbColor.green, rgbColor.red);
-   var arr = colorToPixel(color, format=format);
-
-   writeImage("pixels.bmp", imageType.bmp, arr);
-   writeImage("pixels2.bmp", imageType.bmp, scale(arr, 2));
+.. literalinclude:: ../../../../test/library/packages/Image/example1.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE
+   :end-before: STOP_EXAMPLE
 
 In another example, the following code reads a PNG file, removes all green from
 the image, and writes it back out to a new JPG file.
 
-.. code-block:: chapel
-
-   use Image;
-
-   var arr = readImage("input.png", imageType.png);
-   const fmt = (rgbColor.red, rgbColor.green, rgbColor.blue);
-   var colors = pixelToColor(arr, format=fmt);
-   [c in colors] c(1) = 0;
-   arr = colorToPixel(colors, format=fmt);
-   writeImage("output.jpg", imageType.jpg, arr);
+.. literalinclude:: ../../../../test/library/packages/Image/example2.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE
+   :end-before: STOP_EXAMPLE
 
 */
 @unstable("Image is unstable")
@@ -147,7 +130,7 @@ module Image {
       when imageType.png do PNGHelper.write(outfile, pixels);
       when imageType.jpg do JPGHelper.write(outfile, pixels);
       otherwise
-        halt("Don't know how to write images of type: ", format);
+        throw new IllegalArgumentError("Don't know how to write images of type: " + format:string);
     }
   }
 
@@ -166,7 +149,7 @@ module Image {
       when imageType.png do return PNGHelper.read(infile);
       when imageType.jpg do return JPGHelper.read(infile);
       otherwise
-        halt("Don't know how to read images of type: ", format);
+        throw new IllegalArgumentError("Don't know how to read images of type: " + format:string);
     }
   }
 
@@ -597,17 +580,29 @@ module Image {
     }
 
     proc writePng(const ref outfile: fileWriter(?), pixels: [?dom]) throws {
-      const (writeFunc, context, width, height, mode, data) = writeCommon(outfile, pixels);
+      const (writeFunc, context,
+             width, height,
+             mode, data) = writeCommon(outfile, pixels);
+      defer deallocate(data);
       const stride = width * mode;
-      stbi_write_png_to_func(writeFunc, context, width, height, mode, data, stride);
-      deallocate(data);
+      const ok = stbi_write_png_to_func(writeFunc, context,
+                                        width, height,
+                                        mode, data, stride);
+      if ok == 0 then
+        throw new Error("Failed to write PNG image");
     }
 
     proc writeJpg(const ref outfile: fileWriter(?), pixels: [?dom]) throws {
-      const (writeFunc, context, width, height, mode, data) = writeCommon(outfile, pixels);
+      const (writeFunc, context,
+             width, height,
+             mode, data) = writeCommon(outfile, pixels);
+      defer deallocate(data);
       const quality: c_int = 100;
-      stbi_write_jpg_to_func(writeFunc, context, width, height, mode, data, quality);
-      deallocate(data);
+      const ok = stbi_write_jpg_to_func(writeFunc, context,
+                                        width, height,
+                                        mode, data, quality);
+      if ok == 0 then
+        throw new Error("Failed to write JPG image");
     }
 
 
@@ -626,9 +621,7 @@ module Image {
                                       req_comp: c_int): c_ptr(uint(8));
     private extern proc stbi_image_free(data: c_ptr(void)): void;
 
-    private proc readCommon(const ref infile: fileReader(?)) throws {
-      // read bytes in
-      const bytes_ = infile.readAll();
+    private proc readCommon(const ref bytes_: bytes) throws {
       const nBytes = bytes_.size.safeCast(c_int);
       const buffer = bytes_.c_str():c_ptrConst(void);
 
@@ -636,22 +629,22 @@ module Image {
       var x, y, comp: c_int;
       const ok = stbi_info_from_memory(buffer, nBytes, c_ptrTo(x), c_ptrTo(y), c_ptrTo(comp));
       if ok == 0 then
-        halt("Failed to read image info");
+        throw new Error("Failed to read image info");
 
       // check that the image is 3 channels and 8 bits per channel
       if comp != 3 && comp != 4 then
-        halt("Image must have 3 or 4 channels");
+        throw new Error("Image must have 3 or 4 channels");
 
       const is_16 = stbi_is_16_bit_from_memory(buffer, nBytes);
       if is_16 then
-        halt("Image must have 8 bits per channel");
+        throw new Error("Image must have 8 bits per channel");
 
 
       // read image
       var x_, y_, comp_: c_int;
       var data = stbi_load_from_memory(buffer, nBytes, c_ptrTo(x_), c_ptrTo(y_), c_ptrTo(comp_), 0);
       if data == nil then
-        halt("Failed to read image");
+        throw new Error("Failed to read image");
       assert(x_ == x && y_ == y && comp_ == comp);
       defer stbi_image_free(data);
 
@@ -687,10 +680,19 @@ module Image {
     }
 
     proc readPng(const ref infile: fileReader(?)) throws {
-      return readCommon(infile);
+      const bytes_ = infile.readAll();
+      // magic number: https://en.wikipedia.org/wiki/List_of_file_signatures
+      if bytes_.size >= 8 &&
+         bytes_[0..#8] != b"\x89\x50\x4E\x47\x0D\x0A\x1A\x0A" then
+        throw new Error("Not a PNG file");
+      return readCommon(bytes_);
     }
     proc readJpg(const ref infile: fileReader(?)) throws {
-      return readCommon(infile);
+      const bytes_ = infile.readAll();
+      // magic number: https://en.wikipedia.org/wiki/List_of_file_signatures
+      if bytes_.size >= 3 && bytes_[0..#3] != b"\xFF\xD8\xFF" then
+        throw new Error("Not a JPG file");
+      return readCommon(bytes_);
     }
 
   }

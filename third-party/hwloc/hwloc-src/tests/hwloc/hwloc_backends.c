@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2022 Inria.  All rights reserved.
+ * Copyright © 2012-2023 Inria.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
@@ -46,10 +46,14 @@ static const char *get_backend_name(hwloc_topology_t topo)
 static void assert_backend_name(hwloc_topology_t topo, const char *wanted)
 {
   const char *found = get_backend_name(topo);
-  int diff;
-  assert(found);
-  diff = strcmp(found, wanted);
-  assert(!diff);
+  if (!wanted) {
+    assert(!found);
+  } else {
+    int diff;
+    assert(found);
+    diff = strcmp(found, wanted);
+    assert(!diff);
+  }
 }
 
 static void assert_foo_bar(hwloc_topology_t topo, int setornot)

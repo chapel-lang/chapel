@@ -1,4 +1,4 @@
-# Copyright © 2009-2021 Inria.  All rights reserved.
+# Copyright © 2009-2024 Inria.  All rights reserved.
 # Copyright © 2009-2013, 2021 Université Bordeaux
 # Copyright © 2009-2016 Cisco Systems, Inc.  All rights reserved.
 # See COPYING in top-level directory.
@@ -26,19 +26,15 @@ DOX_TAG = $(DOX_DIR)/$(PACKAGE).tag
 #
 
 # images already available in repository
-PREBUILT_IMAGES = images/dudley.png images/emmett.png images/hagrid.png \
+PREBUILT_IMAGES = images/dudley.png images/emmett.png images/hagrid.png images/heteromem.png \
         images/ppc64-with-smt.png images/ppc64-without-smt.png images/ppc64-full-with-smt.png \
-        images/devel09-pci.png \
-        images/netloc_design.png images/netloc_draw.png
+        images/devel09-pci.png
 # images built from repository before inclusion in make dist
 BUILT_IMAGES = images/diagram.png images/diagram.eps
 
 EXTRA_DIST = \
-        main.doxy \
         hwloc.doxy \
-        netloc.doxy \
         README.sed \
-        doxygen.css \
         doxygen.cfg \
         images/diagram.fig \
         www.open-mpi.org.cfg \
@@ -62,7 +58,6 @@ if HWLOC_BUILD_DOXYGEN
 hwloc_include_dir = $(HWLOC_top_srcdir)/include
 
 dox_inputs = $(DOX_CONFIG) \
-       $(srcdir)/main.doxy \
        $(srcdir)/hwloc.doxy \
        $(hwloc_include_dir)/hwloc.h \
        $(hwloc_include_dir)/hwloc/helper.h \
@@ -85,9 +80,7 @@ dox_inputs = $(DOX_CONFIG) \
        $(hwloc_include_dir)/hwloc/levelzero.h \
        $(hwloc_include_dir)/hwloc/gl.h \
        $(hwloc_include_dir)/hwloc/windows.h \
-       $(hwloc_include_dir)/hwloc/openfabrics-verbs.h \
-       $(srcdir)/netloc.doxy \
-       $(hwloc_include_dir)/netloc.h
+       $(hwloc_include_dir)/hwloc/openfabrics-verbs.h
 
 #
 # Create the images that we need for the PDF output and the HTML
@@ -123,18 +116,6 @@ images/diagram.eps: $(srcdir)/images/diagram.fig
 # Remove useless manpages, they have too long filenames anyway because
 # of nested structurre/union declarations.
 #
-
-#
-# Note that we want to use our own doxygen.css file; not the one that
-# doxygen installs in the HTML directory.  So manually copy it over.
-# Be a little clever: only copy the doxygen.css file over if it exists
-# in DOX_HTML_DIR (which is in the build tree).  If the html tree
-# doesn't exist in the build tree, then we're using an html tree in
-# the source tree, and we don't need to copy over the doxygen.css
-# because we didn't build the html tree (e.g., the html tree came
-# pre-bundled in a tarball).
-#
-
 $(DOX_TAG): $(BUILT_SOURCES) $(dox_inputs) $(PREBUILT_IMAGES)
 	rm -fr $(DOX_DIR)
 	$(DOXYGEN) $(DOX_CONFIG)
@@ -149,10 +130,6 @@ $(DOX_TAG): $(BUILT_SOURCES) $(dox_inputs) $(PREBUILT_IMAGES)
 	@mv $(DOX_MAN_DIR)/man3/hwloc* $(DOX_MAN_DIR)/man3/HWLOC* $(DOX_DIR)/man.tmp/
 	@rm -rf $(DOX_MAN_DIR)/man3
 	@mv $(DOX_DIR)/man.tmp $(DOX_MAN_DIR)/man3
-	@echo "Copying custom doxygen.css..."
-	if test -d $(DOX_HTML_DIR) -a -f $(DOX_HTML_DIR)/doxygen.css; then \
-	    cp -f $(srcdir)/doxygen.css $(DOX_HTML_DIR); \
-	fi
 
 #
 # Rules for building the PDF
@@ -254,6 +231,7 @@ pdf_DATA = $(DOX_A4PDF) $(DOX_LETTERPDF)
 # list of dependencies too.
 
 man3_MANS = \
+        $(DOX_MAN_DIR)/man3/hwlocality_api_error_reporting.3 \
         $(DOX_MAN_DIR)/man3/hwlocality_api_version.3 \
         $(DOX_MAN_DIR)/man3/HWLOC_API_VERSION.3 \
         $(DOX_MAN_DIR)/man3/hwloc_get_api_version.3
@@ -372,7 +350,8 @@ man3_object_info_attrsdir = $(man3dir)
 man3_object_info_attrs_DATA = \
         $(DOX_MAN_DIR)/man3/hwlocality_info_attr.3 \
         $(DOX_MAN_DIR)/man3/hwloc_obj_get_info_by_name.3 \
-        $(DOX_MAN_DIR)/man3/hwloc_obj_add_info.3
+        $(DOX_MAN_DIR)/man3/hwloc_obj_add_info.3 \
+        $(DOX_MAN_DIR)/man3/hwloc_obj_set_subtype.3
 
 man3_cpubindingdir = $(man3dir)
 man3_cpubinding_DATA = \
@@ -398,6 +377,7 @@ man3_membinding_DATA = \
         $(DOX_MAN_DIR)/man3/HWLOC_MEMBIND_DEFAULT.3 \
         $(DOX_MAN_DIR)/man3/HWLOC_MEMBIND_FIRSTTOUCH.3 \
         $(DOX_MAN_DIR)/man3/HWLOC_MEMBIND_INTERLEAVE.3 \
+        $(DOX_MAN_DIR)/man3/HWLOC_MEMBIND_WEIGHTED_INTERLEAVE.3 \
         $(DOX_MAN_DIR)/man3/HWLOC_MEMBIND_MIGRATE.3 \
         $(DOX_MAN_DIR)/man3/HWLOC_MEMBIND_MIXED.3 \
         $(DOX_MAN_DIR)/man3/HWLOC_MEMBIND_NEXTTOUCH.3 \
@@ -481,6 +461,7 @@ man3_tinker_DATA = \
         $(DOX_MAN_DIR)/man3/hwloc_topology_allow.3 \
         $(DOX_MAN_DIR)/man3/hwloc_topology_insert_misc_object.3 \
         $(DOX_MAN_DIR)/man3/hwloc_topology_alloc_group_object.3 \
+        $(DOX_MAN_DIR)/man3/hwloc_topology_free_group_object.3 \
         $(DOX_MAN_DIR)/man3/hwloc_topology_insert_group_object.3 \
         $(DOX_MAN_DIR)/man3/hwloc_obj_add_other_obj_sets.3 \
         $(DOX_MAN_DIR)/man3/hwloc_topology_refresh.3
@@ -914,24 +895,27 @@ MAINTAINERCLEANFILES = $(DOX_TAG) \
 if HWLOC_BUILD_README
 
 #
-# Rules for creating the top-level README file.  There does not appear
-# to be an easy way to know if AC_PATH_PROG found something in
-# configure.ac (!), so put a run-time check here to see if we have
-# w3c.
+# Rules for creating the top-level README file.
+# Take the main html doc page, ignore headers and footers, and add our owns.
 #
 # Just like BUILD_DOXYGEN, BUILD_README will automatically be false if
 # we're not building standalone.
 #
 readme: $(HWLOC_top_srcdir)/README
 $(HWLOC_top_srcdir)/README: $(DOX_TAG)
+	echo "This is a truncated and poorly-formatted version of the documentation main page." > $@
+	echo "See https://www.open-mpi.org/projects/hwloc/doc/ for more." >> $@
+	echo >> $@
+	echo >> $@
 	sed -n -f $(srcdir)/README.sed $(DOX_HTML_DIR)/index.html > $(DOX_HTML_README)
 	LC_ALL=C $(HWLOC_W3_GENERATOR) $(DOX_HTML_README) \
-	 | $(SED) -n -e 's/^   //' -e '/^Introduction$$/,$$p' \
+	 | $(SED) -n -e 's/^   //' -e '/^hwloc Overview$$/,$$p' \
 	 | $(SED) -e '/^--*-$$/,$$ d' \
-	 > $@
+	 >> $@
 	echo >> $@
 	echo >> $@
-	echo "See https://www.open-mpi.org/projects/hwloc/doc/ for more hwloc documentation." >> $@
+	echo "See https://www.open-mpi.org/projects/hwloc/doc/ for more hwloc documentation," >> $@
+	echo "actual links to related pages, images, etc." >> $@
 	rm -f $(DOX_HTML_README)
 
 else

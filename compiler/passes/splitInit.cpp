@@ -637,19 +637,30 @@ static void doElideCopies(VarToCopyElisionState &map) {
           // Change the copy into a move and don't destroy the variable.
 
           Symbol *definedConst = NULL;
+          SymExpr* se = NULL;
           if (call->isPrimitive(PRIM_MOVE)) {
             if (CallExpr *rhsCall = toCallExpr(call->get(2))) {
               if (rhsCall->isNamedAstr(astr_initCopy) ||
                   rhsCall->isNamedAstr(astr_autoCopy)) { // can it be autoCopy?
                 definedConst = toSymExpr(rhsCall->get(2))->symbol();
                 INT_ASSERT(definedConst->getValType() == dtBool);
+                se = toSymExpr(rhsCall->get(1));
               }
 
             }
           }
 
-          call->convertToNoop();
-          call->insertBefore(new CallExpr(PRIM_ASSIGN_ELIDED_COPY, lhs, var));
+          //
+          // If this is an initCopy or autoCopy of an array view,
+          // we shouldn't elide the copy because we need to make
+          // a deep copy rather than persisting the alias.  E.g.,
+          // var B = A[2..n-1]; or var B = A.reshape(2..n-1)
+          // should always deep-copy so that B becomes its own thing.
+          //
+          if (!se || !se->symbol()->hasFlag(FLAG_IS_ARRAY_VIEW)) {
+            call->convertToNoop();
+            call->insertBefore(new CallExpr(PRIM_ASSIGN_ELIDED_COPY, lhs, var));
+          }
 
           if (definedConst != NULL) {
             if (lhs->getValType()->symbol->hasFlag(FLAG_DOMAIN)) {

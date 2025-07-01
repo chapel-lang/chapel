@@ -220,40 +220,45 @@ static void handleReceiverFormals() {
 
 static void markGenerics() {
   // Figure out which types are generic, in a transitive closure manner
-    bool changed;
-    do {
-      changed = false;
-      forv_Vec(AggregateType, at, gAggregateTypes) {
-        // don't try to mark generic again
-        if (!at->isGeneric()) {
+  bool changed = false;
+  do {
+    changed = false;
+    forv_Vec(AggregateType, at, gAggregateTypes) {
+      if (at->symbol->hasFlag(FLAG_RESOLVED_EARLY)) {
+        // Don't check types resolved early - they are always concrete.
+        continue;
+      }
 
-          bool anyGeneric = false;
-          bool anyNonDefaultedGeneric = false;
-          bool anyDefaultedGeneric = false;
-          for_fields(field, at) {
-            bool hasDefault = false;
-            if (at->fieldIsGeneric(field, hasDefault)) {
-              anyGeneric = true;
-              if (hasDefault == false)
-                anyNonDefaultedGeneric = true;
-              else
-                anyDefaultedGeneric = true;
-            }
-          }
+      // don't try to mark generic again
+      if (!at->isGeneric()) {
 
-          if (anyGeneric) {
-            at->markAsGeneric();
-            if (anyNonDefaultedGeneric == false)
-              at->markAsGenericWithDefaults();
-            else if (anyDefaultedGeneric == true &&
-                     anyNonDefaultedGeneric == true)
-              at->markAsGenericWithSomeDefaults();
-
-            changed = true;
+        bool anyGeneric = false;
+        bool anyNonDefaultedGeneric = false;
+        bool anyDefaultedGeneric = false;
+        for_fields(field, at) {
+          bool hasDefault = false;
+          if (at->fieldIsGeneric(field, hasDefault)) {
+            anyGeneric = true;
+            if (hasDefault == false)
+              anyNonDefaultedGeneric = true;
+            else
+              anyDefaultedGeneric = true;
           }
         }
+
+        if (anyGeneric) {
+          at->markAsGeneric();
+          if (anyNonDefaultedGeneric == false)
+            at->markAsGenericWithDefaults();
+          else if (anyDefaultedGeneric == true &&
+                   anyNonDefaultedGeneric == true)
+            at->markAsGenericWithSomeDefaults();
+
+          changed = true;
+        }
       }
-    } while (changed);
+    }
+  } while (changed);
 }
 
 static void checkClass(AggregateType* ct) {
@@ -807,6 +812,8 @@ static void handleForallGoto(ForallStmt* forall, GotoStmt* gs) {
 
 static void resolveGotoLabels() {
   forv_Vec(GotoStmt, gs, gGotoStmts) {
+    if (gs->parentSymbol->hasFlag(FLAG_RESOLVED_EARLY)) continue;
+
     SET_LINENO(gs);
 
     Stmt* loop = NULL;
@@ -3082,6 +3089,9 @@ static void removeUnusedModules() {
   // Now remove any module not in the set
   forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
     bool removeIt = (usedModules.count(mod) == 0);
+
+    // The module contains frontend-generated symbols, so do not remove it.
+    if (mod->initFn && mod->initFn->wasResolvedEarly()) removeIt = false;
 
     if (removeIt) {
       INT_ASSERT(mod->defPoint); // we should not be removing e.g. _root

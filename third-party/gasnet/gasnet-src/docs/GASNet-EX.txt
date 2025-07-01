@@ -86,7 +86,7 @@
 //
 // This is currently a version number for *this* document.
 #define GEX_SPEC_VERSION_MAJOR 0
-#define GEX_SPEC_VERSION_MINOR 18
+#define GEX_SPEC_VERSION_MINOR 18 // actually 18 plus minor clarifications, no API changes
 
 // Major and Minor versions of the GASNet-1 specification.
 //
@@ -1244,8 +1244,6 @@ gex_EP_Location_t gex_TM_TranslateRankToEP(
 
 //
 // Operations on gex_EP_t
-// NOTE: currently gex_Client_Init() is the only way to create an EP.
-// However, additional APIs for EP creation will be added.
 //
 
 // Query owning client
@@ -2330,6 +2328,10 @@ extern gex_AM_SrcDesc_t gex_AM_PrepareReplyLong(
 
 //
 // gex_AM_Commit calls
+//
+// The `sd` argument to `gex_AM_Commit<XXX>[M]()` must be the return from a
+// call to the corresponding (i.e. same `<XXX>`) `gex_AM_Prepare<XXX>()`,
+// and with `[M]` (if any) matching the `numargs` passed to the Prepare.
 //
 // NOTE: Prototypes in this section are "patterns"
 //   These API instantiate the "[M]" at the end of each prototype with

@@ -1368,7 +1368,7 @@ AggregateType* AggregateType::generateType(SymbolMap& subs, CallExpr* call, cons
 }
 
 void AggregateType::resolveConcreteType() {
-  if (this->id == breakOnResolveID) gdbShouldBreakHere();
+  if (this->id == breakOnResolveID) debuggerBreakHere();
 
   if (resolveStatus == RESOLVING || resolveStatus == RESOLVED) {
     // Recursively constructing this type
@@ -2723,15 +2723,22 @@ void AggregateType::buildCopyInitializer() {
     SET_LINENO(this);
 
     bool isGeneric = false;
-    // If this type is generic, then the 'other' formal needs to be generic as
-    // well
-    // TODO: Why can't we use 'fieldIsGeneric' here?
-    for_fields(fieldDefExpr, this) {
-      if (VarSymbol* field = toVarSymbol(fieldDefExpr)) {
-        if (field->hasFlag(FLAG_SUPER_CLASS) == false) {
-          if (field->hasFlag(FLAG_PARAM) || field->isType() ||
-              (field->defPoint->init == NULL && field->defPoint->exprType == NULL)) {
-            isGeneric = true;
+
+    // If the function has this flag, it was created by the frontend and
+    // is fully resolved even if it doesn't have all the information the
+    // old resolver normally expects to find.
+    if (!this->symbol->hasFlag(FLAG_RESOLVED_EARLY)) {
+      // If this type is generic, then the 'other' formal needs to be generic as
+      // well
+      // TODO: Why can't we use 'fieldIsGeneric' here?
+      for_fields(fieldDefExpr, this) {
+        if (VarSymbol* field = toVarSymbol(fieldDefExpr)) {
+          if (field->hasFlag(FLAG_SUPER_CLASS) == false) {
+            if (field->hasFlag(FLAG_PARAM) || field->isType() ||
+                (field->defPoint->init == NULL &&
+                 field->defPoint->exprType == NULL)) {
+              isGeneric = true;
+            }
           }
         }
       }
@@ -3231,6 +3238,32 @@ Symbol* AggregateType::getSubstitution(const char* name) const {
   }
 
   return retval;
+}
+
+void AggregateType::saveGenericSubstitutions() {
+  if (this->substitutions.n > 0) {
+    // Generate substitutionsPostResolve which should not be generated yet
+    INT_ASSERT(this->substitutionsPostResolve.size() == 0);
+    for_fields(field, this) {
+      if (Symbol* value = this->getSubstitutionWithName(field->name)) {
+        NameAndSymbol ns;
+        ns.name = field->name;
+        ns.value = value;
+        ns.isParam = field->isParameter();
+        ns.isType = field->hasFlag(FLAG_TYPE_VARIABLE);
+        this->substitutionsPostResolve.push_back(ns);
+      }
+    }
+    // Clear substitutions since keys might refer to deleted AST nodes
+    this->substitutions.clear();
+  }
+
+  if (this->instantiatedFrom != NULL) {
+    // Clear instantiatedFrom since it would refer to a deleted AST node
+    this->instantiatedFrom = NULL;
+
+    symbol->addFlag(FLAG_INSTANTIATED_GENERIC);
+  }
 }
 
 Type* AggregateType::getDecoratedClass(ClassTypeDecoratorEnum d) {

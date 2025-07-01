@@ -278,6 +278,16 @@ GASNETI_NORETURNP(_gasneti_assert_fail)
   #define gasneti_assert_nzeroret(op) do { op; } while(0)
 #endif
 
+// gasneti_unused_result(expr):
+// Evaluates an expression while including whatever is necessary to
+// prevent the compiler from issuing warnings about discarding the
+// result, such as due to `__attribute__ ((__warn_unused_result__))`.
+// Intended for use in exit handing and/or signal context where there
+// should be no reasonable expectation of handling error returns.
+// NOT intended to substitute for error handing in "normal" contexts.
+extern int _gasneti_unused_result;
+#define gasneti_unused_result(expr) ((void)(_gasneti_unused_result = (int)(uintptr_t)(expr)))
+
 /* return physical memory of machine
    on failure, failureIsFatal nonzero => fatal error, failureIsFatal zero => return 0 */
 extern uint64_t gasneti_getPhysMemSz(int _failureIsFatal); 

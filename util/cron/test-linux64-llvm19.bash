@@ -16,6 +16,9 @@ if [ "$llvm_version" != "19.1.0" ]; then
   exit 2
 fi
 
-export CHPL_NIGHTLY_TEST_CONFIG_NAME="linux64-llvm19"
+export CHPL_LAUNCHER=none
 
-$UTIL_CRON_DIR/nightly -cron -examples ${nightly_args}
+export CHPL_NIGHTLY_TEST_CONFIG_NAME="linux64-llvm19"
+export CHPL_NIGHTLY_TEST_DIRS="llvm/"
+
+$UTIL_CRON_DIR/nightly -cron -examples -blog ${nightly_args}

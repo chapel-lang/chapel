@@ -44,7 +44,8 @@ static QualifiedType::Kind constIntentForType(const Type* t) {
     return QualifiedType::CONST_IN;
 
   if (t->isStringType() || t->isBytesType() ||
-      t->isRecordType() || t->isUnionType() || t->isTupleType())
+      t->isRecordType() || t->isUnionType() || t->isTupleType() ||
+      t->isIteratorType())
     return QualifiedType::CONST_REF;
 
   if (auto ct = t->toClassType()) {
@@ -120,6 +121,7 @@ QualifiedType::Kind resolveIntent(const QualifiedType& t,
     case QualifiedType::PARENLESS_FUNCTION:
     case QualifiedType::FUNCTION:
     case QualifiedType::MODULE:
+    case QualifiedType::LOOP:
     case QualifiedType::INIT_RECEIVER:
       // these don't really have an intent
       return QualifiedType::UNKNOWN;

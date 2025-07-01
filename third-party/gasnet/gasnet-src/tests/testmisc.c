@@ -103,6 +103,8 @@ int main(int argc, char **argv) {
 
   if (argc > 4) test_usage();
 
+  TEST_SRAND(((unsigned int)TIME()) & 0xFFFF);
+
   if (mynode == 0) {
       printf("Running misc performance test with %i iterations...\n",iters);
       printf("%-50s    Total time    Avg. time\n"

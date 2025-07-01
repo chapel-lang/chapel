@@ -225,6 +225,7 @@ struct ClangInfo {
   int charSizeInBits;
   int shortSizeInBits;
   int ptrSizeInBits;
+  int wideCharSizeInBits;
 
   ClangInfo(
     std::string clangCcIn,
@@ -258,7 +259,8 @@ ClangInfo::ClangInfo(
          longLongSizeInBits(0),
          charSizeInBits(0),
          shortSizeInBits(0),
-         ptrSizeInBits(0)
+         ptrSizeInBits(0),
+         wideCharSizeInBits(0)
 {
 }
 
@@ -383,6 +385,7 @@ void setupClangContext(GenInfo* info, ASTContext* Ctx)
     clangInfo->charSizeInBits = Ctx->getTypeSize(Ctx->CharTy.getTypePtr());
     clangInfo->shortSizeInBits = Ctx->getTypeSize(Ctx->ShortTy.getTypePtr());
     clangInfo->ptrSizeInBits = Ctx->getTypeSize(Ctx->VoidPtrTy.getTypePtr());
+    clangInfo->wideCharSizeInBits = Ctx->getTypeSize(Ctx->WideCharTy.getTypePtr());
 
     setupCIntType(dt_c_int, clangInfo->intSizeInBits, false);
     setupCIntType(dt_c_uint, clangInfo->intSizeInBits, true);
@@ -400,6 +403,10 @@ void setupClangContext(GenInfo* info, ASTContext* Ctx)
     setupCIntType(dt_c_uintptr, clangInfo->ptrSizeInBits, true);
     setupCIntType(dt_ssize_t, clangInfo->ptrSizeInBits, false);
     setupCIntType(dt_size_t, clangInfo->ptrSizeInBits, true);
+    // wchar may/may not be signed, depending on the platform
+    setupCIntType(dt_wchar, clangInfo->wideCharSizeInBits,
+      Ctx->WideCharTy.getTypePtr()->isUnsignedIntegerType());
+
 
     addMinMax(Ctx, "CHAR", Ctx->CharTy);
     addMinMax(Ctx, "SCHAR", Ctx->SignedCharTy);
@@ -1649,12 +1656,13 @@ void setupClang(GenInfo* info, std::string mainFile)
     clangInfo->driverArgs.push_back(clangInfo->clangOtherArgs[i]);
   }
 
-  clangInfo->driverArgs.push_back("-c");
-  // chpl - always compile rt file
-  clangInfo->driverArgs.push_back(mainFile.c_str());
-
   if (!fLlvmCodegen)
     clangInfo->driverArgs.push_back("-fsyntax-only");
+  else
+    clangInfo->driverArgs.push_back("-c");
+
+  // chpl - always compile rt file
+  clangInfo->driverArgs.push_back(mainFile.c_str());
 
   if( printSystemCommands && developer ) {
     for( size_t i = 0; i < clangInfo->driverArgs.size(); i++ ) {
@@ -1679,10 +1687,18 @@ void setupClang(GenInfo* info, std::string mainFile)
     chpl::util::wrapCreateAndPopulateDiagOpts(clangInfo->driverArgsCStrings);
   auto diagClient = new clang::TextDiagnosticPrinter(llvm::errs(),
                                                      &*diagOptions);
+#if LLVM_VERSION_MAJOR >= 20
+  auto clangDiags =
+    clang::CompilerInstance::createDiagnostics(*llvm::vfs::getRealFileSystem(),
+                                               diagOptions.release(),
+                                               diagClient,
+                                               /* owned */ true);
+#else
   auto clangDiags =
     clang::CompilerInstance::createDiagnostics(diagOptions.release(),
                                                diagClient,
                                                /* owned */ true);
+#endif
   Clang->setDiagnostics(&*clangDiags);
 
   if (usingGpuLocaleModel()) {
@@ -1792,7 +1808,11 @@ void setupClang(GenInfo* info, std::string mainFile)
   }
 
   // Create the compilers actual diagnostics engine.
+#if LLVM_VERSION_MAJOR >= 20
+  clangInfo->Clang->createDiagnostics(*llvm::vfs::getRealFileSystem());
+#else
   clangInfo->Clang->createDiagnostics();
+#endif
   if (!clangInfo->Clang->hasDiagnostics())
     INT_FATAL("Bad diagnostics from clang");
 
@@ -1856,6 +1876,42 @@ getCodeModel(const CodeGenOptions &CodeGenOpts) {
   return static_cast<llvm::CodeModel::Model>(CodeModel);
 }
 
+#if HAVE_LLVM_VER >= 200
+// copied from clang/lib/CodeGen/BackendUtil.cpp
+static std::string flattenClangCommandLine(ArrayRef<std::string> Args,
+                                           StringRef MainFilename) {
+  if (Args.empty())
+    return std::string{};
+
+  std::string FlatCmdLine;
+  raw_string_ostream OS(FlatCmdLine);
+  bool PrintedOneArg = false;
+  if (!StringRef(Args[0]).contains("-cc1")) {
+    llvm::sys::printArg(OS, "-cc1", /*Quote=*/true);
+    PrintedOneArg = true;
+  }
+  for (unsigned i = 0; i < Args.size(); i++) {
+    StringRef Arg = Args[i];
+    if (Arg.empty())
+      continue;
+    if (Arg == "-main-file-name" || Arg == "-o") {
+      i++; // Skip this argument and next one.
+      continue;
+    }
+    if (Arg.starts_with("-object-file-name") || Arg == MainFilename)
+      continue;
+    // Skip fmessage-length for reproducibility.
+    if (Arg.starts_with("-fmessage-length"))
+      continue;
+    if (PrintedOneArg)
+      OS << " ";
+    llvm::sys::printArg(OS, Arg, /*Quote=*/true);
+    PrintedOneArg = true;
+  }
+  return FlatCmdLine;
+}
+#endif
+
 // this function is substantially similar to clang's
 // initTargetOptions from BackendUtil.cpp
 static llvm::TargetOptions getTargetOptions(
@@ -1910,7 +1966,11 @@ static llvm::TargetOptions getTargetOptions(
   Options.DisableIntegratedAS = CodeGenOpts.DisableIntegratedAS;
 #if HAVE_LLVM_VER >= 190
   Options.MCOptions.CompressDebugSections = CodeGenOpts.getCompressDebugSections();
+#if HAVE_LLVM_VER >= 200
+  Options.MCOptions.X86RelaxRelocations = CodeGenOpts.X86RelaxRelocations;
+#else
   Options.MCOptions.X86RelaxRelocations = CodeGenOpts.RelaxELFRelocations;
+#endif
 #else
   Options.CompressDebugSections = CodeGenOpts.getCompressDebugSections();
   Options.RelaxELFRelocations = CodeGenOpts.RelaxELFRelocations;
@@ -1932,7 +1992,9 @@ static llvm::TargetOptions getTargetOptions(
   Options.BBSections =
     llvm::StringSwitch<llvm::BasicBlockSection>(CodeGenOpts.BBSections)
         .Case("all", llvm::BasicBlockSection::All)
+#if HAVE_LLVM_VER < 200
         .Case("labels", llvm::BasicBlockSection::Labels)
+#endif
         .StartsWith("list=", llvm::BasicBlockSection::List)
         .Case("none", llvm::BasicBlockSection::None)
         .Default(llvm::BasicBlockSection::None);
@@ -2015,8 +2077,13 @@ static llvm::TargetOptions getTargetOptions(
   // consider setting Options.MCOptions.IASSearchPaths
   // if .include directives with integrated assembler are needed
 
-  Options.MCOptions.Argv0 = CodeGenOpts.Argv0;
+  Options.MCOptions.Argv0 = CodeGenOpts.Argv0 ? CodeGenOpts.Argv0 : "";
+#if HAVE_LLVM_VER >= 200
+  Options.MCOptions.CommandlineArgs = flattenClangCommandLine(
+    CodeGenOpts.CommandLineArgs, CodeGenOpts.MainFileName);
+#else
   Options.MCOptions.CommandLineArgs = CodeGenOpts.CommandLineArgs;
+#endif
 #if HAVE_LLVM_VER >= 130
   Options.DebugStrictDwarf = CodeGenOpts.DebugStrictDwarf;
 #endif
@@ -2779,6 +2846,11 @@ static std::string generateClangGpuLangArgs() {
     if (gpuArches.size() >= 1) {
       args += " " + std::string("--offload-arch=") + *gpuArches.begin();
     }
+
+    // to get old behavior: https://releases.llvm.org/19.1.0/tools/clang/docs/ReleaseNotes.html#cuda-hip-language-changes
+    if (getGpuCodegenType() == GpuCodegenType::GPU_CG_NVIDIA_CUDA) {
+      args += " --cuda-include-ptx=all";
+    }
   }
   return args;
 }
@@ -2889,8 +2961,9 @@ static void helpComputeClangArgs(std::string& clangCC,
     addFilteredArgs(clangCCArgs, args);
   }
 
-  // add a -I. so we can find headers named on command line in same dir
-  clangCCArgs.push_back("-I.");
+  // add a -iquote. so we can find headers named on command line in same dir
+  // using iquote over I to prevent accidently overriding system headers
+  clangCCArgs.push_back("-iquote.");
 
   // add a -I for the generated code directory
   clangCCArgs.push_back(std::string("-I") + getIntermediateDirName());
@@ -3916,17 +3989,21 @@ static clang::CanQualType getClangType(::Type* t, bool makeRef) {
   return cTy;
 }
 
-static clang::CanQualType getClangFormalType(ArgSymbol* formal) {
-  ::Type* t = formal->type;
-
-  bool ref = (formal->intent & INTENT_FLAG_REF) ||
-             (formal->requiresCPtr() &&
-              formal->type->getValType()->symbol->hasFlag(FLAG_TUPLE));
-
-  if (formal->isWideRef())
-    USR_FATAL(formal, "Cannot use wide reference in exported function");
+static clang::CanQualType
+getClangFormalType(IntentTag intent, ::Type* t, bool isReceiver) {
+  bool ref = (intent & INTENT_FLAG_REF) ||
+             (argRequiresCPtr(intent, t, isReceiver) &&
+              t->getValType()->symbol->hasFlag(FLAG_TUPLE));
+  if (t->symbol->hasFlag(FLAG_WIDE_REF)) {
+    USR_FATAL(t->symbol, "cannot convert wide reference type to Clang type");
+  }
 
   return getClangType(t, ref);
+}
+
+static clang::CanQualType getClangFormalType(ArgSymbol* formal) {
+  bool isReceiver = formal->hasFlag(FLAG_ARG_THIS);
+  return getClangFormalType(formal->intent, formal->type, isReceiver);
 }
 
 const clang::CodeGen::CGFunctionInfo& getClangABIInfoFD(clang::FunctionDecl* FD)
@@ -3952,6 +4029,45 @@ const clang::CodeGen::CGFunctionInfo& getClangABIInfoFD(clang::FunctionDecl* FD)
   return clang::CodeGen::arrangeFreeFunctionType(CGM, proto);
 }
 
+const clang::CodeGen::CGFunctionInfo& getClangABIInfo(::FunctionType* ft) {
+  auto info = gGenInfo;
+  auto clangInfo = info->clangInfo;
+  auto cCodeGen = clangInfo->cCodeGen;
+  INT_ASSERT(info && clangInfo && cCodeGen);
+  auto& CGM = cCodeGen->CGM();
+
+  // Otherwise, we should call arrangeFreeFunctionCall
+  // with the various types, which must be extern types.
+  // (An alternative strategy would be to generate the C headers
+  //  for these types before creating this clang parser).
+  llvm::SmallVector<clang::CanQualType,4> argTys;
+
+  // Convert each formal to a Clang type.
+  for (int i = 0; i < ft->numFormals(); i++) {
+    auto formal = ft->formal(i);
+    bool isReceiver = !strcmp(formal->name(), "this");
+    auto ty = getClangFormalType(formal->intent(), formal->type(), isReceiver);
+    argTys.push_back(ty);
+  }
+
+  // Convert the return type
+  bool retRef = ft->returnIntent() == RET_CONST_REF ||
+                ft->returnIntent() == RET_REF;
+
+  auto ts = ft->returnType()->symbol;
+  if (ts->hasFlag(FLAG_WIDE_REF)) {
+    // TODO: Error location is not useful and should be issued elsewhere.
+    USR_FATAL(ts, "cannot convert wide reference type to Clang type");
+  }
+
+  auto retTy = getClangType(ft->returnType(), retRef);
+  auto extInfo = clang::FunctionType::ExtInfo();
+  auto tag = CodeGen::RequiredArgs::All;
+  auto& ret = CodeGen::arrangeFreeFunctionCall(CGM, retTy, argTys,
+                                               extInfo,
+                                               tag);
+  return ret;
+}
 
 const clang::CodeGen::CGFunctionInfo& getClangABIInfo(FnSymbol* fn) {
   GenInfo* info = gGenInfo;
@@ -4010,9 +4126,9 @@ const clang::CodeGen::CGFunctionInfo& getClangABIInfo(FnSymbol* fn) {
 }
 
 const clang::CodeGen::ABIArgInfo*
-getCGArgInfo(const clang::CodeGen::CGFunctionInfo* CGI, int curCArg,
-             FnSymbol* fn)
-{
+getCGArgInfo(const clang::CodeGen::CGFunctionInfo* CGI,
+             int curCArg,
+             FnSymbol* fn) {
 
   // Don't try to use the calling convention code for variadic args.
   if ((unsigned) curCArg >= CGI->arg_size()) {
@@ -4183,24 +4299,24 @@ bool isBuiltinExternCFunction(const char* cname)
 }
 
 #ifndef LLVM_USE_OLD_PASSES
-static void addDumpIrModule(ModulePassManager& MPM,
-                            LlvmOptimizationLevel v,
-                            llvmStageNum::llvmStageNum_t stage) {
+static void addDumpIr(ModulePassManager& MPM,
+                      LlvmOptimizationLevel v,
+                      llvmStageNum::llvmStageNum_t stage) {
   MPM.addPass(llvm::createModuleToFunctionPassAdaptor(DumpIRPass(stage)));
 }
-static void addDumpIrCG(CGSCCPassManager& CPM,
-                        LlvmOptimizationLevel v,
-                        llvmStageNum::llvmStageNum_t stage) {
+static void addDumpIr(CGSCCPassManager& CPM,
+                      LlvmOptimizationLevel v,
+                      llvmStageNum::llvmStageNum_t stage) {
   CPM.addPass(DumpIRPass(stage));
 }
-static void addDumpIrFunction(FunctionPassManager& FPM,
-                              LlvmOptimizationLevel v,
-                              llvmStageNum::llvmStageNum_t stage) {
+static void addDumpIr(FunctionPassManager& FPM,
+                      LlvmOptimizationLevel v,
+                      llvmStageNum::llvmStageNum_t stage) {
   FPM.addPass(DumpIRPass(stage));
 }
-static void addDumpIrLoop(LoopPassManager& LPM,
-                        LlvmOptimizationLevel v,
-                        llvmStageNum::llvmStageNum_t stage) {
+static void addDumpIr(LoopPassManager& LPM,
+                      LlvmOptimizationLevel v,
+                      llvmStageNum::llvmStageNum_t stage) {
   LPM.addPass(DumpIRPass(stage));
 }
 static void registerDumpIrExtensions(PassBuilder& PB) {
@@ -4208,12 +4324,23 @@ static void registerDumpIrExtensions(PassBuilder& PB) {
     llvmStageNum::llvmStageNum_t stage = (llvmStageNum::llvmStageNum_t) i;
     if (llvmPrintIrStageNum == llvmStageNum::EVERY ||
         llvmPrintIrStageNum == stage) {
+
+      auto dumpIRLambda = [stage](auto & PM, LlvmOptimizationLevel v) {
+        addDumpIr(PM, v, stage);
+      };
+#if LLVM_VERSION_MAJOR >= 20
+      auto dumpIRLambdaWithPhase = [stage](auto & PM, LlvmOptimizationLevel v,
+                                           llvm::ThinOrFullLTOPhase phase) {
+        addDumpIr(PM, v, stage);
+      };
+#else
+      // prior versions had no phase, use the same as the default
+      auto dumpIRLambdaWithPhase = dumpIRLambda;
+#endif
+
       switch (stage) {
         case llvmStageNum::EarlyAsPossible:
-          PB.registerPipelineStartEPCallback(
-            [stage](ModulePassManager &MPM, LlvmOptimizationLevel v) {
-                      addDumpIrModule(MPM, v, stage);
-                    });
+          PB.registerPipelineStartEPCallback(dumpIRLambda);
           break;
         case llvmStageNum::ModuleOptimizerEarly:
           if (llvmPrintIrStageNum != llvmStageNum::EVERY) {
@@ -4223,52 +4350,28 @@ static void registerDumpIrExtensions(PassBuilder& PB) {
           }
           break;
         case llvmStageNum::LateLoopOptimizer:
-          PB.registerLateLoopOptimizationsEPCallback(
-            [stage](LoopPassManager &LPM, LlvmOptimizationLevel v) {
-                      addDumpIrLoop(LPM, v, stage);
-                    });
+          PB.registerLateLoopOptimizationsEPCallback(dumpIRLambda);
           break;
         case llvmStageNum::LoopOptimizerEnd:
-          PB.registerLoopOptimizerEndEPCallback(
-            [stage](LoopPassManager &LPM, LlvmOptimizationLevel v) {
-                      addDumpIrLoop(LPM, v, stage);
-                    });
+          PB.registerLoopOptimizerEndEPCallback(dumpIRLambda);
           break;
         case llvmStageNum::ScalarOptimizerLate:
-          PB.registerScalarOptimizerLateEPCallback(
-            [stage](FunctionPassManager &FPM, LlvmOptimizationLevel v) {
-                      addDumpIrFunction(FPM, v, stage);
-                    });
+          PB.registerScalarOptimizerLateEPCallback(dumpIRLambda);
           break;
         case llvmStageNum::EarlySimplification:
-          PB.registerPipelineEarlySimplificationEPCallback(
-            [stage](ModulePassManager &MPM, LlvmOptimizationLevel v) {
-                      addDumpIrModule(MPM, v, stage);
-                    });
+          PB.registerPipelineEarlySimplificationEPCallback(dumpIRLambdaWithPhase);
           break;
         case llvmStageNum::OptimizerEarly:
-          PB.registerOptimizerEarlyEPCallback(
-            [stage](ModulePassManager &MPM, LlvmOptimizationLevel v) {
-                      addDumpIrModule(MPM, v, stage);
-                    });
+          PB.registerOptimizerEarlyEPCallback(dumpIRLambdaWithPhase);
           break;
         case llvmStageNum::OptimizerLast:
-          PB.registerOptimizerLastEPCallback(
-            [stage](ModulePassManager &MPM, LlvmOptimizationLevel v) {
-                      addDumpIrModule(MPM, v, stage);
-                    });
+          PB.registerOptimizerLastEPCallback(dumpIRLambdaWithPhase);
           break;
         case llvmStageNum::CGSCCOptimizerLate:
-          PB.registerCGSCCOptimizerLateEPCallback(
-            [stage](CGSCCPassManager &CPM, LlvmOptimizationLevel v) {
-                      addDumpIrCG(CPM, v, stage);
-                    });
+          PB.registerCGSCCOptimizerLateEPCallback(dumpIRLambda);
           break;
         case llvmStageNum::VectorizerStart:
-          PB.registerVectorizerStartEPCallback(
-              [stage](FunctionPassManager &FPM, LlvmOptimizationLevel v) {
-                      addDumpIrFunction(FPM, v, stage);
-                      });
+          PB.registerVectorizerStartEPCallback(dumpIRLambda);
           break;
         case llvmStageNum::EnabledOnOptLevel0:
           if (llvmPrintIrStageNum != llvmStageNum::EVERY) {
@@ -4278,10 +4381,7 @@ static void registerDumpIrExtensions(PassBuilder& PB) {
           }
           break;
         case llvmStageNum::Peephole:
-          PB.registerPeepholeEPCallback(
-              [stage](FunctionPassManager &FPM, LlvmOptimizationLevel v) {
-                      addDumpIrFunction(FPM, v, stage);
-                      });
+          PB.registerPeepholeEPCallback(dumpIRLambda);
           break;
         case llvmStageNum::NOPRINT:
         case llvmStageNum::NONE:
@@ -5078,7 +5178,9 @@ void makeBinaryLLVM(void) {
 
         mysystem(cmd.c_str(), "Compile C File");
         dotOFiles.push_back(objFilename);
-      } else if( isObjFile(inputFilename) ) {
+      } else if(isObjFile(inputFilename) ||
+                isStaticLibrary(inputFilename) ||
+                isSharedLibrary(inputFilename)) {
         dotOFiles.push_back(inputFilename);
       }
     }

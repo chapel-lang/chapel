@@ -162,23 +162,45 @@ Rectangular Array Literals
 
 Rectangular array literals are specified by enclosing a
 comma-separated list of expressions in square brackets, where each
-expression represents an array element's value.  A trailing comma is
-permitted after the final array element.  For a literal with `n`
+expression represents an array element's value. A trailing comma is
+permitted after the final array element. For a literal with `n`
 expressions, an anonymous domain literal ``{0..<n}`` is generated to
-represent the array's indices.  If the value expressions are all of
+represent the array's indices. If the value expressions are all of
 the same type, that type will be used as the array's element type.  If
 they are not, the array's element type is computed using the same type
 unification logic that is used when inferring the return type of a
 procedure with an implicit return type (see
 :ref:`Implicit_Return_Types`).
 
-
+A multi-dimensional rectangular array literal is specified using
+comma-separated values in the innermost dimension and semicolons to separate
+outer dimensions. An array literal of rank ``n`` uses ``n-1`` consecutive
+semicolons to separate the outermost dimension. For example, a 3D array literal
+will use commas to separate the elements in a row, a semicolon to mark the end
+of each row, and two consecutive semicolons to indicate the end of a plane of
+values.  Only rectilinear multi-dimensional literals are supported, where the
+number of elements in each dimension must be the same. A single trailing
+semicolon is permitted after the final row and a trailing comma is permitted
+after the final element in each row.
 
 .. code-block:: syntax
 
    rectangular-array-literal:
-     [ expression-list ]
-     [ expression-list , ]
+     [ rectangular-array-literal-inner ]
+     [ rectangular-array-literal-inner ; ]
+    
+   rectangular-array-literal-inner:
+     array-row
+     array-row semicolon-list rectangular-array-literal-inner
+
+   array-row:
+     expression-list
+     expression-list ,
+
+   semicolon-list:
+    ;
+    semicolon-list ;
+
 
 ..
 
@@ -237,11 +259,38 @@ procedure with an implicit return type (see
 
 ..
 
-   *Open issue*.
+   *Example (adecl-2x2x3-literal.chpl)*.
 
-   We would like to introduce a syntax for multi-dimensional
-   rectangular array literals, where today we can only express 1D
-   arrays whose elements are themselves 1D arrays.
+   The following example declares a 2x2x3-element rectangular array literal
+   containing integers, then subsequently prints each integer element to
+   the console. 
+
+   .. code-block:: chapel
+
+      var A = [1, 2, 3;
+               4, 5, 6;
+               ;
+               7, 8, 9;
+               10, 11, 12];
+
+      for idx in A.domain do
+        writeln(A[idx]);
+
+   
+   .. BLOCK-test-chapeloutput
+
+      1
+      2
+      3
+      4
+      5
+      6
+      7
+      8
+      9
+      10
+      11
+      12
 
 
 .. index::

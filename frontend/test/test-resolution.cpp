@@ -45,9 +45,17 @@ QualifiedType
 resolveQualifiedTypeOfX(Context* context, std::string program) {
   auto m = parseModule(context, std::move(program));
   assert(m->numStmts() > 0);
-  const Variable* x = m->stmt(m->numStmts()-1)->toVariable();
+  // Walk backwards and find the first variable named 'x'.
+  const Variable* x = nullptr;
+  for (int i = m->numStmts() - 1; i >= 0; i--) {
+    if (auto v = m->stmt(i)->toVariable()) {
+      if (v->name() == "x") {
+        x = v;
+        break;
+      }
+    }
+  }
   assert(x);
-  assert(x->name() == "x");
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
@@ -186,10 +194,12 @@ void testCall(const char* testName,
   printf("\n");
 }
 
-const Variable* findVariable(const AstNode* ast, const char* name) {
-  if (auto v = ast->toVariable()) {
-    if (v->name() == name) {
-      return v;
+const VarLikeDecl* findVariable(const AstNode* ast, const char* name) {
+  if (auto v = ast->toVarLikeDecl()) {
+    if (!v->isFormal()) {
+      if (v->name() == name) {
+        return v;
+      }
     }
   }
 
@@ -201,7 +211,7 @@ const Variable* findVariable(const AstNode* ast, const char* name) {
   return nullptr;
 }
 
-const Variable* findVariable(const ModuleVec& vec, const char* name) {
+const VarLikeDecl* findVariable(const ModuleVec& vec, const char* name) {
   for (auto mod : vec) {
     auto got = findVariable(mod, name);
     if (got) return got;
@@ -264,6 +274,13 @@ resolveTypesOfVariablesInit(Context* context,
   return toReturn;
 }
 
+QualifiedType resolveTypeOfVariable(Context* context, std::string program,
+                                    const std::string& variable) {
+  auto m = resolveTypesOfVariables(context, std::move(program), { variable });
+  // If there is no key for 'variable', this constructs an empty value.
+  return m[variable];
+}
+
 void ensureParamInt(const QualifiedType& type, int64_t expectedValue) {
   assert(type.kind() == QualifiedType::PARAM);
   assert(type.type() != nullptr);
@@ -298,6 +315,15 @@ void ensureParamString(const QualifiedType& type, const std::string& expectedVal
   assert(type.param() != nullptr);
   assert(type.param()->isStringParam());
   assert(type.param()->toStringParam()->value() == expectedValue);
+}
+
+void ensureParamEnumStr(const QualifiedType& type, const std::string& expectedName) {
+  assert(type.kind() == QualifiedType::PARAM);
+  assert(type.type() != nullptr);
+  assert(type.type()->isEnumType());
+  assert(type.param() != nullptr);
+  assert(type.param()->isEnumParam());
+  assert(type.param()->toEnumParam()->value().str == expectedName);
 }
 
 void ensureErroneousType(const QualifiedType& type) {
@@ -488,4 +514,57 @@ module M {
 
   // 'clear' rather than 'realize' to simplify test output
   guard.clearErrors();
+}
+
+void testArrayAssign(Context* context, const char* prelude, const char* typeExpr, const char* iterable, int expectedRank, const char* expectedStride, AssociatedAction::Action actionKind, const char* expectedCopyInitFn) {
+  std::string ops = R"""(
+    operator =(ref lhs: int, const rhs: int) {}
+    operator =(ref lhs: real, const rhs: real) {}
+  )""";
+  std::string wholeString = ops + std::string(prelude) + "\n\n" + "proc main() { var A" + typeExpr + " = " + iterable + "; }\n";
+  printf("=== Resolving program: ===\n");
+  printf("%s\n", wholeString.c_str());
+
+  ErrorGuard guard(context);
+
+  static int inputIndex = 0;
+
+  auto filename = UniqueString::get(context, std::string("input") + std::to_string(inputIndex++) + ".chpl");
+  setFileText(context, filename, wholeString);
+  auto mods = parse(context, filename, UniqueString());
+  assert(mods.size() == 1);
+  auto& byPostorder = resolveConcreteFunction(context, mods[0]->stmt(mods[0]->numStmts()-1)->id())->resolutionById();
+  auto var = findVariable(mods[0], "A");
+  assert(var);
+  auto& rr = byPostorder.byAst(var);
+
+  assert(!rr.type().isUnknownOrErroneous());
+  assert(rr.type().type()->isArrayType());
+  auto arrT = rr.type().type()->toArrayType();
+  auto domain = arrT->domainType();
+  assert(!domain.isUnknownOrErroneous());
+  assert(domain.type()->isDomainType());
+  auto domT = domain.type()->toDomainType();
+  ensureParamInt(domT->rank(), expectedRank);
+  ensureParamEnumStr(domT->strides(), expectedStride);
+  assert(!domT->idxType().isUnknownOrErroneous());
+  assert(domT->idxType().type()->isIntType());
+
+  bool foundCall = false;
+  for (auto& aa : rr.associatedActions()) {
+    if (aa.action() == actionKind) {
+      foundCall = true;
+      assert(aa.fn()->id().symbolPath() == expectedCopyInitFn);
+    }
+  }
+  assert(foundCall);
+  assert(!guard.realizeErrors());
+}
+
+void testArrayMaterialize(Context* context, const char* prelude, const char* iterable, int expectedRank, const char* expectedStride, const char* expectedCopyInitFn) {
+  testArrayAssign(context, prelude, "", iterable, expectedRank, expectedStride, AssociatedAction::CUSTOM_COPY_INIT, expectedCopyInitFn);
+}
+
+void testArrayCoerce(Context* context, const char* prelude, const char* typeExpr, const char* iterable, int expectedRank, const char* expectedStride, const char* expectedCopyInitFn) {
+  testArrayAssign(context, prelude, typeExpr, iterable, expectedRank, expectedStride, AssociatedAction::INIT_OTHER, expectedCopyInitFn);
 }

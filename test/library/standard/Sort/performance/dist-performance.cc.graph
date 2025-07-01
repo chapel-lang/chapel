@@ -1,5 +1,5 @@
-perfkeys: Sort-GETS:, Sort-PUTS:, Sort-ONS:
-graphkeys: GETS, PUTS, ONS
+perfkeys: TwoArraySort-GETS:, TwoArraySort-PUTS:, TwoArraySort-ONS:, LSDSort-GETS:, LSDSort-PUTS:, LSDSort-ONS:, PSort-GETS:, PSort-PUTS:, PSort-ONS:
+graphkeys: TwoArray-GETS, TwoArray-PUTS, TwoArray-ONS, LSD-GETS, LSD-PUTS, LSD-ONS, PSort-GETS, PSort-PUTS, PSort-ONS
 repeat-files: distibuted-sort-cc.dat
 ylabel: Count
 graphtitle: Distributed Sort

@@ -1,4 +1,4 @@
-.TH "hwlocality_helper_find_inside" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_helper_find_inside" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -49,7 +49,9 @@ Get the first largest object included in the given cpuset \fCset\fP\&.
 .PP
 \fBReturns\fP
 .RS 4
-the first object that is included in \fCset\fP and whose parent is not\&.
+the first object that is included in \fCset\fP and whose parent is not\&. 
+.PP
+\fCNULL\fP if no such object exists\&.
 .RE
 .PP
 This is convenient for iterating over all largest objects within a CPU set by doing a loop getting the first largest object and clearing its CPU set from the remaining CPU set\&. 
@@ -61,6 +63,8 @@ Get the set of largest objects covering exactly a given cpuset \fCset\fP\&.
 \fBReturns\fP
 .RS 4
 the number of objects returned in \fCobjs\fP\&. 
+.PP
+-1 if no set of objects may cover that cpuset\&. 
 .RE
 .PP
 
@@ -68,6 +72,13 @@ the number of objects returned in \fCobjs\fP\&.
 
 .PP
 Return the number of objects at depth \fCdepth\fP included in CPU set \fCset\fP\&. 
+.PP
+\fBReturns\fP
+.RS 4
+the number of objects\&. 
+.PP
+0 if the depth is invalid\&.
+.RE
 .PP
 \fBNote\fP
 .RS 4
@@ -80,7 +91,16 @@ This function cannot work if objects at the given depth do not have CPU sets (I/
 .SS "static int hwloc_get_nbobjs_inside_cpuset_by_type (\fBhwloc_topology_t\fP topology, \fBhwloc_const_cpuset_t\fP set, \fBhwloc_obj_type_t\fP type)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
-Return the number of objects of type \fCtype\fP included in CPU set \fCset\fP\&. If no object for that type exists inside CPU set \fCset\fP, 0 is returned\&. If there are several levels with objects of that type inside CPU set \fCset\fP, -1 is returned\&.
+Return the number of objects of type \fCtype\fP included in CPU set \fCset\fP\&. 
+.PP
+\fBReturns\fP
+.RS 4
+the number of objects\&. 
+.PP
+0 if there are no objects of that type in the topology\&. 
+.PP
+-1 if there are multiple levels of objects of that type, the caller should fallback to \fBhwloc_get_nbobjs_inside_cpuset_by_depth()\fP\&.
+.RE
 .PP
 \fBNote\fP
 .RS 4
@@ -93,7 +113,16 @@ This function cannot work if objects of the given type do not have CPU sets (I/O
 .SS "static \fBhwloc_obj_t\fP hwloc_get_next_obj_inside_cpuset_by_depth (\fBhwloc_topology_t\fP topology, \fBhwloc_const_cpuset_t\fP set, int depth, \fBhwloc_obj_t\fP prev)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
-Return the next object at depth \fCdepth\fP included in CPU set \fCset\fP\&. If \fCprev\fP is \fCNULL\fP, return the first object at depth \fCdepth\fP included in \fCset\fP\&. The next invokation should pass the previous return value in \fCprev\fP so as to obtain the next object in \fCset\fP\&.
+Return the next object at depth \fCdepth\fP included in CPU set \fCset\fP\&. The next invokation should pass the previous return value in \fCprev\fP so as to obtain the next object in \fCset\fP\&.
+.PP
+\fBReturns\fP
+.RS 4
+the first object at depth \fCdepth\fP included in \fCset\fP if \fCprev\fP is \fCNULL\fP\&. 
+.PP
+the next object at depth \fCdepth\fP included in \fCset\fP if \fCprev\fP is not \fCNULL\fP\&. 
+.PP
+\fCNULL\fP if there is no next object\&.
+.RE
 .PP
 \fBNote\fP
 .RS 4
@@ -106,7 +135,20 @@ This function cannot work if objects at the given depth do not have CPU sets (I/
 .SS "static \fBhwloc_obj_t\fP hwloc_get_next_obj_inside_cpuset_by_type (\fBhwloc_topology_t\fP topology, \fBhwloc_const_cpuset_t\fP set, \fBhwloc_obj_type_t\fP type, \fBhwloc_obj_t\fP prev)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
-Return the next object of type \fCtype\fP included in CPU set \fCset\fP\&. If there are multiple or no depth for given type, return \fCNULL\fP and let the caller fallback to \fBhwloc_get_next_obj_inside_cpuset_by_depth()\fP\&.
+Return the next object of type \fCtype\fP included in CPU set \fCset\fP\&. The next invokation should pass the previous return value in \fCprev\fP so as to obtain the next object in \fCset\fP\&.
+.PP
+\fBReturns\fP
+.RS 4
+the first object of type \fCtype\fP included in \fCset\fP if \fCprev\fP is \fCNULL\fP\&. 
+.PP
+the next object of type \fCtype\fP included in \fCset\fP if \fCprev\fP is not \fCNULL\fP\&. 
+.PP
+\fCNULL\fP if there is no next object\&. 
+.PP
+\fCNULL\fP if there is no depth for the given type\&. 
+.PP
+\fCNULL\fP if there are multiple depths for the given type, the caller should fallback to \fBhwloc_get_next_obj_inside_cpuset_by_depth()\fP\&.
+.RE
 .PP
 \fBNote\fP
 .RS 4
@@ -121,6 +163,13 @@ This function cannot work if objects of the given type do not have CPU sets (I/O
 .PP
 Return the logical index among the objects included in CPU set \fCset\fP\&. Consult all objects in the same level as \fCobj\fP and inside CPU set \fCset\fP in the logical order, and return the index of \fCobj\fP within them\&. If \fCset\fP covers the entire topology, this is the logical index of \fCobj\fP\&. Otherwise, this is similar to a logical index within the part of the topology defined by CPU set \fCset\fP\&.
 .PP
+\fBReturns\fP
+.RS 4
+the logical index among the objects included in the set if any\&. 
+.PP
+-1 if the object is not included in the set\&.
+.RE
+.PP
 \fBNote\fP
 .RS 4
 Objects with empty CPU sets are ignored (otherwise they would be considered included in any given set)\&.
@@ -134,6 +183,11 @@ This function cannot work if obj does not have CPU sets (I/O objects)\&.
 .PP
 Return the (logically) \fCidx\fP -th object at depth \fCdepth\fP included in CPU set \fCset\fP\&. 
 .PP
+\fBReturns\fP
+.RS 4
+the object if any, \fCNULL\fP otherwise\&.
+.RE
+.PP
 \fBNote\fP
 .RS 4
 Objects with empty CPU sets are ignored (otherwise they would be considered included in any given set)\&.
@@ -145,7 +199,18 @@ This function cannot work if objects at the given depth do not have CPU sets (I/
 .SS "static \fBhwloc_obj_t\fP hwloc_get_obj_inside_cpuset_by_type (\fBhwloc_topology_t\fP topology, \fBhwloc_const_cpuset_t\fP set, \fBhwloc_obj_type_t\fP type, unsigned idx)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
-Return the \fCidx\fP -th object of type \fCtype\fP included in CPU set \fCset\fP\&. If there are multiple or no depth for given type, return \fCNULL\fP and let the caller fallback to \fBhwloc_get_obj_inside_cpuset_by_depth()\fP\&.
+Return the \fCidx\fP -th object of type \fCtype\fP included in CPU set \fCset\fP\&. 
+.PP
+\fBReturns\fP
+.RS 4
+the object if any\&. 
+.PP
+\fCNULL\fP if there is no such object\&. 
+.PP
+\fCNULL\fP if there is no depth for given type\&. 
+.PP
+\fCNULL\fP if there are multiple depths for given type, the caller should fallback to \fBhwloc_get_obj_inside_cpuset_by_depth()\fP\&.
+.RE
 .PP
 \fBNote\fP
 .RS 4

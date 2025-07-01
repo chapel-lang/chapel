@@ -10,10 +10,6 @@
 if HWLOC_BUILD_STANDALONE
 include_HEADERS = hwloc.h
 
-if BUILD_NETLOCSCOTCH
-include_HEADERS += netloc.h netlocscotch.h
-endif
-
 include_hwlocdir = $(includedir)/hwloc
 include_hwloc_HEADERS = \
         hwloc/bitmap.h \
@@ -47,10 +43,7 @@ noinst_HEADERS = \
         private/components.h \
         private/internal-components.h \
         private/cpuid-x86.h \
-        private/windows.h \
-        private/netloc.h \
-        netloc/utarray.h \
-        netloc/uthash.h
+        private/windows.h
 
 if HWLOC_HAVE_LINUX
 include_hwloc_HEADERS += \

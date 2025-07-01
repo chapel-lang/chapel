@@ -7,6 +7,7 @@ source $UTIL_CRON_DIR/common-gasnet.bash
 export CHPL_GASNET_SEGMENT=fast
 source $UTIL_CRON_DIR/common-darwin.bash
 source $UTIL_CRON_DIR/common-localnode-paratest.bash
+unset CHPL_LAUNCHER
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="gasnet.fast.darwin"
 

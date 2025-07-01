@@ -1,0 +1,15 @@
+#!/bin/sh 
+
+TESTNAME=$1
+OUTFILE=$2
+TMPFILE=$OUTFILE.prediff.tmp
+
+# filter out line numbers
+sed -E 's/\.chpl:[0-9]*:/\.chpl:n:/' < $OUTFILE > $TMPFILE
+cat $TMPFILE > $OUTFILE
+
+# filter out specific LLVM version
+sed -E 's/LLVM-[1-9][0-9]/LLVM-X/' < $OUTFILE > $TMPFILE
+
+cat $TMPFILE > $OUTFILE
+rm $TMPFILE

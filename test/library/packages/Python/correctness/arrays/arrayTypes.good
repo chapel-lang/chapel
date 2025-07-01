@@ -1,0 +1,290 @@
+Arrays:
+Testing format: b
+Python array: array('b', [1, 2, 3])
+Chapel array: 1 2 3
+Testing format: B
+Python array: array('B', [1, 2, 3])
+Chapel array: 1 2 3
+Testing format: h
+Python array: array('h', [1, 2, 3])
+Chapel array: 1 2 3
+Testing format: H
+Python array: array('H', [1, 2, 3])
+Chapel array: 1 2 3
+Testing format: i
+Python array: array('i', [1, 2, 3])
+Chapel array: 1 2 3
+Testing format: I
+Python array: array('I', [1, 2, 3])
+Chapel array: 1 2 3
+Testing format: l
+Python array: array('l', [1, 2, 3])
+Chapel array: 1 2 3
+Testing format: L
+Python array: array('L', [1, 2, 3])
+Chapel array: 1 2 3
+Testing format: q
+Python array: array('q', [1, 2, 3])
+Chapel array: 1 2 3
+Testing format: Q
+Python array: array('Q', [1, 2, 3])
+Chapel array: 1 2 3
+Testing format: f
+Python array: array('f', [1.0, 2.0, 3.0])
+Chapel array: 1.0 2.0 3.0
+Testing format: d
+Python array: array('d', [1.0, 2.0, 3.0])
+Chapel array: 1.0 2.0 3.0
+Caught expected error: PythonException: bad typecode
+Caught expected error: PythonException: bad typecode
+Caught expected error: ChapelException: Source array's format does not match requested element type
+Caught expected error: ChapelException: Source array's format does not match requested element type
+Caught expected error: ChapelException: Source array's format does not match requested element type
+Testing numpy type (1d array): np.bool
+Python array: [ True False]
+Chapel array: true false
+Testing numpy type (nd array): np.bool
+Python array: [[ True]
+ [False]]
+Chapel array: true
+false
+Testing numpy type (1d array): np.byte
+Python array: [-1 -2 -3]
+Chapel array: -1 -2 -3
+Testing numpy type (nd array): np.byte
+Python array: [[-1]
+ [-2]
+ [-3]]
+Chapel array: -1
+-2
+-3
+Testing numpy type (1d array): np.ubyte
+Python array: [1 2 3]
+Chapel array: 1 2 3
+Testing numpy type (nd array): np.ubyte
+Python array: [[1]
+ [2]
+ [3]]
+Chapel array: 1
+2
+3
+Testing numpy type (1d array): np.short
+Python array: [-1 -2 -3]
+Chapel array: -1 -2 -3
+Testing numpy type (nd array): np.short
+Python array: [[-1]
+ [-2]
+ [-3]]
+Chapel array: -1
+-2
+-3
+Testing numpy type (1d array): np.ushort
+Python array: [1 2 3]
+Chapel array: 1 2 3
+Testing numpy type (nd array): np.ushort
+Python array: [[1]
+ [2]
+ [3]]
+Chapel array: 1
+2
+3
+Testing numpy type (1d array): np.intc
+Python array: [-1 -2 -3]
+Chapel array: -1 -2 -3
+Testing numpy type (nd array): np.intc
+Python array: [[-1]
+ [-2]
+ [-3]]
+Chapel array: -1
+-2
+-3
+Testing numpy type (1d array): np.uintc
+Python array: [1 2 3]
+Chapel array: 1 2 3
+Testing numpy type (nd array): np.uintc
+Python array: [[1]
+ [2]
+ [3]]
+Chapel array: 1
+2
+3
+Testing numpy type (1d array): np.long
+Python array: [-1 -2 -3]
+Chapel array: -1 -2 -3
+Testing numpy type (nd array): np.long
+Python array: [[-1]
+ [-2]
+ [-3]]
+Chapel array: -1
+-2
+-3
+Testing numpy type (1d array): np.ulong
+Python array: [1 2 3]
+Chapel array: 1 2 3
+Testing numpy type (nd array): np.ulong
+Python array: [[1]
+ [2]
+ [3]]
+Chapel array: 1
+2
+3
+Testing numpy type (1d array): np.longlong
+Python array: [-1 -2 -3]
+Chapel array: -1 -2 -3
+Testing numpy type (nd array): np.longlong
+Python array: [[-1]
+ [-2]
+ [-3]]
+Chapel array: -1
+-2
+-3
+Testing numpy type (1d array): np.ulonglong
+Python array: [1 2 3]
+Chapel array: 1 2 3
+Testing numpy type (nd array): np.ulonglong
+Python array: [[1]
+ [2]
+ [3]]
+Chapel array: 1
+2
+3
+Testing numpy type (1d array): np.single
+Python array: [1. 2. 3.]
+Chapel array: 1.0 2.0 3.0
+Testing numpy type (nd array): np.single
+Python array: [[1.]
+ [2.]
+ [3.]]
+Chapel array: 1.0
+2.0
+3.0
+Testing numpy type (1d array): np.double
+Python array: [1. 2. 3.]
+Chapel array: 1.0 2.0 3.0
+Testing numpy type (nd array): np.double
+Python array: [[1.]
+ [2.]
+ [3.]]
+Chapel array: 1.0
+2.0
+3.0
+Testing numpy type (1d array): np.intp
+Python array: [-1 -2 -3]
+Chapel array: -1 -2 -3
+Testing numpy type (nd array): np.intp
+Python array: [[-1]
+ [-2]
+ [-3]]
+Chapel array: -1
+-2
+-3
+Testing numpy type (1d array): np.uintp
+Python array: [1 2 3]
+Chapel array: 1 2 3
+Testing numpy type (nd array): np.uintp
+Python array: [[1]
+ [2]
+ [3]]
+Chapel array: 1
+2
+3
+Testing numpy type (1d array): np.int8
+Python array: [-1 -2 -3]
+Chapel array: -1 -2 -3
+Testing numpy type (nd array): np.int8
+Python array: [[-1]
+ [-2]
+ [-3]]
+Chapel array: -1
+-2
+-3
+Testing numpy type (1d array): np.uint8
+Python array: [1 2 3]
+Chapel array: 1 2 3
+Testing numpy type (nd array): np.uint8
+Python array: [[1]
+ [2]
+ [3]]
+Chapel array: 1
+2
+3
+Testing numpy type (1d array): np.int16
+Python array: [-1 -2 -3]
+Chapel array: -1 -2 -3
+Testing numpy type (nd array): np.int16
+Python array: [[-1]
+ [-2]
+ [-3]]
+Chapel array: -1
+-2
+-3
+Testing numpy type (1d array): np.uint16
+Python array: [1 2 3]
+Chapel array: 1 2 3
+Testing numpy type (nd array): np.uint16
+Python array: [[1]
+ [2]
+ [3]]
+Chapel array: 1
+2
+3
+Testing numpy type (1d array): np.int32
+Python array: [-1 -2 -3]
+Chapel array: -1 -2 -3
+Testing numpy type (nd array): np.int32
+Python array: [[-1]
+ [-2]
+ [-3]]
+Chapel array: -1
+-2
+-3
+Testing numpy type (1d array): np.uint32
+Python array: [1 2 3]
+Chapel array: 1 2 3
+Testing numpy type (nd array): np.uint32
+Python array: [[1]
+ [2]
+ [3]]
+Chapel array: 1
+2
+3
+Testing numpy type (1d array): np.int64
+Python array: [-1 -2 -3]
+Chapel array: -1 -2 -3
+Testing numpy type (nd array): np.int64
+Python array: [[-1]
+ [-2]
+ [-3]]
+Chapel array: -1
+-2
+-3
+Testing numpy type (1d array): np.uint64
+Python array: [1 2 3]
+Chapel array: 1 2 3
+Testing numpy type (nd array): np.uint64
+Python array: [[1]
+ [2]
+ [3]]
+Chapel array: 1
+2
+3
+Testing numpy type (1d array): np.float32
+Python array: [1. 2. 3.]
+Chapel array: 1.0 2.0 3.0
+Testing numpy type (nd array): np.float32
+Python array: [[1.]
+ [2.]
+ [3.]]
+Chapel array: 1.0
+2.0
+3.0
+Testing numpy type (1d array): np.float64
+Python array: [1. 2. 3.]
+Chapel array: 1.0 2.0 3.0
+Testing numpy type (nd array): np.float64
+Python array: [[1.]
+ [2.]
+ [3.]]
+Chapel array: 1.0
+2.0
+3.0

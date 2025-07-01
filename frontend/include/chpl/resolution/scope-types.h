@@ -195,6 +195,16 @@ class IdAndFlags {
                       /* isType */ false);
   }
 
+  static IdAndFlags createForBuiltinFunction() {
+    return IdAndFlags(ID(),
+                      /* isPublic */ true,
+                      /* isMethodOrField */ false,
+                      /* isParenfulFunction */ true,
+                      /* isMethod */ false,
+                      /* isModule */ false,
+                      /* isType */ false);
+  }
+
   bool operator==(const IdAndFlags& other) const {
     return id_ == other.id_ &&
            flags_ == other.flags_;
@@ -573,9 +583,20 @@ class MatchingIdsWithName {
   }
 
   void mark(Context* context) const {
-    for (auto const& elt : idvs_) {
-      context->markPointer(&elt.id_);
+    for (const auto& idv : idvs_) {
+      idv.id_.mark(context);
     }
+  }
+
+  void swap(MatchingIdsWithName& other) {
+    idvs_.swap(other.idvs_);
+    std::swap(encounteredFnNonFnConflict_,
+              other.encounteredFnNonFnConflict_);
+  }
+
+  static bool update(MatchingIdsWithName& keep,
+                     MatchingIdsWithName& addin) {
+    return defaultUpdate(keep, addin);
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
@@ -658,6 +679,10 @@ class Scope {
   /** Add a builtin var with the provided name. This needs to
       be called to populate the root scope with builtins. */
   void addBuiltinVar(UniqueString name);
+
+  /** Add a builtin function with the provided name. This needs to
+      be called to populate the root scope with builtins. */
+  void addBuiltinFunction(UniqueString name);
 
   /** Return the parent scope for this scope. */
   const Scope* parentScope() const { return parentScope_; }
@@ -1436,6 +1461,9 @@ class MethodLookupHelper {
       with a receiver that is applicable */
   virtual bool isReceiverApplicable(Context* context,
                                     const ID& methodId) const = 0;
+  /** Returns 'true' if, based on the current receiver type, we should
+      search a VisibilitySymbols clause for tertiary methods */
+  virtual bool shouldCheckForTertiaryMethods(Context* context, const VisibilitySymbols* toCheck) const = 0;
 };
 
 /** This type helps lookupNameInScope and related functions.

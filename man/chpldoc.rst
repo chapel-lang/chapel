@@ -46,6 +46,12 @@ reStructuredText as an intermediate format.
     documentation comment from a normal one (defaults to '/\*' if
     unspecified).
 
+**-M, \--module-dir <**\ *directory*\ **>**
+
+    Add the specified *directory* to the module search path. The module
+    search path is used to satisfy module 'use' and 'import' statements.
+    See the :ref:`man page for chpl <man-module-dir>` for further details.
+
 .. _man-process-used-modules:
 
 **\--process-used-modules**

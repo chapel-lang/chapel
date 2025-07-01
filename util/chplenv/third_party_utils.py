@@ -189,7 +189,7 @@ def pkgconfig_get_bundled_compile_args(pkg, ucp='', pcfile=''):
 # default static value for pkgconfig_get_system_link_args
 # and pkgconfig_get_bundled_link_args
 def pkgconfig_default_static():
-    static = chpl_platform.get('target')!='hpe-cray-ex'
+    static = not chpl_platform.is_hpe_cray('target')
     return static
 
 #
@@ -249,9 +249,6 @@ def pkgconfig_get_bundled_link_args(pkg, ucp='', pcfile='',
     if pcfile == '':
         pcfile = pkg + '.pc'
 
-    install_path = get_bundled_install_path(pkg, ucp)
-    lib_dir = os.path.join(install_path, 'lib')
-
     (d, pcpath) = read_bundled_pkg_config_file(pkg, ucp, pcfile)
 
     # Return empty tuple if no .pc file was found (e.g. pkg not built yet)
@@ -281,6 +278,15 @@ def pkgconfig_get_bundled_link_args(pkg, ucp='', pcfile='',
 
     # add the -rpath option if it was enabled by the caller
     if add_rpath:
+        install_path = get_bundled_install_path(pkg, ucp)
+        lib_dir_paths = [os.path.join(install_path, 'lib'), os.path.join(install_path, 'lib64')]
+        lib_dir = None
+        for p in lib_dir_paths:
+            if os.path.exists(p):
+                lib_dir = p
+                break
+        if not lib_dir:
+            error("Could not find lib directory for {0} in {1}".format(pkg, lib_dir_paths))
         libs.append('-Wl,-rpath,' + lib_dir)
 
     # assuming libs_private stores system libs, like -lpthread
@@ -451,11 +457,16 @@ def read_bundled_pkg_config_file(pkg, ucp='', pcfile=''):
     if not os.path.exists(install_path):
         return (None, None)
 
-    pcpath = os.path.join(install_path, 'lib', 'pkgconfig', pcfile)
-
-    # if we get this far, we should have a .pc file. check that it exists.
-    if not os.access(pcpath, os.R_OK):
-        error("Could not find '{0}'".format(pcpath), ValueError)
+    paths = [os.path.join(install_path, 'lib', 'pkgconfig', pcfile),
+             os.path.join(install_path, 'lib64', 'pkgconfig', pcfile)]
+    pcpath = None
+    for p in paths:
+        if os.access(p, os.R_OK):
+            pcpath = p
+            break
+    # if we get this far, we should have a .pc file.
+    if not pcpath:
+        error("Could not find .pc file for {0}".format(pkg), ValueError)
         return (None, pcpath)
 
     find_path = os.path.join('third-party', pkg, 'install', ucp)
@@ -465,10 +476,10 @@ def read_bundled_pkg_config_file(pkg, ucp='', pcfile=''):
 
 
 def could_not_find_pkgconfig_pkg(pkg, envname):
-    if homebrew_utils.homebrew_exists() and homebrew_utils.homebrew_pkg_exists(pkg):
+    if homebrew_utils.homebrew_exists() and homebrew_utils.homebrew_pkg_exists(pkg) and not homebrew_utils.homebrew_pkg_exists('pkg-config'):
         # tell user to install pkg-config as well
         error("{0} is installed via homebrew, but pkg-config is not installed. Please install pkg-config with `brew install pkg-config`.".format(pkg))
     else:
         install_str = " with `brew install {0}`".format(pkg) if homebrew_utils.homebrew_exists() else ""
-        error("Could not find a suitable {0} installation. Please install {0}{1} or set {2}=bundled.".format(pkg, install_str, envname))
+        error("Could not find a suitable {0} installation with pkg-config. Please install {0}{1}, set {2}=bundled, or fix pkg-config configuration.".format(pkg, install_str, envname))
 

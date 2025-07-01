@@ -1,0 +1,11 @@
+b targetVar.chpl:5
+b bar
+r
+target var
+frame var
+c
+n
+target var
+frame var
+c
+quit

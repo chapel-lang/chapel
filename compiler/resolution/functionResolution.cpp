@@ -329,11 +329,19 @@ void makeRefType(Type* type) {
     return;
   }
 
-  CallExpr* call = new CallExpr(dtRef->symbol, type->symbol);
-  resolveUninsertedCall(type, call, false);
-  type->refType  = toAggregateType(call->typeInfo());
+  if (dtRef) {
+    CallExpr* call = new CallExpr(dtRef->symbol, type->symbol);
+    resolveUninsertedCall(type, call, false);
+    type->refType  = toAggregateType(call->typeInfo());
 
-  type->refType->getField(1)->type = type;
+    type->refType->getField(1)->type = type;
+  } else {
+    // We no longer have access to the generic 'ref' type, which means it
+    // was already pruned. In which case, we should generate as though we
+    // are at codegen. TODO: Why can't we just do this always?
+    auto rt = getOrMakeRefTypeDuringCodegen(type);
+    INT_ASSERT(rt && type->refType);
+  }
 
   if (type->symbol->hasFlag(FLAG_ATOMIC_TYPE))
     type->refType->symbol->addFlag(FLAG_ATOMIC_TYPE);
@@ -668,7 +676,7 @@ isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual,
 
     // don't emit lvalue errors for array slices
     // (we can think of these as a special kind of reference)
-    if (isAliasingArrayType(sym->type)) {
+    if (sym->hasFlag(FLAG_IS_ARRAY_VIEW) || isAliasingArrayType(sym->type)) {
       actualExprTmp = false;
     }
 
@@ -2408,7 +2416,7 @@ static void reissueMsgHelp(CallExpr* from, const char* str, bool err) {
   if (err) {
     USR_FATAL(from, "%s", str);
   } else {
-    gdbShouldBreakHere();
+    debuggerBreakHere();
     USR_WARN(from, "%s", str);
   }
 }
@@ -3352,12 +3360,7 @@ static bool resolveClassBorrowMethod(CallExpr* call) {
 // resolving calls, but we may not be able to do that until dyno is used
 // to resolve code.
 static bool resolveFunctionPointerCall(CallExpr* call) {
-  FunctionType* ft = nullptr;
-  if (auto base = call->baseExpr)
-    if (auto se = toSymExpr(base))
-      if (auto baseFnType = toFunctionType(se->getValType()))
-        ft = baseFnType;
-
+  auto ft = call->isIndirectCall() ? call->functionType() : nullptr;
   if (!ft) return false;
 
   auto base = call->baseExpr;
@@ -3399,7 +3402,7 @@ static bool resolveFunctionPointerCall(CallExpr* call) {
     Type* actualType = actual->qualType().type();
     Symbol* actualSym = isSymExpr(actual) ? toSymExpr(actual)->symbol()
                                           : nullptr;
-    Type* formalType = ft->formal(i)->type;
+    Type* formalType = ft->formal(i)->type();
     ArgSymbol* formalSym = nullptr;
     FnSymbol* fn = nullptr;
     bool promotes = false;
@@ -3684,7 +3687,7 @@ static void warnForCallConcreteType(CallExpr* call, Type* t) {
 
 static Type* resolveTypeSpecifier(CallInfo& info) {
   CallExpr* call = info.call;
-  if (call->id == breakOnResolveID) gdbShouldBreakHere();
+  if (call->id == breakOnResolveID) debuggerBreakHere();
 
   Type* ret = NULL;
 
@@ -3962,7 +3965,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState) {
   if (call->id == breakOnResolveID) {
     printf("breaking on resolve call %d:\n", call->id);
     print_view(call);
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
 
   resolveGenericActuals(call);
@@ -4367,6 +4370,20 @@ static FnSymbol* resolveNormalCall(CallInfo&            info,
     }
 
     call->baseExpr->replace(new SymExpr(retval));
+
+    //
+    // Mark results to calls that return aliasing arrays as being an array view
+    //
+    if (retval->hasFlag(FLAG_RETURNS_ALIASING_ARRAY)) {
+      if (CallExpr* parent = toCallExpr(call->parentExpr)) {
+        if (parent->isPrimitive(PRIM_MOVE)) {
+          if (SymExpr* se = toSymExpr(parent->get(1))) {
+            se->symbol()->addFlag(FLAG_IS_ARRAY_VIEW);
+            se->symbol()->addFlag(FLAG_INSERT_AUTO_DESTROY);
+          }
+        }
+      }
+    }
 
     resolveNormalCallConstRef(call);
 
@@ -5387,6 +5404,14 @@ void trimVisibleCandidates(CallInfo&       info,
       BaseAST* actual = NULL;
       BaseAST* formal = NULL;
 
+      // If the function was created as a part of dyno typed conversion,
+      // then do not consider it as a candidate. This means that the old
+      // AST resolver may do some redundant work re-instantiating and
+      // re-resolving functions that dyno has already handled, but that
+      // is OK - eventually the new frontend will resolve _everything_
+      // and we can remove the old resolver.
+      if (fn->hasFlag(FLAG_RESOLVED_EARLY)) continue;
+
       if ((fn->isInitializer()) || (isDeinit && fn->isMethod()) || fn->isCopyInit()) {
         actual = call->get(2);
         formal = fn->_this;
@@ -5611,7 +5636,7 @@ static void filterCandidate(CallInfo&                  info,
     USR_PRINT(fn, "Considering function: %s", toString(fn));
 
     if (info.call->id == breakOnResolveID) {
-      gdbShouldBreakHere();
+      debuggerBreakHere();
     }
   }
 
@@ -7336,7 +7361,7 @@ static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn) {
       // INT_ASSERT(varActual->type->symbol->hasFlag(FLAG_GENERIC) == false);
 
       if (formal->id == breakOnResolveID)
-        gdbShouldBreakHere();
+        debuggerBreakHere();
 
       IntentTag origFormalIntent = formal->intent;
 
@@ -7990,7 +8015,7 @@ static Symbol* resolveFieldSymbol(Type* base, Expr* fieldExpr) {
 static void resolveSetMember(CallExpr* call) {
 
   if (call->id == breakOnResolveID) {
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
 
   Symbol* fs = resolveFieldSymbol(call->get(1)->typeInfo()->getValType(),
@@ -8067,7 +8092,7 @@ static void handleSetMemberTypeMismatch(Type*     t,
 
 static void resolveInitField(CallExpr* call) {
   if (call->id == breakOnResolveID) {
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
 
   INT_ASSERT(call->argList.length == 3);
@@ -8145,7 +8170,7 @@ static void resolveInitField(CallExpr* call) {
     // fields from the old instantiation
 
     if (fs->id == breakOnResolveID) {
-      gdbShouldBreakHere();
+      debuggerBreakHere();
     }
 
     bool ignoredHasDefault = false;
@@ -8482,7 +8507,7 @@ void resolveInitVar(CallExpr* call) {
   bool isParamString = dst->hasFlag(FLAG_PARAM) && isString(srcType);
 
   if (call->id == breakOnResolveID) {
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
 
   if (call->isPrimitive(PRIM_INIT_VAR_SPLIT_INIT)) {
@@ -8709,9 +8734,11 @@ void resolveInitVar(CallExpr* call) {
     // of the copy does need to be destroyed.
     if (SymExpr* rhsSe = toSymExpr(srcExpr))
       if (VarSymbol* rhsVar = toVarSymbol(rhsSe->symbol()))
-        if (isAliasingArrayType(rhsVar->getValType()))
+        if (rhsVar->hasFlag(FLAG_IS_ARRAY_VIEW) ||
+            isAliasingArrayType(rhsVar->getValType())) {
           if (rhsVar->hasFlag(FLAG_NO_AUTO_DESTROY) == false)
             rhsVar->addFlag(FLAG_INSERT_AUTO_DESTROY);
+        }
 
     Symbol *definedConst = dst->hasFlag(FLAG_CONST)? gTrue : gFalse;
     CallExpr* initCopy = new CallExpr(astr_initCopy, srcExpr->remove(),
@@ -9086,7 +9113,7 @@ static bool isMoveFromMain(CallExpr* call) {
 
 static void resolveMove(CallExpr* call) {
   if (call->id == breakOnResolveID) {
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
 
   if (moveIsAcceptable(call) == false) {
@@ -9310,7 +9337,7 @@ Type* moveDetermineLhsType(CallExpr* call) {
 
   if (lhsSym->type == dtUnknown || lhsSym->type == dtNil) {
     if (lhsSym->id == breakOnResolveID) {
-      gdbShouldBreakHere();
+      debuggerBreakHere();
     }
 
     Type* type = call->get(2)->typeInfo();
@@ -9789,7 +9816,7 @@ static bool isUndecoratedClassNew(CallExpr* newExpr, Type* newType);
 static void resolveNew(CallExpr* newExpr) {
 
   if (newExpr->id == breakOnResolveID) {
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
 
   // If it's a managed new, detect the _chpl_manager named arg and remove it
@@ -10534,7 +10561,7 @@ static Expr* resolveFunctionTypeConstructor(DefExpr* def) {
   INT_ASSERT(fn->type == dtUnknown);
 
   if (def->id == breakOnResolveID || fn->id == breakOnResolveID) {
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
 
   bool isBodyResolved = fcfs::checkAndResolveSignature(fn, def);
@@ -10544,7 +10571,6 @@ static Expr* resolveFunctionTypeConstructor(DefExpr* def) {
 
   auto ft = FunctionType::get(fn);
   INT_ASSERT(ft);
-
   Type* t = ft;
 
   // If we aren't using pointers, have to convert to a function class type
@@ -10648,6 +10674,9 @@ static Expr* swapInErrorSinkForCapture(FunctionType::Kind kind, Expr* use) {
 }
 
 static Expr* swapInFunctionForCapture(FnSymbol* fn, Expr* use) {
+  // Mark the function as a root to be added to the function table later.
+  fn->addFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION);
+
   auto ret = new SymExpr(fn);
   use->replace(ret);
   return ret;
@@ -10683,7 +10712,7 @@ static Expr* resolveFunctionCapture(FnSymbol* fn, Expr* use,
                                     bool discardType,
                                     bool useClass) {
   if (fn->id == breakOnResolveID || use->id == breakOnResolveID) {
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
 
   // Discarding the type (e.g., for 'c_ptrTo') is well specified.
@@ -10710,16 +10739,17 @@ static Expr* resolveFunctionCapture(FnSymbol* fn, Expr* use,
                      fn->name);
     }
 
-    for(auto i = 0; i < ft->numFormals(); i++) {
+    for (auto i = 0; i < ft->numFormals(); i++) {
       auto formal = ft->formal(i);
       if (formal->isGeneric()) {
-        std::string reason;
-        auto reasons = explainGeneric(formal->type);
+        auto reasons = explainGeneric(formal->type());
         if (reasons.empty()) {
-          USR_PRINT(use, "the formal '%s' is generic", formal->name);
+          USR_PRINT(use, "the formal '%s' is generic", formal->name());
         } else {
           for (auto& r : reasons) {
-            USR_PRINT(use, "the formal '%s' is generic because %s", formal->name, r.c_str());
+            USR_PRINT(use, "the formal '%s' is generic because %s",
+                      formal->name(),
+                      r.c_str());
           }
         }
       }
@@ -10801,7 +10831,7 @@ static Expr* maybeResolveFunctionCapturePrimitive(CallExpr* call) {
     return nullptr;
   }
 
-  if (call->id == breakOnResolveID) gdbShouldBreakHere();
+  if (call->id == breakOnResolveID) debuggerBreakHere();
 
   switch (call->primitive->tag) {
 
@@ -10910,7 +10940,7 @@ Expr* resolveExpr(Expr* expr) {
   Expr*     retval = NULL;
 
   if (expr->id == breakOnResolveID)
-    gdbShouldBreakHere();
+    debuggerBreakHere();
 
   SET_LINENO(expr);
 
@@ -12641,7 +12671,9 @@ static const char* autoCopyFnForType(AggregateType* at);
 static void resolveAutoCopies() {
   for_alive_in_expanding_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (! ts->hasFlag(FLAG_GENERIC)                 &&
-        ! ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
+        ! ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)  &&
+        ! ts->hasFlag(FLAG_REF)                     &&
+        ! ts->hasFlag(FLAG_RESOLVED_EARLY)) {
       if (AggregateType* at = toAggregateType(ts->type)) {
         if (isRecord(at) || isUnion(at)) {
           // If we attempt to resolve auto-copy and co. for an infinite record
@@ -13649,7 +13681,7 @@ static void resolvePrimInit(CallExpr* call) {
 
 static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
 
-  if (call->id == breakOnResolveID) gdbShouldBreakHere();
+  if (call->id == breakOnResolveID) debuggerBreakHere();
 
   AggregateType* at = toAggregateType(type);
   val->type = type;
@@ -13941,7 +13973,7 @@ static void errorInvalidParamInit(CallExpr* call, Symbol* val, Type* type) {
 static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type,
                           Expr* preventingSplitInit) {
 
-  if (call->id == breakOnResolveID) gdbShouldBreakHere();
+  if (call->id == breakOnResolveID) debuggerBreakHere();
 
   AggregateType* at     = toAggregateType(type);
 
@@ -14731,7 +14763,7 @@ static void resolveInitRef(CallExpr* call) {
                refSym->hasFlag(FLAG_REF_VAR));
     INT_ASSERT(refSym->type == dtUnknown); // fyi
 
-    if (refSym->id == breakOnResolveID) gdbShouldBreakHere();
+    if (refSym->id == breakOnResolveID) debuggerBreakHere();
     resolveExpr(call->get(2)); // the normalized type expression
     Expr* typeExpr = call->get(2)->remove();
     if (SymExpr* typeSE = toSymExpr(typeExpr))

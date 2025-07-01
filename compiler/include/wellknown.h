@@ -92,6 +92,7 @@ extern Type* dt_c_uintptr;
 extern Type* dt_c_ptrdiff;
 extern Type* dt_ssize_t;
 extern Type* dt_size_t;
+extern Type* dt_wchar;
 
 // The well-known functions
 extern FnSymbol *gChplHereAlloc;

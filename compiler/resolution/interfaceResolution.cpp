@@ -383,7 +383,7 @@ void resolveInterfaceSymbol(InterfaceSymbol* isym) {
 
   cgprint("resolving interface declaration %s  %s {\n",
           symstring(isym), debugLoc(isym));
-  if (isym->id == breakOnResolveID) gdbShouldBreakHere();
+  if (isym->id == breakOnResolveID) debuggerBreakHere();
 
   for_alist(stmt, isym->ifcBody->body) {
    if (FnSymbol* fn = toFnSymbol(toDefExpr(stmt)->sym))
@@ -754,7 +754,7 @@ void resolveConstrainedGenericFun(FnSymbol* fn) {
 
   cgprint("resolving CG function early %s  %s {\n",
           symstring(fn), debugLoc(fn));
-  if (fn->id == breakOnResolveID) gdbShouldBreakHere();
+  if (fn->id == breakOnResolveID) debuggerBreakHere();
 
   createRepsForIfcSymbols(fn, ifcInfo);
 
@@ -1122,7 +1122,7 @@ static bool addReqFnConstraints(BlockStmt* holder, FnSymbol* reqFn,
     FnSymbol* wrapFn = wrapOneImplementsStatement(istm);
     // We postulate that this constraint holds. Resolving it is meaningless.
     // This means however that istm will not have its tables filled in.
-    if (wrapFn->id == breakOnResolveID) gdbShouldBreakHere();
+    if (wrapFn->id == breakOnResolveID) debuggerBreakHere();
     wrapFn->addFlag(FLAG_RESOLVED);
   }
 
@@ -1724,7 +1724,7 @@ static bool resolveImplementsStmt(FnSymbol* wrapFn, ImplementsStmt* istm,
                                   Expr*   addlSite,
                                   bool    reportErrors,
                                   bool    generatedOnly) {
-  if (istm->id == breakOnResolveID) gdbShouldBreakHere();
+  if (istm->id == breakOnResolveID) debuggerBreakHere();
 
   IfcConstraint* icon = istm->iConstraint;
   InterfaceSymbol* isym = icon->ifcSymbol();
@@ -2216,7 +2216,7 @@ ConstraintSat constraintIsSatisfiedAtCallSite(CallExpr*      callsite,
                                               IfcConstraint* constraint,
                                               SymbolMap&     substitutions) {
   if (callsite->id == breakOnResolveID  ||
-      constraint->id == breakOnResolveID ) gdbShouldBreakHere();
+      constraint->id == breakOnResolveID ) debuggerBreakHere();
 
   InterfaceSymbol* isym = constraint->ifcSymbol();
 

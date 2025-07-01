@@ -214,7 +214,10 @@ static const RecordType* tryCreateManagerRecord(Context* context,
                                               recordId,
                                               /*bct*/ nullptr);
 
-    auto fields = fieldsForTypeDecl(context,
+    // Note: We know these types aren't nested, and so don't require a proper
+    // ResolutionContext at this time.
+    ResolutionContext rc(context);
+    auto fields = fieldsForTypeDecl(&rc,
                                     instantiatedFrom,
                                     DefaultsPolicy::IGNORE_DEFAULTS);
     for (int i = 0; i < fields.numFields(); i++) {
@@ -241,6 +244,14 @@ CompositeType::getOwnedRecordType(Context* context, const BasicClassType* bct) {
 const RecordType*
 CompositeType::getSharedRecordType(Context* context, const BasicClassType* bct) {
   return tryCreateManagerRecord(context, getSharedRecordId(context), bct);
+}
+
+const RecordType*
+CompositeType::getSyncType(Context* context) {
+  auto [id, name] =
+      parsing::getSymbolFromTopLevelModule(context, "ChapelSyncvar", "_syncvar");
+  return RecordType::get(context, id, name,
+                         /* instantiatedFrom */ nullptr, SubstitutionsMap());
 }
 
 const ClassType* CompositeType::getErrorType(Context* context) {

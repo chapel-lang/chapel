@@ -81,7 +81,7 @@ ifndef CHPL_MAKE_CHPLENV_CACHE
 # Evaluate all of the definitions in CHPL_MAKE_ALL_VARS before running
 # printchplenv in order to pass the existing values from the compiler forward
 
-export CHPL_MAKE_CHPLENV_CACHE := $(shell $(CHPL_MAKE_ALL_VARS) $(CHPL_MAKE_HOME)/util/printchplenv --all --internal --no-tidy --make | tr '\n' '|' )
+export CHPL_MAKE_CHPLENV_CACHE := $(shell $(CHPL_MAKE_ALL_VARS) $(CHPL_MAKE_HOME)/util/printchplenv --all --internal --no-tidy --make | tr '\n' '|')
 endif
 
 # This really needs TWO newlines!
@@ -196,9 +196,12 @@ include $(THIRD_PARTY_DIR)/qthread/Makefile.include
 include $(THIRD_PARTY_DIR)/jemalloc/Makefile.common.include
 ifeq ($(strip $(CHPL_MAKE_HOST_TARGET)),--host)
 include $(THIRD_PARTY_DIR)/jemalloc/Makefile.host.include-$(CHPL_MAKE_HOST_JEMALLOC)
+include $(THIRD_PARTY_DIR)/mimalloc/Makefile.host.include-$(CHPL_MAKE_HOST_MIMALLOC)
 else
 include $(THIRD_PARTY_DIR)/jemalloc/Makefile.target.include-$(CHPL_MAKE_TARGET_JEMALLOC)
+include $(THIRD_PARTY_DIR)/mimalloc/Makefile.target.include-$(CHPL_MAKE_TARGET_MIMALLOC)
 endif
+
 include $(THIRD_PARTY_DIR)/gmp/Makefile.include
 include $(THIRD_PARTY_DIR)/hwloc/Makefile.include
 include $(THIRD_PARTY_DIR)/re2/Makefile.include

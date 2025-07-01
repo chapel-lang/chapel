@@ -30,11 +30,13 @@ sys.path.insert(0, os.path.abspath('./'))
 # to prevent failures if chapel-py is not built/installed, check if its installed
 # if installed, add the path and generate the rst file
 # if not installed, just create the file so that the build doesn't fail
-chapel_py_dir = os.path.abspath(
-    "../../third-party/chpl-venv/install/chpl-frontend-py-deps-py"
-    + str(sys.version_info.major)
-    + str(sys.version_info.minor)
-)
+old_sys_path = sys.path.copy()
+sys.path.insert(0, os.path.abspath('../../util/chplenv'))
+import chpl_home_utils
+chapel_py_dir = chpl_home_utils.get_chpldeps(chapel_py=True)
+del chpl_home_utils
+sys.path = old_sys_path
+
 include_chapel_py_docs = False
 chapel_py_api_template = os.path.abspath("./tools/chapel-py/chapel-py-api-template.rst")
 chapel_py_api_rst = os.path.abspath("./tools/chapel-py/chapel-py-api.rst")
@@ -130,13 +132,12 @@ master_doc = 'index'
 # 'version' adds a redundant version number onto the top of the sidebar
 # automatically (rtd-theme). We also don't use |version| anywhere in rst
 
-chplversion = '2.4'                  # TODO -- parse from `chpl --version`
+chplversion = '2.6'
 shortversion = chplversion.replace('-', '&#8209') # prevent line-break at hyphen, if any
 html_context = {"chplversion":chplversion}
 
 # The full version, including alpha/beta/rc tags.
-release = '2.4.0 (pre-release)'
-# release = '2.3.0'
+release = '2.6.0 (pre-release)'
 
 # General information about the project.
 project = u'Chapel Documentation'
@@ -181,11 +182,14 @@ exclude_patterns = ['Makefile',
                     'builtins/SharedObject.rst',
                     'builtins/String.rst',
                     'modules/standard/AutoMath.rst',
+                    'modules/standard/AutoGpu.rst',
                     'modules/standard/ChapelIO.rst',
+                    'modules/standard/ChapelSysCTypes.rst',
 
                     # exclude the chapel-py files
                     'tools/chapel-py/chapel-py-api-template.rst',
                     'tools/chapel-py/chapel-py-api.rst',
+                    'tools/chplcheck/generated/rules.rst',
                    ]
 
 # The reST default role (used for this markup: `text`) to use for all
@@ -226,9 +230,6 @@ if not on_rtd:
         'sticky_navigation': True,
     }
 
-    analytics_id = os.environ.get('CHPLDOC_ANALYTICS_ID')
-    if analytics_id:
-        html_theme_options['analytics_id'] = analytics_id
 
 
 # Theme options are theme-specific and customize the look and feel of a theme

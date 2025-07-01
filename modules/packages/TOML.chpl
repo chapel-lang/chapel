@@ -42,15 +42,13 @@ private use Sort;
 use IO;
 
 
-/* Receives a TOML file as a parameter and outputs a Toml object.
+/* Receives a TOML file as a parameter and outputs a ``Toml`` object.
 
 
-.. code-block:: chapel
-
-     use TOML;
-
-     const tomlFile = open("example.toml", ioMode.r);
-     const toml = parseToml(tomlFile);
+.. literalinclude:: ../../../../test/library/packages/TOML/doc-examples/example_parseToml.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE
+ :end-before: STOP_EXAMPLE
 
 To read tables of a TOML file, use the same syntax as accessing associative arrays. For example,
 to access to the following TOML file's project name,
@@ -64,19 +62,14 @@ to access to the following TOML file's project name,
 
 Use the following code in Chapel.
 
-.. code-block:: chapel
-
-     use TOML;
-
-     const tomlFile = open("example.toml", ioMode.r);
-     const toml = parseToml(tomlFile);
-     const projectName = ["root"]["name"] // returns a TOML object
-     writeln(projectName.toString());     // to turn TOML object into string representation
-
+.. literalinclude:: ../../../../test/library/packages/TOML/doc-examples/example_access_Toml_attribut.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE
+ :end-before: STOP_EXAMPLE
 
 .. note::
 
-  As of Chapel 1.26.0, TOML objects will print their values in the following manner:
+  As of Chapel 1.26.0, ``Toml`` objects will print their values in the following manner:
   If the object contains a `root` table, it will be printed first.
   Keys within the root table will be printed in sorted order.
   All other tables will be printed in a sorted order after `root`, if it exists.
@@ -93,7 +86,7 @@ proc parseToml(input: file) : shared Toml {
   return parseToml(tomlStr);
 }
 
-/* Receives a channel to a TOML file as a parameter and outputs a Toml object.
+/* Receives a channel to a TOML file as a parameter and outputs a ``Toml`` object.
 */
 proc parseToml(input: fileReader) : shared Toml {
   var tomlStr: string;
@@ -101,7 +94,7 @@ proc parseToml(input: fileReader) : shared Toml {
   return parseToml(tomlStr);
 }
 
- /* Receives a string of TOML format as a parameter and outputs a Toml object */
+ /* Receives a string of TOML format as a parameter and outputs a ``Toml`` object */
 proc parseToml(input: string) : shared Toml {
   var D: domain(string);
   var table: [D] shared Toml?;
@@ -326,13 +319,11 @@ module TomlParser {
           skipNext(source);
           var array: list(shared Toml);
           while top(source) != ']' {
-            if comma.match(top(source)) {
+            if comment.match(top(source)) {
               skipNext(source);
-            }
-            else if comment.match(top(source)) {
+            } else if comma.match(top(source)) {
               skipNext(source);
-            }
-            else {
+            } else {
               var toParse = parseValue();
               array.pushBack(toParse);
             }
@@ -699,7 +690,11 @@ used to recursively hold tables and respective values
     }
 
 
-    /* Returns the index of the table path given as a parameter */
+    /*
+       Returns the index of the table path given as a parameter.
+
+       :throws TomlError: If no index could be found for the given table path.
+    */
     proc this(tbl: string) ref : shared Toml? throws {
       const indx = tbl.split('.');
       var top = indx.domain.first;
@@ -840,7 +835,12 @@ used to recursively hold tables and respective values
     }
 
 
-    /* Write a Table to channel f in TOML format */
+    /*
+       Write a Table to channel f in TOML format.
+
+       :throws TomlError: If an error occurred serializing the table, such as
+                          due to missing values or unsupported types.
+    */
     override proc serialize(writer, ref serializer) throws {
       writeTOML(writer);
     }
@@ -1095,6 +1095,8 @@ used to recursively hold tables and respective values
        - *array*
        - *toml* (inline table)
 
+       :throws TomlError: If this is not a known TOML type.
+
      */
     proc tomlType: string throws {
       select this.tag {
@@ -1130,7 +1132,11 @@ module TomlReader {
 
  config const debugTomlReader = false;
 
-  /* Returns the next token in the current line without removing it */
+  /*
+     Returns the next token in the current line without removing it.
+
+     :throws TomlError: If the end of the file is reached.
+  */
   proc top(source) throws {
     if !source.nextLine() {
       throw new owned TomlError("Reached end of file unexpectedly");
@@ -1283,7 +1289,11 @@ module TomlReader {
     }
 
 
-    /* retrieves next token in currentLine */
+    /*
+       Retrieves next token in currentLine.
+
+       :throws TomlError: If the end of the file is reached.
+    */
     proc nextToke() throws {
       if !nextLine() {
         throw new owned TomlError("Reached end of file unexpectedly");

@@ -1,0 +1,5 @@
+(3, 4)
+(32, 8)
+2
+Object is not writable.
+This is expected because the buffer is not writable

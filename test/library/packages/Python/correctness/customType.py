@@ -1,4 +1,5 @@
 
+import sys
 
 class MyRec:
     def __init__(self, x, y):
@@ -12,4 +13,5 @@ class MyRec:
 def printAndReturn(rec):
     assert isinstance(rec, MyRec)
     print(rec)
+    sys.stdout.flush()
     return rec

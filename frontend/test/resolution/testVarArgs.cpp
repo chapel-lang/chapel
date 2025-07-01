@@ -852,6 +852,25 @@ static void testGenericInstantiationDisambiguation() {
   CHPL_ASSERT(qt->isIntType());
 }
 
+static void testWhereClauseOnSizeQuery() {
+  auto context = buildStdContext();
+  auto program = std::string(
+    R"""(
+    proc test(xs ...?k) param where k > 1 do return true;
+    proc test(arg) param do return false;
+
+    param x = test(1);
+    param y = test(1, 2, 3);
+    )""");
+
+  auto qts = resolveTypesOfVariables(context, program, {"x", "y"});
+  auto& qtX = qts.at("x");
+  auto& qtY = qts.at("y");
+
+  ensureParamBool(qtX, false);
+  ensureParamBool(qtY, true);
+}
+
 //
 // TODO: test where-clauses:
 //
@@ -883,6 +902,7 @@ int main(int argc, char** argv) {
   testCount();
   testAlignment();
   testGenericInstantiationDisambiguation();
+  testWhereClauseOnSizeQuery();
 
   printf("\nAll tests passed successfully.\n");
 

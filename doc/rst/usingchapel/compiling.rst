@@ -5,7 +5,7 @@ Compiling Chapel Programs
 =========================
 
 The Chapel compiler converts programs expressed in Chapel source code
-into the corresponding executable form.  This document briefly discusses
+into the corresponding executable form. This document briefly discusses
 running the Chapel compiler.
 
 .. contents::
@@ -110,3 +110,134 @@ auto-complete the option and add a space, ready for the next option.
 
      % chpl --cac<tab>
      % chpl --cache-remote
+
+------------------------------
+Integrating Into Build Systems
+------------------------------
+
+Larger projects using Chapel may wish to setup a build system to manage
+compilation of their Chapel code. This section provides a brief overview of a
+few common build systems and how they can be used with Chapel.
+
+Mason
+^^^^^
+
+:ref:`Mason <readme-mason>` is the Chapel package manager and build system. See
+the :ref:`Mason Guide <index-mason-guide>` for a walkthrough of how to use
+Mason to manage your Chapel projects.
+
+Make
+^^^^
+
+If you wish to use Make to compile your Chapel code, you can specify a recipe
+that contains all of the Chapel files and flags in a single invocation. Chapel
+currently does not support separate compilation, so all Chapel files must be
+compiled together.
+
+For example, a simple ``Makefile`` that compiles a Chapel project might look
+like this. This can be extended with other flags or dependencies as needed:
+
+.. code-block:: Makefile
+
+   CHPL := chpl
+   DEBUG ?= 0
+   TARGET := myProgram
+
+   .PHONY: all
+   all: $(TARGET)
+
+   ifeq ($(DEBUG),1)
+   CHPL_FLAGS += -g
+   else
+   CHPL_FLAGS += --fast
+   endif
+
+   SOURCES := $(wildcard *.chpl)
+
+   $(TARGET): $(SOURCES)
+   	$(CHPL) $(CHPL_FLAGS) $< -o $@
+
+   .PHONY: clean
+   clean:
+   	rm -f $(TARGET)
+
+This can be used by running ``make`` in the directory containing the Makefile.
+Running ``make DEBUG=1`` will compile the program with debugging enabled and
+``make clean`` will remove the compiled program.
+
+CMake
+^^^^^
+
+Although CMake does not yet support Chapel programs natively, the
+Chapel source tree contains a directory,
+`util/cmake <https://github.com/chapel-lang/chapel/tree/main/util/cmake>`_,
+which can be added to a CMake project to support building Chapel programs.
+
+To enable CMake support for your Chapel project, take the following steps:
+
+#. Copy the ``util/cmake`` directory from the Chapel source tree to your
+   project. You may want to copy the files to a subdirectory like ``cmake``, or
+   you can just copy them to the root of your project.
+#. Add ``find_package(chpl REQUIRED HINTS .)`` to your ``CMakeLists.txt`` file.
+
+For example, a simple ``CMakeLists.txt`` file that compiles a Chapel project
+might look like this:
+
+.. code-block:: cmake
+
+   cmake_minimum_required(VERSION 3.20)
+   find_package(chpl REQUIRED HINTS .)
+
+   project(myProgram LANGUAGES CHPL)
+
+   add_executable(myProgram main.chpl myModule.chpl)
+
+Based on the value of ``CMAKE_BUILD_TYPE`` additional flags will be
+added, for example ``--fast`` for ``CMAKE_BUILD_TYPE=release``.
+
+This can then be used like any other CMake project. For example, the following
+will build a release version of the program:
+
+.. code-block:: sh
+
+   mkdir build && cd build
+   cmake .. -DCMAKE_BUILD_TYPE=release
+   cmake --build .
+
+
+Additional compilation flags for compiling the Chapel code can be added using
+``target_link_options``. For example, this snippet limits the amount of
+optimization done by the backend compiler to speed up compilation times.
+
+.. code-block:: cmake
+
+   target_link_options(myProgram PRIVATE --ccflags -O1)
+
+This also means that projects using a mix of C and Chapel code may need to
+specify arguments twice. For example, this snippet shows a project that uses
+both Chapel and C code:
+
+.. code-block:: cmake
+
+   add_executable(main)
+   target_sources(main PRIVATE myChapelProgram.chpl src/c_source_file.c)
+   set_target_properties(main PROPERTIES LINKER_LANGUAGE CHPL)
+
+   # used by C compiler
+   target_include_directories(main PRIVATE include)
+   # used by Chapel compiler
+   target_link_options(main PRIVATE -I${CMAKE_SOURCE_DIR}/include)
+
+
+In larger projects, it may be useful to compile the C code separately. This can
+be done by creating a library target for the C code and linking it to the Chapel
+code:
+
+.. code-block:: cmake
+
+   add_library(myCCode src/c_source_file.c)
+   target_include_directories(myCCode PRIVATE include)
+
+   add_executable(myChapelProgram main.chpl)
+   target_link_options(main PRIVATE -I${CMAKE_SOURCE_DIR}/include)
+   target_link_libraries(myChapelProgram PRIVATE myCCode)

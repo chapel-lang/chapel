@@ -1,4 +1,4 @@
-.TH "hwlocality_helper_find_covering" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_helper_find_covering" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -34,6 +34,8 @@ Get the child covering at least CPU set \fCset\fP\&.
 .PP
 \fBReturns\fP
 .RS 4
+the child that covers the set entirely\&. 
+.PP
 \fCNULL\fP if no child matches or if \fCset\fP is empty\&.
 .RE
 .PP
@@ -46,7 +48,16 @@ This function cannot work if parent does not have a CPU set (I/O or Misc objects
 .SS "static \fBhwloc_obj_t\fP hwloc_get_next_obj_covering_cpuset_by_depth (\fBhwloc_topology_t\fP topology, \fBhwloc_const_cpuset_t\fP set, int depth, \fBhwloc_obj_t\fP prev)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
-Iterate through same-depth objects covering at least CPU set \fCset\fP\&. If object \fCprev\fP is \fCNULL\fP, return the first object at depth \fCdepth\fP covering at least part of CPU set \fCset\fP\&. The next invokation should pass the previous return value in \fCprev\fP so as to obtain the next object covering at least another part of \fCset\fP\&.
+Iterate through same-depth objects covering at least CPU set \fCset\fP\&. The next invokation should pass the previous return value in \fCprev\fP so as to obtain the next object covering at least another part of \fCset\fP\&.
+.PP
+\fBReturns\fP
+.RS 4
+the first object at depth \fCdepth\fP covering at least part of CPU set \fCset\fP if object \fCprev\fP is \fCNULL\fP\&. 
+.PP
+the next one if \fCprev\fP is not \fCNULL\fP\&. 
+.PP
+\fCNULL\fP if there is no next object\&.
+.RE
 .PP
 \fBNote\fP
 .RS 4
@@ -57,9 +68,20 @@ This function cannot work if objects at the given depth do not have CPU sets (I/
 .SS "static \fBhwloc_obj_t\fP hwloc_get_next_obj_covering_cpuset_by_type (\fBhwloc_topology_t\fP topology, \fBhwloc_const_cpuset_t\fP set, \fBhwloc_obj_type_t\fP type, \fBhwloc_obj_t\fP prev)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
-Iterate through same-type objects covering at least CPU set \fCset\fP\&. If object \fCprev\fP is \fCNULL\fP, return the first object of type \fCtype\fP covering at least part of CPU set \fCset\fP\&. The next invokation should pass the previous return value in \fCprev\fP so as to obtain the next object of type \fCtype\fP covering at least another part of \fCset\fP\&.
+Iterate through same-type objects covering at least CPU set \fCset\fP\&. The next invokation should pass the previous return value in \fCprev\fP so as to obtain the next object of type \fCtype\fP covering at least another part of \fCset\fP\&.
 .PP
-If there are no or multiple depths for type \fCtype\fP, \fCNULL\fP is returned\&. The caller may fallback to \fBhwloc_get_next_obj_covering_cpuset_by_depth()\fP for each depth\&.
+\fBReturns\fP
+.RS 4
+the first object of type \fCtype\fP covering at least part of CPU set \fCset\fP if object \fCprev\fP is \fCNULL\fP\&. 
+.PP
+the next one if \fCprev\fP is not \fCNULL\fP\&. 
+.PP
+\fCNULL\fP if there is no next object\&. 
+.PP
+\fCNULL\fP if there is no depth for the given type\&. 
+.PP
+\fCNULL\fP if there are multiple depths for the given type, the caller should fallback to \fBhwloc_get_next_obj_covering_cpuset_by_depth()\fP\&.
+.RE
 .PP
 \fBNote\fP
 .RS 4
@@ -74,6 +96,8 @@ Get the lowest object covering at least CPU set \fCset\fP\&.
 .PP
 \fBReturns\fP
 .RS 4
+the lowest object covering the set entirely\&. 
+.PP
 \fCNULL\fP if no object matches or if \fCset\fP is empty\&. 
 .RE
 .PP

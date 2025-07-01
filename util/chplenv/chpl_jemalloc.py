@@ -5,7 +5,7 @@ import optparse
 
 import chpl_bin_subdir, chpl_compiler, chpl_mem, chpl_platform, overrides, third_party_utils
 import homebrew_utils
-from utils import error, memoize, run_command, warning
+from utils import error, memoize, run_command, warning, check_valid_var
 
 
 @memoize
@@ -53,11 +53,14 @@ def get(flag='target'):
         elif darwin and mem_val == 'jemalloc' and jemalloc_val == 'bundled':
             error("CHPL_HOST_JEMALLOC=bundled is not supported on Mac for host builds")
 
+    var_name = 'CHPL_{0}_JEMALLOC'.format(flag.upper())
+    mem_var_name = 'CHPL_{0}_MEM'.format(flag.upper())
     if mem_val == 'jemalloc' and jemalloc_val == 'none':
-        error("CHPL_JEMALLOC must not be 'none' when CHPL_TARGET_MEM is jemalloc")
+        error("{0} must not be 'none' when {1} is jemalloc".format(var_name, mem_var_name))
     elif mem_val != 'jemalloc' and jemalloc_val != 'none':
-        error("CHPL_JEMALLOC must be 'none' when CHPL_TARGET_MEM is not jemalloc")
+        error("{0} must be 'none' when {1} is not jemalloc".format(var_name, mem_var_name))
 
+    check_valid_var(var_name, jemalloc_val, ["none", "bundled", "system"])
     return jemalloc_val
 
 

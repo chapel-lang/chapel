@@ -1,158 +1,86 @@
-#!/usr/bin/env perl
-
-use Cwd;
-use Cwd 'abs_path';
-use File::Basename;
-use File::Path qw(mkpath);
-use File::Spec;
-use File::Temp qw/ tempdir /;
-
-sub SystemOrDie{
-  $arg = shift;
-  print( "+ $arg \n");
-  if (system($arg) != 0) {
-    die "[gen_release] Command failed with error code: $?";
-  }
-}
-
-$version = "";
-
-while (@ARGV) {
-    $version = shift @ARGV;
-    last;
-}
-
-if ($version eq "") {
-    $reldir = "chapel";
-} else {
-    $reldir = "chapel-$version";
-}
-
-$origCwd = abs_path(cwd());
-
-# Find CHPL_HOME. If unset, use root of repo relative to this script.
-$chplhome = "";
-if (exists($ENV{"CHPL_HOME"})) {
-    $chplhome = $ENV{"CHPL_HOME"};
-} else {
-    $script_dir = dirname($0);
-    $chplhome = abs_path("$script_dir/../..");
-}
-
-# pointers to temporary directory where chapel will be built
-
-$basetmpdir = File::Spec->tmpdir;
-if (exists($ENV{"CHPL_GEN_RELEASE_TMPDIR"})) {
-    $basetmpdir = $ENV{"CHPL_GEN_RELEASE_TMPDIR"};
-}
-$user = `whoami`;
-chomp($user);
-$tmpdir = tempdir("chapel-release.$user.deleteme.XXXXXX", DIR => $basetmpdir, CLEANUP => 1);
-$archive_dir = "$tmpdir/$reldir";
-SystemOrDie("rm -rf $tmpdir");
-SystemOrDie("mkdir -pv $archive_dir");
-$rootdir = "$tmpdir/chpl_home";
-
-# If CHPL_GEN_RELEASE_NO_CLONE is set in environment, do not clone the repo
-# Just use whatever is found in $CHPL_HOME
-
-if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
-
-    # copy the current CHPL_HOME into the directory where chapel will be built
-    print "[gen_release] CHPL_GEN_RELEASE_NO_CLONE: Creating build workspace with tar...\n";
-    SystemOrDie("cd $chplhome && tar -cf - . | (cd $archive_dir && tar -xf -)");
-
-    $resultdir = "$chplhome/tar";
-} else {
-
-    # check out a clean copy of the sources into the directory where chapel will be built
-    $git_url = $ENV{'CHPL_HOME_REPOSITORY'};
-    if ($git_url eq "") {
-        $git_url = "https://github.com/chapel-lang/chapel";
-    }
-
-    $git_branch = "main";
-    if (exists($ENV{'CHPL_GEN_RELEASE_BRANCH'})) {
-        $git_branch = $ENV{'CHPL_GEN_RELEASE_BRANCH'};
-    }
-
-    $repo_cache_path = "/missing";
-    if (exists($ENV{'REPO_CACHE_PATH'})) {
-        $repo_cache_path = $ENV{'REPO_CACHE_PATH'};
-    }
-
-    print "[gen_release] Cloning the sources (repo: $git_url branch: $git_branch)...\n";
-    SystemOrDie("git clone --reference-if-able \"$repo_cache_path/chapel.git\" --branch $git_branch $git_url $rootdir");
-
-    if (exists($ENV{'CHPL_GEN_RELEASE_COMMIT'})) {
-        $commit = $ENV{'CHPL_GEN_RELEASE_COMMIT'};
-        print "[gen_release] Checking out revision $commit...\n";
-        SystemOrDie("cd $rootdir && git reset --hard $commit");
-    }
-
-    print "[gen_release] Confirm final Git source version used.\n";
-    SystemOrDie("cd $rootdir && git --no-pager status && git --no-pager log -1");
+#!/usr/bin/env python3
+import os
+import sys
+import shutil
+import subprocess
+import tempfile
+import glob
+import itertools
+import re
+import getpass
+from contextlib import contextmanager
 
 
+@contextmanager
+def cd(path):
+    cwd = os.getcwd()
+    os.chdir(path)
+    try:
+        yield
+    finally:
+        os.chdir(cwd)
 
-    # write the git-sha while we have the .git directory
-    SystemOrDie("cd $rootdir && util/config/write-git-sha frontend/lib/util --build-version --chpl-home=$rootdir");
-    # use git archive to copy all the files under source control into the archive directory.
-    print "[gen_release] Creating build workspace with git archive...\n";
-    SystemOrDie("cd $rootdir && git archive --format=tar HEAD | (cd $archive_dir && tar -xf -)");
-    # explicitly copy the BUILD_VERSION file and git-version.cpp files
-    print "[gen_release] Copying BUILD_VERSION file.\n";
-    SystemOrDie("cp $rootdir/compiler/main/BUILD_VERSION $archive_dir/compiler/main/BUILD_VERSION");
-    print "[gen_release] Copying git-version.cpp\n";
-    SystemOrDie("cp $rootdir/frontend/lib/util/git-version.cpp $archive_dir/frontend/lib/util/git-version.cpp");
 
-    if (defined($ENV{"CHPL_HOME"})) {
-        $resultdir = $ENV{"CHPL_HOME"};
-        $resultdir = "$resultdir/tar";
-    } else {
-        $resultdir = $basetmpdir;
-    }
-}
+def run(*args, **kwargs):
+    print(f"+ {' '.join(args)}")
+    result = subprocess.run(args, **kwargs)
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"[gen_release] Command failed with error code: {result.returncode}"
+        )
+    return result
+
+
+def make(*args, **kwargs):
+    return run("make", *args, **kwargs)
+
+
+pjoin = os.path.join
+
+def log(*args, **kwargs):
+    print("[gen_release]", *args, **kwargs)
+
+
+def rm_rf(*paths):
+    for path in paths:
+        for p in glob.glob(path):
+            shutil.rmtree(p, ignore_errors=True)
+
 
 # explicit files to include
-@files = (
-       "ACKNOWLEDGEMENTS.md",
-       "CHANGES.md",
-       "CONTRIBUTORS.md",
-       "COPYRIGHT",
-       "LICENSE",
-       "LICENSE.chapel",
-       "Makefile",
-       "CMakeLists.txt",
-       "Dockerfile",
-       "README.rst",
-       "README.files",
-       "compiler/codegen/reservedSymbolNames",
-       "configure",
-       "highlight/README.md",
-       "util/README",
-       "util/buildRelease/chpl-make-cpu_count",
-       "util/buildRelease/install.sh",
-       "util/chpl-completion.bash",
-       "util/printchplenv",
-       "util/setchplenv.bash",
-       "util/setchplenv.csh",
-       "util/setchplenv.fish",
-       "util/setchplenv.sh",
-       "util/start_test",
-       "util/chpltags",
-       "frontend/include/chpl/config/config.h.cmake"
-);
-
+files = [
+    "ACKNOWLEDGEMENTS.md",
+    "CHANGES.md",
+    "CONTRIBUTORS.md",
+    "COPYRIGHT",
+    "LICENSE",
+    "LICENSE.chapel",
+    "Makefile",
+    "CMakeLists.txt",
+    "Dockerfile",
+    "README.rst",
+    "README.files",
+    "compiler/codegen/reservedSymbolNames",
+    "configure",
+    "highlight/README.md",
+    "util/README",
+    "util/buildRelease/chpl-make-cpu_count",
+    "util/buildRelease/install.sh",
+    "util/chpl-completion.bash",
+    "util/printchplenv",
+    "util/setchplenv.bash",
+    "util/setchplenv.csh",
+    "util/setchplenv.fish",
+    "util/setchplenv.sh",
+    "util/start_test",
+    "util/chpltags",
+    "frontend/include/chpl/config/config.h.cmake",
+]
 
 # C/C++ sources
-@code_dirs = (
-    "compiler",
-    "frontend"
-);
-
+code_dirs = ["compiler", "frontend"]
 # include these dirs and their entire contents
-@complete_dirs = (
+complete_dirs = [
     "compiler/etc",
     "doc",
     "examples",
@@ -178,122 +106,229 @@ if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
     "tools/unstableWarningAnonymizer/",
     "tools/chapel-py",
     "tools/chplcheck",
-    "tools/chpl-language-server"
-);
+    "tools/chpl-language-server",
+]
 
 
-chdir "$archive_dir";
+def main():
+    version = ""
+    if len(sys.argv) > 1:
+        version = sys.argv[1]
 
-print "[gen_release] Creating the spec tests...\n";
-SystemOrDie("make spectests");
+    reldir = f"chapel-{version}" if version else "chapel"
 
-# Docs/man page must be built first so we can get rid of any extra files
-# (chpldoc) with a clobber
-print "[gen_release] Building the docs...\n";
-# Set CHPL_COMM to none to avoid issues with gasnet generated makefiles not
-# existing because we haven't built the third-party libs and set CHPL_LLVM to
-# none since we don't need it to build the docs
-$ENV{'CHPL_HOME'} = "$archive_dir";
-$ENV{'CHPL_COMM'} = "none";
-$ENV{'CHPL_LLVM'} = "none";
-print "[gen_release] CHPL_HOME is set to: $ENV{'CHPL_HOME'}\n";
+    # Find CHPL_HOME. If unset, use root of repo relative to this script.
+    chplhome = os.getenv(
+        "CHPL_HOME", os.path.abspath(os.path.join(__file__, "..", "..", ".."))
+    )
 
-if (not exists($ENV{"CHPL_GEN_RELEASE_SKIP_DOCS"})) {
-  print "[gen_release] Building the html docs...\n";
-  SystemOrDie("make chapel-py-venv");
-  SystemOrDie("make docs");
+    # pointers to temporary directory where chapel will be built
+    basetmpdir = os.getenv("CHPL_GEN_RELEASE_TMPDIR", tempfile.gettempdir())
+    user = getpass.getuser()
+    tmpdir = tempfile.mkdtemp(
+        prefix=f"chapel-release.{user}.deleteme.", dir=basetmpdir
+    )
+    archive_dir = pjoin(tmpdir, reldir)
+    rootdir = pjoin(tmpdir, "chpl_home")
 
-  # TODO - make this more elegant / maintainable
-  print "[gen_release] Pruning the docs directory...\n";
-  SystemOrDie("cd doc && make clean-symlinks");
-  SystemOrDie("cd doc && make prunedocs");
-  SystemOrDie("cd doc && rm -f Makefile*");
-  SystemOrDie("cd doc && rm -rf util");
-  SystemOrDie("cd doc && rm -f rst/conf.py");
-  SystemOrDie("cd doc && rm -f rst/index.rst");
-  SystemOrDie("cd doc && rm -f rst/*/index.rst");
-  SystemOrDie("cd doc && rm -rf rst/developer"); # remove when dev-docs enabled
-  SystemOrDie("cd doc && rm -rf rst/meta");
+    rm_rf(tmpdir)
+    os.makedirs(archive_dir, exist_ok=True)
 
-  print "[gen_release] Building the man pages...\n";
-  SystemOrDie("make man");
-  SystemOrDie("make man-chpldoc");
-} else {
-  SystemOrDie("mkdir -p man/man1");
-}
+    # TODO: can we use pythons builtin tar module instead of system commands?
+    tar_executable = "gtar" if shutil.which("gtar") else "tar"
 
-SystemOrDie("make clobber");
+    # If CHPL_GEN_RELEASE_NO_CLONE is set in environment, do not clone the repo
+    # Just use whatever is found in $CHPL_HOME
+    if "CHPL_GEN_RELEASE_NO_CLONE" in os.environ:
+        # copy the current CHPL_HOME into the directory where chapel will be built
+        log("CHPL_GEN_RELEASE_NO_CLONE: Creating build workspace with tar...")
+        with cd(chplhome):
+            p = run(tar_executable, "-cf", "-", ".", stdout=subprocess.PIPE)
+            with cd(archive_dir):
+                run(tar_executable, "-xf", "-", input=p.stdout)
+            del p  # free all the memory used by the tar file
+        resultdir = pjoin(chplhome, "tar")
+    else:
+        # check out a clean copy of the sources into the directory where chapel will be built
+        git_url = os.getenv(
+            "CHPL_HOME_REPOSITORY", "https://github.com/chapel-lang/chapel"
+        )
+        git_branch = os.getenv("CHPL_GEN_RELEASE_BRANCH", "main")
+        repo_cache_path = os.getenv("REPO_CACHE_PATH", "/missing")
+        git_commit = os.getenv("CHPL_GEN_RELEASE_COMMIT", None)
 
-print "[gen_release] Creating the examples directory...\n";
-SystemOrDie("rm examples"); # remove examples symbolic link
-SystemOrDie("cp -r test/release/examples .");
-SystemOrDie("cd util && cp start_test ../examples/");
-
-# print "[gen_release] Removing Makefiles that are not intended for release...\n";
-
-# print "[gen_release] Removing compiler directories that are not intended for release...\n";
-
-print "[gen_release] Removing runtime directories that are not ready for release...\n";
-SystemOrDie("cd runtime/src/launch && rm -r dummy");
-SystemOrDie("cd runtime/src/launch && rm -r mpirun");
-
-print "[gen_release] Removing frontend test directory which is not intended for release...\n";
-SystemOrDie("cd frontend && rm -r test");
-
-print "[gen_release] Removing third-party directories that are not intended for release...\n";
-SystemOrDie("cd third-party && rm *.devel*");
-SystemOrDie("cd third-party/chpl-venv && rm *.devel*");
-SystemOrDie("cd third-party/chpl-venv && rm chplspell-requirements.txt");
-
-print "[gen_release] Removing Git metadata files not intended for release...\n";
-SystemOrDie('find . -type f \( -name .gitignore -o -name .gitattributes \) -exec rm -f {} \; -print');
-
-chdir "$archive_dir";
-
-print "[gen_release] Chmodding the hierarchy\n";
-SystemOrDie("chmod -R ugo+rX .");
-SystemOrDie("chmod -R go-w .");
-
-foreach $file (@files) {
-    if (!(-e $file)) {
-        print "[gen_release] $file does not exist\n";
-        exit( 9);
-    }
-    push @tarfiles, "$reldir/$file";
-}
-
-foreach $dir (@code_dirs) {
-    @filelist = `find $dir`;
-    foreach $fullpath (@filelist) {
-        chomp $fullpath;
-        $file = $fullpath;
-        $file =~ s/(\S+\/)+//g;
-        if ($file =~ /(\.(h|cpp|c|ypp|lex)$)|Makefile|README|BUILD_VERSION|CMakeLists\.txt/) {
-            # print "$fullpath\n";
-            push @tarfiles, "$reldir/$fullpath";
-        }
-    }
-}
-
-foreach $dir (@complete_dirs) {
-    if (!(-e $dir)) {
-        print "[gen_release] $dir does not exist\n";
-    }
-    push @tarfiles, "$reldir/$dir";
-}
+        log(f"Cloning the sources (repo: {git_url} branch: {git_branch})...")
+        cmd = (
+            [
+                "git",
+                "clone",
+                "--reference-if-able",
+                f"{repo_cache_path}/chapel.git",
+                "--branch",
+                git_branch,
+            ]
+            + (["--depth", "1"] if git_commit is None else [])
+            + [
+                git_url,
+                rootdir,
+            ]
+        )
+        run(*cmd)
 
 
-if (! -d $resultdir) {
-    print("Creating $resultdir\n");
-    mkpath($resultdir, 1);
-}
+        with cd(rootdir):
+            if git_commit is not None:
+                log(f"Checking out revision {git_commit}...")
+                run("git", "reset", "--hard", git_commit)
 
-$tarball_name = "$resultdir/$reldir.tar.gz";
-$cmd = "tar -cz -f $tarball_name @tarfiles";
-chdir "..";
-print "[gen_release] $cmd\n";
-SystemOrDie ($cmd);
+            log("Confirm final Git source version used.")
+            run("git", "--no-pager", "status")
+            run("git", "--no-pager", "log", "-1")
 
-print "[gen_release] Left result in $tarball_name\n";
+            # write the git-sha while we have the .git directory
+            run("util/config/write-git-sha", "frontend/lib/util", "--build-version", f"--chpl-home={rootdir}")
+            # use git archive to copy all the files under source control into the archive directory.
+            log("Creating build workspace with git archive...")
 
-chdir $origCwd;
+            p = run(
+                "git", "archive", "--format=tar", "HEAD", stdout=subprocess.PIPE
+            )
+            with cd(archive_dir):
+                run(tar_executable, "-xf", "-", input=p.stdout)
+
+            # explicitly copy the BUILD_VERSION file and git-version.cpp files
+            log("Copying BUILD_VERSION file.")
+            shutil.copy2(
+                "compiler/main/BUILD_VERSION",
+                pjoin(archive_dir, "compiler/main/BUILD_VERSION"),
+            )
+            log("Copying git-version.cpp")
+            shutil.copy2(
+                "frontend/lib/util/git-version.cpp",
+                pjoin(archive_dir, "frontend/lib/util/git-version.cpp"),
+            )
+
+        if "CHPL_HOME" in os.environ:
+            resultdir = pjoin(os.getenv("CHPL_HOME"), "tar")
+        else:
+            resultdir = basetmpdir
+
+    with cd(archive_dir):
+
+        log("Creating the spec tests...")
+        make("spectests")
+
+        # Docs/man page must be built first so we can get rid of any extra files
+        # (chpldoc) with a clobber
+        log("Building the docs...")
+        # Set CHPL_COMM to none to avoid issues with gasnet generated makefiles not
+        # existing because we haven't built the third-party libs and set CHPL_LLVM to
+        # none since we don't need it to build the docs
+        os.environ["CHPL_HOME"] = str(archive_dir)
+        os.environ["CHPL_COMM"] = "none"
+        os.environ["CHPL_LLVM"] = "none"
+        log(f"CHPL_HOME is set to: {os.environ['CHPL_HOME']}")
+
+        if "CHPL_GEN_RELEASE_SKIP_DOCS" not in os.environ:
+            log("Building the html docs...")
+            make("chapel-py-venv")
+            make("docs")
+
+            log("Pruning the docs directory...")
+            with cd("doc"):
+                make("clean-symlinks")
+                make("prunedocs")
+                rm_rf(
+                    "Makefile*",
+                    "util",
+                    "rst/conf.py",
+                    "rst/index.rst",
+                    "rst/*/index.rst",
+                    "rst/developer",  # remove when dev-docs enabled
+                    "rst/meta",
+                )
+
+            log("Building the man pages...")
+            make("man")
+            make("man-chpldoc")
+        else:
+            os.makedirs(pjoin("man", "man1"), exist_ok=True)
+
+        make("clobber")
+
+        log("Creating the examples directory...")
+        os.unlink("examples")  # remove examples symbolic link
+        shutil.copytree("test/release/examples", "examples", copy_function=shutil.copy2)
+        with cd("util"):
+            shutil.copy2("start_test", "../examples/start_test")
+
+        # print "[gen_release] Removing Makefiles that are not intended for release...\n";
+
+        # print "[gen_release] Removing compiler directories that are not intended for release...\n";
+
+        log("Removing runtime directories that are not ready for release...")
+        with cd(pjoin("runtime", "src", "launch")):
+            rm_rf("dummy", "mpirun")
+
+        log("Removing frontend test directory which is not intended for release...")
+        rm_rf(pjoin("frontend", "test"))
+
+        log("Removing third-party directories that are not intended for release...")
+        with cd("third-party"):
+            rm_rf("*.devel*")
+            with cd("chpl-venv"):
+                rm_rf("*.devel*", "chplspell-requirements.txt")
+
+        log("Removing Git metadata files not intended for release...")
+        for p in itertools.chain(
+            glob.glob(".gitignore", recursive=True),
+            glob.glob(".gitattributes", recursive=True),
+        ):
+            log(f"removing {p}")
+            os.unlink(p)
+
+        # TODO: can we use python chmod instead of system commands?
+        log("Chmodding the hierarchy")
+        run("chmod", "-R", "ugo+rX", ".")
+        run("chmod", "-R", "go-w", ".")
+
+        tarfiles = []
+        for file in files:
+            if not os.path.exists(file):
+                log(f"{file} does not exist")
+                sys.exit(9)
+            tarfiles.append(pjoin(reldir, file))
+
+        include_regex = re.compile(r"(\.(h|cpp|c|ypp|lex)$)|Makefile|README|BUILD_VERSION|CMakeLists\.txt")
+        for d in code_dirs:
+            for fullpath in glob.glob(pjoin(d, "**"), recursive=True):
+                name = os.path.basename(fullpath)
+                if include_regex.search(name):
+                    tarfiles.append(pjoin(reldir, fullpath))
+
+        for d in complete_dirs:
+            if not os.path.exists(d):
+                log(f"{d} does not exist")
+            tarfiles.append(pjoin(reldir, d))
+
+        if not os.path.exists(resultdir):
+            print(f"Creating {resultdir}")
+            os.makedirs(resultdir, exist_ok=True)
+
+        tarball_name = pjoin(resultdir, f"{reldir}.tar.gz")
+        cmd = [
+            tar_executable,
+            "-cz",
+            "-f",
+            tarball_name,
+            "--no-xattrs",
+        ] + tarfiles
+        with cd(".."):
+            log(f"{' '.join(cmd)}")
+            run(*cmd)
+
+    log(f"Left result in {tarball_name}")
+
+
+if __name__ == "__main__":
+    main()

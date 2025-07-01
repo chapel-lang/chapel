@@ -1,3 +1,3 @@
 queryGenericField4.chpl:7: In function 'test':
-queryGenericField4.chpl:7: error: 'r' used before defined
-queryGenericField4.chpl:7: note: defined here
+queryGenericField4.chpl:7: error: statement references variable 'R' before it is defined
+queryGenericField4.chpl:7: note: the variable 'R' is defined here

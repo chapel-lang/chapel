@@ -104,6 +104,23 @@ extern int yychpl_debug;
     return ret;
   }
 
+  struct NDArrayElement {
+    ParserExprList* exprs;
+    int nSeparator;
+    TextLocation location;
+  };
+  static inline
+  NDArrayElement makeNDArrayElement(ParserExprList* exprs, TextLocation loc) {
+    NDArrayElement ret = {exprs, 0, loc};
+    return ret;
+  }
+  static inline
+  NDArrayElement makeNDArrayElementSep(int nSeparator, TextLocation loc) {
+    NDArrayElement ret = {nullptr, nSeparator, loc};
+    return ret;
+  }
+  using ParserNDArrayList = std::vector<NDArrayElement>;
+
   // This is used to propagate any comments that hug the top of a statement
   // upwards through parser rules.
   struct CommentsAndStmt {
@@ -278,8 +295,11 @@ extern int yychpl_debug;
     MaybeNamedActualList* maybeNamedActualList;
     ModuleParts moduleParts;
     ParserExprList* exprList;
+    ParserNDArrayList* ndArrayList;
     UniqueStrList* uniqueStrList;
     WhereAndLifetime lifetimeAndWhere;
+
+    int counter;
   };
 
   // Put our types in a different namespace to avoid conflicting with the
@@ -294,12 +314,12 @@ extern int yychpl_debug;
   #define YYSTYPE_IS_TRIVIAL 1
 
   #endif
-#line 330 "chpl.ypp"
+#line 350 "chpl.ypp"
 
   // forward declare ParserContext
   struct ParserContext;
 
-#line 303 "bison-chpl-lib.h"
+#line 323 "bison-chpl-lib.h"
 
 /* Token kinds.  */
 #ifndef YYCHPL_TOKENTYPE
@@ -525,14 +545,14 @@ yychpl_pstate *yychpl_pstate_new (void);
 void yychpl_pstate_delete (yychpl_pstate *ps);
 
 /* "%code provides" blocks.  */
-#line 338 "chpl.ypp"
+#line 358 "chpl.ypp"
 
   extern int yychpl_debug;
 
   void yychpl_error(YYLTYPE*       loc,
                     ParserContext* context,
                     const char*    errorMessage);
-#line 346 "chpl.ypp"
+#line 366 "chpl.ypp"
 
   // include ParserContext.h here because it depends
   // upon YYLTYPE and other types defined by the generated parser
@@ -541,6 +561,6 @@ void yychpl_pstate_delete (yychpl_pstate *ps);
   // include override of macro used to compute locations
   #include "parser-yylloc-default.h"
 
-#line 545 "bison-chpl-lib.h"
+#line 565 "bison-chpl-lib.h"
 
 #endif /* !YY_YYCHPL_BISON_CHPL_LIB_H_INCLUDED  */

@@ -34,6 +34,10 @@ namespace resolution {
 using namespace uast;
 using namespace types;
 
+bool operator==(const CalledFnOrder& x, const CalledFnOrder& y) {
+  return x.depth == y.depth && x.index == y.index;
+}
+
 struct CalledFnCollector {
   using RV = ResolvedVisitor<CalledFnCollector>;
 
@@ -92,6 +96,27 @@ struct CalledFnCollector {
   }
   void exit(const AstNode* ast, RV& rv) {
   }
+
+  // TODO: How can we make this work through ``resolveFunction``, rather than
+  // relying on the cached map in ``ResolvedFunction``? The problem appears to
+  // be that we never use the 'global cache' when storing queries for
+  // nested functions, so the results only live on in ``ResolvedFunction``.
+  const ResolvedFunction* getResolvedFunction(const TypedFnSignature* sig,
+                           const PoiScope* poiScope) {
+    chpl::resolution::ResolutionContext rcval(context);
+    const ResolvedFunction* fn = nullptr;
+    if (resolvedFunction) {
+      if (auto stored = resolvedFunction->getNestedResult(sig, poiScope)) {
+        fn = stored;
+      }
+    }
+
+    if (fn == nullptr) {
+      fn = resolveFunction(&rcval, sig, poiScope);
+    }
+
+    return fn;
+  }
 };
 
 
@@ -129,8 +154,7 @@ void CalledFnCollector::collectCalls(const ResolvedExpression* re) {
   for (const auto& candidate : re->mostSpecific()) {
     if (const TypedFnSignature* sig = candidate.fn()) {
       if (sig->untyped()->idIsFunction()) {
-        chpl::resolution::ResolutionContext rcval(context);
-        const ResolvedFunction* fn = resolveFunction(&rcval, sig, poiScope);
+        auto fn = getResolvedFunction(sig, poiScope);
         collect(fn);
       }
     }
@@ -142,8 +166,7 @@ void CalledFnCollector::collectCalls(const ResolvedExpression* re) {
     // Ideally, that would work by generating uAST for them.
     if (const TypedFnSignature* sig = action.fn()) {
       if (sig->untyped()->idIsFunction()) {
-        chpl::resolution::ResolutionContext rcval(context);
-        const ResolvedFunction* fn = resolveFunction(&rcval, sig, poiScope);
+        auto fn = getResolvedFunction(sig, poiScope);
         collect(fn);
       }
     }
@@ -175,6 +198,8 @@ int gatherTransitiveFnsCalledByFn(Context* context,
   // Now, consider each direct call. Add it to 'called' and
   // also handle it recursively, if we added it.
   for (auto kv : directCalls) {
+    if (kv.first == nullptr) continue;
+
     auto pair = called.insert(kv);
     if (pair.second) {
       // The insertion took place, so it is the first time handling this fn.

@@ -19,9 +19,11 @@
 
 #include "chpl/types/ArrayType.h"
 
+#include "chpl/types/RuntimeType.h"
 #include "chpl/framework/query-impl.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/intents.h"
+#include "chpl/resolution/resolution-queries.h"
 #include "chpl/types/Param.h"
 
 namespace chpl {
@@ -29,6 +31,42 @@ namespace types {
 
 const ID ArrayType::domainId = ID(UniqueString(), 0, 0);
 const ID ArrayType::eltTypeId = ID(UniqueString(), 1, 0);
+
+const RuntimeType* ArrayType::runtimeType(Context* context) const {
+  auto dom = domainType().type()->toDomainType();
+  if (dom->kind() == DomainType::Kind::Unknown) return nullptr;
+
+  return resolution::getRuntimeType(context, this);
+}
+
+static bool const& isAliasingArrayQuery(Context* context, const ArrayType* at) {
+  QUERY_BEGIN(isAliasingArrayQuery, context, at);
+  bool res = false;
+  // assume that there's only one ID that doesn't have a blank path,
+  // and that this ID is the instance field.
+  for (auto& sub : at->substitutions()) {
+    if (sub.first.symbolPath().isEmpty()) continue;
+    auto instanceQt = sub.second;
+
+    if (instanceQt.isUnknownOrErroneous()) break;
+
+    if (auto ct = instanceQt.type()->getCompositeType()) {
+      auto ast = parsing::idToAst(context, ct->id());
+      if (auto ag = ast->attributeGroup()) {
+        if (ag->hasPragma(uast::pragmatags::PRAGMA_ALIASING_ARRAY)) {
+          res = true;
+          break;
+        }
+      }
+    }
+  }
+
+  return QUERY_END(res);
+}
+
+bool ArrayType::isAliasingArray(Context* context) const {
+  return isAliasingArrayQuery(context, this);
+}
 
 void ArrayType::stringify(std::ostream& ss,
                            chpl::StringifyKind stringKind) const {
@@ -71,17 +109,37 @@ ArrayType::getGenericArrayType(Context* context) {
 
 const ArrayType*
 ArrayType::getArrayType(Context* context,
+                        const QualifiedType& instance,
                         const QualifiedType& domainType,
                         const QualifiedType& eltType) {
+  auto genericArray = getGenericArrayType(context);
+
   SubstitutionsMap subs;
+  CHPL_ASSERT(domainType.isType() && domainType.type() &&
+              domainType.type()->isDomainType());
   subs.emplace(ArrayType::domainId, domainType);
+  CHPL_ASSERT((eltType.isType() || eltType.isTypeQuery()) && eltType.type());
   subs.emplace(ArrayType::eltTypeId, eltType);
+
+  // Add substitution for _instance field
+  resolution::ResolutionContext rc(context);
+  auto& rf = fieldsForTypeDecl(&rc, genericArray,
+                               resolution::DefaultsPolicy::IGNORE_DEFAULTS,
+                               /* syntaxOnly */ true);
+  ID instanceFieldId;
+  for (int i = 0; i < rf.numFields(); i++) {
+    if (rf.fieldName(i) == USTR("_instance")) {
+      instanceFieldId = rf.fieldDeclId(i);
+      break;
+    }
+  }
+  subs.emplace(instanceFieldId, instance);
+
   auto id = getArrayID(context);
   auto name = id.symbolName(context);
   auto instantiatedFrom = getGenericArrayType(context);
   return getArrayTypeQuery(context, id, name, instantiatedFrom, subs).get();
 }
-
 
 } // end namespace types
 } // end namespace chpl

@@ -938,7 +938,7 @@ static void test54() {
           x = 11;
         }
     )"""",
-    {});
+    {}, /* expectErrors */ true);
 }
 
 static void test55() {
@@ -965,7 +965,7 @@ static void test56() {
           x = 11;
         }
     )"""",
-    {});
+    {}, /* expectErrors */ true);
 }
 
 static void test57() {
@@ -1362,6 +1362,65 @@ static void test68() {
     {"x", "y"});
 }
 
+// test that split-init is sensitive to break/continue keywords.
+static void test69(const std::string& controlFlow) {
+  testSplitInit("test69",
+    (
+    R"""(
+      proc test() {
+        for i in 1..10 {
+          var x: int;
+          if i == 10 {
+            )""" + controlFlow + R"""(;
+            x = 0;
+          }
+          x = 42;
+        }
+      }
+    )"""
+    ).c_str(), { "x" });
+}
+
+static void test69() {
+  test69("break");
+  test69("continue");
+}
+
+// test that split-init is sensitive to break/continue keywords within branches,
+static void test70(const std::string& controlFlow1, const std::string& controlFlow2) {
+  testSplitInit("test70",
+    (
+    R"""(
+      proc test() {
+        for i in 1..10 {
+          var x: int;
+          if i == 10 {
+            var cond: bool;
+            if cond {
+              )""" + controlFlow1 + R"""(;
+            } else {
+              )""" + controlFlow2 + R"""(;
+            }
+            x = 0;
+          }
+          x = 42;
+        }
+      }
+    )"""
+    ).c_str(), { "x" });
+}
+
+static void test70() {
+  test70("break", "break");
+  test70("continue", "continue");
+
+  /* TODO: mixing control flow requires more intelligence.
+
+    test70("break", "continue");
+    test70("continue", "break");
+  */
+}
+
 int main() {
   test1();
   test2();
@@ -1436,6 +1495,8 @@ int main() {
   test67();
   testParamTrueWhen();
   test68();
+  test69();
+  test70();
 
   return 0;
 }

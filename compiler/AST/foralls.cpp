@@ -951,7 +951,7 @@ static void resolveIdxVar(ForallStmt* pfs, FnSymbol* iterFn)
   // Set QualifiedType of the index variable.
   QualifiedType iType = fsIterYieldType(pfs, iterFn);
   VarSymbol* idxVar = parIdxVar(pfs);
-  if (idxVar->id == breakOnResolveID) gdbShouldBreakHere();
+  if (idxVar->id == breakOnResolveID) debuggerBreakHere();
 
   idxVar->type = iType.type();
   idxVar->qual = iType.getQual();
@@ -1211,7 +1211,7 @@ void static setupRecIterFields(ForallStmt* fs, CallExpr* parIterCall);
 // Returns the next expression to resolve.
 CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
 {
-  if (pfs->id == breakOnResolveID) gdbShouldBreakHere();
+  if (pfs->id == breakOnResolveID) debuggerBreakHere();
 
   // We only get here for origSE==firstIteratedExpr() .
   // If at that time there are other elements in iterExprs(), we remove them.
@@ -1711,7 +1711,7 @@ static Expr* lowerReduceOp(Expr* ref, SymExpr* opSE, SymExpr* dataSE,
 // for_exprs_postorder framework by placing it after the no-op.
 //
 Expr* lowerPrimReduce(CallExpr* call) {
-  if (call->id == breakOnResolveID) gdbShouldBreakHere();
+  if (call->id == breakOnResolveID) debuggerBreakHere();
 
   Expr*   callStmt = call->getStmtExpr();
   CallExpr*   noop = new CallExpr(PRIM_NOOP);

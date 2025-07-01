@@ -1,0 +1,4 @@
+compilerDiagnostics.chpl:15: warning: 1-argument version of foo called with type: real(64)
+compilerDiagnostics.chpl:16: warning: 1-argument version of foo called with type: string
+compilerDiagnostics.chpl:20: error: foo() called with non-matching types: int(64) != real(64)
+compilerDiagnostics.chpl:21: error: foo() called with non-matching types: string != real(64)

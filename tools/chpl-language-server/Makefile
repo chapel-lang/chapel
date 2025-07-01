@@ -44,6 +44,11 @@ test-chpl-language-server: chpl-language-server chpl-language-server-test-venv
 	$(CHPL_MAKE_HOME)/util/config/run-in-venv-with-python-bindings.bash \
 		$(CHPL_MAKE_PYTHON) -m pytest test/*.py
 
+# Same as above, but generates XML report
+test-chpl-language-server-junit: chpl-language-server chpl-language-server-test-venv
+	$(CHPL_MAKE_HOME)/util/config/run-in-venv-with-python-bindings.bash \
+		$(CHPL_MAKE_PYTHON) -m pytest test/*.py --junit-xml=test-chpl-language-server-report.xml
+
 clean: clean-link clean-link-shim clean-pycache
 
 cleanall: clean
@@ -52,6 +57,7 @@ clobber: clean
 
 clean-pycache:
 	find $(CHPL_MAKE_HOME)/tools/chpl-language-server -type d -name __pycache__ -exec rm -rf {} +
+	rm -rf $(CHPL_MAKE_HOME)/tools/chpl-language-server/test/.pytest_cache
 
 clean-link:
 ifneq ($(wildcard $(link)),)

@@ -33,7 +33,7 @@ module ChapelArrayViewElision {
   // of these functions.
 
   proc chpl__createProtoSlice(ref Arr, slicingExprs ...)
-      where chpl__createProtoSliceArgCheck(Arr, slicingExprs) {
+      where chpl__createProtoSliceArgCheck(Arr, slicingExprs, isConst=false) {
 
     if slicingExprs.size == 1 then
       return new chpl__protoSlice(isConst=false, c_addrOf(Arr),
@@ -43,7 +43,7 @@ module ChapelArrayViewElision {
   }
 
   proc chpl__createConstProtoSlice(const ref Arr, slicingExprs ...)
-      where chpl__createProtoSliceArgCheck(Arr, slicingExprs) {
+      where chpl__createProtoSliceArgCheck(Arr, slicingExprs, isConst=true) {
 
     if slicingExprs.size == 1 {
       return new chpl__protoSlice(isConst=true, c_addrOfConst(Arr),
@@ -68,17 +68,15 @@ module ChapelArrayViewElision {
     return new chpl__protoSlice();
   }
 
-  proc chpl__ave_exprCanBeProtoSlice(base, idxExprs...) param: bool {
-    return chpl__ave_baseTypeSupports(base) &&
+  proc chpl__ave_exprCanBeProtoSlice(param isConst: bool,
+                                     base, idxExprs...) param: bool {
+    return chpl__ave_baseTypeSupports(base, isConst) &&
            chpl__ave_idxExprsSupport(base.idxType, (...idxExprs)) &&
            !chpl__ave_nonCompliantSlice(base, (...idxExprs));
   }
 
   proc chpl__ave_protoSlicesSupportAssignment(a: chpl__protoSlice,
                                               b: chpl__protoSlice) param: bool {
-    // for now, only same array types on both sides are supported
-    if a.ptrToArr.deref().type != b.ptrToArr.deref().type then return false;
-
     // either both sides are rank-changes, or neither is
     if a.isRankChange != b.isRankChange then return false;
 
@@ -361,18 +359,22 @@ module ChapelArrayViewElision {
   // private interface
   //
 
-  private proc chpl__createProtoSliceArgCheck(Arr, slicingExprs) param: bool {
+  private proc chpl__createProtoSliceArgCheck(Arr, slicingExprs,
+                                              param isConst) param: bool {
     compilerAssert(isTuple(slicingExprs));
 
-    return chpl__ave_baseTypeSupports(Arr) &&
+    return chpl__ave_baseTypeSupports(Arr, isConst) &&
            (chpl__isTupleOfRanges(slicingExprs) ||
             (slicingExprs.size == 1 && isDomain(slicingExprs[0])) ||
             _validRankChangeArgs(slicingExprs, Arr.idxType));
   }
 
-  private proc chpl__ave_baseTypeSupports(base) param: bool {
+  private proc chpl__ave_baseTypeSupports(base,
+                                          param isConst: bool) param: bool {
     import Reflection;
     return isArray(base) && !chpl__isArrayView(base) && // we could allow views
+           // See https://github.com/chapel-lang/chapel/issues/26626 for below
+           (!isConst || base.rank == 1) &&
            base.domain.supportsArrayViewElision() &&
            Reflection.canResolve("c_addrOf", base);
   }

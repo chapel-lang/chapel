@@ -67,6 +67,7 @@ class QualifiedType final {
   static const Kind FUNCTION = uast::Qualifier::FUNCTION;
   static const Kind PARENLESS_FUNCTION = uast::Qualifier::PARENLESS_FUNCTION;
   static const Kind MODULE = uast::Qualifier::MODULE;
+  static const Kind LOOP = uast::Qualifier::LOOP;
   static const Kind INIT_RECEIVER = uast::Qualifier::INIT_RECEIVER;
 
   static const char* kindToString(Kind k);
@@ -197,6 +198,9 @@ class QualifiedType final {
   */
   bool isParamKnownTuple() const;
 
+  /** Returns true if kind is TYPE_QUERY */
+  bool isTypeQuery() const { return kind_ == Kind::TYPE_QUERY; }
+
   /**
     Returns true if the value cannot be modified directly (but might
     be modified by some other aliasing variable).
@@ -236,6 +240,8 @@ class QualifiedType final {
     Returns true if the type might need to get more info from split-init.
   */
   bool needsSplitInitTypeInfo(Context* context) const;
+
+  static QualifiedType createParamBool(Context* context, bool x);
 
   bool operator==(const QualifiedType& other) const {
     return kind_ == other.kind_ &&

@@ -47,6 +47,20 @@
   #define gasneti_mmap_pagesize()    GASNETI_PAGESIZE
 #endif
 
+// In a PSHM-enabled library, gasneti_use_shared_allocator controls whether a
+// PSHM-compatible segment will be allocated and cross-mapped for eligible
+// cases.  Currently "eligible" includes the aux segment, primordial segment,
+// and the "vnet" PSHM segment.
+// Specifically, when the value is zero the "regular" gasneti_mmap() is used to
+// allocate "regular" memory and no cross-mapping is done.
+// Currently the only valid/usable case for zero in a PSHM-enabled library is
+// when environment variable GASNET_USE_PSHM_SINGLETON is false.
+#if GASNET_PSHM
+  int gasneti_use_shared_allocator = 1;
+#else
+  #define gasneti_use_shared_allocator 0
+#endif
+
 #ifdef GASNETI_MMAP_OR_PSHM
  #if GASNET_PSHM && !defined(_POSIX_C_SOURCE) && PLATFORM_OS_SOLARIS
   #define _POSIX_C_SOURCE 200112L /* Required for shm_{open,unlink} decls */
@@ -595,6 +609,8 @@ static void * gasneti_pshm_mmap(int pshm_rank, void *segbase, size_t segsize) {
                      ((pshm_rank == gasneti_pshm_nodes) && !gasneti_pshm_mynode);
   void * ptr = MAP_FAILED;
 
+  gasneti_assert(gasneti_use_shared_allocator);
+
 #if defined(GASNETI_PSHM_SYSV)
   const int flags = S_IRUSR | S_IWUSR | (create ? ( IPC_CREAT | IPC_EXCL ) : 0);
 
@@ -616,7 +632,8 @@ static void * gasneti_pshm_mmap(int pshm_rank, void *segbase, size_t segsize) {
       // TODO: can we confirm that is the actual cause?
       errno = ENOMEM;
     }
-    return MAP_FAILED;
+    ptr = MAP_FAILED;
+    goto out;
   }
 
   /* map */
@@ -649,7 +666,10 @@ static void * gasneti_pshm_mmap(int pshm_rank, void *segbase, size_t segsize) {
   #else
     #error
   #endif
-  if (fd == -1) return MAP_FAILED;
+  if (fd == -1) {
+    ptr = MAP_FAILED;
+    goto out;
+  }
 
   /* size on create only */
   if (create && ftruncate(fd, segsize)) {
@@ -702,12 +722,21 @@ static void * gasneti_pshm_mmap(int pshm_rank, void *segbase, size_t segsize) {
     gasneti_pshm_unlink(pshm_rank);
     errno = save_errno;
   }
+
+out:
+  GASNETI_TRACE_PRINTF(I, ("gasneti_pshm_mmap(%d, %p, %"PRIuSZ") create=%d ptr=%p",
+                           pshm_rank, segbase, segsize, create, ptr));
   return ptr;
 }
 
 /* Helper: remove local object's mapping from address space */
 static void gasneti_pshm_munmap(void *segbase, uintptr_t segsize) {
   gasneti_assert(segsize > 0);
+  GASNETI_TRACE_PRINTF(I, ("gasneti_pshm_munmap(%p, %"PRIuSZ")", segbase, segsize));
+  if (! gasneti_use_shared_allocator) {
+    gasneti_munmap(segbase, segsize);
+    return;
+  }
 #if defined(GASNETI_PSHM_SYSV)
   if (shmdt(segbase) != 0) {
       gasneti_fatalerror("shmdt("GASNETI_LADDRFMT") failed: %s\n",
@@ -722,6 +751,7 @@ static void gasneti_pshm_munmap(void *segbase, uintptr_t segsize) {
 }
 
 static void gasneti_munmap_remote(gex_Rank_t pshm_rank, void *segbase, uintptr_t segsize) {
+  gasneti_assert(gasneti_use_shared_allocator);
   gasneti_assert(segsize > 0);
 
 #if defined(GASNETI_PSHM_SYSV)
@@ -762,6 +792,7 @@ void gasneti_publish_segment(gasnet_seginfo_t segment, int do_sync) {
 
 /* Helper: destroy the "attach point" */
 static void gasneti_pshm_unlink(int pshm_rank){
+  if (!gasneti_use_shared_allocator) return;
 #if defined(GASNETI_PSHM_SYSV)
   int shmget_id = shmget(gasneti_pshm_sysvkeys[pshm_rank], 0, 0);
   (void)shmctl(shmget_id, IPC_RMID, NULL);
@@ -794,6 +825,7 @@ static void gasneti_unlink_segments(void) {
 
 /* Try to unlink everything we can, ignoring errors */
 static void gasneti_cleanup_shm(void) {
+  gasneti_assert(gasneti_use_shared_allocator);
 #ifdef GASNETI_PSHM_SYSV
   /* Unlink the segments and vnet */
   if (gasneti_pshm_sysvkeys) {
@@ -843,6 +875,10 @@ static void *gasneti_mmap_shared_internal(int pshmnode, void *segbase, uintptr_t
   int mmap_errno;
   gasneti_tick_t t1, t2;
   void	*ptr;
+
+  if (! gasneti_use_shared_allocator) {
+    return gasneti_mmap_internal(segbase, segsize, may_fail);
+  }
 
   /* 0-byte failure modes can vary by implemenation */
   if (!segsize) {
@@ -916,7 +952,7 @@ extern void *gasneti_mmap_shared(uintptr_t segsize) {
   return gasneti_mmap_shared_internal(gasneti_pshm_mynode, NULL, segsize, 1);
 }
 
-extern void *gasneti_mmap_vnet(uintptr_t size, gasneti_bootstrapBroadcastfn_t snodebcastfn) {
+extern void *gasneti_mmap_vnet(uintptr_t size, gasneti_bootstrapBroadcastfn_t nbrhdbcastfn) {
   void *ptr = MAP_FAILED;
   int save_errno = 0;
 
@@ -926,59 +962,68 @@ extern void *gasneti_mmap_vnet(uintptr_t size, gasneti_bootstrapBroadcastfn_t sn
   gasneti_sighandlerfn_t prev_handler = gasneti_reghandler(SIGSYS, SIG_IGN);
   #endif
 
+  // Step 0 (unconditional)
+  // All processes perform common declaration/allocation/initialization
+#if defined(GASNETI_PSHM_FILE) || defined(GASNETI_PSHM_SYSV) || defined(GASNETI_PSHM_POSIX)
+  char unique[GASNETI_PSHM_UNIQUE_LEN];
+#elif defined(GASNETI_PSHM_XPMEM)
+  gasneti_xpmem_segid_t segid = (gasneti_xpmem_segid_t)(-1);
+  gasneti_pshm_apids = gasneti_use_shared_allocator
+                       ? gasneti_malloc(sizeof(gasneti_xpmem_apid_t) * (gasneti_pshm_nodes + 1))
+                       : NULL;
+#else
+  #error "Unknown PSHM implementation"
+#endif
+
+  // Step 1 (IFF gasneti_use_shared_allocator)
+  // First process in each supernode creates the segment and any names/keys/etc.
+  if (gasneti_use_shared_allocator && !gasneti_pshm_mynode) {
   #if defined(GASNETI_PSHM_FILE) || defined(GASNETI_PSHM_SYSV) || defined(GASNETI_PSHM_POSIX)
-  {
-    char unique[GASNETI_PSHM_UNIQUE_LEN];
-
-    /* First in each supernode creates the segment plus the names/keys and returns the unique identifier */
-    if (gasneti_pshm_mynode == 0) {
-      const char *tmp = gasneti_pshm_makeunique(NULL);
-      memcpy(unique, tmp, GASNETI_PSHM_UNIQUE_LEN);
-      ptr = gasneti_mmap_shared_internal(gasneti_pshm_nodes, NULL, size, 1);
-      save_errno = errno;
-    }
-
-    /* Supernode-scoped bcast communicates the names/keys generated by the firsts */
-    (*snodebcastfn)(unique, GASNETI_PSHM_UNIQUE_LEN, unique, gasneti_pshm_firstnode);
-  
-    /* Non-first nodes attach */
-    if (gasneti_pshm_mynode != 0) {
-      (void)gasneti_pshm_makeunique(unique);
-      ptr = gasneti_mmap_shared_internal(gasneti_pshm_nodes, NULL, size, 1);
-      save_errno = errno;
-    }
-  }
+    const char *tmp = gasneti_pshm_makeunique(NULL);
+    memcpy(unique, tmp, GASNETI_PSHM_UNIQUE_LEN);
+    ptr = gasneti_mmap_shared_internal(gasneti_pshm_nodes, NULL, size, 1);
   #elif defined(GASNETI_PSHM_XPMEM)
-  {
-    gasneti_xpmem_segid_t segid = (gasneti_xpmem_segid_t)(-1);
-
-    /* Initialization */
-    gasneti_pshm_apids = gasneti_malloc(sizeof(gasneti_xpmem_apid_t) * (gasneti_pshm_nodes + 1));
-
-    /* First in each supernode creates the segment */
-    if (gasneti_pshm_mynode == 0) {
-      ptr = gasneti_mmap_shared_internal(gasneti_pshm_nodes, NULL, size, 1);
-      save_errno = errno;
-      if (ptr != MAP_FAILED) {
-        segid = gasneti_xpmem_make(ptr, size);
-        save_errno = errno;
-      }
+    ptr = gasneti_mmap_shared_internal(gasneti_pshm_nodes, NULL, size, 1);
+    if (ptr != MAP_FAILED) {
+      segid = gasneti_xpmem_make(ptr, size);
     }
-    
-    /* Supernode-scoped bcast communicates the segment identifier generated by the firsts */
-    (*snodebcastfn)(&segid, sizeof(segid),
-                    &gasneti_pshm_segid_aux,
-                    gasneti_pshm_firstnode);
-
-    /* Non-first nodes attach */
-    if (gasneti_pshm_mynode != 0) {
-      ptr = gasneti_mmap_shared_internal(gasneti_pshm_nodes, NULL, size, 1);
-      save_errno = errno;
-    }
-  }
-  #else
-    #error
   #endif
+    save_errno = errno;
+  }
+
+  // Step 2 (unconditional)
+  // Neighborhood-scoped bcast communicates the names/keys/etc. generated by the firsts
+  // Needed even when !gasneti_use_shared_allocator, since some implementations
+  // of nbrhdbcast communicate globally, and there might be nbhrds in which
+  // gasneti_use_shared_allocator is non-zero (e.g. 3 procs on 2 hosts).
+#if defined(GASNETI_PSHM_FILE) || defined(GASNETI_PSHM_SYSV) || defined(GASNETI_PSHM_POSIX)
+  (*nbrhdbcastfn)(unique, GASNETI_PSHM_UNIQUE_LEN, unique, gasneti_pshm_firstnode);
+#elif defined(GASNETI_PSHM_XPMEM)
+  (*nbrhdbcastfn)(&segid, sizeof(segid),
+                  &gasneti_pshm_segid_aux,
+                  gasneti_pshm_firstnode);
+#endif
+  
+  // Step 3 (unconditional, since gasneti_pshm_mynode!=0 implies use of shared allocator)
+  // Processes other than the first attach
+  if (gasneti_pshm_mynode != 0) {
+    gasneti_assert(gasneti_use_shared_allocator);
+  #if defined(GASNETI_PSHM_FILE) || defined(GASNETI_PSHM_SYSV) || defined(GASNETI_PSHM_POSIX)
+    (void)gasneti_pshm_makeunique(unique);
+    ptr = gasneti_mmap_shared_internal(gasneti_pshm_nodes, NULL, size, 1);
+  #elif defined(GASNETI_PSHM_XPMEM)
+    ptr = gasneti_mmap_shared_internal(gasneti_pshm_nodes, NULL, size, 1);
+  #endif
+    save_errno = errno;
+  }
+
+  // Step 4 (IFF !gasneti_use_shared_allocator)
+  // Allocate "regular" memory
+  if (! gasneti_use_shared_allocator) {
+    gasneti_assert_always_ptr(ptr ,==, MAP_FAILED); // NOT set since decl
+    ptr = gasneti_mmap(size);
+    errno = save_errno;
+  }
 
   #if defined(GASNETI_PSHM_SYSV) && PLATFORM_OS_CYGWIN
   gasneti_reghandler(SIGSYS, prev_handler);
@@ -1346,7 +1391,7 @@ uint64_t gasneti_sharedLimit(void) {
 
 
 #if GASNET_PSHM && (GASNETI_PSHM_FILE || GASNETI_PSHM_POSIX) && HAVE_FSTATVFS
-  {
+  if (gasneti_use_shared_allocator) {
     // Apply limits appropriate to filesystem-backed allocation
     const int flags = O_RDWR | O_CREAT | O_EXCL;
     const mode_t mode = S_IRUSR | S_IWUSR;
@@ -1362,7 +1407,7 @@ uint64_t gasneti_sharedLimit(void) {
     if (fd >= 0) {
       // TODO: for now we ignore any errors here
       if (0 == fstatvfs(fd, &buf)) {
-        uint64_t free_space = buf.f_bsize * buf.f_bavail;
+        uint64_t free_space = (uint64_t)buf.f_bsize * (uint64_t)buf.f_bavail;
         if (free_space) {
           sharedLimit = MIN(sharedLimit, free_space);
         }
@@ -1799,6 +1844,9 @@ int gasneti_segment_map(
                         int pshm_compat,
                         gex_Flags_t flags)
 {
+  GASNETI_TRACE_PRINTF(I, ("gasneti_segment_map: size=%"PRIuPTR", pshm_compat=%d, flags=0x%x",
+                           segsize, pshm_compat, flags));
+
 #ifdef GASNETI_MMAP_OR_PSHM
   if (flags & GASNETI_FLAG_INIT_LEGACY) {
     /* in "legacy_mode" we consume the presegment */
@@ -1958,12 +2006,15 @@ void gasneti_segment_cross_map(gasnet_seginfo_t *seginfo)
 }
 #endif /* GASNET_PSHM */
 
+//  Create a segment (primordial or aux) and exchange seginfo
+//  Only if pshm_segment non-zero then cross-maps the memory w/i the nbrhd
 static gasnet_seginfo_t
 gasneti_do_attach_segment(
                            uintptr_t segsize,
                            gasnet_seginfo_t *all_segments,
                            gex_TM_t tm,
                            gasneti_bootstrapExchangefn_t exchangefn,
+                           int pshm_segment,
                            gex_Flags_t flags)
 {
 #if GASNET_PSHM
@@ -1971,13 +2022,15 @@ gasneti_do_attach_segment(
   const char *context = (all_segments == gasneti_seginfo_aux)
                       ? " while attaching the aux segment"
                       : " while attaching the client segment";
-  gasneti_pshm_cs_enter(context, &gasneti_cleanup_shm);
-  gasneti_pshmnet_bootstrapBarrier();
+  if (pshm_segment) {
+    gasneti_pshm_cs_enter(context, &gasneti_cleanup_shm);
+    gasneti_pshmnet_bootstrapBarrier();
+  }
 #endif
 
   gasnet_seginfo_t local_segment;
 
-  int rc = gasneti_segment_map(&local_segment, segsize, 1, flags);
+  int rc = gasneti_segment_map(&local_segment, segsize, pshm_segment, flags);
   if (rc != GASNET_OK) {
     gasneti_fatalerror("Unexpected failure return from gasneti_segment_map()");
   }
@@ -1988,7 +2041,9 @@ gasneti_do_attach_segment(
     gasneti_blockingExchange(tm, &local_segment, sizeof(gasnet_seginfo_t), all_segments);
 #if GASNET_PSHM
     // Needed if a pshm bootstrap operation may follow use of AMs
-    gasneti_pshmnet_bootstrapBarrierPoll();
+    if (pshm_segment) {
+      gasneti_pshmnet_bootstrapBarrierPoll();
+    }
 #endif
   } else {
     // gasneti_assert(all_segments == gasneti_seginfo_aux); // Eventually only auxseg should use exchangefn
@@ -1997,8 +2052,10 @@ gasneti_do_attach_segment(
   }
 
 #if GASNET_PSHM
-  gasneti_segment_cross_map(all_segments);
-  gasneti_pshm_cs_leave();
+  if (pshm_segment) {
+    gasneti_segment_cross_map(all_segments);
+    gasneti_pshm_cs_leave();
+  }
 #endif
 
   return local_segment;
@@ -2065,6 +2122,9 @@ extern int gex_EP_BindSegment(
   }
   if (segment == GEX_SEGMENT_INVALID) {
     GASNETI_RETURN_ERRR(BAD_ARG,"Invalid call to gex_EP_BindSegment() with GEX_SEGMENT_INVALID");
+  }
+  if (!safe_idx && !gasneti_i_segment_kind_is_host(i_segment)) {
+    GASNETI_RETURN_ERRR(BAD_ARG,"Invalid call to gex_EP_BindSegment() with primordial endpoint and device memory segment.  To use device memory, one must gex_EP_Create() an additional endpoint, bind a device segment to it using gex_EP_BindSegment(), followed by gex_EP_PublishBoundSegment() to enable remote access.");
   }
   if (flags) {
     GASNETI_RETURN_ERRR(BAD_ARG,"Invalid call to gex_EP_BindSegment() with non-zero flags");
@@ -2189,7 +2249,7 @@ int gasneti_segmentAttach(
   /*  register segment  */
 
   // First portion of Segment_Create, plus cross-mapping and seginfo propagation:
-  gasnet_seginfo_t myseg = gasneti_do_attach_segment(segsize, gasneti_seginfo, tm, NULL, flags);
+  gasnet_seginfo_t myseg = gasneti_do_attach_segment(segsize, gasneti_seginfo, tm, NULL, gasneti_use_shared_allocator, flags);
 
   // Sanity checks:
   void *segbase = myseg.addr;
@@ -2743,7 +2803,8 @@ gasneti_auxsegAttach(uint64_t maxsize, gasneti_bootstrapExchangefn_t exchangefn)
                        auxsize, maxsize);
   }
   gasneti_leak(gasneti_seginfo_aux    = gasneti_malloc(gasneti_nodes*sizeof(gasnet_seginfo_t)));
-  gasnet_seginfo_t local_segment = gasneti_do_attach_segment(auxsize, gasneti_seginfo_aux, NULL, exchangefn, 0);
+  gasnet_seginfo_t local_segment =
+          gasneti_do_attach_segment(auxsize, gasneti_seginfo_aux, NULL, exchangefn, gasneti_use_shared_allocator, 0);
   gasneti_auxseg_attach(gasneti_seginfo_aux);
   gasneti_assert_uint(gasneti_seginfo_aux[gasneti_mynode].size ,==, auxsize);
   return local_segment;

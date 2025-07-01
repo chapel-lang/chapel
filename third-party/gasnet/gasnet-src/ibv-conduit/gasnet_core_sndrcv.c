@@ -811,13 +811,20 @@ static void gasnetc_dump_cqe(struct ibv_wc *comp, gasnetc_hca_t *hca, const int 
             }
             break;
         }
-        if ((nargs == GASNETC_MAX_ARGS) && args) {
+        if (nargs == GASNETC_MAX_ARGS) {
           // Decode actual nargs when carrying a hidden flow control arg
-          nargs = GASNETC_HIDDEN_ARG_FULL_NARGS(args) - 1;
+          if (args) {
+            nargs = GASNETC_HIDDEN_ARG_FULL_NARGS(args) - 1;
+          }
+          // TODO: in absence of the original `args` array, Short and Long
+          // cases _might_ be able to reconstruct from message length, but
+          // padding to 8-byte boundary prevents that for Medium.
         }
-        MSG_APPEND(" Re%s%s: nargs=%d handler=%d",
+        MSG_APPEND(" Re%s%s: nargs=%s handler=%d",
                    GASNETC_MSG_ISREPLY(flags)?"ply":"quest",
-                   cat_name, nargs, GASNETC_MSG_HANDLERID(flags));
+                   cat_name,
+                   (nargs == GASNETC_MAX_ARGS)?"unknown":gasneti_dynsprintf("%d",nargs),
+                   GASNETC_MSG_HANDLERID(flags));
         // May use a second scatter-gather entry for med or packed-long payloads
         int num_sge = MIN(sreq->args.am.num_sge, 2); // longer than 2 is erroneous
         for (int i = 0; i < num_sge; ++i) {
@@ -826,12 +833,14 @@ static void gasnetc_dump_cqe(struct ibv_wc *comp, gasnetc_hca_t *hca, const int 
                      (unsigned int)sreq->args.am.length[i]);
         }
         // Payload length in this xfer, if any
-        if (category == gasneti_Long) {
-          // For Long, only report packed payload bytes
-          nbytes = (nbytes & 0x80000000) ? (nbytes & 0x7fffffff) : 0;
-        }
-        if (nbytes && (nbytes != (uint32_t)-1)) {
-          MSG_APPEND(", includes %u bytes payload", (unsigned int)nbytes);
+        if (nbytes != (uint32_t)-1) {
+          if (category == gasneti_Long) {
+            // For Long, only report packed payload bytes
+            nbytes = (nbytes & 0x80000000) ? (nbytes & 0x7fffffff) : 0;
+          }
+          if (nbytes) {
+            MSG_APPEND(", includes %u bytes payload", (unsigned int)nbytes);
+          }
         }
         break;
       }
@@ -1141,11 +1150,18 @@ gasnetc_cep_t *gasnetc_bind_cep_inner(gasnetc_EP_t ep, gasnetc_epid_t epid, gasn
   #else
     #define MAYBE_POLL_RCV_PSHM() ((void)0)
   #endif
+  // Note: It is NOT safe to run progress functions for the case of an AM
+  // Request header because the caller holds resources (at least an AM credit
+  // and often a bounce buffer).  That means running _communicating_ progress
+  // functions here could lead to deadlock.  However, Put of a RequestLong
+  // payload can (and so does) safely execute progress functions here.
+  // This code is not reached for AM Reply (subject of "sanity check" above).
+  // TODO: revisit GASNETC_OP_AM if/when we distinguish NON-communicating PFs.
   #define MAYBE_POLL_RCV(_ep, _cep) do { \
       if (should_poll_rcv && !gasnetc_sema_read(GASNETC_CEP_SQ_SEMA(_cep))) {  \
         gasnetc_poll_rcv_all(_ep, GASNETC_RCV_REAP_LIMIT GASNETI_THREAD_PASS); \
         MAYBE_POLL_RCV_PSHM();                                                 \
-        GASNETI_PROGRESSFNS_RUN();                                             \
+        if (sreq->opcode != GASNETC_OP_AM) { GASNETI_PROGRESSFNS_RUN(); }      \
       }                                                                        \
     } while (0)
 #else
@@ -2641,22 +2657,13 @@ extern int gasnetc_sndrcv_limits(void) {
     gasnetc_rbuf_spares = MAX(1,gasneti_getenv_int_withdefault("GASNET_RBUF_SPARES", threads, 0));
   }
 
-  /* Count normal qps to be placed on each HCA */
-  if (gasneti_nodes == 1) {
-    GASNETC_FOR_ALL_HCA(hca) {
-      /* Avoid a later division by zero */
-      hca->max_qps = 1;
-      hca->qps = 1;
-    }
-  } else {
-    /* XXX: this logic depends on the current gasnetc_select_port() logic;
-     * in particular on the simple node-independent repetition of ports. */
-    int i;
-    for (i = 0; i < gasnetc_num_qps; ++i) {
+  // Count normal qps to be placed on each HCA
+  // XXX: this logic depends on the current gasnetc_select_port() logic;
+  // in particular on the simple node-independent repetition of ports.
+  for (int i = 0; i < gasnetc_num_qps; ++i) {
       hca = &gasnetc_hca[gasnetc_port_tbl[i % gasnetc_num_ports].hca_index];
       hca->qps += 1;
       hca->max_qps += gasneti_nodes;
-    }
   }
 
   /* Ops outstanding per peer and total: */
@@ -3112,7 +3119,7 @@ extern void gasnetc_sndrcv_init_peer(gex_Rank_t node, gasnetc_cep_t *cep) {
     }
 
     hca->num_qps++;
-    gasneti_assert(hca->num_qps <= hca->max_qps);
+    gasneti_assert_uint(hca->num_qps ,<=, hca->max_qps);
   }
 }
 

@@ -248,6 +248,9 @@
 /* has sched_yield() */
 #undef HAVE_SCHED_YIELD
 
+/* has sigaction() and a definition of the SA_RESTART flag */
+#undef GASNETI_HAVE_SA_RESTART
+
 /* have sysctl machdep.tsc_freq */
 #undef GASNETI_HAVE_SYSCTL_MACHDEP_TSC_FREQ
 
@@ -469,13 +472,9 @@
 #undef GASNETI_DISABLE_ALIGNED_SEGMENTS
 
 /* GASNet smp-conduit */
+#undef GASNETC_SMP_SPAWNER_CONF
 #undef GASNETC_HAVE_O_ASYNC
 #undef GASNETC_USE_SOCKETPAIR
-
-/* GASNet aries-conduit settings */
-#undef GASNETC_GNI_MAX_MEDIUM_DFLT
-#undef GASNETC_GNI_MULTI_DOMAIN
-#undef GASNETC_GNI_UDREG
 
 /* GASNet ofi-conduit settings */
 #undef GASNETC_OFI_SPAWNER_CONF

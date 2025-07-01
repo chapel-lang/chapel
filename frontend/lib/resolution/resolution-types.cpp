@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#include "chpl/resolution/resolution-types.h"
 #include "chpl/resolution/can-pass.h"
+#include "chpl/resolution/resolution-types.h"
 
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/framework/global-strings.h"
@@ -35,8 +35,10 @@
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/For.h"
 #include "chpl/uast/VarArgFormal.h"
+#include "chpl/util/clang-integration.h"
 
 #include "Resolver.h"
+#include "extern-blocks.h"
 
 #include <iomanip>
 
@@ -101,8 +103,8 @@ UntypedFnSignature::get(Context* context, ID id,
                                compilerGeneratedOrigin).get();
 }
 
-static const UntypedFnSignature*
-getUntypedFnSignatureForFn(Context* context, const uast::Function* fn) {
+const UntypedFnSignature*
+getUntypedFnSignatureForFn(Context* context, const uast::Function* fn, ID const* compilerGeneratedOrigin) {
   const UntypedFnSignature* result = nullptr;
 
   if (fn != nullptr) {
@@ -134,11 +136,13 @@ getUntypedFnSignatureForFn(Context* context, const uast::Function* fn) {
     result = UntypedFnSignature::get(context, fn->id(), fn->name(),
                                      fn->isMethod(),
                                      /* isTypeConstructor */ false,
-                                     /* isCompilerGenerated */ false,
+                                     /* isCompilerGenerated */ compilerGeneratedOrigin != nullptr,
                                      /* throws */ fn->throws(),
                                      /* idTag */ asttags::Function,
                                      fn->kind(),
-                                     std::move(formals), fn->whereClause());
+                                     std::move(formals), fn->whereClause(),
+                                     compilerGeneratedOrigin ? *compilerGeneratedOrigin
+                                                             : ID());
   }
 
   return result;
@@ -153,6 +157,18 @@ const UntypedFnSignature* UntypedFnSignature::get(Context* context,
   return getUntypedFnSignatureForFn(context, function);
 }
 
+static const UntypedFnSignature*
+getUntypedFnSignatureForExternId(Context* context, ID functionId) {
+  CHPL_ASSERT(functionId.isExternBlockElement());
+
+  auto name = functionId.symbolName(context);
+  auto externBlockId = functionId.parentSymbolId(context);
+
+  auto tfs = externBlockSigForFn(context, externBlockId, name);
+
+  return tfs->untyped();
+}
+
 static const UntypedFnSignature* const&
 getUntypedFnSignatureForIdQuery(Context* context, ID functionId) {
   QUERY_BEGIN(getUntypedFnSignatureForIdQuery, context, functionId);
@@ -162,6 +178,8 @@ getUntypedFnSignatureForIdQuery(Context* context, ID functionId) {
 
   if (ast != nullptr && ast->isFunction()) {
     result = getUntypedFnSignatureForFn(context, ast->toFunction());
+  } else if (functionId.isExternBlockElement()) {
+    result = getUntypedFnSignatureForExternId(context, functionId);
   }
 
   return QUERY_END(result);
@@ -188,8 +206,6 @@ static UniqueString getCallName(const uast::Call* call) {
       name = calledDot->field();
     } else if (auto op = called->toOpCall()) {
       name = op->op();
-    } else {
-      CHPL_UNIMPL("CallInfo without a name");
     }
   }
   return name;
@@ -228,7 +244,6 @@ CallInfo CallInfo::createSimple(UniqueString calledFnName,
 CallInfo CallInfo::createUnknown(const uast::FnCall* call) {
   // Pieces of the CallInfo we need to prepare.
   UniqueString name;
-  QualifiedType calledType;
   bool isMethodCall = false;
   bool hasQuestionArg = false;
   std::vector<CallInfoActual> actuals;
@@ -250,7 +265,7 @@ CallInfo CallInfo::createUnknown(const uast::FnCall* call) {
     }
   }
 
-  auto ret = CallInfo(name, calledType, isMethodCall, hasQuestionArg,
+  auto ret = CallInfo(name, QualifiedType(), isMethodCall, hasQuestionArg,
                       /* isParenless */ false, actuals);
 
   return ret;
@@ -263,97 +278,109 @@ void CallInfo::prepareActuals(Context* context,
                               std::vector<CallInfoActual>& actuals,
                               const AstNode*& questionArg,
                               std::vector<const uast::AstNode*>* actualAsts) {
-
-  const FnCall* fnCall = call->toFnCall();
-
   // Prepare the actuals of the call.
   for (int i = 0; i < call->numActuals(); i++) {
     auto actual = call->actual(i);
+    prepareActual(context, call, actual, i, byPostorder, raiseErrors,
+                  actuals, questionArg, actualAsts);
+  }
+}
 
-    if (isQuestionMark(actual)) {
-      if (call->isTuple()) {
-        // Expressions like (?,?,?)
-        UniqueString byName;
-        auto qt = QualifiedType(QualifiedType::TYPE, AnyType::get(context));
-        actuals.push_back(CallInfoActual(qt, byName));
-        if (actualAsts != nullptr) {
-          actualAsts->push_back(actual);
-        }
-      } else if (questionArg == nullptr) {
-        questionArg = actual;
-      } else {
-        CHPL_REPORT(context, MultipleQuestionArgs, fnCall, questionArg, actual);
-        // Keep questionArg pointing at the first question argument we found
-      }
-    } else {
-      QualifiedType actualType;
-      // replace default value with resolved if available
-      if (const ResolvedExpression* r = byPostorder.byAstOrNull(actual)) {
-        actualType = r->type();
-      }
+void CallInfo::prepareActual(Context* context,
+                             const Call* call,
+                             const AstNode* actual,
+                             int actualIdx,
+                             const ResolutionResultByPostorderID& byPostorder,
+                             bool raiseErrors,
+                             std::vector<CallInfoActual>& actuals,
+                             const AstNode*& questionArg,
+                             std::vector<const uast::AstNode*>* actualAsts) {
+  auto fnCall = call ? call->toFnCall() : nullptr;
+
+  if (isQuestionMark(actual)) {
+    if (call && call->isTuple()) {
+      // Expressions like (?,?,?)
       UniqueString byName;
-      if (fnCall && fnCall->isNamedActual(i)) {
-        byName = fnCall->actualName(i);
+      auto qt = QualifiedType(QualifiedType::TYPE, AnyType::get(context));
+      actuals.push_back(CallInfoActual(qt, byName));
+      if (actualAsts != nullptr) {
+        actualAsts->push_back(actual);
       }
+    } else if (questionArg == nullptr) {
+      questionArg = actual;
+    } else {
+      CHPL_REPORT(context, MultipleQuestionArgs, fnCall, questionArg, actual);
+      // Keep questionArg pointing at the first question argument we found
+    }
+  } else {
+    QualifiedType actualType;
+    // replace default value with resolved if available
+    if (const ResolvedExpression* r = byPostorder.byAstOrNull(actual)) {
+      actualType = r->type();
+    }
+    UniqueString byName;
+    if (fnCall && fnCall->isNamedActual(actualIdx)) {
+      byName = fnCall->actualName(actualIdx);
+    }
 
-      bool handledTupleExpansion = false;
-      if (auto op = actual->toOpCall()) {
-        if (op->op() == USTR("...")) {
-          if (op->numActuals() != 1) {
-            if (raiseErrors) {
-              context->error(op, "tuple expansion can only accept one argument");
-            }
-            actualType = QualifiedType(QualifiedType::VAR,
-                                       ErroneousType::get(context));
-          } else {
-            const ResolvedExpression& rr = byPostorder.byAst(op->actual(0));
-            actualType = rr.type();
+    bool handledTupleExpansion = false;
+    if (auto op = actual->toOpCall()) {
+      if (op->op() == USTR("...")) {
+        if (op->numActuals() != 1) {
+          if (raiseErrors) {
+            context->error(op, "tuple expansion can only accept one argument");
           }
-
-          // handle tuple expansion
-          if (!actualType.hasTypePtr() ||
-              actualType.type()->isUnknownType()) {
-            // leave the result unknown
-            actualType = QualifiedType(QualifiedType::VAR,
-                                       UnknownType::get(context));
-          } else if (actualType.type()->isErroneousType()) {
-            // let it stay erroneous type
-          } else if (!actualType.type()->isTupleType()) {
-            if (raiseErrors) {
-              CHPL_REPORT(context, TupleExpansionNonTuple, fnCall, op, actualType);
-            }
-            actualType = QualifiedType(QualifiedType::VAR,
-                                       ErroneousType::get(context));
-          } else {
-            if (!byName.isEmpty()) {
-              CHPL_REPORT(context, TupleExpansionNamedArgs, op, fnCall);
-            }
-
-            auto tupleType = actualType.type()->toTupleType();
-            int n = tupleType->numElements();
-            for (int i = 0; i < n; i++) {
-              tupleType->elementType(i);
-              // intentionally use the empty name (to ignore it if it was
-              // set and we issued an error above)
-              actuals.push_back(CallInfoActual(tupleType->elementType(i),
-                                               UniqueString()));
-              if (actualAsts != nullptr) {
-                actualAsts->push_back(op);
-              }
-            }
-            handledTupleExpansion = true;
-          }
+          actualType = QualifiedType(QualifiedType::VAR,
+              ErroneousType::get(context));
+        } else {
+          const ResolvedExpression& rr = byPostorder.byAst(op->actual(0));
+          actualType = rr.type();
         }
-      }
 
-      if (!handledTupleExpansion) {
-        actuals.push_back(CallInfoActual(actualType, byName));
-        if (actualAsts != nullptr) {
-          actualAsts->push_back(actual);
+        // handle tuple expansion
+        if (!actualType.hasTypePtr() ||
+            actualType.type()->isUnknownType()) {
+          // leave the result unknown
+          actualType = QualifiedType(QualifiedType::VAR,
+              UnknownType::get(context));
+        } else if (actualType.type()->isErroneousType()) {
+          // let it stay erroneous type
+        } else if (!actualType.type()->isTupleType()) {
+          if (raiseErrors) {
+            CHPL_REPORT(context, TupleExpansionNonTuple, fnCall, op, actualType);
+          }
+          actualType = QualifiedType(QualifiedType::VAR,
+              ErroneousType::get(context));
+        } else {
+          if (!byName.isEmpty()) {
+            CHPL_REPORT(context, TupleExpansionNamedArgs, op, fnCall);
+          }
+
+          auto tupleType = actualType.type()->toTupleType();
+          int n = tupleType->numElements();
+          for (int i = 0; i < n; i++) {
+            tupleType->elementType(i);
+            // intentionally use the empty name (to ignore it if it was
+            // set and we issued an error above)
+            actuals.push_back(CallInfoActual(tupleType->elementType(i),
+                  UniqueString()));
+            if (actualAsts != nullptr) {
+              actualAsts->push_back(op);
+            }
+          }
+          handledTupleExpansion = true;
         }
       }
     }
+
+    if (!handledTupleExpansion) {
+      actuals.push_back(CallInfoActual(actualType, byName));
+      if (actualAsts != nullptr) {
+        actualAsts->push_back(actual);
+      }
+    }
   }
+
 }
 
 // returns true if values of this kind should be treated as 'functional':
@@ -370,8 +397,7 @@ static bool isKindForFunctionalValue(QualifiedType::Kind kind) {
 // if we have `x.f(args)`, returns true if the above should be treated
 // as a method call with `f(this = x, args)`.
 static bool isKindForMethodReceiver(QualifiedType::Kind kind) {
-  return kind != QualifiedType::UNKNOWN &&
-         kind != QualifiedType::FUNCTION &&
+  return kind != QualifiedType::FUNCTION &&
          kind != QualifiedType::MODULE;
 }
 
@@ -426,6 +452,16 @@ CallInfo CallInfo::create(Context* context,
     auto calledExprType = tryGetType(calledExpr, byPostorder);
     auto dotReceiverType = tryGetType(dotReceiver, byPostorder);
 
+    auto makeCallToDotThis = [&]() {
+      name = USTR("this");
+      // add the 'this' argument as well
+      isMethodCall = true;
+      actuals.push_back(CallInfoActual(*calledExprType, USTR("this")));
+      if (actualAsts != nullptr) {
+        actualAsts->push_back(calledExpr);
+      }
+    };
+
     if (calledExprType &&
         (isKindForFunctionalValue(calledExprType->kind()) ||
          calledExprType->isErroneousType())) {
@@ -437,22 +473,23 @@ CallInfo CallInfo::create(Context* context,
       // a value (ambiguity or other "benign" UNKNOWN would not produce errors).
       // Later, this can lead to skipping resolving the call altogether.
 
-      name = USTR("this");
-      // add the 'this' argument as well
-      isMethodCall = true;
-      actuals.push_back(CallInfoActual(*calledExprType, USTR("this")));
-      if (actualAsts != nullptr) {
-        actualAsts->push_back(calledExpr);
-      }
-      // and reset calledType
-      calledType = QualifiedType(QualifiedType::FUNCTION, nullptr);
+      makeCallToDotThis();
     } else if (dotReceiverType && dotReceiverType->kind() == QualifiedType::MODULE) {
       // In calls like `M.f()`, where `M` is a module, we need to restrict
       // our search to `M`'s scope. Signal this by setting `moduleScopeId`.
       if (moduleScopeId != nullptr)
         *moduleScopeId = byPostorder.byAst(dotReceiver).toId();
-    } else if (calledExprType && !calledExprType->isUnknown()) {
-      calledType = *calledExprType;
+      /* TODO: set calledType? */
+    } else if (calledExprType && !calledExprType->isUnknown() && calledExprType->isType()) {
+      // normally, we would say this is a type constructor and set calledType.
+      // However, for tuples, we treat this as a regular "proc this", which
+      // enables accessing the individual element's types.
+
+      if (calledExprType->type() && calledExprType->type()->isTupleType()) {
+        makeCallToDotThis();
+      } else {
+        calledType = *calledExprType;
+      }
     } else if (!call->isOpCall() && dotReceiverType &&
                isKindForMethodReceiver(dotReceiverType->kind())) {
       // Check for normal method call, maybe construct a receiver.
@@ -468,7 +505,6 @@ CallInfo CallInfo::create(Context* context,
       if (actualAsts != nullptr) {
         actualAsts->push_back(dotReceiver);
       }
-      calledType = dotReceiverQt;
       isMethodCall = true;
     }
   }
@@ -510,14 +546,8 @@ CallInfo CallInfo::createWithReceiver(const CallInfo& ci,
   // append the other actuals
   newActuals.insert(newActuals.end(), ci.actuals_.begin() + off, ci.actuals_.end());
 
-  if (ci.name() == USTR("init")) {
-    // For calls to 'init', tag the receiver with a special intent to
-    // relax some checks on its genericity.
-    receiverType = convertToInitReceiverType(receiverType);
-  }
-
   auto name = rename.isEmpty() ? ci.name_ : rename;
-  return CallInfo(name, receiverType,
+  return CallInfo(name, QualifiedType(),
                   /* isMethodCall */ true,
                   ci.hasQuestionArg_,
                   ci.isParenless_,
@@ -532,14 +562,14 @@ CallInfo CallInfo::copyAndRename(const CallInfo &ci, UniqueString rename) {
 void ResolutionResultByPostorderID::setupForSymbol(const AstNode* ast) {
   CHPL_ASSERT(Builder::astTagIndicatesNewIdScope(ast->tag()));
 
-  symbolId = ast->id();
+  symbolId_ = ast->id();
 }
 void ResolutionResultByPostorderID::setupForSignature(const Function* func) {
-  symbolId = func->id();
+  symbolId_ = func->id();
 }
 void ResolutionResultByPostorderID::setupForParamLoop(
     const For* loop, ResolutionResultByPostorderID& parent) {
-  this->symbolId = parent.symbolId;
+  this->symbolId_ = parent.symbolId_;
 }
 void ResolutionResultByPostorderID::setupForFunction(const Function* func) {
   setupForSymbol(func);
@@ -622,7 +652,7 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
       byFormalIdx_.resize(numEntries);
 
       QualifiedType starQT;
-      if (formalQT.type() != nullptr) {
+      if (!formalQT.isUnknownOrErroneous()) {
         const TupleType* tup = formalQT.type()->toTupleType();
         CHPL_ASSERT(tup);
         if (tup->isStarTuple()) {
@@ -636,7 +666,7 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
         QualifiedType qt;
         if (starQT.type() != nullptr) {
           qt = starQT;
-        } else if (formalQT.type() != nullptr) {
+        } else if (!formalQT.isUnknownOrErroneous()) {
           // try to pull the type out of the formalQT if it
           // is after instantiation.
           const TupleType* tup = formalQT.type()->toTupleType();
@@ -801,7 +831,8 @@ syntacticallyGenericFieldsPriorToIdHaveSubs(Context* context,
   }
 
   // Compute the fields without types so that we can iterate the fields.
-  auto& fieldsForOrder = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS,
+  ResolutionContext rc(context);
+  auto& fieldsForOrder = fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS,
                                            /* syntaxOnly */ true);
   for (int i = 0; i < fieldsForOrder.numFields(); i++) {
     auto ithField = fieldsForOrder.fieldDeclId(i);
@@ -1178,14 +1209,45 @@ void PoiInfo::accumulateRecursive(const TypedFnSignature* signature,
 bool PoiInfo::canReuse(const PoiInfo& check) const {
   CHPL_ASSERT(resolved_ && !check.resolved_);
 
+  if (poiScope_ == check.poiScope_) {
+    // if the POI scopes are the same, then we can reuse
+    return true;
+  }
+
+  if (poiFnIdsUsed_.empty() && recursiveFnsUsed_.empty()) {
+    // if we have no POI functions used, then we can reuse
+    return true;
+  }
+
   // Performance TODO: consider function names etc -- see PR #16261
   return false;
 }
 
-MostSpecificCandidate MostSpecificCandidate::fromTypedFnSignature(Context* context,
-                                          const TypedFnSignature* fn,
-                                          const FormalActualMap& faMap,
-                                          const SubstitutionsMap& promotedFormals) {
+MostSpecificCandidate
+MostSpecificCandidate::fromTypedFnSignature(ResolutionContext* rc,
+                                            const TypedFnSignature* fn,
+                                            const FormalActualMap& faMap,
+                                            const Scope* scope,
+                                            const PoiScope* poiScope,
+                                            const SubstitutionsMap& promotedFormals) {
+  auto newFaMap = faMap;
+
+  // Earlier, we didn't resolve the body of the function, but when it's an
+  // initializer, it can have substitution-producing statements such
+  // as `this.typeField = int`. Now that we have picked this candidate
+  // as most specific, it's safe to resolve the body without worrying about
+  // spurious errors from other andidates.
+  if (fn->isInitializer()) {
+    auto instantiationPoiScope =
+      Resolver::poiScopeOrNull(rc->context(), fn, scope, poiScope);
+    auto rf = resolveFunction(rc, fn, instantiationPoiScope, /* skipIfRunning */ true);
+
+    if (rf) {
+      fn = rf->signature();
+      newFaMap.updateReceiverType(fn);
+    }
+  }
+
   int coercionFormal = -1;
   int coercionActual = -1;
   for (auto fa : faMap.byFormals()) {
@@ -1194,23 +1256,33 @@ MostSpecificCandidate MostSpecificCandidate::fromTypedFnSignature(Context* conte
 
     if (!formalType.type() || !actualType.type()) continue;
 
-    auto got = canPass(context, actualType, formalType);
-    if (got.converts() && formalType.kind() == QualifiedType::CONST_REF) {
+    auto canPassFn =
+      actualType.kind() == QualifiedType::INIT_RECEIVER ? canPassScalar
+                                                        : canPass;
+    // An exception is made for the case where we have to convert a tuple to
+    // its referential equivalent, which doesn't count as coercion in the
+    // conventional Chapel sense.
+    auto got = canPassFn(rc->context(), actualType, formalType);
+    if (got.converts() && formalType.kind() == QualifiedType::CONST_REF &&
+        got.conversionKind() != CanPassResult::TO_REFERENTIAL_TUPLE) {
       coercionFormal = fa.formalIdx();
       coercionActual = fa.actualIdx();
       break;
     }
   }
 
-  return MostSpecificCandidate(fn, faMap, promotedFormals, coercionFormal, coercionActual);
+  return MostSpecificCandidate(fn, std::move(newFaMap), promotedFormals, coercionFormal, coercionActual);
 }
 
-MostSpecificCandidate MostSpecificCandidate::fromTypedFnSignature(Context* context,
-                                          const TypedFnSignature* fn,
-                                          const CallInfo& ci,
-                                          const SubstitutionsMap& promotedFormals) {
+MostSpecificCandidate
+MostSpecificCandidate::fromTypedFnSignature(ResolutionContext* rc,
+                                            const TypedFnSignature* fn,
+                                            const CallInfo& ci,
+                                            const Scope* scope,
+                                            const PoiScope* poiScope,
+                                            const SubstitutionsMap& promotedFormals) {
   auto faMap = FormalActualMap(fn, ci);
-  return MostSpecificCandidate::fromTypedFnSignature(context, fn, faMap, promotedFormals);
+  return MostSpecificCandidate::fromTypedFnSignature(rc, fn, faMap, scope, poiScope, promotedFormals);
 }
 
 void MostSpecificCandidate::stringify(std::ostream& ss,
@@ -1282,6 +1354,8 @@ const char* AssociatedAction::kindToString(Action a) {
       return "copy-init";
     case DEFAULT_INIT:
       return "default-init";
+    case CUSTOM_COPY_INIT:
+      return "custom-copy-init";
     case INIT_OTHER:
       return "init-from-other";
     case DEINIT:
@@ -1292,6 +1366,8 @@ const char* AssociatedAction::kindToString(Action a) {
       return "new-init";
     case REDUCE_SCAN:
       return "reduce-scan";
+    case REDUCE_ASSIGN:
+      return "reduce-assign";
     case INFER_TYPE:
       return "infer-type";
     case COMPARE:
@@ -1320,6 +1396,10 @@ void AssociatedAction::stringify(std::ostream& ss,
   if (!id_.isEmpty()) {
     ss << " id=";
     id_.stringify(ss, stringKind);
+  }
+  if (!type_.isUnknown()) {
+    ss << " type=";
+    type_.stringify(ss, stringKind);
   }
 }
 
@@ -1352,13 +1432,13 @@ ResolutionResultByPostorderID::stringify(std::ostream& ss,
 
   size_t maxIdWidth = 0;
   for (auto key : keys) {
-    auto id = ID(symbolId.symbolPath(), key, -1);
+    auto id = ID(symbolId_.symbolPath(), key, -1);
     if (id.str().size() > maxIdWidth)
       maxIdWidth = id.str().size();
   }
 
   for (auto key : keys) {
-    auto id = ID(symbolId.symbolPath(), key, -1);
+    auto id = ID(symbolId_.symbolPath(), key, -1);
 
     // output the ID
     std::cout << std::setw(maxIdWidth) << std::left << id.str();
@@ -1587,6 +1667,11 @@ bool SimpleMethodLookupHelper::isReceiverApplicable(Context* context,
   return methodReceiverId == receiverTypeId_;
 }
 
+
+bool SimpleMethodLookupHelper::shouldCheckForTertiaryMethods(Context* context, const VisibilitySymbols* toCheck) const {
+  return false; // no type information, so no clever tertiary method searching
+}
+
 void SimpleMethodLookupHelper::stringify(std::ostream& ss,
                                          chpl::StringifyKind stringKind) const {
   ss << "SimpleMethodLookupHelper ";
@@ -1643,6 +1728,31 @@ bool TypedMethodLookupHelper::isReceiverApplicable(Context* context,
     return p.passes();
   }
 
+  return false;
+}
+
+static std::vector<QualifiedType> const& importedTypesInVisibilitySymbols(Context* context, const VisibilitySymbols* symbols) {
+  QUERY_BEGIN(importedTypesInVisibilitySymbols, context, symbols);
+  std::vector<QualifiedType> result;
+
+  if (symbols->kind() == VisibilitySymbols::ONLY_CONTENTS &&
+      symbols->scope()->tag() == uast::asttags::Module) {
+    for (auto& rename : symbols->names()) {
+      auto& nameRE = resolveNameInModule(context, symbols->scope()->id(), rename.first);
+
+      if (!nameRE.type().isUnknownOrErroneous()) result.push_back(nameRE.type());
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+bool TypedMethodLookupHelper::shouldCheckForTertiaryMethods(Context* context, const VisibilitySymbols* toCheck) const {
+  auto receiverTypeAsType = QualifiedType(QualifiedType::TYPE, receiverType_.type());
+  for (auto& namedType : importedTypesInVisibilitySymbols(context, toCheck)) {
+    auto p = canPassScalar(context, receiverTypeAsType, namedType);
+    if (p.passes()) return true;
+  }
   return false;
 }
 

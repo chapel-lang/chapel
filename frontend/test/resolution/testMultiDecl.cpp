@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+#include "test-common.h"
 #include "test-resolution.h"
 
 #include "chpl/parsing/parsing-queries.h"
@@ -94,8 +95,7 @@ static void test2() {
 
 static void test3() {
   printf("test3\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto M = parseModule(context,
                 R""""(
@@ -241,6 +241,7 @@ static void test6() {
   ErrorGuard guard(context);
 
   std::string program = R"""(
+    operator =(ref lhs: int, const rhs: int) {}
     var a, b : int;
 
     var x = a;

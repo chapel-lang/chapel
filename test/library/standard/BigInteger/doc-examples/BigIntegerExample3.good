@@ -1,0 +1,2 @@
+BigIntegerExample3.chpl:4: syntax error: integer literal overflow: '4847382292989382987395534934347' is too big for a 64-bit unsigned integer
+BigIntegerExample3.chpl:5: syntax error: integer literal overflow: '4847382292989382987395534934347' is too big for a 64-bit unsigned integer

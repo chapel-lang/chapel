@@ -25,6 +25,7 @@
 #include "chpl/uast/AstList.h"
 #include "chpl/uast/AstTag.h"
 #include "chpl/uast/forward-declare-uast.h"
+#include "chpl/uast/Pragma.h"
 #include "chpl/util/memory.h"
 
 #include <functional>
@@ -33,6 +34,25 @@ namespace chpl {
 namespace uast {
 
 
+namespace detail {
+
+template <typename T>
+const T* astToConst(const AstNode* ast) = delete;
+
+template <typename T>
+T* astTo(AstNode* ast) = delete;
+
+template <typename T>
+bool astIs(const AstNode* ast) = delete;
+
+} // end namespace detail
+
+template <typename Visitor>
+struct AstVisitorPrecondition {
+  static bool skipSubtree(const AstNode* ast, Visitor& v) {
+    return false;
+  }
+};
 
 /**
   This is the base class for AST types.
@@ -288,6 +308,9 @@ class AstNode {
   bool shallowMatch(const AstNode* other) const;
   bool completeMatch(const AstNode* other) const;
 
+  /** Returns true if this AST has the pragma 'p' attached to it. */
+  bool hasPragma(Context* context, uast::pragmatags::PragmaTag p) const;
+
   // 'keep' is some old AST
   // 'addin' is some new AST we wish to combine with it
   //
@@ -318,61 +341,42 @@ class AstNode {
   // define is__ methods for the various AST types
   // using macros and uast-classes-list.h
   /// \cond DO_NOT_DOCUMENT
-  #define AST_IS(NAME) \
+  #define AST_NODE(NAME) \
     bool is##NAME() const { \
       return asttags::is##NAME(this->tag_); \
     }
-  #define AST_NODE(NAME) AST_IS(NAME)
-  #define AST_LEAF(NAME) AST_IS(NAME)
-  #define AST_BEGIN_SUBCLASSES(NAME) AST_IS(NAME)
-  #define AST_END_SUBCLASSES(NAME)
   // Used for macro-based casting
   bool isAstNode() const { return true; }
   /// \endcond
   // Apply the above macros to uast-classes-list.h
-  #include "chpl/uast/uast-classes-list.h"
-  // clear the macros
-  #undef AST_NODE
-  #undef AST_LEAF
-  #undef AST_BEGIN_SUBCLASSES
-  #undef AST_END_SUBCLASSES
-  #undef AST_IS
+  #include "chpl/uast/uast-classes-list-adapter.h"
 
   // define to__ methods for the various AST types
   // using macros and uast-classes-list.h
   // Note: these offer equivalent functionality to C++ dynamic_cast<DstType*>
   /// \cond DO_NOT_DOCUMENT
-  #define AST_TO(NAME) \
+  #define AST_NODE(NAME) \
     const NAME * to##NAME() const { \
       return this->is##NAME() ? (const NAME *)this : nullptr; \
     } \
     NAME * to##NAME() { \
       return this->is##NAME() ? (NAME *)this : nullptr; \
     }
-  #define AST_NODE(NAME) AST_TO(NAME)
-  #define AST_LEAF(NAME) AST_TO(NAME)
-  #define AST_BEGIN_SUBCLASSES(NAME) AST_TO(NAME)
-  #define AST_END_SUBCLASSES(NAME)
   // Used for macro-based casting
-  AST_TO(AstNode)
+  AST_NODE(AstNode)
   /// \endcond
   // Apply the above macros to uast-classes-list.h
-  #include "chpl/uast/uast-classes-list.h"
-  // clear the macros
-  #undef AST_NODE
-  #undef AST_LEAF
-  #undef AST_BEGIN_SUBCLASSES
-  #undef AST_END_SUBCLASSES
-  #undef AST_TO
+  #include "chpl/uast/uast-classes-list-adapter.h"
 
  private:
 
+  /// \cond DO_NOT_DOCUMENT
   template <typename ReturnType, typename Visitor>
   struct Dispatcher {
     static ReturnType doDispatch(const AstNode* ast, Visitor& v) {
 
       switch (ast->tag()) {
-        #define CONVERT(NAME) \
+        #define AST_NODE(NAME) \
           case chpl::uast::asttags::NAME: \
           { \
             return v.visit((const chpl::uast::NAME*) ast); \
@@ -384,21 +388,14 @@ class AstNode {
             CHPL_ASSERT(false && "this code should never be run"); \
           }
 
-        #define AST_NODE(NAME) CONVERT(NAME)
-        #define AST_LEAF(NAME) CONVERT(NAME)
         #define AST_BEGIN_SUBCLASSES(NAME) IGNORE(START_##NAME)
         #define AST_END_SUBCLASSES(NAME) IGNORE(END_##NAME)
 
-        #include "chpl/uast/uast-classes-list.h"
+        #include "chpl/uast/uast-classes-list-adapter.h"
 
         IGNORE(NUM_AST_TAGS)
         IGNORE(AST_TAG_UNKNOWN)
 
-        #undef AST_NODE
-        #undef AST_LEAF
-        #undef AST_BEGIN_SUBCLASSES
-        #undef AST_END_SUBCLASSES
-        #undef CONVERT
         #undef IGNORE
       }
 
@@ -411,7 +408,7 @@ class AstNode {
     static void doDispatch(const AstNode* ast, Visitor& v) {
 
       switch (ast->tag()) {
-        #define CONVERT(NAME) \
+        #define AST_NODE(NAME) \
           case chpl::uast::asttags::NAME: \
           { \
             v.visit((const chpl::uast::NAME*) ast); \
@@ -424,27 +421,21 @@ class AstNode {
             CHPL_ASSERT(false && "this code should never be run"); \
           }
 
-        #define AST_NODE(NAME) CONVERT(NAME)
-        #define AST_LEAF(NAME) CONVERT(NAME)
         #define AST_BEGIN_SUBCLASSES(NAME) IGNORE(START_##NAME)
         #define AST_END_SUBCLASSES(NAME) IGNORE(END_##NAME)
 
-        #include "chpl/uast/uast-classes-list.h"
+        #include "chpl/uast/uast-classes-list-adapter.h"
 
         IGNORE(NUM_AST_TAGS)
         IGNORE(AST_TAG_UNKNOWN)
 
-        #undef AST_NODE
-        #undef AST_LEAF
-        #undef AST_BEGIN_SUBCLASSES
-        #undef AST_END_SUBCLASSES
-        #undef CONVERT
         #undef IGNORE
       }
 
       CHPL_ASSERT(false && "this code should never be run");
     }
   };
+  /// \endcond DO_NOT_DOCUMENT
 
  public:
 
@@ -474,6 +465,15 @@ class AstNode {
 
     return Dispatcher<ReturnType, Visitor>::doDispatch(this, v);
   }
+
+  template <typename TargetAstNode>
+  const TargetAstNode* to() const { return detail::astToConst<TargetAstNode>(this); }
+
+  template <typename TargetAstNode>
+  TargetAstNode* to() { return detail::astTo<TargetAstNode>(this); }
+
+  template <typename TargetAstNode>
+  bool is() const { return detail::astIs<TargetAstNode>(this); }
 
   /**
      The traverse function supports calling a method according to the tag
@@ -509,27 +509,31 @@ class AstNode {
   void traverse(Visitor& v) const {
 
     switch (this->tag()) {
-      #define CASE_LEAF(NAME) \
+      #define AST_LEAF(NAME) \
         case asttags::NAME: \
         { \
-          const NAME* casted = (const NAME*) this; \
-          v.enter(casted); \
-          CHPL_ASSERT(this->numChildren() == 0); \
-          v.exit(casted); \
+          if (!AstVisitorPrecondition<Visitor>::skipSubtree(this, v)) { \
+            const NAME* casted = (const NAME*) this; \
+            v.enter(casted); \
+            CHPL_ASSERT(this->numChildren() == 0); \
+            v.exit(casted); \
+          } \
           break; \
         }
 
-      #define CASE_NODE(NAME) \
+      #define AST_NODE(NAME) \
         case asttags::NAME: \
         { \
-          const NAME* casted = (const NAME*) this; \
-          bool goInToIt = v.enter(casted); \
-          if (goInToIt) { \
-            for (const AstNode* child : this->children()) { \
-              child->traverse(v); \
+          if (!AstVisitorPrecondition<Visitor>::skipSubtree(this, v)) { \
+            const NAME* casted = (const NAME*) this; \
+            bool goInToIt = v.enter(casted); \
+            if (goInToIt) { \
+              for (const AstNode* child : this->children()) { \
+                child->traverse(v); \
+              } \
             } \
+            v.exit(casted); \
           } \
-          v.exit(casted); \
           break; \
         }
 
@@ -540,31 +544,41 @@ class AstNode {
           break; \
         }
 
-      #define AST_NODE(NAME) CASE_NODE(NAME)
-      #define AST_LEAF(NAME) CASE_LEAF(NAME)
       #define AST_BEGIN_SUBCLASSES(NAME) CASE_OTHER(START_##NAME)
       #define AST_END_SUBCLASSES(NAME) CASE_OTHER(END_##NAME)
 
       // Apply the above macros to uast-classes-list.h
       // to fill in the cases
-      #include "chpl/uast/uast-classes-list.h"
+      #include "chpl/uast/uast-classes-list-adapter.h"
       // and also for NUM_AST_TAGS
       CASE_OTHER(NUM_AST_TAGS)
       CASE_OTHER(AST_TAG_UNKNOWN)
 
       // clear the macros
-      #undef AST_NODE
-      #undef AST_LEAF
-      #undef AST_BEGIN_SUBCLASSES
-      #undef AST_END_SUBCLASSES
-      #undef CASE_LEAF
-      #undef CASE_NODE
       #undef CASE_OTHER
     }
   }
 
   owned<AstNode> copy() const;
 };
+
+namespace detail {
+
+template <> inline bool astIs<AstNode>(const AstNode* type) { return true; }
+template <> inline const AstNode* astToConst<AstNode>(const AstNode* ast) { return ast; }
+template <> inline AstNode* astTo<AstNode>(AstNode* ast) { return ast; }
+
+/// \cond DO_NOT_DOCUMENT
+#define AST_NODE(NODE) \
+  template <> inline bool astIs<NODE>(const AstNode* type) { return type->is##NODE(); } \
+  template <> inline const NODE* astToConst<NODE>(const AstNode* ast) { return ast->to##NODE(); } \
+  template <> inline NODE* astTo<NODE>(AstNode* ast) { return ast->to##NODE(); }
+/// \endcond
+
+#include "chpl/uast/uast-classes-list-adapter.h"
+
+} // end namespace detail
+
 } // end namespace uast
 
 template<> struct serialize<uast::AstList> {
@@ -594,7 +608,7 @@ namespace std {
 // define std::less for the various AST types
 // using macros and uast-classes-list.h
 /// \cond DO_NOT_DOCUMENT
-#define AST_LESS(NAME) \
+#define AST_NODE(NAME) \
   template<> struct less<chpl::uast::NAME*> { \
     bool operator()(const chpl::uast::NAME* lhs, \
                     const chpl::uast::NAME* rhs) const { \
@@ -606,21 +620,11 @@ namespace std {
                     ((const chpl::uast::AstNode*)rhs)->id()); \
     } \
   };
-#define AST_NODE(NAME) AST_LESS(NAME)
-#define AST_LEAF(NAME) AST_LESS(NAME)
-#define AST_BEGIN_SUBCLASSES(NAME) AST_LESS(NAME)
-#define AST_END_SUBCLASSES(NAME)
 /// \endcond
-// Apply the above macros to uast-classes-list.h
-#include "chpl/uast/uast-classes-list.h"
 // Additionally, apply the macro to AstNode
-AST_LESS(AstNode)
-// clear the macros
-#undef AST_NODE
-#undef AST_LEAF
-#undef AST_BEGIN_SUBCLASSES
-#undef AST_END_SUBCLASSES
-#undef AST_LESS
+AST_NODE(AstNode)
+// Apply the above macros to uast-classes-list.h
+#include "chpl/uast/uast-classes-list-adapter.h"
 /// \endcond
 
 } // end namespace std

@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+# respect CHPL_TEST_VENV_DIR if it is set and not none
+if [ -n "$CHPL_TEST_VENV_DIR" ] && [ "$CHPL_TEST_VENV_DIR" != "none" ]; then
+  chpl_python=$CHPL_TEST_VENV_DIR/bin/python3
+else
+  chpl_python=$($CHPL_HOME/util/config/find-python.sh)
+fi
+
+# make sure to add the libs dir to the PYTHONPATH if it exists
+FILE_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+MY_LIB_DIR=$FILE_DIR/python_libs
+if [ -d "$MY_LIB_DIR" ]; then
+  export PYTHONPATH=$MY_LIB_DIR:$PYTHONPATH
+fi
+
+$chpl_python create_file.py > $1.good

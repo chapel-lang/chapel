@@ -1,7 +1,3 @@
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "argparsing.h"
 #include <assert.h>
 #include <qthread/qthread.h>
@@ -46,7 +42,8 @@ int main(int argc, char *argv[]) {
   aligned_t t;
   int ret;
 
-  assert(qthread_initialize() == 0);
+  int status = qthread_initialize();
+  test_check(!status);
 
   x = 0;
   CHECK_VERBOSE();
@@ -56,11 +53,11 @@ int main(int argc, char *argv[]) {
   iprintf("Initial value of x: %lu\n", (unsigned long)x);
 
   ret = qthread_fork(consumer, NULL, NULL);
-  assert(ret == QTHREAD_SUCCESS);
+  test_check(ret == QTHREAD_SUCCESS);
   ret = qthread_fork(producer, NULL, &t);
-  assert(ret == QTHREAD_SUCCESS);
+  test_check(ret == QTHREAD_SUCCESS);
   ret = qthread_readFF(&t, &t);
-  assert(ret == QTHREAD_SUCCESS);
+  test_check(ret == QTHREAD_SUCCESS);
 
   if (x == 55) {
     iprintf("Success! x==55\n");

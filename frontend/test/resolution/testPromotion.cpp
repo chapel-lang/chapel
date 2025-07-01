@@ -101,7 +101,13 @@ static void runProgram(std::vector<const char*> prog, F&& f, Types... types) {
   auto context = &ctx;
   ErrorGuard guard(context);
 
-  std::string program = "module ChapelBase {\n  enum iterKind { standalone, leader, follower };\n}\n";
+  std::string program = R"""(
+module ChapelBase {
+  enum iterKind { standalone, leader, follower };
+  operator =(ref lhs:int, const rhs:int) {}
+  operator =(ref lhs:real, const rhs:real) {}
+}
+)""";
 
   auto addType = [&](auto arg) {
     for (const auto& line : arg.strs())
@@ -421,6 +427,51 @@ static void test19() {
         .defineSerialIterator("1"));
 }
 
+static void test20() {
+  // check that we can promote a field access, as spec'ed.
+  runProgram(
+      {
+        "record pair { var first: int; var second: real; }",
+        "proc R.chpl__promotionType() type do return pair;",
+        "for i in (new R()).second {}",
+      },
+      [](ErrorGuard& guard, const QualifiedType& t) {
+        assert(!t.isUnknownOrErroneous());
+        assert(t.type()->isRealType());
+      },
+      IterableType("R").defineSerialIterator("new pair(0, 0.0)"));
+}
+
+static void testFieldPromotionScoping() {
+  // test that field access promotion works even if the field name itself
+  // is not imported / in scope (it should be found in the receiver scopes).
+  auto prog = R"""(
+    module M1 {
+      record point {
+        var firstElt: real;
+        var secondElt: real;
+      }
+      var A: [1..5] point;
+    }
+
+    module M2 {
+      import M1.{A};
+      var B = A.firstElt;
+
+      proc main() {
+        writeln(B);
+      }
+    }
+  )""";
+
+  auto ctx = buildStdContext();
+  auto vars = resolveTypesOfVariables(ctx, prog, { "B" });
+
+  assert(!vars.at("B").isUnknownOrErroneous());
+  assert(vars.at("B").type()->isArrayType());
+  assert(vars.at("B").type()->toArrayType()->eltType().type()->isRealType());
+}
+
 static void testTertiaryMethod() {
   // tertiary method definitions of chpl__promotionType
   // (defined in the scope of iteration) are not allowed.
@@ -483,7 +534,10 @@ int main() {
     test17();
     test18();
     test19();
+    test20();
   }
+
+  testFieldPromotionScoping();
 
   testTertiaryMethod();
 

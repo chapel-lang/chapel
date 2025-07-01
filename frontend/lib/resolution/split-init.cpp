@@ -58,18 +58,22 @@ struct FindSplitInits : VarScopeVisitor {
                                                     const std::vector<VarFrame*>& frames,
                                                     const std::set<ID>& splitInitedVars);
 
+  void propagateChildToParent(VarFrame* frame, VarFrame* parent, const AstNode* ast);
+
   // overrides
   void handleDeclaration(const VarLikeDecl* ast, RV& rv) override;
   void handleMention(const Identifier* ast, ID varId, RV& rv) override;
   void handleAssign(const OpCall* ast, RV& rv) override;
-  void handleOutFormal(const FnCall* ast, const AstNode* actual,
+  void handleOutFormal(const Call* ast, const AstNode* actual,
                        const QualifiedType& formalType,
                        RV& rv) override;
-  void handleInFormal(const FnCall* ast, const AstNode* actual,
+  void handleInFormal(const Call* ast, const AstNode* actual,
                       const QualifiedType& formalType,
+                      const QualifiedType* actualScalarType,
                       RV& rv) override;
-  void handleInoutFormal(const FnCall* ast, const AstNode* actual,
+  void handleInoutFormal(const Call* ast, const AstNode* actual,
                          const QualifiedType& formalType,
+                         const QualifiedType* actualScalarType,
                          RV& rv) override;
 
   void handleReturn(const uast::Return* ast, RV& rv) override;
@@ -80,13 +84,12 @@ struct FindSplitInits : VarScopeVisitor {
   void handleDisjunction(const AstNode * node, 
                          VarFrame * currentFrame,
                          const std::vector<VarFrame*>& frames, 
-                         bool total, RV& rv) override;
+                         bool alwaysTaken, RV& rv) override;
 
   void handleScope(const AstNode* ast, RV& rv) override;
 };
 
 struct SplitInitVarStatus {
-  bool foundReturnsThrows = false;
   bool foundInitedVar = false;
   bool foundMentionedVar = false;
   bool foundDeclaredVar = false;
@@ -99,9 +102,6 @@ SplitInitVarStatus FindSplitInits::findVarStatus(ID varId) {
 
   for (ssize_t i = scopeStack.size() - 1; i >= 0; i--) {
     VarFrame* frame = scopeStack[i].get();
-    if (frame->returnsOrThrows) {
-      status.foundReturnsThrows = true;
-    }
     if (frame->initedVars.count(varId) > 0) {
       status.foundInitedVar = true;
     }
@@ -138,7 +138,7 @@ void FindSplitInits::handleInitOrAssign(ID varId,
 
   // if it wasn't already initialized or mentioned, we mark it initialized
   // in this frame.
-  if (!s.foundReturnsThrows && !s.foundInitedVar && !s.foundMentionedVar) {
+  if (!s.foundInitedVar && !s.foundMentionedVar) {
     // normalize the type -- only consider param value for varId being param.
     QualifiedType::Kind kind = QualifiedType::VAR;
     if (rv.hasId(varId)) {
@@ -179,7 +179,7 @@ void FindSplitInits::handleMention(const Identifier* ast, ID varId, RV& rv) {
 
   // if it wasn't already initialized or mentioned, we mark it mentioned
   // in this frame.
-  if (!s.foundReturnsThrows && !s.foundInitedVar && !s.foundMentionedVar) {
+  if (!s.foundInitedVar && !s.foundMentionedVar) {
     frame->mentionedVars.insert(varId);
   }
 }
@@ -199,7 +199,7 @@ void FindSplitInits::handleAssign(const OpCall* ast, RV& rv) {
   }
 }
 
-void FindSplitInits::handleOutFormal(const FnCall* ast, const AstNode* actual,
+void FindSplitInits::handleOutFormal(const Call* ast, const AstNode* actual,
                                      const QualifiedType& formalType, RV& rv) {
   ID toId = refersToId(actual, rv);
   if (!toId.isEmpty()) {
@@ -210,14 +210,16 @@ void FindSplitInits::handleOutFormal(const FnCall* ast, const AstNode* actual,
   }
 }
 
-void FindSplitInits::handleInFormal(const FnCall* ast, const AstNode* actual,
+void FindSplitInits::handleInFormal(const Call* ast, const AstNode* actual,
                                     const QualifiedType& formalType,
+                                    const QualifiedType* actualScalarType,
                                     RV& rv) {
   processMentions(actual, rv);
 }
 
-void FindSplitInits::handleInoutFormal(const FnCall* ast, const AstNode* actual,
+void FindSplitInits::handleInoutFormal(const Call* ast, const AstNode* actual,
                                        const QualifiedType& formalType,
+                                       const QualifiedType* actualScalarType,
                                        RV& rv) {
   processMentions(actual, rv);
 }
@@ -280,7 +282,7 @@ std::map<ID,QualifiedType> FindSplitInits::verifyInitOrderAndType(const AstNode 
 
       // only check initialization order if the branch 
       // does not unconditionally return
-      if (frame->returnsOrThrows) continue;
+      if (frame->controlFlowInfo.returnsOrThrows()) continue;
 
       if (idx >= referenceInitOrder.size()) {
         referenceInitOrder.emplace_back(id, qt);
@@ -299,28 +301,7 @@ std::map<ID,QualifiedType> FindSplitInits::verifyInitOrderAndType(const AstNode 
 void FindSplitInits::handleDisjunction(const AstNode * node, 
                                        VarFrame * currentFrame, 
                                        const std::vector<VarFrame*>& frames, 
-                                       bool total, RV& rv) {
-
-  // first, if the branch is known at compile time, just process that one.
-  for(auto frame: frames) {
-    if (!frame->paramTrueCond) continue;
-
-    for (auto pair : frame->initedVarsVec) {
-      const auto & id = pair.first;
-      const auto & rhsType = pair.second;
-      if (frame->eligibleVars.count(id) > 0) {
-        // variable is local to this frame's scope; save the result.
-        allSplitInitedVars.insert(id);
-      } else {
-        // variable was declared in an outer scope, and this is only
-        // possible path, so its definitely a valid split init
-        addInit(currentFrame, id, rhsType);
-      }
-    }
-
-    propagateMentions(currentFrame, frame);
-    return;
-  }
+                                       bool alwaysTaken, RV& rv) {
 
   // gather the set of variables inited in any of the branches
   std::set<ID> locallyInitedVars;
@@ -352,7 +333,7 @@ void FindSplitInits::handleDisjunction(const AstNode * node,
     bool allFramesInitReturnOrThrow = true;
     for(auto frame : frames) {
       bool thisFrameInits = frame->initedVars.count(id) > 0;
-      allFramesInitReturnOrThrow &= thisFrameInits || frame->returnsOrThrows;
+      allFramesInitReturnOrThrow &= thisFrameInits || frame->controlFlowInfo.returnsOrThrows();
     }
     if (allFramesInitReturnOrThrow) {
       locallySplitInitedVars.insert(id);
@@ -361,7 +342,7 @@ void FindSplitInits::handleDisjunction(const AstNode * node,
     }
   }
 
-  if (!total) {
+  if (!alwaysTaken) {
     for (auto frame: frames) {
       propagateMentions(currentFrame, frame);
     } 
@@ -384,10 +365,19 @@ void FindSplitInits::handleDisjunction(const AstNode * node,
 
 void FindSplitInits::handleTry(const Try* t, RV& rv) {
   VarFrame* tryFrame = currentFrame();
+  VarFrame* bodyFrame = currentTryBodyFrame();
   int nCatchFrames = currentNumCatchFrames();
+
+  // if the 'try' body is a subFrame, we didn't "exit" it normally like
+  // we do with other scopes. Do that now, since we don't need to treat
+  // it specially here.
+  if (bodyFrame != tryFrame) {
+    propagateChildToParent(bodyFrame, tryFrame, t);
+  }
+
   // if there are no catch clauses, treat it like any other scope
   if (nCatchFrames == 0) {
-    handleScope(t, rv);
+    propagateChildToParent(bodyFrame, currentParentFrame(), t);
     return;
   }
 
@@ -397,20 +387,20 @@ void FindSplitInits::handleTry(const Try* t, RV& rv) {
   bool allThrowOrReturn = true;
   for (int i = 0; i < nCatchFrames; i++) {
     VarFrame* catchFrame = currentCatchFrame(i);
-    if (!catchFrame->returnsOrThrows) {
+    if (!catchFrame->controlFlowInfo.returnsOrThrows()) {
       allThrowOrReturn = false;
     }
   }
 
   // collect variables to tell parent frame we are split initing here
   std::set<ID> trySplitInitVars;
-  std::set<ID> tryMentionedVars = tryFrame->mentionedVars;
+  std::set<ID> tryMentionedVars = bodyFrame->mentionedVars;
 
   // consider the variables we wish to init.
   // Are they mentioned in any catch clauses? Including with assignment?
   // If they are not eligible for split-init, move them to mentionedVars.
-  for (const auto& id : tryFrame->initedVars) {
-    if (tryFrame->eligibleVars.count(id) > 0) {
+  for (const auto& id : bodyFrame->initedVars) {
+    if (bodyFrame->eligibleVars.count(id) > 0) {
       // variable declared in the Try scope, so save the result
       allSplitInitedVars.insert(id);
     } else {
@@ -440,7 +430,7 @@ void FindSplitInits::handleTry(const Try* t, RV& rv) {
 
   // compute the inited vars types and ordering
   std::vector<std::pair<ID, QualifiedType>> tryInitedVarsVec;
-  for (const auto& pair : tryFrame->initedVarsVec) {
+  for (const auto& pair : bodyFrame->initedVarsVec) {
     ID id = pair.first;
     QualifiedType rhsType = pair.second;
     if (trySplitInitVars.count(id) > 0) {
@@ -475,10 +465,7 @@ static bool allowsSplitInit(const AstNode* ast) {
          ast->isTry();
 }
 
-void FindSplitInits::handleScope(const AstNode* ast, RV& rv) {
-  VarFrame* frame = currentFrame();
-  VarFrame* parent = currentParentFrame();
-
+void FindSplitInits::propagateChildToParent(VarFrame* frame, VarFrame* parent, const AstNode* ast) {
   if (allowsSplitInit(ast)) {
     // a scope that allows split init (e.g. a regular { } block)
 
@@ -506,14 +493,19 @@ void FindSplitInits::handleScope(const AstNode* ast, RV& rv) {
   } else {
     // some kind of scope that does not allow split init
     // (e.g., a loop)
-    if (parent != nullptr) {
-      // propagate initedVars and mentionedVars
-      // to mentionedVars in the parent
-      for (const auto& id : frame->initedVars) {
-        if (frame->eligibleVars.count(id) == 0) {
-          parent->mentionedVars.insert(id);
-        }
+    // propagate initedVars and mentionedVars
+    // to mentionedVars in the parent, and to global result if they are split-
+    // inited here.
+    for (const auto& idQt : frame->initedVarsVec) {
+      auto& id = idQt.first;
+      if (frame->eligibleVars.count(id) == 0) {
+        if (parent) parent->mentionedVars.insert(id);
+      } else {
+        // variable declared in this scope, so save the result
+        allSplitInitedVars.insert(id);
       }
+    }
+    if (parent != nullptr) {
       for (const auto& id : frame->mentionedVars) {
         if (frame->eligibleVars.count(id) == 0) {
           parent->mentionedVars.insert(id);
@@ -521,6 +513,14 @@ void FindSplitInits::handleScope(const AstNode* ast, RV& rv) {
       }
     }
   }
+
+}
+
+void FindSplitInits::handleScope(const AstNode* ast, RV& rv) {
+  VarFrame* frame = currentFrame();
+  VarFrame* parent = currentParentFrame();
+
+  propagateChildToParent(frame, parent, ast);
 }
 
 std::set<ID>

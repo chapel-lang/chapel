@@ -92,7 +92,7 @@ bool InitResolver::setupFromType(const Type* type) {
   }
 
   auto ct = type->getCompositeType();
-  auto& rf = fieldsForTypeDecl(ctx_, ct, DefaultsPolicy::USE_DEFAULTS);
+  auto& rf = fieldsForTypeDecl(initResolver_.rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
 
   // If any of the newly-set fields are type or params, setting them
   // effectively means the receiver is a different type.
@@ -126,11 +126,30 @@ void InitResolver::resolveImplicitSuperInit() {
                                   ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL));
     auto superQT = QualifiedType(QualifiedType::INIT_RECEIVER, superCT);
     actuals.push_back(CallInfoActual(superQT, USTR("this")));
-    auto ci = CallInfo(USTR("init"), superQT, true, false, false, actuals);
-    auto inScopes = CallScopeInfo::forNormalCall(initResolver_.scopeStack.back(), initResolver_.poiScope);
-    auto c = resolveGeneratedCall(ctx_, fn_->body()->child(0), ci, inScopes);
+    auto ci = CallInfo(USTR("init"), QualifiedType(), true, false, false, actuals);
+    auto inScopes = CallScopeInfo::forNormalCall(initResolver_.currentScope(), initResolver_.poiScope);
 
-    updateSuperType(&c);
+    auto callContext = fn_->body();
+    auto c = initResolver_.resolveGeneratedCall(callContext, &ci, &inScopes);
+    c.callName = "super.init";
+    c.reportError = [this](const Resolver::CallResultWrapper& result,
+                            std::vector<ApplicabilityResult>& rejected,
+                            std::vector<const uast::VarLikeDecl*>& actualDecls) {
+      CHPL_REPORT(result.parent->context,
+                  NoMatchingSuper, result.astForContext, *result.ci,
+                  rejected, actualDecls, this->useOfSuperFields_);
+    };
+
+    // Capture the errors emitted here and defer them until we know we haven't
+    // found a "real" super.init call (which means a different error supercedes
+    // these).
+    auto cAndErrors = ctx_->runAndCaptureErrors([&c](Context* ctx) {
+      c.noteResultPrintCandidates(nullptr);
+      return true;
+    });
+
+    errorsFromImplicitSuperInit = cAndErrors.consumeErrors();
+    updateSuperType(&c.result);
   }
 }
 
@@ -139,7 +158,8 @@ void InitResolver::doSetupInitialState(void) {
   phase_ = isCallToSuperInitRequired() ? PHASE_NEED_SUPER_INIT
                                        : PHASE_NEED_COMPLETE;
 
-  std::ignore = setupFromType(initialRecvType_);
+  const Type* setupFrom = initialRecvType_;
+  std::ignore = setupFromType(setupFrom);
 }
 
 void InitResolver::markComplete() {
@@ -249,7 +269,7 @@ void InitResolver::merge(owned<InitResolver>& A, owned<InitResolver>& B) {
 
 bool InitResolver::isFinalReceiverStateValid(void) {
   auto ctInitial = initialRecvType_->getCompositeType();
-  auto& rfInitial = fieldsForTypeDecl(ctx_, ctInitial,
+  auto& rfInitial = fieldsForTypeDecl(initResolver_.rc, ctInitial,
                                       DefaultsPolicy::USE_DEFAULTS);
   bool ret = true;
 
@@ -280,79 +300,181 @@ bool InitResolver::isFinalReceiverStateValid(void) {
   return ret;
 }
 
+static std::pair<const BasicClassType*, const BasicClassType*>
+extractBasicSubclassFromInstance(const QualifiedType& instanceQT) {
+  if (instanceQT.isUnknownOrErroneous()) return {nullptr, nullptr};
+
+  const BasicClassType* bct = nullptr;
+  if (auto ct = instanceQT.type()->toClassType()) {
+    bct = ct->basicClassType();
+  } else {
+    bct = instanceQT.type()->toBasicClassType();
+  }
+
+  if (!bct) return {nullptr, nullptr};
+
+  auto parentBct = bct->parentClassType();
+  if (!parentBct) return {nullptr, nullptr};
+
+  return {bct, parentBct};
+}
+
+template <size_t ... Is>
+struct ImplCreateNTuple {
+  template <size_t>
+  using wrap = QualifiedType;
+
+  using type = std::tuple<wrap<Is>...>;
+};
+
+// for the given N names, return N QualifiedTypes
+template <typename ...FieldNames, size_t ... Is>
+static auto helpExtractFields(ResolutionContext* rc, const BasicClassType* bct, std::index_sequence<Is...>, FieldNames... names) {
+  auto& rf = fieldsForTypeDecl(rc, bct,
+                               DefaultsPolicy::IGNORE_DEFAULTS);
+  CHPL_ASSERT(rf.numFields() >= 0 && (size_t) rf.numFields() >= sizeof...(names));
+
+  // TODO: error if any requested fields are not found
+  typename ImplCreateNTuple<Is...>::type ret;
+  for (int i = 0; i < rf.numFields(); i++) {
+    ((rf.fieldName(i) == names ? (std::get<Is>(ret) = rf.fieldType(i), 0) : 0), ...);
+  }
+  return ret;
+}
+
+// same as above, but consider parent classes
+template <typename FoundEach, typename ...FieldNames, size_t ... Is>
+static auto helpExtractFieldsHierarchy(ResolutionContext* rc, const BasicClassType* bct, FoundEach& foundEach, std::index_sequence<Is...>, FieldNames... names) {
+  typename ImplCreateNTuple<Is...>::type ret;
+
+  while (bct) {
+    auto& rf = fieldsForTypeDecl(rc, bct,
+                                 DefaultsPolicy::IGNORE_DEFAULTS);
+    for (int i = 0; i < rf.numFields(); i++) {
+        ((rf.fieldName(i) == names ?
+          (std::get<Is>(ret) = rf.fieldType(i),
+           std::get<Is>(foundEach) += 1,
+           0) : 0), ...);
+    }
+
+    bct = bct->parentClassType();
+
+    // if we've found all of them, stop
+    if ((std::get<Is>(foundEach) && ...)) {
+      break;
+    }
+  }
+
+  return ret;
+}
+
+template <typename ...FieldNames>
+static auto extractFields(ResolutionContext* rc, const BasicClassType* bct,  FieldNames... names) {
+  return helpExtractFields(rc, bct, std::make_index_sequence<sizeof...(FieldNames)>(), names...);
+}
+
+// similar to extractFields, but instead of assuming the fields are in the given
+// class, traverse the class hierarchy to find them. Also, the additional
+// foundEach template argument is used to count how many times each field
+// has occurred. This is useful to know when to stop searching, and to
+// issue errors for missing fields.
+template <typename FoundEach, typename ...FieldNames>
+static auto extractFieldsHierarchy(ResolutionContext* rc, const BasicClassType* bct,  FoundEach& foundEach, FieldNames... names) {
+  return helpExtractFieldsHierarchy(rc, bct, foundEach, std::make_index_sequence<sizeof...(FieldNames)>(), names...);
+}
+
+static std::tuple<QualifiedType, QualifiedType, QualifiedType>
+extractRectangularInfo(ResolutionContext* rc, const BasicClassType* bct) {
+  return extractFields(rc, bct, "rank", "idxType", "strides");
+}
+
+static std::tuple<QualifiedType, QualifiedType>
+extractAssociativeInfo(ResolutionContext* rc, const BasicClassType* bct) {
+  return extractFields(rc, bct, "idxType", "parSafe");
+}
+
+static const DomainType* domainTypeFromInstance(
+    ResolutionContext* rc, const QualifiedType& instanceQt) {
+  auto context = rc->context();
+
+  auto [instanceBct, baseDom] = extractBasicSubclassFromInstance(instanceQt);
+  if (!instanceBct || !baseDom) return nullptr;
+
+  if (baseDom->id().symbolPath() == "ChapelDistribution.BaseRectangularDom") {
+    auto [rank, idxType, strides] = extractRectangularInfo(rc, baseDom);
+    return DomainType::getRectangularType(context, instanceQt, rank,
+                                          idxType, strides);
+  } else if (baseDom->id().symbolPath() == "ChapelDistribution.BaseAssociativeDom") {
+    // Currently the relevant associative domain fields are defined
+    // on all the children of BaseAssociativeDom, so get information
+    // from there.
+    auto [idxType, parSafe] = extractAssociativeInfo(rc, instanceBct);
+    return DomainType::getAssociativeType(context, instanceQt, idxType,
+                                          parSafe);
+  } else if (baseDom->id().symbolPath() == "ChapelDistribution.BaseSparseDomImpl") {
+    auto superclass = baseDom->parentClassType();
+    CHPL_ASSERT(superclass->id().symbolPath() == "ChapelDistribution.BaseSparseDom");
+
+    auto [parentDom] = extractFields(rc, superclass, "parentDom");
+    return DomainType::getSparseType(context, instanceQt, parentDom);
+  } else {
+    // not a recognized domain type
+    return nullptr;
+  }
+
+  // If we reach here, we weren't able to resolve the domain type
+  return nullptr;
+}
+
 // Extract domain type information from _instance substitution
 static const DomainType* domainTypeFromSubsHelper(
-    Context* context, const CompositeType::SubstitutionsMap& subs) {
+    ResolutionContext* rc, const CompositeType::SubstitutionsMap& subs) {
+  auto context = rc->context();
   auto genericDomain = DomainType::getGenericDomainType(context);
 
   // Expect one substitution for _instance
   if (subs.size() != 1) return genericDomain;
 
   const QualifiedType instanceQt = subs.begin()->second;
-
-  if (auto instance = instanceQt.type()) {
-    if (auto instanceCt = instance->toClassType()) {
-      if (auto instanceBct = instanceCt->basicClassType()) {
-        // Get BaseRectangularDom parent subs for rectangular domain info
-        if (auto baseDom = instanceBct->parentClassType()) {
-          if (baseDom->id().symbolPath() == "ChapelDistribution.BaseRectangularDom") {
-            auto& rf = fieldsForTypeDecl(context, baseDom,
-                                         DefaultsPolicy::IGNORE_DEFAULTS);
-            CHPL_ASSERT(rf.numFields() == 3);
-            QualifiedType rank;
-            QualifiedType idxType;
-            QualifiedType strides;
-            for (int i = 0; i < rf.numFields(); i++) {
-              if (rf.fieldName(i) == "rank") {
-                rank = rf.fieldType(i);
-              } else if (rf.fieldName(i) == "idxType") {
-                idxType = rf.fieldType(i);
-              } else if (rf.fieldName(i) == "strides") {
-                strides = rf.fieldType(i);
-              }
-            }
-
-            return DomainType::getRectangularType(context, instanceQt, rank,
-                                                  idxType, strides);
-          } else if (baseDom->id().symbolPath() == "ChapelDistribution.BaseAssociativeDom") {
-            // Currently the relevant associative domain fields are defined
-            // on all the children of BaseAssociativeDom, so get information
-            // from there.
-            auto& rf = fieldsForTypeDecl(context, instanceBct,
-                                         DefaultsPolicy::IGNORE_DEFAULTS);
-            CHPL_ASSERT(rf.numFields() >= 2);
-            QualifiedType idxType;
-            QualifiedType parSafe;
-            for (int i = 0; i < rf.numFields(); i++) {
-              if (rf.fieldName(i) == "idxType") {
-                idxType = rf.fieldType(i);
-              } else if (rf.fieldName(i) == "parSafe") {
-                parSafe = rf.fieldType(i);
-              }
-            }
-
-            return DomainType::getAssociativeType(context, instanceQt, idxType,
-                                                  parSafe);
-          } else if (baseDom->id().symbolPath() == "ChapelDistribution.BaseSparseDom") {
-            // TODO: support sparse domains
-          } else {
-            // not a recognized domain type
-            return genericDomain;
-          }
-        }
-      }
-    }
-  }
-
-  // If we reach here, we weren't able to resolve the domain type
-  return genericDomain;
+  auto domain = domainTypeFromInstance(rc, instanceQt);
+  return domain != nullptr ? domain : genericDomain;
 }
 
-static const Type* ctFromSubs(Context* context,
+static const ArrayType* arrayTypeFromSubsHelper(
+    ResolutionContext* rc, const CompositeType::SubstitutionsMap& subs) {
+  auto context = rc->context();
+  auto genericArray = ArrayType::getGenericArrayType(context);
+
+  // Expect one substitution for _instance
+  if (subs.size() != 1) return genericArray;
+
+  const QualifiedType instanceQt = subs.begin()->second;
+  auto [instanceBct, baseArr] = extractBasicSubclassFromInstance(instanceQt);
+  if (!instanceBct || !baseArr) return genericArray;
+
+  auto fieldCounts = std::make_pair(0, 0);
+  auto [domInstanceQt, eltType] = extractFieldsHierarchy(rc, instanceBct, fieldCounts, "dom", "eltType");
+
+  if (fieldCounts.first == 0) {
+    rc->context()->error(instanceBct->id(), "array implementation class doesn't have required field 'dom'");
+  }
+  if (fieldCounts.second == 0) {
+    rc->context()->error(instanceBct->id(), "array implementation class doesn't have required field 'eltType'");
+  }
+
+  auto domain = domainTypeFromInstance(rc, domInstanceQt);
+
+  return ArrayType::getArrayType(context, instanceQt,
+                                 QualifiedType(QualifiedType::TYPE, domain),
+                                 eltType);
+}
+
+static const Type* ctFromSubs(ResolutionContext* rc,
                               const Type* receiverType,
                               const BasicClassType* superType,
                               const CompositeType* compositeType,
                               const CompositeType::SubstitutionsMap& subs) {
+  auto context = rc->context();
   auto root = compositeType->instantiatedFromCompositeType() ?
               compositeType->instantiatedFromCompositeType() :
               compositeType;
@@ -382,7 +504,9 @@ static const Type* ctFromSubs(Context* context,
     auto dec = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
     ret = ClassType::get(context, basic, manager, dec);
   } else if (receiverType->isDomainType()) {
-    ret = domainTypeFromSubsHelper(context, subs);
+    ret = domainTypeFromSubsHelper(rc, subs);
+  } else if (receiverType->isArrayType()) {
+    ret = arrayTypeFromSubsHelper(rc, subs);
   } else {
     CHPL_ASSERT(false && "Not handled!");
   }
@@ -393,12 +517,18 @@ static const Type* ctFromSubs(Context* context,
 const Type* InitResolver::computeReceiverTypeConsideringState(void) {
   auto ctInitial = initialRecvType_->getCompositeType();
 
+  // for the purposes of determing if subs are needed, we want to inspect the
+  // base type.
+  if (auto ctInitialBase = ctInitial->instantiatedFromCompositeType()) {
+    ctInitial = ctInitialBase;
+  }
+
   // The non-default fields are used to determine if we need to create
   // substitutions. I.e., if a field is concrete even if we ignore defaults,
   // no reason to add a substitution.
-  auto& rfNoDefaults = fieldsForTypeDecl(ctx_, ctInitial,
+  auto& rfNoDefaults = fieldsForTypeDecl(initResolver_.rc, ctInitial,
                                         DefaultsPolicy::IGNORE_DEFAULTS);
-  auto& rfDefaults = fieldsForTypeDecl(ctx_, ctInitial,
+  auto& rfDefaults = fieldsForTypeDecl(initResolver_.rc, ctInitial,
                                        DefaultsPolicy::USE_DEFAULTS);
   CompositeType::SubstitutionsMap subs;
 
@@ -409,7 +539,7 @@ const Type* InitResolver::computeReceiverTypeConsideringState(void) {
     if (genericParent) {
       // Might need to update the parent of the initial receiver type after
       // a super.init call
-      return ctFromSubs(ctx_, initialRecvType_, superType_, ctInitial, subs);
+      return ctFromSubs(initResolver_.rc, initialRecvType_, superType_, ctInitial, subs);
     } else {
       return currentRecvType_;
     }
@@ -445,8 +575,8 @@ const Type* InitResolver::computeReceiverTypeConsideringState(void) {
         // substitutions from previous fields. If the composite type is
         // dependently typed, we might be able to compute defaults that
         // depend on these prior substitutions.
-        auto ctIntermediate = ctFromSubs(ctx_, initialRecvType_, superType_, ctInitial, subs);
-        auto& rfIntermediate = fieldsForTypeDecl(ctx_, ctIntermediate->getCompositeType(),
+        auto ctIntermediate = ctFromSubs(initResolver_.rc, initialRecvType_, superType_, ctInitial, subs);
+        auto& rfIntermediate = fieldsForTypeDecl(initResolver_.rc, ctIntermediate->getCompositeType(),
                                                  DefaultsPolicy::USE_DEFAULTS);
 
         qtForSub = rfIntermediate.fieldType(i);
@@ -459,7 +589,7 @@ const Type* InitResolver::computeReceiverTypeConsideringState(void) {
   }
 
   if (!subs.empty() || genericParent) {
-    const Type* ret = ctFromSubs(ctx_, initialRecvType_, superType_, ctInitial, subs);
+    const Type* ret = ctFromSubs(initResolver_.rc, initialRecvType_, superType_, ctInitial, subs);
     CHPL_ASSERT(ret);
     return ret;
   } else {
@@ -471,7 +601,8 @@ QualifiedType::Kind InitResolver::determineReceiverIntent(void) {
   if (initialRecvType_->isClassType()) {
     return QualifiedType::CONST_IN;
   } else if (initialRecvType_->isRecordType() ||
-             initialRecvType_->isDomainType()) {
+             initialRecvType_->isDomainType() ||
+             initialRecvType_->isArrayType()) {
     return QualifiedType::REF;
   } else {
     CHPL_ASSERT(false && "Not handled");
@@ -518,9 +649,42 @@ InitResolver::computeTypedSignature(const Type* newRecvType) {
   return ret;
 }
 
+static void findMismatchedInstantiations(Context* context,
+                                         const CompositeType* originalCT,
+                                         const CompositeType* finalCT,
+                                         std::vector<std::tuple<ID, UniqueString, QualifiedType, QualifiedType>>& out) {
+  while (originalCT) {
+    CHPL_ASSERT(finalCT);
+    if (!originalCT->instantiatedFromCompositeType()) break;
+
+    for (auto& [id, qt] : originalCT->substitutions()) {
+      auto finalSub = finalCT->substitutions().find(id);
+      if (finalSub == finalCT->substitutions().end()) {
+        out.emplace_back(id, parsing::fieldIdToName(context, id), qt, QualifiedType());
+      } else {
+        auto& finalQt = finalSub->second;
+        if (qt != finalQt) {
+          out.emplace_back(id, parsing::fieldIdToName(context, id), qt, finalQt);
+        }
+      }
+    }
+
+    if (auto clt = originalCT->toBasicClassType()) {
+      originalCT = clt->parentClassType();
+      finalCT = finalCT->toBasicClassType()->parentClassType();
+    } else {
+      break;
+    }
+  }
+}
+
 // TODO: Identify cases where we don't need to do anything.
 const TypedFnSignature* InitResolver::finalize(void) {
   if (fn_ == nullptr) CHPL_ASSERT(false && "Not handled yet!");
+
+  for (auto& error : errorsFromImplicitSuperInit) {
+    ctx_->report(std::move(error));
+  }
 
   auto ret = initResolver_.typedSignature;
 
@@ -539,6 +703,17 @@ const TypedFnSignature* InitResolver::finalize(void) {
   if (isFinalReceiverStateValid()) {
     auto newRecvType = computeReceiverTypeConsideringState();
     ret = computeTypedSignature(newRecvType);
+
+    auto originalCt = initialRecvType_->getCompositeType();
+    auto finalCt = newRecvType->getCompositeType();
+
+    CHPL_ASSERT((originalCt != nullptr) == (finalCt != nullptr));
+    if (finalCt && finalCt->instantiatedFromCompositeType() &&
+        !finalCt->isInstantiationOf(ctx_, originalCt)) {
+      std::vector<std::tuple<ID, UniqueString, QualifiedType, QualifiedType>> mismatches;
+      findMismatchedInstantiations(ctx_, originalCt, finalCt, mismatches);
+      CHPL_REPORT(ctx_, MismatchedInitializerResult, fn_, originalCt, finalCt, std::move(mismatches));
+    }
   }
 
   return ret;
@@ -562,12 +737,23 @@ bool InitResolver::implicitlyResolveFieldType(ID id) {
   if (!state || !state->initPointId.isEmpty()) return false;
 
   auto ct = currentRecvType_->getCompositeType();
-  auto& rf = resolveFieldDecl(ctx_, ct, id, DefaultsPolicy::USE_DEFAULTS);
+  auto& rf = resolveFieldDecl(initResolver_.rc, ct, id, DefaultsPolicy::USE_DEFAULTS);
   for (int i = 0; i < rf.numFields(); i++) {
     auto id = rf.fieldDeclId(i);
     auto state = fieldStateFromId(id);
     CHPL_ASSERT(state);
     CHPL_ASSERT(state->qt.kind() == rf.fieldType(i).kind());
+
+    if ((state->qt.kind() == QualifiedType::TYPE ||
+         state->qt.kind() == QualifiedType::PARAM) &&
+        !rf.fieldHasDefaultValue(i)) {
+      // Chapel does not allow default-initialization of type fields without
+      // defaults. Without a default value and needing default initialization,
+      // this field ought to be generic anyway.
+      ctx_->error(fn_, "cannot implicitly initialize field '%s', which does "
+                       "not have a default value.", rf.fieldName(i).c_str());
+    }
+
     state->qt = rf.fieldType(i);
     state->isInitialized = true;
   }
@@ -690,6 +876,7 @@ bool InitResolver::handleCallToSuperInit(const FnCall* node,
         updateSuperType(c);
 
         this->explicitSuperInit = true;
+        this->errorsFromImplicitSuperInit.clear();
 
         return true;
       }
@@ -729,8 +916,8 @@ bool InitResolver::applyResolvedInitCallToState(const FnCall* node,
   }
 
   auto initialCompType = initialRecvType_->getCompositeType();
-  if (initialCompType->instantiatedFromCompositeType()) {
-    initialCompType = initialCompType->instantiatedFromCompositeType();
+  if (auto initialCompTypeBase = initialCompType->instantiatedFromCompositeType()) {
+    initialCompType = initialCompTypeBase;
   }
 
   CHPL_ASSERT(receiverCompType == initialCompType);
@@ -840,7 +1027,7 @@ bool InitResolver::handleAssignmentToField(const OpCall* node) {
     if (!isAlreadyInitialized) {
       // Recompute field type in case it depends on a recently-instantiated
       // field. For example, ``var curField : typeField;``.
-      auto rf = resolveFieldDecl(ctx_, currentRecvType_->getCompositeType(), fieldId, DefaultsPolicy::IGNORE_DEFAULTS);
+      auto rf = resolveFieldDecl(initResolver_.rc, currentRecvType_->getCompositeType(), fieldId, DefaultsPolicy::IGNORE_DEFAULTS);
       QualifiedType initialFieldType;
       for (int i = 0; i < rf.numFields(); i++) {
         auto id = rf.fieldDeclId(i);
@@ -947,12 +1134,14 @@ bool InitResolver::handleUseOfField(const AstNode* node) {
   if (isSuperField) {
     if (explicitSuperInit == false && phase_ != PHASE_COMPLETE) {
       // Upon first use of parent field, need to insert a super.init() call
+      bool firstUseOfField = useOfSuperFields_.empty();
+      useOfSuperFields_.push_back({id, node->id()});
+
       // TODO: store this as an associated action
-      if (useOfSuperFields_.empty()) {
+      if (firstUseOfField) {
         this->resolveImplicitSuperInit();
       }
 
-      useOfSuperFields_.push_back({id, node->id()});
       return true;
     } else {
       isValidPreInitMention = true;

@@ -309,7 +309,7 @@ bool CanPassResult::canConvertNumeric(Context* context,
     // don't convert bools to complexes (per spec: "unintended by programmer")
 
     // coerce any integer type to any width complex
-    if (actualT->isNumericType())
+    if (actualT->isIntegralType())
       return true;
 
     // convert smaller complex types
@@ -519,8 +519,12 @@ CanPassResult CanPassResult::canPassSubtypeNonBorrowing(Context* context,
                                             const Type* formalT) {
   // nil -> pointers
   if (actualT->isNilType() && formalT->isNilablePtrType() &&
-      !formalT->isCStringType())
-    return convert(SUBTYPE);
+      !formalT->isCStringType()) {
+    return CanPassResult(/* no fail reason */ {},
+                         /* instantiates */ false,
+                         /*promotes*/ false,
+                         /*conversion*/ SUBTYPE);
+  }
 
   // class types
   if (auto actualCt = actualT->toClassType()) {
@@ -559,8 +563,15 @@ CanPassResult CanPassResult::canPassSubtypeNonBorrowing(Context* context,
         instantiates = true;
         pass = true;
       } else if (actualCt->manageableType()->isAnyClassType()) {
-        CHPL_ASSERT(false && "probably shouldn't happen");
-      } else if (actualBct->isSubtypeOf(formalBct, converts, instantiates)) {
+        // We might encounter this case when relying on 'canPass' to implement
+        // the various 'subtype' primitives. Types like 'borrowed class' are
+        // valid arguments in production, and can be found in the where-clauses
+        // of some basic operator implementations.
+
+        // From the previous conditional, we know the formal isn't another
+        // 'any' class, so this actual cannot be passed.
+        pass = false;
+      } else if (actualBct->isSubtypeOf(context, formalBct, converts, instantiates)) {
         // the basic class types are the same
         // or there was a subclass relationship
         // or there was instantiation
@@ -651,6 +662,10 @@ CanPassResult CanPassResult::canConvertTuples(Context* context,
   if (aT->isStarTuple() != fT->isStarTuple()) {
     // Star-tuple-ness differs, so not convertible.
     return fail(FAIL_INCOMPATIBLE_TUPLE_STAR);
+  }
+
+  if (aT->toReferentialTuple(context) == fT) {
+    return convert(TO_REFERENTIAL_TUPLE);
   }
 
   int n = aT->numElements();
@@ -775,8 +790,7 @@ bool CanPassResult::canInstantiateBuiltin(Context* context,
   }
 
   if (formalT->isAnyIteratorRecordType()) {
-    // TODO: represent iterators
-    return false;
+    return actualT->isIteratorType();
   }
 
   if (formalT->isAnyNumericType() && actualT->isNumericType())
@@ -830,9 +844,9 @@ static bool classTypeIsManagedAndDecorated(Context* context,
   return false;
 }
 
-static bool
+bool
 tryConvertClassTypeIntoManagerRecordIfNeeded(Context* context,
-                                             const Type*& mightBeManagerRecord,
+                                             const Type* const & mightBeManagerRecord,
                                              const Type*& mightBeClass) {
   if (!mightBeManagerRecord || !mightBeClass) return false;
 
@@ -881,6 +895,21 @@ shouldConvertClassTypeIntoManagerRecord(Context* context,
   return empty;
 }
 
+CanPassResult CanPassResult::ensureSubtypeConversionInstantiates(CanPassResult got) {
+  if (got.instantiates()) {
+    return got;
+  }
+
+  // The type passed, but didn't actually instantiate. This is odd
+  // since we are trying to instantiate a generic formal. This suggests
+  // the actual is generic, too, which typically doesn't make sense.
+  // Explicitly set the fail reason but keep the rest of the properties
+  // intact, so that that the caller can dismiss this error if
+  // generic actuals are allowed.
+  got.failReason_ = FAIL_DID_NOT_INSTANTIATE;
+  return got;
+}
+
 CanPassResult CanPassResult::canInstantiate(Context* context,
                                             const QualifiedType& actualQT,
                                             const QualifiedType& formalQT) {
@@ -902,15 +931,11 @@ CanPassResult CanPassResult::canInstantiate(Context* context,
     return instantiate();
   }
 
-  // TODO: Should we move this to the section below and have it call canPassSubtypeOrBorrowing?
-  // TODO: There may be cases for nilType that are not covered
   // this is to allow instantiating 'class?' type with nil
-  if (auto cls = formalT->toClassType()) {
-    if (auto mt = cls->manageableType()) {
-      if (mt->isAnyClassType()) {
-        if (cls->decorator().isNilable() && actualT->isNilType())
-          return instantiate();
-      }
+  if (actualT->isNilType()) {
+    auto got = canPassSubtypeOrBorrowing(context, actualT, formalT);
+    if (got.passes()) {
+      return ensureSubtypeConversionInstantiates(got);
     }
   }
 
@@ -929,18 +954,7 @@ CanPassResult CanPassResult::canInstantiate(Context* context,
     if (auto formalCt = formalT->toClassType()) {
       CanPassResult got = canPassSubtypeOrBorrowing(context, actualCt, formalCt);
       if (got.passes()) {
-        if (got.instantiates()) {
-          return got;
-        }
-
-        // The type passed, but didn't actually instantiate. This is odd
-        // since we are trying to instantiate a generic formal. This suggests
-        // the actual is generic, too, which typically doesn't make sense.
-        // Explicitly set the fail reason but keep the rest of the properties
-        // intact, so that that the caller can dismiss this error if
-        // generic actuals are allowed.
-        got.failReason_ = FAIL_DID_NOT_INSTANTIATE;
-        return got;
+        return ensureSubtypeConversionInstantiates(got);
       }
     }
   } else if (auto actualCt = actualT->toCompositeType()) {
@@ -1128,6 +1142,7 @@ CanPassResult CanPassResult::canPassScalar(Context* context,
     case QualifiedType::FUNCTION:
     case QualifiedType::PARENLESS_FUNCTION:
     case QualifiedType::MODULE:
+    case QualifiedType::LOOP:
     case QualifiedType::TYPE_QUERY:
     case QualifiedType::INDEX:
     case QualifiedType::DEFAULT_INTENT:
@@ -1146,15 +1161,7 @@ CanPassResult CanPassResult::canPassScalar(Context* context,
       {
         auto actualTup = actualT->toTupleType();
         if (actualTup != nullptr  && formalT->isTupleType()) {
-          if (actualTup->isVarArgTuple() &&
-              actualTup->toReferentialTuple(context) == formalT) {
-            // Supports code like:
-            //   proc foo(args...) do
-            //     bar(args);
-            //
-            // TODO: Should this register as a conversion?
-            return passAsIs();
-          } else if (formalQT.kind() == QualifiedType::TYPE &&
+          if (formalQT.kind() == QualifiedType::TYPE &&
                 actualTup->toValueTuple(context) == formalT) {
             return passAsIs();
           } else if (formalQT.kind() != QualifiedType::TYPE) {
@@ -1205,7 +1212,7 @@ CanPassResult CanPassResult::canPass(Context* context,
   // Scalar passing failing, but promotion may be possible.
   if (formalQtIn.kind() != QualifiedType::TYPE &&
       formalQtIn.kind() != QualifiedType::PARAM) {
-    auto promotionType = getPromotionType(context, actualQtIn);
+    auto promotionType = getPromotionType(context, actualQtIn, /*skipIfRunning */ true);
 
     if (!promotionType.isUnknownOrErroneous()) {
       auto got = canPassScalar(context, promotionType, formalQtIn);
@@ -1226,7 +1233,7 @@ bool canInstantiateSubstitutions(Context* context,
                                  const SubstitutionsMap& instances,
                                  const SubstitutionsMap& generics,
                                  bool allowMissing) {
-  // Check to see if the substitutions in `instaces` are all instantiations
+  // Check to see if the substitutions in `instances` are all instantiations
   // of the substitutions in `generics`
   //
   // check, for each substitution in mySubs, that it matches
@@ -1244,6 +1251,16 @@ bool canInstantiateSubstitutions(Context* context,
       auto r = canPass(context, mySubType, pSubType);
       if (r.passes() && !r.promotes() && !r.converts()) {
         // instantiation and same-type passing are allowed here
+        //
+        // canPass doesn't check param values for equivalence to allow handling
+        // coercions and narrowing, so explicitly check them here.
+        if (pSubType.isParam()) {
+          bool compatible = pSubType.param() == nullptr ||
+                            mySubType.param() == pSubType.param();
+          if (!compatible) {
+            return false;
+          }
+        }
       } else {
         // it was not an instantiation
         return false;
@@ -1351,6 +1368,20 @@ types::QualifiedType::Kind KindProperties::combineKindsMeet(
   return kp1.toKind();
 }
 
+QualifiedType::Kind
+KindProperties::addConstness(QualifiedType::Kind kind) {
+  auto kp = KindProperties::fromKind(kind);
+  kp.setConst(true);
+  return kp.toKind();
+}
+
+QualifiedType::Kind
+KindProperties::addRefness(QualifiedType::Kind kind) {
+  auto kp = KindProperties::fromKind(kind);
+  kp.setRef(true);
+  return kp.toKind();
+}
+
 QualifiedType::Kind KindProperties::toKind() const {
   if (!isValid) return QualifiedType::UNKNOWN;
   if (isType) return QualifiedType::TYPE;
@@ -1365,6 +1396,12 @@ QualifiedType::Kind KindProperties::toKind() const {
 types::QualifiedType::Kind KindProperties::makeConst(types::QualifiedType::Kind kind) {
   auto props = KindProperties::fromKind(kind);
   props.setConst(true);
+  return props.toKind();
+}
+
+types::QualifiedType::Kind KindProperties::removeRef(types::QualifiedType::Kind kind) {
+  auto props = KindProperties::fromKind(kind);
+  props.setRef(false);
   return props.toKind();
 }
 

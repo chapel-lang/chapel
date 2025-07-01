@@ -1,0 +1,92 @@
+name: Weekly Meeting Topics
+
+on:
+  workflow_dispatch: # Allows manual triggering of the workflow
+  schedule:
+    - cron: '0 17 * * 2' # Runs every week on Tuesday at 10 PT
+
+jobs:
+  create-discussion:
+    name: Create Weekly Discussion
+
+    if: github.repository == 'chapel-lang/chapel'
+    permissions:
+      discussions: write
+      contents: read
+    runs-on: ubuntu-latest
+
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      owner: "chapel-lang"
+      repo_name: "chapel"
+
+    steps:
+    - name: compute date
+      id: date
+      run: |
+        date=$(date -d '+7 days' '+%Y-%m-%d')
+        echo "next_meeting_date=$date" >> $GITHUB_ENV
+      shell: bash
+
+    - name: create discussion
+      run: |
+        repositoryId=$(gh api graphql \
+          -f query='{ repository(owner: "${{ env.owner }}",
+                      name: "${{ env.repo_name }}") { id } }' \
+          | jq -r '.data.repository.id')
+
+        categoryId=$(gh api graphql \
+          -f query='{ repository(owner: "${{ env.owner }}",
+                      name: "${{ env.repo_name }}")
+                      { discussionCategories(first: 10) { nodes { id, name} } } }' \
+          | jq -r '.data.repository.discussionCategories.nodes | .[] | select(.name=="${{ env.category_name }}") | .id')
+
+        body="${{ env.agenda_body }}"
+        title="Chapel project meeting: ${{ env.next_meeting_date }} (agenda items, meeting link, notes)"
+
+        QUERY='mutation($repositoryId: ID!, $categoryId: ID!, $title: String!, $body: String!) {
+          createDiscussion(input: {
+            repositoryId: $repositoryId,
+            categoryId: $categoryId,
+            title: $title,
+            body: $body
+          }) {
+            discussion {
+              id
+            }
+          }
+        }'
+        gh api graphql \
+          -f repositoryId="$repositoryId" \
+          -f categoryId="$categoryId" \
+          -f title="$title" \
+          -f body="$body" \
+          -f query="$QUERY"
+      env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          next_meeting_date: ${{ env.next_meeting_date }}
+          owner: ${{ env.owner }}
+          repo_name: ${{ env.repo_name }}
+          category_name: "Weekly meeting topics"
+          agenda_body: |
+            This discussion is for the weekly Chapel project meeting.
+            
+            **Date/Time: ${{ env.next_meeting_date }} at 10am PT**
+            **Join the meeting using [this Teams link](https://teams.microsoft.com/l/meetup-join/19%3ameeting_N2M5M2E2NTEtNTFkMi00ZjA1LThiNDQtMjFjY2U2ZDc5ODk3%40thread.v2/0?context=%7b%22Tid%22%3a%22105b2061-b669-4b31-92ac-24d304d195dc%22%2c%22Oid%22%3a%22bef28eea-6179-4f21-b284-84c6a0aeacc3%22%7d)**
+            
+            ---
+            
+            Prior to the meeting, propose any agenda items using comments below.  After the meeting, rough notes will be added in comments.
+            
+            Typically, these meetings consist of:
+            * **News:** Quick updates or announcements to keep people in the loop on key efforts or topics
+            * **Demos:** Have something cool to show off?  Do it in a ~5-minute demo
+            * **Short Topics:** Have something that needs a quick discussion, description, or straw poll?  Propose a ~5-minute discussion topic
+            * **Longer Topics:** If you have a topic needing more time, propose it with an estimated duration and we'll try to fit it in.
+            
+            If you'd like to propose an item in any of these categories, please reply to this discussion.
+            
+            In addition to the above sections, we have some standing agenda items, such as:
+            * **Triage:** What is the state of testing and are there issues that need more attention?
+            * **User Issues:** What new user issues have come up in the past week, and which should we prioritize?
+            * **Q&A:** Have something you want to ask, but not on the clock?  We'll open the floor to Q&A as the official meeting wraps up.

@@ -2,7 +2,7 @@
 hwloc README for Chapel
 =======================
 
-This copy of hwloc 2.9.0 is being released with Chapel for
+This copy of hwloc 2.11.2 is being released with Chapel for
 convenience and was obtained from:
 
   https://www.open-mpi.org/projects/hwloc/
@@ -18,9 +18,9 @@ The directory $CHPL_HOME/third-party/hwloc/hwloc-src/ contains the
 un-tarballed hwloc package contents. Version updates should be done as
 follows, assuming the CWD is $CHPL_HOME/third-party/hwloc/:
 
-1. download and untar the latest hwloc 2.X version: e.g. hwloc-2.9.0
+1. download and untar the latest hwloc 2.X version: e.g. hwloc-2.11.2
 2. `rm -rf hwloc-src`
-3. `mv hwloc-2.9.0 hwloc-src`
+3. `mv hwloc-2.11.2 hwloc-src`
 4. `git add --force hwloc-src` (--force to ignore our .gitignore)
 5. update the version number mentioned above
 6. make sure these instructions are up to date :)

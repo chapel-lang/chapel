@@ -144,7 +144,7 @@ module ChapelHashtable {
     const minSizePerTask = dataParMinGranularity;
 
     // We are simply slicing up the table here.  Trying to do something
-    //  more intelligent (like evenly dividing up the full slots, led
+    //  more intelligent (like evenly dividing up the full slots), led
     //  to poor speed ups.
 
     if debugAssocDataPar {
@@ -304,7 +304,7 @@ module ChapelHashtable {
     }
 
     iter allSlots() {
-      for slot in _allSlots(tableSize) {
+      foreach slot in _allSlots(tableSize) {
         yield slot;
       }
     }
@@ -312,7 +312,7 @@ module ChapelHashtable {
     iter allSlots(param tag: iterKind)
       where tag == iterKind.standalone {
 
-      for slot in _allSlots(tableSize, tag=tag) {
+      foreach slot in _allSlots(tableSize, tag=tag) {
         yield slot;
       }
     }
@@ -320,7 +320,7 @@ module ChapelHashtable {
     iter allSlots(param tag: iterKind)
       where tag == iterKind.leader {
 
-      for followThis in _allSlots(tableSize, tag=tag) {
+      foreach followThis in _allSlots(tableSize, tag=tag) {
         yield followThis;
       }
     }
@@ -328,7 +328,7 @@ module ChapelHashtable {
     iter allSlots(followThis, param tag: iterKind)
       where tag == iterKind.follower {
 
-      for i in _allSlots(tableSize, followThis, tag=tag) {
+      foreach i in _allSlots(tableSize, followThis, tag=tag) {
         yield i;
       }
     }
@@ -643,6 +643,35 @@ module ChapelHashtable {
       }
 
       rehash(newSize);
+    }
+
+    iter _evenSlots(param tag) where tag == iterKind.leader {
+      for i in (0..<this.tableNumFullSlots).these(tag) {
+        yield i;
+      }
+    }
+
+
+    iter _evenSlots(followThis, param tag) ref
+      where tag == iterKind.follower {
+
+      var space = followThis(0);
+
+      var curNumFull = 0;
+
+      for i in 0..#(this.tableSize) {
+        if this.isSlotFull(i) {
+          if (curNumFull >= space.low) {
+            if (curNumFull <= space.high) {
+              yield this.table[i];
+            } else {
+              break;
+            }
+          }
+
+          curNumFull += 1;
+        }
+      }
     }
   }
 }

@@ -26,6 +26,19 @@ sub mysystem {
     $onerror = $_[2];
     $showcommand = $_[3];
 
+    my $shouldExitOnError = $onerror eq $exitOnError;
+    my $shouldIgnoreErrors = $onerror eq $ignoreErrors;
+    my $shouldWriteToFile = !$shouldExitOnError && !$shouldIgnoreErrors;
+
+    # Save the command into a file if we're emailing about it, so that
+    # we have a clean list of commands that were run.
+    # We can then compare it against the list of errors and generate a report.
+    if ($shouldWriteToFile) {
+        open(my $SF, '>>', "$onerror.clean") or die "Could not open file '$onerror.clean' $!";
+        print $SF "Running $errorname: $command\n";
+        close($SF);
+    }
+
     if ($showcommand) { print "Executing $command\n"; }
     my $status = system($command);
     if ($status != 0) {
@@ -36,13 +49,17 @@ sub mysystem {
         print "Error $errorname: $status\n";
         if ($onerror eq $exitOnError) {
             exit 1;
-        } elsif ($onerror eq $ignoreErrors) {
-            # Do nothing
-        } else {
-            open(my $SF, '>>', $onerror) or die "Could not open file '$onerror' $!";
-            print $SF "Error $errorname: $status\n";
-            close($SF);
         }
+    }
+
+    if ($shouldWriteToFile) {
+        my $toWrite = "\n";
+        if ($status != 0) {
+            $toWrite = "Error when running $errorname (code $status)\n";
+        }
+        open(my $SF, '>>', "$onerror") or die "Could not open file '$onerror' $!";
+        print $SF $toWrite;
+        close($SF);
     }
     $status;
 }
@@ -91,7 +108,7 @@ sub ensureSummaryExists {
 }
 
 sub ensureMysystemlogExists {
-    $mysystemlog = $_[0];
+    my $mysystemlog = $_[0];
     if (! -r $mysystemlog) {
         print "Creating $mysystemlog\n";
         `touch $mysystemlog`
@@ -167,10 +184,17 @@ sub writeEmail {
     print $SF endMailHeader();
         print $SF "--- New Errors -------------------------------\n";
         print $SF `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | grep -v "$suppressmarker"`;
+        print $SF `LC_ALL=C comm -13 $prevmysystemlog $sortedmysystemlog`;
         print $SF "\n";
 
         print $SF "--- Resolved Errors --------------------------\n";
         print $SF `LC_ALL=C comm -23 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | grep -v "$suppressmarker"`;
+        print $SF `LC_ALL=C comm -23 $prevmysystemlog $sortedmysystemlog`;
+        print $SF "\n";
+
+        print $SF "--- Unresolved Errors ------------------------\n";
+        print $SF `LC_ALL=C comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | grep -v "$suppressmarker"`;
+        print $SF `LC_ALL=C comm -12 $prevmysystemlog $sortedmysystemlog`;
         print $SF "\n";
 
         print $SF "--- New Passing Future tests------------------\n";
@@ -189,25 +213,10 @@ sub writeEmail {
         print $SF `LC_ALL=C comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$suppressmarker" | grep "\\[Success"`;
         print $SF "\n";
 
-        print $SF "--- Unresolved Errors ------------------------\n";
-        print $SF `LC_ALL=C comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | grep -v "$suppressmarker"`;
-        print $SF "\n";
-
         print $SF "--- New Failing Future tests -----------------\n";
         print $SF `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Error"`;
         print $SF "\n";
 
-        print $SF "--- New Errors in Bash Commands ------------------\n";
-        print $SF `LC_ALL=C comm -13 $prevmysystemlog $sortedmysystemlog`;
-        print $SF "\n";
-
-        print $SF "--- Unresolved Errors in Bash Commands ------------------\n";
-        print $SF `LC_ALL=C comm -12 $prevmysystemlog $sortedmysystemlog`;
-        print $SF "\n";
-
-        print $SF "--- Resolved Errors in Bash Commands ------------------\n";
-        print $SF `LC_ALL=C comm -23 $prevmysystemlog $sortedmysystemlog`;
-        print $SF "\n";
     print $SF;
     print $SF endMailChplenv();
     close($SF);

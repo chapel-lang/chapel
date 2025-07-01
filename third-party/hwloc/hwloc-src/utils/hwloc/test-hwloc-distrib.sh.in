@@ -3,7 +3,7 @@
 
 #
 # Copyright © 2009 CNRS
-# Copyright © 2009-2020 Inria.  All rights reserved.
+# Copyright © 2009-2024 Inria.  All rights reserved.
 # Copyright © 2009 Université Bordeaux
 # Copyright © 2014 Cisco Systems, Inc.  All rights reserved.
 # See COPYING in top-level directory.
@@ -38,8 +38,8 @@ set -e
   echo "# 2 sets out of 2 2 2"
   $distrib --if synthetic --input "2 2 2" 2
   echo
-  echo "# 4 sets out of 2 2 2"
-  $distrib --if synthetic --input "2 2 2" 4
+  echo "# 4 sets out of 2 2 2, as lists"
+  $distrib --if synthetic --input "2 2 2" --cof list 4
   echo
   echo "# 8 sets out of 2 2 2"
   $distrib --if synthetic --input "2 2 2" 8

@@ -25,6 +25,7 @@
 #include "chpl.h"
 #include "map.h"
 
+#include <array>
 #include <cstdio>
 #include <map>
 #include <set>
@@ -304,6 +305,14 @@ extern const char* compileCommandFilename;
 extern const char* compileCommand;
 extern char compileVersion[64];
 
+// This is where the list of all supported editions goes
+extern std::array<std::string, 2> editions;
+extern std::string fEdition;
+
+bool isValidEdition(std::string maybeEdition);
+void checkEditionRangeValid(std::string first, std::string last, BaseAST* loc);
+bool isEditionApplicable(std::string first, std::string last, BaseAST* loc);
+
 // This flag is useful for testing
 // the compiler but breaks the language!
 extern bool fMinimalModules;
@@ -338,6 +347,7 @@ extern bool fDynoGenStdLib;
 extern bool fDynoLibGenOrUse;
 
 extern size_t fDynoBreakOnHash;
+extern bool   fDynoBreakOnHashSet;
 
 extern bool fResolveConcreteFns;
 extern bool fIdBasedMunging;

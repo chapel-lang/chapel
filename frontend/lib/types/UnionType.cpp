@@ -28,11 +28,14 @@ namespace types {
 const owned<UnionType>&
 UnionType::getUnionType(Context* context, ID id, UniqueString name,
                         const UnionType* instantiatedFrom,
-                        SubstitutionsMap subs) {
-  QUERY_BEGIN(getUnionType, context, id, name, instantiatedFrom, subs);
+                        SubstitutionsMap subs,
+                        CompositeType::Linkage linkage) {
+  QUERY_BEGIN(getUnionType, context, id, name, instantiatedFrom, subs,
+              linkage);
 
   auto result = toOwned(new UnionType(id, name,
-                                      instantiatedFrom, std::move(subs)));
+                                      instantiatedFrom, std::move(subs),
+                                      linkage));
 
   return QUERY_END(result);
 }
@@ -41,8 +44,9 @@ const UnionType*
 UnionType::get(Context* context, ID id, UniqueString name,
                const UnionType* instantiatedFrom,
                SubstitutionsMap subs) {
+  auto linkage = parsing::idToDeclLinkage(context, id);
   return getUnionType(context, id, name,
-                      instantiatedFrom, std::move(subs)).get();
+                      instantiatedFrom, std::move(subs), linkage).get();
 }
 
 

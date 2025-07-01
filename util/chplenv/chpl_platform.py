@@ -21,25 +21,17 @@ def get(flag='host'):
         error("Invalid flag: '{0}'".format(flag), ValueError)
 
     if not platform_val:
-        # Check for cray platform. It is a cray platform if there is a
-        # cle-release/CLEinfo config file with a known network value in it.
-        cle_info_file = os.path.abspath('/etc/opt/cray/release/cle-release') # CLE >= 6
-        if not os.path.exists(cle_info_file):
-            cle_info_file = os.path.abspath('/etc/opt/cray/release/CLEinfo') # CLE <= 5
-
-        if os.path.exists(cle_info_file):
-            with open(cle_info_file, 'r') as fp:
-                cle_info = fp.read()
-            net_pattern = re.compile('^NETWORK=(?P<net>[a-zA-Z]+)$', re.MULTILINE)
-            net_match = net_pattern.search(cle_info)
-            if net_match is not None and len(net_match.groups()) == 1:
-                net = net_match.group('net')
-                if net.lower() == 'ari':
-                    platform_val = 'cray-xc'
-
-    if not platform_val:
-        network = os.environ.get('CRAYPE_NETWORK_TARGET', '')
-        if network.startswith("slingshot") or network == "ofi":
+        import chpl_comm
+        network = chpl_comm.get_network()
+        if network == 'aries':
+            platform_val = 'cray-xc'
+        elif network == 'ibv':
+            # it could be cray-cs, hpe-apollo, or hpe-cray-xd
+            # do nothing for now
+            pass
+        elif network == 'cxi':
+            # it could also be hpe-cray-xd, but we can't tell
+            # this is good enough, EX is close enough for auto-detection
             platform_val = 'hpe-cray-ex'
 
     if not platform_val:
@@ -75,12 +67,62 @@ def get(flag='host'):
 
     return platform_val
 
+@memoize
+def _get_linux_distribution():
+    distribution = 'unknown'
+
+    uname = platform.uname()
+    platform_val = uname[0].lower().replace('_', '')
+    if platform_val != 'linux':
+        return distribution
+
+    os_release = dict()
+    try:
+        # freedesktop_os_release was added in Python 3.10
+        if hasattr(platform, 'freedesktop_os_release'):
+            os_release = platform.freedesktop_os_release()
+        elif os.path.exists('/etc/os-release'):
+            # Fallback for older Python versions
+            with open('/etc/os-release') as f:
+                for line in f:
+                    if '=' in line:
+                        key, value = line.strip().split('=', 1)
+                        os_release[key] = value.strip('"')
+    except OSError:
+        pass
+
+    distribution = os_release.get('ID', distribution).lower()
+    return distribution
+
+@memoize
+def is_fedora():
+    distribution = _get_linux_distribution()
+    return distribution.startswith('fedora')
 
 @memoize
 def is_wsl():
     name = (platform.uname().release).lower()
     if name.endswith('-microsoft') or name.endswith('-microsoft-standard-wsl2'):
         return True
+
+@memoize
+def is_hpe_cray(flag='host'):
+    platform = get(flag)
+    return platform in ('hpe-cray-ex', 'hpe-cray-xd')
+
+@memoize
+def is_cray(flag='host'):
+    platform = get(flag)
+    return platform.startswith('cray') or is_hpe_cray(flag)
+
+@memoize
+def is_hpe_apollo(flag='host'):
+    platform = get(flag)
+    return platform == 'hpe-apollo'
+
+@memoize
+def is_cluster(flag='host'):
+    return is_cray(flag) or is_hpe_apollo(flag)
 
 @memoize
 def get_mac_os_version():

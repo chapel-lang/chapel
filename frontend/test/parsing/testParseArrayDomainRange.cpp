@@ -33,6 +33,8 @@
 #include "chpl/parsing/Parser.h"
 #include "chpl/framework/Context.h"
 
+#include <array>
+
 static void testRange(Parser* parser, const char* testName,
                       const char* intervalStr,
                       bool hasLowerBound,
@@ -147,6 +149,144 @@ static void testArrayDomain(Parser* parser, const char* testName,
   assert(i == numElements);
 }
 
+template<size_t N>
+static std::string getNDArrayRows(std::array<int, N> shape,
+                                  int idx, bool trailingCommas) {
+  if (idx == N-1) {
+    std::string test = "";
+    std::string sep;
+    for (int i = 0; i < shape[idx]; i++) {
+      test += sep + std::to_string(i);
+      sep = ", ";
+    }
+    if (trailingCommas) {
+      test += ",";
+    }
+    return test;
+  } else {
+    std::string test = "";
+    std::string sep;
+    for (int i = 0; i < shape[idx]; i++) {
+
+      test += sep + getNDArrayRows(shape, idx+1, trailingCommas);
+      sep = std::string(N-idx-1, ';');
+    }
+    return test;
+  }
+}
+
+template<size_t N>
+static void testNDArrayShape(Parser* parser,
+                             std::array<int, N> shape,
+                             bool trailingCommas) {
+  static int counter = 0;
+  auto testName = std::string(__func__) + std::to_string(counter++) + ".chpl";
+
+  ErrorGuard guard(parser->context());
+  std::string test = "var a = ";
+  test += "[" + getNDArrayRows(shape, 0, trailingCommas);
+  if (shape[0] == 1) test += ";";
+  test += "]";
+  test += ";\n";
+
+  std::cout << "--- " << testName << " ---" << std::endl;
+  std::cout << test << std::endl << "====" << std::endl;
+
+  auto parseResult = parseStringAndReportErrors(parser, testName.c_str(), test.c_str());
+
+  assert(!guard.realizeErrors());
+
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
+  assert(mod->stmt(0)->isVariable());
+  auto init = mod->stmt(0)->toVariable()->initExpression();
+  assert(init->isArray());
+  auto arr = init->toArray();
+
+  std::function<void(const AstNode*, decltype(shape), int)> checkerFunc;
+  checkerFunc = [&checkerFunc](const AstNode* expr, auto shape, int idx) {
+    if (idx == shape.size()-1) {
+      auto row = expr->toArrayRow();
+      assert(row);
+      assert(row->numExprs() == shape[idx]);
+      for (auto expr : row->exprs()) {
+        assert(expr->isIntLiteral());
+      }
+    } else {
+      if (idx == 0) {
+        assert(expr->isArray());
+      } else {
+        assert(expr->isArrayRow());
+      }
+      assert(expr->numChildren() == shape[idx]);
+      for (auto expr : expr->children()) {
+        checkerFunc(expr, shape, idx+1);
+      }
+    }
+  };
+
+  checkerFunc(arr, shape, 0);
+
+}
+
+static void testNDArrayLiteral(Parser* parser,
+                               const char* literal,
+                               int nArrayRows) {
+  static int counter = 0;
+  auto testName = std::string(__func__) + std::to_string(counter++) + ".chpl";
+
+  ErrorGuard guard(parser->context());
+  std::string test = "var a = ";
+  test += literal;
+  test += ";\n";
+
+  std::cout << "--- " << testName << " ---" << std::endl;
+  std::cout << test << std::endl << "====" << std::endl;
+
+  auto parseResult = parseStringAndReportErrors(parser, testName.c_str(), test.c_str());
+
+  assert(!guard.realizeErrors());
+
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
+  assert(mod->stmt(0)->isVariable());
+  auto init = mod->stmt(0)->toVariable()->initExpression();
+  assert(init->isArray());
+  auto arr = init->toArray();
+
+  std::function<int(const AstNode*)> counterFunc;
+  counterFunc = [&counterFunc](const AstNode* expr) {
+    int counter = expr->isArrayRow() ? 1 : 0;
+    for (auto expr : expr->children()) {
+      counter += counterFunc(expr);
+    }
+    return counter;
+  };
+  assert(nArrayRows == counterFunc(arr));
+}
+
+static void testNDArrayError(Parser* parser,
+                             const char* literal,
+                             int numErrors) {
+  static int counter = 0;
+  auto testName = std::string(__func__) + std::to_string(counter++) + ".chpl";
+
+  ErrorGuard guard(parser->context());
+  std::string test = "var a = ";
+  test += literal;
+  test += ";\n";
+
+  std::cout << "--- " << testName << " ---" << std::endl;
+  std::cout << test << std::endl << "====" << std::endl;
+
+  auto parseResult = parseStringAndReportErrors(parser, testName.c_str(), test.c_str());
+
+  assert(guard.realizeErrors() == numErrors);
+}
+
+
 int main() {
   Context context;
   Context* ctx = &context;
@@ -170,6 +310,33 @@ int main() {
   testArrayDomain(p, "testDomain1.chpl", false, 1, true);
   testArrayDomain(p, "testDomain2.chpl", false, 8, false);
   testArrayDomain(p, "testDomain3.chpl", false, 8, true);
+
+  testNDArrayShape(p, std::array{2, 2}, false);
+  testNDArrayShape(p, std::array{1, 8}, false);
+  testNDArrayShape(p, std::array{5, 1}, false);
+  testNDArrayShape(p, std::array{3, 5, 7}, false);
+  testNDArrayShape(p, std::array{3, 5, 7, 9, 11}, false);
+  testNDArrayShape(p, std::array{2, 2}, true);
+  testNDArrayShape(p, std::array{1, 8}, true);
+  testNDArrayShape(p, std::array{5, 1}, true);
+  testNDArrayShape(p, std::array{3, 5, 7}, true);
+  testNDArrayShape(p, std::array{3, 5, 7, 9, 11}, true);
+
+  testNDArrayLiteral(p, "[0;]", 1);
+  testNDArrayLiteral(p, "[0,;]", 1);
+  testNDArrayLiteral(p, "[0, 1, 2;]", 1);
+  testNDArrayLiteral(p, "[0, 1, 2,;]", 1);
+  testNDArrayLiteral(p, "[0, 1; 2, 3]", 2);
+  testNDArrayLiteral(p, "[0, 1; 2, 3;]", 2);
+  testNDArrayLiteral(p, "[0; 1; 2; 3]", 4);
+  testNDArrayLiteral(p, "[0,; 1,; 2,; 3,]", 4);
+  testNDArrayLiteral(p, "[0; 1; 2; 3;]", 4);
+  testNDArrayLiteral(p, "[0,; 1,; 2,; 3,;]", 4);
+
+  testNDArrayError(p, "[0, 1 ; 2, 3; ;]", 1);
+  testNDArrayError(p, "[0, 1; 2]", 1);
+  testNDArrayError(p, "[0; 2, 2]", 1);
+  testNDArrayError(p, "[0, 1; 2, 3;; 4, ; 6, 7]", 1);
 
   return 0;
 }

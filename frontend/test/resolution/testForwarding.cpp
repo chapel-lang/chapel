@@ -258,17 +258,17 @@ static void test6a() {
       }
 
       record Middle1 {
-        forwarding var field: Inner1;
-        forwarding var field: Inner2;
+        forwarding var field1: Inner1;
+        forwarding var field2: Inner2;
       }
       record Middle2 {
-        forwarding var field: Inner3;
-        forwarding var field: Inner4;
+        forwarding var field1: Inner3;
+        forwarding var field2: Inner4;
       }
 
       record Outer {
-        forwarding var impl: Middle1;
-        forwarding var impl: Middle2;
+        forwarding var impl1: Middle1;
+        forwarding var impl2: Middle2;
       }
 
       var rec: Outer;
@@ -408,7 +408,7 @@ static void forwardForwardHelper(std::string stmt, bool isVar = false) {
   auto qt = resolveQualifiedTypeOfX(context, contents);
   assert(qt.type()->isErroneousType());
 
-  unsigned int numExpected = isVar ? 3 : 2;
+  unsigned int numExpected = isVar ? 4 : 2;
   assert(guard.numErrors() == numExpected);
 
   assert(guard.error(0)->type() == chpl::NoMatchingCandidates);
@@ -466,7 +466,7 @@ static void test7() {
   auto qt = resolveQualifiedTypeOfX(context, contents);
   assert(qt.type()->isRealType());
 
-  guard.realizeErrors();
+  assert(guard.realizeErrors() == 0);
 }
 
 // Test that 'except' clause doesn't exclude other symbols.
@@ -481,7 +481,7 @@ static void test8() {
     R""""(
     module M {
       record Foo {
-        var _instance : owned Bar;
+        var _instance : unmanaged Bar;
 
         proc init(value) {
           this._instance = value;
@@ -503,7 +503,42 @@ static void test8() {
   auto qt = resolveQualifiedTypeOfX(context, contents);
   assert(qt.type()->isIntType());
 
-  guard.realizeErrors();
+  assert(guard.realizeErrors() == 0);
+}
+
+// Ensure we don't search for forwarded candidates after finding non-forwarded
+// ones, even if the forwarded candidates are methods.
+static void test9() {
+  printf("test9\n");
+
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  const char* contents =
+    R""""(
+    module M {
+      class Bar {
+        proc getVal() : real do return 4;
+      }
+
+      proc getVal() : int do return 3;
+
+      class Foo {
+        var b : owned Bar = new Bar();
+        forwarding b;
+
+        proc doSomething() do return getVal();
+      }
+
+      var f : Foo = new Foo();
+      var x = f.doSomething();
+    }
+    )"""";
+
+  auto qt = resolveQualifiedTypeOfX(context, contents);
+  assert(qt.type()->isIntType());
+
+  assert(guard.realizeErrors() == 0);
 }
 
 
@@ -525,6 +560,7 @@ int main() {
   // TODO: forwarding with only, except
 
   test8();
+  test9();
 
   return 0;
 }

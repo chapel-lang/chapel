@@ -8,6 +8,7 @@ export CHPL_TEST_PERF_SUBDIR="hpe-apollo"
 export CHPL_TEST_PERF_CONFIG_NAME='16-node-apollo-hdr'
 
 source $UTIL_CRON_DIR/common-perf.bash
+source $UTIL_CRON_DIR/common-playground.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.hpe-apollo-hdr.gasnet-ibv.playground"
 
@@ -32,14 +33,14 @@ if [[ "$SKIP_ML_PLAYGROUND" == "1" ]]; then
   exit
 fi
 
-GITHUB_USER=bradcray
-GITHUB_BRANCH=enable-localize-domain-opt
-SHORT_NAME=localize-domain
-START_DATE=07/15/24
+GITHUB_USER=chapel-lang
+GITHUB_BRANCH=main
+SHORT_NAME=main
+START_DATE=05/09/25
 
-git branch -D $GITHUB_USER-$GITHUB_BRANCH
-git checkout -b $GITHUB_USER-$GITHUB_BRANCH
-git pull https://github.com/$GITHUB_USER/chapel.git $GITHUB_BRANCH
+set -e
+checkout_branch $GITHUB_USER $GITHUB_BRANCH
+set +e
 
 nightly_args="${nightly_args} -no-buildcheck"
 # don't use `perf_hpe_apollo_args`, the settings are overwritten here
@@ -47,4 +48,5 @@ perf_args="-performance-description $SHORT_NAME -perflabel ml-"
 perf_args="${perf_args} -performance-configs gn-ibv-large:v,gn-ibv-fast:v,$SHORT_NAME:v -sync-dir-suffix $SHORT_NAME"
 perf_args="${perf_args} -numtrials 1 -startdate $START_DATE"
 
-$UTIL_CRON_DIR/nightly -cron ${perf_args} ${nightly_args}
+$UTIL_CRON_DIR/nightly -cron ${perf_args} ${nightly_args} -compopts '--mllvm -vector-library=LIBMVEC-X86'
+

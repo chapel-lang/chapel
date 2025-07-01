@@ -19,9 +19,12 @@
 
 #ifndef CHAPEL_PY_PYTHON_CLASS_H
 #define CHAPEL_PY_PYTHON_CLASS_H
-#include "Python.h"
+
+#include "PythonWrapper.h"
 #include "chpl/framework/Context.h"
 #include <optional>
+#include <array>
+#include "python-type-helper.h"
 
 template <typename ObjectType>
 struct PerTypeMethods;
@@ -93,7 +96,7 @@ struct PythonClass {
 
   static void dealloc(Self* self) {
     ((PythonClass*) self)->value_.~T();
-    Py_TYPE(self)->tp_free((PyObject *) self);
+    callPyTypeSlot_tp_free(Self::PythonType, (PyObject*) self);
   }
 
   static int init(Self* self, PyObject* args, PyObject* kwargs) {
@@ -101,31 +104,43 @@ struct PythonClass {
     return 0;
   }
 
-  static PyTypeObject configurePythonType() {
-    PyTypeObject configuring = {
-      PyVarObject_HEAD_INIT(NULL, 0)
+  template <size_t SIZE = 0>
+  static PyTypeObject* configurePythonType(unsigned int flags = Py_TPFLAGS_DEFAULT,
+                                           std::array<PyType_Slot, SIZE> extraSlots = {}) {
+
+    auto numBaseSlots = 5;
+    auto numSlots = numBaseSlots + SIZE;
+
+    auto slots = std::unique_ptr<PyType_Slot[]>(new PyType_Slot[numSlots+1]);
+    slots[numSlots] = {0, nullptr};
+    slots[0] = {Py_tp_dealloc, (void*) Self::dealloc};
+    slots[1] = {Py_tp_doc, (void*) PyDoc_STR(Self::DocStr)};
+    slots[2] = {Py_tp_methods, (void*) PerTypeMethods<Self>::methods};
+    slots[3] = {Py_tp_init, (void*) Self::init};
+    slots[4] = {Py_tp_new, (void*) PyType_GenericNew};
+    for (size_t i = 0; i < SIZE; i++) {
+      slots[numBaseSlots + i] = extraSlots[i];
+    }
+
+    PyType_Spec spec = {
+      /*name*/ Self::QualifiedName,
+      /*basicsize*/ sizeof(Self),
+      /*itemsize*/ 0,
+      /*flags*/ flags,
+      /*slots*/ slots.get()
     };
-    // tp_name must be the qualified name
-    configuring.tp_name = Self::QualifiedName;
-    configuring.tp_basicsize = sizeof(Self);
-    configuring.tp_itemsize = 0;
-    configuring.tp_dealloc = (destructor) Self::dealloc;
-    configuring.tp_flags = Py_TPFLAGS_DEFAULT;
-    configuring.tp_doc = PyDoc_STR(Self::DocStr);
-    configuring.tp_methods = (PyMethodDef*) PerTypeMethods<Self>::methods;
-    configuring.tp_init = (initproc) Self::init;
-    configuring.tp_new = PyType_GenericNew;
+    PyTypeObject* configuring = (PyTypeObject*)PyType_FromSpec(&spec);
     return configuring;
   }
 
-  static PyTypeObject PythonType;
+  static PyTypeObject* PythonType;
 
   static int ready() {
-    return PyType_Ready(&Self::PythonType);
+    return PyType_Ready(Self::PythonType);
   }
 
   static int addToModule(PyObject* mod) {
-    return PyModule_AddObject(mod, Self::Name, (PyObject*) &Self::PythonType);
+    return PyModule_AddObject(mod, Self::Name, (PyObject*) Self::PythonType);
   }
 
   /** ===== Public convenience methods for using this object ===== */
@@ -135,8 +150,7 @@ struct PythonClass {
       PyErr_SetString(PyExc_RuntimeError, "Attempt to create a Python object from nullptr.");
       return nullptr;
     }
-
-    auto selfObjectPy = PyObject_CallObject((PyObject *) &Self::PythonType, nullptr);
+    auto selfObjectPy = PyObject_CallObject((PyObject *) Self::PythonType, nullptr);
     auto& val = ((Self*) selfObjectPy)->value_;
 
     val = std::move(createFrom);
@@ -153,7 +167,7 @@ struct PythonClass {
 };
 
 template <typename Self, typename T>
-PyTypeObject PythonClass<Self,T>::PythonType = Self::configurePythonType();
+PyTypeObject* PythonClass<Self,T>::PythonType = Self::configurePythonType();
 
 // Because the ContextObject is essential to other pieces of the API (it's attached
 // to many other Chapel objects to save the user the work of threading through
@@ -188,7 +202,7 @@ struct PythonClassWithContext : public PythonClass<Self, T> {
     if (!PyArg_ParseTuple(args, "O", &contextObjectPy))
         return -1;
 
-    if (contextObjectPy->ob_type != &ContextObject::PythonType) {
+    if (contextObjectPy->ob_type != ContextObject::PythonType) {
       PyErr_SetString(PyExc_TypeError, "Expected a chapel.Context object as the only argument.");
       return -1;
     }
@@ -208,7 +222,7 @@ struct PythonClassWithContext : public PythonClass<Self, T> {
     }
 
     PyObject* args = Py_BuildValue("(O)", (PyObject*) context);
-    auto selfObjectPy = PyObject_CallObject((PyObject *) &Self::PythonType, args);
+    auto selfObjectPy = PyObject_CallObject((PyObject *) Self::PythonType, args);
     auto& val = ((Self*) selfObjectPy)->value_;
 
     val = std::move(createFrom);

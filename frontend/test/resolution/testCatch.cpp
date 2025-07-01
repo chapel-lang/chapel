@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+#include "test-common.h"
 #include "test-resolution.h"
 
 #include "chpl/parsing/parsing-queries.h"
@@ -828,8 +829,7 @@ static void test24(Parser* parser) {
 }
 
 static void test25() {
-  Context context;
-  auto ctx = &context;
+  auto ctx = buildStdContext();
   ErrorGuard guard(ctx);
 
   auto t = resolveTypeOfX(ctx,

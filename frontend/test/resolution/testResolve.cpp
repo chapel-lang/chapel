@@ -480,8 +480,7 @@ static void test9() {
 // error happens after disambiguation.
 static void test10() {
   printf("test10\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   auto path = UniqueString::get(context, "input.chpl");
@@ -497,7 +496,7 @@ static void test10() {
                              proc f(const ref arg: Parent, x: int(8)) { }
                              proc f(const ref arg: Parent, x: numeric) { }
 
-                             var x: owned Child;
+                             var x = new Child();
                              var sixtyFourBits: int = 0;
                              f(x, sixtyFourBits);
                           }
@@ -589,10 +588,10 @@ static void test13() {
 }
 
 static void test14() {
-  Context context;
+  auto context = buildStdContext();
   // Make sure no errors make it to the user, even though we will get errors.
-  ErrorGuard guard(&context);
-  auto variables = resolveTypesOfVariablesInit(&context,
+  ErrorGuard guard(context);
+  auto variables = resolveTypesOfVariablesInit(context,
       R"""(
       param xp = 42;
       var xv = 42;
@@ -610,10 +609,10 @@ static void test14() {
       var r7 = __primitive("addr of", int);
       )""", { "r1", "r2", "r3", "r4", "r5", "r6", "r7" });
 
-  auto refInt = QualifiedType(QualifiedType::REF, IntType::get(&context, 0));
-  auto constRefInt = QualifiedType(QualifiedType::CONST_REF, IntType::get(&context, 0));
-  auto refStr = QualifiedType(QualifiedType::REF, RecordType::getStringType(&context));
-  auto constRefStr = QualifiedType(QualifiedType::CONST_REF, RecordType::getStringType(&context));
+  auto refInt = QualifiedType(QualifiedType::REF, IntType::get(context, 0));
+  auto constRefInt = QualifiedType(QualifiedType::CONST_REF, IntType::get(context, 0));
+  auto refStr = QualifiedType(QualifiedType::REF, RecordType::getStringType(context));
+  auto constRefStr = QualifiedType(QualifiedType::CONST_REF, RecordType::getStringType(context));
 
   assert(variables.at("r1") == constRefInt);
   assert(variables.at("r2") == refInt);
@@ -689,10 +688,10 @@ static void test15() {
 }
 
 static void test16() {
-  Context context;
+  auto context = buildStdContext();
   // Make sure no errors make it to the user, even though we will get errors.
-  ErrorGuard guard(&context);
-  auto variables = resolveTypesOfVariablesInit(&context,
+  ErrorGuard guard(context);
+  auto variables = resolveTypesOfVariablesInit(context,
       R"""(
       record Concrete {
           var x: int;
@@ -707,7 +706,7 @@ static void test16() {
       }
 
       var conc: Concrete;
-      var inst: Generic(int, string, (int, string));
+      var inst = new Generic(1, "hello", (1, "hello"));
 
       param r1 = __primitive("static field type", conc, "x") == int;
       param r2 = __primitive("static field type", conc, "y") == string;
@@ -722,11 +721,38 @@ static void test16() {
   }
 }
 
+static void test16b() {
+  auto context = buildStdContext();
+  // Make sure no errors make it to the user, even though we will get errors.
+  ErrorGuard guard(context);
+  auto variables = resolveTypesOfVariablesInit(context,
+      R"""(
+      class Parent {
+          var x: int;
+          var y: string;
+      }
+
+      class Child : Parent {
+          var z: (int, string);
+      }
+
+      var child = new Child();
+
+      param r1 = __primitive("static field type", child, "x") == int;
+      param r2 = __primitive("static field type", child, "y") == string;
+      param r3 = __primitive("static field type", child, "z") == (int, string);
+      )""", { "r1", "r2", "r3" });
+
+  for (auto& pair : variables) {
+    pair.second.isParamTrue();
+  }
+}
+
 // module-level split-init variables
 static void test17() {
-  Context context;
+  auto context = buildStdContext();
 
-  auto variables = resolveTypesOfVariables(&context,
+  auto variables = resolveTypesOfVariables(context,
       R"""(
       var foo;
       foo = 5;
@@ -832,8 +858,7 @@ static void test19() {
 
 // Accessing the param value of a split-init'd symbol in another module
 static void test20() {
-  Context ctx;
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string contents =
@@ -1325,6 +1350,7 @@ static void test22() {
               return 5;
             }
           }
+          operator =(ref lhs: int, const rhs: int) {}
           var outer : Outer;
           param x = outer.inner(1);
         }
@@ -1349,6 +1375,7 @@ static void test23() {
   {
     std::string prog =
       R"""(
+      operator =(ref lhs: int, const rhs: int) {}
       record R {
         var x : int;
 
@@ -1380,6 +1407,7 @@ static void test23() {
     context->advanceToNextRevision(false);
     std::string prog =
       R"""(
+      operator =(ref lhs: int, const rhs: int) {}
       record Inner {
         var x : int;
 
@@ -1443,6 +1471,8 @@ static void test24() {
           return foo(x);
         }
       }
+
+      operator =(ref lhs: int, const rhs: int) {}
 
       record myRecord {}
       proc foo(r: myRecord) do return 42;
@@ -1703,6 +1733,29 @@ static void test27() {
   assert(guard.realizeErrors() == 0);
 }
 
+// Test resolving logical AND/OR compound assignment operators
+static void test28() {
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string prog =
+    R"""(
+    proc baz() {
+      var ok = true;
+      ok &&= false;
+      ok ||= true;
+      return ok;
+    }
+    var x = baz();
+    )""";
+
+  auto t = resolveTypeOfXInit(context, prog);
+  CHPL_ASSERT(!t.isUnknownOrErroneous());
+  CHPL_ASSERT(t.type()->isBoolType());
+
+  assert(guard.realizeErrors() == 0);
+}
+
 // This bug is hard to replicate with queries alone, but does seem to show
 // up in some cases of the query system.
 static void testInfiniteCycleBug() {
@@ -1820,10 +1873,10 @@ static void testCallableAmbiguity() {
 // Implementation of getting promotion types is tested more thoroughly
 // elsewhere, so this is just a very basic test the prims works as expected.
 static void testPromotionPrim() {
-  Context* context = buildStdContext();
-  ErrorGuard guard(context);
-
   {
+    Context* context = buildStdContext();
+    ErrorGuard guard(context);
+
     std::string prog =
       R"""(
         var d : domain(1, real);
@@ -1838,7 +1891,9 @@ static void testPromotionPrim() {
   }
 
   {
-    context->advanceToNextRevision(false);
+    Context* context = buildStdContext();
+    ErrorGuard guard(context);
+
     std::string prog =
       R"""(
         type t = __primitive("scalar promotion type", int);
@@ -1874,6 +1929,329 @@ static void testGetLocalePrim() {
   assert(guard.realizeErrors() == 0);
 }
 
+static void testArrayGetPrim() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto variables = resolveTypesOfVariablesInit(context,
+    R"""(
+      use CTypes;
+
+      var a: c_ptr(int);
+      var b: c_ptrConst(bool);
+      var c: _ddata(real);
+      var d: c_array(int(8), 4);
+
+      var r1 = __primitive("array_get", a, 0);
+      var r2 = __primitive("array_get", b, 0);
+      var r3 = __primitive("array_get", c, 0);
+      var r4 = __primitive("array_get", d, 0);
+    )""", { "r1", "r2", "r3", "r4" });
+
+  auto& r1 = variables.at("r1");
+  assert(r1.kind() == QualifiedType::REF);
+  assert(r1.type()->isIntType() && r1.type()->toIntType()->isDefaultWidth());
+
+  // note: in production, even const c_ptr returns non-const REF from
+  // this call.
+  auto& r2 = variables.at("r2");
+  assert(r2.kind() == QualifiedType::REF);
+  assert(r2.type()->isBoolType());
+
+  auto& r3 = variables.at("r3");
+  assert(r3.kind() == QualifiedType::REF);
+  assert(r3.type()->isRealType() && r3.type()->toRealType()->isDefaultWidth());
+
+  auto& r4 = variables.at("r4");
+  assert(r4.kind() == QualifiedType::REF);
+  assert(r4.type()->isIntType() && r4.type()->toIntType()->bitwidth() == 8);
+}
+
+static void testAsciiPrim() {
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto variables = resolveTypesOfVariables(context,
+    R"""(
+      param b = __primitive("ascii", "b");
+      param h = __primitive("ascii", "hi", 0);
+      param i = __primitive("ascii", "hi", 1);
+      param c = __primitive("ascii", b"c");
+      param p = __primitive("ascii", b"po", 0);
+      param o = __primitive("ascii", b"po", 1);
+    )""", { "b", "h", "i", "c", "p", "o" });
+
+  auto b = variables.at("b");
+  ensureParamUint(b, 98);
+
+  auto h = variables.at("h");
+  ensureParamUint(h, 104);
+  auto i = variables.at("i");
+  ensureParamUint(i, 105);
+
+  auto c = variables.at("c");
+  ensureParamUint(c, 99);
+
+  auto p = variables.at("p");
+  ensureParamUint(p, 112);
+  auto o = variables.at("o");
+  ensureParamUint(o, 111);
+}
+
+// Test the '.locale' query.
+static void testDotLocale() {
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto loc = resolveTypeOfXInit(context,
+    R"""(
+      var myVar : int;
+      var x = myVar.locale;
+    )""");
+
+  assert(loc.kind() == QualifiedType::CONST_VAR);
+  assert(loc.type());
+  assert(loc.type() == CompositeType::getLocaleType(context));
+
+  assert(guard.realizeErrors() == 0);
+}
+
+// .bytes() should be rewritten to .chpl_bytes()
+static void testDotBytes() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto variables = resolveTypesOfVariables(context,
+    R"""(
+      var str = "hello";
+      var bts = b"hello";
+
+      var x = str.bytes();
+      var y = bts.bytes();
+    )""", { "x", "y" });
+
+  for (auto& kv : variables) {
+    auto& qt = kv.second;
+
+    assert(!qt.isUnknownOrErroneous());
+    assert(qt.type()->isArrayType());
+    assert(qt.type()->toArrayType()->eltType().type()->isUintType());
+    assert(qt.type()->toArrayType()->eltType().type()->toUintType()->bitwidth() == 8);
+  }
+}
+
+// even if a formal's type has defaults, if it's explicitly made generic
+// with (?) it should not be concrete.
+static void testExplicitlyGenericFormal() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+  auto qt = resolveTypeOfXInit(context,
+    R"""(
+      record R {
+        type myType = int;
+      }
+      var intR: R(int);
+      var realR: R(real);
+
+      proc foo(x: R(?) = intR) do return x;
+      var x = foo(realR);
+    )""");
+
+  CHPL_ASSERT(qt.type()->isRecordType());
+  CHPL_ASSERT(qt.type()->toRecordType()->name() == "R");
+  for (auto& sub : qt.type()->toRecordType()->substitutions()) {
+    CHPL_ASSERT(sub.second.type()->isRealType());
+  }
+}
+
+static void testGlobalMultiDecl() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto xQt = resolveTypeOfXInit(context,
+    R"""(
+      operator =(ref lhs: int, const rhs: int) {}
+      var a, b: int;
+      proc foo() do return a;
+      var x = foo();
+    )""");
+
+  assert(xQt.type()->isIntType());
+}
+
+// Ensure that we don't attempt to resolve functions with actuals that are
+// generic but would never be generic during a "real" invocation. This
+// is a quirk of "initial signatures", which do not use instantiation
+// info, and thus occasionally have generic formals where we don't expect.
+static void testGenericTypeInInitialSignature() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::ignore = resolveTypeOfXInit(context,
+    R"""(
+      record R { type field; }
+
+      proc compilerWarning(param msg: string...) {
+        __primitive("warning");
+      }
+
+      proc foo(type t) type {
+        if t == R(?) then compilerWarning("t is generic");
+        return t;
+      }
+
+      proc sig(x: R, y: foo(x.type)) do return x;
+
+      var x = sig(new R(int), new R(int));
+    )""");
+
+
+  // No warnings should have been emitted, because the call to 'foo()' during
+  // resolving the initial signature should've been skipped.
+}
+
+// Ensure that conditinal early returns in 'param' code are respected.
+static void testEarlyReturn() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto qt = resolveTypeOfXInit(context,
+    R"""(
+      record R { type field; }
+
+      proc compilerError(param msg: string...) {
+        __primitive("error");
+      }
+
+      proc foo(type t) type {
+        if t == int then return uint;
+        compilerError("case not handled");
+      }
+
+      type x = foo(int);
+    )""");
+  CHPL_ASSERT(qt.type()->isUintType());
+
+  // guard should have no errors
+}
+
+// Ensure that if execution is guaranteed to return in all paths, even if
+// the exact path is not known at compile time, subsequent
+// code like compilerError is not resolved.
+static void testRuntimeEarlyReturn() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto qt = resolveTypeOfXInit(context,
+    R"""(
+      record R { type field; }
+
+      proc compilerError(param msg: string...) {
+        __primitive("error");
+      }
+
+      proc foo(type t) {
+        var cond: bool;
+        if cond {
+          return 1;
+        } else {
+          return 2;
+        }
+        compilerError("case not handled");
+      }
+
+      var x = foo(int);
+    )""");
+  CHPL_ASSERT(qt.type()->isIntType());
+
+  // guard should have no errors
+}
+
+// Ensure code after continue / break is not resolved in param loops.
+static void testEarlyContinue() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::ignore = resolveTypeOfXInit(context,
+    R"""(
+      for param i in 1..3 {
+        if i == 1 then continue;
+        if i == 2 then break;
+        if i == 3 {
+          var cond: bool;
+          if cond then {
+            continue;
+          } else {
+            continue;
+          }
+        }
+        compilerError("noooo", 0);
+      }
+      var x = 42;
+    )""");
+
+  // guard should have no errors
+}
+
+// Ensure code after continue / break is not resolved in param loops.
+static void testEarlyRuntimeContinue() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::ignore = resolveTypeOfXInit(context,
+    R"""(
+      for i in 1..3 {
+        var cond: bool;
+        if cond then {
+          continue;
+        } else {
+          continue;
+        }
+        compilerError("noooo", 0);
+      }
+      var x = 42;
+    )""");
+
+  // guard should have no errors
+}
+
+static void testGenericSync() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto qt = resolveTypeOfXInit(context,
+    R"""(
+      proc foo (x: sync) do return 3;
+      var a : sync int;
+      var x = foo(a);
+    )""");
+
+  assert(qt.type() && qt.type()->isIntType());
+
+  // guard should have no errors
+}
+
+static void testUseOfUninitializedVar() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+  auto qt = resolveTypeOfXInit(context,
+    R"""(
+       proc foo() {
+        var y;
+        return y;
+       }
+       var x = foo();
+    )""");
+  assert(qt.isUnknownKindOrType());
+  // expect uninitialized var y, can't establish type for call expression foo()
+  assert(guard.realizeErrors() == 2);
+}
+
 int main() {
   test1();
   test2();
@@ -1891,6 +2269,7 @@ int main() {
   test14();
   test15();
   test16();
+  test16b();
   test17();
   test18();
   test19();
@@ -1902,6 +2281,7 @@ int main() {
   test25();
   test26();
   test27();
+  test28();
 
   testInfiniteCycleBug();
 
@@ -1911,6 +2291,26 @@ int main() {
 
   testPromotionPrim();
   testGetLocalePrim();
+  testArrayGetPrim();
+  testAsciiPrim();
+
+  testDotLocale();
+  testDotBytes();
+
+  testExplicitlyGenericFormal();
+
+  testGlobalMultiDecl();
+
+  testGenericTypeInInitialSignature();
+
+  testEarlyReturn();
+  testRuntimeEarlyReturn();
+  testEarlyContinue();
+  testEarlyRuntimeContinue();
+
+  testGenericSync();
+
+  testUseOfUninitializedVar();
 
   return 0;
 }

@@ -99,11 +99,12 @@
 
   To use :record:`distBag`, the initializer must be invoked explicitly to
   properly initialize the data structure. By default, one bag instance is
-  initialized per locale, and one segment per task.
+  initialized per target locale, and one segment per task.
 
-  .. code-block:: chapel
-
-    var bag = new distBag(int, targetLocales=ourTargetLocales);
+  .. literalinclude:: ../../../../test/library/packages/DistributedBag/doc-examples/example_distBag.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_1
+   :end-before: STOP_EXAMPLE_1
 
   The basic methods that distBag supports require a ``taskId`` argument. This
   ``taskId`` will serve as an index to the segment to be updated and it must be
@@ -111,11 +112,10 @@
   segment, which ensures the parallel-safety of the data structure, as well as the
   local DFS ordering.
 
-  .. code-block:: chapel
-
-    bag.add(0, taskId);
-    bag.addBulk(1..100, taskId);
-    var (hasElt, elt) = bag.remove(taskId)
+  .. literalinclude:: ../../../../test/library/packages/DistributedBag/doc-examples/example_distBag.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_2
+   :end-before: STOP_EXAMPLE_2
 
   While the bag is safe to use in a distributed manner, each locale always operates
   on its privatized instance. This means that it is easy to add data in bulk,
@@ -123,30 +123,19 @@
   data, it will steal work on-demand. Here is an example of concurrent operations
   on distBag across multiple locales and tasks:
 
-  .. code-block:: chapel
-
-    coforall loc in Locales do on loc {
-      coforall taskId in 0..<here.maxTaskPar {
-        var (hasElt, elt) = bag.remove(taskId);
-        if hasElt {
-          elt += 1;
-          bag.add(elt, taskId);
-        }
-      }
-    }
+  .. literalinclude:: ../../../../test/library/packages/DistributedBag/doc-examples/example_distBag.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_3
+   :end-before: STOP_EXAMPLE_3
 
   Finally, distBag supports serial and parallel iteration, as well as a set of
   global operations. Here is an example of a distributed parallel iteration and a
   few global operations working with a ``distBag``:
 
-  .. code-block:: chapel
-
-    forall elts in bag do
-      body();
-
-    const size = bag.getSize();
-    const foundElt = bag.contains(elt);
-    bag.clear();
+  .. literalinclude:: ../../../../test/library/packages/DistributedBag/doc-examples/example_distBag.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_4
+   :end-before: STOP_EXAMPLE_4
 
   Methods
   _______
@@ -206,6 +195,21 @@ module DistributedBag
     others and should not be stolen from.
   */
   config const distributedBagWorkStealingMinElts: int = 1;
+
+  /*
+    The victim selection policy for work stealing.
+  */
+  enum victimPolicy {
+    /*
+      Random selection.
+    */
+    RAND,
+    /*
+      Circular or ring-like selection, where each task steals work from the next
+      task in sequence, with the last task stealing from the first.
+    */
+    RING
+  }
 
   /*
     Reference counter for DistributedBag.
@@ -425,13 +429,16 @@ module DistributedBag
       :arg taskId: The index of the segment from which the element is removed.
       :type taskId: `int`
 
+      :arg policy: The victim selection policy for work stealing.
+      :type policy: :type:`victimPolicy`
+
       :return: Depending on the scenarios: `(true, elt)` if we successfully removed
                element `elt` from distBag; `(false, defaultOf(eltType))` otherwise.
       :rtype: `(bool, eltType)`
     */
-    proc remove(taskId: int): (bool, eltType)
+    proc remove(taskId: int, param policy: victimPolicy = victimPolicy.RAND): (bool, eltType)
     {
-      return bag!.remove(taskId);
+      return bag!.remove(taskId, policy);
     }
     /*
       TODO: There are types in Chapel that cannot be default-initialized. One example
@@ -660,15 +667,15 @@ module DistributedBag
       calling task/locale cannot be chosen. We can also specify how many victims
       to check for eligibility; 1 by default.
     */
-    iter victim(const N: int, const callerId: int, const policy: string = "rand",
+    iter victim(const N: int, const callerId: int, param policy: victimPolicy,
       const tries: int = 1): int
     {
       var count: int;
       var limit: int = if (callerId == -1) then N else N-1;
 
       select policy {
-        // In the 'ring' strategy, victims are selected in a round-robin fashion.
-        when "ring" {
+        // Circular or ring-like selection.
+        when victimPolicy.RING {
           var id = (callerId + 1) % N;
 
           while ((count < limit) && (count < tries)) {
@@ -677,8 +684,8 @@ module DistributedBag
             id = (id + 1) % N;
           }
         }
-        // In the 'rand' strategy, victims are randomly selected.
-        when "rand" {
+        // Random selection.
+        when victimPolicy.RAND {
           var id: int;
           const victims = permute(0..#N);
 
@@ -693,9 +700,6 @@ module DistributedBag
         otherwise halt("DistributedBag internal error: Unknown victim choice policy");
       }
     }
-    /*
-      TODO: Probably better to use an enum Policy instead of string here.
-    */
     /*
       TODO: Create a seed here for the RNG that includes the locale ID. Since we aren't
       specifying the seed, we get one based on the time, but this might lead multiple
@@ -718,7 +722,7 @@ module DistributedBag
       best case fails, it trigger a work stealing mechanism (See the Implementation
       Details section).
     */
-    proc remove(const taskId: int): (bool, eltType)
+    proc remove(const taskId: int, param policy: victimPolicy): (bool, eltType)
     {
       var phase = REMOVE_BEST_CASE;
       if (numLocales > 1) then phase = PERFORMANCE_PATCH;
@@ -767,7 +771,7 @@ module DistributedBag
             if globalStealInProgress.read() then return (REMOVE_FAST_EXIT, default);
 
             // iterate over the victim tasks
-            for victimTaskId in victim(here.maxTaskPar, taskId, "rand", here.maxTaskPar) {
+            for victimTaskId in victim(here.maxTaskPar, taskId, policy, here.maxTaskPar) {
               ref targetSegment = segments[victimTaskId];
 
               if !targetSegment.globalSteal.read() {
@@ -823,11 +827,11 @@ module DistributedBag
             */
 
             // iterate over the victim locales
-            for victimLocaleId in victim(numLocales, here.id, "rand", 1) {
+            for victimLocaleId in victim(numLocales, here.id, policy, 1) {
               on Locales[victimLocaleId] {
                 var targetBag = chpl_getPrivatizedCopy(parentHandle.type, parentPid).bag;
                 // iterate over the victim tasks
-                for victimTaskId in victim(here.maxTaskPar, -1, "rand", here.maxTaskPar) {
+                for victimTaskId in victim(here.maxTaskPar, -1, policy, here.maxTaskPar) {
                   ref targetSegment = targetBag!.segments[victimTaskId];
 
                   targetSegment.globalSteal.write(true);
@@ -976,7 +980,7 @@ module DistributedBag
       if (block.tailId + size > block.cap) {
         const neededCap = block.cap*2**ceil(log2((block.tailId + size) / block.cap:real)):int;
         if (neededCap >= distributedBagMaxSegmentCap) then
-          size = distributedBagMaxSegmentCap - block.tailId - 1;
+          size = distributedBagMaxSegmentCap - block.tailId;
         lock_block.readFE();
         block.cap = min(distributedBagMaxSegmentCap, neededCap);
         block.dom = {0..#block.cap};
@@ -984,7 +988,12 @@ module DistributedBag
       }
 
       // add the elements to the tail
-      for elt in elts[0..#size] do block.pushTail(elt);
+      var c = 0;
+      for elt in elts {
+        block.pushTail(elt);
+        c += 1;
+        if (c == size) then break;
+      }
       tail += size;
 
       // check split request
@@ -1055,7 +1064,7 @@ module DistributedBag
         // try to move the pointers
         if simCAS(head, split, h, s, h+1, s) {
           lock_n.readFE();
-          // get an element from the head of the private portion
+          // get an element from the head of the shared portion
           var elt = block.popHead();
           nElts_shared.sub(1);
           lock_n.writeEF(true);

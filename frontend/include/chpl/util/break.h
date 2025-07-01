@@ -22,7 +22,6 @@
 #define CHPL_UTIL_BREAK_H
 
 // must be exported to avoid dead-code elimination by C++ compiler
-void gdbShouldBreakHere();
 void debuggerBreakHere();
 
 #endif

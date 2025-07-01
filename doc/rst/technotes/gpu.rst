@@ -152,7 +152,7 @@ The following are further requirements for GPU support:
 
   * CUDA toolkit version 11.7+ or 12.x must be installed.
 
-  * We test with system LLVM 19. Older versions may work.
+  * We test with LLVM 20. Older versions may work.
 
     * Note that LLVM versions older than 16 do not support CUDA 12.
 
@@ -167,7 +167,8 @@ The following are further requirements for GPU support:
 
   * For ROCm 5.x, ``CHPL_LLVM`` must be set to ``system``. Note that, ROCm
     installations come with LLVM. Setting ``CHPL_LLVM=system`` will allow you to
-    use that LLVM.
+    use that LLVM. Note that ROCm 5.x is not actively tested and we recommend
+    using ROCm 6.x.
 
   * For ROCm 6.x, only ``CHPL_LLVM=bundled`` is supported.
 
@@ -687,7 +688,7 @@ Performance Tips
   program when NVIDIA's kernel mode driver is not already loaded and running.
   If you are using Linux and not running an X server on the target GPU, then
   you may wish to install `NVIDIA's `driver persistence daemon
-  <https://docs.nvidia.com/deploy/driver-persistence/index.html#persistence-daemon>`_
+  <https://docs.nvidia.com/deploy/driver-persistence/#persistence-daemon>`_
   to alleviate this issue.
 
 Tested Configurations
@@ -704,9 +705,9 @@ marked with * are covered in our nightly testing configurations.
 
 * AMD
 
-  * Hardware: MI60*, MI100 and MI250X*
+  * Hardware: MI60, MI100 and MI250X*
 
-  * Software:ROCm 5.4*, 6.0, 6.1, 6.2*
+  * Software:ROCm 5.4, 6.0, 6.1, 6.2*
 
 
 GPU Support on Windows Subsystem for Linux
@@ -715,7 +716,7 @@ GPU Support on Windows Subsystem for Linux
 NVIDIA GPUs can be used on Windows through through WSL. To enable GPU support on
 WSL we require the CUDA Toolkit to be installed in the WSL environment and the
 NVIDIA driver to be installed on the Windows host. See the `NVIDIA documentation
-<https://docs.nvidia.com/cuda/wsl-user-guide/index.html#getting-started-with-cuda-on-wsl-2>`_
+<https://docs.nvidia.com/cuda/wsl-user-guide/#getting-started-with-cuda-on-wsl-2>`_
 for more information on setting up CUDA on WSL.
 See `Using Chapel on WSL <../platforms/windows.html#using-chapel-on-wsl>`_
 for more information on using Chapel with WSL.

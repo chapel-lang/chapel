@@ -112,12 +112,24 @@ module CopyAggregation {
     type elemType;
     @chpldoc.nodoc
     var agg: if aggregate then DstAggregatorImpl(elemType) else nothing;
+    /* Sets ``dst = srcVal`` in a way that aggregates such updates
+       to improve communication efficiency assuming that ``dst`` is remote
+       and ``srcVal`` is local. */
     inline proc ref copy(ref dst: elemType, const in srcVal: elemType) {
       if aggregate then agg.copy(dst, srcVal);
                    else dst = srcVal;
     }
-    inline proc flush() {
-      if aggregate then agg.flush();
+    /* Flushes the aggregator & completes the updates queued up from the
+       :proc:`DstAggregator.copy` calls.
+
+       :arg freeBuffers: if ``true``, deallocates buffers used by this
+                         aggregator. If ``false``, the buffers will remain
+                         allocated after this ``flush`` (to support further
+                         :proc:`DstAggregator.copy` calls) and deallocated
+                         when the aggregator variable is deinitialized.
+     */
+    inline proc ref flush(freeBuffers=false) {
+      if aggregate then agg.flush(freeBuffers=freeBuffers);
     }
   }
 
@@ -130,12 +142,24 @@ module CopyAggregation {
     type elemType;
     @chpldoc.nodoc
     var agg: if aggregate then SrcAggregatorImpl(elemType) else nothing;
+    /* Sets ``dst = src`` in a way that aggregates such updates
+       to improve communication efficiency assuming that ``dst`` is local
+       and ``src`` is remote. */
     inline proc ref copy(ref dst: elemType, const ref src: elemType) {
       if aggregate then agg.copy(dst, src);
                    else dst = src;
     }
-    inline proc flush() {
-      if aggregate then agg.flush();
+    /* Flushes the aggregator & completes the updates queued up from the
+       :proc:`SrcAggregator.copy` calls.
+
+       :arg freeBuffers: if ``true``, deallocates buffers used by this
+                         aggregator. If ``false``, the buffers will remain
+                         allocated after this ``flush`` (to support further
+                         :proc:`SrcAggregator.copy` calls) and deallocated
+                         when the aggregator variable is deinitialized.
+     */
+    inline proc ref flush(freeBuffers=false) {
+      if aggregate then agg.flush(freeBuffers=freeBuffers);
     }
   }
 
@@ -162,7 +186,7 @@ module CopyAggregation {
     }
 
     proc ref deinit() {
-      flush();
+      flush(freeBuffers=true);
       for loc in myLocaleSpace {
         deallocate(lBuffers[loc]);
       }
@@ -170,10 +194,10 @@ module CopyAggregation {
       deallocate(bufferIdxs);
     }
 
-    proc ref flush() {
+    proc ref flush(freeBuffers: bool) {
       for offsetLoc in myLocaleSpace + lastLocale {
         const loc = offsetLoc % numLocales;
-        _flushBuffer(loc, bufferIdxs[loc], freeData=true);
+        _flushBuffer(loc, bufferIdxs[loc], freeData=freeBuffers);
       }
     }
 
@@ -263,7 +287,7 @@ module CopyAggregation {
     }
 
     proc ref deinit() {
-      flush();
+      flush(freeBuffers=true);
       for loc in myLocaleSpace {
         deallocate(dstAddrs[loc]);
         deallocate(lSrcAddrs[loc]);
@@ -273,10 +297,10 @@ module CopyAggregation {
       deallocate(bufferIdxs);
     }
 
-    proc ref flush() {
+    proc ref flush(freeBuffers: bool) {
       for offsetLoc in myLocaleSpace + lastLocale {
         const loc = offsetLoc % numLocales;
-        _flushBuffer(loc, bufferIdxs[loc], freeData=true);
+        _flushBuffer(loc, bufferIdxs[loc], freeData=freeBuffers);
       }
     }
 
@@ -377,7 +401,7 @@ module AggregationPrimitives {
     extern proc getenv(name : c_ptrConst(c_char)) : c_ptrConst(c_char);
     const envValue = getenv(name.localize().c_str());
     const len = strLen(envValue);
-    const strval = try! string.createAdoptingBuffer(envValue, length=len);
+    const strval = try! string.createCopyingBuffer(envValue, length=len);
     if strval.isEmpty() { return default; }
     return try! strval: int;
   }

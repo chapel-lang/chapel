@@ -437,6 +437,13 @@ bool isObjFile(const char* filename) {
   return checkSuffix(filename, "o");
 }
 
+bool isStaticLibrary(const char* filename) {
+  return checkSuffix(filename, "a");
+}
+bool isSharedLibrary(const char* filename) {
+  return checkSuffix(filename, "so") || checkSuffix(filename, "dylib");
+}
+
 static bool foundChplSource = false;
 
 bool isChplSource(const char* filename) {
@@ -456,7 +463,9 @@ static bool isRecognizedSource(const char* filename) {
           isCHeader(filename) ||
           isObjFile(filename) ||
           isChplSource(filename) ||
-          isDynoLib(filename));
+          isDynoLib(filename)) ||
+          isStaticLibrary(filename) ||
+          isSharedLibrary(filename);
 }
 
 
@@ -690,7 +699,9 @@ static void genObjFiles(FILE* makefile) {
   int filenum = 0;
   int first = 1;
   while (const char* inputFilename = nthFilename(filenum++)) {
-    bool objfile = isObjFile(inputFilename);
+    bool objfile = isObjFile(inputFilename) ||
+                   isSharedLibrary(inputFilename) ||
+                   isStaticLibrary(inputFilename);
     bool cfile = isCSource(inputFilename);
     if (objfile || cfile) {
       if (first) {

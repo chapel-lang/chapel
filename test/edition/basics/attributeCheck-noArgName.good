@@ -1,0 +1,1 @@
+attributeCheck-noArgName.chpl:1: error: '@edition' attribute argument must be named

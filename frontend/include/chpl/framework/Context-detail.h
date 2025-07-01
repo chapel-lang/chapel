@@ -25,6 +25,8 @@
 #include "chpl/util/memory.h"
 #include "chpl/util/hash.h"
 
+#include "llvm/ADT/SmallPtrSet.h"
+
 #include <chrono>
 #include <cstdint>
 #include <cstring>
@@ -242,10 +244,7 @@ struct QueryDependency {
 };
 
 using QueryDependencyVec = std::vector<QueryDependency>;
-// The first component is the error emitted by the query, while the second
-// component stores whether or not the error was silenced (i.e. not reported).
-// The query contains all errors, but only prints the non-silenced ones.
-using QueryErrorVec = std::vector<std::pair<owned<ErrorBase>, bool>>;
+using QueryErrorVec = std::vector<owned<ErrorBase>>;
 
 class QueryMapResultBase {
  public:
@@ -274,6 +273,13 @@ class QueryMapResultBase {
   // and that field is used for a lot of things, so for the time being, the
   // extra boolean is fine.
   mutable bool beingTestedForReuse = false;
+  // queries that aren't set in "usual" ways (e.g., ones that are set by
+  // another query) should be marked externallySet. This ensures that these queries,
+  // which would have no dependencies and thus always look like their result
+  // can be reused, are treated properly. For the most part, this means that
+  // queries that rely on an externally set query will be recomputed, possibly
+  // prompting the externally-set query to be set again.
+  mutable bool externallySet = false;
 
   // Whether or not errors from this query result have been shown to the
   // user (they may not have been if some query checked for errors).
@@ -284,7 +290,9 @@ class QueryMapResultBase {
   //
   // This is not too strongly connected to emittedErrors (which tracks whether
   // errors --- if any --- were shown to the user for this query result only)
-  mutable bool errorsPresentInSelfOrDependencies = false;
+  //
+  // Bit 0 tracks if errors occurred, bit 1 tracks warnings.
+  mutable unsigned int errorsPresentInSelfOrDependencies:2;
   // Errors emitted when re-computing a query can refer to memory and data
   // that's temporarily allocated while running the computation. Then, if the
   // output of the query is the same as before, that temporary data can
@@ -305,7 +313,7 @@ class QueryMapResultBase {
   mutable ssize_t oldResultForErrorContents = -1;
 
   mutable QueryDependencyVec dependencies;
-  mutable std::set<const QueryMapResultBase*> recursionErrors;
+  mutable llvm::SmallPtrSet<const QueryMapResultBase*, 2> recursionErrors;
   mutable QueryErrorVec errors;
 
   QueryMapBase* parentQueryMap;
@@ -313,10 +321,10 @@ class QueryMapResultBase {
   QueryMapResultBase(RevisionNumber lastChecked,
                      RevisionNumber lastChanged,
                      bool beingTestedForReuse,
+                     bool externallySet,
                      bool emittedErrors,
-                     bool errorsPresentInSelfOrDependencies,
                      size_t oldResultForErrorContents,
-                     std::set<const QueryMapResultBase*> recursionErrors,
+                     llvm::SmallPtrSet<const QueryMapResultBase*, 2> recursionErrors,
                      QueryMapBase* parentQueryMap);
   virtual ~QueryMapResultBase() = 0; // this is an abstract base class
   virtual void recompute(Context* context) const = 0;
@@ -344,14 +352,13 @@ class QueryMapResult final : public QueryMapResultBase {
                  RevisionNumber lastChanged,
                  bool beingTestedForReuse,
                  bool emittedErrors,
-                 bool errorsPresentInSelfOrDependencies,
                  size_t oldResultForErrorContents,
-                 std::set<const QueryMapResultBase*> recursionErrors,
+                 llvm::SmallPtrSet<const QueryMapResultBase*, 2> recursionErrors,
                  QueryMap<ResultType, ArgTs...>* parentQueryMap,
                  std::tuple<ArgTs...> tupleOfArgs,
                  ResultType result)
     : QueryMapResultBase(lastChecked, lastChanged, beingTestedForReuse,
-                         emittedErrors, errorsPresentInSelfOrDependencies,
+                         emittedErrors,
                          oldResultForErrorContents,
                          std::move(recursionErrors), parentQueryMap),
       tupleOfArgs(std::move(tupleOfArgs)),

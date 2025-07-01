@@ -49,7 +49,7 @@ class Child : Parent {}
 
 proc f(ref x: owned Parent) {}
 
-var x: owned Child;
+var x = new Child();
 f(x);
 )""";
 
@@ -104,7 +104,7 @@ class C {}
 
 proc f(x: owned C) {}
 
-var x: shared C;
+var x = new shared C();
 f(x);
 )""";
 
@@ -277,6 +277,7 @@ record R {
 
 var r: R;
 r.x("hello");
+operator =(ref lhs: int, const rhs: int) {}
 )""";
 
 static const char* errorOther = R"""(
@@ -309,10 +310,10 @@ static const char* errorManyCandidates = R"""(
   
   The following candidate didn't match because an actual couldn't be passed to a formal:
       |
-    1 | proc f(x: int(8)) {}
-      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺
+    8 | proc f(x: uint(64)) {}
+      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
-  The formal 'x' expects a value of type 'int(8)', but the actual was a param of type 'string'.
+  The formal 'x' expects a value of type 'uint(64)', but the actual was a param of type 'string'.
        |
     10 | f("hello");
        |   ⎺⎺⎺⎺⎺⎺⎺
@@ -320,10 +321,10 @@ static const char* errorManyCandidates = R"""(
   
   The following candidate didn't match because an actual couldn't be passed to a formal:
       |
-    2 | proc f(x: int(16)) {}
-      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+    7 | proc f(x: uint(32)) {}
+      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
-  The formal 'x' expects a value of type 'int(16)', but the actual was a param of type 'string'.
+  The formal 'x' expects a value of type 'uint(32)', but the actual was a param of type 'string'.
        |
     10 | f("hello");
        |   ⎺⎺⎺⎺⎺⎺⎺
@@ -332,8 +333,62 @@ static const char* errorManyCandidates = R"""(
   Omitting 6 more candidates that didn't match.
 )""";
 
+static const char* progBreakNonLoop = R"""(
+label outer
+for i in 0..3 {
+  for j in 0..3 {
+   {
+     var outer = 42;
+     continue outer;
+   }
+  }
+}
+)""";
+
+static const char* errorBreakNonLoop = R"""(
+─── error in file.chpl:6 [InvalidContinueBreakTarget] ───
+  Invalid target for 'continue' statement.
+      |
+    6 |      continue outer;
+      |               ⎺⎺⎺⎺⎺
+      |
+  A 'continue' statement can only refer to a loop. This is done by using the loop's label.
+  However, the target is declared as a value of type 'int(64)' here:
+      |
+    5 |      var outer = 42;
+      |          ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+)""";
+
+static const char* progLabelAsValue = R"""(
+proc foo(x) {}
+
+label outer
+for i in 0..3 {
+  for j in 0..3 {
+   foo(outer);
+  }
+}
+)""";
+
+static const char* errorLabelAsValue = R"""(
+─── error in file.chpl:6 [LoopLabelOutsideBreakOrContinue] ───
+  Invalid reference to loop label outside of a 'break' or 'continue' statement.
+  Loop labels can only be referenced in 'break' or 'continue' statements.
+  However, the expression here references a loop label in another context:
+      |
+    6 |    foo(outer);
+      |        ⎺⎺⎺⎺⎺
+      |
+  The expression in question refers to a labeled loop declared here:
+      |
+    4 | for i in 0..3 {
+      |
+)""";
+
 static void testResolverError(const char* program, const char* error,
-                              bool standard = true) {
+                              bool standard = true,
+                              ErrorType expectedType = ErrorType::NoMatchingCandidates) {
   Context* context = nullptr;
   Context ctx;
   if (standard) {
@@ -353,7 +408,7 @@ static void testResolverError(const char* program, const char* error,
   auto resolutionResult = resolveModule(context, mod->id());
 
   assert(guard.numErrors() == 1);
-  assert(guard.error(0)->type() == ErrorType::NoMatchingCandidates);
+  assert(guard.error(0)->type() == expectedType);
 
   std::ostringstream oss;
   ErrorWriter detailedWriter(context, oss, ErrorWriter::DETAILED, /* useColor */ false);
@@ -379,6 +434,9 @@ int main() {
   // Avoid standard modules for now to prevent very long list of candidates
   testResolverError(progOther, errorOther, false);
   testResolverError(progManyCandidates, errorManyCandidates);
+
+  testResolverError(progBreakNonLoop, errorBreakNonLoop, true,  ErrorType::InvalidContinueBreakTarget);
+  testResolverError(progLabelAsValue, errorLabelAsValue, true, ErrorType::LoopLabelOutsideBreakOrContinue);
 
   return 0;
 }

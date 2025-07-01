@@ -1,0 +1,3 @@
+importModule.chpl:4: warning: 'importModule' with a 'moduleContents' argument is deprecated. Use createModule instead.
+hello from Python
+module: mymod

@@ -148,7 +148,8 @@ computeAndPrintStuff(ResolutionContext* rc,
     for (const MostSpecificCandidate& candidate : r->mostSpecific()) {
       if (candidate) {
         auto sig = candidate.fn();
-        if (sig->untyped()->idIsFunction()) {
+        if (sig->untyped()->idIsFunction() &&
+            !sig->untyped()->idIsExternBlockFunction()) {
           auto fn = resolveFunction(rc, sig, r->poiScope());
           calledFns.insert(fn);
         }

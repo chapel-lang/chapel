@@ -28,6 +28,7 @@ cd $CHPL_HOME
 
 # Create a tarball from current repo.
 # The tarball is left in root of repo in tar/ directory.
+short_version=$(get_short_version)
 gen_release $short_version
 
 cp ${CHPL_HOME}/util/packaging/homebrew/chapel-main.rb  ${CHPL_HOME}/util/packaging/homebrew/chapel.rb

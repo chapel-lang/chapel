@@ -28,6 +28,11 @@ else
 CHPL_GASNET_CFG_OPTIONS += --disable-pshm
 endif
 
+# Turn off the runtime warning that occurs when there are co-locales and PSHM
+# is disabled. This should be removed once PSHM is enabled by default.
+
+GASNET_CFLAGS += -DGASNET_NO_PSHM_WARNING
+
 ifneq ($(CHPL_MAKE_COMM_SEGMENT),everything)
 CHPL_GASNET_CFG_OPTIONS += --disable-aligned-segments
 endif
@@ -108,6 +113,14 @@ ifeq ($(CHPL_MAKE_TARGET_COMPILER),llvm)
 # If we are using LLVM 15+, it defaults to -fPIE, so use that here as well
 ifeq ($(shell test $(CHPL_MAKE_LLVM_VERSION) -ge 15; echo "$$?"),0)
 GASNET_CFLAGS += -fPIE
+endif
+endif
+
+# Prevent fatal compile errors from GCC 15+ due to GASNet bug #4787
+# https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4787
+ifeq ($(CHPL_MAKE_TARGET_COMPILER),gnu)
+ifeq ($(shell test $(GNU_GCC_MAJOR_VERSION) -ge 15; echo "$$?"),0)
+GASNET_CFLAGS += -Wno-incompatible-pointer-types
 endif
 endif
 

@@ -46,6 +46,8 @@ public:
 
   // Transform performed pre-order
   bool   enterCallExpr (CallExpr* node) override;
+
+  static bool shouldTransformCall(CallExpr* node);
 };
 
 #endif

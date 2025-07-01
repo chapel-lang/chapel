@@ -7,7 +7,7 @@ if ($ARGV[0] =~ /^-+[vh]/) {
   die "ident (GASNet) 0.1
 This script extracts configuration information embedded in the GASNet library
   and any executables that link it statically.
-Copyright (C) 2024, UC Regents. See GASNet license.txt for terms of use.
+Copyright (C) 2024-2025, UC Regents. See GASNet license.txt for terms of use.
 
 Usage: $0 [file ...]
   If no file is specified, reads from stdin.

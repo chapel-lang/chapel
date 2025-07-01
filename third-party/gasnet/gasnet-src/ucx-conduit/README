@@ -1,6 +1,6 @@
 GASNet ucx-conduit documentation
 Mellanox Technologies LTD Copyright (c) 2019-2021.
-Portions copyright 2021-2024, The Regents of the University of California.
+Portions copyright 2021-2025, The Regents of the University of California.
 
 Boris I. Karasev <boriska@mellanox.com>
 Artem Y. Polyakov <artemp@mellanox.com>
@@ -62,12 +62,12 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   See the extended-ref README for the GASNet general-purpose configuration parameters.
 
   --with-ucx-max-medium=[value]
-    By default gex_AM_LUB{Request,Reply}Medium() return 3992, which is a
-    4KiB buffer minus overheads such as handler arguments.  This configure
+    By default gex_AM_LUB{Request,Reply}Medium() return 65456, which is a
+    64KiB buffer minus overheads such as handler arguments.  This configure
     option sets the default value for the GASNET_UCX_MAX_MEDIUM environment
     variable, which determines the LUB size at runtime.
     The value cannot be less than 512.
-    The default value is 3992.
+    The default value is 65456.
 
 @ Section: Job Spawning @
 
@@ -78,12 +78,14 @@ the gasnetrun_ucx utility:
 gasnetrun_ucx -n <n> [options] [--] prog [program args]
 options:
   -n <n>                 number of processes to run (required)
-  -N <N>                 number of nodes to run on (not supported by all MPIs)
+  -N <N>                 number of nodes to run on (not always supported)
+  -c <n>                 number of cpus per process (not always supported)
   -E <VAR1[,VAR2...]>    list of environment vars to propagate
   -v                     be verbose about what is happening
   -t                     test only, don't execute anything (implies -v)
   -k                     keep any temporary files created (implies -v)
-  -spawner=(ssh|mpi|pmi) force use of a specific spawner (if available)
+  -spawner=<name>        force use of a specific spawner ([supported spawners])
+  --                     ends option parsing
 
 There are as many as three possible methods (ssh, mpi and pmi) by which one
 can launch an ucx-conduit application.  Ssh-based spawning is always
@@ -128,7 +130,7 @@ Additional environment variables:
     thus the return value of the gex_AM_LUB{Request,Reply}Medium() queries.
     The value cannot be less than 512.
     Unless a different value was set using --with-ucx-max-medium=[value]
-    at configure time, the default value is 3992.
+    at configure time, the default value is 65456.
 
 
   In order to control UCX parameters (i.e. device or transport selection), environment
@@ -202,12 +204,6 @@ Additional environment variables:
 + Support for segment-everything mode is currently disabled due to unbounded
   memory use in AMLong (especially as used in the "amref" implementation of RMA).
   Restored support for `--enable-segment-everything` is an area for future work.
-
-+ Bug 4165
-  The implementation of AM Mediums is known to have anomalous performance
-  for payloads above about 1KiB on multiple systems.
-  The most up-to-date information on this bug is maintained at:
-    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4165
 
 + Bug 4172
   In hybrid MPI applications there are conditions which can trigger a crash at
@@ -352,5 +348,18 @@ Additional environment variables:
   + Investigate older UCX versions and hardware compatibility and update README.
   + Support Graceful exits if rank 0 has failed.
   + Restore `--enable-segment-everything` mode:
-    - Fix robustness problems with AMLong in `--enable-segment-everything` mode.
+    - Fix performance and memory usage of AMLong in `--enable-segment-everything` mode.
     - Apply ODP to optimize `--enable-segment-everything` mode.
+    NOTE:
+      In FAST and LARGE modes, receive buffers are preposted to the tag-matching APIs
+      at initialization, and reposted as quickly as the received AMs have been
+      executed.
+      However, in EVERYTHING mode there are NO preposted receives.  Instead, every
+      internal poll (both inside and outside handler context) calls
+      `ucp_tag_probe_nb()` to determine the length necessary in order to post the
+      receive for the message (for which the underlying transport has at least
+      transferred the length and tag, plus maybe the payload in an eager protocol).
+      In general (unless eager) the AM send buffer at the initiator will remain
+      allocated until this matching receive is posted.  Thus, one may deadlock if
+      there is some path by which an AM injector is waiting for send buffers when all
+      of them are tied up with AMs sent to inattentive peers.

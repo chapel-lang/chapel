@@ -658,13 +658,66 @@ void print_view_noline(BaseAST* ast) {
   fflush(stdout);
 }
 
+template <typename T>
+void nprint_dyno_type(const T* t) {
+  if (t == nullptr) {
+    printf("<NULL>");
+  } else {
+    t->dump();
+  }
+  fflush(stdout);
+}
+
+template <typename T>
+void nprint_dyno_type(const T& t) {
+  t.dump();
+  fflush(stdout);
+}
+
+// TODO: A nice one-liner we can use to force instantiation for a type?
+void nprint_view(const chpl::uast::AstNode* x) {
+  nprint_dyno_type(x);
+}
+
+void nprint_view(const chpl::types::Type* x) {
+  nprint_dyno_type(x);
+}
+
+void nprint_view(const chpl::types::QualifiedType& x) {
+  nprint_dyno_type(x);
+}
+
+void nprint_view(const chpl::resolution::CallInfo& x) {
+  nprint_dyno_type(x);
+}
+
+void nprint_view(const chpl::resolution::ResolvedExpression* x) {
+  nprint_dyno_type(x);
+}
+
+void nprint_view(const chpl::resolution::TypedFnSignature* x) {
+  nprint_dyno_type(x);
+}
+
+void nprint_view(const chpl::resolution::UntypedFnSignature* x) {
+  nprint_dyno_type(x);
+}
+
+void nprint_view(const chpl::ID& x) {
+  nprint_dyno_type(x);
+}
+
+void nprint_view(const chpl::UniqueString& x) {
+  nprint_dyno_type(x);
+}
+
 void nprint_view(int id) {
   if (BaseAST* ast = aidWithError(id, "nprint_view"))
     nprint_view(ast);
 }
 
 void nprint_view(BaseAST* ast) {
-  if (ast==NULL) {
+  if (ast == nullptr) {
     printf("<NULL>");
   } else {
     type_nprint_view(ast);

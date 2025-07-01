@@ -32,7 +32,6 @@ namespace types {
 class ArrayType final : public CompositeType {
  private:
   // TODO:
-  // - create 'RuntimeType'
   // - Slicing
   // - Array literals
 
@@ -41,7 +40,8 @@ class ArrayType final : public CompositeType {
             const ArrayType* instantiatedFrom,
             SubstitutionsMap subs)
     : CompositeType(typetags::ArrayType, id, name,
-                    instantiatedFrom, std::move(subs))
+                    instantiatedFrom, std::move(subs),
+                    uast::Decl::DEFAULT_LINKAGE)
   {
   }
 
@@ -69,14 +69,16 @@ class ArrayType final : public CompositeType {
   static const ArrayType* getGenericArrayType(Context* context);
 
   static const ArrayType* getArrayType(Context* context,
+                                       const QualifiedType& instance,
                                        const QualifiedType& domainType,
                                        const QualifiedType& eltType);
 
   const Type* substitute(Context* context,
                          const PlaceholderMap& subs) const override {
-    return getArrayType(context,
-                        domainType().substitute(context, subs),
-                        eltType().substitute(context, subs));
+    return getArrayTypeQuery(context,
+                             id_, name_,
+                             Type::substitute(context, instantiatedFrom_->toArrayType(), subs),
+                             resolution::substituteInMap(context, subs_, subs)).get();
   }
 
   QualifiedType domainType() const {
@@ -96,6 +98,10 @@ class ArrayType final : public CompositeType {
       return QualifiedType();
     }
   }
+
+  const RuntimeType* runtimeType(Context* context) const;
+
+  bool isAliasingArray(Context* context) const;
 
   ~ArrayType() = default;
 

@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# The main purpose of this test is to make sure it doesn't core dump, but
+# here we also check that the right information is being printed at all.
+
+# Note, this prediff is intended to avoid noise in the case that the
+# output is interleaved, which sometimes happens in testing.
+# It does that by using grep with --max-count to check that
+# key patterns occur 3 or more times (we expect 10, so that
+# leaves some room for interleaving).
+
+IN=$2
+OUT=$2.tmp
+
+echo "counting memory tracking prints" > $OUT
+
+echo "'memory usage:'" >> $OUT
+grep --max-count=3 --count 'memory usage:' $IN >> $OUT
+
+echo "'Memory Allocation Report by Type'" >> $OUT
+grep --max-count=3 --count  'Memory Allocation Report by Type' $IN >> $OUT
+echo "'Allocated Memory'" >> $OUT
+grep --max-count=3 --count 'Allocated Memory' $IN >> $OUT
+
+grep 'OK' $IN | grep 'tot=' >> $OUT
+
+mv $OUT $2

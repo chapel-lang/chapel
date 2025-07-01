@@ -21,11 +21,7 @@
 
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
-#include "chpl/resolution/scope-queries.h"
-#include "chpl/types/all-types.h"
-#include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
-#include "chpl/uast/Record.h"
 #include "chpl/uast/Variable.h"
 
 
@@ -53,6 +49,10 @@ module M {
   param s = d.strides;
   param rk = d.isRectangular();
   param ak = d.isAssociative();
+
+  param rttR = __primitive("get runtime type field", d, "rank");
+  type rttI = __primitive("get runtime type field", d, "idxType");
+  param rttS = __primitive("get runtime type field", d, "strides");
 
   var p = d.pid;
 
@@ -105,13 +105,19 @@ module M {
   assert(rankVarTy == dType->rank());
   ensureParamInt(rankVarTy, rank);
 
+  assert(findVarType(m, rr, "rttR") == rankVarTy);
+
   auto idxTypeVarTy = findVarType(m, rr, "i");
   assert(idxTypeVarTy == dType->idxType());
   assert(findVarType(m, rr, "ig") == idxTypeVarTy);
 
+  assert(findVarType(m, rr, "rttI") == idxTypeVarTy);
+
   auto stridesVarTy = findVarType(m, rr, "s");
   assert(stridesVarTy == dType->strides());
   assert(stridesVarTy.param()->toEnumParam()->value().str == strides);
+
+  assert(findVarType(m, rr, "rttS") == stridesVarTy);
 
   ensureParamBool(findVarType(m, rr, "rk"), true);
 
@@ -197,6 +203,24 @@ static void testBadDomain(Context* contextWithStd, std::string domainType) {
   }
 }
 
+// check that the 'dmapped' call is handled via a call to 'chpl__distributed'
+static void testDmapped() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto qt = resolveTypeOfXInit(context,
+    R"""(
+      use BlockDist;
+
+      var Space = {1..10, 1..10};
+      var Dist = new blockDist(Space);
+      var D = Space dmapped Dist;
+      var x = D.distribution.type : string;
+  )""");
+
+  ensureParamString(qt, "blockDist(2, int(64), unmanaged DefaultDist)");
+}
+
 int main() {
   // Set up context with standard modules, re-used between tests for
   // performance.
@@ -211,6 +235,7 @@ int main() {
 
   testDomainLiteral(context, "{1..10}", DomainType::Kind::Rectangular);
   testDomainLiteral(context, "{1..10, 1..10}", DomainType::Kind::Rectangular);
+  testDomainLiteral(context, "{(...(1..10, 1..10))}", DomainType::Kind::Rectangular);
 
   testDomainBadPass(context, "domain(1)", "domain(2)");
   testDomainBadPass(context, "domain(1, int(16))", "domain(1, int(8))");
@@ -228,6 +253,8 @@ int main() {
   testBadDomain(context, "domain(\"asdf\", \"asdf2\")");
   testBadDomain(context, "domain(1, \"asdf\")");
   testBadDomain(context, "domain(1, int, \"asdf\")");
+
+  testDmapped();
 
   return 0;
 }

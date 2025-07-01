@@ -347,10 +347,11 @@ module ChapelIteratorSupport {
   }
 
   proc chpl_iteratorFromForExpr(ir: _iteratorRecord) param {
-    if Reflection.canResolveMethod(ir, "_fromForExpr_") then
-      return ir._fromForExpr_;
-    else
-      return false;
+    if Reflection.canResolveMethod(ir, "_fromForExpr_") {
+      // implementation assumes _fromForExpr_ always returns true if it exists.
+      return true;
+    }
+    return false;
   }
   proc chpl_iteratorFromForExpr(arg) param {
     // non-iterator-record cases are always parallel
@@ -360,10 +361,11 @@ module ChapelIteratorSupport {
   }
 
   proc chpl_iteratorFromForeachExpr(ir: _iteratorRecord) param {
-    if Reflection.canResolveMethod(ir, "_fromForeachExpr_") then
-      return ir._fromForeachExpr_;
-    else
-      return false;
+    if Reflection.canResolveMethod(ir, "_fromForeachExpr_") {
+      // implementation assumes _fromForeachExpr_ always returns true if it exists.
+      return true;
+    }
+    return false;
   }
   proc chpl_iteratorFromForeachExpr(arg) param {
     // non-iterator-record cases are always parallel, not via foreach.

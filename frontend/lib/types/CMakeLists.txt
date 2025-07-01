@@ -47,6 +47,7 @@ target_sources(ChplFrontend-obj
                PrimitiveType.cpp
                PtrType.cpp
                PromotionIteratorType.cpp
+               RuntimeType.cpp
                QualifiedType.cpp
                RealType.cpp
                RecordType.cpp

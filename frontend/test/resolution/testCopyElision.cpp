@@ -33,8 +33,8 @@
 // resolves the last function, or module if testModule=true
 // checks that the copy elision points match the string IDs provided
 static void testCopyElision(const char* test,
-                            const char* program,
-                            std::vector<const char*> expectedPoints,
+                            std::string program,
+                            std::vector<std::string> expectedPoints,
                             bool testModule=false,
                             bool expectErrors=false) {
   printf("%s\n", test);
@@ -181,10 +181,11 @@ static void test4() {
 }
 
 static void test5() {
-  testCopyElision("test5",
+  testCopyElision("test5a",
     R""""(
         proc test(cond: bool) {
           var x:int;
+          var z = x;
           if cond {
             var y = x;
             return;
@@ -192,11 +193,74 @@ static void test5() {
           x;
         }
     )"""",
-    {"M.test@6"});
+    {"M.test@8"}); // ID of 'var y'
+
+  testCopyElision("test5b",
+    R""""(
+        proc test(cond: bool) {
+          var x:int;
+          var z = x;
+          if cond {
+            var y = x;
+            return;
+          } else {
+          }
+        }
+    )"""",
+    {"M.test@8"}); // ID of 'var y'
+
+  testCopyElision("test5c",
+    R""""(
+        proc test(cond: bool) {
+          var x:int;
+          var z = x;
+          if cond {
+            var y = x;
+            return;
+          } else {
+            var yy = x;
+            return;
+          }
+        }
+    )"""",
+    {"M.test@8", "M.test@12"}); // IDs of 'var y' and 'var yy'
+
+  testCopyElision("test5d",
+    R""""(
+        proc test(cond: bool) {
+          var x:int;
+          var z = x;
+          if cond {
+            var y = x;
+            return;
+          }
+          var zz = x;
+        }
+    )"""",
+    {"M.test@8", "M.test@13"}); // IDs of 'var y' and 'var zz'
+
+  // Ensure we don't ignore conditional expression for elision
+  testCopyElision("test5e",
+    R""""(
+        proc helper(in arg: int) { return true; }
+        proc test(cond: bool) {
+          var x:int;
+          var y:int;
+          var a = y;
+          if helper(x) {
+            var b = y;
+            return;
+          }
+          var c = y;
+        }
+    )"""",
+    {"M.test@9",    // ID of 'x' in 'helper(x)'
+     "M.test@12",   // ID of 'var b'
+     "M.test@17"}); // ID of 'var c'
 }
 
 static void test6() {
-  testCopyElision("test6",
+  testCopyElision("test6a",
     R""""(
         proc test(cond: bool) {
           var x:int;
@@ -209,6 +273,23 @@ static void test6() {
         }
     )"""",
     {"M.test@8", "M.test@12"});
+
+  testCopyElision("test6b",
+    R""""(
+        proc test(cond: bool) {
+          var x:int;
+          if cond {
+            var y = x;
+            var z = y;
+            return;
+          } else {
+            var y = x;
+            var z = y;
+            return;
+          }
+        }
+    )"""",
+    {"M.test@6", "M.test@8", "M.test@12", "M.test@14"});
 }
 
 static void test7() {
@@ -286,13 +367,28 @@ static void test12() {
 }
 
 static void test13() {
-  testCopyElision("test13",
+  testCopyElision("test13a",
     R""""(
 
         proc test(cond: bool) {
           var x:int;
+          var z = x;
           if cond {
             var y = x;
+          }
+        }
+    )"""",
+    {});
+  testCopyElision("test13b",
+    R""""(
+
+        proc helper(in arg: int) { return 0; }
+        proc test(cond: bool) {
+          var x:int;
+          var z = helper(x);
+          if cond {
+          } else {
+            var y = helper(x);
           }
         }
     )"""",
@@ -1132,6 +1228,142 @@ static void test43() {
     )"""",
     {"M.test@7"});
 }
+
+// test that copy elision is sensitive to control flow
+static void test44(const std::string& controlModifier) {
+  testCopyElision("test44",
+    (
+    R"""(
+      proc test() {
+        for i in 1..10 {
+          var x = 42;
+          var y = x;
+          if i == 10 {
+            )""" + controlModifier + R"""(;
+            x;
+          }
+        }
+      }
+
+    )"""
+    ).c_str(), {"M.test@7"});
+}
+
+static void test44() {
+  test44("continue");
+  test44("break");
+}
+
+// test that copy elision is sensitive to control flow across several branches
+static void test45(const std::string& controlModifier1, const std::string controlModifier2, bool expectElision) {
+  std::vector<std::string> expectedPoints;
+  if (expectElision) expectedPoints.push_back("M.test@7");
+
+  testCopyElision("test45",
+      (
+    R"""(
+      proc test() {
+        for i in 1..10 {
+          var x = 42;
+          var y = x;
+          if i == 10 {
+            var cond: bool;
+            if cond {
+              )""" + controlModifier1 + R"""(;
+            } else {
+              )""" + controlModifier2 + R"""(;
+            }
+            x;
+          }
+        }
+      }
+
+    )"""
+    ).c_str(), std::move(expectedPoints));
+}
+
+static void test45() {
+  test45("continue", "continue", true);
+  test45("break", "break", true);
+  test45("continue", "", false);
+  test45("", "continue", false);
+  test45("break", "", false);
+  test45("", "break", false);
+
+  /* TODO: mixing control flow requires more intelligence.
+
+    test45("break", "continue", true);
+    test45("continue", "break", true);
+  */
+}
+
+static void test46() {
+  testCopyElision("test46a",
+    R""""(
+
+        proc helper(in arg: int) { return 0; }
+        proc test(cond: bool) {
+          var x:int = 0;
+          var a = x;
+          return helper(x) + helper(x);
+        }
+    )"""",
+    {"M.test@11"}); // ID of 'x' in second 'helper(x)'
+  testCopyElision("test46b",
+    R""""(
+
+        proc double(in x: int, in y: int) { return 0; }
+        proc helper(in arg: int) { return 0; }
+        proc test(cond: bool) {
+          var x:int = 0;
+          var a = x;
+          return double(helper(x), helper(x));
+        }
+    )"""",
+    {"M.test@12"}); // ID of 'x' in second 'helper(x)'
+  testCopyElision("test46c",
+    R""""(
+
+        proc helper(in arg: int) { return 0; }
+        proc test(cond: bool) {
+          var x:int = 0;
+          var a = x;
+          var b = helper(x);
+          return b;
+        }
+    )"""",
+    {"M.test@8"}); // ID of 'x' in call to 'helper'
+}
+
+static void test47() {
+  int counter = 0;
+  auto test = [&counter](std::string loop, std::vector<std::string> IDs) {
+    std::string name = "test47-";
+    name += std::to_string(counter++);
+    testCopyElision(name.c_str(),
+      R""""(
+          iter stuff(in arg: int) { yield 0; }
+          proc helper(in arg: int) { return 0; }
+          proc test(cond: bool) {
+            var x:int = 0;
+            var y:int = 0;
+            )"""" + loop + R""""( { // OK to elide in iterand
+              var z = y; // should not elide
+            }
+          }
+      )"""",
+      IDs);
+  };
+  test("for i in stuff(x)", {"M.test@10"});
+  test("for i in stuff(y)", {}); // 'y' used in loop, should not elide
+  test("for i in stuff(helper(x))", {"M.test@11"});
+  test("while helper(x)", {});
+
+  // TODO: with clause
+  //test("forall i in stuff(x) with (var copy = x)", {});
+  //test("forall i in stuff(x) with (var copy = helper(x))", {});
+}
+
 int main() {
   test1();
   test2();
@@ -1176,5 +1408,9 @@ int main() {
   test41();
   test42();
   test43();
+  test44();
+  test45();
+  test46();
+  test47();
   return 0;
 }

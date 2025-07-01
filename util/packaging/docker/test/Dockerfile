@@ -11,8 +11,7 @@ ENV HOMEBREW_DEVELOPER=1
 
 RUN mkdir -p /home/linuxbrew
 # only really needed for interactive debugging
-# RUN sudo apt-get update
-# RUN sudo apt-get install -y vim
+# RUN sudo apt-get update && sudo apt-get install -y vim
 # ENV EDITOR=vim
 
 # Do the updates before applying our chapel.rb changes

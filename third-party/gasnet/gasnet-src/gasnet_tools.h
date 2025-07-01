@@ -580,7 +580,8 @@ static void _gasnett_trace_printf_noop(const char *_format, ...)) {
   extern int gasneti_run_diagnostics(int _iters, int _threadcnt,
                                      const char *_testsections,
                                      gex_TM_t _myteam, void* _myseg,
-                                     gex_Rank_t _peer, void* _peerseg);
+                                     gex_Rank_t _peer, void* _peerseg,
+                                     unsigned int seed);
   extern void gasneti_diagnostic_gethandlers(gex_AM_Entry_t **_htable, int *_htable_cnt);
   #define gasnett_run_diagnostics gasneti_run_diagnostics
   #define gasnett_diagnostic_gethandlers gasneti_diagnostic_gethandlers

@@ -23,7 +23,7 @@ chpl_home = os.environ.get("CHPL_HOME", "")
 def run_command(cmd, **kwargs):
     if verbose:
         print(f"Running command: \"{' '.join(cmd)}\"")
-    return sp.check_call(cmd, **kwargs)
+    return sp.check_output(cmd, **kwargs)
 
 def determine_arch(package):
     # if the arch is aarch64 or arm64, return arm64
@@ -42,11 +42,12 @@ def determine_arch(package):
 def infer_docker_os(package):
     os_tag_to_docker = {
         "el9": "rockylinux/rockylinux:9",
+        "el10": "almalinux:10",
         "amzn2023": "amazonlinux:2023",
         "ubuntu22": "ubuntu:22.04",
         "ubuntu24": "ubuntu:24.04",
-        "debian11": "debian:bullseye",
-        "debian12": "debian:bookworm",
+        "debian11": "debian:11",
+        "debian12": "debian:12",
     }
     for tag, docker in os_tag_to_docker.items():
         if ".{}.".format(tag) in package:
@@ -59,6 +60,16 @@ def infer_docker_os(package):
         return f"fedora:{fc}"
 
     return ValueError(f"Could not infer docker image from package {package}")
+
+
+def add_digest_to_image(docker_os):
+    cmd = [
+        "docker",
+        "inspect",
+        "--format='{{index .RepoDigests 0}}'",
+        docker_os
+    ]
+    return run_command(cmd).decode("utf-8").strip()
 
 def infer_env_vars(package):
     if "gasnet-udp" in package:
@@ -183,12 +194,14 @@ def main():
 
     # TODO: need to figure out how to test the ofi-slurm package automatically
     if "ofi-slurm" in package:
-        print("Skipping ofi-slurm package")
+        print("Skipping testing of ofi-slurm package")
         return
 
     docker_os = args.dockeros
     if docker_os is None:
         docker_os = infer_docker_os(package)
+
+    docker_os = add_digest_to_image(docker_os)
 
     imagetag = docker_build_image(test_dir, package, docker_os)
     if args.run:

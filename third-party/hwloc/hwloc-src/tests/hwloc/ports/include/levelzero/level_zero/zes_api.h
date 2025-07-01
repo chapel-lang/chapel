@@ -1,5 +1,5 @@
 /*
- * Copyright © 2020-2022 Inria.  All rights reserved.
+ * Copyright © 2020-2023 Inria.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
@@ -7,6 +7,8 @@
 #define HWLOC_PORT_L0_ZET_API_H
 
 #include "ze_api.h"
+
+extern ze_result_t zesInit(int);
 
 typedef void * zes_device_handle_t;
 

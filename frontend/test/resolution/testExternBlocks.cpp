@@ -156,6 +156,156 @@ static void test7() {
          true /* foo comes from the extern block */);
 }
 
+static void test8() {
+  printf("%s\n", __FUNCTION__);
+  {
+    Context* context = buildStdContext();
+    ErrorGuard guard(context);
+    QualifiedType qt =
+      resolveTypeOfXInit(context,
+                         R""""(
+                          module M {
+                            extern { int i; }
+                            var x = i;
+                          }
+                         )"""", true);
+
+    assert(!qt.isUnknownOrErroneous());
+    assert(qt.type()->isIntType());
+
+    assert(!guard.realizeErrors());
+  }
+
+  // Empty extern block
+  {
+    Context* context = buildStdContext();
+    ErrorGuard guard(context);
+    QualifiedType qt =
+      resolveTypeOfXInit(context,
+                         R""""(
+                          module M {
+                            extern { }
+                            var x = 1;
+                          }
+                         )"""", true);
+
+    assert(!qt.isUnknownOrErroneous());
+
+    assert(!guard.realizeErrors());
+  }
+}
+
+static void test9() {
+  printf("%s\n", __FUNCTION__);
+  {
+    Context* context = buildStdContext();
+    ErrorGuard guard(context);
+    QualifiedType qt =
+      resolveTypeOfXInit(context,
+                         R""""(
+                          module M {
+                            module CDemo {
+                              extern {
+                                 static double square(double num) {
+                                    return 2;
+                                 }
+                              }
+                            }
+
+                            var x = CDemo.square(2.0);
+                          }
+                         )"""", true);
+
+    assert(!qt.isUnknownOrErroneous());
+    assert(qt.type()->isRealType());
+    assert(qt.type()->toRealType()->isDefaultWidth());
+
+    assert(!guard.realizeErrors());
+  }
+
+  // With forward declaration(s)
+  {
+    Context* context = buildStdContext();
+    ErrorGuard guard(context);
+    QualifiedType qt =
+      resolveTypeOfXInit(context,
+                         R""""(
+                          module M {
+                            module CDemo {
+                              extern {
+                                 static double square(double num);
+                                 static double square(double num);
+                                 static double square(double num) {
+                                    return 2;
+                                 }
+                              }
+                            }
+
+                            var x = CDemo.square(2.0);
+                          }
+                         )"""", true);
+
+    assert(!qt.isUnknownOrErroneous());
+    assert(qt.type()->isRealType());
+    assert(qt.type()->toRealType()->isDefaultWidth());
+
+    assert(!guard.realizeErrors());
+  }
+}
+
+static void test10() {
+  printf("%s\n", __FUNCTION__);
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+  QualifiedType qt =
+    resolveTypeOfXInit(context,
+                       R""""(
+                        module M {
+                          module CDemo {
+                            extern {
+                               int main(void) {
+                                  return 1;
+                               }
+                            }
+                          }
+
+                          var x = CDemo.main();
+                        }
+                       )"""", true);
+
+  assert(!qt.isUnknownOrErroneous());
+  assert(qt.type()->isIntType());
+  assert(!qt.type()->toIntType()->isDefaultWidth());
+
+  assert(!guard.realizeErrors());
+}
+
+static void test11() {
+  printf("%s\n", __FUNCTION__);
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+  QualifiedType qt =
+    resolveTypeOfXInit(context,
+                       R""""(
+                        module M {
+                          module CDemo {
+                            extern {
+                               void foo(void) {
+                                  return;
+                               }
+                            }
+                          }
+
+                          var x = CDemo.foo();
+                        }
+                       )"""", true);
+
+  assert(!qt.isUnknownOrErroneous());
+  assert(qt.type()->isVoidType());
+
+  assert(!guard.realizeErrors());
+}
+
 
 
 
@@ -167,6 +317,10 @@ int main() {
   test5();
   test6();
   test7();
+  test8();
+  test9();
+  test10();
+  test11();
 
   return 0;
 }

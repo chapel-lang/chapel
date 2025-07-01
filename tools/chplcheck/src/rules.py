@@ -162,7 +162,7 @@ def rules(driver: LintDriver):
 
         if node.name() == "_":
             return True
-        if node.linkage() == "extern":
+        if node.linkage() == "extern" and node.linkage_name() is None:
             return True
         internal_prefixes = driver.config.internal_prefixes
         return check_camel_case(
@@ -174,6 +174,9 @@ def rules(driver: LintDriver):
         """
         Warn for records that are not 'camelCase'.
         """
+
+        if node.linkage() == "extern" and node.linkage_name() is None:
+            return True
 
         internal_prefixes = driver.config.internal_prefixes
         return check_camel_case(context, node, internal_prefixes)
@@ -189,7 +192,7 @@ def rules(driver: LintDriver):
         if node.is_override():
             return True
 
-        if node.linkage() == "extern":
+        if node.linkage() == "extern" and node.linkage_name() is None:
             return True
         if node.kind() == "operator":
             return True
@@ -355,7 +358,7 @@ def rules(driver: LintDriver):
         """
         Warn for boolean literals like 'true' in a conditional statement.
         """
-        return BasicRuleResult(node)
+        return BasicRuleResult(node.condition(), data=node)
 
     # TODO: at some point, we should support a fixit that removes the
     # conditions and the braces, but the way locations work right now makes
@@ -368,7 +371,7 @@ def rules(driver: LintDriver):
         """
         Remove the unused branch of a conditional statement, keeping the braces.
         """
-        node = result.node
+        node = result.data
         lines = chapel.get_file_lines(context, node)
 
         cond = node.condition()
@@ -393,6 +396,9 @@ def rules(driver: LintDriver):
         """
         Warn for user-defined names that start with the 'chpl\\_' reserved prefix.
         """
+
+        if node.linkage() == "extern":
+            return True
 
         if node.name().startswith("chpl_"):
             path = node.location().path()
@@ -643,7 +649,8 @@ def rules(driver: LintDriver):
                 continue
 
             # extern functions have no bodies that can use their formals.
-            if formal.parent().linkage() == "extern":
+            parent = formal.parent()
+            if isinstance(parent, NamedDecl) and parent.linkage() == "extern":
                 continue
 
             formals[formal.unique_id()] = formal
@@ -1054,7 +1061,8 @@ def rules(driver: LintDriver):
     def LineLength(_: chapel.Context, path: str, lines: List[str], Max=None):
         """
         Warn for lines that exceed a maximum length.
-        By default, the maximum line length is 80 characters.
+        By default, the maximum line length is 80 characters. This can be
+        configured with `--setting LineLength.Max=<number>`.
         """
 
         Max = Max or "80"  # default to 80 characters

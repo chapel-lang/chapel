@@ -56,6 +56,8 @@ chplvars = [
              'CHPL_JEMALLOC',
              'CHPL_HOST_JEMALLOC',
              'CHPL_TARGET_JEMALLOC',
+             'CHPL_HOST_MIMALLOC',
+             'CHPL_TARGET_MIMALLOC',
 
              'CHPL_ATOMICS',
              'CHPL_NETWORK_ATOMICS',
@@ -257,6 +259,11 @@ def get_environ(var, default=None):
 def get_chplconfig(var, default=None):
     """ Check if variable has a default defined in a chplconfig file and return value """
     return chplconfig.get(var) or default
+
+@memoize
+def get_chplconfig_path():
+    """ Return the path to the chplconfig file, if it exists """
+    return chplconfig.chplconfigfile or None
 
 """ Generate env vars currently set via environment/chplconfig """
 def keys():

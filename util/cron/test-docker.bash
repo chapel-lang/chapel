@@ -63,15 +63,19 @@ update_image() {
   # image before erroring out; it's important that release pushes come after
   # all nightly pushes so we can't push a broken release image.
   # Anna, 2024-10-07
-  docker buildx build --platform=linux/amd64,linux/arm64 --push . -t "$imageName"
-  BUILD_RESULT=$?
-  # Also push as 'latest' tag if this is a release build
-  if [ -n "$release_tag" ]
+  if [ -z "$release_tag" ]
   then
-    # Use base image name (without tag) to use Docker's default tag 'latest'
-    docker buildx build --platform=linux/amd64,linux/arm64 --push . -t "$baseImageName"
+    docker buildx build --platform=linux/amd64,linux/arm64 --push . -t "$imageName"
+  else
+    # Also push as 'latest' tag if this is a release build.
+    # Use base image name (without tag) to use Docker's default tag 'latest'.
+    # This has to be done in a single invocation of 'build' to ensure we don't
+    # rebuild the image for the 'latest' tag, which would result in it having
+    # a different SHA.
+    docker buildx build --platform=linux/amd64,linux/arm64 --push . -t "$imageName" -t "$baseImageName"
   fi
 
+  BUILD_RESULT=$?
   if [ $BUILD_RESULT -ne 0 ]
   then
         echo "docker build failed for $imageName image"
@@ -123,7 +127,14 @@ update_all_images() {
 if [ -n "$RELEASE_VERSION" ]
 then
   log_info "Building and pushing nightly and release-tagged images for version: $RELEASE_VERSION"
-  release_branch="release/$RELEASE_VERSION"
+  release_ver_no_zero_patch=$RELEASE_VERSION
+  read major minor patch < <(echo $RELEASE_VERSION | ( IFS=".$IFS" ; read a b c && echo $a $b $c ))
+  if [ "$patch" = "0" ]
+  then
+    echo "Truncating patch version '$patch' from release $RELEASE_VERSION to determine branch name"
+    release_ver_no_zero_patch="$major.$minor"
+  fi
+  release_branch="release/$release_ver_no_zero_patch"
   if [ "$(git rev-parse HEAD)" != "$(git rev-parse $release_branch)" ]
   then
     log_error "Not on expected release branch $release_branch for version $RELEASE_VERSION, aborting"

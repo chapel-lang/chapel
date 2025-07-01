@@ -74,12 +74,12 @@ llvm::AllocaInst* makeAlloca(llvm::Type* type,
       tempVar = new llvm::AllocaInst(type,
                                      DL.getAllocaAddrSpace(),
                                      size, llvm::Align(align),
-                                     name, insertBefore);
+                                     name, getInsertPosition(insertBefore));
       trackLLVMValue(tempVar);
     } else {
       tempVar = new llvm::AllocaInst(type,
                                      DL.getAllocaAddrSpace(),
-                                     size, name, insertBefore);
+                                     size, name, getInsertPosition(insertBefore));
       trackLLVMValue(tempVar);
     }
   } else {
@@ -513,8 +513,8 @@ llvm::Value *convertValueToType(llvm::IRBuilder<>* irBuilder,
       // todo: setValueAlignment(tmp_alloc, ???, ???);
       *alloca = tmp_alloc;
       // Now cast the allocation to both fromType and toType.
-      llvm::Type* curPtrType = curType->getPointerTo();
-      llvm::Type* newPtrType = newType->getPointerTo();
+      llvm::Type* curPtrType = llvm::PointerType::getUnqual(curType);
+      llvm::Type* newPtrType = llvm::PointerType::getUnqual(newType);
       // Now get cast pointers
       llvm::Value* tmp_cur = irBuilder->CreatePointerCast(tmp_alloc, curPtrType);
       trackLLVMValue(tmp_cur);
@@ -586,6 +586,16 @@ void print_llvm(llvm::Module* m)
   fprintf(stderr, "\n");
 }
 
+void print_llvm(llvm::Metadata* m)
+{
+  if (m == NULL)
+    fprintf(stderr, "NULL");
+  else
+    m->print(llvm::dbgs(), nullptr, true);
+
+  fprintf(stderr, "\n");
+}
+
 static void printfLLVMHelper(const char* fmt) {
   auto fd = getLlvmPrintIrFile();
   *fd << fmt;
@@ -639,6 +649,15 @@ void list_view(const llvm::Module* arg) {
   printfLLVMHelper("\n");
 }
 
+void list_view(const llvm::Metadata* arg) {
+  if (arg == NULL) printfLLVMHelper("<NULL>");
+  else {
+    auto fd = getLlvmPrintIrFile();
+    arg->print(*fd, nullptr, true);
+  }
+  printfLLVMHelper("\n");
+}
+
 ////////////////////
 // trackLLVMValue //
 ////////////////////
@@ -676,7 +695,7 @@ static int addLlvmValue(const llvm::Value* val) {
 
 const llvm::Value* trackLLVMValue(const llvm::Value* val) {
   int newId = addLlvmValue(val);
-  if (newId == breakOnLLVMID) gdbShouldBreakHere();
+  if (newId == breakOnLLVMID) debuggerBreakHere();
   return val;
 }
 
@@ -763,13 +782,24 @@ void nprint_view(const llvm::Module* arg) {
   printfLLVMHelper("\n");
 }
 
+
+void nprint_view(const llvm::Metadata* arg) {
+  if (arg == NULL) printfLLVMHelper("<NULL>");
+  else {
+    auto fd = getLlvmPrintIrFile();
+    arg->print(*fd, &llvmValueTracker, nullptr, true);
+  }
+  printfLLVMHelper("\n");
+}
+
 #else // if TRACK_LLVM_VALUES
 
 // LLVM IDs are not tracked; nprint_view() is the same as list_view()
 
-void nprint_view(const llvm::Type* arg)   { list_view(arg); }
-void nprint_view(const llvm::Value* arg)  { list_view(arg); }
-void nprint_view(const llvm::Module* arg) { list_view(arg); }
+void nprint_view(const llvm::Type* arg)     { list_view(arg); }
+void nprint_view(const llvm::Value* arg)    { list_view(arg); }
+void nprint_view(const llvm::Module* arg)   { list_view(arg); }
+void nprint_view(const llvm::Metadata* arg) { list_view(arg); }
 
 #endif // if TRACK_LLVM_VALUES
 

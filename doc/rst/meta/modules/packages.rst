@@ -21,7 +21,6 @@ Algorithms
    Crypto <packages/Crypto>
    NPBRandom <packages/NPBRandom>
    Search <packages/Search>
-   Sort <packages/Sort>
 
 Communication (Inter-Locale)
 ----------------------------
@@ -74,6 +73,7 @@ Interoperability
 .. toctree::
    :maxdepth: 1
 
+   Dynamic Loading <packages/DynamicLoading>
    Python <packages/Python>
 
 Math / Numerical Computing

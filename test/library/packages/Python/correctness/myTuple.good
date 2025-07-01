@@ -1,0 +1,29 @@
+size 4
+t[0] 2
+t[1] 3
+t[2] 5
+t[3] 7
+5 in t: true
+8 in t: false
+t[0:2] (2, 3)
+t[1:2] (3,)
+t[2:5] (5, 7)
+t[-3:2] (2, 3)
+t[-3:5] (2, 3, 5, 7)
+t[1:1] ()
+t[2:] (5, 7)
+t[:3] (2, 3, 5)
+t[:] (2, 3, 5, 7)
+checking explicit type for slice overload
+t[0:2] (2, 3)
+t[2:5] (5, 7)
+t[0:2] (2, 3)
+checking negative idx
+Caught exception: PythonException: tuple index out of range
+checking out of bounds idx
+Caught exception: PythonException: tuple index out of range
+checking trying to convert slice to an int
+Caught exception: PythonException: 'tuple' object cannot be interpreted as an integer
+checking trying to slice into too large a tuple
+Caught exception: ChapelException: type specified was larger than returned value
+(11,)

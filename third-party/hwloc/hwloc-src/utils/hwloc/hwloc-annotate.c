@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2022 Inria.  All rights reserved.
+ * Copyright © 2012-2023 Inria.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
@@ -193,8 +193,8 @@ get_unique_obj(hwloc_topology_t topology, int topodepth, char *str,
   size_t typelen;
   int err;
 
-  typelen = strspn(str, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789");
-  if (!typelen || (str[typelen] != ':' && str[typelen] != '=' && str[typelen] != '['))
+  typelen = hwloc_calc_parse_level_size(str);
+  if (!typelen || (str[typelen] != ':' && str[typelen] != '='))
     return NULL;
 
   lcontext.topology = topology;
@@ -601,19 +601,19 @@ int main(int argc, char *argv[])
 		sizevalue = strtoull(argv[1], &end, 0);
                 if (end) {
                   if (!strcasecmp(end, "kB"))
-                    sizevalue *= 1024ULL;
+                    sizevalue *= 1000ULL;
                   else if (!strcasecmp(end, "kiB"))
                     sizevalue <<= 10;
                   else if (!strcasecmp(end, "MB"))
-                    sizevalue *= 1024ULL*1024ULL;
+                    sizevalue *= 1000ULL*1000ULL;
                   else if (!strcasecmp(end, "MiB"))
                     sizevalue <<= 20;
                   else if (!strcasecmp(end, "GB"))
-                    sizevalue *= 1024ULL*1024ULL*1024ULL;
+                    sizevalue *= 1000ULL*1000ULL*1000ULL;
                   else if (!strcasecmp(end, "GiB"))
                     sizevalue <<= 30;
                   else if (!strcasecmp(end, "TB"))
-                    sizevalue *= 1024ULL*1024ULL*1024ULL*1024ULL;
+                    sizevalue *= 1000ULL*1000ULL*1000ULL*1000ULL;
                   else if (!strcasecmp(end, "TiB"))
                     sizevalue <<= 40;
                 }
@@ -810,7 +810,7 @@ int main(int argc, char *argv[])
 	      apply(topology, hwloc_get_root_obj(topology));
 	    } else {
 		size_t typelen;
-		typelen = strspn(location, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789");
+		typelen = hwloc_calc_parse_level_size(location);
 		if (typelen && (location[typelen] == ':' || location[typelen] == '=' || location[typelen] == '[')) {
 			struct hwloc_calc_location_context_s lcontext;
 			lcontext.topology = topology;

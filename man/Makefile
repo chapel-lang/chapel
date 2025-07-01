@@ -34,6 +34,9 @@ clean:
 man1/%.1: %.rst Makefile
 	mkdir -p $(shell dirname $@)
 	sed "/conf$</r conf$<" $< > $<.tmp
+	# rst2man doesn't understand index directives, so we remove them
+	sed '/\.\. index::/d' $<.tmp > $<.noindex
+	mv $<.noindex $<.tmp
 	$(RST2MAN) $<.tmp > $<.tmp.out
 	mv $<.tmp.out $@
 	rm -f $<.tmp

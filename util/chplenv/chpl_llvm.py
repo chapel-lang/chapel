@@ -6,10 +6,10 @@ import sys
 import re
 
 import chpl_bin_subdir, chpl_arch, chpl_compiler, chpl_platform, overrides
-from chpl_home_utils import get_chpl_third_party, get_chpl_home
+from chpl_home_utils import get_chpl_third_party, get_chpl_runtime_incl
 import chpl_gpu
 import homebrew_utils
-from utils import which, memoize, error, run_command, try_run_command, warning
+from utils import which, memoize, error, run_command, try_run_command, warning, check_valid_var
 from collections import defaultdict
 
 # returns a tuple of supported major LLVM versions as strings
@@ -17,7 +17,7 @@ def llvm_versions():
     # Which major release - only need one number for that with current
     # llvm (since LLVM 4.0).
     # These will be tried in order.
-    return ('19','18','17','16','15','14','13','12','11',)
+    return ('20','19','18','17','16','15','14','13','12','11',)
 
 @memoize
 def get_uniq_cfg_path_for(llvm_val, llvm_support_val):
@@ -410,8 +410,8 @@ def validate_llvm_config():
         if not noPackageErrors:
             error(package_err)
 
-        clang_c = get_llvm_clang('c')[0]
-        clang_cxx = get_llvm_clang('c++')[0]
+        clang_c = get_llvm_clang_noargs('c')
+        clang_cxx = get_llvm_clang_noargs('c++')
         if clang_c == '':
             error("Could not find clang with the same version as "
                   "CHPL_LLVM_CONFIG={}. Please try setting CHPL_TARGET_CC.".format(llvm_config))
@@ -452,14 +452,20 @@ def validate_llvm_config():
 @memoize
 def get_system_llvm_config_bindir():
     llvm_config = find_system_llvm_config()
+    return _get_llvm_config_bindir(llvm_config)
+
+@memoize
+def get_llvm_config_bindir():
+    llvm_config = get_llvm_config()
+    return _get_llvm_config_bindir(llvm_config)
+
+@memoize
+def _get_llvm_config_bindir(llvm_config):
     found_version, found_config_err = check_llvm_config(llvm_config)
-
-    bindir = None
-
     if llvm_config and found_version and not found_config_err:
-        bindir = run_command([llvm_config, '--bindir']).strip()
-
-    return bindir
+        return run_command([llvm_config, '--bindir']).strip()
+    else:
+        return None
 
 def get_llvm_clang_command_name(lang):
     lang_upper = lang.upper()
@@ -589,15 +595,13 @@ def get_system_llvm_clang(lang):
     return ''
 
 # lang should be C or CXX
-# returns [] list with the first element the clang command,
-# then necessary arguments
 @memoize
-def get_llvm_clang(lang):
+def get_llvm_clang_noargs(lang):
 
     # if it was provided by a user setting, just use that
     provided = get_overriden_llvm_clang(lang)
     if provided:
-        return provided
+        return provided[0]
 
     clang = None
     llvm_val = get()
@@ -608,12 +612,25 @@ def get_llvm_clang(lang):
         llvm_subdir = get_bundled_llvm_dir()
         clang = os.path.join(llvm_subdir, 'bin', clang_name)
 
+    return clang if clang else ''
+
+# lang should be C or CXX
+# returns [] list with the first element the clang command,
+# then necessary arguments
+@memoize
+def get_llvm_clang(lang):
+
+    # if it was provided by a user setting, just use that
+    provided = get_overriden_llvm_clang(lang)
+    if provided:
+        return provided
+
+    clang = get_llvm_clang_noargs(lang)
     if not clang:
         return ['']
-
-    # tack on arguments that control clang's function
-    result = [clang] + get_clang_basic_args(clang)
-    return result
+    else:
+        # tack on arguments that control clang's function
+        return [clang] + get_clang_basic_args(clang)
 
 
 def has_compatible_installed_llvm():
@@ -641,6 +658,9 @@ def has_compatible_installed_llvm():
 @memoize
 def get():
     llvm_val = overrides.get('CHPL_LLVM')
+    if llvm_val:
+        check_valid_var("CHPL_LLVM", llvm_val, ['none', 'bundled', 'system'])
+
     if not llvm_val:
         llvm_val = 'unset'
 
@@ -757,6 +777,11 @@ def is_gcc_install_dir_supported():
 def get_gcc_install_dir():
     gcc_dir = overrides.get('CHPL_LLVM_GCC_INSTALL_DIR', '')
 
+    # darwin and FreeBSD default to clang, so shouldn't need GCC toolchain
+    host_platform = chpl_platform.get('host')
+    if host_platform == "darwin" or host_platform == "freebsd":
+        return gcc_dir
+
     flag_supported = is_gcc_install_dir_supported()
 
     if gcc_dir:
@@ -785,6 +810,36 @@ def get_gcc_install_dir():
     return gcc_dir
 
 
+@memoize
+def _clang_verbose_on_sys_basic(clang='clang'):
+    # Add -isysroot and -resourcedir based upon what 'clang' uses
+    cfile = os.path.join(get_chpl_runtime_incl(), "sys_basic.h")
+    if not os.path.isfile(cfile):
+        error("error computing isysroot -- sys_basic.h is missing")
+
+    (out, err) = run_command([clang, '-###', cfile],
+                                stdout=True, stderr=True)
+    out += err
+    return out
+
+@memoize
+def _clang_get_isysroot(clang='clang'):
+    out = _clang_verbose_on_sys_basic(clang)
+    found = re.search('"-isysroot" "([^"]+)"', out)
+    if found:
+        return ['-isysroot', found.group(1).strip()]
+    else:
+        return []
+
+@memoize
+def _clang_get_resourcedir(clang='clang'):
+    out = _clang_verbose_on_sys_basic(clang)
+    found = re.search('"-resource-dir" "([^"]+)"', out)
+    if found:
+        return ['-resource-dir', found.group(1).strip()]
+    else:
+        return []
+
 # The bundled LLVM does not currently know to look in a particular Mac OS X SDK
 # so we provide a -isysroot arg to indicate which is used.
 #
@@ -804,25 +859,8 @@ def get_sysroot_resource_dir_args():
     args = [ ]
     llvm_val = get()
     if llvm_val == "bundled":
-        # Add -isysroot and -resourcedir based upon what 'clang' uses
-        cfile = os.path.join(get_chpl_home(),
-                             "runtime", "include", "sys_basic.h")
-        if not os.path.isfile(cfile):
-            error("error computing isysroot -- sys_basic.h is missing")
-
-        (out, err) = run_command(['clang', '-###', cfile],
-                                 stdout=True, stderr=True)
-        out += err
-
-        found = re.search('"-isysroot" "([^"]+)"', out)
-        if found:
-            args.append('-isysroot')
-            args.append(found.group(1).strip())
-
-        found = re.search('"-resource-dir" "([^"]+)"', out)
-        if found:
-            args.append('-resource-dir')
-            args.append(found.group(1).strip())
+        args.extend(_clang_get_isysroot())
+        args.extend(_clang_get_resourcedir())
 
     return args
 
@@ -860,6 +898,12 @@ def get_sysroot_linux_args():
                 args.append('--start-no-unused-arguments')
                 args.append('-Wl,-dynamic-linker,' + dyn_linker)
                 args.append('--end-no-unused-arguments')
+
+    # workaround for fedora
+    if chpl_platform.is_fedora():
+        clang = get_llvm_clang_noargs('c')
+        args.extend(_clang_get_resourcedir(clang))
+
     return args
 
 # When a system LLVM is installed with Homebrew, it's very important
@@ -929,6 +973,11 @@ def _determine_gcc_flag_to_use():
 
     return flag_to_use
 
+@memoize
+def _get_clang_cfg_args(clang_command):
+    clang_cfg = get_clang_cfg_file(clang_command)
+    return parse_clang_cfg_file(clang_cfg)
+
 # On some systems, we need to give clang some arguments for it to
 # find the correct system headers.
 #  * when PrgEnv-gnu is loaded on an XC, we should provide
@@ -942,11 +991,10 @@ def _determine_gcc_flag_to_use():
 def get_clang_basic_args(clang_command):
     clang_args = [ ]
 
+    clang_cfg_args = _get_clang_cfg_args(clang_command)
     @memoize
     def _get_gcc_prefix_dir():
         # read the args that clang will use by default from the config file
-        clang_cfg = get_clang_cfg_file(clang_command)
-        clang_cfg_args = parse_clang_cfg_file(clang_cfg)
         return get_gcc_prefix_dir(clang_cfg_args)
 
     gcc_prefix_flags = {
@@ -961,10 +1009,18 @@ def get_clang_basic_args(clang_command):
             return True
         return False
 
+    skip_sysroot = False
+
     # if the user set one of the flags, use it
     flag_to_use = _determine_gcc_flag_to_use()
     if flag_to_use:
         use_flag(flag_to_use)
+    elif (any(arg.startswith("--sysroot") for arg in clang_cfg_args) or
+          any(arg.startswith("--gcc-install-dir") for arg in clang_cfg_args) or
+          any(arg.startswith("--gcc-toolchain") for arg in clang_cfg_args)):
+        # if the clang configure file supplies sysroot, gcc-install-dir, or
+        #  gcc-toolchain, we shouldn't try to infer anything and override it
+        skip_sysroot = True
     else:
         # we should try and infer them, preferring GCC_INSTALL_DIR
         for try_flag in ['CHPL_LLVM_GCC_INSTALL_DIR', 'CHPL_LLVM_GCC_PREFIX']:
@@ -972,13 +1028,14 @@ def get_clang_basic_args(clang_command):
                 break
 
     target_platform = chpl_platform.get('target')
-    sysroot_args = []
-    if target_platform == "darwin":
-        sysroot_args = get_sysroot_resource_dir_args()
-    else:
-        sysroot_args = get_sysroot_linux_args()
-    if sysroot_args:
-        clang_args.extend(sysroot_args)
+    if not skip_sysroot:
+        sysroot_args = []
+        if target_platform == "darwin":
+            sysroot_args = get_sysroot_resource_dir_args()
+        else:
+            sysroot_args = get_sysroot_linux_args()
+        if sysroot_args:
+            clang_args.extend(sysroot_args)
 
     # This is a workaround for problems with Homebrew llvm@11 on 10.14
     # which avoids errors like
@@ -1028,7 +1085,7 @@ def gather_pe_chpl_pkgconfig_libs():
 
     ret = os.environ.get('PE_CHAPEL_PKGCONFIG_LIBS', '')
     if comm != 'none':
-        if platform != 'hpe-cray-ex':
+        if not chpl_platform.is_hpe_cray('target'):
             # Adding -lhugetlbfs gets the PrgEnv driver to add the appropriate
             # linker option for static linking with it. While it's not always
             # used with Chapel programs, it is expected to be the common case
@@ -1038,9 +1095,6 @@ def gather_pe_chpl_pkgconfig_libs():
 
         if platform.startswith('cray-x'):
             ret = 'cray-ugni:' + ret
-
-        if comm == 'gasnet' and substrate == 'aries':
-            ret = 'cray-udreg:' + ret
 
         if comm == 'ofi' and chpl_libfabric.get() == 'system':
             ret = 'libfabric:' + ret
@@ -1061,7 +1115,6 @@ def gather_pe_chpl_pkgconfig_libs():
 @memoize
 def get_clang_prgenv_args():
 
-    platform = chpl_platform.get('target')
     comp_args = [ ]
     link_args = [ ]
 
@@ -1354,18 +1407,18 @@ def compute_host_link_settings():
         if shared_mode.strip() == 'static':
             llvm_dynamic = False
 
+        libdir = run_command([llvm_config, '--libdir'])
+        if libdir:
+            libdir = libdir.strip()
+            system.append('-L' + libdir)
+            system.append('-Wl,-rpath,' + libdir)
+
         # Make sure to put clang first on the link line
         # because depends on LLVM libraries
         if llvm_dynamic:
             system.append('-lclang-cpp')
         else:
             system.extend(clang_static_libs)
-
-        libdir = run_command([llvm_config, '--libdir'])
-        if libdir:
-            libdir = libdir.strip()
-            system.append('-L' + libdir)
-            system.append('-Wl,-rpath,' + libdir)
 
         ldflags = run_command([llvm_config,
                                '--ldflags', '--system-libs', '--libs'] +
@@ -1461,6 +1514,12 @@ def _main():
     parser.add_option('--llvm-config', dest='action',
                       action='store_const',
                       const='llvmconfig', default='')
+    parser.add_option('--host-cxxflags', dest='action',
+                      action='store_const',
+                      const='host-cxxflags', default='')
+    parser.add_option('--host-ldflags', dest='action',
+                      action='store_const',
+                      const='host-ldflags', default='')
     parser.add_option('--llvm-vesion', dest='action',
                       action='store_const',
                       const='llvmversion', default='')
@@ -1486,6 +1545,14 @@ def _main():
     elif options.action == 'llvmconfig':
         sys.stdout.write("{0}\n".format(llvm_config))
         validate_llvm_config()
+    elif options.action == 'host-cxxflags':
+        flags = get_host_compile_args()
+        sys.stdout.write("{0}\n".format(
+            ' '.join(flags[0] + flags[1])))
+    elif options.action == 'host-ldflags':
+        flags = get_host_link_args()
+        sys.stdout.write("{0}\n".format(
+            ' '.join(flags[0] + flags[1])))
     elif options.action == 'llvmversion':
         llvm_version = get_llvm_version()
         sys.stdout.write("{0}\n".format(llvm_version))

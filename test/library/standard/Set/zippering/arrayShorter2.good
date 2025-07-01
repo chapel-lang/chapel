@@ -1,0 +1,2 @@
+4 5
+arrayShorter2.chpl:16: error: halt reached - size mismatch in zippered iteration (dimension 0)

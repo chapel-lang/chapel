@@ -311,8 +311,10 @@ run-tests: force
 	echo "TESTS COMPLETE"
 
 TESTEXIT_SCRIPT=run-testexit
+TESTEXIT_SEQMIN=1
 TESTEXIT_SEQMAX=13
-TESTEXIT_PARMAX=18
+TESTEXIT_PARMIN=51
+TESTEXIT_PARMAX=55
 do-run-testexit: force
 	@echo "Building $(TESTEXIT_SCRIPT) script..."
 	@echo "#!/bin/sh" > $(TESTEXIT_SCRIPT)
@@ -346,8 +348,8 @@ do-run-testexit: force
 	@echo 'ID="`hostname`-$$MP_CHILD$$PBS_NODENUM"'           >> $(TESTEXIT_SCRIPT)
 	@echo 'line="----------------------------------"'         >> $(TESTEXIT_SCRIPT)
 	@echo 'line="$$line$$line"'                               >> $(TESTEXIT_SCRIPT)
-	@i=0; \
-	 needinterrupt="5 9 16" ; export needinterrupt ;                        \
+	@i=`expr $(TESTEXIT_SEQMIN) - 1`; \
+	 needinterrupt="5 9 53" ; export needinterrupt ;                        \
 	 while test "$$i" != "$(TESTEXIT_PARMAX)" ; do                       \
            i=`expr $$i + 1`;                                                 \
 	   echo ""                                   >> $(TESTEXIT_SCRIPT) ; \
@@ -366,6 +368,7 @@ do-run-testexit: force
 	     echo 'fi'                               >> $(TESTEXIT_SCRIPT) ; \
 	   fi ;                                                              \
 	   if test "$$i" = "$(TESTEXIT_SEQMAX)" ; then                       \
+	     i=`expr $(TESTEXIT_PARMIN) - 1`;                                \
 	     echo 'threadmode=`@PERL@ -n -e '"'"'$(perl_threadscan)'"'"' ' \
                   'testexit@EXESUFFIX@ 2> /dev/null`'      >> $(TESTEXIT_SCRIPT) ; \
 	     echo 'if test "$$threadmode" = "SEQ" -o ' \

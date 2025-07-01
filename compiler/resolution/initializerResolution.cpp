@@ -116,6 +116,27 @@ resolveInitializer(CallExpr* call, bool emitCallResolutionErrors) {
   return retval;
 }
 
+/* This is a helper to buildNewWrapper() that recursively takes care
+   of de-initializing fields in the event that an 'init()' or
+   'postinit()' throws */
+static void helpDeinitFields(AggregateType* type, VarSymbol* _this,
+                             BlockStmt* body) {
+  if (type == NULL) {
+    INT_FATAL("helpDeinitFields() isn't designed to take 'NULL' types");
+  }
+
+  for_fields(field, type) {
+    if (isRecord(field->type) && !field->hasFlag(FLAG_TYPE_VARIABLE)) {
+      body->insertAtHead(new CallExpr("deinit", gMethodToken,
+                           new CallExpr(PRIM_GET_MEMBER, _this, field)));
+    } else if (field->hasFlag(FLAG_SUPER_CLASS) && field->type != dtObject) {
+      // explicitly recurse over fields rather than calling super->deinit
+      // to avoid re-deinit'ing 'this'
+      helpDeinitFields(toAggregateType(field->type), _this, body);
+    }
+  }
+}
+
 // This is a map from the original initializer to the new wrapper
 // The map is keyed by the FnSymbol of the original initializer and the expr of
 //   the allocator (if any)
@@ -215,6 +236,10 @@ static FnSymbol* buildNewWrapper(FnSymbol* initFn, Expr* allocator = nullptr) {
     Expr* toOwned = new CallExpr(PRIM_NEW,
                                  new CallExpr(new SymExpr(dtOwned->symbol),
                                               nonNilC));
+
+    // deinitialize fields, including the 'super' field / parent class
+    helpDeinitFields(type, initTemp, catchBody);
+
     errorDef->init = toOwned;
     catchBody->insertAtHead(errorDef);
     catchBody->insertAtHead(castedDef);
@@ -573,7 +598,7 @@ static void resolveInitCall(CallExpr* call, bool emitCallResolutionErrors,
   if (call->id == breakOnResolveID) {
     printf("breaking on resolve call %d:\n", call->id);
     print_view(call);
-    gdbShouldBreakHere();
+    debuggerBreakHere();
   }
 
   if (info.isWellFormed(call) == true) {
@@ -717,7 +742,7 @@ static void doGatherInitCandidates(CallInfo&                  info,
         USR_PRINT(visibleFn, "Considering function: %s", toString(visibleFn));
 
         if (info.call->id == breakOnResolveID) {
-          gdbShouldBreakHere();
+          debuggerBreakHere();
         }
       }
 
@@ -761,7 +786,7 @@ static void resolveInitializerMatch(FnSymbol* fn) {
     if (fn->id == breakOnResolveID) {
       printf("breaking on resolve fn %s[%d] (%d args)\n",
              fn->name, fn->id, fn->numFormals());
-      gdbShouldBreakHere();
+      debuggerBreakHere();
     }
 
     insertFormalTemps(fn);

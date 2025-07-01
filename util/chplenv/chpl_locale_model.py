@@ -2,17 +2,13 @@
 import sys
 
 import overrides
-from utils import memoize, error
+from utils import memoize, error, check_valid_var
 
 
 @memoize
 def get():
     locale_model_val = overrides.get('CHPL_LOCALE_MODEL', 'flat')
-
-    if locale_model_val not in ['flat', 'gpu']:
-        error('{} is not a valid value for CHPL_LOCALE_MODEL. '
-              'It can only be "flat" or "gpu".'.format(locale_model_val))
-
+    check_valid_var("CHPL_LOCALE_MODEL", locale_model_val, ["flat", "gpu"])
     return locale_model_val
 
 

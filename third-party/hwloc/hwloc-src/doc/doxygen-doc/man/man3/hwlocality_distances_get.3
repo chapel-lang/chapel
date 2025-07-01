@@ -1,4 +1,4 @@
-.TH "hwlocality_distances_get" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_distances_get" 3 "Version 2.11.2" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -58,9 +58,7 @@ hwlocality_distances_get \- Retrieve distances between objects
 .PP
 Kinds of distance matrices\&. The \fCkind\fP attribute of struct \fBhwloc_distances_s\fP is a OR'ed set of kinds\&.
 .PP
-A kind of format HWLOC_DISTANCES_KIND_FROM_* specifies where the distance information comes from, if known\&.
-.PP
-A kind of format HWLOC_DISTANCES_KIND_MEANS_* specifies whether values are latencies or bandwidths, if applicable\&. 
+Each distance matrix may have only one kind among HWLOC_DISTANCES_KIND_FROM_* specifying where distance information comes from, and one kind among HWLOC_DISTANCES_KIND_MEANS_* specifying whether values are latencies or bandwidths\&. 
 .PP
 \fBEnumerator\fP
 .in +1c
@@ -119,25 +117,65 @@ Retrieve distance matrices\&. Retrieve distance matrices from the topology into 
 .PP
 On input, \fCnr\fP points to the number of distance matrices that may be stored in \fCdistances\fP\&. On output, \fCnr\fP points to the number of distance matrices that were actually found, even if some of them couldn't be stored in \fCdistances\fP\&. Distance matrices that couldn't be stored are ignored, but the function still returns success (\fC0\fP)\&. The caller may find out by comparing the value pointed by \fCnr\fP before and after the function call\&.
 .PP
-Each distance matrix returned in the \fCdistances\fP array should be released by the caller using \fBhwloc_distances_release()\fP\&. 
+Each distance matrix returned in the \fCdistances\fP array should be released by the caller using \fBhwloc_distances_release()\fP\&.
+.PP
+\fBReturns\fP
+.RS 4
+0 on success, -1 on error\&. 
+.RE
+.PP
+
 .SS "int hwloc_distances_get_by_depth (\fBhwloc_topology_t\fP topology, int depth, unsigned * nr, struct \fBhwloc_distances_s\fP ** distances, unsigned long kind, unsigned long flags)"
 
 .PP
-Retrieve distance matrices for object at a specific depth in the topology\&. Identical to \fBhwloc_distances_get()\fP with the additional \fCdepth\fP filter\&. 
+Retrieve distance matrices for object at a specific depth in the topology\&. Identical to \fBhwloc_distances_get()\fP with the additional \fCdepth\fP filter\&.
+.PP
+\fBReturns\fP
+.RS 4
+0 on success, -1 on error\&. 
+.RE
+.PP
+
 .SS "int hwloc_distances_get_by_name (\fBhwloc_topology_t\fP topology, const char * name, unsigned * nr, struct \fBhwloc_distances_s\fP ** distances, unsigned long flags)"
 
 .PP
 Retrieve a distance matrix with the given name\&. Usually only one distances structure may match a given name\&.
 .PP
-The name of the most common structure is 'NUMALatency'\&. Others include 'XGMIBandwidth', 'XGMIHops', 'XeLinkBandwidth', and 'NVLinkBandwidth'\&. 
+The name of the most common structure is 'NUMALatency'\&. Others include 'XGMIBandwidth', 'XGMIHops', 'XeLinkBandwidth', and 'NVLinkBandwidth'\&.
+.PP
+\fBReturns\fP
+.RS 4
+0 on success, -1 on error\&. 
+.RE
+.PP
+
 .SS "int hwloc_distances_get_by_type (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_type_t\fP type, unsigned * nr, struct \fBhwloc_distances_s\fP ** distances, unsigned long kind, unsigned long flags)"
 
 .PP
-Retrieve distance matrices for object of a specific type\&. Identical to \fBhwloc_distances_get()\fP with the additional \fCtype\fP filter\&. 
-.SS "const char* hwloc_distances_get_name (\fBhwloc_topology_t\fP topology, struct \fBhwloc_distances_s\fP * distances)"
+Retrieve distance matrices for object of a specific type\&. Identical to \fBhwloc_distances_get()\fP with the additional \fCtype\fP filter\&.
+.PP
+\fBReturns\fP
+.RS 4
+0 on success, -1 on error\&. 
+.RE
+.PP
+
+.SS "const char * hwloc_distances_get_name (\fBhwloc_topology_t\fP topology, struct \fBhwloc_distances_s\fP * distances)"
 
 .PP
-Get a description of what a distances structure contains\&. For instance 'NUMALatency' for hardware-provided NUMA distances (ACPI SLIT), or NULL if unknown\&. 
+Get a description of what a distances structure contains\&. For instance 'NUMALatency' for hardware-provided NUMA distances (ACPI SLIT), or \fCNULL\fP if unknown\&.
+.PP
+\fBReturns\fP
+.RS 4
+the constant string with the name of the distance structure\&.
+.RE
+.PP
+\fBNote\fP
+.RS 4
+The returned name should not be freed by the caller, it belongs to the hwloc library\&. 
+.RE
+.PP
+
 .SS "void hwloc_distances_release (\fBhwloc_topology_t\fP topology, struct \fBhwloc_distances_s\fP * distances)"
 
 .PP
@@ -163,6 +201,11 @@ These transformations may modify the contents of the \fCobjs\fP or \fCvalues\fP 
 \fCtransform_attr\fP must be \fCNULL\fP for now\&.
 .PP
 \fCflags\fP must be \fC0\fP for now\&.
+.PP
+\fBReturns\fP
+.RS 4
+0 on success, -1 on error for instance if flags are invalid\&.
+.RE
 .PP
 \fBNote\fP
 .RS 4

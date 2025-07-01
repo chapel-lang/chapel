@@ -1,3 +1,4 @@
 funcPtr3.chpl:1: error: cannot capture routine with name 'writeln' because it is overloaded
 $CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: declared here
 $CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: declared here
+$CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: declared here

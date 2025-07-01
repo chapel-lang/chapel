@@ -32,6 +32,8 @@
 #include <cstdio>
 #include <string>
 #include <vector>
+#include <utility>
+#include <unordered_set>
 
 using chpl::types::Param;
 using chpl::owned;
@@ -207,9 +209,12 @@ owned<AttributeGroup> ParserContext::buildAttributeGroup(YYLTYPE locationOfDecl)
                                 attributeGroupParts.isDeprecated,
                                 attributeGroupParts.isUnstable,
                                 attributeGroupParts.isParenfulDeprecated,
+                                attributeGroupParts.hasEdition,
                                 attributeGroupParts.deprecationMessage,
                                 attributeGroupParts.unstableMessage,
                                 attributeGroupParts.parenfulDeprecationMessage,
+                                attributeGroupParts.firstEdition,
+                                attributeGroupParts.lastEdition,
                                 std::move(attrList));
   return node;
 }
@@ -270,6 +275,8 @@ void ParserContext::noteAttribute(YYLTYPE loc, AstNode* firstIdent,
     noteDeprecation(loc, actuals);
   } else if (ident->name()==USTR("stable")) {
     noteStable(loc, actuals);
+  } else if (ident->name() == USTR("edition")) {
+    noteEdition(loc, actuals);
   }
 
   // check the actual names are not duplicates
@@ -435,11 +442,57 @@ void ParserContext::noteUnstable(YYLTYPE loc, MaybeNamedActualList* actuals) {
   }
 }
 
+void ParserContext::noteEdition(YYLTYPE loc, MaybeNamedActualList* actuals) {
+  hasAttributeGroupParts = true;
+
+  attributeGroupParts.hasEdition = true;
+
+  if (actuals != nullptr && actuals->size() > 0) {
+    for (auto& actual : *actuals) {
+      if (actual.name.isEmpty()) {
+        error(loc, "'@edition' attribute argument must be named");
+      }
+
+      if (!(actual.name == UniqueString::get(context(), "first").podUniqueString() ||
+            actual.name == UniqueString::get(context(), "last").podUniqueString() ||
+            actual.name.isEmpty())) {
+        error(loc, "unrecognized argument name '%s'. "
+                   "'@edition' attribute only accepts 'first' and 'last' "
+                   "arguments",
+                   actual.name.c_str());
+      }
+      if (!actual.expr->isStringLiteral()) {
+        error(loc, "'@edition' attribute arguments must be string literals for now");
+      }
+
+      if (actual.name == UniqueString::get(context(),
+                                           "first").podUniqueString()) {
+        AstNode* firstStr = actual.expr;
+
+        if (auto strLit = firstStr->toStringLiteral()) {
+          attributeGroupParts.firstEdition = strLit->value();
+        }
+      }
+
+      if (actual.name == UniqueString::get(context(),
+                                           "last").podUniqueString()) {
+        AstNode* lastStr = actual.expr;
+
+        if (auto strLit = lastStr->toStringLiteral()) {
+          attributeGroupParts.lastEdition = strLit->value();
+        }
+      }
+    }
+  } else {
+    error(loc, "'@edition' attribute requires an argument");
+  }
+}
+
 void ParserContext::resetAttributeGroupPartsState() {
   if (hasAttributeGroupParts) {
     auto& pragmas = attributeGroupParts.pragmas;
     if (pragmas) delete pragmas;
-    attributeGroupParts = {nullptr, nullptr, false, false, false, false, UniqueString(), UniqueString(), UniqueString() };
+    attributeGroupParts = {nullptr, nullptr, false, false, false, false, false, UniqueString(), UniqueString(), UniqueString(), UniqueString(), UniqueString() };
     hasAttributeGroupParts = false;
   }
 
@@ -449,9 +502,12 @@ void ParserContext::resetAttributeGroupPartsState() {
   CHPL_ASSERT(!attributeGroupParts.isUnstable);
   CHPL_ASSERT(!attributeGroupParts.isParenfulDeprecated);
   CHPL_ASSERT(!attributeGroupParts.isStable);
+  CHPL_ASSERT(!attributeGroupParts.hasEdition);
   CHPL_ASSERT(attributeGroupParts.deprecationMessage.isEmpty());
   CHPL_ASSERT(attributeGroupParts.unstableMessage.isEmpty());
   CHPL_ASSERT(attributeGroupParts.parenfulDeprecationMessage.isEmpty());
+  CHPL_ASSERT(attributeGroupParts.firstEdition.isEmpty());
+  CHPL_ASSERT(attributeGroupParts.lastEdition.isEmpty());
   CHPL_ASSERT(!hasAttributeGroupParts);
 
   numAttributesBuilt = 0;
@@ -757,6 +813,113 @@ AstList ParserContext::consume(AstNode* e) {
   ret.push_back(toOwned(e));
   return ret;
 }
+
+ParserNDArrayList* ParserContext::makeNDArrayList() {
+  return new ParserNDArrayList();
+}
+ParserNDArrayList* ParserContext::appendNDArrayList(ParserNDArrayList* dst,
+                                                    NDArrayElement e) {
+  dst->push_back(e);
+  return dst;
+}
+
+struct BuildArrayRowsContext {
+  std::unordered_set<int> errorInconsistentSeparatorIdx;
+  std::unordered_set<int> errorSingleSeparatorIdx;
+
+  void realizeErrors(ParserContext* context, ParserNDArrayList* lst) {
+    if (!errorInconsistentSeparatorIdx.empty()) {
+      for (auto i : errorInconsistentSeparatorIdx) {
+        context->error(
+          (*lst)[i].location,
+          "inconsistent number of multi-dimensional array separators");
+      }
+    }
+    if (!errorSingleSeparatorIdx.empty()) {
+      for (auto i : errorSingleSeparatorIdx) {
+        context->error(
+          (*lst)[i].location,
+          "the final dimension of an array must use a single separator");
+      }
+    }
+  }
+
+  std::pair<AstList, chpl::Location> buildArrayRows(
+    ParserContext* context, ParserNDArrayList* lst,
+    Location arrayLoc, int start, int stop,
+    int previousNumSep = -1, std::unordered_set<int> previousMaxSepIdx = {}
+  ) {
+    CHPL_ASSERT(start <= stop);
+    if (start == stop) {
+      if (previousNumSep != -1 && previousNumSep != 1) {
+        auto errIdx = start;
+        if (start > 0 && (*lst)[start-1].nSeparator == previousNumSep) {
+          errIdx = start-1;
+        } else if (start < (int)lst->size()-1 &&
+                   (*lst)[start+1].nSeparator == previousNumSep) {
+          errIdx = start+1;
+        }
+        errorSingleSeparatorIdx.insert(errIdx);
+      }
+      // there is a single row, so just return it
+      return std::make_pair(
+        context->consumeList((*lst)[start].exprs),
+        context->convertLocation((*lst)[start].location)
+      );
+    }
+
+    // find the largest number of consecutive sep
+    int maxSep = 0;
+    std::unordered_set<int> maxSeps;
+    for (int i = start; i <= stop; i++) {
+      if ((*lst)[i].nSeparator > maxSep) {
+        maxSep = (*lst)[i].nSeparator;
+        maxSeps.clear();
+        maxSeps.insert(i);
+      } else if ((*lst)[i].nSeparator == maxSep) {
+        maxSeps.insert(i);
+      }
+    }
+    CHPL_ASSERT(maxSep > 0);
+    if (previousNumSep != -1 && maxSep+1 != previousNumSep) {
+      errorInconsistentSeparatorIdx = previousMaxSepIdx;
+    }
+
+
+    // iterate through the list from start to stop, each time we find a maxSep
+    // recurse on the sublist from the last maxSep to the current element
+    AstList ret;
+    int start_ = start;
+    for (int i = start_; i <= stop; i++) {
+      if ((*lst)[i].nSeparator == maxSep) {
+        auto [newRows, loc] = buildArrayRows(context, lst, arrayLoc,
+                                            start_, i-1, maxSep, maxSeps);
+        ret.push_back(ArrayRow::build(context->builder, loc, std::move(newRows)));
+        start_ = i+1;
+      }
+    }
+    // add the last row
+    auto [newRows, loc] = buildArrayRows(context, lst, arrayLoc,
+                                        start_, stop, maxSep, maxSeps);
+    ret.push_back(ArrayRow::build(context->builder, loc, std::move(newRows)));
+
+    return std::make_pair(std::move(ret), arrayLoc);
+  }
+};
+
+Array* ParserContext::buildNDArray(YYLTYPE location, ParserNDArrayList* lst) {
+  CHPL_ASSERT(lst->size() > 0);
+  auto loc = convertLocation(location);
+
+  BuildArrayRowsContext barc;
+  auto rows = barc.buildArrayRows(this, lst, loc,
+                                   /*start*/0, /*end*/lst->size()-1);
+  barc.realizeErrors(this, lst);
+  delete lst;
+  return Array::build(builder, loc, std::move(rows.first)).release();
+}
+
+
 
 void ParserContext::consumeNamedActuals(MaybeNamedActualList* lst,
                                         AstList& actualsOut,
@@ -1557,7 +1720,9 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
     }
   }
 
-  this->clearComments();
+  auto last = makeLocationAtLast(location);
+  auto commentsToDiscard = gatherComments(last);
+  clearComments(commentsToDiscard);
 
   cs.stmt = f.release();
   return cs;
@@ -1584,8 +1749,11 @@ void ParserContext::enterScopeForFunctionDecl(FunctionParts& fp,
     this->enterScope(asttags::Function, fp.name->name());
   }
 }
-void ParserContext::exitScopeForFunctionDecl(FunctionParts& fp) {
-  this->clearComments();
+void ParserContext::exitScopeForFunctionDecl(YYLTYPE bodyLocation,
+                                             FunctionParts& fp) {
+  auto last = makeLocationAtLast(bodyLocation);
+  auto commentsToDiscard = gatherComments(last);
+  clearComments(commentsToDiscard);
 
   fp.errorExpr = checkForFunctionErrors(fp, fp.returnType);
   // May never have been built if there was a syntax error.
@@ -3460,7 +3628,7 @@ ParserContext::buildLabelStmt(YYLTYPE location, PODUniqueString name,
 
 
 ParserExprList*
-ParserContext::buildSingleStmtRoutineBody(CommentsAndStmt cs) {
-  this->clearComments();
+ParserContext::buildSingleStmtRoutineBody(YYLTYPE location, CommentsAndStmt cs) {
+  cs = this->finishStmt(location, cs);
   return this->makeList(cs);
 }

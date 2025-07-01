@@ -372,6 +372,53 @@ static void test6() {
   assert(qt.type()->isStringType());
 }
 
+static void testDistance() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  // Based on a real-to-[string|bytes] casting in the internal modules.
+  //
+  // The different 'helper' routines are visible to both calls in both versions
+  // of 'myCast'. Disambiguation should find that the version declared in the
+  // same module as the call is 'closer'. This requires being careful about
+  // whether we use the POI scope or the call scope to calculate 'distance'.
+  std::string program = R"""(
+    module M {
+      module A {
+        use super.B;
+
+        proc helper() {
+          return "hello";
+        }
+
+        proc myCast(arg: chpl_anyreal, type t) where t == string {
+          return helper();
+        }
+      }
+
+      module B {
+        use super.A;
+
+        proc helper() {
+          return 42;
+        }
+
+        proc myCast(arg: chpl_anyreal, type t) where t == int {
+          return helper();
+        }
+      }
+
+      use A;
+      use B;
+
+      var x = myCast(5.0, string);
+    }
+  )""";
+
+  auto x = resolveTypeOfX(context, program);
+  assert(x->isStringType());
+}
+
 int main() {
 
   test1();
@@ -380,6 +427,7 @@ int main() {
   test4();
   test5();
   test6();
+  testDistance();
 
   return 0;
 }

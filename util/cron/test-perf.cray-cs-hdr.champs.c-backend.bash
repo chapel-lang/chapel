@@ -9,7 +9,10 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.cray-cs-hdr.champs.c-backend"
 export CHPL_TEST_PERF_DESCRIPTION='c-backend'
 
 source $UTIL_CRON_DIR/common-champs.bash
-source $UTIL_CRON_DIR/common-c-backend.bash
+
+# use clang for C backend testing, not GCC
+# GCC consumes inordinate amounts of memory
+export CHPL_TARGET_COMPILER=clang
 
 export CHPL_TARGET_CPU=none
 

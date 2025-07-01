@@ -1,22 +1,15 @@
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #define _GNU_SOURCE
 
+#include <errno.h>
 #include <fcntl.h> /* for open() */
 #include <pthread.h>
 #include <stdio.h>     /* for perror() */
 #include <stdlib.h>    /* for exit() */
+#include <string.h>    /* for memset() */
 #include <sys/mman.h>  /* for mmap() */
 #include <sys/stat.h>  /* for open() */
 #include <sys/types.h> /* for mmap() */
 #include <unistd.h>    /* for fstat() */
-#ifdef HAVE_INTTYPES_H
-#include <inttypes.h> /* for funky print statements */
-#endif
-#include <errno.h>
-#include <string.h> /* for memset() */
 
 #include "qt_alloc.h"
 #include "qt_asserts.h"
@@ -106,7 +99,7 @@ struct mapinfo_s {
 static struct mapinfo_s *mmaps = NULL;
 static struct dynmapinfo_s *dynmmaps = NULL;
 
-#if defined(HAVE_FSTAT64) && defined(HAVE_LSEEK64)
+#ifdef __GLIBC__
 #define fstat fstat64
 #define lseek lseek64
 typedef struct stat64 statstruct_t;
@@ -124,7 +117,7 @@ typedef struct stat statstruct_t;
 static inline void *qalloc_getfile(off_t const filesize,
                                    void *addr,
                                    char const *filename,
-                                   void **set) { /*{{{ */
+                                   void **set) {
   int fd, rcount, fstatret;
   statstruct_t st;
   void *ret;
@@ -186,13 +179,13 @@ static inline void *qalloc_getfile(off_t const filesize,
     abort();
   }
   return ret;
-} /*}}} */
+}
 
-void *qalloc_makestatmap(off_t const filesize,
-                         void *addr,
-                         char const *filename,
-                         size_t itemsize,
-                         size_t const streams) { /*{{{ */
+API_FUNC void *qalloc_makestatmap(off_t const filesize,
+                                  void *addr,
+                                  char const *filename,
+                                  size_t itemsize,
+                                  size_t const streams) {
   void *set, *ret;
 
   ret = qalloc_getfile(filesize, addr, filename, &set);
@@ -270,12 +263,12 @@ void *qalloc_makestatmap(off_t const filesize,
   }
   /* this will never happen, it's just to make pgCC shut up */
   return NULL;
-} /*}}} */
+}
 
-void *qalloc_makedynmap(off_t const filesize,
-                        void *addr,
-                        char const *filename,
-                        size_t const streams) { /*{{{ */
+API_FUNC void *qalloc_makedynmap(off_t const filesize,
+                                 void *addr,
+                                 char const *filename,
+                                 size_t const streams) {
   void *set, *ret;
 
   ret = qalloc_getfile(filesize, addr, filename, &set);
@@ -340,9 +333,9 @@ void *qalloc_makedynmap(off_t const filesize,
   }
   /* this will never happen, it's just to make pgCC shut up */
   return NULL;
-} /*}}} */
+}
 
-void *qalloc_loadmap(char const *filename) { /*{{{ */
+void *qalloc_loadmap(char const *filename) {
   int fd, fstatret;
   statstruct_t st;
   off_t filesize;
@@ -374,9 +367,9 @@ void *qalloc_loadmap(char const *filename) { /*{{{ */
     return qalloc_makedynmap(
       filesize, header[0], filename, (size_t)(header[2]));
   }
-} /*}}} */
+}
 
-void qalloc_cleanup(void) { /*{{{ */
+API_FUNC void qalloc_cleanup(void) {
   qalloc_checkpoint();
   while (mmaps) {
     struct mapinfo_s *m;
@@ -400,13 +393,13 @@ void qalloc_cleanup(void) { /*{{{ */
     dynmmaps = dynmmaps->next;
     qt_free(m);
   }
-} /*}}} */
+}
 
 /* this is inefficient in the case of running out of memory because of malloc
  * imbalance (i.e. one thread is making all of the qalloc_malloc() calls).
  * Could probably do more aggressive memory stealing from the next stream if
  * that becomes a problem */
-void *qalloc_statmalloc(struct mapinfo_s *m) { /*{{{ */
+API_FUNC void *qalloc_statmalloc(struct mapinfo_s *m) {
   pthread_t me = pthread_self();
   size_t stream = (size_t)me % m->streamcount;
   size_t firststream = stream;
@@ -424,11 +417,10 @@ void *qalloc_statmalloc(struct mapinfo_s *m) { /*{{{ */
     }
   }
   return ret;
-} /*}}} */
+}
 
-static inline void qalloc_unmarkbits(unsigned char *array,
-                                     size_t startbit,
-                                     size_t count) { /*{{{ */
+static inline void
+qalloc_unmarkbits(unsigned char *array, size_t startbit, size_t count) {
   size_t endbit = startbit + count - 1;
 
   if (startbit / 8 == endbit / 8) {
@@ -448,10 +440,10 @@ static inline void qalloc_unmarkbits(unsigned char *array,
     /* unmark the first part of the endbyte */
     array[endbit / 8] &= 0xff & ~(0xff80 >> (endbit - ((endbit / 8) * 8)));
   }
-} /*}}} */
+}
 
 static inline void
-qalloc_markbits(unsigned char *array, size_t startbit, size_t endbit) { /*{{{ */
+qalloc_markbits(unsigned char *array, size_t startbit, size_t endbit) {
   if (startbit / 8 == endbit / 8) {
     /* marking bits within a byte */
     unsigned char bitmask;
@@ -469,13 +461,12 @@ qalloc_markbits(unsigned char *array, size_t startbit, size_t endbit) { /*{{{ */
     /* mark the first part of the endbyte */
     array[endbit / 8] |= 0xff & (0xff80 >> (endbit - ((endbit / 8) * 8)));
   }
-} /*}}} */
+}
 
 /* this function finds the first 0 bit in the array, toggles it, and returns
  * the index of the toggled bit. if no 0 bits are in the array, it returns
  * (a_len * 8 + 8) */
-static inline size_t qalloc_findmark_bit(unsigned char *array,
-                                         size_t bits) { /*{{{ */
+static inline size_t qalloc_findmark_bit(unsigned char *array, size_t bits) {
   size_t i;
   size_t bytes = bits / 8;
 
@@ -509,14 +500,13 @@ static inline size_t qalloc_findmark_bit(unsigned char *array,
   }
   /* this should never happen */
   return (size_t)-1;
-} /*}}} */
+}
 
 /* this function is identical to qalloc_findmark_bit, except that it searches
  * for a string of count 0 bits, and returns the index of the first one found.
  */
-static inline size_t qalloc_findmark_bits(unsigned char *array,
-                                          size_t a_len,
-                                          size_t count) { /*{{{ */
+static inline size_t
+qalloc_findmark_bits(unsigned char *array, size_t a_len, size_t count) {
   size_t byte = 0;
   size_t startbit = (size_t)-1; /* all FF's, no matter what size architecture */
 
@@ -607,10 +597,11 @@ static inline size_t qalloc_findmark_bits(unsigned char *array,
       return startbit;
     }
   }
-} /*}}} */
+}
 
-static inline smallblock_t *qalloc_find_smallblock_entry(
-  struct dynmapinfo_s *m, size_t stream, size_t *offset) { /*{{{ */
+static inline smallblock_t *qalloc_find_smallblock_entry(struct dynmapinfo_s *m,
+                                                         size_t stream,
+                                                         size_t *offset) {
   smallblock_t *sb;
 
   QALLOC_LOCK(m->stream_locks + stream);
@@ -628,10 +619,10 @@ static inline smallblock_t *qalloc_find_smallblock_entry(
     QALLOC_UNLOCK(&sb_prev->lock);
   }
   return sb;
-} /*}}} */
+}
 
 static inline bigblock_header_t *qalloc_find_bigblock_header_entry(
-  struct dynmapinfo_s *m, size_t stream, size_t *offset) { /*{{{ */
+  struct dynmapinfo_s *m, size_t stream, size_t *offset) {
   bigblock_header_t *bbh;
 
   QALLOC_LOCK(m->stream_locks + stream);
@@ -651,9 +642,9 @@ static inline bigblock_header_t *qalloc_find_bigblock_header_entry(
     QALLOC_UNLOCK(&bbh_prev->lock);
   }
   return bbh;
-} /*}}} */
+}
 
-void *qalloc_dynmalloc(struct dynmapinfo_s *m, size_t size) { /*{{{ */
+API_FUNC void *qalloc_dynmalloc(struct dynmapinfo_s *m, size_t size) {
   pthread_t me = pthread_self();
   size_t stream = (size_t)me % m->streamcount;
   size_t original_stream;
@@ -762,17 +753,17 @@ void *qalloc_dynmalloc(struct dynmapinfo_s *m, size_t size) { /*{{{ */
     QALLOC_UNLOCK(&bbh->lock);
   }
   return ret;
-} /*}}} */
+}
 
-void *qalloc_malloc(void *mapinfo, size_t size) { /*{{{ */
+API_FUNC void *qalloc_malloc(void *mapinfo, size_t size) {
   if (((struct mapinfo_s *)mapinfo)->dynflag == 0) {
     return qalloc_statmalloc((struct mapinfo_s *)mapinfo);
   } else {
     return qalloc_dynmalloc((struct dynmapinfo_s *)mapinfo, size);
   }
-} /*}}} */
+}
 
-void qalloc_statfree(void *block, struct mapinfo_s *m) { /*{{{ */
+void qalloc_statfree(void *block, struct mapinfo_s *m) {
   pthread_t me = pthread_self();
   size_t stream = (size_t)me % m->streamcount;
   void **b = (void **)block;
@@ -781,10 +772,10 @@ void qalloc_statfree(void *block, struct mapinfo_s *m) { /*{{{ */
   *b = m->streams[stream];
   m->streams[stream] = b;
   QALLOC_UNLOCK(m->stream_locks + stream);
-} /*}}} */
+}
 
-void qalloc_dynfree(void *block, struct dynmapinfo_s *m) { /*{{{ */
-  if (((size_t)block - (size_t)(m->base)) % 2048) {        /* unaligned */
+void qalloc_dynfree(void *block, struct dynmapinfo_s *m) {
+  if (((size_t)block - (size_t)(m->base)) % 2048) { /* unaligned */
     /* must be small */
     /* this figures out the sb pointer from the address being free'd */
     smallblock_t *sb =
@@ -848,17 +839,17 @@ void qalloc_dynfree(void *block, struct dynmapinfo_s *m) { /*{{{ */
     }
   }
   /* XXX: consider freeing unused smallblocks or bigblock header blocks */
-} /*}}} */
+}
 
-void qalloc_free(void *block, void *mapinfo) { /*{{{ */
+API_FUNC void qalloc_free(void *block, void *mapinfo) {
   if (((struct mapinfo_s *)mapinfo)->dynflag == 0) {
     qalloc_statfree(block, (struct mapinfo_s *)mapinfo);
   } else {
     qalloc_dynfree(block, (struct dynmapinfo_s *)mapinfo);
   }
-} /*}}} */
+}
 
-void qalloc_checkpoint(void) { /*{{{ */
+API_FUNC void qalloc_checkpoint(void) {
   struct mapinfo_s *m = mmaps;
   struct dynmapinfo_s *dm = dynmmaps;
 
@@ -876,6 +867,6 @@ void qalloc_checkpoint(void) { /*{{{ */
     }
     dm = dm->next;
   }
-} /*}}} */
+}
 
 /* vim:set expandtab: */

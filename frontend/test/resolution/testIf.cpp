@@ -404,6 +404,34 @@ static void testIfVarBorrow() {
   assert(obj->basicClassType()->name() == "C");
 }
 
+// ensure assigning to an unmanaged doesn't borrow
+static void testIfVarUnmanaged() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program =
+    R"""(
+    class C {
+      var i : int;
+    }
+
+    proc retClass() : unmanaged C? {
+      return new unmanaged C(5);
+    }
+
+    if const obj = retClass() {
+      var x = obj.i;
+    }
+    )""";
+
+  auto vars = resolveTypesOfVariables(context, program, {"x", "obj"});
+  assert(vars["x"].type()->isIntType());
+  auto obj = vars["obj"].type()->toClassType();
+  assert(obj->decorator().isNonNilable());
+  assert(obj->decorator().isUnmanaged());
+  assert(obj->basicClassType()->name() == "C");
+}
+
 int main() {
   test1();
   test2();
@@ -418,6 +446,7 @@ int main() {
   testIfVarErrorUseInElseBranch4();
   testIfVarErrorNonClassType();
   testIfVarNonNilInThen();
+  testIfVarUnmanaged();
 
   return 0;
 }
