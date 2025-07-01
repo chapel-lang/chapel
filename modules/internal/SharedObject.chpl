@@ -107,6 +107,7 @@ module SharedObject {
   // us from referencing a "top-level" shared reference.  If we one day support
   // :noindexentry:, that could be applied at the module level (instead of
   // :noindex:).  And then we could do :mod:`shared <SharedObject>`.
+  // https://github.com/chapel-lang/chapel/issues/23071
   /*
     :type:`shared` manages the deletion of a class instance in a way
     that supports multiple owners of the class instance.
