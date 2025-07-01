@@ -370,11 +370,7 @@ static UniqueString nameOfAttributeSignature(const AstNode* node) {
 static bool isNoDoc(const Decl* e) {
   auto attrs = parsing::astToAttributeGroup(gContext, e);
   if (attrs) {
-    auto attr = attrs->getAttributeNamed(UniqueString::get(gContext,
-                                                           "chpldoc.nodoc"));
-    if (attr) {
-      return true;
-    }
+    return attrs->hasAttribute(UniqueString::get(gContext, "chpldoc.nodoc"));
   }
   if (symbolNameBeginsWithChpl(e) && nameOfAttributeSignature(e).isEmpty()) {
     // TODO: Remove this check and the pragma once we have an attribute that
@@ -395,11 +391,8 @@ static bool isNoWhereDoc(const Function* f) {
 
 static bool isHideImplType(const Decl* e) {
   if (auto attrs = e->attributeGroup()) {
-    auto attr = attrs->getAttributeNamed(
+    return attrs->hasAttribute(
         UniqueString::get(gContext, "chpldoc.hideImplType"));
-    if (attr) {
-      return true;
-    }
   }
   return false;
 }
