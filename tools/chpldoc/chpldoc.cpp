@@ -296,17 +296,15 @@ or
 
 
 static void checkKnownAttributes(const AttributeGroup* attrs) {
-  // TODO: we need a way to get all the toolspaced attributes for chpldoc, or
-  // any tool, in one go. That will allow us to check for any unrecognized
-  // attributes.
+  static const std::unordered_set<UniqueString> knownChpldocAttrs = {
+      UniqueString::get(gContext, "chpldoc.nodoc"),
+      UniqueString::get(gContext, "chpldoc.attributeSignature"),
+      UniqueString::get(gContext, "chpldoc.hideImplType"),
+  };
   for (auto attr : attrs->children()) {
     auto name = attr->toAttribute()->name();
     if (name.startsWith(USTR("chpldoc."))) {
-      if (name == UniqueString::get(gContext, "chpldoc.nodoc")) {
-        // ignore, it's a known attribute
-      } else if (name == UniqueString::get(gContext, "chpldoc.attributeSignature")) {
-        // ignore, it's a known attribute
-      } else if (name == UniqueString::get(gContext, "chpldoc.hideImplType")) {
+      if (knownChpldocAttrs.count(name)) {
         // ignore, it's a known attribute
       } else {
         // process the Error about unknown Attribute
