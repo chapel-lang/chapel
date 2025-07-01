@@ -318,6 +318,25 @@ across the nodes assigned to the job.  Overloading can still be an issue
 if there are more Chapel locales (program instances) than nodes in the
 slurm job, however.
 
+Other Settings
+--------------
+
+Setting these two environment variables can improve performance.
+
+.. code-block:: bash
+
+   export CHPL_RT_COMM_OFI_DEDICATED_AMH_CORES=true
+   export CHPL_RT_COMM_OFI_CONNECT_EAGERLY=true
+
+Setting ``CHPL_RT_COMM_OFI_DEDICATED_AMH_CORES=true`` will
+dedicate a core to the active message handler progress thread. For
+example, when using ``CHPL_RT_COMM_OFI_DEDICATED_AMH_CORES=true`` on a
+128-core system, there will be 127 cores available for ``forall`` loops
+and similar. The other core is reserved to service requests that arrive
+over the network. This can improve performance in some cases.
+
+
+
 
 .. _Homebrew: https://github.com/Homebrew/brew
 
