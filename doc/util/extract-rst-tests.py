@@ -13,6 +13,7 @@ import stat
 
 import argparse
 import re
+import json
 
 capture_space = re.compile(r"(\s*)\S.*")
 capture_chapter = re.compile(r"\s*.. _Chapter-([a-zA-Z0-9._-]+):\s*")
@@ -29,6 +30,7 @@ match_execopts = re.compile(r"\s*.. BLOCK-test-chapelexecopts\s*")
 match_prediff = re.compile(r"\s*.. BLOCK-test-chapelprediff\s*")
 match_function = re.compile(r"\s*.. function::\s*")
 total_tests = 0
+test_sources = dict()
 
 def get_arguments():
     """
@@ -46,6 +48,8 @@ def get_arguments():
                         help='destination directory of output')
     parser.add_argument('--verbose', '-v', action='store_true', default=False,
                         help='verbosity')
+    parser.add_argument('--report', type=str, default=None,
+                        help='create a report of the tests found')
     return parser.parse_args()
 
 
@@ -145,6 +149,7 @@ def extract_tests(rstfile, outdir):
             execopts = ""
             compopts = ""
             prediff = ""
+            code_block_lines = []
 
             example_start = i-1
             example_end = -1
@@ -227,12 +232,14 @@ def extract_tests(rstfile, outdir):
                 #   .. BLOCK-test-chapelpost
                 #   .. BLOCK-test-chapelpre
                 elif re.match(match_code, line):
+                    linenum = i
                     (i, block) = read_block(lines, i)
                     # Filter out request for line numbers
                     if block.startswith(":linenos:"):
                         block = block.replace(":linenos:", "", 1)
 
                     chpl += block
+                    code_block_lines += [linenum]
                     #print ("Adding to chpl ", block)
 
 
@@ -255,6 +262,12 @@ def extract_tests(rstfile, outdir):
             global total_tests
             total_tests += 1
 
+            global test_sources
+            test_sources[os.path.abspath(f"{outdir}/{chapter}/{testname}.chpl")] = {
+                "rstfile": os.path.abspath(rstfile),
+                "lines": code_block_lines,
+                }
+
 
 def main(**kwargs):
     """Driver function"""
@@ -263,6 +276,10 @@ def main(**kwargs):
     rstfiles = kwargs['rstfiles']
     output = kwargs['output']
     verbose = kwargs['verbose']
+    report = kwargs['report']
+
+    if report and os.path.exists(report):
+        os.remove(report)
 
     for rstfile in rstfiles:
         if os.path.isfile(rstfile):
@@ -274,6 +291,11 @@ def main(**kwargs):
                       extract_tests(os.path.join(dirpath, f), output)
         else:
             print("File not found ", rstfile)
+
+    if report:
+        global test_sources
+        with open(report, 'w') as fp:
+            json.dump(test_sources, fp, indent=2)
 
     global total_tests
     print("DONE - created", total_tests, "tests")
