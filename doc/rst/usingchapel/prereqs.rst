@@ -38,7 +38,7 @@ for using Chapel:
 
   * The LLVM backend is now the default and it is easiest to use it with a
     system-wide installation of LLVM and clang. On Mac OS X, LLVM 14 through 20
-    are currently supported. On other platforms, LLVM and clang versions 11
+    are currently supported. On other platforms, LLVM and clang versions 14
     through 20 are currently supported. If a system-wide installation of
     LLVM and clang with one of those versions is not available, you can
     use the bundled LLVM or disable LLVM support (see
