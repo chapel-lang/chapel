@@ -267,14 +267,23 @@ Common Slurm Settings
 
     ./myprogram --gpus-per-node=2
 
-* Optionally, you can specify the number of cores required per node using either
+* Optionally, you can specify the number of cores required per locale using either
   the environment variable ``CHPL_LAUNCHER_CORES_PER_LOCALE``. For example,
-  to request at least 16 cores per node, set:
+  to request at least 16 cores per locale, set:
 
   .. code-block:: bash
 
-    export CHPL_LAUNCHER_CORES_PER_NODE=16
+    export CHPL_LAUNCHER_CORES_PER_LOCALE=16
 
+  However, note that this is passed directly to slurm as ``--cpus-per-task``,
+  which treats multiple hardware threads (SMT) as separate CPUs. So for example,
+  to give the Chapel runtime access to all available processing units on a 64 core node with 2 hardware threads per core, set:
+
+  .. code-block:: bash
+
+    export CHPL_LAUNCHER_CORES_PER_LOCALE=128
+
+  Note that this only makes the resources available to the Chapel runtime, but by default Chapel will only use one hardware thread per core.
 
 * Optionally, you can specify wall clock time limit for the job using
   ``CHPL_LAUNCHER_WALLTIME``. For example to specify a 10-minute time limit,
