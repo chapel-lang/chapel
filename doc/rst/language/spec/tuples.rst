@@ -34,8 +34,9 @@ The syntax of a tuple type is given by:
 .. code-block:: syntax
 
    tuple-type:
-     ( type-expression , type-list )
      ( type-expression , )
+     ( type-expression , type-list )
+     ( type-expression , type-list , )
 
    type-list:
      type-expression
