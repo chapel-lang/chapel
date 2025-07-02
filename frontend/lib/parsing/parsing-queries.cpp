@@ -945,9 +945,6 @@ static const bool& fileExistsQuery(Context* context, std::string path) {
   return QUERY_END(result);
 }
 
-// TODO: remove the size once LLVM 11 is no longer supported
-using SmallVectorChar = llvm::SmallVector<char, 64>;
-
 bool checkFileExists(Context* context,
                      std::string path,
                      bool requireFileCaseMatches) {
@@ -959,7 +956,7 @@ bool checkFileExists(Context* context,
     // is a 'bla.chpl' with an implicit module, that should not satisfy it.
 
     // compute the parent directory name
-    auto pathv = SmallVectorChar(path.begin(), path.end());
+    auto pathv = llvm::SmallVector<char>(path.begin(), path.end());
     auto style = llvm::sys::path::Style::posix;
     llvm::sys::path::remove_filename(pathv, style);
     std::string dirPath = std::string(pathv.data(), pathv.size());

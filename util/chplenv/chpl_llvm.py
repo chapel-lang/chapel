@@ -17,7 +17,7 @@ def llvm_versions():
     # Which major release - only need one number for that with current
     # llvm (since LLVM 4.0).
     # These will be tried in order.
-    return ('20','19','18','17','16','15','14','13','12','11',)
+    return ('20','19','18','17','16','15','14',)
 
 @memoize
 def get_uniq_cfg_path_for(llvm_val, llvm_support_val):
@@ -1256,12 +1256,6 @@ def filter_llvm_config_flags(llvm_val, flags):
 def filter_llvm_link_flags(flags):
     ret = [ ]
     for flag in flags:
-        # remove -llibxml2.tbd which seems to appear on some Mac OS X versions
-        # with LLVM 11.
-        # TODO: can we remove this workaround?
-        if flag == '-llibxml2.tbd':
-            continue
-
         # LLVM 15 detects libzstd on some systems but doesn't include
         # the -L path from pkg-config (this can happen in a Spack configuration)
         # So, if we have '-lzstd', use pkg-config to get the link flags.
