@@ -6,7 +6,6 @@ From: ubuntu:jammy
 
 %post
     /provision-scripts/apt-get-deps.sh
-    # installs LLVM 13
     /provision-scripts/apt-get-llvm.sh
 
 %runscript
