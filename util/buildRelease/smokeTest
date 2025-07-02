@@ -143,11 +143,11 @@ if [ $LINT -eq 1 ]; then
     fi
 
     # check that the docs have don't use literal .. code-block:: chpl
-    # TODO: improve the script so it does not have to ignore the spec explicitly
-    echo "Checking for literal .. code-block:: chpl"
+    echo "Checking for literal '.. code-block:: chpl'"
+    make $chpl_make_args spectests >/dev/null 2>/dev/null || exit 1
     $($CHPL_HOME/util/config/find-python.sh) \
       $CHPL_HOME/util/devel/lookForCodeBlocks modules doc/rst/ \
-      --ignore doc/rst/language/spec
+      --read-report $CHPL_HOME/examples/spec/report.json
     if [ $? -ne 0 ] ; then
         echo "Found literal code blocks"
         exit 1
