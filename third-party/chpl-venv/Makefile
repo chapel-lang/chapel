@@ -37,11 +37,11 @@ $(CHPL_VENV_VIRTUALENV_DIR_DEPS1_OK):
 
 	@# Now create the venv to use to get the dependencies
 	$(PYTHON) -m venv $(CHPL_VENV_VIRTUALENV_DIR)
-	@# Now install wheel so we can pip install
+	@# Now install pip/wheel so we can pip install
 	export PATH="$(CHPL_VENV_VIRTUALENV_BIN):$$PATH" && \
 	export VIRTUAL_ENV=$(CHPL_VENV_VIRTUALENV_DIR) && \
 	$(PIP) install --upgrade \
-	  $(CHPL_PIP_INSTALL_PARAMS) $(LOCAL_PIP_FLAGS) wheel && \
+	  $(CHPL_PIP_INSTALL_PARAMS) $(LOCAL_PIP_FLAGS) pip wheel && \
 	touch $(CHPL_VENV_VIRTUALENV_DIR_DEPS1_OK)
 
 ifdef CHPL_PIP_FROM_SOURCE
