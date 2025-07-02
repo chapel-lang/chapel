@@ -2584,6 +2584,8 @@ arkouda: &arkouda-base
   03/20/25:
     - text: Add ARKOUDA_DEFAULT_TEMP_DIRECTORY for arkouda perf tests (#26949)
       config: 16-node-hpe-apollo-hdr
+  07/02/25:
+    - Use Chapel 2.5 for Arkouda "release" nightly testing
 
 arkouda-string:
   <<: *arkouda-base
