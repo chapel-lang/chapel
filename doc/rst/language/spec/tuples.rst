@@ -25,9 +25,9 @@ Tuple Types
 -----------
 
 A tuple type is defined by a fixed number (a compile-time constant) of
-component types. It can be specified by a parenthesized, comma-separated
-list of types. The number of types in the list defines the size of the
-tuple; the types themselves specify the component types.
+component types. It can be specified by a parenthesized, comma-separated list
+of types. A trailing comma is allowed. The number of types in the list defines
+the size of the tuple; the types themselves specify the component types.
 
 The syntax of a tuple type is given by: 
 
@@ -109,9 +109,9 @@ Tuple Values
 
 A value of a tuple type attaches a value to each component type. Tuple
 values can be specified by a parenthesized, comma-separated list of
-expressions. The number of expressions in the list defines the size of
-the tuple; the types of these expressions specify the component types of
-the tuple.
+expressions. A trailing comma is allowed. The number of expressions in the list
+defines the size of the tuple; the types of these expressions specify the
+component types of the tuple.
 
 The syntax of a tuple expression is given by: 
 
