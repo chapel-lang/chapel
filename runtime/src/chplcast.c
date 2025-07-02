@@ -301,7 +301,7 @@ _define_string_to_imag_precise(imag, 64, "%lf")
         *invalidCh = *str;                                              \
       }                                                                 \
     }                                                                   \
-    val = val_re + val_im*_Complex_I;                                   \
+    val = _chpl_complex##width(val_re, val_im);                         \
     return val;                                                         \
   }
 
