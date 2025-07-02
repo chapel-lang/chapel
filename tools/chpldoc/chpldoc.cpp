@@ -368,34 +368,24 @@ static UniqueString nameOfAttributeSignature(const AstNode* node) {
 }
 
 static bool isNoDoc(const Decl* e) {
-  auto attrs = parsing::astToAttributeGroup(gContext, e);
-  if (attrs &&
-      attrs->hasAttribute(UniqueString::get(gContext, "chpldoc.nodoc"))) {
+  if (e->hasAttribute(gContext, UniqueString::get(gContext, "chpldoc.nodoc"))) {
     return true;
   }
   if (symbolNameBeginsWithChpl(e) && nameOfAttributeSignature(e).isEmpty()) {
     // TODO: Remove this check and the pragma once we have an attribute that
     // can be used to document chpl_ symbols or otherwise remove the
     // chpl_ prefix from symbols we want documented
-    return !(attrs &&
-             attrs->hasPragma(PragmaTag::PRAGMA_CHPLDOC_IGNORE_CHPL_PREFIX));
+    return !e->hasPragma(gContext, PragmaTag::PRAGMA_CHPLDOC_IGNORE_CHPL_PREFIX);
   }
   return false;
 }
 
 static bool isNoWhereDoc(const Function* f) {
-  if (auto attrs = f->attributeGroup())
-    if (attrs->hasPragma(pragmatags::PRAGMA_NO_WHERE_DOC))
-      return true;
-  return false;
+  return f->hasPragma(gContext, pragmatags::PRAGMA_NO_WHERE_DOC);
 }
 
 static bool isHideImplType(const Decl* e) {
-  if (auto attrs = e->attributeGroup()) {
-    return attrs->hasAttribute(
-        UniqueString::get(gContext, "chpldoc.hideImplType"));
-  }
-  return false;
+  return e->hasAttribute(gContext, UniqueString::get(gContext, "chpldoc.hideImplType"));
 }
 
 static std::vector<std::string> splitLines(const std::string& s) {
@@ -1710,10 +1700,8 @@ struct RstResultBuilder {
     }
     assert(!moduleName.empty());
     const Comment* lastComment = nullptr;
-    if (auto attrs = m->attributeGroup()) {
-      if (attrs->hasPragma(pragmatags::PRAGMA_MODULE_INCLUDED_BY_DEFAULT)) {
-        includedByDefault = true;
-      }
+    if (m->hasPragma(gContext, pragmatags::PRAGMA_MODULE_INCLUDED_BY_DEFAULT)) {
+      includedByDefault = true;
     }
     // header
     if (!textOnly_) {
