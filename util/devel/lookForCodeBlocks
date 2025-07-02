@@ -4,10 +4,13 @@ import os
 import glob
 from itertools import chain
 import pathlib
+from pathlib import Path
 import argparse
+import re
+import json
 
 
-def check_file(filename):
+def check_file(filename, reports):
     """
     Open a file and check for '.. code-block:: [chapel|chpl]' directives.
     Return a list of tuples with the filename and linenumber
@@ -20,17 +23,21 @@ def check_file(filename):
         for linenum, line in enumerate(lines):
             line = line.strip()
             prevline = lines[linenum - 1].strip() if linenum > 0 else b""
-            if (
-                line.startswith(b".. code-block:: chapel")
-                or line.startswith(b".. code-block:: chpl")
-            ) and not prevline.startswith(b".. BLOCK-test-allowCodeBlock"):
+            is_code_block = line.startswith(
+                b".. code-block:: chapel"
+            ) or line.startswith(b".. code-block:: chpl")
+            is_allowed = prevline.startswith(b".. BLOCK-test-allowCodeBlock")
+            is_in_report = any(
+                r.contains(filename, linenum + 1) for r in reports
+            )
+            if is_code_block and not is_allowed and not is_in_report:
                 code_blocks.append((filename, linenum + 1))
 
     return code_blocks
 
 
-def check_files(filenames):
-    result = chain.from_iterable(check_file(fn) for fn in filenames)
+def check_files(filenames, reports):
+    result = chain.from_iterable(check_file(fn, reports) for fn in filenames)
     return sorted(result, key=lambda x: (x[0], x[1]))
 
 
@@ -80,16 +87,43 @@ def get_gitignore_patterns(chplhome: pathlib.Path):
     return resolve_patterns
 
 
+class CreatedTestReport:
+    def __init__(self, report_file):
+        self.report_file = report_file
+        self.report = json.loads(self.report_file.read_text())
+        self.lines_per_rst = {}
+        for entry in self.report.values():
+            rstfile = entry["rstfile"]
+            if rstfile not in self.lines_per_rst:
+                self.lines_per_rst[rstfile] = set()
+            self.lines_per_rst[rstfile].update(entry["lines"])
+
+    def contains(self, file, line):
+        p = str(pathlib.Path(file).resolve())
+        r = line in self.lines_per_rst.get(p, set())
+        return r
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "files",
         nargs="*",
         help="Files or directories to check for code blocks. "
-             "If a directory is provided, all files in it will be checked.",
+        "If a directory is provided, all files in it will be checked.",
     )
-    parser.add_argument('--ignore', action='append', default=[],
-                        help='Patterns to ignore, e.g., "*.rst" or "docs/*"')
+    parser.add_argument(
+        "--ignore",
+        action="append",
+        default=[],
+        help='Patterns to ignore, e.g., "*.rst" or "docs/*"',
+    )
+    parser.add_argument(
+        "--read-report",
+        action="append",
+        default=[],
+        help="Read a report file of created tests and use it to check if docs are tested",
+    )
 
     args = parser.parse_args()
     filenames = []
@@ -109,7 +143,15 @@ def main():
         ignore_patterns.append(str(pathlib.Path(p).resolve()))
     filenames = ignore_files(filenames, ignore_patterns)
 
-    results = check_files(filenames)
+    reports = []
+    for report_file in args.read_report:
+        report_file = pathlib.Path(report_file)
+        if not report_file.exists():
+            print(f"Report file {report_file} does not exist, skipping")
+            continue
+        reports.append(CreatedTestReport(report_file))
+
+    results = check_files(filenames, reports)
     if len(results) != 0:
         print("Found plain code blocks!")
         print("Please turn these into testable code blocks")
