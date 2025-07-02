@@ -311,6 +311,10 @@ class AstNode {
   /** Returns true if this AST has the pragma 'p' attached to it. */
   bool hasPragma(Context* context, uast::pragmatags::PragmaTag p) const;
 
+  /** Returns true if this AST has an attribute with the given name attached to
+   * it. */
+  bool hasAttribute(Context* context, UniqueString attributeName) const;
+
   // 'keep' is some old AST
   // 'addin' is some new AST we wish to combine with it
   //

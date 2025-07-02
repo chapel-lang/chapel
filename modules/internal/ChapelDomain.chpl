@@ -1049,6 +1049,7 @@ module ChapelDomain {
   pragma "domain"
   pragma "has runtime type"
   pragma "ignore noinit"
+  @chpldoc.hideImplType
   record _domain : writeSerializable, readDeserializable {
     var _pid:int; // only used when privatized
     pragma "owned"
@@ -1797,6 +1798,7 @@ module ChapelDomain {
       domain will be default-initialized. They can be set to desired
       values as usual, for example using an assignment operator.
     */
+    @chpldoc.hideImplType
     record unsafeAssignManager : contextManager {
       @chpldoc.nodoc
       var _lhsInstance;
