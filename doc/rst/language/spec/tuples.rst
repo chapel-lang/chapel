@@ -110,7 +110,7 @@ A value of a tuple type attaches a value to each component type. Tuple
 values can be specified by a parenthesized, comma-separated list of
 expressions. The number of expressions in the list defines the size of
 the tuple; the types of these expressions specify the component types of
-the tuple. A trailing comma is allowed.
+the tuple.
 
 The syntax of a tuple expression is given by: 
 
