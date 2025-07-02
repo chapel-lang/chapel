@@ -470,6 +470,7 @@ static Type* canCoerceToCopyType(Type* actualType, Symbol* actualSym,
   if (isSyncType(actualValType)) {
     copyType = getCopyTypeDuringResolution(actualValType);
   } else if (isAliasingArrayType(actualValType) ||
+             (actualSym != NULL && actualSym->hasFlag(FLAG_IS_ARRAY_VIEW)) ||
              actualValType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
     // The conditions below avoid infinite loops and problems
     // relating to resolving initCopy for iterators when not needed.
