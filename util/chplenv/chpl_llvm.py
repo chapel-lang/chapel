@@ -1256,12 +1256,6 @@ def filter_llvm_config_flags(llvm_val, flags):
 def filter_llvm_link_flags(flags):
     ret = [ ]
     for flag in flags:
-        # remove -llibxml2.tbd which seems to appear on some Mac OS X versions
-        # with LLVM 11.
-        # TODO: can we remove this workaround?
-        if flag == '-llibxml2.tbd':
-            continue
-
         # LLVM 15 detects libzstd on some systems but doesn't include
         # the -L path from pkg-config (this can happen in a Spack configuration)
         # So, if we have '-lzstd', use pkg-config to get the link flags.

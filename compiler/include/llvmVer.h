@@ -39,7 +39,7 @@
 // allows typed pointers (and leave it undefined if only opaque pointers
 // are available).
 #if HAVE_LLVM_VER < 150
-// always use typed pointers for LLVM 11, 12, 13, 14
+// always use typed pointers for LLVM 14
 #define HAVE_LLVM_TYPED_POINTERS 1
 #else
 // HAVE_LLVM_VER >= 150
