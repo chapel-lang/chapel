@@ -190,7 +190,7 @@ module Heap {
       return result;
     }
 
-    
+
     /*
       Helper function for checking emptiness without locking
     */
@@ -336,7 +336,6 @@ module Heap {
       if (boundsChecking && _isEmptyUnlocked()) {
         boundsCheckHalt("Called \"heap.pop\" on an empty heap.");
       }
-      
       if _data.size != 1 then
         _data(0) <=> _data(_data.size-1);
 
