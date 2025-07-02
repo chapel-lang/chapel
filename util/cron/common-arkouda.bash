@@ -81,7 +81,7 @@ function release_dependencies() {
       fi
     fi
   elif [ "$CHPL_WHICH_RELEASE_FOR_ARKOUDA" = "2.5.0" ]; then
-    ; # no extra setup needed yet
+    : # no extra setup needed yet
   else
     echo "CHPL_WHICH_RELEASE_FOR_ARKOUDA is set to $CHPL_WHICH_RELEASE_FOR_ARKOUDA, but is not supported by this script."
     exit 1
