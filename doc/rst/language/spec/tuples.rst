@@ -336,7 +336,7 @@ Tuple Destructuring
 
 Tuples can be split into their components in the following ways:
 
--  In assignment where multiple expression on the left-hand side of the
+-  In assignment where multiple expressions on the left-hand side of the
    assignment operator are grouped using tuple notation.
 
 -  In variable declarations where multiple variables in a declaration
@@ -360,7 +360,7 @@ Tuples can be split into their components in the following ways:
 Splitting a Tuple with Assignment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-When multiple expression on the left-hand side of an assignment operator
+When multiple expressions on the left-hand side of an assignment operator
 are grouped using tuple notation, the tuple on the right-hand side is
 split into its components. The number of grouped expressions must be
 equal to the size of the tuple on the right-hand side. In addition to
