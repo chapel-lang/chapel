@@ -182,11 +182,12 @@ To specify a 1-tuple, use the form with the trailing comma ``(1,)``.
 
 Tuple expressions are evaluated similarly to function calls where the
 arguments are all generic with no explicit intent. So a tuple expression
-containing an array does not copy the array.
+containing an array does not copy the array; see
+:ref:`Value_Tuples_and_Referential_Tuples`.
 
 When a tuple is passed as an argument to a function, it is passed as if
 it is a record type containing fields of the same type and in the same
-order as in the tuple.
+order as in the tuple; see :ref:`Tuple_Argument_Intents`.
 
 .. index::
    pair: tuples; indexing
