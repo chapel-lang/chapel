@@ -1489,6 +1489,8 @@ The arity and precedence of the operator must be maintained when it is
 overloaded. Operator resolution follows the same algorithm as function
 resolution.
 
+Operators overloads may also be defined as methods, see :ref:`Operator_Methods`.
+
 Assignment overloads are not supported for class types.
 
 .. index::
