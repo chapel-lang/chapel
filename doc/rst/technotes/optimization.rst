@@ -325,6 +325,15 @@ colocales
   ``none`` or ``unknown``, can allow using newer instruction sets (e.g.
   AVX512) and improve performance.
 
+``CHPL_RT_COMM_OFI_DEDICATED_AMH_CORES``
+
+  When using ``CHPL_COMM=ofi``, setting this environment variable will
+  dedicate a core to the active message handler progress thread. For
+  example, when using ``CHPL_RT_COMM_OFI_DEDICATED_AMH_CORES=true`` on a
+  128-core system, there will be 127 cores available for ``forall`` loops
+  and similar. The other core is reserved to service requests that arrive
+  over the network. This can improve performance in some cases.
+
 ..
   comment: cover ``--llvm-wide-opt`` when it becomes less experemental
 
