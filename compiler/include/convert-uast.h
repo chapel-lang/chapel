@@ -78,6 +78,9 @@ class UastConverter {
 
   // Generate main functions (for use with TConverter)
   virtual void createMainFunctions() = 0;
+
+  virtual void noteConvertedSym(const chpl::uast::AstNode* ast, Symbol* sym) = 0;
+  virtual void noteConvertedFn(const chpl::resolution::TypedFnSignature* sig, FnSymbol* fn) = 0;
 };
 
 chpl::owned<UastConverter> createUntypedConverter(chpl::Context* context);

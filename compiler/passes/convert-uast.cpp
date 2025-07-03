@@ -187,8 +187,8 @@ struct Converter final : UastConverter {
   Expr* convertAST(const uast::AstNode* node, ModTag modTag) override;
 
   // methods to help track what has been converted
-  void noteConvertedSym(const uast::AstNode* ast, Symbol* sym);
-  void noteConvertedFn(const resolution::TypedFnSignature* sig, FnSymbol* fn);
+  void noteConvertedSym(const uast::AstNode* ast, Symbol* sym) override;
+  void noteConvertedFn(const resolution::TypedFnSignature* sig, FnSymbol* fn) override;
   Symbol* findConvertedSym(ID id, bool neverTrace=false);
   void noteIdentFixupNeeded(SymExpr* se, ID id);
   void noteModuleFixupNeeded(ModuleSymbol* m, ID id);
@@ -3635,6 +3635,11 @@ struct Converter final : UastConverter {
   }
 
   Expr* visit(const uast::Enum* node) {
+    if (auto it = syms.find(node->id()); it != syms.end()) {
+      // Sometimes in the typed converter we manually convert untyped AST
+      // to use as a base for instantiation. E.g., dtCPointer
+      return nullptr;
+    }
     const resolution::ResolutionResultByPostorderID* resolved = nullptr;
     if (shouldScopeResolve(node)) {
       resolved = &resolution::scopeResolveEnum(context, node->id());

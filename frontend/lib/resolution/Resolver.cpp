@@ -33,7 +33,7 @@
 
 #include "InitResolver.h"
 #include "VarScopeVisitor.h"
-#include "resolution/BranchSensitiveVisitor.h"
+#include "chpl/resolution/BranchSensitiveVisitor.h"
 #include "resolution/extern-blocks.h"
 
 #include "llvm/ADT/ArrayRef.h"

@@ -283,7 +283,8 @@ AggregateType* shouldWireWellKnownType(const char* name) {
     WellKnownAggregateTypeNeededEarly& wkt =
       sWellKnownAggregateTypesNeededEarly[i];
 
-    if (0 == strcmp(name, wkt.name)) {
+    if (0 == strcmp(name, wkt.name) ||
+        0 == strcmp(name, wkt.userFacingName)) {
       return *wkt.type_;
     }
   }

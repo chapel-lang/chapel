@@ -1,0 +1,13 @@
+'fn helper:void'
+  (BlockStmt
+    (BlockStmt
+      (CallExpr
+        (SymExpr 'fn println:void')
+        (SymExpr 999 'val _literal_16:int'))
+      (GotoStmt return
+        (SymExpr '_end_helper')))
+    (DefExpr   "epilogue label"'_end_helper')
+    (CallExpr return
+      (SymExpr 'const-val _void:void')))
+
+999

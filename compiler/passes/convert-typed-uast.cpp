@@ -48,6 +48,7 @@
 #include "chpl/framework/compiler-configuration.h"
 #include "chpl/framework/global-strings.h"
 #include "chpl/parsing/parsing-queries.h"
+#include "chpl/resolution/BranchSensitiveVisitor.h"
 #include "chpl/resolution/can-pass.h"
 #include "chpl/resolution/ResolvedVisitor.h"
 #include "chpl/resolution/resolution-queries.h"
@@ -125,7 +126,8 @@ using namespace uast;
 //    lazily generate only the functions that are needed, but we cannot take
 //    advantage of that until this pass generates all old AST.
 //
-struct TConverter final : UastConverter {
+struct TConverter final : UastConverter,
+                          chpl::resolution::BranchSensitiveVisitor<chpl::resolution::DefaultFrame, ResolvedVisitor<TConverter>&> {
 
   /// ------------ ///
   /// Nested Types ///
@@ -586,6 +588,28 @@ struct TConverter final : UastConverter {
     return UniqueString::get(context, str);
   }
 
+  // BranchSensitiveVisitor methods
+  const chpl::types::Param* determineWhenCaseValue(const uast::AstNode* ast,
+                                                   RV& rv) override {
+    if (auto action = rv.byAst(ast).getAction(AssociatedAction::COMPARE)) {
+      return action->type().param();
+    }
+
+    return nullptr;
+  }
+  const types::Param* determineIfValue(const uast::AstNode* ast,
+                                       RV& rv) override {
+    if (auto rr = rv.byAst(ast); rr.type().kind() == types::QualifiedType::PARAM) {
+      return rr.type().param();
+    }
+    return nullptr;
+  }
+  void traverseNode(const uast::AstNode* ast, RV& rv) override {
+    ast->traverse(rv);
+  }
+
+
+
   /// -------------------------- ///
   /// Symbol and Type Conversion ///
   /// -------------------------- ///
@@ -640,7 +664,8 @@ struct TConverter final : UastConverter {
   // that can be used in the case of recursive data structures.
   Type* convertType(const types::Type* t, bool convertRefType=false);
 
-  void noteConvertedSym(const uast::AstNode* ast, Symbol* sym);
+  void noteConvertedSym(const uast::AstNode* ast, Symbol* sym) override;
+  void noteConvertedFn(const resolution::TypedFnSignature* sig, FnSymbol* fn) override;
 
   Symbol* convertParam(const types::QualifiedType& qt);
 
@@ -2061,6 +2086,10 @@ void TConverter::noteConvertedSym(const uast::AstNode* ast, Symbol* sym) {
   }
 }
 
+void TConverter::noteConvertedFn(const resolution::TypedFnSignature* sig, FnSymbol* fn) {
+  CHPL_ASSERT(false && "currently unused");
+}
+
 Type* TConverter::findConvertedType(const types::Type* t) {
   auto it = convertedTypes.find(t);
   if (it != convertedTypes.end()) {
@@ -2361,6 +2390,8 @@ struct ConvertTypeHelper {
   }
 
   Type* visit(const types::BasicClassType* bct) {
+    if (bct->isObjectType()) return dtObject;
+
     auto rc = createDummyRC(context());
     auto& rfds = fieldsForTypeDecl(&rc, bct, DefaultsPolicy::USE_DEFAULTS);
 
@@ -2604,6 +2635,8 @@ struct ConvertTypeHelper {
     newTypeSymbol->addFlag(FLAG_RESOLVED_EARLY);
     if (t->isStarTuple()) newTypeSymbol->addFlag(FLAG_STAR_TUPLE);
 
+    ret->saveGenericSubstitutions();
+
     // Insert all tuple instantiations in the tuple module.
     tc_->modChapelTuple->block->insertAtHead(new DefExpr(newTypeSymbol));
 
@@ -2749,6 +2782,23 @@ Type* TConverter::convertType(const types::Type* t, bool convertRefType) {
 
     // Set the converted type once again.
     convertedTypes[t] = ret;
+
+    if (!isPrimitiveType(ret) &&
+        ret->symbol->hasFlag(FLAG_INSTANTIATED_GENERIC) == false &&
+        ret != dtObject) {
+      ID id;
+      if (auto ct = t->getCompositeType()) {
+        id = ct->id();
+      } else if (auto et = t->toEnumType()) {
+        id = et->id();
+      } else if (auto ext = t->toExternType()) {
+        id = ext->id();
+      }
+      if (!id.isEmpty()) {
+        auto ast = parsing::idToAst(context, id);
+        untypedConverter->noteConvertedSym(ast, ret->symbol);
+      }
+    }
 
     return ret;
   }
@@ -4656,6 +4706,7 @@ static void attachFunctionFlags(TConverter* tc, const Function* node,
 }
 
 bool TConverter::enter(const Function* node, RV& rv) {
+  enterScope(node, rv);
   TC_DEBUGF(this, "enter function %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 
   if (node != cur.symbol) {
@@ -4750,7 +4801,6 @@ bool TConverter::enter(const Function* node, RV& rv) {
       } else {
         TC_UNIMPL("Unhandled formal");
       }
-
     }
 
     exitFormals(fn);
@@ -4868,10 +4918,20 @@ bool TConverter::enter(const Function* node, RV& rv) {
   cur.retVar = nullptr;
   cur.epilogueLabel = nullptr;
 
+  if (auto attr = node->attributeGroup()) {
+    UniqueString name = UniqueString::get(context, "dyno.printConvertedAst");
+    if (attr->getAttributeNamed(name)) {
+      // If the dyno attribute is set, print the converted AST.
+      TC_DEBUGF(this, "Converted AST for %s:\n", node->id().str().c_str());
+      print_view(fn);
+    }
+  }
+
   return false;
 }
 
 void TConverter::exit(const Function* node, RV& rv) {
+  exitScope(node, rv);
   TC_DEBUGF(this, "exit function %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 }
 
@@ -5108,6 +5168,7 @@ void TConverter::exit(const Return* node, RV& rv) {
   // replace with GOTO(epilogue)
   auto jump = new GotoStmt(GOTO_RETURN, cur.epilogueLabel);
   insertStmt(jump);
+  markReturn();
 }
 
 bool TConverter::enter(const Call* node, RV& rv) {
@@ -5141,6 +5202,7 @@ void TConverter::exit(const Call* node, RV& rv) {
 }
 
 bool TConverter::enter(const Conditional* node, RV& rv) {
+  enterScope(node, rv);
   TC_DEBUGF(this, "enter conditional %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 
   // Not param-known condition; visit both branches as normal.
@@ -5179,24 +5241,12 @@ bool TConverter::enter(const Conditional* node, RV& rv) {
     // The result of the 'if-expr' will be stored in 'temp'.
     insertExpr(new SymExpr(temp));
   } else {
-    auto condRE = rv.byAst(node->condition());
-    if (condRE.type().isParamTrue()) {
-      // Don't need to process the false branch.
-      auto block = pushNewBlock();
-      node->thenBlock()->traverse(rv);
-      popBlock();
-      insertStmt(block);
-      return false;
-    } else if (condRE.type().isParamFalse()) {
-      if (auto elseBlock = node->elseBlock()) {
-        auto block = pushNewBlock();
-        elseBlock->traverse(rv);
-        popBlock();
-        insertStmt(block);
-      }
-      return false;
-    }
+    // Branch-sensitive traversal doesn't really work for the expression-level
+    // case because we need to build the 'move'. So just rely on this for
+    // statement-level conditionals.
+    if (!branchSensitivelyTraverse(node, rv)) return false;
 
+    auto condRE = rv.byAst(node->condition());
     astlocMarker markAstLoc(node->id());
 
     types::QualifiedType qtCond;
@@ -5327,6 +5377,7 @@ bool TConverter::enter(const Conditional* node, RV& rv) {
 }
 
 void TConverter::exit(const Conditional* node, RV& rv) {
+  exitScope(node, rv);
   TC_DEBUGF(this, "exit conditional %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 }
 
@@ -5369,7 +5420,7 @@ static SymExpr* makeCaseCond(TConverter* tc, TConverter::RV& rv,
   // TODO: handle case where passing to '==' has an associated action
   auto call = new CallExpr(fn, selectExpr->copy(), caseExpr);
 
-  auto cond = tc->storeInTempIfNeeded(call, re.type());
+  auto cond = tc->storeInTempIfNeeded(call, action->type());
 
   return cond;
 }
@@ -5421,20 +5472,32 @@ static SymExpr* getWhenCond(TConverter* tc, TConverter::RV& rv,
 }
 
 bool TConverter::enter(const Select* node, RV& rv) {
+  enterScope(node, rv);
   // TODO:
   // - test case-exprs where the '==' operators have associated actions
   //   (e.g. in-intent on record argument)
 
   //Note: out-of-order otherwise is an error addressed by post-parse-checks
 
+  // TODO: Trying to convert this with the branch sensitive traversal is a bit
+  // awkward because we want to have only one generated select expression, and
+  // would need to store that somehow between when-stmt traversals. It also
+  // feels easier to manage the stacking of CondStmts here.
+
   types::QualifiedType selectQT;
   auto selectExpr = convertExpr(node->expr(), rv, &selectQT);
   auto selectSym = storeInTempIfNeeded(selectExpr, selectQT);
 
+  auto traverse = [this,&rv](const When* when) {
+    enterScope(when->body(), rv);
+    when->body()->traverse(rv);
+    exitScope(when->body(), rv);
+  };
+
   int count = 0;
   for (auto when : node->whenStmts()) {
     if (when->isOtherwise()) {
-      when->body()->traverse(rv);
+      traverse(when);
     } else {
       bool anyParamTrue = false;
       bool allParamFalse = true;
@@ -5453,7 +5516,7 @@ bool TConverter::enter(const Select* node, RV& rv) {
       // Note: this differs from traditional behavior in production, where each
       // comparison was made.
       if (anyParamTrue) {
-        when->body()->traverse(rv);
+        traverse(when);
 
         // Nothing else can match after this, so we're done
         break;
@@ -5461,7 +5524,7 @@ bool TConverter::enter(const Select* node, RV& rv) {
         auto cond = getWhenCond(this, rv, when, selectSym);
 
         // Traversing the body creates a BlockStmt we can remove
-        when->body()->traverse(rv);
+        traverse(when);
         auto thenBlock = cur.lastList()->last()->remove();
 
         auto elseBlock = new BlockStmt();
@@ -5482,9 +5545,13 @@ bool TConverter::enter(const Select* node, RV& rv) {
   return false;
 }
 
-void TConverter::exit(const Select* node, RV& rv) {}
+void TConverter::exit(const Select* node, RV& rv) {
+  exitScope(node, rv);
+  TC_DEBUGF(this, "exit select %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+}
 
 bool TConverter::enter(const Block* node, RV& rv) {
+  enterScope(node, rv);
   // Necessary for explicit standalone block-statements
   auto block = new BlockStmt();
   pushBlock(block);
@@ -5492,18 +5559,31 @@ bool TConverter::enter(const Block* node, RV& rv) {
 }
 
 void TConverter::exit(const Block* node, RV& rv) {
+  exitScope(node, rv);
   auto cur = popBlock();
   insertStmt(cur);
 }
 
 bool TConverter::enter(const AstNode* node, RV& rv) {
+  enterScope(node, rv);
   TC_DEBUGF(this, "enter ast %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
   return true;
 }
 void TConverter::exit(const AstNode* node, RV& rv) {
+  exitScope(node, rv);
   TC_DEBUGF(this, "exit ast %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 }
 
 chpl::owned<UastConverter> createTypedConverter(chpl::Context* context) {
   return toOwned(new TConverter(context));
 }
+
+namespace chpl::uast {
+template <>
+struct AstVisitorPrecondition<TConverter> {
+  static bool skipSubtree(const AstNode* node, TConverter& rv) {
+    return rv.isDoneExecuting() || rv.markedThrow();
+  }
+};
+
+};
