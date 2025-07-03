@@ -745,6 +745,11 @@ binary-trees: &binary-trees-base
 binarytrees-submitted:
   <<: *binary-trees-base
 
+bitops:
+  05/30/25:
+    - text: Fix mismatched types in test (#27308)
+      config: chapcs
+
 blackscholes:
   10/21/16:
     - Improvements to scalarReplace, refPropagation and copyPropagation (#4761)
