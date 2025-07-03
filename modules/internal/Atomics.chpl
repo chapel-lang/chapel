@@ -88,6 +88,13 @@ Atomic variables can also be declared with an initial value:
    :start-after: START_EXAMPLE_1
    :end-before: STOP_EXAMPLE_1
 
+Similarly, a temporary ``atomic`` value can be created by casting to atomic:
+
+.. literalinclude:: ../../../../test/types/atomic/doc-examples/AtomicExamples.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_2
+   :end-before: STOP_EXAMPLE_2
+
 Assignment is supported between atomic variables as well:
 
 .. literalinclude:: ../../../../test/types/atomic/doc-examples/AtomicExamples.chpl
