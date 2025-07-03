@@ -1193,19 +1193,14 @@ module String {
 
     For example:
 
-    .. code-block:: chapel
+    .. literalinclude:: ../../../../test/types/string/doc-examples/StringItems.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE
+       :end-before: STOP_EXAMPLE
 
-      var str = "abcd";
-      for c in str.items() {
-        writeln(c);
-      }
+    Output:
 
-    Output::
-
-      a
-      b
-      c
-      d
+    .. literalinclude:: ../../../../test/types/string/doc-examples/StringItems.good
    */
   iter string.items() : string {
     var localThis: string = this.localize();
@@ -1238,19 +1233,14 @@ module String {
 
     For example:
 
-    .. code-block:: chapel
+    .. literalinclude:: ../../../../test/types/string/doc-examples/StringThese.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE
+       :end-before: STOP_EXAMPLE
 
-      var str = "abcd";
-      for c in str {
-        writeln(c);
-      }
+    Output:
 
-    Output::
-
-      a
-      b
-      c
-      d
+    .. literalinclude:: ../../../../test/types/string/doc-examples/StringThese.good
    */
   iter string.these() : string {
     for c in this.items() do
@@ -1607,10 +1597,10 @@ module String {
     the :type:`string` passed in with the contents of the method
     receiver inserted between them.
 
-    .. code-block:: chapel
-
-        var myString = "|".join("a","10","d");
-        writeln(myString); // prints: "a|10|d"
+    .. literalinclude:: ../../../../test/types/string/doc-examples/StringJoin.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE_0
+       :end-before: STOP_EXAMPLE_0
 
     :arg x: :type:`string` values to be joined
 
@@ -1625,14 +1615,10 @@ module String {
     the :type:`string` passed in with the contents of the method
     receiver inserted between them.
 
-    .. code-block:: chapel
-
-        var tup = ("a","10","d");
-        var myJoinedTuple = "|".join(tup);
-        writeln(myJoinedTuple); // prints: "a|10|d"
-
-        var myJoinedArray = "|".join(["a","10","d"]);
-        writeln(myJoinedArray); // prints: "a|10|d"
+    .. literalinclude:: ../../../../test/types/string/doc-examples/StringJoin.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE_1
+       :end-before: STOP_EXAMPLE_1
 
     :arg x: An array or tuple of :type:`string` values to be joined
 
@@ -2092,15 +2078,14 @@ module String {
      The operation is commutative.
      For example:
 
-     .. code-block:: chapel
+    .. literalinclude:: ../../../../test/types/string/doc-examples/StringRepeatConcat.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE
+       :end-before: STOP_EXAMPLE
 
-        writeln("Hello! " * 3);
-        or
-        writeln(3 * "Hello! ");
+    Results in:
 
-     Results in::
-
-       Hello! Hello! Hello!
+    .. literalinclude:: ../../../../test/types/string/doc-examples/StringRepeatConcat.good
   */
   operator *(s: string, n: integral) : string {
     return doMultiply(s, n);

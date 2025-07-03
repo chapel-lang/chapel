@@ -2140,15 +2140,10 @@ module ChapelDomain {
 
       For example:
 
-      .. code-block:: chapel
-
-        var D = {0..0};
-        var A: [D] shared C = [new shared C(0)];
-        manage D.unsafeAssign({0..1}, checks=true) as mgr {
-          // 'D' has a new index '1', so 'A' has a new element at '1',
-          // which we need to initialize:
-          mgr.initialize(A, 1, new shared C(1));
-        }
+      .. literalinclude:: ../../../../test/domains/doc-examples/DomainUnsafeAssign.chpl
+         :language: chapel
+         :start-after: START_EXAMPLE
+         :end-before: STOP_EXAMPLE
 
       .. note::
 
@@ -2252,32 +2247,27 @@ module ChapelDomain {
     }
 
     /*
-     Creates an index buffer which can be used for faster index addition.
+      Creates an index buffer which can be used for faster index addition.
+      For example, instead of:
 
-     For example, instead of:
+      .. literalinclude:: ../../../../test/domains/doc-examples/DomainCreateIndexBuffer.chpl
+         :language: chapel
+         :start-after: START_EXAMPLE_0
+         :end-before: STOP_EXAMPLE_0
 
-       .. code-block:: chapel
+      You can use `SparseIndexBuffer` for better performance:
 
-          var spsDom: sparse subdomain(parentDom);
-          for i in someIndexIterator() do
-            spsDom += i;
+      .. literalinclude:: ../../../../test/domains/doc-examples/DomainCreateIndexBuffer.chpl
+         :language: chapel
+         :start-after: START_EXAMPLE_1
+         :end-before: STOP_EXAMPLE_1
 
-     You can use `SparseIndexBuffer` for better performance:
+      The above snippet will create a buffer of size N indices, and will
+      automatically commit indices to the sparse domain as the buffer fills up.
+      Indices are also committed when the buffer goes out of scope.
 
-       .. code-block:: chapel
-
-          var spsDom: sparse subdomain(parentDom);
-          var idxBuf = spsDom.createIndexBuffer(size=N);
-          for i in someIndexIterator() do
-            idxBuf.add(i);
-          idxBuf.commit();
-
-     The above snippet will create a buffer of size N indices, and will
-     automatically commit indices to the sparse domain as the buffer fills up.
-     Indices are also committed when the buffer goes out of scope.
-
-     :arg size: Size of the buffer in number of indices.
-     :type size: int
+      :arg size: Size of the buffer in number of indices.
+      :type size: int
     */
     @unstable("createIndexBuffer() is subject to change in the future.")
     inline proc createIndexBuffer(size: int) {
