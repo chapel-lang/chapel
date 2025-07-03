@@ -436,6 +436,7 @@ module Atomics {
 
   // TODO: should this be an operator method AtomicBool.: ?
   pragma "do not resolve unless called"
+  pragma "no copy return"
   @chpldoc.nodoc
   operator :(rhs: bool, type t:AtomicBool) {
     var lhs: AtomicBool = rhs; // use init=
@@ -814,6 +815,7 @@ module Atomics {
   }
 
   // TODO: should this be an operator method AtomicT.: ?
+  pragma "no copy return"
   @chpldoc.nodoc
   operator :(rhs, type t:AtomicT)
   where rhs.type == t.valType {
