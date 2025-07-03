@@ -458,10 +458,10 @@ module Crypto {
 
        Initialization example,
 
-       .. code-block:: chapel
-
-          var h = new Hash(Digest.SHA256);
-
+       .. literalinclude:: ../../../../test/library/packages/Crypto/doc-examples/CryptoExamples.chpl
+          :language: chapel
+          :start-after: START_EXAMPLE_0
+          :end-before: STOP_EXAMPLE_0
     */
     proc init(digestName: Digest) {
       init this;
@@ -623,10 +623,10 @@ module Crypto {
 
        Initialization example,
 
-       .. code-block:: chapel
-
-          var aes = new AES(256, CryptoChainMode.cbc);
-
+       .. literalinclude:: ../../../../test/library/packages/Crypto/doc-examples/CryptoExamples.chpl
+          :language: chapel
+          :start-after: START_EXAMPLE_1
+          :end-before: STOP_EXAMPLE_1
     */
     proc init(bits: int, mode: CryptoChainMode) {
       var tmpCipher: CONST_EVP_CIPHER_PTR;
@@ -829,10 +829,10 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
 
        Initialization example,
 
-       .. code-block:: chapel
-
-          var bf = new Blowfish(CryptoChainMode.cbc);
-
+       .. literalinclude:: ../../../../test/library/packages/Crypto/doc-examples/CryptoExamples.chpl
+          :language: chapel
+          :start-after: START_EXAMPLE_2
+          :end-before: STOP_EXAMPLE_2
     */
     proc init(mode: CryptoChainMode) {
       var tmpCipher: CONST_EVP_CIPHER_PTR;
@@ -934,11 +934,12 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
   class CryptoRandom {
     /* This function represents a CSPRNG that generates and allocates the desired
        number of random values as specified by the argument. Halts for number of
-       bytes less than 1 (invalid). For instance,
+       bytes less than 1 (invalid). For instance:
 
-       .. code-block:: chapel
-
-          var a = (new CryptoRandom()).getRandomBuffer(5)
+       .. literalinclude:: ../../../../test/library/packages/Crypto/doc-examples/CryptoGetRandomBuffer.chpl
+          :language: chapel
+          :start-after: START_EXAMPLE
+          :end-before: STOP_EXAMPLE
 
        would give us a `CryptoBuffer` of size `5` and pre-initialized with values.
 
