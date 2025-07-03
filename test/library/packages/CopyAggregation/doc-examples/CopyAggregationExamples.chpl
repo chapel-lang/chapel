@@ -20,6 +20,8 @@ forall (rA, i) in zip(reversedA, D) do
 /* STOP_EXAMPLE_0 */
 
 /* START_EXAMPLE_1 */
+use CopyAggregation;
+
 var a = 0;
 on Locales[numLocales-1] {
  var agg = new DstAggregator(int);

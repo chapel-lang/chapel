@@ -5,7 +5,7 @@
 use ArgumentParser;
 
 /* START_EXAMPLE_0 */
-prototype module M {
+module M {
   use ArgumentParser;
 
   proc main(args: [] string) throws {
