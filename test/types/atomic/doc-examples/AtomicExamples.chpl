@@ -10,18 +10,12 @@ var x: atomic int;
 var y: atomic int = 1;
 /* STOP_EXAMPLE_1 */
 
-/* 
-NOTE: We do not suggest this in the docs right now because the body of
-      the ': atomic int' operator returns an atomic by value, which is
-      deprecated behavior. If that somehow changes then this example
-      can go back in the docs.
-
 /* START_EXAMPLE_2 */
 var one: int = 1;
 var z = one : atomic int; // creates an `atomic int` initialized with 1
 /* STOP_EXAMPLE_2 */
+
 assert(z.read() == 1);
-*/
 
 /* START_EXAMPLE_3 */
 var a: atomic int = 1;
