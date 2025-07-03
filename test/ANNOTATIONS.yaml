@@ -707,11 +707,6 @@ autoAggNegativeImpact.ml-perf:
   09/02/21:
     - Bring in aggregation optimizations we used in Arkouda (#18326)
 
-bitops:
-  05/30/2025:
-    - text: Fix mismatched types in test (#27308)
-      config: chapcs
-
 bfs:
   09/25/14:
     - addition of octal to, reformatting of format printing.
@@ -749,6 +744,11 @@ binary-trees: &binary-trees-base
     - Switch study version of binary trees from owned to unmanaged (#11128)
 binarytrees-submitted:
   <<: *binary-trees-base
+
+bitops:
+  05/30/2025:
+    - text: Fix mismatched types in test (#27308)
+      config: chapcs
 
 blackscholes:
   10/21/16:
