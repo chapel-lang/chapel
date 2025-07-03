@@ -746,7 +746,7 @@ binarytrees-submitted:
   <<: *binary-trees-base
 
 bitops:
-  05/30/2025:
+  05/30/25:
     - text: Fix mismatched types in test (#27308)
       config: chapcs
 
