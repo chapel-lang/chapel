@@ -190,6 +190,16 @@ module Heap {
       return result;
     }
 
+
+    /*
+      Helper function for checking emptiness without locking
+    */
+    @chpldoc.nodoc
+    proc _isEmptyUnlocked(): bool {
+      return _data.isEmpty();
+    }
+
+
     /*
       Returns `true` if the heap is empty (has size == 0), `false` otherwise
 
@@ -198,7 +208,7 @@ module Heap {
     */
     proc isEmpty(): bool {
       _enter();
-      var result = _data.isEmpty();
+      var result = _isEmptyUnlocked();
       _leave();
       return result;
     }
@@ -217,7 +227,7 @@ module Heap {
                       eltType: string);
       }
       _enter();
-      if (boundsChecking && isEmpty()) {
+      if (boundsChecking && _isEmptyUnlocked()) {
         boundsCheckHalt("Called \"heap.top\" on an empty heap.");
       }
       var result = _data[0];
@@ -323,10 +333,9 @@ module Heap {
     */
     proc ref pop(): eltType {
       _enter();
-      if (boundsChecking && isEmpty()) {
+      if (boundsChecking && _isEmptyUnlocked()) {
         boundsCheckHalt("Called \"heap.pop\" on an empty heap.");
       }
-
       if _data.size != 1 then
         _data(0) <=> _data(_data.size-1);
 

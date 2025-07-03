@@ -1,0 +1,20 @@
+use Heap;
+
+var h = new heap(int, parSafe=true);
+writeln(h.size);
+writeln(h.isEmpty());
+h.push(3);
+writeln(h.size);
+writeln(h.isEmpty());
+writeln(h.top());
+h.push(2);
+writeln(h.size);
+writeln(h.top());
+var popped = h.pop();
+writeln(popped);
+h.push(4);
+writeln(h.size);
+writeln(h.top());
+popped = h.pop();
+writeln(popped);
+writeln(h.top());
