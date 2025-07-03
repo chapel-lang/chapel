@@ -252,7 +252,10 @@ Common Slurm Settings
   environment variable ``CHPL_LAUNCHER_SLURM_OUTPUT_FILENAME`` can be used
   to specify a different filename for the output.
 
-* Optionally, you can specify the number of GPUs required per node using either the environment variable ``CHPL_LAUNCHER_GPUS_PER_NODE`` or the ``--gpus-per-node`` flag. For example, to request 2 GPUs per node for all runs, set:
+* Optionally, you can specify the number of GPUs required per node using either
+  the environment variable ``CHPL_LAUNCHER_GPUS_PER_NODE`` or the
+  ``--gpus-per-node`` flag. For example, to request 2 GPUs per node for all
+  runs, set:
 
   .. code-block:: bash
 
@@ -263,6 +266,32 @@ Common Slurm Settings
   .. code-block:: bash
 
     ./myprogram --gpus-per-node=2
+
+* Optionally, you can specify the number of cores required per locale using either
+  the environment variable ``CHPL_LAUNCHER_CORES_PER_LOCALE``. For example,
+  to request at least 16 cores per locale, set:
+
+  .. code-block:: bash
+
+    export CHPL_LAUNCHER_CORES_PER_LOCALE=16
+
+  However, note that this is passed directly to slurm as ``--cpus-per-task``,
+  which treats multiple hardware threads (SMT) as separate CPUs. So for example,
+  to give the Chapel runtime access to all available processing units on a 64 core node with 2 hardware threads per core, set:
+
+  .. code-block:: bash
+
+    export CHPL_LAUNCHER_CORES_PER_LOCALE=128
+
+  Note that this only makes the resources available to the Chapel runtime, but by default Chapel will only use one hardware thread per core.
+
+* Optionally, you can specify wall clock time limit for the job using
+  ``CHPL_LAUNCHER_WALLTIME``. For example to specify a 10-minute time limit,
+  set:
+
+  .. code-block:: bash
+
+    export CHPL_LAUNCHER_WALLTIME=00:10:00
 
 .. _ssh-launchers-with-slurm:
 
@@ -347,6 +376,29 @@ launcher to execute, the suffix of the real binary executed by the
 launcher may be changed with the ``CHPL_LAUNCHER_SUFFIX`` environment
 variable. If this variable is unset, the suffix defaults to "_real",
 matching the compiler's output.
+
+Changing the created job name
++++++++++++++++++++++++++++++
+
+The name of the job created by the launcher can be changed by setting
+the ``CHPL_LAUNCHER_JOB_NAME`` and ``CHPL_LAUNCHER_JOB_PREFIX``
+environment variables.
+
+* ``CHPL_LAUNCHER_JOB_NAME`` sets the name of the job, which is typically used
+  by the queueing system to identify the job. If this variable is unset, the
+  default is executable name, up to the first 10 characters. Note that even if
+  this variable is set, only the first 10 characters will be used.
+
+* ``CHPL_LAUNCHER_JOB_PREFIX`` sets a prefix for the job name. If this variable
+  is unset, the default is "CHPL-". This prefix is prepended to the job name
+  (either the default or the value of ``CHPL_LAUNCHER_JOB_NAME``) to form the
+  final job name.
+
+For example, to set the job name to "myprefix-myjob", you can set:
+.. code-block:: bash
+
+  export CHPL_LAUNCHER_JOB_PREFIX=myprefix-
+  export CHPL_LAUNCHER_JOB_NAME=myjob
 
 
 Bypassing the launcher
