@@ -1,0 +1,5 @@
+ # SkipFile.good
+--skip OtherFile.chpl
+--skip SkipFile.chpl
+--skip '*.chpl'
+--skip ./

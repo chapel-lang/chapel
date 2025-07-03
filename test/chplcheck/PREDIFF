@@ -1,34 +1,117 @@
-#!/usr/bin/env bash
+#!/usr/bin/env python3
 
-FLAGS=""
+import sys
+import os
+import difflib
+import io
+import subprocess as sp
+from pathlib import Path
 
-# read extra arguments from a $1.chplcheckopts file
-# currently only supports 1 line with nothing but flags
-if [ -e CHPLCHECKOPTS ]; then
-  FLAGS="$FLAGS $(cat CHPLCHECKOPTS)"
-fi
-if [ -e $1.chplcheckopts ]; then
-  FLAGS="$FLAGS $(cat $1.chplcheckopts)"
-fi
+CHPL_HOME = Path(__file__).resolve().parent.parent.parent
+chplenv_dir = CHPL_HOME / "util" / "chplenv"
+testutil_dir = CHPL_HOME / "util" / "test"
+sys.path.append(str(chplenv_dir))
+sys.path.append(str(testutil_dir))
+import sub_test
 
 
-$CHPL_HOME/tools/chplcheck/chplcheck $FLAGS $1.chpl >>$2 2>&1
+DIR_PATH = Path(__file__).resolve().parent
 
-dirpath=$(cd $(dirname $1.chpl) && pwd)
-if sed "s#$dirpath/##" $2 >$2.tmp; then
-  mv $2.tmp $2
-fi
 
-# if there is a good-fixit file, try and run chplcheck with fixit
-if [ -e $1.good-fixit ]; then
+def slurp_file(filename):
+    with open(filename, "r") as f:
+        return f.read()
 
-  $CHPL_HOME/tools/chplcheck/chplcheck \
-    $FLAGS --fixit --fixit-suffix .fixed $1.chpl >/dev/null
 
-  if diff $1.good-fixit $1.chpl.fixed; then
-    echo "[Success matching fixit for $1]" >> $2
-    rm $1.chpl.fixed
-  else
-    echo "[Error matching fixit for $1]" >> $2
-  fi
-fi
+def diff(file1, file2):
+    return difflib.unified_diff(
+        slurp_file(file1).splitlines(keepends=True),
+        slurp_file(file2).splitlines(keepends=True),
+    )
+
+
+def run_chplcheck(filename, flags, header=None):
+    cmd = f"{str(CHPL_HOME / 'tools' / 'chplcheck' / 'chplcheck')} {flags} {filename}"
+    buffer = io.StringIO()
+    if header:
+        buffer.write(f"=== {header} ===\n")
+    cp = sp.run(cmd, shell=True, check=False, stdout=sp.PIPE, stderr=sp.STDOUT, text=True)
+    buffer.write(cp.stdout)
+    output = buffer.getvalue()
+    # filter the absolute paths from the output
+    output = output.replace(str(DIR_PATH) + "/", "")
+
+    return output
+
+
+def sub_test_setup():
+    sub_test.utildir = sub_test.get_util_dir()
+
+
+def main():
+    sub_test_setup()
+
+    file = Path(sys.argv[1]).with_suffix(".chpl")
+    outfile = Path(sys.argv[2])
+
+    globalFlags = slurp_file("CHPLCHECKOPTS").strip()
+
+    optsfile = file.with_suffix(".chplcheckopts")
+    if Path(optsfile).exists():
+        fileFlags = sub_test.ReadFileWithComments(optsfile, False)
+    else:
+        fileFlags = []
+
+    # list of tuples of (goodfile|None, flags)
+    allFlags = []
+    for f in fileFlags:
+        splitline = f.split("#", 1)
+        if len(splitline) == 2:
+            flags = splitline[0].strip()
+            goodfile = splitline[1].strip()
+        else:
+            flags = splitline[0].strip()
+            goodfile = None
+        allFlags.append((goodfile, f"{globalFlags} {flags}"))
+    if not allFlags:
+        allFlags.append((None, globalFlags))
+
+    # because this is a prediff and we have no way of running the diff multiple
+    # times, if there are multiple sets of flags to run, just dump them all
+    # with '==={flags}===' as a header
+    # if there is only one set of flags, just dump the output
+    header = len(allFlags) > 1
+    with open(outfile, "a") as out:
+        for idx, (_, flags) in enumerate(allFlags):
+            output = run_chplcheck(file, flags, header=f"chplcheckopts {idx+1}" if header else None)
+            out.write(output)
+
+    # if there is a good-fixit file, try and run chplcheck with fixit
+    # currently the way we handle this is for each set of flags, we run --fixit.
+    # this is slightly unintuitive, but so far in practice we only specify one
+    # set of flags when testing fixits
+    def run_fixit(out, file, flags, suffix):
+        run_chplcheck(file, f"{flags} --fixit --fixit-suffix {suffix}")
+        if diff(good_fixit, f"{file}{suffix}"):
+            out.write(f"[Success matching fixit for {file.with_suffix('')}]\n")
+        else:
+            out.write(f"[Error matching fixit for {file.with_suffix('')}]\n")
+
+    good_fixit = file.with_suffix(".good-fixit")
+    if good_fixit.exists():
+        with open(outfile, "a") as out:
+            if len(allFlags) > 1:
+                for idx, (_, flags) in enumerate(allFlags):
+                    run_fixit(out, file, flags, f".fixed.{idx+1}")
+            else:
+                run_fixit(out, file, allFlags[0][1], ".fixed")
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as e:
+        print(f"[Error running chplcheck: {e}]", file=sys.stderr)
+        import traceback
+        print(traceback.format_exc(), file=sys.stderr)
+        sys.exit(1)

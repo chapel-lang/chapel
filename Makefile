@@ -213,7 +213,7 @@ chpl-cmake-module-files: FORCE
 	@cd compiler && $(MAKE) chpl-cmake-module-files
 
 lint-standard-modules: chplcheck FORCE
-	tools/chplcheck/chplcheck --skip-unstable \
+	tools/chplcheck/chplcheck --skip-unstable --no-skip-bundled-modules \
 		--internal-prefix "_" \
 		--internal-prefix "chpl_" \
 		--disable-rule ControlFlowParentheses \
