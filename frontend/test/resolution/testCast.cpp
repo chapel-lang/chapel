@@ -588,6 +588,36 @@ static void test47() {
   testBorrow("var c = new unmanaged C?();", true);
 }
 
+static void test48() {
+  // Mimics a situation found in CTypes, involving the casts for c_ptr(void)
+  // Technically these are ambiguous, but we avoid the cast entirely becase
+  // the src/dest types are the same.
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+  std::string program =
+    R"""(
+    record R {
+      type T;
+      var x : T;
+    }
+
+    operator :(x:R, type t:R(int)) {
+      return __primitive("cast", t, x);
+    }
+
+    operator :(x:R(int), type t:R) {
+      return __primitive("cast", t, x);
+    }
+
+    var r = new R(int);
+    var x = r:R(int);
+    )""";
+
+  auto xInit = resolveQualifiedTypeOfX(context, program);
+
+  assert(toString(xInit) == "R(int(64))");
+}
+
 int main() {
   test1();
   test2();
@@ -636,6 +666,7 @@ int main() {
   test45();
   test46();
   test47();
+  test48();
 
   return 0;
 }

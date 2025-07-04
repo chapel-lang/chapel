@@ -4256,6 +4256,12 @@ static bool resolveFnCallSpecial(Context* context,
     auto srcTy = srcQt.type();
     auto dstTy = dstQt.type();
 
+    if (!srcQt.isType() && srcTy == dstTy) {
+      // TODO: insert copy for unnecessary casts involving records
+      exprTypeOut = srcQt;
+      return true;
+    }
+
     auto targetParamGuess = Param::tryGuessParamTagFromType(dstQt.type());
     if (srcQt.isParam() && !targetParamGuess) {
       // We're casting a param value, but the destination type can't be

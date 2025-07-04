@@ -568,3 +568,9 @@ void testArrayMaterialize(Context* context, const char* prelude, const char* ite
 void testArrayCoerce(Context* context, const char* prelude, const char* typeExpr, const char* iterable, int expectedRank, const char* expectedStride, const char* expectedCopyInitFn) {
   testArrayAssign(context, prelude, typeExpr, iterable, expectedRank, expectedStride, AssociatedAction::INIT_OTHER, expectedCopyInitFn);
 }
+
+std::string toString(QualifiedType type) {
+  std::stringstream ss;
+  type.type()->stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
+  return ss.str();
+}
