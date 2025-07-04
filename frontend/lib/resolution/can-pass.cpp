@@ -1081,7 +1081,11 @@ CanPassResult CanPassResult::canPassScalar(Context* context,
     // 'AnyType' has special meaning elsewhere, so it doesn't count as
     // instantiation here.
     if (formalQT.kind() == QualifiedType::TYPE && !formalT->isAnyType()) {
-      return instantiate();
+      if (isTypeGeneric(context, formalQT)) {
+        return instantiate();
+      } else {
+        return passAsIs();
+      }
     }
 
     // otherwise we can pass as-is
