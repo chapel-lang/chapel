@@ -29,6 +29,7 @@ message(STATUS "CHPL_HOME: ${CHPL_HOME}")
 set(CHPL_PRINTCHPLENV "${CHPL_HOME}/util/printchplenv")
 set(CHPL_LLVM_PY "${CHPL_HOME}/util/chplenv/chpl_llvm.py")
 set(CHPL_HOME_UTILS "${CHPL_HOME}/util/chplenv/chpl_home_utils.py")
+set(CHPL_COMPILER_PY "${CHPL_HOME}/util/chplenv/chpl_compiler.py")
 
 # Function to execute Chapel environment commands
 execute_process(
@@ -54,22 +55,58 @@ function(get_chapel_env_var VAR_NAME OUTPUT_VAR)
 endfunction()
 
 get_chapel_env_var("CHPL_LLVM" CHPL_LLVM)
-get_chapel_env_var("CHPL_HOST_CC" CHPL_HOST_CC)
-get_chapel_env_var("CHPL_HOST_CXX" CHPL_HOST_CXX)
 get_chapel_env_var("CHPL_HOST_BIN_SUBDIR" CHPL_HOST_BIN_SUBDIR)
 get_chapel_env_var("CHPL_SANITIZE" CHPL_SANITIZE)
 get_chapel_env_var("CHPL_HOST_PLATFORM" CHPL_HOST_PLATFORM)
 
+execute_process(
+  COMMAND ${Python_EXECUTABLE} ${CHPL_COMPILER_PY} --cc --host --compiler-only
+  OUTPUT_VARIABLE CHPL_HOST_CC
+  RESULT_VARIABLE CHPL_HOST_CC_RESULT
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+if(NOT CHPL_HOST_CC_RESULT EQUAL 0)
+  message(FATAL_ERROR "Failed to get host C compiler")
+endif()
+execute_process(
+  COMMAND ${Python_EXECUTABLE} ${CHPL_COMPILER_PY} --cc --host --additional
+  OUTPUT_VARIABLE CHPL_HOST_CC_FLAGS
+  RESULT_VARIABLE CHPL_HOST_CC_FLAGS_RESULT
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+if(NOT CHPL_HOST_CC_FLAGS_RESULT EQUAL 0)
+  message(FATAL_ERROR "Failed to get host C++ compiler flags")
+endif()
+
+execute_process(
+  COMMAND ${Python_EXECUTABLE} ${CHPL_COMPILER_PY} --cxx --host --compiler-only
+  OUTPUT_VARIABLE CHPL_HOST_CXX
+  RESULT_VARIABLE CHPL_HOST_CXX_RESULT
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+if(NOT CHPL_HOST_CXX_RESULT EQUAL 0)
+  message(FATAL_ERROR "Failed to get host C++ compiler")
+endif()
+execute_process(
+  COMMAND ${Python_EXECUTABLE} ${CHPL_COMPILER_PY} --cxx --host --additional
+  OUTPUT_VARIABLE CHPL_HOST_CXX_FLAGS
+  RESULT_VARIABLE CHPL_HOST_CXX_FLAGS_RESULT
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+
 message(STATUS "CHPL_LLVM: ${CHPL_LLVM}")
-message(STATUS "CHPL_HOST_CC: ${CHPL_HOST_CC}")
-message(STATUS "CHPL_HOST_CXX: ${CHPL_HOST_CXX}")
+message(STATUS "CHPL_HOST_CC: ${CHPL_HOST_CC} ${CHPL_HOST_CC_FLAGS}")
+message(STATUS "CHPL_HOST_CXX: ${CHPL_HOST_CXX} ${CHPL_HOST_CXX_FLAGS}")
 message(STATUS "CHPL_HOST_BIN_SUBDIR: ${CHPL_HOST_BIN_SUBDIR}")
 
 if(CHPL_HOST_CC)
   set(CMAKE_C_COMPILER "${CHPL_HOST_CC}")
+  string(APPEND CMAKE_C_FLAGS " ${CHPL_HOST_CC_FLAGS}")
 endif()
 if(CHPL_HOST_CXX)
   set(CMAKE_CXX_COMPILER "${CHPL_HOST_CXX}")
+  string(APPEND CMAKE_CXX_FLAGS " ${CHPL_HOST_CXX_FLAGS}")
 endif()
 
 #
