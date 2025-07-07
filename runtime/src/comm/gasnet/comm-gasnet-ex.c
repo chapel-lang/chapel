@@ -29,6 +29,7 @@
 #include "chpl-comm-callbacks-internal.h"
 #include "chpl-comm-internal.h"
 #include "chpl-env.h"
+#include "chpl-env-gen.h"
 #include "chpl-exec.h"
 #include "chpl-mem.h"
 #include "chplsys.h"
@@ -1009,8 +1010,13 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
 //
 int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status) {
 
-  const char* lldb_server =
-    chpl_env_rt_get("LLDB_DEBUG_SERVER_PATH", "/usr/bin/lldb-server");
+  const char* lldb_server = chpl_env_rt_get("LLDB_DEBUG_SERVER_PATH",
+#ifdef CHPL_TARGET_PLATFORM_DARWIN
+    "/Library/Developer/CommandLineTools/Library/PrivateFrameworks/LLDB.framework/Resources/debugserver"
+#else
+    "/usr/bin/lldb-server"
+#endif
+  );
   int BASE_PORT = chpl_env_rt_get_int("DEBUG_SERVER_BASE_PORT", 5000);
   // before launching the runtime, sleep for just a little bit to allow the
   // parent to attach to the runtime process
@@ -1043,12 +1049,25 @@ int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status) {
     snprintf(pidStr, sizeof(pidStr), "%d", f);
 
     char* command;
+
+  // this is somewhat fragile, as a user could provide a different
+  // lldb_server path thats actually lldb-server on MacOS, but its unlikely
+  // (as of today, June 7th 2025, lldb-server segfaults on MacOS)
+#ifdef CHPL_TARGET_PLATFORM_DARWIN
+    command = chpl_glom_strings(5,
+      lldb_server,
+      " 127.0.0.1:",
+      portStr,
+      " --attach=", pidStr);
+    *status = chpl_invoke_using_system(command, "running debugserver", 0);
+#else
     command = chpl_glom_strings(5,
       lldb_server,
       " g :",
       portStr,
       " --attach ", pidStr);
-    *status = chpl_invoke_using_system(command, "running debugserver", 0);
+    *status = chpl_invoke_using_system(command, "running lldb-server", 0);
+#endif
     return 1;
   }
 }
