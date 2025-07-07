@@ -7,6 +7,7 @@ project(
   DESCRIPTION "Python bindings for Chapel's frontend library, Dyno"
 )
 
+# Development.SABIModule requires CMake 3.26 or higher
 find_package(Python REQUIRED COMPONENTS Interpreter Development.Module Development.SABIModule)
 
 # Detect Chapel environment
