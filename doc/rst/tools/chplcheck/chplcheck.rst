@@ -550,7 +550,7 @@ Any flag that starts with ``--`` can also be specified
 +------------------------------+-----------------------------------------------+
 | ``--disable-rule RULE_NAME`` | Disable a rule by name.                       |
 +------------------------------+-----------------------------------------------+
-| ``--add-rules FILE``         | Add custom rules from the specified file.     |
+| ``--add-rules FILE.py``      | Add custom rules from the specified file.     |
 |                              | This can be used multiple times to add        |
 |                              | multiple rule files.                          |
 +------------------------------+-----------------------------------------------+
