@@ -69,7 +69,7 @@ class RuleSettingAction(argparse.Action):
 
 
 def add_bool_flag(
-    parser: configargparse.ArgParser, name: str, dest: str, default: bool
+    parser: argparse.ArgParser, name: str, dest: str, default: bool
 ):
     parser.add_argument(f"--{name}", dest=dest, action="store_true")
     parser.add_argument(f"--no-{name}", dest=dest, action="store_false")
