@@ -141,22 +141,6 @@ else()
   set(CHPL_INSTALL_LIB_PATH "")
 endif()
 
-# Get LLVM flags
-set(LLVM_CXX_FLAGS "")
-if(CHPL_LLVM AND NOT CHPL_LLVM STREQUAL "none")
-  execute_process(
-    COMMAND ${Python_EXECUTABLE} ${CHPL_LLVM_PY} --host-cxxflags
-    OUTPUT_VARIABLE LLVM_CXX_FLAGS
-    RESULT_VARIABLE LLVM_FLAGS_RESULT
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-  )
-
-  if(NOT LLVM_FLAGS_RESULT EQUAL 0)
-    message(WARNING "Failed to get LLVM CXX flags")
-    set(LLVM_CXX_FLAGS "")
-  endif()
-endif()
-
 # Create the Python module
 file(GLOB_RECURSE CPP_SOURCES "src/*.cpp")
 python_add_library(chapel_core MODULE ${CPP_SOURCES} USE_SABI 3 WITH_SOABI )
@@ -168,11 +152,6 @@ set_target_properties(chapel_core PROPERTIES
   CXX_STANDARD_REQUIRED ON
 )
 
-# Add compile definitions
-if(CHPL_LLVM AND NOT CHPL_LLVM STREQUAL "none")
-  target_compile_definitions(chapel_core PRIVATE HAVE_LLVM)
-endif()
-
 # Add compile options
 target_compile_options(chapel_core PRIVATE
   -Wno-c99-designator
@@ -180,7 +159,21 @@ target_compile_options(chapel_core PRIVATE
   $<$<CONFIG:Debug>:-g>
 )
 
-# Parse and add LLVM flags
+# Add compile definitions for llvm
+if(CHPL_LLVM AND NOT CHPL_LLVM STREQUAL "none")
+  target_compile_definitions(chapel_core PRIVATE HAVE_LLVM)
+endif()
+set(LLVM_CXX_FLAGS "")
+execute_process(
+  COMMAND ${Python_EXECUTABLE} ${CHPL_LLVM_PY} --host-cxxflags
+  OUTPUT_VARIABLE LLVM_CXX_FLAGS
+  RESULT_VARIABLE LLVM_FLAGS_RESULT
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+if(NOT LLVM_FLAGS_RESULT EQUAL 0)
+  message(WARNING "Failed to get LLVM CXX flags")
+  set(LLVM_CXX_FLAGS "")
+endif()
 if(LLVM_CXX_FLAGS)
   separate_arguments(LLVM_FLAGS_LIST UNIX_COMMAND "${LLVM_CXX_FLAGS}")
   target_compile_options(chapel_core PRIVATE ${LLVM_FLAGS_LIST})
