@@ -275,12 +275,21 @@ def get_compiler_from_command(command):
     # the following adjustments are to handle a command like
     #    /path/to/gcc-10.exe --some-option
     # where we are looking for just the 'gcc' part.
+    # we also need to consider paths like `/usr/bin/aarch64-linux-gnu-gcc-10`
     first = command.split()[0]
     basename = os.path.basename(first)
-    name = basename.split('-')[0].strip()
-    name = name.split('.')[0].strip()
+    # strip off the dot first
+    name = basename.split('.')[0].strip()
+    name_components = name.split('-')
+    # find the last part of the name, keep searching for one thats not a number
+    last_component = None
+    for component in reversed(name_components):
+        last_component = component.strip()
+        if not last_component.isdigit():
+            break
+    names = (name_components[0], last_component)
     for tup in COMPILERS:
-        if name == tup[1] or name == tup[2]:
+        if tup[1] in names or tup[2] in names:
             return tup[0]
 
     # if it was not one of the above cases we don't know how to
