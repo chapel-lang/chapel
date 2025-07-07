@@ -68,6 +68,14 @@ class RuleSettingAction(argparse.Action):
         setattr(namespace, self.dest, setting_dict)
 
 
+def add_bool_flag(
+    parser: configargparse.ArgParser, name: str, dest: str, default: bool
+):
+    parser.add_argument(f"--{name}", dest=dest, action="store_true")
+    parser.add_argument(f"--no-{name}", dest=dest, action="store_false")
+    parser.set_defaults(**{dest: default})
+
+
 @dataclass
 class Config:
     """
@@ -107,18 +115,11 @@ class Config:
             default=False,
             help="Skip unstable code when linting",
         )
-        parser.add_argument(
-            f"--{prefix}skip-bundled-modules",
-            action="store_true",
-            dest="chplcheck_skip_bundled_modules",
-            default=True,
-            help="Skip standard modules when linting",
-        )
-        parser.add_argument(
-            f"--no-{prefix}skip-bundled-modules",
-            action="store_false",
-            dest="chplcheck_skip_bundled_modules",
-            help="Do not skip standard modules when linting",
+        add_bool_flag(
+            parser,
+            "skip-bundled-modules",
+            "chplcheck_skip_bundled_modules",
+            True,
         )
         parser.add_argument(
             f"--{prefix}skip",
