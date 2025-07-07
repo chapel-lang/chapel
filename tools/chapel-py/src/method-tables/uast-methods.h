@@ -272,6 +272,12 @@ CLASS_BEGIN(Include)
                bool, return node->isPrototype())
   PLAIN_GETTER(Include, visibility, "Get the visibility of this Include node",
                const char*, return Decl::visibilityToString(node->visibility()))
+  PLAIN_GETTER(Include, to_node, "Get the AST node that this Include node refers to",
+               Nilable<const chpl::uast::AstNode*>, return nodeOrNullFromToId(context, node))
+  PLAIN_GETTER(Include, name_location, "Get the location of the name in this Include node",
+               std::optional<chpl::Location>,
+               auto loc = chpl::parsing::locateIncludeNameWithAst(context, node);
+               return getValidLocation(loc))
 CLASS_END(Include)
 
 CLASS_BEGIN(Init)

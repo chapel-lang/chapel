@@ -558,6 +558,8 @@ class NodeAndRange:
             self.rng = location_to_range(self.node.field_location())
         elif isinstance(self.node, chapel.NamedDecl):
             self.rng = location_to_range(self.node.name_location())
+        elif isinstance(self.node, chapel.Include):
+            self.rng = location_to_range(self.node.name_location())
         else:
             self.rng = location_to_range(self.node.location())
 
@@ -819,7 +821,9 @@ class FileInfo:
         self.context.global_uses[uid].append(refs)
         return refs
 
-    def _note_reference(self, node: Union[chapel.Dot, chapel.Identifier]):
+    def _note_reference(
+        self, node: Union[chapel.Dot, chapel.Identifier, chapel.Include]
+    ):
         """
         Given a node that can refer to another node, note what it refers
         to in by updating the 'use' segment table and the list of uses.
@@ -876,6 +880,10 @@ class FileInfo:
 
     @enter
     def _enter_Dot(self, node: chapel.Dot):
+        self._note_reference(node)
+
+    @enter
+    def _enter_Include(self, node: chapel.Include):
         self._note_reference(node)
 
     @enter
