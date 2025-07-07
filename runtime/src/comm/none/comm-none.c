@@ -23,6 +23,7 @@
 #include "chpl-comm.h"
 #include "chpl-comm-internal.h"
 #include "chpl-comm-strd-xfer.h"
+#include "chpl-exec.h"
 #include "chplexit.h"
 #include "error.h"
 #include "chpl-mem.h"
@@ -43,20 +44,6 @@
 #include <assert.h>
 #include <unistd.h>
 
-// Helper functions
-
-static int mysystem(const char* command, const char* description,
-                    int ignorestatus) {
-  int status = system(command);
-
-  if (status == -1) {
-    chpl_error("system() fork failed", 0, CHPL_FILE_IDX_COMMAND_LINE);
-  } else if (status != 0 && !ignorestatus) {
-    chpl_error(description, 0, CHPL_FILE_IDX_COMMAND_LINE);
-  }
-
-  return status;
-}
 
 // Chapel interface
 chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
@@ -195,7 +182,7 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
       command = chpl_glom_strings(3, command, " ", argv[i]);
     }
   }
-  *status = mysystem(command, "running gdb", 0);
+  *status = chpl_invoke_using_system(command, "running gdb", 0);
 
   return 1;
 }
@@ -234,7 +221,7 @@ int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status) {
       command = chpl_glom_strings(3, command, " ", argv[i]);
     }
   }
-  *status = mysystem(command, "running lldb", 0);
+  *status = chpl_invoke_using_system(command, "running lldb", 0);
 
   return 1;
 }
