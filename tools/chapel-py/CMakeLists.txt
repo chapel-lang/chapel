@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.26)
+cmake_minimum_required(VERSION 3.20)
 
 project(
   ${SKBUILD_PROJECT_NAME}
@@ -7,7 +7,7 @@ project(
   DESCRIPTION "Python bindings for Chapel's frontend library, Dyno"
 )
 
-# Development.SABIModule requires CMake 3.26 or higher
+# Development.SABIModule requires CMake 3.26 or higher, but it is backported with scikit-build-core
 find_package(Python REQUIRED COMPONENTS Interpreter Development.Module Development.SABIModule)
 
 # Detect Chapel environment
@@ -16,6 +16,8 @@ message(STATUS "Detecting Chapel environment...")
 # Get Chapel home directory (3 levels up from this CMakeLists.txt)
 get_filename_component(CHPL_HOME "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
 message(STATUS "CHPL_HOME: ${CHPL_HOME}")
+
+set(SKBUILD_REQUIREMENTS_FILE "${CHPL_HOME}/third-party/chpl-venv/chapel-py-requirements.txt")
 
 # Set Chapel utility paths
 set(CHPL_PRINTCHPLENV "${CHPL_HOME}/util/printchplenv")
@@ -63,10 +65,10 @@ message(STATUS "CHPL_HOST_BIN_SUBDIR: ${CHPL_HOST_BIN_SUBDIR}")
 
 # Set compilers if specified by Chapel
 if(CHPL_HOST_CC)
-    set(CMAKE_C_COMPILER "${CHPL_HOST_CC}")
+  set(CMAKE_C_COMPILER "${CHPL_HOST_CC}")
 endif()
 if(CHPL_HOST_CXX)
-    set(CMAKE_CXX_COMPILER "${CHPL_HOST_CXX}")
+  set(CMAKE_CXX_COMPILER "${CHPL_HOST_CXX}")
 endif()
 
 # Chapel library path

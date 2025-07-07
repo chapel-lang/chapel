@@ -112,8 +112,7 @@ chapel-py-venv: FORCE $(CHPL_VENV_VIRTUALENV_DIR_OK)
 	CHPL_HOME=$(CHPL_MAKE_HOME) $(PIP) install --upgrade \
 	  $(CHPL_PIP_INSTALL_PARAMS) $(LOCAL_PIP_FLAGS) \
 	  --target $(CHPL_VENV_CHPL_FRONTEND_PY_DEPS) \
-	  $(CHPL_MAKE_HOME)/tools/chapel-py \
-	  -r $(CHPL_VENV_CHAPEL_PY_REQUIREMENTS_FILE)
+	  $(CHPL_MAKE_HOME)/tools/chapel-py
 	mkdir -p $(CHPL_MAKE_HOME)/tools/chapel-py/src/chapel/core
 	CHPL_HOME=$(CHPL_MAKE_HOME) bash \
 		$(CHPL_MAKE_HOME)/util/config/run-in-venv-with-python-bindings.bash \
