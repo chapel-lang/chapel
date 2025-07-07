@@ -26,12 +26,10 @@ All Chapel programs include :proc:`~IO.write`, :proc:`~IO.writeln` and
 :proc:`~IO.writef` by default. This allows for a simple implementation of a
 Hello World program:
 
-.. code-block:: chapel
-
- writeln("Hello, World!");
- // outputs
- // Hello, World!
-
+.. literalinclude:: ../../../../test/library/standard/ChapelIO/doc-examples/ChapelIOExamples.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_0
+   :end-before: STOP_EXAMPLE_0
  */
 pragma "module included by default"
 @unstable("The module name 'ChapelIO' is unstable.  If you want to use qualified naming on the symbols within it, please 'use' or 'import' the :mod:`IO` module")

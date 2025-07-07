@@ -183,21 +183,14 @@ module JSON {
         fields. For example, the following classes with values ``x=5`` and
         ``y=2``:
 
-        .. code-block:: chapel
-
-          class Parent {
-            var x : int;
-          }
-
-          class Child: Parent {
-            var y : int;
-          }
+        .. literalinclude:: ../../../../test/library/standard/JSON/doc-examples/JsonSerializeClass.chpl
+           :language: chapel
+           :start-after: START_EXAMPLE_0
+           :end-before: STOP_EXAMPLE_0
 
         would be serialized as:
 
-        .. code-block:: text
-
-          {"x":5, "y":2}
+        .. literalinclude:: ../../../../test/library/standard/JSON/doc-examples/JsonSerializeClass.good
 
         :arg writer: The ``fileWriter`` to be used when serializing. Must match
           the writer used to create current AggregateSerializer

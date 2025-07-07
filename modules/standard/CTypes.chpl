@@ -77,19 +77,17 @@ module CTypes {
     As with a Chapel class, a ``c_ptr`` can be tested non-nil simply
     by including it in an if statement conditional, like so:
 
-    .. code-block:: chapel
-
-      var x: c_ptr = c_ptrTo(...);
-      if x then do writeln("x is not nil");
-      if !x then do writeln("x is nil");
+    .. literalinclude:: ../../../../test/library/standard/CTypes/doc-examples/CptrExamples.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE_0
+       :end-before: STOP_EXAMPLE_0
 
     Additionally, a ``c_ptr`` can be output like so:
 
-    .. code-block:: chapel
-
-      var x: c_ptr = c_ptrTo(...);
-      writeln(x); // outputs nil or e.g. 0xabc123000000
-
+    .. literalinclude:: ../../../../test/library/standard/CTypes/doc-examples/CptrExamples.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE_1
+       :end-before: STOP_EXAMPLE_1
   */
 
   pragma "data class"
@@ -105,10 +103,10 @@ module CTypes {
     /*
        The type that this pointer points to, which can be queried like so:
 
-       .. code-block:: chapel
-
-         var x: c_ptr = c_ptrTo(...);
-         if x.eltType == c_int then do writeln("x is an int pointer");
+       .. literalinclude:: ../../../../test/library/standard/CTypes/doc-examples/CptrExamples.chpl
+          :language: chapel
+          :start-after: START_EXAMPLE_2
+          :end-before: STOP_EXAMPLE_2
     */
     type eltType;
     /* Retrieve the i'th element (zero based) from a pointer to an array.
@@ -153,10 +151,10 @@ module CTypes {
     /*
        The type that this pointer points to, which can be queried like so:
 
-       .. code-block:: chapel
-
-         var x: c_ptrConst = c_ptrToConst(...);
-         if x.eltType == c_int then do writeln("x is a const int pointer");
+       .. literalinclude:: ../../../../test/library/standard/CTypes/doc-examples/CptrExamples.chpl
+          :language: chapel
+          :start-after: START_EXAMPLE_3
+          :end-before: STOP_EXAMPLE_3
     */
     type eltType;
     /* Retrieve the i'th element (zero based) from a pointer to an array.
@@ -206,19 +204,19 @@ module CTypes {
     /*
        The array element type, which can be queried like so:
 
-       .. code-block:: chapel
-
-         var x: c_array = c_ptrToConst(...);
-         if x.eltType == c_int then do writeln("x is an array of ints");
+       .. literalinclude:: ../../../../test/library/standard/CTypes/doc-examples/CarrayExamples.chpl
+          :language: chapel
+          :start-after: START_EXAMPLE_0
+          :end-before: STOP_EXAMPLE_0
     */
     type eltType;
     /*
        The fixed number of elements, which can be queried like so:
 
-       .. code-block:: chapel
-
-         var x: c_array = c_ptrToConst(...);
-         writeln("x has ", x.size, " elements.");
+       .. literalinclude:: ../../../../test/library/standard/CTypes/doc-examples/CarrayExamples.chpl
+          :language: chapel
+          :start-after: START_EXAMPLE_1
+          :end-before: STOP_EXAMPLE_1
     */
     param size;
 
@@ -1220,12 +1218,10 @@ module CTypes {
 
     For example:
 
-    .. code-block:: chapel
-
-      var myString = "Hello!";
-      on differentLocale {
-        writef("%s", myString.localize().c_str());
-      }
+    .. literalinclude:: ../../../../test/library/standard/CTypes/doc-examples/CptrExamples.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE_0
+       :end-before: STOP_EXAMPLE_0
 
     .. warning::
 
@@ -1257,12 +1253,10 @@ module CTypes {
 
     For example:
 
-    .. code-block:: chapel
-
-        var myBytes = b"Hello!";
-        on differentLocale {
-          writef("%s", myBytes.localize().c_str());
-        }
+    .. literalinclude:: ../../../../test/library/standard/CTypes/doc-examples/CptrExamples.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE_1
+       :end-before: STOP_EXAMPLE_1
 
     .. warning::
 

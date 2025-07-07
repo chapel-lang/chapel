@@ -1,0 +1,5 @@
+0: CommDiagnosticsLittleExample1.chpl:11: remote executeOn, node 1
+1: CommDiagnosticsLittleExample1.chpl:12: remote cache-get, node 0, 8 bytes, commid 3
+1: CommDiagnosticsLittleExample1.chpl:12: remote get_nb, node 0, 64 bytes, commid 3
+1: CommDiagnosticsLittleExample1.chpl:12: remote cache-put, node 0, 8 bytes, commid 4
+1: :-1: remote put_nb, node 0, 8 bytes, commid -1
