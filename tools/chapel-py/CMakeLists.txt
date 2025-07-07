@@ -31,18 +31,16 @@ set(CHPL_LLVM_PY "${CHPL_HOME}/util/chplenv/chpl_llvm.py")
 set(CHPL_HOME_UTILS "${CHPL_HOME}/util/chplenv/chpl_home_utils.py")
 
 # Function to execute Chapel environment commands
+execute_process(
+  COMMAND ${CHPL_PRINTCHPLENV} --internal --all --anonymize --simple
+  OUTPUT_VARIABLE CHPL_ENV_OUTPUT
+  RESULT_VARIABLE CHPL_ENV_RESULT
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+if(NOT CHPL_ENV_RESULT EQUAL 0)
+  message(FATAL_ERROR "Failed to get Chapel environment variables")
+endif()
 function(get_chapel_env_var VAR_NAME OUTPUT_VAR)
-  execute_process(
-    COMMAND ${CHPL_PRINTCHPLENV} --internal --all --anonymize --simple
-    OUTPUT_VARIABLE CHPL_ENV_OUTPUT
-    RESULT_VARIABLE CHPL_ENV_RESULT
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-  )
-
-  if(NOT CHPL_ENV_RESULT EQUAL 0)
-    message(FATAL_ERROR "Failed to get Chapel environment variables")
-  endif()
-
   # Parse the output to find our variable
   string(REPLACE "\n" ";" CHPL_ENV_LINES "${CHPL_ENV_OUTPUT}")
   foreach(LINE ${CHPL_ENV_LINES})
@@ -51,7 +49,6 @@ function(get_chapel_env_var VAR_NAME OUTPUT_VAR)
       return()
     endif()
   endforeach()
-
   # Variable not found
   set(${OUTPUT_VAR} "" PARENT_SCOPE)
 endfunction()
