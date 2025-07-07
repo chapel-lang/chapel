@@ -1395,23 +1395,39 @@ class CLSConfig:
             args_for_setting_config_path=["--config", "-c"],
         )
 
-        chplcheck.config.add_bool_flag("resolver", "resolver", False)
+        chplcheck.config.add_bool_flag(
+            self.parser, "resolver", "resolver", False
+        )
         self.parser.add_argument(
             "--std-module-root", default="", help=configargparse.SUPPRESS
         )
         self.parser.add_argument(
             "--module-dir", "-M", action="append", default=[]
         )
-        chplcheck.config.add_bool_flag("type-inlays", "type_inlays", True)
-        chplcheck.config.add_bool_flag("param-inlays", "param_inlays", True)
-        chplcheck.config.add_bool_flag("literal-arg-inlays", "literal_arg_inlays", True)
-        chplcheck.config.add_bool_flag("dead-code", "dead_code", True)
-        chplcheck.config.add_bool_flag("evaluate-expressions", "eval_expressions", True)
-        chplcheck.config.add_bool_flag("show-instantiations", "show_instantiations", True)
+        chplcheck.config.add_bool_flag(
+            self.parser, "type-inlays", "type_inlays", True
+        )
+        chplcheck.config.add_bool_flag(
+            self.parser, "param-inlays", "param_inlays", True
+        )
+        chplcheck.config.add_bool_flag(
+            self.parser, "literal-arg-inlays", "literal_arg_inlays", True
+        )
+        chplcheck.config.add_bool_flag(
+            self.parser, "dead-code", "dead_code", True
+        )
+        chplcheck.config.add_bool_flag(
+            self.parser, "evaluate-expressions", "eval_expressions", True
+        )
+        chplcheck.config.add_bool_flag(
+            self.parser, "show-instantiations", "show_instantiations", True
+        )
         self.parser.add_argument("--end-markers", default="none")
         self.parser.add_argument("--end-marker-threshold", type=int, default=10)
 
-        chplcheck.config.add_bool_flag("chplcheck", "do_linting", False)
+        chplcheck.config.add_bool_flag(
+            self.parser, "chplcheck", "do_linting", False
+        )
         if chplcheck:
             chplcheck.config.Config.add_arguments(self.parser, "chplcheck-")
 
