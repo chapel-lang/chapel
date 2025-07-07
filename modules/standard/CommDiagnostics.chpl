@@ -36,20 +36,18 @@
   pairs of function calls that turn it on and off.  On-the-fly
   reporting across all locales is done like this:
 
-  .. code-block:: chapel
-
-    startVerboseComm();
-    // between start/stop calls, report comm ops initiated on any locale
-    stopVerboseComm();
+  .. literalinclude:: ../../../../test/library/standard/CommDiagnostics/doc-examples/CommDiagnosticsExamples.chpl
+     :language: chapel
+     :start-after: START_EXAMPLE_0
+     :end-before: STOP_EXAMPLE_0
 
   On-the-fly reporting for just the calling locale is similar.  Only
   the procedure names change:
 
-  .. code-block:: chapel
-
-    startVerboseCommHere();
-    // between start/stop calls, report comm ops initiated on this locale
-    stopVerboseCommHere();
+  .. literalinclude:: ../../../../test/library/standard/CommDiagnostics/doc-examples/CommDiagnosticsExamples.chpl
+     :language: chapel
+     :start-after: START_EXAMPLE_1
+     :end-before: STOP_EXAMPLE_1
 
   In either case, the output produced consists of a line written to
   ``stdout`` for each communication operation.  (Here ``stdout`` means
@@ -58,26 +56,15 @@
 
   Consider this little example program:
 
-  .. code-block:: chapel
-
-    use CommDiagnostics;
-    proc main() {
-      startVerboseComm();
-      var x: int = 1;
-      on Locales(1) {     // should execute_on a blocking task onto locale 1
-        x = x + 1;        // should invoke a remote put and a remote get
-      }
-      stopVerboseComm();
-    }
+  .. literalinclude:: ../../../../test/library/standard/CommDiagnostics/doc-examples/CommDiagnosticsLittleExample1.chpl
+     :language: chapel
+     :start-after: START_EXAMPLE_0
+     :end-before: STOP_EXAMPLE_0
 
   Executing this on two locales with the ``-nl 2`` command line
   option results in the following output:
 
-  .. code-block:: bash
-
-    0: remote task created on 1
-    1: t.chpl:6: remote get from 0, 8 bytes
-    1: t.chpl:6: remote put to 0, 8 bytes
+  .. literalinclude:: ../../../../test/library/standard/CommDiagnostics/doc-examples/CommDiagnosticsLittleExample1.good
 
   The initial number refers to the locale reporting the communication
   event.  The file name and line number point to the place in the
@@ -92,28 +79,18 @@
   internal counters have to be reset before counting is turned on.
   Counting across all locales is done like this:
 
-  .. code-block:: chapel
-
-    // (optional) if we counted previously, reset the counters to zero
-    resetCommDiagnostics();
-    startCommDiagnostics();
-    // between start/stop calls, count comm ops initiated on any locale
-    stopCommDiagnostics();
-    // retrieve the counts and report the results
-    writeln(getCommDiagnostics());
+  .. literalinclude:: ../../../../test/library/standard/CommDiagnostics/doc-examples/CommDiagnosticsExamples.chpl
+     :language: chapel
+     :start-after: START_EXAMPLE_2
+     :end-before: STOP_EXAMPLE_2
 
   Counting on just the calling locale is similar.  Just as for
   on-the-fly reporting, only the procedure names change:
 
-  .. code-block:: chapel
-
-    // (optional) if we counted previously, reset the counters to zero
-    resetCommDiagnosticsHere();
-    startCommDiagnosticsHere();
-    // between start/stop calls, count comm ops initiated on this locale
-    stopCommDiagnosticsHere();
-    // retrieve the counts and report the results
-    writeln(getCommDiagnosticsHere());
+  .. literalinclude:: ../../../../test/library/standard/CommDiagnostics/doc-examples/CommDiagnosticsExamples.chpl
+     :language: chapel
+     :start-after: START_EXAMPLE_3
+     :end-before: STOP_EXAMPLE_3
 
   The optional call to reset the counters is only needed when a program
   collects counts more than once.  In this case, the counters have to
@@ -129,25 +106,15 @@
 
   Consider this little example program:
 
-  .. code-block:: chapel
-
-    use CommDiagnostics;
-    proc main() {
-      startCommDiagnostics();
-      var x: int = 1;
-      on Locales(1) {     // should execute_on a blocking task onto locale 1
-        x = x + 1;        // should invoke a remote put and a remote get
-      }
-      stopCommDiagnostics();
-      writeln(getCommDiagnostics());
-    }
+  .. literalinclude:: ../../../../test/library/standard/CommDiagnostics/doc-examples/CommDiagnosticsLittleExample2.chpl
+     :language: chapel
+     :start-after: START_EXAMPLE_0
+     :end-before: STOP_EXAMPLE_0
 
   Executing this on two locales with the ``-nl 2`` command line
   option results in the following output:
 
-  .. code-block:: bash
-
-    (execute_on = 1) (get = 1, put = 1)
+  .. literalinclude:: ../../../../test/library/standard/CommDiagnostics/doc-examples/CommDiagnosticsLittleExample2.good
 
   The first parenthesized group contains the counts for locale 0, and
   the second contains the counts for locale 1.  So, for the
