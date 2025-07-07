@@ -1,0 +1,41 @@
+[build-system]
+requires = ["scikit-build-core>=0.3.3"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "chapel"
+version = "0.1"
+description = "Python bindings for Chapel's frontend library"
+readme = "README.md"
+license = {text = "Apache-2.0"}
+maintainers = [
+  {name = "Chapel Team"},
+]
+classifiers = [
+  "License :: OSI Approved :: Apache Software License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+]
+keywords = ["chapel", "compiler", "frontend", "dyno"]
+requires-python = ">=3.9"
+dependencies = []
+
+[project.urls]
+Homepage = "https://chapel-lang.org"
+Documentation = "https://chapel-lang.org/docs/tools/chapel-py/chapel-py.html"
+Repository = "https://github.com/chapel-lang/chapel"
+"Bug Tracker" = "https://github.com/chapel-lang/chapel/issues"
+
+[tool.scikit-build]
+wheel.expand-macos-universal-tags = true
+minimum-version = "build-system.requires"
+build-dir = "./build/{wheel_tag}"
+cmake.args = []
+cmake.build-type = "Release"
+install.components = ["python"]
+cmake.source-dir = "."
