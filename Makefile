@@ -47,9 +47,6 @@
 #
 MAKEFLAGS = --no-print-directory
 
-MODULES_TO_LINT = \
-	$(shell find $(CHPL_MAKE_HOME)/modules/dists -name '*.chpl')
-
 export CHPL_MAKE_HOME=$(shell pwd)
 export CHPL_MAKE_PYTHON := $(shell $(CHPL_MAKE_HOME)/util/config/find-python.sh)
 
@@ -211,15 +208,6 @@ chpl-language-server: frontend-shared FORCE
 chpl-cmake-module-files: FORCE
 	@echo "Generating CMake module files..."
 	@cd compiler && $(MAKE) chpl-cmake-module-files
-
-lint-standard-modules: chplcheck FORCE
-	tools/chplcheck/chplcheck --skip-unstable --no-skip-bundled-modules \
-		--internal-prefix "_" \
-		--internal-prefix "chpl_" \
-		--disable-rule ControlFlowParentheses \
-		--disable-rule UnusedFormal \
-		--disable-rule LineLength \
-		$(MODULES_TO_LINT)
 
 compile-util-python: FORCE
 	@if $(CHPL_MAKE_PYTHON) -m compileall -h > /dev/null 2>&1 ; then \
