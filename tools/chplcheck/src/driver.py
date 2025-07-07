@@ -20,7 +20,7 @@
 import functools
 import itertools
 from typing import Any, Callable, Iterator, List, Optional, Tuple, Union
-import os, fnmatch
+import os, fnmatch, pathlib
 
 import chapel
 from fixits import Fixit
@@ -130,20 +130,21 @@ class LintDriver:
         Check if a node should be skipped based on its path.
         """
         path = node if isinstance(node, str) else node.location().path()
-        path = os.path.abspath(path)
+        path = pathlib.Path(path).absolute()
 
-        if self.config.skip_bundled and context.is_bundled_path(path):
+        if self.config.skip_bundled and context.is_bundled_path(str(path)):
             return True
         elif len(self.config.skip_files) > 0:
-            for skip_pattern in self.config.skip_files:
-                abs_skip_pattern = os.path.abspath(skip_pattern)
+            skip_files = [pathlib.Path(f) for f in self.config.skip_files]
+            for skip_pattern in skip_files:
+                abs_skip_pattern = skip_pattern.absolute()
                 return (
                     (
                         os.path.exists(skip_pattern)
                         and os.path.samefile(skip_pattern, path)
                     )
                     or os.path.commonprefix([abs_skip_pattern, path])
-                    == abs_skip_pattern
+                    == str(abs_skip_pattern)
                     or fnmatch.fnmatch(path, skip_pattern)
                 )
         return False
