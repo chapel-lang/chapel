@@ -68,6 +68,14 @@ class RuleSettingAction(argparse.Action):
         setattr(namespace, self.dest, setting_dict)
 
 
+def add_bool_flag(
+    parser: argparse.ArgumentParser, name: str, dest: str, default: bool
+):
+    parser.add_argument(f"--{name}", dest=dest, action="store_true")
+    parser.add_argument(f"--no-{name}", dest=dest, action="store_false")
+    parser.set_defaults(**{dest: default})
+
+
 @dataclass
 class Config:
     """
@@ -77,6 +85,8 @@ class Config:
     disabled_rules: List[str]
     enabled_rules: List[str]
     skip_unstable: bool
+    skip_bundled: bool
+    skip_files: List[str]
     internal_prefixes: List[str]
     check_internal_prefixes: bool
     add_rules: List[str]
@@ -103,7 +113,20 @@ class Config:
             action="store_true",
             dest="chplcheck_skip_unstable",
             default=False,
-            help="Skip unstable rules when linting",
+            help="Skip unstable code when linting",
+        )
+        add_bool_flag(
+            parser,
+            "skip-bundled-modules",
+            "chplcheck_skip_bundled_modules",
+            True,
+        )
+        parser.add_argument(
+            f"--{prefix}skip",
+            action="append",
+            dest="chplcheck_skip_files",
+            default=[],
+            help="Skip a file when linting. Can be used multiple times. Accepts glob patterns.",
         )
         parser.add_argument(
             f"--{prefix}internal-prefix",
@@ -141,6 +164,8 @@ class Config:
             disabled_rules=args["chplcheck_disabled_rules"],
             enabled_rules=args["chplcheck_enabled_rules"],
             skip_unstable=args["chplcheck_skip_unstable"],
+            skip_bundled=args["chplcheck_skip_bundled_modules"],
+            skip_files=args["chplcheck_skip_files"],
             internal_prefixes=args["chplcheck_internal_prefixes"],
             check_internal_prefixes=args["chplcheck_check_internal_prefixes"],
             add_rules=args["chplcheck_add_rules"],
