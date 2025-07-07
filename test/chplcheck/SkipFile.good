@@ -7,3 +7,4 @@ SkipFile.chpl:2: node violates rule UnusedFormal
 === chplcheckopts 3 ===
 === chplcheckopts 4 ===
 === chplcheckopts 5 ===
+=== chplcheckopts 6 ===

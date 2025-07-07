@@ -3,3 +3,4 @@
 --skip SkipFile.chpl
 --skip '*.chpl'
 --skip ./
+--skip '**/*.chpl'
