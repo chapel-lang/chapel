@@ -323,6 +323,8 @@ struct BranchSensitiveVisitor {
       // don't propagate return/throw etc. out of a loop, because we can't
       // reason about its dynamic behavior. The exception are 'Param' loops.
       return;
+    } else if (ast->isFunction()) {
+      return;
     }
     sequenceWithParentFrame(parentFrame, currentFrame()->controlFlowInfo);
   }
