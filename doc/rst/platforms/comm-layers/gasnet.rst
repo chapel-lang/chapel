@@ -121,7 +121,7 @@ running your Chapel program:
 Using Chapel in this way will partition the machine's resources into
 multiple locales.
 
-The ``smp`` conduit is designed for shared-memory execution is very similar to
+The ``smp`` conduit is designed for shared-memory execution and is very similar to
 :ref:`readme-colocale`. Notably, when specifying the number of locales it the following are equivalent
 
 .. code-block:: bash
