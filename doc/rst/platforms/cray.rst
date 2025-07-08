@@ -376,7 +376,7 @@ The native ugni communication layer is the default on Cray XC systems. See
 :ref:`readme-ugni` for more information on using the ugni communication layer.
 
 
-gasnet Communication Layer
+GASNet Communication Layer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The GASNet-based communication layer discussed in the
@@ -394,11 +394,11 @@ if it doesn't a different size can be specified, as discussed in the
 following section.
 
 
-gasnet Communication Layer and the Heap
+GASNet Communication Layer and the Heap
 _______________________________________
 
 In contrast to the dynamic heap extension available in the ugni comm
-layer, when the gasnet comm layer is used with a native substrate for
+layer, when the GASNet comm layer is used with a native substrate for
 higher network performance, the runtime must know up front the maximum
 size the heap will grow to during execution.
 
