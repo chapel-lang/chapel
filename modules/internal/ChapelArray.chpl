@@ -1985,12 +1985,10 @@ module ChapelArray {
     return result;
   }
 
-  // How to cast arrays to strings
+  // catch-all to avoid promotion
   @chpldoc.nodoc
-  @deprecated(notes="casting arrays to string is deprecated; please use 'try! \"%?\".format()' from IO.FormattedIO instead")
   operator :(x: [], type t:string) {
-    import IO.FormattedIO.string;
-    return try! "%?".format(x);
+    compilerError("array casts to string are not supported");
   }
 
   pragma "last resort"
@@ -2739,26 +2737,11 @@ module ChapelArray {
       e = b;
   }
 
-  // required to prevent deprecation warnings being related to internal modules
-  @chpldoc.nodoc
-  @deprecated(notes="Direct assignment to 'sync' variables is deprecated; apply a 'write??()' method to modify one")
-  operator =(ref a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
-    forall e in a do
-      e = b;
-  }
-
   //
   // op= overloads for array/scalar pairs
   //
   @chpldoc.nodoc
   operator +=(ref a: [], b: _desync(a.eltType)) {
-    forall e in a do
-      e += b;
-  }
-  // required to prevent deprecation warnings being related to internal modules
-  @chpldoc.nodoc
-  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
-  operator +=(ref a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
     forall e in a do
       e += b;
   }
@@ -2768,23 +2751,9 @@ module ChapelArray {
     forall e in a do
       e -= b;
   }
-  // required to prevent deprecation warnings being related to internal modules
-  @chpldoc.nodoc
-  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
-  operator -=(ref a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
-    forall e in a do
-      e -= b;
-  }
 
   @chpldoc.nodoc
   operator *=(ref a: [], b: _desync(a.eltType)) {
-    forall e in a do
-      e *= b;
-  }
-  // required to prevent deprecation warnings being related to internal modules
-  @chpldoc.nodoc
-  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
-  operator *=(ref a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
     forall e in a do
       e *= b;
   }
@@ -2794,23 +2763,9 @@ module ChapelArray {
     forall e in a do
       e /= b;
   }
-  // required to prevent deprecation warnings being related to internal modules
-  @chpldoc.nodoc
-  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
-  operator /=(ref a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
-    forall e in a do
-      e /= b;
-  }
 
   @chpldoc.nodoc
   operator %=(ref a: [], b: _desync(a.eltType)) {
-    forall e in a do
-      e %= b;
-  }
-  // required to prevent deprecation warnings being related to internal modules
-  @chpldoc.nodoc
-  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
-  operator %=(ref a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
     forall e in a do
       e %= b;
   }
@@ -2820,23 +2775,9 @@ module ChapelArray {
     forall e in a do
       e **= b;
   }
-  // required to prevent deprecation warnings being related to internal modules
-  @chpldoc.nodoc
-  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
-  operator **=(ref a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
-    forall e in a do
-      e **= b;
-  }
 
   @chpldoc.nodoc
   operator &=(ref a: [], b: _desync(a.eltType)) {
-    forall e in a do
-      e &= b;
-  }
-  // required to prevent deprecation warnings being related to internal modules
-  @chpldoc.nodoc
-  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
-  operator &=(ref a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
     forall e in a do
       e &= b;
   }
@@ -2846,23 +2787,9 @@ module ChapelArray {
     forall e in a do
       e |= b;
   }
-  // required to prevent deprecation warnings being related to internal modules
-  @chpldoc.nodoc
-  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
-  operator |=(ref a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
-    forall e in a do
-      e |= b;
-  }
 
   @chpldoc.nodoc
   operator ^=(ref a: [], b: _desync(a.eltType)) {
-    forall e in a do
-      e ^= b;
-  }
-  // required to prevent deprecation warnings being related to internal modules
-  @chpldoc.nodoc
-  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
-  operator ^=(ref a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
     forall e in a do
       e ^= b;
   }
@@ -2872,23 +2799,9 @@ module ChapelArray {
     forall e in a do
       e >>= b;
   }
-  // required to prevent deprecation warnings being related to internal modules
-  @chpldoc.nodoc
-  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
-  operator >>=(ref a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
-    forall e in a do
-      e >>= b;
-  }
 
   @chpldoc.nodoc
   operator <<=(ref a: [], b: _desync(a.eltType)) {
-    forall e in a do
-      e <<= b;
-  }
-  // required to prevent deprecation warnings being related to internal modules
-  @chpldoc.nodoc
-  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
-  operator <<=(ref a: [], b: _desync(a.eltType)) where isSyncType(a.eltType) {
     forall e in a do
       e <<= b;
   }
