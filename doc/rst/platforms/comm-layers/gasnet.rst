@@ -130,7 +130,8 @@ The ``smp`` conduit is designed for shared-memory execution is very similar to
    ./myprogram -nl 1x4
    ./myprogram -nl 4x1
 
-All of these will result in 4 locales partitioning a single node/machine's resources.
+All of these will result in 4 locales running on a single node/machine,
+partitioning the resources of that node between them.
 
 .. _readme-gasnet-emulating-multilocale:
 
