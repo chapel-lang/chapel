@@ -100,23 +100,17 @@ on a user-defined data type to define how that type is deserialized from a
 ``fileReader`` or serialized to a ``fileWriter``. The method signatures for
 non-class types are:
 
-.. code-block:: chapel
-
-   proc T.serialize(writer: fileWriter(locking=false, ?),
-                    ref serializer: ?st) throws
-
-   proc ref T.deserialize(reader: fileReader(locking=false, ?),
-                          ref deserializer: ?dt) throws
+.. literalinclude:: ../../../../test/library/standard/IO/doc-examples/example_de-serialize_methods.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE_1
+ :end-before: STOP_EXAMPLE_1
 
 The signatures for classes are slightly different:
 
-.. code-block:: chapel
-
-   override proc T.serialize(writer: fileWriter(locking=false, ?),
-                             ref serializer: ?st) throws
-
-   override proc T.deserialize(reader: fileReader(locking=false, ?),
-                               ref deserializer: ?dt) throws
+.. literalinclude:: ../../../../test/library/standard/IO/doc-examples/example_de-serialize_methods.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE_2
+ :end-before: STOP_EXAMPLE_2
 
 The ``serializer`` and ``deserializer`` arguments must satisfy the
 :ref:`Serializer API<io-serializer-API>` and the
@@ -2484,7 +2478,7 @@ record defaultSerializer {
     parentheses. For example, the tuple literal ``(1, 2, 3)`` would be
     serialized as:
 
-    .. code-block::
+    .. code-block:: text
 
       (1, 2, 3)
 
@@ -9773,16 +9767,10 @@ functions take in a format string and some arguments. The :proc:`string.format`
 method is also available and is loosely equivalent to C's 'sprintf'. For
 example, one might do:
 
-.. code-block:: chapel
-
-  writef("My favorite %s is %i\n", "number", 7);
-
-  var s:string = "My favorite %s is %i".format("number", 7);
-  writeln(s);
-
-  // prints:
-  // My favorite number is 7
-  // My favorite number is 7
+.. literalinclude:: ../../../../../test/library/standard/IO/doc-examples/FormattedIO/example_string_format.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE
+ :end-before: STOP_EXAMPLE
 
 The following sections offer a tour through the conversions to illustrate the
 common cases. A more precise definition follows in the
@@ -9843,29 +9831,19 @@ In both conversions above, an imaginary argument gets an 'i' afterwards
 and the entire expression is padded out to the width of ##### digits.
 For example:
 
-.. code-block:: chapel
-
-  writef("|%{#####}|\n", 2.0i);
-       // outputs:
-       //   |   2i|
-
-  writef("|%{#####.#}|\n", 2.0i);
-       // outputs:
-       //   |   2.0i|
+.. literalinclude:: ../../../../../test/library/standard/IO/doc-examples/FormattedIO/example_generic_numeric_conversions.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE_1
+ :end-before: STOP_EXAMPLE_1
 
 Complex arguments are printed in the format a + bi, where each of a and b is
 rounded individually as if printed under that conversion on its own. Then, the
 formatted complex number is padded to the requested size. For example:
 
-.. code-block:: chapel
-
-  writef("|%{#########}|\n", 1.0+2.0i);
-       // outputs:
-       //   |   1 + 2i|
-
-  writef("|%{#########.#}|\n", 1.0+2.0i);
-       // outputs:
-       //   | 1.0 + 2.0i|
+.. literalinclude:: ../../../../../test/library/standard/IO/doc-examples/FormattedIO/example_generic_numeric_conversions.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE_2
+ :end-before: STOP_EXAMPLE_2
 
 See :ref:`about-io-formatted-pound-details` for more details
 on this conversion type.
@@ -10071,22 +10049,10 @@ General Conversion
 
   For example, read and write a record in JSON format:
 
-  .. code-block:: chapel
-
-        use IO, JSON;
-
-        record R {
-          // fields...
-        }
-
-        var f = open("data.json", ioMode.cwr),
-            r: R;
-
-        // write an 'R' in JSON format
-        f.writer(serializer = new jsonSerializer()).writef("%?", new R(/* ... */));
-
-        // read into an 'R' from JSON format
-        f.reader(deserializer = new jsonDeserializer()).readf("%?", r);
+  .. literalinclude:: ../../../../../test/library/standard/IO/doc-examples/FormattedIO/example_read_write_json.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE
+   :end-before: STOP_EXAMPLE
 
 Note About Whitespace
 +++++++++++++++++++++
@@ -10147,22 +10113,20 @@ digits to use when printing a floating-point number by using the # symbol to
 stand for digits. The fractional portion of the number will be rounded
 appropriately and extra space will be made if the integer portion is too small:
 
-.. code-block:: chapel
-
-  writef("n:%{###.###}\n", 1.2349);
-       // outputs:
-       // n:  1.235
+.. literalinclude:: ../../../../../test/library/standard/IO/doc-examples/FormattedIO/example_hashtag_specifiers.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE_1
+ :end-before: STOP_EXAMPLE_1
 
 This syntax also works for numbers without a decimal point by rounding them
 appropriately.
 
 A # specifier may start with a ``.``.
 
-.. code-block:: chapel
-
-  writef("%{.##}\n", 0.777);
-       // outputs:
-       //  0.78
+.. literalinclude:: ../../../../../test/library/standard/IO/doc-examples/FormattedIO/example_hashtag_specifiers.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE_2
+ :end-before: STOP_EXAMPLE_2
 
 % Specifiers
 ++++++++++++
@@ -10321,69 +10285,30 @@ Going through each section for text conversions:
 Formatted I/O Examples
 ++++++++++++++++++++++
 
-.. code-block:: chapel
+.. literalinclude:: ../../../../../test/library/standard/IO/doc-examples/FormattedIO/example_formatted_io_1.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE
+ :end-before: STOP_EXAMPLE
 
-  writef("%5i %5s %5r\n", 1, "test", 6.34);
-       // outputs:
-       //    1  test  6.34
+.. literalinclude:: ../../../../../test/library/standard/IO/doc-examples/FormattedIO/example_formatted_io_2.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE
+ :end-before: STOP_EXAMPLE
 
-  writef("%2.4z\n", 43.291 + 279.112i);
-       // outputs:
-       // 43.29 + 279.1i
+.. literalinclude:: ../../../../../test/library/standard/IO/doc-examples/FormattedIO/example_formatted_io_3.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE
+ :end-before: STOP_EXAMPLE
 
-  writef('%"S\n', "test \"\" \'\' !");
-       // outputs:
-       // "test \"\" '' !"
-  writef("%'S\n", "test \"\" \'\' !");
-       // outputs:
-       // 'test "" \'\' !'
-  writef("%{(S)}\n", "test ()", "(", ")");
-       // outputs:
-       // (test (\))
+.. literalinclude:: ../../../../../test/library/standard/IO/doc-examples/FormattedIO/example_formatted_io_4.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE
+ :end-before: STOP_EXAMPLE
 
-
-  writef("|%40s|\n", "test");
-  writef("|%<40s|\n", "test");
-  writef("|%^40s|\n", "test");
-  writef("|%>40s|\n", "test")
-       // outputs:
-       // |                                    test|
-       // |test                                    |
-       // |                  test                  |
-       // |                                    test|
-
-  writef("123456\n");
-  writef("%6.6'S\n", "a");
-  writef("%6.6'S\n", "abcdefg");
-  writef("%.3'S\n", "a");
-  writef("%.3'S\n", "abcd");
-       // outputs:
-       // 123456
-       //    'a'
-       // 'a'...
-       // 'a'
-       // ''...
-
-
-  var s:string;
-  var got = readf(" %c", s);
-  // if the input is " a", "\na", "  a", etc, s will contain "a"
-  // if the input is "b", got will be false and s will contain ""
-
-  var s:string;
-  var got = readf("\n%c", s);
-  // if the input is "\na", or " \na", s will contain "a"
-  // if the input is "b", got will be false and s will be ""
-
-  var got = readf("%/a+/");
-  // if the input is "a" or "aa" (and so on), got will return true
-  // if the input is "c" got will be false
-
-  var s:string;
-  var got = readf("%/a(b+)/", s);
-  // if the input is "c" got will be false and s will be ""
-  // if the input is "ab", got will be true and s will be "b"
-  // if the input is "abb", got will be true and s will be "bb"
+.. literalinclude:: ../../../../../test/library/standard/IO/doc-examples/FormattedIO/example_formatted_io_5.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE
+ :end-before: STOP_EXAMPLE
 
 FormattedIO Functions and Types
 -------------------------------
@@ -10394,7 +10319,6 @@ module FormattedIO {
   use CTypes;
   use OS.POSIX;
   use OS;
-//use IO;
 
 // ---------------------------------------------------------------
 // ---------------------------------------------------------------
