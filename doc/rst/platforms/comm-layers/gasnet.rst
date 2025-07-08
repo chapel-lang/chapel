@@ -162,6 +162,8 @@ on a single machine with the following environment variable settings:
 See the documentation for the :ref:`UDP conduit <using-udp>` for more details on
 what these environment variables do.
 
+.. _readme-udp-vs-smp:
+
 When should I use ``CHPL_COMM_SUBSTRATE=udp`` vs ``CHPL_COMM_SUBSTRATE=smp``?
 *****************************************************************************
 
@@ -169,10 +171,11 @@ While both the ``udp`` and ``smp`` conduits can be used to run multilocale
 Chapel programs on a single node or shared memory machine (e.g. laptops or
 workstations), there are a few key differences:
 
-* ``udp`` emulates multiple locales by oversubscribing the machine's resources,
-  so each locale is sharing the same resources. ``smp`` creates multiple
-  co-locales which partition the machine's resources between them, so each
-  locale has its own dedicated resources.
+* ``udp`` emulates multiple locales by :ref:`oversubscribing
+  <oversubscribed-execution>` the machine's resources, so each locale is
+  sharing the same resources. ``smp`` creates multiple co-locales which
+  partition the machine's resources between them, so each locale has its own
+  dedicated resources.
 
 * ``udp`` primarily implements communication between locales over the network,
   so all traffic is routed through the network stack. ``smp`` uses shared
