@@ -63,6 +63,24 @@ static bool isNameOfCompilerGeneratedMethod(UniqueString name) {
   return false;
 }
 
+// do not look outside the defining module
+static const LookupConfig IN_SCOPE_CONFIG = LOOKUP_DECLS | LOOKUP_PARENTS | LOOKUP_METHODS;
+
+static MatchingIdsWithName getMatchingIdsInInternalModule(Context* context,
+                                                          const char* modName,
+                                                          UniqueString name) {
+  auto mod =
+    parsing::getToplevelModule(context,
+                               UniqueString::get(context, modName));
+
+  if (!mod) return MatchingIdsWithName();
+
+  return lookupNameInScope(context, scopeForModule(context, mod->id()),
+                           /* methodLookupHelper */ nullptr,
+                           /* receiverScopeHelper */ nullptr,
+                           name, IN_SCOPE_CONFIG);
+}
+
 static MatchingIdsWithName getMatchingIdsInDefiningScope(Context* context,
                                                          const Type* type,
                                                          UniqueString name) {
@@ -79,27 +97,20 @@ static MatchingIdsWithName getMatchingIdsInDefiningScope(Context* context,
   // there is no defining scope
   if (!scopeForReceiverType) return {};
 
-  // do not look outside the defining module
-  const LookupConfig config = LOOKUP_DECLS | LOOKUP_PARENTS | LOOKUP_METHODS;
-
   auto ids = lookupNameInScope(context, scopeForReceiverType,
                                /* methodLookupHelper */ nullptr,
                                /* receiverScopeHelper */ nullptr,
-                               name, config);
+                               name, IN_SCOPE_CONFIG);
 
   // this ought to be solved by interfaces, but today it isn't. As a workaround
   // for some standard types having their (de)serialize methods defined in
-  // ChapelIO, search that module too.
-  if (ids.numIds() == 0 && isDeSerializeMethod(name)) {
-    auto chapelIo =
-      parsing::getToplevelModule(context,
-                                 UniqueString::get(context, "ChapelIO"));
-    if (!chapelIo) return ids;
-
-    ids = lookupNameInScope(context, scopeForModule(context, chapelIo->id()),
-                            /* methodLookupHelper */ nullptr,
-                            /* receiverScopeHelper */ nullptr,
-                            name, config);
+  // ChapelIO, search that module too. Same deal with hash/ChapelHashing.
+  if (ids.numIds() == 0) {
+    if (isDeSerializeMethod(name)) {
+      ids = getMatchingIdsInInternalModule(context, "ChapelIO", name);
+    } else if (name == USTR("hash")) {
+      ids = getMatchingIdsInInternalModule(context, "ChapelHashing", name);
+    }
   }
 
   return ids;
