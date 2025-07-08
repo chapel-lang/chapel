@@ -1,6 +1,8 @@
 //
 // THIS TEST CASE IS AUTO-INCLUDED IN THE DOCUMENTATION
 //
+use Subprocess;
+
 /* START_EXAMPLE_1 */
 use IO;
 
@@ -62,3 +64,6 @@ try {
   // details about errors that they can throw.
 }
 /* STOP_EXAMPLE_2 */
+
+// delete test file
+var sub = spawn(["rm", "test-file.txt"]);

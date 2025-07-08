@@ -1,6 +1,17 @@
 //
 // THIS TEST CASE IS AUTO-INCLUDED IN THE DOCUMENTATION
 //
+use Subprocess;
+
+// prepare a file for the test
+var myFile = open("test.txt", ioMode.cw);
+var myFileWriter = myFile.writer(locking=false);
+
+myFileWriter.writeln("this is a test");
+
+myFileWriter.close();
+myFile.close();
+
 /* START_EXAMPLE */
 use IO;
 
@@ -25,3 +36,6 @@ try {
   writeln("something else went wrong...");
 }
 /* STOP_EXAMPLE */
+
+// delete test file
+var sub = spawn(["rm", "test.txt"]);
