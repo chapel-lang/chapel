@@ -42,7 +42,7 @@ ofi
     OpenFabrics Interface (libfabric) for Slingshot and Omni-Path.
 ucx
     Unified Communication X for InfiniBand. Chapel does not actively support this
-    substrate and it's use is not recommended.
+    substrate and its use is not recommended.
 
 See the `GASNet website <https://gasnet.lbl.gov/>`_ for more
 information on each of these conduits.
