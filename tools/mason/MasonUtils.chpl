@@ -98,12 +98,10 @@ proc stripExt(toStrip: string, ext: string) : string {
 
 
 /* Uses the Subprocess module to create a subprocess */
-proc runCommand(cmd, quiet=false) : string throws {
+proc runCommand(cmd: [] string, quiet=false) : string throws {
   var ret : string;
   try {
-
-    var splitCmd = cmd.split();
-    var process = spawn(splitCmd, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe);
+    var process = spawn(cmd, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe);
 
     var line:string;
     while process.stdout.readLine(line) {
@@ -117,10 +115,12 @@ proc runCommand(cmd, quiet=false) : string throws {
     }
     process.wait();
     if process.exitCode != 0 {
-      throw new owned MasonError("Command failed: '" + cmd + "'");
+      var cmdStr = " ".join(cmd);
+      throw new owned MasonError("Command failed: '" + cmdStr + "'");
     }
   } catch e: FileNotFoundError {
-    throw new owned MasonError("Command not found: '" + cmd + "'");
+    var cmdStr = " ".join(cmd);
+    throw new owned MasonError("Command not found: '" + cmdStr + "'");
   } catch e: MasonError {
     throw e;
   } catch {
@@ -128,6 +128,16 @@ proc runCommand(cmd, quiet=false) : string throws {
   }
   return ret;
 }
+proc runCommand(cmd: string, quiet=false) : string throws {
+  var res: string;
+  try {
+    res = runCommand(cmd.split(), quiet=quiet);
+  } catch e {
+    throw e;
+  }
+  return res;
+}
+
 
 /* Same as runCommand but for situations where an
    exit status is needed */
