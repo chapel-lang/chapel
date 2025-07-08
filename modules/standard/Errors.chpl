@@ -296,9 +296,9 @@ module Errors {
       For example:
 
       .. literalinclude:: ../../../../test/library/standard/Errors/doc-examples/TaskErrorsThese.chpl
-        :language: chapel
-        :start-after: START_EXAMPLE_0
-        :end-before: STOP_EXAMPLE_0
+         :language: chapel
+         :start-after: START_EXAMPLE_0
+         :end-before: STOP_EXAMPLE_0
 
       Yields references to ``owned Error?`` so that one of the
       yielded errors might be re-thrown. Only yields values
