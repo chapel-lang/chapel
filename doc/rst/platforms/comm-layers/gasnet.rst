@@ -36,7 +36,7 @@ mpi
     MPI - portable conduit, works on any network with MPI 1.1 or newer
     (see :ref:`readme-gasnet-mpi`)
 smp
-    Simulates multiple locales on a single shared-memory machine
+    Runs multiple co-locales on a single shared-memory machine
     (see :ref:`readme-gasnet-smp`)
 ofi
     OpenFabrics Interface (libfabric) for Slingshot and Omni-Path.
@@ -71,6 +71,8 @@ directly by network hardware.  The options are:
 everything
   All memory is available for remote memory access.
   This option is not supported with the ``smp`` or ``ucx`` substrates.
+  If using the ``ofi`` substrate, this option is supported when targeting
+  the ``cxi`` provider (Slingshot).
 fast
   A limited portion of memory is available and optimized for fastest remote
   memory access
@@ -89,15 +91,16 @@ access.
 
 Current defaults are:
 
-===================  ====================
+===================  =================================================
 CHPL_COMM_SUBSTRATE  CHPL_GASNET_SEGMENT
-===================  ====================
+===================  =================================================
 ibv                  large
-ofi                  fast (only when ``CHPL_TARGET_PLATFORM`` is ``hpe-cray-ex``)
+ofi                  fast (only when the ``CHPL_TARGET_PLATFORM`` is a
+                     ``hpe-cray-ex`` or ``hpe-cray-xd``)
 smp                  fast
 ucx                  fast
 other                everything
-===================  ====================
+===================  =================================================
 
 .. _readme-gasnet-smp:
 
@@ -106,10 +109,10 @@ Multilocale Execution with Shared-Memory
 
 When running Chapel programs with ``CHPL_COMM=gasnet``, you can use the
 ``smp`` conduit to have multilocale execution on a single shared-memory
-machine. This emulates a multinode environment by partitioning the machines
+machine. This emulates a multinode environment by partitioning the machine's
 resources (similar to :ref:`readme-colocale`). This allows you to run Chapel
-programs that are designed for
-multinode execution without needing a distributed system. To do this,
+programs that are designed for multinode execution without needing a
+distributed system or network support. To do this,
 set the environment variable ``CHPL_COMM_SUBSTRATE`` to ``smp`` before
 running your Chapel program:
 
@@ -121,8 +124,9 @@ running your Chapel program:
 Using Chapel in this way will partition the machine's resources into
 multiple locales.
 
-The ``smp`` conduit is designed for shared-memory execution and is very similar to
-:ref:`readme-colocale`. Notably, when specifying the number of locales it the following are equivalent
+The ``smp`` conduit is designed for shared-memory execution and is very similar
+to :ref:`readme-colocale`. Notably, when specifying the number of locales
+the following commands are equivalent:
 
 .. code-block:: bash
 
