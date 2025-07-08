@@ -92,9 +92,10 @@ Current defaults are:
 ===================  ====================
 CHPL_COMM_SUBSTRATE  CHPL_GASNET_SEGMENT
 ===================  ====================
-aries                fast
 ibv                  large
+ofi                  fast (only when ``CHPL_TARGET_PLATFORM`` is ``hpe-cray-ex``)
 smp                  fast
+ucx                  fast
 other                everything
 ===================  ====================
 
