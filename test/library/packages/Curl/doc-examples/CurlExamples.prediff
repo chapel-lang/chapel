@@ -1,11 +1,7 @@
 #!/bin/bash
 # replace carriage returns
 cat $2 | sed 's/\r$//' > $2.tmp
-# only lines containing HTTP starting with >|<
-cat $2.tmp | grep HTTP | grep -E "^>|^<" > $2
-# replace HTTP version number
-cat $2 | sed 's/HTTP\/[0-9.]/HTTP/g' > $2.tmp
-# get rid of 'using HTTP' lines
-cat $2.tmp | grep -v 'using HTTP' > $2
+# keep only lines containing special symbol
+cat $2.tmp | grep ~@ > $2
 # done with temp file
 rm $2.tmp
