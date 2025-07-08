@@ -107,7 +107,7 @@ Multilocale Execution with Shared-Memory
 When running Chapel programs with ``CHPL_COMM=gasnet``, you can use the
 ``smp`` conduit to have multilocale execution on a single shared-memory
 machine. This emulates a multinode environment by partitioning the machines
-resources (similar to `readme-colocale`_). This allows you to run Chapel
+resources (similar to :ref:`readme-colocale`). This allows you to run Chapel
 programs that are designed for
 multinode execution without needing a distributed system. To do this,
 set the environment variable ``CHPL_COMM_SUBSTRATE`` to ``smp`` before
@@ -122,7 +122,7 @@ Using Chapel in this way will partition the machine's resources into
 multiple locales.
 
 The ``smp`` conduit is designed for shared-memory execution is very similar to
-`readme-colocale`_. Notably, when specifying the number of locales it the following are equivalent
+:ref:`readme-colocale`. Notably, when specifying the number of locales it the following are equivalent
 
 .. code-block:: bash
 
