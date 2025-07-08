@@ -1431,17 +1431,16 @@ module ChapelArray {
 
     // keep in sync with test/arrays/reindex/from-reindex-chpldocs.chpl
     /*
-       Return an array view over a new domain. The new domain must be
-       of the same rank and size as the original array's domain.
 
-       For example:
+      Return an array view over a new domain. The new domain must be
+      of the same rank and size as the original array's domain.
 
-       .. code-block:: chapel
+      For example:
 
-          var A: [1..10] int;
-          const D = {6..15};
-          ref reA = A.reindex(D);
-          reA[6] = 1; // updates A[1]
+      .. literalinclude:: ../../../../test/arrays/doc-examples/ArrayReindex.chpl
+         :language: chapel
+         :start-after: START_EXAMPLE_0
+         :end-before: STOP_EXAMPLE_0
     */
     pragma "fn returns aliasing array"
     inline proc reindex(newDomain: domain)
@@ -1453,17 +1452,16 @@ module ChapelArray {
     //
     // keep in sync with test/arrays/reindex/from-reindex-chpldocs.chpl
     /*
-       Return an array view over a new domain defined implicitly
-       by one or more `newDims`, which must be ranges. The new domain must be
-       of the same rank and size as the original array's domain.
+      Return an array view over a new domain defined implicitly
+      by one or more `newDims`, which must be ranges. The new domain must be
+      of the same rank and size as the original array's domain.
 
-       For example:
+      For example:
 
-       .. code-block:: chapel
-
-          var A: [3..4, 5..6] int;
-          ref reA = A.reindex(13..14, 15..16);
-          reA[13,15] = 1; // updates A[3,5]
+      .. literalinclude:: ../../../../test/arrays/doc-examples/ArrayReindex.chpl
+         :language: chapel
+         :start-after: START_EXAMPLE_1
+         :end-before: STOP_EXAMPLE_1
     */
     pragma "fn returns aliasing array"
     proc reindex(newDims...)
@@ -2952,11 +2950,10 @@ module ChapelArray {
         without creating a new copy of the reshaped values, a ``ref``
         declaration must be used, for example:
 
-        .. code-block:: chapel
-
-           var A = [1, 2, 3, 4];
-           ref B = reshape(A, 1..2, 1..2);
-           B[1,1] = 5;   // this will change the initial element of A
+        .. literalinclude:: ../../../../test/arrays/doc-examples/ArrayReshape.chpl
+           :language: chapel
+           :start-after: START_EXAMPLE
+           :end-before: STOP_EXAMPLE
 
         In contrast, if a ``var`` or ``const`` declaration is used,
         that will create a new array whose values will be initialized

@@ -657,10 +657,10 @@ module Bytes {
     the :type:`bytes` passed in with the contents of the method
     receiver inserted between them.
 
-    .. code-block:: chapel
-
-        var myBytes = b"|".join(b"a",b"10",b"d");
-        writeln(myBytes); // prints: "a|10|d"
+    .. literalinclude:: ../../../../test/types/bytes/doc-examples/BytesJoin.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE_0
+       :end-before: STOP_EXAMPLE_0
 
     :arg x: :type:`bytes` values to be joined
 
@@ -675,14 +675,10 @@ module Bytes {
     the :type:`bytes` passed in with the contents of the method
     receiver inserted between them.
 
-    .. code-block:: chapel
-
-        var tup = (b"a",b"10",b"d");
-        var myJoinedTuple = b"|".join(tup);
-        writeln(myJoinedTuple); // prints: "a|10|d"
-
-        var myJoinedArray = b"|".join([b"a",b"10",b"d"]);
-        writeln(myJoinedArray); // prints: "a|10|d"
+    .. literalinclude:: ../../../../test/types/bytes/doc-examples/BytesJoin.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE_1
+       :end-before: STOP_EXAMPLE_1
 
     :arg x: An array or tuple of :type:`bytes` values to be joined
 
@@ -1137,22 +1133,21 @@ module Bytes {
     return __primitive("string_concat", s0, s1);
 
   /*
-     :returns: A new :type:`bytes` which is the result of repeating `s`
-               `n` times.  If `n` is less than or equal to 0, an empty bytes is
-               returned.
+    :returns: A new :type:`bytes` which is the result of repeating `s`
+             `n` times.  If `n` is less than or equal to 0, an empty bytes is
+             returned.
 
-     The operation is commutative.
-     For example:
+    The operation is commutative.
+    For example:
 
-     .. code-block:: chapel
+    .. literalinclude:: ../../../../test/types/bytes/doc-examples/BytesRepeatConcat.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE
+       :end-before: STOP_EXAMPLE
 
-        writeln(b"Hello! "*3);
-        or
-        writeln(3*b"Hello! ");
+    Results in:
 
-     Results in::
-
-        Hello! Hello! Hello!
+    .. literalinclude:: ../../../../test/types/bytes/doc-examples/BytesRepeatConcat.good
   */
   operator *(s: bytes, n: integral) : bytes {
     return doMultiply(s, n);
