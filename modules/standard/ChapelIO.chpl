@@ -30,6 +30,8 @@ Hello World program:
    :language: chapel
    :start-after: START_EXAMPLE_0
    :end-before: STOP_EXAMPLE_0
+
+.. begin ChapelIO docs
  */
 pragma "module included by default"
 @unstable("The module name 'ChapelIO' is unstable.  If you want to use qualified naming on the symbols within it, please 'use' or 'import' the :mod:`IO` module")
