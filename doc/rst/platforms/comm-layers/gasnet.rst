@@ -71,7 +71,7 @@ directly by network hardware.  The options are:
 everything
   All memory is available for remote memory access.
   This option is not supported with the ``smp`` or ``ucx`` substrates.
-  If using the ``ofi`` substrate, this option is supported when targeting
+  If using the ``ofi`` substrate, this option is not supported when targeting
   the ``cxi`` provider (Slingshot).
 fast
   A limited portion of memory is available and optimized for fastest remote
