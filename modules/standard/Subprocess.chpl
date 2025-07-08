@@ -90,10 +90,7 @@ example, consider the following program that writes the numbers ``1`` through
 
 This program prints:
 
-.. code-block:: text
-
-  00000000  01 02 03 04 05 06 07 08  09 0a                    |..........|
-  0000000a
+.. literalinclude:: ../../../../test/library/standard/Spawn/doc-examples/example_writeBinary.good
 
 Please refer to :type:`~IO.binarySerializer` and :type:`~IO.binaryDeserializer`
 for more information on their supported format.
@@ -979,10 +976,10 @@ module Subprocess {
     Other values for `signal` are system-specific and can be declared in this
     way, for example:
 
-    .. code-block:: chapel
-
-       extern const SIGPOLL: c_int;
-
+    .. literalinclude:: ../../../../test/library/standard/Spawn/doc-examples/example_signal.chpl
+     :language: chapel
+     :start-after: START_EXAMPLE
+     :end-before: STOP_EXAMPLE
 
     :arg signal: the signal to send
 
