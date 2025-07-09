@@ -129,7 +129,9 @@ proc runCommand(cmd: [] string, quiet=false) : string throws {
   return ret;
 }
 proc runCommand(cmd: string, quiet=false) : string throws {
-  return runCommand(cmd.split(), quiet=quiet);
+  // temporary is a workaround for #27504
+  const cmds = cmd.split();
+  return runCommand(cmds, quiet=quiet);
 }
 
 
