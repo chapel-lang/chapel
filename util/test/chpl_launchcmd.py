@@ -277,10 +277,8 @@ class AbstractJob(object):
         if more_l:
             submit_command.append('{0}'.format(more_l))
 
-
         logging.info('qsub command: "{0}"'.format(' '.join(submit_command)))
         return submit_command
-
 
     def run(self):
         """Run batch job in subprocess and wait for job to complete.
@@ -560,6 +558,21 @@ class AbstractJob(object):
             logging.error('No test command provided.')
             raise ValueError('No test command found.')
 
+        # validate the value of CHPL_LAUNCHER
+        chpl_home = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "..", "..")
+        )
+        chpl_launcher = subprocess.check_output(
+            ["{}/util/chplenv/chpl_launcher.py".format(chpl_home)],
+            encoding="utf-8",
+        ).strip()
+        if chpl_launcher.startswith("pbs-"):
+            msg = "CHPL_LAUNCHER is set to {}, which is not supported".format(
+                chpl_launcher
+            )
+            logging.error(msg)
+            raise ValueError(msg)
+
         job_flavor = cls._detect_job_flavor()
         logging.info('Detected job flavor: {0}'.format(job_flavor.__name__))
         return job_flavor(test_command, args)
@@ -629,7 +642,6 @@ class AbstractJob(object):
                                 'Please put a space between "-nl" and number of '
                                 'locales, if that\'s the purpose.'.format(arg))
 
-
     @classmethod
     def _get_test_command(cls, args, unparsed_args):
         """Returns test command by folding numLocales args into unparsed command line
@@ -684,7 +696,6 @@ class AbstractJob(object):
                             help=('Optional queue specification for reserving '
                                   'specific queues. Can also be set with env var '
                                   'CHPL_LAUNCHCMD_QUEUES'))
-
 
         args, unparsed_args = parser.parse_known_args()
 
