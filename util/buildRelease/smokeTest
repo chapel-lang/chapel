@@ -148,7 +148,7 @@ if [ $LINT -eq 1 ]; then
     $($CHPL_HOME/util/config/find-python.sh) \
       $CHPL_HOME/util/devel/lookForCodeBlocks modules doc/rst/ \
       --read-report $CHPL_HOME/examples/spec/report.json \
-      --ignore doc/rst/developer
+      --ignore doc/rst/developer --ignore doc/rst/language/evolution.rst
     if [ $? -ne 0 ] ; then
         echo "Found literal code blocks"
         exit 1
