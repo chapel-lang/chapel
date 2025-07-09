@@ -147,7 +147,8 @@ if [ $LINT -eq 1 ]; then
     make $chpl_make_args spectests >/dev/null 2>/dev/null || exit 1
     $($CHPL_HOME/util/config/find-python.sh) \
       $CHPL_HOME/util/devel/lookForCodeBlocks modules doc/rst/ \
-      --read-report $CHPL_HOME/examples/spec/report.json
+      --read-report $CHPL_HOME/examples/spec/report.json \
+      --ignore doc/rst/developer
     if [ $? -ne 0 ] ; then
         echo "Found literal code blocks"
         exit 1
