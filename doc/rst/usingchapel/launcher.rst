@@ -104,8 +104,8 @@ If ``CHPL_LAUNCHER`` is left unset, a default is picked as follows:
   CHPL_COMM_SUBSTRATE=ofi  [slurm-]gasnetrun_ofi
   =======================  ==============================================
 
-  If salloc is in the user's path, then the slurm version of these launchers
-  will be used. Otherwise, the base ``gasnetrun_*`` launcher is used.
+  If salloc or srun is in the user's path, then the slurm version of these
+  launchers will be used. Otherwise, the base ``gasnetrun_*`` launcher is used.
 
 * otherwise, if ``CHPL_TARGET_PLATFORM`` is a HPE system or a Cray system:
 
@@ -165,8 +165,8 @@ When ``CHPL_COMM == gasnet``, this will also be used to set the value of
 
 .. _using-slurm:
 
-Using Slurm
-+++++++++++
+Using Native Slurm
+++++++++++++++++++
 
 To use native Slurm, set:
 
@@ -174,16 +174,19 @@ To use native Slurm, set:
 
   export CHPL_LAUNCHER=slurm-srun
 
-On Cray systems, this will happen automatically if srun is found in your
-path, but not when both srun and aprun are found in your path. Native
-Slurm is the best option where it works, but at the time of this writing,
-there are problems with it when combined with ``CHPL_COMM=gasnet`` and the
-UDP or InfiniBand conduits. So, for these configurations please see:
+On Cray systems, this will happen automatically if srun is found in your path
+and you are not using GASNet, but not when both srun and aprun are found in
+your path. Native Slurm is the best option where it works, but at the time of
+this writing, there are problems with it when combined with
+``CHPL_COMM=gasnet`` and the UDP or InfiniBand conduits. So, for these
+configurations please see:
 
   * :ref:`readme-infiniband` for information about using Slurm with
     InfiniBand.
   * :ref:`using-udp-slurm` for information about using Slurm with the UDP
     conduit
+  * :ref:`_using-slurm-gasnet` for information about using Slurm with
+    the GASNet launchers.
 
 Common Slurm Settings
 *********************
@@ -292,6 +295,27 @@ Common Slurm Settings
   .. code-block:: bash
 
     export CHPL_LAUNCHER_WALLTIME=00:10:00
+
+
+.. _using-slurm-gasnet:
+
+Using the GASNet Slurm Launchers
+++++++++++++++++++++++++++++++++
+
+When using CHPL_COMM=gasnet and Slurm is available, Chapel will prefer to use
+the slurm-prefixed version of the GASNet launchers, such as
+``slurm-gasnetrun_ibv``.
+
+The GASNet Slurm launchers use ``srun`` by default to launch the program onto
+the compute nodes. This can be run from a login node or from within an existing
+allocation. The GASNet Slurm launchers can also just use ``salloc`` directly by
+setting ``CHPL_RT_GASNETRUN_LAUNCHER`` to ``salloc``. Note that using
+``salloc`` will not work if run within an existing allocation. To request batch
+submission, set ``CHPL_LAUNCHER_USE_SBATCH``.
+
+If you prefer to make Slurm commands yourself explicitly set the
+``CHPL_LAUNCHER`` environment variable to the non-slurm version of the GASNet
+launcher, such as ``gasnetrun_ibv``.
 
 .. _ssh-launchers-with-slurm:
 

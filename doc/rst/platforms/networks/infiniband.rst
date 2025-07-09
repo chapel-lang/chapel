@@ -90,8 +90,8 @@ pbs-gasnetrun_ibv     queue jobs using PBS (qsub)
 lsf-gasnetrun_ibv     queue jobs using LSF (bsub)
 ===================  ======================================
 
-``CHPL_LAUNCHER`` will typically default to ``gasnetrun_ibv`` unless ``salloc``
-is in your path, in which case it will default to
+``CHPL_LAUNCHER`` will typically default to ``gasnetrun_ibv`` unless ``srun``/
+``salloc`` is in your path, in which case it will default to
 ``slurm-gasnetrun_ibv``
 
 By default Slurm, PBS, and LSF versions launch in an interactive
