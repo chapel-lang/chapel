@@ -23,15 +23,6 @@ cmake_minimum_required(VERSION 3.20)
 
 message(STATUS "Detecting Chapel environment...")
 
-#
-# This is slightly dangerous, because printchplenv could be relying on CC/CXX
-# to set the host compiler properly, but cmake adamantly refuses to not set CC/CXX
-# to some default value, even if a user hasn't set them (or even if
-# -DCMAKE_C_COMPILER= and -DCMAKE_CXX_COMPILER= are explicitly set).
-#
-unset(ENV{CC})
-unset(ENV{CXX})
-
 get_filename_component(CHPL_HOME "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
 message(STATUS "CHPL_HOME: ${CHPL_HOME}")
 
@@ -41,8 +32,15 @@ set(CHPL_HOME_UTILS "${CHPL_HOME}/util/chplenv/chpl_home_utils.py")
 set(CHPL_COMPILER_PY "${CHPL_HOME}/util/chplenv/chpl_compiler.py")
 
 # Function to execute Chapel environment commands
+#
+# This runs with CC/CXX unset. This is slightly dangerous, because printchplenv
+# could be relying on CC/CXX to set the host compiler properly, but cmake
+# adamantly refuses to not set CC/CXX to some default value, even if a user
+# hasn't set them (or even if -DCMAKE_C_COMPILER= and -DCMAKE_CXX_COMPILER= are
+# explicitly set).
+#
 execute_process(
-  COMMAND ${CHPL_PRINTCHPLENV} --internal --all --anonymize --simple
+  COMMAND ${CMAKE_COMMAND} -E env CC= CXX= -- ${CHPL_PRINTCHPLENV} --internal --all --anonymize --simple
   OUTPUT_VARIABLE CHPL_ENV_OUTPUT
   RESULT_VARIABLE CHPL_ENV_RESULT
   OUTPUT_STRIP_TRAILING_WHITESPACE
@@ -69,7 +67,7 @@ get_chapel_env_var("CHPL_SANITIZE" CHPL_SANITIZE)
 get_chapel_env_var("CHPL_HOST_PLATFORM" CHPL_HOST_PLATFORM)
 
 execute_process(
-  COMMAND ${Python_EXECUTABLE} ${CHPL_COMPILER_PY} --cc --host --compiler-only
+  COMMAND ${CMAKE_COMMAND} -E env CC= CXX= -- ${Python_EXECUTABLE} ${CHPL_COMPILER_PY} --cc --host --compiler-only
   OUTPUT_VARIABLE CHPL_HOST_CC
   RESULT_VARIABLE CHPL_HOST_CC_RESULT
   OUTPUT_STRIP_TRAILING_WHITESPACE
@@ -78,7 +76,7 @@ if(NOT CHPL_HOST_CC_RESULT EQUAL 0)
   message(FATAL_ERROR "Failed to get host C compiler")
 endif()
 execute_process(
-  COMMAND ${Python_EXECUTABLE} ${CHPL_COMPILER_PY} --cc --host --additional
+  COMMAND ${CMAKE_COMMAND} -E env CC= CXX= -- ${Python_EXECUTABLE} ${CHPL_COMPILER_PY} --cc --host --additional
   OUTPUT_VARIABLE CHPL_HOST_CC_FLAGS
   RESULT_VARIABLE CHPL_HOST_CC_FLAGS_RESULT
   OUTPUT_STRIP_TRAILING_WHITESPACE
@@ -88,7 +86,7 @@ if(NOT CHPL_HOST_CC_FLAGS_RESULT EQUAL 0)
 endif()
 
 execute_process(
-  COMMAND ${Python_EXECUTABLE} ${CHPL_COMPILER_PY} --cxx --host --compiler-only
+  COMMAND ${CMAKE_COMMAND} -E env CC= CXX= -- ${Python_EXECUTABLE} ${CHPL_COMPILER_PY} --cxx --host --compiler-only
   OUTPUT_VARIABLE CHPL_HOST_CXX
   RESULT_VARIABLE CHPL_HOST_CXX_RESULT
   OUTPUT_STRIP_TRAILING_WHITESPACE
@@ -97,7 +95,7 @@ if(NOT CHPL_HOST_CXX_RESULT EQUAL 0)
   message(FATAL_ERROR "Failed to get host C++ compiler")
 endif()
 execute_process(
-  COMMAND ${Python_EXECUTABLE} ${CHPL_COMPILER_PY} --cxx --host --additional
+  COMMAND ${CMAKE_COMMAND} -E env CC= CXX= -- ${Python_EXECUTABLE} ${CHPL_COMPILER_PY} --cxx --host --additional
   OUTPUT_VARIABLE CHPL_HOST_CXX_FLAGS
   RESULT_VARIABLE CHPL_HOST_CXX_FLAGS_RESULT
   OUTPUT_STRIP_TRAILING_WHITESPACE
@@ -135,7 +133,7 @@ message(STATUS "Chapel lib path: ${CHPL_LIB_PATH}")
 
 # Get Chapel install lib path
 execute_process(
-  COMMAND ${Python_EXECUTABLE} ${CHPL_HOME_UTILS} --configured-install-lib-prefix
+  COMMAND ${CMAKE_COMMAND} -E env CC= CXX= -- ${Python_EXECUTABLE} ${CHPL_HOME_UTILS} --configured-install-lib-prefix
   OUTPUT_VARIABLE CHPL_INSTALL_LIB_PATH
   RESULT_VARIABLE CHPL_INSTALL_RESULT
   OUTPUT_STRIP_TRAILING_WHITESPACE
@@ -171,7 +169,7 @@ if(CHPL_LLVM AND NOT CHPL_LLVM STREQUAL "none")
 endif()
 set(LLVM_CXX_FLAGS "")
 execute_process(
-  COMMAND ${Python_EXECUTABLE} ${CHPL_LLVM_PY} --host-cxxflags
+  COMMAND ${CMAKE_COMMAND} -E env CC= CXX= -- ${Python_EXECUTABLE} ${CHPL_LLVM_PY} --host-cxxflags
   OUTPUT_VARIABLE LLVM_CXX_FLAGS
   RESULT_VARIABLE LLVM_FLAGS_RESULT
   OUTPUT_STRIP_TRAILING_WHITESPACE
