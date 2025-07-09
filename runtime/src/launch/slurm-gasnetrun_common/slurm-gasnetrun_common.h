@@ -105,11 +105,11 @@ static int getNumCoresPerLocale(void) {
 }
 
 static chpl_bool getSlurmDebug(void) {
-  chpl_bool result = false;
-  char *debugString = getenv("SALLOC_DEBUG");
-  if (debugString) {
-    result = (atoi(debugString) != 0) ? true : false;
-  }
+  // either SALLOC_DEBUG or CHPL_RT_SLURM_DEBUG is sufficient to enable
+  // debugging output.
+  chpl_bool result =
+    chpl_env_str_to_bool("SALLOC_DEBUG", getenv("SALLOC_DEBUG"), false) ||
+    chpl_env_rt_get_bool("SLURM_DEBUG", false);
   return result;
 }
 
@@ -188,6 +188,16 @@ static void propagate_environment(char** buf, int* charsWritten)
   char *enviro_keys = chpl_get_enviro_keys(',');
   if (enviro_keys)
     chpl_append_to_cmd(buf, charsWritten, " -E '%s'", enviro_keys);
+}
+
+static const char* chpl_get_command_name(void);
+static const char* chpl_get_command_name(void) {
+  const char* command = chpl_env_rt_get("GASNETRUN_LAUNCHER", "srun");
+  if (0 != strcmp("srun", command) &&
+      0 != strcmp("salloc", command)) {
+    chpl_error("GASNETRUN_LAUNCHER must be 'srun' or 'salloc'", 0, 0);
+  }
+  return command;
 }
 
 static char* chpl_launch_create_command(int argc, char* argv[],
@@ -352,11 +362,11 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     for (i=1; i<argc; i++) {
       chpl_append_to_cmd(&iCom, &len, " '%s'", argv[i]);
     }
-    const char* format = "salloc %s";
-    int baseCommandLen = strlen(format) + len + 1;
+    const char* command = chpl_get_command_name();
+    int baseCommandLen = strlen(command) + len + 2; // +2 for space and null terminator
     baseCommand = (char*)chpl_mem_allocMany(baseCommandLen, sizeof(char),
                                             CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
-    snprintf(baseCommand, baseCommandLen, format, iCom);
+    snprintf(baseCommand, baseCommandLen, "%s %s", command, iCom);
     chpl_mem_free(iCom, 0, 0);
   }
 
