@@ -7,8 +7,8 @@ from utils import which, error, memoize, warning, check_valid_var
 
 
 def slurm_prefix(base_launcher):
-    """ If salloc is available, prefix with slurm-"""
-    if which('salloc'):
+    """ If srun|salloc is available, prefix with slurm-"""
+    if which('srun') or which('salloc'):
         return 'slurm-{}'.format(base_launcher)
     return base_launcher
 
