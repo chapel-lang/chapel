@@ -23,6 +23,15 @@ cmake_minimum_required(VERSION 3.20)
 
 message(STATUS "Detecting Chapel environment...")
 
+#
+# This is slightly dangerous, because printchplenv could be relying on CC/CXX
+# to set the host compiler properly, but cmake adamantly refuses to not set CC/CXX
+# to some default value, even if a user hasn't set them (or even if
+# -DCMAKE_C_COMPILER= and -DCMAKE_CXX_COMPILER= are explicitly set).
+#
+unset(ENV{CC})
+unset(ENV{CXX})
+
 get_filename_component(CHPL_HOME "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
 message(STATUS "CHPL_HOME: ${CHPL_HOME}")
 
@@ -116,7 +125,7 @@ endif()
 project(
   ${SKBUILD_PROJECT_NAME}
   VERSION ${SKBUILD_PROJECT_VERSION}
-  LANGUAGES CXX
+  LANGUAGES C CXX
   DESCRIPTION "Python bindings for Chapel's frontend library, Dyno"
 )
 
@@ -171,8 +180,7 @@ execute_process(
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 if(NOT LLVM_FLAGS_RESULT EQUAL 0)
-  message(WARNING "Failed to get LLVM CXX flags")
-  set(LLVM_CXX_FLAGS "")
+  message(FATAL_ERROR "Failed to get LLVM CXX flags")
 endif()
 if(LLVM_CXX_FLAGS)
   separate_arguments(LLVM_FLAGS_LIST UNIX_COMMAND "${LLVM_CXX_FLAGS}")
