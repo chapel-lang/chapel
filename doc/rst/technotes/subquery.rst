@@ -19,6 +19,7 @@ Functions Supported on Array and Domain Types
 hasSingleLocalSubdomain
 -----------------------
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
   proc array.hasSingleLocalSubdomain() : bool;
@@ -44,6 +45,7 @@ To support this function on a custom domain map, write a param function named
 localSubdomain
 --------------
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
   proc array.localSubdomain(loc: locale = here) : domain;
@@ -60,6 +62,7 @@ used to modify the index set owned by the locale.
 To support this function on a custom domain map, write a function named
 ``dsiLocalSubdomain``. For example:
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
   proc BlockArr.dsiLocalSubdomain(loc: locale) : domain;
@@ -67,6 +70,7 @@ To support this function on a custom domain map, write a function named
 localSubdomains
 ---------------
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
   iter array.localSubdomains(loc: locale = here) : domain;
@@ -83,6 +87,7 @@ Currently, this is a serial iterator.
 To support this iterator on a custom domain map, write an iterator named
 ``dsiLocalSubdomains``. For example:
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
   iter BlockCyclicArr.dsiLocalSubdomains(loc: locale) : domain;
@@ -93,6 +98,7 @@ Functions Supported on Arrays, Domains, and Distributions
 targetLocales
 -------------
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
   proc array.targetLocales() : [] locale;

@@ -938,6 +938,7 @@ Arithmetic Operators
 The following arithmetic operators are defined on ranges and integral
 types:
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
    proc +(r: range, s: integral): range

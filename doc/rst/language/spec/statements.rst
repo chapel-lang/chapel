@@ -214,7 +214,7 @@ For all other compound assignments, Chapel provides a completely generic
 catch-all implementation defined in the obvious way. For example:
 
 
-
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
    inline proc +=(ref lhs, rhs) {
