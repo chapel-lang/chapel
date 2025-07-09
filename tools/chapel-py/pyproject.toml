@@ -37,15 +37,15 @@ Repository = "https://github.com/chapel-lang/chapel"
 "Bug Tracker" = "https://github.com/chapel-lang/chapel/issues"
 
 [build-system]
-requires = ["scikit-build-core>=0.3.3"]
+requires = ["scikit-build-core>=0.11.5"]
 build-backend = "scikit_build_core.build"
 
 [tool.scikit-build]
 wheel.expand-macos-universal-tags = true
 minimum-version = "build-system.requires"
-cmake.minimum-version = "3.20"
 build-dir = "./build/{wheel_tag}"
+install.components = ["python"]
+cmake.version = ">=3.20"
 cmake.args = []
 cmake.build-type = "Release"
-install.components = ["python"]
 cmake.source-dir = "."
