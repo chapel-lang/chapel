@@ -2,15 +2,19 @@ use FileSystem, IO;
 
 use MasonDoc only;
 
-config const testcase = 1;
+enum tests {
+  base, withAuthor
+}
+
+config const testcase = tests.base;
 config const keep = false;
 
 here.chdir('Pkg');
 
 // Document package
-if testcase == 1 then
+if testcase == tests.base then
   MasonDoc.masonDoc(['doc']);
-else if testcase == 2 then
+else if testcase == tests.withAuthor then
   MasonDoc.masonDoc(['doc', '--', '--author', 'Billy']);
 
 const sourcesDir = 'doc/_sources/modules/src/',
@@ -38,7 +42,7 @@ if exists(FS) then
 else
   writeln("Success: ", FS, " was not generated");
 
-if testcase == 2 {
+if testcase == tests.withAuthor {
   // confirm author was added to index.html
   const indexHtml = 'doc/index.html';
   if !exists(indexHtml) then

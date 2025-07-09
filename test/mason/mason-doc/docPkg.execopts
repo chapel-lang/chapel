@@ -1,2 +1,2 @@
---testcase=1
---testcase=2
+--testcase=tests.base
+--testcase=tests.withAuthor
