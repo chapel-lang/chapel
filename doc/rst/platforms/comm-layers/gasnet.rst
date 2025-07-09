@@ -177,10 +177,16 @@ workstations), there are a few key differences:
   partition the machine's resources between them, so each locale has its own
   dedicated resources.
 
-* ``udp`` primarily implements communication between locales over the network,
-  so all traffic is routed through the network stack. ``smp`` uses shared
-  memory for communication between co-locales, which can be more efficient and
-  requires less configuration.
+* ``udp`` (by default with ``CHPL_GASNET_SEGMENT=everything``) implements
+  communication between locales over the TCP/IP network, so all traffic is
+  routed through the network stack. ``smp`` always uses shared memory for
+  communication between co-locales, which can be more efficient and requires
+  less configuration.
+
+* ``udp`` always requires a working network configuration to start jobs and can
+  sometimes require additional configuration tweaks to successfully spawn jobs
+  in the presence of firewalls or misconfigured DNS services. ``smp`` does not
+  rely on any network services.
 
 .. _readme-gasnet-mpi:
 
