@@ -171,8 +171,8 @@ While both the ``udp`` and ``smp`` conduits can be used to run multilocale
 Chapel programs on a single node or shared memory machine (e.g. laptops or
 workstations), there are a few key differences:
 
-* ``udp`` creates multiple locales on a single node by
-  :ref:`oversubscribing <oversubscribed-execution>` the machine's resources,
+* ``udp`` creates multiple locales on a single node that
+  :ref:`oversubscribe <oversubscribed-execution>` the machine's resources,
   so each locale is sharing the same resources. ``smp`` creates multiple
   co-locales which partition the machine's resources between them, so each
   locale has its own dedicated resources.
