@@ -139,13 +139,13 @@ partitioning the resources of that node between them.
 
 .. _readme-gasnet-emulating-multilocale:
 
-Emulating Multilocale Execution with the UDP Conduit
+Emulating Distributed Execution with the UDP Conduit
 ++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 While the :ref:`UDP conduit <using-udp>` is primarily intended for portable
-multilocale execution over ethernet, it can be modified to emulate multiple
-locales locally by :ref:`oversubscribing <oversubscribed-execution>` the machine's
-resources.
+multilocale execution over ethernet, it can also be used to run multiple
+locales locally on a single node by :ref:`oversubscribing
+<oversubscribed-execution>` the machine's resources.
 
 With a build of Chapel with ``CHPL_COMM=gasnet`` and
 ``CHPL_COMM_SUBSTRATE=udp``, you can run a Chapel program on multiple locales
@@ -171,11 +171,11 @@ While both the ``udp`` and ``smp`` conduits can be used to run multilocale
 Chapel programs on a single node or shared memory machine (e.g. laptops or
 workstations), there are a few key differences:
 
-* ``udp`` emulates multiple locales by :ref:`oversubscribing
-  <oversubscribed-execution>` the machine's resources, so each locale is
-  sharing the same resources. ``smp`` creates multiple co-locales which
-  partition the machine's resources between them, so each locale has its own
-  dedicated resources.
+* ``udp`` creates multiple locales on a single node by
+  :ref:`oversubscribing <oversubscribed-execution>` the machine's resources,
+  so each locale is sharing the same resources. ``smp`` creates multiple
+  co-locales which partition the machine's resources between them, so each
+  locale has its own dedicated resources.
 
 * ``udp`` (by default with ``CHPL_GASNET_SEGMENT=everything``) implements
   communication between locales over the TCP/IP network, so all traffic is
