@@ -5,6 +5,7 @@
 use Curl;
 use URL;
 
+{
 /* START_EXAMPLE_0 */
 use URL;
 var urlreader = openUrlReader("http://example.com");
@@ -15,12 +16,22 @@ while urlreader.readLine(str) {
 }
 /* STOP_EXAMPLE_0 */
 
+var concat: bytes;
+urlreader = openUrlReader("http://example.com");
+while urlreader.readLine(str) do concat += str;
+assert(!concat.isEmpty());
+
+writeln('~@OK0');
+}
+
 // Note that this constant is described as optional but has to exist for
 // the test to compile...
 {
 /* START_EXAMPLE_1 */
 extern const CURLOPT_VERBOSE: CURLoption;
 /* STOP_EXAMPLE_1 */
+
+writeln('~@OK1');
 }
 
 {
@@ -40,7 +51,8 @@ writeln(str);
 reader.close();
 /* STOP_EXAMPLE_2 */
 
-assert(str.size != 0);
+assert(!str.isEmpty());
+writeln('~@OK2');
 }
 
 {
@@ -81,4 +93,5 @@ var ret = Curl.curl_easy_perform(curl);
 args.free();
 Curl.curl_easy_cleanup(curl);
 /* STOP_EXAMPLE_3 */
+writeln('~@OK3');
 }
