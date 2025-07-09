@@ -129,13 +129,7 @@ proc runCommand(cmd: [] string, quiet=false) : string throws {
   return ret;
 }
 proc runCommand(cmd: string, quiet=false) : string throws {
-  var res: string;
-  try {
-    res = runCommand(cmd.split(), quiet=quiet);
-  } catch e {
-    throw e;
-  }
-  return res;
+  return runCommand(cmd.split(), quiet=quiet);
 }
 
 
