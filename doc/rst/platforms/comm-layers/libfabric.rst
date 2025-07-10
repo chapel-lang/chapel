@@ -339,7 +339,7 @@ Setting these environment variables can improve performance in some cases.
 ``CHPL_RT_COMM_OFI_CONNECT_EAGERLY``
   Setting ``CHPL_RT_COMM_OFI_CONNECT_EAGERLY=true`` will cause the runtime to
   do extra work at application launch to set up communication. Normally
-  this is done on as-needed basis, which can slow down initial
+  this is done on an as-needed basis, which can slow down initial
   communication. Setting this variable can result in increased
   performance at the cost of slightly slower application launch.
 
