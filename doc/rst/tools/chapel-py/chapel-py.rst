@@ -80,7 +80,18 @@ If you wish to install the Python bindings in your system python, you must manua
 
    cd $CHPL_HOME
    make frontend-shared
-   python3 -m pip install $CHPL_HOME/tools/chapel-py
+   CC=$CC CXX=$CXX python3 -m pip install $CHPL_HOME/tools/chapel-py
+
+.. note::
+
+   The ``CC=$CC CXX=$CXX`` prefix is necessary to ensure that the Python
+   bindings are built with the correct compiler. Even if you have ``CC`` and
+   ``CXX`` unset in your environment they must be set to some empty value,
+   otherwise the build may fail in unexpected ways. Using ``CC=$CC CXX=$CXX``
+   is a workaround that preserves the values of these variables from the
+   environment, but also sets them to an empty value if they are unset. This is
+   a workaround for an issue with the Python build system, and will not be
+   necessary in the future.
 
 
 Usage
