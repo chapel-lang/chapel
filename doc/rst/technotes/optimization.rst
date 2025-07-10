@@ -325,6 +325,20 @@ colocales
   ``none`` or ``unknown``, can allow using newer instruction sets (e.g.
   AVX512) and improve performance.
 
+Network-specific communication settings
+
+  Please see the documentation for the network that you are using for
+  more details on what can be adjusted. Some specific variables you might
+  consider:
+
+    * :ref:`CHPL_RT_COMM_OFI_DEDICATED_AMH_CORES <readme-libfabric-CHPL_RT_COMM_OFI_DEDICATED_AMH_CORES>`
+      when using ``CHPL_COMM=ofi`` can be used to dedicate a core to
+      service requests that arrive over the network
+
+    * :ref:`CHPL_RT_COMM_GASNET_DEDICATED_PROGRESS_CORE <readme-infiniband-CHPL_RT_COMM_GASNET_DEDICATED_PROGRESS_CORE>`
+      when using ``CHPL_COMM=gasnet`` with ``CHPL_COMM_SUBSTRATE=ibv``
+      offers a similar capability for InfiniBand
+
 ..
   comment: cover ``--llvm-wide-opt`` when it becomes less experemental
 
