@@ -81,60 +81,59 @@
 
   First, the :record:`DistDeque` must be initialized before use by calling its initializer.
 
-  .. code-block:: chapel
-
-    var deque = new DistDeque(int, cap=maxElem, targetLocales=ourLocales);
+  .. literalinclude:: ../../../../test/library/packages/DistributedDeque/doc-examples/DequeExamples.chpl
+     :language: chapel
+     :start-after: START_EXAMPLE_0
+     :end-before: STOP_EXAMPLE_0
+     :dedent:
 
   The deque can be used as a queue by using the :proc:`DistributedDequeImpl.enqueue` and :proc:`DistributedDequeImpl.dequeue` convenience
   methods or inserting from one end to remove from another...
 
-  .. code-block:: chapel
-
-    deque.enqueue(1);
-    var (hasElem, elem) = deque.dequeue();
+  .. literalinclude:: ../../../../test/library/packages/DistributedDeque/doc-examples/DequeExamples.chpl
+     :language: chapel
+     :start-after: START_EXAMPLE_1
+     :end-before: STOP_EXAMPLE_1
+     :dedent:
 
   The deque can be used as a stack by using the :proc:`DistributedDequeImpl.push` and :proc:`DistributedDequeImpl.pop` convenience methods,
   or insertion and removing from the same ends...
 
-  .. code-block:: chapel
-
-    deque.push(1);
-    var (hasElem, elem) = deque.pop();
+  .. literalinclude:: ../../../../test/library/packages/DistributedDeque/doc-examples/DequeExamples.chpl
+     :language: chapel
+     :start-after: START_EXAMPLE_2
+     :end-before: STOP_EXAMPLE_2
+     :dedent:
 
   The deque can be used as a list by using the :proc:`DistributedDequeImpl.pushBack`, :proc:`DistributedDequeImpl.pushFront`, :proc:`DistributedDequeImpl.popBack`,
   and :proc:`DistributedDequeImpl.popFront` methods. While the deque is not indexable, the ability to `append` or `prepend`
   is powerful enough to allow a total ordering, allowing the user to define the order by letting them
   insert and remove at whichever ends they so choose.
 
-  .. code-block:: chapel
-
-    var deque = new DistDeque(int);
-    forall i in 1 .. N {
-      if i % 2 == 0 then deque.pushFront(i);
-      else deque.pushBack(i);
-    }
+  .. literalinclude:: ../../../../test/library/packages/DistributedDeque/doc-examples/DequeExamples.chpl
+     :language: chapel
+     :start-after: START_EXAMPLE_3
+     :end-before: STOP_EXAMPLE_3
+     :dedent:
 
   The deque supports both serial and parallel iteration, and a means to iterate in a particular order
-  (currently only FIFO and LIFO) using the ``Ordering`` enumerator.
+  (currently only FIFO) using the ``Ordering`` enumerator.
 
-  .. code-block:: chapel
-
-    for elt in deque.these(Ordering.FIFO) {
-      // ...
-    }
-
-    for elt in deque.these(Ordering.LIFO) {
-      // ...
-    }
+  .. literalinclude:: ../../../../test/library/packages/DistributedDeque/doc-examples/DequeExamples.chpl
+     :language: chapel
+     :start-after: START_EXAMPLE_4
+     :end-before: STOP_EXAMPLE_4
+     :dedent:
 
   The deque can also be used in a reduction, although currently reduction only used parallel-iteration, hence
   reduction will be performed in an unordered fashion. In the future, a specific function may be created to
   allow reduction in a certain ordering...
 
-  .. code-block:: chapel
-
-    deque.addBulk(1..100);
-    var result = + reduce deque;
+  .. literalinclude:: ../../../../test/library/packages/DistributedDeque/doc-examples/DequeExamples.chpl
+     :language: chapel
+     :start-after: START_EXAMPLE_5
+     :end-before: STOP_EXAMPLE_5
+     :dedent:
 
   Bugs and Known Issues
   _____________________
