@@ -161,29 +161,31 @@ int main(int argc, char* argv[]) {
       count++;
     }
   }
-  // Find all the GPUs
-  chpl_topo_pci_addr_t inAddrs[count];
-  chpl_topo_pci_addr_t outAddrs[count];
-  int i = 0;
-  while ((obj = hwloc_get_next_pcidev(topology, obj)) != NULL) {
-    if (obj->attr->pcidev.vendor_id == 0x10de) {
-      inAddrs[i].domain = (uint8_t) obj->attr->pcidev.domain;
-      inAddrs[i].bus = (uint8_t) obj->attr->pcidev.bus;
-      inAddrs[i].device = (uint8_t) obj->attr->pcidev.dev;
-      inAddrs[i].function = (uint8_t) obj->attr->pcidev.func;
-      i++;
+  if (count > 0) {
+    // Find all the GPUs
+    chpl_topo_pci_addr_t inAddrs[count];
+    chpl_topo_pci_addr_t outAddrs[count];
+    int i = 0;
+    while ((obj = hwloc_get_next_pcidev(topology, obj)) != NULL) {
+      if (obj->attr->pcidev.vendor_id == 0x10de) {
+        inAddrs[i].domain = (uint8_t) obj->attr->pcidev.domain;
+        inAddrs[i].bus = (uint8_t) obj->attr->pcidev.bus;
+        inAddrs[i].device = (uint8_t) obj->attr->pcidev.dev;
+        inAddrs[i].function = (uint8_t) obj->attr->pcidev.func;
+        i++;
+      }
     }
+    // Select our GPUs.
+    int rc = chpl_topo_selectMyDevices(inAddrs, outAddrs, &count);
+    if (rc != 0) {
+      fprintf(stderr, "chpl_topo_selectMyDevices returned %d\n", rc);
+      exit(1);
+    }
+    printf("GPUS:");
+    for(i = 0; i < count; i++) {
+      printf(" %04x:%02x:%02x.%x", outAddrs[i].domain, outAddrs[i].bus,
+             outAddrs[i].device, outAddrs[i].function);
+    }
+    printf("\n");
   }
-  // Select our GPUs.
-  int rc = chpl_topo_selectMyDevices(inAddrs, outAddrs, &count);
-  if (rc != 0) {
-    fprintf(stderr, "chpl_topo_selectMyDevices returned %d\n", rc);
-    exit(1);
-  }
-  printf("GPUS:");
-  for(i = 0; i < count; i++) {
-    printf(" %04x:%02x:%02x.%x", outAddrs[i].domain, outAddrs[i].bus,
-           outAddrs[i].device, outAddrs[i].function);
-  }
-  printf("\n");
 }
