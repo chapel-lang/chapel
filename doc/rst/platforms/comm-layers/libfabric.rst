@@ -321,21 +321,27 @@ slurm job, however.
 Other Settings
 --------------
 
-Setting these two environment variables can improve performance.
+Setting these environment variables can improve performance in some cases.
 
-.. code-block:: bash
+.. _readme-libfabric-CHPL_RT_COMM_OFI_DEDICATED_AMH_CORES:
 
-   export CHPL_RT_COMM_OFI_DEDICATED_AMH_CORES=true
-   export CHPL_RT_COMM_OFI_CONNECT_EAGERLY=true
+``CHPL_RT_COMM_OFI_DEDICATED_AMH_CORES``
+  Setting ``CHPL_RT_COMM_OFI_DEDICATED_AMH_CORES=true`` will
+  dedicate a core to the active message handler progress thread. For
+  example, when using ``CHPL_RT_COMM_OFI_DEDICATED_AMH_CORES=true`` on a
+  128-core system, there will be 127 cores available for ``forall`` loops
+  and similar. The other core is reserved to service requests that arrive
+  over the network. Setting this variable can improve performance in some
+  communication-intensive cases.
 
-Setting ``CHPL_RT_COMM_OFI_DEDICATED_AMH_CORES=true`` will
-dedicate a core to the active message handler progress thread. For
-example, when using ``CHPL_RT_COMM_OFI_DEDICATED_AMH_CORES=true`` on a
-128-core system, there will be 127 cores available for ``forall`` loops
-and similar. The other core is reserved to service requests that arrive
-over the network. This can improve performance in some cases.
+.. _readme-libfabric-CHPL_RT_COMM_OFI_CONNECT_EAGERLY:
 
-
+``CHPL_RT_COMM_OFI_CONNECT_EAGERLY``
+  Setting ``CHPL_RT_COMM_OFI_CONNECT_EAGERLY=true`` will cause the runtime to
+  do extra work at application launch to set up communication. Normally
+  this is done on as-needed basis, which can slow down initial
+  communication. Setting this variable can result in increased
+  performance at the cost of slightly slower application launch.
 
 
 .. _Homebrew: https://github.com/Homebrew/brew
