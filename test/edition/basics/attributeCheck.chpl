@@ -1,5 +1,5 @@
 /* START_EXAMPLE */
-@edition(first="pre-edition")
+@edition(first="preview")
 proc foo(x: int) {
   writeln("in new edition foo with arg x=", x);
 }
@@ -11,7 +11,7 @@ proc foo(x: int) {
 /* STOP_EXAMPLE */
 
 // Check specifying both first and last works
-@edition(first="2.0", last="pre-edition")
+@edition(first="2.0", last="preview")
 proc bar(s: string) {
   writeln(s);
 }
@@ -22,7 +22,7 @@ proc baz() {
   writeln("in old baz");
 }
 
-@edition(first="pre-edition", last="pre-edition")
+@edition(first="preview", last="preview")
 proc baz() {
   writeln("in new baz");
 }
