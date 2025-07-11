@@ -342,6 +342,9 @@ def rules(driver: LintDriver):
 
     @driver.basic_rule(chapel.Conditional)
     def SimpleBoolConditional(context, node: chapel.Conditional):
+        """
+        Warn for boolean conditionals that can be simplified.
+        """
         then = list(node.then_block().stmts())
         else_block = node.else_block()
         else_block = list(else_block.stmts()) if else_block else []
