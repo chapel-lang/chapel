@@ -340,6 +340,64 @@ def rules(driver: LintDriver):
 
         return [Fixit.build(Edit.build(paren_loc, new_text))]
 
+    @driver.basic_rule(chapel.Conditional)
+    def SimpleBoolConditional(context, node: chapel.Conditional):
+        then = list(node.then_block().stmts())
+        else_block = node.else_block()
+        else_block = list(else_block.stmts()) if else_block else []
+        if not (len(then) == 1 and len(else_block) == 1):
+            return
+        then_stmt = then[0]
+        else_stmt = else_block[0]
+
+        def check_for_bool(then_stmt, else_stmt, is_only_returns):
+            if isinstance(then_stmt, chapel.BoolLiteral) and isinstance(
+                else_stmt, chapel.BoolLiteral
+            ):
+                should_invert = not then_stmt.value()
+                return BasicRuleResult(
+                    node, data=(is_only_returns, should_invert)
+                )
+
+        # if they are both bool literals, this can be simplified
+        if node.is_expression_level():
+            return check_for_bool(then_stmt, else_stmt, is_only_returns=False)
+
+        # if they are both returns and are simple returns of bool literals,
+        # this can also be simplified
+        if isinstance(then_stmt, chapel.Return) and isinstance(
+            else_stmt, chapel.Return
+        ):
+            return check_for_bool(
+                then_stmt.value(), else_stmt.value(), is_only_returns=True
+            )
+
+        return True
+
+    @driver.fixit(SimpleBoolConditional)
+    def FixSimpleBoolConditional(context, result: BasicRuleResult):
+        assert isinstance(result.data, tuple)
+        is_only_returns, should_invert = result.data
+        node = result.node
+        assert isinstance(node, chapel.Conditional)
+        condition = node.condition()
+        cond_loc = condition.location()
+        cond_loc_start_line, cond_loc_start_col = cond_loc.start()
+        _, cond_loc_end_col = cond_loc.end()
+
+        # get the conditions text, using its location so we preserve comments
+        lines = chapel.get_file_lines(context, result.node)
+        condition_text = lines[cond_loc_start_line - 1][
+            cond_loc_start_col - 1 : cond_loc_end_col - 1
+        ]
+
+        if should_invert:
+            condition_text = "!(" + condition_text + ")"
+        if is_only_returns:
+            condition_text = "return " + condition_text
+
+        return [Fixit.build(Edit.build(node.location(), condition_text))]
+
     @driver.basic_rule(Coforall, default=False)
     def NestedCoforalls(context: Context, node: Coforall):
         """
