@@ -349,7 +349,7 @@ def rules(driver: LintDriver):
         else_block = node.else_block()
         else_block = list(else_block.stmts()) if else_block else []
         if not (len(then) == 1 and len(else_block) == 1):
-            return
+            return True
         then_stmt = then[0]
         else_stmt = else_block[0]
 
@@ -361,6 +361,7 @@ def rules(driver: LintDriver):
                 return BasicRuleResult(
                     node, ignorable=False, data=(is_only_returns, should_invert)
                 )
+            return True
 
         # if they are both bool literals, this can be simplified
         if node.is_expression_level():
