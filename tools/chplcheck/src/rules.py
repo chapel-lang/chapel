@@ -359,7 +359,7 @@ def rules(driver: LintDriver):
             ):
                 should_invert = not then_stmt.value()
                 return BasicRuleResult(
-                    node, data=(is_only_returns, should_invert)
+                    node, ignorable=False, data=(is_only_returns, should_invert)
                 )
 
         # if they are both bool literals, this can be simplified
