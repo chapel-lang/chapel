@@ -12151,9 +12151,17 @@ proc bytes.format(args ...?k): bytes throws {
 private proc chpl_do_format_read(f, offset: int) throws {
   var buf = allocate(uint(8), (offset+1).safeCast(c_size_t));
   var r = f.reader(locking=false);
-  defer r.close();
+  defer {
+    try {
+      r.close();
+    } catch { /* ignore deferred close error */ }
+  }
 
   r.readBinary(buf, offset);
+
+  // close errors are thrown instead of ignored
+  r.close();
+  f.close();
 
   // Add the terminating NULL byte to make C string conversion easy.
   buf[offset] = 0;
@@ -12166,7 +12174,11 @@ private proc chpl_do_format(fmt:?t, args ...?k): t throws
 
   // Open a memory buffer to store the result
   var f = openMemFile();
-  defer f.close();
+  defer {
+    try {
+      f.close();
+    } catch { /* ignore deferred close error */ }
+  }
 
   var offset:int = 0;
   {
