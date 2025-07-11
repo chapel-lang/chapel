@@ -1,0 +1,3 @@
+got = true
+got = true
+BadFormatError: bad format: no match (in fileReader.readf(fmt:string) with path "example_formatted_io_4.stdin" offset 4)

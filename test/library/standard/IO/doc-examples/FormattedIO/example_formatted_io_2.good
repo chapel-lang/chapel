@@ -1,0 +1,4 @@
+got = true, s = a
+got = true, s = a
+got = true, s = a
+BadFormatError: bad format (in fileReader.readf(fmt:string, ...) with path "example_formatted_io_2.stdin" offset 7)
