@@ -2924,7 +2924,7 @@ module ChapelArray {
 
   // The following are the historical reshape() procedures that rely
   // on copying the array's elements, proposed to be replaced by the
-  // pre-edition variants that follow
+  // preview edition variants that follow
 
   /* Return a copy of the array ``A`` containing the same values but
      in the shape of the domain ``D``. The number of indices in the
@@ -2936,7 +2936,7 @@ module ChapelArray {
 
         In addition to the above version of reshape(), there is
         another experimental version that is available when compiling
-        with ``--edition=pre-edition``.  Its main feature is that, by
+        with ``--edition=preview``.  Its main feature is that, by
         default, it creates a reshaped version of the array that
         aliases the original elements rather than making a copy of
         them.  Other new features include:
@@ -3010,7 +3010,7 @@ module ChapelArray {
   }
 
   // The following is the proposed new reshape() implementation that
-  // supports aliasing by default, currently part of a pre-edition
+  // supports aliasing by default, currently part of a preview edition
 
   @chpldoc.nodoc
   config param checkReshapeDimsByDefault = boundsChecking;
@@ -3026,7 +3026,7 @@ module ChapelArray {
   pragma "no promotion when by ref"
   pragma "fn returns aliasing array"
   @chpldoc.nodoc
-  @edition(first="pre-edition")
+  @edition(first="preview")
   proc reshape(arr: [], ranges: range(?)...) {
     return arr.chpl_aliasReshape(ranges, checkReshapeDimsByDefault);
   }
@@ -3034,14 +3034,14 @@ module ChapelArray {
   pragma "no promotion when by ref"
   pragma "fn returns aliasing array"
   @chpldoc.nodoc
-  @edition(first="pre-edition")
+  @edition(first="preview")
   proc reshape(arr: [], ranges: range(?)..., checkDims: bool) {
     return arr.chpl_aliasReshape(ranges, checkDims);
   }
 
   pragma "last resort"
   @chpldoc.nodoc
-  @edition(first="pre-edition")
+  @edition(first="preview")
   proc reshape(arr: [], ranges: range(?)..., param copy: bool)
    where copy == true {
     return arr.chpl_copyReshape({(...ranges)}, checkReshapeDimsByDefault);
@@ -3051,14 +3051,14 @@ module ChapelArray {
   pragma "fn returns aliasing array"
   pragma "last resort"
   @chpldoc.nodoc
-  @edition(first="pre-edition")
+  @edition(first="preview")
   proc reshape(arr: [], ranges: range(?)..., param copy: bool)
    where copy == false {
     return arr.chpl_aliasReshape({(...ranges)}, checkReshapeDimsByDefault);
   }
 
   @chpldoc.nodoc
-  @edition(first="pre-edition")
+  @edition(first="preview")
   proc reshape(arr: [], ranges: range(?)...,
                checkDims = checkReshapeDimsByDefault, param copy = false)
    where copy == true {
@@ -3068,7 +3068,7 @@ module ChapelArray {
   pragma "no promotion when by ref"
   pragma "fn returns aliasing array"
   @chpldoc.nodoc
-  @edition(first="pre-edition")
+  @edition(first="preview")
   proc reshape(arr: [], ranges: range(?)...,
                checkDims = checkReshapeDimsByDefault, param copy = false)
    where copy == false {
@@ -3079,7 +3079,7 @@ module ChapelArray {
   // doesn't alias, so can't use the "fn returns aliasing array" pragma
 
   @chpldoc.nodoc
-  @edition(first="pre-edition")
+  @edition(first="preview")
   proc reshape(arr: [], dom: domain(?), checkDims=checkReshapeDimsByDefault,
                param copy = false) where copy == true {
     return arr.chpl_copyReshape(dom, checkDims);
@@ -3088,7 +3088,7 @@ module ChapelArray {
   pragma "no promotion when by ref"
   pragma "fn returns aliasing array"
   @chpldoc.nodoc
-  @edition(first="pre-edition")
+  @edition(first="preview")
   proc reshape(arr: [], dom: domain(?), checkDims=checkReshapeDimsByDefault,
                param copy = false) where copy == false {
     return arr.chpl_aliasReshape(dom, checkDims);

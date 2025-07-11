@@ -1,4 +1,4 @@
-@edition(fisrt="pre-edition")
+@edition(fisrt="preview")
 proc foo(x: int) {
   writeln("in new edition foo with arg x=", x);
 }
