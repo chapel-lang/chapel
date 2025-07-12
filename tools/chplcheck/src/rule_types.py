@@ -112,7 +112,7 @@ class BasicRuleResult:
 _BasicRuleResult = typing.Union[bool, BasicRuleResult]
 """The type of values that can be returned by basic rule functions"""
 
-AstNodeType = typing.TypeVar('AstNodeType', bound=chapel.AstNode)
+AstNodeType = typing.TypeVar("AstNodeType", bound=chapel.AstNode)
 """Type variable for AstNode types used in basic rule checks. Special type
 variable to allow for more specific node types in checks."""
 
