@@ -434,6 +434,7 @@ def rules(driver: LintDriver):
         Remove the unused branch of a conditional statement, keeping the braces.
         """
         node = result.data
+        assert isinstance(node, Conditional)
         lines = chapel.get_file_lines(context, node)
 
         cond = node.condition()
