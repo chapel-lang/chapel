@@ -1211,7 +1211,8 @@ module ChapelBase {
   // left and right shift on primitive types
   //
 
-  inline proc bitshiftChecks(a, b: integral) {
+  pragma "always propagate line file info"
+  proc bitshiftChecks(a, b: integral) {
     use HaltWrappers;
 
     if b < 0 {
@@ -1226,16 +1227,17 @@ module ChapelBase {
     }
   }
 
-  inline proc bitshiftChecks(param a, param b: integral) {
+  pragma "always propagate line file info"
+  proc bitshiftChecks(param a, param b: integral) param {
     if b < 0 {
       param msg = "Cannot bitshift " + a:string + " by " + b:string +
                   " because " + b:string + " is less than 0";
-      compilerError(msg);
+      compilerError(msg, errorDepth=2);
     } else if b >= numBits(a.type) {
       param msg = "Cannot bitshift " + a:string + " by " + b:string +
                   " because " + b:string + " is >= the bitwidth of " +
                   a.type:string;
-      compilerError(msg);
+      compilerError(msg, errorDepth=2);
     }
   }
 
@@ -1261,23 +1263,23 @@ module ChapelBase {
   }
 
   inline operator <<(param a: int(?w), param b: integral) param {
-    if boundsChecking then bitshiftChecks(a, b);
+    bitshiftChecks(a, b);
     // Intentionally cast `a` to `uint(w)` for an unsigned left shift.
     return __primitive("<<", a:uint(w), b):int(w);
   }
 
   inline operator <<(param a: uint(?w), param b: integral) param {
-    if boundsChecking then bitshiftChecks(a, b);
+   bitshiftChecks(a, b);
     return __primitive("<<", a, b);
   }
 
   inline operator >>(param a: int(?w), param b: integral) param {
-    if boundsChecking then bitshiftChecks(a, b);
+    bitshiftChecks(a, b);
     return __primitive(">>", a, b);
   }
 
   inline operator >>(param a: uint(?w), param b: integral) param {
-    if boundsChecking then bitshiftChecks(a, b);
+    bitshiftChecks(a, b);
     return __primitive(">>", a, b);
   }
 
