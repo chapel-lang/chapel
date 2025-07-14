@@ -114,6 +114,14 @@ __build_packages() {
   local docker_dir_name=$os
   local docker_image_base=$(__docker_image_from_os $os)
 
+  if [ $pkg_type = "unknown" ]; then
+    echo "Unknown package type for OS $os"
+    return 1
+  fi
+  if [ -z "$docker_image_base" ]; then
+    echo "Unknown docker image base for OS $os"
+    return 1
+  fi
 
   __wget_chpl_release $chapel_version
 
@@ -167,6 +175,15 @@ __build_image() {
   local pkg_type=$(__package_type_from_dir $os)
   local docker_dir_name=$os
   local docker_image_base=$(__docker_image_from_dir $os)
+
+  if [ $pkg_type = "unknown" ]; then
+    echo "Unknown package type for OS $os"
+    return 1
+  fi
+  if [ -z "$docker_image_base" ]; then
+    echo "Unknown docker image base for OS $os"
+    return 1
+  fi
 
   __wget_chpl_release $chapel_version
 
