@@ -75,28 +75,28 @@ __wget_chpl_release() {
 }
 
 __build_all_packages() {
-  if [[ $# -ne 4 && $# -ne 5 ]]; then
-    echo "Usage: __build_packages <os> <package_name> <chapel_version> <package_version> <para>"
+  if [[ $# -ne 5 ]]; then
+    echo "Usage: __build_all_packages <os> <package_name> <chapel_version> <package_version> <para>"
     return
   fi
   __build_packages $1 $2 $3 $4 '--platform=linux/amd64,linux/arm64' $5
 }
 __build_x8664_package() {
-  if [[ $# -ne 4 && $# -ne 5 ]]; then
-    echo "Usage: __build_packages <os> <package_name> <chapel_version> <package_version> <para>"
+  if [[ $# -ne 5 ]]; then
+    echo "Usage: __build_x8664_package <os> <package_name> <chapel_version> <package_version> <para>"
     return
   fi
   __build_packages $1 $2 $3 $4 '--platform=linux/amd64' $5
 }
 __build_arm64_package() {
-  if [[ $# -ne 4 && $# -ne 5 ]]; then
-    echo "Usage: __build_packages <os> <package_name> <chapel_version> <package_version> <para>"
+  if [[ $# -ne 5 ]]; then
+    echo "Usage: __build_arm64_package <os> <package_name> <chapel_version> <package_version> <para>"
     return
   fi
   __build_packages $1 $2 $3 $4 '--platform=linux/arm64' $5
 }
 __build_native_package() {
-  if [[ $# -ne 4 && $# -ne 5 ]]; then
+  if [[ $# -ne 5 ]]; then
     echo "Usage: __build_packages <os> <package_name> <chapel_version> <package_version> <para>"
     return
   fi
@@ -104,14 +104,12 @@ __build_native_package() {
 }
 
 __build_packages() {
-  # use this to build a container image for local testing
   local os=$1
   local package_name=$2
   local chapel_version=$3
   local package_version=$4
   local architecture_string=$5
-  # default to 1 core
-  local para=${6:-1}
+  local para=$6
   local pkg_type=$(__package_type_from_os $os)
   local docker_dir_name=$os
   local docker_image_base=$(__docker_image_from_os $os)
@@ -165,8 +163,7 @@ __build_image() {
   local package_name=$2
   local chapel_version=$3
   local package_version=$4
-  # default to 1 core
-  local para=${5:-1}
+  local para=$5
   local pkg_type=$(__package_type_from_dir $os)
   local docker_dir_name=$os
   local docker_image_base=$(__docker_image_from_dir $os)
