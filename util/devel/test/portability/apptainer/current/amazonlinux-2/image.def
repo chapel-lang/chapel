@@ -7,8 +7,12 @@ From: amazonlinux:2
 
 %post
     /provision-scripts/yum-deps-amazonlinux-2.sh
-    # this installs clang 11 / llvm 11
-    yum -y install llvm-devel clang clang-devel
+    # AL2 provides LLVM 11 (only) and GCC 7.3 (by default), both of which are
+    # too old for us.
+    # Install and use GCC 10, which can be used to build bundled/none LLVM.
+    yum -y install gcc10
+    CC=gcc10-gcc
+    CXX=gcc10-g++
 
 %runscript
     ../../provision-scripts/run.sh "$@"
