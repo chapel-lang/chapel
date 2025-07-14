@@ -61,11 +61,7 @@
 #ifdef HAVE_LLVM
 #include "llvm/Config/llvm-config.h"
 #include "llvm/Support/CommandLine.h"
-#if HAVE_LLVM_VER >= 140
 #include "llvm/MC/TargetRegistry.h"
-#else
-#include "llvm/Support/TargetRegistry.h"
-#endif
 #include "llvm/Support/TargetSelect.h"
 #endif
 
@@ -354,7 +350,7 @@ const char* compileCommandFilename = "compileCommand.tmp";
 const char* compileCommand = NULL;
 char compileVersion[64];
 
-std::array<std::string, 2> editions ({{"2.0", "pre-edition"}});
+std::array<std::string, 2> editions ({{"2.0", "preview"}});
 std::string fEdition = "2.0";
 
 static bool fPrintCopyright = false;
@@ -906,6 +902,13 @@ static void setEdition(const ArgumentDescription* desc, const char* arg) {
 
   if (val == "default") {
     // Use the default edition, which is set at the declaration point
+
+  } else if (val == "pre-edition") {
+    USR_WARN("'pre-edition' has been renamed to 'preview'.  This option will "
+             "still be available for a few releases, but we recommend updating "
+             "to the new name.");
+    fEdition = editions.back();
+
   } else if (!isValidEdition(val)) {
     printf("--edition only accepts a limited set of values.  Current options");
     printf(" are:\n");

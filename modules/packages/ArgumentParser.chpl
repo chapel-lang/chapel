@@ -113,24 +113,10 @@
   Quickstart Example
   -------------------
 
-  .. code-block:: chapel
-
-    module M {
-      use ArgumentParser;
-      proc main(args:[]string) throws {
-        var parser = new argumentParser();
-        var simpleArg = parser.addArgument(name="positional");
-        var optionArg = parser.addOption(name="optional");
-        var flagArg = parser.addFlag(name="debug", defaultValue=false);
-        parser.parseArgs(args);
-
-        var debug = flagArg.valueAsBool();
-        // we are assured a value here or else the parser would have thrown an error
-        var foo = simpleArg.value();
-        var bar:string;
-        if optionArg.hasValue() then bar = optionArg.value();
-      }
-    }
+  .. literalinclude:: ../../../../test/library/packages/ArgumentParser/doc-examples/ArgumentParserExamples.chpl
+     :language: chapel
+     :start-after: START_EXAMPLE_0
+     :end-before: STOP_EXAMPLE_0
 
   This program would accept any of the following command line arguments (and other combinations):
 
@@ -193,12 +179,10 @@
 
   Example usage:
 
-  .. code-block:: chapel
-
-    // to set the help text on an argument, flag, etc.
-    var myArg = parser.addArgument(name="myArg",
-                                   help="This text describes myArg for the user");
-
+  .. literalinclude:: ../../../../test/library/packages/ArgumentParser/doc-examples/ArgumentParserExamples.chpl
+     :language: chapel
+     :start-after: START_EXAMPLE_1
+     :end-before: STOP_EXAMPLE_1
 
   To take full control over what happens when a user requests help, create a new class
   that inherits the ``HelpHandler`` and override the ``printHelp()`` method. Then,
@@ -208,16 +192,10 @@
 
   Example usage:
 
-  .. code-block:: chapel
-
-    class MyHelpHandler : HelpHandler {
-      override proc printHelp() {
-        // call some custom functions like ...
-        // printMyCustomHelp();
-        // maybe other things?
-      }
-    }
-    var parser = new argumentParser(helpHandler=new MyHelpHandler());
+  .. literalinclude:: ../../../../test/library/packages/ArgumentParser/doc-examples/ArgumentParserExamples.chpl
+     :language: chapel
+     :start-after: START_EXAMPLE_2
+     :end-before: STOP_EXAMPLE_2
 
   All help requests will now execute whatever is defined in ``printHelp()``
   and then exit, as the parser's ``exitOnError`` is `true` by default.
@@ -228,19 +206,14 @@
 
   Example usage:
 
-  .. code-block:: chapel
-
-    const myHelpMessage = "A customized message that should be displayed\n" +
-                          "instead of the usual help  and usage message.\n"
-    var parser = new argumentParser(helpMessage=myHelpMessage);
-
+  .. literalinclude:: ../../../../test/library/packages/ArgumentParser/doc-examples/ArgumentParserExamples.chpl
+     :language: chapel
+     :start-after: START_EXAMPLE_3
+     :end-before: STOP_EXAMPLE_3
 
   To turn off help handling completely, set the ``addHelp`` argument to `false`
   when initializing the ``argumentParser``.
-
-
- */
-
+*/
 @unstable("ArgumentParser is unstable.")
 module ArgumentParser {
   use List;
@@ -874,10 +847,10 @@ module ArgumentParser {
 
   We can declare a new argumentParser like so:
 
-  .. code-block:: chapel
-
-    var parser = new argumentParser();
-
+  .. literalinclude:: ../../../../test/library/packages/ArgumentParser/doc-examples/ArgumentParserExamples.chpl
+     :language: chapel
+     :start-after: START_EXAMPLE_4
+     :end-before: STOP_EXAMPLE_4
 
   **Limitations**
 
@@ -1026,9 +999,10 @@ module ArgumentParser {
 
     For example, defining an argument like this:
 
-    .. code-block:: chapel
-
-        var fileArg = parser.addArgument(name="filename");
+    .. literalinclude:: ../../../../test/library/packages/ArgumentParser/doc-examples/ArgumentParserAddArgument.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE_0
+       :end-before: STOP_EXAMPLE_0
 
     we would expect command line arguments like this:
 
@@ -1079,9 +1053,10 @@ module ArgumentParser {
 
     For example, defining an argument like this:
 
-    .. code-block:: chapel
-
-        var filesArg = parser.addArgument(name="filenames", numArgs=1..);
+    .. literalinclude:: ../../../../test/library/packages/ArgumentParser/doc-examples/ArgumentParserAddArgument.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE_1
+       :end-before: STOP_EXAMPLE_1
 
     we would expect command line arguments like either of these:
 
@@ -1156,9 +1131,10 @@ module ArgumentParser {
 
     For example, defining an option like this:
 
-    .. code-block:: chapel
-
-      var fileArg = parser.addOption(name="filename");
+    .. literalinclude:: ../../../../test/library/packages/ArgumentParser/doc-examples/ArgumentParserAddOption.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE_0
+       :end-before: STOP_EXAMPLE_0
 
     we would expect command line arguments like either of these:
 
@@ -1166,8 +1142,6 @@ module ArgumentParser {
 
       $ programName --filename=myFile1.ext
       $ programName --filename myFile1.ext
-
-
 
     :arg name: a friendly name to give this option, or a pattern to use to indicate
                 this option from the command line. If providing a pattern, use a
@@ -1232,9 +1206,10 @@ module ArgumentParser {
 
     For example, defining an option like this:
 
-    .. code-block:: chapel
-
-      var filesArg = parser.addOption(name="filenames", numArgs=1..);
+    .. literalinclude:: ../../../../test/library/packages/ArgumentParser/doc-examples/ArgumentParserAddOption.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE_1
+       :end-before: STOP_EXAMPLE_1
 
     we would expect command line arguments like any of these:
 
@@ -1327,11 +1302,12 @@ module ArgumentParser {
 
     For example, defining a flag like this:
 
-    .. code-block:: chapel
+    .. literalinclude:: ../../../../test/library/packages/ArgumentParser/doc-examples/ArgumentParserAddFlag.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE_0
+       :end-before: STOP_EXAMPLE_0
 
-      var debugArg = parser.addFlag(name="debug");
-
-    we would expect command line arguments like this:
+    We would expect command line arguments like this:
 
     .. code-block:: shell
 
@@ -1408,13 +1384,12 @@ module ArgumentParser {
 
     For example, defining a flag like this:
 
-    .. code-block:: chapel
+    .. literalinclude:: ../../../../test/library/packages/ArgumentParser/doc-examples/ArgumentParserAddFlag.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE_1
+       :end-before: STOP_EXAMPLE_1
 
-      var debugArg = parser.addFlag(name="debug",
-                                    numArgs=0..1,
-                                    defaultValue=false);
-
-    we would expect command line arguments like either of these:
+    We would expect command line arguments like either of these:
 
     .. code-block:: shell
 
@@ -1532,11 +1507,12 @@ module ArgumentParser {
 
     For example, a defining a subcommand like this:
 
-    .. code-block:: chapel
+    .. literalinclude:: ../../../../test/library/packages/ArgumentParser/doc-examples/ArgumentParserAddSubCommand.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE_0
+       :end-before: STOP_EXAMPLE_0
 
-      var subCmdRun = parser.addSubCommand("run");
-
-    we would expect command line arguments like this:
+    We would expect command line arguments like this:
 
     .. code-block:: shell
 
@@ -1571,11 +1547,12 @@ module ArgumentParser {
 
     For example, defining a passthrough delimiter like this:
 
-    .. code-block:: chapel
+    .. literalinclude:: ../../../../test/library/packages/ArgumentParser/doc-examples/ArgumentParserAddPassThrough.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE_0
+       :end-before: STOP_EXAMPLE_0
 
-      var passedArgs = parser.addPassThrough();
-
-    we would expect command line arguments like this:
+    We would expect command line arguments like this:
 
     .. code-block:: shell
 
@@ -1625,12 +1602,10 @@ module ArgumentParser {
 
     Example usage:
 
-    .. code-block:: chapel
-
-      proc main(args:[]string) throws {
-        // after parser and arguments defined
-        parser.parseArgs(args);
-      }
+    .. literalinclude:: ../../../../test/library/packages/ArgumentParser/doc-examples/ArgumentParserParseArgs.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE_0
+       :end-before: STOP_EXAMPLE_0
 
     :arg arguments: The array of values passed from the command line to `main(args:[]string)`
 
@@ -1916,10 +1891,10 @@ module ArgumentParser {
 
     Example usage:
 
-    .. code-block:: chapel
-
-      var argVal:string;
-      if myArg.hasValue() then argVal = myArg.value();
+    .. literalinclude:: ../../../../test/library/packages/ArgumentParser/doc-examples/ArgumentParserArgumentValue.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE_0
+       :end-before: STOP_EXAMPLE_0
 
     :returns: The string value for this argument as parsed from the command line
 
@@ -1934,12 +1909,10 @@ module ArgumentParser {
 
     Example usage:
 
-    .. code-block:: chapel
-
-      // to get an array of strings
-      var argValues = myArg.values();
-      // create a list of strings
-      var argList = new list(myArg.values());
+    .. literalinclude:: ../../../../test/library/packages/ArgumentParser/doc-examples/ArgumentParserArgumentValues.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE_0
+       :end-before: STOP_EXAMPLE_0
 
     :returns: An iterator over the parsed values
 

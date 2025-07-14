@@ -113,24 +113,6 @@ void initializeLlvmTargets() {
 }
 
 #ifdef HAVE_LLVM
-std::unique_ptr<clang::DiagnosticOptions>
-wrapCreateAndPopulateDiagOpts(llvm::ArrayRef<const char *> Argv) {
-#if LLVM_VERSION_MAJOR >= 14
-  return clang::CreateAndPopulateDiagOpts(Argv);
-#else
-  auto diagOpts = std::make_unique<clang::DiagnosticOptions>();
-  unsigned missingArgIndex, missingArgCount;
-  llvm::opt::InputArgList Args =
-    clang::driver::getDriverOptTable().ParseArgs(Argv.slice(1),
-                                                 missingArgIndex,
-                                                 missingArgCount);
-  clang::ParseDiagnosticArgs(*diagOpts, Args);
-  return diagOpts;
-#endif
-}
-#endif
-
-#ifdef HAVE_LLVM
 static std::string getChplLocaleModel(Context* context) {
   std::string result = "flat";
   auto chplEnv = context->getChplEnv();
@@ -312,7 +294,7 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
       cc1argsCstrs.push_back(arg.c_str());
     }
 
-    auto diagOptions = wrapCreateAndPopulateDiagOpts(cc1argsCstrs);
+    auto diagOptions = clang::CreateAndPopulateDiagOpts(cc1argsCstrs);
     auto diagClient = new clang::TextDiagnosticBuffer();
 #if LLVM_VERSION_MAJOR >= 20
       auto clangDiags =
@@ -472,7 +454,7 @@ static owned<clang::CompilerInstance> getCompilerInstanceForReadingPch(
   }
 
   clang::CompilerInstance* Clang = new clang::CompilerInstance();
-  auto diagOptions = wrapCreateAndPopulateDiagOpts(cc1argsCstrs);
+  auto diagOptions = clang::CreateAndPopulateDiagOpts(cc1argsCstrs);
   auto diagClient = new clang::TextDiagnosticPrinter(llvm::errs(),
                                                      &*diagOptions);
 #if LLVM_VERSION_MAJOR >= 20

@@ -148,8 +148,17 @@ scopeResolveViaEnum(Context* context, const AstNode* enumNode, const AstNode* no
   return nullptr;
 }
 
+static const ID scopeResolveViaInclude(Context* context,
+                                 const AstNode* includeNode,
+                                 const AstNode* node) {
+  if (auto include = includeNode->toInclude())
+    if (auto submodule = parsing::getIncludedSubmodule(context, include->id()))
+      return submodule->id();
+  return ID();
+}
+
 // For scope resolution, we handle AST nodes that don't necessarily get
-// their own ResolvedExpression (specificlaly, uses/imports), so return an ID
+// their own ResolvedExpression (specifically, uses/imports), so return an ID
 // instead of a ResolvedExpression.
 static const ID scopeResolveToIdForNode(Context* context, const AstNode* node) {
   const AstNode* search = node;
@@ -163,6 +172,8 @@ static const ID scopeResolveToIdForNode(Context* context, const AstNode* node) {
     } else if (auto rr = scopeResolveViaModule(context, search, node)) {
       return rr->toId();
     } else if(auto id = scopeResolveViaVisibilityStmt(context, search, node)) {
+      return id;
+    } else if (auto id = scopeResolveViaInclude(context, search, node)) {
       return id;
     }
     search = parsing::parentAst(context, search);

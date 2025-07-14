@@ -376,16 +376,16 @@ The native ugni communication layer is the default on Cray XC systems. See
 :ref:`readme-ugni` for more information on using the ugni communication layer.
 
 
-gasnet Communication Layer
+GASNet Communication Layer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The GASNet-based communication layer discussed in the
-:ref:`readme-gasnet` page can be used on all Cray systems.  For
-best performance it should be used with native substrates and fixed
-segments, though even then its performance will rarely match that of the
-ugni communication layer.  The relevant configurations are:
+:ref:`readme-gasnet` page can be used on Cray XC systems, using the 'ofi'
+or 'mpi' substrates. This is not well supported or tested. The
+relevant configurations are:
 
   CHPL_COMM=gasnet
+    CHPL_COMM_SUBSTRATE=ofi or mpi
     CHPL_GASNET_SEGMENT=fast or large
 
 In these configurations the heap is created with a fixed size at the
@@ -393,16 +393,12 @@ beginning of execution.  The default size works well in most cases but
 if it doesn't a different size can be specified, as discussed in the
 following section.
 
-Note that as of Chapel 2.4, the 'aries' substrate is no longer supported by
-GASNet. It is still possible to use the 'ofi' or 'mpi' substrates to target a
-Cray XC with GASNet, but this is not well supported or tested.
 
-
-gasnet Communication Layer and the Heap
+GASNet Communication Layer and the Heap
 _______________________________________
 
 In contrast to the dynamic heap extension available in the ugni comm
-layer, when the gasnet comm layer is used with a native substrate for
+layer, when the GASNet comm layer is used with a native substrate for
 higher network performance, the runtime must know up front the maximum
 size the heap will grow to during execution.
 

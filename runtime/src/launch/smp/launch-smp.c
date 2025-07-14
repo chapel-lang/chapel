@@ -35,8 +35,11 @@ int chpl_launch(int argc, char* argv[], int32_t numLocales,
   if ((numLocalesPerNode > 1) && (numNodes != 1)) {
     chpl_error("smp launcher does not support multiple nodes", 0, 0);
   }
-
-  chpl_env_set_uint("GASNET_PSHM_NODES", numLocales, 1);
+  // numLocales is the total number of locales (i.e. numNodes * numLocalesPerNode)
+  // force CHPL_RT_LOCALES_PER_NODE to this value,
+  // since the user could have passed just `-nl 4`
+  chpl_env_set_uint("CHPL_RT_LOCALES_PER_NODE", (uint64_t)numLocales, 1);
+  chpl_env_set_uint("GASNET_PSHM_NODES", (uint64_t)numLocales, 1);
 
   chpl_compute_real_binary_name(argv[0]);
   snprintf(baseCommand, sizeof(baseCommand), "%s", chpl_get_real_binary_name());

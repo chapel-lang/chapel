@@ -777,6 +777,7 @@ module ChapelArray {
   // the serialize routines to fire, when their where-clause permits.
   pragma "always RVF"
   /* The array type */
+  @chpldoc.hideImplType
   record _array : writeSerializable, readDeserializable {
     var _pid:int;  // only used when privatized
     pragma "owned"
@@ -1430,17 +1431,16 @@ module ChapelArray {
 
     // keep in sync with test/arrays/reindex/from-reindex-chpldocs.chpl
     /*
-       Return an array view over a new domain. The new domain must be
-       of the same rank and size as the original array's domain.
 
-       For example:
+      Return an array view over a new domain. The new domain must be
+      of the same rank and size as the original array's domain.
 
-       .. code-block:: chapel
+      For example:
 
-          var A: [1..10] int;
-          const D = {6..15};
-          ref reA = A.reindex(D);
-          reA[6] = 1; // updates A[1]
+      .. literalinclude:: ../../../../test/arrays/doc-examples/ArrayReindex.chpl
+         :language: chapel
+         :start-after: START_EXAMPLE_0
+         :end-before: STOP_EXAMPLE_0
     */
     pragma "fn returns aliasing array"
     inline proc reindex(newDomain: domain)
@@ -1452,17 +1452,16 @@ module ChapelArray {
     //
     // keep in sync with test/arrays/reindex/from-reindex-chpldocs.chpl
     /*
-       Return an array view over a new domain defined implicitly
-       by one or more `newDims`, which must be ranges. The new domain must be
-       of the same rank and size as the original array's domain.
+      Return an array view over a new domain defined implicitly
+      by one or more `newDims`, which must be ranges. The new domain must be
+      of the same rank and size as the original array's domain.
 
-       For example:
+      For example:
 
-       .. code-block:: chapel
-
-          var A: [3..4, 5..6] int;
-          ref reA = A.reindex(13..14, 15..16);
-          reA[13,15] = 1; // updates A[3,5]
+      .. literalinclude:: ../../../../test/arrays/doc-examples/ArrayReindex.chpl
+         :language: chapel
+         :start-after: START_EXAMPLE_1
+         :end-before: STOP_EXAMPLE_1
     */
     pragma "fn returns aliasing array"
     proc reindex(newDims...)
@@ -2925,7 +2924,7 @@ module ChapelArray {
 
   // The following are the historical reshape() procedures that rely
   // on copying the array's elements, proposed to be replaced by the
-  // pre-edition variants that follow
+  // preview edition variants that follow
 
   /* Return a copy of the array ``A`` containing the same values but
      in the shape of the domain ``D``. The number of indices in the
@@ -2937,7 +2936,7 @@ module ChapelArray {
 
         In addition to the above version of reshape(), there is
         another experimental version that is available when compiling
-        with ``--edition=pre-edition``.  Its main feature is that, by
+        with ``--edition=preview``.  Its main feature is that, by
         default, it creates a reshaped version of the array that
         aliases the original elements rather than making a copy of
         them.  Other new features include:
@@ -2951,11 +2950,10 @@ module ChapelArray {
         without creating a new copy of the reshaped values, a ``ref``
         declaration must be used, for example:
 
-        .. code-block:: chapel
-
-           var A = [1, 2, 3, 4];
-           ref B = reshape(A, 1..2, 1..2);
-           B[1,1] = 5;   // this will change the initial element of A
+        .. literalinclude:: ../../../../test/arrays/doc-examples/ArrayReshape.chpl
+           :language: chapel
+           :start-after: START_EXAMPLE
+           :end-before: STOP_EXAMPLE
 
         In contrast, if a ``var`` or ``const`` declaration is used,
         that will create a new array whose values will be initialized
@@ -3012,7 +3010,7 @@ module ChapelArray {
   }
 
   // The following is the proposed new reshape() implementation that
-  // supports aliasing by default, currently part of a pre-edition
+  // supports aliasing by default, currently part of a preview edition
 
   @chpldoc.nodoc
   config param checkReshapeDimsByDefault = boundsChecking;
@@ -3028,7 +3026,7 @@ module ChapelArray {
   pragma "no promotion when by ref"
   pragma "fn returns aliasing array"
   @chpldoc.nodoc
-  @edition(first="pre-edition")
+  @edition(first="preview")
   proc reshape(arr: [], ranges: range(?)...) {
     return arr.chpl_aliasReshape(ranges, checkReshapeDimsByDefault);
   }
@@ -3036,14 +3034,14 @@ module ChapelArray {
   pragma "no promotion when by ref"
   pragma "fn returns aliasing array"
   @chpldoc.nodoc
-  @edition(first="pre-edition")
+  @edition(first="preview")
   proc reshape(arr: [], ranges: range(?)..., checkDims: bool) {
     return arr.chpl_aliasReshape(ranges, checkDims);
   }
 
   pragma "last resort"
   @chpldoc.nodoc
-  @edition(first="pre-edition")
+  @edition(first="preview")
   proc reshape(arr: [], ranges: range(?)..., param copy: bool)
    where copy == true {
     return arr.chpl_copyReshape({(...ranges)}, checkReshapeDimsByDefault);
@@ -3053,14 +3051,14 @@ module ChapelArray {
   pragma "fn returns aliasing array"
   pragma "last resort"
   @chpldoc.nodoc
-  @edition(first="pre-edition")
+  @edition(first="preview")
   proc reshape(arr: [], ranges: range(?)..., param copy: bool)
    where copy == false {
     return arr.chpl_aliasReshape({(...ranges)}, checkReshapeDimsByDefault);
   }
 
   @chpldoc.nodoc
-  @edition(first="pre-edition")
+  @edition(first="preview")
   proc reshape(arr: [], ranges: range(?)...,
                checkDims = checkReshapeDimsByDefault, param copy = false)
    where copy == true {
@@ -3070,7 +3068,7 @@ module ChapelArray {
   pragma "no promotion when by ref"
   pragma "fn returns aliasing array"
   @chpldoc.nodoc
-  @edition(first="pre-edition")
+  @edition(first="preview")
   proc reshape(arr: [], ranges: range(?)...,
                checkDims = checkReshapeDimsByDefault, param copy = false)
    where copy == false {
@@ -3081,7 +3079,7 @@ module ChapelArray {
   // doesn't alias, so can't use the "fn returns aliasing array" pragma
 
   @chpldoc.nodoc
-  @edition(first="pre-edition")
+  @edition(first="preview")
   proc reshape(arr: [], dom: domain(?), checkDims=checkReshapeDimsByDefault,
                param copy = false) where copy == true {
     return arr.chpl_copyReshape(dom, checkDims);
@@ -3090,7 +3088,7 @@ module ChapelArray {
   pragma "no promotion when by ref"
   pragma "fn returns aliasing array"
   @chpldoc.nodoc
-  @edition(first="pre-edition")
+  @edition(first="preview")
   proc reshape(arr: [], dom: domain(?), checkDims=checkReshapeDimsByDefault,
                param copy = false) where copy == false {
     return arr.chpl_aliasReshape(dom, checkDims);

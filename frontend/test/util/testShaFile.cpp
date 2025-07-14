@@ -68,19 +68,11 @@ static void checkHash(const char* name,
 }
 
 static void testHashes() {
-#if LLVM_VERSION_MAJOR >= 13
   // sha-256
   checkHash("hello.data", "hello",
             "2CF24DBA5FB0A30E26E83B2AC5B9E29E1B161E5C1FA7425E73043362938B9824");
   checkHash("ones.data", std::string(1024*1024*32, '1'),
             "34511EDC22A4D5749A71FF3D4A47AAC494214D65EE88EC69FAC46C9ABDF5CE0D");
-#else
-  // sha-1 since sha-256 not available in LLVM < 13
-  checkHash("hello.data", "hello",
-            "AAF4C61DDCC5E8A2DABEDE0F3B482CD9AEA9434D");
-  checkHash("ones.data", std::string(1024*1024*32, '1'),
-            "CBBA74D49460868EA01AC8825FF1657205C22476");
-#endif
 }
 
 int main(int argc, char** argv) {

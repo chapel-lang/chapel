@@ -25,9 +25,9 @@ description:
 |                 |                                                            |
 |                 | See :ref:`default-edition`.                                |
 +-----------------+------------------------------------------------------------+
-| ``pre-edition`` | A collection of changes intended for future editions.      |
+| ``preview``     | A collection of changes intended for future editions.      |
 |                 |                                                            |
-|                 | See :ref:`pre-edition` and :ref:`pre-edition-changes`.     |
+|                 | See :ref:`preview-edition` and :ref:`preview-changes`.     |
 +-----------------+------------------------------------------------------------+
 
 When a change is required that would break existing user codes, the change will
@@ -35,10 +35,11 @@ be guarded by an edition.  Users interested in updating to use this new behavior
 can compile their code with ``--edition=<edition with the change>``, while the
 majority of users can continue to rely on the old behavior by default.
 
-The 2.5 release introduced two editions, ``2.0`` and ``pre-edition``.  ``2.0``
-is the default edition and will remain the default for the foreseeable future.
-``pre-edition`` is a gathering point for breaking changes until there is a
-sufficient quantity of them to justify a new edition.
+The 2.5 release introduced two editions, ``2.0`` and ``pre-edition``.  In 2.6,
+``pre-edition`` was renamed to ``preview``.  ``2.0`` is the default edition and
+will remain the default for the foreseeable future.  ``preview`` is a gathering
+point for breaking changes until there is a sufficient quantity of them to
+justify a new edition.
 
 .. _default-edition:
 
@@ -70,20 +71,20 @@ edition, if not more.
    discussion on that subject.
 
 
-.. _pre-edition:
+.. _preview-edition:
 
 -------------------
-The Pre-Edition
+The Preview Edition
 -------------------
 
-The ``pre-edition`` is a gathering point for breaking changes until there is a
-sufficient quantity of them to justify a new edition.  There will always be a
-``pre-edition``, though users should avoid relying on it for production code as
-breaking changes will be introduced to it without warning.
+The ``preview`` edition is a gathering point for breaking changes until there is
+a sufficient quantity of them to justify a new edition.  There will always be a
+``preview`` edition, though users should avoid relying on it for production code
+as breaking changes will be introduced to it without warning.
 
-Changes that have been elevated from the ``pre-edition`` into an official
-edition will still be present in the ``pre-edition`` going forward, until such
-time as a conflicting change is made.
+Changes that have been elevated from the ``preview`` edition into an official
+edition will still be present in the ``preview`` edition going forward, until
+such time as a conflicting change is made.
 
 ------------
 Old Editions
@@ -105,17 +106,17 @@ Changes
 This section is intended as a living list of breaking changes and which edition
 they were introduced in.
 
-.. _pre-edition-changes:
+.. _preview-changes:
 
-++++++++++++++++++++++++++
-Changes in the Pre-Edition
-++++++++++++++++++++++++++
+++++++++++++++++++++++++++++++
+Changes in the Preview Edition
+++++++++++++++++++++++++++++++
 
 
 The following are a list of breaking changes currently accessible by compiling
-with ``--edition=pre-edition``.  When a new edition is created, some of these
+with ``--edition=preview``.  When a new edition is created, some of these
 changes may be included in that edition as well, while others may continue to
-remain in the pre-edition until they are deemed sufficiently complete.
+remain in the preview until they are deemed sufficiently complete.
 
 - The ``reshape`` function has been modified to support aliasing.  This enables
   viewing an existing array's elements using a different shape for the array.
@@ -133,3 +134,11 @@ remain in the pre-edition until they are deemed sufficiently complete.
 
   See the note on :chpl:proc:`~ChapelArray.reshape` for more information.
 
+- The ``domain.sorted`` iterator method has been removed. It was only
+  implemented for associative domains (as that was the only type of domain that
+  could be sorted) and all other ``sort`` / ``sorted`` methods have been
+  removed. The intended replacement is to import ``Sort`` and call
+  :chpl:proc:`Sort.sorted(domain)<Sort.sorted>`.
+
+  The temporary config ``noSortedWarnings`` has also been removed, as its only
+  purpose was to suppress warnings about the ``domain.sorted`` method.

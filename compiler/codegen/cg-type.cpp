@@ -642,11 +642,9 @@ void AggregateType::codegenDef() {
         llvm::Type *globalPtrTy = nullptr;
 
         if (isOpaquePointer(llBaseType)) {
-#if HAVE_LLVM_VER >= 140
           // No need to compute the element type for an opaque pointer
           globalPtrTy = llvm::PointerType::get(gContext->llvmContext(),
                                                globalAddressSpace);
-#endif
         } else {
 #ifdef HAVE_LLVM_TYPED_POINTERS
           // Remove one level of indirection since the addr field

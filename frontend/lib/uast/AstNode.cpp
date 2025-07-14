@@ -45,6 +45,15 @@ bool AstNode::hasPragma(Context* context, pragmatags::PragmaTag p) const {
   return false;
 }
 
+bool AstNode::hasAttribute(Context* context, UniqueString attributeName) const {
+  if (auto& id = this->id()) {
+    if (auto ag = parsing::idToAttributeGroup(context, id)) {
+      return ag->hasAttribute(attributeName);
+    }
+  }
+  return false;
+}
+
 void AstNode::dumpFieldsInner(const DumpSettings& s) const {
 }
 

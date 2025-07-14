@@ -376,16 +376,6 @@ endif
 endif
 
 #
-# Don't warn for deprecated declarations with llvm 11 and 12, its a very noisy warning
-#
-ifeq ($(shell test $(CHPL_MAKE_LLVM_VERSION) -eq 11; echo "$$?"),0)
-WARN_CXXFLAGS += -Wno-deprecated-declarations
-endif
-ifeq ($(shell test $(CHPL_MAKE_LLVM_VERSION) -eq 12; echo "$$?"),0)
-WARN_CXXFLAGS += -Wno-deprecated-declarations
-endif
-
-#
 # Don't error for -Wnonnull in llvm 17+ due to false positives in llvm headers
 #
 ifeq ($(shell test $(CHPL_MAKE_LLVM_VERSION) -ge 17; echo "$$?"),0)

@@ -102,13 +102,12 @@ module SharedObject {
   }
 
 
-  // Ideally, this can be marked with nodoc and the doc put at the module level
-  //   since shared isn't really a 'record' or a 'type'
-  // But that prevents us from referencing a "top-level" shared reference
-  // If we one day support :noindexentry:, that could be applied at the module
-  //   level (instead of :noindex:)
-  // And then we could do :mod:`shared <SharedObject>`
-  // For now, `fixInternalDocs.sh` replaces `.. record:: shared` with `.. type:: shared`
+  // TODO: Ideally, this can be marked with nodoc and the doc put at the module
+  // level since shared isn't really a 'record' or a 'type'.  But that prevents
+  // us from referencing a "top-level" shared reference.  If we one day support
+  // :noindexentry:, that could be applied at the module level (instead of
+  // :noindex:).  And then we could do :mod:`shared <SharedObject>`.
+  // https://github.com/chapel-lang/chapel/issues/23071
   /*
     :type:`shared` manages the deletion of a class instance in a way
     that supports multiple owners of the class instance.
@@ -116,6 +115,7 @@ module SharedObject {
     This is currently implemented with task-safe reference counting.
   */
   pragma "managed pointer"
+  @chpldoc.hideImplType
   record _shared : writeSerializable, readDeserializable {
     type chpl_t;         // contained type (class type)
 

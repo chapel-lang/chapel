@@ -616,7 +616,7 @@ static void test9() {
 }
 
 static void test10() {
-  printf("test9\n");
+  printf("test10\n");
   Context ctx;
   Context* context = &ctx;
 
@@ -626,8 +626,8 @@ static void test10() {
         type A, B;
       }
 
-      type a = Bar(int);
-      type b = Bar(int, int);
+      type a = C(int);
+      type b = C(int, int);
       )""", {"a", "b"});
 
 

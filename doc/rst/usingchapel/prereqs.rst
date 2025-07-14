@@ -28,7 +28,7 @@ for using Chapel:
 
       * GCC 7.4 or newer
 
-      * LLVM Clang 11.0 or newer
+      * LLVM Clang 14.0 or newer
 
       * Apple Xcode/Clang 11.0 or newer
 
@@ -37,12 +37,10 @@ for using Chapel:
   * CMake is available and ``cmake`` runs version 3.20 or later.
 
   * The LLVM backend is now the default and it is easiest to use it with a
-    system-wide installation of LLVM and clang. On Mac OS X, LLVM 14 through 20
-    are currently supported. On other platforms, LLVM and clang versions 11
-    through 20 are currently supported. If a system-wide installation of
-    LLVM and clang with one of those versions is not available, you can
-    use the bundled LLVM or disable LLVM support (see
-    :ref:`readme-chplenv.CHPL_LLVM`).
+    system-wide installation of LLVM and clang. LLVM versions 14 through 20 are
+    currently supported. If a system-wide installation of LLVM and clang with
+    one of those versions is not available, you can use the bundled LLVM or
+    disable LLVM support (see :ref:`readme-chplenv.CHPL_LLVM`).
 
   * When using the LLVM installation bundled with Chapel
     (``CHPL_LLVM=bundled``), make sure your machine has at least 4GB of memory

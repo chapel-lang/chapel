@@ -8,9 +8,6 @@ source $UTIL_CRON_DIR/common.bash
 source $UTIL_CRON_DIR/common-c-backend.bash
 source $UTIL_CRON_DIR/common-localnode-paratest.bash
 
-# common-llvm restricts us to extern/ferguson, but we want all the tests
-unset CHPL_NIGHTLY_TEST_DIRS
-
 nightly_args="${nightly_args} $(set +x ; get_nightly_paratest_args) -asserts"
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="c-backend"

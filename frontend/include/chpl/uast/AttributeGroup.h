@@ -218,6 +218,13 @@ class AttributeGroup final : public AstNode {
     return pragmas_.find(tag) != pragmas_.end();
   }
 
+  /**
+    Returns true if the given attribute name is present on this attributeGroup
+  */
+  bool hasAttribute(UniqueString attributeName) const {
+    return getAttributeNamed(attributeName) != nullptr;
+  }
+
   // An iterable over the pragmas of this.
   using PragmaIterable = Iterable<std::set<PragmaTag>>;
 

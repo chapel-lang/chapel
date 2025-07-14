@@ -362,18 +362,23 @@ GASNet also provides additional environment variable settings that can
 optionally be used to control the detailed behavior of these threads, see the
 GASNet documentation referenced in :ref:`ibv-conduit-docs`.
 
+.. _readme-infiniband-CHPL_RT_COMM_GASNET_DEDICATED_PROGRESS_CORE:
+
 By default, the blocking progress threads are created by GASNet and do not
 have any thread-specific core binding.  An experimental Chapel feature
-allows more control over the behavior of the blocking progress threads:
+allows the blocking progress thread to be bound to a specific core:
 
 .. code-block:: bash
 
+      export CHPL_RT_COMM_GASNET_DEDICATED_PROGRESS_CORE=true
       export CHPL_RT_COMM_GASNET_DEFER_PROGRESS_THREADS=true
 
-Specifically, this setting enables the
-``CHPL_RT_COMM_GASNET_DEDICATED_PROGRESS_CORE`` setting described in the
-earlier section to additionally control the placement and binding of GASNet's
-blocking send and receive progress threads.
+This combination dedicates a core for the receive progress thread (as
+well as the PSHM progress thread, if using co-locales). That core will be
+dedicated to improving communication performance and will not be
+avaliable for other computation. Note that it is possible to dedicate a
+core for the PSHM progress thread without changing the receive progress
+thread by setting only the first of these.
 
 .. _ibv-conduit-docs:
 

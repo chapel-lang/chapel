@@ -128,4 +128,6 @@ void testArrayAssign(Context* context, const char* prelude, const char* typeExpr
 void testArrayMaterialize(Context* context, const char* prelude, const char* iterable, int expectedRank, const char* expectedStride, const char* expectedCopyInitFn);
 void testArrayCoerce(Context* context, const char* prelude, const char* typeExpr, const char* iterable, int expectedRank, const char* expectedStride, const char* expectedCopyInitFn);
 
+std::string toString(QualifiedType type);
+
 #endif

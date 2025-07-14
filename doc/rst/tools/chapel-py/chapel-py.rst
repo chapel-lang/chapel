@@ -65,12 +65,17 @@ Installation
 ------------
 
 Make sure that you have a from-source build of Chapel available in your
-``CHPL_HOME``. Currently, the build script also requires having LLVM available
-in your path. The build script also requires that the development package of
-Python be installed (for many package managers this is called
-``python3-devel``). With those constraints met, you can just run ``make
-chapel-py-venv``. This will allow you to use the Python bindings from a
-Python script run with
+``CHPL_HOME``, the development package for Python (for many package managers
+this is called ``python3-devel``), and that you satisfy all the other
+:ref:`Chapel prerequisites <readme-prereqs>`. Then the Python bindings can be
+built and installed as:
+
+.. code-block::
+
+   cd $CHPL_HOME
+   make chapel-py-venv
+
+This will allow you to use the Python bindings from a Python script run with
 ``$CHPL_HOME/util/config/run-in-venv-with-python-bindings.bash python3``,
 instead of just ``python3``.
 
@@ -80,7 +85,18 @@ If you wish to install the Python bindings in your system python, you must manua
 
    cd $CHPL_HOME
    make frontend-shared
-   python3 -m pip install $CHPL_HOME/tools/chapel-py
+   CC=$CC CXX=$CXX python3 -m pip install $CHPL_HOME/tools/chapel-py
+
+.. note::
+
+   The ``CC=$CC CXX=$CXX`` prefix is necessary to ensure that the Python
+   bindings are built with the correct compiler. Even if you have ``CC`` and
+   ``CXX`` unset in your environment they must be set to some empty value,
+   otherwise the build may fail in unexpected ways. Using ``CC=$CC CXX=$CXX``
+   is a workaround that preserves the values of these variables from the
+   environment, but also sets them to an empty value if they are unset. This is
+   a workaround for an issue with the Python build system, and will not be
+   necessary in the future.
 
 
 Usage

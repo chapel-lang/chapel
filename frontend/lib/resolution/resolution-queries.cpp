@@ -2276,6 +2276,7 @@ instantiateSignatureImpl(ResolutionContext* rc,
     visitor.skipTypeQueries = false;
 
     bool addSub = false;
+    bool isInstantiated = false;
     QualifiedType useType;
     const auto formal = untypedSignature->formalDecl(entry.formalIdx());
     const auto& actualType = entry.actualType();
@@ -2336,6 +2337,7 @@ instantiateSignatureImpl(ResolutionContext* rc,
       }
 
       if (got.instantiates() || formalType.isType()) {
+        addSub = true;
         // add a substitution for a valid value
         //
         // if no conversion took place, then we can use the actual type. One
@@ -2345,17 +2347,23 @@ instantiateSignatureImpl(ResolutionContext* rc,
         // of the same type), but we want to instantiate with whatever the
         // formal type was (e.g., if we're the formal is `_owned(C)`, instantiate
         // with `_owned(C)`).
-        if (!got.converts() && instantiateAcrossManagerRecordConversion(context, formalType, actualType, useType)) {
-          // useType was set as an out parameter of the call in the condition.
-          addSub = true;
-        } else if (!got.converts()) {
-          // use the actual type since no conversion/promotion was needed
-          addSub = true;
-          useType = scalarType;
+        if (!got.converts()) {
+          if (instantiateAcrossManagerRecordConversion(context, formalType, actualType, useType)) {
+            // useType was set as an out parameter of the call in the condition.
+            isInstantiated = true;
+          } else if (formalType.isType() && !got.instantiates()) {
+            // When a type formal's type expression is a specific instantiation,
+            // e.g., `type T : R(int)`, we want to add a substitution but
+            // should not consider it instantiated.
+            useType = scalarType;
+          } else {
+            // use the actual type since no conversion/promotion was needed
+            isInstantiated = true;
+            useType = scalarType;
+          }
         } else {
+          isInstantiated = true;
           // get instantiation type
-          addSub = true;
-
           useType = getInstantiationType(context,
                                          scalarType,
                                          formalType);
@@ -2419,7 +2427,10 @@ instantiateSignatureImpl(ResolutionContext* rc,
         if ((size_t) formalIdx >= formalsInstantiated.size()) {
           formalsInstantiated.resize(sig->numFormals());
         }
-        formalsInstantiated.setBit(formalIdx, true);
+
+        if (isInstantiated) {
+          formalsInstantiated.setBit(formalIdx, true);
+        }
       }
 
       formalIdx++;
@@ -4244,6 +4255,12 @@ static bool resolveFnCallSpecial(Context* context,
     auto dstQt = ci.actual(1).type();
     auto srcTy = srcQt.type();
     auto dstTy = dstQt.type();
+
+    if (!srcQt.isType() && srcTy == dstTy) {
+      // TODO: insert copy for unnecessary casts involving records
+      exprTypeOut = srcQt;
+      return true;
+    }
 
     auto targetParamGuess = Param::tryGuessParamTagFromType(dstQt.type());
     if (srcQt.isParam() && !targetParamGuess) {
