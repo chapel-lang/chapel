@@ -51,7 +51,7 @@ if [ $(__package_type_from_os $OS) == "apt" ]; then
   apt_conf="./util/packaging/common/apt.conf"
   rm -f $apt_conf
   echo "Acquire::http::proxy \"$PROXY_ADDRESS_FOR_HTTP\";" >> $apt_conf
-  echo "Acquire::https::proxy \"$PROXY_ADDRESS_FOR_HTTP\";" >> $apt_conf
+  echo "Acquire::https::proxy \"$PROXY_ADDRESS_FOR_HTTPS\";" >> $apt_conf
   export INJECT_BEFORE_DEPS="COPY ./common/apt.conf /etc/apt/apt.conf"
 fi
 
