@@ -1263,23 +1263,23 @@ module ChapelBase {
   }
 
   inline operator <<(param a: int(?w), param b: integral) param {
-    bitshiftChecks(a, b);
+    if boundsChecking then bitshiftChecks(a, b);
     // Intentionally cast `a` to `uint(w)` for an unsigned left shift.
     return __primitive("<<", a:uint(w), b):int(w);
   }
 
   inline operator <<(param a: uint(?w), param b: integral) param {
-   bitshiftChecks(a, b);
+    if boundsChecking then bitshiftChecks(a, b);
     return __primitive("<<", a, b);
   }
 
   inline operator >>(param a: int(?w), param b: integral) param {
-    bitshiftChecks(a, b);
+    if boundsChecking then bitshiftChecks(a, b);
     return __primitive(">>", a, b);
   }
 
   inline operator >>(param a: uint(?w), param b: integral) param {
-    bitshiftChecks(a, b);
+    if boundsChecking then bitshiftChecks(a, b);
     return __primitive(">>", a, b);
   }
 
