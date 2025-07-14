@@ -11,12 +11,12 @@ New Editions Process
 When creating new editions, be sure to:
 
 - Add the new edition name to the array of editions in the compiler just
-  **before** ``pre-edition``.
-- Update all desired changes that are currently associated with ``pre-edition``
-  to be linked with this new edition name.
+  **before** ``preview``.
+- Update all desired changes that are currently associated with the ``preview``
+  edition to be linked with this new edition name.
 
   - Update :ref:`edition-changes` to list those changes under this new release
-    name instead of under :ref:`pre-edition-changes`.
+    name instead of under :ref:`preview-changes`.
 
 - When https://github.com/chapel-lang/chapel/issues/27336 gets implemented, be
   sure to update it as well.
@@ -47,13 +47,13 @@ The ``@edition`` attribute requires one or both of the following arguments:
 - last
 
   - To specify the final edition that will include this symbol.  When not
-    specified, will be ``pre-edition``.
+    specified, will be the ``preview`` edition.
 
 When using the attribute, the old behavior should be marked with
 ``@edition(last="<most recent edition name>")``, while the new behavior should
-be marked with ``@edition(first="pre-edition")``.  This will ensure that the
+be marked with ``@edition(first="preview")``.  This will ensure that the
 old behavior remains available with previous editions, while the new behavior
-becomes available in the ``pre-edition``.  E.g.,
+becomes available in the ``preview`` edition.  E.g.,
 
 .. literalinclude:: ../../../../test/edition/basics/attributeCheck.chpl
    :language: chapel
@@ -89,7 +89,7 @@ resolution, but for specific compiler-level breaking changes the range will
 likely have to be explicitly specified.
 
 All known editions are stored in an array in the compiler in order, and the last
-edition in the array is always ``pre-edition``.
+edition in the array is always the ``preview`` edition.
 
 +++++++++++++++
 Runtime Changes
@@ -111,7 +111,7 @@ like:
 
 .. code-block:: chapel
 
-   @edition(first="pre-edition")
+   @edition(first="preview")
    proc chpl_print_complex(...) {
      return qio_channel_print_complex(false, _channel_internal, re, im,
                                       numBytes(re.type),
