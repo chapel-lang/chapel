@@ -5,12 +5,9 @@
 # Argument are set via the environment:
 #   CHPL_VERSION: The version of the release to create.
 #   CHPL_TARBALL: The location of the tarball to use. If not set, the tarball will be downloaded.
-#   PACKAGE_TYPE: The type of package to build. Either 'apt' or 'rpm'.
 #   OS: The OS to build the package for. e.g. 'ubuntu22'
 #   PACKAGE_NAME: The name of the package to build. e.g. 'chapel'
 #   PACKAGE_VERSION: The version of the package to build, usually this is '1'
-#   DOCKER_DIR_NAME: The name of the directory in util/packaging/{PACKAGE_TYPE} that contains the Dockerfile to use.
-#   DOCKER_IMAGE_BASE: The name of the Docker image to use, including tag.
 #   PARALLEL: The number of cores to use for building the package. Default is 1.
 
 #
@@ -47,6 +44,15 @@ if [ -n "$CHPL_TARBALL" ]; then
   log_info "Using local tarball: $CHPL_TARBALL"
   mkdir -p $CHPL_HOME/util/packaging/tarballs
   cp $CHPL_TARBALL $CHPL_HOME/util/packaging/tarballs/chapel-${CHPL_VERSION}.tar.gz
+fi
+
+# For debian builds, setup some extra proxy/network information
+if [ $(__package_type_from_os $OS) == "apt" ]; then
+  apt_conf="./util/packaging/common/apt.conf"
+  rm -f $apt_conf
+  echo "Acquire::http::proxy \"$PROXY_ADDRESS_FOR_HTTP\";" >> $apt_conf
+  echo "Acquire::https::proxy \"$PROXY_ADDRESS_FOR_HTTP\";" >> $apt_conf
+  export INJECT_BEFORE_DEPS="COPY ./common/apt.conf /etc/apt/apt.conf"
 fi
 
 # if BUILD_CROSS_PLATFORM is set, build the cross-platform package
