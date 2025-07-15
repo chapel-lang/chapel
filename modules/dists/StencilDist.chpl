@@ -1207,7 +1207,17 @@ iter StencilDom.these(param tag: iterKind, followThis) where tag == iterKind.fol
 //
 proc StencilDom.dsiBuildArray(type eltType, param initElts:bool) {
   if isOwnedClassType(eltType) {
-    compilerWarning("Creating a 'stencilDist'-distributed array of 'owned' classes is discouraged, since any calls to 'updateFluff()' will transfer the ownership of boundary values from one locale to the other, leaving the original with the value 'nil'");
+    if isNonNilableClassType(eltType) {
+      //
+      // 'owned C' simply doesn't work today, so this creates a clean error
+      //
+      compilerError("'stencilDist'-distributed arrays of non-nilable 'owned' classes are not currently supported");
+    } else {
+      //
+      // 'owned C?' works, but is probably surprising, so warn about it
+      //
+      compilerWarning("Creating a 'stencilDist'-distributed array of 'owned' classes is discouraged, since any calls to 'updateFluff()' will transfer the ownership of boundary values from one locale to the other, leaving the original with the value 'nil'");
+    }
   }
   const dom = this;
   const creationLocale = here.id;
