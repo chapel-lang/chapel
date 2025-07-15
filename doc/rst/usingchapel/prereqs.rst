@@ -101,7 +101,7 @@ We have used the following commands to install the above prerequisites:
       sudo apk add llvm-dev clang-dev clang-static llvm-static
 
 
-  * Amazon Linux 2 (but note `Amazon Linux 2 CHPL_LLVM!=system incompatibility`_)::
+  * Amazon Linux 2 (but note `Amazon Linux 2 CHPL_LLVM==system incompatibility`_)::
 
       sudo yum install git gcc gcc-c++ m4 perl python tcsh bash perl python python-devel python-setuptools bash make gawk python3 which
       sudo yum install wget tar openssl-devel
@@ -112,7 +112,12 @@ We have used the following commands to install the above prerequisites:
       make
       sudo make install
       sudo update-alternatives --install /usr/bin/cmake cmake /usr/local/bin/cmake 1
-      sudo yum install llvm-devel clang clang-devel
+      sudo yum install gcc10 gcc10-c++
+      sudo export CC=gcc10-gcc
+      sudo export CXX=gcc10-g++
+      sudo export CHPL_HOST_CC=gcc10-gcc
+      sudo export CHPL_HOST_CXX=gcc10-g++
+      sudo export CHPL_LLVM=bundled
 
 
   * Amazon Linux 2023::
@@ -186,13 +191,15 @@ We have used the following commands to install the above prerequisites:
 Compatibility Notes
 -------------------
 
-Amazon Linux 2 CHPL_LLVM!=system incompatibility
+Amazon Linux 2 CHPL_LLVM==system incompatibility
 ++++++++++++++++++++++++++++++++++++++++++++++++
 
 Amazon Linux 2 uses GCC 7.3.1 but GCC 7.4 or newer is required to build
-LLVM. Chapel can use a system-wide install of LLVM on this platform, so
-installing the LLVM packages as shown above and using `CHPL_LLVM=system`
-is the recommended workaround.
+LLVM, and also uses LLVM 11 but LLVM 14 or newer is required for Chapel.
+To use Chapel on this platform, installing a newer GCC is required. The repos
+provide a GCC 10 package, which we then set environment variables for Chapel to
+use instead of the default version. Chapel can then be built with
+``CHPL_LLVM=none`` or ``CHPL_LLVM=bundled``.
 
 Newer CMake required to build LLVM
 ++++++++++++++++++++++++++++++++++
