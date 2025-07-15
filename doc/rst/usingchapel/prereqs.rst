@@ -76,7 +76,7 @@ Installation
 
   The commands below are automatically generated.
   To regenerate them:
-    cd util/devel/test/apptainer
+    cd util/devel/test/portability/apptainer
     ./extract-docs.py
     paste output below & adjust to add any notes
 
