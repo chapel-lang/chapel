@@ -7,6 +7,9 @@ From: amazonlinux:2
 
 %post
     /provision-scripts/yum-deps-and-gcc10-amazonlinux-2.sh
+    # AL2 only provides LLVM 11 in repos which is too old, so have to use
+    # bundled.
+    export CHPL_LLVM=bundled
 
 %runscript
     ../../provision-scripts/run.sh "$@"
