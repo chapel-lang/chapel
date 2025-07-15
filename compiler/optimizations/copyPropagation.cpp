@@ -1027,9 +1027,10 @@ void copyPropagation(void) {
       // Iterate GCP with dead code elimination.
       while (globalCopyPropagation(fn) > 0)
       {
-        if (!fNoDeadCodeElimination)
+        if (!fNoDeadCodeElimination) {
           deadVariableElimination(fn);
           eliminateLiteralExpressions(fn);
+        }
       }
     }
   }
