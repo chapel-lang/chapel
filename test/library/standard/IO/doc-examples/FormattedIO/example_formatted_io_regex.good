@@ -1,0 +1,6 @@
+got = true
+got = true
+BadFormatError: bad format: no match (in fileReader.readf(fmt:string) with path "example_formatted_io_regex.stdin" offset 4)
+got = true, s = b
+got = true, s = bb
+BadFormatError: bad format: no match (in fileReader.readf(fmt:string, ...) with path "example_formatted_io_regex.stdin" offset 10)

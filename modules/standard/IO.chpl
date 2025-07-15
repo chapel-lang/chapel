@@ -56,90 +56,26 @@ read or write access to its file.
 
 For example, the following program opens a file and writes an integer to it:
 
-.. code-block:: chapel
-
-  use IO;
-
-  try {
-    // open the file "test-file.txt" for writing, creating it if
-    // it does not exist yet.
-    var myFile = open("test-file.txt", ioMode.cw);
-
-    // create a fileWriter starting at the beginning of the file
-    // (this fileWriter will not be used in parallel, so does not need to use
-    // locking)
-    var myFileWriter = myFile.writer(locking=false);
-
-    var x: int = 17;
-
-    // This function will write the human-readable text version of x;
-    // binary I/O is also possible.
-    myFileWriter.write(x);
-
-    // Now test-file.txt contains:
-    // 17
-
-  } catch e: Error {
-    // Generally speaking, the I/O functions throw errors.  Handling these
-    // errors is application-dependent and is left out of this example for
-    // brevity.  Please see the documentation for individual functions for more
-    // details about errors that they can throw.
-  }
+.. literalinclude:: ../../../../test/library/standard/IO/doc-examples/example_open_read_write.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE_1
+ :end-before: STOP_EXAMPLE_1
 
 Then, the following program can be used to read the integer:
 
-.. code-block:: chapel
-
-  use IO;
-
-  try {
-    // open the file "test-file.txt" for reading only
-    var myFile = open("test-file.txt", ioMode.r);
-
-    // create a fileReader starting at the beginning of the file
-    // (this fileReader will not be used in parallel, so does not need to use
-    // locking)
-    var myFileReader = myFile.reader(locking=false);
-
-    var x: int;
-
-    // Now read a textual integer. Note that the
-    // fileReader.read function returns a bool to indicate
-    // if it read something or if the end of the file
-    // was reached before something could be read.
-    var readSomething = myFileReader.read(x);
-
-    writeln("Read integer ", x);
-    // prints out:
-    // Read integer 17
-
-  } catch e: Error {
-    // Generally speaking, the I/O functions throw errors.  Handling these
-    // errors is application-dependent and is left out of this example for
-    // brevity.  Please see the documentation for individual functions for more
-    // details about errors that they can throw.
-  }
+.. literalinclude:: ../../../../test/library/standard/IO/doc-examples/example_open_read_write.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE_2
+ :end-before: STOP_EXAMPLE_2
 
 The :proc:`~IO.read` functions allow one to read values into variables as
 the following example demonstrates. It shows three ways to read values into
 a pair of variables ``x`` and ``y``.
 
-.. code-block:: chapel
-
-  use IO;
-
-  var x: int;
-  var y: real;
-  /* reading into variable expressions, returning
-     true if the values were read, false on EOF */
-  var ok:bool = read(x, y);
-
-  /* reading via a single type argument */
-  x = read(int);
-  y = read(real);
-
-  /* reading via multiple type arguments */
-  (x, y) = read(int, real);
+.. literalinclude:: ../../../../test/library/standard/IO/doc-examples/example_read_vars.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE
+ :end-before: STOP_EXAMPLE
 
 Design Rationale
 ----------------
@@ -164,23 +100,17 @@ on a user-defined data type to define how that type is deserialized from a
 ``fileReader`` or serialized to a ``fileWriter``. The method signatures for
 non-class types are:
 
-.. code-block:: chapel
-
-   proc T.serialize(writer: fileWriter(locking=false, ?),
-                    ref serializer: ?st) throws
-
-   proc ref T.deserialize(reader: fileReader(locking=false, ?),
-                          ref deserializer: ?dt) throws
+.. literalinclude:: ../../../../test/library/standard/IO/doc-examples/example_de-serialize_methods.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE_1
+ :end-before: STOP_EXAMPLE_1
 
 The signatures for classes are slightly different:
 
-.. code-block:: chapel
-
-   override proc T.serialize(writer: fileWriter(locking=false, ?),
-                             ref serializer: ?st) throws
-
-   override proc T.deserialize(reader: fileReader(locking=false, ?),
-                               ref deserializer: ?dt) throws
+.. literalinclude:: ../../../../test/library/standard/IO/doc-examples/example_de-serialize_methods.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE_2
+ :end-before: STOP_EXAMPLE_2
 
 The ``serializer`` and ``deserializer`` arguments must satisfy the
 :ref:`Serializer API<io-serializer-API>` and the
@@ -194,20 +124,10 @@ necessarily required to utilize their ``serializer`` and ``deserializer``
 arguments, and can instead trivially read and write from their ``fileReader``
 and ``fileWriter`` arguments. For example:
 
-.. code-block:: chapel
-
-  // A record 'R' that serializes as an integer
-  record R : writeSerializable {
-    var x : int;
-
-    proc serialize(writer: fileWriter(locking=false, ?),
-                   ref serializer: ?st) {
-      writer.write(x);
-    }
-  }
-
-  var val = new R(5);
-  writeln(val); // prints '5'
+.. literalinclude:: ../../../../test/library/standard/IO/doc-examples/example_basic_serializer.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE
+ :end-before: STOP_EXAMPLE
 
 Using Serializers and Deserializers
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -218,12 +138,10 @@ to support serializing various kinds of types. These methods can be used
 to serialize or deserialize a type in a format-agnostic way. For example,
 consider a simple 'point' type:
 
-.. code-block:: chapel
-
-  record point : writeSerializable {
-    var x : int;
-    var y : int;
-  }
+.. literalinclude:: ../../../../test/library/standard/IO/doc-examples/example_point_de-serializer.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE_1
+ :end-before: STOP_EXAMPLE_1
 
 The default implementation of ``point``'s ``serialize`` method will naturally
 serialize ``point`` as a record. In the default serialization format, this
@@ -240,37 +158,19 @@ the ``fileWriter`` to use when writing serialized output and the number of
 elements in the tuple. The returned value from ``startTuple`` is a helper
 object that implements ``writeElement`` and ``endTuple`` methods:
 
-.. code-block:: chapel
-
-    proc point.serialize(writer: fileWriter(locking=false, ?),
-                         ref serializer: ?st) {
-      // Start serializing and get the helper object
-      // '2' represents the number of tuple elements to be serialized
-      var ser = serializer.startTuple(writer, 2);
-
-      ser.writeElement(x); // serialize 'x' as a tuple element
-      ser.writeElement(y); // serialize 'y' as a tuple element
-
-      // End serialization of the tuple
-      ser.endTuple();
-    }
+.. literalinclude:: ../../../../test/library/standard/IO/doc-examples/example_point_de-serializer.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE_2
+ :end-before: STOP_EXAMPLE_2
 
 Now, when using different Serializers like the :type:`~IO.defaultSerializer` or
 the :type:`~JSON.jsonSerializer`, the ``point`` type can be serialized without
 introducing special cases for each format:
 
-.. code-block:: chapel
-
-  use IO, JSON;
-
-  var p = new point(4, 2);
-
-  // Prints '(4, 2)' in the default serialization format
-  stdout.writeln(p);
-
-  // Prints '[4, 2]' in the JSON serialization format
-  var jsonWriter = stdout.withSerializer(jsonSerializer);
-  jsonWriter.writeln(p);
+.. literalinclude:: ../../../../test/library/standard/IO/doc-examples/example_point_de-serializer.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE_3
+ :end-before: STOP_EXAMPLE_3
 
 A similar API exists for deserialization that would allow for deserializing a
 ``point`` as a tuple. Please refer to the
@@ -558,31 +458,10 @@ out of memory when attempting to allocate more buffer space.
 As such, it is typically recommended that more specific errors are caught and
 recovered from separately from a ``SystemError``. See the following example:
 
-.. code-block:: chapel
-
-  use IO;
-
-  const r = openReader("test.txt");
-
-  try {
-    var i = r.read(int);
-    // ...
-  } catch e: EofError {
-    writeln("r is at EOF");
-    // we're done reading
-
-  } catch e: UnexpectedEofError {
-    writeln("unable to read an 'int'");
-    // try to read something else? ...
-
-  } catch e: SystemError {
-    writeln("system error in IO implementation: ", e);
-    // try to recover from the error? ...
-
-  } catch e: Error {
-    writeln("something else went wrong...");
-  }
-
+.. literalinclude:: ../../../../test/library/standard/IO/doc-examples/example_error_handling.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE
+ :end-before: STOP_EXAMPLE
 
 .. _io-transactions:
 
@@ -625,27 +504,10 @@ any portion of its buffer.
 
 See the following example of a simple I/O transaction:
 
-.. code-block:: chapel
-
-  use IO;
-
-  var fr = openReader("file.txt");
-
-  // mark the current channel position
-  fr.mark();
-
-  // read an array of bytes
-  var a: [0..<200] uint(8);
-  fr.read(a);
-
-  // try to match a pattern
-  if fr.matchLiteral("b") {
-    fr.commit(); // "b" was found, continue reading from the current offset
-  } else {
-    fr.revert(); // "b" was't found, revert back to the marked position
-
-    // try to read something else from the file, throw an error, etc.
-  }
+.. literalinclude:: ../../../../test/library/standard/IO/doc-examples/example_transactions.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE
+ :end-before: STOP_EXAMPLE
 
 .. _filereader-filewriter-regions:
 
@@ -677,31 +539,10 @@ portions of a file from separate tasks. See the following example, which
 uses multiple tasks to concurrently read bytes from a binary file into an
 array of bytes:
 
-.. code-block:: chapel
-
-  use IO;
-
-  // the number of tasks to use
-  config const nWorkers = 8;
-
-  // open a (large) binary file
-  var f = open("file.dat", ioMode.r);
-
-  // compute how many bytes each worker will read
-  const nBytes = f.size,
-        nPerLoc = nBytes/ nWorkers;
-
-  // create an array to hold the file contents
-  var a: [0..<nBytes] uint(8);
-
-  // concurrently read each worker's region into 'a'
-  coforall w in 0..<nWorkers {
-    const myRegion = (w*nPerLoc)..<((w+1) * nPerLoc),
-          fr = f.reader(region=myRegion, locking=false);
-
-    fr.readBinary(a[myRegion]);
-  }
-
+.. literalinclude:: ../../../../test/library/standard/IO/doc-examples/example_read_region.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE
+ :end-before: STOP_EXAMPLE
 
 .. _locking-filereaders-and-filewriters:
 
@@ -718,13 +559,10 @@ and ``fileWriter`` type. As such, it is possible to use type constraints to
 designate whether a reader or writer is locking. For example this could be
 useful in a procedure that relies on a ``reader`` argument being locking:
 
-.. code-block:: chapel
-
-  use IO;
-
-  proc readSomething(reader: fileReader(locking=true, ?)) {
-    // use 'reader' concurrently with another fileReader/fileWriter   ...
-  }
+.. literalinclude:: ../../../../test/library/standard/IO/doc-examples/example_lock_filereader.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE
+ :end-before: STOP_EXAMPLE
 
 The ``locking`` field can be set by passing the desired value to one of the
 following routines that create a :record:`fileReader` or :record:`fileWriter`:
@@ -1573,18 +1411,10 @@ private const IOHINTS_NOMMAP:      c_int = QIO_METHOD_PREADPWRITE;
 
   This example depicts how an ``ioHintSet`` might be used.
 
-  .. code-block:: chapel
-
-    use IO;
-
-    // define a set of hints using a union operation
-    var hints = ioHintSet.sequential | ioHintSet.prefetch;
-
-    // open a file using the hints
-    var f: file;
-    try! {
-      f = open("path/to/my/file.txt", ioMode.r, hints=hints);
-    }
+  .. literalinclude:: ../../../../test/library/standard/IO/doc-examples/example_ioHintSet.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE
+   :end-before: STOP_EXAMPLE
 */
 record ioHintSet {
   @chpldoc.nodoc
@@ -2579,21 +2409,14 @@ record defaultSerializer {
       fields. For example, the following classes with values
       ``x=5`` and ``y=2.0``:
 
-      .. code-block:: chapel
-
-        class Parent {
-          var x : int;
-        }
-
-        class Child: Parent {
-          var y : real;
-        }
+      .. literalinclude:: ../../../../test/library/standard/IO/doc-examples/example_serialized_class.chpl
+       :language: chapel
+       :start-after: START_EXAMPLE
+       :end-before: STOP_EXAMPLE
 
       would be serialized as:
 
-      .. code-block:: text
-
-        {x = 5, y = 2.0}
+      .. literalinclude:: ../../../../test/library/standard/IO/doc-examples/example_serialized_class.good
 
       :arg writer: The ``fileWriter`` to be used when serializing. Must match
                    the writer used to create current AggregateSerializer.
@@ -2653,7 +2476,7 @@ record defaultSerializer {
     parentheses. For example, the tuple literal ``(1, 2, 3)`` would be
     serialized as:
 
-    .. code-block::
+    .. code-block:: text
 
       (1, 2, 3)
 
@@ -6883,14 +6706,10 @@ proc fileWriter.styleElement(element:int):int {
 
   **Example:**
 
-  .. code-block:: chapel
-
-    var r = openReader("ints.txt"),
-        sum = 0;
-
-    forall line in r.lines() with (+ reduce sum) {
-      sum += line:int;
-    }
+  .. literalinclude:: ../../../../test/library/standard/IO/doc-examples/example_read_lines.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE
+   :end-before: STOP_EXAMPLE
 
   .. warning::
 
@@ -6933,14 +6752,10 @@ iter fileReader.lines(
 
   **Example:**
 
-  .. code-block:: chapel
-
-    var r = openReader("ints.txt"),
-        sum = 0;
-
-    forall line in r.lines(targetLocales=Locales) with (+ reduce sum) {
-      sum += line:int;
-    }
+  .. literalinclude:: ../../../../test/library/standard/IO/doc-examples/example_read_lines_dist.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE
+   :end-before: STOP_EXAMPLE
 
   .. warning::
 
@@ -9476,9 +9291,10 @@ proc fileReader.readln(ref args ...?k):bool throws {
    For example, the following line of code reads a value of type `int`
    from :var:`stdin` and uses it to initialize a variable ``x``:
 
-   .. code-block:: chapel
-
-     var x = stdin.read(int);
+   .. literalinclude:: ../../../../test/library/standard/IO/doc-examples/example_read_stdin.chpl
+    :language: chapel
+    :start-after: START_EXAMPLE
+    :end-before: STOP_EXAMPLE
 
    :arg t: the type to read
    :returns: the value read
@@ -9949,16 +9765,10 @@ functions take in a format string and some arguments. The :proc:`string.format`
 method is also available and is loosely equivalent to C's 'sprintf'. For
 example, one might do:
 
-.. code-block:: chapel
-
-  writef("My favorite %s is %i\n", "number", 7);
-
-  var s:string = "My favorite %s is %i".format("number", 7);
-  writeln(s);
-
-  // prints:
-  // My favorite number is 7
-  // My favorite number is 7
+.. literalinclude:: ../../../../../test/library/standard/IO/doc-examples/FormattedIO/example_string_format.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE
+ :end-before: STOP_EXAMPLE
 
 The following sections offer a tour through the conversions to illustrate the
 common cases. A more precise definition follows in the
@@ -10019,29 +9829,19 @@ In both conversions above, an imaginary argument gets an 'i' afterwards
 and the entire expression is padded out to the width of ##### digits.
 For example:
 
-.. code-block:: chapel
-
-  writef("|%{#####}|\n", 2.0i);
-       // outputs:
-       //   |   2i|
-
-  writef("|%{#####.#}|\n", 2.0i);
-       // outputs:
-       //   |   2.0i|
+.. literalinclude:: ../../../../../test/library/standard/IO/doc-examples/FormattedIO/example_generic_numeric_conversions.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE_1
+ :end-before: STOP_EXAMPLE_1
 
 Complex arguments are printed in the format a + bi, where each of a and b is
 rounded individually as if printed under that conversion on its own. Then, the
 formatted complex number is padded to the requested size. For example:
 
-.. code-block:: chapel
-
-  writef("|%{#########}|\n", 1.0+2.0i);
-       // outputs:
-       //   |   1 + 2i|
-
-  writef("|%{#########.#}|\n", 1.0+2.0i);
-       // outputs:
-       //   | 1.0 + 2.0i|
+.. literalinclude:: ../../../../../test/library/standard/IO/doc-examples/FormattedIO/example_generic_numeric_conversions.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE_2
+ :end-before: STOP_EXAMPLE_2
 
 See :ref:`about-io-formatted-pound-details` for more details
 on this conversion type.
@@ -10247,22 +10047,10 @@ General Conversion
 
   For example, read and write a record in JSON format:
 
-  .. code-block:: chapel
-
-        use IO, JSON;
-
-        record R {
-          // fields...
-        }
-
-        var f = open("data.json", ioMode.cwr),
-            r: R;
-
-        // write an 'R' in JSON format
-        f.writer(serializer = new jsonSerializer()).writef("%?", new R(/* ... */));
-
-        // read into an 'R' from JSON format
-        f.reader(deserializer = new jsonDeserializer()).readf("%?", r);
+  .. literalinclude:: ../../../../../test/library/standard/IO/doc-examples/FormattedIO/example_read_write_json.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE
+   :end-before: STOP_EXAMPLE
 
 Note About Whitespace
 +++++++++++++++++++++
@@ -10323,22 +10111,20 @@ digits to use when printing a floating-point number by using the # symbol to
 stand for digits. The fractional portion of the number will be rounded
 appropriately and extra space will be made if the integer portion is too small:
 
-.. code-block:: chapel
-
-  writef("n:%{###.###}\n", 1.2349);
-       // outputs:
-       // n:  1.235
+.. literalinclude:: ../../../../../test/library/standard/IO/doc-examples/FormattedIO/example_hashtag_specifiers.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE_1
+ :end-before: STOP_EXAMPLE_1
 
 This syntax also works for numbers without a decimal point by rounding them
 appropriately.
 
 A # specifier may start with a ``.``.
 
-.. code-block:: chapel
-
-  writef("%{.##}\n", 0.777);
-       // outputs:
-       //  0.78
+.. literalinclude:: ../../../../../test/library/standard/IO/doc-examples/FormattedIO/example_hashtag_specifiers.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE_2
+ :end-before: STOP_EXAMPLE_2
 
 % Specifiers
 ++++++++++++
@@ -10497,69 +10283,30 @@ Going through each section for text conversions:
 Formatted I/O Examples
 ++++++++++++++++++++++
 
-.. code-block:: chapel
+.. literalinclude:: ../../../../../test/library/standard/IO/doc-examples/FormattedIO/example_formatted_io.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE_1
+ :end-before: STOP_EXAMPLE_1
 
-  writef("%5i %5s %5r\n", 1, "test", 6.34);
-       // outputs:
-       //    1  test  6.34
+.. literalinclude:: ../../../../../test/library/standard/IO/doc-examples/FormattedIO/example_formatted_io.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE_2
+ :end-before: STOP_EXAMPLE_2
 
-  writef("%2.4z\n", 43.291 + 279.112i);
-       // outputs:
-       // 43.29 + 279.1i
+.. literalinclude:: ../../../../../test/library/standard/IO/doc-examples/FormattedIO/example_formatted_io.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE_3
+ :end-before: STOP_EXAMPLE_3
 
-  writef('%"S\n', "test \"\" \'\' !");
-       // outputs:
-       // "test \"\" '' !"
-  writef("%'S\n", "test \"\" \'\' !");
-       // outputs:
-       // 'test "" \'\' !'
-  writef("%{(S)}\n", "test ()", "(", ")");
-       // outputs:
-       // (test (\))
+.. literalinclude:: ../../../../../test/library/standard/IO/doc-examples/FormattedIO/example_formatted_io_regex.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE_1
+ :end-before: STOP_EXAMPLE_1
 
-
-  writef("|%40s|\n", "test");
-  writef("|%<40s|\n", "test");
-  writef("|%^40s|\n", "test");
-  writef("|%>40s|\n", "test")
-       // outputs:
-       // |                                    test|
-       // |test                                    |
-       // |                  test                  |
-       // |                                    test|
-
-  writef("123456\n");
-  writef("%6.6'S\n", "a");
-  writef("%6.6'S\n", "abcdefg");
-  writef("%.3'S\n", "a");
-  writef("%.3'S\n", "abcd");
-       // outputs:
-       // 123456
-       //    'a'
-       // 'a'...
-       // 'a'
-       // ''...
-
-
-  var s:string;
-  var got = readf(" %c", s);
-  // if the input is " a", "\na", "  a", etc, s will contain "a"
-  // if the input is "b", got will be false and s will contain ""
-
-  var s:string;
-  var got = readf("\n%c", s);
-  // if the input is "\na", or " \na", s will contain "a"
-  // if the input is "b", got will be false and s will be ""
-
-  var got = readf("%/a+/");
-  // if the input is "a" or "aa" (and so on), got will return true
-  // if the input is "c" got will be false
-
-  var s:string;
-  var got = readf("%/a(b+)/", s);
-  // if the input is "c" got will be false and s will be ""
-  // if the input is "ab", got will be true and s will be "b"
-  // if the input is "abb", got will be true and s will be "bb"
+.. literalinclude:: ../../../../../test/library/standard/IO/doc-examples/FormattedIO/example_formatted_io_regex.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE_2
+ :end-before: STOP_EXAMPLE_2
 
 FormattedIO Functions and Types
 -------------------------------
@@ -10570,7 +10317,6 @@ module FormattedIO {
   use CTypes;
   use OS.POSIX;
   use OS;
-//use IO;
 
 // ---------------------------------------------------------------
 // ---------------------------------------------------------------
