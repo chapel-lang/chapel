@@ -21,6 +21,7 @@ __package_type_from_os() {
     ;;
     *)
     pkg_type="unknown"
+    exit 1
     ;;
   esac
   echo $pkg_type
@@ -57,6 +58,7 @@ __docker_image_from_os() {
     ;;
     *)
     docker_image_base="unknown"
+    exit 1
     ;;
   esac
   echo $docker_image_base
@@ -172,9 +174,9 @@ __build_image() {
   local chapel_version=$3
   local package_version=$4
   local para=$5
-  local pkg_type=$(__package_type_from_dir $os)
+  local pkg_type=$(__package_type_from_os $os)
   local docker_dir_name=$os
-  local docker_image_base=$(__docker_image_from_dir $os)
+  local docker_image_base=$(__docker_image_from_os $os)
 
   if [ $pkg_type = "unknown" ]; then
     echo "Unknown package type for OS $os"
