@@ -21,7 +21,6 @@ __package_type_from_os() {
     ;;
     *)
     pkg_type="unknown"
-    exit 1
     ;;
   esac
   echo $pkg_type
@@ -58,7 +57,6 @@ __docker_image_from_os() {
     ;;
     *)
     docker_image_base="unknown"
-    exit 1
     ;;
   esac
   echo $docker_image_base
