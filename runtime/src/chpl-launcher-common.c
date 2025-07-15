@@ -126,22 +126,25 @@ void chpl_append_to_cmd(char** cmdBufPtr, int* charsWritten,
   }
 
   // Determine additional characters to be written
-  const int addedLen = vsnprintf(NULL, 0, format, argsForLen);
+  // vsnprintf does not include the space for the null terminator, so plus one
+  const int requiredLength = vsnprintf(NULL, 0, format, argsForLen) + 1;
   va_end(argsForLen);
-  int newLen = *charsWritten + addedLen;
+  int newCmdBufSize = *charsWritten + requiredLength;
 
   // Allocate more memory if needed
-  if (newLen >= initialSize) {
-    *cmdBufPtr = (char*)chpl_mem_realloc(*cmdBufPtr, newLen * sizeof(char),
+  if (newCmdBufSize >= initialSize) {
+    *cmdBufPtr = (char*)chpl_mem_realloc(*cmdBufPtr, newCmdBufSize * sizeof(char),
                                         CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
   }
 
-  // Write the new characters
-  vsnprintf(*cmdBufPtr + *charsWritten, addedLen + 1, format, argsForPrint);
-  va_end(argsForPrint);
-  *charsWritten = newLen;
-}
+  char* currentBufEnd = *cmdBufPtr + *charsWritten;
+  int currentBufEndLen = requiredLength;
 
+  // Write the new characters
+  const int actuallyWrote = vsnprintf(currentBufEnd, currentBufEndLen, format, argsForPrint);
+  va_end(argsForPrint);
+  *charsWritten += actuallyWrote;
+}
 //
 // Use this function to run short utility programs that will return less
 //  than 1024 characters of output.  The program must not expect any input.
