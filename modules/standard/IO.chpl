@@ -2416,9 +2416,7 @@ record defaultSerializer {
 
       would be serialized as:
 
-      .. code-block:: text
-
-        {x = 5, y = 2.0}
+      .. literalinclude:: ../../../../test/library/standard/IO/doc-examples/example_serialized_class.good
 
       :arg writer: The ``fileWriter`` to be used when serializing. Must match
                    the writer used to create current AggregateSerializer.
@@ -10285,30 +10283,30 @@ Going through each section for text conversions:
 Formatted I/O Examples
 ++++++++++++++++++++++
 
-.. literalinclude:: ../../../../../test/library/standard/IO/doc-examples/FormattedIO/example_formatted_io_1.chpl
+.. literalinclude:: ../../../../../test/library/standard/IO/doc-examples/FormattedIO/example_formatted_io.chpl
  :language: chapel
- :start-after: START_EXAMPLE
- :end-before: STOP_EXAMPLE
+ :start-after: START_EXAMPLE_1
+ :end-before: STOP_EXAMPLE_1
 
-.. literalinclude:: ../../../../../test/library/standard/IO/doc-examples/FormattedIO/example_formatted_io_2.chpl
+.. literalinclude:: ../../../../../test/library/standard/IO/doc-examples/FormattedIO/example_formatted_io.chpl
  :language: chapel
- :start-after: START_EXAMPLE
- :end-before: STOP_EXAMPLE
+ :start-after: START_EXAMPLE_2
+ :end-before: STOP_EXAMPLE_2
 
-.. literalinclude:: ../../../../../test/library/standard/IO/doc-examples/FormattedIO/example_formatted_io_3.chpl
+.. literalinclude:: ../../../../../test/library/standard/IO/doc-examples/FormattedIO/example_formatted_io.chpl
  :language: chapel
- :start-after: START_EXAMPLE
- :end-before: STOP_EXAMPLE
+ :start-after: START_EXAMPLE_3
+ :end-before: STOP_EXAMPLE_3
 
-.. literalinclude:: ../../../../../test/library/standard/IO/doc-examples/FormattedIO/example_formatted_io_4.chpl
+.. literalinclude:: ../../../../../test/library/standard/IO/doc-examples/FormattedIO/example_formatted_io_regex.chpl
  :language: chapel
- :start-after: START_EXAMPLE
- :end-before: STOP_EXAMPLE
+ :start-after: START_EXAMPLE_1
+ :end-before: STOP_EXAMPLE_1
 
-.. literalinclude:: ../../../../../test/library/standard/IO/doc-examples/FormattedIO/example_formatted_io_5.chpl
+.. literalinclude:: ../../../../../test/library/standard/IO/doc-examples/FormattedIO/example_formatted_io_regex.chpl
  :language: chapel
- :start-after: START_EXAMPLE
- :end-before: STOP_EXAMPLE
+ :start-after: START_EXAMPLE_2
+ :end-before: STOP_EXAMPLE_2
 
 FormattedIO Functions and Types
 -------------------------------

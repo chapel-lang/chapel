@@ -1,3 +1,0 @@
-got = true, s = a
-got = true, s = a
-BadFormatError: bad format: encountered non-whitespace (in fileReader.readf(fmt:string, ...) with path "example_formatted_io_3.stdin" offset 5)
