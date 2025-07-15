@@ -126,7 +126,7 @@ void chpl_append_to_cmd(char** cmdBufPtr, int* charsWritten,
   }
 
   // Determine additional characters to be written
-  const int addedLen = vsnprintf(NULL, 0, format, argsForLen);
+  const int addedLen = vsnprintf(NULL, 0, format, argsForLen) + 1;
   va_end(argsForLen);
   int newLen = *charsWritten + addedLen;
 
@@ -137,9 +137,9 @@ void chpl_append_to_cmd(char** cmdBufPtr, int* charsWritten,
   }
 
   // Write the new characters
-  vsnprintf(*cmdBufPtr + *charsWritten, addedLen + 1, format, argsForPrint);
+  const int actuallyWrote = vsnprintf(*cmdBufPtr + *charsWritten, addedLen, format, argsForPrint);
   va_end(argsForPrint);
-  *charsWritten = newLen;
+  *charsWritten = actuallyWrote;
 }
 
 //
