@@ -93,6 +93,88 @@ static Expr* postFoldSymExpr(SymExpr* symExpr);
     }                                                                   \
   }
 
+bool canSimplifyCallExpr(CallExpr* call) {
+  return call->isPrimitive(PRIM_UNARY_MINUS) ||call->isPrimitive(PRIM_UNARY_PLUS) ||
+         call->isPrimitive(PRIM_UNARY_NOT) || call->isPrimitive(PRIM_UNARY_LNOT) ||
+         call->isPrimitive(PRIM_ADD) || call->isPrimitive(PRIM_SUBTRACT) ||
+         call->isPrimitive(PRIM_MULT) || call->isPrimitive(PRIM_DIV) ||
+         call->isPrimitive(PRIM_MOD) || call->isPrimitive(PRIM_EQUAL) ||
+         call->isPrimitive(PRIM_NOTEQUAL) || call->isPrimitive(PRIM_LESSOREQUAL) ||
+         call->isPrimitive(PRIM_GREATEROREQUAL) || call->isPrimitive(PRIM_LESS) ||
+         call->isPrimitive(PRIM_GREATER) || call->isPrimitive(PRIM_AND) ||
+         call->isPrimitive(PRIM_OR) || call->isPrimitive(PRIM_XOR) ||
+         call->isPrimitive(PRIM_POW) || call->isPrimitive(PRIM_LSH) ||
+         call->isPrimitive(PRIM_RSH);
+}
+Expr* simplifyCallExpr(CallExpr* call) {
+  SET_LINENO(call);
+  Expr* retval = call;
+  if (call->isPrimitive(PRIM_UNARY_MINUS) == true) {
+    FOLD_CALL1(P_prim_minus);
+
+  } else if (call->isPrimitive(PRIM_UNARY_PLUS) == true) {
+    FOLD_CALL1(P_prim_plus);
+
+  } else if (call->isPrimitive(PRIM_UNARY_NOT) == true) {
+    FOLD_CALL1(P_prim_not);
+
+  } else if (call->isPrimitive(PRIM_UNARY_LNOT) == true) {
+    FOLD_CALL1(P_prim_lnot);
+
+  } else if (call->isPrimitive(PRIM_ADD) == true) {
+    FOLD_CALL2(P_prim_add);
+
+  } else if (call->isPrimitive(PRIM_SUBTRACT) == true) {
+    FOLD_CALL2(P_prim_subtract);
+
+  } else if (call->isPrimitive(PRIM_MULT) == true) {
+    FOLD_CALL2(P_prim_mult);
+
+  } else if (call->isPrimitive(PRIM_DIV) == true) {
+    FOLD_CALL2(P_prim_div);
+
+  } else if (call->isPrimitive(PRIM_MOD) == true) {
+    FOLD_CALL2(P_prim_mod);
+
+  } else if (call->isPrimitive(PRIM_EQUAL) == true) {
+    FOLD_CALL2(P_prim_equal);
+
+  } else if (call->isPrimitive(PRIM_NOTEQUAL) == true) {
+    FOLD_CALL2(P_prim_notequal);
+
+  } else if (call->isPrimitive(PRIM_LESSOREQUAL) == true) {
+    FOLD_CALL2(P_prim_lessorequal);
+
+  } else if (call->isPrimitive(PRIM_GREATEROREQUAL) == true) {
+    FOLD_CALL2(P_prim_greaterorequal);
+
+  } else if (call->isPrimitive(PRIM_LESS) == true) {
+    FOLD_CALL2(P_prim_less);
+
+  } else if (call->isPrimitive(PRIM_GREATER) == true) {
+    FOLD_CALL2(P_prim_greater);
+
+  } else if (call->isPrimitive(PRIM_AND) == true) {
+    FOLD_CALL2(P_prim_and);
+
+  } else if (call->isPrimitive(PRIM_OR) == true) {
+    FOLD_CALL2(P_prim_or);
+
+  } else if (call->isPrimitive(PRIM_XOR) == true) {
+    FOLD_CALL2(P_prim_xor);
+
+  } else if (call->isPrimitive(PRIM_POW) == true) {
+    FOLD_CALL2(P_prim_pow);
+
+  } else if (call->isPrimitive(PRIM_LSH) == true) {
+    FOLD_CALL2(P_prim_lsh);
+
+  } else if (call->isPrimitive(PRIM_RSH) == true) {
+    FOLD_CALL2(P_prim_rsh);
+  }
+  return retval;
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -628,18 +710,6 @@ static Expr* postFoldPrimop(CallExpr* call) {
       call->replace(retval);
     }
 
-  } else if (call->isPrimitive(PRIM_UNARY_MINUS) == true) {
-    FOLD_CALL1(P_prim_minus);
-
-  } else if (call->isPrimitive(PRIM_UNARY_PLUS) == true) {
-    FOLD_CALL1(P_prim_plus);
-
-  } else if (call->isPrimitive(PRIM_UNARY_NOT) == true) {
-    FOLD_CALL1(P_prim_not);
-
-  } else if (call->isPrimitive(PRIM_UNARY_LNOT) == true) {
-    FOLD_CALL1(P_prim_lnot);
-
   } else if (call->isPrimitive(PRIM_ABS) == true) {
     FOLD_CALL1(P_prim_abs);
 
@@ -652,56 +722,8 @@ static Expr* postFoldPrimop(CallExpr* call) {
   } else if (call->isPrimitive(PRIM_GET_IMAG) == true) {
     FOLD_CALL1(P_prim_get_imag);
 
-  } else if (call->isPrimitive(PRIM_ADD) == true) {
-    FOLD_CALL2(P_prim_add);
-
-  } else if (call->isPrimitive(PRIM_SUBTRACT) == true) {
-    FOLD_CALL2(P_prim_subtract);
-
-  } else if (call->isPrimitive(PRIM_MULT) == true) {
-    FOLD_CALL2(P_prim_mult);
-
-  } else if (call->isPrimitive(PRIM_DIV) == true) {
-    FOLD_CALL2(P_prim_div);
-
-  } else if (call->isPrimitive(PRIM_MOD) == true) {
-    FOLD_CALL2(P_prim_mod);
-
-  } else if (call->isPrimitive(PRIM_EQUAL) == true) {
-    FOLD_CALL2(P_prim_equal);
-
-  } else if (call->isPrimitive(PRIM_NOTEQUAL) == true) {
-    FOLD_CALL2(P_prim_notequal);
-
-  } else if (call->isPrimitive(PRIM_LESSOREQUAL) == true) {
-    FOLD_CALL2(P_prim_lessorequal);
-
-  } else if (call->isPrimitive(PRIM_GREATEROREQUAL) == true) {
-    FOLD_CALL2(P_prim_greaterorequal);
-
-  } else if (call->isPrimitive(PRIM_LESS) == true) {
-    FOLD_CALL2(P_prim_less);
-
-  } else if (call->isPrimitive(PRIM_GREATER) == true) {
-    FOLD_CALL2(P_prim_greater);
-
-  } else if (call->isPrimitive(PRIM_AND) == true) {
-    FOLD_CALL2(P_prim_and);
-
-  } else if (call->isPrimitive(PRIM_OR) == true) {
-    FOLD_CALL2(P_prim_or);
-
-  } else if (call->isPrimitive(PRIM_XOR) == true) {
-    FOLD_CALL2(P_prim_xor);
-
-  } else if (call->isPrimitive(PRIM_POW) == true) {
-    FOLD_CALL2(P_prim_pow);
-
-  } else if (call->isPrimitive(PRIM_LSH) == true) {
-    FOLD_CALL2(P_prim_lsh);
-
-  } else if (call->isPrimitive(PRIM_RSH) == true) {
-    FOLD_CALL2(P_prim_rsh);
+  } else if(canSimplifyCallExpr(call)) {
+    retval = simplifyCallExpr(call);
 
   } else if (call->isPrimitive(PRIM_REQUIRE) == true) {
     Expr*       arg = call->argList.only();
