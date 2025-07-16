@@ -25,7 +25,7 @@ update-alternatives --install /usr/bin/cmake cmake /usr/local/bin/cmake 1
 # too old for us.
 # Install and use GCC 10, which can be used to build bundled/none LLVM.
 yum -y install gcc10 gcc10-c++
-export CC=gcc10-gcc
-export CXX=gcc10-g++
-export CHPL_HOST_CC=gcc10-gcc
-export CHPL_HOST_CXX=gcc10-g++
+unsudo export CC=gcc10-gcc
+unsudo export CXX=gcc10-g++
+unsudo export CHPL_HOST_CC=gcc10-gcc
+unsudo export CHPL_HOST_CXX=gcc10-g++
