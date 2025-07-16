@@ -18,13 +18,16 @@
 # limitations under the License.
 #
 
+import argparse
+import getopt
+import json
+import os
+import re
 import subprocess
 import sys
-import argparse
 import tempfile
-import os
-import json
 from collections import defaultdict
+
 from chapel import *
 from chapel.core import *
 
@@ -50,6 +53,17 @@ def list_parsed_files(files, module_paths):
 def run_toplevel():
     # Top-level invocation; behave as the driver script.
 
+    # parse manually using getopt so users have to put chpl-shim options first
+    # getopt will stop on the first non-option argument, i.e. chpl or mason or similar
+    generate_vscode_tasks = False
+    flags, args = getopt.getopt(sys.argv[1:], "", ["vscode"])
+    for flag, _ in flags:
+        if flag in ["--vscode"]:
+            generate_vscode_tasks = True
+
+    # TODO: this only works when chpl is not passed as a path and we rely on
+    # the PATH to find it. i.e. `./bin/chpl-shim ./bin/chpl` will not work.
+
     # Create a temporary directory to add the 'chpl' wrapper script
     tempdir = tempfile.TemporaryDirectory()
     wrapper = os.path.join(tempdir.name, "chpl")
@@ -69,7 +83,7 @@ def run_toplevel():
     newenv["PATH"] = newpath
 
     # Invoke the script I was asked to invoke
-    subprocess.run(sys.argv[1:], env=newenv)
+    subprocess.run(args, env=newenv)
 
     # At this point, our subprocessses have finished and created flags
     # in the tempdir. Iterate all the files in the dir and merge the results.
@@ -89,7 +103,76 @@ def run_toplevel():
     )
     if not skip_cls:
         with open(".cls-commands.json", "w") as f:
-            json.dump(commands, f)
+            json.dump(commands, f, indent=2)
+
+    # generate vscode tasks if requested and there is actually something to do
+    if generate_vscode_tasks and args:
+        # generate a 'type: process' for the command line passed to chpl-shim
+        # i.e. `chpl-shim make`
+        #
+        # TODO: and generate a 'type: chpl' for the extracted invocation,
+        # if it exists i.e. commands.get('invocation', None)
+        # currently we don't generate that since it seems redundant
+
+        command = args[0]
+        remaining_args = args[1:]
+
+        def get_env_affecting_chapel():
+            """Similar logic to whats in the vscode extension"""
+            base_globs = [
+                r"CHPL_.*",
+                r"CHPL_RT_.*",
+                r"FI_.*",
+                r"GASNET_.*",
+                r"SLURM_.*",
+                r"PBS_.*",
+                r"QTHREAD_.*",
+                r"QT_.*",
+                r"ASAN_OPTIONS",
+                r"PATH",
+            ]
+            base_globs = [re.compile(glob) for glob in base_globs]
+            env = os.environ.copy()
+            env = {
+                k: v
+                for k, v in env.items()
+                if any(g.match(k) for g in base_globs)
+            }
+            return env
+
+        cli_task = {
+            "label": " ".join(args),
+            "type": "process",
+            "command": command,
+            "args": remaining_args,
+            "problemMatcher": ["$chpl-compiler"],
+            "options": {
+                "cwd": os.getcwd(),
+                "env": get_env_affecting_chapel(),
+            },
+        }
+
+        # look for a .vscode/tasks.json file
+        vscode_tasks_path = os.path.join(
+            os.getcwd(), ".vscode", "tasks.json"
+        )
+        if os.path.exists(vscode_tasks_path):
+            with open(vscode_tasks_path, "r") as f:
+                tasks = json.load(f)
+        else:
+            tasks = {"version": "2.0.0", "tasks": []}
+
+        replaced = False
+        for idx, t in enumerate(tasks["tasks"]):
+            if t["label"] == cli_task["label"]:
+                tasks["tasks"][idx] = cli_task
+                replaced = True
+                break
+        if not replaced:
+            tasks["tasks"].append(cli_task)
+
+        with open(vscode_tasks_path, "w") as f:
+            json.dump(tasks, f, indent=2)
 
 
 def run_chpl_shim():
