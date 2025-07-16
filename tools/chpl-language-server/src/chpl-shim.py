@@ -110,7 +110,7 @@ def run_chpl_shim():
     # Since we don't have a perfectly matching arg-parser, iterate argv again
     # to look for .chpl files
     for arg in sys.argv:
-        if arg.endswith(".chpl"):
+        if arg.endswith(".chpl") and arg not in files:
             files.append(arg)
 
     files = [os.path.abspath(file) for file in files if file.endswith(".chpl")]
