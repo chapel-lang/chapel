@@ -113,28 +113,36 @@ def run_chpl_shim():
         if arg.endswith(".chpl") and arg not in files:
             files.append(arg)
 
-    files = [os.path.abspath(file) for file in files if file.endswith(".chpl")]
-    files += list_parsed_files(files, args.module_dirs)
-    files = list(set(files))
+    # if no .chpl files were specified, `chpl` may have been invoked
+    # with just `--print-chpl-home` or `--version`, so we should not generate
+    # a .cls-commands.json file.
+    skip_cls_generation = len(files) == 0
 
-    commands = {}
-    for file in files:
+    if not skip_cls_generation:
+        files = [
+            os.path.abspath(file) for file in files if file.endswith(".chpl")
+        ]
+        files += list_parsed_files(files, args.module_dirs)
+        files = list(set(files))
+
+        commands = {}
         invocation = " ".join(sys.argv).replace(__file__, real_compiler)
-        commands[file] = {
-            #   "invocation": invocation,
-            "module_dirs": [
-                os.path.abspath(mod_dir) for mod_dir in args.module_dirs
-            ],
-            "files": files,
-        }
+        commands["invocation"] = invocation
+        for file in files:
+            commands[file] = {
+                "module_dirs": [
+                    os.path.abspath(mod_dir) for mod_dir in args.module_dirs
+                ],
+                "files": files,
+            }
 
-    tmpfile = tempfile.NamedTemporaryFile(
-        mode="w", delete=False, dir=tmpfile_path, suffix=".json"
-    )
+        tmpfile = tempfile.NamedTemporaryFile(
+            mode="w", delete=False, dir=tmpfile_path, suffix=".json"
+        )
 
-    # Convert to json
-    with tmpfile as f:
-        f.write(json.dumps(commands))
+        # Convert to json
+        with tmpfile as f:
+            f.write(json.dumps(commands))
 
     subprocess.run([real_compiler] + sys.argv[1:])
 
