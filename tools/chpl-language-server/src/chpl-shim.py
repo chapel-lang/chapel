@@ -33,14 +33,13 @@ def list_parsed_files(files, module_paths):
     ctx = Context()
     ctx.set_module_paths(module_paths, files)
 
-    for file in files:
-        asts = ctx.parse(file)
-
+    # parse all files before triggering resolution
+    all_asts = {file: ctx.parse(file) for file in files}
+    for asts in all_asts.values():
         # Trigger scope resolution to make sure other files are parsed.
         # XXX: hack
         for ast, _ in each_matching(asts, Identifier):
             ast.to_node()
-
     return [
         parsed_path
         for parsed_path in ctx.introspect_parsed_files()
