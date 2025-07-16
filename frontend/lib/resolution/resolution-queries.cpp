@@ -5767,7 +5767,7 @@ CallResolutionResult resolveTupleExpr(Context* context,
   if (allType == false && allValue == false) {
     context->error(tuple, "Mix of value and type tuple elements in tuple expr");
     auto e = ErroneousType::get(context);
-    return CallResolutionResult(QualifiedType(QualifiedType::CONST_VAR, e));
+    return CallResolutionResult(QualifiedType(QualifiedType::CONST_REF, e));
   }
 
   // otherwise, construct the tuple type
@@ -5775,7 +5775,7 @@ CallResolutionResult resolveTupleExpr(Context* context,
 
   QualifiedType::Kind kind = QualifiedType::UNKNOWN;
   if (allValue)
-    kind = QualifiedType::CONST_VAR;
+    kind = QualifiedType::CONST_REF;
   else if (allType)
     kind = QualifiedType::TYPE;
 
@@ -5784,6 +5784,8 @@ CallResolutionResult resolveTupleExpr(Context* context,
     const Type* t = q.type();
     eltTypes.push_back(t);
   }
+
+  debuggerBreakHere();
 
   const TupleType* t = nullptr;
   if (allType)
