@@ -86,41 +86,23 @@ statements above this point in this file are in an implicit module called
 errorHandling. Since the below statements are also not in a ``module``
 declaration, they are also in an *implicit module*.
 
-.. code-block:: chapel
+.. literalinclude:: ../../../test/technotes/doc-examples/ErrorHandlingHelper.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_0
+   :end-before: STOP_EXAMPLE_0
 
-  canThrow(1); // handling can be omitted; halts if an error occurs
-
-  proc throwsErrorsOn() throws {
-    // error propagates out of this function
-    canThrow(-1);
-  }
-
-  proc doesNotThrowErrorsOn() {
-    // causes a halt if called
-    alwaysThrows();
-  }
+.. literalinclude:: ../../../test/technotes/doc-examples/ErrorHandlingImplicitModule.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_0
+   :end-before: STOP_EXAMPLE_0
 
 Fatal error mode can also be activated for explicit modules using the
 ``prototype module`` declaration:
 
-.. code-block:: chapel
-
-  prototype module PrototypeModule {
-
-    canThrow(1); // handling can be omitted; halts if an error occurs
-
-    proc throwsErrorsOn() throws {
-      // error propagates out of this function
-      alwaysThrows();
-    }
-
-    proc doesNotThrowErrorsOn() {
-      // causes a halt if called
-      alwaysThrows();
-    }
-  }
-
-  use PrototypeModule;
+.. literalinclude:: ../../../test/technotes/doc-examples/ErrorHandlingPrototypeModule.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_0
+   :end-before: STOP_EXAMPLE_0
 
 .. _technote-errorHandling-relaxed:
 
@@ -133,24 +115,10 @@ throw, then the error will be propagated out as with implicit modules.
 
 This is the *relaxed* error handling mode.
 
-.. code-block:: chapel
-
-  module ProductionModule {
-    // this line would cause a compilation error since the error is not handled
-    // canThrow(1);
-
-    proc throwsErrorsOn() throws {
-      // any error thrown by alwaysThrows will propagate out
-      alwaysThrows();
-    }
-
-    // this function does not compile because the error is not handled
-    // proc doesNotThrowErrorsOn() {
-    //   alwaysThrows();
-    // }
-  }
-
-  use ProductionModule;
+.. literalinclude:: ../../../test/technotes/doc-examples/ErrorHandlingProductionModule.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_0
+   :end-before: STOP_EXAMPLE_0
 
 .. _technote-errorHandling-strict:
 
@@ -171,30 +139,10 @@ the assignment ``try``.
 
 It is also possible to use ``try!`` in these forms.
 
-.. code-block:: chapel
-
-  pragma "error mode strict"
-  module StrictModule {
-    proc throwsErrorsOn() throws {
-      try {
-        alwaysThrows();
-        writeln("never reached");
-      }
-    }
-
-    proc alsoThrowsErrorsOn() throws {
-      try alwaysThrows();
-    }
-
-    proc doesNotThrowErrorsOn() {
-      try! alwaysThrows();
-    }
-
-    proc assignmentTry() throws {
-      var x = try alwaysThrows();
-      writeln(x);
-    }
-  }
+.. literalinclude:: ../../../test/technotes/doc-examples/ErrorHandlingStrictMode.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_0
+   :end-before: STOP_EXAMPLE_0
 
 .. _technote-errorHandling-limitations:
 
