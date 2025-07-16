@@ -1,1 +1,1 @@
-#27505
+bug: Certain insertion patterns make LIFO iteration crash (#27505)
