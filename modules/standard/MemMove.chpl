@@ -174,6 +174,7 @@ module MemMove {
     }
   }
 
+  // TODO: this function is unused, can it be removed?
   private inline proc _haltBadIndex(a, idx, indexName: string) {
     import HaltWrappers.boundsCheckHalt;
 
@@ -182,6 +183,7 @@ module MemMove {
                       'does not contain: ' + indexName);
   }
 
+  // TODO: this function is unused, can it be removed?
   // Call to 'indexOrder' assumes 'idx' is a valid index.
   private inline proc _haltBadElementRange(a, idx, numElements: int) {
     import HaltWrappers.boundsCheckHalt;
@@ -202,6 +204,7 @@ module MemMove {
                       'more indices fall outside its domain');
   }
 
+  // TODO: this function is unused, can it be removed?
   private inline proc _haltRangeOverlap(dstIndex, srcIndex, numElements) {
     import HaltWrappers.boundsCheckHalt;
 
