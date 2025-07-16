@@ -194,12 +194,18 @@ Compatibility Notes
 Amazon Linux 2 CHPL_LLVM==system incompatibility
 ++++++++++++++++++++++++++++++++++++++++++++++++
 
-Amazon Linux 2 uses GCC 7.3.1 but GCC 7.4 or newer is required to build
-LLVM, and also uses LLVM 11 but LLVM 14 or newer is required for Chapel.
-To use Chapel on this platform, installing a newer GCC is required. The repos
-provide a GCC 10 package, which we then set environment variables for Chapel to
-use instead of the default version. Chapel can then be built with
-``CHPL_LLVM=none`` or ``CHPL_LLVM=bundled``.
+Amazon Linux 2 uses GCC 7.3.1 and only provides LLVM 11, but Chapel requires a
+newer GCC and newer LLVM. To use Chapel on this platform, installing a newer
+GCC is required. The repositories provide a GCC 10 package, which can be used
+to configure Chapel.
+
+      export CC=gcc10-gcc
+      export CXX=gcc10-g++
+      export CHPL_HOST_CC=gcc10-gcc
+      export CHPL_HOST_CXX=gcc10-g++
+
+Chapel can then be built with ``CHPL_LLVM=none`` (still requires the newer GCC)
+or ``CHPL_LLVM=bundled``.
 
 Newer CMake required to build LLVM
 ++++++++++++++++++++++++++++++++++
