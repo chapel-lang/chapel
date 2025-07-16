@@ -153,9 +153,7 @@ def run_toplevel():
         }
 
         # look for a .vscode/tasks.json file
-        vscode_tasks_path = os.path.join(
-            os.getcwd(), ".vscode", "tasks.json"
-        )
+        vscode_tasks_path = os.path.join(os.getcwd(), ".vscode", "tasks.json")
         if os.path.exists(vscode_tasks_path):
             with open(vscode_tasks_path, "r") as f:
                 tasks = json.load(f)
