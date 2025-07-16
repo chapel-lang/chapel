@@ -7,9 +7,6 @@ From: amazonlinux:2
 
 %post
     /provision-scripts/yum-deps-and-gcc10-amazonlinux-2.sh
-    # AL2 only provides LLVM 11 in repos which is too old, so have to use
-    # bundled.
-    /provision-scripts/set-llvm-bundled.sh
 
 %runscript
     ../../provision-scripts/run.sh "$@"
