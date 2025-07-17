@@ -25,10 +25,7 @@ update-alternatives --install /usr/bin/cmake cmake /usr/local/bin/cmake 1
 # too old for us.
 # Install and use GCC 10, which can be used to build bundled/none LLVM.
 yum -y install gcc10 gcc10-c++
-# TODO: Root is not needed here, but using `unsudo` doesn't work as it's an
-# invocation of `sudo` and you can't use shell builtins like `export` with
-# `sudo`.
-export CC=gcc10-gcc
-export CXX=gcc10-g++
-export CHPL_HOST_CC=gcc10-gcc
-export CHPL_HOST_CXX=gcc10-g++
+export CC=gcc10-gcc # unsudo
+export CXX=gcc10-g++ # unsudo
+export CHPL_HOST_CC=gcc10-gcc # unsudo
+export CHPL_HOST_CXX=gcc10-g++ # unsudo
