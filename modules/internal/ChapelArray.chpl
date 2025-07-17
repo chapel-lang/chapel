@@ -3044,7 +3044,7 @@ module ChapelArray {
   @edition(first="preview")
   proc reshape(arr: [], ranges: range(?)..., param copy: bool)
    where copy == true {
-    return arr.chpl_copyReshape({(...ranges)}, checkReshapeDimsByDefault);
+    return arr.chpl_copyReshape(ranges, checkReshapeDimsByDefault);
   }
 
   pragma "no promotion when by ref"
@@ -3054,7 +3054,7 @@ module ChapelArray {
   @edition(first="preview")
   proc reshape(arr: [], ranges: range(?)..., param copy: bool)
    where copy == false {
-    return arr.chpl_aliasReshape({(...ranges)}, checkReshapeDimsByDefault);
+    return arr.chpl_aliasReshape(ranges, checkReshapeDimsByDefault);
   }
 
   @chpldoc.nodoc
@@ -3062,7 +3062,7 @@ module ChapelArray {
   proc reshape(arr: [], ranges: range(?)...,
                checkDims = checkReshapeDimsByDefault, param copy = false)
    where copy == true {
-    return arr.chpl_copyReshape({(...ranges)}, checkDims);
+    return arr.chpl_copyReshape(ranges, checkDims);
   }
 
   pragma "no promotion when by ref"
@@ -3072,7 +3072,7 @@ module ChapelArray {
   proc reshape(arr: [], ranges: range(?)...,
                checkDims = checkReshapeDimsByDefault, param copy = false)
    where copy == false {
-    return arr.chpl_aliasReshape({(...ranges)}, checkDims);
+    return arr.chpl_aliasReshape(ranges, checkDims);
   }
 
   // These versions take a domain; there are two because the copy version
@@ -3102,6 +3102,16 @@ module ChapelArray {
   // also wasn't able to easily reproduce the behavior in a simple,
   // standalone test, so it could be worth another shot.
   //
+  pragma "no promotion when by ref"
+  pragma "reference to const when const this"
+  proc _array.chpl_copyReshape(ranges: ?d*range, checkDims: bool) {
+    if d == 1 && ranges(0).bounds == boundKind.low {
+      return this.chpl_copyReshape({ranges(0).low..#this.size}, false);
+    } else {
+      return this.chpl_copyReshape({(...ranges)}, checkDims);
+    }
+  }
+
   pragma "no promotion when by ref"
   pragma "reference to const when const this"
   proc _array.chpl_copyReshape(dom: domain(?), checkDims: bool) {
