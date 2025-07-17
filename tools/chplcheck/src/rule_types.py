@@ -112,9 +112,12 @@ class BasicRuleResult:
 _BasicRuleResult = typing.Union[bool, BasicRuleResult]
 """The type of values that can be returned by basic rule functions"""
 
+AstNodeType = typing.TypeVar("AstNodeType", bound=chapel.AstNode)
+"""Type variable for AstNode types used in basic rule checks. Special type
+variable to allow for more specific node types in checks."""
 
 BasicRuleCheck = typing.Callable[
-    [chapel.Context, chapel.AstNode], _BasicRuleResult
+    [chapel.Context, AstNodeType], _BasicRuleResult
 ]
 """Function type for basic rules; (context, node) -> _BasicRuleResult"""
 
@@ -155,13 +158,13 @@ class AdvancedRuleResult:
 
 
 _AdvancedRuleResult = typing.Iterator[
-    typing.Union[chapel.AstNode, AdvancedRuleResult]
+    typing.Union[AstNodeType, AdvancedRuleResult]
 ]
 """Internal type for advanced rule results"""
 
 
 AdvancedRuleCheck = typing.Callable[
-    [chapel.Context, chapel.AstNode], _AdvancedRuleResult
+    [chapel.Context, AstNodeType], _AdvancedRuleResult
 ]
 """Function type for advanced rules"""
 
