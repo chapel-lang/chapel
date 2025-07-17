@@ -901,7 +901,7 @@ module ChapelBase {
   //
 
   pragma "always propagate line file info"
-  proc _intExpHelp_checkZero(a, b) {
+  private proc _intExpHelp_checkZero(a, b) {
     if a == 0 then halt("cannot compute ", a, " ** ", b);
   }
 
