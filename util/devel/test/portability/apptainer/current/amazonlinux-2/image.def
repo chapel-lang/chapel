@@ -20,6 +20,7 @@ From: amazonlinux:2
     export CHPL_HOST_CC=gcc10-gcc # unsudo
     export CHPL_HOST_CXX=gcc10-g++ # unsudo
 
+    # Since AL2 provided LLVM is too old, have to use bundled for an LLVM build.
     export CHPL_LLVM=bundled # unsudo
 
 %runscript
