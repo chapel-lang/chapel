@@ -1,0 +1,1 @@
+FirstClassProceduresInvalidAssignment.chpl:11: error: Cannot assign to borrowed chpl_fcf_int64_t_x_int64_t_y__int64_t? from borrowed chpl_fcf_int64_t_a_int64_t_b__int64_t?
