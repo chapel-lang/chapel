@@ -256,25 +256,25 @@ module CTypes {
       }
     }
 
+    pragma "always propagate line file info"
+    @chpldoc.nodoc
+    proc boundsCheckThis(i) {
+      if i < 0 || i >= size then
+        HaltWrappers.boundsCheckHalt("c array index out of bounds " + i:string +
+                                     "(indices are 0.." + (size-1):string + ")");
+    }
+
     /* Retrieve the i'th element (zero based) from the array.
        Does the equivalent of arr[i] in C.
        Includes bounds checking when such checks are enabled.
     */
     inline proc ref this(i: integral) ref : eltType {
-      if boundsChecking then
-        if i < 0 || i >= size then
-          HaltWrappers.boundsCheckHalt("c array index out of bounds " + i:string +
-                                       "(indices are 0.." + (size-1):string + ")");
-
+      if boundsChecking then boundsCheckThis(i);
       return __primitive("array_get", this, i);
     }
     @chpldoc.nodoc
     inline proc const ref this(i: integral) const ref : eltType {
-      if boundsChecking then
-        if i < 0 || i >= size then
-          HaltWrappers.boundsCheckHalt("c array index out of bounds " + i:string +
-                                       "(indices are 0.." + (size-1):string + ")");
-
+      if boundsChecking then boundsCheckThis(i);
       return __primitive("array_get", this, i);
     }
 
@@ -803,6 +803,20 @@ module CTypes {
     return x;
   }
 
+  pragma "always propagate line file info"
+  @chpldoc.nodoc
+  proc checksFor_c_ptrTo_arr(l, arr_size, param constVersion=false) {
+    param name = if constVersion then "c_ptrToConst" else "c_ptrTo";
+    if l != here then
+      halt(
+        name + "() can only be applied to an array from the locale on " +
+        "which it lives (array is on locale " + l.id:string +
+        ", call was made on locale " + here.id:string + ")");
+
+    if arr_size == 0 then
+      halt("Can't create a C pointer for an array with 0 elements.");
+  }
+
   /*
     Returns a :type:`c_ptr` to the elements of a non-distributed
     Chapel rectangular array.  Note that the existence of this
@@ -819,16 +833,7 @@ module CTypes {
     if (!chpl__isDROrDRView(arr)) then
       compilerError("Only single-locale rectangular arrays support c_ptrTo() at present");
 
-    if boundsChecking {
-      if (arr._value.locale != here) then
-        halt(
-            "c_ptrTo() can only be applied to an array from the locale on " +
-            "which it lives (array is on locale " + arr._value.locale.id:string +
-            ", call was made on locale " + here.id:string + ")");
-
-      if (arr.size == 0) then
-        halt("Can't create a C pointer for an array with 0 elements.");
-    }
+    if boundsChecking then checksFor_c_ptrTo_arr(arr._value.locale, arr.size);
 
     return c_pointer_return(arr[arr.domain.low]);
   }
@@ -908,16 +913,7 @@ module CTypes {
     if (!chpl__isDROrDRView(arr)) then
       compilerError("Only single-locale rectangular arrays support c_ptrToConst() at present");
 
-    if boundsChecking {
-      if (arr._value.locale != here) then
-        halt(
-            "c_ptrToConst() can only be applied to an array from the locale on " +
-            "which it lives (array is on locale " + arr._value.locale.id:string +
-            ", call was made on locale " + here.id:string + ")");
-
-      if (arr.size == 0) then
-        halt("Can't create a C pointer for an array with 0 elements.");
-    }
+    if boundsChecking then checksFor_c_ptrTo_arr(arr._value.locale, arr.size, true);
 
     return c_pointer_return_const(arr[arr.domain.low]);
   }

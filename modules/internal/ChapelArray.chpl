@@ -1383,7 +1383,7 @@ module ChapelArray {
     // checks should be performed and is set based on the value of
     // the --no-formal-domain-checks flag.
     //
-    inline proc chpl_checkArrArgDoms(formalDom: domain, param runtimeChecks: bool) {
+    proc chpl_checkArrArgDoms(formalDom: domain, param runtimeChecks: bool) {
       //
       // It's a compile-time error if the ranks don't match
       //
