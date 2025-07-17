@@ -12148,8 +12148,8 @@ proc bytes.format(args ...?k): bytes throws {
   return b"";
 }
 
-private proc chpl_do_format_read(f, offset: int) throws {
-  var buf = allocate(uint(8), (offset+1).safeCast(c_size_t));
+private proc chpl_do_format_read(f, size: int) throws {
+  var buf = allocate(uint(8), (size+1).safeCast(c_size_t));
   var r = f.reader(locking=false);
   defer {
     try {
@@ -12157,14 +12157,14 @@ private proc chpl_do_format_read(f, offset: int) throws {
     } catch { /* ignore deferred close error */ }
   }
 
-  r.readBinary(buf, offset);
+  r.readBinary(buf, size);
 
   // close errors are thrown instead of ignored
   r.close();
   f.close();
 
   // Add the terminating NULL byte to make C string conversion easy.
-  buf[offset] = 0;
+  buf[size] = 0;
 
   return buf;
 }
@@ -12197,7 +12197,7 @@ private proc chpl_do_format(fmt:?t, args ...?k): t throws
     w.close();
   }
 
-  return t.createAdoptingBuffer(chpl_do_format_read(f, offset), offset, offset+1);
+  return t.createAdoptingBuffer(chpl_do_format_read(f, size=offset), offset, offset+1);
 }
 
 
