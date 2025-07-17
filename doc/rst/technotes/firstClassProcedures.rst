@@ -37,6 +37,7 @@ returns an integer, users may write the following:
    :language: chapel
    :start-after: START_EXAMPLE_0
    :end-before: STOP_EXAMPLE_0
+   :dedent:
 
 .. note::
   Currently ``proc(`` must be written without any spaces occurring between
@@ -70,6 +71,7 @@ procedure definition.
    :language: chapel
    :start-after: START_EXAMPLE_1
    :end-before: STOP_EXAMPLE_1
+   :dedent:
 
 The Formals of Procedure Types May Be Anonymous
 -----------------------------------------------
@@ -125,6 +127,7 @@ For example:
    :language: chapel
    :start-after: START_EXAMPLE_2
    :end-before: STOP_EXAMPLE_2
+   :dedent:
 
 Anonymous procedures may be captured as though they are named procedures,
 by substituting them in places where a procedure name may also appear:
@@ -133,6 +136,7 @@ by substituting them in places where a procedure name may also appear:
    :language: chapel
    :start-after: START_EXAMPLE_3
    :end-before: STOP_EXAMPLE_3
+   :dedent:
 
 Today, only procedures (defined with the ``proc`` keyword) may be
 captured. Additionally, a captured procedure must not:
