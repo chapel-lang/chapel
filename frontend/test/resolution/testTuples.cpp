@@ -87,7 +87,7 @@ static void test3() {
                   var x = (r, r);
                 )"""");
 
-  assert(qt.kind() == QualifiedType::CONST_VAR);
+  assert(qt.kind() == QualifiedType::CONST_REF);
   assert(qt.type()->isTupleType());
   auto tt = qt.type()->toTupleType();
   assert(tt->numElements() == 2);
