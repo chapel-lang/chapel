@@ -18,10 +18,14 @@ CONFIG VAR FLAGS:
 
 CONFIG VARS:
 ============
+Built-in config vars:
                        numLocales: int(64)
   defaultHashTableResizeThreshold: real(64)
+
+MainProcExample1 config vars:
+                           myFlag: bool
 
 EXTRA ARGUMENTS:
 ================
 You can provide an arbitrary list of filenames.
-FILE: --memTrack=true
+FILE: --myFlag=true

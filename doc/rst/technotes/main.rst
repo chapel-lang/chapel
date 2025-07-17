@@ -1,8 +1,8 @@
 .. _readme-main:
 
-=================
-The main function
-=================
+=======================
+The ``main()`` Function
+=======================
 
 After running module initialization code (top-level statements in
 modules), a Chapel program will start executing from the entry point,
@@ -11,7 +11,7 @@ taken no arguments and had no return type.  This technote describes
 initial support for returning a status value and making ``main()`` take
 arbitrary command-line arguments.
 
-Returning a status value
+Returning a Status Value
 ========================
 
 Traditionally, the only way to return a nonzero exit value from a
@@ -21,7 +21,7 @@ returned serves as the status value.
 
 .. _technote-mainWithArgs:
 
-Having ``main()`` accept command-line arguments
+Having ``main()`` Accept Command-line Arguments
 ===============================================
 
 Overview
@@ -72,8 +72,8 @@ arguments are available and what they might do. For this reason, when
 a Chapel program includes a ``main()`` declared to take arguments,
 ``--help`` and ``-h`` will be passed on to the ``main(args)`` function.
 
-The function ``printUsage()`` will print out the familiar config var
-table. To gain access to this new function requires a module:
+The function :chpl:proc:`Help.printUsage()` will print out the familiar
+config var table. To gain access to this new function requires a module:
 
 .. literalinclude:: ../../../test/technotes/doc-examples/MainProcExample0.chpl
    :language: chapel
@@ -94,10 +94,10 @@ used by a program which simply wants to add explanatory text to the
 There is a way to suspend argument processing when ``main()`` is declared
 to take arguments.
 
-Suppose that you need to pass a file named ``--memTrack=true`` to the
+Suppose that you need to pass a file named ``--myFlag=true`` to the
 program written above. If passed like normal, then the Chapel runtime
 will consume this argument at startup and use it to set the associated
-config var named ``memTrack``.
+config var named ``myFlag``.
 
 However, if the argument ``--`` is placed in the argument list, all
 subsequent arguments will be passed through to ``main()`` without
@@ -107,7 +107,7 @@ The scenario described could be invoked on the shell like so:
 
 .. code-block:: shell
 
-  ./myprogram --help -- --memTrack=true
+  ./myprogram --help -- --myFlag=true
 
-This will result in ``--memTrack=true`` being output by ``myprogram`` as
+This will result in ``--myFlag=true`` being output by ``myprogram`` as
 an additional file name.

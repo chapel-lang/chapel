@@ -6,6 +6,8 @@
 // chpl myprogram.chpl
 use Help;
 
+config const myFlag: bool = false;
+
 proc main(args: [] string) {
   var sawHelp = false;
 

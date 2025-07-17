@@ -114,7 +114,7 @@ used whether they have any ``local`` statement, or not. (This includes
 The ``local do on`` statement
 -----------------------------
 
-The ``local do on`` construct functions similarly to a normal ``on``
+The ``local do on`` construct behaves similarly to a normal ``on``
 statement, but it will halt if the ``on`` statement migrates
 execution away from the current locale.
 

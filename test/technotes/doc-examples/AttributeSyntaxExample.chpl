@@ -11,9 +11,3 @@ proc foo() { }
 @toolName.attributeName(arg1="value", arg2=1, arg3=true)
 proc foo() { }
 /* STOP_EXAMPLE_0 */
-
-/* START_EXAMPLE_0 */
-/* STOP_EXAMPLE_0 */
-
-/* START_EXAMPLE_0 */
-/* STOP_EXAMPLE_0 */
