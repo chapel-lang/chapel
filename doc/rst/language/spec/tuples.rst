@@ -259,7 +259,7 @@ and ``coforall`` loops. These loops iterate over all of the tuple’s
 elements. A loop of the form:
 
 
-
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
    [for|forall|coforall] e in t do
@@ -269,7 +269,7 @@ where t is a homogeneous tuple of size ``n``, is semantically equivalent
 to:
 
 
-
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
    [for|forall|coforall] i in 0..n-1 do
@@ -286,6 +286,7 @@ elements, giving each iteration its own index variable that is a
 future to include ``const`` or ``ref`` index variables).  Thus, a
 loop of the form:
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
   for e in t do
@@ -294,6 +295,7 @@ loop of the form:
 where t is a heterogeneous tuple of size ``n`` is semantically
 equivalent to:
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
   { // iteration 0
