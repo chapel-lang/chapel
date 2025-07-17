@@ -15,7 +15,6 @@ This README describes the ``local`` statement in the Chapel language.
 Its definition and implementation is an area of ongoing work and it
 should be used with caution.
 
-
 Overview
 --------
 
@@ -63,24 +62,24 @@ Examples
 
 Here is an example of a ``local`` statement:
 
-.. code-block:: chapel
-
-    local do
-      x = A(5);
+.. literalinclude:: ../../../test/technotes/doc-examples/LocalStatementExamples.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_0
+   :end-before: STOP_EXAMPLE_0
+   :dedent:
 
 The inner statement is often a block, commonly referred to as a
 "local block":
 
-.. code-block:: chapel
-
-    local {
-      initializeMyData(data);
-      compute(data);
-    }
+.. literalinclude:: ../../../test/technotes/doc-examples/LocalStatementExamples.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_1
+   :end-before: STOP_EXAMPLE_1
+   :dedent:
 
 In the above examples, the Chapel implementation checks whether ``x``,
 as well as all memory referenced during the calls of ``A.this(5)``
-(an implicit call for ``A(5)``), initializeMyData(), and compute(),
+(an implicit call for ``A(5)``), ``initializeMyData()``, and ``compute()``,
 are located on the current locale. Otherwise an error is reported.
 Analogously, if ``on`` statement(s) are executed during these calls
 that attempt to execute on a different locale, an error is reported.
@@ -91,29 +90,20 @@ Conditional `local`
 The ``local`` statement behavior can be controlled via the optional
 conditional expression.
 
-.. code-block:: chapel
-
-    local data.locale == here {
-      initializeMyData(data);
-      compute(data);
-    }
+.. literalinclude:: ../../../test/technotes/doc-examples/LocalStatementExamples.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_2
+   :end-before: STOP_EXAMPLE_2
+   :dedent:
 
 The above example will be localized only if ``data`` resides in the
-current locale. Conditional local statement above compiled identically
-as:
+current locale. The code for the above example is identical to:
 
-.. code-block:: chapel
-
-    if data.locale == here {
-      local {
-        initializeMyData(data);
-        compute(data);
-      }
-    }
-    else {
-      initializeMyData(data);
-      compute(data);
-    }
+.. literalinclude:: ../../../test/technotes/doc-examples/LocalStatementExamples.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_3
+   :end-before: STOP_EXAMPLE_3
+   :dedent:
 
 This implies that local statements in outer dynamic/static scopes will
 override the inner ones. i.e. if ``data.locale == here`` evaluates to
@@ -121,50 +111,34 @@ override the inner ones. i.e. if ``data.locale == here`` evaluates to
 used whether they have any ``local`` statement, or not. (This includes
 ``local false`` blocks).
 
-The 'local do on' Statement
-===========================
+The ``local do on`` statement
+-----------------------------
 
+The ``local do on`` construct behaves similarly to a normal ``on``
+statement, but it will halt if the ``on`` statement migrates
+execution away from the current locale.
 
-The ``local do on`` construct in Chapel performs an on-statement on a
-sublocale within the current node. For example:
+It is otherwise unrelated to ``local`` statements or ``local`` blocks,
+and it has no impact on what communication is or is not allowed within
+the ``on`` block itself.
 
-.. code-block:: chapel
+For example, the following program would produce a runtime error when
+the ``on`` statement is hit if executed with any number of locales
+greater than ``1``:
 
-  for i in 0..#here.getChildCount() {
-    local do on here.getChild(i) {
-      writeln("On sublocale ", here);
-    }
-  }
+.. literalinclude:: ../../../test/technotes/doc-examples/LocalStatementHalt.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_0
+   :end-before: STOP_EXAMPLE_0
+   :dedent:
 
-When the ``--local-checks`` flag is enabled, a runtime check will be inserted
-to confirm that the on-statement is performed within the same node.
-``--local-checks`` is enabled by default and can be disabled with
+Output when run with ``-nl 2``:
+
+.. literalinclude:: ../../../test/technotes/doc-examples/LocalStatementHalt.good
+
+Enabling and disabling runtime checks
+-------------------------------------
+
+Runtime checks will be inserted when the ``--local-checks`` flag is enabled.
+The flag ``--local-checks`` is enabled by default and can be disabled with
 ``--no-local-checks``, ``--no-checks``, or ``--fast``.
-
-For example this complete program would produce a runtime error if the number
-of locales is greater than one:
-
-.. code-block:: chapel
-
-  var LastLocale = Locales[numLocales-1];
-  local do on LastLocale {
-    writeln("On remote locale ", LastLocale);
-  }
-
-Output::
-
-  > ./local-on-err -nl 2
-  local-on-err.chpl:2: error: Local-on is not local
-
-This program begins executing on Locale 0, so when the ``local do on``
-attempts to execute on a different node (the last Locale) we see a
-runtime error.
-
-The ``local do on`` construct functions similarly to a normal
-on-statement in all other ways. Note that it is unrelated to ``local``
-statements or ``local`` blocks, and that it has no impact on what
-communication is or is not allowed (other than where the on-statement
-can execute).
-
-With this information the compiler can reduce overhead associated with wide
-pointers and hopefully improve performance.
