@@ -5781,6 +5781,10 @@ CallResolutionResult resolveTupleExpr(Context* context,
   } else if (allValue) {
     kind = QualifiedType::CONST_REF;
     t = TupleType::getReferentialTuple(context, std::move(eltTypes));
+    // Use CONST_VAR intent for tuple expressions containing no references
+    if (t->toTupleType()->toValueTuple(context) == t->toTupleType()) {
+      kind = QualifiedType::CONST_VAR;
+    }
   } else {
     context->error(tuple, "Mix of value and type tuple elements in tuple expr");
     kind = QualifiedType::UNKNOWN;
