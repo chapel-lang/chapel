@@ -5759,25 +5759,11 @@ CallResolutionResult resolveTupleExpr(Context* context,
 
   // if any argument is Unknown / null, return Unknown
   if (anyUnknown) {
-    auto unk = UnknownType::get(context);
-    return CallResolutionResult(QualifiedType(QualifiedType::CONST_VAR, unk));
-  }
-
-  // if there is a mix of value and type elements, error
-  if (allType == false && allValue == false) {
-    context->error(tuple, "Mix of value and type tuple elements in tuple expr");
-    auto e = ErroneousType::get(context);
-    return CallResolutionResult(QualifiedType(QualifiedType::CONST_REF, e));
+    return CallResolutionResult(QualifiedType());
   }
 
   // otherwise, construct the tuple type
   std::vector<const Type*> eltTypes;
-
-  QualifiedType::Kind kind = QualifiedType::UNKNOWN;
-  if (allValue)
-    kind = QualifiedType::CONST_REF;
-  else if (allType)
-    kind = QualifiedType::TYPE;
 
   for (const auto& actual : ci.actuals()) {
     QualifiedType q = actual.type();
@@ -5787,11 +5773,19 @@ CallResolutionResult resolveTupleExpr(Context* context,
 
   debuggerBreakHere();
 
-  const TupleType* t = nullptr;
-  if (allType)
+  const Type* t = nullptr;
+  QualifiedType::Kind kind;
+  if (allType) {
+    kind = QualifiedType::TYPE;
     t = TupleType::getValueTuple(context, std::move(eltTypes));
-  else
+  } else if (allValue) {
+    kind = QualifiedType::CONST_REF;
     t = TupleType::getReferentialTuple(context, std::move(eltTypes));
+  } else {
+    context->error(tuple, "Mix of value and type tuple elements in tuple expr");
+    kind = QualifiedType::UNKNOWN;
+    t = ErroneousType::get(context);
+  }
 
   return CallResolutionResult(QualifiedType(kind, t));
 }
