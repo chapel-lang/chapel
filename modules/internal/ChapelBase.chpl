@@ -666,11 +666,11 @@ module ChapelBase {
   inline operator *(a: complex(128), b: imag(64)) do return (-a.im*_i2r(b), a.re*_i2r(b)) : complex(128);
 
   pragma "always propagate line file info"
-  proc checkDivision(b) {
+  private proc checkDivision(b) {
     if b == 0 then halt("Attempt to divide by zero");
   }
   pragma "always propagate line file info"
-  proc checkModulus(b) {
+  private proc checkModulus(b) {
     if b == 0 then halt("Attempt to compute a modulus by zero");
   }
 
@@ -1516,7 +1516,7 @@ module ChapelBase {
   }
 
   pragma "always propagate line file info"
-  proc arrayInitHalt(initMethod) {
+  private proc arrayInitHalt(initMethod) {
     halt("ArrayInit.", initMethod, " should have been made concrete");
   }
 

@@ -2267,7 +2267,7 @@ private proc isBCPindex(type t) param do
 
   /////////// operators 'by', 'align', '#' ///////////
 
-  proc chpl_check_step_integral(step) {
+  private proc chpl_check_step_integral(step) {
     if !isIntegral(step.type) then
       compilerError("can't apply 'by' using step of a non-integral type ",
                     step.type:string);
