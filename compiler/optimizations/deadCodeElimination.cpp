@@ -426,6 +426,43 @@ static void deadModuleElimination() {
 }
 
 
+// called in copyPropagation.cpp
+void eliminateLiteralExpressions(FnSymbol* fn) {
+  std::vector<CallExpr*> callExprs;
+
+  collectCallExprs(fn->body, callExprs);
+
+  for(auto callExpr : callExprs) {
+    if(canSimplifyCallExpr(callExpr)) {
+      simplifyCallExpr(callExpr);
+    }
+    // if (callExpr->isPrimitive(PRIM_EQUAL) ||
+    //     callExpr->isPrimitive(PRIM_NOTEQUAL) ||
+    //     callExpr->isPrimitive(PRIM_LESSOREQUAL) ||
+    //     callExpr->isPrimitive(PRIM_GREATEROREQUAL) ||
+    //     callExpr->isPrimitive(PRIM_LESS) ||
+    //     callExpr->isPrimitive(PRIM_GREATER)) {
+    //   // if the right and left side are literals, evaluate the expression
+    //   auto left = toSymExpr(callExpr->get(1));
+    //   auto right = toSymExpr(callExpr->get(2));
+    //   if (left == NULL || right == NULL) continue;
+    //   if (!left->symbol()->isImmediate() || !right->symbol()->isImmediate()) continue;
+    //   auto left_imm = toVarSymbol(left->symbol())->immediate;
+    //   auto right_imm = toVarSymbol(right->symbol())->immediate;
+    //   if (left_imm->const_kind == NUM_KIND_INT &&
+    //       right_imm->const_kind == NUM_KIND_INT) {
+    //     // if the left is less than the right, replace the call with true
+    //     // otherwise replace it with false
+    //     SET_LINENO(callExpr);
+    //     bool result = left_imm->int_value() < right_imm->int_value();
+    //     callExpr->replace(new SymExpr(new_BoolSymbol(result)));
+    //   }
+
+    // }
+  }
+}
+
+
 void deadCodeElimination() {
   if (!fNoDeadCodeElimination) {
     deadBlockElimination();
