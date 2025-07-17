@@ -2394,19 +2394,19 @@ class CallScopeInfo {
 class AssociatedAction {
  public:
   enum Action {
-    ASSIGN,       // same type or different type assign
-    COPY_INIT,    // init= from same type
-    INIT_OTHER,   // init= from other type
+    ASSIGN,           // same type or different type assign
+    COPY_INIT,        // init= from same type
+    INIT_OTHER,       // init= from other type
     CUSTOM_COPY_INIT, // chpl__copyInit for specialized behavior
     DEFAULT_INIT,
     DEINIT,
-    ITERATE,      // aka "these"
+    ITERATE,          // aka "these"
     NEW_INIT,
-    REDUCE_SCAN,  // resolution of "generate" for a reduce/scan operation.
-    REDUCE_ASSIGN, // resolution of "accumulateOntoState" for a reduce= operation.
+    REDUCE_SCAN,      // resolution of "generate" for a reduce/scan operation.
+    REDUCE_ASSIGN,    // resolution of "accumulateOntoState" for a reduce= operation.
     INFER_TYPE,
-    COMPARE,      // == , e.g., for select-statements
-    RUNTIME_TYPE, // create runtime type
+    COMPARE,          // == , e.g., for select-statements
+    RUNTIME_TYPE,     // create runtime type
     ENTER_CONTEXT,
     EXIT_CONTEXT,
   };
