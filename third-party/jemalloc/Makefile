@@ -25,6 +25,12 @@ ifeq (, $(CHPL_JEMALLOC_ENABLE_STATS))
 CHPL_JEMALLOC_CFG_OPTIONS += --disable-stats
 endif
 
+# Enable profiling if the user explicitly asks for it.
+ifneq (, $(CHPL_JEMALLOC_ENABLE_PROFILING))
+CHPL_JEMALLOC_CFG_OPTIONS += --enable-prof
+endif
+
+
 # As an optimization, use jemalloc's decay-based purging instead of the
 # default ratio-based purging
 CHPL_JEMALLOC_CFG_OPTIONS += --with-malloc-conf=purge:decay
