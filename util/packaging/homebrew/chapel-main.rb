@@ -53,7 +53,6 @@ class Chapel < Formula
       CHPL_TARGET_JEMALLOC=system
       CHPL_HWLOC=system
       CHPL_LLVM=system
-      CHPL_TARGET_COMPILER=llvm
       CHPL_LLVM_CONFIG=#{llvm.opt_bin}/llvm-config
       CHPL_LLVM_GCC_PREFIX=none
     EOS
