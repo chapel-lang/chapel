@@ -113,6 +113,7 @@ class Chapel < Formula
       end
     end
     system bin/"chpl", "--print-passes", "--print-commands", libexec/"examples/hello.chpl"
+    system bin/"chpl", "--target-compiler", cbackend, "--print-passes", "--print-commands", libexec/"examples/hello.chpl"
     system bin/"chpldoc", "--version"
     system bin/"mason", "--version"
 
