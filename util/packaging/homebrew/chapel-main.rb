@@ -52,6 +52,8 @@ class Chapel < Formula
       CHPL_TARGET_MEM=jemalloc
       CHPL_TARGET_JEMALLOC=system
       CHPL_HWLOC=system
+      CHPL_LLVM=system
+      CHPL_TARGET_COMPILER=llvm
       CHPL_LLVM_CONFIG=#{llvm.opt_bin}/llvm-config
       CHPL_LLVM_GCC_PREFIX=none
     EOS
@@ -60,12 +62,18 @@ class Chapel < Formula
     # https://github.com/Homebrew/legacy-homebrew/pull/35166
     cd libexec do
       system "./util/printchplenv", "--all"
-      with_env(CHPL_LLVM: "none") do
-        system "make"
+      system "make"
+      on_macos do
+        with_env(CHPL_TARGET_COMPILER: "clang") do
+          system "make"
+        end
       end
-      with_env(CHPL_LLVM: "system") do
-        system "make"
+      on_linux do
+        with_env(CHPL_TARGET_COMPILER: "gnu") do
+          system "make"
+        end
       end
+
       with_env(CHPL_PIP_FROM_SOURCE: "1") do
         system "make", "chpldoc"
         system "make", "chplcheck"
