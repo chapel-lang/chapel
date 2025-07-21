@@ -24,6 +24,12 @@ class Chapel < Formula
     deps.map(&:to_formula).find { |f| f.name.match? "^llvm" }
   end
 
+  # determine the C backend to use based on the system
+  cbackend = "gnu"
+  on_macos do
+    cbackend = "clang"
+  end
+
   def install
     # Always detect Python used as dependency rather than needing aliased Python formula
     python = "python3.13"
@@ -62,15 +68,8 @@ class Chapel < Formula
     cd libexec do
       system "./util/printchplenv", "--all"
       system "make"
-      on_macos do
-        with_env(CHPL_TARGET_COMPILER: "clang") do
-          system "make"
-        end
-      end
-      on_linux do
-        with_env(CHPL_TARGET_COMPILER: "gnu") do
-          system "make"
-        end
+      with_env(CHPL_TARGET_COMPILER: cbackend) do
+        system "make"
       end
 
       with_env(CHPL_PIP_FROM_SOURCE: "1") do
@@ -107,11 +106,9 @@ class Chapel < Formula
     ENV["CHPL_INCLUDE_PATH"] = HOMEBREW_PREFIX/"include"
     ENV["CHPL_LIB_PATH"] = HOMEBREW_PREFIX/"lib"
     cd libexec do
-      with_env(CHPL_LLVM: "system") do
-        system "util/test/checkChplInstall"
-        system "util/test/checkChplDoc"
-      end
-      with_env(CHPL_LLVM: "none") do
+      system "util/test/checkChplInstall"
+      system "util/test/checkChplDoc"
+      with_env(CHPL_TARGET_COMPILER: cbackend) do
         system "util/test/checkChplInstall"
         system "util/test/checkChplDoc"
       end
