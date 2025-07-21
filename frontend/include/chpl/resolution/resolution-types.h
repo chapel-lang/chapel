@@ -2952,6 +2952,12 @@ class ResolvedFunction {
   const ID& id() const {
     return signature_->id();
   }
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 /// \cond DO_NOT_DOCUMENT
