@@ -20,12 +20,3 @@ unsudo make
 make install
 
 update-alternatives --install /usr/bin/cmake cmake /usr/local/bin/cmake 1
-
-# AL2 provides LLVM 11 (only) and GCC 7.3 (by default), both of which are
-# too old for us.
-# Install and use GCC 10, which can be used to build bundled/none LLVM.
-yum -y install gcc10 gcc10-c++
-unsudo export CC=gcc10-gcc
-unsudo export CXX=gcc10-g++
-unsudo export CHPL_HOST_CC=gcc10-gcc
-unsudo export CHPL_HOST_CXX=gcc10-g++
