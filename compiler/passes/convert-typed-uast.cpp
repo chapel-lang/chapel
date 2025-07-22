@@ -662,7 +662,7 @@ struct TConverter final : UastConverter,
   // Converts a type. If it's an AggregateType, it will also fill in the
   // fields, but only after creating a dummy AggregateType for the map
   // that can be used in the case of recursive data structures.
-  Type* convertType(const types::Type* t, bool convertRefType=false);
+  Type* convertType(const types::Type* t);
 
   void noteConvertedSym(const uast::AstNode* ast, Symbol* sym) override;
   void noteConvertedFn(const resolution::TypedFnSignature* sig, FnSymbol* fn) override;
@@ -1514,6 +1514,8 @@ FnSymbol* TConverter::convertNewWrapper(const ResolvedFunction* rInitFn) {
   fn->addFlag(FLAG_RESOLVED_EARLY);
   fn->setNormalized(true);
 
+  fn->retType = convertType(rInitFn->signature()->formalType(0).type());
+
   // Add the _new function just after the relevant initFn
   initFn->defPoint->insertAfter(new DefExpr(fn));
 
@@ -1594,8 +1596,7 @@ FnSymbol* TConverter::findOrConvertTupleInit(const types::TupleType* tt) {
   auto it = chplTupleInit.find(tt);
   if (it != chplTupleInit.end()) return it->second;
 
-  const bool convertRefType = true;
-  Type* newType = convertType(tt, convertRefType);
+  Type* newType = convertType(tt);
 
   // Otherwise, construct it.
   FnSymbol* ret = new FnSymbol("chpl__tuple_init");
@@ -2590,7 +2591,7 @@ struct ConvertTypeHelper {
     for (int i = 0; i < t->numElements(); i++) {
       auto qt = t->elementType(i);
 
-      auto conv = tc_->convertType(qt.type(), qt.isRef());
+      auto conv = tc_->convertType(qt.type());
       auto sym = qt.isRef() ? conv->refType->symbol : conv->symbol;
       args.push_back(sym);
 
@@ -2742,7 +2743,7 @@ struct ConvertTypeHelper {
   }
 };
 
-Type* TConverter::convertType(const types::Type* t, bool convertRefType) {
+Type* TConverter::convertType(const types::Type* t) {
   if (t == nullptr) return dtUnknown;
 
   Type* ret = nullptr;
@@ -2804,7 +2805,7 @@ Type* TConverter::convertType(const types::Type* t, bool convertRefType) {
   }
 
   // If we need to generate a 'ref' wrapper for the type, do so now.
-  if (convertRefType && !ret->refType) {
+  if (!ret->refType) {
     SET_LINENO(ret->symbol);
 
     // TODO: This is "AGGREGATE_RECORD" in "getOrMakeRefTypeDuringCodegen"?
@@ -4860,9 +4861,7 @@ bool TConverter::enter(const Function* node, RV& rv) {
     setupExternExportFunctionDecl(linkageFlag, linkageExpr, fn);
   }
 
-  const bool convertRefType = true;
-  fn->retType = convertType(cur.resolvedFunction->returnType().type(),
-                            convertRefType);
+  fn->retType = convertType(cur.resolvedFunction->returnType().type());
 
   // visit the body to convert
   if (node->body()) {
