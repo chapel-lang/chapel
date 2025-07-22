@@ -30,11 +30,13 @@ Then the compiler can be run as follows:
 
 The value of ``prof_prefix`` is the prefix for the output files.
 
-It may be useful to pass ``--no-compiler-driver`` to the compiler. Without this
-flag, the compiler functions as a driver and spawns several subprocesses for
-different phases of the compiler. This will results in multiple profiling
-output files, one for each subprocess. If you want to profile the compiler as a
-single process, use ``--no-compiler-driver``.
+.. note::
+
+   It may be useful to pass ``--no-compiler-driver`` to the compiler. Without this
+   flag, the compiler functions as a driver and spawns several subprocesses for
+   different phases of the compiler. This will results in multiple profiling
+   output files, one for each subprocess. If you want to profile the compiler as a
+   single process, use ``--no-compiler-driver``.
 
 Output files can be interpreted using ``jeprof`` (which is built with
 jemalloc). For example, the following will generate a simple text report,
