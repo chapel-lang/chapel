@@ -5876,7 +5876,7 @@ private proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):err
   return EINVAL;
 }
 
-@edition(first="pre-edition")
+@edition(first="preview")
 private proc chpl_print_complex(_channel_internal, x) {
   var re = x.re;
   var im = x.im;

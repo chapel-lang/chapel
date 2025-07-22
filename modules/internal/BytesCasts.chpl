@@ -246,7 +246,7 @@ module BytesCasts {
   //
   // complex
   //
-  @edition(first="pre-edition")
+  @edition(first="preview")
   operator :(x: chpl_anycomplex, type t:bytes) {
     return chpl_bytesCastHelper(x);
   }

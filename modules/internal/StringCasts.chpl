@@ -255,7 +255,7 @@ module StringCasts {
   //
   // complex
   //
-  @edition(first="pre-edition")
+  @edition(first="preview")
   operator :(x: chpl_anycomplex, type t:string) {
     return chpl_stringCastHelper(x);
   }

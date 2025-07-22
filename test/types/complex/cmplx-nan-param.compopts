@@ -1,2 +1,2 @@
 --edition=2.0 # cmplx-nan-param.old.good
---edition=pre-edition # cmplx-nan-param.good
+--edition=preview # cmplx-nan-param.good
