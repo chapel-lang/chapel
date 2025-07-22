@@ -152,10 +152,16 @@ def _main():
                       const='target', default='target')
     parser.add_option('--host', dest='flag', action='store_const',
                       const='host')
+    parser.add_option('--cfg-path', dest='cfg_path', action='store_true',
+                      default=False,)
     (options, args) = parser.parse_args()
 
-    jemalloc_val = get(options.flag)
-    sys.stdout.write("{0}\n".format(jemalloc_val))
+    if not options.cfg_path:
+        jemalloc_val = get(options.flag)
+        sys.stdout.write("{0}\n".format(jemalloc_val))
+    else:
+        cfg_path = get_uniq_cfg_path(options.flag)
+        sys.stdout.write("{0}\n".format(cfg_path))
 
 
 if __name__ == '__main__':
