@@ -55,8 +55,10 @@ Profiling Chapel programs with jemalloc
 .. warning::
 
    When writing these docs, I was unable to get jemalloc's profiling to give
-   good results for Chapel programs. I am including these docs here for
-   completeness.
+   good results for Chapel programs. jemalloc would always report 0
+   allocations, which is not correct or useful. I believe there are changes to
+   the runtime that need to be made before this will work correctly. However, I
+   am including these docs here for completeness.
 
 
 Similar steps for profiling the compiler can be used for profiling Chapel
