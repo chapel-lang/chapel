@@ -6,7 +6,7 @@ proc test() {
   var A: [0..99] int;
   /* START_EXAMPLE_0 */
   @llvm.assertVectorized()
-  foreach a in A { /* ... */ }; // warns if this is not vectorizable
+  foreach a in A { a += 1; }; // warns if this is not vectorizable (but it should be)
   /* STOP_EXAMPLE_0 */
 }
 test();
