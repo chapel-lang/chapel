@@ -120,10 +120,23 @@ ifndef GNU_GCC_MINOR_VERSION
 export GNU_GCC_MINOR_VERSION := $(shell $(CC) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[2]);}')
 endif
 ifndef GNU_GPP_MAJOR_VERSION
-export GNU_GPP_MAJOR_VERSION := $(shell $(CXX) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[1]);}')
+#
+# When using this makefile to build a launcher, we don't use C++. Since g++ may
+# not be available, we default to minimum dummy versions to avoid errors about
+# missing g++.
+#
+ifneq ($(MAKE_LAUNCHER),1)
+export GNU_GPP_MAJOR_VERSION := $(shell $(CXX) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[1]);}';)
+else
+export GNU_GPP_MAJOR_VERSION := 7
+endif
 endif
 ifndef GNU_GPP_MINOR_VERSION
-export GNU_GPP_MINOR_VERSION := $(shell $(CXX) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[2]);}')
+ifneq ($(MAKE_LAUNCHER),1)
+export GNU_GPP_MINOR_VERSION := $(shell $(CXX) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[2]);}';)
+else
+export GNU_GPP_MINOR_VERSION := 0
+endif
 endif
 ifndef GNU_GPP_SUPPORTS_MISSING_DECLS
 export GNU_GPP_SUPPORTS_MISSING_DECLS := $(shell test $(GNU_GPP_MAJOR_VERSION) -lt 4 || (test $(GNU_GPP_MAJOR_VERSION) -eq 4 && test $(GNU_GPP_MINOR_VERSION) -le 2); echo "$$?")
@@ -139,7 +152,11 @@ endif
 # be at least C++11 to match.
 #
 DEF_C_VER := $(shell echo __STDC_VERSION__ | $(CC) -E -x c - | sed -e '/^\#/d' -e 's/L$$//' -e 's/__STDC_VERSION__/0/')
-DEF_CXX_VER := $(shell echo __cplusplus | $(CXX) -E -x c++ - | sed -e '/^\#/d' -e 's/L$$//' -e 's/__cplusplus/0/')
+ifneq ($(MAKE_LAUNCHER),1)
+DEF_CXX_VER := $(shell  echo __cplusplus | $(CXX) -E -x c++ - | sed -e '/^\#/d' -e 's/L$$//' -e 's/__cplusplus/0/';)
+else
+DEF_CXX_VER := 2017
+endif
 C_STD := $(shell test $(DEF_C_VER) -lt 199901 && echo -std=gnu99)
 CXX_STD := $(shell test $(DEF_C_VER) -ge 201112 -a $(DEF_CXX_VER) -lt 201103 && echo -std=gnu++11)
 
@@ -356,16 +373,6 @@ RUNTIME_CFLAGS += -Wno-psabi
 WARN_CXXFLAGS += -Wno-psabi
 SQUASH_WARN_GEN_CFLAGS += -Wno-psabi
 endif
-endif
-
-#
-# Don't warn for deprecated declarations with llvm 11 and 12, its a very noisy warning
-#
-ifeq ($(shell test $(CHPL_MAKE_LLVM_VERSION) -eq 11; echo "$$?"),0)
-WARN_CXXFLAGS += -Wno-deprecated-declarations
-endif
-ifeq ($(shell test $(CHPL_MAKE_LLVM_VERSION) -eq 12; echo "$$?"),0)
-WARN_CXXFLAGS += -Wno-deprecated-declarations
 endif
 
 #

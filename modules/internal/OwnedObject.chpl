@@ -22,13 +22,12 @@
 module OwnedObject {
   use ChapelStandard;
 
-  // Ideally, this can be marked with nodoc and the doc put at the module level
-  //   since owned isn't really a 'record' or a 'type'
-  // But that prevents us from referencing a "top-level" owned reference
-  // If we one day support :noindexentry:, that could be applied at the module
-  //   level (instead of :noindex:)
-  // And then we could do :mod:`owned <OwnedObject>`
-  // For now, `fixInternalDocs.sh` replaces `.. record:: owned` with `.. type:: owned`
+  // TODO: Ideally, this can be marked with nodoc and the doc put at the module
+  // level since owned isn't really a 'record' or a 'type'.  But that prevents
+  // us from referencing a "top-level" owned reference.  If we one day support
+  // :noindexentry:, that could be applied at the module level (instead of
+  // :noindex:).  And then we could do :mod:`owned <OwnedObject>`.
+  // https://github.com/chapel-lang/chapel/issues/23071
   /*
     :type:`owned` manages the deletion of a class instance assuming
     that this :type:`owned` is the only thing responsible for
@@ -37,6 +36,7 @@ module OwnedObject {
   pragma "no copy"
   pragma "copy mutates"
   pragma "managed pointer"
+  @chpldoc.hideImplType
   record _owned : writeSerializable, readDeserializable {
     type chpl_t;                // contained type (class type)
 

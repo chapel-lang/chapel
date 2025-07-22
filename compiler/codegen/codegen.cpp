@@ -283,14 +283,7 @@ static void genGlobalRawString(const char *cname, std::string &value, size_t len
       auto globalStringIr = info->irBuilder->CreateGlobalString(value);
       trackLLVMValue(globalStringIr);
       llvm::Type* ty = nullptr;
-#if HAVE_LLVM_VER >= 140
       ty = globalStringIr->getValueType();
-#else
-#if HAVE_LLVM_VER >= 130
-      ty = llvm::cast<llvm::PointerType>(
-        globalStringIr->getType()->getScalarType())->getElementType();
-#endif
-#endif
       auto correctlyTypedValue = info->irBuilder->CreateConstInBoundsGEP2_32(
         ty, globalStringIr, 0, 0);
       trackLLVMValue(correctlyTypedValue);

@@ -81,7 +81,7 @@ jobs:
     - uses: actions/checkout@v4
     - name: run dyno linters
       run: |
-        CHPL_HOME=$PWD CHPL_HOST_CC=clang-13 CHPL_HOST_CXX=clang++-13 make run-dyno-linters
+        CHPL_HOME=$PWD CHPL_HOST_COMPILER=clang make run-dyno-linters
 
   check_compiler_dyno_tests:
     runs-on: ubuntu-latest

@@ -188,33 +188,14 @@ the non-distributed domain ``Space``.  It then declares an array ``A``
 over that domain.  The `forall` loop sets each array element to the ID
 of the locale to which it is mapped.
 
-  .. code-block:: chapel
-
-    use BlockDist;
-
-    const Space = {1..8, 1..8};
-    const Dist = new blockDist(boundingBox=Space);
-    const D = Dist.createDomain(Space);
-    var A: [D] int;
-
-    forall a in A do
-      a = here.id;
-
-    writeln(A);
+.. literalinclude:: ../../../../test/distributions/doc-examples/BlockDistExamples.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE
+   :end-before: STOP_EXAMPLE
 
 When run on 6 locales, the output is:
 
-  ::
-
-    0 0 0 0 1 1 1 1
-    0 0 0 0 1 1 1 1
-    0 0 0 0 1 1 1 1
-    2 2 2 2 3 3 3 3
-    2 2 2 2 3 3 3 3
-    2 2 2 2 3 3 3 3
-    4 4 4 4 5 5 5 5
-    4 4 4 4 5 5 5 5
-
+.. literalinclude:: ../../../../test/distributions/doc-examples/BlockDistExamples.good
 
 **Data-Parallel Iteration**
 

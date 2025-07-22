@@ -29,8 +29,13 @@ sed -E -e 's/Breakpoint.*where.*at.*/Breakpoint/' \
        -e 's/name = .*, //' $file > $file.tmp
 mv $file.tmp $file
 
-# remove Target stopped
-sed -e '/Target 0: (targetVar) stopped./d' $file > $file.tmp
+# remove Target stopped and process launched lines
+sed -e '/Target 0: (targetVar) stopped./d' \
+    -e '/launched/d' $file > $file.tmp
+mv $file.tmp $file
+
+# remove 'settings set'
+sed -e '/settings set/d' $file > $file.tmp
 mv $file.tmp $file
 
 # remove empty lines and space

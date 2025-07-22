@@ -1806,12 +1806,6 @@ static void testInitGenericAfterConcrete() {
   }
 }
 
-static std::string toString(QualifiedType type) {
-  std::stringstream ss;
-  type.type()->stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
-  return ss.str();
-}
-
 static void testNilFieldInit() {
   std::string program = R"""(
     class C { var x: int; }

@@ -29,14 +29,10 @@
 
    Chapel programs can declare main to take arguments like this:
 
-   .. code-block:: chapel
-
-     proc main(args: [] string) {
-       for a in args {
-         // process arguments
-         writeln("Got argument ", a);
-       }
-     }
+   .. literalinclude:: ../../../../test/library/standard/Help/doc-examples/example_read_args.chpl
+    :language: chapel
+    :start-after: START_EXAMPLE
+    :end-before: STOP_EXAMPLE
 
    Programs that use this feature might need to expand upon the usage message
    that explains which config variables are available. To do so, this module
@@ -57,30 +53,15 @@ module Help {
      A typical example might be this program, that accumulates a list of
      filenames in addition to handling config variable arguments:
 
-     .. code-block:: chapel
+     .. literalinclude:: ../../../../test/library/standard/Help/doc-examples/example_print_usage.chpl
+      :language: chapel
+      :start-after: START_EXAMPLE
+      :end-before: STOP_EXAMPLE
 
-       use Help;
-
-       config const x = 5;
-
-       proc main(args: [] string) {
-         var filenames: [1..0] string;
-
-         var programName = args[0];
-
-         for a in args[1..] {
-           if a == "-h" || a == "--help" {
-             writeln("Usage: ", programName, " <options> filename [filenames]");
-             printUsage();
-             exit(1); // returning 1 from main is also an option
-           } else {
-             filenames.push_back(a);
-           }
-         }
-
-         writef("Got filenames = %ht\n", filenames);
-         writef("Got configuration variable x = %ht\n", x);
-       }
+     .. note::
+        A Chapel program's executable name (the 0-th argument to main) will
+        vary between multilocale and single locale settings.  See
+        :ref:`readme-multilocale` for more details.
    */
   proc printUsage() {
     extern proc printHelpTable();

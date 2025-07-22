@@ -38,6 +38,8 @@ Each of these types of mason packages serve different purposes and, to use mason
 it helps to know what each type has been designed for.
 
 
+.. _mason-applications:
+
 Mason Applications
 ~~~~~~~~~~~~~~~~~~
 A mason application, which is the default type of mason package, is meant to be a self-contained,
@@ -86,6 +88,8 @@ Some examples of when you would want to create a mason library as opposed to an 
   
 * You found some functionality missing from Chapel, and think others could benefit from your solution
 
+
+.. _mason-lightweight-projects:
 
 Mason Lightweight Projects
 ~~~~~~~~~~~~~~~~~~~~~~~~~~

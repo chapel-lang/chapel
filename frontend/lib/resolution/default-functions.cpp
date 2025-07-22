@@ -51,7 +51,8 @@ static bool isNameOfCompilerGeneratedMethod(UniqueString name) {
   // TODO: Update me over time.
   if (name == USTR("init")       ||
       name == USTR("deinit")     ||
-      name == USTR("init=")) {
+      name == USTR("init=")      ||
+      name == USTR("hash")) {
     return true;
   }
 
@@ -60,6 +61,24 @@ static bool isNameOfCompilerGeneratedMethod(UniqueString name) {
   }
 
   return false;
+}
+
+// do not look outside the defining module
+static const LookupConfig IN_SCOPE_CONFIG = LOOKUP_DECLS | LOOKUP_PARENTS | LOOKUP_METHODS;
+
+static MatchingIdsWithName getMatchingIdsInInternalModule(Context* context,
+                                                          const char* modName,
+                                                          UniqueString name) {
+  auto mod =
+    parsing::getToplevelModule(context,
+                               UniqueString::get(context, modName));
+
+  if (!mod) return MatchingIdsWithName();
+
+  return lookupNameInScope(context, scopeForModule(context, mod->id()),
+                           /* methodLookupHelper */ nullptr,
+                           /* receiverScopeHelper */ nullptr,
+                           name, IN_SCOPE_CONFIG);
 }
 
 static MatchingIdsWithName getMatchingIdsInDefiningScope(Context* context,
@@ -78,27 +97,20 @@ static MatchingIdsWithName getMatchingIdsInDefiningScope(Context* context,
   // there is no defining scope
   if (!scopeForReceiverType) return {};
 
-  // do not look outside the defining module
-  const LookupConfig config = LOOKUP_DECLS | LOOKUP_PARENTS | LOOKUP_METHODS;
-
   auto ids = lookupNameInScope(context, scopeForReceiverType,
                                /* methodLookupHelper */ nullptr,
                                /* receiverScopeHelper */ nullptr,
-                               name, config);
+                               name, IN_SCOPE_CONFIG);
 
   // this ought to be solved by interfaces, but today it isn't. As a workaround
   // for some standard types having their (de)serialize methods defined in
-  // ChapelIO, search that module too.
-  if (ids.numIds() == 0 && isDeSerializeMethod(name)) {
-    auto chapelIo =
-      parsing::getToplevelModule(context,
-                                 UniqueString::get(context, "ChapelIO"));
-    if (!chapelIo) return ids;
-
-    ids = lookupNameInScope(context, scopeForModule(context, chapelIo->id()),
-                            /* methodLookupHelper */ nullptr,
-                            /* receiverScopeHelper */ nullptr,
-                            name, config);
+  // ChapelIO, search that module too. Same deal with hash/ChapelHashing.
+  if (ids.numIds() == 0) {
+    if (isDeSerializeMethod(name)) {
+      ids = getMatchingIdsInInternalModule(context, "ChapelIO", name);
+    } else if (name == USTR("hash")) {
+      ids = getMatchingIdsInInternalModule(context, "ChapelHashing", name);
+    }
   }
 
   return ids;
@@ -265,7 +277,14 @@ generateRecordCompareGeSignature(ResolutionContext* rc, const CompositeType* lhs
 }
 
 static const TypedFnSignature*
-generateRecordAssignment(ResolutionContext* rc, const CompositeType* lhsType);
+generateRecordAssignment(ResolutionContext* rc, const CompositeType* lhsType) {
+  return typedSignatureFromGenerator(rc, buildRecordAssign, lhsType->id());
+}
+
+static const TypedFnSignature*
+generateRecordHashSignature(ResolutionContext* rc, const CompositeType* lhsType) {
+  return typedSignatureFromGenerator(rc, buildRecordHash, lhsType->id());
+}
 
 using EnumCastSelector = OverloadSelector<buildEnumToStringCastImpl, buildEnumToBytesCastImpl, buildStringToEnumCastImpl, buildBytesToEnumCastImpl>;
 
@@ -431,7 +450,19 @@ needCompilerGeneratedMethod(Context* context, const Type* type,
 
   bool isAggregate = type->getCompositeType() || type->isRecordLike();
   if ((isAggregate && isNameOfCompilerGeneratedMethod(name))) {
-    if (!areFnOverloadsPresentInDefiningScope(context, type, QualifiedType::INIT_RECEIVER, name)) {
+    bool userDefinedExists =
+      areFnOverloadsPresentInDefiningScope(context, type, QualifiedType::INIT_RECEIVER, name);
+
+    if (name == USTR("hash")) {
+      if (parenless) return false;
+
+      auto qt = QualifiedType(QualifiedType::CONST_VAR, type);
+      userDefinedExists |=
+        areOperatorOverloadsPresentInDefiningScope(context, /* typeForScope */ qt, qt, qt, USTR("==")) ||
+        areOperatorOverloadsPresentInDefiningScope(context, /* typeForScope */ qt, qt, qt, USTR("!="));
+    }
+
+    if (!userDefinedExists) {
       return true;
     }
   }
@@ -755,67 +786,30 @@ generateInitSignature(ResolutionContext* rc, const CompositeType* inCompType) {
   return typedSignatureInitial(rc, uSig);
 }
 
-struct BinaryFnBuilder {
+struct FnBuilder {
   Context* context_;
   ID typeID_;
   const TypeDecl* typeDecl_;
   UniqueString name_;
   Function::Kind kind_;
   bool throws_;
-  Formal::Intent lhsIntent_;
-  Formal::Intent rhsIntent_;
+  bool inline_ = false;
 
   owned<Builder> builder_;
   Location dummyLoc_;
 
-  owned<Formal> lhsFormal_;
-  owned<Formal> rhsFormal_;
-
   AstList stmts_;
 
-  BinaryFnBuilder(Context* context, ID typeID, UniqueString name,
-                 Function::Kind kind,
-                 Formal::Intent lhsIntent = Formal::DEFAULT_INTENT,
-                 Formal::Intent rhsIntent = Formal::DEFAULT_INTENT,
-                 bool throws = false,
-                 optional<int> overloadOffset = empty)
+  FnBuilder(Context* context, ID typeID, UniqueString name,
+           Function::Kind kind, bool throws = false,
+           optional<int> overloadOffset = empty)
     : context_(context), typeID_(std::move(typeID)), name_(name), kind_(kind),
-      throws_(throws), lhsIntent_(lhsIntent), rhsIntent_(rhsIntent) {
+      throws_(throws) {
     builder_ = Builder::createForGeneratedCode(context_, typeID_, overloadOffset);
     dummyLoc_ = parsing::locateId(context_, typeID_);
 
-    typeDecl_ = parsing::idToAst(context, typeID)->toTypeDecl();
+    typeDecl_ = parsing::idToAst(context, typeID_)->toTypeDecl();
     CHPL_ASSERT(typeDecl_);
-  }
-
-  virtual owned<AstNode> lhsFormalTypeExpr() = 0;
-  owned<Formal>& lhsFormal() {
-    if (lhsFormal_) return lhsFormal_;
-
-    // As a special rule in Chapel, operator declarations inside a type ignore
-    // the 'this' formal, and instead have an 'lhs' and 'rhs' formal. Handle
-    // that here by constructing an LHS formal that's not called 'this'. When
-    // finalizing, we'll insert a dummy 'this' formal.
-    UniqueString nameToUse = USTR("this");
-    if (kind_ == Function::Kind::OPERATOR) {
-      nameToUse = UniqueString::get(context_, "lhs");
-    }
-    lhsFormal_ = Formal::build(builder(), dummyLoc_, nullptr,
-                               nameToUse, lhsIntent_,
-                               lhsFormalTypeExpr(), nullptr);
-    return lhsFormal_;
-  }
-
-  virtual owned<AstNode> rhsFormalTypeExpr() = 0;
-  owned<Formal>& rhsFormal() {
-    if (rhsFormal_) return rhsFormal_;
-
-
-    auto otherName = UniqueString::get(context_, "rhs");
-    rhsFormal_ = Formal::build(builder(), dummyLoc_, nullptr,
-                                otherName, rhsIntent_,
-                                rhsFormalTypeExpr(), nullptr);
-    return rhsFormal_;
   }
 
   Context* context() const { return context_; }
@@ -836,6 +830,10 @@ struct BinaryFnBuilder {
     return BoolLiteral::build(builder(), dummyLoc_, value);
   }
 
+  owned<IntLiteral> intLit(int64_t value) {
+    return IntLiteral::build(builder(), dummyLoc_, value, UniqueString::get(context_, std::to_string(value)));
+  }
+
   owned<Identifier> identifier(UniqueString name) {
     return Identifier::build(builder(), dummyLoc_, name);
   }
@@ -850,10 +848,15 @@ struct BinaryFnBuilder {
   }
 
   template <typename ... Ts>
-  owned<FnCall> call(UniqueString fn, Ts&& ... varArgs) {
+  owned<FnCall> call(owned<AstNode> calledExpr, Ts&& ... varArgs) {
     AstList args;
     (args.push_back(std::move(varArgs)),...);
-    return FnCall::build(builder(), dummyLoc_, identifier(fn), std::move(args), /* callUsedSquareBrackets */ false);
+    return FnCall::build(builder(), dummyLoc_, std::move(calledExpr), std::move(args), /* callUsedSquareBrackets */ false);
+  }
+
+  template <typename ... Ts>
+  owned<FnCall> call(UniqueString fn, Ts&& ... varArgs) {
+    return call(identifier(fn), std::forward<Ts>(varArgs)...);
   }
 
   owned<Return> ret(owned<AstNode> result) {
@@ -887,29 +890,35 @@ struct BinaryFnBuilder {
     return cond;
   }
 
-  BuilderResult finalize() {
-    auto body = Block::build(builder(), dummyLoc_, std::move(stmts_));
-    AstList otherFormals;
+  template <typename F>
+  void eachField(F&& callable) {
+    auto ct = initialTypeForTypeDecl(context_, typeID_)->getCompositeType();
 
-    // See comment in constructor. For operators, the left hand side formal is not really
-    // "this", and "this" is a dummy formal. Insert the "lhs" formal as a normal
-    // formal, and create the dummy.
-    if (kind_ == Function::Kind::OPERATOR) {
-      otherFormals.push_back(std::move(lhsFormal()));
-      lhsFormal_ = Formal::build(builder(), dummyLoc_, nullptr,
-                                      USTR("this"), Formal::DEFAULT_INTENT,
-                                      identifier(typeID_.symbolName(context_)), nullptr);
+    // attempt to resolve the fields
+    auto defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
+    auto rc = createDummyRC(context_);
+    auto& rf = fieldsForTypeDecl(&rc, ct,
+                                                 defaultsPolicy,
+                                                 /* syntaxOnly */ true);
+    for (int i = 0; i < rf.numFields(); i++) {
+      auto fieldDecl = parsing::idToAst(context_, rf.fieldDeclId(i));
+      CHPL_ASSERT(fieldDecl && fieldDecl->isVariable());
+      callable(fieldDecl->toVariable());
     }
-    otherFormals.push_back(std::move(rhsFormal()));
+  }
+
+  BuilderResult finalize(owned<Formal> receiver,
+                         AstList otherFormals,
+                         owned<Block> body) {
     auto genFn = Function::build(builder(),
                                  dummyLoc_, {},
                                  Decl::Visibility::PUBLIC,
                                  Decl::Linkage::DEFAULT_LINKAGE,
                                  /*linkageName=*/{},
                                  name_,
-                                 /*inline=*/false, /*override=*/false,
+                                 inline_, /*override=*/false,
                                  kind_,
-                                 /*receiver=*/std::move(lhsFormal()),
+                                 /*receiver=*/std::move(receiver),
                                  Function::ReturnIntent::DEFAULT_RETURN_INTENT,
                                  // throws, primaryMethod, parenless
                                  throws_, false, false,
@@ -924,6 +933,71 @@ struct BinaryFnBuilder {
   }
 };
 
+struct BinaryFnBuilder : public FnBuilder {
+  Formal::Intent lhsIntent_;
+  Formal::Intent rhsIntent_;
+
+  owned<Formal> lhsFormal_;
+  owned<Formal> rhsFormal_;
+
+  BinaryFnBuilder(Context* context, ID typeID, UniqueString name,
+                 Function::Kind kind,
+                 Formal::Intent lhsIntent = Formal::DEFAULT_INTENT,
+                 Formal::Intent rhsIntent = Formal::DEFAULT_INTENT,
+                 bool throws = false,
+                 optional<int> overloadOffset = empty)
+    : FnBuilder(context, std::move(typeID), name, kind, throws, std::move(overloadOffset)),
+      lhsIntent_(lhsIntent), rhsIntent_(rhsIntent) {
+  }
+
+  virtual owned<AstNode> lhsFormalTypeExpr() = 0;
+  owned<Formal>& lhsFormal() {
+    if (lhsFormal_) return lhsFormal_;
+
+    // As a special rule in Chapel, operator declarations inside a type ignore
+    // the 'this' formal, and instead have an 'lhs' and 'rhs' formal. Handle
+    // that here by constructing an LHS formal that's not called 'this'. When
+    // finalizing, we'll insert a dummy 'this' formal.
+    UniqueString nameToUse = USTR("this");
+    if (kind_ == Function::Kind::OPERATOR) {
+      nameToUse = UniqueString::get(context_, "lhs");
+    }
+    lhsFormal_ = Formal::build(builder(), dummyLoc_, nullptr,
+                               nameToUse, lhsIntent_,
+                               lhsFormalTypeExpr(), nullptr);
+    return lhsFormal_;
+  }
+
+  virtual owned<AstNode> rhsFormalTypeExpr() = 0;
+  owned<Formal>& rhsFormal() {
+    if (rhsFormal_) return rhsFormal_;
+
+
+    auto otherName = UniqueString::get(context_, "rhs");
+    rhsFormal_ = Formal::build(builder(), dummyLoc_, nullptr,
+                                otherName, rhsIntent_,
+                                rhsFormalTypeExpr(), nullptr);
+    return rhsFormal_;
+  }
+
+  BuilderResult finalize() {
+    auto body = Block::build(builder(), dummyLoc_, std::move(stmts_));
+    AstList otherFormals;
+
+    // See comment in constructor. For operators, the left hand side formal is not really
+    // "this", and "this" is a dummy formal. Insert the "lhs" formal as a normal
+    // formal, and create the dummy.
+    if (kind_ == Function::Kind::OPERATOR) {
+      otherFormals.push_back(std::move(lhsFormal()));
+      lhsFormal_ = Formal::build(builder(), dummyLoc_, nullptr,
+                                      USTR("this"), Formal::DEFAULT_INTENT,
+                                      identifier(typeID_.symbolName(context_)), nullptr);
+    }
+    otherFormals.push_back(std::move(rhsFormal()));
+    return FnBuilder::finalize(std::move(lhsFormal()), std::move(otherFormals), std::move(body));
+  }
+};
+
 struct FieldFnBuilder : BinaryFnBuilder {
   FieldFnBuilder(Context* context, ID typeID, UniqueString name,
                  Function::Kind kind,
@@ -932,7 +1006,30 @@ struct FieldFnBuilder : BinaryFnBuilder {
     : BinaryFnBuilder(context, typeID, name, kind, lhsIntent, rhsIntent) {}
 
   owned<AstNode> lhsFormalTypeExpr() override {
-    return identifier(typeDecl_->name());
+    // If it's a generic type with defaults, we use the type name with a '?'.
+    // Otherwise, typedSignatureInitial will use the defaulted type.
+    if (auto agg = typeDecl_->toAggregateDecl()) {
+      bool hasGenericDefaults = false;
+      for (auto decl : agg->decls()) {
+        if (auto var = decl->toVarLikeDecl()) {
+          if (var->storageKind() == Qualifier::TYPE ||
+              var->storageKind() == Qualifier::PARAM) {
+            if (var->initExpression() != nullptr) {
+              hasGenericDefaults = true;
+              break;
+            }
+          }
+        }
+      }
+
+      if (hasGenericDefaults) {
+        return call(agg->name(), identifier(USTR("?")));
+      } else {
+        return identifier(agg->name());
+      }
+    } else {
+      return identifier(typeDecl_->name());
+    }
   }
 
   owned<AstNode> rhsFormalTypeExpr() override {
@@ -947,23 +1044,6 @@ struct FieldFnBuilder : BinaryFnBuilder {
   owned<Dot> rhsField(const VarLikeDecl* fieldDecl) {
     return dot(identifier(rhsFormal()->name()), fieldDecl->name());
   }
-
-  template <typename F>
-  void eachFieldPair(F&& callable) {
-    auto ct = initialTypeForTypeDecl(context_, typeID_)->getCompositeType();
-
-    // attempt to resolve the fields
-    auto defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
-    auto rc = createDummyRC(context_);
-    auto& rf = fieldsForTypeDecl(&rc, ct,
-                                                 defaultsPolicy,
-                                                 /* syntaxOnly */ true);
-    for (int i = 0; i < rf.numFields(); i++) {
-      auto fieldDecl = parsing::idToAst(context_, rf.fieldDeclId(i));
-      CHPL_ASSERT(fieldDecl && fieldDecl->isVariable());
-      callable(this, fieldDecl->toVariable());
-    }
-  }
 };
 
 const BuilderResult& buildInitEquals(Context* context, ID typeID) {
@@ -971,10 +1051,10 @@ const BuilderResult& buildInitEquals(Context* context, ID typeID) {
 
   FieldFnBuilder bld(context, typeID, USTR("init="), Function::Kind::PROC);
 
-  bld.eachFieldPair([](FieldFnBuilder* bld, const Variable* decl) {
-    bld->stmts().push_back(bld->op(bld->lhsField(decl),
-                                   USTR("="),
-                                   bld->rhsField(decl)));
+  bld.eachField([&bld](const Variable* decl) {
+    bld.stmts().push_back(bld.op(bld.lhsField(decl),
+                                 USTR("="),
+                                 bld.rhsField(decl)));
   });
 
   auto result = bld.finalize();
@@ -988,13 +1068,13 @@ const BuilderResult& buildRecordComparison(Context* context, ID typeID) {
                      Formal::CONST_REF,
                      Formal::CONST_REF);
 
-  bld.eachFieldPair([](FieldFnBuilder* bld, const Variable* decl) {
+  bld.eachField([&bld](const Variable* decl) {
     if (decl->kind() == Variable::TYPE) return;
 
     auto neqCall =
-      bld->call(UniqueString::get(bld->context(), "chpl_field_neq"),
-                bld->lhsField(decl), bld->rhsField(decl));
-    bld->stmts().push_back(bld->earlyReturn(std::move(neqCall), bld->boolLit(false)));
+      bld.call(UniqueString::get(bld.context(), "chpl_field_neq"),
+               bld.lhsField(decl), bld.rhsField(decl));
+    bld.stmts().push_back(bld.earlyReturn(std::move(neqCall), bld.boolLit(false)));
   });
 
   bld.stmts().push_back(bld.ret(bld.boolLit(true)));
@@ -1010,12 +1090,12 @@ const BuilderResult& buildRecordInequalityComparison(Context* context, ID typeID
                      Formal::CONST_REF,
                      Formal::CONST_REF);
 
-  bld.eachFieldPair([](FieldFnBuilder* bld, const Variable* decl) {
+  bld.eachField([&bld](const Variable* decl) {
     if (decl->kind() == Variable::TYPE) return;
 
-    bld->stmts().push_back(
-        bld->call(UniqueString::get(bld->context(), "chpl_field_neq"),
-                  bld->lhsField(decl), bld->rhsField(decl)));
+    bld.stmts().push_back(
+        bld.call(UniqueString::get(bld.context(), "chpl_field_neq"),
+                 bld.lhsField(decl), bld.rhsField(decl)));
   });
 
   owned<AstNode> wholeNeq = bld.boolLit(false);
@@ -1047,20 +1127,20 @@ static const BuilderResult buildOrderedComparison(Context* context, ID typeID,
   // otherwise, first field is equal, so move on to second field.
   // This implements dictionary ordering.
 
-  bld.eachFieldPair([&, strictCompFn](FieldFnBuilder* bld, const Variable* decl) {
+  bld.eachField([&, strictCompFn](const Variable* decl) {
     if (decl->kind() == Variable::TYPE) return;
 
-    bld->stmts().push_back(
-      bld->earlyReturn(bld->call(strictCompFn,
-                                 bld->lhsField(decl),
-                                 bld->rhsField(decl)),
-                       bld->boolLit(true))
+    bld.stmts().push_back(
+      bld.earlyReturn(bld.call(strictCompFn,
+                               bld.lhsField(decl),
+                               bld.rhsField(decl)),
+                      bld.boolLit(true))
     );
-    bld->stmts().push_back(
-      bld->earlyReturn(bld->call(strictCompReversedFn,
-                                 bld->lhsField(decl),
-                                 bld->rhsField(decl)),
-                       bld->boolLit(false))
+    bld.stmts().push_back(
+      bld.earlyReturn(bld.call(strictCompReversedFn,
+                               bld.lhsField(decl),
+                               bld.rhsField(decl)),
+                      bld.boolLit(false))
     );
   });
 
@@ -1104,6 +1184,81 @@ const uast::BuilderResult& buildRecordCompareGe(Context* context, ID typeID) {
                                        UniqueString::get(context, "chpl_field_gt"),
                                        UniqueString::get(context, "chpl_field_lt"),
                                        true);
+  return QUERY_END(result);
+}
+
+const BuilderResult& buildRecordAssign(Context* context, ID typeID) {
+  QUERY_BEGIN(buildRecordAssign, context, typeID);
+
+  FieldFnBuilder bld(context, typeID, USTR("="), Function::Kind::OPERATOR,
+                     Formal::REF, Formal::CONST_REF);
+
+  bld.eachField([&bld](const Variable* decl) {
+    if (decl->kind() == Variable::TYPE ||
+        decl->kind() == Variable::PARAM) return;
+
+    bld.stmts().push_back(
+        bld.op(bld.lhsField(decl), USTR("="), bld.rhsField(decl)));
+  });
+
+  auto result = bld.finalize();
+  return QUERY_END(result);
+}
+
+struct HashFnBuilder : public FnBuilder {
+  owned<Formal> thisFormal_;
+  bool isInline_ = false;
+
+  HashFnBuilder(Context* context, ID typeID)
+    : FnBuilder(context, typeID, USTR("hash"), Function::PROC, false, chpl::empty) {
+    thisFormal_ = Formal::build(builder(), dummyLoc_, nullptr,
+                                USTR("this"), Formal::DEFAULT_INTENT,
+                                nullptr, nullptr);
+  }
+
+  void accumulateHash() {
+    owned<AstNode> hashExpr = nullptr;
+    int fieldIdx = 1;
+    eachField([&hashExpr, &fieldIdx, this](const Variable* decl) {
+      if (decl->kind() == Variable::TYPE ||
+          decl->kind() == Variable::PARAM) return;
+
+      auto fieldAccess = this->dot(this->identifier(USTR("this")), decl->name());
+      if (!hashExpr) {
+        hashExpr = this->call(UniqueString::get(this->context(), "chpl__defaultHashWrapperInner"),
+                              std::move(fieldAccess));
+      } else {
+        auto hashCall = this->call(this->dot(std::move(fieldAccess), USTR("hash")));
+        hashExpr = this->call(UniqueString::get(this->context(), "chpl__defaultHashCombine"),
+                              std::move(hashCall), std::move(hashExpr),
+                              this->intLit(fieldIdx++));
+      }
+    });
+
+    if (!hashExpr) {
+      // no fields, use a constant hash value
+      // Dyno has no "uint literals", so perform a cast to uint from int.
+      hashExpr = this->op(this->intLit(0), USTR(":"), this->identifier(USTR("uint")));
+      isInline_ = true;
+    }
+
+    stmts().push_back(this->ret(std::move(hashExpr)));
+  }
+
+  BuilderResult finalize() {
+    return FnBuilder::finalize(std::move(thisFormal_),
+                               AstList{},
+                               Block::build(builder(), dummyLoc_, std::move(stmts_)));
+  }
+};
+
+const uast::BuilderResult& buildRecordHash(Context* context, ID typeID) {
+  QUERY_BEGIN(buildRecordHash, context, typeID);
+
+  HashFnBuilder bld(context, typeID);
+  bld.accumulateHash();
+  auto result = bld.finalize();
+
   return QUERY_END(result);
 }
 
@@ -1695,122 +1850,6 @@ generateOperatorFormalDetail(const UniqueString name,
   formalTypes.push_back(std::move(qtFd));
 }
 
-
-// builds the formal entries for the operator methods, including the 'this'
-// method receiver and the lhs argument. Specify the
-// QualifiedType::Kind for each of these.
-static void
-generateUnaryOperatorMethodParts(Context* context,
-                                  const CompositeType* inCompType,
-                                  const CompositeType*& compType,
-                                  std::vector<UntypedFnSignature::FormalDetail>& ufsFormals,
-                                  std::vector<QualifiedType>& formalTypes,
-                                  QualifiedType::Kind thisKind,
-                                  QualifiedType::Kind lhsKind) {
-  // adjust to refer to fully generic signature if needed
-  auto genericCompType = inCompType->instantiatedFromCompositeType();
-  compType = genericCompType ? genericCompType : inCompType;
-
-  // make sure the receiver is a record type
-  CHPL_ASSERT(compType->isRecordType() && "Only RecordType supported for now");
-
-  // start by adding a formal for the receiver, 'this'
-  generateOperatorFormalDetail(USTR("this"), compType, ufsFormals, formalTypes,
-                               thisKind);
-
-  // add a formal for the 'lhs' argument
-  generateOperatorFormalDetail(UniqueString::get(context,"lhs"),
-                               compType, ufsFormals, formalTypes,
-                               lhsKind);
-  CHPL_ASSERT(formalTypes.size() == 2);
-  CHPL_ASSERT(ufsFormals.size() == 2);
-}
-
-// builds the formal entries for the operator methods, including the 'this'
-// method receiver and the lhs and rhs arguments. Specify the
-// QualifiedType::Kind for each of these.
-static void
-generateBinaryOperatorMethodParts(Context* context,
-                                  const CompositeType* inCompType,
-                                  const CompositeType*& compType,
-                                  std::vector<UntypedFnSignature::FormalDetail>& ufsFormals,
-                                  std::vector<QualifiedType>& formalTypes,
-                                  QualifiedType::Kind thisKind,
-                                  QualifiedType::Kind lhsKind,
-                                  QualifiedType::Kind rhsKind) {
-  // add formals for the 'this' receiver and 'lhs' argument
-  generateUnaryOperatorMethodParts(context, inCompType, compType, ufsFormals,
-                                   formalTypes, thisKind, lhsKind);
-
-  // add a formal for the 'rhs' argument
-  generateOperatorFormalDetail(UniqueString::get(context,"rhs"),
-                               compType, ufsFormals, formalTypes,
-                               rhsKind);
-
-  CHPL_ASSERT(formalTypes.size() == 3);
-  CHPL_ASSERT(ufsFormals.size() == 3);
-}
-
-/*
-generate a TypedFnSignature and UntypedFnSignature with formal details for a
-record operator method. The operator is specified by the UniqueString op.
-*/
-static const TypedFnSignature*
-generateRecordBinaryOperator(Context* context, UniqueString op,
-                             const CompositeType* lhsType,
-                             QualifiedType::Kind thisKind,
-                             QualifiedType::Kind lhsKind,
-                             QualifiedType::Kind rhsKind) {
-  const CompositeType* compType = nullptr;
-  std::vector<UntypedFnSignature::FormalDetail> ufsFormals;
-  std::vector<QualifiedType> formalTypes;
-
-  // build the formal details
-  generateBinaryOperatorMethodParts(context, lhsType, compType, ufsFormals,
-                                  formalTypes, thisKind, lhsKind, rhsKind);
-  // build the untyped signature
-  auto ufs = UntypedFnSignature::get(context,
-                        /*id*/ compType->id(),
-                        /*name*/ op,
-                        /*isMethod*/ true,
-                        /*isTypeConstructor*/ false,
-                        /*isCompilerGenerated*/ true,
-                        /*throws*/ false,
-                        /*idTag*/ parsing::idToTag(context, compType->id()),
-                        /*kind*/ uast::Function::Kind::OPERATOR,
-                        /*formals*/ std::move(ufsFormals),
-                        /*whereClause*/ nullptr);
-
-  // now build the other pieces of the typed signature
-  auto g = getTypeGenericity(context, lhsType);
-  bool needsInstantiation = (g == Type::GENERIC ||
-                             g == Type::GENERIC_WITH_DEFAULTS);
-
-  auto ret = TypedFnSignature::get(context,
-                                   ufs,
-                                   std::move(formalTypes),
-                                   TypedFnSignature::WHERE_NONE,
-                                   needsInstantiation,
-                                   /* instantiatedFrom */ nullptr,
-                                   /* parentFn */ nullptr,
-                                   /* formalsInstantiated */ Bitmap(),
-                                   /* outerVariables */ {});
-
-  return ret;
-}
-
-static const TypedFnSignature*
-generateRecordAssignment(ResolutionContext* rc, const CompositeType* lhsType) {
-  // rhs used to be 'maybe const' but now 'const' is default.
-  //
-  // TODO: it's possible that we need to compute the dyno equivalent of
-  //       FLAG_COPY_MUTATES to get the right constness here.
-  return generateRecordBinaryOperator(rc->context(), USTR("="), lhsType,
-                                      /*this*/ QualifiedType::TYPE,
-                                      /*lhs*/  QualifiedType::REF,
-                                      /*rhs*/  QualifiedType::CONST_REF );
-}
-
 static const TypedFnSignature*
 generatePtrMethod(Context* context, QualifiedType receiverType,
                    UniqueString name) {
@@ -1961,6 +2000,12 @@ generateIteratorMethod(Context* context,
   return result;
 }
 
+// Note: Generating uAST for extern assignment isn't possible at the moment
+// because types like ``extern type my_struct_t;`` don't have a symbol path
+// we can use. It's just something like ``MyMod@42``, which we can't use to
+// make , e.g., ``MyMod@42.=``. We could generate a function like for
+// extern records like ``extern record R { var x : int; }``, but it seems
+// simpler to handle both in the same way.
 static const TypedFnSignature*
 generateExternAssignment(ResolutionContext* rc, const ExternType* type) {
   auto context = rc->context();
@@ -2024,6 +2069,8 @@ getCompilerGeneratedMethodQuery(ResolutionContext* rc, QualifiedType receiverTyp
       result = generateDeSerialize(rc, compType, name, "writer", "serializer");
     } else if (name == USTR("deserialize")) {
       result = generateDeSerialize(rc, compType, name, "reader", "deserializer");
+    } else if (name == USTR("hash")) {
+      result = generateRecordHashSignature(rc, compType);
     } else if (auto tupleType = type->toTupleType()) {
       result = generateTupleMethod(context, tupleType, name);
     } else if (type->isPtrType()) {
@@ -2425,6 +2472,8 @@ builderResultForDefaultFunction(Context* context,
     return &buildDeSerialize(context, typeID, true);
   } else if (name == USTR("deserialize")) {
     return &buildDeSerialize(context, typeID, false);
+  } else if (name == USTR("hash")) {
+    return &buildRecordHash(context, typeID);
   } else if (name == USTR("==")) {
     return &buildRecordComparison(context, typeID);
   } else if (name == USTR("!=")) {
@@ -2437,6 +2486,8 @@ builderResultForDefaultFunction(Context* context,
     return &buildRecordCompareGt(context, typeID);
   } else if (name == USTR(">=")) {
     return &buildRecordCompareGe(context, typeID);
+  } else if (name == USTR("=")) {
+    return &buildRecordAssign(context, typeID);
   } else if (name == USTR("chpl__enumToOrder")) {
     return &buildEnumToOrder(context, typeID);
   } else if (name == USTR("chpl__orderToEnum")) {

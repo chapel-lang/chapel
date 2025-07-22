@@ -73,34 +73,34 @@
 For example, the following code declares an atomic variable ``x`` that
 stores an ``int``:
 
-.. code-block:: chapel
-
-      var x: atomic int;
+.. literalinclude:: ../../../../test/types/atomic/doc-examples/AtomicExamples.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_0
+   :end-before: STOP_EXAMPLE_0
 
 Such an atomic variable that is declared without an initialization expression
 will store the default value of the contained type (i.e. ``0`` or ``false``).
 
 Atomic variables can also be declared with an initial value:
 
-.. code-block:: chapel
-
-      var y: atomic int = 1;
+.. literalinclude:: ../../../../test/types/atomic/doc-examples/AtomicExamples.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_1
+   :end-before: STOP_EXAMPLE_1
 
 Similarly, a temporary ``atomic`` value can be created by casting to atomic:
 
-.. code-block:: chapel
-
-      var one: int = 1;
-      ... one : atomic int... // creates an `atomic int` initialized with 1
+.. literalinclude:: ../../../../test/types/atomic/doc-examples/AtomicExamples.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_2
+   :end-before: STOP_EXAMPLE_2
 
 Assignment is supported between atomic variables as well:
 
-.. code-block:: chapel
-
-      var x: atomic int = 1;
-      var y: atomic int = 2;
-
-      x = y; // equivalent to x.write(y.read())
+.. literalinclude:: ../../../../test/types/atomic/doc-examples/AtomicExamples.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_3
+   :end-before: STOP_EXAMPLE_3
 
 Chapel currently supports atomic operations for bools, all supported sizes of
 signed and unsigned integers, as well as all supported sizes of reals.  Note
@@ -244,6 +244,7 @@ module Atomics {
 
   pragma "atomic type"
   pragma "ignore noinit"
+  @chpldoc.hideImplType
   record AtomicBool : writeSerializable {
     // Support `valType` on atomic bool type and instances for symmetry with
     // numeric atomics
@@ -435,6 +436,7 @@ module Atomics {
 
   // TODO: should this be an operator method AtomicBool.: ?
   pragma "do not resolve unless called"
+  pragma "no copy return"
   @chpldoc.nodoc
   operator :(rhs: bool, type t:AtomicBool) {
     var lhs: AtomicBool = rhs; // use init=
@@ -443,6 +445,7 @@ module Atomics {
 
   pragma "atomic type"
   pragma "ignore noinit"
+  @chpldoc.hideImplType
   record AtomicT : writeSerializable {
     @chpldoc.nodoc
     type valType;
@@ -812,6 +815,7 @@ module Atomics {
   }
 
   // TODO: should this be an operator method AtomicT.: ?
+  pragma "no copy return"
   @chpldoc.nodoc
   operator :(rhs, type t:AtomicT)
   where rhs.type == t.valType {

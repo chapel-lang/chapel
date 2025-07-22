@@ -23,81 +23,49 @@
 //
 
 /*
-  Support for dynamic loading in Chapel.
+Support for dynamic loading in Chapel.
 
-  .. note::
+.. note::
 
-    To ``use`` this module, the experimental procedure pointer feature
-    must be activated. Do this by setting the ``config param`` named
-    ``useProcedurePointers`` to ``true``.
+  To ``use`` this module, the experimental procedure pointer feature
+  must be activated. Do this by setting the ``config param`` named
+  ``useProcedurePointers`` to ``true``.
 
-  This module provides the ability to load a binary at runtime. Procedures
-  contained in a dynamically loaded binary can be retrieved and called on
-  any locale without compile-time knowledge of their names or locations.
+This module provides the ability to load a binary at runtime. Procedures
+contained in a dynamically loaded binary can be retrieved and called on
+any locale without compile-time knowledge of their names or locations.
 
-  A hypothetical C binary could contain a procedure named ``foo``:
+A hypothetical C binary could contain a procedure named ``foo``:
 
-  .. code-block:: c
+.. literalinclude:: ../../../../test/library/packages/DynamicLoading/doc-examples/TestBinary.c
+   :language: c
+   :start-after: START_EXAMPLE
+   :end-before: STOP_EXAMPLE
 
-    // Compile with: 'cc -shared -fPIC -o TestBinary TestBinary.c'
-    //
-    // Your C compiler must support compiling a shared library as well
-    // as generating "position independent code". If your compiler
-    // offers some other way of preserving symbol tables (e.g., the
-    // '-rdynamic' flag) for use with dynamic loading, you can compile
-    // a regular executable with that flag as well.
-    //
+This binary can be can be loaded in Chapel at runtime as follows:
 
-    #include <stdio.h>
+.. literalinclude:: ../../../../test/library/packages/DynamicLoading/doc-examples/ModuleDocTest.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_0
+   :end-before: STOP_EXAMPLE_0
 
-    void foo(void);
-    void foo(void) {
-      printf("Hello world from %s!\n", __FUNCTION__);
-    }
+And a procedure named ``foo`` with type ``proc(): void`` can be retrieved:
 
-    int main(void) {
-      foo();
-      return 0;
-    }
+.. literalinclude:: ../../../../test/library/packages/DynamicLoading/doc-examples/ModuleDocTest.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_1
+   :end-before: STOP_EXAMPLE_1
 
-  This binary can be can be loaded in Chapel at runtime as follows:
+When a procedure is retrieved from a loaded binary, the returned procedure
+value is callable on any locale despite :proc:`binary.retrieve()` only
+being called on a single locale. The returned procedure is considered to
+be ``extern`` and this is reflected in its type.
 
-  .. code-block:: chapel
+.. note::
 
-    // Compile with: 'chpl Test.chpl -suseProcedurePointers=true'
-    //
-
-    use DynamicLoading;
-
-    // A binary may or may not exist at this path.
-    const path = './TestBinary';
-
-    // If loading fails an error will be issued and the 'try!' will halt.
-    const bin = try! binary.load(path);
-
-  And a procedure named ``foo`` with type ``proc(): void`` can be retrieved:
-
-  .. code-block::chapel
-
-    // Declare the type of the procedure.
-    type P = proc(): void;
-
-    // Retrieve a procedure named 'foo' from 'bin' with the type 'P'.
-    const p1 = try! bin.retrieve('foo', P);
-
-    // Call the procedure.
-    p1();
-
-  When a procedure is retrieved from a loaded binary, the returned procedure
-  value is callable on any locale despite :proc:`binary.retrieve()` only
-  being called on a single locale. The returned procedure is considered to
-  be ``extern`` and this is reflected in its type.
-
-  .. note::
-
-    Currently, only procedures can be retrieved from loaded binaries.
-    Support for retrieving references to data stored in a binary could
-    be added in the future.
+  Currently, only procedures can be retrieved from loaded binaries.
+  Support for retrieving references to data stored in a binary could
+  be added in the future.
 */
 @unstable('Dynamic loading support is experimental and unstable.')
 module DynamicLoading {

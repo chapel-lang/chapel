@@ -23,11 +23,12 @@ use FileSystem;
 use IO;
 use MasonHelp;
 use MasonUtils;
+use List only list;
 
 proc masonDoc(args: [] string) throws {
 
   var parser = new argumentParser(helpHandler=new MasonDocHelpHandler());
-
+  var passArgs = parser.addPassThrough();
   parser.parseArgs(args);
 
   try! {
@@ -43,19 +44,31 @@ proc masonDoc(args: [] string) throws {
     const projectName = tomlFile["brick"]!["name"]!.s;
     const projectFile = projectName + '.chpl';
 
-    if isDir(projectHome + '/src/') {
-      if isFile(projectHome + '/src/' + projectFile) {
-        // Must use relative paths with chpldoc to prevent baking in abs paths
-        here.chdir(projectHome);
+    if isDir(projectHome + '/src/') &&
+       isFile(projectHome + '/src/' + projectFile) {
+      // Must use relative paths with chpldoc to prevent baking in abs paths
+      here.chdir(projectHome);
 
-        const command = 'chpldoc src/' + projectFile + ' -o doc/ --process-used-modules';
-        writeln(command);
-        runCommand(command);
-      }
+      var command = new list([
+        "chpldoc",
+        "src/" + projectFile,
+        "-o",
+        "doc/",
+        "--process-used-modules"
+      ]);
+      command.pushBack(passArgs.values());
+      const commandArr = command.toArray();
+      const commandStr = " ".join(commandArr);
+      writeln(commandStr);
+      runCommand(commandArr);
     }
     else {
       writeln('Mason could not find the project to document!');
-      runCommand('chpldoc');
+      var command = new list([
+        "chpldoc",
+      ]);
+      command.pushBack(passArgs.values());
+      runCommand(command.toArray());
     }
   }
   catch e: MasonError {

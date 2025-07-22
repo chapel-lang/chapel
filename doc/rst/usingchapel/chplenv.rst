@@ -37,7 +37,7 @@ CHPL_HOME
 
     .. code-block:: sh
 
-        export CHPL_HOME=~/chapel-2.4.0
+        export CHPL_HOME=~/chapel-2.5.0
 
    .. note::
      This, and all other examples in the Chapel documentation, assumes you're
@@ -502,6 +502,7 @@ CHPL_MEM
         ========= =======================================================
         cstdlib   use the standard C malloc/free commands
         jemalloc  use Jason Evan's memory allocator
+        mimalloc  use the mimalloc memory allocator
         ========= =======================================================
 
    If unset, ``CHPL_MEM`` defaults to ``jemalloc`` for most configurations.
@@ -527,6 +528,7 @@ CHPL_TARGET_MEM
         ========= =======================================================
         cstdlib   use the standard C malloc/free commands
         jemalloc  use Jason Evan's memory allocator
+        mimalloc  use the mimalloc memory allocator
         ========= =======================================================
 
    If unset, ``CHPL_TARGET_MEM`` defaults to ``jemalloc`` for most configurations.
@@ -572,6 +574,7 @@ CHPL_HOST_MEM
         ========= =======================================================
         cstdlib   use the standard C malloc/free commands
         jemalloc  use Jason Evan's memory allocator
+        mimalloc  use the mimalloc memory allocator
         ========= =======================================================
 
    If unset, ``CHPL_HOST_MEM`` defaults to ``jemalloc`` everywhere except
@@ -979,6 +982,11 @@ CHPL_UNWIND
 
    If unset, ``CHPL_UNWIND`` defaults to ``none``
 
+   .. note::
+
+      At present, ``CHPL_UWIND=bundled`` does not work on Mac OS X.
+      ``CHPL_UNWIND=system`` should be used instead on that system.
+
 .. _readme-chplenv.CHPL_LIB_PIC:
 
 CHPL_LIB_PIC
@@ -1019,6 +1027,9 @@ the option via an environment variable.  To see a list of the environment
 variables that support each option, run the compiler with the ``--help-env``
 flag.  For boolean flags and toggles, setting the environment variable to any
 value selects that flag.
+
+.. index::
+   single: chplconfig; Chapel configuration file
 
 .. _readme-chplenv.chplconfig:
 

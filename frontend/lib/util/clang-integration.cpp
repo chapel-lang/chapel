@@ -60,11 +60,37 @@ namespace util {
 using namespace types;
 using namespace resolution;
 
-
 const std::vector<std::string>& clangFlags(Context* context) {
   QUERY_BEGIN_INPUT(clangFlags, context);
+
   std::vector<std::string> ret;
-  ret.push_back("clang"); // dummy argv[0] to make this callable in C++ tests
+  ret.push_back("clang");
+
+  if (auto chplEnvRes = context->getChplEnv()) {
+    const auto& chplEnv = chplEnvRes.get();
+    // Append target compile args
+    static std::string compileArgsKeys[] = {"CHPL_LLVM_CLANG_C",
+                                            "CHPL_TARGET_BUNDLED_COMPILE_ARGS",
+                                            "CHPL_TARGET_SYSTEM_COMPILE_ARGS"};
+    for (const auto& key : compileArgsKeys) {
+      if (chplEnv.find(key) != chplEnv.end()) {
+        auto value = chplEnv.at(key);
+        if (!value.empty()) {
+          // If CHPL_LLVM_CLANG_C exists use it as the clang to invoke,
+          // removing the default value we started with first.
+          if (key == "CHPL_LLVM_CLANG_C") {
+            ret.clear();
+          }
+          std::istringstream iss(value);
+          std::string arg;
+          while (iss >> arg) {
+            ret.push_back(arg);
+          }
+        }
+      }
+    }
+  }
+
   return QUERY_END(ret);
 }
 
@@ -85,24 +111,6 @@ void initializeLlvmTargets() {
   }
 #endif
 }
-
-#ifdef HAVE_LLVM
-std::unique_ptr<clang::DiagnosticOptions>
-wrapCreateAndPopulateDiagOpts(llvm::ArrayRef<const char *> Argv) {
-#if LLVM_VERSION_MAJOR >= 14
-  return clang::CreateAndPopulateDiagOpts(Argv);
-#else
-  auto diagOpts = std::make_unique<clang::DiagnosticOptions>();
-  unsigned missingArgIndex, missingArgCount;
-  llvm::opt::InputArgList Args =
-    clang::driver::getDriverOptTable().ParseArgs(Argv.slice(1),
-                                                 missingArgIndex,
-                                                 missingArgCount);
-  clang::ParseDiagnosticArgs(*diagOpts, Args);
-  return diagOpts;
-#endif
-}
-#endif
 
 #ifdef HAVE_LLVM
 static std::string getChplLocaleModel(Context* context) {
@@ -286,7 +294,7 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
       cc1argsCstrs.push_back(arg.c_str());
     }
 
-    auto diagOptions = wrapCreateAndPopulateDiagOpts(cc1argsCstrs);
+    auto diagOptions = clang::CreateAndPopulateDiagOpts(cc1argsCstrs);
     auto diagClient = new clang::TextDiagnosticBuffer();
 #if LLVM_VERSION_MAJOR >= 20
       auto clangDiags =
@@ -446,7 +454,7 @@ static owned<clang::CompilerInstance> getCompilerInstanceForReadingPch(
   }
 
   clang::CompilerInstance* Clang = new clang::CompilerInstance();
-  auto diagOptions = wrapCreateAndPopulateDiagOpts(cc1argsCstrs);
+  auto diagOptions = clang::CreateAndPopulateDiagOpts(cc1argsCstrs);
   auto diagClient = new clang::TextDiagnosticPrinter(llvm::errs(),
                                                      &*diagOptions);
 #if LLVM_VERSION_MAJOR >= 20

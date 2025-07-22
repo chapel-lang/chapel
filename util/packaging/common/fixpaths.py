@@ -64,8 +64,9 @@ for f in files:
     if len(new_path) == 0:
         sp.check_call(["chrpath", "-d", f])
     else:
-        # remove duplicates
-        new_path = list(set(new_path))
+        # remove duplicates and preserve order
+        seen = set()
+        new_path = [x for x in new_path if not (x in seen or seen.add(x))]
 
         path = ":".join(new_path)
         sp.check_call(["chrpath", "-r", path, f])

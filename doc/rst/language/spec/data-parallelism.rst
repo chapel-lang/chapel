@@ -62,19 +62,19 @@ The syntax of the forall statement is given by
 .. code-block:: syntax
 
    forall-statement:
-     'forall' index-var-declaration 'in' iteratable-expression task-intent-clause[OPT] 'do' statement
-     'forall' index-var-declaration 'in' iteratable-expression task-intent-clause[OPT] block-statement
-     'forall' iteratable-expression task-intent-clause[OPT] 'do' statement
-     'forall' iteratable-expression task-intent-clause[OPT] block-statement
-     [ index-var-declaration 'in' iteratable-expression task-intent-clause[OPT] ] statement
-     [ iteratable-expression task-intent-clause[OPT] ] statement
+     'forall' index-var-declaration 'in' iterable-expression task-intent-clause[OPT] 'do' statement
+     'forall' index-var-declaration 'in' iterable-expression task-intent-clause[OPT] block-statement
+     'forall' iterable-expression task-intent-clause[OPT] 'do' statement
+     'forall' iterable-expression task-intent-clause[OPT] block-statement
+     [ index-var-declaration 'in' iterable-expression task-intent-clause[OPT] ] statement
+     [ iterable-expression task-intent-clause[OPT] ] statement
 
 As with the for statement, the indices may be omitted if they are
 unnecessary and the ``do`` keyword may be omitted before a block
 statement.
 
 The square bracketed form will resort to order-independent iteration
-(i.e. ``foreach``) when ``iteratable-expression`` does not support parallel
+(i.e. ``foreach``) when ``iterable-expression`` does not support parallel
 iteration. The ``forall`` form will result in an error when parallel
 iteration is not available.
 
@@ -93,7 +93,7 @@ Execution and Serializability
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The forall statement evaluates the loop body once for each element
-yielded by the ``iteratable-expression``. Each instance of the forall
+yielded by the ``iterable-expression``. Each instance of the forall
 loop’s body may be executed concurrently with the others, but this is
 not guaranteed. In particular, the loop must be serializable. Details
 regarding concurrency and iterator implementation are described
@@ -202,10 +202,10 @@ The syntax of a forall expression is given by
 .. code-block:: syntax
 
    forall-expression:
-     'forall' index-var-declaration 'in' iteratable-expression task-intent-clause[OPT] 'do' expression
-     'forall' iteratable-expression task-intent-clause[OPT] 'do' expression
-     [ index-var-declaration 'in' iteratable-expression task-intent-clause[OPT] ] expression
-     [ iteratable-expression task-intent-clause[OPT] ] expression
+     'forall' index-var-declaration 'in' iterable-expression task-intent-clause[OPT] 'do' expression
+     'forall' iterable-expression task-intent-clause[OPT] 'do' expression
+     [ index-var-declaration 'in' iterable-expression task-intent-clause[OPT] ] expression
+     [ iterable-expression task-intent-clause[OPT] ] expression
 
 As with the for expression, the indices may be omitted if they are
 unnecessary. The ``do`` keyword is always required in the keyword-based
@@ -213,7 +213,7 @@ notation.
 
 As with the forall statement, the square bracketed form will resort to
 order-independent iteration (i.e. ``foreach``) when
-``iteratable-expression`` does not support parallel iteration. The
+``iterable-expression`` does not support parallel iteration. The
 ``forall`` form will result in an error when parallel iteration is not
 available.
 
@@ -897,8 +897,8 @@ The syntax for a reduction expression is given by:
 .. code-block:: syntax
 
    reduce-expression:
-     reduce-scan-operator 'reduce' iteratable-expression
-     class-type 'reduce' iteratable-expression
+     reduce-scan-operator 'reduce' iterable-expression
+     class-type 'reduce' iterable-expression
 
    reduce-scan-operator: one of
      + * && || & | ^ 'min' 'max' 'minmax' 'minloc' 'maxloc'
@@ -997,8 +997,8 @@ The syntax for a scan expression is given by:
 .. code-block:: syntax
 
    scan-expression:
-     reduce-scan-operator 'scan' iteratable-expression
-     class-type 'scan' iteratable-expression
+     reduce-scan-operator 'scan' iterable-expression
+     class-type 'scan' iterable-expression
 
 The predefined scans are defined by ``reduce-scan-operator``. These are
 identical to the predefined reductions and are described

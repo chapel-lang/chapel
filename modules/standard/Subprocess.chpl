@@ -31,93 +31,40 @@ To start a subprocess, use :proc:`spawn` or :proc:`spawnshell`.  To wait for
 the subprocess process to finish, use the :proc:`subprocess.wait` or
 :proc:`subprocess.communicate` functions.
 
-This example program produces a listing of files in the current directory with
-names that begin with ``test.`` by using the ``ls`` command. The
+This example program produces a listing of files in the ``test_directory``
+directory by using the ``ls`` command. The
 output will be mixed in with the Chapel program's output.
 
-.. code-block:: chapel
-
-  use Subprocess;
-
-  var sub = spawn(["ls", "test.*"]);
-  sub.wait();
+.. literalinclude:: ../../../../test/library/standard/Spawn/doc-examples/example_spawn.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE
+ :end-before: STOP_EXAMPLE
 
 This version also runs the ``ls`` command but uses a pipe
 to read the output from the ``ls`` command.
 
-.. code-block:: chapel
-
-  use Subprocess;
-
-  var sub = spawn(["ls", "test.*"], stdout=pipeStyle.pipe);
-
-  var line:string;
-  while sub.stdout.readLine(line) {
-    write("ls returned: ", line);
-  }
-
-  sub.wait();
+.. literalinclude:: ../../../../test/library/standard/Spawn/doc-examples/example_spawn_pipe.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE
+ :end-before: STOP_EXAMPLE
 
 Here is an example program that provides input to a subprocess in addition to
 capturing its output.  This version uses the ``cat`` command, which just prints
 back its input.
 
-.. code-block:: chapel
-
-  use Subprocess;
-
-  var sub = spawn(["cat"], stdin=pipeStyle.bufferAll, stdout=pipeStyle.pipe);
-
-  sub.stdin.writeln("Hello");
-  sub.stdin.writeln("World");
-
-  sub.communicate();
-
-  var line:string;
-  while sub.stdout.readLine(line) {
-    write("Got line: ", line);
-  }
-
-  // prints out:
-  // Got line: Hello
-  // Got line: World
-
+.. literalinclude:: ../../../../test/library/standard/Spawn/doc-examples/example_readWrite.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE
+ :end-before: STOP_EXAMPLE
 
 Here is a final example in which the Chapel program uses 2 tasks
 to work with a subprocess. One task is producing data and the
 other task is consuming it.
 
-.. code-block:: chapel
-
-  use Subprocess;
-
-  var input = ["a", "b", "c"];
-
-  var sub = spawn(["cat"], stdin=pipeStyle.pipe, stdout=pipeStyle.pipe);
-  cobegin {
-    {
-      // one task writes data to the subprocess
-      for x in input {
-        sub.stdin.writeln(x);
-      }
-      // this close is important; otherwise the other task blocks forever
-      sub.stdin.close();
-    }
-
-    {
-      var line:string;
-      while sub.stdout.readln(line) {
-        writeln("Got line ", line);
-      }
-    }
-  }
-  sub.wait();
-
-  // prints out:
-  // Got line: a
-  // Got line: b
-  // Got line: c
-
+.. literalinclude:: ../../../../test/library/standard/Spawn/doc-examples/example_readWriteTwoTasks.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE
+ :end-before: STOP_EXAMPLE
 
 .. note::
 
@@ -136,29 +83,14 @@ methods to create binary-serializing aliases of ``stdin`` and ``stdout``. For
 example, consider the following program that writes the numbers ``1`` through
 ``10`` in binary to the ``hexdump`` utility:
 
-.. code-block:: chapel
-
-  use IO, Subprocess;
-
-  var sub = spawn(["hexdump", "-C"], stdin=pipeStyle.pipe, stdout=pipeStyle.pipe);
-
-  // Use 'withSerializer' to create a binary-serializing alias of 'sub.stdin'
-  var bin = sub.stdin.withSerializer(binarySerializer);
-
-  for i in 1..10 do bin.write(i:uint(8));
-
-  sub.communicate();
-
-  var line : string;
-  while sub.stdout.readLine(line) do
-    write(line);
+.. literalinclude:: ../../../../test/library/standard/Spawn/doc-examples/example_writeBinary.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE
+ :end-before: STOP_EXAMPLE
 
 This program prints:
 
-.. code-block:: text
-
-  00000000  01 02 03 04 05 06 07 08  09 0a                    |..........|
-  0000000a
+.. literalinclude:: ../../../../test/library/standard/Spawn/doc-examples/example_writeBinary.good
 
 Please refer to :type:`~IO.binarySerializer` and :type:`~IO.binaryDeserializer`
 for more information on their supported format.
@@ -1044,10 +976,10 @@ module Subprocess {
     Other values for `signal` are system-specific and can be declared in this
     way, for example:
 
-    .. code-block:: chapel
-
-       extern const SIGPOLL: c_int;
-
+    .. literalinclude:: ../../../../test/library/standard/Spawn/doc-examples/example_signal.chpl
+     :language: chapel
+     :start-after: START_EXAMPLE
+     :end-before: STOP_EXAMPLE
 
     :arg signal: the signal to send
 

@@ -22,7 +22,7 @@
 
 #include "chpl/framework/ID.h"
 #include "chpl/resolution/ResolvedVisitor.h"
-#include "./BranchSensitiveVisitor.h"
+#include "chpl/resolution/BranchSensitiveVisitor.h"
 
 namespace chpl {
 namespace uast {

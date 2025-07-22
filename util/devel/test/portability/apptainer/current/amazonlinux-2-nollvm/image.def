@@ -1,0 +1,24 @@
+BootStrap: docker
+From: amazonlinux:2
+
+
+%files
+    ../../provision-scripts/* /provision-scripts/
+
+%post
+    /provision-scripts/yum-deps-amazonlinux-2.sh
+
+    # AL2 provides LLVM 11 (only) and GCC 7.3 (by default), both of which are
+    # too old for us. Install and use GCC 10, which can be used to build
+    # bundled/none LLVM.
+    yum -y install gcc10 gcc10-c++
+
+%environment
+    # Use installed GCC 10 package for Chapel build
+    export CC=gcc10-gcc # unsudo
+    export CXX=gcc10-g++ # unsudo
+    export CHPL_HOST_CC=gcc10-gcc # unsudo
+    export CHPL_HOST_CXX=gcc10-g++ # unsudo
+
+%runscript
+    ../../provision-scripts/run.sh "$@"

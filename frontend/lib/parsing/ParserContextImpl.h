@@ -1720,7 +1720,9 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
     }
   }
 
-  this->clearComments();
+  auto last = makeLocationAtLast(location);
+  auto commentsToDiscard = gatherComments(last);
+  clearComments(commentsToDiscard);
 
   cs.stmt = f.release();
   return cs;
@@ -1747,8 +1749,11 @@ void ParserContext::enterScopeForFunctionDecl(FunctionParts& fp,
     this->enterScope(asttags::Function, fp.name->name());
   }
 }
-void ParserContext::exitScopeForFunctionDecl(FunctionParts& fp) {
-  this->clearComments();
+void ParserContext::exitScopeForFunctionDecl(YYLTYPE bodyLocation,
+                                             FunctionParts& fp) {
+  auto last = makeLocationAtLast(bodyLocation);
+  auto commentsToDiscard = gatherComments(last);
+  clearComments(commentsToDiscard);
 
   fp.errorExpr = checkForFunctionErrors(fp, fp.returnType);
   // May never have been built if there was a syntax error.
@@ -3623,7 +3628,7 @@ ParserContext::buildLabelStmt(YYLTYPE location, PODUniqueString name,
 
 
 ParserExprList*
-ParserContext::buildSingleStmtRoutineBody(CommentsAndStmt cs) {
-  this->clearComments();
+ParserContext::buildSingleStmtRoutineBody(YYLTYPE location, CommentsAndStmt cs) {
+  cs = this->finishStmt(location, cs);
   return this->makeList(cs);
 }

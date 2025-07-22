@@ -155,6 +155,15 @@ proc verifyResults() {
   const numErrors = + reduce [i in TableSpace] (T(i) != i);
   if (printStats) then writeln("Number of errors is: ", numErrors, "\n");
 
+  if numErrors > (errorTolerance * N_U) {
+    writeln("Number of errors is: ", numErrors, "\n");
+    writeln("error tolerance = ", errorTolerance * N_U);
+    for loc in Locales do on loc {
+      writeln("Locale", loc.id, " name is '", loc.name, "'");
+      writeln("Locale", loc.id, " hostname is '", loc.hostname, "'");
+    }
+  }
+
   //
   // Return whether or not the number of errors was within the benchmark's
   // tolerance.

@@ -166,7 +166,6 @@ removeUsage $file
 ## ChapelArray ##
 file="./ChapelArray.rst"
 replace "_array" "array" $file
-replace "record" "type" $file
 
 removePrefixFunctions $file
 removePrefixVariables $file
@@ -178,7 +177,6 @@ removeUsage $file
 ## ChapelDomain ##
 file="./ChapelDomain.rst"
 replace "_domain" "domain" $file
-replace "record" "type" $file
 
 removePrefixFunctions $file
 removePrefixVariables $file
@@ -193,8 +191,8 @@ file="./Atomics.rst"
 
 removePrefixFunctions $file
 
-replace "record:: AtomicBool" "type:: atomic \(bool\)" $file
-replace "record:: AtomicT"    "type:: atomic \(valType\)" $file
+replace "AtomicBool" "atomic \(bool\)" $file
+replace "AtomicT"    "atomic \(valType\)" $file
 
 removeTitle $file
 removeUsage $file
@@ -233,7 +231,6 @@ file=OwnedObject.rst
 removeTitle $file
 replace "_owned" "owned" $file
 replace "chpl_t" "t" $file
-replace ".. record:: owned" ".. type:: owned" $file
 removeUsage $file
 ## End of OwnedObject ##
 
@@ -243,26 +240,5 @@ removeTitle $file
 replace "_owned" "owned" $file
 replace "_shared" "shared" $file
 replace "chpl_t" "t" $file
-replace ".. record:: shared" ".. type:: shared" $file
 removeUsage $file
 ## End of SharedObject ##
-
-# Bending the rules a little to modify CTypes, which is not an internal module.
-# This is a hack that won't be necessary if #22461 is implemented.
-# Has to be at the end of the script due to the cd. (or cd back after)
-cd "${TEMPDIR}/source/modules/standard/"
-## CTypes ##
-file=CTypes.rst
-replace "class:: c_ptr" "type:: c_ptr" $file # also gets c_ptrConst
-replace "record:: c_array" "type:: c_array" $file
-## End of CTypes ##
-
-
-# TODO Remove this after Chapel 2.3 when doc/rst/meta/modules/packages/Sort.rst is removed
-## Sort ##
-file=Sort.rst
-echo ".. _std-sort:" >> $file.tmp
-echo "" >> $file.tmp
-cat $file >> $file.tmp
-mv $file.tmp $file
-## End of Sort ##

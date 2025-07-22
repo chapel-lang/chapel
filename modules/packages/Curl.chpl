@@ -49,15 +49,10 @@ Simple uses of Curl work through the generic :mod:`URL` module. This module
 allows a URL to be opened as a :record:`IO.fileReader` or
 `:record:`IO.fileWriter`.
 
-.. code-block:: chapel
-
-  use URL;
-  var urlreader = openUrlReader("http://example.com");
-  var str:bytes;
-  // Output each line read from the URL to stdout
-  while(urlreader.readLine(str)) {
-    write(str);
-  }
+.. literalinclude:: ../../../../test/library/packages/Curl/doc-examples/CurlExamples.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_0
+   :end-before: STOP_EXAMPLE_0
 
 The Curl module includes ``require`` statements to include the Curl header and
 library, so the above example can be compiled simply with:
@@ -87,70 +82,25 @@ provide extern declarations for all constants. However these are trivial to add
 to your own programs. For example, the below example declares
 ``CURLOPT_VERBOSE`` as a ``CURLoption`` like this:
 
-.. code-block:: chapel
-
-  extern const CURLOPT_VERBOSE:CURLoption;
+.. literalinclude:: ../../../../test/library/packages/Curl/doc-examples/CurlExamples.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_1
+   :end-before: STOP_EXAMPLE_1
 
 Here is a full program enabling verbose output from Curl while downloading:
 
-.. code-block:: chapel
-
-  // This example changes the Curl options before connecting
-  use URL;
-  use Curl;
-  var reader = openUrlReader("https://example.com");
-  var str:bytes;
-  // Set verbose output from curl
-  extern const CURLOPT_VERBOSE:CURLoption;
-  Curl.setopt(reader, CURLOPT_VERBOSE, true);
-
-  // now read into the bytes
-  reader.readAll(str);
-  writeln(str);
-  reader.close();
-
+.. literalinclude:: ../../../../test/library/packages/Curl/doc-examples/CurlExamples.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_2
+   :end-before: STOP_EXAMPLE_2
 
 Here is an example program using lower-level libcurl functions to
 issue a POST request:
 
-.. code-block:: chapel
-
-    // This example uses the curl_easy_ interface from libcurl
-    // to POST some json data.
-    use CTypes;
-    import Curl;
-
-    extern const CURLOPT_CUSTOMREQUEST: Curl.CURLoption;
-    extern const CURLOPT_HTTPHEADER: Curl.CURLoption;
-    extern const CURLOPT_POSTFIELDS: Curl.CURLoption;
-    extern const CURLOPT_URL: Curl.CURLoption;
-    extern const CURLOPT_WRITEFUNCTION: Curl.CURLoption;
-
-    // Called with the contents of the server's response; does nothing with it.
-    // Else libcurl writes it to stdout.
-    proc null_write_callback(ptr: c_ptr(c_char), size: c_size_t, nmemb: c_size_t, userdata: c_ptr(void)) {
-      return size * nmemb;
-    }
-
-    var curl = Curl.curl_easy_init();
-
-    var args = new Curl.slist();
-    args.append("Accept: application/json");
-    args.append("Content-Type: application/json");
-    Curl.curl_easy_setopt(curl, CURLOPT_HTTPHEADER, args);
-
-    var jsonPayload = '{"foo": "bar"}';
-    Curl.curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jsonPayload);
-
-    Curl.curl_easy_setopt(curl, CURLOPT_URL, 'http://localhost:3000/posts');
-    Curl.curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, 'POST');
-    Curl.curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, c_ptrTo(null_write_callback):c_ptr(void));
-
-    var ret = Curl.curl_easy_perform(curl);
-
-    args.free();
-    Curl.curl_easy_cleanup(curl);
-
+.. literalinclude:: ../../../../test/library/packages/Curl/doc-examples/CurlExamples.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_3
+   :end-before: STOP_EXAMPLE_3
 
 Curl Support Types and Functions
 --------------------------------
@@ -172,6 +122,8 @@ module Curl {
 
   /* Returns the ``CURL`` handle connected to a channel opened with
      :proc:`URL.openUrlReader` or :proc:`URL.openUrlWriter`.
+
+     :throws SystemError: If the channel is non-local or not a Curl channel.
    */
   proc getCurlHandle(ch):c_ptr(CURL) throws
   where isSubtype(ch.type, fileReader) || isSubtype(ch.type, fileWriter) {
@@ -198,6 +150,9 @@ module Curl {
      :arg opt: the curl option to set.
      :arg arg: the value to set the curl option specified by opt.
      :type arg: `int`, `string`, `bool`, or `slist`
+     :throws SystemError: If the channel and args list are not on the same
+                          locale, or if the channel is not a curl channel.
+     :throws IoError: If an error occurs setting the option.
   */
   proc setopt(ch, opt:c_int, arg):bool throws
   where isSubtype(ch.type, fileReader) || isSubtype(ch.type, fileWriter) {
@@ -282,22 +237,22 @@ module Curl {
 
      For example, you might do:
 
-     .. code-block:: chapel
-
-       extern const CURLOPT_USERNAME:CURLoption;
-       extern const CURLOPT_PASSWORD:CURLoption;
-
-       setopt(curlfile, (CURLOPT_USERNAME, username),
-                        (CURLOPT_PASSWORD, password));
+     .. literalinclude:: ../../../../test/library/packages/Curl/doc-examples/CurlSetopt.chpl
+        :language: chapel
+        :start-after: START_EXAMPLE_0
+        :end-before: STOP_EXAMPLE_0
 
      :arg ch: a :record:`IO.fileReader` or :record:`IO.fileWriter`
      :arg args: any number of tuples of the form (curl_option, value).
                 This function will call ``setopt`` on each pair in turn.
+     :throws SystemError: If the channel and an args list are not on the same
+                          locale, or if the channel is not a curl channel.
+     :throws IoError: If an error occurs setting the option.
    */
   proc setopt(ch, args ...?k) throws
   where isSubtype(ch.type, fileReader) || isSubtype(ch.type, fileWriter) {
     for param i in 0..k-1 {
-      setopt(ch, args(i)(0), args(i)(1));
+      try setopt(ch, args(i)(0), args(i)(1));
     }
   }
 
@@ -328,6 +283,7 @@ module Curl {
      support returning an error code instead of halting.
 
      :arg str: a string argument to append
+     :throws IoError: If an error occurs appending to the slist.
     */
   proc ref slist.append(str:string) throws {
     var err: errorCode = 0;

@@ -1,0 +1,4 @@
+AttributeSyntaxExample.chpl:8: In function 'foo':
+AttributeSyntaxExample.chpl:7: error: Unknown top-level attribute 'attributeName'
+AttributeSyntaxExample.chpl:12: In function 'foo':
+AttributeSyntaxExample.chpl:11: warning: Unknown attribute tool name 'toolName'

@@ -25,6 +25,7 @@
 
 LOCATION_MAP(Dot, DotField)
 LOCATION_MAP(NamedDecl, DeclName)
+LOCATION_MAP(Include, IncludeName)
 LOCATION_MAP(Loop, LoopHeader)
 LOCATION_MAP(AstNode, BlockHeader)
 LOCATION_MAP(NamedDecl, DeclHeader)

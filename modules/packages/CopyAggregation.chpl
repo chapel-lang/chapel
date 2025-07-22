@@ -18,71 +18,51 @@
  * limitations under the License.
  */
 
-/* Provides support for aggregated copies/assignments for trivial types.
+/*
+  Provides support for aggregated copies/assignments for trivial types.
 
-   .. warning::
-     This module represents work in progress. The API is unstable and likely to
-     change over time.
+  .. warning::
 
-   This module provides an aggregated version of copy/assignment for trivially
-   copyable types. Trivially copyable types require no special behavior to be
-   copied and merely copying their representation is sufficient. They include
-   ``numeric`` and ``bool`` types as well as tuples or records consisting only
-   of ``numeric``/``bool``. Records cannot have user-defined copy-initializers,
-   deinitializers, or assignment overloads.
+    This module represents work in progress. The API is unstable and likely to
+    change over time.
 
-   Aggregated copies can provide a significant speedup for batch assignment
-   operations that do not require ordering of operations. The results of
-   aggregated operations are not visible until the aggregator is deinitialized
-   or an explicit ``flush()`` call is made. The current implementation requires
-   that one side of the copy is always local. When the source is always local
-   and the destination may be remote a :record:`DstAggregator` should be used.
-   When the destination is always local and the source may be remote, a
-   :record:`SrcAggregator` should be used. Note that aggregators are not
-   parallel safe and are expected to be created on a per-task basis. Each
-   aggregator has a per-peer buffer, so memory usage increases with number of
-   locales. The following example demonstrates  using :record:`SrcAggregator`
-   to reverse an array:
+  This module provides an aggregated version of copy/assignment for trivially
+  copyable types. Trivially copyable types require no special behavior to be
+  copied and merely copying their representation is sufficient. They include
+  ``numeric`` and ``bool`` types as well as tuples or records consisting only
+  of ``numeric``/``bool``. Records cannot have user-defined copy-initializers,
+  deinitializers, or assignment overloads.
 
-   .. code-block:: chapel
+  Aggregated copies can provide a significant speedup for batch assignment
+  operations that do not require ordering of operations. The results of
+  aggregated operations are not visible until the aggregator is deinitialized
+  or an explicit ``flush()`` call is made. The current implementation requires
+  that one side of the copy is always local. When the source is always local
+  and the destination may be remote a :record:`DstAggregator` should be used.
+  When the destination is always local and the source may be remote, a
+  :record:`SrcAggregator` should be used. Note that aggregators are not
+  parallel safe and are expected to be created on a per-task basis. Each
+  aggregator has a per-peer buffer, so memory usage increases with number of
+  locales. The following example demonstrates  using :record:`SrcAggregator`
+  to reverse an array:
 
-     use BlockDist, CopyAggregation;
+  .. literalinclude:: ../../../../test/library/packages/CopyAggregation/doc-examples/CopyAggregationExamples.chpl
+     :language: chapel
+     :start-after: START_EXAMPLE_0
+     :end-before: STOP_EXAMPLE_0
 
-     const size = 10000;
-     const space = {0..size};
-     const D = space dmapped new blockDist(space);
-     var A, reversedA: [D] int = D;
+  It's important to be aware that aggregated operations are not consistent with
+  regular operations and updates may not be visible until the aggregator is
+  deinitialized or an explicit call to ``flush()`` is made.
 
-     forall (rA, i) in zip(reversedA, D) with (var agg = new SrcAggregator(int)) do
-       agg.copy(rA, A[size-i]);
+  .. literalinclude:: ../../../../test/library/packages/CopyAggregation/doc-examples/CopyAggregationExamples.chpl
+     :language: chapel
+     :start-after: START_EXAMPLE_1
+     :end-before: STOP_EXAMPLE_1
 
-     // no flush required, flushed when aggregator is deinitialized
-
-     forall (rA, i) in zip(reversedA, D) do
-       assert(rA == size-i);
-
-
-   It's important to be aware that aggregated operations are not consistent with
-   regular operations and updates may not be visible until the aggregator is
-   deinitialized or an explicit call to ``flush()`` is made.
-
-   .. code-block:: chapel
-
-     use CopyAggregation;
-
-     var a = 0;
-     on Locales[numLocales-1] {
-       var agg = new DstAggregator(int);
-       var b = 1;
-       agg.copy(a, b);
-       writeln(a);   // can print 0 or 1
-       agg.flush();
-       writeln(a);   // must print 1
-     }
-
-   Generally speaking aggregators are useful for when you have a large batch of
-   remote assignments to perform and the order of those operations doesn't
-   matter.
+  Generally speaking aggregators are useful for when you have a large batch of
+  remote assignments to perform and the order of those operations doesn't
+  matter.
  */
 module CopyAggregation {
   use AggregationPrimitives;

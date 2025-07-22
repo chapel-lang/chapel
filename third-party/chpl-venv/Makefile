@@ -37,11 +37,11 @@ $(CHPL_VENV_VIRTUALENV_DIR_DEPS1_OK):
 
 	@# Now create the venv to use to get the dependencies
 	$(PYTHON) -m venv $(CHPL_VENV_VIRTUALENV_DIR)
-	@# Now install wheel so we can pip install
+	@# Now install pip/wheel so we can pip install
 	export PATH="$(CHPL_VENV_VIRTUALENV_BIN):$$PATH" && \
 	export VIRTUAL_ENV=$(CHPL_VENV_VIRTUALENV_DIR) && \
 	$(PIP) install --upgrade \
-	  $(CHPL_PIP_INSTALL_PARAMS) $(LOCAL_PIP_FLAGS) wheel && \
+	  $(CHPL_PIP_INSTALL_PARAMS) $(LOCAL_PIP_FLAGS) pip wheel && \
 	touch $(CHPL_VENV_VIRTUALENV_DIR_DEPS1_OK)
 
 ifdef CHPL_PIP_FROM_SOURCE
@@ -107,13 +107,15 @@ chapel-py-venv: FORCE $(CHPL_VENV_VIRTUALENV_DIR_OK)
 	@# Install chapel-py's Python package into the Python Application
 	@# directory structure at $(CHPL_VENV_CHPL_FRONTEND_PY_DEPS)
 	@# this is python version specific
+	@#
+	@# note that CC/CXX are explicitly set to avoid scikit-build/scikit-build-core#1114
 	export PATH="$(CHPL_VENV_VIRTUALENV_BIN):$$PATH" && \
 	export VIRTUAL_ENV=$(CHPL_VENV_VIRTUALENV_DIR) && \
+	CC=$(CHPL_MAKE_HOST_CC) CXX=$(CHPL_MAKE_HOST_CXX) \
 	CHPL_HOME=$(CHPL_MAKE_HOME) $(PIP) install --upgrade \
 	  $(CHPL_PIP_INSTALL_PARAMS) $(LOCAL_PIP_FLAGS) \
 	  --target $(CHPL_VENV_CHPL_FRONTEND_PY_DEPS) \
-	  $(CHPL_MAKE_HOME)/tools/chapel-py \
-	  -r $(CHPL_VENV_CHAPEL_PY_REQUIREMENTS_FILE)
+	  $(CHPL_MAKE_HOME)/tools/chapel-py
 	mkdir -p $(CHPL_MAKE_HOME)/tools/chapel-py/src/chapel/core
 	CHPL_HOME=$(CHPL_MAKE_HOME) bash \
 		$(CHPL_MAKE_HOME)/util/config/run-in-venv-with-python-bindings.bash \

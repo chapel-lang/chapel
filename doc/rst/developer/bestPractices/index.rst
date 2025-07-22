@@ -16,6 +16,7 @@ Best Practices for Contributors
    DCO
    CompilerDebugging
    CompilerIRTricks
+   EditionsDev
    ErrorWarningMessaging
    RuntimeLibrary
    GeneratedCode
@@ -95,6 +96,9 @@ developers.  A possible reading order is roughly as follows:
 
 :ref:`best-practices-unstable`:
   How to mark features as unstable
+
+:ref:`best-practices-editions`:
+  How to tie a particular change to a particular (set of) edition(s)
 
 :ref:`readme-nightlytesting`
   How to run nightly testing

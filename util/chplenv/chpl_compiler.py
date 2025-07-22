@@ -275,12 +275,21 @@ def get_compiler_from_command(command):
     # the following adjustments are to handle a command like
     #    /path/to/gcc-10.exe --some-option
     # where we are looking for just the 'gcc' part.
+    # we also need to consider paths like `/usr/bin/aarch64-linux-gnu-gcc-10`
     first = command.split()[0]
     basename = os.path.basename(first)
-    name = basename.split('-')[0].strip()
-    name = name.split('.')[0].strip()
+    # strip off the dot first
+    name = basename.split('.')[0].strip()
+    name_components = name.split('-')
+    # find the last part of the name, keep searching for one thats not a number
+    last_component = None
+    for component in reversed(name_components):
+        last_component = component.strip()
+        if not last_component.isdigit():
+            break
+    names = (name_components[0], last_component)
     for tup in COMPILERS:
-        if name == tup[1] or name == tup[2]:
+        if tup[1] in names or tup[2] in names:
             return tup[0]
 
     # if it was not one of the above cases we don't know how to
@@ -372,6 +381,16 @@ def get_compiler_command(flag, lang):
         command = [get_compiler_name_c(compiler_val)]
     elif lang_upper == 'CXX':
         command = [get_compiler_name_cxx(compiler_val)]
+
+    # if CHPL_*_COMPILER is clang, we may need to adjust the command, because
+    # 'clang' may not exist (it might be clang-VERSION)
+    if compiler_val == 'clang' and (lang_upper == 'CC' or lang_upper == 'CXX') and not which(command[0]):
+        from  chpl_llvm import llvm_versions
+        for v in llvm_versions():
+            newcommand = command[0] + '-' + v
+            if which(newcommand):
+                command[0] = newcommand
+                break
 
     # Adjust the path in two situations:
     #  CHPL_TARGET_COMPILER=llvm -- means use the selected llvm/clang

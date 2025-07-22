@@ -223,7 +223,7 @@ module Crypto {
        :rtype: `[] string`
 
     */
-    proc toHex() throws {
+    proc toHex() {
       var buffHex: [this.buffDomain] string;
       for i in this.buffDomain {
         const byte = this.buff[i];
@@ -241,7 +241,7 @@ module Crypto {
        :rtype: `string`
 
     */
-    proc toHexString() throws {
+    proc toHexString() {
       var buffHexString: string;
       for i in this.buffDomain {
         const byte = this.buff[i];
@@ -458,10 +458,10 @@ module Crypto {
 
        Initialization example,
 
-       .. code-block:: chapel
-
-          var h = new Hash(Digest.SHA256);
-
+       .. literalinclude:: ../../../../test/library/packages/Crypto/doc-examples/CryptoExamples.chpl
+          :language: chapel
+          :start-after: START_EXAMPLE_0
+          :end-before: STOP_EXAMPLE_0
     */
     proc init(digestName: Digest) {
       init this;
@@ -623,10 +623,10 @@ module Crypto {
 
        Initialization example,
 
-       .. code-block:: chapel
-
-          var aes = new AES(256, CryptoChainMode.cbc);
-
+       .. literalinclude:: ../../../../test/library/packages/Crypto/doc-examples/CryptoExamples.chpl
+          :language: chapel
+          :start-after: START_EXAMPLE_1
+          :end-before: STOP_EXAMPLE_1
     */
     proc init(bits: int, mode: CryptoChainMode) {
       var tmpCipher: CONST_EVP_CIPHER_PTR;
@@ -829,10 +829,10 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
 
        Initialization example,
 
-       .. code-block:: chapel
-
-          var bf = new Blowfish(CryptoChainMode.cbc);
-
+       .. literalinclude:: ../../../../test/library/packages/Crypto/doc-examples/CryptoExamples.chpl
+          :language: chapel
+          :start-after: START_EXAMPLE_2
+          :end-before: STOP_EXAMPLE_2
     */
     proc init(mode: CryptoChainMode) {
       var tmpCipher: CONST_EVP_CIPHER_PTR;
@@ -864,6 +864,9 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
 
        :return: An `owned CryptoBuffer` representing the ciphertext.
        :rtype: `owned CryptoBuffer`
+
+       :throws IllegalArgumentError: If the key is less than 10 bytes long, or
+                                     if the IV is not 8 bytes long.
 
     */
     proc encrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer): owned CryptoBuffer throws {
@@ -931,11 +934,12 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
   class CryptoRandom {
     /* This function represents a CSPRNG that generates and allocates the desired
        number of random values as specified by the argument. Halts for number of
-       bytes less than 1 (invalid). For instance,
+       bytes less than 1 (invalid). For instance:
 
-       .. code-block:: chapel
-
-          var a = (new CryptoRandom()).getRandomBuffer(5)
+       .. literalinclude:: ../../../../test/library/packages/Crypto/doc-examples/CryptoGetRandomBuffer.chpl
+          :language: chapel
+          :start-after: START_EXAMPLE
+          :end-before: STOP_EXAMPLE
 
        would give us a `CryptoBuffer` of size `5` and pre-initialized with values.
 
@@ -944,6 +948,8 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
 
        :return: An `owned CryptoBuffer` representing the generated values.
        :rtype: `owned CryptoBuffer`
+
+       :throws IllegalArgumentError: If the `buffLen` is less than 1.
 
     */
     proc getRandomBuffer(buffLen: int): owned CryptoBuffer throws {
@@ -1206,6 +1212,8 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
 
        :return: An `owned CryptoBuffer` representing the obtained plaintext.
        :rtype: `owned CryptoBuffer`
+
+       :throws IllegalArgumentError: If the `key` is not a match.
 
     */
     proc decrypt(envp: Envelope, key: RSAKey): owned CryptoBuffer throws {

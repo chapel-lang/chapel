@@ -172,18 +172,20 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
   The ``fluff`` argument indicates the requested number of cached elements in
   each dimension. If an element of ``fluff`` is greater than zero, the user can
   use indices outside of ``boundingBox`` to index into the array. If the domain
-  is not strided, you can consider indices for dimension ``i`` to be:
+  is not strided, you can consider indices for dimension ``i`` over a
+  domain named ``boundingBox`` to be:
 
-  .. code-block:: chapel
-
-     boundingBox.dim(i).expand(fluff(i))
+  .. literalinclude:: ../../../../test/distributions/doc-examples/StencilDistExamples.chpl
+     :language: chapel
+     :start-after: START_EXAMPLE_0
+     :end-before: STOP_EXAMPLE_0
 
   If the domain is strided:
 
-  .. code-block:: chapel
-
-     const bb = boundingBox.dim(i);
-     bb.expand(fluff(i) * abs(bb.stride));
+  .. literalinclude:: ../../../../test/distributions/doc-examples/StencilDistExamples.chpl
+     :language: chapel
+     :start-after: START_EXAMPLE_1
+     :end-before: STOP_EXAMPLE_1
 
   The same logic is used when determining the cached index set on each locale,
   except you can imagine ``boundingBox`` to be replaced with the returned
@@ -214,14 +216,10 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
   arguments.  In such cases, factory procedures can be used for
   convenience and to avoid repetition.
 
-  .. code-block:: chapel
-
-    use StencilDist;
-
-    var BlockDom1 = stencilDist.createDomain({1..5, 1..5});
-    var BlockArr1 = stencilDist.createArray({1..5, 1..5}, real);
-    var BlockDom2 = stencilDist.createDomain(1..5, 1..5);
-    var BlockArr2 = stencilDist.createArray(1..5, 1..5, real);
+  .. literalinclude:: ../../../../test/distributions/doc-examples/StencilDistExamples.chpl
+     :language: chapel
+     :start-after: START_EXAMPLE_2
+     :end-before: STOP_EXAMPLE_2
 
   The helper methods on ``stencilDist`` have the following signatures:
 
@@ -296,23 +294,10 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
   call the ``updateFluff`` method to update the cached elements for each
   locale. Here is a simple example:
 
-  .. code-block:: chapel
-
-    use StencilDist;
-
-    const Space = {1..10, 1..10};
-    const Dist = new stencilDist(boundingBox=Space, fluff=(1,1));
-    const D = Dist.createDomain(Space);
-    var A : [D] int;
-
-    forall (i,j) in D with (ref A) do
-      A[i,j] = i*10 + j;
-
-    // At this point, the ghost cell caches are out of date
-
-    A.updateFluff();
-
-    // ghost cell caches are now up-to-date
+  .. literalinclude:: ../../../../test/distributions/doc-examples/StencilDistExamples.chpl
+     :language: chapel
+     :start-after: START_EXAMPLE_3
+     :end-before: STOP_EXAMPLE_3
 
   After updating, any read from the array should be up-to-date. The
   ``updateFluff`` method does not currently accept any arguments.
@@ -1221,6 +1206,19 @@ iter StencilDom.these(param tag: iterKind, followThis) where tag == iterKind.fol
 // how to allocate a new array over this domain
 //
 proc StencilDom.dsiBuildArray(type eltType, param initElts:bool) {
+  if isOwnedClassType(eltType) {
+    if isNonNilableClassType(eltType) {
+      //
+      // 'owned C' simply doesn't work today, so this creates a clean error
+      //
+      compilerError("'stencilDist'-distributed arrays of non-nilable 'owned' classes are not currently supported");
+    } else {
+      //
+      // 'owned C?' works, but is probably surprising, so warn about it
+      //
+      compilerWarning("Creating a 'stencilDist'-distributed array of 'owned' classes is discouraged, since any calls to 'updateFluff()' will transfer the ownership of boundary values from one locale to the other, leaving the original with the value 'nil'");
+    }
+  }
   const dom = this;
   const creationLocale = here.id;
   const dummyLSD = new unmanaged LocStencilDom(rank, idxType, strides);

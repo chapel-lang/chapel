@@ -595,16 +595,16 @@ loop is given by:
 .. code-block:: syntax
 
    for-statement:
-     'for' index-var-declaration 'in' iteratable-expression 'do' statement
-     'for' index-var-declaration 'in' iteratable-expression block-statement
-     'for' iteratable-expression 'do' statement
-     'for' iteratable-expression block-statement
+     'for' index-var-declaration 'in' iterable-expression 'do' statement
+     'for' index-var-declaration 'in' iterable-expression block-statement
+     'for' iterable-expression 'do' statement
+     'for' iterable-expression block-statement
 
    index-var-declaration:
      identifier
      tuple-grouped-identifier-list
 
-   iteratable-expression:
+   iterable-expression:
      expression
      'zip' ( expression-list )
 
@@ -618,7 +618,7 @@ The ``index-var-declaration`` is optional and may be omitted if the
 indices do not need to be referenced in the loop (in which case the
 ``in`` keyword is omitted as well).
 
-If the iteratable-expression begins with the keyword ``zip`` followed by
+If the iterable-expression begins with the keyword ``zip`` followed by
 a parenthesized expression-list, the listed expressions must support
 zippered iteration.
 
@@ -682,10 +682,10 @@ parameter for loop statement is given by:
 .. code-block:: syntax
 
    param-for-statement:
-     'for' 'param' identifier 'in' param-iteratable-expression 'do' statement
-     'for' 'param' identifier 'in' param-iteratable-expression block-statement
+     'for' 'param' identifier 'in' param-iterable-expression 'do' statement
+     'for' 'param' identifier 'in' param-iterable-expression block-statement
 
-   param-iteratable-expression:
+   param-iterable-expression:
      range-literal
      range-literal 'by' integer-literal
 

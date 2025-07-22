@@ -83,6 +83,18 @@ test-cls-junit test-chpl-language-server-junit: FORCE
 	@$(MAKE) chpl-language-server
 	@cd tools/chpl-language-server && $(MAKE) test-chpl-language-server-junit
 
+MODULES_TO_LINT = \
+	$(shell find $(CHPL_MAKE_HOME)/modules/dists -name '*.chpl')
+
+lint-standard-modules: chplcheck FORCE
+	tools/chplcheck/chplcheck --skip-unstable --no-skip-bundled-modules \
+		--internal-prefix "_" \
+		--internal-prefix "chpl_" \
+		--disable-rule ControlFlowParentheses \
+		--disable-rule UnusedFormal \
+		--disable-rule LineLength \
+		$(MODULES_TO_LINT)
+
 run-frontend-linters: FORCE
 	@cd compiler && $(MAKE) run-frontend-linters
 
