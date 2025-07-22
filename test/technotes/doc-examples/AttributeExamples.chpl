@@ -48,20 +48,11 @@ proc foo() { }
 proc test2() {
   var A: [0..99] int;
   /* START_EXAMPLE_2 */
-  @llvm.assertVectorized()
-  foreach a in A { /* ... */ }; // warns if this is not vectorizable
-  /* STOP_EXAMPLE_2 */
-}
-test2();
-
-proc test3() {
-  var A: [0..99] int;
-  /* START_EXAMPLE_3 */
   @llvm.metadata(
    ("llvm.loop.vectorize.enable", true), // becomes !{!"llvm.loop.vectorize.enable", i1 true}
    ("llvm.loop.vectorize.width", 4) // becomes !{!"llvm.loop.vectorize.width", i64 4}
   )
   foreach a in A { /* ... */ };
-  /* STOP_EXAMPLE_3 */
+  /* STOP_EXAMPLE_2 */
 }
-test3();
+test2();

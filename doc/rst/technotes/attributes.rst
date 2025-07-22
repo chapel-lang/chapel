@@ -148,10 +148,10 @@ Other Attributes
   Note that this attribute is currently only meaningful on ``for``
   and ``foreach`` loops.
 
-  .. literalinclude:: ../../../test/technotes/doc-examples/AttributeExamples.chpl
+  .. literalinclude:: ../../../test/technotes/doc-examples/AttributesAssertVectorized.chpl
      :language: chapel
-     :start-after: START_EXAMPLE_2
-     :end-before: STOP_EXAMPLE_2
+     :start-after: START_EXAMPLE_0
+     :end-before: STOP_EXAMPLE_0
      :dedent:
 
 * ``@llvm.metadata`` is an experimental attribute which can be used to adjust
@@ -167,8 +167,8 @@ Other Attributes
 
   .. literalinclude:: ../../../test/technotes/doc-examples/AttributeExamples.chpl
      :language: chapel
-     :start-after: START_EXAMPLE_3
-     :end-before: STOP_EXAMPLE_3
+     :start-after: START_EXAMPLE_2
+     :end-before: STOP_EXAMPLE_2
      :dedent:
 
 Future Work and Design Discussions
