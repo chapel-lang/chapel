@@ -1498,6 +1498,7 @@ FnSymbol* TConverter::convertNewWrapper(const ResolvedFunction* rInitFn) {
   CallExpr* innerInit = new CallExpr(initFn, gMethodToken, initTemp);
   VarSymbol* retVar = newTemp("ret", type);
   retVar->addFlag(FLAG_RVV);
+  body->insertAtTail(new DefExpr(retVar));
 
   fn->setMethod(true);
   fn->addFlag(FLAG_NEW_WRAPPER);
@@ -2390,7 +2391,9 @@ struct ConvertTypeHelper {
   }
 
   Type* visit(const types::BasicClassType* bct) {
-    if (bct->isObjectType()) return dtObject;
+    if (bct->isObjectType()) {
+      return dtObject;
+    }
 
     auto rc = createDummyRC(context());
     auto& rfds = fieldsForTypeDecl(&rc, bct, DefaultsPolicy::USE_DEFAULTS);
@@ -4336,7 +4339,7 @@ void TConverter::ActualConverter::convertActual(const FormalActual& fa) {
   INT_ASSERT(0 <= idxSlot && idxSlot < ((int) actualState_.size()));
   auto& slot = actualState_[idxSlot];
 
-  if (!fa.hasDefault()) {
+  if (!fa.hasDefault() || fa.hasActual()) {
     INT_ASSERT(fa.hasActual());
 
     // If there is no default argument then an actual is present.
