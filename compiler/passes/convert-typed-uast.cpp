@@ -1522,8 +1522,7 @@ FnSymbol* TConverter::convertNewWrapper(const ResolvedFunction* rInitFn) {
   // set up the formals and init call based on the init function
   SymbolMap initToNewMap;
   for_formals(formal, initFn) {
-    INT_ASSERT(formal->type != dtMethodToken);
-    if (formal != initFn->_this) {
+    if (formal != initFn->_this && formal->type != dtMethodToken) {
       ArgSymbol* newArg = formal->copy();
       initToNewMap.put(formal, newArg);
       fn->insertFormalAtTail(newArg);
@@ -2902,7 +2901,7 @@ struct ConvertDefaultValueHelper {
 
     // Found it, so invoke the default-initializer on a temp.
     auto temp = tc_->makeNewTemp(qt);
-    auto initCall = new CallExpr(fn, temp);
+    auto initCall = new CallExpr(fn, gMethodToken, temp);
 
     std::vector<const AstNode*> actualAsts;
     auto tfs = rf->signature();
@@ -4239,6 +4238,11 @@ Expr* TConverter::convertNamedCallOrNull(const Call* node, RV& rv) {
 
   convertAndInsertActuals(ret, node, actualAsts, sig, fam, rv);
 
+  // Operators can be methods without a 'this' formal
+  if (calledFn->isMethod() && calledFn->_this != nullptr) {
+    ret->insertAtHead(new SymExpr(gMethodToken));
+  }
+
   return ret;
 }
 
@@ -4774,6 +4778,10 @@ bool TConverter::enter(const Function* node, RV& rv) {
         if (arg->hasFlag(FLAG_ARG_THIS)) {
           fn->thisTag = arg->intent;
           fn->_this = arg;
+
+          // While we're at it, add the method token formal
+          auto mt = new ArgSymbol(INTENT_BLANK, astr("_mt"), dtMethodToken);
+          fn->insertFormalAtTail(mt);
         }
 
         auto def = new DefExpr(arg);
@@ -5059,13 +5067,13 @@ Expr* TConverter::convertParenlessCallOrNull(const AstNode* node, RV& rv) {
 
   if (sig->isMethod()) {
     if (node->isIdentifier()) {
-      ret = new CallExpr(calledFn, codegenImplicitThis(rv));
+      ret = new CallExpr(calledFn, gMethodToken, codegenImplicitThis(rv));
     } else {
       auto [recvAst, fieldName] = accessExpressionDetails(node);
       std::ignore = fieldName;
       types::QualifiedType qtRecv;
       auto recv = recvAst ? convertExpr(recvAst, rv, &qtRecv) : nullptr;
-      ret = new CallExpr(calledFn, storeInTempIfNeeded(recv, qtRecv));
+      ret = new CallExpr(calledFn, gMethodToken, storeInTempIfNeeded(recv, qtRecv));
     }
   } else {
     ret = new CallExpr(calledFn);
