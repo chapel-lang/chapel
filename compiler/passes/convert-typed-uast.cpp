@@ -2748,62 +2748,60 @@ struct ConvertTypeHelper {
 Type* TConverter::convertType(const types::Type* t) {
   if (t == nullptr) return dtUnknown;
 
-  Type* ret = nullptr;
-
   if (auto existing = findConvertedType(t)) {
     // (A) Fetch the cached converted type to reuse it if possible.
-    ret = existing;
+    return existing;
 
-  } else {
-    // (B) Convert a type for the first time. Start by checking to see if
-    // the type is an aggregate. If it is, check to see if it is a well
-    // known type, otherwise make a stub first to support recursion when
-    // converting the fields.
-    auto selector = [](auto name, AggregateTag tag) {
-      auto at = shouldWireWellKnownType(name.c_str());
-      auto ret = at ? at : new AggregateType(tag);
-      return ret;
-    };
+  }
 
-    AggregateType* at = nullptr;
-    if (auto x = t->toBasicClassType()) {
-      // NOTE: 'ClassType' will convert the 'BasicClassType' to get here.
-      at = selector(x->name(), AGGREGATE_CLASS);
-    } else if (auto x = t->toRecordType()) {
-      at = selector(x->name(), AGGREGATE_RECORD);
-    } else if (auto x = t->toUnionType()) {
-      at = selector(x->name(), AGGREGATE_UNION);
-    }
+  Type* ret = nullptr;
 
-    // It's an aggregate, so emplace a map entry before converting.
-    if (at) convertedTypes[t] = at;
-
-    // Invoke the visitor to convert the type.
-    ConvertTypeHelper visitor = { this };
-    ret = t->dispatch<Type*>(visitor);
-    INT_ASSERT(ret);
-
-    // Set the converted type once again.
-    convertedTypes[t] = ret;
-
-    if (!isPrimitiveType(ret) &&
-        ret->symbol->hasFlag(FLAG_INSTANTIATED_GENERIC) == false &&
-        ret != dtObject) {
-      ID id;
-      if (auto ct = t->getCompositeType()) {
-        id = ct->id();
-      } else if (auto et = t->toEnumType()) {
-        id = et->id();
-      } else if (auto ext = t->toExternType()) {
-        id = ext->id();
-      }
-      if (!id.isEmpty()) {
-        auto ast = parsing::idToAst(context, id);
-        untypedConverter->noteConvertedSym(ast, ret->symbol);
-      }
-    }
-
+  // (B) Convert a type for the first time. Start by checking to see if
+  // the type is an aggregate. If it is, check to see if it is a well
+  // known type, otherwise make a stub first to support recursion when
+  // converting the fields.
+  auto selector = [](auto name, AggregateTag tag) {
+    auto at = shouldWireWellKnownType(name.c_str());
+    auto ret = at ? at : new AggregateType(tag);
     return ret;
+  };
+
+  AggregateType* at = nullptr;
+  if (auto x = t->toBasicClassType()) {
+    // NOTE: 'ClassType' will convert the 'BasicClassType' to get here.
+    at = selector(x->name(), AGGREGATE_CLASS);
+  } else if (auto x = t->toRecordType()) {
+    at = selector(x->name(), AGGREGATE_RECORD);
+  } else if (auto x = t->toUnionType()) {
+    at = selector(x->name(), AGGREGATE_UNION);
+  }
+
+  // It's an aggregate, so emplace a map entry before converting.
+  if (at) convertedTypes[t] = at;
+
+  // Invoke the visitor to convert the type.
+  ConvertTypeHelper visitor = { this };
+  ret = t->dispatch<Type*>(visitor);
+  INT_ASSERT(ret);
+
+  // Set the converted type once again.
+  convertedTypes[t] = ret;
+
+  if (!isPrimitiveType(ret) &&
+      ret->symbol->hasFlag(FLAG_INSTANTIATED_GENERIC) == false &&
+      ret != dtObject) {
+    ID id;
+    if (auto ct = t->getCompositeType()) {
+      id = ct->id();
+    } else if (auto et = t->toEnumType()) {
+      id = et->id();
+    } else if (auto ext = t->toExternType()) {
+      id = ext->id();
+    }
+    if (!id.isEmpty()) {
+      auto ast = parsing::idToAst(context, id);
+      untypedConverter->noteConvertedSym(ast, ret->symbol);
+    }
   }
 
   // If we need to generate a 'ref' wrapper for the type, do so now.
@@ -4787,8 +4785,7 @@ bool TConverter::enter(const Function* node, RV& rv) {
           fn->insertFormalAtTail(mt);
         }
 
-        auto def = new DefExpr(arg);
-        fn->insertFormalAtTail(def);
+        fn->insertFormalAtTail(arg);
 
       } else if (auto va = decl->toVarArgFormal()) {
         convertAndInsertVarArgs(va, rv);
