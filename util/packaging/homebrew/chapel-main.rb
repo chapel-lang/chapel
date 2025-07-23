@@ -26,7 +26,12 @@ class Chapel < Formula
 
   # determine the C backend to use based on the system
   def cbackend
-    OS.mac? ? "clang" : "gnu"
+    on_macos do
+      return "clang"
+    end
+    on_linux do
+      return "gnu"
+    end
   end
 
   def install
@@ -113,7 +118,8 @@ class Chapel < Formula
       end
     end
     system bin/"chpl", "--print-passes", "--print-commands", libexec/"examples/hello.chpl"
-    system bin/"chpl", "--target-compiler", cbackend, "--print-passes", "--print-commands", libexec/"examples/hello.chpl"
+    system bin/"chpl", "--target-compiler", cbackend, "--print-passes",
+           "--print-commands", libexec/"examples/hello.chpl"
     system bin/"chpldoc", "--version"
     system bin/"mason", "--version"
 
