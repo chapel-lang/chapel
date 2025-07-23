@@ -26,7 +26,10 @@ class Chapel < Formula
 
   # determine the C backend to use based on the system
   def cbackend
-    OS.mac? ? "clang" : "gnu"
+    on_macos do
+      return "clang"
+    end
+    return "gnu"
   end
 
   def install
