@@ -212,7 +212,7 @@ class SparseBlockDom: BaseSparseDomImpl(?) {
     var _totalAdded: atomic int;
     coforall l in dist.targetLocDom do on dist.targetLocales[l] {
       const _retval = locDoms[l]!.mySparseBlock.bulkAdd(inds[localeRanges[l]],
-          dataSorted=true, isUnique=false);
+          dataSorted=true, isUnique=isUnique);
       _totalAdded.add(_retval);
     }
     const _retval = _totalAdded.read();
@@ -222,8 +222,9 @@ class SparseBlockDom: BaseSparseDomImpl(?) {
   proc _bulkAddHere_help(inds: [] index(rank,idxType),
       dataSorted=false, isUnique=false) {
 
-    const _retval = myLocDom!.mySparseBlock.bulkAdd(inds, dataSorted=true,
-        isUnique=false);
+    const _retval = myLocDom!.mySparseBlock.bulkAdd(inds,
+                                                    dataSorted=dataSorted,
+                                                    isUnique=isUnique);
     return _retval;
   }
 
