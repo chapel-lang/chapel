@@ -550,6 +550,53 @@ def get_overridden_llvm_clang(lang):
 
     return res
 
+# find the absolute path to the clang command for the given path and lang.
+# this is essentially just `os.path.realpath(path)` and some fixups for C++.
+# most of the time, clang++ is just a symlink to clang, so we can't just resolve
+# the symlink. and since the clang driver determines the language we are
+# compiling for based on the
+# name of the executable used, so it has to be clang++ for C++ and clang for C.
+def find_clang_absolute_path(path, lang):
+    resolved_path = os.path.realpath(path)
+    if resolved_path == path:
+        # if the path is already resolved, just return it as-is
+        return path
+
+    ret = None
+
+    lang_upper = lang.upper()
+    if lang_upper == "CXX" or lang_upper == "C++":
+        basename = os.path.basename(resolved_path)
+        # if its already clang++ or doesn't contain clang, just return it as-is
+        if "++" in basename or "clang" not in basename:
+            ret = resolved_path
+        else:
+
+            # insert ++ into the resolved path after 'clang', which might be
+            # something like 'clang-##'
+            clang_idx = resolved_path.rfind('clang')
+            if clang_idx != -1:
+                resolved_path = (resolved_path[:clang_idx + 5] + '++' +
+                                resolved_path[clang_idx + 5:])
+                if os.path.exists(resolved_path):
+                    ret = resolved_path
+                else:
+                    # try removing the -## suffix if it exists
+                    clang_suffix_idx = resolved_path.rfind('-')
+                    if clang_suffix_idx != -1 and clang_suffix_idx > clang_idx:
+                        resolved_path = resolved_path[:clang_suffix_idx]
+                        if os.path.exists(resolved_path):
+                            ret = resolved_path
+    else:
+        # for C, just return the resolved path
+        ret = resolved_path
+
+    if ret is None:
+        # if we didn't find a clang++ path, just use the original symlink
+        ret = path
+
+    return ret
+
 # given a lang argument of 'c' or 'c++'/'cxx', return the system clang command
 # to use. Checks that the clang version matches the version of llvm-config in
 # use. Returns '' if no acceptable system clang was found.
@@ -591,9 +638,7 @@ def get_system_llvm_clang(lang):
             if '/' not in clang_path:
                 clang_path = which(clang_path)
             if is_system_clang_version_ok(clang_path):
-                # get the real path to the clang executable
-                clang_path = os.path.realpath(clang_path)
-                return clang_path
+                return find_clang_absolute_path(clang_path, lang)
     return ''
 
 # lang should be C or CXX
