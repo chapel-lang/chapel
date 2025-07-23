@@ -4391,7 +4391,8 @@ void TConverter::ActualConverter::convertActual(const FormalActual& fa) {
 
   // Swap on the called function state.
   std::swap(calledFnState_, tc_->cur);
-  tc_->pushBlock(tc_->cur.moduleSymbol->block);
+  BlockStmt* block = new BlockStmt();
+  tc_->pushBlock(block);
 
   ResolutionContext rcval(context);
   ResolvedVisitor<TConverter> rvCalledFn(&rcval, fn, *tc_, rr);
@@ -4399,7 +4400,10 @@ void TConverter::ActualConverter::convertActual(const FormalActual& fa) {
   // Convert the init-expression for the formal of interest, or generate a
   // default-value for the type if function is compiler-generated.
   Expr* expr = nullptr;
-  if (tfs_->untyped()->isCompilerGenerated()) {
+  if (initExpr == nullptr && fa.hasDefault()) {
+    INT_ASSERT(!fa.hasActual());
+    INT_ASSERT(tfs_->untyped()->isCompilerGenerated());
+    INT_ASSERT(tfs_->untyped()->name() == USTR("init"));
     // The formal is part of a compiler-generated function, so we can just
     // construct a default-value for the type as uAST will not be supplied.
     INT_ASSERT(!decl || decl->id().isFabricatedId());
@@ -4418,6 +4422,8 @@ void TConverter::ActualConverter::convertActual(const FormalActual& fa) {
   // Swap off the called function state.
   tc_->popBlock();
   std::swap(calledFnState_, tc_->cur);
+  stmtInsertionPoint_->insertAtTail(block);
+  block->flattenAndRemove();
 }
 
 void TConverter::ActualConverter::
