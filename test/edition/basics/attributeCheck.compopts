@@ -3,3 +3,4 @@
 --edition=2.0 # attributeCheck.good
 --edition=preview # attributeCheck.new.good
 --edition=pre-edition # attributeCheck.pre-edition.good
+--edition=pre-edition --no-compiler-driver # attributeCheck.pre-edition.shorter.good

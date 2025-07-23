@@ -1,0 +1,4 @@
+warning: 'pre-edition' has been renamed to 'preview'.  This option will still be available for a few releases, but we recommend updating to the new name.
+in new edition foo with arg x=17
+always relevant
+in new baz
