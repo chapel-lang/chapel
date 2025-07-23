@@ -662,7 +662,7 @@ struct TConverter final : UastConverter,
   // Converts a type. If it's an AggregateType, it will also fill in the
   // fields, but only after creating a dummy AggregateType for the map
   // that can be used in the case of recursive data structures.
-  Type* convertType(const types::Type* t, bool convertRefType=false);
+  Type* convertType(const types::Type* t);
 
   void noteConvertedSym(const uast::AstNode* ast, Symbol* sym) override;
   void noteConvertedFn(const resolution::TypedFnSignature* sig, FnSymbol* fn) override;
@@ -1498,6 +1498,7 @@ FnSymbol* TConverter::convertNewWrapper(const ResolvedFunction* rInitFn) {
   CallExpr* innerInit = new CallExpr(initFn, gMethodToken, initTemp);
   VarSymbol* retVar = newTemp("ret", type);
   retVar->addFlag(FLAG_RVV);
+  body->insertAtTail(new DefExpr(retVar));
 
   fn->setMethod(true);
   fn->addFlag(FLAG_NEW_WRAPPER);
@@ -1514,14 +1515,15 @@ FnSymbol* TConverter::convertNewWrapper(const ResolvedFunction* rInitFn) {
   fn->addFlag(FLAG_RESOLVED_EARLY);
   fn->setNormalized(true);
 
+  fn->retType = convertType(rInitFn->signature()->formalType(0).type());
+
   // Add the _new function just after the relevant initFn
   initFn->defPoint->insertAfter(new DefExpr(fn));
 
   // set up the formals and init call based on the init function
   SymbolMap initToNewMap;
   for_formals(formal, initFn) {
-    INT_ASSERT(formal->type != dtMethodToken);
-    if (formal != initFn->_this) {
+    if (formal != initFn->_this && formal->type != dtMethodToken) {
       ArgSymbol* newArg = formal->copy();
       initToNewMap.put(formal, newArg);
       fn->insertFormalAtTail(newArg);
@@ -1594,8 +1596,7 @@ FnSymbol* TConverter::findOrConvertTupleInit(const types::TupleType* tt) {
   auto it = chplTupleInit.find(tt);
   if (it != chplTupleInit.end()) return it->second;
 
-  const bool convertRefType = true;
-  Type* newType = convertType(tt, convertRefType);
+  Type* newType = convertType(tt);
 
   // Otherwise, construct it.
   FnSymbol* ret = new FnSymbol("chpl__tuple_init");
@@ -2390,7 +2391,9 @@ struct ConvertTypeHelper {
   }
 
   Type* visit(const types::BasicClassType* bct) {
-    if (bct->isObjectType()) return dtObject;
+    if (bct->isObjectType()) {
+      return dtObject;
+    }
 
     auto rc = createDummyRC(context());
     auto& rfds = fieldsForTypeDecl(&rc, bct, DefaultsPolicy::USE_DEFAULTS);
@@ -2590,7 +2593,7 @@ struct ConvertTypeHelper {
     for (int i = 0; i < t->numElements(); i++) {
       auto qt = t->elementType(i);
 
-      auto conv = tc_->convertType(qt.type(), qt.isRef());
+      auto conv = tc_->convertType(qt.type());
       auto sym = qt.isRef() ? conv->refType->symbol : conv->symbol;
       args.push_back(sym);
 
@@ -2742,69 +2745,67 @@ struct ConvertTypeHelper {
   }
 };
 
-Type* TConverter::convertType(const types::Type* t, bool convertRefType) {
+Type* TConverter::convertType(const types::Type* t) {
   if (t == nullptr) return dtUnknown;
-
-  Type* ret = nullptr;
 
   if (auto existing = findConvertedType(t)) {
     // (A) Fetch the cached converted type to reuse it if possible.
-    ret = existing;
+    return existing;
 
-  } else {
-    // (B) Convert a type for the first time. Start by checking to see if
-    // the type is an aggregate. If it is, check to see if it is a well
-    // known type, otherwise make a stub first to support recursion when
-    // converting the fields.
-    auto selector = [](auto name, AggregateTag tag) {
-      auto at = shouldWireWellKnownType(name.c_str());
-      auto ret = at ? at : new AggregateType(tag);
-      return ret;
-    };
+  }
 
-    AggregateType* at = nullptr;
-    if (auto x = t->toBasicClassType()) {
-      // NOTE: 'ClassType' will convert the 'BasicClassType' to get here.
-      at = selector(x->name(), AGGREGATE_CLASS);
-    } else if (auto x = t->toRecordType()) {
-      at = selector(x->name(), AGGREGATE_RECORD);
-    } else if (auto x = t->toUnionType()) {
-      at = selector(x->name(), AGGREGATE_UNION);
-    }
+  Type* ret = nullptr;
 
-    // It's an aggregate, so emplace a map entry before converting.
-    if (at) convertedTypes[t] = at;
-
-    // Invoke the visitor to convert the type.
-    ConvertTypeHelper visitor = { this };
-    ret = t->dispatch<Type*>(visitor);
-    INT_ASSERT(ret);
-
-    // Set the converted type once again.
-    convertedTypes[t] = ret;
-
-    if (!isPrimitiveType(ret) &&
-        ret->symbol->hasFlag(FLAG_INSTANTIATED_GENERIC) == false &&
-        ret != dtObject) {
-      ID id;
-      if (auto ct = t->getCompositeType()) {
-        id = ct->id();
-      } else if (auto et = t->toEnumType()) {
-        id = et->id();
-      } else if (auto ext = t->toExternType()) {
-        id = ext->id();
-      }
-      if (!id.isEmpty()) {
-        auto ast = parsing::idToAst(context, id);
-        untypedConverter->noteConvertedSym(ast, ret->symbol);
-      }
-    }
-
+  // (B) Convert a type for the first time. Start by checking to see if
+  // the type is an aggregate. If it is, check to see if it is a well
+  // known type, otherwise make a stub first to support recursion when
+  // converting the fields.
+  auto selector = [](auto name, AggregateTag tag) {
+    auto at = shouldWireWellKnownType(name.c_str());
+    auto ret = at ? at : new AggregateType(tag);
     return ret;
+  };
+
+  AggregateType* at = nullptr;
+  if (auto x = t->toBasicClassType()) {
+    // NOTE: 'ClassType' will convert the 'BasicClassType' to get here.
+    at = selector(x->name(), AGGREGATE_CLASS);
+  } else if (auto x = t->toRecordType()) {
+    at = selector(x->name(), AGGREGATE_RECORD);
+  } else if (auto x = t->toUnionType()) {
+    at = selector(x->name(), AGGREGATE_UNION);
+  }
+
+  // It's an aggregate, so emplace a map entry before converting.
+  if (at) convertedTypes[t] = at;
+
+  // Invoke the visitor to convert the type.
+  ConvertTypeHelper visitor = { this };
+  ret = t->dispatch<Type*>(visitor);
+  INT_ASSERT(ret);
+
+  // Set the converted type once again.
+  convertedTypes[t] = ret;
+
+  if (!isPrimitiveType(ret) &&
+      ret->symbol->hasFlag(FLAG_INSTANTIATED_GENERIC) == false &&
+      ret != dtObject) {
+    ID id;
+    if (auto ct = t->getCompositeType()) {
+      id = ct->id();
+    } else if (auto et = t->toEnumType()) {
+      id = et->id();
+    } else if (auto ext = t->toExternType()) {
+      id = ext->id();
+    }
+    if (!id.isEmpty()) {
+      auto ast = parsing::idToAst(context, id);
+      untypedConverter->noteConvertedSym(ast, ret->symbol);
+    }
   }
 
   // If we need to generate a 'ref' wrapper for the type, do so now.
-  if (convertRefType && !ret->refType) {
+  if (!ret->refType) {
     SET_LINENO(ret->symbol);
 
     // TODO: This is "AGGREGATE_RECORD" in "getOrMakeRefTypeDuringCodegen"?
@@ -2901,7 +2902,7 @@ struct ConvertDefaultValueHelper {
 
     // Found it, so invoke the default-initializer on a temp.
     auto temp = tc_->makeNewTemp(qt);
-    auto initCall = new CallExpr(fn, temp);
+    auto initCall = new CallExpr(fn, gMethodToken, temp);
 
     std::vector<const AstNode*> actualAsts;
     auto tfs = rf->signature();
@@ -4238,6 +4239,11 @@ Expr* TConverter::convertNamedCallOrNull(const Call* node, RV& rv) {
 
   convertAndInsertActuals(ret, node, actualAsts, sig, fam, rv);
 
+  // Operators can be methods without a 'this' formal
+  if (calledFn->isMethod() && calledFn->_this != nullptr) {
+    ret->insertAtHead(new SymExpr(gMethodToken));
+  }
+
   return ret;
 }
 
@@ -4331,7 +4337,7 @@ void TConverter::ActualConverter::convertActual(const FormalActual& fa) {
   INT_ASSERT(0 <= idxSlot && idxSlot < ((int) actualState_.size()));
   auto& slot = actualState_[idxSlot];
 
-  if (!fa.hasDefault()) {
+  if (!fa.hasDefault() || fa.hasActual()) {
     INT_ASSERT(fa.hasActual());
 
     // If there is no default argument then an actual is present.
@@ -4773,10 +4779,13 @@ bool TConverter::enter(const Function* node, RV& rv) {
         if (arg->hasFlag(FLAG_ARG_THIS)) {
           fn->thisTag = arg->intent;
           fn->_this = arg;
+
+          // While we're at it, add the method token formal
+          auto mt = new ArgSymbol(INTENT_BLANK, astr("_mt"), dtMethodToken);
+          fn->insertFormalAtTail(mt);
         }
 
-        auto def = new DefExpr(arg);
-        fn->insertFormalAtTail(def);
+        fn->insertFormalAtTail(arg);
 
       } else if (auto va = decl->toVarArgFormal()) {
         convertAndInsertVarArgs(va, rv);
@@ -4860,9 +4869,7 @@ bool TConverter::enter(const Function* node, RV& rv) {
     setupExternExportFunctionDecl(linkageFlag, linkageExpr, fn);
   }
 
-  const bool convertRefType = true;
-  fn->retType = convertType(cur.resolvedFunction->returnType().type(),
-                            convertRefType);
+  fn->retType = convertType(cur.resolvedFunction->returnType().type());
 
   // visit the body to convert
   if (node->body()) {
@@ -5060,13 +5067,13 @@ Expr* TConverter::convertParenlessCallOrNull(const AstNode* node, RV& rv) {
 
   if (sig->isMethod()) {
     if (node->isIdentifier()) {
-      ret = new CallExpr(calledFn, codegenImplicitThis(rv));
+      ret = new CallExpr(calledFn, gMethodToken, codegenImplicitThis(rv));
     } else {
       auto [recvAst, fieldName] = accessExpressionDetails(node);
       std::ignore = fieldName;
       types::QualifiedType qtRecv;
       auto recv = recvAst ? convertExpr(recvAst, rv, &qtRecv) : nullptr;
-      ret = new CallExpr(calledFn, storeInTempIfNeeded(recv, qtRecv));
+      ret = new CallExpr(calledFn, gMethodToken, storeInTempIfNeeded(recv, qtRecv));
     }
   } else {
     ret = new CallExpr(calledFn);

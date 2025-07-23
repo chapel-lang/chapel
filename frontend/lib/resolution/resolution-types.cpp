@@ -1452,6 +1452,31 @@ ResolutionResultByPostorderID::stringify(std::ostream& ss,
   }
 }
 
+void
+ResolvedFunction::stringify(std::ostream& ss,
+                                         chpl::StringifyKind stringKind) const {
+  ss << "ResolvedFunction: " << std::endl;
+
+  if (signature_) {
+    signature_->stringify(ss, stringKind);
+  } else {
+    ss << "<no signature>";
+  }
+  ss << std::endl;
+
+  ss << "return intent: ";
+  ss << Function::returnIntentToString(returnIntent_);
+  ss << std::endl;
+
+  ss << "return type: ";
+  returnType_.stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
+  ss << std::endl;
+
+  ss << "----- resolution results -----" << std::endl;
+  resolutionById_.stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
+  ss << "----- end resolution results -----" << std::endl;
+}
+
 
 /**
   Find method receiver aggregate decl ID (for use when scope resolving).
@@ -1824,6 +1849,7 @@ IMPLEMENT_DUMP(MostSpecificCandidates);
 IMPLEMENT_DUMP(CallResolutionResult);
 IMPLEMENT_DUMP(SimpleMethodLookupHelper);
 IMPLEMENT_DUMP(TypedMethodLookupHelper);
+IMPLEMENT_DUMP(ResolvedFunction);
 
 } // end namespace resolution
 } // end namespace chpl
