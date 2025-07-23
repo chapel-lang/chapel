@@ -495,7 +495,7 @@ def is_system_clang_version_ok(clang_command):
 # are arguments to use.
 # Returns None if no override was present.
 @memoize
-def get_overriden_llvm_clang(lang):
+def get_overridden_llvm_clang(lang):
     lang_upper = lang.upper()
     if lang_upper == 'C++':
         lang_upper = 'CXX'
@@ -555,7 +555,7 @@ def get_overriden_llvm_clang(lang):
 # use. Returns '' if no acceptable system clang was found.
 @memoize
 def get_system_llvm_clang(lang):
-    provided = get_overriden_llvm_clang(lang)
+    provided = get_overridden_llvm_clang(lang)
     if provided:
         return provided[0]
 
@@ -601,7 +601,7 @@ def get_system_llvm_clang(lang):
 def get_llvm_clang_noargs(lang):
 
     # if it was provided by a user setting, just use that
-    provided = get_overriden_llvm_clang(lang)
+    provided = get_overridden_llvm_clang(lang)
     if provided:
         return provided[0]
 
@@ -623,7 +623,7 @@ def get_llvm_clang_noargs(lang):
 def get_llvm_clang(lang):
 
     # if it was provided by a user setting, just use that
-    provided = get_overriden_llvm_clang(lang)
+    provided = get_overridden_llvm_clang(lang)
     if provided:
         return provided
 
