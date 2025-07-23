@@ -52,6 +52,9 @@ unsigned CHPL_JE_LG_ARENA;
 #if (JEMALLOC_VERSION_MAJOR == 4) && (JEMALLOC_VERSION_MINOR >= 1)
 #define USE_JE_CHUNK_HOOKS
 #endif
+#if JEMALLOC_VERSION_MAJOR >= 5
+#define USE_JE_EXTENT_HOOKS
+#endif
 
 enum heap_type {FIXED, DYNAMIC, NONE};
 
@@ -64,7 +67,7 @@ static struct shared_heap {
 } heap;
 
 
-#ifdef USE_JE_CHUNK_HOOKS
+#if defined(USE_JE_CHUNK_HOOKS) || defined(USE_JE_EXTENT_HOOKS)
 // compute aligned index into our shared heap, alignment must be a power of 2
 static inline void* alignHelper(void* base_ptr, size_t offset, size_t alignment) {
   uintptr_t p;
@@ -218,6 +221,161 @@ static bool chunk_merge(void *chunk_a, size_t size_a, void *chunk_b, size_t size
 
 #endif // ifdef USE_JE_CHUNK_HOOKS
 
+
+#ifdef USE_JE_EXTENT_HOOKS
+
+
+// Our extent replacement hook for allocations (Essentially a replacement for
+// mmap/sbrk.) Grab memory out of the fixed shared heap or get an extension
+// chunk, and give it to jemalloc.
+static void* extent_alloc(
+  extent_hooks_t *extent_hooks,
+  void *new_addr, size_t size, size_t alignment,
+  bool *zero, bool *commit, unsigned arena_ind) {
+
+  void* cur_extent_base = NULL;
+
+  if (heap.type == FIXED) {
+    //
+    // Get more space out of the fixed heap.
+    //
+    size_t cur_heap_size;
+
+    // this function can be called concurrently and it looks like jemalloc
+    // doesn't call it inside a lock, so we need to protect it ourselves
+    pthread_mutex_lock(&heap.alloc_lock);
+
+    // compute our current aligned pointer into the shared heap
+    //
+    //   jemalloc 5.3.0 man: "The alignment parameter is always a power of two at least as large as the page size."
+    cur_extent_base = alignHelper(heap.base, heap.cur_offset, alignment);
+
+    // jemalloc 5.3.0 man: " If new_addr is not NULL, the returned pointer must be new_addr on success or NULL on error."
+    if (new_addr && new_addr != cur_extent_base) {
+      pthread_mutex_unlock(&heap.alloc_lock);
+      return NULL;
+    }
+
+    cur_heap_size = (uintptr_t)cur_extent_base - (uintptr_t)heap.base;
+
+    // If there's not enough space on the heap for this allocation, return NULL
+    if (size > heap.size - cur_heap_size) {
+      pthread_mutex_unlock(&heap.alloc_lock);
+      return NULL;
+    }
+
+    // Update the current pointer, now that we've past any early returns.
+    heap.cur_offset = cur_heap_size + size;
+
+    // now that cur_heap_offset is updated, we can unlock
+    pthread_mutex_unlock(&heap.alloc_lock);
+
+    if (interleave_mem && arena_ind == CHPL_JE_LG_ARENA) {
+      chpl_topo_interleaveMemLocality(cur_extent_base, size);
+    }
+  } else if (heap.type == DYNAMIC) {
+    // jemalloc 5.3.0 man: "If new_addr is not NULL, the returned pointer must be new_addr on success or NULL on error". This is used to grab new chunks in a
+    // specific location so they can be merged with old ones for in-place
+    // reallocation. It's unlikely our allocation will happen to get the right
+    // address so don't waste time allocating/freeing in the common case.
+    if (new_addr != NULL) {
+      return NULL;
+    }
+
+    //
+    // Get a dynamic extension chunk.
+    //
+    cur_extent_base = chpl_comm_regMemAlloc(size, CHPL_RT_MD_MEM_HEAP_SPACE,
+                                           0, CHPL_FILE_IDX_INTERNAL);
+
+    if (cur_extent_base == NULL) {
+      return NULL;
+    }
+
+    assert(((uintptr_t)cur_extent_base & (alignment-1)) == 0);
+
+    //
+    // Localize the new memory via first-touch, by storing to each page.
+    // This will give the memory affinity to the NUMA domain (if any)
+    // we were running on when we allocated it.  It also commits the
+    // memory, in the jemalloc sense.
+    //
+    const size_t heap_page_size = chpl_comm_regMemHeapPageSize();
+    for (int i = 0; i < size; i += heap_page_size) {
+      ((char*) cur_extent_base)[i] = 0;
+    }
+
+    chpl_comm_regMemPostAlloc(cur_extent_base, size);
+
+    // Support useUpMemNotInHeap by hiding the fixed/dynamic distinction
+    heap.base = cur_extent_base;
+    heap.size = size;
+    heap.cur_offset = 0;
+  } else {
+    chpl_internal_error("Invalid heap.type in extent_alloc");
+  }
+
+  // jemalloc 5.3.0 man: "Zeroing is mandatory if *zero is true upon function entry."
+  if (*zero) {
+    memset(cur_extent_base, 0, size);
+  }
+
+  // Commit is not relevant for linux/darwin, but jemalloc wants us to set it
+  *commit = true;
+
+  return cur_extent_base;
+}
+
+//
+// Returning true indicates an opt-out of these hooks. For dalloc, this means
+// that we never get memory back from jemalloc and we just let it re-use it in
+// the future.
+//
+static bool extent_dalloc(
+  extent_hooks_t *extent_hooks,
+  void *addr, size_t size, bool committed, unsigned arena_ind) {
+  return true;
+}
+
+static void extent_destroy(
+  extent_hooks_t *extent_hooks,
+  void *addr, size_t size, bool committed, unsigned arena_ind) {
+  // Do nothing to destroy the extent
+}
+
+static bool extent_commit(extent_hooks_t *extent_hooks,
+  void *addr, size_t size, size_t offset, size_t length, unsigned arena_ind) {
+  return true;
+}
+static bool extent_decommit(extent_hooks_t *extent_hooks,
+  void *addr, size_t size, size_t offset, size_t length, unsigned arena_ind) {
+  return true;
+}
+static bool extent_purge(
+  extent_hooks_t *extent_hooks,
+  void *addr, size_t size, size_t offset, size_t length, unsigned arena_ind) {
+  return true;
+}
+
+// Since we opt-out of dalloc hooks, jemalloc is free to merge/split existing
+// chunks (this is important for fragmentation avoidance.) If we support dalloc
+// we'll have to do more to update how we track backing memory regions. Note
+// that returning false means splitting/merging is allowed.
+static bool extent_split(
+  extent_hooks_t *extent_hooks,
+  void *addr, size_t size, size_t size_a, size_t size_b,
+  bool committed, unsigned arena_ind) {
+  return !merge_split_chunks;
+}
+static bool extent_merge(
+  extent_hooks_t *extent_hooks,
+  void *addr_a, size_t size_a, void *addr_b, size_t size_b,
+  bool committed, unsigned arena_ind) {
+  return !merge_split_chunks;
+}
+
+#endif // ifdef USE_JE_EXTENT_HOOKS
+
 // *** End chunk hook replacements *** //
 
 
@@ -271,6 +429,20 @@ static void initialize_arenas(void) {
   set_arena(0);
 }
 
+#ifdef USE_JE_EXTENT_HOOKS
+// the memory of new_hooks must last beyond the call to replaceChunkHooks
+static extent_hooks_t new_hooks = {
+  extent_alloc,
+  extent_dalloc,
+  extent_destroy,
+  extent_commit,
+  extent_decommit,
+  extent_purge, // lazy purge
+  extent_purge, // forced purge
+  extent_split,
+  extent_merge
+};
+#endif
 
 // replace the chunk hooks for each arena with the hooks we provided above
 static void replaceChunkHooks(void) {
@@ -302,7 +474,26 @@ static void replaceChunkHooks(void) {
     }
   }
 #else
-    chpl_internal_error("cannot init multi-locale heap: please rebuild with jemalloc >= 4.1 and < 5.0");
+#ifdef USE_JE_EXTENT_HOOKS
+
+  unsigned narenas;
+  unsigned arena;
+
+  // for each arena, change the chunk hooks
+  narenas = get_num_arenas();
+  for (arena=0; arena<narenas; arena++) {
+    char path[128];
+    snprintf(path, sizeof(path), "arena.%u.extent_hooks", arena);
+
+    extent_hooks_t* hooks = &new_hooks;
+    if (CHPL_JE_MALLCTL(path, NULL, NULL, &hooks, sizeof(hooks)) != 0) {
+      chpl_internal_error_v("could not update the extent hooks");
+    }
+  }
+
+#else
+    chpl_internal_error("cannot init multi-locale heap");
+#endif
 #endif
 
 }
@@ -313,7 +504,11 @@ static unsigned get_num_small_classes(void) {
 }
 
 static unsigned get_num_large_classes(void) {
+#ifdef USE_JE_EXTENT_HOOKS
+  return get_unsigned_mallctl_value("arenas.nlextents");
+#else
   return get_unsigned_mallctl_value("arenas.nlruns");
+#endif
 }
 
 static unsigned get_num_small_and_large_classes(void) {
@@ -336,7 +531,11 @@ static void get_small_and_large_class_sizes(size_t* classes) {
   large_classes = get_num_large_classes();
   for (class=0; class<large_classes; class++) {
     char lsize[128];
+#ifdef USE_JE_EXTENT_HOOKS
+    snprintf(lsize, sizeof(lsize), "arenas.lextent.%u.size", class);
+#else
     snprintf(lsize, sizeof(lsize), "arenas.lrun.%u.size", class);
+#endif
     classes[small_classes + class] = get_size_t_mallctl_value(lsize);
   }
 }
@@ -373,7 +572,16 @@ static void useUpMemNotInHeap(void) {
   // allocation, regardless of size, must have come from a chunk provided by
   // our shared heap. Once we know a specific class size came from our shared
   // heap, we can free the memory instead of leaking it.
-  for (class=num_classes-1; class!=UINT_MAX; class--) {
+#ifdef USE_JE_EXTENT_HOOKS
+  // with extent hooks, there are some really large classes that can cause
+  // segfaults, so we start from the last small class and go down
+  unsigned large_classes = get_num_large_classes();
+  unsigned start_point = num_classes - 1 - large_classes;
+#else
+  unsigned start_point = num_classes - 1;
+#endif
+
+  for (class=start_point; class!=UINT_MAX; class--) {
     void* p = NULL;
     size_t alloc_size;
     alloc_size = classes[class];
@@ -395,6 +603,14 @@ static void initializeSharedHeap(void) {
   replaceChunkHooks();
 
   useUpMemNotInHeap();
+
+  // printf("trying to do an allocagion\n");
+  // void* p = CHPL_JE_MALLOCX(2 * 1024 * 1024, MALLOCX_NO_FLAGS);
+  // printf("got %p\n", p);
+
+  // printf("trying to do an allocagion\n");
+  // p = CHPL_JE_MALLOCX(57344, MALLOCX_NO_FLAGS);
+  // printf("got %p\n", p);
 }
 
 void chpl_mem_layerInit(void) {
