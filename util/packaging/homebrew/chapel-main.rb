@@ -29,7 +29,9 @@ class Chapel < Formula
     on_macos do
       return "clang"
     end
-    return "gnu"
+    on_linux do
+      return "gnu"
+    end
   end
 
   def install
