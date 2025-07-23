@@ -780,7 +780,7 @@ module ChapelDistribution {
 
     proc ref commit() {
       if cur >= 1 then
-        obj.dsiBulkAdd(buf[..cur-1]);
+        obj.dsiBulkAddNoPreserveInds(buf[..cur-1]);
       cur = 0;
     }
   }
