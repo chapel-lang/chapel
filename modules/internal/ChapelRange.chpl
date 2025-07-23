@@ -1826,7 +1826,7 @@ private proc isBCPindex(type t) param do
   // Bounds checking
   //
 
-  inline proc range.chpl_boundsCheck(other: range(?e,?b,?s))
+  proc range.chpl_boundsCheck(other: range(?e,?b,?s))
     where b == boundKind.neither
   {
     if chpl__singleValIdxType(idxType) {
@@ -1839,7 +1839,7 @@ private proc isBCPindex(type t) param do
     return true;
   }
 
-  inline proc range.chpl_boundsCheck(other: range(?e,?b,?s))
+  proc range.chpl_boundsCheck(other: range(?e,?b,?s))
   {
     if ! this.isAligned()
       then return false;
@@ -1881,7 +1881,7 @@ private proc isBCPindex(type t) param do
 
   // used in checkRankChange(args) where each args(i) can be
   // either a range or an individual index
-  inline proc range.chpl_boundsCheck(other: idxType) do
+  proc range.chpl_boundsCheck(other: idxType) do
     return contains(other);
 
 
@@ -2267,7 +2267,7 @@ private proc isBCPindex(type t) param do
 
   /////////// operators 'by', 'align', '#' ///////////
 
-  inline proc chpl_check_step_integral(step) {
+  private proc chpl_check_step_integral(step) {
     if !isIntegral(step.type) then
       compilerError("can't apply 'by' using step of a non-integral type ",
                     step.type:string);
@@ -2282,7 +2282,7 @@ private proc isBCPindex(type t) param do
   // Helpers to check if the stride of a range is invalid. Error (either at
   // runtime or compile time) if it's invalid.
 
-  inline proc chpl_range_check_stride(step, type idxType) {
+  proc chpl_range_check_stride(step, type idxType) {
     chpl_check_step_integral(step);
     type strType = chpl__rangeStrideType(idxType);
 
@@ -2297,7 +2297,7 @@ private proc isBCPindex(type t) param do
     }
   }
 
-  inline proc chpl_range_check_stride(param step, type idxType)  {
+  proc chpl_range_check_stride(param step, type idxType)  {
     chpl_check_step_integral(step);
     type strType = chpl__rangeStrideType(idxType);
 
@@ -3300,7 +3300,7 @@ private proc isBCPindex(type t) param do
     compilerError("iteration over a range with no bounds");
   }
 
-  private inline proc boundsCheckUnboundedRange(r: range(?)) {
+  private proc boundsCheckUnboundedRange(r: range(?)) {
     if boundsChecking {
       if ! r.hasFirstForIter() then
         HaltWrappers.boundsCheckHalt("iteration over range that has no first index");
