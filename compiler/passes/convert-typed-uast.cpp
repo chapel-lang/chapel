@@ -3938,7 +3938,7 @@ Expr* TConverter::convertFieldInitOrNull(
     auto fam = FormalActualMap(init->untyped(), initCI);
     INT_ASSERT(fam.isValid());
 
-    auto call = new CallExpr(fn);
+    auto call = new CallExpr(fn, gMethodToken);
     convertAndInsertActuals(call, node, actualAsts, init, fam, rv);
     ret = call;
 
