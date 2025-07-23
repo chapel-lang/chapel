@@ -1,4 +1,6 @@
-uncaught IllegalArgumentError: bad cast from string 'inf + infi' to complex(1\
-28)
+inf
+nan
+infi
+uncaught IllegalArgumentError: bad cast from string 'inf + infi' to complex(128)
   string-to-inf-nan.chpl:10: thrown here
   string-to-inf-nan.chpl:10: uncaught here
