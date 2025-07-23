@@ -142,3 +142,7 @@ remain in the preview until they are deemed sufficiently complete.
 
   The temporary config ``noSortedWarnings`` has also been removed, as its only
   purpose was to suppress warnings about the ``domain.sorted`` method.
+
+- Casts and printing of complex numbers involving ``nan`` have been adjusted to
+  reflect the values of individual components instead of making the entire value
+  be ``nan``.
