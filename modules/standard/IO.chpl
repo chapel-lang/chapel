@@ -5880,14 +5880,16 @@ private proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):err
 private proc chpl_print_complex(_channel_internal, x) {
   var re = x.re;
   var im = x.im;
-  return qio_channel_print_complex(false, _channel_internal, re, im, numBytes(re.type), false);
+  return qio_channel_print_complex(threadsafe=false, _channel_internal, re, im,
+                                   numBytes(re.type), full_nan=false);
 }
 
 @edition(last="2.0")
 private proc chpl_print_complex(_channel_internal, x) {
   var re = x.re;
   var im = x.im;
-  return qio_channel_print_complex(false, _channel_internal, re, im, numBytes(re.type), true);
+  return qio_channel_print_complex(threadsafe=false, _channel_internal, re, im,
+                                   numBytes(re.type), full_nan=true);
 }
 
 config param chpl_testReadBinaryInternalEIO = false;
