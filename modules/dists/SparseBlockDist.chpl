@@ -183,7 +183,17 @@ class SparseBlockDom: BaseSparseDomImpl(?) {
                                           sparseLayoutType=sparseLayoutType,
                                           dist=dist);
 
-    if !dataSorted then sort(inds, comparator=comp);
+    // NOTE: at this point, we have to ignore `dataSorted`. The sorting we do
+    // here uses a custom comparator. The rest of the logic here depends on that
+    // custom comparator. Things get a bit tricky here because if the user has
+    // used the `addOn` argument, then we would expect a lexicographical sorting
+    // rather than the custom one here. Right now, I am choosing to silently
+    // ignore the flag in this setting. We could consider issuing warnings, but
+    // it is hard to imagine how to achieve that with today's interface, where
+    // the main problem is two bool flags to the `dsiBulkAdd`. It is hard to
+    // tell whether `Dom.bulkAdd(Inds, true);` uses the dataSorted flag at
+    // compile time
+    sort(inds, comparator=comp);
 
     var localeRanges: [dist.targetLocDom] range;
     on inds {
