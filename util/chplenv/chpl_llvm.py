@@ -591,6 +591,8 @@ def get_system_llvm_clang(lang):
             if '/' not in clang_path:
                 clang_path = which(clang_path)
             if is_system_clang_version_ok(clang_path):
+                # get the real path to the clang executable
+                clang_path = os.path.realpath(clang_path)
                 return clang_path
     return ''
 
@@ -898,11 +900,6 @@ def get_sysroot_linux_args():
                 args.append('--start-no-unused-arguments')
                 args.append('-Wl,-dynamic-linker,' + dyn_linker)
                 args.append('--end-no-unused-arguments')
-
-    # workaround for fedora
-    if chpl_platform.is_fedora():
-        clang = get_llvm_clang_noargs('c')
-        args.extend(_clang_get_resourcedir(clang))
 
     return args
 
