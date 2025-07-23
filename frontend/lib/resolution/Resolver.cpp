@@ -5281,7 +5281,6 @@ void Resolver::prepareCallInfoActuals(const Call* call,
                                       std::vector<CallInfoActual>& actuals,
                                       const AstNode*& questionArg,
                                       std::vector<const uast::AstNode*>* actualAsts) {
-  debuggerBreakHere();
   CallInfo::prepareActuals(context, call, byPostorder,
                            /* raiseErrors */ true,
                            actuals, questionArg,
@@ -5491,7 +5490,6 @@ issueIteratorDiagnosticsIfNeeded(Resolver& rv,
 }
 
 void Resolver::handleCallExpr(const uast::Call* call) {
-  debuggerBreakHere();
   if (scopeResolveOnly) {
     return;
   }

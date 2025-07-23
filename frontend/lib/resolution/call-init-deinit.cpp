@@ -267,9 +267,6 @@ void CallInitDeinit::analyzeReturnedExpr(ResolvedExpression& re,
                                          bool& copyElidesFromSkip,
                                          ID& skipDeinitId,
                                          RV& rv) {
-  // if (re.type().type() && re.type().type()->isTupleType()) {
-  //   debuggerBreakHere();
-  // }
   bool fnReturnsRegularValue = false;
   if (resolver.symbol) {
     if (auto inFn = resolver.symbol->toFunction()) {
@@ -673,13 +670,6 @@ void CallInitDeinit::resolveAssign(const AstNode* ast,
                                    RV& rv) {
   VarFrame* frame = currentFrame();
 
-  if (lhsType.type() && lhsType.type()->isRecordType()) {
-    debuggerBreakHere();
-  }
-  if (lhsType.type() && lhsType.type()->isTupleType()) {
-    debuggerBreakHere();
-  }
-
   auto rhsType = rhsTypeIn;
   if (lhsType.isUnknown() || lhsType.isErroneousType() ||
       rhsType.isUnknown() || rhsType.isErroneousType()) {
@@ -743,12 +733,6 @@ void CallInitDeinit::resolveCopyInit(const AstNode* ast,
                                      const QualifiedType& rhsType,
                                      bool forMoveInit,
                                      RV& rv) {
-  if (lhsType.type() && lhsType.type()->isTupleType()) {
-    debuggerBreakHere();
-  }
-  if (lhsType.type() && lhsType.type()->isRecordType()) {
-    debuggerBreakHere();
-  }
   if (!Type::needsInitDeinitCall(lhsType.type())) {
     if (lhsType.type() && lhsType.type()->isArrayType()) {
       // Array init is not resolved normally (via init), but copy init
@@ -799,12 +783,6 @@ void CallInitDeinit::resolveCopyInit(const AstNode* ast,
   if (lhsType.type() != rhsType.type()) {
     action = AssociatedAction::INIT_OTHER;
   }
-  if (lhsType.type() && lhsType.type()->isTupleType()) {
-    debuggerBreakHere();
-  }
-  if (lhsType.type() && lhsType.type()->isRecordType()) {
-    debuggerBreakHere();
-  }
   c.noteResult(&opR, { { action, ast->id() } });
 
   // If we were trying to move, but had to run an init= to change types,
@@ -844,9 +822,6 @@ void CallInitDeinit::resolveMoveInit(const AstNode* ast,
       if (lhsGenUnk || rhsGenUnk) {
         CHPL_ASSERT(false && "should not be reached");
       } else {
-        if (lhsType.type() && lhsType.type()->isTupleType()) {
-          debuggerBreakHere();
-        }
         resolveCopyInit(ast, rhsAst, lhsType, rhsType,
                         /* forMoveInit */ true,
                         rv);
@@ -864,9 +839,6 @@ void CallInitDeinit::processInit(VarFrame* frame,
                                  const QualifiedType& lhsType,
                                  const QualifiedType& rhsType,
                                  RV& rv) {
-  if (lhsType.type() && lhsType.type()->isTupleType()) {
-    debuggerBreakHere();
-  }
   // ast should be:
   //  * a '=' call
   //  * a VarLikeDecl

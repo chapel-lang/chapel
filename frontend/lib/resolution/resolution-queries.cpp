@@ -5771,8 +5771,6 @@ CallResolutionResult resolveTupleExpr(Context* context,
     eltTypes.push_back(t);
   }
 
-  debuggerBreakHere();
-
   const Type* t = nullptr;
   QualifiedType::Kind kind;
   if (allType) {
