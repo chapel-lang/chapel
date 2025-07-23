@@ -246,8 +246,6 @@ bool Type::isRecordLike() const {
       return true;
     }
   } else if (this->isRecordType() || this->isUnionType() || this->isTupleType()) {
-    // if (this->isTupleType()) debuggerBreakHere();
-    // if (this->isRecordType()) debuggerBreakHere();
     return true;
   }
 
