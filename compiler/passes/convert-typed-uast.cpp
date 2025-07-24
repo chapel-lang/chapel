@@ -358,9 +358,6 @@ struct TConverter final : UastConverter,
     // The signature of the called function.
     const TypedFnSignature* tfs_ = nullptr;
 
-    // State for actuals. Not all slots may be used.
-    std::vector<ActualInfo> actualState_;
-
     // The uAST representing the call's location.
     const AstNode* astForCall_ = nullptr;
 
@@ -374,7 +371,7 @@ struct TConverter final : UastConverter,
     RV& rv_;
 
     // Mapping from a formal's ID to the 'FormalActual' slot.
-    std::unordered_map<ID, const FormalActual&> formalIdToFormalActual_;
+    std::unordered_map<ID, Symbol*> formalIdToActualSymbol_;
 
     // Used to insert actual temps if needed.
     AList* stmtInsertionPoint_ = nullptr;
@@ -383,7 +380,7 @@ struct TConverter final : UastConverter,
     void prepareCalledFnConversionState();
 
     // Convert a single actual considering 'fa'.
-    void convertActual(const FormalActual& fa);
+    SymExpr* convertActual(const FormalActual& fa);
 
    public:
     ActualConverter(TConverter* tc,
@@ -2909,10 +2906,13 @@ struct ConvertDefaultValueHelper {
     FormalActualMap fam(rf->signature(), ci2);
     INT_ASSERT(fam.isValid());
 
-    // Use an 'ActualConverter' to handle potential default-arguments.
-    TConverter::ActualConverter ac(tc_, node_, actualAsts, tfs, fam, rv_);
-    const int fromMappingIdx = 1;
-    ac.convertAndInsertActuals(initCall, fromMappingIdx);
+    if (fam.numFormalsMapped() > 1) {
+      // Use an 'ActualConverter' to handle potential default-arguments, as
+      // long as there's more than just the receiver formal.
+      TConverter::ActualConverter ac(tc_, node_, actualAsts, tfs, fam, rv_);
+      const int fromMappingIdx = 1;
+      ac.convertAndInsertActuals(initCall, fromMappingIdx);
+    }
 
     // Insert the initializer call as a statement.
     tc_->insertStmt(initCall);
@@ -4264,21 +4264,10 @@ TConverter::ActualConverter::ActualConverter(
   // Use the arity provided by 'fam' since it has already accounted for
   // variable-arity formals such as varargs when computing alignment.
   INT_ASSERT(fam_.isValid());
-  actualState_.resize(fam_.numFormalsMapped());
 
   // Determine if the call requires any defaults at all.
   for (auto& fa : fam_.byFormals()) {
     callRequiresDefaults_ |= fa.hasDefault();
-
-    if (auto decl = fa.formal()) {
-      // A vararg formal can never be referred to by another formal.
-      if (decl->isVarArgFormal()) continue;
-
-      // Add entries so that slots can be looked up by formal ID.
-      auto it = formalIdToFormalActual_.find(decl->id());
-      INT_ASSERT(it == formalIdToFormalActual_.end());
-      formalIdToFormalActual_.emplace(decl->id(), fa);
-    }
   }
 
   // Exit early if defaults are not required.
@@ -4325,17 +4314,13 @@ void TConverter::ActualConverter::prepareCalledFnConversionState() {
   s.topLevelModTag         = moduleSymbol->modTag;
 }
 
-void TConverter::ActualConverter::convertActual(const FormalActual& fa) {
-  if (tc_->shouldElideFormal(tfs_, fa.formalIdx())) return;
+SymExpr* TConverter::ActualConverter::convertActual(const FormalActual& fa) {
+  if (tc_->shouldElideFormal(tfs_, fa.formalIdx())) return nullptr;
 
   Context* context = tc_->context;
 
   // One or the other must hold in order to compute the slot index.
   INT_ASSERT(fa.hasDefault() || fa.hasActual());
-
-  int idxSlot = fa.hasActual() ? fa.actualIdx() : fa.formalIdx();
-  INT_ASSERT(0 <= idxSlot && idxSlot < ((int) actualState_.size()));
-  auto& slot = actualState_[idxSlot];
 
   if (!fa.hasDefault() || fa.hasActual()) {
     INT_ASSERT(fa.hasActual());
@@ -4352,12 +4337,8 @@ void TConverter::ActualConverter::convertActual(const FormalActual& fa) {
     types::QualifiedType actualType;
     auto actualExpr = tc_->convertExpr(astActual, rv_, &actualType);
     auto temp = tc_->storeInTempIfNeeded(actualExpr, actualType);
-    std::get<Expr*>(slot) = temp;
 
-    // prep a symbol in case this is used in in a default argument expression
-    std::get<Symbol*>(slot) = temp->symbol();
-
-    return;
+    return temp;
   }
 
   // Otherwise we need a default argument. Get the formal's init expression.
@@ -4371,11 +4352,8 @@ void TConverter::ActualConverter::convertActual(const FormalActual& fa) {
   }
 
   // If there is no uAST for an init-expression and the function is not
-  // compiler-generated, then there is nothing we can do, so exit early.
-  if (!initExpr && !decl->id().isFabricatedId()) {
-    std::get<Expr*>(slot) = TC_PLACEHOLDER(tc_);
-    return;
-  }
+  // compiler-generated, then there is nothing we can do.
+  CHPL_ASSERT(initExpr || decl->id().isFabricatedId());
 
   //
   // At this point, we are resolving a default argument value. In order to
@@ -4426,31 +4404,27 @@ void TConverter::ActualConverter::convertActual(const FormalActual& fa) {
   }
 
   // TODO: Handle conversions as needed!
-  INT_ASSERT(expr);
-  std::get<Expr*>(slot) = expr;
-
-  auto se = toSymExpr(expr);
-  std::get<Symbol*>(slot) = se->symbol();
-
   // Swap off the called function state.
   tc_->popBlock();
   std::swap(calledFnState_, tc_->cur);
   stmtInsertionPoint_->insertAtTail(block);
   block->flattenAndRemove();
+
+  auto se = toSymExpr(expr);
+  INT_ASSERT(se);
+  return se;
 }
 
 void TConverter::ActualConverter::
 convertAndInsertActuals(CallExpr* call, int fromMappingIdx) {
-  const int hi = (int) actualState_.size();
+  if (fam_.numFormalsMapped() == 0) {
+    return;
+  }
+
   auto savedExprList = tc_->cur.lastList();
   auto savedStmtList = tc_->cur.stmtList();
 
-  if (!actualState_.empty()) {
-    INT_ASSERT(0 <= fromMappingIdx && fromMappingIdx <= hi);
-  }
-
-  // Nothing to do, the index is OOB.
-  if (fromMappingIdx >= hi) return;
+  INT_ASSERT(fromMappingIdx < fam_.numFormalsMapped());
 
   tc_->enterCallActuals(call);
 
@@ -4458,7 +4432,20 @@ convertAndInsertActuals(CallExpr* call, int fromMappingIdx) {
   for (const FormalActual& fa : fam_.byFormals()) {
     // Convert each formal/actual mapping starting from the one requested.
     if (i++ < fromMappingIdx) continue;
-    this->convertActual(fa);
+
+    if (auto se = this->convertActual(fa)) {
+      call->insertAtTail(se);
+
+      if (auto decl = fa.formal()) {
+        // A vararg formal can never be referred to by another formal.
+        if (decl->isVarArgFormal()) continue;
+
+        // Add entries so that slots can be looked up by formal ID.
+        auto it = formalIdToActualSymbol_.find(decl->id());
+        INT_ASSERT(it == formalIdToActualSymbol_.end());
+        formalIdToActualSymbol_.emplace(decl->id(), se->symbol());
+      }
+    }
   }
 
   tc_->exitCallActuals();
@@ -4466,15 +4453,6 @@ convertAndInsertActuals(CallExpr* call, int fromMappingIdx) {
   // Ensure the 'current AST lists' match - converter may swap contexts.
   INT_ASSERT(tc_->cur.stmtList() == savedStmtList);
   INT_ASSERT(tc_->cur.lastList() == savedExprList);
-
-  // Then insert their ASTs into the call.
-  for (auto& slot : actualState_) {
-    if (auto temp = std::get<Symbol*>(slot)) {
-      call->insertAtTail(new SymExpr(temp));
-    } else if (auto expr = std::get<Expr*>(slot)) {
-      call->insertAtTail(expr);
-    }
-  }
 }
 
 // TODO: How are implicit receivers handled here? There won't be an AST for it?
@@ -4490,14 +4468,9 @@ void TConverter::convertAndInsertActuals(
 }
 
 Symbol* TConverter::ActualConverter::interceptFormalUse(const ID& id) {
-  auto it = formalIdToFormalActual_.find(id);
-  if (it != formalIdToFormalActual_.end()) {
-    auto& fa = it->second;
-    int idxActual = fa.hasActual() ? fa.actualIdx() : fa.formalIdx();
-    auto& slot = actualState_[idxActual];
-    auto& temp = std::get<Symbol*>(slot);
-    INT_ASSERT(temp);
-    return temp;
+  auto it = formalIdToActualSymbol_.find(id);
+  if (it != formalIdToActualSymbol_.end()) {
+    return it->second;
   } else {
     INT_ASSERT(false && "Expected entry for formal ID!");
   }
