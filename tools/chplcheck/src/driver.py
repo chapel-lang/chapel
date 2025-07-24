@@ -198,7 +198,7 @@ class LintDriver:
         The name of the decorated function is used as the name of the rule.
         """
 
-        def decorator_basic_rule(func):
+        def decorator_basic_rule(func: rule_types.BasicRuleCheck):
             self.BasicRules.append(
                 rule_types.BasicRule(
                     driver=self,
@@ -229,7 +229,7 @@ class LintDriver:
         suggested to the user.
         """
 
-        def decorator_fixit(func):
+        def decorator_fixit(func: rule_types.FixitHook):
             found = False
             for rule in itertools.chain(
                 self.BasicRules, self.AdvancedRules, self.LocationRules
@@ -269,7 +269,7 @@ class LintDriver:
         The name of the decorated function is used as the name of the rule.
         """
 
-        def decorator_advanced_rule(func):
+        def decorator_advanced_rule(func: rule_types.AdvancedRuleCheck):
             self.AdvancedRules.append(
                 rule_types.AdvancedRule(
                     driver=self,
@@ -305,7 +305,7 @@ class LintDriver:
         The name of the decorated function is used as the name of the rule.
         """
 
-        def decorator_location_rule(func):
+        def decorator_location_rule(func: rule_types.LocationRuleCheck):
             self.LocationRules.append(
                 rule_types.LocationRule(
                     driver=self,
