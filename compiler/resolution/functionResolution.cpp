@@ -5778,7 +5778,7 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState) 
     return NULL;
   }
 
-  // Detect cycles 
+  // Detect cycles
   {
     auto it = std::find(forwardCallCycleSet.begin(),
                         forwardCallCycleSet.end(), at);
