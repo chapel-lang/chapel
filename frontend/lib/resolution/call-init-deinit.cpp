@@ -188,9 +188,7 @@ bool CallInitDeinit::isCallProducingValue(const AstNode* rhsAst,
                                           const QualifiedType& rhsType,
                                           RV& rv) {
   return rv.byAst(rhsAst).toId().isEmpty() && !isRef(rhsType.kind());
-         // && !(rhsType.type() && rhsType.type()->isTupleType());
 }
-
 
 std::tuple<CallInfo, CallScopeInfo>
 setupCallForCopyOrMove(Resolver& resolver,
