@@ -2011,6 +2011,107 @@ static void test30() {
     });
 }
 
+// Split-init with tuple destructuring, copying out of tuple
+static void test31() {
+  testActions("test31",
+    R""""(
+      module M {
+        record R { }
+        proc test() {
+          var r = new R();
+
+          var tup = (1, r);
+
+          var a : int;
+          var b : R;
+          (a, b) = tup;
+          tup;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
+      {AssociatedAction::INIT_OTHER, "tup", ""},
+      {AssociatedAction::ASSIGN,     "M.test@12", ""},
+      {AssociatedAction::COPY_INIT,  "b", ""},
+      {AssociatedAction::DEINIT,     "M.test@18",   "r"},
+      {AssociatedAction::DEINIT,     "M.test@18",   "b"}
+    });
+}
+
+// Split-init with tuple destructuring, moving out of tuple
+static void test32() {
+  testActions("test32",
+    R""""(
+      module M {
+        record R { }
+        proc test() {
+          var r = new R();
+
+          var tup = (1, r);
+
+          var a : int;
+          var b : R;
+          (a, b) = tup;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
+      {AssociatedAction::INIT_OTHER, "tup", ""},
+      {AssociatedAction::ASSIGN,     "M.test@12", ""},
+      {AssociatedAction::DEINIT,     "M.test@18",   "b"}
+    });
+}
+
+// Declaring with tuple destructuring, copying out of tuple
+static void test33() {
+  testActions("test33",
+    R""""(
+      module M {
+        record R { }
+        proc test() {
+          var r = new R();
+
+          var tup = (1, r);
+
+          var (a, b) = tup;
+          tup;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
+      {AssociatedAction::INIT_OTHER, "tup", ""},
+      {AssociatedAction::COPY_INIT,  "b", ""},
+      {AssociatedAction::DEINIT,     "M.test@18",   "r"},
+      {AssociatedAction::DEINIT,     "M.test@18",   "b"}
+    });
+}
+
+// Declaring with tuple destructuring, moving out of tuple
+static void test34() {
+  testActions("test34",
+    R""""(
+      module M {
+        record R { }
+        proc test() {
+          var r = new R();
+
+          var tup = (1, r);
+
+          var (a, b) = tup;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
+      {AssociatedAction::INIT_OTHER, "tup", ""},
+      {AssociatedAction::DEINIT,     "M.test@18",   "r"},
+      {AssociatedAction::DEINIT,     "M.test@18",   "b"}
+    });
+}
+
 // calling function with 'out' intent formal
 
 // calling functions with 'inout' intent formal
@@ -2117,6 +2218,10 @@ int main() {
   test28();
   test29();
   test30();
+  test31();
+  test32();
+  test33();
+  test34();
 
   return 0;
 }
