@@ -12,6 +12,7 @@ files = [
     "/usr/bin/mason",
     "/usr/bin/chplcheck",
     "/usr/bin/chpl-language-server",
+    "/usr/bin/chpl-shim",
 ]
 dirs = [
     "/usr/lib/chapel",
