@@ -97,6 +97,7 @@ if [ "${CHPL_TEST_ARKOUDA_PERF}" = "true" ] ; then
   if [ -z "${CHPL_TEST_ARKOUDA_SKIP_BUILD}" ] ; then
     make 2>&1 | tee $ARKOUDA_EMITTED_CODE_SIZE_FILE.tmp
     if [ ${PIPESTATUS[0]} -ne "0" ] ; then
+      top bn1 2>/dev/null || echo "'top' failed (ignored)" # check for "competitors" for memory etc.
       log_fatal_error "compiling arkouda"
     fi
     if grep -q "Statements emitted:" $ARKOUDA_EMITTED_CODE_SIZE_FILE.tmp ; then
