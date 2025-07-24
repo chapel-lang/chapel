@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
+* Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -1904,6 +1904,88 @@ static void test26() {
   */
 }
 
+// Copying then moving tuple
+static void test27() {
+  testActions("test27",
+    R""""(
+      module M {
+        record R { }
+        proc test() {
+          var r = new R();
+
+          var x = (1, r);
+          var y = x;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
+      {AssociatedAction::INIT_OTHER, "x",           ""},
+      {AssociatedAction::DEINIT,     "M.test@10",   "r"}
+    });
+}
+
+// Copying tuple twice
+static void test28() {
+  testActions("test28",
+    R""""(
+      module M {
+        record R { }
+        proc test() {
+          var r = new R();
+
+          var x = (1, r);
+          var y = x;
+          x;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
+      {AssociatedAction::INIT_OTHER, "x",           ""},
+      {AssociatedAction::COPY_INIT,  "y",           ""},
+      {AssociatedAction::DEINIT,     "M.test@11",   "r"}
+    });
+}
+
+// Creating reference to tuple, then copying from it
+static void test29() {
+  testActions("test29",
+    R""""(
+      module M {
+        record R { }
+        proc test() {
+          var r = new R();
+
+          const ref x = (1, r);
+          var y = x;
+          x;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
+      {AssociatedAction::INIT_OTHER, "y",           ""},
+      {AssociatedAction::DEINIT,     "M.test@11",   "r"}
+    });
+}
+
+// Returning a tuple expression (ref tuple) converted to value tuple
+static void test30() {
+  testActions("test30",
+    R""""(
+      module M {
+        record R { }
+        proc test(ref arg : R) {
+          return (1, arg);
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::INIT_OTHER, "M.test@5", ""},
+    });
+}
+
 // calling function with 'out' intent formal
 
 // calling functions with 'inout' intent formal
@@ -2004,6 +2086,11 @@ int main() {
 
   test25();
   test26();
+
+  test27();
+  test28();
+  test29();
+  test30();
 
   return 0;
 }
