@@ -422,7 +422,7 @@ qioerr qio_channel_print_float(const int threadsafe, qio_channel_t* restrict ch,
 qioerr qio_channel_print_imag(const int threadsafe, qio_channel_t* restrict ch, const void* restrict ptr, size_t len);
 
 qioerr qio_channel_scan_complex(const int threadsafe, qio_channel_t* restrict ch, void* restrict re_out, void* restrict im_out, size_t len);
-qioerr qio_channel_print_complex(const int threadsafe, qio_channel_t* restrict ch, const void* restrict re_ptr, const void* im_ptr, size_t len);
+qioerr qio_channel_print_complex(const int threadsafe, qio_channel_t* restrict ch, const void* restrict re_ptr, const void* im_ptr, size_t len, int full_nan);
 
 // These methods read or write UTF-8 characters (codepoints).
 

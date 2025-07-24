@@ -4125,12 +4125,13 @@ static qioerr maybe_right_pad(qio_channel_t* restrict ch, int gotsize)
   return err;
 }
 
-
+// TODO: When 2.0 edition is removed, can remove `full_nan` argument and the
+// variables and if statement it supports
 qioerr qio_channel_print_complex(const int threadsafe,
                                  qio_channel_t* restrict ch,
                                  const void* restrict re_ptr,
                                  const void* restrict im_ptr,
-                                 size_t len)
+                                 size_t len, int full_nan)
 {
   char* re_buf = NULL;
   char* im_buf = NULL;
@@ -4171,8 +4172,8 @@ qioerr qio_channel_print_complex(const int threadsafe,
       QIO_GET_CONSTANT_ERROR(err, EINVAL, "bad floating point type");
   }
 
-  re_isnan = isnan(re_num);
-  im_isnan = isnan(im_num);
+  re_isnan = full_nan & isnan(re_num);
+  im_isnan = full_nan & isnan(im_num);
 
   // Lock before reading any style information from the
   // channel.

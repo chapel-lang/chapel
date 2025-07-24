@@ -246,26 +246,16 @@ module BytesCasts {
   //
   // complex
   //
+  @edition(first="preview")
+  operator :(x: chpl_anycomplex, type t:bytes) {
+    return chpl_fromComplexCastHelper(x, t);
+  }
+
+  @edition(last="2.0")
   operator :(x: chpl_anycomplex, type t:bytes) {
     if isNan(x.re) || isNan(x.im) then
       return b"nan";
-    var re = (x.re):bytes;
-    var im: bytes;
-    var op: bytes;
-    if x.im < 0 {
-      im = (-x.im):bytes;
-      op = " - ";
-    } else if x.im == -0.0 && -0.0 != 0.0 { // Special accommodation for Seymour.
-      im = "0.0";
-      op = " - ";
-    } else {
-      im = (x.im):bytes;
-      op = " + ";
-    }
-    const ts0 = re + op;
-    const ts1 = ts0 + im;
-    const ret = ts1 + b"i";
-    return ret;
+    return chpl_fromComplexCastHelper(x, t);
   }
 
   operator :(x: bytes, type t:chpl_anycomplex) throws {

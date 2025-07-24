@@ -1,0 +1,2 @@
+--edition=2.0 # string-to-inf-nan.old.good
+--edition=preview # string-to-inf-nan.good

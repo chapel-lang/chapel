@@ -1279,7 +1279,7 @@ private extern proc qio_channel_print_imag(threadsafe:c_int, ch:qio_channel_ptr_
 
 
 private extern proc qio_channel_scan_complex(threadsafe:c_int, ch:qio_channel_ptr_t, ref re_ptr, ref im_ptr, len:c_size_t):errorCode;
-private extern proc qio_channel_print_complex(threadsafe:c_int, ch:qio_channel_ptr_t, const ref re_ptr, const ref im_ptr, len:c_size_t):errorCode;
+private extern proc qio_channel_print_complex(threadsafe:c_int, ch:qio_channel_ptr_t, const ref re_ptr, const ref im_ptr, len:c_size_t, full_nan: c_int):errorCode;
 
 
 private extern proc qio_channel_read_char(threadsafe:c_int, ch:qio_channel_ptr_t, ref char:int(32)):errorCode;
@@ -5852,9 +5852,7 @@ private proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):err
     return qio_channel_print_imag(false, _channel_internal, x, numBytes(t));
   } else if isComplexType(t)  {
     // handle complex types
-    var re = x.re;
-    var im = x.im;
-    return qio_channel_print_complex(false, _channel_internal, re, im, numBytes(re.type));
+    return chpl_print_complex(_channel_internal, x);
   } else if t == string {
     // handle string
     const local_x = x.localize();
@@ -5876,6 +5874,22 @@ private proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):err
     compilerError("Unknown primitive type in _write_text_internal ", t:string);
   }
   return EINVAL;
+}
+
+@edition(first="preview")
+private proc chpl_print_complex(_channel_internal, x) {
+  var re = x.re;
+  var im = x.im;
+  return qio_channel_print_complex(threadsafe=false, _channel_internal, re, im,
+                                   numBytes(re.type), full_nan=false);
+}
+
+@edition(last="2.0")
+private proc chpl_print_complex(_channel_internal, x) {
+  var re = x.re;
+  var im = x.im;
+  return qio_channel_print_complex(threadsafe=false, _channel_internal, re, im,
+                                   numBytes(re.type), full_nan=true);
 }
 
 config param chpl_testReadBinaryInternalEIO = false;

@@ -1491,6 +1491,27 @@ module BytesStringCommon {
     return true;
   }
 
+  proc chpl_fromComplexCastHelper(x: chpl_anycomplex, type t) where
+    t == bytes || t == string {
+    var re = (x.re): t;
+    var im: t;
+    var op: t;
+    if x.im < 0 {
+      im = (-x.im): t;
+      op = " - ";
+    } else if x.im == -0.0 && -0.0 != 0.0 { // Special accommodation for Seymour.
+      im = "0.0";
+      op = " - ";
+    } else {
+      im = (x.im): t;
+      op = " + ";
+    }
+    const ts0 = re + op;
+    const ts1 = ts0 + im;
+    const ret = ts1 + (if t == bytes then b"i" else "i");
+    return ret;
+  }
+
   // character-wise operation helpers
 
   require "ctype.h";
