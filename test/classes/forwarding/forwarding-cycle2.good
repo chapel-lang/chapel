@@ -1,0 +1,5 @@
+forwarding-cycle2.chpl:26: In function 'main':
+forwarding-cycle2.chpl:28: error: forwarding cycle detected
+forwarding-cycle2.chpl:19: note: forwarding cycle includes type 'A'
+forwarding-cycle2.chpl:12: note: forwarding cycle includes type 'B'
+forwarding-cycle2.chpl:2: note: forwarding cycle includes type 'C'
