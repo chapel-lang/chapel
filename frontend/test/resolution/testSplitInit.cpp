@@ -1593,6 +1593,19 @@ static void test76() {
     {}, ERRORS_EXPECTED);
 }
 
+// Split init via tuple destructuring assignment
+static void test77() {
+  testSplitInit("test77",
+    R"""(
+        proc test() {
+          var tup = (1,);
+          var x:int;
+          (x,) = tup;
+        }
+    )""",
+    {"x"});
+}
+
 int main() {
   test1();
   test2();
@@ -1676,6 +1689,7 @@ int main() {
   test74();
   test75();
   test76();
+  test77();
 
   return 0;
 }
