@@ -54,12 +54,11 @@ const char* astr(const char* s1)
 
 const char* astr(const std::string& s)
 {
-  return astr(s.c_str());
+  return astr(std::string_view(s));
 }
 const char* astr(std::string_view s)
 {
-  // Make a std::string copy of the string_view to guarantee null termination.
-  return astr(std::string(s));
+  return gContext->uniqueCString(s.data(), s.size());
 }
 const char* astr(UniqueString s)
 {
