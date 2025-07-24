@@ -2868,7 +2868,7 @@ static void helpComputeClangArgs(std::string& clangCC,
   StringSaver Saver(A);
 
   // get any args passed to CC/CXX and add them to the builtin clang invocation
-  SmallVector<const char *, 0> split;
+  SmallVector<const char *, 2> split;
   llvm::cl::TokenizeGNUCommandLine(CHPL_LLVM_CLANG_C, Saver, split);
   // set clangCC / clangCXX to just the first argument
   for (size_t i = 0; i < split.size(); i++) {
@@ -4722,7 +4722,7 @@ static llvm::CodeGenFileType getCodeGenFileType() {
 static std::string findSiblingClangToolPath(std::string_view toolName) {
   BumpPtrAllocator A;
   StringSaver Saver(A);
-  SmallVector<const char *, 0> split;
+  SmallVector<const char *, 2> split;
   llvm::cl::TokenizeGNUCommandLine(CHPL_LLVM_CLANG_C, Saver, split);
   if (split.size() > 0) {
     auto clang = split[0];
