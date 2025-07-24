@@ -11908,11 +11908,32 @@ proc bytes.format(args ...?k): bytes throws {
   return b"";
 }
 
+private proc chpl_do_format_read(f, size: int) throws {
+  var buf = allocate(uint(8), (size+1).safeCast(c_size_t));
+  var r = f.reader(locking=false);
+  defer {
+    try {
+      r.close();
+    } catch { /* ignore deferred close error */ }
+  }
+
+  r.readBinary(buf, size);
+
+  // close errors are thrown instead of ignored
+  r.close();
+  f.close();
+
+  // Add the terminating NULL byte to make C string conversion easy.
+  buf[size] = 0;
+
+  return buf;
+}
+
 private proc chpl_do_format(fmt:?t, args ...?k): t throws
     where isStringType(t) || isBytesType(t) {
 
   // Open a memory buffer to store the result
-  var f = try openMemFile();
+  var f = openMemFile();
   defer {
     try {
       f.close();
@@ -11921,39 +11942,22 @@ private proc chpl_do_format(fmt:?t, args ...?k): t throws
 
   var offset:int = 0;
   {
-    var w = try f.writer(locking=false);
+    var w = f.writer(locking=false);
     defer {
       try {
         w.close();
       } catch { /* ignore deferred close error */ }
     }
-    try w.writef(fmt, (...args));
+    w.writef(fmt, (...args));
     try! w.lock();
     offset = w.offset();
     w.unlock();
 
     // close error is thrown instead of ignored
-    try w.close();
+    w.close();
   }
 
-  var buf = allocate(uint(8), (offset+1).safeCast(c_size_t));
-  var r = try f.reader(locking=false);
-  defer {
-    try {
-      r.close();
-    } catch { /* ignore deferred close error */ }
-  }
-
-  try r.readBinary(buf, offset);
-
-  // close errors are thrown instead of ignored
-  try r.close();
-  try f.close();
-
-  // Add the terminating NULL byte to make C string conversion easy.
-  buf[offset] = 0;
-
-  return t.createAdoptingBuffer(buf, offset, offset+1);
+  return t.createAdoptingBuffer(chpl_do_format_read(f, size=offset), offset, offset+1);
 }
 
 
