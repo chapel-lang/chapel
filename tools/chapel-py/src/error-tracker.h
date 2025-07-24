@@ -24,6 +24,7 @@
 #include "chpl/framework/Context.h"
 #include "chpl/framework/ErrorBase.h"
 #include "python-class.h"
+#include "chpl/framework/ErrorWriter.h"
 
 struct ContextObject;
 
@@ -31,6 +32,33 @@ struct ErrorObject : public PythonClassWithContext<ErrorObject, chpl::owned<chpl
   static constexpr const char* QualifiedName = "chapel.Error";
   static constexpr const char* Name = "Error";
   static constexpr const char* DocStr = "An error that occurred as part of processing a file with the Chapel compiler frontend";
+
+  static PyObject* str(ErrorObject *self) {
+    if (!self->value_) {
+      raiseExceptionForIncorrectlyConstructedType("Error");
+      return nullptr;
+    }
+    std::stringstream ss;
+    chpl::ErrorWriter ew(&self->context()->value_, ss,
+                          chpl::ErrorWriter::BRIEF, false);
+    self->value_->write(ew);
+    auto typeString = ss.str();
+    return Py_BuildValue("s", typeString.c_str());
+  }
+  static PyObject* repr(ErrorObject *self) {
+    return str(self);
+  }
+
+  static PyTypeObject* configurePythonType() {
+    // Configure the necessary methods to make inserting into sets working:
+
+    std::array<PyType_Slot, 2> extraSlots = {
+      PyType_Slot{Py_tp_str, (void*) str},
+      {Py_tp_repr, (void*) repr},
+    };
+    PyTypeObject* configuring = PythonClassWithContext<ErrorObject, chpl::owned<chpl::ErrorBase>>::configurePythonType(Py_TPFLAGS_DEFAULT, extraSlots);
+    return configuring;
+  }
 };
 
 using LocationAndNote = std::tuple<chpl::Location, std::string>;
