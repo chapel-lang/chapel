@@ -4351,7 +4351,11 @@ void TConverter::ActualConverter::convertActual(const FormalActual& fa) {
     // Convert the actual and leave.
     types::QualifiedType actualType;
     auto actualExpr = tc_->convertExpr(astActual, rv_, &actualType);
-    std::get<Expr*>(slot) = tc_->storeInTempIfNeeded(actualExpr, actualType);
+    auto temp = tc_->storeInTempIfNeeded(actualExpr, actualType);
+    std::get<Expr*>(slot) = temp;
+
+    // prep a symbol in case this is used in in a default argument expression
+    std::get<Symbol*>(slot) = temp->symbol();
 
     return;
   }
@@ -4400,6 +4404,7 @@ void TConverter::ActualConverter::convertActual(const FormalActual& fa) {
   // Convert the init-expression for the formal of interest, or generate a
   // default-value for the type if function is compiler-generated.
   Expr* expr = nullptr;
+  types::QualifiedType exprType;
   if (initExpr == nullptr && fa.hasDefault()) {
     INT_ASSERT(!fa.hasActual());
     INT_ASSERT(tfs_->untyped()->isCompilerGenerated());
@@ -4409,15 +4414,23 @@ void TConverter::ActualConverter::convertActual(const FormalActual& fa) {
     INT_ASSERT(!decl || decl->id().isFabricatedId());
     auto t = fa.formalType().type();
     expr = tc_->defaultValueForType(t, decl, rvCalledFn);
+    exprType = fa.formalType();
 
   } else {
     // Otherwise, invoke the typed converter using the new visitor.
-    expr = tc_->convertExpr(initExpr, rvCalledFn);
+    expr = tc_->convertExpr(initExpr, rvCalledFn, &exprType);
+  }
+
+  if (!isSymExpr(expr)) {
+    expr = tc_->storeInTempIfNeeded(expr, exprType);
   }
 
   // TODO: Handle conversions as needed!
   INT_ASSERT(expr);
   std::get<Expr*>(slot) = expr;
+
+  auto se = toSymExpr(expr);
+  std::get<Symbol*>(slot) = se->symbol();
 
   // Swap off the called function state.
   tc_->popBlock();
@@ -4480,26 +4493,11 @@ Symbol* TConverter::ActualConverter::interceptFormalUse(const ID& id) {
   auto it = formalIdToFormalActual_.find(id);
   if (it != formalIdToFormalActual_.end()) {
     auto& fa = it->second;
-    int idxActual = fa.actualIdx();
+    int idxActual = fa.hasActual() ? fa.actualIdx() : fa.formalIdx();
     auto& slot = actualState_[idxActual];
     auto& temp = std::get<Symbol*>(slot);
-
-    // If a temporary exists, then return it.
-    if (temp) return temp;
-
-    // Otherwise, we need to create the temporary.
-    auto expr = std::get<Expr*>(slot);
-    INT_ASSERT(expr);
-
-    auto ret = newTemp(astr("actual_", istr(idxActual)));
-    stmtInsertionPoint_->insertAtTail(new DefExpr(ret));
-
-    auto move = new CallExpr(PRIM_MOVE, ret, expr);
-    stmtInsertionPoint_->insertAtTail(move);
-
-    temp = ret;
-
-    return ret;
+    INT_ASSERT(temp);
+    return temp;
   } else {
     INT_ASSERT(false && "Expected entry for formal ID!");
   }
