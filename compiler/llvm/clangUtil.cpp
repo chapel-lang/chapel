@@ -4719,30 +4719,23 @@ static llvm::CodeGenFileType getCodeGenFileType() {
   }
 }
 
-static std::string findSiblingClangToolPath(const std::string &toolName) {
-  // Find path to a tool that is a sibling to clang
-  // note that if we have /path/to/clang-14, this logic
-  // will look for /path/to/${toolName}-14.
-  //
-  // If such suffixes do not turn out to matter in practice, it would
-  // be nice to update this code to use sys::path::parent_path().
-  std::vector<std::string> split;
-  std::string result = toolName;
-
-  splitStringWhitespace(CHPL_LLVM_CLANG_C, split);
+static std::string findSiblingClangToolPath(std::string_view toolName) {
+  BumpPtrAllocator A;
+  StringSaver Saver(A);
+  SmallVector<const char *, 0> split;
+  llvm::cl::TokenizeGNUCommandLine(CHPL_LLVM_CLANG_C, Saver, split);
   if (split.size() > 0) {
-    std::string tmp = split[0];
-    const char* clang = "clang";
-    auto pos = tmp.find(clang);
-    if (pos != std::string::npos) {
-      tmp.replace(pos, strlen(clang), toolName);
-      if (pathExists(tmp.c_str())) {
-        result = tmp;
+    auto clang = split[0];
+    auto parent = sys::path::parent_path(clang);
+    if (!parent.empty()) {
+      SmallString<128> path;
+      sys::path::append(path, parent, toolName);
+      if (pathExists(path.str())) {
+        return std::string(path);
       }
     }
   }
-
-  return result;
+  return std::string(toolName);
 }
 
 static void stripPtxDebugDirective(const std::string& artifactFilename) {
