@@ -76,7 +76,7 @@ class Chapel < Formula
         system "make"
       end
       with_env(CHPL_COMM: "gasnet", CHPL_COMM_SUBSTRATE: "udp",
-        CHPL_GASNET_CFG_OPTIONS: "--disable-ibv"
+        CHPL_GASNET_CFG_OPTIONS: "--disable-auto-conduit-detect --enable-udp --enable-smp"
       ) do
         system "make"
         with_env(CHPL_TARGET_COMPILER: cbackend) do
@@ -84,7 +84,7 @@ class Chapel < Formula
         end
       end
       with_env(CHPL_COMM: "gasnet", CHPL_COMM_SUBSTRATE: "smp",
-        CHPL_GASNET_CFG_OPTIONS: "--disable-ibv"
+        CHPL_GASNET_CFG_OPTIONS: "--disable-auto-conduit-detect --enable-udp --enable-smp"
       ) do
         system "make"
         with_env(CHPL_TARGET_COMPILER: cbackend) do
