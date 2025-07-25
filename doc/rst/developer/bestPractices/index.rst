@@ -27,6 +27,7 @@ Best Practices for Contributors
    SpellChecking
    Valgrind
    Sanitizers
+   MemoryProfiling
    Deprecation
    Unstable
    NightlyTesting

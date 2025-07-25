@@ -16,7 +16,7 @@ def normalize(ln):
 expectedGeneratedCodeLines = []
 fromLineNumbers = []
 with open(expectedGenCodeFile, 'r') as f:
-    linenum = 0;
+    linenum = 0
     for line in f:
         line = line.rstrip()
         linenum += 1
@@ -38,7 +38,7 @@ with open (testOutputFile, 'a') as f:
         startindex = index
         while index < nActualLines:
             actualLine = actualLines[index]
-            index += 1;
+            index += 1
 
             if re.search(r'build[a-zA-Z_]*range', actualLine):
               f.write('Found build range\n')

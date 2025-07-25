@@ -296,15 +296,15 @@ or
 
 
 static void checkKnownAttributes(const AttributeGroup* attrs) {
-  // TODO: we need a way to get all the toolspaced attributes for chpldoc, or
-  // any tool, in one go. That will allow us to check for any unrecognized
-  // attributes.
+  static const std::unordered_set<UniqueString> knownChpldocAttrs = {
+      UniqueString::get(gContext, "chpldoc.nodoc"),
+      UniqueString::get(gContext, "chpldoc.attributeSignature"),
+      UniqueString::get(gContext, "chpldoc.hideImplType"),
+  };
   for (auto attr : attrs->children()) {
     auto name = attr->toAttribute()->name();
     if (name.startsWith(USTR("chpldoc."))) {
-      if (name == UniqueString::get(gContext, "chpldoc.nodoc")) {
-        // ignore, it's a known attribute
-      } else if (name == UniqueString::get(gContext, "chpldoc.attributeSignature")) {
+      if (knownChpldocAttrs.count(name)) {
         // ignore, it's a known attribute
       } else {
         // process the Error about unknown Attribute
@@ -368,29 +368,24 @@ static UniqueString nameOfAttributeSignature(const AstNode* node) {
 }
 
 static bool isNoDoc(const Decl* e) {
-  auto attrs = parsing::astToAttributeGroup(gContext, e);
-  if (attrs) {
-    auto attr = attrs->getAttributeNamed(UniqueString::get(gContext,
-                                                           "chpldoc.nodoc"));
-    if (attr) {
-      return true;
-    }
+  if (e->hasAttribute(gContext, UniqueString::get(gContext, "chpldoc.nodoc"))) {
+    return true;
   }
   if (symbolNameBeginsWithChpl(e) && nameOfAttributeSignature(e).isEmpty()) {
     // TODO: Remove this check and the pragma once we have an attribute that
     // can be used to document chpl_ symbols or otherwise remove the
     // chpl_ prefix from symbols we want documented
-    return !(attrs &&
-             attrs->hasPragma(PragmaTag::PRAGMA_CHPLDOC_IGNORE_CHPL_PREFIX));
+    return !e->hasPragma(gContext, PragmaTag::PRAGMA_CHPLDOC_IGNORE_CHPL_PREFIX);
   }
   return false;
 }
 
 static bool isNoWhereDoc(const Function* f) {
-  if (auto attrs = f->attributeGroup())
-    if (attrs->hasPragma(pragmatags::PRAGMA_NO_WHERE_DOC))
-      return true;
-  return false;
+  return f->hasPragma(gContext, pragmatags::PRAGMA_NO_WHERE_DOC);
+}
+
+static bool isHideImplType(const Decl* e) {
+  return e->hasAttribute(gContext, UniqueString::get(gContext, "chpldoc.hideImplType"));
 }
 
 static std::vector<std::string> splitLines(const std::string& s) {
@@ -1498,7 +1493,10 @@ struct RstResultBuilder {
   bool show(const std::string& kind, const T* node, bool indentComment=true) {
     if (isNoDoc(node)) return false;
 
-    if (!textOnly_) os_ << ".. " << kind << ":: ";
+    std::string useKind = kind;
+    if (isHideImplType(node)) useKind = "type";
+
+    if (!textOnly_) os_ << ".. " << useKind << ":: ";
     RstSignatureVisitor ppv{os_};
 
     if (node->isEnumElement()) {
@@ -1702,10 +1700,8 @@ struct RstResultBuilder {
     }
     assert(!moduleName.empty());
     const Comment* lastComment = nullptr;
-    if (auto attrs = m->attributeGroup()) {
-      if (attrs->hasPragma(pragmatags::PRAGMA_MODULE_INCLUDED_BY_DEFAULT)) {
-        includedByDefault = true;
-      }
+    if (m->hasPragma(gContext, pragmatags::PRAGMA_MODULE_INCLUDED_BY_DEFAULT)) {
+      includedByDefault = true;
     }
     // header
     if (!textOnly_) {

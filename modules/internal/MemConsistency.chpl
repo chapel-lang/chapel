@@ -102,7 +102,7 @@ module MemConsistency {
       when memoryOrder.release do return memory_order_release;
       when memoryOrder.acqRel  do return memory_order_acq_rel;
       when memoryOrder.seqCst  do return memory_order_seq_cst;
-      otherwise do HaltWrappers.exhaustiveSelectHalt("Invalid memoryOrder");
+      otherwise do compilerError("Invalid memoryOrder");
     }
   }
 

@@ -1,5 +1,7 @@
  # flagCheck.good
 --edition=default
 --edition=2.0
---edition=pre-edition
+--edition=preview
+--edition=pre-edition # flagCheck.pre-edition.good
+--edition=pre-edition --no-compiler-driver # flagCheck.pre-edition.shorter.good
 --edition=thisHadBetterNeverBeAnActualEditionNameYall # flagCheck.badEdition.good

@@ -36,7 +36,7 @@
 
 #include "extern-blocks.h"
 #include "Resolver.h"
-#include "resolution/BranchSensitiveVisitor.h"
+#include "chpl/resolution/BranchSensitiveVisitor.h"
 
 #include <cstdio>
 #include <iterator>

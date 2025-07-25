@@ -302,6 +302,8 @@ compositeTypeIsPod(resolution::ResolutionContext* rc, const Type* t) {
 
   if (auto cls = t->toClassType()) {
     return !cls->decorator().isManaged();
+  } else if (t->isBasicClassType()) {
+    return false;
   }
 
   auto ct = t->getCompositeType();

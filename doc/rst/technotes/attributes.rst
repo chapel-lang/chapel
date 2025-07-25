@@ -28,16 +28,10 @@ ability to specify a tool name for an attribute.
 
 Here are examples of what an attribute might look like:
 
-.. code-block:: chapel
-
-    // example of an attribute without a tool name
-    @attributeName(arg1="value", arg2=1, arg3=1.0, arg4=true, arg5=1..10)
-    proc foo() { }
-
-    // example of an attribute with a tool name
-    @toolName.attributeName(arg1="value", arg2=1, arg3=true)
-    proc foo() { }
-
+.. literalinclude:: ../../../test/technotes/doc-examples/AttributeSyntaxExample.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_0
+   :end-before: STOP_EXAMPLE_0
 
 Limitations
 ~~~~~~~~~~~
@@ -106,34 +100,11 @@ Stability Attributes
     in a future release.
 
 
-.. code-block:: chapel
-
-    // ways to use @deprecated
-    @deprecated
-    proc foo() {}
-
-    @deprecated("foo is deprecated, please use bar")
-    proc foo() {}
-
-    @deprecated(since="1.30", notes="foo is deprecated", suggestion="use bar")
-    proc foo() {}
-
-    // ways to use @unstable
-    @unstable
-    proc foo() {}
-
-    @unstable("foo is unstable")
-    proc foo() {}
-
-    @unstable(category="experimental", issue="1234", reason="testing a new feature")
-    proc foo() {}
-
-    // ways to use @stable
-    @stable(since="1.30")
-    proc foo() {}
-
-    @stable("1.30")
-    proc bar() {}
+.. literalinclude:: ../../../test/technotes/doc-examples/AttributeExamples.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_0
+   :end-before: STOP_EXAMPLE_0
+   :dedent:
 
 
 .. note::
@@ -154,21 +125,19 @@ Other Attributes
   When converting existing code, note that ``@chpldoc.nodoc`` must be placed `after`
   any remaining pragmas assigned to the symbol.
 
-  .. code-block:: chapel
+  .. literalinclude:: ../../../test/technotes/doc-examples/AttributeExamples.chpl
+     :language: chapel
+     :start-after: START_EXAMPLE_1
+     :end-before: STOP_EXAMPLE_1
+     :dedent:
 
-      // prevent the entire module from being documented
-      @chpldoc.nodoc
-      module M { }
+  Pragmas must currently appear before any attributes, and interleaving
+  them may lead to syntax errors:
 
-      // valid placement of @chpldoc.nodoc
-      pragma "always RVF"
-      @chpldoc.nodoc
-      proc foo() { }
-
-      // invalid placement of @chpldoc.nodoc
-      @chpldoc.nodoc
-      pragma "always RVF"
-      proc foo() { }
+  .. literalinclude:: ../../../test/technotes/doc-examples/AttributeInvalidPlacement.chpl
+     :language: chapel
+     :start-after: START_EXAMPLE_0
+     :end-before: STOP_EXAMPLE_0
 
 * ``@llvm.assertVectorized`` is an experimental attribute which can be applied
   to all statement-level loops. When used on a loop, it applies a post-codegen
@@ -179,10 +148,11 @@ Other Attributes
   Note that this attribute is currently only meaningful on ``for``
   and ``foreach`` loops.
 
-  .. code-block:: chapel
-
-     @llvm.assertVectorized()
-     foreach a in A { ... }; // warns if this is not vectorizable
+  .. literalinclude:: ../../../test/technotes/doc-examples/AttributesAssertVectorized.chpl
+     :language: chapel
+     :start-after: START_EXAMPLE_0
+     :end-before: STOP_EXAMPLE_0
+     :dedent:
 
 * ``@llvm.metadata`` is an experimental attribute which can be used to adjust
   the code generation when using the LLVM backend.
@@ -195,13 +165,11 @@ Other Attributes
   Note that this attribute is currently only meaningful on ``for``
   and ``foreach`` loops.
 
-  .. code-block:: chapel
-
-     @llvm.metadata(
-       ("llvm.loop.vectorize.enable", true), // becomes !{!"llvm.loop.vectorize.enable", i1 true}
-       ("llvm.loop.vectorize.width", 4) // becomes !{!"llvm.loop.vectorize.width", i64 4}
-     )
-     foreach a in A { ... };
+  .. literalinclude:: ../../../test/technotes/doc-examples/AttributeExamples.chpl
+     :language: chapel
+     :start-after: START_EXAMPLE_2
+     :end-before: STOP_EXAMPLE_2
+     :dedent:
 
 Future Work and Design Discussions
 ----------------------------------

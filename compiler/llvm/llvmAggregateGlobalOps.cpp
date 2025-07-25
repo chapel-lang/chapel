@@ -782,11 +782,7 @@ bool AggregateGlobalOpsOpt::run(Function &F) {
 
     if( DebugThis ) {
       dbgs() << "Working on BB ";
-#if HAVE_LLVM_VER >= 110
       BB->print(dbgs(), nullptr, false, true);
-#else
-      BB->print(dbgs(), true);
-#endif
       dbgs() << '\n';
     }
 
@@ -809,11 +805,7 @@ bool AggregateGlobalOpsOpt::run(Function &F) {
     if( DebugThis && ChangedBB ) {
       dbgs() << "in function " << F.getName() << "\n";
       dbgs() << "After transform BB is ";
-#if HAVE_LLVM_VER >= 110
       BB->print(dbgs(), nullptr, false, true);
-#else
-      BB->print(dbgs(), true);
-#endif
       dbgs() << '\n';
     }
 

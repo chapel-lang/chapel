@@ -19,32 +19,14 @@ Example of Compile-time Nil Checking
 
 Consider this example program:
 
-.. code-block:: chapel
-
-  // ex.chpl
-
-  class MyClass {
-    var x: int;
-    proc method() { }
-  }
-
-  var obj: MyClass; // default initializes obj to store nil
-  obj.method();
-
-  var x = new owned MyClass(1);
-  var y = owned.release(x); // now x stores nil
-  x.method();
+.. literalinclude:: ../../../test/technotes/doc-examples/NilCheckingExamples.chpl
+   :language: chapel
+   :start-after: START_EXAMPLE_0
+   :end-before: STOP_EXAMPLE_0
 
 Compiling this program will produce the following compilation errors:
 
-::
-
-  ex.chpl:9: error: attempt to dereference nil
-  ex.chpl:9: note: variable obj is nil at this point
-  ex.chpl:8: note: this statement may be relevant
-  ex.chpl:13: error: attempt to dereference nil
-  ex.chpl:12: note: this statement may be relevant
-
+.. literalinclude:: ../../../test/technotes/doc-examples/NilCheckingExamples.good
 
 Limitations of Compile-time Nil Checking
 ========================================
@@ -56,6 +38,10 @@ where a nil is dereferenced. Here are some limitations of the analysis:
  * it gives up in certain complex control flow situations
  * it does not track may-alias sets
  * it is not interprocedural
+
+Additionally, compile-time checks are not performed for module-scope
+code. If the code in the previous example were moved outside ``main``,
+then the program would compile without issues.
 
 Nonetheless we hope that the additional checking provided by this pass
 is useful. If you run into a surprising case where it reports an error,

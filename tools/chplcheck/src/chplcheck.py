@@ -199,6 +199,7 @@ def print_rules(driver: LintDriver, show_all=True):
 
 def main():
     parser = configargparse.ArgParser(
+        "chplcheck",
         default_config_files=[
             os.path.join(os.getcwd(), "chplcheck.cfg"),
             os.path.join(os.getcwd(), ".chplcheck.cfg"),

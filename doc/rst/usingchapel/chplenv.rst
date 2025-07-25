@@ -1028,6 +1028,9 @@ variables that support each option, run the compiler with the ``--help-env``
 flag.  For boolean flags and toggles, setting the environment variable to any
 value selects that flag.
 
+.. index::
+   single: chplconfig; Chapel configuration file
+
 .. _readme-chplenv.chplconfig:
 
 Chapel Configuration Files

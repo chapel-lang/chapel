@@ -9,7 +9,6 @@ source $UTIL_CRON_DIR/common-native-gpu.bash
 # Setup for GPU:
 module load cudatoolkit
 export CHPL_TARGET_COMPILER=llvm
-export CHPL_LLVM=bundled
 export CHPL_TARGET_CPU=native
 export CHPL_LAUNCHER_CONSTRAINT=BW18
 export CHPL_LAUNCHER="slurm-srun"

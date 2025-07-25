@@ -48,6 +48,7 @@
 #include "chpl/framework/compiler-configuration.h"
 #include "chpl/framework/global-strings.h"
 #include "chpl/parsing/parsing-queries.h"
+#include "chpl/resolution/BranchSensitiveVisitor.h"
 #include "chpl/resolution/can-pass.h"
 #include "chpl/resolution/ResolvedVisitor.h"
 #include "chpl/resolution/resolution-queries.h"
@@ -125,7 +126,8 @@ using namespace uast;
 //    lazily generate only the functions that are needed, but we cannot take
 //    advantage of that until this pass generates all old AST.
 //
-struct TConverter final : UastConverter {
+struct TConverter final : UastConverter,
+                          chpl::resolution::BranchSensitiveVisitor<chpl::resolution::DefaultFrame, ResolvedVisitor<TConverter>&> {
 
   /// ------------ ///
   /// Nested Types ///
@@ -586,6 +588,28 @@ struct TConverter final : UastConverter {
     return UniqueString::get(context, str);
   }
 
+  // BranchSensitiveVisitor methods
+  const chpl::types::Param* determineWhenCaseValue(const uast::AstNode* ast,
+                                                   RV& rv) override {
+    if (auto action = rv.byAst(ast).getAction(AssociatedAction::COMPARE)) {
+      return action->type().param();
+    }
+
+    return nullptr;
+  }
+  const types::Param* determineIfValue(const uast::AstNode* ast,
+                                       RV& rv) override {
+    if (auto rr = rv.byAst(ast); rr.type().kind() == types::QualifiedType::PARAM) {
+      return rr.type().param();
+    }
+    return nullptr;
+  }
+  void traverseNode(const uast::AstNode* ast, RV& rv) override {
+    ast->traverse(rv);
+  }
+
+
+
   /// -------------------------- ///
   /// Symbol and Type Conversion ///
   /// -------------------------- ///
@@ -638,9 +662,10 @@ struct TConverter final : UastConverter {
   // Converts a type. If it's an AggregateType, it will also fill in the
   // fields, but only after creating a dummy AggregateType for the map
   // that can be used in the case of recursive data structures.
-  Type* convertType(const types::Type* t, bool convertRefType=false);
+  Type* convertType(const types::Type* t);
 
-  void noteConvertedSym(const uast::AstNode* ast, Symbol* sym);
+  void noteConvertedSym(const uast::AstNode* ast, Symbol* sym) override;
+  void noteConvertedFn(const resolution::TypedFnSignature* sig, FnSymbol* fn) override;
 
   Symbol* convertParam(const types::QualifiedType& qt);
 
@@ -1473,6 +1498,7 @@ FnSymbol* TConverter::convertNewWrapper(const ResolvedFunction* rInitFn) {
   CallExpr* innerInit = new CallExpr(initFn, gMethodToken, initTemp);
   VarSymbol* retVar = newTemp("ret", type);
   retVar->addFlag(FLAG_RVV);
+  body->insertAtTail(new DefExpr(retVar));
 
   fn->setMethod(true);
   fn->addFlag(FLAG_NEW_WRAPPER);
@@ -1489,14 +1515,15 @@ FnSymbol* TConverter::convertNewWrapper(const ResolvedFunction* rInitFn) {
   fn->addFlag(FLAG_RESOLVED_EARLY);
   fn->setNormalized(true);
 
+  fn->retType = convertType(rInitFn->signature()->formalType(0).type());
+
   // Add the _new function just after the relevant initFn
   initFn->defPoint->insertAfter(new DefExpr(fn));
 
   // set up the formals and init call based on the init function
   SymbolMap initToNewMap;
   for_formals(formal, initFn) {
-    INT_ASSERT(formal->type != dtMethodToken);
-    if (formal != initFn->_this) {
+    if (formal != initFn->_this && formal->type != dtMethodToken) {
       ArgSymbol* newArg = formal->copy();
       initToNewMap.put(formal, newArg);
       fn->insertFormalAtTail(newArg);
@@ -1569,8 +1596,7 @@ FnSymbol* TConverter::findOrConvertTupleInit(const types::TupleType* tt) {
   auto it = chplTupleInit.find(tt);
   if (it != chplTupleInit.end()) return it->second;
 
-  const bool convertRefType = true;
-  Type* newType = convertType(tt, convertRefType);
+  Type* newType = convertType(tt);
 
   // Otherwise, construct it.
   FnSymbol* ret = new FnSymbol("chpl__tuple_init");
@@ -2061,6 +2087,10 @@ void TConverter::noteConvertedSym(const uast::AstNode* ast, Symbol* sym) {
   }
 }
 
+void TConverter::noteConvertedFn(const resolution::TypedFnSignature* sig, FnSymbol* fn) {
+  CHPL_ASSERT(false && "currently unused");
+}
+
 Type* TConverter::findConvertedType(const types::Type* t) {
   auto it = convertedTypes.find(t);
   if (it != convertedTypes.end()) {
@@ -2361,6 +2391,10 @@ struct ConvertTypeHelper {
   }
 
   Type* visit(const types::BasicClassType* bct) {
+    if (bct->isObjectType()) {
+      return dtObject;
+    }
+
     auto rc = createDummyRC(context());
     auto& rfds = fieldsForTypeDecl(&rc, bct, DefaultsPolicy::USE_DEFAULTS);
 
@@ -2559,7 +2593,7 @@ struct ConvertTypeHelper {
     for (int i = 0; i < t->numElements(); i++) {
       auto qt = t->elementType(i);
 
-      auto conv = tc_->convertType(qt.type(), qt.isRef());
+      auto conv = tc_->convertType(qt.type());
       auto sym = qt.isRef() ? conv->refType->symbol : conv->symbol;
       args.push_back(sym);
 
@@ -2603,6 +2637,8 @@ struct ConvertTypeHelper {
     newTypeSymbol->addFlag(FLAG_TYPE_VARIABLE);
     newTypeSymbol->addFlag(FLAG_RESOLVED_EARLY);
     if (t->isStarTuple()) newTypeSymbol->addFlag(FLAG_STAR_TUPLE);
+
+    ret->saveGenericSubstitutions();
 
     // Insert all tuple instantiations in the tuple module.
     tc_->modChapelTuple->block->insertAtHead(new DefExpr(newTypeSymbol));
@@ -2709,52 +2745,67 @@ struct ConvertTypeHelper {
   }
 };
 
-Type* TConverter::convertType(const types::Type* t, bool convertRefType) {
+Type* TConverter::convertType(const types::Type* t) {
   if (t == nullptr) return dtUnknown;
-
-  Type* ret = nullptr;
 
   if (auto existing = findConvertedType(t)) {
     // (A) Fetch the cached converted type to reuse it if possible.
-    ret = existing;
+    return existing;
 
-  } else {
-    // (B) Convert a type for the first time. Start by checking to see if
-    // the type is an aggregate. If it is, check to see if it is a well
-    // known type, otherwise make a stub first to support recursion when
-    // converting the fields.
-    auto selector = [](auto name, AggregateTag tag) {
-      auto at = shouldWireWellKnownType(name.c_str());
-      auto ret = at ? at : new AggregateType(tag);
-      return ret;
-    };
+  }
 
-    AggregateType* at = nullptr;
-    if (auto x = t->toBasicClassType()) {
-      // NOTE: 'ClassType' will convert the 'BasicClassType' to get here.
-      at = selector(x->name(), AGGREGATE_CLASS);
-    } else if (auto x = t->toRecordType()) {
-      at = selector(x->name(), AGGREGATE_RECORD);
-    } else if (auto x = t->toUnionType()) {
-      at = selector(x->name(), AGGREGATE_UNION);
-    }
+  Type* ret = nullptr;
 
-    // It's an aggregate, so emplace a map entry before converting.
-    if (at) convertedTypes[t] = at;
-
-    // Invoke the visitor to convert the type.
-    ConvertTypeHelper visitor = { this };
-    ret = t->dispatch<Type*>(visitor);
-    INT_ASSERT(ret);
-
-    // Set the converted type once again.
-    convertedTypes[t] = ret;
-
+  // (B) Convert a type for the first time. Start by checking to see if
+  // the type is an aggregate. If it is, check to see if it is a well
+  // known type, otherwise make a stub first to support recursion when
+  // converting the fields.
+  auto selector = [](auto name, AggregateTag tag) {
+    auto at = shouldWireWellKnownType(name.c_str());
+    auto ret = at ? at : new AggregateType(tag);
     return ret;
+  };
+
+  AggregateType* at = nullptr;
+  if (auto x = t->toBasicClassType()) {
+    // NOTE: 'ClassType' will convert the 'BasicClassType' to get here.
+    at = selector(x->name(), AGGREGATE_CLASS);
+  } else if (auto x = t->toRecordType()) {
+    at = selector(x->name(), AGGREGATE_RECORD);
+  } else if (auto x = t->toUnionType()) {
+    at = selector(x->name(), AGGREGATE_UNION);
+  }
+
+  // It's an aggregate, so emplace a map entry before converting.
+  if (at) convertedTypes[t] = at;
+
+  // Invoke the visitor to convert the type.
+  ConvertTypeHelper visitor = { this };
+  ret = t->dispatch<Type*>(visitor);
+  INT_ASSERT(ret);
+
+  // Set the converted type once again.
+  convertedTypes[t] = ret;
+
+  if (!isPrimitiveType(ret) &&
+      ret->symbol->hasFlag(FLAG_INSTANTIATED_GENERIC) == false &&
+      ret != dtObject) {
+    ID id;
+    if (auto ct = t->getCompositeType()) {
+      id = ct->id();
+    } else if (auto et = t->toEnumType()) {
+      id = et->id();
+    } else if (auto ext = t->toExternType()) {
+      id = ext->id();
+    }
+    if (!id.isEmpty()) {
+      auto ast = parsing::idToAst(context, id);
+      untypedConverter->noteConvertedSym(ast, ret->symbol);
+    }
   }
 
   // If we need to generate a 'ref' wrapper for the type, do so now.
-  if (convertRefType && !ret->refType) {
+  if (!ret->refType) {
     SET_LINENO(ret->symbol);
 
     // TODO: This is "AGGREGATE_RECORD" in "getOrMakeRefTypeDuringCodegen"?
@@ -2851,7 +2902,7 @@ struct ConvertDefaultValueHelper {
 
     // Found it, so invoke the default-initializer on a temp.
     auto temp = tc_->makeNewTemp(qt);
-    auto initCall = new CallExpr(fn, temp);
+    auto initCall = new CallExpr(fn, gMethodToken, temp);
 
     std::vector<const AstNode*> actualAsts;
     auto tfs = rf->signature();
@@ -4188,6 +4239,11 @@ Expr* TConverter::convertNamedCallOrNull(const Call* node, RV& rv) {
 
   convertAndInsertActuals(ret, node, actualAsts, sig, fam, rv);
 
+  // Operators can be methods without a 'this' formal
+  if (calledFn->isMethod() && calledFn->_this != nullptr) {
+    ret->insertAtHead(new SymExpr(gMethodToken));
+  }
+
   return ret;
 }
 
@@ -4281,7 +4337,7 @@ void TConverter::ActualConverter::convertActual(const FormalActual& fa) {
   INT_ASSERT(0 <= idxSlot && idxSlot < ((int) actualState_.size()));
   auto& slot = actualState_[idxSlot];
 
-  if (!fa.hasDefault()) {
+  if (!fa.hasDefault() || fa.hasActual()) {
     INT_ASSERT(fa.hasActual());
 
     // If there is no default argument then an actual is present.
@@ -4656,6 +4712,7 @@ static void attachFunctionFlags(TConverter* tc, const Function* node,
 }
 
 bool TConverter::enter(const Function* node, RV& rv) {
+  enterScope(node, rv);
   TC_DEBUGF(this, "enter function %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 
   if (node != cur.symbol) {
@@ -4722,10 +4779,13 @@ bool TConverter::enter(const Function* node, RV& rv) {
         if (arg->hasFlag(FLAG_ARG_THIS)) {
           fn->thisTag = arg->intent;
           fn->_this = arg;
+
+          // While we're at it, add the method token formal
+          auto mt = new ArgSymbol(INTENT_BLANK, astr("_mt"), dtMethodToken);
+          fn->insertFormalAtTail(mt);
         }
 
-        auto def = new DefExpr(arg);
-        fn->insertFormalAtTail(def);
+        fn->insertFormalAtTail(arg);
 
       } else if (auto va = decl->toVarArgFormal()) {
         convertAndInsertVarArgs(va, rv);
@@ -4750,7 +4810,6 @@ bool TConverter::enter(const Function* node, RV& rv) {
       } else {
         TC_UNIMPL("Unhandled formal");
       }
-
     }
 
     exitFormals(fn);
@@ -4810,9 +4869,7 @@ bool TConverter::enter(const Function* node, RV& rv) {
     setupExternExportFunctionDecl(linkageFlag, linkageExpr, fn);
   }
 
-  const bool convertRefType = true;
-  fn->retType = convertType(cur.resolvedFunction->returnType().type(),
-                            convertRefType);
+  fn->retType = convertType(cur.resolvedFunction->returnType().type());
 
   // visit the body to convert
   if (node->body()) {
@@ -4868,10 +4925,20 @@ bool TConverter::enter(const Function* node, RV& rv) {
   cur.retVar = nullptr;
   cur.epilogueLabel = nullptr;
 
+  if (auto attr = node->attributeGroup()) {
+    UniqueString name = UniqueString::get(context, "dyno.printConvertedAst");
+    if (attr->getAttributeNamed(name)) {
+      // If the dyno attribute is set, print the converted AST.
+      TC_DEBUGF(this, "Converted AST for %s:\n", node->id().str().c_str());
+      print_view(fn);
+    }
+  }
+
   return false;
 }
 
 void TConverter::exit(const Function* node, RV& rv) {
+  exitScope(node, rv);
   TC_DEBUGF(this, "exit function %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 }
 
@@ -5000,13 +5067,13 @@ Expr* TConverter::convertParenlessCallOrNull(const AstNode* node, RV& rv) {
 
   if (sig->isMethod()) {
     if (node->isIdentifier()) {
-      ret = new CallExpr(calledFn, codegenImplicitThis(rv));
+      ret = new CallExpr(calledFn, gMethodToken, codegenImplicitThis(rv));
     } else {
       auto [recvAst, fieldName] = accessExpressionDetails(node);
       std::ignore = fieldName;
       types::QualifiedType qtRecv;
       auto recv = recvAst ? convertExpr(recvAst, rv, &qtRecv) : nullptr;
-      ret = new CallExpr(calledFn, storeInTempIfNeeded(recv, qtRecv));
+      ret = new CallExpr(calledFn, gMethodToken, storeInTempIfNeeded(recv, qtRecv));
     }
   } else {
     ret = new CallExpr(calledFn);
@@ -5108,6 +5175,7 @@ void TConverter::exit(const Return* node, RV& rv) {
   // replace with GOTO(epilogue)
   auto jump = new GotoStmt(GOTO_RETURN, cur.epilogueLabel);
   insertStmt(jump);
+  markReturn();
 }
 
 bool TConverter::enter(const Call* node, RV& rv) {
@@ -5141,6 +5209,7 @@ void TConverter::exit(const Call* node, RV& rv) {
 }
 
 bool TConverter::enter(const Conditional* node, RV& rv) {
+  enterScope(node, rv);
   TC_DEBUGF(this, "enter conditional %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 
   // Not param-known condition; visit both branches as normal.
@@ -5179,24 +5248,12 @@ bool TConverter::enter(const Conditional* node, RV& rv) {
     // The result of the 'if-expr' will be stored in 'temp'.
     insertExpr(new SymExpr(temp));
   } else {
-    auto condRE = rv.byAst(node->condition());
-    if (condRE.type().isParamTrue()) {
-      // Don't need to process the false branch.
-      auto block = pushNewBlock();
-      node->thenBlock()->traverse(rv);
-      popBlock();
-      insertStmt(block);
-      return false;
-    } else if (condRE.type().isParamFalse()) {
-      if (auto elseBlock = node->elseBlock()) {
-        auto block = pushNewBlock();
-        elseBlock->traverse(rv);
-        popBlock();
-        insertStmt(block);
-      }
-      return false;
-    }
+    // Branch-sensitive traversal doesn't really work for the expression-level
+    // case because we need to build the 'move'. So just rely on this for
+    // statement-level conditionals.
+    if (!branchSensitivelyTraverse(node, rv)) return false;
 
+    auto condRE = rv.byAst(node->condition());
     astlocMarker markAstLoc(node->id());
 
     types::QualifiedType qtCond;
@@ -5327,6 +5384,7 @@ bool TConverter::enter(const Conditional* node, RV& rv) {
 }
 
 void TConverter::exit(const Conditional* node, RV& rv) {
+  exitScope(node, rv);
   TC_DEBUGF(this, "exit conditional %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 }
 
@@ -5369,7 +5427,7 @@ static SymExpr* makeCaseCond(TConverter* tc, TConverter::RV& rv,
   // TODO: handle case where passing to '==' has an associated action
   auto call = new CallExpr(fn, selectExpr->copy(), caseExpr);
 
-  auto cond = tc->storeInTempIfNeeded(call, re.type());
+  auto cond = tc->storeInTempIfNeeded(call, action->type());
 
   return cond;
 }
@@ -5421,20 +5479,32 @@ static SymExpr* getWhenCond(TConverter* tc, TConverter::RV& rv,
 }
 
 bool TConverter::enter(const Select* node, RV& rv) {
+  enterScope(node, rv);
   // TODO:
   // - test case-exprs where the '==' operators have associated actions
   //   (e.g. in-intent on record argument)
 
   //Note: out-of-order otherwise is an error addressed by post-parse-checks
 
+  // TODO: Trying to convert this with the branch sensitive traversal is a bit
+  // awkward because we want to have only one generated select expression, and
+  // would need to store that somehow between when-stmt traversals. It also
+  // feels easier to manage the stacking of CondStmts here.
+
   types::QualifiedType selectQT;
   auto selectExpr = convertExpr(node->expr(), rv, &selectQT);
   auto selectSym = storeInTempIfNeeded(selectExpr, selectQT);
 
+  auto traverse = [this,&rv](const When* when) {
+    enterScope(when->body(), rv);
+    when->body()->traverse(rv);
+    exitScope(when->body(), rv);
+  };
+
   int count = 0;
   for (auto when : node->whenStmts()) {
     if (when->isOtherwise()) {
-      when->body()->traverse(rv);
+      traverse(when);
     } else {
       bool anyParamTrue = false;
       bool allParamFalse = true;
@@ -5453,7 +5523,7 @@ bool TConverter::enter(const Select* node, RV& rv) {
       // Note: this differs from traditional behavior in production, where each
       // comparison was made.
       if (anyParamTrue) {
-        when->body()->traverse(rv);
+        traverse(when);
 
         // Nothing else can match after this, so we're done
         break;
@@ -5461,7 +5531,7 @@ bool TConverter::enter(const Select* node, RV& rv) {
         auto cond = getWhenCond(this, rv, when, selectSym);
 
         // Traversing the body creates a BlockStmt we can remove
-        when->body()->traverse(rv);
+        traverse(when);
         auto thenBlock = cur.lastList()->last()->remove();
 
         auto elseBlock = new BlockStmt();
@@ -5482,9 +5552,13 @@ bool TConverter::enter(const Select* node, RV& rv) {
   return false;
 }
 
-void TConverter::exit(const Select* node, RV& rv) {}
+void TConverter::exit(const Select* node, RV& rv) {
+  exitScope(node, rv);
+  TC_DEBUGF(this, "exit select %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
+}
 
 bool TConverter::enter(const Block* node, RV& rv) {
+  enterScope(node, rv);
   // Necessary for explicit standalone block-statements
   auto block = new BlockStmt();
   pushBlock(block);
@@ -5492,18 +5566,31 @@ bool TConverter::enter(const Block* node, RV& rv) {
 }
 
 void TConverter::exit(const Block* node, RV& rv) {
+  exitScope(node, rv);
   auto cur = popBlock();
   insertStmt(cur);
 }
 
 bool TConverter::enter(const AstNode* node, RV& rv) {
+  enterScope(node, rv);
   TC_DEBUGF(this, "enter ast %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
   return true;
 }
 void TConverter::exit(const AstNode* node, RV& rv) {
+  exitScope(node, rv);
   TC_DEBUGF(this, "exit ast %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 }
 
 chpl::owned<UastConverter> createTypedConverter(chpl::Context* context) {
   return toOwned(new TConverter(context));
 }
+
+namespace chpl::uast {
+template <>
+struct AstVisitorPrecondition<TConverter> {
+  static bool skipSubtree(const AstNode* node, TConverter& rv) {
+    return rv.isDoneExecuting() || rv.markedThrow();
+  }
+};
+
+};

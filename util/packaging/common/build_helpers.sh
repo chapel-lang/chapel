@@ -6,7 +6,60 @@ __get_docker_tag() {
   local chapel_version=$3
   local package_version=$4
 
-  __docker_tag="chapel/${package_name}-${chapel_version}-${os}:${package_version}"
+  echo "chapel/${package_name}-${chapel_version}-${os}:${package_version}"
+}
+
+
+__package_type_from_os() {
+  local pkg_type
+  case $1 in
+    "amzn2023" | "fc41" | "fc42" | "el9" | "el10")
+    pkg_type="rpm"
+    ;;
+    "debian11" | "debian12" | "ubuntu22" | "ubuntu24")
+    pkg_type="apt"
+    ;;
+    *)
+    pkg_type="unknown"
+    ;;
+  esac
+  echo $pkg_type
+}
+__docker_image_from_os() {
+  local docker_image_base
+  case $1 in
+    "amzn2023")
+    docker_image_base="amazonlinux:2023"
+    ;;
+    "fc41")
+    docker_image_base="fedora:41"
+    ;;
+    "fc42")
+    docker_image_base="fedora:42"
+    ;;
+    "el9")
+    docker_image_base="rockylinux/rockylinux:9"
+    ;;
+    "el10")
+    docker_image_base="almalinux:10"
+    ;;
+    "debian11")
+    docker_image_base="debian:11"
+    ;;
+    "debian12")
+    docker_image_base="debian:12"
+    ;;
+    "ubuntu22")
+    docker_image_base="ubuntu:22.04"
+    ;;
+    "ubuntu24")
+    docker_image_base="ubuntu:24.04"
+    ;;
+    *)
+    docker_image_base="unknown"
+    ;;
+  esac
+  echo $docker_image_base
 }
 
 __wget_chpl_release() {
@@ -22,36 +75,59 @@ __wget_chpl_release() {
 }
 
 __build_all_packages() {
-  __build_packages $1 $2 $3 $4 $5 $6 $7 '--platform=linux/amd64,linux/arm64' $8
+  if [[ $# -ne 5 ]]; then
+    echo "Usage: __build_all_packages <os> <package_name> <chapel_version> <package_version> <para>"
+    return
+  fi
+  __build_packages $1 $2 $3 $4 '--platform=linux/amd64,linux/arm64' $5
 }
 __build_x8664_package() {
-  __build_packages $1 $2 $3 $4 $5 $6 $7 '--platform=linux/amd64' $8
+  if [[ $# -ne 5 ]]; then
+    echo "Usage: __build_x8664_package <os> <package_name> <chapel_version> <package_version> <para>"
+    return
+  fi
+  __build_packages $1 $2 $3 $4 '--platform=linux/amd64' $5
 }
 __build_arm64_package() {
-  __build_packages $1 $2 $3 $4 $5 $6 $7 '--platform=linux/arm64' $8
+  if [[ $# -ne 5 ]]; then
+    echo "Usage: __build_arm64_package <os> <package_name> <chapel_version> <package_version> <para>"
+    return
+  fi
+  __build_packages $1 $2 $3 $4 '--platform=linux/arm64' $5
 }
 __build_native_package() {
-  __build_packages $1 $2 $3 $4 $5 $6 $7 '' $8
+  if [[ $# -ne 5 ]]; then
+    echo "Usage: __build_packages <os> <package_name> <chapel_version> <package_version> <para>"
+    return
+  fi
+  __build_packages $1 $2 $3 $4 '' $5
 }
 
 __build_packages() {
-  local pkg_type=$1
-  local os=$2
-  local package_name=$3
-  local chapel_version=$4
-  local package_version=$5
-  local docker_dir_name=$6
-  local docker_image_base=$7
-  local architecture_string=$8
+  local os=$1
+  local package_name=$2
+  local chapel_version=$3
+  local package_version=$4
+  local architecture_string=$5
+  local para=$6
+  local pkg_type=$(__package_type_from_os $os)
+  local docker_dir_name=$os
+  local docker_image_base=$(__docker_image_from_os $os)
 
-  # default to 1 core
-  local para=${9:-1}
+  if [ $pkg_type = "unknown" ]; then
+    echo "Unknown package type for OS $os"
+    return 1
+  fi
+  if [ -z "$docker_image_base" ]; then
+    echo "Unknown docker image base for OS $os"
+    return 1
+  fi
 
   __wget_chpl_release $chapel_version
 
   local package_dir="${CHPL_HOME}/util/packaging/${pkg_type}/${docker_dir_name}"
   local fill_script="${CHPL_HOME}/util/packaging/${pkg_type}/common/fill_docker_template.py"
-  __get_docker_tag $os $package_name $chapel_version $package_version
+  docker_tag=$(__get_docker_tag $os $package_name $chapel_version $package_version)
 
   pushd ${package_dir}
 
@@ -84,29 +160,36 @@ __build_packages() {
     --build-arg "DOCKER_DIR_NAME=$docker_dir_name" \
     --build-arg "DOCKER_IMAGE_NAME_FULL=$docker_image_name_full" \
     --build-arg "PARALLEL=$para" \
-    -t $__docker_tag \
+    -t $docker_tag \
     -f Dockerfile ../..
   popd
 }
 
 __build_image() {
   # use this to build a container image for local testing
-  local pkg_type=$1
-  local os=$2
-  local package_name=$3
-  local chapel_version=$4
-  local package_version=$5
-  local docker_dir_name=$6
-  local docker_image_base=$7
+  local os=$1
+  local package_name=$2
+  local chapel_version=$3
+  local package_version=$4
+  local para=$5
+  local pkg_type=$(__package_type_from_os $os)
+  local docker_dir_name=$os
+  local docker_image_base=$(__docker_image_from_os $os)
 
-  # default to 1 core
-  local para=${8:-1}
+  if [ $pkg_type = "unknown" ]; then
+    echo "Unknown package type for OS $os"
+    return 1
+  fi
+  if [ -z "$docker_image_base" ]; then
+    echo "Unknown docker image base for OS $os"
+    return 1
+  fi
 
   __wget_chpl_release $chapel_version
 
   local package_dir="${CHPL_HOME}/util/packaging/${pkg_type}/${docker_dir_name}"
   local fill_script="${CHPL_HOME}/util/packaging/${pkg_type}/common/fill_docker_template.py"
-  __get_docker_tag $os $package_name $chapel_version $package_version
+  docker_tag=$(__get_docker_tag $os $package_name $chapel_version $package_version)
 
   pushd ${package_dir}
 
@@ -137,7 +220,7 @@ __build_image() {
     --build-arg "DOCKER_DIR_NAME=$docker_dir_name" \
     --build-arg "DOCKER_IMAGE_NAME_FULL=$docker_image_name_full" \
     --build-arg "PARALLEL=$para" \
-    -t $__docker_tag \
+    -t $docker_tag \
     -f Dockerfile ../..
   popd
 }
@@ -147,9 +230,9 @@ __run_container() {
   local chapel_version=$3
   local package_version=$4
 
-  __get_docker_tag $os $package_name $chapel_version $package_version
+  docker_tag=$(__get_docker_tag $os $package_name $chapel_version $package_version)
 
-  docker run -it --rm $__docker_tag
+  docker run -it --rm $docker_tag
 }
 
 __test_package() {

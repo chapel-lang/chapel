@@ -92,14 +92,9 @@
 #endif
 #include "llvm/Transforms/Utils/Cloning.h"
 
-#if HAVE_LLVM_VER >= 140
 #include "llvm/MC/TargetRegistry.h"
 #include "llvm/Passes/OptimizationLevel.h"
 using LlvmOptimizationLevel = llvm::OptimizationLevel;
-#else
-#include "llvm/Support/TargetRegistry.h"
-using LlvmOptimizationLevel = llvm::PassBuilder::OptimizationLevel;
-#endif
 
 #ifdef HAVE_LLVM_RV
 #include "rv/passes.h"
@@ -1683,8 +1678,7 @@ void setupClang(GenInfo* info, std::string mainFile)
 
   // Create a compiler instance to handle the actual work.
   CompilerInstance* Clang = new CompilerInstance();
-  auto diagOptions =
-    chpl::util::wrapCreateAndPopulateDiagOpts(clangInfo->driverArgsCStrings);
+  auto diagOptions = clang::CreateAndPopulateDiagOpts(clangInfo->driverArgsCStrings);
   auto diagClient = new clang::TextDiagnosticPrinter(llvm::errs(),
                                                      &*diagOptions);
 #if LLVM_VERSION_MAJOR >= 20
@@ -1957,10 +1951,8 @@ static llvm::TargetOptions getTargetOptions(
     Options.AllowFPOpFusion = llvm::FPOpFusion::Standard;
   }
 
-#if HAVE_LLVM_VER >= 120
   Options.BinutilsVersion =
       llvm::TargetMachine::parseBinutilsVersion(CodeGenOpts.BinutilsVersion);
-#endif
 
   Options.UseInitArray = CodeGenOpts.UseInitArray;
   Options.DisableIntegratedAS = CodeGenOpts.DisableIntegratedAS;
@@ -1985,9 +1977,6 @@ static llvm::TargetOptions getTargetOptions(
   //Options.NoNaNsFPMath = LangOpts.NoHonorNaNs; -- set above
   Options.NoZerosInBSS = CodeGenOpts.NoZeroInitializedInBSS;
   //Options.UnsafeFPMath = LangOpts.UnsafeFPMath; -- set above
-#if HAVE_LLVM_VER <= 110
-  Options.StackAlignmentOverride = CodeGenOpts.StackAlignment;
-#endif
 
   Options.BBSections =
     llvm::StringSwitch<llvm::BasicBlockSection>(CodeGenOpts.BBSections)
@@ -2003,17 +1992,10 @@ static llvm::TargetOptions getTargetOptions(
     INT_FATAL("this clang configuration not supported");
   }
 
-#if HAVE_LLVM_VER >= 120
   Options.EnableMachineFunctionSplitter = CodeGenOpts.SplitMachineFunctions;
-#endif
 
   Options.FunctionSections = CodeGenOpts.FunctionSections;
   Options.DataSections = CodeGenOpts.DataSections;
-#if LLVM_VERSION_MAJOR == 12
-  // clang::CodeGenOptions::IgnoreXCOFFVisibility first appeared in
-  // LLVM version 12 and then went away in version 13.
-  Options.IgnoreXCOFFVisibility = CodeGenOpts.IgnoreXCOFFVisibility;
-#endif
   Options.UniqueSectionNames = CodeGenOpts.UniqueSectionNames;
   Options.UniqueBasicBlockSectionNames =
       CodeGenOpts.UniqueBasicBlockSectionNames;
@@ -2029,28 +2011,16 @@ static llvm::TargetOptions getTargetOptions(
 #endif
   Options.DebuggerTuning = CodeGenOpts.getDebuggerTuning();
   Options.EmitStackSizeSection = CodeGenOpts.StackSizeSection;
-#if HAVE_LLVM_VER >= 130
   Options.StackUsageOutput = CodeGenOpts.StackUsageOutput;
-#endif
   Options.EmitAddrsig = CodeGenOpts.Addrsig;
   Options.ForceDwarfFrameSection = CodeGenOpts.ForceDwarfFrameSection;
   Options.EmitCallSiteInfo = CodeGenOpts.EmitCallSiteInfo;
-#if HAVE_LLVM_VER >= 120
-  Options.EnableAIXExtendedAltivecABI = CodeGenOpts.EnableAIXExtendedAltivecABI;
-#if HAVE_LLVM_VER < 140
-  Options.PseudoProbeForProfiling = CodeGenOpts.PseudoProbeForProfiling;
-  Options.ValueTrackingVariableLocations =
-      CodeGenOpts.ValueTrackingVariableLocations;
-#endif
-#endif
 #if HAVE_LLVM_VER >= 170
   Options.XRayFunctionIndex = CodeGenOpts.XRayFunctionIndex;
 #else
   Options.XRayOmitFunctionIndex = CodeGenOpts.XRayOmitFunctionIndex;
 #endif
-#if HAVE_LLVM_VER >= 140
   Options.LoopAlignment = CodeGenOpts.LoopAlignment;
-#endif
 
   Options.MCOptions.SplitDwarfFile = CodeGenOpts.SplitDwarfFile;
   Options.MCOptions.MCRelaxAll = CodeGenOpts.RelaxAll;
@@ -2068,9 +2038,7 @@ static llvm::TargetOptions getTargetOptions(
   Options.MCOptions.MCFatalWarnings = CodeGenOpts.FatalWarnings;
   Options.MCOptions.MCNoWarn = CodeGenOpts.NoWarn;
   Options.MCOptions.AsmVerbose = CodeGenOpts.AsmVerbose;
-#if HAVE_LLVM_VER >= 120
   Options.MCOptions.Dwarf64 = CodeGenOpts.Dwarf64;
-#endif
   Options.MCOptions.PreserveAsmComments = CodeGenOpts.PreserveAsmComments;
   Options.MCOptions.ABIName = TargetOpts.ABI;
 
@@ -2084,9 +2052,7 @@ static llvm::TargetOptions getTargetOptions(
 #else
   Options.MCOptions.CommandLineArgs = CodeGenOpts.CommandLineArgs;
 #endif
-#if HAVE_LLVM_VER >= 130
   Options.DebugStrictDwarf = CodeGenOpts.DebugStrictDwarf;
-#endif
 
   return Options;
 }
@@ -2126,13 +2092,8 @@ static void setupModule()
 
   INT_ASSERT(info->module);
 
-#if HAVE_LLVM_VER >= 130
   clangInfo->asmTargetLayoutStr =
     clangInfo->Clang->getTarget().getDataLayoutString();
-#else
-  clangInfo->asmTargetLayoutStr =
-    clangInfo->Clang->getTarget().getDataLayout().getStringRepresentation();
-#endif
 
   // Set the target triple.
   const llvm::Triple &Triple =
@@ -2750,19 +2711,11 @@ void prepareCodegenLLVM()
 #endif
 }
 
-#if HAVE_LLVM_VER >= 140
 static void handleErrorLLVM(void* user_data, const char* reason,
                             bool gen_crash_diag)
 {
   INT_FATAL("llvm fatal error: %s", reason);
 }
-#else
-static void handleErrorLLVM(void* user_data, const std::string& reason,
-                            bool gen_crash_diag)
-{
-  INT_FATAL("llvm fatal error: %s", reason.c_str());
-}
-#endif
 
 struct ExternBlockInfo {
   GenInfo* gen_info;
@@ -2915,7 +2868,7 @@ static void helpComputeClangArgs(std::string& clangCC,
   StringSaver Saver(A);
 
   // get any args passed to CC/CXX and add them to the builtin clang invocation
-  SmallVector<const char *, 0> split;
+  SmallVector<const char *, 2> split;
   llvm::cl::TokenizeGNUCommandLine(CHPL_LLVM_CLANG_C, Saver, split);
   // set clangCC / clangCXX to just the first argument
   for (size_t i = 0; i < split.size(); i++) {
@@ -2973,12 +2926,14 @@ static void helpComputeClangArgs(std::string& clangCC,
     clangCCArgs.push_back(clangRequiredWarningFlags[i]);
   }
 
+#if HAVE_LLVM_VER >= 150
   if (usingGpuLocaleModel() &&
       getGpuCodegenType() == GpuCodegenType::GPU_CG_NVIDIA_CUDA) {
     // this is necessary for CUB 11. Once we drop CUDA 11 support, we can
     // probably remove this
     clangCCArgs.push_back("-Wno-deprecated-builtins");
   }
+#endif
 
   // Add debug flags
   if (debugCCode) {
@@ -3234,13 +3189,7 @@ void runClang(const char* just_parse_filename) {
   if (fDriverMakeBinaryPhase) {
     // Needed for makeBinary but is only otherwise run by the skipped
     // ExecuteAction below.
-#if HAVE_LLVM_VER >= 130
     clangInfo->Clang->createTarget();
-#else
-    clangInfo->Clang->setTarget(TargetInfo::CreateTargetInfo(
-        clangInfo->Clang->getDiagnostics(),
-        clangInfo->Clang->getInvocation().TargetOpts));
-#endif
 
     return;
   }
@@ -3418,12 +3367,8 @@ clang::FunctionDecl* getFunctionDeclClang(const char* name)
 llvm::Type* getTypeLLVM(const char* name)
 {
   GenInfo* info = gGenInfo;
-#if HAVE_LLVM_VER >= 120
   llvm::Type* t = llvm::StructType::getTypeByName(gContext->llvmContext(),
                                                   name);
-#else
-  llvm::Type* t = info->module->getTypeByName(name);
-#endif
 
   if( t ) return t;
 
@@ -4776,30 +4721,23 @@ static llvm::CodeGenFileType getCodeGenFileType() {
   }
 }
 
-static std::string findSiblingClangToolPath(const std::string &toolName) {
-  // Find path to a tool that is a sibling to clang
-  // note that if we have /path/to/clang-14, this logic
-  // will look for /path/to/${toolName}-14.
-  //
-  // If such suffixes do not turn out to matter in practice, it would
-  // be nice to update this code to use sys::path::parent_path().
-  std::vector<std::string> split;
-  std::string result = toolName;
-
-  splitStringWhitespace(CHPL_LLVM_CLANG_C, split);
+static std::string findSiblingClangToolPath(std::string_view toolName) {
+  BumpPtrAllocator A;
+  StringSaver Saver(A);
+  SmallVector<const char *, 2> split;
+  llvm::cl::TokenizeGNUCommandLine(CHPL_LLVM_CLANG_C, Saver, split);
   if (split.size() > 0) {
-    std::string tmp = split[0];
-    const char* clang = "clang";
-    auto pos = tmp.find(clang);
-    if (pos != std::string::npos) {
-      tmp.replace(pos, strlen(clang), toolName);
-      if (pathExists(tmp.c_str())) {
-        result = tmp;
+    auto clang = split[0];
+    auto parent = sys::path::parent_path(clang);
+    if (!parent.empty()) {
+      SmallString<128> path;
+      sys::path::append(path, parent, toolName);
+      if (pathExists(path.str())) {
+        return std::string(path);
       }
     }
   }
-
-  return result;
+  return std::string(toolName);
 }
 
 static void stripPtxDebugDirective(const std::string& artifactFilename) {
@@ -4986,11 +4924,7 @@ static void saveIrToBcFileIfNeeded(const std::string& filename,
     GenInfo* info = gGenInfo;
     std::error_code tmpErr;
     // Save the generated LLVM IR to the given file
-#if HAVE_LLVM_VER >= 120
     ToolOutputFile output(filename.c_str(), tmpErr, sys::fs::OF_None);
-#else
-    ToolOutputFile output(filename.c_str(), tmpErr, sys::fs::F_None);
-#endif
     if (tmpErr) {
       USR_FATAL("Could not open output file %s", filename.c_str());
     }
@@ -5311,11 +5245,7 @@ static void llvmEmitObjectFile(void) {
 
   // setup output file info
   std::error_code error;
-#if HAVE_LLVM_VER >= 120
   llvm::sys::fs::OpenFlags flags = llvm::sys::fs::OF_None;
-#else
-  llvm::sys::fs::OpenFlags flags = llvm::sys::fs::F_None;
-#endif
 
   // Make sure that we are generating PIC when we need to be.
   if (strcmp(CHPL_LIB_PIC, "pic") == 0) {

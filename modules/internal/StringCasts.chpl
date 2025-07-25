@@ -255,26 +255,16 @@ module StringCasts {
   //
   // complex
   //
+  @edition(first="preview")
+  operator :(x: chpl_anycomplex, type t:string) {
+    return chpl_fromComplexCastHelper(x, t);
+  }
+
+  @edition(last="2.0")
   operator :(x: chpl_anycomplex, type t:string) {
     if isNan(x.re) || isNan(x.im) then
       return "nan";
-    var re = (x.re):string;
-    var im: string;
-    var op: string;
-    if x.im < 0 {
-      im = (-x.im):string;
-      op = " - ";
-    } else if x.im == -0.0 && -0.0 != 0.0 { // Special accommodation for Seymour.
-      im = "0.0";
-      op = " - ";
-    } else {
-      im = (x.im):string;
-      op = " + ";
-    }
-    const ts0 = re + op;
-    const ts1 = ts0 + im;
-    const ret = ts1 + "i";
-    return ret;
+    return chpl_fromComplexCastHelper(x, t);
   }
 
 

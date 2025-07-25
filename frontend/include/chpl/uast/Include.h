@@ -95,7 +95,7 @@ class Include final : public AstNode {
   static owned<Include> build(Builder* builder, Location loc,
                               Decl::Visibility visibility,
                               bool isPrototype,
-                              UniqueString name);
+                              UniqueString name, Location nameLoc);
 
   /**
     Return the visibility of this include statement.

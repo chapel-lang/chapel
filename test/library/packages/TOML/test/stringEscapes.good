@@ -1,0 +1,13 @@
+Test with single quotes:
+"Foo, Bar"
+"Foo 	\ Bar"
+"Foo \ Bar"
+"Foo \'\"\\ Bar"
+Test with double quotes:
+"Foo, Bar"
+"Foo 	\ Bar"
+"Foo \ Bar"
+"Foo \'\"\\ Bar"
+Test with escaped quotes:
+"Foo, ' Bar"
+"Foo, " Bar"

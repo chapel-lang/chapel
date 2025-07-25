@@ -119,6 +119,23 @@ class TomlError : Error {
 }
 
 /*
+  Globally used regex patterns for parsing/reading TOML files.
+*/
+@chpldoc.nodoc
+param doubleQuotesPattern =  '"(?:[^"\\\\]|\\\\.)*"',
+  singleQuotesPattern = "'(?:[^'\\\\]|\\\\.)*'",
+  commentPattern = '\\#',
+  commaPattern = '\\,',
+  equalsPattern = '\\=',
+  bracketPattern = '\\[|\\]',
+  curlyPattern = '\\{|\\}',
+  digitPattern = '\\d+',
+  keysPattern = '^\\w+',
+  dtPattern = "^\\d{4}-\\d{2}-\\d{2}[ T]\\d{2}:\\d{2}:\\d{2}",
+  ldPattern = "^\\d{4}-\\d{2}-\\d{2}",
+  tiPattern = "^\\d{2}:\\d{2}:\\d{2}(.\\d{6,})?";
+
+/*
 Parser module with the Toml class for the Chapel TOML library.
 */
 module TomlParser {
@@ -129,6 +146,7 @@ module TomlParser {
   import IO.fileWriter;
   private use TOML.TomlReader;
   import TOML.TomlError;
+  import TOML;
   use Sort;
 
   /* Prints a line by line output of parsing process */
@@ -145,24 +163,22 @@ module TomlParser {
     var rootTable: shared Toml;
     var curTable: string;
 
-    const doubleQuotes = '"[^,]*?"',
-      singleQuotes = "'[^,]*?'",
-      bracket = '\\[|\\]',
-      digit = "\\d+",
-      keys = "^\\w+";
-    const Str = new regex(doubleQuotes + '|' + singleQuotes),
-      kv = new regex('|'.join(doubleQuotes, singleQuotes, digit, keys)),
-      dt = new regex('^\\d{4}-\\d{2}-\\d{2}[ T]\\d{2}:\\d{2}:\\d{2}$'),
+    const Str = new regex(TOML.doubleQuotesPattern + '|' +
+                          TOML.singleQuotesPattern),
+      kv = new regex('|'.join(TOML.doubleQuotesPattern,
+                              TOML.singleQuotesPattern,
+                              TOML.digitPattern, TOML.keysPattern)),
+      dt = new regex(TOML.dtPattern + "$"),
       realNum = new regex("\\+\\d*\\.\\d+|\\-\\d*\\.\\d+|\\d*\\.\\d+"),
-      ld = new regex('^\\d{4}-\\d{2}-\\d{2}$'),
-      ti = new regex('^\\d{2}:\\d{2}:\\d{2}(.\\d{6,})?$'),
+      ld = new regex(TOML.ldPattern + "$"),
+      ti = new regex(TOML.tiPattern + "$"),
       ints = new regex("(\\d+|\\+\\d+|\\-\\d+)"),
       inBrackets = new regex("(\\[.*?\\])"),
       corner = new regex("(\\[.+\\])"),
-      brackets = new regex('\\[|\\]'),
+      brackets = new regex(TOML.bracketPattern),
       whitespace = new regex("\\s"),
-      comment = new regex("(\\#)"),
-      comma = new regex("(\\,)");
+      comment = new regex("("+TOML.commentPattern+")"),
+      comma = new regex("("+TOML.commaPattern+")");
 
     var debugCounter = 1;
 
@@ -405,7 +421,7 @@ module TomlParser {
         }
         else if corner.match(val) {
           var token = getToken(source);
-          var value =  token.strip(bracket);
+          var value =  token.strip('[]');
           var toAdd = [']', value, '['];
           addToken(source, toAdd);
           return parseValue();
@@ -1126,6 +1142,7 @@ used to recursively hold tables and respective values
 module TomlReader {
  use List;
  import TOML.TomlError;
+ import TOML;
 
  private use Regex;
  private use IO;
@@ -1212,19 +1229,19 @@ module TomlReader {
       var linetokens: list(string);
       var nonEmptyChar: bool = false;
 
-      const doubleQuotes = '("[^,]*?")',           // ""
-            singleQuotes = "('[^,]*?')",           // ''
-            bracketContents = "(\\[\\w+\\])",   // [_]
-            brackets = "(\\[)|(\\])",           // []
+      param doubleQuotes = "("+TOML.doubleQuotesPattern+")", // ""
+            singleQuotes = "("+TOML.singleQuotesPattern+")", // ''
+            bracketContents = "(\\[\\w+\\])",                // [_]
+            brackets = "("+TOML.bracketPattern+")",          // []
             // TODO: fix table headers
-            //tblName = '(\\w+."[^"]+")',         // [somename."0.1.0"]
-            comments = "(\\#)",                 // #
-            commas = "(\\,)",                   // ,
-            equals = "(\\=)",                   // =
-            curly = "(\\{)|(\\})",              // {}
-            dt = "^\\d{4}-\\d{2}-\\d{2}[ T]\\d{2}:\\d{2}:\\d{2}",
-            ld = "^\\d{4}-\\d{2}-\\d{2}",
-            ti = "^\\d{2}:\\d{2}:\\d{2}(.\\d{6,})?";
+            //tblName = '(\\w+."[^"]+")',                    // [somename."0.1.0"]
+            comments = "("+TOML.commentPattern+")",          // #
+            commas = "("+TOML.commaPattern+")",              // ,
+            equals = "("+TOML.equalsPattern+")",             // =
+            curly = "("+TOML.curlyPattern+")",               // {}
+            dt = TOML.dtPattern,
+            ld = TOML.ldPattern,
+            ti = TOML.tiPattern;
 
       const pattern = new regex('|'.join(doubleQuotes,
                                          singleQuotes,

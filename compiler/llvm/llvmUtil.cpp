@@ -332,7 +332,6 @@ int64_t arrayVecN(llvm::Type *t)
     unsigned n = at->getNumElements();
     return n;
   } else if( t->isVectorTy() ) {
-#if HAVE_LLVM_VER >= 120
     unsigned n;
     if (llvm::FixedVectorType *vt = llvm::dyn_cast<llvm::FixedVectorType>(t)) {
       n = vt->getNumElements();
@@ -340,10 +339,6 @@ int64_t arrayVecN(llvm::Type *t)
       // Scalable vector type not handled here
       return -1;
     }
-#else
-    llvm::VectorType *vt = llvm::dyn_cast<llvm::VectorType>(t);
-    unsigned n = vt->getNumElements();
-#endif
     return n;
   } else {
     return -1;
@@ -524,11 +519,9 @@ llvm::Value *convertValueToType(llvm::IRBuilder<>* irBuilder,
       trackLLVMValue(store_cur);
 #if HAVE_LLVM_VER >= 150
       return trackLLVMValue(irBuilder->CreateLoad(newType, tmp_new));
-#elif HAVE_LLVM_VER >= 130
+#else
       return trackLLVMValue(irBuilder->CreateLoad(
                         tmp_new->getType()->getPointerElementType(), tmp_new));
-#else
-      return trackLLVMValue(irBuilder->CreateLoad(tmp_new));
 #endif
     }
   }
@@ -804,32 +797,18 @@ void nprint_view(const llvm::Metadata* arg) { list_view(arg); }
 #endif // if TRACK_LLVM_VALUES
 
 llvm::AttrBuilder llvmPrepareAttrBuilder(llvm::LLVMContext& ctx) {
-  #if HAVE_LLVM_VER >= 140
   llvm::AttrBuilder ret(ctx);
-  #else
-  llvm::AttrBuilder ret;
-  std::ignore = ctx;
-  #endif
   return ret;
 }
 
 void llvmAddAttr(llvm::LLVMContext& ctx, llvm::AttributeList& attrs,
             size_t idx,
             llvm::AttrBuilder& b) {
-  #if HAVE_LLVM_VER >= 140
   attrs = attrs.addAttributesAtIndex(ctx, idx, b);
-  #else
-  attrs = attrs.addAttributes(ctx, idx, b);
-  #endif
 }
 
 void llvmAttachStructRetAttr(llvm::AttrBuilder& b, llvm::Type* returnTy) {
-  #if HAVE_LLVM_VER >= 130
   b.addStructRetAttr(returnTy);
-  #else
-  b.addAttribute(llvm::Attribute::StructRet);
-  std::ignore = returnTy;
-  #endif
 
   #if HAVE_LLVM_VER >= 180
   // matches attributes added by clang with sret
@@ -841,10 +820,8 @@ void llvmAttachStructRetAttr(llvm::AttrBuilder& b, llvm::Type* returnTy) {
 bool isOpaquePointer(llvm::Type* ty) {
 #if HAVE_LLVM_VER >= 170
   return ty->isPointerTy();
-#elif HAVE_LLVM_VER >= 140
-  return ty->isOpaquePointerTy();
 #else
-  return false; // older LLVMs did not have opaque pointers
+  return ty->isOpaquePointerTy();
 #endif
 }
 

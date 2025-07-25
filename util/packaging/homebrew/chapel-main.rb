@@ -24,6 +24,16 @@ class Chapel < Formula
     deps.map(&:to_formula).find { |f| f.name.match? "^llvm" }
   end
 
+  # determine the C backend to use based on the system
+  def cbackend
+    on_macos do
+      return "clang"
+    end
+    on_linux do
+      return "gnu"
+    end
+  end
+
   def install
     # Always detect Python used as dependency rather than needing aliased Python formula
     python = "python3.13"
@@ -52,6 +62,7 @@ class Chapel < Formula
       CHPL_TARGET_MEM=jemalloc
       CHPL_TARGET_JEMALLOC=system
       CHPL_HWLOC=system
+      CHPL_LLVM=system
       CHPL_LLVM_CONFIG=#{llvm.opt_bin}/llvm-config
       CHPL_LLVM_GCC_PREFIX=none
     EOS
@@ -60,12 +71,11 @@ class Chapel < Formula
     # https://github.com/Homebrew/legacy-homebrew/pull/35166
     cd libexec do
       system "./util/printchplenv", "--all"
-      with_env(CHPL_LLVM: "none") do
+      system "make"
+      with_env(CHPL_TARGET_COMPILER: cbackend) do
         system "make"
       end
-      with_env(CHPL_LLVM: "system") do
-        system "make"
-      end
+
       with_env(CHPL_PIP_FROM_SOURCE: "1") do
         system "make", "chpldoc"
         system "make", "chplcheck"
@@ -100,16 +110,16 @@ class Chapel < Formula
     ENV["CHPL_INCLUDE_PATH"] = HOMEBREW_PREFIX/"include"
     ENV["CHPL_LIB_PATH"] = HOMEBREW_PREFIX/"lib"
     cd libexec do
-      with_env(CHPL_LLVM: "system") do
-        system "util/test/checkChplInstall"
-        system "util/test/checkChplDoc"
-      end
-      with_env(CHPL_LLVM: "none") do
+      system "util/test/checkChplInstall"
+      system "util/test/checkChplDoc"
+      with_env(CHPL_TARGET_COMPILER: cbackend) do
         system "util/test/checkChplInstall"
         system "util/test/checkChplDoc"
       end
     end
     system bin/"chpl", "--print-passes", "--print-commands", libexec/"examples/hello.chpl"
+    system bin/"chpl", "--target-compiler", cbackend, "--print-passes",
+           "--print-commands", libexec/"examples/hello.chpl"
     system bin/"chpldoc", "--version"
     system bin/"mason", "--version"
 

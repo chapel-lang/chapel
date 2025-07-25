@@ -19,9 +19,8 @@ Base Language Features
    Error Handling Modes and Prototype Modules <errorHandling>
    First-class Procedures in Chapel <firstClassProcedures>
    Including Sub-Modules from Separate Files <module_include>
-   main() Functions <main>
+   The 'main()' Function <main>
    Module Search Paths <module_search>
-   Operator Methods <operatorMethods>
    The 'manage' Statement <manage>
    Attributes <attributes>
    Interfaces <interfaces>

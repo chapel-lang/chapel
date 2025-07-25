@@ -1,0 +1,2 @@
+# explicitly checks this in the compopts file.  Remove when pre-edition is removed
+COMPOPTS <= --no-compiler-driver

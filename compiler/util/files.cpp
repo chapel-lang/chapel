@@ -61,6 +61,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include "llvm/Support/Path.h"
+#include "llvm/Support/FileSystem.h"
+
 
 std::string executableFilename;
 std::string libmodeHeadername;
@@ -1103,22 +1106,12 @@ void expandInstallationPaths(std::vector<std::string>& args) {
   }
 }
 
-bool isDirectory(const char* path)
-{
-  struct stat stats;
-  if (stat(path, &stats) == 0 && (stats.st_mode & S_IFMT) == S_IFDIR)
-    return true;
-
-  return false;
+bool isDirectory(std::string_view path) {
+  return llvm::sys::fs::is_directory(path);
 }
 
-bool pathExists(const char* path)
-{
-  struct stat stats;
-  if (stat(path, &stats) == 0)
-    return true;
-
-  return false;
+bool pathExists(std::string_view path) {
+  return llvm::sys::fs::exists(path);
 }
 
 // would just use realpath, but it is not supported on all platforms.

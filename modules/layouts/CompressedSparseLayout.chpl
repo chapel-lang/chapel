@@ -32,15 +32,10 @@
   A sparse domain can be declared using these layouts using syntax
   like the following:
 
-    .. code-block:: chapel
-
-      use CompressedSparseLayout;
-
-      const D = {1..m, 1..n},  // a dense domain defining a bounding box
-            CSRDomain: sparse subdomain(D) dmapped new csrLayout() = ...;
-
-      var CSRArray: [CSRDomain] real;
-
+  .. literalinclude:: ../../../../test/distributions/doc-examples/CompressedSparseLayoutExamples.chpl
+     :language: chapel
+     :start-after: START_EXAMPLE
+     :end-before: STOP_EXAMPLE
 
   In addition to the standard methods and operators defined on sparse
   domains and arrays in Chapel, these layouts also support the

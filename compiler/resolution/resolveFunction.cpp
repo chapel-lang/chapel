@@ -1117,7 +1117,9 @@ static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
 
           call->insertAtTail(unrefCall);
 
-          if (array && isAliasingArrayType(rhs->getValType()) == false) {
+          SymExpr* rhsse = toSymExpr(rhs);
+          if (array && isAliasingArrayType(rhs->getValType()) == false &&
+              (rhsse == NULL || !rhsse->symbol()->hasFlag(FLAG_IS_ARRAY_VIEW))) {
             // If the function does not have this flag, this must
             // be a non-view array. Remove the unref call.
             unrefCall->replace(rhs->copy());

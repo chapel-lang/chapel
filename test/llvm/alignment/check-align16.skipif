@@ -1,2 +1,0 @@
-# compiler segfaults with LLVM 12
-CHPL_LLVM_VERSION==12

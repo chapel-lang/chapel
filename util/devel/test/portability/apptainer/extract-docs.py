@@ -106,13 +106,13 @@ def fixname(subdir):
 def extract_sdef_commands(sdef):
     cmds = [ ]
     with open(sdef) as file:
-        inPost = False
+        inSectionToRead = False
         for line in file:
-            if line.startswith("%post"):
-                inPost = True
+            if line.startswith("%post") or line.startswith("%environment"):
+                inSectionToRead = True
             elif line.startswith("%"):
-                inPost = False
-            elif inPost:
+                inSectionToRead = False
+            elif inSectionToRead:
                 line = line.strip()
                 if line.startswith("/provision-scripts/"):
                     spath = line[1:] # remove leading /

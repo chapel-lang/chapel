@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+# remove memLeaks
+sed '/memLeaks/d' $2 > $2.tmp
+mv $2.tmp $2

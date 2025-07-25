@@ -558,6 +558,8 @@ class NodeAndRange:
             self.rng = location_to_range(self.node.field_location())
         elif isinstance(self.node, chapel.NamedDecl):
             self.rng = location_to_range(self.node.name_location())
+        elif isinstance(self.node, chapel.Include):
+            self.rng = location_to_range(self.node.name_location())
         else:
             self.rng = location_to_range(self.node.location())
 
@@ -819,7 +821,9 @@ class FileInfo:
         self.context.global_uses[uid].append(refs)
         return refs
 
-    def _note_reference(self, node: Union[chapel.Dot, chapel.Identifier]):
+    def _note_reference(
+        self, node: Union[chapel.Dot, chapel.Identifier, chapel.Include]
+    ):
         """
         Given a node that can refer to another node, note what it refers
         to in by updating the 'use' segment table and the list of uses.
@@ -876,6 +880,10 @@ class FileInfo:
 
     @enter
     def _enter_Dot(self, node: chapel.Dot):
+        self._note_reference(node)
+
+    @enter
+    def _enter_Include(self, node: chapel.Include):
         self._note_reference(node)
 
     @enter
@@ -1395,32 +1403,39 @@ class CLSConfig:
             args_for_setting_config_path=["--config", "-c"],
         )
 
-        def add_bool_flag(name: str, dest: str, default: bool):
-            self.parser.add_argument(
-                f"--{name}", dest=dest, action="store_true"
-            )
-            self.parser.add_argument(
-                f"--no-{name}", dest=dest, action="store_false"
-            )
-            self.parser.set_defaults(**{dest: default})
-
-        add_bool_flag("resolver", "resolver", False)
+        chplcheck.config.add_bool_flag(
+            self.parser, "resolver", "resolver", False
+        )
         self.parser.add_argument(
             "--std-module-root", default="", help=configargparse.SUPPRESS
         )
         self.parser.add_argument(
             "--module-dir", "-M", action="append", default=[]
         )
-        add_bool_flag("type-inlays", "type_inlays", True)
-        add_bool_flag("param-inlays", "param_inlays", True)
-        add_bool_flag("literal-arg-inlays", "literal_arg_inlays", True)
-        add_bool_flag("dead-code", "dead_code", True)
-        add_bool_flag("evaluate-expressions", "eval_expressions", True)
-        add_bool_flag("show-instantiations", "show_instantiations", True)
+        chplcheck.config.add_bool_flag(
+            self.parser, "type-inlays", "type_inlays", True
+        )
+        chplcheck.config.add_bool_flag(
+            self.parser, "param-inlays", "param_inlays", True
+        )
+        chplcheck.config.add_bool_flag(
+            self.parser, "literal-arg-inlays", "literal_arg_inlays", True
+        )
+        chplcheck.config.add_bool_flag(
+            self.parser, "dead-code", "dead_code", True
+        )
+        chplcheck.config.add_bool_flag(
+            self.parser, "evaluate-expressions", "eval_expressions", True
+        )
+        chplcheck.config.add_bool_flag(
+            self.parser, "show-instantiations", "show_instantiations", True
+        )
         self.parser.add_argument("--end-markers", default="none")
         self.parser.add_argument("--end-marker-threshold", type=int, default=10)
 
-        add_bool_flag("chplcheck", "do_linting", False)
+        chplcheck.config.add_bool_flag(
+            self.parser, "chplcheck", "do_linting", False
+        )
         if chplcheck:
             chplcheck.config.Config.add_arguments(self.parser, "chplcheck-")
 
