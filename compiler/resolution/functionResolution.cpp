@@ -5713,9 +5713,6 @@ static FnSymbol* adjustAndResolveForwardedCall(CallExpr* call, ForwardingStmt* d
   tgt->addFlag(FLAG_MAYBE_REF);
   tgt->addFlag(FLAG_MAYBE_TYPE);
   DefExpr* defTgt = new DefExpr(tgt);
-
-  // note: cycle detection uses the name of tgt
-  // as well as the fact that it's 1st in the block
   callStmt->insertBefore(defTgt);
 
   // Set the target
@@ -5745,37 +5742,13 @@ static FnSymbol* adjustAndResolveForwardedCall(CallExpr* call, ForwardingStmt* d
   return ret;
 }
 
-static void detectForwardingCycle(CallExpr* call) {
-  BlockStmt* cur = toBlockStmt(call->getStmtExpr()->parentExpr);
-  DefExpr* firstDef = NULL;
-  while (cur != NULL) {
-    DefExpr* def = toDefExpr(cur->body.head);
-    if (def == NULL || def->sym->name != astr_chpl_forward_tgt)
-      return; // not a cycle
-
-    if (firstDef == NULL) {
-      firstDef = def;
-      INT_ASSERT(firstDef->sym->type && firstDef->sym->type != dtUnknown);
-    } else {
-      // If firstDef has same type as def, cycle is found.
-      if (firstDef->sym->type == def->sym->type) {
-        Type* t = canonicalDecoratedClassType(firstDef->sym->getValType());
-        TypeSymbol* ts = t->symbol;
-        USR_FATAL_CONT(def, "forwarding cycle detected");
-        USR_PRINT(ts, "for the type %s", ts->name);
-        USR_STOP();
-      }
-    }
-    cur = toBlockStmt(cur->parentExpr);
-  }
-}
-
+llvm::SmallVector<std::tuple<AggregateType*, const char*, const char*>, 4> forwardCallCycleSet;
 
 // Returns a relevant FnSymbol if it worked
 static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState) {
   CallExpr* call = info.call;
-  const char* calledName = info.name;
-  const char* inFnName = call->getFunction()->name;
+  const char* calledName = astr(info.name);
+  const char* inFnName = astr(call->getFunction()->name);
   Expr* receiver = call->get(2);
   Type* t = receiver->getValType();
   AggregateType* at = toAggregateType(canonicalDecoratedClassType(t));
@@ -5806,7 +5779,24 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState) 
   }
 
   // Detect cycles
-  detectForwardingCycle(call);
+  {
+    auto key = std::make_tuple(at, calledName, inFnName);
+    auto it = std::find(forwardCallCycleSet.begin(),
+                        forwardCallCycleSet.end(), key);
+    if (it != forwardCallCycleSet.end()) {
+      // If we have seen this type before, then we have a cycle.
+      // Note: this is not a perfect cycle detection, but it works
+      // for the current use cases.
+      USR_FATAL_CONT(call, "forwarding cycle detected");
+      for (auto& it : forwardCallCycleSet) {
+        auto cycleAt = std::get<0>(it);
+        USR_PRINT(cycleAt, "forwarding cycle includes type '%s'",
+                  cycleAt->symbol->name);
+      }
+      USR_STOP();
+    }
+    forwardCallCycleSet.push_back(key);
+  }
 
   // Try each of the forwarding clauses to see if any get us
   // a match.
@@ -5837,9 +5827,7 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState) 
     BlockStmt* block = new BlockStmt(forwardedCall, BLOCK_SCOPELESS);
     call->getStmtExpr()->insertBefore(block);
 
-    FnSymbol* fn = NULL;
-    fn = adjustAndResolveForwardedCall(forwardedCall, delegate, methodName);
-
+    auto fn = adjustAndResolveForwardedCall(forwardedCall, delegate, methodName);
     if (fn) {
       if (bestFn == NULL) {
         bestFn = fn;
@@ -5889,6 +5877,7 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState) 
       bestBlock->flattenAndRemove();
     }
   }
+  forwardCallCycleSet.clear();
 
   return bestFn;
 }
