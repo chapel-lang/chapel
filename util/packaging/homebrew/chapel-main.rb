@@ -1,3 +1,6 @@
+# typed: strict
+# frozen_string_literal: true
+
 class Chapel < Formula
   include Language::Python::Shebang
 
@@ -75,16 +78,20 @@ class Chapel < Formula
       with_env(CHPL_TARGET_COMPILER: cbackend) do
         system "make"
       end
-      with_env(CHPL_COMM: "gasnet", CHPL_COMM_SUBSTRATE: "udp",
-        CHPL_GASNET_CFG_OPTIONS: "--disable-auto-conduit-detect --enable-udp --enable-smp"
+      with_env(
+        CHPL_COMM:               "gasnet",
+        CHPL_COMM_SUBSTRATE:     "udp",
+        CHPL_GASNET_CFG_OPTIONS: "--disable-auto-conduit-detect --enable-udp --enable-smp",
       ) do
         system "make"
         with_env(CHPL_TARGET_COMPILER: cbackend) do
           system "make"
         end
       end
-      with_env(CHPL_COMM: "gasnet", CHPL_COMM_SUBSTRATE: "smp",
-        CHPL_GASNET_CFG_OPTIONS: "--disable-auto-conduit-detect --enable-udp --enable-smp"
+      with_env(
+        CHPL_COMM:               "gasnet",
+        CHPL_COMM_SUBSTRATE:     "smp",
+        CHPL_GASNET_CFG_OPTIONS: "--disable-auto-conduit-detect --enable-udp --enable-smp",
       ) do
         system "make"
         with_env(CHPL_TARGET_COMPILER: cbackend) do
@@ -136,7 +143,27 @@ class Chapel < Formula
     EOS
     chplrun_udp.chmod 0755
     bin.install_symlink chplrun_udp => "chplrun-udp"
+  end
 
+  def post_install
+    ohai "Chapel has been installed successfully!"
+    puts <<~EOS
+      By default, compiled Chapel programs will be single-locale only. There are
+      two ways to compile and run multi-locale Chapel programs locally:
+
+      Compile your program with:
+        `chpl --comm=gasnet --comm-substrate=smp`
+
+      OR
+
+      Compile your program with:
+        `chpl --comm=gasnet --comm-substrate=udp`
+      And then run it with:
+        `chplrun-udp ./your_program_name`
+
+      To simulate GPU execution, you can compile your program with:
+        `chpl --locale-model=gpu --gpu=cpu`
+    EOS
   end
 
   test do
@@ -150,9 +177,13 @@ class Chapel < Formula
         system "util/test/checkChplInstall"
       end
       with_env(CHPL_COMM: "gasnet", CHPL_COMM_SUBSTRATE: "udp") do
-        with_env(GASNET_SPAWNFN: "L", GASNET_ROUTE_OUTPUT: "0",
-          GASNET_QUIET: "Y", GASNET_MASTERIP: "127.0.0.1",
-          GASNET_WORKERIP: "127.0.0.0", CHPL_RT_OVERSUBSCRIBED: "yes"
+        with_env(
+          GASNET_SPAWNFN:         "L",
+          GASNET_ROUTE_OUTPUT:    "0",
+          GASNET_QUIET:           "Y",
+          GASNET_MASTERIP:        "127.0.0.1",
+          GASNET_WORKERIP:        "127.0.0.0",
+          CHPL_RT_OVERSUBSCRIBED: "yes",
         ) do
           system "util/test/checkChplInstall"
           with_env(CHPL_TARGET_COMPILER: cbackend) do
@@ -180,26 +211,5 @@ class Chapel < Formula
     # chpl-language-server will hang indefinitely waiting for a LSP client
     system bin/"chplcheck", "--list-rules"
     system bin/"chplcheck", libexec/"examples/hello.chpl"
-  end
-
-  def post_install
-    ohai "Chapel has been installed successfully!"
-    puts <<~EOS
-      By default, compiled Chapel programs will be single-locale only. There are
-      two ways to compile and run multi-locale Chapel programs locally:
-
-      Compile your program with:
-        `chpl --comm=gasnet --comm-substrate=smp`
-
-      OR
-
-      Compile your program with:
-        `chpl --comm=gasnet --comm-substrate=udp`
-      And then run it with:
-        `chplrun-udp ./your_program_name`
-
-      To simulate GPU execution, you can compile your program with:
-        `chpl --locale-model=gpu --gpu=cpu`
-    EOS
   end
 end
