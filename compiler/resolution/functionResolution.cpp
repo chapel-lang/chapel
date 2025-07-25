@@ -5742,12 +5742,12 @@ static FnSymbol* adjustAndResolveForwardedCall(CallExpr* call, ForwardingStmt* d
   return ret;
 }
 
-llvm::SmallVector<AggregateType*, 8> forwardCallCycleSet;
+llvm::SmallVector<std::pair<AggregateType*, const char*>, 4> forwardCallCycleSet;
 
 // Returns a relevant FnSymbol if it worked
 static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState) {
   CallExpr* call = info.call;
-  const char* calledName = info.name;
+  const char* calledName = astr(info.name);
   const char* inFnName = call->getFunction()->name;
   Expr* receiver = call->get(2);
   Type* t = receiver->getValType();
@@ -5780,20 +5780,22 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState) 
 
   // Detect cycles
   {
+    auto key = std::make_pair(at, calledName);
     auto it = std::find(forwardCallCycleSet.begin(),
-                        forwardCallCycleSet.end(), at);
+                        forwardCallCycleSet.end(), key);
     if (it != forwardCallCycleSet.end()) {
       // If we have seen this type before, then we have a cycle.
       // Note: this is not a perfect cycle detection, but it works
       // for the current use cases.
       USR_FATAL_CONT(call, "forwarding cycle detected");
-      for (auto& cycleAt : forwardCallCycleSet) {
+      for (auto& it : forwardCallCycleSet) {
+        auto cycleAt = it.first;
         USR_PRINT(cycleAt, "forwarding cycle includes type '%s'",
                   cycleAt->symbol->name);
       }
       USR_STOP();
     }
-    forwardCallCycleSet.push_back(at);
+    forwardCallCycleSet.push_back(key);
   }
 
   // Try each of the forwarding clauses to see if any get us
@@ -5825,9 +5827,7 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState) 
     BlockStmt* block = new BlockStmt(forwardedCall, BLOCK_SCOPELESS);
     call->getStmtExpr()->insertBefore(block);
 
-    FnSymbol* fn = NULL;
-    fn = adjustAndResolveForwardedCall(forwardedCall, delegate, methodName);
-
+    auto fn = adjustAndResolveForwardedCall(forwardedCall, delegate, methodName);
     if (fn) {
       if (bestFn == NULL) {
         bestFn = fn;
