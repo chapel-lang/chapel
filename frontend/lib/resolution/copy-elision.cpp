@@ -23,6 +23,7 @@
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/resolution-types.h"
 #include "chpl/resolution/scope-queries.h"
+#include "chpl/types/Type.h"
 #include "chpl/types/ClassType.h"
 #include "chpl/uast/all-uast.h"
 
@@ -160,20 +161,6 @@ bool FindElidedCopies::hasCrossTypeInitAssignWithIn(
   return false;
 }
 
-static bool isRecordLike(const Type* t) {
-  if (auto ct = t->toClassType()) {
-    auto decorator = ct->decorator();
-    if (! (decorator.isBorrowed() || decorator.isUnmanaged())) {
-      return true;
-    }
-  } else if (t->isRecordType() || t->isUnionType()) {
-    return true;
-  }
-  // TODO: tuples?
-
-  return false;
-}
-
 bool
 FindElidedCopies::copyElisionAllowedForTypes(const QualifiedType& lhsType,
                                              const QualifiedType& rhsType,
@@ -185,7 +172,7 @@ FindElidedCopies::copyElisionAllowedForTypes(const QualifiedType& lhsType,
       return true;
     } else if (lhsType.isUnknown() || rhsType.isUnknown()) {
       return false;
-    } else if (isRecordLike(lhsType.type())) {
+    } else if (lhsType.type()->isRecordLike()) {
       // check to see if an there is an init= to initialize
       // lhsType from rhsType but that uses the 'in' intent on the
       // formal.

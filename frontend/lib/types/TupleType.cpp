@@ -224,8 +224,8 @@ const TupleType* TupleType::toValueTuple(Context* context, bool makeConst) const
       allValue = false;
     allConst &= elementType(i).isConst();
     if (eltType.type() && eltType.type()->isTupleType()) {
-      // Conservatively throw off 'allValue' because the nested tuple might
-      // have a reference inside it.
+      // Conservatively throw off 'allValue' and 'allConst', because the nested
+      // tuple might have a reference or non-const element inside it.
       allValue = false;
       allConst = false;
     }
@@ -262,8 +262,8 @@ const TupleType* TupleType::toReferentialTuple(Context* context, bool makeConst)
     allConst &= elementType(i).isConst();
 
     if (eltType.type() && eltType.type()->isTupleType()) {
-      // Conservatively throw off 'allRef' because the nested tuple might
-      // have a reference inside it.
+      // Conservatively throw off 'allRef' and 'allConst', because the nested
+      // tuple might have a non-reference or non-const element inside it.
       allRef = false;
       allConst = false;
     }

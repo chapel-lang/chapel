@@ -190,7 +190,6 @@ bool CallInitDeinit::isCallProducingValue(const AstNode* rhsAst,
   return rv.byAst(rhsAst).toId().isEmpty() && !isRef(rhsType.kind());
 }
 
-
 std::tuple<CallInfo, CallScopeInfo>
 setupCallForCopyOrMove(Resolver& resolver,
                        const AstNode* ast,
@@ -202,6 +201,7 @@ setupCallForCopyOrMove(Resolver& resolver,
   std::vector<CallInfoActual> actuals;
   const Scope* scope = scopeForId(resolver.context, ast->id());
   auto inScopes = CallScopeInfo::forNormalCall(scope, resolver.poiScope);
+  CallInfo ci;
 
   if (!lhsType.isUnknown() &&
       (lhsType.type()->isArrayType() ||
@@ -220,13 +220,12 @@ setupCallForCopyOrMove(Resolver& resolver,
                                      UniqueString()));
     outAsts.push_back(nullptr);
 
-    auto ci = CallInfo (/* name */ freeFn,
+    ci = CallInfo (/* name */ freeFn,
                         /* calledType */ QualifiedType(),
                         /* isMethodCall */ false,
                         /* hasQuestionArg */ false,
                         /* isParenless */ false,
                         std::move(actuals));
-    return { ci, inScopes };
   } else {
     // For other types, use `init=`.
     auto varArg = QualifiedType(QualifiedType::VAR, lhsType.type(), lhsType.param());
@@ -234,14 +233,15 @@ setupCallForCopyOrMove(Resolver& resolver,
     outAsts.push_back(ast);
     actuals.push_back(CallInfoActual(rhsType, UniqueString()));
     outAsts.push_back(rhsAst);
-    auto ci = CallInfo (/* name */ USTR("init="),
+    ci = CallInfo (/* name */ USTR("init="),
                         /* calledType */ QualifiedType(),
                         /* isMethodCall */ true,
                         /* hasQuestionArg */ false,
                         /* isParenless */ false,
                         actuals);
-    return { ci, inScopes };
   }
+
+  return { ci, inScopes };
 }
 
 void CallInitDeinit::analyzeReturnedExpr(ResolvedExpression& re,
@@ -269,11 +269,12 @@ void CallInitDeinit::analyzeReturnedExpr(ResolvedExpression& re,
     }
   }
 
+  auto kind = re.type().kind();
   if (fnReturnsRegularValue) {
     ID toId = re.toId(); // what variable was returned/yielded?
     if (!toId.isEmpty()) {
       if (resolver.symbol->id().contains(toId)) { // is it a local variable?
-        if (isValue(re.type().kind())) {
+        if (isValue(kind)) {
           if (returnOrYield->isYield()) {
             // for a yield, it depends on if the yield was copy elided
             if (elidedCopyFromIds.count(returnOrYield->id()) > 0) {
@@ -300,9 +301,13 @@ void CallInitDeinit::analyzeReturnedExpr(ResolvedExpression& re,
       }
     } else {
       // it wasn't a simple variable
-      // consider the type of the returned expression.
-      auto kind = re.type().kind();
-      if (isValue(kind)) {
+      // consider the type and kind of the returned expression.
+      auto type = re.type().type();
+      if (type && type->isTupleType()) {
+        // this is a tuple expression, therefore a referential tuple, and
+        // we need to init= a value tuple to return
+        needsCopyOrConv = true;
+      } else if (isValue(kind)) {
         // no action required to return a value expression by value
         // e.g. return makeSomeRecord();
       } else if (isRef(kind)) {
