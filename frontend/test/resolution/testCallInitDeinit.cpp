@@ -1986,7 +1986,7 @@ static void test30() {
     });
 }
 
-// Split-init with tuple destructuring, copying out of tuple
+// Assignment with tuple destructuring, copying out of tuple
 static void test31() {
   testActions("test31",
     R""""(
@@ -1997,8 +1997,8 @@ static void test31() {
 
           var tup = (1, r);
 
-          var a : int;
-          var b : R;
+          var a = 1;
+          var b = new R();
           (a, b) = tup;
           tup;
         }
@@ -2006,15 +2006,16 @@ static void test31() {
     )"""",
     {
       {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
-      {AssociatedAction::INIT_OTHER, "tup", ""},
-      {AssociatedAction::ASSIGN,     "M.test@12", ""},
-      {AssociatedAction::COPY_INIT,  "b", ""},
+      {AssociatedAction::INIT_OTHER, "tup",         ""},
+      {AssociatedAction::NEW_INIT,   "M.test@12",   ""},
+      {AssociatedAction::ASSIGN,     "M.test@14",   ""},
+      {AssociatedAction::COPY_INIT,  "b",           ""},
       {AssociatedAction::DEINIT,     "M.test@18",   "r"},
       {AssociatedAction::DEINIT,     "M.test@18",   "b"}
     });
 }
 
-// Split-init with tuple destructuring, moving out of tuple
+// Assignment with tuple destructuring, moving out of tuple
 static void test32() {
   testActions("test32",
     R""""(
@@ -2025,21 +2026,22 @@ static void test32() {
 
           var tup = (1, r);
 
-          var a : int;
-          var b : R;
+          var a = 1;
+          var b = new R();
           (a, b) = tup;
         }
       }
     )"""",
     {
       {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
-      {AssociatedAction::INIT_OTHER, "tup", ""},
-      {AssociatedAction::ASSIGN,     "M.test@12", ""},
-      {AssociatedAction::DEINIT,     "M.test@18",   "b"}
+      {AssociatedAction::INIT_OTHER, "tup",         ""},
+      {AssociatedAction::NEW_INIT,   "M.test@12",   ""},
+      {AssociatedAction::ASSIGN,     "M.test@14",   ""},
+      {AssociatedAction::DEINIT,     "M.test@18",   "b"},
     });
 }
 
-// Declaring with tuple destructuring, copying out of tuple
+// Init with tuple destructuring, copying out of tuple
 static void test33() {
   testActions("test33",
     R""""(
@@ -2057,14 +2059,14 @@ static void test33() {
     )"""",
     {
       {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
-      {AssociatedAction::INIT_OTHER, "tup", ""},
-      {AssociatedAction::COPY_INIT,  "b", ""},
+      {AssociatedAction::INIT_OTHER, "tup",         ""},
+      {AssociatedAction::COPY_INIT,  "b",           ""},
       {AssociatedAction::DEINIT,     "M.test@18",   "r"},
       {AssociatedAction::DEINIT,     "M.test@18",   "b"}
     });
 }
 
-// Declaring with tuple destructuring, moving out of tuple
+// Init with tuple destructuring, moving out of tuple
 static void test34() {
   testActions("test34",
     R""""(
@@ -2081,7 +2083,7 @@ static void test34() {
     )"""",
     {
       {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
-      {AssociatedAction::INIT_OTHER, "tup", ""},
+      {AssociatedAction::INIT_OTHER, "tup",         ""},
       {AssociatedAction::DEINIT,     "M.test@18",   "r"},
       {AssociatedAction::DEINIT,     "M.test@18",   "b"}
     });
