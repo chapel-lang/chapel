@@ -87,7 +87,7 @@ static void test3() {
                   var x = (r, r);
                 )"""");
 
-  assert(qt.kind() == QualifiedType::CONST_VAR);
+  assert(qt.kind() == QualifiedType::CONST_REF);
   assert(qt.type()->isTupleType());
   auto tt = qt.type()->toTupleType();
   assert(tt->numElements() == 2);
@@ -1076,8 +1076,7 @@ static void test25() {
 
 static void test26() {
   printf("%s\n", __FUNCTION__);
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program =
@@ -1105,8 +1104,7 @@ static void test26() {
 
 static void test27() {
   printf("%s\n", __FUNCTION__);
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program =
@@ -1125,8 +1123,7 @@ static void test27() {
 // This is private issue #6382.
 static void test28() {
   printf("%s\n", __FUNCTION__);
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program =
@@ -1154,8 +1151,7 @@ static void test28() {
 
 static void test29() {
   printf("%s\n", __FUNCTION__);
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program =
@@ -1198,8 +1194,7 @@ static void test29() {
 
 static void test30() {
   printf("%s\n", __FUNCTION__);
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program =
@@ -1235,8 +1230,7 @@ static void test30() {
 
 static void test31() {
   printf("%s\n", __FUNCTION__);
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program =
@@ -1265,8 +1259,7 @@ static void test31() {
 
 static void test32() {
   printf("%s\n", __FUNCTION__);
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program =
@@ -1293,8 +1286,7 @@ static void test32() {
 
 static void test33() {
   printf("%s\n", __FUNCTION__);
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program =
@@ -1319,8 +1311,7 @@ static void test33() {
 
 static void test34() {
   printf("%s\n", __FUNCTION__);
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program =

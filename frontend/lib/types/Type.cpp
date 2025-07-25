@@ -245,10 +245,9 @@ bool Type::isRecordLike() const {
           decorator.isUnknownManagement())) {
       return true;
     }
-  } else if (this->isRecordType() || this->isUnionType()) {
+  } else if (this->isRecordType() || this->isUnionType() || this->isTupleType()) {
     return true;
   }
-  // TODO: tuples?
 
   return false;
 }

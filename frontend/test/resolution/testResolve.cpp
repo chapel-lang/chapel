@@ -1436,12 +1436,11 @@ static void test23() {
 }
 
 static void test24() {
-  Context ctx;
-  Context* context = &ctx;
-  ErrorGuard guard(context);
-
   {
     // straightforward case for qualified module
+    Context* context = buildStdContext();
+    ErrorGuard guard(context);
+
     std::string prog =
       R"""(
       module M {
@@ -1463,7 +1462,9 @@ static void test24() {
     // qualified call when POI is involved. Make sure that although the
     // current scope isn't searched for the function, it is still searched
     // for POI functions when resolving the generic function's body.
-    context->advanceToNextRevision(false);
+    Context* context = buildStdContext();
+    ErrorGuard guard(context);
+
     std::string prog =
       R"""(
       module M {
@@ -1491,7 +1492,9 @@ static void test24() {
   {
     // another POI case, to make sure that the POI-based generic function
     // we just wrote isn't defaulting to some return type.
-    context->advanceToNextRevision(false);
+    Context* context = buildStdContext();
+    ErrorGuard guard(context);
+
     std::string prog =
       R"""(
       module M {
@@ -1522,7 +1525,9 @@ static void test24() {
   {
     // qualified call, but we're not calling a function. Rather, we're invoking
     // an overloaded call operator on a value, which we retrieve from a module.
-    context->advanceToNextRevision(false);
+    Context* context = buildStdContext();
+    ErrorGuard guard(context);
+
     std::string prog =
       R"""(
       module M {
@@ -1547,6 +1552,9 @@ static void test24() {
 
   {
     // nested module qualified access should work too.
+    Context* context = buildStdContext();
+    ErrorGuard guard(context);
+
     std::string prog =
       R"""(
       module M {
