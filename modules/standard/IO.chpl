@@ -622,7 +622,7 @@ Automatically Included IO Functions
 -----------------------------------
 
 .. include:: ChapelIO.rst
-  :start-after:  // Hello, World!
+  :start-after: begin ChapelIO docs
 
 IO Functions and Types
 ----------------------

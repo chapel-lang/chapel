@@ -291,19 +291,18 @@ module Errors {
       }
     }
 
-    /* Iterate over the errors contained in this :class:`TaskErrors`.
-       For example
+    /*
+      Iterate over the errors contained in this :class:`TaskErrors`.
+      For example:
 
-         .. code-block:: chapel
+      .. literalinclude:: ../../../../test/library/standard/Errors/doc-examples/TaskErrorsThese.chpl
+         :language: chapel
+         :start-after: START_EXAMPLE_0
+         :end-before: STOP_EXAMPLE_0
 
-           var taskErrors:TaskErrors = ...;
-           for containedError in taskErrors {
-             // Do something with the contained error
-           }
-
-       Yields references to ``owned Error?`` so that one of the
-       yielded errors might be re-thrown. Only yields values
-       that are not storing ``nil`` at the time of the call.
+      Yields references to ``owned Error?`` so that one of the
+      yielded errors might be re-thrown. Only yields values
+      that are not storing ``nil`` at the time of the call.
      */
     iter these() ref : owned Error? {
       if boundsChecking then assert(this.locale.id == here.id,
