@@ -209,11 +209,17 @@ def _reportMissingGpuReq(msg, allowExempt=True, suggestNone=True):
 def determine_gpu_type():
     typesFound = [val for (val, gpu_type) in GPU_TYPES.items() if which(gpu_type.compiler)]
     if len(typesFound) == 1:
-      return typesFound[0]
+        return typesFound[0]
 
-    error("Unable to determine GPU type%s, assign 'CHPL_GPU' to one of: [%s]" %
-      ("" if len(typesFound) == 0 else " (detected: [%s])" %  ", ".join(typesFound),
-       ", ".join(GPU_TYPES.keys())))
+    detected_str = (
+        " (detected: [{}])".format(", ".join(typesFound)) if typesFound else ""
+    )
+    options_str = ", ".join(t for t in GPU_TYPES.keys() if t != "none")
+    error(
+        "Unable to determine GPU type{}, assign 'CHPL_GPU' to one of: [{}]".format(
+            detected_str, options_str
+        )
+    )
     return None
 
 @memoize
