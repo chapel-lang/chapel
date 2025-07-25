@@ -5780,7 +5780,6 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState) 
 
   // Detect cycles
   {
-    // auto atForKey = toAggregateType(canonicalDecoratedClassType(t));
     auto key = std::make_tuple(at, calledName, inFnName);
     auto it = std::find(forwardCallCycleSet.begin(),
                         forwardCallCycleSet.end(), key);
