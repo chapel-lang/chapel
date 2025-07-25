@@ -5742,16 +5742,16 @@ static FnSymbol* adjustAndResolveForwardedCall(CallExpr* call, ForwardingStmt* d
   return ret;
 }
 
-llvm::SmallVector<std::pair<AggregateType*, const char*>, 4> forwardCallCycleSet;
+llvm::SmallVector<std::tuple<AggregateType*, const char*, const char*>, 4> forwardCallCycleSet;
 
 // Returns a relevant FnSymbol if it worked
 static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState) {
   CallExpr* call = info.call;
   const char* calledName = astr(info.name);
-  const char* inFnName = call->getFunction()->name;
+  const char* inFnName = astr(call->getFunction()->name);
   Expr* receiver = call->get(2);
   Type* t = receiver->getValType();
-  AggregateType* at = toAggregateType(canonicalClassType(t));
+  AggregateType* at = toAggregateType(canonicalDecoratedClassType(t));
 
   FnSymbol* bestFn = NULL;
   CallExpr* bestCall = NULL;
@@ -5780,7 +5780,8 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState) 
 
   // Detect cycles
   {
-    auto key = std::make_pair(at, calledName);
+    // auto atForKey = toAggregateType(canonicalDecoratedClassType(t));
+    auto key = std::make_tuple(at, calledName, inFnName);
     auto it = std::find(forwardCallCycleSet.begin(),
                         forwardCallCycleSet.end(), key);
     if (it != forwardCallCycleSet.end()) {
@@ -5789,7 +5790,7 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState) 
       // for the current use cases.
       USR_FATAL_CONT(call, "forwarding cycle detected");
       for (auto& it : forwardCallCycleSet) {
-        auto cycleAt = it.first;
+        auto cycleAt = std::get<0>(it);
         USR_PRINT(cycleAt, "forwarding cycle includes type '%s'",
                   cycleAt->symbol->name);
       }
