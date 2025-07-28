@@ -474,7 +474,7 @@ proc runUnitTest(ref cmdLineCompopts: list(string), show: bool) {
       timeElapsed.start();
       for tests in files {
         try {
-          testFile(tests, result, show);
+          testFile(tests, cmdLineCompopts, result, show);
         }
         catch e {
           writeln("Caught an Exception in Running Test File: ", tests);
@@ -484,7 +484,7 @@ proc runUnitTest(ref cmdLineCompopts: list(string), show: bool) {
 
       for dir in dirs {
         try {
-          testDirectory(dir, result, show);
+          testDirectory(dir, cmdLineCompopts, result, show);
         }
         catch e {
           writeln("Caught an Exception in Running Test Directory: ", dir);
@@ -504,7 +504,8 @@ proc runUnitTest(ref cmdLineCompopts: list(string), show: bool) {
 
 @chpldoc.nodoc
 /*Docs: Todo*/
-proc testFile(file, ref result, show: bool) throws {
+proc testFile(file, const ref compopts: list(string),
+              ref result, show: bool) throws {
   var fileName = basename(file);
   var line: string;
   var compErr = false;
@@ -520,7 +521,8 @@ proc testFile(file, ref result, show: bool) throws {
 
   const moveTo = "-o " + executable;
   const allCompOpts = "--comm " + comm;
-  const compCommand = " ".join("chpl",file, moveTo, allCompOpts);
+  const compCommand = " ".join("chpl",file, moveTo, allCompOpts) + " " +
+                      " ".join(compopts.these());
   const compilation = runWithStatus(compCommand, !show);
 
   if compilation != 0 {
@@ -560,10 +562,11 @@ proc testFile(file, ref result, show: bool) throws {
 
 @chpldoc.nodoc
 /*Docs: Todo*/
-proc testDirectory(dir, ref result, show: bool) throws {
+proc testDirectory(dir, const ref compopts: list(string),
+                   ref result, show: bool) throws {
   for file in findFiles(startdir = dir, recursive = subdir) {
     if file.endsWith(".chpl") {
-      testFile(file, result, show);
+      testFile(file, compopts, result, show);
     }
   }
 }
