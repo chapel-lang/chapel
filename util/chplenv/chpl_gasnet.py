@@ -1,6 +1,6 @@
 import chpl_compiler, chpl_comm_debug, chpl_comm_segment, chpl_comm_substrate
 import overrides, chpl_home_utils, compiler_utils, third_party_utils
-from utils import error, warning, memoize
+from utils import error, warning, memoize, is_true
 import os
 
 @memoize
@@ -93,6 +93,9 @@ def get_link_args():
 # (e.g. it might link with mpicc)
 @memoize
 def get_override_ld():
+    if is_true(os.environ.get('CHPL_IGNORE_GASNET_LD', None)):
+        return None
+
     (d, _) = third_party_utils.read_bundled_pkg_config_file(
                        'gasnet', get_uniq_cfg_path(), get_gasnet_pc_file())
 

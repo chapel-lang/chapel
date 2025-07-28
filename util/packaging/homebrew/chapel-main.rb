@@ -56,6 +56,7 @@ class Chapel < Formula
     # This ENV avoids a problem where cmake cache is invalidated by subsequent make calls
     ENV["CHPL_CMAKE_USE_CC_CXX"] = "1"
     ENV["CHPL_CMAKE_PYTHON"] = python
+    ENV["CHPL_IGNORE_GASNET_LD"] = "1"
 
     # don't try to set CHPL_LLVM_GCC_PREFIX since the llvm
     # package should be configured to use a reasonable GCC
@@ -126,7 +127,7 @@ class Chapel < Formula
     end
 
     bin.install libexec.glob("bin/#{platform}/*")
-    bin.env_script_all_files libexec/"bin"/platform, CHPL_HOME: libexec
+    bin.env_script_all_files libexec/"bin"/platform, CHPL_HOME: libexec, CHPL_IGNORE_GASNET_LD: 1
     man1.install_symlink libexec.glob("man/man1/*.1")
     (lib/"cmake/chpl").install libexec.glob("lib/cmake/chpl/*")
 
@@ -170,6 +171,7 @@ class Chapel < Formula
     ENV["CHPL_HOME"] = libexec
     ENV["CHPL_INCLUDE_PATH"] = HOMEBREW_PREFIX/"include"
     ENV["CHPL_LIB_PATH"] = HOMEBREW_PREFIX/"lib"
+    ENV["CHPL_IGNORE_GASNET_LD"] = "1"
     cd libexec do
       system "util/test/checkChplInstall"
       system "util/test/checkChplDoc"
