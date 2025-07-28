@@ -79,7 +79,6 @@ proc masonTest(args: [] string, checkProj=true) throws {
   if setCommOpt.hasValue() then setComm = setCommOpt.value();
 
   var isMasonProject = true;
-  // TODO: add test of mason being used as a test runner
   try {
     getProjectHome(here.cwd());
   } catch e: MasonError {
