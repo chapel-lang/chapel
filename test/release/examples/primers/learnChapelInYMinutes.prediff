@@ -174,7 +174,7 @@ try:
   for value in good_parallel_1:
     count = test_parallel_1.count( value )
     if count != 1:
-      writeOutput( "Failed! Section 1 of parallel test: There are exactly "+ str( count )+ " occurences of \"" + + str( value ) + "\" expected exactly 1" )
+      writeOutput( "Failed! Section 1 of parallel test: There are exactly "+ str( count )+ " occurrences of \"" + str(value) + "\" expected exactly 1" )
       exit( -1-len(test_serial)-5 )
 
 except IndexError:
@@ -190,7 +190,7 @@ try:
   for value in good_parallel_2:
     count = test_parallel_2.count( value )
     if count != 1:
-      writeOutput( "Failed! Section 2 of parallel test: There are exactly "+ str( count )+ " occurences of \"" + + str( value ) + "\" expected exactly 1" )
+      writeOutput( "Failed! Section 2 of parallel test: There are exactly "+ str( count )+ " occurrences of \"" + str(value) + "\" expected exactly 1" )
       exit( -1-len(test_serial)-5 )
 
 except IndexError:
@@ -204,7 +204,7 @@ try:
   for value in [ "Hello from task# "+str(i) for i in range(1,11) ]:
     count = test_parallel_3.count( value )
     if count != 1:
-      writeOutput( "Failed! Section 3 of parallel test: There are exactly "+ str( count )+ " occurences of \"" + + str( value ) + "\" expected exactly 1" )
+      writeOutput( "Failed! Section 3 of parallel test: There are exactly "+ str( count )+ " occurrences of \"" + str(value) + "\" expected exactly 1" )
       exit( -1-len(test_serial)-6 )
 
 except IndexError:
@@ -214,14 +214,14 @@ except IndexError:
 # list 1..100 section
 try:
   # pop one, split the line into a list by the separator
-  test_parallel_4 = test_parallel.pop(0).split(', ') 
+  test_parallel_4 = test_parallel.pop(0).split(', ')
   # in the separation process, there will be exacty one empty element at the end
-  # because of the output's terminating ', ', add and empty element to the good 
+  # because of the output's terminating ', ', add and empty element to the good
   # list to account for this
   for value in  ([ str(v) for v in range(1,101)]+[ '' ] ):
     count =test_parallel_4.count( value )
     if count != 1:
-      writeOutput( "Failed! Section 4 of parallel test: There are exactly "+ str( count )+ " occurences of \"" + + str( value ) + "\" expected exactly 1" )
+      writeOutput( "Failed! Section 4 of parallel test: There are exactly "+ str( count )+ " occurrences of \"" + str(value) + "\" expected exactly 1" )
       exit( -1-len(test_serial)-7 )
 
 except IndexError:
@@ -293,12 +293,12 @@ except IndexError:
 good_parallel_6 = [ 'Reader: waiting for uranium to be 235', 'Writer: will set uranium to the value 235 in...', '3', '2', '1', 'Reader: uranium was set (by someone) to 235' ]
 
 try:
-  
+
   test_parallel_6 = [ test_parallel.pop(0) for i in range(6) ]
   for value in good_parallel_6:
     count = test_parallel_6.count( value )
     if count != 1:
-      writeOutput( "Failed! Section 6 of parallel test: There are exactly "+ str( count )+ " occurences of \"" + + str( value ) + "\" expected exactly 1" )
+      writeOutput( "Failed! Section 6 of parallel test: There are exactly "+ str( count )+ " occurrences of \"" + str(value) + "\" expected exactly 1" )
       exit( -1-len(test_serial)-16 )
 
 except IndexError:
@@ -310,12 +310,12 @@ except IndexError:
 good_parallel_7 = [ 'Reader: waiting to read.', 'Writer: will write in...', '3', '2', '1', 'Reader: value is 123' ]
 
 try:
-  
+
   test_parallel_7 = [ test_parallel.pop(0) for i in range(6) ]
   for value in good_parallel_7:
     count = test_parallel_7.count( value )
     if count != 1:
-      writeOutput( "Failed! Section 7 of parallel test: There are exactly "+ str( count )+ " occurences of \"" + + str( value ) + "\" expected exactly 1" )
+      writeOutput( "Failed! Section 7 of parallel test: There are exactly "+ str( count )+ " occurrences of \"" + str(value) + "\" expected exactly 1" )
       exit( -1-len(test_serial)-17 )
 
 except IndexError:
@@ -332,7 +332,7 @@ try:
   for value in good_parallel_9:
     count = test_parallel_9.count( value )
     if count != 1:
-      writeOutput( "Failed! Section 9 of parallel test: There are exactly " + str( count ) + " occurences of \"" + str( value ) + "\" expected exactly 1" )
+      writeOutput( "Failed! Section 9 of parallel test: There are exactly " + str( count ) + " occurrences of \"" + str( value ) + "\" expected exactly 1" )
       exit( -1-len(test_serial)-19 )
   
 
@@ -349,7 +349,7 @@ try:
   for value in good_parallel_10:
     count = test_parallel_10.count( value )
     if count != 1:
-      writeOutput( "Failed! Section 10 of parallel test: There are exactly " + str( count ) + " occurences of \"" + str( value ) + "\" expected exactly 1" )
+      writeOutput( "Failed! Section 10 of parallel test: There are exactly " + str( count ) + " occurrences of \"" + str( value ) + "\" expected exactly 1" )
       exit( -1-len(test_serial)-20 )
   
 
