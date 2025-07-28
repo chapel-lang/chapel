@@ -69,7 +69,10 @@ class Chapel < Formula
       CHPL_LLVM=system
       CHPL_LLVM_CONFIG=#{llvm.opt_bin}/llvm-config
       CHPL_LLVM_GCC_PREFIX=none
+      CHPL_TARGET_CPU=native
     EOS
+    # NOTE: CHPL_TARGET_CPU=native could cause problems for users cross-compiling,
+    # should we only set this for CHPL_COMM=none?
 
     # Must be built from within CHPL_HOME to prevent build bugs.
     # https://github.com/Homebrew/legacy-homebrew/pull/35166
