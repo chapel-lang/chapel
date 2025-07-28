@@ -60,7 +60,6 @@ proc masonTest(args: [] string, checkProj=true) throws {
   var parFlag = parser.addFlag(name="parallel", defaultValue=false);
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
   var setCommOpt = parser.addOption(name="setComm", defaultValue="none");
-  var skipCheckFlag = parser.addFlag(name="skipCheck", defaultValue=false);
 
   // TODO: Why doesn't masonTest support a passthrough for values that should
   // go to the runtime?
@@ -72,7 +71,6 @@ proc masonTest(args: [] string, checkProj=true) throws {
   var show = showFlag.valueAsBool();
   var run = !runFlag.valueAsBool();
   var parallel = parFlag.valueAsBool();
-  var skipCheck = skipCheckFlag.valueAsBool();
   keepExec = keepFlag.valueAsBool();
   subdir = recursFlag.valueAsBool();
   if updateFlag.hasValue() {
@@ -80,7 +78,15 @@ proc masonTest(args: [] string, checkProj=true) throws {
   }
   if setCommOpt.hasValue() then setComm = setCommOpt.value();
 
-  if checkProj && !skipCheck {
+  var isMasonProject = true;
+  // TODO: add test of mason being used as a test runner
+  try {
+    getProjectHome(here.cwd());
+  } catch e: MasonError {
+    isMasonProject = false;
+  }
+
+  if checkProj && isMasonProject {
     const projectType = getProjectType();
     if projectType == "light" then
       throw new owned MasonError("Mason light projects do not currently support 'mason test'");
