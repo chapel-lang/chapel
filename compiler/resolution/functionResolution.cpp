@@ -5528,6 +5528,11 @@ static BlockStmt* findVisibleFunctionsAndCandidates(
     scopeUsed = visInfo.currStart;
 
     advanceCurrStart(visInfo);
+
+    // prevent infinite loop
+    if (scopeUsed == visInfo.currStart) {
+      break;
+    }
   }
   while
     (candidates.n == 0 && visInfo.currStart != NULL);
