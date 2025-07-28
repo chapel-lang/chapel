@@ -258,6 +258,12 @@ module UnitTest {
   config const skippedTestNames: string = "None";
   @chpldoc.nodoc
   config const ranTests: string = "None";
+
+  @chpldoc.nodoc
+  config const filter: string = "";
+  @chpldoc.nodoc
+  config param noRegex: bool = false;
+
   // This is a dummy test to capture the function signature
   private
   proc testSignature(test: borrowed Test) throws { }
@@ -1249,6 +1255,37 @@ module UnitTest {
     return name + "()";
   }
 
+  @chpldoc.nodoc
+  record Filter {
+    type patType = if noRegex then string else regex(string);
+    const rawPattern: string;
+    const pattern: patType;
+
+    proc init(p: string) {
+      this.rawPattern = p;
+      this.pattern = p;
+    }
+    proc init(raw, p: regex(string)) {
+      this.rawPattern = raw;
+      this.pattern = p;
+    }
+    proc type create(p: string) throws {
+      if noRegex then
+        return new Filter(p);
+      else
+        return new Filter(p, new regex(p));
+    }
+    proc matches(s: string): bool throws {
+      if rawPattern == "" then
+        return true;
+
+      if noRegex then
+        return s.contains(this.pattern);
+      else
+        return this.pattern.search(s).matched;
+    }
+  }
+
   /*Runs the tests
 
     Call this as
@@ -1273,9 +1310,11 @@ module UnitTest {
     // gather all the tests
     param n = __primitive("gather tests", testObjGather.borrow());
 
+    const F = Filter.create(filter);
+
     for param i in 1..n {
       var test_FCF = __primitive("get test by index",i);
-      if (test_FCF: string != tempFcf: string) {
+      if test_FCF: string != tempFcf: string && F.matches(test_FCF:string) {
         testSuite.addTest(test_FCF);
       }
     }
