@@ -1493,7 +1493,7 @@ FnSymbol* TConverter::convertNewWrapper(const ResolvedFunction* rInitFn) {
 
   BlockStmt* body = fn->body;
   VarSymbol* initTemp = newTemp("initTemp", type);
-  CallExpr* innerInit = new CallExpr(initFn, gMethodToken, initTemp);
+  CallExpr* innerInit = new CallExpr(initFn, initTemp);
   VarSymbol* retVar = newTemp("ret", type);
   retVar->addFlag(FLAG_RVV);
   body->insertAtTail(new DefExpr(retVar));
@@ -1521,7 +1521,7 @@ FnSymbol* TConverter::convertNewWrapper(const ResolvedFunction* rInitFn) {
   // set up the formals and init call based on the init function
   SymbolMap initToNewMap;
   for_formals(formal, initFn) {
-    if (formal != initFn->_this && formal->type != dtMethodToken) {
+    if (formal != initFn->_this) {
       ArgSymbol* newArg = formal->copy();
       initToNewMap.put(formal, newArg);
       fn->insertFormalAtTail(newArg);
@@ -2900,7 +2900,7 @@ struct ConvertDefaultValueHelper {
 
     // Found it, so invoke the default-initializer on a temp.
     auto temp = tc_->makeNewTemp(qt);
-    auto initCall = new CallExpr(fn, gMethodToken, temp);
+    auto initCall = new CallExpr(fn, temp);
 
     std::vector<const AstNode*> actualAsts;
     auto tfs = rf->signature();
@@ -3507,7 +3507,7 @@ Expr* TConverter::convertNewCallOrNull(const Call* node, RV& rv) {
     AggregateType* type = toAggregateType(initFn->_this->getValType());
 
     VarSymbol* initTemp = newTemp("initTemp", type);
-    auto initCall = new CallExpr(initFn, gMethodToken, initTemp);
+    auto initCall = new CallExpr(initFn, initTemp);
     insertStmt(new DefExpr(initTemp));
 
     // TODO: is it right that 'hasQuestionArg' is always false here?
@@ -3970,7 +3970,7 @@ Expr* TConverter::convertFieldInitOrNull(
     auto fam = FormalActualMap(init->untyped(), initCI);
     INT_ASSERT(fam.isValid());
 
-    auto call = new CallExpr(fn, gMethodToken);
+    auto call = new CallExpr(fn);
     convertAndInsertActuals(call, node, actualAsts, init, fam, rv);
     ret = call;
 
@@ -4271,9 +4271,9 @@ Expr* TConverter::convertNamedCallOrNull(const Call* node, RV& rv) {
 
   convertAndInsertActuals(ret, node, actualAsts, sig, fam, rv);
 
-  // Operators can be methods without a 'this' formal
-  if (calledFn->isMethod() && calledFn->_this != nullptr) {
-    ret->insertAtHead(new SymExpr(gMethodToken));
+  if (fVerify && calledFn->isMethod() && calledFn->numFormals() > 0) {
+    auto arg = toSymExpr(ret->get(1));
+    INT_ASSERT(arg->symbol() != gMethodToken);
   }
 
   return ret;
@@ -4787,10 +4787,6 @@ bool TConverter::enter(const Function* node, RV& rv) {
         if (arg->hasFlag(FLAG_ARG_THIS)) {
           fn->thisTag = arg->intent;
           fn->_this = arg;
-
-          // While we're at it, add the method token formal
-          auto mt = new ArgSymbol(INTENT_BLANK, astr("_mt"), dtMethodToken);
-          fn->insertFormalAtTail(mt);
         }
 
         fn->insertFormalAtTail(arg);
@@ -4942,6 +4938,11 @@ bool TConverter::enter(const Function* node, RV& rv) {
     }
   }
 
+  if (fVerify && fn->isMethod() && fn->numFormals() > 0) {
+    auto arg = fn->getFormal(1);
+    INT_ASSERT(arg->type != dtMethodToken);
+  }
+
   return false;
 }
 
@@ -5075,13 +5076,13 @@ Expr* TConverter::convertParenlessCallOrNull(const AstNode* node, RV& rv) {
 
   if (sig->isMethod()) {
     if (node->isIdentifier()) {
-      ret = new CallExpr(calledFn, gMethodToken, codegenImplicitThis(rv));
+      ret = new CallExpr(calledFn, codegenImplicitThis(rv));
     } else {
       auto [recvAst, fieldName] = accessExpressionDetails(node);
       std::ignore = fieldName;
       types::QualifiedType qtRecv;
       auto recv = recvAst ? convertExpr(recvAst, rv, &qtRecv) : nullptr;
-      ret = new CallExpr(calledFn, gMethodToken, storeInTempIfNeeded(recv, qtRecv));
+      ret = new CallExpr(calledFn, storeInTempIfNeeded(recv, qtRecv));
     }
   } else {
     ret = new CallExpr(calledFn);
