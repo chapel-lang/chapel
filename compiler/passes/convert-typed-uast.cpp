@@ -4431,9 +4431,7 @@ SymExpr* TConverter::ActualConverter::convertActual(const FormalActual& fa) {
     expr = tc_->convertExpr(initExpr, rvCalledFn, &exprType);
   }
 
-  if (!isSymExpr(expr)) {
-    expr = tc_->storeInTempIfNeeded(expr, exprType);
-  }
+  expr = tc_->storeInTempIfNeeded(expr, exprType);
 
   // TODO: Handle conversions as needed!
   // Swap off the called function state.
