@@ -391,7 +391,7 @@ struct TConverter final : UastConverter,
                     RV& rv);
 
     // Insert converted actuals into the given 'CallExpr'.
-    void convertAndInsertActuals(CallExpr* call, int fromMappingIdx=0);
+    void convertAndInsertActuals(CallExpr* call, bool skipReceiver);
 
     // When converting a default argument, this is called to replace a
     // reference to a formal with a reference to an actual if needed.
@@ -924,7 +924,8 @@ struct TConverter final : UastConverter,
                                const std::vector<const AstNode*>& actualAsts,
                                const resolution::TypedFnSignature* tfs,
                                const FormalActualMap& fam,
-                               RV& rv);
+                               RV& rv,
+                               bool skipReceiver=false);
 
   // This handles tasks such as e.g., inserting 'deinit' calls at the
   // end of the current statement. TODO: Need to wire this up to occur
@@ -2910,8 +2911,7 @@ struct ConvertDefaultValueHelper {
       // Use an 'ActualConverter' to handle potential default-arguments, as
       // long as there's more than just the receiver formal.
       TConverter::ActualConverter ac(tc_, node_, actualAsts, tfs, fam, rv_);
-      const int fromMappingIdx = 1;
-      ac.convertAndInsertActuals(initCall, fromMappingIdx);
+      ac.convertAndInsertActuals(initCall, /*skipReceiver=*/true);
     }
 
     // Insert the initializer call as a statement.
@@ -3521,8 +3521,7 @@ Expr* TConverter::convertNewCallOrNull(const Call* node, RV& rv) {
     auto fam = FormalActualMap(init->untyped(), ci2);
 
     TConverter::ActualConverter ac(this, node, actualAsts, init, fam, rv);
-    const int fromMappingIdx = 1;
-    ac.convertAndInsertActuals(initCall, fromMappingIdx);
+    ac.convertAndInsertActuals(initCall, /*skipReceiver=*/true);
     insertStmt(initCall);
 
     ret = new SymExpr(initTemp);
@@ -4449,7 +4448,7 @@ SymExpr* TConverter::ActualConverter::convertActual(const FormalActual& fa) {
 }
 
 void TConverter::ActualConverter::
-convertAndInsertActuals(CallExpr* call, int fromMappingIdx) {
+convertAndInsertActuals(CallExpr* call, bool skipReceiver) {
   if (fam_.numFormalsMapped() == 0) {
     return;
   }
@@ -4457,14 +4456,12 @@ convertAndInsertActuals(CallExpr* call, int fromMappingIdx) {
   auto savedExprList = tc_->cur.lastList();
   auto savedStmtList = tc_->cur.stmtList();
 
-  INT_ASSERT(fromMappingIdx < fam_.numFormalsMapped());
-
   tc_->enterCallActuals(call);
 
   int i = 0;
   for (const FormalActual& fa : fam_.byFormals()) {
-    // Convert each formal/actual mapping starting from the one requested.
-    if (i++ < fromMappingIdx) continue;
+    const int curIdx = i++;
+    if (skipReceiver && curIdx == 0) continue;
 
     if (auto se = this->convertActual(fa)) {
       call->insertAtTail(se);
@@ -4495,9 +4492,10 @@ void TConverter::convertAndInsertActuals(
                                 const std::vector<const AstNode*>& actualAsts,
                                 const resolution::TypedFnSignature* tfs,
                                 const FormalActualMap& fam,
-                                RV& rv) {
+                                RV& rv,
+                                bool skipReceiver) {
   ActualConverter ac(this, node, actualAsts, tfs, fam, rv);
-  ac.convertAndInsertActuals(c);
+  ac.convertAndInsertActuals(c, skipReceiver);
 }
 
 Symbol* TConverter::ActualConverter::interceptFormalUse(const ID& id) {
