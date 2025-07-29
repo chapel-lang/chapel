@@ -192,12 +192,21 @@ int gatherTransitiveFnsCalledByFn(Context* context,
   CalledFnsSet directCalls;
   int directCount = gatherFnsCalledByFn(context, fn, order, directCalls);
 
+  // Sort the direct calls by their index in the call graph, so that we can
+  // more reliably iterate over them later. This helps with debugging in
+  // the production compiler by making it easier to break on an AST ID.
+  auto sorted = std::vector<std::pair<const ResolvedFunction*, CalledFnOrder>>(
+      directCalls.begin(), directCalls.end());
+  std::sort(sorted.begin(), sorted.end(), [](auto& a, auto& b) {
+    return a.second.index < b.second.index;
+  });
+
   // used for recording the order value for transitive calls
   CalledFnOrder newOrder = {order.depth + 1, directCount};
 
   // Now, consider each direct call. Add it to 'called' and
   // also handle it recursively, if we added it.
-  for (auto kv : directCalls) {
+  for (auto kv : sorted) {
     if (kv.first == nullptr) continue;
 
     auto pair = called.insert(kv);
