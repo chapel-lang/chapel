@@ -17,4 +17,9 @@ x = bar;                    // OK!
 /* STOP_EXAMPLE_0 */
 
 assert(x(2, 2) == 4);
-assert(x(4, 4) == foo(4, 4) == bar(4, 4));
+
+// They should all produce the same result.
+const a = x(4, 4);
+const b = foo(4, 4);
+const c = bar(4, 4);
+assert(a == b && b == c);
