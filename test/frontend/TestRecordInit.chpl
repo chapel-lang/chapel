@@ -20,16 +20,21 @@ record ExplicitInit {
   }
 }
 
-proc main() {
-  var r : R;
+proc println(r: R) {
   println(r.x);
   println(r.y);
+}
+
+proc main() {
+  var r : R;
+  println(r);
 
   var x : DefaultInit;
-  println(x.r.x);
-  println(x.r.y);
+  println(x.r);
 
   var y : ExplicitInit;
-  println(y.r.x);
-  println(y.r.y);
+  println(y.r);
+
+  var z = new R(100, 200);
+  println(z);
 }
