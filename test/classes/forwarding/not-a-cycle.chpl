@@ -21,6 +21,11 @@ record A {
   proc init() {
     this.impl = new typename();
   }
+
+  proc deinit() {
+    if test == testCase.UNMANAGED then
+      delete this.impl;
+  }
 }
 
 proc main() {
