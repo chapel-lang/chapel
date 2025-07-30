@@ -358,9 +358,6 @@ struct TConverter final : UastConverter,
     // The signature of the called function.
     const TypedFnSignature* tfs_ = nullptr;
 
-    // State for actuals. Not all slots may be used.
-    std::vector<ActualInfo> actualState_;
-
     // The uAST representing the call's location.
     const AstNode* astForCall_ = nullptr;
 
@@ -374,7 +371,7 @@ struct TConverter final : UastConverter,
     RV& rv_;
 
     // Mapping from a formal's ID to the 'FormalActual' slot.
-    std::unordered_map<ID, const FormalActual&> formalIdToFormalActual_;
+    std::unordered_map<ID, Symbol*> formalIdToActualSymbol_;
 
     // Used to insert actual temps if needed.
     AList* stmtInsertionPoint_ = nullptr;
@@ -383,7 +380,7 @@ struct TConverter final : UastConverter,
     void prepareCalledFnConversionState();
 
     // Convert a single actual considering 'fa'.
-    void convertActual(const FormalActual& fa);
+    SymExpr* convertActual(const FormalActual& fa);
 
    public:
     ActualConverter(TConverter* tc,
@@ -394,7 +391,7 @@ struct TConverter final : UastConverter,
                     RV& rv);
 
     // Insert converted actuals into the given 'CallExpr'.
-    void convertAndInsertActuals(CallExpr* call, int fromMappingIdx=0);
+    void convertAndInsertActuals(CallExpr* call, bool skipReceiver);
 
     // When converting a default argument, this is called to replace a
     // reference to a formal with a reference to an actual if needed.
@@ -927,7 +924,8 @@ struct TConverter final : UastConverter,
                                const std::vector<const AstNode*>& actualAsts,
                                const resolution::TypedFnSignature* tfs,
                                const FormalActualMap& fam,
-                               RV& rv);
+                               RV& rv,
+                               bool skipReceiver=false);
 
   // This handles tasks such as e.g., inserting 'deinit' calls at the
   // end of the current statement. TODO: Need to wire this up to occur
@@ -1495,7 +1493,7 @@ FnSymbol* TConverter::convertNewWrapper(const ResolvedFunction* rInitFn) {
 
   BlockStmt* body = fn->body;
   VarSymbol* initTemp = newTemp("initTemp", type);
-  CallExpr* innerInit = new CallExpr(initFn, gMethodToken, initTemp);
+  CallExpr* innerInit = new CallExpr(initFn, initTemp);
   VarSymbol* retVar = newTemp("ret", type);
   retVar->addFlag(FLAG_RVV);
   body->insertAtTail(new DefExpr(retVar));
@@ -1523,7 +1521,7 @@ FnSymbol* TConverter::convertNewWrapper(const ResolvedFunction* rInitFn) {
   // set up the formals and init call based on the init function
   SymbolMap initToNewMap;
   for_formals(formal, initFn) {
-    if (formal != initFn->_this && formal->type != dtMethodToken) {
+    if (formal != initFn->_this) {
       ArgSymbol* newArg = formal->copy();
       initToNewMap.put(formal, newArg);
       fn->insertFormalAtTail(newArg);
@@ -2902,17 +2900,19 @@ struct ConvertDefaultValueHelper {
 
     // Found it, so invoke the default-initializer on a temp.
     auto temp = tc_->makeNewTemp(qt);
-    auto initCall = new CallExpr(fn, gMethodToken, temp);
+    auto initCall = new CallExpr(fn, temp);
 
     std::vector<const AstNode*> actualAsts;
     auto tfs = rf->signature();
     FormalActualMap fam(rf->signature(), ci2);
     INT_ASSERT(fam.isValid());
 
-    // Use an 'ActualConverter' to handle potential default-arguments.
-    TConverter::ActualConverter ac(tc_, node_, actualAsts, tfs, fam, rv_);
-    const int fromMappingIdx = 1;
-    ac.convertAndInsertActuals(initCall, fromMappingIdx);
+    if (fam.numFormalsMapped() > 1) {
+      // Use an 'ActualConverter' to handle potential default-arguments, as
+      // long as there's more than just the receiver formal.
+      TConverter::ActualConverter ac(tc_, node_, actualAsts, tfs, fam, rv_);
+      ac.convertAndInsertActuals(initCall, /*skipReceiver=*/true);
+    }
 
     // Insert the initializer call as a statement.
     tc_->insertStmt(initCall);
@@ -3478,13 +3478,8 @@ Expr* TConverter::convertNewCallOrNull(const Call* node, RV& rv) {
     return nullptr;
   }
 
-  // For 'new unmanaged C(...)' it should generate a call to a '_new'
-  // function. The actuals are passed along to it down below.
-  //
-  // TODO: Handle management appropriately here (e.g., 'owned').
-  //
-  FnSymbol* calledFn = findOrConvertNewWrapper(rf);
-  CallExpr* ret = new CallExpr(calledFn);
+  auto type = init->formalType(0).type();
+  Expr* ret = nullptr;
 
   // Pieces needed to construct the 'CallInfo'.
   const bool raiseErrors = false;
@@ -3503,48 +3498,85 @@ Expr* TConverter::convertNewCallOrNull(const Call* node, RV& rv) {
                                        questionArg,
                                        &actualAsts);
 
-  // Copy over the init formal shapes, except for the receiver formal.
-  std::vector<UntypedFnSignature::FormalDetail> formals;
-  auto ufsInit = init->untyped();
+  bool hasQuestionArg = (questionArg != nullptr);
 
-  INT_ASSERT(ufsInit->isMethod());
-  for (int i = 0; i < ufsInit->numFormals(); i++) {
-    if (i == 0) continue;
-    formals.push_back({ ufsInit->formalName(i),
-                        ufsInit->formalDefaultKind(i),
-                        /*decl*/ nullptr,
-                        ufsInit->formalIsVarArgs(i) });
+  if (type->isRecordType()) {
+    actualAsts.insert(actualAsts.begin(), nullptr);
+    // find or convert the init function
+    FnSymbol* initFn = findOrConvertFunction(rf);
+    AggregateType* type = toAggregateType(initFn->_this->getValType());
+
+    VarSymbol* initTemp = newTemp("initTemp", type);
+    auto initCall = new CallExpr(initFn, initTemp);
+    insertStmt(new DefExpr(initTemp));
+
+    // TODO: is it right that 'hasQuestionArg' is always false here?
+    auto ci1 = resolution::CallInfo(USTR("init"), types::QualifiedType(),
+                                   /*isMethodCall*/ false,
+                                   /*hasQuestionArg*/ hasQuestionArg,
+                                   /*isParenless*/ false,
+                                   /*actuals*/ std::move(actuals));
+    auto ci2 = resolution::CallInfo::createWithReceiver(ci1,
+                                   init->formalType(0));
+    auto fam = FormalActualMap(init->untyped(), ci2);
+
+    TConverter::ActualConverter ac(this, node, actualAsts, init, fam, rv);
+    ac.convertAndInsertActuals(initCall, /*skipReceiver=*/true);
+    insertStmt(initCall);
+
+    ret = new SymExpr(initTemp);
+  } else {
+    // For 'new unmanaged C(...)' it should generate a call to a '_new'
+    // function. The actuals are passed along to it down below.
+    //
+    // TODO: Handle management appropriately here (e.g., 'owned').
+    //
+    FnSymbol* calledFn = findOrConvertNewWrapper(rf);
+    ret = new CallExpr(calledFn);
+
+    // Copy over the init formal shapes, except for the receiver formal.
+    std::vector<UntypedFnSignature::FormalDetail> formals;
+    auto ufsInit = init->untyped();
+
+    INT_ASSERT(ufsInit->isMethod());
+    for (int i = 0; i < ufsInit->numFormals(); i++) {
+      if (i == 0) continue;
+      formals.push_back({ ufsInit->formalName(i),
+                          ufsInit->formalDefaultKind(i),
+                          /*decl*/ nullptr,
+                          ufsInit->formalIsVarArgs(i) });
+    }
+
+    // Generate an untyped signature to get at the formal/actual map.
+    auto fakeNewUfs = UntypedFnSignature::get(context,
+                                          /*id*/ ID(),
+                                          /*name*/ ustr("_new"),
+                                          /*isMethod*/ false,
+                                          /*isTypeConstructor*/ false,
+                                          /*isCompilerGenerated*/ true,
+                                          /*throws*/ init->untyped()->throws(),
+                                          /*idTag*/ uast::asttags::Function,
+                                          /*kind*/ uast::Function::PROC,
+                                          /*formals*/ std::move(formals),
+                                          /*whereClause*/ nullptr,
+                                          /*compilerGeneratedOrigin*/ ID());
+
+    // Note that we're creating a CI, but we're not actually going to resolve
+    // this generated call, because the '_new' function exists only in the
+    // middle-end. Instead, we're just using the CI to generate a formals-to-
+    // actuals map.
+    auto ci = resolution::CallInfo(ustr("_new"), types::QualifiedType(),
+                                   /*isMethodCall*/ false,
+                                   /*hasQuestionArg*/ hasQuestionArg,
+                                   /*isParenless*/ false,
+                                   /*actuals*/ std::move(actuals));
+
+    // This mapping drives the conversion of actuals.
+    auto fam = FormalActualMap(fakeNewUfs, ci);
+    INT_ASSERT(fam.isValid());
+
+    convertAndInsertActuals(toCallExpr(ret), node, actualAsts, init, fam, rv);
   }
-
-  // Generate an untyped signature to get at the formal/actual map.
-  auto fakeNewUfs = UntypedFnSignature::get(context,
-                                        /*id*/ ID(),
-                                        /*name*/ ustr("_new"),
-                                        /*isMethod*/ false,
-                                        /*isTypeConstructor*/ false,
-                                        /*isCompilerGenerated*/ true,
-                                        /*throws*/ init->untyped()->throws(),
-                                        /*idTag*/ uast::asttags::Function,
-                                        /*kind*/ uast::Function::PROC,
-                                        /*formals*/ std::move(formals),
-                                        /*whereClause*/ nullptr,
-                                        /*compilerGeneratedOrigin*/ ID());
-
-  // Note that we're creating a CI, but we're not actually going to resolve
-  // this generated call, because the '_new' function exists only in the
-  // middle-end. Instead, we're just using the CI to generate a formals-to-
-  // actuals map.
-  auto ci = resolution::CallInfo(ustr("_new"), types::QualifiedType(),
-                                 /*isMethodCall*/ false,
-                                 /*hasQuestionArg*/ false,
-                                 /*isParenless*/ false,
-                                 /*actuals*/ std::move(actuals));
-
-  // This mapping drives the conversion of actuals.
-  auto fam = FormalActualMap(fakeNewUfs, ci);
-  INT_ASSERT(fam.isValid());
-
-  convertAndInsertActuals(ret, node, actualAsts, init, fam, rv);
 
   return ret;
 }
@@ -4239,9 +4271,9 @@ Expr* TConverter::convertNamedCallOrNull(const Call* node, RV& rv) {
 
   convertAndInsertActuals(ret, node, actualAsts, sig, fam, rv);
 
-  // Operators can be methods without a 'this' formal
-  if (calledFn->isMethod() && calledFn->_this != nullptr) {
-    ret->insertAtHead(new SymExpr(gMethodToken));
+  if (fVerify && calledFn->isMethod() && calledFn->numFormals() > 0) {
+    auto arg = toSymExpr(ret->get(1));
+    INT_ASSERT(arg->symbol() != gMethodToken);
   }
 
   return ret;
@@ -4264,21 +4296,10 @@ TConverter::ActualConverter::ActualConverter(
   // Use the arity provided by 'fam' since it has already accounted for
   // variable-arity formals such as varargs when computing alignment.
   INT_ASSERT(fam_.isValid());
-  actualState_.resize(fam_.numFormalsMapped());
 
   // Determine if the call requires any defaults at all.
   for (auto& fa : fam_.byFormals()) {
     callRequiresDefaults_ |= fa.hasDefault();
-
-    if (auto decl = fa.formal()) {
-      // A vararg formal can never be referred to by another formal.
-      if (decl->isVarArgFormal()) continue;
-
-      // Add entries so that slots can be looked up by formal ID.
-      auto it = formalIdToFormalActual_.find(decl->id());
-      INT_ASSERT(it == formalIdToFormalActual_.end());
-      formalIdToFormalActual_.emplace(decl->id(), fa);
-    }
   }
 
   // Exit early if defaults are not required.
@@ -4325,19 +4346,15 @@ void TConverter::ActualConverter::prepareCalledFnConversionState() {
   s.topLevelModTag         = moduleSymbol->modTag;
 }
 
-void TConverter::ActualConverter::convertActual(const FormalActual& fa) {
-  if (tc_->shouldElideFormal(tfs_, fa.formalIdx())) return;
+SymExpr* TConverter::ActualConverter::convertActual(const FormalActual& fa) {
+  if (tc_->shouldElideFormal(tfs_, fa.formalIdx())) return nullptr;
 
   Context* context = tc_->context;
 
   // One or the other must hold in order to compute the slot index.
   INT_ASSERT(fa.hasDefault() || fa.hasActual());
 
-  int idxSlot = fa.hasActual() ? fa.actualIdx() : fa.formalIdx();
-  INT_ASSERT(0 <= idxSlot && idxSlot < ((int) actualState_.size()));
-  auto& slot = actualState_[idxSlot];
-
-  if (!fa.hasDefault() || fa.hasActual()) {
+  if (fa.hasActual()) {
     INT_ASSERT(fa.hasActual());
 
     // If there is no default argument then an actual is present.
@@ -4351,9 +4368,9 @@ void TConverter::ActualConverter::convertActual(const FormalActual& fa) {
     // Convert the actual and leave.
     types::QualifiedType actualType;
     auto actualExpr = tc_->convertExpr(astActual, rv_, &actualType);
-    std::get<Expr*>(slot) = tc_->storeInTempIfNeeded(actualExpr, actualType);
+    auto temp = tc_->storeInTempIfNeeded(actualExpr, actualType);
 
-    return;
+    return temp;
   }
 
   // Otherwise we need a default argument. Get the formal's init expression.
@@ -4367,11 +4384,8 @@ void TConverter::ActualConverter::convertActual(const FormalActual& fa) {
   }
 
   // If there is no uAST for an init-expression and the function is not
-  // compiler-generated, then there is nothing we can do, so exit early.
-  if (!initExpr && !decl->id().isFabricatedId()) {
-    std::get<Expr*>(slot) = TC_PLACEHOLDER(tc_);
-    return;
-  }
+  // compiler-generated, then there is nothing we can do.
+  CHPL_ASSERT(initExpr || decl->id().isFabricatedId());
 
   //
   // At this point, we are resolving a default argument value. In order to
@@ -4391,7 +4405,8 @@ void TConverter::ActualConverter::convertActual(const FormalActual& fa) {
 
   // Swap on the called function state.
   std::swap(calledFnState_, tc_->cur);
-  tc_->pushBlock(tc_->cur.moduleSymbol->block);
+  BlockStmt* block = new BlockStmt();
+  tc_->pushBlock(block);
 
   ResolutionContext rcval(context);
   ResolvedVisitor<TConverter> rvCalledFn(&rcval, fn, *tc_, rr);
@@ -4399,47 +4414,66 @@ void TConverter::ActualConverter::convertActual(const FormalActual& fa) {
   // Convert the init-expression for the formal of interest, or generate a
   // default-value for the type if function is compiler-generated.
   Expr* expr = nullptr;
-  if (tfs_->untyped()->isCompilerGenerated()) {
+  types::QualifiedType exprType;
+  if (initExpr == nullptr && fa.hasDefault()) {
+    INT_ASSERT(!fa.hasActual());
+    INT_ASSERT(tfs_->untyped()->isCompilerGenerated());
+    INT_ASSERT(tfs_->untyped()->name() == USTR("init"));
     // The formal is part of a compiler-generated function, so we can just
     // construct a default-value for the type as uAST will not be supplied.
     INT_ASSERT(!decl || decl->id().isFabricatedId());
     auto t = fa.formalType().type();
     expr = tc_->defaultValueForType(t, decl, rvCalledFn);
+    exprType = fa.formalType();
 
   } else {
     // Otherwise, invoke the typed converter using the new visitor.
-    expr = tc_->convertExpr(initExpr, rvCalledFn);
+    expr = tc_->convertExpr(initExpr, rvCalledFn, &exprType);
   }
 
-  // TODO: Handle conversions as needed!
-  INT_ASSERT(expr);
-  std::get<Expr*>(slot) = expr;
+  expr = tc_->storeInTempIfNeeded(expr, exprType);
 
+  // TODO: Handle conversions as needed!
   // Swap off the called function state.
   tc_->popBlock();
   std::swap(calledFnState_, tc_->cur);
+  stmtInsertionPoint_->insertAtTail(block);
+  block->flattenAndRemove();
+
+  auto se = toSymExpr(expr);
+  INT_ASSERT(se);
+  return se;
 }
 
 void TConverter::ActualConverter::
-convertAndInsertActuals(CallExpr* call, int fromMappingIdx) {
-  const int hi = (int) actualState_.size();
-  auto savedExprList = tc_->cur.lastList();
-  auto savedStmtList = tc_->cur.stmtList();
-
-  if (!actualState_.empty()) {
-    INT_ASSERT(0 <= fromMappingIdx && fromMappingIdx <= hi);
+convertAndInsertActuals(CallExpr* call, bool skipReceiver) {
+  if (fam_.numFormalsMapped() == 0) {
+    return;
   }
 
-  // Nothing to do, the index is OOB.
-  if (fromMappingIdx >= hi) return;
+  auto savedExprList = tc_->cur.lastList();
+  auto savedStmtList = tc_->cur.stmtList();
 
   tc_->enterCallActuals(call);
 
   int i = 0;
   for (const FormalActual& fa : fam_.byFormals()) {
-    // Convert each formal/actual mapping starting from the one requested.
-    if (i++ < fromMappingIdx) continue;
-    this->convertActual(fa);
+    const int curIdx = i++;
+    if (skipReceiver && curIdx == 0) continue;
+
+    if (auto se = this->convertActual(fa)) {
+      call->insertAtTail(se);
+
+      if (auto decl = fa.formal()) {
+        // A vararg formal can never be referred to by another formal.
+        if (decl->isVarArgFormal()) continue;
+
+        // Add entries so that slots can be looked up by formal ID.
+        auto it = formalIdToActualSymbol_.find(decl->id());
+        INT_ASSERT(it == formalIdToActualSymbol_.end());
+        formalIdToActualSymbol_.emplace(decl->id(), se->symbol());
+      }
+    }
   }
 
   tc_->exitCallActuals();
@@ -4447,15 +4481,6 @@ convertAndInsertActuals(CallExpr* call, int fromMappingIdx) {
   // Ensure the 'current AST lists' match - converter may swap contexts.
   INT_ASSERT(tc_->cur.stmtList() == savedStmtList);
   INT_ASSERT(tc_->cur.lastList() == savedExprList);
-
-  // Then insert their ASTs into the call.
-  for (auto& slot : actualState_) {
-    if (auto temp = std::get<Symbol*>(slot)) {
-      call->insertAtTail(new SymExpr(temp));
-    } else if (auto expr = std::get<Expr*>(slot)) {
-      call->insertAtTail(expr);
-    }
-  }
 }
 
 // TODO: How are implicit receivers handled here? There won't be an AST for it?
@@ -4465,35 +4490,16 @@ void TConverter::convertAndInsertActuals(
                                 const std::vector<const AstNode*>& actualAsts,
                                 const resolution::TypedFnSignature* tfs,
                                 const FormalActualMap& fam,
-                                RV& rv) {
+                                RV& rv,
+                                bool skipReceiver) {
   ActualConverter ac(this, node, actualAsts, tfs, fam, rv);
-  ac.convertAndInsertActuals(c);
+  ac.convertAndInsertActuals(c, skipReceiver);
 }
 
 Symbol* TConverter::ActualConverter::interceptFormalUse(const ID& id) {
-  auto it = formalIdToFormalActual_.find(id);
-  if (it != formalIdToFormalActual_.end()) {
-    auto& fa = it->second;
-    int idxActual = fa.actualIdx();
-    auto& slot = actualState_[idxActual];
-    auto& temp = std::get<Symbol*>(slot);
-
-    // If a temporary exists, then return it.
-    if (temp) return temp;
-
-    // Otherwise, we need to create the temporary.
-    auto expr = std::get<Expr*>(slot);
-    INT_ASSERT(expr);
-
-    auto ret = newTemp(astr("actual_", istr(idxActual)));
-    stmtInsertionPoint_->insertAtTail(new DefExpr(ret));
-
-    auto move = new CallExpr(PRIM_MOVE, ret, expr);
-    stmtInsertionPoint_->insertAtTail(move);
-
-    temp = ret;
-
-    return ret;
+  auto it = formalIdToActualSymbol_.find(id);
+  if (it != formalIdToActualSymbol_.end()) {
+    return it->second;
   } else {
     INT_ASSERT(false && "Expected entry for formal ID!");
   }
@@ -4779,10 +4785,6 @@ bool TConverter::enter(const Function* node, RV& rv) {
         if (arg->hasFlag(FLAG_ARG_THIS)) {
           fn->thisTag = arg->intent;
           fn->_this = arg;
-
-          // While we're at it, add the method token formal
-          auto mt = new ArgSymbol(INTENT_BLANK, astr("_mt"), dtMethodToken);
-          fn->insertFormalAtTail(mt);
         }
 
         fn->insertFormalAtTail(arg);
@@ -4934,6 +4936,11 @@ bool TConverter::enter(const Function* node, RV& rv) {
     }
   }
 
+  if (fVerify && fn->isMethod() && fn->numFormals() > 0) {
+    auto arg = fn->getFormal(1);
+    INT_ASSERT(arg->type != dtMethodToken);
+  }
+
   return false;
 }
 
@@ -5067,13 +5074,13 @@ Expr* TConverter::convertParenlessCallOrNull(const AstNode* node, RV& rv) {
 
   if (sig->isMethod()) {
     if (node->isIdentifier()) {
-      ret = new CallExpr(calledFn, gMethodToken, codegenImplicitThis(rv));
+      ret = new CallExpr(calledFn, codegenImplicitThis(rv));
     } else {
       auto [recvAst, fieldName] = accessExpressionDetails(node);
       std::ignore = fieldName;
       types::QualifiedType qtRecv;
       auto recv = recvAst ? convertExpr(recvAst, rv, &qtRecv) : nullptr;
-      ret = new CallExpr(calledFn, gMethodToken, storeInTempIfNeeded(recv, qtRecv));
+      ret = new CallExpr(calledFn, storeInTempIfNeeded(recv, qtRecv));
     }
   } else {
     ret = new CallExpr(calledFn);

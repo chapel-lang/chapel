@@ -469,6 +469,23 @@ static const ArrayType* arrayTypeFromSubsHelper(
                                  eltType);
 }
 
+static const TupleType* tupleTypeFromSubsHelper(
+    ResolutionContext* rc, const CompositeType::SubstitutionsMap& subs) {
+  auto context = rc->context();
+  auto genericTuple = TupleType::getGenericTupleType(context);
+
+  if (subs.size() != 1) return genericTuple;
+
+  const QualifiedType instanceQt = subs.begin()->second;
+  if (!instanceQt.type() || !instanceQt.type()->isTupleType()) {
+    return genericTuple;
+  }
+  auto origType = instanceQt.type()->toTupleType();
+  auto asValueType = origType->toValueTuple(context);
+
+  return asValueType;
+}
+
 static const Type* ctFromSubs(ResolutionContext* rc,
                               const Type* receiverType,
                               const BasicClassType* superType,
@@ -507,6 +524,8 @@ static const Type* ctFromSubs(ResolutionContext* rc,
     ret = domainTypeFromSubsHelper(rc, subs);
   } else if (receiverType->isArrayType()) {
     ret = arrayTypeFromSubsHelper(rc, subs);
+  } else if (receiverType->isTupleType()) {
+    ret = tupleTypeFromSubsHelper(rc, subs);
   } else {
     CHPL_ASSERT(false && "Not handled!");
   }
@@ -602,7 +621,8 @@ QualifiedType::Kind InitResolver::determineReceiverIntent(void) {
     return QualifiedType::CONST_IN;
   } else if (initialRecvType_->isRecordType() ||
              initialRecvType_->isDomainType() ||
-             initialRecvType_->isArrayType()) {
+             initialRecvType_->isArrayType() ||
+             initialRecvType_->isTupleType()) {
     return QualifiedType::REF;
   } else {
     CHPL_ASSERT(false && "Not handled");
