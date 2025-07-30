@@ -244,16 +244,10 @@ void cleanAst() {
     serializeMap.erase(key);
   }
 
-  std::set<FunctionType*> functionTypesToRemove;
-
   //
   // clear back pointers to dead ast instances
   //
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (auto ft = toFunctionType(ts->type)) {
-      if (!ft->inTree()) functionTypesToRemove.insert(ft);
-    }
-
     for (int i = 0; i < ts->type->methods.n; i++) {
       FnSymbol* method = ts->type->methods.v[i];
 
@@ -293,18 +287,6 @@ void cleanAst() {
     }
   }
 
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    auto ft = toFunctionType(fn->type);
-    if (ft && !ft->inTree()) {
-      // Set the type to 'nullptr', it can be recomputed later.
-      fn->type = nullptr;
-
-      // We should be removing the type.
-      INT_ASSERT(functionTypesToRemove.find(ft) !=
-                 functionTypesToRemove.end());
-    }
-  }
-
   removedIterResumeLabels.clear();
 
   copiedIterResumeGotos.clear();
@@ -318,12 +300,6 @@ void cleanAst() {
   // clean global vectors and delete dead ast instances
   //
   foreach_ast(clean_gvec);
-
-  // Finally, clean up any 'FunctionType' since they do not have a 'gvec'.
-  for (auto ast : functionTypesToRemove) {
-    trace_remove(ast, 'x');
-    delete ast;
-  }
 }
 
 
