@@ -2858,6 +2858,9 @@ void FnSymbol::codegenDef() {
     if (fNoInline)
       func->addFnAttr(llvm::Attribute::NoInline);
 
+    if (this->hasFlag(FLAG_NO_INLINE))
+      func->addFnAttr(llvm::Attribute::NoInline);
+
 #if HAVE_LLVM_VER < 160
     // in newer LLVM versions, this is a only parameter attribute
     if (this->hasFlag(FLAG_LLVM_READNONE))
