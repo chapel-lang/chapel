@@ -4693,6 +4693,21 @@ considerCompilerGeneratedCandidates(ResolutionContext* rc,
   candidates.addCandidate(instantiated.candidate());
 }
 
+static const types::QualifiedType& getPromotionTypeQuery(Context* context, types::QualifiedType qt);
+
+static bool shouldSkipScalarTypes(Context* context,
+                                  QualifiedType receiverType) {
+  if (receiverType.isUnknownOrErroneous()) return true;
+  if (receiverType.isParam() || receiverType.isType()) return false;
+
+  // adjust the intent since we do that prior to invoking getPromotionTypeQuery
+  receiverType = QualifiedType(QualifiedType::CONST_VAR, receiverType.type());
+
+  // if we're currently computing the promotion (scalar) type, we can't use said
+  // promotion type for computing receivers.
+  return context->isQueryRunning(getPromotionTypeQuery, std::make_tuple(receiverType));
+}
+
 static MatchingIdsWithName lookupCalledExprImpl(Context* context,
                                                 const Scope* scope,
                                                 UniqueString name,
@@ -4700,7 +4715,9 @@ static MatchingIdsWithName lookupCalledExprImpl(Context* context,
                                                 LookupConfig config,
                                                 CheckedScopes& visited) {
   ReceiverScopeTypedHelper typedHelper;
-  auto lookupHelper = typedHelper.methodLookupForType(context, receiverType);
+
+  bool checkScalarTypes = !shouldSkipScalarTypes(context, receiverType);
+  auto lookupHelper = typedHelper.methodLookupForType(context, receiverType, checkScalarTypes);
   auto ret = lookupNameInScopeWithSet(context, scope,
                                       lookupHelper,
                                       /* receiverScopeHelper */ nullptr,
