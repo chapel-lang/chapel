@@ -288,13 +288,23 @@ def _var_to_string(node: chapel.VarLikeDecl) -> List[Component]:
     if intent:
         comps.append(_wrap_str(f"{intent} "))
 
-    comps.append(_wrap_str(node.name()))
+    # dont show the name if this is this_formal and it has a type_expression
+    is_this_formal = isinstance(node, chapel.Formal) and node.is_this()
+    if not (is_this_formal and node.type_expression()):
+        comps.append(_wrap_str(node.name()))
 
     type_str = None
     type_ = node.type_expression()
     if type_:
         type_str = Component.to_string(_node_to_string(type_))
-    comps.append(Component(ComponentTag.TYPE, type_str, node, prefix=": "))
+    comps.append(
+        Component(
+            ComponentTag.TYPE,
+            type_str,
+            node,
+            prefix=": " if not is_this_formal else None,
+        )
+    )
 
     init_str = None
     init = node.init_expression()
