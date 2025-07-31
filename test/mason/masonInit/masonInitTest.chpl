@@ -13,6 +13,7 @@ proc main(){
       rmTree('src');
       rmTree('.git');
       remove('Mason.toml');
+      remove('.gitignore');
   }
   else {
     writeln("Init is incorrect");

@@ -1,0 +1,9 @@
+
+======================================================================
+FAIL masonTestRunner-MyTest.chpl: test2()
+----------------------------------------------------------------------
+AssertionError: in masonTestRunner-MyTest.chpl:11 - assertTrue failed. Given expression is False
+
+----------------------------------------------------------------------
+
+FAILED (passed = 1 failures = 1 )

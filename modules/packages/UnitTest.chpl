@@ -1240,7 +1240,7 @@ module UnitTest {
 
   private proc testNameFromProcedure(f): string {
     var line = f: string;
-    assert(line.startsWith("proc"));
+    assert(line.startsWith("proc") || line.startsWith("wide proc"));
     var parenIndex = line.find("(");
     assert(parenIndex > -1);
     var name = try! line[(5 : byteIndex)..<parenIndex];

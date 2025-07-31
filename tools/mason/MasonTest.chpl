@@ -60,7 +60,6 @@ proc masonTest(args: [] string, checkProj=true) throws {
   var parFlag = parser.addFlag(name="parallel", defaultValue=false);
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
   var setCommOpt = parser.addOption(name="setComm", defaultValue="none");
-  var skipCheckFlag = parser.addFlag(name="skipCheck", defaultValue=false);
 
   // TODO: Why doesn't masonTest support a passthrough for values that should
   // go to the runtime?
@@ -72,7 +71,6 @@ proc masonTest(args: [] string, checkProj=true) throws {
   var show = showFlag.valueAsBool();
   var run = !runFlag.valueAsBool();
   var parallel = parFlag.valueAsBool();
-  var skipCheck = skipCheckFlag.valueAsBool();
   keepExec = keepFlag.valueAsBool();
   subdir = recursFlag.valueAsBool();
   if updateFlag.hasValue() {
@@ -80,7 +78,14 @@ proc masonTest(args: [] string, checkProj=true) throws {
   }
   if setCommOpt.hasValue() then setComm = setCommOpt.value();
 
-  if checkProj && !skipCheck {
+  var isMasonProject = true;
+  try {
+    getProjectHome(here.cwd());
+  } catch e: MasonError {
+    isMasonProject = false;
+  }
+
+  if checkProj && isMasonProject {
     const projectType = getProjectType();
     if projectType == "light" then
       throw new owned MasonError("Mason light projects do not currently support 'mason test'");
@@ -468,7 +473,7 @@ proc runUnitTest(ref cmdLineCompopts: list(string), show: bool) {
       timeElapsed.start();
       for tests in files {
         try {
-          testFile(tests, result, show);
+          testFile(tests, cmdLineCompopts, result, show);
         }
         catch e {
           writeln("Caught an Exception in Running Test File: ", tests);
@@ -478,7 +483,7 @@ proc runUnitTest(ref cmdLineCompopts: list(string), show: bool) {
 
       for dir in dirs {
         try {
-          testDirectory(dir, result, show);
+          testDirectory(dir, cmdLineCompopts, result, show);
         }
         catch e {
           writeln("Caught an Exception in Running Test Directory: ", dir);
@@ -498,7 +503,8 @@ proc runUnitTest(ref cmdLineCompopts: list(string), show: bool) {
 
 @chpldoc.nodoc
 /*Docs: Todo*/
-proc testFile(file, ref result, show: bool) throws {
+proc testFile(file, const ref compopts: list(string),
+              ref result, show: bool) throws {
   var fileName = basename(file);
   var line: string;
   var compErr = false;
@@ -514,7 +520,8 @@ proc testFile(file, ref result, show: bool) throws {
 
   const moveTo = "-o " + executable;
   const allCompOpts = "--comm " + comm;
-  const compCommand = " ".join("chpl",file, moveTo, allCompOpts);
+  const compCommand = " ".join("chpl",file, moveTo, allCompOpts) + " " +
+                      " ".join(compopts.these());
   const compilation = runWithStatus(compCommand, !show);
 
   if compilation != 0 {
@@ -554,10 +561,11 @@ proc testFile(file, ref result, show: bool) throws {
 
 @chpldoc.nodoc
 /*Docs: Todo*/
-proc testDirectory(dir, ref result, show: bool) throws {
+proc testDirectory(dir, const ref compopts: list(string),
+                   ref result, show: bool) throws {
   for file in findFiles(startdir = dir, recursive = subdir) {
     if file.endsWith(".chpl") {
-      testFile(file, result, show);
+      testFile(file, compopts, result, show);
     }
   }
 }
