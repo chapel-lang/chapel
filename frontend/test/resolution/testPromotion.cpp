@@ -442,6 +442,63 @@ static void test20() {
       IterableType("R").defineSerialIterator("new pair(0, 0.0)"));
 }
 
+static void test21() {
+  // Promotion gets triggered for methods
+  runProgram(
+      { "proc int.foo() do return this;",
+        "for i in (new R()).foo() {}" },
+      [](ErrorGuard& guard, const QualifiedType& t) {
+        assert(!t.isUnknownOrErroneous());
+        assert(t.type()->isIntType());
+      },
+      IterableType("R").definePromotionType("int").defineSerialIterator("1"));
+}
+
+// You can invoke primary methods on a type even if they are not imported
+// into the current scope, because the type's definition scope is considered.
+// However, in production, this rule doesn't apply to promoted methods.
+// Test that in Dyno, it does (which is more consistent).
+static void testPromotedMethodNotImported() {
+  auto prog = R"""(
+    module M1 {
+      record R {
+        proc foo() do return 42.0;
+      }
+    }
+    module M2 {
+      use M1;
+
+      record S {
+        proc chpl__promotionType() type do return R;
+        iter these() do yield new R();
+      }
+
+      var s = new S();
+    }
+    module M3 {
+      import M2.s;
+
+      var x = s.foo();
+    }
+  )""";
+
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  setFileText(context, "input.chpl", prog);
+  auto& res = parseFileToBuilderResultAndCheck(context, UniqueString::get(context, "input.chpl"), UniqueString());
+  assert(res.numTopLevelExpressions() == 3);
+  auto M3 = res.topLevelExpression(2)->toModule();
+  assert(M3->numStmts() == 2);
+  auto xInit = M3->stmt(1)->toVariable()->initExpression();
+
+  auto& rr = resolveModule(context, M3->id());
+  auto& re = rr.byAst(xInit);
+  assert(!re.type().isUnknownOrErroneous());
+  assert(re.type().type()->isPromotionIteratorType());
+  assert(re.type().type()->toPromotionIteratorType()->yieldType().type()->isRealType());
+}
+
 static void testFieldPromotionScoping() {
   // test that field access promotion works even if the field name itself
   // is not imported / in scope (it should be found in the receiver scopes).
@@ -535,7 +592,10 @@ int main() {
     test18();
     test19();
     test20();
+    test21();
   }
+
+  testPromotedMethodNotImported();
 
   testFieldPromotionScoping();
 
