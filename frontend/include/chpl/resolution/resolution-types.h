@@ -3394,7 +3394,7 @@ struct ReceiverScopeTypedHelper final : public ReceiverScopeHelper {
   }
 
   const TypedMethodLookupHelper*
-  methodLookupForType(Context* context, types::QualifiedType type) const;
+  methodLookupForType(Context* context, types::QualifiedType type, bool checkScalarTypes = false) const;
 
   const TypedMethodLookupHelper*
   methodLookupForMethodId(Context* context, const ID& methodId) const override;
