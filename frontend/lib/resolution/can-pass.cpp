@@ -1024,7 +1024,7 @@ CanPassResult CanPassResult::canPassScalar(Context* context,
   //   proc f(a: int(?w), b: int(2*w))
   // when computing an initial candidate, 'b' is unknown
   // but we should allow passing an argument to it.
-  if (formalT->isUnknownType() && !actualQT.isType()) {
+  if (formalT->isUnknownType()) {
     return instantiate();
   }
 
