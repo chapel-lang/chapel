@@ -54,11 +54,14 @@ static auto recIter = std::string(R""""(
 
 std::vector<const ErrorBase*> errors;
 
+template <paramtags::ParamTag Tag, typename ParamT>
 struct ParamCollector {
   using RV = ResolvedVisitor<ParamCollector>;
 
+  using ValueT = decltype(std::declval<const ParamT*>()->value());
+
   std::map<std::string, int> resolvedIdents;
-  std::multimap<std::string, int64_t> resolvedVals;
+  std::multimap<std::string, ValueT> resolvedVals;
 
   ParamCollector() { }
 
@@ -66,10 +69,10 @@ struct ParamCollector {
     if (decl->storageKind() == Qualifier::PARAM ||
         decl->storageKind() == Qualifier::INDEX) {
       const ResolvedExpression& rr = rv.byAst(decl);
-      auto val = rr.type().param()->toIntParam();
-      assert(val != nullptr);
+      auto val = rr.type().param();
+      assert(val != nullptr && val->tag() == Tag);
 
-      resolvedVals.emplace(decl->name().str(), val->value());
+      resolvedVals.emplace(decl->name().str(), ((const ParamT*) val)->value());
     }
     return true;
   }
@@ -335,8 +338,8 @@ static void testCForLoop() {
 }
 
 // Note: values hardcoded to match 'helpTestParam' helper
-struct ParamLoopTester {
-  ParamCollector pc;
+struct IntParamLoopTester {
+  ParamCollector<paramtags::ParamTag::IntParam, IntParam> pc;
   std::map<std::string, int> resolvedIdents;
   std::multimap<std::string, int64_t> resolvedVals;
 
@@ -354,7 +357,7 @@ struct ParamLoopTester {
   }
 };
 
-static ParamLoopTester helpTestParam(const char* rangeExpr, const char* extraCode = "") {
+static IntParamLoopTester helpTestIntParam(const char* rangeExpr, const char* extraCode = "") {
   printf("testParamFor with %s\n", rangeExpr);
   auto context = buildStdContext();
   ErrorGuard guard(context);
@@ -375,18 +378,18 @@ static ParamLoopTester helpTestParam(const char* rangeExpr, const char* extraCod
   const Module* m = parseModule(context, iterText);
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
-  ParamCollector pc;
-  ResolvedVisitor<ParamCollector> rv(&rcval, m, pc, rr);
+  ParamCollector<paramtags::ParamTag::IntParam, IntParam> pc;
+  ResolvedVisitor<decltype(pc)> rv(&rcval, m, pc, rr);
   m->traverse(rv);
 
   const ResolvedExpression& re = rr.byAst(m->stmt(0));
   assert(re.type().type() == IntType::get(context, 0));
-  return ParamLoopTester{std::move(pc), {}, {}};
+  return IntParamLoopTester{std::move(pc), {}, {}};
 }
 
 static void testParamFor() {
   {
-    auto test = helpTestParam("1..10");
+    auto test = helpTestIntParam("1..10");
     for (int i = 1; i <= 10; i++) {
       test.noteExpectedIteration(i);
     }
@@ -394,7 +397,7 @@ static void testParamFor() {
   }
 
   {
-    auto test = helpTestParam("1..10 by 2");
+    auto test = helpTestIntParam("1..10 by 2");
     for (int i = 1; i <= 10; i += 2) {
       test.noteExpectedIteration(i);
     }
@@ -402,7 +405,7 @@ static void testParamFor() {
   }
 
   {
-    auto test = helpTestParam("1..10 by -2");
+    auto test = helpTestIntParam("1..10 by -2");
     for (int i = 10; i >= 1; i -= 2) {
       test.noteExpectedIteration(i);
     }
@@ -410,7 +413,7 @@ static void testParamFor() {
   }
 
   {
-    auto test = helpTestParam("1..<10");
+    auto test = helpTestIntParam("1..<10");
     for (int i = 1; i < 10; i++) {
       test.noteExpectedIteration(i);
     }
@@ -418,7 +421,7 @@ static void testParamFor() {
   }
 
   {
-    auto test = helpTestParam("1..<10 by -2");
+    auto test = helpTestIntParam("1..<10 by -2");
     for (int i = 9; i >= 1; i -= 2) {
       test.noteExpectedIteration(i);
     }
@@ -426,7 +429,7 @@ static void testParamFor() {
   }
 
   {
-    auto test = helpTestParam("0..#10");
+    auto test = helpTestIntParam("0..#10");
     for (int i = 0; i < 10; i ++) {
       test.noteExpectedIteration(i);
     }
@@ -434,7 +437,7 @@ static void testParamFor() {
   }
 
   {
-    auto test = helpTestParam("0..#10 by -2");
+    auto test = helpTestIntParam("0..#10 by -2");
     for (int i = 9; i >= 0; i -= 2) {
       test.noteExpectedIteration(i);
     }
@@ -442,7 +445,7 @@ static void testParamFor() {
   }
 
   {
-    auto test = helpTestParam("..10#10");
+    auto test = helpTestIntParam("..10#10");
     for (int i = 1; i <= 10; i++) {
       test.noteExpectedIteration(i);
     }
@@ -450,7 +453,7 @@ static void testParamFor() {
   }
 
   {
-    auto test = helpTestParam("..10#10 by -2");
+    auto test = helpTestIntParam("..10#10 by -2");
     for (int i = 10; i >= 1; i -= 2) {
       test.noteExpectedIteration(i);
     }
@@ -458,7 +461,7 @@ static void testParamFor() {
   }
 
   {
-    auto test = helpTestParam("1..10", "break;");
+    auto test = helpTestIntParam("1..10", "break;");
     for (int i = 1; i <= 10; i++) {
       test.noteExpectedIteration(i);
       break;
@@ -467,7 +470,7 @@ static void testParamFor() {
   }
 
   {
-    auto test = helpTestParam("1..10", "continue;");
+    auto test = helpTestIntParam("1..10", "continue;");
     for (int i = 1; i <= 10; i++) {
       test.noteExpectedIteration(i);
       continue;
@@ -502,8 +505,8 @@ static void testNestedParamFor() {
   const Module* m = parseModule(context, loopText);
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
-  ParamCollector pc;
-  ResolvedVisitor<ParamCollector> rv(rc, m, pc, rr);
+  ParamCollector<paramtags::ParamTag::IntParam, IntParam> pc;
+  ResolvedVisitor<decltype(pc)> rv(rc, m, pc, rr);
   m->traverse(rv);
 
   const ResolvedExpression& re = rr.byAst(m->stmt(0));
