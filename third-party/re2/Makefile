@@ -31,7 +31,7 @@ ifneq (, $(CHPL_RE2_VALGRIND_SUPPORT))
 CHPL_RE2_CXXFLAGS += -DRE2_ON_VALGRIND
 endif
 
-ifeq ($(CHPL_LIB_PIC),pic)
+ifeq ($(CHPL_MAKE_LIB_PIC),pic)
 CXXFLAGS += $(SHARED_LIB_CFLAGS)
 endif
 

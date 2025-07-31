@@ -90,7 +90,7 @@ ifeq (, $(MPI_CC))
 MPI_CC=mpicc
 endif
 
-ifeq ($(CHPL_LIB_PIC),pic)
+ifeq ($(CHPL_MAKE_LIB_PIC),pic)
 GASNET_CFLAGS += $(SHARED_LIB_CFLAGS)
 # MPI_CFLAGS overides autodetection, which we don't want so add to MPI_CC
 MPI_CC += $(SHARED_LIB_CFLAGS)

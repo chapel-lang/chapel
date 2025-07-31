@@ -25,7 +25,7 @@ CHPL_LIBFABRIC_CFG_OPTIONS += --enable-debug
 CFLAGS += -g
 endif
 
-ifeq ($(CHPL_LIB_PIC),pic)
+ifeq ($(CHPL_MAKE_LIB_PIC),pic)
 CFLAGS += $(SHARED_LIB_CFLAGS)
 endif
 
