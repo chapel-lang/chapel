@@ -11904,6 +11904,7 @@ proc bytes.format(args ...?k): bytes throws {
   return b"";
 }
 
+pragma "no inline"
 private proc chpl_do_format_read(f, size: int) throws {
   var buf = allocate(uint(8), (size+1).safeCast(c_size_t));
   var r = f.reader(locking=false);
@@ -11925,6 +11926,7 @@ private proc chpl_do_format_read(f, size: int) throws {
   return buf;
 }
 
+pragma "no inline"
 private proc chpl_do_format(fmt:?t, args ...?k): t throws
     where isStringType(t) || isBytesType(t) {
 

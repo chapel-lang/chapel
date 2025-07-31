@@ -75,6 +75,17 @@
   #define ___always_inline inline
 #endif
 
+#if defined __has_attribute
+  #if __has_attribute (noinline)
+    #define chpl_noinline __attribute__ ((noinline))
+  #endif
+#endif
+#ifndef chpl_noinline
+  // not supported
+  #define chpl_noinline
+#endif
+
+
 // Ask a C++ compiler if it would please include e.g. INT64_MAX
 #ifndef __STDC_CONSTANT_MACROS
 #define __STDC_CONSTANT_MACROS

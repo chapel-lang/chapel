@@ -2446,6 +2446,10 @@ void FnSymbol::codegenHeaderC(void) {
   if (fGenIDS)
     fprintf(outfile, "%s", idCommentTemp(this));
 
+  if (hasFlag(FLAG_NO_INLINE)) {
+    fprintf(outfile, "chpl_noinline ");
+  }
+
   if (!fIncrementalCompilation && !hasFlag(FLAG_EXPORT) && !hasFlag(FLAG_EXTERN)) {
     fprintf(outfile, "static ");
   }
@@ -2856,6 +2860,9 @@ void FnSymbol::codegenDef() {
     }
     // Also mark no-inline if the flag was set
     if (fNoInline)
+      func->addFnAttr(llvm::Attribute::NoInline);
+
+    if (this->hasFlag(FLAG_NO_INLINE))
       func->addFnAttr(llvm::Attribute::NoInline);
 
 #if HAVE_LLVM_VER < 160
