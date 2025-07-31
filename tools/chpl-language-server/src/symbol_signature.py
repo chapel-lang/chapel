@@ -60,7 +60,9 @@ class Component:
         return s
 
 
-def _wrap_str(s: str, prefix: Optional[str] = None, postfix: Optional[str] = None) -> Component:
+def _wrap_str(
+    s: str, prefix: Optional[str] = None, postfix: Optional[str] = None
+) -> Component:
     return Component(ComponentTag.STRING, s, prefix=prefix, postfix=postfix)
 
 
@@ -92,16 +94,18 @@ class SymbolSignature:
             if tag == ComponentTag.TYPE and node is not None:
                 type_str = _resolve_type_str(node, via)
                 if type_str:
-                    self._signature[i] = _wrap_str(type_str, prefix=prefix, postfix=postfix)
+                    self._signature[i] = _wrap_str(
+                        type_str, prefix=prefix, postfix=postfix
+                    )
                 elif value:
                     # if we can't resolve the type, we just keep the original value
-                    self._signature[i] = _wrap_str(value, prefix=prefix, postfix=postfix)
+                    self._signature[i] = _wrap_str(
+                        value, prefix=prefix, postfix=postfix
+                    )
                 else:
                     remove.append(i)
         for i in reversed(remove):
             del self._signature[i]
-
-
 
     def compute_value(self, via: Optional[chapel.TypedSignature] = None):
         """evaluate expressions"""
@@ -115,16 +119,19 @@ class SymbolSignature:
             if tag == ComponentTag.PARAM_VALUE and node is not None:
                 param_str = _resolve_param_str(node, via)
                 if param_str:
-                    self._signature[i] = _wrap_str(param_str, prefix=prefix, postfix=postfix)
+                    self._signature[i] = _wrap_str(
+                        param_str, prefix=prefix, postfix=postfix
+                    )
                 elif value:
                     # if we can't resolve the param, we just keep the original value
-                    self._signature[i] = _wrap_str(value, prefix=prefix, postfix=postfix)
+                    self._signature[i] = _wrap_str(
+                        value, prefix=prefix, postfix=postfix
+                    )
                 else:
                     remove.append(i)
 
         for i in reversed(remove):
             del self._signature[i]
-
 
     def __str__(self) -> str:
         return Component.to_string(self._signature)
@@ -234,7 +241,7 @@ def _node_to_string(node: chapel.AstNode, sep="") -> List[Component]:
 
 
 def _record_class_to_string(
-    node: Union[chapel.Record, chapel.Class]
+    node: Union[chapel.Record, chapel.Class],
 ) -> List[Component]:
     """
     Convert a Record or a Class to a string
@@ -293,7 +300,9 @@ def _var_to_string(node: chapel.VarLikeDecl) -> List[Component]:
     init = node.init_expression()
     if init:
         init_str = Component.to_string(_node_to_string(init))
-    comps.append(Component(ComponentTag.PARAM_VALUE, init_str, node, prefix=" = "))
+    comps.append(
+        Component(ComponentTag.PARAM_VALUE, init_str, node, prefix=" = ")
+    )
 
     return comps
 
@@ -322,9 +331,7 @@ def _proc_to_string(node: chapel.Function) -> List[Component]:
         assert isinstance(this_formal, chapel.Formal)
         intent = _intent_to_string(this_formal.intent())
         if intent:
-            comps.append(
-                _wrap_str(f"{intent} ")
-            )
+            comps.append(_wrap_str(f"{intent} "))
         # if the this-formal has a type, add it
         type_expr = this_formal.type_expression()
         if type_expr:
@@ -332,7 +339,9 @@ def _proc_to_string(node: chapel.Function) -> List[Component]:
             comps.append(_wrap_str("."))
         else:
             # if it doesn't have a type_expression, we can try and get it from resolution
-            comps.append(Component(ComponentTag.TYPE, None, this_formal, postfix="."))
+            comps.append(
+                Component(ComponentTag.TYPE, None, this_formal, postfix=".")
+            )
 
     comps.append(_wrap_str(node.name()))
 
