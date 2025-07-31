@@ -640,6 +640,16 @@ CLASS_BEGIN(VarLikeDecl)
                const char*, return intentToString(node->storageKind()))
 CLASS_END(VarLikeDecl)
 
+CLASS_BEGIN(Formal)
+  PLAIN_GETTER(Formal, is_this, "Check if this Formal node is a 'this' formal",
+               bool,
+                auto parent = chpl::parsing::parentAst(context, node);
+                return parent && parent->isFunction() &&
+                       parent->toFunction()->thisFormal() &&
+                       parent->toFunction()->thisFormal()->id() == node->id();
+              )
+CLASS_END(Formal)
+
 CLASS_BEGIN(VarArgFormal)
   PLAIN_GETTER(VarArgFormal, count, "Get the count expression of this VarArgFormal node",
                Nilable<const chpl::uast::AstNode*>, return node->count())
