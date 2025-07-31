@@ -9,6 +9,7 @@ from lsprotocol.types import ClientCapabilities
 from lsprotocol.types import CompletionList, CompletionParams
 from lsprotocol.types import ReferenceParams, ReferenceContext
 from lsprotocol.types import InitializeParams
+from lsprotocol.types import HoverParams, Hover, MarkupContent
 import pytest
 import pytest_lsp
 from pytest_lsp import ClientServerConfig, LanguageClient
@@ -424,3 +425,88 @@ async def test_go_to_enum(client: LanguageClient):
         # check A.a
         await check_goto_decl_def(client, doc, pos((5, 8)), pos((1, 5)))
         await check_goto_decl_def(client, doc, pos((5, 10)), pos((2, 2)))
+
+
+@pytest.mark.asyncio
+async def test_hover(client: LanguageClient):
+    """
+    Ensure that `: string` as a type inlay does not break
+    """
+
+    file = """
+            module M {
+              iter myIter() { }
+              proc myFunc(myFormal: int) { }
+              operator +(x, y) do return 1;
+              var myVar: int;
+              config const myConfig: int;
+
+              record myRec {
+                iter myMethodIter() { }
+                proc myMethod(myFormal: real(32)) { }
+                operator *(x, y) do return 1;
+                var myField: int;
+              }
+
+              class myClass {
+                proc init() { }
+                proc deinit() { }
+                proc init=(other) { }
+                proc :(x, type t) { }
+              }
+
+              proc myRec.secondary(myFormal) { }
+            }
+           """
+
+    hovers = [
+        ("module M", rng(pos((0, 7)), pos((0, 8))), pos((0, 7))),
+        ("iter myIter()", rng(pos((1, 7)), pos((1, 13))), pos((1, 8))),
+        (
+            "proc myFunc(myFormal: int)",
+            rng(pos((2, 7)), pos((2, 13))),
+            pos((2, 9)),
+        ),
+        ("myFormal: int", rng(pos((2, 14)), pos((2, 22))), pos((2, 8))),
+        ("operator +(x, y)", rng(pos((3, 12)), pos((3, 13))), pos((3, 10))),
+        ("var myVar: int", rng(pos((4, 6)), pos((4, 10))), pos((4, 5))),
+        (
+            "config const myConfig: int",
+            rng(pos((5, 12)), pos((5, 20))),
+            pos((5, 14)),
+        ),
+        ("record myRec", rng(pos((7, 7)), pos((7, 11))), pos((7, 8))),
+        ("iter myMethodIter()", rng(pos((8, 7)), pos((8, 14))), pos((8, 8))),
+        (
+            "proc myMethod(myFormal: real(32))",
+            rng(pos((9, 7)), pos((9, 15))),
+            pos((9, 8)),
+        ),
+        ("myFormal: real(32)", rng(pos((9, 16)), pos((9, 24))), pos((9, 14))),
+        ("operator *(x, y)", rng(pos((10, 11)), pos((10, 12))), pos((10, 11))),
+        ("var myField: int", rng(pos((11, 6)), pos((11, 13))), pos((11, 7))),
+        ("class myClass", rng(pos((13, 8)), pos((13, 15))), pos((13, 8))),
+        ("proc init()", rng(pos((14, 6)), pos((14, 10))), pos((14, 7))),
+        ("proc deinit()", rng(pos((15, 6)), pos((15, 12))), pos((15, 13))),
+        ("proc init=(other)", rng(pos((16, 6)), pos((16, 11))), pos((16, 8))),
+        ("proc :(x, type t)", rng(pos((17, 6)), pos((17, 7))), pos((17, 7))),
+        (
+            "proc myRec.secondary(myFormal)",
+            rng(pos((19, 6)), pos((19, 14))),
+            pos((19, 8)),
+        ),
+        ("record myRec", rng(pos((19, 6)), pos((19, 11))), pos((19, 7))),
+        ("myFormal", rng(pos((19, 15)), pos((19, 22))), pos((19, 15))),
+    ]
+
+    async with source_file(client, file) as doc:
+
+        for expected_text, expected_rng, p in hovers:
+            # try to hover over the inlay/inlay location, make sure it does something
+            actual = await client.text_document_hover_async(
+                params=HoverParams(doc, p)
+            )
+            assert actual is not None
+            assert expected_rng == actual.range
+            assert isinstance(actual.contents, MarkupContent)
+            assert expected_text in actual.contents.value
