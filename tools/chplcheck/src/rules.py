@@ -152,6 +152,23 @@ def check_pascal_case(
         name_for_linting(context, node, internal_prefixes),
     )
 
+def extract_only_bool(parent: Conditional, node: Optional[Block]) -> Optional[bool]:
+    if node is None:
+        return None
+
+    children = list(node)
+    if len(children) != 1:
+        return None
+
+    check_for_bool = children[0]
+    if not parent.is_expression_level():
+        if not isinstance(check_for_bool, Return):
+            return None
+        check_for_bool = check_for_bool.value()
+
+    if not isinstance(check_for_bool, BoolLiteral):
+        return None
+    return check_for_bool.value()
 
 def rules(driver: LintDriver):
     @driver.basic_rule(VarLikeDecl, default=False)
@@ -345,43 +362,29 @@ def rules(driver: LintDriver):
         """
         Warn for boolean conditionals that can be simplified.
         """
-        then = list(node.then_block().stmts())
-        else_block = node.else_block()
-        else_block = list(else_block.stmts()) if else_block else []
-        if not (len(then) == 1 and len(else_block) == 1):
-            return True
-        then_stmt = then[0]
-        else_stmt = else_block[0]
-
-        def check_for_bool(then_stmt, else_stmt, is_only_returns):
-            if isinstance(then_stmt, chapel.BoolLiteral) and isinstance(
-                else_stmt, chapel.BoolLiteral
-            ):
-                should_invert = not then_stmt.value()
-                return BasicRuleResult(
-                    node, ignorable=False, data=(is_only_returns, should_invert)
-                )
+        then_ret = extract_only_bool(node, node.then_block())
+        else_ret = extract_only_bool(node, node.else_block())
+        if then_ret is None or else_ret is None:
             return True
 
-        # if they are both bool literals, this can be simplified
-        if node.is_expression_level():
-            return check_for_bool(then_stmt, else_stmt, is_only_returns=False)
-
-        # if they are both returns and are simple returns of bool literals,
-        # this can also be simplified
-        if isinstance(then_stmt, chapel.Return) and isinstance(
-            else_stmt, chapel.Return
-        ):
-            return check_for_bool(
-                then_stmt.value(), else_stmt.value(), is_only_returns=True
+        is_only_returns = not node.is_expression_level()
+        if then_ret != else_ret:
+            should_invert = not then_ret
+            return BasicRuleResult(
+                node, ignorable=False, data=(is_only_returns, should_invert, None)
             )
+        else:
+            return BasicRuleResult(
+                node, ignorable=False, data=(is_only_returns, None, then_ret)
+            )
+
 
         return True
 
     @driver.fixit(SimpleBoolConditional)
     def FixSimpleBoolConditional(context, result: BasicRuleResult):
         assert isinstance(result.data, tuple)
-        is_only_returns, should_invert = result.data
+        is_only_returns, should_invert, replace_with_value = result.data
         node = result.node
         assert isinstance(node, chapel.Conditional)
         condition = node.condition()
@@ -389,16 +392,19 @@ def rules(driver: LintDriver):
         cond_loc_start_line, cond_loc_start_col = cond_loc.start()
         _, cond_loc_end_col = cond_loc.end()
 
-        # get the conditions text, using its location so we preserve comments
-        lines = chapel.get_file_lines(context, result.node)
-        condition_text = lines[cond_loc_start_line - 1][
-            cond_loc_start_col - 1 : cond_loc_end_col - 1
-        ]
+        if replace_with_value is None:
+            # get the conditions text, using its location so we preserve comments
+            lines = chapel.get_file_lines(context, result.node)
+            condition_text = lines[cond_loc_start_line - 1][
+                cond_loc_start_col - 1 : cond_loc_end_col - 1
+            ]
+            if should_invert:
+                condition_text = "!(" + condition_text + ")"
+        else:
+            condition_text = "true" if replace_with_value else "false"
 
-        if should_invert:
-            condition_text = "!(" + condition_text + ")"
         if is_only_returns:
-            condition_text = "return " + condition_text
+            condition_text = "return " + condition_text + ";"
 
         return [Fixit.build(Edit.build(node.location(), condition_text))]
 
