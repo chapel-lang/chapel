@@ -1,0 +1,55 @@
+module SimpleBoolConditional {
+  proc foo(x) {
+    return x /**/ == 1;
+  }
+  proc fooInv(x) {
+    return !(x == 1);
+  }
+  proc bar(x) {
+    return x == /**/1;
+  }
+  proc barInv(x) {
+    return !(x == 1);
+  }
+  proc egg(x) {
+    return x == 1;
+  }
+  proc eggInv(x) {
+    return !(x /**/== 1);
+  }
+  proc spam(x) {
+    var a = x == 1;
+    var b = !(x == 2);
+
+    const c = x == 3,
+          d = !(x == 4);
+    return a && b && c && d;
+  }
+
+  proc onlyTrue(x) {
+    var y = true;
+    return true;
+  }
+  proc onlyTrue2(x) {
+    return true;
+  }
+
+  proc onlyFalse(x) {
+    var y = false;
+    return false;
+  }
+  proc onlyFalse2(x) {
+    return false;
+  }
+
+  proc arrayVersion(x) {
+    var y = [i in 1..x] i%2 == 0;
+    var z = [i in 1..x] true;
+    return [i in 1..x] !(i%2 == 0);
+  }
+
+  proc oneBranch(x) {
+    var y = [i in 1..x] if i%2 == 0 then true;
+    return [i in 1..x] if i%2 == 0 then false;
+  }
+}

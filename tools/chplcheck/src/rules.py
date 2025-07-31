@@ -153,6 +153,27 @@ def check_pascal_case(
     )
 
 
+def extract_only_bool(
+    parent: Conditional, node: Optional[Block]
+) -> Optional[bool]:
+    if node is None:
+        return None
+
+    children = list(node)
+    if len(children) != 1:
+        return None
+
+    check_for_bool = children[0]
+    if not parent.is_expression_level():
+        if not isinstance(check_for_bool, Return):
+            return None
+        check_for_bool = check_for_bool.value()
+
+    if not isinstance(check_for_bool, BoolLiteral):
+        return None
+    return check_for_bool.value()
+
+
 def rules(driver: LintDriver):
     @driver.basic_rule(VarLikeDecl, default=False)
     def CamelOrPascalCaseVariables(context: Context, node: VarLikeDecl):
@@ -340,6 +361,58 @@ def rules(driver: LintDriver):
 
         return [Fixit.build(Edit.build(paren_loc, new_text))]
 
+    @driver.basic_rule(chapel.Conditional)
+    def SimpleBoolConditional(context, node: chapel.Conditional):
+        """
+        Warn for boolean conditionals that can be simplified.
+        """
+        then_ret = extract_only_bool(node, node.then_block())
+        else_ret = extract_only_bool(node, node.else_block())
+        if then_ret is None or else_ret is None:
+            return True
+
+        is_only_returns = not node.is_expression_level()
+        if then_ret != else_ret:
+            should_invert = not then_ret
+            return BasicRuleResult(
+                node,
+                ignorable=False,
+                data=(is_only_returns, should_invert, None),
+            )
+        else:
+            return BasicRuleResult(
+                node, ignorable=False, data=(is_only_returns, None, then_ret)
+            )
+
+        return True
+
+    @driver.fixit(SimpleBoolConditional)
+    def FixSimpleBoolConditional(context, result: BasicRuleResult):
+        assert isinstance(result.data, tuple)
+        is_only_returns, should_invert, replace_with_value = result.data
+        node = result.node
+        assert isinstance(node, chapel.Conditional)
+        condition = node.condition()
+        cond_loc = condition.location()
+        cond_loc_start_line, cond_loc_start_col = cond_loc.start()
+        _, cond_loc_end_col = cond_loc.end()
+
+        if replace_with_value is None:
+            # get the conditions text, using its location so we preserve comments
+            lines = chapel.get_file_lines(context, result.node)
+            condition_text = lines[cond_loc_start_line - 1][
+                cond_loc_start_col - 1 : cond_loc_end_col - 1
+            ]
+            if should_invert:
+                condition_text = "!(" + condition_text + ")"
+        else:
+            condition_text = "true" if replace_with_value else "false"
+
+        if is_only_returns:
+            condition_text = "return " + condition_text + ";"
+
+        return [Fixit.build(Edit.build(node.location(), condition_text))]
+
     @driver.basic_rule(Coforall, default=False)
     def NestedCoforalls(context: Context, node: Coforall):
         """
@@ -372,6 +445,7 @@ def rules(driver: LintDriver):
         Remove the unused branch of a conditional statement, keeping the braces.
         """
         node = result.data
+        assert isinstance(node, Conditional)
         lines = chapel.get_file_lines(context, node)
 
         cond = node.condition()
