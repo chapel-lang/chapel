@@ -2446,6 +2446,10 @@ void FnSymbol::codegenHeaderC(void) {
   if (fGenIDS)
     fprintf(outfile, "%s", idCommentTemp(this));
 
+  if (hasFlag(FLAG_NO_INLINE)) {
+    fprintf(outfile, "chpl_noinline ");
+  }
+
   if (!fIncrementalCompilation && !hasFlag(FLAG_EXPORT) && !hasFlag(FLAG_EXTERN)) {
     fprintf(outfile, "static ");
   }
