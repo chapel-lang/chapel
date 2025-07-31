@@ -147,7 +147,7 @@ endif
 # reduce performance penalty in cases where numChapelTasks < numQthreadWorkers
 CHPL_QTHREAD_CFG_OPTIONS += -DQTHREADS_CONDWAIT_QUEUE=ON
 
-ifeq ($(CHPL_LIB_PIC),pic)
+ifeq ($(CHPL_MAKE_LIB_PIC),pic)
 CFLAGS += $(SHARED_LIB_CFLAGS)
 endif
 

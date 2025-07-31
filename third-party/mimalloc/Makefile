@@ -41,7 +41,7 @@ CHPL_MIMALLOC_CFG_OPTIONS += -DCMAKE_C_COMPILER='$(shell $(CHPL_MAKE_PYTHON) $(C
 	                           -DCMAKE_CXX_FLAGS='$(shell $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_compiler.py --cxx --target --additional) $(CXXFLAGS)'
 endif
 
-ifeq ($(CHPL_LIB_PIC),pic)
+ifeq ($(CHPL_MAKE_LIB_PIC),pic)
 CFLAGS += $(SHARED_LIB_CFLAGS)
 endif
 
