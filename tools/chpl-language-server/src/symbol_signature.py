@@ -33,8 +33,10 @@ class ComponentTag(enum.Enum):
 @dataclass
 class Component:
     tag: ComponentTag
-    value: Union[str, None]
+    value: Optional[str]
     node: Optional[chapel.AstNode] = None
+    prefix: Optional[str] = None
+    postfix: Optional[str] = None
 
     @staticmethod
     def to_string(comps: List["Component"]) -> str:
@@ -46,7 +48,11 @@ class Component:
                 ComponentTag.PARAM_VALUE,
             ):
                 if comp.value is not None:
+                    if comp.prefix is not None:
+                        s += str(comp.prefix)
                     s += str(comp.value)
+                    if comp.postfix is not None:
+                        s += str(comp.postfix)
             elif comp.tag == ComponentTag.PLACEHOLDER:
                 s += "<...>"
             else:
@@ -54,8 +60,8 @@ class Component:
         return s
 
 
-def _wrap_str(s: str) -> Component:
-    return Component(ComponentTag.STRING, s)
+def _wrap_str(s: str, prefix: Optional[str] = None, postfix: Optional[str] = None) -> Component:
+    return Component(ComponentTag.STRING, s, prefix=prefix, postfix=postfix)
 
 
 def _wrap_in(
@@ -76,23 +82,49 @@ class SymbolSignature:
 
         Note: this is a temporary method that will go away when the resolver is fully online
         """
+        remove = []
         for i in range(len(self._signature)):
             tag = self._signature[i].tag
             node = self._signature[i].node
+            value = self._signature[i].value
+            prefix = self._signature[i].prefix or ""
+            postfix = self._signature[i].postfix or ""
             if tag == ComponentTag.TYPE and node is not None:
                 type_str = _resolve_type_str(node, via)
                 if type_str:
-                    self._signature[i] = _wrap_str(": " + type_str)
+                    self._signature[i] = _wrap_str(type_str, prefix=prefix, postfix=postfix)
+                elif value:
+                    # if we can't resolve the type, we just keep the original value
+                    self._signature[i] = _wrap_str(value, prefix=prefix, postfix=postfix)
+                else:
+                    remove.append(i)
+        for i in reversed(remove):
+            del self._signature[i]
+
+
 
     def compute_value(self, via: Optional[chapel.TypedSignature] = None):
         """evaluate expressions"""
+        remove = []
         for i in range(len(self._signature)):
             tag = self._signature[i].tag
             node = self._signature[i].node
+            value = self._signature[i].value
+            prefix = self._signature[i].prefix or ""
+            postfix = self._signature[i].postfix or ""
             if tag == ComponentTag.PARAM_VALUE and node is not None:
                 param_str = _resolve_param_str(node, via)
                 if param_str:
-                    self._signature[i] = _wrap_str(" = " + param_str)
+                    self._signature[i] = _wrap_str(param_str, prefix=prefix, postfix=postfix)
+                elif value:
+                    # if we can't resolve the param, we just keep the original value
+                    self._signature[i] = _wrap_str(value, prefix=prefix, postfix=postfix)
+                else:
+                    remove.append(i)
+
+        for i in reversed(remove):
+            del self._signature[i]
+
 
     def __str__(self) -> str:
         return Component.to_string(self._signature)
@@ -254,14 +286,14 @@ def _var_to_string(node: chapel.VarLikeDecl) -> List[Component]:
     type_str = None
     type_ = node.type_expression()
     if type_:
-        type_str = ": " + Component.to_string(_node_to_string(type_))
-    comps.append(Component(ComponentTag.TYPE, type_str, node))
+        type_str = Component.to_string(_node_to_string(type_))
+    comps.append(Component(ComponentTag.TYPE, type_str, node, prefix=": "))
 
     init_str = None
     init = node.init_expression()
     if init:
-        init_str = " = " + Component.to_string(_node_to_string(init))
-    comps.append(Component(ComponentTag.PARAM_VALUE, init_str, node))
+        init_str = Component.to_string(_node_to_string(init))
+    comps.append(Component(ComponentTag.PARAM_VALUE, init_str, node, prefix=" = "))
 
     return comps
 
@@ -285,10 +317,23 @@ def _proc_to_string(node: chapel.Function) -> List[Component]:
 
     comps.append(_wrap_str(f"{node.kind()} "))
     # if it has a this-formal, check for this intent
-    if node.this_formal() and _intent_to_string(node.this_formal().intent()):
-        comps.append(
-            _wrap_str(f"{_intent_to_string(node.this_formal().intent())} ")
-        )
+    this_formal = node.this_formal()
+    if this_formal:
+        assert isinstance(this_formal, chapel.Formal)
+        intent = _intent_to_string(this_formal.intent())
+        if intent:
+            comps.append(
+                _wrap_str(f"{intent} ")
+            )
+        # if the this-formal has a type, add it
+        type_expr = this_formal.type_expression()
+        if type_expr:
+            comps.extend(_node_to_string(type_expr))
+            comps.append(_wrap_str("."))
+        else:
+            # if it doesn't have a type_expression, we can try and get it from resolution
+            comps.append(Component(ComponentTag.TYPE, None, this_formal, postfix="."))
+
     comps.append(_wrap_str(node.name()))
 
     if not node.is_parenless():
