@@ -458,6 +458,8 @@ static void test21() {
 // into the current scope, because the type's definition scope is considered.
 // However, in production, this rule doesn't apply to promoted methods.
 // Test that in Dyno, it does (which is more consistent).
+//
+// Tracking issue in prod: https://github.com/chapel-lang/chapel/issues/27578
 static void testPromotedMethodNotImported() {
   auto prog = R"""(
     module M1 {
