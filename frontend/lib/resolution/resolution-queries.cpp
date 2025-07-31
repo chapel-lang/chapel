@@ -5340,7 +5340,24 @@ gatherAndFilterCandidates(ResolutionContext* rc,
     // The 'isInsideForwarding' check below would prevent resolving a method
     // 'bar()' on 'b'.
 
+    // don't look for chpl__promotionType using forwarding,
+    // This prevents an infinite dependency of:
+    //
+    // get scopes
+    //   -> get scopes for scalar types
+    //   -> resolve chpl__promotionType to get scalar types
+    //   -> resolve fields for the purposes of forwarding
+    //   -> resolve method calls in fields
+    //   -> get scopes
+    //
+    // This dependency is technically broken anyway by uses of isQueryRunning,
+    // but I'm keeping this workaround since isQueryRunning technically violates
+    // the "no side effects" rule of queries, so the fewer queries end up
+    // invoking it, the better. -D.F.
+    bool skipForwarding = (ci.name() == "chpl__promotionType");
+
     if (receiverType && typeUsesForwarding(context, receiverType) &&
+        !skipForwarding &&
         !isInsideForwarding(context, call)) {
       CandidatesAndForwardingInfo nonPoiCandidates;
       CandidatesAndForwardingInfo poiCandidates;
