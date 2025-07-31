@@ -39,4 +39,37 @@ module SimpleBoolConditional {
           d = if x == 4 then false else true;
     return a && b && c && d;
   }
+
+  proc onlyTrue(x) {
+    var y = if x == 1 then true else true;
+    return if x == 1 then true else true;
+  }
+  proc onlyTrue2(x) {
+    if x == 1 then
+      return true;
+    else
+      return true;
+  }
+
+  proc onlyFalse(x) {
+    var y = if x == 1 then false else false;
+    return if x == 1 then false else false;
+  }
+  proc onlyFalse2(x) {
+    if x == 1 then
+      return false;
+    else
+      return false;
+  }
+
+  proc arrayVersion(x) {
+    var y = [i in 1..x] if i%2 == 0 then true else false,
+        z = [i in 1..x] if i%2 == 0 then true else true;
+    return [i in 1..x] if i%2 == 0 then false else true;
+  }
+
+  proc oneBranch(x) {
+    var y = [i in 1..x] if i%2 == 0 then true;
+    return [i in 1..x] if i%2 == 0 then false;
+  }
 }

@@ -9,4 +9,13 @@ SimpleBoolConditional.chpl:36: node violates rule SimpleBoolConditional
 SimpleBoolConditional.chpl:36: node violates rule ConsecutiveDecls
 SimpleBoolConditional.chpl:38: node violates rule SimpleBoolConditional
 SimpleBoolConditional.chpl:39: node violates rule SimpleBoolConditional
+SimpleBoolConditional.chpl:44: node violates rule SimpleBoolConditional
+SimpleBoolConditional.chpl:45: node violates rule SimpleBoolConditional
+SimpleBoolConditional.chpl:48: node violates rule SimpleBoolConditional
+SimpleBoolConditional.chpl:55: node violates rule SimpleBoolConditional
+SimpleBoolConditional.chpl:56: node violates rule SimpleBoolConditional
+SimpleBoolConditional.chpl:59: node violates rule SimpleBoolConditional
+SimpleBoolConditional.chpl:66: node violates rule SimpleBoolConditional
+SimpleBoolConditional.chpl:67: node violates rule SimpleBoolConditional
+SimpleBoolConditional.chpl:68: node violates rule SimpleBoolConditional
 [Success matching fixit for SimpleBoolConditional]
