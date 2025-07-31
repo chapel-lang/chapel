@@ -909,7 +909,11 @@ class FileInfo:
         # do not enter the this formal, unless it has an explicit type (secondary method)
         p = node.parent_symbol()
         assert p is not None
-        if not (p.this_formal() == node and node.type_expression() is None):
+        if not (
+            isinstance(p, chapel.Function)
+            and p.this_formal() == node
+            and node.type_expression() is None
+        ):
             self.def_segments.append(NodeAndRange(node))
             self._note_scope(node)
 
