@@ -686,7 +686,9 @@ class ContextContainer:
         self.module_paths: List[str] = [os.path.dirname(os.path.abspath(file))]
         self.context: chapel.Context = chapel.Context()
         self.file_infos: List["FileInfo"] = []
-        self.global_uses: Dict[str, List[References]] = defaultdict(list)
+        self.global_uses: Dict[chapel.AstNode, List[References]] = defaultdict(
+            list
+        )
         self.instantiation_ids: Dict[chapel.TypedSignature, str] = {}
         self.instantiation_id_counter = 0
 
@@ -779,7 +781,7 @@ class FileInfo:
     instantiation_segments: PositionList[
         Tuple[NodeAndRange, chapel.TypedSignature]
     ] = field(init=False)
-    uses_here: Dict[str, References] = field(init=False)
+    uses_here: Dict[chapel.AstNode, References] = field(init=False)
     instantiations: Dict[
         str,
         Dict[chapel.TypedSignature, CallsInTypeContext],
@@ -812,13 +814,13 @@ class FileInfo:
         with self.context.context.track_errors() as _:
             return self.parse_file()
 
-    def _get_use_container(self, uid: str) -> References:
-        if uid in self.uses_here:
-            return self.uses_here[uid]
+    def _get_use_container(self, node: chapel.AstNode) -> References:
+        if node in self.uses_here:
+            return self.uses_here[node]
 
         refs = References(self, [])
-        self.uses_here[uid] = refs
-        self.context.global_uses[uid].append(refs)
+        self.uses_here[node] = refs
+        self.context.global_uses[node].append(refs)
         return refs
 
     def _note_reference(
@@ -832,7 +834,7 @@ class FileInfo:
         if not to:
             return
 
-        self._get_use_container(to.unique_id()).append(NodeAndRange(node))
+        self._get_use_container(to).append(NodeAndRange(node))
         self.use_segments.append(
             ResolvedPair(NodeAndRange(node), NodeAndRange(to))
         )
@@ -1749,9 +1751,7 @@ class ChapelLanguageServer(LanguageServer):
         if (
             isinstance(decl.node, chapel.Formal)
             and isinstance(decl.node.parent(), chapel.Function)
-            and decl.node.parent().this_formal() is not None
-            and decl.node.unique_id()
-            == decl.node.parent().this_formal().unique_id()
+            and decl.node.parent().this_formal() == decl.node
         ):
             return []
 
@@ -1772,7 +1772,7 @@ class ChapelLanguageServer(LanguageServer):
         parent_loop = decl.node.parent()
         if parent_loop and isinstance(parent_loop, chapel.IndexableLoop):
             index = parent_loop.index()
-            if index and index.unique_id() == decl.node.unique_id():
+            if index == decl.node:
                 text_edits = None
 
         return [
@@ -2105,7 +2105,7 @@ def run_lsp():
         ls.eagerly_process_all_files(fi.context)
 
         locations = [node_and_loc.get_location()]
-        for uselist in fi.context.global_uses[node_and_loc.node.unique_id()]:
+        for uselist in fi.context.global_uses[node_and_loc.node]:
             for use in uselist:
                 locations.append(use.get_location())
 
@@ -2283,7 +2283,7 @@ def run_lsp():
         ls.eagerly_process_all_files(fi.context)
 
         add_to_edits(node_and_loc)
-        for uselist in fi.context.global_uses[node_and_loc.node.unique_id()]:
+        for uselist in fi.context.global_uses[node_and_loc.node]:
             for use in uselist:
                 add_to_edits(use)
 
@@ -2345,7 +2345,7 @@ def run_lsp():
         if node_and_loc.get_uri() == text_doc_uri:
             dh = DocumentHighlight(node_and_loc.rng, DocumentHighlightKind.Text)
             highlights.append(dh)
-        uses = fi.uses_here.get(node_and_loc.node.unique_id(), [])
+        uses = fi.uses_here.get(node_and_loc.node, [])
         highlights += [
             DocumentHighlight(use.rng, DocumentHighlightKind.Text)
             for use in uses
@@ -2515,7 +2515,7 @@ def run_lsp():
             uid = node.unique_id()
 
             instantiation = fi.get_inst_segment_at_position(params.position)
-            if instantiation and instantiation.ast().unique_id() == uid:
+            if instantiation and instantiation.ast() == node:
                 sigs.append(instantiation)
             elif uid in fi.instantiations:
                 sigs.extend(fi.instantiations[uid].keys())
