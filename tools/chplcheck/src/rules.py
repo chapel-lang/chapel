@@ -152,7 +152,10 @@ def check_pascal_case(
         name_for_linting(context, node, internal_prefixes),
     )
 
-def extract_only_bool(parent: Conditional, node: Optional[Block]) -> Optional[bool]:
+
+def extract_only_bool(
+    parent: Conditional, node: Optional[Block]
+) -> Optional[bool]:
     if node is None:
         return None
 
@@ -169,6 +172,7 @@ def extract_only_bool(parent: Conditional, node: Optional[Block]) -> Optional[bo
     if not isinstance(check_for_bool, BoolLiteral):
         return None
     return check_for_bool.value()
+
 
 def rules(driver: LintDriver):
     @driver.basic_rule(VarLikeDecl, default=False)
@@ -371,13 +375,14 @@ def rules(driver: LintDriver):
         if then_ret != else_ret:
             should_invert = not then_ret
             return BasicRuleResult(
-                node, ignorable=False, data=(is_only_returns, should_invert, None)
+                node,
+                ignorable=False,
+                data=(is_only_returns, should_invert, None),
             )
         else:
             return BasicRuleResult(
                 node, ignorable=False, data=(is_only_returns, None, then_ret)
             )
-
 
         return True
 
