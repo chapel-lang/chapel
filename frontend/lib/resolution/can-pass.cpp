@@ -526,6 +526,22 @@ CanPassResult CanPassResult::canPassSubtypeNonBorrowing(Context* context,
                          /*conversion*/ SUBTYPE);
   }
 
+  // implement conversions to and from chpl_c_string and c_ptr(c_char)
+  auto charType = typeForSysCType(context, USTR("c_char"));
+  auto checkCStringCPtr = [&charType](const Type* maybeCString, const Type* maybeCPtr) {
+    if (auto cptr = maybeCPtr->toCPtrType()) {
+      return cptr->isConst() && cptr->eltType() == charType.type() &&
+             maybeCString->isCStringType();
+    }
+    return false;
+  };
+  if (checkCStringCPtr(actualT, formalT) || checkCStringCPtr(formalT, actualT)) {
+    return CanPassResult(/* no fail reason */ {},
+                         /* instantiates */ false,
+                         /*promotes*/ false,
+                         /*conversion*/ SUBTYPE);
+  }
+
   // class types
   if (auto actualCt = actualT->toClassType()) {
     if (auto formalCt = formalT->toClassType()) {
