@@ -403,7 +403,8 @@ bool VarScopeVisitor::resolvedCallHelper(const Call* callAst, RV& rv) {
         CHPL_ASSERT(op->numActuals() == 2);
         auto lhs = op->actual(0);
         auto lhsRr = rv.byPostorder().byAst(lhs);
-        if (rr->type().type() == lhsRr.type().type()) {
+        if (!rr->type().isUnknownOrErroneous() &&
+            rr->type().type() == lhsRr.type().type()) {
           handleInFormal(callAst, lhs, rr->type(), nullptr, rv);
           return false;
         }
