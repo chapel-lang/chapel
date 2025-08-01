@@ -1,7 +1,7 @@
 :title: Mason Guide: *Building and Running*
 
 .. _building-and-running:
-        
+
 Building and Running
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -51,9 +51,9 @@ being produced, the ``--release`` flag can be thrown as follows:
 .. code-block:: sh
 
    mason build --release --force
-   
+
    OR
-   
+
    mason run --build --release --force
 
 The ``--release`` option adds the ``--fast`` argument to the compilation step.

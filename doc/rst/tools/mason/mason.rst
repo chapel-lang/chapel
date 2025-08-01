@@ -35,10 +35,10 @@ be better suited.
 
 1. Complex Compilation Needs Beyond `chpl`: For Chapel programs requiring
    compilation steps beyond what the Chapel compiler offers, Mason might not
-   be the most suitable choice. Consider alternatives like `Make` for greater
-   flexibility in crafting intricate build commands. As an example, the
-   Arkouda project, a prominent open-source Chapel application, uses
-   `Make` to run preparatory Python scripts before the final binary compilation.
+   be the most suitable choice. Consider alternatives like `Make` or `CMake`
+   for greater flexibility in crafting intricate build commands. As an example,
+   the Arkouda project, a prominent open-source Chapel application, uses `Make`
+   to run preparatory Python scripts before the final binary compilation.
 
 **Combining Mason with Make:**
 
