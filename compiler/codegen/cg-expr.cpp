@@ -2852,20 +2852,27 @@ static GenRet codegenCallExprInner(GenRet function,
     llvm::FunctionType* fnType = nullptr;
 
     if (func) {
+      // We were provided an LLVM function and should use its type.
       fnType = func->getFunctionType();
+
     } else if (fn) {
+      // We generate an LLVM function type using a Chapel function.
       GenRet t = fn->codegenFunctionType(false);
       fnType = llvm::dyn_cast<llvm::FunctionType>(t.type);
       INT_ASSERT(fnType);
+
     } else if (fnTyArg) {
+      // The caller provided a LLVM function type to use.
       fnType = fnTyArg;
+
     } else if (chplFnType) {
-      const auto& info = fetchLocalFunctionTypeLlvm(chplFnType);
-      fnType = info.type;
+      // Compute the LLVM function type using a Chapel function type.
+      auto& info = localFunctionTypeCodegenInfo(chplFnType);
+      fnType = info.llvmType;
       INT_ASSERT(isIndirect);
 
     } else {
-      INT_FATAL("Could not compute called function type");
+      INT_FATAL("Could not compute the call's LLVM function type");
     }
 
     std::vector<llvm::Value *> llArgs;
@@ -3106,8 +3113,8 @@ static GenRet codegenCallExprInner(GenRet function,
       // that are not appropriate for the call.
       c->setAttributes(attrs);
     } else if (chplFnType) {
-      const auto& info = fetchLocalFunctionTypeLlvm(chplFnType);
-      c->setAttributes(info.attrs);
+      auto& info = localFunctionTypeCodegenInfo(chplFnType);
+      c->setAttributes(info.llvmAttrs);
     }
 
     // we might add attributes for the call site only, e.g. NoBuiltin, here.

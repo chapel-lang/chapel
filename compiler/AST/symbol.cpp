@@ -1289,26 +1289,6 @@ bool isOuterVarOfShadowVar(Expr* expr) {
 *                                                                   *
 ********************************* | ********************************/
 
-#ifdef HAVE_LLVM
-
-static std::map<FunctionType*, LlvmFunctionInfo>
-chapelFunctionTypeToLlvmFunctionType;
-
-const LlvmFunctionInfo& fetchLocalFunctionTypeLlvm(FunctionType* ft) {
-  auto it = chapelFunctionTypeToLlvmFunctionType.find(ft);
-  if (it != chapelFunctionTypeToLlvmFunctionType.end()) return it->second;
-
-  // Generate the LLVM function info.
-  LlvmFunctionInfo info;
-  std::vector<const char*> argNames;
-  info.type = codegenFunctionTypeLLVM(ft, info.attrs, argNames);
-
-  // Insert the info into the map.
-  it = chapelFunctionTypeToLlvmFunctionType.emplace_hint(it, ft, info);
-  return it->second;
-}
-#endif
-
 TypeSymbol::TypeSymbol(const char* init_name, Type* init_type) :
   Symbol(E_TypeSymbol, init_name, init_type),
     llvmImplType(NULL), llvmAlignment(ALIGNMENT_UNINIT),
