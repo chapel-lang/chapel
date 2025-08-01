@@ -6656,9 +6656,9 @@ static owned<BaseParamRangeInfo> paramRangeInfoFromBound(Context* context, Resol
       optional<int64_t> lowV = empty, hiV = empty;
       auto findElementInList = [&info](auto& into, const EnumParam* p) {
         if (!p) return;
-        for (int64_t i = 0; i < info->elements.size(); i++) {
+        for (size_t i = 0; i < info->elements.size(); i++) {
           if (info->elements[i]->id() == p->value().id) {
-            into = i;
+            into = static_cast<int64_t>(i);
             return;
           }
         }
