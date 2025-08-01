@@ -153,7 +153,6 @@ static void addNoAliasMetadata(GenRet &ret, Symbol* sym) {
 }
 #endif
 
-#ifdef HAVE_LLVM
 static bool shouldGenerateAsIfCallingDirectly(SymExpr* se, FnSymbol* fn) {
   INT_ASSERT(se->symbol() == fn);
 
@@ -175,7 +174,6 @@ static bool shouldGenerateAsIfCallingDirectly(SymExpr* se, FnSymbol* fn) {
   // Otherwise, treat the mention as indirect.
   return false;
 }
-#endif
 
 GenRet SymExpr::codegen() {
   GenInfo* info = gGenInfo;
@@ -185,9 +183,20 @@ GenRet SymExpr::codegen() {
   if (id == breakOnCodegenID)
     debuggerBreakHere();
 
-  if( outfile ) {
-    if (getStmtExpr() && getStmtExpr() == this)
-      codegenStmt(this);
+  if (outfile) {
+    if (getStmtExpr() && getStmtExpr() == this) codegenStmt(this);
+  }
+
+  if (auto fn = toFnSymbol(var)) {
+    if (shouldGenerateAsIfCallingDirectly(this, fn)) {
+      ret = fn->codegenAsCallBaseExpr();
+    } else {
+      ret = fn->codegenAsValue();
+    }
+    return ret;
+  }
+
+  if (outfile) {
     ret = var->codegen();
   } else {
 #ifdef HAVE_LLVM
@@ -201,12 +210,6 @@ GenRet SymExpr::codegen() {
       addNoAliasMetadata(ret, var);
     } else if(isTypeSymbol(var)) {
       ret.type = toTypeSymbol(var)->codegen().type;
-    } else if(auto fn = toFnSymbol(var)) {
-      if (shouldGenerateAsIfCallingDirectly(this, fn)) {
-        ret = fn->codegenAsCallBaseExpr();
-      } else {
-        ret = fn->codegenAsValue();
-      }
     } else {
       ret = info->lvt->getValue(var->cname);
       if( ! ret.val ) {
@@ -2849,20 +2852,27 @@ static GenRet codegenCallExprInner(GenRet function,
     llvm::FunctionType* fnType = nullptr;
 
     if (func) {
+      // We were provided an LLVM function and should use its type.
       fnType = func->getFunctionType();
+
     } else if (fn) {
+      // We generate an LLVM function type using a Chapel function.
       GenRet t = fn->codegenFunctionType(false);
       fnType = llvm::dyn_cast<llvm::FunctionType>(t.type);
       INT_ASSERT(fnType);
+
     } else if (fnTyArg) {
+      // The caller provided a LLVM function type to use.
       fnType = fnTyArg;
+
     } else if (chplFnType) {
-      const auto& info = fetchLocalFunctionTypeLlvm(chplFnType);
-      fnType = info.type;
+      // Compute the LLVM function type using a Chapel function type.
+      auto& info = localFunctionTypeCodegenInfo(chplFnType);
+      fnType = info.llvmType;
       INT_ASSERT(isIndirect);
 
     } else {
-      INT_FATAL("Could not compute called function type");
+      INT_FATAL("Could not compute the call's LLVM function type");
     }
 
     std::vector<llvm::Value *> llArgs;
@@ -3103,8 +3113,8 @@ static GenRet codegenCallExprInner(GenRet function,
       // that are not appropriate for the call.
       c->setAttributes(attrs);
     } else if (chplFnType) {
-      const auto& info = fetchLocalFunctionTypeLlvm(chplFnType);
-      c->setAttributes(info.attrs);
+      auto& info = localFunctionTypeCodegenInfo(chplFnType);
+      c->setAttributes(info.llvmAttrs);
     }
 
     // we might add attributes for the call site only, e.g. NoBuiltin, here.
@@ -4168,12 +4178,20 @@ static GenRet codegenCall(CallExpr* call) {
     // Use the type from the generated expression since it should be local.
     chplFnType = toFunctionType(base.chplType);
 
-    // And make sure the LLVM type for the function is generated.
-    if (chplFnType) chplFnType->codegenDef();
-
     INT_ASSERT(chplFnType);
     INT_ASSERT(chplFnType->isLocal());
     INT_ASSERT(call->numActuals() == chplFnType->numFormals());
+
+    if (gGenInfo->cfile) {
+      // In C, we have to cast the 'void*' to a function type to call it.
+      auto& info = localFunctionTypeCodegenInfo(chplFnType);
+      auto castType = info.gen.c.c_str();
+      base = codegenCast(castType, base);
+
+      // Copy back the local type since it will have been discarded.
+      base.chplType = info.gen.chplType;
+    }
+
   } else if (fn) {
     auto se = toSymExpr(call->baseExpr);
     INT_ASSERT(se && se->symbol() == fn);

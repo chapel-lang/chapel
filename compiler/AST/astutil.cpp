@@ -1393,7 +1393,6 @@ void cleanupAfterTypeRemoval() {
   }
 }
 
-
 static void removeVoidMoves()
 {
   forv_Vec(CallExpr, call, gCallExprs)
