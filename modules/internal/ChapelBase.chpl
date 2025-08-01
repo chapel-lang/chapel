@@ -2604,7 +2604,6 @@ module ChapelBase {
 
 
   // implements 'delete' statement
-  pragma "no borrow convert"
   proc chpl__delete(const arg) {
 
     if chpl_isDdata(arg.type) then
@@ -3355,7 +3354,6 @@ module ChapelBase {
                   " construct cannot be invoked on a type");
   }
 
-  pragma "no borrow convert"
   inline proc _removed_cast(in x) {
     return x;
   }

@@ -436,16 +436,12 @@ proc isAtomicValue(e)    param do  return isAtomicType(e.type);
 
 @chpldoc.nodoc
 proc isHomogeneousTupleValue(x) param do return __primitive("is star tuple type", x);
-pragma "no borrow convert"
 @chpldoc.nodoc
 proc isOwnedClassValue(e)     param do return isOwnedClassType(e.type);
-pragma "no borrow convert"
 @chpldoc.nodoc
 proc isSharedClassValue(e)    param do return isSharedClassType(e.type);
-pragma "no borrow convert"
 @chpldoc.nodoc
 proc isUnmanagedClassValue(e) param do return isUnmanagedClassType(e.type);
-pragma "no borrow convert"
 @chpldoc.nodoc
 proc isBorrowedClassValue(e)  param do return isBorrowedClassType(e.type);
 @chpldoc.nodoc
@@ -625,16 +621,12 @@ proc isHomogeneousTuple(e)  param do  return isHomogeneousTupleValue(e);
 /* Returns ``true`` if the argument is a generic type, and ``false`` otherwise. */
 proc isGeneric(e)   param do  return false;
 /* Returns ``true`` if the argument is an ``owned`` class type. */
-pragma "no borrow convert"
 proc isOwnedClass(e)     param do  return isOwnedClassValue(e);
 /* Returns ``true`` if the argument is a ``shared`` class type. */
-pragma "no borrow convert"
 proc isSharedClass(e)     param do  return isSharedClassValue(e);
 /* Returns ``true`` if the argument is a ``unmanaged`` class type. */
-pragma "no borrow convert"
 proc isUnmanagedClass(e)     param do  return isUnmanagedClassValue(e);
 /* Returns ``true`` if the argument is a ``borrowed`` class type. */
-pragma "no borrow convert"
 proc isBorrowedClass(e)     param do  return isBorrowedClassValue(e);
 /* Returns ``true`` if the argument is a class type that can store ``nil``. */
 proc isNilableClass(e)     param do  return isNilableClassValue(e);
