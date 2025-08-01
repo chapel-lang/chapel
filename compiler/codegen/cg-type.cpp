@@ -93,8 +93,11 @@ void PrimitiveType::codegenDef() {
 void ConstrainedType::codegenDef() {
 }
 
-static void codegenFunctionTypeWide(FunctionType* ft, bool forLlvm) {
-  if (forLlvm) {
+static void codegenFunctionTypeWide(FunctionType* ft) {
+  if (auto outfile = gGenInfo->cfile) {
+    // TODO: Should I get the code-generated 'int(64)' type here instead?
+    fprintf(outfile, "typedef %s %s;\n\n", "int64_t", ft->symbol->cname);
+  } else {
   #ifdef HAVE_LLVM
     // Use a 'int64' dynamic index. Do not bother generating a function type.
     auto t = llvm::Type::getInt64Ty(gContext->llvmContext());
@@ -104,21 +107,20 @@ static void codegenFunctionTypeWide(FunctionType* ft, bool forLlvm) {
       ft->symbol->llvmAlignment = ALIGNMENT_DEFER;
     }
   #endif
-  } else {
-    auto outfile = gGenInfo->cfile;
-    INT_ASSERT(outfile);
-
-    // TODO: Should I get the code-generated 'int(64)' type here instead?
-    fprintf(outfile, "typedef %s %s;\n\n", "int64_t", ft->symbol->cname);
   }
 }
 
-static void codegenFunctionTypeLocal(FunctionType* ft, bool forLlvm) {
-  if (forLlvm) {
+static void codegenFunctionTypeLocal(FunctionType* ft) {
+  if (auto outfile = gGenInfo->cfile) {
+
+    // Declare local procs as 'void*' to handle circular dependencies.
+    fprintf(outfile, "typedef %s %s;\n\n", "void*", ft->symbol->cname);
+
+  } else {
   #ifdef HAVE_LLVM
     // Generate the underlying type. This is a function value type.
-    const auto& info = fetchLocalFunctionTypeLlvm(ft);
-    auto baseType = info.type;
+    auto& info = localFunctionTypeCodegenInfo(ft);
+    auto baseType = info.llvmType;
 
     // The final type is a pointer to the underlying function type.
     auto& layout = gGenInfo->module->getDataLayout();
@@ -131,39 +133,6 @@ static void codegenFunctionTypeLocal(FunctionType* ft, bool forLlvm) {
       ft->symbol->llvmAlignment = ALIGNMENT_DEFER;
     }
   #endif
-  } else {
-    auto outfile = gGenInfo->cfile;
-    INT_ASSERT(outfile);
-
-    /* TODO (dlongnecke): May have no relevance now.
-
-    // Assemble a string representing the function type in C.
-    std::string str;
-
-    // E.g., 'void (*theTypedefName)(argt1, argt2, argt3)';
-    str += ft->returnType()->codegen().c.c_str();
-    str += "(*";
-    str += ft->symbol->cname;
-    str += ")(";
-
-    // TODO: Keep the formal names omitted here?
-    for (int i = 0; i < ft->numFormals(); i++) {
-      const bool last = (i+1) == ft->numFormals();
-      auto formal = ft->formal(i);
-      INT_ASSERT(formal);
-
-      // Emit the type (neither C nor Chapel cares about formal names now).
-      str += formal->type()->codegen().c.c_str();
-      if (!last) str += ", ";
-    }
-
-    str += ")";
-
-    fprintf(outfile, "typedef %s;\n\n", str.c_str());
-    */
-
-    // Declare local procs as 'void*' to handle circular dependencies.
-    fprintf(outfile, "typedef %s %s;\n\n", "void*", ft->symbol->cname);
   }
 }
 
@@ -177,17 +146,12 @@ void FunctionType::codegenDef() {
     llvm::Type *type = gGenInfo->lvt->getType(symbol->cname);
     if (type) return;
   }
-
-  // Now set a flag to indicate what backend we are generating for.
-  const bool forLlvm = true && gGenInfo->cfile == nullptr;
-  #else
-  const bool forLlvm = false;
   #endif
 
   if (this->isWide()) {
-    codegenFunctionTypeWide(this, forLlvm);
+    codegenFunctionTypeWide(this);
   } else {
-    codegenFunctionTypeLocal(this, forLlvm);
+    codegenFunctionTypeLocal(this);
   }
 }
 
