@@ -4182,10 +4182,14 @@ static GenRet codegenCall(CallExpr* call) {
     INT_ASSERT(chplFnType->isLocal());
     INT_ASSERT(call->numActuals() == chplFnType->numFormals());
 
-    // TODO (dlongnecke): The C backend requires a cast to a procedure
-    // type in order to call, while the LLVM backend does not.
     if (gGenInfo->cfile) {
-      INT_FATAL(call, "Cast to C function type not implemented yet!");
+      // In C, we have to cast the 'void*' to a function type to call it.
+      auto& info = localFunctionTypeCodegenInfo(chplFnType);
+      auto castType = info.gen.c.c_str();
+      base = codegenCast(castType, base);
+
+      // Copy back the local type since it will have been discarded.
+      base.chplType = info.gen.chplType;
     }
 
   } else if (fn) {
