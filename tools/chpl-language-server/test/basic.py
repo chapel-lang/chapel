@@ -452,10 +452,12 @@ async def test_hover(client: LanguageClient):
                 proc init() { }
                 proc deinit() { }
                 proc init=(other) { }
-                proc :(x, type t) { }
+                operator :(x, type t) { }
               }
 
               proc myRec.secondary(myFormal) { }
+              proc getType() type { return myRec; }
+              proc (getType()).secondary2(myFormal) { }
             }
            """
 
@@ -467,36 +469,55 @@ async def test_hover(client: LanguageClient):
             rng(pos((2, 7)), pos((2, 13))),
             pos((2, 9)),
         ),
-        ("myFormal: int", rng(pos((2, 14)), pos((2, 22))), pos((2, 8))),
-        ("operator +(x, y)", rng(pos((3, 12)), pos((3, 13))), pos((3, 10))),
-        ("var myVar: int", rng(pos((4, 6)), pos((4, 10))), pos((4, 5))),
+        ("myFormal: int", rng(pos((2, 14)), pos((2, 22))), pos((2, 15))),
+        ("operator +(x, y)", rng(pos((3, 11)), pos((3, 12))), pos((3, 11))),
+        ("var myVar: int", rng(pos((4, 6)), pos((4, 11))), pos((4, 8))),
         (
             "config const myConfig: int",
-            rng(pos((5, 12)), pos((5, 20))),
-            pos((5, 14)),
+            rng(pos((5, 15)), pos((5, 23))),
+            pos((5, 15)),
         ),
-        ("record myRec", rng(pos((7, 7)), pos((7, 11))), pos((7, 8))),
-        ("iter myMethodIter()", rng(pos((8, 7)), pos((8, 14))), pos((8, 8))),
+        ("record myRec", rng(pos((7, 9)), pos((7, 14))), pos((7, 10))),
+        ("iter myMethodIter()", rng(pos((8, 9)), pos((8, 21))), pos((8, 18))),
         (
             "proc myMethod(myFormal: real(32))",
-            rng(pos((9, 7)), pos((9, 15))),
-            pos((9, 8)),
+            rng(pos((9, 9)), pos((9, 17))),
+            pos((9, 11)),
         ),
-        ("myFormal: real(32)", rng(pos((9, 16)), pos((9, 24))), pos((9, 14))),
-        ("operator *(x, y)", rng(pos((10, 11)), pos((10, 12))), pos((10, 11))),
-        ("var myField: int", rng(pos((11, 6)), pos((11, 13))), pos((11, 7))),
-        ("class myClass", rng(pos((13, 8)), pos((13, 15))), pos((13, 8))),
-        ("proc init()", rng(pos((14, 6)), pos((14, 10))), pos((14, 7))),
-        ("proc deinit()", rng(pos((15, 6)), pos((15, 12))), pos((15, 13))),
-        ("proc init=(other)", rng(pos((16, 6)), pos((16, 11))), pos((16, 8))),
-        ("proc :(x, type t)", rng(pos((17, 6)), pos((17, 7))), pos((17, 7))),
+        ("myFormal: real(32)", rng(pos((9, 18)), pos((9, 26))), pos((9, 22))),
+        ("operator *(x, y)", rng(pos((10, 13)), pos((10, 14))), pos((10, 13))),
+        ("var myField: int", rng(pos((11, 8)), pos((11, 15))), pos((11, 8))),
+        ("class myClass", rng(pos((14, 8)), pos((14, 15))), pos((14, 8))),
+        ("proc init()", rng(pos((15, 9)), pos((15, 13))), pos((15, 12))),
+        ("proc deinit()", rng(pos((16, 9)), pos((16, 15))), pos((16, 12))),
+        ("proc init=(other)", rng(pos((17, 9)), pos((17, 14))), pos((17, 12))),
+        (
+            "operator :(x, type t)",
+            rng(pos((18, 13)), pos((18, 14))),
+            pos((18, 14)),
+        ),
         (
             "proc myRec.secondary(myFormal)",
-            rng(pos((19, 6)), pos((19, 14))),
-            pos((19, 8)),
+            rng(pos((21, 13)), pos((21, 22))),
+            pos((21, 13)),
         ),
-        ("record myRec", rng(pos((19, 6)), pos((19, 11))), pos((19, 7))),
-        ("myFormal", rng(pos((19, 15)), pos((19, 22))), pos((19, 15))),
+        # myRec is a use, so the hover gives us the location of the def
+        ("record myRec", rng(pos((7, 9)), pos((7, 14))), pos((21, 12))),
+        ("myFormal", rng(pos((21, 23)), pos((21, 31))), pos((21, 31))),
+        (
+            "proc getType() type",
+            rng(pos((22, 7)), pos((22, 14))),
+            pos((22, 9)),
+        ),
+        (
+            "proc (getType()).secondary2(myFormal)",
+            rng(pos((23, 19)), pos((23, 29))),
+            pos((23, 19)),
+        ),
+        # getType() is a use, so the hover gives us the location of the def
+        ("proc getType() type", rng(pos((22, 7)), pos((22, 14))), pos((23, 9))),
+        # (getType()) is just an expression, so it just shows the text
+        ("(getType())", rng(pos((23, 7)), pos((23, 18))), pos((23, 7))),
     ]
 
     async with source_file(client, file) as doc:
@@ -506,6 +527,7 @@ async def test_hover(client: LanguageClient):
             actual = await client.text_document_hover_async(
                 params=HoverParams(doc, p)
             )
+            print(actual)
             assert actual is not None
             assert expected_rng == actual.range
             assert isinstance(actual.contents, MarkupContent)
