@@ -47,6 +47,7 @@ cp -r %{_prefix}/share/chapel %{buildroot}/%{_prefix}/share/chapel
 %{_prefix}/bin/mason
 %{_prefix}/bin/chplcheck
 %{_prefix}/bin/chpl-language-server
+%{_prefix}/bin/chpl-shim
 %{_prefix}/lib/chapel/*
 %{_prefix}/share/chapel/*
 %{_prefix}/lib/cmake/chpl/*
