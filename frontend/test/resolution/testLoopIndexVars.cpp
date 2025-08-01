@@ -337,7 +337,7 @@ static void testCForLoop() {
   assert(cond.type().type() == BoolType::get(context));
 }
 
-// Note: values hardcoded to match 'helpTestParam' helper
+// Note: values hardcoded to match 'helpTestIntParam' helper
 struct IntParamLoopTester {
   ParamCollector<paramtags::ParamTag::IntParam, IntParam> pc;
   std::map<std::string, int> resolvedIdents;
@@ -387,7 +387,63 @@ static IntParamLoopTester helpTestIntParam(const char* rangeExpr, const char* ex
   return IntParamLoopTester{std::move(pc), {}, {}};
 }
 
-static void testParamFor() {
+// Note: values hardcoded to match 'helpTestIntParam' helper
+struct EnumParamLoopTester {
+  ParamCollector<paramtags::ParamTag::EnumParam, EnumParam> pc;
+  std::map<std::string, int> resolvedIdents;
+  std::multimap<std::string, std::string> resolvedVals;
+
+  void noteExpectedIteration(std::string e) {
+    resolvedIdents["i"] += 1;
+    resolvedIdents["x"] += 1;
+    resolvedVals.emplace("i", e);
+    resolvedVals.emplace("n", e);
+  }
+
+  void assertMatch() {
+    for (auto& kv : resolvedIdents) {
+      assert(pc.resolvedIdents.at(kv.first) == kv.second);
+    }
+
+    std::multimap<std::string, std::string> pcStrings;
+    for (const auto& kv : pc.resolvedVals) {
+      pcStrings.emplace(kv.first, kv.second.str);
+    }
+    assert(resolvedVals == pcStrings);
+  }
+};
+
+static EnumParamLoopTester helpTestEnumParam(const char* rangeExpr, const char* extraCode = "") {
+  printf("testParamFor with %s\n", rangeExpr);
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+  ResolutionContext rcval(context);
+  //
+  // Test iteration over an iterator call
+  //
+
+  auto iterText = R"""(
+                  var x = 0;
+                  enum color { red, green, blue, cyan, yellow, magenta }
+                  use color;
+                  for param i in )""" + std::string(rangeExpr) + R"""( {
+                    param n = i;
+                    var y = x;
+                    )""" + std::string(extraCode) + R"""(
+                  }
+                  )""";
+
+  const Module* m = parseModule(context, iterText);
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+  ParamCollector<paramtags::ParamTag::EnumParam, EnumParam> pc;
+  ResolvedVisitor<decltype(pc)> rv(&rcval, m, pc, rr);
+  m->traverse(rv);
+
+  return EnumParamLoopTester{std::move(pc), {}, {}};
+}
+
+static void testIntParamFor() {
   {
     auto test = helpTestIntParam("1..10");
     for (int i = 1; i <= 10; i++) {
@@ -475,6 +531,220 @@ static void testParamFor() {
       test.noteExpectedIteration(i);
       continue;
     }
+    test.assertMatch();
+  }
+}
+
+static void testEnumParamFor() {
+  {
+    auto test = helpTestEnumParam("red..blue");
+    test.noteExpectedIteration("red");
+    test.noteExpectedIteration("green");
+    test.noteExpectedIteration("blue");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("red..#3");
+    test.noteExpectedIteration("red");
+    test.noteExpectedIteration("green");
+    test.noteExpectedIteration("blue");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("red..#6");
+    test.noteExpectedIteration("red");
+    test.noteExpectedIteration("green");
+    test.noteExpectedIteration("blue");
+    test.noteExpectedIteration("cyan");
+    test.noteExpectedIteration("yellow");
+    test.noteExpectedIteration("magenta");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("red..#100");
+    test.noteExpectedIteration("red");
+    test.noteExpectedIteration("green");
+    test.noteExpectedIteration("blue");
+    test.noteExpectedIteration("cyan");
+    test.noteExpectedIteration("yellow");
+    test.noteExpectedIteration("magenta");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("..cyan#3");
+    test.noteExpectedIteration("green");
+    test.noteExpectedIteration("blue");
+    test.noteExpectedIteration("cyan");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("..magenta#3");
+    test.noteExpectedIteration("cyan");
+    test.noteExpectedIteration("yellow");
+    test.noteExpectedIteration("magenta");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("..magenta#6");
+    test.noteExpectedIteration("red");
+    test.noteExpectedIteration("green");
+    test.noteExpectedIteration("blue");
+    test.noteExpectedIteration("cyan");
+    test.noteExpectedIteration("yellow");
+    test.noteExpectedIteration("magenta");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("..magenta#100");
+    test.noteExpectedIteration("red");
+    test.noteExpectedIteration("green");
+    test.noteExpectedIteration("blue");
+    test.noteExpectedIteration("cyan");
+    test.noteExpectedIteration("yellow");
+    test.noteExpectedIteration("magenta");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("red..blue by -1");
+    test.noteExpectedIteration("blue");
+    test.noteExpectedIteration("green");
+    test.noteExpectedIteration("red");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("red..#3 by -1");
+    test.noteExpectedIteration("blue");
+    test.noteExpectedIteration("green");
+    test.noteExpectedIteration("red");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("red..#6 by -1");
+    test.noteExpectedIteration("magenta");
+    test.noteExpectedIteration("yellow");
+    test.noteExpectedIteration("cyan");
+    test.noteExpectedIteration("blue");
+    test.noteExpectedIteration("green");
+    test.noteExpectedIteration("red");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("red..#100 by -1");
+    test.noteExpectedIteration("magenta");
+    test.noteExpectedIteration("yellow");
+    test.noteExpectedIteration("cyan");
+    test.noteExpectedIteration("blue");
+    test.noteExpectedIteration("green");
+    test.noteExpectedIteration("red");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("..cyan#3 by -1");
+    test.noteExpectedIteration("cyan");
+    test.noteExpectedIteration("blue");
+    test.noteExpectedIteration("green");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("..magenta#3 by -1");
+    test.noteExpectedIteration("magenta");
+    test.noteExpectedIteration("yellow");
+    test.noteExpectedIteration("cyan");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("..magenta#6 by -1");
+    test.noteExpectedIteration("magenta");
+    test.noteExpectedIteration("yellow");
+    test.noteExpectedIteration("cyan");
+    test.noteExpectedIteration("blue");
+    test.noteExpectedIteration("green");
+    test.noteExpectedIteration("red");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("..magenta#100 by -1");
+    test.noteExpectedIteration("magenta");
+    test.noteExpectedIteration("yellow");
+    test.noteExpectedIteration("cyan");
+    test.noteExpectedIteration("blue");
+    test.noteExpectedIteration("green");
+    test.noteExpectedIteration("red");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("red..blue by 2");
+    test.noteExpectedIteration("red");
+    test.noteExpectedIteration("blue");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("red..#3 by 2");
+    test.noteExpectedIteration("red");
+    test.noteExpectedIteration("blue");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("red..#6 by 2");
+    test.noteExpectedIteration("red");
+    test.noteExpectedIteration("blue");
+    test.noteExpectedIteration("yellow");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("red..#100 by 2");
+    test.noteExpectedIteration("red");
+    test.noteExpectedIteration("blue");
+    test.noteExpectedIteration("yellow");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("..cyan#3 by 2");
+    test.noteExpectedIteration("green");
+    test.noteExpectedIteration("cyan");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("..magenta#3 by 2");
+    test.noteExpectedIteration("cyan");
+    test.noteExpectedIteration("magenta");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("..magenta#6 by 2");
+    test.noteExpectedIteration("red");
+    test.noteExpectedIteration("blue");
+    test.noteExpectedIteration("yellow");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("..magenta#100 by 2");
+    test.noteExpectedIteration("red");
+    test.noteExpectedIteration("blue");
+    test.noteExpectedIteration("yellow");
     test.assertMatch();
   }
 }
@@ -1607,7 +1877,8 @@ int main() {
   testNoIndex();
   testTheseNoIndex();
   testCForLoop();
-  testParamFor();
+  testIntParamFor();
+  testEnumParamFor();
   testNestedParamFor();
   testNestedParamForLabeledBreakContinue();
   testHeteroTuples();
