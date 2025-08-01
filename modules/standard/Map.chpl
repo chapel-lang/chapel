@@ -620,7 +620,7 @@ module Map {
       Reads the contents of this map from a ``fileReader``.
       The 'defaultDeserializer' format looks like:
 
-        .. code-block:: chapel
+        .. code-block:: text
 
            {k1: v1, k2: v2, .... , kn: vn}
 
@@ -648,7 +648,7 @@ module Map {
       Writes the contents of this map to a ``fileWriter``.
       The 'defaultSerializer' format looks like:
 
-        .. code-block:: chapel
+        .. code-block:: text
 
            {k1: v1, k2: v2, .... , kn: vn}
 

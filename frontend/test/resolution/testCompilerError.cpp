@@ -169,7 +169,7 @@ static void testTwoErrors() {
     )""";
 
   resolveTypesOfVariables(ctx, program, {"x", "y"});
-  ensureErrorOnLine(ctx, guard.errors(), ErrorType::UserDiagnosticEncounterError, 645, "no", /* allowOthers = */ true);
+  ensureErrorOnLine(ctx, guard.errors(), ErrorType::UserDiagnosticEncounterError, 644, "no", /* allowOthers = */ true);
   ensureErrorOnLine(ctx, guard.errors(), ErrorType::UserDiagnosticEmitError, 5, "no", /* allowOthers = */ true);
   ensureErrorOnLine(ctx, guard.errors(), ErrorType::UserDiagnosticEmitError, 7, "no", /* allowOthers = */ true);
   guard.realizeErrors();
