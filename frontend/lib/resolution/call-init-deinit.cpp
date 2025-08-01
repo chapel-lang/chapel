@@ -187,6 +187,14 @@ static bool isTypeParam(QualifiedType::Kind kind) {
 bool CallInitDeinit::isCallProducingValue(const AstNode* rhsAst,
                                           const QualifiedType& rhsType,
                                           RV& rv) {
+  if (rhsAst->isTuple() && rhsType.type() && rhsType.type()->isTupleType()) {
+    if (auto asTupleType = rhsType.type()->toTupleType()) {
+      // Consider a tuple expression to be a call producing a value (for the
+      // purposes of call-init-deinit) iff it contains only value elements.
+      return asTupleType == asTupleType->toValueTuple(context);
+    }
+  }
+
   return rv.byAst(rhsAst).toId().isEmpty() && !isRef(rhsType.kind());
 }
 
