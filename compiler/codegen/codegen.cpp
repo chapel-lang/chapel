@@ -2705,8 +2705,8 @@ const FunctionTypeCodegenInfo& localFunctionTypeCodegenInfo(FunctionType* ft) {
     std::vector<const char*> argNames;
     info.llvmType = codegenFunctionTypeLLVM(ft, info.llvmAttrs, argNames);
     info.gen.type = info.llvmType;
-  }
   #endif
+  }
 
   // Insert the info into the map.
   it = chapelFunctionTypeToCodegenInfo.emplace_hint(it, ftLocal, info);
