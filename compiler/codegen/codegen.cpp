@@ -2671,12 +2671,14 @@ const FunctionTypeCodegenInfo& localFunctionTypeCodegenInfo(FunctionType* ft) {
 
   FunctionTypeCodegenInfo info;
 
+  // Set the Chapel type to the local procedure type.
+  info.gen.chplType = ftLocal;
+
   if (gGenInfo->cfile) {
     // Assemble a string representing the function type in C.
     auto& str = info.gen.c;
 
     // E.g., 'void (*)(argt1, argt2, argt3)';
-    str += "(";
     str += ft->returnType()->codegen().c;
     str += " (*)(";
 
@@ -2691,7 +2693,10 @@ const FunctionTypeCodegenInfo& localFunctionTypeCodegenInfo(FunctionType* ft) {
       if (!last) str += ", ";
     }
 
-    str += "))";
+    // An empty formal list takes 'void' to make old C standards happy.
+    if (0 == ft->numFormals()) str += "void";
+
+    str += ")";
 
   } else {
   #ifdef HAVE_LLVM
@@ -2699,7 +2704,6 @@ const FunctionTypeCodegenInfo& localFunctionTypeCodegenInfo(FunctionType* ft) {
     std::vector<const char*> argNames;
     info.llvmType = codegenFunctionTypeLLVM(ft, info.llvmAttrs, argNames);
     info.gen.type = info.llvmType;
-    info.gen.chplType = ftLocal;
   }
   #endif
 
