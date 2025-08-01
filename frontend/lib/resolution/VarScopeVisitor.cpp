@@ -398,6 +398,12 @@ bool VarScopeVisitor::resolvedCallHelper(const Call* callAst, RV& rv) {
 
     // detect elided unnecessary casts (where the lhs was cast to its own type)
     // in this case we perform a copy of the original value.
+    //
+    // TODO: we could consider a more general way to signal how a particular
+    // call was resolved (like, "hey, this was resolved by a compiler-generated
+    // elided cast!") so that we don't have to pattern match. However, there
+    // aren't a lot of different casses like this, so for now I'm leaving
+    // the special case. - D.F.
     if (auto op = callAst->toOpCall()) {
       if (op->op() == USTR(":")) {
         CHPL_ASSERT(op->numActuals() == 2);
