@@ -20,6 +20,9 @@ elif [[ "$(hostname -s)" == "horizon" ]]; then
   if [ -f /lus/scratch/chapelu/chpl-deps/horizon/load_chpl_deps.bash ] ; then
     source /lus/scratch/chapelu/chpl-deps/horizon/load_chpl_deps.bash
   fi
+elif [[ "$(hostname -s)" == "chapel-rocky-9" ]]; then
+  # TODO: set up spack for this machine instead of manual installs
+  PATH="$HOME/chapelu/Python-3.11.13-install/bin:$PATH"
 else
   # For systems not using a Spack install
 
