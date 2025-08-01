@@ -83,7 +83,17 @@ struct CalledFnCollector {
   }
 
   bool enter(const Function* fn, RV& rv) {
-    return fn == symbol; // only proceed if it's the function requested
+    // only proceed if it's the function requested
+    if (fn == symbol) {
+      return true;
+    }
+
+    // If it's an export function, we should queue it up
+    if (fn->linkage() == Function::Linkage::EXPORT) {
+      collect(resolveConcreteFunction(context, fn->id()));
+    }
+
+    return false;
   }
   void exit(const Function* fn, RV& rv) {
   }
