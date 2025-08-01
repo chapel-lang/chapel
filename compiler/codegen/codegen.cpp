@@ -2657,6 +2657,57 @@ Type* getNamedTypeDuringCodegen(const char* name) {
   return NULL;
 }
 
+static std::map<FunctionType*, FunctionTypeCodegenInfo>
+chapelFunctionTypeToCodegenInfo;
+
+const FunctionTypeCodegenInfo& localFunctionTypeCodegenInfo(FunctionType* ft) {
+  // Memoize to reduce the amount of work we do. We use 'local' procedure
+  // pointer types as the key in order to elide away wideness entirely, as
+  // it doesn't matter here (always local).
+  //
+  auto ftLocal = ft->isLocal() ? ft : ft->getAsLocal();
+  auto it = chapelFunctionTypeToCodegenInfo.find(ftLocal);
+  if (it != chapelFunctionTypeToCodegenInfo.end()) return it->second;
+
+  FunctionTypeCodegenInfo info;
+
+  if (gGenInfo->cfile) {
+    // Assemble a string representing the function type in C.
+    auto& str = info.gen.c;
+
+    // E.g., 'void (*)(argt1, argt2, argt3)';
+    str += "(";
+    str += ft->returnType()->codegen().c;
+    str += " (*)(";
+
+    // NOTE: Omit the formal names because C does not require them.
+    for (int i = 0; i < ft->numFormals(); i++) {
+      const bool last = (i+1) == ft->numFormals();
+      auto formal = ft->formal(i);
+      INT_ASSERT(formal);
+
+      str += formal->type()->codegen().c;
+
+      if (!last) str += ", ";
+    }
+
+    str += "))";
+
+  } else {
+  #ifdef HAVE_LLVM
+    // Generate the LLVM function info.
+    std::vector<const char*> argNames;
+    info.llvmType = codegenFunctionTypeLLVM(ft, info.llvmAttrs, argNames);
+    info.gen.type = info.llvmType;
+    info.gen.chplType = ftLocal;
+  }
+  #endif
+
+  // Insert the info into the map.
+  it = chapelFunctionTypeToCodegenInfo.emplace_hint(it, ftLocal, info);
+
+  return it->second;
+}
 
 // Do this once for CPU and GPU
 static void codegenPartOne() {
