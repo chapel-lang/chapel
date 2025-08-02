@@ -1592,7 +1592,8 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
           auto lstr = lhs.param()->toStringParam()->value();
           auto rstr = rhs.param()->toStringParam()->value();
           auto concat = UniqueString::getConcat(context, lstr.c_str(), rstr.c_str());
-          type = QualifiedType::makeParamString(context, concat);
+          type = QualifiedType(QualifiedType::PARAM, lhs.type(),
+                               StringParam::get(context, concat));
         }
       }
       break;
