@@ -199,12 +199,92 @@ static void test4() {
   }
 }
 
+// Test calling dependently typed type constructor, in a type formal
+static void test5() {
+  // With param field type declared
+  {
+    printf("part 1\n");
+    auto context = buildStdContext();
+    ErrorGuard guard(context);
+
+    const std::string program =
+      R""""(
+      record Foo {
+        param fooField : int;
+      }
+      proc bar(param strides = 1, type other: Foo(strides)) param {
+        return other.fooField;
+      }
+      var x = bar(1, Foo(1));
+      )"""";
+
+    auto qt = resolveTypeOfXInit(context, program);
+    for (auto& e : guard.errors()) std::cout << e->message() << std::endl;
+    assert(qt.type() != nullptr);
+    ensureParamInt(qt, 1);
+
+    context->collectGarbage();
+  }
+
+  // Param field of generic type
+  {
+    printf("part 2\n");
+    auto context = buildStdContext();
+    ErrorGuard guard(context);
+
+    const std::string program =
+      R""""(
+      record Foo {
+        param fooField;
+      }
+      proc bar(param strides = 1, type other: Foo(strides)) param {
+        return other.fooField;
+      }
+      var x = bar(1, Foo(1));
+      )"""";
+
+    auto qt = resolveTypeOfXInit(context, program);
+    for (auto& e : guard.errors()) std::cout << e->message() << std::endl;
+    assert(qt.type() != nullptr);
+    ensureParamInt(qt, 1);
+
+    context->collectGarbage();
+  }
+
+  // type field
+  {
+    printf("part 3\n");
+    auto context = buildStdContext();
+    ErrorGuard guard(context);
+
+    const std::string program =
+      R""""(
+      record Foo {
+        type fooField;
+      }
+      proc bar(x, type other: Foo(x.type)) type {
+        return other.fooField;
+      }
+      type x = bar(1, Foo(int));
+      )"""";
+
+    auto qt = resolveTypeOfXInit(context, program);
+    for (auto& e : guard.errors()) std::cout << e->message() << std::endl;
+    assert(qt.type() != nullptr);
+    assert(qt.type()->isIntType());
+    assert(qt.kind() == QualifiedType::TYPE);
+
+    context->collectGarbage();
+  }
+}
+
 int main() {
   test1();
   test2();
   test3a();
   test3b();
   test4();
+  test5();
 
   return 0;
 }
