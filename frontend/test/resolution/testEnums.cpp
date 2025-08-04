@@ -629,6 +629,107 @@ static void test18() {
   assert(guard.realizeErrors() == 1);
 }
 
+// same as test18, except places the code in an internal module to ensure
+// it still works. This is a regression test; internal modules don't auto-use
+// `ChapelBase`, and thus didn't have `==` available.
+static void test18internal() {
+  // duplicated from buildStdContext
+  std::string chpl_home;
+  if (const char* chpl_home_env = getenv("CHPL_HOME")) {
+    chpl_home = chpl_home_env;
+  } else {
+    printf("CHPL_HOME must be set");
+    exit(1);
+  }
+  Context::Configuration config;
+  config.chplHome = chpl_home;
+  Context ctx(config);
+  // end duplicate
+
+  auto context = &ctx;
+  ErrorGuard guard(context);
+
+  // duplicate/inline/fuse from buildStdContext + setupModuleSearchPaths
+  // unlike those functions, configures `myint` to be an internal path
+  {
+    auto& chplHomeStr = context->chplHome();
+    CHPL_ASSERT(chplHomeStr != "");
+    auto chplEnv = context->getChplEnv();
+    CHPL_ASSERT(!chplEnv.getError() && "printchplenv error handling not implemented");
+
+    // CHPL_MODULE_PATH isn't always in the output; check if it's there.
+    auto it = chplEnv->find("CHPL_MODULE_PATH");
+    auto chplModulePath = (it != chplEnv->end()) ? it->second : "";
+    setupModuleSearchPaths(context,
+                           chplHomeStr,
+                           "",
+                           false,
+                           chplEnv->at("CHPL_LOCALE_MODEL"),
+                           false,
+                           chplEnv->at("CHPL_TASKS"),
+                           chplEnv->at("CHPL_COMM"),
+                           chplEnv->at("CHPL_SYS_MODULES_SUBDIR"),
+                           chplModulePath,
+                           {"myint"},  // prependInternalModulePaths
+                           {},  // prependStandardModulePaths
+                           {}, // cmdLinePaths
+                           {});
+  }
+  // end duplicate
+
+  auto path = UniqueString::get(context, "myint/input.chpl");
+  setFileText(context, path,
+      R"""(
+      // internal modules don't get auto-generated assignment operators
+      use ChapelBase only =;
+
+      enum color {
+        red, green, blue
+      }
+      var tmp = color.red;
+      param tmpParam = color.red;
+      var a = chpl__enumToOrder(tmp);
+      param b = chpl__enumToOrder(tmp); // error
+      param c = chpl__enumToOrder(tmpParam);
+      param d = chpl__enumToOrder(color.red);
+      param e = chpl__enumToOrder(color.green);
+      param f = chpl__enumToOrder(color.blue);
+      )""");
+
+  auto& br = parseFileToBuilderResultAndCheck(context, path, {});
+  assert(br.numTopLevelExpressions() == 1);
+  auto mod = br.topLevelExpression(0)->toModule();
+  auto vars = resolveTypesOfVariables(context, mod,
+      {"a", "b", "c", "d", "e", "f"});
+
+  assert(vars.at("a").type());
+  assert(vars.at("a").type()->isIntType());
+  assert(!vars.at("a").param());
+  assert(vars.at("b").isErroneousType());
+  assert(vars.at("c").type());
+  assert(vars.at("c").type()->isIntType());
+  assert(vars.at("c").param());
+  assert(vars.at("c").param()->isIntParam());
+  assert(vars.at("c").param()->toIntParam()->value() == 0);
+  assert(vars.at("d").type());
+  assert(vars.at("d").type()->isIntType());
+  assert(vars.at("d").param());
+  assert(vars.at("d").param()->isIntParam());
+  assert(vars.at("d").param()->toIntParam()->value() == 0);
+  assert(vars.at("e").type());
+  assert(vars.at("e").type()->isIntType());
+  assert(vars.at("e").param());
+  assert(vars.at("e").param()->isIntParam());
+  assert(vars.at("e").param()->toIntParam()->value() == 1);
+  assert(vars.at("f").type());
+  assert(vars.at("f").type()->isIntType());
+  assert(vars.at("f").param());
+  assert(vars.at("f").param()->isIntParam());
+  assert(vars.at("f").param()->toIntParam()->value() == 2);
+
+  assert(guard.realizeErrors() == 1);
+}
+
 static void test19() {
   auto context = buildStdContext();
   ErrorGuard guard(context);
@@ -759,6 +860,7 @@ int main() {
   test16();
   test17();
   test18();
+  test18internal();
   test19();
   test20();
   test21();
