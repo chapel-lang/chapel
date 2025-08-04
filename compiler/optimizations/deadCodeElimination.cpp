@@ -426,26 +426,51 @@ static void deadModuleElimination() {
 }
 
 static bool removeVoidFunction(FnSymbol* fn) {
+  // returns true if the function was removed
+  if (fn == chplUserMain) return false;
+  // various functions that should not be removed
+  if (fn->hasFlag(FLAG_EXPORT) || fn->hasFlag(FLAG_MODULE_INIT) ||
+      fn->hasFlag(FLAG_NO_FN_BODY) || fn->hasFlag(FLAG_DESTRUCTOR) ||
+      fn->hasFlag(FLAG_VIRTUAL) ||
+      fn->hasFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION))
+    return false;
+
+  // don't remove on functions
+  if (fn->hasEitherFlag(FLAG_ON, FLAG_ON_BLOCK))
+    return false;
+
   // remove functions which return void and do nothing
-  if (!fn->hasFlag(FLAG_EXPORT) && !fn->hasFlag(FLAG_MODULE_INIT) &&
-      !fn->hasFlag(FLAG_NO_FN_BODY) && !fn->hasFlag(FLAG_DESTRUCTOR) &&
-      !fn->hasFlag(FLAG_VIRTUAL) &&
-      fn->retType == dtVoid && fn->body && fn->body->length() == 1) {
-    if (auto call = toCallExpr(fn->body->body.only())) {
-      if (call->isPrimitive(PRIM_RETURN)) {
+  if (fn->retType == dtVoid && fn->body && fn->body->length() == 1) {
+    if (auto lastCall = toCallExpr(fn->body->body.only())) {
+      if (lastCall->isPrimitive(PRIM_RETURN)) {
         computeAllCallSites(fn);
         auto calledBy = fn->calledBy;
         for_alive_in_Vec(CallExpr, call, *calledBy) {
           // remove the call to the function
           call->remove();
         }
-        // remove the function
-        fn->defPoint->remove();
-        return true;
+        if (!fn->isUsed()) {
+          fn->defPoint->remove();
+          return true;
+        }
       }
     }
   }
   return false;
+}
+
+static void deadFunctionElimination() {
+  // skip minimal modules, since many key functions are stubbed out and then get
+  // removed, which breaks later passes
+  if (fMinimalModules) return;
+
+  bool changed;
+  do {
+    changed = false;
+    for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
+      changed = removeVoidFunction(fn) || changed;
+    }
+  } while (changed);
 }
 
 
@@ -455,15 +480,7 @@ void deadCodeElimination() {
 
     deadStringLiteralElimination();
 
-    {
-      bool changed;
-      do {
-        changed = false;
-        for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
-          changed = removeVoidFunction(fn) || changed;
-        }
-      } while (changed);
-    }
+    deadFunctionElimination();
 
     for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
 
