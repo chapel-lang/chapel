@@ -425,8 +425,12 @@ static void deadModuleElimination() {
   }
 }
 
+//
+// returns true if the function was removed
+//
 static bool removeVoidFunction(FnSymbol* fn) {
-  // returns true if the function was removed
+
+  // do not remove 'main', even if its empty
   if (fn == chplUserMain) return false;
   // various functions that should not be removed
   if (fn->hasFlag(FLAG_EXPORT) || fn->hasFlag(FLAG_MODULE_INIT) ||
