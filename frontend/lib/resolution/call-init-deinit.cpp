@@ -898,7 +898,7 @@ void CallInitDeinit::resolveDeinit(const AstNode* ast,
     return;
   } else if (type.type()->isTupleType()) {
     // TODO: probably need to do something here, at least in some cases
-    printf("Warning: omitting tuple deinit");
+    CHPL_UNIMPL("Warning: omitting tuple deinit");
     return;
   }
 
