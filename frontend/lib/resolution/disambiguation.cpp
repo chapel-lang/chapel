@@ -1494,6 +1494,18 @@ static int testArgMapping(const DisambiguationContext& dctx,
   bool f1Param = f1QualType.hasParamPtr();
   bool f2Param = f2QualType.hasParamPtr();
 
+  // strip param values from QTs since the arg mapping comparison works only
+  // on types. (in production: Type*, no Immediate)
+  //
+  // Without appeal to tradition: one case this fixes is the "more specific"
+  // comparison on formals that determines that int(8) is more specific than
+  // int(16) because only the former can be passed to the latter, and not vice
+  // versa. If `param` values are kept, a param value of 1 of either type
+  // can be passed to the other due to narrowing.
+
+  if (f1Param) f1QualType = QualifiedType(QualifiedType::Kind::IN, f1Type);
+  if (f2Param) f2QualType = QualifiedType(QualifiedType::Kind::IN, f2Type);
+
   bool f1Instantiated = fa1->formalInstantiated();
   bool f2Instantiated = fa2->formalInstantiated();
 
