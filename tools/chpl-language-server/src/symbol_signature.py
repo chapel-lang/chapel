@@ -85,13 +85,12 @@ class SymbolSignature:
         Note: this is a temporary method that will go away when the resolver is fully online
         """
         remove = []
-        for i in range(len(self._signature)):
-            tag = self._signature[i].tag
-            node = self._signature[i].node
-            value = self._signature[i].value
-            prefix = self._signature[i].prefix or ""
-            postfix = self._signature[i].postfix or ""
-            if tag == ComponentTag.TYPE and node is not None:
+        for (i, part) in enumerate(self._signature):
+            node = part.node
+            value = part.value
+            prefix = part.prefix or ""
+            postfix = part.postfix or ""
+            if part.tag == ComponentTag.TYPE and node is not None:
                 type_str = _resolve_type_str(node, via)
                 if type_str:
                     self._signature[i] = _wrap_str(
@@ -110,13 +109,12 @@ class SymbolSignature:
     def compute_value(self, via: Optional[chapel.TypedSignature] = None):
         """evaluate expressions"""
         remove = []
-        for i in range(len(self._signature)):
-            tag = self._signature[i].tag
-            node = self._signature[i].node
-            value = self._signature[i].value
-            prefix = self._signature[i].prefix or ""
-            postfix = self._signature[i].postfix or ""
-            if tag == ComponentTag.PARAM_VALUE and node is not None:
+        for i, part in enumerate(self._signature):
+            node = part.node
+            value = part.value
+            prefix = part.prefix or ""
+            postfix = part.postfix or ""
+            if part.tag == ComponentTag.PARAM_VALUE and node is not None:
                 param_str = _resolve_param_str(node, via)
                 if param_str:
                     self._signature[i] = _wrap_str(
