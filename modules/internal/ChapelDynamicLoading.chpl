@@ -26,33 +26,72 @@ module ChapelDynamicLoading {
 
   param chpl_defaultProcBufferSize = 512;
 
-  // This will always be run, so we can rely on it.
-  inline proc issueConfigurationErrors() param {
+  // Exists so that tests can make a proc pointer to an internal procedure.
+  proc chpl_procToTestInsertLineNumbers() {
+    // This is a standard module call that requires line numbers.
+    warning('INSERT LINE NUMBERS TEST!');
+  }
+
+  inline proc configErrorsForProcedurePointers(param emitErrors: bool) param {
     use ChplConfig;
 
-    param unsupportedLlvmVersion = CHPL_LLVM_VERSION == "14";
-    if useProcedurePointers && CHPL_TARGET_COMPILER == "llvm" &&
-       unsupportedLlvmVersion {
-      // This could be a compiler error, but I'm lazy and putting it here.
-      compilerError('The experimental procedure pointer implementation ' +
-                    'is not supported with LLVM-' + CHPL_LLVM_VERSION, 2);
+    if !useProcedurePointers then return false;
+
+    // The C backend doesn't quite work yet.
+    if CHPL_TARGET_COMPILER != "llvm" {
+      if emitErrors {
+        compilerError('The experimental procedure pointer implementation ' +
+                      'is not currently supported by the C backend');
+      }
+      return true;
+    }
+
+    // LLVM 11-14 use typed pointers, which the backend doesn't support yet.
+    param unsupportedLlvmVersion = CHPL_LLVM_VERSION == "14" ||
+                                   CHPL_LLVM_VERSION == "13" ||
+                                   CHPL_LLVM_VERSION == "12" ||
+                                   CHPL_LLVM_VERSION == "11";
+
+    if CHPL_TARGET_COMPILER == "llvm" && unsupportedLlvmVersion {
+      if emitErrors {
+        param v = CHPL_LLVM_VERSION;
+        compilerError('The experimental procedure pointer implementation ' +
+                      'is not currently supported with LLVM-' + v, 2);
+      }
+      return true;
+    }
+    return false;
+  }
+
+  // Publish platform-specific errors once.
+  if useProcedurePointers {
+    configErrorsForProcedurePointers(emitErrors=true);
+  }
+
+  // Returns 'true' if compile-time configuration errors exist.
+  inline proc configErrorsForDynamicLoading(param emitErrors: bool) param {
+    use ChplConfig;
+
+    if !useProcedurePointers {
+      if emitErrors {
+        compilerError('The experimental procedure pointer implementation ' +
+                      'must be enabled to use dynamic loading. Set the ' +
+                      'config param \'useProcedurePointers\' to \'true\'', 2);
+      }
       return true;
     }
 
     return false;
   }
 
-  inline proc isDynamicLoadingSupported param {
-    if issueConfigurationErrors() then return false;
-    return true;
+  proc isDynamicLoadingSupported param {
+    return !configErrorsForProcedurePointers(emitErrors=false) &&
+           !configErrorsForDynamicLoading(emitErrors=false);
   }
 
-  inline proc isDynamicLoadingEnabled {
+  proc isDynamicLoadingEnabled {
     return isDynamicLoadingSupported;
   }
-
-  // Invoke immediately to issue compiler errors.
-  isDynamicLoadingSupported;
 
   // This counter is used to assign a unique 'wide index' to each procedure.
   // We start with '1' since the '0th' index is reserved to represent 'nil'.
@@ -228,6 +267,14 @@ module ChapelDynamicLoading {
     return ret;
   }
 
+  proc errorIfDynamicLoadingNotEnabled(out err) {
+    if !isDynamicLoadingEnabled {
+      err = new DynLoadError('Dynamic loading is not enabled');
+      return true;
+    }
+    return false;
+  }
+
   // A store of of all loaded binaries which lives on LOCALE-0. Each time a
   // binary is loaded an entry will be made in the store. The interface to the
   // stored info is the system pointer retrieved by 'dlopen'.
@@ -251,21 +298,6 @@ module ChapelDynamicLoading {
         if slot.val != nil then delete slot.val;
       }
     }
-  }
-
-  private inline proc errorIfUnsupported() {
-    var ret: owned DynLoadError?;
-
-    if !isDynamicLoadingSupported {
-      compilerError('Dynamic loading is not supported for your ' +
-                    'current Chapel configuration', 2);
-    }
-
-    if !isDynamicLoadingEnabled {
-      ret = new DynLoadError('Dynamic loading is not enabled');
-    }
-
-    return ret;
   }
 
   // This is one per entrypoint binary and lives on LOCALE-0.
@@ -315,9 +347,10 @@ module ChapelDynamicLoading {
     proc type create(path: string, out err: owned DynLoadError?) {
       var ret: unmanaged chpl_BinaryInfo? = nil;
 
-      // Check for an error and return if it was set.
-      err = errorIfUnsupported();
-      if err != nil then return ret;
+      if configurationErrorsExist(emitErrors=true) ||
+         errorIfDynamicLoadingIsNotEnabled(err) {
+        return ret;
+      }
 
       on Locales[0] {
         const store = chpl_binaryInfoStore.borrow();
@@ -454,17 +487,15 @@ module ChapelDynamicLoading {
       }
 
       if chpl_isLocalProc(t) {
-        // The 'wideness' of a procedure type should not necessarily be
-        // exposed to the user (and so we really shouldn't care), but it's an
-        // assumption we make about the input type as a precaution. Also,
-        // we might like to allow users to load references to data as well.
+        // Users shouldn't be able to easily construct local types right now.
         compilerError('The procedure type passed to \'loadSymbol\'' +
                       'should be wide');
       }
 
-      // Check for an error and return if it was set.
-      err = errorIfUnsupported();
-      if err != nil then return __primitive("cast", P, 0);
+      if configurationErrorsExist(emitErrors=true) ||
+         errorIfDynamicLoadingIsNotEnabled(err) {
+        return __primitive("cast", P, 0);
+      }
 
       // On the fast path, we check to see if the symbol exists on LOCALE-0.
       // If it does, then it should be in the procedure pointer cache, and
