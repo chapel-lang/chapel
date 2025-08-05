@@ -22,7 +22,7 @@ elif [[ "$(hostname -s)" == "horizon" ]]; then
   fi
 elif [[ "$(hostname -s)" == "chapel-rocky-9" ]]; then
   # TODO: set up spack for this machine instead of manual installs
-  PATH="$HOME/Python-3.11.13-install/bin:$PATH"
+  PATH="$HOME/bin:$PATH"
 else
   # For systems not using a Spack install
 
