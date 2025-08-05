@@ -1630,10 +1630,14 @@ simpleMethodLookupQuery(Context* context, ID typeId) {
   return QUERY_END(result);
 }
 
+static const TypedMethodLookupHelper&
+typedMethodLookupQuery(Context* context, QualifiedType receiverType, bool checkScalarTypes);
+
 /* Gather scopes for a given receiver type and all its parents */
 static TypedMethodLookupHelper::ReceiverScopesVec
 gatherReceiverAndParentScopesForType(Context* context,
-                                     const types::Type* thisType) {
+                                     const types::Type* thisType,
+                                     bool checkScalarTypes) {
   TypedMethodLookupHelper::ReceiverScopesVec scopes;
 
   if (thisType != nullptr) {
@@ -1660,16 +1664,28 @@ gatherReceiverAndParentScopesForType(Context* context,
     } else if (const ExternType* et = thisType->toExternType()) {
       scopes.push_back(scopeForId(context, et->id()));
     }
+
+
+    auto thisQt = QualifiedType(QualifiedType::VAR, thisType);
+    if (checkScalarTypes) {
+      if (auto pqt = getPromotionType(context, thisQt, true); !pqt.isUnknownOrErroneous()) {
+        // also get scopes from the element type, so that (array of things).method() works.
+        auto& eltHelper = typedMethodLookupQuery(context, pqt, checkScalarTypes);
+        std::copy(eltHelper.receiverScopes().begin(),
+                  eltHelper.receiverScopes().end(),
+                  std::back_inserter(scopes));
+      }
+    }
   }
 
   return scopes;
 }
 
 static const TypedMethodLookupHelper&
-typedMethodLookupQuery(Context* context, QualifiedType receiverType) {
-  QUERY_BEGIN(typedMethodLookupQuery, context, receiverType);
+typedMethodLookupQuery(Context* context, QualifiedType receiverType, bool checkScalarTypes) {
+  QUERY_BEGIN(typedMethodLookupQuery, context, receiverType, checkScalarTypes);
 
-  auto vec = gatherReceiverAndParentScopesForType(context, receiverType.type());
+  auto vec = gatherReceiverAndParentScopesForType(context, receiverType.type(), checkScalarTypes);
   auto result = TypedMethodLookupHelper(receiverType, std::move(vec));
 
   return QUERY_END(result);
@@ -1796,7 +1812,8 @@ void TypedMethodLookupHelper::stringify(std::ostream& ss,
 
 const TypedMethodLookupHelper*
 ReceiverScopeTypedHelper::methodLookupForType(Context* context,
-                                              QualifiedType type) const {
+                                              QualifiedType type,
+                                              bool checkScalarTypes) const {
   if (const Type* typePtr = type.type()) {
     if (typePtr->getCompositeType() ||
         typePtr->isPtrType() ||
@@ -1809,7 +1826,7 @@ ReceiverScopeTypedHelper::methodLookupForType(Context* context,
         kind = QualifiedType::VAR;
       }
       const TypedMethodLookupHelper& got =
-        typedMethodLookupQuery(context, QualifiedType(kind, typePtr));
+        typedMethodLookupQuery(context, QualifiedType(kind, typePtr), checkScalarTypes);
 
       if (!got.isEmpty())
         return &got;
