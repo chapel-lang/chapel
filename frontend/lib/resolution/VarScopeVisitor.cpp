@@ -368,8 +368,10 @@ bool VarScopeVisitor::resolvedCallHelper(const Call* callAst, RV& rv) {
   const MostSpecificCandidates& candidates = rr->mostSpecific();
   bool anyInOutInout = false;
   bool isMethod = false;
+  bool foundCandidate = false;
   for (const MostSpecificCandidate& candidate : candidates) {
     if (candidate) {
+      foundCandidate = true;
       auto fn = candidate.fn();
       if (fn->untyped()->isMethod()) isMethod = true;
 
@@ -386,6 +388,32 @@ bool VarScopeVisitor::resolvedCallHelper(const Call* callAst, RV& rv) {
       }
       if (anyInOutInout) {
         break;
+      }
+    }
+  }
+
+  if (!foundCandidate) {
+    // this indicates some special handling took place to resolve this call.
+    // We can handle special logic for such special handling here.
+
+    // detect elided unnecessary casts (where the lhs was cast to its own type)
+    // in this case we perform a copy of the original value.
+    //
+    // TODO: we could consider a more general way to signal how a particular
+    // call was resolved (like, "hey, this was resolved by a compiler-generated
+    // elided cast!") so that we don't have to pattern match. However, there
+    // aren't a lot of different casses like this, so for now I'm leaving
+    // the special case. - D.F.
+    if (auto op = callAst->toOpCall()) {
+      if (op->op() == USTR(":")) {
+        CHPL_ASSERT(op->numActuals() == 2);
+        auto lhs = op->actual(0);
+        auto lhsRr = rv.byPostorder().byAst(lhs);
+        if (!rr->type().isUnknownOrErroneous() &&
+            rr->type().type() == lhsRr.type().type()) {
+          handleInFormal(callAst, lhs, rr->type(), nullptr, rv);
+          return false;
+        }
       }
     }
   }
