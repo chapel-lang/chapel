@@ -34,6 +34,7 @@ fi
 
 # Ensure we're using the expected Python version
 source $UTIL_CRON_DIR/load-base-deps.bash
+module unload llvm
 
 # Variable set by Jenkins to indicate type of whitebox. If it is not set, assume cray-xc.
 platform=${CRAY_PLATFORM_FROM_JENKINS:-cray-xc}
