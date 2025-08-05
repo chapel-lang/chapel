@@ -906,7 +906,8 @@ class FileInfo:
 
     @enter
     def _enter_Formal(self, node: chapel.Formal):
-        # do not enter the this formal, unless it has an explicit type (secondary method)
+        # do not enter the `this` formal, unless it has an explicit type
+        # i.e. (it is a secondary method)
         if not (node.is_this() and node.type_expression() is None):
             self.def_segments.append(NodeAndRange(node))
             self._note_scope(node)
