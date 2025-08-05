@@ -4366,8 +4366,11 @@ static bool resolveFnCallSpecial(Context* context,
           exprTypeOut = QualifiedType::makeParamString(context, oss.str());
           return true;
         } else if (dstQtEnumType && srcTy->isStringType()) {
-          CHPL_UNIMPL("param string to enum cast");
-          return false;
+          CHPL_ASSERT(srcQt.param()->isStringParam());
+          exprTypeOut = typeForEnumElement(context, dstQtEnumType,
+                                           srcQt.param()->toStringParam()->value(),
+                                           astForErr);
+          return true;
         }
 
         if (srcQtEnumType && srcQtEnumType->isAbstract()) {
