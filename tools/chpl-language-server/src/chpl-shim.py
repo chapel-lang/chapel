@@ -118,7 +118,7 @@ def run_toplevel():
         remaining_args = args[1:]
 
         def get_env_affecting_chapel():
-            """Similar logic to whats in the vscode extension"""
+            """Similar logic to what's in the vscode extension"""
             base_globs = [
                 r"CHPL_.*",
                 r"CHPL_RT_.*",
@@ -132,10 +132,9 @@ def run_toplevel():
                 r"PATH",
             ]
             base_globs = [re.compile(glob) for glob in base_globs]
-            env = os.environ.copy()
             env = {
                 k: v
-                for k, v in env.items()
+                for k, v in os.environ.items()
                 if any(g.match(k) for g in base_globs)
             }
             return env
