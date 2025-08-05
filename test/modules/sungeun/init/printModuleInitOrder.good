@@ -64,7 +64,6 @@ Initializing Modules:
     ChapelTaskTable
     MemTracking
     ExportWrappers
-    ChapelContext
     ChapelStaticVars
     ChapelDynamicLoading
     AlignedTSupport
