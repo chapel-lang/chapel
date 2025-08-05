@@ -3666,6 +3666,13 @@ doIsCandidateApplicableInitial(ResolutionContext* rc,
       // the field might not be present on the current type T, but on the
       // element type of T for promotion. Keep trying to find the field by
       // looking at the element type of the current type if we fail.
+      //
+      // note: in `canPass` and elsewhere, we do not consider transitive promotion.
+      // So, stop after a single call to getPromotionType. This code is still
+      // written as a loop in case we want to change that in the future.
+      // See other calls to getPromotionType for other places where we decide
+      // on transitive promotion.
+      bool inPromotion = false;
       while (!qt.isUnknownOrErroneous()) {
         auto containingType = isNameOfField(context, ci.name(), qt.type());
         if (!containingType) {
@@ -3685,7 +3692,10 @@ doIsCandidateApplicableInitial(ResolutionContext* rc,
           return ApplicabilityResult::success(ret);
         }
 
+        if (inPromotion) break;
+
         qt = getPromotionType(context, qt);
+        inPromotion = true;
       }
     }
     // not a candidate
@@ -5048,6 +5058,11 @@ gatherAndFilterScalarFields(ResolutionContext* rc,
       auto& idv = ret.idAndFlags(i);
       if (idv.isMethodOrField() && !idv.isMethod()) toReturn.append(idv);
     }
+
+    // note: in `canPass` and elsewhere, we do not consider transitive promotion.
+    // So, stop after a single call to getPromotionType. This code is still
+    // written as a loop in case we want to change that in the future.
+    break;
   }
 
   CandidatesAndForwardingInfo lastResort;
