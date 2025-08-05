@@ -1,6 +1,3 @@
-# typed: strict
-# frozen_string_literal: true
-
 class Chapel < Formula
   include Language::Python::Shebang
 
