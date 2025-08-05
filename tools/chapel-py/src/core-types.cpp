@@ -205,8 +205,8 @@ PyObject* AstNodeObject::richcompare(AstNodeObject *self, PyObject *other, int o
     Py_RETURN_NOTIMPLEMENTED;
   }
   auto otherCast = (AstNodeObject*) other;
-  auto selfId = self->value_->id();
-  auto otherId = otherCast->value_->id();
+  auto& selfId = self->value_->id();
+  auto& otherId = otherCast->value_->id();
 
   Py_RETURN_RICHCOMPARE(selfId, otherId, op);
 }
