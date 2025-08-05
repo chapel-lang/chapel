@@ -196,6 +196,22 @@ PyObject* AstNodeObject::repr(AstNodeObject *self) {
   return Py_BuildValue("s", typeString.c_str());
 }
 
+Py_hash_t AstNodeObject::hash(AstNodeObject *self) {
+  return self->value_->id().hash();
+}
+
+PyObject* AstNodeObject::richcompare(AstNodeObject *self, PyObject *other, int op) {
+  if (!PyObject_TypeCheck(other, AstNodeObject::PythonType)) {
+    Py_RETURN_NOTIMPLEMENTED;
+  }
+  auto otherCast = (AstNodeObject*) other;
+  auto& selfId = self->value_->id();
+  auto& otherId = otherCast->value_->id();
+
+  Py_RETURN_RICHCOMPARE(selfId, otherId, op);
+}
+
+
 void ChapelTypeObject_dealloc(ChapelTypeObject* self) {
   Py_XDECREF(self->contextObject);
   callPyTypeSlot_tp_free(ChapelTypeObject::PythonType, (PyObject*) self);
