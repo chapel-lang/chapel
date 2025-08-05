@@ -533,7 +533,30 @@ bool needCompilerGeneratedBinaryOp(Context* context,
                                    const types::QualifiedType& lhs,
                                    const types::QualifiedType& rhs,
                                    UniqueString name) {
-  return needCompilerGeneratedBinaryOpImpl(context, lhs, rhs, name);
+  // check if the regular call (e.g., lhs + rhs) would work, but also allow
+  // for the posibility of promotion (e.g., effectively [lhsScalar in lhs] lhs + rhs).
+  // This leads to a total of 4 cases.
+
+  for (int i : { 0b00, 0b01, 0b10, 0b11 }) {
+    auto testLhs = lhs, testRhs = rhs;
+    if (i & 0b01) {
+      auto lhsScalar = getPromotionType(context, lhs);
+      if (!lhsScalar.isUnknownOrErroneous()) testLhs = lhsScalar;
+      else continue; // no promotion for lhs, skip this case
+    }
+
+    if (i & 0b10) {
+      auto rhsScalar = getPromotionType(context, rhs);
+      if (!rhsScalar.isUnknownOrErroneous()) testRhs = rhsScalar;
+      else continue; // no promotion for rhs, skip this case
+    }
+
+    if (needCompilerGeneratedBinaryOpImpl(context, testLhs, testRhs, name)) {
+      // If we found a candidate that needs generation, return true.
+      return true;
+    }
+  }
+  return false;
 }
 
 static bool initHelper(Context* context,
@@ -2105,13 +2128,26 @@ getCompilerGeneratedBinaryOp(ResolutionContext* rc,
   auto context = rc->context();
 
   std::vector<const TypedFnSignature*> result;
-  auto lhsT = lhsType.type();
 
-  do {
+  for (int i : { 0b00, 0b01, 0b10, 0b11 }) {
+    auto testLhs = lhsType, testRhs = rhsType;
+    if (i & 0b01) {
+      auto lhsScalar = getPromotionType(context, lhsType);
+      if (!lhsScalar.isUnknownOrErroneous()) testLhs = lhsScalar;
+      else continue; // no promotion for lhs, skip this case
+    }
+
+    if (i & 0b10) {
+      auto rhsScalar = getPromotionType(context, rhsType);
+      if (!rhsScalar.isUnknownOrErroneous()) testRhs = rhsScalar;
+      else continue; // no promotion for rhs, skip this case
+    }
+    auto lhsT = testLhs.type();
+
     const TypedFnSignature* tfs = nullptr;
-    if (needCompilerGeneratedBinaryOpImpl(context, lhsType, rhsType, name)) {
+    if (needCompilerGeneratedBinaryOpImpl(context, testLhs, testRhs, name)) {
       if (const EnumType* enumType = nullptr;
-          auto generator = generatorForCompilerGeneratedEnumOperator(name, lhsType, rhsType, enumType)) {
+          auto generator = generatorForCompilerGeneratedEnumOperator(name, testLhs, testRhs, enumType)) {
         tfs = generator(rc, enumType);
       } else if (auto recordType = lhsT->toRecordType()) {
         if (auto generator = generatorForCompilerGeneratedRecordOperator(name)) {
