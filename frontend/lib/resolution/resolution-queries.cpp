@@ -4723,11 +4723,12 @@ considerCompilerGeneratedFunctions(ResolutionContext* rc,
 //
 // This helper serves to consider compiler-generated functions that can't
 // be guessed based on the first argument.
-static const TypedFnSignature*
+static std::vector<const TypedFnSignature*> const&
 considerCompilerGeneratedOperators(ResolutionContext* rc,
                                    const CallInfo& ci,
                                    CandidatesAndForwardingInfo& candidates) {
-  if (!ci.isOpCall() || ci.numActuals() != 2) return nullptr;
+  static const std::vector<const TypedFnSignature*> empty;
+  if (!ci.isOpCall() || ci.numActuals() != 2) return empty;
 
   CHPL_ASSERT(ci.numActuals() >= 1);
   auto& lhs = ci.actual(0).type();
@@ -4735,7 +4736,7 @@ considerCompilerGeneratedOperators(ResolutionContext* rc,
 
   // if we don't need the operator, nothing to do.
   if (!needCompilerGeneratedBinaryOp(rc->context(), lhs, rhs, ci.name())) {
-    return nullptr;
+    return empty;
   }
 
   return getCompilerGeneratedBinaryOp(rc, lhs, rhs, ci.name());
@@ -4747,47 +4748,53 @@ considerCompilerGeneratedCandidates(ResolutionContext* rc,
                                     const CallInfo& ci,
                                     CandidatesAndForwardingInfo& candidates,
                                     std::vector<ApplicabilityResult>* rejected) {
-  const TypedFnSignature* tfs = nullptr;
+  std::vector<const TypedFnSignature*> tfss;
 
-  tfs = considerCompilerGeneratedOperators(rc, ci, candidates);
-  if (tfs == nullptr) {
-    tfs = considerCompilerGeneratedMethods(rc, ci, candidates);
+  for (auto tfs : considerCompilerGeneratedOperators(rc, ci, candidates)){
+    tfss.push_back(tfs);
   }
-  if (tfs == nullptr) {
-    tfs = considerCompilerGeneratedFunctions(rc, ci, candidates);
+  if (tfss.empty()) {
+    if (auto tfs = considerCompilerGeneratedMethods(rc, ci, candidates))
+      tfss.push_back(tfs);
   }
-
-  if (!tfs) return;
-
-  // check if the initial signature matches
-  auto faMap = FormalActualMap(tfs->untyped(), ci);
-  if (!isInitialTypedSignatureApplicable(rc->context(), tfs, faMap, ci).success()) {
-    return;
+  if (tfss.empty()) {
+    if (auto tfs = considerCompilerGeneratedFunctions(rc, ci, candidates))
+      tfss.push_back(tfs);
   }
 
-  // OK, already concrete, store and return
-  if (!tfs->needsInstantiation()) {
-    candidates.addCandidate(tfs);
-    return;
-  }
+  if (tfss.empty()) return;
 
-  // need to instantiate before storing
-  auto instantiated = doIsCandidateApplicableInstantiating(rc,
-                                                           tfs,
-                                                           ci,
-                                                           /* POI */ nullptr);
-  if (!instantiated.success()) {
-    // failed when instantiating, likely due to dependent types.
-    if (rejected) rejected->push_back(instantiated);
-    return;
-  }
+  for (auto tfs : tfss) {
+    // check if the initial signature matches
+    auto faMap = FormalActualMap(tfs->untyped(), ci);
+    if (!isInitialTypedSignatureApplicable(rc->context(), tfs, faMap, ci).success()) {
+      return;
+    }
 
-  if (!instantiated.candidate()->isInitializer() &&
-      checkUninstantiatedFormals(rc->context(), astForErr, instantiated.candidate())) {
-    return; // do not push invalid candidate into list
-  }
+    // OK, already concrete, store and return
+    if (!tfs->needsInstantiation()) {
+      candidates.addCandidate(tfs);
+      return;
+    }
 
-  candidates.addCandidate(instantiated.candidate());
+    // need to instantiate before storing
+    auto instantiated = doIsCandidateApplicableInstantiating(rc,
+                                                             tfs,
+                                                             ci,
+                                                             /* POI */ nullptr);
+    if (!instantiated.success()) {
+      // failed when instantiating, likely due to dependent types.
+      if (rejected) rejected->push_back(instantiated);
+      return;
+    }
+
+    if (!instantiated.candidate()->isInitializer() &&
+        checkUninstantiatedFormals(rc->context(), astForErr, instantiated.candidate())) {
+      return; // do not push invalid candidate into list
+    }
+
+    candidates.addCandidate(instantiated.candidate());
+  }
 }
 
 static MatchingIdsWithName lookupCalledExprImpl(Context* context,

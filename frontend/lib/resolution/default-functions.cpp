@@ -486,10 +486,10 @@ needCompilerGeneratedMethod(Context* context, const Type* type,
   return false;
 }
 
-bool needCompilerGeneratedBinaryOp(Context* context,
-                                   const types::QualifiedType& lhs,
-                                   const types::QualifiedType& rhs,
-                                   UniqueString name) {
+static bool needCompilerGeneratedBinaryOpImpl(Context* context,
+                                              const types::QualifiedType& lhs,
+                                              const types::QualifiedType& rhs,
+                                              UniqueString name) {
   auto lhsT = lhs.type();
   auto rhsT = rhs.type();
 
@@ -527,6 +527,13 @@ bool needCompilerGeneratedBinaryOp(Context* context,
   }
 
   return false;
+}
+
+bool needCompilerGeneratedBinaryOp(Context* context,
+                                   const types::QualifiedType& lhs,
+                                   const types::QualifiedType& rhs,
+                                   UniqueString name) {
+  return needCompilerGeneratedBinaryOpImpl(context, lhs, rhs, name);
 }
 
 static bool initHelper(Context* context,
@@ -2089,35 +2096,39 @@ getCompilerGeneratedMethodQuery(ResolutionContext* rc, QualifiedType receiverTyp
   return CHPL_RESOLUTION_QUERY_END(result);
 }
 
-static const TypedFnSignature* const&
-getCompilerGeneratedBinaryOpQuery(ResolutionContext* rc,
-                                  QualifiedType lhsType,
-                                  QualifiedType rhsType,
-                                  UniqueString name) {
-  CHPL_RESOLUTION_QUERY_BEGIN(getCompilerGeneratedBinaryOpQuery, rc, lhsType, rhsType, name);
+std::vector<const TypedFnSignature*> const&
+getCompilerGeneratedBinaryOp(ResolutionContext* rc,
+                             QualifiedType lhsType,
+                             QualifiedType rhsType,
+                             UniqueString name) {
+  CHPL_RESOLUTION_QUERY_BEGIN(getCompilerGeneratedBinaryOp, rc, lhsType, rhsType, name);
   auto context = rc->context();
 
-  const TypedFnSignature* result = nullptr;
+  std::vector<const TypedFnSignature*> result;
   auto lhsT = lhsType.type();
 
-  if (needCompilerGeneratedBinaryOp(context, lhsType, rhsType, name)) {
-    if (const EnumType* enumType = nullptr;
-        auto generator = generatorForCompilerGeneratedEnumOperator(name, lhsType, rhsType, enumType)) {
-      result = generator(rc, enumType);
-    } else if (auto recordType = lhsT->toRecordType()) {
-      if (auto generator = generatorForCompilerGeneratedRecordOperator(name)) {
-        result = generator(rc, recordType);
+  do {
+    const TypedFnSignature* tfs = nullptr;
+    if (needCompilerGeneratedBinaryOpImpl(context, lhsType, rhsType, name)) {
+      if (const EnumType* enumType = nullptr;
+          auto generator = generatorForCompilerGeneratedEnumOperator(name, lhsType, rhsType, enumType)) {
+        tfs = generator(rc, enumType);
+      } else if (auto recordType = lhsT->toRecordType()) {
+        if (auto generator = generatorForCompilerGeneratedRecordOperator(name)) {
+          tfs = generator(rc, recordType);
+        } else {
+          CHPL_UNIMPL("record method not implemented yet!");
+        }
+      } else if (lhsT->isExternType() && name == USTR("=")) {
+        tfs = generateExternAssignment(rc, lhsT->toExternType());
       } else {
-        CHPL_UNIMPL("record method not implemented yet!");
+        CHPL_UNIMPL("should not be reachable");
       }
-    } else if (lhsT->isExternType() && name == USTR("=")) {
-      result = generateExternAssignment(rc, lhsT->toExternType());
-    } else {
-      CHPL_UNIMPL("should not be reachable");
     }
-  }
 
-  CHPL_ASSERT(result == nullptr || result->untyped()->name() == name);
+    CHPL_ASSERT(tfs == nullptr || tfs->untyped()->name() == name);
+    if (tfs) result.push_back(tfs);
+  } while (false);
 
   return CHPL_RESOLUTION_QUERY_END(result);
 }
@@ -2142,15 +2153,6 @@ getCompilerGeneratedMethod(ResolutionContext* rc, const QualifiedType receiverTy
     qt = QualifiedType(QualifiedType::VAR, qt.type());
   }
   return getCompilerGeneratedMethodQuery(rc, qt, name, parenless);
-}
-
-const TypedFnSignature*
-getCompilerGeneratedBinaryOp(ResolutionContext* rc,
-                             const types::QualifiedType lhsType,
-                             const types::QualifiedType rhsType,
-                             UniqueString name) {
-
-  return getCompilerGeneratedBinaryOpQuery(rc, lhsType, rhsType, name);
 }
 
 static const TypedFnSignature* const&
