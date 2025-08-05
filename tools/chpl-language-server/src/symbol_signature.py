@@ -85,7 +85,7 @@ class SymbolSignature:
         Note: this is a temporary method that will go away when the resolver is fully online
         """
         remove = []
-        for (i, part) in enumerate(self._signature):
+        for i, part in enumerate(self._signature):
             node = part.node
             value = part.value
             prefix = part.prefix or ""
