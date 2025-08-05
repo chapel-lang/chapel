@@ -2084,6 +2084,90 @@ ID lookupEnumElementByNumericValue(Context* context,
   return ID();
 }
 
+const std::pair<ID, bool>&
+scopeResolveEnumElement(Context* context,
+                        const Enum* enumAst,
+                        UniqueString elementName,
+                        const AstNode* nodeForErr) {
+  QUERY_BEGIN(scopeResolveEnumElement, context, enumAst, elementName, nodeForErr);
+  bool ambiguous = false;
+  LookupConfig config = LOOKUP_DECLS | LOOKUP_INNERMOST;
+  auto enumScope = scopeForId(context, enumAst->id());
+  auto ids = lookupNameInScope(context, enumScope,
+                               /* methodLookupHelper */ nullptr,
+                               /* receiverScopeHelper */ nullptr,
+                               elementName, config);
+  if (ids.numIds() == 0) {
+    // Do not report the error here, because it might not be an error.
+    // In particular, we could be in a parenless method call. Callers
+    // will decide whether or not to emit the error.
+  } else if (ids.numIds() > 1) {
+    // multiple candidates. report an error, but the expression most likely has a type given by the enum.
+    std::vector<ID> redefinedIds(ids.numIds());
+    std::copy(ids.begin(), ids.end(), redefinedIds.begin());
+    CHPL_REPORT(context, MultipleEnumElems, nodeForErr, elementName, enumAst,
+                std::move(redefinedIds));
+    ambiguous = true;
+  } else {
+    auto ret = std::make_pair(ids.firstId(), ambiguous);
+    return QUERY_END(ret);
+  }
+
+  auto ret = std::make_pair(ID(), ambiguous);
+  return QUERY_END(ret);
+}
+
+QualifiedType
+typeForScopeResolvedEnumElement(Context* context,
+                                const EnumType* enumType,
+                                const ID& refersToId,
+                                bool ambiguous) {
+  if (!refersToId.isEmpty()) {
+    // Found a single enum element, the type can be a param.
+    auto newParam = Param::getEnumParam(context, refersToId);
+    return QualifiedType(QualifiedType::PARAM, enumType, newParam);
+  } else if (ambiguous) {
+    // multiple candidates. but the expression most likely has a type given by
+    // the enum.
+    return QualifiedType(QualifiedType::CONST_VAR, enumType);
+  } else {
+    return QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
+  }
+}
+
+QualifiedType
+typeForScopeResolvedEnumElement(Context* context,
+                                const ID& enumTypeId,
+                                const ID& refersToId,
+                                bool ambiguous) {
+  auto type = initialTypeForTypeDecl(context, enumTypeId);
+  CHPL_ASSERT(type && type->isEnumType());
+  return typeForScopeResolvedEnumElement(context, type->toEnumType(),
+                                         refersToId, ambiguous);
+}
+
+const QualifiedType&
+typeForEnumElement(Context* context,
+                   const EnumType* enumType,
+                   UniqueString elementName,
+                   const AstNode* nodeForErr) {
+  QUERY_BEGIN(typeForEnumElement, context, enumType, elementName, nodeForErr);
+  auto enumAst = parsing::idToAst(context, enumType->id())->toEnum();
+  CHPL_ASSERT(enumAst != nullptr);
+  auto& [refersToId, ambiguous] =
+    scopeResolveEnumElement(context, enumAst, elementName, nodeForErr);
+  auto qt = typeForScopeResolvedEnumElement(context, enumType, refersToId, ambiguous);
+  if (refersToId.isEmpty() && !ambiguous) {
+    // scopeResolveEnumElement doesn't report a "not found" error because
+    // not being able to find an enum element isn't always an error. Here,
+    // though, we are specifically interested in an element, so report
+    // the error.
+    CHPL_REPORT(context, UnknownEnumElem, nodeForErr, elementName, enumAst);
+  }
+  return QUERY_END(qt);
+}
+
+
 static bool varArgCountMatch(const VarArgFormal* formal,
                              ResolutionResultByPostorderID& r) {
   QualifiedType formalType = r.byAst(formal).type();
