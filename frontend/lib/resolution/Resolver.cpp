@@ -6450,135 +6450,261 @@ resolveIterTypeWithTag(Resolver& rv,
   return yieldType;
 }
 
-struct ParamRangeInfo {
-  int64_t current;
-  int64_t end;
+struct BaseParamRangeInfo {
   const Type* yieldType = nullptr;
 
   // Optionally specified properties
   int64_t step = 1;
 
-  static optional<ParamRangeInfo> fromBound(Context* context, ResolutionResultByPostorderID& rr, const AstNode* node) {
-    ParamRangeInfo scratch;
-    int numElts = -1;
+  virtual ~BaseParamRangeInfo() = default;
 
-    // Compositions of ranges can get very complicated:
-    //
-    //   (0..#10 by 2) is a 5-element range, 0, 2, 4, 6, 8
-    //   (0.. by 2 #10) is a 10-element range, 2, 4, ...,
-    //
-    // For now, only allow #10 in the last position, to mimic something like 0<10,
-    // and only allow one 'by', since multi-by combinations require smarts.
-    // This is an improvement over production anyway, where # is not supported
-    // in params at all.
-    bool seenPound = false;
-    bool seenBy = false;
-    while (auto op = node->toOpCall()) {
-      if (seenPound) {
-        context->error(op, "unexpected composition of operators in 'param' loop");
-        return {};
-      }
+  virtual bool done() const = 0;
+  virtual QualifiedType advance(Context* context) = 0;
 
-      if (op->op() == USTR("by")) {
-        if (seenBy) {
-          context->error(op, "multiple 'by' operators unsupported in 'param' loop");
-          return {};
-        }
-        seenBy = true;
-
-        node = op->actual(0);
-        auto& byRe = rr.byAst(op->actual(1));
-        auto byParam = byRe.type().param();
-        if (!byParam || !byParam->isIntParam()) {
-          context->error(op, "expected an integer 'param' for 'by'");
-          return {};
-        }
-
-        scratch.step *= byParam->toIntParam()->value();
-        if (scratch.step == 0) {
-          context->error(op, "step size for 'by' must be non-zero");
-          return {};
-        }
-      } else if (op->op() == USTR("#")) {
-        seenPound = true;
-
-        node = op->actual(0);
-        auto& byRe = rr.byAst(op->actual(1));
-        auto byParam = byRe.type().param();
-        if (!byParam || !byParam->isIntParam()) {
-          context->error(op, "expected an integer 'param' for '#'");
-          return {};
-        }
-
-        numElts = byParam->toIntParam()->value();
-        if (numElts < 0) {
-          context->error(op, "number of elements for '#' must be non-negative");
-          return {};
-        }
-      }
-    }
-
-    auto rng = node->toRange();
-    if (!rng) {
-      context->error(node, "'param' loops can only iterate over range literals");
-      return {};
-    }
-
-    // TODO: Simplify once we no longer use nullptr for param()
-    auto findBoundParam = [&scratch, &rr](const AstNode* bound) -> const IntParam* {
-      if (!bound) return nullptr;
-      ResolvedExpression& boundRE = rr.byAst(bound);
-      if (!scratch.yieldType) scratch.yieldType = boundRE.type().type();
-      auto param = boundRE.type().param();
-      return param ? param->toIntParam() : nullptr;
-    };
-    auto low = findBoundParam(rng->lowerBound());
-    auto hi = findBoundParam(rng->upperBound());
-
-    // TODO: various overflow issue here; if hiVal is INT_MIN, subtracting would
-    //       overflow, etc.
-
-    bool validBounds = false;
+  template <typename R>
+  static bool populateFromBound(R& scratch,
+                                optional<typename R::Iter> low,
+                                optional<typename R::Iter> hi,
+                                Range::OpKind opKind, int step, int numElts) {
     if (low && hi) {
-      validBounds = true;
-      scratch.current = low->value();
-      scratch.end = hi->value() - (rng->opKind() == Range::OPEN_HIGH ? 1 : 0);
+      scratch.current = *low;
+      scratch.end = *hi;
+      R::shiftIdxBy(scratch.end, opKind == Range::OPEN_HIGH ? -1 : 0);
     } else if (low && numElts >= 0) {
-      validBounds = true;
-      scratch.current = low->value();
-      scratch.end = scratch.current + numElts - 1;
+      scratch.end = scratch.current = *low;
+      R::shiftIdxBy(scratch.end, numElts - 1);
     } else if (hi && numElts >=0) {
-      validBounds = true;
-      scratch.end = hi->value() - (rng->opKind() == Range::OPEN_HIGH ? 1 : 0);
-      scratch.current = scratch.end - numElts + 1;
-    }
-    if (!validBounds) {
-      context->error(rng, "param loops may only iterate over bounded integer range literals");
-      return {};
+      scratch.end = *hi;
+      R::shiftIdxBy(scratch.end, opKind == Range::OPEN_HIGH ? -1 : 0);
+      scratch.current = scratch.end;
+      R::shiftIdxBy(scratch.current, - (numElts - 1));
+    } else {
+      return false; // error, can't build range
     }
 
-    if (scratch.step < 0) {
+    scratch.step = step;
+    if (step < 0) {
       std::swap(scratch.current, scratch.end);
     }
 
-    return scratch;
+    return true;
   }
 
-  bool done() const {
-    if (step > 0) return (current > end);
-    return (current < end);
+  template <typename R>
+  static owned<R> fromBound(optional<typename R::Iter> low,
+                            optional<typename R::Iter> hi,
+                            Range::OpKind opKind, int step, int numElts) {
+    auto scratch = toOwned(new R());
+    bool success =
+      populateFromBound<R>(*scratch, low, hi, opKind, step, numElts);
+    return success ? std::move(scratch) : nullptr;
   }
 
-  QualifiedType advance(Context* context) {
-    CHPL_ASSERT(!done());
-    int64_t save = current;
-    current += step;
+  static owned<BaseParamRangeInfo>
+  fromBound(Context* context, ResolutionResultByPostorderID& rr,
+            const AstNode* node);
+};
 
-    return QualifiedType(QualifiedType::PARAM,
-                         yieldType,
-                         IntParam::get(context, save));
+struct IntParamRangeInfo : BaseParamRangeInfo {
+  using Iter = int64_t;
+  int64_t current;
+  int64_t end;
+
+  bool done() const override {
+    return (step > 0) ? (current > end) : (current < end);
+  }
+
+  // Adjust val by step. This is not just val += step to avoid
+  // overflow/underflow.
+  static void shiftIdxBy(int64_t& val, int64_t step) {
+    if (step >= 0 && val > INT64_MAX - step) {
+      // overflow
+      val = INT64_MAX;
+    } else if (step < 0 && val < INT64_MIN - step) {
+      // underflow
+      val = INT64_MIN;
+    } else {
+      val += step;
+    }
+  }
+
+  virtual const Param* wrap(Context* context, int64_t val) const {
+    return IntParam::get(context, val);
+  }
+
+  QualifiedType advance(Context* context) override {
+    assert(!done());
+    auto save = current;
+    shiftIdxBy(current, step);
+    return QualifiedType(QualifiedType::PARAM, yieldType, wrap(context, save));
+  }
+
+  static owned<BaseParamRangeInfo> build(Context* context, const Type* yieldType,
+                                         const Param* low, const Param* hi,
+                                         const Range* rng, int step, int numElts) {
+    optional<int64_t> lowV = empty, hiV = empty;
+    if (low) lowV = low->toIntParam()->value();
+    if (hi) hiV = hi->toIntParam()->value();
+
+    return fromBound<IntParamRangeInfo>(lowV, hiV, rng->opKind(), step, numElts);
   }
 };
+
+struct EnumParamRangeInfo : IntParamRangeInfo {
+  // Performance: elements could be a reference to a stored query result
+  // if we don't want to construct it each time.
+  std::vector<const EnumElement*> elements;
+
+  EnumParamRangeInfo(AstListNoCommentsIteratorPair<EnumElement> elts)
+    : elements(elts.begin(), elts.end()) {
+    current = 0;
+    end = static_cast<int64_t>(elements.size()) - 1;
+  }
+
+  const Param* wrap(Context* context, int64_t val) const override {
+    auto elt = elements[val];
+    return EnumParam::get(context, Param::EnumValue(elt->id(), elt->name().str()));
+  }
+
+  static owned<BaseParamRangeInfo> build(Context* context, const Type* yieldType,
+                                         const Param* low, const Param* hi,
+                                         const Range* rng, int step, int numElts) {
+    CHPL_ASSERT(yieldType && yieldType->isEnumType());
+    auto enumType = yieldType->toEnumType();
+    auto enumDecl = parsing::idToAst(context, enumType->id())->toEnum();
+    CHPL_ASSERT(enumDecl);
+    auto info = toOwned(new EnumParamRangeInfo(enumDecl->enumElements()));
+
+    optional<int64_t> lowV = empty, hiV = empty;
+    auto findElementInList = [&info](auto& into, const EnumParam* p) {
+      if (!p) return;
+      for (size_t i = 0; i < info->elements.size(); i++) {
+        if (info->elements[i]->id() == p->value().id) {
+          into = static_cast<int64_t>(i);
+          return;
+        }
+      }
+    };
+    findElementInList(lowV, low ? low->toEnumParam() : nullptr);
+    findElementInList(hiV, hi ? hi->toEnumParam() : nullptr);
+    if (populateFromBound(*info, lowV, hiV, rng->opKind(), step, numElts)) {
+      info->current = std::clamp(info->current, int64_t(0), int64_t(info->elements.size()) - 1);
+      info->end = std::clamp(info->end, int64_t(0), int64_t(info->elements.size()) - 1);
+      return info;
+    }
+    return nullptr;
+  }
+};
+
+owned<BaseParamRangeInfo>
+BaseParamRangeInfo::fromBound(Context* context,
+                              ResolutionResultByPostorderID& rr,
+                              const AstNode* node) {
+  int step = 1;
+  int numElts = -1;
+  const Type* yieldType = nullptr;
+
+  // Compositions of ranges can get very complicated:
+  //
+  //   (0..#10 by 2) is a 5-element range, 0, 2, 4, 6, 8
+  //   (0.. by 2 #10) is a 10-element range, 2, 4, ...,
+  //
+  // For now, only allow #10 in the last position, to mimic something like 0<10,
+  // and only allow one 'by', since multi-by combinations require smarts.
+  // This is an improvement over production anyway, where # is not supported
+  // in params at all.
+  bool seenPound = false;
+  bool seenBy = false;
+  while (auto op = node->toOpCall()) {
+    if (seenPound) {
+      context->error(op, "unexpected composition of operators in 'param' loop");
+      return {};
+    }
+
+    if (op->op() == USTR("by")) {
+      if (seenBy) {
+        context->error(op, "multiple 'by' operators unsupported in 'param' loop");
+        return {};
+      }
+      seenBy = true;
+
+      node = op->actual(0);
+      auto& byRe = rr.byAst(op->actual(1));
+      auto byParam = byRe.type().param();
+      if (!byParam || !byParam->isIntParam()) {
+        context->error(op, "expected an integer 'param' for 'by'");
+        return {};
+      }
+
+      step *= byParam->toIntParam()->value();
+      if (step == 0) {
+        context->error(op, "step size for 'by' must be non-zero");
+        return {};
+      }
+    } else if (op->op() == USTR("#")) {
+      seenPound = true;
+
+      node = op->actual(0);
+      auto& byRe = rr.byAst(op->actual(1));
+      auto byParam = byRe.type().param();
+      if (!byParam || !byParam->isIntParam()) {
+        context->error(op, "expected an integer 'param' for '#'");
+        return {};
+      }
+
+      numElts = byParam->toIntParam()->value();
+      if (numElts < 0) {
+        context->error(op, "number of elements for '#' must be non-negative");
+        return {};
+      }
+    }
+  }
+
+  auto rng = node->toRange();
+  if (!rng) {
+    context->error(node, "'param' loops can only iterate over range literals");
+    return {};
+  }
+
+  // TODO: Simplify once we no longer use nullptr for param()
+  optional<paramtags::ParamTag> tag = empty;
+  bool validBounds = true;
+  auto findBoundParam = [context, &validBounds, &tag, &yieldType, &rr](const AstNode* bound) -> const Param* {
+    if (!bound) return nullptr;
+    ResolvedExpression& boundRE = rr.byAst(bound);
+    auto param = boundRE.type().param();
+    if (!param) {
+      context->error(bound, "expected a 'param' for range bound in 'param' loop");
+      validBounds = false;
+      return nullptr;
+    }
+    if (!yieldType) yieldType = boundRE.type().type();
+    if (!tag) {
+      tag = param->tag();
+    } else if (param->tag() != *tag) {
+      context->error(bound, "incompatible range bounds in 'param' loop");
+      validBounds = false;
+      return nullptr;
+    }
+    return param;
+  };
+  auto low = findBoundParam(rng->lowerBound());
+  auto hi = findBoundParam(rng->upperBound());
+
+  if (!validBounds) return {}; // error already issued, just return.
+
+  owned<BaseParamRangeInfo> toReturn = nullptr;
+  if (tag == paramtags::ParamTag::IntParam) {
+    toReturn = IntParamRangeInfo::build(context, yieldType, low, hi,
+                                        rng, step, numElts);
+  } else if (tag == paramtags::ParamTag::EnumParam) {
+    toReturn = EnumParamRangeInfo::build(context, yieldType, low, hi,
+                                         rng, step, numElts);
+  }
+  if (toReturn) toReturn->yieldType = yieldType;
+
+  return toReturn;
+}
 
 struct TupleInfo {
   const TupleType* tupleType;
@@ -6658,7 +6784,7 @@ static bool resolveParamForLoop(Resolver& rv, const For* forLoop) {
     return true;
   }
 
-  auto iterandInfo = ParamRangeInfo::fromBound(context, rv.byPostorder, iterand);
+  auto iterandInfo = BaseParamRangeInfo::fromBound(context, rv.byPostorder, iterand);
   if (!iterandInfo) return false;
 
   return resolveParamForLoop(rv, forLoop, std::move(iterandInfo));

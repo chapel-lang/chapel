@@ -54,11 +54,14 @@ static auto recIter = std::string(R""""(
 
 std::vector<const ErrorBase*> errors;
 
+template <paramtags::ParamTag Tag, typename ParamT>
 struct ParamCollector {
   using RV = ResolvedVisitor<ParamCollector>;
 
+  using ValueT = decltype(std::declval<const ParamT*>()->value());
+
   std::map<std::string, int> resolvedIdents;
-  std::multimap<std::string, int64_t> resolvedVals;
+  std::multimap<std::string, ValueT> resolvedVals;
 
   ParamCollector() { }
 
@@ -66,10 +69,10 @@ struct ParamCollector {
     if (decl->storageKind() == Qualifier::PARAM ||
         decl->storageKind() == Qualifier::INDEX) {
       const ResolvedExpression& rr = rv.byAst(decl);
-      auto val = rr.type().param()->toIntParam();
-      assert(val != nullptr);
+      auto val = rr.type().param();
+      assert(val != nullptr && val->tag() == Tag);
 
-      resolvedVals.emplace(decl->name().str(), val->value());
+      resolvedVals.emplace(decl->name().str(), ((const ParamT*) val)->value());
     }
     return true;
   }
@@ -334,9 +337,9 @@ static void testCForLoop() {
   assert(cond.type().type() == BoolType::get(context));
 }
 
-// Note: values hardcoded to match 'helpTestParam' helper
-struct ParamLoopTester {
-  ParamCollector pc;
+// Note: values hardcoded to match 'helpTestIntParam' helper
+struct IntParamLoopTester {
+  ParamCollector<paramtags::ParamTag::IntParam, IntParam> pc;
   std::map<std::string, int> resolvedIdents;
   std::multimap<std::string, int64_t> resolvedVals;
 
@@ -354,7 +357,7 @@ struct ParamLoopTester {
   }
 };
 
-static ParamLoopTester helpTestParam(const char* rangeExpr, const char* extraCode = "") {
+static IntParamLoopTester helpTestIntParam(const char* rangeExpr, const char* extraCode = "") {
   printf("testParamFor with %s\n", rangeExpr);
   auto context = buildStdContext();
   ErrorGuard guard(context);
@@ -375,18 +378,79 @@ static ParamLoopTester helpTestParam(const char* rangeExpr, const char* extraCod
   const Module* m = parseModule(context, iterText);
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
-  ParamCollector pc;
-  ResolvedVisitor<ParamCollector> rv(&rcval, m, pc, rr);
+  ParamCollector<paramtags::ParamTag::IntParam, IntParam> pc;
+  ResolvedVisitor<decltype(pc)> rv(&rcval, m, pc, rr);
   m->traverse(rv);
 
   const ResolvedExpression& re = rr.byAst(m->stmt(0));
   assert(re.type().type() == IntType::get(context, 0));
-  return ParamLoopTester{std::move(pc), {}, {}};
+  return IntParamLoopTester{std::move(pc), {}, {}};
 }
 
-static void testParamFor() {
+// Note: values hardcoded to match 'helpTestIntParam' helper
+struct EnumParamLoopTester {
+  ParamCollector<paramtags::ParamTag::EnumParam, EnumParam> pc;
+  std::map<std::string, int> resolvedIdents;
+  std::multimap<std::string, std::string> resolvedVals;
+
+  void noteExpectedIteration(std::string e) {
+    resolvedIdents["i"] += 1;
+    resolvedIdents["x"] += 1;
+    resolvedVals.emplace("i", e);
+    resolvedVals.emplace("n", e);
+  }
+
+  template <typename ...Ts>
+  void noteExpectedIterations(Ts&&...es) {
+    (noteExpectedIteration(std::forward<Ts>(es)), ...);
+  }
+
+  void assertMatch() {
+    for (auto& kv : resolvedIdents) {
+      assert(pc.resolvedIdents.at(kv.first) == kv.second);
+    }
+
+    std::multimap<std::string, std::string> pcStrings;
+    for (const auto& kv : pc.resolvedVals) {
+      pcStrings.emplace(kv.first, kv.second.str);
+    }
+    assert(resolvedVals == pcStrings);
+  }
+};
+
+static EnumParamLoopTester helpTestEnumParam(const char* rangeExpr, const char* extraCode = "") {
+  printf("testParamFor with %s\n", rangeExpr);
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+  ResolutionContext rcval(context);
+  //
+  // Test iteration over an iterator call
+  //
+
+  auto iterText = R"""(
+                  var x = 0;
+                  enum color { red, green, blue, cyan, yellow, magenta }
+                  use color;
+                  for param i in )""" + std::string(rangeExpr) + R"""( {
+                    param n = i;
+                    var y = x;
+                    )""" + std::string(extraCode) + R"""(
+                  }
+                  )""";
+
+  const Module* m = parseModule(context, iterText);
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+  ParamCollector<paramtags::ParamTag::EnumParam, EnumParam> pc;
+  ResolvedVisitor<decltype(pc)> rv(&rcval, m, pc, rr);
+  m->traverse(rv);
+
+  return EnumParamLoopTester{std::move(pc), {}, {}};
+}
+
+static void testIntParamFor() {
   {
-    auto test = helpTestParam("1..10");
+    auto test = helpTestIntParam("1..10");
     for (int i = 1; i <= 10; i++) {
       test.noteExpectedIteration(i);
     }
@@ -394,7 +458,7 @@ static void testParamFor() {
   }
 
   {
-    auto test = helpTestParam("1..10 by 2");
+    auto test = helpTestIntParam("1..10 by 2");
     for (int i = 1; i <= 10; i += 2) {
       test.noteExpectedIteration(i);
     }
@@ -402,7 +466,7 @@ static void testParamFor() {
   }
 
   {
-    auto test = helpTestParam("1..10 by -2");
+    auto test = helpTestIntParam("1..10 by -2");
     for (int i = 10; i >= 1; i -= 2) {
       test.noteExpectedIteration(i);
     }
@@ -410,7 +474,7 @@ static void testParamFor() {
   }
 
   {
-    auto test = helpTestParam("1..<10");
+    auto test = helpTestIntParam("1..<10");
     for (int i = 1; i < 10; i++) {
       test.noteExpectedIteration(i);
     }
@@ -418,7 +482,7 @@ static void testParamFor() {
   }
 
   {
-    auto test = helpTestParam("1..<10 by -2");
+    auto test = helpTestIntParam("1..<10 by -2");
     for (int i = 9; i >= 1; i -= 2) {
       test.noteExpectedIteration(i);
     }
@@ -426,7 +490,7 @@ static void testParamFor() {
   }
 
   {
-    auto test = helpTestParam("0..#10");
+    auto test = helpTestIntParam("0..#10");
     for (int i = 0; i < 10; i ++) {
       test.noteExpectedIteration(i);
     }
@@ -434,7 +498,7 @@ static void testParamFor() {
   }
 
   {
-    auto test = helpTestParam("0..#10 by -2");
+    auto test = helpTestIntParam("0..#10 by -2");
     for (int i = 9; i >= 0; i -= 2) {
       test.noteExpectedIteration(i);
     }
@@ -442,7 +506,7 @@ static void testParamFor() {
   }
 
   {
-    auto test = helpTestParam("..10#10");
+    auto test = helpTestIntParam("..10#10");
     for (int i = 1; i <= 10; i++) {
       test.noteExpectedIteration(i);
     }
@@ -450,7 +514,7 @@ static void testParamFor() {
   }
 
   {
-    auto test = helpTestParam("..10#10 by -2");
+    auto test = helpTestIntParam("..10#10 by -2");
     for (int i = 10; i >= 1; i -= 2) {
       test.noteExpectedIteration(i);
     }
@@ -458,7 +522,7 @@ static void testParamFor() {
   }
 
   {
-    auto test = helpTestParam("1..10", "break;");
+    auto test = helpTestIntParam("1..10", "break;");
     for (int i = 1; i <= 10; i++) {
       test.noteExpectedIteration(i);
       break;
@@ -467,11 +531,157 @@ static void testParamFor() {
   }
 
   {
-    auto test = helpTestParam("1..10", "continue;");
+    auto test = helpTestIntParam("1..10", "continue;");
     for (int i = 1; i <= 10; i++) {
       test.noteExpectedIteration(i);
       continue;
     }
+    test.assertMatch();
+  }
+}
+
+static void testEnumParamFor() {
+  {
+    auto test = helpTestEnumParam("red..blue");
+    test.noteExpectedIterations("red", "green", "blue");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("red..#3");
+    test.noteExpectedIterations("red", "green", "blue");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("red..#6");
+    test.noteExpectedIterations("red", "green", "blue", "cyan", "yellow", "magenta");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("red..#100");
+    test.noteExpectedIterations("red", "green", "blue", "cyan", "yellow", "magenta");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("..cyan#3");
+    test.noteExpectedIterations("green", "blue", "cyan");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("..magenta#3");
+    test.noteExpectedIterations("cyan", "yellow", "magenta");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("..magenta#6");
+    test.noteExpectedIterations("red", "green", "blue", "cyan", "yellow", "magenta");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("..magenta#100");
+    test.noteExpectedIterations("red", "green", "blue", "cyan", "yellow", "magenta");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("red..blue by -1");
+    test.noteExpectedIterations("blue", "green", "red");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("red..#3 by -1");
+    test.noteExpectedIterations("blue", "green", "red");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("red..#6 by -1");
+    test.noteExpectedIterations("magenta", "yellow", "cyan", "blue", "green", "red");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("red..#100 by -1");
+    test.noteExpectedIterations("magenta", "yellow", "cyan", "blue", "green", "red");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("..cyan#3 by -1");
+    test.noteExpectedIterations("cyan", "blue", "green");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("..magenta#3 by -1");
+    test.noteExpectedIterations("magenta", "yellow", "cyan");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("..magenta#6 by -1");
+    test.noteExpectedIterations("magenta", "yellow", "cyan", "blue", "green", "red");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("..magenta#100 by -1");
+    test.noteExpectedIterations("magenta", "yellow", "cyan", "blue", "green", "red");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("red..blue by 2");
+    test.noteExpectedIterations("red", "blue");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("red..#3 by 2");
+    test.noteExpectedIterations("red", "blue");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("red..#6 by 2");
+    test.noteExpectedIterations("red", "blue", "yellow");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("red..#100 by 2");
+    test.noteExpectedIterations("red", "blue", "yellow");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("..cyan#3 by 2");
+    test.noteExpectedIterations("green", "cyan");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("..magenta#3 by 2");
+    test.noteExpectedIterations("cyan", "magenta");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("..magenta#6 by 2");
+    test.noteExpectedIterations("red", "blue", "yellow");
+    test.assertMatch();
+  }
+
+  {
+    auto test = helpTestEnumParam("..magenta#100 by 2");
+    test.noteExpectedIterations("red", "blue", "yellow");
     test.assertMatch();
   }
 }
@@ -502,8 +712,8 @@ static void testNestedParamFor() {
   const Module* m = parseModule(context, loopText);
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
-  ParamCollector pc;
-  ResolvedVisitor<ParamCollector> rv(rc, m, pc, rr);
+  ParamCollector<paramtags::ParamTag::IntParam, IntParam> pc;
+  ResolvedVisitor<decltype(pc)> rv(rc, m, pc, rr);
   m->traverse(rv);
 
   const ResolvedExpression& re = rr.byAst(m->stmt(0));
@@ -1604,7 +1814,8 @@ int main() {
   testNoIndex();
   testTheseNoIndex();
   testCForLoop();
-  testParamFor();
+  testIntParamFor();
+  testEnumParamFor();
   testNestedParamFor();
   testNestedParamForLabeledBreakContinue();
   testHeteroTuples();
