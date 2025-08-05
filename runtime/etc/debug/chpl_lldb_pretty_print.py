@@ -422,79 +422,59 @@ class ArrayProvider:
         )
         if ranges.GetNumChildren() <= 0:
             return
-        # Handle N-dimensional arrays
-        if self.rank == 1:
-            # 1D case - simple linear indexing
-            range_0 = ranges.GetChildAtIndex(0)
-            low = range_0.GetChildMemberWithName("_low").GetValueAsSigned()
-            high = range_0.GetChildMemberWithName("_high").GetValueAsSigned()
 
-            data_ptr = self.data.GetValueAsUnsigned()
-            for i in range(0, high - low + 1):
-                element_addr = data_ptr + i * element_size
-                element_name = f"[{i}]"
-                try:
-                    element_val = self.valobj.CreateValueFromAddress(
-                        element_name, element_addr, element_type
-                    )
-                    self.synthetic_children[element_name] = element_val
-                except:
-                    print(
-                        f"ArrayProvider: failed to create element at index {i}"
-                    )
-        else:
-            # N-D case - multi-dimensional indexing
-            bounds = []
-            for dim in range(self.rank):
-                range_dim = ranges.GetChildAtIndex(dim)
-                low = range_dim.GetChildMemberWithName(
-                    "_low"
-                ).GetValueAsSigned()
-                high = range_dim.GetChildMemberWithName(
-                    "_high"
-                ).GetValueAsSigned()
-                bounds.append((low, high))
+        # N-D case - multi-dimensional indexing
+        bounds = []
+        for dim in range(self.rank):
+            range_dim = ranges.GetChildAtIndex(dim)
+            low = (
+                range_dim.GetNonSyntheticValue()
+                .GetChildMemberWithName("_low")
+                .GetValueAsSigned()
+            )
+            high = (
+                range_dim.GetNonSyntheticValue()
+                .GetChildMemberWithName("_high")
+                .GetValueAsSigned()
+            )
+            bounds.append((low, high))
 
-            data_ptr = self.data.GetValueAsUnsigned()
+        data_ptr = self.data.GetValueAsUnsigned()
 
-            def generate_indices(dims, bounds):
-                if dims == 0:
-                    yield []
-                else:
-                    low, high = bounds[dims - 1]
-                    for i in range(low, high + 1):
-                        for rest in generate_indices(dims - 1, bounds):
-                            yield [i] + rest
+        def generate_indices(dims, bounds):
+            if dims == 0:
+                yield []
+            else:
+                low, high = bounds[dims - 1]
+                for i in range(low, high + 1):
+                    for rest in generate_indices(dims - 1, bounds):
+                        yield [i] + rest
 
-            # Calculate strides for row-major ordering
-            strides = [1]
-            for i in range(self.rank - 1, 0, -1):
-                low, high = bounds[i]
-                size = high - low + 1
-                strides.insert(0, strides[0] * size)
+        # Calculate strides
+        strides = [1]
+        for i in range(self.rank - 1, 0, -1):
+            low, high = bounds[i]
+            size = high - low + 1
+            strides.insert(0, strides[0] * size)
 
-            for indices in generate_indices(self.rank, bounds):
-                # Calculate linear offset
-                offset = 0
-                for i, idx in enumerate(indices):
-                    low, _ = bounds[i]
-                    offset += (idx - low) * strides[i]
+        for indices in generate_indices(self.rank, bounds):
+            # Calculate linear offset
+            offset = 0
+            for i, idx in enumerate(indices):
+                low, _ = bounds[i]
+                offset += (idx - low) * strides[i]
 
-                element_addr = data_ptr + offset * element_size
-                element_name = f"[{','.join(map(str, indices))}]"
-                try:
-                    element_type = self.valobj.GetTarget().FindFirstType(
-                        self.element_type
-                    )
-                    if element_type.IsValid():
-                        element_val = self.valobj.CreateValueFromAddress(
-                            element_name, element_addr, element_type
-                        )
-                        self.synthetic_children[element_name] = element_val
-                except:
-                    print(
-                        f"ArrayProvider: failed to create element at indices {indices}"
-                    )
+            element_addr = data_ptr + offset * element_size
+            element_name = f"[{','.join(map(str, indices))}]"
+            try:
+                element_val = self.valobj.CreateValueFromAddress(
+                    element_name, element_addr, element_type
+                )
+                self.synthetic_children[element_name] = element_val
+            except:
+                print(
+                    f"ArrayProvider: failed to create element at indices {indices}"
+                )
 
     def _get_element_size(self):
         """Get the size in bytes of the element type"""
