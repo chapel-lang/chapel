@@ -10,6 +10,17 @@ Vagrant.configure("2") do |config|
   config.vm.box_architecture = "i386"
   config.vm.box_version = "4.3.12"
 
+  config.vm.provision "shell" do |s|
+    s.env =  { http_proxy:ENV['http_proxy'], https_proxy:ENV['https_proxy'] }
+    s.path =  "../../provision-scripts/proxy-setup.sh"
+  end
+
+  # Hack to get this box to grab DNS nameservers from DHCP, rather than using
+  # the public DNS servers it for some reason has hardcoded.
+  config.vm.provision "shell",
+    inline: "sed -i 's/dns-nameserver/#dns-nameserver/' /etc/network/interfaces ;\
+             systemctl restart networking"
+
   config.vm.provision "shell",
     path: "../../provision-scripts/apt-get-deps.sh"
 
@@ -24,7 +35,7 @@ Vagrant.configure("2") do |config|
 
   config.vm.provider "virtualbox" do |vb|
     vb.memory = 4096
-    # vb.cpus = 2
+    vb.cpus = 2
   end
 
 end
