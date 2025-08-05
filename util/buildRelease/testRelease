@@ -93,7 +93,6 @@ sub mysystem {
     $status = system($command);
     if ($status != 0) {
         $somethingfailed = 1;
-        $status = $status / 256;
         print "Error $_[1]: $status\n";
         if ($fatal != 0) {
           exit 1;
