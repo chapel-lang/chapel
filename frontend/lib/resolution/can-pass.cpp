@@ -529,9 +529,9 @@ CanPassResult CanPassResult::canPassSubtypeNonBorrowing(Context* context,
   // implement conversions to and from chpl_c_string and c_ptr(c_char)
   auto charType = typeForSysCType(context, USTR("c_char"));
   auto checkCStringCPtr = [&charType](const Type* maybeCString, const Type* maybeCPtr) {
+    if (!maybeCString->isCStringType()) return false;
     if (auto cptr = maybeCPtr->toCPtrType()) {
-      return cptr->isConst() && cptr->eltType() == charType.type() &&
-             maybeCString->isCStringType();
+      return cptr->isConst() && cptr->eltType() == charType.type();
     }
     return false;
   };
