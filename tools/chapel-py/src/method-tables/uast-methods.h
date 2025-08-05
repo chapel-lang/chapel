@@ -642,12 +642,7 @@ CLASS_END(VarLikeDecl)
 
 CLASS_BEGIN(Formal)
   PLAIN_GETTER(Formal, is_this, "Check if this Formal node is a 'this' formal",
-               bool,
-                auto parent = chpl::parsing::parentAst(context, node);
-                return parent && parent->isFunction() &&
-                       parent->toFunction()->thisFormal() &&
-                       parent->toFunction()->thisFormal()->id() == node->id();
-              )
+               bool, return node->name() == USTR("this"))
 CLASS_END(Formal)
 
 CLASS_BEGIN(VarArgFormal)
