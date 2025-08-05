@@ -52,7 +52,6 @@ static void buildDefaultOfFunction(AggregateType* ct);
 static void buildUnionAssignmentFunction(AggregateType* ct);
 
 static void buildEnumIntegerCastFunctions(EnumType* et);
-static void buildEnumFirstFunction(EnumType* et);
 static void buildEnumSizeFunction(EnumType* et);
 static void buildEnumOrderFunctions(EnumType* et);
 static void buildEnumStringOrBytesCastFunctions(EnumType* type,
@@ -1167,7 +1166,6 @@ void buildEnumFunctions(EnumType* et) {
   buildEnumStringOrBytesCastFunctions(et, dtString);
 
   buildEnumIntegerCastFunctions(et);
-  buildEnumFirstFunction(et);
   buildEnumSizeFunction(et);
   buildEnumOrderFunctions(et);
 }
@@ -1208,43 +1206,6 @@ static void buildEnumSizeFunction(EnumType* et) {
   fn->tagIfGeneric();
 }
 
-
-
-static void buildEnumFirstFunction(EnumType* et) {
-  if (functionExists("chpl_enum_first", et))
-    return;
-  // Build a function that returns the first option for the enum
-  // specified, also known as the default.
-  FnSymbol* fn = new FnSymbol("chpl_enum_first");
-  fn->addFlag(FLAG_COMPILER_GENERATED);
-  fn->addFlag(FLAG_LAST_RESORT);
-  // Making this compiler generated allows users to define what the
-  // default is for a particular enum.  They can also redefine the
-  // _defaultOf function for the enum to obtain this functionality (and
-  // that is the encouraged path to take).
-  fn->addFlag(FLAG_INLINE);
-  ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "t", et);
-  arg->addFlag(FLAG_TYPE_VARIABLE);
-  fn->insertFormalAtTail(arg);
-  fn->retTag = RET_PARAM;
-
-  DefExpr* defExpr = toDefExpr(et->constants.head);
-  if (defExpr)
-    fn->insertAtTail(new CallExpr(PRIM_RETURN, defExpr->sym));
-  else
-    fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
-  // If there are one or more enumerators for this type, return the first one
-  // listed.  Otherwise return nothing.
-
-  DefExpr* fnDef = new DefExpr(fn);
-  // needs to go in the base module because when called from _defaultOf(et),
-  // they are automatically inserted
-  baseModule->block->insertAtTail(fnDef);
-  reset_ast_loc(fnDef, et->symbol);
-
-  normalize(fn);
-  fn->tagIfGeneric();
-}
 
 static void buildEnumIntegerCastFunctions(EnumType* et) {
   bool initsExist = !et->isAbstract();
