@@ -76,9 +76,14 @@ The `Debugger.breakpoint` statement
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The :chpl:mod:`Debugger` module provides a parenless function called
-:chpl:proc:`~Debugger.breakpoint`. When the code is compiled and run with debug
-symbols, i.e. ``-g``, the attached debugger will automatically stop at calls to
-this function as a breakpoint.
+:chpl:proc:`~Debugger.breakpoint`. This will cause an attached debugger to
+automatically stop at calls to this function as a breakpoint.
+
+.. note::
+
+   This requires ``b debuggerBreakHere`` to be set in the debugger, which is
+   done automatically by the ``--gdb`` and ``--lldb`` flags. If you need a true
+   debug trap, see the :chpl:proc:`~Debugger.debugTrap` function.
 
 .. _readme-debugging-bkc:
 
