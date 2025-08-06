@@ -111,7 +111,8 @@ chapel-py-venv: FORCE $(CHPL_VENV_VIRTUALENV_DIR_OK)
 	@# note that CC/CXX are explicitly set to avoid scikit-build/scikit-build-core#1114
 	export PATH="$(CHPL_VENV_VIRTUALENV_BIN):$$PATH" && \
 	export VIRTUAL_ENV=$(CHPL_VENV_VIRTUALENV_DIR) && \
-	CC=$(CHPL_MAKE_HOST_CC) CXX=$(CHPL_MAKE_HOST_CXX) \
+	CC=$(shell which $(CHPL_MAKE_HOST_CC)) \
+	CXX=$(shell which $(CHPL_MAKE_HOST_CXX)) \
 	CHPL_HOME=$(CHPL_MAKE_HOME) $(PIP) install --upgrade \
 	  $(CHPL_PIP_INSTALL_PARAMS) $(LOCAL_PIP_FLAGS) \
 	  --target $(CHPL_VENV_CHPL_FRONTEND_PY_DEPS) \
