@@ -41,7 +41,7 @@ struct DisambiguationCandidate {
   QualifiedType forwardingTo; // actual passed to receiver when forwarding
   FormalActualMap formalActualMap;
   int idx = 0;
-  SubstitutionsMap promotedFormals;
+  PromotedFormalMap promotedFormals;
   bool nImplicitConversionsComputed = false;
   bool anyNegParamToUnsigned = false;
   int nImplicitConversions = 0;
@@ -1253,10 +1253,7 @@ void DisambiguationCandidate::computeConversionInfo(Context* context, int numAct
     if (canPass.passes() && canPass.promotes()) {
       actualType = getPromotionType(context, fa1->actualType()).type();
 
-      auto promotionAnchor =
-        this->fn->untyped()->idIsField() ? this->fn->id() : fa1->formal()->id();
-
-      this->promotedFormals[promotionAnchor] = fa1->actualType();
+      this->promotedFormals[fa1->formalIdx()] = fa1->actualType();
     }
 
     nImplicitConversions++;

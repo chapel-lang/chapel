@@ -7392,13 +7392,9 @@ shapeForIteratorQuery(Context* context,
     return QUERY_END(result);
   } else if (auto promoIterator = iter->toPromotionIteratorType()) {
     auto scalarFn = promoIterator->scalarFn();
-    auto untypedScalarFn = scalarFn->untyped();
     auto& formalMap = promoIterator->promotedFormals();
     for (int i = 0; i < scalarFn->numFormals(); i++) {
-      auto anchorId =
-        untypedScalarFn->idIsField() ? scalarFn->id() : untypedScalarFn->formalDecl(i)->id();
-
-      auto promotedEntry = formalMap.find(anchorId);
+      auto promotedEntry = formalMap.find(i);
       if (promotedEntry != formalMap.end()) {
         leaderType = promotedEntry->second;
         break;
@@ -7594,10 +7590,7 @@ resolveTheseCallForPromotionIterator(ResolutionContext* rc,
   auto untypedScalarFn = typedScalarFn->untyped();
   int numFormals = untypedScalarFn->numFormals();
   for (int i = 0; i < numFormals; i++) {
-    auto anchorId =
-      untypedScalarFn->idIsField() ? typedScalarFn->id() : untypedScalarFn->formalDecl(i)->id();
-
-    auto promotionType = promoIt->promotedFormals().find(anchorId);
+    auto promotionType = promoIt->promotedFormals().find(i);
     if (promotionType != promoIt->promotedFormals().end()) {
       receiverTypes.push_back(promotionType->second);
     }
