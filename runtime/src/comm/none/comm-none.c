@@ -169,19 +169,24 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
 
 int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status) {
 
-  const char* debuggerCmdFile = chpl_get_debugger_cmd_file();
-  char* command;
-  if (debuggerCmdFile != NULL) {
-    command = chpl_glom_strings(4,
-      "lldb -o 'b debuggerBreakHere' --source ",
-      debuggerCmdFile,
-      " -- ",
-      argv[0]);
+  char* command = (char*)"lldb -o 'b debuggerBreakHere'";
+
+  const char* pretty_printer = chpl_glom_strings(2, CHPL_HOME, "/runtime/etc/debug/chpl_lldb_pretty_print.py");
+  if (access(pretty_printer, R_OK) == 0) {
+    command = chpl_glom_strings(4, command,
+      " -o 'command script import \"", pretty_printer, "\"'");
   } else {
-    command = chpl_glom_strings(2,
-      "lldb -o 'b debuggerBreakHere' -- ",
-      argv[0]);
+    chpl_warning("Could not find lldb pretty-printer, it will be ignored",
+                  0, CHPL_FILE_IDX_COMMAND_LINE);
   }
+
+  const char* debuggerCmdFile = chpl_get_debugger_cmd_file();
+  if (debuggerCmdFile != NULL) {
+    command = chpl_glom_strings(4, command, " --source \"", debuggerCmdFile, "\"");
+  }
+
+  command = chpl_glom_strings(3, command, " -- ", argv[0]);
+
 
   for (int i=1; i<argc; i++) {
     if (i != lldbArgnum) {
