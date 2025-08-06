@@ -66,6 +66,23 @@ Note that it is the user's responsibility to make sure things are set up
 so the terminal emulator run in the target environment can open its
 display window in the launch environment.
 
+Pretty Printing (LLDB only)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The Chapel pretty-printer for LLDB is automatically loaded when using the
+``--lldb`` flag. If you are using LLDB without this flag, you can load the
+pretty-printer manually by running the following command in LLDB:
+
+.. code-block:: bash
+
+    command script import $CHPL_HOME/runtime/etc/debug/chpl_lldb_pretty_print.py
+
+This pretty-printer understands a number of builtin Chapel types. This
+overrides the default printing for many types when using ``p`` (``print``) or
+``v`` (``frame variable``). To circumvent this, you can use ``v -R`` (``frame
+variable -R``) to print the raw value of a variable without the pretty-printer.
+
+
 Using a graphical debugger
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
