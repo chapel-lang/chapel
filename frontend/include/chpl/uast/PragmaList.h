@@ -414,6 +414,7 @@ PRAGMA(MODIFIES_CONST_FIELDS, npr, "modifies const fields", "... of 'this' argum
 PRAGMA(MODULE_FROM_COMMAND_LINE_FILE, npr, "module from command line file", "This is a module that came from a file named on the compiler command line")
 
 PRAGMA(MODULE_INIT, npr, "module init", "a module init function")
+PRAGMA(MODULE_DEINIT, npr, "module deinit", "a module deinit function")
 
 PRAGMA(MODULE_INCLUDED_BY_DEFAULT, ypr, "module included by default", "module is included by default")
 

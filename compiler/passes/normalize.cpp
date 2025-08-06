@@ -559,6 +559,7 @@ static void handleModuleDeinitFn(ModuleSymbol* mod) {
 
     deinitFn->name = astr("chpl__deinit_", mod->name);
     deinitFn->removeFlag(FLAG_DESTRUCTOR);
+    deinitFn->addFlag(FLAG_MODULE_DEINIT);
   }
 }
 
