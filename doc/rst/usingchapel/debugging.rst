@@ -138,7 +138,7 @@ debuggability of the generated executable:
   Flag                                 Description
   ===================================  =========================================
   ``-g``                               Generate debug symbols in the executable
-  ``--ccflags -gdwarf-4``               Use DWARF 4 debug information
+  ``--ccflags -gdwarf-4``              Use DWARF 4 debug information
                                        (useful for ``gdb``)
   ``--preserve-inlined-line-numbers``  When code gets inlined (e.g. replacing a
                                        function call with the function body)
