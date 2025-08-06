@@ -24,6 +24,19 @@ exists to launch the program within a ``lldb`` session. For best results, you
 should read :ref:`this section <readme-debugging-bkc>` to build Chapel and
 build your application.
 
+You can also just run the program with ``gdb`` or ``lldb`` directly. This
+may be useful, for example if you want to use a graphical debugger like VSCode.
+``--gdb`` and ``--lldb`` are just convenience flags that do the following:
+
+* Set a breakpoint on ``debuggerBreakHere``, i.e. ``b debuggerBreakHere``
+* LLDB only: Enable the Chapel pretty-printer for LLDB, i.e.
+  ``command script import $CHPL_HOME/runtime/etc/debug/chpl_lldb_pretty_print.py``
+* If specified, execute additional debugger commands from a file whose path is
+  set in ``CHPL_RT_DEBUGGER_CMD_FILE``
+
+If you are not using ``--gdb`` or ``--lldb``, make sure to replicate the
+above steps in your debugger of choice for the best experience.
+
 Running in gdb/lldb with a launcher
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
