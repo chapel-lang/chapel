@@ -307,6 +307,7 @@ class HomogeneousTupleProvider:
         )
 
 
+# TODO: for now we only handle DefaultRectangular arrays
 # array
 # _array_DefaultRectangularArr_1_int64_t_one_int64_t_int64_t_chpl
 # rank, idx_type, stride_kind, element_type, idxSignedType
