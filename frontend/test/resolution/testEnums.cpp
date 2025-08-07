@@ -740,6 +740,43 @@ static void test22() {
   ensureParamEnumStr(qt, "red");
 }
 
+static void test23() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  // Production allows multiple constants to have the same numeric value.
+  // When casting backwards, the first matching constant is picked.
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+      enum color {
+        red = 0,
+        green = 0,
+        blue = 1,
+        gold = 1,
+      }
+      param a = "red" : color;
+      param b = "green" : color;
+      param c = "blue" : color;
+      param d = "gold" : color;
+      )""", {"a", "b", "c", "d"});
+
+  auto param0 = vars.at("a").param();
+  assert(param0 && param0->isEnumParam());
+  assert(param0->toEnumParam()->value().str == "red");
+
+  auto param1 = vars.at("b").param();
+  assert(param1 && param1->isEnumParam());
+  assert(param1->toEnumParam()->value().str == "green");
+
+  auto param2 = vars.at("c").param();
+  assert(param2 && param2->isEnumParam());
+  assert(param2->toEnumParam()->value().str == "blue");
+
+  auto param3 = vars.at("d").param();
+  assert(param3 && param3->isEnumParam());
+  assert(param3->toEnumParam()->value().str == "gold");
+}
+
 int main() {
   test1();
   test2();
@@ -763,6 +800,7 @@ int main() {
   test20();
   test21();
   test22();
+  test23();
 
   return 0;
 }
