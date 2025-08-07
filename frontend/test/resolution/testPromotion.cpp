@@ -442,6 +442,19 @@ static void test20() {
       IterableType("R").defineSerialIterator("new pair(0, 0.0)"));
 }
 
+static void test21() {
+  // we can promoted generated binary operator calls
+  runProgram(
+      { "enum color { red = 1, green, blue }",
+        "operator =(ref lhs: color, in rhs: color) {}",
+        "for i in (new R()) : int {}" },
+      [](ErrorGuard& guard, const QualifiedType& t) {
+        assert(!t.isUnknownOrErroneous());
+        assert(t.type()->isIntType());
+      },
+      IterableType("R").definePromotionType("color").defineSerialIterator("color.red"));
+}
+
 static void testFieldPromotionScoping() {
   // test that field access promotion works even if the field name itself
   // is not imported / in scope (it should be found in the receiver scopes).
@@ -535,6 +548,7 @@ int main() {
     test18();
     test19();
     test20();
+    test21();
   }
 
   testFieldPromotionScoping();
