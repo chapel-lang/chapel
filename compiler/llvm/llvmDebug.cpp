@@ -130,15 +130,14 @@ void debug_data::create_compile_unit(ModuleSymbol* modSym, const char *file, con
 }
 
 
-llvm::DIType* debug_data::construct_type(Type *type)
-{
+llvm::DIType* debug_data::construct_type(Type *type) {
   llvm::MDNode *N = myGetType(type);
   if(N) return llvm::cast_or_null<llvm::DIType>(N);
 
   GenInfo* info = gGenInfo;
   const llvm::DataLayout& layout = info->module->getDataLayout();
 
-  llvm::Type* ty = type->symbol->getLLVMType();
+  llvm::Type* ty = type->symbol->getLLVMStructureType();
   const char* name = type->symbol->name;
   ModuleSymbol* defModule = type->symbol->getModule();
   const char* defFile = type->symbol->fname();
@@ -146,10 +145,9 @@ llvm::DIType* debug_data::construct_type(Type *type)
 
   auto dibuilder = defModule->llvmDIBuilder;
 
-  if(!ty) {
-    return NULL;
-  }
-  if(ty->isIntegerTy()) {
+  if (!ty) return NULL;
+
+  if (ty->isIntegerTy()) {
     N = dibuilder->createBasicType(
       name, /* Name */
       layout.getTypeSizeInBits(ty), /* SizeInBits */
@@ -159,9 +157,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
 
     myTypeDescriptors[type] = N;
     return llvm::cast_or_null<llvm::DIType>(N);
-  }
-
-  else if(ty->isFloatingPointTy()) {
+  } else if (ty->isFloatingPointTy()) {
     N = dibuilder->createBasicType(
       name,
       layout.getTypeSizeInBits(ty),
@@ -169,10 +165,8 @@ llvm::DIType* debug_data::construct_type(Type *type)
 
     myTypeDescriptors[type] = N;
     return llvm::cast_or_null<llvm::DIType>(N);
-  }
-
-  else if(ty->isPointerTy()) {
-    if(type != type->getValType()) {//Add this condition to avoid segFault
+  } else if (ty->isPointerTy()) {
+    if (type != type->getValType()) {//Add this condition to avoid segFault
       N = dibuilder->createPointerType(
         get_type(type->getValType()),//it should return the pointee's DIType
         layout.getPointerSizeInBits(ty->getPointerAddressSpace()),
@@ -182,14 +176,13 @@ llvm::DIType* debug_data::construct_type(Type *type)
 
       myTypeDescriptors[type] = N;
       return llvm::cast_or_null<llvm::DIType>(N);
-    }
-    else {
-      if(type->astTag == E_PrimitiveType) {
+    } else {
+      if (type->astTag == E_PrimitiveType) {
         // TODO: reimplement this properly within the Chapel type system
 #ifdef HAVE_LLVM_TYPED_POINTERS
         llvm::Type *PointeeTy = ty->getPointerElementType();
         // handle string, c_string, nil, opaque, raw_c_void_ptr
-        if(PointeeTy->isIntegerTy()) {
+        if (PointeeTy->isIntegerTy()) {
           llvm::DIType* pteIntDIType; //create the DI-pointeeType
           pteIntDIType = dibuilder->createBasicType(
             myGetTypeName(PointeeTy),
@@ -205,9 +198,8 @@ llvm::DIType* debug_data::construct_type(Type *type)
 
           myTypeDescriptors[type] = N;
           return llvm::cast_or_null<llvm::DIType>(N);
-        }
-        // handle qio_channel_ptr_t, qio_file_ptr_t, syserr, _file
-        else if(PointeeTy->isStructTy()) {
+        } else if (PointeeTy->isStructTy()) {
+           // handle qio_channel_ptr_t, qio_file_ptr_t, syserr, _file
           llvm::DIType* pteStrDIType; //create the DI-pointeeType
           pteStrDIType = dibuilder->createStructType(
             get_module_scope(defModule), /* Scope */
@@ -238,21 +230,19 @@ llvm::DIType* debug_data::construct_type(Type *type)
 #else
         return NULL;
 #endif
-      }
-      else if(type->astTag == E_AggregateType) {
+      } else if (type->astTag == E_AggregateType) {
         // dealing with classes
         AggregateType *this_class = (AggregateType *)type;
 
         llvm::SmallVector<llvm::Metadata *, 8> EltTys;
         llvm::DIType* derivedFrom = nullptr;
 
-        if( this_class->dispatchParents.length() > 0 )
+        if (this_class->dispatchParents.length() > 0)
           derivedFrom = get_type(this_class->dispatchParents.first());
 
         // solve the data class: _ddata
-        if(this_class->symbol->hasFlag(FLAG_DATA_CLASS)) {
-          Type* vt = getDataClassType(this_class->symbol)->typeInfo();
-          if(vt) {
+        if (this_class->symbol->hasFlag(FLAG_DATA_CLASS)) {
+          if (Type* vt = getDataClassType(this_class->symbol)->typeInfo()) {
             N = dibuilder->createPointerType(
               get_type(vt),
               layout.getPointerSizeInBits(ty->getPointerAddressSpace()),
@@ -267,10 +257,9 @@ llvm::DIType* debug_data::construct_type(Type *type)
 
         const llvm::StructLayout* slayout = NULL;
         const char *struct_name = this_class->classStructName(true);
-        llvm::Type* st = getTypeLLVM(struct_name);
-        if(st){
-          llvm::StructType* struct_type = llvm::cast<llvm::StructType>(st);
-          if(!struct_type->isOpaque()){
+        if (llvm::Type* st = getTypeLLVM(struct_name)) {
+          auto struct_type = llvm::cast<llvm::StructType>(st);
+          if (!struct_type->isOpaque()) {
             N = dibuilder->createForwardDecl(
               llvm::dwarf::DW_TAG_structure_type,
               name,
@@ -336,14 +325,13 @@ llvm::DIType* debug_data::construct_type(Type *type)
       } // end of astTag == E_AggregateTy
     } // end of else (type==type->getType)
   } // end of ty->isPointerTy()
-
-  else if(ty->isStructTy() && type->astTag == E_AggregateType) {
+  else if (ty->isStructTy() && type->astTag == E_AggregateType) {
     AggregateType *this_class = (AggregateType *)type;
 
     llvm::SmallVector<llvm::Metadata *, 8> EltTys;
     llvm::DIType* derivedFrom = nullptr;
 
-    if( this_class->dispatchParents.length() > 0 )
+    if (this_class->dispatchParents.length() > 0)
       derivedFrom = get_type(this_class->dispatchParents.first());
 
     const llvm::StructLayout* slayout = NULL;
@@ -375,9 +363,9 @@ llvm::DIType* debug_data::construct_type(Type *type)
       // See line 270 for a comment about this if
         fditype = dibuilder->createNullPtrType();
 
-      if(!fty){
+      if (!fty) {
         fty = getTypeLLVM(fts->cname);
-        if(!fty) {
+        if (!fty) {
           // FIXME: Types should have an LLVM type
           return NULL;
         }
@@ -397,7 +385,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
       EltTys.push_back(mty);
     }
 
-    if(this_class->aggregateTag == AGGREGATE_RECORD) {
+    if (this_class->aggregateTag == AGGREGATE_RECORD) {
       N = dibuilder->createStructType(
         get_module_scope(defModule),
         name,
@@ -411,8 +399,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
 
       myTypeDescriptors[type] = N;
       return llvm::cast_or_null<llvm::DIType>(N);
-    }
-    else if(this_class->aggregateTag == AGGREGATE_CLASS) {
+    } else if (this_class->aggregateTag == AGGREGATE_CLASS) {
       N = dibuilder->createStructType(
         get_module_scope(defModule),
         name,
@@ -426,8 +413,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
 
       myTypeDescriptors[type] = N;
       return llvm::cast_or_null<llvm::DIType>(N);
-    }
-    else if(this_class->aggregateTag == AGGREGATE_UNION) {
+    } else if (this_class->aggregateTag == AGGREGATE_UNION) {
       N = dibuilder->createUnionType(
         get_module_scope(defModule),
         name,
@@ -441,9 +427,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
       myTypeDescriptors[type] = N;
       return llvm::cast_or_null<llvm::DIType>(N);
     }
-  }
-
-  else if(ty->isArrayTy() && type->astTag == E_AggregateType) {
+  } else if (ty->isArrayTy() && type->astTag == E_AggregateType) {
     if (type->symbol->hasFlag(FLAG_C_ARRAY)) return NULL;
     AggregateType *this_class = (AggregateType *)type;
     // Subscripts are "ranges" for each dimension of the array
@@ -464,19 +448,24 @@ llvm::DIType* debug_data::construct_type(Type *type)
     return llvm::cast_or_null<llvm::DIType>(N);
   }
 
+  if (type == dtVoid) {
+    return NULL;
+  }
+
   // We are unable for some reasons to find a debug type. This shouldn't be a
   // problem for a correct compilation, but it would be better to find a way to
   // deal with this case
   //
   // These are some debug prints for helping find these types.
   //
-  /*printf("Unhandled type: %s\n\ttype->astTag=%i\n", type->symbol->name, type->astTag);
-  if(type->symbol->getLLVMType()) {
+  // TODO: comment this back out before merging!!!!!
+  printf("Unhandled type: %s\n\ttype->astTag=%i\n", type->symbol->name, type->astTag);
+  if (type->symbol->getLLVMType()) {
     printf("\tllvmImplType->getTypeID() = %i\n", type->symbol->getLLVMType()->getTypeID());
   }
   else {
     printf("\tllvmImplType is NULL\n");
-  }*/
+  }
 
   return NULL;
 }
