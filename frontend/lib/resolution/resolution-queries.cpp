@@ -1865,12 +1865,7 @@ enumElementsForEnum(Context* context, const Enum* node) {
   return QUERY_END(result);
 }
 
-// A type to track what kind of signedness a value needs.
-// Aliasing an int to avoid defining mark<..>, hash<..>, update<..> for it.
-using RequiredSignedness = int;
-static constexpr RequiredSignedness RS_NONE = 0, RS_SIGNED = 1, RS_UNSIGNED = 2;
-
-static std::pair<optional<QualifiedType>, RequiredSignedness> const&
+std::pair<optional<QualifiedType>, RequiredSignedness> const&
 initialNumericValueOfEnumElement(Context* context, ID elementId) {
   QUERY_BEGIN(initialNumericValueOfEnumElement, context, elementId);
 
@@ -1880,23 +1875,34 @@ initialNumericValueOfEnumElement(Context* context, ID elementId) {
 
   auto one = QualifiedType::makeParamInt(context, 1);
 
+  ResolutionResultByPostorderID byPostorder;
+  Resolver res = Resolver::createForEnumElements(context, decl, byPostorder);
+
   auto& allElements = enumElementsForEnum(context, decl);
   size_t myIdx = 0;
+  auto enumType = initialTypeForTypeDecl(context, declId);
   for (size_t i = 0; i < allElements.size(); i++) {
     if (allElements[i]->id() == elementId) {
       myIdx = i;
       break;
     }
+
+    // The resolver will try using "local results" (i.e., consult
+    // byPostorder) for the enum elements, so give them the type they ought
+    // to have.
+    auto paramVal =
+      EnumParam::EnumValue(allElements[i]->id(), allElements[i]->name().str());
+    auto param =
+        QualifiedType(QualifiedType::PARAM, enumType,
+                      EnumParam::get(context, paramVal));
+    byPostorder.byAst(allElements[i]).setType(param);
   }
 
   // Found an initialization expression; use its type.
   CHPL_ASSERT(elem);
   optional<QualifiedType> value = empty;
   if (elem->initExpression()) {
-    ResolutionResultByPostorderID byPostorder;
-    Resolver res = Resolver::createForEnumElements(context, decl, byPostorder);
     elem->traverse(res);
-
     auto qt = byPostorder.byAst(elem->initExpression()).type();
     auto type = qt.type();
 
