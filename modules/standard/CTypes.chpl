@@ -1218,7 +1218,7 @@ module CTypes {
 
     For example:
 
-    .. literalinclude:: ../../../../test/library/standard/CTypes/doc-examples/CptrExamples.chpl
+    .. literalinclude:: ../../../../test/library/standard/CTypes/doc-examples/CstrExamples.chpl
        :language: chapel
        :start-after: START_EXAMPLE_0
        :end-before: STOP_EXAMPLE_0
@@ -1253,7 +1253,7 @@ module CTypes {
 
     For example:
 
-    .. literalinclude:: ../../../../test/library/standard/CTypes/doc-examples/CptrExamples.chpl
+    .. literalinclude:: ../../../../test/library/standard/CTypes/doc-examples/CstrExamples.chpl
        :language: chapel
        :start-after: START_EXAMPLE_1
        :end-before: STOP_EXAMPLE_1
