@@ -47,6 +47,7 @@ struct GatherStuff {
 // function indexes count functions from 1
 //   0 means nothing found
 //  -1 means ambiguous
+// checks last call in the module, to allow calls in argument types
 static void checkCalledIndex(Context* context,
                              std::string contents,
                              int expectOnlyIdx,
@@ -75,10 +76,9 @@ static void checkCalledIndex(Context* context,
   m->traverse(stuff);
 
   assert(stuff.fns.size() > 1); // > 1 needed for disambiguation
-  assert(stuff.fnCalls.size() == 1); // need just one to disambiguate
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
-  const ResolvedExpression& re = rr.byAst(stuff.fnCalls[0]);
+  const ResolvedExpression& re = rr.byAst(stuff.fnCalls.back());
   const MostSpecificCandidates& s = re.mostSpecific();
 
   // disambiguation tests should either have a best candidate or be ambiguous.
@@ -372,6 +372,20 @@ static void test6() {
   assert(qt.type()->isStringType());
 }
 
+static void test7() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  checkCalledIndex(context,
+      R""""(
+        proc f(param arg: int(8)) { }   // 1
+        proc f(param arg: int(16)) { }  // 2
+        param x = 1;
+        f(x);
+      )"""",
+    1);
+}
+
 static void testDistance() {
   auto context = buildStdContext();
   ErrorGuard guard(context);
@@ -427,6 +441,7 @@ int main() {
   test4();
   test5();
   test6();
+  test7();
   testDistance();
 
   return 0;
