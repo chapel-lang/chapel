@@ -1853,6 +1853,97 @@ QualifiedType getInstantiationType(Context* context,
   return QualifiedType();
 }
 
+static std::vector<const EnumElement*> const&
+enumElementsForEnum(Context* context, const Enum* node) {
+  QUERY_BEGIN(enumElementsForEnum, context, node);
+
+  std::vector<const EnumElement*> result;
+  for (auto elem : node->enumElements()) {
+    result.push_back(elem);
+  }
+
+  return QUERY_END(result);
+}
+
+// A type to track what kind of signedness a value needs.
+// Aliasing an int to avoid defining mark<..>, hash<..>, update<..> for it.
+using RequiredSignedness = int;
+static constexpr RequiredSignedness RS_NONE = 0, RS_SIGNED = 1, RS_UNSIGNED = 2;
+
+static std::pair<optional<QualifiedType>, RequiredSignedness> const&
+initialNumericValueOfEnumElement(Context* context, ID elementId) {
+  QUERY_BEGIN(initialNumericValueOfEnumElement, context, elementId);
+
+  auto declId = elementId.parentSymbolId(context);
+  auto elem = parsing::idToAst(context, elementId)->toEnumElement();
+  auto decl = parsing::idToAst(context, declId)->toEnum();
+
+  auto one = QualifiedType::makeParamInt(context, 1);
+
+  auto& allElements = enumElementsForEnum(context, decl);
+  size_t myIdx = 0;
+  for (size_t i = 0; i < allElements.size(); i++) {
+    if (allElements[i]->id() == elementId) {
+      myIdx = i;
+      break;
+    }
+  }
+
+  // Found an initialization expression; use its type.
+  CHPL_ASSERT(elem);
+  optional<QualifiedType> value = empty;
+  if (elem->initExpression()) {
+    ResolutionResultByPostorderID byPostorder;
+    Resolver res = Resolver::createForEnumElements(context, decl, byPostorder);
+    elem->traverse(res);
+
+    auto qt = byPostorder.byAst(elem->initExpression()).type();
+    auto type = qt.type();
+
+    if (qt.isErroneousType() || qt.isGenericOrUnknown()) {
+      // Don't propagate errors if they're unrelated; leave value unknown.
+    } else if (!type->isIntType() && !type->isUintType()) {
+      value = CHPL_TYPE_ERROR(context, EnumInitializerNotInteger, elem, qt);
+    } else if (!qt.isParam()) {
+      value = CHPL_TYPE_ERROR(context, EnumInitializerNotParam, elem, qt);
+    } else {
+      value = qt;
+    }
+  } else {
+    if (myIdx == 0) {
+      // we're the first value, without an init expression we're abstract.
+      value = empty;
+    } else {
+      auto& prevValue = initialNumericValueOfEnumElement(context, allElements[myIdx - 1]->id());
+      if (!prevValue.first) {
+        // the previous value is abstract, which means so are we.
+        value = empty;
+      } else {
+        auto& lastQt = *prevValue.first;
+        if (lastQt.isParam()) {
+          // Previous value was valid, so add one to it.
+          value = Param::fold(context, elem, chpl::uast::PRIM_ADD, lastQt, one);
+        } else {
+          // Previous value was unknown, so we can't add one to it.
+          value = QualifiedType();
+        }
+      }
+    }
+  }
+
+  RequiredSignedness signedness = RS_NONE;
+  if (!value || !value->param()) {
+    // Do nothing.
+  } else if (auto intParam = value->param()->toIntParam()) {
+    signedness = intParam->value() < 0 ? RS_SIGNED : RS_NONE;
+  } else if (auto uintParam = value->param()->toUintParam()) {
+    signedness = uintParam->value() > INT64_MAX ? RS_UNSIGNED : RS_NONE;
+  }
+
+  auto result = std::make_pair(std::move(value), signedness);
+  return QUERY_END(result);
+}
+
 const std::map<ID, QualifiedType>&
 computeNumericValuesOfEnumElements(Context* context, ID node) {
   QUERY_BEGIN(computeNumericValuesOfEnumElements, context, node);
@@ -1863,70 +1954,16 @@ computeNumericValuesOfEnumElements(Context* context, ID node) {
   auto enumNode = ast->toEnum();
   if (!enumNode) return QUERY_END(result);
 
-  ResolutionResultByPostorderID byPostorder;
-  Resolver res = Resolver::createForEnumElements(context, enumNode, byPostorder);
-
-  // The constant 'one' for adding
-  auto one = QualifiedType::makeParamInt(context, 1);
-
-  // A type to track what kind of signedness a value needs.
-  enum RequiredSignedness {
-    RS_NONE,
-    RS_SIGNED,
-    RS_UNSIGNED,
-  };
-
   // First collect all the values, no matter what types they are.
   using ValueVector = std::vector<std::tuple<QualifiedType,
                                              RequiredSignedness,
                                              const EnumElement*>>;
   ValueVector valuesAndAsts;
   for (auto elem : enumNode->enumElements()) {
-    elem->traverse(res);
-    QualifiedType value = {};
-
-    // Found an initialization expression; use its type.
-    if (elem->initExpression()) {
-      auto qt = byPostorder.byAst(elem->initExpression()).type();
-      auto type = qt.type();
-
-      if (qt.isErroneousType() || qt.isGenericOrUnknown()) {
-        // Don't propagate errors if they're unrelated; leave value unknown.
-      } else if (!type->isIntType() && !type->isUintType()) {
-        value = CHPL_TYPE_ERROR(context, EnumInitializerNotInteger, elem, qt);
-      } else if (!qt.isParam()) {
-        value = CHPL_TYPE_ERROR(context, EnumInitializerNotParam, elem, qt);
-      } else {
-        value = qt;
-      }
-    } else {
-      if (valuesAndAsts.empty() || std::get<2>(valuesAndAsts.back()) == nullptr) {
-        // we're either the first value, or all the previous values have
-        // been abstract. We're abstract too -- encode this using a 'null'
-        // elem.
-        elem = nullptr;
-      } else {
-        auto& lastValueInfo = valuesAndAsts.back();
-        auto lastQt = std::get<0>(lastValueInfo);
-        if (lastQt.isParam()) {
-          // Previous value was valid, so add one to it.
-          value = Param::fold(context, elem, chpl::uast::PRIM_ADD, lastQt, one);
-        } else {
-          // Previous value was unknown, so we can't add one to it.
-        }
-      }
-    }
-
-    RequiredSignedness signedness = RS_NONE;
-    if (!value.param()) {
-      // Do nothing.
-    } else if (auto intParam = value.param()->toIntParam()) {
-      signedness = intParam->value() < 0 ? RS_SIGNED : RS_NONE;
-    } else if (auto uintParam = value.param()->toUintParam()) {
-      signedness = uintParam->value() > INT64_MAX ? RS_UNSIGNED : RS_NONE;
-    }
-
-    valuesAndAsts.emplace_back(value, signedness, elem);
+    auto [maybeValue, signedness] =
+        initialNumericValueOfEnumElement(context, elem->id());
+    auto value = maybeValue ? *maybeValue : QualifiedType();
+    valuesAndAsts.emplace_back(value, signedness, maybeValue ? elem : nullptr);
   }
 
   const EnumElement* needsSigned = nullptr;
