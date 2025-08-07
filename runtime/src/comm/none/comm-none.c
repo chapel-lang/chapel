@@ -158,7 +158,7 @@ static chpl_bool chpl_get_command_output(const char* command,
 static chpl_bool chpl_lldb_supports_python(void);
 static chpl_bool chpl_lldb_supports_python(void) {
   char output[256];
-  const char* command = "lldb --version";
+  const char* command = "lldb --python-path";
   if (!chpl_get_command_output(command, output, sizeof(output))) {
     return false;
   }
