@@ -15,6 +15,10 @@ mv $file.tmp $file
 grep -v 'warning: LLDB does not support scripting with Python, pretty-printer will not be used' $file > $file.tmp
 mv $file.tmp $file
 
+# remove command script import
+grep -v 'command script import' $file > $file.tmp
+mv $file.tmp $file
+
 # remove the OpenCL warnings
 sed -E -e '/OpenCL/d' $file > $file.tmp
 mv $file.tmp $file

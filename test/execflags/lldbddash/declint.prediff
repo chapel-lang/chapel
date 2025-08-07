@@ -15,6 +15,9 @@ grep -v 'settings set -- target.run-args  "--memLeaks"' $tmpfile > $outfile
 # Filter warning about python support
 mv $outfile $tmpfile
 grep -v 'warning: LLDB does not support scripting with Python, pretty-printer will not be used' $tmpfile > $outfile
+# remove command script import
+grep -v 'command script import' $file > $file.tmp
+mv $file.tmp $file
 rm $tmpfile
 
 #
