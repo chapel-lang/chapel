@@ -171,6 +171,32 @@ void Type::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
 
 IMPLEMENT_DUMP(Type);
 
+bool Type::isCArrayType(Context* context, const Type*& outEltType, const IntParam*& outSize) const {
+  auto rec = toRecordType();
+  if (!rec || rec->id().symbolPath() != "CTypes.c_array") return false;
+
+  auto rc = resolution::createDummyRC(context);
+  auto fields = resolution::fieldsForTypeDecl(&rc, rec, resolution::DefaultsPolicy::IGNORE_DEFAULTS);
+  bool foundEltType = false, foundSize = false;
+  for (int i = 0; i < fields.numFields(); i++) {
+    if (fields.fieldName(i) == "eltType") {
+      foundEltType = true;
+      outEltType = fields.fieldType(i).type();
+    } else if (fields.fieldName(i) == USTR("size")) {
+      foundSize = true;
+      auto param = fields.fieldType(i).param();
+      outSize = param ? param->toIntParam() : nullptr;
+    }
+  }
+
+  if (!foundEltType || !foundSize) {
+    context->error(rec->id(), "internal c_array record does not have eltType and size fields");
+    return false;
+  }
+
+  return true;
+}
+
 bool Type::isStringType() const {
   if (auto rec = toRecordType()) {
     if (rec->id().symbolPath() == USTR("String._string"))

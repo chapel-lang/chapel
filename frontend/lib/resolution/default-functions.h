@@ -71,12 +71,12 @@ getCompilerGeneratedMethod(ResolutionContext* rc,
 /**
   Given the name of a binary operation and the types of its operands,
   determine if the compiler needs to provide a generated implementation,
-  and if so, generates and returns a TypedFnSignature representing the
+  and if so, generates and returns TypedFnSignatures representing the
   generated binary operation.
 
-  If no operation was generated, returns nullptr.
+  Multiple signatures may be returned if promotion was used.
  */
-const TypedFnSignature*
+std::vector<const TypedFnSignature*> const&
 getCompilerGeneratedBinaryOp(ResolutionContext* rc,
                              const types::QualifiedType lhsType,
                              const types::QualifiedType rhsType,

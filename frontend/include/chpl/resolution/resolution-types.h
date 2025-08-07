@@ -47,9 +47,17 @@ namespace resolution {
 
 using SubstitutionsMap = types::CompositeType::SubstitutionsMap;
 
-SubstitutionsMap substituteInMap(Context* context,
-                                 const SubstitutionsMap& substituteIn,
-                                 const types::PlaceholderMap& subs);
+template <typename K>
+std::unordered_map<K, types::QualifiedType>
+substituteInMap(Context* context,
+                const std::unordered_map<K, types::QualifiedType>& substituteIn,
+                const types::PlaceholderMap& subs) {
+  std::unordered_map<K, types::QualifiedType> into;
+  for (auto [id, qt] : substituteIn) {
+    into.emplace(id, qt.substitute(context, subs));
+  }
+  return into;
+}
 
 /* When adjusting return intent overloads, the context of the overloaded
    call (is it used as a value, a reference, or a const reference?). */
@@ -1695,6 +1703,16 @@ class FormalActualMap {
 
 
 /**
+  A map from a formal index (represented by `int` to match formalIdk field
+  in FormalActual) to a qualified type representing the scalar type.
+  This is not represented using a `SubstitutionsMap` because for some
+  compiler-generated functions, we don't have formal IDs / decls.
+ */
+using PromotedFormalMap = std::unordered_map<int, types::QualifiedType>;
+
+size_t hashPromotedFormalMap(const PromotedFormalMap& map);
+
+/**
   Stores a function candidate. This information includes both the
   TypedFnSignature* representing the candidate, as well as information
   about this candidate's applicability. In particular, we store whether or
@@ -1707,17 +1725,17 @@ class MostSpecificCandidate {
 
   const TypedFnSignature* fn_;
   owned<FormalActualMap> faMap_;
-  owned<SubstitutionsMap> promotedFormals_;
+  owned<PromotedFormalMap> promotedFormals_;
   int constRefCoercionFormal_;
   int constRefCoercionActual_;
 
   MostSpecificCandidate(const TypedFnSignature* fn,
                         FormalActualMap faMap,
-                        SubstitutionsMap promotedFormals,
+                        PromotedFormalMap promotedFormals,
                         int constRefCoercionFormal,
                         int constRefCoercionActual)
     : fn_(fn), faMap_(new FormalActualMap(std::move(faMap))),
-      promotedFormals_(new SubstitutionsMap(std::move(promotedFormals))),
+      promotedFormals_(new PromotedFormalMap(std::move(promotedFormals))),
       constRefCoercionFormal_(constRefCoercionFormal),
       constRefCoercionActual_(constRefCoercionActual) {}
 
@@ -1734,7 +1752,7 @@ class MostSpecificCandidate {
       faMap_ = toOwned(new FormalActualMap(*other.faMap_));
     }
     if (other.promotedFormals_) {
-      promotedFormals_ = toOwned(new SubstitutionsMap(*other.promotedFormals_));
+      promotedFormals_ = toOwned(new PromotedFormalMap(*other.promotedFormals_));
     }
     constRefCoercionFormal_ = other.constRefCoercionFormal_;
     constRefCoercionActual_ = other.constRefCoercionActual_;
@@ -1749,20 +1767,20 @@ class MostSpecificCandidate {
                                         const FormalActualMap& faMap,
                                         const Scope* scope,
                                         const PoiScope* poiScope,
-                                        const SubstitutionsMap& promotedFormals);
+                                        const PromotedFormalMap& promotedFormals);
 
   static MostSpecificCandidate fromTypedFnSignature(ResolutionContext* rc,
                                         const TypedFnSignature* fn,
                                         const CallInfo& info,
                                         const Scope* scope,
                                         const PoiScope* poiScope,
-                                        const SubstitutionsMap& promotedFormals);
+                                        const PromotedFormalMap& promotedFormals);
 
   const TypedFnSignature* fn() const { return fn_; }
 
   const FormalActualMap& formalActualMap() const { return *faMap_; }
 
-  const SubstitutionsMap& promotedFormals() const { return *promotedFormals_; }
+  const PromotedFormalMap& promotedFormals() const { return *promotedFormals_; }
 
   int constRefCoercionFormal() const { return constRefCoercionFormal_; }
 
@@ -1804,7 +1822,7 @@ class MostSpecificCandidate {
     context->markPointer(fn_);
     if (faMap_) faMap_->mark(context);
     if (promotedFormals_) {
-      chpl::mark<SubstitutionsMap>{}(context, *promotedFormals_);
+      chpl::mark<PromotedFormalMap>{}(context, *promotedFormals_);
     }
     (void) constRefCoercionFormal_; // nothing to mark
     (void) constRefCoercionActual_; // nothing to mark
@@ -3481,6 +3499,7 @@ CHPL_DEFINE_STD_HASH_(OuterVariables, (key.hash()));
 CHPL_DEFINE_STD_HASH_(ApplicabilityResult, (key.hash()));
 CHPL_DEFINE_STD_HASH_(CompilerDiagnostic, (key.hash()));
 CHPL_DEFINE_STD_HASH_(ResolvedFunction, (key.hash()));
+CHPL_DEFINE_STD_HASH_(PromotedFormalMap, (chpl::resolution::hashPromotedFormalMap(key)));
 CHPL_DEFINE_STD_HASH_(MostSpecificCandidate, (key.hash()));
 CHPL_DEFINE_STD_HASH_(MostSpecificCandidates, (key.hash()));
 CHPL_DEFINE_STD_HASH_(CallResolutionResult, (key.hash()));

@@ -92,6 +92,26 @@ types::QualifiedType getInstantiationType(Context* context,
                                           types::QualifiedType actualType,
                                           types::QualifiedType formalType);
 
+// A type to track what kind of signedness a value needs.
+// Aliasing an int to avoid defining mark<..>, hash<..>, update<..> for it.
+using RequiredSignedness = int;
+static constexpr RequiredSignedness RS_NONE = 0, RS_SIGNED = 1, RS_UNSIGNED = 2;
+
+/**
+  The language allows later enum elements to use previous enum
+  elements' values in their initialization expressions. However,
+  the type of an enum element cast is not determined until after each
+  element is considered (since later elements' values may affect the
+  signedness of the representation type).
+
+  To help bridge the gap (fetch enum numeric value, to use it in an initialization
+  expression for another enum, before the type of the numeric value is known),
+  this query provides the "intial guess", which is aware only of information
+  preceding the given element's declaration.
+ */
+std::pair<optional<types::QualifiedType>, RequiredSignedness> const&
+initialNumericValueOfEnumElement(Context* context, ID elementId);
+
 /**
   Returns a map from enum element IDs to their numeric values.
   The caller is responsible for validating that node is an enum ID.
@@ -105,6 +125,44 @@ computeNumericValuesOfEnumElements(Context* context, ID node);
 
 const chpl::optional<types::QualifiedType>&
 computeUnderlyingTypeOfEnum(Context* context, ID element);
+
+/**
+  Given a name and an Enum AST node, look up the ID of the enum's element.
+  Returns the ID, as well as whether the lookup was ambiguous (e.g.,
+  due to duplicate enum element names).
+ */
+const std::pair<ID, bool>&
+scopeResolveEnumElement(Context* context,
+                        const uast::Enum* enumAst,
+                        UniqueString elementName,
+                        const uast::AstNode* nodeForErr);
+
+/**
+  Given the result of a lookup of an enum element (see scopeResolveEnumElement),
+  construct the appropriate QualifiedType for the element. This type can be
+  `param` if enough information is present, but in some cases will not be
+  (e.g., due to ambiguity).
+ */
+types::QualifiedType
+typeForScopeResolvedEnumElement(Context* context,
+                                const ID& enumTypeId,
+                                const ID& refersToId,
+                                bool ambiguous);
+
+types::QualifiedType
+typeForScopeResolvedEnumElement(Context* context,
+                                const types::EnumType* enumType,
+                                const ID& refersToId,
+                                bool ambiguous);
+
+/**
+  Look up the type of an enum element by its name, and return
+  the QualifiedType for that element.
+ */
+const types::QualifiedType& typeForEnumElement(Context* context,
+                                               const types::EnumType* type,
+                                               UniqueString elemName,
+                                               const uast::AstNode* astForErr);
 
 /**
   Returns the numeric value of an enum element.

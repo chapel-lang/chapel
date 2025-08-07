@@ -589,7 +589,28 @@ CanPassResult CanPassResult::canPassSubtypeNonBorrowing(Context* context,
   }
 
   // TODO: c_ptr(t) -> c_ptr(void)
-  // TODO: c_array -> c_ptr(void), c_array(t) -> c_ptr(t)
+
+  const Type* eltType = nullptr;
+  const IntParam* sizeParam = nullptr;
+  if (formalT->isCPtrType() && actualT->isCArrayType(context, eltType, sizeParam)) {
+    auto formalPtr = formalT->toCPtrType();
+
+    // any C array can be passed to a void pointer
+    if (formalPtr->isVoidPtr()) {
+      return CanPassResult(/* no fail reason */ {},
+                           /* instantiates */ false,
+                           /*promotes*/ false,
+                           SUBTYPE);
+    }
+
+    // Like in C, an array can "decay" to a pointer to its first element.
+    if (formalPtr->eltType() == eltType) {
+      return CanPassResult(/* no fail reason */ {},
+                           /* instantiates */ false,
+                           /*promotes*/ false,
+                           SUBTYPE);
+    }
+  }
 
   return fail(FAIL_EXPECTED_SUBTYPE);
 }

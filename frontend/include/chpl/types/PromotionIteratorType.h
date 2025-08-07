@@ -44,12 +44,12 @@ class PromotionIteratorType final : public IteratorType {
      Mapping of promoted formals to their array (non-scalar) types, for the
      purposes of determining the parallel iteration strategy.
    */
-  const resolution::SubstitutionsMap promotedFormals_;
+  const resolution::PromotedFormalMap promotedFormals_;
 
   PromotionIteratorType(const resolution::PoiScope* poiScope,
                         const resolution::TypedFnSignature* scalarFn,
                         QualifiedType yieldType,
-                        resolution::SubstitutionsMap promotedFormals)
+                        resolution::PromotedFormalMap promotedFormals)
     : IteratorType(typetags::PromotionIteratorType, poiScope),
       scalarFn_(scalarFn),
       yieldType_(std::move(yieldType)),
@@ -70,14 +70,14 @@ class PromotionIteratorType final : public IteratorType {
                            const resolution::PoiScope* poiScope,
                            const resolution::TypedFnSignature* scalarFn,
                            QualifiedType retType,
-                           resolution::SubstitutionsMap promotedFormals);
+                           resolution::PromotedFormalMap promotedFormals);
 
  public:
   static const PromotionIteratorType* get(Context* context,
                                           const resolution::PoiScope* poiScope,
                                           const resolution::TypedFnSignature* scalarFn,
                                           QualifiedType retType,
-                                          resolution::SubstitutionsMap promotedFormals);
+                                          resolution::PromotedFormalMap promotedFormals);
 
   virtual const Type* substitute(Context* context,
                                  const PlaceholderMap& subs) const override {
@@ -94,7 +94,7 @@ class PromotionIteratorType final : public IteratorType {
     return yieldType_;
   }
 
-  const resolution::SubstitutionsMap& promotedFormals() const {
+  const resolution::PromotedFormalMap& promotedFormals() const {
     return promotedFormals_;
   }
 };

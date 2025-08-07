@@ -37,7 +37,7 @@ PromotionIteratorType::getPromotionIteratorType(Context* context,
                                                 const resolution::PoiScope* poiScope,
                                                 const resolution::TypedFnSignature* scalarFn,
                                                 QualifiedType retType,
-                                                resolution::SubstitutionsMap promotedFormals) {
+                                                resolution::PromotedFormalMap promotedFormals) {
   QUERY_BEGIN(getPromotionIteratorType, context, poiScope, scalarFn, retType, promotedFormals);
   auto result = toOwned(new PromotionIteratorType(poiScope, scalarFn, std::move(retType), std::move(promotedFormals)));
   return QUERY_END(result);
@@ -48,7 +48,7 @@ PromotionIteratorType::get(Context* context,
                            const resolution::PoiScope* poiScope,
                            const resolution::TypedFnSignature* scalarFn,
                            QualifiedType retType,
-                           resolution::SubstitutionsMap promotedFormals) {
+                           resolution::PromotedFormalMap promotedFormals) {
   return getPromotionIteratorType(context, poiScope, scalarFn, std::move(retType), std::move(promotedFormals)).get();
 }
 
