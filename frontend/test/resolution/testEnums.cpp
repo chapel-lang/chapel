@@ -811,6 +811,29 @@ static void test24() {
   ensureParamInt(vars.at("d"), 9);
 }
 
+static void test25() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+      var x = 1;
+      enum color {
+        red = 1,
+        green,
+        gold = (red:int + green:int) * blue:int,
+        blue,
+      }
+      type t = color;
+      param a = color.red : int;
+      param b = color.green : int;
+      param c = color.blue : int;
+      param d = color.gold : int;
+      )""", {"t", "a", "b", "c", "d"});
+
+  assert(guard.realizeErrors());
+}
+
 int main() {
   test1();
   test2();
@@ -836,6 +859,7 @@ int main() {
   test22();
   test23();
   test24();
+  test25();
 
   return 0;
 }
