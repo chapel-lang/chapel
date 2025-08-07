@@ -5671,6 +5671,29 @@ static bool isDotDomainAccess(const Dot* dot) {
   return dot->field() == USTR("domain");
 }
 
+static bool isEnumAccess(Context* context, const ResolvedExpression& receiver, ID& outEnumId) {
+  auto& receiverType = receiver.type();
+  if (receiverType.kind() != QualifiedType::TYPE) return false;
+
+  // have to handle two cases, both of which need to work:
+  // 1. the type is not an enum, but toId refers to an enum. This can happen
+  //    during scope resolution, where we don't figure out types.
+  // 2. the type is an enum, but the toId does not refer to an enum.
+  //    This can happen if we're using aliasing, via variables or parenless procs.
+
+  if (asttags::isEnum(parsing::idToTag(context, receiver.toId()))) {
+    outEnumId = receiver.toId();
+    return true;
+  }
+
+  if (receiverType.type()->isEnumType()) {
+    outEnumId = receiverType.type()->toEnumType()->id();
+    return true;
+  }
+
+  return false;
+}
+
 void Resolver::exit(const Dot* dot) {
   ResolvedExpression& receiver = byPostorder.byAst(dot->receiver());
   ResolvedExpression& r = byPostorder.byAst(dot);
@@ -5777,10 +5800,10 @@ void Resolver::exit(const Dot* dot) {
     return;
   }
 
-  if (receiver.type().kind() == QualifiedType::TYPE &&
-      asttags::isEnum(parsing::idToTag(context, receiver.toId()))) {
+  ID tmpEnumId;
+  if (isEnumAccess(context, receiver, tmpEnumId)) {
     // resolve E.x where E is an enum.
-    auto enumAst = parsing::idToAst(context, receiver.toId())->toEnum();
+    auto enumAst = parsing::idToAst(context, tmpEnumId)->toEnum();
     CHPL_ASSERT(enumAst != nullptr);
 
     auto& [elemId, ambiguous] =
