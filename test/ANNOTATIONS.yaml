@@ -809,6 +809,10 @@ cg:
 cg-a:
   04/05/18:
     - Convert BaseDist-inheriting classes to use initializers (#9075)
+  07/24/25:
+    - Avoid inlining functions that just do checks (#27531)
+  08/06/25:
+    - Add a pass to deadCodeElimination to remove empty functions that do nothing (#27562)
 
 c-ray:
   10/11/16:
@@ -1104,6 +1108,10 @@ isx-no-return:
 isx-release:
   01/23/18:
     - Fix memory leak introduced in PR #8073 (#8268)
+  07/24/25:
+    - Avoid inlining functions that just do checks (#27531)
+  08/06/25:
+    - Add a pass to deadCodeElimination to remove empty functions that do nothing (#27562)
 
 isx.ml-time: &isx-ml-base
   02/26/16:
@@ -1846,6 +1854,10 @@ ra:
     - Convert BaseDist-inheriting classes to use initializers (#9075)
   07/15/20:
     - Enable parallel array init for all types (#16070)
+  07/24/25:
+    - Avoid inlining functions that just do checks (#27531)
+  08/06/25:
+    - Add a pass to deadCodeElimination to remove empty functions that do nothing (#27562)
 
 ra.ml-perf:
   09/19/17:
