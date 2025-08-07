@@ -267,11 +267,15 @@ module ChapelDynamicLoading {
     return ret;
   }
 
-  proc errorIfDynamicLoadingNotEnabled(out err) {
-    if !isDynamicLoadingEnabled {
-      err = new DynLoadError('Dynamic loading is not enabled');
+  proc checkForDynamicLoadingErrors(ref err) {
+    // Note that procedure pointer errors were checked in module code.
+    param errors = configErrorsForDynamicLoading(emitErrors=true);
+
+    if errors || !isDynamicLoadingEnabled {
+      err = new DynLoadError('Dynamic loading support is not enabled!');
       return true;
     }
+
     return false;
   }
 
@@ -347,10 +351,7 @@ module ChapelDynamicLoading {
     proc type create(path: string, out err: owned DynLoadError?) {
       var ret: unmanaged chpl_BinaryInfo? = nil;
 
-      if configurationErrorsExist(emitErrors=true) ||
-         errorIfDynamicLoadingIsNotEnabled(err) {
-        return ret;
-      }
+      if checkForDynamicLoadingErrors(err) then return ret;
 
       on Locales[0] {
         const store = chpl_binaryInfoStore.borrow();
@@ -492,8 +493,7 @@ module ChapelDynamicLoading {
                       'should be wide');
       }
 
-      if configurationErrorsExist(emitErrors=true) ||
-         errorIfDynamicLoadingIsNotEnabled(err) {
+      if checkForDynamicLoadingErrors(err) {
         return __primitive("cast", P, 0);
       }
 
