@@ -83,7 +83,6 @@ chplvars = [
 
              # These are not in printchplenv --all
              'CHPL_MAKE',
-             'CHPL_HOST_USE_SYSTEM_LIBCXX',
            ]
 
 
