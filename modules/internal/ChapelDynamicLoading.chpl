@@ -32,7 +32,7 @@ module ChapelDynamicLoading {
     warning('INSERT LINE NUMBERS TEST!');
   }
 
-  inline proc configErrorsForProcedurePointers(param emitErrors: bool) param {
+  proc configErrorsForProcedurePointers(param emitErrors: bool) param {
     use ChplConfig;
 
     if !useProcedurePointers then return false;
@@ -46,11 +46,8 @@ module ChapelDynamicLoading {
       return true;
     }
 
-    // LLVM 11-14 use typed pointers, which the backend doesn't support yet.
-    param unsupportedLlvmVersion = CHPL_LLVM_VERSION == "14" ||
-                                   CHPL_LLVM_VERSION == "13" ||
-                                   CHPL_LLVM_VERSION == "12" ||
-                                   CHPL_LLVM_VERSION == "11";
+    // LLVM 14 uses typed pointers, which the backend doesn't support yet.
+    param unsupportedLlvmVersion = CHPL_LLVM_VERSION == "14";
 
     if CHPL_TARGET_COMPILER == "llvm" && unsupportedLlvmVersion {
       if emitErrors {
@@ -69,7 +66,7 @@ module ChapelDynamicLoading {
   }
 
   // Returns 'true' if compile-time configuration errors exist.
-  inline proc configErrorsForDynamicLoading(param emitErrors: bool) param {
+  proc configErrorsForDynamicLoading(param emitErrors: bool) param {
     use ChplConfig;
 
     if !useProcedurePointers {
@@ -87,10 +84,6 @@ module ChapelDynamicLoading {
   proc isDynamicLoadingSupported param {
     return !configErrorsForProcedurePointers(emitErrors=false) &&
            !configErrorsForDynamicLoading(emitErrors=false);
-  }
-
-  proc isDynamicLoadingEnabled {
-    return isDynamicLoadingSupported;
   }
 
   // This counter is used to assign a unique 'wide index' to each procedure.
@@ -271,7 +264,7 @@ module ChapelDynamicLoading {
     // Note that procedure pointer errors were checked in module code.
     param errors = configErrorsForDynamicLoading(emitErrors=true);
 
-    if errors || !isDynamicLoadingEnabled {
+    if errors {
       err = new DynLoadError('Dynamic loading support is not enabled!');
       return true;
     }
@@ -895,8 +888,6 @@ module ChapelDynamicLoading {
   // expects the caller to do so if necessary.
   export proc
   chpl_insertExternLocalPtrNoSync(ptr: c_ptr(void), idx: int): int {
-    if !isDynamicLoadingEnabled then halt('Should not reach here!');
-
     const ret = if idx == 0
       then chpl_dynamicProcIdxCounter.fetchAdd(1)
       else idx;
@@ -915,17 +906,11 @@ module ChapelDynamicLoading {
 
   // This function is called by the compiler to lookup wide pointer indices.
   export proc chpl_dynamicProcIdxToLocalPtr(idx: int): c_ptr(void) {
-    var ret = if isDynamicLoadingEnabled
-        then fetchLocalPtrForDynamicIdx(idx)
-        else lookupPtrFromLocalFtable(idx);
-    return ret;
+    return fetchLocalPtrForDynamicIdx(idx);
   }
 
   // This function is called by the compiler to create wide pointer indices.
   export proc chpl_staticToDynamicProcIdx(idx: int): int {
-    var ret = if isDynamicLoadingEnabled
-        then fetchDynamicIdxForStaticIdx(idx)
-        else idx;
-    return ret;
+    return fetchDynamicIdxForStaticIdx(idx);
   }
 }
