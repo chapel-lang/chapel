@@ -50,6 +50,8 @@ namespace types {
 // Apply the above macros to type-classes-list.h
 #include "chpl/types/type-classes-list-adapter.h"
 
+class IntParam;
+
 class Type;
 using PlaceholderMap = std::unordered_map<ID, const Type*>;
 
@@ -210,6 +212,10 @@ class Type {
   // So, isAnyNumericType checks if the type is that builtin type 'numeric'.
   // In contrast, isNumericType checks to see if the type is one of the
   // numeric types.
+
+  /** returns true if this represents the c_array type. If it does, sets
+      outEltType and outSize to the element type and size of the c_array. */
+  bool isCArrayType(Context* context, const Type*& outEltType, const IntParam*& outSize) const;
 
   /** returns true if this represents the string type */
   bool isStringType() const;
