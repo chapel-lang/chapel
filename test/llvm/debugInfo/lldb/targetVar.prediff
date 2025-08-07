@@ -10,6 +10,11 @@ sed -E -e 's/^(Current executable set to).*$/\1 targetVar/' \
     $file > $file.tmp
 mv $file.tmp $file
 
+
+# remove python warnings
+grep -v 'warning: LLDB does not support scripting with Python, pretty-printer will not be used' $file > $file.tmp
+mv $file.tmp $file
+
 # remove the OpenCL warnings
 sed -E -e '/OpenCL/d' $file > $file.tmp
 mv $file.tmp $file
