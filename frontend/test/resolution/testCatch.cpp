@@ -420,6 +420,30 @@ static void test12(Parser* parser) {
   assert(guard.realizeErrors() == 1);
 }
 
+// cannot throw in a non-throwing function, but can if it returns early!
+static void test12b(Parser* parser) {
+  auto ctx = buildStdContext();
+  auto path = UniqueString::get(ctx, "test12.chpl");
+
+  ErrorGuard guard(ctx);
+  std::string program = R""""(
+                        module M {
+                          proc test() {
+                            return true;
+                            throw new Error();
+                          }
+                        }
+              )"""";
+  setFileText(ctx, path, program);
+  const ModuleVec& vec = parseToplevel(ctx, path);
+  auto mod = vec[0]->toModule();
+  assert(mod);
+  auto func = mod->stmt(0)->toFunction();
+  assert(func);
+  auto resFunc = resolveConcreteFunction(ctx, func->id());
+  assert(resFunc);
+}
+
 
 // "is in a try but not handled"
 static void test13(Parser* parser) {
@@ -864,6 +888,7 @@ int main() {
   test10(p);
   test11(p);
   test12(p);
+  test12b(p);
   test13(p);
   test14(p);
   test15(p);
