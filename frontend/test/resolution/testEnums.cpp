@@ -777,6 +777,40 @@ static void test23() {
   assert(param3->toEnumParam()->value().str == "gold");
 }
 
+// test numeric conversion of enums, with some dependent values
+static void test24() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+      var x = 1;
+      enum color {
+        red = 1,
+        green,
+        blue,
+        gold = (red:int + green:int) * blue:int
+      }
+      type t = color;
+      param a = color.red : int;
+      param b = color.green : int;
+      param c = color.blue : int;
+      param d = color.gold : int;
+      )""", {"t", "a", "b", "c", "d"});
+
+  auto qtT = vars.at("t");
+  auto enumValuesByName = enumConstantValues(context, qtT);
+  ensureParamInt(enumValuesByName.at("red"), 1);
+  ensureParamInt(enumValuesByName.at("green"), 2);
+  ensureParamInt(enumValuesByName.at("blue"), 3);
+  ensureParamInt(enumValuesByName.at("gold"), 9);
+
+  ensureParamInt(vars.at("a"), 1);
+  ensureParamInt(vars.at("b"), 2);
+  ensureParamInt(vars.at("c"), 3);
+  ensureParamInt(vars.at("d"), 9);
+}
+
 int main() {
   test1();
   test2();
@@ -801,6 +835,7 @@ int main() {
   test21();
   test22();
   test23();
+  test24();
 
   return 0;
 }
