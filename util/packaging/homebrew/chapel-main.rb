@@ -50,9 +50,12 @@ class Chapel < Formula
     # Chapel uses this ENV to work out where to install.
     ENV["CHPL_HOME"] = libexec
     ENV["CHPL_GMP"] = "system"
+
     # This ENV avoids a problem where cmake cache is invalidated by subsequent make calls
     ENV["CHPL_CMAKE_USE_CC_CXX"] = "1"
     ENV["CHPL_CMAKE_PYTHON"] = python
+
+    # This ENV avoids issues with GASNet picking up the wrong linker
     ENV["CHPL_IGNORE_GASNET_LD"] = "1"
 
     # don't try to set CHPL_LLVM_GCC_PREFIX since the llvm
