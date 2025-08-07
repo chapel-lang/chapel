@@ -834,6 +834,24 @@ static void test25() {
   assert(guard.realizeErrors());
 }
 
+// test accessing enum elements via aliases
+static void test26() {
+  auto context = buildStdContext();
+  auto vars = resolveTypesOfVariables(context,
+                         R""""(
+                         enum color {
+                           red, green, blue
+                         }
+                         type c1 = color;
+                         proc c2 type do return color;
+
+                         param x = c1.red;
+                         param y = c2.red;
+                         )"""", {"x", "y"});
+  ensureParamEnumStr(vars.at("x"), "red");
+  ensureParamEnumStr(vars.at("y"), "red");
+}
+
 int main() {
   test1();
   test2();
@@ -860,6 +878,7 @@ int main() {
   test23();
   test24();
   test25();
+  test26();
 
   return 0;
 }
