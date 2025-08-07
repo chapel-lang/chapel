@@ -162,7 +162,16 @@ static chpl_bool chpl_lldb_supports_python(void) {
   if (!chpl_get_command_output(command, output, sizeof(output))) {
     return false;
   }
-  return output[0] != '\0' && access(output, R_OK) == 0;
+
+  if (output[0] == '\0') {
+    return false;
+  }
+  // remove trailing newline if present
+  size_t len = strlen(output);
+  if (len > 0 && output[len - 1] == '\n') {
+    output[len - 1] = '\0';
+  }
+  return access(output, R_OK) == 0;
 }
 
 int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
