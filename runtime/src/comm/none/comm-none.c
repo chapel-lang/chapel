@@ -141,6 +141,39 @@ static const char* chpl_get_debugger_cmd_file(void) {
   return debuggerCmdFile;
 }
 
+static chpl_bool chpl_get_command_output(const char* command,
+                                         char* output, size_t output_size);
+static chpl_bool chpl_get_command_output(const char* command,
+                                         char* output, size_t output_size) {
+  FILE* pipe = popen(command, "r");
+  if (!pipe) {
+    return false;
+  }
+  size_t bytes_read = fread(output, sizeof(char), output_size - 1, pipe);
+  output[bytes_read] = '\0';
+  int status = pclose(pipe);
+  return (status == 0);
+}
+
+static chpl_bool chpl_lldb_supports_python(void);
+static chpl_bool chpl_lldb_supports_python(void) {
+  char output[256];
+  const char* command = "lldb --python-path";
+  if (!chpl_get_command_output(command, output, sizeof(output))) {
+    return false;
+  }
+
+  if (output[0] == '\0') {
+    return false;
+  }
+  // remove trailing newline if present
+  size_t len = strlen(output);
+  if (len > 0 && output[len - 1] == '\n') {
+    output[len - 1] = '\0';
+  }
+  return access(output, R_OK) == 0;
+}
+
 int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
 
   const char* debuggerCmdFile = chpl_get_debugger_cmd_file();
@@ -171,13 +204,21 @@ int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status) {
 
   char* command = (char*)"lldb -o 'b debuggerBreakHere'";
 
-  const char* pretty_printer = chpl_glom_strings(2, CHPL_HOME, "/runtime/etc/debug/chpl_lldb_pretty_print.py");
-  if (access(pretty_printer, R_OK) == 0) {
-    command = chpl_glom_strings(4, command,
-      " -o 'command script import \"", pretty_printer, "\"'");
+  if (chpl_lldb_supports_python()) {
+    const char* pretty_printer = chpl_glom_strings(2, CHPL_HOME, "/runtime/etc/debug/chpl_lldb_pretty_print.py");
+    if (access(pretty_printer, R_OK) == 0) {
+      command = chpl_glom_strings(4, command,
+        " -o 'command script import \"", pretty_printer, "\"'");
+    } else {
+      chpl_warning("Could not find lldb pretty-printer, it will be ignored",
+                    0, CHPL_FILE_IDX_COMMAND_LINE);
+    }
   } else {
-    chpl_warning("Could not find lldb pretty-printer, it will be ignored",
-                  0, CHPL_FILE_IDX_COMMAND_LINE);
+    chpl_warning(
+      "LLDB does not support scripting with Python"
+      ", pretty-printer will not be used",
+      0, CHPL_FILE_IDX_COMMAND_LINE
+    );
   }
 
   const char* debuggerCmdFile = chpl_get_debugger_cmd_file();
