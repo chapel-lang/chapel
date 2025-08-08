@@ -94,12 +94,13 @@ void ConstrainedType::codegenDef() {
 }
 
 static void codegenFunctionTypeWide(FunctionType* ft) {
+  // Use a 'int64' dynamic index. Do not bother generating a function type.
   if (auto outfile = gGenInfo->cfile) {
-    // TODO: Should I get the code-generated 'int(64)' type here instead?
-    fprintf(outfile, "typedef %s %s;\n\n", "int64_t", ft->symbol->cname);
+    fprintf(outfile, "typedef %s %s;\n\n",
+                     dtInt[INT_SIZE_64]->codegen().c.c_str(),
+                     ft->symbol->cname);
   } else {
   #ifdef HAVE_LLVM
-    // Use a 'int64' dynamic index. Do not bother generating a function type.
     auto t = llvm::Type::getInt64Ty(gContext->llvmContext());
     if (!ft->symbol->hasLLVMType()) {
       gGenInfo->lvt->addGlobalType(ft->symbol->cname, t, false);

@@ -1813,7 +1813,7 @@ static void codegen_header(std::set<const char*> & cnames,
   GenInfo* info = gGenInfo;
 
   // Collected when considering both types and 'FnSymbol'.
-  std::set<FunctionType*> fnTypesToCodegen;
+  std::unordered_set<FunctionType*> fnTypesToCodegen;
 
   //
   // Collect most types, but do not sort yet.
@@ -1827,8 +1827,8 @@ static void codegen_header(std::set<const char*> & cnames,
       // functions are visited below.
       if (!ft->symbol->isUsed()) continue;
 
-      auto it = fnTypesToCodegen.find(ft);
-      if (it == fnTypesToCodegen.end()) {
+      if (auto it = fnTypesToCodegen.find(ft);
+               it == fnTypesToCodegen.end()) {
         // TODO (dlongnecke): Rare case right now, so leave breakpoint...
         debuggerBreakHere();
         fnTypesToCodegen.emplace_hint(it, ft);
@@ -1862,8 +1862,8 @@ static void codegen_header(std::set<const char*> & cnames,
     if (auto ft = toFunctionType(fn->type)) {
       if (isProcPtrRoot || ft->symbol->isUsed()) {
         // It is used or a root used to construct a value, so keep it.
-        auto it = fnTypesToCodegen.find(ft);
-        if (it == fnTypesToCodegen.end()) {
+        if (auto it = fnTypesToCodegen.find(ft);
+                 it == fnTypesToCodegen.end()) {
           fnTypesToCodegen.emplace_hint(it, ft);
           types.push_back(ft->symbol);
         }

@@ -4178,6 +4178,7 @@ static GenRet codegenCall(CallExpr* call) {
     // TODO (dlongnecke): The C backend requires a cast to a procedure
     // type in order to call, while the LLVM backend does not.
     if (gGenInfo->cfile) {
+      INT_FATAL(call, "Cast to C function type not implemented yet!");
     }
 
   } else if (fn) {
