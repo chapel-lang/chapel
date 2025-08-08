@@ -2390,7 +2390,7 @@ GenRet FnSymbol::codegenFunctionType(bool forHeader) {
 
   ret.chplType = typeInfo();
 
-  // Eventually we can reuse this, perhaps...
+  // TODO (dlongnecke): Eventually we can reuse this, perhaps...
   if (isFunctionType(ret.chplType)) ret.chplType = dtUnknown;
 
   if( info->cfile ) {
