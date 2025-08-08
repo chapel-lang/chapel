@@ -179,6 +179,7 @@ extern std::string driverTmpDir;
 // end compiler driver control flags
 extern bool fExitLeaks;
 extern bool fPrintAllCandidates;
+extern bool fDescribeCandidates;
 extern bool fPrintCallGraph;
 extern bool fPrintCallStackOnError;
 extern bool fAutoPrintCallStackOnError;
