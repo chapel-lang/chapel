@@ -187,6 +187,14 @@ static bool isTypeParam(QualifiedType::Kind kind) {
 bool CallInitDeinit::isCallProducingValue(const AstNode* rhsAst,
                                           const QualifiedType& rhsType,
                                           RV& rv) {
+  if (rhsAst->isTuple() && rhsType.type() && rhsType.type()->isTupleType()) {
+    if (auto asTupleType = rhsType.type()->toTupleType()) {
+      // Consider a tuple expression to be a call producing a value (for the
+      // purposes of call-init-deinit) iff it contains only value elements.
+      return asTupleType == asTupleType->toValueTuple(context);
+    }
+  }
+
   return rv.byAst(rhsAst).toId().isEmpty() && !isRef(rhsType.kind());
 }
 
@@ -543,7 +551,7 @@ void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
   }
 }
 
-// Adjusts LHS tuple type so that its components are all references.
+// Adjusts LHS tuple type so that its components are all values.
 // Does no sanity checks.
 static QualifiedType
 getLhsForTupleUnpackAssign(Context* context,
@@ -568,7 +576,7 @@ getLhsForTupleUnpackAssign(Context* context,
     } else {
       // Otherwise, turn its qualifier into 'ref' / 'const ref'
       auto eqt = lhsT->elementType(i);
-      auto kind = KindProperties::addRefness(eqt.kind());
+      auto kind = KindProperties::removeRef(eqt.kind());
       qt = { kind, eqt.type(), eqt.param() };
     }
 
@@ -588,6 +596,8 @@ void CallInitDeinit::resolveTupleUnpackAssign(const Tuple* lhsTuple,
                                               const QualifiedType& initialLhsType,
                                               const QualifiedType& rhsType,
                                               RV& rv) {
+  VarFrame* frame = currentFrame();
+
   // Make sure that both the LHS and RHS have types
   if (!initialLhsType.hasTypePtr()) {
     context->error(lhsTuple, "Unknown lhs tuple type in split tuple assign");
@@ -618,9 +628,6 @@ void CallInitDeinit::resolveTupleUnpackAssign(const Tuple* lhsTuple,
     return;
   }
 
-  // Then, make sure that the LHS is valid and adjust its intent.
-  // It recomputes the LHS tuple type and sets it in 'byPostorder'.
-  // It does not recompute intents for component sub-expressions.
   auto lhsType = getLhsForTupleUnpackAssign(context, astForErr, lhsTuple,
                                             initialLhsType);
   rv.byPostorder().byAst(lhsTuple).setType(lhsType);
@@ -643,7 +650,7 @@ void CallInitDeinit::resolveTupleUnpackAssign(const Tuple* lhsTuple,
       continue;
     }
 
-    resolveAssign(actual, lhsEltType, rhsEltType, rv);
+    processInit(frame, actual, lhsEltType, rhsEltType, rv);
   }
 }
 
