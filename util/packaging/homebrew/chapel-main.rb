@@ -120,6 +120,21 @@ class Chapel < Formula
       rm_r("third-party/libunwind/libunwind-src/")
       rm_r("third-party/gmp/gmp-src/")
       rm_r("third-party/qthread/qthread-src/")
+
+      #
+      # the following makes sure GASNet doesn't pickup incorrect paths during the build
+      #
+      # clobber the gasnet include
+      rm_r Dir.glob("third-party/gasnet/install/**/include")
+      # clobber GASNET_CC=, GASNET_CXX=, and GASNET_LD= from the *.pc files
+      gasnet_pc_files = Dir.glob("third-party/gasnet/install/**/lib/pkgconfig/gasnet-*-par.pc")
+      gasnet_pc_files.each do |pc_file|
+        inreplace pc_file, /^GASNET_CC=.*$/, ""
+        inreplace pc_file, /^GASNET_CXX=.*$/, ""
+        inreplace pc_file, /^GASNET_LD=.*$/, ""
+      end
+      # remove the gasnet_tools-par.pc files
+      rm_r Dir.glob("third-party/gasnet/install/**/lib/pkgconfig/gasnet_tools-par.pc")
     end
 
     # Install chpl and other binaries (e.g. chpldoc) into bin/ as exec scripts.
