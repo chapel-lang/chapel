@@ -8,15 +8,25 @@ compilerAssert(useProcedurePointers);
 
 var once = false;
 
+// NOTE: Pragma is a lie, but we need 'compiler/passes/insertLineNumbers.cpp'
+// to thread line numbers through this as though it is a procedure defined
+// in a standard or internal module.
+//
+pragma "compiler generated"
+proc procToTestInsertLineNumbers() {
+  // This is a standard module call that requires line numbers.
+  warning('INSERT LINE NUMBERS TEST!');
+}
+
 proc constructWideProcPointerNeedingLineNos() {
   use ChapelDynamicLoading;
 
   if !once {
-    chpl_procToTestInsertLineNumbers();
+    procToTestInsertLineNumbers();
     once = true;
   }
 
-  const ret = chpl_procToTestInsertLineNumbers;
+  const ret = procToTestInsertLineNumbers;
   return ret;
 }
 

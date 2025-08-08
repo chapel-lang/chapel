@@ -26,12 +26,6 @@ module ChapelDynamicLoading {
 
   param chpl_defaultProcBufferSize = 512;
 
-  // Exists so that tests can make a proc pointer to an internal procedure.
-  proc chpl_procToTestInsertLineNumbers() {
-    // This is a standard module call that requires line numbers.
-    warning('INSERT LINE NUMBERS TEST!');
-  }
-
   proc configErrorsForProcedurePointers(param emitErrors: bool) param {
     use ChplConfig;
 
@@ -264,8 +258,8 @@ module ChapelDynamicLoading {
     // Note that procedure pointer errors were checked in module code.
     param errors = configErrorsForDynamicLoading(emitErrors=true);
 
-    if errors {
-      err = new DynLoadError('Dynamic loading support is not enabled!');
+    if errors || !isDynamicLoadingSupported {
+      err = new DynLoadError('Dynamic loading is not supported');
       return true;
     }
 
@@ -906,11 +900,17 @@ module ChapelDynamicLoading {
 
   // This function is called by the compiler to lookup wide pointer indices.
   export proc chpl_dynamicProcIdxToLocalPtr(idx: int): c_ptr(void) {
-    return fetchLocalPtrForDynamicIdx(idx);
+    const ret = if isDynamicLoadingSupported
+          then fetchLocalPtrForDynamicIdx(idx)
+          else lookupPtrFromLocalFtable(idx);
+    return ret;
   }
 
   // This function is called by the compiler to create wide pointer indices.
   export proc chpl_staticToDynamicProcIdx(idx: int): int {
-    return fetchDynamicIdxForStaticIdx(idx);
+    const ret = if isDynamicLoadingSupported
+          then fetchDynamicIdxForStaticIdx(idx)
+          else idx;
+    return ret;
   }
 }
