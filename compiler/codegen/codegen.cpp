@@ -1226,7 +1226,6 @@ static void codegen_aggregate_def(AggregateType* ct) {
   //DFS, check visited
   if (!shouldCodegenAggregate(ct)) return;
   if (ct->symbol->hasFlag(FLAG_CODEGENNED)) return;
-  ct->symbol->addFlag(FLAG_CODEGENNED);
 
   // For reference or data class types, first generate
   // the referenced type
@@ -1251,6 +1250,8 @@ static void codegen_aggregate_def(AggregateType* ct) {
   // Lastly, generate the type we're working on.
   // Codegen what we have here.
   ct->symbol->codegenDef();
+
+  ct->symbol->addFlag(FLAG_CODEGENNED);
 }
 
 static void genConfigGlobalsAndAbout() {
