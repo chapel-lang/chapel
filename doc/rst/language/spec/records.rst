@@ -764,7 +764,7 @@ records if none are explicitly defined. ``==`` and ``!=`` functions have the
 following signatures for a record ``R``:
 
 
-
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
    operator ==(lhs:R, rhs:R) : bool where lhs.type == rhs.type;
