@@ -93,58 +93,65 @@ void PrimitiveType::codegenDef() {
 void ConstrainedType::codegenDef() {
 }
 
-#ifdef HAVE_LLVM
-static void codegenFunctionTypeWideLlvm(FunctionType* ft) {
-  // Use a 'int64' dynamic index. Do not bother generating a function type.
-  auto t = llvm::Type::getInt64Ty(gContext->llvmContext());
-  if (!ft->symbol->hasLLVMType()) {
-    gGenInfo->lvt->addGlobalType(ft->symbol->cname, t, false);
-    ft->symbol->llvmImplType = t;
-    ft->symbol->llvmAlignment = ALIGNMENT_DEFER;
+static void codegenFunctionTypeWide(FunctionType* ft) {
+  if (auto outfile = gGenInfo->cfile) {
+    // TODO: Should I get the code-generated 'int(64)' type here instead?
+    fprintf(outfile, "typedef %s %s;\n\n", "int64_t", ft->symbol->cname);
+  } else {
+  #ifdef HAVE_LLVM
+    // Use a 'int64' dynamic index. Do not bother generating a function type.
+    auto t = llvm::Type::getInt64Ty(gContext->llvmContext());
+    if (!ft->symbol->hasLLVMType()) {
+      gGenInfo->lvt->addGlobalType(ft->symbol->cname, t, false);
+      ft->symbol->llvmImplType = t;
+      ft->symbol->llvmAlignment = ALIGNMENT_DEFER;
+    }
+  #endif
   }
 }
-#endif
 
-#ifdef HAVE_LLVM
-static void codegenFunctionTypeLocalLlvm(FunctionType* ft) {
-  // Generate the underlying type. This is a function value type.
-  const auto& info = fetchLocalFunctionTypeLlvm(ft);
-  auto baseType = info.type;
+static void codegenFunctionTypeLocal(FunctionType* ft) {
+  if (auto outfile = gGenInfo->cfile) {
 
-  // The final type is a pointer to the underlying function type.
-  auto& layout = gGenInfo->module->getDataLayout();
-  auto addrSpace = layout.getAllocaAddrSpace();
-  llvm::Type* t = llvm::PointerType::get(baseType, addrSpace);
+    // Declare local procs as 'void*' to handle circular dependencies.
+    fprintf(outfile, "typedef %s %s;\n\n", "void*", ft->symbol->cname);
 
-  if (!ft->symbol->hasLLVMType()) {
-    gGenInfo->lvt->addGlobalType(ft->symbol->cname, t, false);
-    ft->symbol->llvmImplType = t;
-    ft->symbol->llvmAlignment = ALIGNMENT_DEFER;
+  } else {
+  #ifdef HAVE_LLVM
+    // Generate the underlying type. This is a function value type.
+    auto& info = localFunctionTypeCodegenInfo(ft);
+    auto baseType = info.llvmType;
+
+    // The final type is a pointer to the underlying function type.
+    auto& layout = gGenInfo->module->getDataLayout();
+    auto addrSpace = layout.getAllocaAddrSpace();
+    llvm::Type* t = llvm::PointerType::get(baseType, addrSpace);
+
+    if (!ft->symbol->hasLLVMType()) {
+      gGenInfo->lvt->addGlobalType(ft->symbol->cname, t, false);
+      ft->symbol->llvmImplType = t;
+      ft->symbol->llvmAlignment = ALIGNMENT_DEFER;
+    }
+  #endif
   }
 }
-#endif
 
-// TODO: See 'codegenFunctionTypeLLVM' for hints about what ABI stuff to
-// do when code generating extern/export stuff. It's a mess in there!
 void FunctionType::codegenDef() {
-  auto info = gGenInfo;
-  auto outfile = info->cfile;
-
   // This must hold, otherwise we'd be using class instances instead...
   INT_ASSERT(fcfs::usePointerImplementation());
 
-  if (outfile) {
-    INT_FATAL("The C backend is not supported yet!");
+  #ifdef HAVE_LLVM
+  if (gGenInfo->cfile == nullptr) {
+    // A LLVM-only precondition to make sure we remain idempotent.
+    llvm::Type *type = gGenInfo->lvt->getType(symbol->cname);
+    if (type) return;
+  }
+  #endif
+
+  if (this->isWide()) {
+    codegenFunctionTypeWide(this);
   } else {
-    #ifdef HAVE_LLVM
-      llvm::Type *type = info->lvt->getType(symbol->cname);
-      if (type) return;
-      if (this->isWide()) {
-        codegenFunctionTypeWideLlvm(this);
-      } else {
-        codegenFunctionTypeLocalLlvm(this);
-      }
-    #endif
+    codegenFunctionTypeLocal(this);
   }
 }
 

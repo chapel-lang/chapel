@@ -1812,24 +1812,73 @@ static void codegen_header(std::set<const char*> & cnames,
                            std::vector<VarSymbol*> & globals) {
   GenInfo* info = gGenInfo;
 
+  // Collected when considering both types and 'FnSymbol'.
+  std::set<FunctionType*> fnTypesToCodegen;
+
   //
-  // collect types and apply canonical sort
+  // Collect most types, but do not sort yet.
   //
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (ts->defPoint->parentExpr != rootModule->block) {
-      types.push_back(ts);
-    } else if (isFunctionType(ts->type)) {
-      if (!fcfs::usePointerImplementation()) {
-        INT_ASSERT(!ts->isUsed());
-      } else if (ts->isUsed()) {
-        // Types will still exist in the tree even if they are not used
-        // by any variables/etc because many computations will run over
-        // the function type rather than the function itself.
+    if (auto ft = toFunctionType(ts->type)) {
+      INT_ASSERT(fcfs::usePointerImplementation() || !ts->isUsed());
+
+      // Only function types used directly (e.g., in a cast operation)
+      // can be collected here. The rest have to be collected when
+      // functions are visited below.
+      if (!ft->symbol->isUsed()) continue;
+
+      auto it = fnTypesToCodegen.find(ft);
+      if (it == fnTypesToCodegen.end()) {
+        // TODO (dlongnecke): Rare case right now, so leave breakpoint...
+        debuggerBreakHere();
+        fnTypesToCodegen.emplace_hint(it, ft);
         types.push_back(ts);
+      } else {
+        INT_FATAL(ts, "Type stored more than once in 'gTypeSymbols'!");
+      }
+
+    } else if (ts->defPoint->parentExpr != rootModule->block) {
+      types.push_back(ts);
+    }
+  }
+
+  //
+  // Collect functions and function types, then sort them.
+  //
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    // The function is not code-generated, so skip it.
+    if (!needsCodegenWrtGPU(fn)) continue;
+
+    // OK, should generate the function and consider its type.
+    functions.push_back(fn);
+
+    // Collect function types to generate. The vast majority are discarded.
+    // TODO (dlongnecke): Ensure that this flag is not stale...
+    bool isProcPtrRoot = fn->hasFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION);
+    auto ft = toFunctionType(fn->type);
+
+    INT_ASSERT(!isProcPtrRoot || ft);
+
+    if (auto ft = toFunctionType(fn->type)) {
+      if (isProcPtrRoot || ft->symbol->isUsed()) {
+        // It is used or a root used to construct a value, so keep it.
+        auto it = fnTypesToCodegen.find(ft);
+        if (it == fnTypesToCodegen.end()) {
+          fnTypesToCodegen.emplace_hint(it, ft);
+          types.push_back(ft->symbol);
+        }
+      } else {
+        // TODO (dlongnecke): Could be pruned/discarded earlier...
+        continue;
       }
     }
   }
+
+  // Now we can sort types...
   std::sort(types.begin(), types.end(), compareSymbol);
+
+  // ...and functions.
+  std::sort(functions.begin(), functions.end(), compareSymbol);
 
   //
   // collect globals and apply canonical sort
@@ -1842,18 +1891,8 @@ static void codegen_header(std::set<const char*> & cnames,
       }
     }
   }
+
   std::sort(globals.begin(), globals.end(), compareSymbol);
-
-  //
-  // collect functions and apply canonical sort
-  //
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (needsCodegenWrtGPU(fn)) {
-      functions.push_back(fn);
-    }
-  }
-  std::sort(functions.begin(), functions.end(), compareSymbol);
-
   codegen_header_compilation_config();
 
   if (fLibraryCompile) {
@@ -1893,6 +1932,14 @@ static void codegen_header(std::set<const char*> & cnames,
   genClassIDs(types, true);
   genSubclassArray(true);
   genClassNames(types, true);
+
+  // Generate procedure pointer types first to handle circular dependencies.
+  genComment("Procedure Pointer Types");
+  forv_Vec(TypeSymbol, ts, types) {
+    if (auto ft = toFunctionType(ts->type)) {
+      ft->codegenDef();
+    }
+  }
 
   genComment("Class Prototypes");
   forv_Vec(TypeSymbol, typeSymbol, types) {
@@ -2611,6 +2658,61 @@ Type* getNamedTypeDuringCodegen(const char* name) {
   return NULL;
 }
 
+static std::map<FunctionType*, FunctionTypeCodegenInfo>
+chapelFunctionTypeToCodegenInfo;
+
+const FunctionTypeCodegenInfo& localFunctionTypeCodegenInfo(FunctionType* ft) {
+  // Memoize to reduce the amount of work we do. We use 'local' procedure
+  // pointer types as the key in order to elide away wideness entirely, as
+  // it doesn't matter here (always local).
+  //
+  auto ftLocal = ft->isLocal() ? ft : ft->getAsLocal();
+  auto it = chapelFunctionTypeToCodegenInfo.find(ftLocal);
+  if (it != chapelFunctionTypeToCodegenInfo.end()) return it->second;
+
+  FunctionTypeCodegenInfo info;
+
+  // Set the Chapel type to the local procedure type.
+  info.gen.chplType = ftLocal;
+
+  if (gGenInfo->cfile) {
+    // Assemble a string representing the function type in C.
+    auto& str = info.gen.c;
+
+    // E.g., 'void (*)(argt1, argt2, argt3)';
+    str += ft->returnType()->codegen().c;
+    str += " (*)(";
+
+    // NOTE: Omit the formal names because C does not require them.
+    for (int i = 0; i < ft->numFormals(); i++) {
+      const bool last = (i+1) == ft->numFormals();
+      auto formal = ft->formal(i);
+      INT_ASSERT(formal);
+
+      str += formal->type()->codegen().c;
+
+      if (!last) str += ", ";
+    }
+
+    // An empty formal list takes 'void' to make old C standards happy.
+    if (0 == ft->numFormals()) str += "void";
+
+    str += ")";
+
+  } else {
+  #ifdef HAVE_LLVM
+    // Generate the LLVM function info.
+    std::vector<const char*> argNames;
+    info.llvmType = codegenFunctionTypeLLVM(ft, info.llvmAttrs, argNames);
+    info.gen.type = info.llvmType;
+  #endif
+  }
+
+  // Insert the info into the map.
+  it = chapelFunctionTypeToCodegenInfo.emplace_hint(it, ftLocal, info);
+
+  return it->second;
+}
 
 // Do this once for CPU and GPU
 static void codegenPartOne() {

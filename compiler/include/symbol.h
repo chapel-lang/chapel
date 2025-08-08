@@ -459,16 +459,6 @@ enum AlignmentStatus {
   // >1 ==> the ABI alignment
 };
 
-// Given a Chapel function type, fetch the associated local LLVM type.
-#ifdef HAVE_LLVM
-struct LlvmFunctionInfo {
-  llvm::FunctionType* type = nullptr;
-  llvm::AttributeList attrs;
-};
-
-const LlvmFunctionInfo& fetchLocalFunctionTypeLlvm(FunctionType* t);
-#endif
-
 class TypeSymbol final : public Symbol {
  public:
   // We need to know whether or not the definition
