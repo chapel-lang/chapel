@@ -2,7 +2,7 @@ use DynamicLoading;
 use CTypes;
 
 // A binary may or may not exist at this path.
-const path = './TestBinary';
+const path = './TestCLibraryToLoad.so';
 
 // If loading fails an error will be issued and the 'try!' will halt.
 const bin = try! binary.load(path);
