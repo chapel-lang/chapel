@@ -329,6 +329,12 @@ static void test23() {
   assert(vars["x"].type()->isIntType());
 }
 
+static void test24() {
+  testCPtrArg("chpl_c_string", "c_ptrConst(c_char)", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+    assert(fn);
+  });
+}
+
 int main() {
   setupContext();
 
@@ -356,6 +362,8 @@ int main() {
   test22();
 
   test23();
+
+  test24();
 
   delete context;
 
