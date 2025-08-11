@@ -541,6 +541,9 @@ struct TConverter final : UastConverter,
   void setSymbolsToIgnore(std::unordered_set<ID> ignore) override {
     INT_FATAL("TConverter::setSymbolsToIgnore not implemented");
   }
+  void eraseSymbolToIgnore(ID ignore) override {
+    INT_FATAL("TConverter::eraseSymbolToIgnore not implemented");
+  }
 
   void setMainModule(ID mainModule) override {
     TC_DEBUGF(this, "have %s\n", mainModule.str().c_str());
@@ -1132,6 +1135,68 @@ ModuleSymbol* TConverter::convertModule(const Module* mod) {
 
   // TODO: remove this block once the resolver is fully operational
   if (modSym->modTag != MOD_USER) {
+    // Search for module scope variables in internal/standard modules and
+    // convert them using the typed converter. Otherwise they would not be
+    // converted because we currently use the untyped converter for these
+    // modules.
+    //
+    // We identify these variables by checking for module-scope variables
+    // without a defPoint. This indicates that we needed a SymExpr for a use
+    // of a variable, but haven't actually converted it yet.
+    //
+    // For non-extern module-scope variables we will create a copy of the
+    // variable with a "_dyno_" prefix and a function that initializes the
+    // value.
+    for (auto pair: globalSyms) {
+      auto sym = pair.second;
+      if (!parsing::idIsModule(context, pair.first) &&
+          mod->id().contains(pair.first) &&
+          sym->defPoint == nullptr) {
+        auto node = parsing::idToAst(context, pair.first)->toVariable();
+
+        // Found a global variable referred to by some other code
+        // For now, this should only happen with internal or standard modules.
+        INT_ASSERT(modSym->modTag != MOD_USER);
+
+        // Extern variables need to use the same name.
+        if (node->linkage() != uast::Variable::EXTERN) {
+          sym->name = astr("_dyno_", sym->name);
+          sym->addFlag(FLAG_NO_INIT);
+
+          // Let the untyped converter convert the variable normally, so that
+          // it can be used with code still relying on the production resolver.
+          untypedConverter->eraseSymbolToIgnore(pair.first);
+        }
+
+        // Create an initialization function where the variable's converted
+        // initialization AST will be inserted.
+        FnSymbol* initFn = new FnSymbol((astr("_init_", sym->name)));
+        initFn->retType = dtVoid;
+
+        ConvertedSymbolState saved = cur;
+        cur = {};
+        cur.moduleSymbol = modSym;
+        cur.symbol = mod;
+        cur.moduleFromLibraryFile = modSym->hasFlag(FLAG_PRECOMPILED);
+        pushBlock(initFn->body);
+
+        ResolutionContext rcval(context);
+        auto rr = resolveModuleStmt(context, pair.first);
+        ResolvedVisitor<TConverter> rv(&rcval, cur.symbol, *this, rr);
+        convertVariable(node, rv, true);
+        popBlock();
+
+        cur = saved;
+
+        // Extern variables don't require initialization, and only need to be
+        // converted to get the correct type.
+        if (node->linkage() != uast::Variable::EXTERN) {
+          modSym->block->insertAtTail(new DefExpr(initFn));
+          modSym->block->insertAtTail(new CallExpr(initFn));
+        }
+      }
+    }
+
     return untypedConverter->convertToplevelModule(mod, modSym->modTag);
   }
 

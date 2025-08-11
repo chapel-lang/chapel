@@ -101,6 +101,28 @@ struct CalledFnCollector {
   bool enter(const AstNode* ast, RV& rv) {
     if (auto re = rv.byPostorder().byAstOrNull(ast)) {
       collectCalls(re);
+
+      // Look for uses of module-scope variables in internal/standard modules,
+      // which we will need to convert.
+      //
+      // TODO: this is a temporary workaround while the typed resolver is
+      // still in development.
+      if (ast->isIdentifier() &&
+          !re->toId().isEmpty() &&
+          parsing::idIsModuleScopeVar(context, re->toId()) &&
+          parsing::idIsInBundledModule(context, re->toId())) {
+        auto var = parsing::idToAst(context, re->toId())->toVariable();
+        CHPL_ASSERT(var && var->isVariable());
+
+        if (var->kind() != Variable::Kind::TYPE &&
+            var->kind() != Variable::Kind::PARAM) {
+          CalledFnOrder newOrder = {order.depth + 1, 0};
+          auto v = CalledFnCollector(context, var, nullptr, newOrder, called);
+          v.process();
+
+          order.index += v.order.index;
+        }
+      }
     }
     return true;
   }
@@ -137,6 +159,13 @@ void CalledFnCollector::process() {
     chpl::resolution::ResolutionContext rcval(context);
     const ResolutionResultByPostorderID& byPostorder =
       resolvedFunction->resolutionById();
+    ResolvedVisitor<CalledFnCollector> rv(&rcval, symbol, *this, byPostorder);
+    symbol->traverse(rv);
+  } else if (symbol && symbol->isVariable()) {
+    CHPL_ASSERT(parsing::idIsModuleScopeVar(context, symbol->id()));
+    chpl::resolution::ResolutionContext rcval(context);
+    const ResolutionResultByPostorderID& byPostorder =
+      resolveModuleStmt(context, symbol->id());
     ResolvedVisitor<CalledFnCollector> rv(&rcval, symbol, *this, byPostorder);
     symbol->traverse(rv);
   } else {

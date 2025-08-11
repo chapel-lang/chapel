@@ -168,6 +168,9 @@ struct Converter final : UastConverter {
   void setSymbolsToIgnore(std::unordered_set<chpl::ID> ignore) override {
     symbolsToIgnore.swap(ignore);
   }
+  void eraseSymbolToIgnore(chpl::ID ignore) override {
+    symbolsToIgnore.erase(ignore);
+  }
 
   void useModuleWhenConverting(const chpl::ID& modId, ModuleSymbol* modSym) override {
     modSyms[modId] = modSym;
@@ -3583,6 +3586,7 @@ struct Converter final : UastConverter {
   Expr* visit(const uast::Variable* node) {
     auto isTypeVar = node->kind() == uast::Variable::TYPE;
     auto stmts = new BlockStmt(BLOCK_SCOPELESS);
+    if (symbolsToIgnore.count(node->id()) != 0) return nullptr;
 
     auto info = convertVariable(node, true);
     INT_ASSERT(info.entireExpr && info.variableDef);
