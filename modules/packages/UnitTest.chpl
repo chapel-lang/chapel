@@ -240,6 +240,19 @@ Output:
 
   OK
 
+
+Filtering Tests
+~~~~~~~~~~~~~~~
+
+When running tests, you can run a subset of the tests in a given file by using specifying a filter. This is done by specifying ``--filter`` followed by a regular expression matching the names of the tests to run.
+
+.. note::
+
+   If you are using a build of Chapel without regex support
+   (i.e. ``CHPL_RE2=none``), you can compile your test case with ``-snoRegex``
+   to disable regex support in the test runner. ``--filter`` will then
+   perform simple substring matching instead of regex matching.
+
 */
 module UnitTest {
   use Reflection;
