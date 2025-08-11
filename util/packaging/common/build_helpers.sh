@@ -13,10 +13,10 @@ __get_docker_tag() {
 __package_type_from_os() {
   local pkg_type
   case $1 in
-    "amzn2023" | "fc41" | "fc42" | "el9" | "el10")
+    "amzn2023" | "fc41" | "fc42" | "el10")
     pkg_type="rpm"
     ;;
-    "debian11" | "debian12" | "ubuntu22" | "ubuntu24")
+    "debian12" | "ubuntu22" | "ubuntu24")
     pkg_type="apt"
     ;;
     *)
@@ -37,14 +37,8 @@ __docker_image_from_os() {
     "fc42")
     docker_image_base="fedora:42"
     ;;
-    "el9")
-    docker_image_base="rockylinux/rockylinux:9"
-    ;;
     "el10")
     docker_image_base="almalinux:10"
-    ;;
-    "debian11")
-    docker_image_base="debian:11"
     ;;
     "debian12")
     docker_image_base="debian:12"
