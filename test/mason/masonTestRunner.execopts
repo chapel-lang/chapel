@@ -1,0 +1,4 @@
+--test=Basic # masonTestRunner.Basic.good
+--test=Fail # masonTestRunner.Fail.good
+--test=Filter1 # masonTestRunner.Filter1.good
+--test=FilterAll # masonTestRunner.Basic.good
