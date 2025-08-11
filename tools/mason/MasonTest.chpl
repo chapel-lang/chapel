@@ -60,7 +60,7 @@ proc masonTest(args: [] string, checkProj=true) throws {
   var parFlag = parser.addFlag(name="parallel", defaultValue=false);
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
   var setCommOpt = parser.addOption(name="setComm", defaultValue="none");
-  var filterFlag = parser.addOption(name="testFilter", defaultValue="");
+  var filterFlag = parser.addOption(name="filter", defaultValue="");
 
   // TODO: Why doesn't masonTest support a passthrough for values that should
   // go to the runtime?
