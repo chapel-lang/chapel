@@ -1,0 +1,1 @@
+bug: Line numbers are not correctly propagated for procedure pointers

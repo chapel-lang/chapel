@@ -1,0 +1,1 @@
+$CHPL_HOME/modules/internal/ChapelDynamicLoading.chpl:n: error: The experimental procedure pointer implementation is not currently supported by the C backend
