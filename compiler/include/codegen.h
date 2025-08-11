@@ -270,8 +270,6 @@ void linkInDynoFiles();
 
 void closeCodegenFiles();
 
-// Given a Chapel function type, fetch the associated local LLVM type.
-
 struct FunctionTypeCodegenInfo {
 #ifdef HAVE_LLVM
   // If we are generating LLVM, we need not only the type, but also a
