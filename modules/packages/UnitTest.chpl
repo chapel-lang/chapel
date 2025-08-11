@@ -1280,7 +1280,7 @@ module UnitTest {
         return true;
 
       if noRegex then
-        return s.contains(this.pattern);
+        return s.find(this.pattern) != -1;
       else
         return this.pattern.search(s).matched;
     }
