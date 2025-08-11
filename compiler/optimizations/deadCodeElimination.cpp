@@ -433,7 +433,7 @@ static bool removeVoidFunction(FnSymbol* fn) {
   // do not remove 'main', even if its empty
   if (fn == chplUserMain) return false;
   // various functions that should not be removed
-  if (fn->hasFlag(FLAG_EXPORT) ||
+  if (fn->hasEitherFlag(FLAG_EXPORT, FLAG_EXTERN) ||
       fn->hasFlag(FLAG_MODULE_INIT) ||  fn->hasFlag(FLAG_MODULE_DEINIT) ||
       fn->hasFlag(FLAG_NO_FN_BODY) || fn->hasFlag(FLAG_DESTRUCTOR) ||
       fn->hasFlag(FLAG_VIRTUAL) ||
