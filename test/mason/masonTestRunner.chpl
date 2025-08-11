@@ -20,7 +20,7 @@ proc main() {
   } else if test == Filter1 {
     masonTest(["test", "masonTestRunner-MyTest.chpl", "--filter", "test1"]);
   } else if test == FilterAll {
-    masonTest(["test", "masonTestRunner-MyTest.chpl", "--filter", "'test1|test2'"]);
+    masonTest(["test", "masonTestRunner-MyTest.chpl", "--filter", "test1|test2"]);
   }
 }
 
