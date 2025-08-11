@@ -1,0 +1,12 @@
+[brick]
+name="masonTestFiltering"
+version="0.1.0"
+chplVersion="2.6.0"
+license="None"
+type="application"
+
+tests = ["testA.chpl", "testB.chpl"]
+
+
+[dependencies]
+

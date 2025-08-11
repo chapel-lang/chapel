@@ -1,0 +1,4 @@
+--test=Basic # Basic.good
+--test=Filter1 # Filter1.good
+--test=Filter3 # Filter3.good
+--test=Filter1OnlyA # Filter1OnlyA.good
