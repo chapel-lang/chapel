@@ -115,7 +115,7 @@ static void codegenFunctionTypeLocal(FunctionType* ft) {
   // Declare local procs as 'void*' to handle circular dependencies.
   if (auto outfile = gGenInfo->cfile) {
     fprintf(outfile, "typedef %s %s;\n\n",
-                     dtVoid->codegen().c.c_str(),
+                     dtCVoidPtr->codegen().c.c_str(),
                      ft->symbol->cname);
   } else {
   #ifdef HAVE_LLVM
