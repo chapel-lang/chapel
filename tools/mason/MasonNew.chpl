@@ -132,17 +132,11 @@ proc validateChplVersion(chapelVersion) throws {
 proc validatePackageName(dirName) throws {
   if dirName == '' {
     throw new owned MasonError("No package name specified");
-  }
-  else if !isIdentifier(dirName) {
+  } else if !isIdentifier(dirName) {
     throw new owned MasonError("Bad package name '" + dirName +
                         "' - only Chapel identifiers are legal package names.\n" +
                         "Please use mason new %s --name <LegalName>".format(dirName));
-  }
-  else if dirName.count("$") > 0 {
-    throw new owned MasonError("Bad package name '" + dirName +
-                        "' - $ is not allowed in package names");
-  }
-  else {
+  } else {
     return true;
   }
 }

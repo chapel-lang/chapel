@@ -513,10 +513,8 @@ proc isIdentifier(name:string) {
   if name == "" then
     return false;
 
-  // Identifiers can't start with a digit or a $
+  // Identifiers can't start with a digit
   if name[0].isDigit() then
-    return false;
-  if name[0] == "$" then
     return false;
 
   // Check all characters are legal identifier characters
@@ -524,10 +522,9 @@ proc isIdentifier(name:string) {
   // - upper case alphabetic
   // - digits
   // - _
-  // - $
   var ok = true;
   for ch in name {
-    if !(ch == "$" || ch == "_" || ch.isAlnum()) then
+    if !(ch == "_" || ch.isAlnum()) then
       ok = false;
   }
   return ok;

@@ -1,1 +1,2 @@
-Bad package name 'bad$tuff' - $ is not allowed in package names
+Bad package name 'bad$tuff' - only Chapel identifiers are legal package names.
+Please use mason new bad$tuff --name <LegalName>
