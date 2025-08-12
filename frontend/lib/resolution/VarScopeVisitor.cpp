@@ -674,7 +674,7 @@ computeActualFormalIntents(Context* context,
         // formal types are guaranteed to be the same, which they are
         // using the checks below.
         actualPromoted[actualIdx] =
-          promoCtx && promoCtx->promotedFormals().count(fa->formal()->id()) > 0;
+          promoCtx && promoCtx->promotedFormals().count(fa->formalIdx()) > 0;
 
         if (firstCandidate) {
           actualFormalIntents[actualIdx] = intent;

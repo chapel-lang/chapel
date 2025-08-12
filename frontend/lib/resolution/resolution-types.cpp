@@ -48,16 +48,6 @@ namespace resolution {
 using namespace uast;
 using namespace types;
 
-SubstitutionsMap substituteInMap(Context* context,
-                                 const SubstitutionsMap& substituteIn,
-                                 const PlaceholderMap& subs) {
-  SubstitutionsMap into;
-  for (auto [id, qt] : substituteIn) {
-    into.emplace(id, qt.substitute(context, subs));
-  }
-  return into;
-}
-
 const owned<UntypedFnSignature>&
 UntypedFnSignature::getUntypedFnSignature(Context* context, ID id,
                                           UniqueString name,
@@ -1223,13 +1213,17 @@ bool PoiInfo::canReuse(const PoiInfo& check) const {
   return false;
 }
 
+size_t hashPromotedFormalMap(const PromotedFormalMap& map) {
+  return hashUnorderedMap(map);
+}
+
 MostSpecificCandidate
 MostSpecificCandidate::fromTypedFnSignature(ResolutionContext* rc,
                                             const TypedFnSignature* fn,
                                             const FormalActualMap& faMap,
                                             const Scope* scope,
                                             const PoiScope* poiScope,
-                                            const SubstitutionsMap& promotedFormals) {
+                                            const PromotedFormalMap& promotedFormals) {
   auto newFaMap = faMap;
 
   // Earlier, we didn't resolve the body of the function, but when it's an
@@ -1280,7 +1274,7 @@ MostSpecificCandidate::fromTypedFnSignature(ResolutionContext* rc,
                                             const CallInfo& ci,
                                             const Scope* scope,
                                             const PoiScope* poiScope,
-                                            const SubstitutionsMap& promotedFormals) {
+                                            const PromotedFormalMap& promotedFormals) {
   auto faMap = FormalActualMap(fn, ci);
   return MostSpecificCandidate::fromTypedFnSignature(rc, fn, faMap, scope, poiScope, promotedFormals);
 }

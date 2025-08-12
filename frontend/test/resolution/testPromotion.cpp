@@ -443,6 +443,19 @@ static void test20() {
 }
 
 static void test21() {
+  // we can promoted generated binary operator calls
+  runProgram(
+      { "enum color { red = 1, green, blue }",
+        "operator =(ref lhs: color, in rhs: color) {}",
+        "for i in (new R()) : int {}" },
+      [](ErrorGuard& guard, const QualifiedType& t) {
+        assert(!t.isUnknownOrErroneous());
+        assert(t.type()->isIntType());
+      },
+      IterableType("R").definePromotionType("color").defineSerialIterator("color.red"));
+}
+
+static void test22() {
   // Promotion gets triggered for methods
   runProgram(
       { "proc int.foo() do return this;",
@@ -595,6 +608,7 @@ int main() {
     test19();
     test20();
     test21();
+    test22();
   }
 
   testPromotedMethodNotImported();

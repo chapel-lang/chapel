@@ -211,8 +211,19 @@ optional<Immediate> paramToImmediate(Context* context,
         CHPL_ASSERT(et);
 
         if (ep) {
-          auto numericValueOpt =
-            computeNumericValueOfEnumElement(context, ep->value().id);
+          optional<QualifiedType> numericValueOpt = empty;
+          if (context->isQueryRunning(computeNumericValuesOfEnumElements, std::make_tuple(et->id()))) {
+            // we're still determining the numeric values of the enum elements.
+            // This can happen if one enum element's declaration is trying to
+            // cast another, preceding declaration to its numeric type. E.g.:
+            //
+            //   enum A { red = 1; green = red:int + 2 }
+            //
+            // Use the "initial guess".
+            numericValueOpt = initialNumericValueOfEnumElement(context, ep->value().id).first;
+          } else {
+            numericValueOpt = computeNumericValueOfEnumElement(context, ep->value().id);
+          }
 
           if (!numericValueOpt) {
             auto eltAst = parsing::idToAst(context, ep->value().id)->toEnumElement();

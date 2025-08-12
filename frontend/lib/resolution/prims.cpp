@@ -1837,6 +1837,15 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
       break;
 
     case PRIM_DEREF:
+      if (ci.numActuals() == 1) {
+        auto onlyQt = ci.actual(0).type();
+        if (onlyQt.isRef()) {
+          type = QualifiedType(KindProperties::removeRef(onlyQt.kind()),
+                                onlyQt.type());
+        }
+      }
+      break;
+
     case PRIM_SET_REFERENCE:
     case PRIM_GET_END_COUNT:
     case PRIM_GET_DYNAMIC_END_COUNT:

@@ -80,7 +80,7 @@ static MostSpecificCandidate const& mscQuery(Context* context) {
       });
 
   auto faMap = FormalActualMap(typed, ci);
-  auto promotedFormals = SubstitutionsMap();
+  auto promotedFormals = PromotedFormalMap();
 
   assert(faMap.isValid());
 

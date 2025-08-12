@@ -1853,6 +1853,91 @@ QualifiedType getInstantiationType(Context* context,
   return QualifiedType();
 }
 
+std::pair<optional<QualifiedType>, RequiredSignedness> const&
+initialNumericValueOfEnumElement(Context* context, ID elementId) {
+  QUERY_BEGIN(initialNumericValueOfEnumElement, context, elementId);
+
+  auto declId = elementId.parentSymbolId(context);
+  auto elem = parsing::idToAst(context, elementId)->toEnumElement();
+  auto decl = parsing::idToAst(context, declId)->toEnum();
+
+  auto one = QualifiedType::makeParamInt(context, 1);
+
+  ResolutionResultByPostorderID byPostorder;
+  Resolver res = Resolver::createForEnumElements(context, decl, byPostorder);
+
+  const EnumElement* prevElem = nullptr;
+  auto enumType = initialTypeForTypeDecl(context, declId);
+  for (auto elem : decl->enumElements()) {
+    if (elem->id() == elementId) {
+      break;
+    }
+
+    // The resolver will try using "local results" (i.e., consult
+    // byPostorder) for the enum elements, so give them the type they ought
+    // to have.
+    auto paramVal =
+      EnumParam::EnumValue(elem->id(), elem->name().str());
+    auto param =
+        QualifiedType(QualifiedType::PARAM, enumType,
+                      EnumParam::get(context, paramVal));
+    byPostorder.byAst(elem).setType(param);
+
+    prevElem = elem;
+  }
+
+  // Found an initialization expression; use its type.
+  CHPL_ASSERT(elem);
+  optional<QualifiedType> value = empty;
+  if (elem->initExpression()) {
+    elem->traverse(res);
+    auto qt = byPostorder.byAst(elem->initExpression()).type();
+    auto type = qt.type();
+
+    if (qt.isErroneousType() || qt.isGenericOrUnknown()) {
+      // Don't propagate errors if they're unrelated; leave value unknown.
+    } else if (!type->isIntType() && !type->isUintType()) {
+      value = CHPL_TYPE_ERROR(context, EnumInitializerNotInteger, elem, qt);
+    } else if (!qt.isParam()) {
+      value = CHPL_TYPE_ERROR(context, EnumInitializerNotParam, elem, qt);
+    } else {
+      value = qt;
+    }
+  } else {
+    if (prevElem == nullptr) {
+      // we're the first value, without an init expression we're abstract.
+      value = empty;
+    } else {
+      auto& prevValue = initialNumericValueOfEnumElement(context, prevElem->id());
+      if (!prevValue.first) {
+        // the previous value is abstract, which means so are we.
+        value = empty;
+      } else {
+        auto& lastQt = *prevValue.first;
+        if (lastQt.isParam()) {
+          // Previous value was valid, so add one to it.
+          value = Param::fold(context, elem, chpl::uast::PRIM_ADD, lastQt, one);
+        } else {
+          // Previous value was unknown, so we can't add one to it.
+          value = QualifiedType();
+        }
+      }
+    }
+  }
+
+  RequiredSignedness signedness = RS_NONE;
+  if (!value || !value->param()) {
+    // Do nothing.
+  } else if (auto intParam = value->param()->toIntParam()) {
+    signedness = intParam->value() < 0 ? RS_SIGNED : RS_NONE;
+  } else if (auto uintParam = value->param()->toUintParam()) {
+    signedness = uintParam->value() > INT64_MAX ? RS_UNSIGNED : RS_NONE;
+  }
+
+  auto result = std::make_pair(std::move(value), signedness);
+  return QUERY_END(result);
+}
+
 const std::map<ID, QualifiedType>&
 computeNumericValuesOfEnumElements(Context* context, ID node) {
   QUERY_BEGIN(computeNumericValuesOfEnumElements, context, node);
@@ -1863,70 +1948,16 @@ computeNumericValuesOfEnumElements(Context* context, ID node) {
   auto enumNode = ast->toEnum();
   if (!enumNode) return QUERY_END(result);
 
-  ResolutionResultByPostorderID byPostorder;
-  Resolver res = Resolver::createForEnumElements(context, enumNode, byPostorder);
-
-  // The constant 'one' for adding
-  auto one = QualifiedType::makeParamInt(context, 1);
-
-  // A type to track what kind of signedness a value needs.
-  enum RequiredSignedness {
-    RS_NONE,
-    RS_SIGNED,
-    RS_UNSIGNED,
-  };
-
   // First collect all the values, no matter what types they are.
   using ValueVector = std::vector<std::tuple<QualifiedType,
                                              RequiredSignedness,
                                              const EnumElement*>>;
   ValueVector valuesAndAsts;
   for (auto elem : enumNode->enumElements()) {
-    elem->traverse(res);
-    QualifiedType value = {};
-
-    // Found an initialization expression; use its type.
-    if (elem->initExpression()) {
-      auto qt = byPostorder.byAst(elem->initExpression()).type();
-      auto type = qt.type();
-
-      if (qt.isErroneousType() || qt.isGenericOrUnknown()) {
-        // Don't propagate errors if they're unrelated; leave value unknown.
-      } else if (!type->isIntType() && !type->isUintType()) {
-        value = CHPL_TYPE_ERROR(context, EnumInitializerNotInteger, elem, qt);
-      } else if (!qt.isParam()) {
-        value = CHPL_TYPE_ERROR(context, EnumInitializerNotParam, elem, qt);
-      } else {
-        value = qt;
-      }
-    } else {
-      if (valuesAndAsts.empty() || std::get<2>(valuesAndAsts.back()) == nullptr) {
-        // we're either the first value, or all the previous values have
-        // been abstract. We're abstract too -- encode this using a 'null'
-        // elem.
-        elem = nullptr;
-      } else {
-        auto& lastValueInfo = valuesAndAsts.back();
-        auto lastQt = std::get<0>(lastValueInfo);
-        if (lastQt.isParam()) {
-          // Previous value was valid, so add one to it.
-          value = Param::fold(context, elem, chpl::uast::PRIM_ADD, lastQt, one);
-        } else {
-          // Previous value was unknown, so we can't add one to it.
-        }
-      }
-    }
-
-    RequiredSignedness signedness = RS_NONE;
-    if (!value.param()) {
-      // Do nothing.
-    } else if (auto intParam = value.param()->toIntParam()) {
-      signedness = intParam->value() < 0 ? RS_SIGNED : RS_NONE;
-    } else if (auto uintParam = value.param()->toUintParam()) {
-      signedness = uintParam->value() > INT64_MAX ? RS_UNSIGNED : RS_NONE;
-    }
-
-    valuesAndAsts.emplace_back(value, signedness, elem);
+    auto [maybeValue, signedness] =
+        initialNumericValueOfEnumElement(context, elem->id());
+    auto value = maybeValue ? *maybeValue : QualifiedType();
+    valuesAndAsts.emplace_back(value, signedness, maybeValue ? elem : nullptr);
   }
 
   const EnumElement* needsSigned = nullptr;
@@ -2083,6 +2114,90 @@ ID lookupEnumElementByNumericValue(Context* context,
 
   return ID();
 }
+
+const std::pair<ID, bool>&
+scopeResolveEnumElement(Context* context,
+                        const Enum* enumAst,
+                        UniqueString elementName,
+                        const AstNode* nodeForErr) {
+  QUERY_BEGIN(scopeResolveEnumElement, context, enumAst, elementName, nodeForErr);
+  bool ambiguous = false;
+  LookupConfig config = LOOKUP_DECLS | LOOKUP_INNERMOST;
+  auto enumScope = scopeForId(context, enumAst->id());
+  auto ids = lookupNameInScope(context, enumScope,
+                               /* methodLookupHelper */ nullptr,
+                               /* receiverScopeHelper */ nullptr,
+                               elementName, config);
+  if (ids.numIds() == 0) {
+    // Do not report the error here, because it might not be an error.
+    // In particular, we could be in a parenless method call. Callers
+    // will decide whether or not to emit the error.
+  } else if (ids.numIds() > 1) {
+    // multiple candidates. report an error, but the expression most likely has a type given by the enum.
+    std::vector<ID> redefinedIds(ids.numIds());
+    std::copy(ids.begin(), ids.end(), redefinedIds.begin());
+    CHPL_REPORT(context, MultipleEnumElems, nodeForErr, elementName, enumAst,
+                std::move(redefinedIds));
+    ambiguous = true;
+  } else {
+    auto ret = std::make_pair(ids.firstId(), ambiguous);
+    return QUERY_END(ret);
+  }
+
+  auto ret = std::make_pair(ID(), ambiguous);
+  return QUERY_END(ret);
+}
+
+QualifiedType
+typeForScopeResolvedEnumElement(Context* context,
+                                const EnumType* enumType,
+                                const ID& refersToId,
+                                bool ambiguous) {
+  if (!refersToId.isEmpty()) {
+    // Found a single enum element, the type can be a param.
+    auto newParam = Param::getEnumParam(context, refersToId);
+    return QualifiedType(QualifiedType::PARAM, enumType, newParam);
+  } else if (ambiguous) {
+    // multiple candidates. but the expression most likely has a type given by
+    // the enum.
+    return QualifiedType(QualifiedType::CONST_VAR, enumType);
+  } else {
+    return QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
+  }
+}
+
+QualifiedType
+typeForScopeResolvedEnumElement(Context* context,
+                                const ID& enumTypeId,
+                                const ID& refersToId,
+                                bool ambiguous) {
+  auto type = initialTypeForTypeDecl(context, enumTypeId);
+  CHPL_ASSERT(type && type->isEnumType());
+  return typeForScopeResolvedEnumElement(context, type->toEnumType(),
+                                         refersToId, ambiguous);
+}
+
+const QualifiedType&
+typeForEnumElement(Context* context,
+                   const EnumType* enumType,
+                   UniqueString elementName,
+                   const AstNode* nodeForErr) {
+  QUERY_BEGIN(typeForEnumElement, context, enumType, elementName, nodeForErr);
+  auto enumAst = parsing::idToAst(context, enumType->id())->toEnum();
+  CHPL_ASSERT(enumAst != nullptr);
+  auto& [refersToId, ambiguous] =
+    scopeResolveEnumElement(context, enumAst, elementName, nodeForErr);
+  auto qt = typeForScopeResolvedEnumElement(context, enumType, refersToId, ambiguous);
+  if (refersToId.isEmpty() && !ambiguous) {
+    // scopeResolveEnumElement doesn't report a "not found" error because
+    // not being able to find an enum element isn't always an error. Here,
+    // though, we are specifically interested in an element, so report
+    // the error.
+    CHPL_REPORT(context, UnknownEnumElem, nodeForErr, elementName, enumAst);
+  }
+  return QUERY_END(qt);
+}
+
 
 static bool varArgCountMatch(const VarArgFormal* formal,
                              ResolutionResultByPostorderID& r) {
@@ -3582,6 +3697,13 @@ doIsCandidateApplicableInitial(ResolutionContext* rc,
       // the field might not be present on the current type T, but on the
       // element type of T for promotion. Keep trying to find the field by
       // looking at the element type of the current type if we fail.
+      //
+      // note: in `canPass` and elsewhere, we do not consider transitive promotion.
+      // So, stop after a single call to getPromotionType. This code is still
+      // written as a loop in case we want to change that in the future.
+      // See other calls to getPromotionType for other places where we decide
+      // on transitive promotion.
+      bool inPromotion = false;
       while (!qt.isUnknownOrErroneous()) {
         auto containingType = isNameOfField(context, ci.name(), qt.type());
         if (!containingType) {
@@ -3601,7 +3723,10 @@ doIsCandidateApplicableInitial(ResolutionContext* rc,
           return ApplicabilityResult::success(ret);
         }
 
+        if (inPromotion) break;
+
         qt = getPromotionType(context, qt);
+        inPromotion = true;
       }
     }
     // not a candidate
@@ -4282,8 +4407,11 @@ static bool resolveFnCallSpecial(Context* context,
           exprTypeOut = QualifiedType::makeParamString(context, oss.str());
           return true;
         } else if (dstQtEnumType && srcTy->isStringType()) {
-          CHPL_UNIMPL("param string to enum cast");
-          return false;
+          CHPL_ASSERT(srcQt.param()->isStringParam());
+          exprTypeOut = typeForEnumElement(context, dstQtEnumType,
+                                           srcQt.param()->toStringParam()->value(),
+                                           astForErr);
+          return true;
         }
 
         if (srcQtEnumType && srcQtEnumType->isAbstract()) {
@@ -4626,11 +4754,12 @@ considerCompilerGeneratedFunctions(ResolutionContext* rc,
 //
 // This helper serves to consider compiler-generated functions that can't
 // be guessed based on the first argument.
-static const TypedFnSignature*
+static std::vector<const TypedFnSignature*> const&
 considerCompilerGeneratedOperators(ResolutionContext* rc,
                                    const CallInfo& ci,
                                    CandidatesAndForwardingInfo& candidates) {
-  if (!ci.isOpCall() || ci.numActuals() != 2) return nullptr;
+  static const std::vector<const TypedFnSignature*> empty;
+  if (!ci.isOpCall() || ci.numActuals() != 2) return empty;
 
   CHPL_ASSERT(ci.numActuals() >= 1);
   auto& lhs = ci.actual(0).type();
@@ -4638,7 +4767,7 @@ considerCompilerGeneratedOperators(ResolutionContext* rc,
 
   // if we don't need the operator, nothing to do.
   if (!needCompilerGeneratedBinaryOp(rc->context(), lhs, rhs, ci.name())) {
-    return nullptr;
+    return empty;
   }
 
   return getCompilerGeneratedBinaryOp(rc, lhs, rhs, ci.name());
@@ -4650,47 +4779,53 @@ considerCompilerGeneratedCandidates(ResolutionContext* rc,
                                     const CallInfo& ci,
                                     CandidatesAndForwardingInfo& candidates,
                                     std::vector<ApplicabilityResult>* rejected) {
-  const TypedFnSignature* tfs = nullptr;
+  std::vector<const TypedFnSignature*> tfss;
 
-  tfs = considerCompilerGeneratedOperators(rc, ci, candidates);
-  if (tfs == nullptr) {
-    tfs = considerCompilerGeneratedMethods(rc, ci, candidates);
+  for (auto tfs : considerCompilerGeneratedOperators(rc, ci, candidates)){
+    tfss.push_back(tfs);
   }
-  if (tfs == nullptr) {
-    tfs = considerCompilerGeneratedFunctions(rc, ci, candidates);
+  if (tfss.empty()) {
+    if (auto tfs = considerCompilerGeneratedMethods(rc, ci, candidates))
+      tfss.push_back(tfs);
   }
-
-  if (!tfs) return;
-
-  // check if the initial signature matches
-  auto faMap = FormalActualMap(tfs->untyped(), ci);
-  if (!isInitialTypedSignatureApplicable(rc->context(), tfs, faMap, ci).success()) {
-    return;
+  if (tfss.empty()) {
+    if (auto tfs = considerCompilerGeneratedFunctions(rc, ci, candidates))
+      tfss.push_back(tfs);
   }
 
-  // OK, already concrete, store and return
-  if (!tfs->needsInstantiation()) {
-    candidates.addCandidate(tfs);
-    return;
-  }
+  if (tfss.empty()) return;
 
-  // need to instantiate before storing
-  auto instantiated = doIsCandidateApplicableInstantiating(rc,
-                                                           tfs,
-                                                           ci,
-                                                           /* POI */ nullptr);
-  if (!instantiated.success()) {
-    // failed when instantiating, likely due to dependent types.
-    if (rejected) rejected->push_back(instantiated);
-    return;
-  }
+  for (auto tfs : tfss) {
+    // check if the initial signature matches
+    auto faMap = FormalActualMap(tfs->untyped(), ci);
+    if (!isInitialTypedSignatureApplicable(rc->context(), tfs, faMap, ci).success()) {
+      return;
+    }
 
-  if (!instantiated.candidate()->isInitializer() &&
-      checkUninstantiatedFormals(rc->context(), astForErr, instantiated.candidate())) {
-    return; // do not push invalid candidate into list
-  }
+    // OK, already concrete, store and return
+    if (!tfs->needsInstantiation()) {
+      candidates.addCandidate(tfs);
+      return;
+    }
 
-  candidates.addCandidate(instantiated.candidate());
+    // need to instantiate before storing
+    auto instantiated = doIsCandidateApplicableInstantiating(rc,
+                                                             tfs,
+                                                             ci,
+                                                             /* POI */ nullptr);
+    if (!instantiated.success()) {
+      // failed when instantiating, likely due to dependent types.
+      if (rejected) rejected->push_back(instantiated);
+      return;
+    }
+
+    if (!instantiated.candidate()->isInitializer() &&
+        checkUninstantiatedFormals(rc->context(), astForErr, instantiated.candidate())) {
+      return; // do not push invalid candidate into list
+    }
+
+    candidates.addCandidate(instantiated.candidate());
+  }
 }
 
 static const types::QualifiedType& getPromotionTypeQuery(Context* context, types::QualifiedType qt);
@@ -4978,6 +5113,11 @@ gatherAndFilterScalarFields(ResolutionContext* rc,
       auto& idv = ret.idAndFlags(i);
       if (idv.isMethodOrField() && !idv.isMethod()) toReturn.append(idv);
     }
+
+    // note: in `canPass` and elsewhere, we do not consider transitive promotion.
+    // So, stop after a single call to getPromotionType. This code is still
+    // written as a loop in case we want to change that in the future.
+    break;
   }
 
   CandidatesAndForwardingInfo lastResort;
@@ -7317,13 +7457,9 @@ shapeForIteratorQuery(Context* context,
     return QUERY_END(result);
   } else if (auto promoIterator = iter->toPromotionIteratorType()) {
     auto scalarFn = promoIterator->scalarFn();
-    auto untypedScalarFn = scalarFn->untyped();
     auto& formalMap = promoIterator->promotedFormals();
     for (int i = 0; i < scalarFn->numFormals(); i++) {
-      auto anchorId =
-        untypedScalarFn->idIsField() ? scalarFn->id() : untypedScalarFn->formalDecl(i)->id();
-
-      auto promotedEntry = formalMap.find(anchorId);
+      auto promotedEntry = formalMap.find(i);
       if (promotedEntry != formalMap.end()) {
         leaderType = promotedEntry->second;
         break;
@@ -7519,10 +7655,7 @@ resolveTheseCallForPromotionIterator(ResolutionContext* rc,
   auto untypedScalarFn = typedScalarFn->untyped();
   int numFormals = untypedScalarFn->numFormals();
   for (int i = 0; i < numFormals; i++) {
-    auto anchorId =
-      untypedScalarFn->idIsField() ? typedScalarFn->id() : untypedScalarFn->formalDecl(i)->id();
-
-    auto promotionType = promoIt->promotedFormals().find(anchorId);
+    auto promotionType = promoIt->promotedFormals().find(i);
     if (promotionType != promoIt->promotedFormals().end()) {
       receiverTypes.push_back(promotionType->second);
     }

@@ -841,6 +841,118 @@ static void test22() {
   ensureParamEnumStr(qt, "red");
 }
 
+static void test23() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  // Production allows multiple constants to have the same numeric value.
+  // When casting backwards, the first matching constant is picked.
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+      enum color {
+        red = 0,
+        green = 0,
+        blue = 1,
+        gold = 1,
+      }
+      param a = "red" : color;
+      param b = "green" : color;
+      param c = "blue" : color;
+      param d = "gold" : color;
+      )""", {"a", "b", "c", "d"});
+
+  auto param0 = vars.at("a").param();
+  assert(param0 && param0->isEnumParam());
+  assert(param0->toEnumParam()->value().str == "red");
+
+  auto param1 = vars.at("b").param();
+  assert(param1 && param1->isEnumParam());
+  assert(param1->toEnumParam()->value().str == "green");
+
+  auto param2 = vars.at("c").param();
+  assert(param2 && param2->isEnumParam());
+  assert(param2->toEnumParam()->value().str == "blue");
+
+  auto param3 = vars.at("d").param();
+  assert(param3 && param3->isEnumParam());
+  assert(param3->toEnumParam()->value().str == "gold");
+}
+
+// test numeric conversion of enums, with some dependent values
+static void test24() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+      var x = 1;
+      enum color {
+        red = 1,
+        green,
+        blue,
+        gold = (red:int + green:int) * blue:int
+      }
+      type t = color;
+      param a = color.red : int;
+      param b = color.green : int;
+      param c = color.blue : int;
+      param d = color.gold : int;
+      )""", {"t", "a", "b", "c", "d"});
+
+  auto qtT = vars.at("t");
+  auto enumValuesByName = enumConstantValues(context, qtT);
+  ensureParamInt(enumValuesByName.at("red"), 1);
+  ensureParamInt(enumValuesByName.at("green"), 2);
+  ensureParamInt(enumValuesByName.at("blue"), 3);
+  ensureParamInt(enumValuesByName.at("gold"), 9);
+
+  ensureParamInt(vars.at("a"), 1);
+  ensureParamInt(vars.at("b"), 2);
+  ensureParamInt(vars.at("c"), 3);
+  ensureParamInt(vars.at("d"), 9);
+}
+
+static void test25() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+      var x = 1;
+      enum color {
+        red = 1,
+        green,
+        gold = (red:int + green:int) * blue:int,
+        blue,
+      }
+      type t = color;
+      param a = color.red : int;
+      param b = color.green : int;
+      param c = color.blue : int;
+      param d = color.gold : int;
+      )""", {"t", "a", "b", "c", "d"});
+
+  assert(guard.realizeErrors());
+}
+
+// test accessing enum elements via aliases
+static void test26() {
+  auto context = buildStdContext();
+  auto vars = resolveTypesOfVariables(context,
+                         R""""(
+                         enum color {
+                           red, green, blue
+                         }
+                         type c1 = color;
+                         proc c2 type do return color;
+
+                         param x = c1.red;
+                         param y = c2.red;
+                         )"""", {"x", "y"});
+  ensureParamEnumStr(vars.at("x"), "red");
+  ensureParamEnumStr(vars.at("y"), "red");
+}
+
 int main() {
   test1();
   test2();
@@ -865,6 +977,10 @@ int main() {
   test20();
   test21();
   test22();
+  test23();
+  test24();
+  test25();
+  test26();
 
   return 0;
 }

@@ -3499,7 +3499,7 @@ QualifiedType Resolver::typeForId(const ID& id) {
   }
 
   if (asttags::isEnum(parentTag) && asttags::isEnumElement(tag)) {
-    return typeForScopeResolvedEnumElement(parentId, id, /* ambiguous */ false);
+    return typeForScopeResolvedEnumElement(context, parentId, id, /* ambiguous */ false);
   }
 
   // If the id is contained within a class/record/union that we are resolving,
@@ -5667,83 +5667,31 @@ bool Resolver::enter(const Dot* dot) {
   return true;
 }
 
-ID Resolver::scopeResolveEnumElement(const Enum* enumAst,
-                                     UniqueString elementName,
-                                     const AstNode* nodeForErr,
-                                     bool& outAmbiguous) {
-  outAmbiguous = false;
-  LookupConfig config = LOOKUP_DECLS | LOOKUP_INNERMOST;
-  auto enumScope = scopeForId(context, enumAst->id());
-  auto ids = lookupNameInScope(context, enumScope,
-                               /* methodLookupHelper */ nullptr,
-                               /* receiverScopeHelper */ nullptr,
-                               elementName, config);
-  if (ids.numIds() == 0) {
-    // Do not report the error here, because it might not be an error.
-    // In particular, we could be in a parenless method call. Callers
-    // will decide whether or not to emit the error.
-  } else if (ids.numIds() > 1) {
-    // multiple candidates. report an error, but the expression most likely has a type given by the enum.
-    std::vector<ID> redefinedIds(ids.numIds());
-    std::copy(ids.begin(), ids.end(), redefinedIds.begin());
-    CHPL_REPORT(context, MultipleEnumElems, nodeForErr, elementName, enumAst,
-                std::move(redefinedIds));
-    outAmbiguous = true;
-  } else {
-    return ids.firstId();
-  }
-
-  return ID();
-}
-
-QualifiedType
-Resolver::typeForScopeResolvedEnumElement(const EnumType* enumType,
-                                          const ID& refersToId,
-                                          bool ambiguous) {
-  if (!refersToId.isEmpty()) {
-    // Found a single enum element, the type can be a param.
-    auto newParam = Param::getEnumParam(context, refersToId);
-    return QualifiedType(QualifiedType::PARAM, enumType, newParam);
-  } else if (ambiguous) {
-    // multiple candidates. but the expression most likely has a type given by
-    // the enum.
-    return QualifiedType(QualifiedType::CONST_VAR, enumType);
-  } else {
-    return QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
-  }
-}
-
-QualifiedType
-Resolver::typeForScopeResolvedEnumElement(const ID& enumTypeId,
-                                          const ID& refersToId,
-                                          bool ambiguous) {
-  auto type = initialTypeForTypeDecl(context, enumTypeId);
-  CHPL_ASSERT(type && type->isEnumType());
-  return typeForScopeResolvedEnumElement(type->toEnumType(), refersToId,
-                                         ambiguous);
-}
-
-QualifiedType Resolver::typeForEnumElement(const EnumType* enumType,
-                                           UniqueString elementName,
-                                           const AstNode* nodeForErr) {
-  auto enumAst = parsing::idToAst(context, enumType->id())->toEnum();
-  CHPL_ASSERT(enumAst != nullptr);
-  bool ambiguous;
-  auto refersToId = scopeResolveEnumElement(enumAst, elementName,
-                                            nodeForErr, ambiguous);
-  auto qt = typeForScopeResolvedEnumElement(enumType, refersToId, ambiguous);
-  if (refersToId.isEmpty() && !ambiguous) {
-    // scopeResolveEnumElement doesn't report a "not found" error because
-    // not being able to find an enum element isn't always an error. Here,
-    // though, we are specifically interested in an element, so report
-    // the error.
-    CHPL_REPORT(context, UnknownEnumElem, nodeForErr, elementName, enumAst);
-  }
-  return qt;
-}
-
 static bool isDotDomainAccess(const Dot* dot) {
   return dot->field() == USTR("domain");
+}
+
+static bool isEnumAccess(Context* context, const ResolvedExpression& receiver, ID& outEnumId) {
+  auto& receiverType = receiver.type();
+  if (receiverType.kind() != QualifiedType::TYPE) return false;
+
+  // have to handle two cases, both of which need to work:
+  // 1. the type is not an enum, but toId refers to an enum. This can happen
+  //    during scope resolution, where we don't figure out types.
+  // 2. the type is an enum, but the toId does not refer to an enum.
+  //    This can happen if we're using aliasing, via variables or parenless procs.
+
+  if (asttags::isEnum(parsing::idToTag(context, receiver.toId()))) {
+    outEnumId = receiver.toId();
+    return true;
+  }
+
+  if (receiverType.type() && receiverType.type()->isEnumType()) {
+    outEnumId = receiverType.type()->toEnumType()->id();
+    return true;
+  }
+
+  return false;
 }
 
 void Resolver::exit(const Dot* dot) {
@@ -5852,14 +5800,14 @@ void Resolver::exit(const Dot* dot) {
     return;
   }
 
-  if (receiver.type().kind() == QualifiedType::TYPE &&
-      asttags::isEnum(parsing::idToTag(context, receiver.toId()))) {
+  ID tmpEnumId;
+  if (isEnumAccess(context, receiver, tmpEnumId)) {
     // resolve E.x where E is an enum.
-    auto enumAst = parsing::idToAst(context, receiver.toId())->toEnum();
+    auto enumAst = parsing::idToAst(context, tmpEnumId)->toEnum();
     CHPL_ASSERT(enumAst != nullptr);
 
-    bool ambiguous;
-    auto elemId = scopeResolveEnumElement(enumAst, dot->field(), dot, ambiguous);
+    auto& [elemId, ambiguous] =
+      scopeResolveEnumElement(context, enumAst, dot->field(), dot);
     validateAndSetToId(r, dot, elemId);
 
     if (!scopeResolveOnly &&
@@ -5867,7 +5815,7 @@ void Resolver::exit(const Dot* dot) {
         receiver.type().type()->isEnumType()) {
       const EnumType* enumType = receiver.type().type()->toEnumType();
       CHPL_ASSERT(enumType != nullptr);
-      auto qt = typeForScopeResolvedEnumElement(enumType, elemId, ambiguous);
+      auto qt = typeForScopeResolvedEnumElement(context, enumType, elemId, ambiguous);
       r.setType(qt);
       maybeEmitWarningsForId(this, qt, dot, elemId);
     }
