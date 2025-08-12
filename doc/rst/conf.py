@@ -114,7 +114,7 @@ def setup(app):
         app.connect('autodoc-process-signature', process_signature)
 
 # The suffix of source filenames.
-source_suffix = '.rst'
+source_suffix = {'.rst' : 'restructuredtext'}
 
 # The encoding of source files.
 # source_encoding = 'utf-8-sig'
