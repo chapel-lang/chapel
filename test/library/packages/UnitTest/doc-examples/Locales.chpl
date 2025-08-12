@@ -6,7 +6,7 @@ use UnitTest;
 
 /* START_EXAMPLE_1 */
 proc test3(test: borrowed Test) throws {
-  test.addNumLocales(1, 3);
+  test.addNumLocales(5, 3);
 }
 /* STOP_EXAMPLE_1 */
 
