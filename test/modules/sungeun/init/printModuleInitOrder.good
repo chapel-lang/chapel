@@ -21,7 +21,6 @@ Initializing Modules:
         ChapelNumLocales
        DefaultRectangular
         ChapelArray
-         ArrayViewSlice
          ChapelPrivatization
          ChapelDomain
           FormattedIO
