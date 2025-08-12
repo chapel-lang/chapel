@@ -1053,7 +1053,7 @@ module UnitTest {
         }
       }
       if !canRun {
-        const errorMsg = "Required Locales = {%?}".format(", ".join([i in this.dictDomain] i:string));
+        const errorMsg = "Required Locales = %?".format(", ".join([i in this.dictDomain] i:string));
         throw new owned TestIncorrectNumLocales(errorMsg);
       }
     }
