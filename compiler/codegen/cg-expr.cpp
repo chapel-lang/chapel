@@ -4184,6 +4184,25 @@ static GenRet codegenCall(CallExpr* call) {
 
     if (gGenInfo->cfile) {
       // In C, we have to cast the 'void*' to a function type to call it.
+      //
+      // NOTE: This is technically undefined behavior according to the C
+      // standard, see 'Section 6.3.2.3', which states that the 'void*' can
+      // only be safely be cast to a pointer of an "object type" and back.
+      //
+      // A function pointer is not an object type. Indeed, it seems there
+      // are/were some rare platforms on which function pointers and data
+      // pointers can have differing representations, which would make this
+      // cast a bug.
+      //
+      // However, the 'dlsym' function relies on one being able cast a
+      // 'void*' to a function pointer, which implies that they must share
+      // the same representation. Indeed, the POSIX standard does seem
+      // to require that 'void*' be castable to a function pointer and back.
+      //
+      // So if this is ever an issue in the future, we can look into some
+      // workarounds (e.g., require POSIX, or disable dynamic loading on
+      // offending platforms and then deal with this cast issue then).
+      //
       auto& info = localFunctionTypeCodegenInfo(chplFnType);
       auto castType = info.gen.c.c_str();
       base = codegenCast(castType, base);
