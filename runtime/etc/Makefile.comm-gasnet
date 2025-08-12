@@ -41,6 +41,10 @@ ifneq ($(CHPL_MAKE_HOST_PLATFORM),$(CHPL_MAKE_TARGET_PLATFORM))
 #
 LD = $(CXX)
 else
+include $(CHPL_MAKE_HOME)/make/Makefile.isTrue
+ifneq (, $(call isTrue, $(CHPL_IGNORE_GASNET_LD)))
+LD = $(CXX)
+else
 #
 # Use GASNet's choice of C compiler
 #
@@ -66,6 +70,7 @@ LD = $(MPI_CXX)
 else
 LD = $(CXX)
 $(warning GASNET_LD unexpectedly set to '$(GASNET_LD)'.  Please file a Chapel bug against this.)
+endif
 endif
 endif
 endif

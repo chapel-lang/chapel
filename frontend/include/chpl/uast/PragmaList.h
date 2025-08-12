@@ -414,6 +414,7 @@ PRAGMA(MODIFIES_CONST_FIELDS, npr, "modifies const fields", "... of 'this' argum
 PRAGMA(MODULE_FROM_COMMAND_LINE_FILE, npr, "module from command line file", "This is a module that came from a file named on the compiler command line")
 
 PRAGMA(MODULE_INIT, npr, "module init", "a module init function")
+PRAGMA(MODULE_DEINIT, npr, "module deinit", "a module deinit function")
 
 PRAGMA(MODULE_INCLUDED_BY_DEFAULT, ypr, "module included by default", "module is included by default")
 
@@ -425,7 +426,6 @@ PRAGMA(IGNORE_NOINIT, ypr, "ignore noinit", "this type must be initialized")
 PRAGMA(NON_BLOCKING, npr, "non blocking", "with ON/ON_BLOCK, non-blocking on functions")
 PRAGMA(NO_AUTO_DESTROY, ypr, "no auto destroy", ncm)
 PRAGMA(NO_FN_BODY, npr, "no fn body", "function has no body")
-PRAGMA(NO_BORROW_CONVERT, ypr, "no borrow convert", "arguments that are instantiated as owned/shared/etc do not need to convert to borrow")
 PRAGMA(NO_CAPTURE_FOR_TASKING, npr, "no capture for tasking", "does not need to be captured before spawning tasks")
 PRAGMA(NO_CODEGEN, ypr, "no codegen", "do not generate e.g. C code defining this symbol")
 PRAGMA(NO_COPY, ypr, "no copy", "do not apply chpl__initCopy to initialization of a variable")

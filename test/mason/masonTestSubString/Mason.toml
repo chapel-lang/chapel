@@ -2,5 +2,6 @@
 name = "masonTestSubString"
 version = "0.1.0"
 chplVersion = "1.20.0"
+type = "application"
 
 [dependencies]

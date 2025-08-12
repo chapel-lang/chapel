@@ -20,7 +20,7 @@ proc funcMarkedNotGpuizableThatTriesToGpuize() {
 }
 
 pragma "no gpu codegen"
-proc funcMarkedNotGpuizable() { }
+proc funcMarkedNotGpuizable() { return 1; }
 
 on here.gpus[0] {
   if failureMode == 1 {

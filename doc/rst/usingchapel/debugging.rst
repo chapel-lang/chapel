@@ -24,6 +24,19 @@ exists to launch the program within a ``lldb`` session. For best results, you
 should read :ref:`this section <readme-debugging-bkc>` to build Chapel and
 build your application.
 
+You can also just run the program with ``gdb`` or ``lldb`` directly. This
+may be useful, for example if you want to use a graphical debugger like VSCode.
+``--gdb`` and ``--lldb`` are just convenience flags that do the following:
+
+* Set a breakpoint on ``debuggerBreakHere``, i.e. ``b debuggerBreakHere``
+* LLDB only: Enable the Chapel pretty-printer for LLDB, i.e.
+  ``command script import $CHPL_HOME/runtime/etc/debug/chpl_lldb_pretty_print.py``
+* If specified, execute additional debugger commands from a file whose path is
+  set in ``CHPL_RT_DEBUGGER_CMD_FILE``
+
+If you are not using ``--gdb`` or ``--lldb``, make sure to replicate the
+above steps in your debugger of choice for the best experience.
+
 Running in gdb/lldb with a launcher
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -53,6 +66,23 @@ Note that it is the user's responsibility to make sure things are set up
 so the terminal emulator run in the target environment can open its
 display window in the launch environment.
 
+Pretty Printing (LLDB only)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The Chapel pretty-printer for LLDB is automatically loaded when using the
+``--lldb`` flag. If you are using LLDB without this flag, you can load the
+pretty-printer manually by running the following command in LLDB:
+
+.. code-block:: bash
+
+    command script import $CHPL_HOME/runtime/etc/debug/chpl_lldb_pretty_print.py
+
+This pretty-printer understands a number of builtin Chapel types. This
+overrides the default printing for many types when using ``p`` (``print``) or
+``v`` (``frame variable``). To circumvent this, you can use ``v -R`` (``frame
+variable -R``) to print the raw value of a variable without the pretty-printer.
+
+
 Using a graphical debugger
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -63,9 +93,14 @@ The `Debugger.breakpoint` statement
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The :chpl:mod:`Debugger` module provides a parenless function called
-:chpl:proc:`~Debugger.breakpoint`. When the code is compiled and run with debug
-symbols, i.e. ``-g``, the attached debugger will automatically stop at calls to
-this function as a breakpoint.
+:chpl:proc:`~Debugger.breakpoint`. This will cause an attached debugger to
+automatically stop at calls to this function as a breakpoint.
+
+.. note::
+
+   This requires ``b debuggerBreakHere`` to be set in the debugger, which is
+   done automatically by the ``--gdb`` and ``--lldb`` flags. If you need a true
+   debug trap, see the :chpl:proc:`~Debugger.debugTrap` function.
 
 .. _readme-debugging-bkc:
 
@@ -103,7 +138,7 @@ debuggability of the generated executable:
   Flag                                 Description
   ===================================  =========================================
   ``-g``                               Generate debug symbols in the executable
-  ``--ccflags -gdwarf4``               Use DWARF 4 debug information
+  ``--ccflags -gdwarf-4``              Use DWARF 4 debug information
                                        (useful for ``gdb``)
   ``--preserve-inlined-line-numbers``  When code gets inlined (e.g. replacing a
                                        function call with the function body)

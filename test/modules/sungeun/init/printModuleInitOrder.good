@@ -21,7 +21,6 @@ Initializing Modules:
         ChapelNumLocales
        DefaultRectangular
         ChapelArray
-         ArrayViewSlice
          ChapelPrivatization
          ChapelDomain
           FormattedIO
@@ -64,7 +63,6 @@ Initializing Modules:
     ChapelTaskTable
     MemTracking
     ExportWrappers
-    ChapelContext
     ChapelStaticVars
     ChapelDynamicLoading
     AlignedTSupport

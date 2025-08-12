@@ -1010,6 +1010,7 @@ void ensureModuleDeinitFnAnchor(ModuleSymbol* mod, Expr*& anchor) {
 
   if (!deinitFn) {
     deinitFn = new FnSymbol(astr("chpl__deinit_", mod->name));
+    deinitFn->addFlag(FLAG_MODULE_DEINIT);
 
     mod->block->insertAtTail(new DefExpr(deinitFn));
 

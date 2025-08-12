@@ -197,6 +197,7 @@ Compiler Configuration Options:
       --comm-substrate <conduit>      Specify communication conduit
       --gasnet-segment <segment>      Specify GASNet memory segment
       --gmp <gmp-version>             Specify GMP library
+      --gpu <gpu>                     Specify the GPU vendor
       --hwloc <hwloc-impl>            Specify whether to use hwloc
       --launcher <launcher-system>    Specify how to launch programs
       --lib-pic <pic>                 Specify whether to use

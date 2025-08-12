@@ -1461,6 +1461,31 @@ static void test16h() {
       {AssociatedAction::DEINIT,       "M.test@4",   "x"},
     });
 }
+// performing a redundant cast to the same type (treated as 'in' intent) without copy elision
+static void test16i() {
+  testActions("test16i",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        proc test() {
+          var x: R;
+          var tmp = x : R;
+          x;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEFAULT_INIT, "x",          ""},
+      {AssociatedAction::COPY_INIT,    "M.test@2",   ""},
+      {AssociatedAction::DEINIT,       "M.test@7",   "tmp"},
+      {AssociatedAction::DEINIT,       "M.test@7",   "x"},
+    });
+}
 
 // 'out' intent: formal not deinitialized (deinited at call site)
 static void test17a() {
@@ -2060,6 +2085,7 @@ int main() {
   test16f();
   test16g();
   test16h();
+  test16i();
 
   test17a();
   test17b();

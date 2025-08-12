@@ -202,6 +202,7 @@ class AbstractJob(object):
         logging.debug('Test command basename: {0}'.format(cmd_basename))
 
         job_name = '{0}-{1}'.format(prefix, cmd_basename)
+        job_name = job_name.replace('=','-')
         logging.debug('Job name is: {0}'.format(job_name))
         return job_name
 

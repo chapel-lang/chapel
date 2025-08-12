@@ -1054,6 +1054,14 @@ doc/rst/usingchapel/chplenv.rst in your Chapel installation.
     whether you've built the included GMP library in the third-party
     *directory*).
 
+.. _man-gpu:
+.. index:: --gpu
+
+**\--gpu <gpu>**
+
+    Specify the GPU vendor to use for GPU code generation. This flag
+    corresponds with and overrides the $CHPL\_GPU environment variable.
+
 .. _man-hwloc:
 .. index:: --hwloc
 

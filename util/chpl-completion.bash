@@ -93,6 +93,7 @@ _chpl ()
 --gdb \
 --gen-ids \
 --gmp \
+--gpu \
 --gpu-arch \
 --gpu-block-size \
 --gpu-ptxas-enforce-optimization \
@@ -475,6 +476,7 @@ _chpl ()
 --formal-domain-checks \
 --gasnet-segment \
 --gmp \
+--gpu \
 --hdr-search-path \
 --help \
 --help-env \

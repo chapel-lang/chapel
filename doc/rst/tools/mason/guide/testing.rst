@@ -67,7 +67,7 @@ After adding our test, the package structure will be as follows::
    │   └── myPackage.chpl
    ├── target/
    │   ├── debug/
-   │   │   └── myPackage/
+   │   │   └── myPackage
    │   ├── example/
    │   ├── release/
    │   │   └── myPackage

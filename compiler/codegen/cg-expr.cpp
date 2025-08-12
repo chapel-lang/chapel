@@ -153,7 +153,6 @@ static void addNoAliasMetadata(GenRet &ret, Symbol* sym) {
 }
 #endif
 
-#ifdef HAVE_LLVM
 static bool shouldGenerateAsIfCallingDirectly(SymExpr* se, FnSymbol* fn) {
   INT_ASSERT(se->symbol() == fn);
 
@@ -175,7 +174,6 @@ static bool shouldGenerateAsIfCallingDirectly(SymExpr* se, FnSymbol* fn) {
   // Otherwise, treat the mention as indirect.
   return false;
 }
-#endif
 
 GenRet SymExpr::codegen() {
   GenInfo* info = gGenInfo;
@@ -185,9 +183,20 @@ GenRet SymExpr::codegen() {
   if (id == breakOnCodegenID)
     debuggerBreakHere();
 
-  if( outfile ) {
-    if (getStmtExpr() && getStmtExpr() == this)
-      codegenStmt(this);
+  if (outfile) {
+    if (getStmtExpr() && getStmtExpr() == this) codegenStmt(this);
+  }
+
+  if (auto fn = toFnSymbol(var)) {
+    if (shouldGenerateAsIfCallingDirectly(this, fn)) {
+      ret = fn->codegenAsCallBaseExpr();
+    } else {
+      ret = fn->codegenAsValue();
+    }
+    return ret;
+  }
+
+  if (outfile) {
     ret = var->codegen();
   } else {
 #ifdef HAVE_LLVM
@@ -201,12 +210,6 @@ GenRet SymExpr::codegen() {
       addNoAliasMetadata(ret, var);
     } else if(isTypeSymbol(var)) {
       ret.type = toTypeSymbol(var)->codegen().type;
-    } else if(auto fn = toFnSymbol(var)) {
-      if (shouldGenerateAsIfCallingDirectly(this, fn)) {
-        ret = fn->codegenAsCallBaseExpr();
-      } else {
-        ret = fn->codegenAsValue();
-      }
     } else {
       ret = info->lvt->getValue(var->cname);
       if( ! ret.val ) {
@@ -4168,12 +4171,16 @@ static GenRet codegenCall(CallExpr* call) {
     // Use the type from the generated expression since it should be local.
     chplFnType = toFunctionType(base.chplType);
 
-    // And make sure the LLVM type for the function is generated.
-    if (chplFnType) chplFnType->codegenDef();
-
     INT_ASSERT(chplFnType);
     INT_ASSERT(chplFnType->isLocal());
     INT_ASSERT(call->numActuals() == chplFnType->numFormals());
+
+    // TODO (dlongnecke): The C backend requires a cast to a procedure
+    // type in order to call, while the LLVM backend does not.
+    if (gGenInfo->cfile) {
+      INT_FATAL(call, "Cast to C function type not implemented yet!");
+    }
+
   } else if (fn) {
     auto se = toSymExpr(call->baseExpr);
     INT_ASSERT(se && se->symbol() == fn);

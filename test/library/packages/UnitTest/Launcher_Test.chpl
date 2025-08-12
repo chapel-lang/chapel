@@ -2,6 +2,6 @@ private use List;
 use MasonTest;
 
 proc main(args: [] string) {
-  var masonArgs = ["mason", "--recursive", args[1]];
-  masonTest(masonArgs, checkProj=false);
+  var masonArgs = ["test", "--recursive", args[1]];
+  masonTest(masonArgs);
 }

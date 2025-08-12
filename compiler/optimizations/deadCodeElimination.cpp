@@ -425,6 +425,59 @@ static void deadModuleElimination() {
   }
 }
 
+//
+// returns true if the function was removed
+//
+static bool removeVoidFunction(FnSymbol* fn) {
+
+  // do not remove 'main', even if its empty
+  if (fn == chplUserMain) return false;
+  // various functions that should not be removed
+  if (fn->hasEitherFlag(FLAG_EXPORT, FLAG_EXTERN) ||
+      fn->hasFlag(FLAG_MODULE_INIT) ||  fn->hasFlag(FLAG_MODULE_DEINIT) ||
+      fn->hasFlag(FLAG_NO_FN_BODY) || fn->hasFlag(FLAG_DESTRUCTOR) ||
+      fn->hasFlag(FLAG_VIRTUAL) ||
+      fn->hasFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION))
+    return false;
+
+  // don't remove on functions
+  if (fn->hasEitherFlag(FLAG_ON, FLAG_ON_BLOCK))
+    return false;
+
+  // remove functions which return void and do nothing
+  if (fn->retType == dtVoid && fn->body && fn->body->length() == 1) {
+    if (auto lastCall = toCallExpr(fn->body->body.only())) {
+      if (lastCall->isPrimitive(PRIM_RETURN)) {
+        computeAllCallSites(fn);
+        auto calledBy = fn->calledBy;
+        for_alive_in_Vec(CallExpr, call, *calledBy) {
+          // remove the call to the function
+          call->remove();
+        }
+        if (!fn->isUsed()) {
+          fn->defPoint->remove();
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+static void deadFunctionElimination() {
+  // skip minimal modules, since many key functions are stubbed out and then get
+  // removed, which breaks later passes
+  if (fMinimalModules) return;
+
+  bool changed;
+  do {
+    changed = false;
+    for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
+      changed = removeVoidFunction(fn) || changed;
+    }
+  } while (changed);
+}
+
 
 void deadCodeElimination() {
   if (!fNoDeadCodeElimination) {
@@ -432,8 +485,9 @@ void deadCodeElimination() {
 
     deadStringLiteralElimination();
 
+    deadFunctionElimination();
 
-    forv_Vec(FnSymbol, fn, gFnSymbols) {
+    for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
 
       // 2014/10/17   Noakes and Elliot
       // Dead Block Elimination may convert valid loops to "malformed" loops.

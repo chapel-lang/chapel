@@ -19,9 +19,9 @@ proc main() {
   testN6(A, rankChangeVarA); // does not alias
 }
 
-proc testA1(a, b) { }
-proc testA2(a, b) { }
-proc testN3(a, b) { }
-proc testN4(a, b) { }
-proc testN5(a, b) { }
-proc testN6(a, b) { }
+proc testA1(a, b) { return 1; }
+proc testA2(a, b) { return 1; }
+proc testN3(a, b) { return 1; }
+proc testN4(a, b) { return 1; }
+proc testN5(a, b) { return 1; }
+proc testN6(a, b) { return 1; }

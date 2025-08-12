@@ -32,6 +32,9 @@ elif [ -z "$(type module 2> /dev/null)" ] ; then
     exit 2
 fi
 
+# Ensure we're using the expected Python version
+source /lus/scratch/chapelu/chpl-deps/horizon/load_chpl_deps_wb.bash
+
 # Variable set by Jenkins to indicate type of whitebox. If it is not set, assume cray-xc.
 platform=${CRAY_PLATFORM_FROM_JENKINS:-cray-xc}
 log_info "Using platform: ${platform}"

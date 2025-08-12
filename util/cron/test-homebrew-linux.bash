@@ -66,6 +66,9 @@ cd ${CHPL_HOME}/util/packaging/homebrew
 cp ${CHPL_HOME}/util/packaging/homebrew/chapel.rb  ${CHPL_HOME}/util/packaging/docker/test
 cp $location ${CHPL_HOME}/util/packaging/docker/test
 
+log_info "Chapel formula to be tested:"
+cat ${CHPL_HOME}/util/packaging/homebrew/chapel.rb
+
 # This will start a docker container that is similar to the one used by homebrew-ci and test the homebrew installation inside it.
 source ${CHPL_HOME}/util/packaging/docker/test/homebrew_ci.bash
 
