@@ -38,7 +38,7 @@ module ChapelDynamicLoading {
       if emitErrors {
         param v = CHPL_LLVM_VERSION;
         compilerError('The experimental procedure pointer implementation ' +
-                      'is not currently supported with LLVM-' + v, 2);
+                      'is not currently supported with LLVM-' + v);
       }
       return true;
     }
