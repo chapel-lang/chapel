@@ -81,7 +81,7 @@ hexDigit         [0-9a-fA-F]
 
 letter           [_a-zA-Z]
 
-ident            {letter}({letter}|{digit}|"$")*
+ident            {letter}({letter}|{digit})*
 queriedIdent     \?{ident}
 atIdent          \@{ident}
 

@@ -109,7 +109,6 @@ following syntax:
    legal-identifier-char:
      letter-or-underscore
      digit
-     '$'
 
    letter-or-underscore:
      letter
