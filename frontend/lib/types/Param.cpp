@@ -215,7 +215,10 @@ optional<Immediate> paramToImmediate(Context* context,
           if (context->isQueryRunning(computeNumericValuesOfEnumElements, std::make_tuple(et->id()))) {
             // we're still determining the numeric values of the enum elements.
             // This can happen if one enum element's declaration is trying to
-            // cast another, preceding declaration to its numeric type.
+            // cast another, preceding declaration to its numeric type. E.g.:
+            //
+            //   enum A { red = 1; green = red:int + 2 }
+            //
             // Use the "initial guess".
             numericValueOpt = initialNumericValueOfEnumElement(context, ep->value().id).first;
           } else {

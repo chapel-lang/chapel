@@ -2164,7 +2164,7 @@ getCompilerGeneratedBinaryOp(ResolutionContext* rc,
 
     CHPL_ASSERT(tfs == nullptr || tfs->untyped()->name() == name);
     if (tfs) result.push_back(tfs);
-  } while (false);
+  }
 
   return CHPL_RESOLUTION_QUERY_END(result);
 }

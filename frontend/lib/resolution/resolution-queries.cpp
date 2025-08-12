@@ -1853,18 +1853,6 @@ QualifiedType getInstantiationType(Context* context,
   return QualifiedType();
 }
 
-static std::vector<const EnumElement*> const&
-enumElementsForEnum(Context* context, const Enum* node) {
-  QUERY_BEGIN(enumElementsForEnum, context, node);
-
-  std::vector<const EnumElement*> result;
-  for (auto elem : node->enumElements()) {
-    result.push_back(elem);
-  }
-
-  return QUERY_END(result);
-}
-
 std::pair<optional<QualifiedType>, RequiredSignedness> const&
 initialNumericValueOfEnumElement(Context* context, ID elementId) {
   QUERY_BEGIN(initialNumericValueOfEnumElement, context, elementId);
@@ -1878,12 +1866,10 @@ initialNumericValueOfEnumElement(Context* context, ID elementId) {
   ResolutionResultByPostorderID byPostorder;
   Resolver res = Resolver::createForEnumElements(context, decl, byPostorder);
 
-  auto& allElements = enumElementsForEnum(context, decl);
-  size_t myIdx = 0;
+  const EnumElement* prevElem = nullptr;
   auto enumType = initialTypeForTypeDecl(context, declId);
-  for (size_t i = 0; i < allElements.size(); i++) {
-    if (allElements[i]->id() == elementId) {
-      myIdx = i;
+  for (auto elem : decl->enumElements()) {
+    if (elem->id() == elementId) {
       break;
     }
 
@@ -1891,11 +1877,13 @@ initialNumericValueOfEnumElement(Context* context, ID elementId) {
     // byPostorder) for the enum elements, so give them the type they ought
     // to have.
     auto paramVal =
-      EnumParam::EnumValue(allElements[i]->id(), allElements[i]->name().str());
+      EnumParam::EnumValue(elem->id(), elem->name().str());
     auto param =
         QualifiedType(QualifiedType::PARAM, enumType,
                       EnumParam::get(context, paramVal));
-    byPostorder.byAst(allElements[i]).setType(param);
+    byPostorder.byAst(elem).setType(param);
+
+    prevElem = elem;
   }
 
   // Found an initialization expression; use its type.
@@ -1916,11 +1904,11 @@ initialNumericValueOfEnumElement(Context* context, ID elementId) {
       value = qt;
     }
   } else {
-    if (myIdx == 0) {
+    if (prevElem == nullptr) {
       // we're the first value, without an init expression we're abstract.
       value = empty;
     } else {
-      auto& prevValue = initialNumericValueOfEnumElement(context, allElements[myIdx - 1]->id());
+      auto& prevValue = initialNumericValueOfEnumElement(context, prevElem->id());
       if (!prevValue.first) {
         // the previous value is abstract, which means so are we.
         value = empty;
