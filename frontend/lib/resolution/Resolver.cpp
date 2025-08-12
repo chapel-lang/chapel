@@ -5686,7 +5686,7 @@ static bool isEnumAccess(Context* context, const ResolvedExpression& receiver, I
     return true;
   }
 
-  if (receiverType.type()->isEnumType()) {
+  if (receiverType.type() && receiverType.type()->isEnumType()) {
     outEnumId = receiverType.type()->toEnumType()->id();
     return true;
   }
