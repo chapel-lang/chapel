@@ -29,7 +29,6 @@
 #include "chpl/uast/chpl-syntax-printer.h"
 
 #include <vector>
-#include <string.h>
 
 namespace {
 
@@ -1493,10 +1492,6 @@ void Visitor::checkReservedSymbolName(const NamedDecl* node) {
     error(node, "attempt to redefine reserved word '%s'.", name.c_str());
   } else if (isNameReservedType(name)) {
     error(node, "attempt to redefine reserved type '%s'.", name.c_str());
-  }
-
-  if(strchr(name.c_str(), '$') != nullptr) {
-    warn(node, "Using '$' in identifiers is deprecated; rename this to not use a '$'.");
   }
 }
 

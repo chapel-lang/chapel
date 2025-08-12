@@ -150,7 +150,6 @@ const char* legalizeName(const char* name) {
       case '!': ret += "_EXCLAMATION_"; break;
       case '#': ret += "_POUND_";       break;
       case '?': ret += "_QUESTION_";    break;
-      case '$': ret += "_DOLLAR_";      break;
       case '~': ret += "_TILDE_";       break;
       case ':': ret += "_COLON_";       break;
       case '.': ret += "_DOT_";         break;

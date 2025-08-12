@@ -52,14 +52,14 @@ module Treap {
   //
   @chpldoc.nodoc
   class _LockWrapper {
-    var lock$ = new _lockType();
+    var lock = new _lockType();
 
     inline proc lock() {
-      lock$.lock();
+      lock.lock();
     }
 
     inline proc unlock() {
-      lock$.unlock();
+      lock.unlock();
     }
   }
 
@@ -145,13 +145,13 @@ module Treap {
     var _root: nodeType = nil;
 
     @chpldoc.nodoc
-    var _lock$ = if parSafe then new _LockWrapper() else none;
+    var _lock = if parSafe then new _LockWrapper() else none;
 
     @chpldoc.nodoc
     inline proc _enter() {
       if parSafe then
         on this {
-          _lock$.lock();
+          _lock.lock();
         }
     }
 
@@ -159,7 +159,7 @@ module Treap {
     inline proc _leave() {
       if parSafe then
         on this {
-          _lock$.unlock();
+          _lock.unlock();
         }
     }
 
