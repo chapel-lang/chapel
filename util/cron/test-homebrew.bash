@@ -54,6 +54,9 @@ sed_command="sed -i.bak -e "
 $sed_command "s#url.*#url \"file\:///$location\"#" chapel.rb
 $sed_command "1s/sha256.*/sha256 \"$sha256\"/;t" -e "1,/sha256.*/s//sha256 \"$sha256\"/" chapel.rb
 
+log_info "Chapel formula to be tested:"
+cat chapel.rb
+
 # Test if homebrew install using the chapel formula works.
 brew upgrade
 brew uninstall --force chapel
