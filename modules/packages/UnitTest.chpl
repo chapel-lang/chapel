@@ -67,42 +67,27 @@ UnitTest module also provides multiple methods for specifying test Metadata:
 Examples
 --------
 
+All examples are run using the `mason test` command, which acts as a test
+runner for the UnitTest module. See :ref:`testing-with-mason` for more info.
+
+.. note::
+
+   These examples can also be run standalone, but that output is not shown here.
+
 Basic Usage
 ^^^^^^^^^^^
 
 Here is a minimal example demonstrating how to use the UnitTest module:
 
-.. code-block:: chapel
-
-   use UnitTest;
-
-   proc celsius2fahrenheit(x) {
-     // we should be returning "(x: real * 9/5)+32"
-     return (x * 9/5)+32;
-   }
-
-   proc test_temperature(test: borrowed Test) throws {
-     // we were expecting 98.6 but since we missed typecasting
-     // the above function returned 98.
-     test.assertFalse(celsius2fahrenheit(37) == 98);
-   }
-
-   UnitTest.main();
+.. literalinclude:: ../../../../test/library/packages/UnitTest/doc-examples/BasicUsage.chpl
+    :language: chapel
+    :start-after: START_EXAMPLE
+    :end-before: STOP_EXAMPLE
 
 Output:
 
-.. code-block:: bash
-
-  ======================================================================
-  FAIL xyz.chpl: test_temperature()
-  ----------------------------------------------------------------------
-  AssertionError: assertFalse failed. Given expression is True
-
-  ----------------------------------------------------------------------
-  Run 1 test
-
-  FAILED failures = 1
-
+.. literalinclude:: ../../../../test/library/packages/UnitTest/doc-examples/BasicUsage.good
+    :language: bash
 
 Skipping Tests
 ^^^^^^^^^^^^^^^
@@ -110,135 +95,67 @@ Skipping Tests
 You can skip tests unconditionally with :proc:`~Test.skip` and
 conditionally with :proc:`~Test.skipIf`:
 
-.. code-block:: chapel
-
-   use UnitTest;
-
-   /* calculates factorial */
-   proc factorial(x: int): int {
-     return if x == 0 then 1 else x * factorial(x-1);
-   }
-
-   /*Conditional skip*/
-   proc test1(test: borrowed Test) throws {
-     test.skipIf(factorial(0) != 1,"Base condition is wrong in factorial");
-     test.assertTrue(factorial(5) == 120);
-   }
-
-   /*Unconditional skip*/
-   proc test2(test: borrowed Test) throws {
-     test.skip("Skipping the test directly");
-   }
-
-   UnitTest.main();
-
+.. literalinclude:: ../../../../test/library/packages/UnitTest/doc-examples/Skip.chpl
+    :language: chapel
+    :start-after: START_EXAMPLE
+    :end-before: STOP_EXAMPLE
 
 Output:
 
-.. code-block:: bash
-
-  ======================================================================
-  SKIPPED xyz.chpl: test2()
-  ----------------------------------------------------------------------
-  TestSkipped: Skipping the test directly
-
-  ----------------------------------------------------------------------
-  Run 1 test
-
-  OK skipped = 1
-
+.. literalinclude:: ../../../../test/library/packages/UnitTest/doc-examples/Skip.good
+    :language: bash
 
 Specifying locales
 ^^^^^^^^^^^^^^^^^^
 
-You can specify the num of locales of a test using these method.
+You can specify the num of locales of a test using these methods.
 
 :proc:`~Test.addNumLocales`
 :proc:`~Test.maxLocales`
 :proc:`~Test.minLocales`
 
-Here is an example demonstrating how to use the :proc:`~Test.addNumLocales`
+Here is an example demonstrating how to use :proc:`~Test.addNumLocales`
 
-.. code-block:: chapel
-
-  proc test_square(test: borrowed Test) throws {
-    test.addNumLocales(5);
-    var A: [Locales.domain] int;
-    coforall i in 0..numLocales-1 with (ref A) {
-      on Locales(i) {
-        A[i+1] = (i+1)*(i+1);
-      }
-    }
-    test.assertTrue(A[5]==25);
-  }
+.. literalinclude:: ../../../../test/library/packages/UnitTest/doc-examples/LocalesSquare.chpl
+    :language: chapel
+    :start-after: START_EXAMPLE
+    :end-before: STOP_EXAMPLE
 
 Output:
 
-.. code-block:: bash
+.. literalinclude:: ../../../../test/library/packages/UnitTest/doc-examples/LocalesSquare.good
+    :language: bash
 
-  ----------------------------------------------------------------------
-  Run 1 test
-
-  OK
 
 You can also specify multiple locales on which your code can run.
 
-.. code-block:: chapel
+.. literalinclude:: ../../../../test/library/packages/UnitTest/doc-examples/Locales.chpl
+    :language: chapel
+    :start-after: START_EXAMPLE_1
+    :end-before: STOP_EXAMPLE_1
 
-  proc test3(test: borrowed Test) throws {
-    test.addNumLocales(16,8);
-  }
-
-You can mention the range of locales using :proc:`~Test.maxLocales` and
+You can specify the range of locales using :proc:`~Test.maxLocales` and
 :proc:`~Test.minLocales`
 
-.. code-block:: chapel
-
-  proc test4(test: borrowed Test) throws {
-    test.maxLocales(4);
-    test.minLocales(2);
-  }
+.. literalinclude:: ../../../../test/library/packages/UnitTest/doc-examples/Locales.chpl
+    :language: chapel
+    :start-after: START_EXAMPLE_2
+    :end-before: STOP_EXAMPLE_2
 
 Specifying Dependencies
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 You can specify the order in which tests should run using :proc:`~Test.dependsOn`:
 
-.. code-block:: chapel
-
-   use UnitTest;
-
-   var factorials: list(int);
-
-   // calculates factorial
-   proc factorial(x: int): int {
-     return if x == 0 then 1 else x * factorial(x-1);
-   }
-
-   proc testFillFact(test: borrowed Test) throws {
-     test.skipIf(factorial(0) != 1,"Base condition is wrong in factorial");
-     for i in 1..10 do
-       factorials.pushBack(factorial(i));
-   }
-
-   proc testSumFact(test: borrowed Test) throws {
-     test.dependsOn(testFillFact);
-     var s = 0;
-     for i in factorials.indices do
-       s += factorials[i];
-     test.assertGreaterThan(s,0);
-   }
-
-   UnitTest.main();
+.. literalinclude:: ../../../../test/library/packages/UnitTest/doc-examples/Dependencies.chpl
+    :language: chapel
+    :start-after: START_EXAMPLE
+    :end-before: STOP_EXAMPLE
 
 Output:
 
-.. code-block:: bash
-
-  ----------------------------------------------------------------------
-  Run 2 tests
-
-  OK
+.. literalinclude:: ../../../../test/library/packages/UnitTest/doc-examples/Dependencies.good
+    :language: bash
 
 */
 module UnitTest {

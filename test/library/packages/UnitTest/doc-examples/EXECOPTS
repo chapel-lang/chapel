@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+chpl_comm=$($CHPL_HOME/util/chplenv/chpl_comm.py)
+
+if [[ $chpl_comm == "none" ]]; then
+  echo ""
+else
+  echo "--setComm=$chpl_comm"
+fi

@@ -1,0 +1,5 @@
+BasicUsage.chpl # BasicUsage.good
+Skip.chpl # Skip.good
+LocalesSquare.chpl # LocalesSquare.good
+Locales.chpl # Locales.good
+Dependencies.chpl # Dependencies.good

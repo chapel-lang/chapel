@@ -1,0 +1,10 @@
+
+======================================================================
+SKIPPED LocalesSquare.chpl: test_square()
+----------------------------------------------------------------------
+Not a MultiLocale Environment. $CHPL_COMM = none
+TestIncorrectNumLocales: in LocalesSquare.chpl:8 - Required Locales = 5
+
+----------------------------------------------------------------------
+
+OK (skipped = 1 )
