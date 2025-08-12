@@ -96,7 +96,6 @@ static const char* errorExpectedSubType = R"""(
     3 | f(int);
       |   ⎺⎺⎺
       |
-  Formals with kind 'type' expect the actual to be a subtype, but 'int(64)' is not a subtype of 'string'.
 )""";
 
 static const char* progIncompatibleMgr = R"""(

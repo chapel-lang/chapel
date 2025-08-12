@@ -1191,6 +1191,14 @@ CanPassResult CanPassResult::canPassScalar(Context* context,
             }
           }
         }
+
+        // See ResolutionCandidate::shouldAllowCoercions: for TYPE
+        // formals, only class type coercions are allowed.
+        if (formalQT.kind() == QualifiedType::TYPE &&
+            (!actualT->isClassType() || !formalT->isClassType())) {
+          break;
+        }
+
         return canPassSubtypeNonBorrowing(context, actualT, formalT);
       }
 
