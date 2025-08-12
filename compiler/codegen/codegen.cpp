@@ -2657,7 +2657,7 @@ Type* getNamedTypeDuringCodegen(const char* name) {
   return NULL;
 }
 
-static std::map<FunctionType*, FunctionTypeCodegenInfo>
+static std::unordered_map<FunctionType*, FunctionTypeCodegenInfo>
 chapelFunctionTypeToCodegenInfo;
 
 const FunctionTypeCodegenInfo& localFunctionTypeCodegenInfo(FunctionType* ft) {
