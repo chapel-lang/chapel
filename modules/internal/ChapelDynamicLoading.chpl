@@ -39,18 +39,6 @@ module ChapelDynamicLoading {
       }
       return true;
     }
-
-    // LLVM 14 uses typed pointers, which the backend doesn't support yet.
-    param unsupportedLlvmVersion = CHPL_LLVM_VERSION == "14";
-
-    if CHPL_TARGET_COMPILER == "llvm" && unsupportedLlvmVersion {
-      if emitErrors {
-        param v = CHPL_LLVM_VERSION;
-        compilerError('The experimental procedure pointer implementation ' +
-                      'is not currently supported with LLVM-' + v);
-      }
-      return true;
-    }
     return false;
   }
 
