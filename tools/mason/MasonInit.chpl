@@ -91,6 +91,11 @@ proc masonInit(args: [] string) throws {
     const path = if dirName == '' then '.' else dirName;
     if packageName.size > 0 then name = packageName;
 
+    if !isLightweight {
+      validatePackageName(dirName=name);
+    }
+
+
     if dirName != '' then
       if !isDir(path) then
         throw new owned MasonError("Directory does not exist: " + path +
