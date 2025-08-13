@@ -271,11 +271,15 @@ private proc runTests(show: bool, run: bool, parallel: bool,
       timeElapsed.start();
       for test in testNames {
         var testPath: string;
-        if customTest {
-          testPath = "".join(cwd,"/",test);
-        }
-        else {
-          testPath = "".join('test/', test);
+        if isAbsPath(test) {
+          testPath = test;
+        } else {
+          if customTest {
+            testPath = "".join(cwd,"/",test);
+          }
+          else {
+            testPath = "".join('test/', test);
+          }
         }
         const testName = basename(stripExt(test, ".chpl"));
 
@@ -410,12 +414,10 @@ proc getTestPath(fullPath: string, testPath = "") : string {
   var split = splitPath(fullPath);
   if split[1] == "test" {
     return testPath;
-  }
-  else {
+  } else {
     if testPath == "" {
       return getTestPath(split[0], split[1]);
-    }
-    else {
+    } else {
       var appendedPath = joinPath(split[1], testPath);
       return getTestPath(split[0], appendedPath);
     }
