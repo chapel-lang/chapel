@@ -1,4 +1,0 @@
-# lou.ncac.gwu.edu 
-Usage:
-   mpirun [-a[rray] array] [-cpr] [-d[ir] dir] [-f[ile] file] [-miser]
-   [-p[refix] prefix] [-stats] [-v[erbose]] entry [:entry]

@@ -1,7 +1,0 @@
-Makefile.in
-/aclocal.m4
-/configure
-/gasnet_config.h.in
-/gasnet_config.h.in~
-/config-aux/compile
-/stamp-h.in

@@ -1,3 +1,0 @@
-# jacquard.nersc.gov
-Unknown option "-h"
-usage: mpirun [-verbose] [-noenv] [-np N] a.out [args]

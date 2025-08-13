@@ -1,4 +1,0 @@
-Usage:
-   mpirun [-a[rray] array] [-d[ir] dir] [-f[ile] file]
-   [-p[refix] prefix] [-progress] [-stats] [-v[erbose]] entry [:entry]
-
