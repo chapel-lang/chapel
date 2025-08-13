@@ -1206,8 +1206,12 @@ def main():
     #   or not this is a good idea, but preserving it for now for backwards
     #   compatibility.
     #
+    filename = None
     if (perftest and os.access(PerfDirFile('EXECOPTS'),os.R_OK)): # ./PERFEXECOPTS
         filename = PerfDirFile('EXECOPTS')
+    elif os.access('./EXECOPTS',os.R_OK):
+        filename = './EXECOPTS'
+    if filename is not None:
         tgeo = ReadFileWithComments(filename)
         if len(tgeo) >= 1:
             globalExecopts = shlex.split(tgeo[0])
@@ -1215,16 +1219,6 @@ def main():
                 sys.stdout.write(
                     "[Warning: multiple lines of options in %s, only using the first one]\n"
                     % filename
-                )
-        else:
-            globalExecopts = list()
-    elif os.access('./EXECOPTS',os.R_OK):
-        tgeo = ReadFileWithComments('./EXECOPTS')
-        if len(tgeo) >= 1:
-            globalExecopts = shlex.split(tgeo[0])
-            if len(tgeo) > 1:
-                sys.stdout.write(
-                    "[Warning: multiple lines of options in EXECOPTS, only using the first one]\n"
                 )
         else:
             globalExecopts = list()
