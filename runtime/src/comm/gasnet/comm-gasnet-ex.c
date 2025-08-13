@@ -1010,6 +1010,12 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
 //
 int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status) {
 
+#ifdef CHPL_TARGET_PLATFORM_DARWIN
+  // mac has some issues with debugserver, users will likely run into issues
+  // warn them about it
+  chpl_warning("Running Chapel with COMM=gasnet and lldb is not well supported on MacOS", 0, 0);
+#endif
+
   const char* lldb_server = chpl_env_rt_get("LLDB_DEBUG_SERVER_PATH",
 #ifdef CHPL_TARGET_PLATFORM_DARWIN
     "/Library/Developer/CommandLineTools/Library/PrivateFrameworks/LLDB.framework/Resources/debugserver"
