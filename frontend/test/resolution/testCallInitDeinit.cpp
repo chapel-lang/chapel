@@ -1935,6 +1935,56 @@ static void testActions(const char* test,
 //   */
 // }
 
+// Copying tuple expr
+static void test27a() {
+  testActions("test27a",
+    R""""(
+      module M {
+        record R { }
+        proc test() {
+          var r = new R();
+
+          var x = (1, r);
+          r;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
+      {AssociatedAction::INIT_OTHER, "x",           ""},
+        {AssociatedAction::ASSIGN,  "x",      "M.test@4"},
+        {AssociatedAction::COPY_INIT,  "x",   "M.test@3"},
+      {AssociatedAction::DEINIT,     "M.test@9",   "r"}
+    });
+}
+
+// Copying tuple variable
+static void test27b() {
+  testActions("test27b",
+    R""""(
+      module M {
+        record R { }
+        proc test() {
+          var r = new R();
+          var tup = (1, r);
+
+          var x = tup;
+          tup;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
+      {AssociatedAction::INIT_OTHER, "tup",         ""},
+        {AssociatedAction::ASSIGN,  "tup",      "M.test@4"},
+        {AssociatedAction::COPY_INIT,  "tup",   "M.test@3"},
+      {AssociatedAction::COPY_INIT, "x",            ""},
+        {AssociatedAction::ASSIGN,  "x",      "M.test@4"},
+        {AssociatedAction::COPY_INIT,  "x",   "M.test@3"},
+      {AssociatedAction::DEINIT,     "M.test@11",   "r"}
+    });
+}
+
 // Copying then moving tuple
 static void test27() {
   testActions("test27",
@@ -2222,6 +2272,8 @@ int main() {
   // test25();
   // test26();
 
+  test27a();
+  test27b();
   test27();
   test28();
   test29();
