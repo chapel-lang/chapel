@@ -1929,49 +1929,49 @@ static void testActions(const char* test,
 //   */
 // }
 
-// // Copying then moving tuple
-// static void test27() {
-//   testActions("test27",
-//     R""""(
-//       module M {
-//         record R { }
-//         proc test() {
-//           var r = new R();
+// Copying then moving tuple
+static void test27() {
+  testActions("test27",
+    R""""(
+      module M {
+        record R { }
+        proc test() {
+          var r = new R();
 
-//           var x = (1, r);
-//           var y = x;
-//         }
-//       }
-//     )"""",
-//     {
-//       {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
-//       {AssociatedAction::INIT_OTHER, "x",           ""},
-//       {AssociatedAction::DEINIT,     "M.test@10",   "r"}
-//     });
-// }
+          var x = (1, r);
+          var y = x;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
+      {AssociatedAction::INIT_OTHER, "x",           ""},
+      {AssociatedAction::DEINIT,     "M.test@10",   "r"}
+    });
+}
 
-// // Copying tuple twice
-// static void test28() {
-//   testActions("test28",
-//     R""""(
-//       module M {
-//         record R { }
-//         proc test() {
-//           var r = new R();
+// Copying tuple twice
+static void test28() {
+  testActions("test28",
+    R""""(
+      module M {
+        record R { }
+        proc test() {
+          var r = new R();
 
-//           var x = (1, r);
-//           var y = x;
-//           x;
-//         }
-//       }
-//     )"""",
-//     {
-//       {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
-//       {AssociatedAction::INIT_OTHER, "x",           ""},
-//       {AssociatedAction::COPY_INIT,  "y",           ""},
-//       {AssociatedAction::DEINIT,     "M.test@11",   "r"}
-//     });
-// }
+          var x = (1, r);
+          var y = x;
+          x;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
+      {AssociatedAction::INIT_OTHER, "x",           ""},
+      {AssociatedAction::COPY_INIT,  "y",           ""},
+      {AssociatedAction::DEINIT,     "M.test@11",   "r"}
+    });
+}
 
 // Creating reference to tuple, then copying from it
 static void test29() {
@@ -2216,8 +2216,8 @@ int main() {
   // test25();
   // test26();
 
-  // test27();
-  // test28();
+  test27();
+  test28();
   test29();
   test30();
   test31();
