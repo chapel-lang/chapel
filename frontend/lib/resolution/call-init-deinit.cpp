@@ -113,6 +113,15 @@ struct CallInitDeinit : VarScopeVisitor {
                      ID deinitedId,
                      const QualifiedType& type,
                      RV& rv);
+
+  bool validateTuplesForAssignOrInit(const AstNode* ast,
+                                     const QualifiedType& lhsType,
+                                     const QualifiedType& rhsType);
+  void resolveTupleInit(const AstNode* ast,
+                        const AstNode* rhsAst,
+                        const QualifiedType& lhsType,
+                        const QualifiedType& rhsType,
+                        RV& rv);
   void resolveTupleUnpackAssign(const Tuple* lhsTuple,
                                 const AstNode* astForErr,
                                 const QualifiedType& initialLhsType,
@@ -591,6 +600,61 @@ getLhsForTupleUnpackAssign(Context* context,
   return ret;
 }
 
+bool CallInitDeinit::validateTuplesForAssignOrInit(const AstNode* ast,
+                                     const QualifiedType& lhsType,
+                                     const QualifiedType& rhsType) {
+  // Make sure that both the LHS and RHS have types
+  if (!lhsType.hasTypePtr()) {
+    context->error(ast, "Unknown lhs type in tuple assign or init");
+    return false;
+  }
+  if (!rhsType.hasTypePtr()) {
+    context->error(ast, "Unknown rhs type in tuple assign or init");
+    return false;
+  }
+
+  const TupleType* lhsTupleType = nullptr;
+  const TupleType* rhsTupleType = nullptr;
+
+  // Then, check that lhsType and rhsType are tuples
+  if (!(lhsTupleType = lhsType.type()->toTupleType())) {
+    context->error(ast, "lhs type is not tuple in tuple assign or init");
+    return false;
+  }
+  if (!(rhsTupleType = rhsType.type()->toTupleType())) {
+    context->error(ast, "rhs type is not tuple in tuple assign or init");
+    return false;
+  }
+
+  // Then, check that they have the same size
+  if (lhsTupleType->numElements() != rhsTupleType->numElements()) {
+    context->error(ast, "tuple size mismatch in tuple assign or init");
+    return false;
+  }
+
+  return true;
+}
+
+void CallInitDeinit::resolveTupleInit(const AstNode* ast,
+                                      const AstNode* rhsAst,
+                                      const QualifiedType& lhsType,
+                                      const QualifiedType& rhsType,
+                                      RV& rv) {
+  if (!validateTuplesForAssignOrInit(ast, lhsType, rhsType)) {
+    return;
+  }
+
+  if (auto tuple = ast->toTuple()) {
+    // Initializing variables via tuple destructuring
+    resolveTupleUnpackAssign(tuple, ast, lhsType, rhsType, rv);
+    return;
+  } else {
+    // Initializing an actual tuple variable
+    // TODO: resolve init= per component
+    resolveCopyInit(ast, rhsAst, lhsType, rhsType, false, rv);
+  }
+}
+
 
 void CallInitDeinit::resolveTupleUnpackAssign(const Tuple* lhsTuple,
                                               const AstNode* astForErr,
@@ -599,33 +663,7 @@ void CallInitDeinit::resolveTupleUnpackAssign(const Tuple* lhsTuple,
                                               RV& rv) {
   VarFrame* frame = currentFrame();
 
-  // Make sure that both the LHS and RHS have types
-  if (!initialLhsType.hasTypePtr()) {
-    context->error(lhsTuple, "Unknown lhs tuple type in split tuple assign");
-    return;
-  }
-  if (!rhsType.hasTypePtr()) {
-    context->error(lhsTuple, "Unknown rhs tuple type in split tuple assign");
-    return;
-  }
-
-  // Then, check that lhsType and rhsType are tuples
-  const TupleType* initialLhsT = initialLhsType.type()->toTupleType();
-  const TupleType* rhsT = rhsType.type()->toTupleType();
-
-  if (initialLhsT == nullptr) {
-    context->error(lhsTuple, "lhs type is not tuple in split tuple assign");
-    return;
-  }
-  if (rhsT == nullptr) {
-    context->error(lhsTuple, "rhs type is not tuple in split tuple assign");
-    return;
-  }
-
-  // Then, check that they have the same size
-  if (lhsTuple->numActuals() != rhsT->numElements() ||
-      initialLhsT->numElements() != rhsT->numElements()) {
-    context->error(lhsTuple, "tuple size mismatch in split tuple assign");
+  if (!validateTuplesForAssignOrInit(astForErr, initialLhsType, rhsType)) {
     return;
   }
 
@@ -633,13 +671,14 @@ void CallInitDeinit::resolveTupleUnpackAssign(const Tuple* lhsTuple,
                                             initialLhsType);
   rv.byPostorder().byAst(lhsTuple).setType(lhsType);
 
-  auto lhsT = lhsType.type()->toTupleType();
+  auto lhsTupleType = lhsType.type()->toTupleType();
+  auto rhsTupleType = rhsType.type()->toTupleType();
 
   for (int i = 0; i < lhsTuple->numActuals(); i++) {
     auto actual = lhsTuple->actual(i);
 
-    QualifiedType lhsEltType = lhsT->elementType(i);
-    QualifiedType rhsEltType = rhsT->elementType(i);
+    QualifiedType lhsEltType = lhsTupleType->elementType(i);
+    QualifiedType rhsEltType = rhsTupleType->elementType(i);
     auto ident = actual->toIdentifier();
 
     // Do not perform an assignment in the case of a '_' variable.
@@ -651,6 +690,7 @@ void CallInitDeinit::resolveTupleUnpackAssign(const Tuple* lhsTuple,
       continue;
     }
 
+    // Resolve assignment of the element
     processInit(frame, actual, lhsEltType, rhsEltType, rv);
   }
 }
@@ -844,6 +884,8 @@ void CallInitDeinit::processInit(VarFrame* frame,
                                  const QualifiedType& lhsType,
                                  const QualifiedType& rhsType,
                                  RV& rv) {
+  CHPL_ASSERT(ast);
+
   // ast should be:
   //  * a '=' call
   //  * a VarLikeDecl
@@ -896,8 +938,10 @@ void CallInitDeinit::processInit(VarFrame* frame,
       resolveMoveInit(ast, rhsAst, lhsType, rhsType, rv);
     } else {
       // it is copy initialization, so use init= for records
-      // and assign for other stuff
-      if (lhsType.type() != nullptr && lhsType.type()->isRecordLike()) {
+      // and assign for other stuff, or special handling for tuples
+      if (lhsType.type() != nullptr && lhsType.type()->isTupleType()) {
+        resolveTupleInit(ast, rhsAst, lhsType, rhsType, rv);
+      } else if (lhsType.type() != nullptr && lhsType.type()->isRecordLike()) {
         resolveCopyInit(ast, rhsAst,
                         lhsType, rhsType,
                         /* forMoveInit */ false,
