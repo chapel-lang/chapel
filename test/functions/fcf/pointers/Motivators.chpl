@@ -94,6 +94,7 @@ module Motivators {
     proc foo() const ref { return globalCounter; }
     const p1 = foo;
     const p2 = proc() const ref { return globalCounter; };
+
     proc bar(p, n: int) {
       const ref x = p();
       globalCounter = 0;
@@ -101,9 +102,30 @@ module Motivators {
       globalCounter = n;
       assert(x == n);
     }
+
     bar(foo, 2);
     bar(p1, 4);
     bar(p2, 8);
+  }
+
+  proc testCallProcPassingAndReturningByRef() {
+    proc foo(ref counter: int, const n: int) ref {
+      counter = n;
+      return globalCounter;
+    }
+
+    const p1 = foo;
+
+    proc bar(p, n: int) {
+      var counter = 0;
+      ref x = p(counter, n);
+      x = here.id;
+      assert(counter == n);
+      assert(globalCounter == here.id);
+    }
+
+    bar(p1, 4);
+    bar(p1, 8);
   }
 
   proc testParenlessProcNotProcType() {
@@ -176,7 +198,19 @@ module Motivators {
     assert(x == 8);
   }
 
+  // Case 1: Procedure pointer returning ref should be widened.
+  proc testWideRefPatterns0() {
+    globalCounter = 0;
+    const p = proc() const ref { return globalCounter; };
+    const ref x = p();
+    assert(globalCounter == x && x == 0);
+    globalCounter = 8;
+    assert(x == 8);
+  }
+
   proc main() {
+    use ChplConfig;
+
     testSimpleProcTypeEquivalence();
     testProcTypeFromNamedProcedure();
     testEnsureProcTypeIsNotClass();
@@ -187,14 +221,20 @@ module Motivators {
     testNestedProcInGenericInstantiation();
     testPtrToNestedProcInMethod();
     testCallProcStoredInRecordField();
-    // TODO: Need to fit 'FunctionType' into 'insertWideReferences'.
-    // testCallProcReturningByConstRef();
-    testParenlessProcNotProcType();
-    // testProcValueThatThrows1();
-    // testProcValueThatThrows2();
-    testProcCallAsActualParsing1();
-    testProcCallAsActualParsing2();
-    testAnonProcAsForwardingCrazyProgram();
-    testCallProcReturningProc();
+    testCallProcReturningByConstRef();
+
+    // TODO: Move stuff out of this branch as stuff passes with IWR.
+    if compiledForSingleLocale() {
+      testCallProcPassingAndReturningByRef();
+      testParenlessProcNotProcType();
+      testProcValueThatThrows1();
+      testProcValueThatThrows2();
+      testProcCallAsActualParsing1();
+      testProcCallAsActualParsing2();
+      testAnonProcAsForwardingCrazyProgram();
+      testCallProcReturningProc();
+    }
+
+    testWideRefPatterns0();
   }
 }
