@@ -17,7 +17,7 @@ extensions = [
 ]
 
 # The suffix of source filenames.
-source_suffix = '.rst'
+source_suffix = {'.rst' : 'restructuredtext'}
 
 # The master toctree document.
 master_doc = 'index'
@@ -50,7 +50,6 @@ pygments_style = 'sphinx'
 if not on_rtd:
     import sphinx_rtd_theme
     html_theme = 'sphinx_rtd_theme'
-    html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
     html_theme_options = {
         'sticky_navigation': True,

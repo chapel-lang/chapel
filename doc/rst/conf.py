@@ -114,7 +114,7 @@ def setup(app):
         app.connect('autodoc-process-signature', process_signature)
 
 # The suffix of source filenames.
-source_suffix = '.rst'
+source_suffix = {'.rst' : 'restructuredtext'}
 
 # The encoding of source files.
 # source_encoding = 'utf-8-sig'
@@ -224,7 +224,6 @@ exclude_patterns = ['Makefile',
 if not on_rtd:
     import sphinx_rtd_theme
     html_theme = 'sphinx_rtd_theme'
-    html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
     html_theme_options = {
         'sticky_navigation': True,
