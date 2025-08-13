@@ -1,0 +1,13 @@
+# hive.lbl.gov
+mpirun [-ht] [-v...] [-m method] [-np nprocs] [-args "arglist"] [-machinefile file] [-noenv] exe [args ...]
+        -h                      help
+        -t                      don't execute any commands
+        -v ...                  increase verbosity (MPIRUN_DEBUG)
+        -m method               use method rms, slurm, pdsh, ssh or rsh (MPIRUN_METHOD)
+        -np nprocs              number of processes to spawn
+        -args "arglist"         additional arguments for job launch command
+        -machinefile file       machinefile specifying hosts (MPIRUN_MACHINES_FILE)
+        -noenv                  disable environment forwarding and local shared memory communication
+
+set MPIRUN_ELANIDMAP_FILE to file listing '<hostname> <elan-netid>' lines, if netids not specified in machinefile
+note that files need to be creatable in the current directory

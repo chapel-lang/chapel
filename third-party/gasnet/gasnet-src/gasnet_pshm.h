@@ -258,6 +258,8 @@ int gasnetc_AMPSHM_PrepareRequestMedium(gasneti_AM_SrcDesc_t sd,
 void gasnetc_AMPSHM_CommitRequestMedium(gasneti_AM_SrcDesc_t sd,
                                         gex_AM_Index_t handler, size_t nbytes,
                                         va_list argptr);
+int gasnetc_AMPSHM_CancelRequestMedium(gasneti_AM_SrcDesc_t sd,
+                                       gex_Flags_t          flags);
 int gasnetc_AMPSHM_PrepareRequestLong(gasneti_AM_SrcDesc_t sd,
                                       gex_Rank_t           jobrank,
                                       const void          *client_buf,
@@ -270,6 +272,8 @@ int gasnetc_AMPSHM_PrepareRequestLong(gasneti_AM_SrcDesc_t sd,
 void gasnetc_AMPSHM_CommitRequestLong(gasneti_AM_SrcDesc_t sd,
                                       gex_AM_Index_t handler, size_t nbytes,
                                       void *dest_addr, va_list argptr);
+int gasnetc_AMPSHM_CancelRequestLong(gasneti_AM_SrcDesc_t sd,
+                                     gex_Flags_t          flags);
 
 int gasnetc_AMPSHM_PrepareReplyMedium(gasneti_AM_SrcDesc_t sd,
                                       gex_Token_t          token,
@@ -282,6 +286,8 @@ int gasnetc_AMPSHM_PrepareReplyMedium(gasneti_AM_SrcDesc_t sd,
 void gasnetc_AMPSHM_CommitReplyMedium(gasneti_AM_SrcDesc_t sd,
                                       gex_AM_Index_t handler, size_t nbytes,
                                       va_list argptr);
+int gasnetc_AMPSHM_CancelReplyMedium(gasneti_AM_SrcDesc_t sd,
+                                     gex_Flags_t          flags);
 int gasnetc_AMPSHM_PrepareReplyLong(gasneti_AM_SrcDesc_t sd,
                                     gex_Token_t          token,
                                     const void          *client_buf,
@@ -294,6 +300,8 @@ int gasnetc_AMPSHM_PrepareReplyLong(gasneti_AM_SrcDesc_t sd,
 void gasnetc_AMPSHM_CommitReplyLong(gasneti_AM_SrcDesc_t sd,
                                     gex_AM_Index_t handler, size_t nbytes,
                                     void *dest_addr, va_list argptr);
+int gasnetc_AMPSHM_CancelReplyLong(gasneti_AM_SrcDesc_t sd,
+                                   gex_Flags_t          flags);
 
 /*******************************************************************************
  * Intra-supernode shared-memory barrier

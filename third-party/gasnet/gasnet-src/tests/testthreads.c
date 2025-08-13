@@ -164,16 +164,16 @@ void	pong_longhandler(gex_Token_t token, void *buf, size_t nbytes,
 #define hidx_mpi_replyhandler    209
 
 gex_AM_Entry_t htable[] = { 
-	{ hidx_ping_shorthandler, ping_shorthandler, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT, 1 },
-	{ hidx_pong_shorthandler, pong_shorthandler, GEX_FLAG_AM_REPLY|GEX_FLAG_AM_SHORT, 1 },
-	{ hidx_ping_medhandler,   ping_medhandler,   GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_MEDIUM, 2 },
-	{ hidx_pong_medhandler,   pong_medhandler,   GEX_FLAG_AM_REPLY|GEX_FLAG_AM_MEDIUM, 1 },
-	{ hidx_ping_longhandler,  ping_longhandler,  GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_LONG, 3 },
-	{ hidx_pong_longhandler,  pong_longhandler,  GEX_FLAG_AM_REPLY|GEX_FLAG_AM_LONG, 1 },
+	{ hidx_ping_shorthandler, (gex_AM_Fn_t)ping_shorthandler, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT, 1 },
+	{ hidx_pong_shorthandler, (gex_AM_Fn_t)pong_shorthandler, GEX_FLAG_AM_REPLY|GEX_FLAG_AM_SHORT, 1 },
+	{ hidx_ping_medhandler,   (gex_AM_Fn_t)ping_medhandler,   GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_MEDIUM, 2 },
+	{ hidx_pong_medhandler,   (gex_AM_Fn_t)pong_medhandler,   GEX_FLAG_AM_REPLY|GEX_FLAG_AM_MEDIUM, 1 },
+	{ hidx_ping_longhandler,  (gex_AM_Fn_t)ping_longhandler,  GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_LONG, 3 },
+	{ hidx_pong_longhandler,  (gex_AM_Fn_t)pong_longhandler,  GEX_FLAG_AM_REPLY|GEX_FLAG_AM_LONG, 1 },
       #if TEST_MPI
-	{ hidx_mpi_handler,       mpi_handler,       GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT, 2 },
-	{ hidx_mpi_probehandler,  mpi_probehandler,  GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT, 1 },
-	{ hidx_mpi_replyhandler,  mpi_replyhandler,  GEX_FLAG_AM_REPLY|GEX_FLAG_AM_SHORT, 1 },
+	{ hidx_mpi_handler,       (gex_AM_Fn_t)mpi_handler,       GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT, 2 },
+	{ hidx_mpi_probehandler,  (gex_AM_Fn_t)mpi_probehandler,  GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT, 1 },
+	{ hidx_mpi_replyhandler,  (gex_AM_Fn_t)mpi_replyhandler,  GEX_FLAG_AM_REPLY|GEX_FLAG_AM_SHORT, 1 },
       #endif
 };
 #define HANDLER_TABLE_SIZE (sizeof(htable)/sizeof(gex_AM_Entry_t))

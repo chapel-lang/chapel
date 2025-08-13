@@ -1,0 +1,190 @@
+mpirun (Open MPI) 1.4.2
+
+Usage: mpirun [OPTION]...  [PROGRAM]...
+Start the given program using Open RTE
+
+   -am <arg0>            Aggregate MCA parameter set file list
+   --app <arg0>          Provide an appfile; ignore all other command line
+                         options
+   -bind-to-board|--bind-to-board 
+                         Whether to bind processes to specific boards
+                         (meaningless on 1 board/node)
+   -bind-to-core|--bind-to-core 
+                         Whether to bind processes to specific cores (the
+                         default)
+   -bind-to-none|--bind-to-none 
+                         Do not bind processes to cores or sockets
+   -bind-to-socket|--bind-to-socket 
+                         Whether to bind processes to sockets
+   -byboard|--byboard    Whether to assign processes round-robin by board
+                         (equivalent to bynode if only 1 board/node)
+   -bycore|--bycore      Alias for byslot
+   -bynode|--bynode      Whether to assign processes round-robin by node
+   -byslot|--byslot      Whether to assign processes round-robin by slot
+                         (the default)
+   -bysocket|--bysocket  Whether to assign processes round-robin by socket
+-c|-np|--np <arg0>       Number of processes to run
+   -cf|--cartofile <arg0>  
+                         Provide a cartography file
+   -cpu-set|--cpu-set <arg0>  
+                         Comma-separated list of ranges specifying logical
+                         cpus allocated to this job [default: none]
+   -cpus-per-proc|--cpus-per-proc <arg0>  
+                         Number of cpus to use for each process [default=1]
+   -cpus-per-rank|--cpus-per-rank <arg0>  
+                         Synonym for cpus-per-proc
+-d|-debug-devel|--debug-devel 
+                         Enable debugging of OpenRTE
+   -debug|--debug        Invoke the user-level debugger indicated by the
+                         orte_base_user_debugger MCA parameter
+   -debug-daemons|--debug-daemons 
+                         Enable debugging of any OpenRTE daemons used by
+                         this application
+   -debug-daemons-file|--debug-daemons-file 
+                         Enable debugging of any OpenRTE daemons used by
+                         this application, storing output in files
+   -debugger|--debugger <arg0>  
+                         Sequence of debuggers to search for when "--debug"
+                         is used
+   -default-hostfile|--default-hostfile <arg0>  
+                         Provide a default hostfile
+   -display-allocation|--display-allocation 
+                         Display the allocation being used by this job
+   -display-devel-allocation|--display-devel-allocation 
+                         Display a detailed list (mostly intended for
+                         developers) of the allocation being used by this
+                         job
+   -display-devel-map|--display-devel-map 
+                         Display a detailed process map (mostly intended for
+                         developers) just before launch
+   -display-map|--display-map 
+                         Display the process map just before launch
+   -do-not-launch|--do-not-launch 
+                         Perform all necessary operations to prepare to
+                         launch the application, but do not actually launch
+                         it
+   -do-not-resolve|--do-not-resolve 
+                         Do not attempt to resolve interfaces
+   -gmca|--gmca <arg0> <arg1>  
+                         Pass global MCA parameters that are applicable to
+                         all contexts (arg0 is the parameter name; arg1 is
+                         the parameter value)
+-h|--help                This help message
+-H|-host|--host <arg0>   List of hosts to invoke processes on
+   --hetero              Indicates that multiple app_contexts are being
+                         provided that are a mix of 32/64 bit binaries
+   -hostfile|--hostfile <arg0>  
+                         Provide a hostfile
+   -launch-agent|--launch-agent <arg0>  
+                         Command used to start processes on remote nodes
+                         (default: orted)
+   -leave-session-attached|--leave-session-attached 
+                         Enable debugging of OpenRTE
+   -loadbalance|--loadbalance 
+                         Balance total number of procs across all allocated
+                         nodes
+   -machinefile|--machinefile <arg0>  
+                         Provide a hostfile
+   -mca|--mca <arg0> <arg1>  
+                         Pass context-specific MCA parameters; they are
+                         considered global if --gmca is not used and only
+                         one context is specified (arg0 is the parameter
+                         name; arg1 is the parameter value)
+   -n|--n <arg0>         Number of processes to run
+   -nolocal|--nolocal    Do not run any MPI applications on the local node
+   -nooversubscribe|--nooversubscribe 
+                         Nodes are not to be oversubscribed, even if the
+                         system supports such operation
+   --noprefix            Disable automatic --prefix behavior
+   -nperboard|--nperboard <arg0>  
+                         Launch n processes per board on all allocated
+                         nodes
+   -npernode|--npernode <arg0>  
+                         Launch n processes per node on all allocated nodes
+   -npersocket|--npersocket <arg0>  
+                         Launch n processes per socket on all allocated
+                         nodes
+   -num-boards|--num-boards <arg0>  
+                         Number of processor boards/node (1-256) [default:
+                         1]
+   -num-cores|--num-cores <arg0>  
+                         Number of cores/socket (1-256) [default: 1]
+   -num-sockets|--num-sockets <arg0>  
+                         Number of sockets/board (1-256) [default: 1]
+   -ompi-server|--ompi-server <arg0>  
+                         Specify the URI of the Open MPI server, or the name
+                         of the file (specified as file:filename) that
+                         contains that info
+   -output-filename|--output-filename <arg0>  
+                         Redirect output from application processes into
+                         filename.rank
+   -path|--path <arg0>   PATH to be used to look for executables to start
+                         processes
+   -pernode|--pernode    Launch one process per available node on the
+                         specified number of nodes [no -np => use all
+                         allocated nodes]
+   --prefix <arg0>       Prefix where Open MPI is installed on remote nodes
+   --preload-files <arg0>  
+                         Preload the comma separated list of files to the
+                         remote machines current working directory before
+                         starting the remote process.
+   --preload-files-dest-dir <arg0>  
+                         The destination directory to use in conjunction
+                         with --preload-files. By default the absolute and
+                         relative paths provided by --preload-files are
+                         used.
+-q|--quiet               Suppress helpful messages
+   -report-bindings|--report-bindings 
+                         Whether to report process bindings to stderr
+                         [default: 0 = no]
+   -report-pid|--report-pid 
+                         Printout pid
+   -rf|--rankfile <arg0>  
+                         Provide a rankfile file
+-s|--preload-binary      Preload the binary on the remote machine before
+                         starting the remote process.
+   -server-wait-time|--server-wait-time <arg0>  
+                         Time in seconds to wait for ompi-server (default:
+                         10 sec)
+   -show-progress|--show-progress 
+                         Output a brief periodic report on launch progress
+   -slot-list|--slot-list <arg0>  
+                         List of processor IDs to bind MPI processes to
+                         (e.g., used in conjunction with rank files)
+   -stdin|--stdin <arg0>  
+                         Specify procs to receive stdin [rank, none]
+                         (default: 0, indicating rank 0)
+   -stride|--stride <arg0>  
+                         When binding multiple cores to a rank, the step
+                         size to use between cores [default: 1]
+   -tag-output|--tag-output 
+                         Tag all output with [job,rank]
+   -timestamp-output|--timestamp-output 
+                         Timestamp all application process output
+   -tmpdir|--tmpdir <arg0>  
+                         Set the root for the session directory tree for
+                         orterun ONLY
+   -tv|--tv              Deprecated backwards compatibility flag; synonym
+                         for "--debug"
+-v|--verbose             Be verbose
+-V|--version             Print version and exit
+   -wait-for-server|--wait-for-server 
+                         If ompi-server is not already running, wait until
+                         it is detected (default: false)
+   -wd|--wd <arg0>       Synonym for --wdir
+   -wdir|--wdir <arg0>   Set the working directory of the started processes
+-x <arg0>                Export an environment variable, optionally
+                         specifying a value (e.g., "-x foo" exports the
+                         environment variable foo and takes its value from
+                         the current environment; "-x foo=bar" exports the
+                         environment variable name foo and sets its value to
+                         "bar" in the started processes)
+   -xml|--xml            Provide all output in XML format
+   -xml-file|--xml-file <arg0>  
+                         Provide all output in XML format to the specified
+                         file
+   -xterm|--xterm <arg0>  
+                         Create a new xterm window and display output from
+                         the specified ranks there
+
+Report bugs to http://www.open-mpi.org/community/help/

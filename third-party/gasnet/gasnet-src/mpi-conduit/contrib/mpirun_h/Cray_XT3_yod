@@ -1,0 +1,42 @@
+# guppy.cray.com
+yod: option `-h' is ambiguous
+Invalid option 
+yod: App Usage: yod [{-D <option>}] [-help]
+	[-Version]
+	[-sz <size> | -size <size> | -np <size>] [-stack <size>]
+	[-tlimit <seconds>]
+	[-list <nodelist>] [-Account <account number>]
+	[-target [catamount|linux]]
+	[-share] [-heap <size>] [-Priority <pri>]
+	<file> <args> | -F <loadfile>
+
+
+    -D <option>          Valid options are:
+                         phase1, phase2, load, load1, load2
+                         load3, loadt, msg, msg1, msg2, progress
+                         hetero, alloc, alloc1, alloc2, io, io1,
+                         io2, term, rca, all, or a number; e.g. 12 or 0xC
+                         Can also set LVL1, LVL2, LVL3 or
+                         use LVL7 for all three flags debug
+    -help                This help message
+    -Version             version number of yod
+    -sz <size>           e.g. 32 or all
+    -size <size>         same as -sz
+    -np <size>           same as -sz
+    -stack <size>        stack size in bytes (default = 16777216)
+    -tlimit <seconds>    time limit in seconds 
+                         (default = 0 -> "no limit")   
+    -list <nodelist>     comma delimited set of nodes 
+                         CPA supports .. notation 
+                         e.g. 1,3,5..7            
+    -Account <account number> Project to charge for this run 
+    -target <node type>  catamount or linux 
+                         (default = catamount)  
+    -share               share nodes with another application
+    -heap <size>         heap size in bytes
+                         (default = remaining memory)  
+    -Priority <pri>      process priority 
+    -F <loadfile>        Heterogenous load
+    <file> <args>        The file and its arguments to load and execute
+All options can be abbreviated!
+Cmd line usage error

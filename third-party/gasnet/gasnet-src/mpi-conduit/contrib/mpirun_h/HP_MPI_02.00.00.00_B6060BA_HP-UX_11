@@ -1,0 +1,20 @@
+# HP Testdrive td192
+mpirun: Usage: mpirun [-help] [-version] [-jv] [-i <spec>]
+                [-spawn] [-1sided] [-universe_size=#] [-sp <paths>]
+                [-T] [-prot] [-e var[=val]] -prun <prun-options> <program> [<args>]
+
+mpirun: Usage: mpirun [-help] [-version] [-ck] [-djpv] [-tv]
+                [-i <spec>] [-client <rank> <host:port>] [-stdio=<options>]
+                [-ha] [-universe_size=#] [-l <user>] [-sp <paths>]
+                [-T] [-prot] [-e var[=val]] [-h <host>] [-spawn]
+
+        [-1sided] [-np #] {<program> [<args>]}
+
+mpirun: Usage: mpirun [-help] [-version] [-ck] [-djpv] [-tv]
+                [-i <spec>] [-client <rank> <host:port>] [-stdio=<options>]
+                [-hmp] [-T] [-prot] [-e var[=val]] [-ha]
+                [-universe_size=#] [-spawn] [-1sided] [-commd]
+                {-f <appfile> [-- [<extra_args>]]}
+
+mpirun: Illegal or badly formed option: -h
+mpirun: See mpirun(1) for more information

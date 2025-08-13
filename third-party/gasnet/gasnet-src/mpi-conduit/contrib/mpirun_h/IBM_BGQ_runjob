@@ -1,0 +1,45 @@
+runjob [options] : exe arg1 arg2 ... argn
+
+Job Options:
+  --exe arg                 executable to run
+  --args arg                arguments
+  --envs arg                environment variables in key=value form
+  --exp-env arg             export a specific environment variable
+  --env-all                 export all environment variables
+  --cwd arg (=current wdir) current working directory
+  --timeout arg             positive number of seconds to wait after runjob 
+                            starts before a SIGKILL will be delivered.
+
+Resource Options:
+  --block arg                      block ID, must be initialized and requires 
+                                   Execute authority.
+  --corner arg                     sub-block compute node corner location: R00-
+                                   M0-N04-J00
+  --shape arg                      five dimensional sub-block shape, in terms 
+                                   of compute nodes: 1x2x2x1x2
+  -p [ --ranks-per-node ] arg (=1) number of ranks per node: 1, 2, 4, 8, 16, 
+                                   32, or 64
+  -n [ --np ] arg                  positive number of ranks in the entire job
+  --mapping arg (=ABCDET)          ABCDET permutation or path to mapping file
+
+Debug Options:
+  --label [=arg(=long)] (=none) prefix job output with stdout, stderr, and rank
+  --strace arg (=none)          specify  none, or n where n is a rank to enable
+                                system call tracing
+  --start-tool arg              path to tool to start with the job
+  --tool-args arg               arguments for the tool
+  --tool-subset arg (=0-$max)   rank subset to use when launching the tool 
+                                daemon
+
+Miscellaneous Options:
+  --stdinrank arg (=0)  rank to send stdin to
+  --raise               if the job dies with a signal, raise it
+
+  -h [ --help ]         this help text
+  -v [ --version ]      display version information
+  --properties arg      Blue Gene configuration file
+  --verbose arg         Logging configuration
+
+
+for more information, consult the man page
+

@@ -1,0 +1,89 @@
+prun [-IkOstv][-A account][-B base][-c cpus][-e mode][-i mode]
+     [-m block|cyclic][-N nodes|all][-n procs][-o mode][-P project]
+     [-p partition][-R request] program [args...]
+prun [-dtv] -p root | -r
+     [-B base][-H hostnamelist][-N nodes][-R request] program [args...]
+prun -f procfile [-EItv][-e mode][-i mode][-o mode][-P project][-p partition]
+prun -h
+
+Run a parallel program
+Flags:
+	-A account	Specify account to use
+	-B base	base node
+	-c cpus	number of CPUs per process
+	-d 		distribute rmsloader to /tmp on each node
+	-E 		'explain' a procfile (only with -f option)
+	-e mode		set stderr mode
+	-f procfile	use procfile
+	-H hostnamelist	run on listed hosts
+	-h 		print this info
+	-i mode		set stdin mode
+	-I 		allocate CPUs immediately or fail
+	-k 		forward Kerberos credentials
+	-l tag		label stdout/stderr with a tag. The following
+			tag characters have special meanings:
+			   %g	the global rank of the process
+			   %G	the number of processes
+			   %h	the rank of the node
+			   %H	the number of nodes
+			   %l	the rank of the process on this node
+			   %L	the number of processes on the node
+			   %m	text base of the hostname
+			   %n	numeric part of the hostname
+			   %p	the pid of the process
+			   %t	the current time (hh:mm:ss)
+			   %@	the hostname of the node (same as "%m%-n")
+			   %%	a single %
+	-N nodes	number of nodes to allocate
+	-n procs	number of processes to run
+	-m block|cyclic	process to node mapping
+	-o mode		set stdout mode
+	-O 		allow resources to be overcommited
+			ie. allow more processes than CPUs
+	-P project	project to use
+	-p partition	partition to use
+	-R request	set resource request flag. request can be:
+			    hwbcast=0|1
+			    immediate=0|1
+			    maxcpus=n
+			    mincpus=n
+			    pty=0|1
+			    samecpus=0|1
+			    rails=n
+			    railmask=mask
+	-r 		rsh mode (admin use only)
+	-s 		print stats as job exits
+	-t 		prefix output with process number (same as -l "%g ")
+	-v 		enable reporting
+
+Resources are allocated (and freed) for the job, unless previously
+assigned using allocate. The default process distribution is block.
+
+Multiple requests can be entered as a comma-separated list,
+for example, 'prun -R hwbcast=1,immediate=1 ...'.
+
+Stdio for a parallel program is controlled by three stdio modes one
+each for stdin (-i), stdout (-o) and stderr (-e). These modes control
+how input to prun is directed to the application processes and how
+their output on stdout/stderr is processed by prun. The supported
+stdio modes are:
+	all	all processes send/receive
+	none	no processes send/receive
+	{rank}	only process {rank} can send/receive
+	file	processes read/write from/to file.{rank}
+
+The default modes are stdin=0, stdout=all, stderr=all, i.e. stdin is
+directed to process 0 and output on stdout/stderr from all processes
+is returned to prun.
+
+'prun -p root ...' and 'prun -r ...' are equivalent in that -p root
+implies rsh mode and -r implies -p root.  In both cases the partition,
+will be root, rsh mode will be set and 1 process per node will run.
+By default -N will be set to all nodes.
+
+Procfile line format should be one of the following:
+number			hostname[:path] executable arguments
+lowrank;highrank;step	hostname[:path] executable arguments
+number			index[:path] executable arguments
+lowrank;highrank;step	index[:path] executable arguments
+

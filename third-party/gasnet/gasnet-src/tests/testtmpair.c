@@ -141,16 +141,16 @@ static void nplong_pong_handler(gex_Token_t token, void *buf, size_t nbytes) {
 
 // handler table
 gex_AM_Entry_t htable[] = {
-  { hidx_short_ping,  short_ping_handler,  GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT,  0 },
-  { hidx_short_pong,  short_pong_handler,  GEX_FLAG_AM_REPLY  |GEX_FLAG_AM_SHORT,  0 },
-  { hidx_med_ping,    med_ping_handler,    GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_MEDIUM, 0 },
-  { hidx_med_pong,    med_pong_handler,    GEX_FLAG_AM_REPLY  |GEX_FLAG_AM_MEDIUM, 0 },
-  { hidx_long_ping,   long_ping_handler,   GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_LONG,   0 },
-  { hidx_long_pong,   long_pong_handler,   GEX_FLAG_AM_REPLY  |GEX_FLAG_AM_LONG,   0 },
-  { hidx_npmed_ping,  npmed_ping_handler,  GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_MEDIUM, 0 },
-  { hidx_npmed_pong,  npmed_pong_handler,  GEX_FLAG_AM_REPLY  |GEX_FLAG_AM_MEDIUM, 0 },
-  { hidx_nplong_ping, nplong_ping_handler, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_LONG,   0 },
-  { hidx_nplong_pong, nplong_pong_handler, GEX_FLAG_AM_REPLY  |GEX_FLAG_AM_LONG,   0 }
+  { hidx_short_ping,  (gex_AM_Fn_t)short_ping_handler,  GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_SHORT,  0 },
+  { hidx_short_pong,  (gex_AM_Fn_t)short_pong_handler,  GEX_FLAG_AM_REPLY  |GEX_FLAG_AM_SHORT,  0 },
+  { hidx_med_ping,    (gex_AM_Fn_t)med_ping_handler,    GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_MEDIUM, 0 },
+  { hidx_med_pong,    (gex_AM_Fn_t)med_pong_handler,    GEX_FLAG_AM_REPLY  |GEX_FLAG_AM_MEDIUM, 0 },
+  { hidx_long_ping,   (gex_AM_Fn_t)long_ping_handler,   GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_LONG,   0 },
+  { hidx_long_pong,   (gex_AM_Fn_t)long_pong_handler,   GEX_FLAG_AM_REPLY  |GEX_FLAG_AM_LONG,   0 },
+  { hidx_npmed_ping,  (gex_AM_Fn_t)npmed_ping_handler,  GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_MEDIUM, 0 },
+  { hidx_npmed_pong,  (gex_AM_Fn_t)npmed_pong_handler,  GEX_FLAG_AM_REPLY  |GEX_FLAG_AM_MEDIUM, 0 },
+  { hidx_nplong_ping, (gex_AM_Fn_t)nplong_ping_handler, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_LONG,   0 },
+  { hidx_nplong_pong, (gex_AM_Fn_t)nplong_pong_handler, GEX_FLAG_AM_REPLY  |GEX_FLAG_AM_LONG,   0 }
  };
 #define HANDLER_TABLE_SIZE (sizeof(htable)/sizeof(gex_AM_Entry_t))
 

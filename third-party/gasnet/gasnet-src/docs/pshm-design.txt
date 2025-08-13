@@ -1,0 +1,165 @@
+GASNet inter-Process SHared Memory (PSHM) design
+---------------------------------------------
+
+Document by:
+    Dan Bonachea <bonachea@cs.berkeley.edu>
+    Paul H. Hargrove <PHHargrove@lbl.gov>
+    Filip Blagojevic <FBlagojevic@lbl.gov>
+Implementation by:
+    Jason Duell
+    Filip Blagojevic <FBlagojevic@lbl.gov>
+    Paul H. Hargrove <PHHargrove@lbl.gov>
+
+===============================================================
+WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+
+The contents of this file are no longer maintained, and user
+documentation has moved into the top-level GASNet README.
+
+For current information on using GASNet's PSHM support, please
+consult the main GASNet README.
+
+WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+===============================================================
+
+Goal:
+----
+Provide GASNet with a mechanism to communicate through shared memory among
+processes on the same compute node.  This is expected to be more robust than
+pthreads (which greatly complicates the Berkeley UPC runtime, and prevents
+linking to any numeric libraries that that are not thread-safe).  It is also
+expected to display lower latency than use of a network API's loopback
+capabilities (though the network hardware might provide other benefits such
+as asynchronous bulk memory copy w/o cache pollution).
+
+We appreciate your feedback related to PSHM (both positive and
+negative) and would be happy to work with you to improve PSHM.
+
+Scope:
+-----
+* GASNet segment via PSHM only supported for SEGMENT_FAST or SEGMENT_LARGE
+  (not meaningful for SEGMENT_EVERYTHING mode)
+* May eventually support AM-over-PSHM for SEGMENT_EVERYTHING (but not yet)
+* Applicable both w/ and w/o pthreads
+
+Terminology:
+-----------
+* node: each UNIX process running GASNet
+* supernode: 1 or more nodes with cross-mapped segments using PSHM support
+* supernode peers: nodes which share a supernode
+
+Interface notes:
+---------------
+* All node processes call gasnet_init(), each is a separate GASNet node
+* PSHM is enabled/disabled at configure time and GASNETI_PSHM_ENABLED is
+  #defined to either 1 or 0.  Each conduit can then #define GASNET_PSHM
+  to 1 if it implements PSHM support.
+* gasnetc_init() performs super-node discovery, using OS-appropriate (or
+  conduit-specific) mechanisms to figure out which nodes are capable of
+  sharing memory with which other nodes:
+   - unconditionally calls gasneti_nodemapInit() (to drive "discovery")
+   - calls gasneti_pshm_init() only if PSHM support enabled (to setup data)
+* MaxLocal/Global return values reflecting the amount of segment space divided
+  evenly among the supernode peers, and each node passes a size to
+  gasnet_attach reflecting the per-node segment size they want. 
+* gasnet_attach takes care of mapping each processor's segments as usual, but
+  also maps the segments of supernode peers into each nodes VM space using
+  OS-appropriate mechanisms. (shm_open()+mmap(), shmget()+shmat(), etc.).
+* Nodes on a supernode typically have different virtual address map of the
+  segments on that supernode.  They are typically not contiguous either.
+* Client calls gasnet_getSegmentInfo() to get the location of their segment and
+  those of other nodes (as always)
+* Client calls gasnet_getNodeInfo() to get the compute node rank, and the
+  supernode rank (which need not be the same when GASNET_SUPERNODE_MAXSIZE
+  is non-zero) for each node.  Only nodes with the same supernode rank as
+  the caller are addressable via PSHM.  When PSHM is enabled the "offset"
+  field gives the difference between X's address for its own segment and the
+  address (if any) at which that segment is mapped in the caller's address
+  space.
+* Client may directly load/store into the segments of any node sharing their
+  supernode (currently implemented in Berkeley UPC runtime library)
+* remotely-addressable segment restrictions on gasnet_put/get/AMLong apply to
+  the individual segments - i.e. gasnet_put() to an address in the segment of
+  node X must give node X as the target node, not some other supernode peer
+
+Restrictions:
+------------
+* gasnet_hsl_t's are node-local and while they might reside in the segment,
+  they may not be accessed by more than one node in a supernode
+  - we can/should add a debug-mode check for this (also applies to shmem-conduit)
+* Use of GASNet atomics in the segment is allowed, but they must not be weak
+  atomics (which means using the explicitly "strong" ones in client code).
+
+Closed (previously "Open") questions:
+------------------------------------
+Q1) Do we need a separate build or separate configure of libgasnet and/or
+    libupcr with PSHM enabled/disabled?
+A1) Since the set of conduits supported by PSHM was initially a small subset
+    of the total list, we chose not to complicate the UPC compiler with this.
+    Thus we've chosen to configure everything (UPCR+gasnet) w/ --enable-pshm
+    or w/o.  The number of conduits supporting PSHM is now irrelevant since in
+    a PSHM-enabled build of GASNet any conduits not supporting PSHM are simply
+    built w/o it (as opposed to not built at all as was once the case).
+
+Q2) If we want to use the same build, then how should GASNET_ALIGNED_SEGMENTS
+    definition behave?  Never true when any supernode contains more than one
+    node, but don't know that until runtime.
+A2) We assume that you don't use PSHM unless also using > 1 proc/node.
+    May also revisit if we don't configure PSHM as a distinct build.
+
+Q3) Can we get away with always connecting segments after all processes are
+    created, or do we need to fork after setting up shared memory segments?
+    Will drivers & spawners even allow that?
+    If we decide that a fork is required after job launch, then it should
+    definitely be done by the conduit, not the client code. But how would the
+    interface look? (this would very likely break MPI interoperability)
+A3) All supported conduits are attaching to segments in gasnet_attach().  We
+    don't need to work about fork() at all (except that smp-conduit now has a
+    fork-based spawner inside gasnetc_init()).
+
+Q4) Does the client code between init/attach need to know the supernode
+    associations? (e.g. to make segsize decision)
+A4) So far we have not seen a need for this (though internal to GASNet we do).
+
+Q5) Can/do we still get allocate on first write mapping for the segment?
+    - If so, who's responsible for establishing processor/memory affinity
+      with first touch? (probably the client)
+A5) We have each node mmap() its own segment before any cross-mapping is done
+    which should ensure locality if the OS does allocation at mmap() time.
+    We currently have the client doing first-touch to deal with the case that
+    the OS does page frame allocation on touch, rather than mmap().
+
+Q6) Do we ever want to allow supernodes to share a physical node?
+    (e.g. to increase segment size or to leverage NUMA affinity)
+    - if so, need an interface to specify this (probably environment variables)
+A6) The GASNET_SUPERNODE_MAXSIZE env var bounds the number of processes which
+    will be joined into a single supernode (with 0 meaning no bound).  When
+    there are more than this number of processes per node, then multiple
+    supernodes will be constructed.
+
+Open questions:
+--------------
+* How do we handle 8 or 16-way SMPs on 32-bit platforms where VM space is
+  already tight, or OS's where the limit on sharable memory is small? This
+  design would make our per-node segsizes rather small. Do we want a mode
+  where segments are not cross-mapped, but the gasnet_put/get can bypass the
+  NIC using a two-copy scheme through bounce buffers?
+  - This bounce buffer mode could potentially also help for EVERYTHING mode
+    (without pshm segments), although due to attentiveness issues, it may be
+    slower than using loopback RDMA
+  - Is this mode just the extended-ref using AM-over-PSHM?
+* Will there be contention with MPI for resources (and should we care)?
+  
+Known Problems / To do:
+----------------------
+* The mechanism we are using to probe for maximum segment size works fine on a
+  system with plenty of memory, but dies on systems with less.  The work
+  around is to set the GASNET_MAX_SEGSIZE small enough for a given system.
+
+* GASNet conduits known NOT to work:
+  - SHMEM conduit does not support PSHM, but there is no reason to think
+    that doing so would be constructive.
+  Keep in mind that if you use one of these conduits on a platform with the
+  necessary support for PSHM, you may still configure with --enable-pshm to
+  get PSHM support in other conduits (e.g. SMP and MPI), and non-PSHM
+  conduits will still build (they will simply be missing PSHM support).

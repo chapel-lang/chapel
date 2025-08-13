@@ -74,18 +74,20 @@ typedef struct gasneti_mk_impl_s gasneti_mk_impl_t;
   #if GASNET_DEBUG
     extern gasneti_MK_t gasneti_import_mk(gex_MK_t _mk);
     extern gasneti_MK_t gasneti_import_mk_nonhost(gex_MK_t _mk);
+    extern gasneti_MK_t gasneti_import_mk_nonhost_valid(gex_MK_t _mk);
     extern gex_MK_t gasneti_export_mk(gasneti_MK_t _real_mk);
   #else
     #define gasneti_import_mk(x) ((gasneti_MK_t)(x))
     #define gasneti_import_mk_nonhost(x) ((gasneti_MK_t)(x))
+    #define gasneti_import_mk_nonhost_valid gasneti_import_mk_nonhost
     #define gasneti_export_mk(x) ((gex_MK_t)(x))
   #endif
   // TODO: Either document the following, prohibiting GEX_MK_HOST, or fix them for that case
-  #define gex_MK_SetCData(mk,val)    ((void)(gasneti_import_mk_nonhost(mk)->_cdata = (val)))
-  #define gex_MK_QueryCData(mk)      ((void*)gasneti_import_mk_nonhost(mk)->_cdata)
-  #define gex_MK_QueryFlags(mk)      ((gex_Flags_t)gasneti_import_mk_nonhost(mk)->_flags)
-  #define gex_MK_QueryClient(mk)     gasneti_export_client(gasneti_import_mk_nonhost(mk)->_client)
-  #define gex_MK_QueryClass(mk)      ((gex_MK_Class_t)gasneti_import_mk_nonhost(mk)->_mk_class)
+  #define gex_MK_SetCData(mk,val)    ((void)(gasneti_import_mk_nonhost_valid(mk)->_cdata = (val)))
+  #define gex_MK_QueryCData(mk)      ((void*)gasneti_import_mk_nonhost_valid(mk)->_cdata)
+  #define gex_MK_QueryFlags(mk)      ((gex_Flags_t)gasneti_import_mk_nonhost_valid(mk)->_flags)
+  #define gex_MK_QueryClient(mk)     gasneti_export_client(gasneti_import_mk_nonhost_valid(mk)->_client)
+  #define gex_MK_QueryClass(mk)      ((gex_MK_Class_t)gasneti_import_mk_nonhost_valid(mk)->_mk_class)
 #endif
 
 GASNETI_END_NOWARN

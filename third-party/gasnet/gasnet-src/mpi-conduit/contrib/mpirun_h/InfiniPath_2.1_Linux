@@ -1,0 +1,79 @@
+InfiniPath Release2.1 of Fri Jul 20 15:17:27 PDT 2007 $
+Usage: mpirun [-ssh|-mpd|-h] <mpi-options> progname <prog-options>
+The format of each line is
+    [SHORT_OPTION] <LONG_OPTION> [ARGUMENT_TYPE] <DESCRIPTION> <[DEFAULTS]>
+Essentials
+  -m -machinefile STRING         Hosts file [-m <mpihosts>, $MPIHOSTS,
+                                 ./mpihosts, $HOME/.mpihosts]
+     -nonmpi                     Run a non-mpi program [off]
+     -np INT                     Number of processes to create [-np <nprocs>,
+                                 $MPI_NPROCS, or 1 process]
+     -ppn INT                    Number of processes per node [1 (unless
+                                 machinefile has less hosts than -np)]
+     -rcfile STRING              Startup shell script [-rcfile <mpirunrc>,
+                                 $MPIRUNRC or $HOME/.mpirunrc]
+Spawn
+     -distributed[=UINT|on|off]  Distributed mpirun spawning mechanism [on]
+Quiescence
+     -disable-mpi-progress-check Disable MPI communication progress checks
+                                 (pings enabled if -q > 0) [off]
+  -i -ping-interval INT          Seconds to wait between ping packets to
+                                 mpirun (if -q > 0) [60]
+  -q -quiescence-timeout INT     Seconds to wait for quiescence on the ranks
+                                 (-q 0 to disable) [900]
+Verbosity
+     -job-info                   Print brief job startup and shutdown timing
+                                 information [off]
+     -no-syslog                  Don't send critical errors through syslog [off]
+  -V -verbose                    Print diagnostic messages [off]
+Startup
+     -listen-addr STRING         Hostname or IPv4 to listen on [gethostname(2)]
+  -k -kill-timeout INT           Seconds to wait for other ranks after the
+                                 first rank exits [60]
+  -I -open-timeout INT           Seconds to wait for InfiniPath connection
+                                 (-1 for infinite) [0]
+     -runscript STRING           Script to run program with [none]
+  -t -timeout INT                Seconds to wait per connection
+                                 (-1 waits forever) [60]
+Stats
+  -M -print-stats[=STRING]       Print MPI stats (-M implies -M=mpi) [mpi]
+     -statsfile STRING           Filename for printing statistics [stderr]
+     -statsmode STRING           Mode for printing various statistics:
+                                 absolute/diffs [diffs]
+Tuning
+  -L -long-len UINT              Message length in bytes above which rendezvous
+                                 protocol is used [64000]
+  -s -long-len-shmem UINT        Message length in bytes above which rendezvous
+                                 protocol is used [16000]
+  -N -num-send-bufs INT          Number of send buffers in runtime [512]
+  -W -rndv-window-size UINT      Window size in bytes to use for native
+                                 rendezvous [262144]
+Shell
+     -shell STRING               Which program is used to log into remote
+                                 hosts [ssh (unless $MPI_SHELL is defined)]
+     -shellx STRING              Program used to log into remote hosts with X11
+                                 forwarding. Useful when running with -debug or
+                                 in xterm [ssh (unless $MPI_SHELL_X is defined)]
+Debug
+     -debug                      Run each process under debugger in xterm [off]
+     -debug-no-pause             Like debug but no pause at beginning [off]
+     -debugger STRING            Which debugger to use (gdb|pathdb|strace) [gdb]
+     -display STRING             X Display for xterm [none]
+     -in-xterm                   Run each process in an xterm window [off]
+  -d -psc-debug-level INT        Controls the verbosity of debug messages [1]
+     -xterm STRING               Which xterm to use [xterm]
+Format
+  -l -label-output               Unique label for each process' output [off]
+  -y -labelstyle STRING          Indicates the style of the output label
+                                 May contain the special characters:
+                                 %n:nodename, %r:rank, %p:pid, %L:LID, %P:port
+                                 %l:rank within a node, %%: % sign [%n:%r.]
+Other
+  -h -help                       Show help [off]
+     -stdin STRING               Filename to use as stdin for the node
+                                 program [none]
+     -stdin-target INT           Rank that should read the file from -stdin
+                                 (-1 for all ranks) [-1]
+  -v -version                    Show version [off]
+     -wdir STRING                Sets the working directory for the node
+                                 program [.]

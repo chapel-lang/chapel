@@ -7,6 +7,7 @@ all:
 # legacy harness support
 UPCR_BLDDIR ?= $(TOP_BUILDDIR)
 GASNET_BLDDIR ?= $(TOP_BUILDDIR)/gasnet
+GASNET_SRCDIR ?= $(TOP_SRCDIR)/gasnet
 
 PERL ?= perl
 CONDUIT_DIR=$(GASNET_BLDDIR)/$(NETWORK)-conduit
@@ -53,6 +54,9 @@ testconduitspecific: force
 parsync: force
 	@$(MAKE) -C $(CONDUIT_DIR) $@
 	@echo '#!/bin/sh' > $@ ; chmod +x $@
+
+ident:
+	cp -f $(GASNET_SRCDIR)/other/contrib/ident .
 
 check-exports: force
 	@$(MAKE) -C $(CONDUIT_DIR) $@

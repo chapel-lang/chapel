@@ -1,0 +1,3 @@
+This directory contains a database of known mpirun -h outputs for use in
+gasnetrun_mpi's mpirun identification heuristics.  These files are for
+development use only and therefore are not distributed.

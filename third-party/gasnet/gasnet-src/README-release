@@ -1,0 +1,405 @@
+README-release file for GASNet
+https://gasnet.lbl.gov
+
+The purpose of this document is to record the steps required for a public
+release of GASNet.  This is NOT required reading for most developers.
+
+See also:
+ + README: GASNet usage documentation
+ + README-devel: GASNet design information and coding standards
+ + README-git: Rules developers are expected to follow when committing
+
+GASNet Release Procedure
+========================
+
+* Start from a *clean* clone of the git repo.
+  Either start from a NEW clone, or use one of "git clean" or "git stash -o"
+  to remove untracked files.  Otherwise it's very easy for stray files to end
+  up in the release.
+
+* Under normal circumstances you will generating a release on the 'master'
+  branch after use of a "release branch" to merge in all the new work from
+  'develop' and update version numbers, etc.  This procedure begins with the
+  creation of the "release branch" for a hypothetical 2040.8.0 release:
+    $ git checkout -b release/2040.8.0 develop
+
+* To allow collaboration on the release work, one may optionally "publish"
+  the release branch on bitbucket:
+    $ git push -u origin release/2040.8.0
+
+* Increment the version number for each item or software module that has
+  changed since the last public release:
+  Package version number in configure.in:
+    GASNET_RELEASE_VERSION_*
+  - the major and minor versions are the nominal year and month of the package
+  - For bug-fix release patches, update the patch number for each (ex: 2020.4.2).
+  - For development, update the patch number whenever it's useful (new feature,
+    big bugfix), and/or whenever we put out a new 'stable' release (or hand
+    out a snapshot to a user). The patch-level should be even for beta versions
+    marked as "stable" for users, or odd for general development.
+  GASNet spec version numbers, in configure.in:
+    GASNET(EX)_SPEC_VERSION_MAJOR - increment on backwards compatibility break
+    GASNET(EX)_SPEC_VERSION_MINOR - increment for new features that don't break
+                                    backwards compatibility, zero on MAJOR change
+    Every increment should have a corresponding ChangeLog entry summarizing the change.
+  GASNet tools spec version numbers, in configure.in:
+    GASNETT_SPEC_VERSION_MAJOR - increment on backward compatibility break
+    GASNETT_SPEC_VERSION_MINOR - increment for new features that don't break
+                                 backwards compatibility, zero on MAJOR change
+    Every increment should have a corresponding ChangeLog entry summarizing the change.
+  Spec version numbers in docs/GASNet-EX.txt and README-tools:
+    Following the previous release, develop should have advanced the GASNet-EX and
+    GASNet Tools spec numbers in documentation (docs/GASNet-EX.txt and README-tools).
+    Those need to be updated to match the changes made to configure.in.
+    Generally, this means stripping the comment: // work-in-progress, not "closed".
+  other/gasnet_portable_platform.h - increment EVERY release (even without changes)
+  Conduits: */gasnet_core_fwd.h
+
+* On 'develop' advance the version numbers in configure.in (odd minor and patch
+  numbers for development), and apply a corresponding annotated tag for use by
+  the "git describe" command:
+    $ git checkout develop
+    [ edit GASNET_RELEASE_VERSION_* in configure.in, and commit it ]
+    $ git tag -a -m "GASNet development version 2040.8.1" gex-2040.8.1 develop
+    $ git push origin develop gex-2040.8.1
+  This change is made immediately after creation of the release branch to ensure
+  concurrent development commits on develop have appropriate git describe and
+  version ids reflecting the fact they won't appear until the NEXT release.
+  However this commit will also cause a conflict when the release branch is later
+  merged that will need to be resolved. If no concurrent development is expected,
+  this step can be postponed until after the release branch is merged.
+
+* Review commit messages and write a summary of user-visible changes and 
+  bug fixes since last public release - add to ChangeLog
+
+* Update license.txt with any new authorship credits
+
+* Create a new version of docs/memory_kinds.pdf:
+  + Open Google doc:
+    - https://docs.google.com/document/d/1KDA3eLNAnW9XuOcRe0mMwww99pPhSPR6-y-2FvlqxPc
+  + File > Download > Microsoft Word (.docx)
+  + Open in MS Word
+  + Edit the file properties in Word and update Title, Authors, Keywords
+  + File > Save As > 
+    - Select File Type PDF 
+    - Open Options and select: All pages, "Create Bookmarks using Headings", PDF/A output
+  + Audit the result for garbled fonts, correct bookmarks and PDF metadata
+
+* Commit all changes made in the previous steps
+
+* Run pushbuild/misc/extract-urls.sh on the source repo to generate an
+  HTML with all the URLs scraped from text docs, then run deadlinkchecker on it.
+
+* ./Bootstrap the sources
+
+* From a separate builddir, do a configure, then
+    $ gmake all distcheck [GASNET_DOCS=PATH_TO_GASNET_DOCUMENTATION]
+  the release candidate archive.  See below for info on the optional
+  GASNET_DOCS setting.
+
+* Unpack the archive and diff against the source tree to find missing files,
+  especially documentation and auxiliary files.  Check that other/contrib
+  contains any cross-configure scripts that are intended for distribution.
+  The following command may be used to list any files which have been
+  added to the Git repository since the previous release:
+    $ git diff --name-status [previous-release-tag] | grep ^A
+
+* Verify that ./unBootstrap removes all generated files:
+  In the repository directory:
+    $ ./unBootstrap
+    $ git status --ignored
+  If "git status" listed any "ignored files" then you need to update
+  unBootstrap (and if it lists any "untracked files" then you didn't
+  start with a clean repo).
+
+* If the spec has not changed since the previous release, consider reusing
+  the generated files from a past release.  That can be automated by adding
+     GASNET_DOCS=PATH_TO_GASNET_DOCUMENTATION
+  to the distcheck step, above.
+  Otherwise, check the spec documents were generated correctly & clean up
+  if necessary (regenerate the .ps on Linux).
+
+* Test the release candidate on all directly supported systems and conduits,
+  with both debug+stats+trace and ndebug configs, and all supported backend
+  C compilers:
+   HPE Cray EX: ofi (and mpi if time/allocation allows)
+   Linux-Ethernet: mpi, udp, ofi
+   Linux-InfiniBand: mpi, ibv, ucx
+   Linux-Omni-Path: ofi (plus mpi and ibv if time/allocation allows)
+   Windows/Cygwin: smp+pthreads
+   Mac OS X: smp+pthreads, smp+sysv
+  SEGMENT_EVERYTHING should be tested on all conduits supporting it.
+
+* Install the release candidate and ensure that share/docs/gasnet contains
+  all the intended documentation, including any files referenced by README.
+  Any missing should be added to INSTALL_DOCS in the top-level Makefile.am
+  Do NOT add developer-only documents (eg this file) to the distribution.
+
+* Resolutions for any "issues" (bugs, missing docs, etc.) should be fixed
+  on the release branch and re-tested as necessary.  These will be merged
+  back to 'develop' at the end of this procedure.  However, if there is
+  something critical, it can be cherry-picked to 'develop' without any
+  problems (git is smart enough to deal with this at the later merge step).
+
+* Decide whether a tools-only release is being performed.
+  Generally a tools-only release needs to be justified by one of the following:
+    * A bump to GASNETT_SPEC_VERSION_{MAJOR,MINOR} documented in the
+      ChangeLog along with the tools API changes it signifies.
+    * A ChangeLog entry for platform support that also applies to tool-only mode.
+    * One or more "fixed bugs" that apply to tools-only functionality
+
+* Clone a *second* copy of the repository for the tools-only distribution:
+    $ git clone --branch release/2040.8.0 \
+            https://bitbucket.org/berkeleylab/gasnet gasnet-tools
+    $ cd gasnet-tools
+    $ ./Bootstrap -o
+  make a separate build directory, configure and "gmake all distcheck"
+  to build the tools-only tarball.
+  The use of the URL for anonymous access to BitBucket is INTENTIONAL,
+  so that you cannot accidentally commit the re-writes done by the
+  "-o" option to ./Bootstrap.
+
+* Iterate the appropriate steps above until you have final release
+  tarballs for both GASNet and GASNet_Tools
+
+* Before merging the release branch be sure you have up-to-date clones of both
+  'master' and 'develop'.  While it is unlikely that 'master' has changed since
+  you began, concurrent development on 'develop' should be considered normal.
+  Since you haven't committed anything to either branch in your local repo,
+  the following should be safe:
+    $ git checkout develop
+    $ git pull --ff-only
+    $ git checkout master
+    $ git pull --ff-only
+
+* Advanced warning #1:
+  If there were any "hot fixes" on 'master' since the previous release
+  then you will may need to resolve conflicts in the "git ... finish ..." or
+  "git merge ..." step below.  If you are motivated to accept any conflict
+  resolution other than "-X theirs" (meaning: "use the release branch in the
+  case of all conflicts") then you should abort the merge and resolve the
+  conflict through changes to the release branch (and generate new tarballs).
+
+[TODO: need explicit commands for reverse-the-revert below]
+* Advanced warning #2:
+  In the event that any feature on 'develop' was reverted on the release branch
+  (e.g. due to test failures) but you wish to retain the feature on 'develop',
+  you will need to take extra steps to deal with this.  The preferred sequence 
+  would be create/rebase the release branch prior to the introduction of the
+  problematic feature. If this is not possible, then fix things up on the release 
+  branch before it is merged to 'master', and consider skipping the release
+  branch merge to develop. Individual unrelated improvements on the release
+  branch can instead be cherry-picked to develop.
+
+* Now merge the release branch to 'master' (where the general public will
+  expect to find sources intended for general consumption), tag the release,
+  and delete the transient release branch. (We no longer merge master back 
+  to develop, due to lack of perceived benefit).
+    $ git checkout master
+    $ git merge --edit --no-ff release/2040.8.0
+    $ git tag -a gex-2040.8.0 -m "GASNet release 2040.8.0" master
+
+* Check the tag landed in the correct place as follows:
+    $ git show gex-2040.8.0
+  The output should show the commit message for the *merge*.  If it shows any
+  of the earlier commits, move it using "--force":
+    $ git tag --force -a gex-2040.8.0 -m "GASNet release 2040.8.0" master
+  OR, just "--force" it without checking - this is perfectly safe.
+
+* Bump package patch version to .1 on develop and create annotated tag
+  - This should also increment the spec and tools spec versions in
+    documentation files (docs/GASNet-EX.txt and README-tools) ONLY,
+    with comment: // work-in-progress, not "closed"
+
+* Start a new ChangeLog section in develop using the following 2 lines
+  (without indent, and preserving XX-YY-ZZ literally.)
+  ----------------------------------------------------------------------
+  20XX-YY-ZZ: PENDING
+
+* Check carefully that everything is exactly as you wish before you push:
+    $ git push origin master gex-2040.8.0
+  This is the only step of this entire procedure that cannot be undone.
+
+* If you chose to "publish" the release branch on bitbucket, then use the
+  following command to delete the (now unused) release branch:
+    $ git push --delete origin release/2040.8.0
+
+* Generate ("gmake dist") the GASNet and GASNet_Tools tarballs one more
+  time from a checkout of the tagged commit to embed the proper git version
+  info.  This must be done before any more annotated tags are generated
+  in the following steps, to ensure the git-describe output uses the new
+  release tag.
+
+* If the GASNet or tools spec versions have changed, they get tags too:
+    $ git tag gex-spec-2.1 master
+    $ git push origin gex-spec-2.1
+  and/or
+    $ git tag gasnet-tools-spec-1.32 master
+    $ git push origin gasnet-tools-spec-1.32
+
+* In Bugzilla (before publishing the release):
+  + Add the version number of this release
+  + Add a milestone for the next release
+
+* In gasnet-web CVS repository:
+  + Add the new tarballs to CVS in the following locations
+      tools/GASNet_Tools-[version].tar.gz
+      EX/GASNet-[version].tar.gz
+  + Copy the GASNet-EX spec (docs/GASNet-EX.txt in the tarball) to EX/:
+      EX/GASNet-EX-[version].txt  (creating a new file to add to CVS)
+  + Update EX/date_history and tools/date_history in CVS with the three
+    versioned files added to the respective directories in the previous two steps.
+  + Update index.html for the new release
+    Minimum update is:
+    - fresh NEWS item
+    - new versions and MD5s and SHA256 or the tarballs (sizes are automatic)
+       - on the download page and the text files in each tarball directory
+    - new spec version number for "GASNet-EX API description"
+    One should also check that lists (such as of conduits, platforms and
+    compilers) are kept current.
+
+* On the gasnet.lbl.gov server:
+  + "cvs up" to get the new tarballs and index.html
+  + "tar xfz ..." to extract the new GASNet release (not Tools)
+  + Move the "dist-ex" symbolic link:
+    $ ln -sfn GASNet-2040.8.0 dist-ex
+
+* Update release mirrors:
+  + https://bitbucket.org/berkeleylab/gasnet/downloads/
+  + https://sourceforge.net/projects/gasnet/files/
+  + mantis:/data/www/html/snapshot (for snapshots, only)
+  + class-web VM: /var/www/html/EX (spec, symlink and tarball)
+
+* Email a release notice with the most recent ChangeLog entry, using
+  the following headers:
+  To: gasnet-announce@lbl.gov, gasnet-users@lbl.gov
+  Reply-To: gasnet-devel@lbl.gov
+  Subject: GASNet-EX [version] Release Announcement
+
+* In Bugzilla CLOSE the bugs resolved in this release and rollover those
+  which were not, as follows:
+
+  + Set Status=CLOSED for any GASNet Bugzilla reports RESOLVED/FIXED or
+    VERIFIED/FIXED in this release to inform the reporter and all CC-list
+    members that the fix appears in the new release.  Take care to audit the
+    list to avoid closing bugs that were fixed on the develop branch but NOT
+    in the release.
+    Suggested comment text:
+      We believe this bug to be fixed in the GASNet-[YYYY.MM.PP] release,
+      available from https://gasnet.lbl.gov
+
+      If you believe that this bug is still present in GASNet-[YYYY.MM.PP]
+      (or later) please REOPEN this bug report with details on how to reproduce
+      the problem.
+
+  + Temporarily globally disable Bugzilla email (ideally during off-peak hours)
+    to prevent generating tons of spam during the following steps (which should
+    all be done together):
+    - Open the Bugzilla Administration page
+    - Click on "Parameters" section, then "Email" on the left
+    - Change mail_delivery_method from "Sendmail" to "None"
+    - Click "Save Changes" at the bottom of the page.
+
+  + Set Status=CLOSED for any GASNet Bugzilla reports RESOLVED as INVALID,
+    WONTFIX, WORKSFORME or DUPLICATE which have been in that status for one
+    "release year" or longer.
+    Suggested comment text:
+      Mass CLOSE of bugs in RESOLVED/[XXX] status for a full release cycle (or longer).
+    For DUPLICATE bugs only, add the following additional text:
+      Note that this doesn't necessarily mean the reported problem is "Closed"; only
+      that this bug report is no longer active.  See the duplicated bug for the
+      current Status of the reported problem.
+
+  + Update the milestone for any Bugzilla reports in NEW, ASSIGNED or REOPENED
+    state on the old milestone to the next milestone.
+    Suggested comment text:
+        Rolling-over open bugs to next milestone.
+
+  + Restore the Bugzilla mail_delivery_method to Sendmail
+
+* Revise this document with any additions, corrections or changes
+
+Snapshot Releases
+=================
+
+* Goals of a snapshot include
+  + provide stable, versioned code to one or more stakeholders
+  + ensure the version is tagged in git for reproducibility
+  + avoid listing the version number in ChangeLog of the main branches, or as the name of a branch
+  + provide unambiguous, monotonic versioning:
+    - package, gex spec, tools spec, AMX libs, gasnet_portable_platform.h
+* A snapshot differs from a normal release as follows:
+  + We do not generate a tarball to post on any of our public download sites
+    - Upload to `unlisted` area on mantis to be decided on a case-by-case basis
+      (e.g. collaborator's CI needs a Bootstrapped tarball)
+  + We do not generate any advertising, publicity or public-facing documentation (such as updates to gasnet.lbl.gov)
+  + We do not add a version to Bugzilla
+    - Existing "other snapshot (specify)" already serves this purpose
+  + We do not attempt manual testing on platforms not covered by automation
+    - Unless such a platform is a motivator for the snapshot
+  + Less effort might be spent on updates to documentation.  Examples:
+    - Might omit careful examination of `git` history looking for missing `ChangeLog` items
+    - Might omit reordering or "wordsmithing" in ChangeLog
+    - No review of `[PROPOSED]`, '[EXPERIMENTAL]', or similar tags in `GASNet-EX.txt`
+    - Skip the spell checker
+* A snapshot shares the following characteristics with a normal "full" release
+  + We must review a full week of automated testing and at least document "NEW" failures
+    not attributed to external causes (SYSERR, "pilot error", bug in test or client, etc.)
+  + `{GASNETT,GEX}_SPEC_VERSION_*` will have "closed" values, meaning
+    no `// work-in-progress, not "closed"` comments or `GASNet-EX.txt` and `README-tools`
+  + We advance (if appropriate) conduit, ammpi and amudp versions
+  + We advance version in `other/gasnet_portable_platform.h`
+* Snapshots should be named `gex-YYYY.MM.0-snapshot`
+  + Will reflect the date of the snapshot release
+    (as opposed to a patch relative to any full release or earlier snapshot)
+  + In the event `YYYY.MM` would collide with a planned release, "decrement" the month
+    - Example: the 2023.2.0 snapshot took place in March, but we used `2` for `MM`
+      because a full 2023.3.0 release was forthcoming
+* Step 1. Prior to advancing `stable` the following should be done on `develop` to ensure that there
+  will be no version ambiguity between the snapshot content and subsequent work on `develop`
+  + If there have been any GEX or Tools spec changes, "close" `GEX_SPEC_VERSION_*` and/or
+    `GASNETT_SPEC_VERSION_*` as for a normal release.
+    - The "no changes" case is handled below, in Step 3.
+  + Advance the version in `other/gasnet_portable_platform.h`
+  + If appropriate, advance conduit and amx versions as for a normal release
+  + Update the package version to `YYYY.MM.0` in `configure.in`
+  + Note that the "PENDING" line remains in `ChangeLog`
+  + Note lack of any `-snapshot` in these steps
+  + This work should be subject to PR which is fast-forward merged, just as when preparing for a normal release
+* Step 2. advance `stable` in the normal manner
+  + The "normal manner" includes an annotated `gex-stable-YYYY_MM_DD` tag
+  + If applicable, new spec and amx version tags should be applied to `stable`:
+    - `gex-spec-*`, `gasnet-tools-spec-*`, `AMMPI_*`, `AMUDP_*`
+  + Note lack of any tag for `gex-YYYY.MM.0`
+* Step 3. Create the snapshot, as a single "orphan" commit
+  + Parent of the snapshot is the commit created in Step 2.
+  + Replace PENDING heading with date and package version in ChangeLog
+  + If nothing has changed to warrant an advance of `{GASNETT,GEX}_SPEC_VERSION_*` in Step 1,
+    then roll-back the "in progress" version bump(s) which were preserved on `develop`
+    - However, if there were textual changes which did not change the API, then we should
+      roll-back the number but append a short comment mentioning the difference(s).
+  + Comment: "Version markings for YYYY.MM.0-snapshot"
+  + Commit gets an annotated tag
+    - Tag: `gex-YYYY.MM.0-snapshot`
+    - Annotation message: "GASNet-EX YYYY.MM.0 snapshot"
+  + The annotated tag is "publication" of the snapshot release (pushes the commit too)
+* Step 4. When sure no additional changes are desired on `develop` (sending us back to Step. 1)
+  + Follow normal post-release steps on `develop`, including advancing the package version to
+    `gex-YYYY.MM.1` and opening new "work-in-progress" GEX and Tools spec versions if they were
+     closed in Step 1.
+  + Most (only?) significant differences from a normal release are that the "PENDING" line will
+    already/still be present in `ChangeLog` and in some case the GEX and Tools spec numbers might
+    already/still be marked work-in-progress.
+* Optional
+  + Best practice is to stage `develop`, `stable` and the single orphan commit in a team
+    member's fork of the main repo, where we can review all the commit and tags.
+  + In that case, all the work constructed in steps 1 to 4 boils down to pushing two
+    branches and three or more tags.
+
+--------------------------------------------------------------------------
+  The canonical version of this document is located here:
+    https://bitbucket.org/berkeleylab/gasnet/src/develop/README-release
+
+  For more information, please email: gasnet-devel@lbl.gov
+  or visit the GASNet home page at:   https://gasnet.lbl.gov
+--------------------------------------------------------------------------

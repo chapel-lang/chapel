@@ -1,0 +1,52 @@
+# from surveyor.alcf.anl.gov on 10/16/08
+Usage: 
+	 mpirun [options]
+	 or
+	 mpirun [options] binary [arg1 arg2 ... argn]
+
+Options:
+    -h				Provides this extended help information
+      				can also use -help
+    -version			Display version information
+    -partition <partition_id>	ID of the partition to run the job on
+    -np <nodes|ranks>		For dynamic partitions, the number of compute nodes to allocate for the job
+                     		For static partitions, the number of mpi ranks to use for the job
+    -mode <SMP|DUAL|VN>		Execution mode, either SMP, DUAL, or Virtual Node mode.
+                       		Default is SMP
+    -exe <binary>		Full path to the binary to execute
+    -cwd <path>			Current working directory of the job, as seen by the
+               			compute nodes, can also use -wdir
+    -host <service_node_host>	Hostname of the service node
+    -port <service_node_port>	Port of the mpirun server on the service node
+    -env <env=val>		Environment variable that should be set
+    -exp_env <env vars>		Environment variable in the current environment to export
+    -env_all 			Export all current enviorment variables to the job environment
+    -mapfile <mapfile|mapping>  mapfile contains a user specified MPI topology,
+                                mapping is a permutation of XYZT
+    -args <"<arguments>">	Arguments to pass to the job, must be enclosed in double quotes
+    -timeout <seconds>		The limit of the job execution time
+    -start_gdbserver <path>	Start gdbserver for the job, must specify path to gdbserver
+    -label			Add labels (STDOUT, STDERR, and MPI rank) to the job output
+    -nw				Return mpirun job cycle status instead of job exit status
+    -nofree			Do not deallocate the partition if mpirun allocated it
+    -free <wait|nowait>		Free the partition specified by -partition,
+                       		no job will be run
+    -noallocate			Do not allocate the partition, the job will only start
+               			if the partition was already INITIALIZED or CONFIGURING
+    -reboot			Reboot all compute nodes of the specified partition before
+           			running the job, the partition must be INIIALIZED prior 
+           			to rebooting
+    -boot_options <options>	Low level options used when booting a partition
+    -verbose <0|1|2|3|4>	Verbosity level, default is 0
+    -trace <0-7>		Trace level, output is sent to a file in the current working
+                		directory. Default level is 0
+    -only_test_protocol		Test the mpirun frontend to backend communication,
+                       		no job will be run
+    -strace <all|none|n>	Enable syscall trace for all, none, or node with MPI rank n
+    -shape <XxYxZ>		Shape of job in XxYxZ format, if not specified you must use
+                  		-partition or -np
+    -psets_per_bp <n>		Number of psets per base partition required in the partition.
+    -connect <TORUS|MESH>	Compute node connections, default is MESH.
+    -enable_tty_reporting	Disables the default line buffering of stdin, stdout, and stderr
+                         	when input (stdin) or output (stdout/stderr) is not a tty.
+    -config <path>		Specify mpirun config file path

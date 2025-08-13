@@ -1,0 +1,86 @@
+# n2001.lbl.gov
+-----------------------------------------------------------------------------
+Synopsis:       mpirun [options] <app> 
+                mpirun [options] <where> <program> [<prog args>]
+
+Description:    Start an MPI application in LAM/MPI.
+
+Notes:
+                [options]       Zero or more of the options listed below
+                <app>           LAM/MPI appschema
+                <where>         List of LAM nodes and/or CPUs (examples
+                                below)
+                <program>       Must be a LAM/MPI program that either
+                                invokes MPI_INIT or has exactly one of
+                                its children invoke MPI_INIT
+                <prog args>     Optional list of command line arguments
+                                to <program>
+
+Options:
+                -c <num>        Run <num> copies of <program> (same as -np)
+                -c2c            Use fast library (C2C) mode
+                -client <rank>  <host>:<port>
+                                Run IMPI job; connect to the IMPI server <host>
+                                at port <port> as IMPI client number <rank>
+                -D              Change current working directory of new
+                                processes to the directory where the
+                                executable resides
+                -f              Do not open stdio descriptors
+                -ger            Turn on GER mode
+                -h              Print this help message
+                -l              Force line-buffered output
+                -lamd           Use LAM daemon (LAMD) mode (opposite of -c2c)
+                -nger           Turn off GER mode
+                -np <num>       Run <num> copies of <program> (same as -c)
+                -nx             Don't export LAM_MPI_* environment variables
+                -O              Universe is homogeneous
+                -pty / -npty    Use/don't use pseudo terminals when stdout is 
+                                a tty
+                -s <nodeid>     Load <program> from node <nodeid>
+                -sigs / -nsigs  Catch/don't catch signals in MPI application
+                -ssi <n> <arg>  Set environment variable LAM_MPI_SSI_<n>=<arg>
+                -toff           Enable tracing with generation initially off
+                -ton, -t        Enable tracing with generation initially on
+                -tv		Launch processes under TotalView Debugger
+		-v              Be verbose
+                -w / -nw        Wait/don't wait for application to complete
+                -wd <dir>       Change current working directory of new
+                                processes to <dir>
+                -x <envlist>    Export environment vars in <envlist>
+
+Nodes:          n<list>, e.g., n0-3,5
+CPUS:           c<list>, e.g., c0-3,5
+Extras:         h (local node), o (origin node), N (all nodes), C (all CPUs)
+
+Examples:       mpirun n0-7 prog1
+                Executes "prog1" on nodes 0 through 7.
+
+                mpirun -lamd -x FOO=bar,DISPLAY N prog2
+                Executes "prog2" on all nodes using the LAMD RPI.  
+                In the environment of each process, set FOO to the value
+                "bar", and set DISPLAY to the current value.
+
+                mpirun n0 N prog3
+                Run "prog3" on node 0, *and* all nodes.  This executes *2*
+                copies on n0.
+
+                mpirun C prog4 arg1 arg2
+                Run "prog4" on each available CPU with command line
+                arguments of "arg1" and "arg2".  If each node has a
+                CPU count of 1, the "C" is equivalent to "N".  If at
+                least one node has a CPU count greater than 1, LAM
+                will run neighboring ranks of MPI_COMM_WORLD on that
+                node.  For example, if node 0 has a CPU count of 4 and
+                node 1 has a CPU count of 2, "prog4" will have
+                MPI_COMM_WORLD ranks 0 through 3 on n0, and ranks 4
+                and 5 on n1.
+
+                mpirun c0 C prog5
+                Similar to the "prog3" example above, this runs "prog5"
+                on CPU 0 *and* on each available CPU.  This executes
+                *2* copies on the node where CPU 0 is (i.e., n0).
+                This is probably not a useful use of the "C" notation;
+                it is only shown here for an example.
+
+Defaults:       -c2c -w -pty -nger -nsigs
+-----------------------------------------------------------------------------

@@ -409,37 +409,37 @@ int gasnet_AMGetMsgSource(gasnet_token_t _token, gasnet_node_t *_srcrank) {
   #define gasnet_AMRequestShort(node,hidx,...) ( \
           gasneti_assert_reason_always(GASNETI_ARGCOUNT_VAL(__VA_ARGS__) == GASNETI_AMNUMARGS(__VA_ARGS__), \
                                        "Argument count mismatch to gasnet_AMRequestShort()"), \
-          GASNETI_AMVA(RequestShort,__VA_ARGS__)(gasneti_thunk_tm,node,hidx,GASNETI_FLAG_G2EX_DEBUG&&__VA_ARGS__) )
+          GASNETI_AMVA(RequestShort,,__VA_ARGS__)(gasneti_thunk_tm,node,hidx,GASNETI_FLAG_G2EX_DEBUG&&__VA_ARGS__) )
 
   #define gasnet_AMRequestMedium(node,hidx,src_addr,nbytes,...) ( \
           gasneti_assert_reason_always(GASNETI_ARGCOUNT_VAL(__VA_ARGS__) == GASNETI_AMNUMARGS(__VA_ARGS__), \
                                        "Argument count mismatch to gasnet_AMRequestMedium()"), \
-          GASNETI_AMVA(RequestMedium,__VA_ARGS__)(gasneti_thunk_tm,node,hidx,src_addr,nbytes,GEX_EVENT_NOW,GASNETI_FLAG_G2EX_DEBUG&&__VA_ARGS__) )
+          GASNETI_AMVA(RequestMedium,,__VA_ARGS__)(gasneti_thunk_tm,node,hidx,src_addr,nbytes,GEX_EVENT_NOW,GASNETI_FLAG_G2EX_DEBUG&&__VA_ARGS__) )
 
   #define gasnet_AMRequestLong(node,hidx,src_addr,nbytes,dst_addr,...) ( \
           gasneti_assert_reason_always(GASNETI_ARGCOUNT_VAL(__VA_ARGS__) == GASNETI_AMNUMARGS(__VA_ARGS__), \
                                        "Argument count mismatch to gasnet_AMRequestLong()"), \
-          GASNETI_AMVA(RequestLong,__VA_ARGS__)(gasneti_thunk_tm,node,hidx,src_addr,nbytes,dst_addr,GEX_EVENT_NOW,GASNETI_FLAG_G2EX_DEBUG&&__VA_ARGS__) )
+          GASNETI_AMVA(RequestLong,,__VA_ARGS__)(gasneti_thunk_tm,node,hidx,src_addr,nbytes,dst_addr,GEX_EVENT_NOW,GASNETI_FLAG_G2EX_DEBUG&&__VA_ARGS__) )
 
   #define gasnet_AMRequestLongAsync(node,hidx,src_addr,nbytes,dst_addr,...) ( \
           gasneti_assert_reason_always(GASNETI_ARGCOUNT_VAL(__VA_ARGS__) == GASNETI_AMNUMARGS(__VA_ARGS__), \
                                        "Argument count mismatch to gasnet_AMRequestLongAsync()"), \
-          GASNETI_AMVA(RequestLong,__VA_ARGS__)(gasneti_thunk_tm,node,hidx,src_addr,nbytes,dst_addr,GEX_EVENT_NOW,GASNETI_FLAG_G2EX_DEBUG&&__VA_ARGS__) )
+          GASNETI_AMVA(RequestLong,,__VA_ARGS__)(gasneti_thunk_tm,node,hidx,src_addr,nbytes,dst_addr,GEX_EVENT_NOW,GASNETI_FLAG_G2EX_DEBUG&&__VA_ARGS__) )
 
   #define gasnet_AMReplyShort(token,hidx,...) ( \
           gasneti_assert_reason_always(GASNETI_ARGCOUNT_VAL(__VA_ARGS__) == GASNETI_AMNUMARGS(__VA_ARGS__), \
                                        "Argument count mismatch to gasnet_AMReplyShort()"), \
-          GASNETI_AMVA(ReplyShort,__VA_ARGS__)(token,hidx,0&&__VA_ARGS__) )
+          GASNETI_AMVA(ReplyShort,,__VA_ARGS__)(token,hidx,0&&__VA_ARGS__) )
 
   #define gasnet_AMReplyMedium(token,hidx,src_addr,nbytes,...) ( \
           gasneti_assert_reason_always(GASNETI_ARGCOUNT_VAL(__VA_ARGS__) == GASNETI_AMNUMARGS(__VA_ARGS__), \
                                        "Argument count mismatch to gasnet_AMReplyMedium()"), \
-          GASNETI_AMVA(ReplyMedium,__VA_ARGS__)(token,hidx,src_addr,nbytes,GEX_EVENT_NOW,0&&__VA_ARGS__) )
+          GASNETI_AMVA(ReplyMedium,,__VA_ARGS__)(token,hidx,src_addr,nbytes,GEX_EVENT_NOW,0&&__VA_ARGS__) )
 
   #define gasnet_AMReplyLong(token,hidx,src_addr,nbytes,dst_addr,...) ( \
           gasneti_assert_reason_always(GASNETI_ARGCOUNT_VAL(__VA_ARGS__) == GASNETI_AMNUMARGS(__VA_ARGS__), \
                                        "Argument count mismatch to gasnet_AMReplyLong()"), \
-          GASNETI_AMVA(ReplyLong,__VA_ARGS__)(token,hidx,src_addr,nbytes,dst_addr,GEX_EVENT_NOW,0&&__VA_ARGS__) )
+          GASNETI_AMVA(ReplyLong,,__VA_ARGS__)(token,hidx,src_addr,nbytes,dst_addr,GEX_EVENT_NOW,0&&__VA_ARGS__) )
 #endif
 
 /* ------------------------------------------------------------------------------------ */

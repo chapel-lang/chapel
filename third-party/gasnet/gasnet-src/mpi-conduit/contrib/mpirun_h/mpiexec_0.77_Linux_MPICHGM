@@ -1,0 +1,20 @@
+# rtc.rice.edu http://www.osc.edu/~pw/mpiexec/
+Usage: mpiexec [<args>] <executable> [<exe args>]...
+   or: mpiexec [<args>] -config[=]<file>
+  -n <numproc> : use only some of the allocated processors
+     Default behavior allocates one process per allocated processor.
+  -verbose : be verbose about mpiexec operation
+  -nostdin : do not listen to stdin, allowing process to go into background
+  -allstdin : send stdin to all processes (default just proc #0)
+  -nostdout : do not redirect stdout/stderr, but let pbs accumulate it
+  -comm (gm|p4|ib|mpich2|lam|shmem|emp|none) : choose MPI (default mpich-gm)
+    -mpich-p4-[no-]shmem : for MPICH/P4, specify if the library was
+                           compiled with shared memory support (default yes)
+  -pernode : allocate only one process per compute node
+  -nolocal : do not run any MPI processes on the local node
+  -transform-hostname[=]<sed expression> : use alternate names for MPI
+  -tv : debug using totalview (ensure it is in your path)
+  -kill : kill other processes if any one process exits
+  -config[=]<file> : use heterogenous node specification file ("-" for stdin)
+  -version : show version information
+Version 0.77, configure options:'--with-pbs=/usr/pbs' '--with-pbssrc=/usr/pbs' '--with-default-comm=mpich-gm' '--prefix=/usr/local'

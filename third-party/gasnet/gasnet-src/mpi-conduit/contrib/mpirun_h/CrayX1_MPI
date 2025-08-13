@@ -1,0 +1,36 @@
+# phoenix.ccs.ornl.gov
+mpirun: ERROR: Option requires an argument -- h
+mpirun: ERROR: Option requires an argument -- h
+mpirun: ERROR: Option requires an argument -- h
+Usage: mpirun [-D][-L n|-l n][-N pes][-P port][-U uid][-C mask][-W wrap]
+          [-f][-G gasid][-h hard_label|-s soft_label][-m size]
+          [-p text:other][-A|-F][-t sec][-V][-u][-c limits]
+          [-d depth] [-n|-np] width entry [: -np width entry2
+            [: -np width entry3 [: ...] ] ]
+
+      -A            Accelerated memory model
+      -c            Application current limits name=value,...
+      -C            Privileged: cache domain mask 0..3
+      -D            Debug
+      -d depth      Depth of each processor (number of threads)
+      -F            Flexible memory model
+      -f            Force run (Prime)
+      -G gasid      Privileged: Stand-alone GASID
+      -h hard_label Only locate on nodes with this label
+      -L n          Privileged: Stand-alone placement first module
+      -l n          Psched placement first module (advisory)
+      -m size       Memory limit in megabytes (default unlimited)
+                    K|M|G suffix supported (16 == 16M == 16 megabytes)
+      -N pes        PEs per module
+      -n|-np width  Number of processors needed
+      -P port       RPC port number of psched
+      -p text:other Set text and/or other page size (0 == default)
+                    Value in bytes K|M|G suffix (1M == 1 megabyte)
+      -s soft_label Preferentially locate on nodes with this label
+      -t sec        Time limit in seconds (default unlimited)
+      -U uid        Specify UID (testing only)
+      -u            Run as unplaced application
+      -V            Display MPI library version
+      -W            PEs per cache domain
+      :             Separate binaries for MPMD mode
+                                      (Multiple Program, Multiple Data)

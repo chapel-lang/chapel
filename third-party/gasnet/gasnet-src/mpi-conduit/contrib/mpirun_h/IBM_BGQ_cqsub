@@ -1,0 +1,12 @@
+Command required
+
+Usage: cqsub [-d] [-v] -p <project> -q <queue> -C <working directory>
+             --dependencies <jobid1>:<jobid2> --preemptable
+             -e envvar1=value1:envvar2=value2 -k <kernel profile>
+             -K <kernel options> -O <outputprefix> -t time <in minutes>
+             -E <error file path> -o <output file path> -i <input file path>
+             -n <number of nodes> -h -c <processor count> -m <mode co/vn> 
+             -u <umask> --debuglog <cobaltlog file path>
+             --attrs <attr1=val1:attr2=val2> --run-users <user1>:<user2> 
+             --run-project <command> <args>
+

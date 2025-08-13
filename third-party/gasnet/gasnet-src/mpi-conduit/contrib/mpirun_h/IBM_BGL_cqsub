@@ -1,0 +1,3 @@
+# bgl.mcs.anl.gov
+option -h not recognized
+Usage: cqsub [-d] [-v] -p <project> -q <queue> -C <working directory> -e envvar1=value1:envvar2=value2 -k <kernel profile> -O <outputprefix> -t time <in minutes> -n <number of nodes> -c <processor count> -m <mode co/vn> <command> <args>

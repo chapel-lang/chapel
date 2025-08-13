@@ -118,7 +118,7 @@ COMMON_ENV += CHPL_COMM_DEBUG=$(CHPL_COMM_DEBUG)
 endif
 
 # Apply upsteam or local patches, if any
-chapel_patches =
+chapel_patches ?=
 chapel-patch: force
 	cd $(CHAPEL_BLDDIR) && \
 	for p in $(chapel_patches); do $(WGET) $$p && patch -p1 < `basename $$p`; done

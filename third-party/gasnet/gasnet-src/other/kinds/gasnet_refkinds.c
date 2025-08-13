@@ -26,6 +26,10 @@ gasneti_MK_t gasneti_import_mk_nonhost(gex_MK_t _mk) {
   }
   return gasneti_import_mk(_mk);
 }
+gasneti_MK_t gasneti_import_mk_nonhost_valid(gex_MK_t mk) {
+  gasneti_assert(mk != GEX_MK_INVALID);
+  return gasneti_import_mk_nonhost(mk);
+}
 #endif
 
 #ifndef gasneti_export_mk

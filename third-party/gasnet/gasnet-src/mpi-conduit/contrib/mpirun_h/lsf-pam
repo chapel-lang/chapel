@@ -1,0 +1,23 @@
+Usage message for PASS specific arguments...
+    -Dvpg <integer>           : Debug level for virtual process group code
+    -Dsr <integer>            : Debug level for send/receive code
+    -Dspawn <integer>         : Debug level for process spawn code
+    -Dstate <integer>         : Debug level for state transitions
+    -Dresmgr <integer>        : Debug level for Resource Manager Interface Code
+    -Dinfo <integer>          : Debug level for task info code
+    -Dmalloc <integer>        : Debug level for Memory Allocation
+    -Dexception <integer>     : Debug level for Exception Handling
+    -Dtop <integer>           : Debug level for Top level Code
+    -Dmainloop <integer>      : Debug level for Main Event Loop Code
+    -Dshutdown <integer>      : Debug level for Shutdown Code
+    -Dsi <integer>            : Debug level for simple instrumentation
+    -Dmpirm <integer>         : Debug level for MPI RM Library Code
+    -Drmi <integer>           : Debug level for Remote Method Invocation Code
+    -Dpjl <integer>           : Debug level for Parallel Job Launcher Code
+    -Dper <integer>           : Debug level for Performance data
+    -Dpass <integer>          : Set all PASS debugging flags to <integer>
+    -pause "id1 id2...idn"    : Pause at pausepoints id1 id2...idn
+    -show_pausepoints         : Print a message when each pausepoint is 
+                                executed
+    -TSdebug                  : Enable debugging for TaskStarter 
+

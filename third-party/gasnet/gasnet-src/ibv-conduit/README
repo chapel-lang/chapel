@@ -12,6 +12,7 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
 @ Section: Multi-rail Support @
 @ Section: On-Demand Paging (ODP) Support @
 @ Section: HCA Configuration @
+@ Section: Remote Atomics @
 @ Section: Advice to Client Authors @
 @ Section: Known Problems @
 @ Section: Core API @
@@ -1047,6 +1048,18 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
     The default is to use a fraction of the HCA pinning resources equal to
     the fraction of physical memory given by GASNET_PHYSMEM_MAX, subject to
     a system-dependent maximum value.
+
+  + GASNET_RATOMICBUF_COUNT
+    This gives the max number of pre-pinned buffers allocated on each
+    process for buffering of remote atomic operations, where each such
+    buffer is one cache line in length.  The actual number of buffers
+    allocated is the lesser of the values of GASNET_RATOMICBUF_COUNT and
+    GASNET_NETWORKDEPTH_TOTAL, since the total network depth bounds the
+    number of operations that can utilize these buffers.
+    If set to zero (the default), the value is set equal to
+    GASNET_NETWORKDEPTH_TOTAL.
+    Reducing this parameter limits the number of in-flight fetching remote
+    atomic operations, which each consume one buffer.
    
   Firehose configuration:
   ----------------------
@@ -1255,6 +1268,47 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
     the value to 16 yielded approximately a 30% bandwidth improvement in an
     RDMA-GET benchmark.
 
+@ Section: Remote Atomics @
+
+Support for offloaded atomics can be disabled at configure time using
+`--disable-ibv-atomics`.  Otherwise, offload support is compiled in
+`GASNET_SEGMENT_FAST` mode builds only.  There is currently no support
+for `LARGE` or `EVERYTHING` modes.
+
+See "Remote Atomics vs multi-rail" in the Known Problems section.
+
+The following table indicates the pairs of atomic operation and data type that
+are eligible for offload to the InfiniBand HCA.  The offloaded atomics will be
+used when the arguments to gex_AD_Create() express only supported pairs (unless
+suppressed by use of GEX_FLAG_AD_FAVOR_MY_RANK or GEX_FLAG_AD_FAVOR_MY_NBRHD
+flags, or in a single-process run).
+
+          I32   U32   I64   U64   FLT   DBL
+          ---   ---   ---   ---   ---   ---
+    SET:   N     N     N     N     N     N
+    GET:   N     N     Y     Y     N     Y
+   SWAP:   N     N     N     N     N     N
+ (F)CAS:   N     N     Y     Y     N     Y
+ (F)ADD:   N     N     Y     Y     N     N
+ (F)SUB:   N     N     Y     Y     N     N
+ (F)INC:   N     N     Y     Y     N     N
+ (F)DEC:   N     N     Y     Y     N     N
+(F)MULT:   N     N     N     N     N     N
+ (F)MIN:   N     N     N     N     N     N
+ (F)MAX:   N     N     N     N     N     N
+ (F)AND:   N     N     N     N    N/A   N/A
+  (F)OR:   N     N     N     N    N/A   N/A
+ (F)XOR:   N     N     N     N    N/A   N/A
+
+    Y = offload is supported
+    N = offload is not supported
+    N/A indicates invalid op/type pairs
+
+Please note the complete lack of a SET operation.  Clients will need to address
+this either by ensuring memory is initialized to known values prior to any
+potential access using `gex_AD_Op*()`, or through use of supported operations
+(such as GET followed by CAS in an interval free of concurrent updates).
+
 @ Section: Advice to Client Authors @
 
 + Negotiated-payload Active Messages (NPAM)
@@ -1385,6 +1439,16 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   If you experience this error it is recommended that you reconfigure
   your build of GASNet with --disable-ibv-xrc.  If that is not possible
   one can also set GASNET_USE_XRC=0 in your environment.
+
++ Remote Atomics vs multi-rail
+  To ensure correct/consistent results, support for offload of remote atomics
+  to the InfiniBand HCA will use only a single HCA.  Currently, only the first
+  HCA opened by ibv-conduit is probed for atomic support.  This means that in a
+  multi-rail system, atomics are eligible for offload only when the first used
+  HCA advertises the necessary support.
+  Additionally, when using multiple rails, the implementation can only use a
+  single QP, while single-rail runs are capable of striping concurrent atomic
+  operations over multiple QPs (for non-default vaules of GASNET_NUM_QPS).
 
 + Bug 495 and 955
   The "firehose" implementation of dynamic memory registration in ibv-conduit
