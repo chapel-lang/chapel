@@ -205,6 +205,9 @@ chpl-language-server: frontend-shared FORCE
 	@# building it twice).
 	cd tools/chpl-language-server && $(MAKE) all install
 
+chpl-parallel-dbg: FORCE
+	cd tools/chpl-parallel-dbg && $(MAKE) all install
+
 chpl-cmake-module-files: FORCE
 	@echo "Generating CMake module files..."
 	@cd compiler && $(MAKE) chpl-cmake-module-files
@@ -265,6 +268,7 @@ clobber: FORCE
 	cd tools/chpldoc && $(MAKE) clobber
 	cd tools/chpl-language-server && $(MAKE) clobber
 	cd tools/chplcheck && $(MAKE) clobber
+	cd tools/chpl-parallel-dbg && $(MAKE) clobber
 	if [ -e doc/Makefile ]; then cd doc && $(MAKE) clobber; fi
 	rm -rf bin
 	rm -rf lib
