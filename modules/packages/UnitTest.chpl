@@ -108,7 +108,7 @@ Output:
 Specifying locales
 ^^^^^^^^^^^^^^^^^^
 
-You can specify the num of locales of a test using these methods.
+You can control the number of locales a test should use with these methods:
 
 :proc:`~Test.addNumLocales`
 :proc:`~Test.maxLocales`
