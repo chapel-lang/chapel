@@ -20,6 +20,8 @@ source $UTIL_CRON_DIR/common-tarball.bash
 # Tell gen_release to use existing repo instead of creating a new one with
 # git-archive.
 export CHPL_GEN_RELEASE_NO_CLONE=true
+# skip docs build for a faster tarball
+export CHPL_GEN_RELEASE_SKIP_DOCS=true
 
 export CHPL_LLVM=none
 
