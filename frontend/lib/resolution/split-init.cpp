@@ -62,6 +62,7 @@ struct FindSplitInits : VarScopeVisitor {
   void propagateChildToParent(VarFrame* frame, VarFrame* parent, const AstNode* ast);
 
   // overrides
+  void handleTupleDeclaration(const TupleDecl* ast, RV& rv) override;
   void handleDeclaration(const VarLikeDecl* ast, RV& rv) override;
   void handleMention(const Identifier* ast, ID varId, RV& rv) override;
   void handleAssign(const OpCall* ast, RV& rv) override;
@@ -182,6 +183,10 @@ void FindSplitInits::handleInitOrAssign(ID varId,
     // add the split init entry to the current frame
     addInit(frame, varId, useType);
   }
+}
+
+void FindSplitInits::handleTupleDeclaration(const TupleDecl* ast, RV& rv) {
+  // TODO
 }
 
 void FindSplitInits::handleDeclaration(const VarLikeDecl* ast, RV& rv) {

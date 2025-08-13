@@ -273,10 +273,11 @@ bool VarScopeVisitor::enter(const TupleDecl* ast, RV& rv) {
   enterAst(ast);
   enterScope(ast, rv);
 
-  // TODO: handle tuple decls
   return false;
 }
 void VarScopeVisitor::exit(const TupleDecl* ast, RV& rv) {
+  handleTupleDeclaration(ast, rv);
+
   exitScope(ast, rv);
   exitAst(ast);
 

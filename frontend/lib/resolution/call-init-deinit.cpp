@@ -123,6 +123,7 @@ struct CallInitDeinit : VarScopeVisitor {
   void processReturnThrowYield(const uast::AstNode* ast, RV& rv);
 
   // overrides
+  void handleTupleDeclaration(const TupleDecl* ast, RV& rv) override;
   void handleDeclaration(const VarLikeDecl* ast, RV& rv) override;
   void handleMention(const Identifier* ast, ID varId, RV& rv) override;
   void handleAssign(const OpCall* ast, RV& rv) override;
@@ -955,6 +956,10 @@ void CallInitDeinit::resolveDeinit(const AstNode* ast,
 
   ResolvedExpression& opR = rv.byAst(assocAst);
   c.noteResult(&opR, { { AssociatedAction::DEINIT, deinitedId } });
+}
+
+void CallInitDeinit::handleTupleDeclaration(const TupleDecl* ast, RV& rv) {
+  // TODO
 }
 
 void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {

@@ -66,6 +66,8 @@ class VarScopeVisitor : public BranchSensitiveVisitor<VarFrame, MutatingResolved
 
   // ----- methods to be implemented by specific analysis subclass
 
+  /** Called for a tuple destructuring variable declaration */
+  virtual void handleTupleDeclaration(const TupleDecl* ast, RV& rv) = 0;
   /** Called for a variable declaration */
   virtual void handleDeclaration(const uast::VarLikeDecl* ast, RV& rv) = 0;
   /** Called for an Identifier not used in one of the below cases */
