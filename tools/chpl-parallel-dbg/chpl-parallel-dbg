@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+executable=$1
+shift
+numLocales=$1
+shift
+
+if [ -z "$executable" ] || [ -z "$numLocales" ]; then
+  echo "Usage: $0 <executable> <numLocales> [<lldb options>...]"
+  exit 1
+fi
+
+real_name=$executable
+if [ -f "${real_name}_real" ]; then
+  real_name="${real_name}_real"
+fi
+
+
+if [ ! -n "$CHPL_HOME" ]; then
+  CHPL_HOME=$(chpl --print-chpl-home)
+  if [ -z "$CHPL_HOME" ]; then
+    echo "CHPL_HOME is not set and could not be determined."
+    exit 1
+  fi
+fi
+commands_file="$CHPL_HOME/runtime/etc/debug/chpl_parallel_dbg_commands.py"
+
+lldb \
+  -o "command script import '$commands_file'" \
+  -o "connect $real_name $numLocales" \
+  $@
