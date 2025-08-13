@@ -33,7 +33,7 @@
 
 using ActionElt = std::tuple<AssociatedAction::Action,
                              std::string, /* ID where action occurs */
-                             std::string /* ID acted upon or "" */ >;
+                             std::string /* ID acted upon (or second ID if present) */ >;
 using Actions = std::vector<ActionElt>;
 
 static std::string idToStr(Context* context, ID id) {
@@ -47,11 +47,22 @@ static std::string idToStr(Context* context, ID id) {
   return name;
 }
 
-static void gatherActions(Context* context,
-                          const AstNode* ast,
-                          const ResolvedFunction* r,
-                          Actions& actions) {
+static void addAction(Context* context, Actions& actions, const AstNode* ast,
+                      const AssociatedAction* act) {
+  // HACK: Store otherId as the acted upon ID if it exists, otherwise use the
+  // actual acted upon ID.
+  ID useActId = (!act->otherId().isEmpty()) ? act->otherId() : act->id();
+  actions.emplace_back(act->action(), idToStr(context, ast->id()),
+                       idToStr(context, useActId));
 
+  // Add sub-actions (if any) flattened into the list.
+  for (auto subAct : act->subActions()) {
+    addAction(context, actions, ast, subAct);
+  }
+}
+
+static void gatherActions(Context* context, const AstNode* ast,
+                          const ResolvedFunction* r, Actions& actions) {
   // gather actions for child nodes
   for (auto child : ast->children()) {
     gatherActions(context, child, r, actions);
@@ -60,21 +71,11 @@ static void gatherActions(Context* context,
   // gather actions for this node
   const ResolvedExpression* re = r->resolutionById().byAstOrNull(ast);
   if (re != nullptr) {
-    for (auto act: re->associatedActions()) {
-      if (act.action() == AssociatedAction::DEINIT) {
-        actions.push_back(std::make_tuple(act.action(),
-                                          idToStr(context, ast->id()),
-                                          idToStr(context, act.id())));
-      } else {
-        // ignore acted-upon ID expect for DEINIT
-        actions.push_back(std::make_tuple(act.action(),
-                                          idToStr(context, ast->id()),
-                                          ""));
-      }
+    for (auto act : re->associatedActions()) {
+      addAction(context, actions, ast, &act);
     }
   }
 }
-
 
 static void printAction(const ActionElt& a) {
   AssociatedAction::Action gotAction;
@@ -164,6 +165,11 @@ static void testActions(const char* test,
     expectAction = std::get<0>(expected[i]);
     expectInId = std::get<1>(expected[i]);
     expectActId = std::get<2>(expected[i]);
+    if (expectActId.empty()) {
+      if (gotActId == gotInId) {
+        gotActId = "";
+      }
+    }
 
     if (gotAction != expectAction) {
       assert(false && "Failure: mismatched action type");
