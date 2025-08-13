@@ -2550,13 +2550,14 @@ class AssociatedAction {
   ID id_;
   types::QualifiedType type_;
 
+  // a second id associated with some tuple per-element actions, where it is
+  // necessary to keep track of an RHS.
+  ID otherId_;
+
   // A list of actions contained within this one.
   // Currently only used for tuple copy-init-deinit, where each element may
   // have a sub-action.
   llvm::SmallVector<const AssociatedAction*> subActions_;
-  // A second ID associated with some tuple per-element actions, where it is
-  // necessary to keep track of an RHS.
-  ID otherId_;
 
  public:
   AssociatedAction(Action action, const TypedFnSignature* fn, ID id,
@@ -2568,8 +2569,8 @@ class AssociatedAction {
            fn_ == other.fn_ &&
            id_ == other.id_ &&
            type_ == other.type_ &&
-           subActions_ == other.subActions_ &&
-           otherId_ == other.otherId_;
+           otherId_ == other.otherId_ &&
+           subActions_ == other.subActions_;
   }
   bool operator!=(const AssociatedAction& other) const {
     return !(*this == other);
@@ -2583,22 +2584,20 @@ class AssociatedAction {
   /** Return the ID is associated with the action */
   const ID& id() const { return id_; }
 
-  const types::QualifiedType type() const { return type_; }
+  const ID& otherId() const { return otherId_; }
 
-  bool hasSubActions() const { return !subActions_.empty(); }
+  const types::QualifiedType type() const { return type_; }
 
   const llvm::SmallVector<const AssociatedAction*>& subActions() const {
     return subActions_;
   }
 
-  const ID& otherId() const { return otherId_; }
-
   void mark(Context* context) const {
     if (fn_ != nullptr) fn_->mark(context);
     id_.mark(context);
     type_.mark(context);
-    chpl::mark<decltype(subActions_)>{}(context, subActions_);
     otherId_.mark(context);
+    chpl::mark<decltype(subActions_)>{}(context, subActions_);
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
