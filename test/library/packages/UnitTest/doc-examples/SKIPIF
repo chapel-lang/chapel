@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+# skip if CHPL_TARGET_PLATFORM is not linux64 or darwin
+if [[ $CHPL_TARGET_PLATFORM != "linux64" && $CHPL_TARGET_PLATFORM != "darwin" ]]; then
+  echo True
+else
+  echo False
+fi

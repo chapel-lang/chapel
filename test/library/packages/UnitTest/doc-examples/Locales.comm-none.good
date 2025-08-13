@@ -1,0 +1,16 @@
+
+======================================================================
+SKIPPED Locales.chpl: test3()
+----------------------------------------------------------------------
+Not a MultiLocale Environment. $CHPL_COMM = none
+TestIncorrectNumLocales: in Locales.chpl:9 - Required Locales = 5, 3
+
+======================================================================
+SKIPPED Locales.chpl: test4()
+----------------------------------------------------------------------
+Not a MultiLocale Environment. $CHPL_COMM = none
+TestIncorrectNumLocales: in Locales.chpl:16 - Required Locales = 2
+
+----------------------------------------------------------------------
+
+OK (skipped = 2 )

@@ -1,0 +1,9 @@
+
+======================================================================
+FAIL BasicUsage.chpl: test_temperature()
+----------------------------------------------------------------------
+AssertionError: in BasicUsage.chpl:17 - assertFalse failed. Given expression is True
+
+----------------------------------------------------------------------
+
+FAILED (failures = 1 )
