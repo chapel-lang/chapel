@@ -3099,7 +3099,15 @@ static GenRet codegenCallExprInner(GenRet function,
       c = info->irBuilder->CreateCall(func, llArgs);
       trackLLVMValue(c);
     } else {
-      if (!fnType) INT_FATAL("Could not compute called function type");
+    #ifdef HAVE_LLVM_TYPED_POINTERS
+      // If we are using typed pointers, the pointer type must match the
+      // call type or else instruction verification will fail. If using
+      // opaque pointers, it is fine if the call pointer type is 'void*'.
+      auto fnPtrType = llvm::PointerType::getUnqual(fnType);
+      val = info->irBuilder->CreateBitCast(val, fnPtrType);
+    #endif
+
+      if (!fnType) INT_FATAL("Need function type to create indirect call");
       c = info->irBuilder->CreateCall(fnType, val, llArgs);
       trackLLVMValue(c);
     }
