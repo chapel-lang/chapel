@@ -460,7 +460,7 @@ static void maybeIssueRefMaybeConstWarning(ArgSymbol* arg) {
 
     const char* argName = nullptr;
     char argBuffer[64];
-    if (isTaskIntent && arg->hasFlag(FLAG_FIELD_ACCESSOR)) {
+    if (isTaskIntent && (arg->hasFlag(FLAG_FIELD_ACCESSOR) || isArgThis)) {
       argName = "this";
     } else if (arg->hasFlag(FLAG_EXPANDED_VARARGS)) {
       int varArgNum;
