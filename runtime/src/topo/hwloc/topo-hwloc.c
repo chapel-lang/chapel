@@ -690,9 +690,13 @@ static void partitionResources(void) {
         } hwloc_bitmap_foreach_end();
       }
       if (unusedCores != 0) {
-        char msg[200];
-        snprintf(msg, sizeof(msg), "%d cores are unused", unusedCores);
-        chpl_warning(msg, 0, 0);
+
+        // silence the warning if CHPL_RT_SILENCE_UNUSED_CORES is set
+        if (!chpl_env_rt_get_bool("SILENCE_UNUSED_CORES", false)) {
+          char msg[200];
+          snprintf(msg, sizeof(msg), "%d cores are unused", unusedCores);
+          chpl_warning(msg, 0, 0);
+        }
       }
 
       // Limit our accessible cores and PUs to those in our cpuset.

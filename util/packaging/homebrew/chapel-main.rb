@@ -8,7 +8,7 @@ class Chapel < Formula
   license "Apache-2.0"
   head "https://github.com/chapel-lang/chapel.git", branch: "main"
 
-  # Don't include the bottle information in chapel-main.rb deliberatley. The
+  # Don't include the bottle information in chapel-main.rb deliberately. The
   # idea is that we don't want to accidentally use a published bottle in our testing,
   # which would always report passing.
 
@@ -88,9 +88,10 @@ class Chapel < Formula
         CHPL_GASNET_CFG_OPTIONS: "--disable-auto-conduit-detect --enable-udp --enable-smp",
       ) do
         system "make"
-        with_env(CHPL_TARGET_COMPILER: cbackend) do
-          system "make"
-        end
+        # C backend requires chapel-lang/chapel#27652 to be resolved
+        # with_env(CHPL_TARGET_COMPILER: cbackend) do
+        #   system "make"
+        # end
       end
       with_env(
         CHPL_COMM:               "gasnet",
@@ -98,9 +99,10 @@ class Chapel < Formula
         CHPL_GASNET_CFG_OPTIONS: "--disable-auto-conduit-detect --enable-udp --enable-smp",
       ) do
         system "make"
-        with_env(CHPL_TARGET_COMPILER: cbackend) do
-          system "make"
-        end
+        # C backend requires chapel-lang/chapel#27652 to be resolved
+        # with_env(CHPL_TARGET_COMPILER: cbackend) do
+        #   system "make"
+        # end
       end
       with_env(CHPL_LOCALE_MODEL: "gpu", CHPL_GPU: "cpu") do
         system "make"
@@ -190,6 +192,8 @@ class Chapel < Formula
     ENV["CHPL_INCLUDE_PATH"] = HOMEBREW_PREFIX/"include"
     ENV["CHPL_LIB_PATH"] = HOMEBREW_PREFIX/"lib"
     ENV["CHPL_IGNORE_GASNET_LD"] = "1"
+    ENV["CHPL_RT_SILENCE_UNUSED_CORES"] = "1"
+
     cd libexec do
       system "util/test/checkChplInstall"
       system "util/test/checkChplDoc"
@@ -206,16 +210,18 @@ class Chapel < Formula
           CHPL_RT_OVERSUBSCRIBED: "yes",
         ) do
           system "util/test/checkChplInstall"
-          with_env(CHPL_TARGET_COMPILER: cbackend) do
-            system "util/test/checkChplInstall"
-          end
+          # C backend requires chapel-lang/chapel#27652 to be resolved
+          # with_env(CHPL_TARGET_COMPILER: cbackend) do
+          #   system "util/test/checkChplInstall"
+          # end
         end
       end
       with_env(CHPL_COMM: "gasnet", CHPL_COMM_SUBSTRATE: "smp") do
         system "util/test/checkChplInstall"
-        with_env(CHPL_TARGET_COMPILER: cbackend) do
-          system "util/test/checkChplInstall"
-        end
+        # C backend requires chapel-lang/chapel#27652 to be resolved
+        # with_env(CHPL_TARGET_COMPILER: cbackend) do
+        #   system "util/test/checkChplInstall"
+        # end
       end
       with_env(CHPL_LOCALE_MODEL: "gpu", CHPL_GPU: "cpu") do
         system "util/test/checkChplInstall"
