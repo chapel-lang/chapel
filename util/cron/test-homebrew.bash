@@ -62,7 +62,7 @@ brew upgrade
 brew uninstall --force chapel
 # Remove the cached chapel tar file before running brew install --build-from-source chapel.rb
 rm $HOME/Library/Caches/Homebrew/downloads/*--chapel-${short_version}.tar.gz
-HOMEBREW_NO_INSTALL_FROM_API=1 brew install -v --build-from-source chapel.rb
+HOMEBREW_DEVELOPER=1 HOMEBREW_NO_INSTALL_FROM_API=1 brew install -v --build-from-source ./chapel.rb
 INSTALL_STATUS=$?
     if [ $INSTALL_STATUS -ne 0 ]
     then
