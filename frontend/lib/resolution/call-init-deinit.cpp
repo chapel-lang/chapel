@@ -586,7 +586,7 @@ getLhsForTupleUnpackAssign(Context* context,
     } else {
       // Otherwise, turn its qualifier into 'ref' / 'const ref'
       auto eqt = lhsT->elementType(i);
-      auto kind = KindProperties::removeRef(eqt.kind());
+      auto kind = KindProperties::addRefness(eqt.kind());
       qt = { kind, eqt.type(), eqt.param() };
     }
 
