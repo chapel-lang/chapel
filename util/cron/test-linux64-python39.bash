@@ -12,4 +12,4 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="linux64-python39"
 
 set_and_check_python_version "3.9.13"
 
-$UTIL_CRON_DIR/nightly -cron -hellos ${nightly_args}
+$UTIL_CRON_DIR/nightly -cron -pythonDep ${nightly_args}
