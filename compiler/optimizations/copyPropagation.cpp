@@ -1016,15 +1016,21 @@ void copyPropagation(void) {
       if (fn->hasFlag(FLAG_EXTERN))
         continue;
 
-      localCopyPropagation(fn);
-      if (!fNoDeadCodeElimination)
-        deadVariableElimination(fn);
+      // Iterate LCP with dead code elimination.
+      while (localCopyPropagation(fn) > 0) {
+        if (!fNoDeadCodeElimination) {
+          deadVariableElimination(fn);
+          eliminateLiteralExpressions(fn);
+        }
+      }
 
       // Iterate GCP with dead code elimination.
       while (globalCopyPropagation(fn) > 0)
       {
-        if (!fNoDeadCodeElimination)
+        if (!fNoDeadCodeElimination) {
           deadVariableElimination(fn);
+          eliminateLiteralExpressions(fn);
+        }
       }
     }
   }
