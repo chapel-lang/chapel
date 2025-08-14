@@ -108,6 +108,12 @@ struct CallInitDeinit : VarScopeVisitor {
                    const QualifiedType& lhsType,
                    const QualifiedType& rhsType,
                    RV& rv);
+  void processTupleEltInit(VarFrame* frame,
+                           const AstNode* ast,
+                           int eltIdx,
+                           const QualifiedType& lhsType,
+                           const QualifiedType& rhsType,
+                           RV& rv);
 
   void resolveDeinit(const AstNode* ast,
                      ID deinitedId,
@@ -640,6 +646,8 @@ void CallInitDeinit::resolveTupleInit(const AstNode* ast,
                                       const QualifiedType& lhsType,
                                       const QualifiedType& rhsType,
                                       RV& rv) {
+  VarFrame* frame = currentFrame();
+
   if (!validateTuplesForAssignOrInit(ast, lhsType, rhsType)) {
     return;
   }
@@ -650,8 +658,21 @@ void CallInitDeinit::resolveTupleInit(const AstNode* ast,
     return;
   } else {
     // Initializing an actual tuple variable
-    // TODO: resolve init= per component
+
+    // Resolve a top-level init for the tuple itself
     resolveCopyInit(ast, rhsAst, lhsType, rhsType, false, rv);
+
+    // Also resolve an init per component
+
+    debuggerBreakHere();
+    auto lhsTupleType = lhsType.type()->toTupleType();
+    auto rhsTupleType = rhsType.type()->toTupleType();
+    for (int i = 0; i < lhsTupleType->numElements(); i++) {
+      auto lhsEltType = lhsTupleType->elementType(i);
+      auto rhsEltType = rhsTupleType->elementType(i);
+
+      processTupleEltInit(frame, ast, i, lhsEltType, rhsEltType, rv);
+    }
   }
 }
 
@@ -953,6 +974,70 @@ void CallInitDeinit::processInit(VarFrame* frame,
   }
 }
 
+void CallInitDeinit::processTupleEltInit(VarFrame* frame,
+                                         const AstNode* ast,
+                                         int eltIndex,
+                                         const QualifiedType& lhsType,
+                                         const QualifiedType& rhsType,
+                                         RV& rv) {
+  CHPL_ASSERT(ast);
+
+  const AstNode* rhsAst = nullptr;
+  auto op = ast->toOpCall();
+  if (op != nullptr && op->op() == USTR("=")) {
+    rhsAst = op->actual(1);
+  } else if (auto vd = ast->toVarLikeDecl()) {
+    rhsAst = vd->initExpression();
+  } else {
+    CHPL_ASSERT(false && "unexpected ast for tuple elt init");
+  }
+
+  if (lhsType.isType() || lhsType.isParam()) {
+    // these are basically 'move' initialization
+    resolveMoveInit(ast, rhsAst, lhsType, rhsType, rv);
+  } else {
+    // check genericity; rhs must be concrete. assume error was issued elsewhere.
+    auto g = getTypeGenericity(context, rhsType);
+    if (g != Type::CONCRETE) {
+      return;
+    }
+
+    if (isRef(lhsType.kind())) {
+      // e.g. ref x = localVariable;
+      //  or  ref y = returnAValue();
+      if (isCallProducingValue(rhsAst, rhsType, rv)) {
+        resolveDeinit(ast, rhsAst->id(), rhsType, rv);
+      }
+    } else if (elidedCopyFromIds.count(ast->id()) > 0) {
+      // it is move initialization
+      resolveMoveInit(ast, rhsAst, lhsType, rhsType, rv);
+
+      // The RHS must represent a variable that is now dead,
+      // so note that in deinitedVars.
+      ID rhsDeclId = refersToId(rhsAst, rv);
+      // copy elision with '=' should only apply to myVar = myOtherVar
+      CHPL_ASSERT(!rhsDeclId.isEmpty());
+      frame->deinitedVars.emplace(rhsDeclId, currentStatement()->id());
+    } else if (isCallProducingValue(rhsAst, rhsType, rv)) {
+      // e.g. var x; x = callReturningValue();
+      resolveMoveInit(ast, rhsAst, lhsType, rhsType, rv);
+    } else {
+      // it is copy initialization, so use init= for records
+      // and assign for other stuff, or special handling for tuples
+      if (lhsType.type() != nullptr && lhsType.type()->isTupleType()) {
+        resolveTupleInit(ast, rhsAst, lhsType, rhsType, rv);
+      } else if (lhsType.type() != nullptr && lhsType.type()->isRecordLike()) {
+        resolveCopyInit(ast, rhsAst,
+                        lhsType, rhsType,
+                        /* forMoveInit */ false,
+                        rv);
+      } else {
+        resolveAssign(ast, lhsType, rhsType, rv);
+      }
+    }
+  }
+}
+
 
 void CallInitDeinit::resolveDeinit(const AstNode* ast,
                                    ID deinitedId,
@@ -1008,7 +1093,7 @@ void CallInitDeinit::handleTupleDeclaration(const TupleDecl* ast, RV& rv) {
 
 void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
   VarFrame* frame = currentFrame();
-
+ 
   // check for use of deinited variables in type or init exprs
   if (auto type = ast->typeExpression()) {
     processMentions(type, rv);
