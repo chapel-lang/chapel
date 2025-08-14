@@ -30,5 +30,5 @@ record R2 {
 }
 var r2 = new R2();
 r2.foo();
-r2.bar();
+sync r2.bar();
 writeln(r2);
