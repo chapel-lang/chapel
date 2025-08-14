@@ -233,8 +233,8 @@ class Chapel < Formula
     system bin/"chpldoc", "--version"
     system bin/"mason", "--version"
 
-    Test chplcheck, if it works CLS probably does too.
-    chpl-language-server will hang indefinitely waiting for a LSP client
+    # Test chplcheck, if it works CLS probably does too.
+    # chpl-language-server will hang indefinitely waiting for a LSP client
     system bin/"chplcheck", "--list-rules"
     system bin/"chplcheck", libexec/"examples/hello.chpl"
   end
