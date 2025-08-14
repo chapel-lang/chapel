@@ -53,6 +53,7 @@ class UastConverter {
   setFunctionsToConvertWithTypes(const chpl::resolution::CalledFnsSet& calledFns) = 0;
 
   virtual void setSymbolsToIgnore(std::unordered_set<chpl::ID> ignore) = 0;
+  virtual void eraseSymbolToIgnore(chpl::ID ignore) = 0;
 
   // Indicate which module is the main module
   virtual void setMainModule(chpl::ID mainModule) = 0;
