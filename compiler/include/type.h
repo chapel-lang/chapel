@@ -127,7 +127,7 @@ public:
 
 
   // Only used for LLVM.
-  std::map<std::string, int> GEPMap;
+  llvm::SmallDenseMap<const char*, int> GEPMap;
 #ifdef HAVE_LLVM
   llvm::Type* getLLVMType();
   int getLLVMAlignment();
