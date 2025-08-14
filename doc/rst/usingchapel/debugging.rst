@@ -37,6 +37,12 @@ may be useful, for example if you want to use a graphical debugger like VSCode.
 If you are not using ``--gdb`` or ``--lldb``, make sure to replicate the
 above steps in your debugger of choice for the best experience.
 
+Multi-locale debugging
+~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+
 Running in gdb/lldb with a launcher
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -55,7 +61,6 @@ launchers::
   gasnetrun_ofi
   mpirun4ofi
   pbs-aprun
-  smp
 
 The default terminal emulator program is ``xterm``,
 but by setting the environment variable ``CHPL_COMM_DBG_TERM=urxvt``
