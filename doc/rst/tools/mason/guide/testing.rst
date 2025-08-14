@@ -101,6 +101,16 @@ Specific tests can be run by listing their names or substrings of their names as
 
 Specifying tests to run in the command line ignores the list of tests in `Mason.toml`, and searches all files in `test/`.
 
+Tests can be further filtered using the ``filter`` flag. The ``filter`` flag
+takes a regular expression for test names to run inside each test file. For
+example, if ``test/testFile.chpl`` contains three unit tests named ``testA``,
+``testB``, and ``testC``, the following command will run only ``testA`` and
+``testB``:
+
+.. code-block:: sh
+
+    mason test --filter 'testA|testB' test/testFile.chpl
+
 Additional output can be displayed by throwing the ``--show`` flag.
 
 .. note::

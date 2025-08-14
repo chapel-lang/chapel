@@ -1,0 +1,5 @@
+failingTest()
+Flavour: FAIL
+======================================================================
+AssertionError: in testFiltering.chpl:12 - assertFalse failed. Given expression is True
+----------------------------------------------------------------------

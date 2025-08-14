@@ -214,6 +214,7 @@ Options:
         --parallel              Run tests in parallel(sequential by default)
         --[no]-update           [Do not] update the mason-registry when testing
         --setComm               Set the CHPL_COMM value for running the tests,  e.g. none, gasnet, ugni
+        --filter=FILTER         Filter the tests to run in each file by a regular expression
 
 Test configuration is up to the user
 Tests pass if they exit with status code 0

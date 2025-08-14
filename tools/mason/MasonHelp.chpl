@@ -518,6 +518,7 @@ proc masonTestHelp() {
   writeln("        --parallel              Run tests in parallel(sequential by default)");
   writeln("        --[no]-update           [Do not] update the mason-registry when testing");
   writeln("        --setComm               Set the CHPL_COMM value for running the tests,  e.g. none, gasnet, ugni");
+  writeln("        --filter=FILTER         Filter the tests to run in each file by a regular expression");
   writeln();
   writeln("Test configuration is up to the user");
   writeln("Tests pass if they exit with status code 0");

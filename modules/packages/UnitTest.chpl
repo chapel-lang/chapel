@@ -157,6 +157,19 @@ Output:
 .. literalinclude:: ../../../../test/library/packages/UnitTest/doc-examples/Dependencies.good
     :language: bash
 
+
+Filtering Tests
+~~~~~~~~~~~~~~~
+
+When running tests, you can run a subset of the tests in a given file by using specifying a filter. This is done by specifying ``--filter`` followed by a regular expression matching the names of the tests to run.
+
+.. note::
+
+   If you are using a build of Chapel without regex support
+   (i.e. ``CHPL_RE2=none``), you can compile your test case with ``-snoRegex``
+   to disable regex support in the test runner. ``--filter`` will then
+   perform simple substring matching instead of regex matching.
+
 */
 module UnitTest {
   use Reflection;
@@ -175,6 +188,12 @@ module UnitTest {
   config const skippedTestNames: string = "None";
   @chpldoc.nodoc
   config const ranTests: string = "None";
+
+  @chpldoc.nodoc
+  config const filter: string = "";
+  @chpldoc.nodoc
+  config param noRegex: bool = false;
+
   // This is a dummy test to capture the function signature
   private
   proc testSignature(test: borrowed Test) throws { }
@@ -1166,6 +1185,37 @@ module UnitTest {
     return name + "()";
   }
 
+  @chpldoc.nodoc
+  record Filter {
+    type patType = if noRegex then string else regex(string);
+    const rawPattern: string;
+    const pattern: patType;
+
+    proc init(p: string) {
+      this.rawPattern = p;
+      this.pattern = p;
+    }
+    proc init(raw, p: regex(string)) {
+      this.rawPattern = raw;
+      this.pattern = p;
+    }
+    proc type create(p: string) throws {
+      if noRegex then
+        return new Filter(p);
+      else
+        return new Filter(p, new regex(p));
+    }
+    proc matches(s: string): bool throws {
+      if rawPattern == "" then
+        return true;
+
+      if noRegex then
+        return s.find(this.pattern) != -1;
+      else
+        return this.pattern.search(s).matched;
+    }
+  }
+
   /*Runs the tests
 
     Call this as
@@ -1190,9 +1240,11 @@ module UnitTest {
     // gather all the tests
     param n = __primitive("gather tests", testObjGather.borrow());
 
+    const F = Filter.create(filter);
+
     for param i in 1..n {
       var test_FCF = __primitive("get test by index",i);
-      if (test_FCF: string != tempFcf: string) {
+      if test_FCF: string != tempFcf: string && F.matches(test_FCF:string) {
         testSuite.addTest(test_FCF);
       }
     }
