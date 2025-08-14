@@ -1395,6 +1395,19 @@ void AssociatedAction::stringify(std::ostream& ss,
     ss << " type=";
     type_.stringify(ss, stringKind);
   }
+  if (hasTupleEltIdx()) {
+    ss << " tuple-elt-idx=" << tupleEltIdx_;
+  }
+
+  ss << " sub-actions: {";
+  for (int i = 0; i < subActions_.size(); i++) {
+    ss << "";
+    subActions_[i]->stringify(ss, stringKind);
+    if (i < subActions_.size() - 1) {
+      ss << ", ";
+    }
+  }
+  ss << "}";
 }
 
 void ResolvedExpression::stringify(std::ostream& ss,
