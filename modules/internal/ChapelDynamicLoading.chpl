@@ -31,15 +31,6 @@ module ChapelDynamicLoading {
 
     if !useProcedurePointers then return false;
 
-    // The C backend doesn't quite work yet.
-    if CHPL_TARGET_COMPILER != "llvm" {
-      if emitErrors {
-        compilerError('The experimental procedure pointer implementation ' +
-                      'is not currently supported by the C backend');
-      }
-      return true;
-    }
-
     // LLVM 14 uses typed pointers, which the backend doesn't support yet.
     param unsupportedLlvmVersion = CHPL_LLVM_VERSION == "14";
 
