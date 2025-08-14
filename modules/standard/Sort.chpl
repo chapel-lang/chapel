@@ -105,6 +105,7 @@ array being sorted.
 
 The default key method would look like this:
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
   proc defaultComparator.key(elt) {
@@ -125,6 +126,7 @@ operator, which is used by the base compare method of all sort routines. If the
 ``<`` operator is not defined for the return type, the user may define it
 themselves like so:
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
   operator <(x: returnType, y: returnType): bool {
@@ -157,6 +159,7 @@ indicating how x and y compare to each other. The conditions between ``x`` and
 
 The default compare method for a signed integral type can look like this:
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
     proc defaultComparator.compare(x, y) {
