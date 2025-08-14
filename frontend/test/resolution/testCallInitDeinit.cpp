@@ -49,11 +49,16 @@ static std::string idToStr(Context* context, ID id) {
 
 static void addAction(Context* context, Actions& actions, const AstNode* ast,
                       const AssociatedAction* act) {
-  // HACK: Store otherId as the acted upon ID if it exists, otherwise use the
+  // HACK: Store tuple idx as the acted upon ID if it exists, otherwise use the
   // actual acted upon ID.
-  ID useActId = (!act->otherId().isEmpty()) ? act->otherId() : act->id();
-  actions.emplace_back(act->action(), idToStr(context, ast->id()),
-                       idToStr(context, useActId));
+  std::string useActIdStr;
+  if (act->hasTupleEltIdx()) {
+    useActIdStr = std::to_string(act->tupleEltIndex());
+  } else {
+    useActIdStr = idToStr(context, act->id());
+  }
+
+  actions.emplace_back(act->action(), idToStr(context, ast->id()), useActIdStr);
 
   // Add sub-actions (if any) flattened into the list.
   for (auto subAct : act->subActions()) {
@@ -1979,8 +1984,8 @@ static void test27b() {
         {AssociatedAction::ASSIGN,  "tup",      "M.test@4"},
         {AssociatedAction::COPY_INIT,  "tup",   "M.test@3"},
       {AssociatedAction::COPY_INIT, "x",            ""},
-        {AssociatedAction::ASSIGN,  "x",      "M.test@4"},
-        {AssociatedAction::COPY_INIT,  "x",   "M.test@3"},
+        {AssociatedAction::ASSIGN,  "x",      "0"},
+        {AssociatedAction::COPY_INIT,  "x",   "1"},
       {AssociatedAction::DEINIT,     "M.test@11",   "r"}
     });
 }

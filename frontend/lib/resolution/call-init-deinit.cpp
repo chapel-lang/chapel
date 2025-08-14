@@ -31,6 +31,7 @@
 
 #include "Resolver.h"
 #include "VarScopeVisitor.h"
+#include <unordered_set>
 
 namespace chpl {
 namespace resolution {
@@ -641,6 +642,20 @@ bool CallInitDeinit::validateTuplesForAssignOrInit(const AstNode* ast,
   return true;
 }
 
+static void accumulateActions(std::unordered_set<AssociatedAction>& seen,
+                              std::unordered_set<AssociatedAction>& newActions,
+                              const ResolvedExpression& re) {
+  auto allActions = re.associatedActions();
+  for (auto action : allActions) {
+    bool isNew = seen.insert(action).second;
+    if (isNew) {
+      printf("Found new action: %s\n",
+             AssociatedAction::kindToString(action.action()));
+      newActions.insert(action);
+    }
+  }
+}
+
 void CallInitDeinit::resolveTupleInit(const AstNode* ast,
                                       const AstNode* rhsAst,
                                       const QualifiedType& lhsType,
@@ -664,7 +679,22 @@ void CallInitDeinit::resolveTupleInit(const AstNode* ast,
 
     // Also resolve an init per component
 
-    debuggerBreakHere();
+    auto& re = rv.byPostorder().byAst(ast);
+    std::unordered_set<AssociatedAction> seenActions;
+    std::unordered_set<AssociatedAction> startActions;
+    printf("start\n");
+    accumulateActions(seenActions, startActions, re);
+    printf("after start\n");
+    AssociatedAction* topLevelAction = nullptr;
+    if (startActions.size() == 0) {
+      // No action created for the tuple itself
+    } else if (startActions.size() == 1) {
+      topLevelAction = new AssociatedAction(*startActions.begin());
+    } else {
+      CHPL_ASSERT(false && "shouldn't be possible");
+    }
+    llvm::SmallVector<const AssociatedAction*> subActions;
+
     auto lhsTupleType = lhsType.type()->toTupleType();
     auto rhsTupleType = rhsType.type()->toTupleType();
     for (int i = 0; i < lhsTupleType->numElements(); i++) {
@@ -672,6 +702,28 @@ void CallInitDeinit::resolveTupleInit(const AstNode* ast,
       auto rhsEltType = rhsTupleType->elementType(i);
 
       processTupleEltInit(frame, ast, i, lhsEltType, rhsEltType, rv);
+
+      std::unordered_set<AssociatedAction> newActions;
+      accumulateActions(seenActions, newActions, re);
+      printf("Found %zu actions for tuple elt %d\n",
+             newActions.size(), i);
+      if (!topLevelAction) {
+        CHPL_ASSERT(newActions.empty() &&
+                    "should not have per-elt actions with no action for tuple");
+      }
+      for (auto action : newActions) {
+        printf("Adding sub-action for tuple elt %d: %s\n", i,
+               AssociatedAction::kindToString(action.action()));
+        subActions.push_back(new AssociatedAction(action));
+      }
+    }
+    if (topLevelAction) {
+      auto newTopLevelAction =
+          AssociatedAction(topLevelAction->action(), topLevelAction->fn(),
+                           topLevelAction->id(), topLevelAction->type(),
+                           /** tupleEltIdx **/ -1, subActions);
+      re.clearAssociatedActions();
+      re.addAssociatedAction(std::move(newTopLevelAction));
     }
   }
 }
@@ -982,14 +1034,30 @@ void CallInitDeinit::processTupleEltInit(VarFrame* frame,
                                          RV& rv) {
   CHPL_ASSERT(ast);
 
+  // const AstNode* rhsAst = nullptr;
+  // auto op = ast->toOpCall();
+  // if (op != nullptr && op->op() == USTR("=")) {
+  //   rhsAst = op->actual(1);
+  // } else if (auto vd = ast->toVarLikeDecl()) {
+  //   rhsAst = vd->initExpression();
+  // } else {
+  //   CHPL_ASSERT(false && "unexpected ast for tuple elt init");
+  // }
+
   const AstNode* rhsAst = nullptr;
   auto op = ast->toOpCall();
   if (op != nullptr && op->op() == USTR("=")) {
     rhsAst = op->actual(1);
   } else if (auto vd = ast->toVarLikeDecl()) {
     rhsAst = vd->initExpression();
-  } else {
-    CHPL_ASSERT(false && "unexpected ast for tuple elt init");
+  } else if (auto r = ast->toReturn()) {
+    rhsAst = r->value();
+  } else if (auto y = ast->toYield()) {
+    rhsAst = y->value();
+  }
+
+  if (rhsAst == nullptr) {
+    rhsAst = ast;
   }
 
   if (lhsType.isType() || lhsType.isParam()) {

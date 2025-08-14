@@ -1572,9 +1572,8 @@ void AssociatedAction::stringify(std::ostream& ss,
     ss << " type=";
     type_.stringify(ss, stringKind);
   }
-  if (!otherId_.isEmpty()) {
-    ss << " otherId=";
-    otherId_.stringify(ss, stringKind);
+  if (hasTupleEltIdx()) {
+    ss << " tuple-elt-idx=" << tupleEltIdx_;
   }
 
   ss << " sub-actions: {";
