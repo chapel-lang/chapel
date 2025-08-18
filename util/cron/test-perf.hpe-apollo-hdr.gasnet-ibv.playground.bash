@@ -48,5 +48,5 @@ perf_args="-performance-description $SHORT_NAME -perflabel ml-"
 perf_args="${perf_args} -performance-configs gn-ibv-large:v,gn-ibv-fast:v,$SHORT_NAME:v -sync-dir-suffix $SHORT_NAME"
 perf_args="${perf_args} -numtrials 1 -startdate $START_DATE"
 
-$UTIL_CRON_DIR/nightly -cron ${perf_args} ${nightly_args} -compopts '--mllvm -vector-library=LIBMVEC-X86'
+$UTIL_CRON_DIR/nightly -cron ${perf_args} ${nightly_args}
 
