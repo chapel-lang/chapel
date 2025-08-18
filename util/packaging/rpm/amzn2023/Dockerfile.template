@@ -16,7 +16,7 @@ RUN dnf upgrade -y && \
 
 @@{GET_CHAPEL}
 
-@@{BUILD_DEFAULT}
+@@{BUILD_ONLY_COMPILER}
 
 @@{INSTALL}
 
