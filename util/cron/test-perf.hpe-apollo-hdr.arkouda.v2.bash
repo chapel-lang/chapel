@@ -11,7 +11,7 @@ export CHPL_TEST_ARKOUDA_SKIP_UNIT_TESTS=true
 export CHPL_TEST_ARKOUDA_PERF=true
 
 export CHPL_TEST_PERF_CONFIG_NAME='16-node-hpe-apollo-hdr'
-export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.hpe-apollo-hdr.arkouda"
+export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.hpe-apollo-hdr.arkouda.v2"
 
 module list
 
