@@ -23,12 +23,12 @@ else
 fi
 
 brew test-bot --only-setup
-    if [ $? -ne 0 ]; then
+if [ $? -ne 0 ]; then
       echo "brew test-bot --only-setup failed"
       exit 1
-      else
+else
       echo "brew test-bot --only-setup succeeded"
-    fi
+fi
 
 brew test-bot --only-formulae-dependents --junit --testing-formulae=chapel --skipped-or-failed-formulae=chapel
 if [ $? -ne 0 ]; then
