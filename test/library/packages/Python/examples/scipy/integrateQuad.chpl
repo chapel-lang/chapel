@@ -1,4 +1,5 @@
 use Python;
+use CTypes;
 
 var interp = new Interpreter();
 
@@ -19,20 +20,16 @@ proc integrate(f: borrowed Value, a: real, b: real): real {
 }
 
 
-proc chapelProcToPython(f:proc(_: real):real): owned Value {
-  use CTypes;
-  // get a c_ptr to a Chapel proc
-  var f_ptr = c_ptrTo(f):c_ptr(void);
-
-  // create a ctypes object from the function pointer
-  // another way to do this would be to support the pycapsule api in some form
+// converts a c_ptr to a Chapel proc to a scipy LowLevelCallable,
+// which is a wrapper around a ctypes function pointer
+proc procPtrToPython(f: c_ptr(?)): owned Value {
+  // wrap the pointer as a ctypes function pointer
   var ctypes = interp.importModule("ctypes");
   var ctypes_double = ctypes.get("c_double");
   var cfunctype = ctypes.call("CFUNCTYPE", ctypes_double, ctypes_double);
-  var f_ptrPy = cfunctype(f_ptr:c_intptr);
+  var f_ptrPy = cfunctype(f:c_ptr(void):c_intptr);
 
-  // using the python representation of the function pointer,
-  // create a LowLevelCallable for scipy usage
+  // create a LowLevelCallable from the function pointer
   var fPy = sp.call("LowLevelCallable", f_ptrPy,
                     kwargs=["signature"=>"double (double)"]);
   return fPy;
@@ -40,8 +37,8 @@ proc chapelProcToPython(f:proc(_: real):real): owned Value {
 
 {
   writeln("Integrating x**3, defined in Chapel");
-  proc chplFunc(x: real): real do return x;
-  var f = chapelProcToPython(cChplFunc);
+  proc chplFunc(x: real): real do return x**3;
+  var f = procPtrToPython(c_ptrTo(chplFunc));
   writeln(integrate(f, 0.0, 2.0));
   writeln(integrate(f, 0.0, 4.0));
   writeln(integrate(f, 0.0, 8.0));
