@@ -44,12 +44,24 @@ def common_substitutions():
     substitutions[
         "BUILD_DEFAULT"
     ] = f"""
-    WORKDIR /home/user/chapel-$CHAPEL_VERSION
-    {generate_run_command(default_config)}
-    {generate_run_command(gasnet_udp_config)}
-    {generate_run_command(ofi_pmi2_config)}
-    {generate_run_command(gpu_cpu_config)}
-    {generate_run_command_default_config()}
+WORKDIR /home/user/chapel-$CHAPEL_VERSION
+{generate_run_command(default_config)}
+{generate_run_command(gasnet_udp_config)}
+{generate_run_command(ofi_pmi2_config)}
+{generate_run_command(gpu_cpu_config)}
+{generate_run_command_default_config()}
+    """
+
+    # build the minimal configuration
+    # which is only the Chapel compiler and runtime
+    substitutions[
+        "BUILD_ONLY_COMPILER"
+    ] = f"""
+WORKDIR /home/user/chapel-$CHAPEL_VERSION
+{generate_run_command(default_config)}
+{generate_run_command(gasnet_udp_config)}
+{generate_run_command(ofi_pmi2_config)}
+{generate_run_command(gpu_cpu_config)}
     """
 
     substitutions[
@@ -197,15 +209,18 @@ def generate_run_command(base_config: Dict[str, Union[str,List[str]]], build_cmd
 
     run_commands = []
     for config in configs:
-            command_prefix = f"""RUN export CHPL_HOME=/home/user/chapel-$CHAPEL_VERSION && \\
-            rm -f $CHPL_HOME/chplconfig && touch $CHPL_HOME/chplconfig && \\"""
-            command_postfix = f"""echo "CHPL_LLVM_CONFIG=$(which llvm-config)" >>$CHPL_HOME/chplconfig && \\
+            command_prefix = textwrap.dedent(f"""
+            RUN export CHPL_HOME=/home/user/chapel-$CHAPEL_VERSION && \\
+              rm -f $CHPL_HOME/chplconfig && touch $CHPL_HOME/chplconfig && \\""").strip()
+
+            command_postfix = textwrap.indent(textwrap.dedent(f"""
+            echo "CHPL_LLVM_CONFIG=$(which llvm-config)" >>$CHPL_HOME/chplconfig && \\
             ./configure --prefix=/usr && \\
             {build_cmd} && \\
-            unset CHPL_HOME"""
+            unset CHPL_HOME""").strip(), "  ")
 
             command_body = "\n".join(
-                f'echo "{key}={value}" >> $CHPL_HOME/chplconfig && \\'
+                f'  echo "{key}={value}" >> $CHPL_HOME/chplconfig && \\'
                 for key, value in config.items() if value is not None
             )
             run_command = f"{command_prefix}\n{command_body}\n{command_postfix}"

@@ -15,12 +15,4 @@ RUN dnf install -y --allowerasing ./@@{PACKAGE_NAME}
 USER user
 WORKDIR /home/user
 
-RUN mason new MyPackage
-WORKDIR /home/user/MyPackage
-RUN chplcheck src/*.chpl
-RUN mason build
-RUN mason run -- -nl 1
-RUN mkdir test && touch test/test.chpl mason test
-WORKDIR /home/user
-
-# TODO: shallow clone start_test and some tests to run in a few configs
+@@{TEST_SCRIPT}

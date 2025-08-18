@@ -8,6 +8,7 @@ import os
 import subprocess as sp
 import re
 from string import Template
+import textwrap
 
 
 class MyTemplate(Template):
@@ -38,6 +39,9 @@ def determine_arch(package):
     else:
         return arch
 
+
+def is_minimal_package(package):
+    return "chapel-minimal" in os.path.basename(package)
 
 def infer_docker_os(package):
     os_tag_to_docker = {
@@ -97,13 +101,24 @@ def build_docker(test_dir, package_path, package_name, docker_os):
     with open(template_file, "r") as f:
         template = f.read()
 
+    test_full_package = """
+        COPY --chown=user --chmod=0755 ./common/test-package.sh /home/user/test-package.sh
+        RUN /home/user/test-package.sh
+    """
+    test_minimal_package = """
+        COPY --chown=user --chmod=0755 ./common/test-minimal-package.sh /home/user/test-minimal-package.sh
+        RUN /home/user/test-minimal-package.sh
+    """
+    test_package = textwrap.dedent(
+        test_full_package if not is_minimal_package(package_name) else test_minimal_package).strip()
+
     substitutions = {
         "OS_BASE_IMAGE": docker_os,
         "HOST_PACKAGE_PATH": package_path,
         "PACKAGE_NAME": package_name,
         "TEST_ENV": infer_env_vars(package_name),
+        "TEST_SCRIPT": test_package,
     }
-
 
     src = MyTemplate(template)
     result = src.safe_substitute(substitutions)
@@ -111,7 +126,6 @@ def build_docker(test_dir, package_path, package_name, docker_os):
     output_file = os.path.join(test_dir, "Dockerfile")
     with open(output_file, "w") as f:
         f.write(result)
-
 
     # now invoke the proper script to fill in the rest of the Dockerfile
     pkg_type = infer_pkg_type(package_name)

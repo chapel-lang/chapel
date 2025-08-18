@@ -2,7 +2,7 @@
 
 __get_docker_tag() {
   local os=$1
-  local package_name=$2
+  local package_name=$(__get_package_name $os $2)
   local chapel_version=$3
   local package_version=$4
 
@@ -55,6 +55,26 @@ __docker_image_from_os() {
   esac
   echo $docker_image_base
 }
+__build_minimal_package() {
+  local os=$1
+   case $1 in
+    "amzn2023")
+    return true
+    ;;
+    *)
+    return false
+    ;;
+  esac
+}
+__get_package_name() {
+  local os=$1
+  local package_name="chapel"
+  if __build_minimal_package $os; then
+    package_name="chapel-minimal"
+  fi
+  echo $package_name
+}
+
 
 __wget_chpl_release() {
   local chapel_version=$1
@@ -99,7 +119,7 @@ __build_native_package() {
 
 __build_packages() {
   local os=$1
-  local package_name=$2
+  local package_name=$(__get_package_name $os $2)
   local chapel_version=$3
   local package_version=$4
   local architecture_string=$5
@@ -132,7 +152,7 @@ __build_packages() {
   # with that version.
   if [ -z "$(docker image ls -q $docker_image_base)" ]; then
     echo "Error: Failed to pull image $docker_image_base and a copy does not exist locally"
-    exit 1
+    return 1
   fi
   local docker_image_name_full="$(docker inspect --format='{{index .RepoDigests 0}}' $docker_image_base)"
   echo "Using image digest ${docker_image_name_full} for $docker_image_base"
@@ -162,7 +182,7 @@ __build_packages() {
 __build_image() {
   # use this to build a container image for local testing
   local os=$1
-  local package_name=$2
+  local package_name=$(__get_package_name $os $2)
   local chapel_version=$3
   local package_version=$4
   local para=$5
@@ -194,7 +214,7 @@ __build_image() {
   # with that version.
   if [ -z "$(docker image ls -q $docker_image_base)" ]; then
     echo "Error: Failed to pull image $docker_image_base and a copy does not exist locally"
-    exit 1
+    return 1
   fi
   local docker_image_name_full="$(docker inspect --format='{{index .RepoDigests 0}}' $docker_image_base)"
   echo "Using image digest ${docker_image_name_full} for $docker_image_base"
@@ -220,7 +240,7 @@ __build_image() {
 }
 __run_container() {
   local os=$1
-  local package_name=$2
+  local package_name=$(__get_package_name $os $2)
   local chapel_version=$3
   local package_version=$4
 
