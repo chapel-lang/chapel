@@ -78,6 +78,8 @@ def fixname(subdir):
     # remove first freebsd in freebsd-FreeBSD-12.2-STABLE
     if name.startswith("freebsd-FreeBSD-"):
         name = name[len("freebsd-"):]
+    if name.startswith("bento-freebsd-"):
+        name = name[len("bento-"):]
     # remove 64 in ubuntu-impish64
     if name.endswith("64"):
         name = name[:name.find("64")]
@@ -114,6 +116,10 @@ def extract_sdef_commands(sdef):
                 inSectionToRead = False
             elif inSectionToRead:
                 line = line.strip()
+
+                if line.startswith("DEBIAN_FRONTEND=noninteractive"):
+                    line = line.replace("DEBIAN_FRONTEND=noninteractive", "").strip()
+
                 if line.startswith("/provision-scripts/"):
                     spath = line[1:] # remove leading /
                     subcmds = gather_provision_script_cmds(spath)
@@ -134,7 +140,9 @@ def extract_vfile_commands(vfile):
                         spath = part[part.find('provision-scripts'):]
                         if ('git-clone-chapel.sh' in spath or
                             'gmake-chapel-quick.sh' in spath or
-                            'make-chapel-quick.sh' in spath):
+                            'make-chapel-quick.sh' in spath or
+                            'freebsd-repo-fix.sh' in spath or
+                            'proxy-setup.sh' in spath):
                             pass # skip these
                         else:
                             subcmds = gather_provision_script_cmds(spath)
@@ -153,7 +161,7 @@ for d in directories:
         if "nix" in subpath:
             continue # skip these configurations
                      # (not sure how useful this is)
-        if "generic-x32-debian11" in subpath:
+        if "generic-x32-debian" in subpath:
             continue # skip this one, redudant with other debian ones
 
         subdirs.append(subpath)
@@ -214,47 +222,47 @@ tab = { }
 
 i = 0
 while i < len(subdirs):
-  subpath = subdirs[i]
-  names = [ ]
+    subpath = subdirs[i]
+    names = [ ]
 
-  # find how many configs have the same commands
-  cmds = tocmds[subpath]
-  while i < len(subdirs) and tocmds[subdirs[i]] == cmds:
-      names.append(fixname(subdirs[i]))
-      i += 1
+    # find how many configs have the same commands
+    cmds = tocmds[subpath]
+    while i < len(subdirs) and tocmds[subdirs[i]] == cmds:
+        names.append(fixname(subdirs[i]))
+        i += 1
 
-  # summarize names string
-  # remove words that occur repeatedly
-  shortnames = [ ]
-  firstwords = names[0].split()
-  first = True
-  for name in names:
-      if first:
-          # always give full name for first element
-          shortnames.append(name)
-          first = False
-      elif not first:
-          # remove words that occured already
-          words = name.split()
-          j = 0
-          mayskip = True
-          shortname = ""
-          while j < len(words):
-              if mayskip and j < len(firstwords) and firstwords[j] == words[j]:
-                  pass # skip redundant word
-              else:
-                  mayskip = False
-                  shortname += " " + words[j]
-              j += 1
-          shortnames.append(shortname)
+    # summarize names string
+    # remove words that occur repeatedly
+    shortnames = [ ]
+    firstwords = names[0].split()
+    first = True
+    for name in names:
+        if first:
+            # always give full name for first element
+            shortnames.append(name)
+            first = False
+        elif not first:
+            # remove words that occurred already
+            words = name.split()
+            j = 0
+            mayskip = True
+            shortname = ""
+            while j < len(words):
+                if mayskip and j < len(firstwords) and firstwords[j] == words[j]:
+                    pass # skip redundant word
+                else:
+                    mayskip = False
+                    shortname += " " + words[j]
+                j += 1
+            shortnames.append(shortname)
 
-  tab[",".join(shortnames)] = cmds
+    tab[",".join(shortnames)] = cmds
 
 # finally, output the table
 for names, cmds in sorted(tab.items(), key=lambda x: x[0]):
-  print("  * " + names + '::')
-  print()
-  for cmd in cmds:
-     print("      " + cmd)
-  print()
-  print()
+    print("  * " + names + '::')
+    print()
+    for cmd in cmds:
+        print("      " + cmd)
+    print()
+    print()
