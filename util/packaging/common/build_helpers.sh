@@ -68,9 +68,9 @@ __build_minimal_package() {
 }
 __get_package_name() {
   local os=$1
-  local package_name="chapel"
+  local package_name=$2
   if __build_minimal_package $os; then
-    package_name="chapel-minimal"
+    package_name="$package_name-minimal"
   fi
   echo $package_name
 }
