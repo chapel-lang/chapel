@@ -680,6 +680,53 @@ static void test22() {
   check("D2");
 }
 
+static void test23() {
+  printf("%s\n", __FUNCTION__);
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+                R""""(
+                  proc f(arg: ?k*?t) param { return k; }
+                  proc g(arg: ?k*?t) type { return t; }
+
+                  param x = f((1,2,3));
+                  param y = f((1,2,3,4));
+                  param z = f((1,2));
+                  type t = g((1,2,3));
+                )"""", {"x", "y", "z", "t"});
+
+  ensureParamInt(vars.at("x"), 3);
+  ensureParamInt(vars.at("y"), 4);
+  ensureParamInt(vars.at("z"), 2);
+  assert(!vars.at("t").isUnknownOrErroneous());
+  assert(vars.at("t").type()->isIntType());
+}
+
+static void test24() {
+  printf("%s\n", __FUNCTION__);
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+                R""""(
+                  proc f(arg: (?a, ?b, ?c)) type { return a; }
+                  proc g(arg: (?a, ?b, ?c)) type { return b; }
+                  proc h(arg: (?a, ?b, ?c)) type { return c; }
+
+                  type x = f((1, 2.0, true));
+                  type y = g((1, 2.0, true));
+                  type z = h((1, 2.0, true));
+                )"""", {"x", "y", "z"});
+
+  for (auto& [name, qt] : vars)  {
+    assert(!qt.isUnknownOrErroneous());
+  }
+  assert(vars.at("x").type()->isIntType());
+  assert(vars.at("y").type()->isRealType());
+  assert(vars.at("z").type()->isBoolType());
+}
+
 int main() {
   test1();
   test2();
@@ -705,6 +752,8 @@ int main() {
   test20();
   test21();
   test22();
+  test23();
+  test24();
 
   return 0;
 }
