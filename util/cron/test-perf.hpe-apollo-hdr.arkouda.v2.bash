@@ -45,7 +45,7 @@ module list
 
 export CHPL_TEST_PERF_SYNC_DIR_SUFFIX=v2
 export CHPL_TEST_PERF_DESCRIPTION=nightly-v2
-export CHPL_TEST_PERF_CONFIGS="nightly,nightly-v2:v"
+export CHPL_TEST_PERF_CONFIGS="nightly:v,nightly-v2:v"
 
 test_nightly
 sync_graphs
