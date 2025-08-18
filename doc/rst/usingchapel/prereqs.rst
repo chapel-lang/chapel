@@ -84,6 +84,7 @@ We have used the following commands to install the above prerequisites:
 
   * Alma Linux 8, 9.6, 10.0::
 
+      sudo dnf upgrade
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake
       sudo dnf install which diffutils
       sudo dnf install llvm-devel clang clang-devel
@@ -122,6 +123,7 @@ We have used the following commands to install the above prerequisites:
 
   * Amazon Linux 2023::
 
+      sudo dnf upgrade
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake
       sudo dnf install which diffutils
       sudo dnf install clang clang-devel llvm-devel
@@ -137,6 +139,7 @@ We have used the following commands to install the above prerequisites:
 
   * CentOS Stream 9, 10::
 
+      sudo dnf upgrade
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake
       sudo dnf install which diffutils
       sudo dnf install llvm-devel clang clang-devel
@@ -146,18 +149,19 @@ We have used the following commands to install the above prerequisites:
 
       sudo apt-get update
       sudo apt-get install gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config cmake
-      sudo apt-get install llvm-dev llvm clang libclang-dev libclang-cpp-dev libedit-dev
+      sudo apt-get install llvm-16-dev llvm-16 llvm-16-tools clang-16 libclang-16-dev libclang-cpp16-dev libedit-dev
 
 
-  * Debian 12 "Bookworm"::
+  * Debian 12 "Bookworm", 13 "Trixie"::
 
       sudo apt-get update
       sudo apt-get install gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config cmake
       sudo apt-get install llvm-dev llvm clang libclang-dev libclang-cpp-dev libedit-dev
 
 
-  * Fedora 41, 42 (but note `Fedora CHPL_LLVM=system incompatibilities`_)::
+  * Fedora 41, 42::
 
+      sudo dnf upgrade
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake
       sudo dnf install which diffutils
       sudo dnf install llvm-devel clang clang-devel
@@ -177,6 +181,7 @@ We have used the following commands to install the above prerequisites:
 
   * Rocky Linux 8.10, 9.5::
 
+      sudo dnf upgrade
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake
       sudo dnf install which diffutils
       sudo dnf install llvm-devel clang clang-devel
@@ -219,13 +224,3 @@ installing a system LLVM package using the commands shown above.
 Note that the LLVM support library is used even with ``CHPL_LLVM=none``,
 and so installing a system LLVM on these platforms is still important in
 that case.
-
-Fedora CHPL_LLVM=system incompatibilities
-+++++++++++++++++++++++++++++++++++++++++
-
-Fedora only includes a single version of ``clang``. As
-a result, ``CHPL_LLVM=system`` only works on Fedora releases that have a
-version of ``clang`` that Chapel supports. In particular,
-``CHPL_LLVM=system`` might not work on the newest versions of Fedora.
-``CHPL_LLVM=bundled`` or ``CHPL_LLVM=none`` are available as
-alternatives.
