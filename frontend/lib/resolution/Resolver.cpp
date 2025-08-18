@@ -1486,6 +1486,20 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
                            isNonStarVarArg, /* isTopLevel */ false);
       }
     }
+  } else if (auto tup = formalTypeExpr->toTuple()) {
+    if (!actualType.isUnknownOrErroneous()) {
+      if (auto tupT = actualType.type()->toTupleType();
+          tupT && tupT->numElements() == tup->numActuals()) {
+        // only do this for well-sized tuples. Otherwise, errors should've
+        // been emitted elsewhere.
+        for (int i = 0; i < tup->numActuals(); i++) {
+          auto actual = tup->actual(i);
+          auto elementType = QualifiedType(QualifiedType::TYPE, tupT->elementType(i).type());
+          resolveTypeQueries(actual, elementType,
+                             isNonStarVarArg, /* isTopLevel */ false);
+        }
+      }
+    }
   }
 }
 

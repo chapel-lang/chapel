@@ -6076,7 +6076,7 @@ CallResolutionResult resolveTupleExpr(Context* context,
     const Type* t = q.type();
     if (t == nullptr || t->isUnknownType())
       anyUnknown = true;
-    else if (q.kind() == QualifiedType::TYPE)
+    else if (q.kind() == QualifiedType::TYPE || q.kind() == QualifiedType::TYPE_QUERY)
       allValue = false;
     else
       allType = false;
