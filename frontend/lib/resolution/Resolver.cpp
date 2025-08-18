@@ -1471,6 +1471,21 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
                            isNonStarVarArg, /* isTopLevel */ false);
       }
     }
+  } else if (auto op = formalTypeExpr->toOpCall()) {
+    if (op->op() == USTR("*") && !actualType.isUnknownOrErroneous()) {
+      CHPL_ASSERT(op->numActuals() == 2);
+      if (auto tup = actualType.type()->toTupleType();
+          tup && tup->isStarTuple()) {
+        auto size = QualifiedType(QualifiedType::PARAM,
+                                  IntType::get(context, 0),
+                                  IntParam::get(context, tup->numElements()));
+        auto starType = QualifiedType(QualifiedType::TYPE, tup->starType().type());
+        resolveTypeQueries(op->actual(0), size,
+                           isNonStarVarArg, /* isTopLevel */ false);
+        resolveTypeQueries(op->actual(1), starType,
+                           isNonStarVarArg, /* isTopLevel */ false);
+      }
+    }
   }
 }
 
