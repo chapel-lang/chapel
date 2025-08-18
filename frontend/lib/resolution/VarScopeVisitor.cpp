@@ -419,7 +419,10 @@ bool VarScopeVisitor::resolvedCallHelper(const Call* callAst, RV& rv) {
   }
 
   if (!anyInOutInout) {
-    // visit the actuals to gather mentions
+    // visit the actuals (and receiver, if any) to gather mentions
+    if (auto fnCall = callAst->toFnCall()) {
+      fnCall->calledExpression()->traverse(rv);
+    }
     for (auto actualAst : callAst->actuals()) {
       actualAst->traverse(rv);
     }
