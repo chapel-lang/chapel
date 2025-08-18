@@ -38,7 +38,7 @@ proc main() {
 
   {
     writeln("Integrating x**3, defined in Chapel");
-    export proc chplFunc(x: c_int): c_int do return x;
+    export proc chplFunc(x: c_int): c_int do return x**3;
     var p = c_ptrTo(chplFunc);
     var f = procPtrToPython(interp, sp, p);
     writeln(integrate(spi, f, 0.0, 2.0));
