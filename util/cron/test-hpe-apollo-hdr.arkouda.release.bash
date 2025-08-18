@@ -18,10 +18,10 @@ module list
 
 source $UTIL_CRON_DIR/common.bash
 source $UTIL_CRON_DIR/common-hpe-apollo.bash
-#
+
 # setup arkouda
-source $UTIL_CRON_DIR/common-arkouda.bash
 source $UTIL_CRON_DIR/common-arkouda-hpe-apollo-hdr.bash
+source $UTIL_CRON_DIR/common-arkouda.bash
 
 export ARKOUDA_NUMLOCALES=16
 
