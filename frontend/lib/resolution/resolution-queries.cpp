@@ -4463,6 +4463,28 @@ bool resolvePostfixNilableAppliedToNew(Context* context, const Call* call,
   return true;
 }
 
+static bool extractParamIndexingValueForTuple(const QualifiedType& qt,
+                                              int64_t& outVal) {
+  if (!qt.isParam() || !qt.hasParamPtr()) return false;
+
+  if (qt.type()->isIntType()) {
+    outVal = qt.param()->toIntParam()->value();
+    return true;
+  } else if (qt.type()->isUintType()) {
+    uint64_t uval = qt.param()->toUintParam()->value();
+
+    // if uint is too big, just set it to int max. Tuple can't be that
+    // big anyway so we will report an error later.
+    if (uval > std::numeric_limits<int64_t>::max()) {
+      outVal = std::numeric_limits<int64_t>::max();
+    } else {
+      outVal = static_cast<int64_t>(uval);
+    }
+    return true;
+  }
+  return false;
+}
+
 // Resolving calls for certain compiler-supported patterns
 // without requiring module implementations exist at all.
 static bool resolveFnCallSpecial(Context* context,
@@ -4700,11 +4722,10 @@ static bool resolveFnCallSpecial(Context* context,
     // compiler-defined 'this' operator for param-indexed tuples
     auto thisType = ci.actual(0).type();
     auto second = ci.actual(1).type();
+    int64_t val;
     if (thisType.hasTypePtr() && thisType.type()->isTupleType() &&
-        second.isParam() && second.hasParamPtr() &&
-        second.type()->isIntType()) {
+        extractParamIndexingValueForTuple(second, val)) {
       auto tup = thisType.type()->toTupleType();
-      auto val = second.param()->toIntParam()->value();
       if (val < 0 || val >= tup->numElements()) {
         CHPL_REPORT(context, TupleIndexOOB, astForErr->toCall(), tup, val);
         exprTypeOut = QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
