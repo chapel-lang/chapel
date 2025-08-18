@@ -1146,12 +1146,15 @@ ModuleSymbol* TConverter::convertModule(const Module* mod) {
     //
     // For non-extern module-scope variables we will create a copy of the
     // variable with a "_dyno_" prefix and a function that initializes the
-    // value.
+    // value. We do this to get along with the production resolver more easily,
+    // by allowing it to resolve the original variable normally, while the
+    // type-converted AST can use the copy.
     for (auto pair: globalSyms) {
       auto sym = pair.second;
       if (!parsing::idIsModule(context, pair.first) &&
           mod->id().contains(pair.first) &&
-          sym->defPoint == nullptr) {
+          sym->defPoint == nullptr &&
+          parsing::idIsModuleScopeVar(context, pair.first)) {
         auto node = parsing::idToAst(context, pair.first)->toVariable();
 
         // Found a global variable referred to by some other code

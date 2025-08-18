@@ -103,10 +103,14 @@ struct CalledFnCollector {
       collectCalls(re);
 
       // Look for uses of module-scope variables in internal/standard modules,
-      // which we will need to convert.
+      // which we will need to convert. Currently call graph traversal does not
+      // enter into modules when module-scope variables are used, so we have
+      // to explicitly do that here.
       //
       // TODO: this is a temporary workaround while the typed resolver is
-      // still in development.
+      // still in development. Eventually we will resolve the module
+      // initialization of internal/standard modules and pick up these calls
+      // normally.
       if (ast->isIdentifier() &&
           !re->toId().isEmpty() &&
           parsing::idIsModuleScopeVar(context, re->toId()) &&
