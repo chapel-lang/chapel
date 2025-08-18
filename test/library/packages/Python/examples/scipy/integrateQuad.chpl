@@ -22,7 +22,7 @@ proc integrate(f: borrowed Value, a: real, b: real): real {
 
 // converts a c_ptr to a Chapel proc to a scipy LowLevelCallable,
 // which is a wrapper around a ctypes function pointer
-proc procPtrToPython(f: c_ptr(?)): owned Value {
+proc procPtrToPython(f): owned Value {
   // wrap the pointer as a ctypes function pointer
   var ctypes = interp.importModule("ctypes");
   var ctypes_double = ctypes.get("c_double");
