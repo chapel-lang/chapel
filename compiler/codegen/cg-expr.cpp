@@ -2852,20 +2852,27 @@ static GenRet codegenCallExprInner(GenRet function,
     llvm::FunctionType* fnType = nullptr;
 
     if (func) {
+      // We were provided an LLVM function and should use its type.
       fnType = func->getFunctionType();
+
     } else if (fn) {
+      // We generate an LLVM function type using a Chapel function.
       GenRet t = fn->codegenFunctionType(false);
       fnType = llvm::dyn_cast<llvm::FunctionType>(t.type);
       INT_ASSERT(fnType);
+
     } else if (fnTyArg) {
+      // The caller provided a LLVM function type to use.
       fnType = fnTyArg;
+
     } else if (chplFnType) {
-      const auto& info = fetchLocalFunctionTypeLlvm(chplFnType);
-      fnType = info.type;
+      // Compute the LLVM function type using a Chapel function type.
+      auto& info = localFunctionTypeCodegenInfo(chplFnType);
+      fnType = info.llvmType;
       INT_ASSERT(isIndirect);
 
     } else {
-      INT_FATAL("Could not compute called function type");
+      INT_FATAL("Could not compute the call's LLVM function type");
     }
 
     std::vector<llvm::Value *> llArgs;
@@ -3106,8 +3113,8 @@ static GenRet codegenCallExprInner(GenRet function,
       // that are not appropriate for the call.
       c->setAttributes(attrs);
     } else if (chplFnType) {
-      const auto& info = fetchLocalFunctionTypeLlvm(chplFnType);
-      c->setAttributes(info.attrs);
+      auto& info = localFunctionTypeCodegenInfo(chplFnType);
+      c->setAttributes(info.llvmAttrs);
     }
 
     // we might add attributes for the call site only, e.g. NoBuiltin, here.
@@ -4175,10 +4182,33 @@ static GenRet codegenCall(CallExpr* call) {
     INT_ASSERT(chplFnType->isLocal());
     INT_ASSERT(call->numActuals() == chplFnType->numFormals());
 
-    // TODO (dlongnecke): The C backend requires a cast to a procedure
-    // type in order to call, while the LLVM backend does not.
     if (gGenInfo->cfile) {
-      INT_FATAL(call, "Cast to C function type not implemented yet!");
+      // In C, we have to cast the 'void*' to a function type to call it.
+      //
+      // NOTE: This is technically undefined behavior according to the C
+      // standard, see 'Section 6.3.2.3', which states that the 'void*' can
+      // only be safely be cast to a pointer of an "object type" and back.
+      //
+      // A function pointer is not an object type. Indeed, it seems there
+      // are/were some rare platforms on which function pointers and data
+      // pointers can have differing representations, which would make this
+      // cast a bug.
+      //
+      // However, the 'dlsym' function relies on one being able cast a
+      // 'void*' to a function pointer, which implies that they must share
+      // the same representation. Indeed, the POSIX standard does seem
+      // to require that 'void*' be castable to a function pointer and back.
+      //
+      // So if this is ever an issue in the future, we can look into some
+      // workarounds (e.g., require POSIX, or disable dynamic loading on
+      // offending platforms and then deal with this cast issue then).
+      //
+      auto& info = localFunctionTypeCodegenInfo(chplFnType);
+      auto castType = info.gen.c.c_str();
+      base = codegenCast(castType, base);
+
+      // Copy back the local type since it will have been discarded.
+      base.chplType = info.gen.chplType;
     }
 
   } else if (fn) {

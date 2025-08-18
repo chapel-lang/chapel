@@ -270,4 +270,32 @@ void linkInDynoFiles();
 
 void closeCodegenFiles();
 
+struct FunctionTypeCodegenInfo {
+#ifdef HAVE_LLVM
+  // If we are generating LLVM, we need not only the type, but also a
+  // standard set of attributes that we generate for indirect calls.
+  // These attributes are responsible for setting things like the
+  // correct calling convention, so they can't be omitted.
+  llvm::FunctionType* llvmType = nullptr;
+  llvm::AttributeList llvmAttrs;
+#endif
+  // For C code, this will contain the string representing the local type
+  // of the function. For LLVM code, it will contain a 'llvm::Type*' set
+  // to the function type that was computed above. In both cases the Chapel
+  // type will be set to the corresponding local function type.
+  GenRet gen;
+};
+
+// This can be called to produce a backend-appropriate translation of the
+// 'local' function type for 'ft' that is suitable for use when issuing
+// an indirect call.
+//
+// The actual wideness of 'ft' is ignored, as backend procedure pointer
+// types are always local.
+//
+// This exists in addition to 'FunctionType::codegenDef()' because that
+// method produces an opaque type (an 'int64_t' for 'wide' and a 'void*'
+// for 'local') in order to simplify translation.
+const FunctionTypeCodegenInfo& localFunctionTypeCodegenInfo(FunctionType* ft1);
+
 #endif //CODEGEN_H
