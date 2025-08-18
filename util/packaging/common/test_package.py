@@ -46,6 +46,7 @@ def infer_docker_os(package):
         "ubuntu22": "ubuntu:22.04",
         "ubuntu24": "ubuntu:24.04",
         "debian12": "debian:12",
+        "debian13": "debian:13",
     }
     for tag, docker in os_tag_to_docker.items():
         if ".{}.".format(tag) in package:
