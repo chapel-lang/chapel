@@ -105,7 +105,8 @@ struct CalledFnCollector {
       // Look for uses of module-scope variables in internal/standard modules,
       // which we will need to convert. Currently call graph traversal does not
       // enter into modules when module-scope variables are used, so we have
-      // to explicitly do that here.
+      // to explicitly do that here because internal modules are not visited
+      // elsewhere.
       //
       // TODO: this is a temporary workaround while the typed resolver is
       // still in development. Eventually we will resolve the module

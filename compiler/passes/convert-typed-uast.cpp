@@ -1148,7 +1148,10 @@ ModuleSymbol* TConverter::convertModule(const Module* mod) {
     // variable with a "_dyno_" prefix and a function that initializes the
     // value. We do this to get along with the production resolver more easily,
     // by allowing it to resolve the original variable normally, while the
-    // type-converted AST can use the copy.
+    // type-converted AST can use the copy. We create a function to handle
+    // initialization because otherwise normalization of the module would
+    // unhelpfully modify the resolved AST, and normalization skips resolved
+    // functions.
     for (auto pair: globalSyms) {
       auto sym = pair.second;
       if (!parsing::idIsModule(context, pair.first) &&
