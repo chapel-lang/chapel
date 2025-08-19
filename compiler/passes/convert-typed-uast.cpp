@@ -4141,11 +4141,11 @@ Expr* TConverter::convertIntrinsicCastOrNull(
 
   if (qt1.type() == qt2.type()) {
     // TODO: I believe we actually have to insert a copy here
-    if (qt1.type()->isRecordType()) {
-      TC_UNIMPL("Eliding cast to same record type!");
-      return TC_PLACEHOLDER(this);
-    } else {
+    if (qt1.type()->isCPtrType()) {
       return convertExpr(node->actual(0), rv);
+    } else {
+      TC_UNIMPL("Eliding cast to same type!");
+      return TC_PLACEHOLDER(this);
     }
   }
 
