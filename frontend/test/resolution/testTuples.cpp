@@ -300,7 +300,6 @@ static void test9b() {
     assert(vars["xd"].type()->isUintType());
   }
   {
-    printf("arst\n");
     auto context = buildStdContext();
     ErrorGuard guard(context);
 
