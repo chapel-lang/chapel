@@ -1172,6 +1172,8 @@ ModuleSymbol* TConverter::convertModule(const Module* mod) {
           // Let the untyped converter convert the variable normally, so that
           // it can be used with code still relying on the production resolver.
           untypedConverter->eraseSymbolToIgnore(pair.first);
+        } else {
+          untypedConverter->noteConvertedSym(node, sym);
         }
 
         // Create an initialization function where the variable's converted
@@ -1308,11 +1310,20 @@ void TConverter::convertFunctionsToConvert() {
   std::unordered_set<ID> ignore;
   for (auto pair: fns) {
     const ResolvedFunction* fn = pair.first;
+    // Allow methods to be resolved by the production resolver, so that we can
+    // avoid having to match calling conventions while the converter is in
+    // development.
+    if (parsing::idIsInBundledModule(context, fn->id()) &&
+        fn->signature()->isMethod()) continue;
 
     // Need to leave generic functions alone, so production can use them
     if (fn->signature()->instantiatedFrom() != nullptr) continue;
 
     ignore.insert(fn->id());
+
+    auto ast = parsing::idToAst(context, fn->id());
+    untypedConverter->noteConvertedSym(ast,
+                                 pair.second);
   }
   for (auto pair: globalSyms) {
     ignore.insert(pair.first);
@@ -2252,11 +2263,30 @@ struct ConvertTypeHelper {
         continue;
       }
       Type* ft = tc_->convertType(qt.type());
+
+      // NOTE: During the intermediate stage of development of this conversion
+      // pass, we need to preserve field initialization expressions in case
+      // they are used in production's resolution later.
+      //
+      // For example, strings are used by both the compiler and the typed
+      // converter.
+      auto declID = rf.fieldDeclId(i);
+      const AstNode* declAst = parsing::idToAst(tc_->context, declID);
+      const VarLikeDecl* field = declAst->toVarLikeDecl();
+      if (!field) {
+        INT_ASSERT(declAst->isForwardingDecl());
+        field = declAst->toForwardingDecl()->expr()->toVarLikeDecl();
+      }
+      Expr* initExpr = nullptr;
+      if (field->initExpression()) {
+        initExpr = tc_->untypedConverter->convertAST(field->initExpression());
+      }
+
       UniqueString name = rf.fieldName(i);
       VarSymbol* v = new VarSymbol(astr(name), ft);
       v->qual = tc_->convertQualifier(qt.kind());
       v->makeField();
-      at->fields.insertAtTail(new DefExpr(v));
+      at->fields.insertAtTail(new DefExpr(v, initExpr));
     }
   }
 
@@ -2272,7 +2302,7 @@ struct ConvertTypeHelper {
     if (auto& id = ct->id()) {
       if (auto ast = parsing::idToAst(context(), id)) {
         bool isFromLibrary = tc_->cur.moduleFromLibraryFile;
-        auto decl = ast->toDecl();
+        auto decl = ast->toAggregateDecl();
         INT_ASSERT(decl);
 
         // Attach pragmas and attributes.
@@ -2282,6 +2312,15 @@ struct ConvertTypeHelper {
         auto linkageFlag = convertFlagForDeclLinkage(decl);
         if (linkageFlag != FLAG_UNKNOWN) {
           ts->addFlag(linkageFlag);
+        }
+
+        // Attach untyped conversion results for methods
+        for (auto stmt : decl->declOrComments()) {
+          if (auto fn = stmt->toFunction()) {
+            auto expr = tc_->untypedConverter->convertAST(fn);
+            INT_ASSERT(expr);
+            at->addDeclarations(expr);
+          }
         }
       }
     }
@@ -3128,6 +3167,11 @@ bool TConverter::functionExistsAtRuntime(const ResolvedFunction* r) {
   } else if (qt.isParam()) {
     // a 'param' actual can be left out at this point
     return false;
+  } else if (r->returnIntent() == uast::Function::PARAM ||
+             r->returnIntent() == uast::Function::TYPE) {
+    // Sometimes, apparently, we allow a function to have this kind of return
+    // intent without actually returning a value.
+    return false;
   }
 
   // otherwise, there is something to do.
@@ -3513,8 +3557,13 @@ Expr* TConverter::paramElideCallOrNull(const TypedFnSignature* sig,
       Type* t = convertType(qt.type());
       ret = new SymExpr(t->symbol);
     } else {
-      Symbol* p = convertParam(qt);
-      ret = new SymExpr(p);
+      if (!qt.param()) {
+        // param return-intent on function without a return value
+        ret = new SymExpr(gNone);
+      } else {
+        Symbol* p = convertParam(qt);
+        ret = new SymExpr(p);
+      }
     }
   }
 
@@ -4092,8 +4141,12 @@ Expr* TConverter::convertIntrinsicCastOrNull(
 
   if (qt1.type() == qt2.type()) {
     // TODO: I believe we actually have to insert a copy here
-    TC_UNIMPL("Eliding cast to same type!");
-    return TC_PLACEHOLDER(this);
+    if (qt1.type()->isRecordType()) {
+      TC_UNIMPL("Eliding cast to same type!");
+      return TC_PLACEHOLDER(this);
+    } else {
+      return convertExpr(node->actual(0), rv);
+    }
   }
 
   const ResolvedFunction* rf = nullptr;
@@ -4440,6 +4493,18 @@ SymExpr* TConverter::ActualConverter::convertActual(const FormalActual& fa) {
     types::QualifiedType actualType;
     auto actualExpr = tc_->convertExpr(astActual, rv_, &actualType);
     auto temp = tc_->storeInTempIfNeeded(actualExpr, actualType);
+
+    // Note: Assumes that an unknown formal indicates some kind of fabricated
+    // formal/actual map based on an untyped signature.
+    if (!fa.formalType().isUnknown() &&
+        fa.formalType().type() != fa.actualType().type()) {
+      auto got = canPassScalar(context, fa.actualType(), fa.formalType());
+      if (got.converts() &&
+          got.conversionKind() != CanPassResult::ConversionKind::TO_REFERENTIAL_TUPLE) {
+        auto type = tc_->convertType(fa.formalType().type());
+        temp = tc_->storeInTempIfNeeded(new CallExpr(PRIM_CAST, type->symbol, temp), fa.formalType());
+      }
+    }
 
     return temp;
   }
