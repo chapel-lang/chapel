@@ -263,6 +263,14 @@ void VarScopeVisitor::handleSelect(const Select* sel, RV& rv) {
 
 void VarScopeVisitor::enterAst(const uast::AstNode* ast) {
   inAstStack.push_back(ast);
+  // if (ast && ast->isTuple()) debuggerBreakHere();
+  // if (ast && ast->id()) {
+  //   if (auto parentId = parsing::idToParentId(context, ast->id())) {
+  //     if (auto parentAst = parsing::idToAst(context, parentId)) {
+  //       if (parentAst->isTuple()) debuggerBreakHere();
+  //     }
+  //   }
+  // }
 }
 void VarScopeVisitor::exitAst(const uast::AstNode* ast) {
   CHPL_ASSERT(!inAstStack.empty() && ast == inAstStack.back());
@@ -285,7 +293,7 @@ void VarScopeVisitor::exit(const TupleDecl* ast, RV& rv) {
 }
 
 bool VarScopeVisitor::enter(const NamedDecl* ast, RV& rv) {
-
+  // if (rv.byAst(ast).type().type()->isTupleType()) debuggerBreakHere();
   if (ast->id().isSymbolDefiningScope()) {
     // It's a symbol with a different path, e.g. a Function.
     // Don't try to resolve it now in this
@@ -299,6 +307,7 @@ bool VarScopeVisitor::enter(const NamedDecl* ast, RV& rv) {
   return true;
 }
 void VarScopeVisitor::exit(const NamedDecl* ast, RV& rv) {
+  // if (rv.byAst(ast).type().type()->isTupleType()) debuggerBreakHere();
   if (ast->id().isSymbolDefiningScope()) {
     // It's a symbol with a different path, e.g. a Function.
     // Don't try to resolve it now in this
