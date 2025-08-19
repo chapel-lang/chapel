@@ -212,7 +212,23 @@ bool CallInitDeinit::isCallProducingValue(const AstNode* rhsAst,
     }
   }
 
-  return rv.byAst(rhsAst).toId().isEmpty() && !isRef(rhsType.kind());
+  // if (rhsAst) {
+  //   if (rv.byAst(rhsAst).toId().isEmpty() != rhsAst->isCall()) {
+  //     debuggerBreakHere();
+  //   }
+  // }
+
+  bool isProbablyCall = rv.byAst(rhsAst).toId().isEmpty();
+  // if we're in a tuple expr, we won't have an id, so this check may be false positive
+  auto parentId = parsing::idToParentId(context, rhsAst->id());
+  if (auto parentAst = parsing::idToAst(context, parentId)) {
+    if (parentAst->isTuple() && !isCallProducingValue(parentAst, rv.byAst(parentAst).type(), rv) /**&& !rhsAst->isCall()**/) {
+      isProbablyCall = false;
+    }
+  }
+
+  // return rv.byAst(rhsAst).toId().isEmpty() && !isRef(rhsType.kind());
+  return isProbablyCall && !isRef(rhsType.kind());
 }
 
 std::tuple<CallInfo, CallScopeInfo>
@@ -698,6 +714,7 @@ void CallInitDeinit::resolveTupleInit(const AstNode* ast,
     auto lhsTupleType = lhsType.type()->toTupleType();
     auto rhsTupleType = rhsType.type()->toTupleType();
     for (int i = 0; i < lhsTupleType->numElements(); i++) {
+      // debuggerBreakHere();
       auto lhsEltType = lhsTupleType->elementType(i);
       auto rhsEltType = rhsTupleType->elementType(i);
 
@@ -714,7 +731,16 @@ void CallInitDeinit::resolveTupleInit(const AstNode* ast,
       for (auto action : newActions) {
         printf("Adding sub-action for tuple elt %d: %s\n", i,
                AssociatedAction::kindToString(action.action()));
-        subActions.push_back(new AssociatedAction(action));
+        auto useId = action.id();
+        auto useTupleEltIdx = i;
+        if (auto tupleAst = rhsAst->toTuple()) {
+          useId = tupleAst->actual(i)->id();
+          useTupleEltIdx = -1;
+        }
+        auto actionWithIdx = new AssociatedAction(
+            action.action(), action.fn(), useId, action.type(),
+            /** tupleEltIdx **/ useTupleEltIdx, action.subActions());
+        subActions.push_back(actionWithIdx);
       }
     }
     if (topLevelAction) {
@@ -1034,16 +1060,6 @@ void CallInitDeinit::processTupleEltInit(VarFrame* frame,
                                          RV& rv) {
   CHPL_ASSERT(ast);
 
-  // const AstNode* rhsAst = nullptr;
-  // auto op = ast->toOpCall();
-  // if (op != nullptr && op->op() == USTR("=")) {
-  //   rhsAst = op->actual(1);
-  // } else if (auto vd = ast->toVarLikeDecl()) {
-  //   rhsAst = vd->initExpression();
-  // } else {
-  //   CHPL_ASSERT(false && "unexpected ast for tuple elt init");
-  // }
-
   const AstNode* rhsAst = nullptr;
   auto op = ast->toOpCall();
   if (op != nullptr && op->op() == USTR("=")) {
@@ -1055,6 +1071,19 @@ void CallInitDeinit::processTupleEltInit(VarFrame* frame,
   } else if (auto y = ast->toYield()) {
     rhsAst = y->value();
   }
+
+  if (rhsAst && rhsAst->isTuple()) {
+    // debuggerBreakHere();
+    CHPL_ASSERT(eltIndex >= 0 && eltIndex < rhsAst->toTuple()->numActuals());
+    rhsAst = rhsAst->toTuple()->actual(eltIndex);
+  }
+
+  // CHPL_ASSERT(rhsTupleAst);
+  // const auto tuple = rhsTupleAst->toTuple();
+  // CHPL_ASSERT(tuple);
+  // CHPL_ASSERT(eltIndex >= 0 && eltIndex < tuple->numActuals());
+  // const AstNode* rhsAst = tuple->actual(eltIndex);
+  // CHPL_ASSERT(rhsAst);
 
   if (rhsAst == nullptr) {
     rhsAst = ast;
@@ -1088,6 +1117,7 @@ void CallInitDeinit::processTupleEltInit(VarFrame* frame,
       frame->deinitedVars.emplace(rhsDeclId, currentStatement()->id());
     } else if (isCallProducingValue(rhsAst, rhsType, rv)) {
       // e.g. var x; x = callReturningValue();
+      // debuggerBreakHere();
       resolveMoveInit(ast, rhsAst, lhsType, rhsType, rv);
     } else {
       // it is copy initialization, so use init= for records

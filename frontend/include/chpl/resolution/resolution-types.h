@@ -2620,6 +2620,10 @@ class AssociatedAction {
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
   static const char* kindToString(Action a);
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 class ResolvedParamLoop;
