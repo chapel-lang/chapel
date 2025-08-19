@@ -26,30 +26,6 @@ module ChapelDynamicLoading {
 
   param chpl_defaultProcBufferSize = 512;
 
-  proc configErrorsForProcedurePointers(param emitErrors: bool) param {
-    use ChplConfig;
-
-    if !useProcedurePointers then return false;
-
-    // LLVM 14 uses typed pointers, which the backend doesn't support yet.
-    param unsupportedLlvmVersion = CHPL_LLVM_VERSION == "14";
-
-    if CHPL_TARGET_COMPILER == "llvm" && unsupportedLlvmVersion {
-      if emitErrors {
-        param v = CHPL_LLVM_VERSION;
-        compilerError('The experimental procedure pointer implementation ' +
-                      'is not currently supported with LLVM-' + v, 2);
-      }
-      return true;
-    }
-    return false;
-  }
-
-  // Publish platform-specific errors once.
-  if useProcedurePointers {
-    configErrorsForProcedurePointers(emitErrors=true);
-  }
-
   // Returns 'true' if compile-time configuration errors exist.
   proc configErrorsForDynamicLoading(param emitErrors: bool) param {
     use ChplConfig;
@@ -67,8 +43,7 @@ module ChapelDynamicLoading {
   }
 
   proc isDynamicLoadingSupported param {
-    return !configErrorsForProcedurePointers(emitErrors=false) &&
-           !configErrorsForDynamicLoading(emitErrors=false);
+    return !configErrorsForDynamicLoading(emitErrors=false);
   }
 
   // This counter is used to assign a unique 'wide index' to each procedure.
