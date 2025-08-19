@@ -827,6 +827,7 @@ static void normalizeBase(BaseAST* base, bool addEndOfStatements) {
   for_vector(Symbol, symbol, symbols) {
     if (VarSymbol* var = toVarSymbol(symbol)) {
       DefExpr* defExpr = var->defPoint;
+      if (var->hasFlag(FLAG_RESOLVED_EARLY)) continue;
 
       if (FnSymbol* fn = toFnSymbol(defExpr->parentSymbol)) {
         if (fn == stringLiteralModule->initFn) {

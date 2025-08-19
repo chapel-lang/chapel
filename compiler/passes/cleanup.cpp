@@ -91,15 +91,19 @@ static void handleNonTypedAndNonInitedVar(DefExpr* def) {
     if (needsInit) {
       if ((def->init && def->init->isNoInitExpr()) ||
           def->sym->hasFlag(FLAG_CONFIG)) {
-        USR_FATAL_CONT(def->sym,
-                       "Variable '%s' is not initialized and has no type",
-                       def->sym->name);
+        if (!def->sym->hasFlag(FLAG_RESOLVED_EARLY)) {
+          USR_FATAL_CONT(def->sym,
+                         "Variable '%s' is not initialized and has no type",
+                         def->sym->name);
+        }
       } else {
         bool skip = false;
         if (FnSymbol* inFn = toFnSymbol(def->parentSymbol)) {
           if (inFn->isNormalized()) {
             skip = true;
           }
+        } else if (def->sym->hasFlag(FLAG_RESOLVED_EARLY)) {
+          skip = true;
         }
 
         if (!skip) {
