@@ -59,10 +59,10 @@ __build_minimal_package() {
   local os=$1
    case $1 in
     "amzn2023")
-    return true
+    return 0
     ;;
     *)
-    return false
+    return 1
     ;;
   esac
 }
