@@ -438,14 +438,6 @@ record regexMatch {
   var numBytes:int;
 }
 
-pragma "do not resolve unless called"
-@chpldoc.nodoc
-proc reMatch type
-{
-   compilerWarning("Regex: 'reMatch' is deprecated; please use 'regexMatch' instead");
-   return regexMatch;
-}
-
 @chpldoc.nodoc
 proc _to_regexMatch(ref p:qio_regex_string_piece_t):regexMatch {
   if qio_regex_string_piece_isnull(p) {

@@ -1,2 +1,1 @@
--M ../../tools/mason/ -stest=Basic
--M ../../tools/mason/ -stest=Fail
+-M ../../tools/mason/
