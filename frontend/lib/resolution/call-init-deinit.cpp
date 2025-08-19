@@ -111,6 +111,7 @@ struct CallInitDeinit : VarScopeVisitor {
                    RV& rv);
   void processTupleEltInit(VarFrame* frame,
                            const AstNode* ast,
+                           const Tuple* tupleAst,
                            int eltIdx,
                            const QualifiedType& lhsType,
                            const QualifiedType& rhsType,
@@ -212,17 +213,13 @@ bool CallInitDeinit::isCallProducingValue(const AstNode* rhsAst,
     }
   }
 
-  // if (rhsAst) {
-  //   if (rv.byAst(rhsAst).toId().isEmpty() != rhsAst->isCall()) {
-  //     debuggerBreakHere();
-  //   }
-  // }
-
   bool isProbablyCall = rv.byAst(rhsAst).toId().isEmpty();
-  // if we're in a tuple expr, we won't have an id, so this check may be false positive
+  // If we're in a tuple expr, we won't have an id, so the above check may give
+  // a false positive.
   auto parentId = parsing::idToParentId(context, rhsAst->id());
   if (auto parentAst = parsing::idToAst(context, parentId)) {
-    if (parentAst->isTuple() && !isCallProducingValue(parentAst, rv.byAst(parentAst).type(), rv) /**&& !rhsAst->isCall()**/) {
+    if (parentAst->isTuple() &&
+        !isCallProducingValue(parentAst, rv.byAst(parentAst).type(), rv)) {
       isProbablyCall = false;
     }
   }
@@ -665,18 +662,14 @@ static void accumulateActions(std::unordered_set<AssociatedAction>& seen,
   for (auto action : allActions) {
     bool isNew = seen.insert(action).second;
     if (isNew) {
-      printf("Found new action: %s\n",
-             AssociatedAction::kindToString(action.action()));
       newActions.insert(action);
     }
   }
 }
 
-void CallInitDeinit::resolveTupleInit(const AstNode* ast,
-                                      const AstNode* rhsAst,
+void CallInitDeinit::resolveTupleInit(const AstNode* ast, const AstNode* rhsAst,
                                       const QualifiedType& lhsType,
-                                      const QualifiedType& rhsType,
-                                      RV& rv) {
+                                      const QualifiedType& rhsType, RV& rv) {
   VarFrame* frame = currentFrame();
 
   if (!validateTuplesForAssignOrInit(ast, lhsType, rhsType)) {
@@ -688,72 +681,65 @@ void CallInitDeinit::resolveTupleInit(const AstNode* ast,
     resolveTupleUnpackAssign(tuple, ast, lhsType, rhsType, rv);
     return;
   } else {
-    // Initializing an actual tuple variable
+    // Initializing an actual tuple variable, with either another tuple variable
+    // or a tuple expression.
 
-    // Resolve a top-level init for the tuple itself
-    resolveCopyInit(ast, rhsAst, lhsType, rhsType, false, rv);
+    auto rhsTupleAst = rhsAst->toTuple();
 
-    // Also resolve an init per component
-
+    // Resolve an init per component, which will become sub-actions of the
+    // overall top-level tuple init.
     auto& re = rv.byPostorder().byAst(ast);
     std::unordered_set<AssociatedAction> seenActions;
-    std::unordered_set<AssociatedAction> startActions;
-    printf("start\n");
-    accumulateActions(seenActions, startActions, re);
-    printf("after start\n");
-    AssociatedAction* topLevelAction = nullptr;
-    if (startActions.size() == 0) {
-      // No action created for the tuple itself
-    } else if (startActions.size() == 1) {
-      topLevelAction = new AssociatedAction(*startActions.begin());
-    } else {
-      CHPL_ASSERT(false && "shouldn't be possible");
-    }
     llvm::SmallVector<const AssociatedAction*> subActions;
-
     auto lhsTupleType = lhsType.type()->toTupleType();
     auto rhsTupleType = rhsType.type()->toTupleType();
     for (int i = 0; i < lhsTupleType->numElements(); i++) {
-      // debuggerBreakHere();
       auto lhsEltType = lhsTupleType->elementType(i);
       auto rhsEltType = rhsTupleType->elementType(i);
 
-      processTupleEltInit(frame, ast, i, lhsEltType, rhsEltType, rv);
+      processTupleEltInit(frame, ast, rhsTupleAst, i, lhsEltType, rhsEltType,
+                          rv);
 
       std::unordered_set<AssociatedAction> newActions;
       accumulateActions(seenActions, newActions, re);
-      printf("Found %zu actions for tuple elt %d\n",
-             newActions.size(), i);
-      if (!topLevelAction) {
-        CHPL_ASSERT(newActions.empty() &&
-                    "should not have per-elt actions with no action for tuple");
-      }
       for (auto action : newActions) {
-        printf("Adding sub-action for tuple elt %d: %s\n", i,
-               AssociatedAction::kindToString(action.action()));
         auto useId = action.id();
         auto useTupleEltIdx = i;
-        if (auto tupleAst = rhsAst->toTuple()) {
-          useId = tupleAst->actual(i)->id();
+        if (rhsTupleAst) {
+          useId = rhsTupleAst->actual(i)->id();
           useTupleEltIdx = -1;
         }
         auto actionWithIdx = new AssociatedAction(
             action.action(), action.fn(), useId, action.type(),
-            /** tupleEltIdx **/ useTupleEltIdx, action.subActions());
+            /* tupleEltIdx */ useTupleEltIdx, action.subActions());
         subActions.push_back(actionWithIdx);
       }
     }
-    if (topLevelAction) {
+
+    // Resolve a top-level init for the tuple itself, which should generate an
+    // action.
+    resolveCopyInit(ast, rhsAst, lhsType, rhsType, false, rv);
+
+    // Gather the sub-actions into this new action.
+    std::unordered_set<AssociatedAction> topLevelActions;
+    accumulateActions(seenActions, topLevelActions, re);
+    if (topLevelActions.size() == 0) {
+      // No action created for the tuple itself, nothing to do.
+      CHPL_ASSERT(subActions.empty() &&
+                  "should not have sub-actions with no top-level action");
+    } else if (topLevelActions.size() == 1) {
+      auto topLevelAction = topLevelActions.begin();
       auto newTopLevelAction =
           AssociatedAction(topLevelAction->action(), topLevelAction->fn(),
                            topLevelAction->id(), topLevelAction->type(),
-                           /** tupleEltIdx **/ -1, subActions);
+                           /* tupleEltIdx */ -1, subActions);
       re.clearAssociatedActions();
       re.addAssociatedAction(std::move(newTopLevelAction));
+    } else {
+      CHPL_ASSERT(false && "shouldn't be possible");
     }
   }
 }
-
 
 void CallInitDeinit::resolveTupleUnpackAssign(const Tuple* lhsTuple,
                                               const AstNode* astForErr,
@@ -1054,40 +1040,37 @@ void CallInitDeinit::processInit(VarFrame* frame,
 
 void CallInitDeinit::processTupleEltInit(VarFrame* frame,
                                          const AstNode* ast,
+                                         const Tuple* tupleAst,
                                          int eltIndex,
                                          const QualifiedType& lhsType,
                                          const QualifiedType& rhsType,
                                          RV& rv) {
   CHPL_ASSERT(ast);
+  CHPL_ASSERT(eltIndex >= 0);
 
   const AstNode* rhsAst = nullptr;
-  auto op = ast->toOpCall();
-  if (op != nullptr && op->op() == USTR("=")) {
-    rhsAst = op->actual(1);
-  } else if (auto vd = ast->toVarLikeDecl()) {
-    rhsAst = vd->initExpression();
-  } else if (auto r = ast->toReturn()) {
-    rhsAst = r->value();
-  } else if (auto y = ast->toYield()) {
-    rhsAst = y->value();
+
+  if (tupleAst) {
+    CHPL_ASSERT(eltIndex < tupleAst->numActuals());
+    rhsAst = tupleAst->actual(eltIndex);
+  } else {
+    auto op = ast->toOpCall();
+    if (op != nullptr && op->op() == USTR("=")) {
+      rhsAst = op->actual(1);
+    } else if (auto vd = ast->toVarLikeDecl()) {
+      rhsAst = vd->initExpression();
+    } else if (auto r = ast->toReturn()) {
+      rhsAst = r->value();
+    } else if (auto y = ast->toYield()) {
+      rhsAst = y->value();
+    }
+
+    if (!rhsAst) {
+      rhsAst = ast;
+    }
   }
 
-  if (rhsAst && rhsAst->isTuple()) {
-    // debuggerBreakHere();
-    CHPL_ASSERT(eltIndex >= 0 && eltIndex < rhsAst->toTuple()->numActuals());
-    rhsAst = rhsAst->toTuple()->actual(eltIndex);
-  }
-
-  // CHPL_ASSERT(rhsTupleAst);
-  // const auto tuple = rhsTupleAst->toTuple();
-  // CHPL_ASSERT(tuple);
-  // CHPL_ASSERT(eltIndex >= 0 && eltIndex < tuple->numActuals());
-  // const AstNode* rhsAst = tuple->actual(eltIndex);
-  // CHPL_ASSERT(rhsAst);
-
-  if (rhsAst == nullptr) {
-    rhsAst = ast;
-  }
+  // TODO: deduplicate a lot of this code with processInit
 
   if (lhsType.isType() || lhsType.isParam()) {
     // these are basically 'move' initialization
@@ -1117,7 +1100,6 @@ void CallInitDeinit::processTupleEltInit(VarFrame* frame,
       frame->deinitedVars.emplace(rhsDeclId, currentStatement()->id());
     } else if (isCallProducingValue(rhsAst, rhsType, rv)) {
       // e.g. var x; x = callReturningValue();
-      // debuggerBreakHere();
       resolveMoveInit(ast, rhsAst, lhsType, rhsType, rv);
     } else {
       // it is copy initialization, so use init= for records
