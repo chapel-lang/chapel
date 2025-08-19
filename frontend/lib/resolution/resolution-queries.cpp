@@ -1509,6 +1509,71 @@ static const AstNode* unwrapClassCall(const Call* call, bool& outConcreteManagem
   return unwrapped;
 }
 
+static bool isScopeResolvedExprGeneric(Context* context,
+                                       ResolutionResultByPostorderID& rr,
+                                       const AstNode* expr,
+                                       std::set<const Type*>& ignore) {
+  bool isConcreteManagement;
+  if (auto call = expr->toCall()) {
+    expr = unwrapClassCall(call, isConcreteManagement);
+  }
+
+  auto ident = expr->toIdentifier();
+  auto call = expr->toFnCall();
+  if (call) {
+    ident = call->calledExpression()->toIdentifier();
+  }
+
+  if (call && callHasQuestionMark(call)) {
+    return true;
+  }
+
+  if (ident) {
+    if (isNameBuiltinGenericType(context, ident->name())) {
+      return true;
+    }
+
+    auto& re = rr.byAst(ident);
+    if (re.toId().isEmpty()) {
+      // If we can't find this, treat it as concrete.
+    } else {
+      auto& toId = re.toId();
+      auto toTag = parsing::idToTag(context, toId);
+      if (asttags::isClass(toTag) && !isConcreteManagement) {
+        // classes without 'shared' or 'owned' are generic (generic management),
+        // regardless if whether the class' fields are generic or not.
+        return true;
+      }
+
+      // if the type is generic, then the resolved expression that points to
+      // this type is generic too, _unless_ it's used as part of a call to
+      // a type constructor to create a concrete instance of the type (in
+      // which case there is a 'call').
+      if (asttags::isAggregateDecl(toTag) && !call) {
+        auto initialType =
+          initialTypeForTypeDecl(context, toId)->getCompositeType();
+        if (getTypeGenericityIgnoring(context, initialType, ignore) != Type::CONCRETE) {
+          return true;
+        }
+      }
+    }
+  }
+
+  // at this point, if we have a call it's got 0+ actuals, none of which are '?',
+  // and the base expression is either a record or a managed class type.
+  // Check if any of the actuals are generic, and take that to assume the
+  // whole call is generic.
+  if (call) {
+    for (auto actual : call->actuals()) {
+      if (isScopeResolvedExprGeneric(context, rr, actual, ignore)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
 /**
   Written primarily to support multi-decls, though the logic is the same
   as for single declarations. Sets 'outIsGeneric' with the genericity of the
@@ -1563,50 +1628,7 @@ static bool isVariableDeclWithClearGenericity(Context* context,
                                            var, rr);
   var->traverse(visitor);
 
-  auto typeExpr = var->typeExpression();
-  bool isConcreteManagement;
-  if (auto call = typeExpr->toCall()) {
-    typeExpr = unwrapClassCall(call, isConcreteManagement);
-  }
-  if (auto ident = typeExpr->toIdentifier()) {
-    if (isNameBuiltinGenericType(context, ident->name())) {
-      outIsGeneric = true;
-      return true;
-    }
-
-    auto& re = rr.byAst(ident);
-    if (re.toId().isEmpty()) {
-      // If we can't find this, treat it as concrete.
-      outIsGeneric = false;
-      return true;
-    }
-
-    auto& toId = re.toId();
-    auto toTag = parsing::idToTag(context, toId);
-    if (asttags::isClass(toTag) && !isConcreteManagement) {
-      // classes without 'shared' or 'owned' are generic (generic management),
-      // regardless if whether the class' fields are generic or not.
-      outIsGeneric = true;
-      return true;
-    }
-
-    if (asttags::isAggregateDecl(toTag)) {
-      // a type can be generic if its fields are generic. Go for the
-      // "basic class type" here instead of the "<anymanaged> C" that we could
-      // get here for classes, via getCompositeType().
-      auto initialType =
-        initialTypeForTypeDecl(context, toId)->getCompositeType();
-      outIsGeneric = getTypeGenericityIgnoring(context, initialType, ignore) != Type::CONCRETE;
-      return true;
-    }
-  } else if (auto call = typeExpr->toFnCall()) {
-    if (callHasQuestionMark(call)) {
-      outIsGeneric = true;
-      return true;
-    }
-  }
-
-  outIsGeneric = false;
+  outIsGeneric = isScopeResolvedExprGeneric(context, rr, var->typeExpression(), ignore);
   return true;
 }
 
