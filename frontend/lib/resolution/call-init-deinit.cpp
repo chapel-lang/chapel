@@ -604,10 +604,10 @@ getLhsForTupleUnpackAssign(Context* context,
       qt = { QualifiedType::VAR, NothingType::get(context) };
 
     } else {
-      // Otherwise, turn its qualifier into 'ref' / 'const ref'
+      // Otherwise, turn its qualifier into 'var' / 'const var'
       auto eqt = lhsT->elementType(i);
-      auto kind = KindProperties::addRefness(eqt.kind());
-      qt = { kind, eqt.type(), eqt.param() };
+      auto useKind = KindProperties::removeRef(eqt.kind());
+      qt = { useKind, eqt.type(), eqt.param() };
     }
 
     eltTypes.push_back(std::move(qt));
