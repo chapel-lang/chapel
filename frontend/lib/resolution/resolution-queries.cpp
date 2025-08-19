@@ -1509,39 +1509,6 @@ static const AstNode* unwrapClassCall(const Call* call, bool& outConcreteManagem
   return unwrapped;
 }
 
-static bool doGetOrComputeSyntacticGenericity(Context* context,
-                                       const ID& typeId,
-                                       std::map<ID, bool>& typeGenericities) {
-  auto res = typeGenericities.emplace(typeId, false);
-
-  // type is currently being considered, return current guess at its genericity
-  if (!res.second) return res.first->second;
-
-  return false; // current WIP guess: not generic
-}
-
-static bool const& computeSyntacticGenericityQuery(Context* context,
-                                                        ID typeId) {
-  QUERY_BEGIN(computeSyntacticGenericityQuery, context, typeId);
-  std::map<ID, bool> typeGenericities;
-  bool result = doGetOrComputeSyntacticGenericity(context, typeId, typeGenericities);
-  return QUERY_END(result);
-}
-
-static bool getOrComputeSyntacticGenericity(Context* context,
-                                            const ID& typeId,
-                                            std::map<ID, bool>& typeGenericities) {
-  // if no types are being considered yet, invoke the top-level query,
-  // in the hopes that it will be cached.
-  if (typeGenericities.empty()) {
-    return computeSyntacticGenericityQuery(context, typeId);
-  }
-
-  // otherwise, we're in the middle of computing genericity of some set
-  // of types, so invoke the non-cached helper.
-  return doGetOrComputeSyntacticGenericity(context, typeId, typeGenericities);
-}
-
 /**
   Written primarily to support multi-decls, though the logic is the same
   as for single declarations. Sets 'outIsGeneric' with the genericity of the
@@ -1554,7 +1521,7 @@ static bool isVariableDeclWithClearGenericity(Context* context,
                                               const VarLikeDecl* var,
                                               bool &outIsGeneric,
                                               types::QualifiedType* outFormalType,
-                                              std::map<ID, bool>& typeGenericities) {
+                                              std::set<const Type*>& ignore) {
   // fields that are 'type' or 'param' are generic
   // and we can use the same type/param intent for the type constructor
   if (var->storageKind() == QualifiedType::TYPE ||
@@ -1624,8 +1591,12 @@ static bool isVariableDeclWithClearGenericity(Context* context,
     }
 
     if (asttags::isAggregateDecl(toTag)) {
-      // a type can be generic if its fields are generic.
-      outIsGeneric = getOrComputeSyntacticGenericity(context, toId, typeGenericities);
+      // a type can be generic if its fields are generic. Go for the
+      // "basic class type" here instead of the "<anymanaged> C" that we could
+      // get here for classes, via getCompositeType().
+      auto initialType =
+        initialTypeForTypeDecl(context, toId)->getCompositeType();
+      outIsGeneric = getTypeGenericityIgnoring(context, initialType, ignore) != Type::CONCRETE;
       return true;
     }
   } else if (auto call = typeExpr->toFnCall()) {
@@ -1639,10 +1610,10 @@ static bool isVariableDeclWithClearGenericity(Context* context,
   return true;
 }
 
-static bool isFieldSyntacticallyGeneric(Context* context,
-                                        const ID& fieldId,
-                                        types::QualifiedType* formalType,
-                                        std::map<ID, bool>& typeGenericities) {
+bool isFieldSyntacticallyGenericIgnoring(Context* context,
+                                         const ID& fieldId,
+                                         types::QualifiedType* formalType,
+                                         std::set<const Type*>& typeGenericities) {
   // compare with AggregateType::fieldIsGeneric
 
   auto var = parsing::idToAst(context, fieldId)->toVariable();
@@ -1693,8 +1664,8 @@ static bool isFieldSyntacticallyGeneric(Context* context,
 bool isFieldSyntacticallyGeneric(Context* context,
                                  const ID& fieldId,
                                  types::QualifiedType* formalType) {
-  std::map<ID, bool> typeGenericities;
-  return isFieldSyntacticallyGeneric(context, fieldId, formalType, typeGenericities);
+  std::set<const Type*> typeGenericities;
+  return isFieldSyntacticallyGenericIgnoring(context, fieldId, formalType, typeGenericities);
 }
 
 bool shouldIncludeFieldInTypeConstructor(Context* context,
