@@ -1516,7 +1516,8 @@ static const FnCall* unwrapClassCall(const FnCall* call) {
 static bool isVariableDeclWithClearGenericity(Context* context,
                                               const VarLikeDecl* var,
                                               bool &outIsGeneric,
-                                              types::QualifiedType* outFormalType) {
+                                              types::QualifiedType* outFormalType,
+                                              std::map<ID, bool>& typeGenericities) {
   // fields that are 'type' or 'param' are generic
   // and we can use the same type/param intent for the type constructor
   if (var->storageKind() == QualifiedType::TYPE ||
@@ -1563,16 +1564,17 @@ static bool isVariableDeclWithClearGenericity(Context* context,
   return true;
 }
 
-bool isFieldSyntacticallyGeneric(Context* context,
-                                 const ID& fieldId,
-                                 types::QualifiedType* formalType) {
+static bool isFieldSyntacticallyGeneric(Context* context,
+                                        const ID& fieldId,
+                                        types::QualifiedType* formalType,
+                                        std::map<ID, bool>& typeGenericities) {
   // compare with AggregateType::fieldIsGeneric
 
   auto var = parsing::idToAst(context, fieldId)->toVariable();
   CHPL_ASSERT(var);
 
   bool isGeneric = false;
-  if (isVariableDeclWithClearGenericity(context, var, isGeneric, formalType)) {
+  if (isVariableDeclWithClearGenericity(context, var, isGeneric, formalType, typeGenericities)) {
     return isGeneric;
   }
 
@@ -1604,13 +1606,20 @@ bool isFieldSyntacticallyGeneric(Context* context,
         break;
       }
 
-      if (isVariableDeclWithClearGenericity(context, neighborVar, isGeneric, formalType)) {
+      if (isVariableDeclWithClearGenericity(context, neighborVar, isGeneric, formalType, typeGenericities)) {
         break;
       }
     }
   }
 
   return isGeneric;
+}
+
+bool isFieldSyntacticallyGeneric(Context* context,
+                                 const ID& fieldId,
+                                 types::QualifiedType* formalType) {
+  std::map<ID, bool> typeGenericities;
+  return isFieldSyntacticallyGeneric(context, fieldId, formalType, typeGenericities);
 }
 
 bool shouldIncludeFieldInTypeConstructor(Context* context,
