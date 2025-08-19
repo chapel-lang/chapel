@@ -690,7 +690,7 @@ void CallInitDeinit::resolveTupleInit(const AstNode* ast, const AstNode* rhsAst,
     // overall top-level tuple init.
     auto& re = rv.byPostorder().byAst(ast);
     std::unordered_set<AssociatedAction> seenActions;
-    llvm::SmallVector<const AssociatedAction*> subActions;
+    AssociatedAction::ActionsList subActions;
     auto lhsTupleType = lhsType.type()->toTupleType();
     auto rhsTupleType = rhsType.type()->toTupleType();
     for (int i = 0; i < lhsTupleType->numElements(); i++) {
