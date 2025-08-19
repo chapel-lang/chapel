@@ -1,0 +1,31 @@
+
+Demonstrating tuples
+y = 20
+
+coord = 10
+coord = 20
+coord = 30
+coord 0 = 10
+coord 1 = 20
+coord 2 = 30
+
+x = 10  y = 0  z = 30
+
+- coord = -10
+- coord = -20
+- coord = -30
+coord*coord = 100
+coord*coord = 400
+coord*coord = 900
+
+coord3D_3 == -coord3D_2 ? true
+(1,1,1,0,1,1,1) != (1,1,1,1,1,1,1) ? true
+
+fail 1st index: (1, 2, 3) >  (2, 2, 2) ? false
+pass 1st index: (3, 2, 1) >  (2, 2, 2) ? true
+fail 2nd index: (2, 1, 3) >  (2, 2, 2) ? false
+pass 2nd index: (2, 3, 1) >  (2, 2, 2) ? true
+fail 3rd index: (2, 2, 1) >  (2, 2, 2) ? false
+pass 3rd index: (2, 2, 3) >  (2, 2, 2) ? true
+fail at end:    (2, 2, 2) >  (2, 2, 2) ? false
+pass at end:    (2, 2, 2) >= (2, 2, 2) ? true
