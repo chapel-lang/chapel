@@ -1505,6 +1505,39 @@ static const FnCall* unwrapClassCall(const FnCall* call) {
   return unwrapped ? unwrapped->toFnCall() : nullptr;
 }
 
+static bool doGetOrComputeSyntacticGenericity(Context* context,
+                                       const ID& typeId,
+                                       std::map<ID, bool>& typeGenericities) {
+  auto res = typeGenericities.emplace(typeId, false);
+
+  // type is currently being considered, return current guess at its genericity
+  if (!res.second) return res.first->second;
+
+  return false; // current WIP guess: not generic
+}
+
+static bool const& computeSyntacticGenericityQuery(Context* context,
+                                                        ID typeId) {
+  QUERY_BEGIN(computeSyntacticGenericityQuery, context, typeId);
+  std::map<ID, bool> typeGenericities;
+  bool result = doGetOrComputeSyntacticGenericity(context, typeId, typeGenericities);
+  return QUERY_END(result);
+}
+
+static bool getOrComputeSyntacticGenericity(Context* context,
+                                            const ID& typeId,
+                                            std::map<ID, bool>& typeGenericities) {
+  // if no types are being considered yet, invoke the top-level query,
+  // in the hopes that it will be cached.
+  if (typeGenericities.empty()) {
+    return computeSyntacticGenericityQuery(context, typeId);
+  }
+
+  // otherwise, we're in the middle of computing genericity of some set
+  // of types, so invoke the non-cached helper.
+  return doGetOrComputeSyntacticGenericity(context, typeId, typeGenericities);
+}
+
 /**
   Written primarily to support multi-decls, though the logic is the same
   as for single declarations. Sets 'outIsGeneric' with the genericity of the
@@ -1549,9 +1582,43 @@ static bool isVariableDeclWithClearGenericity(Context* context,
   // of the type expression determines if we guess it to be generic or
   // concrete. The only "generic" form is a call with a "(?)" actual.
 
+  auto aggregateDeclId = var->id().parentSymbolId(context);
+  auto aggregateDecl = parsing::idToAst(context, aggregateDeclId)->toAggregateDecl();
+  CHPL_ASSERT(aggregateDecl);
+
+  ResolutionResultByPostorderID rr;
+  auto visitor =
+    Resolver::createForScopeResolvingField(context, aggregateDecl,
+                                           var, rr);
+  var->traverse(visitor);
+
   if (auto ident = var->typeExpression()->toIdentifier()) {
-    outIsGeneric = isNameBuiltinGenericType(context, ident->name());
-    return true;
+    if (isNameBuiltinGenericType(context, ident->name())) {
+      outIsGeneric = true;
+      return true;
+    }
+
+    auto& re = rr.byAst(ident);
+    if (re.toId().isEmpty()) {
+      // If we can't find this, treat it as concrete.
+      outIsGeneric = false;
+      return true;
+    }
+
+    auto& toId = re.toId();
+    auto toTag = parsing::idToTag(context, toId);
+    if (asttags::isClass(toTag)) {
+      // classes without 'shared' or 'owned' are generic (generic management),
+      // regardless if whether the class' fields are generic or not.
+      outIsGeneric = true;
+      return true;
+    }
+
+    if (asttags::isAggregateDecl(toTag)) {
+      // a type can be generic if its fields are generic.
+      outIsGeneric = getOrComputeSyntacticGenericity(context, toId, typeGenericities);
+      return true;
+    }
   } else if (auto call = var->typeExpression()->toFnCall()) {
     auto unwrapped = unwrapClassCall(call);
     if (unwrapped && callHasQuestionMark(unwrapped)) {
