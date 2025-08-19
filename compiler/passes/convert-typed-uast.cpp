@@ -4142,7 +4142,7 @@ Expr* TConverter::convertIntrinsicCastOrNull(
   if (qt1.type() == qt2.type()) {
     // TODO: I believe we actually have to insert a copy here
     if (qt1.type()->isRecordType()) {
-      TC_UNIMPL("Eliding cast to same type!");
+      TC_UNIMPL("Eliding cast to same record type!");
       return TC_PLACEHOLDER(this);
     } else {
       return convertExpr(node->actual(0), rv);
@@ -4495,7 +4495,9 @@ SymExpr* TConverter::ActualConverter::convertActual(const FormalActual& fa) {
     auto temp = tc_->storeInTempIfNeeded(actualExpr, actualType);
 
     // Note: Assumes that an unknown formal indicates some kind of fabricated
-    // formal/actual map based on an untyped signature.
+    // formal/actual map based on an untyped signature. This can happen when
+    // we create a _new wrapper (which doesn't exist in the frontend)
+    // and we want to insert actuals.
     if (!fa.formalType().isUnknown() &&
         fa.formalType().type() != fa.actualType().type()) {
       auto got = canPassScalar(context, fa.actualType(), fa.formalType());
