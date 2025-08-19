@@ -1485,24 +1485,28 @@ static bool callHasQuestionMark(const FnCall* call) {
   return false;
 }
 
-static const FnCall* unwrapClassCall(const FnCall* call) {
-  const Call* unwrapped = call;
+static const AstNode* unwrapClassCall(const Call* call, bool& outConcreteManagement) {
+  const AstNode* unwrapped = call;
+  outConcreteManagement = false;
 
-  if (parsing::isCallToClassManager(call)) {
-    if (call->numActuals() == 1) {
-      unwrapped = call->actual(0)->toCall();
+  if (auto fnCall = call->toFnCall()) {
+    if (parsing::isCallToClassManager(fnCall)) {
+      if (call->numActuals() == 1) {
+        unwrapped = call->actual(0);
+        outConcreteManagement = true;
+      }
     }
   }
 
   if (unwrapped) {
     if (auto opCall = unwrapped->toOpCall()) {
       if (opCall->numActuals() == 1 && opCall->op() == "?") {
-        unwrapped = opCall->actual(0)->toFnCall();
+        unwrapped = opCall->actual(0);
       }
     }
   }
 
-  return unwrapped ? unwrapped->toFnCall() : nullptr;
+  return unwrapped;
 }
 
 static bool doGetOrComputeSyntacticGenericity(Context* context,
@@ -1592,7 +1596,12 @@ static bool isVariableDeclWithClearGenericity(Context* context,
                                            var, rr);
   var->traverse(visitor);
 
-  if (auto ident = var->typeExpression()->toIdentifier()) {
+  auto typeExpr = var->typeExpression();
+  bool isConcreteManagement;
+  if (auto call = typeExpr->toCall()) {
+    typeExpr = unwrapClassCall(call, isConcreteManagement);
+  }
+  if (auto ident = typeExpr->toIdentifier()) {
     if (isNameBuiltinGenericType(context, ident->name())) {
       outIsGeneric = true;
       return true;
@@ -1607,7 +1616,7 @@ static bool isVariableDeclWithClearGenericity(Context* context,
 
     auto& toId = re.toId();
     auto toTag = parsing::idToTag(context, toId);
-    if (asttags::isClass(toTag)) {
+    if (asttags::isClass(toTag) && !isConcreteManagement) {
       // classes without 'shared' or 'owned' are generic (generic management),
       // regardless if whether the class' fields are generic or not.
       outIsGeneric = true;
@@ -1619,9 +1628,8 @@ static bool isVariableDeclWithClearGenericity(Context* context,
       outIsGeneric = getOrComputeSyntacticGenericity(context, toId, typeGenericities);
       return true;
     }
-  } else if (auto call = var->typeExpression()->toFnCall()) {
-    auto unwrapped = unwrapClassCall(call);
-    if (unwrapped && callHasQuestionMark(unwrapped)) {
+  } else if (auto call = typeExpr->toFnCall()) {
+    if (callHasQuestionMark(call)) {
       outIsGeneric = true;
       return true;
     }
