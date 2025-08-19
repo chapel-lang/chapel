@@ -1,0 +1,31 @@
+==============================
+Debugging Multithreaded Issues
+==============================
+
+Writing parallel programs can be challenging, especially when it comes to
+debugging issues that arise from multithreading (like race conditions). Chapel
+provides a few built-in features to help with debugging multithreaded code.
+
+Tracking and Reporting on Tasks
+-------------------------------
+
+For certain tasking layers, Chapel supports an experimental
+capability for tracking the status of tasks, primarily designed for
+use in a single-locale execution.  To enable this capability, your
+program must be compiled with the ``--task-tracking`` flag.
+
+The feature itself is enabled at execution time by setting the boolean
+environment variable ``CHPL_RT_ENABLE_TASK_REPORTING`` to any of the
+values "1", "yes", or "true".  If this is done, then when ``<CTRL-C>``
+is entered while a program is executing, a list of pending and executing
+tasks will be printed to the console, giving an indication of which
+tasks are at which source locations.  This is only supported with
+``CHPL_TASKS=fifo``.
+
+Note that task tracking adds a fair amount of runtime overhead to
+task-parallel programs.
+
+Using Sanitizers
+----------------
+
+TODO: link to tsan
