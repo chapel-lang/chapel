@@ -16,7 +16,7 @@ __package_type_from_os() {
     "amzn2023" | "fc41" | "fc42" | "el10")
     pkg_type="rpm"
     ;;
-    "debian12" | "ubuntu22" | "ubuntu24")
+    "debian12" | "debian13" | "ubuntu22" | "ubuntu24")
     pkg_type="apt"
     ;;
     *)
@@ -42,6 +42,9 @@ __docker_image_from_os() {
     ;;
     "debian12")
     docker_image_base="debian:12"
+    ;;
+    "debian13")
+    docker_image_base="debian:13"
     ;;
     "ubuntu22")
     docker_image_base="ubuntu:22.04"

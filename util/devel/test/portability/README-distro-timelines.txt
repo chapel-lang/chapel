@@ -73,7 +73,7 @@ x  9 "stretch"  long-term support until Jun 2022
 x 10 "buster"   long-term support until Jun 2024
   11 "bullseye" long-term support until Jun 2026
   12 "bookworm" released June 2023
-  13 "trixie"   expected release ?
+  13 "trixie"   released Aug 2025
   14 "forky"    expected release ?
   15 "duke"     expected release ?
 
