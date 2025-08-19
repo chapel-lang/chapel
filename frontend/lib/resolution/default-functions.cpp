@@ -2436,6 +2436,9 @@ static owned<Function> typeConstructorFnForComposite(Context* context,
                                               defaultsPolicy,
                                               /* syntaxOnly */ true);
 
+  std::set<const Type*> ignoreTypes;
+  ignoreTypes.insert(ct->instantiatedFromCompositeType() ? ct->instantiatedFromCompositeType() : ct);
+
   // find the generic fields from the type and add
   // these as type constructor arguments.
   int nFields = f.numFields();
@@ -2446,7 +2449,7 @@ static owned<Function> typeConstructorFnForComposite(Context* context,
     auto fieldDecl = declAst->toVariable();
     CHPL_ASSERT(fieldDecl);
     QualifiedType formalType;
-    if (isFieldSyntacticallyGeneric(context, declId, nullptr)) {
+    if (isFieldSyntacticallyGenericIgnoring(context, declId, nullptr, ignoreTypes)) {
 
       auto typeExpr = fieldDecl->typeExpression();
       auto initExpr = fieldDecl->initExpression();

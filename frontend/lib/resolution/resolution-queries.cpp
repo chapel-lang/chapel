@@ -1539,10 +1539,22 @@ static bool isScopeResolvedExprGeneric(Context* context,
     } else {
       auto& toId = re.toId();
       auto toTag = parsing::idToTag(context, toId);
-      if (asttags::isClass(toTag) && !isConcreteManagement) {
+      const CompositeType* initialType = nullptr;
+
+      if (asttags::isAggregateDecl(toTag)) {
+        initialType = initialTypeForTypeDecl(context, toId)->getCompositeType();
+      }
+
+      if (asttags::isClass(toTag) && !isConcreteManagement &&
+          ignore.find(initialType) == ignore.end()) {
         // classes without 'shared' or 'owned' are generic (generic management),
         // regardless if whether the class' fields are generic or not.
-        return true;
+        //
+        // except for things marked with `pragma "data class"`, which are
+        // magical and don't get managed.
+        if (!initialType->hasPragma(context, PRAGMA_DATA_CLASS)) {
+          return true;
+        }
       }
 
       // if the type is generic, then the resolved expression that points to
@@ -1550,8 +1562,6 @@ static bool isScopeResolvedExprGeneric(Context* context,
       // a type constructor to create a concrete instance of the type (in
       // which case there is a 'call').
       if (asttags::isAggregateDecl(toTag) && !call) {
-        auto initialType =
-          initialTypeForTypeDecl(context, toId)->getCompositeType();
         if (getTypeGenericityIgnoring(context, initialType, ignore) != Type::CONCRETE) {
           return true;
         }
