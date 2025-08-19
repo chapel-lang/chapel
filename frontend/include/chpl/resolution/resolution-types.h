@@ -2429,6 +2429,8 @@ class AssociatedAction {
     EXIT_CONTEXT,
   };
 
+  using ActionsList = llvm::SmallVector<const AssociatedAction*>;
+
  private:
   Action action_;
   const TypedFnSignature* fn_;
@@ -2443,12 +2445,12 @@ class AssociatedAction {
   // A list of actions contained within this one.
   // Currently only used for tuple copy-init-deinit, where each element may
   // have a sub-action.
-  llvm::SmallVector<const AssociatedAction*> subActions_;
+  ActionsList subActions_;
 
  public:
   AssociatedAction(Action action, const TypedFnSignature* fn, ID id,
                    types::QualifiedType type, int tupleEltIdx = -1,
-                   llvm::SmallVector<const AssociatedAction*> subActions = {})
+                   ActionsList subActions = {})
       : action_(action),
         fn_(fn),
         id_(id),
@@ -2486,7 +2488,7 @@ class AssociatedAction {
     return tupleEltIdx_;
   }
 
-  const llvm::SmallVector<const AssociatedAction*>& subActions() const {
+  const ActionsList& subActions() const {
     return subActions_;
   }
 
@@ -2499,7 +2501,9 @@ class AssociatedAction {
     id_.mark(context);
     type_.mark(context);
     chpl::mark<decltype(tupleEltIdx_)>{}(context, tupleEltIdx_);
-    chpl::mark<decltype(subActions_)>{}(context, subActions_);
+    for (const auto& subAction : subActions_) {
+      subAction->mark(context);
+    }
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
