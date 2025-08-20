@@ -89,10 +89,6 @@ sanitizers. In particular:
 
   .. _bug: https://gcc.gnu.org/bugzilla//show_bug.cgi?id=101476
 
-
-
-TODO: test what happens with CHPL_SANITIZE=undefined,memory
-
 Other Sanitizers
 ----------------
 
