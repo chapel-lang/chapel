@@ -39,7 +39,6 @@ The following sections provide more information on debugging Chapel programs:
    debugging/multilocale
    debugging/memory
    debugging/tasks
-   debugging/communication
    debugging/sanitizers
 
 Useful Debug Features
