@@ -993,12 +993,12 @@ shouldHandleManagerRecordConversion(Context* context,
   if (tryConvertClassTypeIntoManagerRecordIfNeeded(context, formalT, actualT) ||
       tryConvertClassTypeIntoManagerRecordIfNeeded(context, actualT, formalT)) {
     CHPL_ASSERT(formalT->isRecordType() && actualT->isRecordType());
-    return std::make_pair(actualT->toRecordType(), formalT->toRecordType());
+    return std::make_pair(actualT, formalT);
   }
   if (tryConvertClassTypeOutOfManagerRecordIfNeeded(context, formalT, actualT) ||
       tryConvertClassTypeOutOfManagerRecordIfNeeded(context, actualT, formalT)) {
     CHPL_ASSERT(formalT->isClassType() && actualT->isClassType());
-    return std::make_pair(actualT->toClassType(), formalT->toClassType());
+    return std::make_pair(actualT, formalT);
   }
 
   return empty;
