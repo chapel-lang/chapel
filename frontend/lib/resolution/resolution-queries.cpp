@@ -1839,6 +1839,13 @@ QualifiedType getInstantiationType(Context* context,
   CHPL_ASSERT(canPass(context, actualType, formalType).instantiates() ||
               formalType.isType());
 
+  // there are some tricky cases around '_owned' (record) and our internal 'owned'
+  // representation (e.g.). 'owned' -> `_owned' cannot create conversions, but
+  // the other way could (if the actual is a manager record, we turn it into
+  // the internal 'owned' representation, then borrow it). Do this wrapping
+  // now, if needed.
+  tryConvertClassTypeOutOfManagerRecordIfNeeded(context, actualT, formalT);
+
   if (auto actualCt = actualT->toClassType()) {
     // handle decorated class passed to decorated class
     if (auto formalCt = formalT->toClassType()) {
@@ -2387,9 +2394,9 @@ static bool instantiateAcrossManagerRecordConversion(Context* context,
   if (tryConvertClassTypeIntoManagerRecordIfNeeded(context, formalT, actualT)) {
     outInstType = QualifiedType(formal.kind(), actualT);
     return true;
-  } else if (tryConvertClassTypeIntoManagerRecordIfNeeded(context, actualT, formalT)) {
-    CHPL_UNIMPL("converting manager record into class type");
-    return false;
+  } else if (tryConvertClassTypeOutOfManagerRecordIfNeeded(context, actualT, formalT)) {
+    outInstType = QualifiedType(formal.kind(), actualT);
+    return true;
   }
   return false;
 }

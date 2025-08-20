@@ -198,8 +198,13 @@ class CanPassResult {
  */
 bool
 tryConvertClassTypeIntoManagerRecordIfNeeded(Context* context,
-                                             const types::Type* const & mightBeManagerRecord,
+                                             const types::Type* const& mightBeManagerRecord,
                                              const types::Type*& mightBeClass);
+
+bool
+tryConvertClassTypeOutOfManagerRecordIfNeeded(Context* context,
+                                              const types::Type*& mightBeManagerRecord,
+                                              const types::Type* const& mightBeClass);
 
 /**
   Given an argument with QualifiedType actualType,

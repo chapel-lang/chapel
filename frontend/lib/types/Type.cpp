@@ -197,6 +197,22 @@ bool Type::isCArrayType(Context* context, const Type*& outEltType, const IntPara
   return true;
 }
 
+bool Type::isOwnedRecordType() const {
+  if (auto rec = toRecordType()) {
+    if (rec->id().symbolPath() == USTR("OwnedObject._owned"))
+      return true;
+  }
+  return false;
+}
+
+bool Type::isSharedRecordType() const {
+  if (auto rec = toRecordType()) {
+    if (rec->id().symbolPath() == USTR("SharedObject._shared"))
+      return true;
+  }
+  return false;
+}
+
 bool Type::isStringType() const {
   if (auto rec = toRecordType()) {
     if (rec->id().symbolPath() == USTR("String._string"))

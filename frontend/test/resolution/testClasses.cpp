@@ -400,17 +400,17 @@ static void testInstantiateManagerRecord() {
   std::string program = R"""(
     class C {}
 
-    proc _owned.foo() {
-      return this;
+    proc _owned.foo() type {
+      return this.type;
     }
 
-    proc _shared.foo() {
-      return this;
+    proc _shared.foo() type {
+      return this.type;
     }
 
 
-    var x = (new owned C()).foo();
-    var y = (new shared C()).foo();
+    type x = (new owned C()).foo();
+    type y = (new shared C()).foo();
   )""";
   auto context = buildStdContext();
   ErrorGuard guard(context);
