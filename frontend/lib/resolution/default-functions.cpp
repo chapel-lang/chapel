@@ -2436,6 +2436,22 @@ static owned<Function> typeConstructorFnForComposite(Context* context,
                                               defaultsPolicy,
                                               /* syntaxOnly */ true);
 
+  // this could be considered a hack. Consider the following snippet:
+  //
+  // class C {
+  //   var next: C?;
+  // }
+  //
+  // Here, we can obviously tell that field `next` has generic management,
+  // and is therefore generic. However, there's no way to build a type
+  // constructor for `C` that would enable instantiating `next`, since to
+  // specify the ownership of `next`, you'd need to provide e.g. an `owned C`,
+  // but to provide ownership for the inner `C`, you'd need to provide
+  // `owned C(owned C)`, and you can keep expanding this. Resolving the type
+  // constructor would require resolving the type constructor, ad infinitum.
+  //
+  // So, for mutually recursive groups of types, ignore even ownership genericity
+  // in fields.
   std::set<const Type*> ignoreTypes;
   ignoreTypes.insert(ct->instantiatedFromCompositeType() ? ct->instantiatedFromCompositeType() : ct);
 
