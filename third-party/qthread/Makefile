@@ -133,7 +133,7 @@ endif
 CHPL_QTHREAD_CFG_OPTIONS += -DQTHREADS_SCHEDULER=$(SCHEDULER)
 
 
-# if CHPL_QTHREAD_SANITIZER_SUPPORT, disable fastcontenxt
+# sanitizers won't work with fastcontext switching
 ifneq ($(CHPL_MAKE_SANITIZE), none)
 	CHPL_QTHREAD_CFG_OPTIONS += -DDQTHREADS_CONTEXT_SWAP_IMPL=system
 endif
