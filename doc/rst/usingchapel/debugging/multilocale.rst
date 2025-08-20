@@ -34,7 +34,7 @@ follows:
 
 .. code-block:: bash
 
-    ./<program> -nl <num_locales> --lldb
+    ./<program> -nl <numLocales> --lldb
 
 This will launch the program, start up a few ``lldb-server`` instances, and
 then wait.
@@ -44,15 +44,15 @@ From another window, you can then run the following command to connect to the
 
 .. code-block:: bash
 
-    chpl-parallel-dbg <program> <num_locales>
+    chpl-parallel-dbg <program> <numLocales>
 
 This will create setup a ``lldb`` session, and create a target per locale. You
 can then use ``lldb`` commands to debug the program as you would normally.
 However, its important to remeber that you are essentially debugging multiple
 programs at once (however many locales you specified). This means that when you
 step through the code, set breakpoints, print variables, you will only be doing
-so for the current locale. To switch to another locale, you can use the ``on
-<LOCALE_NUM>`` (an alias for ``target select `<LOCALE_NUM>``) command in
+so for the current locale. To switch to another locale, you can use the
+``on <localeNum>`` (an alias for ``target select `<localeNum>``) command in
 ``lldb`` to switch to a different target.
 
 For example, to switch to locale 1 and print the value of a variable called

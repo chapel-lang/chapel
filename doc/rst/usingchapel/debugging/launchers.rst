@@ -11,13 +11,20 @@ locale, each running the debugger on that locale's program instance. To use
 program. For ``lldb``, use ``CHPL_COMM_USE_LLDB``. This is known to work in all
 of these launchers:
 
-  amudprun
-  aprun
-  gasnetrun_ibv
-  gasnetrun_mpi
-  gasnetrun_ofi
-  mpirun4ofi
-  pbs-aprun
+  * amudprun
+
+  * aprun
+
+  * gasnetrun_ibv
+
+  * gasnetrun_mpi
+
+  * gasnetrun_ofi
+
+  * mpirun4ofi
+
+  * pbs-aprun
+
 
 The default terminal emulator program is ``xterm``, but by setting the
 environment variable ``CHPL_COMM_DBG_TERM=urxvt`` you can force use of
