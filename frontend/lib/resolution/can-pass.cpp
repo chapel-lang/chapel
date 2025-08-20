@@ -908,10 +908,11 @@ tryConvertClassTypeIntoManagerRecordIfNeeded(Context* context,
   // Override the class type to the manager record type
   // mightBeClass used to be `owned` of type ClassType,
   // now it's `_owned` of type RecordType
+  static const auto genericDec = ClassTypeDecorator(ClassTypeDecorator::GENERIC);
   if (aot) {
-    mightBeClass = CompositeType::getOwnedRecordType(context, /*bct*/ nullptr);
+    mightBeClass = CompositeType::getOwnedRecordType(context, /*bct*/ nullptr, genericDec);
   } else if (ast) {
-    mightBeClass = CompositeType::getSharedRecordType(context, /*bct*/ nullptr);
+    mightBeClass = CompositeType::getSharedRecordType(context, /*bct*/ nullptr, genericDec);
   } else {
     mightBeClass = ct->managerRecordType(context);
   }
