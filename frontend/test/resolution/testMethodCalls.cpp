@@ -856,6 +856,31 @@ static void test18() {
   assert(guard.numErrors() == 0);
 }
 
+static void test19() {
+  // classes without management, with nested generic fields, or both,
+  // are considered generic and this should not "surprise" the
+  // syntactic genericity checker.
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    class ClearlyOwnershipGeneric {}
+    record wrapper { type wraps; }
+
+    record r {
+      var x: wrapper(wrapper(?));
+      var y: ClearlyOwnershipGeneric;
+      var z: wrapper(ClearlyOwnershipGeneric);
+    }
+
+    var myR: r(wrapper(wrapper(int)), owned ClearlyOwnershipGeneric, wrapper(owned ClearlyOwnershipGeneric));
+    var tmp = (myR.x, myR.y, myR.z);
+    )""";
+
+  // should resolve without issue
+  std::ignore = resolveTypesOfVariables(context, program, { "tmp" });
+}
+
 int main() {
   test1();
   test2();
@@ -875,6 +900,7 @@ int main() {
   test16();
   test17();
   test18();
+  test19();
 
   return 0;
 }
