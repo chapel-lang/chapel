@@ -1,8 +1,8 @@
 .. _readme-debugging-bkc:
 
-=================================================
-Best Known Configurations of Chapel for Debugging
-=================================================
+=======================================
+Best Known Configurations for Debugging
+=======================================
 
 ----------------------
 Using the LLVM backend
