@@ -1,3 +1,5 @@
+.. _debugging-with-launchers:
+
 ===================================
 Running in gdb/lldb with a launcher
 ===================================

@@ -2,8 +2,11 @@
 Debugging multilocale code
 ==========================
 
-Debugging multilocale programs is much more complex than debugging single-locale
-programs. Most techniques for doing this end up boiling down to running a debugger instance for each locale. See :ref:`these docs <running-in-gdb-lldb-with-a-launcher>` which describe how to achieve this very explicitly with multiple windows.
+Debugging multilocale programs is much more complex than debugging
+single-locale programs. Most techniques for doing this end up boiling down to
+running a debugger instance for each locale. See :ref:`these docs
+<debugging-with-launchers>` which describe how to achieve this very explicitly
+with multiple windows.
 
 The rest of this page describes some other tools that can help with debugging multilocale code.
 
