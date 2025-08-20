@@ -1632,6 +1632,8 @@ static bool isVariableDeclWithClearGenericity(Context* context,
   auto aggregateDecl = parsing::idToAst(context, aggregateDeclId)->toAggregateDecl();
   CHPL_ASSERT(aggregateDecl);
 
+  // Performance: this scope resolution could be put behind a query if it
+  //              impacts performance too much.
   ResolutionResultByPostorderID rr;
   auto visitor =
     Resolver::createForScopeResolvingField(context, aggregateDecl,
@@ -1696,6 +1698,7 @@ bool isFieldSyntacticallyGenericIgnoring(Context* context,
 bool isFieldSyntacticallyGeneric(Context* context,
                                  const ID& fieldId,
                                  types::QualifiedType* formalType) {
+  // Performance: this might be made into a query, why not?
   std::set<const Type*> typeGenericities;
   return isFieldSyntacticallyGenericIgnoring(context, fieldId, formalType, typeGenericities);
 }
