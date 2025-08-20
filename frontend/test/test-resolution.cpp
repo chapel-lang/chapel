@@ -22,6 +22,8 @@
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/uast/Module.h"
 
+#include <cmath>
+
 
 QualifiedType
 resolveTypeOfXInit(Context* context, std::string program, bool requireTypeKnown) {
