@@ -486,6 +486,8 @@ static void populateScopeWithBuiltins(Context* context, Scope* scope) {
   // TODO: maybe we can represent these as 'NilLiteral' and 'NoneLiteral' nodes?
   scope->addBuiltinVar(USTR("nil"));
   scope->addBuiltinVar(USTR("none"));
+  scope->addBuiltinVar(USTR("chpl_INFINITY"));
+  scope->addBuiltinVar(USTR("chpl_NAN"));
 
   scope->addBuiltinFunction(USTR("chpl__orderToEnum"));
   scope->addBuiltinFunction(USTR("chpl__enumToOrder"));
