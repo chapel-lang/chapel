@@ -2,8 +2,11 @@
 Debugging memory related issues
 ===============================
 
-
-TODO: intro text
+Chapel provides several tools and techniques for debugging memory-related
+issues in your programs. For many problems related to memory leaks or overall
+memory usage, you can use the built-in memory diagnostics features.
+Additionally, Chapel supports using external tools like AddressSanitizer (ASan)
+and Valgrind to help identify and resolve memory issues.
 
 -------------------------------------------
 Configuration Constants for Tracking Memory
