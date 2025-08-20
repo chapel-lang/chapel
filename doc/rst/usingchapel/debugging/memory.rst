@@ -28,9 +28,16 @@ A brief synopsis of these configuration constants is as follows:
   --memLog=string       file to contain all memory reporting
   --memLeaksLog=string  if set, append final stats and leaks-by-type here
 
+Using Sanitizers
+----------------
 
+Using AddressSanitizer (ASan) with Chapel can help detect many common
+memory errors at runtime with minimal overhead. See :ref:`readme-sanitizers`
+for details on how to set up and use sanitizers with Chapel.
 
-TODO: ASAN
+Using Valgrind
+--------------
 
-
-TODO: valgrind
+Valgrind is a powerful tool for detecting memory errors at runtime. See
+:ref:`best-practices-valgrind` for details on how to set up and use Valgrind
+with Chapel.
