@@ -1513,7 +1513,7 @@ static bool isScopeResolvedExprGeneric(Context* context,
                                        ResolutionResultByPostorderID& rr,
                                        const AstNode* expr,
                                        std::set<const Type*>& ignore) {
-  bool isConcreteManagement;
+  bool isConcreteManagement = false;
   if (auto call = expr->toCall()) {
     expr = unwrapClassCall(call, isConcreteManagement);
   }
