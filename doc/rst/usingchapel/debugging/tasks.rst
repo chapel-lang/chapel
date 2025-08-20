@@ -28,4 +28,9 @@ task-parallel programs.
 Using Sanitizers
 ----------------
 
-TODO: link to tsan
+ThreadSanitizer (TSan) is a tool that can help detect race conditions and other
+issues in multithreaded programs. To use TSan with Chapel, you will need to
+build Chapel with the appropriate config and then set
+``CHPL_SANITIZE_EXE=thread``. This will enable TSan for your Chapel programs.
+See :ref:`readme-sanitizers` for more details on how to set up and use
+sanitizers with Chapel.
