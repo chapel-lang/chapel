@@ -841,8 +841,8 @@ bool CanPassResult::canInstantiateBuiltin(Context* context,
             return true;
 
   if (formalT->isAnyPodType()) {
-    CHPL_UNIMPL("POD types"); // TODO: compute POD-ness
-    return false;
+    auto rc = createDummyRC(context);
+    return Type::isPod(&rc, actualT);
   }
 
   if (formalT->isAnyRealType() && actualT->isRealType())
