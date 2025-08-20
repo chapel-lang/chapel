@@ -110,3 +110,17 @@ Backport a patch from qthreads that switches to the fallback implementation of c
  set(QTHREADS_GUARD_PAGES OFF CACHE BOOL "Whether or not to guard memory pages to help with debugging stack overflows. Default is OFF.")
  set(QTHREADS_CONDWAIT_QUEUE OFF CACHE BOOL "Use a waiting queue based on pthread condition variables instead of a spin-based queue for inter-thread communication. Default is OFF.")
 
+
+
+Fix an ASAN failure caused by an off-by-one error with copying strings
+--- a/src/affinity/binders.c
++++ b/src/affinity/binders.c
+@@ -142,7 +142,7 @@ void INTERNAL qt_affinity_init(qthread_shepherd_id_t *nbshepherds,
+     }
+ 
+   } else {
+-    char *bstr = qt_malloc(strlen(bindstr));
++    char *bstr = qt_malloc(strlen(bindstr)+1);
+     strcpy(bstr, bindstr);
+     int i, j;
+     sheps.num = 1;
