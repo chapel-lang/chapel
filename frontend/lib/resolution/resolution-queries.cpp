@@ -4408,9 +4408,27 @@ static bool resolveFnCallSpecial(Context* context,
           return true;
         } else if (dstQtEnumType && srcTy->isStringType()) {
           CHPL_ASSERT(srcQt.param()->isStringParam());
-          exprTypeOut = typeForEnumElement(context, dstQtEnumType,
-                                           srcQt.param()->toStringParam()->value(),
-                                           astForErr);
+
+          auto enumName = srcQt.param()->toStringParam()->value();
+          auto path = UniqueString();
+          auto lastDot = findLastDot(enumName.c_str());
+
+          if (lastDot != -1) {
+            path = UniqueString::get(context, enumName.c_str(),lastDot);
+            enumName = UniqueString::get(context, enumName.c_str() + lastDot + 1);
+          }
+
+          if (!dstQtEnumType->id().symbolPath().endsWith(path)) {
+            context->error(astForErr,
+                           "invalid qualified name for enum element '%s' in cast to %s",
+                           enumName.c_str(), dstQtEnumType->id().symbolPath().c_str());
+            exprTypeOut = QualifiedType(QualifiedType::UNKNOWN,
+                                        ErroneousType::get(context));
+          } else {
+            exprTypeOut = typeForEnumElement(context, dstQtEnumType,
+                                             enumName,
+                                             astForErr);
+          }
           return true;
         }
 
