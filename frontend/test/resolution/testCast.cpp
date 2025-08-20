@@ -455,8 +455,7 @@ static void test43() {
 // param bytes to string (formely throwing assertions)
 static void test44() {
   printf("test44\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   testHelper(context, "param x = b\"hello\" : string;",
                       ErroneousType::get(context), nullptr);
 }

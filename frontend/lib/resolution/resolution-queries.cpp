@@ -4428,9 +4428,14 @@ static bool resolveFnCallSpecial(Context* context,
           return true;
         }
 
-        exprTypeOut = Param::fold(context, astForErr,
-                                  uast::PrimitiveTag::PRIM_CAST, srcQt, dstQt);
-        return true;
+        if (Param::castAllowed(context, srcQt, dstQt)) {
+          exprTypeOut = Param::fold(context, astForErr,
+                                    uast::PrimitiveTag::PRIM_CAST, srcQt, dstQt);
+          return true;
+        }
+
+        // fall through, param cast isn't possible but maybe there's a runtime
+        // cast that normal function resolution can handle.
     } else if (srcQt.isType() && dstQt.hasTypePtr() && dstTy->isStringType()) {
       // handle casting a type name to a string
       std::ostringstream oss;
