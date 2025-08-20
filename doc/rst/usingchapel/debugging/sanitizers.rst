@@ -22,7 +22,6 @@ sanitizers enabled:
 .. code-block:: bash
 
    export CHPL_TARGET_MEM=cstdlib
-   export CHPL_TASKS=fifo
    export CHPL_TARGET_COMPILER=gnu # or CHPL_TARGET_COMPILER=clang
    export CHPL_SANITIZE_EXE=address
 
@@ -81,9 +80,6 @@ sanitizers. In particular:
   compilations don't currently work
 - Sanitizers hook into the system allocator, so using ``jemalloc`` is not
   supported
-- ``qthreads`` performs task-switching in user-space, which throws off
-  stack frame tracking. We expect to be able to resolve this in the
-  future.
 - By default the gcc address sanitizer will enable leak checking, but
   Chapel intentionally leaks some memory in the runtime, so we disable
   that tracking for now. See :ref:`readme-debugging` for more info about
