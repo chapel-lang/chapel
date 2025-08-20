@@ -1,5 +1,5 @@
 ==============================
-Debugging Multithreaded Issues
+Debugging multithreaded issues
 ==============================
 
 Writing parallel programs can be challenging, especially when it comes to
@@ -25,12 +25,13 @@ tasks are at which source locations.  This is only supported with
 Note that task tracking adds a fair amount of runtime overhead to
 task-parallel programs.
 
-Using Sanitizers
-----------------
+.. TODO tsan fails in the runtime: https://github.com/chapel-lang/chapel/issues/27670
+    Using Sanitizers
+    ----------------
 
-ThreadSanitizer (TSan) is a tool that can help detect race conditions and other
-issues in multithreaded programs. To use TSan with Chapel, you will need to
-build Chapel with the appropriate config and then set
-``CHPL_SANITIZE_EXE=thread``. This will enable TSan for your Chapel programs.
-See :ref:`readme-sanitizers` for more details on how to set up and use
-sanitizers with Chapel.
+    ThreadSanitizer (TSan) is a tool that can help detect race conditions and other
+    issues in multithreaded programs. To use TSan with Chapel, you will need to
+    build Chapel with the appropriate config and then set
+    ``CHPL_SANITIZE_EXE=thread``. This will enable TSan for your Chapel programs.
+    See :ref:`readme-sanitizers` for more details on how to set up and use
+    sanitizers with Chapel.

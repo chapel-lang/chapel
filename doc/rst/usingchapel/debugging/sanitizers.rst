@@ -98,10 +98,12 @@ Currently, only AddressSanitizer is regularly tested, but the options passed to
 C undefined behavior sanitizer and address sanitizer set
 ``CHPL_SANITIZE_EXE=undefined,memory``.
 
-ThreadSanitizer (TSan)
-~~~~~~~~~~~~~~~~~~~~~~
 
-ThreadSanitizer is a tool for detecting race conditions in multithreaded
-programs. To use it in with Chapel programs, set ``CHPL_SANITIZE_EXE=thread``.
-Note instead of using ``ASAN_OPTIONS``, you should set ``TSAN_OPTIONS`` to
-configure TSan.
+.. TODO: tsan fails in the runtime: https://github.com/chapel-lang/chapel/issues/27670
+    ThreadSanitizer (TSan)
+    ~~~~~~~~~~~~~~~~~~~~~~
+
+    ThreadSanitizer is a tool for detecting race conditions in multithreaded
+    programs. To use it in with Chapel programs, set ``CHPL_SANITIZE_EXE=thread``.
+    Note instead of using ``ASAN_OPTIONS``, you should set ``TSAN_OPTIONS`` to
+    configure TSan.
