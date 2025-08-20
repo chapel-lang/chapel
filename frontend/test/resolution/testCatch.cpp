@@ -445,6 +445,40 @@ static void test12b(Parser* parser) {
 }
 
 
+// after compilerError, try-catch analysis should go and try access unresolved
+// AST.
+static void test12c(Parser* parser) {
+  auto ctx = buildStdContext();
+  auto path = UniqueString::get(ctx, "test12.chpl");
+
+  std::string program = R""""(
+                        module M {
+                          proc test() {
+                            compilerError("oopsie!");
+
+                            // this is a regression test; in the past,
+                            // trying to branch-sensitively traverse this
+                            // loop (which wasn't resolved, since we
+                            // produced a compiler error) caused a hard crash
+                            // of the compiler.
+                            if true {
+                              throw new Error();
+                            } else {
+                              // or don't throw
+                            }
+                          }
+                        }
+              )"""";
+  setFileText(ctx, path, program);
+  const ModuleVec& vec = parseToplevel(ctx, path);
+  auto mod = vec[0]->toModule();
+  assert(mod);
+  auto func = mod->stmt(0)->toFunction();
+  assert(func);
+  auto resFunc = resolveConcreteFunction(ctx, func->id());
+  assert(resFunc);
+}
+
 // "is in a try but not handled"
 static void test13(Parser* parser) {
   auto ctx = buildStdContext();
@@ -889,6 +923,7 @@ int main() {
   test11(p);
   test12(p);
   test12b(p);
+  test12c(p);
   test13(p);
   test14(p);
   test15(p);
