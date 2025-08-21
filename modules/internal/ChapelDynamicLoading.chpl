@@ -122,7 +122,7 @@ module ChapelDynamicLoading {
   proc deinit() {
     on Locales[0] do delete chpl_localPtrCache;
 
-    if isDynamicLoadingSupported {
+    if isDynamicLoadingSupported && numLocales > 1 {
       coforall loc in Locales[1..] do on loc {
         delete chpl_localPtrCache;
       }
