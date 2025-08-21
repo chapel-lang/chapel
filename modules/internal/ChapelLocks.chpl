@@ -98,12 +98,13 @@ module ChapelLocks {
   // The default lock type is a spinlock since that is what we use most often.
   type chpl_defaultLockGuardLockType = chpl_LocalSpinlock;
 
-  /** A lock guard is a useful abstraction which allows you to bundle both
+  /*  A lock guard is a useful abstraction which allows you to bundle both
       a lock and a data type together in the same variable. Access to the
       data is controlled via use of the guard as a context manager.
 
-      E.g., given a guard 'g', one must write 'manage g as x' to get access
-      to the data. Getting access requires taking the lock. */
+      E.g., given a guard 'g', one must write 'manage g.write() as x' to get
+      access to the data. Getting access requires taking the lock. */
+  pragma "default intent is ref"
   record chpl_lockGuard {
     type dataType;
     type lockType = chpl_defaultLockGuardLockType;
@@ -162,44 +163,25 @@ module ChapelLocks {
     // Returns the type of the access context manager.
     proc type _accessManagerType type do return accessManager;
 
-    // Get a ref pointer to 'this' even with const ref receiver intent.
-    inline proc const ref _thisAsMutablePtr {
-      const ptr = c_ptrToConst(this) : c_ptr(void);
-      return ptr : c_ptr(this.type);
-    }
-
     // Wrapper to create a new context manager instance.
-    inline proc const ref _createAccessManager(param isWriteAccess: bool) {
+    inline proc ref _createAccessManager(param isWriteAccess: bool) {
       type t = this.type._accessManagerType;
-      return new t(dataType, lockType, isWriteAccess, _thisAsMutablePtr);
+      return new t(dataType, lockType, isWriteAccess, c_ptrTo(this));
     }
 
     /** Return a new context manager that provides read access. */
-    inline proc const ref read() do
+    inline proc ref read() do
       return _createAccessManager(isWriteAccess=false);
 
     /** Return a new context manager that provides write access. */
-    inline proc const ref write() do
+    inline proc ref write() do
       return _createAccessManager(isWriteAccess=true);
 
     /** Allows unlocked access to the data. */
     proc ref unsafeAccess() ref do return _data;
-
-    /** Use the guard directly as a context manager for write access. */
-    proc const ref enterContext() ref {
-      var manager = write();
-      return manager.enterContext();
-    }
-
-    /** Use the guard directly as a context manager for write access. */
-    proc const ref exitContext(in e: owned Error?) {
-      var manager = write();
-      manager.exitContext(e);
-    }
   }
 
   chpl_LocalSpinlock implements contextManager;
-  chpl_lockGuard implements contextManager;
 
   // TODO: Workaround for 'implements' not supporting dot expressions yet.
   type chpl_lockGuardAccessManager = chpl_lockGuard._accessManagerType;
