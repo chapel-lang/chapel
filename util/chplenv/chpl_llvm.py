@@ -238,29 +238,6 @@ def check_llvm_packages(llvm_config):
         s = "Could not find the clang library {0}".format(clang_cpp_lib)
         s += "\nPerhaps you need to install the libclang-cpp-dev package"
 
-    host_platform = chpl_platform.get('host')
-    if host_platform == "darwin":
-        # on Mac OS X with Homebrew, require LLVM 14 or newer
-        # because these LLVM versions fix a problem with
-        # mixing libc++ versions
-        llvm_version, ignored_err = check_llvm_config(llvm_config)
-        llvm_version = llvm_version.strip()
-        bad_vers = ('11', '12', '13')
-        if llvm_version in bad_vers:
-            # compute the set subtraction:
-            #    llvm_versions() - bad_vers
-            # for use in the error message
-            ok_vers = [ ]
-            vers = llvm_versions()
-            for v in vers:
-                if not v in bad_vers:
-                    ok_vers.append(v)
-
-            s = ("LLVM version {0} is not supported on Mac OS X. "
-                 "Please use one of these versions: {1}"
-                 .format(llvm_version, ', '.join(ok_vers)))
-
-
     return (s == '', s)
 
 
@@ -818,7 +795,7 @@ def get_gcc_prefix_dir(clang_cfg_args):
 @memoize
 def is_gcc_install_dir_supported():
     llvm_version = get_llvm_version()
-    return llvm_version not in ('11', '12', '13', '14', '15')
+    return llvm_version not in ('14', '15')
 
 @memoize
 def get_gcc_install_dir():
@@ -1079,6 +1056,7 @@ def get_clang_basic_args(clang_command):
         if sysroot_args:
             clang_args.extend(sysroot_args)
 
+    # TODO: is this still needed? We don't support llvm@11 and 10.14 is EOL
     # This is a workaround for problems with Homebrew llvm@11 on 10.14
     # which avoids errors like
     #  ld: unknown option: -platform_version
@@ -1407,14 +1385,14 @@ def compute_host_link_settings():
     if llvm_val == 'system' or llvm_val == 'bundled':
         llvm_version = get_llvm_version()
         # Starting with clang 15, clang needs additional libraries
-        if llvm_version not in ('11', '12', '13', '14'):
+        if llvm_version not in ('14',):
             clang_static_libs.append('-lclangSupport')
             llvm_components.append('windowsdriver')
         # Starting with clang 16, clang needs additional libraries
-        if llvm_version not in ('11', '12', '13', '14', '15'):
+        if llvm_version not in ('14', '15'):
             llvm_components.append('frontendhlsl')
         # Starting with clang 18, clang needs additional libraries
-        if llvm_version not in ('11', '12', '13', '14', '15', '16', '17'):
+        if llvm_version not in ('14', '15', '16', '17'):
             llvm_components.append('frontenddriver')
             # clangAPINotes must go immediately after clangSema
             idx = clang_static_libs.index('-lclangSema') + 1
@@ -1430,14 +1408,6 @@ def compute_host_link_settings():
         llvm_components = ['support']
 
     if llvm_support_val == 'system':
-        # For LLVM version 11 and older, there was a problem where
-        # 'llvm-config' did not work properly on Mac OS X, so work around
-        # that by using static linking.
-        llvm_version = get_llvm_version()
-        host_platform = chpl_platform.get('host')
-        if host_platform == 'darwin' and llvm_version == '11':
-            llvm_dynamic = False
-
         # Also, change to static, if llvm-config indicates static linking
         shared_mode = run_command([llvm_config, '--shared-mode'])
         if shared_mode.strip() == 'static':
