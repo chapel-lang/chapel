@@ -24,6 +24,11 @@ module ChapelDynamicLoading {
   private use Atomics;
   private use ChapelLocks;
 
+  private proc isLocalNoComm param {
+    use ChplConfig;
+    return compiledForSingleLocale();
+  }
+
   param chpl_defaultProcBufferSize = 512;
 
   // Returns 'true' if compile-time configuration errors exist.
@@ -122,9 +127,12 @@ module ChapelDynamicLoading {
   proc deinit() {
     on Locales[0] do delete chpl_localPtrCache;
 
-    if isDynamicLoadingSupported && numLocales > 1 {
-      coforall loc in Locales[1..] do on loc {
-        delete chpl_localPtrCache;
+    if !isLocalNoComm {
+      // Behind a 'local' check to avoid throwing off compiler optimizations.
+      if isDynamicLoadingSupported && numLocales > 1 {
+        coforall loc in Locales[1..] do on loc {
+          delete chpl_localPtrCache;
+        }
       }
     }
   }
