@@ -1207,7 +1207,7 @@ module UnitTest {
         if ChplConfig.CHPL_RE2 == "none" then
           compilerError(
             "Regular expressions are not supported in this Chapel build. " +
-            "Recompile with --noRegex or build Chapel with CHPL_RE2=bundled.",
+            "Recompile with -snoRegex or build Chapel with CHPL_RE2=bundled.",
             errorDepth=2
           );
         return new Filter(p, new regex(p));

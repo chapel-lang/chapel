@@ -1,1 +1,2 @@
--M ../../../../../tools/mason --noRegex
+-M ../../../../../tools/mason -snoRegex
+
