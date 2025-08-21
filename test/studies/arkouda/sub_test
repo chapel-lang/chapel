@@ -22,7 +22,7 @@ if [ -n "${CHPL_TEST_LAUNCHCMD}" ] ; then
   export ARKOUDA_SERVER_LAUNCH_PREFIX=$(echo "$CHPL_TEST_LAUNCHCMD --walltime=$ARKOUDA_ALLOC_TIMEOUT" | envsubst)
 fi
 
-export ARKOUDA_PYTEST_OPTIONS=${CHPL_TEST_ARKOUDA_PYTEST_OPTIONS:-""}
+export ARKOUDA_PYTEST_OPTIONS=${CHPL_TEST_ARKOUDA_CORRECTNESS_PYTEST_OPTIONS:-""}
 
 # Arkouda needs chpl in PATH
 bin_subdir=$($CHPL_HOME/util/chplenv/chpl_bin_subdir.py)
@@ -200,6 +200,58 @@ if [ ${CHPL_TEST_ARKOUDA_STOP_AFTER_BUILD} = "false" ]; then
     else
       log_error "running benchmarks"
     fi
+    test_end
+  fi
+
+  # Run benchmarks_v2
+  if [ "${CHPL_TEST_ARKOUDA_PERF_V2}" = "true" ] ; then
+    reformat_benchmark_opts=" --dat-dir $CHPL_TEST_PERF_DIR --graph-dir $CHPL_TEST_PERF_DIR/html"
+    if [ "${CHPL_TEST_GEN_ARKOUDA_GRAPHS}" = "false" ] ; then
+      # v2 benchmarks do not support not generating graphs
+      log_fatal_error "CHPL_TEST_GEN_ARKOUDA_GRAPHS must be true for benchmarks_v2"
+    fi
+    reformat_benchmark_opts="${reformat_benchmark_opts} --annotations $CHPL_HOME/test/ANNOTATIONS.yaml"
+    if [[ -n $CHPL_TEST_PERF_DESCRIPTION ]]; then
+      reformat_benchmark_opts="${reformat_benchmark_opts} --description $CHPL_TEST_PERF_DESCRIPTION"
+    fi
+    if [[ -n $CHPL_TEST_PERF_CONFIG_NAME ]]; then
+      reformat_benchmark_opts="${reformat_benchmark_opts} --platform-name $CHPL_TEST_PERF_CONFIG_NAME"
+    fi
+    if [[ -n $CHPL_TEST_PERF_START_DATE ]]; then
+      reformat_benchmark_opts="${reformat_benchmark_opts} --start-date $CHPL_TEST_PERF_START_DATE"
+    fi
+    if [[ -n $CHPL_TEST_PERF_CONFIGS ]]; then
+      reformat_benchmark_opts="${reformat_benchmark_opts} --configs $CHPL_TEST_PERF_CONFIGS"
+    fi
+    if [[ -n $CHPL_TEST_ARKOUDA_REFORMAT_BENCHMARKS_V2 ]]; then
+      reformat_benchmark_opts="${reformat_benchmark_opts} $CHPL_TEST_ARKOUDA_REFORMAT_BENCHMARKS_V2"
+    fi
+
+    local benchmark_size=$((10**8))
+    local benchmark_data=benchmark_v2/data/benchmark_stats_$(date +%Y%m%d_%H%M%S).json
+    mkdir -p benchmark_v2/data
+    benchmark_opts="--benchmark-autosave --benchmark-storage=file://benchmark_v2/.benchmarks --size=$benchmark_size --benchmark-json=$benchmark_data"
+    if [[ -n $CHPL_TEST_NUM_TRIALS ]]; then
+      benchmark_opts="${benchmark_opts} --trials $CHPL_TEST_NUM_TRIALS"
+    fi
+    if [[ -n $CHPL_TEST_ARKOUDA_BENCHMARKS_V2 ]]; then
+      benchmark_opts="${benchmark_opts} $CHPL_TEST_ARKOUDA_BENCHMARKS_V2"
+    fi
+
+    test_start "benchmarks_v2"
+    if python3 -m pytest -c benchmark.ini $benchmark_opts ; then
+      log_success "benchmark_v2 output"
+    else
+      log_error "running benchmarks_v2"
+    fi
+
+    # process the data and create graphs
+    if benchmark_v2/reformat_benchmark_results.py --benchmark-data $benchmark_data $reformat_benchmark_opts ; then
+      log_success "benchmark_v2 graph generation"
+    else
+      log_error "generating benchmark_v2 graphs"
+    fi
+
     test_end
   fi
 
