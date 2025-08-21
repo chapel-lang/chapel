@@ -1202,8 +1202,16 @@ module UnitTest {
     proc type create(p: string) throws {
       if noRegex then
         return new Filter(p);
-      else
+      else {
+        import ChplConfig;
+        if ChplConfig.CHPL_RE2 == "none" then
+          compilerError(
+            "Regular expressions are not supported in this Chapel build. " +
+            "Recompile with -snoRegex or build Chapel with CHPL_RE2=bundled.",
+            errorDepth=2
+          );
         return new Filter(p, new regex(p));
+      }
     }
     proc matches(s: string): bool throws {
       if rawPattern == "" then
