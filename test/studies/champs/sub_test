@@ -84,9 +84,11 @@ fi
 # Compile CHAMPS executables
 test_compile icing
 
+local flow_success=0
+
 if [ -z "$CHAMPS_QUICKSTART" ] || [ ! -z "$CHAMPS_COMPILE_ALL_EXECS" ] ; then
   test_compile prep
-  test_compile flow
+  flow_success=$(test_compile flow)
   test_compile drop
   test_compile potential
   test_compile potentialPrep
@@ -105,7 +107,7 @@ if [ -z "$CHAMPS_QUICKSTART" ] || [ ! -z "$CHAMPS_COMPILE_ALL_EXECS" ] ; then
 fi
 
 
-if [ -z "$CHAMPS_QUICKSTART" ] ; then
+if [ -z "$CHAMPS_QUICKSTART" ] && [[ $flow_success -eq 0 ]] ; then
   # copy the input data to the filesystem we're running on
   # I can't tell whether prep is running too slow or just freezing, for now don't run it
   # cp $CHAMPS_DATA_PATH/CRMHL_coarse.cgns $CHAMPS_HOME/
