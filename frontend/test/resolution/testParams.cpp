@@ -194,6 +194,23 @@ static void test6() {
   assert(pval.type()->toIntType()->bitwidth() == 32);
 }
 
+static void test7() {
+  printf("test7\n");
+
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+      param x = chpl_INFINITY;
+      param y = chpl_NAN;
+      )""", {"x", "y"});
+
+  ensureParamReal(vars.at("x"), std::numeric_limits<double>::infinity());
+  ensureParamReal(vars.at("y"), std::numeric_limits<double>::quiet_NaN());
+}
+
 int main() {
   test1();
   test2();
@@ -201,6 +218,7 @@ int main() {
   test4();
   test5();
   test6();
+  test7();
 
   return 0;
 }

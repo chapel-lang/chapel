@@ -425,6 +425,16 @@ const QualifiedType& typeForBuiltin(Context* context,
     result = QualifiedType(QualifiedType::PARAM,
                            NothingType::get(context),
                            NoneParam::get(context, /* NoneValue */ {}));
+  } else if (name == USTR("chpl_INFINITY")) {
+    double infinity = std::numeric_limits<double>::infinity();
+    result = QualifiedType(QualifiedType::PARAM,
+                           RealType::get(context, 0),
+                           RealParam::get(context, infinity));
+  } else if (name == USTR("chpl_NAN")) {
+    double nan = std::numeric_limits<double>::quiet_NaN();
+    result = QualifiedType(QualifiedType::PARAM,
+                           RealType::get(context, 0),
+                           RealParam::get(context, nan));
   } else {
     // Could be a non-type builtin like 'index'
     result = QualifiedType();

@@ -22,6 +22,8 @@
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/uast/Module.h"
 
+#include <cmath>
+
 
 QualifiedType
 resolveTypeOfXInit(Context* context, std::string program, bool requireTypeKnown) {
@@ -324,6 +326,21 @@ void ensureParamEnumStr(const QualifiedType& type, const std::string& expectedNa
   assert(type.param() != nullptr);
   assert(type.param()->isEnumParam());
   assert(type.param()->toEnumParam()->value().str == expectedName);
+}
+
+void ensureParamReal(const QualifiedType& type, double expectedValue) {
+  assert(type.kind() == QualifiedType::PARAM);
+  assert(type.type() != nullptr);
+  assert(type.type()->isRealType());
+  assert(type.param() != nullptr);
+  assert(type.param()->isRealParam());
+
+  // NaN == NaN is false, so we need to use a different check.
+  if (std::isnan(expectedValue)) {
+    assert(std::isnan(type.param()->toRealParam()->value()));
+  } else {
+    assert(type.param()->toRealParam()->value() == expectedValue);
+  }
 }
 
 void ensureErroneousType(const QualifiedType& type) {
