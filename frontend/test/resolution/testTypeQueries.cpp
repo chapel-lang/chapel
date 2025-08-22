@@ -199,6 +199,44 @@ static void test8() {
   assert(it->bitwidth() == 8);
 }
 
+// bool is the only type that doesn't allow ? for its bitwidth, since
+// there is only one bitwidth for bool.
+static void test7b() {
+  printf("test7b\n");
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto t = resolveTypeOfXInit(context,
+                R""""(
+                  proc f(arg: bool(?)) { return arg; }
+                  var a: bool;
+                  var x = f(a);
+                )"""", /* requireTypeKnown */ false);
+
+  assert(t.isErroneousType());
+
+  // one for type constructor, one for no matching call
+  assert(guard.realizeErrors() == 2);
+}
+
+static void test8b() {
+  printf("test8b\n");
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto t = resolveTypeOfXInit(context,
+                R""""(
+                  proc f(arg: bool(?w)) { return arg; }
+                  var a: bool;
+                  var x = f(a);
+                )"""", /* requireTypeKnown */ false);
+
+  assert(t.isErroneousType());
+
+  // one for type constructor, one for no matching call
+  assert(guard.realizeErrors() == 2);
+}
+
 static void test9() {
   printf("test9\n");
   auto context = buildStdContext();
@@ -736,6 +774,8 @@ int main() {
   test6();
   test7();
   test8();
+  test7b();
+  test8b();
   test9();
   test10();
   test11();
