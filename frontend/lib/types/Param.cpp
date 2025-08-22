@@ -503,9 +503,9 @@ static QualifiedType enumParamFromNumericValue(Context* context,
   return numericValue;
 }
 
-static bool paramCastAllowed(Context* context,
-                             const QualifiedType& a,
-                             const QualifiedType& b) {
+bool Param::castAllowed(Context* context,
+                        const QualifiedType& a,
+                        const QualifiedType& b) {
   auto at = a.type();
   auto bt = b.type();
 
@@ -552,7 +552,7 @@ static QualifiedType handleParamCast(Context* context,
                                      const AstNode* astForErr,
                                      QualifiedType a,
                                      QualifiedType b) {
-  if (!paramCastAllowed(context, a, b)) {
+  if (!Param::castAllowed(context, a, b)) {
     CHPL_REPORT(context, InvalidParamCast, astForErr, a, b);
     return QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
   }

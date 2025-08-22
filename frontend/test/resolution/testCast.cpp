@@ -455,8 +455,7 @@ static void test43() {
 // param bytes to string (formely throwing assertions)
 static void test44() {
   printf("test44\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   testHelper(context, "param x = b\"hello\" : string;",
                       ErroneousType::get(context), nullptr);
 }
@@ -651,6 +650,23 @@ static void test48() {
   }
 }
 
+// string -> int cast should work, but at runtime.
+static void test49() {
+  {
+    // the cast works at runtime...
+    auto context = buildStdContext();
+    ErrorGuard guard(context);
+    auto vars = resolveTypesOfVariables(context, "var x = \"1\" : int;", {"x"});
+    assert(vars.at("x").type() == IntType::get(context, 0));
+  }
+  {
+    // ... but it's not a param cast.
+    auto context = buildStdContext();
+    testHelper(context, "param x = \"hello\" : int;",
+                        ErroneousType::get(context), nullptr);
+  }
+}
+
 int main() {
   test1();
   test2();
@@ -700,6 +716,7 @@ int main() {
   test46();
   test47();
   test48();
+  test49();
 
   return 0;
 }
