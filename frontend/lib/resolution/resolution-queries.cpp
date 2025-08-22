@@ -1485,24 +1485,103 @@ static bool callHasQuestionMark(const FnCall* call) {
   return false;
 }
 
-static const FnCall* unwrapClassCall(const FnCall* call) {
-  const Call* unwrapped = call;
+static const AstNode* unwrapClassCall(const Call* call, bool& outConcreteManagement) {
+  const AstNode* unwrapped = call;
+  outConcreteManagement = false;
 
-  if (parsing::isCallToClassManager(call)) {
-    if (call->numActuals() == 1) {
-      unwrapped = call->actual(0)->toCall();
+  if (auto fnCall = call->toFnCall()) {
+    if (parsing::isCallToClassManager(fnCall)) {
+      if (call->numActuals() == 1) {
+        unwrapped = call->actual(0);
+        outConcreteManagement = true;
+      }
     }
   }
 
   if (unwrapped) {
     if (auto opCall = unwrapped->toOpCall()) {
       if (opCall->numActuals() == 1 && opCall->op() == "?") {
-        unwrapped = opCall->actual(0)->toFnCall();
+        unwrapped = opCall->actual(0);
       }
     }
   }
 
-  return unwrapped ? unwrapped->toFnCall() : nullptr;
+  return unwrapped;
+}
+
+static bool isScopeResolvedExprGeneric(Context* context,
+                                       ResolutionResultByPostorderID& rr,
+                                       const AstNode* expr,
+                                       std::set<const Type*>& ignore) {
+  bool isConcreteManagement = false;
+  if (auto call = expr->toCall()) {
+    expr = unwrapClassCall(call, isConcreteManagement);
+  }
+
+  auto ident = expr->toIdentifier();
+  auto call = expr->toFnCall();
+  if (call) {
+    ident = call->calledExpression()->toIdentifier();
+  }
+
+  if (call && callHasQuestionMark(call)) {
+    return true;
+  }
+
+  if (ident) {
+    if (isNameBuiltinGenericType(context, ident->name())) {
+      return true;
+    }
+
+    auto& re = rr.byAst(ident);
+    if (re.toId().isEmpty()) {
+      // If we can't find this, treat it as concrete.
+    } else {
+      auto& toId = re.toId();
+      auto toTag = parsing::idToTag(context, toId);
+      const CompositeType* initialType = nullptr;
+
+      if (asttags::isAggregateDecl(toTag)) {
+        initialType = initialTypeForTypeDecl(context, toId)->getCompositeType();
+      }
+
+      if (asttags::isClass(toTag) && !isConcreteManagement &&
+          ignore.find(initialType) == ignore.end()) {
+        // classes without 'shared' or 'owned' are generic (generic management),
+        // regardless if whether the class' fields are generic or not.
+        //
+        // except for things marked with `pragma "data class"`, which are
+        // magical and don't get managed.
+        if (!initialType->hasPragma(context, PRAGMA_DATA_CLASS)) {
+          return true;
+        }
+      }
+
+      // if the type is generic, then the resolved expression that points to
+      // this type is generic too, _unless_ it's used as part of a call to
+      // a type constructor to create a concrete instance of the type (in
+      // which case there is a 'call').
+      if (asttags::isAggregateDecl(toTag) && !call) {
+        if (getTypeGenericityIgnoring(context, initialType, ignore) != Type::CONCRETE) {
+          return true;
+        }
+      }
+    }
+  }
+
+  // at this point, if we have a call it's got 0+ actuals, none of which are '?',
+  // and the base expression is either a record or a managed class type.
+  // Check if any of the actuals are generic, and take that to assume the
+  // whole call is generic.
+  if (call) {
+    for (auto actual : call->actuals()) {
+      if (isScopeResolvedExprGeneric(context, rr, actual, ignore)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 /**
@@ -1516,7 +1595,8 @@ static const FnCall* unwrapClassCall(const FnCall* call) {
 static bool isVariableDeclWithClearGenericity(Context* context,
                                               const VarLikeDecl* var,
                                               bool &outIsGeneric,
-                                              types::QualifiedType* outFormalType) {
+                                              types::QualifiedType* outFormalType,
+                                              std::set<const Type*>& ignore) {
   // fields that are 'type' or 'param' are generic
   // and we can use the same type/param intent for the type constructor
   if (var->storageKind() == QualifiedType::TYPE ||
@@ -1548,31 +1628,33 @@ static bool isVariableDeclWithClearGenericity(Context* context,
   // of the type expression determines if we guess it to be generic or
   // concrete. The only "generic" form is a call with a "(?)" actual.
 
-  if (auto ident = var->typeExpression()->toIdentifier()) {
-    outIsGeneric = isNameBuiltinGenericType(context, ident->name());
-    return true;
-  } else if (auto call = var->typeExpression()->toFnCall()) {
-    auto unwrapped = unwrapClassCall(call);
-    if (unwrapped && callHasQuestionMark(unwrapped)) {
-      outIsGeneric = true;
-      return true;
-    }
-  }
+  auto aggregateDeclId = var->id().parentSymbolId(context);
+  auto aggregateDecl = parsing::idToAst(context, aggregateDeclId)->toAggregateDecl();
+  CHPL_ASSERT(aggregateDecl);
 
-  outIsGeneric = false;
+  // Performance: this scope resolution could be put behind a query if it
+  //              impacts performance too much.
+  ResolutionResultByPostorderID rr;
+  auto visitor =
+    Resolver::createForScopeResolvingField(context, aggregateDecl,
+                                           var, rr);
+  var->traverse(visitor);
+
+  outIsGeneric = isScopeResolvedExprGeneric(context, rr, var->typeExpression(), ignore);
   return true;
 }
 
-bool isFieldSyntacticallyGeneric(Context* context,
-                                 const ID& fieldId,
-                                 types::QualifiedType* formalType) {
+bool isFieldSyntacticallyGenericIgnoring(Context* context,
+                                         const ID& fieldId,
+                                         types::QualifiedType* formalType,
+                                         std::set<const Type*>& typeGenericities) {
   // compare with AggregateType::fieldIsGeneric
 
   auto var = parsing::idToAst(context, fieldId)->toVariable();
   CHPL_ASSERT(var);
 
   bool isGeneric = false;
-  if (isVariableDeclWithClearGenericity(context, var, isGeneric, formalType)) {
+  if (isVariableDeclWithClearGenericity(context, var, isGeneric, formalType, typeGenericities)) {
     return isGeneric;
   }
 
@@ -1604,13 +1686,21 @@ bool isFieldSyntacticallyGeneric(Context* context,
         break;
       }
 
-      if (isVariableDeclWithClearGenericity(context, neighborVar, isGeneric, formalType)) {
+      if (isVariableDeclWithClearGenericity(context, neighborVar, isGeneric, formalType, typeGenericities)) {
         break;
       }
     }
   }
 
   return isGeneric;
+}
+
+bool isFieldSyntacticallyGeneric(Context* context,
+                                 const ID& fieldId,
+                                 types::QualifiedType* formalType) {
+  // Performance: this might be made into a query, why not?
+  std::set<const Type*> typeGenericities;
+  return isFieldSyntacticallyGenericIgnoring(context, fieldId, formalType, typeGenericities);
 }
 
 bool shouldIncludeFieldInTypeConstructor(Context* context,
@@ -1751,6 +1841,13 @@ QualifiedType getInstantiationType(Context* context,
   CHPL_ASSERT(canPass(context, actualType, formalType).passes());
   CHPL_ASSERT(canPass(context, actualType, formalType).instantiates() ||
               formalType.isType());
+
+  // there are some tricky cases around '_owned' (record) and our internal 'owned'
+  // representation (e.g.). 'owned' -> `_owned' cannot create conversions, but
+  // the other way could (if the actual is a manager record, we turn it into
+  // the internal 'owned' representation, then borrow it). Do this wrapping
+  // now, if needed.
+  tryConvertClassTypeOutOfManagerRecordIfNeeded(context, actualT, formalT);
 
   if (auto actualCt = actualT->toClassType()) {
     // handle decorated class passed to decorated class
@@ -2300,9 +2397,9 @@ static bool instantiateAcrossManagerRecordConversion(Context* context,
   if (tryConvertClassTypeIntoManagerRecordIfNeeded(context, formalT, actualT)) {
     outInstType = QualifiedType(formal.kind(), actualT);
     return true;
-  } else if (tryConvertClassTypeIntoManagerRecordIfNeeded(context, actualT, formalT)) {
-    CHPL_UNIMPL("converting manager record into class type");
-    return false;
+  } else if (tryConvertClassTypeOutOfManagerRecordIfNeeded(context, actualT, formalT)) {
+    outInstType = QualifiedType(formal.kind(), actualT);
+    return true;
   }
   return false;
 }

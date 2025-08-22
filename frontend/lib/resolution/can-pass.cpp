@@ -908,10 +908,11 @@ tryConvertClassTypeIntoManagerRecordIfNeeded(Context* context,
   // Override the class type to the manager record type
   // mightBeClass used to be `owned` of type ClassType,
   // now it's `_owned` of type RecordType
+  static const auto genericDec = ClassTypeDecorator(ClassTypeDecorator::GENERIC);
   if (aot) {
-    mightBeClass = CompositeType::getOwnedRecordType(context, /*bct*/ nullptr);
+    mightBeClass = CompositeType::getOwnedRecordType(context, /*bct*/ nullptr, genericDec);
   } else if (ast) {
-    mightBeClass = CompositeType::getSharedRecordType(context, /*bct*/ nullptr);
+    mightBeClass = CompositeType::getSharedRecordType(context, /*bct*/ nullptr, genericDec);
   } else {
     mightBeClass = ct->managerRecordType(context);
   }
@@ -919,14 +920,85 @@ tryConvertClassTypeIntoManagerRecordIfNeeded(Context* context,
   return true;
 }
 
-static optional<std::pair<const RecordType*, const RecordType*>>
-shouldConvertClassTypeIntoManagerRecord(Context* context,
-                                        const Type* actualT,
-                                        const Type* formalT) {
+bool
+tryConvertClassTypeOutOfManagerRecordIfNeeded(Context* context,
+                                              const types::Type*& mightBeManagerRecord,
+                                              const types::Type* const& mightBeClass) {
+  if (!mightBeManagerRecord || !mightBeClass) return false;
+
+  auto mr = mightBeManagerRecord->toRecordType();
+  bool otherClassLike =
+    mightBeClass->isClassType() ||
+    mightBeClass->isAnyOwnedType() ||
+    mightBeClass->isAnySharedType() ||
+    mightBeClass->isAnyClassType();
+
+  if (!mr || !otherClassLike) return false;
+
+  const Type* targetManager = nullptr;
+  if (mr->isOwnedRecordType()) {
+    targetManager = AnyOwnedType::get(context);
+  } else if (mr->isSharedRecordType()) {
+    targetManager = AnySharedType::get(context);
+  } else {
+    // not a manager record type
+    return false;
+  }
+
+  // well, the other class is a class-ish thing, and we're _owned or
+  // _shared. So, find the chpl_t field, use that to get the BasicClassType
+  // and nilability, and create the target class type.
+
+  auto rc = createDummyRC(context);
+  auto fields =
+    fieldsForTypeDecl(&rc, mr,
+                      DefaultsPolicy::IGNORE_DEFAULTS);
+
+  for (int i = 0; i < fields.numFields(); i++) {
+    if (fields.fieldName(i) != "chpl_t") continue;
+    auto fieldType = fields.fieldType(i);
+
+    // it's possible that fieldType is unknown (we are the generic _owned).
+    // Otherwise, it better be a class type.
+    if (fieldType.isUnknown()) {
+      mightBeManagerRecord =
+        ClassType::get(context, AnyClassType::get(context), targetManager,
+                       ClassTypeDecorator(ClassTypeDecorator::MANAGED));
+      return true;
+    } else if (!fieldType.isUnknownOrErroneous() &&
+               fieldType.type()->isClassType()) {
+      // we have a class type, so we can use it to create the target class type
+      auto ct = fieldType.type()->toClassType();
+      // _owned(borrowed C) -> owned C
+      // _shared(borrowed C?) -> shared C?
+      auto targetDec =
+        ClassTypeDecorator(ClassTypeDecorator::MANAGED)
+        .copyNilabilityFrom(ct->decorator());
+      mightBeManagerRecord =
+        ClassType::get(context, ct->basicClassType(), targetManager, targetDec);
+      return true;
+    } else {
+      // not a class type, so we can't convert
+      return false;
+    }
+  }
+  CHPL_ASSERT(false && "should not be reachable");
+  return false;
+}
+
+static optional<std::pair<const Type*, const Type*>>
+shouldHandleManagerRecordConversion(Context* context,
+                                    const Type* actualT,
+                                    const Type* formalT) {
   if (tryConvertClassTypeIntoManagerRecordIfNeeded(context, formalT, actualT) ||
       tryConvertClassTypeIntoManagerRecordIfNeeded(context, actualT, formalT)) {
     CHPL_ASSERT(formalT->isRecordType() && actualT->isRecordType());
-    return std::make_pair(actualT->toRecordType(), formalT->toRecordType());
+    return std::make_pair(actualT, formalT);
+  }
+  if (tryConvertClassTypeOutOfManagerRecordIfNeeded(context, formalT, actualT) ||
+      tryConvertClassTypeOutOfManagerRecordIfNeeded(context, actualT, formalT)) {
+    CHPL_ASSERT(formalT->isClassType() && actualT->isClassType());
+    return std::make_pair(actualT, formalT);
   }
 
   return empty;
@@ -1049,7 +1121,7 @@ CanPassResult CanPassResult::canPassScalar(Context* context,
   const Type* formalT = formalQT.type();
   CHPL_ASSERT(actualT && formalT);
   if (auto managerRecordPair =
-           shouldConvertClassTypeIntoManagerRecord(context, actualT, formalT)) {
+           shouldHandleManagerRecordConversion(context, actualT, formalT)) {
     actualT = managerRecordPair->first;
     formalT = managerRecordPair->second;
     actualQT = QualifiedType(actualQT.kind(), actualT, actualQT.param());

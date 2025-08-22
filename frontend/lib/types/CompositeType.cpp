@@ -206,13 +206,16 @@ static const ID getSharedRecordId(Context* context) {
 
 static const RecordType* tryCreateManagerRecord(Context* context,
                                                 const ID& recordId,
-                                                const BasicClassType* bct) {
+                                                const BasicClassType* bct,
+                                                const ClassTypeDecorator& copyNilabilityFrom) {
   const RecordType* instantiatedFrom = nullptr;
   SubstitutionsMap subs;
   if (bct != nullptr) {
+    static const auto genericDec = ClassTypeDecorator(ClassTypeDecorator::GENERIC);
     instantiatedFrom = tryCreateManagerRecord(context,
                                               recordId,
-                                              /*bct*/ nullptr);
+                                              /*bct*/ nullptr,
+                                              genericDec);
 
     // Note: We know these types aren't nested, and so don't require a proper
     // ResolutionContext at this time.
@@ -222,7 +225,8 @@ static const RecordType* tryCreateManagerRecord(Context* context,
                                     DefaultsPolicy::IGNORE_DEFAULTS);
     for (int i = 0; i < fields.numFields(); i++) {
       if (fields.fieldName(i) != "chpl_t") continue;
-      auto ctd = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
+      auto ctd =
+        ClassTypeDecorator(ClassTypeDecorator::BORROWED).copyNilabilityFrom(copyNilabilityFrom);
       auto ct = ClassType::get(context, bct, /* manager */ nullptr, ctd);
 
       subs[fields.fieldDeclId(i)] = QualifiedType(QualifiedType::TYPE, ct);
@@ -237,13 +241,13 @@ static const RecordType* tryCreateManagerRecord(Context* context,
 }
 
 const RecordType*
-CompositeType::getOwnedRecordType(Context* context, const BasicClassType* bct) {
-  return tryCreateManagerRecord(context, getOwnedRecordId(context), bct);
+CompositeType::getOwnedRecordType(Context* context, const BasicClassType* bct, const ClassTypeDecorator& copyNilabilityFrom) {
+  return tryCreateManagerRecord(context, getOwnedRecordId(context), bct, copyNilabilityFrom);
 }
 
 const RecordType*
-CompositeType::getSharedRecordType(Context* context, const BasicClassType* bct) {
-  return tryCreateManagerRecord(context, getSharedRecordId(context), bct);
+CompositeType::getSharedRecordType(Context* context, const BasicClassType* bct, const ClassTypeDecorator& copyNilabilityFrom) {
+  return tryCreateManagerRecord(context, getSharedRecordId(context), bct, copyNilabilityFrom);
 }
 
 const RecordType*

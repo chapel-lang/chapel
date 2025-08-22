@@ -27,6 +27,7 @@
 namespace chpl {
 namespace types {
 
+class ClassTypeDecorator;
 
 /**
 
@@ -241,10 +242,12 @@ class CompositeType : public Type {
   static const RecordType* getDistributionType(Context* context);
 
   /** Get the record _owned implementing owned */
-  static const RecordType* getOwnedRecordType(Context* context, const BasicClassType* bct);
+  static const RecordType* getOwnedRecordType(Context* context, const BasicClassType* bct,
+                                              const ClassTypeDecorator& copyNilabilityFrom);
 
   /** Get the record _shared implementing shared */
-  static const RecordType* getSharedRecordType(Context* context, const BasicClassType* bct);
+  static const RecordType* getSharedRecordType(Context* context, const BasicClassType* bct,
+                                               const ClassTypeDecorator& copyNilabilityFrom);
 
   /** Get the sync type (_syncvar record) */
   static const RecordType* getSyncType(Context* context);

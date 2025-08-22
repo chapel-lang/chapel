@@ -317,6 +317,10 @@ types::Type::Genericity getTypeGenericity(Context* context,
 types::Type::Genericity getTypeGenericity(Context* context,
                                           types::QualifiedType qt);
 
+bool isFieldSyntacticallyGenericIgnoring(Context* context,
+                                         const ID& fieldId,
+                                         types::QualifiedType* formalType,
+                                         std::set<const types::Type*>& typeGenericities);
 
 bool isFieldSyntacticallyGeneric(Context* context,
                                  const ID& field,

@@ -196,6 +196,8 @@ X(deprecated          , "deprecated")
 X(edition             , "edition")
 X(unstable            , "unstable")
 
+X(ownedRecId          , "OwnedObject._owned")
+X(sharedRecId         , "SharedObject._shared")
 X(stringId            , "String._string")
 X(bytesId             , "Bytes._bytes")
 X(localeId            , "ChapelLocale._locale")

@@ -217,6 +217,12 @@ class Type {
       outEltType and outSize to the element type and size of the c_array. */
   bool isCArrayType(Context* context, const Type*& outEltType, const IntParam*& outSize) const;
 
+  /** returns true if this represents the _owned builtin record */
+  bool isOwnedRecordType() const;
+
+  /** returns true if this represents the _shared builtin record */
+  bool isSharedRecordType() const;
+
   /** returns true if this represents the string type */
   bool isStringType() const;
 
