@@ -28,6 +28,9 @@ class Context;
 
 #define ID_GEN_START -3
 
+/* find the last '.' but don't count \. returns -1 if none was found */
+ssize_t findLastDot(const char* path);
+
 /**
   This class represents an ID for an AST node.
   AST element IDs can be helpful for creating maps with AST

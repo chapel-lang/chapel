@@ -45,7 +45,7 @@ UniqueString ID::symbolPathWithoutRepeats(Context* context) const {
 
 // find the last '.' but don't count \.
 // returns -1 if none was found
-static ssize_t findLastDot(const char* path) {
+ssize_t findLastDot(const char* path) {
   ssize_t lastDot = -1;
   for (ssize_t i = 1; path[i]; i++) {
     if (path[i] == '.' && path[i-1] != '\\')

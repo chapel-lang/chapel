@@ -953,6 +953,40 @@ static void test26() {
   ensureParamEnumStr(vars.at("y"), "red");
 }
 
+static void test27() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+      enum color {
+        red = 0,
+        green = 0,
+      }
+      enum colorOther {
+        red = 0,
+        green = 0,
+      }
+      param a = "color.red" : color;
+      param b = "color.green" : color;
+      param c = "colorOther.red" : color;
+      param d = "colorOther.green" : color;
+      )""", {"a", "b", "c", "d"});
+
+  auto param0 = vars.at("a").param();
+  assert(param0 && param0->isEnumParam());
+  assert(param0->toEnumParam()->value().str == "red");
+
+  auto param1 = vars.at("b").param();
+  assert(param1 && param1->isEnumParam());
+  assert(param1->toEnumParam()->value().str == "green");
+
+  vars.at("c").isErroneousType();
+  vars.at("d").isErroneousType();
+
+  assert(guard.realizeErrors() == 2);
+}
+
 int main() {
   test1();
   test2();
@@ -981,6 +1015,7 @@ int main() {
   test24();
   test25();
   test26();
+  test27();
 
   return 0;
 }
