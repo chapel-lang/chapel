@@ -1364,6 +1364,19 @@ static void test47() {
   //test("forall i in stuff(x) with (var copy = helper(x))", {});
 }
 
+static void test48() {
+  testCopyElision("test5a",
+    R""""(
+        record R { proc foo(){} }
+        proc test(cond: bool) {
+          var x: R;
+          var z = x;
+          return x.foo();
+        }
+    )"""",
+    {}); // x is mentioned in receiver of method call, so no elision
+}
+
 int main() {
   test1();
   test2();
@@ -1412,5 +1425,6 @@ int main() {
   test45();
   test46();
   test47();
+  test48();
   return 0;
 }
