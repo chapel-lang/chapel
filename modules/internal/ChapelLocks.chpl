@@ -129,31 +129,39 @@ module ChapelLocks {
       type dataType;
       type lockType;
       param isWriteAccess: bool;
-      var _guardPtr: c_ptr(chpl_lockGuard(dataType, lockType));
+      const _guardPtr: c_ptr(chpl_lockGuard(dataType, lockType));
+
+      inline proc init(ptr: c_ptr(chpl_lockGuard(?t1, ?t2)),
+                       param isWriteAccess: bool) {
+        this.dataType = t1;
+        this.lockType = t2;
+        this.isWriteAccess = isWriteAccess;
+        this._guardPtr = ptr;
+      }
 
       proc isReading param do return !isWriteAccess;
       proc isWriting param do return isWriteAccess;
       proc _guard ref do return _guardPtr.deref();
 
       pragma "fn returns infinite lifetime"
-      proc ref enterContext() ref where isWriting {
+      inline proc ref enterContext() ref where isWriting {
         _guard._lock.acquireWriteLock();
         return _guardPtr.deref().unsafeAccess();
       }
 
       pragma "fn returns infinite lifetime"
-      proc ref enterContext() const ref where isReading {
+      inline proc ref enterContext() const ref where isReading {
         _guard._lock.acquireReadLock();
         return _guardPtr.deref().unsafeAccess();
       }
 
-      proc ref exitContext(in e: owned Error?) where isWriting {
+      inline proc ref exitContext(in e: owned Error?) where isWriting {
         defer _guard._lock.releaseWriteLock();
         // TODO: We shouldn't halt here, but 'throws' is currently awkward.
         if e then halt(e!.message());
       }
 
-      proc ref exitContext(in e: owned Error?) where isReading {
+      inline proc ref exitContext(in e: owned Error?) where isReading {
         defer _guard._lock.releaseReadLock();
         // TODO: We shouldn't halt here, but 'throws' is currently awkward.
         if e then halt(e!.message());
@@ -166,7 +174,7 @@ module ChapelLocks {
     // Wrapper to create a new context manager instance.
     inline proc ref _createAccessManager(param isWriteAccess: bool) {
       type t = this.type._accessManagerType;
-      return new t(dataType, lockType, isWriteAccess, c_ptrTo(this));
+      return new t(c_ptrTo(this), isWriteAccess);
     }
 
     /** Return a new context manager that provides read access. */
