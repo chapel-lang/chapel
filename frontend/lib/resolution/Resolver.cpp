@@ -2791,6 +2791,11 @@ void Resolver::resolveTupleDecl(const TupleDecl* td, QualifiedType useType) {
   resolveTupleUnpackDecl(td, std::move(useType));
 }
 
+static SkipCallResolutionReason
+shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
+                         std::vector<const uast::AstNode*> actualAsts,
+                         const CallInfo& ci);
+
 bool Resolver::resolveSpecialNewCall(const Call* call) {
   if (!call->calledExpression() ||
       !call->calledExpression()->isNew()) {
@@ -2863,6 +2868,10 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
   auto inScope = currentScope();
   auto inPoiScope = poiScope;
   auto inScopes = CallScopeInfo::forNormalCall(inScope, inPoiScope);
+
+  if (shouldSkipCallResolution(this, call, actualAsts, ci)) {
+    return true;
+  }
 
   // note: the resolution machinery will get compiler generated candidates
   auto c = resolveGeneratedCall(call, &ci, &inScopes);
