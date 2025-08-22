@@ -2499,6 +2499,7 @@ instantiateSignatureImpl(ResolutionContext* rc,
 
     bool addSub = false;
     bool isInstantiated = false;
+    bool justComputedVarArgType = false;
     QualifiedType useType;
     const auto formal = untypedSignature->formalDecl(entry.formalIdx());
     const auto& actualType = entry.actualType();
@@ -2512,6 +2513,7 @@ instantiateSignatureImpl(ResolutionContext* rc,
         // We haven't yet re-computed the vararg tuple type.
         formal->traverse(visitor);
         varArgType = r.byAst(formal).type();
+        justComputedVarArgType = true;
       }
       formalType = getVarArgTupleElemType(varArgType);
 
@@ -2671,9 +2673,18 @@ instantiateSignatureImpl(ResolutionContext* rc,
     if (entry.isVarArgEntry()) {
       // Vararg entries don't get substitutions at this point, so
       // manually update type queries.
-      if (auto vld = formal->toVarLikeDecl()) {
-        if (auto te = vld->typeExpression()) {
-            visitor.resolveTypeQueries(te, useType);
+      //
+      // ... except, don't do this if this is the second+ time we are visiting
+      // this vararg formal. The reason being that type queries can't change
+      // after the first time (so that `x: R(?t)...` leaves `?t` consistent).
+      // This way, the type queries will remain as they were during the first
+      // actual, and we'll get formal-actual mismatches if the user tries to
+      // pull a switcheroo.
+      if (justComputedVarArgType) {
+        if (auto vld = formal->toVarLikeDecl()) {
+          if (auto te = vld->typeExpression()) {
+              visitor.resolveTypeQueries(te, useType);
+          }
         }
       }
     } else if (formal) {
