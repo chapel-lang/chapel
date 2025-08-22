@@ -765,6 +765,22 @@ static void test24() {
   assert(vars.at("z").type()->isBoolType());
 }
 
+// bool variable declarations with type queries are ungood
+static void test25() {
+  printf("%s\n", __FUNCTION__);
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+                R""""(
+                  var x: bool(?) = true;
+                  var y: bool(?w) = false;
+                )"""", {"x", "y"});
+  assert(vars.at("x").isUnknown());
+  assert(vars.at("y").isUnknown());
+  assert(guard.realizeErrors() == 2);
+}
+
 int main() {
   test1();
   test2();
@@ -794,6 +810,7 @@ int main() {
   test22();
   test23();
   test24();
+  test25();
 
   return 0;
 }
