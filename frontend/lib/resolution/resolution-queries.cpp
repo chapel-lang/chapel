@@ -4180,7 +4180,7 @@ static const Type* getNumericType(Context* context,
         return AnyImagType::get(context);
       } else if (name == USTR("complex")) {
         return AnyComplexType::get(context);
-      } else if (name == USTR("bool")) {
+      } else if (name == USTR("bool") || ci.calledType().type()->isBoolType()) {
         // bool used to support custom widths, but now it doesn't.
         //
         // handle it here anyway, since it used to be much like "int" and "real",
@@ -4195,7 +4195,7 @@ static const Type* getNumericType(Context* context,
       }
     }
 
-    if (name == USTR("bool")) {
+    if (name == USTR("bool") || ci.calledType().type()->isBoolType()) {
       if (ci.numActuals() > 0) {
         // bool used to support custom widths, but now it doesn't. Now,
         // there's no bool(..) type constructor.

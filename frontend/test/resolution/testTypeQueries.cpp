@@ -237,6 +237,46 @@ static void test8b() {
   assert(guard.realizeErrors() == 2);
 }
 
+// same as test7b, but uses a type alias for bool.
+static void test7c() {
+  printf("test7c\n");
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto t = resolveTypeOfXInit(context,
+                R""""(
+                  type mybool = bool;
+                  proc f(arg: mybool(?)) { return arg; }
+                  var a: mybool;
+                  var x = f(a);
+                )"""", /* requireTypeKnown */ false);
+
+  assert(t.isErroneousType());
+
+  // one for type constructor, one for no matching call
+  assert(guard.realizeErrors() == 2);
+}
+
+// same as test8b, but uses a type alias for bool.
+static void test8c() {
+  printf("test8c\n");
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto t = resolveTypeOfXInit(context,
+                R""""(
+                  type mybool = bool;
+                  proc f(arg: mybool(?w)) { return arg; }
+                  var a: mybool;
+                  var x = f(a);
+                )"""", /* requireTypeKnown */ false);
+
+  assert(t.isErroneousType());
+
+  // one for type constructor, one for no matching call
+  assert(guard.realizeErrors() == 2);
+}
+
 static void test9() {
   printf("test9\n");
   auto context = buildStdContext();
@@ -781,6 +821,23 @@ static void test25() {
   assert(guard.realizeErrors() == 2);
 }
 
+// same as test23 but using type aliases for bool
+static void test25b() {
+  printf("%s\n", __FUNCTION__);
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+                R""""(
+                  type mybool = bool;
+                  var x: mybool(?) = true;
+                  var y: mybool(?w) = false;
+                )"""", {"x", "y"});
+  assert(vars.at("x").isUnknown());
+  assert(vars.at("y").isUnknown());
+  assert(guard.realizeErrors() == 2);
+}
+
 int main() {
   test1();
   test2();
@@ -792,6 +849,8 @@ int main() {
   test8();
   test7b();
   test8b();
+  test7c();
+  test8c();
   test9();
   test10();
   test11();
@@ -811,6 +870,7 @@ int main() {
   test23();
   test24();
   test25();
+  test25b();
 
   return 0;
 }
