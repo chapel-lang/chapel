@@ -2351,6 +2351,65 @@ def run_lsp():
     @server.feature(TEXT_DOCUMENT_CODE_LENS)
     async def code_lens(ls: ChapelLanguageServer, params: CodeLensParams):
 
+        text_doc = ls.workspace.get_text_document(params.text_document.uri)
+        fi, _ = ls.get_file_info(text_doc.uri)
+        filename = fi.uri[len("file://") :]
+
+        # find anything that looks like a test func
+        # TODO: for now restrict this to vscode
+        actions = []
+        for n, v in chapel.each_matching(
+            fi.get_asts(),
+            [chapel.Function, ("?formal", chapel.Formal), chapel.Block],
+        ):
+            assert isinstance(n, chapel.Function)
+            if not n.throws():
+                continue
+            name = n.name()
+            formal = v["formal"]
+            assert isinstance(formal, chapel.Formal)
+            type_ = formal.type_expression()
+            if type_ is None:
+                continue
+            if not isinstance(type_, chapel.FnCall):
+                continue
+            if not type_.num_actuals() == 1:
+                continue
+            # TODO: this should be properly matching the AST
+            if str(type_) != "borrowed Test":
+                continue
+            lens = CodeLens(
+                data=(filename, name,),
+                command=Command(
+                    "▶ Run {}".format(name),
+                    "chapel.mason.invokeTestFile",
+                    [filename, name],
+                ),
+                range=location_to_range(n.location()),
+            )
+            actions.append(lens)
+
+        # find UnitTest.main() and put a lens on it too
+        for n, v in chapel.each_matching(
+            fi.get_asts(), [chapel.FnCall, ("?dot", chapel.Dot)]
+        ):
+            dot = v["dot"]
+            assert isinstance(dot, chapel.Dot)
+            if str(dot) != "UnitTest.main":
+                continue
+            lens = CodeLens(
+                data=(filename,),
+                command=Command(
+                    "▶ Run All",
+                    "chapel.mason.invokeTestFile",
+                    [filename],
+                ),
+                range=location_to_range(n.location()),
+            )
+            actions.append(lens)
+
+        return actions
+
         # return early if the resolver is not being used or the feature is disabled
         if not ls.use_resolver:
             return None
@@ -2362,7 +2421,7 @@ def run_lsp():
 
         fi, _ = ls.get_file_info(text_doc.uri)
 
-        actions = []
+        # actions = []
         decls = fi.def_segments.elts
         for decl in decls:
             if (
