@@ -2260,6 +2260,81 @@ static void testUseOfUninitializedVar() {
   assert(guard.realizeErrors() == 2);
 }
 
+/* test cases copied from testTypePropertyPrimitives */
+static void testAnyPod() {
+  auto base =
+    /* prelude */ R"""(
+            pragma "ignore noinit"
+            record r1 {}
+            record r2 { var x: int; var y: real; }
+            record r3 { var x: int; var y: real; var z: integral; }
+            record r4 { var x: r2; var y: int; }
+            record r5 {
+              proc deinit() {}
+            }
+            record r6 {
+              proc init=(rhs: r6) {}
+            }
+            record r7 {
+              operator=(lhs: r7, rhs: r7) {}
+            }
+            record r8 {}
+            operator=(lhs: r8, rhs: r8) {}
+            // Should be marked POD irregardless of the generic.
+            pragma "plain old data"
+            record r9 { type T; var x: T; }
+            class c1 { var x: int; }
+            record r10 { var x: owned c1?; }
+            record r11 { var x: r9(?); }
+            operator =(ref lhs: int, const rhs: int) {}
+            operator =(ref lhs: real, const rhs: real) {}
+            )""";
+
+  auto runTest = [base](const char* type, bool shouldWork) {
+    auto ctx = buildStdContext();
+    ErrorGuard guard(ctx);
+
+    auto fullProg = std::string(base) +
+      "proc foo(type arg: chpl_anyPOD) param do return true;\n" +
+      "pragma \"last resort\" proc foo(type arg) param do return false;\n" +
+      "param x = foo(" + std::string(type) + ");\n";
+
+    auto qt = resolveTypeOfXInit(ctx, fullProg);
+    ensureParamBool(qt, shouldWork);
+  };
+
+  const char* podTypes[] = {
+    "bool", "int", "int(8)", "int(16)", "int(32)",
+    "int(64)", "uint", "uint(8)", "uint(16)",
+    "uint(32)", "uint(64)", "real(32)", "real(64)",
+    "complex", "imag",
+    "r2", "r4", "r9",
+    "borrowed c1", "borrowed c1?", "unmanaged c1", "unmanaged c1?",
+  };
+  for (size_t i = 0; i < sizeof(podTypes) / sizeof(podTypes[0]); i++) {
+    runTest(podTypes[i], true);
+  }
+
+  // skip "integral", because it's a built-in generic type and we don't
+  // resolve calls with this type as an actual.
+  const char* nonPodTypes[] = {
+    /* "integral", */ "r1", "r3", "r5", "r6", "r7", "r8", "r10",
+    // TODO: Currently marked as non-POD even though all the members are
+    // marked as POD - this is because 'r9' is technically generic, which
+    // causes problems.
+    "r11",
+    "c1", "owned c1", "owned c1?", "shared c1", "shared c1?",
+  };
+  for (size_t i = 0; i < sizeof(nonPodTypes) / sizeof(nonPodTypes[0]); i++) {
+    runTest(nonPodTypes[i], false);
+  }
+
+  // TODO:(these are todo'd in the original test file, too)
+  // { {"atomic int"}, Test::FALSE },
+  // { {"single int"}, Test::FALSE },
+  // { {"sync int"}, Test::FALSE },
+}
+
 int main() {
   test1();
   test2();
@@ -2319,6 +2394,8 @@ int main() {
   testGenericSync();
 
   testUseOfUninitializedVar();
+
+  testAnyPod();
 
   return 0;
 }
