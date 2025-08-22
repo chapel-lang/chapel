@@ -425,6 +425,31 @@ static void testNewShadowCandidates(Context* context) {
   assert(guard.realizeErrors() == 1);
 }
 
+// regression test for bug in which re-running a vararg iterator's resolution (e.g.,
+// when looking for other overloads) accidentially re-wraps args in an extra tuple.
+// This happened because vararg formals are instantiated with the tuple of
+// arguments passed to then, and subsequent re-runs just passed that tuple
+// directly instead of expanding it.
+static void testVarArgIterator(Context* context) {
+  std::string prog =
+    R"""(
+    iter foo(fml...) {
+        for arg in fml {
+            yield arg;
+        }
+    }
+    var tmp: _iteratorRecord = foo(1,2,3,4);
+    var x = + reduce tmp;
+    )""";
+
+  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context, prog, {"x"});
+  assert(!vars.at("x").isUnknownOrErroneous());
+  assert(vars.at("x").type()->isIntType());
+}
+
 int main() {
   auto context = buildStdContext();
   testStandaloneWithoutSerial(context);
@@ -434,4 +459,5 @@ int main() {
   testIteratorFnPoiIgnoresIterationScope(context);
   testLoopExprIteratorPoi(context);
   testNewShadowCandidates(context);
+  testVarArgIterator(context);
 }

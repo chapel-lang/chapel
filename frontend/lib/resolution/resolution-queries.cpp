@@ -7356,7 +7356,17 @@ findTaggedIteratorForType(ResolutionContext* rc,
   auto name = fnIter->iteratorFn()->untyped()->name();
   std::vector<QualifiedType> argTypes;
   for (int i = 0; i < fn->numFormals(); i++) {
-    argTypes.push_back(fn->formalType(i));
+    if (fn->untyped()->formalIsVarArgs(i)) {
+      auto varArgs = fn->formalType(i);
+      CHPL_ASSERT(!varArgs.isUnknownOrErroneous());
+      auto tup = varArgs.type()->toTupleType();
+      CHPL_ASSERT(tup);
+      for (int j = 0; j < tup->numElements(); j++) {
+        argTypes.push_back(tup->elementType(j));
+      }
+    } else {
+      argTypes.push_back(fn->formalType(i));
+    }
   }
   auto inScopes = callScopeInfoForIterator(rc->context(), fnIter, overrideScope);
 
