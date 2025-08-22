@@ -2958,6 +2958,27 @@ resolveFunctionByInfoImpl(ResolutionContext* rc, const TypedFnSignature* sig,
     visitor.returnType = std::move(qt);
   }
 
+  // Walk the linkage name, if any
+  UniqueString linkageNameStr;
+  if (auto linkageName = fn->linkageName()) {
+    linkageName->traverse(visitor);
+
+    auto re = rr.byAst(linkageName);
+    auto& qt = re.type();
+    if (qt.isErroneousType()) {
+      // coudn't compute linkage name, error already issued
+    } else if (qt.isUnknownOrErroneous()) {
+      context->error(linkageName,
+                     "could not determine linkage name for function '%s'",
+                     fn->name().c_str());
+    } else if (!qt.isParam() || !qt.param() || !qt.type()->isStringType()) {
+      context->error(linkageName,
+                     "linkage name for must be a compile-time-known string");
+    } else {
+      linkageNameStr = qt.param()->toStringParam()->value();
+    }
+  }
+
   // Walk the body to resolve it.
   if (fn->body()) fn->body()->traverse(visitor);
 
@@ -2998,6 +3019,7 @@ resolveFunctionByInfoImpl(ResolutionContext* rc, const TypedFnSignature* sig,
                                   fn->returnIntent(),
                                   std::move(rr),
                                   std::move(resolvedPoiInfo),
+                                  linkageNameStr,
                                   std::move(visitor.returnType),
                                   std::move(visitor.userDiagnostics),
                                   std::move(visitor.poiTraceToChild),
@@ -3585,6 +3607,7 @@ scopeResolveFunctionQueryBody(Context* context, ID id) {
   result = toOwned(new ResolvedFunction(sig, fn->returnIntent(),
                                         std::move(resolutionById),
                                         PoiInfo(),
+                                        UniqueString(),
                                         QualifiedType(),
                                         {}, {}, {}));
   return result;
