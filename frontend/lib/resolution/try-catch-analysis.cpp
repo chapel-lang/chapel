@@ -290,6 +290,7 @@ namespace resolution {
           }
         }
       }
+      if (r.causedFatalError()) markFatalError();
     }
     return true;
   }
