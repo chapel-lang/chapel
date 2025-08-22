@@ -718,6 +718,22 @@ static void test22() {
   check("D2");
 }
 
+// bool variable declarations with type queries are ungood
+static void test23() {
+  printf("%s\n", __FUNCTION__);
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+                R""""(
+                  var x: bool(?) = true;
+                  var y: bool(?w) = false;
+                )"""", {"x", "y"});
+  assert(vars.at("x").isUnknown());
+  assert(vars.at("y").isUnknown());
+  assert(guard.realizeErrors() == 2);
+}
+
 int main() {
   test1();
   test2();
@@ -745,6 +761,7 @@ int main() {
   test20();
   test21();
   test22();
+  test23();
 
   return 0;
 }
