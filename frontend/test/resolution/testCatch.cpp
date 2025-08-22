@@ -458,7 +458,7 @@ static void test12c(Parser* parser) {
 
                             // this is a regression test; in the past,
                             // trying to branch-sensitively traverse this
-                            // loop (which wasn't resolved, since we
+                            // conditional (which wasn't resolved, since we
                             // produced a compiler error) caused a hard crash
                             // of the compiler.
                             if true {
