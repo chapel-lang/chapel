@@ -50,35 +50,6 @@ module ChapelDynamicLoading {
   // We start with '1' since the '0th' index is reserved to represent 'nil'.
   var chpl_dynamicProcIdxCounter: atomic int = 1;
 
-  // This class is a local bidirectional map from 'pointer' <-> 'int'.
-  record chpl_localBidirectionalMap {
-    type K, V;
-    var _keyToVal = new chpl_localMap(K, V);
-    var _valToKey = new chpl_localMap(V, K);
-
-    inline proc ref set(in key: K, in val: V) {
-      var ret = false;
-      on this do {
-        const add1 = _keyToVal.set(key, val);
-        const add2 = _valToKey.set(val, key);
-        ret = add1;
-      }
-      return ret;
-    }
-
-    inline proc get(key: K, out val: V) {
-      var ret = false;
-      on this do ret = _keyToVal.get(key, val);
-      return ret;
-    }
-
-    inline proc get(val: V, out key: K) {
-      var ret = false;
-      on this do ret = _valToKey.get(val, key);
-      return ret;
-    }
-  }
-
   class chpl_LocalPtrCache {
     var guard: chpl_lockGuard(chpl_localBidirectionalMap(c_ptr(void), int));
   }
@@ -369,7 +340,7 @@ module ChapelDynamicLoading {
               var found = m.get(bin._systemPtrs[0], ret);
               if !found {
                 ret = owned.release(bin);
-                const ok = m.set(ret!._systemPtrs[0], ret);
+                const ok = m.add(ret!._systemPtrs[0], ret);
                 assert(ok);
               }
             }
@@ -568,7 +539,7 @@ module ChapelDynamicLoading {
 
     inline proc this(idx: integral) ref {
       if boundsChecking && (idx < 0 || idx >= _size) then
-          halt('Out of bounds!');
+        halt('Out of bounds!');
       return _ptr[idx];
     }
 
@@ -681,7 +652,7 @@ module ChapelDynamicLoading {
       for slot in oldBuf {
         if !_isKeyZeroBits(slot.key) {
           import MemMove;
-          const added = set(slot.key, MemMove.moveFrom(slot.val));
+          const added = add(slot.key, MemMove.moveFrom(slot.val));
           assert(added);
         }
       }
@@ -704,8 +675,8 @@ module ChapelDynamicLoading {
       return false;
     }
 
-    // Returns 'true' if the key was set in the map for the first time.
-    proc ref set(in key: K, in val: V): bool {
+    // Returns 'true' if the key was added in the map for the first time.
+    proc ref add(in key: K, in val: V, param addOnlyIfAbsent=false): bool {
       if _isKeyZeroBits(key) then return false;
 
       _resizeIfNeeded();
@@ -726,11 +697,9 @@ module ChapelDynamicLoading {
 
       } else if (slot.key == key) {
         // The slot is initialized, so just assign the value.
-        slot.val = val;
-        return false;
+        if !addOnlyIfAbsent then slot.val = val;
       }
 
-      halt('Should not reach here!');
       return false;
     }
 
@@ -751,6 +720,41 @@ module ChapelDynamicLoading {
       }
 
       return false;
+    }
+  }
+
+  // This class is a local bidirectional map.
+  record chpl_localBidirectionalMap {
+    type K, V;
+    var _keyToVal: chpl_localMap(K, V);
+    var _valToKey: chpl_localMap(V, K);
+
+    inline proc size do return _valToKey.size;
+
+    proc ref add(in key: K, in val: V) {
+      var ret = false;
+
+      on this do {
+        if _keyToVal.add(key, val, addOnlyIfAbsent=true) {
+          const added = _valToKey.add(val, key);
+          assert(added);
+          ret = true;
+        }
+      }
+
+      return ret;
+    }
+
+    proc get(key: K, out val: V) {
+      var ret = false;
+      on this do ret = _keyToVal.get(key, val);
+      return ret;
+    }
+
+    proc get(val: V, out key: K) {
+      var ret = false;
+      on this do ret = _valToKey.get(val, key);
+      return ret;
     }
   }
 
@@ -799,7 +803,7 @@ module ChapelDynamicLoading {
           // that will set the map entries for this pointer. Set the index
           // on LOCALE-0 to claim the job.
           ret = chpl_dynamicProcIdxCounter.fetchAdd(1);
-          m.set(ptr, ret);
+          m.add(ptr, ret);
           requestedUniqueIdx = true;
         }
 
@@ -808,7 +812,7 @@ module ChapelDynamicLoading {
           coforall loc in Locales[1..] do on loc {
             local do manage chpl_localPtrCache.guard as m {
               const ptr = lookupPtrFromLocalFtable(idx);
-              m.set(ptr, ret);
+              m.add(ptr, ret);
             }
           }
         }
@@ -838,7 +842,7 @@ module ChapelDynamicLoading {
       // If 'set()' returns 'false' then the index was already in the map!
       // We just overwrote it, but it shouldn't have been set in the first
       // place so the only thing to do is halt.
-      if !m.set(ptr, ret) {
+      if !m.add(ptr, ret) {
         halt('Procedure pointer duplicately mapped!');
       }
     }
