@@ -2818,6 +2818,19 @@ instantiateSignatureImpl(ResolutionContext* rc,
         return ApplicabilityResult::failure(sig, passResult.reason(), entry.formalIdx());
       }
 
+      // be strict about instantiation type to ensure type query values
+      // are unambiguous. See also the previous justComputedVarArgType
+      // condition and comment above.
+      if (entry.isVarArgEntry() && !justComputedVarArgType &&
+          qFormalType.type() != useType.type()) {
+        auto vfml = formal->toVarArgFormal();
+        CHPL_ASSERT(vfml != nullptr);
+        if (vfml->typeExpression() &&
+            !parsing::typeQueriesInExpression(context, vfml->typeExpression()).empty()) {
+          return ApplicabilityResult::failure(sig, FAIL_VARARG_TQ_MISMATCH, entry.formalIdx());
+        }
+      }
+
       if (fn != nullptr && fn->isMethod() && fn->thisFormal() == formal) {
         // Set the visitor's 'inCompositeType' property to the final
         // instantiation of 'this' so that we can correctly resolve methods.
