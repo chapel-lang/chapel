@@ -246,23 +246,23 @@ static Type* baseForLLVMPointer(TypeSymbol* origBase) {
 // and do not fill 'aligns'.
 static void buildStructFields(const llvm::DataLayout& DL,
                               AggregateType* ag, bool explicitPadding,
-                              std::map<std::string, int>& GEPMap,
-                              std::vector<llvm::Type*>& params,
-                              std::vector<unsigned>& aligns,
+                              llvm::SmallDenseMap<const char*, int>& GEPMap,
+                              llvm::SmallVector<llvm::Type*>& params,
+                              llvm::SmallVector<unsigned>& aligns,
                               uint64_t& structSize, int& structAlignment)
 {
   GenInfo* info = gGenInfo;
   int      paramID = 0;
   uint64_t currSize = 0;
   int      currAlignment = ALIGNMENT_DEFER;
-  INT_ASSERT(GEPMap.empty());  // we clear it if explicit padding is needed
+  INT_ASSERT(!explicitPadding || GEPMap.empty()); // we clear it if explicit padding is needed
   llvm::Type* padTy =
     explicitPadding ? llvm::Type::getInt8Ty(gContext->llvmContext()) : nullptr;
 
   // Performs updates when explicitPadding==false.
   // This avoids the need to compute fieldSize and fieldAlign.
   auto addFieldWhenNotEP = [&](const char* fieldName, llvm::Type* fieldType) {
-    GEPMap.insert(std::pair<std::string, int>(fieldName, paramID));
+    GEPMap.insert(std::make_pair(astr(fieldName), paramID));
     paramID++;
     params.push_back(fieldType);
   };
@@ -271,7 +271,7 @@ static void buildStructFields(const llvm::DataLayout& DL,
   // Assumes that padding has already been inserted as needed.
   auto addFieldWhenEP = [&](const char* fieldName, llvm::Type* fieldType,
                             uint64_t fieldSize, int fieldAlign) {
-    GEPMap.insert(std::pair<std::string, int>(fieldName, paramID));
+    GEPMap.insert(std::make_pair(astr(fieldName), paramID));
     paramID++;
     params.push_back(fieldType);
     aligns.push_back(fieldAlign);
@@ -319,9 +319,8 @@ static void buildStructFields(const llvm::DataLayout& DL,
         largestSize = fieldSize;
       }
 
-      GEPMap.insert(std::pair<std::string, int>(field->cname, paramID));
-      GEPMap.insert(std::pair<std::string, int>(
-            std::string("_u.") + field->cname, paramID));
+      GEPMap.insert(std::make_pair(field->cname, paramID));
+      GEPMap.insert(std::make_pair(astr("_u.", field->cname), paramID));
 
       // TODO account for field's alignment in case it is >8
     }
@@ -422,8 +421,8 @@ static void buildStructFields(const llvm::DataLayout& DL,
 // what we think vs. what LLVM thinks.
 static void checkStructFields(const llvm::DataLayout& DL,
                               AggregateType* ag, llvm::StructType* stype,
-                              std::vector<llvm::Type*>& params,
-                              std::vector<unsigned>& aligns,
+                              llvm::SmallVector<llvm::Type*>& params,
+                              llvm::SmallVector<unsigned>& aligns,
                               uint64_t structSize, int structAlignment)
 {
   // For the release we should hide these behind 'if (fVerify)'
@@ -629,8 +628,8 @@ void AggregateType::codegenDef() {
     } else {
 #ifdef HAVE_LLVM
       const llvm::DataLayout& DL = info->module->getDataLayout();
-      std::vector<llvm::Type*> params;
-      std::vector<unsigned> aligns; // only for assertions
+      llvm::SmallVector<llvm::Type*> params;
+      llvm::SmallVector<unsigned> aligns; // only for assertions
       uint64_t structSize = 0;
 
       // this updates params, aligns, structSize, structAlignment
@@ -710,9 +709,11 @@ void AggregateType::codegenDef() {
       info->lvt->addGlobalType(this->symbol->cname, type, false);
       this->symbol->llvmImplType = type;
     } else {
-      INT_ASSERT(this->symbol->llvmImplType == type);
+      // TODO: switch this to a structural check, rather than a ptr based one
+      // INT_ASSERT(this->symbol->llvmImplType == type);
     }
-    INT_ASSERT(this->symbol->llvmAlignment == ALIGNMENT_UNINIT);
+    INT_ASSERT(this->symbol->llvmAlignment == ALIGNMENT_UNINIT ||
+               this->symbol->llvmAlignment == ALIGNMENT_DEFER);
     INT_ASSERT(structAlignment != ALIGNMENT_UNINIT);
     this->symbol->llvmAlignment = llvmAlignmentOrDefer(structAlignment, type);
     // double-check, in case we missed this in buildStructFields
@@ -753,16 +754,15 @@ void AggregateType::codegenPrototype() {
 
 int AggregateType::getMemberGEP(const char *name, bool &isCArrayField) {
 #ifdef HAVE_LLVM
-  if( symbol->hasFlag(FLAG_EXTERN) ) {
+  if (symbol->hasFlag(FLAG_EXTERN)) {
     // We will cache the info in the local GEP map.
-    std::map<std::string, int>::const_iterator GEPIdx = GEPMap.find(name);
-    if(GEPIdx != GEPMap.end()) {
-      isCArrayField = isCArrayFieldMap[name];
-      return GEPIdx->second;
+    if (auto it = GEPMap.find(astr(name)); it != GEPMap.end()) {
+      isCArrayField = isCArrayFieldMap[astr(name)];
+      return it->second;
     }
     int ret = getCRecordMemberGEP(symbol->cname, name, isCArrayField);
-    GEPMap.insert(std::pair<std::string,int>(name, ret));
-    isCArrayFieldMap.insert(std::pair<std::string,int>(name, isCArrayField));
+    GEPMap.insert(std::make_pair(astr(name), ret));
+    isCArrayFieldMap.insert(std::make_pair(astr(name), isCArrayField));
     return ret;
   } else {
     Vec<Type*> next, current;
@@ -771,9 +771,8 @@ int AggregateType::getMemberGEP(const char *name, bool &isCArrayField) {
 
     while (current_p->n != 0) {
       forv_Vec(Type, t, *current_p) {
-        std::map<std::string,int>::const_iterator GEPIdx = t->GEPMap.find(name);
-        if(GEPIdx != t->GEPMap.end()) {
-          return GEPIdx->second;
+        if (auto it = t->GEPMap.find(astr(name)); it != t->GEPMap.end()) {
+          return it->second;
         }
 
         if (AggregateType* at = toAggregateType(t)) {

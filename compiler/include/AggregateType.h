@@ -240,7 +240,7 @@ public:
 private:
 
   // Only used for LLVM.
-  std::map<std::string, bool> isCArrayFieldMap;
+  llvm::SmallDenseMap<const char*, bool> isCArrayFieldMap;
 
   static ArgSymbol*           createGenericArg(VarSymbol* field);
 
