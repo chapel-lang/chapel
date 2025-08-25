@@ -560,6 +560,19 @@ static void test9(Context* ctx) {
   assert(!guard.realizeErrors());
   assert(qt.kind() == QualifiedType::VAR);
   assert(qt.type() && qt.type()->isIntType());
+
+  auto m = parseModule(ctx, std::move(program));
+  CalledFnsSet called;
+  std::ignore = gatherTransitiveFnsCalledByModInit(ctx, m->id(), called);
+
+  bool found = false;
+  for (auto [fn, order] : called) {
+    if (fn->signature()->untyped()->name() != "foobar") continue;
+
+    assert(fn->linkageName() == "bool_hello");
+    found = true;
+  }
+  assert(found);
 }
 
 // This is private issue #6123.
