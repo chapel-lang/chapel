@@ -1269,6 +1269,76 @@ const types::QualifiedType typeWithDefaults(ResolutionContext* rc,
   return t;
 }
 
+static void computeTypesReachableFromType(Context* context,
+                                          const ID& aggregateId,
+                                          std::set<ID>& result);
+
+struct ReachableTypeFinder {
+  Context* context;
+  std::set<ID>& result;
+  ResolutionResultByPostorderID& rr;
+
+  void visitId(const ID& id) {
+
+  }
+
+  // by default, recurse into children
+  bool enter(const AstNode* node) { return true; }
+  void exit(const AstNode* node) {}
+
+  bool enter(const Identifier* node) {
+    auto re = rr.byAstOrNull(node);
+    if (!re) return false;
+
+    auto toId = re->toId();
+    if (!asttags::isAggregateDecl(parsing::idToTag(context, toId))) {
+      return false;
+    }
+
+    if (result.insert(toId).second) {
+      computeTypesReachableFromType(context, toId, result);
+    }
+
+    return false;
+  }
+  void exit(const Identifier* node) {}
+
+  bool enter(const Module* node) { return false;  /* don't recurse into modules */ }
+  void exit(const Module* node) {}
+
+  bool enter(const Function* node) { return false;  /* don't recurse into functions */ }
+  void exit(const Function* node) {}
+};
+
+static void computeTypesReachableFromType(Context* context,
+                                          const ID& id,
+                                          std::set<ID>& result) {
+
+  auto scopeResolved = scopeResolveAggregate(context, id);
+  auto ast = parsing::idToAst(context, id);
+  CHPL_ASSERT(ast && ast->isAggregateDecl());
+  auto ad = ast->toAggregateDecl();
+
+  ReachableTypeFinder finder = {context, result, scopeResolved};
+
+  for (auto field : ad->decls()) {
+    if (!parsing::idIsField(context, field->id())) continue;
+
+    field->traverse(finder);
+  }
+
+}
+
+static std::set<ID> const& typesReachableFromType(Context* context,
+                                                   ID aggregateId) {
+
+  QUERY_BEGIN(typesReachableFromType, context, aggregateId);
+  std::set<ID> result;
+  result.insert(aggregateId);
+  computeTypesReachableFromType(context, aggregateId, result);
+  return QUERY_END(result);
+}
+
 
 // the ignore argument is just to ignore types that we are currently
 // computing the genericity of (we can assume that those are concrete).

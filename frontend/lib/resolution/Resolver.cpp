@@ -4508,7 +4508,8 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
       return;
     } else if (id.isEmpty()) {
       setToBuiltin(result, ident->name());
-      result.setType(computeDefaultsIfNecessary(*this, result.type(), id, ident));
+      if (!scopeResolveOnly)
+        result.setType(computeDefaultsIfNecessary(*this, result.type(), id, ident));
       return;
     }
 
