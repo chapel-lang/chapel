@@ -6,8 +6,9 @@
 # This script will clone the homebrew-core repository and do a diff with the our version
 # and the published version of the chapel formula.
 
-# !IMPORTANT! Make sure BREW_CORE_REPO_PATH is set to where the homebrew-core
-# repository should go before running this script
+
+set -e
+set -x
 
 UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $UTIL_CRON_DIR/functions.bash
@@ -18,14 +19,14 @@ log_info "Setting CHPL_HOME to: ${CHPL_HOME}"
 log_info "Moving to ${CHPL_HOME}"
 cd $CHPL_HOME
 
-# This will clone the home-brew repository to BREW_CORE_REPO_PATH and compare the chapel-release.rb repo under
+# This will clone the home-brew repository and compare the chapel-release.rb repo under
 # util/packaging/homebrew
-log_info "Cloning homebrew-core repository into ${BREW_CORE_REPO_PATH}/homebrew-core"
-git clone --branch master --depth 1 git@github.com:Homebrew/homebrew-core ${BREW_CORE_REPO_PATH}/homebrew-core 2> /dev/null || (cd ${BREW_CORE_REPO_PATH:-/missing}/homebrew-core; git pull origin master)
+git clone --branch master --depth 1 https://github.com/Homebrew/homebrew-core.git
 
 # compare the chapel.rb in homebrew-core with the one in our repository (chapel-release.rb)
 # to catch any changes homebrew makes to the formula without telling us (might happen when they update deps, etc)
-diff ${BREW_CORE_REPO_PATH:-/missing}/homebrew-core/Formula/c/chapel.rb ${CHPL_HOME}/util/packaging/homebrew/chapel-release.rb
+diff ./homebrew-core/Formula/c/chapel.rb ${CHPL_HOME}/util/packaging/homebrew/chapel-release.rb
+
 FORMULA_CHANGED=$?
 if [ $FORMULA_CHANGED -ne 0 ]
 then
