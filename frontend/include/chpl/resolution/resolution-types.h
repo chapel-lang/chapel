@@ -2429,22 +2429,41 @@ class AssociatedAction {
     EXIT_CONTEXT,
   };
 
+  using ActionsList = llvm::SmallVector<const AssociatedAction*>;
+
  private:
   Action action_;
   const TypedFnSignature* fn_;
   ID id_;
   types::QualifiedType type_;
 
+  // An index associated with some tuple per-element actions, where it is
+  // necessary to keep track of which tuple element the action applies to.
+  // The sentinel value of -1 indicates no associated tuple element.
+  int tupleEltIdx_ = -1;
+
+  // A list of actions contained within this one.
+  // Currently only used for tuple copy-init-deinit, where each element may
+  // have a sub-action.
+  ActionsList subActions_;
+
  public:
   AssociatedAction(Action action, const TypedFnSignature* fn, ID id,
-                   types::QualifiedType type)
-    : action_(action), fn_(fn), id_(id), type_(type) {
-  }
+                   types::QualifiedType type, int tupleEltIdx = -1,
+                   ActionsList subActions = {})
+      : action_(action),
+        fn_(fn),
+        id_(id),
+        type_(type),
+        tupleEltIdx_(tupleEltIdx),
+        subActions_(std::move(subActions)) {}
   bool operator==(const AssociatedAction& other) const {
     return action_ == other.action_ &&
            fn_ == other.fn_ &&
            id_ == other.id_ &&
-           type_ == other.type_;
+           type_ == other.type_ &&
+           tupleEltIdx_ == other.tupleEltIdx_ &&
+           subActions_ == other.subActions_;
   }
   bool operator!=(const AssociatedAction& other) const {
     return !(*this == other);
@@ -2460,15 +2479,40 @@ class AssociatedAction {
 
   const types::QualifiedType type() const { return type_; }
 
+  bool hasTupleEltIdx() const {
+    return tupleEltIdx_ != -1;
+  }
+
+  const int tupleEltIndex() const {
+    CHPL_ASSERT(hasTupleEltIdx());
+    return tupleEltIdx_;
+  }
+
+  const ActionsList& subActions() const {
+    return subActions_;
+  }
+
+  size_t hash() const {
+    return chpl::hash(action_, fn_, id_, type_, tupleEltIdx_, subActions_);
+  }
+
   void mark(Context* context) const {
     if (fn_ != nullptr) fn_->mark(context);
     id_.mark(context);
     type_.mark(context);
+    chpl::mark<decltype(tupleEltIdx_)>{}(context, tupleEltIdx_);
+    for (const auto& subAction : subActions_) {
+      subAction->mark(context);
+    }
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
   static const char* kindToString(Action a);
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 class ResolvedParamLoop;
@@ -2581,12 +2625,20 @@ class ResolvedExpression {
   /** set the point-of-instantiation scope */
   void setPoiScope(const PoiScope* poiScope) { poiScope_ = poiScope; }
 
-  /** add an associated function */
+  /** remove all associated actions */
+  void clearAssociatedActions() {
+    associatedActions_.clear();
+  }
+
+  /** add an associated action */
   void addAssociatedAction(AssociatedAction::Action action,
                            const TypedFnSignature* fn,
                            ID id,
                            types::QualifiedType type) {
-    associatedActions_.push_back(AssociatedAction(action, fn, id, type));
+    addAssociatedAction(AssociatedAction(action, fn, id, type));
+  }
+  void addAssociatedAction(AssociatedAction action) {
+    associatedActions_.push_back(action);
   }
 
   void setParamLoop(const ResolvedParamLoop* paramLoop) { paramLoop_ = paramLoop; }
@@ -3504,6 +3556,7 @@ CHPL_DEFINE_STD_HASH_(MostSpecificCandidate, (key.hash()));
 CHPL_DEFINE_STD_HASH_(MostSpecificCandidates, (key.hash()));
 CHPL_DEFINE_STD_HASH_(CallResolutionResult, (key.hash()));
 CHPL_DEFINE_STD_HASH_(TheseResolutionResult, (key.hash()));
+CHPL_DEFINE_STD_HASH_(AssociatedAction, (key.hash()));
 CHPL_DEFINE_STD_HASH_(ResolvedFields, (key.hash()));
 CHPL_DEFINE_STD_HASH_(FieldDetail, (key.hash()));
 CHPL_DEFINE_STD_HASH_(ForwardingDetail, (key.hash()));
