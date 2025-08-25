@@ -534,6 +534,7 @@ static const char *objTypeString(hwloc_obj_type_t t) {
 //
 
 static void partitionResources(void) {
+  // TODO: partitioning should respect CHPL_RT_NUM_THREADS_PER_LOCALE=MAX_LOGICAL
   hwloc_obj_t root = hwloc_get_root_obj(topology);
   hwloc_obj_type_t myRootType = HWLOC_OBJ_TYPE_MAX;
   chpl_bool userSetMyRootType = false;
@@ -557,6 +558,14 @@ static void partitionResources(void) {
                                        HWLOC_OBJ_L3CACHE, HWLOC_OBJ_L2CACHE,
                                        HWLOC_OBJ_L1CACHE, HWLOC_OBJ_TYPE_MAX};
       for (int i = 0; cacheTypes[i] != HWLOC_OBJ_TYPE_MAX; i++) {
+        // TODO: this logic looks for the LLC
+        // but maybe it should look for other types of caches? For example,
+        // an we may want to bind to an L2 cache in a hybrid core system
+        // because there is only one L3 cache per socket.
+        // Its a fairly trivial change (just only select the cache type
+        // that has more than numLocalesOnNode objects)
+        // but that changes the meaning of 1x2llc (because we might bind
+        // to L2 caches instead of L3 caches) so we should think about it.
         if (hwloc_get_nbobjs_by_type(topology, cacheTypes[i]) > 0) {
           myRootType = cacheTypes[i];
           break;
@@ -675,12 +684,20 @@ static void partitionResources(void) {
         // logAccSets has the cores each parition can use. If they don't have
         // the same number of cores, then we can't proceed with this
         // partitioning scheme.
+        // we also want to avoid the situation where all the paritions
+        // end up having 0 cores.
         int firstSetSize = hwloc_bitmap_weight(logAccSets[0]);
         chpl_bool badPartitioning = false;
-        for (int i = 1; i < numPartitions; i++) {
-          if (hwloc_bitmap_weight(logAccSets[i]) != firstSetSize) {
+        for (int i = 0; i < numPartitions; i++) {
+          int numCores = hwloc_bitmap_weight(logAccSets[i]);
+          if (numCores != firstSetSize) {
             _DBG_P("logAccSets[%d] has %d cores, logAccSets[0] has %d",
-                   i, hwloc_bitmap_weight(logAccSets[i]), firstSetSize);
+                   i, numCores, firstSetSize);
+            badPartitioning = true;
+            break;
+          }
+          if (numCores == 0) {
+            _DBG_P("logAccSets[%d] has no cores", i);
             badPartitioning = true;
             break;
           }
@@ -732,6 +749,13 @@ static void partitionResources(void) {
 
         // silence the warning if CHPL_RT_SILENCE_UNUSED_CORES is set
         if (!chpl_env_rt_get_bool("SILENCE_UNUSED_CORES", false)) {
+
+          // TODO: on a hybrid arch like M3 or alderlake with all the
+          // efficency cores in one L2 and all the performance cores in
+          // another, this can be misleading. For example, currently
+          // trying to pin to 'core' on alderlake will report unused cores
+          // for all cores, instead of just the ones selected by CHPL_RT_USE_PU_KIND.
+
           char msg[200];
           snprintf(msg, sizeof(msg), "%d cores are unused", unusedCores);
           chpl_warning(msg, 0, 0);
