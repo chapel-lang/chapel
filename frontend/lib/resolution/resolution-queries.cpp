@@ -4180,10 +4180,32 @@ static const Type* getNumericType(Context* context,
         return AnyImagType::get(context);
       } else if (name == USTR("complex")) {
         return AnyComplexType::get(context);
+      } else if (name == USTR("bool") || ci.calledType().type()->isBoolType()) {
+        // bool used to support custom widths, but now it doesn't.
+        //
+        // handle it here anyway, since it used to be much like "int" and "real",
+        // might be that way again, and we can provide a specific error
+        // message.
+        context->error(astForErr, "the 'bool' type is not generic and only has one width, "
+                       "so it cannot be called with a '?' or type query.");
+        return ErroneousType::get(context);
       } else {
         CHPL_ASSERT(false && "should not be reachable");
         return nullptr;
       }
+    }
+
+    if (name == USTR("bool") || ci.calledType().type()->isBoolType()) {
+      if (ci.numActuals() > 0) {
+        // bool used to support custom widths, but now it doesn't. Now,
+        // there's no bool(..) type constructor.
+        context->error(astForErr, "the 'bool' type is not generic and only has one width, so"
+                       " it doen't take type constructor arguments.");
+        return ErroneousType::get(context);
+      }
+
+      // `R()` for concrete type `R` in production compiles, so allow it here.
+      return BoolType::get(context);
     }
 
     QualifiedType qt;
