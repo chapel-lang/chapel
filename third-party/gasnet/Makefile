@@ -116,14 +116,6 @@ GASNET_CFLAGS += -fPIE
 endif
 endif
 
-# Prevent fatal compile errors from GCC 15+ due to GASNet bug #4787
-# https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4787
-ifeq ($(CHPL_MAKE_TARGET_COMPILER),gnu)
-ifeq ($(shell test $(GNU_GCC_MAJOR_VERSION) -ge 15; echo "$$?"),0)
-GASNET_CFLAGS += -Wno-incompatible-pointer-types
-endif
-endif
-
 CHPL_GASNET_ENV_VARS:= CC='$(CC)' CXX='$(CXX)' MPI_CC='$(MPI_CC)' CFLAGS='$(GASNET_CFLAGS)' CXXFLAGS='$(GASNET_CFLAGS)'
 
 CHPL_GASNET_CFG_OPTIONS += $(CHPL_GASNET_MORE_CFG_OPTIONS)
