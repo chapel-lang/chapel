@@ -647,6 +647,13 @@ bool findFieldIdInDeclaration(const uast::AstNode* varDecl,
                               ID& outFieldId);
 
 /**
+  Given an expression (e.g., a formal's type expression), finds
+  all the type queries.
+ */
+std::vector<const uast::AstNode*> const&
+typeQueriesInExpression(Context* context, const uast::AstNode* expr);
+
+/**
   Given an ID for a Record/Union/Class Decl,
   and a field name, returns the ID for the Variable declaring that field.
   Does so by looking recursively for either:

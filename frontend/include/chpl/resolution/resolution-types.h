@@ -1398,6 +1398,8 @@ enum PassingFailureReason {
   FAIL_GENERIC_TO_NONTYPE,
   /* A type was expected to be the exact match of the formal, but wasn't. */
   FAIL_NOT_EXACT_MATCH,
+  /* A vararg type query is present in a non-star vararg. */
+  FAIL_VARARG_TQ_MISMATCH,
   /* Some other, generic reason. */
   FAIL_FORMAL_OTHER,
 };

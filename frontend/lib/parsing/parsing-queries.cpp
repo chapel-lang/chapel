@@ -1754,6 +1754,35 @@ bool findFieldIdInDeclaration(const AstNode* ast,
   return false;
 }
 
+struct TypeQueryCollector {
+  std::vector<const AstNode*> typeQueries;
+
+  bool enter(const TypeQuery* tq) {
+    typeQueries.push_back(tq);
+    return false; // shouldn't have children anyway
+  }
+  void exit(const TypeQuery* tq) {}
+
+  bool enter(const AstNode* node) { return true; }
+  void exit(const AstNode* node) {}
+
+  bool enter(const Module* module) { return false; }
+  void exit(const Module* module) {}
+
+  bool enter(const Function* function) { return false; }
+  void exit(const Function* function) {}
+};
+
+std::vector<const uast::AstNode*> const&
+typeQueriesInExpression(Context* context, const uast::AstNode* expr) {
+  QUERY_BEGIN(typeQueriesInExpression, context, expr);
+
+  TypeQueryCollector collector;
+  expr->traverse(collector);
+
+  return QUERY_END(collector.typeQueries);
+}
+
 static const ID&
 fieldIdWithNameQuery(Context* context, ID typeDeclId, UniqueString fieldName) {
   QUERY_BEGIN(fieldIdWithNameQuery, context, typeDeclId, fieldName);

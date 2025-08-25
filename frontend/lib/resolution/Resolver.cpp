@@ -1221,22 +1221,6 @@ static void varArgTypeQueryError(Context* context,
   result.setType(errType);
 }
 
-static std::vector<const TypeQuery*>
-collectTypeQueriesIn(const AstNode* ast, bool recurse=true) {
-  std::vector<const TypeQuery*> ret;
-
-  auto func = [&](const AstNode* ast, auto& self) -> void {
-    for (auto child : ast->children()) {
-      if (auto tq = child->toTypeQuery()) ret.push_back(tq);
-      if (recurse) self(child, self);
-    }
-  };
-
-  func(ast, func);
-
-  return ret;
-}
-
 static const TypeQuery* getDomainTypeQuery(const BracketLoop* arrayTypeExpr) {
   auto tq = arrayTypeExpr->iterand()->toTypeQuery();
   if (tq) return tq;
@@ -1334,7 +1318,7 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
                          isNonStarVarArg,
                          /* isTopLevel */ false);
     } else {
-      auto typeQueries = collectTypeQueriesIn(call);
+      auto typeQueries = parsing::typeQueriesInExpression(context, call);
 
       // There are no type queries in the call, so there is nothing to do.
       if (typeQueries.empty()) return;
@@ -2791,6 +2775,11 @@ void Resolver::resolveTupleDecl(const TupleDecl* td, QualifiedType useType) {
   resolveTupleUnpackDecl(td, std::move(useType));
 }
 
+static SkipCallResolutionReason
+shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
+                         std::vector<const uast::AstNode*> actualAsts,
+                         const CallInfo& ci);
+
 bool Resolver::resolveSpecialNewCall(const Call* call) {
   if (!call->calledExpression() ||
       !call->calledExpression()->isNew()) {
@@ -2863,6 +2852,10 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
   auto inScope = currentScope();
   auto inPoiScope = poiScope;
   auto inScopes = CallScopeInfo::forNormalCall(inScope, inPoiScope);
+
+  if (shouldSkipCallResolution(this, call, actualAsts, ci)) {
+    return true;
+  }
 
   // note: the resolution machinery will get compiler generated candidates
   auto c = resolveGeneratedCall(call, &ci, &inScopes);
@@ -4499,7 +4492,8 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
       return;
     } else if (id.isEmpty()) {
       setToBuiltin(result, ident->name());
-      result.setType(computeDefaultsIfNecessary(*this, result.type(), id, ident));
+      if (!scopeResolveOnly)
+        result.setType(computeDefaultsIfNecessary(*this, result.type(), id, ident));
       return;
     }
 
