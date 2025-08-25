@@ -37,6 +37,7 @@ COMMON_NOGEN_SRCS = \
 	chpl-comm-diags.c \
 	chpl-const-arg-check.c \
 	chpl-init.c \
+	chpl-exec.c \
 	chplexit.c \
 	chpl-export-wrappers.c \
 	chpl-external-array.c \
