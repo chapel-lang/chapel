@@ -106,6 +106,8 @@ getUntypedFnSignatureForFn(Context* context, const uast::Function* fn, ID const*
       if (auto formal = decl->toFormal()) {
         name = formal->name();
         hasDefault = formal->initExpression() != nullptr;
+      } else if (auto formal = decl->toTupleDecl()) {
+        hasDefault = formal->initExpression() != nullptr;
       } else if (auto varargs = decl->toVarArgFormal()) {
         name = varargs->name();
 

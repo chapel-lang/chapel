@@ -2335,6 +2335,20 @@ static void testAnyPod() {
   // { {"sync int"}, Test::FALSE },
 }
 
+static void testTupleFormalWithDefault() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+  auto qt = resolveTypeOfXInit(context,
+    R"""(
+       proc foo((x, y) = (1, 2)) {
+         return x + y;
+       }
+       var x = foo((3,4));
+    )""");
+  assert(!qt.isUnknownOrErroneous());
+  assert(qt.type()->isIntType());
+}
+
 int main() {
   test1();
   test2();
@@ -2396,6 +2410,7 @@ int main() {
   testUseOfUninitializedVar();
 
   testAnyPod();
+  testTupleFormalWithDefault();
 
   return 0;
 }

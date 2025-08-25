@@ -739,6 +739,31 @@ static void test18() {
   assert(rr.byAst(z).type().type()->isRealType());
 }
 
+// same as test18, but with unsigned.
+static void test18b() {
+  printf("%s\n", __FUNCTION__);
+  auto context = buildStdContext();
+
+  auto program = R""""(
+                  var t = (1, "hello", 3.0);
+                  var x = t(0 : uint);
+                  var y = t(1 : uint);
+                  var z = t(2 : uint);
+                )"""";
+
+  auto m = parseModule(context, std::move(program));
+
+  auto x = findVariable(m, "x");
+  auto y = findVariable(m ,"y");
+  auto z = findVariable(m ,"z");
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+
+  assert(rr.byAst(x).type().type()->isIntType());
+  assert(rr.byAst(y).type().type()->isStringType());
+  assert(rr.byAst(z).type().type()->isRealType());
+}
+
 // Test "get svec member[ value]" primitives
 static void test19() {
   printf("%s\n", __FUNCTION__);
@@ -1349,6 +1374,7 @@ int main() {
   test16();
   test17();
   test18();
+  test18b();
   test19();
   testTupleGeneric();
 
