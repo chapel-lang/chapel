@@ -22,7 +22,7 @@ cd $CHPL_HOME
 # Clone a fresh copy of homebrew-core to compare against
 CHECKOUT_DIR=./homebrew-core
 rm -rf $CHECKOUT_DIR
-git clone --branch master --depth 1 https://github.com/Homebrew/homebrew-core.git $CHECKOUT_DIR
+git clone --depth 1 https://github.com/Homebrew/homebrew-core.git $CHECKOUT_DIR
 
 # compare the chapel.rb in homebrew-core with the one in our repository (chapel-release.rb)
 # to catch any changes homebrew makes to the formula without telling us (might happen when they update deps, etc)
