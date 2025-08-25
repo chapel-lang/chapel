@@ -1625,8 +1625,27 @@ static bool isScopeResolvedExprGeneric(Context* context,
         initialType = initialTypeForTypeDecl(context, toId)->getCompositeType();
       }
 
-      if (asttags::isClass(toTag) && !isConcreteManagement &&
-          ignore.find(initialType) == ignore.end()) {
+      // this could be considered a hack. Consider the following snippet:
+      //
+      // class C {
+      //   var next: C?;
+      // }
+      //
+      // Here, we can obviously tell that field `next` has generic management,
+      // and is therefore generic. However, there's no way to build a type
+      // constructor for `C` that would enable instantiating `next`, since to
+      // specify the ownership of `next`, you'd need to provide e.g. an `owned C`,
+      // but to provide ownership for the inner `C`, you'd need to provide
+      // `owned C(owned C)`, and you can keep expanding this. Resolving the type
+      // constructor would require resolving the type constructor, ad infinitum.
+      //
+      // So, for mutually recursive groups of types, ignore even ownership genericity
+      // in fields.
+      bool isMutuallyRecursive =
+        asttags::isAggregateDecl(toTag) &&
+        typesReachableFromType(context, toId).count(expr->id().parentSymbolId(context)) != 0;
+
+      if (asttags::isClass(toTag) && !isConcreteManagement && !isMutuallyRecursive) {
         // classes without 'shared' or 'owned' are generic (generic management),
         // regardless if whether the class' fields are generic or not.
         //
@@ -1641,8 +1660,8 @@ static bool isScopeResolvedExprGeneric(Context* context,
       // this type is generic too, _unless_ it's used as part of a call to
       // a type constructor to create a concrete instance of the type (in
       // which case there is a 'call').
-      if (asttags::isAggregateDecl(toTag) && !call) {
-        if (getTypeGenericityIgnoring(context, initialType, ignore) != Type::CONCRETE) {
+      if (asttags::isAggregateDecl(toTag) && !call && !isMutuallyRecursive) {
+        if (getTypeGenericity(context, initialType) != Type::CONCRETE) {
           return true;
         }
       }
