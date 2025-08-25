@@ -594,6 +594,14 @@ def FindGoodFile(basename, commExecNums=['']):
         if not os.path.isfile(goodfile):
             goodfile=basename+commExecNum+'.good'
 
+        # look for a .dyno good file, and prefer it over the regular .good file
+        if '--dyno-resolve-only' in envCompopts:
+            if os.path.isfile(goodfile):
+                prefix = goodfile.removesuffix('.good')
+                dynogood=prefix+'.dyno.good'
+                if os.path.isfile(dynogood):
+                    goodfile = dynogood
+
     return goodfile
 
 def get_exec_log_name(execname, comp_opts_count=None, exec_opts_count=None):
