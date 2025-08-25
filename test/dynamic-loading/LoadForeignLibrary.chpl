@@ -11,6 +11,8 @@ use Reflection;
 
 require "TestTypeOnlyHeader.h";
 
+config const hi = 2**16;
+
 // These types are declared in the header above, but we have to re-declare
 // them here because a require doesn't actually bring them into view as an
 // extern block would.
@@ -61,7 +63,8 @@ record dynamicLibrary {
   }
 }
 
-proc test1() {
+// Call a procedure retrieved from a dynamic library on multiple locales.
+proc test0() {
   writeln(Reflection.getRoutineName());
   writeln();
 
@@ -83,7 +86,10 @@ proc test1() {
   writeln();
 }
 
-proc test2() {
+// The goal of this test is to ensure ABI correctness for indirect calls.
+// The procedures retrieved from a dynamic library are 'extern', so they
+// need to use an extern calling convention.
+proc test1() {
   writeln(Reflection.getRoutineName());
   writeln();
 
@@ -123,7 +129,30 @@ proc test2() {
   }
 }
 
+// The goal of this test is to create heavy cross-locale contention.
+proc test2() {
+  writeln(Reflection.getRoutineName());
+  writeln();
+
+  var bin = new dynamicLibrary("./TestCLibraryToLoad.so");
+
+  type P1 = proc(_: int, _: int): int;
+
+  const ptr0 = try! bin.load("addTwoReturn", P1);
+  assert(ptr0 != nil);
+
+  // OK to take 'bin' here by 'ref' intent, it should be parallel-safe.
+  forall i in 1..<hi with (ref bin) {
+    const loc = Locales[i % numLocales];
+    on loc {
+      const ptr = try! bin.load("addTwoReturn", P1);
+      assert(ptr == ptr0);
+    }
+  }
+}
+
 proc main() {
+  test0();
   test1();
   test2();
 }
