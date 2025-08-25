@@ -25,11 +25,6 @@
 
 ifneq ($(CHPL_MAKE_SANITIZE), none)
   # Configuration checks
-  ifeq ($(CHPL_MAKE_TASKS), qthreads)
-    ifeq (,$(CHPL_QTHREAD_SANITIZER_SUPPORT))
-      $(error CHPL_TASKS=fifo is required for sanitizers)
-    endif
-  endif
   ifneq ($(CHPL_MAKE_TARGET_MEM), cstdlib)
     $(error CHPL_TARGET_MEM=cstdlib is required for sanitizers)
   endif

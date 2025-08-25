@@ -16,8 +16,6 @@ def get(flag=''):
         sanitizers_val = overrides.get('CHPL_SANITIZE', 'none')
 
     if sanitizers_val != 'none':
-        if chpl_tasks.get() != 'fifo':
-            error("CHPL_TASKS=fifo is required for sanitizers")
         if flag == 'exe' and chpl_mem.get('target') != 'cstdlib':
             error("CHPL_TARGET_MEM=cstdlib is required for sanitizers")
         if flag == 'exe' and chpl_compiler.get() == 'llvm':
