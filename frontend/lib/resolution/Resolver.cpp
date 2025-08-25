@@ -1221,22 +1221,6 @@ static void varArgTypeQueryError(Context* context,
   result.setType(errType);
 }
 
-static std::vector<const TypeQuery*>
-collectTypeQueriesIn(const AstNode* ast, bool recurse=true) {
-  std::vector<const TypeQuery*> ret;
-
-  auto func = [&](const AstNode* ast, auto& self) -> void {
-    for (auto child : ast->children()) {
-      if (auto tq = child->toTypeQuery()) ret.push_back(tq);
-      if (recurse) self(child, self);
-    }
-  };
-
-  func(ast, func);
-
-  return ret;
-}
-
 static const TypeQuery* getDomainTypeQuery(const BracketLoop* arrayTypeExpr) {
   auto tq = arrayTypeExpr->iterand()->toTypeQuery();
   if (tq) return tq;
@@ -1334,7 +1318,7 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
                          isNonStarVarArg,
                          /* isTopLevel */ false);
     } else {
-      auto typeQueries = collectTypeQueriesIn(call);
+      auto typeQueries = parsing::typeQueriesInExpression(context, call);
 
       // There are no type queries in the call, so there is nothing to do.
       if (typeQueries.empty()) return;
