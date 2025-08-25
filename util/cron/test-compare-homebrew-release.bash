@@ -19,13 +19,14 @@ log_info "Setting CHPL_HOME to: ${CHPL_HOME}"
 log_info "Moving to ${CHPL_HOME}"
 cd $CHPL_HOME
 
-# This will clone the home-brew repository and compare the chapel-release.rb repo under
-# util/packaging/homebrew
-git clone --branch master --depth 1 https://github.com/Homebrew/homebrew-core.git
+# Clone a fresh copy of homebrew-core to compare against
+CHECKOUT_DIR=./homebrew-core
+rm -rf $CHECKOUT_DIR
+git clone --branch master --depth 1 https://github.com/Homebrew/homebrew-core.git $CHECKOUT_DIR
 
 # compare the chapel.rb in homebrew-core with the one in our repository (chapel-release.rb)
 # to catch any changes homebrew makes to the formula without telling us (might happen when they update deps, etc)
-diff ./homebrew-core/Formula/c/chapel.rb ${CHPL_HOME}/util/packaging/homebrew/chapel-release.rb
+diff $CHECKOUT_DIR/Formula/c/chapel.rb ${CHPL_HOME}/util/packaging/homebrew/chapel-release.rb
 
 FORMULA_CHANGED=$?
 if [ $FORMULA_CHANGED -ne 0 ]
