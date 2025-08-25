@@ -672,12 +672,15 @@ static void partitionResources(void) {
           logAccSets[i] = s;
         }
 
-        // logAccSets has the cores each parition can use. If any of those are
-        // empty, we should not use this parititioning scheme.
+        // logAccSets has the cores each parition can use. If they don't have
+        // the same number of cores, then we can't proceed with this
+        // partitioning scheme.
+        int firstSetSize = hwloc_bitmap_weight(logAccSets[0]);
         chpl_bool badPartitioning = false;
-        for (int i = 0; i < numPartitions; i++) {
-          if (hwloc_bitmap_iszero(logAccSets[i])) {
-            _DBG_P("logAccSets[%d] is empty", i);
+        for (int i = 1; i < numPartitions; i++) {
+          if (hwloc_bitmap_weight(logAccSets[i]) != firstSetSize) {
+            _DBG_P("logAccSets[%d] has %d cores, logAccSets[0] has %d",
+                   i, hwloc_bitmap_weight(logAccSets[i]), firstSetSize);
             badPartitioning = true;
             break;
           }
