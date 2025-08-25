@@ -3152,7 +3152,11 @@ void AggregateType::addRootType() {
     if (inherits.length == 0 && symbol->hasFlag(FLAG_NO_OBJECT) == false) {
       SET_LINENO(this);
 
-      VarSymbol* super = new VarSymbol("super", dtObject);
+      if (!symbol->hasFlag(FLAG_RESOLVED_EARLY)) {
+        VarSymbol* super = new VarSymbol("super", dtObject);
+        super->addFlag(FLAG_SUPER_CLASS);
+        fields.insertAtHead(new DefExpr(super));
+      }
 
       dispatchParents.add(dtObject);
 
@@ -3160,10 +3164,6 @@ void AggregateType::addRootType() {
       if (dtObject->dispatchChildren.add_exclusive(this) == false) {
         INT_ASSERT(false);
       }
-
-      super->addFlag(FLAG_SUPER_CLASS);
-
-      fields.insertAtHead(new DefExpr(super));
     }
   }
 }

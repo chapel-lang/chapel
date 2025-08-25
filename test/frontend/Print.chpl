@@ -6,6 +6,7 @@
 //  * halt()
 //  * write 'print(x: ?t) where isTupleType(t)' using recursion
 use Types;
+use CTypes;
 
 extern {
   #include <stdint.h>
@@ -18,6 +19,7 @@ extern {
   void printMyUint64(uint64_t x);
   void printMyReal64(double x);
   void printMyBool(bool x);
+  void printStr(const char* str);
 
   void printMyInt64(int64_t x) {
     printf("%" PRId64, x);
@@ -42,6 +44,10 @@ extern {
       printf("false");
     }
   }
+
+  void printStr(const char* str) {
+    printf("%s", str);
+  }
 }
 
 extern proc printMyChar(x: real(64));
@@ -49,6 +55,7 @@ extern proc printMyInt64(x: int(64));
 extern proc printMyUint64(x: uint(64));
 extern proc printMyReal64(x: real(64));
 extern proc printMyBool(x: bool);
+extern proc printStr(str: c_ptrConst(c_char));
 
 proc doPrintSpace() do printMyChar(32);
 proc doPrintNewline() do printMyChar(10);
@@ -62,6 +69,8 @@ proc print(x: ?t) {
     printMyUint64(x);
   } else if isRealType(t) {
     printMyReal64(x);
+  } else if t == string {
+    printStr(x.c_str());
   } else if isTupleType(t) {
     // TODO: Param loop this...
     // TODO: Move this to 'print'...

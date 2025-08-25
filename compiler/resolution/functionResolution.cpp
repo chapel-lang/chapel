@@ -6974,6 +6974,19 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
     return 2;
 
   } else {
+    // Note: exists to support the typed converter. We don't want to resolve to
+    // the early-resolved function if the other candidate is not early-resolved.
+    bool early1 = candidate1->fn->hasFlag(FLAG_RESOLVED_EARLY);
+    bool early2 = candidate2->fn->hasFlag(FLAG_RESOLVED_EARLY);
+
+    if (early1 && !early2) {
+      EXPLAIN("\nFn %d is resolved early, Fn %d is not\n", i, j);
+      return 2;
+    } else if (!early1 && early2) {
+      EXPLAIN("\nFn %d is not resolved early, Fn %d is\n", i, j);
+      return 1;
+    }
+
     if (nArgsIncomparable > 0 ||
         (DS.fn1NonParamArgsPreferred && DS.fn2NonParamArgsPreferred) ||
         (DS.fn1ParamArgsPreferred && DS.fn2ParamArgsPreferred)) {
@@ -11795,6 +11808,7 @@ static void checkSpeciallyNamedMethods() {
     if (ifc == gSerializable) {
       continue;
     }
+    if (at->symbol->hasFlag(FLAG_RESOLVED_EARLY)) continue;
 
     USR_WARN(at,
              "the type '%s' defines methods that previously had special meaning. "
@@ -12667,8 +12681,7 @@ static void resolveAutoCopies() {
   for_alive_in_expanding_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (! ts->hasFlag(FLAG_GENERIC)                 &&
         ! ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)  &&
-        ! ts->hasFlag(FLAG_REF)                     &&
-        ! ts->hasFlag(FLAG_RESOLVED_EARLY)) {
+        ! ts->hasFlag(FLAG_REF)) {
       if (AggregateType* at = toAggregateType(ts->type)) {
         if (isRecord(at) || isUnion(at)) {
           // If we attempt to resolve auto-copy and co. for an infinite record
