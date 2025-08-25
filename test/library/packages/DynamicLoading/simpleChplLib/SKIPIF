@@ -1,0 +1,5 @@
+# TODO: Need to skip if CHPL_LIB_PIC != pic and we're on linux64 I
+# think?  But works on Mac without CHPL_LIB_PIC set, so shouldn't just
+# skip of CHPL_LIB_PIC != pic as
+# test/interop/C/makefiles/dynamicLinking/ does (which works on the
+# Mac, but is currently not being tested there, unfortunately).

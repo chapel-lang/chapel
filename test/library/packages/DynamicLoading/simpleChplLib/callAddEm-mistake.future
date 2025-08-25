@@ -1,0 +1,1 @@
+Bug: When retrieving non-existent FCP from dyn lib, get assert rather than thrown error
