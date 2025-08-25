@@ -514,7 +514,7 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
       } else if (immediate->const_kind == NUM_KIND_INT) {
         int64_t iconst = immediate->int_value();
         if (iconst == (1ll<<63)) {
-          ret.c = "-INT64(9223372036854775807) - INT64(1)";
+          ret.c = "(-INT64(9223372036854775807) - INT64(1))";
         } else if (iconst <= -2147483648ll || iconst >= 2147483647ll) {
           ret.c = "INT64(" + int64_to_string(iconst) + ")";
         } else {
@@ -565,7 +565,7 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
       } else if (immediate->const_kind == NUM_KIND_COMMID) {
         int64_t iconst = immediate->commid_value();
         if (iconst == (1ll<<63)) {
-          ret.c = "-COMMID(9223372036854775807) - COMMID(1)";
+          ret.c = "(-COMMID(9223372036854775807) - COMMID(1))";
         } else {
           INT_ASSERT(immediate->num_index == INT_SIZE_64);
           ret.c = "COMMID(" + int64_to_string(iconst) + ")";
