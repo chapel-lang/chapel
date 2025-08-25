@@ -603,6 +603,7 @@ Unary Plus Operators
 
 The unary plus operators are predefined as follows: 
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
    operator +(a: int(8)): int(8)
@@ -637,6 +638,7 @@ Unary Minus Operators
 
 The unary minus operators are predefined as follows: 
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
    operator -(a: int(8)): int(8)
@@ -673,6 +675,7 @@ Addition Operators
 
 The addition operators are predefined as follows: 
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
    operator +(a: int(8), b: int(8)): int(8)
@@ -731,6 +734,7 @@ Subtraction Operators
 
 The subtraction operators are predefined as follows: 
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
    operator -(a: int(8), b: int(8)): int(8)
@@ -786,6 +790,7 @@ Multiplication Operators
 
 The multiplication operators are predefined as follows: 
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
    operator *(a: int(8), b: int(8)): int(8)
@@ -842,6 +847,7 @@ Division Operators
 
 The division operators are predefined as follows: 
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
    operator /(a: int(8), b: int(8)): int(8)
@@ -904,6 +910,7 @@ Modulus Operators
 
 The modulus operators are predefined as follows: 
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
    operator %(a: int(8), b: int(8)): int(8)
@@ -1182,8 +1189,7 @@ The Logical Negation Operator
 The logical negation operator is predefined for booleans and integers as
 follows:
 
-
-
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
    operator !(a: bool): bool
@@ -1296,6 +1302,7 @@ Ordered Comparison Operators
 The “less than” comparison operators are predefined over numeric types
 as follows: 
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
    operator <(a: int(8), b: int(8)): bool
@@ -1320,6 +1327,7 @@ the result is false.
 The “greater than” comparison operators are predefined over numeric
 types as follows: 
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
    operator >(a: int(8), b: int(8)): bool
@@ -1344,6 +1352,7 @@ otherwise the result is false.
 The “less than or equal to” comparison operators are predefined over
 numeric types as follows: 
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
    operator <=(a: int(8), b: int(8)): bool
@@ -1368,6 +1377,7 @@ The result of ``a <= b`` is true if ``a`` is less than or equal to
 The “greater than or equal to” comparison operators are predefined over
 numeric types as follows: 
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
    operator >=(a: int(8), b: int(8)): bool
@@ -1392,6 +1402,7 @@ The result of ``a >= b`` is true if ``a`` is greater than or equal to
 The ordered comparison operators are predefined over strings as follows:
 
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
    operator <(a: string, b: string): bool
@@ -1422,6 +1433,7 @@ Equality Comparison Operators
 The equality comparison operators ``==`` and ``!=`` are predefined
 over bool and the numeric types as follows: 
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
    operator ==(a: int(8), b: int(8)): bool
@@ -1475,6 +1487,7 @@ equivalent to ``!(a == b)``.
 The equality comparison operators are predefined over classes as
 follows: 
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
    operator ==(a: RootClass, b: RootClass): bool
@@ -1491,6 +1504,7 @@ in :ref:`Record_Comparison_Operators`.
 The equality comparison operators are predefined over strings as
 follows: 
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
    operator ==(a: string, b: string): bool
@@ -1537,8 +1551,7 @@ The string concatenation operator ``+`` is predefined for string
 arguments and returns a new string that is the concatenation of its
 arguments:
 
-
-
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
    operator +(s0: string, s1: string): string
