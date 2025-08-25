@@ -901,7 +901,7 @@ void ResolvedFields::finalizeFields(Context* context, bool syntaxOnly) {
     Type::Genericity g;
 
     if (syntaxOnly) {
-      if (!isFieldSyntacticallyGenericIgnoring(context, field.declId, nullptr, ignore)) {
+      if (!isFieldSyntacticallyGeneric(context, field.declId, nullptr)) {
         g = Type::CONCRETE;
       } else {
         // In syntaxOnly mode, the field type is only set from substitutions;

@@ -1591,8 +1591,7 @@ static const AstNode* unwrapClassCall(const Call* call, bool& outConcreteManagem
 
 static bool isScopeResolvedExprGeneric(Context* context,
                                        ResolutionResultByPostorderID& rr,
-                                       const AstNode* expr,
-                                       std::set<const Type*>& ignore) {
+                                       const AstNode* expr) {
   bool isConcreteManagement = false;
   if (auto call = expr->toCall()) {
     expr = unwrapClassCall(call, isConcreteManagement);
@@ -1674,7 +1673,7 @@ static bool isScopeResolvedExprGeneric(Context* context,
   // whole call is generic.
   if (call) {
     for (auto actual : call->actuals()) {
-      if (isScopeResolvedExprGeneric(context, rr, actual, ignore)) {
+      if (isScopeResolvedExprGeneric(context, rr, actual)) {
         return true;
       }
     }
@@ -1694,8 +1693,7 @@ static bool isScopeResolvedExprGeneric(Context* context,
 static bool isVariableDeclWithClearGenericity(Context* context,
                                               const VarLikeDecl* var,
                                               bool &outIsGeneric,
-                                              types::QualifiedType* outFormalType,
-                                              std::set<const Type*>& ignore) {
+                                              types::QualifiedType* outFormalType) {
   // fields that are 'type' or 'param' are generic
   // and we can use the same type/param intent for the type constructor
   if (var->storageKind() == QualifiedType::TYPE ||
@@ -1739,21 +1737,20 @@ static bool isVariableDeclWithClearGenericity(Context* context,
                                            var, rr);
   var->traverse(visitor);
 
-  outIsGeneric = isScopeResolvedExprGeneric(context, rr, var->typeExpression(), ignore);
+  outIsGeneric = isScopeResolvedExprGeneric(context, rr, var->typeExpression());
   return true;
 }
 
-bool isFieldSyntacticallyGenericIgnoring(Context* context,
-                                         const ID& fieldId,
-                                         types::QualifiedType* formalType,
-                                         std::set<const Type*>& typeGenericities) {
+bool isFieldSyntacticallyGeneric(Context* context,
+                                 const ID& fieldId,
+                                 types::QualifiedType* formalType) {
   // compare with AggregateType::fieldIsGeneric
 
   auto var = parsing::idToAst(context, fieldId)->toVariable();
   CHPL_ASSERT(var);
 
   bool isGeneric = false;
-  if (isVariableDeclWithClearGenericity(context, var, isGeneric, formalType, typeGenericities)) {
+  if (isVariableDeclWithClearGenericity(context, var, isGeneric, formalType)) {
     return isGeneric;
   }
 
@@ -1785,21 +1782,13 @@ bool isFieldSyntacticallyGenericIgnoring(Context* context,
         break;
       }
 
-      if (isVariableDeclWithClearGenericity(context, neighborVar, isGeneric, formalType, typeGenericities)) {
+      if (isVariableDeclWithClearGenericity(context, neighborVar, isGeneric, formalType)) {
         break;
       }
     }
   }
 
   return isGeneric;
-}
-
-bool isFieldSyntacticallyGeneric(Context* context,
-                                 const ID& fieldId,
-                                 types::QualifiedType* formalType) {
-  // Performance: this might be made into a query, why not?
-  std::set<const Type*> typeGenericities;
-  return isFieldSyntacticallyGenericIgnoring(context, fieldId, formalType, typeGenericities);
 }
 
 bool shouldIncludeFieldInTypeConstructor(Context* context,
