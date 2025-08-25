@@ -484,6 +484,11 @@ static int processExternCode(yyscan_t scanner) {
   ParserContext* context = yyget_extra(scanner);
   if (context->parseStats)
     context->parseStats->countToken(pch);
+
+  // at this point we have eaten the extern code and the closing '}'
+  CHPL_ASSERT(yy_has_state(scanner) == true);
+  yy_pop_state(scanner);
+
   return EXTERNCODE;
 }
 
@@ -502,7 +507,7 @@ static SizedStr eatExternCode(yyscan_t scanner) {
   int       depth                            = 1;
   int       c                                = 0;
   int       lastc                            = 0;
-  int       state                            = 0;
+  int       state                            = in_code;
 
   ParserContext* context = yyget_extra(scanner);
 
