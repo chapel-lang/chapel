@@ -685,7 +685,34 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
       }
       bool actualPrinted = false;
       const uast::VarLikeDecl* offendingActual = actualDecls.at(printCount);
-      if (badPass.formalType().isUnknown()) {
+      if (candidate.formalReason() == resolution::FAIL_VARARG_TQ_MISMATCH) {
+        // a single vararg formal with a type query (like `x: ?t`) was used
+        // to pass actuals of different types. Collect all applicable types.
+
+        resolution::FormalActualMap fa(fn, ci);
+        std::vector<std::pair<const types::Type*, size_t>> actuals;
+        std::set<const types::Type*> seenTypes;
+        for (size_t i = 0; i < ci.numActuals(); i++){
+          auto entry = fa.byActualIdx(i);
+          if (!entry) continue;
+          if (seenTypes.insert(entry->actualType().type()).second) {
+            actuals.emplace_back(entry->actualType().type(), i);
+          }
+        }
+
+        CHPL_ASSERT(actuals.size() > 1);
+        wr.message("The variable-argument ", expectedThing, " ", formalName,
+                   ", which contains a type query, was used with ", passedThing, "s of "
+                    "incompatible types '", actuals[0].first, "' and '",
+                    actuals[1].first, "'.");
+        wr.message("Variable-argument ", expectedThing, "s with type queries can only accept ",
+                    passedThing, "s of a single type.");
+
+
+        // TODO: we don't currently have all actuals available here, so
+        // we can't print nice underlines showing the incompatible actuals.
+
+      } else if (badPass.formalType().isUnknown()) {
         // The formal type can be unknown in an initial instantiation if it
         // depends on the previous formals' types. In that case, don't print it
         // and say something nicer.
