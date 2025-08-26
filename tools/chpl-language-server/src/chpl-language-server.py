@@ -147,6 +147,8 @@ class ChapelLanguageServer(LanguageServer):
         self.end_marker_patterns = self._get_end_marker_patterns()
         self.do_linting: bool = config.get("do_linting")
 
+        self.is_vscode: bool = False
+
         self.lint_driver = None
         self._setup_linter(config)
 
@@ -685,11 +687,13 @@ def run_lsp():
         ls: ChapelLanguageServer,
         params: InitializeParams,
     ):
-        if params.workspace_folders is None:
-            return
+        if params.workspace_folders is not None:
+            for ws in params.workspace_folders:
+                ls.register_workspace(ws.uri)
 
-        for ws in params.workspace_folders:
-            ls.register_workspace(ws.uri)
+        if params.client_info is not None:
+            name = params.client_info.name
+            ls.is_vscode = name == "Visual Studio Code"
 
     @server.feature(WORKSPACE_DID_CHANGE_WORKSPACE_FOLDERS)
     async def did_change_folders(
@@ -996,108 +1000,44 @@ def run_lsp():
         filename = fi.uri[len("file://") :]
 
         actions = []
-        for mod, _ in chapel.each_matching(fi.get_asts(), chapel.Module):
-            log("look at mod", mod.name())
-            assert isinstance(mod, chapel.Module)
-            test_functions = mod.find_test_functions()
-            for func in test_functions:
-                name = func.name()
+
+        if ls.is_vscode:
+            for mod, _ in chapel.each_matching(fi.get_asts(), chapel.Module):
+                assert isinstance(mod, chapel.Module)
+                test_functions = mod.find_test_functions()
+                for func in test_functions:
+                    name = func.name()
+                    lens = CodeLens(
+                        data=(
+                            filename,
+                            name,
+                        ),
+                        command=Command(
+                            "▶ Run {}".format(name),
+                            "chapel.mason.invokeTestFile",
+                            [filename, name],
+                        ),
+                        range=location_to_range(func.header_location()),
+                    )
+                    actions.append(lens)
+
+                test_main = mod.find_unittest_main()
+                if test_main is None:
+                    continue
                 lens = CodeLens(
-                    data=(
-                        filename,
-                        name,
-                    ),
+                    data=(filename,),
                     command=Command(
-                        "▶ Run {}".format(name),
+                        "▶ Run All",
                         "chapel.mason.invokeTestFile",
-                        [filename, name],
+                        [filename],
                     ),
-                    range=location_to_range(func.header_location()),
+                    range=location_to_range(test_main.location()),
                 )
-                log("adding an action", lens)
                 actions.append(lens)
 
-            test_main = mod.find_unittest_main()
-            log(test_main)
-            if test_main is None:
-                continue
-            lens = CodeLens(
-                data=(filename,),
-                command=Command(
-                    "▶ Run All",
-                    "chapel.mason.invokeTestFile",
-                    [filename],
-                ),
-                range=location_to_range(test_main.location()),
-            )
-            # log(lens)
-            log("hi", test_main, test_main.location())
-            actions.append(lens)
-            log("added lens for main", lens)
-
-        log("returning actions", actions)
-        # find anything that looks like a test func
-        # TODO: for now restrict this to vscode
-        # actions = []
-        # for n, v in chapel.each_matching(
-        #     fi.get_asts(),
-        #     [chapel.Function, ("?formal", chapel.Formal), chapel.Block],
-        # ):
-        #     assert isinstance(n, chapel.Function)
-        #     if not n.throws():
-        #         continue
-        #     name = n.name()
-        #     formal = v["formal"]
-        #     assert isinstance(formal, chapel.Formal)
-        #     type_ = formal.type_expression()
-        #     if type_ is None:
-        #         continue
-        #     if not isinstance(type_, chapel.FnCall):
-        #         continue
-        #     if not type_.num_actuals() == 1:
-        #         continue
-        #     # TODO: this should be properly matching the AST
-        #     if str(type_) != "borrowed Test":
-        #         continue
-        #     lens = CodeLens(
-        #         data=(
-        #             filename,
-        #             name,
-        #         ),
-        #         command=Command(
-        #             "▶ Run {}".format(name),
-        #             "chapel.mason.invokeTestFile",
-        #             [filename, name],
-        #         ),
-        #         range=location_to_range(n.location()),
-        #     )
-        #     actions.append(lens)
-
-        # find UnitTest.main() and put a lens on it too
-        # for n, v in chapel.each_matching(
-        #     fi.get_asts(), [chapel.FnCall, ("?dot", chapel.Dot)]
-        # ):
-        #     dot = v["dot"]
-        #     assert isinstance(dot, chapel.Dot)
-        #     if str(dot) != "UnitTest.main":
-        #         continue
-        #     lens = CodeLens(
-        #         data=(filename,),
-        #         command=Command(
-        #             "▶ Run All",
-        #             "chapel.mason.invokeTestFile",
-        #             [filename],
-        #         ),
-        #         range=location_to_range(n.location()),
-        #     )
-        #     actions.append(lens)π
-
         # return early if the resolver is not being used or the feature is disabled
-        log("hi", ls.use_resolver, ls.show_instantiations)
         if not ls.use_resolver:
-            log("returning actions")
             return actions
-
         if not ls.show_instantiations:
             return actions
 
