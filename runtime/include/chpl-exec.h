@@ -25,6 +25,12 @@
 extern "C" {
 #endif
 
+
+/*
+  This function invokes the given command using the system() call.
+  If the command returns a non-zero status and ignore_status is 0,
+  then a fatal Chapel error is raised.
+*/
 int chpl_invoke_using_system(const char* command,
                              const char* description,
                              int ignore_status);
