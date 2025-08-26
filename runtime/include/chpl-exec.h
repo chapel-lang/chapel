@@ -23,6 +23,6 @@
 
 int chpl_invoke_using_system(const char* command,
                              const char* description,
-                             int ignorestatus);
+                             int ignore_status);
 
 #endif

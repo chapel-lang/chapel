@@ -1001,7 +1001,7 @@ void chpl_comm_post_mem_init(void) {
 // No support for gdb for now
 //
 int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
-  chpl_error("Running Chapel with COMM=gasnet and gdb is not yet supported", 0, 0);
+  chpl_error("Running Chapel with CHPL_COMM=gasnet and gdb is not yet supported", 0, 0);
   return 1;
 }
 
@@ -1013,21 +1013,20 @@ int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status) {
 #ifdef CHPL_TARGET_PLATFORM_DARWIN
   // mac has some issues with debugserver, users will likely run into issues
   // warn them about it
-  chpl_warning("Running Chapel with COMM=gasnet and lldb is not well supported on MacOS", 0, 0);
+  chpl_warning("Running Chapel with CHPL_COMM=gasnet and lldb is not well supported on MacOS", 0, 0);
+  const char* default_lldb_server =
+    "/Library/Developer/CommandLineTools/Library/PrivateFrameworks/LLDB.framework/Resources/debugserver";
+#else
+  const char* default_lldb_server = "/usr/bin/lldb-server";
 #endif
 
-  const char* lldb_server = chpl_env_rt_get("LLDB_DEBUG_SERVER_PATH",
-#ifdef CHPL_TARGET_PLATFORM_DARWIN
-    "/Library/Developer/CommandLineTools/Library/PrivateFrameworks/LLDB.framework/Resources/debugserver"
-#else
-    "/usr/bin/lldb-server"
-#endif
-  );
+  const char* lldb_server =
+    chpl_env_rt_get("LLDB_DEBUG_SERVER_PATH", default_lldb_server);
   int BASE_PORT = chpl_env_rt_get_int("DEBUG_SERVER_BASE_PORT", 5000);
   // before launching the runtime, sleep for just a little bit to allow the
   // parent to attach to the runtime process
   // otherwise the child may end before the parent gets a chance to run
-  int CHILD_SLEEP_FUDGE_FACTOR =
+  int SLEEP_FUDGE_FACTOR =
     chpl_env_rt_get_int("DEBUG_SERVER_SLEEP_FUDGE_FACTOR", 2);
 
   // this check is really important for good user errors and preventing injection
@@ -1047,7 +1046,7 @@ int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status) {
     chpl_internal_error_v("fork failed: %s", strerror(errno));
     return 1;
   } else if (f == 0) {
-    sleep(CHILD_SLEEP_FUDGE_FACTOR);
+    sleep(SLEEP_FUDGE_FACTOR);
     return 0; // continue
   } else {
     // the parent attaches to the runtime process, which is the child

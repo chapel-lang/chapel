@@ -26,18 +26,18 @@
 
 #include <sys/wait.h>
 
-#define CHECK_ERROR(status, description, ignorestatus) do { \
+#define CHECK_ERROR(status, description, ignore_status) do { \
   if (status == -1) { \
     chpl_error("fork failed", 0, CHPL_FILE_IDX_COMMAND_LINE);\
-  } else if (status != 0 && !ignorestatus) { \
+  } else if (status != 0 && !ignore_status) { \
     chpl_error(description, 0, CHPL_FILE_IDX_COMMAND_LINE); \
   } \
 } while(0)
 
 int chpl_invoke_using_system(const char* command,
                              const char* description,
-                             int ignorestatus) {
+                             int ignore_status) {
   int status = system(command);
-  CHECK_ERROR(status, description, ignorestatus);
+  CHECK_ERROR(status, description, ignore_status);
   return status;
 }
