@@ -34,4 +34,8 @@ echo "Setting Nightly variables"
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="python-modules.gasnet"
 export CHPL_NIGHTLY_TEST_DIRS="interop/python/multilocale"
 
+# limit the amount of parallelism used, we were running out of memory on the
+# testing machine.
+export CHPL_MAKE_MAX_CPU_COUNT=2
+
 $UTIL_CRON_DIR/nightly -cron -futures
