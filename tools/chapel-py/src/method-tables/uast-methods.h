@@ -622,12 +622,14 @@ CLASS_END(Interface)
 CLASS_BEGIN(Module)
   PLAIN_GETTER(Module, kind, "Get the kind of this Module node",
                const char*, return Module::moduleKindToString(node->kind()))
-  PLAIN_GETTER(Module, find_test_functions, "Get all of the UnitTest functions in this Module",
+  PLAIN_GETTER(Module, find_test_functions,
+               "Get all of the UnitTest functions in this Module",
                std::vector<const chpl::uast::Function*>,
                return findTestFunctionsForModule(context, node))
-  PLAIN_GETTER(Module, find_unittest_main, "Find the call to UnitTest.main in this module, if any",
-              Nilable<const chpl::uast::FnCall*>,
-              return findUnitTestMainForModule(context, node))
+  PLAIN_GETTER(Module, find_unittest_main,
+               "Find the call to UnitTest.main in this module, if any",
+               Nilable<const chpl::uast::FnCall*>,
+               return findUnitTestMainForModule(context, node))
 CLASS_END(Module)
 
 CLASS_BEGIN(ReduceIntent)

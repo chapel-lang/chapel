@@ -300,7 +300,7 @@ struct TestFunctionFinder {
   std::vector<const Function*> fns;
 
   TestFunctionFinder(Context* context, const QualifiedType& testType)
-    : context(context), testType(testType) {}
+    : context(context), testType(testType), fns() {}
 
   bool enter(const Function* fn) {
     // We're looking for a non-method function that throws and accepts
@@ -367,9 +367,8 @@ struct TestFunctionMainFinder {
     : context(context), mainID(mainID), callsMain(nullptr) {}
 
   bool enter(const FnCall* call) {
-    if (callsMain) return false;
+    if (callsMain != nullptr) return false;
     auto resolvedID = scopeResolveToIdForNode(context, call->calledExpression());
-    std::cerr << "searching call " << call << " with resolved id " << resolvedID.symbolName(context) << "\n";
     if (resolvedID == mainID) {
       callsMain = call;
       return false;
@@ -382,31 +381,20 @@ struct TestFunctionMainFinder {
   void exit(const AstNode* node) {}
 };
 
-const FnCall*
+const FnCall* const&
 findUnitTestMainForModule(Context* context, const Module* mod) {
-  // TODO: why does this being a query break with weird errors?
-  // QUERY_BEGIN(findUnitTestMainForModule, context, mod);
+  QUERY_BEGIN(findUnitTestMainForModule, context, mod);
   const FnCall* result = nullptr;
-
-  // TODO: this sometimes crashes and seems most reliable with log messages. WHY!
 
   using namespace parsing;
 
   // make sure UnitTest has been parsed before getSymbolIdFromTopLevelModule
   if (getToplevelModule(context, UniqueString::get(context, "UnitTest"))) {
     if (auto mainID = getSymbolIdFromTopLevelModule(context, "UnitTest", "main")) {
-      std::cerr << "mainID found " << "\n";
       TestFunctionMainFinder tfmf(context, mainID);
       mod->traverse(tfmf);
-      std::cerr << "callsMain found " << (tfmf.callsMain != nullptr) << "\n";
       result = tfmf.callsMain;
-      std::cerr << "result = " << result << "\n";
-    } else {
-      std::cerr << "no mainID\n";
     }
-  } else {
-    std::cerr << "no UnitTest module\n";
   }
-  return result;
-  // return QUERY_END(result);
+  return QUERY_END(result);
 }
