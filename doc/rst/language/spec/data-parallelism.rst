@@ -235,7 +235,6 @@ of the loop, and yields each resulting value.
 When a forall expression is used to initialize a variable, such as
 
 
-.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
    var X = forall iterableExpression() do computeValue();
