@@ -562,7 +562,7 @@ static void partitionResources(void) {
         // but maybe it should look for other types of caches? For example,
         // an we may want to bind to an L2 cache in a hybrid core system
         // because there is only one L3 cache per socket.
-        // Its a fairly trivial change (just only select the cache type
+        // It's a fairly trivial change (just only select the cache type
         // that has more than numLocalesOnNode objects)
         // but that changes the meaning of 1x2llc (because we might bind
         // to L2 caches instead of L3 caches) so we should think about it.
