@@ -1,0 +1,21 @@
+#!/usr/bin/env python3
+
+import sys
+import re
+
+file=sys.argv[2]
+
+with open(file, 'rb') as f:
+    contents = f.read()
+
+
+handle_no_return = b"""==\\d+==WARNING: ASan is ignoring requested __asan_handle_no_return: .*
+False positive error reports may follow
+For details see https:\\/\\/github.com\\/google\\/sanitizers\\/issues\\/189
+"""
+
+output = re.sub(handle_no_return, b'', contents, flags=re.MULTILINE)
+
+
+with open(file, 'wb') as f:
+    f.write(output)

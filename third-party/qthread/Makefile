@@ -132,6 +132,12 @@ SCHEDULER = $(CHPL_QTHREAD_SCHEDULER)
 endif
 CHPL_QTHREAD_CFG_OPTIONS += -DQTHREADS_SCHEDULER=$(SCHEDULER)
 
+
+# sanitizers won't work with fastcontext switching
+ifneq ($(CHPL_MAKE_SANITIZE), none)
+	CHPL_QTHREAD_CFG_OPTIONS += -DDQTHREADS_CONTEXT_SWAP_IMPL=system
+endif
+
 # only do this on M1+ Macs
 ifeq ($(CHPL_MAKE_TARGET_ARCH),arm64)
 ifeq ($(CHPL_MAKE_TARGET_PLATFORM),darwin)

@@ -1145,7 +1145,6 @@ def set_up_executables():
             chpl_system_preexec.append(preexec)
         os.environ["CHPL_SYSTEM_PREEXEC"] = ','.join(chpl_system_preexec)
 
-
     # pre-diff
     chpl_system_prediff = []
     if args.prediff:
@@ -1180,6 +1179,14 @@ def set_up_executables():
         prediff_for_debug = os.path.join(util_dir, "test", "prediff-for-debug")
         if prediff_for_debug not in chpl_system_prediff:
             chpl_system_prediff.append(prediff_for_debug)
+
+    if ("qthreads" == chpl_tasks.get() and
+        "none" != chpl_sanitizers.get(flag="exe")):
+        prediff_for_qthreads_asan = os.path.join(
+            util_dir, "test", "prediff-for-qthreads-asan"
+        )
+        if prediff_for_qthreads_asan not in chpl_system_prediff:
+            chpl_system_prediff.append(prediff_for_qthreads_asan)
 
     if chpl_system_prediff:
         os.environ["CHPL_SYSTEM_PREDIFF"] = ','.join(chpl_system_prediff)
