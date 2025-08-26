@@ -92,6 +92,7 @@ distribution.
 
 The ``replicatedDist`` initializer is defined as follows:
 
+  .. BLOCK-test-allowCodeBlock
   .. code-block:: chapel
 
     proc replicatedDist.init(

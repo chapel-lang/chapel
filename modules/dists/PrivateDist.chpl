@@ -42,6 +42,7 @@ This module declares a module-level constant of type ``privateDist``
 named ``PrivateSpace`` for use as a convenience (so that user programs
 do not need to declare their own).
 
+  .. BLOCK-test-allowCodeBlock
   .. code-block:: chapel
 
     const PrivateSpace: domain(1) dmapped new privateDist();

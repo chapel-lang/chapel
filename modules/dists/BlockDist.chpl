@@ -214,6 +214,7 @@ as possible between those tasks.
 
 The ``blockDist`` initializer is defined as follows:
 
+  .. BLOCK-test-allowCodeBlock
   .. code-block:: chapel
 
     proc blockDist.init(

@@ -46,6 +46,7 @@ distribution accesses all replicands in certain cases, as specified there.
 
 The ``ReplicatedDim`` record initializer is available as follows:
 
+  .. BLOCK-test-allowCodeBlock
   .. code-block:: chapel
 
     proc ReplicatedDim.init(numLocales:int)
