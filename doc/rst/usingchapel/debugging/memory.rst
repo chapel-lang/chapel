@@ -1,5 +1,5 @@
 ===============================
-Debugging memory related issues
+Debugging Memory-related Issues
 ===============================
 
 Chapel provides several tools and techniques for debugging memory-related

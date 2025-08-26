@@ -1,7 +1,7 @@
 .. _debugging-with-launchers:
 
 ===================================
-Running in gdb/lldb with a launcher
+Running in gdb/lldb with a Launcher
 ===================================
 
 When debugging multilocale Chapel programs and using some launchers, you can

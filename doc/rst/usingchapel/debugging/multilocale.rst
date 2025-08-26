@@ -1,14 +1,15 @@
 ==========================
-Debugging multilocale code
+Debugging Multilocale Code
 ==========================
 
-Debugging multilocale programs is much more complex than debugging
+Debugging multilocale programs is more complex than debugging
 single-locale programs. Most techniques for doing this end up boiling down to
 running a debugger instance for each locale. See :ref:`these docs
 <debugging-with-launchers>` which describe how to achieve this very explicitly
 with multiple windows.
 
-The rest of this page describes some other tools that can help with debugging multilocale code.
+The rest of this page describes some other tools that can help with debugging
+multilocale code.
 
 
 chpl-parallel-dbg
@@ -48,8 +49,8 @@ From another window, you can then run the following command to connect to the
 
 This will create setup a ``lldb`` session, and create a target per locale. You
 can then use ``lldb`` commands to debug the program as you would normally.
-However, its important to remeber that you are essentially debugging multiple
-programs at once (however many locales you specified). This means that when you
+However, its important to remember that you are essentially debugging multiple
+processes at once (however many locales you specified). This means that when you
 step through the code, set breakpoints, print variables, you will only be doing
 so for the current locale. To switch to another locale, you can use the
 ``on <localeNum>`` (an alias for ``target select `<localeNum>``) command in
@@ -81,6 +82,8 @@ Limitations
 gdb4hpc
 -------
 
-gdb4hpc is a proprietary tool offered by HPE for debugging distributed
+gdb4hpc_ is a proprietary tool offered by HPE for debugging distributed
 programs. It is mostly used for debugging MPI programs, but can in theory be
 used for debugging Chapel programs as well.
+
+.. _gdb4hpc: https://cpe.ext.hpe.com/docs/latest/debugging-tools/gdb4hpc/man/gdb4hpc.1.html

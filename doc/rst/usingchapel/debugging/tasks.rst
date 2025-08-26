@@ -1,10 +1,10 @@
 ==============================
-Debugging multithreaded issues
+Debugging Multithreaded Issues
 ==============================
 
 Writing parallel programs can be challenging, especially when it comes to
 debugging issues that arise from multithreading (like race conditions). Chapel
-provides a few built-in features to help with debugging multithreaded code.
+provides some built-in features to help with debugging multithreaded code.
 
 Tracking and Reporting on Tasks
 -------------------------------

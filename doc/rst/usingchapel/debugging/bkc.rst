@@ -5,7 +5,7 @@ Best Known Configurations for Debugging
 =======================================
 
 ----------------------
-Using the LLVM backend
+Using the LLVM Backend
 ----------------------
 
 When debugging Chapel using the default LLVM backend, make sure to use the
@@ -54,7 +54,7 @@ debuggability of the generated executable:
 
 
 -------------------
-Using the C backend
+Using the C Backend
 -------------------
 
 It may be useful to debug Chapel programs using the C backend. The current best
@@ -131,7 +131,7 @@ debugging. Any of them can be omitted as desired.
                                        can make debugging harder.
   ===================================  =========================================
 
-Notes on munging
+Notes on Munging
 ''''''''''''''''
 
 The utility of using a debugger with Chapel depends greatly on your familiarity
@@ -142,7 +142,7 @@ looking at a stack trace within ``gdb``.
 When debugging Chapel, it is useful to know that in generating its code,
 the Chapel compiler renames user identifiers.  By default, the Chapel
 compiler munges all user identifiers, such that a variable named ``x``
-would be code generated as ``x_chpl``.  This munging can be controlled
+would be code-generated as ``x_chpl``.  This munging can be controlled
 using the ``--[no-]munge-user-idents`` flag (see the ``chpl`` man page
 for more information).  In some cases, additional munging may be
 required or applied that cannot be turned off.
@@ -155,7 +155,3 @@ where the compiler has further renamed the variable).  If the
 
 See :ref:`more-munging-info` for more information on munging.
 
-Over time, we plan to improve our ability to debug the generated
-code for a Chapel program. If you find yourself debugging the
-generated code a lot and need help or have requests for better
-support, please let us know so that we can prioritize accordingly.

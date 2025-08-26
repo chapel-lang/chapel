@@ -13,11 +13,11 @@ valgrind in that it can help identify memory errors. ASan is much faster than
 valgrind, but does require recompilation. Note that only GCC and Clang support
 sanitizers.
 
-Building the compiler
+Building the Compiler
 ---------------------
 
-The following chplenv variables are required to build the Chapel compiler with
-sanitizers enabled:
+The following environment variables are required to build the Chapel compiler
+with sanitizers enabled:
 
 .. code-block:: bash
 
@@ -25,7 +25,7 @@ sanitizers enabled:
    export CHPL_TARGET_COMPILER=gnu # or CHPL_TARGET_COMPILER=clang
    export CHPL_SANITIZE_EXE=address
 
-Running the compiled program
+Running the Compiled Program
 ----------------------------
 
 After building a compiler configured like the above, you can build and run a
@@ -34,9 +34,9 @@ environment variables:
 
 .. code-block:: bash
 
-   chpl <program.chpl>
+   chpl hello.chpl
    export ASAN_OPTIONS="use_sigaltstack=0,detect_leaks=0"
-   ./<program>
+   ./hello
 
 Limitations
 -----------

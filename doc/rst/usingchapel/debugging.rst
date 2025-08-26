@@ -60,7 +60,7 @@ overrides the default printing for many types when using ``p`` (``print``) or
 ``v`` (``frame variable``). To circumvent this, you can use ``v -R`` (``frame
 variable -R``) to print the raw value of a variable without the pretty-printer.
 
-Using a graphical debugger
+Using a Graphical Debugger
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The Chapel VSCode extension provides a graphical debugging experience with
@@ -78,3 +78,11 @@ automatically stop at calls to this function as a breakpoint.
    This requires ``b debuggerBreakHere`` to be set in the debugger, which is
    done automatically by the ``--gdb`` and ``--lldb`` flags. If you need a true
    debug trap, see the :chpl:proc:`~Debugger.debugTrap` function.
+
+
+----
+
+We continue to improve our debugging support for Chapel programs. If you
+find cases where the debugging experience could be improved,
+`please let us <https://github.com/chapel-lang/chapel/issues/new/choose>`_
+know so that we can prioritize accordingly.
