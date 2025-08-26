@@ -21,8 +21,16 @@
 #ifndef _chpl_exec_h_
 #define _chpl_exec_h_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int chpl_invoke_using_system(const char* command,
                              const char* description,
                              int ignore_status);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
