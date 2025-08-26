@@ -60,6 +60,6 @@ To get better stack traces when optimizations are enabled:
      the equivalent.
 
 See :ref:`readme-sanitizers` for more information on using AddressSanitizer with
-Chapel programs. This page also lists various limitations of AddressSanitizer
+Chapel programs. That page also lists various limitations of AddressSanitizer
 with Chapel programs, which also apply to the use of AddressSanitizer for
 debugging the Chapel compiler itself.
