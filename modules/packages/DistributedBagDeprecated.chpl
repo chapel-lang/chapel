@@ -88,6 +88,7 @@
   properly initialize the structure. Using the default state without initializing
   will result in a halt.
 
+  .. BLOCK-test-allowCodeBlock
   .. code-block:: chapel
 
     var bag = new DistBag(int, targetLocales=ourTargetLocales);
@@ -99,6 +100,7 @@
   desired, and likely will more memory consumption on a single node. We offer a way for the user to
   invoke a more static load balancing approach, called :proc:`DistributedBagImpl.balance`, which will redistributed work.
 
+  .. BLOCK-test-allowCodeBlock
   .. code-block:: chapel
 
     bag.addBulk(1..N);
