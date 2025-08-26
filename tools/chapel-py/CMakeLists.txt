@@ -140,7 +140,8 @@ endif()
 
 # Create the Python module
 file(GLOB_RECURSE CPP_SOURCES "src/*.cpp")
-python_add_library(chapel_core MODULE ${CPP_SOURCES} USE_SABI 3 WITH_SOABI )
+python_add_library(chapel_core MODULE ${CPP_SOURCES}
+                   WITH_SOABI USE_SABI ${SKBUILD_SABI_VERSION})
 
 # Set the module name to match the expected Python import path
 set_target_properties(chapel_core PROPERTIES
@@ -229,9 +230,6 @@ elseif(UNIX)
     )
   endif()
 endif()
-
-# Enable py_limited_api for stable ABI
-target_compile_definitions(chapel_core PRIVATE Py_LIMITED_API=0x03080000)
 
 # Install the module in the correct location
 install(TARGETS chapel_core DESTINATION chapel COMPONENT python)
