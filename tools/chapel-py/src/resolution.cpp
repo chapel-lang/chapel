@@ -364,7 +364,7 @@ struct TestFunctionMainFinder {
   const FnCall* callsMain;
 
   TestFunctionMainFinder(Context* context, ID mainID)
-    : context(context), mainID(mainID) {}
+    : context(context), mainID(mainID), callsMain(nullptr) {}
 
   bool enter(const FnCall* call) {
     if (callsMain) return false;
