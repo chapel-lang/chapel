@@ -235,6 +235,7 @@ of the loop, and yields each resulting value.
 When a forall expression is used to initialize a variable, such as
 
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
    var X = forall iterableExpression() do computeValue();
@@ -710,12 +711,14 @@ Consider a function ``f`` with formal arguments ``s1``, ``s2``, ... that
 are promoted and formal arguments ``a1``, ``a2``, ... that are not
 promoted. The call
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
    f(s1, s2, ..., a1, a2, ...)
 
 is equivalent to 
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
    [(e1, e2, ...) in zip(s1, s2, ...)] f(e1, e2, ..., a1, a2, ...)
@@ -726,12 +729,14 @@ the promoted actuals must have the same shape.
 Formal arguments that are not promoted are evaluated once and stored in a
 temporary variable. If formal ``a1`` is an expression, then the call 
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
    f(s1, s2, ..., a1, a2, ...)
 
 is equivalent to 
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
    var tmp = a1;
@@ -785,12 +790,14 @@ rather than functions.
 Whole array assignment is one example. It is is implicitly parallel. The
 array assignment statement: 
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
    LHS = RHS;
 
 is equivalent to 
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
    forall (e1,e2) in zip(LHS,RHS) do
