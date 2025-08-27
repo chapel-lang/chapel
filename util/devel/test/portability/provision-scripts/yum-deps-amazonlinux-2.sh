@@ -8,7 +8,7 @@ yum -y install git gcc gcc-c++ m4 perl python tcsh bash perl python python-devel
 yum -y install wget tar openssl-devel
 
 hide yum -y install sudo
-
+hide chmod 0400 /etc/shadow # workaround https://github.com/apptainer/apptainer/issues/2756
 
 hide MYTMP=`unsudo mktemp -d`
 hide cd $MYTMP
