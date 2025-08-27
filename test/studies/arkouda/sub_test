@@ -235,9 +235,10 @@ if [ ${CHPL_TEST_ARKOUDA_STOP_AFTER_BUILD} = "false" ]; then
     benchmark_data=benchmark_v2/data/benchmark_stats_$(date +%Y%m%d_%H%M%S).json
     mkdir -p benchmark_v2/data
     benchmark_opts="--benchmark-autosave --benchmark-storage=file://benchmark_v2/.benchmarks --size=$benchmark_size --benchmark-json=$benchmark_data"
-    if [[ -n $CHPL_TEST_NUM_TRIALS ]]; then
-      benchmark_opts="${benchmark_opts} --trials $CHPL_TEST_NUM_TRIALS"
-    fi
+    # TODO why doesn't trials work?
+    # if [[ -n $CHPL_TEST_NUM_TRIALS ]]; then
+    #   benchmark_opts="${benchmark_opts} --trials $CHPL_TEST_NUM_TRIALS"
+    # fi
     if [[ -n $CHPL_TEST_ARKOUDA_BENCHMARKS_V2 ]]; then
       benchmark_opts="${benchmark_opts} $CHPL_TEST_ARKOUDA_BENCHMARKS_V2"
     fi
@@ -250,7 +251,7 @@ if [ ${CHPL_TEST_ARKOUDA_STOP_AFTER_BUILD} = "false" ]; then
     fi
 
     # process the data and create graphs
-    if benchmark_v2/reformat_benchmark_results.py --benchmark-data $benchmark_data $reformat_benchmark_opts ; then
+    if python3 benchmark_v2/reformat_benchmark_results.py --benchmark-data $benchmark_data $reformat_benchmark_opts ; then
       log_success "benchmark_v2 graph generation"
     else
       log_error "generating benchmark_v2 graphs"
