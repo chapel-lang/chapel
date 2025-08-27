@@ -534,35 +534,55 @@ static const char *objTypeString(hwloc_obj_type_t t) {
 //
 
 static void partitionResources(void) {
+  // TODO: partitioning should respect CHPL_RT_NUM_THREADS_PER_LOCALE=MAX_LOGICAL
   hwloc_obj_t root = hwloc_get_root_obj(topology);
   hwloc_obj_type_t myRootType = HWLOC_OBJ_TYPE_MAX;
+  chpl_bool userSetMyRootType = false;
   int numLocalesOnNode = chpl_get_num_locales_on_node();
   int numColocales = chpl_env_rt_get_int("LOCALES_PER_NODE", 0);
   int unusedCores = 0;
+  chpl_bool skipFindingPartitionRoot = false;
 
-  const char *t = chpl_env_rt_get("COLOCALE_OBJ_TYPE", NULL);
-  if (t != NULL) {
+  const char *coLocaleObjType = chpl_env_rt_get("COLOCALE_OBJ_TYPE", NULL);
+  if (coLocaleObjType != NULL) {
+    userSetMyRootType = true;
     // The type of root object was specified on the command-line.
-    if (!strcmp(t , "socket")) {
+    if (!strcmp(coLocaleObjType, "socket")) {
       myRootType = HWLOC_OBJ_PACKAGE;
-    } else if (!strcmp(t , "numa")) {
+    } else if (!strcmp(coLocaleObjType, "numa")) {
       myRootType = HWLOC_OBJ_NUMANODE;
-    } else if (!strcmp(t , "core")) {
+    } else if (!strcmp(coLocaleObjType, "core")) {
       myRootType = HWLOC_OBJ_CORE;
-    } else if (!strcmp(t , "cache")) {
+    } else if (!strcmp(coLocaleObjType, "cache")) {
       hwloc_obj_type_t cacheTypes[] = {HWLOC_OBJ_L5CACHE, HWLOC_OBJ_L4CACHE,
                                        HWLOC_OBJ_L3CACHE, HWLOC_OBJ_L2CACHE,
                                        HWLOC_OBJ_L1CACHE, HWLOC_OBJ_TYPE_MAX};
       for (int i = 0; cacheTypes[i] != HWLOC_OBJ_TYPE_MAX; i++) {
+        // TODO: this logic looks for the LLC
+        // but maybe it should look for other types of caches? For example,
+        // an we may want to bind to an L2 cache in a hybrid core system
+        // because there is only one L3 cache per socket.
+        // It's a fairly trivial change (just only select the cache type
+        // that has more than numLocalesOnNode objects)
+        // but that changes the meaning of 1x2llc (because we might bind
+        // to L2 caches instead of L3 caches) so we should think about it.
         if (hwloc_get_nbobjs_by_type(topology, cacheTypes[i]) > 0) {
           myRootType = cacheTypes[i];
           break;
         }
       }
+    } else if(!strcmp(coLocaleObjType, "none")) {
+      // this is internal for development and testing
+      myRootType = HWLOC_OBJ_TYPE_MAX;
+    } else if(!strcmp(coLocaleObjType, "skip")) {
+      // this is internal for development and testing
+      skipFindingPartitionRoot = true;
+      myRootType = HWLOC_OBJ_TYPE_MAX;
     } else {
       char msg[200];
       snprintf(msg, sizeof(msg),
-               "CHPL_RT_COLOCALE_OBJ_TYPE is not a valid type: \"%s\"", t);
+               "CHPL_RT_COLOCALE_OBJ_TYPE is not a valid type: \"%s\"",
+               coLocaleObjType);
       chpl_error(msg, 0, 0);
     }
   }
@@ -608,7 +628,8 @@ static void partitionResources(void) {
     // to determine this accurately.
 
     if (rank != -1) {
-      if (myRootType == HWLOC_OBJ_TYPE_MAX) {
+      _DBG_P("myRootType is %s", objTypeString(myRootType));
+      if (!skipFindingPartitionRoot && myRootType == HWLOC_OBJ_TYPE_MAX) {
         // Chose a root object if the number of them matches the number of
         // locales.
         hwloc_obj_type_t rootTypes[] = {HWLOC_OBJ_MACHINE, HWLOC_OBJ_PACKAGE,
@@ -625,8 +646,9 @@ static void partitionResources(void) {
           }
         }
       }
+      _DBG_P("myRootType inferred to %s", objTypeString(myRootType));
       if (myRootType != HWLOC_OBJ_TYPE_MAX) {
-        _DBG_P("myRootType: %s", objTypeString(myRootType));
+        _DBG_P("getting our root object");
         int numCores = hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_CORE);
         int numObjs = hwloc_get_nbobjs_by_type(topology, myRootType);
         if (numObjs < numPartitions) {
@@ -658,8 +680,43 @@ static void partitionResources(void) {
           hwloc_bitmap_and(s, s, logAccSet);
           logAccSets[i] = s;
         }
-      } else {
-        // Cores not tied to a root object
+
+        // logAccSets has the cores each parition can use. If they don't have
+        // the same number of cores, then we can't proceed with this
+        // partitioning scheme.
+        // we also want to avoid the situation where all the paritions
+        // end up having 0 cores.
+        assert(numPartitions > 0);
+        int firstSetSize = hwloc_bitmap_weight(logAccSets[0]);
+        chpl_bool badPartitioning = false;
+        for (int i = 0; i < numPartitions; i++) {
+          int numCores = hwloc_bitmap_weight(logAccSets[i]);
+          if (numCores != firstSetSize) {
+            _DBG_P("logAccSets[%d] has %d cores, logAccSets[0] has %d",
+                   i, numCores, firstSetSize);
+            badPartitioning = true;
+            break;
+          }
+          if (numCores == 0) {
+            _DBG_P("logAccSets[%d] has no cores", i);
+            badPartitioning = true;
+            break;
+          }
+        }
+        if (badPartitioning) {
+          _DBG_P("bailing out of partitioning by %s", objTypeString(myRootType));
+          myRootType = HWLOC_OBJ_TYPE_MAX;
+          if (userSetMyRootType) {
+            char msg[200];
+            snprintf(msg, sizeof(msg),
+                     "Cannot bind to the architectural feature '%s' with %d co-locales. Falling back to no binding.",
+                     coLocaleObjType, numPartitions);
+            chpl_warning(msg, 0, 0);
+          }
+        }
+      }
+      if (myRootType == HWLOC_OBJ_TYPE_MAX) {
+        _DBG_P("Cores not tied to a root object");
         int coresPerPartition = numCPUsPhysAcc / numPartitions;
         if (coresPerPartition < 1) {
           char msg[200];
@@ -693,6 +750,13 @@ static void partitionResources(void) {
 
         // silence the warning if CHPL_RT_SILENCE_UNUSED_CORES is set
         if (!chpl_env_rt_get_bool("SILENCE_UNUSED_CORES", false)) {
+
+          // TODO: on a hybrid arch like M3 or alderlake with all the
+          // efficency cores in one L2 and all the performance cores in
+          // another, this can be misleading. For example, currently
+          // trying to pin to 'core' on alderlake will report unused cores
+          // for all cores, instead of just the ones selected by CHPL_RT_USE_PU_KIND.
+
           char msg[200];
           snprintf(msg, sizeof(msg), "%d cores are unused", unusedCores);
           chpl_warning(msg, 0, 0);
@@ -1593,12 +1657,12 @@ done:
 
 static
 void chk_err_fn(const char* file, int lineno, const char* what) {
-  chpl_internal_error_v("%s: %d: !(%s)", file, lineno, what);
+  chpl_internal_error_v("%s:%d: !(%s)", file, lineno, what);
 }
 
 
 static
 void chk_err_errno_fn(const char* file, int lineno, const char* what) {
-  chpl_internal_error_v("%s: %d: !(%s): %s", file, lineno, what,
+  chpl_internal_error_v("%s:%d: !(%s): %s", file, lineno, what,
                         strerror(errno));
 }
