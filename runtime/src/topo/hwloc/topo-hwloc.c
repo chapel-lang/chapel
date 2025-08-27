@@ -686,6 +686,7 @@ static void partitionResources(void) {
         // partitioning scheme.
         // we also want to avoid the situation where all the paritions
         // end up having 0 cores.
+        assert(numPartitions > 0);
         int firstSetSize = hwloc_bitmap_weight(logAccSets[0]);
         chpl_bool badPartitioning = false;
         for (int i = 0; i < numPartitions; i++) {
