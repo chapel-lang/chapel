@@ -136,6 +136,12 @@ struct CallInitDeinit : VarScopeVisitor {
                                 const QualifiedType& rhsType,
                                 RV& rv);
 
+  void processSingleAssignHelper(const OpCall* ast,
+                                 const AstNode* lhsAst,
+                                 const AstNode* rhsAst,
+                                 const QualifiedType& lhsType,
+                                 const QualifiedType& rhsType,
+                                 RV& rv);
 
   void processReturnThrowYield(const uast::AstNode* ast, RV& rv);
 
@@ -677,9 +683,9 @@ void CallInitDeinit::resolveTupleInit(const AstNode* ast, const AstNode* rhsAst,
   }
 
   if (auto tuple = ast->toTuple()) {
+    debuggerBreakHere();
     // Initializing variables via tuple destructuring
     resolveTupleUnpackAssign(tuple, ast, lhsType, rhsType, rv);
-    return;
   } else {
     // Initializing an actual tuple variable, with either another tuple variable
     // or a tuple expression.
@@ -776,7 +782,13 @@ void CallInitDeinit::resolveTupleUnpackAssign(const Tuple* lhsTuple,
     }
 
     // Resolve assignment of the element
-    processInit(frame, actual, lhsEltType, rhsEltType, rv);
+    debuggerBreakHere();
+    if (auto op = astForErr->toOpCall()) {
+      processSingleAssignHelper(op, actual, nullptr, lhsEltType, rhsEltType,
+                                rv);
+    } else {
+      processInit(frame, actual, lhsEltType, rhsEltType, rv);
+    }
   }
 }
 
@@ -793,14 +805,16 @@ void CallInitDeinit::resolveAssign(const AstNode* ast,
   }
 
   if (auto call = ast->toOpCall()) {
-    if (call->op() == "=" && call->child(0)->isTuple()) {
-      // Tuple unpacking assignment
-      // (a, b, c) = foo();
-      auto lhsTuple = call->actual(0)->toTuple();
-      auto& lhsType = rv.byPostorder().byAst(call->actual(0)).type();
-      auto& rhsType = rv.byPostorder().byAst(call->actual(1)).type();
-      resolveTupleUnpackAssign(lhsTuple, call, lhsType, rhsType, rv);
-      return;
+    if (call->op() == "="  && call->child(0)->isTuple()) {
+      if (lhsType.type() && lhsType.type()->isTupleType()) {
+        // Tuple unpacking assignment
+        // (a, b, c) = foo();
+        auto lhsTuple = call->actual(0)->toTuple();
+        auto& lhsType = rv.byPostorder().byAst(call->actual(0)).type();
+        auto& rhsType = rv.byPostorder().byAst(call->actual(1)).type();
+        resolveTupleUnpackAssign(lhsTuple, call, lhsType, rhsType, rv);
+        return;
+      }
     }
   }
   // In an 'if var' decl, resolve assign as though the RHS is non-nil.
@@ -834,11 +848,13 @@ void CallInitDeinit::resolveAssign(const AstNode* ast,
   ResolvedExpression& opR = rv.byAst(ast);
 
   auto op = ast->toOpCall();
-  if (op != nullptr && op->op() == USTR("=")) {
-    // if the syntax shows a '=' call, resolve that into the assign
+  if (op != nullptr && op->op() == USTR("=") && !op->child(0)->isTuple()) {
+    // if the syntax shows a '=' call (except tuple unpacking assign),
+    // resolve that into the assign
     c.noteResult(&opR);
   } else {
     // otherwise, add an associated action
+    if (op && op->child(0)->isTuple()) debuggerBreakHere();
     c.noteResult(&opR, { { AssociatedAction::ASSIGN, ast->id() } });
   }
 }
@@ -1307,21 +1323,13 @@ void CallInitDeinit::handleMention(const Identifier* ast, ID varId, RV& rv) {
   checkUseOfDeinited(ast, varId);
 }
 
-void CallInitDeinit::handleAssign(const OpCall* ast, RV& rv) {
+void CallInitDeinit::processSingleAssignHelper(
+    const OpCall* ast, const AstNode* lhsAst, const AstNode* rhsAst,
+    const QualifiedType& lhsType, const QualifiedType& rhsType, RV& rv) {
   VarFrame* frame = currentFrame();
 
-  // What is the RHS and LHS of the '=' call?
-  auto lhsAst = ast->actual(0);
-  auto rhsAst = ast->actual(1);
-
-  ResolvedExpression& lhsRe = rv.byAst(lhsAst);
-  QualifiedType lhsType = lhsRe.type();
-
-  ResolvedExpression& rhsRe = rv.byAst(rhsAst);
-  QualifiedType rhsType = rhsRe.type();
-
   // update initedVars if it is initializing a variable
-  bool splitInited = processSplitInitAssign(ast, splitInitedVars, rv);
+  bool splitInited = processSplitInitAssign(lhsAst, splitInitedVars, rv);
 
   if (splitInited) {
     // if initializing a variable, update localsAndDefers or initedOuterVars
@@ -1344,6 +1352,41 @@ void CallInitDeinit::handleAssign(const OpCall* ast, RV& rv) {
     // it is assignment, so resolve the '=' call
     resolveAssign(ast, lhsType, rhsType, rv);
   }
+}
+
+void CallInitDeinit::handleAssign(const OpCall* ast, RV& rv) {
+  // What is the RHS and LHS of the '=' call?
+  auto lhsAst = ast->actual(0);
+  auto rhsAst = ast->actual(1);
+
+  ResolvedExpression& lhsRe = rv.byAst(lhsAst);
+  QualifiedType lhsType = lhsRe.type();
+  ResolvedExpression& rhsRe = rv.byAst(rhsAst);
+  QualifiedType rhsType = rhsRe.type();
+
+  if (auto lhsTuple = lhsAst->toTuple()) {
+    resolveTupleUnpackAssign(lhsTuple, ast, lhsType, rhsType, rv);
+  } else {
+    processSingleAssignHelper(ast, lhsAst, rhsAst, lhsType, rhsType, rv);
+  }
+
+  // if (auto lhsTuple = lhsAst->toTuple()) {
+  //   for (int i = 0; i < lhsTuple->numActuals(); i++) {
+  //     auto elt = lhsTuple->actual(i);
+  //     if (lhsType.type() && lhsType.type()->isTupleType() &&
+  //         rhsType.type() && rhsType.type()->isTupleType()) {
+  //       const QualifiedType& useLhsType =
+  //           lhsType.type()->toTupleType()->elementType(i);
+  //       const QualifiedType& useRhsType =
+  //           rhsType.type()->toTupleType()->elementType(i);
+  //       debuggerBreakHere();
+  //       processSingleAssignHelper(ast, elt, rhsAst, useLhsType, useRhsType, rv);
+  //     }
+  //   }
+  // } else {
+  //   processSingleAssignHelper(ast, lhsAst, rhsAst, lhsType, rhsType, rv);
+  // }
+
 }
 void CallInitDeinit::handleOutFormal(const Call* ast,
                                      const AstNode* actual,

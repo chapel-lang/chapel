@@ -61,6 +61,11 @@ struct FindSplitInits : VarScopeVisitor {
 
   void propagateChildToParent(VarFrame* frame, VarFrame* parent, const AstNode* ast);
 
+  void processSingleAssignHelper(const AstNode* lhsAst,
+                                 const AstNode* rhsAst,
+                                 const AstNode* ast,
+                                 RV& rv);
+
   // overrides
   void handleTupleDeclaration(const TupleDecl* ast, RV& rv) override;
   void handleDeclaration(const VarLikeDecl* ast, RV& rv) override;
@@ -217,10 +222,10 @@ void FindSplitInits::handleMention(const Identifier* ast, ID varId, RV& rv) {
   }
 }
 
-void FindSplitInits::handleAssign(const OpCall* ast, RV& rv) {
-  auto lhsAst = ast->actual(0);
-  auto rhsAst = ast->actual(1);
-
+void FindSplitInits::processSingleAssignHelper(const AstNode* lhsAst,
+                                               const AstNode* rhsAst,
+                                               const AstNode* ast,
+                                               RV& rv) {
   ID lhsVarId = refersToId(lhsAst, rv);
   if (!lhsVarId.isEmpty()) {
     // get the type for the rhs
@@ -229,6 +234,20 @@ void FindSplitInits::handleAssign(const OpCall* ast, RV& rv) {
   } else {
     // visit the LHS to check for mentions
     lhsAst->traverse(rv);
+  }
+}
+
+void FindSplitInits::handleAssign(const OpCall* ast, RV& rv) {
+  auto lhsAst = ast->actual(0);
+  auto rhsAst = ast->actual(1);
+
+  if (auto lhsTuple = lhsAst->toTuple()) {
+    debuggerBreakHere();
+    for (auto elt : lhsTuple->actuals()) {
+      processSingleAssignHelper(elt, rhsAst, ast, rv);
+    }
+  } else {
+    processSingleAssignHelper(lhsAst, rhsAst, ast, rv);
   }
 }
 
