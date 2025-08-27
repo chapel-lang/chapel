@@ -2822,7 +2822,7 @@ instantiateSignatureImpl(ResolutionContext* rc,
       // are unambiguous. See also the previous justComputedVarArgType
       // condition and comment above.
       if (entry.isVarArgEntry() && !justComputedVarArgType &&
-          qFormalType.type() != useType.type()) {
+          passResult.converts()) {
         auto vfml = formal->toVarArgFormal();
         CHPL_ASSERT(vfml != nullptr);
         if (vfml->typeExpression() &&
