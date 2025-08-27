@@ -150,7 +150,7 @@ class VarScopeVisitor : public BranchSensitiveVisitor<VarFrame, MutatingResolved
 
   /** Update initedVars if an assignment represents a split-init.
       Returns true if it was a split init. */
-  bool processSplitInitAssign(const OpCall* ast,
+  bool processSplitInitAssign(const AstNode* lhsAst,
                               const std::set<ID>& allSplitInitedVars,
                               RV& rv);
 

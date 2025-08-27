@@ -25,6 +25,7 @@
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/types/Type.h"
 #include "chpl/types/ClassType.h"
+#include "chpl/types/TupleType.h"
 #include "chpl/uast/all-uast.h"
 
 #include "VarScopeVisitor.h"
@@ -68,6 +69,11 @@ struct FindElidedCopies : VarScopeVisitor {
                                   const QualifiedType& rhsType,
                                   const AstNode* ast,
                                   RV& rv);
+  void processSingleAssignHelper(const AstNode* lhsAst,
+                                 const AstNode* rhsAst,
+                                 const QualifiedType& rhsType,
+                                 const AstNode* ast,
+                                 RV& rv);
   static bool lastMentionIsCopy(VarFrame* frame, ID varId);
   static void gatherLastMentionIsCopyVars(VarFrame* frame, std::set<ID>& vars);
   static void addDeclaration(VarFrame* frame, const VarLikeDecl* ast);
@@ -299,13 +305,16 @@ void FindElidedCopies::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
   }
 }
 void FindElidedCopies::handleMention(const Identifier* ast, ID varId, RV& rv) {
+  // if (ast->name() == "tup") debuggerBreakHere();
   VarFrame* frame = currentFrame();
   addMention(frame, varId);
 }
-void FindElidedCopies::handleAssign(const OpCall* ast, RV& rv) {
-  auto lhsAst = ast->actual(0);
-  auto rhsAst = ast->actual(1);
-  bool splitInit = processSplitInitAssign(ast, allSplitInitedVars, rv);
+
+void FindElidedCopies::processSingleAssignHelper(const AstNode* lhsAst,
+                                                 const AstNode* rhsAst,
+                                                 const QualifiedType& rhsType,
+                                                 const AstNode* ast, RV& rv) {
+  bool splitInit = processSplitInitAssign(lhsAst, allSplitInitedVars, rv);
   if (splitInit) {
     VarFrame* frame = currentFrame();
 
@@ -317,7 +326,6 @@ void FindElidedCopies::handleAssign(const OpCall* ast, RV& rv) {
       // check that the types are the same
       if (rv.hasId(lhsVarId) && rv.hasId(rhsVarId)) {
         QualifiedType lhsType = rv.byId(lhsVarId).type();
-        QualifiedType rhsType = rv.byId(rhsVarId).type();
         if (copyElisionAllowedForTypes(lhsType, rhsType, ast, rv)) {
           addCopyInit(frame, rhsVarId, ast->id());
         }
@@ -325,6 +333,27 @@ void FindElidedCopies::handleAssign(const OpCall* ast, RV& rv) {
     }
   } else {
     processMentions(lhsAst, rv);
+  }
+}
+
+void FindElidedCopies::handleAssign(const OpCall* ast, RV& rv) {
+  debuggerBreakHere();
+  auto lhsAst = ast->actual(0);
+  auto rhsAst = ast->actual(1);
+
+  ID rhsVarId = refersToId(rhsAst, rv);
+  const QualifiedType& rhsType = rv.byId(rhsVarId).type();
+  if (auto lhsTuple = lhsAst->toTuple()) {
+    for (int i = 0; i < lhsTuple->numActuals(); i++) {
+      auto elt = lhsTuple->actual(i);
+      if (rhsType.type() && rhsType.type()->isTupleType()) {
+        const QualifiedType& useRhsType =
+            rhsType.type()->toTupleType()->elementType(i);
+        processSingleAssignHelper(elt, rhsAst, useRhsType, ast, rv);
+      }
+    }
+  } else {
+    processSingleAssignHelper(lhsAst, rhsAst, rhsType, ast, rv);
   }
 }
 void FindElidedCopies::handleOutFormal(const Call* ast,
