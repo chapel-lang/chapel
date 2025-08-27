@@ -140,12 +140,12 @@ void VarScopeVisitor::processMentions(const AstNode* ast, RV& rv) {
 }
 
 bool
-VarScopeVisitor::processSplitInitAssign(const OpCall* ast,
+VarScopeVisitor::processSplitInitAssign(const AstNode* lhsAst,
                                         const std::set<ID>& allSplitInitedVars,
                                         RV& rv) {
+  // debuggerBreakHere();
   bool inserted = false;
   auto frame = currentFrame();
-  auto lhsAst = ast->actual(0);
   ID lhsVarId = refersToId(lhsAst, rv);
   if (!lhsVarId.isEmpty() && allSplitInitedVars.count(lhsVarId) > 0) {
     inserted = frame->addToInitedVars(lhsVarId);
