@@ -275,9 +275,15 @@ proc chpl_toExternProcType(type t) type where isProcedureType(t) do
 // locales).
 inline proc chpl_toLocalProc(x: ?t) where chpl_isLocalProc(t) do return x;
 inline proc chpl_toLocalProc(x: ?t) where chpl_isWideProc(t) {
+  use CTypes only c_ptr;
+
+  // Declare extern instead of 'use' to work around circular dependencies.
+  extern proc chpl_dynamicProcIdxToLocalPtr(idx: int(64)): c_ptr(void);
+
   const idx = __primitive("cast", int, x);
   const ptr = chpl_dynamicProcIdxToLocalPtr(idx);
-  return __primitive("cast", chpl_toLocalProcType(t), ptr);
+  const ret = __primitive("cast", chpl_toLocalProcType(t), ptr);
+  return ret;
 }
 
 /*

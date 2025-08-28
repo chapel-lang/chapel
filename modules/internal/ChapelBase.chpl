@@ -86,7 +86,6 @@ module ChapelBase {
   enum iterKind {leader, follower, standalone};
 
   // This flag toggles on the new pointer-based implementation.
-  // It is unstable and experimental.
   config param useProcedurePointers = false;
 
   proc chpl_enableProcPtrs(type t) param {
@@ -190,6 +189,14 @@ module ChapelBase {
   inline operator !=(a: _nilType, b: ?t) where chpl_enableProcPtrs(t) {
     // Fine for either local or wide since 'NULL' is '0'.
     return __primitive("!=", b, 0);
+  }
+  inline operator ==(a: ?t, b: _nilType) where chpl_enableProcPtrs(t) {
+    // Fine for either local or wide since 'NULL' is '0'.
+    return __primitive("==", a, 0);
+  }
+  inline operator ==(a: _nilType, b: ?t) where chpl_enableProcPtrs(t) {
+    // Fine for either local or wide since 'NULL' is '0'.
+    return __primitive("==", b, 0);
   }
 
   inline operator ==(a: ?t1, b: ?t2) where chpl_enableProcPtrs(t1, t2) {
