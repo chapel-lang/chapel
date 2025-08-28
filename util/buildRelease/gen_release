@@ -107,6 +107,7 @@ complete_dirs = [
     "tools/chapel-py",
     "tools/chplcheck",
     "tools/chpl-language-server",
+    "tools/chpl-parallel-dbg",
 ]
 
 
