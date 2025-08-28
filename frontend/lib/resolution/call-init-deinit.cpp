@@ -130,11 +130,11 @@ struct CallInitDeinit : VarScopeVisitor {
                         const QualifiedType& lhsType,
                         const QualifiedType& rhsType,
                         RV& rv);
-  void resolveTupleUnpackAssign(const Tuple* lhsTuple,
-                                const AstNode* astForErr,
-                                const QualifiedType& initialLhsType,
-                                const QualifiedType& rhsType,
-                                RV& rv);
+  void resolveTupleUnpackAssignOrInit(const Tuple* lhsTuple,
+                                      const AstNode* astForErr,
+                                      const QualifiedType& initialLhsType,
+                                      const QualifiedType& rhsType,
+                                      RV& rv);
 
   void processSingleAssignHelper(const OpCall* ast,
                                  const AstNode* lhsAst,
@@ -685,7 +685,7 @@ void CallInitDeinit::resolveTupleInit(const AstNode* ast, const AstNode* rhsAst,
   if (auto tuple = ast->toTuple()) {
     debuggerBreakHere();
     // Initializing variables via tuple destructuring
-    resolveTupleUnpackAssign(tuple, ast, lhsType, rhsType, rv);
+    resolveTupleUnpackAssignOrInit(tuple, ast, lhsType, rhsType, rv);
   } else {
     // Initializing an actual tuple variable, with either another tuple variable
     // or a tuple expression.
@@ -747,11 +747,11 @@ void CallInitDeinit::resolveTupleInit(const AstNode* ast, const AstNode* rhsAst,
   }
 }
 
-void CallInitDeinit::resolveTupleUnpackAssign(const Tuple* lhsTuple,
-                                              const AstNode* astForErr,
-                                              const QualifiedType& initialLhsType,
-                                              const QualifiedType& rhsType,
-                                              RV& rv) {
+void CallInitDeinit::resolveTupleUnpackAssignOrInit(const Tuple* lhsTuple,
+                                                    const AstNode* astForErr,
+                                                    const QualifiedType& initialLhsType,
+                                                    const QualifiedType& rhsType,
+                                                    RV& rv) {
   VarFrame* frame = currentFrame();
 
   if (!validateTuplesForAssignOrInit(astForErr, initialLhsType, rhsType)) {
@@ -777,7 +777,7 @@ void CallInitDeinit::resolveTupleUnpackAssign(const Tuple* lhsTuple,
 
     if (auto innerTuple = actual->toTuple()) {
       // Recurse if the element is a tuple.
-      resolveTupleUnpackAssign(innerTuple, astForErr, lhsEltType, rhsEltType, rv);
+      resolveTupleUnpackAssignOrInit(innerTuple, astForErr, lhsEltType, rhsEltType, rv);
       continue;
     }
 
@@ -812,7 +812,7 @@ void CallInitDeinit::resolveAssign(const AstNode* ast,
         auto lhsTuple = call->actual(0)->toTuple();
         auto& lhsType = rv.byPostorder().byAst(call->actual(0)).type();
         auto& rhsType = rv.byPostorder().byAst(call->actual(1)).type();
-        resolveTupleUnpackAssign(lhsTuple, call, lhsType, rhsType, rv);
+        resolveTupleUnpackAssignOrInit(lhsTuple, call, lhsType, rhsType, rv);
         return;
       }
     }
@@ -1365,7 +1365,7 @@ void CallInitDeinit::handleAssign(const OpCall* ast, RV& rv) {
   QualifiedType rhsType = rhsRe.type();
 
   if (auto lhsTuple = lhsAst->toTuple()) {
-    resolveTupleUnpackAssign(lhsTuple, ast, lhsType, rhsType, rv);
+    resolveTupleUnpackAssignOrInit(lhsTuple, ast, lhsType, rhsType, rv);
   } else {
     processSingleAssignHelper(ast, lhsAst, rhsAst, lhsType, rhsType, rv);
   }
