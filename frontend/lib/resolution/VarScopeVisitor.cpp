@@ -167,11 +167,11 @@ VarScopeVisitor::processSplitInitOut(const Call* ast,
   return inserted;
 }
 
-bool VarScopeVisitor::processDeclarationInit(const VarLikeDecl* ast, RV& rv) {
+bool VarScopeVisitor::processDeclarationInit(const NamedDecl* lhsAst, const AstNode* initExpression, RV& rv) {
   auto frame = currentFrame();
   bool inserted = false;
-  if (ast->initExpression() != nullptr) {
-    inserted = frame->addToInitedVars(ast->id());
+  if (initExpression) {
+    inserted = frame->addToInitedVars(lhsAst->id());
   }
   return inserted;
 }
