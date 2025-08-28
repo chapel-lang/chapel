@@ -2349,6 +2349,31 @@ static void testTupleFormalWithDefault() {
   assert(qt.type()->isIntType());
 }
 
+// regression test. For generic types that used their type parameter
+// as an argument to a 'new' of another type, while computing their generic
+// type, we'd end up resolving 'new C(unknown)', which caused issues. Now, as
+// in other cases like 'foo(unknown)', we skip resolving such calls.
+static void testSkipUnknownInNew() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto qt = resolveTypeOfXInit(context,
+    R"""(
+    class C {
+      type argT;
+    }
+
+    record R {
+      type argT;
+      var myC = new unmanaged C(argT);
+    }
+
+    var x = new R(int);
+  )""");
+  assert(!qt.isUnknownOrErroneous());
+  assert(qt.type()->isRecordType());
+}
+
 int main() {
   test1();
   test2();
@@ -2411,6 +2436,8 @@ int main() {
 
   testAnyPod();
   testTupleFormalWithDefault();
+
+  testSkipUnknownInNew();
 
   return 0;
 }
