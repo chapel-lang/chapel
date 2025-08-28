@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+
+#
+# Copyright 2025-2025 Hewlett Packard Enterprise Development LP
+# Other additional copyright holders may be indicated within.
+#
+# The entirety of this work is licensed under the Apache License,
+# Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License.
+#
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+executable=$1
+shift
+numLocales=$1
+shift
+
+if [ -z "$executable" ] || [ -z "$numLocales" ]; then
+  echo "Usage: $0 <executable> <numLocales> [<lldb options>...]"
+  exit 1
+fi
+
+real_name=$executable
+if [ -f "${real_name}_real" ]; then
+  real_name="${real_name}_real"
+fi
+
+
+if [ ! -n "$CHPL_HOME" ]; then
+  CHPL_HOME=$(chpl --print-chpl-home)
+  if [ -z "$CHPL_HOME" ]; then
+    echo "CHPL_HOME is not set and could not be determined."
+    exit 1
+  fi
+fi
+commands_file="$CHPL_HOME/runtime/etc/debug/chpl_parallel_dbg_commands.py"
+
+lldb \
+  -o "command script import '$commands_file'" \
+  -o "connect $real_name $numLocales" \
+  $@
