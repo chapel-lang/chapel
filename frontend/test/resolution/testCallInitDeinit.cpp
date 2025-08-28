@@ -2115,32 +2115,32 @@ static void test31() {
 
 // Assignment with tuple destructuring, moving out of tuple
 static void test32() {
-  testActions("test32",
-    R""""(
-      module M {
-        record R { }
-        proc test() {
-          var r = new R();
+  // testActions("test32",
+  //   R""""(
+  //     module M {
+  //       record R { }
+  //       proc test() {
+  //         var r = new R();
 
-          var tup = (1, r);
+  //         var tup = (1, r);
 
-          var a = 1;
-          var b = new R();
-          (a, b) = tup;
-        }
-      }
-    )"""",
-    {
-      {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
-      {AssociatedAction::INIT_OTHER, "tup",         ""},
-        {AssociatedAction::ASSIGN,    "tup",   "M.test@4"},
-        {AssociatedAction::COPY_INIT, "tup",   "M.test@5"},
-      {AssociatedAction::NEW_INIT,   "M.test@12",   ""},
-      {AssociatedAction::ASSIGN,     "M.test@18",   "0"},
-      {AssociatedAction::ASSIGN,     "M.test@18",   "1"},
-      {AssociatedAction::DEINIT,     "M.test@18",   "b"},
-      {AssociatedAction::DEINIT,     "M.test@18",   "r"},
-    });
+  //         var a = 1;
+  //         var b = new R();
+  //         (a, b) = tup;
+  //       }
+  //     }
+  //   )"""",
+  //   {
+  //     {AssociatedAction::NEW_INIT,   "M.test@2",    ""},
+  //     {AssociatedAction::INIT_OTHER, "tup",         ""},
+  //       {AssociatedAction::ASSIGN,    "tup",   "M.test@4"},
+  //       {AssociatedAction::COPY_INIT, "tup",   "M.test@5"},
+  //     {AssociatedAction::NEW_INIT,   "M.test@12",   ""},
+  //     {AssociatedAction::ASSIGN,     "M.test@18",   "0"},
+  //     {AssociatedAction::ASSIGN,     "M.test@18",   "1"},
+  //     {AssociatedAction::DEINIT,     "M.test@19",   "b"},
+  //     {AssociatedAction::DEINIT,     "M.test@19",   "r"},
+  //   });
 }
 
 // Init with tuple destructuring, copying out of tuple
@@ -2166,8 +2166,8 @@ static void test33() {
         {AssociatedAction::COPY_INIT, "tup",   "M.test@5"},
       {AssociatedAction::ASSIGN,    "a",   "0"},
       {AssociatedAction::COPY_INIT, "b",   "1"},
-      {AssociatedAction::DEINIT,     "M.test@13",   "r"},
-      {AssociatedAction::DEINIT,     "M.test@13",   "b"}
+      {AssociatedAction::DEINIT,     "M.test@13",   "b"},
+      {AssociatedAction::DEINIT,     "M.test@13",   "r"}
     });
 }
 

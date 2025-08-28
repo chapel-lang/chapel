@@ -162,7 +162,9 @@ class VarScopeVisitor : public BranchSensitiveVisitor<VarFrame, MutatingResolved
                            RV& rv);
 
   /** Update initedVars for a declaration with an initExpression. */
-  bool processDeclarationInit(const VarLikeDecl* ast, RV& rv);
+  bool processDeclarationInit(const NamedDecl* lhsAst,
+                              const AstNode* initExpression,
+                              RV& rv);
 
   /** Returns the return or yield type of the function being processed */
   const types::QualifiedType& returnOrYieldType();
