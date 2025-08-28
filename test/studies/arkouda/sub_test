@@ -240,7 +240,7 @@ if [ ${CHPL_TEST_ARKOUDA_STOP_AFTER_BUILD} = "false" ]; then
     benchmark_data=benchmark_v2/data/benchmark_stats_$(date +%Y%m%d_%H%M%S).json
     mkdir -p benchmark_v2/data
     benchmark_opts="--benchmark-autosave --benchmark-storage=file://benchmark_v2/.benchmarks --size=$benchmark_size --benchmark-json=$benchmark_data"
-    if [ -n "$ARKOUDA_DEFAULT_TEMP_DIRECTORY" ] ; then
+    if [[ -n "$ARKOUDA_DEFAULT_TEMP_DIRECTORY" ]]; then
       benchmark_opts="${benchmark_opts} --io_path=$ARKOUDA_DEFAULT_TEMP_DIRECTORY/ak_io_benchmark"
     fi
     # TODO why doesn't trials work?
