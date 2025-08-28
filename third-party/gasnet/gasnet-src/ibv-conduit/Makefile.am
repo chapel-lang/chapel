@@ -81,7 +81,9 @@ CONDUIT_FILELIST =               \
       gasnet_extended.c          \
       gasnet_extended_fwd.h      \
       gasnet_firehose.c          \
+      gasnet_ratomic.c           \
       gasnet_ibv.h               \
+      gasnet_ratomic_fwd.h       \
       firehose_fwd.h             
 
 # list of conduit core and extended .c source files 
@@ -93,6 +95,7 @@ CONDUIT_SOURCELIST =                 \
       $(srcdir)/gasnet_core_thread.c \
       $(srcdir)/gasnet_extended.c    \
       $(srcdir)/gasnet_firehose.c    \
+      $(srcdir)/gasnet_ratomic.c     \
       $(fh_sourcelist) \
       $(hwloc_sources) \
       $(ssh_sources) $(pmi_sources)

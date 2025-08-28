@@ -240,6 +240,16 @@ GASNet-EX to perform such transfers.
 For the most up-to-date information on this issue see
 [bug 4149](https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4149)
 
+## CUDA Primary Context
+
+The current implementation of CUDA_UVA memory kinds uses the device's primary
+context for any GASNet-allocated segments, and requires that client-allocated
+CUDA device memory passed to `gex_Segment_Create()` be associated with the
+device's primary context.
+
+This limitation is not part of the specification, and may be relaxed in a future
+release.
+
 ## Small Gets into CUDA memory on supported InfiniBand hardware
 
 As documented

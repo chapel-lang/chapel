@@ -305,7 +305,7 @@ gasnetc_segment_exchange(gex_TM_t tm, gex_EP_t *eps, size_t num_eps)
   // Count/allocate local space
   size_t local_bytes = 0;
   for (gex_Rank_t i = 0; i < num_eps; ++i) {
-    gasnetc_Segment_t segment = (gasnetc_Segment_t) gasneti_import_ep(eps[i])->_segment;
+    gasnetc_Segment_t segment = (gasnetc_Segment_t) gasneti_import_ep_valid(eps[i])->_segment;
     if (!segment || !segment->_size) continue;
     gasnetc_mem_info_t* mem_info = segment->mem_info;
     gasneti_assert(mem_info);
@@ -319,7 +319,7 @@ gasnetc_segment_exchange(gex_TM_t tm, gex_EP_t *eps, size_t num_eps)
   // Pack
   size_t offset = 0;
   for (gex_Rank_t i = 0; i < num_eps; ++i) {
-    gasnetc_Segment_t segment = (gasnetc_Segment_t) gasneti_import_ep(eps[i])->_segment;
+    gasnetc_Segment_t segment = (gasnetc_Segment_t) gasneti_import_ep_valid(eps[i])->_segment;
     if (!segment || !segment->_size) continue;
     gasnetc_mem_info_t* mem_info = segment->mem_info;
     gasneti_assert(mem_info);
@@ -797,7 +797,7 @@ int gasnetc_segment_create_hook(gex_Segment_t e_segment)
 {
 #if GASNETC_PIN_SEGMENT
   // Register the segment
-  gasnetc_Segment_t segment = (gasnetc_Segment_t) gasneti_import_segment(e_segment);
+  gasnetc_Segment_t segment = (gasnetc_Segment_t) gasneti_import_segment_valid(e_segment);
   segment->mem_info = gasnetc_segment_register(segment->_addr, segment->_size);
   if (! segment->mem_info) {
     // TODO: non-fatal error handling:
@@ -1632,19 +1632,11 @@ extern int gasnetc_AMRequestShortM(
   return retval;
 }
 
-#if !GASNET_NATIVE_NP_ALLOC_REQ_MEDIUM // (###)
+#if GASNET_NATIVE_NP_ALLOC_REQ_MEDIUM
 
-// This provides a template implementing the following two external functions:
-//     int gasnetc_AMRequestMediumV()
-//     int gasnetc_AMRequestMediumM()
-//
-// In this example both are in terms of a common inline function:
-//     int gasnetc_AMRequestMedium()
-// but that is not a requirement.
-//
-// This approach is suitable if your client does not wish to implement the
-// Prepare and Commit required to provide a conduit-specialized implementation
-// of Negotiated-Payload AMs.
+#error gasnetc_AM_PrepareRequestMedium unimplemented
+
+#else
 
 GASNETI_INLINE(gasnetc_AMRequestMedium)
 int gasnetc_AMRequestMedium(gex_TM_t tm, gex_Rank_t rank, gex_AM_Index_t handler,
@@ -1699,175 +1691,6 @@ extern int gasnetc_AMRequestMediumM(
   return retval;
 }
 
-#else // GASNET_NATIVE_NP_ALLOC_REQ_MEDIUM
-
-// This provides a template implementing the following three external functions:
-//     int gasnetc_AMRequestMediumM()
-//     int gasnetc_AM_PrepareRequestMedium()
-//     void gasnetc_AM_CommitRequestMediumM()
-//
-// In this example all three are in terms of two inline functions:
-//     int gasnetc_prepare_req_medium()
-//     void gasnetc_commit_req_medium()
-// but that is not a requirement.
-//
-// This example provides a specialized implementation of Negotiated-Payload
-// RequestMedium (by providing gasnetc_AM_PrepareRequestMedium() and
-// gasnetc_AM_CommitRequestMediumM()) and one must
-//    #define GASNET_NATIVE_NP_ALLOC_REQ_MEDIUM 1
-// in the conduit's gasnet_core_fwd.h to disable (conflicting) definitions in
-// the reference implementation.
-
-GASNETI_INLINE(gasnetc_prepare_req_medium)
-int gasnetc_prepare_req_medium(
-                       gasneti_AM_SrcDesc_t    sd,
-                       const int               isFixed,
-                       gex_TM_t                tm,
-                       gex_Rank_t              rank,
-                       const void             *client_buf,
-                       size_t                  least_payload,
-                       size_t                  most_payload,
-                       gex_Event_t            *lc_opt,
-                       gex_Flags_t             flags,
-                       unsigned int            nargs
-                       GASNETI_THREAD_FARG)
-{
-  // (###) Add code here to allocate resources (possibly unsuccessfully, if
-  // flags includes GEX_FLAG_IMMEDIATE) for a Medium Request, storing arguments
-  // in either the conduit-specific header or in the 'sd'.
-
-  // No provisions are needed for communication within the neighborhood,
-  // since this function is only called in the non-nbrhd case.
-
-  // In this example:
-  // + isFixed is 0 when called from gasnetc_AM_PrepareRequestMedium, and
-  //   all other arguments are passed unchanged
-  // + isFixed is 1 when called from gasnetc_AMRequestMediumM, and
-  //   - client_buf is the source_buf argument to gasnetc_AMRequestMediumM
-  //   - least_payload is unused
-  //   - most_payload is the nbytes argument to gasnetc_AMRequestMediumM
-
-  return 0; // or 1 if GEX_FLAG_IMMEDIATE passed and resource(s) unavailable
-}
-
-GASNETI_INLINE(gasnetc_commit_req_medium)
-void gasnetc_commit_req_medium(
-                       gasneti_AM_SrcDesc_t    sd,
-                       const int               isFixed,
-                       gex_AM_Index_t          handler,
-                       size_t                  nbytes,
-                       va_list                 argptr)
-{
-  // (###) Add code here to initiate a Medium Request using the union of the
-  // arguments, and the values stored in 'sd' by the preceding call to
-  // gasnetc_prepare_req_medium() or in locations referenced by 'sd'.
-
-  // No provisions are needed for communication within the neighborhood,
-  // since this function is only called in the non-nbrhd case.
-}
-
-extern int gasnetc_AMRequestMediumM(
-                    gex_TM_t tm,                      /* local context */
-                    gex_Rank_t rank,                  /* with tm, defines remote context */
-                    gex_AM_Index_t handler,           /* index into destination ep's handler table */
-                    void *source_addr, size_t nbytes, /* data payload */
-                    gex_Event_t *lc_opt,              /* local completion of payload */
-                    gex_Flags_t flags
-                    GASNETI_THREAD_FARG,
-                    int numargs, ...) {
-  GASNETI_COMMON_AMREQUESTMEDIUM(tm,rank,handler,source_addr,nbytes,lc_opt,flags,numargs);
-  GASNETC_IMMEDIATE_MAYBE_POLL(flags); /* (###) poll at least once, to assure forward progress */
-
-  va_list argptr;
-  va_start(argptr, numargs);
-
-  int retval;
-  gex_Rank_t jobrank = gasneti_e_tm_rank_to_jobrank(tm, jobrank);
-  if (GASNETI_NBRHD_JOBRANK_IS_LOCAL(jobrank)) {
-    gasneti_leaf_finish(lc_opt); // synchronous LC
-    retval = gasnetc_nbrhd_RequestGeneric(gasneti_Medium, jobrank, handler,
-                                          source_addr, nbytes, NULL,
-                                          flags, numargs, argptr GASNETI_THREAD_PASS);
-  } else {
-    struct gasneti_AM_SrcDesc the_sd;
-    retval = gasnetc_prepare_req_medium(&the_sd,1,jobrank,source_addr,0,nbytes,
-                                        lc_opt,flags,numargs GASNETI_THREAD_PASS);
-    if (!retval) {
-      gasnetc_commit_req_medium(&the_sd,1,handler,nbytes,argptr);
-    }
-  }
-
-  va_end(argptr);
-  return retval;
-}
-
-extern gex_AM_SrcDesc_t gasnetc_AM_PrepareRequestMedium(
-                       gex_TM_t           tm,
-                       gex_Rank_t         rank,
-                       const void        *client_buf,
-                       size_t             least_payload,
-                       size_t             most_payload,
-                       gex_Event_t       *lc_opt,
-                       gex_Flags_t        flags
-                       GASNETI_THREAD_FARG,
-                       unsigned int       nargs)
-{
-    GASNETI_TRACE_PREP_REQUESTMEDIUM(tm,rank,client_buf,least_payload,most_payload,flags,nargs);
-
-    gasneti_AM_SrcDesc_t sd = gasneti_init_request_srcdesc(GASNETI_THREAD_PASS_ALONE);
-    GASNETI_COMMON_PREP_REQ(sd,tm,rank,client_buf,least_payload,most_payload,NULL,lc_opt,flags,nargs,Medium);
-
-    GASNETC_IMMEDIATE_MAYBE_POLL(flags); /* (###) poll at least once, to assure forward progress */
-
-    flags &= ~(GEX_FLAG_AM_PREPARE_LEAST_CLIENT | GEX_FLAG_AM_PREPARE_LEAST_ALLOC);
-    gex_Rank_t jobrank = gasneti_e_tm_rank_to_jobrank(tm, rank);
-
-    if (GASNETI_NBRHD_JOBRANK_IS_LOCAL(jobrank)) {
-        sd = gasnetc_nbrhd_PrepareRequest(sd, gasneti_Medium, jobrank,
-                                           client_buf, least_payload, most_payload,
-                                           NULL, lc_opt, flags, nargs);
-    } else {
-        int imm;
-        imm = gasnetc_prepare_req_medium(sd,0,jobrank,client_buf,least_payload,most_payload,
-                                         lc_opt,flags,nargs GASNETI_THREAD_PASS);
-        if (imm) {
-            gasneti_reset_srcdesc(sd);
-            sd = NULL; // GEX_AM_SRCDESC_NO_OP
-        } else {
-            gasneti_init_sd_poison(sd);
-            sd->_is_nbrhd = 0;
-        }
-    }
-
-    GASNETI_TRACE_PREP_RETURN(REQUEST_MEDIUM, sd);
-    GASNETI_CHECK_SD(client_buf, least_payload, most_payload, sd);
-    return gasneti_export_srcdesc(sd);
-}
-
-extern void gasnetc_AM_CommitRequestMediumM(
-                       gex_AM_Index_t          handler,
-                       size_t                  nbytes
-                       GASNETI_THREAD_FARG,
-                     #if GASNET_DEBUG
-                       unsigned int            nargs_arg,
-                     #endif
-                       gex_AM_SrcDesc_t        sd_arg, ...)
-{
-    gasneti_AM_SrcDesc_t sd = gasneti_import_srcdesc(sd_arg);
-
-    GASNETI_COMMON_COMMIT_REQ(sd,handler,nbytes,NULL,nargs_arg,Medium);
-
-    va_list argptr;
-    va_start(argptr, sd_arg);
-    if (sd->_is_nbrhd) {
-        gasnetc_nbrhd_CommitRequest(sd, gasneti_Medium, handler, nbytes, NULL, argptr);
-    } else {
-        gasnetc_commit_req_medium(sd,handler,nbytes,argptr);
-    }
-    va_end(argptr);
-
-    gasneti_reset_srcdesc(sd);
-}
 #endif // GASNET_NATIVE_NP_ALLOC_REQ_MEDIUM
 
 GASNETI_INLINE(gasnetc_AMRequestLong)
@@ -1961,7 +1784,11 @@ extern int gasnetc_AMReplyShortM(
   return retval;
 }
 
-#if !GASNET_NATIVE_NP_ALLOC_REP_MEDIUM // (###)
+#if GASNET_NATIVE_NP_ALLOC_REP_MEDIUM
+
+#error gasnetc_AM_PrepareReplyMedium unimplemented
+
+#else
 
 // This provides a template implementing the following two external functions:
 //     int gasnetc_AMReplyMediumV()
@@ -2016,160 +1843,6 @@ extern int gasnetc_AMReplyMediumM(
   int retval = gasnetc_AMReplyMedium(token,handler,source_addr,nbytes,lc_opt,flags,numargs,argptr);
   va_end(argptr);
   return retval;
-}
-
-#else // GASNET_NATIVE_NP_ALLOC_REP_MEDIUM
-
-// This provides a template implementing the following three external functions:
-//     int gasnetc_AMReplyMediumM()
-//     int gasnetc_AM_PrepareReplyMedium()
-//     void gasnetc_AM_CommitReplyMediumM()
-// See comments with GASNET_NATIVE_NP_ALLOC_REQ_MEDIUM for more information.
-
-GASNETI_INLINE(gasnetc_prepare_rep_medium)
-int gasnetc_prepare_rep_medium(
-                       gasneti_AM_SrcDesc_t    sd,
-                       const int               isFixed,
-                       gex_Token_t             token,
-                       const void             *client_buf,
-                       size_t                  least_payload,
-                       size_t                  most_payload,
-                       gex_Event_t            *lc_opt,
-                       gex_Flags_t             flags,
-                       unsigned int            nargs
-                       GASNETI_THREAD_FARG)
-{
-  // (###) Add code here to allocate resources (possibly unsuccessfully, if
-  // flags includes GEX_FLAG_IMMEDIATE) for a Medium Reply, storing arguments
-  // in either the conduit-specific header or in the 'sd'.
-
-  // No provisions are needed for communication within the neighborhood,
-  // since this function is only called in the non-nbrhd case.
-
-  // In this example:
-  // + isFixed is 0 when called from gasnetc_AM_PrepareReplyMedium, and
-  //   all other arguments are passed unchanged
-  // + isFixed is 1 when called from gasnetc_AMReplyMediumM, and
-  //   - client_buf is the source_buf argument to gasnetc_AMReplyMediumM
-  //   - least_payload is unused
-  //   - most_payload is the nbytes argument to gasnetc_AMReplyMediumM
-
-  return 0; // or 1 if GEX_FLAG_IMMEDIATE passed and resource(s) unavailable
-}
-
-GASNETI_INLINE(gasnetc_commit_rep_medium)
-void gasnetc_commit_rep_medium(
-                       gasneti_AM_SrcDesc_t    sd,
-                       const int               isFixed,
-                       gex_AM_Index_t          handler,
-                       size_t                  nbytes,
-                       va_list                 argptr)
-{
-  // (###) Add code here to initiate a Medium Reply using the union of the
-  // arguments, and the values stored in 'sd' by the preceding call to
-  // gasnetc_prepare_req_medium() or in locations referenced by 'sd'.
-
-  // No provisions are needed for communication within the neighborhood,
-  // since this function is only called in the non-nbrhd case.
-}
-
-extern int gasnetc_AMReplyMediumM(
-                    gex_Token_t token,                /* token provided on handler entry */
-                    gex_AM_Index_t handler,           /* index into destination ep's handler table */
-                    void *source_addr, size_t nbytes, /* data payload */
-                    gex_Event_t *lc_opt,              /* local completion of payload */
-                    gex_Flags_t flags,
-                    int numargs, ...) {
-  GASNETI_COMMON_AMREPLYMEDIUM(token,handler,source_addr,nbytes,lc_opt,flags,numargs);
-
-  va_list argptr;
-  va_start(argptr, numargs);
-
-  int retval;
-  if_pt (gasnetc_token_in_nbrhd(token)) {
-    gasneti_leaf_finish(lc_opt); // synchronous LC
-    retval = gasnetc_nbrhd_ReplyGeneric(gasneti_Medium, token, handler,
-                                        source_addr, nbytes, NULL,
-                                        flags, numargs, argptr);
-  } else {
-    // (###) post threadinfo extracted from token, or call GASNET_BEGIN_FUNCTION() instead:
-    //GASNET_POST_THREADINFO(###);
-
-    struct gasneti_AM_SrcDesc the_sd;
-    retval = gasnetc_prepare_rep_medium(&the_sd,1,token,source_addr,0,nbytes,
-                                        lc_opt,flags,numargs GASNETI_THREAD_PASS);
-    if (!retval) {
-      gasnetc_commit_rep_medium(&the_sd,1,handler,nbytes,argptr);
-    }
-  }
-
-  va_end(argptr);
-  return retval;
-}
-
-extern gex_AM_SrcDesc_t gasnetc_AM_PrepareReplyMedium(
-                       gex_Token_t        token,
-                       const void        *client_buf,
-                       size_t             least_payload,
-                       size_t             most_payload,
-                       gex_Event_t       *lc_opt,
-                       gex_Flags_t        flags
-                       unsigned int       nargs)
-{
-    GASNETI_TRACE_PREP_REPLYMEDIUM(token,client_buf,least_payload,most_payload,flags,nargs);
-
-    gasneti_AM_SrcDesc_t sd;
-    flags &= ~(GEX_FLAG_AM_PREPARE_LEAST_CLIENT | GEX_FLAG_AM_PREPARE_LEAST_ALLOC);
-
-    if (gasnetc_token_in_nbrhd(token)) {
-        sd = gasnetc_nbrhd_PrepareReply(gasneti_Medium, token,
-                                         client_buf, least_payload, most_payload,
-                                         NULL, lc_opt, flags, nargs);
-    } else {
-        // (###) post threadinfo extracted from token, or call GASNET_BEGIN_FUNCTION() instead:
-        //GASNET_POST_THREADINFO(###);
-        sd = gasneti_init_reply_srcdesc(GASNETI_THREAD_PASS_ALONE);
-        GASNETI_COMMON_PREP_REP(sd,token,client_buf,least_payload,most_payload,NULL,lc_opt,flags,nargs,Medium);
-
-        int imm;
-        imm = gasnetc_prepare_rep_medium(sd,0,token,client_buf,least_payload,most_payload,
-                                        lc_opt,flags,nargs GASNETI_THREAD_PASS);
-        if (imm) {
-            gasneti_reset_srcdesc(sd);
-            sd = NULL; // GEX_AM_SRCDESC_NO_OP
-        } else {
-            gasneti_init_sd_poison(sd);
-            sd->_is_nbrhd = 0;
-        }
-    }
-
-    GASNETI_TRACE_PREP_RETURN(REPLY_MEDIUM, sd);
-    GASNETI_CHECK_SD(client_buf, least_payload, most_payload, sd);
-    return gasneti_export_srcdesc(sd);
-}
-
-extern void gasnetc_AM_CommitReplyMediumM(
-                       gex_AM_Index_t          handler,
-                       size_t                  nbytes,
-                     #if GASNET_DEBUG
-                       unsigned int            nargs_arg,
-                     #endif
-                       gex_AM_SrcDesc_t        sd_arg, ...)
-{
-    gasneti_AM_SrcDesc_t sd = gasneti_import_srcdesc(sd_arg);
-
-    GASNETI_COMMON_COMMIT_REP(sd,handler,nbytes,NULL,nargs_arg,Medium);
-
-    va_list argptr;
-    va_start(argptr, sd_arg);
-    if (sd->_is_nbrhd) {
-        gasnetc_nbrhd_CommitReply(sd, gasneti_Medium, handler, nbytes, NULL, argptr);
-    } else {
-        gasnetc_commit_rep_medium(sd,0,handler,nbytes,argptr);
-    }
-    va_end(argptr);
-
-    gasneti_reset_srcdesc(sd);
 }
 
 #endif // GASNET_NATIVE_NP_ALLOC_REP_MEDIUM

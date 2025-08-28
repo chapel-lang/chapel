@@ -1278,7 +1278,7 @@ extern const char *AMMPI_DumpStatistics(void *_fp, ammpi_stats_t *stats, int glo
       : 0.0);
 
   /* batch lines together to improve chance of output together */
-  sprintf(msg, 
+  (sprintf)(msg, 
     " Requests: %8"PRIu64" sent, %8"PRIu64" received\n"
     " Replies:  %8"PRIu64" sent, %8"PRIu64" received\n"
     " Returned messages:%2"PRIu64"\n"

@@ -68,7 +68,7 @@ AMUDP has a few notable departures from the AM-2 specification:
 
 Change Log
 ----------
-AMUDP 3.21 (PENDING)
+AMUDP 3.21 (08/2025)
 - Allow zero-byte Long AMs without validation of address against segment bounds,
   aligning the behavior with the GASNet-EX specification where the AM-2
   specification leaves the behavior in such cases unspecified.

@@ -71,8 +71,8 @@ void doGet(gex_Flags_t imm_flag);
 
 int main(int argc, char **argv) {
   gex_AM_Entry_t htable[] = { 
-    { hidx_expect_dec_handler, expect_dec_handler, GEX_FLAG_AM_REQREP|GEX_FLAG_AM_MEDLONG, 0 },
-    { hidx_expect_set_handler, expect_set_handler, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_MEDIUM, 0 }
+    { hidx_expect_dec_handler, (gex_AM_Fn_t)expect_dec_handler, GEX_FLAG_AM_REQREP|GEX_FLAG_AM_MEDLONG, 0 },
+    { hidx_expect_set_handler, (gex_AM_Fn_t)expect_set_handler, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_MEDIUM, 0 }
   };
 
   GASNET_Safe(gex_Client_Init(&myclient, &myep, &myteam, "testimm", &argc, &argv, 0));

@@ -1105,7 +1105,7 @@ extern const char *AMUDP_DumpStatistics(void *_fp, amudp_stats_t *stats, int glo
   }
 
   /* batch lines together to improve chance of output together */
-  snprintf(msg, sizeof(msg),
+  (snprintf)(msg, sizeof(msg),
     " Requests: %8" PRIu64 " sent, %4" PRIu64 " retransmitted, %8" PRIu64 " received\n"
     " Replies:  %8" PRIu64 " sent, %4" PRIu64 " retransmitted, %8" PRIu64 " received, %4" PRIu64 " squashed\n"
     " Returned messages:   %8" PRIu64 "\n"

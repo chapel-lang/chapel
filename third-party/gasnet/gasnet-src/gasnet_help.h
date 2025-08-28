@@ -475,7 +475,7 @@ GASNETI_INLINE(_gasneti_in_segment_t)
 int _gasneti_in_segment_t(const void *_ptr, size_t _nbytes, const gex_Segment_t _segment) {
   gasneti_assert(_nbytes); // precondition to avoid "fence post" error at top of segment
   uintptr_t _uptr = (uintptr_t)_ptr;
-  gasneti_Segment_t _i_seg = gasneti_import_segment(_segment);
+  gasneti_Segment_t _i_seg = gasneti_import_segment_valid(_segment);
   return (_uptr >= (uintptr_t)(_i_seg->_addr) && (_uptr + _nbytes) <= (uintptr_t)_i_seg->_ub);
 }
 
@@ -2065,25 +2065,25 @@ GASNETI_PUREP(gasneti_pshm_aux2local)
 
 #define GASNETI_AMNUMARGS(...) GASNETI_AMNUMARGS_(__VA_ARGS__,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0,0)
 #define GASNETI_AMNUMARGS_(_0,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,N,...) N
-#define GASNETI_AMVA(_stem,...) _CONCAT(gex_AM_##_stem,GASNETI_AMNUMARGS(__VA_ARGS__))
+#define GASNETI_AMVA(_stem,_suff,...) _CONCAT(_CONCAT(gex_AM_##_stem,GASNETI_AMNUMARGS(__VA_ARGS__)),_suff)
 
 #define                gex_AM_RequestShort(tm,rank,hidx,...) \
-        GASNETI_AMVA(RequestShort,__VA_ARGS__)(tm,rank,hidx,__VA_ARGS__)
+        GASNETI_AMVA(RequestShort,,__VA_ARGS__)(tm,rank,hidx,__VA_ARGS__)
 
 #define                gex_AM_RequestMedium(tm,rank,hidx,src_addr,nbytes,lc_opt,...) \
-        GASNETI_AMVA(RequestMedium,__VA_ARGS__)(tm,rank,hidx,src_addr,nbytes,lc_opt,__VA_ARGS__)
+        GASNETI_AMVA(RequestMedium,,__VA_ARGS__)(tm,rank,hidx,src_addr,nbytes,lc_opt,__VA_ARGS__)
 
 #define                gex_AM_RequestLong(tm,rank,hidx,src_addr,nbytes,dst_addr,lc_opt,...) \
-        GASNETI_AMVA(RequestLong,__VA_ARGS__)(tm,rank,hidx,src_addr,nbytes,dst_addr,lc_opt,__VA_ARGS__)
+        GASNETI_AMVA(RequestLong,,__VA_ARGS__)(tm,rank,hidx,src_addr,nbytes,dst_addr,lc_opt,__VA_ARGS__)
 
 #define                gex_AM_ReplyShort(token,hidx,...) \
-        GASNETI_AMVA(ReplyShort,__VA_ARGS__)(token,hidx,__VA_ARGS__)
+        GASNETI_AMVA(ReplyShort,,__VA_ARGS__)(token,hidx,__VA_ARGS__)
 
 #define                gex_AM_ReplyMedium(token,hidx,src_addr,nbytes,lc_opt,...) \
-        GASNETI_AMVA(ReplyMedium,__VA_ARGS__)(token,hidx,src_addr,nbytes,lc_opt,__VA_ARGS__)
+        GASNETI_AMVA(ReplyMedium,,__VA_ARGS__)(token,hidx,src_addr,nbytes,lc_opt,__VA_ARGS__)
 
 #define                gex_AM_ReplyLong(token,hidx,src_addr,nbytes,dst_addr,lc_opt,...) \
-        GASNETI_AMVA(ReplyLong,__VA_ARGS__)(token,hidx,src_addr,nbytes,dst_addr,lc_opt,__VA_ARGS__)
+        GASNETI_AMVA(ReplyLong,,__VA_ARGS__)(token,hidx,src_addr,nbytes,dst_addr,lc_opt,__VA_ARGS__)
 
 /* Similarly provide argument-counting convenience wrappers for gex_AM_Commit{Request,Reply}{Medium,Long}, 
  * with the same pre-requisites as above (compiler must support C99 __VA_ARGS__).
@@ -2092,13 +2092,26 @@ GASNETI_PUREP(gasneti_pshm_aux2local)
  * within the __VA_ARGS__, for the same reasons.
  */
 #define gex_AM_CommitRequestMedium(sd,hidx,...) \
-        GASNETI_AMVA(CommitRequestMedium,__VA_ARGS__)(sd,hidx,__VA_ARGS__)
+        GASNETI_AMVA(CommitRequestMedium,,__VA_ARGS__)(sd,hidx,__VA_ARGS__)
 #define gex_AM_CommitReplyMedium(sd,hidx,...) \
-        GASNETI_AMVA(CommitReplyMedium,__VA_ARGS__)(sd,hidx,__VA_ARGS__)
+        GASNETI_AMVA(CommitReplyMedium,,__VA_ARGS__)(sd,hidx,__VA_ARGS__)
 #define gex_AM_CommitRequestLong(sd,hidx,nbytes,...) \
-        GASNETI_AMVA(CommitRequestLong,__VA_ARGS__)(sd,hidx,nbytes,__VA_ARGS__)
+        GASNETI_AMVA(CommitRequestLong,,__VA_ARGS__)(sd,hidx,nbytes,__VA_ARGS__)
 #define gex_AM_CommitReplyLong(sd,hidx,nbytes,...) \
-        GASNETI_AMVA(CommitReplyLong,__VA_ARGS__)(sd,hidx,nbytes,__VA_ARGS__)
+        GASNETI_AMVA(CommitReplyLong,,__VA_ARGS__)(sd,hidx,nbytes,__VA_ARGS__)
+
+/* Arg-counting macros for the "Commit v2" APIs differ in their need to place
+ * "_v2" after the argumument count.
+ * Additionally, the last non-variadic argument is commit_flags
+ */
+#define gex_AM_CommitRequestMedium_v2(sd,hidx,nbytes,...) \
+        GASNETI_AMVA(CommitRequestMedium,_v2,__VA_ARGS__)(sd,hidx,nbytes,__VA_ARGS__)
+#define gex_AM_CommitReplyMedium_v2(sd,hidx,nbytes,...) \
+        GASNETI_AMVA(CommitReplyMedium,_v2,__VA_ARGS__)(sd,hidx,nbytes,__VA_ARGS__)
+#define gex_AM_CommitRequestLong_v2(sd,hidx,nbytes,dest_addr,...) \
+        GASNETI_AMVA(CommitRequestLong,_v2,__VA_ARGS__)(sd,hidx,nbytes,dest_addr,__VA_ARGS__)
+#define gex_AM_CommitReplyLong_v2(sd,hidx,nbytes,dest_addr,...) \
+        GASNETI_AMVA(CommitReplyLong,_v2,__VA_ARGS__)(sd,hidx,nbytes,dest_addr,__VA_ARGS__)
 
 #endif
 /* ------------------------------------------------------------------------------------ */
