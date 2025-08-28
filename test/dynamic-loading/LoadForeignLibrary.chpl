@@ -56,7 +56,7 @@ record dynamicLibrary {
     if _bin then _bin!.dropRefCount();
   }
 
-  proc err() do return _err;
+  proc err() do return _err.borrow();
 
   inline proc _assertRetrievedProcedureProperties(p1: ?t1) {
     use Types;
@@ -110,8 +110,7 @@ record dynamicLibrary {
 }
 
 proc test0() {
-  writeln(Reflection.getRoutineName());
-  writeln();
+  writeln(getRoutineName());
 
   var bin = new dynamicLibrary("./TestCLibraryToLoad.so");
 
@@ -132,8 +131,7 @@ proc test0() {
 }
 
 proc test1() {
-  writeln(Reflection.getRoutineName());
-  writeln();
+  writeln(getRoutineName());
 
   var bin = new dynamicLibrary("./TestCLibraryToLoad.so");
 
@@ -172,33 +170,35 @@ proc test1() {
 }
 
 proc test2() {
-  writeln(Reflection.getRoutineName());
-  writeln();
+  writeln(getRoutineName());
 
   // Here neither the library or procedure exist.
-  var bin = new dynamicLibrary("SOME_PATH_THAT_DOES_NOT_EXIST");
+  var bin = new dynamicLibrary("SOME_FILE_THAT_DOES_NOT_EXIST");
 
   try {
     type P = proc(): void;
     const p = bin.load("SOME_SYMBOL_THAT_DOES_NOT_EXIST", P);
     assert(p == nil);
   } catch e {
-    writeln(e.message());
+    writeln('Caught error!');
+    // TODO: Sanitize the dynamic linker output to be platform-independent.
+    // writeln(e.message());
   }
 }
 
 proc test3() {
-  writeln(Reflection.getRoutineName());
-  writeln();
+  writeln(getRoutineName());
 
   // Here the library exists but the procedure does not.
   var bin = new dynamicLibrary("./TestCLibraryToLoad.so");
   try {
     type P = proc(): void;
-    const p = try! bin.load("SOME_SYMBOL_THAT_DOES_NOT_EXIST", P);
+    const p = bin.load("SOME_SYMBOL_THAT_DOES_NOT_EXIST", P);
     assert(p == nil);
   } catch e {
-    writeln(e.message());
+    writeln('Caught error!');
+    // TODO: Sanitize the dynamic linker output to be platform-independent.
+    // writeln(e.message());
   }
 }
 
