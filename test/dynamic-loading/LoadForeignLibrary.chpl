@@ -1,8 +1,12 @@
 //
-// While this exercises the internal dynamic loading API, the intent of this
-// test is to exercise the parts of the library that pertain to procedure
-// types/values - specifically, that the pointers returned via loading are
-// callable on each locale, and broadly behave as expected.
+// This test makes sure that loading and retrieving symbols from a foreign
+// shared library works as expected. A retrieved symbol should be callable
+// on any locale, and it should use the correct calling convention (the C
+// or system calling convention).
+//
+// Additionally, this will test that the internal loading API behaves as
+// expected - that it throws errors in the correct places and does not
+// halt unexpectedly.
 //
 
 use ChapelDynamicLoading;
@@ -52,16 +56,60 @@ record dynamicLibrary {
     if _bin then _bin!.dropRefCount();
   }
 
+  proc err() do return _err;
+
+  inline proc _assertRetrievedProcedureProperties(p1: ?t1) {
+    use Types;
+
+    compilerAssert(isProcedureValue(p1));
+    compilerAssert(isProcedureType(t1));
+    compilerAssert(isProcedure(p1));
+    compilerAssert(isProcedure(t1));
+
+    compilerAssert(!chpl_isLocalProc(p1));
+    compilerAssert(!chpl_isLocalProc(t1));
+    compilerAssert(!chpl_isLocalProcType(t1));
+
+    compilerAssert(chpl_isWideProc(p1));
+    compilerAssert(chpl_isWideProc(t1));
+    compilerAssert(chpl_isWideProcType(t1));
+
+    compilerAssert(chpl_isExternProc(p1));
+    compilerAssert(chpl_isExternProc(t1));
+    compilerAssert(chpl_isExternProcType(t1));
+
+    const p2 = chpl_toLocalProc(p1);
+    type t2 = p2.type;
+
+    compilerAssert(isProcedureValue(p2));
+    compilerAssert(isProcedureType(t2));
+    compilerAssert(isProcedure(p2));
+    compilerAssert(isProcedure(t2));
+
+    compilerAssert(chpl_isLocalProc(p2));
+    compilerAssert(chpl_isLocalProc(t2));
+    compilerAssert(chpl_isLocalProcType(t2));
+
+    compilerAssert(!chpl_isWideProc(p2));
+    compilerAssert(!chpl_isWideProc(t2));
+    compilerAssert(!chpl_isWideProcType(t2));
+
+    compilerAssert(chpl_isExternProc(p2));
+    compilerAssert(chpl_isExternProc(t2));
+    compilerAssert(chpl_isExternProcType(t2));
+  }
+
   proc ref load(sym: string, type T) throws {
     if _err != nil then throw _err;
     var err;
     var ret = _bin!.loadSymbol(sym, T, err);
     if err != nil then throw err;
+    _assertRetrievedProcedureProperties(ret);
     return ret;
   }
 }
 
-proc test1() {
+proc test0() {
   writeln(Reflection.getRoutineName());
   writeln();
 
@@ -83,7 +131,7 @@ proc test1() {
   writeln();
 }
 
-proc test2() {
+proc test1() {
   writeln(Reflection.getRoutineName());
   writeln();
 
@@ -123,7 +171,40 @@ proc test2() {
   }
 }
 
+proc test2() {
+  writeln(Reflection.getRoutineName());
+  writeln();
+
+  // Here neither the library or procedure exist.
+  var bin = new dynamicLibrary("SOME_PATH_THAT_DOES_NOT_EXIST");
+
+  try {
+    type P = proc(): void;
+    const p = bin.load("SOME_SYMBOL_THAT_DOES_NOT_EXIST", P);
+    assert(p == nil);
+  } catch e {
+    writeln(e.message());
+  }
+}
+
+proc test3() {
+  writeln(Reflection.getRoutineName());
+  writeln();
+
+  // Here the library exists but the procedure does not.
+  var bin = new dynamicLibrary("./TestCLibraryToLoad.so");
+  try {
+    type P = proc(): void;
+    const p = try! bin.load("SOME_SYMBOL_THAT_DOES_NOT_EXIST", P);
+    assert(p == nil);
+  } catch e {
+    writeln(e.message());
+  }
+}
+
 proc main() {
+  test0();
   test1();
   test2();
+  test3();
 }
