@@ -470,18 +470,23 @@ module ChapelDynamicLoading {
         const handle0 = _systemPtrs[0];
         assert(handle0 != nil);
 
-        const ptr0 = localDynLoadSymbolLookup(sym, handle0, errBuf[0]);
+        var err0;
+        const ptr0 = localDynLoadSymbolLookup(sym, handle0, err0);
 
-        if errBuf[0] == nil && ptr0 != nil {
-          manage this.withReadLock() {
-            var data;
-            const found = _procPtrToDataLocale0.get(ptr0, data);
-            shouldInternPointer = !found;
-            if found {
-              const (got, sym) = data;
-              assert(got != 0);
-              idx = got;
-            }
+        if err0 != nil {
+          err = err0;
+
+        } else if ptr0 == nil {
+          err = new DynLoadError('Failed to locate symbol: ' + sym);
+
+        } else manage this.withReadLock() {
+          var data;
+          const found = _procPtrToDataLocale0.get(ptr0, data);
+          shouldInternPointer = !found;
+          if found {
+            const (got, sym) = data;
+            assert(got != 0);
+            idx = got;
           }
         }
 
@@ -794,12 +799,14 @@ module ChapelDynamicLoading {
     // There should always be an entry for this dynamic index in the local
     // cache because the local roots are emplaced when a function value is
     // created. So just halt if this is not the case.
-    local do manage chpl_localPtrCache.withReadLock() {
-      var found = chpl_localPtrCache.getUnlocked(idx, ret);
-      assert(found);
+    if idx != 0 {
+      local do manage chpl_localPtrCache.withReadLock() {
+        var found = chpl_localPtrCache.getUnlocked(idx, ret);
+        assert(found);
+        assert(ret != nil);
+      }
     }
 
-    assert(ret != nil);
     return ret;
   }
 
