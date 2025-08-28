@@ -60,9 +60,9 @@ Using the C Backend
 It may be useful to debug Chapel programs using the C backend. The current best
 practice for debugging Chapel source code with the C backend is to use a series
 of flags to improve the debuggability of the generated executable. While
-debugging with just ``-g`` is possible, these flags result in generated code
-with debug information that most closely matches the Chapel source code. This
-can be done in two steps.
+debugging with just ``-g`` is possible, these flags (explained in step 2 below)
+result in generated code with debug information that most closely matches the
+Chapel source code. This can be done in two steps.
 
 1) Build the compiler with ``CHPL_TARGET_COMPILER`` set to ``gnu``
    (or ``clang`` if on Mac):
