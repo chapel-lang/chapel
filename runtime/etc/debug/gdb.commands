@@ -1,0 +1,5 @@
+break debuggerBreakHere
+commands $bpnum
+up
+end
+

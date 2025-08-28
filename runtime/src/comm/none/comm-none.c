@@ -163,19 +163,24 @@ static chpl_bool chpl_lldb_supports_python(void) {
 
 int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
 
-  const char* debuggerCmdFile = chpl_get_debugger_cmd_file();
-  char* command;
-  if (debuggerCmdFile != NULL) {
-    command = chpl_glom_strings(4,
-      "gdb -q -ex 'break debuggerBreakHere' --command ",
-      debuggerCmdFile,
-      " --args ",
-      argv[0]);
+  char* command = (char*)"gdb -q";
+
+  const char* gdb_commands = chpl_glom_strings(2, CHPL_HOME, "/runtime/etc/debug/gdb.commands");
+  if (access(gdb_commands, R_OK) == 0) {
+    command = chpl_glom_strings(4, command, " -x \"", gdb_commands, "\"");
   } else {
-    command = chpl_glom_strings(2,
-      "gdb -q -ex 'break debuggerBreakHere' --args ",
-      argv[0]);
+    chpl_warning(
+      "Could not find 'gdb.commands' file, falling back to basic settings",
+      0, CHPL_FILE_IDX_COMMAND_LINE);
+    command = chpl_glom_strings(2, command, " -ex 'break debuggerBreakHere'");
   }
+
+  const char* debuggerCmdFile = chpl_get_debugger_cmd_file();
+  if (debuggerCmdFile != NULL) {
+    command = chpl_glom_strings(4, command, " --command \"", debuggerCmdFile, "\"");
+  }
+
+  command = chpl_glom_strings(3, command, " --args ", argv[0]);
 
   for (int i=1; i<argc; i++) {
     if (i != gdbArgnum) {
@@ -189,12 +194,18 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
 
 int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status) {
 
-  // set a breakpoint on function (-n debuggerBreakHere),
-  // give the breakpoint a name (-N debuggerBreakHere),
-  // and when that breakpoint is hit, run the command "up" to move up one frame
-  char* command = (char*)"lldb"
-    " -o 'breakpoint set -n debuggerBreakHere -N debuggerBreakHere'"
-    " -o 'breakpoint command add -o up debuggerBreakHere'";
+  char* command = (char*)"lldb";
+
+  const char* lldb_commands = chpl_glom_strings(2, CHPL_HOME, "/runtime/etc/debug/lldb.commands");
+  if (access(lldb_commands, R_OK) == 0) {
+    command = chpl_glom_strings(4, command, " --source \"", lldb_commands, "\"");
+  } else {
+    chpl_warning(
+      "Could not find 'lldb.commands' file, falling back to basic settings",
+      0, CHPL_FILE_IDX_COMMAND_LINE);
+    command = chpl_glom_strings(2, command, " -o 'b debuggerBreakHere'");
+  }
+
 
   if (chpl_lldb_supports_python()) {
     const char* pretty_printer = chpl_glom_strings(2, CHPL_HOME, "/runtime/etc/debug/chpl_lldb_pretty_print.py");
