@@ -305,7 +305,6 @@ void FindElidedCopies::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
   }
 }
 void FindElidedCopies::handleMention(const Identifier* ast, ID varId, RV& rv) {
-  // if (ast->name() == "tup") debuggerBreakHere();
   VarFrame* frame = currentFrame();
   addMention(frame, varId);
 }
@@ -337,7 +336,6 @@ void FindElidedCopies::processSingleAssignHelper(const AstNode* lhsAst,
 }
 
 void FindElidedCopies::handleAssign(const OpCall* ast, RV& rv) {
-  debuggerBreakHere();
   auto lhsAst = ast->actual(0);
   auto rhsAst = ast->actual(1);
 
