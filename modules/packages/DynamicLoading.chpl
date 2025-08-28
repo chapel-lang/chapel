@@ -73,6 +73,9 @@ module DynamicLoading {
 // This internal module contains the low-level implementation.
 private use ChapelDynamicLoading;
 
+// Publish this error class for use by users.
+public use ChapelDynamicLoading only DynLoadError;
+
 if !useProcedurePointers {
   compilerError('This module cannot be used unless the experimental ' +
                 'procedure pointer implementation is activated. Set the ' +
