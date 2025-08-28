@@ -1,0 +1,15 @@
+#!/usr/bin/env python3
+
+import os
+
+skip = False
+isLinuxPlatform = os.getenv('CHPL_TARGET_PLATFORM') in ['linux64', 'linux32']
+
+# Skip if we are on linux and 'pic' is not set.
+skip = skip or (isLinuxPlatform and os.getenv('CHPL_LIB_PIC') != 'pic')
+
+# Skip if 'COMM != none'. We currently generate a multilocale client-server
+# library in these cases and things don't quite work right.
+skip = skip or (os.getenv('CHPL_COMM') != 'none')
+
+print(skip)

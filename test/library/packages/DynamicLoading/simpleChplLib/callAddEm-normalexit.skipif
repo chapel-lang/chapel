@@ -1,0 +1,11 @@
+#!/usr/bin/env python3
+
+import os
+
+skip = False
+isLinuxPlatform = os.getenv('CHPL_TARGET_PLATFORM') in ['linux64', 'linux32']
+
+# Skip if we are on linux and 'pic' is not set.
+skip = skip or (not isLinuxPlatform or os.getenv('CHPL_LIB_PIC') != 'pic')
+
+print(skip)
