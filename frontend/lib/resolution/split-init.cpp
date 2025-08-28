@@ -242,7 +242,6 @@ void FindSplitInits::handleAssign(const OpCall* ast, RV& rv) {
   auto rhsAst = ast->actual(1);
 
   if (auto lhsTuple = lhsAst->toTuple()) {
-    debuggerBreakHere();
     for (auto elt : lhsTuple->actuals()) {
       processSingleAssignHelper(elt, rhsAst, ast, rv);
     }

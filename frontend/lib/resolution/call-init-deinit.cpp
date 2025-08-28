@@ -691,14 +691,14 @@ void CallInitDeinit::resolveTupleInit(const AstNode* ast, const AstNode* rhsAst,
     // or a tuple expression.
 
     auto rhsTupleAst = rhsAst->toTuple();
+    auto lhsTupleType = lhsType.type()->toTupleType();
+    auto rhsTupleType = rhsType.type()->toTupleType();
 
     // Resolve an init per component, which will become sub-actions of the
     // overall top-level tuple init.
     auto& re = rv.byPostorder().byAst(ast);
     std::unordered_set<AssociatedAction> seenActions;
     AssociatedAction::ActionsList subActions;
-    auto lhsTupleType = lhsType.type()->toTupleType();
-    auto rhsTupleType = rhsType.type()->toTupleType();
     for (int i = 0; i < lhsTupleType->numElements(); i++) {
       auto lhsEltType = lhsTupleType->elementType(i);
       auto rhsEltType = rhsTupleType->elementType(i);
@@ -817,6 +817,7 @@ void CallInitDeinit::resolveAssign(const AstNode* ast,
       }
     }
   }
+
   // In an 'if var' decl, resolve assign as though the RHS is non-nil.
   // We'll verify it is at runtime.
   if (auto conditional = frame->scopeAst->toConditional()) {
@@ -1369,24 +1370,6 @@ void CallInitDeinit::handleAssign(const OpCall* ast, RV& rv) {
   } else {
     processSingleAssignHelper(ast, lhsAst, rhsAst, lhsType, rhsType, rv);
   }
-
-  // if (auto lhsTuple = lhsAst->toTuple()) {
-  //   for (int i = 0; i < lhsTuple->numActuals(); i++) {
-  //     auto elt = lhsTuple->actual(i);
-  //     if (lhsType.type() && lhsType.type()->isTupleType() &&
-  //         rhsType.type() && rhsType.type()->isTupleType()) {
-  //       const QualifiedType& useLhsType =
-  //           lhsType.type()->toTupleType()->elementType(i);
-  //       const QualifiedType& useRhsType =
-  //           rhsType.type()->toTupleType()->elementType(i);
-  //       debuggerBreakHere();
-  //       processSingleAssignHelper(ast, elt, rhsAst, useLhsType, useRhsType, rv);
-  //     }
-  //   }
-  // } else {
-  //   processSingleAssignHelper(ast, lhsAst, rhsAst, lhsType, rhsType, rv);
-  // }
-
 }
 void CallInitDeinit::handleOutFormal(const Call* ast,
                                      const AstNode* actual,
