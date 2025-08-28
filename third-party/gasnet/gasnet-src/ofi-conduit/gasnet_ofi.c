@@ -2093,6 +2093,8 @@ int gasnetc_ep_bindsegment(gasneti_EP_t i_ep, gasneti_Segment_t segment)
       }
     }
 #endif
+
+    gasneti_assert_zeroret( gasneti_mk_segment_context_push(segment) );
 #if GASNETC_HAVE_FI_MR_REG_ATTR
     const char *reg_fn = "fi_mr_regattr";
     int ret = fi_mr_regattr(gasnetc_ofi_domainfd, &attr, flags, mrfd_p);
@@ -2103,6 +2105,8 @@ int gasnetc_ep_bindsegment(gasneti_EP_t i_ep, gasneti_Segment_t segment)
                         attr.access, attr.offset, attr.requested_key,
                         flags, mrfd_p, attr.context);
 #endif
+    gasneti_assert_zeroret( gasneti_mk_segment_context_pop(segment) );
+
     if (ret) {
         if (gasneti_VerboseErrors) {
             gasneti_console_message("WARNING",

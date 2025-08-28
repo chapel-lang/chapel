@@ -121,6 +121,12 @@ GASNETI_END_EXTERNC
 
 // Things for use only in conduit code
 #if GASNETI_BUILDING_CONDUIT
+  // Perform Push and Pop of a "context" if required for the given kind
+  // Valid (but no-op) even for host memory segments
+  // Returns GASNET_OK on success
+  extern int gasneti_mk_segment_context_push(gasneti_Segment_t i_segment);
+  extern int gasneti_mk_segment_context_pop(gasneti_Segment_t i_segment);
+
   #if GASNET_HAVE_MK_CLASS_ZE
     extern int gasneti_mk_ze_device_ordinal(void *device_handle_arg, int gpu_only);
     extern const char *gasneti_mk_ze_strerror(unsigned int result);

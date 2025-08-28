@@ -10,8 +10,8 @@ define([cv_prefix],[gasnet_cv_])
 
 dnl Public release version packaging identifier:
 define([GASNET_RELEASE_VERSION_MAJOR_D],[2025])
-define([GASNET_RELEASE_VERSION_MINOR_D],[2])
-define([GASNET_RELEASE_VERSION_PATCH_D],[5])
+define([GASNET_RELEASE_VERSION_MINOR_D],[8])
+define([GASNET_RELEASE_VERSION_PATCH_D],[0])
 dnl GASNet-EX spec version:
 define([GASNETEX_SPEC_VERSION_MAJOR_D],[0])
 define([GASNETEX_SPEC_VERSION_MINOR_D],[19])
@@ -5174,7 +5174,7 @@ GASNET_HELP_OUTPUT([
 Memory-kinds options:])
 
 GASNET_IF_ENABLED(memory-kinds,
-        [Prototype support for memory kinds (transfers to/from device memory).  Enables default auto-detection of all device type applicable to the target platform.  However, the individual --enable-kind-* options have precedence.  Use of --enable-memory-kinds=force makes failure to detect at least one supported kind fatal.],
+        [Support for memory kinds (transfers to/from device memory).  Enables default auto-detection of all device type applicable to the target platform.  However, the individual --enable-kind-* options have precedence.  Use of --enable-memory-kinds=force makes failure to detect at least one supported kind fatal.],
         [enable_mk_default=probe], [enable_mk_default=no])
 
 # This is potentially used CUDA_UVA and by HIP

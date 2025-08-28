@@ -14,11 +14,9 @@ GASNet-EX ChangeLog
   - Portable UDP (udp-conduit)
   - Portable MPI (mpi-conduit)
   - Unified Communication X (ucx-conduit) [EXPERIMENTAL]
-  Users wishing to use other retired conduits may need to download 
-  the GASNet v1.x distribution from https://gasnet.lbl.gov.
 
 ----------------------------------------------------------------------
-20XX-YY-ZZ: PENDING
+2025-08-28: GASNet-EX 2025.8.0
 
 * Memory Kinds (support for non-host memory)
   - Fixed support for device memory allocated via cuMemMap (bug 4767)
@@ -28,6 +26,10 @@ GASNet-EX ChangeLog
   - Users of Cray XC systems are advised to use the renamed cross-configure
     scripts `cross-configure-cray-xc-slurm` and `cross-configure-cray-xc-alps`,
     which enable ofi-conduit with libfabric's "gni" provider.
+
+* Libfabric (details in ofi-conduit README)
+  - Updates for compatibility of ofi-conduit CUDA UVA memory kinds with
+    HPE's Slingshot Host Software (SHS) 12.0.1.
 
 * InfiniBand Verbs (details in ibv-conduit README)
   - Setting `GASNET_IBV_PORTS_TYPE=auto` can now be used to automate
@@ -109,6 +111,8 @@ GASNet-EX ChangeLog
   - bug4774 - Add argument-checking to GASNet object query accessors
   - bug4787 - GCC-15 errors and warnings regarding incompatible pointers-to-function
   - bug4788 - amx/testam.c not C23-compatible
+  - bug4797 - Intermittent init-time crash inside gasneti_bootstrapBarrier_am()
+  - bug???? - gex_EP_BindSegment failures with CUDA device memory and SHS 12.0.1
 
 ----------------------------------------------------------------------
 2024-05-23: GASNet-EX 2024.5.0

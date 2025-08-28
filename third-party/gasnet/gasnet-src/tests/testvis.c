@@ -1170,6 +1170,7 @@ void verify_pc_arrivals(void) {
   size_t actual = gasnett_atomic_read(&pcarrival_cnt,0);
   for (int i=0; i < 5 && actual < expect; i++) { // bounded stall for global quiescence of PC
     sleep(1); 
+    gasnet_AMPoll();
     actual = gasnett_atomic_read(&pcarrival_cnt,0);
   }
   if (actual != expect) {
