@@ -189,7 +189,12 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
 
 int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status) {
 
-  char* command = (char*)"lldb -o 'b debuggerBreakHere'";
+  // set a breakpoint on function (-n debuggerBreakHere),
+  // give the breakpoint a name (-N debuggerBreakHere),
+  // and when that breakpoint is hit, run the command "up" to move up one frame
+  char* command = (char*)"lldb"
+    " -o 'breakpoint set -n debuggerBreakHere -N debuggerBreakHere'"
+    " -o 'breakpoint command add -o up debuggerBreakHere'";
 
   if (chpl_lldb_supports_python()) {
     const char* pretty_printer = chpl_glom_strings(2, CHPL_HOME, "/runtime/etc/debug/chpl_lldb_pretty_print.py");
