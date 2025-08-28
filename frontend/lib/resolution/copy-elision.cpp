@@ -279,7 +279,7 @@ void FindElidedCopies::handleTupleDeclaration(const TupleDecl* ast, RV& rv) {
 
 void FindElidedCopies::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
   addDeclaration(currentFrame(), ast);
-  processDeclarationInit(ast, rv);
+  processDeclarationInit(ast, ast->initExpression(), rv);
 
   if (auto initExpr = ast->initExpression()) {
     VarFrame* frame = currentFrame();

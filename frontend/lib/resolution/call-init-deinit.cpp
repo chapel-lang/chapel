@@ -88,7 +88,9 @@ struct CallInitDeinit : VarScopeVisitor {
                                RV& rv);
   void processDeinitsAndPropagate(VarFrame* frame, VarFrame* parent, RV& rv);
 
-  void resolveDefaultInit(const VarLikeDecl* ast, RV& rv);
+  void resolveDefaultInit(const NamedDecl* ast,
+                          Qualifier intentOrKind,
+                          RV& rv);
   void resolveAssign(const AstNode* ast,
                      const QualifiedType& lhsType,
                      const QualifiedType& rhsType,
@@ -131,6 +133,7 @@ struct CallInitDeinit : VarScopeVisitor {
                         const QualifiedType& rhsType,
                         RV& rv);
   void resolveTupleUnpackAssignOrInit(const Tuple* lhsTuple,
+                                      const Tuple* rhsTuple,
                                       const AstNode* astForErr,
                                       const QualifiedType& initialLhsType,
                                       const QualifiedType& rhsType,
@@ -142,6 +145,22 @@ struct CallInitDeinit : VarScopeVisitor {
                                  const QualifiedType& lhsType,
                                  const QualifiedType& rhsType,
                                  RV& rv);
+
+  void processSingleDeclHelper(const NamedDecl* ast,
+                               const AstNode* parent,
+                               const AstNode* initExpression,
+                               const QualifiedType& initType,
+                               bool isFormal,
+                               Qualifier intentOrKind,
+                               RV& rv);
+  void validateTypeAndInitExpr(const AstNode* typeExpression,
+                               const AstNode* initExpression,
+                               RV& rv);
+
+  void processTupleDecl(const TupleDecl* ast,
+                        const QualifiedType& initType,
+                        const TupleDecl* topLevelDeclAst,
+                        RV& rv);
 
   void processReturnThrowYield(const uast::AstNode* ast, RV& rv);
 
@@ -485,11 +504,11 @@ void CallInitDeinit::processDeinitsAndPropagate(VarFrame* frame,
   }
 }
 
-void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
+void CallInitDeinit::resolveDefaultInit(const NamedDecl* ast, Qualifier intentOrKind, RV& rv) {
   // Type variables do not need default init.
-  if (ast->storageKind() == Qualifier::TYPE) return;
+  if (intentOrKind == Qualifier::TYPE) return;
 
-  if (isRef(ast->storageKind())) {
+  if (isRef(intentOrKind)) {
     context->error(ast, "cannot default initialize references");
   }
 
@@ -682,15 +701,15 @@ void CallInitDeinit::resolveTupleInit(const AstNode* ast, const AstNode* rhsAst,
     return;
   }
 
-  if (auto tuple = ast->toTuple()) {
-    debuggerBreakHere();
+  auto rhsTupleAst = rhsAst->toTuple();
+
+  if (auto lhsTupleAst = ast->toTuple()) {
     // Initializing variables via tuple destructuring
-    resolveTupleUnpackAssignOrInit(tuple, ast, lhsType, rhsType, rv);
+    resolveTupleUnpackAssignOrInit(lhsTupleAst, rhsTupleAst, ast, lhsType, rhsType, rv);
   } else {
     // Initializing an actual tuple variable, with either another tuple variable
     // or a tuple expression.
 
-    auto rhsTupleAst = rhsAst->toTuple();
     auto lhsTupleType = lhsType.type()->toTupleType();
     auto rhsTupleType = rhsType.type()->toTupleType();
 
@@ -748,6 +767,7 @@ void CallInitDeinit::resolveTupleInit(const AstNode* ast, const AstNode* rhsAst,
 }
 
 void CallInitDeinit::resolveTupleUnpackAssignOrInit(const Tuple* lhsTuple,
+                                                    const Tuple* rhsTuple,
                                                     const AstNode* astForErr,
                                                     const QualifiedType& initialLhsType,
                                                     const QualifiedType& rhsType,
@@ -765,6 +785,11 @@ void CallInitDeinit::resolveTupleUnpackAssignOrInit(const Tuple* lhsTuple,
   auto lhsTupleType = lhsType.type()->toTupleType();
   auto rhsTupleType = rhsType.type()->toTupleType();
 
+  // Resolve an init per component, which will become sub-actions of the
+  // overall top-level tuple init.
+  auto& re = rv.byPostorder().byAst(astForErr);
+  std::unordered_set<AssociatedAction> seenActions;
+  AssociatedAction::ActionsList subActions;
   for (int i = 0; i < lhsTuple->numActuals(); i++) {
     auto actual = lhsTuple->actual(i);
 
@@ -777,18 +802,44 @@ void CallInitDeinit::resolveTupleUnpackAssignOrInit(const Tuple* lhsTuple,
 
     if (auto innerTuple = actual->toTuple()) {
       // Recurse if the element is a tuple.
-      resolveTupleUnpackAssignOrInit(innerTuple, astForErr, lhsEltType, rhsEltType, rv);
+      const Tuple* rhsInnerTuple = nullptr;
+      if (rhsTuple) {
+        rhsInnerTuple = rhsTuple->actual(i)->toTuple();
+      }
+      resolveTupleUnpackAssignOrInit(innerTuple, rhsInnerTuple, astForErr, lhsEltType, rhsEltType, rv);
       continue;
     }
 
     // Resolve assignment of the element
-    debuggerBreakHere();
     if (auto op = astForErr->toOpCall()) {
       processSingleAssignHelper(op, actual, nullptr, lhsEltType, rhsEltType,
                                 rv);
     } else {
       processInit(frame, actual, lhsEltType, rhsEltType, rv);
     }
+
+    std::unordered_set<AssociatedAction> newActions;
+    accumulateActions(seenActions, newActions, re);
+    for (auto action : newActions) {
+      auto useId = action.id();
+      auto useTupleEltIdx = i;
+      if (rhsTuple) {
+        useId = rhsTuple->actual(i)->id();
+        useTupleEltIdx = -1;
+      }
+      auto actionWithIdx = new AssociatedAction(
+          action.action(), action.fn(), useId, action.type(),
+          /* tupleEltIdx */ useTupleEltIdx, action.subActions());
+      subActions.push_back(actionWithIdx);
+    }
+  }
+
+  // TODO: Resolve a top-level init or assign for the tuple itself
+
+  // Gather the sub-actions into this new action.
+  re.clearAssociatedActions();
+  for (auto action : subActions) {
+    re.addAssociatedAction(*action);
   }
 }
 
@@ -810,9 +861,10 @@ void CallInitDeinit::resolveAssign(const AstNode* ast,
         // Tuple unpacking assignment
         // (a, b, c) = foo();
         auto lhsTuple = call->actual(0)->toTuple();
+        auto rhsTuple = call->actual(1)->toTuple();
         auto& lhsType = rv.byPostorder().byAst(call->actual(0)).type();
         auto& rhsType = rv.byPostorder().byAst(call->actual(1)).type();
-        resolveTupleUnpackAssignOrInit(lhsTuple, call, lhsType, rhsType, rv);
+        resolveTupleUnpackAssignOrInit(lhsTuple, rhsTuple, call, lhsType, rhsType, rv);
         return;
       }
     }
@@ -1184,22 +1236,10 @@ void CallInitDeinit::resolveDeinit(const AstNode* ast,
   c.noteResult(&opR, { { AssociatedAction::DEINIT, deinitedId } });
 }
 
-void CallInitDeinit::handleTupleDeclaration(const TupleDecl* ast, RV& rv) {
-  // TODO
-}
-
-void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
+void CallInitDeinit::processSingleDeclHelper(const NamedDecl* ast, const AstNode* parent, const AstNode* initExpression, const QualifiedType& initType, bool isFormal, Qualifier intentOrKind, RV& rv) {
   VarFrame* frame = currentFrame();
- 
-  // check for use of deinited variables in type or init exprs
-  if (auto type = ast->typeExpression()) {
-    processMentions(type, rv);
-  }
-  if (auto init = ast->initExpression()) {
-    processMentions(init, rv);
-  }
 
-  bool inited = processDeclarationInit(ast, rv);
+  bool inited = processDeclarationInit(ast, initExpression, rv);
   bool splitInited = (splitInitedVars.count(ast->id()) > 0);
 
   bool handledFormal = false;
@@ -1208,8 +1248,7 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
   bool isRefLoopIntent = false;
   bool isResource = false;
 
-  if (ast->isFormal() || ast->isVarArgFormal()) {
-
+  if (isFormal) {
     // consider the formal's intent
     ResolvedExpression& formalRe = rv.byAst(ast);
     QualifiedType formalType = formalRe.type();
@@ -1237,7 +1276,6 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
     }
   }
 
-  auto parent = parsing::parentAst(context, ast);
   if (parent) {
     // Errors in Catch statements will be instantiated by the throwing function
     // in the Try block
@@ -1253,7 +1291,7 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
         // Any other declaration (with type, with init) is just a task variable.
         if (!tv->initExpression() && !tv->typeExpression()) {
           isLoopIntent = true;
-          if (isRef(ast->storageKind())) {
+          if (isRef(intentOrKind)) {
             isRefLoopIntent = true;
           }
         }
@@ -1274,7 +1312,7 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
     // Will be inited later, don't default init,
     // and also don't try to deinit it on e.g. a return before that point
 
-  } else if (isLoopIntent && !isRefLoopIntent ) {
+  } else if (isLoopIntent && !isRefLoopIntent) {
     // loop intent variables don't have a RHS, but are implicitly initialized
     // from the outer variable they correspond to. Handle that initialization
     // here.
@@ -1285,13 +1323,10 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
     processInit(frame, ast, lhsType, rhsType, rv);
   } else if (inited) {
     auto lhsAst = ast;
-    auto rhsAst = ast->initExpression();
-
     ResolvedExpression& lhsRe = rv.byAst(lhsAst);
     QualifiedType lhsType = lhsRe.type();
 
-    ResolvedExpression& rhsRe = rv.byAst(rhsAst);
-    QualifiedType rhsType = rhsRe.type();
+    QualifiedType rhsType = initType;
 
     processInit(frame, ast, lhsType, rhsType, rv);
     // note that the variable is now initialized
@@ -1308,7 +1343,7 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
              ast->attributeGroup()->hasPragma(uast::pragmatags::PRAGMA_NO_INIT) == false) {
     // default init it
     // not inited here and not split-inited, so default-initialize it
-    resolveDefaultInit(ast, rv);
+    resolveDefaultInit(ast, intentOrKind, rv);
     // note that the variable is now initialized
     ID id = ast->id();
     frame->addToInitedVars(id);
@@ -1317,6 +1352,76 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
 
   // record it in declaredVars
   frame->addToDeclaredVars(ast->id());
+}
+
+void CallInitDeinit::validateTypeAndInitExpr(const AstNode* typeExpression,
+                                             const AstNode* initExpression,
+                                             RV& rv) {
+  // check for use of deinited variables in type or init exprs
+  if (typeExpression) {
+    processMentions(typeExpression, rv);
+  }
+  if (initExpression) {
+    processMentions(initExpression, rv);
+  }
+}
+
+void CallInitDeinit::processTupleDecl(const TupleDecl* ast,
+                                      const QualifiedType& initType,
+                                      const TupleDecl* topLevelDeclAst,
+                                      RV& rv) {
+  auto topLevelInitExpr = topLevelDeclAst->initExpression();
+
+  // If there's an init expr, it should be a tuple type with the same shape as
+  // this tuple decl.
+  const TupleType* initExprTupleType = nullptr;
+  if (initType.type()) {
+    initExprTupleType = initType.type()->toTupleType();
+    CHPL_ASSERT(initExprTupleType);
+    CHPL_ASSERT(initExprTupleType->numElements() == ast->numDecls());
+  }
+
+  for (int i = 0; i < ast->numDecls(); i++) {
+    auto decl = ast->decl(i);
+    // Use top-level tuple decl's init expr ast, but use corresponding
+    // element type for this element for the init expr type.
+    const QualifiedType& eltInitType =
+        initExprTupleType ? initExprTupleType->elementType(i) : QualifiedType();
+    if (auto vld = decl->toVarLikeDecl()) {
+      debuggerBreakHere();
+      auto parent = parsing::parentAst(context, topLevelDeclAst);
+      // Propagate formal-ness and intent from the tuple decl
+      bool isFormal = ast->isTupleDeclFormal();
+      Qualifier intentOrKind = (Qualifier)ast->intentOrKind();
+      processSingleDeclHelper(vld, topLevelInitExpr, parent, eltInitType,
+                              isFormal, intentOrKind, rv);
+    } else if (auto td = decl->toTupleDecl()) {
+      processTupleDecl(td, eltInitType, topLevelDeclAst, rv);
+    } else {
+      context->error(decl, "unexpected type of contained decl in tuple decl");
+    }
+  }
+}
+
+void CallInitDeinit::handleTupleDeclaration(const TupleDecl* ast, RV& rv) {
+  validateTypeAndInitExpr(ast->typeExpression(), ast->initExpression(), rv);
+
+  auto topLevelDeclAst = ast;
+  auto initExprType = rv.byAst(topLevelDeclAst->initExpression()).type();
+  processTupleDecl(ast, initExprType, topLevelDeclAst, rv);
+}
+
+void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
+  validateTypeAndInitExpr(ast->typeExpression(), ast->initExpression(), rv);
+
+  auto initExpr = ast->initExpression();
+  auto parent = parsing::parentAst(context, ast);
+  bool isFormal = ast->isFormal() || ast->isVarArgFormal();
+  Qualifier intentOrKind = ast->storageKind();
+  const QualifiedType& initType =
+      initExpr ? rv.byAst(initExpr).type() : QualifiedType();
+  processSingleDeclHelper(ast, parent, initExpr, initType, isFormal,
+                          intentOrKind, rv);
 }
 
 void CallInitDeinit::handleMention(const Identifier* ast, ID varId, RV& rv) {
@@ -1366,7 +1471,7 @@ void CallInitDeinit::handleAssign(const OpCall* ast, RV& rv) {
   QualifiedType rhsType = rhsRe.type();
 
   if (auto lhsTuple = lhsAst->toTuple()) {
-    resolveTupleUnpackAssignOrInit(lhsTuple, ast, lhsType, rhsType, rv);
+    resolveTupleUnpackAssignOrInit(lhsTuple, rhsAst->toTuple(), ast, lhsType, rhsType, rv);
   } else {
     processSingleAssignHelper(ast, lhsAst, rhsAst, lhsType, rhsType, rv);
   }
