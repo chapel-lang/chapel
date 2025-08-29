@@ -410,8 +410,7 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
   // helper for resolveTypeQueriesFromFormalType
   void resolveTypeQueries(const uast::AstNode* formalTypeExpr,
                           const types::QualifiedType& actualType,
-                          bool isNonStarVarArg = false,
-                          bool isTopLevel = true);
+                          bool isNonStarVarArg = false);
 
   void resolveVarArgSizeQuery(const uast::VarArgFormal* varArgFormal,
                               int numVarArgs);
