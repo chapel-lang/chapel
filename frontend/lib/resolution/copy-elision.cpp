@@ -101,6 +101,7 @@ struct FindElidedCopies : VarScopeVisitor {
                                RV& rv);
 
   void processTupleDecl(const TupleDecl* ast,
+                        const AstNode* initExpression,
                         const QualifiedType& initType,
                         const TupleDecl* topLevelDeclAst,
                         RV& rv);
@@ -321,10 +322,11 @@ void FindElidedCopies::processSingleDeclHelper(const NamedDecl* ast,
 }
 
 void FindElidedCopies::processTupleDecl(const TupleDecl* ast,
+                                        const AstNode* initExpression,
                                         const QualifiedType& initType,
                                         const TupleDecl* topLevelDeclAst,
                                         RV& rv) {
-  auto topLevelInitExpr = topLevelDeclAst->initExpression();
+  VarFrame* frame = currentFrame();
 
   // If there's an init expr, it should be a tuple type with the same shape as
   // this tuple decl.
@@ -334,31 +336,61 @@ void FindElidedCopies::processTupleDecl(const TupleDecl* ast,
     CHPL_ASSERT(initExprTupleType);
     CHPL_ASSERT(initExprTupleType->numElements() == ast->numDecls());
   }
+  const Tuple* initExprTuple = nullptr;
+  if (initExpression) {
+    initExprTuple = initExpression->toTuple();
+    if (initExprTuple) {
+      CHPL_ASSERT(initExprTuple->numActuals() == ast->numDecls());
+    }
+  }
+
+  // In the case of a tuple variable init expr, we can have multiple points
+  // copy-eliding from the same variable, but usual copy elision logic allows
+  // only one per copy-init. Work around this by manually recording and saving
+  // each point for this var, restoring them all at the end.
+  auto rhsVarId = refersToId(initExpression, rv);
+  std::set<ID> savedPoints;
 
   for (int i = 0; i < ast->numDecls(); i++) {
     auto decl = ast->decl(i);
-    // Use top-level tuple decl's init expr ast, but use corresponding
-    // element type for this element for the init expr type.
+    // Use corresponding element of init expr for this element's init expr,
+    // if init expr is present and a tuple expression. Otherwise, just propagate
+    // top level init exp as is.
+    const AstNode* eltInitExpr = (initExprTuple ?
+                                 initExprTuple->actual(i) : initExpression);
     const QualifiedType& eltInitType =
         initExprTupleType ? initExprTupleType->elementType(i) : QualifiedType();
+
     if (auto vld = decl->toVarLikeDecl()) {
       // Propagate formal-ness and intent from the tuple decl
       bool isFormal = ast->isTupleDeclFormal();
       Qualifier intentOrKind = (Qualifier)ast->intentOrKind();
-      processSingleDeclHelper(vld, topLevelInitExpr, eltInitType,
+      processSingleDeclHelper(vld, eltInitExpr, eltInitType,
                               isFormal, intentOrKind, rv);
     } else if (auto td = decl->toTupleDecl()) {
-      processTupleDecl(td, eltInitType, topLevelDeclAst, rv);
+      processTupleDecl(td, eltInitExpr, eltInitType, topLevelDeclAst, rv);
     } else {
       context->error(decl, "unexpected type of contained decl in tuple decl");
     }
+
+    if (!rhsVarId.isEmpty()) {
+      auto& newPoints = frame->copyElisionState[rhsVarId].points;
+      savedPoints.insert(newPoints.begin(), newPoints.end());
+    }
+  }
+
+  if (!savedPoints.empty()) {
+    // restore all the points we found
+    CopyElisionState& state = frame->copyElisionState[rhsVarId];
+    state.points.insert(savedPoints.begin(), savedPoints.end());
   }
 }
 
 void FindElidedCopies::handleTupleDeclaration(const TupleDecl* ast, RV& rv) {
   auto topLevelDeclAst = ast;
-  auto initExprType = rv.byAst(topLevelDeclAst->initExpression()).type();
-  processTupleDecl(ast, initExprType, topLevelDeclAst, rv);
+  auto initExpr = topLevelDeclAst->initExpression();
+  auto initExprType = rv.byAst(initExpr).type();
+  processTupleDecl(ast, initExpr, initExprType, topLevelDeclAst, rv);
 }
 
 void FindElidedCopies::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
