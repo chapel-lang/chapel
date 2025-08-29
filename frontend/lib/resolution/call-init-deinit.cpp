@@ -905,7 +905,6 @@ void CallInitDeinit::resolveAssign(const AstNode* ast,
     c.noteResult(&opR);
   } else {
     // otherwise, add an associated action
-    if (op && op->child(0)->isTuple()) debuggerBreakHere();
     c.noteResult(&opR, { { AssociatedAction::ASSIGN, ast->id() } });
   }
 }
