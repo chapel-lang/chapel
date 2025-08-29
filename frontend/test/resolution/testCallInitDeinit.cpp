@@ -2192,8 +2192,8 @@ static void test34() {
         {AssociatedAction::ASSIGN,    "tup",   "M.test@4"},
         {AssociatedAction::COPY_INIT, "tup",   "M.test@5"},
       {AssociatedAction::ASSIGN,    "a",   "0"},
-      {AssociatedAction::DEINIT,     "M.test@12",   "r"},
-      {AssociatedAction::DEINIT,     "M.test@12",   "b"}
+      {AssociatedAction::DEINIT,     "M.test@12",   "b"},
+      {AssociatedAction::DEINIT,     "M.test@12",   "r"}
     });
 }
 

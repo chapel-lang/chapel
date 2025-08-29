@@ -76,7 +76,9 @@ struct FindElidedCopies : VarScopeVisitor {
                                  RV& rv);
   static bool lastMentionIsCopy(VarFrame* frame, ID varId);
   static void gatherLastMentionIsCopyVars(VarFrame* frame, std::set<ID>& vars);
-  static void addDeclaration(VarFrame* frame, const VarLikeDecl* ast);
+  static void addDeclaration(VarFrame* frame,
+                             Qualifier intentOrKind,
+                             const NamedDecl* ast);
   static void addCopyInit(VarFrame* frame, ID fromVarId, ID point);
   static void addMention(VarFrame* frame, ID varId);
 
@@ -90,6 +92,18 @@ struct FindElidedCopies : VarScopeVisitor {
   void noteMentionsForOutFormals(VarFrame* frame);
 
   void propagateChildToParent(VarFrame* frame, VarFrame* parent, const AstNode* ast);
+
+  void processSingleDeclHelper(const NamedDecl* ast,
+                               const AstNode* initExpression,
+                               const QualifiedType& initType,
+                               bool isFormal,
+                               Qualifier intentOrKind,
+                               RV& rv);
+
+  void processTupleDecl(const TupleDecl* ast,
+                        const QualifiedType& initType,
+                        const TupleDecl* topLevelDeclAst,
+                        RV& rv);
 
   // overrides
   void handleTupleDeclaration(const TupleDecl* ast, RV& rv) override;
@@ -208,11 +222,11 @@ void FindElidedCopies::gatherLastMentionIsCopyVars(VarFrame* frame,
   }
 }
 
-void FindElidedCopies::addDeclaration(VarFrame* frame, const VarLikeDecl* ast) {
+void FindElidedCopies::addDeclaration(VarFrame* frame, Qualifier intentOrKind,
+                                      const NamedDecl* ast) {
   bool inserted = frame->addToDeclaredVars(ast->id());
   if (inserted) {
-    auto kind = ast->storageKind();
-    if (kindAllowsCopyElision(kind)) {
+    if (kindAllowsCopyElision(intentOrKind)) {
       frame->eligibleVars.insert(ast->id());
     }
   }
@@ -273,23 +287,24 @@ void FindElidedCopies::noteMentionsForOutFormals(VarFrame* frame) {
   }
 }
 
-void FindElidedCopies::handleTupleDeclaration(const TupleDecl* ast, RV& rv) {
-  // TODO
-}
+void FindElidedCopies::processSingleDeclHelper(const NamedDecl* ast,
+                                               const AstNode* initExpression,
+                                               const QualifiedType& initType,
+                                               bool isFormal,
+                                               Qualifier intentOrKind,
+                                               RV& rv) {
+  addDeclaration(currentFrame(), intentOrKind, ast);
+  processDeclarationInit(ast, initExpression, rv);
 
-void FindElidedCopies::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
-  addDeclaration(currentFrame(), ast);
-  processDeclarationInit(ast, ast->initExpression(), rv);
-
-  if (auto initExpr = ast->initExpression()) {
+  if (initExpression) {
     VarFrame* frame = currentFrame();
     ID lhsVarId = ast->id();
-    ID rhsVarId = refersToId(initExpr, rv);
+    ID rhsVarId = refersToId(initExpression, rv);
     if (!rhsVarId.isEmpty() && isEligibleVarInAnyFrame(rhsVarId)) {
       // check that the types are the same
       if (rv.hasId(lhsVarId) && rv.hasId(rhsVarId)) {
         QualifiedType lhsType = rv.byId(lhsVarId).type();
-        QualifiedType rhsType = rv.byId(rhsVarId).type();
+        QualifiedType rhsType = initType;
         if (copyElisionAllowedForTypes(lhsType, rhsType, ast, rv)) {
           addCopyInit(frame, rhsVarId, ast->id());
         }
@@ -297,13 +312,64 @@ void FindElidedCopies::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
     }
   }
 
-  if (ast->isFormal() || ast->isVarArgFormal()) {
-    if (ast->storageKind() == Qualifier::OUT ||
-        ast->storageKind() == Qualifier::INOUT) {
+  if (isFormal) {
+    if (intentOrKind == Qualifier::OUT ||
+        intentOrKind == Qualifier::INOUT) {
       outOrInoutFormals.insert(ast->id());
     }
   }
 }
+
+void FindElidedCopies::processTupleDecl(const TupleDecl* ast,
+                                        const QualifiedType& initType,
+                                        const TupleDecl* topLevelDeclAst,
+                                        RV& rv) {
+  auto topLevelInitExpr = topLevelDeclAst->initExpression();
+
+  // If there's an init expr, it should be a tuple type with the same shape as
+  // this tuple decl.
+  const TupleType* initExprTupleType = nullptr;
+  if (initType.type()) {
+    initExprTupleType = initType.type()->toTupleType();
+    CHPL_ASSERT(initExprTupleType);
+    CHPL_ASSERT(initExprTupleType->numElements() == ast->numDecls());
+  }
+
+  for (int i = 0; i < ast->numDecls(); i++) {
+    auto decl = ast->decl(i);
+    // Use top-level tuple decl's init expr ast, but use corresponding
+    // element type for this element for the init expr type.
+    const QualifiedType& eltInitType =
+        initExprTupleType ? initExprTupleType->elementType(i) : QualifiedType();
+    if (auto vld = decl->toVarLikeDecl()) {
+      // Propagate formal-ness and intent from the tuple decl
+      bool isFormal = ast->isTupleDeclFormal();
+      Qualifier intentOrKind = (Qualifier)ast->intentOrKind();
+      processSingleDeclHelper(vld, topLevelInitExpr, eltInitType,
+                              isFormal, intentOrKind, rv);
+    } else if (auto td = decl->toTupleDecl()) {
+      processTupleDecl(td, eltInitType, topLevelDeclAst, rv);
+    } else {
+      context->error(decl, "unexpected type of contained decl in tuple decl");
+    }
+  }
+}
+
+void FindElidedCopies::handleTupleDeclaration(const TupleDecl* ast, RV& rv) {
+  auto topLevelDeclAst = ast;
+  auto initExprType = rv.byAst(topLevelDeclAst->initExpression()).type();
+  processTupleDecl(ast, initExprType, topLevelDeclAst, rv);
+}
+
+void FindElidedCopies::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
+  auto initExpr = ast->initExpression();
+  bool isFormal = ast->isFormal() || ast->isVarArgFormal();
+  Qualifier intentOrKind = ast->storageKind();
+  const QualifiedType& initType =
+      initExpr ? rv.byAst(initExpr).type() : QualifiedType();
+  processSingleDeclHelper(ast, initExpr, initType, isFormal, intentOrKind, rv);
+}
+
 void FindElidedCopies::handleMention(const Identifier* ast, ID varId, RV& rv) {
   VarFrame* frame = currentFrame();
   addMention(frame, varId);
@@ -354,6 +420,7 @@ void FindElidedCopies::handleAssign(const OpCall* ast, RV& rv) {
     processSingleAssignHelper(lhsAst, rhsAst, rhsType, ast, rv);
   }
 }
+
 void FindElidedCopies::handleOutFormal(const Call* ast,
                                        const AstNode* actual,
                                        const QualifiedType& formalType,
