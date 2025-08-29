@@ -2778,7 +2778,8 @@ void Resolver::resolveTupleDecl(const TupleDecl* td, QualifiedType useType) {
 static SkipCallResolutionReason
 shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
                          std::vector<const uast::AstNode*> actualAsts,
-                         const CallInfo& ci);
+                         const CallInfo& ci,
+                         bool* outAnyGenericActuals = nullptr);
 
 bool Resolver::resolveSpecialNewCall(const Call* call) {
   if (!call->calledExpression() ||
@@ -2980,7 +2981,8 @@ static bool couldBeOutInitialized(Resolver* rv, const ID& toId) {
 static SkipCallResolutionReason
 shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
                          std::vector<const uast::AstNode*> actualAsts,
-                         const CallInfo& ci) {
+                         const CallInfo& ci,
+                         bool* outAnyGenericActuals) {
   Context* context = rv->context;
   SkipCallResolutionReason skip = NONE;
   auto& byPostorder = rv->byPostorder;
@@ -3031,6 +3033,10 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
         bool noSubstitution =
           rv->substitutions == nullptr ||
           (!toId.isEmpty() && rv->substitutions->count(toId) == 0);
+
+        if (outAnyGenericActuals != nullptr && g != Type::CONCRETE) {
+          *outAnyGenericActuals = true;
+        }
 
         if (qt.isType() && isBuiltinGeneric && noSubstitution) {
           skip = GENERIC_TYPE;
@@ -6952,8 +6958,11 @@ static bool handleArrayTypeExpr(Resolver& rv,
     // array builder function.
     const char* arrayBuilderProc = "chpl__buildArrayRuntimeType";
     std::vector<CallInfoActual> actuals;
+    std::vector<const AstNode*> actualExprs;
     actuals.emplace_back(domainType, UniqueString::get(rv.context, "dom"));
+    actualExprs.push_back(iterandExpr);
     actuals.emplace_back(eltType, UniqueString::get(rv.context, "eltType"));
+    actualExprs.push_back(loop->numStmts() == 1 ? loop->stmt(0) : nullptr);
     auto ci = CallInfo(
         /* name */ UniqueString::get(rv.context, arrayBuilderProc),
         /* calledType */ QualifiedType(),
@@ -6963,9 +6972,17 @@ static bool handleArrayTypeExpr(Resolver& rv,
         actuals);
     auto scope = rv.currentScope();
     auto inScopes = CallScopeInfo::forNormalCall(scope, rv.poiScope);
-    auto c = resolveGeneratedCall(rv.rc, iterandExpr, ci, inScopes);
-    if (!c.exprType().isUnknownOrErroneous()) {
-      arrayType = QualifiedType(QualifiedType::TYPE, c.exprType().type());
+
+    // array types are specially built using chpl__buildArrayRuntimeType, which
+    // assumes that the actuals are their "final" incarnations (i.e., we're
+    // not in an initial/generic signature). So, if that assumption is not met,
+    // don't attempt to resolve the call.
+    bool anyActualsGeneric = false;
+    if (!shouldSkipCallResolution(&rv, loop, actualExprs, ci, &anyActualsGeneric) && !anyActualsGeneric) {
+      auto c = resolveGeneratedCall(rv.rc, iterandExpr, ci, inScopes);
+      if (!c.exprType().isUnknownOrErroneous()) {
+        arrayType = QualifiedType(QualifiedType::TYPE, c.exprType().type());
+      }
     }
   }
 
