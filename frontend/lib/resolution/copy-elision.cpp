@@ -106,6 +106,11 @@ struct FindElidedCopies : VarScopeVisitor {
                         const TupleDecl* topLevelDeclAst,
                         RV& rv);
 
+  void processTupleAssign(const Tuple* lhsTuple,
+                          const AstNode* rhsAst,
+                          const QualifiedType& rhsType,
+                          RV& rv);
+
   // overrides
   void handleTupleDeclaration(const TupleDecl* ast, RV& rv) override;
   void handleDeclaration(const VarLikeDecl* ast, RV& rv) override;
@@ -382,6 +387,7 @@ void FindElidedCopies::processTupleDecl(const TupleDecl* ast,
   if (!savedPoints.empty()) {
     // restore all the points we found
     CopyElisionState& state = frame->copyElisionState[rhsVarId];
+    state.points.clear();
     state.points.insert(savedPoints.begin(), savedPoints.end());
   }
 }
@@ -410,7 +416,8 @@ void FindElidedCopies::handleMention(const Identifier* ast, ID varId, RV& rv) {
 void FindElidedCopies::processSingleAssignHelper(const AstNode* lhsAst,
                                                  const AstNode* rhsAst,
                                                  const QualifiedType& rhsType,
-                                                 const AstNode* ast, RV& rv) {
+                                                 const AstNode* ast,
+                                                 RV& rv) {
   bool splitInit = processSplitInitAssign(lhsAst, allSplitInitedVars, rv);
   if (splitInit) {
     VarFrame* frame = currentFrame();
@@ -433,21 +440,70 @@ void FindElidedCopies::processSingleAssignHelper(const AstNode* lhsAst,
   }
 }
 
+void FindElidedCopies::processTupleAssign(const Tuple* lhsTuple,
+                                          const AstNode* rhsAst,
+                                          const QualifiedType& rhsType,
+                                          RV& rv) {
+    const Tuple* rhsTuple = rhsAst->toTuple();
+    if (rhsTuple) {
+      CHPL_ASSERT(rhsTuple->numActuals() == lhsTuple->numActuals());
+    }
+
+    const TupleType* rhsTupleType = nullptr;
+    if (rhsType.type()) {
+      rhsTupleType = rhsType.type()->toTupleType();
+      CHPL_ASSERT(rhsTupleType);
+      CHPL_ASSERT(rhsTupleType->numElements() == lhsTuple->numActuals());
+    }
+
+    // In the case of a tuple variable init expr, we can have multiple points
+    // copy-eliding from the same variable, but usual copy elision logic allows
+    // only one per copy-init. Work around this by manually recording and saving
+    // each point for this var, restoring them all at the end.
+    auto rhsVarId = refersToId(rhsAst, rv);
+    std::set<ID> savedPoints;
+
+    for (int i = 0; i < lhsTuple->numActuals(); i++) {
+      auto elt = lhsTuple->actual(i);
+      // Use corresponding element of rhs for this element's rhs, if rhs
+      // is present and a tuple expression. Otherwise, just propagate
+      // top level rhs as is.
+      if (rhsTuple) {
+        rhsAst = rhsTuple->actual(i);
+      }
+      QualifiedType useRhsType =
+          rhsTupleType ? rhsTupleType->elementType(i) : rhsType;
+      if (auto ident = elt->toIdentifier()) {
+        if (ident->name() == USTR("_")) continue;
+        processSingleAssignHelper(elt, rhsAst, useRhsType, elt, rv);
+      } else if (auto innerTuple = elt->toTuple()) {
+        processTupleAssign(innerTuple, rhsAst, useRhsType, rv);
+      } else {
+        context->error(elt,
+                       "unexpected type of contained element in tuple assign");
+      }
+
+      if (!rhsVarId.isEmpty()) {
+        auto& newPoints = currentFrame()->copyElisionState[rhsVarId].points;
+        savedPoints.insert(newPoints.begin(), newPoints.end());
+      }
+    }
+
+    if (!savedPoints.empty()) {
+      // restore all the points we found
+      CopyElisionState& state = currentFrame()->copyElisionState[rhsVarId];
+      state.points.clear();
+      state.points.insert(savedPoints.begin(), savedPoints.end());
+    }
+}
+
 void FindElidedCopies::handleAssign(const OpCall* ast, RV& rv) {
   auto lhsAst = ast->actual(0);
   auto rhsAst = ast->actual(1);
 
-  ID rhsVarId = refersToId(rhsAst, rv);
-  const QualifiedType& rhsType = rv.byId(rhsVarId).type();
+  const QualifiedType& rhsType = rv.byAst(rhsAst).type();
   if (auto lhsTuple = lhsAst->toTuple()) {
-    for (int i = 0; i < lhsTuple->numActuals(); i++) {
-      auto elt = lhsTuple->actual(i);
-      if (rhsType.type() && rhsType.type()->isTupleType()) {
-        const QualifiedType& useRhsType =
-            rhsType.type()->toTupleType()->elementType(i);
-        processSingleAssignHelper(elt, rhsAst, useRhsType, ast, rv);
-      }
-    }
+    processTupleAssign(lhsTuple, rhsAst, rhsType, rv);
   } else {
     processSingleAssignHelper(lhsAst, rhsAst, rhsType, ast, rv);
   }
