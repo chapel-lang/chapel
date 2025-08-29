@@ -1598,9 +1598,10 @@ static void test77() {
   testSplitInit("test77",
     R"""(
         proc test() {
-          var tup = (1,);
-          var x:int;
-          (x,) = tup;
+          var tup = (1, 2, 3);
+          var x: int;
+          var y: int = 3;
+          (x, y, _) = tup;
         }
     )""",
     {"x"});
