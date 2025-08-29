@@ -2270,8 +2270,8 @@ module ChapelDomain {
       :type size: int
     */
     @unstable("createIndexBuffer() is subject to change in the future.")
-    inline proc createIndexBuffer(size: int) {
-      return _value.dsiCreateIndexBuffer(size);
+    inline proc createIndexBuffer(size: int, dataSorted:bool = false, isUnique:bool = false) {
+      return _value.dsiCreateIndexBuffer(size, dataSorted, isUnique);
     }
 
     /*
