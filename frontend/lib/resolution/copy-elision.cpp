@@ -395,7 +395,7 @@ void FindElidedCopies::processTupleDecl(const TupleDecl* ast,
 void FindElidedCopies::handleTupleDeclaration(const TupleDecl* ast, RV& rv) {
   auto topLevelDeclAst = ast;
   auto initExpr = topLevelDeclAst->initExpression();
-  auto initExprType = rv.byAst(initExpr).type();
+  auto initExprType = initExpr ? rv.byAst(initExpr).type() : QualifiedType();
   processTupleDecl(ast, initExpr, initExprType, topLevelDeclAst, rv);
 }
 

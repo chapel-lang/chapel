@@ -1425,10 +1425,11 @@ void CallInitDeinit::processTupleDecl(const TupleDecl* ast,
 }
 
 void CallInitDeinit::handleTupleDeclaration(const TupleDecl* ast, RV& rv) {
-  validateTypeAndInitExpr(ast->typeExpression(), ast->initExpression(), rv);
+  auto initExpr = ast->initExpression();
+  validateTypeAndInitExpr(ast->typeExpression(), initExpr, rv);
 
   auto topLevelDeclAst = ast;
-  auto initExprType = rv.byAst(topLevelDeclAst->initExpression()).type();
+  auto initExprType = initExpr ? rv.byAst(initExpr).type() : QualifiedType();
   processTupleDecl(ast, initExprType, topLevelDeclAst, rv);
 }
 
