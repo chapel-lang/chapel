@@ -1377,8 +1377,10 @@ static void test48() {
     {}); // x is mentioned in receiver of method call, so no elision
 }
 
+// Copy elision for destructuring of tuple var
 static void test49() {
-  testCopyElision("test49",
+  // Init
+  testCopyElision("test49a",
     R""""(
       record R { }
       proc test() {
@@ -1390,10 +1392,28 @@ static void test49() {
       }
     )"""",
     {"M.test@8", "M.test@9"});
+
+  // Assign
+  testCopyElision("test49b",
+    R""""(
+      record R { }
+      proc test() {
+        var r = new R();
+
+        var tup = (1, r);
+
+        var a: int;
+        var b: R;
+        (a, b) = tup;
+      }
+    )"""",
+    {"M.test@12", "M.test@13"});
 }
 
+// Like test49, but no elision as the variable is mentioned later
 static void test50() {
-  testCopyElision("test50",
+  // Init
+  testCopyElision("test50a",
     R""""(
       record R { }
       proc test() {
@@ -1402,6 +1422,23 @@ static void test50() {
         var tup = (1, r);
 
         var (a, b) = tup;
+        tup;
+      }
+    )"""",
+    {});
+
+  // Assign
+  testCopyElision("test50b",
+    R""""(
+      record R { }
+      proc test() {
+        var r = new R();
+
+        var tup = (1, r);
+
+        var a: int;
+        var b: R;
+        (a, b) = tup;
         tup;
       }
     )"""",
