@@ -222,6 +222,21 @@
   #define DEBUG_PRINTF(...)
 #endif
 
+// Define this to break when 'setWide', etc are called on a particular ID.
+#define BREAK_WHEN_VISITING_ID_0 (-1)
+#define BREAK_WHEN_VISITING_ID_1 (-1)
+#define BREAK_WHEN_VISITING_ID_2 (-1)
+#define BREAK_WHEN_VISITING_ID_3 (-1)
+
+#define BREAK_WHEN_VISITING_ID(id__) do { \
+  if (id__ == BREAK_WHEN_VISITING_ID_0 || \
+      id__ == BREAK_WHEN_VISITING_ID_1 || \
+      id__ == BREAK_WHEN_VISITING_ID_2 || \
+      id__ == BREAK_WHEN_VISITING_ID_3) { \
+    debuggerBreakHere(); \
+  } \
+} while (0)
+
 static void debug(BaseAST* base, const char* format, ...) {
 #ifdef PRINT_WIDE_ANALYSIS
   Symbol* sym = toSymbol(base);
@@ -303,8 +318,24 @@ static bool valIsWideClass(BaseAST* bs) {
   return bs->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS);
 }
 
+static bool hasSomeWideness(BaseAST* bs);
+
+static bool isFunctionTypeContainingWide(BaseAST* bs) {
+  if (auto ft = toFunctionType(bs->typeInfo())) {
+    if (hasSomeWideness(ft->returnType()->symbol)) return true;
+
+    for (int i = 0; i < ft->numFormals(); i++) {
+      auto f = ft->formal(i);
+      if (hasSomeWideness(f->type()->symbol)) return true;
+    }
+  }
+
+  return false;
+}
+
 static bool hasSomeWideness(BaseAST* bs) {
-  return isFullyWide(bs) || valIsWideClass(bs);
+  return isFunctionTypeContainingWide(bs) || isFullyWide(bs) ||
+         valIsWideClass(bs);
 }
 
 static bool isRefType(BaseAST* bs)
@@ -329,12 +360,22 @@ static bool typeCanBeWide(Symbol *sym) {
   bool bad = sym->hasFlag(FLAG_EXTERN) ||
              (sym->isRefOrWideRef() == false && ts->hasFlag(FLAG_NO_WIDE_CLASS));
 
+  if (auto ft = toFunctionType(ts->getValType())) {
+    if (!sym->isRefOrWideRef()) {
+      // It is not a ref or wide ref, but it is a function type. If it
+      // contains a component (formal/return) that is (w-)ref, then it
+      // can still be made wide.
+      bad = bad || !ft->containsAnyRefComponent();
+    }
+  }
+
   if (!isFullyWide(sym) && !sym->isRefOrWideRef() && !canWidenRecord(ts) && isRecord(sym->type)) {
     bad = true;
   }
 
   return !bad &&
          (isObj(sym) ||
+          isFunctionType(ts->type) ||
           sym->isRefOrWideRef() ||
           canWidenRecord(sym) ||
           ts->hasFlag(FLAG_DATA_CLASS));
@@ -471,6 +512,9 @@ static bool queueEmpty() {
 static void fixType(Symbol* sym, bool mustBeWide, bool wideVal) {
   if (isFullyWide(sym) || !typeCanBeWide(sym)) return;
 
+  // (dlongnecke): Procedure component types are adjusted in `matchWide`.
+  if (isFunctionType(sym->type) && !sym->type->isRefOrWideRef()) return;
+
   if (isObj(sym) && mustBeWide) {
     if (TypeSymbol* ts = toTypeSymbol(sym->defPoint->parentSymbol)) {
       if (isFullyWide(ts)) return; // Don't widen a field in a wide type.
@@ -582,6 +626,8 @@ static void printCauses(Symbol* sym) {
 
 
 static void setWide(BaseAST* cause, Symbol* sym) {
+  BREAK_WHEN_VISITING_ID(sym->id);
+
   if (!typeCanBeWide(sym)) return;
   if (isArgSymbol(sym) && sym->defPoint->parentSymbol->hasFlag(FLAG_LOCAL_ARGS)) return;
   if (isVarSymbol(sym) && sym->defPoint->parentSymbol->hasFlag(FLAG_ARRAY) && !fNoInferLocalFields) {
@@ -603,6 +649,8 @@ static void setWide(BaseAST* cause, SymExpr* se) {
 
 
 static void setValWide(BaseAST* cause, Symbol* sym) {
+  BREAK_WHEN_VISITING_ID(sym->id);
+
   Type* valType = sym->type->getValType();
   if (!typeCanBeWide(sym)) return;
   if (!isObj(valType)) return;
@@ -619,7 +667,6 @@ static void setValWide(BaseAST* cause, Symbol* sym) {
 static void setValWide(BaseAST* cause, SymExpr* se) {
   setValWide(cause, se->symbol());
 }
-
 
 //
 // Often we need to sync the wideness of two references.
@@ -638,13 +685,86 @@ static void widenRef(BaseAST* src, Symbol* dest) {
   }
 }
 
+// Considering 'src', transform 'dst' such that it has matching wideness.
+// TODO (dlongnecke): What about the case where 'dst' is already wide but
+// 'src' is not? Can such cases occur? And if they do, what impact does
+// that have for propagation?
+static FunctionType* matchWidenessAcrossComponents(FunctionType* src,
+                                                   FunctionType* dst) {
+  INT_ASSERT(src->numFormals() == dst->numFormals());
+  FunctionType* ret = dst;
+
+  for (int i = 0; i < src->numFormals(); i++) {
+    auto fSrc = src->formal(i);
+    auto fDst = dst->formal(i);
+
+    if (fDst->isRefOrWideRef()) {
+      if (fSrc->qualType().isWideRef() && !fDst->qualType().isWideRef()) {
+        // The types for 'src' and 'dst' should match at this point.
+        INT_ASSERT(fSrc->type()->getValType() ==
+                   fDst->type()->getValType());
+
+        // Then widen the 'dst' type and construct a new function type.
+        auto fDstTypeWidened = getOrMakeWideTypeDuringCodegen(fDst->type());
+        FunctionType::Formal x = {
+          fDst->isConst() ? QUAL_CONST_WIDE_REF : QUAL_WIDE_REF,
+          fDstTypeWidened,
+          fDst->intent(),
+          fDst->name(),
+        };
+
+        ret = ret->getSubstituting(x, i);
+      }
+    }
+  }
+
+  if (src->returnType()->isWideRef() && !dst->returnType()->isWideRef()) {
+    INT_ASSERT(dst->returnType()->isRefOrWideRef());
+    INT_ASSERT(dst->returnIntent() == RET_CONST_REF ||
+               dst->returnIntent() == RET_REF);
+    ret = ret->getSubstituting(dst->returnIntent(), src->returnType());
+  }
+
+  return ret;
+}
+
 // Abstract special casing for refs away if we just want an easy
 // way to say that two variables need to have the same wideness.
 static void matchWide(BaseAST* src, Symbol* dest) {
+  if (auto ftDstIn = toFunctionType(dest->getValType())) {
+    // If the underlying type of 'dest' is a function type, then it may need
+    // adjustment to its components (e.g., formal) if a source component is
+    // wide. This needs to occur regardless of the reference level of 'dest'.
+
+    auto ftSrcIn = toFunctionType(src->getValType());
+    auto ftDstOut = matchWidenessAcrossComponents(ftSrcIn, ftDstIn);
+
+    if (ftDstOut != ftDstIn) {
+      // A change was made. Now match the original ref level.
+      Type* dstNewType = ftDstOut;
+      if (dest->isWideRef()) {
+        dstNewType = getOrMakeWideTypeDuringCodegen(dstNewType);
+      } else if (dest->isRef()) {
+        dstNewType = dstNewType->getRefType();
+      }
+
+      // Print a debug message to indicate that the type was changed.
+      debug(dest, "original type %s[%d] adjusted to %s[%d]",
+            toString(dest->type), dest->type->id,
+            toString(dstNewType), dstNewType->id);
+
+      // Set the type. No need to add to the queue, it will be done below.
+      dest->type = dstNewType;
+    }
+  }
+
+  // Continuing (even if the above occurred), now adjust ref wideness.
   if (src->isRefOrWideRef() && dest->isRefOrWideRef()) {
     widenRef(src, dest);
+
   } else if (dest->isRefOrWideRef() && !src->isRefOrWideRef()) {
     setValWide(src, dest);
+
   } else {
     setWide(src, dest);
   }
@@ -958,11 +1078,9 @@ static void addKnownWides() {
 
     FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
 
-    for (FnSymbol* indirectlyCalledFn : ftableVec) {
-      if (fn == indirectlyCalledFn) {
-        debug(arg, "called from ftableVec\n");
-        setWide(fn, arg);
-      }
+    if (ftableMap.find(fn) != ftableMap.end()) {
+      debug(arg, "called from ftable\n");
+      setWide(fn, arg);
     }
 
     forv_Vec(CallExpr, call, *fn->calledBy) {
@@ -1033,10 +1151,13 @@ static void addKnownWides() {
 // widen other variables.
 //
 static void propagateVar(Symbol* sym) {
-
   INT_ASSERT(hasSomeWideness(sym));
   debug(sym, "Propagating var\n");
 
+  BREAK_WHEN_VISITING_ID(sym->id);
+
+  // TODO (dlongnecke): Do we need to propagate ref components in PTs here?
+  //
   // Actuals and formals have to have the same wideness of their _val field.
   // A ref_T can't be passed into a ref_wide_T, or vice versa, even with temps.
   // At least, this isn't possible today as far as I know.
@@ -1209,53 +1330,105 @@ static void propagateVar(Symbol* sym) {
       }
       else if (call->isPrimitive(PRIM_RETURN)) {
         FnSymbol* fn = toFnSymbol(call->parentSymbol);
+        bool isFnUsedAsVal = fn->hasFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION);
+        bool wasRetTypeChanged = false;
         {
+          //
+          // Adjust the return type of the function to match sym's wideness.
+          //
           QualifiedType qt = sym->qualType();
           Type* newRetType = qt.type();
           if (qt.isRefOrWideRef() && isRefType(newRetType) == false) {
+            wasRetTypeChanged = true;
             if (qt.isRef()) {
               newRetType = newRetType->refType;
             } else {
               newRetType = wideRefMap.get(newRetType->refType);
             }
           }
+
           // Functions don't support qualifiers for return types yet, so we
           // need to encode wideness in the type.
           fn->retType = newRetType;
+
+          if (isFnUsedAsVal) {
+            // Recompute the type for procedures used as values.
+            auto ft = fn->computeAndSetType();
+            INT_ASSERT(!wasRetTypeChanged || ft->returnType()->isWideRef());
+          }
         }
+
         INT_ASSERT(fn);
 
         forv_Vec(CallExpr*, call, *fn->calledBy) {
+          // Now adjust the LHS of all direct calls to 'fn'.
+
           if (!isAlive(call)) continue;
 
-          // TODO: This case handles virtual method calls, or the return of
-          // a _ref. Can we handle this better?
           if (CallExpr* parent = toCallExpr(call->parentExpr)) {
-            INT_ASSERT(parent->isPrimitive(PRIM_MOVE) || parent->isPrimitive(PRIM_ASSIGN));
+            // TODO: This case handles virtual method calls, or the return
+            // of a _ref. Can we handle this better?
+            INT_ASSERT(parent->isPrimitive(PRIM_MOVE) ||
+                       parent->isPrimitive(PRIM_ASSIGN));
+
             SymExpr* lhs = toSymExpr(parent->get(1));
-            DEBUG_PRINTF("Returning wide to %s (%d)\n", lhs->symbol()->cname, lhs->symbol()->id);
+            DEBUG_PRINTF("Returning wide to %s (%d)\n",
+                         lhs->symbol()->cname,
+                         lhs->symbol()->id);
+
             if (isObj(sym) && lhs->isRefOrWideRef()) {
               setValWide(use, lhs);
-            }
-            else if (isObj(lhs) || isObj(sym)) {
+
+            } else if (isObj(lhs) || isObj(sym)) {
               setWide(use, lhs);
-            }
-            else if (sym->isRefOrWideRef() && lhs->isRefOrWideRef()) {
+
+            } else if (sym->isRefOrWideRef() && lhs->isRefOrWideRef()) {
               widenRef(use, lhs->symbol());
             }
           }
         }
-      }
-      else if (call->isPrimitive(PRIM_ARRAY_SHIFT_BASE_POINTER)) {
+
+        if (isFnUsedAsVal && wasRetTypeChanged) {
+          for_SymbolSymExprs(se, fn) {
+            if (!isAlive(se)) continue;
+            auto call = toCallExpr(se->parentExpr);
+
+            // Now consider uses of the function that are not calls.
+            if (call && call->baseExpr != se) {
+              if (call->isPrimitive(PRIM_MOVE)) {
+                auto lhs = toSymExpr(call->get(1));
+                auto rhs = toSymExpr(call->get(2));
+                INT_ASSERT(lhs && se == rhs);
+
+                // Set the type to the widened one that was just computed.
+                //
+                // TODO (dlongnecke): What if for some reason this LHS
+                // already has different set of w-ref components? In that
+                // case assignment is incorrect, we need to match wideness.
+                // Also, what if a component of the LHS is wide, but the
+                // corresponding component is not wide in 'fn'?
+                auto& t = lhs->symbol()->type;
+                INT_ASSERT(isFunctionType(t));
+                t = fn->type;
+
+                // And add the new variable to the queue. We don't call
+                // 'setWide' here because a procedure type isn't really
+                // "wide", but it does need to propagate and calls to it
+                // also need to be adjusted.
+                addToQueue(lhs->symbol());
+              }
+            }
+          }
+        }
+      } else if (call->isPrimitive(PRIM_ARRAY_SHIFT_BASE_POINTER)) {
         if (use == call->get(2)) {
           debug(sym, "Setting shift base wide\n");
           setWide(use, toSymExpr(call->get(1))->symbol());
         }
-      }
-      else if (call->primitive) {
+
+      } else if (call->primitive) {
         DEBUG_PRINTF("Unhandled primitive %s (call %d in %s)\n", call->primitive->name, call->id, call->getModule()->cname);
-      }
-      else if (FnSymbol* fn = call->resolvedFunction()) {
+      } else if (FnSymbol* fn = call->resolvedFunction()) {
         debug(sym, "passed to fn %s (%d)\n", fn->cname, fn->id);
 
         // TODO: Duplicate functions here.
@@ -1263,6 +1436,15 @@ static void propagateVar(Symbol* sym) {
         ArgSymbol* arg = actual_to_formal(use);
         debug(sym, "Default widening of arg %s (%d)\n", arg->cname, arg->id);
         matchWide(use, arg);
+      } else if (call->isIndirectCall() && call->baseExpr == use) {
+        // Any ref components in the call will need to be widened.
+        auto ft = toFunctionType(use->getValType());
+        INT_ASSERT(ft);
+        if (ft->numFormals() > 0) {
+          INT_ASSERT(call->numActuals() > 0);
+          INT_FATAL(call, "Widening arguments to indirect calls "
+                          "is not implemented yet!");
+        }
       }
     }
   }
@@ -2086,6 +2268,8 @@ static void fixAST() {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (!isAlive(call)) continue;
 
+    BREAK_WHEN_VISITING_ID(call->id);
+
     if (call->isResolved()) {
       for_formals_actuals(formal, actual, call) {
         if (SymExpr* act = toSymExpr(actual)) {
@@ -2100,7 +2284,7 @@ static void fixAST() {
       }
     }
     else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL) ||
-        call->isPrimitive(PRIM_FTABLE_CALL)) {
+             call->isPrimitive(PRIM_FTABLE_CALL)) {
       for_actuals(actual, call) {
         SymExpr* act = toSymExpr(actual);
         if (isFullyWide(act)) continue;

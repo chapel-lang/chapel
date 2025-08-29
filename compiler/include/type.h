@@ -452,14 +452,17 @@ class FunctionType final : public Type {
     Formal(Qualifier qual, Type* type, IntentTag intent, const char* name);
     bool operator==(const Formal& other) const;
     size_t hash() const;
-    bool isGeneric() const;
     Qualifier qual() const;
     Type* type() const;
     IntentTag intent() const;
     const char* name() const;
     QualifiedType qualType() const;
+    bool isGeneric() const;
     bool isAnonymous() const;
+    bool isConst() const;
     bool isRef() const;
+    bool isWideRef() const;
+    bool isRefOrWideRef() const;
   };
 
  private:
@@ -522,6 +525,8 @@ class FunctionType final : public Type {
   FunctionType* getAsLocal() const;
   FunctionType* getAsWide() const;
   FunctionType* getAsExtern() const;
+  FunctionType* getSubstituting(Formal formal, int idx) const;
+  FunctionType* getSubstituting(RetTag returnIntent, Type* returnType) const;
 
   Kind kind() const;
   Width width() const;
@@ -539,6 +544,7 @@ class FunctionType final : public Type {
   bool isExtern() const;
   bool isExport() const;
   bool hasForeignLinkage() const;
+  bool containsAnyRefComponent() const;
   const char* toString() const;
   const char* toStringMangledForCodegen() const;
   size_t hash() const;
