@@ -1481,6 +1481,27 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
   });
 }
 
+bool Resolver::validateArrayEltTypeConstraints(const uast::AstNode* formalTypeExpr,
+                                               const types::QualifiedType& actualType) {
+  bool success = true;
+  mapTypeToAst(context, byPostorder, formalTypeExpr,
+               actualType, /* isTopLevel */ true,
+               [this, &success](Context* context,
+                                                 const AstNode* node,
+                                                 const QualifiedType& qt) {
+    // TODO: this should be a lookup, don't let me merge this.
+    for (auto& [constrainedNode, expectedQt] : arrayEltTypeConstraints) {
+      if (node != constrainedNode) continue;
+
+      auto result = canPassScalar(context, qt, expectedQt);
+      if (!result.passes() || result.converts()) {
+        success = false;
+      }
+    }
+  });
+  return success;
+}
+
 void Resolver::resolveVarArgSizeQuery(const uast::VarArgFormal* varArgFormal,
                                       int numVarArgs) {
   if (auto countQuery = varArgFormal->count()) {
@@ -6978,6 +6999,10 @@ static bool handleArrayTypeExpr(Resolver& rv,
         arrayType = QualifiedType(QualifiedType::TYPE, c.exprType().type());
       }
     }
+  }
+
+  if (rv.collectArrayEltTypeConstraints && loop->numStmts() == 1) {
+    rv.arrayEltTypeConstraints.emplace_back(loop->stmt(0), eltType);
   }
 
   re.setType(arrayType);

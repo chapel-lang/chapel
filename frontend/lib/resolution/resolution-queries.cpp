@@ -2767,9 +2767,14 @@ instantiateSignatureImpl(ResolutionContext* rc,
       }
     } else if (formal) {
       // Substitutions have been updated; re-run resolution to get better
-      // intents, vararg info, and to extract type query info.
+      // intents, vararg info, and to extract type query and array element
+      // type constraint info.
+      bool collectArrayEltTypeConstraints = true;
+      visitor.arrayEltTypeConstraints.clear();
+      std::swap(visitor.collectArrayEltTypeConstraints, collectArrayEltTypeConstraints);
       formal->traverse(visitor);
       formalType = getProperFormalType(r, entry, ad, formal);
+      std::swap(visitor.collectArrayEltTypeConstraints, collectArrayEltTypeConstraints);
     }
 
     // Type queries have now been computed. We need to verify that type
@@ -2816,6 +2821,14 @@ instantiateSignatureImpl(ResolutionContext* rc,
       if (!passResult.passes()) {
         // Type query constraints were not satisfied
         return ApplicabilityResult::failure(sig, passResult.reason(), entry.formalIdx());
+      }
+
+      if (auto vld = formal->toVarLikeDecl()) {
+        if (auto te = vld->typeExpression()) {
+          if (!visitor.validateArrayEltTypeConstraints(te, checkType)) {
+            return ApplicabilityResult::failure(sig, FAIL_CANNOT_INSTANTIATE, entry.formalIdx());
+          }
+        }
       }
 
       // be strict about instantiation type to ensure type query values
