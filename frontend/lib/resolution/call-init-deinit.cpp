@@ -243,13 +243,11 @@ bool CallInitDeinit::isCallProducingValue(const AstNode* rhsAst,
   // a false positive.
   auto parentId = parsing::idToParentId(context, rhsAst->id());
   if (auto parentAst = parsing::idToAst(context, parentId)) {
-    if (parentAst->isTuple() &&
-        !isCallProducingValue(parentAst, rv.byAst(parentAst).type(), rv)) {
+    if (parentAst->isTuple() || parentAst->isTupleDecl()) {
       isProbablyCall = false;
     }
   }
 
-  // return rv.byAst(rhsAst).toId().isEmpty() && !isRef(rhsType.kind());
   return isProbablyCall && !isRef(rhsType.kind());
 }
 
@@ -1400,7 +1398,31 @@ void CallInitDeinit::processTupleDecl(const TupleDecl* ast,
     } else {
       context->error(decl, "unexpected type of contained decl in tuple decl");
     }
+
+    auto& re = rv.byPostorder().byAst(decl);
+    AssociatedAction::ActionsList subActions;
+    for (auto action : re.associatedActions()) {
+      debuggerBreakHere();
+      auto useId = action.id();
+      auto useTupleEltIdx = i;
+      // if (rhsTupleAst) {
+      //   useId = rhsTupleAst->actual(i)->id();
+      //   useTupleEltIdx = -1;
+      // }
+      auto actionWithIdx = new AssociatedAction(
+          action.action(), action.fn(), useId, action.type(),
+          /* tupleEltIdx */ useTupleEltIdx, action.subActions());
+      subActions.push_back(actionWithIdx);
+    }
+
+    // Gather the sub-actions into this new action.
+    re.clearAssociatedActions();
+    for (auto action : subActions) {
+      re.addAssociatedAction(*action);
+    }
   }
+
+  // TODO: Resolve a top-level init or assign for the tuple itself?
 }
 
 void CallInitDeinit::handleTupleDeclaration(const TupleDecl* ast, RV& rv) {
