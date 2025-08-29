@@ -24,7 +24,7 @@ def get(flag=''):
             import chpl_llvm
             llvm_vers = chpl_llvm.get_llvm_version()
             if llvm_vers in ('14', '15'):
-                error("This version of LLVM is not supported with sanitizers")
+                error("LLVM {0} is not supported with sanitizers".format(llvm_vers))
             if sanitizers_val != 'address':
                 error("CHPL_SANITIZE_EXE={0} is not supported with CHPL_TARGET_COMPILER=llvm".format(sanitizers_val))
         if flag == '' and chpl_mem.get('host') != 'cstdlib':
