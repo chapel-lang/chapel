@@ -1365,7 +1365,7 @@ static void test47() {
 }
 
 static void test48() {
-  testCopyElision("test5a",
+  testCopyElision("test48",
     R""""(
         record R { proc foo(){} }
         proc test(cond: bool) {
@@ -1375,6 +1375,37 @@ static void test48() {
         }
     )"""",
     {}); // x is mentioned in receiver of method call, so no elision
+}
+
+static void test49() {
+  testCopyElision("test49",
+    R""""(
+      record R { }
+      proc test() {
+        var r = new R();
+
+        var tup = (1, r);
+
+        var (a, b) = tup;
+      }
+    )"""",
+    {"M.test@8", "M.test@9"});
+}
+
+static void test50() {
+  testCopyElision("test50",
+    R""""(
+      record R { }
+      proc test() {
+        var r = new R();
+
+        var tup = (1, r);
+
+        var (a, b) = tup;
+        tup;
+      }
+    )"""",
+    {});
 }
 
 int main() {
@@ -1426,5 +1457,8 @@ int main() {
   test46();
   test47();
   test48();
+  test49();
+  test50();
+
   return 0;
 }
