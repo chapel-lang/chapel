@@ -218,8 +218,8 @@ documentation: $(SYS_CTYPES_MODULE_DOC)
 	@./internal/fixInternalDocs.sh ${MODULE_SPHINX}
 	@./dists/fixDistDocs.perl      ${MODULE_SPHINX}
 	@echo "Copying generated module documentation to ${DOC_BUILD}"
-	@rm -rf {DOC_BUILD}/modules
-	@rm -rf {DOC_BUILD}/builtins
+	@rm -rf ${DOC_BUILD}/modules
+	@rm -rf ${DOC_BUILD}/builtins
 	@mkdir -p ${DOC_BUILD}/modules
 	@mkdir -p ${DOC_BUILD}/builtins
 	@cp -rf ${MODULE_SPHINX}/source/modules/standard   ${DOC_BUILD}/modules
