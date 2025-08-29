@@ -51,3 +51,5 @@ The modifications that we have made to the GASNet source are as follows:
      gasneti_console_message("WARNING",
 
 ```
+
+* Cherry-picked 5da3b2f592 - ofi: fix EVERYTHING support, broken by PR#663
