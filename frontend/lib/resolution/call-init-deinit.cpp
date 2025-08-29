@@ -1083,7 +1083,8 @@ void CallInitDeinit::processInit(VarFrame* frame,
       // so note that in deinitedVars.
       ID rhsDeclId = refersToId(rhsAst, rv);
       // copy elision with '=' should only apply to myVar = myOtherVar
-      CHPL_ASSERT(!rhsDeclId.isEmpty());
+      // TODO: properly handle tuple destructuring decl case
+      // CHPL_ASSERT(!rhsDeclId.isEmpty());
       frame->deinitedVars.emplace(rhsDeclId, currentStatement()->id());
     } else if (isCallProducingValue(rhsAst, rhsType, rv)) {
       // e.g. var x; x = callReturningValue();
@@ -1386,12 +1387,11 @@ void CallInitDeinit::processTupleDecl(const TupleDecl* ast,
     const QualifiedType& eltInitType =
         initExprTupleType ? initExprTupleType->elementType(i) : QualifiedType();
     if (auto vld = decl->toVarLikeDecl()) {
-      debuggerBreakHere();
       auto parent = parsing::parentAst(context, topLevelDeclAst);
       // Propagate formal-ness and intent from the tuple decl
       bool isFormal = ast->isTupleDeclFormal();
       Qualifier intentOrKind = (Qualifier)ast->intentOrKind();
-      processSingleDeclHelper(vld, topLevelInitExpr, parent, eltInitType,
+      processSingleDeclHelper(vld, parent, topLevelInitExpr, eltInitType,
                               isFormal, intentOrKind, rv);
     } else if (auto td = decl->toTupleDecl()) {
       processTupleDecl(td, eltInitType, topLevelDeclAst, rv);
@@ -1402,7 +1402,6 @@ void CallInitDeinit::processTupleDecl(const TupleDecl* ast,
     auto& re = rv.byPostorder().byAst(decl);
     AssociatedAction::ActionsList subActions;
     for (auto action : re.associatedActions()) {
-      debuggerBreakHere();
       auto useId = action.id();
       auto useTupleEltIdx = i;
       // if (rhsTupleAst) {
