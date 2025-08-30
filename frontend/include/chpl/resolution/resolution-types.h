@@ -2831,6 +2831,9 @@ class ResolvedFunction {
   // the set of point-of-instantiation scopes used by the instantiation
   PoiInfo poiInfo_;
 
+  // the linkage name computed for this function
+  UniqueString linkageName_;
+
   // the return type computed for this function
   types::QualifiedType returnType_;
 
@@ -2850,6 +2853,7 @@ class ResolvedFunction {
                    uast::Function::ReturnIntent returnIntent,
                    ResolutionResultByPostorderID resolutionById,
                    PoiInfo poiInfo,
+                   UniqueString linkageName,
                    types::QualifiedType returnType,
                    std::vector<CompilerDiagnostic> diagnostics,
                    PoiTraceToChildMap poiTraceToChild,
@@ -2858,6 +2862,7 @@ class ResolvedFunction {
         returnIntent_(returnIntent),
         resolutionById_(std::move(resolutionById)),
         poiInfo_(std::move(poiInfo)),
+        linkageName_(linkageName),
         returnType_(std::move(returnType)),
         diagnostics_(std::move(diagnostics)),
         poiTraceToChild_(std::move(poiTraceToChild)),
@@ -2871,6 +2876,9 @@ class ResolvedFunction {
 
   /** the return intent */
   uast::Function::ReturnIntent returnIntent() const { return returnIntent_; }
+
+  /** the linkage name */
+  UniqueString linkageName() const { return linkageName_; }
 
   /** the return type */
   const types::QualifiedType& returnType() const {
@@ -2906,6 +2914,7 @@ class ResolvedFunction {
            returnIntent_ == other.returnIntent_ &&
            resolutionById_ == other.resolutionById_ &&
            PoiInfo::updateEquals(poiInfo_, other.poiInfo_) &&
+           linkageName_ == other.linkageName_ &&
            returnType_ == other.returnType_ &&
            diagnostics_ == other.diagnostics_ &&
            poiTraceToChild_ == other.poiTraceToChild_ &&
@@ -2920,6 +2929,7 @@ class ResolvedFunction {
     std::swap(returnIntent_, other.returnIntent_);
     resolutionById_.swap(other.resolutionById_);
     poiInfo_.swap(other.poiInfo_);
+    linkageName_.swap(other.linkageName_);
     returnType_.swap(other.returnType_);
     std::swap(diagnostics_, other.diagnostics_);
     std::swap(poiTraceToChild_, other.poiTraceToChild_);
@@ -2933,6 +2943,7 @@ class ResolvedFunction {
     context->markPointer(signature_);
     resolutionById_.mark(context);
     poiInfo_.mark(context);
+    linkageName_.mark(context);
     returnType_.mark(context);
     chpl::mark<decltype(diagnostics_)>{}(context, diagnostics_);
     for (auto& p : poiTraceToChild_) {
@@ -2947,7 +2958,7 @@ class ResolvedFunction {
   size_t hash() const {
     // Skip 'resolutionById_' since it can be quite large.
     std::ignore = resolutionById_;
-    size_t ret = chpl::hash(signature_, returnIntent_, poiInfo_, returnType_, diagnostics_);
+    size_t ret = chpl::hash(signature_, returnIntent_, poiInfo_, linkageName_, returnType_, diagnostics_);
     for (auto& p : poiTraceToChild_) {
       ret = hash_combine(ret, chpl::hash(p.first));
       ret = hash_combine(ret, chpl::hash(p.second));
