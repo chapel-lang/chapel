@@ -1269,6 +1269,76 @@ const types::QualifiedType typeWithDefaults(ResolutionContext* rc,
   return t;
 }
 
+static void computeTypesReachableFromType(Context* context,
+                                          const ID& aggregateId,
+                                          std::set<ID>& result);
+
+struct ReachableTypeFinder {
+  Context* context;
+  std::set<ID>& result;
+  ResolutionResultByPostorderID& rr;
+
+  void visitId(const ID& id) {
+
+  }
+
+  // by default, recurse into children
+  bool enter(const AstNode* node) { return true; }
+  void exit(const AstNode* node) {}
+
+  bool enter(const Identifier* node) {
+    auto re = rr.byAstOrNull(node);
+    if (!re) return false;
+
+    auto toId = re->toId();
+    if (!asttags::isAggregateDecl(parsing::idToTag(context, toId))) {
+      return false;
+    }
+
+    if (result.insert(toId).second) {
+      computeTypesReachableFromType(context, toId, result);
+    }
+
+    return false;
+  }
+  void exit(const Identifier* node) {}
+
+  bool enter(const Module* node) { return false;  /* don't recurse into modules */ }
+  void exit(const Module* node) {}
+
+  bool enter(const Function* node) { return false;  /* don't recurse into functions */ }
+  void exit(const Function* node) {}
+};
+
+static void computeTypesReachableFromType(Context* context,
+                                          const ID& id,
+                                          std::set<ID>& result) {
+
+  auto scopeResolved = scopeResolveAggregate(context, id);
+  auto ast = parsing::idToAst(context, id);
+  CHPL_ASSERT(ast && ast->isAggregateDecl());
+  auto ad = ast->toAggregateDecl();
+
+  ReachableTypeFinder finder = {context, result, scopeResolved};
+
+  for (auto field : ad->decls()) {
+    if (!parsing::idIsField(context, field->id())) continue;
+
+    field->traverse(finder);
+  }
+
+}
+
+static std::set<ID> const& typesReachableFromType(Context* context,
+                                                   ID aggregateId) {
+
+  QUERY_BEGIN(typesReachableFromType, context, aggregateId);
+  std::set<ID> result;
+  result.insert(aggregateId);
+  computeTypesReachableFromType(context, aggregateId, result);
+  return QUERY_END(result);
+}
+
 
 // the ignore argument is just to ignore types that we are currently
 // computing the genericity of (we can assume that those are concrete).
@@ -1521,8 +1591,7 @@ static const AstNode* unwrapClassCall(const Call* call, bool& outConcreteManagem
 
 static bool isScopeResolvedExprGeneric(Context* context,
                                        ResolutionResultByPostorderID& rr,
-                                       const AstNode* expr,
-                                       std::set<const Type*>& ignore) {
+                                       const AstNode* expr) {
   bool isConcreteManagement = false;
   if (auto call = expr->toCall()) {
     expr = unwrapClassCall(call, isConcreteManagement);
@@ -1555,8 +1624,27 @@ static bool isScopeResolvedExprGeneric(Context* context,
         initialType = initialTypeForTypeDecl(context, toId)->getCompositeType();
       }
 
-      if (asttags::isClass(toTag) && !isConcreteManagement &&
-          ignore.find(initialType) == ignore.end()) {
+      // this could be considered a hack. Consider the following snippet:
+      //
+      // class C {
+      //   var next: C?;
+      // }
+      //
+      // Here, we can obviously tell that field `next` has generic management,
+      // and is therefore generic. However, there's no way to build a type
+      // constructor for `C` that would enable instantiating `next`, since to
+      // specify the ownership of `next`, you'd need to provide e.g. an `owned C`,
+      // but to provide ownership for the inner `C`, you'd need to provide
+      // `owned C(owned C)`, and you can keep expanding this. Resolving the type
+      // constructor would require resolving the type constructor, ad infinitum.
+      //
+      // So, for mutually recursive groups of types, ignore even ownership genericity
+      // in fields.
+      bool isMutuallyRecursive =
+        asttags::isAggregateDecl(toTag) &&
+        typesReachableFromType(context, toId).count(expr->id().parentSymbolId(context)) != 0;
+
+      if (asttags::isClass(toTag) && !isConcreteManagement && !isMutuallyRecursive) {
         // classes without 'shared' or 'owned' are generic (generic management),
         // regardless if whether the class' fields are generic or not.
         //
@@ -1571,8 +1659,8 @@ static bool isScopeResolvedExprGeneric(Context* context,
       // this type is generic too, _unless_ it's used as part of a call to
       // a type constructor to create a concrete instance of the type (in
       // which case there is a 'call').
-      if (asttags::isAggregateDecl(toTag) && !call) {
-        if (getTypeGenericityIgnoring(context, initialType, ignore) != Type::CONCRETE) {
+      if (asttags::isAggregateDecl(toTag) && !call && !isMutuallyRecursive) {
+        if (getTypeGenericity(context, initialType) != Type::CONCRETE) {
           return true;
         }
       }
@@ -1585,7 +1673,7 @@ static bool isScopeResolvedExprGeneric(Context* context,
   // whole call is generic.
   if (call) {
     for (auto actual : call->actuals()) {
-      if (isScopeResolvedExprGeneric(context, rr, actual, ignore)) {
+      if (isScopeResolvedExprGeneric(context, rr, actual)) {
         return true;
       }
     }
@@ -1605,8 +1693,7 @@ static bool isScopeResolvedExprGeneric(Context* context,
 static bool isVariableDeclWithClearGenericity(Context* context,
                                               const VarLikeDecl* var,
                                               bool &outIsGeneric,
-                                              types::QualifiedType* outFormalType,
-                                              std::set<const Type*>& ignore) {
+                                              types::QualifiedType* outFormalType) {
   // fields that are 'type' or 'param' are generic
   // and we can use the same type/param intent for the type constructor
   if (var->storageKind() == QualifiedType::TYPE ||
@@ -1650,21 +1737,20 @@ static bool isVariableDeclWithClearGenericity(Context* context,
                                            var, rr);
   var->traverse(visitor);
 
-  outIsGeneric = isScopeResolvedExprGeneric(context, rr, var->typeExpression(), ignore);
+  outIsGeneric = isScopeResolvedExprGeneric(context, rr, var->typeExpression());
   return true;
 }
 
-bool isFieldSyntacticallyGenericIgnoring(Context* context,
-                                         const ID& fieldId,
-                                         types::QualifiedType* formalType,
-                                         std::set<const Type*>& typeGenericities) {
+bool isFieldSyntacticallyGeneric(Context* context,
+                                 const ID& fieldId,
+                                 types::QualifiedType* formalType) {
   // compare with AggregateType::fieldIsGeneric
 
   auto var = parsing::idToAst(context, fieldId)->toVariable();
   CHPL_ASSERT(var);
 
   bool isGeneric = false;
-  if (isVariableDeclWithClearGenericity(context, var, isGeneric, formalType, typeGenericities)) {
+  if (isVariableDeclWithClearGenericity(context, var, isGeneric, formalType)) {
     return isGeneric;
   }
 
@@ -1696,21 +1782,13 @@ bool isFieldSyntacticallyGenericIgnoring(Context* context,
         break;
       }
 
-      if (isVariableDeclWithClearGenericity(context, neighborVar, isGeneric, formalType, typeGenericities)) {
+      if (isVariableDeclWithClearGenericity(context, neighborVar, isGeneric, formalType)) {
         break;
       }
     }
   }
 
   return isGeneric;
-}
-
-bool isFieldSyntacticallyGeneric(Context* context,
-                                 const ID& fieldId,
-                                 types::QualifiedType* formalType) {
-  // Performance: this might be made into a query, why not?
-  std::set<const Type*> typeGenericities;
-  return isFieldSyntacticallyGenericIgnoring(context, fieldId, formalType, typeGenericities);
 }
 
 bool shouldIncludeFieldInTypeConstructor(Context* context,
@@ -2499,6 +2577,7 @@ instantiateSignatureImpl(ResolutionContext* rc,
 
     bool addSub = false;
     bool isInstantiated = false;
+    bool justComputedVarArgType = false;
     QualifiedType useType;
     const auto formal = untypedSignature->formalDecl(entry.formalIdx());
     const auto& actualType = entry.actualType();
@@ -2512,6 +2591,7 @@ instantiateSignatureImpl(ResolutionContext* rc,
         // We haven't yet re-computed the vararg tuple type.
         formal->traverse(visitor);
         varArgType = r.byAst(formal).type();
+        justComputedVarArgType = true;
       }
       formalType = getVarArgTupleElemType(varArgType);
 
@@ -2671,9 +2751,18 @@ instantiateSignatureImpl(ResolutionContext* rc,
     if (entry.isVarArgEntry()) {
       // Vararg entries don't get substitutions at this point, so
       // manually update type queries.
-      if (auto vld = formal->toVarLikeDecl()) {
-        if (auto te = vld->typeExpression()) {
-            visitor.resolveTypeQueries(te, useType);
+      //
+      // ... except, don't do this if this is the second+ time we are visiting
+      // this vararg formal. The reason being that type queries can't change
+      // after the first time (so that `x: R(?t)...` leaves `?t` consistent).
+      // This way, the type queries will remain as they were during the first
+      // actual, and we'll get formal-actual mismatches if the user tries to
+      // pull a switcheroo.
+      if (justComputedVarArgType) {
+        if (auto vld = formal->toVarLikeDecl()) {
+          if (auto te = vld->typeExpression()) {
+              visitor.resolveTypeQueries(te, useType);
+          }
         }
       }
     } else if (formal) {
@@ -2727,6 +2816,19 @@ instantiateSignatureImpl(ResolutionContext* rc,
       if (!passResult.passes()) {
         // Type query constraints were not satisfied
         return ApplicabilityResult::failure(sig, passResult.reason(), entry.formalIdx());
+      }
+
+      // be strict about instantiation type to ensure type query values
+      // are unambiguous. See also the previous justComputedVarArgType
+      // condition and comment above.
+      if (entry.isVarArgEntry() && !justComputedVarArgType &&
+          passResult.converts()) {
+        auto vfml = formal->toVarArgFormal();
+        CHPL_ASSERT(vfml != nullptr);
+        if (vfml->typeExpression() &&
+            !parsing::typeQueriesInExpression(context, vfml->typeExpression()).empty()) {
+          return ApplicabilityResult::failure(sig, FAIL_VARARG_TQ_MISMATCH, entry.formalIdx());
+        }
       }
 
       if (fn != nullptr && fn->isMethod() && fn->thisFormal() == formal) {
