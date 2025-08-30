@@ -96,6 +96,10 @@
 #include "llvm/Passes/OptimizationLevel.h"
 using LlvmOptimizationLevel = llvm::OptimizationLevel;
 
+#include "llvm/Transforms/Instrumentation/AddressSanitizerOptions.h"
+#include "llvm/Transforms/Instrumentation/AddressSanitizer.h"
+
+
 #ifdef HAVE_LLVM_RV
 #include "rv/passes.h"
 #endif
@@ -2519,6 +2523,38 @@ static PassBuilder constructPassBuilder(
 }
 
 
+//
+// Copied from clang/lib/CodeGen/BackendUtil.cpp
+// It's probably not really relevant to Chapel since we don't do GC, but this
+// does return true for MachO
+//
+// Check if ASan should use GC-friendly instrumentation for globals.
+// First of all, there is no point if -fdata-sections is off (expect for MachO,
+// where this is not a factor). Also, on ELF this feature requires an assembler
+// extension that only works with -integrated-as at the moment.
+static bool asanUseGlobalsGC(const Triple &T, const CodeGenOptions &CGOpts) {
+  if (!CGOpts.SanitizeAddressGlobalsDeadStripping)
+    return false;
+  switch (T.getObjectFormat()) {
+  case Triple::MachO:
+  case Triple::COFF:
+    return true;
+  case Triple::ELF:
+    return !CGOpts.DisableIntegratedAS;
+  case Triple::GOFF:
+    llvm::report_fatal_error("ASan not implemented for GOFF");
+  case Triple::XCOFF:
+    llvm::report_fatal_error("ASan not implemented for XCOFF.");
+  case Triple::Wasm:
+  case Triple::DXContainer:
+  case Triple::SPIRV:
+  case Triple::UnknownObjectFormat:
+    break;
+  }
+  return false;
+}
+
+
 static void runModuleOptPipeline(bool addWideOpts) {
   GenInfo* info = gGenInfo;
 
@@ -2573,6 +2609,39 @@ static void runModuleOptPipeline(bool addWideOpts) {
     MPM = PB.buildO0DefaultPipeline(optLvl);
   } else {
     MPM = PB.buildPerModuleDefaultPipeline(optLvl);
+  }
+
+  if (strcmp(envMap["CHPL_SANITIZE_EXE"], "address") == 0) {
+
+    // if `--no-llvm-wide-opt` add asan
+    // if `--llvm-wide-opt` and `addWideOpts` is true, add asan
+    if (!fLLVMWideOpt || (fLLVMWideOpt && addWideOpts)) {
+
+      //
+      // Much of this logic comes from clang in clang/lib/CodeGen/BackendUtil.cpp
+      //
+      auto AsanCallback = [&](ModulePassManager &MPM, LlvmOptimizationLevel Level
+#if LLVM_VERSION_MAJOR >= 20
+                              , llvm::ThinOrFullLTOPhase Phase
+#endif
+      ) {
+        auto& clangInfo = gGenInfo->clangInfo;
+        auto& codegenOptions = clangInfo->codegenOptions;
+        Triple TargetTriple(info->module->getTargetTriple());
+
+        bool UseGlobalGC = asanUseGlobalsGC(TargetTriple, codegenOptions);
+        bool UseOdrIndicator = codegenOptions.SanitizeAddressUseOdrIndicator;
+        llvm::AsanDtorKind DestructorKind = codegenOptions.getSanitizeAddressDtor();
+        llvm::AddressSanitizerOptions Opts;
+        Opts.CompileKernel = false;
+        Opts.Recover = codegenOptions.SanitizeRecover.has(SanitizerKind::Address);
+        Opts.UseAfterScope = codegenOptions.SanitizeAddressUseAfterScope;
+        Opts.UseAfterReturn = codegenOptions.getSanitizeAddressUseAfterReturn();
+        MPM.addPass(AddressSanitizerPass(Opts, UseGlobalGC, UseOdrIndicator,
+                                        DestructorKind));
+      };
+      PB.registerOptimizerLastEPCallback(AsanCallback);
+    }
   }
 
   // Add the Global to Wide optimization if necessary.
@@ -5702,6 +5771,12 @@ static std::string buildLLVMLinkCommand(std::string useLinkCXX,
   // static, the server cannot be.
   if (fLinkStyle == LS_STATIC && !fMultiLocaleInterop) {
     command += " -static";
+  }
+
+  if (strcmp(envMap["CHPL_SANITIZE_EXE"], "none") != 0) {
+    // If we are sanitizing, we need to add the sanitizer runtime library.
+    // This is done by the Makefile, but we need to do it here too.
+    command += " -fsanitize=" + std::string(envMap["CHPL_SANITIZE_EXE"]);
   }
 
   command += " -o ";

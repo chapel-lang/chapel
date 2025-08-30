@@ -22,7 +22,6 @@ with sanitizers enabled:
 .. code-block:: bash
 
    export CHPL_TARGET_MEM=cstdlib
-   export CHPL_TARGET_COMPILER=gnu # or CHPL_TARGET_COMPILER=clang
    export CHPL_SANITIZE_EXE=address
 
 Running the Compiled Program
@@ -76,8 +75,6 @@ Configuration Limitations
 The above options are needed because not all third-party libraries support
 sanitizers. In particular:
 
-- Sanitizer instrumentation is added by the C compiler, so LLVM
-  compilations don't currently work
 - Sanitizers hook into the system allocator, so using ``jemalloc`` is not
   supported
 - By default the gcc address sanitizer will enable leak checking, but
