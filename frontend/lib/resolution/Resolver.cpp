@@ -1235,74 +1235,50 @@ static const TypeQuery* getDomainTypeQuery(const BracketLoop* arrayTypeExpr) {
   return nullptr;
 }
 
-// helper for resolveTypeQueriesFromFormalType
-void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
-                                  const QualifiedType& actualType,
-                                  bool isNonStarVarArg,
-                                  bool isTopLevel) {
+template <typename F>
+void mapTypeToAst(Context* context,
+                  ResolutionResultByPostorderID& byPostorder,
+                  const AstNode* typeExpr,
+                  const QualifiedType& typeQt,
+                  bool isTopLevel,
+                  F&& invokedFunction) {
 
-  auto actualTypePtr = actualType.type();
+  auto actualTypePtr = typeQt.type();
   // Give up if the type is nullptr or UnknownType or AnyType
   if (actualTypePtr == nullptr ||
       actualTypePtr->isUnknownType() ||
       actualTypePtr->isAnyType())
     return;
 
-  CHPL_ASSERT(formalTypeExpr != nullptr);
+  CHPL_ASSERT(typeExpr != nullptr);
 
-  // Give up if typeExpr is an Identifier
-  if (formalTypeExpr->isIdentifier())
-    return;
-
-  if (formalTypeExpr->isTypeQuery()) {
-    ResolvedExpression& result = byPostorder.byAst(formalTypeExpr);
-
-    if (isNonStarVarArg) {
-      varArgTypeQueryError(context, formalTypeExpr, result);
-    } else {
-      // Set the type that we know (since it was passed in)
-      if (isTopLevel) {
-        // Queries at the top level only capture type. e.g., param x: ?t
-        result.setType(QualifiedType(QualifiedType::TYPE, actualTypePtr));
-      } else {
-        result.setType(actualType);
-      }
-    }
+  // Invoke the callback with the current node before recursion.
+  if (isTopLevel) {
+    // Queries at the top level only capture type. e.g., param x: ?t
+    invokedFunction(context, typeExpr,
+                    QualifiedType(QualifiedType::TYPE, actualTypePtr));
+  } else {
+    invokedFunction(context, typeExpr, typeQt);
   }
 
-  // Make recursive calls as needed to handle any TypeQuery nodes
-  // nested within typeExpr.
-  if (auto call = formalTypeExpr->toFnCall()) {
-    if (isCallToIntEtc(formalTypeExpr)) {
+  // Make recursive calls as needed.
+  if (auto call = typeExpr->toFnCall()) {
+    if (isCallToIntEtc(typeExpr)) {
       // If it is e.g. int(TypeQuery), resolve the type query to the width
-      // Set the type that we know (since it was passed in)
       if (call->numActuals() == 1) {
-        if (auto tq = call->actual(0)->toTypeQuery()) {
-          if (auto pt = actualTypePtr->toPrimitiveType()) {
-            ResolvedExpression& resolvedWidth = byPostorder.byAst(tq);
-            if (isNonStarVarArg) {
-              varArgTypeQueryError(context, call->actual(0), resolvedWidth);
-            } else {
-              auto qt = QualifiedType::makeParamInt(context, pt->bitwidth());
-              resolvedWidth.setType(qt);
-            }
-          }
+        if (auto pt = actualTypePtr->toPrimitiveType()) {
+          auto qt = QualifiedType::makeParamInt(context, pt->bitwidth());
+          invokedFunction(context, call->actual(0), qt);
         }
       }
-    } else if (isCallToPtr(formalTypeExpr)) {
+    } else if (isCallToPtr(typeExpr)) {
       // If it is e.g. c_ptr(TypeQuery), resolve the type query to the eltType
       // Set the type that we know (since it was passed in)
       if (call->numActuals() == 1) {
-        if (auto tq = call->actual(0)->toTypeQuery()) {
-          if (auto pt = actualTypePtr->toPtrType()) {
-            ResolvedExpression& resolvedElt = byPostorder.byAst(tq);
-            if (isNonStarVarArg) {
-              varArgTypeQueryError(context, call->actual(0), resolvedElt);
-            } else {
-              resolvedElt.setType(QualifiedType(QualifiedType::TYPE,
-                                                pt->eltType()));
-            }
-          }
+        if (auto pt = actualTypePtr->toPtrType()) {
+          invokedFunction(context, call->actual(0),
+                          QualifiedType(QualifiedType::TYPE,
+                                        pt->eltType()));
         }
       }
     } else if (parsing::isCallToClassManager(call) &&
@@ -1314,25 +1290,21 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
 
       auto classArg = call->actual(0);
       auto actualMt = actualTypePtr->toClassType()->manageableType();
-      resolveTypeQueries(classArg, QualifiedType(actualType.kind(), actualMt),
-                         isNonStarVarArg,
-                         /* isTopLevel */ false);
+      mapTypeToAst(context, byPostorder, classArg, QualifiedType(typeQt.kind(), actualMt), false, invokedFunction);
     } else {
       auto typeQueries = parsing::typeQueriesInExpression(context, call);
 
-      // There are no type queries in the call, so there is nothing to do.
-      if (typeQueries.empty()) return;
-
       // If we are a resolving a signature, then we have resolved the types
       // of the call's sub-expressions, so we can accurately judge whether
-      // or not the call is to a type constructor.
+      // or not the call is to a type constructor. This is signaled
+      // by 'byPostorderIfAvailable != nullptr'.
       QualifiedType baseExprType;
       bool isCertainlyCallToTypeConstructor = false;
-      if (this->signatureOnly) {
-        if (auto expr = call->calledExpression()) {
-          CHPL_ASSERT(byPostorder.hasId(expr->id()));
-
-          baseExprType = byPostorder.byAst(expr).type();
+      bool hadCalledExprResult = false;
+      if (auto expr = call->calledExpression()) {
+        if (auto rr = byPostorder.byAstOrNull(expr)) {
+          hadCalledExprResult = true;
+          baseExprType = rr->type();
 
           if (baseExprType.kind() == QualifiedType::TYPE &&
               (baseExprType.type() &&
@@ -1347,13 +1319,15 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
       // above that there's at least one '?w' type query in the call.
       //
       // TODO: Can emit more elaborate errors here.
-      if (this->signatureOnly && !isCertainlyCallToTypeConstructor) {
-        CHPL_ASSERT(!typeQueries.empty());
+      if (hadCalledExprResult && !isCertainlyCallToTypeConstructor &&
+          !typeQueries.empty()) {
         context->error(typeQueries[0], "One or more type queries appeared "
                                        "outside of a type constructor call - "
                                        "here is the first one");
         return;
       }
+
+      if (!isCertainlyCallToTypeConstructor) return;
 
       // From this point on, we are only working with the type of the entire
       // call. To explain why, consider the following code:
@@ -1380,18 +1354,14 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
       // If we're not working with a composite type, give up. There's some
       // sort of structural issue that we should have detected earlier.
       if (actualCt == nullptr) {
-        CHPL_ASSERT(!this->signatureOnly);
         return;
       }
 
       // Make sure that 'actualCt' is instantiated. Only do this when we're
       // first evaluating the signature and not when we're "reloading" the
       // types of type queries.
-      if (this->signatureOnly) {
-        if (!actualCt->instantiatedFromCompositeType()) {
-          context->error(formalTypeExpr, "Instantiated type expected");
-          return;
-        }
+      if (!actualCt->instantiatedFromCompositeType()) {
+        return;
       }
 
       // TODO: need to implement type queries for domain type expressions
@@ -1427,64 +1397,109 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
         if (search != subs.end()) {
           QualifiedType fieldType = search->second;
           auto actual = call->actual(i);
-          resolveTypeQueries(actual, fieldType,
-                             isNonStarVarArg,
-                             /* isTopLevel */ false);
+          mapTypeToAst(context, byPostorder, actual, fieldType, false, invokedFunction);
         }
       }
     }
-  } else if (auto arr = formalTypeExpr->toBracketLoop()) {
-    if (!actualType.isUnknownOrErroneous() && actualType.type()->isArrayType()) {
+  } else if (auto arr = typeExpr->toBracketLoop()) {
+    if (!typeQt.isUnknownOrErroneous() && typeQt.type()->isArrayType()) {
       // notably, we can't have type queries that select only a part of a domain
       // at this time. See checkDomainTypeQueryUsage in post-parse-checks.cpp.
       // So we can assume if there is a type query, it's for the whole domain.
 
-      auto iterand = getDomainTypeQuery(arr);
+      const AstNode* iterand = getDomainTypeQuery(arr);
+      if (iterand == nullptr) iterand = arr->iterand();
 
       if (iterand) {
         // Match production: domain type expressions are CONST_REF.
-        auto& result = byPostorder.byAst(iterand);
-        result.setType(QualifiedType(QualifiedType::CONST_REF, actualType.type()->toArrayType()->domainType().type()));
+        invokedFunction(context, iterand, QualifiedType(QualifiedType::CONST_REF, typeQt.type()->toArrayType()->domainType().type()));
       }
 
       // Resolve type queries in the element type.
       CHPL_ASSERT(arr->body()->numStmts() <= 1);
       if (arr->body()->numStmts() == 1) {
-        resolveTypeQueries(arr->body()->stmt(0),
-                           actualType.type()->toArrayType()->eltType(),
-                           isNonStarVarArg, /* isTopLevel */ false);
+        mapTypeToAst(context, byPostorder, arr->body()->stmt(0), typeQt.type()->toArrayType()->eltType(), false, invokedFunction);
       }
     }
-  } else if (auto op = formalTypeExpr->toOpCall()) {
-    if (op->op() == USTR("*") && !actualType.isUnknownOrErroneous()) {
+  } else if (auto op = typeExpr->toOpCall()) {
+    if (op->op() == USTR("*") && !typeQt.isUnknownOrErroneous()) {
       CHPL_ASSERT(op->numActuals() == 2);
-      if (auto tup = actualType.type()->toTupleType();
+      if (auto tup = typeQt.type()->toTupleType();
           tup && tup->isStarTuple()) {
         auto size = QualifiedType(QualifiedType::PARAM,
                                   IntType::get(context, 0),
                                   IntParam::get(context, tup->numElements()));
         auto starType = QualifiedType(QualifiedType::TYPE, tup->starType().type());
-        resolveTypeQueries(op->actual(0), size,
-                           isNonStarVarArg, /* isTopLevel */ false);
-        resolveTypeQueries(op->actual(1), starType,
-                           isNonStarVarArg, /* isTopLevel */ false);
+        mapTypeToAst(context, byPostorder, op->actual(0), size, false, invokedFunction);
+        mapTypeToAst(context, byPostorder, op->actual(1), starType, false, invokedFunction);
       }
     }
-  } else if (auto tup = formalTypeExpr->toTuple()) {
-    if (!actualType.isUnknownOrErroneous()) {
-      if (auto tupT = actualType.type()->toTupleType();
+  } else if (auto tup = typeExpr->toTuple()) {
+    if (!typeQt.isUnknownOrErroneous()) {
+      if (auto tupT = typeQt.type()->toTupleType();
           tupT && tupT->numElements() == tup->numActuals()) {
         // only do this for well-sized tuples. Otherwise, errors should've
         // been emitted elsewhere.
         for (int i = 0; i < tup->numActuals(); i++) {
           auto actual = tup->actual(i);
           auto elementType = QualifiedType(QualifiedType::TYPE, tupT->elementType(i).type());
-          resolveTypeQueries(actual, elementType,
-                             isNonStarVarArg, /* isTopLevel */ false);
+          mapTypeToAst(context, byPostorder, actual, elementType, false, invokedFunction);
         }
       }
     }
   }
+}
+
+
+// helper for resolveTypeQueriesFromFormalType
+void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
+                                  const QualifiedType& actualType,
+                                  bool isNonStarVarArg) {
+
+  auto actualTypePtr = actualType.type();
+  // Give up if the type is nullptr or UnknownType or AnyType
+  if (actualTypePtr == nullptr ||
+      actualTypePtr->isUnknownType() ||
+      actualTypePtr->isAnyType())
+    return;
+
+  CHPL_ASSERT(formalTypeExpr != nullptr);
+
+  mapTypeToAst(context, byPostorder, formalTypeExpr,
+               actualType, /* isTopLevel */ true,
+               [this, isNonStarVarArg](Context* context,
+                                       const AstNode* node,
+                                       const QualifiedType& qt) {
+    if (node->isTypeQuery()) {
+      auto& result = this->byPostorder.byAst(node);
+      if (isNonStarVarArg) {
+        varArgTypeQueryError(context, node, result);
+      } else {
+        result.setType(qt);
+      }
+    }
+  });
+}
+
+bool Resolver::validateArrayEltTypeConstraints(const uast::AstNode* formalTypeExpr,
+                                               const types::QualifiedType& actualType) {
+  bool success = true;
+  mapTypeToAst(context, byPostorder, formalTypeExpr,
+               actualType, /* isTopLevel */ true,
+               [this, &success](Context* context,
+                                                 const AstNode* node,
+                                                 const QualifiedType& qt) {
+    // TODO: this should be a lookup, don't let me merge this.
+    for (auto& [constrainedNode, expectedQt] : arrayEltTypeConstraints) {
+      if (node != constrainedNode) continue;
+
+      auto result = canPassScalar(context, qt, expectedQt);
+      if (!result.passes() || result.converts()) {
+        success = false;
+      }
+    }
+  });
+  return success;
 }
 
 void Resolver::resolveVarArgSizeQuery(const uast::VarArgFormal* varArgFormal,
@@ -2778,7 +2793,8 @@ void Resolver::resolveTupleDecl(const TupleDecl* td, QualifiedType useType) {
 static SkipCallResolutionReason
 shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
                          std::vector<const uast::AstNode*> actualAsts,
-                         const CallInfo& ci);
+                         const CallInfo& ci,
+                         bool* outAnyGenericActuals = nullptr);
 
 bool Resolver::resolveSpecialNewCall(const Call* call) {
   if (!call->calledExpression() ||
@@ -2980,7 +2996,8 @@ static bool couldBeOutInitialized(Resolver* rv, const ID& toId) {
 static SkipCallResolutionReason
 shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
                          std::vector<const uast::AstNode*> actualAsts,
-                         const CallInfo& ci) {
+                         const CallInfo& ci,
+                         bool* outAnyGenericActuals) {
   Context* context = rv->context;
   SkipCallResolutionReason skip = NONE;
   auto& byPostorder = rv->byPostorder;
@@ -3031,6 +3048,10 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
         bool noSubstitution =
           rv->substitutions == nullptr ||
           (!toId.isEmpty() && rv->substitutions->count(toId) == 0);
+
+        if (outAnyGenericActuals != nullptr && g != Type::CONCRETE) {
+          *outAnyGenericActuals = true;
+        }
 
         if (qt.isType() && isBuiltinGeneric && noSubstitution) {
           skip = GENERIC_TYPE;
@@ -6952,8 +6973,11 @@ static bool handleArrayTypeExpr(Resolver& rv,
     // array builder function.
     const char* arrayBuilderProc = "chpl__buildArrayRuntimeType";
     std::vector<CallInfoActual> actuals;
+    std::vector<const AstNode*> actualExprs;
     actuals.emplace_back(domainType, UniqueString::get(rv.context, "dom"));
+    actualExprs.push_back(iterandExpr);
     actuals.emplace_back(eltType, UniqueString::get(rv.context, "eltType"));
+    actualExprs.push_back(loop->numStmts() == 1 ? loop->stmt(0) : nullptr);
     auto ci = CallInfo(
         /* name */ UniqueString::get(rv.context, arrayBuilderProc),
         /* calledType */ QualifiedType(),
@@ -6963,10 +6987,22 @@ static bool handleArrayTypeExpr(Resolver& rv,
         actuals);
     auto scope = rv.currentScope();
     auto inScopes = CallScopeInfo::forNormalCall(scope, rv.poiScope);
-    auto c = resolveGeneratedCall(rv.rc, iterandExpr, ci, inScopes);
-    if (!c.exprType().isUnknownOrErroneous()) {
-      arrayType = QualifiedType(QualifiedType::TYPE, c.exprType().type());
+
+    // array types are specially built using chpl__buildArrayRuntimeType, which
+    // assumes that the actuals are their "final" incarnations (i.e., we're
+    // not in an initial/generic signature). So, if that assumption is not met,
+    // don't attempt to resolve the call.
+    bool anyActualsGeneric = false;
+    if (!shouldSkipCallResolution(&rv, loop, actualExprs, ci, &anyActualsGeneric) && !anyActualsGeneric) {
+      auto c = resolveGeneratedCall(rv.rc, iterandExpr, ci, inScopes);
+      if (!c.exprType().isUnknownOrErroneous()) {
+        arrayType = QualifiedType(QualifiedType::TYPE, c.exprType().type());
+      }
     }
+  }
+
+  if (rv.collectArrayEltTypeConstraints && loop->numStmts() == 1) {
+    rv.arrayEltTypeConstraints.emplace_back(loop->stmt(0), eltType);
   }
 
   re.setType(arrayType);

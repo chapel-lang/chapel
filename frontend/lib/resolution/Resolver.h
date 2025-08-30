@@ -99,6 +99,7 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
   bool skipTypeQueries = false;
   bool usePlaceholders = false;
   bool allowLocalSearch = true;
+  bool collectArrayEltTypeConstraints = false;
 
   // internal variables
   ResolutionContext emptyResolutionContext;
@@ -154,6 +155,13 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
   // diagnostics emitted by compilerError / compilerWarning that are
   // to be issued further up the call stack.
   std::vector<CompilerDiagnostic> userDiagnostics;
+
+  // constraints on arrays' element types. Since the array type constructor
+  // is special, we don't want to run it with partially-generic arguments.
+  // Intead, when in doubt, when resolve `[domainExpr] eltTypeExpr` to be
+  // the generic `_array`, and note that the type of `eltTypeExpr` must match
+  // the element type of the array. These constraints are gathered here.
+  std::vector<std::pair<const uast::AstNode*, types::QualifiedType>> arrayEltTypeConstraints;
 
   static PoiInfo makePoiInfo(const PoiScope* poiScope) {
     if (poiScope == nullptr)
@@ -410,8 +418,7 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
   // helper for resolveTypeQueriesFromFormalType
   void resolveTypeQueries(const uast::AstNode* formalTypeExpr,
                           const types::QualifiedType& actualType,
-                          bool isNonStarVarArg = false,
-                          bool isTopLevel = true);
+                          bool isNonStarVarArg = false);
 
   void resolveVarArgSizeQuery(const uast::VarArgFormal* varArgFormal,
                               int numVarArgs);
@@ -430,6 +437,15 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
    */
   void resolveTypeQueriesFromFormalType(const uast::VarLikeDecl* formal,
                                         types::QualifiedType formalType);
+
+  /*
+   Once the resolver has been run with 'collectArrayEltTypeConstraints',
+   the 'arrayEltTypeConstraints' vector will contain additional constraints
+   on the actual type for a particular formal. Validate that these constraints
+   are met.
+  */
+  bool validateArrayEltTypeConstraints(const uast::AstNode* formalTypeExpr,
+                                       const types::QualifiedType& actualType);
 
   // helper for getTypeForDecl -- checks the Kinds are compatible
   // if so, returns false.
