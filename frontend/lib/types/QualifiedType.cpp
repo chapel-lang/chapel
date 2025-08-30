@@ -62,6 +62,11 @@ QualifiedType QualifiedType::makeParamInt(Context* context, int64_t i) {
           IntParam::get(context, i)};
 }
 
+QualifiedType QualifiedType::makeParamUint(Context* context, uint64_t i) {
+  return {QualifiedType::PARAM, UintType::get(context, 0),
+          UintParam::get(context, i)};
+}
+
 QualifiedType QualifiedType::makeParamString(Context* context, UniqueString s) {
   return {QualifiedType::PARAM, RecordType::getStringType(context),
           StringParam::get(context, s)};

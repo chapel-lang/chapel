@@ -2046,7 +2046,8 @@ initialNumericValueOfEnumElement(Context* context, ID elementId) {
   auto elem = parsing::idToAst(context, elementId)->toEnumElement();
   auto decl = parsing::idToAst(context, declId)->toEnum();
 
-  auto one = QualifiedType::makeParamInt(context, 1);
+  auto one = QualifiedType::makeParamUint(context, 1);
+  auto maxInt = QualifiedType::makeParamInt(context, std::numeric_limits<int64_t>::max());
 
   ResolutionResultByPostorderID byPostorder;
   Resolver res = Resolver::createForEnumElements(context, decl, byPostorder);
@@ -2101,7 +2102,12 @@ initialNumericValueOfEnumElement(Context* context, ID elementId) {
         auto& lastQt = *prevValue.first;
         if (lastQt.isParam()) {
           // Previous value was valid, so add one to it.
-          value = Param::fold(context, elem, chpl::uast::PRIM_ADD, lastQt, one);
+          // Except if it overflows, in which case promoted to a uint.
+          if (lastQt.param() == maxInt.param() ){
+            value = QualifiedType::makeParamUint(context, (uint64_t) std::numeric_limits<int64_t>::max() + 1);
+          } else {
+            value = Param::fold(context, elem, chpl::uast::PRIM_ADD, lastQt, one);
+          }
         } else {
           // Previous value was unknown, so we can't add one to it.
           value = QualifiedType();
