@@ -139,8 +139,9 @@ def __lldb_init_module(debugger, internal_dict):
     print("Chapel parallel debugger commands loaded")
     directory = os.path.dirname(os.path.abspath(__file__))
     pretty_printer_file = os.path.join(directory, "chpl_lldb_pretty_print.py")
-    debugger.HandleCommand("b debuggerBreakHere")
-    debugger.HandleCommand(f"command script import {pretty_printer_file}")
+    lldb_commands_file = os.path.join(directory, "lldb.commands")
+    debugger.HandleCommand(f'command source "{lldb_commands_file}"')
+    debugger.HandleCommand(f'command script import "{pretty_printer_file}"')
     debugger.HandleCommand("command script add -f chpl_parallel_dbg_commands.on on")
     debugger.HandleCommand("command script add -f chpl_parallel_dbg_commands.connect connect")
 
