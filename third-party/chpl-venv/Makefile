@@ -93,6 +93,13 @@ chpldoc-venv: install-chpldeps
 
 c2chapel-venv: install-chpldeps
 
+
+ifeq (, $(call isTrue, $(CHPL_DEVELOPER)))
+CHAPEL_PY_VENV_EXTRA_FLAGS=
+else
+CHAPEL_PY_VENV_EXTRA_FLAGS=--verbose --config-settings=cmake.build-type="Debug" --config-settings=build.verbose=true
+endif
+
 # the Python bindings depend on libChplFrontendShared.so and some additional
 # files listed in setup.py. The former is not consistently named (.so on UNIX,
 # .dylib on macOS), making it harder to list as a dependency. The latter we
@@ -114,6 +121,7 @@ chapel-py-venv: FORCE $(CHPL_VENV_VIRTUALENV_DIR_OK)
 	CC=$(shell which $(CHPL_MAKE_HOST_CC)) \
 	CXX=$(shell which $(CHPL_MAKE_HOST_CXX)) \
 	CHPL_HOME=$(CHPL_MAKE_HOME) $(PIP) install --upgrade \
+	  $(CHAPEL_PY_VENV_EXTRA_FLAGS) \
 	  $(CHPL_PIP_INSTALL_PARAMS) $(LOCAL_PIP_FLAGS) \
 	  --target $(CHPL_VENV_CHPL_FRONTEND_PY_DEPS) \
 	  $(CHPL_MAKE_HOME)/tools/chapel-py
