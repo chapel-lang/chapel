@@ -567,6 +567,7 @@ as described by its domain. A loop of the form:
 
 
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
    [for|forall|coforall] a in A do
@@ -576,6 +577,7 @@ is semantically equivalent to:
 
 
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
    [for|forall|coforall] i in A.domain do
@@ -1111,6 +1113,7 @@ set manipulations.  The supported set operators are:
 
 Consider the following code where ``A`` and ``B`` are associative arrays:
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
   var C = A op B;
@@ -1122,6 +1125,7 @@ There are also ``op=`` variants that store the result into the first operand.
 
 Consider the following code where ``A`` and ``B`` are associative arrays:
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
   A op= B;

@@ -123,6 +123,7 @@ as evenly as possible between those tasks.
 
 The ``cyclicDist`` initializer is defined as follows:
 
+  .. BLOCK-test-allowCodeBlock
   .. code-block:: chapel
 
     proc cyclicDist.init(

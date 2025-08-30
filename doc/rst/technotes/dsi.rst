@@ -173,6 +173,7 @@ class ``GlobalDomain``
 .. class:: GlobalDomain
 
 
+  .. BLOCK-test-allowCodeBlock
   .. code-block:: chapel
 
     class GlobalDomain: BaseRectangularDom {
@@ -231,6 +232,7 @@ class ``GlobalDomain``
 
   The same as the other ``dsiSetIndices``. Could be implemented like this:
 
+   .. BLOCK-test-allowCodeBlock
    .. code-block:: chapel
 
     { dsiSetIndices([(...rangesArg)]); }
@@ -426,6 +428,7 @@ class ``GlobalArray``
   The DSI requirements apply to each of those classes.
   Here ``GlobalArray`` refers to each such class.
 
+  .. BLOCK-test-allowCodeBlock
   .. code-block:: chapel
 
     class GlobalArray ... {
@@ -727,6 +730,7 @@ class that chooses to support privatization.
   NOTE: do not specify the return type (due to a bug in the compiler).
 
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
     class Global ... {
@@ -845,9 +849,10 @@ the former needs to reference a privatized copy of the latter.
 To obtain a privatized copy of an object, e.g. for use within
 ``dsiPrivatize()``, use the following procedure:
 
- .. code-block:: chapel
+.. BLOCK-test-allowCodeBlock
+.. code-block:: chapel
 
-  proc chpl_getPrivatizedCopy(type objectType, objectPid:int): objectType
+   proc chpl_getPrivatizedCopy(type objectType, objectPid:int): objectType
 
 Notes:
 

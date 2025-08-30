@@ -225,6 +225,7 @@ Stifling documentation
 To mark a particular symbol to not be output as part of the documentation,
 preface the symbol with the attribute ``@chpldoc.nodoc``. For example:
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
    @chpldoc.nodoc
@@ -232,6 +233,7 @@ preface the symbol with the attribute ``@chpldoc.nodoc``. For example:
 
 Private symbols are not documented by default.
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
    private proc foo() { ... }

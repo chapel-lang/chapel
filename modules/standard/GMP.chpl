@@ -58,6 +58,7 @@ Step 1:
 Step 2:
   Have your Chapel program ``use`` the standard GMP module
 
+  .. BLOCK-test-allowCodeBlock
   .. code-block:: chapel
 
             use GMP;   // put this statement in your Chapel program

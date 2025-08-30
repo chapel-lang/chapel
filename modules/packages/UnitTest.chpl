@@ -27,6 +27,7 @@ automates execution of any test function.
 
 A unit test function is defined as any function with the following signature:
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
   proc funcName(test: borrowed Test) throws {}
@@ -1228,6 +1229,7 @@ module UnitTest {
 
     Call this as
 
+    .. BLOCK-test-allowCodeBlock
     .. code-block:: chapel
 
       UnitTest.main();

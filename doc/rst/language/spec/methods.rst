@@ -440,6 +440,7 @@ Operators may be overloaded (see :ref:`Function_Overloading`) to support new
 behavior on one or more types using the ``operator`` keyword.  Such overloads
 may be defined as standalone functions, e.g.
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
    operator +(lhs: t1, rhs: t2) { ... }

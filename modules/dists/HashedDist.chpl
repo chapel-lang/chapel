@@ -100,6 +100,7 @@ When run on 6 locales, the output is:
 
 The ``hashedDist`` domain map initializer is defined as follows:
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
   proc init(type idxType,

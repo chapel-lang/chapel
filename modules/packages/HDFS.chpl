@@ -35,6 +35,7 @@ Using HDFS Support in Chapel
 To open an HDFS file in Chapel, first create an :class:`HDFSFileSystem` by
 connecting to an HDFS name node.
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
   import HDFS;
@@ -49,6 +50,7 @@ Once you have a :record:`hdfs`, you can open files within that
 filesystem using :proc:`HDFSFileSystem.open` and perform I/O on them using
 the usual functionality in the :mod:`IO` module:
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
   var f = fs.open("/tmp/testfile.txt", ioMode.cw);

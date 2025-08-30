@@ -156,6 +156,7 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
 
   The ``stencilDist`` initializer is defined as follows:
 
+    .. BLOCK-test-allowCodeBlock
     .. code-block:: chapel
 
       proc stencilDist.init(
