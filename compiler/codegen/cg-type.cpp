@@ -126,7 +126,7 @@ static void codegenFunctionTypeLocal(FunctionType* ft) {
     // The final type is a pointer to the underlying function type.
     auto& layout = gGenInfo->module->getDataLayout();
     auto addrSpace = layout.getAllocaAddrSpace();
-    llvm::Type* t = llvm::PointerType::get(baseType, addrSpace);
+    llvm::Type* t = getPointerType(baseType, addrSpace);
 
     if (!ft->symbol->hasLLVMType()) {
       gGenInfo->lvt->addGlobalType(ft->symbol->cname, t, false);
@@ -541,7 +541,7 @@ void AggregateType::codegenDef() {
     } else {
 #ifdef HAVE_LLVM
       llvm::Type* llBaseType = baseForLLVMPointer(base)->getLLVMType();
-      type = llvm::PointerType::getUnqual(llBaseType);
+      type = getPointerType(llBaseType);
       structAlignment = ALIGNMENT_DEFER; // or pointer alignment
 #endif
     }
@@ -556,7 +556,7 @@ void AggregateType::codegenDef() {
     } else {
 #ifdef HAVE_LLVM
       llvm::Type* llBaseType = baseForLLVMPointer(base)->getLLVMType();
-      type = llvm::PointerType::getUnqual(llBaseType);
+      type = getPointerType(llBaseType);
       structAlignment = ALIGNMENT_DEFER; // or pointer alignment
 #endif
     }
@@ -628,7 +628,7 @@ void AggregateType::codegenDef() {
 
         if (isOpaquePointer(llBaseType)) {
           // No need to compute the element type for an opaque pointer
-          globalPtrTy = llvm::PointerType::get(gContext->llvmContext(),
+          globalPtrTy = getPointerType(gContext->llvmContext(),
                                                globalAddressSpace);
         } else {
 #ifdef HAVE_LLVM_TYPED_POINTERS
@@ -636,7 +636,7 @@ void AggregateType::codegenDef() {
           // of a wide pointer is always a local address.
           llvm::Type* eltType = llBaseType->getPointerElementType();
           INT_ASSERT(eltType);
-          globalPtrTy = llvm::PointerType::get(eltType, globalAddressSpace);
+          globalPtrTy = lgetPointerType(eltType, globalAddressSpace);
 #endif
         }
 
@@ -719,7 +719,7 @@ void AggregateType::codegenPrototype() {
       st = llvm::StructType::create(info->module->getContext(), struct_name);
       info->lvt->addGlobalType(struct_name, st, false);
 
-      llvm::PointerType* pt = llvm::PointerType::getUnqual(st);
+      auto pt = getPointerType(st);
       info->lvt->addGlobalType(symbol->cname, pt, false);
       symbol->llvmImplType = st;
 #endif

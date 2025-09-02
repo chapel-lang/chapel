@@ -323,8 +323,8 @@ namespace {
 
     Value* alloc = makeAlloca(allocType, "widecast", insertBefore);
 
-    Type* fromPtrType = llvm::PointerType::getUnqual(fromValue->getType());
-    Type* newPtrType = llvm::PointerType::getUnqual(toType);
+    auto fromPtrType = getPointerType(fromValue->getType());
+    auto newPtrType = getPointerType(toType);
 
     Value* allocAsFrom = alloc;
     if (allocAsFrom->getType() != fromPtrType) {
@@ -401,7 +401,7 @@ namespace {
       voidPtrTy = getPointerType(M.getContext(), 0);
       glVoidPtrTy = getPointerType(M.getContext(), info->globalSpace);
       wideVoidPtrTy = convertTypeGlobalToWide(&M, info, glVoidPtrTy);
-      ptrLocTy = llvm::PointerType::getUnqual(info->localeIdType);
+      ptrLocTy = getPointerType(info->localeIdType);
       i64Ty = llvm::Type::getInt64Ty(M.getContext());
       i8Ty = llvm::Type::getInt8Ty(M.getContext());
 
@@ -1312,12 +1312,12 @@ bool GlobalToWide::run(Module &M) {
       // information, but if not we set some defaults here so
       // that tests can be created and bugpoint can be run.
       if( !info ) {
-        Type* voidTy = llvm::Type::getVoidTy(M.getContext());
-        Type* voidPtrTy = getPointerType(M.getContext(), 0);
-        Type* i64Ty = llvm::Type::getInt64Ty(M.getContext());
-        Type* i8Ty = llvm::Type::getInt8Ty(M.getContext());
+        auto voidTy = llvm::Type::getVoidTy(M.getContext());
+        auto voidPtrTy = getPointerType(M.getContext(), 0);
+        auto i64Ty = llvm::Type::getInt64Ty(M.getContext());
+        auto i8Ty = llvm::Type::getInt8Ty(M.getContext());
         const DataLayout& DL = M.getDataLayout();
-        Type* sizeTy = DL.getIntPtrType(M.getContext(), 0);
+        auto sizeTy = DL.getIntPtrType(M.getContext(), 0);
 
         errs() << "Warning: GlobalToWide using default configuration\n";
         info = new GlobalToWideInfo();
@@ -1826,7 +1826,7 @@ bool GlobalToWide::run(Module &M) {
 
           Constant *init = ConstantExpr::getPointerCast(gv, new_type);
           GlobalAlias *new_alias = GlobalAlias::create(
-              llvm::PointerType::getUnqual(new_type),
+              getPointerType(new_type),
               0, /* addr space */
               ga->getLinkage(),
               "", init, &M);
@@ -2152,10 +2152,10 @@ void populateFunctionsForGlobalType(Module *module, GlobalToWideInfo* info, Type
   GlobalPointerInfo & r = info->gTypes[globalPtrTy];
 
   if (isOpaquePointer(globalPtrTy)) {
-    ptrTy = llvm::PointerType::getUnqual(module->getContext());
+    ptrTy = getPointerType(module->getContext());
   } else {
 #ifdef HAVE_LLVM_TYPED_POINTERS
-    ptrTy = llvm::PointerType::getUnqual(globalPtrTy->getPointerElementType());
+    ptrTy = getPointerType(globalPtrTy->getPointerElementType());
 #else
     assert(false && "Should not be reachable");
 #endif
@@ -2314,15 +2314,15 @@ Type* createWidePointerToType(Module* module, GlobalToWideInfo* i, Type* eltTy)
   // Get the wide pointer struct containing {locale, address}
   Type* fields[2];
   fields[0] = i->localeIdType;
-  llvm::PointerType* ptrTy = nullptr;
+  llvm::Type* ptrTy = nullptr;
   if (eltTy) {
 #ifdef HAVE_LLVM_TYPED_POINTERS
-    ptrTy = llvm::PointerType::getUnqual(eltTy);
+    ptrTy = getPointerType(eltTy);
 #else
     assert(false && "Should not be reachable");
 #endif
   } else {
-    ptrTy = llvm::PointerType::getUnqual(context);
+    ptrTy = getPointerType(context);
   }
   assert(ptrTy);
   fields[1] = ptrTy;
@@ -2415,7 +2415,7 @@ Type* convertTypeGlobalToWide(Module* module, GlobalToWideInfo* info, Type* t)
           // Replace the pointer with a struct containing {locale, address}
           return createWidePointerToType(module, info, nullptr);
       } else {
-          return llvm::PointerType::get(context, t->getPointerAddressSpace());
+          return getPointerType(context, t->getPointerAddressSpace());
       }
     } else {
 #ifdef HAVE_LLVM_TYPED_POINTERS
@@ -2427,7 +2427,7 @@ Type* convertTypeGlobalToWide(Module* module, GlobalToWideInfo* info, Type* t)
           // Replace the pointer with a struct containing {locale, address}
           return createWidePointerToType(module, info, wideEltType);
       } else {
-          return llvm::PointerType::get(wideEltType, t->getPointerAddressSpace());
+          return getPointerType(wideEltType, t->getPointerAddressSpace());
       }
 #else
       assert(false && "Should not be reachable");

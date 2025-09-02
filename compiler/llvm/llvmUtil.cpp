@@ -508,8 +508,8 @@ llvm::Value *convertValueToType(llvm::IRBuilder<>* irBuilder,
       // todo: setValueAlignment(tmp_alloc, ???, ???);
       *alloca = tmp_alloc;
       // Now cast the allocation to both fromType and toType.
-      llvm::Type* curPtrType = llvm::PointerType::getUnqual(curType);
-      llvm::Type* newPtrType = llvm::PointerType::getUnqual(newType);
+      auto curPtrType = getPointerType(curType);
+      auto newPtrType = getPointerType(newType);
       // Now get cast pointers
       llvm::Value* tmp_cur = irBuilder->CreatePointerCast(tmp_alloc, curPtrType);
       trackLLVMValue(tmp_cur);
@@ -849,6 +849,13 @@ llvm::Type* getPointerType(llvm::IRBuilder<>* irBuilder, unsigned AS) {
   return irBuilder->getPtrTy(AS);
 #else
   return irBuilder->getInt8PtrTy(AS);
+#endif
+}
+llvm::Type* getPointerType(llvm::Type* eltType, unsigned AS) {
+#if LLVM_VERSION_MAJOR < 21
+  return llvm::PointerType::get(eltType, AS);
+#else
+  return llvm::PointerType::get(eltType->getContext(), AS);
 #endif
 }
 

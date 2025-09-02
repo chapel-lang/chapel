@@ -158,11 +158,23 @@ const std::vector<std::string>& getCC1Arguments(Context* context,
 
   std::string triple = llvm::sys::getDefaultTargetTriple();
   // Create a compiler instance to handle the actual work.
-  auto diagOptions = new clang::DiagnosticOptions();
+  auto diagOptions = std::make_unique<clang::DiagnosticOptions>();
   auto diagClient = new clang::TextDiagnosticPrinter(llvm::errs(),
-                                                     &*diagOptions);
+#if LLVM_VERSION_MAJOR >= 21
+                                                    *diagOptions
+#else
+                                                     diagOptions.get()
+#endif
+                                                    );
   auto diagID = new clang::DiagnosticIDs();
-  auto diags = new clang::DiagnosticsEngine(diagID, &*diagOptions, diagClient);
+  auto diags = new clang::DiagnosticsEngine(
+    diagID,
+#if LLVM_VERSION_MAJOR >= 21
+    *diagOptions,
+#else
+    diagOptions.get(),
+#endif
+    diagClient);
 
   // takes ownership of all of the above
   clang::driver::Driver D(argsCstrs[0], triple, *diags);
@@ -207,8 +219,6 @@ const std::vector<std::string>& getCC1Arguments(Context* context,
       result.push_back(arg);
     }
   }
-
-  delete diags;
 
 #endif
 
@@ -296,6 +306,13 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
 
     auto diagOptions = clang::CreateAndPopulateDiagOpts(cc1argsCstrs);
     auto diagClient = new clang::TextDiagnosticBuffer();
+#if LLVM_VERSION_MAJOR >= 21
+      auto clangDiags =
+      clang::CompilerInstance::createDiagnostics(*llvm::vfs::getRealFileSystem(),
+                                                 *diagOptions,
+                                                 diagClient,
+                                                 /* owned */ true);
+#else
 #if LLVM_VERSION_MAJOR >= 20
       auto clangDiags =
       clang::CompilerInstance::createDiagnostics(*llvm::vfs::getRealFileSystem(),
@@ -307,6 +324,7 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
       clang::CompilerInstance::createDiagnostics(diagOptions.release(),
                                                  diagClient,
                                                  /* owned */ true);
+#endif
 #endif
     Clang->setDiagnostics(&*clangDiags);
 
@@ -456,7 +474,20 @@ static owned<clang::CompilerInstance> getCompilerInstanceForReadingPch(
   clang::CompilerInstance* Clang = new clang::CompilerInstance();
   auto diagOptions = clang::CreateAndPopulateDiagOpts(cc1argsCstrs);
   auto diagClient = new clang::TextDiagnosticPrinter(llvm::errs(),
-                                                     &*diagOptions);
+#if LLVM_VERSION_MAJOR >= 21
+                                                     *diagOptions
+#else
+                                                     &*diagOptions
+#endif
+                                                    );
+
+#if LLVM_VERSION_MAJOR >= 21
+  auto clangDiags =
+    clang::CompilerInstance::createDiagnostics(*llvm::vfs::getRealFileSystem(),
+                                               *diagOptions,
+                                               diagClient,
+                                               /* owned */ true);
+#else
 #if LLVM_VERSION_MAJOR >= 20
   auto clangDiags =
     clang::CompilerInstance::createDiagnostics(*llvm::vfs::getRealFileSystem(),
@@ -469,6 +500,7 @@ static owned<clang::CompilerInstance> getCompilerInstanceForReadingPch(
                                                diagClient,
                                                /* owned */ true);
 #endif
+#endif
   Clang->setDiagnostics(&*clangDiags);
 
   bool success =
@@ -476,7 +508,16 @@ static owned<clang::CompilerInstance> getCompilerInstanceForReadingPch(
                                               cc1argsCstrs, *clangDiags);
   CHPL_ASSERT(success);
 
-  Clang->setTarget(clang::TargetInfo::CreateTargetInfo(Clang->getDiagnostics(), Clang->getInvocation().TargetOpts));
+  Clang->setTarget(
+    clang::TargetInfo::CreateTargetInfo(
+      Clang->getDiagnostics(),
+#if LLVM_VERSION_MAJOR >= 21
+      Clang->getInvocation().getTargetOpts()
+#else
+      Clang->getInvocation().TargetOpts
+#endif
+    )
+  );
   Clang->createFileManager();
   Clang->createSourceManager(Clang->getFileManager());
   Clang->createPreprocessor(clang::TU_Complete);

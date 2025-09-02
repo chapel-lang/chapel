@@ -530,11 +530,11 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
     llvm::Type* locAddrType = nullptr;
 
     if (isOpaquePointer(addrType)) {
-      locAddrType = llvm::PointerType::getUnqual(gContext->llvmContext());
+      locAddrType = getPointerType(gContext->llvmContext());
     } else {
 #ifdef HAVE_LLVM_TYPED_POINTERS
       locAddrType =
-        llvm::PointerType::getUnqual(addrType->getPointerElementType());
+        getPointerType(addrType->getPointerElementType());
 #endif
     }
     INT_ASSERT(locAddrType);
@@ -1304,7 +1304,7 @@ GenRet doCodegenFieldPtr(
           baseTy, baseValue, cBaseType->getMemberGEP("_u", unused));
       trackLLVMValue(ret.val);
       auto addrSpace = baseValue->getType()->getPointerAddressSpace();
-      llvm::PointerType* ty = llvm::PointerType::get(retType.type, addrSpace);
+      auto ty = getPointerType(retType.type, addrSpace);
       // Now cast it to the right type.
       ret.val = convertValueToType(ret.val, ty, false);
       INT_ASSERT(ret.val);
@@ -1342,8 +1342,7 @@ GenRet doCodegenFieldPtr(
             (ret.chplType == dtCFnPtr)) {
           // cast the returned pointer to the right type
           auto addrSpace = baseValue->getType()->getPointerAddressSpace();
-          llvm::PointerType* ty =
-            llvm::PointerType::get(retType.type, addrSpace);
+          auto ty = getPointerType(retType.type, addrSpace);
           ret.val = convertValueToType(ret.val, ty, false);
         }
 
@@ -2201,6 +2200,20 @@ GenRet codegenMod(GenRet a, GenRet b)
   return ret;
 }
 
+#ifdef HAVE_LLVM
+static llvm::CallInst* CreateIntrinsic(llvm::Intrinsic::ID id,
+                                        llvm::ArrayRef<llvm::Type*> tys,
+                                        llvm::ArrayRef<llvm::Value*> args) {
+#if LLVM_VERSION_MAJOR >= 21
+  auto call = gGenInfo->irBuilder->CreateIntrinsic(id, tys, args, {});
+#else
+  auto call = gGenInfo->irBuilder->CreateIntrinsic(id, tys, args);
+#endif
+  trackLLVMValue(call);
+  return call;
+}
+#endif
+
 // TODO: We could call the C 'fma' function from 'math.h' here.
 static GenRet emitFmaForC(GenRet av, GenRet bv, GenRet cv) {
   INT_FATAL("Should not reach here, user facing functions should call the "
@@ -2212,7 +2225,6 @@ static GenRet emitFmaForC(GenRet av, GenRet bv, GenRet cv) {
 static GenRet emitFmaForLlvm(GenRet av, GenRet bv, GenRet cv) {
   GenRet ret;
 #ifdef HAVE_LLVM
-  GenInfo* info = gGenInfo;
   INT_ASSERT(av.chplType == bv.chplType && bv.chplType == cv.chplType);
   INT_ASSERT(av.chplType == dtReal[FLOAT_SIZE_64] ||
              av.chplType == dtReal[FLOAT_SIZE_32]);
@@ -2229,7 +2241,7 @@ static GenRet emitFmaForLlvm(GenRet av, GenRet bv, GenRet cv) {
   auto id = llvm::Intrinsic::fma;
   std::vector<llvm::Type*> tys = { ty };
   std::vector<llvm::Value*> args = { av.val, bv.val, cv.val };
-  ret.val = info->irBuilder->CreateIntrinsic(id, tys, args);
+  ret.val = CreateIntrinsic(id, tys, args);
   trackLLVMValue(ret.val);
 #endif
 
@@ -2276,7 +2288,6 @@ static GenRet emitSqrtCMath(GenRet av) {
 static GenRet emitSqrtLLVMIntrinsic(GenRet av) {
   GenRet ret;
 #ifdef HAVE_LLVM
-  GenInfo* info = gGenInfo;
   INT_ASSERT(av.chplType == dtReal[FLOAT_SIZE_64] ||
              av.chplType == dtReal[FLOAT_SIZE_32]);
   auto ty = av.val->getType();
@@ -2288,7 +2299,7 @@ static GenRet emitSqrtLLVMIntrinsic(GenRet av) {
   auto id = llvm::Intrinsic::sqrt;
   std::vector<llvm::Type*> tys = { ty };
   std::vector<llvm::Value*> args = { av.val };
-  ret.val = info->irBuilder->CreateIntrinsic(id, tys, args);
+  ret.val = CreateIntrinsic(id, tys, args);
   trackLLVMValue(ret.val);
 #endif
 
@@ -2323,7 +2334,6 @@ static GenRet emitAbsCMath(GenRet av) {
 static GenRet emitAbsLLVMIntrinsic(GenRet av) {
   GenRet ret;
 #ifdef HAVE_LLVM
-  GenInfo* info = gGenInfo;
   INT_ASSERT(av.chplType == dtReal[FLOAT_SIZE_64] ||
              av.chplType == dtReal[FLOAT_SIZE_32]);
   auto ty = av.val->getType();
@@ -2335,7 +2345,7 @@ static GenRet emitAbsLLVMIntrinsic(GenRet av) {
   auto id = llvm::Intrinsic::fabs;
   std::vector<llvm::Type*> tys = { ty };
   std::vector<llvm::Value*> args = { av.val };
-  ret.val = info->irBuilder->CreateIntrinsic(id, tys, args);
+  ret.val = CreateIntrinsic(id, tys, args);
   trackLLVMValue(ret.val);
 #endif
 
@@ -2993,8 +3003,8 @@ static GenRet codegenCallExprInner(GenRet function,
                 tmp = createTempVarWith(args[i]);
 
                 llvm::Value* ptr = tmp.val;
-                llvm::Type* sTyPtrTy = llvm::PointerType::get(sTy, stackSpace);
-                llvm::Type* i8PtrTy = getPointerType(irBuilder);
+                auto sTyPtrTy = getPointerType(sTy, stackSpace);
+                auto i8PtrTy = getPointerType(irBuilder);
 
                 // handle offset
                 if (unsigned offset = argInfo->getDirectOffset()) {
@@ -3040,7 +3050,7 @@ static GenRet codegenCallExprInner(GenRet function,
             // Create a temp variable to load from
             tmp = createTempVarWith(args[i]);
 
-            llvm::Type* sTyPtrTy = llvm::PointerType::get(sTy, stackSpace);
+            auto sTyPtrTy = getPointerType(sTy, stackSpace);
             llvm::Value* ptr = irBuilder->CreatePointerCast(tmp.val, sTyPtrTy);
             trackLLVMValue(ptr);
 
@@ -3105,7 +3115,7 @@ static GenRet codegenCallExprInner(GenRet function,
       // If we are using typed pointers, the pointer type must match the
       // call type or else instruction verification will fail. If using
       // opaque pointers, it is fine if the call pointer type is 'void*'.
-      auto fnPtrType = llvm::PointerType::getUnqual(fnType);
+      auto fnPtrType = getPointerType(fnType);
       val = info->irBuilder->CreateBitCast(val, fnPtrType);
     #endif
 
@@ -3466,7 +3476,7 @@ GenRet codegenNullPointer()
     ret.c = "NULL";
   } else {
 #ifdef HAVE_LLVM
-    llvm::Type* ptrType = getPointerType(info->irBuilder);
+    auto ptrType = getPointerType(info->irBuilder);
     ret.val = llvm::Constant::getNullValue(ptrType);
 #endif
   }
@@ -3503,8 +3513,8 @@ void codegenCallMemcpy(GenRet dest, GenRet src, GenRet size,
     llvm::Type *types[3];
     unsigned addrSpaceDest = llvm::cast<llvm::PointerType>(dest.val->getType())->getAddressSpace();
     unsigned addrSpaceSrc = llvm::cast<llvm::PointerType>(src.val->getType())->getAddressSpace();
-    types[0] = llvm::PointerType::get(int8Ty, addrSpaceDest);
-    types[1] = llvm::PointerType::get(int8Ty, addrSpaceSrc);
+    types[0] = getPointerType(int8Ty, addrSpaceDest);
+    types[1] = getPointerType(int8Ty, addrSpaceSrc);
     types[2] = llvm::Type::getInt64Ty(gContext->llvmContext());
     //types[3] = llvm::Type::getInt32Ty(info->llvmContext);
     //types[4] = llvm::Type::getInt1Ty(info->llvmContext);
@@ -3796,7 +3806,7 @@ GenRet codegenCastToVoidStar(GenRet value)
     ret.c += "))";
   } else {
 #ifdef HAVE_LLVM
-    llvm::Type* castType = getPointerType(info->irBuilder);
+    auto castType = getPointerType(info->irBuilder);
     ret.val = convertValueToType(value.val, castType, !value.isUnsigned);
     INT_ASSERT(ret.val);
 #endif
@@ -5586,7 +5596,7 @@ DEFINE_PRIM(GPU_ALLOC_SHARED) {
   trackLLVMValue(sharedArray);
 
   // Get a void* pointer to the shared array.
-  llvm::Type* voidPtrType = getPointerType(gContext->llvmContext(), 3);
+  auto voidPtrType = getPointerType(gContext->llvmContext(), 3);
   llvm::Value* sharedArrayPtr = gGenInfo->irBuilder->CreateBitCast(sharedArray, voidPtrType, "sharedArrayPtr");
   trackLLVMValue(sharedArrayPtr);
 
@@ -6294,14 +6304,14 @@ DEFINE_PRIM(FTABLE_CALL) {
       argt = call->get(2)->typeInfo()->codegen().type;
 
       if (argMustUseCPtr(call->get(2)->typeInfo()))
-        argt = llvm::PointerType::getUnqual(argt);
+        argt = getPointerType(argt);
 
       argumentTypes.push_back(argt);
 
       argt = call->get(3)->typeInfo()->codegen().type;
 
       if (argMustUseCPtr(call->get(3)->typeInfo()))
-        argt = llvm::PointerType::getUnqual(argt);
+        argt = getPointerType(argt);
 
       argumentTypes.push_back(argt);
 
@@ -6311,7 +6321,7 @@ DEFINE_PRIM(FTABLE_CALL) {
 
       // OK, now cast to the fnTy.
       fngen.val = gGenInfo->irBuilder->CreateBitCast(fnPtr,
-                                                    llvm::PointerType::getUnqual(fnTy));
+                                                    getPointerType(fnTy));
       trackLLVMValue(fngen.val);
 #endif
     }
@@ -6413,7 +6423,7 @@ llvm::MDNode* createMetadataScope(llvm::LLVMContext& ctx,
                                     const char* name) {
 
   auto scopeName = llvm::MDString::get(ctx, name);
-  auto dummy = llvm::MDNode::getTemporary(ctx, chpl::empty);
+  auto dummy = llvm::MDNode::getTemporary(ctx, {});
   llvm::Metadata* Args[] = {dummy.get(), domain, scopeName};
   auto scope = llvm::MDNode::get(ctx, Args);
   // Remove the dummy and replace it with a self-reference.
@@ -6437,7 +6447,7 @@ DEFINE_PRIM(NO_ALIAS_SET) {
 
     if (info->noAliasDomain == NULL) {
       auto domainName = llvm::MDString::get(ctx, "Chapel no-alias");
-      auto dummy = llvm::MDNode::getTemporary(ctx, chpl::empty);
+      auto dummy = llvm::MDNode::getTemporary(ctx, {});
       llvm::Metadata* Args[] = {dummy.get(), domainName};
       info->noAliasDomain = llvm::MDNode::get(ctx, Args);
       // Remove the dummy and replace it with a self-reference.
@@ -6509,7 +6519,7 @@ DEFINE_PRIM(DEBUG_TRAP) {
   }
   else {
     #ifdef HAVE_LLVM
-    ret.val = info->irBuilder->CreateIntrinsic(llvm::Intrinsic::debugtrap, {}, {});
+    ret.val = CreateIntrinsic(llvm::Intrinsic::debugtrap, {}, {});
     trackLLVMValue(ret.val);
     #endif
   }

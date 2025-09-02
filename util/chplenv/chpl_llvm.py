@@ -17,6 +17,7 @@ def llvm_versions():
     # Which major release - only need one number for that with current
     # llvm (since LLVM 4.0).
     # These will be tried in order.
+    # return ('21','20','19','18','17','16','15','14',)
     return ('20','19','18','17','16','15','14',)
 
 @memoize
