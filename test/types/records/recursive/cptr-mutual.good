@@ -1,0 +1,1 @@
+cptr-mutual.chpl:6: error: record 'R2' cannot contain a recursive field 'y' whose type 'R1' contains 'c_ptrConst(R1)'
