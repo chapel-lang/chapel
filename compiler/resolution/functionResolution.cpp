@@ -2680,6 +2680,16 @@ static FnSymbol* resolveUninsertedCall(Expr* insert, CallExpr* call,
 }
 
 static void checkForInfiniteRecord(AggregateType* at, std::set<AggregateType*>& nestedRecords) {
+
+  // no need to check for extern records, since the extern compiler checks that
+  // and we will never reach this point in compilation with an extern record
+  // and including a check on extern records leads to false positives with
+  // `c_ptr(record)`
+  // it may be possible in the future for us to codegen c_ptr(record), and then
+  // this extra check for extern records could be removed
+  if (at->symbol->hasFlag(FLAG_EXTERN))
+    return;
+
   auto inner = [&at, &nestedRecords](Symbol* field, AggregateType* ft, Type* realType = nullptr) {
     if (!ft) return;
     if (nestedRecords.find(ft) != nestedRecords.end()) {
@@ -2757,10 +2767,7 @@ void resolveTypeWithInitializer(AggregateType* at, FnSymbol* fn) {
     }
   }
 
-  // check for infinite records
-  // no need to check for extern records, since the extern compiler checks that
-  // and we will never reach this point in compilation with an extern record
-  if (isRecord(at) && !at->symbol->hasFlag(FLAG_EXTERN)) {
+  if (isRecord(at)) {
     checkForInfiniteRecord(at);
   }
 
