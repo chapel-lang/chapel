@@ -291,6 +291,21 @@ std::vector<int> const& actualOrderForNode(Context* context, const AstNode* node
   return QUERY_END(res);
 }
 
+
+static inline ID parseAndGetSymbolIdFromTopLevelModule(Context* context,
+                                                       const char* modName,
+                                                       const char* symName) {
+  using namespace parsing;
+  // make sure the module is parsed before we try to look up the symbol
+  if (!getToplevelModule(context, UniqueString::get(context, modName))) {
+    return ID();
+  }
+  if (auto TestID = getSymbolIdFromTopLevelModule(context, modName, symName)) {
+    return TestID;
+  }
+  return ID();
+}
+
 struct TestFunctionFinder {
   // Inputs
   Context* context;
@@ -335,21 +350,17 @@ findTestFunctionsForModule(Context* context, const Module* mod) {
   QUERY_BEGIN(findTestFunctionsForModule, context, mod);
   std::vector<const Function*> result;
 
-  using namespace parsing;
+  if (auto TestID =
+    parseAndGetSymbolIdFromTopLevelModule(context, "UnitTest", "Test")) {
+    auto TestTy = resolution::initialTypeForTypeDecl(context, TestID);
+    if (TestTy && TestTy->isClassType()) {
+      auto borrowedDec = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
+      auto borrowedTestTy = TestTy->toClassType()->withDecorator(context, borrowedDec);
+      auto borrowedTestQualTy = QualifiedType(QualifiedType::DEFAULT_INTENT, borrowedTestTy);
 
-  // make sure UnitTest has been parsed before getSymbolIdFromTopLevelModule
-  if (getToplevelModule(context, UniqueString::get(context, "UnitTest"))) {
-    if (auto TestID = getSymbolIdFromTopLevelModule(context, "UnitTest", "Test")) {
-      auto TestTy = resolution::initialTypeForTypeDecl(context, TestID);
-      if (TestTy && TestTy->isClassType()) {
-        auto borrowedDec = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
-        auto borrowedTestTy = TestTy->toClassType()->withDecorator(context, borrowedDec);
-        auto borrowedTestQualTy = QualifiedType(QualifiedType::DEFAULT_INTENT, borrowedTestTy);
-
-        TestFunctionFinder tff(context, borrowedTestQualTy);
-        mod->traverse(tff);
-        result = tff.fns;
-      }
+      TestFunctionFinder tff(context, borrowedTestQualTy);
+      mod->traverse(tff);
+      result = tff.fns;
     }
   }
   return QUERY_END(result);
@@ -386,15 +397,11 @@ findUnitTestMainForModule(Context* context, const Module* mod) {
   QUERY_BEGIN(findUnitTestMainForModule, context, mod);
   const FnCall* result = nullptr;
 
-  using namespace parsing;
-
-  // make sure UnitTest has been parsed before getSymbolIdFromTopLevelModule
-  if (getToplevelModule(context, UniqueString::get(context, "UnitTest"))) {
-    if (auto mainID = getSymbolIdFromTopLevelModule(context, "UnitTest", "main")) {
-      TestFunctionMainFinder tfmf(context, mainID);
-      mod->traverse(tfmf);
-      result = tfmf.callsMain;
-    }
+  if (auto mainID =
+      parseAndGetSymbolIdFromTopLevelModule(context, "UnitTest", "main")) {
+    TestFunctionMainFinder tfmf(context, mainID);
+    mod->traverse(tfmf);
+    result = tfmf.callsMain;
   }
   return QUERY_END(result);
 }
