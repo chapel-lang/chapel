@@ -2757,7 +2757,10 @@ void resolveTypeWithInitializer(AggregateType* at, FnSymbol* fn) {
     }
   }
 
-  if (isRecord(at)) {
+  // check for infinite records
+  // no need to check for extern records, since the extern compiler checks that
+  // and we will never reach this point in compilation with an extern record
+  if (isRecord(at) && !at->symbol->hasFlag(FLAG_EXTERN)) {
     checkForInfiniteRecord(at);
   }
 
