@@ -228,6 +228,8 @@ module CTypes {
         compilerError("c_array element type cannot be 'void'");
       if eltType == nothing then
         compilerError("c_array element type cannot be 'nothing'");
+      if isGeneric(eltType) then
+        compilerError("c_array element type cannot be generic");
       this.eltType = eltType;
       this.size = size;
       init this;
