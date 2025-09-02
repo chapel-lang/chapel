@@ -1079,10 +1079,10 @@ static void test24() {
   assert(qtTup.type()->isTupleType());
   auto tpTup = qtTup.type()->toTupleType();
 
-  // Its components are 'ref real(64)' and 'var nothing'.
+  // Its components are 'var real(64)' and 'var nothing'.
   for (int i = 0; i < tpTup->numElements(); i++) {
     auto qt = tpTup->elementType(i);
-    assert(i != 0 || (qt.type()->isRealType() && qt.kind() == QualifiedType::REF));
+    assert(i != 0 || (qt.type()->isRealType() && qt.kind() == QualifiedType::VAR));
     assert(i != 1 || (qt.type()->isNothingType() && qt.kind() == QualifiedType::VAR));
   }
 
