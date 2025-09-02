@@ -360,11 +360,11 @@ const char* qualifierToStr(Qualifier q) {
 }
 
 bool QualifiedType::isRefType() const {
-  return _type->symbol->hasFlag(FLAG_REF);
+  return _type && _type->symbol->hasFlag(FLAG_REF);
 }
 
 bool QualifiedType::isWideRefType() const {
-  return _type->symbol->hasFlag(FLAG_WIDE_REF);
+  return _type && _type->symbol->hasFlag(FLAG_WIDE_REF);
 }
 
 const char* QualifiedType::qualStr() const {
