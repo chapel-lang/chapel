@@ -367,6 +367,7 @@ void FindElidedCopies::processTupleDecl(const TupleDecl* ast,
         initExprTupleType ? initExprTupleType->elementType(i) : QualifiedType();
 
     if (auto vld = decl->toVarLikeDecl()) {
+      if (vld->name() == USTR("_")) continue;
       // Propagate formal-ness and intent from the tuple decl
       bool isFormal = ast->isTupleDeclFormal();
       Qualifier intentOrKind = (Qualifier)ast->intentOrKind();
