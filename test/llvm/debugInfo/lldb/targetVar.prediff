@@ -7,6 +7,7 @@ sed -E -e 's/^(Current executable set to).*$/\1 targetVar/' \
     -e 's/^(Executing commands in).*$/\1 targetVarCommands.txt/' \
     -e 's/^(Global variables for).*$/\1 targetVar.chpl/' \
     -e 's/(launched:).*/\1 targetVar/' \
+    -e 's/\/.*lldb.commands/lldb.commands/' \
     $file > $file.tmp
 mv $file.tmp $file
 
