@@ -72,11 +72,6 @@ module Time {
                                            out yday:    int(32),
                                            out isdst:   int(32));
 
-  // Transition symbol for 1.32 dayOfWeek behavior change, deprecated in 2.1.
-  @chpldoc.nodoc
-  @deprecated("'cIsoDayOfWeek' is deprecated and no longer affects the behavior of 'dayOfWeek'")
-  config param cIsoDayOfWeek = true;
-
   /*
      Days in the week, starting with Monday.
      Monday is represented as 1.
