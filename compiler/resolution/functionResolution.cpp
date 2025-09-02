@@ -2684,7 +2684,7 @@ static void checkForInfiniteRecord(AggregateType* at, std::set<AggregateType*>& 
     if (!ft) return;
     if (nestedRecords.find(ft) != nestedRecords.end()) {
 
-      Type* typeForError = realType ? realType : ft;
+      Type* typeForError = realType ? realType : at;
 
       // Found a cycle
       // Note: error message text agreed upon in #10281
