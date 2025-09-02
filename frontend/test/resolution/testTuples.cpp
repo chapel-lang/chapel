@@ -1070,7 +1070,9 @@ static void test24() {
 
   // Get the type of the '(x, _)' tuple itself.
   auto testFn = mod->stmt(3)->toFunction();
-  auto astTup = testFn->stmt(1)->toCall()->actual(0)->toTuple();
+  auto astOp = testFn->stmt(1)->toOpCall();
+  assert(astOp);
+  auto astTup = astOp->actual(0)->toTuple();
   assert(astTup);
   auto& qtTup = fnRR.byAst(astTup).type();
 
@@ -1087,13 +1089,10 @@ static void test24() {
   }
 
   // Finally confirm that there is an assignment for 'x' but not for '_'.
-  for (int i = 0; i < astTup->numActuals(); i++) {
-    auto actual = astTup->actual(i);
-    auto& actions = fnRR.byAst(actual).associatedActions();
-    assert(i != 0 || (actions.size() == 1 &&
-                      actions[0].action() == AssociatedAction::ASSIGN));
-    assert(i != 1 || actions.size() == 0);
-  }
+  auto& actions = fnRR.byAst(astOp).associatedActions();
+  assert(actions.size() == 1 &&
+         actions[0].action() == AssociatedAction::ASSIGN &&
+         actions[0].hasTupleEltIdx() && actions[0].tupleEltIndex() == 0);
 }
 
 static void test25() {
