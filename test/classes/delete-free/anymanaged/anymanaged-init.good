@@ -1,3 +1,3 @@
-anymanaged-init.chpl:2: error: field is declared with generic memory management
-note: consider adding 'owned', 'shared', 'borrowed', or 'unmanaged'
-note: if generic memory management is desired, use a 'type' field to store the class type
+anymanaged-init.chpl:3: In initializer:
+anymanaged-init.chpl:5: warning: please add '(?)' to type 'A' because it is generic
+anymanaged-init.chpl:3: error: could not determine the concrete type for the generic return type 'unmanaged A'
