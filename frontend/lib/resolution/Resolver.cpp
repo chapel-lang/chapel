@@ -3168,6 +3168,17 @@ bool Resolver::resolveSpecialOpCall(const Call* call) {
     if (op->numActuals() == 2) {
       // Update a generic/unknown type when split-init is used.
       adjustTypesOnAssign(op->actual(0), op->actual(1));
+
+      if (auto lhsTuple = op->actual(0)->toTuple()) {
+        auto rhsQt = byPostorder.byAst(op->actual(1)).type();
+        if (auto rhsTupleType = rhsQt.type()->toTupleType()) {
+          if (lhsTuple->numActuals() != rhsTupleType->numElements()) {
+            context->error(call, "tuple size mismatch in split tuple assign");
+            byPostorder.byAst(call).setType(QualifiedType(
+                QualifiedType::UNKNOWN, ErroneousType::get(context)));
+          }
+        }
+      }
     }
   } else if (op->op() == USTR("...")) {
     // just leave it unknown -- tuple expansion only makes sense
