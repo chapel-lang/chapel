@@ -1042,9 +1042,11 @@ void CallInitDeinit::processInit(VarFrame* frame,
   //  * a VarLikeDecl
   //  * an actual passed by 'in' intent
   //  * a Return or Yield
+  const AstNode* lhsAst = nullptr;
   const AstNode* rhsAst = nullptr;
   auto op = ast->toOpCall();
   if (op != nullptr && op->op() == USTR("=")) {
+    lhsAst = op->actual(0);
     rhsAst = op->actual(1);
   } else if (auto vd = ast->toVarLikeDecl()) {
     rhsAst = vd->initExpression();
@@ -1057,6 +1059,8 @@ void CallInitDeinit::processInit(VarFrame* frame,
   if (rhsAst == nullptr) {
     rhsAst = ast;
   }
+
+  const bool lhsIsTuple = lhsAst && lhsAst->isTuple();
 
   if (lhsType.isType() || lhsType.isParam()) {
     // these are basically 'move' initialization
@@ -1085,7 +1089,7 @@ void CallInitDeinit::processInit(VarFrame* frame,
       // TODO: properly handle tuple destructuring decl case
       // CHPL_ASSERT(!rhsDeclId.isEmpty());
       frame->deinitedVars.emplace(rhsDeclId, currentStatement()->id());
-    } else if (isCallProducingValue(rhsAst, rhsType, rv)) {
+    } else if (isCallProducingValue(rhsAst, rhsType, rv) && !lhsIsTuple) {
       // e.g. var x; x = callReturningValue();
       resolveMoveInit(ast, rhsAst, lhsType, rhsType, rv);
     } else {
@@ -1115,6 +1119,7 @@ void CallInitDeinit::processTupleEltInit(VarFrame* frame,
   CHPL_ASSERT(ast);
   CHPL_ASSERT(eltIndex >= 0);
 
+  const AstNode* lhsAst = nullptr;
   const AstNode* rhsAst = nullptr;
 
   if (tupleAst) {
@@ -1123,6 +1128,7 @@ void CallInitDeinit::processTupleEltInit(VarFrame* frame,
   } else {
     auto op = ast->toOpCall();
     if (op != nullptr && op->op() == USTR("=")) {
+      lhsAst = op->actual(0);
       rhsAst = op->actual(1);
     } else if (auto vd = ast->toVarLikeDecl()) {
       rhsAst = vd->initExpression();
@@ -1136,6 +1142,8 @@ void CallInitDeinit::processTupleEltInit(VarFrame* frame,
       rhsAst = ast;
     }
   }
+
+  const bool lhsIsTuple = lhsAst && lhsAst->isTuple();
 
   // TODO: deduplicate a lot of this code with processInit
 
@@ -1165,7 +1173,7 @@ void CallInitDeinit::processTupleEltInit(VarFrame* frame,
       // copy elision with '=' should only apply to myVar = myOtherVar
       CHPL_ASSERT(!rhsDeclId.isEmpty());
       frame->deinitedVars.emplace(rhsDeclId, currentStatement()->id());
-    } else if (isCallProducingValue(rhsAst, rhsType, rv)) {
+    } else if (isCallProducingValue(rhsAst, rhsType, rv) && !lhsIsTuple) {
       // e.g. var x; x = callReturningValue();
       resolveMoveInit(ast, rhsAst, lhsType, rhsType, rv);
     } else {
