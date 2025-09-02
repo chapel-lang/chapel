@@ -54,7 +54,12 @@ function log_error()
 # Test chpldoc with the chpldoc primer, instead of the chpl.
 bin_name=chpldoc
 
-CHPL_BIN=$(which ${bin_name} 2> /dev/null)
+which which >/dev/null 2>/dev/null
+if [ $? -ne 0 ] ; then
+  CHPL_BIN="$(command -v ${bin_name} 2> /dev/null)"
+else
+  CHPL_BIN="$(which ${bin_name} 2> /dev/null)"
+fi
 
 # Verify chpl binary exists and is executable.
 if [ -z "${CHPL_BIN}" ] ; then
