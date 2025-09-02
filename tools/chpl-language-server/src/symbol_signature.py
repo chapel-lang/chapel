@@ -234,6 +234,8 @@ def _node_to_string(node: chapel.AstNode, sep="") -> List[Component]:
         return _list_to_string(node.stmts(), sep)
     elif isinstance(node, chapel.New):
         return _new_to_string(node)
+    elif isinstance(node, chapel.Tuple):
+        return _list_to_string(node.actuals(), ", ", "(", ")")
 
     return [Component(ComponentTag.PLACEHOLDER, None)]
 
