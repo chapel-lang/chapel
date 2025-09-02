@@ -48,8 +48,11 @@ proc masonRun(args: [] string) throws {
   parser.parseArgs(args);
 
   const projectType = getProjectType();
-  if projectType != "application" then
-    throw new owned MasonError("Only mason applications can be run, but this is a Mason " + projectType);
+  if projectType == "lightweight" then
+    throw new MasonError("Mason lightweight projects do not support running");
+  if !exampleOpts._present && projectType != "application" then
+    throw new MasonError(
+      "Only mason applications can be run, but this is a Mason " + projectType);
 
   var show = showFlag.valueAsBool();
   var release = releaseFlag.valueAsBool();
