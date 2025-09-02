@@ -2251,17 +2251,11 @@ struct ConvertTypeHelper {
 
   void helpConvertFields(const types::CompositeType* ct,
                          const ResolvedFields& rf,
-                         AggregateType* at) {
+                         AggregateType* at,
+                         bool isInstantiation = false) {
     int nFields = rf.numFields();
     for (int i = 0; i < nFields; i++) {
       types::QualifiedType qt = rf.fieldType(i);
-      if (qt.isType() && !tc_->typeExistsAtRuntime(qt.type())) {
-        // a 'type' field can be left out at this point
-        continue;
-      } else if (qt.isParam()) {
-        // a 'param' field can be left out at this point
-        continue;
-      }
       Type* ft = tc_->convertType(qt.type());
 
       // NOTE: During the intermediate stage of development of this conversion
@@ -2278,15 +2272,24 @@ struct ConvertTypeHelper {
         field = declAst->toForwardingDecl()->expr()->toVarLikeDecl();
       }
       Expr* initExpr = nullptr;
-      if (field->initExpression()) {
-        initExpr = tc_->untypedConverter->convertAST(field->initExpression());
+      Expr* typeExpr = nullptr;
+      if (!isInstantiation && parsing::idIsInBundledModule(tc_->context, declID)) {
+        if (field->initExpression()) {
+          initExpr = tc_->untypedConverter->convertAST(field->initExpression());
+        }
+        if (field->typeExpression()) {
+          typeExpr = tc_->untypedConverter->convertAST(field->typeExpression());
+        }
       }
 
       UniqueString name = rf.fieldName(i);
       VarSymbol* v = new VarSymbol(astr(name), ft);
       v->qual = tc_->convertQualifier(qt.kind());
+      if (qt.isType()) {
+        v->addFlag(FLAG_TYPE_VARIABLE);
+      }
       v->makeField();
-      at->fields.insertAtTail(new DefExpr(v, initExpr));
+      at->fields.insertAtTail(new DefExpr(v, initExpr, typeExpr));
     }
   }
 
@@ -3817,21 +3820,14 @@ locateFieldSymbolAndType(TConverter* tc,
   auto& rfds = fieldsForTypeDecl(&rc, ct, dpo);
 
   int dynoFieldIndex = -1;
-  int prodFieldIndex = -1;
 
   // TODO: Fetching superclass field (non-flat access).
   if (fieldName != nullptr) {
     bool found = false;
 
-    int typeParamOffset = 0;
     for (int i = 0; i < rfds.numFields(); i++) {
-      if (auto type = rfds.fieldType(i);
-          type.isParam() || type.isType()) {
-        typeParamOffset += 1;
-      }
       if (rfds.fieldName(i) != fieldName) continue;
       dynoFieldIndex = i;
-      prodFieldIndex = i - typeParamOffset;
       found = true;
       break;
     }
@@ -3859,7 +3855,7 @@ locateFieldSymbolAndType(TConverter* tc,
     // TODO: Currently we do two scans (consulting 'ResolvedFields' above also
     // does a scan to find the field index). Is there a way we can get away
     // with only doing one while also retrieving the field's frontend type?
-    const int idx = (prodFieldIndex + 1) + superOffset;
+    const int idx = (dynoFieldIndex + 1) + superOffset;
     auto field = at->getField(idx);
     CHPL_ASSERT(0==strcmp(fieldName, field->name));
     return { base, field, fieldType };
