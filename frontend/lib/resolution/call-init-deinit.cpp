@@ -671,7 +671,7 @@ bool CallInitDeinit::validateTuplesForAssignOrInit(const AstNode* ast,
 
   // Then, check that they have the same size
   if (lhsTupleType->numElements() != rhsTupleType->numElements()) {
-    context->error(ast, "tuple size mismatch in tuple assign or init");
+    // assume error already emitted
     return false;
   }
 

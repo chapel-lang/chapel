@@ -503,15 +503,19 @@ void FindElidedCopies::processTupleAssign(const Tuple* lhsTuple,
                                           const QualifiedType& rhsType,
                                           RV& rv) {
     const Tuple* rhsTuple = rhsAst->toTuple();
-    if (rhsTuple) {
-      CHPL_ASSERT(rhsTuple->numActuals() == lhsTuple->numActuals());
+    if (rhsTuple && rhsTuple->numActuals() != lhsTuple->numActuals()) {
+      // error emitted previously
+      return;
     }
 
     const TupleType* rhsTupleType = nullptr;
     if (rhsType.type()) {
       rhsTupleType = rhsType.type()->toTupleType();
       CHPL_ASSERT(rhsTupleType);
-      CHPL_ASSERT(rhsTupleType->numElements() == lhsTuple->numActuals());
+      if (rhsTupleType->numElements() != lhsTuple->numActuals()) {
+        // error emitted previously
+        return;
+      }
     }
 
     // In the case of a tuple variable init expr, we can have multiple points
