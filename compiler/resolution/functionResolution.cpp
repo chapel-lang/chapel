@@ -2744,6 +2744,16 @@ void resolveTypeWithInitializer(AggregateType* at, FnSymbol* fn) {
     if (field->type == dtUnknown && field->defPoint->exprType != NULL) {
       field->type = field->defPoint->exprType->typeInfo();
     }
+    if (isClassLikeOrManaged(field->type)) {
+      if (auto dec = classTypeDecorator(field->type);
+          isDecoratorUnknownManagement(dec)) {
+          USR_FATAL_CONT(field, "field is declared with generic memory management");
+          USR_PRINT("consider adding 'owned', 'shared', 'borrowed', or 'unmanaged'");
+          USR_PRINT("if generic memory management is desired, "
+                    "use a 'type' field to store the class type");
+          USR_STOP();
+      }
+    }
   }
 
   if (isRecord(at)) {
