@@ -26,3 +26,6 @@ define parentlocid
   call debugSummary(debugParentSym($arg0))
 end
 break debuggerBreakHere
+commands $bpnum
+up
+end
