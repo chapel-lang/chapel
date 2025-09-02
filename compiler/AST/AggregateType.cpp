@@ -2199,7 +2199,8 @@ void AggregateType::processGenericFields() {
           anyDefaultedGenericFields = true;
         }
       }
-    } else if (field->defPoint->init == NULL) {
+    } else if (field->defPoint->init == NULL &&
+        !this->symbol->hasFlag(FLAG_RESOLVED_EARLY)) {
       if (field->defPoint->exprType == NULL) {
         genericFields.push_back(field); // "var x;"
         allDefaultedGenericFields = false;

@@ -453,7 +453,7 @@ struct TConverter final : UastConverter,
   std::unordered_map<const types::Type*, FnSymbol*> chplTupleInit;
 
   // stores a mapping from chpl::Type* to Type*
-  std::unordered_map<const types::Type*, Type*> convertedTypes;
+  std::unordered_map<const types::Type*, std::pair<bool, Type*>> convertedTypes;
 
   // so that TConverter can process one module (or function) at a time,
   // encountering a submodule, if it is to be converted, add it to this
@@ -658,6 +658,7 @@ struct TConverter final : UastConverter,
 
   /* Look up a type in the converted types map. Does not convert. */
   Type* findConvertedType(const types::Type* t);
+  bool typeIsConverted(const types::Type* t);
 
   // Converts a type. If it's an AggregateType, it will also fill in the
   // fields, but only after creating a dummy AggregateType for the map
@@ -1245,7 +1246,6 @@ ModuleSymbol* TConverter::convertToplevelModule(const Module* mod,
 
 void TConverter::postConvertApplyFixups() {
   untypedConverter->postConvertApplyFixups();
-
 
   // TODO: apply fixups from this converter
 }
@@ -2174,10 +2174,19 @@ void TConverter::noteConvertedFn(const resolution::TypedFnSignature* sig, FnSymb
 Type* TConverter::findConvertedType(const types::Type* t) {
   auto it = convertedTypes.find(t);
   if (it != convertedTypes.end()) {
-    return it->second;
+    return it->second.second;
   }
 
   return nullptr;
+}
+
+bool TConverter::typeIsConverted(const types::Type* t) {
+  auto it = convertedTypes.find(t);
+  if (it != convertedTypes.end()) {
+    return it->second.first;
+  }
+
+  return false;
 }
 
 static IF1_complex_type getComplexSize(const types::ComplexType* t) {
@@ -2296,8 +2305,14 @@ struct ConvertTypeHelper {
   void helpConvertCompositeType(const types::CompositeType* ct,
                                 const ResolvedFields& rf,
                                 AggregateType* at) {
+    auto gct = ct->instantiatedFromCompositeType();
+    if (gct && !tc_->typeIsConverted(gct)) {
+      tc_->convertType(gct);
+    }
+    auto generic = toAggregateType(tc_->findConvertedType(gct));
+
     // First convert the fields in a regular manner.
-    helpConvertFields(ct, rf, at);
+    helpConvertFields(ct, rf, at, generic != nullptr);
 
     auto ts = at->symbol;
     INT_ASSERT(ts);
@@ -2330,6 +2345,21 @@ struct ConvertTypeHelper {
 
     ts->addFlag(FLAG_RESOLVED_EARLY);
     at->resolveStatus = RESOLVED;
+
+    if (generic == nullptr) {
+      at->processGenericFields();
+
+      // This is a generic type created for the purpose of serving as a root
+      // instantiation, which other parts of production assume exists.
+      if (at->genericFields.size() > 0) {
+        at->resolveStatus = UNRESOLVED;
+        at->markAsGeneric();
+      }
+    }
+    if (generic) {
+      at->instantiatedFrom = generic;
+      at->renameInstantiation();
+    }
 
     auto rc = createDummyRC(context());
     if (types::Type::isPod(&rc, ct)) {
@@ -2888,7 +2918,7 @@ Type* TConverter::convertType(const types::Type* t) {
   }
 
   // It's an aggregate, so emplace a map entry before converting.
-  if (at) convertedTypes[t] = at;
+  if (at) convertedTypes[t] = {false, at};
 
   // Invoke the visitor to convert the type.
   ConvertTypeHelper visitor = { this };
@@ -2896,7 +2926,7 @@ Type* TConverter::convertType(const types::Type* t) {
   INT_ASSERT(ret);
 
   // Set the converted type once again.
-  convertedTypes[t] = ret;
+  convertedTypes[t] = {true, ret};
 
   if (!isPrimitiveType(ret) &&
       ret->symbol->hasFlag(FLAG_INSTANTIATED_GENERIC) == false &&

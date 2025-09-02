@@ -168,6 +168,7 @@ public:
 
   Symbol*                     getSubstitution(const char* name)          const;
   void                        saveGenericSubstitutions();
+  void                        renameInstantiation();
 
   Type*                       getDecoratedClass(ClassTypeDecoratorEnum d);
 
@@ -254,8 +255,6 @@ private:
 
   void                        addClassToHierarchy(
                                           std::set<AggregateType*>& seen);
-
-  void                        renameInstantiation();
 
   AggregateType*              instantiationWithParent(AggregateType* parent, Expr* insnPoint = NULL);
 
