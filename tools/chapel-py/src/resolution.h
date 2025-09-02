@@ -38,3 +38,10 @@ calledFnForNode(chpl::Context* context, const chpl::uast::AstNode* node);
 
 std::vector<int> const&
 actualOrderForNode(chpl::Context* context, const chpl::uast::AstNode* node);
+
+std::vector<const chpl::uast::Function*> const&
+findTestFunctionsForModule(chpl::Context* context, const chpl::uast::Module* mod);
+
+const chpl::uast::FnCall* const&
+findUnitTestMainForModule(chpl::Context* context, const chpl::uast::Module* mod);
+
