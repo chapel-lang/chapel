@@ -26,8 +26,9 @@
 // This header guarantees a specific stable version of Python.h is used.
 //
 
-// use a stable API version of python 3.8
-#define Py_LIMITED_API 0x03080000
+#ifndef Py_LIMITED_API
+#error "Py_LIMITED_API should be defined by the build system"
+#endif
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
