@@ -2002,6 +2002,11 @@ bool isRecord(Type* t) {
   return false;
 }
 
+bool isCPtrToRecord(Type* t) {
+  return t->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
+         isRecord(getDataClassType(t->symbol)->typeInfo());
+}
+
 bool isUserRecord(Type* t) {
   if (!isRecord(t))
     return false;
