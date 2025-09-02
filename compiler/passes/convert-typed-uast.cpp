@@ -4485,6 +4485,16 @@ Expr* TConverter::convertNamedCallOrNull(const Call* node, RV& rv) {
                                          raiseErrors,
                                          &actualAsts);
 
+  if (sig && sig->isMethod() && !ci.isMethodCall() &&
+      !ci.isOpCall()) {
+    // If the call is a method call, but the CI does not indicate it,
+    // then we need to adjust the CI to make it a method call.
+    ci = resolution::CallInfo::createWithReceiver(ci, sig->formalType(0));
+    auto fn = cur.symbol->toFunction();
+    INT_ASSERT(fn && fn->isMethod());
+    actualAsts.insert(actualAsts.begin(), fn->thisFormal());
+  }
+
   // No need to resolve assignment betwen types
   if (ci.name() == USTR("=") &&
       (ci.actual(0).type().isType() || ci.actual(0).type().isParam())) {
@@ -4620,7 +4630,16 @@ SymExpr* TConverter::ActualConverter::convertActual(const FormalActual& fa) {
 
     // Convert the actual and leave.
     types::QualifiedType actualType;
-    auto actualExpr = tc_->convertExpr(astActual, rv_, &actualType);
+    Expr* actualExpr = nullptr;
+    if (auto formal = astActual->toFormal()) {
+      // We don't have a 'this' identifier for implicit method calls, so we
+      // use the 'this' formal's uAST as a signal to generate the implicit
+      // 'this'.
+      INT_ASSERT(formal->name() == USTR("this"));
+      actualExpr = tc_->codegenImplicitThis(rv_);
+    } else {
+      actualExpr = tc_->convertExpr(astActual, rv_, &actualType);
+    }
     auto temp = tc_->storeInTempIfNeeded(actualExpr, actualType);
 
     // Note: Assumes that an unknown formal indicates some kind of fabricated
@@ -4689,7 +4708,8 @@ SymExpr* TConverter::ActualConverter::convertActual(const FormalActual& fa) {
     // The formal is part of a compiler-generated function, so we can just
     // construct a default-value for the type as uAST will not be supplied.
     INT_ASSERT(!decl || decl->id().isFabricatedId());
-    auto t = fa.formalType().type();
+
+    auto t = tfs_->formalType(fa.formalIdx()).type();
     expr = tc_->defaultValueForType(t, decl, rvCalledFn);
     exprType = fa.formalType();
 
