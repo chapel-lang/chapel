@@ -62,7 +62,12 @@ log_info "Running minimal test script: \$CHPL_HOME/util/test/checkChplInstall"
 
 BIN_NAME=chpl
 
-CHPL_BIN="$(which ${BIN_NAME} 2> /dev/null)"
+which which >/dev/null 2>/dev/null
+if [ $? -ne 0 ] ; then
+  CHPL_BIN="$(command -v ${BIN_NAME} 2> /dev/null)"
+else
+  CHPL_BIN="$(which ${BIN_NAME} 2> /dev/null)"
+fi
 
 # Verify chpl is in $PATH
 if [ -z "${CHPL_BIN}" ] ; then
