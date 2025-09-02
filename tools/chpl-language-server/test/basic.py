@@ -458,6 +458,9 @@ async def test_hover(client: LanguageClient):
               proc myRec.secondary(myFormal) { }
               proc getType() type { return myRec; }
               proc (getType()).secondary2(myFormal) { }
+
+              proc takesTuples(myTup: (int, real) = (1, 2.0)) { }
+              proc takesTuples2(myTup: 2 * int) { }
             }
            """
 
@@ -518,6 +521,22 @@ async def test_hover(client: LanguageClient):
         ("proc getType() type", rng(pos((22, 7)), pos((22, 14))), pos((23, 9))),
         # (getType()) is just an expression, so it just shows the text
         ("(getType())", rng(pos((23, 7)), pos((23, 18))), pos((23, 7))),
+        (
+            "takesTuples(myTup: (int, real) = (1, 2.0))",
+            rng(pos((25, 7)), pos((25, 18))),
+            pos((25, 9)),
+        ),
+        (
+            "myTup: (int, real) = (1, 2.0)",
+            rng(pos((25, 19)), pos((25, 24))),
+            pos((25, 24)),
+        ),
+        (
+            "takesTuples2(myTup: 2 * int)",
+            rng(pos((26, 7)), pos((26, 19))),
+            pos((26, 9)),
+        ),
+        ("myTup: 2 * int", rng(pos((26, 20)), pos((26, 25))), pos((26, 25))),
     ]
 
     async with source_file(client, file) as doc:
