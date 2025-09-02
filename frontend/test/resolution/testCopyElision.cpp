@@ -1391,7 +1391,7 @@ static void test49() {
         var (a, b, _) = tup;
       }
     )"""",
-    {"M.test@9", "M.test@10"});
+    {"M.test@5", "M.test@9", "M.test@10"});
 
   // Assign
   testCopyElision("test49b",
@@ -1407,7 +1407,7 @@ static void test49() {
         (a, b, _) = tup;
       }
     )"""",
-    {"M.test@13", "M.test@14"});
+    {"M.test@5", "M.test@13", "M.test@14"});
 }
 
 // Like test49, but no elision as the variable is mentioned later
@@ -1425,7 +1425,7 @@ static void test50() {
         tup;
       }
     )"""",
-    {});
+    {"M.test@5"});
 
   // Assign
   testCopyElision("test50b",
@@ -1442,12 +1442,13 @@ static void test50() {
         tup;
       }
     )"""",
-    {});
+    {"M.test@5"});
 }
 
 // Copy elision for assigning tuple expr into tuple var
 static void test51() {
-  testCopyElision("test51",
+  // Init
+  testCopyElision("test51a",
     R""""(
       record R { }
       proc test() {
@@ -1458,7 +1459,22 @@ static void test51() {
         s;
       }
     )"""",
-    {"M.test@8", "M.test@9"});
+    {"M.test@9"});
+
+  // Assign
+  testCopyElision("test51b",
+    R""""(
+      record R { }
+      proc test() {
+        var r = new R();
+        var s = new R();
+
+        var tup: (int, R, R);
+        tup = (1, r, s);
+        s;
+      }
+    )"""",
+    {"M.test@15"});
 }
 
 int main() {
