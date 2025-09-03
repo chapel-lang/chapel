@@ -2802,7 +2802,6 @@ static void markArraysOfBorrows(AggregateType* at) {
 
 void resolvePromotionType(AggregateType* at) {
   INT_ASSERT(at->scalarPromotionType == NULL);
-  INT_ASSERT(at->symbol->hasFlag(FLAG_GENERIC) == false);
 
   // don't try to resolve promotion types for sync
   // (for erroneous sync of array it leads to coercion which leads
