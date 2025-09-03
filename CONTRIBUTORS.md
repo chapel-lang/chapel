@@ -6,25 +6,22 @@ The following people have contributed to Chapel releases:
 Contributors to the Chapel 2.5 release
 --------------------------------------
 * Jade Abraham, [HPE]
+* Subhramit Basu, individual contributor
 * [Dan Bonachea], [Lawrence Berkeley National Laboratory]
 * [Brad Chamberlain], [HPE]
 * Soohoon Choi, [HPE]
 * Lydia Duncan, [HPE]
 * Daniel Fedorin, [HPE]
-* Emmanuel Ferdman, individual contributor
 * Michael Ferguson, [HPE]
 * [Paul H. Hargrove], [Lawrence Berkeley National Laboratory]
 * Ben Harshbarger, [HPE]
-* John Hartman, [HPE]
-* Ian Henriksen, [Sandia National Laboratories]
+* Guillaume Helbecque, individual contributor
 * Engin Kayraklioglu, [HPE]
 * [Shreyas Khandekar], [HPE] (former intern from [University of Arizona])
 * Vassily Litvinov, [HPE]
 * David Longnecker, [HPE]
-* Ahmad Rezaii, [HPE]
+* Brandon Neth, [HPE] (former intern from [University of Arizona])
 * Anna Rift, [HPE]
-* Andy Stone, [HPE] (former [Cray Inc.] intern from [Colorado State University])
-* Tim Zinsky, [HPE]
 
 Contributors to previous releases
 ---------------------------------
@@ -75,16 +72,18 @@ Contributors to previous releases
 * Prasanth Duvvuri, [GSoC 2021] student from [Northeastern University] (former individual contributor)
 * Saliya Ekanayake, [Indiana University]
 * Omar Elawady, individual contributor
+* Emmanuel Ferdman, individual contributor
 * Luca Ferranti, individual contributor
 * Samuel Figueroa[*](#footnote), [Cray Inc.]
 * Roald Frederickx, individual contributor
 * Rahul Ghangas, [GSoC 2020] student from [Australian National University]
 * Alexey Gokhberg, [Unicorn Enterprises SA]
 * Piyush Gupta, individual contributor
+* John Hartman, [HPE]
 * Akihiro Hayashi, [Rice University]
-* Guillaume Helbecque, individual contributor
 * Hannah Hemmaplardh, [Cray Inc.] intern from [University of Washington]
 * Steven Hemmy, [Cray Inc.] intern from [University of Wisconsin]
+* Ian Henriksen, [Sandia National Laboratories]
 * Tom Hildebrandt, [Cray Inc.]
 * Shannon Hoffswell[*](#footnote), [Cray Inc.]
 * Samuel Howard, individual contributor
@@ -140,7 +139,6 @@ Contributors to previous releases
 * Divye Nayyar, individual contributor and [GSoC 2021] student from [Indian Institute of Technology Roorkee]
 * Jacob Nelson, [Cray Inc.] intern from [University of Washington]
 * [Phil Nelson], [Western Washington University] / [Cray Inc.] contractor
-* Brandon Neth, [HPE] (former intern from [University of Arizona])
 * Sarah Nguyen, [HPE]
 * Michael Noakes, [Cray Inc.]
 * Joshua Olson, individual contributor
@@ -161,6 +159,7 @@ Contributors to previous releases
 * Kumar Prasun, individual contributor
 * Surya Priy, individual contributor
 * Lee Prokowich, [Cray Inc.]
+* Ahmad Rezaii, [HPE]
 * Elliot Ronaghan, [HPE]
 * David Qian, individual contributor
 * Yujia Qiao, individual contributor and [GSoC 2020] student from [Huazhong University of Science and Technology]
@@ -186,6 +185,7 @@ Contributors to previous releases
 * Srinivas Sridharan, [University of Notre Dame] / [ORNL]
 * Jenna Hoole Starkey, [HPE]
 * George Stelle, [Sandia National Laboratories]
+* Andy Stone, [HPE] (former [Cray Inc.] intern from [Colorado State University])
 * Michelle Mills Strout, [HPE]
 * Chris Swenson, individual contributor
 * [Kenjiro Taura], [University of Tokyo]
@@ -216,6 +216,7 @@ Contributors to previous releases
 * Tim Zakian, [Cray Inc.] intern from [Indiana University]
 * Vanessa Zambrano, [HPE]
 * Hui Zhang, [University of Maryland]
+* Tim Zinsky, [HPE]
 
 [Logo Design](https://chapel-lang.org/logo.html)
 ------------------------------------------------
