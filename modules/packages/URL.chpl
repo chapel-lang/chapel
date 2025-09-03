@@ -24,15 +24,10 @@ Download data from a URL or upload data to a URL.
 
 For example, the following program downloads a web-page from http://example.com and outputs each line to stdout:
 
-.. code-block:: chapel
-
-  use URL;
-  var urlreader = openUrlReader("http://example.com");
-  var str:bytes;
-  // Output each line read from the URL to stdout
-  while(urlreader.readLine(str)) {
-    write(str);
-  }
+.. literalinclude:: ../../../../test/library/packages/URL/doc-examples/example_read_url.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE
+ :end-before: STOP_EXAMPLE
 
 .. note::
 

@@ -47,7 +47,7 @@ Using Curl Support in Chapel
 
 Simple uses of Curl work through the generic :mod:`URL` module. This module
 allows a URL to be opened as a :record:`IO.fileReader` or
-`:record:`IO.fileWriter`.
+:record:`IO.fileWriter`.
 
 .. literalinclude:: ../../../../test/library/packages/Curl/doc-examples/CurlExamples.chpl
    :language: chapel
