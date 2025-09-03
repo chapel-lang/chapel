@@ -6,7 +6,7 @@
 # backwards compatibility). Please don't change it unless you know what
 # you're doing.
 Vagrant.configure("2") do |config|
-  config.vm.box = "bento/freebsd-14.3"
+  config.vm.box = "bento/freebsd-13.5"
 
   # needs more disk space
   # have to use this for it to work:
