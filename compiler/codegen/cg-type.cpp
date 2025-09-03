@@ -164,14 +164,12 @@ void EnumType::codegenDef() {
   if( outfile ) {
     fprintf(outfile, "typedef enum {");
     bool first = true;
-    for_enums(constant, this) {
+    for (auto [sym, var] : this->getConstantMap()) {
+      INT_ASSERT(var && var->immediate);
       if (!first) {
         fprintf(outfile, ", ");
       }
-      fprintf(outfile, "%s", constant->sym->codegen().c.c_str());
-      if (constant->init) {
-        fprintf(outfile, " = %s", constant->init->codegen().c.c_str());
-      }
+      fprintf(outfile, "%s = %s", sym->codegen().c.c_str(), var->codegen().c.c_str());
       first = false;
     }
     fprintf(outfile, "} ");
@@ -193,30 +191,10 @@ void EnumType::codegenDef() {
       symbol->llvmImplType = type;
       symbol->llvmAlignment = ALIGNMENT_DEFER;
 
-      // Convert enums to constants with the user-specified immediate,
-      // sized appropriately, when it exists.  When it doesn't, give
-      // it the semi-arbitrary 0-based ordinal value (similar to what
-      // the C back-end would do itself).  Note that once some enum
-      // has a non-NULL constant->init, all subsequent ones should as
-      // well.
-      int order = 0;
-      for_enums(constant, this) {
-        //llvm::Constant *initConstant;
-
-        VarSymbol* s;
-        if (constant->init) {
-          s = toVarSymbol(toSymExpr(constant->init)->symbol());
-        } else {
-          s = new_IntSymbol(order, INT_SIZE_64);
-        }
-        INT_ASSERT(s);
-        INT_ASSERT(s->immediate);
-
-        VarSymbol* sizedImmediate = resizeImmediate(s, ty);
-
-        info->lvt->addGlobalValue(constant->sym->cname,
-                                  sizedImmediate->codegen());
-        order++;
+      for (auto [sym, var] : this->getConstantMap()) {
+        INT_ASSERT(var && var->immediate);
+        VarSymbol* sizedImmediate = resizeImmediate(var, ty);
+        info->lvt->addGlobalValue(sym->cname, sizedImmediate->codegen());
       }
     }
 #endif

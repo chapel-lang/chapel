@@ -355,6 +355,11 @@ class EnumType final : public Type {
   bool isAbstract();  // is the enum abstract?  (has no associated values)
   bool isConcrete();  // is the enum concrete?  (all have associated values)
   PrimitiveType* getIntegerType();
+
+  llvm::SmallDenseMap<Symbol*, VarSymbol*> getConstantMap();
+
+ private:
+  llvm::SmallDenseMap<Symbol*, VarSymbol*> _constantMap;
 };
 
 

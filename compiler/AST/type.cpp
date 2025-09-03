@@ -607,6 +607,31 @@ PrimitiveType* EnumType::getIntegerType() {
   return integerType;
 }
 
+llvm::SmallDenseMap<Symbol*, VarSymbol*> EnumType::getConstantMap() {
+  if (_constantMap.empty()) {
+    // Convert enums to constants with the user-specified immediate,
+    // sized appropriately, when it exists.  When it doesn't, give
+    // it the semi-arbitrary 0-based ordinal value (similar to what
+    // C would do itself).  Note that once some enum
+    // has a non-NULL constant->init, all subsequent ones should as
+    // well.
+    int order = 0;
+    for_enums(constant, this) {
+      if (constant->init) {
+        auto var = toVarSymbol(toSymExpr(constant->init)->symbol());
+        INT_ASSERT(var && var->immediate);
+        _constantMap.insert(std::make_pair(constant->sym, var));
+      } else {
+        auto var = new_IntSymbol(order, INT_SIZE_64);
+        INT_ASSERT(var && var->immediate);
+        _constantMap.insert(std::make_pair(constant->sym, var));
+      }
+      order++;
+    }
+  }
+  return _constantMap;
+}
+
 
 void EnumType::accept(AstVisitor* visitor) {
   if (visitor->enterEnumType(this) == true) {
