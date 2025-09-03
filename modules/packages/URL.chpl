@@ -44,15 +44,6 @@ For example, the following program downloads a web-page from http://example.com 
 module URL {
   public use IO;
 
-  pragma "last resort"
-  @deprecated("openUrlReader with a start and/or end argument is deprecated. Please use the new region argument instead.")
-  proc openUrlReader(url:string, param locking=true,
-                     start:int(64) = 0, end:int(64) = max(int(64)))
-                    : fileReader(locking) throws {
-    var region = if end == max(int(64)) then start..end else start..(end-1);
-    return openUrlReaderHelper(url, locking, region);
-  }
-
   /*
 
   Open a fileReader from a particular URL.
@@ -86,15 +77,6 @@ module URL {
     var f = openCurlFile(url, ioMode.r);
     // TODO: change this back to f.reader when the kind argument is removed
     return f.readerHelper(locking=locking, region=region);
-  }
-
-  pragma "last resort"
-  @deprecated("openUrlWriter with a start and/or end argument is deprecated. Please use the new region argument instead.")
-  proc openUrlWriter(url:string, param locking=true,
-                 start:int(64) = 0, end:int(64) = max(int(64)))
-                : fileWriter(locking) throws {
-    var region = if end == max(int(64)) then start..end else start..(end-1);
-    return openUrlWriterHelper(url, locking, region);
   }
 
   /*
