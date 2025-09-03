@@ -62,7 +62,6 @@ x 8 - EOL May 2024
  10 - EOL May 2030
 
 Debian -- see https://wiki.debian.org/DebianReleases
-       -- and https://app.vagrantup.com/debian
 x  6 "squeeze"  long-term support until Feb 2016
 x  7 "wheezy"   long-term support until May 2018
 x  8 "jessie"   long-term support until May 2020
