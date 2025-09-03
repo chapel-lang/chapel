@@ -2680,40 +2680,61 @@ static FnSymbol* resolveUninsertedCall(Expr* insert, CallExpr* call,
 }
 
 static void checkForInfiniteRecord(AggregateType* at, std::set<AggregateType*>& nestedRecords) {
+
+  // no need to check for extern records, since the extern compiler checks that
+  // and we will never reach this point in compilation with an extern record
+  // and including a check on extern records leads to false positives with
+  // `c_ptr(record)`
+  // it may be possible in the future for us to codegen c_ptr(record), and then
+  // this extra check for extern records could be removed
+  if (at->symbol->hasFlag(FLAG_EXTERN))
+    return;
+
+  auto inner = [&at, &nestedRecords](Symbol* field, AggregateType* ft, Type* realType = nullptr) {
+    if (!ft) return;
+    if (nestedRecords.find(ft) != nestedRecords.end()) {
+
+      Type* typeForError = realType ? realType : at;
+
+      // Found a cycle
+      // Note: error message text agreed upon in #10281
+      if (ft == at) {
+        // Simple cycle:
+        // record B {
+        //   var b : B;
+        // }
+        USR_FATAL(field,
+                  "record '%s' cannot contain a recursive field '%s' of type '%s'",
+                  at->symbol->name,
+                  field->name,
+                  typeForError->symbol->name);
+      } else {
+        // Cycle involving multiple records
+        if (at->symbol->hasFlag(FLAG_TUPLE)) {
+          USR_FATAL(ft, "tuple '%s' cannot contain recursive record type '%s'", at->symbol->name, ft->symbol->name);
+        } else {
+          USR_FATAL(field,
+                    "record '%s' cannot contain a recursive field '%s' whose type '%s' contains '%s'",
+                    at->symbol->name,
+                    field->name,
+                    ft->symbol->name,
+                    typeForError->symbol->name);
+        }
+      }
+    } else {
+      nestedRecords.insert(ft);
+      checkForInfiniteRecord(ft, nestedRecords);
+      nestedRecords.erase(ft);
+    }
+  };
   for_fields(field, at) {
     if (isRecord(field->type)) {
       AggregateType* ft = toAggregateType(field->type);
-      if (nestedRecords.find(ft) != nestedRecords.end()) {
-        // Found a cycle
-        // Note: error message text agreed upon in #10281
-        if (ft == at) {
-          // Simple cycle:
-          // record B {
-          //   var b : B;
-          // }
-          USR_FATAL(field,
-                    "record '%s' cannot contain a recursive field '%s' of type '%s'",
-                    at->symbol->name,
-                    field->name,
-                    at->symbol->name);
-        } else {
-          // Cycle involving multiple records
-          if (at->symbol->hasFlag(FLAG_TUPLE)) {
-            USR_FATAL(ft, "tuple '%s' cannot contain recursive record type '%s'", at->symbol->name, ft->symbol->name);
-          } else {
-            USR_FATAL(field,
-                      "record '%s' cannot contain a recursive field '%s' whose type '%s' contains '%s'",
-                      at->symbol->name,
-                      field->name,
-                      ft->symbol->name,
-                      at->symbol->name);
-          }
-        }
-      } else {
-        nestedRecords.insert(ft);
-        checkForInfiniteRecord(ft, nestedRecords);
-        nestedRecords.erase(ft);
-      }
+      inner(field, ft);
+    } else if (isCPtrToRecord(field->type)) {
+      AggregateType* ft = toAggregateType(
+        getDataClassType(field->type->symbol)->typeInfo());
+      inner(field, ft, /*realType=*/field->type);
     }
   }
 }

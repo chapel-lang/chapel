@@ -1,0 +1,1 @@
+cptr.chpl:3: error: record 'R' cannot contain a recursive field 'x' of type 'c_ptr(R)'
