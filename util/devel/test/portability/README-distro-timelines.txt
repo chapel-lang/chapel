@@ -124,9 +124,10 @@ x 13.2 EOL Jul 2024
 x 13.3 EOL Dec 2024
 x 14.0 EOL Sep 2024
 x 14.1 EOL Mar 2025
-- 13.4 EOL Jun 2025
-  14.2 released Dec 2024 (as of 3/5/25 there was no 14.2-STABLE vagrant box available from freebsd)
+x 13.4 EOL Jun 2025
   13.5 released Mar 2024
+  14.2 released Dec 2024 (as of 3/5/25 there was no 14.2-STABLE vagrant box available from freebsd)
+  14.3 released Jun 2025
 
 OpenSuse -- see https://en.opensuse.org/Lifetime
          -- and https://app.vagrantup.com/opensuse
