@@ -184,5 +184,5 @@ x 21.10 "Impish Indri"      EOL July 2022
 x 22.10 "Kinetic Kudu"      EOL July 2023
 x 23.04 "Lunar Lobster"     EOL Jan 2024
 x 23.10 "Mantic Minotaur"   EOL Jul 2024
-  24.10 "Oracular Oriole"   EOL Jul 2025
+x 24.10 "Oracular Oriole"   EOL Jul 2025
   25.04 "Plucky Puffin"     EOL Jan 2026
