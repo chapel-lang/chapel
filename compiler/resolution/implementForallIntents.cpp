@@ -797,7 +797,7 @@ static void resolveShadowVarTypeIntent(LoopWithShadowVarsInterface* fs,
 // If 'sym' is the receiver and 'fs' has a shadow var for the receiver,
 // return that shadow var.
 static ShadowVarSymbol* svarForReceiver(LoopWithShadowVarsInterface* fs, Symbol* sym) {
-  if (sym->name == astrThis)
+  if (sym->name == astrThis && !sym->hasFlag(FLAG_TYPE_VARIABLE))
     for_shadow_vars(SV, TEMP, fs)
       if (SV->name == astrThis)
         return SV;
@@ -806,7 +806,7 @@ static ShadowVarSymbol* svarForReceiver(LoopWithShadowVarsInterface* fs, Symbol*
 
 // Helper: if this is a 'this' that needs our attention, return its type.
 static AggregateType* isRecordReceiver(Symbol* sym) {
-  if (sym->hasFlag(FLAG_ARG_THIS))
+  if (sym->hasFlag(FLAG_ARG_THIS) && !sym->hasFlag(FLAG_TYPE_VARIABLE))
     if (Type* type = sym->type->getValType())
       if (isUserRecord(type))
         return toAggregateType(type);
