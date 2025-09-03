@@ -1,0 +1,4 @@
+LockGuardBadTaskIntent.chpl:7: In function 'test0':
+LockGuardBadTaskIntent.chpl:14: error: const actual is passed to 'ref' formal 'this' of add()
+note: to formal of type map(int(64),int(64),false)
+LockGuardBadTaskIntent.chpl:14: note: The shadow variable 'm' is constant due to task intents in this loop
