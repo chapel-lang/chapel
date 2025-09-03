@@ -54,7 +54,7 @@ x   7.9-2009 released Nov 2020 EOL Jun 2024
 x 8 not-stream - EOL 2021-12-31
     (CentOS only available in Stream releases after that)
 
-CentOS Stream
+CentOS Stream -- same lifecycle as RHEL https://access.redhat.com/support/policy/updates/errata#Life_Cycle_Dates
        -- dnf doesn't old show versions by default but they can be found, e.g.
        -- dnf list --showduplicates llvm && dnf install llvm-devel-14.0.6
 x 8 - EOL May 2024
