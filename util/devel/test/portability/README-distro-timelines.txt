@@ -7,14 +7,10 @@ Alma Linux -- see https://wiki.almalinux.org/release-notes/
               Each minor version reaches end of life when the new version is released.
               For example, AlmaLinux OS 9.2 reached end of life with the release of AlmaLinux OS 9.3.
   8.x  EOL 2029
+  8.10 released May 2024
   9.x  EOL 2032
-x 9.0  released May 2022
-x 9.1  released Nov 2022
-x 9.2  released May 2023
-x 9.3  released Nov 2023
-x 9.4  released May 2024
-x 9.5  released Nov 2024
   9.6  released May 2025
+  10.x EOL 2035
   10.0 released May 2025
 
 Alpine Linux -- see https://www.alpinelinux.org/releases/
