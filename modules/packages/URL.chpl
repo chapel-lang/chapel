@@ -24,15 +24,10 @@ Download data from a URL or upload data to a URL.
 
 For example, the following program downloads a web-page from http://example.com and outputs each line to stdout:
 
-.. code-block:: chapel
-
-  use URL;
-  var urlreader = openUrlReader("http://example.com");
-  var str:bytes;
-  // Output each line read from the URL to stdout
-  while(urlreader.readLine(str)) {
-    write(str);
-  }
+.. literalinclude:: ../../../../test/library/packages/URL/doc-examples/example_read_url.chpl
+ :language: chapel
+ :start-after: START_EXAMPLE
+ :end-before: STOP_EXAMPLE
 
 .. note::
 
@@ -43,15 +38,6 @@ For example, the following program downloads a web-page from http://example.com 
 
 module URL {
   public use IO;
-
-  pragma "last resort"
-  @deprecated("openUrlReader with a start and/or end argument is deprecated. Please use the new region argument instead.")
-  proc openUrlReader(url:string, param locking=true,
-                     start:int(64) = 0, end:int(64) = max(int(64)))
-                    : fileReader(locking) throws {
-    var region = if end == max(int(64)) then start..end else start..(end-1);
-    return openUrlReaderHelper(url, locking, region);
-  }
 
   /*
 
@@ -86,15 +72,6 @@ module URL {
     var f = openCurlFile(url, ioMode.r);
     // TODO: change this back to f.reader when the kind argument is removed
     return f.readerHelper(locking=locking, region=region);
-  }
-
-  pragma "last resort"
-  @deprecated("openUrlWriter with a start and/or end argument is deprecated. Please use the new region argument instead.")
-  proc openUrlWriter(url:string, param locking=true,
-                 start:int(64) = 0, end:int(64) = max(int(64)))
-                : fileWriter(locking) throws {
-    var region = if end == max(int(64)) then start..end else start..(end-1);
-    return openUrlWriterHelper(url, locking, region);
   }
 
   /*
