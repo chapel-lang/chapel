@@ -13,10 +13,10 @@ __get_docker_tag() {
 __package_type_from_os() {
   local pkg_type
   case $1 in
-    "amzn2023" | "fc41" | "fc42" | "el10")
+    "amzn*" | "fc*" | "el*")
     pkg_type="rpm"
     ;;
-    "debian12" | "debian13" | "ubuntu22" | "ubuntu24")
+    "debian*" | "ubuntu*")
     pkg_type="apt"
     ;;
     *)
