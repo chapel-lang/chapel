@@ -1,12 +1,10 @@
-test1
-
+test0
 extern proc(_: int, _: int): int
 
 LOCALE0 got: 0
 ---
 
-test2
-
+test1
 extern proc(a: real, b: real, c: real, d: real, e: real, f: real, g: real, h: real, x: baz): foobar
 extern proc(x: foobar)
 
@@ -15,3 +13,7 @@ LOCALE0
 { 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, { 0, 0, 0, 0 } }
 writeln: (a = 0.0, b = 0.0, c = 0.0, d = 0.0, e = 0.0, f = 0.0, g = 0.0, h = 0.0, x = (a = 0, b = 0, c = 0, d = 0), padding = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31])
 ---
+test2
+Caught error!
+test3
+Caught error!
