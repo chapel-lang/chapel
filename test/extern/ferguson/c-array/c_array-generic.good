@@ -1,0 +1,1 @@
+c_array-generic.chpl:5: error: c_array element type cannot be generic

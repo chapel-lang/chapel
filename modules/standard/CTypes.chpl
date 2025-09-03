@@ -185,6 +185,13 @@ module CTypes {
     }
   }
 
+
+  private proc isAnyManagedClass(type t) param {
+    return isGeneric(t) && isClassType(t) &&
+           !(isUnmanagedClass(t) || isBorrowedClass(t) ||
+             isSharedClass(t) || isOwnedClass(t));
+  }
+
   /*
   This type represents a C array with fixed size.  A variable of type
   ``c_array`` can coerce to a ``c_ptr`` with the same element type.  In that
@@ -228,6 +235,15 @@ module CTypes {
         compilerError("c_array element type cannot be 'void'");
       if eltType == nothing then
         compilerError("c_array element type cannot be 'nothing'");
+      if isGeneric(eltType) {
+        param msg = "c_array element type cannot be generic";
+        if isAnyManagedClass(eltType) {
+          compilerError(msg + "\n" + eltType:string +
+                        " may be generic due to generic management");
+        } else {
+          compilerError(msg);
+        }
+      }
       this.eltType = eltType;
       this.size = size;
       init this;

@@ -1,0 +1,2 @@
+c_array-anymanaged.chpl:5: error: c_array element type cannot be generic
+A may be generic due to generic management

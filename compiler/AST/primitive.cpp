@@ -362,7 +362,10 @@ returnInfoArrayIndexValue(CallExpr* call) {
 static QualifiedType
 returnInfoArrayIndex(CallExpr* call) {
   QualifiedType tmp = returnInfoArrayIndexValue(call);
-  return QualifiedType(tmp.type()->refType, QUAL_REF);
+  auto refType = tmp.type()->refType;
+  if (!refType)
+    INT_FATAL(call, "invalid attempt to get reference type");
+  return QualifiedType(refType, QUAL_REF);
 }
 
 static QualifiedType
