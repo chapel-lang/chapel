@@ -145,18 +145,17 @@ x 15.5 EOL Dec 2024
   15.6 EOL Dec 2025
 
 Rocky Linux -- see https://wiki.rockylinux.org/rocky/version/
-  8.x EOL May 2029
-x 8.8 EOL Nov 2023
-x 8.9 EOL May 2024
-  8.10 EOL May 2029
+            -- and https://hub.docker.com/r/rockylinux/rockylinux
+  8.x  EOL May 2029
+x 8.9  EOL May 2024
+  8.10 released May 2024
 
-  9.x EOL May 2032
-x 9.0 EOL Nov 2022
-x 9.1 EOL May 2023
-x 9.2 EOL Nov 2023
-x 9.3 EOL May 2024
-x 9.4 EOL Nov 2024
-  9.5 EOL May 2024
+  9.x  EOL May 2032
+x 9.5  EOL May 2024
+  9.6  released Jun 2025
+
+  10.x EOL May 2035
+  10.0 released Jun 2025
 
 Ubuntu -- see https://wiki.ubuntu.com/Releases
        -- and https://app.vagrantup.com/ubuntu
