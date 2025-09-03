@@ -312,7 +312,7 @@ bool processStringInRequireStmt(Expr* expr,
     if (isChplSource(str)) {
       if (parseTime) {
         if (!atModuleScope) {
-          USR_WARN(expr, "using 'require' on a Chapel source file not at module scope is deprecated");
+          USR_FATAL(expr, "cannot use 'require' on a Chapel source file not at module scope");
         }
         // no need to add the source file since that is handled
         // within resolveVisibilityStmtsQuery.
