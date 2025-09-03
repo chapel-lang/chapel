@@ -687,11 +687,9 @@ void AggregateType::codegenDef() {
       info->lvt->addGlobalType(this->symbol->cname, type, false);
       this->symbol->llvmImplType = type;
     } else {
-      // TODO: switch this to a structural check, rather than a ptr based one
-      // INT_ASSERT(this->symbol->llvmImplType == type);
+      INT_ASSERT(this->symbol->llvmImplType == type);
     }
-    INT_ASSERT(this->symbol->llvmAlignment == ALIGNMENT_UNINIT ||
-               this->symbol->llvmAlignment == ALIGNMENT_DEFER);
+    INT_ASSERT(this->symbol->llvmAlignment == ALIGNMENT_UNINIT);
     INT_ASSERT(structAlignment != ALIGNMENT_UNINIT);
     this->symbol->llvmAlignment = llvmAlignmentOrDefer(structAlignment, type);
     // double-check, in case we missed this in buildStructFields

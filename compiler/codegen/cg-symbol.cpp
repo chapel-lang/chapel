@@ -1480,10 +1480,6 @@ void TypeSymbol::codegenPrototype() {
 
 
 void TypeSymbol::codegenDef() {
-  if (this->hasFlag(FLAG_CODEGENNED)) {
-    // Already codegenned, nothing to do.
-    return;
-  }
   GenInfo *info = gGenInfo;
 
   if( id == breakOnCodegenID ||
@@ -1894,36 +1890,16 @@ int llvmAlignmentOrDefer(int alignment, llvm::Type* type) {
   return alignment;
 }
 
-static inline void ensureCodegenned(TypeSymbol* ts, bool resolveClassTypes) {
+static inline void ensureCodegenned(TypeSymbol* ts) {
   // Beware that some types would fail codegenDef(), ex. LAPACK_C_SELECT1 in:
   // test/lib./pack./LinearAlgebra/correctness/no-dependencies/no-flags/no-flags
-  bool needsCodegenDef = false;
-  if (!ts->hasLLVMType()) {
-    needsCodegenDef = true;
-  } else {
-    bool isClassType = false;
-    if (auto at = toAggregateType(ts->type)) {
-      if (at->isClass())
-        isClassType = true;
-    }
-    if (isClassType && resolveClassTypes) {
-      // we also need the full codegenDef type for StructType (i.e. class/record)
-      if (auto ty = ts->llvmImplType) {
-        if (auto st = llvm::dyn_cast_or_null<llvm::StructType>(ty)) {
-          if (st->isOpaque() && !ts->hasFlag(FLAG_EXTERN))
-            needsCodegenDef = true;
-        }
-      }
-    }
-  }
-
-  if (needsCodegenDef)
+  if (!ts->hasLLVMType())
     ts->codegenDef();
 }
 
 // for a class type, get its structure type
 llvm::Type* TypeSymbol::getLLVMStructureType() {
-  ensureCodegenned(this, /*resolveClassTypes*/true);
+  ensureCodegenned(this);
 
   INT_ASSERT(llvmImplType != nullptr);
   return llvmImplType;
@@ -1931,9 +1907,7 @@ llvm::Type* TypeSymbol::getLLVMStructureType() {
 
 // for a class type, get its pointer type
 llvm::Type* TypeSymbol::getLLVMType() {
-  // in this case, we just really need the prototype of the class, so who cares
-  // if its codegened or not
-  ensureCodegenned(this, /*resolveClassTypes*/false);
+  ensureCodegenned(this);
 
   // llvmImplType for c_ptr and _ddata is 'ptr', not a struct
   if (auto* stype = llvm::dyn_cast_or_null<llvm::StructType>(llvmImplType)) {
