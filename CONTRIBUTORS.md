@@ -3,7 +3,7 @@ Chapel Contributors
 
 The following people have contributed to Chapel releases:
 
-Contributors to the Chapel 2.5 release
+Contributors to the Chapel 2.6 release
 --------------------------------------
 * Jade Abraham, [HPE]
 * Subhramit Basu, individual contributor
