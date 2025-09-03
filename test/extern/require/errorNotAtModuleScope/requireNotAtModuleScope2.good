@@ -1,0 +1,1 @@
+requireNotAtModuleScope2.chpl:3: error: cannot use 'require' on a Chapel source file not at module scope
