@@ -1425,7 +1425,14 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
         auto field = findFieldByName(context, ad, actualCt, formal->name());
         auto search = subs.find(field->id());
         if (search != subs.end()) {
-          QualifiedType fieldType = search->second;
+          auto fieldType = search->second;
+
+          // fields like `var x` get their substitutions as `var T`, but
+          // for type queries, we want to set the result with 'type T'.
+          if (!fieldType.isUnknownOrErroneous() && !fieldType.isParam() && !fieldType.isType()) {
+            fieldType = QualifiedType(QualifiedType::TYPE, fieldType.type());
+          }
+
           auto actual = call->actual(i);
           resolveTypeQueries(actual, fieldType,
                              isNonStarVarArg,
