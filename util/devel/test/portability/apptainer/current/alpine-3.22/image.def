@@ -1,13 +1,12 @@
 BootStrap: docker
-From: rockylinux/rockylinux:9.5
+From: alpine:3.22
 
 %files
     ../../provision-scripts/* /provision-scripts/
 
 %post
-    /provision-scripts/dnf-deps.sh
-    # installs LLVM / clang 18
-    /provision-scripts/dnf-llvm.sh
+    /provision-scripts/apk-deps.sh
+    /provision-scripts/apk-llvm.sh
 
 %runscript
     ../../provision-scripts/run.sh "$@"

@@ -1,13 +1,11 @@
 BootStrap: docker
-From: ubuntu:oracular
+From: rockylinux/rockylinux:10
 
 %files
     ../../provision-scripts/* /provision-scripts/
 
 %post
-    /provision-scripts/apt-get-deps.sh
-    # installs LLVM 19
-    /provision-scripts/apt-get-llvm.sh
+    /provision-scripts/dnf-deps.sh
 
 %runscript
     ../../provision-scripts/run.sh "$@"

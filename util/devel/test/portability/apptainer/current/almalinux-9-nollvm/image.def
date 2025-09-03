@@ -1,13 +1,11 @@
 BootStrap: docker
-From: alpine:3.18
+From: almalinux:9
 
 %files
     ../../provision-scripts/* /provision-scripts/
 
 %post
-    /provision-scripts/apk-deps.sh
-    # default llvm/clang version is 16
-    /provision-scripts/apk-llvm15.sh
+    /provision-scripts/dnf-deps.sh
 
 %runscript
     ../../provision-scripts/run.sh "$@"

@@ -1,12 +1,11 @@
 BootStrap: docker
-From: almalinux:9.6
+From: almalinux:10
 
 %files
     ../../provision-scripts/* /provision-scripts/
 
 %post
     /provision-scripts/dnf-deps.sh
-    /provision-scripts/dnf-llvm.sh
 
 %runscript
     ../../provision-scripts/run.sh "$@"

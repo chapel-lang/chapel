@@ -1,5 +1,5 @@
 BootStrap: docker
-From: almalinux:10.0
+From: rockylinux/rockylinux:9
 
 %files
     ../../provision-scripts/* /provision-scripts/
