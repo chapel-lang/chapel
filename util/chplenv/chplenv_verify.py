@@ -305,28 +305,37 @@ class TestHostCanFindLLVM(TestCompile):
         )
 
     def _program(self):
+        llvm_version = self.chplenv.get("CHPL_LLVM_VERSION", "0")
         if self.chplenv.get("CHPL_LLVM") != "none":
-            return """
+            return f"""
 #include "clang/Basic/Version.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/LLVMContext.h"
+#include "llvm/Config/llvm-config.h"
 #include <iostream>
-int main() {
+#if LLVM_VERSION_MAJOR != {llvm_version}
+#error Mismatched LLVM version
+#endif
+int main() {{
     std::cout << clang::getLLVMRevision() << std::endl;
     llvm::LLVMContext Context;
     llvm::Module M("mymod", Context);
     return 0;
-}
+}}
 """
         else:
-            return """
+            return f"""
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Config/llvm-config.h"
 #include <iostream>
-int main() {
+#if LLVM_VERSION_MAJOR != {llvm_version}
+#error Mismatched LLVM version
+#endif
+int main() {{
     std::cout << "Hello, World!" << std::endl;
     llvm::outs() << "Hello, LLVM!\\n";
     return 0;
-}
+}}
 """
 
 
