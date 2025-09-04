@@ -73,6 +73,12 @@ class ArrayType final : public CompositeType {
                                        const QualifiedType& domainType,
                                        const QualifiedType& eltType);
 
+  /* construct an array type whose element type / domain type might be constrained,
+     but the array is still generic. */
+  static const ArrayType* getUninstancedArrayType(Context* context,
+                                                  const QualifiedType& domainType,
+                                                  const QualifiedType& eltType);
+
   const Type* substitute(Context* context,
                          const PlaceholderMap& subs) const override {
     return getArrayTypeQuery(context,
