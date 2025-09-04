@@ -1041,12 +1041,12 @@ def main():
 
     globalLastcompopts=list()
     if os.access('./LASTCOMPOPTS',os.R_OK):
-        globalLastcompopts+=run_process(['cat', './LASTCOMPOPTS'], stdout=subprocess.PIPE)[1].strip().split()
+        globalLastcompopts+=ReadFileWithComments('./LASTCOMPOPTS')[0].strip().split()
     # sys.stdout.write('globalLastcompopts=%s\n'%(globalLastcompopts))
 
     globalLastexecopts=list()
     if os.access('./LASTEXECOPTS',os.R_OK):
-        globalLastexecopts+=run_process(['cat', './LASTEXECOPTS'], stdout=subprocess.PIPE)[1].strip().split()
+        globalLastexecopts+=ReadFileWithComments('./LASTCOMPOPTS')[0].strip().split()
     # sys.stdout.write('globalLastexecopts=%s\n'%(globalLastexecopts))
 
     if os.access(PerfDirFile('NUMLOCALES'),os.R_OK):
