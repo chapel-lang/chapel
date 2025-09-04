@@ -2785,8 +2785,7 @@ void Resolver::resolveTupleDecl(const TupleDecl* td, QualifiedType useType) {
 static SkipCallResolutionReason
 shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
                          std::vector<const uast::AstNode*> actualAsts,
-                         const CallInfo& ci,
-                         bool* outAnyGenericActuals = nullptr);
+                         const CallInfo& ci);
 
 bool Resolver::resolveSpecialNewCall(const Call* call) {
   if (!call->calledExpression() ||
@@ -2988,8 +2987,7 @@ static bool couldBeOutInitialized(Resolver* rv, const ID& toId) {
 static SkipCallResolutionReason
 shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
                          std::vector<const uast::AstNode*> actualAsts,
-                         const CallInfo& ci,
-                         bool* outAnyGenericActuals) {
+                         const CallInfo& ci) {
   Context* context = rv->context;
   SkipCallResolutionReason skip = NONE;
   auto& byPostorder = rv->byPostorder;
@@ -3040,10 +3038,6 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
         bool noSubstitution =
           rv->substitutions == nullptr ||
           (!toId.isEmpty() && rv->substitutions->count(toId) == 0);
-
-        if (outAnyGenericActuals != nullptr && g != Type::CONCRETE) {
-          *outAnyGenericActuals = true;
-        }
 
         if (qt.isType() && isBuiltinGeneric && noSubstitution) {
           skip = GENERIC_TYPE;
@@ -6873,6 +6867,67 @@ static bool isShapedLikeArray(const IndexableLoop* loop) {
   return true;
 }
 
+// Array types are normally built using chpl__buildArrayRuntimeType, which
+// assumes that the actuals are their "final" incarnations (i.e., we're
+// not in an initial/generic signature). It doesn't handle generic types.
+//
+// However, array types in formals are different. Even if they appear
+// concrete, like `[1..4] int`, which is a default-rectangular array over
+// a default-rectangular domain, we allow them to capture other types
+// of arrays (e.g., block distributed ones). So, because (1) in typed
+// signautres we might want to build an array type with a generic element type,
+// which would break the buildRuntimeType assumption, and (2) array type expressions
+// in formals are effectively generic, we treat them specially, throw
+// away their _instance field, and allow generic element types. We want to only
+// do this in formals, though, which is what this function checks for.
+static bool ignoreInstanceInArrayOrDomain(Resolver& rv, const AstNode* exprToConsider) {
+  if (rv.declStack.empty()) return false;
+
+  size_t consideringDecl = rv.declStack.size() - 1;
+
+  // We treat array type expression specially when they are in formal type
+  // expressions. So walk up the decl stack to check if we are in a formal.
+
+  const AstNode* typeExpr = nullptr;
+  while (true) {
+    auto decl = rv.declStack[consideringDecl];
+
+    if (auto fml = decl->toFormal()) {
+      typeExpr = fml->typeExpression();
+      break;
+    } else if (auto vfml = decl->toVarArgFormal()) {
+      typeExpr = vfml->typeExpression();
+      break;
+    } else if (auto td = decl->toTupleDecl()) {
+      if (auto te = td->typeExpression()) {
+
+        // tuple declarations can exist outside of formals, we should check
+        // if we our parent ID is a function. Note: this can't be a nested
+        // tuple decl, since those don't have type expressions.
+
+        auto parentId = parsing::idToParentId(rv.context, td->id());
+        if (uast::asttags::isFunction(parsing::idToTag(rv.context, parentId))) {
+          typeExpr = te;
+        }
+        break;
+      }
+
+      // otherwise, check the parent -- we might be a tuple decl inside a
+      // multi-decl or tuple decl.
+    } else {
+      // some other kind of decl.
+      break;
+    }
+
+    // move on to the next decl in the stack
+    if (consideringDecl == 0) break;
+    consideringDecl--;
+  }
+
+  if (typeExpr == nullptr) return false;
+  return typeExpr->id().contains(exprToConsider->id());
+}
+
 static bool handleArrayTypeExpr(Resolver& rv,
                                 const IndexableLoop* loop) {
   auto& re = rv.byPostorder.byAst(loop);
@@ -6960,16 +7015,24 @@ static bool handleArrayTypeExpr(Resolver& rv,
               /* domainType */ domainTypeAsType,
               /* eltType */ eltType));
     }
+  } else if (ignoreInstanceInArrayOrDomain(rv, loop)) {
+    auto domainT = domainType.type();
+    if (auto dt = domainT->toDomainType()) {
+      domainT = dt; // right now, does nothing.
+    }
+    auto adjustedDomainType =
+      QualifiedType(QualifiedType::TYPE, domainT);
+    auto adjustedEltType =
+      QualifiedType(QualifiedType::TYPE, eltType.type());
+    arrayType = QualifiedType(QualifiedType::TYPE,
+        ArrayType::getUninstancedArrayType(rv.context, adjustedDomainType, adjustedEltType));
   } else {
     // We have an instantiated domain, so get array type via call to its
     // array builder function.
     const char* arrayBuilderProc = "chpl__buildArrayRuntimeType";
     std::vector<CallInfoActual> actuals;
-    std::vector<const AstNode*> actualExprs;
     actuals.emplace_back(domainType, UniqueString::get(rv.context, "dom"));
-    actualExprs.push_back(iterandExpr);
     actuals.emplace_back(eltType, UniqueString::get(rv.context, "eltType"));
-    actualExprs.push_back(loop->numStmts() == 1 ? loop->stmt(0) : nullptr);
     auto ci = CallInfo(
         /* name */ UniqueString::get(rv.context, arrayBuilderProc),
         /* calledType */ QualifiedType(),
@@ -6980,33 +7043,9 @@ static bool handleArrayTypeExpr(Resolver& rv,
     auto scope = rv.currentScope();
     auto inScopes = CallScopeInfo::forNormalCall(scope, rv.poiScope);
 
-    // array types are specially built using chpl__buildArrayRuntimeType, which
-    // assumes that the actuals are their "final" incarnations (i.e., we're
-    // not in an initial/generic signature). So, if that assumption is not met,
-    // don't attempt to resolve the call.
-    bool anyActualsGeneric = false;
-    bool shouldSkip = shouldSkipCallResolution(&rv, loop, actualExprs, ci, &anyActualsGeneric);
-    if (!shouldSkip && !anyActualsGeneric) {
-      auto c = resolveGeneratedCall(rv.rc, iterandExpr, ci, inScopes);
-      if (!c.exprType().isUnknownOrErroneous()) {
-        arrayType = QualifiedType(QualifiedType::TYPE, c.exprType().type());
-      }
-    } else {
-      // If we should skip because of generics (and not due to erroneous types
-      // or other weirdness), construct a generic array type without invoking
-      // the builder function. This locks in the element type and domain type
-      // (if any), but doesn't run any more logic.
-      //
-      // Notably, there's an assumption here. The builder function we're skipping
-      // invokes `dom.buildArrayType(eltType)`. In theory, this method _could_
-      // produce an array over a different domain -- though that would be odd.
-      // However, here, we are assuming the domain type is what is expected.
-      auto adjustedDomainType =
-          QualifiedType(QualifiedType::TYPE, domainType.type());
-      auto adjustedEltType =
-          QualifiedType(QualifiedType::TYPE, eltType.type());
-      arrayType = QualifiedType(QualifiedType::TYPE,
-                                ArrayType::getUninstancedArrayType(rv.context, adjustedDomainType, adjustedEltType));
+    auto c = resolveGeneratedCall(rv.rc, iterandExpr, ci, inScopes);
+    if (!c.exprType().isUnknownOrErroneous()) {
+      arrayType = QualifiedType(QualifiedType::TYPE, c.exprType().type());
     }
   }
 

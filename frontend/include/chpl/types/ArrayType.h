@@ -109,6 +109,12 @@ class ArrayType final : public CompositeType {
 
   bool isAliasingArray(Context* context) const;
 
+  bool isUninstancedArray() const {
+    /* 0 subs = fully generic, 3 subs = _instance is present, 2 subs =
+       _instance is absent but domain and eltType are present */
+    return substitutions().size() == 2;
+  }
+
   ~ArrayType() = default;
 
   virtual void stringify(std::ostream& ss,
