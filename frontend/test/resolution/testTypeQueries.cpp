@@ -821,7 +821,7 @@ static void test25() {
   assert(guard.realizeErrors() == 2);
 }
 
-// same as test23 but using type aliases for bool
+// same as test25 but using type aliases for bool
 static void test25b() {
   printf("%s\n", __FUNCTION__);
   auto context = buildStdContext();
@@ -836,6 +836,30 @@ static void test25b() {
   assert(vars.at("x").isUnknown());
   assert(vars.at("y").isUnknown());
   assert(guard.realizeErrors() == 2);
+}
+
+static void test26() {
+  printf("%s\n", __FUNCTION__);
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+                R""""(
+                  record wrapper { var x; }
+                  class Wrapper { var x; }
+
+                  proc unwrapRec(type arg: wrapper(?t)) type { return t; }
+                  proc unwrapClass(type arg: owned Wrapper(?t)) type { return t; }
+
+                  type a = unwrapRec(wrapper(int(8)));
+                  type b = unwrapClass(owned Wrapper(bool));
+                )"""", {"a", "b"});
+
+
+  auto& a = vars.at("a");
+  auto& b = vars.at("b");
+  assert(a.isType() && a.type()->isIntType() && a.type()->toIntType()->bitwidth() == 8);
+  assert(b.isType() && b.type()->isBoolType());
 }
 
 int main() {
@@ -871,6 +895,7 @@ int main() {
   test24();
   test25();
   test25b();
+  test26();
 
   return 0;
 }
