@@ -41,7 +41,6 @@ assert(concurrentActual.read() == expected);
 assert(c.getSize() == nElems);
 
 // Empty collection. Make sure all tasks start around same time...
-if isBag then c.balance();
 concurrentActual.write(0);
 var bar = new barrier(here.maxTaskPar * numLocales);
 coforall loc in Locales do on loc {
