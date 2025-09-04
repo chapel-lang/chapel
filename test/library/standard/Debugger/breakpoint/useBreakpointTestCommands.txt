@@ -1,8 +1,6 @@
 r
-up
 p/d myVariable
 c
-up
 p/d myVariable
 c
 quit

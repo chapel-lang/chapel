@@ -1,0 +1,2 @@
+breakpoint set -n debuggerBreakHere -N debuggerBreakHere
+breakpoint command add -o up debuggerBreakHere

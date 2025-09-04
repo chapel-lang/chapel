@@ -8,7 +8,7 @@ tmpfile=$outfile.raw.tmp
 # some gdbs print out extra stuff.  This filters it out
 #
 mv $outfile $tmpfile
-grep -v "Current executable set to" $tmpfile | grep -v "Executing commands in" | grep -v "settings set" | grep -v "command regex" | grep -v "breakpoint set" | grep -v "Breakpoint 1" | grep -v "target create" | grep -v "command source" > $outfile
+grep -v "Current executable set to" $tmpfile | grep -v "Executing commands in" | grep -v "settings set" | grep -v "command regex" | grep -v "breakpoint set" | grep -v "breakpoint command" | grep -v "Breakpoint 1" | grep -v "target create" | grep -v "command source" > $outfile
 rm $tmpfile
 
 #

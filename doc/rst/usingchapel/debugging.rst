@@ -19,14 +19,25 @@ You can also just run the program with ``gdb`` or ``lldb`` directly. This
 may be useful, for example if you want to use a graphical debugger like VSCode.
 ``--gdb`` and ``--lldb`` are just convenience flags that do the following:
 
-* Set a breakpoint on ``debuggerBreakHere``, i.e. ``b debuggerBreakHere``
+* Source the command files to setup the debugger for Chapel
+
+  * For GDB: ``source $CHPL_HOME/runtime/etc/debug/gdb.commands``
+
+  * For LLDB: ``command source $CHPL_HOME/runtime/etc/debug/lldb.commands``
+
 * LLDB only: Enable the Chapel pretty-printer for LLDB, i.e.
   ``command script import $CHPL_HOME/runtime/etc/debug/chpl_lldb_pretty_print.py``
+
 * If specified, execute additional debugger commands from a file whose path is
   set in ``CHPL_RT_DEBUGGER_CMD_FILE``
 
 If you are not using ``--gdb`` or ``--lldb``, make sure to replicate the
 above steps in your debugger of choice for the best experience.
+
+.. note::
+
+   GDB/LLDB will not know about ``$CHPL_HOME``, you will need to expand that
+   variable to the actual path.
 
 The following sections provide more information on debugging Chapel programs:
 

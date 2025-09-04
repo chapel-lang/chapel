@@ -7,4 +7,5 @@ command regex dview 's/(.*)/expr -- (%1).dump()/'
 command regex flags  's/(.*)/expr -- viewFlags(%1)/'
 command regex loc    's/(.*)/expr -- ::stringLoc(%1)/'
 
-breakpoint set -n debuggerBreakHere
+breakpoint set -n debuggerBreakHere -N debuggerBreakHere
+breakpoint command add -o up debuggerBreakHere
