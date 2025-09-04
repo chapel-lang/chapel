@@ -5379,9 +5379,6 @@ proc fileWriter.filePlugin() : borrowed QioPluginFile? {
 // case, since we only will have one reference, will be right after we close
 // this fileReader presumably).
 
-@deprecated("OpenReaderLockingDefault is deprecated and no longer controls openReader's behavior")
-config param OpenReaderLockingDefault = true;
-
 /*
 
 Open a file at a particular path and return a :record:`fileReader` for it.
@@ -5496,9 +5493,6 @@ proc openBytesReader(const b: bytes, in deserializer: ?dt = defaultSerializeVal(
   return fr;
 }
 
-@deprecated("OpenWriterLockingDefault is deprecated and no longer controls openWriter's behavior")
-config param OpenWriterLockingDefault = true;
-
 /*
 
 Open a file at a particular path and return a :record:`fileWriter` for it.
@@ -5558,7 +5552,7 @@ proc openWriter(path:string, param locking = false,
    :arg locking: compile-time argument to determine whether or not the
                  fileReader should use locking; sets the
                  corresponding parameter of the :record:`fileReader` type.
-                 Defaults to ``true`` (*default deprecated, see warning below*).
+                 Defaults to ``false``.
    :arg region: zero-based byte offset indicating where in the file the
                fileReader should start and stop reading. Defaults to
                ``0..`` - meaning from the start of the file to no end point.
@@ -5571,14 +5565,6 @@ proc openWriter(path:string, param locking = false,
    .. warning::
 
       The region argument will ignore any specified stride other than 1.
-
-   .. warning::
-
-      The default value for ``locking`` will be removed in an upcoming release.
-      To avoid the warning, specify the value of ``locking`` explicitly.
-
-      Note that ``locking=true`` should only be used when a fileReader will be
-      used by multiple tasks concurrently.
 
 
    :throws SystemError: If a fileReader could not be returned.
@@ -5661,7 +5647,7 @@ proc file.readerHelper(param locking=true,
    :arg locking: compile-time argument to determine whether or not the
                  fileWriter should use locking; sets the
                  corresponding parameter of the :record:`fileWriter` type.
-                 Defaults to ``true`` (*default deprecated, see warning below*).
+                 Defaults to ``false``.
    :arg region: zero-based byte offset indicating where in the file the
                fileWriter should start and stop writing. Defaults to
                ``0..`` - meaning from the start of the file to no specified end
@@ -5675,15 +5661,6 @@ proc file.readerHelper(param locking=true,
    .. warning::
 
       The region argument will ignore any specified stride other than 1.
-
-   .. warning::
-
-      The default value for ``locking`` will be removed in an upcoming release.
-      To avoid the warning, specify the value of ``locking`` explicitly.
-
-      Note that ``locking=true`` should only be used when a fileWriter will be
-      used by multiple tasks concurrently.
-
 
    :throws SystemError: If a fileWriter could not be returned.
    :throws IllegalArgumentError: If trying to write explicitly prior to
@@ -9074,9 +9051,6 @@ proc fileReader.readBinary(ref b: bytes, maxSize: int): bool throws {
   return lenRead > 0;
 }
 
-@chpldoc.nodoc
-@deprecated("'ReadBinaryArrayReturnInt' is deprecated — 'readBinary' now returns an int by default when reading an array")
-config param ReadBinaryArrayReturnInt = true;
 
 /*
   Read an array of binary numbers from a :record:`fileReader`
