@@ -1382,6 +1382,10 @@ static Type::Genericity getFieldsGenericity(Context* context,
 
     return combined;
   } else if (auto at = ct->toArrayType()) {
+    if (at->isUninstancedArray()) {
+      return Type::GENERIC;
+    }
+
     auto dt = getTypeGenericityIgnoring(context, at->domainType(), ignore);
     auto et = getTypeGenericityIgnoring(context, at->eltType(), ignore);
 
