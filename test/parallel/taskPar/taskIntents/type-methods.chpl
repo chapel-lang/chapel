@@ -34,9 +34,13 @@ record R {
   }
 
   proc type useBegin(dom) {
+    // synchronization to work around https://github.com/chapel-lang/chapel/issues/27769
+    var x: atomic int = 1;
     begin {
       writeln(bar(dom));
+      x.add(-1);
     }
+    x.waitFor(0);
   }
   proc type useCobegin(dom) {
     cobegin {
