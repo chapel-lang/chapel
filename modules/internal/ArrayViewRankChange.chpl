@@ -403,7 +403,8 @@ module ArrayViewRankChange {
     override proc dsiAlignedLow do return upDom.dsiAlignedLow;
     override proc dsiAlignedHigh do return upDom.dsiAlignedHigh;
     override proc dsiIndexOrder(i) do return upDom.dsiIndexOrder(i);
-    override proc dsiCreateIndexBuffer(size) do return upDom.dsiCreateIndexBuffer(size);
+    override proc dsiCreateIndexBuffer(size, dataSorted=false, isUnique=false) do
+      return upDom.dsiCreateIndexBuffer(size, dataSorted, isUnique);
 
     // Don't want to privatize a DefaultRectangular, so pass the query on to
     // the wrapped array

@@ -352,7 +352,9 @@ module ChapelDistribution {
     proc dsiIndexOrder(i)         { dnsError("indexOrder"); }
 
     pragma "last resort" @chpldoc.nodoc
-    proc dsiCreateIndexBuffer(size) { dnsError("createIndexBuffer"); }
+    proc dsiCreateIndexBuffer(size, dataSorted = false, isUnique = false) {
+      dnsError("createIndexBuffer");
+    }
 
     // end of default overloads to provide clear compile-time error messages
 
@@ -760,10 +762,15 @@ module ChapelDistribution {
     var buf: [bufDom] idxType;
     var cur = 0;
 
-    proc init(size, param rank: int, obj) {
+    var dataSorted:bool;
+    var isUnique:bool;
+
+    proc init(size, param rank: int, obj, dataSorted = false, isUnique = false) {
       this.rank = rank;
       this.obj = obj;
       bufDom = {0..#size};
+      this.dataSorted = dataSorted;
+      this.isUnique = isUnique;
     }
 
     proc ref deinit() {
@@ -780,7 +787,7 @@ module ChapelDistribution {
 
     proc ref commit() {
       if cur >= 1 then
-        obj.dsiBulkAddNoPreserveInds(buf[..cur-1]);
+        obj.dsiBulkAddNoPreserveInds(buf[..cur-1], dataSorted, isUnique);
       cur = 0;
     }
   }
@@ -862,8 +869,12 @@ module ChapelDistribution {
     override proc dsiAlignedLow { return parentDom.low; }
     override proc dsiAlignedHigh { return parentDom.high; }
 
-    override proc dsiCreateIndexBuffer(size) {
-      return new SparseIndexBuffer(rank=this.rank, obj=this, size=size);
+    override proc dsiCreateIndexBuffer(size, dataSorted=false, isUnique=false) {
+      return new SparseIndexBuffer(rank=this.rank,
+                                   obj=this,
+                                   size=size,
+                                   dataSorted,
+                                   isUnique);
     }
 
   } // end BaseSparseDom
