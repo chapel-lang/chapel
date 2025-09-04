@@ -456,7 +456,7 @@ def get_system_compile_args(flag):
     # Add Homebrew include directory if Homebrew is installed
     homebrew_prefix = homebrew_utils.get_homebrew_prefix()
     if homebrew_prefix:
-        paths.append('-I' + homebrew_prefix + '/include')
+        paths.append('-isystem' + homebrew_prefix + '/include')
 
     return paths
 
