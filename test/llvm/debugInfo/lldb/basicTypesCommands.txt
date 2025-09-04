@@ -17,4 +17,4 @@ p myInt
 p myReal
 p myEnumVal
 p myEnumRef
-p myTuples
+p myTuple
