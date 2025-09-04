@@ -1,0 +1,165 @@
+#!/usr/bin/env python3
+import sys
+import os
+import glob
+from itertools import chain
+import pathlib
+from pathlib import Path
+import argparse
+import re
+import json
+
+
+def check_file(filename, reports):
+    """
+    Open a file and check for '.. code-block:: [chapel|chpl]' directives.
+    Return a list of tuples with the filename and linenumber
+
+    if the previous line is '.. BLOCK-test-allowCodeBlock', then skip this line.
+    """
+    code_blocks = []
+    with open(filename, "rb") as fp:
+        lines = fp.readlines()
+        for linenum, line in enumerate(lines):
+            line = line.strip()
+            prevline = lines[linenum - 1].strip() if linenum > 0 else b""
+            is_code_block = line.startswith(
+                b".. code-block:: chapel"
+            ) or line.startswith(b".. code-block:: chpl")
+            is_allowed = prevline.startswith(b".. BLOCK-test-allowCodeBlock")
+            is_in_report = any(
+                r.contains(filename, linenum + 1) for r in reports
+            )
+            if is_code_block and not is_allowed and not is_in_report:
+                code_blocks.append((filename, linenum + 1))
+
+    return code_blocks
+
+
+def check_files(filenames, reports):
+    result = chain.from_iterable(check_file(fn, reports) for fn in filenames)
+    return sorted(result, key=lambda x: (x[0], x[1]))
+
+
+def ignore_files(filenames, ignore_patterns=[]):
+    """
+    filter out files that match any of the ignore patterns.
+    """
+    if not ignore_patterns:
+        return filenames
+
+    ignored_files = set()
+    for filename in filenames:
+        resolved_filename = pathlib.Path(filename).resolve()
+        for pattern in ignore_patterns:
+            if resolved_filename.is_relative_to(pattern):
+                ignored_files.add(filename)
+            if resolved_filename.match(pattern):
+                ignored_files.add(filename)
+
+    return [fn for fn in filenames if fn not in ignored_files]
+
+
+def get_gitignore_patterns(chplhome: pathlib.Path):
+    """
+    Read the .gitignore file for the docs and return a list of patterns.
+    """
+
+    directory = chplhome / "doc"
+    gitignore_path = directory / ".gitignore"
+    if not gitignore_path.exists():
+        patterns = []
+    else:
+        with gitignore_path.open("r") as f:
+            patterns = [
+                line.strip()
+                for line in f
+                if line.strip() and not line.startswith("#")
+            ]
+
+    resolve_patterns = []
+    for p in patterns:
+        if p.startswith("/"):
+            p = str(directory / p[1:])
+        elif not p.startswith("*"):
+            p = str(directory / p)
+        resolve_patterns.append(p)
+    return resolve_patterns
+
+
+class CreatedTestReport:
+    def __init__(self, report_file):
+        self.report_file = report_file
+        self.report = json.loads(self.report_file.read_text())
+        self.lines_per_rst = {}
+        for entry in self.report.values():
+            rstfile = entry["rstfile"]
+            if rstfile not in self.lines_per_rst:
+                self.lines_per_rst[rstfile] = set()
+            self.lines_per_rst[rstfile].update(entry["lines"])
+
+    def contains(self, file, line):
+        p = str(pathlib.Path(file).resolve())
+        r = line in self.lines_per_rst.get(p, set())
+        return r
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "files",
+        nargs="*",
+        help="Files or directories to check for code blocks. "
+        "If a directory is provided, all files in it will be checked.",
+    )
+    parser.add_argument(
+        "--ignore",
+        action="append",
+        default=[],
+        help='Patterns to ignore, e.g., "*.rst" or "docs/*"',
+    )
+    parser.add_argument(
+        "--read-report",
+        action="append",
+        default=[],
+        help="Read a report file of created tests and use it to check if docs are tested",
+    )
+
+    args = parser.parse_args()
+    filenames = []
+    for a in args.files:
+        if os.path.isdir(a):
+            filenames.extend(
+                str(p) for p in pathlib.Path(a).rglob("*") if p.is_file()
+            )
+        elif os.path.isfile(a):
+            filenames.append(a)
+        else:
+            filenames.extend(glob.glob(a, recursive=True))
+
+    chplhome = pathlib.Path(__file__).parent.parent.parent
+    ignore_patterns = get_gitignore_patterns(chplhome)
+    for p in args.ignore:
+        ignore_patterns.append(str(pathlib.Path(p).resolve()))
+    filenames = ignore_files(filenames, ignore_patterns)
+
+    reports = []
+    for report_file in args.read_report:
+        report_file = pathlib.Path(report_file)
+        if not report_file.exists():
+            print(f"Report file {report_file} does not exist, skipping")
+            continue
+        reports.append(CreatedTestReport(report_file))
+
+    results = check_files(filenames, reports)
+    if len(results) != 0:
+        print("Found plain code blocks!")
+        print("Please turn these into testable code blocks")
+        print(*("  {}:{}".format(*r) for r in results), sep="\n")
+        return 1
+    else:
+        return 0
+
+
+if __name__ == "__main__":
+    exit(main())

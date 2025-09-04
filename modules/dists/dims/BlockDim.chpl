@@ -40,6 +40,7 @@ that would be produced by a 1D :class:`~BlockDist.blockDist` distribution.
 
 The following ``BlockDim`` record initializers are available:
 
+  .. BLOCK-test-allowCodeBlock
   .. code-block:: chapel
 
     proc BlockDim.init(

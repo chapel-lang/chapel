@@ -54,6 +54,7 @@ that would be produced by a 1D :class:`~BlockCycDist.blockCycDist` distribution.
 
 The ``BlockCyclicDim`` record initializer is defined as follows:
 
+  .. BLOCK-test-allowCodeBlock
   .. code-block:: chapel
 
     proc init(

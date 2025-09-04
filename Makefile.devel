@@ -103,4 +103,4 @@ run-dyno-linters: run-frontend-linters FORCE
 SPECTEST_DIR = ./test/release/examples/spec
 spectests: FORCE
 	rm -rf $(SPECTEST_DIR)
-	doc/util/extract-rst-tests.py  doc/rst/language/spec/ --output $(SPECTEST_DIR)
+	doc/util/extract-rst-tests.py  doc/rst/language/spec/ --output $(SPECTEST_DIR) --report $(SPECTEST_DIR)/report.json

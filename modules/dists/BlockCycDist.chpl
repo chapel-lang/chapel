@@ -118,6 +118,7 @@ When run on 6 locales, the output is:
 
 The ``blockCycDist`` initializer is defined as follows:
 
+  .. BLOCK-test-allowCodeBlock
   .. code-block:: chapel
 
     proc blockCycDist.init(

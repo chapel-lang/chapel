@@ -78,6 +78,7 @@ contains definitions for the array of locales on which the program is
 executing (``Locales``), a domain for that array (``LocaleSpace``), and
 the number of locales (``numLocales``).
 
+.. BLOCK-test-allowCodeBlock
 .. code-block:: chapel
 
    config const numLocales: int;
