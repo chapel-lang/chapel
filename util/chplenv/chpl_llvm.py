@@ -1332,8 +1332,6 @@ def get_host_compile_args():
 
     if llvm_val == 'system' or llvm_val == 'bundled':
         bundled.append('-DHAVE_LLVM')
-        vers_major = get_llvm_version()
-        bundled.append('-DEXPECTED_LLVM_VERSION=' + vers_major)
 
     return (bundled, system)
 
