@@ -1,0 +1,1 @@
+-g --no-copy-propagation --no-scalar-replacement
