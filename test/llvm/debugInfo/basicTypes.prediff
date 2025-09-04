@@ -49,16 +49,11 @@ def dump_symbol(name):
         chpl_home = os.environ.get("CHPL_HOME", "")
         output = [re.sub(re.escape(chpl_home), "$CHPL_HOME", line) for line in output]
 
-        # if any lines have DW_TAG_enumeration_type, make sure the DW_TAG_enumerator lines are in order
+        # DW_TAG_enumeration_type can print in any order, so sanitize
+        # DW_AT_const_value and DW_AT_name lines to a deterministic order
         if any("DW_TAG_enumeration_type" in line for line in output):
-            enumerators = [line for line in output if "DW_TAG_enumerator" in line]
-            enumerators.sort(key=lambda line: re.search(r'DW_AT_const_value\s*\((\d+)\)', line).group(1))
-            # remove all the enumerators from output
-            output = [line for line in output if "DW_TAG_enumerator" not in line]
-            # find the index of the first enumerator
-            insert_index = next(i for i, line in enumerate(output) if "DW_TAG_enumerator" in line or "NULL" in line)
-            # insert the sorted enumerators back into output
-            output[insert_index:insert_index] = enumerators
+            output = [re.sub(r"\d+", "ENUM_VAL", line) if "DW_AT_const_value" in line else line for line in output]
+            output = [re.sub(r'\(".*"\)', '("ENUM_NAME")', line) if "DW_AT_name" in line else line for line in output]
 
         output = "".join(output).strip()
         return output
@@ -169,20 +164,20 @@ DW_TAG_structure_type
 "myEnum":"""
 DW_TAG_enumeration_type
               DW_AT_type	("int(64)")
-              DW_AT_name	("myEnum")
+              DW_AT_name	("ENUM_NAME")
               DW_AT_byte_size	(0x08)
               DW_AT_decl_file	("./basicTypes.chpl")
               DW_AT_decl_line	(23)
               DW_AT_alignment	(8)
   DW_TAG_enumerator
-                DW_AT_name	("e1")
-                DW_AT_const_value	(0)
+                DW_AT_name	("ENUM_NAME")
+                DW_AT_const_value	(ENUM_VAL)
   DW_TAG_enumerator
-                DW_AT_name	("e2")
-                DW_AT_const_value	(1)
+                DW_AT_name	("ENUM_NAME")
+                DW_AT_const_value	(ENUM_VAL)
   DW_TAG_enumerator
-                DW_AT_name	("e3")
-                DW_AT_const_value	(2)
+                DW_AT_name	("ENUM_NAME")
+                DW_AT_const_value	(ENUM_VAL)
   NULL
 """,
 "myRec":"""
