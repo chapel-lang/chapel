@@ -51,6 +51,16 @@ module ChapelDynamicLoading {
     return !configErrorsForDynamicLoading(emitErrors=false);
   }
 
+  iter fanToAll(skip: locale) {
+    for loc in Locales {
+      if loc != skip then yield loc;
+    }
+  }
+
+  proc shouldFanOut: bool {
+    return isDynamicLoadingSupported && !isLocalNoComm && numLocales > 1;
+  }
+
   // This counter is used to assign a unique 'wide index' to each procedure.
   // We start with '1' since the '0th' index is reserved to represent 'nil'.
   var chpl_dynamicProcIdxCounter: atomic int = 1;
@@ -72,8 +82,8 @@ module ChapelDynamicLoading {
   // If we are multi-locale, then we'll need to initialize the cache on the
   // remaining locales manually, since the module initializer is only
   // running on LOCALE-0.
-  if isDynamicLoadingSupported && numLocales > 1 {
-    coforall loc in Locales[1..] do on loc do local {
+  if shouldFanOut {
+    coforall loc in fanToAll(skip=here) do on loc do local {
       // The local value will be nil despite a non-nilable type. This is OK.
       assert(chpl_localPtrCache == nil);
       chpl_localPtrCache = new unmanaged chpl_LocalPtrCache();
@@ -83,12 +93,10 @@ module ChapelDynamicLoading {
   proc deinit() {
     on Locales[0] do delete chpl_localPtrCache;
 
-    if !isLocalNoComm {
-      // Behind a 'local' check to avoid throwing off compiler optimizations.
-      if isDynamicLoadingSupported && numLocales > 1 {
-        coforall loc in Locales[1..] do on loc {
-          delete chpl_localPtrCache;
-        }
+    // Behind a 'local' check to avoid throwing off compiler optimizations.
+    if shouldFanOut {
+      coforall loc in fanToAll(skip=here) do on loc {
+        delete chpl_localPtrCache;
       }
     }
   }
@@ -299,8 +307,8 @@ module ChapelDynamicLoading {
           var numErrs: atomic int = 0;
 
           // Loop and attempt to open system handles on other locales.
-          if numLocales > 1 {
-            coforall loc in Locales[1..] with (ref errBuf) do on loc {
+          if shouldFanOut {
+            coforall loc in fanToAll(skip=here) with (ref errBuf) do on loc {
               const n = (here.id: int);
 
               var err: owned DynLoadError?;
@@ -389,6 +397,66 @@ module ChapelDynamicLoading {
       _refCount.sub(1);
     }
 
+    // This private method emplaces a new index into the local procedure
+    // pointer cache on each locale, and then it returns the index. It
+    // may lock on local caches but it does not ensure global consistency.
+    // The caller should do that by holding 'this._lock'.
+    //
+    // Note that the passed in pointer only has meaning on 'this.locale'.
+    inline proc _emplaceNewIndexUnlocked(sym: string, ptrOnThis: c_ptr(void),
+                                         out err: owned DynLoadError?) {
+      var errBuf = new chpl_localBuffer(owned DynLoadError?, numLocales);
+      var numErrs: atomic int;
+
+      // Get the wide index to use by interning on 'this.locale'. By passing
+      // in '0' we tell the routine to assign us a unique index to use.
+      var ret = chpl_insertExternLocalPtrNoSync(ptrOnThis, this.locale.id);
+      assert(ret != 0);
+
+      if shouldFanOut {
+        coforall loc in fanToAll(skip=this.locale) do on loc {
+          const n = here.id : int;
+          var handle: c_ptr(void);
+          on this do handle = _systemPtrs[n];
+
+          var err;
+          const ptr = localDynLoadSymbolLookup(sym, handle, err);
+
+          if ptr == nil && err == nil {
+            const msg = 'Failed to load symbol on locale ' + n:string;
+            err = new DynLoadError(msg);
+          }
+
+          if err != nil {
+            on this do errBuf[n] = err;
+            numErrs.add(1);
+
+          } else {
+            assert(ptr != nil);
+            const got = chpl_insertExternLocalPtrNoSync(ptr, ret);
+            assert(got == ret);
+          }
+        }
+      }
+
+      if numErrs.read() > 0 {
+        // If there were errors, then report the first error.
+        // TODO: Evict any pointers stored in the cache.
+        // TODO: Consolidate the reported errors.
+        for i in 0..<errBuf.size {
+          if errBuf[i] {
+            err = errBuf[i];
+            break;
+          }
+        }
+
+        // Clear the index since there was an error.
+        ret = 0;
+      }
+
+      return ret;
+    }
+
     // TODO: 'T' must be a procedure type, but we cannot restrict it yet,
     // e.g., we cannot write "type t: proc". As a short-term workaround
     // we could add a primitive "any procedure type" to use instead.
@@ -411,80 +479,43 @@ module ChapelDynamicLoading {
         return __primitive("cast", P, 0);
       }
 
-      // On the fast path, we check to see if the symbol exists on LOCALE-0.
-      // If it does, then it should be in the procedure pointer cache, and
-      // we can immediately translate it into a wide index.
       on Locales[0] {
-        var errBuf = new chpl_localBuffer(owned DynLoadError?, numLocales);
-        var numErrs: atomic int = 0;
-        var shouldInternPointer = false;
+        const handle = _systemPtrs[here.id];
+        assert(handle != nil);
 
-        // No need to grab the lock, this should not be modified (or nil).
-        const handle0 = _systemPtrs[0];
-        assert(handle0 != nil);
+        // Call the system lookup routine, e.g., 'dlsym'.
+        var errOnThis;
+        const ptrOnThis = localDynLoadSymbolLookup(sym, handle, errOnThis);
 
-        var err0;
-        const ptr0 = localDynLoadSymbolLookup(sym, handle0, err0);
+        if errOnThis != nil {
+          err = errOnThis;
 
-        if err0 != nil {
-          err = err0;
-
-        } else if ptr0 == nil {
+        } else if ptrOnThis == nil {
+          // There was an error while calling the system lookup routine.
           err = new DynLoadError('Failed to locate symbol: ' + sym);
 
         } else manage this._lock {
+          // The following section must all happen while holding the lock.
+          // Check to see if the wide index is already stored stored here.
           var data;
-          const found = _procPtrToDataLocale0.get(ptr0, data);
-          shouldInternPointer = !found;
+          const found = _procPtrToDataLocale0.get(ptrOnThis, data);
+
           if found {
+            // In the fast path there was already an entry for the symbol.
             const (got, sym) = data;
             assert(got != 0);
             idx = got;
-          }
-        }
 
-        if shouldInternPointer {
-          // Get the wide index to use by interning on LOCALE-0. By passing
-          // in '0' we tell the routine to assign us a unique index to use.
-          idx = chpl_insertExternLocalPtrNoSync(ptr0, 0);
-          assert(idx != 0);
+          } else {
+            // Otherwise there was no entry, so add pointers to all caches.
+            idx = _emplaceNewIndexUnlocked(sym, ptrOnThis, err);
 
-          if numLocales > 1 {
-            // Loop over all locales and fetch the symbol's local pointer.
-            coforall loc in Locales[1..] do on loc {
-              const n = (here.id: int);
-
-              // Fetch the system handle that is stored on LOCALE-0.
-              var handle: c_ptr(void);
-              on Locales[0] do handle = _systemPtrs[n];
-
-              var err: owned DynLoadError?;
-              const ptr = localDynLoadSymbolLookup(sym, handle, err);
-              if err {
-                on Locales[0] do errBuf[n] = err;
-                numErrs.add(1);
-              } else if ptr {
-                var got = chpl_insertExternLocalPtrNoSync(ptr, idx);
-                assert(got == idx);
-              } else {
-                // TODO: Construct an error instead.
-                halt('Failed to fetch symbol!');
-              }
+            if idx != 0 {
+              // A non-nil index was returned, so we add a new entry.
+              const data = (idx, sym);
+              const added = _procPtrToDataLocale0.add(ptrOnThis, data);
+              assert(added);
             }
-          }
-
-          if numErrs.read() > 0 {
-            // If there were errors, then report the first error.
-            // TODO: Evict any pointers stored in the cache.
-            // TODO: Consolidate the reported errors.
-            for i in 0..<errBuf.size {
-              if errBuf[i] {
-                err = errBuf[i];
-                break;
-              }
-            }
-            // Clear the index since there was an error.
-            idx = 0;
           }
         }
       }
