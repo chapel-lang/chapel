@@ -218,7 +218,8 @@ proc test4() {
   assert(wideProc0 != nil);
 
   // OK to take 'bin' here by 'ref' intent, it should be parallel-safe.
-  forall i in 1..<hi with (ref bin) {
+  const maxIters = hi;
+  forall i in 1..<maxIters with (ref bin) {
     const loc = Locales[i % numLocales];
     on loc {
       const wideProc = try! bin.load("addTwoReturn", P1);

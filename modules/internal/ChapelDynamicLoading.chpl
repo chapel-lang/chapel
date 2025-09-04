@@ -51,6 +51,16 @@ module ChapelDynamicLoading {
     return !configErrorsForDynamicLoading(emitErrors=false);
   }
 
+  iter fanToAll(skip: locale) {
+    for loc in Locales {
+      if loc != skip then yield loc;
+    }
+  }
+
+  proc shouldFanOut: bool {
+    return isDynamicLoadingSupported && !isLocalNoComm && numLocales > 1;
+  }
+
   // This counter is used to assign a unique 'wide index' to each procedure.
   // We start with '1' since the '0th' index is reserved to represent 'nil'.
   var chpl_dynamicProcIdxCounter: atomic int = 1;
@@ -72,8 +82,8 @@ module ChapelDynamicLoading {
   // If we are multi-locale, then we'll need to initialize the cache on the
   // remaining locales manually, since the module initializer is only
   // running on LOCALE-0.
-  if isDynamicLoadingSupported && numLocales > 1 {
-    coforall loc in Locales[1..] do on loc do local {
+  if shouldFanOut {
+    coforall loc in fanToAll(skip=here) do on loc do local {
       // The local value will be nil despite a non-nilable type. This is OK.
       assert(chpl_localPtrCache == nil);
       chpl_localPtrCache = new unmanaged chpl_LocalPtrCache();
@@ -83,12 +93,10 @@ module ChapelDynamicLoading {
   proc deinit() {
     on Locales[0] do delete chpl_localPtrCache;
 
-    if !isLocalNoComm {
-      // Behind a 'local' check to avoid throwing off compiler optimizations.
-      if isDynamicLoadingSupported && numLocales > 1 {
-        coforall loc in Locales[1..] do on loc {
-          delete chpl_localPtrCache;
-        }
+    // Behind a 'local' check to avoid throwing off compiler optimizations.
+    if shouldFanOut {
+      coforall loc in fanToAll(skip=here) do on loc {
+        delete chpl_localPtrCache;
       }
     }
   }
@@ -299,8 +307,8 @@ module ChapelDynamicLoading {
           var numErrs: atomic int = 0;
 
           // Loop and attempt to open system handles on other locales.
-          if numLocales > 1 {
-            coforall loc in Locales[1..] with (ref errBuf) do on loc {
+          if shouldFanOut {
+            coforall loc in fanToAll(skip=here) with (ref errBuf) do on loc {
               const n = (here.id: int);
 
               var err: owned DynLoadError?;
@@ -405,28 +413,28 @@ module ChapelDynamicLoading {
       var ret = chpl_insertExternLocalPtrNoSync(ptrOnThis, this.locale.id);
       assert(ret != 0);
 
-      if numLocales > 1 {
-        coforall loc in Locales {
-          if loc != this.locale then on loc {
-            const n = here.id : int;
-            var handle: c_ptr(void);
-            on Locales[0] do handle = _systemPtrs[here.id];
+      if shouldFanOut {
+        coforall loc in fanToAll(skip=this.locale) do on loc {
+          const n = here.id : int;
+          var handle: c_ptr(void);
+          on this do handle = _systemPtrs[n];
 
-            var err: owned DynLoadError?;
-            const ptr = localDynLoadSymbolLookup(sym, handle, err);
+          var err;
+          const ptr = localDynLoadSymbolLookup(sym, handle, err);
 
-            if err {
-              on Locales[0] do errBuf[n] = err;
-              numErrs.add(1);
+          if ptr == nil && err == nil {
+            const msg = 'Failed to load symbol on locale ' + n:string;
+            err = new DynLoadError(msg);
+          }
 
-            } else if ptr {
-              const got = chpl_insertExternLocalPtrNoSync(ptr, ret);
-              assert(got == ret);
+          if err != nil {
+            on this do errBuf[n] = err;
+            numErrs.add(1);
 
-            } else {
-              // TODO: Construct an error instead.
-              halt('Failed to fetch symbol!');
-            }
+          } else {
+            assert(ptr != nil);
+            const got = chpl_insertExternLocalPtrNoSync(ptr, ret);
+            assert(got == ret);
           }
         }
       }
