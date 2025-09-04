@@ -831,9 +831,14 @@ static const char* builtinTypeName(Type* vt) {
 
 const char* FunctionType::typeToString(Type* t) {
   // Use the value type when printing out the user type to hide '_ref'.
-  auto vt = t->getValType();
-  if (auto builtinName = builtinTypeName(vt)) return builtinName;
-  return vt->symbol->name;
+  if (!developer) {
+    auto vt = t->getValType();
+    if (auto builtinName = builtinTypeName(vt)) return builtinName;
+    return vt->symbol->name;
+  } else {
+    // As a developer, display the type exactly as given.
+    return t->symbol->name;
+  }
 }
 
 const char* FunctionType::returnIntentToString(RetTag intent) {
@@ -1024,6 +1029,37 @@ FunctionType::getWithMask(int64_t mask, bool& outMaskConflicts) const {
   outMaskConflicts = maskConflicts;
 
   return ret;
+}
+
+FunctionType*
+FunctionType::getSubstituting(FunctionType::Formal formal, int idx) const {
+  auto f = this->formal(idx);
+  if (f && *f == formal) return (FunctionType*) this;
+
+  auto newFormals = formals_;
+  newFormals[idx] = formal;
+
+  SET_LINENO(this);
+
+  return get(kind_, width_, linkage_, std::move(newFormals),
+             returnIntent_,
+             returnType_,
+             throws_);
+}
+
+FunctionType*
+FunctionType::getSubstituting(RetTag returnIntent, Type* returnType) const {
+  if (this->returnIntent() == returnIntent &&
+      this->returnType() == returnType) {
+    return (FunctionType*) this;
+  }
+
+  SET_LINENO(this);
+
+  return get(kind_, width_, linkage_, formals_,
+             returnIntent,
+             returnType,
+             throws_);
 }
 
 FunctionType::Kind FunctionType::kind() const {
@@ -1250,6 +1286,18 @@ bool FunctionType::Formal::isRef() const {
   return qualType().isRef();
 }
 
+bool FunctionType::Formal::isWideRef() const {
+  return qualType().isWideRef();
+}
+
+bool FunctionType::Formal::isRefOrWideRef() const {
+  return isRef() || isWideRef();
+}
+
+bool FunctionType::Formal::isConst() const {
+  return qualType().isConst();
+}
+
 bool FunctionType::Formal::isGeneric() const {
   auto t = type_;
   return t == dtUnknown || t == dtAny || t->symbol->hasFlag(FLAG_GENERIC);
@@ -1310,6 +1358,15 @@ bool FunctionType::isExport() const {
 
 bool FunctionType::hasForeignLinkage() const {
   return linkage_ != FunctionType::DEFAULT;
+}
+
+bool FunctionType::containsAnyRefComponent() const {
+  if (returnIntent_ == RET_REF || returnType_->isRefOrWideRef()) return true;
+  for (int i = 0; i < numFormals(); i++) {
+    auto f = formal(i);
+    if (f->qualType().isRefOrWideRef()) return true;
+  }
+  return false;
 }
 
 /************************************* | **************************************
