@@ -27,6 +27,13 @@
 
 #define HAVE_LLVM_VER (LLVM_VERSION_MAJOR*10 + LLVM_VERSION_MINOR)
 
+#if defined(EXPECTED_LLVM_VERSION) && EXPECTED_LLVM_VERSION != LLVM_VERSION_MAJOR
+#define STRINGIFY2(s) #s
+#define STRINGIFY(s) STRINGIFY2(s)
+static_assert(false, "Expected LLVM version " STRINGIFY(EXPECTED_LLVM_VERSION)
+              ", but found version " STRINGIFY(LLVM_VERSION_MAJOR));
+#endif
+
 #if HAVE_LLVM_VER < 140
 #error LLVM version is too old for this version of Chapel
 #endif
