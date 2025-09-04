@@ -130,7 +130,6 @@ PACKAGES_TO_DOCUMENT = \
 	packages/Crypto.chpl \
 	packages/Curl.chpl \
 	packages/DistributedBag.chpl \
-	packages/DistributedBagDeprecated.chpl \
 	packages/DistributedDeque.chpl \
 	packages/DistributedIters.chpl \
 	packages/DynamicLoading.chpl \

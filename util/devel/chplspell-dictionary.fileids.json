@@ -1272,9 +1272,6 @@
   "386cfb80-bd7c-11ee-b488-ff57a08c3497": [
     "modules/packages/DistributedBag.chpl"
   ],
-  "733029d2-8aba-11e7-b3f1-10ddb1d4c3d5": [
-    "modules/packages/DistributedBagDeprecated.chpl"
-  ],
   "838b0068-8aba-11e7-b3f1-10ddb1d4c3d5": [
     "modules/packages/DistributedDeque.chpl"
   ],
