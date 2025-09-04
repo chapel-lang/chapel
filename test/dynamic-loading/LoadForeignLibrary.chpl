@@ -15,6 +15,8 @@ use Reflection;
 
 require "TestTypeOnlyHeader.h";
 
+config const hi = 2**16;
+
 // These types are declared in the header above, but we have to re-declare
 // them here because a require doesn't actually bring them into view as an
 // extern block would.
@@ -202,9 +204,35 @@ proc test3() {
   }
 }
 
+// The goal of this test is to create heavy cross-locale contention.
+// As well, there should be no problems retrieving the same symbol
+// multiple times regardless of locale.
+proc test4() {
+  writeln(getRoutineName());
+
+  var bin = new dynamicLibrary("./TestCLibraryToLoad.so");
+
+  type P1 = proc(_: int, _: int): int;
+
+  const wideProc0 = try! bin.load("addTwoReturn", P1);
+  assert(wideProc0 != nil);
+
+  // OK to take 'bin' here by 'ref' intent, it should be parallel-safe.
+  forall i in 1..<hi with (ref bin) {
+    const loc = Locales[i % numLocales];
+    on loc {
+      const wideProc = try! bin.load("addTwoReturn", P1);
+      assert(wideProc == wideProc0);
+      const x = wideProc(here.id, here.id);
+      assert(x == (here.id * 2));
+    }
+  }
+}
+
 proc main() {
   test0();
   test1();
   test2();
   test3();
+  test4();
 }
