@@ -404,6 +404,9 @@ def cleanup(execname, test_ran_and_more_compopts=False):
                 os.unlink(execname)
             if os.path.isfile(execname+'_real'):
                 os.unlink(execname+'_real')
+            if os.path.exists(execname+'.dSYM'):
+                import shutil
+                shutil.rmtree(execname+'.dSYM')
             # Hopefully short term workaround on cygwin where we've been seeing
             # an issue where after a test is run, some other process has a
             # handle on the executable and we can't create a new executable
