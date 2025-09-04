@@ -36,7 +36,7 @@ for i in someIndexIterator() do assert(spsDom.contains(i));
 /* START_EXAMPLE_2 */
 var dataSorted=true;
 var spsDom: sparse subdomain(parentDom);
-var idxBuf = spsDom.createIndexBuffer(size=N,dataSorted=dataSorted);
+var idxBuf = spsDom.createIndexBuffer(size=N, dataSorted=dataSorted);
 for i in someIndexIterator() do
   idxBuf.add(i);
 idxBuf.commit();
@@ -49,7 +49,7 @@ for i in someIndexIterator() do assert(spsDom.contains(i));
 /* START_EXAMPLE_3 */
 var isUnique=true;
 var spsDom: sparse subdomain(parentDom);
-var idxBuf = spsDom.createIndexBuffer(size=N,isUnique=isUnique);
+var idxBuf = spsDom.createIndexBuffer(size=N, isUnique=isUnique);
 for i in someIndexIterator() do
   idxBuf.add(i);
 idxBuf.commit();
@@ -63,7 +63,9 @@ for i in someIndexIterator() do assert(spsDom.contains(i));
 var dataSorted=true;
 var isUnique=true;
 var spsDom: sparse subdomain(parentDom);
-var idxBuf = spsDom.createIndexBuffer(size=N,dataSorted=dataSorted,isUnique=isUnique);
+var idxBuf = spsDom.createIndexBuffer(size=N,
+                                      dataSorted=dataSorted,
+                                      isUnique=isUnique);
 for i in someIndexIterator() do
   idxBuf.add(i);
 idxBuf.commit();
