@@ -9,7 +9,8 @@ code that doesn't appear in the release.
    directory/package  use                                          license
    -----------------  -------------------------------------------  -------
    third-party/
-       scspell        Spell-checking utility                       GPL 2
+     chpl-venv/       python packages supporting chplspell
+       scspell3k      Spell-checking utility                       GPL 2
        scspell SCOWL word lists
                       Spell-checking dictionaries                  MIT-like
                                                                    BSD
