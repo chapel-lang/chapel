@@ -11,7 +11,7 @@ type = struct MyRecord1 {
 $2 = void
 type = void
 $3 = {myFieldA = 0, myFieldB = 0, myFieldC = {x0 = 0, x1 = 0}, myFieldD = {
-    buffLen = 0, buffSize = 0, cachedNumCodepoints = 0, buff = XXXX,
+    buffLen = 0, buffSize = 0, cachedNumCodepoints = 0, buff = 0xXXXX,
     isOwned = true, hasEscapes = false, locale_id = 0}, myFieldE = void,
   myFieldF = {_pid = -1, _instance = void, _unowned = false}}
 type = struct MyRecord2 {
@@ -57,7 +57,7 @@ type = struct owned MyClass {
     decltype(nullptr) chpl_p;
 }
 $10 = {buffLen = 13, buffSize = 14, cachedNumCodepoints = 13,
-  buff = 0x7ffff56fd94e "Hello, world!", isOwned = false, hasEscapes = false,
+  buff = 0xXXXX "Hello, world!", isOwned = false, hasEscapes = false,
   locale_id = 0}
 type = struct string {
     int(64) buffLen;
@@ -93,9 +93,9 @@ type = int(64)
 $16 = 3.1400000000000001
 type = real(64)
 $17 = e2
-type = enum class myEnum {e2 = 1, e3, e1 = 0}
+type = enum class myEnum {e3 = 2, e2 = 1, e1 = 0}
 $18 = (enum myEnum *) 0xXXXX
-type = enum class myEnum {e2 = 1, e3, e1 = 0} *
+type = enum class myEnum {e3 = 2, e2 = 1, e1 = 0} *
 $19 = {x0 = 1, x1 = {buffLen = 3, buffSize = 8, cachedNumCodepoints = 3,
     buff = 0xXXXX "two", isOwned = true, hasEscapes = false,
     locale_id = 0}, x2 = 3, x3 = e1}
