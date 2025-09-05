@@ -16,7 +16,7 @@ myLocal: 59
 myGlobal: 42
 Process XXXX stopped
 * Thread #X, stop reason = breakpoint 2.1
-    frame #0: 0xXXXX targetVar`foo_chpl(myFormal=XX) at targetVar.chpl:5
+    frame #0: 0xXXXX targetVar`foo_chpl(myFormal=59) at targetVar.chpl:5
    2
    3   	proc foo(myFormal) {
    4   	  const localVar = myFormal + 1;
@@ -25,7 +25,7 @@ Process XXXX stopped
    7   	  writeln("localVar: ", localVar);
    8   	}
 (lldb) target var
-Global variables for targetVar.chpl
+Global variables for FILE.chpl
 (long) myGlobal_chpl = 42
 (lldb) frame var
 (long) myFormal = 59
@@ -37,7 +37,7 @@ localVar: 60
 Process XXXX resuming
 Process XXXX stopped
 * Thread #X, stop reason = breakpoint 3.1
-    frame #0: 0xXXXX targetVar`bar_chpl(myFormal=XX) at targetVar.chpl:10
+    frame #0: 0xXXXX targetVar`bar_chpl(myFormal=uninit) at FILE.chpl:10
    7   	  writeln("localVar: ", localVar);
    8   	}
    9
@@ -48,7 +48,7 @@ Process XXXX stopped
 (lldb) n
 Process XXXX stopped
 * Thread #X, stop reason = step over
-    frame #0: 0xXXXX targetVar`bar_chpl(myFormal=XX) at targetVar.chpl:11
+    frame #0: 0xXXXX targetVar`bar_chpl(myFormal=59) at targetVar.chpl:11
    8   	}
    9
    10  	proc bar(myFormal) {
