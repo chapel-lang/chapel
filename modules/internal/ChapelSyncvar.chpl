@@ -158,20 +158,6 @@ module ChapelSyncvar {
       this.isOwned = false;
     }
 
-    @deprecated(notes="Initializing a type-inferred variable from a 'sync' is deprecated; apply a 'read??()' method to the right-hand side")
-    proc init=(const ref other: _syncvar(?)) {
-      // Allow initialization from compatible sync variables, e.g.:
-      //   var x : sync int = 5;
-      //   var y : sync real = x;
-      if isCoercible(other.valType, this.type.valType) == false {
-        param theseTypes = "'" + this.type:string + "' from '" + other.type:string + "'";
-        param because = "because '" + other.valType:string + "' is not coercible to '" + this.type.valType:string + "'";
-        compilerError("cannot initialize ", theseTypes, " ",  because);
-      }
-      this.init(this.type.valType);
-      this.writeEF(other.readFE());
-    }
-
     pragma "dont disable remote value forwarding"
     proc init=(in other : this.type.valType) {
       this.init(this.type.valType, other);
@@ -299,88 +285,9 @@ module ChapelSyncvar {
   }
 
   @chpldoc.nodoc
-  @deprecated(notes="Direct assignment to 'sync' variables is deprecated; apply a 'write??()' method to modify one")
-  operator =(ref lhs : _syncvar(?t), rhs : t) {
-    lhs.wrapped.writeEF(rhs);
-  }
-
-  @chpldoc.nodoc
   inline operator :(from, type t:_syncvar)
   where from.type == t.valType {
     return new _syncvar(from);
-  }
-
-  @chpldoc.nodoc
-  @deprecated(notes="Casting sync variables is deprecated")
-  inline operator :(from: _syncvar, type toType:_syncvar) {
-    // TODO: this doesn't seem right - it doesn't use toType
-    return new _syncvar(from);
-  }
-
-  @chpldoc.nodoc
-  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
-  operator +=(ref lhs : _syncvar(?t), rhs : t) {
-    lhs.wrapped.writeEF(lhs.wrapped.readFE() +  rhs);
-  }
-
-  @chpldoc.nodoc
-  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
-  operator -=(ref lhs : _syncvar(?t), rhs : t) {
-    lhs.wrapped.writeEF(lhs.wrapped.readFE() -  rhs);
-  }
-
-  @chpldoc.nodoc
-  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
-  operator *=(ref lhs : _syncvar(?t), rhs : t) {
-    lhs.wrapped.writeEF(lhs.wrapped.readFE() *  rhs);
-  }
-
-  @chpldoc.nodoc
-  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
-  operator /=(ref lhs : _syncvar(?t), rhs : t) {
-    lhs.wrapped.writeEF(lhs.wrapped.readFE() /  rhs);
-  }
-
-  @chpldoc.nodoc
-  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
-  operator %=(ref lhs : _syncvar(?t), rhs : t) {
-    lhs.wrapped.writeEF(lhs.wrapped.readFE() %  rhs);
-  }
-
-  @chpldoc.nodoc
-  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
-  operator **=(ref lhs : _syncvar(?t), rhs : t) {
-    lhs.wrapped.writeEF(lhs.wrapped.readFE() ** rhs);
-  }
-
-  @chpldoc.nodoc
-  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
-  operator &=(ref lhs : _syncvar(?t), rhs : t) {
-    lhs.wrapped.writeEF(lhs.wrapped.readFE() &  rhs);
-  }
-
-  @chpldoc.nodoc
-  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
-  operator |=(ref lhs : _syncvar(?t), rhs : t) {
-    lhs.wrapped.writeEF(lhs.wrapped.readFE() |  rhs);
-  }
-
-  @chpldoc.nodoc
-  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
-  operator ^=(ref lhs : _syncvar(?t), rhs : t) {
-    lhs.wrapped.writeEF(lhs.wrapped.readFE() ^  rhs);
-  }
-
-  @chpldoc.nodoc
-  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
-  operator >>=(ref lhs : _syncvar(?t), rhs : t) {
-    lhs.wrapped.writeEF(lhs.wrapped.readFE() >> rhs);
-  }
-
-  @chpldoc.nodoc
-  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
-  operator <<=(ref lhs : _syncvar(?t), rhs : t) {
-    lhs.wrapped.writeEF(lhs.wrapped.readFE() << rhs);
   }
 
   // TODO Jade: remove me when compiler generated inits are removed
@@ -395,12 +302,6 @@ module ChapelSyncvar {
     // TODO: this should probably clone the value and full/empty state instead
     var ret: sv.type = sv.readFE();
     return ret;
-  }
-
-  pragma "init copy fn"
-  @deprecated(notes="Initializing a type-inferred variable from a 'sync' is deprecated; apply a '.read??()' method to the right-hand side")
-  proc chpl__initCopy(ref sv : _syncvar(?t), definedConst: bool) {
-    return sv.readFE();
   }
 
   pragma "auto copy fn"
