@@ -523,6 +523,26 @@ formalNeedsInstantiation(Context* context,
   }
 
   if (considerGenericity) {
+    // for the purposes of marking a function signature as needing instantiation
+    // (i.e., via additional actuals etc), do not consider generic OUT formals.
+    // The reason is that these formals are instantiated in the function body,
+    // and are not provided from outside / during the call.
+    if (formalType.kind() == QualifiedType::OUT) {
+      // ... except, varargs with an unknown number of arguments do need to go
+      // through instantiation, so that we can instantiate the tuple formal
+      // with the right size.
+      bool isUnknownSizeVarargs = false;
+      if (auto formalT = formalType.type()) {
+        if (auto tup = formalT->toTupleType()) {
+          isUnknownSizeVarargs = tup->isVarArgTuple() && !tup->isKnownSize();
+        }
+      }
+
+      if (!isUnknownSizeVarargs) {
+        return false;
+      }
+    }
+
     auto g = getTypeGenericity(context, formalType);
     if (g != Type::CONCRETE) {
       return true;

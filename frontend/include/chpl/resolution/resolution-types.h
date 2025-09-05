@@ -1691,6 +1691,8 @@ class FormalActualMap {
     byFormalIdx_[0].formalType_ = initializer->formalType(0);
   }
 
+  void updateOutFormalTypes(const TypedFnSignature* adjustedSignature);
+
   /** Return the number of formals in this mapping. The number of actuals
       may be more (e.g., for a 'varargs') or less (e.g., default-argument
       values) than the number of formals, but there will always be as many

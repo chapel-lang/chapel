@@ -1251,9 +1251,15 @@ const TypedFnSignature* inferOutFormals(ResolutionContext* rc,
   int numFormals = sig->numFormals();
   for (int i = 0; i < numFormals; i++) {
     const types::QualifiedType& ft = sig->formalType(i);
-    if (ft.kind() == QualifiedType::OUT && ft.isGenericOrUnknown()) {
-      anyGenericOutFormals = true;
-      break;
+
+    if (ft.kind() == QualifiedType::OUT) {
+      bool generic = ft.isUnknown() ||
+        getTypeGenericity(rc->context(), ft.type()) != Type::CONCRETE;
+
+      if (generic) {
+        anyGenericOutFormals = true;
+        break;
+      }
     }
   }
 

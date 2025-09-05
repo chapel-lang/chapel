@@ -573,6 +573,30 @@ bool ResolutionResultByPostorderID::update(ResolutionResultByPostorderID& keep,
   return defaultUpdate(keep, addin);
 }
 
+void FormalActualMap::updateOutFormalTypes(const TypedFnSignature* adjustedSignature) {
+  for (auto& entry : byFormalIdx_) {
+    if (entry.formalType().kind() != QualifiedType::OUT) {
+      continue;
+    }
+
+    auto newQt = adjustedSignature->formalType(entry.formalIdx());
+    if (newQt.isUnknownOrErroneous()) {
+      continue;
+    }
+
+    if (auto tt = newQt.type()->toTupleType()) {
+      if (tt->isVarArgTuple()) {
+        // how could we be at this point if we couldn't compute the number
+        // of varargs?
+        CHPL_ASSERT(tt->isStarTuple());
+        newQt = tt->starType();
+      }
+    }
+
+    entry.formalType_ = QualifiedType(entry.formalType_.kind(), newQt.type(), newQt.param());
+  }
+}
+
 bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
                                        const TypedFnSignature* typed,
                                        const CallInfo& call) {
@@ -1292,7 +1316,14 @@ MostSpecificCandidates::inferOutFormals(ResolutionContext* rc,
   for (int i = 0; i < NUM_INTENTS; i++) {
     if (MostSpecificCandidate& c = candidates[i]) {
       constexpr auto f = chpl::resolution::inferOutFormals;
-      c.fn_ = f(rc, c.fn(), instantiationPoiScope);
+      auto oldFn = c.fn();
+      c.fn_ = f(rc, oldFn, instantiationPoiScope);
+
+      // We changed an arbitrary number of formal types. The FormalActualMap
+      // now might contain stale formal types. Update it.
+      if (c.fn_ != oldFn && c.faMap_) {
+        c.faMap_->updateOutFormalTypes(c.fn_);
+      }
     }
   }
 }
