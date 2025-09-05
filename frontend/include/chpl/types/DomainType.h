@@ -152,6 +152,13 @@ class DomainType final : public CompositeType {
     return parentDom.type()->toDomainType();
   }
 
+  /* Return a version of this domain that isn't tied to a particular instance
+     (DefaultRectangular etc.), by stripping the _instance field substitution.
+     This makes the domain generic and suitable to being used in array formals. */
+  const DomainType* makeUninstanced(Context* context) const;
+
+  bool isUninstanced(Context* context) const;
+
   // Returns the integer representing the rank of this domain. This is more
   // general than `rank`, because `rank` returns the substitution
   // corresponding to the rank, which only exists for rectangular domains.

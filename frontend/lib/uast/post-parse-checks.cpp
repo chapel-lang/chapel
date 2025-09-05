@@ -546,6 +546,9 @@ void Visitor::checkDomainTypeQueryUsage(const TypeQuery* node) {
   if (auto foundFormal = searchParents(asttags::Formal, &lastInWalk)) {
     auto formal = foundFormal->toFormal();
     if (lastInWalk == formal->typeExpression()) errorBadQueryLoc = false;
+  } else if (auto foundFormal = searchParents(asttags::VarArgFormal, &lastInWalk)) {
+    auto formal = foundFormal->toVarArgFormal();
+    if (lastInWalk == formal->typeExpression()) errorBadQueryLoc = false;
   }
 
   // We shouldn't see '[?d in foo]'... TODO: Specialize this error.

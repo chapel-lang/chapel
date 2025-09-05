@@ -141,5 +141,19 @@ ArrayType::getArrayType(Context* context,
   return getArrayTypeQuery(context, id, name, instantiatedFrom, subs).get();
 }
 
+const ArrayType*
+ArrayType::getUninstancedArrayType(Context* context,
+                                   const QualifiedType& domainType,
+                                   const QualifiedType& eltType) {
+  SubstitutionsMap subs;
+  subs.emplace(ArrayType::domainId, domainType);
+  subs.emplace(ArrayType::eltTypeId, eltType);
+
+  auto id = getArrayID(context);
+  auto name = id.symbolName(context);
+  auto instantiatedFrom = getGenericArrayType(context);
+  return getArrayTypeQuery(context, id, name, instantiatedFrom, subs).get();
+}
+
 } // end namespace types
 } // end namespace chpl
