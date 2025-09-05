@@ -1462,11 +1462,6 @@ static Type::Genericity getInterfaceActualsGenericity(Context* context,
 
 Type::Genericity getTypeGenericityIgnoring(Context* context, const Type* t,
                                            std::set<const Type*>& ignore) {
-  if (auto at = t->toArrayType()) {
-    if (at->substitutions().size() == 2) {
-      debuggerBreakHere();
-    }
-  }
   if (t == nullptr)
     return Type::MAYBE_GENERIC;
 
