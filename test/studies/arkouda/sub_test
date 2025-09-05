@@ -6,6 +6,10 @@
 ARKOUDA_URL=${ARKOUDA_URL:-https://github.com/Bears-R-Us/arkouda.git}
 ARKOUDA_BRANCH=${ARKOUDA_BRANCH:-main}
 
+# TODO: test custom branch for now
+ARKOUDA_URL=https://github.com/jabraham17/arkouda.git
+ARKOUDA_BRANCH=fix-bench
+
 export CHPL_TEST_ARKOUDA_STOP_AFTER_BUILD=${CHPL_TEST_ARKOUDA_STOP_AFTER_BUILD:-"false"}
 
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
@@ -227,13 +231,18 @@ if [ ${CHPL_TEST_ARKOUDA_STOP_AFTER_BUILD} = "false" ]; then
       reformat_benchmark_opts="${reformat_benchmark_opts} $CHPL_TEST_ARKOUDA_REFORMAT_BENCHMARKS_V2"
     fi
 
-    benchmark_size=$((10**8))
+    # benchmark_size=$((10**8))
+    benchmark_size=$((10**2))
     benchmark_data=benchmark_v2/data/benchmark_stats_$(date +%Y%m%d_%H%M%S).json
     mkdir -p benchmark_v2/data
     benchmark_opts="--benchmark-autosave --benchmark-storage=file://benchmark_v2/.benchmarks --size=$benchmark_size --benchmark-json=$benchmark_data"
-    if [[ -n $CHPL_TEST_NUM_TRIALS ]]; then
-      benchmark_opts="${benchmark_opts} --trials $CHPL_TEST_NUM_TRIALS"
+    if [[ -n "$ARKOUDA_DEFAULT_TEMP_DIRECTORY" ]]; then
+      benchmark_opts="${benchmark_opts} --io_path=$ARKOUDA_DEFAULT_TEMP_DIRECTORY/ak_io_benchmark"
     fi
+    # TODO why doesn't trials work?
+    # if [[ -n $CHPL_TEST_NUM_TRIALS ]]; then
+    #   benchmark_opts="${benchmark_opts} --trials $CHPL_TEST_NUM_TRIALS"
+    # fi
     if [[ -n $CHPL_TEST_ARKOUDA_BENCHMARKS_V2 ]]; then
       benchmark_opts="${benchmark_opts} $CHPL_TEST_ARKOUDA_BENCHMARKS_V2"
     fi
@@ -245,8 +254,14 @@ if [ ${CHPL_TEST_ARKOUDA_STOP_AFTER_BUILD} = "false" ]; then
       log_error "running benchmarks_v2"
     fi
 
+    if python3 benchmark_v2/generate_field_lookup_map.py --dat-dir $CHPL_TEST_PERF_DIR ; then
+      log_success "benchmark_v2 field lookup map generation"
+    else
+      log_error "generating benchmark_v2 field lookup map"
+    fi
+
     # process the data and create graphs
-    if benchmark_v2/reformat_benchmark_results.py --benchmark-data $benchmark_data $reformat_benchmark_opts ; then
+    if python3 benchmark_v2/reformat_benchmark_results.py --benchmark-data $benchmark_data $reformat_benchmark_opts ; then
       log_success "benchmark_v2 graph generation"
     else
       log_error "generating benchmark_v2 graphs"
