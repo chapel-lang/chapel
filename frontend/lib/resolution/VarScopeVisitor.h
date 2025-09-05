@@ -66,6 +66,8 @@ class VarScopeVisitor : public BranchSensitiveVisitor<VarFrame, MutatingResolved
 
   // ----- methods to be implemented by specific analysis subclass
 
+  /** Called for a tuple destructuring variable declaration */
+  virtual void handleTupleDeclaration(const TupleDecl* ast, RV& rv) = 0;
   /** Called for a variable declaration */
   virtual void handleDeclaration(const uast::VarLikeDecl* ast, RV& rv) = 0;
   /** Called for an Identifier not used in one of the below cases */
@@ -148,7 +150,7 @@ class VarScopeVisitor : public BranchSensitiveVisitor<VarFrame, MutatingResolved
 
   /** Update initedVars if an assignment represents a split-init.
       Returns true if it was a split init. */
-  bool processSplitInitAssign(const OpCall* ast,
+  bool processSplitInitAssign(const AstNode* lhsAst,
                               const std::set<ID>& allSplitInitedVars,
                               RV& rv);
 
@@ -160,7 +162,9 @@ class VarScopeVisitor : public BranchSensitiveVisitor<VarFrame, MutatingResolved
                            RV& rv);
 
   /** Update initedVars for a declaration with an initExpression. */
-  bool processDeclarationInit(const VarLikeDecl* ast, RV& rv);
+  bool processDeclarationInit(const NamedDecl* lhsAst,
+                              const AstNode* initExpression,
+                              RV& rv);
 
   /** Returns the return or yield type of the function being processed */
   const types::QualifiedType& returnOrYieldType();
