@@ -36,6 +36,13 @@ if chplenv["CHPL_TARGET_PLATFORM"] == "darwin":
 if chplenv["CHPL_LAUNCHER"] != "none":
     dwarfDumpTarget += "_real"
 
+def verify():
+    try:
+        sp.check_call([llvm_dwarfdump, "--debug-info", "--verify", dwarfDumpTarget])
+    except sp.CalledProcessError as e:
+        return e.output.decode().strip()
+    return None
+
 def dump_symbol(name):
     try:
         cmd = [llvm_dwarfdump, dwarfDumpTarget, "--debug-info", "--name", name, "--show-children", "--diff"]
@@ -357,6 +364,15 @@ def test_symbols():
     return res
 
 with open(output_file, "a") as f:
+    print("Running DWARF verification...", file=f)
+    verify_errors = verify()
+    if verify_errors:
+        print("DWARF verification failed:", file=f)
+        print(verify_errors, file=f)
+        print("FAIL", file=f)
+        sys.exit(1)
+    else:
+        print("Success!!", file=f)
     print("Running DWARF dump checks...", file=f)
     errors = test_symbols()
     if errors:

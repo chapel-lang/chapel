@@ -10,5 +10,7 @@
 41 42 43 44 45
 46 47 48 49 50
 true | 42 | 3.14 | e2 | e2 | (1, two, 3.0, e1)
+Running DWARF verification...
+Success!!
 Running DWARF dump checks...
 Success!!
