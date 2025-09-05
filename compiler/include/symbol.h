@@ -491,6 +491,7 @@ class TypeSymbol final : public Symbol {
   llvm::MDNode* llvmTbaaStructCopyNode;       // tbaa.struct for memcpy
   llvm::MDNode* llvmConstTbaaStructCopyNode;  // const tbaa.struct
   llvm::MDNode* llvmDIType;
+  llvm::MDNode* llvmDIForwardType;
 #else
   // Keep same layout so toggling HAVE_LLVM
   // will not lead to build errors without make clean
@@ -505,6 +506,7 @@ class TypeSymbol final : public Symbol {
   void* llvmTbaaStructCopyNode;
   void* llvmConstTbaaStructCopyNode;
   void* llvmDIType;
+  void* llvmDIForwardType;
 #endif
 
   TypeSymbol(const char* init_name, Type* init_type);

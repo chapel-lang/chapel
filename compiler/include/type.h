@@ -127,7 +127,7 @@ public:
 
 
   // Only used for LLVM.
-  std::map<std::string, int> GEPMap;
+  llvm::SmallDenseMap<const char*, int> GEPMap;
 #ifdef HAVE_LLVM
   llvm::Type* getLLVMType();
   int getLLVMAlignment();
@@ -355,6 +355,11 @@ class EnumType final : public Type {
   bool isAbstract();  // is the enum abstract?  (has no associated values)
   bool isConcrete();  // is the enum concrete?  (all have associated values)
   PrimitiveType* getIntegerType();
+
+  llvm::SmallDenseMap<Symbol*, VarSymbol*> getConstantMap();
+
+ private:
+  llvm::SmallDenseMap<Symbol*, VarSymbol*> _constantMap;
 };
 
 

@@ -1297,6 +1297,7 @@ TypeSymbol::TypeSymbol(const char* init_name, Type* init_type) :
     llvmTbaaAggTypeDescriptor(NULL),
     llvmTbaaStructCopyNode(NULL), llvmConstTbaaStructCopyNode(NULL),
     llvmDIType(NULL),
+    llvmDIForwardType(NULL),
     instantiationPoint(NULL),
     userInstantiationPointLoc(0, NULL)
 {

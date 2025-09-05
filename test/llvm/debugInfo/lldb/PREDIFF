@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+
+file=$2
+
+# clean the path
+sed -E -e 's/^(Current executable set to).*$/\1 EXECUTABLE/' \
+    -e 's/^(Executing commands in).*$/\1 FILE.txt/' \
+    -e 's/^(Global variables for).*$/\1 FILE.chpl/' \
+    -e 's/(launched:).*/\1 EXECUTABLE/' \
+    -e 's/\/.*lldb.commands/lldb.commands/' \
+    $file > $file.tmp
+mv $file.tmp $file
+
+
+# remove python warnings
+grep -v 'warning: LLDB does not support scripting with Python, pretty-printer will not be used' $file > $file.tmp
+mv $file.tmp $file
+
+# remove command script import
+grep -v 'command script import' $file > $file.tmp
+mv $file.tmp $file
+
+# remove the OpenCL warnings
+sed -E -e '/OpenCL/d' $file > $file.tmp
+mv $file.tmp $file
+
+# clean addresses
+sed -E -e 's/0x[0-9a-fA-F]+/0xXXXX/g' $file > $file.tmp
+mv $file.tmp $file
+
+# clean Process and thread
+sed -E -e 's/Process [0-9]+/Process XXXX/g' \
+    -e 's/thread #[0-9]+/Thread #X/g' $file > $file.tmp
+mv $file.tmp $file
+
+# Clean Breakpoint lines
+sed -E -e 's/Breakpoint.*where.*at.*/Breakpoint/' \
+       -e 's/name = .*, //' $file > $file.tmp
+mv $file.tmp $file
+
+# remove Target stopped and process launched lines
+sed -e '/Target 0: (.*) stopped./d' \
+    -e '/launched/d' $file > $file.tmp
+mv $file.tmp $file
+
+# remove 'settings set'
+sed -e '/settings set/d' $file > $file.tmp
+mv $file.tmp $file
+
+# remove empty lines and space
+sed -e '/^[[:space:]]*$/d' -e 's/[[:space:]]*$//' $file > $file.tmp
+mv $file.tmp $file
