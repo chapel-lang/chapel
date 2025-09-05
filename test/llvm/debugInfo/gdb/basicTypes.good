@@ -46,7 +46,7 @@ type = struct [domain(1,int(64),one)] int(64) {
     decltype(nullptr) _instance;
     bool _unowned;
 }
-$8 = {super = {<No data fields>}, x = 140737311199712, y = 0}
+$8 = {super = {<No data fields>}, x = uninit, y = 0}
 type = struct MyClass {
     struct RootClass super : 64;
     int(64) x;

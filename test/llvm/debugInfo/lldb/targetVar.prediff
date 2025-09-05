@@ -2,12 +2,6 @@
 
 file=$2
 
-# clean the path
-sed -E -e 's/\.\/targetVar/targetVar/g' \
-    -e 's/at targetVar\.chpl.*//' \
-    $file > $file.tmp
-mv $file.tmp $file
-
 # clean garbage values
 sed -E -e 's/myFormal=[0-9][0-9][0-9]+/myFormal=uninit/' $file > $file.tmp
 mv $file.tmp $file

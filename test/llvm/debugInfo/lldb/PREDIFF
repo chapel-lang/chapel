@@ -3,10 +3,10 @@
 file=$2
 
 # clean the path
-sed -E -e 's/^(Current executable set to).*$/\1 targetVar/' \
-    -e 's/^(Executing commands in).*$/\1 targetVarCommands.txt/' \
-    -e 's/^(Global variables for).*$/\1 targetVar.chpl/' \
-    -e 's/(launched:).*/\1 targetVar/' \
+sed -E -e 's/^(Current executable set to).*$/\1 EXECUTABLE/' \
+    -e 's/^(Executing commands in).*$/\1 FILE.txt/' \
+    -e 's/^(Global variables for).*$/\1 FILE.chpl/' \
+    -e 's/(launched:).*/\1 EXECUTABLE/' \
     -e 's/\/.*lldb.commands/lldb.commands/' \
     $file > $file.tmp
 mv $file.tmp $file
@@ -25,8 +25,7 @@ sed -E -e '/OpenCL/d' $file > $file.tmp
 mv $file.tmp $file
 
 # clean addresses
-sed -E -e 's/0x[0-9a-fA-F]+/0xXXXX/g' \
-       -e 's/myFormal=[0-9]+/myFormal=XX/' $file > $file.tmp
+sed -E -e 's/0x[0-9a-fA-F]+/0xXXXX/g' $file > $file.tmp
 mv $file.tmp $file
 
 # clean Process and thread
@@ -40,7 +39,7 @@ sed -E -e 's/Breakpoint.*where.*at.*/Breakpoint/' \
 mv $file.tmp $file
 
 # remove Target stopped and process launched lines
-sed -e '/Target 0: (targetVar) stopped./d' \
+sed -e '/Target 0: (.*) stopped./d' \
     -e '/launched/d' $file > $file.tmp
 mv $file.tmp $file
 

@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+file=$2
+
+
+# clean garbage values
+sed -E -e 's/, x = [0-9][0-9][0-9]+, y/, x = uninit, y/' $file > $file.tmp
+mv $file.tmp $file

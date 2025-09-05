@@ -62,7 +62,7 @@ Target 0: (basicTypes) stopped.
 (lldb) p myRec2.myFieldF
 (ChapelArray::[domain(1,int(64),one)] int(64))  (_pid = -1, _instance = 0xXXXX, _unowned = false)
 (lldb) p myUnmanagedClass
-(basicTypes::MyClass)  (super = ChapelBase::RootClass @ 0xXXXX, x = 4395893472, y = 0)
+(basicTypes::MyClass)  (super = ChapelBase::RootClass @ 0xXXXX, x = uninit, y = 0)
 (lldb) p myClass
 (OwnedObject::owned MyClass)  (chpl_p = 0xXXXX)
 (lldb) p myStr
