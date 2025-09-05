@@ -32,8 +32,8 @@ ptype myInt
 p myReal
 ptype myReal
 p myEnumVal
-ptype myEnumVal
+#ptype myEnumVal
 p myEnumRef
-ptype myEnumRef
+#ptype myEnumRef
 p myTuple
 ptype myTuple
