@@ -382,7 +382,11 @@ llvm::DIType* debug_data::construct_type(Type *type) {
         8*layout.getABITypeAlign(ty).value(), /* AlignInBits */
         dibuilder->getOrCreateArray(Elements),
         diBT,
-        0 /* RuntimeLang */
+#if LLVM_VERSION_MAJOR >= 18
+        0 /* RuntimeLang */,
+#endif
+        "", /* UniqueIdentifer */
+        true /* isScoped */
       );
       type->symbol->llvmDIType = N;
       return llvm::cast_or_null<llvm::DIType>(N);
