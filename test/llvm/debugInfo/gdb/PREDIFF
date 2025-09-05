@@ -19,7 +19,7 @@ mv $file.tmp $file
 sed -e '/warning: .debug_names not created by gdb; ignoring/d' $file > $file.tmp
 mv $file.tmp $file
 
-sed -E -e '/Missing separate debuginfos: .*/d' $file > $file.tmp
+sed -E -e '/Missing separate debuginfos/d' $file > $file.tmp
 mv $file.tmp $file
 
 # remove the OpenCL warnings
