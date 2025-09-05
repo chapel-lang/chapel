@@ -94,9 +94,7 @@ type = int(64)
 $16 = 3.1400000000000001
 type = real(64)
 $17 = e2
-type = enum class myEnum {e3 = 2, e2 = 1, e1 = 0}
 $18 = (enum myEnum *) 0xXXXX
-type = enum class myEnum {e3 = 2, e2 = 1, e1 = 0} *
 $19 = {x0 = 1, x1 = {buffLen = 3, buffSize = 8, cachedNumCodepoints = 3,
     buff = 0xXXXX "two", isOwned = true, hasEscapes = false,
     locale_id = 0}, x2 = 3, x3 = e1}
