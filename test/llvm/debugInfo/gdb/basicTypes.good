@@ -3,7 +3,7 @@ Breakpoint 1 at 0xXXXX: file gdb.c, line 28.
 [Switching to Thread 0xXXXX (LWP XXXX)]
 Thread 2 "basicTypes" hit Breakpoint 1, debuggerBreakHere () at gdb.c:28
 28	void debuggerBreakHere(void) {printf("%s", "");}
-#1  0xXXXX in chpl_user_main () at basicTypes.chpl:50
+#1  0xXXXX in chpl_user_main ()
 50	  use Debugger; breakpoint;
 $1 = {myField = void}
 type = struct MyRecord1 {

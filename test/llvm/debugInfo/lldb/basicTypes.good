@@ -35,7 +35,6 @@ Process XXXX stopped
    49
 -> 50  	  use Debugger; breakpoint;
    51  	}
-Target 0: (basicTypes) stopped.
 (lldb) p myRec
 (basicTypes::MyRecord1)  (myField = 0xXXXX)
 (lldb) p myRec.myField

@@ -37,7 +37,7 @@ localVar: 60
 Process XXXX resuming
 Process XXXX stopped
 * Thread #X, stop reason = breakpoint 3.1
-    frame #0: 0xXXXX targetVar`bar_chpl(myFormal=uninit) at FILE.chpl:10
+    frame #0: 0xXXXX targetVar`bar_chpl(myFormal=59) at targetVar.chpl:10
    7   	  writeln("localVar: ", localVar);
    8   	}
    9
@@ -57,7 +57,7 @@ Process XXXX stopped
    13  	}
    14
 (lldb) target var
-Global variables for targetVar.chpl
+Global variables for FILE.chpl
 (long) myGlobal_chpl = 42
 (lldb) frame var
 (long) myFormal = 59
