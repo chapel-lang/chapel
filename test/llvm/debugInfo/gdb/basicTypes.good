@@ -1,0 +1,114 @@
+Reading symbols from ./basicTypes...
+Breakpoint 1 at 0xXXXX: file gdb.c, line 28.
+Thread 2 "basicTypes" hit Breakpoint 1, debuggerBreakHere () at gdb.c:28
+28	void debuggerBreakHere(void) {printf("%s", "");}
+#1  0x0000555555782f2e in chpl_user_main () at basicTypes.chpl:50
+50	  use Debugger; breakpoint;
+$1 = {myField = void}
+type = struct MyRecord1 {
+    decltype(nullptr) myField;
+}
+$2 = void
+type = void
+$3 = {myFieldA = 0, myFieldB = 0, myFieldC = {x0 = 0, x1 = 0}, myFieldD = {
+    buffLen = 0, buffSize = 0, cachedNumCodepoints = 0, buff = 0x0,
+    isOwned = true, hasEscapes = false, locale_id = 0}, myFieldE = void,
+  myFieldF = {_pid = -1, _instance = void, _unowned = false}}
+type = struct MyRecord2 {
+    int(64) myFieldA;
+    real(64) myFieldB;
+    struct (int(64),real(64)) myFieldC;
+    struct string myFieldD;
+    decltype(nullptr) myFieldE;
+    struct [domain(1,int(64),one)] int(64) myFieldF;
+}
+$4 = {x0 = 0, x1 = 0}
+type = struct (int(64),real(64)) {
+    int(64) x0;
+    real(64) x1;
+}
+$5 = {buffLen = 0, buffSize = 0, cachedNumCodepoints = 0, buff = 0x0,
+  isOwned = true, hasEscapes = false, locale_id = 0}
+type = struct string {
+    int(64) buffLen;
+    int(64) buffSize;
+    int(64) cachedNumCodepoints;
+    uint(8) *buff;
+    bool isOwned;
+    bool hasEscapes;
+    int(32) locale_id;
+}
+$6 = void
+type = void
+$7 = {_pid = -1, _instance = void, _unowned = false}
+type = struct [domain(1,int(64),one)] int(64) {
+    int(64) _pid;
+    decltype(nullptr) _instance;
+    bool _unowned;
+}
+$8 = {super = {<No data fields>}, x = 140737311199712, y = 0}
+type = struct MyClass {
+    struct RootClass super : 64;
+    int(64) x;
+    real(64) y;
+}
+$9 = {chpl_p = void}
+type = struct owned MyClass {
+    decltype(nullptr) chpl_p;
+}
+$10 = {buffLen = 13, buffSize = 14, cachedNumCodepoints = 13,
+  buff = 0x7ffff56fd94e "Hello, world!", isOwned = false, hasEscapes = false,
+  locale_id = 0}
+type = struct string {
+    int(64) buffLen;
+    int(64) buffSize;
+    int(64) cachedNumCodepoints;
+    uint(8) *buff;
+    bool isOwned;
+    bool hasEscapes;
+    int(32) locale_id;
+}
+$11 = {_pid = -1, _instance = void, _unowned = false}
+type = struct domain(2,int(64),positive) {
+    int(64) _pid;
+    decltype(nullptr) _instance;
+    bool _unowned;
+}
+$12 = {_pid = -1, _instance = void, _unowned = false}
+type = struct [domain(2,int(64),positive)] int(64) {
+    int(64) _pid;
+    decltype(nullptr) _instance;
+    bool _unowned;
+}
+$13 = {_pid = -1, _instance = void, _unowned = false}
+type = struct [domain(1,int(64),one)] int(64) {
+    int(64) _pid;
+    decltype(nullptr) _instance;
+    bool _unowned;
+}
+$14 = true
+type = bool
+$15 = 42
+type = int(64)
+$16 = 3.1400000000000001
+type = real(64)
+$17 = e2
+type = enum class myEnum {e2 = 1, e3, e1 = 0}
+$18 = (enum myEnum *) 0x7fff815fc8c8
+type = enum class myEnum {e2 = 1, e3, e1 = 0} *
+$19 = {x0 = 1, x1 = {buffLen = 3, buffSize = 8, cachedNumCodepoints = 3,
+    buff = 0x7ffff571d018 "two", isOwned = true, hasEscapes = false,
+    locale_id = 0}, x2 = 3, x3 = e1}
+type = struct (int(64),string,real(64),myEnum) {
+    int(64) x0;
+    struct string x1;
+    real(64) x2;
+    enum myEnum x3;
+}
+Missing separate debuginfos, use: zypper install glibc-debuginfo-2.31-150300.41.1.x86_64 libgcc_s1-debuginfo-11.3.0+git1637-150000.1.11.2.x86_64 libstdc++6-debuginfo-11.3.0+git1637-150000.1.11.2.x86_64
+(gdb) quit
+A debugging session is active.
+
+	Inferior 1 [process 6041] will be killed.
+
+Quit anyway? (y or n) [answered Y; input not from terminal]

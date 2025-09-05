@@ -1,7 +1,7 @@
-Reading symbols from targetVar...
+Reading symbols from EXECUTABLE...
 Breakpoint 1 at 0xXXXX: file gdb.c, line 28.
-Breakpoint 2 at 0xXXXX: file targetVar.chpl, line 5.
-Breakpoint 3 at 0xXXXX: file targetVar.chpl, line 10.
+Breakpoint 2 at 0xXXXX: file FILE.chpl, line 5.
+Breakpoint 3 at 0xXXXX: file FILE.chpl, line 10.
 [Switching to Thread 0xXXXX (LWP XXXX)]
 Thread 2 "targetVar" hit Breakpoint 2, foo_chpl (myFormal=59)
 5	  writeln("printing from foo");
