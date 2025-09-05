@@ -1,4 +1,4 @@
-$CHPL_HOME/modules/internal/ChapelBase.chpl:1347: internal error: UTI-MIS-0939 chpl version 1.27.0 pre-release (b832268935)
+$CHPL_HOME/modules/standard/Regex.chpl:681: internal error: UTI-MIS-1049 chpl version 2.6.0 pre-release (e69472a1958)
 Note: This source location is a guess.
 
 Internal errors indicate a bug in the Chapel compiler,
