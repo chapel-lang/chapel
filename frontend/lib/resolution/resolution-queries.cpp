@@ -1380,6 +1380,12 @@ static Type::Genericity getFieldsGenericity(Context* context,
       combined = Type::GENERIC;
     }
 
+    // domains that don't specify a distribution kind are generic.
+    // they should only occur in formals.
+    if (dt->isUninstanced(context)) {
+      combined = Type::GENERIC;
+    }
+
     return combined;
   } else if (auto at = ct->toArrayType()) {
     if (at->isUninstancedArray()) {
@@ -1456,6 +1462,11 @@ static Type::Genericity getInterfaceActualsGenericity(Context* context,
 
 Type::Genericity getTypeGenericityIgnoring(Context* context, const Type* t,
                                            std::set<const Type*>& ignore) {
+  if (auto at = t->toArrayType()) {
+    if (at->substitutions().size() == 2) {
+      debuggerBreakHere();
+    }
+  }
   if (t == nullptr)
     return Type::MAYBE_GENERIC;
 

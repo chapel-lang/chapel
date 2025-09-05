@@ -7018,7 +7018,7 @@ static bool handleArrayTypeExpr(Resolver& rv,
   } else if (ignoreInstanceInArrayOrDomain(rv, loop)) {
     auto domainT = domainType.type();
     if (auto dt = domainT->toDomainType()) {
-      domainT = dt; // right now, does nothing.
+      domainT = dt->makeUninstanced(rv.context);
     }
     auto adjustedDomainType =
       QualifiedType(QualifiedType::TYPE, domainT);
