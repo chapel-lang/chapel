@@ -13,7 +13,8 @@ grep -v "Breakpoint 1: where" $tmpfile | \
   grep -v "Current executable set to" | \
   grep -v "b debuggerBreakHere" | \
   grep -v 'breakpoint set -n debuggerBreakHere -N debuggerBreakHere' | \
-  grep -v 'breakpoint command add -o up debuggerBreakHere' \
+  grep -v 'breakpoint command add -o up debuggerBreakHere' | \
+  grep -v 'runtime/etc/debug/lldb.commands' \
   > $outfile
 # Also filter out line about memleaks arguments to executable
 mv $outfile $tmpfile
