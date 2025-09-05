@@ -2,7 +2,7 @@ Reading symbols from ./basicTypes...
 Breakpoint 1 at 0xXXXX: file gdb.c, line 28.
 Thread 2 "basicTypes" hit Breakpoint 1, debuggerBreakHere () at gdb.c:28
 28	void debuggerBreakHere(void) {printf("%s", "");}
-#1  0x0000555555782f2e in chpl_user_main () at basicTypes.chpl:50
+#1  0xXXXX in chpl_user_main () at basicTypes.chpl:50
 50	  use Debugger; breakpoint;
 $1 = {myField = void}
 type = struct MyRecord1 {
@@ -11,7 +11,7 @@ type = struct MyRecord1 {
 $2 = void
 type = void
 $3 = {myFieldA = 0, myFieldB = 0, myFieldC = {x0 = 0, x1 = 0}, myFieldD = {
-    buffLen = 0, buffSize = 0, cachedNumCodepoints = 0, buff = 0x0,
+    buffLen = 0, buffSize = 0, cachedNumCodepoints = 0, buff = XXXX,
     isOwned = true, hasEscapes = false, locale_id = 0}, myFieldE = void,
   myFieldF = {_pid = -1, _instance = void, _unowned = false}}
 type = struct MyRecord2 {
@@ -27,7 +27,7 @@ type = struct (int(64),real(64)) {
     int(64) x0;
     real(64) x1;
 }
-$5 = {buffLen = 0, buffSize = 0, cachedNumCodepoints = 0, buff = 0x0,
+$5 = {buffLen = 0, buffSize = 0, cachedNumCodepoints = 0, buff = 0xXXXX,
   isOwned = true, hasEscapes = false, locale_id = 0}
 type = struct string {
     int(64) buffLen;
@@ -94,10 +94,10 @@ $16 = 3.1400000000000001
 type = real(64)
 $17 = e2
 type = enum class myEnum {e2 = 1, e3, e1 = 0}
-$18 = (enum myEnum *) 0x7fff815fc8c8
+$18 = (enum myEnum *) 0xXXXX
 type = enum class myEnum {e2 = 1, e3, e1 = 0} *
 $19 = {x0 = 1, x1 = {buffLen = 3, buffSize = 8, cachedNumCodepoints = 3,
-    buff = 0x7ffff571d018 "two", isOwned = true, hasEscapes = false,
+    buff = 0xXXXX "two", isOwned = true, hasEscapes = false,
     locale_id = 0}, x2 = 3, x3 = e1}
 type = struct (int(64),string,real(64),myEnum) {
     int(64) x0;
@@ -105,10 +105,7 @@ type = struct (int(64),string,real(64),myEnum) {
     real(64) x2;
     enum myEnum x3;
 }
-Missing separate debuginfos, use: zypper install glibc-debuginfo-2.31-150300.41.1.x86_64 libgcc_s1-debuginfo-11.3.0+git1637-150000.1.11.2.x86_64 libstdc++6-debuginfo-11.3.0+git1637-150000.1.11.2.x86_64
 (gdb) quit
 A debugging session is active.
-
-	Inferior 1 [process 6041] will be killed.
-
+	Inferior 1 [process XXXX] will be killed.
 Quit anyway? (y or n) [answered Y; input not from terminal]

@@ -11,7 +11,8 @@ sed -E -e 's/^(Current executable set to).*$/\1 EXECUTABLE/' \
 mv $file.tmp $file
 
 # remove the thread info
-sed -E -e '/\[New Thread.*/d' -e '/\[Thread.*/d' -e '/libthread_db/d' $file > $file.tmp
+sed -E -e '/\[New Thread.*/d' -e '/\[Thread.*/d' \
+       -e '/libthread_db/d' -e '/Switching to/d' $file > $file.tmp
 mv $file.tmp $file
 
 # remove debug_names warning
