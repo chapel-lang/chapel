@@ -37,3 +37,4 @@ p myEnumRef
 #ptype myEnumRef
 p myTuple
 ptype myTuple
+quit
