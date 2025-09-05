@@ -171,7 +171,7 @@ DW_TAG_structure_type
 "myEnum":"""
 DW_TAG_enumeration_type
               DW_AT_type	("int(64)")
-              DW_AT_enum_class  (true)
+              DW_AT_enum_class	(true)
               DW_AT_name	("ENUM_NAME")
               DW_AT_byte_size	(0x08)
               DW_AT_decl_file	("./basicTypes.chpl")
