@@ -6,13 +6,10 @@ As the Makefile installs end-user Python packages into the virutalenv
 Python packages required by the developer tool `chplspell`.
 
 
-The primary packages required by `chplspell` are: `scspell`,
-`argparse`, and `virtualenv` (for installation).  `argparse` and
-`virtualenv` are described in [README.md](README.md) as they are also
-required by end-user tools.
+The primary package required by `chplspell` is `scspell3k`.
 
 
-### scspell
+### scspell3k
 
 A spell checker for source code
 
