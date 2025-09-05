@@ -37,6 +37,13 @@ if chplenv["CHPL_LAUNCHER"] != "none":
     dwarfDumpTarget += "_real"
 
 def verify():
+
+    if chplenv["CHPL_TARGET_PLATFORM"] != "darwin":
+        # TODO: skip the verify check on non-macOS platforms for now
+        # on non-macOS platforms we may have linked against system
+        # libraries ike glibc with debug info and it causes --verify to hang
+        return None
+
     try:
         sp.check_call([llvm_dwarfdump, "--debug-info", "--verify", dwarfDumpTarget])
     except sp.CalledProcessError as e:
