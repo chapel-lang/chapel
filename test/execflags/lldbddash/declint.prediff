@@ -11,8 +11,8 @@ mv $outfile $tmpfile
 grep -v "Breakpoint 1: where" $tmpfile | \
   grep -v "target create" | \
   grep -v "Current executable set to" | \
-  grep -v "b debuggerBreakHere" |
-  grep -v 'breakpoint set -n debuggerBreakHere -N debuggerBreakHere' |\
+  grep -v "b debuggerBreakHere" | \
+  grep -v 'breakpoint set -n debuggerBreakHere -N debuggerBreakHere' | \
   grep -v 'breakpoint command add -o up debuggerBreakHere' \
   > $outfile
 # Also filter out line about memleaks arguments to executable
