@@ -2265,7 +2265,15 @@ struct ConvertTypeHelper {
     int nFields = rf.numFields();
     for (int i = 0; i < nFields; i++) {
       types::QualifiedType qt = rf.fieldType(i);
-      Type* ft = tc_->convertType(qt.type());
+      Type* ft = nullptr;
+      if (rf.isGeneric()) {
+        // Leave the field type as unknown for generic types.
+        // Otherwise, converting the type might result in incorrect errors
+        // about the field type being ambiguously generic.
+        ft = dtUnknown;
+      } else {
+        ft = tc_->convertType(qt.type());
+      }
 
       // NOTE: During the intermediate stage of development of this conversion
       // pass, we need to preserve field initialization expressions in case
