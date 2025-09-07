@@ -5796,9 +5796,9 @@ bool TConverter::enter(const Select* node, RV& rv) {
   auto selectSym = storeInTempIfNeeded(selectExpr, selectQT);
 
   auto traverse = [this,&rv](const When* when) {
-    enterScope(when->body(), rv);
+    enterScope(when, rv);
     when->body()->traverse(rv);
-    exitScope(when->body(), rv);
+    exitScope(when, rv);
   };
 
   int count = 0;
