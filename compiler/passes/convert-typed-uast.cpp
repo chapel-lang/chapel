@@ -2553,6 +2553,7 @@ struct ConvertTypeHelper {
     if (auto parentClassType = bct->parentClassType()) {
       Type* pt = tc_->convertType(parentClassType);
       VarSymbol* v = new VarSymbol("super", pt);
+      v->addFlag(FLAG_SUPER_CLASS);
       v->qual = QUAL_VAL;
       v->makeField();
       at->fields.insertAtTail(new DefExpr(v));
@@ -3848,6 +3849,7 @@ locateFieldSymbolAndType(TConverter* tc,
   auto rc = createDummyRC(tc->context);
   auto dpo = resolution::DefaultsPolicy::IGNORE_DEFAULTS;
   auto& rfds = fieldsForTypeDecl(&rc, ct, dpo);
+  auto at = toAggregateType(tc->convertType(ct));
 
   int dynoFieldIndex = -1;
 
@@ -3863,8 +3865,19 @@ locateFieldSymbolAndType(TConverter* tc,
     }
 
     if (!found && (cls || ct->isBasicClassType())) {
-      TC_UNIMPL("Potentially retrieving superclass field by name?");
-      return error;
+      types::QualifiedType qtSuper = {types::QualifiedType::CONST_IN,
+                                      ct->toBasicClassType()->parentClassType()};
+      if (0==strcmp(fieldName, "super")) {
+        return { base, at->getField(1), qtSuper };
+      } else {
+        Expr* newBase = new CallExpr(PRIM_GET_MEMBER_VALUE,
+                                      base,
+                                      new_CStringSymbol("super"));
+        newBase = tc->storeInTempIfNeeded(newBase, qtSuper);
+        return locateFieldSymbolAndType(tc, newBase,
+                                           qtSuper,
+                                           fieldName, -1);
+      }
     }
   }
 
@@ -3874,7 +3887,7 @@ locateFieldSymbolAndType(TConverter* tc,
   auto fieldType = rfds.fieldType(dynoFieldIndex);
 
   // TODO: Is it appropriate to always use the 'BasicClassType' here?
-  if (auto at = toAggregateType(tc->convertType(ct))) {
+  if (at) {
     int superOffset = 0;
     if (auto bct = ct->toBasicClassType()) {
       if (bct->parentClassType() != nullptr) {
@@ -3955,7 +3968,9 @@ static Expr* codegenGetFieldImpl(TConverter* tc,
   // TODO: Except for RTTs...
   INT_ASSERT(!qtField.isType() && !qtField.isParam());
 
-  if (prim == PRIM_UNKNOWN) {
+  if (0 == strcmp(sym->name, "super")) {
+    prim = PRIM_GET_MEMBER_VALUE;
+  } else if (prim == PRIM_UNKNOWN) {
     prim = qtField.isRef() ? PRIM_GET_MEMBER_VALUE : PRIM_GET_MEMBER;
   }
 
@@ -3965,13 +3980,17 @@ static Expr* codegenGetFieldImpl(TConverter* tc,
   auto ret = new CallExpr(prim, base, new SymExpr(sym));
 
   // The type of the field was requested.
-  if (outQt) {
-    // Adjust it to have the 'ref' type since that's what a fetch produces.
-    auto kp = resolution::KindProperties::fromKind(qtField.kind());
-    kp.setRef(true);
-    types::QualifiedType qt { kp.toKind(), qtField.type(), qtField.param() };
-    INT_ASSERT(kp.valid() && !qt.isUnknownOrErroneous());
-    *outQt = qt;
+  if (outQt ) {
+    if (prim == PRIM_GET_MEMBER || sym->isRef()) {
+      // Adjust it to have the 'ref' type since that's what a fetch produces.
+      auto kp = resolution::KindProperties::fromKind(qtField.kind());
+      kp.setRef(true);
+      types::QualifiedType qt { kp.toKind(), qtField.type(), qtField.param() };
+      INT_ASSERT(kp.valid() && !qt.isUnknownOrErroneous());
+      *outQt = qt;
+    } else {
+      *outQt = qtField;
+    }
   }
 
   return ret;
