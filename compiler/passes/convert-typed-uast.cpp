@@ -2340,10 +2340,19 @@ struct ConvertTypeHelper {
           ts->addFlag(linkageFlag);
         }
 
-        // Attach untyped conversion results for methods
+        // Attach untyped conversion results for methods and nested types
         for (auto stmt : decl->declOrComments()) {
-          if (auto fn = stmt->toFunction()) {
-            auto expr = tc_->untypedConverter->convertAST(fn);
+          if (auto decl = stmt->toNamedDecl();
+              decl && !decl->isVarLikeDecl()) {
+            if (generic != nullptr) {
+              if (decl->name() == USTR("init") ||
+                  decl->name() == USTR("init=") ||
+                  decl->name() == USTR("deinit")) {
+                // Don't generate initializers for instantiations.
+                continue;
+              }
+            }
+            auto expr = tc_->untypedConverter->convertAST(decl);
             INT_ASSERT(expr);
             at->addDeclarations(expr);
           }
