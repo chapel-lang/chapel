@@ -4878,7 +4878,7 @@ static void attachFunctionFlags(TConverter* tc, const Function* node,
     fn->addFlag(FLAG_NO_PARENS);
   }
 
-  if (node->isMethod()) {
+  if (node->isMethod() && node->kind() != uast::Function::OPERATOR) {
     fn->addFlag(FLAG_METHOD);
     if (node->isPrimaryMethod()) {
       fn->addFlag(FLAG_METHOD_PRIMARY);
