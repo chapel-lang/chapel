@@ -2919,9 +2919,17 @@ Type* TConverter::convertType(const types::Type* t) {
   // the type is an aggregate. If it is, check to see if it is a well
   // known type, otherwise make a stub first to support recursion when
   // converting the fields.
-  auto selector = [](auto name, AggregateTag tag) {
+  auto selector = [&t](auto name, AggregateTag tag) {
     auto at = shouldWireWellKnownType(name.c_str());
-    auto ret = at ? at : new AggregateType(tag);
+
+    // Need a new AggregateType if this is an instantiation.
+    bool isInstantiation = false;
+    if (auto ct = t->getCompositeType();
+        ct && ct->instantiatedFromCompositeType()) {
+      isInstantiation = true;
+    }
+
+    auto ret = at && !isInstantiation ? at : new AggregateType(tag);
     return ret;
   };
 
