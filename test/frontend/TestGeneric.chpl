@@ -10,4 +10,8 @@ proc main() {
   var y = new R(real, 42.0);
   println(x.x);
   println(y.x);
+
+  type T = R(int);
+  var z : T;
+  println(z.x);
 }

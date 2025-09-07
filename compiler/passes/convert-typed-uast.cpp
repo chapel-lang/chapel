@@ -3049,8 +3049,22 @@ struct ConvertDefaultValueHelper {
       return new SymExpr(temp);;
     }
 
+    // Add type/param arguments if type is generic.
+    // Language requires we use named arguments here.
+    std::vector<CallInfoActual> actuals;
+    if (t->instantiatedFromCompositeType()) {
+      auto rc = createDummyRC(context());
+      auto& rfds = fieldsForTypeDecl(&rc, t, DefaultsPolicy::USE_DEFAULTS);
+      for (int i = 0; i < rfds.numFields(); i++) {
+        auto qt = t->substitution(rfds.fieldDeclId(i));
+        if (!qt.isUnknown()) {
+          actuals.push_back({qt, rfds.fieldName(i)});
+        }
+      }
+    }
+
     // Otherwise, construct a 'CallInfo' representing 't.init()'...
-    auto ci1 = resolution::CallInfo::createSimple(tc_->ustr("init"));
+    auto ci1 = resolution::CallInfo::createSimple(tc_->ustr("init"), actuals);
     auto ci2 = resolution::CallInfo::createWithReceiver(ci1, qt);
 
     // Search for 'init()' using the generated call.

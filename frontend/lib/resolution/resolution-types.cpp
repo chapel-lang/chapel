@@ -233,6 +233,16 @@ CallInfo CallInfo::createSimple(UniqueString calledFnName,
                   {CallInfoActual(arg1type), CallInfoActual(arg2type)});
 }
 
+CallInfo CallInfo::createSimple(UniqueString calledFnName,
+                                std::vector<CallInfoActual> actuals) {
+  return CallInfo(calledFnName,
+                  /* calledType */ types::QualifiedType(),
+                  /* isMethodCall */ false,
+                  /* hasQuestionArg */ false,
+                  /* isParenless */ false,
+                  actuals);
+}
+
 CallInfo CallInfo::createUnknown(const uast::FnCall* call) {
   // Pieces of the CallInfo we need to prepare.
   UniqueString name;
