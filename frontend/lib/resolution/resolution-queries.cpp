@@ -2618,6 +2618,32 @@ instantiateSignatureImpl(ResolutionContext* rc,
     const auto formal = untypedSignature->formalDecl(entry.formalIdx());
     const auto& actualType = entry.actualType();
 
+    // Production considers OUT formals w/array type exprs to be concrete.
+    // Configure the visitor to treat them as such.
+    //
+    // Why do we do this here, instead of when computing the initial signature?
+    // To smooth out weirdness due to partial instantiations. Consider:
+    //
+    //     proc foo(x, xs: [1..10] x.type) {}
+    //
+    // In the initial signature, 'x.type' is unknown, so trying to invoke
+    // the array type builder will cause problems. Here, while computing
+    // the instantiated signature, we have incorporated prior type information,
+    // so 'x.type' is known.
+    visitor.useConcreteArrayTypeForFormals = ID();
+    if (entry.formalType().kind() == QualifiedType::OUT) {
+      if (auto fml = entry.formal()) {
+        const AstNode* typeExpr = nullptr;
+        if (auto vld = fml->toVarLikeDecl()) {
+          typeExpr = vld->typeExpression();
+        } else if (auto td = fml->toTupleDecl()) {
+          typeExpr = td->typeExpression();
+        }
+
+        if (typeExpr) visitor.useConcreteArrayTypeForFormals = typeExpr->id();
+      }
+    }
+
     // Re-compute the formal type using substitutions if needed.
     // Performance: we can start doing this only after the first substitution
     //              is created
@@ -3060,36 +3086,6 @@ ApplicabilityResult instantiateSignature(ResolutionContext* rc,
   return instantiateSignatureQuery(rc, sig, call, poiScope);
 }
 
-// While array expressions in formals are typically generic, they
-// are DefaultRectangular in OUT formals unless otherwise specified.
-// If no assignment to generic array OUT formals occurred, re-resolve them
-// as concrete types.
-static void concretizeArrayFormalTypes(Context* context,
-                                       Resolver& visitor,
-                                       const Function* fn) {
-  for (auto fml : fn->formals()) {
-    const AstNode* typeExpr = nullptr;
-    if (auto vld = fml->toVarLikeDecl()) {
-      if (vld->storageKind() != QualifiedType::OUT) continue;
-      if (vld->initExpression() != nullptr) continue;
-      typeExpr = vld->typeExpression();
-    } else if (auto td = fml->toTupleDecl()) {
-      if (td->intentOrKind() != TupleDecl::OUT) continue;
-      if (td->initExpression() != nullptr) continue;
-      typeExpr = td->typeExpression();
-    }
-
-    if (typeExpr == nullptr) continue;
-    auto& re = visitor.byPostorder.byAst(fml);
-    auto g = getTypeGenericity(context, re.type().type());
-    if (g == Type::CONCRETE) continue;
-
-    visitor.useConcreteArrayTypeForFormals = typeExpr->id();
-    fml->traverse(visitor);
-    visitor.useConcreteArrayTypeForFormals = ID();
-  }
-}
-
 // This implements the body of 'resolveFunctionByInfo'. It returns a new
 // 'ResolvedFunction' and does not directly set any queries.
 //
@@ -3154,8 +3150,6 @@ resolveFunctionByInfoImpl(ResolutionContext* rc, const TypedFnSignature* sig,
   if (!visitor.outerVariables.isEmpty() && rc->isEmpty()) {
     return nullptr;
   }
-
-  concretizeArrayFormalTypes(context, visitor, fn);
 
   const TypedFnSignature* finalSig = sig;
 
