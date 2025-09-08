@@ -27,7 +27,8 @@ The Chapel implementation is composed of two categories of code:
      vim              vim-based syntax coloring                    VIM
 
    third-party/
-     chpl-venv/       python packages supporting chpldoc, tests, CLS
+     chpl-venv/       python packages supporting chpldoc, 'start_test',
+                        `c2chapel`, CLS, `chapel-py`, `chplcheck`
        argcomplete    Tab completion of arguments                  Apache v2.0
        babel          Internationalization utilities               BSD
        breathe        Sphinx doxygen renderer                      BSD
@@ -42,8 +43,6 @@ The Chapel implementation is composed of two categories of code:
        pycparser      A C parser in Python                         BSD
        pycparserext   Extensions for pycparser                     MIT
        Pygments       A syntax highlighting package                BSD
-       pytest         Python's testing framework                   MIT
-       pytest-lsp     Pytest plugin for language servers           MIT
        PyYAML         YAML parser and emitter for Python           MIT
        setuptools     Download, build, install, upgrade, and uninstall Python
                       packages                                     MIT
@@ -67,7 +66,8 @@ The Chapel implementation is composed of two categories of code:
      whereami         for locating the _real binary in launchers   MIT
 
    tools/
-     chapel-py/       Python packages supporting Chapel Python bindings
+     chapel-py/       Python packages supporting Chapel Python bindings and
+                        programs that rely on it (i.e., `chplcheck` and CLS)
        attrs          Classes Without Boilerplate                  MIT
        cattrs         Composable complex class support for attrs and dataclasses
                                                                    MIT
@@ -75,7 +75,7 @@ The Chapel implementation is composed of two categories of code:
        exceptiongroup Backport of classes supported by Python 3.11 MIT
        lsprotocol     Python types for Language Server Protocol    MIT
        pygls          Pythonic generic language server             Apache v2.0
-       PyYAML         see above
+       PyYAML         see the PyYAML listing under chpl-venv, above
        toml           Tom's Obvious, Minimal Language              MIT
        typeguard      Run-time type checker for Python             MIT
 
@@ -95,7 +95,8 @@ The Chapel implementation is composed of two categories of code:
 
    third-party/
      chpl-venv        only used when running 'chpldoc', 'start_test', `c2chapel`
-                        the CLS, or the developer-only 'chplspell'
+                        CLS, `chapel-py`, `chplcheck` or the developer-only
+                        'chplspell'
      gasnet           only used when CHPL_COMM is 'gasnet'
      gmp              only used when CHPL_GMP is 'gmp'
      hwloc            only used when CHPL_HWLOC is 'hwloc'
@@ -109,7 +110,8 @@ The Chapel implementation is composed of two categories of code:
      whereami         used when starting a program with a launcher
 
    tools/
-     chapel-py        only used when using the Chapel Python bindings
+     chapel-py        only used when using the Chapel Python bindings or
+                        programs that rely on it (i.e., `chplcheck` and CLS)
 
    For packages that are used based on a CHPL_* setting, note that this
    setting may either be explicitly or implicitly set. Additionally,

@@ -30,8 +30,9 @@ The primary packages required by `start_test` are: `PyYAML`, `argcomplete`,
 
 The primary packages required by `c2chapel` are: `pycparser` and `pycparserext`.
 
-The primary packages required by the Chapel Language Server (CLS) are: `pytest`
-and `pytest-lsp`.
+The primary package required by both `chpl-language-server` (CLS) and
+`chplcheck` is `chapel-py`.  The packages required by `chapel-py` are listed in
+`$CHPL_HOME/tools/chapel-py/pyproject.toml`
 
 ### Sphinx
 
@@ -118,7 +119,7 @@ Used by `start_test` to install Arkouda's dependencies.
 
 Manipulates JUnit/xUnit Result XML files.
 
-Used by `nightly` to parser the Chapel Language Server tests.
+Used by `nightly` to parse the Chapel Language Server tests.
 
 **License**: Apache v2.0
 
@@ -143,26 +144,6 @@ Required by c2chapel.
 **License**: MIT
 
 **Website**: https://pypi.org/project/pycparserext/
-
-### pytest
-
-A well-known Python testing framework.
-
-Required by the CLS.
-
-**License**: MIT
-
-**Website**: https://pypi.org/project/pytest/
-
-### pytest-lsp
-
-A pytest plugin for end-to-end testing of language servers.
-
-Required by the CLS.
-
-**License**: MIT
-
-**Website**: https://pypi.org/project/pytest-lsp/
 
 Package Dependencies
 --------------------
