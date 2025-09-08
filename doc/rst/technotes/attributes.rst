@@ -60,7 +60,7 @@ all tool names other than ``chpldoc`` will be reported to the user as a warning.
 Developers of other tools, such as formatters or linters, are free to design
 their own attributes so long as they prefix them with a tool name. It is
 recommended but not required that the tool name aligns with the tool binary
-name. As an example, see the :ref:`@chpldoc.nodoc attribute <attributes-tools>`,
+name. As an example, see the :ref:`@chpldoc.nodoc attribute <attributes-other>`,
 which is used by the ``chpldoc`` tool to suppress documentation for a symbol.
 The tool name ``chpldoc`` precedes the attribute name ``nodoc``, which takes no
 arguments.
@@ -86,7 +86,7 @@ Implemented Attributes
 Attributes are currently implemented in the following areas:
 
 * :ref:`Stability Attributes <attributes-stability>`
-* :ref:`Tooling Attributes <attributes-tools>`
+* :ref:`Other Attributes <attributes-other>`
 
 
 .. _attributes-stability:
@@ -113,7 +113,7 @@ Stability Attributes
     parse it, but it will not have any effect.
 
 
-.. _attributes-tools:
+.. _attributes-other:
 
 Other Attributes
 ~~~~~~~~~~~~~~~~
@@ -138,6 +138,11 @@ Other Attributes
      :language: chapel
      :start-after: START_EXAMPLE_0
      :end-before: STOP_EXAMPLE_0
+
+* ``@edition`` is a developer-oriented attribute used to specify which
+  edition(s) a breaking change is associated with.  See :ref:`edition-attribute`
+  for more information about the attribute, and :ref:`readme-editions` for more
+  information about editions in general.
 
 * ``@llvm.assertVectorized`` is an experimental attribute which can be applied
   to all statement-level loops. When used on a loop, it applies a post-codegen
