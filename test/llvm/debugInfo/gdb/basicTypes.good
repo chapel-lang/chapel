@@ -4,7 +4,7 @@ Breakpoint 1 at 0xXXXX: file gdb.c, line 28.
 Thread 2 "basicTypes" hit Breakpoint 1, debuggerBreakHere () at gdb.c:28
 28	void debuggerBreakHere(void) {printf("%s", "");}
 #1  0xXXXX in chpl_user_main ()
-50	  use Debugger; breakpoint;
+54	  use Debugger; breakpoint;
 $1 = {myField = void}
 type = struct MyRecord1 {
     decltype(nullptr) myField;
@@ -104,7 +104,6 @@ type = struct (int(64),string,real(64),myEnum) {
     real(64) x2;
     enum myEnum x3;
 }
-(gdb) quit
 A debugging session is active.
 	Inferior 1 [process XXXX] will be killed.
 Quit anyway? (y or n) [answered Y; input not from terminal]
