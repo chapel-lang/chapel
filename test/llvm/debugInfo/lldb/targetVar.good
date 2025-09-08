@@ -16,7 +16,7 @@ myLocal: 59
 myGlobal: 42
 Process XXXX stopped
 * Thread #X, stop reason = breakpoint 2.1
-    frame #0: 0xXXXX targetVar`foo_chpl(myFormal=59) at targetVar.chpl:5
+    frame #0: 0xXXXX targetVar`foo_chpl(myFormal=uninit) at targetVar.chpl:5
    2
    3   	proc foo(myFormal) {
    4   	  const localVar = myFormal + 1;
@@ -48,7 +48,7 @@ Process XXXX stopped
 (lldb) n
 Process XXXX stopped
 * Thread #X, stop reason = step over
-    frame #0: 0xXXXX targetVar`bar_chpl(myFormal=59) at targetVar.chpl:11
+    frame #0: 0xXXXX targetVar`bar_chpl(myFormal=uninit) at targetVar.chpl:11
    8   	}
    9
    10  	proc bar(myFormal) {
