@@ -499,13 +499,15 @@ QualifiedType typeForLiteral(Context* context, const Literal* literal) {
 
 /////// function resolution
 
-static bool
+static TypedFnSignature::InstantiationState
 formalNeedsInstantiation(Context* context,
                          const QualifiedType& formalType,
                          const Decl* formalDecl,
                          const SubstitutionsMap* substitutions) {
   if (formalType.isUnknown()) {
-    return true;
+    return formalType.kind() == QualifiedType::OUT ?
+           TypedFnSignature::INST_GENERIC_OUT :
+           TypedFnSignature::INST_GENERIC_OTHER;
   }
 
   bool considerGenericity = true;
@@ -523,50 +525,52 @@ formalNeedsInstantiation(Context* context,
   }
 
   if (considerGenericity) {
-    // for the purposes of marking a function signature as needing instantiation
-    // (i.e., via additional actuals etc), do not consider generic OUT formals.
-    // The reason is that these formals are instantiated in the function body,
-    // and are not provided from outside / during the call.
-    if (formalType.kind() == QualifiedType::OUT) {
-      // ... except, varargs with an unknown number of arguments do need to go
-      // through instantiation, so that we can instantiate the tuple formal
-      // with the right size.
-      bool isUnknownSizeVarargs = false;
-      if (auto formalT = formalType.type()) {
-        if (auto tup = formalT->toTupleType()) {
-          isUnknownSizeVarargs = tup->isVarArgTuple() && !tup->isKnownSize();
-        }
-      }
-
-      if (!isUnknownSizeVarargs) {
-        return false;
-      }
-    }
-
     auto g = getTypeGenericity(context, formalType);
     if (g != Type::CONCRETE) {
-      return true;
+      auto instantiationState = TypedFnSignature::INST_CONCRETE;
+      if (formalType.kind() == QualifiedType::OUT) {
+        bool isUnknownSizeVarargs = false;
+        if (auto formalT = formalType.type()) {
+          if (auto tup = formalT->toTupleType()) {
+            isUnknownSizeVarargs = tup->isVarArgTuple() && !tup->isKnownSize();
+          }
+        }
+
+        // out vararg size isn't computed from the body, it's a call site
+        // property, so don't consider it a part of "generic 'out' formal"
+        // condition.
+        if (isUnknownSizeVarargs) {
+          instantiationState = TypedFnSignature::INST_GENERIC_OTHER;
+        }
+
+        return (TypedFnSignature::InstantiationState)
+          ((int) instantiationState | TypedFnSignature::INST_GENERIC_OUT);
+      }
+
+      return TypedFnSignature::INST_GENERIC_OTHER;
     }
   }
 
-  return false;
+  return TypedFnSignature::INST_CONCRETE;
 }
 
-static bool
+static TypedFnSignature::InstantiationState
 anyFormalNeedsInstantiation(Context* context,
                             const std::vector<types::QualifiedType>& formalTs,
                             const UntypedFnSignature* untypedSig,
                             SubstitutionsMap* substitutions) {
-  bool genericOrUnknown = false;
+  TypedFnSignature::InstantiationState genericOrUnknown =
+    TypedFnSignature::INST_CONCRETE;
   int i = 0;
   for (const auto& qt : formalTs) {
     if (untypedSig->isOperator() && untypedSig->formalName(i) == USTR("this")) {
       // the 'this' formals of operators aren't really used (lhs and rhs are
       // passed in as the first two formals), do don't check 'this'.
-    } else if (formalNeedsInstantiation(context, qt, untypedSig->formalDecl(i),
-                                 substitutions)) {
-      genericOrUnknown = true;
-      break;
+    } else {
+      auto formalNeedsInst =
+        formalNeedsInstantiation(context, qt, untypedSig->formalDecl(i),
+                                 substitutions);
+      genericOrUnknown = (TypedFnSignature::InstantiationState) ((int)genericOrUnknown | (int)formalNeedsInst);
     }
     i++;
   }
@@ -727,7 +731,7 @@ typedSignatureInitialImpl(ResolutionContext* rc,
 
   // now, construct a TypedFnSignature from the result
   std::vector<types::QualifiedType> formalTypes = visitor.getFormalTypes(fn);
-  bool needsInstantiation = anyFormalNeedsInstantiation(context, formalTypes,
+  auto instantiationState = anyFormalNeedsInstantiation(context, formalTypes,
                                                         untypedSig,
                                                         nullptr);
 
@@ -735,14 +739,14 @@ typedSignatureInitialImpl(ResolutionContext* rc,
   // which case we will visit the where clause when that happens
   auto whereResult = TypedFnSignature::WHERE_NONE;
   if (auto whereClause = fn->whereClause()) {
-    if (needsInstantiation) {
+    if (instantiationState) {
       // Visit the where clause for generic nested functions just to collect
       // outer variables. TODO: Is this OK or could POI muck with this?
       if (parentSignature) whereClause->traverse(visitor);
       whereResult = TypedFnSignature::WHERE_TBD;
     } else {
       whereClause->traverse(visitor);
-      whereResult = whereClauseResult(context, fn, r, needsInstantiation);
+      whereResult = whereClauseResult(context, fn, r, instantiationState);
     }
   }
 
@@ -759,7 +763,7 @@ typedSignatureInitialImpl(ResolutionContext* rc,
                                  untypedSig,
                                  std::move(formalTypes),
                                  whereResult,
-                                 needsInstantiation,
+                                 instantiationState,
                                  /* instantiatedFrom */ nullptr,
                                  /* parentFn */ parentSignature,
                                  /* formalsInstantiated */ Bitmap(),
@@ -2594,6 +2598,11 @@ instantiateSignatureImpl(ResolutionContext* rc,
   // Instead, we'll populate the formal types right away.
   std::vector<types::QualifiedType> formalTypes;
 
+  // see note below on OUT formals w/array types. This variable is set to
+  // true if we've used a concrete array type for an OUT formal, which
+  // previously would've been generic.
+  bool usedConcreteArrayType = false;
+
   bool instantiateVarArgs = false;
   std::vector<QualifiedType> varargsTypes;
   int varArgIdx = -1;
@@ -2673,6 +2682,10 @@ instantiateSignatureImpl(ResolutionContext* rc,
       // is right.
       formalType = entry.formalType();
     }
+
+    usedConcreteArrayType |=
+      !visitor.useConcreteArrayTypeForFormals.isEmpty() &&
+      formalType.type() != sig->formalType(entry.formalIdx()).type();
 
     // note: entry.actualType can have type()==nullptr and UNKNOWN.
     // in that case, resolver code should treat it as a hint to
@@ -2930,7 +2943,7 @@ instantiateSignatureImpl(ResolutionContext* rc,
   }
 
   // use the existing signature if there were no substitutions
-  if (substitutions.size() == 0 && formalTypes.size() == 0) {
+  if (substitutions.size() == 0 && !usedConcreteArrayType && formalTypes.size() == 0) {
     // Even if no instantiations occurred due to formals, an initializer
     // might end up creating substitutions when we resolve its body
     // and process assignments like `this.someType = bla`. So, do not
@@ -2944,7 +2957,13 @@ instantiateSignatureImpl(ResolutionContext* rc,
     }
   }
 
-  bool needsInstantiation = false;
+  if (usedConcreteArrayType && formalsInstantiated.size() == 0) {
+    // normally we do this when we add a substitution, but we haven't
+    // added any substitutions yet.
+    formalsInstantiated.resize(sig->numFormals());
+  }
+
+  auto instantiationState = TypedFnSignature::INST_CONCRETE;
   TypedFnSignature::WhereClauseResult where = TypedFnSignature::WHERE_NONE;
 
   if (fn != nullptr) {
@@ -2964,10 +2983,10 @@ instantiateSignatureImpl(ResolutionContext* rc,
 
     auto tmp = visitor.getFormalTypes(fn);
     formalTypes.swap(tmp);
-    needsInstantiation = anyFormalNeedsInstantiation(context, formalTypes,
+    instantiationState = anyFormalNeedsInstantiation(context, formalTypes,
                                                      untypedSignature,
                                                      &substitutions);
-    where = whereClauseResult(context, fn, r, needsInstantiation);
+    where = whereClauseResult(context, fn, r, instantiationState);
   } else if (ad != nullptr) {
     // TODO: compute the class type
 
@@ -3041,7 +3060,7 @@ instantiateSignatureImpl(ResolutionContext* rc,
       formalTypes[0] = QualifiedType(sig->formalType(0).kind(), newType);
     }
 
-    needsInstantiation = anyFormalNeedsInstantiation(context, formalTypes,
+    instantiationState = anyFormalNeedsInstantiation(context, formalTypes,
                                                      untypedSignature,
                                                      &newSubstitutions);
   } else if (ed) {
@@ -3056,7 +3075,7 @@ instantiateSignatureImpl(ResolutionContext* rc,
                                       untypedSignature,
                                       std::move(formalTypes),
                                       where,
-                                      needsInstantiation,
+                                      instantiationState,
                                       /* instantiatedFrom */ sig,
                                       /* parentFn */ parentSignature,
                                       std::move(formalsInstantiated),
@@ -3445,7 +3464,7 @@ helpResolveFunction(ResolutionContext* rc, const TypedFnSignature* sig,
   // or type constructor in which case we may still have generic formals.
   // For example, range(?) will reach this point.
   if (!sig->isInitializer() && !sig->untyped()->isTypeConstructor() &&
-      sig->needsInstantiation()) {
+      sig->needsNonOutInstantiation()) {
     CHPL_ASSERT(false &&
                 "Should only be called on concrete or fully "
                 "instantiated functions");

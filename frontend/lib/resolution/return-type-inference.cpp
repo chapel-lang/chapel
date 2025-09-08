@@ -1247,26 +1247,12 @@ const TypedFnSignature* inferOutFormals(ResolutionContext* rc,
     return nullptr;
   }
 
-  bool anyGenericOutFormals = false;
-  int numFormals = sig->numFormals();
-  for (int i = 0; i < numFormals; i++) {
-    const types::QualifiedType& ft = sig->formalType(i);
-
-    if (ft.kind() == QualifiedType::OUT) {
-      bool generic = ft.isUnknown() ||
-        getTypeGenericity(rc->context(), ft.type()) != Type::CONCRETE;
-
-      if (generic) {
-        anyGenericOutFormals = true;
-        break;
-      }
-    }
-  }
 
   // if there are no 'out' formals with generic type, just return 'sig'.
-  // also just return 'sig' if the function needs instantiation;
+  // also just return 'sig' if the function needs instantiation for non-'out' reasons;
   // in that case, we can't infer the 'out' formals by resolving the body.
-  if (anyGenericOutFormals && !sig->needsInstantiation()) {
+  if (sig->instantiationState() & TypedFnSignature::INST_GENERIC_OUT &&
+      !(sig->instantiationState() & TypedFnSignature::INST_GENERIC_OTHER)) {
     return inferOutFormalsQuery(rc, sig, instantiationPoiScope);
   } else {
     return sig;
