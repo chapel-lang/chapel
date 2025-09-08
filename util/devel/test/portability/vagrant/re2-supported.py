@@ -3,7 +3,7 @@
 import os
 import sys
 
-chplenv_dir = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'chplenv')
+chplenv_dir = os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', 'chplenv')
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
 import chpl_compiler
