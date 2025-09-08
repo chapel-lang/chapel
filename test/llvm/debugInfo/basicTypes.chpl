@@ -9,6 +9,9 @@ record MyRecord1 {
   proc init() {
     this.myField = new unmanaged MyClass();
   }
+  proc deinit() {
+    delete this.myField;
+  }
 }
 
 record MyRecord2 {
@@ -30,6 +33,7 @@ proc main() {
   var myRec = new MyRecord1();
   var myRec2 = new MyRecord2();
   var myUnmanagedClass = new unmanaged MyClass();
+  defer { delete myUnmanagedClass; }
   var myClass = new MyClass();
   const myStr = "Hello, world!";
   const myDom = {1..10, 1..10 by 2};
