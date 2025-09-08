@@ -215,8 +215,6 @@ public:
   // What to delegate to with 'forwarding'
   AList                       forwardingTo;
 
-  const char*                 doc;
-
   // Used during code generation for subclass checking,
   // isa checking. This is the value we store in chpl__cid_XYZ.
   int                         classId;

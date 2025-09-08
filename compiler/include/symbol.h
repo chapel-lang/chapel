@@ -527,8 +527,6 @@ class TypeSymbol final : public Symbol {
   // TBAA metadata for aggregates
   void codegenAggMetadata();
 
-  const char* doc;
-
   BlockStmt* instantiationPoint;
   astlocT userInstantiationPointLoc;
 };
