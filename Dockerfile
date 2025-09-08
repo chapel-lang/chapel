@@ -48,7 +48,8 @@ RUN git config --global user.email "noreply@example.com" && \
 # set up Chapel environment variables
 ENV CHPL_HOME=/opt/chapel \
     CHPL_GMP=system \
-    CHPL_LLVM=system
+    CHPL_LLVM=system \
+    CHPL_TARGET_CPU=none
 
 WORKDIR $CHPL_HOME
 
