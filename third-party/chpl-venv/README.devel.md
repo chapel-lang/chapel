@@ -27,7 +27,7 @@ A spell checker for source code
 
 A well-known Python testing framework.
 
-Required by CLS.
+Required for testing CLS.
 
 **License**: MIT
 
@@ -37,7 +37,7 @@ Required by CLS.
 
 A pytest plugin for end-to-end testing of language servers.
 
-Required by CLS.
+Required for testing CLS.
 
 **License**: MIT
 
