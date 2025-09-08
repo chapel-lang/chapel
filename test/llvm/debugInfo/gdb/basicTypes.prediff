@@ -10,6 +10,7 @@ mv $file.tmp $file
 
 # make <incomplete type> into void
 sed -E -e 's/<incomplete type>/void/g' $file > $file.tmp
+mv $file.tmp $file
 
 
 # clean garbage values
