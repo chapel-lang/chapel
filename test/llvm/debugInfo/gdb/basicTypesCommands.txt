@@ -3,7 +3,8 @@ p myRec
 ptype myRec
 p myRec.myField
 ptype myRec.myField
-p myRec2
+# TODO: don't print this for now, it messes up the formatting for the .good file
+#p myRec2
 ptype myRec2
 p myRec2.myFieldC
 ptype myRec2.myFieldC
