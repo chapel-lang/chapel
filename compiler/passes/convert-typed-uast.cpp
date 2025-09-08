@@ -2512,12 +2512,17 @@ struct ConvertTypeHelper {
     // and this also applies to things like default-initialization (where
     // we zero-initialize the memory), or assignment (where we bitcopy).
     auto ret = new PrimitiveType(nullptr);
+    auto node = parsing::idToAst(context(), t->id())->toNamedDecl();
 
     INT_ASSERT(!t->linkageName().isEmpty());
-    auto name = astr(t->linkageName());
+    auto name = astr(node->name());
 
     auto ts = new TypeSymbol(name, ret);
-    INT_ASSERT(ts->name == ts->cname);
+    ts->cname = astr(t->linkageName());
+
+    bool isFromLibrary = tc_->cur.moduleFromLibraryFile;
+    attachSymbolAttributes(context(), node, ts, isFromLibrary);
+    attachSymbolVisibility(node, ts);
 
     ts->addFlag(FLAG_EXTERN);
 
@@ -2994,8 +2999,7 @@ Type* TConverter::convertType(const types::Type* t) {
   // Set the converted type once again.
   convertedTypes[t] = {true, ret};
 
-  if (!isPrimitiveType(ret) &&
-      ret->symbol->hasFlag(FLAG_INSTANTIATED_GENERIC) == false &&
+  if (ret->symbol->hasFlag(FLAG_INSTANTIATED_GENERIC) == false &&
       ret != dtObject) {
     ID id;
     if (auto ct = t->getCompositeType()) {
