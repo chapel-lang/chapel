@@ -40,7 +40,7 @@ source $UTIL_CRON_DIR/common-perf-hpe-apollo-hdr.bash
 # When the multi-local playground is not used, set `SKIP_ARKOUDA_PLAYGROUND=1
 #
 
-SKIP_ARKOUDA_PLAYGROUND=1
+SKIP_ARKOUDA_PLAYGROUND=0
 if [[ "$SKIP_ARKOUDA_PLAYGROUND" == "1" ]]; then
   log_info "Skipping testing of the arkouda playground"
   exit
