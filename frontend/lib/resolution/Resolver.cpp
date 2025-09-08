@@ -6882,6 +6882,9 @@ static bool isShapedLikeArray(const IndexableLoop* loop) {
 // do this in formals, though, which is what this function checks for.
 static bool ignoreInstanceInArrayOrDomain(Resolver& rv, const AstNode* exprToConsider) {
   if (rv.declStack.empty()) return false;
+  if (rv.useConcreteArrayTypeForFormals.contains(exprToConsider->id())) {
+    return false;
+  }
 
   size_t consideringDecl = rv.declStack.size() - 1;
 

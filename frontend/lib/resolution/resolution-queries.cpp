@@ -3060,6 +3060,36 @@ ApplicabilityResult instantiateSignature(ResolutionContext* rc,
   return instantiateSignatureQuery(rc, sig, call, poiScope);
 }
 
+// While array expressions in formals are typically generic, they
+// are DefaultRectangular in OUT formals unless otherwise specified.
+// If no assignment to generic array OUT formals occurred, re-resolve them
+// as concrete types.
+static void concretizeArrayFormalTypes(Context* context,
+                                       Resolver& visitor,
+                                       const Function* fn) {
+  for (auto fml : fn->formals()) {
+    const AstNode* typeExpr = nullptr;
+    if (auto vld = fml->toVarLikeDecl()) {
+      if (vld->storageKind() != QualifiedType::OUT) continue;
+      if (vld->initExpression() != nullptr) continue;
+      typeExpr = vld->typeExpression();
+    } else if (auto td = fml->toTupleDecl()) {
+      if (td->intentOrKind() != TupleDecl::OUT) continue;
+      if (td->initExpression() != nullptr) continue;
+      typeExpr = td->typeExpression();
+    }
+
+    if (typeExpr == nullptr) continue;
+    auto& re = visitor.byPostorder.byAst(fml);
+    auto g = getTypeGenericity(context, re.type().type());
+    if (g == Type::CONCRETE) continue;
+
+    visitor.useConcreteArrayTypeForFormals = typeExpr->id();
+    fml->traverse(visitor);
+    visitor.useConcreteArrayTypeForFormals = ID();
+  }
+}
+
 // This implements the body of 'resolveFunctionByInfo'. It returns a new
 // 'ResolvedFunction' and does not directly set any queries.
 //
@@ -3124,6 +3154,8 @@ resolveFunctionByInfoImpl(ResolutionContext* rc, const TypedFnSignature* sig,
   if (!visitor.outerVariables.isEmpty() && rc->isEmpty()) {
     return nullptr;
   }
+
+  concretizeArrayFormalTypes(context, visitor, fn);
 
   const TypedFnSignature* finalSig = sig;
 
