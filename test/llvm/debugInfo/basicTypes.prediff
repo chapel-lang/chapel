@@ -45,7 +45,7 @@ def verify():
         return None
 
     try:
-        sp.check_call([llvm_dwarfdump, "--debug-info", "--verify", dwarfDumpTarget])
+        sp.check_call([llvm_dwarfdump, "--debug-info", "--verify", dwarfDumpTarget], stdout=sp.PIPE, stderr=sp.STDOUT)
     except sp.CalledProcessError as e:
         return e.output.decode().strip()
     return None
@@ -129,48 +129,48 @@ DW_TAG_structure_type
               DW_AT_name	("MyRecord2")
               DW_AT_byte_size	(0x68)
               DW_AT_decl_file	("./basicTypes.chpl")
-              DW_AT_decl_line	(14)
+              DW_AT_decl_line	(17)
               DW_AT_alignment	(8)
   DW_TAG_member
                 DW_AT_name	("myFieldA")
                 DW_AT_type	("int(64)")
                 DW_AT_decl_file	("./basicTypes.chpl")
-                DW_AT_decl_line	(15)
+                DW_AT_decl_line	(18)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x00)
   DW_TAG_member
                 DW_AT_name	("myFieldB")
                 DW_AT_type	("real(64)")
                 DW_AT_decl_file	("./basicTypes.chpl")
-                DW_AT_decl_line	(16)
+                DW_AT_decl_line	(19)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
   DW_TAG_member
                 DW_AT_name	("myFieldC")
                 DW_AT_type	("ChapelTuple::(int(64),real(64))")
                 DW_AT_decl_file	("./basicTypes.chpl")
-                DW_AT_decl_line	(17)
+                DW_AT_decl_line	(20)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x10)
   DW_TAG_member
                 DW_AT_name	("myFieldD")
                 DW_AT_type	("String::string")
                 DW_AT_decl_file	("./basicTypes.chpl")
-                DW_AT_decl_line	(18)
+                DW_AT_decl_line	(21)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x20)
   DW_TAG_member
                 DW_AT_name	("myFieldE")
                 DW_AT_type	("std::nullptr_t")
                 DW_AT_decl_file	("./basicTypes.chpl")
-                DW_AT_decl_line	(19)
+                DW_AT_decl_line	(22)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x48)
   DW_TAG_member
                 DW_AT_name	("myFieldF")
                 DW_AT_type	("ChapelArray::[domain(1,int(64),one)] int(64)")
                 DW_AT_decl_file	("./basicTypes.chpl")
-                DW_AT_decl_line	(20)
+                DW_AT_decl_line	(23)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x50)
   NULL
@@ -182,7 +182,7 @@ DW_TAG_enumeration_type
               DW_AT_name	("ENUM_NAME")
               DW_AT_byte_size	(0x08)
               DW_AT_decl_file	("./basicTypes.chpl")
-              DW_AT_decl_line	(23)
+              DW_AT_decl_line	(26)
               DW_AT_alignment	(8)
   DW_TAG_enumerator
                 DW_AT_name	("ENUM_NAME")
@@ -199,49 +199,49 @@ DW_TAG_enumeration_type
 DW_TAG_variable
               DW_AT_name	("myRec")
               DW_AT_decl_file	("./basicTypes.chpl")
-              DW_AT_decl_line	(30)
+              DW_AT_decl_line	(33)
               DW_AT_type	("basicTypes::MyRecord1")
 """,
 "myRec2":"""
 DW_TAG_variable
               DW_AT_name	("myRec2")
               DW_AT_decl_file	("./basicTypes.chpl")
-              DW_AT_decl_line	(31)
+              DW_AT_decl_line	(34)
               DW_AT_type	("basicTypes::MyRecord2")
 """,
 "myUnmanagedClass":"""
 DW_TAG_variable
               DW_AT_name	("myUnmanagedClass")
               DW_AT_decl_file	("./basicTypes.chpl")
-              DW_AT_decl_line	(32)
+              DW_AT_decl_line	(35)
               DW_AT_type	("basicTypes::MyClass")
 """,
 "myClass":"""
 DW_TAG_variable
               DW_AT_name	("myClass")
               DW_AT_decl_file	("./basicTypes.chpl")
-              DW_AT_decl_line	(33)
+              DW_AT_decl_line	(37)
               DW_AT_type	("OwnedObject::owned MyClass")
 """,
 "myStr":"""
 DW_TAG_variable
               DW_AT_name	("myStr")
               DW_AT_decl_file	("./basicTypes.chpl")
-              DW_AT_decl_line	(34)
+              DW_AT_decl_line	(38)
               DW_AT_type	("String::string")
 """,
 "myDom":"""
 DW_TAG_variable
               DW_AT_name	("myDom")
               DW_AT_decl_file	("./basicTypes.chpl")
-              DW_AT_decl_line	(35)
+              DW_AT_decl_line	(39)
               DW_AT_type	("ChapelDomain::domain(2,int(64),positive)")
 """,
 "myArr2d":"""
 DW_TAG_variable
               DW_AT_name	("myArr2d")
               DW_AT_decl_file	("./basicTypes.chpl")
-              DW_AT_decl_line	(36)
+              DW_AT_decl_line	(40)
               DW_AT_type	("ChapelArray::[domain(2,int(64),positive)] int(64)")
 
 """,
@@ -249,49 +249,49 @@ DW_TAG_variable
 DW_TAG_variable
               DW_AT_name	("myArr")
               DW_AT_decl_file	("./basicTypes.chpl")
-              DW_AT_decl_line	(37)
+              DW_AT_decl_line	(41)
               DW_AT_type	("ChapelArray::[domain(1,int(64),one)] int(64)")
 """,
 "myBool":"""
 DW_TAG_variable
               DW_AT_name	("myBool")
               DW_AT_decl_file	("./basicTypes.chpl")
-              DW_AT_decl_line	(38)
+              DW_AT_decl_line	(42)
               DW_AT_type	("bool")
 """,
 "myInt":"""
 DW_TAG_variable
               DW_AT_name	("myInt")
               DW_AT_decl_file	("./basicTypes.chpl")
-              DW_AT_decl_line	(39)
+              DW_AT_decl_line	(43)
               DW_AT_type	("int(64)")
 """,
 "myReal":"""
 DW_TAG_variable
               DW_AT_name	("myReal")
               DW_AT_decl_file	("./basicTypes.chpl")
-              DW_AT_decl_line	(40)
+              DW_AT_decl_line	(44)
               DW_AT_type	("real(64)")
 """,
 "myEnumVal":"""
 DW_TAG_variable
               DW_AT_name	("myEnumVal")
               DW_AT_decl_file	("./basicTypes.chpl")
-              DW_AT_decl_line	(41)
+              DW_AT_decl_line	(45)
               DW_AT_type	("basicTypes::myEnum")
 """,
 "myEnumRef": """
 DW_TAG_variable
               DW_AT_name	("myEnumRef")
               DW_AT_decl_file	("./basicTypes.chpl")
-              DW_AT_decl_line	(42)
+              DW_AT_decl_line	(46)
               DW_AT_type	("basicTypes::myEnum *")
 """,
 "myTuple": """
 DW_TAG_variable
               DW_AT_name	("myTuple")
               DW_AT_decl_file	("./basicTypes.chpl")
-              DW_AT_decl_line	(43)
+              DW_AT_decl_line	(47)
               DW_AT_type	("ChapelTuple::(int(64),string,real(64),myEnum)")
 """,
 "[domain(1,int(64),one)] int(64)": """

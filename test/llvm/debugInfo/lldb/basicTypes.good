@@ -21,20 +21,20 @@ Executing commands in FILE.txt
 46 47 48 49 50
 true | 42 | 3.14 | e2 | e2 | (1, two, 3.0, e1)
 (lldb)  up
-frame #1: 0xXXXX basicTypes`chpl_user_main at basicTypes.chpl:50
-   47  	  writeln(myDom, myArr, myArr2d, sep=" | ");
-   48  	  writeln(myBool, myInt, myReal, myEnumVal, myEnumRef, myTuple, sep=" | ");
-   49
--> 50  	  use Debugger; breakpoint;
-   51  	}
+frame #1: 0xXXXX basicTypes`chpl_user_main at basicTypes.chpl:54
+   51  	  writeln(myDom, myArr, myArr2d, sep=" | ");
+   52  	  writeln(myBool, myInt, myReal, myEnumVal, myEnumRef, myTuple, sep=" | ");
+   53
+-> 54  	  use Debugger; breakpoint;
+   55  	}
 Process XXXX stopped
 * Thread #X, stop reason = breakpoint 1.1
-    frame #1: 0xXXXX basicTypes`chpl_user_main at basicTypes.chpl:50
-   47  	  writeln(myDom, myArr, myArr2d, sep=" | ");
-   48  	  writeln(myBool, myInt, myReal, myEnumVal, myEnumRef, myTuple, sep=" | ");
-   49
--> 50  	  use Debugger; breakpoint;
-   51  	}
+    frame #1: 0xXXXX basicTypes`chpl_user_main at basicTypes.chpl:54
+   51  	  writeln(myDom, myArr, myArr2d, sep=" | ");
+   52  	  writeln(myBool, myInt, myReal, myEnumVal, myEnumRef, myTuple, sep=" | ");
+   53
+-> 54  	  use Debugger; breakpoint;
+   55  	}
 (lldb) p myRec
 (basicTypes::MyRecord1)  (myField = 0xXXXX)
 (lldb) p myRec.myField
@@ -93,3 +93,4 @@ Process XXXX stopped
   x2 = 3
   x3 = e1
 }
+(lldb) quit
