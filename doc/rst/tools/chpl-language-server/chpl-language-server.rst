@@ -191,20 +191,31 @@ project using ``make``:
 
 .. code-block:: bash
 
-   $CHPL_HOME/tools/chpl-language-server/chpl-shim make
+   chpl-shim make
 
 This is similarly done for ``mason`` projects:
 
 .. code-block:: bash
 
-   $CHPL_HOME/tools/chpl-language-server/chpl-shim mason build
-
-.. note::
-
-   The above commands assume a from-source build of Chapel. An installed Chapel
-   may require a different path to ``chpl-shim``.
+   chpl-shim mason build
 
 .. note::
 
    First-class ``mason`` support is currently planned (but not yet
    implemented), avoiding the need for ``chpl-shim`` in ``mason`` projects.
+
+Setting up VSCode tasks
+^^^^^^^^^^^^^^^^^^^^^^^
+
+VSCode users may wish to build their Chapel projects from the VSCode GUI.
+``chpl-shim`` can also be used to help generate a ``tasks.json`` file for
+building a Chapel project. For example, the following command will generate a
+``tasks.json`` file for a Chapel project using ``make``:
+
+.. code-block:: bash
+
+   chpl-shim --vscode make
+
+This will add a new task to the ``tasks.json`` file that will build the project
+(as well as writing the ``.cls-commands.json`` file). This can similarly be
+done for ``mason`` projects.
