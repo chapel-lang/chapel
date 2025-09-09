@@ -162,7 +162,8 @@ Expr* partOfNonNormalizableExpr(Expr* expr);
 void warnIfGenericFormalMissingQ(ArgSymbol* arg, Type* type, Expr* typeExpr);
 
 // parallel.cpp
-Type* getOrMakeRefTypeDuringCodegen(Type* type);
+Type* getOrMakeRefTypeDuringCodegen(Type* type,
+                                    std::optional<FlagSet> refTsFlags = std::nullopt);
 Type* getOrMakeWideTypeDuringCodegen(Type* refType);
 CallExpr* findDownEndCount(FnSymbol* fn);
 

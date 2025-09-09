@@ -2915,7 +2915,9 @@ Type* TConverter::convertType(const types::Type* t) {
 
   // If we need to generate a 'ref' wrapper for the type, do so now.
   if (!ret->refType) {
-    getOrMakeRefTypeDuringCodegen(ret);
+    FlagSet flags;
+    flags.set(FLAG_RESOLVED_EARLY);
+    getOrMakeRefTypeDuringCodegen(ret, flags);
   }
 
   return ret;
