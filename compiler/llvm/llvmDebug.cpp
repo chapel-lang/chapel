@@ -357,39 +357,7 @@ llvm::DIType* debug_data::construct_type(Type *type) {
   if (ty->isIntegerTy()) {
     // TODO: special handling for enums
     if (type->astTag == E_EnumType) {
-      EnumType* et = toEnumType(type);
-      Type* bt = et->getIntegerType();
-      auto diBT = get_type(bt);
-      if (!diBT) {
-        if (developer || fVerify) {
-          INT_FATAL("Unable to find base type for enum %s", type->symbol->name);
-        }
-        return nullptr;
-      }
-      llvm::SmallVector<llvm::Metadata *> Elements;
-      for (auto [sym, var] : et->getConstantMap()) {
-        INT_ASSERT(var && var->immediate);
-        auto ev =
-          dibuilder->createEnumerator(sym->name, var->immediate->aps_int());
-        Elements.push_back(ev);
-      }
-      N = dibuilder->createEnumerationType(
-        get_module_scope(defModule),
-        name,
-        get_file(defModule, defFile),
-        defLine,
-        layout.getTypeSizeInBits(ty), /* SizeInBits */
-        8*layout.getABITypeAlign(ty).value(), /* AlignInBits */
-        dibuilder->getOrCreateArray(Elements),
-        diBT,
-#if LLVM_VERSION_MAJOR >= 18
-        0 /* RuntimeLang */,
-#endif
-        "", /* UniqueIdentifer */
-        true /* isScoped */
-      );
-      type->symbol->llvmDIType = N;
-      return llvm::cast_or_null<llvm::DIType>(N);
+      return construct_type_for_enum(ty, toEnumType(type));
     } else {
       auto encoding = is_bool_type(type) ? llvm::dwarf::DW_ATE_boolean :
                      (is_signed(type)    ? llvm::dwarf::DW_ATE_signed :
@@ -475,6 +443,51 @@ llvm::DIType* debug_data::construct_type(Type *type) {
   }
 
   return nullptr;
+}
+
+llvm::DIType* debug_data::construct_type_for_enum(llvm::Type* ty, EnumType* type) {
+  GenInfo* info = gGenInfo;
+  const llvm::DataLayout& layout = info->module->getDataLayout();
+
+  const char* name = type->symbol->name;
+  ModuleSymbol* defModule = type->symbol->getModule();
+  const char* defFile = type->symbol->fname();
+  int defLine = type->symbol->linenum();
+
+  auto dibuilder = defModule->llvmDIBuilder;
+
+  Type* bt = type->getIntegerType();
+  auto diBT = get_type(bt);
+  if (!diBT) {
+    if (developer || fVerify) {
+      INT_FATAL("Unable to find base type for enum %s", name);
+    }
+    return nullptr;
+  }
+  llvm::SmallVector<llvm::Metadata *> Elements;
+  for (auto [sym, var] : type->getConstantMap()) {
+    INT_ASSERT(var && var->immediate);
+    auto ev =
+      dibuilder->createEnumerator(sym->name, var->immediate->aps_int());
+    Elements.push_back(ev);
+  }
+  auto N = dibuilder->createEnumerationType(
+    get_module_scope(defModule),
+    name,
+    get_file(defModule, defFile),
+    defLine,
+    layout.getTypeSizeInBits(ty), /* SizeInBits */
+    8*layout.getABITypeAlign(ty).value(), /* AlignInBits */
+    dibuilder->getOrCreateArray(Elements),
+    diBT,
+#if LLVM_VERSION_MAJOR >= 18
+    0 /* RuntimeLang */,
+#endif
+    "", /* UniqueIdentifer */
+    true /* isScoped */
+  );
+  type->symbol->llvmDIType = N;
+  return llvm::cast_or_null<llvm::DIType>(N);
 }
 
 llvm::DIType* debug_data::get_type(Type *type) {
