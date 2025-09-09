@@ -8,8 +8,8 @@
 
 # TODO: Migrate this configuration over to Apptainer. Michael ran into initial
 # difficulties with this because:
-# - Homebrew wants to install parts of itself in system directories outside of
-#   /home, and Apptainer wants those to be bind mounted from the host,
+# - Homebrew wants to install itself in system directories (/opt/homebrew on
+#   ARM macs), and Apptainer wants those to be bind mounted from the host,
 #   but we don't want to allow the Apptainer run to modify host system dirs. We
 #   would need to enumerate and set up the necessary dirs as within the
 #   container only.
