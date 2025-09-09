@@ -2506,7 +2506,7 @@ int main(int argc, char* argv[]) {
     init_args(&sArgState, argv[0], (void*)main);
 
     // Initialize the arguments for argument state.
-    init_arg_desc(&sArgState, arg_desc, deprecated_args);
+    init_arg_desc(&sArgState, arg_desc);
 
     initFlags();
     initAstrConsts();
