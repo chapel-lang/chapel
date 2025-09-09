@@ -59,7 +59,7 @@ proc masonTest(args: [] string) throws {
   var recursFlag = parser.addFlag(name="recursive", defaultValue=false);
   var parFlag = parser.addFlag(name="parallel", defaultValue=false);
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
-  var setCommOpt = parser.addOption(name="setComm", defaultValue="none");
+  var setCommOpt = parser.addOption(name="setComm");
   var filterFlag = parser.addOption(name="filter", defaultValue="");
 
   // TODO: Why doesn't masonTest support a passthrough for values that should
