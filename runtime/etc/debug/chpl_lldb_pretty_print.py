@@ -61,7 +61,7 @@ class StringProvider:
 
 
 range_regex_c = re.compile(
-    r"^range_([a-zA-Z0-9_]+)_(both|low|high|neither)_(one|negOne|positive|negative|any)_chpl$"
+    r"^range_([a-zA-Z0-9_]+)_(both|low|high|neither)_(one|negOne|positive|negative|any)(?:_chpl)?$"
 )
 range_regex_llvm = re.compile(
     r"^ChapelRange::range\(([a-zA-Z0-9_()]+),(both|low|high|neither),(one|negOne|positive|negative|any)\)$"
@@ -172,7 +172,7 @@ class RangeProvider:
 
 # TODO: only handles DefaultRectangularDom for now
 domain_regex_c = re.compile(
-    r"^_domain_DefaultRectangularDom_([0-9]+)_([a-zA-Z0-9_]+)_(one|negOne|positive|negative|any)_chpl$"
+    r"^_domain_DefaultRectangularDom_([0-9]+)_([a-zA-Z0-9_]+)_(one|negOne|positive|negative|any)(?:_chpl)?$"
 )
 domain_regex_llvm = re.compile(r"^$")  # TODO
 
@@ -254,7 +254,7 @@ class DomainProvider:
 # homogenous tuples
 #
 homogeneous_tuple_regex_c = re.compile(
-    r"^_tuple_([0-9]+)_star_([a-zA-Z0-9_]+)_chpl$"
+    r"^_tuple_([0-9]+)_star_([a-zA-Z0-9_]+)(?:_chpl)?$"
 )
 homogeneous_tuple_regex_llvm = re.compile(r"^$")  # TODO
 
@@ -332,7 +332,7 @@ class HomogeneousTupleProvider:
 # rank, idx_type, stride_kind, element_type, idxSignedType
 
 array_regex_c = re.compile(
-    r"^_array_DefaultRectangularArr_([0-9]+)_([a-zA-Z0-9_]+)_(one|negOne|positive|negative|any)_([a-zA-Z0-9_]+)_([a-zA-Z0-9_]+)_chpl$"
+    r"^_array_DefaultRectangularArr_([0-9]+)_([a-zA-Z0-9_]+)_(one|negOne|positive|negative|any)_([a-zA-Z0-9_]+)_([a-zA-Z0-9_]+)(?:_chpl)?$"
 )
 array_regex_llvm = re.compile(r"^$")  # TODO
 
@@ -370,7 +370,7 @@ def ArraySummary(valobj, internal_dict):
 def GetArrayType(_instance):
     ddata = _instance.GetChildMemberWithName("data")
     # use the element type we can compute from ddata
-    ddata_regex_c = re.compile(r"^_ddata_([a-zA-Z0-9_]+)_chpl$")
+    ddata_regex_c = re.compile(r"^_ddata_([a-zA-Z0-9_]+)(?:_chpl)?$")
     ddata_regex_llvm = re.compile(r"^$")  # TODO
     ddata_typename = ddata.GetTypeName()
     ddata_match = ddata_regex_c.match(ddata_typename) or ddata_regex
@@ -528,10 +528,10 @@ class ArrayProvider:
 
 def __lldb_init_module(debugger, internal_dict):
     debugger.HandleCommand(
-        "type summary add --expand --python-function chpl_lldb_pretty_print.StringSummary  -x '^string_chpl|String::string$'"
+        "type summary add --expand --python-function chpl_lldb_pretty_print.StringSummary  -x '^string_chpl|string|String::string$'"
     )
     debugger.HandleCommand(
-        "type synth add --python-class chpl_lldb_pretty_print.StringProvider -x '^string_chpl|String::string$'"
+        "type synth add --python-class chpl_lldb_pretty_print.StringProvider -x '^string_chpl|string|String::string$'"
     )
 
     debugger.HandleCommand(
