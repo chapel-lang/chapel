@@ -1476,8 +1476,7 @@ static void passArgsToNestedFns() {
 // with wide pointers with the C backend
 static std::unordered_map<const char*, AggregateType*> refMap;
 
-Type* getOrMakeRefTypeDuringCodegen(Type* type,
-                                    std::optional<FlagSet> refTsFlags) {
+Type* getOrMakeRefTypeDuringCodegen(Type* type) {
   Type* refType;
   // BHARSH TODO: This check causes a failure for the following test:
   //   execflags/tmacd/config_ref
@@ -1504,9 +1503,6 @@ Type* getOrMakeRefTypeDuringCodegen(Type* type,
       refTs->addFlag(FLAG_REF);
       refTs->addFlag(FLAG_NO_DEFAULT_FUNCTIONS);
       refTs->addFlag(FLAG_NO_OBJECT);
-      if (refTsFlags) {
-        refTs->flags |= *refTsFlags;
-      }
       theProgram->block->insertAtTail(new DefExpr(refTs));
       ref->fields.insertAtTail(new DefExpr(new VarSymbol("_val", type)));
       refType = ref;
