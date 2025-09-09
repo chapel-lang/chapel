@@ -1469,6 +1469,12 @@ static void passArgsToNestedFns() {
   }
 }
 
+// prevent issues like
+// extern "t" myType;
+// extern "t" myOtherType;
+// this will result in two definitions of `_ref_t`, which can cause problems
+// with wide pointers with the C backend
+static std::unordered_map<const char*, AggregateType*> refMap;
 
 Type* getOrMakeRefTypeDuringCodegen(Type* type) {
   Type* refType;
@@ -1485,16 +1491,24 @@ Type* getOrMakeRefTypeDuringCodegen(Type* type) {
 
   refType = type->refType;
   if( ! refType ) {
-    SET_LINENO(type->symbol);
-    AggregateType* ref = new AggregateType(AGGREGATE_CLASS);
-    TypeSymbol* refTs = new TypeSymbol(astr("_ref_", type->symbol->cname), ref);
-    refTs->addFlag(FLAG_REF);
-    refTs->addFlag(FLAG_NO_DEFAULT_FUNCTIONS);
-    refTs->addFlag(FLAG_NO_OBJECT);
-    theProgram->block->insertAtTail(new DefExpr(refTs));
-    ref->fields.insertAtTail(new DefExpr(new VarSymbol("_val", type)));
-    refType = ref;
-    type->refType = ref;
+    auto cname = astr(type->symbol->cname);
+    auto it = refMap.find(cname);
+    if (it != refMap.end()) {
+      refType = it->second;
+      type->refType = it->second;
+    } else {
+      SET_LINENO(type->symbol);
+      AggregateType* ref = new AggregateType(AGGREGATE_CLASS);
+      TypeSymbol* refTs = new TypeSymbol(astr("_ref_", type->symbol->cname), ref);
+      refTs->addFlag(FLAG_REF);
+      refTs->addFlag(FLAG_NO_DEFAULT_FUNCTIONS);
+      refTs->addFlag(FLAG_NO_OBJECT);
+      theProgram->block->insertAtTail(new DefExpr(refTs));
+      ref->fields.insertAtTail(new DefExpr(new VarSymbol("_val", type)));
+      refType = ref;
+      type->refType = ref;
+      refMap.insert(it, std::make_pair(cname, ref));
+    }
   }
   return refType;
 }
