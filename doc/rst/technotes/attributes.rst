@@ -181,9 +181,6 @@ Future Work and Design Discussions
 
 Planned work for attributes includes:
 
-* deprecate and replace the use of ``pragma "no doc"`` with ``@chpldoc.nodoc``
-  as the primary means to omit documentation for a symbol
-
 * convert ``pragma "always RVF"`` into an attribute, possibly ``@chpl.alwaysRvf``
 
 * allow any order of pragmas and attributes
