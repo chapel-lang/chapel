@@ -332,11 +332,8 @@ void init_args(ArgumentState* state, const char* argv0, void* mainAddr) {
  * Initialize arg_desc member.
  */
 
-void init_arg_desc(ArgumentState* state, ArgumentDescription* arg_desc,
-                   DeprecatedArgument* deprecated_args)
-{
+void init_arg_desc(ArgumentState* state, ArgumentDescription* arg_desc) {
   state->desc = arg_desc;
-  state->deprecated_args = deprecated_args;
 }
 
 /************************************* | **************************************
@@ -365,8 +362,7 @@ Flag types:
 static bool ProcessEnvironment(const ArgumentState* state);
 static void ProcessCommandLine(ArgumentState* state, int argc, char* argv[]);
 
-bool process_args(ArgumentState* state, int argc, char* argv[])
-{
+bool process_args(ArgumentState* state, int argc, char* argv[]) {
 #ifdef _BASEAST_H_
   astlocMarker markAstLoc(0, "<command line>");
 #endif
@@ -389,24 +385,9 @@ static void ApplyValue(const ArgumentState*       state,
                        const char*                value);
 
 
-static bool ProcessEnvironment(const ArgumentState* state)
-{
+static bool ProcessEnvironment(const ArgumentState* state) {
   ArgumentDescription* desc = state->desc;
-  DeprecatedArgument* deprecated_args = state->deprecated_args;
   bool hadError = false;
-
-  if(deprecated_args) {
-    for (int i = 0; deprecated_args[i].env; i++) {
-        const char* env = getenv(deprecated_args[i].env);
-        if (env != 0) {
-          arg_warn(deprecated_args[i].msg, "");
-
-          if(deprecated_args[i].replacementEnv) {
-            setenv(deprecated_args[i].replacementEnv, env, 0);
-          }
-        }
-    }
-  }
 
   // The name field is defined by every row except the final guard
   for (int i = 0; desc[i].name != 0; i++)
