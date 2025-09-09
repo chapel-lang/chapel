@@ -1477,7 +1477,7 @@ static void passArgsToNestedFns() {
 static std::unordered_map<const char*, AggregateType*> refMap;
 
 Type* getOrMakeRefTypeDuringCodegen(Type* type,
-                                    std::optional<FlagSet> refTsFlags = std::nullopt) {
+                                    std::optional<FlagSet> refTsFlags) {
   Type* refType;
   // BHARSH TODO: This check causes a failure for the following test:
   //   execflags/tmacd/config_ref
