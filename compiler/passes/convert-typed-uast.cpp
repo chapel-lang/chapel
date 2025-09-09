@@ -2915,21 +2915,6 @@ Type* TConverter::convertType(const types::Type* t) {
 
   // If we need to generate a 'ref' wrapper for the type, do so now.
   if (!ret->refType) {
-    // SET_LINENO(ret->symbol);
-
-    // // TODO: This is "AGGREGATE_RECORD" in "getOrMakeRefTypeDuringCodegen"?
-    // // But making these early 'ref' wrappers records interferes with a lot
-    // // of optimization passes that are looking for records, so my guess is
-    // // that the codegen generated ones should probably be 'CLASS' as well.
-    // AggregateType* ref = new AggregateType(AGGREGATE_CLASS);
-    // TypeSymbol* refTs = new TypeSymbol(astr("_ref_", ret->symbol->cname), ref);
-    // refTs->addFlag(FLAG_REF);
-    // refTs->addFlag(FLAG_NO_DEFAULT_FUNCTIONS);
-    // refTs->addFlag(FLAG_NO_OBJECT);
-    // refTs->addFlag(FLAG_RESOLVED_EARLY);
-    // globalInsertionPoint->insertAtTail(new DefExpr(refTs));
-    // ref->fields.insertAtTail(new DefExpr(new VarSymbol("_val", ret)));
-    // ret->refType = ref;
     getOrMakeRefTypeDuringCodegen(ret);
   }
 
