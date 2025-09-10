@@ -1,0 +1,96 @@
+(lldb) target create "./basicTypes"
+Current executable set to EXECUTABLE
+(lldb) command source -s 0 'lldb.commands'
+Executing commands in FILE.txt
+(lldb) breakpoint set -n debuggerBreakHere -N debuggerBreakHere
+Breakpoint
+(lldb) breakpoint command add -o up debuggerBreakHere
+(lldb) command source -s 0 'basicTypesCommands.txt'
+Executing commands in FILE.txt
+(lldb) r
+(myField = {x = 0, y = 0.0}) | (myFieldA = 0, myFieldB = 0.0, myFieldC = (0, 0.0), myFieldD = , myFieldE = nil, myFieldF = 0 0 0 0 0 0 0 0 0 0) | Hello, world! | {x = 0, y = 0.0} | {x = 0, y = 0.0}
+{1..10, 1..10 by 2} | 1 2 3 4 5 6 7 8 9 10 | 1 2 3 4 5
+6 7 8 9 10
+11 12 13 14 15
+16 17 18 19 20
+21 22 23 24 25
+26 27 28 29 30
+31 32 33 34 35
+36 37 38 39 40
+41 42 43 44 45
+46 47 48 49 50
+true | 42 | 3.14 | e2 | e2 | (1, two, 3.0, e1)
+(lldb)  up
+frame #1: 0xXXXX basicTypes`chpl_user_main at basicTypes.chpl:54
+   51  	  writeln(myDom, myArr, myArr2d, sep=" | ");
+   52  	  writeln(myBool, myInt, myReal, myEnumVal, myEnumRef, myTuple, sep=" | ");
+   53
+-> 54  	  use Debugger; breakpoint;
+   55  	}
+Process XXXX stopped
+* Thread #X, stop reason = breakpoint 1.1
+    frame #1: 0xXXXX basicTypes`chpl_user_main at basicTypes.chpl:54
+   51  	  writeln(myDom, myArr, myArr2d, sep=" | ");
+   52  	  writeln(myBool, myInt, myReal, myEnumVal, myEnumRef, myTuple, sep=" | ");
+   53
+-> 54  	  use Debugger; breakpoint;
+   55  	}
+(lldb) p myRec
+(basicTypes::MyRecord1)  (myField = 0xXXXX)
+(lldb) p myRec.myField
+(std::nullptr_t) 0xXXXX
+(lldb) p myRec2
+(basicTypes::MyRecord2) {
+  myFieldA = 0
+  myFieldB = 0
+  myFieldC = (x0 = 0, x1 = 0)
+  myFieldD = "" {
+    size = 0
+  }
+  myFieldE = 0xXXXX
+  myFieldF = (_pid = -1, _instance = 0xXXXX, _unowned = false)
+}
+(lldb) p myRec2.myFieldC
+(ChapelTuple::(int(64),real(64)))  (x0 = 0, x1 = 0)
+(lldb) p myRec2.myFieldD
+(String::string) "" {
+  size = 0
+}
+(lldb) p myRec2.myFieldE
+(std::nullptr_t) 0xXXXX
+(lldb) p myRec2.myFieldF
+(ChapelArray::[domain(1,int(64),one)] int(64))  (_pid = -1, _instance = 0xXXXX, _unowned = false)
+(lldb) p myUnmanagedClass
+(basicTypes::MyClass)  (super = ChapelBase::RootClass @ 0xXXXX, x = uninit, y = 0)
+(lldb) p myClass
+(OwnedObject::owned MyClass)  (chpl_p = 0xXXXX)
+(lldb) p myStr
+(String::string) "Hello, world!" {
+  size = 13
+}
+(lldb) p myDom
+(ChapelDomain::domain(2,int(64),positive))  (_pid = -1, _instance = 0xXXXX, _unowned = false)
+(lldb) p myArr2d
+(ChapelArray::[domain(2,int(64),positive)] int(64))  (_pid = -1, _instance = 0xXXXX, _unowned = false)
+(lldb) p myArr
+(ChapelArray::[domain(1,int(64),one)] int(64))  (_pid = -1, _instance = 0xXXXX, _unowned = false)
+(lldb) p myBool
+(bool) true
+(lldb) p myInt
+(long) 42
+(lldb) p myReal
+(double) 3.1400000000000001
+(lldb) p myEnumVal
+(basicTypes::myEnum) e2
+(lldb) p myEnumRef
+(basicTypes::myEnum *) 0xXXXX
+(lldb) p myTuple
+(ChapelTuple::(int(64),string,real(64),myEnum)) {
+  x0 = 1
+  x1 = "two" {
+    size = 3
+  }
+  x2 = 3
+  x3 = e1
+}
+(lldb) quit

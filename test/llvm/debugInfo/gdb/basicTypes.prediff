@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+file=$2
+
+# clean the path
+sed -E -e 's/\.\/basicTypes/basicTypes/g' \
+    -e 's/at basicTypes\.chpl.*//' \
+    $file > $file.tmp
+mv $file.tmp $file
+
+# make <incomplete type> into void
+sed -E -e 's/<incomplete type>/void/g' $file > $file.tmp
+mv $file.tmp $file
+
+# remove ` : 64` from `struct RootClass super`
+sed -E -e 's/(struct RootClass super)\s*:\s*[0-9]+/\1/' $file > $file.tmp
+mv $file.tmp $file
+
+# clean garbage values
+sed -E -e 's/, x = [0-9][0-9][0-9]+, y/, x = uninit, y/' $file > $file.tmp
+mv $file.tmp $file
+
+# remove empty lines and space
+sed -e '/^[[:space:]]*$/d' -e 's/[[:space:]]*$//' $file > $file.tmp
+mv $file.tmp $file

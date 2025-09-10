@@ -1893,7 +1893,7 @@ int llvmAlignmentOrDefer(int alignment, llvm::Type* type) {
 static inline void ensureCodegenned(TypeSymbol* ts) {
   // Beware that some types would fail codegenDef(), ex. LAPACK_C_SELECT1 in:
   // test/lib./pack./LinearAlgebra/correctness/no-dependencies/no-flags/no-flags
-  if (! ts->hasLLVMType())
+  if (!ts->hasLLVMType())
     ts->codegenDef();
 }
 

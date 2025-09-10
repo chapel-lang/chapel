@@ -1,0 +1,105 @@
+Reading symbols from basicTypes...
+Breakpoint 1 at 0xXXXX: file gdb.c, line 28.
+[Switching to Thread 0xXXXX (LWP XXXX)]
+Thread 2 "basicTypes" hit Breakpoint 1, debuggerBreakHere () at gdb.c:28
+28	void debuggerBreakHere(void) {printf("%s", "");}
+#1  0xXXXX in chpl_user_main ()
+54	  use Debugger; breakpoint;
+$1 = {myField = void}
+type = struct MyRecord1 {
+    decltype(nullptr) myField;
+}
+$2 = void
+type = void
+type = struct MyRecord2 {
+    int(64) myFieldA;
+    real(64) myFieldB;
+    struct (int(64),real(64)) myFieldC;
+    struct string myFieldD;
+    decltype(nullptr) myFieldE;
+    struct [domain(1,int(64),one)] int(64) myFieldF;
+}
+$3 = {x0 = 0, x1 = 0}
+type = struct (int(64),real(64)) {
+    int(64) x0;
+    real(64) x1;
+}
+$4 = {buffLen = 0, buffSize = 0, cachedNumCodepoints = 0, buff = 0xXXXX,
+  isOwned = true, hasEscapes = false, locale_id = 0}
+type = struct string {
+    int(64) buffLen;
+    int(64) buffSize;
+    int(64) cachedNumCodepoints;
+    uint(8) *buff;
+    bool isOwned;
+    bool hasEscapes;
+    int(32) locale_id;
+}
+$5 = void
+type = void
+$6 = {_pid = -1, _instance = void, _unowned = false}
+type = struct [domain(1,int(64),one)] int(64) {
+    int(64) _pid;
+    decltype(nullptr) _instance;
+    bool _unowned;
+}
+$7 = {super = {<No data fields>}, x = uninit, y = 0}
+type = struct MyClass {
+    struct RootClass super;
+    int(64) x;
+    real(64) y;
+}
+$8 = {chpl_p = void}
+type = struct owned MyClass {
+    decltype(nullptr) chpl_p;
+}
+$9 = {buffLen = 13, buffSize = 14, cachedNumCodepoints = 13,
+  buff = 0xXXXX "Hello, world!", isOwned = false, hasEscapes = false,
+  locale_id = 0}
+type = struct string {
+    int(64) buffLen;
+    int(64) buffSize;
+    int(64) cachedNumCodepoints;
+    uint(8) *buff;
+    bool isOwned;
+    bool hasEscapes;
+    int(32) locale_id;
+}
+$10 = {_pid = -1, _instance = void, _unowned = false}
+type = struct domain(2,int(64),positive) {
+    int(64) _pid;
+    decltype(nullptr) _instance;
+    bool _unowned;
+}
+$11 = {_pid = -1, _instance = void, _unowned = false}
+type = struct [domain(2,int(64),positive)] int(64) {
+    int(64) _pid;
+    decltype(nullptr) _instance;
+    bool _unowned;
+}
+$12 = {_pid = -1, _instance = void, _unowned = false}
+type = struct [domain(1,int(64),one)] int(64) {
+    int(64) _pid;
+    decltype(nullptr) _instance;
+    bool _unowned;
+}
+$13 = true
+type = bool
+$14 = 42
+type = int(64)
+$15 = 3.1400000000000001
+type = real(64)
+$16 = e2
+$17 = (enum myEnum *) 0xXXXX
+$18 = {x0 = 1, x1 = {buffLen = 3, buffSize = 8, cachedNumCodepoints = 3,
+    buff = 0xXXXX "two", isOwned = true, hasEscapes = false,
+    locale_id = 0}, x2 = 3, x3 = e1}
+type = struct (int(64),string,real(64),myEnum) {
+    int(64) x0;
+    struct string x1;
+    real(64) x2;
+    enum myEnum x3;
+}
+A debugging session is active.
+	Inferior 1 [process XXXX] will be killed.
+Quit anyway? (y or n) [answered Y; input not from terminal]

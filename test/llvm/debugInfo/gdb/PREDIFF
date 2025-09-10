@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+
+file=$2
+
+# clean the path
+sed -E -e 's/^(Current executable set to).*$/\1 EXECUTABLE/' \
+    -e 's/^(Executing commands in).*$/\1 FILE.txt/' \
+    -e 's/^(Global variables for).*$/\1 FILE.chpl/' \
+    -e 's/(launched:).*/\1 EXECUTABLE/' \
+    $file > $file.tmp
+mv $file.tmp $file
+
+# remove the thread info
+sed -E -e '/\[New Thread.*/d' -e '/\[Thread.*/d' \
+       -e '/libthread_db/d' $file > $file.tmp
+mv $file.tmp $file
+
+# remove debug_names warning
+sed -e '/warning: .debug_names not created by gdb; ignoring/d' $file > $file.tmp
+mv $file.tmp $file
+
+sed -E -e '/Missing separate debuginfos/d' $file > $file.tmp
+mv $file.tmp $file
+
+# remove the OpenCL warnings
+sed -E -e '/OpenCL/d' $file > $file.tmp
+mv $file.tmp $file
+
+# clean addresses
+sed -E -e 's/0x[0-9a-fA-F]+/0xXXXX/g' $file > $file.tmp
+mv $file.tmp $file
+
+# clean Process and thread
+sed -E -e 's/([Pp])rocess [0-9]+/\1rocess XXXX/g' \
+    -e 's/thread #[0-9]+/Thread #X/g' \
+    -e 's/LWP [0-9]+/LWP XXXX/g' $file > $file.tmp
+mv $file.tmp $file
+
+# remove empty lines and space
+sed -e '/^[[:space:]]*$/d' -e 's/[[:space:]]*$//' $file > $file.tmp
+mv $file.tmp $file

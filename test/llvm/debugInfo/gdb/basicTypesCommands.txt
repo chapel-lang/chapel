@@ -1,0 +1,41 @@
+r
+p myRec
+ptype myRec
+p myRec.myField
+ptype myRec.myField
+# TODO: don't print this for now, it messes up the formatting for the .good file
+#p myRec2
+ptype myRec2
+p myRec2.myFieldC
+ptype myRec2.myFieldC
+p myRec2.myFieldD
+ptype myRec2.myFieldD
+p myRec2.myFieldE
+ptype myRec2.myFieldE
+p myRec2.myFieldF
+ptype myRec2.myFieldF
+p myUnmanagedClass
+ptype myUnmanagedClass
+p myClass
+ptype myClass
+p myStr
+ptype myStr
+p myDom
+ptype myDom
+p myArr2d
+ptype myArr2d
+p myArr
+ptype myArr
+p myBool
+ptype myBool
+p myInt
+ptype myInt
+p myReal
+ptype myReal
+p myEnumVal
+#ptype myEnumVal
+p myEnumRef
+#ptype myEnumRef
+p myTuple
+ptype myTuple
+quit

@@ -1,0 +1,390 @@
+#!/usr/bin/env python3
+
+
+import os, subprocess as sp, sys
+import re
+
+
+target = sys.argv[1]
+output_file = sys.argv[2]
+
+chplenv_lines = (
+    sp.check_output(
+        [
+            os.environ["CHPL_HOME"] + "/util/printchplenv",
+            "--all",
+            "--internal",
+            "--simple",
+        ]
+    )
+    .decode()
+    .splitlines()
+)
+
+
+chplenv = {k: v for k, v in [line.split("=", 1) for line in chplenv_lines]}
+llvm_bin = (
+    sp.check_output([chplenv["CHPL_LLVM_CONFIG"], "--bindir"]).decode().strip()
+)
+llvm_dwarfdump = llvm_bin + "/llvm-dwarfdump"
+
+dwarfDumpTarget = target
+
+# On OSX we should have built a '.dSYM' archive.
+if chplenv["CHPL_TARGET_PLATFORM"] == "darwin":
+    dwarfDumpTarget += ".dSYM"
+if chplenv["CHPL_LAUNCHER"] != "none":
+    dwarfDumpTarget += "_real"
+
+def verify():
+
+    if chplenv["CHPL_TARGET_PLATFORM"] != "darwin":
+        # TODO: skip the verify check on non-macOS platforms for now
+        # on non-macOS platforms we may have linked against system
+        # libraries ike glibc with debug info and it causes --verify to hang
+        return None
+
+    try:
+        sp.check_call([llvm_dwarfdump, "--debug-info", "--verify", dwarfDumpTarget], stdout=sp.PIPE, stderr=sp.STDOUT)
+    except sp.CalledProcessError as e:
+        return e.output.decode().strip()
+    return None
+
+def dump_symbol(name):
+    try:
+        cmd = [llvm_dwarfdump, dwarfDumpTarget, "--debug-info", "--name", name, "--show-children", "--diff"]
+        output = sp.check_output(cmd).decode().strip()
+        # Remove the first line which is just the filename
+        output = output.splitlines(keepends=True)[1:]
+        # remove any line with DW_AT_location
+        output = [line for line in output if "DW_AT_location" not in line]
+
+        # replace anything that looks like CHPL_HOME with CHPL_HOME
+        chpl_home = os.environ.get("CHPL_HOME", "")
+        output = [re.sub(re.escape(chpl_home), "$CHPL_HOME", line) for line in output]
+
+        # DW_TAG_enumeration_type can print in any order, so sanitize
+        # DW_AT_const_value and DW_AT_name lines to a deterministic order
+        if any("DW_TAG_enumeration_type" in line for line in output):
+            output = [re.sub(r"\d+", "ENUM_VAL", line) if "DW_AT_const_value" in line else line for line in output]
+            output = [re.sub(r'\(".*"\)', '("ENUM_NAME")', line) if "DW_AT_name" in line else line for line in output]
+
+        output = "".join(output).strip()
+        return output
+    except sp.CalledProcessError as e:
+        return f"Error dumping symbol {name}: {e.output.decode().strip()}"
+    except Exception as e:
+        return f"Error dumping symbol {name}: {str(e)}"
+
+
+symbols = {
+    "MyClass": """
+DW_TAG_structure_type
+              DW_AT_name	("MyClass")
+              DW_AT_byte_size	(0x18)
+              DW_AT_decl_file	("./basicTypes.chpl")
+              DW_AT_decl_line	(2)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("super")
+                DW_AT_type	("ChapelBase::RootClass")
+                DW_AT_decl_file	("./basicTypes.chpl")
+                DW_AT_decl_line	(2)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("x")
+                DW_AT_type	("int(64)")
+                DW_AT_decl_file	("./basicTypes.chpl")
+                DW_AT_decl_line	(3)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x08)
+  DW_TAG_member
+                DW_AT_name	("y")
+                DW_AT_type	("real(64)")
+                DW_AT_decl_file	("./basicTypes.chpl")
+                DW_AT_decl_line	(4)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x10)
+  NULL
+""",
+"MyRecord1":"""
+DW_TAG_structure_type
+              DW_AT_name	("MyRecord1")
+              DW_AT_byte_size	(0x08)
+              DW_AT_decl_file	("./basicTypes.chpl")
+              DW_AT_decl_line	(7)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("myField")
+                DW_AT_type	("std::nullptr_t")
+                DW_AT_decl_file	("./basicTypes.chpl")
+                DW_AT_decl_line	(8)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  NULL
+""",
+"MyRecord2":"""
+DW_TAG_structure_type
+              DW_AT_name	("MyRecord2")
+              DW_AT_byte_size	(0x68)
+              DW_AT_decl_file	("./basicTypes.chpl")
+              DW_AT_decl_line	(17)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("myFieldA")
+                DW_AT_type	("int(64)")
+                DW_AT_decl_file	("./basicTypes.chpl")
+                DW_AT_decl_line	(18)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("myFieldB")
+                DW_AT_type	("real(64)")
+                DW_AT_decl_file	("./basicTypes.chpl")
+                DW_AT_decl_line	(19)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x08)
+  DW_TAG_member
+                DW_AT_name	("myFieldC")
+                DW_AT_type	("ChapelTuple::(int(64),real(64))")
+                DW_AT_decl_file	("./basicTypes.chpl")
+                DW_AT_decl_line	(20)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x10)
+  DW_TAG_member
+                DW_AT_name	("myFieldD")
+                DW_AT_type	("String::string")
+                DW_AT_decl_file	("./basicTypes.chpl")
+                DW_AT_decl_line	(21)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x20)
+  DW_TAG_member
+                DW_AT_name	("myFieldE")
+                DW_AT_type	("std::nullptr_t")
+                DW_AT_decl_file	("./basicTypes.chpl")
+                DW_AT_decl_line	(22)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x48)
+  DW_TAG_member
+                DW_AT_name	("myFieldF")
+                DW_AT_type	("ChapelArray::[domain(1,int(64),one)] int(64)")
+                DW_AT_decl_file	("./basicTypes.chpl")
+                DW_AT_decl_line	(23)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x50)
+  NULL
+""",
+"myEnum":"""
+DW_TAG_enumeration_type
+              DW_AT_type	("int(64)")
+              DW_AT_enum_class	(true)
+              DW_AT_name	("ENUM_NAME")
+              DW_AT_byte_size	(0x08)
+              DW_AT_decl_file	("./basicTypes.chpl")
+              DW_AT_decl_line	(26)
+              DW_AT_alignment	(8)
+  DW_TAG_enumerator
+                DW_AT_name	("ENUM_NAME")
+                DW_AT_const_value	(ENUM_VAL)
+  DW_TAG_enumerator
+                DW_AT_name	("ENUM_NAME")
+                DW_AT_const_value	(ENUM_VAL)
+  DW_TAG_enumerator
+                DW_AT_name	("ENUM_NAME")
+                DW_AT_const_value	(ENUM_VAL)
+  NULL
+""",
+"myRec":"""
+DW_TAG_variable
+              DW_AT_name	("myRec")
+              DW_AT_decl_file	("./basicTypes.chpl")
+              DW_AT_decl_line	(33)
+              DW_AT_type	("basicTypes::MyRecord1")
+""",
+"myRec2":"""
+DW_TAG_variable
+              DW_AT_name	("myRec2")
+              DW_AT_decl_file	("./basicTypes.chpl")
+              DW_AT_decl_line	(34)
+              DW_AT_type	("basicTypes::MyRecord2")
+""",
+"myUnmanagedClass":"""
+DW_TAG_variable
+              DW_AT_name	("myUnmanagedClass")
+              DW_AT_decl_file	("./basicTypes.chpl")
+              DW_AT_decl_line	(35)
+              DW_AT_type	("basicTypes::MyClass")
+""",
+"myClass":"""
+DW_TAG_variable
+              DW_AT_name	("myClass")
+              DW_AT_decl_file	("./basicTypes.chpl")
+              DW_AT_decl_line	(37)
+              DW_AT_type	("OwnedObject::owned MyClass")
+""",
+"myStr":"""
+DW_TAG_variable
+              DW_AT_name	("myStr")
+              DW_AT_decl_file	("./basicTypes.chpl")
+              DW_AT_decl_line	(38)
+              DW_AT_type	("String::string")
+""",
+"myDom":"""
+DW_TAG_variable
+              DW_AT_name	("myDom")
+              DW_AT_decl_file	("./basicTypes.chpl")
+              DW_AT_decl_line	(39)
+              DW_AT_type	("ChapelDomain::domain(2,int(64),positive)")
+""",
+"myArr2d":"""
+DW_TAG_variable
+              DW_AT_name	("myArr2d")
+              DW_AT_decl_file	("./basicTypes.chpl")
+              DW_AT_decl_line	(40)
+              DW_AT_type	("ChapelArray::[domain(2,int(64),positive)] int(64)")
+
+""",
+"myArr":"""
+DW_TAG_variable
+              DW_AT_name	("myArr")
+              DW_AT_decl_file	("./basicTypes.chpl")
+              DW_AT_decl_line	(41)
+              DW_AT_type	("ChapelArray::[domain(1,int(64),one)] int(64)")
+""",
+"myBool":"""
+DW_TAG_variable
+              DW_AT_name	("myBool")
+              DW_AT_decl_file	("./basicTypes.chpl")
+              DW_AT_decl_line	(42)
+              DW_AT_type	("bool")
+""",
+"myInt":"""
+DW_TAG_variable
+              DW_AT_name	("myInt")
+              DW_AT_decl_file	("./basicTypes.chpl")
+              DW_AT_decl_line	(43)
+              DW_AT_type	("int(64)")
+""",
+"myReal":"""
+DW_TAG_variable
+              DW_AT_name	("myReal")
+              DW_AT_decl_file	("./basicTypes.chpl")
+              DW_AT_decl_line	(44)
+              DW_AT_type	("real(64)")
+""",
+"myEnumVal":"""
+DW_TAG_variable
+              DW_AT_name	("myEnumVal")
+              DW_AT_decl_file	("./basicTypes.chpl")
+              DW_AT_decl_line	(45)
+              DW_AT_type	("basicTypes::myEnum")
+""",
+"myEnumRef": """
+DW_TAG_variable
+              DW_AT_name	("myEnumRef")
+              DW_AT_decl_file	("./basicTypes.chpl")
+              DW_AT_decl_line	(46)
+              DW_AT_type	("basicTypes::myEnum *")
+""",
+"myTuple": """
+DW_TAG_variable
+              DW_AT_name	("myTuple")
+              DW_AT_decl_file	("./basicTypes.chpl")
+              DW_AT_decl_line	(47)
+              DW_AT_type	("ChapelTuple::(int(64),string,real(64),myEnum)")
+""",
+"[domain(1,int(64),one)] int(64)": """
+DW_TAG_structure_type
+              DW_AT_name	("[domain(1,int(64),one)] int(64)")
+              DW_AT_byte_size	(0x18)
+              DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelArray.chpl")
+              DW_AT_decl_line	(781)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("_pid")
+                DW_AT_type	("int(64)")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelArray.chpl")
+                DW_AT_decl_line	(782)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("_instance")
+                DW_AT_type	("std::nullptr_t")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelArray.chpl")
+                DW_AT_decl_line	(785)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x08)
+  DW_TAG_member
+                DW_AT_name	("_unowned")
+                DW_AT_type	("bool")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelArray.chpl")
+                DW_AT_decl_line	(786)
+                DW_AT_alignment	(1)
+                DW_AT_data_member_location	(0x10)
+  NULL
+""",
+"domain(2,int(64),positive)": """
+DW_TAG_structure_type
+              DW_AT_name	("domain(2,int(64),positive)")
+              DW_AT_byte_size	(0x18)
+              DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelDomain.chpl")
+              DW_AT_decl_line	(1053)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("_pid")
+                DW_AT_type	("int(64)")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelDomain.chpl")
+                DW_AT_decl_line	(1054)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("_instance")
+                DW_AT_type	("std::nullptr_t")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelDomain.chpl")
+                DW_AT_decl_line	(1056)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x08)
+  DW_TAG_member
+                DW_AT_name	("_unowned")
+                DW_AT_type	("bool")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelDomain.chpl")
+                DW_AT_decl_line	(1057)
+                DW_AT_alignment	(1)
+                DW_AT_data_member_location	(0x10)
+  NULL
+"""
+}
+
+def test_symbols():
+    res = []
+    for name, expected in symbols.items():
+        output = dump_symbol(name)
+
+        if expected.strip() not in output:
+            res.append(f"Symbol {name} did not match expected output")
+            res.append("Expected:")
+            res.append(expected.strip())
+            res.append("Got:")
+            res.append(output)
+            res.append("="*40)
+    return res
+
+with open(output_file, "a") as f:
+    print("Running DWARF verification...", file=f)
+    verify_errors = verify()
+    if verify_errors:
+        print("DWARF verification failed:", file=f)
+        print(verify_errors, file=f)
+        print("FAIL", file=f)
+        sys.exit(1)
+    else:
+        print("Success!!", file=f)
+    print("Running DWARF dump checks...", file=f)
+    errors = test_symbols()
+    if errors:
+        for err in errors:
+            print(err, file=f)
+        print("FAIL", file=f)
+    else:
+        print("Success!!", file=f)

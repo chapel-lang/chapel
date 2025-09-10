@@ -1,0 +1,2 @@
+# TODO: remove the need for no-copy-propagation
+-g --no-copy-propagation --no-scalar-replacement

@@ -82,6 +82,11 @@ class debug_data
   //std::vector<llvm::DINameSpace>name_spaces;
   //std::map<const char*,llvm::DINameSpace,lessAstr> modulesByName;
   //std::vector<llvm::DISubprogram>functions;
+
+  llvm::DIType* construct_type_for_pointer(llvm::Type* ty, Type* type);
+  llvm::DIType* construct_type_for_aggregate(llvm::StructType* ty, AggregateType* type);
+  llvm::DIType* construct_type_for_enum(llvm::Type* ty, EnumType* type);
+
 #else
   static bool can_debug() { return false; }
 #endif
