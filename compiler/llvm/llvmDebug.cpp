@@ -244,6 +244,9 @@ llvm::DIType* debug_data::construct_type_for_pointer(llvm::Type* ty, Type* type)
 
   const char* name = type->symbol->name;
   ModuleSymbol* defModule = type->symbol->getModule();
+#ifdef HAVE_LLVM_TYPED_POINTERS
+  const char* defFile = type->symbol->fname();
+#endif
 
   auto dibuilder = defModule->llvmDIBuilder;
 

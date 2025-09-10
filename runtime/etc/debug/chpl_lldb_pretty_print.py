@@ -528,10 +528,10 @@ class ArrayProvider:
 
 def __lldb_init_module(debugger, internal_dict):
     debugger.HandleCommand(
-        "type summary add --expand --python-function chpl_lldb_pretty_print.StringSummary  -x '^string_chpl|string|String::string$'"
+        "type summary add --expand --python-function chpl_lldb_pretty_print.StringSummary  -x '^((string(_chpl)?)|String::string)$'"
     )
     debugger.HandleCommand(
-        "type synth add --python-class chpl_lldb_pretty_print.StringProvider -x '^string_chpl|string|String::string$'"
+        "type synth add --python-class chpl_lldb_pretty_print.StringProvider -x '^((string(_chpl)?)|String::string)$'"
     )
 
     debugger.HandleCommand(
