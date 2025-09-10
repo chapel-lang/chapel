@@ -1476,23 +1476,33 @@ const BuilderResult& buildEnumToOrder(Context* context, ID typeID) {
   AstList stmts;
   auto type = parsing::idToAst(context, typeID)->toEnum();
 
-  AstList useList;
-  auto visClause = VisibilityClause::build(builder, dummyLoc,
-                                           std::move(typeIdent));
-  useList.push_back(std::move(visClause));
+  {
+    AstList enumUseList;
+    auto visClause = VisibilityClause::build(builder, dummyLoc,
+                                             std::move(typeIdent));
+    enumUseList.push_back(std::move(visClause));
+    auto useEnum = Use::build(builder, dummyLoc, Decl::Visibility::DEFAULT_VISIBILITY, std::move(enumUseList));
+    stmts.push_back(std::move(useEnum));
+  }
 
   // In production, the new function gets inserted into the ChapelBase module.
   // In dyno, we can't do this, since generated code has to be in a particular
   // location (at this time, logically "inside" the type declaration it's generated
   // for). To ensure we have the necessary code, `use` ChapelBase` in the body.
-  auto baseIdent = Identifier::build(builder, dummyLoc,
-                                     UniqueString::get(context, "ChapelBase"));
-  auto baseVisClause = VisibilityClause::build(builder, dummyLoc,
-                                               std::move(baseIdent));
-  useList.push_back(std::move(baseVisClause));
+  {
+    AstList baseUseList;
+    auto baseIdent = Identifier::build(builder, dummyLoc,
+                                       UniqueString::get(context, "ChapelBase"));
+    auto eq = Identifier::build(builder, dummyLoc, USTR("=="));
+    std::vector<owned<AstNode>> limitations;
+    limitations.push_back(std::move(eq));
+    auto baseVisClause = VisibilityClause::build(builder, dummyLoc,
+                                                 std::move(baseIdent), VisibilityClause::ONLY, std::move(limitations));
+    baseUseList.push_back(std::move(baseVisClause));
 
-  auto use = Use::build(builder, dummyLoc, Decl::Visibility::DEFAULT_VISIBILITY, std::move(useList));
-  stmts.push_back(std::move(use));
+    auto useBase = Use::build(builder, dummyLoc, Decl::Visibility::DEFAULT_VISIBILITY, std::move(baseUseList));
+    stmts.push_back(std::move(useBase));
+  }
 
 
   // build up when-stmts
