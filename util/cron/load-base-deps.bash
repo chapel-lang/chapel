@@ -8,7 +8,7 @@ if [[ "${HOSTNAME:0:6}" == "chapcs" || "${HOSTNAME:0:6}" == "chapvm" ]]; then
     source /hpcdc/project/chapel/chpl-deps/chapcs11/load_chpl_deps.bash
   fi
 elif [[ "$(hostname -s)" == "osprey" || "$(hostname -s)" == "atlas" ||
-        "$(hostname -s)" == "pinoak-login1" ]]; then
+        "$(hostname -s)" == "pinoak-login1" || "$(hostname -s)" == "pinoak-uan1" ]]; then
   if [ -f /lus/scratch/chapelu/chpl-deps/$(hostname -s)/load_chpl_deps.bash ] ; then
     source /lus/scratch/chapelu/chpl-deps/$(hostname -s)/load_chpl_deps.bash
   fi
