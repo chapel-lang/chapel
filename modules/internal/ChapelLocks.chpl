@@ -122,58 +122,9 @@ module ChapelLocks {
       this._data = x;
     }
 
-    /** An access manager is a context manager meant for use with a 'manage'
-        statement and is created by a call to one of the guard methods such
-        as 'read()', 'write()', or 'lock()'. */
-    record accessManager {
-      type dataType;
-      type lockType;
-      param isWriteAccess: bool;
-      const _guardPtr: c_ptr(chpl_lockGuard(dataType, lockType));
-
-      inline proc init(ptr: c_ptr(chpl_lockGuard(?t1, ?t2)),
-                       param isWriteAccess: bool) {
-        this.dataType = t1;
-        this.lockType = t2;
-        this.isWriteAccess = isWriteAccess;
-        this._guardPtr = ptr;
-      }
-
-      proc isReading param do return !isWriteAccess;
-      proc isWriting param do return isWriteAccess;
-      proc _guard ref do return _guardPtr.deref();
-
-      pragma "fn returns infinite lifetime"
-      inline proc ref enterContext() ref where isWriting {
-        _guard._lock.acquireWriteLock();
-        return _guardPtr.deref().unsafeAccess();
-      }
-
-      pragma "fn returns infinite lifetime"
-      inline proc ref enterContext() const ref where isReading {
-        _guard._lock.acquireReadLock();
-        return _guardPtr.deref().unsafeAccess();
-      }
-
-      inline proc ref exitContext(in e: owned Error?) where isWriting {
-        defer _guard._lock.releaseWriteLock();
-        // TODO: We shouldn't halt here, but 'throws' is currently awkward.
-        if e then halt(e!.message());
-      }
-
-      inline proc ref exitContext(in e: owned Error?) where isReading {
-        defer _guard._lock.releaseReadLock();
-        // TODO: We shouldn't halt here, but 'throws' is currently awkward.
-        if e then halt(e!.message());
-      }
-    }
-
-    // Returns the type of the access context manager.
-    proc type _accessManagerType type do return accessManager;
-
     // Wrapper to create a new context manager instance.
     inline proc ref _createAccessManager(param isWriteAccess: bool) {
-      type t = this.type._accessManagerType;
+      type t = chpl_lockGuardAccessManager;
       return new t(c_ptrTo(this), isWriteAccess);
     }
 
@@ -189,9 +140,56 @@ module ChapelLocks {
     proc ref unsafeAccess() ref do return _data;
   }
 
-  chpl_LocalSpinlock implements contextManager;
+  /** An access manager is a context manager meant for use with a 'manage'
+      statement and is created by a call to one of the guard methods such
+      as 'read()', 'write()', or 'lock()'. */
+  // TODO: This was originally nested inside `chpl_lockGuard`, but that
+  //       causes a bizarre problem with `--verify` in programs that
+  //       emit compiler errors during the `resolve()` pass. An issue
+  //       is forthcoming.
+  record chpl_lockGuardAccessManager {
+    type dataType;
+    type lockType;
+    param isWriteAccess: bool;
+    const _guardPtr: c_ptr(chpl_lockGuard(dataType, lockType));
 
-  // TODO: Workaround for 'implements' not supporting dot expressions yet.
-  type chpl_lockGuardAccessManager = chpl_lockGuard._accessManagerType;
+    inline proc init(ptr: c_ptr(chpl_lockGuard(?t1, ?t2)),
+                     param isWriteAccess: bool) {
+      this.dataType = t1;
+      this.lockType = t2;
+      this.isWriteAccess = isWriteAccess;
+      this._guardPtr = ptr;
+    }
+
+    proc isReading param do return !isWriteAccess;
+    proc isWriting param do return isWriteAccess;
+    proc _guard ref do return _guardPtr.deref();
+
+    pragma "fn returns infinite lifetime"
+    inline proc ref enterContext() ref where isWriting {
+      _guard._lock.acquireWriteLock();
+      return _guardPtr.deref().unsafeAccess();
+    }
+
+    pragma "fn returns infinite lifetime"
+    inline proc ref enterContext() const ref where isReading {
+      _guard._lock.acquireReadLock();
+      return _guardPtr.deref().unsafeAccess();
+    }
+
+    inline proc ref exitContext(in e: owned Error?) where isWriting {
+      defer _guard._lock.releaseWriteLock();
+      // TODO: We shouldn't halt here, but 'throws' is currently awkward.
+      if e then halt(e!.message());
+    }
+
+    inline proc ref exitContext(in e: owned Error?) where isReading {
+      defer _guard._lock.releaseReadLock();
+      // TODO: We shouldn't halt here, but 'throws' is currently awkward.
+      if e then halt(e!.message());
+    }
+  }
+
+  chpl_LocalSpinlock implements contextManager;
   chpl_lockGuardAccessManager implements contextManager;
 }
