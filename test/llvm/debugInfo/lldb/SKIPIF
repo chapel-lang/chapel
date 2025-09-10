@@ -1,7 +1,13 @@
 #!/usr/bin/env bash
 
 if command -v lldb >/dev/null ; then
-  echo "False"
+
+  python_path=$(lldb --python-path 2>/dev/null)
+  if [ -z "$python_path" ]; then
+    echo "True"
+  else
+    echo "False"
+  fi
 else
   echo "True"
 fi
