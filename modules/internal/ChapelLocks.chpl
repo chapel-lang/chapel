@@ -145,8 +145,8 @@ module ChapelLocks {
       as 'read()', 'write()', or 'lock()'. */
   // TODO: This was originally nested inside `chpl_lockGuard`, but that
   //       causes a bizarre problem with `--verify` in programs that
-  //       emit compiler errors during the `resolve()` pass. An issue
-  //       is forthcoming.
+  //       emit compiler errors during the `resolve()` pass. See the
+  //       pull request #27795 for a detailed explanation.
   record chpl_lockGuardAccessManager {
     type dataType;
     type lockType;
