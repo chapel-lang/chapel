@@ -3006,12 +3006,14 @@ void AggregateType::addClassToHierarchy(std::set<AggregateType*>& localSeen) {
     if (isClass() == true) {
       SET_LINENO(this);
 
-      // For a class, just add a super class pointer.
-      VarSymbol* super = new VarSymbol("super", pt);
+      if (!this->wasResolvedEarly() ) {
+        // For a class, just add a super class pointer.
+        VarSymbol* super = new VarSymbol("super", pt);
 
-      super->addFlag(FLAG_SUPER_CLASS);
+        super->addFlag(FLAG_SUPER_CLASS);
 
-      fields.insertAtHead(new DefExpr(super));
+        fields.insertAtHead(new DefExpr(super));
+      }
 
     } else {
       SET_LINENO(this);

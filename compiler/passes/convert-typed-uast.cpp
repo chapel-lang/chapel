@@ -2574,6 +2574,8 @@ struct ConvertTypeHelper {
       v->qual = QUAL_VAL;
       v->makeField();
       at->fields.insertAtTail(new DefExpr(v));
+
+      at->inherits.insertAtTail(new SymExpr(pt->symbol));
     }
 
     helpConvertCompositeType(bct, rfds, at);
