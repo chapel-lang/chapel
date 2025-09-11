@@ -34,12 +34,16 @@ Updates to Chapel Prerequisites
 
 Syntactic / Naming Changes
 --------------------------
+* renamed the 'pre-edition' to now be called the 'preview' edition  
+  (see https://chapel-lang.org/docs/2.6/technotes/editions.html)
 
 New Language Features
 ---------------------
 
 Language Feature Improvements
 -----------------------------
+* imporved stringification of NaN `complex` values in the 'preview' edition  
+  (see https://chapel-lang.org/docs/2.6/technotes/editions.html#changes-in-the-preview-edition)
 * extended the new edition of `reshape()` to better support unbounded ranges  
   (see https://chapel-lang.org/docs/main/language/spec/arrays.html#ChapelArray.reshape)
 
@@ -49,6 +53,7 @@ Semantic Changes / Changes to the Language Definition
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
 * removed the deprecated `Time.cIsoDayOfWeek` `config param`
+* removed the previously deprecated `URL.openUrl[Writer|Reader]()` routines
 
 Namespace Changes
 -----------------
@@ -93,6 +98,7 @@ Tool Improvements
 -----------------
 * added a `@chpldoc.hideImplType` attribute to display a symbol as a `type`  
   (e.g., `@chpldoc.hideImplType record MyType { }` renders as `type MyType`)
+* `chpldoc`, `c2chapel`, `chapel-py` and the CLS now require Python 3.10+
 
 Syntax Highlighters
 -------------------
@@ -100,15 +106,25 @@ Syntax Highlighters
 Documentation Improvements
 --------------------------
 * added the ability to search the online documentation for compiler flags
+* removed the redundant `init=` technote
+* unified uses of "iteratable" and "iterable" in favor of "iterable"
+* updated the README Twitter link and description to refer to it as "X" instead
 
 Language Specification Improvements
 -----------------------------------
+* added operator methods to the language specification, removing the technote  
+  (see https://chapel-lang.org/docs/2.6/language/spec/methods.html#operator-methods)
 * clarified in the 'Tuples' chapter that trailing commas are always permitted  
   (see https://chapel-lang.org/docs/2.6/language/spec/tuples.html#tuple-types)
 
 Documentation Improvements for Libraries
 ----------------------------------------
+* converted many example codes into automated tests, fixing them in the process
 * added missing `throws` annotations to procedures in several package modules
+* improved the `Help` module's documentation for multilocale settings  
+  (see https://chapel-lang.org/docs/2.6/modules/standard/Help.html#Help.printUsage)
+* removed `j` and `h` from the `FormattedIO` documentation
+* fixed a typo in the `Curl` module documentation
 
 Documentation Improvements for Tools
 ------------------------------------
@@ -145,6 +161,7 @@ Configuration / Build Changes
 
 Updates to Chapel's Release Formats
 -----------------------------------
+* dropped pre-built package support for Debian 11 and RHEL 9
 
 Portability / Platform-specific Improvements
 --------------------------------------------
@@ -169,10 +186,12 @@ Runtime Library Improvements
 
 Third-Party Software Changes
 ----------------------------
+* updated Python packages used by `chpldoc`, `c2chapel`, `chapel-py` and CLS
 
 Bug Fixes
 ---------
 * fixed a bug in which the new edition of `reshape()` wasn't copying on return
+* fixed a bug with casting the string `"infi"` to `imag` on Linux platforms
 
 Bug Fixes for Libraries
 -----------------------
@@ -247,6 +266,8 @@ Developer-oriented changes: Testing System
 ------------------------------------------
 * improved documentation and set of scripts used for portability testing
 * fixed Vagrant test script bugs and enabled running on proxied systems
+* `start_test` now requires Python 3.10 or later
+* updated Python package versions used by `start_test`
 * removed unintended division of command exit status in `testRelease` script
 
 Developer-oriented changes: Tool Improvements
