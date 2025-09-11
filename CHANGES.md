@@ -106,9 +106,14 @@ Syntax Highlighters
 Documentation Improvements
 --------------------------
 * added the ability to search the online documentation for compiler flags
+* updated the `LICENSE` files w.r.t. the Python packages relied upon by tools  
+  (see https://raw.githubusercontent.com/chapel-lang/chapel/refs/heads/release/2.6/LICENSE)
+* added an entry on the `@editions` attribute to the attributes technote  
+  (see https://chapel-lang.org/docs/main/technotes/attributes.html#other-attributes)
 * removed the redundant `init=` technote
 * unified uses of "iteratable" and "iterable" in favor of "iterable"
 * updated the README Twitter link and description to refer to it as "X" instead
+* removed a completed TODO from the attributes technote
 
 Language Specification Improvements
 -----------------------------------
@@ -187,6 +192,8 @@ Runtime Library Improvements
 Third-Party Software Changes
 ----------------------------
 * updated Python packages used by `chpldoc`, `c2chapel`, `chapel-py` and CLS
+* updated the third-party READMEs with respect to additional Python packages  
+  (see https://raw.githubusercontent.com/chapel-lang/chapel/refs/heads/release/2.6/third-party/chpl-venv/README.md)
 
 Bug Fixes
 ---------
