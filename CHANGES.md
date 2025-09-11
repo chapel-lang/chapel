@@ -48,6 +48,7 @@ Semantic Changes / Changes to the Language Definition
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
+* removed the deprecated `Time.cIsoDayOfWeek` `config param`
 
 Namespace Changes
 -----------------
@@ -90,6 +91,8 @@ GPU Computing
 
 Tool Improvements
 -----------------
+* added a `@chpldoc.hideImplType` attribute to display a symbol as a `type`  
+  (e.g., `@chpldoc.hideImplType record MyType { }` renders as `type MyType`)
 
 Syntax Highlighters
 -------------------
@@ -99,9 +102,12 @@ Documentation Improvements
 
 Language Specification Improvements
 -----------------------------------
+* clarified in the 'Tuples' chapter that trailing commas are always permitted  
+  (see https://chapel-lang.org/docs/2.6/language/spec/tuples.html#tuple-types)
 
 Documentation Improvements for Libraries
 ----------------------------------------
+* added missing `throws` annotations to procedures in several package modules
 
 Documentation Improvements for Tools
 ------------------------------------
@@ -111,6 +117,8 @@ Documentation Improvements to the 'man' Pages
 
 Platform-Specific Documentation Improvements
 --------------------------------------------
+* updated Amazon Linux 2 build instructions to allow `CHPL_LLVM=none` configs  
+  (see https://chapel-lang.org/docs/2.6/usingchapel/prereqs.html#amazon-linux-2-chpl-llvm-system-incompatibility)
 
 Technical Note Improvements
 ---------------------------
@@ -185,6 +193,7 @@ Developer-oriented changes: Process
 
 Developer-oriented changes: Documentation
 -----------------------------------------
+* removed stub docs for `Sort` package module (moved to be a standard module)
 
 Developer-oriented changes: Syntactic / Naming Changes
 ------------------------------------------------------
@@ -199,6 +208,7 @@ Developer-oriented changes: Performance improvements
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
 * fixed a typo that was thwarting proper cleaning of docs builds
+* clarified error when homebrew-based `pkg-config` fails to find a dependence
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
@@ -208,6 +218,7 @@ Developer-oriented changes: Compiler improvements / changes
 
 Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
+* added `init=` to assignments and returns of ref-tuples to create value tuples
 
 Developer-oriented changes: GPU support
 ---------------------------------------
@@ -217,9 +228,14 @@ Developer-oriented changes: Runtime improvements
 
 Developer-oriented changes: Platform-specific bug fixes
 -------------------------------------------------------
+* fixed missing include paths in Dyno's invocations of Clang on macOS
+* removed a self-referential symlink causing Spack `@main` build to fail
 
 Developer-oriented changes: Testing System
 ------------------------------------------
+* improved documentation and set of scripts used for portability testing
+* fixed Vagrant test script bugs and enabled running on proxied systems
+* removed unintended division of command exit status in `testRelease` script
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
