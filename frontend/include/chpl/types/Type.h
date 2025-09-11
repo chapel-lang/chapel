@@ -314,8 +314,8 @@ class Type {
       always considered to be POD, and no further evaluation takes
       place.
 
-      If 't' is the sync type, the single type, an atomic type, the
-      array type, or the domain type, then 't' is not POD.
+      If 't' is the sync type, an atomic type, the array type, or
+      the domain type, then 't' is not POD.
 
       If 't' is a class with 'owned' or 'shared' management, then 't'
       is not POD.
