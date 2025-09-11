@@ -99,6 +99,7 @@ Syntax Highlighters
 
 Documentation Improvements
 --------------------------
+* added the ability to search the online documentation for compiler flags
 
 Language Specification Improvements
 -----------------------------------
@@ -219,6 +220,17 @@ Developer-oriented changes: Compiler improvements / changes
 Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
 * added `init=` to assignments and returns of ref-tuples to create value tuples
+* made numerous improvements to the 'dyno' resolver for types and calls:
+  * fixed an ambiguity bug when type formals have a type expression
+* made numerous improvements when converting 'dyno' AST to production AST
+  * enabled conversion of strings
+  * implemented support for correctly handling unreachable code
+  * implemented support for class allocation
+  * implemented support for `export` procedures
+  * implemented support for partially converting internal/standard modules
+  * significantly improved support for initializing records
+  * significantly improved support for default argument values
+  * fixed a bug causing the computed call-graph to be nondeterministic
 
 Developer-oriented changes: GPU support
 ---------------------------------------
