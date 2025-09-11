@@ -2,10 +2,6 @@ Release Changes List
 ====================
 
 TODO:
-o fold Anna's dyno change into other lists
-o move new attribute back into developer section
-o unify bullets in dyno sub-lists
-o move deprecated entries from language to lib that are
 o '(http:' -> '(see http:'
 o sort items within categories
 o check placement of items into categories
@@ -61,8 +57,6 @@ Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
 * removed deprecated support for `$` as a valid character in identifiers
 * removed deprecated support for `require` of `.chpl` files at non-module scope
-* removed the deprecated `Time.cIsoDayOfWeek` `config param`
-* removed the previously deprecated `URL.openUrl[Writer|Reader]()` routines
 
 Namespace Changes
 -----------------
@@ -102,6 +96,8 @@ Deprecated / Unstable / Removed Library Features
 * removed the deprecated `DistributedBagDeprecated` module
 * removed the deprecated config variable `IO.ReadBinaryArrayReturnInt`
 * removed the deprecated `IO.Open[Writer|Reader]LockingDefault` config vars
+* removed the deprecated `Time.cIsoDayOfWeek` `config param`
+* removed the previously deprecated `URL.openUrl[Writer|Reader]()` routines
 
 Compiler Flags
 --------------
@@ -148,8 +144,6 @@ Tool Improvements
   (see https://chapel-lang.org/docs/2.6/tools/chapel-py/chapel-py.html#chapel.Formal.is_this)
 * migrated `chapel-py` to a `pyproject.toml`-based project
 * started using the Python 3.9 limited ABI version for `chapel-py`
-* added a `@chpldoc.hideImplType` attribute to display a symbol as a `type`  
-  (e.g., `@chpldoc.hideImplType record MyType { }` renders as `type MyType`)
 * `chpldoc`, `c2chapel`, `chapel-py` and the CLS now require Python 3.10+
 
 Syntax Highlighters
@@ -415,13 +409,13 @@ Developer-oriented changes: Compiler improvements / changes
 
 Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
-* added `init=` to assignments and returns of ref-tuples to create value tuples
 * made numerous improvements to the 'dyno' resolver for types and calls:
   - made try-catch analysis sensitive to various early return cases
   - enabled promotion of method calls and compiler-generated binary operators
   - enabled type queries in tuple formals (both `(?t, ?u)` and `?k * ?v`)
   - enabled using unsigned integers to index into tuples
   - enabled casting tuples to strings
+  - added `init=` to assignments/returns of ref-tuples to create value tuples
   - ensured `param` concatenation of byte string literals produces `bytes`
   - enabled casting `param` strings to runtime numbers and `enum` types
   - allowed `enum` declarations to refer to previous elements' values  
@@ -435,16 +429,16 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
   - disallowed type queries in boolean types
   - fixed enforcing of type query constraints in generic variadic formals
   - fixed ambiguity errors when selecting routines subject to `param` narrowing
-  * fixed an ambiguity bug when type formals have a type expression
+  - fixed an ambiguity bug when type formals have a type expression
 * made numerous improvements when converting 'dyno' AST to production AST
-  * enabled conversion of strings
-  * implemented support for correctly handling unreachable code
-  * implemented support for class allocation
-  * implemented support for `export` procedures
-  * implemented support for partially converting internal/standard modules
-  * significantly improved support for initializing records
-  * significantly improved support for default argument values
-  * fixed a bug causing the computed call-graph to be nondeterministic
+  - enabled conversion of strings
+  - implemented support for correctly handling unreachable code
+  - implemented support for class allocation
+  - implemented support for `export` procedures
+  - implemented support for partially converting internal/standard modules
+  - significantly improved support for initializing records
+  - significantly improved support for default argument values
+  - fixed a bug causing the computed call-graph to be nondeterministic
 
 Developer-oriented changes: GPU support
 ---------------------------------------
@@ -469,6 +463,8 @@ Developer-oriented changes: Testing System
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
+* added a `@chpldoc.hideImplType` attribute to display a symbol as a `type`  
+  (e.g., `@chpldoc.hideImplType record MyType { }` renders as `type MyType`)
 * rewrote `testReleaseHelp` to use `bash` instead of `csh`
 * improved the copyright CI check to ignore generated minimal modules
 * improved the debuggability of `chapel-py` with `CHPL_DEVELOPER` set
