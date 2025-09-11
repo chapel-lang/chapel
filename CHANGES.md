@@ -335,6 +335,7 @@ Bug Fixes for Libraries
 -----------------------
 * fixed a bug in `DynamicLoading` when trying to load a non-existent symbol
 * fixed a bug in `DynamicLoading` when trying to load a symbol multiple times
+* fixed a deadlock for heaps initialized with `parSafe=true`
 * fixed parsing of strings with escapes and commas in the `TOML` module
 * fixed printing of "Required Locales" in `UnitTest` to support `mason test`
 * fixed `UnitTest` not working when compiled with `--devel`
