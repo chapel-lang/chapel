@@ -160,6 +160,8 @@ Documentation Improvements
   (see https://chapel-lang.org/docs/2.6/platforms/comm-layers/gasnet.html#emulating-distributed-execution-with-the-udp-conduit)
 * added the ability to search the online documentation for compiler flags
 * added support for searching for the docs describing `chplconfig` files
+* improved the task-private variable description in the `forall` loops primer  
+  (see https://chapel-lang.org/docs/2.6/primers/forallLoops.html#task-private-variables)
 * converted the code examples in several technotes to support nightly testing
 * updated the `LICENSE` files w.r.t. the Python packages relied upon by tools  
   (see https://raw.githubusercontent.com/chapel-lang/chapel/refs/heads/release/2.6/LICENSE)
