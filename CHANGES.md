@@ -247,6 +247,24 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
 * added `init=` to assignments and returns of ref-tuples to create value tuples
 * made numerous improvements to the 'dyno' resolver for types and calls:
+  - made try-catch analysis sensitive to various early return cases
+  - enabled promotion of method calls and compiler-generated binary operators
+  - enabled type queries in tuple formals (both `(?t, ?u)` and `?k * ?v`)
+  - enabled using unsigned integers to index into tuples
+  - enabled casting tuples to strings
+  - ensured `param` concatenation of byte string literals produces `bytes`
+  - enabled casting `param` strings to runtime numbers and `enum` types
+  - allowed `enum` declarations to refer to previous elements' values  
+    (e.g., `enum E { A = 0, B = A : int + 1 }`)
+  - enabled `param` iteration over `enum` ranges
+  - enable accessing `enum` elements through a type alias to the `enum` type
+  - added implicit conversion from `c_array` to `c_ptr`.
+  - enabled more methods on C strings represented by `c_ptr(c_char)`
+  - implemented compiler-generated hash functions
+  - improved detection of syntactically-generic fields
+  - disallowed type queries in boolean types
+  - fixed enforcing of type query constraints in generic variadic formals
+  - fixed ambiguity errors when selecting routines subject to `param` narrowing
   * fixed an ambiguity bug when type formals have a type expression
 * made numerous improvements when converting 'dyno' AST to production AST
   * enabled conversion of strings
