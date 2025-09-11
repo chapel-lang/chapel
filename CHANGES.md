@@ -51,6 +51,8 @@ Language Feature Improvements
   (see https://chapel-lang.org/docs/2.6/technotes/editions.html#changes-in-the-preview-edition)
 * extended the new edition of `reshape()` to better support unbounded ranges  
   (see https://chapel-lang.org/docs/main/language/spec/arrays.html#ChapelArray.reshape)
+* enhanced the `.createIndexBuffer()` method via new sorted/unique properties  
+  (see https://chapel-lang.org/docs/2.6/language/spec/domains.html#ChapelDomain.createIndexBuffer)
 
 Semantic Changes / Changes to the Language Definition
 -----------------------------------------------------
