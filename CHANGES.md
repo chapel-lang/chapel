@@ -81,6 +81,7 @@ Changes / Feature Improvements in Package Modules
 * improved `Debugger.breakpoint` to automatically jump to the Chapel frame
 * added a `--filter` flat to `UnitTest` to support running a subset of tests  
   (see https://chapel-lang.org/docs/2.6/modules/packages/UnitTest.html#filtering-tests)
+* improved the `DynamicLoading` module to work with LLVM 14 and the C back-end
 
 New Standard Layout and Distribution Features
 ---------------------------------------------
@@ -159,6 +160,7 @@ Documentation Improvements
   (see https://chapel-lang.org/docs/2.6/platforms/comm-layers/gasnet.html#emulating-distributed-execution-with-the-udp-conduit)
 * added the ability to search the online documentation for compiler flags
 * added support for searching for the docs describing `chplconfig` files
+* converted the code examples in several technotes to support nightly testing
 * updated the `LICENSE` files w.r.t. the Python packages relied upon by tools  
   (see https://raw.githubusercontent.com/chapel-lang/chapel/refs/heads/release/2.6/LICENSE)
 * added an entry on the `@editions` attribute to the attributes technote  
@@ -313,6 +315,7 @@ Bug Fixes
 * fixed function expressions not supporting single-statement bodies
 * fixed an issue with parsing `extern` blocks
 * fixed an internal error when casting Chapel functions to pointers
+* fixed an internal error when casting to `atomic`
 * fixed a bug in which the new edition of `reshape()` wasn't copying on return
 * fixed a bug with casting the string `"infi"` to `imag` on Linux platforms
 * fixed an internal error when using generically managed class fields
@@ -328,6 +331,8 @@ Bug Fixes
 
 Bug Fixes for Libraries
 -----------------------
+* fixed a bug in `DynamicLoading` when trying to load a non-existent symbol
+* fixed a bug in `DynamicLoading` when trying to load a symbol multiple times
 * fixed parsing of strings with escapes and commas in the `TOML` module
 * fixed printing of "Required Locales" in `UnitTest` to support `mason test`
 * fixed `UnitTest` not working when compiled with `--devel`
@@ -380,6 +385,7 @@ Developer-oriented changes: Syntactic / Naming Changes
 
 Developer-oriented changes: Module changes
 ------------------------------------------
+* added a new locking abstraction to the internal `ChapelLocks` module
 * refactored the new edition of `reshape()` to avoid redundancy
 
 Developer-oriented changes: Performance improvements
