@@ -85,6 +85,7 @@ Changes / Feature Improvements in Package Modules
 
 New Standard Layout and Distribution Features
 ---------------------------------------------
+* enabled the `isUnique` flag for `bulkAdd()` on distributed sparse domains
 * added a warning when creating stencil-distributed arrays of `owned` classes
 * added missing support for `==` on `privateDist` instances
 
@@ -239,6 +240,7 @@ Example Codes
 
 Performance Optimizations / Improvements
 ----------------------------------------
+* accelerated the addition of a `sparseIndexBuffer` to a sparse domain
 
 Improvements to Compile Times
 -----------------------------
@@ -320,6 +322,7 @@ Bug Fixes
 * fixed an internal error when casting to `atomic`
 * fixed a bug in which the new edition of `reshape()` wasn't copying on return
 * fixed a bug with casting the string `"infi"` to `imag` on Linux platforms
+* fix a bug with the `dataSorted` flag in distributed `bulkAdd()` calls
 * fixed an internal error when using generically managed class fields
 * fixed a compiler crash when resolving certain inits of generic records
 * fixed an erroneous error about forwarding cycles with `owned` classes
