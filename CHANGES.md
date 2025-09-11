@@ -96,6 +96,8 @@ GPU Computing
 
 Tool Improvements
 -----------------
+* adjusted `chpldoc` to support `-M` for extending the module search path  
+ (see https://chapel-lang.org/docs/2.6/tools/chpldoc/man.html)
 * added a `@chpldoc.hideImplType` attribute to display a symbol as a `type`  
   (e.g., `@chpldoc.hideImplType record MyType { }` renders as `type MyType`)
 * `chpldoc`, `c2chapel`, `chapel-py` and the CLS now require Python 3.10+
@@ -141,6 +143,8 @@ Platform-Specific Documentation Improvements
 --------------------------------------------
 * updated Amazon Linux 2 build instructions to allow `CHPL_LLVM=none` configs  
   (see https://chapel-lang.org/docs/2.6/usingchapel/prereqs.html#amazon-linux-2-chpl-llvm-system-incompatibility)
+* added documentation for `CHPL_RT_COMM_OFI_DEDICATED_AMH_CORES`  
+ (see https://chapel-lang.org/docs/main/platforms/comm-layers/libfabric.html#other-settings)
 
 Technical Note Improvements
 ---------------------------
@@ -199,6 +203,7 @@ Bug Fixes
 ---------
 * fixed a bug in which the new edition of `reshape()` wasn't copying on return
 * fixed a bug with casting the string `"infi"` to `imag` on Linux platforms
+* fixed a bug where `CHPL_LIB_PIC` in `chplconfig` was sometimes ignored 
 
 Bug Fixes for Libraries
 -----------------------
@@ -208,6 +213,7 @@ Bug Fixes for GPU Computing
 
 Bug Fixes for Tools
 -------------------
+* Fixed a bug where `chpldoc --process-used-modules` could not find a module
 
 Bug Fixes for Build Issues
 --------------------------
