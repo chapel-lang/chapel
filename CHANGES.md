@@ -2,20 +2,20 @@ Release Changes List
 ====================
 
 TODO:
-o '(http:' -> '(see http:'
+* '(http:' -> '(see http:'
 o sort items within categories
 o check placement of items into categories
 o check ordering of categories relative to one another
-o check for ' vs `
-o fulfill TODOs
-o check man page or util/chpl-completion.bash for new compiler flags
-o check test/release/examples
-o check for docs/2.4/ links
-o check forced linebreaks
-o check initial '*'
-o check for initial 'A-Z'
-o check for 'see:'
-o check for changes put too far down in file
+* check for ' vs `
+* fulfill TODOs
+* check man page or util/chpl-completion.bash for new compiler flags
+* check test/release/examples
+* check for docs/2.4/ links
+* check forced linebreaks
+* check initial '*'
+* check for initial 'A-Z'
+* check for 'see:'
+* check for changes put too far down in file
 o add highlights
 o spellcheck
 o remove empty sections
@@ -46,7 +46,7 @@ Language Feature Improvements
 * imporved stringification of NaN `complex` values in the 'preview' edition  
   (see https://chapel-lang.org/docs/2.6/technotes/editions.html#changes-in-the-preview-edition)
 * extended the new edition of `reshape()` to better support unbounded ranges  
-  (see https://chapel-lang.org/docs/main/language/spec/arrays.html#ChapelArray.reshape)
+  (see https://chapel-lang.org/docs/2.6/language/spec/arrays.html#ChapelArray.reshape)
 * enhanced the `.createIndexBuffer()` method via new sorted/unique properties  
   (see https://chapel-lang.org/docs/2.6/language/spec/domains.html#ChapelDomain.createIndexBuffer)
 
@@ -63,7 +63,7 @@ Namespace Changes
 
 New Standard Library Features
 -----------------------------
-* added a cast from `real` values to `bigint` in the 'BigInteger' module
+* added a cast from `real` values to `bigint` in the `BigInteger` module
 
 Changes / Feature Improvements in Standard Libraries
 ----------------------------------------------------
@@ -138,9 +138,9 @@ Tool Improvements
  (see https://chapel-lang.org/docs/2.6/tools/chpldoc/man.html)
 * improved `chpldoc`'s rendering when using `throws` and return types together
 * made `chapel-py` no longer rely on `CHPL_HOME` being set to build or run
-* made `chapel.AstNode` hashable and comparable in the `chapel-py` API
+* made `chapel.AstNode` hashable and comparable in the `chapel-py` API  
   (see https://chapel-lang.org/docs/2.6/tools/chapel-py/chapel-py.html#chapel.AstNode)
-* added a `is_this` method to `chapel.Formal` in the `chapel-py` API
+* added a `is_this` method to `chapel.Formal` in the `chapel-py` API  
   (see https://chapel-lang.org/docs/2.6/tools/chapel-py/chapel-py.html#chapel.Formal.is_this)
 * migrated `chapel-py` to a `pyproject.toml`-based project
 * started using the Python 3.9 limited ABI version for `chapel-py`
@@ -163,11 +163,11 @@ Documentation Improvements
 * updated the `LICENSE` files w.r.t. the Python packages relied upon by tools  
   (see https://raw.githubusercontent.com/chapel-lang/chapel/refs/heads/release/2.6/LICENSE)
 * added an entry on the `@editions` attribute to the attributes technote  
-  (see https://chapel-lang.org/docs/main/technotes/attributes.html#other-attributes)
+  (see https://chapel-lang.org/docs/2.6/technotes/attributes.html#other-attributes)
 * removed the redundant `init=` technote
 * unified uses of "iteratable" and "iterable" in favor of "iterable"
 * updated the README Twitter link and description to refer to it as "X" instead
-* removed a completed TODO from the attributes technote
+* removed a completed action item from the attributes technote
 
 Language Specification Improvements
 -----------------------------------
@@ -193,7 +193,7 @@ Documentation Improvements for Libraries
 * removed `j` and `h` from the `FormattedIO` documentation
 * fixed a typo in the `Curl` module documentation
 * removed the standalone page for `AutoGpu` whose contents now appear in `GPU`  
-  (see https://chapel-lang.org/docs/main/modules/standard/GPU.html)
+  (see https://chapel-lang.org/docs/2.6/modules/standard/GPU.html)
 
 Documentation Improvements for Tools
 ------------------------------------
@@ -222,11 +222,11 @@ Platform-Specific Documentation Improvements
 * added documentation for more launcher environment variables  
   (see https://chapel-lang.org/docs/2.6/usingchapel/launcher.html#common-slurm-settings)
 * added a new slurm troubleshooting section to the launcher documentation  
-  (see https://chapel-lang.org/docs/main/usingchapel/launcher.html#troubleshooting-with-slurm)
+  (see https://chapel-lang.org/docs/2.6/usingchapel/launcher.html#troubleshooting-with-slurm)
 * updated Amazon Linux 2 build instructions to allow `CHPL_LLVM=none` configs  
   (see https://chapel-lang.org/docs/2.6/usingchapel/prereqs.html#amazon-linux-2-chpl-llvm-system-incompatibility)
 * added documentation for `CHPL_RT_COMM_OFI_DEDICATED_AMH_CORES`  
- (see https://chapel-lang.org/docs/main/platforms/comm-layers/libfabric.html#other-settings)
+ (see https://chapel-lang.org/docs/2.6/platforms/comm-layers/libfabric.html#other-settings)
 
 Technical Note Improvements
 ---------------------------
@@ -346,7 +346,7 @@ Bug Fixes for GPU Computing
 Bug Fixes for Tools
 -------------------
 * fixed printing for primary methods when hovering in CLS
-* Fixed a bug where `chpldoc --process-used-modules` could not find a module
+* fixed a bug where `chpldoc --process-used-modules` could not find a module
 * fixed `chapel-py` builds not working with older versions of pip
 * added missing checking for invalid project names to `mason init`
 * fixed an issue with `mason test` mangling an absolute path to a test file
