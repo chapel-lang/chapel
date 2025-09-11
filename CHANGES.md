@@ -1,6 +1,26 @@
 Release Changes List
 ====================
 
+TODO:
+o '(http:' -> '(see http:'
+o sort items within categories
+o check placement of items into categories
+o check ordering of categories relative to one another
+o check for ' vs `
+o fulfill TODOs
+o check man page or util/chpl-completion.bash for new compiler flags
+o check test/release/examples
+o check for docs/2.4/ links
+o check forced linebreaks
+o check initial '*'
+o check for initial 'A-Z'
+o check for 'see:'
+o check for changes put too far down in file
+o add highlights
+o spellcheck
+o remove empty sections
+o check links
+
 version 2.6
 ===========
 
@@ -20,6 +40,8 @@ New Language Features
 
 Language Feature Improvements
 -----------------------------
+* extended the new edition of `reshape()` to better support unbounded ranges  
+  (see https://chapel-lang.org/docs/main/language/spec/arrays.html#ChapelArray.reshape)
 
 Semantic Changes / Changes to the Language Definition
 -----------------------------------------------------
@@ -32,6 +54,7 @@ Namespace Changes
 
 New Standard Library Features
 -----------------------------
+* added a cast from `real` values to `bigint` in the 'BigInteger' module
 
 Changes / Feature Improvements in Standard Libraries
 ----------------------------------------------------
@@ -44,6 +67,8 @@ Changes / Feature Improvements in Package Modules
 
 New Standard Layout and Distribution Features
 ---------------------------------------------
+* added a warning when creating stencil-distributed arrays of `owned` classes
+* added missing support for `==` on `privateDist` instances
 
 Name Changes for Standard Layouts and Distributions
 ---------------------------------------------------
@@ -104,6 +129,7 @@ Generated Code Improvements
 
 Memory Improvements
 -------------------
+* closed a memory leak when creating new instances of `privateDist`
 
 Configuration / Build Changes
 -----------------------------
@@ -137,6 +163,7 @@ Third-Party Software Changes
 
 Bug Fixes
 ---------
+* fixed a bug in which the new edition of `reshape()` wasn't copying on return
 
 Bug Fixes for Libraries
 -----------------------
@@ -164,12 +191,14 @@ Developer-oriented changes: Syntactic / Naming Changes
 
 Developer-oriented changes: Module changes
 ------------------------------------------
+* refactored the new edition of `reshape()` to avoid redundancy
 
 Developer-oriented changes: Performance improvements
 ----------------------------------------------------
 
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
+* fixed a typo that was thwarting proper cleaning of docs builds
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
