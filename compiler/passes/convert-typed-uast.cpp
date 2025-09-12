@@ -3940,14 +3940,15 @@ locateFieldSymbolAndType(TConverter* tc,
     }
 
     if (!found && (cls || ct->isBasicClassType())) {
+      auto bct = ct->toBasicClassType();
       types::QualifiedType qtSuper = {types::QualifiedType::CONST_IN,
-                                      ct->toBasicClassType()->parentClassType()};
+                                      bct->parentClassType()};
       if (0==strcmp(fieldName, "super")) {
         return { base, at->getField(1), qtSuper };
       } else {
-        Expr* newBase = new CallExpr(PRIM_GET_MEMBER_VALUE,
-                                      base,
-                                      new_CStringSymbol("super"));
+        Expr* newBase = new CallExpr(PRIM_CAST,
+                                      tc->convertType(qtSuper.type())->symbol,
+                                      base);
         newBase = tc->storeInTempIfNeeded(newBase, qtSuper);
         return locateFieldSymbolAndType(tc, newBase,
                                            qtSuper,
