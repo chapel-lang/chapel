@@ -90,7 +90,7 @@ Debugging Improvements
 * improved `Debugger.breakpoint` to automatically jump to the Chapel frame
 * improved the debug information for enums and bools with the LLVM back-end
 
-VSCode / Chapel Language Server (CLS) / Editor Improvements
+VSCode / `chpl-language-server` (CLS) / Editor Improvements
 -----------------------------------------------------------
 * added a "Run Test" code lens in VSCode for `UnitTest` test functions
 * added a `--vscode` flag to `chpl-shim` to generate VSCode tasks  
