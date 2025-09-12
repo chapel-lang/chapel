@@ -92,7 +92,7 @@ Process XXXX stopped
 (basicTypes::MyClass *) 0xXXXX
 (lldb) p myClass
 (OwnedObject::owned MyClass) 0xXXXX {
-  super = 0xXXXX
+  super = (cid = XXX)
   x = 0
   y = 0
 }
