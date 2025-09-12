@@ -3,8 +3,8 @@ Release Changes List
 
 TODO:
 * '(http:' -> '(see http:'
-o sort items within categories
-o check placement of items into categories
+* sort items within categories
+* check placement of items into categories
 o check ordering of categories relative to one another
 * check for ' vs `
 * fulfill TODOs
@@ -16,7 +16,7 @@ o check ordering of categories relative to one another
 * check for initial 'A-Z'
 * check for 'see:'
 * check for changes put too far down in file
-o add highlights
+* add highlights
 o spellcheck
 o remove empty sections
 o check links
@@ -26,8 +26,16 @@ version 2.6
 
 released September 18, 2025
 
-Highlights (see subsequent sections for further details)
---------------------------------------------------------
+Highlights (see the sections that follow for details)
+-----------------------------------------------------
+* made several improvements in support of debugging and testing Chapel programs
+* added/improved docs about multiple locales, AWS/EFA, ASAN, SMP, Ethernet, ...
+* improved tools: VSCode, `chplcheck`, CLS, `chpldoc`, `chapel-py` and `mason`
+* improved support for using address sanitizers with Chapel programs
+* improved the consistency and robustness of the `DynamicLoading` module
+* improved the flexibility of the Homebrew and Linux package releases
+* continued improving Dyno's ability to resolve and lower language features
+* made many other improvements in terms of bug fixes, errors, docs, etc.
 
 Updates to Chapel Prerequisites
 -------------------------------
