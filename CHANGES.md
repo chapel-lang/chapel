@@ -1,26 +1,6 @@
 Release Changes List
 ====================
 
-TODO:
-* '(http:' -> '(see http:'
-* sort items within categories
-* check placement of items into categories
-* check for ' vs `
-* fulfill TODOs
-* check man page or util/chpl-completion.bash for new compiler flags
-* check test/release/examples
-* check for docs/2.4/ links
-* check forced linebreaks
-* check initial '*'
-* check for initial 'A-Z'
-* check for 'see:'
-* check for changes put too far down in file
-* add highlights
-* spellcheck
-* remove empty sections
-* check ordering of categories relative to one another
-o check links
-
 version 2.6
 ===========
 
