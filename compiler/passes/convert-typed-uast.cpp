@@ -1247,27 +1247,6 @@ ModuleSymbol* TConverter::convertToplevelModule(const Module* mod,
 void TConverter::postConvertApplyFixups() {
   untypedConverter->postConvertApplyFixups();
 
-  // Move nested functions back into their parent functions. Won't be needed
-  // in the long-term, but for now we want to avoid these nested functions
-  // registering as candidates.
-  //
-  // TODO: This doesn't work for generic functions
-  std::unordered_map<ID, Symbol*> idFnMap;
-  for (auto pair: fns) {
-    auto fn = pair.first;
-    auto sym = pair.second;
-    idFnMap[fn->id()] = sym;
-  }
-  for (auto [id, sym] : idFnMap) {
-    if (isFnSymbol(sym)) {
-      auto parent = parsing::idToParentFunctionId(context, id);
-      if (parsing::idIsFunction(context, parent)) {
-        auto parentFn = toFnSymbol(idFnMap[parent]);
-        parentFn->insertAtHead(sym->defPoint->remove());
-      }
-    }
-  }
-
   // TODO: apply fixups from this converter
 }
 
@@ -5198,6 +5177,12 @@ bool TConverter::enter(const Function* node, RV& rv) {
   if (fVerify && fn->isMethod() && fn->numFormals() > 0) {
     auto arg = fn->getFormal(1);
     INT_ASSERT(arg->type != dtMethodToken);
+  }
+
+  if (parsing::idIsNestedFunction(context, node->id())) {
+    // Allow nested functions to be hoisted to the top-level of the module,
+    // but do not allow them to be candidates for production's resolution.
+    fn->addFlag(FLAG_INVISIBLE_FN);
   }
 
   return false;
