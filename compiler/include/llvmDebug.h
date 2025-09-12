@@ -87,6 +87,8 @@ class debug_data
   llvm::DIType* construct_type_for_aggregate(llvm::StructType* ty, AggregateType* type);
   llvm::DIType* construct_type_for_enum(llvm::Type* ty, EnumType* type);
 
+  llvm::DIType* wrap_in_pointer_if_needed(llvm::DIType* N, Type* type);
+
 #else
   static bool can_debug() { return false; }
 #endif

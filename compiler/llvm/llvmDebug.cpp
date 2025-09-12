@@ -123,10 +123,62 @@ void debug_data::create_compile_unit(
 }
 
 
+llvm::DIType* debug_data::wrap_in_pointer_if_needed(
+  llvm::DIType* N, Type* type
+) {
+  auto res = N;
+  // TODO: what about refs
+  if (isUnmanagedClass(type) || isBorrowedClass(type)) {
+    GenInfo* info = gGenInfo;
+    const llvm::DataLayout& layout = info->module->getDataLayout();
+    auto dibuilder = type->symbol->getModule()->llvmDIBuilder;
+    // auto& Ctx = gContext->llvmContext();
+
+    // FIXME: this information should be applied to the variable declaration
+    // not the type itself
+    // std::string ptrType;
+    // if (isUnmanagedClass(type))
+    //   ptrType = "unmanaged";
+    // else if (isBorrowedClass(type))
+    //   ptrType = "borrowed";
+    // else if (isManagedPtrType(type))
+    //   ptrType = "managed"; // TODO handle owned/shared separately
+    // else if (type->symbol->hasFlag(FLAG_C_PTRCONST_CLASS))
+    //   ptrType = "c_ptrConst";
+    // else if (type->symbol->hasFlag(FLAG_C_PTR_CLASS))
+    //   ptrType = "c_ptr";
+    // else if (type->symbol->hasFlag(FLAG_DATA_CLASS))
+    //   ptrType = "ddata";
+    // else if (type->symbol->hasFlag(FLAG_REF))
+    //   ptrType = "ref";
+    // else
+    //   ptrType = "unknown";
+
+    // llvm::Metadata *Ops[2] = {
+    //     llvm::MDString::get(Ctx, "chpl.ptrtype"),
+    //     llvm::MDString::get(Ctx, ptrType)};
+    // llvm::SmallVector<llvm::Metadata*, 1> Annots = {llvm::MDNode::get(Ctx, Ops)};
+    // llvm::DINodeArray Annotations = dibuilder->getOrCreateArray(Annots);
+
+    // todo: make this print nicer for for borrowed/unmanaged/ref?
+    auto ptrN = dibuilder->createPointerType(
+      res,
+      layout.getPointerSizeInBits(),
+      0, /* alignment */
+      chpl::empty,
+      type->symbol->name
+      // Annotations
+    );
+    res = ptrN;
+  }
+  return res;
+}
+
 llvm::DIType* debug_data::construct_type_for_aggregate(
   llvm::StructType* ty, AggregateType* type
 ) {
 
+  // TODO: remove this! But to do that I need to rewrite some of this code
   if(ty->isOpaque())
     return nullptr;
 
@@ -145,7 +197,7 @@ llvm::DIType* debug_data::construct_type_for_aggregate(
   if (type->dispatchParents.length() > 0)
     derivedFrom = get_type(type->dispatchParents.first());
 
-  auto N = dibuilder->createForwardDecl(
+  llvm::MDNode* N = dibuilder->createForwardDecl(
     llvm::dwarf::DW_TAG_structure_type,
     name,
     get_module_scope(defModule),
@@ -155,6 +207,7 @@ llvm::DIType* debug_data::construct_type_for_aggregate(
     !ty->isOpaque() ? layout.getTypeSizeInBits(ty) : 0,
     !ty->isOpaque() ? 8*layout.getABITypeAlign(ty).value() : 0
   );
+  N = wrap_in_pointer_if_needed(llvm::cast<llvm::DIType>(N), type);
 
   //N is added to the map (early) so that element search below can find it,
   //so as to avoid infinite recursion for structs that contain pointers to
@@ -184,22 +237,24 @@ llvm::DIType* debug_data::construct_type_for_aggregate(
       }
 
       llvm::DIType* fditype = get_type(field->type);
-      if(fditype == nullptr) {
+      if (fditype == nullptr) {
+        if (developer || fVerify) {
+          INT_FATAL("Unable to find DIType for field %s of type %s in aggregate %s",
+                    field->name, fts->name, type->symbol->name);
+        }
         // if we can't determine the field type yet, create a forward decl
         // then later, the forward decl will be replaced with the actual type
-        // TODO: this creates crashes with arrays, why? Possibly bad interaction
-        // with ddata?
-        // fditype = dibuilder->createForwardDecl(
-        //   llvm::dwarf::DW_TAG_structure_type,
-        //   fts->name,
-        //   get_module_scope(fts->defPoint->getModule()),
-        //   get_file(fts->defPoint->getModule(), fts->defPoint->fname()),
-        //   fts->defPoint->linenum(),
-        //   0, // RuntimeLang
-        //   layout.getTypeSizeInBits(fty),
-        //   8*layout.getABITypeAlign(fty).value()
-        // );
-        fditype = dibuilder->createNullPtrType();
+        fditype = dibuilder->createForwardDecl(
+          llvm::dwarf::DW_TAG_structure_type,
+          fts->name,
+          get_module_scope(fts->defPoint->getModule()),
+          get_file(fts->defPoint->getModule(), fts->defPoint->fname()),
+          fts->defPoint->linenum(),
+          0, // RuntimeLang
+          layout.getTypeSizeInBits(fty),
+          8*layout.getABITypeAlign(fty).value()
+        );
+        fditype = wrap_in_pointer_if_needed(fditype, field->type);
       }
 
       bool unused;
@@ -229,6 +284,7 @@ llvm::DIType* debug_data::construct_type_for_aggregate(
       derivedFrom, /* DerivedFrom */
       dibuilder->getOrCreateArray(EltTys) /* Elements */
     );
+    N = wrap_in_pointer_if_needed(llvm::cast<llvm::DIType>(N), type);
     type->symbol->llvmDIForwardType = nullptr;
     type->symbol->llvmDIType = N;
   } // end of if(!Opaque)
