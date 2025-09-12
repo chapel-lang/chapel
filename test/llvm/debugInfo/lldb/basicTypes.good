@@ -36,9 +36,11 @@ Process XXXX stopped
 -> 54  	  use Debugger; breakpoint;
    55  	}
 (lldb) p myRec
-(basicTypes::MyRecord1)  (myField = 0xXXXX)
+(basicTypes::MyRecord1) {
+  myField = 0xXXXX
+}
 (lldb) p myRec.myField
-(std::nullptr_t) 0xXXXX
+(basicTypes::MyClass *) 0xXXXX
 (lldb) p myRec2
 (basicTypes::MyRecord2) {
   myFieldA = 0
@@ -47,8 +49,12 @@ Process XXXX stopped
   myFieldD = "" {
     size = 0
   }
-  myFieldE = 0xXXXX
-  myFieldF = (_pid = -1, _instance = 0xXXXX, _unowned = false)
+  myFieldE = NULL
+  myFieldF = {
+    _pid = -1
+    _instance = 0xXXXX
+    _unowned = false
+  }
 }
 (lldb) p myRec2.myFieldC
 (ChapelTuple::(int(64),real(64)))  (x0 = 0, x1 = 0)
@@ -57,23 +63,43 @@ Process XXXX stopped
   size = 0
 }
 (lldb) p myRec2.myFieldE
-(std::nullptr_t) 0xXXXX
+(basicTypes::MyClass *) NULL
 (lldb) p myRec2.myFieldF
-(ChapelArray::[domain(1,int(64),one)] int(64))  (_pid = -1, _instance = 0xXXXX, _unowned = false)
+(ChapelArray::[domain(1,int(64),one)] int(64)) {
+  _pid = -1
+  _instance = 0xXXXX
+  _unowned = false
+}
 (lldb) p myUnmanagedClass
-(basicTypes::MyClass)  (super = ChapelBase::RootClass @ 0xXXXX, x = uninit, y = 0)
+(basicTypes::MyClass *) 0xXXXX
 (lldb) p myClass
-(OwnedObject::owned MyClass)  (chpl_p = 0xXXXX)
+(OwnedObject::owned MyClass) 0xXXXX {
+  super = 0xXXXX
+  x = 0
+  y = 0
+}
 (lldb) p myStr
 (String::string) "Hello, world!" {
   size = 13
 }
 (lldb) p myDom
-(ChapelDomain::domain(2,int(64),positive))  (_pid = -1, _instance = 0xXXXX, _unowned = false)
+(ChapelDomain::domain(2,int(64),positive)) {
+  _pid = -1
+  _instance = 0xXXXX
+  _unowned = false
+}
 (lldb) p myArr2d
-(ChapelArray::[domain(2,int(64),positive)] int(64))  (_pid = -1, _instance = 0xXXXX, _unowned = false)
+(ChapelArray::[domain(2,int(64),positive)] int(64)) {
+  _pid = -1
+  _instance = 0xXXXX
+  _unowned = false
+}
 (lldb) p myArr
-(ChapelArray::[domain(1,int(64),one)] int(64))  (_pid = -1, _instance = 0xXXXX, _unowned = false)
+(ChapelArray::[domain(1,int(64),one)] int(64)) {
+  _pid = -1
+  _instance = 0xXXXX
+  _unowned = false
+}
 (lldb) p myBool
 (bool) true
 (lldb) p myInt
