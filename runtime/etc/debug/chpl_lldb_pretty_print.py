@@ -279,86 +279,7 @@ class DomainProvider:
         )
 
 
-#
-# homogenous tuples
-#
-homogeneous_tuple_regex_c = re.compile(
-    r"^_tuple_([0-9]+)_star_([a-zA-Z0-9_]+)(?:_chpl)?$"
-)
-homogeneous_tuple_regex_llvm = re.compile(r"^$")  # TODO
-
-
-def HomogeneousTupleRecognizer(sbtype, internal_dict):
-    typename = sbtype.GetName()
-    match = homogeneous_tuple_regex_c.match(
-        typename
-    ) or homogeneous_tuple_regex_llvm.match(typename)
-    return match is not None
-
-
-def HomogeneousTupleSummary(valobj, internal_dict):
-    typename = valobj.GetTypeName()
-    match = homogeneous_tuple_regex_c.match(
-        typename
-    ) or homogeneous_tuple_regex_llvm.match(typename)
-    if not match:
-        print(
-            f"HomogeneousTuple_Summary: type name '{typename}' did not match expected pattern"
-        )
-        return None
-
-    size = match.group(1)
-    vals = []
-    for i in range(int(size)):
-        child = valobj.GetNonSyntheticValue().GetChildAtIndex(i)
-        vals.append(child.GetSummary() or child.GetValue() or "")
-    return f"{', '.join(vals)}"
-
-
-class HomogeneousTupleProvider:
-    def __init__(self, valobj, internal_dict):
-        self.valobj = valobj
-
-        self.synthetic_children = {}
-        typename = self.valobj.GetTypeName()
-        match = homogeneous_tuple_regex_c.match(
-            typename
-        ) or homogeneous_tuple_regex_llvm.match(typename)
-        if not match:
-            print(
-                f"HomogeneousTupleProvider: type name '{typename}' did not match expected pattern"
-            )
-            return
-
-        size = int(match.group(1))
-        for i in range(size):
-            self.synthetic_children[str(i)] = self.valobj.GetChildAtIndex(i)
-
-    def has_children(self):
-        return self.num_children() > 0
-
-    def num_children(self):
-        return len(self.synthetic_children)
-
-    def get_child_index(self, name):
-        if name in self.synthetic_children:
-            return list(self.synthetic_children.keys()).index(name)
-        else:
-            return -1
-
-    def get_child_at_index(self, index):
-        if index < 0 or index >= self.num_children():
-            return None
-        key = list(self.synthetic_children.keys())[index]
-        return self.valobj.CreateValueFromExpression(
-            f"[{key}]", self.synthetic_children[key].GetValue()
-        )
-
-
-# TODO: for now we only handle DefaultRectangular arrays
-# array
-# _array_DefaultRectangularArr_1_int64_t_one_int64_t_int64_t_chpl
-# rank, idx_type, stride_kind, element_type, idxSignedType
+# TODO: for now we only handle DefaultRectangular for C backend
 
 array_regex_c = re.compile(
     r"^_array_DefaultRectangularArr_([0-9]+)_([a-zA-Z0-9_]+)_(one|negOne|positive|negative|any)_([a-zA-Z0-9_]+)_([a-zA-Z0-9_]+)(?:_chpl)?$"
@@ -638,11 +559,6 @@ def __lldb_init_module(debugger, internal_dict):
     )
     register("RangeSummary", "RangeProvider", recognizer("RangeRecognizer"))
     register("DomainSummary", "DomainProvider", recognizer("DomainRecognizer"))
-    register(
-        "HomogeneousTupleSummary",
-        "HomogeneousTupleProvider",
-        recognizer("HomogeneousTupleRecognizer"),
-    )
     register("ArraySummary", "ArrayProvider", recognizer("ArrayRecognizer"))
     register(
         "ManagedObjectSummary",
