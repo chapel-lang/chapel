@@ -13,4 +13,442 @@ true | 42 | 3.14 | e2 | e2 | (1, two, 3.0, e1)
 Running DWARF verification...
 Success!!
 Running DWARF dump checks...
+====================================MyClass=====================================
+DW_TAG_pointer_type
+              DW_AT_type	("basicTypes::MyClass")
+              DW_AT_name	("MyClass")
+DW_TAG_structure_type
+              DW_AT_name	("MyClass")
+              DW_AT_byte_size	(0x18)
+              DW_AT_decl_file	("./basicTypes.chpl")
+              DW_AT_decl_line	(3)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("super")
+                DW_AT_type	("ChapelBase::RootClass *")
+                DW_AT_decl_file	("./basicTypes.chpl")
+                DW_AT_decl_line	(3)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("x")
+                DW_AT_type	("int(64)")
+                DW_AT_decl_file	("./basicTypes.chpl")
+                DW_AT_decl_line	(4)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x08)
+  DW_TAG_member
+                DW_AT_name	("y")
+                DW_AT_type	("real(64)")
+                DW_AT_decl_file	("./basicTypes.chpl")
+                DW_AT_decl_line	(5)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x10)
+  NULL
+DW_TAG_structure_type
+              DW_AT_name	("MyClass")
+              DW_AT_declaration	(true)
+              DW_AT_alignment	(8)
+DW_TAG_pointer_type
+              DW_AT_type	("basicTypes::MyClass")
+              DW_AT_name	("MyClass")
+================================================================================
+===================================MyRecord1====================================
+DW_TAG_structure_type
+              DW_AT_name	("MyRecord1")
+              DW_AT_byte_size	(0x08)
+              DW_AT_decl_file	("./basicTypes.chpl")
+              DW_AT_decl_line	(9)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("myField")
+                DW_AT_type	("basicTypes::MyClass *")
+                DW_AT_decl_file	("./basicTypes.chpl")
+                DW_AT_decl_line	(10)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  NULL
+================================================================================
+===================================MyRecord2====================================
+DW_TAG_structure_type
+              DW_AT_name	("MyRecord2")
+              DW_AT_byte_size	(0x68)
+              DW_AT_decl_file	("./basicTypes.chpl")
+              DW_AT_decl_line	(20)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("myFieldA")
+                DW_AT_type	("int(64)")
+                DW_AT_decl_file	("./basicTypes.chpl")
+                DW_AT_decl_line	(21)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("myFieldB")
+                DW_AT_type	("real(64)")
+                DW_AT_decl_file	("./basicTypes.chpl")
+                DW_AT_decl_line	(22)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x08)
+  DW_TAG_member
+                DW_AT_name	("myFieldC")
+                DW_AT_type	("ChapelTuple::(int(64),real(64))")
+                DW_AT_decl_file	("./basicTypes.chpl")
+                DW_AT_decl_line	(23)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x10)
+  DW_TAG_member
+                DW_AT_name	("myFieldD")
+                DW_AT_type	("String::string")
+                DW_AT_decl_file	("./basicTypes.chpl")
+                DW_AT_decl_line	(24)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x20)
+  DW_TAG_member
+                DW_AT_name	("myFieldE")
+                DW_AT_type	("basicTypes::MyClass *")
+                DW_AT_decl_file	("./basicTypes.chpl")
+                DW_AT_decl_line	(25)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x48)
+  DW_TAG_member
+                DW_AT_name	("myFieldF")
+                DW_AT_type	("ChapelArray::[domain(1,int(64),one)] int(64)")
+                DW_AT_decl_file	("./basicTypes.chpl")
+                DW_AT_decl_line	(26)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x50)
+  NULL
+================================================================================
+=====================================myEnum=====================================
+DW_TAG_enumeration_type
+              DW_AT_type	("int(64)")
+              DW_AT_enum_class	(true)
+              DW_AT_name	("ENUM_NAME")
+              DW_AT_byte_size	(0x08)
+              DW_AT_decl_file	("./basicTypes.chpl")
+              DW_AT_decl_line	(30)
+              DW_AT_alignment	(8)
+  DW_TAG_enumerator
+                DW_AT_name	("ENUM_NAME")
+                DW_AT_const_value	(ENUM_VAL)
+  DW_TAG_enumerator
+                DW_AT_name	("ENUM_NAME")
+                DW_AT_const_value	(ENUM_VAL)
+  DW_TAG_enumerator
+                DW_AT_name	("ENUM_NAME")
+                DW_AT_const_value	(ENUM_VAL)
+  NULL
+================================================================================
+=====================================myRec======================================
+DW_TAG_variable
+              DW_AT_name	("myRec")
+              DW_AT_decl_file	("./basicTypes.chpl")
+              DW_AT_decl_line	(38)
+              DW_AT_type	("basicTypes::MyRecord1")
+================================================================================
+=====================================myRec2=====================================
+DW_TAG_variable
+              DW_AT_name	("myRec2")
+              DW_AT_decl_file	("./basicTypes.chpl")
+              DW_AT_decl_line	(40)
+              DW_AT_type	("basicTypes::MyRecord2")
+================================================================================
+================================myUnmanagedClass================================
+DW_TAG_variable
+              DW_AT_name	("myUnmanagedClass")
+              DW_AT_decl_file	("./basicTypes.chpl")
+              DW_AT_decl_line	(42)
+              DW_AT_type	("basicTypes::MyClass *")
+================================================================================
+====================================myClass=====================================
+DW_TAG_variable
+              DW_AT_name	("myClass")
+              DW_AT_decl_file	("./basicTypes.chpl")
+              DW_AT_decl_line	(45)
+              DW_AT_type	("OwnedObject::owned MyClass")
+================================================================================
+=====================================myStr======================================
+DW_TAG_variable
+              DW_AT_name	("myStr")
+              DW_AT_decl_file	("./basicTypes.chpl")
+              DW_AT_decl_line	(47)
+              DW_AT_type	("String::string")
+================================================================================
+=====================================myDom======================================
+DW_TAG_variable
+              DW_AT_name	("myDom")
+              DW_AT_decl_file	("./basicTypes.chpl")
+              DW_AT_decl_line	(49)
+              DW_AT_type	("ChapelDomain::domain(2,int(64),positive)")
+================================================================================
+====================================myArr2d=====================================
+DW_TAG_variable
+              DW_AT_name	("myArr2d")
+              DW_AT_decl_file	("./basicTypes.chpl")
+              DW_AT_decl_line	(51)
+              DW_AT_type	("ChapelArray::[domain(2,int(64),positive)] int(64)")
+================================================================================
+=====================================myArr======================================
+DW_TAG_variable
+              DW_AT_name	("myArr")
+              DW_AT_decl_file	("./basicTypes.chpl")
+              DW_AT_decl_line	(53)
+              DW_AT_type	("ChapelArray::[domain(1,int(64),one)] int(64)")
+================================================================================
+=====================================myBool=====================================
+DW_TAG_variable
+              DW_AT_name	("myBool")
+              DW_AT_decl_file	("./basicTypes.chpl")
+              DW_AT_decl_line	(55)
+              DW_AT_type	("bool")
+================================================================================
+=====================================myInt======================================
+DW_TAG_variable
+              DW_AT_name	("myInt")
+              DW_AT_decl_file	("./basicTypes.chpl")
+              DW_AT_decl_line	(57)
+              DW_AT_type	("int(64)")
+================================================================================
+=====================================myReal=====================================
+DW_TAG_variable
+              DW_AT_name	("myReal")
+              DW_AT_decl_file	("./basicTypes.chpl")
+              DW_AT_decl_line	(59)
+              DW_AT_type	("real(64)")
+================================================================================
+===================================myEnumVal====================================
+DW_TAG_variable
+              DW_AT_name	("myEnumVal")
+              DW_AT_decl_file	("./basicTypes.chpl")
+              DW_AT_decl_line	(61)
+              DW_AT_type	("basicTypes::myEnum")
+================================================================================
+===================================myEnumRef====================================
+DW_TAG_variable
+              DW_AT_name	("myEnumRef")
+              DW_AT_decl_file	("./basicTypes.chpl")
+              DW_AT_decl_line	(63)
+              DW_AT_type	("basicTypes::myEnum *")
+================================================================================
+====================================myTuple=====================================
+DW_TAG_variable
+              DW_AT_name	("myTuple")
+              DW_AT_decl_file	("./basicTypes.chpl")
+              DW_AT_decl_line	(65)
+              DW_AT_type	("ChapelTuple::(int(64),string,real(64),myEnum)")
+================================================================================
+========================[domain(1,int(64),one)] int(64)=========================
+DW_TAG_structure_type
+              DW_AT_name	("[domain(1,int(64),one)] int(64)")
+              DW_AT_byte_size	(0x18)
+              DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelArray.chpl")
+              DW_AT_decl_line	(781)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("_pid")
+                DW_AT_type	("int(64)")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelArray.chpl")
+                DW_AT_decl_line	(782)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("_instance")
+                DW_AT_type	("DefaultRectangular::[domain(1,int(64),one)] int(64) *")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelArray.chpl")
+                DW_AT_decl_line	(785)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x08)
+  DW_TAG_member
+                DW_AT_name	("_unowned")
+                DW_AT_type	("bool")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelArray.chpl")
+                DW_AT_decl_line	(786)
+                DW_AT_alignment	(1)
+                DW_AT_data_member_location	(0x10)
+  NULL
+DW_TAG_structure_type
+              DW_AT_name	("[domain(1,int(64),one)] int(64)")
+              DW_AT_declaration	(true)
+              DW_AT_alignment	(8)
+DW_TAG_pointer_type
+              DW_AT_type	("DefaultRectangular::[domain(1,int(64),one)] int(64)")
+              DW_AT_name	("[domain(1,int(64),one)] int(64)")
+DW_TAG_structure_type
+              DW_AT_name	("[domain(1,int(64),one)] int(64)")
+              DW_AT_byte_size	(0x80)
+              DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
+              DW_AT_decl_line	(1036)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("super")
+                DW_AT_type	("ChapelDistribution::BaseRectangularArr(1,int(64),one,int(64)) *")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
+                DW_AT_decl_line	(1036)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("dom")
+                DW_AT_type	("DefaultRectangular::domain(1,int(64),one) *")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
+                DW_AT_decl_line	(1041)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x30)
+  DW_TAG_member
+                DW_AT_name	("off")
+                DW_AT_type	("int(64)[1]")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
+                DW_AT_decl_line	(1043)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x38)
+  DW_TAG_member
+                DW_AT_name	("blk")
+                DW_AT_type	("int(64)[1]")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
+                DW_AT_decl_line	(1044)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x40)
+  DW_TAG_member
+                DW_AT_name	("sizesPerDim")
+                DW_AT_type	("int(64)[1]")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
+                DW_AT_decl_line	(1045)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x48)
+  DW_TAG_member
+                DW_AT_name	("str")
+                DW_AT_type	("int(64)[1]")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
+                DW_AT_decl_line	(1046)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x50)
+  DW_TAG_member
+                DW_AT_name	("factoredOffs")
+                DW_AT_type	("int(64)")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
+                DW_AT_decl_line	(1047)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x58)
+  DW_TAG_member
+                DW_AT_name	("data")
+                DW_AT_type	("int(64) *")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
+                DW_AT_decl_line	(1051)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x60)
+  DW_TAG_member
+                DW_AT_name	("shiftedData")
+                DW_AT_type	("int(64) *")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
+                DW_AT_decl_line	(1055)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x68)
+  DW_TAG_member
+                DW_AT_name	("externFreeFunc")
+                DW_AT_type	("void *")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
+                DW_AT_decl_line	(1058)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x70)
+  DW_TAG_member
+                DW_AT_name	("externArr")
+                DW_AT_type	("bool")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
+                DW_AT_decl_line	(1059)
+                DW_AT_alignment	(1)
+                DW_AT_data_member_location	(0x78)
+  DW_TAG_member
+                DW_AT_name	("_borrowed")
+                DW_AT_type	("bool")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
+                DW_AT_decl_line	(1060)
+                DW_AT_alignment	(1)
+                DW_AT_data_member_location	(0x79)
+  DW_TAG_member
+                DW_AT_name	("callPostAlloc")
+                DW_AT_type	("bool")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
+                DW_AT_decl_line	(1062)
+                DW_AT_alignment	(1)
+                DW_AT_data_member_location	(0x7a)
+  DW_TAG_member
+                DW_AT_name	("deinitElts")
+                DW_AT_type	("bool")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
+                DW_AT_decl_line	(1064)
+                DW_AT_alignment	(1)
+                DW_AT_data_member_location	(0x7b)
+  NULL
+DW_TAG_pointer_type
+              DW_AT_type	("DefaultRectangular::[domain(1,int(64),one)] int(64)")
+              DW_AT_name	("[domain(1,int(64),one)] int(64)")
+================================================================================
+===========================domain(2,int(64),positive)===========================
+DW_TAG_structure_type
+              DW_AT_name	("domain(2,int(64),positive)")
+              DW_AT_byte_size	(0x18)
+              DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelDomain.chpl")
+              DW_AT_decl_line	(1053)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("_pid")
+                DW_AT_type	("int(64)")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelDomain.chpl")
+                DW_AT_decl_line	(1054)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("_instance")
+                DW_AT_type	("DefaultRectangular::domain(2,int(64),positive) *")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelDomain.chpl")
+                DW_AT_decl_line	(1056)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x08)
+  DW_TAG_member
+                DW_AT_name	("_unowned")
+                DW_AT_type	("bool")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelDomain.chpl")
+                DW_AT_decl_line	(1057)
+                DW_AT_alignment	(1)
+                DW_AT_data_member_location	(0x10)
+  NULL
+DW_TAG_pointer_type
+              DW_AT_type	("DefaultRectangular::domain(2,int(64),positive)")
+              DW_AT_name	("domain(2,int(64),positive)")
+DW_TAG_structure_type
+              DW_AT_name	("domain(2,int(64),positive)")
+              DW_AT_declaration	(true)
+              DW_AT_alignment	(8)
+DW_TAG_structure_type
+              DW_AT_name	("domain(2,int(64),positive)")
+              DW_AT_byte_size	(0x78)
+              DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
+              DW_AT_decl_line	(150)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("super")
+                DW_AT_type	("ChapelDistribution::BaseRectangularDom(2,int(64),positive) *")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
+                DW_AT_decl_line	(150)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("dist")
+                DW_AT_type	("DefaultRectangular::DefaultDist *")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
+                DW_AT_decl_line	(151)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x30)
+  DW_TAG_member
+                DW_AT_name	("ranges")
+                DW_AT_type	("ChapelRange::range(int(64),both,positive)[2]")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
+                DW_AT_decl_line	(152)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x38)
+  NULL
+DW_TAG_pointer_type
+              DW_AT_type	("DefaultRectangular::domain(2,int(64),positive)")
+              DW_AT_name	("domain(2,int(64),positive)")
+================================================================================
 Success!!
