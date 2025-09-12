@@ -20,7 +20,7 @@ Highlights (see the sections that follow for details)
 Updates to Chapel Prerequisites
 -------------------------------
 * removed support for LLVM 11, 12, and 13
-* `chpldoc`, `c2chapel`, `chapel-py` and the CLS now require Python 3.10+
+* `chpldoc`, `c2chapel`, `chapel-py` and CLS now require Python 3.10+
 
 Syntactic / Naming Changes
 --------------------------
@@ -1252,7 +1252,7 @@ Third-Party Software Changes
 * updated the bundled version of LLVM to LLVM 19
 * updated the bundled version of Qthreads to 1.21
 * addressed a performance regression in Qthreads version 1.21 via a patch
-* updated Python package versions used by `chpldoc`, `chapel-py` and the CLS
+* updated Python package versions used by `chpldoc`, `chapel-py` and CLS
 * explicitly pinned `pycparserext` version relied upon by `c2chapel` to 2021.1
 
 Bug Fixes
@@ -1956,7 +1956,7 @@ Tool Improvements
   - extended call inlays to support negative numbers and `complex` literals
   - expanded support for end-block markers
   - ensured types displayed in hints are valid Chapel syntax
-  - added a `--chplcheck` flag to run linting from within the CLS  
+  - added a `--chplcheck` flag to run linting from within CLS  
     (see https://chapel-lang.org/docs/2.1/tools/chpl-language-server/chpl-language-server.html#using-chplcheck-from-cls)
   - added a `--[no]-show-instantiations` flag to control CLS code lenses  
     (see https://chapel-lang.org/docs/2.1/tools/chpl-language-server/chpl-language-server.html#experimental-resolver-features)
