@@ -20,6 +20,7 @@ Highlights (see the sections that follow for details)
 Updates to Chapel Prerequisites
 -------------------------------
 * removed support for LLVM 11, 12, and 13
+* `chpldoc`, `c2chapel`, `chapel-py` and the CLS now require Python 3.10+
 
 Syntactic / Naming Changes
 --------------------------
@@ -75,43 +76,58 @@ Compiler Improvements
 ---------------------
 * added support for using address sanitizers (ASAN) with the LLVM back-end  
   (see https://chapel-lang.org/docs/2.6/usingchapel/debugging/sanitizers.html)
-* improved the debug information for enums and bools with the LLVM back-end
 
 GPU Computing
 -------------
 * added support for using NVIDIA GPUs with LLVM 20
 
-Tool Improvements
------------------
+Debugging Improvements
+----------------------
 * added a prototype `chpl-parallel-dbg` tool for multi-locale debugging  
   (see https://chapel-lang.org/docs/2.6/usingchapel/debugging/multilocale.html#chpl-parallel-dbg)
 * added support for pretty-printing built-in native Chapel types in LLDB  
   (e.g., strings, homogeneous tuples, ranges, domains, and arrays)
+* improved `Debugger.breakpoint` to automatically jump to the Chapel frame
+* improved the debug information for enums and bools with the LLVM back-end
+
+VSCode / Chapel Language Server (CLS) / Editor Improvements
+-----------------------------------------------------------
 * added a "Run Test" code lens in VSCode for `UnitTest` test functions
 * added a `--vscode` flag to `chpl-shim` to generate VSCode tasks  
   (see https://chapel-lang.org/docs/2.6/tools/chpl-language-server/chpl-language-server.html#setting-up-vscode-tasks)
 * added `chpl-language-server` (CLS) pretty-printing when hovering over tuples
 * improved printing for secondary methods when hovering in CLS
 * added `goto-def` support for included modules in CLS
+
+Linter / `chplcheck` Improvements
+---------------------------------
 * added `--skip` and `--no-skip-bundled-modules` to `chplcheck` to skip files  
   (see https://chapel-lang.org/docs/2.6/tools/chplcheck/chplcheck.html#flags)
 * added a new `chplcheck` linting rule for simple boolean conditionals  
   (see https://chapel-lang.org/docs/2.6/tools/chplcheck/chplcheck.html#simpleboolconditional)
+
+Package Manager / Mason Improvements
+------------------------------------
 * added `--filter` to `mason test` to run a subset of tests  
   (see https://chapel-lang.org/docs/2.6/tools/mason/guide/testing.html)
 * added `doc` to the list of ignored paths in `mason`'s default `.gitignore`
 * added support for passing flags through `mason doc` to `chpldoc`
+
+`chpldoc` Improvements
+----------------------
 * adjusted `chpldoc` to support `-M` for extending the module search path  
  (see https://chapel-lang.org/docs/2.6/tools/chpldoc/man.html)
 * improved `chpldoc`'s rendering when using `throws` and return types together
+
+`chapel-py` Improvements
+------------------------
 * made `chapel-py` no longer rely on `CHPL_HOME` being set to build or run
 * made `chapel.AstNode` hashable and comparable in the `chapel-py` API  
   (see https://chapel-lang.org/docs/2.6/tools/chapel-py/chapel-py.html#chapel.AstNode)
-* added an `is_this` method to `chapel.Formal` in the `chapel-py` API  
+* added an `is_this()` method to `chapel.Formal` in the `chapel-py` API  
   (see https://chapel-lang.org/docs/2.6/tools/chapel-py/chapel-py.html#chapel.Formal.is_this)
 * migrated `chapel-py` to a `pyproject.toml`-based project
-* started using the Python 3.9 limited ABI version for `chapel-py`
-* `chpldoc`, `c2chapel`, `chapel-py` and the CLS now require Python 3.10+
+* updated `chapel-py` to use the Python 3.9 limited ABI version instead of 3.8
 
 Documentation Improvements
 --------------------------
