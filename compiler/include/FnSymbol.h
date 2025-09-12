@@ -142,7 +142,6 @@ public:
   FnSymbol*                  valueFunction;
 
   int                        codegenUniqueNum;
-  const char*                doc;
 
   // Used to store the return symbol during partial copying.
   Symbol*                    retSymbol;

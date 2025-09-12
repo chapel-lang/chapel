@@ -338,8 +338,6 @@ class EnumType final : public Type {
   PrimitiveType* integerType;
 
  public:
-  const char* doc;
-
   EnumType();
  ~EnumType() override = default;
 

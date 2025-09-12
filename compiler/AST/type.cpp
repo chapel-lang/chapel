@@ -536,8 +536,7 @@ bool isConstrainedTypeSymbol(Symbol* s, ConstrainedTypeUse use) {
 
 EnumType::EnumType() :
   Type(E_EnumType, NULL),
-  constants(), integerType(NULL),
-  doc(NULL)
+  constants(), integerType(NULL)
 {
   gEnumTypes.add(this);
   constants.parent = this;

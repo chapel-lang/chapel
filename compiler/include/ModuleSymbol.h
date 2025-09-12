@@ -98,7 +98,6 @@ public:
   std::vector<ModuleSymbol*> modUseList;
 
   const char*             filename;
-  const char*             doc;
 
 #ifdef HAVE_LLVM
   ExternBlockInfo*        extern_info;

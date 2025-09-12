@@ -69,7 +69,6 @@ FnSymbol::FnSymbol(const char* initName)
   userString         = NULL;
   valueFunction      = NULL;
   codegenUniqueNum   = 1;
-  doc                = NULL;
   retSymbol          = NULL;
   llvmDISubprogram   = NULL;
   mIsNormalized      = false;

@@ -56,7 +56,6 @@ AggregateType::AggregateType(AggregateTag initTag) :
   initializerResolved = false;
   iteratorInfo        = NULL;
   thunkInvoke         = NULL;
-  doc                 = NULL;
 
   instantiatedFrom    = NULL;
 
