@@ -256,6 +256,12 @@ llvm::DIType* debug_data::construct_type_for_aggregate(
         );
         fditype = wrap_in_pointer_if_needed(fditype, field->type);
       }
+      // if the field is "super", unwrap the pointer
+      if (field->hasFlag(FLAG_SUPER_CLASS) &&
+          fditype->getTag() == llvm::dwarf::DW_TAG_pointer_type) {
+        auto pointeeType = llvm::cast<llvm::DIDerivedType>(fditype)->getBaseType();
+        fditype = pointeeType;
+      }
 
       bool unused;
       auto mty = dibuilder->createMemberType(
@@ -396,9 +402,59 @@ llvm::DIType* debug_data::construct_type_for_pointer(llvm::Type* ty, Type* type)
   return nullptr;
 }
 
+llvm::DIType* debug_data::construct_type_for_special_cases(llvm::Type* ty, Type* type) {
+
+  GenInfo* info = gGenInfo;
+  const llvm::DataLayout& layout = info->module->getDataLayout();
+
+  const char* name = type->symbol->name;
+  ModuleSymbol* defModule = type->symbol->getModule();
+  const char* defFile = type->symbol->fname();
+  int defLine = type->symbol->linenum();
+
+  auto dibuilder = defModule->llvmDIBuilder;
+
+
+  if (type == dtObject) {
+    // wrap_in_pointer_if_needed(llvm::cast<llvm::DIType>(N), type);
+    llvm::SmallVector<llvm::Metadata *, 1> EltTys;
+    llvm::Type* cidType = info->lvt->getType("chpl__class_id");
+    auto cidDITy = dibuilder->createMemberType(
+      get_module_scope(defModule),
+      "cid",
+      get_file(defModule, defFile),
+      defLine,
+      layout.getTypeSizeInBits(cidType),
+      8*layout.getABITypeAlign(cidType).value(),
+      0, /* offset, assume its zero */
+      llvm::DINode::FlagZero,
+      get_type(CLASS_ID_TYPE)
+    );
+    EltTys.push_back(cidDITy);
+    // since dtOject has a single field, we can directly assume the size and alignent to
+    // be the same as its single field
+    llvm::DIType* N = dibuilder->createStructType(
+      get_module_scope(defModule), /* Scope */
+      name, /* Name */
+      get_file(defModule, defFile), /* File */
+      defLine, /* LineNumber */
+      layout.getTypeSizeInBits(cidType), /* SizeInBits */
+      8*layout.getABITypeAlign(cidType).value(), /* AlignInBits */
+      llvm::DINode::FlagZero, /* Flags */
+      nullptr,
+      dibuilder->getOrCreateArray(EltTys) /* Elements */
+    );
+    N = wrap_in_pointer_if_needed(llvm::cast<llvm::DIType>(N), type);
+    type->symbol->llvmDIType = N;
+    return N;
+  }
+  return nullptr;
+
+}
+
+
 llvm::DIType* debug_data::construct_type(Type *type) {
   llvm::MDNode *N = nullptr;
-  // if(N) return llvm::cast_or_null<llvm::DIType>(N);
 
   GenInfo* info = gGenInfo;
   const llvm::DataLayout& layout = info->module->getDataLayout();
@@ -412,6 +468,12 @@ llvm::DIType* debug_data::construct_type(Type *type) {
   auto dibuilder = defModule->llvmDIBuilder;
 
   if (!ty) return nullptr;
+
+
+  if (auto diTypeFromSpecialCase = construct_type_for_special_cases(ty, type)) {
+    type->symbol->llvmDIType = diTypeFromSpecialCase;
+    return diTypeFromSpecialCase;
+  }
 
   if (ty->isIntegerTy()) {
     // TODO: special handling for enums

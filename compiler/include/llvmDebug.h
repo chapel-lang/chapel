@@ -86,6 +86,7 @@ class debug_data
   llvm::DIType* construct_type_for_pointer(llvm::Type* ty, Type* type);
   llvm::DIType* construct_type_for_aggregate(llvm::StructType* ty, AggregateType* type);
   llvm::DIType* construct_type_for_enum(llvm::Type* ty, EnumType* type);
+  llvm::DIType* construct_type_for_special_cases(llvm::Type* ty, Type* type);
 
   llvm::DIType* wrap_in_pointer_if_needed(llvm::DIType* N, Type* type);
 
