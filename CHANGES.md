@@ -64,7 +64,7 @@ Deprecated / Unstable / Removed Library Features
 * removed the deprecated `config` variable `IO.ReadBinaryArrayReturnInt`
 * removed the deprecated `IO.Open[Writer|Reader]LockingDefault` `config` vars
 * removed the deprecated `config param` `Time.cIsoDayOfWeek`
-* removed the previously deprecated `URL.openUrl[Writer|Reader]()` routines
+* removed the deprecated `URL.openUrl[Writer|Reader]()` routines
 
 Compiler Flags
 --------------
@@ -283,7 +283,7 @@ Bug Fixes for Tools
 * fixed `mason test`'s documented use as a test runner for `.chpl` files
 * fixed `mason run --example` to work properly with mason libraries
 * fixed `mason test --setComm` incorrectly always defaulting to `none`
-* removed deprecated support for mason module names containing `$`
+* fixed a bug in which mason permitted module names to include `$` symbols
 
 Bug Fixes for Build Issues
 --------------------------
