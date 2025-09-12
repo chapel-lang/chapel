@@ -526,38 +526,97 @@ class ArrayProvider:
         )
 
 
+owned_regex = re.compile(r"^((_owned_.+(_chpl)?)|(OwnedObject::owned .+))$")
+shared_regex = re.compile(r"^((_shared_.+(_chpl)?)|(SharedObject::shared .+))$")
+
+
+def ManagedObjectRecognizer(sbtype, internal_dict):
+    typename = sbtype.GetName()
+    match = owned_regex.match(typename) or shared_regex.match(typename)
+    return match is not None and not sbtype.IsPointerType()
+
+
+def ManagedObjectSummary(valobj, internal_dict):
+    chpl_p = valobj.GetNonSyntheticValue().GetChildMemberWithName("chpl_p")
+
+    if chpl_p.GetValueAsUnsigned() == 0:
+        return "nil"
+    else:
+        return chpl_p.GetSummary() or chpl_p.GetValue()
+
+
+class ManagedObjectProvider:
+    def __init__(self, valobj, internal_dict):
+        self.valobj = valobj
+
+        chpl_p = self.valobj.GetNonSyntheticValue().GetChildMemberWithName(
+            "chpl_p"
+        )
+        if chpl_p.GetValueAsUnsigned() == 0:
+            self.synthetic_children = {}
+        else:
+            self.synthetic_children = {}
+            deref_chpl_p = chpl_p.Dereference()
+            if deref_chpl_p.IsValid():
+                for i in range(deref_chpl_p.GetNumChildren()):
+                    child = deref_chpl_p.GetChildAtIndex(i)
+                    if child.IsValid():
+                        self.synthetic_children[child.GetName()] = child
+
+    def has_children(self):
+        return self.num_children() > 0
+
+    def num_children(self):
+        return len(self.synthetic_children)
+
+    def get_child_index(self, name):
+        if name in self.synthetic_children:
+            return list(self.synthetic_children.keys()).index(name)
+        else:
+            return -1
+
+    def get_child_at_index(self, index):
+        if index < 0 or index >= self.num_children():
+            return None
+        key = list(self.synthetic_children.keys())[index]
+        element_data = self.synthetic_children[key].GetData()
+        element_type = self.synthetic_children[key].GetType()
+        return self.valobj.CreateValueFromData(
+            f"{key}", element_data, element_type
+        )
+
+
 def __lldb_init_module(debugger, internal_dict):
-    debugger.HandleCommand(
-        "type summary add --expand --python-function chpl_lldb_pretty_print.StringSummary  -x '^((string(_chpl)?)|String::string)$'"
-    )
-    debugger.HandleCommand(
-        "type synth add --python-class chpl_lldb_pretty_print.StringProvider -x '^((string(_chpl)?)|String::string)$'"
-    )
 
-    debugger.HandleCommand(
-        f"type summary add --expand --python-function chpl_lldb_pretty_print.RangeSummary --recognizer-function chpl_lldb_pretty_print.RangeRecognizer"
-    )
-    debugger.HandleCommand(
-        f"type synth add --python-class chpl_lldb_pretty_print.RangeProvider --recognizer-function chpl_lldb_pretty_print.RangeRecognizer"
-    )
+    def register(summary_function, provider_class, recognizer_str):
+        debugger.HandleCommand(
+            f"type summary add --skip-pointers --expand --python-function chpl_lldb_pretty_print.{summary_function} {recognizer_str}"
+        )
+        debugger.HandleCommand(
+            f"type synth add --skip-pointers --python-class chpl_lldb_pretty_print.{provider_class} {recognizer_str}"
+        )
 
-    debugger.HandleCommand(
-        f"type summary add --expand --python-function chpl_lldb_pretty_print.DomainSummary --recognizer-function chpl_lldb_pretty_print.DomainRecognizer"
-    )
-    debugger.HandleCommand(
-        f"type synth add --python-class chpl_lldb_pretty_print.DomainProvider --recognizer-function chpl_lldb_pretty_print.DomainRecognizer"
-    )
+    def regex(type_regex):
+        return f"-x '^({type_regex})$'"
 
-    debugger.HandleCommand(
-        f"type summary add --expand --python-function chpl_lldb_pretty_print.HomogeneousTupleSummary --recognizer-function chpl_lldb_pretty_print.HomogeneousTupleRecognizer"
-    )
-    debugger.HandleCommand(
-        f"type synth add --python-class chpl_lldb_pretty_print.HomogeneousTupleProvider --recognizer-function chpl_lldb_pretty_print.HomogeneousTupleRecognizer"
-    )
+    def recognizer(func_name):
+        return f"--recognizer-function chpl_lldb_pretty_print.{func_name}"
 
-    debugger.HandleCommand(
-        f"type summary add --expand --python-function chpl_lldb_pretty_print.ArraySummary --recognizer-function chpl_lldb_pretty_print.ArrayRecognizer"
+    register(
+        "StringSummary",
+        "StringProvider",
+        regex("(string(_chpl)?)|String::string"),
     )
-    debugger.HandleCommand(
-        f"type synth add --python-class chpl_lldb_pretty_print.ArrayProvider --recognizer-function chpl_lldb_pretty_print.ArrayRecognizer"
+    register("RangeSummary", "RangeProvider", recognizer("RangeRecognizer"))
+    register("DomainSummary", "DomainProvider", recognizer("DomainRecognizer"))
+    register(
+        "HomogeneousTupleSummary",
+        "HomogeneousTupleProvider",
+        recognizer("HomogeneousTupleRecognizer"),
+    )
+    register("ArraySummary", "ArrayProvider", recognizer("ArrayRecognizer"))
+    register(
+        "ManagedObjectSummary",
+        "ManagedObjectProvider",
+        recognizer("ManagedObjectRecognizer"),
     )
