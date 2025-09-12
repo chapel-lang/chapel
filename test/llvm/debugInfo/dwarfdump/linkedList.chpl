@@ -1,5 +1,6 @@
 
 
+// DWARFDUMP: MyNode
 class MyNode {
   var id: int;
   var next: unmanaged MyNode?;
@@ -13,6 +14,7 @@ class MyNode {
     }
   }
 }
+// DWARFDUMP: myLinkedList
 record myLinkedList {
   var head: unmanaged MyNode?;
   proc init() {
@@ -47,6 +49,7 @@ record myLinkedList {
 }
 
 proc main() {
+  // DWARFDUMP: thisIsTheList
   var thisIsTheList = new myLinkedList();
   thisIsTheList.append(1);
   thisIsTheList.append(2);
