@@ -5,7 +5,6 @@ TODO:
 * '(http:' -> '(see http:'
 * sort items within categories
 * check placement of items into categories
-o check ordering of categories relative to one another
 * check for ' vs `
 * fulfill TODOs
 * check man page or util/chpl-completion.bash for new compiler flags
@@ -17,8 +16,9 @@ o check ordering of categories relative to one another
 * check for 'see:'
 * check for changes put too far down in file
 * add highlights
-o spellcheck
-o remove empty sections
+* spellcheck
+* remove empty sections
+* check ordering of categories relative to one another
 o check links
 
 version 2.6
@@ -46,9 +46,6 @@ Syntactic / Naming Changes
 * renamed the 'pre-edition' to now be called the 'preview' edition  
   (see https://chapel-lang.org/docs/2.6/technotes/editions.html)
 
-New Language Features
----------------------
-
 Language Feature Improvements
 -----------------------------
 * improved stringification of NaN `complex` values in the 'preview' edition  
@@ -58,27 +55,15 @@ Language Feature Improvements
 * added new sorted/unique properties to the `.createIndexBuffer()` method  
   (see https://chapel-lang.org/docs/2.6/language/spec/domains.html#ChapelDomain.createIndexBuffer)
 
-Semantic Changes / Changes to the Language Definition
------------------------------------------------------
-
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
 * removed deprecated support for `$` as a valid character in identifiers
 * removed deprecated support for `require` of `.chpl` files at non-module scope
 
-Namespace Changes
------------------
-
-New Standard Library Features
------------------------------
-
 Changes / Feature Improvements in Standard Libraries
 ----------------------------------------------------
 * added a cast from `real` values to `bigint` in the `BigInteger` module
 * removed the `.sorted()` iterator method from domains in the 'preview' edition
-
-New Package Module Features
----------------------------
 
 Changes / Feature Improvements in Package Modules
 -------------------------------------------------
@@ -92,12 +77,6 @@ New Standard Layout and Distribution Features
 * enabled the `isUnique` flag for `bulkAdd()` on distributed sparse domains
 * added missing support for `==` on instances of the `privateDist` distribution
 * added a warning when creating stencil-distributed arrays of `owned` classes
-
-Name Changes for Standard Layouts and Distributions
----------------------------------------------------
-
-Name Changes in Libraries
--------------------------
 
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
@@ -154,9 +133,6 @@ Tool Improvements
 * started using the Python 3.9 limited ABI version for `chapel-py`
 * `chpldoc`, `c2chapel`, `chapel-py` and the CLS now require Python 3.10+
 
-Syntax Highlighters
--------------------
-
 Documentation Improvements
 --------------------------
 * refactored and improved the structure of the multilocale execution docs  
@@ -211,9 +187,6 @@ Documentation Improvements for Tools
 * expanded documentation for the `Mason.toml` manifest file  
   (see https://chapel-lang.org/docs/2.6/tools/mason/guide/manifestfile.html)
 
-Documentation Improvements to the 'man' Pages
----------------------------------------------
-
 Platform-Specific Documentation Improvements
 --------------------------------------------
 * added new documentation on using Chapel's SMP mode  
@@ -230,12 +203,6 @@ Platform-Specific Documentation Improvements
   (see https://chapel-lang.org/docs/2.6/usingchapel/prereqs.html#amazon-linux-2-chpl-llvm-system-incompatibility)
 * added documentation for `CHPL_RT_COMM_OFI_DEDICATED_AMH_CORES`  
  (see https://chapel-lang.org/docs/2.6/platforms/comm-layers/libfabric.html#other-settings)
-
-Technical Note Improvements
----------------------------
-
-Example Codes
--------------
 
 Performance Optimizations / Improvements
 ----------------------------------------
@@ -255,9 +222,6 @@ Memory Improvements
 * closed a memory leak when creating new instances of `privateDist`
 * fixed memory leaks and corruption issues in `slurm-gasnetrun_*` launchers
 
-Configuration / Build Changes
------------------------------
-
 Updates to Chapel's Release Formats
 -----------------------------------
 * expanded the Homebrew formula to include multi-locale & cpu-as-device modes  
@@ -272,30 +236,15 @@ Updates to Chapel's Release Formats
 * dropped pre-built package support for Debian 11 and RHEL 9 Linux packages
 * added the ability to use `extern` blocks with the C back-end with Homebrew
 
-Portability / Platform-specific Improvements
---------------------------------------------
-
-Portability / Build Improvements for GPUs
------------------------------------------
-
-Generated Executable Flags
---------------------------
-
 Error Messages / Semantic Checks
 --------------------------------
 * improved the warnings for missing task intents on methods with a `ref` intent
 * improved the error message for having a `c_ptr` in a record that is recursive
 
-Error Messages / Semantic Checks for Libraries
-----------------------------------------------
-
 Error Messages for Build Issues
 -------------------------------
 * improved the errors when the runtime for the current configuration is missing
 * improved the errors for using an unsupported configuration for sanitizers
-
-Launchers
----------
 
 Runtime Library Improvements
 ----------------------------
@@ -376,25 +325,16 @@ Bug Fixes for the Runtime
 * fixed the binding of co-locales on heterogeneous architectures
 * fixed the partitioning of cores for the GASNet `smp` substrate
 
-Developer-oriented changes: Process
------------------------------------
-
 Developer-oriented changes: Documentation
 -----------------------------------------
 * added documentation on using `jemalloc` memory profiling  
   (see https://chapel-lang.org/docs/2.6/developer/bestPractices/MemoryProfiling.html)
 * removed stub docs for the `Sort` package module (now a standard module)
 
-Developer-oriented changes: Syntactic / Naming Changes
-------------------------------------------------------
-
 Developer-oriented changes: Module changes
 ------------------------------------------
 * added a new locking abstraction to the internal `ChapelLocks` module
 * refactored the new edition of `reshape()` to avoid redundancy
-
-Developer-oriented changes: Performance improvements
-----------------------------------------------------
 
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
@@ -403,9 +343,6 @@ Developer-oriented changes: Makefile / Build-time changes
 * upgraded the CI to use Ubuntu 24 and LLVM 19
 * clarified error when homebrew-based `pkg-config` fails to find a dependence
 * fixed a typo that was thwarting proper cleaning of docs builds
-
-Developer-oriented changes: Compiler Flags
-------------------------------------------
 
 Developer-oriented changes: Compiler improvements / changes
 -----------------------------------------------------------
@@ -443,12 +380,6 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
   - significantly improved support for initializing records
   - significantly improved support for default argument values
   - fixed a bug causing the computed call-graph to be nondeterministic
-
-Developer-oriented changes: GPU support
----------------------------------------
-
-Developer-oriented changes: Runtime improvements
-------------------------------------------------
 
 Developer-oriented changes: Platform-specific bug fixes
 -------------------------------------------------------
