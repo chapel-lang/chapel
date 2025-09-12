@@ -642,12 +642,6 @@ module Python {
       return new Module(this, modName);
     }
 
-    @deprecated("'importModule' with a 'moduleContents' argument is deprecated. Use :proc:`createModule` instead.")
-    proc importModule(modName: string, moduleContents): owned Module throws
-      where moduleContents.type == string || moduleContents.type == bytes {
-      return new Module(this, modName, moduleContents);
-    }
-
     /*
       Create a Python module, using the provided ``moduleContents``. This is
       equivalent to putting the code in a file, and then importing the file
