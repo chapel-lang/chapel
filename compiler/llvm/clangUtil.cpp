@@ -2350,10 +2350,13 @@ void finishCodegenLLVM() {
   // Verify the LLVM module.
   if (developer || fVerify) {
     bool problems;
-    problems = verifyModule(*info->module, &errs());
-    //problems = false;
+    bool BrokenDebugInfo = true;
+    problems = verifyModule(*info->module, &errs(), &BrokenDebugInfo);
     if (problems) {
       INT_FATAL("LLVM module verification failed");
+    }
+    if (BrokenDebugInfo) {
+      INT_FATAL("LLVM module has broken debug info");
     }
   }
 
