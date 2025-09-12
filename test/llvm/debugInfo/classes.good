@@ -1,8 +1,0 @@
-{x = 17} | {x = 17} | {x = 17} | {x = 17}
-nil | nil | nil | nil
-(x = {x = 17}) | (x = {x = 17}) | (x = {x = 17}) | (x = {x = 17})
-(x = {x = 17}) | (x = {x = 17}) | (x = {x = 17}) | (x = {x = 17})
-Running DWARF verification...
-Success!!
-Running DWARF dump checks...
-Success!!

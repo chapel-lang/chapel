@@ -1,0 +1,160 @@
+42 | 3.14 | (x = 42) | {x = 17} | {x = 17}
+42 | 3.14 | (x = 42) | {x = 17} | {x = 17}
+Running DWARF verification...
+Success!!
+Running DWARF dump checks...
+=================================myRec(int(64))=================================
+DW_TAG_structure_type
+              DW_AT_name	("myRec(int(64))")
+              DW_AT_byte_size	(0x08)
+              DW_AT_decl_file	("./c_ptrs.chpl")
+              DW_AT_decl_line	(5)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("x")
+                DW_AT_type	("int(64)")
+                DW_AT_decl_file	("./c_ptrs.chpl")
+                DW_AT_decl_line	(6)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  NULL
+================================================================================
+====================================MyClass=====================================
+DW_TAG_pointer_type
+              DW_AT_type	("c_ptrs::MyClass")
+              DW_AT_name	("MyClass")
+DW_TAG_structure_type
+              DW_AT_name	("MyClass")
+              DW_AT_byte_size	(0x10)
+              DW_AT_decl_file	("./c_ptrs.chpl")
+              DW_AT_decl_line	(9)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("super")
+                DW_AT_type	("ChapelBase::RootClass *")
+                DW_AT_decl_file	("./c_ptrs.chpl")
+                DW_AT_decl_line	(9)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("x")
+                DW_AT_type	("int(64)")
+                DW_AT_decl_file	("./c_ptrs.chpl")
+                DW_AT_decl_line	(10)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x08)
+  NULL
+DW_TAG_structure_type
+              DW_AT_name	("MyClass")
+              DW_AT_declaration	(true)
+              DW_AT_alignment	(8)
+DW_TAG_pointer_type
+              DW_AT_type	("c_ptrs::MyClass")
+              DW_AT_name	("MyClass")
+================================================================================
+=====================================myInt======================================
+DW_TAG_variable
+              DW_AT_name	("myInt")
+              DW_AT_decl_file	("./c_ptrs.chpl")
+              DW_AT_decl_line	(16)
+              DW_AT_type	("int(64)")
+================================================================================
+=====================================myReal=====================================
+DW_TAG_variable
+              DW_AT_name	("myReal")
+              DW_AT_decl_file	("./c_ptrs.chpl")
+              DW_AT_decl_line	(18)
+              DW_AT_type	("real(64)")
+================================================================================
+====================================myRecInt====================================
+DW_TAG_variable
+              DW_AT_name	("myRecInt")
+              DW_AT_decl_file	("./c_ptrs.chpl")
+              DW_AT_decl_line	(20)
+              DW_AT_type	("c_ptrs::myRec(int(64))")
+================================================================================
+================================myUnmanagedClass================================
+DW_TAG_variable
+              DW_AT_name	("myUnmanagedClass")
+              DW_AT_decl_file	("./c_ptrs.chpl")
+              DW_AT_decl_line	(22)
+              DW_AT_type	("c_ptrs::MyClass *")
+================================================================================
+==================================myOwnedClass==================================
+DW_TAG_variable
+              DW_AT_name	("myOwnedClass")
+              DW_AT_decl_file	("./c_ptrs.chpl")
+              DW_AT_decl_line	(25)
+              DW_AT_type	("OwnedObject::owned MyClass")
+================================================================================
+====================================myIntPtr====================================
+DW_TAG_variable
+              DW_AT_name	("myIntPtr")
+              DW_AT_decl_file	("./c_ptrs.chpl")
+              DW_AT_decl_line	(29)
+              DW_AT_type	("int(64) *")
+================================================================================
+===================================myRealPtr====================================
+DW_TAG_variable
+              DW_AT_name	("myRealPtr")
+              DW_AT_decl_file	("./c_ptrs.chpl")
+              DW_AT_decl_line	(31)
+              DW_AT_type	("real(64) *")
+================================================================================
+==================================myRecIntPtr===================================
+DW_TAG_variable
+              DW_AT_name	("myRecIntPtr")
+              DW_AT_decl_file	("./c_ptrs.chpl")
+              DW_AT_decl_line	(33)
+              DW_AT_type	("c_ptrs::myRec(int(64)) *")
+================================================================================
+==============================myUnmanagedClassPtr===============================
+DW_TAG_variable
+              DW_AT_name	("myUnmanagedClassPtr")
+              DW_AT_decl_file	("./c_ptrs.chpl")
+              DW_AT_decl_line	(35)
+              DW_AT_type	("void *")
+================================================================================
+================================myOwnedClassPtr=================================
+DW_TAG_variable
+              DW_AT_name	("myOwnedClassPtr")
+              DW_AT_decl_file	("./c_ptrs.chpl")
+              DW_AT_decl_line	(37)
+              DW_AT_type	("OwnedObject::owned MyClass *")
+================================================================================
+=================================myIntPtrConst==================================
+DW_TAG_variable
+              DW_AT_name	("myIntPtrConst")
+              DW_AT_decl_file	("./c_ptrs.chpl")
+              DW_AT_decl_line	(45)
+              DW_AT_type	("int(64) *")
+================================================================================
+=================================myRealPtrConst=================================
+DW_TAG_variable
+              DW_AT_name	("myRealPtrConst")
+              DW_AT_decl_file	("./c_ptrs.chpl")
+              DW_AT_decl_line	(47)
+              DW_AT_type	("real(64) *")
+================================================================================
+================================myRecIntPtrConst================================
+DW_TAG_variable
+              DW_AT_name	("myRecIntPtrConst")
+              DW_AT_decl_file	("./c_ptrs.chpl")
+              DW_AT_decl_line	(49)
+              DW_AT_type	("c_ptrs::myRec(int(64)) *")
+================================================================================
+============================myUnmanagedClassPtrConst============================
+DW_TAG_variable
+              DW_AT_name	("myUnmanagedClassPtrConst")
+              DW_AT_decl_file	("./c_ptrs.chpl")
+              DW_AT_decl_line	(51)
+              DW_AT_type	("void *")
+================================================================================
+==============================myOwnedClassPtrConst==============================
+DW_TAG_variable
+              DW_AT_name	("myOwnedClassPtrConst")
+              DW_AT_decl_file	("./c_ptrs.chpl")
+              DW_AT_decl_line	(53)
+              DW_AT_type	("OwnedObject::owned MyClass *")
+================================================================================
+Success!!
