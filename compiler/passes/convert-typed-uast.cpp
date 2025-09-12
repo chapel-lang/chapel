@@ -2558,7 +2558,16 @@ struct ConvertTypeHelper {
 
     const types::RecordType* manager = t->managerRecordType(context());
     if (manager == nullptr) {
-      ret = at; // unamanged / borrowed is just the class type at this point
+      auto dec = t->decorator();
+      ClassTypeDecoratorEnum d = dec.isUnmanaged() ? ClassTypeDecorator::UNMANAGED
+                                                   : ClassTypeDecorator::BORROWED;
+      if (dec.isNonNilable()) {
+        d = addNonNilToDecorator(d);
+      } else {
+        d = addNilableToDecorator(d);
+      }
+
+      ret = at->getDecoratedClass(d); // unamanged / borrowed is just the class type at this point
     } else {
       // owned/shared should have had a substitution for chpl_t
       INT_ASSERT(!manager->substitutions().empty());
@@ -2988,7 +2997,7 @@ Type* TConverter::convertType(const types::Type* t) {
     } else if (auto ext = t->toExternType()) {
       id = ext->id();
     }
-    if (!id.isEmpty()) {
+    if (!id.isEmpty() && !isDecoratedClassType(ret)) {
       auto ast = parsing::idToAst(context, id);
       untypedConverter->noteConvertedSym(ast, ret->symbol);
     }
@@ -3003,7 +3012,11 @@ Type* TConverter::convertType(const types::Type* t) {
     // of optimization passes that are looking for records, so my guess is
     // that the codegen generated ones should probably be 'CLASS' as well.
     AggregateType* ref = new AggregateType(AGGREGATE_CLASS);
-    TypeSymbol* refTs = new TypeSymbol(astr("_ref_", ret->symbol->cname), ref);
+    const char* name = astr("_ref_", ret->symbol->cname);
+    if (isDecoratedClassType(ret)) {
+      name = astr("_ref(", ret->symbol->name, ")");
+    }
+    TypeSymbol* refTs = new TypeSymbol(name, ref);
     refTs->addFlag(FLAG_REF);
     refTs->addFlag(FLAG_NO_DEFAULT_FUNCTIONS);
     refTs->addFlag(FLAG_NO_OBJECT);
