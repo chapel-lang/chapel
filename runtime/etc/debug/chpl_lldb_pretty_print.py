@@ -150,7 +150,7 @@ class RangeProvider:
                 f"RangeProvider: type name '{typename}' did not match expected pattern"
             )
             return False
-        return match.group(2) in ("low", "both")
+        return match.group("boundsKind") in ("low", "both")
 
     def _has_high_bound(self):
         typename = self.valobj.GetTypeName()
@@ -197,11 +197,12 @@ class RangeProvider:
         )
 
 
-# TODO: only handles DefaultRectangularDom for now
+# TODO: only handles DefaultRectangularDom for C for now
 domain_regex_c = re.compile(
-    r"^_domain_DefaultRectangularDom_([0-9]+)_([a-zA-Z0-9_]+)_(one|negOne|positive|negative|any)(?:_chpl)?$"
+    r"^_domain_DefaultRectangularDom_(?P<rank>[0-9]+)_(?P<eltType>[a-zA-Z0-9_]+)_(?P<stride>one|negOne|positive|negative|any)(?:_chpl)?$"
 )
-domain_regex_llvm = re.compile(r"^$")  # TODO
+domain_regex_llvm = re.compile(r"^ChapelDomain::domain\((?P<rank>[0-9]+),(?P<eltType>[a-zA-Z0-9_\(\)]+),(?P<stride>one|negOne|positive|negative|any)\)$")
+# TODO handle developer domain regex
 
 
 def DomainRecognizer(sbtype, internal_dict):
@@ -209,6 +210,11 @@ def DomainRecognizer(sbtype, internal_dict):
     match = domain_regex_c.match(typename) or domain_regex_llvm.match(typename)
     return match is not None
 
+
+def RangesToString(ranges):
+    getSum = lambda r: r.GetSummary() or r.GetValue() or ""
+    s = ", ".join(getSum(ranges.GetChildAtIndex(i)) for i in range(ranges.GetNumChildren()))
+    return s
 
 def DomainSummary(valobj, internal_dict):
     typename = valobj.GetTypeName()
@@ -219,17 +225,13 @@ def DomainSummary(valobj, internal_dict):
         )
         return None
 
-    rank = int(match.group(1))
-    idx_type = match.group(2)
-    stride_kind = match.group(3)
-
     ranges = (
         valobj.GetNonSyntheticValue()
         .GetChildMemberWithName("_instance")
         .GetNonSyntheticValue()
         .GetChildMemberWithName("ranges")
     )
-    return "{" + (ranges.GetSummary()) + "}"
+    return "{" + RangesToString(ranges) + "}"
 
 
 class DomainProvider:
