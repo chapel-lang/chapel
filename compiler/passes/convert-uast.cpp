@@ -3760,7 +3760,7 @@ struct Converter final : UastConverter {
     if (auto it = syms.find(node->id()); it != syms.end()) {
       // Sometimes in the typed converter we manually convert untyped AST
       // to use as a base for instantiation. E.g., dtCPointer
-      return nullptr;
+      return it->second->defPoint->remove();
     }
 
     const resolution::ResolutionResultByPostorderID* resolved = nullptr;
