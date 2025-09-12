@@ -61,10 +61,10 @@ class StringProvider:
 
 
 range_regex_c = re.compile(
-    r"^range_([a-zA-Z0-9_]+)_(both|low|high|neither)_(one|negOne|positive|negative|any)(?:_chpl)?$"
+    r"^range_(?P<eltType>[a-zA-Z0-9_]+)_(?P<boundsKind>both|low|high|neither)_(?P<stride>one|negOne|positive|negative|any)(?:_chpl)?$"
 )
 range_regex_llvm = re.compile(
-    r"^ChapelRange::range\(([a-zA-Z0-9_()]+),(both|low|high|neither),(one|negOne|positive|negative|any)\)$"
+    r"^ChapelRange::range\((?P<eltType>[a-zA-Z0-9_()]+),(?P<boundsKind>both|low|high|neither),(?P<stride>one|negOne|positive|negative|any)\)$"
 )
 
 
@@ -79,6 +79,11 @@ def RangeSummary(valobj, internal_dict):
         .GetChildMemberWithName("_high")
         .GetValueAsSigned()
     )
+    stride = (
+        valobj.GetNonSyntheticValue()
+        .GetChildMemberWithName("_stride")
+        .GetValueAsSigned()
+    )
 
     typename = valobj.GetTypeName()
     match = range_regex_c.match(typename) or range_regex_llvm.match(typename)
@@ -89,10 +94,13 @@ def RangeSummary(valobj, internal_dict):
         return None
 
     def has_low_bound():
-        return match.group(2) in ("low", "both")
+        return match.group("boundsKind") in ("low", "both")
 
     def has_high_bound():
-        return match.group(2) in ("high", "both")
+        return match.group("boundsKind") in ("high", "both")
+
+    def has_stride():
+        return match.group("stride") != "one"
 
     # TODO: handle strides and alignment
     res = ""
@@ -101,6 +109,9 @@ def RangeSummary(valobj, internal_dict):
     res += ".."
     if has_high_bound():
         res += str(high)
+    if has_stride():
+        res += f" by {stride}"
+
 
     return res
 
@@ -123,6 +134,10 @@ class RangeProvider:
         if self._has_high_bound():
             self.synthetic_children["high"] = (
                 self.valobj.GetChildMemberWithName("_high")
+            )
+        if self._has_stride():
+            self.synthetic_children["stride"] = (
+                self.valobj.GetChildMemberWithName("_stride")
             )
 
     def _has_low_bound(self):
@@ -147,7 +162,19 @@ class RangeProvider:
                 f"RangeProvider: type name '{typename}' did not match expected pattern"
             )
             return False
-        return match.group(2) in ("high", "both")
+        return match.group("boundsKind") in ("high", "both")
+
+    def _has_stride(self):
+        typename = self.valobj.GetTypeName()
+        match = range_regex_c.match(typename) or range_regex_llvm.match(
+            typename
+        )
+        if not match:
+            print(
+                f"RangeProvider: type name '{typename}' did not match expected pattern"
+            )
+            return False
+        return match.group("stride") != "one"
 
     def has_children(self):
         return self.num_children() > 0
