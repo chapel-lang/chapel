@@ -31,7 +31,7 @@ DW_TAG_structure_type
               DW_AT_alignment	(8)
   DW_TAG_member
                 DW_AT_name	("super")
-                DW_AT_type	("ChapelBase::RootClass *")
+                DW_AT_type	("ChapelBase::RootClass")
                 DW_AT_decl_file	("./c_ptrs.chpl")
                 DW_AT_decl_line	(9)
                 DW_AT_alignment	(8)
