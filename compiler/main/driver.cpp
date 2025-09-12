@@ -1617,34 +1617,6 @@ static ArgumentDescription arg_desc[] = {
   {0}
 };
 
-static DeprecatedArgument deprecated_args[] = {
-  {"CHPL_NO_CHECKS",
-    "The environment variable 'CHPL_NO_CHECKS' has been deprecated use 'CHPL_CHECKS' instead.",
-    "CHPL_CHECKS"
-  },
-  {"CHPL_NO_BOUNDS_CHECKING",
-   "The environment variable 'CHPL_NO_BOUNDS_CHECKING' has been deprecated use 'CHPL_BOUNDS_CHECKING instead.",
-   "CHPL_BOUNDS_CHECKING"
-  },
-  {"CHPL_NO_NIL_CHECKS",
-   "The environment variable 'CHPL_NO_NIL_CHECKS' has been deprecated use 'CHPL_NIL_CHECKS' instead.",
-   "CHPL_NIL_CHECKS"
-  },
-  {"CHPL_NO_CODEGEN",
-   "The environment variable 'CHPL_NO_CODEGEN' has been deprecated use 'CHPL_CODEGEN' instead.",
-   "CHPL_CODEGEN"
-  },
-  {"CHPL_NO_COMPILE_TIME_NIL_CHECKS",
-   "The environment variable 'CHPL_NO_COMPILE_TIME_NIL_CHECKS' has been deprecated use 'CHPL_COMPILE_TIME_NIL_CHECKS  instead.",
-   "CHPL_COMPILE_TIME_NIL_CHECKS"
-  },
-  {"CHPL_DISABLE_WARNINGS",
-   "The environment variable 'CHPL_DISABLE_WARNINGS' has been deprecated use 'CHPL_WARNINGS' instead.",
-   "CHPL_WARNINGS"
-  },
-  {0}
-};
-
 static ArgumentState sArgState = {
   0,
   0,
@@ -2534,7 +2506,7 @@ int main(int argc, char* argv[]) {
     init_args(&sArgState, argv[0], (void*)main);
 
     // Initialize the arguments for argument state.
-    init_arg_desc(&sArgState, arg_desc, deprecated_args);
+    init_arg_desc(&sArgState, arg_desc);
 
     initFlags();
     initAstrConsts();
