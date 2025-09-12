@@ -282,9 +282,9 @@ class DomainProvider:
 # TODO: for now we only handle DefaultRectangular for C backend
 
 array_regex_c = re.compile(
-    r"^_array_DefaultRectangularArr_([0-9]+)_([a-zA-Z0-9_]+)_(one|negOne|positive|negative|any)_([a-zA-Z0-9_]+)_([a-zA-Z0-9_]+)(?:_chpl)?$"
+    r"^_array_DefaultRectangularArr_(?P<rank>[0-9]+)_(?P<idxType>[a-zA-Z0-9_]+)_(?P<stride>one|negOne|positive|negative|any)_(?P<eltType>[a-zA-Z0-9_]+)_(?P<idxSignedType>[a-zA-Z0-9_]+)(?:_chpl)?$"
 )
-array_regex_llvm = re.compile(r"^$")  # TODO
+array_regex_llvm = re.compile(r"^ChapelArray::\[domain\((?P<rank>[0-9]+),(?P<idxType>[a-zA-Z0-9_\(\)]+),(?P<stride>one|negOne|positive|negative|any)\)\] (?P<eltType>[a-zA-Z0-9_\(\)]+)$")
 
 
 def ArrayRecognizer(sbtype, internal_dict):
@@ -302,34 +302,29 @@ def ArraySummary(valobj, internal_dict):
         )
         return None
 
-    rank = int(match.group(1))
-    idx_type = match.group(2)
-    stride_kind = match.group(3)
-    element_type = match.group(4)
-    idx_signed_type = match.group(5)
-
     _instance = valobj.GetNonSyntheticValue().GetChildMemberWithName(
         "_instance"
     )
     domClass = _instance.GetChildMemberWithName("dom")
     data = _instance.GetChildMemberWithName("data")
     ranges = domClass.GetNonSyntheticValue().GetChildMemberWithName("ranges")
-    return f"[{ranges.GetSummary() or ranges.GetValue()}] {GetArrayType(_instance)}"
+    return f"[{RangesToString(ranges)}] {GetArrayType(_instance)}"
 
 
 def GetArrayType(_instance):
     ddata = _instance.GetChildMemberWithName("data")
     # use the element type we can compute from ddata
-    ddata_regex_c = re.compile(r"^_ddata_([a-zA-Z0-9_]+)(?:_chpl)?$")
-    ddata_regex_llvm = re.compile(r"^$")  # TODO
+    # TODO: handle wide pointers
+    ddata_regex_c = re.compile(r"^_ddata_(?P<eltType>[a-zA-Z0-9_]+?)(?:_chpl)?$")
+    ddata_regex_llvm = re.compile(r"^(?P<eltType>[a-zA-Z0-9_\(\)]+) \*$")
     ddata_typename = ddata.GetTypeName()
-    ddata_match = ddata_regex_c.match(ddata_typename) or ddata_regex
+    ddata_match = ddata_regex_c.match(ddata_typename) or ddata_regex_llvm.match(ddata_typename)
     if not ddata_match:
         print(
             f"ArrayProvider: ddata type name '{ddata_typename}' did not match expected pattern"
         )
         return "unknown"
-    element_type = ddata_match.group(1)
+    element_type = ddata_match.group("eltType")
     return element_type
 
 
@@ -358,7 +353,7 @@ class ArrayProvider:
         self.synthetic_children["dom"] = self.domClass
         self.synthetic_children["data"] = self.data
 
-        self.rank = int(match.group(1))
+        self.rank = int(match.group("rank"))
         self.element_type = GetArrayType(self._instance)
 
         self._make_synthetic_array()
@@ -407,7 +402,12 @@ class ArrayProvider:
                 .GetChildMemberWithName("_high")
                 .GetValueAsSigned()
             )
-            bounds.append((low, high))
+            stride = (
+                range_dim.GetNonSyntheticValue()
+                .GetChildMemberWithName("_stride")
+                .GetValueAsSigned()
+            )
+            bounds.append((low, high, stride))
 
         data_ptr = self.data.GetValueAsUnsigned()
 
@@ -415,24 +415,25 @@ class ArrayProvider:
             if dims == 0:
                 yield []
             else:
-                low, high = bounds[dims - 1]
-                for i in range(low, high + 1):
+                low, high, stride = bounds[dims - 1]
+                for i in range(low, high + 1, stride if stride else 1):
                     for rest in generate_indices(dims - 1, bounds):
-                        yield [i] + rest
+                        yield rest + [i]
 
-        # Calculate strides
-        strides = [1]
-        for i in range(self.rank - 1, 0, -1):
-            low, high = bounds[i]
-            size = high - low + 1
-            strides.insert(0, strides[0] * size)
 
         for indices in generate_indices(self.rank, bounds):
-            # Calculate linear offset
+            # Calculate linear offset for multi-dimensional array
             offset = 0
-            for i, idx in enumerate(indices):
-                low, _ = bounds[i]
-                offset += (idx - low) * strides[i]
+            multiplier = 1
+            for dim in reversed(range(self.rank)):
+                low, high, stride = bounds[dim]
+                dim_index = indices[dim]
+                # Convert from Chapel index to 0-based index
+                zero_based_index = (dim_index - low) // (stride if stride else 1)
+                offset += zero_based_index * multiplier
+                # Update multiplier for next dimension
+                dim_size = (high - low) // (stride if stride else 1) + 1
+                multiplier *= dim_size
 
             element_addr = data_ptr + offset * element_size
             element_name = f"[{','.join(map(str, indices))}]"
