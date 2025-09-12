@@ -144,7 +144,7 @@ Documentation Improvements
 * converted many example codes into automated tests, fixing them in the process
 * improved the task-private variable description in the `forall` loops primer  
   (see https://chapel-lang.org/docs/2.6/primers/forallLoops.html#task-private-variables)
-* added an entry on the `@editions` attribute to the attributes technote  
+* added an entry on the `@edition` attribute to the attributes technote  
   (see https://chapel-lang.org/docs/2.6/technotes/attributes.html#other-attributes)
 * updated the `LICENSE` files w.r.t. the Python packages relied upon by tools  
   (see https://raw.githubusercontent.com/chapel-lang/chapel/refs/heads/release/2.6/LICENSE)
