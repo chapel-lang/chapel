@@ -21,24 +21,26 @@ Executing commands in FILE.txt
 46 47 48 49 50
 true | 42 | 3.14 | e2 | e2 | (1, two, 3.0, e1)
 (lldb)  up
-frame #1: 0xXXXX basicTypes`chpl_user_main at basicTypes.chpl:54
-   51  	  writeln(myDom, myArr, myArr2d, sep=" | ");
-   52  	  writeln(myBool, myInt, myReal, myEnumVal, myEnumRef, myTuple, sep=" | ");
-   53
--> 54  	  use Debugger; breakpoint;
-   55  	}
+frame #1: 0xXXXX basicTypes`chpl_user_main at basicTypes.chpl:74
+   71  	  writeln(myDom, myArr, myArr2d, sep=" | ");
+   72  	  writeln(myBool, myInt, myReal, myEnumVal, myEnumRef, myTuple, sep=" | ");
+   73
+-> 74  	  use Debugger; breakpoint;
+   75  	}
 Process XXXX stopped
 * Thread #X, stop reason = breakpoint 1.1
-    frame #1: 0xXXXX basicTypes`chpl_user_main at basicTypes.chpl:54
-   51  	  writeln(myDom, myArr, myArr2d, sep=" | ");
-   52  	  writeln(myBool, myInt, myReal, myEnumVal, myEnumRef, myTuple, sep=" | ");
-   53
--> 54  	  use Debugger; breakpoint;
-   55  	}
+    frame #1: 0xXXXX basicTypes`chpl_user_main at basicTypes.chpl:74
+   71  	  writeln(myDom, myArr, myArr2d, sep=" | ");
+   72  	  writeln(myBool, myInt, myReal, myEnumVal, myEnumRef, myTuple, sep=" | ");
+   73
+-> 74  	  use Debugger; breakpoint;
+   75  	}
 (lldb) p myRec
-(basicTypes::MyRecord1)  (myField = 0xXXXX)
+(basicTypes::MyRecord1) {
+  myField = 0xXXXX
+}
 (lldb) p myRec.myField
-(std::nullptr_t) 0xXXXX
+(basicTypes::MyClass *) 0xXXXX
 (lldb) p myRec2
 (basicTypes::MyRecord2) {
   myFieldA = 0
@@ -47,8 +49,21 @@ Process XXXX stopped
   myFieldD = "" {
     size = 0
   }
-  myFieldE = 0xXXXX
-  myFieldF = (_pid = -1, _instance = 0xXXXX, _unowned = false)
+  myFieldE = NULL
+  myFieldF = [1..10] long {
+    dom = 0xXXXX
+    data = 0xXXXX
+    [1] = 0
+    [2] = 0
+    [3] = 0
+    [4] = 0
+    [5] = 0
+    [6] = 0
+    [7] = 0
+    [8] = 0
+    [9] = 0
+    [10] = 0
+  }
 }
 (lldb) p myRec2.myFieldC
 (ChapelTuple::(int(64),real(64)))  (x0 = 0, x1 = 0)
@@ -57,23 +72,119 @@ Process XXXX stopped
   size = 0
 }
 (lldb) p myRec2.myFieldE
-(std::nullptr_t) 0xXXXX
+(basicTypes::MyClass *) NULL
 (lldb) p myRec2.myFieldF
-(ChapelArray::[domain(1,int(64),one)] int(64))  (_pid = -1, _instance = 0xXXXX, _unowned = false)
+(ChapelArray::[domain(1,int(64),one)] int(64)) [1..10] long {
+  dom = 0xXXXX
+  data = 0xXXXX
+  [1] = 0
+  [2] = 0
+  [3] = 0
+  [4] = 0
+  [5] = 0
+  [6] = 0
+  [7] = 0
+  [8] = 0
+  [9] = 0
+  [10] = 0
+}
 (lldb) p myUnmanagedClass
-(basicTypes::MyClass)  (super = ChapelBase::RootClass @ 0xXXXX, x = uninit, y = 0)
+(basicTypes::MyClass *) 0xXXXX
 (lldb) p myClass
-(OwnedObject::owned MyClass)  (chpl_p = 0xXXXX)
+(OwnedObject::owned MyClass) 0xXXXX {
+  super = (cid = XXX)
+  x = 0
+  y = 0
+}
 (lldb) p myStr
 (String::string) "Hello, world!" {
   size = 13
 }
 (lldb) p myDom
-(ChapelDomain::domain(2,int(64),positive))  (_pid = -1, _instance = 0xXXXX, _unowned = false)
+(ChapelDomain::domain(2,int(64),positive)) {1..10 by 1, 1..10 by 2} {
+  dim = {
+    [0] = 1..10 by 1 {
+      low = 1
+      high = 10
+      stride = 1
+    }
+    [1] = 1..10 by 2 {
+      low = 1
+      high = 10
+      stride = 2
+    }
+  }
+}
 (lldb) p myArr2d
-(ChapelArray::[domain(2,int(64),positive)] int(64))  (_pid = -1, _instance = 0xXXXX, _unowned = false)
+(ChapelArray::[domain(2,int(64),positive)] int(64)) [1..10 by 1, 1..10 by 2] long {
+  dom = 0xXXXX
+  data = 0xXXXX
+  [1,1] = 1
+  [2,1] = 6
+  [3,1] = 11
+  [4,1] = 16
+  [5,1] = 21
+  [6,1] = 26
+  [7,1] = 31
+  [8,1] = 36
+  [9,1] = 41
+  [10,1] = 46
+  [1,3] = 2
+  [2,3] = 7
+  [3,3] = 12
+  [4,3] = 17
+  [5,3] = 22
+  [6,3] = 27
+  [7,3] = 32
+  [8,3] = 37
+  [9,3] = 42
+  [10,3] = 47
+  [1,5] = 3
+  [2,5] = 8
+  [3,5] = 13
+  [4,5] = 18
+  [5,5] = 23
+  [6,5] = 28
+  [7,5] = 33
+  [8,5] = 38
+  [9,5] = 43
+  [10,5] = 48
+  [1,7] = 4
+  [2,7] = 9
+  [3,7] = 14
+  [4,7] = 19
+  [5,7] = 24
+  [6,7] = 29
+  [7,7] = 34
+  [8,7] = 39
+  [9,7] = 44
+  [10,7] = 49
+  [1,9] = 5
+  [2,9] = 10
+  [3,9] = 15
+  [4,9] = 20
+  [5,9] = 25
+  [6,9] = 30
+  [7,9] = 35
+  [8,9] = 40
+  [9,9] = 45
+  [10,9] = 50
+}
 (lldb) p myArr
-(ChapelArray::[domain(1,int(64),one)] int(64))  (_pid = -1, _instance = 0xXXXX, _unowned = false)
+(ChapelArray::[domain(1,int(64),one)] int(64)) [1..10] long {
+  dom = 0xXXXX
+  data = 0xXXXX
+  [1] = 1
+  [2] = 2
+  [3] = 3
+  [4] = 4
+  [5] = 5
+  [6] = 6
+  [7] = 7
+  [8] = 8
+  [9] = 9
+  [10] = 10
+}
 (lldb) p myBool
 (bool) true
 (lldb) p myInt
