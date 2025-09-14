@@ -1693,7 +1693,7 @@ FnSymbol* TConverter::findOrConvertTupleInit(const types::TupleType* tt) {
   INT_ASSERT(at);
 
   // Otherwise, construct it.
-  FnSymbol* ret = new FnSymbol("chpl__tuple_init");
+  FnSymbol* ret = new FnSymbol("init");
 
   auto _this = new ArgSymbol(INTENT_REF, "this", newType);
   _this->addFlag(FLAG_ARG_THIS);
@@ -1734,22 +1734,30 @@ FnSymbol* TConverter::findOrConvertTupleInit(const types::TupleType* tt) {
                                    new SymExpr(arg)));
   }
 
+  // End with an empty return to keep 'verify' happy.
+  ret->insertAtTail(new CallExpr(PRIM_RETURN));
+
   ret->addFlag(FLAG_RESOLVED);
   ret->addFlag(FLAG_RESOLVED_EARLY);
-  ret->addFlag(FLAG_ALLOW_REF);
   ret->addFlag(FLAG_COMPILER_GENERATED);
+
   ret->addFlag(FLAG_LAST_RESORT);
   ret->addFlag(FLAG_INLINE);
   ret->addFlag(FLAG_INVISIBLE_FN);
+  ret->addFlag(FLAG_ALLOW_REF);
+
   ret->addFlag(FLAG_INIT_TUPLE);
   ret->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
+
+  // TODO: What the heck does this flag do? I see only one use of it in the
+  //       entire compiler, can we/should we remove it once the TC goes live?
   ret->addFlag(FLAG_PARTIAL_TUPLE);
+
+  // Set the intializer to return 'void'.
   ret->retTag = RET_VALUE;
-  ret->retType = newType;
+  ret->retType = dtVoid;
 
   ret->substitutions.copy(newType->substitutions);
-  CallExpr* primReturn = new CallExpr(PRIM_RETURN, _this);
-  ret->insertAtTail(primReturn);
 
   // TODO: Do we need to set this?
   BlockStmt* instantiationPoint = nullptr;
