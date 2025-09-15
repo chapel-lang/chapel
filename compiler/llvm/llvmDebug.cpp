@@ -123,6 +123,18 @@ void debug_data::create_compile_unit(
 }
 
 
+bool debug_data::should_add_DI_for(Symbol* sym) {
+  // in developer mode, add debug info for everything
+  if (developer) return true;
+
+  // skip temps
+  if (sym->hasFlag(FLAG_TEMP)) return false;
+
+  // default to adding debug info
+  return true;
+}
+
+
 llvm::DIType* debug_data::construct_type_for_aggregate(
   llvm::StructType* ty, AggregateType* type
 ) {
