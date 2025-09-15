@@ -122,7 +122,6 @@ void debug_data::create_compile_unit(
                                              0 /* RV */ );
 }
 
-
 llvm::DIType* debug_data::wrap_in_pointer_if_needed(
   llvm::DIType* N, Type* type
 ) {
@@ -502,23 +501,25 @@ llvm::DIType* debug_data::construct_type(Type *type) {
   } else if (ty->isStructTy() && type->astTag == E_AggregateType) {
     return construct_type_for_aggregate(
       llvm::cast<llvm::StructType>(ty), toAggregateType(type));
-  } else if (ty->isStructTy() && type->astTag == E_PrimitiveType &&
-             type->symbol->hasFlag(FLAG_EXTERN)) {
-    // Handle extern structs
+  } else if (ty->isStructTy() && type->astTag == E_PrimitiveType) {
+    // Handle extern and opaque structs as a forward decl
     llvm::StructType* struct_type = llvm::cast<llvm::StructType>(ty);
-
-    N = dibuilder->createForwardDecl(
-      llvm::dwarf::DW_TAG_structure_type,
-      name,
-      get_module_scope(defModule),
-      get_file(defModule, defFile),
-      defLine,
-      0, // RuntimeLang
-      !struct_type->isOpaque() ? layout.getTypeSizeInBits(ty) : 0,
-      !struct_type->isOpaque() ? 8*layout.getABITypeAlign(ty).value() : 0
-    );
-    type->symbol->llvmDIType = N;
-    return llvm::cast_or_null<llvm::DIType>(N);
+    if (type->symbol->hasFlag(FLAG_EXTERN) || struct_type->isOpaque()) {
+      N = dibuilder->createForwardDecl(
+        llvm::dwarf::DW_TAG_structure_type,
+        name,
+        get_module_scope(defModule),
+        get_file(defModule, defFile),
+        defLine,
+        0, // RuntimeLang
+        !struct_type->isOpaque() ? layout.getTypeSizeInBits(ty) : 0,
+        !struct_type->isOpaque() ? 8*layout.getABITypeAlign(ty).value() : 0
+      );
+      type->symbol->llvmDIType = N;
+      return llvm::cast_or_null<llvm::DIType>(N);
+    } else {
+      // TODO: create a struct type from the fields
+    }
   } else if (ty->isArrayTy() && type->astTag == E_AggregateType) {
     if (type->symbol->hasFlag(FLAG_C_ARRAY))
       return nullptr;
@@ -789,26 +790,29 @@ llvm::DIVariable* debug_data::construct_variable(VarSymbol *varSym)
   llvm::DIFile* file = get_file(modSym, file_name);
   llvm::DIType* varSym_type = get_type(varSym->type);
 
-  if(varSym_type) {
-    llvm::DILocalVariable* localVariable = modSym->llvmDIBuilder->createAutoVariable(
-      scope, /* Scope */
-      name, /*Name*/
-      file, /*File*/
-      line_number, /*Lineno*/
-      varSym_type, /*Type*/
-      true/*AlwaysPreserve, won't be removed when optimized*/
-      ); //omit the  Flags and ArgNo
+  if (!varSym_type) {
+    if (developer || fVerify) {
+      INT_FATAL("Unable to find DIType for variable %s of type %s in function %s",
+                varSym->name, varSym->type->symbol->name, funcSym->name);
+    }
+    varSym_type = modSym->llvmDIBuilder->createNullPtrType();
+  }
 
-    modSym->llvmDIBuilder->insertDeclare(varSym->codegen().val, localVariable,
-      modSym->llvmDIBuilder->createExpression(), llvm::DILocation::get(
-        scope->getContext(), line_number, 0, scope, nullptr, false),
-      gGenInfo->irBuilder->GetInsertBlock());
-    return localVariable;
-  }
-  else {
-    //Empty dbg node if the symbol type is unresolved
-    return nullptr;
-  }
+  llvm::DILocalVariable* localVariable = modSym->llvmDIBuilder->createAutoVariable(
+    scope, /* Scope */
+    name, /*Name*/
+    file, /*File*/
+    line_number, /*Lineno*/
+    varSym_type, /*Type*/
+    true/*AlwaysPreserve, won't be removed when optimized*/
+    ); //omit the  Flags and ArgNo
+
+  modSym->llvmDIBuilder->insertDeclare(varSym->codegen().val, localVariable,
+    modSym->llvmDIBuilder->createExpression(), llvm::DILocation::get(
+      scope->getContext(), line_number, 0, scope, nullptr, false),
+    gGenInfo->irBuilder->GetInsertBlock());
+  return localVariable;
+
 }
 
 llvm::DIVariable* debug_data::get_variable(VarSymbol *varSym)
