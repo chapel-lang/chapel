@@ -396,7 +396,7 @@ static void reorderInternalModules() {
   // go through all of the modules and rearrange a select few
 
   std::vector<std::pair<const char*, ModuleSymbol*>> tofix;
-  tofix.emplace_back(astr("chpl__Program"), nullptr);
+  tofix.emplace_back(astr("ChapelProgram"), nullptr);
   tofix.emplace_back(astr("ChapelStringLiterals"), nullptr);
   tofix.emplace_back(astr("ChapelBase"), nullptr);
   tofix.emplace_back(astr("ChapelStandard"), nullptr);
@@ -427,9 +427,9 @@ static void reorderInternalModules() {
 
   allModules.clear();
 
-  // pull out the module for chpl__Program to treat it specially
+  // pull out the module for ChapelProgram to treat it specially
   ModuleSymbol* modChapelProgram = nullptr;
-  INT_ASSERT(0 == strcmp(tofix[0].first, "chpl__Program"));
+  INT_ASSERT(0 == strcmp(tofix[0].first, "ChapelProgram"));
   modChapelProgram = tofix[0].second;
   tofix[0].second = nullptr;
   INT_ASSERT(modChapelProgram && modChapelProgram == theProgram);
