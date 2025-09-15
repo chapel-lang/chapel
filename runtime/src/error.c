@@ -392,6 +392,7 @@ void chpl_error_explicit(const char *message, int32_t lineno,
   chpl_stack_unwind(stderr, '\n');
 #endif
 
+  debuggerBreakHere();
   chpl_exit_any(1);
 }
 
@@ -459,6 +460,7 @@ void chpl_error_preformatted(const char* message) {
   chpl_stack_unwind(stderr, '\n');
 #endif
 
+  debuggerBreakHere();
   chpl_exit_any(1);
 }
 
