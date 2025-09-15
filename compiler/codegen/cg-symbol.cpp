@@ -966,7 +966,7 @@ void VarSymbol::codegenGlobalDef(bool isHeader) {
       gVar->setDSOLocal(true);
       setValueAlignment(gVar, type, this);
 
-      if(debug_info){
+      if (debug_info && debug_info->should_add_DI_for(this)) {
         auto di = debug_info->get_global_variable(this);
         if (di) {
           gVar->addDebugInfo(di);
@@ -1054,7 +1054,7 @@ void VarSymbol::codegenDef() {
         }
       }
     }
-    if(debug_info){
+    if (debug_info && debug_info->should_add_DI_for(this)) {
       debug_info->get_variable(this);
     }
 #endif
@@ -3121,7 +3121,7 @@ void FnSymbol::codegenDef() {
                             tempVar.isLVPtr, tempVar.isUnsigned);
 
         // debug info for formal arguments
-        if(debug_info){
+        if (debug_info && debug_info->should_add_DI_for(arg)) {
           debug_info->get_formal_arg(arg, clangArgNum+1);
         }
       }
