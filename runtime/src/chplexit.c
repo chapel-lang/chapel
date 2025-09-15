@@ -26,7 +26,7 @@
 #include "chpl-mem.h"
 #include "chplmemtrack.h"
 #include "chpl-topo.h"
-#include "gdb.h"
+#include "debugger.h"
 
 #include <stdio.h>
 #include <stdlib.h>

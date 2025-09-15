@@ -20,7 +20,7 @@
 
 #include "chplrt.h"
 
-#include "gdb.h"
+#include "debugger.h"
 
 #include <stdio.h>
 

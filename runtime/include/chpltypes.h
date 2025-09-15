@@ -367,6 +367,6 @@ typedef int8_t chpl_arg_bundle_kind_t;
 
 #include "chpl-string-support.h"
 
-#include "gdb.h"
+#include "debugger.h"
 
 #endif
