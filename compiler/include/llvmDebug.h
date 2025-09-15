@@ -53,6 +53,8 @@ class debug_data
   void finalize();
   void create_compile_unit(ModuleSymbol* modSym, const char *file, const char *directory, bool is_optimized, const char *flags);
 
+  bool should_add_DI_for(Symbol* sym);
+
   llvm::DIType* construct_type(Type *type);
   llvm::DIType* get_type(Type *type);
 
