@@ -308,6 +308,15 @@ private module BitOps_internal {
   }
 
   inline proc rotl(x: uint(?bits), n: integral) {
+    if boundsChecking {
+      use HaltWrappers;
+      if n < 0 || n >= bits {
+        HaltWrappers.boundsCheckHalt("rotation amount must be between 0 and " +
+                                     (bits:string-1) +
+                                     " for type of size " +
+                                     bits:string + " - got " + n);
+      }
+    }
     // the select will be folded out at compile time.
     select bits {
       when 64 do
@@ -328,6 +337,15 @@ private module BitOps_internal {
   }
 
   inline proc rotr(x: uint(?bits), n: integral) {
+    if boundsChecking {
+      use HaltWrappers;
+      if n < 0 || n >= bits {
+        HaltWrappers.boundsCheckHalt("rotation amount must be between 0 and " +
+                                     (bits:string-1) +
+                                     " for type of size " +
+                                     bits:string + " - got " + n);
+      }
+    }
     // the select will be folded out at compile time.
     select bits {
       when 64 do

@@ -84,6 +84,11 @@ module ChapelHashing {
     pragma "codegen for CPU and GPU"
     extern proc chpl_bitops_rotl_64(x: uint(64), n: uint(64)) : uint(64);
     var n:uint = (17 + fieldnum):uint;
+    if boundsChecking {
+      if n >= 64 {
+        halt("rotation amount must be between 0 and 63 - got " + n:string);
+      }
+    }
     return _gen_key(a ^ chpl_bitops_rotl_64(b, n));
   }
 
