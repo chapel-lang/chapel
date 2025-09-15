@@ -51,11 +51,11 @@ TEST_NIGHTLY=0
 GITHUB_USER=chapel-lang
 GITHUB_BRANCH=main
 
-SHORT_NAME=playground
-START_DATE=09/03/25
+SHORT_NAME=segPdarrayIndex-4812
+START_DATE=09/15/25
 
 export ARKOUDA_URL=https://github.com/1RyanK/arkouda.git
-export ARKOUDA_BRANCH=4722-Improve_ak.find_code
+export ARKOUDA_BRANCH=4803-Investigate_performance_of_segPdarrayIndex
 
 if [[ "$TEST_NIGHTLY" == "1" ]]; then
   set -e
