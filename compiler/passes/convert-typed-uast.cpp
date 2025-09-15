@@ -2315,6 +2315,31 @@ struct ConvertTypeHelper {
     }
   }
 
+  // TODO: This is copied wholesale and we should stop doing this when we
+  //       have total control over compilation. Every procedure should be
+  //       "flat", there should be no nesting of procedures/types/modules.
+  void flattenPrimaryMethod(TypeSymbol* ts, FnSymbol* fn) {
+    auto insertPoint = ts->defPoint;
+    auto def = fn->defPoint;
+
+    while (isTypeSymbol(insertPoint->parentSymbol)) {
+      insertPoint = insertPoint->parentSymbol->defPoint;
+    }
+
+    insertPoint->insertBefore(def->remove());
+
+    if (fn->userString != nullptr && fn->name != ts->name) {
+      if (strncmp(fn->userString, "ref ", 4) == 0) {
+        // fn->userString of "ref foo()"
+        // Move "ref " before the type name so we end up with "ref Type.foo()"
+        // instead of "Type.ref foo()"
+        fn->userString = astr("ref ", ts->name, ".", fn->userString + 4);
+      } else {
+        fn->userString = astr(ts->name, ".", fn->userString);
+      }
+    }
+  }
+
   void helpConvertCompositeType(const types::CompositeType* ct,
                                 const ResolvedFields& rf,
                                 AggregateType* at) {
@@ -2339,12 +2364,26 @@ struct ConvertTypeHelper {
           ts->addFlag(linkageFlag);
         }
 
-        // Attach untyped conversion results for methods
+        // Attach untyped conversion results for methods. TODO: We shouldn't
+        // be attaching untyped results here - instead we should be letting
+        // the call graph / converter generate these typed as we would any
+        // other procedure. This is a WIP/stepping-stone.
         for (auto stmt : decl->declOrComments()) {
-          if (auto fn = stmt->toFunction()) {
-            auto expr = tc_->untypedConverter->convertAST(fn);
+          if (auto function = stmt->toFunction()) {
+            auto expr = tc_->untypedConverter->convertAST(function);
             INT_ASSERT(expr);
-            at->addDeclarations(expr);
+
+            auto block = toBlockStmt(expr);
+            auto def = block ? toDefExpr(block->body.tail) : nullptr;
+            auto fn = def ? toFnSymbol(def->sym) : nullptr;
+
+            if (fn) {
+              // Flatten out a method using 'flattenPrimaryMethod'.
+              at->addDeclarations(block);
+              INT_ASSERT(def->inTree());
+              INT_ASSERT(def->getParentSymbol() == at->symbol);
+              flattenPrimaryMethod(at->symbol, fn);
+            }
           }
         }
       }

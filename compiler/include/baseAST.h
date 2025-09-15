@@ -282,6 +282,8 @@ public:
   bool              isRef();
   bool              isWideRef();
   bool              isRefOrWideRef();
+  Symbol*           getParentSymbol();
+  Symbol*           getSymbol();
   FnSymbol*         getFunction();
   ModuleSymbol*     getModule();
   Type*             getValType();

@@ -413,21 +413,13 @@ ModuleSymbol* BaseAST::getModule() {
 }
 
 bool BaseAST::wasResolvedEarly() {
-  if (auto sym = toSymbol(this)) {
+  if (auto sym = getSymbol()) {
     if (sym->hasFlag(FLAG_RESOLVED_EARLY)) {
+      // Flag should not be added to module symbols, for now.
       INT_ASSERT(!isModuleSymbol(sym));
       return true;
     }
   }
-
-  if (auto t = toType(this)) {
-    if (t->symbol->hasFlag(FLAG_RESOLVED_EARLY)) return true;
-  }
-
-  // Check to see if the AST is in a dyno-generated function symbol.
-  auto fn = this->getFunction();
-  if (fn && fn->hasFlag(FLAG_RESOLVED_EARLY)) return true;
-
   return false;
 }
 
@@ -437,14 +429,6 @@ bool BaseAST::canMutateEarly() {
 
   // OK, this was not created by the typed converter.
   if (!wasResolvedEarly()) return true;
-
-  // OK, this is a module, so we can mutate its contents.
-  if (isModuleSymbol(this)) return true;
-
-  // OK, it's an expression contained in a module.
-  if (auto e = toExpr(this)) {
-    if (isModuleSymbol(e->parentSymbol)) return true;
-  }
 
   // NO, cannot mutate.
   return false;
@@ -460,6 +444,22 @@ bool BaseAST::isWideRef() {
 
 bool BaseAST::isRefOrWideRef() {
   return this->qualType().isRefOrWideRef();
+}
+
+Symbol* BaseAST::getParentSymbol() {
+  if (auto e = toExpr(this)) {
+    return e->parentSymbol;
+  } else if (auto s = toSymbol(this)) {
+    return s->defPoint ? s->defPoint->parentSymbol : nullptr;
+  } else if (auto t = toType(this)) {
+    return t->symbol ? t->symbol->getParentSymbol() : nullptr;
+  }
+  return nullptr;
+}
+
+Symbol* BaseAST::getSymbol() {
+  if (auto sym = toSymbol(this)) return sym;
+  return getParentSymbol();
 }
 
 FnSymbol* BaseAST::getFunction() {
