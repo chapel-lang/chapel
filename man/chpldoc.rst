@@ -46,7 +46,7 @@ reStructuredText as an intermediate format.
     documentation comment from a normal one (defaults to '/\*' if
     unspecified).
 
-.. _man-module-dir:
+.. _man-chpldoc-module-dir:
 
 **-M, \--module-dir <**\ *directory*\ **>**
 
