@@ -54,8 +54,8 @@ GITHUB_BRANCH=main
 SHORT_NAME=playground
 START_DATE=09/03/25
 
-export ARKOUDA_URL=https://github.com/Bears-R-Us/arkouda.git
-export ARKOUDA_BRANCH=main
+export ARKOUDA_URL=https://github.com/1RyanK/arkouda.git
+export ARKOUDA_BRANCH=4722-Improve_ak.find_code
 
 if [[ "$TEST_NIGHTLY" == "1" ]]; then
   set -e
