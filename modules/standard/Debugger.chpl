@@ -38,10 +38,7 @@ module Debugger {
     with ``b debuggerBreakHere``. If using ``--gdb`` or ``--lldb``, this
     is done automatically.
   */
-  inline proc breakpoint {
-    extern proc debuggerBreakHere();
-    debuggerBreakHere();
-  }
+  extern "debuggerBreakHere" proc breakpoint;
 
   /*
     If ``disableDebugTraps`` is set to ``true``, then the
