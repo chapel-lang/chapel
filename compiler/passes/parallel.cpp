@@ -1532,7 +1532,8 @@ Type* getOrMakeWideTypeDuringCodegen(Type* refType) {
 
   // Now, create a wide pointer type.
   AggregateType* wide = new AggregateType(AGGREGATE_RECORD);
-  TypeSymbol* wts = new TypeSymbol(astr("chpl____wide_", refType->symbol->cname), wide);
+  TypeSymbol* wts = new TypeSymbol(astr("wide(", refType->symbol->name, ")"), wide);
+  wts->cname = astr("chpl____wide_", refType->symbol->cname);
   if( refType->symbol->hasFlag(FLAG_REF) || refType == dtNil )
     wts->addFlag(FLAG_WIDE_REF);
   else
