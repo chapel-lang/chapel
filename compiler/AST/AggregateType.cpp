@@ -2971,7 +2971,14 @@ void AggregateType::addClassToHierarchy(std::set<AggregateType*>& localSeen) {
       auto istmt = ImplementsStmt::build(isym, ifcActuals, nullptr);
       getEnclosingBlockForImplements(this->symbol)->insertAtTail(istmt);
 
-      expr->remove();
+      // TODO: The typed converter need to add code supporting interfaces.
+      //       For at least a little while it will need to defer to the
+      //       production compiler for some things, because interfaces are
+      //       not fully implemented in dyno.
+      EARLY_RESOLVED_AST_MUTATION([=](){
+        expr->remove();
+      });
+
       continue;
     }
 

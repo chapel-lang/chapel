@@ -307,6 +307,18 @@ private:
   Type*             getWideRefType();
 };
 
+// This function lets you deliberately perform some mutation on AST that
+// was resolved early. You pass it a function/closure that does the
+// mutation. Note that if you decide to make an exception you should note
+// it (write a TODO), and make a work item describing what needs to be
+// implemented in the typed converter.
+template <typename F>
+void EARLY_RESOLVED_AST_MUTATION(F function) {
+  BaseAST::canMutateEarlyResolvedSymbols = true;
+  function();
+  BaseAST::canMutateEarlyResolvedSymbols = false;
+}
+
 GenRet baseASTCodegen(BaseAST* ast);
 GenRet baseASTCodegenInt(int x);
 GenRet baseASTCodegenString(const char* str);

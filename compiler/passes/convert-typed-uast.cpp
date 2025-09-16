@@ -2269,6 +2269,21 @@ static IF1_int_type getUintSize(const types::UintType* t) {
   return INT_SIZE_DEFAULT;
 }
 
+static void markTypeAsResolved(Type* t) {
+  if (auto sym = t->symbol) {
+    // Mark the type as being resolved early.
+    sym->addFlag(FLAG_RESOLVED_EARLY);
+
+    // This should always hold - we should not be creating generic types.
+    INT_ASSERT(!sym->hasFlag(FLAG_GENERIC));
+  }
+
+  // Also mark the type as fully resolved if applicable.
+  if (auto at = toAggregateType(t)) {
+    at->resolveStatus = RESOLVED;
+  }
+}
+
 struct ConvertTypeHelper {
   TConverter* tc_ = nullptr;
 
@@ -2315,31 +2330,6 @@ struct ConvertTypeHelper {
     }
   }
 
-  // TODO: This is copied wholesale and we should stop doing this when we
-  //       have total control over compilation. Every procedure should be
-  //       "flat", there should be no nesting of procedures/types/modules.
-  void flattenPrimaryMethod(TypeSymbol* ts, FnSymbol* fn) {
-    auto insertPoint = ts->defPoint;
-    auto def = fn->defPoint;
-
-    while (isTypeSymbol(insertPoint->parentSymbol)) {
-      insertPoint = insertPoint->parentSymbol->defPoint;
-    }
-
-    insertPoint->insertBefore(def->remove());
-
-    if (fn->userString != nullptr && fn->name != ts->name) {
-      if (strncmp(fn->userString, "ref ", 4) == 0) {
-        // fn->userString of "ref foo()"
-        // Move "ref " before the type name so we end up with "ref Type.foo()"
-        // instead of "Type.ref foo()"
-        fn->userString = astr("ref ", ts->name, ".", fn->userString + 4);
-      } else {
-        fn->userString = astr(ts->name, ".", fn->userString);
-      }
-    }
-  }
-
   void helpConvertCompositeType(const types::CompositeType* ct,
                                 const ResolvedFields& rf,
                                 AggregateType* at) {
@@ -2379,6 +2369,11 @@ struct ConvertTypeHelper {
 
             if (fn) {
               // Flatten out a method using 'flattenPrimaryMethod'.
+              //
+              // TODO: This is copied wholesale and we should stop doing this
+              //       when we have total control over compilation. Every
+              //       procedure should be "flat", there should be no nesting
+              //       of procedures/types/modules.
               at->addDeclarations(block);
               INT_ASSERT(def->inTree());
               INT_ASSERT(def->getParentSymbol() == at->symbol);
@@ -2389,8 +2384,7 @@ struct ConvertTypeHelper {
       }
     }
 
-    ts->addFlag(FLAG_RESOLVED_EARLY);
-    at->resolveStatus = RESOLVED;
+    markTypeAsResolved(at);
 
     auto rc = createDummyRC(context());
     if (types::Type::isPod(&rc, ct)) {
@@ -2641,7 +2635,7 @@ struct ConvertTypeHelper {
     attachSymbolAttributes(context(), node, ts, isFromLibrary);
     attachSymbolVisibility(node, ts);
 
-    ts->addFlag(FLAG_RESOLVED_EARLY);
+    markTypeAsResolved(enumType);
 
     auto def = insertTypeIntoModule(t->id(), enumType);
     INT_ASSERT(def);
@@ -2784,7 +2778,8 @@ struct ConvertTypeHelper {
     makeTupleName(args, t->isStarTuple(), name, cname);
 
     ret->instantiatedFrom = dtTuple;
-    ret->resolveStatus = RESOLVED;
+
+    markTypeAsResolved(ret);
 
     // TODO: We could drop this stuff setting up dispatch parents since we
     //       don't actually use it to resolve, and the tuple's not a class
@@ -2807,7 +2802,6 @@ struct ConvertTypeHelper {
     newTypeSymbol->addFlag(FLAG_TUPLE);
     newTypeSymbol->addFlag(FLAG_PARTIAL_TUPLE);
     newTypeSymbol->addFlag(FLAG_TYPE_VARIABLE);
-    newTypeSymbol->addFlag(FLAG_RESOLVED_EARLY);
     if (t->isStarTuple()) newTypeSymbol->addFlag(FLAG_STAR_TUPLE);
 
     ret->saveGenericSubstitutions();
@@ -2881,10 +2875,11 @@ struct ConvertTypeHelper {
     // note: getInstantiation should re-use existing instantiations
     int index = 1;
     Expr* insnPoint = nullptr; // TODO: does this need to be set?
-    AggregateType* ret =
-      base->getInstantiation(convertedEltT->symbol, index, insnPoint);
-    ret->resolveStatus = RESOLVED;
-    ret->symbol->addFlag(FLAG_RESOLVED_EARLY);
+    auto ret = base->getInstantiation(convertedEltT->symbol, index, insnPoint);
+
+    INT_ASSERT(!ret->symbol->hasFlag(FLAG_GENERIC));
+
+    markTypeAsResolved(ret);
 
     ret->saveGenericSubstitutions();
     propagateNotPOD(ret);
@@ -2923,7 +2918,6 @@ Type* TConverter::convertType(const types::Type* t) {
   if (auto existing = findConvertedType(t)) {
     // (A) Fetch the cached converted type to reuse it if possible.
     return existing;
-
   }
 
   Type* ret = nullptr;
@@ -2989,7 +2983,9 @@ Type* TConverter::convertType(const types::Type* t) {
     refTs->addFlag(FLAG_REF);
     refTs->addFlag(FLAG_NO_DEFAULT_FUNCTIONS);
     refTs->addFlag(FLAG_NO_OBJECT);
-    refTs->addFlag(FLAG_RESOLVED_EARLY);
+
+    markTypeAsResolved(ref);
+
     globalInsertionPoint->insertAtTail(new DefExpr(refTs));
     ref->fields.insertAtTail(new DefExpr(new VarSymbol("_val", ret)));
     ret->refType = ref;
