@@ -312,9 +312,9 @@ private module BitOps_internal {
       use HaltWrappers;
       if n < 0 || n >= bits {
         HaltWrappers.boundsCheckHalt("rotation amount must be between 0 and " +
-                                     (bits:string-1) +
+                                     (bits-1):string +
                                      " for type of size " +
-                                     bits:string + " - got " + n);
+                                     bits:string + " - got " + n:string);
       }
     }
     // the select will be folded out at compile time.
@@ -341,9 +341,9 @@ private module BitOps_internal {
       use HaltWrappers;
       if n < 0 || n >= bits {
         HaltWrappers.boundsCheckHalt("rotation amount must be between 0 and " +
-                                     (bits:string-1) +
+                                     (bits-1):string +
                                      " for type of size " +
-                                     bits:string + " - got " + n);
+                                     bits:string + " - got " + n:string);
       }
     }
     // the select will be folded out at compile time.
