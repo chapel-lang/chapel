@@ -1,0 +1,1 @@
+rotl-rotr-checks.chpl:NN: error: halt reached - rotation amount must be between 0 and 63 for type of size 64 - got N
