@@ -22,8 +22,6 @@
   Bitwise operations implemented using C intrinsics when possible.
  */
 module BitOps {
-  import BitOps_internal;
-
   /*
     Count leading zeros in `x`.
 
@@ -31,7 +29,23 @@ module BitOps {
     :rtype: `x.type`
    */
   inline proc clz(x: integral) {
-    return BitOps_internal.clz(x);
+    param bits = numBits(x.type);
+    if bits != 8 && bits != 16 && bits != 32 && bits != 64 {
+      compilerError("clz is not supported for that bit width");
+    }
+    param funcBits = if bits == 8 || bits == 16 then 32 else bits;
+
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern "chpl_bitops_clz_" + funcBits:string
+    proc innerClz(x: uint(funcBits)): uint(funcBits);
+
+    if bits == 8 then
+      return (innerClz(x: uint(bits))-24): uint(bits): x.type;
+    else if bits == 16 then
+      return (innerClz(x: uint(bits))-16): uint(bits): x.type;
+    else
+      return innerClz(x: uint(bits)): uint(bits): x.type;
   }
 
   /*
@@ -41,7 +55,18 @@ module BitOps {
     :rtype: `x.type`
    */
   inline proc ctz(x: integral) {
-    return BitOps_internal.ctz(x);
+    param bits = numBits(x.type);
+    if bits != 8 && bits != 16 && bits != 32 && bits != 64 {
+      compilerError("ctz is not supported for that bit width");
+    }
+    param funcBits = if bits == 8 || bits == 16 then 32 else bits;
+
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern "chpl_bitops_ctz_" + funcBits:string
+    proc innerCtz(x: uint(funcBits)): uint(funcBits);
+
+    return innerCtz(x: uint(bits)): uint(bits): x.type;
   }
 
   /*
@@ -51,7 +76,18 @@ module BitOps {
     :rtype: `x.type`
    */
   inline proc popCount(x: integral) {
-    return BitOps_internal.popCount(x);
+    param bits = numBits(x.type);
+    if bits != 8 && bits != 16 && bits != 32 && bits != 64 {
+      compilerError("popCount is not supported for that bit width");
+    }
+    param funcBits = if bits == 8 || bits == 16 then 32 else bits;
+
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern "chpl_bitops_popcount_" + funcBits:string
+    proc innerPopCount(x: uint(funcBits)): uint(funcBits);
+
+    return innerPopCount(x: uint(bits)): uint(bits): x.type;
   }
 
   /*
@@ -62,7 +98,18 @@ module BitOps {
     :rtype: `x.type`
    */
   inline proc parity(x: integral) {
-    return BitOps_internal.parity(x);
+    param bits = numBits(x.type);
+    if bits != 8 && bits != 16 && bits != 32 && bits != 64 {
+      compilerError("parity is not supported for that bit width");
+    }
+    param funcBits = if bits == 8 || bits == 16 then 32 else bits;
+
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern "chpl_bitops_parity_" + funcBits:string
+    proc innerParity(x: uint(funcBits)): uint(funcBits);
+
+    return innerParity(x: uint(bits)): uint(bits): x.type;
   }
 
   /*
@@ -75,7 +122,28 @@ module BitOps {
     :rtype: `x.type`
    */
   inline proc rotl(x: integral, n: integral) {
-    return BitOps_internal.rotl(x, n);
+    param bits = numBits(x.type);
+    if bits != 8 && bits != 16 && bits != 32 && bits != 64 {
+      compilerError("rotl is not supported for that bit width");
+    }
+
+    if boundsChecking {
+      use HaltWrappers;
+      if n < 0 || n >= bits {
+        HaltWrappers.boundsCheckHalt("rotation amount must be between 0 and " +
+                                     (bits-1):string +
+                                     " for type of size " +
+                                     bits:string + " - got " + n:string);
+      }
+    }
+
+
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern "chpl_bitops_rotl_" + bits:string
+    proc innerRotl(x: uint(bits), n: uint(bits)): uint(bits);
+
+    return innerRotl(x: uint(bits), n: uint(bits)): x.type;
   }
 
   /*
@@ -88,7 +156,28 @@ module BitOps {
     :rtype: `x.type`
    */
   inline proc rotr(x: integral, n: integral) {
-    return BitOps_internal.rotr(x, n);
+    param bits = numBits(x.type);
+    if bits != 8 && bits != 16 && bits != 32 && bits != 64 {
+      compilerError("rotr is not supported for that bit width");
+    }
+
+    if boundsChecking {
+      use HaltWrappers;
+      if n < 0 || n >= bits {
+        HaltWrappers.boundsCheckHalt("rotation amount must be between 0 and " +
+                                     (bits-1):string +
+                                     " for type of size " +
+                                     bits:string + " - got " + n:string);
+      }
+    }
+
+
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern "chpl_bitops_rotr_" + bits:string
+    proc innerRotr(x: uint(bits), n: uint(bits)): uint(bits);
+
+    return innerRotr(x: uint(bits), n: uint(bits)): x.type;
   }
 
   // Legacy operations
@@ -153,215 +242,4 @@ module BitOps {
     return result;
   }
 
-}
-
-/**
- * module to hide the extern procedures
- */
-private module BitOps_internal {
-  private use CTypes;
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc chpl_bitops_popcount_32(x: c_uint) : uint(32);
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc chpl_bitops_popcount_64(x: c_ulonglong) : uint(64);
-
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc chpl_bitops_clz_32(x: c_uint) : uint(32);
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc chpl_bitops_clz_64(x: c_ulonglong) : uint(64);
-
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc chpl_bitops_ctz_32(x: c_uint) : uint(32);
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc chpl_bitops_ctz_64(x: c_ulonglong) : uint(64);
-
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc chpl_bitops_parity_32(x: c_uint) : uint(32);
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc chpl_bitops_parity_64(x: c_ulonglong) : uint(64);
-
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc chpl_bitops_rotl_8(x: uint(8), n: uint(8)) : uint(8);
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc chpl_bitops_rotl_16(x: uint(16), n: uint(16)) : uint(16);
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc chpl_bitops_rotl_32(x: uint(32), n: uint(32)) : uint(32);
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc chpl_bitops_rotl_64(x: uint(64), n: uint(64)) : uint(64);
-
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc chpl_bitops_rotr_8(x: uint(8), n: uint(8)) : uint(8);
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc chpl_bitops_rotr_16(x: uint(16), n: uint(16)) : uint(16);
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc chpl_bitops_rotr_32(x: uint(32), n: uint(32)) : uint(32);
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc chpl_bitops_rotr_64(x: uint(64), n: uint(64)) : uint(64);
-
-  inline proc clz(x: uint(?bits)) {
-    // the select will be folded out at compile time.
-    select bits {
-      when 64 do
-        return chpl_bitops_clz_64(x);
-      when 32 do
-        return chpl_bitops_clz_32(x);
-      when 16 do
-        // gets promoted to 32bit, subtract the extra leading 0s
-        return (chpl_bitops_clz_32(x)-16):uint(16);
-      when 8 do
-        // gets promoted to 32bit, subtract the extra leading 0s
-        return (chpl_bitops_clz_32(x)-24):uint(8);
-      otherwise
-        // NOTE: this actually cant happen with how the integer types are setup
-        //       right now - leaving it here for the future when we support
-        //       >64bit types
-        compilerError("clz is not supported for that bit width.");
-    }
-  }
-
-  inline proc clz(x: int(?bits)) {
-    return BitOps_internal.clz(x:uint(bits)):int(bits);
-  }
-
-  inline proc ctz(x: uint(?bits)) {
-    // the select will be folded out at compile time.
-    select bits {
-      when 64 do
-        return chpl_bitops_ctz_64(x);
-      when 32 do
-        return chpl_bitops_ctz_32(x);
-      when 16 do
-        return chpl_bitops_ctz_32(x):uint(16);
-      when 8 do
-        return chpl_bitops_ctz_32(x):uint(8);
-      otherwise
-        // NOTE: this actually cant happen with how the integer types are setup
-        //       right now - leaving it here for the future when we support
-        //       >64bit types
-        compilerError("ctz is not supported for that bit width.");
-    }
-  }
-
-  inline proc ctz(x: int(?bits)) {
-    return BitOps_internal.ctz(x:uint(bits)):int(bits);
-  }
-
-  inline proc popCount(x: uint(?bits)) {
-    // the select will be folded out at compile time.
-    select bits {
-      when 64 do
-        return chpl_bitops_popcount_64(x);
-      when 32 do
-        return chpl_bitops_popcount_32(x);
-      when 16 do
-        return chpl_bitops_popcount_32(x):uint(16);
-      when 8 do
-        return chpl_bitops_popcount_32(x):uint(8);
-      // In the future we could also break a large int (128+) into 64bit chucks
-      // and add up the results.
-      otherwise
-        // NOTE: this actually cant happen with how the integer types are setup
-        //       right now - leaving it here for the future when we support
-        //       >64bit types
-        compilerError("popCount is not supported for that bit width.");
-    }
-  }
-
-  inline proc popCount(x: int(?bits)) {
-    return BitOps_internal.popCount(x:uint(bits)):int(bits);
-  }
-
-  inline proc parity(x: uint(?bits)) {
-    // the select will be folded out at compile time.
-    select bits {
-      when 64 do
-        return chpl_bitops_parity_64(x);
-      when 32 do
-        return chpl_bitops_parity_32(x);
-      when 16 do
-        return chpl_bitops_parity_32(x):uint(16);
-      when 8 do
-        return chpl_bitops_parity_32(x):uint(8);
-      otherwise
-        compilerError("parity is not supported for that bit width.");
-    }
-  }
-
-  inline proc parity(x: int(?bits)) {
-    return BitOps_internal.parity(x:uint(bits)):int(bits);
-  }
-
-  inline proc rotl(x: uint(?bits), n: integral) {
-    if boundsChecking {
-      use HaltWrappers;
-      if n < 0 || n >= bits {
-        HaltWrappers.boundsCheckHalt("rotation amount must be between 0 and " +
-                                     (bits-1):string +
-                                     " for type of size " +
-                                     bits:string + " - got " + n:string);
-      }
-    }
-    // the select will be folded out at compile time.
-    select bits {
-      when 64 do
-        return chpl_bitops_rotl_64(x, n:uint(bits));
-      when 32 do
-        return chpl_bitops_rotl_32(x, n:uint(bits));
-      when 16 do
-        return chpl_bitops_rotl_16(x, n:uint(bits));
-      when 8 do
-        return chpl_bitops_rotl_8(x, n:uint(bits));
-      otherwise
-        compilerError("rotl is not supported for that bit width.");
-    }
-  }
-
-  inline proc rotl(x: int(?bits), n: integral) {
-    return BitOps_internal.rotl(x:uint(bits), n):int(bits);
-  }
-
-  inline proc rotr(x: uint(?bits), n: integral) {
-    if boundsChecking {
-      use HaltWrappers;
-      if n < 0 || n >= bits {
-        HaltWrappers.boundsCheckHalt("rotation amount must be between 0 and " +
-                                     (bits-1):string +
-                                     " for type of size " +
-                                     bits:string + " - got " + n:string);
-      }
-    }
-    // the select will be folded out at compile time.
-    select bits {
-      when 64 do
-        return chpl_bitops_rotr_64(x, n:uint(bits));
-      when 32 do
-        return chpl_bitops_rotr_32(x, n:uint(bits));
-      when 16 do
-        return chpl_bitops_rotr_16(x, n:uint(bits));
-      when 8 do
-        return chpl_bitops_rotr_8(x, n:uint(bits));
-      otherwise
-        compilerError("rotr is not supported for that bit width.");
-    }
-  }
-
-  inline proc rotr(x: int(?bits), n: integral) {
-    return BitOps_internal.rotr(x:uint(bits), n):int(bits);
-  }
 }
