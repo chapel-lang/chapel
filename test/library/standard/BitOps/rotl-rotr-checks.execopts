@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+for i in {0..7}; do
+  echo "--testCase=$i # rotl-rotr-checks.8.good";
+done
+for i in {8..15}; do
+  echo "--testCase=$i # rotl-rotr-checks.16.good";
+done
+for i in {16..23}; do
+  echo "--testCase=$i # rotl-rotr-checks.32.good";
+done
+for i in {24..31}; do
+  echo "--testCase=$i # rotl-rotr-checks.64.good";
+done
