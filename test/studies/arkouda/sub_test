@@ -135,7 +135,7 @@ if [ ${CHPL_TEST_ARKOUDA_STOP_AFTER_BUILD} = "false" ]; then
   if ! python3 -m pip install --force-reinstall --timeout 60 $AK_PIP_CONTRAINTS -e .[dev] ; then
     log_fatal_error "installing arkouda"
   else
-    log "Use 'source $ARKOUDA_TEST_VENV/bin/activate' to activate the venv"
+    log "Use 'source $(pwd)/$ARKOUDA_TEST_VENV/bin/activate' to activate the venv"
   fi
 
   # Check installation
