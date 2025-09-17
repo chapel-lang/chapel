@@ -138,6 +138,7 @@ cls-test-venv: chapel-py-venv
 	CHPL_HOME=$(CHPL_MAKE_HOME) $(PIP) install \
 	  $(CHPL_PIP_INSTALL_PARAMS) $(LOCAL_PIP_FLAGS) \
 	  --target $(CHPL_VENV_CHPL_FRONTEND_PY_DEPS) \
+	  $(CHPL_MAKE_HOME)/tools/chapel-py \
 	  -r $(CHPL_VENV_CLS_TEST_REQUIREMENTS_FILE)
 	@# Using --upgrade above breaks the test venv, because there's a bug
 	@# in its interaction with --target. As a result, this command does
