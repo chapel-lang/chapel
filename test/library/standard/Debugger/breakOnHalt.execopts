@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+if command -v gdb >/dev/null ; then
+  echo "--gdb"
+fi
+
+if command -v lldb >/dev/null ; then
+  echo "--lldb"
+fi

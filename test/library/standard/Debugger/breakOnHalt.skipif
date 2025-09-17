@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+
+if command -v gdb >/dev/null ; then
+  ;
+else
+  echo "True"
+  exit 0
+fi
+
+if command -v lldb >/dev/null ; then
+  ;
+else
+  echo "True"
+  exit 0`
+fi
+
+if [ "$CHPL_HOME" != "none" ]; then
+  echo "True"
+  exit 0
+fi
+
+
+echo "False"

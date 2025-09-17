@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+file=$2
+
+if grep -q -E 'frame #1:.*chpl_error_explicit' $file; then
+  echo "Success: Found expected output" > $file
+else
+  echo "Failure: Expected output not found" > $file
+fi
