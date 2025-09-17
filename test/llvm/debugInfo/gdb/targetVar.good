@@ -1,5 +1,5 @@
 Reading symbols from targetVar...
-Breakpoint 1 at 0xXXXX: file gdb.c, line 28.
+Breakpoint 1 at 0xXXXX: file debugger.c, line 28.
 Breakpoint 2 at 0xXXXX: file targetVar.chpl, line 5.
 Breakpoint 3 at 0xXXXX: file targetVar.chpl, line 10.
 [Switching to Thread 0xXXXX (LWP XXXX)]
