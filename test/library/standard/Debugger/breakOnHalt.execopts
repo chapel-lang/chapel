@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 
-if command -v gdb >/dev/null ; then
-  echo "--gdb"
-fi
 
-if command -v lldb >/dev/null ; then
-  echo "--lldb"
-fi
+for i in -5 17; do
+  if command -v gdb >/dev/null ; then
+    echo "--myVar=$i --gdb"
+  fi
+
+  if command -v lldb >/dev/null ; then
+    echo "--myVar=$i --lldb"
+  fi
+done

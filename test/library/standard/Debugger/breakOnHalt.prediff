@@ -2,8 +2,8 @@
 
 file=$2
 
-if grep -q -E '#1:.*chpl_error_explicit' $file; then
+if grep -q -E '#1:.*(chpl_error_explicit|chpl_error_preformatted)' $file; then
   echo "Success: Found expected output" > $file
 else
-  echo "Failure: Expected output not found" > $file
+  echo "Failure: Expected output not found" >> $file
 fi
