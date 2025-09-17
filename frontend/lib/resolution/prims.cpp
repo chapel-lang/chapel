@@ -26,7 +26,11 @@
 #include "chpl/framework/ErrorBase.h"
 #include "chpl/resolution/can-pass.h"
 #include "chpl/util/version-info.h"
+#include "chpl/util/string-utils.h"
 #include "chpl/framework/query-impl.h"
+
+// Code from the runtime w/ UTF-8 support.
+#include "encoding-support.h"
 
 namespace chpl {
 namespace resolution {
@@ -923,6 +927,28 @@ static QualifiedType primObjectToInt(Context* context, const CallInfo& ci) {
   return QualifiedType(argType.kind(), IntType::get(context, 64));
 }
 
+static QualifiedType primStringLengthCodepoints(Context* context, const CallInfo& ci) {
+  if (ci.numActuals() != 1) return QualifiedType();
+
+  auto actualType = ci.actual(0).type();
+  UniqueString sParam;
+  if (!toParamStringActual(actualType, sParam) &&
+      !toParamBytesActual(actualType, sParam)) {
+    return QualifiedType();
+  }
+
+  // This is taken verbatim from postFold.cpp in production.
+  // Don't bother looking at the first byte.
+  // Count it as an initial UTF-8 byte.
+  size_t nbytes = sParam.length();
+  size_t ncodepoints  = (nbytes > 0);
+  for (size_t i = 1; i < nbytes; ++i)
+    if (isInitialUTF8Byte(sParam.c_str()[i]))
+      ++ncodepoints;
+
+  return QualifiedType::makeParamInt(context, ncodepoints);
+}
+
 static QualifiedType primAscii(ResolutionContext* rc, const PrimCall* call, const CallInfo& ci) {
   if (ci.numActuals() != 1 && ci.numActuals() != 2) return QualifiedType();
 
@@ -949,6 +975,59 @@ static QualifiedType primAscii(ResolutionContext* rc, const PrimCall* call, cons
   return QualifiedType(QualifiedType::PARAM,
                        UintType::get(rc->context(), 8),
                        UintParam::get(rc->context(), str.c_str()[index]));
+}
+
+static QualifiedType primStringItem(Context* context, const PrimCall* call, const CallInfo& ci) {
+  if (ci.numActuals() != 1 && ci.numActuals() != 2) return QualifiedType();
+
+  UniqueString sParam;
+  int64_t index = 0;
+
+  if (!toParamStringActual(ci.actual(0).type(), sParam) &&
+      !toParamBytesActual(ci.actual(0).type(), sParam)) {
+    return QualifiedType();
+  }
+
+  if (ci.numActuals() == 2 &&
+      !toParamIntActual(ci.actual(1).type(), index)) {
+    return QualifiedType();
+  }
+
+  // chpl_enc_codepoint_at_idx returns a calloc'd string. Fortunately,
+  // it's defined in a header, and brings in stdlib, so we can use free()
+  // and be sure it's the right allocator.
+  const char* retStr = chpl_enc_codepoint_at_idx(sParam.c_str(), index);
+  auto toReturn = QualifiedType::makeParamString(context, UniqueString::get(context, retStr));
+  free((void*) retStr);
+  return toReturn;
+}
+
+static QualifiedType primBytesItem(Context* context, const PrimCall* call, const CallInfo& ci) {
+  if (ci.numActuals() != 1 && ci.numActuals() != 2) return QualifiedType();
+
+  UniqueString sParam;
+  int64_t index = 0;
+
+  if (!toParamBytesActual(ci.actual(0).type(), sParam) &&
+      !toParamStringActual(ci.actual(0).type(), sParam)) {
+    return QualifiedType();
+  }
+
+  if (ci.numActuals() == 2 &&
+      !toParamIntActual(ci.actual(1).type(), index)) {
+    return QualifiedType();
+  }
+
+  if (index < 0 || (uint64_t) index >= sParam.length()) {
+    context->error(call, "index out of range");
+    return QualifiedType();
+  }
+
+  char result[2] = { sParam.c_str()[index], '\0' };
+
+  return QualifiedType(QualifiedType::PARAM,
+                       CompositeType::getBytesType(context),
+                       StringParam::get(context, UniqueString::get(context, result)));
 }
 
 /*
@@ -1599,7 +1678,7 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
       break;
     }
     case PRIM_STRING_LENGTH_CODEPOINTS:
-      CHPL_UNIMPL("misc primitives");
+      type = primStringLengthCodepoints(context, ci);
       break;
 
     case PRIM_ASCII:
@@ -1607,7 +1686,13 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
       break;
 
     case PRIM_STRING_ITEM:
+      type = primStringItem(context, call, ci);
+      break;
+
     case PRIM_BYTES_ITEM:
+      type = primBytesItem(context, call, ci);
+      break;
+
     case PRIM_STRING_INDEX:
     case PRIM_STRING_COPY:
     case PRIM_STRING_SELECT:
