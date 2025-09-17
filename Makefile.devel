@@ -21,6 +21,7 @@ export CHPL_MAKE_PYTHON := $(shell $(CHPL_MAKE_HOME)/util/config/find-python.sh)
 develall:
 	@$(MAKE) always-build-man
 	@$(MAKE) always-build-chplspell-venv
+	@$(MAKE) always-build-cls-test
 
 docs: chpldoc man-chpl man-chpldoc
 	cd doc && $(MAKE) docs

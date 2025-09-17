@@ -62,7 +62,6 @@ comprt: FORCE
 	@$(MAKE) always-build-test-venv
 	@$(MAKE) always-build-chpldoc
 	@$(MAKE) always-build-chapel-py
-	@$(MAKE) always-build-cls-test
 	@$(MAKE) always-build-chplcheck
 	@$(MAKE) always-build-cls
 	@$(MAKE) runtime
