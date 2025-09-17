@@ -299,6 +299,7 @@ def test_directory(test, test_type):
                 skip_test = False
                 if os.path.isfile("SKIPIF"):
                     try:
+                        logger.write('[Checking SKIPIF]')
                         skip_test = process_skipif_output(run_command([test_env, "SKIPIF"]).strip())
                         # check output and skip if true
                         if skip_test == "1" or skip_test == "True":
