@@ -140,9 +140,6 @@ test-venv: third-party-test-venv
 chapel-py-venv: frontend-shared
 	$(MAKE) third-party-chapel-py-venv
 
-cls-test-venv: FORCE chapel-py-venv
-	cd third-party && $(MAKE) cls-test-venv
-
 chpldoc: third-party-chpldoc-venv
 	@cd third-party && $(MAKE) llvm
 	cd compiler && $(MAKE) chpldoc
@@ -162,11 +159,6 @@ always-build-chpldoc: FORCE
 always-build-chapel-py: FORCE
 	-@if [ -n "$$CHPL_ALWAYS_BUILD_CHAPEL_PY" ]; then \
 	$(MAKE) chapel-py-venv; \
-	fi
-
-always-build-cls-test: FORCE
-	-@if [ -n "$$CHPL_ALWAYS_BUILD_CHAPEL_PY_TEST" ]; then \
-	$(MAKE) cls-test-venv; \
 	fi
 
 always-build-chplcheck: FORCE
