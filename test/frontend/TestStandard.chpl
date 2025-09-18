@@ -16,5 +16,11 @@ proc main() {
     a.add(5);
     println(a.read());
   }
+
+  {
+    var r = 1..10;
+    println(r.first);
+    println(r.last);
+  }
 }
 
