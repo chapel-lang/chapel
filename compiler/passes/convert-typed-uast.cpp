@@ -2594,7 +2594,7 @@ struct ConvertTypeHelper {
 
   Type* visit(const types::RecordType* t) {
     auto rc = createDummyRC(context());
-    auto& rfds = fieldsForTypeDecl(&rc, t, DefaultsPolicy::USE_DEFAULTS);
+    auto& rfds = fieldsForTypeDecl(&rc, t, DefaultsPolicy::IGNORE_DEFAULTS);
 
     AggregateType* at = toAggregateType(tc_->findConvertedType(t));
     INT_ASSERT(at);
