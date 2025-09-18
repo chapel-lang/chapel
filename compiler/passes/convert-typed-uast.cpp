@@ -2333,13 +2333,29 @@ struct ConvertTypeHelper {
     if (gct && !tc_->typeIsConverted(gct)) {
       tc_->convertType(gct);
     }
-    auto generic = toAggregateType(tc_->findConvertedType(gct));
+    auto instantiatedFrom = toAggregateType(tc_->findConvertedType(gct));
 
     // First convert the fields in a regular manner.
-    helpConvertFields(ct, rf, at, generic != nullptr);
+    helpConvertFields(ct, rf, at, instantiatedFrom != nullptr);
 
     auto ts = at->symbol;
     INT_ASSERT(ts);
+
+    if (!rf.isGeneric()) {
+      ts->addFlag(FLAG_RESOLVED_EARLY);
+      at->resolveStatus = RESOLVED;
+
+      if (instantiatedFrom) {
+        at->instantiatedFrom = instantiatedFrom;
+        at->renameInstantiation();
+      }
+    } else {
+      // This is a generic type created for the purpose of serving as a root
+      // instantiation, which other parts of production assume exists.
+      at->processGenericFields();
+      at->resolveStatus = UNRESOLVED;
+      at->markAsGeneric();
+    }
 
     if (auto& id = ct->id()) {
       if (auto ast = parsing::idToAst(context(), id)) {
@@ -2360,7 +2376,7 @@ struct ConvertTypeHelper {
         for (auto stmt : decl->declOrComments()) {
           if (auto decl = stmt->toNamedDecl();
               decl && !decl->isVarLikeDecl()) {
-            if (generic != nullptr) {
+            if (instantiatedFrom != nullptr) {
               if (decl->name() == USTR("init") ||
                   decl->name() == USTR("init=") ||
                   decl->name() == USTR("deinit")) {
@@ -2368,30 +2384,13 @@ struct ConvertTypeHelper {
                 continue;
               }
             }
+
             auto expr = tc_->untypedConverter->convertAST(decl);
             INT_ASSERT(expr);
             at->addDeclarations(expr);
           }
         }
       }
-    }
-
-    ts->addFlag(FLAG_RESOLVED_EARLY);
-    at->resolveStatus = RESOLVED;
-
-    if (generic == nullptr) {
-      at->processGenericFields();
-
-      // This is a generic type created for the purpose of serving as a root
-      // instantiation, which other parts of production assume exists.
-      if (at->genericFields.size() > 0) {
-        at->resolveStatus = UNRESOLVED;
-        at->markAsGeneric();
-      }
-    }
-    if (generic) {
-      at->instantiatedFrom = generic;
-      at->renameInstantiation();
     }
 
     auto rc = createDummyRC(context());
