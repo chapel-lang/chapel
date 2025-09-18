@@ -4,4 +4,12 @@ nvccDir=$(which nvcc)
 nvccLib=${nvccDir%/bin/nvcc}/lib64
 nvccInc=${nvccDir%/bin/nvcc}/include
 
-echo "-M../ -L$nvccLib -I$nvccInc -lcudart -lcublas"
+extraLink=""
+mathLibs=$(echo $LD_LIBRARY_PATH | tr ':' '\n' | grep math_libs)
+foundMathLibs=$?
+if [[ $foundMathLibs -eq 0 && -n $mathLibs ]] ; then
+  extraLink+=" -L$mathLibs"
+fi
+
+echo "-M../ -I$nvccInc -L$nvccLib $extraLink -lcudart -lcublas"
+
