@@ -99,6 +99,7 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
   bool skipTypeQueries = false;
   bool usePlaceholders = false;
   bool allowLocalSearch = true;
+  ID useConcreteArrayTypeForFormals = ID();
 
   // internal variables
   ResolutionContext emptyResolutionContext;

@@ -862,6 +862,102 @@ static void test26() {
   assert(b.isType() && b.type()->isBoolType());
 }
 
+static void test27() {
+  std::string prelude =
+    R"""(
+    class MyClass {}
+    record wrapper { type eltType; }
+
+    proc f(y: [?d1] [?d2] real) param {
+      return "two-dim real (" + d1.type:string + ", " + d2.type:string + ")";
+    }
+
+    proc f(x: [?d1] [?d2] int(?w)) param {
+      return "two-dim int with width " + w : string + " (" + d1.type:string + ", " +
+             d2.type:string + ")";
+    }
+
+    proc f(y: [?D] real) param {
+      return "one-dim real (" + D.type:string + ")";
+    }
+
+    proc f(y: [?D] owned) param {
+      return "one-dim owned (" + D.type:string + ") with elt type " +
+             y.eltType:string;
+    }
+
+    proc f(y: ([?d1] real, [?d2] owned)) param {
+      return "pair of real, owned (" + d1.type:string + ", " + d2.type:string + ")";
+    }
+
+    proc foo(y: [?D] wrapper(?t)) param {
+      return "wrapper with elt type " + t:string + " (" + D.type:string + ")";
+    }
+
+    proc foo(y: [?D] wrapper(?t)...) param where y.type.size > 1 {
+      return y.type.size : string + " wrappers with elt type " + t:string +
+             " (" + D.type:string + ")";
+    }
+
+    // not an overload to avoid ambiguity with vararg foo above
+    proc sameElts(y: [?d1] ?t, z: [?d2] t) param {
+      return "sameElts with elt type " + t:string + " (" + d1.type:string +
+             ", " + d2.type:string + ")";
+    }
+
+    var A: [1..3] real;
+    var B: [1..3 by -1] [1..5 by 2] real;
+    var C: [1..3] owned MyClass;
+    var D: [1..3] wrapper(int);
+    var E: [1..3] wrapper(real);
+    var F64: [1..3] [1..3] int;
+    var F32: [1..3] [1..3] int(32);
+    var F16: [1..3] [1..3] int(16);
+   )""";
+
+  std::pair<const char*, const char*> cases[] = {
+    {"f(A)", "one-dim real (domain(1,int(64),one))"},
+    {"f(B)", "two-dim real (domain(1,int(64),negOne), domain(1,int(64),positive))"},
+    {"f(C)", "one-dim owned (domain(1,int(64),one)) with elt type owned MyClass"},
+    {"f((A, C))", "pair of real, owned (domain(1,int(64),one), domain(1,int(64),one))"},
+    {"sameElts(A, A)", "sameElts with elt type real(64) (domain(1,int(64),one), domain(1,int(64),one))"},
+    {"sameElts(C, C)", "sameElts with elt type owned MyClass (domain(1,int(64),one), domain(1,int(64),one))"},
+    {"foo(D)", "wrapper with elt type int(64) (domain(1,int(64),one))"},
+    {"foo(E)", "wrapper with elt type real(64) (domain(1,int(64),one))"},
+    {"foo(D)", "wrapper with elt type int(64) (domain(1,int(64),one))"},
+    {"foo(D, D)", "2 wrappers with elt type int(64) (domain(1,int(64),one))"},
+    {"foo(D, D, D)", "3 wrappers with elt type int(64) (domain(1,int(64),one))"},
+    {"f(F64)", "two-dim int with width 64 (domain(1,int(64),one), domain(1,int(64),one))"},
+    {"f(F32)", "two-dim int with width 32 (domain(1,int(64),one), domain(1,int(64),one))"},
+    {"f(F16)", "two-dim int with width 16 (domain(1,int(64),one), domain(1,int(64),one))"},
+    {"sameElts(A, C)", nullptr}, // should error
+    {"sameElts(C, A)", nullptr}, // should error
+    {"foo(D, E)", nullptr}, // should error
+  };
+
+  for (size_t i = 0; i < sizeof(cases)/sizeof(cases[0]); i++) {
+    printf("%s case %zu\n", __FUNCTION__, i);
+    auto context = buildStdContext();
+    ErrorGuard guard(context);
+
+    auto qt = resolveQualifiedTypeOfX(context,
+                  prelude + R""""(
+                    param x = )"""" + cases[i].first + R""""(;
+                  )"""");
+
+    if (cases[i].second != nullptr) {
+      assert(!qt.isUnknownOrErroneous());
+      assert(qt.kind() == QualifiedType::PARAM);
+      ensureParamString(qt, cases[i].second);
+    } else {
+      assert(qt.isErroneousType());
+      assert(guard.numErrors() == 1);
+      assert(guard.error(0)->type() == ErrorType::NoMatchingCandidates);
+      guard.realizeErrors();
+    }
+  }
+}
+
 int main() {
   test1();
   test2();
@@ -896,6 +992,7 @@ int main() {
   test25();
   test25b();
   test26();
+  test27();
 
   return 0;
 }

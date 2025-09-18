@@ -626,7 +626,7 @@ const TypedFnSignature* const& precompiledHeaderSigForFn(
       result = TypedFnSignature::get(
           context, untypedSig, std::move(formalTypes),
           /* whereClauseResult */ TypedFnSignature::WHERE_NONE,
-          /* needsInstantiation */ false,
+          /* instantiationState */ TypedFnSignature::INST_CONCRETE,
           /* instantiatedFrom */ nullptr,
           /* parentFn */ nullptr,
           /* formalsInstantiated */ Bitmap(),

@@ -60,7 +60,7 @@ static MostSpecificCandidate const& mscQuery(Context* context) {
   auto typed = TypedFnSignature::get(context, untyped,
       /* formalTypes */ { QualifiedType(QualifiedType::CONST_IN, IntType::get(context, 32)) },
       TypedFnSignature::WHERE_NONE,
-      /* needsInstantiation */ false,
+      /* instantiationState */ TypedFnSignature::INST_CONCRETE,
       /* instantiatedFrom */ nullptr,
       /* parentFn */ nullptr,
       /* instantiatedFormals */ Bitmap{},

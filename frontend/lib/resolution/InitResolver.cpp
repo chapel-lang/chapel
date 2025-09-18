@@ -643,7 +643,7 @@ InitResolver::computeTypedSignature(const Type* newRecvType) {
 
   formalsInstantiated.resize(ufs->numFormals());
 
-  bool needsInstantiation = false;
+  auto instantiationState = TypedFnSignature::INST_CONCRETE;
 
   for (int i = 0; i < tfs->numFormals(); i++) {
     if (i == 0) {
@@ -654,14 +654,14 @@ InitResolver::computeTypedSignature(const Type* newRecvType) {
       formalTypes.push_back(tfs->formalType(i));
       formalsInstantiated.setBit(i, tfs->formalIsInstantiated(i));
       if (tfs->formalType(i).genericity() == Type::Genericity::GENERIC) {
-        needsInstantiation = true;
+        instantiationState = TypedFnSignature::INST_GENERIC_OTHER;
       }
     }
   }
 
   ret = TypedFnSignature::get(ctx_, ufs, formalTypes,
                               tfs->whereClauseResult(),
-                              needsInstantiation,
+                              instantiationState,
                               tfs->instantiatedFrom(),
                               tfs->parentFn(),
                               formalsInstantiated,
