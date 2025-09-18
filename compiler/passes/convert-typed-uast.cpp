@@ -2576,15 +2576,17 @@ struct ConvertTypeHelper {
     INT_ASSERT(def);
 
     // convert the superclass as a field 'super'
-    if (auto parentClassType = bct->parentClassType()) {
-      Type* pt = tc_->convertType(parentClassType);
-      VarSymbol* v = new VarSymbol("super", pt);
-      v->addFlag(FLAG_SUPER_CLASS);
-      v->qual = QUAL_VAL;
-      v->makeField();
-      at->fields.insertAtTail(new DefExpr(v));
+    if (!rfds.isGeneric()) {
+      if (auto parentClassType = bct->parentClassType()) {
+        Type* pt = tc_->convertType(parentClassType);
+        VarSymbol* v = new VarSymbol("super", pt);
+        v->addFlag(FLAG_SUPER_CLASS);
+        v->qual = QUAL_VAL;
+        v->makeField();
+        at->fields.insertAtTail(new DefExpr(v));
 
-      at->inherits.insertAtTail(new SymExpr(pt->symbol));
+        at->inherits.insertAtTail(new SymExpr(pt->symbol));
+      }
     }
 
     helpConvertCompositeType(bct, rfds, at);
