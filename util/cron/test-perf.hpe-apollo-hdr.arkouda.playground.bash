@@ -51,11 +51,11 @@ TEST_NIGHTLY=0
 GITHUB_USER=chapel-lang
 GITHUB_BRANCH=main
 
-SHORT_NAME=segPdarrayIndex-4812
-START_DATE=09/15/25
+SHORT_NAME=scan-regression-fix
+START_DATE=09/18/25
 
-export ARKOUDA_URL=https://github.com/1RyanK/arkouda.git
-export ARKOUDA_BRANCH=4803-Investigate_performance_of_segPdarrayIndex
+export ARKOUDA_URL=https://github.com/drculhane/arkouda.git
+export ARKOUDA_BRANCH=ForIssue4810
 
 if [[ "$TEST_NIGHTLY" == "1" ]]; then
   set -e
