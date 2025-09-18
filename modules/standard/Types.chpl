@@ -616,8 +616,6 @@ proc isArray(e)     param do  return isArrayValue(e);
 proc isDmap(e)      param do  return isDmapValue(e);
 /* Returns ``true`` if the argument is a ``sync`` type or a ``sync`` variable. */
 proc isSync(e)      param do  return isSyncValue(e);
-/* Returns ``true`` if the argument is a ``single`` type or a ``single`` variable. */
-proc isSingle(e)    param do  return isSingleValue(e);
 /*Returns ``true`` if the argument is an ``atomic`` type or an ``atomic`` variable.*/
 proc isAtomic(e)    param do  return isAtomicValue(e);
 
