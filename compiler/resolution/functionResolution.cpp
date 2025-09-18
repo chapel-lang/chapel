@@ -4053,7 +4053,7 @@ static bool isGenericRecordInit(CallExpr* call) {
          ures->unresolved == astrInitEquals) &&
         call->numActuals()               >= 2) {
       Type* t1 = call->get(1)->typeInfo();
-      Type* t2 = call->get(2)->typeInfo();
+      Type* t2 = call->get(2)->typeInfo()->getValType();
 
       if (t1                                  == dtMethodToken &&
           isGenericRecordWithInitializers(t2) == true) {
