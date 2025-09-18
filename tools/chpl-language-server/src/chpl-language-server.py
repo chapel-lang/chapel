@@ -389,7 +389,7 @@ class ChapelLanguageServer(LanguageServer):
         return [
             InlayHint(
                 position=position,
-                label=[InlayHintLabelPart(value)],
+                label=value,
                 text_edits=edits,
             )
         ]
