@@ -351,7 +351,7 @@ async def check_goto_decl_def(
             typing.Union[
                 Location, typing.List[Location], typing.List[LocationLink]
             ]
-        ]
+        ],
     ):
         if dst is None:
             assert results is None or (
@@ -396,7 +396,7 @@ async def check_goto_type_def(
             typing.Union[
                 Location, typing.List[Location], typing.List[LocationLink]
             ]
-        ]
+        ],
     ):
         if dst is None:
             assert results is None or (
@@ -536,12 +536,12 @@ async def check_enum_inlay_hints(
     client: LanguageClient,
     doc: TextDocumentIdentifier,
     rng: Range,
-    expected_inlays: Sequence[
-        typing.Tuple[Position, str]
-    ],
+    expected_inlays: Sequence[typing.Tuple[Position, str]],
 ) -> typing.List[InlayHint]:
     standardized_inlays = [(i[0], i[1], None) for i in expected_inlays]
-    actual_inlays = await check_inlay_hints(client, doc, rng, standardized_inlays)
+    actual_inlays = await check_inlay_hints(
+        client, doc, rng, standardized_inlays
+    )
 
     # Check that the '= bla' inlays are insertable
     for inlay in actual_inlays:
