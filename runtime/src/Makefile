@@ -74,9 +74,9 @@ include $(RUNTIME_ROOT)/make/Makefile.runtime.subdirrules
 include $(RUNTIME_ROOT)/make/Makefile.runtime.foot
 
 #
-# turn on debugging for gdb.c to help make debugging test uniform
+# turn on debugging for debugger.c to help make debugging test uniform
 # for developers and users
 #
-$(RUNTIME_OBJ_DIR)/gdb.o: gdb.c $(RUNTIME_OBJ_DIR_STAMP)
+$(RUNTIME_OBJ_DIR)/debugger.o: debugger.c $(RUNTIME_OBJ_DIR_STAMP)
 	@if [ `grep "chplrt.h" $< | wc -l` -ne 1 ]; then echo "PROBLEM:  $< does not include 'chplrt.h'."; exit 1; fi
 	$(CC) -c -g $(RUNTIME_CFLAGS) $(RUNTIME_INCLS) -o $@ $<
