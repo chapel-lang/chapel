@@ -26,7 +26,7 @@ var branchInfo = [
                     // TODO: Remove this branchDate; there was no branch for
                     //       1.1.1. (thomasvandoren, 2015-04-09)
                     "branchDate" : "2010-04-09",
-                    6revision" : -1},
+                    "revision" : -1},
                   { "release" : "1.2",
                     "releaseDate": "2010-10-21",
                     "branchDate" : "2010-10-14",
