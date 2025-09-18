@@ -987,6 +987,46 @@ static void test27() {
   assert(guard.realizeErrors() == 2);
 }
 
+static void test28() {
+  auto prog =
+    R"""(
+    enum myenum {
+      a = 0x7fffffffffffffff,
+      b,
+      c = b:uint + 2
+    }
+
+    param x = myenum.a : uint;
+    param y = myenum.b : uint;
+    param z = myenum.c : uint;
+    )""";
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context, prog, {"x", "y", "z"});
+  ensureParamUint(vars.at("x"), 0x7fffffffffffffff);
+  ensureParamUint(vars.at("y"), 0x8000000000000000);
+  ensureParamUint(vars.at("z"), 0x8000000000000002);
+}
+
+static void test29() {
+  auto prog =
+    R"""(
+    enum myenum {
+      writeln, write
+    }
+
+    var x = chpl__enumToOrder(myenum.writeln);
+    var y = chpl__enumToOrder(myenum.write);
+    )""";
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context, prog, {"x", "y"});
+  assert(vars.at("x").type()->isIntType());
+  assert(vars.at("y").type()->isIntType());
+}
+
 int main() {
   test1();
   test2();
@@ -1016,6 +1056,8 @@ int main() {
   test25();
   test26();
   test27();
+  test28();
+  test29();
 
   return 0;
 }

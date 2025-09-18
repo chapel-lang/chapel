@@ -75,6 +75,7 @@ class QualifiedType final {
   // Convenience functions to construct param types
   static QualifiedType makeParamBool(Context* context, bool b);
   static QualifiedType makeParamInt(Context* context, int64_t i);
+  static QualifiedType makeParamUint(Context* context, uint64_t i);
   static QualifiedType makeParamString(Context* context, UniqueString s);
   static QualifiedType makeParamString(Context* context, std::string s);
 
