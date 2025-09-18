@@ -3445,8 +3445,13 @@ resolveFunctionByInfoQuery(ResolutionContext* rc,
     auto& saved = resolveFunctionByPoisQuery(rc, resolvedPoiTrace);
     ret = saved.get();
 
-    QUERY_STORE_RESULT(resolveFunctionByResolvedInfoQuery, rc->context(),
-                       ret, sig, saved->poiInfo());
+    // very conservative: don't cache if this is a nested function. In the
+    // "bad" case, a generic parent function can change the types and resolution
+    // of 'sig', making caching unsafe.
+    if (!sig->parentFn()) {
+      QUERY_STORE_RESULT(resolveFunctionByResolvedInfoQuery, rc->context(),
+                         ret, sig, saved->poiInfo());
+    }
   }
 
   return CHPL_RESOLUTION_QUERY_END(ret);
