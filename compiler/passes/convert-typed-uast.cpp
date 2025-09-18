@@ -2300,11 +2300,27 @@ struct ConvertTypeHelper {
       }
 
       UniqueString name = rf.fieldName(i);
-      VarSymbol* v = new VarSymbol(astr(name), ft);
-      v->qual = tc_->convertQualifier(qt.kind());
+      VarSymbol* v = new VarSymbol(astr(name));
+
       if (qt.isType()) {
         v->addFlag(FLAG_TYPE_VARIABLE);
+      } else if (qt.isParam()) {
+        v->addFlag(FLAG_PARAM);
       }
+
+      if (!rf.isGeneric()) {
+        v->type = ft;
+        v->qual = tc_->convertQualifier(qt.kind());
+
+        if (qt.isType()) {
+          at->substitutions.put(v, ft->symbol);
+        } else if (qt.isParam()) {
+          auto param = tc_->convertParam(qt);
+          at->substitutions.put(v, param);
+          paramMap.put(v, param);
+        }
+      }
+
       v->makeField();
       at->fields.insertAtTail(new DefExpr(v, initExpr, typeExpr));
     }
