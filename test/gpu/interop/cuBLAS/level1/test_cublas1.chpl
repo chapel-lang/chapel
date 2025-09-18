@@ -174,6 +174,7 @@ proc test_cuamax_helper(type t) {
 
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
+    defer cublas_destroy_handle(cublas_handle);
 
     if (t == real(32)    || t == real(64) ||
         t == complex(64) || t == complex(128)) {
@@ -197,6 +198,7 @@ proc test_cuamax_helper(type t) {
 
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
+    defer cublas_destroy_handle(cublas_handle);
 
     if (t == real(32)    || t == real(64) ||
         t == complex(64) || t == complex(128)) {
@@ -228,6 +230,7 @@ proc test_cuamin_helper(type t) {
 
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
+    defer cublas_destroy_handle(cublas_handle);
 
 
     if (t == real(32)    || t == real(64) ||
@@ -252,6 +255,7 @@ proc test_cuamin_helper(type t) {
 
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
+    defer cublas_destroy_handle(cublas_handle);
 
     if (t == real(32)    || t == real(64) ||
         t == complex(64) || t == complex(128)) {
@@ -295,6 +299,7 @@ proc test_cuasum_helper(type t) {
 
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
+    defer cublas_destroy_handle(cublas_handle);
 
     var err = 1.0;
 
@@ -330,6 +335,7 @@ proc test_cucopy_helper(type t) {
 
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
+    defer cublas_destroy_handle(cublas_handle);
 
     if t == real(32)    || t == real(64) ||
        t == complex(64) || t == complex(128) {
@@ -368,6 +374,7 @@ proc test_cuaxpy_helper(type t) {
 
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
+    defer cublas_destroy_handle(cublas_handle);
 
     if t == real(32)    || t == real(64) ||
        t == complex(64) || t == complex(128) {
@@ -407,6 +414,7 @@ proc test_cudot_helper(type t) {
 
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
+    defer cublas_destroy_handle(cublas_handle);
     var r : t;
 
     if t == real(32) || t == real(64) {
@@ -442,6 +450,7 @@ proc test_cudotu_helper(type t) {
 
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
+    defer cublas_destroy_handle(cublas_handle);
     var res : t;
 
     if t == complex(64) || t == complex(128) {
@@ -477,6 +486,7 @@ proc test_cudotc_helper(type t) {
 
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
+    defer cublas_destroy_handle(cublas_handle);
     var res : t;
 
     if t == complex(64) || t == complex(128) {
@@ -511,6 +521,7 @@ proc test_cunrm2_helper(type t) {
 
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
+    defer cublas_destroy_handle(cublas_handle);
     var err = 1.0;
 
     if t == real(32)    || t == real(64) ||
@@ -553,6 +564,7 @@ proc test_curot_helper(type t) {
 
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
+    defer cublas_destroy_handle(cublas_handle);
 
     if t == real(32) || t == real(64) {
       cu_rot(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y, c, s);
@@ -601,6 +613,7 @@ proc test_cucrot_helper(type t) {
 
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
+    defer cublas_destroy_handle(cublas_handle);
 
     if t == complex(64) {
       cu_rot(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y, c, s);
@@ -649,6 +662,7 @@ proc test_cuzrot_helper(type t) {
 
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
+    defer cublas_destroy_handle(cublas_handle);
 
     if t == complex(128) {
       cu_rot(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y, c, s);
@@ -697,6 +711,7 @@ proc test_cucsrot_helper(type t) {
 
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
+    defer cublas_destroy_handle(cublas_handle);
 
     if t == complex(64) {
       cu_rot(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y, c, s);
@@ -746,6 +761,7 @@ proc test_cuzdrot_helper(type t) {
 
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
+    defer cublas_destroy_handle(cublas_handle);
 
     if t == complex(128) {
       cu_rot(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y, c, s);
@@ -792,6 +808,7 @@ proc test_curotg_helper(type t) {
 
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
+    defer cublas_destroy_handle(cublas_handle);
 
     if t == real(32) || t == real(64) {
       cu_rotg(cublas_handle, a, b, c, s);
@@ -852,6 +869,7 @@ proc test_cucrotg_helper(type t) {
 
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
+    defer cublas_destroy_handle(cublas_handle);
 
     if t == complex(64) {
       cu_rotg(cublas_handle, a, b, c, s);
@@ -911,6 +929,7 @@ proc test_cuzrotg_helper(type t) {
 
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
+    defer cublas_destroy_handle(cublas_handle);
 
     if t == complex(128) {
       cu_rotg(cublas_handle, a, b, c, s);
@@ -976,6 +995,7 @@ proc test_curotm_helper(type t) {
 
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
+    defer cublas_destroy_handle(cublas_handle);
 
     if t == real(32) || t == real(64) {
       cu_rotm(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y, P);
@@ -1045,6 +1065,7 @@ proc test_curotmg_helper(type t) {
 
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
+    defer cublas_destroy_handle(cublas_handle);
 
     if t == real(32) || t == real(64) {
       cu_rotmg(cublas_handle, d1, d2, b1, b2, P);
@@ -1105,6 +1126,7 @@ proc test_cuscal_helper(type t) {
 
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
+    defer cublas_destroy_handle(cublas_handle);
 
     if t == real(32)    || t == real(64) ||
        t == complex(64) || t == complex(128) {
@@ -1142,6 +1164,7 @@ proc test_cucsscal_helper(type t) {
 
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
+    defer cublas_destroy_handle(cublas_handle);
 
     if t == complex(64) {
       cu_scal(cublas_handle, N, a, gpu_ptr_X);
@@ -1178,6 +1201,7 @@ proc test_cuzdscal_helper(type t) {
 
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
+    defer cublas_destroy_handle(cublas_handle);
 
     if t == complex(128) {
       cu_scal(cublas_handle, N, a, gpu_ptr_X);
@@ -1217,6 +1241,7 @@ proc test_cuswap_helper(type t) {
 
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
+    defer cublas_destroy_handle(cublas_handle);
 
     if t == real(32)    || t == real(64) ||
        t == complex(64) || t == complex(128) {
