@@ -715,7 +715,7 @@ static void removeWhereClausesAndReturnTypeBlocks() {
   }
 }
 
-static void removeMootFields() {
+static void removeTypeAndParamFields() {
   // Remove type fields and parameter fields
   for_alive_in_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (AggregateType* at = toAggregateType(ts->type)) {
@@ -1070,7 +1070,12 @@ void pruneResolvedTree() {
 
   removeWhereClausesAndReturnTypeBlocks();
 
-  removeMootFields();
+  // TODO: This removes type and param fields which are required for the
+  //       old resolver to function properly when considering early-resolved
+  //       instantiations (so we cannot just remove them early on in the
+  //       typed converter). However, later passes expect these fields to be
+  //       removed. It can be removed when we stop using the old resolver.
+  EARLY_RESOLVED_AST_MUTATION(removeTypeAndParamFields);
 
   removeSymbolsWithRemovedTypes();
 
