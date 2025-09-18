@@ -60,7 +60,23 @@ struct FindSplitInits : VarScopeVisitor {
 
   void propagateChildToParent(VarFrame* frame, VarFrame* parent, const AstNode* ast);
 
+  void processSingleAssignHelper(const AstNode* lhsAst,
+                                 const AstNode* rhsAst,
+                                 const AstNode* ast,
+                                 RV& rv);
+
+  void processSingleDeclHelper(const NamedDecl* ast,
+                               const AstNode* initExpression,
+                               bool isFormal,
+                               Qualifier intentOrKind,
+                               RV& rv);
+
+  void processTupleDecl(const TupleDecl* ast,
+                        const TupleDecl* topLevelDeclAst,
+                        RV& rv);
+
   // overrides
+  void handleTupleDeclaration(const TupleDecl* ast, RV& rv) override;
   void handleDeclaration(const VarLikeDecl* ast, RV& rv) override;
   void handleMention(const Identifier* ast, ID varId, RV& rv) override;
   void handleAssign(const OpCall* ast, RV& rv) override;
@@ -156,19 +172,55 @@ void FindSplitInits::handleInitOrAssign(ID varId,
   }
 }
 
-void FindSplitInits::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
+void FindSplitInits::processSingleDeclHelper(const NamedDecl* ast,
+                                             const AstNode* initExpression,
+                                             bool isFormal,
+                                             Qualifier intentOrKind,
+                                             RV& rv) {
   VarFrame* frame = currentFrame();
   bool inserted = frame->addToDeclaredVars(ast->id());
   if (inserted) {
-    if (ast->initExpression() == nullptr) {
+    if (!initExpression) {
       frame->eligibleVars.insert(ast->id());
     }
-    if (ast->isFormal() || ast->isVarArgFormal()) {
-      if (ast->storageKind() == Qualifier::OUT) {
-        outFormals.insert(ast->id());
-      }
+  }
+  if (isFormal) {
+    if (intentOrKind == Qualifier::OUT) {
+      outFormals.insert(ast->id());
     }
   }
+}
+
+void FindSplitInits::processTupleDecl(const TupleDecl* ast,
+                                      const TupleDecl* topLevelDeclAst,
+                                      RV& rv) {
+  auto topLevelInitExpr = topLevelDeclAst->initExpression();
+
+  for (int i = 0; i < ast->numDecls(); i++) {
+    auto decl = ast->decl(i);
+    if (auto vld = decl->toVarLikeDecl()) {
+      // Propagate formal-ness and intent from the tuple decl
+      bool isFormal = ast->isTupleDeclFormal();
+      Qualifier intentOrKind = (Qualifier)ast->intentOrKind();
+      processSingleDeclHelper(vld, topLevelInitExpr, isFormal, intentOrKind, rv);
+    } else if (auto td = decl->toTupleDecl()) {
+      processTupleDecl(td, topLevelDeclAst, rv);
+    } else {
+      context->error(decl, "unexpected type of contained decl in tuple decl");
+    }
+  }
+}
+
+void FindSplitInits::handleTupleDeclaration(const TupleDecl* ast, RV& rv) {
+  auto topLevelDeclAst = ast;
+  processTupleDecl(ast, topLevelDeclAst, rv);
+}
+
+void FindSplitInits::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
+  auto initExpr = ast->initExpression();
+  bool isFormal = ast->isFormal() || ast->isVarArgFormal();
+  Qualifier intentOrKind = ast->storageKind();
+  processSingleDeclHelper(ast, initExpr, isFormal, intentOrKind, rv);
 }
 
 void FindSplitInits::handleMention(const Identifier* ast, ID varId, RV& rv) {
@@ -184,10 +236,10 @@ void FindSplitInits::handleMention(const Identifier* ast, ID varId, RV& rv) {
   }
 }
 
-void FindSplitInits::handleAssign(const OpCall* ast, RV& rv) {
-  auto lhsAst = ast->actual(0);
-  auto rhsAst = ast->actual(1);
-
+void FindSplitInits::processSingleAssignHelper(const AstNode* lhsAst,
+                                               const AstNode* rhsAst,
+                                               const AstNode* ast,
+                                               RV& rv) {
   ID lhsVarId = refersToId(lhsAst, rv);
   if (!lhsVarId.isEmpty()) {
     // get the type for the rhs
@@ -196,6 +248,19 @@ void FindSplitInits::handleAssign(const OpCall* ast, RV& rv) {
   } else {
     // visit the LHS to check for mentions
     lhsAst->traverse(rv);
+  }
+}
+
+void FindSplitInits::handleAssign(const OpCall* ast, RV& rv) {
+  auto lhsAst = ast->actual(0);
+  auto rhsAst = ast->actual(1);
+
+  if (auto lhsTuple = lhsAst->toTuple()) {
+    for (auto elt : lhsTuple->actuals()) {
+      processSingleAssignHelper(elt, rhsAst, ast, rv);
+    }
+  } else {
+    processSingleAssignHelper(lhsAst, rhsAst, ast, rv);
   }
 }
 
