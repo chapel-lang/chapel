@@ -1251,8 +1251,7 @@ const TypedFnSignature* inferOutFormals(ResolutionContext* rc,
   // if there are no 'out' formals with generic type, just return 'sig'.
   // also just return 'sig' if the function needs instantiation for non-'out' reasons;
   // in that case, we can't infer the 'out' formals by resolving the body.
-  if (sig->instantiationState() & TypedFnSignature::INST_GENERIC_OUT &&
-      !(sig->instantiationState() & TypedFnSignature::INST_GENERIC_OTHER)) {
+  if (sig->instantiationState() == TypedFnSignature::INST_GENERIC_OUT) {
     return inferOutFormalsQuery(rc, sig, instantiationPoiScope);
   } else {
     return sig;
