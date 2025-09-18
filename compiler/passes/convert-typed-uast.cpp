@@ -1064,6 +1064,9 @@ struct TConverter final : UastConverter,
   bool enter(const Block* node, RV& rv);
   void exit(const Block* node, RV& rv);
 
+  bool enter(const Range* node, RV& rv);
+  void exit(const Range* node, RV& rv);
+
   bool enter(const AstNode* node, RV& rv);
   void exit(const AstNode* node, RV& rv);
 };
@@ -5873,6 +5876,41 @@ void TConverter::exit(const Block* node, RV& rv) {
   exitScope(node, rv);
   auto cur = popBlock();
   insertStmt(cur);
+}
+
+bool TConverter::enter(const Range* node, RV& rv) {
+  auto re = rv.byAstOrNull(node);
+
+  auto& candidate = re->mostSpecific().only();
+  auto sig = candidate.fn();
+
+  // TODO: Do we need to handle nested functions differently here?
+  chpl::resolution::ResolutionContext rcval(context);
+  auto rf = resolveFunction(&rcval, sig, re->poiScope());
+
+  const std::vector<const AstNode*> actualAsts =
+    {node->lowerBound(), node->upperBound()};
+
+  std::vector<CallInfoActual> actuals;
+  actuals.push_back(CallInfoActual(rv.byAst(node->lowerBound()).type()));
+  actuals.push_back(CallInfoActual(rv.byAst(node->upperBound()).type()));
+  auto ci = resolution::CallInfo::createSimple(sig->untyped()->name(), actuals);
+
+  auto calledFn = findOrConvertFunction(rf);
+  CallExpr* ret = new CallExpr(calledFn);
+
+  // This mapping drives the conversion of actuals.
+  auto& fam = candidate.formalActualMap();
+  INT_ASSERT(fam.isValid());
+
+  convertAndInsertActuals(ret, node, actualAsts, sig, fam, rv);
+
+  insertExpr(ret);
+
+  return false;
+}
+
+void TConverter::exit(const Range* node, RV& rv) {
 }
 
 bool TConverter::enter(const AstNode* node, RV& rv) {
