@@ -29,6 +29,7 @@
 #include "chpl/resolution/disambiguation.h"
 #include "chpl/resolution/intents.h"
 #include "chpl/resolution/scope-queries.h"
+#include "chpl/resolution/split-init.h"
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
 #include "chpl/util/assertions.h"
@@ -104,6 +105,117 @@ namespace resolution {
 using namespace uast;
 using namespace types;
 
+static void updateTypeForModuleLevelSplitInit(Context* context, ID id,
+                                              ResolvedExpression& lhs,
+                                              const ResolvedExpression& rhs) {
+  const QualifiedType lhsType = lhs.type();
+  const QualifiedType rhsType = rhs.type();
+
+  if (!lhsType.needsSplitInitTypeInfo(context)) return;
+
+  const Param* p = rhsType.param();
+  if (lhsType.kind() != QualifiedType::PARAM) {
+    p = nullptr;
+  }
+  const auto useType = QualifiedType(lhsType.kind(), rhsType.type(), p);
+
+  lhs.setType(useType);
+}
+
+struct ModuleLevelSplitInitCollector {
+  ResolutionContext* rc;
+  ResolutionResultByPostorderID& result;
+
+  // variables that didn't get enough type information to be fully resolved,
+  // and whose type might change due to split-init later.
+  std::vector<ID> incompleteInitVariables;
+
+  ModuleLevelSplitInitCollector(ResolutionContext* rc,
+                                ResolutionResultByPostorderID& result,
+                                const TupleDecl* parentTup)
+    : rc(rc), result(result) {
+  }
+
+  bool enter(const AstNode* node) { return false; }
+  void exit(const AstNode* node) {}
+
+  bool enter(const MultiDecl* md) { return true; }
+  void exit(const MultiDecl* md) {}
+
+  bool enter(const TupleDecl* td) { return true; }
+  void exit(const TupleDecl* td) {}
+
+  bool enter(const Variable* var) {
+    auto rAOrNull = result.byIdOrNull(var->id());
+    if (!rAOrNull) {
+      incompleteInitVariables.push_back(var->id());
+      return false;
+    }
+
+    auto& qt = rAOrNull->type();
+    if (qt.needsSplitInitTypeInfo(rc->context())) {
+      incompleteInitVariables.push_back(var->id());
+    }
+
+    return false;
+  }
+  void exit(const Variable* var) {}
+};
+
+static void resolveSubsequentModuleStatementsIfSplitInit(ResolutionContext* rc,
+                                                         ResolutionResultByPostorderID& result,
+                                                         const Module* mod,
+                                                         const AstNode* modStmt) {
+  const TupleDecl* parentTup = nullptr;
+  if (auto tup = modStmt->toTupleDecl()) {
+    // `var (a, b);` is generic / untyped. Its components can be split-init.
+    if (!tup->initExpression() && !tup->typeExpression()) {
+      parentTup = tup;
+    }
+  } else if (!modStmt->isMultiDecl() && !modStmt->isVariable()) {
+    // if we're not a tuple, not a multi-decl, and not a variable,
+    // then we can't be split-init.
+    return;
+  }
+
+  ModuleLevelSplitInitCollector collector(rc, result, parentTup);
+  modStmt->traverse(collector);
+
+  if (collector.incompleteInitVariables.empty()) return;
+
+  // We found variables that might be split-init. Run scope resolution to
+  // compute split-initialization points.
+  auto& scopeResult = scopeResolveModule(rc->context(), mod->id());
+  std::multimap<ID, ID> varInitIds;
+  std::ignore = computeSplitInits(rc->context(), mod, scopeResult, &varInitIds);
+
+  for (auto varId : collector.incompleteInitVariables) {
+    auto rng = varInitIds.equal_range(varId);
+    if (rng.first == rng.second) continue; // not split-init
+
+    std::set<ID> otherModStmts;
+    for (auto it = rng.first; it != rng.second; it++) {
+      auto initPointId = it->second;
+      auto parentId = parsing::idToParentId(rc->context(), initPointId);
+      while (!asttags::isModule(parsing::idToTag(rc->context(), parentId))) {
+        initPointId = parentId;
+        parentId = parsing::idToParentId(rc->context(), parentId);
+      }
+      otherModStmts.insert(initPointId);
+    }
+
+    if (otherModStmts.size() != 1) continue;
+
+    // There's one other module statement that determines this variable's
+    // type. Resolve it.
+    auto& dependency = resolveModuleStmt(rc->context(), *otherModStmts.begin());
+    if (auto reToCopy = dependency.byIdOrNull(varId)) {
+      auto& re = result.byId(varId);
+      updateTypeForModuleLevelSplitInit(rc->context(), varId, re, *reToCopy);
+    }
+  }
+}
+
 const ResolutionResultByPostorderID& resolveModuleStmt(Context* context,
                                                        ID id) {
   QUERY_BEGIN(resolveModuleStmt, context, id);
@@ -124,6 +236,8 @@ const ResolutionResultByPostorderID& resolveModuleStmt(Context* context,
     auto modStmt = parsing::idToAst(context, id);
     auto visitor = Resolver::createForModuleStmt(rc, mod, modStmt, result);
     modStmt->traverse(visitor);
+
+    resolveSubsequentModuleStatementsIfSplitInit(rc, result, mod, modStmt);
 
     // There will be no further calls (it's a top-level statement), so if the
     // diagnostics wanted to be higher up the call stack, too bad.
@@ -159,23 +273,6 @@ scopeResolveModuleStmt(Context* context, ID id) {
   }
 
   return QUERY_END(result);
-}
-
-static void updateTypeForModuleLevelSplitInit(Context* context, ID id,
-                                              ResolvedExpression& lhs,
-                                              const ResolvedExpression& rhs) {
-  const QualifiedType lhsType = lhs.type();
-  const QualifiedType rhsType = rhs.type();
-
-  if (!lhsType.needsSplitInitTypeInfo(context)) return;
-
-  const Param* p = rhsType.param();
-  if (lhsType.kind() != QualifiedType::PARAM) {
-    p = nullptr;
-  }
-  const auto useType = QualifiedType(lhsType.kind(), rhsType.type(), p);
-
-  lhs.setType(useType);
 }
 
 static void checkImplementationPoint(ResolutionContext* rc, const ImplementationPoint* implPoint) {
