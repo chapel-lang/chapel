@@ -1,0 +1,168 @@
+#!/usr/bin/env python3
+import os
+import subprocess as sp
+import sys
+import re
+
+
+class Verifier:
+    def __init__(self, target, llvm_dwarfdump, chplenv):
+        self.target = target
+        self.source = f"{target}.chpl"
+        self.llvm_dwarfdump = llvm_dwarfdump
+        self.chplenv = chplenv
+        self.dwarfDumpTarget = target
+        if chplenv["CHPL_TARGET_PLATFORM"] == "darwin":
+            self.dwarfDumpTarget += ".dSYM"
+        if chplenv["CHPL_LAUNCHER"] != "none":
+            self.dwarfDumpTarget += "_real"
+
+    def verify(self):
+
+        if self.chplenv["CHPL_TARGET_PLATFORM"] != "darwin":
+            # TODO: skip the verify check on non-macOS platforms for now
+            # on non-macOS platforms we may have linked against system
+            # libraries ike glibc with debug info and it causes --verify to hang
+            return None
+
+        try:
+            sp.check_call(
+                [
+                    self.llvm_dwarfdump,
+                    "--debug-info",
+                    "--verify",
+                    self.dwarfDumpTarget,
+                ],
+                stdout=sp.PIPE,
+                stderr=sp.STDOUT,
+            )
+        except sp.CalledProcessError as e:
+            return e.output.decode().strip()
+        return None
+
+    def dump_symbol(self, name):
+        try:
+            cmd = [
+                self.llvm_dwarfdump,
+                self.dwarfDumpTarget,
+                "--debug-info",
+                "--name",
+                name,
+                "--show-children",
+                "--diff",
+            ]
+            output = sp.check_output(cmd).decode().strip()
+            # Remove the first line which is just the filename
+            output = output.splitlines(keepends=True)[1:]
+            # remove any line with DW_AT_location
+            output = [line for line in output if "DW_AT_location" not in line]
+
+            # replace anything that looks like CHPL_HOME with CHPL_HOME
+            chpl_home = self.chplenv.get("CHPL_HOME", "")
+            output = [
+                re.sub(re.escape(chpl_home), "$CHPL_HOME", line)
+                for line in output
+            ]
+
+            # DW_TAG_enumeration_type can print in any order, so sanitize
+            # DW_AT_const_value and DW_AT_name lines to a deterministic order
+            if any("DW_TAG_enumeration_type" in line for line in output):
+                output = [
+                    (
+                        re.sub(r"\d+", "ENUM_VAL", line)
+                        if "DW_AT_const_value" in line
+                        else line
+                    )
+                    for line in output
+                ]
+                output = [
+                    (
+                        re.sub(r'\(".*"\)', '("ENUM_NAME")', line)
+                        if "DW_AT_name" in line
+                        else line
+                    )
+                    for line in output
+                ]
+
+            output = "".join(output).strip()
+            return True, output
+        except sp.CalledProcessError as e:
+            return (
+                False,
+                f"Error dumping symbol {name}: {e.output.decode().strip()}",
+            )
+        except Exception as e:
+            return False, f"Error dumping symbol {name}: {str(e)}"
+
+    def find_symbols_to_dump(self):
+        symbols = []
+        with open(self.source, "r") as f:
+            lines = f.readlines()
+            for line in lines:
+                match = re.search(r"//\s*DWARFDUMP:\s*(.+)\s*$", line)
+                if match:
+                    symbols.append(match.group(1).strip())
+        return symbols
+
+    def test(self, outfile):
+        with open(output_file, "a") as f:
+            print("Running DWARF verification...", file=f)
+            verify_errors = self.verify()
+            if verify_errors:
+                print("DWARF verification failed:", file=f)
+                print(verify_errors, file=f)
+                print("FAIL", file=f)
+                sys.exit(1)
+            else:
+                print("Success!!", file=f)
+            print("Running DWARF dump checks...", file=f)
+            errors = False
+            symbols = self.find_symbols_to_dump()
+            for name in symbols:
+                lhs = (80 - len(name)) // 2
+                rhs = 80 - lhs - len(name)
+                print(f"{'='*lhs}{name}{'='*rhs}", file=f)
+                success, output = self.dump_symbol(name)
+                errors |= not success
+                print(output, file=f)
+                print("=" * 80, file=f)
+            if errors:
+                print("FAIL", file=f)
+            else:
+                print("Success!!", file=f)
+
+
+if __name__ == "__main__":
+    target = sys.argv[1]
+    output_file = sys.argv[2]
+    chplenv_lines = (
+        sp.check_output(
+            [
+                os.environ["CHPL_HOME"] + "/util/printchplenv",
+                "--all",
+                "--internal",
+                "--simple",
+            ]
+        )
+        .decode()
+        .splitlines()
+    )
+
+    chplenv = {k: v for k, v in [line.split("=", 1) for line in chplenv_lines]}
+    llvm_bin = (
+        sp.check_output([chplenv["CHPL_LLVM_CONFIG"], "--bindir"])
+        .decode()
+        .strip()
+    )
+    llvm_dwarfdump = llvm_bin + "/llvm-dwarfdump"
+
+    dwarfDumpTarget = target
+
+    # On OSX we should have built a '.dSYM' archive.
+    if chplenv["CHPL_TARGET_PLATFORM"] == "darwin":
+        dwarfDumpTarget += ".dSYM"
+    if chplenv["CHPL_LAUNCHER"] != "none":
+        dwarfDumpTarget += "_real"
+
+    verifier = Verifier(target, llvm_dwarfdump, chplenv)
+    verifier.test(output_file)
