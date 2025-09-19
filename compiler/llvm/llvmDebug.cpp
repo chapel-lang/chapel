@@ -72,6 +72,7 @@ for more information on LLVM debug information.
 // garbage issue could be solved with scrubbing, if it matters.
 
 char current_dir[128];
+constexpr int RuntimeLang = 0;
 
 // Ifdef'd to avoid unused warning, because its only usage has the same ifdef.
 // If this gets used elsewhere the ifdef can be removed; besides the warning,
@@ -201,7 +202,7 @@ llvm::DIType* debug_data::construct_type_for_aggregate(
     get_module_scope(defModule),
     get_file(defModule, defFile),
     defLine,
-    0, // RuntimeLang
+    RuntimeLang,
     !ty->isOpaque() ? layout.getTypeSizeInBits(ty) : 0,
     !ty->isOpaque() ? 8*layout.getABITypeAlign(ty).value() : 0
   );
@@ -248,7 +249,7 @@ llvm::DIType* debug_data::construct_type_for_aggregate(
           get_module_scope(fts->defPoint->getModule()),
           get_file(fts->defPoint->getModule(), fts->defPoint->fname()),
           fts->defPoint->linenum(),
-          0, // RuntimeLang
+          RuntimeLang,
           layout.getTypeSizeInBits(fty),
           8*layout.getABITypeAlign(fty).value()
         );
@@ -504,15 +505,17 @@ llvm::DIType* debug_data::construct_type(Type *type) {
     // Handle extern and opaque structs as a forward decl
     llvm::StructType* struct_type = llvm::cast<llvm::StructType>(ty);
     if (type->symbol->hasFlag(FLAG_EXTERN) || struct_type->isOpaque()) {
+      auto typeSize = !struct_type->isOpaque() ? layout.getTypeSizeInBits(ty) : 0;
+      auto typeAlign = !struct_type->isOpaque() ? 8*layout.getABITypeAlign(ty).value() : 0;
       N = dibuilder->createForwardDecl(
         llvm::dwarf::DW_TAG_structure_type,
         name,
         get_module_scope(defModule),
         get_file(defModule, defFile),
         defLine,
-        0, // RuntimeLang
-        !struct_type->isOpaque() ? layout.getTypeSizeInBits(ty) : 0,
-        !struct_type->isOpaque() ? 8*layout.getABITypeAlign(ty).value() : 0
+        RuntimeLang,
+        typeSize,
+        typeAlign
       );
       type->symbol->llvmDIType = N;
       return llvm::cast_or_null<llvm::DIType>(N);
@@ -602,7 +605,7 @@ llvm::DIType* debug_data::construct_type_for_enum(llvm::Type* ty, EnumType* type
     dibuilder->getOrCreateArray(Elements),
     diBT,
 #if LLVM_VERSION_MAJOR >= 18
-    0 /* RuntimeLang */,
+   RuntimeLang,
 #endif
     "", /* UniqueIdentifer */
     true /* isScoped */
