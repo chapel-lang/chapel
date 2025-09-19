@@ -72,7 +72,6 @@ for more information on LLVM debug information.
 // garbage issue could be solved with scrubbing, if it matters.
 
 char current_dir[128];
-llvm::DenseMap<const Type *, llvm::MDNode *> myTypeDescriptors;
 
 // Ifdef'd to avoid unused warning, because its only usage has the same ifdef.
 // If this gets used elsewhere the ifdef can be removed; besides the warning,
