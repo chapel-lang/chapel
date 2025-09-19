@@ -141,7 +141,7 @@ class Chapel < Formula
 
     # Install chpl and other binaries (e.g. chpldoc) into bin/ as exec scripts.
     platform = if OS.linux? && Hardware::CPU.is_64_bit?
-      "linux64-#{Hardware::CPU.arch}"
+      "linux64-#{Hardware::CPU.arm? ? "aarch64" : Hardware::CPU.arch}"
     else
       "#{OS.kernel_name.downcase}-#{Hardware::CPU.arch}"
     end
