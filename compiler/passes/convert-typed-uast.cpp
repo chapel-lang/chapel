@@ -452,7 +452,9 @@ struct TConverter final : UastConverter,
   std::unordered_map<const ResolvedFunction*, FnSymbol*> newWrappers;
   std::unordered_map<const types::Type*, FnSymbol*> chplTupleInit;
 
-  // stores a mapping from chpl::Type* to Type*
+  // Stores a mapping from chpl::Type* to (bool, Type*), where the boolean
+  // indicates whether the type has been converted yet. If 'false', then it is
+  // int he process of being converted.
   std::unordered_map<const types::Type*, std::pair<bool, Type*>> convertedTypes;
 
   // so that TConverter can process one module (or function) at a time,
@@ -2288,9 +2290,15 @@ struct ConvertTypeHelper {
         INT_ASSERT(declAst->isForwardingDecl());
         field = declAst->toForwardingDecl()->expr()->toVarLikeDecl();
       }
+
       Expr* initExpr = nullptr;
       Expr* typeExpr = nullptr;
       if (!isInstantiation && parsing::idIsInBundledModule(tc_->context, declID)) {
+        // Preserve the untyped AST for internal/standard types in case the
+        // production resolver needs it later. This does not apply to
+        // instantiations, which the production resolver will not handle.
+        //
+        // TODO: Remove this when the production resolver is no longer used.
         if (field->initExpression()) {
           initExpr = tc_->untypedConverter->convertAST(field->initExpression());
         }
@@ -2352,6 +2360,8 @@ struct ConvertTypeHelper {
     } else {
       // This is a generic type created for the purpose of serving as a root
       // instantiation, which other parts of production assume exists.
+      //
+      // TODO: Remove this when the production resolver is no longer used.
       at->processGenericFields();
       at->resolveStatus = UNRESOLVED;
       at->markAsGeneric();
@@ -2611,6 +2621,8 @@ struct ConvertTypeHelper {
 
   Type* visit(const types::RecordType* t) {
     auto rc = createDummyRC(context());
+    // Ignore defaults because the type of 't' is already final, and should
+    // not use any default values for generic fields.
     auto& rfds = fieldsForTypeDecl(&rc, t, DefaultsPolicy::IGNORE_DEFAULTS);
 
     AggregateType* at = toAggregateType(tc_->findConvertedType(t));
@@ -4052,7 +4064,7 @@ static Expr* codegenGetFieldImpl(TConverter* tc,
   auto ret = new CallExpr(prim, base, new SymExpr(sym));
 
   // The type of the field was requested.
-  if (outQt ) {
+  if (outQt) {
     if (prim == PRIM_GET_MEMBER || sym->isRef()) {
       // Adjust it to have the 'ref' type since that's what a fetch produces.
       auto kp = resolution::KindProperties::fromKind(qtField.kind());

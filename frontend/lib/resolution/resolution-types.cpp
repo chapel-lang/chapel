@@ -240,7 +240,7 @@ CallInfo CallInfo::createSimple(UniqueString calledFnName,
                   /* isMethodCall */ false,
                   /* hasQuestionArg */ false,
                   /* isParenless */ false,
-                  actuals);
+                  std::move(actuals));
 }
 
 CallInfo CallInfo::createUnknown(const uast::FnCall* call) {

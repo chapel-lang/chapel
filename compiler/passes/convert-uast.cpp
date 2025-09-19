@@ -3837,6 +3837,8 @@ Expr* Converter::convertAST(const uast::AstNode* node) {
   bool emptyModStack = modStack.empty();
   ID modId;
   if (emptyModStack) {
+    // This might happen if 'convertAST' is called by the typed converter,
+    // and we have not set a module.
     modId = parsing::idToParentModule(context, node->id());
     UniqueString unused;
     bool isFromLibraryFile = context->moduleIsInLibrary(node->id(), unused);
