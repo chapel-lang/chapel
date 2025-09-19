@@ -3365,7 +3365,8 @@ static bool resolveClassBorrowMethod(CallExpr* call) {
             auto insertPoint = pe->getStmtExpr();
             VarSymbol* derefTmp = newTemp(receiverType->symbol->getValType());
             insertPoint->insertBefore(new DefExpr(derefTmp));
-            insertPoint->insertBefore(new CallExpr(PRIM_MOVE, derefTmp, new CallExpr(PRIM_DEREF, receiver->copy()/*is the copy really needed? */)));
+            insertPoint->insertBefore(
+              new CallExpr(PRIM_MOVE, derefTmp, new CallExpr(PRIM_DEREF, receiver)));
             receiver = new SymExpr(derefTmp);
           }
 
