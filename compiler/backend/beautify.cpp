@@ -58,7 +58,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "files.h"
 #include "misc.h"
 #include "stringutil.h"
-#include "mysystem.h"
+#include "chpl/util/filesystem.h"
 
 #define ZLINEFORMAT "#line %d \"%s\"\n"
 #define ZLINEINPUT "/* ZLINE: "
@@ -182,7 +182,6 @@ void beautify(fileinfo* origfile) {
   char *cp;
   FILE *inputfile;
   FILE *outputfile;
-  const char* command;
   int i;
   int new_line, indent;
   int zline;
@@ -262,8 +261,12 @@ void beautify(fileinfo* origfile) {
   closefile(tmpfile);
   closefile(origfile);
 
-  command = astr("mv ", tmpfile->pathname, " ", origfile->pathname);
-  mysystem(command, "moving beautified file", false, true);
+  auto err = chpl::moveFile(tmpfile->pathname, origfile->pathname);
+  if (err) {
+    INT_FATAL("Unable to rename %s to %s: %s",
+              tmpfile->pathname, origfile->pathname,
+              err.message().c_str());
+  }
 
   if (justification.size() != 0) {
     INT_FATAL( "Parentheses or curly braces are not balanced "
