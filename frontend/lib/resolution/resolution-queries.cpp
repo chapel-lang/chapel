@@ -187,7 +187,9 @@ static void resolveSubsequentModuleStatementsIfSplitInit(ResolutionContext* rc,
   // compute split-initialization points.
   auto& scopeResult = scopeResolveModule(rc->context(), mod->id());
   std::multimap<ID, ID> varInitIds;
-  std::ignore = computeSplitInits(rc->context(), mod, scopeResult, &varInitIds);
+  std::ignore = rc->context()->runAndDetectErrors([&, mod](Context* context) {
+    return computeSplitInits(context, mod, scopeResult, &varInitIds);
+  });
 
   for (auto varId : collector.incompleteInitVariables) {
     auto rng = varInitIds.equal_range(varId);
@@ -216,9 +218,31 @@ static void resolveSubsequentModuleStatementsIfSplitInit(ResolutionContext* rc,
   }
 }
 
-const ResolutionResultByPostorderID& resolveModuleStmt(Context* context,
-                                                       ID id) {
+
+const ResolutionResultByPostorderID& resolveModuleStmt(Context* context, ID id) {
   QUERY_BEGIN(resolveModuleStmt, context, id);
+
+  // the gist: do standalone module resolution, then try resolving any
+  // modules that contain split-inits for variables in this statement.
+
+  auto copiedResolvedInfo = resolveModuleStmtStandalone(context, id);
+
+  ResolutionContext rcval(context);
+  auto rc = &rcval;
+
+  ID moduleId = parsing::idToParentId(context, id);
+  auto moduleAst = parsing::idToAst(context, moduleId);
+  if (const Module* mod = moduleAst->toModule()) {
+    auto modStmt = parsing::idToAst(context, id);
+      resolveSubsequentModuleStatementsIfSplitInit(rc, copiedResolvedInfo, mod, modStmt);
+  }
+
+  return QUERY_END(copiedResolvedInfo);
+}
+
+const ResolutionResultByPostorderID& resolveModuleStmtStandalone(Context* context,
+                                                                 ID id) {
+  QUERY_BEGIN(resolveModuleStmtStandalone, context, id);
   QUERY_REGISTER_TRACER(
     return std::make_pair(std::get<0>(args), "resolving this module statement");
   );
@@ -236,8 +260,6 @@ const ResolutionResultByPostorderID& resolveModuleStmt(Context* context,
     auto modStmt = parsing::idToAst(context, id);
     auto visitor = Resolver::createForModuleStmt(rc, mod, modStmt, result);
     modStmt->traverse(visitor);
-
-    resolveSubsequentModuleStatementsIfSplitInit(rc, result, mod, modStmt);
 
     // There will be no further calls (it's a top-level statement), so if the
     // diagnostics wanted to be higher up the call stack, too bad.

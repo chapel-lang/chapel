@@ -3524,6 +3524,23 @@ QualifiedType Resolver::typeForId(const ID& id) {
     // If the id is contained within a module, use typeForModuleLevelSymbol.
     bool isCurrentModule =
         parsing::idToAst(context, parentId)->toModule() == symbol->toModule();
+
+    // if we resolved the target module level statement, but it relies
+    // on split-init, and we are trying to resolve that split-init,
+    // use the intermediate (pre-split-init) type information to avoid
+    // causing cycles if possible.
+    auto stmtId = parsing::idToContainingMultiDeclId(context, id);
+    bool fallBackToStandalone =
+      context->isQueryRunning(resolveModuleStmt, std::make_tuple(stmtId)) &&
+      context->hasCurrentResultForQuery(resolveModuleStmtStandalone, std::make_tuple(stmtId));
+
+    if (fallBackToStandalone) {
+      auto& rr = resolveModuleStmtStandalone(context, stmtId);
+      if (auto re = rr.byIdOrNull(id)) {
+        return re->type();
+      }
+    }
+
     return typeForModuleLevelSymbol(context, id, isCurrentModule);
   }
 

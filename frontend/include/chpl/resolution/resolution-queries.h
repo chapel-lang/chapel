@@ -36,6 +36,16 @@ namespace resolution {
 const ResolutionResultByPostorderID& resolveModuleStmt(Context* context, ID id);
 
 /**
+  Resolve a module-level statement or variable declaration.
+
+  Unlike `resolveModuleStmt`, which will attempt split-init resolution of
+  global variables in `id` via other module statements, this query only
+  resolves the statement itself. If `id` is a variable declaration that
+  is split-init, this might produce an unknown/generic type.
+ */
+const ResolutionResultByPostorderID& resolveModuleStmtStandalone(Context* context, ID id);
+
+/**
   Specialized version of resolveModuleStmt when the statement is an
   'implements'. This does the work of constructing an 'ImplementationPoint'.
  */
