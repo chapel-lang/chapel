@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# This script is to test that the current homebrew formula on homebrew-core master
+# This script is to test that the current homebrew formula on homebrew-core main
 # matches with the copy we keep in chapel-release.rb.
 
 # This script will clone the homebrew-core repository and do a diff with the our version
