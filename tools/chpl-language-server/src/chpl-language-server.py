@@ -139,6 +139,7 @@ class ChapelLanguageServer(LanguageServer):
         self.type_inlays: bool = config.get("type_inlays")
         self.literal_arg_inlays: bool = config.get("literal_arg_inlays")
         self.param_inlays: bool = config.get("param_inlays")
+        self.enum_inlays: bool = config.get("enum_inlays")
         self.dead_code: bool = config.get("dead_code")
         self.eval_expressions: bool = config.get("eval_expressions")
         self.show_instantiations: bool = config.get("show_instantiations")
@@ -355,6 +356,44 @@ class ChapelLanguageServer(LanguageServer):
         if uri in self.configurations:
             del self.configurations[uri]
 
+    def _get_enum_inlays(self, decl: NodeAndRange) -> List[InlayHint]:
+        if not self.enum_inlays:
+            return []
+
+        node = decl.node
+        if not isinstance(node, chapel.EnumElement):
+            return []
+
+        enum_value = node.assigned_value()
+        inlay_value: str | None = None
+        if isinstance(enum_value, chapel.IntParam):
+            inlay_value = str(enum_value.value())
+        elif isinstance(enum_value, chapel.UintParam):
+            inlay_value = str(enum_value.value())
+
+        if not inlay_value:
+            return []
+
+        node_init = node.init_expression()
+        edits = []
+        if isinstance(node_init, chapel.Literal):
+            return []
+        elif isinstance(node_init, chapel.AstNode):
+            position = location_to_range(node_init.location()).end
+            value = " /* " + inlay_value + " */"
+        else:
+            position = location_to_range(node.location()).end
+            value = " = " + inlay_value
+            edits = [TextEdit(Range(position, position), value)]
+
+        return [
+            InlayHint(
+                position=position,
+                label=value,
+                text_edits=edits,
+            )
+        ]
+
     def _get_param_inlays(
         self, decl: NodeAndRange, qt: chapel.QualifiedType
     ) -> List[InlayHint]:
@@ -428,15 +467,17 @@ class ChapelLanguageServer(LanguageServer):
         if not self.use_resolver:
             return []
 
+        inlays = []
+        inlays.extend(self._get_enum_inlays(decl))
+
         rr = decl.node.resolve_via(via) if via else decl.node.resolve()
         if not rr:
-            return []
+            return inlays
 
         qt = rr.type()
         if qt is None:
-            return []
+            return inlays
 
-        inlays = []
         inlays.extend(self._get_param_inlays(decl, qt))
         inlays.extend(self._get_type_inlays(decl, qt))
         return inlays

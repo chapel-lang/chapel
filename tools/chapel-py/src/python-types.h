@@ -238,6 +238,7 @@ std::string nilableTypeString() {
 
 DEFINE_INOUT_TYPE(bool, "bool", PyBool_FromLong(TO_WRAP), PyLong_AsLong(TO_UNWRAP));
 DEFINE_INOUT_TYPE(int, "int", Py_BuildValue("i", TO_WRAP), PyLong_AsLong(TO_UNWRAP));
+DEFINE_INOUT_TYPE(unsigned int, "int", Py_BuildValue("I", TO_WRAP), PyLong_AsUnsignedLong(TO_UNWRAP));
 DEFINE_INOUT_TYPE(const char*, "str", Py_BuildValue("s", TO_WRAP), getCStringFromPyObjString(TO_UNWRAP));
 DEFINE_INOUT_TYPE(chpl::UniqueString, "str", Py_BuildValue("s", TO_WRAP.c_str()), chpl::UniqueString::get(&CONTEXT->value_, getCStringFromPyObjString(TO_UNWRAP)));
 DEFINE_INOUT_TYPE(std::string, "str", Py_BuildValue("s", TO_WRAP.c_str()), std::string(getCStringFromPyObjString(TO_UNWRAP)));

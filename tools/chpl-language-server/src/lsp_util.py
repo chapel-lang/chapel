@@ -1351,6 +1351,9 @@ class CLSConfig:
             self.parser, "param-inlays", "param_inlays", True
         )
         chplcheck().config.add_bool_flag(
+            self.parser, "enum-inlays", "enum_inlays", True
+        )
+        chplcheck().config.add_bool_flag(
             self.parser, "literal-arg-inlays", "literal_arg_inlays", True
         )
         chplcheck().config.add_bool_flag(

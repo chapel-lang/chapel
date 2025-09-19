@@ -46,6 +46,11 @@ CLASS_BEGIN(IntParam)
                int, return node->value())
 CLASS_END(IntParam)
 
+CLASS_BEGIN(UintParam)
+  PLAIN_GETTER(UintParam, value, "Get the value of this unsigned integer Param",
+               unsigned int, return node->value())
+CLASS_END(UintParam)
+
 CLASS_BEGIN(StringParam)
   PLAIN_GETTER(StringParam, value, "Get the value of this string Param",
                chpl::UniqueString, return node->value())

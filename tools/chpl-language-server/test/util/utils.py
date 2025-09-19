@@ -351,7 +351,7 @@ async def check_goto_decl_def(
             typing.Union[
                 Location, typing.List[Location], typing.List[LocationLink]
             ]
-        ]
+        ],
     ):
         if dst is None:
             assert results is None or (
@@ -396,7 +396,7 @@ async def check_goto_type_def(
             typing.Union[
                 Location, typing.List[Location], typing.List[LocationLink]
             ]
-        ]
+        ],
     ):
         if dst is None:
             assert results is None or (
@@ -530,6 +530,34 @@ async def check_inlay_hints(
         assert expected[2] == actual.kind
 
     return results
+
+
+async def check_enum_inlay_hints(
+    client: LanguageClient,
+    doc: TextDocumentIdentifier,
+    rng: Range,
+    expected_inlays: Sequence[typing.Tuple[Position, str]],
+) -> typing.List[InlayHint]:
+    standardized_inlays = [(i[0], i[1], None) for i in expected_inlays]
+    actual_inlays = await check_inlay_hints(
+        client, doc, rng, standardized_inlays
+    )
+
+    # Check that the '= bla' inlays are insertable
+    for inlay in actual_inlays:
+        label = inlay.label
+        if isinstance(label, list):
+            label = "".join([part.value for part in label])
+
+        if label.startswith(" = "):
+            # the list of inlay text edits should have one element and have the
+            # same text/range as the inlay
+            assert inlay.text_edits is not None
+            assert len(inlay.text_edits) == 1
+            assert inlay.text_edits[0].range.start == inlay.position
+            assert inlay.text_edits[0].new_text == label
+
+    return actual_inlays
 
 
 async def check_type_inlay_hints(
