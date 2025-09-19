@@ -13024,8 +13024,10 @@ static void insertReturnTemps() {
   // because we do not support sync/singles for minimal modules.
   //
   for_alive_in_expanding_Vec(CallExpr, call, gCallExprs) {
-      if (call->list == NULL && isForallRecIterHelper(call))
-        continue;
+      if (!call->canMutateEarly()) continue;
+
+      if (call->list == NULL && isForallRecIterHelper(call)) continue;
+
       if (FnSymbol* fn = call->resolvedOrVirtualFunction()) {
         if (fn->retType != dtVoid && fn->retType != dtUnknown &&
             fn->retTag != RET_TYPE) {

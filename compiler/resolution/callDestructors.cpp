@@ -2195,11 +2195,6 @@ void callDestructors() {
   pm.runPass(AutoDestroyLoopExprTemps(), gCallExprs);
   pm.runPass(InsertDestructorCalls(), gCallExprs);
   pm.runPass(LowerAutoDestroyRuntimeType(), gCallExprs);
-
-  // TODO: Move this to a different pass and don't consider this to be
-  // part of 'callDestructors', as it seems like an optimization.
-  ReturnByRef::apply();
-
   pm.runPass(InsertCopiesForYields(), gCallExprs);
 
   lateConstCheck(NULL);
@@ -2212,11 +2207,21 @@ void callDestructors() {
 
   checkForErroneousInitCopies();
 
+  // Allow mutation of frontend-generation symbols now!
+  //
+  // After this point all transformations can be applied to any AST regardless
+  // of when it was generated. This is considered to be the "end" of the
+  // 'callDestructors' pass as far as the typed converter is concerned.
+  //
+  BaseAST::canMutateEarlyResolvedSymbols = true;
+
+  // Make certain functions return via a ref formal. TODO: Can remove?
+  ReturnByRef::apply();
+
+  // This always needs to run since the frontend doesn't do lifetime checking.
   checkLifetimesAndNilDereferences();
 
-  // TODO: Interprocedural, mutates all Vars/Args/ShadowVars of a given type.
-  // TODO: Break out "removeUselessCasts()" into its own pass?
-  // TODO: I think 'dyno' can handle all of this elegantly.
+  // TODO: This pass can be removed when the typed converter comes online.
   convertClassTypesToCanonical();
 
   pm.runPass(CallDestructorsCallCleanup(), gCallExprs);

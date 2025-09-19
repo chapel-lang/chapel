@@ -270,9 +270,20 @@ public:
   // symbols inserted into it that the old compiler generated).
   bool              wasResolvedEarly();
 
+  // This AST was created by the typed converter but it is allowed to be
+  // mutated (e.g., it is a 'ModuleSymbol', which can contain a mix of
+  // early-resolved and late-resolved symbols).
+  bool              canMutateEarly();
+
+  // Set to 'true' after a specific point in the 'callDestructors' pass to
+  // indicate that AST marked with 'FLAG_RESOLVED_EARLY' can be mutated.
+  static bool       canMutateEarlyResolvedSymbols;
+
   bool              isRef();
   bool              isWideRef();
   bool              isRefOrWideRef();
+  Symbol*           getParentSymbol();
+  Symbol*           getSymbol();
   FnSymbol*         getFunction();
   ModuleSymbol*     getModule();
   Type*             getValType();
@@ -295,6 +306,18 @@ private:
 
   Type*             getWideRefType();
 };
+
+// This function lets you deliberately perform some mutation on AST that
+// was resolved early. You pass it a function/closure that does the
+// mutation. Note that if you decide to make an exception you should note
+// it (write a TODO), and make a work item describing what needs to be
+// implemented in the typed converter.
+template <typename F>
+void EARLY_RESOLVED_AST_MUTATION(F function) {
+  BaseAST::canMutateEarlyResolvedSymbols = true;
+  function();
+  BaseAST::canMutateEarlyResolvedSymbols = false;
+}
 
 GenRet baseASTCodegen(BaseAST* ast);
 GenRet baseASTCodegenInt(int x);

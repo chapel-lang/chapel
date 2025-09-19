@@ -65,6 +65,11 @@
 
 #include <iostream>
 
+#if defined HAVE_LLVM
+  #define TC_HAVE_LLVM 1
+  #include "clangUtil.h"
+#endif
+
 // If defined as 1, dump debug output from the converter to stdout.
 #define TC_DEBUG_TRACE 0
 
@@ -411,6 +416,12 @@ struct TConverter final : UastConverter,
     static constexpr bool trace = false;
   #endif
 
+  #if defined(TC_HAVE_LLVM) && TC_HAVE_LLVM != 0
+    static constexpr bool flagHaveLlvm = true;
+  #else
+    static constexpr bool flagHaveLlvm = false;
+  #endif
+
   // The 'dyno' compiler context.
   Context* context = nullptr;
 
@@ -484,9 +495,9 @@ struct TConverter final : UastConverter,
     using Entry = std::tuple<ModuleSymbol**, ModuleSymbol**, const char*>;
 
     std::vector<Entry> v {
-      Entry { &modChapelBase,  &baseModule,    "ChapelBase"  },
-      Entry { &modChapelTuple, nullptr,        "ChapelTuple" },
-      Entry { &modIO,          &ioModule,      "IO"          },
+      Entry { &modChapelBase,       &baseModule,    "ChapelBase"      },
+      Entry { &modChapelTuple,      nullptr,        "ChapelTuple"     },
+      Entry { &modIO,               &ioModule,      "IO"              },
     };
 
     for (auto [ptr1, ptr2, str] : v) {
@@ -739,7 +750,6 @@ struct TConverter final : UastConverter,
   /// Expression Conversion ///
   /// --------------------- ///
 
-
   Expr* placeholder(const char* function, int line) {
     if constexpr(trace) {
       DebugPrinter(function, line)(this, "Generating placeholder AST!");
@@ -779,7 +789,7 @@ struct TConverter final : UastConverter,
 
   // Helper that constructs AST to produce the default value for a type.
   //
-  // The argument 'pin' is an uAST node used to ground any generated calls
+  // The argument 'pin' is a uAST node used to ground any generated calls
   // needed to resolve and construct the default value. If it is 'nullptr',
   // then the currently converted symbol will be used instead. In addition
   // to providing context about the default value, 'pin' is also used to
@@ -1678,8 +1688,12 @@ FnSymbol* TConverter::findOrConvertTupleInit(const types::TupleType* tt) {
 
   Type* newType = convertType(tt);
 
+  // Should always exist. Need it to fetch 'SymExpr' for fields.
+  auto at = toAggregateType(newType);
+  INT_ASSERT(at);
+
   // Otherwise, construct it.
-  FnSymbol* ret = new FnSymbol("chpl__tuple_init");
+  FnSymbol* ret = new FnSymbol("init");
 
   auto _this = new ArgSymbol(INTENT_REF, "this", newType);
   _this->addFlag(FLAG_ARG_THIS);
@@ -1710,29 +1724,40 @@ FnSymbol* TConverter::findOrConvertTupleInit(const types::TupleType* tt) {
     // Mark the arg as 'no auto destroy' since we will be moving it.
     arg->addFlag(FLAG_NO_AUTO_DESTROY);
 
-    // Move the formal into the field.
+    // Shift two over to account for the 'size' field and 1-based indexing.
+    const int fieldIdx = (i + 2);
+
+    // Move the formal into the field. TODO: Replace with a 'setField' helper.
     ret->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
                                    _this,
-                                   new_CStringSymbol(name),
+                                   at->getField(fieldIdx),
                                    new SymExpr(arg)));
   }
 
+  // End with an empty return to keep 'verify' happy.
+  ret->insertAtTail(new CallExpr(PRIM_RETURN));
+
   ret->addFlag(FLAG_RESOLVED);
   ret->addFlag(FLAG_RESOLVED_EARLY);
-  ret->addFlag(FLAG_ALLOW_REF);
   ret->addFlag(FLAG_COMPILER_GENERATED);
+
   ret->addFlag(FLAG_LAST_RESORT);
   ret->addFlag(FLAG_INLINE);
   ret->addFlag(FLAG_INVISIBLE_FN);
+  ret->addFlag(FLAG_ALLOW_REF);
+
   ret->addFlag(FLAG_INIT_TUPLE);
   ret->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
+
+  // TODO: What the heck does this flag do? I see only one use of it in the
+  //       entire compiler, can we/should we remove it once the TC goes live?
   ret->addFlag(FLAG_PARTIAL_TUPLE);
+
+  // Set the intializer to return 'void'.
   ret->retTag = RET_VALUE;
-  ret->retType = newType;
+  ret->retType = dtVoid;
 
   ret->substitutions.copy(newType->substitutions);
-  CallExpr* primReturn = new CallExpr(PRIM_RETURN, _this);
-  ret->insertAtTail(primReturn);
 
   // TODO: Do we need to set this?
   BlockStmt* instantiationPoint = nullptr;
@@ -2244,6 +2269,21 @@ static IF1_int_type getUintSize(const types::UintType* t) {
   return INT_SIZE_DEFAULT;
 }
 
+static void markTypeAsResolved(Type* t) {
+  if (auto sym = t->symbol) {
+    // Mark the type as being resolved early.
+    sym->addFlag(FLAG_RESOLVED_EARLY);
+
+    // This should always hold - we should not be creating generic types.
+    INT_ASSERT(!sym->hasFlag(FLAG_GENERIC));
+  }
+
+  // Also mark the type as fully resolved if applicable.
+  if (auto at = toAggregateType(t)) {
+    at->resolveStatus = RESOLVED;
+  }
+}
+
 struct ConvertTypeHelper {
   TConverter* tc_ = nullptr;
 
@@ -2314,19 +2354,37 @@ struct ConvertTypeHelper {
           ts->addFlag(linkageFlag);
         }
 
-        // Attach untyped conversion results for methods
+        // Attach untyped conversion results for methods. TODO: We shouldn't
+        // be attaching untyped results here - instead we should be letting
+        // the call graph / converter generate these typed as we would any
+        // other procedure. This is a WIP/stepping-stone.
         for (auto stmt : decl->declOrComments()) {
-          if (auto fn = stmt->toFunction()) {
-            auto expr = tc_->untypedConverter->convertAST(fn);
+          if (auto function = stmt->toFunction()) {
+            auto expr = tc_->untypedConverter->convertAST(function);
             INT_ASSERT(expr);
-            at->addDeclarations(expr);
+
+            auto block = toBlockStmt(expr);
+            auto def = block ? toDefExpr(block->body.tail) : nullptr;
+            auto fn = def ? toFnSymbol(def->sym) : nullptr;
+
+            if (fn) {
+              // Flatten out a method using 'flattenPrimaryMethod'.
+              //
+              // TODO: This is copied wholesale and we should stop doing this
+              //       when we have total control over compilation. Every
+              //       procedure should be "flat", there should be no nesting
+              //       of procedures/types/modules.
+              at->addDeclarations(block);
+              INT_ASSERT(def->inTree());
+              INT_ASSERT(def->getParentSymbol() == at->symbol);
+              flattenPrimaryMethod(at->symbol, fn);
+            }
           }
         }
       }
     }
 
-    ts->addFlag(FLAG_RESOLVED_EARLY);
-    at->resolveStatus = RESOLVED;
+    markTypeAsResolved(at);
 
     auto rc = createDummyRC(context());
     if (types::Type::isPod(&rc, ct)) {
@@ -2577,7 +2635,7 @@ struct ConvertTypeHelper {
     attachSymbolAttributes(context(), node, ts, isFromLibrary);
     attachSymbolVisibility(node, ts);
 
-    ts->addFlag(FLAG_RESOLVED_EARLY);
+    markTypeAsResolved(enumType);
 
     auto def = insertTypeIntoModule(t->id(), enumType);
     INT_ASSERT(def);
@@ -2720,7 +2778,8 @@ struct ConvertTypeHelper {
     makeTupleName(args, t->isStarTuple(), name, cname);
 
     ret->instantiatedFrom = dtTuple;
-    ret->resolveStatus = RESOLVED;
+
+    markTypeAsResolved(ret);
 
     // TODO: We could drop this stuff setting up dispatch parents since we
     //       don't actually use it to resolve, and the tuple's not a class
@@ -2743,7 +2802,6 @@ struct ConvertTypeHelper {
     newTypeSymbol->addFlag(FLAG_TUPLE);
     newTypeSymbol->addFlag(FLAG_PARTIAL_TUPLE);
     newTypeSymbol->addFlag(FLAG_TYPE_VARIABLE);
-    newTypeSymbol->addFlag(FLAG_RESOLVED_EARLY);
     if (t->isStarTuple()) newTypeSymbol->addFlag(FLAG_STAR_TUPLE);
 
     ret->saveGenericSubstitutions();
@@ -2817,10 +2875,11 @@ struct ConvertTypeHelper {
     // note: getInstantiation should re-use existing instantiations
     int index = 1;
     Expr* insnPoint = nullptr; // TODO: does this need to be set?
-    AggregateType* ret =
-      base->getInstantiation(convertedEltT->symbol, index, insnPoint);
-    ret->resolveStatus = RESOLVED;
-    ret->symbol->addFlag(FLAG_RESOLVED_EARLY);
+    auto ret = base->getInstantiation(convertedEltT->symbol, index, insnPoint);
+
+    INT_ASSERT(!ret->symbol->hasFlag(FLAG_GENERIC));
+
+    markTypeAsResolved(ret);
 
     ret->saveGenericSubstitutions();
     propagateNotPOD(ret);
@@ -2859,7 +2918,6 @@ Type* TConverter::convertType(const types::Type* t) {
   if (auto existing = findConvertedType(t)) {
     // (A) Fetch the cached converted type to reuse it if possible.
     return existing;
-
   }
 
   Type* ret = nullptr;
@@ -2925,7 +2983,9 @@ Type* TConverter::convertType(const types::Type* t) {
     refTs->addFlag(FLAG_REF);
     refTs->addFlag(FLAG_NO_DEFAULT_FUNCTIONS);
     refTs->addFlag(FLAG_NO_OBJECT);
-    refTs->addFlag(FLAG_RESOLVED_EARLY);
+
+    markTypeAsResolved(ref);
+
     globalInsertionPoint->insertAtTail(new DefExpr(refTs));
     ref->fields.insertAtTail(new DefExpr(new VarSymbol("_val", ret)));
     ret->refType = ref;
@@ -5533,11 +5593,26 @@ void TConverter::exit(const Conditional* node, RV& rv) {
   TC_DEBUGF(this, "exit conditional %s %s\n", node->id().str().c_str(), asttags::tagToString(node->tag()));
 }
 
+// TODO: See the pass 'readExternC', if we want to remove it we'll need to:
+//
+// -- Build the 'gAllExternCode' file with the '#include extern_block_mod'
+// -- Close all the files and the global file
+// -- Call 'runClang' on each module's 'extern_info->file.filename'
+// -- Swap what went into the global LVT into the module's private LVT
+//
+// Right now all we are doing is placing the extern block directly into the
+// 'extern_block_mod.c' file instead of creating AST for the extern block.
+//
 bool TConverter::enter(const ExternBlock* node, RV& rv) {
-  // TODO: Remove dependency on this + 'build.cpp'.
-  auto stmt = convertAstUntyped(node);
-  INT_ASSERT(isBlockStmt(stmt));
-  insertStmt(stmt);
+  ModuleSymbol* mod = cur.moduleSymbol;
+  INT_ASSERT(mod);
+
+  if constexpr(flagHaveLlvm) {
+    // Save the extern block in the C source file associated with the module.
+    auto text = astr(node->code());
+    saveExternBlock(mod, text);
+  }
+
   return false;
 }
 
