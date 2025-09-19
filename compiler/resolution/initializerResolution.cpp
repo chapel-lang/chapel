@@ -82,7 +82,7 @@ resolveInitializer(CallExpr* call, bool emitCallResolutionErrors) {
 
     resolveInitializerMatch(call->resolvedFunction());
 
-    if (isGenericRecord(call->get(2)->typeInfo())) {
+    if (isGenericRecord(call->get(2)->typeInfo()->getValType())) {
       SymExpr* namedSe = NULL;
 
       // There are two cases for generic records

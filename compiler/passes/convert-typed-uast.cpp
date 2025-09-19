@@ -452,8 +452,10 @@ struct TConverter final : UastConverter,
   std::unordered_map<const ResolvedFunction*, FnSymbol*> newWrappers;
   std::unordered_map<const types::Type*, FnSymbol*> chplTupleInit;
 
-  // stores a mapping from chpl::Type* to Type*
-  std::unordered_map<const types::Type*, Type*> convertedTypes;
+  // Stores a mapping from chpl::Type* to (bool, Type*), where the boolean
+  // indicates whether the type has been converted yet. If 'false', then it is
+  // int he process of being converted.
+  std::unordered_map<const types::Type*, std::pair<bool, Type*>> convertedTypes;
 
   // so that TConverter can process one module (or function) at a time,
   // encountering a submodule, if it is to be converted, add it to this
@@ -658,6 +660,7 @@ struct TConverter final : UastConverter,
 
   /* Look up a type in the converted types map. Does not convert. */
   Type* findConvertedType(const types::Type* t);
+  bool typeIsConverted(const types::Type* t);
 
   // Converts a type. If it's an AggregateType, it will also fill in the
   // fields, but only after creating a dummy AggregateType for the map
@@ -1245,7 +1248,6 @@ ModuleSymbol* TConverter::convertToplevelModule(const Module* mod,
 
 void TConverter::postConvertApplyFixups() {
   untypedConverter->postConvertApplyFixups();
-
 
   // TODO: apply fixups from this converter
 }
@@ -2174,10 +2176,19 @@ void TConverter::noteConvertedFn(const resolution::TypedFnSignature* sig, FnSymb
 Type* TConverter::findConvertedType(const types::Type* t) {
   auto it = convertedTypes.find(t);
   if (it != convertedTypes.end()) {
-    return it->second;
+    return it->second.second;
   }
 
   return nullptr;
+}
+
+bool TConverter::typeIsConverted(const types::Type* t) {
+  auto it = convertedTypes.find(t);
+  if (it != convertedTypes.end()) {
+    return it->second.first;
+  }
+
+  return false;
 }
 
 static IF1_complex_type getComplexSize(const types::ComplexType* t) {
@@ -2251,18 +2262,20 @@ struct ConvertTypeHelper {
 
   void helpConvertFields(const types::CompositeType* ct,
                          const ResolvedFields& rf,
-                         AggregateType* at) {
+                         AggregateType* at,
+                         bool isInstantiation = false) {
     int nFields = rf.numFields();
     for (int i = 0; i < nFields; i++) {
       types::QualifiedType qt = rf.fieldType(i);
-      if (qt.isType() && !tc_->typeExistsAtRuntime(qt.type())) {
-        // a 'type' field can be left out at this point
-        continue;
-      } else if (qt.isParam()) {
-        // a 'param' field can be left out at this point
-        continue;
+      Type* ft = nullptr;
+      if (rf.isGeneric()) {
+        // Leave the field type as unknown for generic types.
+        // Otherwise, converting the type might result in incorrect errors
+        // about the field type being ambiguously generic.
+        ft = dtUnknown;
+      } else {
+        ft = tc_->convertType(qt.type());
       }
-      Type* ft = tc_->convertType(qt.type());
 
       // NOTE: During the intermediate stage of development of this conversion
       // pass, we need to preserve field initialization expressions in case
@@ -2277,27 +2290,82 @@ struct ConvertTypeHelper {
         INT_ASSERT(declAst->isForwardingDecl());
         field = declAst->toForwardingDecl()->expr()->toVarLikeDecl();
       }
+
       Expr* initExpr = nullptr;
-      if (field->initExpression()) {
-        initExpr = tc_->untypedConverter->convertAST(field->initExpression());
+      Expr* typeExpr = nullptr;
+      if (!isInstantiation && parsing::idIsInBundledModule(tc_->context, declID)) {
+        // Preserve the untyped AST for internal/standard types in case the
+        // production resolver needs it later. This does not apply to
+        // instantiations, which the production resolver will not handle.
+        //
+        // TODO: Remove this when the production resolver is no longer used.
+        if (field->initExpression()) {
+          initExpr = tc_->untypedConverter->convertAST(field->initExpression());
+        }
+        if (field->typeExpression()) {
+          typeExpr = tc_->untypedConverter->convertAST(field->typeExpression());
+        }
       }
 
       UniqueString name = rf.fieldName(i);
-      VarSymbol* v = new VarSymbol(astr(name), ft);
-      v->qual = tc_->convertQualifier(qt.kind());
+      VarSymbol* v = new VarSymbol(astr(name));
+
+      if (qt.isType()) {
+        v->addFlag(FLAG_TYPE_VARIABLE);
+      } else if (qt.isParam()) {
+        v->addFlag(FLAG_PARAM);
+      }
+
+      if (!rf.isGeneric()) {
+        v->type = ft;
+        v->qual = tc_->convertQualifier(qt.kind());
+
+        if (qt.isType()) {
+          at->substitutions.put(v, ft->symbol);
+        } else if (qt.isParam()) {
+          auto param = tc_->convertParam(qt);
+          at->substitutions.put(v, param);
+          paramMap.put(v, param);
+        }
+      }
+
       v->makeField();
-      at->fields.insertAtTail(new DefExpr(v, initExpr));
+      at->fields.insertAtTail(new DefExpr(v, initExpr, typeExpr));
     }
   }
 
   void helpConvertCompositeType(const types::CompositeType* ct,
                                 const ResolvedFields& rf,
                                 AggregateType* at) {
+    auto gct = ct->instantiatedFromCompositeType();
+    if (gct && !tc_->typeIsConverted(gct)) {
+      tc_->convertType(gct);
+    }
+    auto instantiatedFrom = toAggregateType(tc_->findConvertedType(gct));
+
     // First convert the fields in a regular manner.
-    helpConvertFields(ct, rf, at);
+    helpConvertFields(ct, rf, at, instantiatedFrom != nullptr);
 
     auto ts = at->symbol;
     INT_ASSERT(ts);
+
+    if (!rf.isGeneric()) {
+      ts->addFlag(FLAG_RESOLVED_EARLY);
+      at->resolveStatus = RESOLVED;
+
+      if (instantiatedFrom) {
+        at->instantiatedFrom = instantiatedFrom;
+        at->renameInstantiation();
+      }
+    } else {
+      // This is a generic type created for the purpose of serving as a root
+      // instantiation, which other parts of production assume exists.
+      //
+      // TODO: Remove this when the production resolver is no longer used.
+      at->processGenericFields();
+      at->resolveStatus = UNRESOLVED;
+      at->markAsGeneric();
+    }
 
     if (auto& id = ct->id()) {
       if (auto ast = parsing::idToAst(context(), id)) {
@@ -2314,19 +2382,26 @@ struct ConvertTypeHelper {
           ts->addFlag(linkageFlag);
         }
 
-        // Attach untyped conversion results for methods
+        // Attach untyped conversion results for methods and nested types
         for (auto stmt : decl->declOrComments()) {
-          if (auto fn = stmt->toFunction()) {
-            auto expr = tc_->untypedConverter->convertAST(fn);
+          if (auto decl = stmt->toNamedDecl();
+              decl && !decl->isVarLikeDecl()) {
+            if (instantiatedFrom != nullptr) {
+              if (decl->name() == USTR("init") ||
+                  decl->name() == USTR("init=") ||
+                  decl->name() == USTR("deinit")) {
+                // Don't generate initializers for instantiations.
+                continue;
+              }
+            }
+
+            auto expr = tc_->untypedConverter->convertAST(decl);
             INT_ASSERT(expr);
             at->addDeclarations(expr);
           }
         }
       }
     }
-
-    ts->addFlag(FLAG_RESOLVED_EARLY);
-    at->resolveStatus = RESOLVED;
 
     auto rc = createDummyRC(context());
     if (types::Type::isPod(&rc, ct)) {
@@ -2487,7 +2562,16 @@ struct ConvertTypeHelper {
 
     const types::RecordType* manager = t->managerRecordType(context());
     if (manager == nullptr) {
-      ret = at; // unamanged / borrowed is just the class type at this point
+      auto dec = t->decorator();
+      ClassTypeDecoratorEnum d = dec.isUnmanaged() ? ClassTypeDecorator::UNMANAGED
+                                                   : ClassTypeDecorator::BORROWED;
+      if (dec.isNonNilable()) {
+        d = addNonNilToDecorator(d);
+      } else {
+        d = addNilableToDecorator(d);
+      }
+
+      ret = at->getDecoratedClass(d); // unamanged / borrowed is just the class type at this point
     } else {
       // owned/shared should have had a substitution for chpl_t
       INT_ASSERT(!manager->substitutions().empty());
@@ -2517,12 +2601,17 @@ struct ConvertTypeHelper {
     INT_ASSERT(def);
 
     // convert the superclass as a field 'super'
-    if (auto parentClassType = bct->parentClassType()) {
-      Type* pt = tc_->convertType(parentClassType);
-      VarSymbol* v = new VarSymbol("super", pt);
-      v->qual = QUAL_VAL;
-      v->makeField();
-      at->fields.insertAtTail(new DefExpr(v));
+    if (!rfds.isGeneric()) {
+      if (auto parentClassType = bct->parentClassType()) {
+        Type* pt = tc_->convertType(parentClassType);
+        VarSymbol* v = new VarSymbol("super", pt);
+        v->addFlag(FLAG_SUPER_CLASS);
+        v->qual = QUAL_VAL;
+        v->makeField();
+        at->fields.insertAtTail(new DefExpr(v));
+
+        at->inherits.insertAtTail(new SymExpr(pt->symbol));
+      }
     }
 
     helpConvertCompositeType(bct, rfds, at);
@@ -2532,7 +2621,9 @@ struct ConvertTypeHelper {
 
   Type* visit(const types::RecordType* t) {
     auto rc = createDummyRC(context());
-    auto& rfds = fieldsForTypeDecl(&rc, t, DefaultsPolicy::USE_DEFAULTS);
+    // Ignore defaults because the type of 't' is already final, and should
+    // not use any default values for generic fields.
+    auto& rfds = fieldsForTypeDecl(&rc, t, DefaultsPolicy::IGNORE_DEFAULTS);
 
     AggregateType* at = toAggregateType(tc_->findConvertedType(t));
     INT_ASSERT(at);
@@ -2868,9 +2959,17 @@ Type* TConverter::convertType(const types::Type* t) {
   // the type is an aggregate. If it is, check to see if it is a well
   // known type, otherwise make a stub first to support recursion when
   // converting the fields.
-  auto selector = [](auto name, AggregateTag tag) {
+  auto selector = [&t](auto name, AggregateTag tag) {
     auto at = shouldWireWellKnownType(name.c_str());
-    auto ret = at ? at : new AggregateType(tag);
+
+    // Need a new AggregateType if this is an instantiation.
+    bool isInstantiation = false;
+    if (auto ct = t->getCompositeType();
+        ct && ct->instantiatedFromCompositeType()) {
+      isInstantiation = true;
+    }
+
+    auto ret = at && !isInstantiation ? at : new AggregateType(tag);
     return ret;
   };
 
@@ -2885,7 +2984,7 @@ Type* TConverter::convertType(const types::Type* t) {
   }
 
   // It's an aggregate, so emplace a map entry before converting.
-  if (at) convertedTypes[t] = at;
+  if (at) convertedTypes[t] = {false, at};
 
   // Invoke the visitor to convert the type.
   ConvertTypeHelper visitor = { this };
@@ -2893,7 +2992,7 @@ Type* TConverter::convertType(const types::Type* t) {
   INT_ASSERT(ret);
 
   // Set the converted type once again.
-  convertedTypes[t] = ret;
+  convertedTypes[t] = {true, ret};
 
   if (!isPrimitiveType(ret) &&
       ret->symbol->hasFlag(FLAG_INSTANTIATED_GENERIC) == false &&
@@ -2906,7 +3005,7 @@ Type* TConverter::convertType(const types::Type* t) {
     } else if (auto ext = t->toExternType()) {
       id = ext->id();
     }
-    if (!id.isEmpty()) {
+    if (!id.isEmpty() && !isDecoratedClassType(ret)) {
       auto ast = parsing::idToAst(context, id);
       untypedConverter->noteConvertedSym(ast, ret->symbol);
     }
@@ -2921,7 +3020,11 @@ Type* TConverter::convertType(const types::Type* t) {
     // of optimization passes that are looking for records, so my guess is
     // that the codegen generated ones should probably be 'CLASS' as well.
     AggregateType* ref = new AggregateType(AGGREGATE_CLASS);
-    TypeSymbol* refTs = new TypeSymbol(astr("_ref_", ret->symbol->cname), ref);
+    const char* name = astr("_ref_", ret->symbol->cname);
+    if (isDecoratedClassType(ret)) {
+      name = astr("_ref(", ret->symbol->name, ")");
+    }
+    TypeSymbol* refTs = new TypeSymbol(name, ref);
     refTs->addFlag(FLAG_REF);
     refTs->addFlag(FLAG_NO_DEFAULT_FUNCTIONS);
     refTs->addFlag(FLAG_NO_OBJECT);
@@ -2998,8 +3101,22 @@ struct ConvertDefaultValueHelper {
       return new SymExpr(temp);;
     }
 
+    // Add type/param arguments if type is generic.
+    // Language requires we use named arguments here.
+    std::vector<CallInfoActual> actuals;
+    if (t->instantiatedFromCompositeType()) {
+      auto rc = createDummyRC(context());
+      auto& rfds = fieldsForTypeDecl(&rc, t, DefaultsPolicy::USE_DEFAULTS);
+      for (int i = 0; i < rfds.numFields(); i++) {
+        auto qt = t->substitution(rfds.fieldDeclId(i));
+        if (!qt.isUnknown()) {
+          actuals.push_back({qt, rfds.fieldName(i)});
+        }
+      }
+    }
+
     // Otherwise, construct a 'CallInfo' representing 't.init()'...
-    auto ci1 = resolution::CallInfo::createSimple(tc_->ustr("init"));
+    auto ci1 = resolution::CallInfo::createSimple(tc_->ustr("init"), actuals);
     auto ci2 = resolution::CallInfo::createWithReceiver(ci1, qt);
 
     // Search for 'init()' using the generated call.
@@ -3815,30 +3932,36 @@ locateFieldSymbolAndType(TConverter* tc,
   auto rc = createDummyRC(tc->context);
   auto dpo = resolution::DefaultsPolicy::IGNORE_DEFAULTS;
   auto& rfds = fieldsForTypeDecl(&rc, ct, dpo);
+  auto at = toAggregateType(tc->convertType(ct));
 
   int dynoFieldIndex = -1;
-  int prodFieldIndex = -1;
 
   // TODO: Fetching superclass field (non-flat access).
   if (fieldName != nullptr) {
     bool found = false;
 
-    int typeParamOffset = 0;
     for (int i = 0; i < rfds.numFields(); i++) {
-      if (auto type = rfds.fieldType(i);
-          type.isParam() || type.isType()) {
-        typeParamOffset += 1;
-      }
       if (rfds.fieldName(i) != fieldName) continue;
       dynoFieldIndex = i;
-      prodFieldIndex = i - typeParamOffset;
       found = true;
       break;
     }
 
     if (!found && (cls || ct->isBasicClassType())) {
-      TC_UNIMPL("Potentially retrieving superclass field by name?");
-      return error;
+      auto bct = ct->toBasicClassType();
+      types::QualifiedType qtSuper = {types::QualifiedType::CONST_IN,
+                                      bct->parentClassType()};
+      if (0==strcmp(fieldName, "super")) {
+        return { base, at->getField(1), qtSuper };
+      } else {
+        Expr* newBase = new CallExpr(PRIM_CAST,
+                                      tc->convertType(qtSuper.type())->symbol,
+                                      base);
+        newBase = tc->storeInTempIfNeeded(newBase, qtSuper);
+        return locateFieldSymbolAndType(tc, newBase,
+                                           qtSuper,
+                                           fieldName, -1);
+      }
     }
   }
 
@@ -3848,7 +3971,7 @@ locateFieldSymbolAndType(TConverter* tc,
   auto fieldType = rfds.fieldType(dynoFieldIndex);
 
   // TODO: Is it appropriate to always use the 'BasicClassType' here?
-  if (auto at = toAggregateType(tc->convertType(ct))) {
+  if (at) {
     int superOffset = 0;
     if (auto bct = ct->toBasicClassType()) {
       if (bct->parentClassType() != nullptr) {
@@ -3859,7 +3982,7 @@ locateFieldSymbolAndType(TConverter* tc,
     // TODO: Currently we do two scans (consulting 'ResolvedFields' above also
     // does a scan to find the field index). Is there a way we can get away
     // with only doing one while also retrieving the field's frontend type?
-    const int idx = (prodFieldIndex + 1) + superOffset;
+    const int idx = (dynoFieldIndex + 1) + superOffset;
     auto field = at->getField(idx);
     CHPL_ASSERT(0==strcmp(fieldName, field->name));
     return { base, field, fieldType };
@@ -3929,7 +4052,9 @@ static Expr* codegenGetFieldImpl(TConverter* tc,
   // TODO: Except for RTTs...
   INT_ASSERT(!qtField.isType() && !qtField.isParam());
 
-  if (prim == PRIM_UNKNOWN) {
+  if (0 == strcmp(sym->name, "super")) {
+    prim = PRIM_GET_MEMBER_VALUE;
+  } else if (prim == PRIM_UNKNOWN) {
     prim = qtField.isRef() ? PRIM_GET_MEMBER_VALUE : PRIM_GET_MEMBER;
   }
 
@@ -3940,12 +4065,16 @@ static Expr* codegenGetFieldImpl(TConverter* tc,
 
   // The type of the field was requested.
   if (outQt) {
-    // Adjust it to have the 'ref' type since that's what a fetch produces.
-    auto kp = resolution::KindProperties::fromKind(qtField.kind());
-    kp.setRef(true);
-    types::QualifiedType qt { kp.toKind(), qtField.type(), qtField.param() };
-    INT_ASSERT(kp.valid() && !qt.isUnknownOrErroneous());
-    *outQt = qt;
+    if (prim == PRIM_GET_MEMBER || sym->isRef()) {
+      // Adjust it to have the 'ref' type since that's what a fetch produces.
+      auto kp = resolution::KindProperties::fromKind(qtField.kind());
+      kp.setRef(true);
+      types::QualifiedType qt { kp.toKind(), qtField.type(), qtField.param() };
+      INT_ASSERT(kp.valid() && !qt.isUnknownOrErroneous());
+      *outQt = qt;
+    } else {
+      *outQt = qtField;
+    }
   }
 
   return ret;
@@ -4802,7 +4931,7 @@ static void attachFunctionFlags(TConverter* tc, const Function* node,
     fn->addFlag(FLAG_NO_PARENS);
   }
 
-  if (node->isMethod()) {
+  if (node->isMethod() && node->kind() != uast::Function::OPERATOR) {
     fn->addFlag(FLAG_METHOD);
     if (node->isPrimaryMethod()) {
       fn->addFlag(FLAG_METHOD_PRIMARY);
@@ -5077,6 +5206,12 @@ bool TConverter::enter(const Function* node, RV& rv) {
   if (fVerify && fn->isMethod() && fn->numFormals() > 0) {
     auto arg = fn->getFormal(1);
     INT_ASSERT(arg->type != dtMethodToken);
+  }
+
+  if (parsing::idIsNestedFunction(context, node->id())) {
+    // Allow nested functions to be hoisted to the top-level of the module,
+    // but do not allow them to be candidates for production's resolution.
+    fn->addFlag(FLAG_INVISIBLE_FN);
   }
 
   return false;

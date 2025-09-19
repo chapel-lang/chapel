@@ -623,6 +623,10 @@ class CallInfo {
   static CallInfo createSimple(UniqueString calledFnName,
                                types::QualifiedType arg1type,
                                types::QualifiedType arg2type);
+  /** Construct a CallInfo with arbitrary arguments,
+      for calling a regular function by name. Does not handle methods. */
+  static CallInfo createSimple(UniqueString calledFnName,
+                               std::vector<CallInfoActual> actuals);
 
   /** Construct a CallInfo with unknown types for the actuals
       that can be used for FormalActualMap but not much else.
