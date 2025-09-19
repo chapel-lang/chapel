@@ -154,7 +154,7 @@ void chpl_append_to_cmd(char** cmdBufPtr, int* charsWritten,
 int
 chpl_run_utility1K(const char *command, char *const argv[], char *outbuf, int outbuflen) {
   const int buflen = 1024;
-  char buf[buflen];
+  char buf[/*buflen*/1024];
   char *cur;
   int fdo[2], outfd;
   int fde[2], errfd;
