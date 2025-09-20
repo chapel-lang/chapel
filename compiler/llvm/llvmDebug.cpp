@@ -413,7 +413,7 @@ llvm::DIType* debug_data::construct_type_for_pointer(llvm::Type* ty, Type* type)
   return nullptr;
 }
 
-llvm::DIType* debug_data::construct_type_for_special_cases(llvm::Type* ty, Type* type) {
+llvm::DIType* debug_data::construct_type_from_chapel_type(llvm::Type* ty, Type* type) {
 
   GenInfo* info = gGenInfo;
   const llvm::DataLayout& layout = info->module->getDataLayout();
@@ -427,14 +427,13 @@ llvm::DIType* debug_data::construct_type_for_special_cases(llvm::Type* ty, Type*
 
 
   if (type == dtObject) {
-    // wrap_in_pointer_if_needed(llvm::cast<llvm::DIType>(N), type);
     llvm::SmallVector<llvm::Metadata *, 1> EltTys;
     llvm::Type* cidType = info->lvt->getType("chpl__class_id");
     auto cidDITy = dibuilder->createMemberType(
-      get_module_scope(defModule),
+      developer ? get_module_scope(defModule) : nullptr,
       "cid",
-      get_file(defModule, defFile),
-      defLine,
+      developer ? get_file(defModule, defFile) : nullptr,
+      developer ? defLine : 0,
       layout.getTypeSizeInBits(cidType),
       8*layout.getABITypeAlign(cidType).value(),
       0, /* offset, assume its zero */
@@ -445,10 +444,10 @@ llvm::DIType* debug_data::construct_type_for_special_cases(llvm::Type* ty, Type*
     // since dtOject has a single field, we can directly assume the size and alignent to
     // be the same as its single field
     llvm::DIType* N = dibuilder->createStructType(
-      get_module_scope(defModule), /* Scope */
+      developer ? get_module_scope(defModule) : nullptr, /* Scope */
       name, /* Name */
-      get_file(defModule, defFile), /* File */
-      defLine, /* LineNumber */
+      developer ? get_file(defModule, defFile) : nullptr, /* File */
+      developer ? defLine : 0, /* LineNumber */
       layout.getTypeSizeInBits(cidType), /* SizeInBits */
       8*layout.getABITypeAlign(cidType).value(), /* AlignInBits */
       llvm::DINode::FlagZero, /* Flags */
@@ -458,6 +457,80 @@ llvm::DIType* debug_data::construct_type_for_special_cases(llvm::Type* ty, Type*
     N = wrap_in_pointer_if_needed(llvm::cast<llvm::DIType>(N), type);
     type->symbol->llvmDIType = N;
     return N;
+  } else if (isBoolType(type)) {
+    auto size = layout.getTypeSizeInBits(ty);
+    auto N = dibuilder->createBasicType(name, size, llvm::dwarf::DW_ATE_boolean);
+    type->symbol->llvmDIType = N;
+    return N;
+  } else if (isIntType(type) || isUIntType(type)) {
+    auto encoding = isSignedType(type) ? llvm::dwarf::DW_ATE_signed :
+                                         llvm::dwarf::DW_ATE_unsigned;
+    auto size = layout.getTypeSizeInBits(ty);
+    llvm::DIType* N = dibuilder->createBasicType(name, size, encoding);
+    N = dibuilder->createTypedef(N, name, nullptr, 0, nullptr);
+    type->symbol->llvmDIType = N;
+    return N;
+  } else if (isRealType(type) || isImagType(type)) {
+    // TODO: eventually, it would be nice to use DW_ATE_imaginary_float
+    // for imaginary types, but lldb doesn't seem to understand that today
+    auto encoding = llvm::dwarf::DW_ATE_float;
+    auto size = layout.getTypeSizeInBits(ty);
+    llvm::DIType* N = dibuilder->createBasicType(name, size, encoding);
+    N = dibuilder->createTypedef(N, name, nullptr, 0, nullptr);
+    type->symbol->llvmDIType = N;
+    return N;
+  } else if (isComplexType(type)) {
+    // we could codegen this as DW_ATE_complex_float, but then we
+    // wouldn't have the real and imaginary parts as members
+    // but it would give us a pretty-printer for free
+    llvm::SmallVector<llvm::Metadata *, 1> EltTys;
+    auto fpSize = type == dtComplex[COMPLEX_SIZE_64] ? FLOAT_SIZE_32 :
+                                                       FLOAT_SIZE_64;
+    llvm::Type* reType = dtReal[fpSize]->getLLVMType();
+    llvm::Type* imType = dtImag[fpSize]->getLLVMType();
+    EltTys.push_back(dibuilder->createMemberType(
+      nullptr,
+      "re",
+      nullptr,
+      0,
+      layout.getTypeSizeInBits(reType),
+      8*layout.getABITypeAlign(reType).value(),
+      0, /* offset, assume its zero */
+      llvm::DINode::FlagZero,
+      get_type(dtReal[fpSize])
+    ));
+    EltTys.push_back(dibuilder->createMemberType(
+      nullptr,
+      "im",
+      nullptr,
+      0,
+      layout.getTypeSizeInBits(imType),
+      8*layout.getABITypeAlign(imType).value(),
+      0, /* offset, assume its zero */
+      llvm::DINode::FlagZero,
+      get_type(dtImag[fpSize])
+    ));
+    llvm::DIType* N = dibuilder->createStructType(
+      nullptr, /* Scope */
+      name, /* Name */
+      nullptr, /* File */
+      0,
+      layout.getTypeSizeInBits(ty), /* SizeInBits */
+      8*layout.getABITypeAlign(ty).value(), /* AlignInBits */
+      llvm::DINode::FlagZero, /* Flags */
+      nullptr,
+      dibuilder->getOrCreateArray(EltTys) /* Elements */
+    );
+    type->symbol->llvmDIType = N;
+    return N;
+  } else if (isEnumType(type)) {
+    return construct_type_for_enum(ty, toEnumType(type));
+  } else if (isAtomicType(type)) {
+    // TODO:
+    return nullptr;
+  } else if (isSyncType(type)) {
+    // TODO:
+    return nullptr;
   }
   return nullptr;
 
@@ -481,31 +554,20 @@ llvm::DIType* debug_data::construct_type(Type *type) {
   if (!ty) return nullptr;
 
 
-  if (auto diTypeFromSpecialCase = construct_type_for_special_cases(ty, type)) {
+  if (auto diTypeFromSpecialCase = construct_type_from_chapel_type(ty, type)) {
     type->symbol->llvmDIType = diTypeFromSpecialCase;
     return diTypeFromSpecialCase;
   }
 
   if (ty->isIntegerTy()) {
-    // TODO: special handling for enums
-    if (type->astTag == E_EnumType) {
-      return construct_type_for_enum(ty, toEnumType(type));
-    } else {
-      auto encoding = is_bool_type(type) ? llvm::dwarf::DW_ATE_boolean :
-                     (is_signed(type)    ? llvm::dwarf::DW_ATE_signed :
-                                          llvm::dwarf::DW_ATE_unsigned);
-      N = dibuilder->createBasicType(
-        name, /* Name */
-        layout.getTypeSizeInBits(ty), /* SizeInBits */
-        encoding);
-      type->symbol->llvmDIType = N;
-      return llvm::cast_or_null<llvm::DIType>(N);
-    }
+    auto encoding = isSignedType(type) ? llvm::dwarf::DW_ATE_signed :
+                                         llvm::dwarf::DW_ATE_unsigned;
+    N = dibuilder->createBasicType(name, layout.getTypeSizeInBits(ty), encoding);
+    type->symbol->llvmDIType = N;
+    return llvm::cast_or_null<llvm::DIType>(N);
   } else if (ty->isFloatingPointTy()) {
-    N = dibuilder->createBasicType(
-      name,
-      layout.getTypeSizeInBits(ty),
-      llvm::dwarf::DW_ATE_float);
+    auto encoding = llvm::dwarf::DW_ATE_float;
+    N = dibuilder->createBasicType(name, layout.getTypeSizeInBits(ty), encoding);
     type->symbol->llvmDIType = N;
     return llvm::cast_or_null<llvm::DIType>(N);
   } else if (ty->isPointerTy()) {
