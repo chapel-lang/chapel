@@ -944,13 +944,13 @@ static void findHeapVarsAndRefs(Map<Symbol*, Vec<SymExpr*>*>& defMap,
         !def->sym->hasFlag(FLAG_LOCALE_PRIVATE) &&
         !def->sym->hasFlag(FLAG_EXTERN)) {
       if (def->sym->hasFlag(FLAG_CONST) &&
-          (is_bool_type(def->sym->type)    ||
-           is_enum_type(def->sym->type)    ||
-           is_int_type(def->sym->type)     ||
-           is_uint_type(def->sym->type)    ||
-           is_real_type(def->sym->type)    ||
-           is_imag_type(def->sym->type)    ||
-           is_complex_type(def->sym->type) ||
+          (isBoolType(def->sym->type)    ||
+           isEnumType(def->sym->type)    ||
+           isIntType(def->sym->type)     ||
+           isUIntType(def->sym->type)    ||
+           isRealType(def->sym->type)    ||
+           isImagType(def->sym->type)    ||
+           isComplexType(def->sym->type) ||
            (isRecord(def->sym->type)             &&
             !isRecordWrappedType(def->sym->type) &&
             !isSyncType(def->sym->type)          &&

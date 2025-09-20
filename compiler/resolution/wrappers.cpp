@@ -1737,12 +1737,12 @@ static void warnForDeprecatedImplicitConversion(ArgSymbol* formal,
       const char* actualTypeStr = toString(actualType);
       const char* formalInsnTypeStr = toString(formalType);
       const char* formalTypeStr = "?";
-      if      (is_bool_type(formalType))    formalTypeStr = "bool";
-      else if (is_int_type(formalType))     formalTypeStr = "int";
-      else if (is_uint_type(formalType))    formalTypeStr = "uint";
-      else if (is_real_type(formalType))    formalTypeStr = "real";
-      else if (is_imag_type(formalType))    formalTypeStr = "imag";
-      else if (is_complex_type(formalType)) formalTypeStr = "complex";
+      if      (isBoolType(formalType))    formalTypeStr = "bool";
+      else if (isIntType(formalType))     formalTypeStr = "int";
+      else if (isUIntType(formalType))    formalTypeStr = "uint";
+      else if (isRealType(formalType))    formalTypeStr = "real";
+      else if (isImagType(formalType))    formalTypeStr = "imag";
+      else if (isComplexType(formalType)) formalTypeStr = "complex";
 
       USR_WARN(actual, "deprecated use of implicit conversion "
                        "when passing to a generic formal");

@@ -406,11 +406,11 @@ static void markVectorizableForallLoops()
           Type* opType = op->type;
           bool ok = false;
           // Only vectorize + reductions on numbers
-          if (is_int_type(accumType) ||
-              is_uint_type(accumType) ||
-              is_imag_type(accumType) ||
-              is_real_type(accumType)
-              // TODO: is_complex_type
+          if (isIntType(accumType) ||
+              isUIntType(accumType) ||
+              isImagType(accumType) ||
+              isRealType(accumType)
+              // TODO: isComplexType
              ) {
             if (startsWith(opType->symbol->name, "SumReduceScanOp"))
               ok = true;

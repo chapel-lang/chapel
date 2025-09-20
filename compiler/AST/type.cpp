@@ -1772,85 +1772,75 @@ void initCompilerGlobals() {
   initForTaskIntents();
 }
 
-bool is_nothing_type(Type* t) {
-  return t == dtNothing;
-}
-
-bool is_bool_type(Type* t) {
+bool isBoolType(Type* t) {
   return t == dtBool;
 }
 
-
-bool is_int_type(Type *t) {
+bool isIntType(Type *t) {
   return
-    t == dtInt[INT_SIZE_32] ||
     t == dtInt[INT_SIZE_8] ||
     t == dtInt[INT_SIZE_16] ||
+    t == dtInt[INT_SIZE_32] ||
     t == dtInt[INT_SIZE_64];
 }
 
-
-bool is_uint_type(Type *t) {
+bool isUIntType(Type *t) {
   return
-    t == dtUInt[INT_SIZE_32] ||
     t == dtUInt[INT_SIZE_8] ||
     t == dtUInt[INT_SIZE_16] ||
+    t == dtUInt[INT_SIZE_32] ||
     t == dtUInt[INT_SIZE_64];
 }
 
-bool is_signed(Type *t) {
-  if( is_int_type(t) ||
-      is_real_type(t) ||
-      is_imag_type(t) ||
-      is_complex_type(t) ) return true;
-  if( is_uint_type(t) ) return false;
-  if( is_enum_type(t) ) {
-    return is_signed(toEnumType(t)->getIntegerType());
+bool isSignedType(Type *t) {
+  if (isIntType(t) ||
+      isRealType(t) ||
+      isImagType(t) ||
+      isComplexType(t)) return true;
+  if (isUIntType(t)) return false;
+  if (isEnumType(t)) {
+    return isSignedType(toEnumType(t)->getIntegerType());
   }
   return false;
 }
 
-bool is_real_type(Type *t) {
+bool isRealType(Type *t) {
   return
     t == dtReal[FLOAT_SIZE_64] ||
     t == dtReal[FLOAT_SIZE_32];
 }
 
-
-bool is_imag_type(Type *t) {
+bool isImagType(Type *t) {
   return
     t == dtImag[FLOAT_SIZE_64] ||
     t == dtImag[FLOAT_SIZE_32];
 }
 
-
-bool is_complex_type(Type *t) {
+bool isComplexType(Type *t) {
   return
     t == dtComplex[COMPLEX_SIZE_128] ||
     t == dtComplex[COMPLEX_SIZE_64];
 }
 
-
-bool is_enum_type(Type *t) {
+bool isEnumType(Type *t) {
   return toEnumType(t);
 }
 
-
 bool isLegalParamType(Type* t) {
-  return (is_bool_type(t) ||
-          is_int_type(t) ||
-          is_uint_type(t) ||
-          is_real_type(t) ||
-          is_imag_type(t) ||
-          is_complex_type(t) ||
-          is_enum_type(t) ||
+  return (isBoolType(t) ||
+          isIntType(t) ||
+          isUIntType(t) ||
+          isRealType(t) ||
+          isImagType(t) ||
+          isComplexType(t) ||
+          isEnumType(t) ||
           isString(t) ||
           isBytes(t) ||
           t == dtStringC ||
           t == dtUnknown);
 }
 
-int get_width(Type *t) {
+int getWidthOfType(Type *t) {
   if (t == dtInt[INT_SIZE_8] ||
       t == dtUInt[INT_SIZE_8])
     return 8;
@@ -1874,11 +1864,11 @@ int get_width(Type *t) {
   return 0;
 }
 
-int get_component_width(Type *t) {
-  if (is_complex_type(t)) {
-    return get_width(t) / 2;
+int getComponentWidthOfType(Type *t) {
+  if (isComplexType(t)) {
+    return getWidthOfType(t) / 2;
   }
-  return get_width(t);
+  return getWidthOfType(t);
 }
 
 // numbers between -2**width .. 2**width
@@ -2385,13 +2375,13 @@ bool typeNeedsCopyInitDeinit(Type* type) {
 bool needsCapture(Type* t) {
   INT_ASSERT(!isReferenceType(t)); // responsibility of the caller
 
-  if (is_bool_type(t) ||
-      is_int_type(t) ||
-      is_uint_type(t) ||
-      is_real_type(t) ||
-      is_imag_type(t) ||
-      is_complex_type(t) ||
-      is_enum_type(t) ||
+  if (isBoolType(t) ||
+      isIntType(t) ||
+      isUIntType(t) ||
+      isRealType(t) ||
+      isImagType(t) ||
+      isComplexType(t) ||
+      isEnumType(t) ||
       t == dtStringC ||
       isClassLikeOrPtr(t) ||
       isRecord(t) ||

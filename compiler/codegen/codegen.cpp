@@ -249,7 +249,7 @@ genGlobalDefClassId(const char* cname, int id, bool isHeader) {
         info->module->getOrInsertGlobal(name, id_type));
     gv->setInitializer(info->irBuilder->getInt32(id));
     gv->setConstant(true);
-    info->lvt->addGlobalValue(name, gv, GEN_PTR, ! is_signed(CLASS_ID_TYPE), CLASS_ID_TYPE);
+    info->lvt->addGlobalValue(name, gv, GEN_PTR, ! isSignedType(CLASS_ID_TYPE), CLASS_ID_TYPE);
 #endif
   }
 }
@@ -2380,7 +2380,7 @@ static const char* generateFileName(ChainHashMap<const char*, StringHashFns, int
 bool argRequiresCPtr(IntentTag intent, Type* t, bool isReceiver) {
   /* This used to be true for INTENT_REF, but that is handled with the "_ref"
      class and we don't need to generate a pointer for it directly */
-  if (isReceiver && is_complex_type(t)) return true;
+  if (isReceiver && isComplexType(t)) return true;
   return argMustUseCPtr(t);
 }
 

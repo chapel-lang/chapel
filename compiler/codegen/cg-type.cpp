@@ -187,7 +187,7 @@ void EnumType::codegenDef() {
       PrimitiveType* ty = getIntegerType();
       type = ty->codegen().type;
 
-      info->lvt->addGlobalType(symbol->cname, type, !is_signed(ty));
+      info->lvt->addGlobalType(symbol->cname, type, !isSignedType(ty));
       symbol->llvmImplType = type;
       symbol->llvmAlignment = ALIGNMENT_DEFER;
 

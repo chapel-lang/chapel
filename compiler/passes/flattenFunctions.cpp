@@ -167,13 +167,13 @@ findOuterVars(FnSymbol* fn, SymbolMap* uses) {
 // Is this type OK to pass by value (e.g. it's reasonably-sized)?
 static bool
 passableByVal(Type* type) {
-  if (is_bool_type(type)    ||
-      is_int_type(type)     ||
-      is_uint_type(type)    ||
-      is_real_type(type)    ||
-      is_imag_type(type)    ||
-      is_complex_type(type) ||
-      is_enum_type(type)    ||
+  if (isBoolType(type)    ||
+      isIntType(type)     ||
+      isUIntType(type)    ||
+      isRealType(type)    ||
+      isImagType(type)    ||
+      isComplexType(type) ||
+      isEnumType(type)    ||
       isClass(type)         ||
       type == dtTaskID      ||
       // For now, allow ranges as a special case, not records in general.

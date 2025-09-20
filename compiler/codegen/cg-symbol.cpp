@@ -962,7 +962,7 @@ void VarSymbol::codegenGlobalDef(bool isHeader) {
             llvm::Constant::getNullValue(llTy), /* initializer, */
             cname);
       trackLLVMValue(gVar);
-      info->lvt->addGlobalValue(cname, gVar, GEN_PTR, ! is_signed(type), type);
+      info->lvt->addGlobalValue(cname, gVar, GEN_PTR, ! isSignedType(type), type);
       gVar->setDSOLocal(true);
       setValueAlignment(gVar, type, this);
 
@@ -1035,13 +1035,13 @@ void VarSymbol::codegenDef() {
         globalValue->setInitializer(llvm::cast<llvm::Constant>(
               codegenImmediateLLVM(immediate)));
       }
-      info->lvt->addGlobalValue(cname, globalValue, GEN_VAL, ! is_signed(type), type);
+      info->lvt->addGlobalValue(cname, globalValue, GEN_VAL, ! isSignedType(type), type);
     }
 
     llvm::Type *varType = type->getLLVMType();
 
     llvm::AllocaInst *varAlloca = createVarLLVM(varType, type, this, cname);
-    info->lvt->addValue(cname, varAlloca, GEN_PTR, ! is_signed(type));
+    info->lvt->addValue(cname, varAlloca, GEN_PTR, ! isSignedType(type));
 
     if(AggregateType *ctype = toAggregateType(type)) {
       if(ctype->isClass() ||
@@ -1645,7 +1645,7 @@ void TypeSymbol::codegenMetadata() {
     // are treated as unions because we don't know what Chapel type the
     // LLVM fields are referring to.  (There is no backward mapping.)
     llvmTbaaTypeDescriptor = info->tbaaUnionsNode;
-  } else if (is_complex_type(type)) {
+  } else if (isComplexType(type)) {
     codegenCplxMetadata();
     INT_ASSERT(llvmTbaaAggTypeDescriptor);
     llvmTbaaTypeDescriptor = llvmTbaaAggTypeDescriptor;
@@ -1653,7 +1653,7 @@ void TypeSymbol::codegenMetadata() {
              isClass(type) || hasEitherFlag(FLAG_REF,FLAG_WIDE_REF) ||
              hasEitherFlag(FLAG_DATA_CLASS,FLAG_WIDE_CLASS) ||
              isFunctionType(type)) {
-    if (is_imag_type(type)) {
+    if (isImagType(type)) {
       // At present, imaginary often aliases with real,
       // so make real the parent of imaginary.
       INT_ASSERT(type == dtImag[FLOAT_SIZE_32] ||
@@ -2989,7 +2989,7 @@ void FnSymbol::codegenDef() {
       if (argRequiresCPtr(arg) || (argInfo && argInfo->isIndirect())) {
         // consume the next LLVM argument
         llvm::Argument& llArg = *ai++;
-        info->lvt->addValue(arg->cname, &llArg,  GEN_PTR, !is_signed(argType));
+        info->lvt->addValue(arg->cname, &llArg,  GEN_PTR, !isSignedType(argType));
 
       } else if (argInfo) {
 
@@ -3005,11 +3005,11 @@ void FnSymbol::codegenDef() {
           // make sure the argument has the correct type
           if (val->getType() != argInfo->getCoerceToType())
             val = convertValueToType(val, argInfo->getCoerceToType(),
-                                     is_signed(argType), true);
+                                     isSignedType(argType), true);
 
           if (val->getType() != chapelArgTy)
             val = convertValueToType(val, chapelArgTy,
-                                     is_signed(argType), true);
+                                     isSignedType(argType), true);
 
           if (needTempForExportInIntent(arg)) {
             GenRet tempVar = createTempVarForFormal(arg, val);
@@ -3019,7 +3019,7 @@ void FnSymbol::codegenDef() {
                                 tempVar.isLVPtr, tempVar.isUnsigned);
           }
           else {
-            info->lvt->addValue(arg->cname, val,  GEN_VAL, !is_signed(argType));
+            info->lvt->addValue(arg->cname, val,  GEN_VAL, !isSignedType(argType));
             setValueAlignment(val, arg->type, arg);
           }
         } else {
@@ -3096,11 +3096,11 @@ void FnSymbol::codegenDef() {
             // make sure the argument has the correct type
             if (val->getType() != argInfo->getCoerceToType())
               val = convertValueToType(val, argInfo->getCoerceToType(),
-                                       is_signed(argType), true);
+                                       isSignedType(argType), true);
 
             if (val->getType() != chapelArgTy)
               val = convertValueToType(val, chapelArgTy,
-                                       is_signed(argType), true);
+                                       isSignedType(argType), true);
 
             GenRet tempVar = createTempVarForFormal(arg, val);
 
@@ -3352,13 +3352,13 @@ void FnSymbol::codegenFortran(int indent) {
       if (formal->hasFlag(FLAG_NO_CODEGEN))
         continue;
       uniqueKindNames.insert(getFortranKindName(formal->type, formal));
-      if (is_uint_type(formal->type)) {
+      if (isUIntType(formal->type)) {
         foundUnsignedInt = true;
       }
     }
     if (retType != dtVoid) {
       uniqueKindNames.insert(getFortranKindName(retType, this));
-      if (is_uint_type(retType)) {
+      if (isUIntType(retType)) {
         foundUnsignedInt = true;
       }
     }
