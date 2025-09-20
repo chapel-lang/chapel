@@ -1061,7 +1061,7 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
   rts->addFlag(FLAG_NO_OBJECT);
   rts->addFlag(FLAG_REF);
   iteratorFnCall->parentSymbol->defPoint->insertBefore(new DefExpr(rts));
-  rct->fields.insertAtTail(new DefExpr(new VarSymbol("_val", ct)));
+  rct->fields.insertAtTail(new DefExpr(newTemp("_val", ct)));
   ct->refType = rct;
 
   // Create the argument bundle.
