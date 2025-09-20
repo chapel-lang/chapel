@@ -216,7 +216,7 @@ module Atomics {
     if isInt(valType)  then return "int_least"  + numBits(valType):string + "_t";
     if isUint(valType) then return "uint_least" + numBits(valType):string + "_t";
     if isReal(valType) then return "_real"      + numBits(valType):string;
-    if isPointerType(valType) then return "uintptr_t";
+    if isAnyCPtr(valType) then return "uintptr_t";
   }
 
   private proc externFunc(param s: string, type valType, param explicit=true) param {
