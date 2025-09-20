@@ -1018,7 +1018,7 @@ static bool doAdjustForConditional(CondStmt* cond, bool inThenBranch,
       // in Chapel: if obj then ...
       return adjustTestArgChain(testArg, inThenBranch, OUT);
 
-     if (is_bool_type(testArg->getValType()))
+     if (isBoolType(testArg->getValType()))
       // look for ==(t,nil), !=(nil,t), etc.
       if (CallExpr* TE = toCallExpr(getSingleDefExpr(testArg)))
       {

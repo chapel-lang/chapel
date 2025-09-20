@@ -209,7 +209,7 @@ const char* CallInfo::toString() {
         snprint_imm(buff, bufSize, *var->immediate);
 
         std::string s = buff;
-        if (is_imag_type(type))
+        if (isImagType(type))
           s += 'i';
 
         // Add the type if it's not default
