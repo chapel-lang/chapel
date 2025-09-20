@@ -189,6 +189,9 @@ PRAGMA(DEFAULT_INTENT_IS_REF_MAYBE_CONST, ypr,
        "default intent is ref if modified",
        "The default intent for this type is ref if modified const "
        "ref otherwise")
+PRAGMA(NO_USER_DEBUG_INFO, ypr,
+       "no user debug info",
+       "Do not emit user-level debug info for this symbol")
 
 PRAGMA(NO_PROMOTION_WHEN_BY_REF, ypr, "no promotion when by ref", ncm)
 
