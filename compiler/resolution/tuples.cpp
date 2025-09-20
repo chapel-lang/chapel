@@ -181,7 +181,7 @@ FnSymbol* makeConstructTuple(std::vector<TypeSymbol*>& args,
   FnSymbol *ctor = new FnSymbol(tupleInitName);
 
   // Does "_this" even make sense in this situation?
-  VarSymbol* _this = new VarSymbol("this", newType);
+  VarSymbol* _this = newTemp("this", newType);
   _this->addFlag(FLAG_ARG_THIS);
   ctor->insertAtTail(new DefExpr(_this));
   ctor->_this = _this;
@@ -206,7 +206,7 @@ FnSymbol* makeConstructTuple(std::vector<TypeSymbol*>& args,
       element = arg;
     } else {
       // Otherwise, copy it
-      element = new VarSymbol(astr("elt_", name), args[i]->type);
+      element = newTemp(astr("elt_", name), args[i]->type);
       ctor->insertAtTail(new DefExpr(element));
       CallExpr* copy = new CallExpr(astr_autoCopy, arg, new SymExpr(gFalse));
       ctor->insertAtTail(new CallExpr(PRIM_MOVE, element, copy));
@@ -539,7 +539,7 @@ static void instantiate_tuple_init(FnSymbol* fn) {
     const char* name    = field->name;
     Type*       type    = field->type;
 
-    Symbol*     elem    = new VarSymbol(astr("elt_", name), type);
+    Symbol*     elem    = newTemp(astr("elt_", name), type);
     Symbol*     symName = new_CStringSymbol(name);
 
     // Ensure normalize doesn't try to auto destroy this
@@ -573,7 +573,7 @@ static VarSymbol* generateReadTupleField(Symbol* fromSym, Symbol* fromField,
 
   if (isReferenceType(fromField->type)) {
     // Use PRIM_GET_MEMBER_VALUE if the element is already a reference
-    readF = new VarSymbol(astr("read_", name), fromField->type);
+    readF = newTemp(astr("read_", name), fromField->type);
     DefExpr* def = new DefExpr(readF);
     if (insertBefore)
       insertBefore->insertBefore(def);
@@ -584,7 +584,7 @@ static VarSymbol* generateReadTupleField(Symbol* fromSym, Symbol* fromField,
     get = new CallExpr(PRIM_GET_MEMBER_VALUE, fromSym, fromName);
   } else {
     // Otherwise, use PRIM_GET_MEMBER
-    readF = new VarSymbol(astr("read_", name),
+    readF = newTemp(astr("read_", name),
                           fromField->type->getRefType());
 
     DefExpr* def = new DefExpr(readF);
@@ -638,7 +638,7 @@ static VarSymbol* generateCoerce(Symbol* fromField, Symbol* toField,
       // fromField : ref(t)      toField : t
       // fromField : t           toField : t
 
-      element = new VarSymbol(astr("elt_", name), toField->type);
+      element = newTemp(astr("elt_", name), toField->type);
       insertBefore->insertBefore(new DefExpr(element));
 
       // otherwise copy construct it
@@ -654,12 +654,12 @@ static VarSymbol* generateCoerce(Symbol* fromField, Symbol* toField,
     // even with ref level adjustment, types do not match.
     // create a _cast call.
 
-    element = new VarSymbol(astr("elt_", name), toField->type);
+    element = newTemp(astr("elt_", name), toField->type);
     insertBefore->insertBefore(new DefExpr(element));
 
     VarSymbol* valueElement = element;
     if (isReferenceType(toField->type)) {
-      valueElement = new VarSymbol(astr("velt_", name), toField->getValType());
+      valueElement = newTemp(astr("velt_", name), toField->getValType());
       insertBefore->insertBefore(new DefExpr(valueElement));
     }
 
@@ -727,7 +727,7 @@ void addTupleCoercion(AggregateType* fromT, AggregateType* toT,
 // has no reference components, ex. 2*int. If so, avoid field-wide operations
 // and copy it using a single 'move' when the tuple is a POD.
 static void instantiateTrivialTupleCast(FnSymbol* fn, ArgSymbol* arg) {
-  VarSymbol* retv = new VarSymbol("retcopy", arg->type);
+  VarSymbol* retv = newTemp("retcopy", arg->type);
   BlockStmt* fnbody = fn->body;
   fnbody->insertAtTail(new DefExpr(retv));
   fnbody->insertAtTail(new CallExpr(PRIM_MOVE, retv, arg));
@@ -752,7 +752,7 @@ static void instantiate_tuple_cast(FnSymbol* fn, CallExpr* context) {
 
   BlockStmt* block = new BlockStmt(BLOCK_SCOPELESS);
 
-  VarSymbol* retv = new VarSymbol("retv", toT);
+  VarSymbol* retv = newTemp("retv", toT);
   block->insertAtTail(new DefExpr(retv));
 
   if (fromT->numFields() != toT->numFields()) {
@@ -793,7 +793,7 @@ static void instantiate_tuple_cast(FnSymbol* fn, CallExpr* context) {
       // to the (function local) result of the cast
       INT_ASSERT(!isReferenceType(toField->type));
 
-      element = new VarSymbol(astr("elt_", name), toField->type);
+      element = newTemp(astr("elt_", name), toField->type);
       block->insertAtTail(new DefExpr(element));
 
       CallExpr* cast = createCast(readF, toField->type->symbol);
@@ -808,7 +808,7 @@ static void instantiate_tuple_cast(FnSymbol* fn, CallExpr* context) {
       // fromField : ref(t)      toField : t
       // fromField : t           toField : t
 
-      element = new VarSymbol(astr("elt_", name), toField->type);
+      element = newTemp(astr("elt_", name), toField->type);
       block->insertAtTail(new DefExpr(element));
 
       // otherwise copy construct it
@@ -842,7 +842,7 @@ instantiate_tuple_initCopy_or_autoCopy(FnSymbol* fn,
 
   BlockStmt* block = new BlockStmt(BLOCK_SCOPELESS);
 
-  VarSymbol* retv = new VarSymbol("retv", ct);
+  VarSymbol* retv = newTemp("retv", ct);
   block->insertAtTail(new DefExpr(retv));
 
   // Starting at field 2 to skip the size field
@@ -860,7 +860,7 @@ instantiate_tuple_initCopy_or_autoCopy(FnSymbol* fn,
       element = read;
     } else {
       // otherwise copy construct it
-      element = new VarSymbol(astr("elt_", name), toField->type);
+      element = newTemp(astr("elt_", name), toField->type);
       block->insertAtTail(new DefExpr(element));
       CallExpr* copy = new CallExpr(copy_fun, read, gFalse);
       block->insertAtTail(new CallExpr(PRIM_MOVE, element, copy));
@@ -915,7 +915,7 @@ instantiate_tuple_unref(FnSymbol* fn)
     // Just return the passed argument.
     block->insertAtTail(new CallExpr(PRIM_RETURN, new SymExpr(arg)));
   } else {
-    VarSymbol* retv = new VarSymbol("retv", ct);
+    VarSymbol* retv = newTemp("retv", ct);
     block->insertAtTail(new DefExpr(retv));
 
     // Starting at field 2 to skip the size field
@@ -930,7 +930,7 @@ instantiate_tuple_unref(FnSymbol* fn)
 
       if (isReferenceType(fromField->type)) {
         // If it is a reference, copy construct it
-        element = new VarSymbol(astr("elt_", name), toField->type);
+        element = newTemp(astr("elt_", name), toField->type);
         block->insertAtTail(new DefExpr(element));
         CallExpr* copy = new CallExpr(useCopy, read, gFalse);
         block->insertAtTail(new CallExpr(PRIM_MOVE, element, copy));
