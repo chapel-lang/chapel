@@ -180,6 +180,9 @@ bool debug_data::should_add_DI_for(Symbol* sym) {
   // skip temps
   if (sym->hasFlag(FLAG_TEMP)) return false;
 
+  // skip non-user variables
+  if (sym->hasFlag(FLAG_NO_USER_DEBUG_INFO)) return false;
+
   // default to adding debug info
   return true;
 }
@@ -526,8 +529,25 @@ llvm::DIType* debug_data::construct_type_from_chapel_type(llvm::Type* ty, Type* 
   } else if (isEnumType(type)) {
     return construct_type_for_enum(ty, toEnumType(type));
   } else if (isAtomicType(type)) {
-    // TODO:
-    return nullptr;
+    // TODO: valType is gone at codegen, how do I know the type!
+    Type* valType = nullptr;
+    if (auto valTypeField = type->getField("valType", false)) {
+      valType = valTypeField->type;
+    } else if (strcmp(type->symbol->name, "atomic bool") == 0) {
+      valType = dtBool;
+    } else {
+      if (developer || fVerify) {
+        INT_FATAL("Unable to find valType for atomic type %s",
+                  type->symbol->name);
+      }
+      return nullptr;
+    }
+    llvm::DIType* N = dibuilder->createQualifiedType(
+      llvm::dwarf::DW_TAG_atomic_type, get_type(valType)
+    );
+    N = dibuilder->createTypedef(N, name, nullptr, 0, nullptr);
+    type->symbol->llvmDIType = N;
+    return N;
   } else if (isSyncType(type)) {
     // TODO:
     return nullptr;
