@@ -11,6 +11,7 @@ class Chapel < Formula
   no_autobump! because: :bumped_by_upstream
 
   bottle do
+    sha256 arm64_tahoe:   "a29ef8f62f550f340686cf4578a4d28b4eb77f669db5e0c8d0ee48f869c19b9e"
     sha256 arm64_sequoia: "3c56855c59c61a8e2da5357d514d6328952036e8757b533356395b33d005be11"
     sha256 arm64_sonoma:  "7b539533e13df72b8547538aac9939ec6d71bdd0a1490cc77599f64930518fdf"
     sha256 sonoma:        "b1c6c9e5501bccabea3d743cf457fc61a04bc87b22300fa670dee36b8e5d4bfe"
@@ -101,6 +102,9 @@ class Chapel < Formula
   end
 
   test do
+    # Hide ld warning until formula uses LLVM 21+ or if we apply backports to `llvm@20`
+    ENV["MACOSX_DEPLOYMENT_TARGET"] = MacOS.version.to_s if OS.mac? && MacOS.version >= :tahoe
+
     ENV["CHPL_HOME"] = libexec
     ENV["CHPL_INCLUDE_PATH"] = HOMEBREW_PREFIX/"include"
     ENV["CHPL_LIB_PATH"] = HOMEBREW_PREFIX/"lib"
