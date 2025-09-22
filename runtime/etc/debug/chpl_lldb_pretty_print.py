@@ -61,10 +61,10 @@ class StringProvider:
 
 
 range_regex_c = re.compile(
-    r"^range_([a-zA-Z0-9_]+)_(both|low|high|neither)_(one|negOne|positive|negative|any)(?:_chpl)?$"
+    r"^range_(?P<eltType>[a-zA-Z0-9_]+)_(?P<boundsKind>both|low|high|neither)_(?P<stride>one|negOne|positive|negative|any)(?:_chpl)?$"
 )
 range_regex_llvm = re.compile(
-    r"^ChapelRange::range\(([a-zA-Z0-9_()]+),(both|low|high|neither),(one|negOne|positive|negative|any)\)$"
+    r"^ChapelRange::range\((?P<eltType>[a-zA-Z0-9_()]+),(?P<boundsKind>both|low|high|neither),(?P<stride>one|negOne|positive|negative|any)\)$"
 )
 
 
@@ -79,6 +79,11 @@ def RangeSummary(valobj, internal_dict):
         .GetChildMemberWithName("_high")
         .GetValueAsSigned()
     )
+    stride = (
+        valobj.GetNonSyntheticValue()
+        .GetChildMemberWithName("_stride")
+        .GetValueAsSigned()
+    )
 
     typename = valobj.GetTypeName()
     match = range_regex_c.match(typename) or range_regex_llvm.match(typename)
@@ -89,10 +94,13 @@ def RangeSummary(valobj, internal_dict):
         return None
 
     def has_low_bound():
-        return match.group(2) in ("low", "both")
+        return match.group("boundsKind") in ("low", "both")
 
     def has_high_bound():
-        return match.group(2) in ("high", "both")
+        return match.group("boundsKind") in ("high", "both")
+
+    def has_stride():
+        return match.group("stride") != "one"
 
     # TODO: handle strides and alignment
     res = ""
@@ -101,6 +109,9 @@ def RangeSummary(valobj, internal_dict):
     res += ".."
     if has_high_bound():
         res += str(high)
+    if has_stride():
+        res += f" by {stride}"
+
 
     return res
 
@@ -124,6 +135,10 @@ class RangeProvider:
             self.synthetic_children["high"] = (
                 self.valobj.GetChildMemberWithName("_high")
             )
+        if self._has_stride():
+            self.synthetic_children["stride"] = (
+                self.valobj.GetChildMemberWithName("_stride")
+            )
 
     def _has_low_bound(self):
         typename = self.valobj.GetTypeName()
@@ -135,7 +150,7 @@ class RangeProvider:
                 f"RangeProvider: type name '{typename}' did not match expected pattern"
             )
             return False
-        return match.group(2) in ("low", "both")
+        return match.group("boundsKind") in ("low", "both")
 
     def _has_high_bound(self):
         typename = self.valobj.GetTypeName()
@@ -147,7 +162,19 @@ class RangeProvider:
                 f"RangeProvider: type name '{typename}' did not match expected pattern"
             )
             return False
-        return match.group(2) in ("high", "both")
+        return match.group("boundsKind") in ("high", "both")
+
+    def _has_stride(self):
+        typename = self.valobj.GetTypeName()
+        match = range_regex_c.match(typename) or range_regex_llvm.match(
+            typename
+        )
+        if not match:
+            print(
+                f"RangeProvider: type name '{typename}' did not match expected pattern"
+            )
+            return False
+        return match.group("stride") != "one"
 
     def has_children(self):
         return self.num_children() > 0
@@ -170,11 +197,12 @@ class RangeProvider:
         )
 
 
-# TODO: only handles DefaultRectangularDom for now
+# TODO: only handles DefaultRectangularDom for C for now
 domain_regex_c = re.compile(
-    r"^_domain_DefaultRectangularDom_([0-9]+)_([a-zA-Z0-9_]+)_(one|negOne|positive|negative|any)(?:_chpl)?$"
+    r"^_domain_DefaultRectangularDom_(?P<rank>[0-9]+)_(?P<eltType>[a-zA-Z0-9_]+)_(?P<stride>one|negOne|positive|negative|any)(?:_chpl)?$"
 )
-domain_regex_llvm = re.compile(r"^$")  # TODO
+domain_regex_llvm = re.compile(r"^ChapelDomain::domain\((?P<rank>[0-9]+),(?P<eltType>[a-zA-Z0-9_\(\)]+),(?P<stride>one|negOne|positive|negative|any)\)$")
+# TODO handle developer domain regex
 
 
 def DomainRecognizer(sbtype, internal_dict):
@@ -182,6 +210,11 @@ def DomainRecognizer(sbtype, internal_dict):
     match = domain_regex_c.match(typename) or domain_regex_llvm.match(typename)
     return match is not None
 
+
+def RangesToString(ranges):
+    getSum = lambda r: r.GetSummary() or r.GetValue() or ""
+    s = ", ".join(getSum(ranges.GetChildAtIndex(i)) for i in range(ranges.GetNumChildren()))
+    return s
 
 def DomainSummary(valobj, internal_dict):
     typename = valobj.GetTypeName()
@@ -192,17 +225,13 @@ def DomainSummary(valobj, internal_dict):
         )
         return None
 
-    rank = int(match.group(1))
-    idx_type = match.group(2)
-    stride_kind = match.group(3)
-
     ranges = (
         valobj.GetNonSyntheticValue()
         .GetChildMemberWithName("_instance")
         .GetNonSyntheticValue()
         .GetChildMemberWithName("ranges")
     )
-    return "{" + (ranges.GetSummary()) + "}"
+    return "{" + RangesToString(ranges) + "}"
 
 
 class DomainProvider:
@@ -250,91 +279,12 @@ class DomainProvider:
         )
 
 
-#
-# homogenous tuples
-#
-homogeneous_tuple_regex_c = re.compile(
-    r"^_tuple_([0-9]+)_star_([a-zA-Z0-9_]+)(?:_chpl)?$"
-)
-homogeneous_tuple_regex_llvm = re.compile(r"^$")  # TODO
-
-
-def HomogeneousTupleRecognizer(sbtype, internal_dict):
-    typename = sbtype.GetName()
-    match = homogeneous_tuple_regex_c.match(
-        typename
-    ) or homogeneous_tuple_regex_llvm.match(typename)
-    return match is not None
-
-
-def HomogeneousTupleSummary(valobj, internal_dict):
-    typename = valobj.GetTypeName()
-    match = homogeneous_tuple_regex_c.match(
-        typename
-    ) or homogeneous_tuple_regex_llvm.match(typename)
-    if not match:
-        print(
-            f"HomogeneousTuple_Summary: type name '{typename}' did not match expected pattern"
-        )
-        return None
-
-    size = match.group(1)
-    vals = []
-    for i in range(int(size)):
-        child = valobj.GetNonSyntheticValue().GetChildAtIndex(i)
-        vals.append(child.GetSummary() or child.GetValue() or "")
-    return f"{', '.join(vals)}"
-
-
-class HomogeneousTupleProvider:
-    def __init__(self, valobj, internal_dict):
-        self.valobj = valobj
-
-        self.synthetic_children = {}
-        typename = self.valobj.GetTypeName()
-        match = homogeneous_tuple_regex_c.match(
-            typename
-        ) or homogeneous_tuple_regex_llvm.match(typename)
-        if not match:
-            print(
-                f"HomogeneousTupleProvider: type name '{typename}' did not match expected pattern"
-            )
-            return
-
-        size = int(match.group(1))
-        for i in range(size):
-            self.synthetic_children[str(i)] = self.valobj.GetChildAtIndex(i)
-
-    def has_children(self):
-        return self.num_children() > 0
-
-    def num_children(self):
-        return len(self.synthetic_children)
-
-    def get_child_index(self, name):
-        if name in self.synthetic_children:
-            return list(self.synthetic_children.keys()).index(name)
-        else:
-            return -1
-
-    def get_child_at_index(self, index):
-        if index < 0 or index >= self.num_children():
-            return None
-        key = list(self.synthetic_children.keys())[index]
-        return self.valobj.CreateValueFromExpression(
-            f"[{key}]", self.synthetic_children[key].GetValue()
-        )
-
-
-# TODO: for now we only handle DefaultRectangular arrays
-# array
-# _array_DefaultRectangularArr_1_int64_t_one_int64_t_int64_t_chpl
-# rank, idx_type, stride_kind, element_type, idxSignedType
+# TODO: for now we only handle DefaultRectangular for C backend
 
 array_regex_c = re.compile(
-    r"^_array_DefaultRectangularArr_([0-9]+)_([a-zA-Z0-9_]+)_(one|negOne|positive|negative|any)_([a-zA-Z0-9_]+)_([a-zA-Z0-9_]+)(?:_chpl)?$"
+    r"^_array_DefaultRectangularArr_(?P<rank>[0-9]+)_(?P<idxType>[a-zA-Z0-9_]+)_(?P<stride>one|negOne|positive|negative|any)_(?P<eltType>[a-zA-Z0-9_]+)_(?P<idxSignedType>[a-zA-Z0-9_]+)(?:_chpl)?$"
 )
-array_regex_llvm = re.compile(r"^$")  # TODO
+array_regex_llvm = re.compile(r"^ChapelArray::\[domain\((?P<rank>[0-9]+),(?P<idxType>[a-zA-Z0-9_\(\)]+),(?P<stride>one|negOne|positive|negative|any)\)\] (?P<eltType>[a-zA-Z0-9_\(\)]+)$")
 
 
 def ArrayRecognizer(sbtype, internal_dict):
@@ -352,34 +302,29 @@ def ArraySummary(valobj, internal_dict):
         )
         return None
 
-    rank = int(match.group(1))
-    idx_type = match.group(2)
-    stride_kind = match.group(3)
-    element_type = match.group(4)
-    idx_signed_type = match.group(5)
-
     _instance = valobj.GetNonSyntheticValue().GetChildMemberWithName(
         "_instance"
     )
     domClass = _instance.GetChildMemberWithName("dom")
     data = _instance.GetChildMemberWithName("data")
     ranges = domClass.GetNonSyntheticValue().GetChildMemberWithName("ranges")
-    return f"[{ranges.GetSummary() or ranges.GetValue()}] {GetArrayType(_instance)}"
+    return f"[{RangesToString(ranges)}] {GetArrayType(_instance)}"
 
 
 def GetArrayType(_instance):
     ddata = _instance.GetChildMemberWithName("data")
     # use the element type we can compute from ddata
-    ddata_regex_c = re.compile(r"^_ddata_([a-zA-Z0-9_]+)(?:_chpl)?$")
-    ddata_regex_llvm = re.compile(r"^$")  # TODO
+    # TODO: handle wide pointers
+    ddata_regex_c = re.compile(r"^_ddata_(?P<eltType>[a-zA-Z0-9_]+?)(?:_chpl)?$")
+    ddata_regex_llvm = re.compile(r"^(?P<eltType>[a-zA-Z0-9_\(\)]+) \*$")
     ddata_typename = ddata.GetTypeName()
-    ddata_match = ddata_regex_c.match(ddata_typename) or ddata_regex
+    ddata_match = ddata_regex_c.match(ddata_typename) or ddata_regex_llvm.match(ddata_typename)
     if not ddata_match:
         print(
             f"ArrayProvider: ddata type name '{ddata_typename}' did not match expected pattern"
         )
         return "unknown"
-    element_type = ddata_match.group(1)
+    element_type = ddata_match.group("eltType")
     return element_type
 
 
@@ -408,7 +353,7 @@ class ArrayProvider:
         self.synthetic_children["dom"] = self.domClass
         self.synthetic_children["data"] = self.data
 
-        self.rank = int(match.group(1))
+        self.rank = int(match.group("rank"))
         self.element_type = GetArrayType(self._instance)
 
         self._make_synthetic_array()
@@ -457,7 +402,12 @@ class ArrayProvider:
                 .GetChildMemberWithName("_high")
                 .GetValueAsSigned()
             )
-            bounds.append((low, high))
+            stride = (
+                range_dim.GetNonSyntheticValue()
+                .GetChildMemberWithName("_stride")
+                .GetValueAsSigned()
+            )
+            bounds.append((low, high, stride))
 
         data_ptr = self.data.GetValueAsUnsigned()
 
@@ -465,24 +415,25 @@ class ArrayProvider:
             if dims == 0:
                 yield []
             else:
-                low, high = bounds[dims - 1]
-                for i in range(low, high + 1):
+                low, high, stride = bounds[dims - 1]
+                for i in range(low, high + 1, stride if stride else 1):
                     for rest in generate_indices(dims - 1, bounds):
-                        yield [i] + rest
+                        yield rest + [i]
 
-        # Calculate strides
-        strides = [1]
-        for i in range(self.rank - 1, 0, -1):
-            low, high = bounds[i]
-            size = high - low + 1
-            strides.insert(0, strides[0] * size)
 
         for indices in generate_indices(self.rank, bounds):
-            # Calculate linear offset
+            # Calculate linear offset for multi-dimensional array
             offset = 0
-            for i, idx in enumerate(indices):
-                low, _ = bounds[i]
-                offset += (idx - low) * strides[i]
+            multiplier = 1
+            for dim in reversed(range(self.rank)):
+                low, high, stride = bounds[dim]
+                dim_index = indices[dim]
+                # Convert from Chapel index to 0-based index
+                zero_based_index = (dim_index - low) // (stride if stride else 1)
+                offset += zero_based_index * multiplier
+                # Update multiplier for next dimension
+                dim_size = (high - low) // (stride if stride else 1) + 1
+                multiplier *= dim_size
 
             element_addr = data_ptr + offset * element_size
             element_name = f"[{','.join(map(str, indices))}]"
@@ -526,38 +477,92 @@ class ArrayProvider:
         )
 
 
+owned_regex = re.compile(r"^((_owned_.+(_chpl)?)|(OwnedObject::owned .+))$")
+shared_regex = re.compile(r"^((_shared_.+(_chpl)?)|(SharedObject::shared .+))$")
+
+
+def ManagedObjectRecognizer(sbtype, internal_dict):
+    typename = sbtype.GetName()
+    match = owned_regex.match(typename) or shared_regex.match(typename)
+    return match is not None and not sbtype.IsPointerType()
+
+
+def ManagedObjectSummary(valobj, internal_dict):
+    chpl_p = valobj.GetNonSyntheticValue().GetChildMemberWithName("chpl_p")
+
+    if chpl_p.GetValueAsUnsigned() == 0:
+        return "nil"
+    else:
+        return chpl_p.GetSummary() or chpl_p.GetValue()
+
+
+class ManagedObjectProvider:
+    def __init__(self, valobj, internal_dict):
+        self.valobj = valobj
+
+        chpl_p = self.valobj.GetNonSyntheticValue().GetChildMemberWithName(
+            "chpl_p"
+        )
+        if chpl_p.GetValueAsUnsigned() == 0:
+            self.synthetic_children = {}
+        else:
+            self.synthetic_children = {}
+            deref_chpl_p = chpl_p.Dereference()
+            if deref_chpl_p.IsValid():
+                for i in range(deref_chpl_p.GetNumChildren()):
+                    child = deref_chpl_p.GetChildAtIndex(i)
+                    if child.IsValid():
+                        self.synthetic_children[child.GetName()] = child
+
+    def has_children(self):
+        return self.num_children() > 0
+
+    def num_children(self):
+        return len(self.synthetic_children)
+
+    def get_child_index(self, name):
+        if name in self.synthetic_children:
+            return list(self.synthetic_children.keys()).index(name)
+        else:
+            return -1
+
+    def get_child_at_index(self, index):
+        if index < 0 or index >= self.num_children():
+            return None
+        key = list(self.synthetic_children.keys())[index]
+        element_data = self.synthetic_children[key].GetData()
+        element_type = self.synthetic_children[key].GetType()
+        return self.valobj.CreateValueFromData(
+            f"{key}", element_data, element_type
+        )
+
+
 def __lldb_init_module(debugger, internal_dict):
-    debugger.HandleCommand(
-        "type summary add --expand --python-function chpl_lldb_pretty_print.StringSummary  -x '^((string(_chpl)?)|String::string)$'"
-    )
-    debugger.HandleCommand(
-        "type synth add --python-class chpl_lldb_pretty_print.StringProvider -x '^((string(_chpl)?)|String::string)$'"
-    )
 
-    debugger.HandleCommand(
-        f"type summary add --expand --python-function chpl_lldb_pretty_print.RangeSummary --recognizer-function chpl_lldb_pretty_print.RangeRecognizer"
-    )
-    debugger.HandleCommand(
-        f"type synth add --python-class chpl_lldb_pretty_print.RangeProvider --recognizer-function chpl_lldb_pretty_print.RangeRecognizer"
-    )
+    def register(summary_function, provider_class, recognizer_str):
+        debugger.HandleCommand(
+            f"type summary add --skip-pointers --expand --python-function chpl_lldb_pretty_print.{summary_function} {recognizer_str}"
+        )
+        debugger.HandleCommand(
+            f"type synth add --skip-pointers --python-class chpl_lldb_pretty_print.{provider_class} {recognizer_str}"
+        )
 
-    debugger.HandleCommand(
-        f"type summary add --expand --python-function chpl_lldb_pretty_print.DomainSummary --recognizer-function chpl_lldb_pretty_print.DomainRecognizer"
-    )
-    debugger.HandleCommand(
-        f"type synth add --python-class chpl_lldb_pretty_print.DomainProvider --recognizer-function chpl_lldb_pretty_print.DomainRecognizer"
-    )
+    def regex(type_regex):
+        return f"-x '^({type_regex})$'"
 
-    debugger.HandleCommand(
-        f"type summary add --expand --python-function chpl_lldb_pretty_print.HomogeneousTupleSummary --recognizer-function chpl_lldb_pretty_print.HomogeneousTupleRecognizer"
-    )
-    debugger.HandleCommand(
-        f"type synth add --python-class chpl_lldb_pretty_print.HomogeneousTupleProvider --recognizer-function chpl_lldb_pretty_print.HomogeneousTupleRecognizer"
-    )
+    def recognizer(func_name):
+        return f"--recognizer-function chpl_lldb_pretty_print.{func_name}"
 
-    debugger.HandleCommand(
-        f"type summary add --expand --python-function chpl_lldb_pretty_print.ArraySummary --recognizer-function chpl_lldb_pretty_print.ArrayRecognizer"
+    register(
+        "StringSummary",
+        "StringProvider",
+        regex("(string(_chpl)?)|String::string"),
     )
-    debugger.HandleCommand(
-        f"type synth add --python-class chpl_lldb_pretty_print.ArrayProvider --recognizer-function chpl_lldb_pretty_print.ArrayRecognizer"
+    register("RangeSummary", "RangeProvider", recognizer("RangeRecognizer"))
+    register("DomainSummary", "DomainProvider", recognizer("DomainRecognizer"))
+    register("ArraySummary", "ArrayProvider", recognizer("ArrayRecognizer"))
+    register(
+        "ManagedObjectSummary",
+        "ManagedObjectProvider",
+        recognizer("ManagedObjectRecognizer"),
     )

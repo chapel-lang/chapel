@@ -1,0 +1,160 @@
+42 | 3.14 | (x = 42) | {x = 17} | {x = 17}
+42 | 3.14 | (x = 42) | {x = 17} | {x = 17}
+Running DWARF verification...
+Success!!
+Running DWARF dump checks...
+=================================myRec(int(64))=================================
+DW_TAG_structure_type
+              DW_AT_name	("myRec(int(64))")
+              DW_AT_byte_size	(0x08)
+              DW_AT_decl_file	("./refs.chpl")
+              DW_AT_decl_line	(5)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("x")
+                DW_AT_type	("int(64)")
+                DW_AT_decl_file	("./refs.chpl")
+                DW_AT_decl_line	(6)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  NULL
+================================================================================
+====================================MyClass=====================================
+DW_TAG_pointer_type
+              DW_AT_type	("refs::MyClass")
+              DW_AT_name	("MyClass")
+DW_TAG_structure_type
+              DW_AT_name	("MyClass")
+              DW_AT_byte_size	(0x10)
+              DW_AT_decl_file	("./refs.chpl")
+              DW_AT_decl_line	(9)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("super")
+                DW_AT_type	("ChapelBase::RootClass")
+                DW_AT_decl_file	("./refs.chpl")
+                DW_AT_decl_line	(9)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("x")
+                DW_AT_type	("int(64)")
+                DW_AT_decl_file	("./refs.chpl")
+                DW_AT_decl_line	(10)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x08)
+  NULL
+DW_TAG_structure_type
+              DW_AT_name	("MyClass")
+              DW_AT_declaration	(true)
+              DW_AT_alignment	(8)
+DW_TAG_pointer_type
+              DW_AT_type	("refs::MyClass")
+              DW_AT_name	("MyClass")
+================================================================================
+=====================================myInt======================================
+DW_TAG_variable
+              DW_AT_name	("myInt")
+              DW_AT_decl_file	("./refs.chpl")
+              DW_AT_decl_line	(16)
+              DW_AT_type	("int(64)")
+================================================================================
+=====================================myReal=====================================
+DW_TAG_variable
+              DW_AT_name	("myReal")
+              DW_AT_decl_file	("./refs.chpl")
+              DW_AT_decl_line	(18)
+              DW_AT_type	("real(64)")
+================================================================================
+====================================myRecInt====================================
+DW_TAG_variable
+              DW_AT_name	("myRecInt")
+              DW_AT_decl_file	("./refs.chpl")
+              DW_AT_decl_line	(20)
+              DW_AT_type	("refs::myRec(int(64))")
+================================================================================
+================================myUnmanagedClass================================
+DW_TAG_variable
+              DW_AT_name	("myUnmanagedClass")
+              DW_AT_decl_file	("./refs.chpl")
+              DW_AT_decl_line	(22)
+              DW_AT_type	("refs::MyClass *")
+================================================================================
+==================================myOwnedClass==================================
+DW_TAG_variable
+              DW_AT_name	("myOwnedClass")
+              DW_AT_decl_file	("./refs.chpl")
+              DW_AT_decl_line	(25)
+              DW_AT_type	("OwnedObject::owned MyClass")
+================================================================================
+====================================myIntRef====================================
+DW_TAG_variable
+              DW_AT_name	("myIntRef")
+              DW_AT_decl_file	("./refs.chpl")
+              DW_AT_decl_line	(29)
+              DW_AT_type	("int(64) *")
+================================================================================
+===================================myRealRef====================================
+DW_TAG_variable
+              DW_AT_name	("myRealRef")
+              DW_AT_decl_file	("./refs.chpl")
+              DW_AT_decl_line	(31)
+              DW_AT_type	("real(64) *")
+================================================================================
+==================================myRecIntRef===================================
+DW_TAG_variable
+              DW_AT_name	("myRecIntRef")
+              DW_AT_decl_file	("./refs.chpl")
+              DW_AT_decl_line	(33)
+              DW_AT_type	("refs::myRec(int(64)) *")
+================================================================================
+==============================myUnmanagedClassRef===============================
+DW_TAG_variable
+              DW_AT_name	("myUnmanagedClassRef")
+              DW_AT_decl_file	("./refs.chpl")
+              DW_AT_decl_line	(35)
+              DW_AT_type	("void *")
+================================================================================
+================================myOwnedClassRef=================================
+DW_TAG_variable
+              DW_AT_name	("myOwnedClassRef")
+              DW_AT_decl_file	("./refs.chpl")
+              DW_AT_decl_line	(37)
+              DW_AT_type	("OwnedObject::owned MyClass *")
+================================================================================
+===================================myIntCRef====================================
+DW_TAG_variable
+              DW_AT_name	("myIntCRef")
+              DW_AT_decl_file	("./refs.chpl")
+              DW_AT_decl_line	(44)
+              DW_AT_type	("int(64) *")
+================================================================================
+===================================myRealCRef===================================
+DW_TAG_variable
+              DW_AT_name	("myRealCRef")
+              DW_AT_decl_file	("./refs.chpl")
+              DW_AT_decl_line	(46)
+              DW_AT_type	("real(64) *")
+================================================================================
+==================================myRecIntCRef==================================
+DW_TAG_variable
+              DW_AT_name	("myRecIntCRef")
+              DW_AT_decl_file	("./refs.chpl")
+              DW_AT_decl_line	(48)
+              DW_AT_type	("refs::myRec(int(64)) *")
+================================================================================
+==============================myUnmanagedClassCRef==============================
+DW_TAG_variable
+              DW_AT_name	("myUnmanagedClassCRef")
+              DW_AT_decl_file	("./refs.chpl")
+              DW_AT_decl_line	(50)
+              DW_AT_type	("void *")
+================================================================================
+================================myOwnedClassCRef================================
+DW_TAG_variable
+              DW_AT_name	("myOwnedClassCRef")
+              DW_AT_decl_file	("./refs.chpl")
+              DW_AT_decl_line	(52)
+              DW_AT_type	("OwnedObject::owned MyClass *")
+================================================================================
+Success!!
