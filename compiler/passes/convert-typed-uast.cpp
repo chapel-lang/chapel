@@ -4495,7 +4495,9 @@ Expr* TConverter::convertNamedCallOrNull(const Call* node, RV& rv) {
   if (sig && sig->isMethod() && !ci.isMethodCall() &&
       !ci.isOpCall()) {
     // If the call is a method call, but the CI does not indicate it,
-    // then we need to adjust the CI to make it a method call.
+    // then we're dealing with an implicit receiver.
+    //
+    // In that case, we need to adjust the CI to make it a method call.
     ci = resolution::CallInfo::createWithReceiver(ci, sig->formalType(0));
     auto fn = cur.symbol->toFunction();
     INT_ASSERT(fn && fn->isMethod());
