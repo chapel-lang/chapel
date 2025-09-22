@@ -571,6 +571,18 @@ CLASS_END(NamedDecl)
 CLASS_BEGIN(EnumElement)
   PLAIN_GETTER(EnumElement, init_expression, "Get the init expression of this EnumElement node",
                Nilable<const chpl::uast::AstNode*>, return node->initExpression())
+  PLAIN_GETTER(EnumElement, assigned_value, "Get the 'param' value assigned to this EnumElement node, either directly or via sequence increment",
+               Nilable<const chpl::types::Param*>,
+               auto parentId = node->id().parentSymbolId(context);
+               auto& numericValues = chpl::resolution::computeNumericValuesOfEnumElements(context, parentId);
+
+               if (auto it = numericValues.find(node->id());
+                   it != numericValues.end()) {
+                 return it->second.param();
+               }
+
+               return nullptr;
+               )
 CLASS_END(EnumElement)
 
 CLASS_BEGIN(Function)
