@@ -3760,7 +3760,7 @@ struct Converter final : UastConverter {
     if (auto it = syms.find(node->id()); it != syms.end()) {
       // Sometimes in the typed converter we manually convert untyped AST
       // to use as a base for instantiation. E.g., dtCPointer
-      return nullptr;
+      return it->second->defPoint->remove();
     }
 
     const resolution::ResolutionResultByPostorderID* resolved = nullptr;
@@ -3834,8 +3834,36 @@ struct Converter final : UastConverter {
 
 /// Generic conversion calling the above functions ///
 Expr* Converter::convertAST(const uast::AstNode* node) {
+  bool emptyModStack = modStack.empty();
+  ID modId;
+  if (emptyModStack) {
+    // This might happen if 'convertAST' is called by the typed converter,
+    // and we have not set a module.
+    modId = parsing::idToParentModule(context, node->id());
+    UniqueString unused;
+    bool isFromLibraryFile = context->moduleIsInLibrary(node->id(), unused);
+    auto modNode = parsing::idToAst(context, modId)->toModule();
+    this->modStack.push_back(ModStackEntry(modNode, isFromLibraryFile));
+  } else if (fVerify) {
+    auto modId = parsing::idToParentModule(context, node->id());
+    INT_ASSERT(modStack.back().mod->id() == modId);
+  }
+
   astlocMarker markAstLoc(node->id());
-  return node->dispatch<Expr*>(*this);
+  auto ret = node->dispatch<Expr*>(*this);
+
+  if (emptyModStack) {
+    auto mod = modSyms[modId];
+    for (auto usedMod : modStack.back().usedModules) {
+      mod->moduleUseAdd(usedMod);
+    }
+    for (auto modId : modStack.back().usedModuleIds) {
+      noteModuleFixupNeeded(mod, modId);
+    }
+    modStack.pop_back();
+  }
+
+  return ret;
 }
 
 /// Calls convertAST with a specific modTag
@@ -3843,8 +3871,7 @@ Expr* Converter::convertAST(const uast::AstNode* node, ModTag modTag) {
   auto prev = topLevelModTag;
   topLevelModTag = modTag;
 
-  astlocMarker markAstLoc(node->id());
-  auto ret =  node->dispatch<Expr*>(*this);
+  auto ret = convertAST(node);
 
   topLevelModTag = prev;
   return ret;
