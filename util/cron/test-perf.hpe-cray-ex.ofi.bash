@@ -17,6 +17,7 @@ source $UTIL_CRON_DIR/common-hpe-cray-ex.bash
 
 export CHPL_RT_COMM_OFI_EXPECTED_PROVIDER="cxi"
 export CHPL_RT_MAX_HEAP_SIZE="80%"
+export CHPL_LAUNCHER_PARTITION=bardpeak
 
 nightly_args="${nightly_args} -no-buildcheck"
 perf_args="-performance -perflabel ml- -numtrials 1"
