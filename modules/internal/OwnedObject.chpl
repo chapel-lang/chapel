@@ -180,6 +180,7 @@ module OwnedObject {
     If the argument is `nil` it returns `nil`.
   */
   inline proc type _owned.release(pragma "leaves arg nil" ref obj: owned) {
+    pragma "no user debug info"
     var oldPtr = obj.chpl_p;
     type t = obj.chpl_t;
 
@@ -250,6 +251,7 @@ module OwnedObject {
         compilerError("cannot assign to '" + lhs.type:string + "' " +
                       "from '" + rhs.type:string + "'");
 
+    pragma "no user debug info"
     var oldPtr = _to_unmanaged(lhs.chpl_p);
     lhs.chpl_p = owned.release(rhs);
     delete oldPtr;
@@ -273,6 +275,7 @@ module OwnedObject {
   proc chpl__initCopy(pragma "leaves arg nil" pragma "nil from arg"
                       ref src: _owned,
                       definedConst: bool) {
+    pragma "no user debug info"
     var ret = new _owned(src);
     return ret;
   }
@@ -283,6 +286,7 @@ module OwnedObject {
   proc chpl__autoCopy(pragma "leaves arg nil" pragma "nil from arg"
                       ref src: _owned,
                       definedConst: bool) {
+    pragma "no user debug info"
     var ret = new _owned(src);
     return ret;
   }
@@ -325,6 +329,7 @@ module OwnedObject {
   @chpldoc.nodoc
   inline operator :(pragma "nil from arg" in x:owned class, type t:owned class?)    where isSubtype(x.chpl_t,_to_nonnil(t.chpl_t))
   {
+    pragma "no user debug info"
     var castPtr = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
     x.chpl_p = nil;
     // t stores a nilable type
@@ -336,6 +341,7 @@ module OwnedObject {
   inline operator :(pragma "nil from arg" in x:owned class?, type t:owned class?)
     where isSubtype(x.chpl_t,t.chpl_t)
   {
+    pragma "no user debug info"
     var castPtr = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
     x.chpl_p = nil;
     // t stores a nilable type
@@ -347,6 +353,7 @@ module OwnedObject {
   inline operator :(pragma "nil from arg" in x:owned class, type t:owned class)
     where isSubtype(x.chpl_t,t.chpl_t)
   {
+    pragma "no user debug info"
     var castPtr = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
     x.chpl_p = nil;
     // t stores a non-nilable type
@@ -358,6 +365,7 @@ module OwnedObject {
   inline operator :(in x:owned class?, type t:owned class) throws
     where isSubtype(_to_nonnil(x.chpl_t),t.chpl_t)
   {
+    pragma "no user debug info"
     var castPtr = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
     if castPtr == nil {
       throw new owned NilClassError();
@@ -376,6 +384,7 @@ module OwnedObject {
       throw new owned NilClassError();
     }
     // the following line can throw ClassCastError
+    pragma "no user debug info"
     var castPtr = try x.chpl_p:_to_nonnil(_to_unmanaged(t.chpl_t));
     x.chpl_p = nil;
     return new _owned(castPtr);
@@ -385,6 +394,7 @@ module OwnedObject {
     where isProperSubtype(t.chpl_t,x.chpl_t)
   {
     // the following line can throw ClassCastError
+    pragma "no user debug info"
     var castPtr = try x.chpl_p:_to_nonnil(_to_unmanaged(t.chpl_t));
     x.chpl_p = nil;
     return new _owned(castPtr);
@@ -397,6 +407,7 @@ module OwnedObject {
     where isProperSubtype(t.chpl_t,x.chpl_t)
   {
     // this cast returns nil if the dynamic type is not compatible
+    pragma "no user debug info"
     var castPtr = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
     if castPtr != nil {
       x.chpl_p = nil;
@@ -409,6 +420,7 @@ module OwnedObject {
     where isProperSubtype(_to_nonnil(t.chpl_t),x.chpl_t)
   {
     // this cast returns nil if the dynamic type is not compatible
+    pragma "no user debug info"
     var castPtr = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
     if castPtr != nil {
       x.chpl_p = nil;
@@ -424,6 +436,7 @@ module OwnedObject {
     if isGenericType(t) then
       compilerError("illegal cast from nil to a generic owned type");
 
+    pragma "no user debug info"
     var tmp:t;
     return tmp;
   }
