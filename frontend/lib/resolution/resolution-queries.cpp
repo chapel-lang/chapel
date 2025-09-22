@@ -463,9 +463,8 @@ scopeResolveModule(Context* context, ID id) {
 
 }
 
-const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id,
-                                              ID stmtIdIfInSameModule) {
-  QUERY_BEGIN(typeForModuleLevelSymbol, context, id, stmtIdIfInSameModule);
+const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id) {
+  QUERY_BEGIN(typeForModuleLevelSymbol, context, id);
 
   QualifiedType result;
 
@@ -475,15 +474,10 @@ const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id,
     // with 'resolveModuleStmt' will return a bogus result because that 'id'
     // is not at the statement level.
     auto stmtId = parsing::idToContainingMultiDeclId(context, id);
+
     const auto& resolvedStmt = resolveModuleStmt(context, stmtId);
     if (resolvedStmt.hasId(id)) {
       result = resolvedStmt.byId(id).type();
-      if (result.needsSplitInitTypeInfo(context) && stmtIdIfInSameModule.isEmpty()) {
-        ID moduleId = parsing::idToParentId(context, stmtId);
-        const auto& resolvedModule = resolveModule(context, moduleId);
-        assert(resolvedModule.hasId(id));
-        result = resolvedModule.byId(id).type();
-      }
     } else {
       // fall back to default value
       result = QualifiedType();

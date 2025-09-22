@@ -76,7 +76,7 @@ const ResolutionResultByPostorderID& scopeResolveModule(Context* context,
   Compute the type for a NamedDecl with a particular id.
  */
 const types::QualifiedType& typeForModuleLevelSymbol(
-    Context* context, ID id, ID stmtIdIfInSameModule = ID());
+    Context* context, ID id);
 
 /**
   Compute the type for a Builtin type using just its name

@@ -3538,12 +3538,7 @@ QualifiedType Resolver::typeForId(const ID& id) {
       }
     }
 
-    auto stmtIdIfInSameModule = ID();
-    if (isCurrentModule && curStmt != nullptr) {
-      stmtIdIfInSameModule = curStmt->id();
-    }
-
-    return typeForModuleLevelSymbol(context, id, stmtIdIfInSameModule);
+    return typeForModuleLevelSymbol(context, id);
   }
 
   if (asttags::isEnum(parentTag) && asttags::isEnumElement(tag)) {
