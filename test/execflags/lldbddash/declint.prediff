@@ -13,7 +13,8 @@ grep -v "Breakpoint 1: where" $tmpfile | \
   grep -v "Current executable set to" | \
   grep -v "b debuggerBreakHere" | \
   grep -v 'breakpoint set -n debuggerBreakHere -N debuggerBreakHere' | \
-  grep -v 'breakpoint command add -o up debuggerBreakHere' | \
+  grep -v 'breakpoint command add' | \
+  grep -v 'command script import' | \
   grep -v 'runtime/etc/debug/lldb.commands' \
   > $outfile
 # Also filter out line about memleaks arguments to executable
@@ -22,9 +23,6 @@ grep -v 'settings set -- target.run-args  "--memLeaks"' $tmpfile > $outfile
 # Filter warning about python support
 mv $outfile $tmpfile
 grep -v 'warning: LLDB does not support scripting with Python, pretty-printer will not be used' $tmpfile > $outfile
-# remove command script import
-mv $outfile $tmpfile
-grep -v 'command script import' $tmpfile > $outfile
 rm $tmpfile
 
 #
