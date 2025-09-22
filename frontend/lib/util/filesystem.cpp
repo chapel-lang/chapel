@@ -469,5 +469,35 @@ std::error_code copyModificationTime(const llvm::Twine& srcPath,
   return err;
 }
 
+std::error_code moveFile(const llvm::Twine& srcPath,
+              const llvm::Twine& dstPath) {
+  auto err = llvm::sys::fs::rename(srcPath, dstPath);
+  if (err) {
+    // rename may have failed (especially across filesystems)
+    // fall back to copy (with permissions) and delete
+    err = llvm::sys::fs::copy_file(srcPath, dstPath);
+    if (err) {
+      return err;
+    }
+
+    // and then set permissions, like mv
+    auto maybePerms = llvm::sys::fs::getPermissions(srcPath);
+    if (maybePerms.getError()) {
+      return maybePerms.getError();
+    }
+    err = llvm::sys::fs::setPermissions(dstPath, *maybePerms);
+    if (err) {
+      return err;
+    }
+
+    // and then remove the file, so it's like mv
+    err = llvm::sys::fs::remove(srcPath);
+    if (err) {
+      return err;
+    }
+  }
+  return std::error_code();
+}
+
 
 } // namespace chpl

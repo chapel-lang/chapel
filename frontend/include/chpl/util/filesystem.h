@@ -182,6 +182,8 @@ HashFileResult hashString(llvm::StringRef data);
 std::error_code copyModificationTime(const llvm::Twine& srcPath,
                                      const llvm::Twine& dstPath);
 
+std::error_code moveFile(const llvm::Twine& srcPath,
+                         const llvm::Twine& dstPath);
 
 } // end namespace chpl
 

@@ -130,6 +130,7 @@ using LlvmOptimizationLevel = llvm::OptimizationLevel;
 
 #include "../../frontend/lib/immediates/prim_data.h"
 #include "chpl/util/clang-integration.h"
+#include "chpl/util/filesystem.h"
 
 #include "global-ast-vecs.h"
 
@@ -5704,48 +5705,12 @@ static void moveResultFromTmp(const char* resultName, const char* tmpbinname) {
   // mv tmp/hello.tmp hello
   if( printSystemCommands )
     printf("mv %s %s\n", tmpbinname, resultName);
-
-  err = llvm::sys::fs::rename(tmpbinname, resultName);
+  err = chpl::moveFile(tmpbinname, resultName);
   if (err) {
-    // But that might fail if /tmp is on a different filesystem.
-
-    std::string mv("mv ");
-    mv += tmpbinname;
-    mv += " ";
-    mv += resultName;
-
-    mysystem(mv.c_str(), mv.c_str());
-
-    /* For future LLVM,
-       err = llvm::sys::fs::copy_file(tmpbinname, resultName);
-       if (err) {
-         USR_FATAL("copying file %s to %s failed: %s\n",
-                   tmpbinname,
-                   resultName,
-                   err.message().c_str());
-       }
-
-       // and then set permissions, like mv
-       auto maybePerms = llvm::sys::fs::getPermissions(tmpbinname);
-       if (maybePerms.getError()) {
-         USR_FATAL("reading permissions on %s failed: %s\n",
-                   tmpbinname,
-                   err.message().c_str());
-       }
-       err = llvm::sys::fs::setPermissions(resultName, *maybePerms);
-       if (err) {
-         USR_FATAL("setting permissions on %s failed: %s\n",
-                   resultName,
-                   err.message().c_str());
-       }
-
-       // and then remove the file, so it's like mv
-       err = llvm::sys::fs::remove(tmpbinname);
-       if (err) {
-         USR_FATAL("removing file %s failed: %s\n",
-                   tmpbinname,
-                   err.message().c_str());
-       }*/
+    USR_FATAL("Moving temporary binary '%s' to '%s' failed: %s\n",
+              tmpbinname,
+              resultName,
+              err.message().c_str());
   }
 }
 
