@@ -576,8 +576,8 @@ CLASS_BEGIN(EnumElement)
                auto parentId = node->id().parentSymbolId(context);
                auto& numericValues = chpl::resolution::computeNumericValuesOfEnumElements(context, parentId);
 
-               auto it = numericValues.find(node->id());
-               if (it != numericValues.end()) {
+               if (auto it = numericValues.find(node->id());
+                   it != numericValues.end()) {
                  return it->second.param();
                }
 
