@@ -188,6 +188,9 @@ class Chapel < Formula
   end
 
   test do
+    # Hide ld warning until formula uses LLVM 21+ or if we apply backports to `llvm@20`
+    ENV["MACOSX_DEPLOYMENT_TARGET"] = MacOS.version.to_s if OS.mac? && MacOS.version >= :tahoe
+
     ENV["CHPL_HOME"] = libexec
     ENV["CHPL_INCLUDE_PATH"] = HOMEBREW_PREFIX/"include"
     ENV["CHPL_LIB_PATH"] = HOMEBREW_PREFIX/"lib"
