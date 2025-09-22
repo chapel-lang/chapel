@@ -527,7 +527,7 @@ Resolver::createForScopeResolvingFunction(Context* context,
     TypedFnSignature::get(context, uSig,
                           std::move(formalTypes),
                           whereTbd,
-                          /* needsInstantiation */ false,
+                          /* instantiationState */ TypedFnSignature::INST_CONCRETE,
                           /* instantiatedFrom */ nullptr,
                           /* parentFn */ nullptr,
                           /* formalsInstantiated */ Bitmap(),
@@ -6867,6 +6867,70 @@ static bool isShapedLikeArray(const IndexableLoop* loop) {
   return true;
 }
 
+// Array types are normally built using chpl__buildArrayRuntimeType, which
+// assumes that the actuals are their "final" incarnations (i.e., we're
+// not in an initial/generic signature). It doesn't handle generic types.
+//
+// However, array types in formals are different. Even if they appear
+// concrete, like `[1..4] int`, which is a default-rectangular array over
+// a default-rectangular domain, we allow them to capture other types
+// of arrays (e.g., block distributed ones). So, because (1) in typed
+// signautres we might want to build an array type with a generic element type,
+// which would break the buildRuntimeType assumption, and (2) array type expressions
+// in formals are effectively generic, we treat them specially, throw
+// away their _instance field, and allow generic element types. We want to only
+// do this in formals, though, which is what this function checks for.
+static bool ignoreInstanceInArrayOrDomain(Resolver& rv, const AstNode* exprToConsider) {
+  if (rv.declStack.empty()) return false;
+  if (rv.useConcreteArrayTypeForFormals.contains(exprToConsider->id())) {
+    return false;
+  }
+
+  size_t consideringDecl = rv.declStack.size() - 1;
+
+  // We treat array type expression specially when they are in formal type
+  // expressions. So walk up the decl stack to check if we are in a formal.
+
+  const AstNode* typeExpr = nullptr;
+  while (true) {
+    auto decl = rv.declStack[consideringDecl];
+
+    if (auto fml = decl->toFormal()) {
+      typeExpr = fml->typeExpression();
+      break;
+    } else if (auto vfml = decl->toVarArgFormal()) {
+      typeExpr = vfml->typeExpression();
+      break;
+    } else if (auto td = decl->toTupleDecl()) {
+      if (auto te = td->typeExpression()) {
+
+        // tuple declarations can exist outside of formals, we should check
+        // if we our parent ID is a function. Note: this can't be a nested
+        // tuple decl, since those don't have type expressions.
+
+        auto parentId = parsing::idToParentId(rv.context, td->id());
+        if (uast::asttags::isFunction(parsing::idToTag(rv.context, parentId))) {
+          typeExpr = te;
+        }
+        break;
+      }
+
+      // otherwise, check the parent -- we might be a tuple decl inside a
+      // multi-decl or tuple decl.
+    } else {
+      // some other kind of decl.
+      break;
+    }
+
+    // move on to the next decl in the stack
+    if (consideringDecl == 0) break;
+    consideringDecl--;
+  }
+
+  if (typeExpr == nullptr) return false;
+  return typeExpr->id().contains(exprToConsider->id());
+}
+
 static bool handleArrayTypeExpr(Resolver& rv,
                                 const IndexableLoop* loop) {
   auto& re = rv.byPostorder.byAst(loop);
@@ -6954,6 +7018,17 @@ static bool handleArrayTypeExpr(Resolver& rv,
               /* domainType */ domainTypeAsType,
               /* eltType */ eltType));
     }
+  } else if (ignoreInstanceInArrayOrDomain(rv, loop)) {
+    auto domainT = domainType.type();
+    if (auto dt = domainT->toDomainType()) {
+      domainT = dt->makeUninstanced(rv.context);
+    }
+    auto adjustedDomainType =
+      QualifiedType(QualifiedType::TYPE, domainT);
+    auto adjustedEltType =
+      QualifiedType(QualifiedType::TYPE, eltType.type());
+    arrayType = QualifiedType(QualifiedType::TYPE,
+        ArrayType::getUninstancedArrayType(rv.context, adjustedDomainType, adjustedEltType));
   } else {
     // We have an instantiated domain, so get array type via call to its
     // array builder function.
@@ -6970,6 +7045,7 @@ static bool handleArrayTypeExpr(Resolver& rv,
         actuals);
     auto scope = rv.currentScope();
     auto inScopes = CallScopeInfo::forNormalCall(scope, rv.poiScope);
+
     auto c = resolveGeneratedCall(rv.rc, iterandExpr, ci, inScopes);
     if (!c.exprType().isUnknownOrErroneous()) {
       arrayType = QualifiedType(QualifiedType::TYPE, c.exprType().type());

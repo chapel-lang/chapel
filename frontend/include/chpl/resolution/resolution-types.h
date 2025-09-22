@@ -957,6 +957,15 @@ class TypedFnSignature {
     WHERE_FALSE, // where resulted in false
   } WhereClauseResult;
 
+  typedef enum {
+    INST_CONCRETE = 0, // the function is fully concrete
+    INST_GENERIC_OUT = 0b01, // the function has a generic 'out' formal,
+                             // which is inferred from the body
+    INST_GENERIC_OTHER = 0b10, // the function has a generic formal,
+                               // which is inferred from the call
+    INST_GENERIC_OUT_AND_OTHER = 0b11, // the function has both kinds of generics
+  } InstantiationState;
+
  private:
   // What is the untyped function signature?
   const UntypedFnSignature* untypedSignature_;
@@ -966,7 +975,7 @@ class TypedFnSignature {
   WhereClauseResult whereClauseResult_ = WHERE_TBD;
 
   // Are any of the formals generic or unknown at this point?
-  bool needsInstantiation_ = true;
+  InstantiationState instantiationState_ = INST_GENERIC_OUT_AND_OTHER;
 
   // Does this TypedFnSignature represent a refinement of another
   // TypedFnSignature with no new instantiation information?
@@ -994,7 +1003,7 @@ class TypedFnSignature {
   TypedFnSignature(const UntypedFnSignature* untypedSignature,
                    std::vector<types::QualifiedType> formalTypes,
                    WhereClauseResult whereClauseResult,
-                   bool needsInstantiation,
+                   InstantiationState needsInstantiation,
                    bool isRefinementOnly,
                    const TypedFnSignature* instantiatedFrom,
                    const TypedFnSignature* parentFn,
@@ -1003,7 +1012,7 @@ class TypedFnSignature {
     : untypedSignature_(untypedSignature),
       formalTypes_(std::move(formalTypes)),
       whereClauseResult_(whereClauseResult),
-      needsInstantiation_(needsInstantiation),
+      instantiationState_(needsInstantiation),
       isRefinementOnly_(isRefinementOnly),
       instantiatedFrom_(instantiatedFrom),
       parentFn_(parentFn),
@@ -1015,7 +1024,7 @@ class TypedFnSignature {
                       const UntypedFnSignature* untypedSignature,
                       std::vector<types::QualifiedType> formalTypes,
                       TypedFnSignature::WhereClauseResult whereClauseResult,
-                      bool needsInstantiation,
+                      InstantiationState needsInstantiation,
                       bool isRefinementOnly,
                       const TypedFnSignature* instantiatedFrom,
                       const TypedFnSignature* parentFn,
@@ -1034,7 +1043,7 @@ class TypedFnSignature {
                               const UntypedFnSignature* untypedSignature,
                               std::vector<types::QualifiedType> formalTypes,
                               TypedFnSignature::WhereClauseResult whereClauseResult,
-                              bool needsInstantiation,
+                              InstantiationState needsInstantiation,
                               const TypedFnSignature* instantiatedFrom,
                               const TypedFnSignature* parentFn,
                               Bitmap formalsInstantiated,
@@ -1056,7 +1065,7 @@ class TypedFnSignature {
     return untypedSignature_ == other.untypedSignature_ &&
            formalTypes_ == other.formalTypes_ &&
            whereClauseResult_ == other.whereClauseResult_ &&
-           needsInstantiation_ == other.needsInstantiation_ &&
+           instantiationState_ == other.instantiationState_ &&
            isRefinementOnly_ == other.isRefinementOnly_ &&
            instantiatedFrom_ == other.instantiatedFrom_ &&
            parentFn_ == other.parentFn_ &&
@@ -1106,7 +1115,20 @@ class TypedFnSignature {
 
   /** Returns if any of the formals are generic or unknown */
   bool needsInstantiation() const {
-    return needsInstantiation_;
+    return instantiationState_ != INST_CONCRETE;
+  }
+
+  /** Returns if the function is missing instantiation information besides
+      types of generic 'out' formals.
+
+      The 'out' formals are often not problematic since their types are inferred
+      from the function's body, and not from the call site. */
+  bool needsNonOutInstantiation() const {
+    return (instantiationState_ & INST_GENERIC_OTHER) != 0;
+  };
+
+  InstantiationState instantiationState() const {
+    return instantiationState_;
   }
 
   bool isMethod() const { return untyped()->isMethod(); }
@@ -1694,6 +1716,8 @@ class FormalActualMap {
     CHPL_ASSERT(byFormalIdx_[0].formal()->toNamedDecl()->name() == USTR("this"));
     byFormalIdx_[0].formalType_ = initializer->formalType(0);
   }
+
+  void updateOutFormalTypes(const TypedFnSignature* adjustedSignature);
 
   /** Return the number of formals in this mapping. The number of actuals
       may be more (e.g., for a 'varargs') or less (e.g., default-argument
@@ -3479,6 +3503,29 @@ template<> struct stringify<resolution::TypedFnSignature::WhereClauseResult>
         break;
       case WhereClauseResult::WHERE_FALSE:
         streamOut <<  "WHERE_FALSE";
+        break;
+    }
+}
+};
+
+template<> struct stringify<resolution::TypedFnSignature::InstantiationState>
+{
+  void operator()(std::ostream& streamOut,
+                  StringifyKind stringKind,
+                  const resolution::TypedFnSignature::InstantiationState& stringMe) const {
+    using InstantiationState = resolution::TypedFnSignature::InstantiationState;
+    switch(stringMe) {
+      case InstantiationState::INST_CONCRETE:
+        streamOut << "INST_CONCRETE";
+        break;
+      case InstantiationState::INST_GENERIC_OUT:
+        streamOut <<  "INST_GENERIC_OUT";
+        break;
+      case InstantiationState::INST_GENERIC_OTHER:
+        streamOut <<  "INST_GENERIC_OTHER";
+        break;
+      case InstantiationState::INST_GENERIC_OUT_AND_OTHER:
+        streamOut <<  "INST_GENERIC_OUT_AND_OTHER";
         break;
     }
 }

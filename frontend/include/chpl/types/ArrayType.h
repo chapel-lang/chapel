@@ -73,6 +73,12 @@ class ArrayType final : public CompositeType {
                                        const QualifiedType& domainType,
                                        const QualifiedType& eltType);
 
+  /* construct an array type whose element type / domain type might be constrained,
+     but the array is still generic. */
+  static const ArrayType* getUninstancedArrayType(Context* context,
+                                                  const QualifiedType& domainType,
+                                                  const QualifiedType& eltType);
+
   const Type* substitute(Context* context,
                          const PlaceholderMap& subs) const override {
     return getArrayTypeQuery(context,
@@ -102,6 +108,12 @@ class ArrayType final : public CompositeType {
   const RuntimeType* runtimeType(Context* context) const;
 
   bool isAliasingArray(Context* context) const;
+
+  bool isUninstancedArray() const {
+    /* 0 subs = fully generic, 3 subs = _instance is present, 2 subs =
+       _instance is absent but domain and eltType are present */
+    return substitutions().size() == 2;
+  }
 
   ~ArrayType() = default;
 

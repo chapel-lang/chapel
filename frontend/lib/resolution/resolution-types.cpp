@@ -583,6 +583,30 @@ bool ResolutionResultByPostorderID::update(ResolutionResultByPostorderID& keep,
   return defaultUpdate(keep, addin);
 }
 
+void FormalActualMap::updateOutFormalTypes(const TypedFnSignature* adjustedSignature) {
+  for (auto& entry : byFormalIdx_) {
+    if (entry.formalType().kind() != QualifiedType::OUT) {
+      continue;
+    }
+
+    auto newQt = adjustedSignature->formalType(entry.formalIdx());
+    if (newQt.isUnknownOrErroneous()) {
+      continue;
+    }
+
+    if (auto tt = newQt.type()->toTupleType()) {
+      if (tt->isVarArgTuple()) {
+        // how could we be at this point if we couldn't compute the number
+        // of varargs?
+        CHPL_ASSERT(tt->isStarTuple());
+        newQt = tt->starType();
+      }
+    }
+
+    entry.formalType_ = QualifiedType(entry.formalType_.kind(), newQt.type(), newQt.param());
+  }
+}
+
 bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
                                        const TypedFnSignature* typed,
                                        const CallInfo& call) {
@@ -944,7 +968,7 @@ TypedFnSignature::getTypedFnSignature(Context* context,
                     const UntypedFnSignature* untypedSignature,
                     std::vector<types::QualifiedType> formalTypes,
                     TypedFnSignature::WhereClauseResult whereClauseResult,
-                    bool needsInstantiation,
+                    InstantiationState instantiationState,
                     bool isRefinementOnly,
                     const TypedFnSignature* instantiatedFrom,
                     const TypedFnSignature* parentFn,
@@ -952,14 +976,14 @@ TypedFnSignature::getTypedFnSignature(Context* context,
                     OuterVariables outerVariables) {
   QUERY_BEGIN(getTypedFnSignature, context,
               untypedSignature, formalTypes, whereClauseResult,
-              needsInstantiation, isRefinementOnly, instantiatedFrom, parentFn,
+              instantiationState, isRefinementOnly, instantiatedFrom, parentFn,
               formalsInstantiated,
               outerVariables);
 
   auto result = toOwned(new TypedFnSignature(untypedSignature,
                                              std::move(formalTypes),
                                              whereClauseResult,
-                                             needsInstantiation,
+                                             instantiationState,
                                              isRefinementOnly,
                                              instantiatedFrom,
                                              parentFn,
@@ -974,7 +998,7 @@ TypedFnSignature::get(Context* context,
                       const UntypedFnSignature* untypedSignature,
                       std::vector<types::QualifiedType> formalTypes,
                       TypedFnSignature::WhereClauseResult whereClauseResult,
-                      bool needsInstantiation,
+                      InstantiationState instantiationState,
                       const TypedFnSignature* instantiatedFrom,
                       const TypedFnSignature* parentFn,
                       Bitmap formalsInstantiated,
@@ -982,7 +1006,7 @@ TypedFnSignature::get(Context* context,
   return getTypedFnSignature(context, untypedSignature,
                              std::move(formalTypes),
                              whereClauseResult,
-                             needsInstantiation,
+                             instantiationState,
                              /* isRefinementOnly */ false,
                              instantiatedFrom,
                              parentFn,
@@ -999,7 +1023,7 @@ TypedFnSignature::getInferred(
                              inferredFrom->untyped(),
                              formalTypes,
                              inferredFrom->whereClauseResult(),
-                             inferredFrom->needsInstantiation(),
+                             inferredFrom->instantiationState(),
                              /* isRefinementOnly */ true,
                              inferredFrom->inferredFrom(),
                              inferredFrom->parentFn(),
@@ -1020,7 +1044,7 @@ TypedFnSignature::substitute(Context* context,
   return getTypedFnSignature(context, untyped(),
                              std::move(newFormalTypes),
                              whereClauseResult(),
-                             needsInstantiation(),
+                             instantiationState(),
                              isRefinementOnly_,
                              instantiatedFrom(),
                              parentFn(),
@@ -1302,7 +1326,14 @@ MostSpecificCandidates::inferOutFormals(ResolutionContext* rc,
   for (int i = 0; i < NUM_INTENTS; i++) {
     if (MostSpecificCandidate& c = candidates[i]) {
       constexpr auto f = chpl::resolution::inferOutFormals;
-      c.fn_ = f(rc, c.fn(), instantiationPoiScope);
+      auto oldFn = c.fn();
+      c.fn_ = f(rc, oldFn, instantiationPoiScope);
+
+      // We changed an arbitrary number of formal types. The FormalActualMap
+      // now might contain stale formal types. Update it.
+      if (c.fn_ != oldFn && c.faMap_) {
+        c.faMap_->updateOutFormalTypes(c.fn_);
+      }
     }
   }
 }
