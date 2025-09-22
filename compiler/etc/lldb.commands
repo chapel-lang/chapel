@@ -9,3 +9,4 @@ command regex loc    's/(.*)/expr -- ::stringLoc(%1)/'
 
 breakpoint set -n debuggerBreakHere -N debuggerBreakHere
 breakpoint command add -o up debuggerBreakHere
+command script import -c chpl_lldb_debuggerBreakHere.py

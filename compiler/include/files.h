@@ -130,7 +130,7 @@ void restoreAdditionalSourceFiles();
 
 void genIncludeCommandLineHeaders(FILE* outfile);
 
-const char* createDebuggerFile(const char* debugger, int argc, char* argv[]);
+std::string getDebuggerCommands(std::string_view, int argc, char* argv[]);
 
 std::string getChplDepsApp();
 bool compilingWithPrgEnv();

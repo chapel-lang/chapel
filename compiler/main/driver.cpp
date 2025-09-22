@@ -925,18 +925,16 @@ static void setEdition(const ArgumentDescription* desc, const char* arg) {
 }
 
 static void runCompilerInGDB(int argc, char* argv[]) {
-  const char* gdbCommandFilename = createDebuggerFile("gdb", argc, argv);
-  const char* command = astr("gdb -q ", argv[0]," -x ", gdbCommandFilename);
-  int status = mysystem(command, "running gdb", false);
+  auto commands = getDebuggerCommands("gdb", argc, argv);
+  int status = mysystem(commands.c_str(), "running gdb", false);
 
   clean_exit(status);
 }
 
 
 static void runCompilerInLLDB(int argc, char* argv[]) {
-  const char* lldbCommandFilename = createDebuggerFile("lldb", argc, argv);
-  const char* command = astr("lldb -s ", lldbCommandFilename, " ", argv[0]);
-  int status = mysystem(command, "running lldb", false);
+  auto commands = getDebuggerCommands("lldb", argc, argv);
+  int status = mysystem(commands.c_str(), "running lldb", false);
 
   clean_exit(status);
 }
