@@ -349,6 +349,7 @@ proc _shared.init=(pragma "nil from arg" in take: owned) {
     as an expiring value.
   */
   inline proc type _shared.adopt(pragma "nil from arg" in obj: owned) {
+    pragma "no user debug info"
     var ptr = owned.release(obj);
     return shared.adopt(ptr);
   }
@@ -527,6 +528,7 @@ proc _shared.init=(pragma "nil from arg" in take: owned) {
       throw new owned NilClassError();
     }
     // the following line can throw ClassCastError
+    pragma "no user debug info"
     var p = try x.chpl_p:_to_nonnil(_to_unmanaged(t.chpl_t));
 
     return new _shared(true, _to_borrowed(p.type), p, x.chpl_pn);
@@ -536,6 +538,7 @@ proc _shared.init=(pragma "nil from arg" in take: owned) {
     where isProperSubtype(t.chpl_t, x.chpl_t)
   {
     // the following line can throw ClassCastError
+    pragma "no user debug info"
     var p = try x.chpl_p:_to_nonnil(_to_unmanaged(t.chpl_t));
 
     return new _shared(true, _to_borrowed(p.type), p, x.chpl_pn);
@@ -548,6 +551,7 @@ proc _shared.init=(pragma "nil from arg" in take: owned) {
     where isProperSubtype(t.chpl_t, x.chpl_t)
   {
     // this cast returns nil if the dynamic type is not compatible
+    pragma "no user debug info"
     var p = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
     return new _shared(true, _to_borrowed(p.type), p, x.chpl_pn);
   }
@@ -556,6 +560,7 @@ proc _shared.init=(pragma "nil from arg" in take: owned) {
     where isProperSubtype(t.chpl_t, x.chpl_t:class?)
   {
     // this cast returns nil if the dynamic type is not compatible
+    pragma "no user debug info"
     var p = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
     return new _shared(true, _to_borrowed(p.type), p, x.chpl_pn);
   }
@@ -568,6 +573,7 @@ proc _shared.init=(pragma "nil from arg" in take: owned) {
     if isGenericType(t) then
       compilerError("illegal cast from nil to a generic shared type");
 
+    pragma "no user debug info"
     var tmp:t;
     return tmp;
   }
