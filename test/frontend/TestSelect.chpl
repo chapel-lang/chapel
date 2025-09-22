@@ -45,6 +45,20 @@ proc valueRet(arg: int) {
   }
 }
 
+proc valHelper(arg: int) {
+  return arg;
+}
+
+proc selectReturnProc(arg: int) {
+  select arg {
+    when valHelper(1) do return 1;
+    when valHelper(2) do return 2;
+    when valHelper(3), valHelper(4), valHelper(5) do return 5;
+  }
+
+  return 0;
+}
+
 proc main() {
   test(1);
   test(2);
@@ -79,4 +93,6 @@ proc main() {
   println(valueRet(1));
   println(valueRet(5));
   println(valueRet(99));
+
+  println(selectReturnProc(1));
 }

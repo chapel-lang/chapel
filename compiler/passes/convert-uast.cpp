@@ -3585,6 +3585,12 @@ struct Converter final : UastConverter {
 
   Expr* visit(const uast::Variable* node) {
     auto isTypeVar = node->kind() == uast::Variable::TYPE;
+    if (auto it = syms.find(node->id()); isTypeVar && it != syms.end()) {
+      // Sometimes in the typed converter we manually convert untyped AST
+      // to use as a base for instantiation. E.g., dtCPointer
+      return nullptr;
+    }
+
     auto stmts = new BlockStmt(BLOCK_SCOPELESS);
     if (symbolsToIgnore.count(node->id()) != 0) return nullptr;
 

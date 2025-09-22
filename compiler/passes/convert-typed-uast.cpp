@@ -1064,6 +1064,9 @@ struct TConverter final : UastConverter,
   bool enter(const Block* node, RV& rv);
   void exit(const Block* node, RV& rv);
 
+  bool enter(const Range* node, RV& rv);
+  void exit(const Range* node, RV& rv);
+
   bool enter(const AstNode* node, RV& rv);
   void exit(const AstNode* node, RV& rv);
 };
@@ -2512,12 +2515,17 @@ struct ConvertTypeHelper {
     // and this also applies to things like default-initialization (where
     // we zero-initialize the memory), or assignment (where we bitcopy).
     auto ret = new PrimitiveType(nullptr);
+    auto node = parsing::idToAst(context(), t->id())->toNamedDecl();
 
     INT_ASSERT(!t->linkageName().isEmpty());
-    auto name = astr(t->linkageName());
+    auto name = astr(node->name());
 
     auto ts = new TypeSymbol(name, ret);
-    INT_ASSERT(ts->name == ts->cname);
+    ts->cname = astr(t->linkageName());
+
+    bool isFromLibrary = tc_->cur.moduleFromLibraryFile;
+    attachSymbolAttributes(context(), node, ts, isFromLibrary);
+    attachSymbolVisibility(node, ts);
 
     ts->addFlag(FLAG_EXTERN);
 
@@ -2994,8 +3002,7 @@ Type* TConverter::convertType(const types::Type* t) {
   // Set the converted type once again.
   convertedTypes[t] = {true, ret};
 
-  if (!isPrimitiveType(ret) &&
-      ret->symbol->hasFlag(FLAG_INSTANTIATED_GENERIC) == false &&
+  if (ret->symbol->hasFlag(FLAG_INSTANTIATED_GENERIC) == false &&
       ret != dtObject) {
     ID id;
     if (auto ct = t->getCompositeType()) {
@@ -4485,6 +4492,18 @@ Expr* TConverter::convertNamedCallOrNull(const Call* node, RV& rv) {
                                          raiseErrors,
                                          &actualAsts);
 
+  if (sig && sig->isMethod() && !ci.isMethodCall() &&
+      !ci.isOpCall()) {
+    // If the call is a method call, but the CI does not indicate it,
+    // then we're dealing with an implicit receiver.
+    //
+    // In that case, we need to adjust the CI to make it a method call.
+    ci = resolution::CallInfo::createWithReceiver(ci, sig->formalType(0));
+    auto fn = cur.symbol->toFunction();
+    INT_ASSERT(fn && fn->isMethod());
+    actualAsts.insert(actualAsts.begin(), fn->thisFormal());
+  }
+
   // No need to resolve assignment betwen types
   if (ci.name() == USTR("=") &&
       (ci.actual(0).type().isType() || ci.actual(0).type().isParam())) {
@@ -4620,7 +4639,16 @@ SymExpr* TConverter::ActualConverter::convertActual(const FormalActual& fa) {
 
     // Convert the actual and leave.
     types::QualifiedType actualType;
-    auto actualExpr = tc_->convertExpr(astActual, rv_, &actualType);
+    Expr* actualExpr = nullptr;
+    if (auto formal = astActual->toFormal()) {
+      // We don't have a 'this' identifier for implicit method calls, so we
+      // use the 'this' formal's uAST as a signal to generate the implicit
+      // 'this'.
+      INT_ASSERT(formal->name() == USTR("this"));
+      actualExpr = tc_->codegenImplicitThis(rv_);
+    } else {
+      actualExpr = tc_->convertExpr(astActual, rv_, &actualType);
+    }
     auto temp = tc_->storeInTempIfNeeded(actualExpr, actualType);
 
     // Note: Assumes that an unknown formal indicates some kind of fabricated
@@ -4689,7 +4717,8 @@ SymExpr* TConverter::ActualConverter::convertActual(const FormalActual& fa) {
     // The formal is part of a compiler-generated function, so we can just
     // construct a default-value for the type as uAST will not be supplied.
     INT_ASSERT(!decl || decl->id().isFabricatedId());
-    auto t = fa.formalType().type();
+
+    auto t = tfs_->formalType(fa.formalIdx()).type();
     expr = tc_->defaultValueForType(t, decl, rvCalledFn);
     exprType = fa.formalType();
 
@@ -5776,9 +5805,9 @@ bool TConverter::enter(const Select* node, RV& rv) {
   auto selectSym = storeInTempIfNeeded(selectExpr, selectQT);
 
   auto traverse = [this,&rv](const When* when) {
-    enterScope(when->body(), rv);
+    enterScope(when, rv);
     when->body()->traverse(rv);
-    exitScope(when->body(), rv);
+    exitScope(when, rv);
   };
 
   int count = 0;
@@ -5849,6 +5878,41 @@ void TConverter::exit(const Block* node, RV& rv) {
   exitScope(node, rv);
   auto cur = popBlock();
   insertStmt(cur);
+}
+
+bool TConverter::enter(const Range* node, RV& rv) {
+  auto re = rv.byAstOrNull(node);
+
+  auto& candidate = re->mostSpecific().only();
+  auto sig = candidate.fn();
+
+  // TODO: Do we need to handle nested functions differently here?
+  chpl::resolution::ResolutionContext rcval(context);
+  auto rf = resolveFunction(&rcval, sig, re->poiScope());
+
+  const std::vector<const AstNode*> actualAsts =
+    {node->lowerBound(), node->upperBound()};
+
+  std::vector<CallInfoActual> actuals;
+  actuals.push_back(CallInfoActual(rv.byAst(node->lowerBound()).type()));
+  actuals.push_back(CallInfoActual(rv.byAst(node->upperBound()).type()));
+  auto ci = resolution::CallInfo::createSimple(sig->untyped()->name(), actuals);
+
+  auto calledFn = findOrConvertFunction(rf);
+  CallExpr* ret = new CallExpr(calledFn);
+
+  // This mapping drives the conversion of actuals.
+  auto& fam = candidate.formalActualMap();
+  INT_ASSERT(fam.isValid());
+
+  convertAndInsertActuals(ret, node, actualAsts, sig, fam, rv);
+
+  insertExpr(ret);
+
+  return false;
+}
+
+void TConverter::exit(const Range* node, RV& rv) {
 }
 
 bool TConverter::enter(const AstNode* node, RV& rv) {

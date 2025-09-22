@@ -9,5 +9,18 @@ proc main() {
   var x : int = 5;
   var y = c_ptrTo(x);
   println(y.deref());
+
+  {
+    var a : atomic int;
+    a.add(1);
+    a.add(5);
+    println(a.read());
+  }
+
+  {
+    var r = 1..10;
+    println(r.first);
+    println(r.last);
+  }
 }
 
