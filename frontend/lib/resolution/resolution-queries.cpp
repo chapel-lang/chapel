@@ -129,11 +129,10 @@ struct ModuleLevelSplitInitCollector {
 
   // variables that didn't get enough type information to be fully resolved,
   // and whose type might change due to split-init later.
-  std::vector<ID> incompleteInitVariables;
+  std::set<ID> incompleteInitVariables;
 
   ModuleLevelSplitInitCollector(ResolutionContext* rc,
-                                ResolutionResultByPostorderID& result,
-                                const TupleDecl* parentTup)
+                                ResolutionResultByPostorderID& result)
     : rc(rc), result(result) {
   }
 
@@ -149,13 +148,18 @@ struct ModuleLevelSplitInitCollector {
   bool enter(const Variable* var) {
     auto rAOrNull = result.byIdOrNull(var->id());
     if (!rAOrNull) {
-      incompleteInitVariables.push_back(var->id());
+      incompleteInitVariables.insert(var->id());
+      return false;
+    }
+
+    if (var->initExpression() != nullptr) {
+      // has an init expression, shouldn't be split-init.
       return false;
     }
 
     auto& qt = rAOrNull->type();
     if (qt.needsSplitInitTypeInfo(rc->context())) {
-      incompleteInitVariables.push_back(var->id());
+      incompleteInitVariables.insert(var->id());
     }
 
     return false;
@@ -163,58 +167,92 @@ struct ModuleLevelSplitInitCollector {
   void exit(const Variable* var) {}
 };
 
+struct ModuleLevelMentionCollector {
+  ResolutionContext* rc;
+  ResolutionResultByPostorderID const& result;
+  std::set<ID> const& incompleteInitVariables;
+
+  ID currentStmt;
+  std::map<ID, ID> firstMentioningStmt;
+
+  ModuleLevelMentionCollector(ResolutionContext* rc,
+                              ResolutionResultByPostorderID const& result,
+                              std::set<ID> const& incompleteInitVariables)
+    : rc(rc), result(result),
+      incompleteInitVariables(incompleteInitVariables) {
+  }
+
+  bool enter(const AstNode* node) { return true; }
+  void exit(const AstNode* node) {}
+
+  bool enter(const Module* node) { return false; }
+  void exit(const Module* node) {}
+
+  bool enter(const TypeDecl* node) { return false; }
+  void exit(const TypeDecl* node) {}
+
+  bool enter(const Function* node) { return false; }
+  void exit(const Function* node) {}
+
+  bool enter(const Interface* node) { return false; }
+  void exit(const Interface* node) {}
+
+  bool enter(const Identifier* node) {
+    if (auto rr = result.byAstOrNull(node)) {
+      if (incompleteInitVariables.count(rr->toId())) {
+        firstMentioningStmt.try_emplace(rr->toId(), currentStmt);
+      }
+    }
+    return false;
+  }
+  void exit(const Identifier* node) {}
+};
+
 static std::map<ID, ID> findSplitInitStatements(ResolutionContext* rc,
                                                 ResolutionResultByPostorderID& result,
                                                 const Module* mod,
                                                 const AstNode* modStmt) {
 
-  const TupleDecl* parentTup = nullptr;
-  if (auto tup = modStmt->toTupleDecl()) {
-    // `var (a, b);` is generic / untyped. Its components can be split-init.
-    if (!tup->initExpression() && !tup->typeExpression()) {
-      parentTup = tup;
-    }
-  } else if (!modStmt->isMultiDecl() && !modStmt->isVariable()) {
+  if (!modStmt->isTupleDecl() && !modStmt->isMultiDecl() &&
+             !modStmt->isVariable()) {
     // if we're not a tuple, not a multi-decl, and not a variable,
     // then we can't be split-init.
     return {};
   }
 
-  ModuleLevelSplitInitCollector collector(rc, result, parentTup);
+  // First, collect all variables that have might need to be split-init.
+  ModuleLevelSplitInitCollector collector(rc, result);
   modStmt->traverse(collector);
-
   if (collector.incompleteInitVariables.empty()) return {};
 
   // We found variables that might be split-init. Run scope resolution to
-  // compute split-initialization points.
+  // find the first statement where these variables are mentioned, and see
+  // if they are first mentioned.
   auto& scopeResult = scopeResolveModule(rc->context(), mod->id());
-  std::multimap<ID, ID> varInitIds;
-  std::ignore = rc->context()->runAndDetectErrors([&, mod](Context* context) {
-    return computeSplitInits(context, mod, scopeResult, &varInitIds);
-  });
 
-  std::map<ID, ID> varInitStmts;
-  for (auto varId : collector.incompleteInitVariables) {
-    auto rng = varInitIds.equal_range(varId);
-    if (rng.first == rng.second) continue; // not split-init
+  ModuleLevelMentionCollector mentionCollector(
+    rc, scopeResult, collector.incompleteInitVariables);
 
-    std::set<ID> otherModStmts;
-    for (auto it = rng.first; it != rng.second; it++) {
-      auto initPointId = it->second;
-      auto parentId = parsing::idToParentId(rc->context(), initPointId);
-      while (!asttags::isModule(parsing::idToTag(rc->context(), parentId))) {
-        initPointId = parentId;
-        parentId = parsing::idToParentId(rc->context(), parentId);
-      }
-      otherModStmts.insert(initPointId);
+  bool isBefore = true;
+  for (auto child : mod->children()) {
+    if (mentionCollector.firstMentioningStmt.size() ==
+        collector.incompleteInitVariables.size()) {
+      // found all the mentions we need
+      break;
     }
 
-    if (otherModStmts.size() != 1) continue;
+    if (child == modStmt) {
+      isBefore = false;
+      continue;
+    }
 
-    varInitStmts[varId] = *otherModStmts.begin();
+    if (isBefore) continue;
+
+    mentionCollector.currentStmt = child->id();
+    child->traverse(mentionCollector);
   }
 
-  return varInitStmts;
+  return mentionCollector.firstMentioningStmt;
 }
 
 const ResolutionResultByPostorderID& resolveModuleStmt(Context* context, ID id) {
