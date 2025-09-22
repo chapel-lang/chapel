@@ -3525,23 +3525,25 @@ QualifiedType Resolver::typeForId(const ID& id) {
     bool isCurrentModule =
         parsing::idToAst(context, parentId)->toModule() == symbol->toModule();
 
-    // if we resolved the target module level statement, but it relies
-    // on split-init, and we are trying to resolve that split-init,
-    // use the intermediate (pre-split-init) type information to avoid
-    // causing cycles if possible.
-    auto stmtId = parsing::idToContainingMultiDeclId(context, id);
-    bool fallBackToStandalone =
-      context->isQueryRunning(resolveModuleStmt, std::make_tuple(stmtId)) &&
-      context->hasCurrentResultForQuery(resolveModuleStmtStandalone, std::make_tuple(stmtId));
-
-    if (fallBackToStandalone) {
-      auto& rr = resolveModuleStmtStandalone(context, stmtId);
-      if (auto re = rr.byIdOrNull(id)) {
-        return re->type();
+    // We're referring to a variable somewhere in this module. Are we the
+    // statement that's initializing this variable via split-init?
+    // If so, don't try to resolve that module statement, and instead
+    // return Unknown.
+    if (isCurrentModule && curStmt && !id.isSymbolDefiningScope()) {
+      auto topLevelId = parsing::idToContainingMultiDeclId(context, id);
+      auto& standaloneInfo = resolveModuleStmtStandalone(context, topLevelId);
+      if (auto it = standaloneInfo.second.find(id);
+          it != standaloneInfo.second.end() && it->second == curStmt->id()) {
+        return QualifiedType();
       }
     }
 
-    return typeForModuleLevelSymbol(context, id, isCurrentModule);
+    auto stmtIdIfInSameModule = ID();
+    if (isCurrentModule && curStmt != nullptr) {
+      stmtIdIfInSameModule = curStmt->id();
+    }
+
+    return typeForModuleLevelSymbol(context, id, stmtIdIfInSameModule);
   }
 
   if (asttags::isEnum(parentTag) && asttags::isEnumElement(tag)) {
