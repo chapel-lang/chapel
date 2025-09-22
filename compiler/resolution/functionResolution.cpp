@@ -3359,6 +3359,17 @@ static bool resolveClassBorrowMethod(CallExpr* call) {
           call->get(1)->remove();  //remove method token
           Expr *receiver = call->get(1)->remove(); // remove `this`
 
+          // if the receiver is a ref, deref it before casting it
+          auto receiverType = receiver->typeInfo();
+          if (receiverType && receiverType->symbol->isRef()) {
+            auto insertPoint = pe->getStmtExpr();
+            VarSymbol* derefTmp = newTemp(receiverType->symbol->getValType());
+            insertPoint->insertBefore(new DefExpr(derefTmp));
+            insertPoint->insertBefore(
+              new CallExpr(PRIM_MOVE, derefTmp, new CallExpr(PRIM_DEREF, receiver)));
+            receiver = new SymExpr(derefTmp);
+          }
+
           // add arguments to PRIM_CAST
           call->insertAtTail(newType->symbol);
           call->insertAtTail(receiver);
