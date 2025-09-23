@@ -20,4 +20,4 @@ export CHPL_RT_MAX_HEAP_SIZE="50%"
 export CHPL_LAUNCHER_MEM=unset
 
 # both partitions we use have 128 cores
-export CHPL_NIGHTLY_MAKE="srun --partition=\$CHPL_LAUNCHER_PARTITION --cpus-per-task=128 make"
+export CHPL_NIGHTLY_MAKE="srun --partition=\$CHPL_LAUNCHER_PARTITION --export=ALL --cpus-per-task=128 make"

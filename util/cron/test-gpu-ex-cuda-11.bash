@@ -8,10 +8,7 @@ source $UTIL_CRON_DIR/common-hpe-cray-ex.bash
 source $UTIL_CRON_DIR/common-gpu-nvidia-hpe-cray-ex.bash
 
 module load cuda/11.8
-
-# the module loaded above doesn't wire symlinks correctly. I've created a ticket
-# for that, but until that's fixed, we are setting this environment explicitly
-export CHPL_CUDA_PATH=/opt/nvidia/hpc_sdk/Linux_x86_64/23.3/cuda/11.8
+export CHPL_CUDA_PATH=$(dirname $(dirname $(which nvcc)))
 
 export CHPL_COMM=none
 export CHPL_GPU=nvidia  # amd is also detected automatically
