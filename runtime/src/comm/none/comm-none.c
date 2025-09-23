@@ -208,6 +208,16 @@ int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status) {
 
 
   if (chpl_lldb_supports_python()) {
+
+    const char* debuggerBreakHereCommands = chpl_glom_strings(2, CHPL_HOME, "/runtime/etc/debug/chpl_lldb_debuggerBreakHere.py");
+    if (access(debuggerBreakHereCommands, R_OK) == 0) {
+      command = chpl_glom_strings(4, command,
+        " -o 'command script import \"", debuggerBreakHereCommands, "\"'");
+    } else {
+      chpl_warning("Could not find lldb debuggerBreakHere script, it will be ignored",
+                    0, CHPL_FILE_IDX_COMMAND_LINE);
+    }
+
     const char* pretty_printer = chpl_glom_strings(2, CHPL_HOME, "/runtime/etc/debug/chpl_lldb_pretty_print.py");
     if (access(pretty_printer, R_OK) == 0) {
       command = chpl_glom_strings(4, command,

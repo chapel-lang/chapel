@@ -602,33 +602,34 @@ const char* nthFilename(int i) {
 }
 
 
-const char* createDebuggerFile(const char* debugger, int argc, char* argv[]) {
-  const char* dbgfilename = genIntermediateFilename(astr(debugger, ".commands"));
-  FILE* dbgfile = openfile(dbgfilename);
-  int i;
+std::string getDebuggerCommands(std::string_view debugger, int argc, char* argv[]) {
+  std::string command;
+  auto commandsFile = CHPL_HOME + "/compiler/etc/" +
+                      std::string(debugger) + ".commands";
 
-  if (strcmp(debugger, "gdb") == 0) {
-    fprintf(dbgfile, "set args");
-  } else if (strcmp(debugger, "lldb") == 0) {
-    fprintf(dbgfile, "settings set -- target.run-args");
+  if (debugger == "gdb") {
+    command += "gdb -q -x ";
+    command += commandsFile;
+    command += " --args ";
+    command += argv[0];
+  } else if (debugger == "lldb") {
+    command += "lldb -s ";
+    command += commandsFile;
+    command += " -- ";
+    command += argv[0];
   } else {
-      INT_FATAL("createDebuggerFile doesn't know how to handle the given "
-                "debugger: '%s'", debugger);
+      INT_FATAL("getDebuggerCommands doesn't know how to handle the given "
+                "debugger: '%s'", std::string(debugger).c_str());
   }
-  for (i=1; i<argc; i++) {
-    if (strcmp(argv[i], astr("--", debugger)) != 0) {
-      fprintf(dbgfile, " %s", argv[i]);
+  const char* dbgFlagName = astr("--", astr(debugger));
+  for (int i = 1; i < argc; i++) {
+    if (strcmp(argv[i], dbgFlagName) != 0) {
+      command += " ";
+      command += argv[i];
     }
   }
 
-  fprintf(dbgfile, "\n");
-  closefile(dbgfile);
-  myshell(astr("cat ", CHPL_HOME.c_str(), "/compiler/etc/", debugger, ".commands >> ",
-                dbgfilename),
-           astr("appending ", debugger, " commands"),
-           false);
-
-  return dbgfilename;
+  return command;
 }
 
 std::string getChplDepsApp() {
