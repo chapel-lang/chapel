@@ -223,11 +223,13 @@ static void test8() {
       param x = s.size;
       param y = s[1];
       param z = s.item(1);
-      )""", {"x", "y", "z"});
+      param w = b"Türkçe".item(1);
+      )""", {"x", "y", "z", "w"});
 
   ensureParamInt(vars.at("x"), 6);
   ensureParamString(vars.at("y"), "ü");
   ensureParamString(vars.at("z"), "ü");
+  ensureParamString(vars.at("w"), "\xC3", /* isByteString */ true);
 }
 
 int main() {
