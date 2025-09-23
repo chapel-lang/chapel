@@ -1421,6 +1421,38 @@ static void test70() {
   */
 }
 
+// test that split-init works even if we don't resolve a whole module
+static void test71() {
+  std::string program = R"""(
+     module M {
+         var x;
+         x = (12, 1);
+         var y = x;
+     }
+   )""";
+
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto mod = parseModule(context, program);
+  assert(mod->numStmts() == 3);
+  auto stmt3 = mod->child(2);
+  assert(stmt3->isVariable());
+  auto varY = stmt3->toVariable();
+  auto stmt1 = mod->child(0);
+  assert(stmt1->isVariable());
+  auto varX = stmt1->toVariable();
+
+  auto& rrX = resolveModuleStmt(context, varX->id());
+  auto& qtX = rrX.byId(varX->id()).type();
+  assert(!qtX.isUnknownOrErroneous());
+  assert(qtX.type()->isTupleType());
+  auto& rrY = resolveModuleStmt(context, varY->id());
+  auto& qtY = rrY.byId(varY->id()).type();
+  assert(!qtY.isUnknownOrErroneous());
+  assert(qtY.type()->isTupleType());
+}
+
 int main() {
   test1();
   test2();
@@ -1497,6 +1529,7 @@ int main() {
   test68();
   test69();
   test70();
+  test71();
 
   return 0;
 }
