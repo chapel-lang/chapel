@@ -150,11 +150,7 @@ endif
 #
 C_STD := -std=gnu17
 CXX_STD := -std=gnu11
-
-# CXX11_STD is the flag to select C++11, blank for compilers that
-# don't know how to do that
-# Also, if a compiler uses C++11 or newer by default, CXX11_STD will be blank.
-CXX11_STD := $(shell test $(DEF_CXX_VER) -lt 201103 && echo -std=gnu++11)
+CXX11_STD := -std=gnu++11
 
 COMP_CFLAGS += $(C_STD)
 RUNTIME_CFLAGS += $(C_STD)
