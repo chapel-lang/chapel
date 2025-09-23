@@ -595,7 +595,8 @@ llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
     Type* valType = nullptr;
     if (auto valTypeField = type->getField("valType", false)) {
       valType = valTypeField->type;
-    } else if (strcmp(type->symbol->name, "atomic bool") == 0) {
+    } else if (strcmp(type->symbol->name, "atomic bool") == 0 ||
+               strcmp(type->symbol->name, "AtomicBool") == 0) {
       valType = dtBool;
     } else {
       if (developer || fVerify) {
