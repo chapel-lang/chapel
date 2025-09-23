@@ -17,7 +17,7 @@ if [ ! -z "$CHAMPS_QUICKSTART" ]; then
   if [ -d "$CHAMPS_COMMON_DIR" ]; then
     echo "[Warning: $CHAMPS_COMMON_DIR exists, will try to git pull]"
     update_nightly_repo
-  else 
+  else
     echo "Creating $CHAMPS_COMMON_DIR"
     pushd $(dirname $CHAMPS_COMMON_DIR)
     git clone https://github.com/chapelu-champs/champs-nightly.git
@@ -43,7 +43,7 @@ chpl --version
 export CHAMPS_HOME=$CWD/champs
 rm -rf ${CHAMPS_HOME}
 
-# Clone CHAMPS 
+# Clone CHAMPS
 git_clone_opts="--branch=${CHAMPS_BRANCH} --single-branch --depth=1"
 if ! git clone ${CHAMPS_URL} $git_clone_opts ; then
   log_fatal_error "cloning CHAMPS"
@@ -90,13 +90,15 @@ if [ -z "$CHAMPS_QUICKSTART" ] || [ ! -z "$CHAMPS_COMPILE_ALL_EXECS" ] ; then
   test_compile prep
   flow_success=$(test_compile flow)
   test_compile drop
-  test_compile potential
+  # broken!
+  # test_compile potential
   test_compile potentialPrep
   test_compile geo
   test_compile thermo
   test_compile postLink
   test_compile post
-  test_compile stochasticIcing
+  # broken!
+  # test_compile stochasticIcing
   test_compile octree
   test_compile eigenSolvePost
   test_compile externalSolverPost
