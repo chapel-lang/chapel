@@ -144,7 +144,10 @@ SQUASH_WARN_GEN_CFLAGS += -Wno-tautological-compare
 #
 # warn for unwanted GNU extension usages
 #
-RUNTIME_GNU_WARNINGS = -Wgnu -Wno-gnu-folding-constant -Wno-zero-length-array -Wno-variadic-macro-arguments-omitted
+RUNTIME_GNU_WARNINGS = -Wgnu -Wno-gnu-folding-constant -Wno-zero-length-array
+ifeq ($(shell test $(CLANG_MAJOR_VERSION) -ge 20; echo "$$?"),0)
+RUNTIME_GNU_WARNINGS += -Wno-variadic-macro-arguments-omitted
+endif
 
 #
 # compiler warnings settings
