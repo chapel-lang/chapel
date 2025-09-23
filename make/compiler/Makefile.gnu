@@ -146,19 +146,10 @@ export GNU_GCC_SUPPORTS_STRICT_OVERFLOW := $(shell test $(GNU_GCC_MAJOR_VERSION)
 endif
 
 #
-# If the compiler's default C version is less than C99, force C99 mode.
+# We always use gnu17 and gnu++17 for the runtime
 #
-# If the default C version is at least C11, force the C++ version to
-# be at least C++11 to match.
-#
-DEF_C_VER := $(shell echo __STDC_VERSION__ | $(CC) -E -x c - | sed -e '/^\#/d' -e 's/L$$//' -e 's/__STDC_VERSION__/0/')
-ifneq ($(MAKE_LAUNCHER),1)
-DEF_CXX_VER := $(shell  echo __cplusplus | $(CXX) -E -x c++ - | sed -e '/^\#/d' -e 's/L$$//' -e 's/__cplusplus/0/';)
-else
-DEF_CXX_VER := 2017
-endif
-C_STD := $(shell test $(DEF_C_VER) -lt 199901 && echo -std=gnu99)
-CXX_STD := $(shell test $(DEF_C_VER) -ge 201112 -a $(DEF_CXX_VER) -lt 201103 && echo -std=gnu++11)
+C_STD := -std=gnu17
+CXX_STD := -std=gnu11
 
 # CXX11_STD is the flag to select C++11, blank for compilers that
 # don't know how to do that
