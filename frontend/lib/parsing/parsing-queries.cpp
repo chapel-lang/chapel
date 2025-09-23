@@ -1597,6 +1597,10 @@ ID idToParentModule(Context* context, ID id) {
   return getModuleForId(context, parentSymId);
 }
 
+ID idToModule(Context* context, ID id) {
+  return getModuleForId(context, id);
+}
+
 bool idIsToplevelModule(Context* context, ID id) {
   if (idIsModule(context, id)) {
     ID parentSymId = id.parentSymbolId(context);
