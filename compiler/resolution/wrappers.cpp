@@ -3258,6 +3258,7 @@ static void buildFastFollowerCheck(FastFollowerCheckType checkType,
   FnSymbol*   checkFn    = NULL;
 
   ArgSymbol*  x          = new ArgSymbol(INTENT_BLANK, "x", IRtype);
+  x->addFlag(FLAG_NO_USER_DEBUG_INFO);
 
   std::vector<SymExpr *> fieldSymExprs;
 
