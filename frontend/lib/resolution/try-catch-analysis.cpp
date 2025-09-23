@@ -324,7 +324,7 @@ namespace resolution {
     // a try
     enterScope(ast, rv);
     bool canThrow = tryStack.size() > 0 || this->canThrow();
-    if (!canThrow) {
+    if (!canThrow && mode != ErrorCheckingMode::FATAL) {
       context->error(ast, "cannot throw in a non-throwing function");
     }
     return true;
