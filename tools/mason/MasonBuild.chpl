@@ -30,13 +30,13 @@ use MasonUpdate;
 use MasonSystem;
 use MasonExternal;
 use MasonExample;
-import MasonInternal as Internal;
+use MasonLogger;
 use Subprocess;
 use TOML;
 
-proc masonBuild(args: [] string) throws {
+var log = new logger("mason build");
 
-  var log = new Internal.logger("mason build");
+proc masonBuild(args: [] string) throws {
 
   var parser = new argumentParser(helpHandler=new MasonBuildHelpHandler());
 
@@ -49,7 +49,7 @@ proc masonBuild(args: [] string) throws {
   var passArgs = parser.addPassThrough();
 
   parser.parseArgs(args);
-  log.debugf("Arguments parsed\n");
+  log.debugln("Arguments parsed");
 
   if passArgs.hasValue() && exampleOpts._present {
     throw new owned MasonError("Examples do not support `--` syntax");
@@ -59,7 +59,7 @@ proc masonBuild(args: [] string) throws {
   if projectType == "light" then
     throw new owned MasonError("Mason light projects do not currently support 'mason build'");
 
-  log.debugf("Project type acquired\n");
+  log.debugln("Project type acquired");
 
   var show = showFlag.valueAsBool();
   var release = releaseFlag.valueAsBool();
@@ -97,7 +97,7 @@ proc masonBuild(args: [] string) throws {
     const configNames = updateLock(skipUpdate);
     const tomlName = configNames[0];
     const lockName = configNames[1];
-    log.debugf("About to build program\n");
+    log.debugln("About to build program");
     buildProgram(release, show, force, skipUpdate, compopts, tomlName, lockName);
   }
 }
@@ -220,14 +220,11 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
       command += gitDepSrc;
     }
 
-    // Verbosity control
-    if show then writeln("Compilation command: " + command);
-    else {
-      if release then writeln("Compiling [release] target: " + project);
-      else writeln("Compiling [debug] target: " + project);
-    }
+    log.infof("Compiling [%s] target: %s\n",
+              if release then "release" else "debug", project);
 
     // compile Program with deps
+    log.debugln("Compilation command: " + command);
     var compilation = runWithStatus(command);
     if compilation != 0 {
       return false;
