@@ -27,7 +27,7 @@ use Map;
 use MasonEnv;
 use MasonHelp;
 use MasonUtils;
-use MasonInternal;
+use MasonLogger;
 use Path;
 use SpecParser;
 use TOML;

@@ -18,11 +18,13 @@
  * limitations under the License.
  */
 
-module MasonInternal {
+module MasonLogger {
   import IO;
   import this.SafeCalls as Safe;
 
 
+  // Note: we use >= to determine whether we should output something. So, if you
+  // change enum values, make sure to put things in order.
   enum logLevel { no, error, warn, info, debug };
 
   config const logs = logLevel.info;
@@ -38,22 +40,22 @@ module MasonInternal {
     var prefix: string;
 
     proc infoln(f: string) {
-      if doInfo then Safe.writeln(logWriter, message(f));
+      if doInfo then Safe.writeln(logWriter, addPrefix(f));
+    }
+
+    proc infof(f: string, args...) {
+      if doInfo then Safe.writef(logWriter, addPrefix(f), (...args));
     }
 
     proc debugln(f: string) {
-      if doDebug then Safe.writeln(logWriter, message(f));
-    }
-
-    proc debugf(f: string) {
-      if doDebug then Safe.writef(logWriter, message(f));
+      if doDebug then Safe.writeln(logWriter, addPrefix(f));
     }
 
     proc debugf(f: string, args...) {
-      if doDebug then Safe.writef(logWriter, message(f), (...args));
+      if doDebug then Safe.writef(logWriter, addPrefix(f), (...args));
     }
 
-    proc message(f) {
+    proc addPrefix(f) {
       return Safe.format("%s: %s", this.prefix, f);
     }
   }

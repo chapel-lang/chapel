@@ -27,7 +27,7 @@ use MasonExternal;
 use MasonHelp;
 use MasonSystem;
 use MasonUtils;
-use MasonInternal;
+use MasonLogger;
 use TOML;
 import Path;
 

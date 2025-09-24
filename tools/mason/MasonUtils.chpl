@@ -31,7 +31,7 @@ public use MasonEnv;
 public use Path;
 public use TOML;
 use Regex;
-use MasonInternal;
+use MasonLogger;
 
 var log = new logger("utils");
 
