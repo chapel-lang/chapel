@@ -242,7 +242,13 @@ private proc runTests(show: bool, run: bool, parallel: bool, filter: string,
     // Get system, and external compopts
     var compopts = getTomlCompopts(lockFile, cmdLineCompopts);
 
+    // add prerequisite compopts
     for prereq in MasonPrereqs.prereqs() {
+      const pFlags = runCommand("make -C %s -s printchplflags".format(prereq));
+
+      for pFlag in pFlags.split(" ") {
+        compopts.pushBack(pFlag);
+      }
       // should prereqs expose these in their Makefiles instead?
       const incGlob = Path.joinPath(prereq, "include", "*.h");
       for path in glob(incGlob) {
