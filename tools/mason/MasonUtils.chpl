@@ -33,7 +33,7 @@ public use TOML;
 use Regex;
 use MasonLogger;
 
-var log = new logger("utils");
+private var log = new logger("utils");
 
 
 /* Gets environment variables for spawn commands */
