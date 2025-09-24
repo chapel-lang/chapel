@@ -18,7 +18,7 @@ proc main() {
   writeln(r1, r2, r3, r4, sep =" | ");
 
   var newUnmanagedClass = new unmanaged MyClass(20);
-  defer { delete newUnmanagedClass; }
+  delete r1.x;
   r1.x = newUnmanagedClass;
   r2.x = newUnmanagedClass:borrowed;
 
