@@ -235,6 +235,7 @@ fi
 # if CHPL_CHECK_MAX_LOCALES is set, use it to cap NUMLOCALES
 if [ -n "${CHPL_CHECK_MAX_LOCALES}" ] ; then
     if [ ${NUMLOCALES} -gt ${CHPL_CHECK_MAX_LOCALES} ] ; then
+        NUMLOCALES=${CHPL_CHECK_MAX_LOCALES}
     fi
 fi
 
