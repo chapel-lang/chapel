@@ -653,6 +653,21 @@ static void test16() {
   assert(qt.type()->isRealType());
 }
 
+static void test16b() {
+  printf("%s\n", __FUNCTION__);
+  auto context = buildStdContext();
+
+  auto qt = resolveQualifiedTypeOfX(context,
+                R""""(
+                  proc helper(type a, type b) type { return b; }
+                  type tup = (int, real);
+                  type x = helper( (... tup) );
+                )"""");
+
+  assert(qt.kind() == QualifiedType::TYPE);
+  assert(qt.type()->isRealType());
+}
+
 static void test17() {
   printf("%s\n", __FUNCTION__);
   auto context = buildStdContext();
@@ -1372,6 +1387,7 @@ int main() {
   test14();
   test15();
   test16();
+  test16b();
   test17();
   test18();
   test18b();

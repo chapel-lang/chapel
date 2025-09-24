@@ -2374,6 +2374,30 @@ static void testSkipUnknownInNew() {
   assert(qt.type()->isRecordType());
 }
 
+// regression test. Allow for patterns in which a type formal etc. is
+// instantiated with a generic type, and we invke a type method on it,
+// which (according to production tests) is allowed.
+static void testTypeProcOnGenericReceiver() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto qt = resolveTypeOfXInit(context,
+    R"""(
+    record R {
+      type t;
+      proc type tt type do return int;
+    }
+
+    proc foo(type arg1, type arg2 = arg1.tt) {
+      var tmp: arg2;
+      return tmp;
+    }
+    var x = foo(R(?));
+  )""");
+  assert(!qt.isUnknownOrErroneous());
+  assert(qt.type()->isIntType());
+}
+
 int main() {
   test1();
   test2();
@@ -2438,6 +2462,8 @@ int main() {
   testTupleFormalWithDefault();
 
   testSkipUnknownInNew();
+
+  testTypeProcOnGenericReceiver();
 
   return 0;
 }

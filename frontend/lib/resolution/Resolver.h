@@ -429,7 +429,7 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
      This function resolves the types of all TypeQuery nodes
      contained in the passed Formal (by updating 'byPostorder').
    */
-  void resolveTypeQueriesFromFormalType(const uast::VarLikeDecl* formal,
+  void resolveTypeQueriesFromFormalType(const uast::Decl* formal,
                                         types::QualifiedType formalType);
 
   // helper for getTypeForDecl -- checks the Kinds are compatible

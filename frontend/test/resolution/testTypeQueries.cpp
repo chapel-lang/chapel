@@ -958,6 +958,23 @@ static void test27() {
   }
 }
 
+static void test28() {
+  printf("%s\n", __FUNCTION__);
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+                R""""(
+                proc foo((t,): (int(?w),)) param {
+                  return w;
+                }
+                param x = foo((3, ));
+                )"""", {"x"});
+
+
+  ensureParamInt(vars.at("x"), 64);
+}
+
 int main() {
   test1();
   test2();
@@ -993,6 +1010,7 @@ int main() {
   test25b();
   test26();
   test27();
+  test28();
 
   return 0;
 }
