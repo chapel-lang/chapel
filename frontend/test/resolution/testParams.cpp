@@ -211,6 +211,27 @@ static void test7() {
   ensureParamReal(vars.at("y"), std::numeric_limits<double>::quiet_NaN());
 }
 
+static void test8() {
+  printf("test8\n");
+
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+      param s = "Türkçe";
+      param x = s.size;
+      param y = s[1];
+      param z = s.item(1);
+      param w = b"Türkçe".item(1);
+      )""", {"x", "y", "z", "w"});
+
+  ensureParamInt(vars.at("x"), 6);
+  ensureParamString(vars.at("y"), "ü");
+  ensureParamString(vars.at("z"), "ü");
+  ensureParamString(vars.at("w"), "\xC3", /* isByteString */ true);
+}
+
 int main() {
   test1();
   test2();
@@ -219,6 +240,7 @@ int main() {
   test5();
   test6();
   test7();
+  test8();
 
   return 0;
 }

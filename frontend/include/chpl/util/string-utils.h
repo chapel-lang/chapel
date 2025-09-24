@@ -42,6 +42,13 @@ std::string replacePrefix(const std::string& s,
                           const std::string& prefix,
                           const std::string& replacement);
 
+/** Returns true if the character is an initial byte in a UTF-8 sequence. */
+static inline bool isInitialUTF8Byte(unsigned char c)
+{
+  return (c & 0xc0) != 0x80;
+}
+
+
 
 } // namespace chpl
 

@@ -44,7 +44,7 @@ using CalledFnsSet = std::unordered_map<const ResolvedFunction*, CalledFnOrder>;
    This function does not consider transitive calls.
    Returns the number of functions gathered. */
 int gatherFnsCalledByFn(Context* context,
-                        const ResolvedFunction* fn,
+                        std::vector<const ResolvedFunction*>& fnStack,
                         CalledFnOrder order,
                         CalledFnsSet& called);
 
@@ -52,6 +52,7 @@ int gatherFnsCalledByFn(Context* context,
    function into a set.
    Returns the number of functions gathered. */
 int gatherTransitiveFnsCalledByFn(Context* context,
+                                  std::vector<const ResolvedFunction*>& fnStack,
                                   const ResolvedFunction* fn,
                                   CalledFnOrder order,
                                   CalledFnsSet& called);

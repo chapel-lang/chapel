@@ -3524,7 +3524,21 @@ QualifiedType Resolver::typeForId(const ID& id) {
     // If the id is contained within a module, use typeForModuleLevelSymbol.
     bool isCurrentModule =
         parsing::idToAst(context, parentId)->toModule() == symbol->toModule();
-    return typeForModuleLevelSymbol(context, id, isCurrentModule);
+
+    // We're referring to a variable somewhere in this module. Are we the
+    // statement that's initializing this variable via split-init?
+    // If so, don't try to resolve that module statement, and instead
+    // return Unknown.
+    if (isCurrentModule && curStmt && !id.isSymbolDefiningScope()) {
+      auto topLevelId = parsing::idToContainingMultiDeclId(context, id);
+      auto& standaloneInfo = resolveModuleStmtStandalone(context, topLevelId);
+      if (auto it = standaloneInfo.second.find(id);
+          it != standaloneInfo.second.end() && it->second == curStmt->id()) {
+        return QualifiedType();
+      }
+    }
+
+    return typeForModuleLevelSymbol(context, id);
   }
 
   if (asttags::isEnum(parentTag) && asttags::isEnumElement(tag)) {

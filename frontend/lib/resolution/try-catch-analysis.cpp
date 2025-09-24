@@ -324,7 +324,7 @@ namespace resolution {
     // a try
     enterScope(ast, rv);
     bool canThrow = tryStack.size() > 0 || this->canThrow();
-    if (!canThrow) {
+    if (!canThrow && mode != ErrorCheckingMode::FATAL) {
       context->error(ast, "cannot throw in a non-throwing function");
     }
     return true;
@@ -409,6 +409,20 @@ namespace resolution {
   // PERMIT_UNHANDLED_MODULE_ERRORS compiler flag to determine the handling mode
   static ErrorCheckingMode computeErrorCheckingMode(Context* context,
                                                     const AstNode* node) {
+    // pragmas on modules override the default error checking mode.
+    auto moduleId = parsing::idToModule(context, node->id());
+    auto ag = parsing::idToAttributeGroup(context, moduleId);
+    if (!ag) {
+      // fall through to figuring out the mode from the module kind
+    } else if (ag->hasPragma(pragmatags::PRAGMA_ERROR_MODE_FATAL)) {
+      return ErrorCheckingMode::FATAL;
+    } else if (ag->hasPragma(pragmatags::PRAGMA_ERROR_MODE_STRICT)) {
+      CHPL_UNIMPL("strict error checking mode not implemented");
+      return ErrorCheckingMode::RELAXED;
+    } else if (ag->hasPragma(pragmatags::PRAGMA_ERROR_MODE_RELAXED)) {
+      return ErrorCheckingMode::RELAXED;
+    }
+
     auto mode = ErrorCheckingMode::UNKNOWN;
     auto moduleKind = parsing::idToModuleKind(context, node->id());
     if (moduleKind == Module::Kind::PROTOTYPE ||

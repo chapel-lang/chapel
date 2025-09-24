@@ -86,7 +86,7 @@ resolveTypesOfVariablesInit(Context* context, std::string program, const std::ve
 void ensureParamInt(const QualifiedType& type, int64_t expectedValue);
 void ensureParamUint(const QualifiedType& type, uint64_t expectedValue);
 void ensureParamBool(const QualifiedType& type, bool expectedValue);
-void ensureParamString(const QualifiedType& type, const std::string& expectedValue);
+void ensureParamString(const QualifiedType& type, const std::string& expectedValue, bool isByteString = false);
 void ensureParamEnumStr(const QualifiedType& type, const std::string& expectedName);
 void ensureParamReal(const QualifiedType& type, double expectedValue);
 void ensureErroneousType(const QualifiedType& type);

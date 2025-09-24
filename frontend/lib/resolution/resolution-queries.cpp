@@ -28,7 +28,9 @@
 #include "chpl/resolution/can-pass.h"
 #include "chpl/resolution/disambiguation.h"
 #include "chpl/resolution/intents.h"
+#include "chpl/resolution/resolution-types.h"
 #include "chpl/resolution/scope-queries.h"
+#include "chpl/resolution/split-init.h"
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
 #include "chpl/util/assertions.h"
@@ -104,16 +106,193 @@ namespace resolution {
 using namespace uast;
 using namespace types;
 
-const ResolutionResultByPostorderID& resolveModuleStmt(Context* context,
-                                                       ID id) {
+static void updateTypeForModuleLevelSplitInit(Context* context, ID id,
+                                              ResolvedExpression& lhs,
+                                              const ResolvedExpression& rhs) {
+  const QualifiedType lhsType = lhs.type();
+  const QualifiedType rhsType = rhs.type();
+
+  if (!lhsType.needsSplitInitTypeInfo(context)) return;
+
+  const Param* p = rhsType.param();
+  if (lhsType.kind() != QualifiedType::PARAM) {
+    p = nullptr;
+  }
+  const auto useType = QualifiedType(lhsType.kind(), rhsType.type(), p);
+
+  lhs.setType(useType);
+}
+
+struct ModuleLevelSplitInitCollector {
+  ResolutionContext* rc;
+  ResolutionResultByPostorderID& result;
+
+  // variables that didn't get enough type information to be fully resolved,
+  // and whose type might change due to split-init later.
+  std::set<ID> incompleteInitVariables;
+
+  ModuleLevelSplitInitCollector(ResolutionContext* rc,
+                                ResolutionResultByPostorderID& result)
+    : rc(rc), result(result) {
+  }
+
+  bool enter(const AstNode* node) { return false; }
+  void exit(const AstNode* node) {}
+
+  bool enter(const MultiDecl* md) { return true; }
+  void exit(const MultiDecl* md) {}
+
+  bool enter(const TupleDecl* td) { return true; }
+  void exit(const TupleDecl* td) {}
+
+  bool enter(const Variable* var) {
+    auto rAOrNull = result.byIdOrNull(var->id());
+    if (!rAOrNull) {
+      incompleteInitVariables.insert(var->id());
+      return false;
+    }
+
+    if (var->initExpression() != nullptr) {
+      // has an init expression, shouldn't be split-init.
+      return false;
+    }
+
+    auto& qt = rAOrNull->type();
+    if (qt.needsSplitInitTypeInfo(rc->context())) {
+      incompleteInitVariables.insert(var->id());
+    }
+
+    return false;
+  }
+  void exit(const Variable* var) {}
+};
+
+struct ModuleLevelMentionCollector {
+  ResolutionContext* rc;
+  ResolutionResultByPostorderID const& result;
+  std::set<ID> const& incompleteInitVariables;
+
+  ID currentStmt;
+  std::map<ID, ID> firstMentioningStmt;
+
+  ModuleLevelMentionCollector(ResolutionContext* rc,
+                              ResolutionResultByPostorderID const& result,
+                              std::set<ID> const& incompleteInitVariables)
+    : rc(rc), result(result),
+      incompleteInitVariables(incompleteInitVariables) {
+  }
+
+  bool enter(const AstNode* node) { return true; }
+  void exit(const AstNode* node) {}
+
+  bool enter(const Module* node) { return false; }
+  void exit(const Module* node) {}
+
+  bool enter(const TypeDecl* node) { return false; }
+  void exit(const TypeDecl* node) {}
+
+  bool enter(const Function* node) { return false; }
+  void exit(const Function* node) {}
+
+  bool enter(const Interface* node) { return false; }
+  void exit(const Interface* node) {}
+
+  bool enter(const Identifier* node) {
+    if (auto rr = result.byAstOrNull(node)) {
+      if (incompleteInitVariables.count(rr->toId())) {
+        firstMentioningStmt.try_emplace(rr->toId(), currentStmt);
+      }
+    }
+    return false;
+  }
+  void exit(const Identifier* node) {}
+};
+
+static std::map<ID, ID> findSplitInitStatements(ResolutionContext* rc,
+                                                ResolutionResultByPostorderID& result,
+                                                const Module* mod,
+                                                const AstNode* modStmt) {
+
+  if (!modStmt->isTupleDecl() && !modStmt->isMultiDecl() &&
+             !modStmt->isVariable()) {
+    // if we're not a tuple, not a multi-decl, and not a variable,
+    // then we can't be split-init.
+    return {};
+  }
+
+  // First, collect all variables that have might need to be split-init.
+  ModuleLevelSplitInitCollector collector(rc, result);
+  modStmt->traverse(collector);
+  if (collector.incompleteInitVariables.empty()) return {};
+
+  // We found variables that might be split-init. Run scope resolution to
+  // find the first statement where these variables are mentioned, and see
+  // if they are first mentioned.
+  auto& scopeResult = scopeResolveModule(rc->context(), mod->id());
+
+  ModuleLevelMentionCollector mentionCollector(
+    rc, scopeResult, collector.incompleteInitVariables);
+
+  bool isBefore = true;
+  for (auto child : mod->children()) {
+    if (mentionCollector.firstMentioningStmt.size() ==
+        collector.incompleteInitVariables.size()) {
+      // found all the mentions we need
+      break;
+    }
+
+    if (child == modStmt) {
+      isBefore = false;
+      continue;
+    }
+
+    if (isBefore) continue;
+
+    mentionCollector.currentStmt = child->id();
+    child->traverse(mentionCollector);
+  }
+
+  return mentionCollector.firstMentioningStmt;
+}
+
+const ResolutionResultByPostorderID& resolveModuleStmt(Context* context, ID id) {
   QUERY_BEGIN(resolveModuleStmt, context, id);
+
+  // the gist: do standalone module resolution, then try resolving any
+  // modules that contain split-inits for variables in this statement.
+
+  auto& standaloneData = resolveModuleStmtStandalone(context, id);
+  auto copiedResolvedInfo =
+    std::get<ResolutionResultByPostorderID>(standaloneData);
+
+  ResolutionContext rcval(context);
+  auto rc = &rcval;
+
+  for (auto& [varId, modStmtId] : std::get<1>(standaloneData)) {
+    // There's one other module statement that determines this variable's
+    // type. Resolve it.
+    auto& dependency = resolveModuleStmt(rc->context(), modStmtId);
+    if (auto reToCopy = dependency.byIdOrNull(varId)) {
+      auto& re = copiedResolvedInfo.byId(varId);
+      updateTypeForModuleLevelSplitInit(rc->context(), varId, re, *reToCopy);
+    }
+  }
+
+  return QUERY_END(copiedResolvedInfo);
+}
+
+
+std::pair<ResolutionResultByPostorderID, std::map<ID, ID>> const&
+resolveModuleStmtStandalone(Context* context, ID id) {
+  QUERY_BEGIN(resolveModuleStmtStandalone, context, id);
   QUERY_REGISTER_TRACER(
     return std::make_pair(std::get<0>(args), "resolving this module statement");
   );
 
   CHPL_ASSERT(!id.isSymbolDefiningScope());
 
-  ResolutionResultByPostorderID result;
+  ResolutionResultByPostorderID resolutionResults;
+  std::map<ID, ID> splitInitStmts;
   ResolutionContext rcval(context);
   auto rc = &rcval;
 
@@ -122,7 +301,7 @@ const ResolutionResultByPostorderID& resolveModuleStmt(Context* context,
   if (const Module* mod = moduleAst->toModule()) {
     // Resolve just the requested statement
     auto modStmt = parsing::idToAst(context, id);
-    auto visitor = Resolver::createForModuleStmt(rc, mod, modStmt, result);
+    auto visitor = Resolver::createForModuleStmt(rc, mod, modStmt, resolutionResults);
     modStmt->traverse(visitor);
 
     // There will be no further calls (it's a top-level statement), so if the
@@ -134,8 +313,12 @@ const ResolutionResultByPostorderID& resolveModuleStmt(Context* context,
     if (auto rec = context->recoverFromSelfRecursion()) {
       CHPL_REPORT(context, RecursionModuleStmt, modStmt, mod, std::move(*rec));
     }
+
+    splitInitStmts = findSplitInitStatements(rc, resolutionResults, mod, modStmt);
   }
 
+  auto result = std::make_pair(std::move(resolutionResults),
+                               std::move(splitInitStmts));
   return QUERY_END(result);
 }
 
@@ -159,23 +342,6 @@ scopeResolveModuleStmt(Context* context, ID id) {
   }
 
   return QUERY_END(result);
-}
-
-static void updateTypeForModuleLevelSplitInit(Context* context, ID id,
-                                              ResolvedExpression& lhs,
-                                              const ResolvedExpression& rhs) {
-  const QualifiedType lhsType = lhs.type();
-  const QualifiedType rhsType = rhs.type();
-
-  if (!lhsType.needsSplitInitTypeInfo(context)) return;
-
-  const Param* p = rhsType.param();
-  if (lhsType.kind() != QualifiedType::PARAM) {
-    p = nullptr;
-  }
-  const auto useType = QualifiedType(lhsType.kind(), rhsType.type(), p);
-
-  lhs.setType(useType);
 }
 
 static void checkImplementationPoint(ResolutionContext* rc, const ImplementationPoint* implPoint) {
@@ -335,9 +501,8 @@ scopeResolveModule(Context* context, ID id) {
 
 }
 
-const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id,
-                                              bool isCurrentModule) {
-  QUERY_BEGIN(typeForModuleLevelSymbol, context, id, isCurrentModule);
+const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id) {
+  QUERY_BEGIN(typeForModuleLevelSymbol, context, id);
 
   QualifiedType result;
 
@@ -347,15 +512,10 @@ const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id,
     // with 'resolveModuleStmt' will return a bogus result because that 'id'
     // is not at the statement level.
     auto stmtId = parsing::idToContainingMultiDeclId(context, id);
+
     const auto& resolvedStmt = resolveModuleStmt(context, stmtId);
     if (resolvedStmt.hasId(id)) {
       result = resolvedStmt.byId(id).type();
-      if (result.needsSplitInitTypeInfo(context) && !isCurrentModule) {
-        ID moduleId = parsing::idToParentId(context, stmtId);
-        const auto& resolvedModule = resolveModule(context, moduleId);
-        assert(resolvedModule.hasId(id));
-        result = resolvedModule.byId(id).type();
-      }
     } else {
       // fall back to default value
       result = QualifiedType();
@@ -3445,8 +3605,13 @@ resolveFunctionByInfoQuery(ResolutionContext* rc,
     auto& saved = resolveFunctionByPoisQuery(rc, resolvedPoiTrace);
     ret = saved.get();
 
-    QUERY_STORE_RESULT(resolveFunctionByResolvedInfoQuery, rc->context(),
-                       ret, sig, saved->poiInfo());
+    // very conservative: don't cache if this is a nested function. In the
+    // "bad" case, a generic parent function can change the types and resolution
+    // of 'sig', making caching unsafe.
+    if (!sig->parentFn()) {
+      QUERY_STORE_RESULT(resolveFunctionByResolvedInfoQuery, rc->context(),
+                         ret, sig, saved->poiInfo());
+    }
   }
 
   return CHPL_RESOLUTION_QUERY_END(ret);

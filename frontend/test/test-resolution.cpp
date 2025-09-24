@@ -310,10 +310,10 @@ void ensureParamBool(const QualifiedType& type, bool expectedValue) {
   assert(type.param()->toBoolParam()->value() == expectedValue);
 }
 
-void ensureParamString(const QualifiedType& type, const std::string& expectedValue) {
+void ensureParamString(const QualifiedType& type, const std::string& expectedValue, bool isByteString) {
   assert(type.kind() == QualifiedType::PARAM);
   assert(type.type() != nullptr);
-  assert(type.type()->isStringType());
+  assert(isByteString ? type.type()->isBytesType() : type.type()->isStringType());
   assert(type.param() != nullptr);
   assert(type.param()->isStringParam());
   assert(type.param()->toStringParam()->value() == expectedValue);

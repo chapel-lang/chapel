@@ -32,6 +32,7 @@
 #include "symbol.h"
 
 #include "../../frontend/lib/immediates/prim_data.h"
+#include "chpl/util/string-utils.h"
 
 static Expr* postFoldNormal(CallExpr* call);
 
@@ -551,7 +552,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
     // Count it as an initial UTF-8 byte.
     size_t ncodepoints  = (nbytes > 0);
     for (size_t i = 1; i < nbytes; ++i)
-      if (isInitialUTF8Byte(unesc[i]))
+      if (chpl::isInitialUTF8Byte(unesc[i]))
         ++ncodepoints;
 
     retval = new SymExpr(new_IntSymbol(ncodepoints, INT_SIZE_DEFAULT));

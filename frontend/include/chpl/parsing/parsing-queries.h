@@ -597,6 +597,12 @@ const uast::AstNode* parentAst(Context* context, const uast::AstNode* node);
 ID idToParentModule(Context* context, ID id);
 
 /**
+  Return the ID for the module containing the given ID,
+  unless the ID itself is a module, in which case return the ID itself.
+ */
+ID idToModule(Context* context, ID id);
+
+/**
   Given an ID 'id', attempt to lookup the declared linkage of the composite
   type associated with 'id'. Returns 'DEFAULT_LINKAGE' if no such AST was
   found.

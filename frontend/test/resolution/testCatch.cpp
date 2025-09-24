@@ -479,6 +479,53 @@ static void test12c(Parser* parser) {
   assert(resFunc);
 }
 
+// cannot throw in a non-throwing function... unless a pragma specifies fatal mode.
+static void test12d(Parser* parser) {
+  auto ctx = buildStdContext();
+  auto path = UniqueString::get(ctx, "test12.chpl");
+
+  ErrorGuard guard(ctx);
+  std::string program = R""""(
+                        pragma "error mode fatal"
+                        module M {
+                          proc test() {
+                            throw new Error();
+                          }
+                        }
+              )"""";
+  setFileText(ctx, path, program);
+  const ModuleVec& vec = parseToplevel(ctx, path);
+  auto mod = vec[0]->toModule();
+  assert(mod);
+  auto func = mod->stmt(0)->toFunction();
+  assert(func);
+  auto resFunc = resolveConcreteFunction(ctx, func->id());
+  assert(resFunc);
+}
+
+// cannot throw in a non-throwing context if the module is marked non-fatal.
+static void test12e(Parser* parser) {
+  auto ctx = buildStdContext();
+  auto path = UniqueString::get(ctx, "test12.chpl");
+
+  ErrorGuard guard(ctx);
+  std::string program = R""""(
+                        pragma "error mode relaxed"
+                        prototype module M {
+                          throw new Error();
+                        }
+              )"""";
+  setFileText(ctx, path, program);
+  const ModuleVec& vec = parseToplevel(ctx, path);
+  auto mod = vec[0]->toModule();
+  std::ignore = resolveModule(ctx, mod->id());
+
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->message() == "cannot throw in a non-throwing function");
+  assert(guard.error(0)->kind() == ErrorBase::Kind::ERROR);
+  assert(guard.realizeErrors() == 1);
+}
+
 // "is in a try but not handled"
 static void test13(Parser* parser) {
   auto ctx = buildStdContext();
@@ -924,6 +971,8 @@ int main() {
   test12(p);
   test12b(p);
   test12c(p);
+  test12d(p);
+  test12e(p);
   test13(p);
   test14(p);
   test15(p);

@@ -1421,6 +1421,112 @@ static void test70() {
   */
 }
 
+// test that split-init works even if we don't resolve a whole module
+static void test71() {
+  std::string program = R"""(
+     module M {
+         var x;
+         x = (12, 1);
+         var y = x;
+     }
+   )""";
+
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto mod = parseModule(context, program);
+  assert(mod->numStmts() == 3);
+  auto stmt3 = mod->child(2);
+  assert(stmt3->isVariable());
+  auto varY = stmt3->toVariable();
+  auto stmt1 = mod->child(0);
+  assert(stmt1->isVariable());
+  auto varX = stmt1->toVariable();
+
+  auto& rrX = resolveModuleStmt(context, varX->id());
+  auto& qtX = rrX.byId(varX->id()).type();
+  assert(!qtX.isUnknownOrErroneous());
+  assert(qtX.type()->isTupleType());
+  auto& rrY = resolveModuleStmt(context, varY->id());
+  auto& qtY = rrY.byId(varY->id()).type();
+  assert(!qtY.isUnknownOrErroneous());
+  assert(qtY.type()->isTupleType());
+}
+
+// test mutually recursive module split-init
+// note: disable this test if we don't allow mutually recursive module variables
+static void test72a() {
+  printf("test72a\n");
+  std::string program = R"""(
+      module A {
+        use B;
+        var a;
+        a = 42;
+        var c = b;
+      }
+      module B {
+        use A;
+        var b = a;
+      }
+  )""";
+
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+  auto filename = UniqueString::get(context, "test.chpl");
+  setFileText(context, filename, program);
+  auto& br = parseFileToBuilderResultAndCheck(context, filename, UniqueString());
+
+  assert(br.numTopLevelExpressions() == 2);
+  auto modA = br.topLevelExpression(0)->toModule();
+  assert(modA && modA->name() == "A");
+  auto modB = br.topLevelExpression(1)->toModule();
+  assert(modB && modB->name() == "B");
+
+  auto declC = modA->stmt(3)->toVariable();
+  assert(declC && declC->name() == "c");
+
+  auto& modARes = resolveModule(context, modA->id());
+  auto qtC = modARes.byId(declC->id()).type();
+  assert(!qtC.isUnknownOrErroneous());
+  assert(qtC.type()->isIntType());
+}
+
+static void test72b() {
+  printf("test72b\n");
+  std::string program = R"""(
+      module A {
+        use B;
+        var a = 42;
+        var c = b;
+      }
+      module B {
+        use A;
+        var b;
+        b = a;
+      }
+  )""";
+
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+  auto filename = UniqueString::get(context, "test.chpl");
+  setFileText(context, filename, program);
+  auto& br = parseFileToBuilderResultAndCheck(context, filename, UniqueString());
+
+  assert(br.numTopLevelExpressions() == 2);
+  auto modA = br.topLevelExpression(0)->toModule();
+  assert(modA && modA->name() == "A");
+  auto modB = br.topLevelExpression(1)->toModule();
+  assert(modB && modB->name() == "B");
+
+  auto declC = modA->stmt(2)->toVariable();
+  assert(declC && declC->name() == "c");
+
+  auto& modARes = resolveModule(context, modA->id());
+  auto qtC = modARes.byId(declC->id()).type();
+  assert(!qtC.isUnknownOrErroneous());
+  assert(qtC.type()->isIntType());
+}
+
 int main() {
   test1();
   test2();
@@ -1497,6 +1603,9 @@ int main() {
   test68();
   test69();
   test70();
+  test71();
+  test72a();
+  test72b();
 
   return 0;
 }
