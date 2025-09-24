@@ -30,10 +30,13 @@ use MasonUpdate;
 use MasonSystem;
 use MasonExternal;
 use MasonExample;
+import MasonInternal as Internal;
 use Subprocess;
 use TOML;
 
 proc masonBuild(args: [] string) throws {
+
+  var log = new Internal.logger("mason build");
 
   var parser = new argumentParser(helpHandler=new MasonBuildHelpHandler());
 
@@ -46,6 +49,7 @@ proc masonBuild(args: [] string) throws {
   var passArgs = parser.addPassThrough();
 
   parser.parseArgs(args);
+  log.debugf("Arguments parsed\n");
 
   if passArgs.hasValue() && exampleOpts._present {
     throw new owned MasonError("Examples do not support `--` syntax");
@@ -54,6 +58,8 @@ proc masonBuild(args: [] string) throws {
   const projectType = getProjectType();
   if projectType == "light" then
     throw new owned MasonError("Mason light projects do not currently support 'mason build'");
+
+  log.debugf("Project type acquired\n");
 
   var show = showFlag.valueAsBool();
   var release = releaseFlag.valueAsBool();
@@ -70,6 +76,7 @@ proc masonBuild(args: [] string) throws {
     else skipUpdate = true;
   }
 
+  log.debugf("Is example? %s\n", example);
   if example {
     // compopts become example names. Build never runs examples
     for val in exampleOpts.values() do compopts.pushBack(val);
@@ -90,6 +97,7 @@ proc masonBuild(args: [] string) throws {
     const configNames = updateLock(skipUpdate);
     const tomlName = configNames[0];
     const lockName = configNames[1];
+    log.debugf("About to build program\n");
     buildProgram(release, show, force, skipUpdate, compopts, tomlName, lockName);
   }
 }

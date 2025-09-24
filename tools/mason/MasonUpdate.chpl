@@ -27,6 +27,7 @@ use MasonExternal;
 use MasonHelp;
 use MasonSystem;
 use MasonUtils;
+use MasonInternal;
 use TOML;
 import Path;
 
@@ -46,6 +47,7 @@ The current resolution strategy for Mason 0.1.0 is the IVRS as described below:
 */
 
 private var failedChapelVersion: list(string);
+private var log = new logger("mason update");
 
 proc masonUpdate(args: [?d] string) {
   var tf = "Mason.toml";
@@ -76,23 +78,30 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock", show=true) {
     const lockPath = projectHome + "/" + Path.relPath(lf);
     const openFile = openReader(tomlPath, locking=false);
     const TomlFile = parseToml(openFile);
+    log.debugf("Parsed %s\n", tomlPath);
+
     var updated = false;
     if isFile(tomlPath) {
       if TomlFile.pathExists('dependencies') {
         if TomlFile['dependencies']!.A.size > 0 {
+          log.infoln("Updating registry");
           updateRegistry(skipUpdate, show);
           updated = true;
         }
       }
       if !updated && show {
-        writeln("Skipping registry update since no dependency found in manifest file.");
+        log.infoln("Skipping registry update since no dependency found in manifest file.");
       }
     }
+
+    log.debugln("Will do external update");
     if isDir(SPACK_ROOT) && TomlFile.pathExists('external') {
-      if getSpackVersion < spackVersion then
+      if getSpackVersion() < minSpackVersion then
       throw new owned MasonError("Mason has been updated. " +
                   "To install Spack, call: mason external --setup.");
     }
+
+    log.debugln("Will do createDepTree");
     const lockFile = createDepTree(TomlFile);
     if failedChapelVersion.size > 0 {
       const prefix = if failedChapelVersion.size == 1
@@ -104,6 +113,7 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock", show=true) {
       exit(1);
     }
     // Generate Lock File
+    log.debugln("Generating lock file");
     genLock(lockFile, lockPath);
     // Close Memory
     openFile.close();
@@ -113,6 +123,7 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock", show=true) {
     stderr.writeln(e.message());
     exit(1);
   }
+  log.debugln("updateLock returning");
   return (tf, lf);
 }
 
@@ -227,6 +238,7 @@ private proc createDepTree(root: Toml) {
     exit(1);
   }
 
+  log.debugln("Setting depTree for Chapel dependencies");
   if root.pathExists("dependencies") {
     var deps = getDependencies(root);
 
@@ -271,12 +283,14 @@ private proc createDepTree(root: Toml) {
   }
 
   // Check for pkg-config dependencies
+  log.debugln("Setting depTree for system dependencies");
   if root.pathExists("system") {
     const exDeps = getPCDeps(root["system"]!);
     depTree.set("system", exDeps);
   }
 
   // Check for non-Chapel dependencies
+  log.debugln("Setting depTree for external dependencies");
   if root.pathExists("external") {
     const externals = getExternalPackages(root["external"]!);
     depTree.set("external", externals);
