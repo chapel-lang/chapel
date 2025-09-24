@@ -81,23 +81,13 @@ module MasonLogger {
       }
     }
 
-    proc writef(writer, fmt: string) {
-      try {
-        writer.writef(fmt);
-      }
-      catch e {
-        // just use the non-throwing console output
-        writeln("Error writing formatted debug output");
-      }
-    }
-
     proc writeln(writer, s: string) {
       try {
         writer.writeln(s);
       }
       catch e {
         // just use the non-throwing console output
-        writeln("Error writing formatted debug output");
+        writeln("Error writing debug output");
       }
     }
   }
