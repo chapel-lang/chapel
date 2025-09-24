@@ -235,8 +235,6 @@ fi
 # if CHPL_CHECK_MAX_LOCALES is set, use it to cap NUMLOCALES
 if [ -n "${CHPL_CHECK_MAX_LOCALES}" ] ; then
     if [ ${NUMLOCALES} -gt ${CHPL_CHECK_MAX_LOCALES} ] ; then
-        log_info "Capping NUMLOCALES=${NUMLOCALES} to ${CHPL_CHECK_MAX_LOCALES}, because \$CHPL_CHECK_MAX_LOCALES is set"
-        NUMLOCALES=${CHPL_CHECK_MAX_LOCALES}
     fi
 fi
 
@@ -268,6 +266,7 @@ TEST_EXEC_OUT=${TEST_JOB}.exec.out
     fi
 
     log_info "Running test job."
+    log_debug "Using ${NUMLOCALES} locales and execution options: ${EXEC_OPTS}"
     env $(echo ${EXEC_ENV} | xargs) \
       ./${TEST_JOB} -nl${NUMLOCALES} ${EXEC_OPTS} 2>&1 | sort > ${TEST_EXEC_OUT}
     log_info "Test job complete."
