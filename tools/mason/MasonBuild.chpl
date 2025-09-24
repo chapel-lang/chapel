@@ -19,8 +19,9 @@
  */
 
 
+import FileSystem as FS;
+import Path;
 use ArgumentParser;
-use FileSystem;
 use List;
 use Map;
 use MasonUtils;
@@ -74,6 +75,37 @@ proc masonBuild(args: [] string) throws {
   if updateFlag.hasValue() {
     if updateFlag.valueAsBool() then skipUpdate = false;
     else skipUpdate = true;
+  }
+
+  const prereqsDir = "prereqs";
+
+  if FS.exists(prereqsDir) {
+    if FS.isDir(prereqsDir) {
+      const baseDir = here.cwd();
+      log.infof("Prerequisites directory exists (%s)\n", prereqsDir);
+      here.chdir(prereqsDir);
+
+      // see https://github.com/chapel-lang/chapel/issues/27855
+      const dirs = FS.walkDirs(prereqsDir);
+
+      for dir in dirs {
+        log.infof("Installing prerequisite %s\n", dir);
+        here.chdir(dir);
+
+        runCommand("make"); // TODO check for errors
+
+        const curDir = here.cwd();
+        compopts.pushBack("-I%s".format(Path.joinPath(curDir, "include")));
+        compopts.pushBack("-L%s".format(Path.joinPath(curDir, "obj")));
+      }
+      log.infof("Prerequisites have been installed\n", prereqsDir);
+
+      here.chdir(baseDir);
+    }
+    else {
+      log.infof("%s is supposed to be directory with prerequisites " +
+                "but it looks to be a file. It will be ignored.", prereqsDir);
+    }
   }
 
   log.debugf("Is example? %s\n", example);
