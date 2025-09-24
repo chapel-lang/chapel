@@ -232,6 +232,17 @@ else
     fi
 fi
 
+# if CHPL_CHECK_MAX_LOCALES is set, use it to cap NUMLOCALES
+if [ -n "${CHPL_CHECK_MAX_LOCALES}" ] ; then
+    if [ ${NUMLOCALES} -gt ${CHPL_CHECK_MAX_LOCALES} ] ; then
+        NUMLOCALES=${CHPL_CHECK_MAX_LOCALES}
+        # if this is set, we probably need a locale specific good file
+        if [ -f ${TEST_DIR}/${TEST_JOB}.nl-${NUMLOCALES}.good ]; then
+            GOOD=${TEST_DIR}/${TEST_JOB}.nl-${NUMLOCALES}.good
+        fi
+    fi
+fi
+
 # Check for valid launchers
 if [ ${chpl_launcher} == "slurm-srun" -o ${chpl_launcher} == "amudprun" -o ${chpl_launcher} == "smp" -o ${chpl_launcher} == "none" ]; then
     log_info "\$CHPL_LAUNCHER=${chpl_launcher} is compatible with test script."
@@ -260,6 +271,7 @@ TEST_EXEC_OUT=${TEST_JOB}.exec.out
     fi
 
     log_info "Running test job."
+    log_debug "Using ${NUMLOCALES} locales and execution options: ${EXEC_OPTS}"
     env $(echo ${EXEC_ENV} | xargs) \
       ./${TEST_JOB} -nl${NUMLOCALES} ${EXEC_OPTS} 2>&1 | sort > ${TEST_EXEC_OUT}
     log_info "Test job complete."
