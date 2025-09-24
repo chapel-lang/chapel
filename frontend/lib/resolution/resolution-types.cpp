@@ -361,10 +361,16 @@ void CallInfo::prepareActual(Context* context,
           auto tupleType = actualType.type()->toTupleType();
           int n = tupleType->numElements();
           for (int i = 0; i < n; i++) {
-            tupleType->elementType(i);
+            auto qt = tupleType->elementType(i);
+            // the type expression (int, string) is that of a value tuple,
+            // so it has 'var' intents for the elements. But if we're splatting
+            // the type expression, we want to insert type actuals.
+            if (actualType.isType()) {
+              qt = QualifiedType(QualifiedType::TYPE, qt.type());
+            }
             // intentionally use the empty name (to ignore it if it was
             // set and we issued an error above)
-            actuals.push_back(CallInfoActual(tupleType->elementType(i),
+            actuals.push_back(CallInfoActual(qt,
                   UniqueString()));
             if (actualAsts != nullptr) {
               actualAsts->push_back(op);
