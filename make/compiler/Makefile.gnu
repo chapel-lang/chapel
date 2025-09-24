@@ -385,14 +385,16 @@ SQUASH_WARN_GEN_CFLAGS += -Wno-strict-overflow
 #  can change the programs runtime behavior (when -O2 or greater is tossed).
 endif
 
+RUNTIME_GNU_WARNINGS = -Wgnu -Wno-gnu-folding-constant -Wno-zero-length-array -Wno-gnu-zero-variadic-macro-arguments
+
 #
 # compiler warnings settings
 #
 ifeq ($(WARNINGS), 1)
 COMP_CFLAGS += $(WARN_CFLAGS)
 COMP_CXXFLAGS += $(WARN_CXXFLAGS)
-RUNTIME_CFLAGS += $(WARN_CFLAGS) -Wno-char-subscripts
-RUNTIME_CXXFLAGS += $(WARN_CXXFLAGS)
+RUNTIME_CFLAGS += $(WARN_CFLAGS) -Wno-char-subscripts $(RUNTIME_GNU_WARNINGS)
+RUNTIME_CXXFLAGS += $(WARN_CXXFLAGS) $(RUNTIME_GNU_WARNINGS)
 #WARN_GEN_CFLAGS += -Wunreachable-code
 # GEN_CFLAGS gets warnings added via WARN_GEN_CFLAGS in comp-generated Makefile
 
