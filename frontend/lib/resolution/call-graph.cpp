@@ -44,7 +44,7 @@ struct CalledFnCollector {
   // input
   Context* context;
   const AstNode* symbol = nullptr; // Module* or Function*
-  const ResolvedFunction* resolvedFunction = nullptr; // set if not module
+  std::vector<const ResolvedFunction*>& fnStack; // for each function along the way
   CalledFnOrder order;
 
   // output
@@ -52,12 +52,12 @@ struct CalledFnCollector {
 
   CalledFnCollector(Context* context,
                     const AstNode* symbol,
-                    const ResolvedFunction* resolvedFunction,
+                    std::vector<const ResolvedFunction*>& fnStack,
                     CalledFnOrder order,
                     CalledFnsSet& called)
     : context(context),
       symbol(symbol),
-      resolvedFunction(resolvedFunction),
+      fnStack(fnStack),
       order(order),
       called(called)
   {
@@ -122,7 +122,8 @@ struct CalledFnCollector {
         if (var->kind() != Variable::Kind::TYPE &&
             var->kind() != Variable::Kind::PARAM) {
           CalledFnOrder newOrder = {order.depth + 1, 0};
-          auto v = CalledFnCollector(context, var, nullptr, newOrder, called);
+          std::vector<const ResolvedFunction*> emptyFnStack;
+          auto v = CalledFnCollector(context, var, emptyFnStack, newOrder, called);
           v.process();
 
           order.index += v.order.index;
@@ -142,9 +143,10 @@ struct CalledFnCollector {
                            const PoiScope* poiScope) {
     chpl::resolution::ResolutionContext rcval(context);
     const ResolvedFunction* fn = nullptr;
-    if (resolvedFunction) {
-      if (auto stored = resolvedFunction->getNestedResult(sig, poiScope)) {
+    for (auto it = fnStack.rbegin(); it != fnStack.rend(); it++) {
+      if (auto stored = (*it)->getNestedResult(sig, poiScope)) {
         fn = stored;
+        break;
       }
     }
 
@@ -158,12 +160,12 @@ struct CalledFnCollector {
 
 
 void CalledFnCollector::process() {
-  if (resolvedFunction) {
+  if (fnStack.size() > 0) {
     CHPL_ASSERT(symbol && symbol->isFunction());
     // we are handling a function, so visit based on the ResolvedFunction.
     chpl::resolution::ResolutionContext rcval(context);
     const ResolutionResultByPostorderID& byPostorder =
-      resolvedFunction->resolutionById();
+      fnStack.back()->resolutionById();
     ResolvedVisitor<CalledFnCollector> rv(&rcval, symbol, *this, byPostorder);
     symbol->traverse(rv);
   } else if (symbol && symbol->isVariable()) {
@@ -218,23 +220,27 @@ void CalledFnCollector::collectCalls(const ResolvedExpression* re) {
 }
 
 int gatherFnsCalledByFn(Context* context,
-                        const ResolvedFunction* fn,
+                        std::vector<const ResolvedFunction*>& fnStack,
                         CalledFnOrder order,
                         CalledFnsSet& called) {
-  const AstNode* symbol = parsing::idToAst(context, fn->id());
+  CHPL_ASSERT(fnStack.size() > 0);
+  const AstNode* symbol = parsing::idToAst(context, fnStack.back()->id());
   CHPL_ASSERT(symbol && symbol->isFunction());
-  auto v = CalledFnCollector(context, symbol, fn, order, called);
+  auto v = CalledFnCollector(context, symbol, fnStack, order, called);
   v.process();
   return v.order.index - order.index;
 }
 
 int gatherTransitiveFnsCalledByFn(Context* context,
+                                  std::vector<const ResolvedFunction*>& fnStack,
                                   const ResolvedFunction* fn,
                                   CalledFnOrder order,
                                   CalledFnsSet& called) {
+  fnStack.push_back(fn);
+
   // gather the direct calls into a set
   CalledFnsSet directCalls;
-  int directCount = gatherFnsCalledByFn(context, fn, order, directCalls);
+  int directCount = gatherFnsCalledByFn(context, fnStack, order, directCalls);
 
   // Sort the direct calls by their index in the call graph, so that we can
   // more reliably iterate over them later. This helps with debugging in
@@ -257,12 +263,15 @@ int gatherTransitiveFnsCalledByFn(Context* context,
     if (pair.second) {
       // The insertion took place, so it is the first time handling this fn.
       // Visit it recursively.
-      int c = gatherTransitiveFnsCalledByFn(context, /* fn */ kv.first,
+      int c = gatherTransitiveFnsCalledByFn(context, fnStack, /* fn */ kv.first,
                                             newOrder, called);
       // include the count for subsequent calls
       newOrder.index += c;
     }
   }
+
+  fnStack.pop_back();
+
   return newOrder.index;
 }
 
@@ -271,6 +280,7 @@ int gatherTransitiveFnsForFnId(Context* context,
                                CalledFnsSet& called) {
   const ResolvedFunction* fn = resolveConcreteFunction(context, fnId);
 
+  std::vector<const ResolvedFunction*> fnStack;
   if (fn != nullptr) {
     CalledFnOrder order = {0, 0};
     auto pair = called.insert({fn, order});
@@ -279,7 +289,7 @@ int gatherTransitiveFnsForFnId(Context* context,
       order.index++;
       // gather the transitive calls
       order.depth = 1;
-      return 1 + gatherTransitiveFnsCalledByFn(context, fn, order, called);
+      return 1 + gatherTransitiveFnsCalledByFn(context, fnStack, fn, order, called);
     }
   }
 
@@ -292,8 +302,9 @@ int gatherFnsCalledByModInit(Context* context,
   const AstNode* symbol = parsing::idToAst(context, moduleId);
   CHPL_ASSERT(symbol && symbol->isModule());
   CalledFnOrder order = {0, 0};
+  std::vector<const ResolvedFunction*> emptyFnStack;
   auto v = CalledFnCollector(context, symbol,
-                             /* resolvedFunction */ nullptr,
+                             emptyFnStack,
                              order, called);
   v.process();
   return v.order.index - order.index;
@@ -310,12 +321,13 @@ int gatherTransitiveFnsCalledByModInit(Context* context,
 
   // Now, consider each direct call. Add it to 'called' and
   // also handle it recursively, if we added it.
+  std::vector<const ResolvedFunction*> fnStack;
   for (auto kv : directCalls) {
     auto pair = called.insert(kv);
     if (pair.second) {
       // The insertion took place, so it is the first time handling this fn.
       // Visit it recursively.
-      int c = gatherTransitiveFnsCalledByFn(context, /* fn */ kv.first,
+      int c = gatherTransitiveFnsCalledByFn(context, fnStack, /* fn */ kv.first,
                                             newOrder, called);
       // include the count for subsequent calls
       newOrder.index += c;
