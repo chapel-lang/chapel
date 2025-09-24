@@ -401,12 +401,14 @@ static void setFormalTypeUsingSignature(Resolver& rv, const TypedFnSignature* si
 
   // TODO: Aren't these results already computed when we traverse formals
   // in resolution-queries?
-  if (auto formal = decl->toFormal())
+  if (auto formal = decl->toFormal()) {
     rv.resolveTypeQueriesFromFormalType(formal, qt);
-  if (auto formal = decl->toVarArgFormal())
+  } else if (auto formal = decl->toVarArgFormal()) {
     rv.resolveTypeQueriesFromFormalType(formal, qt);
-  if (auto td = decl->toTupleDecl())
+  } if (auto td = decl->toTupleDecl()) {
     rv.resolveTupleUnpackDecl(td, qt);
+    rv.resolveTypeQueriesFromFormalType(td, qt);
+  }
 }
 
 static void setFormalTypesUsingSignature(Resolver& rv) {
@@ -1504,7 +1506,7 @@ void Resolver::resolveVarArgSizeQuery(const uast::VarArgFormal* varArgFormal,
   }
 }
 
-void Resolver::resolveTypeQueriesFromFormalType(const VarLikeDecl* formal,
+void Resolver::resolveTypeQueriesFromFormalType(const Decl* formal,
                                                 QualifiedType formalType) {
   if (auto varargs = formal->toVarArgFormal()) {
     const TupleType* tuple = formalType.type()->toTupleType();
@@ -1512,12 +1514,18 @@ void Resolver::resolveTypeQueriesFromFormalType(const VarLikeDecl* formal,
     // args...?n
     resolveVarArgSizeQuery(varargs, tuple->numElements());
 
-    if (auto typeExpr = formal->typeExpression()) {
+    if (auto typeExpr = varargs->typeExpression()) {
       QualifiedType useType = tuple->elementType(0);
       resolveTypeQueries(typeExpr, useType, !tuple->isStarTuple());
     }
-  } else if (auto typeExpr = formal->typeExpression()) {
-    resolveTypeQueries(typeExpr, formalType);
+  } else if (auto vld = formal->toVarLikeDecl()) {
+    if (auto typeExpr = vld->typeExpression()) {
+      resolveTypeQueries(typeExpr, formalType);
+    }
+  } else if (auto td = formal->toTupleDecl()) {
+    if (auto typeExpr = td->typeExpression()) {
+      resolveTypeQueries(typeExpr, formalType);
+    }
   }
 }
 
@@ -4606,7 +4614,7 @@ bool Resolver::enter(const TypeQuery* tq) {
   //   * if there is a substitution for 'arg', 't' should be computed from it
 
   // Find the parent Formal and check for a substitution for that Formal
-  const VarLikeDecl* formal = nullptr;
+  const Decl* formal = nullptr;
   bool foundFormalSubstitution = false;
   QualifiedType foundFormalType;
   for (auto it = declStack.rbegin(); it != declStack.rend(); ++it) {
@@ -4616,6 +4624,8 @@ bool Resolver::enter(const TypeQuery* tq) {
       break;
     } else if (auto varargs = d->toVarArgFormal()) {
       formal = varargs;
+    } else if (auto td = d->toTupleDecl()) {
+      formal = td;
     }
   }
   if (formal != nullptr) {
