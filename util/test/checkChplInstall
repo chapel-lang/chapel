@@ -236,6 +236,10 @@ fi
 if [ -n "${CHPL_CHECK_MAX_LOCALES}" ] ; then
     if [ ${NUMLOCALES} -gt ${CHPL_CHECK_MAX_LOCALES} ] ; then
         NUMLOCALES=${CHPL_CHECK_MAX_LOCALES}
+        # if this is set, we probably need a locale specific good file
+        if [ -f ${TEST_DIR}/${TEST_JOB}.nl-${NUMLOCALES}.good ]; then
+            GOOD=${TEST_DIR}/${TEST_JOB}.nl-${NUMLOCALES}.good
+        fi
     fi
 fi
 
