@@ -4,7 +4,6 @@ Current executable set to EXECUTABLE
 Executing commands in FILE.txt
 (lldb) breakpoint set -n debuggerBreakHere -N debuggerBreakHere
 Breakpoint
-(lldb) breakpoint command add -o up debuggerBreakHere
 (lldb) command source -s 0 'targetVarCommands.txt'
 Executing commands in FILE.txt
 (lldb) b targetVar.chpl:5

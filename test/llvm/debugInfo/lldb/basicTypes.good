@@ -4,7 +4,6 @@ Current executable set to EXECUTABLE
 Executing commands in FILE.txt
 (lldb) breakpoint set -n debuggerBreakHere -N debuggerBreakHere
 Breakpoint
-(lldb) breakpoint command add -o up debuggerBreakHere
 (lldb) command source -s 0 'basicTypesCommands.txt'
 Executing commands in FILE.txt
 (lldb) r
@@ -20,13 +19,6 @@ Executing commands in FILE.txt
 41 42 43 44 45
 46 47 48 49 50
 true | 42 | 3.14 | e2 | e2 | (1, two, 3.0, e1)
-(lldb)  up
-frame #1: 0xXXXX basicTypes`chpl_user_main at basicTypes.chpl:74
-   71  	  writeln(myDom, myArr, myArr2d, sep=" | ");
-   72  	  writeln(myBool, myInt, myReal, myEnumVal, myEnumRef, myTuple, sep=" | ");
-   73
--> 74  	  use Debugger; breakpoint;
-   75  	}
 Process XXXX stopped
 * Thread #X, stop reason = breakpoint 1.1
     frame #1: 0xXXXX basicTypes`chpl_user_main at basicTypes.chpl:74
