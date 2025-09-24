@@ -31,6 +31,9 @@ public use MasonEnv;
 public use Path;
 public use TOML;
 use Regex;
+use MasonInternal;
+
+var log = new logger("utils");
 
 
 /* Gets environment variables for spawn commands */
@@ -232,6 +235,7 @@ proc getSpackResult(cmd, quiet=false) : string throws {
     " && export PATH=\"$SPACK_ROOT/bin:$PATH\"" +
     " && . $SPACK_ROOT/share/spack/setup-env.sh && ";
     var splitCmd = prefix + cmd;
+    log.debugf("running spack command %s\n", splitCmd);
     var process = spawnshell(splitCmd, stdout=pipeStyle.pipe, executable="bash");
 
     for line in process.stdout.lines() {

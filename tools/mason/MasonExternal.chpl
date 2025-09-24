@@ -19,11 +19,6 @@
  */
 
 /* Version as of Chapel 1.25 - to be updated each release */
-const spackVersion = new VersionInfo('0.19.0');
-const major = spackVersion.major:string;
-const minor = spackVersion.minor:string;
-const spackBranch = 'releases/v' + '.'.join(major, minor);
-const spackDefaultPath = MASON_HOME + "/spack";
 
 use ArgumentParser;
 use FileSystem;
@@ -32,9 +27,19 @@ use Map;
 use MasonEnv;
 use MasonHelp;
 use MasonUtils;
+use MasonInternal;
 use Path;
 use SpecParser;
 use TOML;
+
+var log = new logger("mason external");
+
+const minSpackVersion = new VersionInfo('1.0.0');
+const major = minSpackVersion.major:string;
+const minor = minSpackVersion.minor:string;
+const spackBranch = 'releases/v' + '.'.join(major, minor);
+const spackDefaultPath = MASON_HOME + "/spack";
+const spackRegistryDefaultPath = MASON_HOME + "/spack-registry";
 
 proc masonExternal(args: [] string) {
 
@@ -72,46 +77,62 @@ proc masonExternal(args: [] string) {
       if MASON_OFFLINE {
         throw new owned MasonError('Cannot setup Spack when MASON_OFFLINE is set to true');
       }
+
       // If spack and spack registry is present with latest version, print message
       if isDir(SPACK_ROOT) &&
-      isDir(MASON_HOME+'/spack-registry') &&
-      getSpackVersion == spackVersion &&
-      SPACK_ROOT == spackDefaultPath {
+         isDir(spackRegistryDefaultPath) &&
+         getSpackVersion() == minSpackVersion &&
+         SPACK_ROOT == spackDefaultPath {
+
         throw new owned MasonError("Spack backend is already installed");
       }
+
       // If both spack and spack registry not installed then setup spack
-      if !isDir(SPACK_ROOT) && !isDir(MASON_HOME+'/spack-registry') then
+      if !isDir(SPACK_ROOT) && !isDir(spackRegistryDefaultPath) then
         setupSpack();
+
+      // Engin: Why do we clone spack itself while creating our own registry?
       // If spack registry is not installed then install it
-      if !isDir(MASON_HOME+'/spack-registry') {
+      if !isDir(spackRegistryDefaultPath) {
         writeln("Installing Spack Registry ...");
-        const dest = MASON_HOME + '/spack-registry';
+        const dest = spackRegistryDefaultPath;
         const branch = ' --branch releases/latest ';
         const status = cloneSpackRepository(branch, dest);
         if status != 0 then
           throw new owned MasonError("Spack registry installation failed.");
       }
+      else {
+        writef("Using existing Spack Registry at %s\n",
+               spackRegistryDefaultPath);
+      }
+
+      /* Engin: Unclear to me why we do this.
+
       // If spack is installed and version is outdated, update it
-      if isDir(SPACK_ROOT) && getSpackVersion != spackVersion {
+      if isDir(SPACK_ROOT) && getSpackVersion() != minSpackVersion {
         writeln("Updating Spack backend ... ");
         const status = updateSpackCommandLine();
         if isDir(MASON_HOME + '/spack-registry') then generateYAML();
         if status != 0 then throw new owned MasonError("Spack update failed.");
       }
-      // If spack is not installed then install it
+       */
+
+      // If spack is not installed then install it. Note that this is going to
+      // be a spack installation owned by Mason, in that it will make it use its
+      // own registry. That may be OK.
       if !isDir(SPACK_ROOT) {
         writeln("Installing Spack backend ... ");
         const spackLatestBranch = ' --branch ' + spackBranch + ' ';
         const status = cloneSpackRepository(spackLatestBranch, SPACK_ROOT);
-        if isDir(MASON_HOME + '/spack-registry') then generateYAML();
+        if isDir(spackRegistryDefaultPath) then generateYAML();
         if status != 0 then
           throw new owned MasonError("Spack installation failed.");
       }
       // check that after all this, the version of spack is as we expect it
-      if getSpackVersion != spackVersion then
+      if getSpackVersion() <= minSpackVersion then
         throw new owned MasonError("Spack update or installation failed. \
-                                    Expected v%s, got v%s".format(spackVersion.str(),
-                                                                  getSpackVersion.str()));
+                                    Expected v%s, got v%s".format(minSpackVersion.str(),
+                                                                  getSpackVersion().str()));
       exit(0);
     }
     if spackInstalled() {
@@ -163,16 +184,16 @@ proc spackInstalled() throws {
                                + "call: mason external --setup");
   }
   // if local spack version is lower than required version
-  if getSpackVersion < spackVersion && SPACK_ROOT == spackDefaultPath {
+  if getSpackVersion() < minSpackVersion && SPACK_ROOT == spackDefaultPath {
     throw new owned MasonError("Mason has been updated and requires a newer " +
-          "version of Spack (%s).".format(spackVersion.str()) +
+          "version of Spack (%s).".format(minSpackVersion.str()) +
           "\nTo use mason external, call: mason external --setup");
   }
   // if local version is a major or minor version higher than required version
-  if !spackVersion.isCompatible(getSpackVersion) {
-    writeln("Your version of Spack (v%s) differs ".format(getSpackVersion.str()) +
+  if !minSpackVersion.isCompatible(getSpackVersion()) {
+    writeln("Your version of Spack (v%s) differs ".format(getSpackVersion().str()) +
             "from that supported by Mason " +
-            "(v%s).\nThis may lead to unexpected ".format(spackVersion.str()) +
+            "(v%s).\nThis may lead to unexpected ".format(minSpackVersion.str()) +
             "behavior");
   }
   return true;
@@ -182,7 +203,7 @@ proc spackInstalled() throws {
 proc setupSpack() throws {
   writeln("Installing Spack backend ...");
   const destCLI = MASON_HOME + "/spack/";
-  const spackLatestBranch = ' --branch v' + spackVersion.str() + ' ';
+  const spackLatestBranch = ' --branch v' + minSpackVersion.str() + ' ';
   const destPackages = MASON_HOME + "/spack-registry";
   const spackMasterBranch = ' --branch releases/latest ';
   const statusCLI = cloneSpackRepository(spackLatestBranch, destCLI);
@@ -223,7 +244,7 @@ proc gitFetch(branch: string) {
 
 /* Updates the spack directory used for spack commands */
 private proc updateSpackCommandLine() {
-  const releaseTag = 'v' + spackVersion.str();
+  const releaseTag = 'v' + minSpackVersion.str();
   var tag = 'refs/tags/' + releaseTag;
   tag = tag + ':' + tag;
   const statusFetch = gitFetch(tag);
@@ -232,6 +253,9 @@ private proc updateSpackCommandLine() {
   else return 0;
 }
 
+
+// ENGIN: If you have your independent spack installation, this function
+// basically highjacks it. It feels wrong to be doing this.
 /*
   Generate site-specific repos.yaml :-
   Replaces package repository path of repos.yaml file at
@@ -257,7 +281,7 @@ private proc printSpackVersion() {
 }
 
 /* Returns spack version */
-proc getSpackVersion : VersionInfo {
+proc getSpackVersion() : VersionInfo {
   const command = "spack --version";
   const tmpVersion = getSpackResult(command,true).strip();
   // on systems with their own spack, spack --version can provide
@@ -430,7 +454,11 @@ proc getExternalPackages(exDeps: Toml) /* [domain(string)] shared Toml? */ {
               fullSpec = "@".join(name, spec.s);
             }
 
+            log.debugf("Dep %s: fullSpec: %s\n", name, fullSpec);
+
             const resolvedSpec = resolveSpec(fullSpec);
+
+            log.debugf("Dep %s: resolvedSpec: %s\n", name, resolvedSpec);
 
             var dependencies = getSpkgDependencies(resolvedSpec);
             const pkgInfo = getSpkgInfo(resolvedSpec, dependencies);
@@ -534,12 +562,15 @@ proc getSpkgDependencies(spec: string): list(string) throws {
   var found = false;
   var dependencies: list(string);
   for item in pkgInfo.split() {
+    log.debugf("Spack dependency %s\n", item);
 
     if item.rfind(name) != -1 {
       found = true;
+      log.debugln("Found");
     }
     else if found {
       const dep = item.strip("^");
+      log.debugf("Had found already, adding %s\n", dep);
       dependencies.pushBack(dep);
     }
   }
@@ -559,20 +590,18 @@ private proc specName(spec: string): string throws {
 }
 
 
+// ENGIN: not sure why we need this, this seems to be sensitive to changes to
+// Spack syntax. All we need should be "spec"?
 /* Resolve spec, pinning to the installed version and eliminating ranges */
 private proc resolveSpec(spec: string): string throws {
-  const command = "spack spec %s".format(spec);
+  const command = "spack spec --no-install-status %s | head -n1".format(spec);
   const output = getSpackResult(command, quiet=true);
-  var lines = output.split('\n');
 
-  // Package on 7th line
-  var ret = lines[6].strip();
-
-  if ret == '' {
+  if output == '' {
     throw new owned MasonError("Package not found: " + spec);
   }
 
-  return ret;
+  return output;
 }
 
 
