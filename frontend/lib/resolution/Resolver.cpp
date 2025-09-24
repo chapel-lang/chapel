@@ -5883,12 +5883,6 @@ void Resolver::exit(const Dot* dot) {
     return;
   }
 
-  // Handle generic receiver type later in function resolution,
-  // once we have an instantiation.
-  if (getTypeGenericity(context, receiver.type()) != Type::CONCRETE) {
-    deferToFunctionResolution = true;
-  }
-
   if (scopeResolveOnly || deferToFunctionResolution)
     return;
 
@@ -5896,13 +5890,22 @@ void Resolver::exit(const Dot* dot) {
 
   // resolve a.x where a is a record/class and x is a field or parenless method
   std::vector<CallInfoActual> actuals;
+  std::vector<const uast::AstNode*> actualAsts;
   actuals.push_back(CallInfoActual(receiver.type(), USTR("this")));
+  actualAsts.push_back(dot->receiver());
   auto ci = CallInfo (/* name */ dot->field(),
                       /* calledType */ QualifiedType(),
                       /* isMethodCall */ true,
                       /* hasQuestionArg */ false,
                       /* isParenless */ true,
                       actuals);
+
+  // apply the usual call skipping rules, that rule out (e.g.) generic
+  // actuals.
+  if (shouldSkipCallResolution(this, dot, actualAsts, ci)) {
+    return;
+  }
+
   auto inScope = currentScope();
   auto inScopes = CallScopeInfo::forNormalCall(inScope, poiScope);
   auto c = resolveGeneratedCall(dot, &ci, &inScopes);
