@@ -244,7 +244,8 @@ private proc runTests(show: bool, run: bool, parallel: bool, filter: string,
 
     // add prerequisite compopts
     for prereq in MasonPrereqs.prereqs() {
-      const pFlags = runCommand("make -C %s -s printchplflags".format(prereq));
+      const cmd = "make -C %s -s printchplflags".format(prereq);
+      const pFlags = runCommand(cmd).strip();
 
       for pFlag in pFlags.split(" ") {
         compopts.pushBack(pFlag);
