@@ -20,6 +20,10 @@ mv $file.tmp $file
 grep -v 'command script import' $file > $file.tmp
 mv $file.tmp $file
 
+# remove breakpoint command add
+grep -v 'breakpoint command add' $file > $file.tmp
+mv $file.tmp $file
+
 # remove the OpenCL warnings
 sed -E -e '/OpenCL/d' $file > $file.tmp
 mv $file.tmp $file
