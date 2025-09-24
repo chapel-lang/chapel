@@ -232,6 +232,14 @@ else
     fi
 fi
 
+# if CHPL_CHECK_MAX_LOCALES is set, use it to cap NUMLOCALES
+if [ -n "${CHPL_CHECK_MAX_LOCALES}" ] ; then
+    if [ ${NUMLOCALES} -gt ${CHPL_CHECK_MAX_LOCALES} ] ; then
+        log_info "Capping NUMLOCALES=${NUMLOCALES} to ${CHPL_CHECK_MAX_LOCALES}, because \$CHPL_CHECK_MAX_LOCALES is set"
+        NUMLOCALES=${CHPL_CHECK_MAX_LOCALES}
+    fi
+fi
+
 # Check for valid launchers
 if [ ${chpl_launcher} == "slurm-srun" -o ${chpl_launcher} == "amudprun" -o ${chpl_launcher} == "smp" -o ${chpl_launcher} == "none" ]; then
     log_info "\$CHPL_LAUNCHER=${chpl_launcher} is compatible with test script."
