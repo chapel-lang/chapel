@@ -146,9 +146,9 @@ export GNU_GCC_SUPPORTS_STRICT_OVERFLOW := $(shell test $(GNU_GCC_MAJOR_VERSION)
 endif
 
 #
-# We always use gnu17 and gnu++17 for the runtime
+# We always use gnu99 and gnu++11 for the runtime
 #
-C_STD := -std=gnu17
+C_STD := -std=gnu99
 CXX_STD := -std=gnu11
 CXX11_STD := -std=gnu++11
 

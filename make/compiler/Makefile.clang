@@ -54,9 +54,9 @@ GEN_CFLAGS += $(SANITIZER_CFLAGS)
 GEN_LFLAGS += $(SANITIZER_LDFLAGS)
 
 #
-# We always use gnu17 and gnu++17 for the runtime
+# We always use gnu99 and gnu++11 for the runtime
 #
-C_STD := -std=gnu17
+C_STD := -std=gnu99
 CXX_STD := -std=gnu++11
 CXX11_STD := -std=gnu++11
 
