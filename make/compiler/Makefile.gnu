@@ -385,7 +385,7 @@ SQUASH_WARN_GEN_CFLAGS += -Wno-strict-overflow
 #  can change the programs runtime behavior (when -O2 or greater is tossed).
 endif
 
-RUNTIME_GNU_WARNINGS = -Wgnu -Wno-gnu-folding-constant -Wno-zero-length-array -Wno-gnu-zero-variadic-macro-arguments
+RUNTIME_GNU_WARNINGS = -Wno-vla
 
 #
 # compiler warnings settings
