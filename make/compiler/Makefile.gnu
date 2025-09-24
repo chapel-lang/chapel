@@ -149,7 +149,7 @@ endif
 # We always use gnu11 and gnu++11 for the runtime
 #
 C_STD := -std=gnu11
-CXX_STD := -std=gnu11
+CXX_STD := -std=gnu++11
 CXX11_STD := -std=gnu++11
 
 COMP_CFLAGS += $(C_STD)
