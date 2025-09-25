@@ -5294,11 +5294,7 @@ types::QualifiedType Resolver::typeForBooleanOp(const uast::OpCall* op) {
 }
 
 bool Resolver::enter(const Call* call) {
-  // At this time, we don't allow method calls in inheritance expressions,
-  // so we assume that there can't be overloading etc.
-  if (call != curInheritanceExpr) {
-    callNodeStack.push_back(call);
-  }
+  callNodeStack.push_back(call);
   auto op = call->toOpCall();
 
   if (op && initResolver) {
@@ -5706,9 +5702,7 @@ void Resolver::exit(const Call* call) {
 
   // Always remove the call from the stack if we pushed it there,
   // to make sure it's properly set.
-  if (call != curInheritanceExpr) {
-    callNodeStack.pop_back();
-  }
+  callNodeStack.pop_back();
 }
 
 bool Resolver::enter(const Dot* dot) {
