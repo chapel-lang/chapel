@@ -66,7 +66,8 @@ static const bool& checkSignatureQuery(Context* context,
       context->error(errId, "Bad 'this' intent for init=");
     }
     bool rhsIntentGenericOrRef = isGenericQualifier(rhsIntent) ||
-                                 isRefQualifier(rhsIntent);
+                                 isRefQualifier(rhsIntent) ||
+                                 rhsIntent == Qualifier::PARAM;
     // check the intent of the rhs argument
     if (sig->formalType(0).type() == sig->formalType(1).type()) {
       // same-type case: only const/default/ref/const ref RHS is allowed
