@@ -196,7 +196,7 @@ module ChapelDynamicLoading {
     return ret;
   }
 
-  proc checkForDynamicLoadingErrors(ref err) {
+  private proc checkForDynamicLoadingErrors(ref err) {
     // Note that procedure pointer errors were checked in module code.
     param errors = configErrorsForDynamicLoading(emitErrors=true);
 
@@ -206,6 +206,21 @@ module ChapelDynamicLoading {
     }
 
     return false;
+  }
+
+  proc closeLocalBinary(path: string, handle: c_ptr(void),
+                        param warn=true) {
+    var ret;
+    localDynLoadClose(handle, ret);
+
+    if warn && ret != nil {
+      const msg = 'While closing \'' + path + '\' ' +
+                  'there was an error on LOCALE-' + here.id:string +
+                  ': ' + ret!.message();
+      warning(msg);
+    }
+
+    return ret;
   }
 
   var chpl_binaryInfoStore = new owned chpl_BinaryInfoStore();
@@ -241,7 +256,7 @@ module ChapelDynamicLoading {
         var handle = localDynLoadOpen(path, err);
 
         // Make sure that the local pointer is closed (discarding the error).
-        defer { if handle then localDynLoadClose(handle, err); }
+        defer { if handle then closeLocalBinary(path, handle, warn=false); }
 
         if err != nil {
           errOnThis = err;
@@ -341,16 +356,15 @@ module ChapelDynamicLoading {
 
         coforall loc in fanToAll(skip=skip) with (ref errBuf) do on loc {
           var err;
-          var ptr = localDynLoadOpen(path, err);
+          var handle = localDynLoadOpen(path, err);
 
-          // Ensure that the local pointer is closed (discarding the error).
-          defer { if ptr then localDynLoadClose(ptr, err); }
+          defer { if handle then closeLocalBinary(path, handle, warn=false); }
 
-          if ptr {
+          if handle {
             // Swap in pointer on 'bin'. This clears the variable.
             const idx = here.id;
-            on bin do bin._systemHandles[idx] <=> ptr;
-            assert(ptr == nil);
+            on bin do bin._systemHandles[idx] <=> handle;
+            assert(handle == nil);
 
           } else if err == nil {
             // TODO: Make it so all failure paths return an error.
@@ -378,13 +392,8 @@ module ChapelDynamicLoading {
 
         coforall loc in fanToAll() do on loc {
           // Clean up all the system handles that have been opened.
-          const ptr = bin._systemHandles[here.id];
-
-          if ptr != nil {
-            var err;
-            localDynLoadClose(ptr, err);
-            if err then halt('Error when closing system handle!');
-          }
+          const handle = bin._systemHandles[here.id];
+          if handle then closeLocalBinary(path, handle, warn=true);
         }
 
         return nil;
@@ -423,18 +432,9 @@ module ChapelDynamicLoading {
         _closed = true;
 
         for i in 0..<_systemHandles.size {
-          const ptr = _systemHandles[i];
-          if ptr then on Locales[i] {
-            var err;
-            localDynLoadClose(ptr, err);
-            if err {
-              const msg = 'While closing \'' + _path + '\' ' +
-                          'there was an error on LOCALE-' + here.id:string +
-                          ': ' + err!.message();
-              // TODO: We warn because there's not really much else we
-              //       can do here at present...
-              warning(msg);
-            }
+          const handle = _systemHandles[i];
+          if handle != nil then on Locales[i] {
+            closeLocalBinary(_path, handle);
           }
         }
       }
