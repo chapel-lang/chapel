@@ -1503,28 +1503,6 @@ static void test44() {
   assert(pf.begin()->second.param()->toEnumParam()->value().str == "red");
 }
 
-static void testSubs(Context* context,
-                     const CompositeType* ct,
-                     const std::map<std::string, QualifiedType>& expected) {
-  assert(ct);
-  auto rc = createDummyRC(context);
-  auto fields =
-    fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
-
-  for (int i = 0; i < fields.numFields(); i++) {
-    auto name = fields.fieldName(i);
-    auto fieldId = fields.fieldDeclId(i);
-
-    if (auto it = expected.find(name.str()); it != expected.end()) {
-      auto subit = ct->substitutions().find(fieldId);
-      assert(subit != ct->substitutions().end());
-      assert(subit->second == it->second);
-    } else {
-      assert(ct->substitutions().find(fieldId) == ct->substitutions().end());
-    }
-  }
-}
-
 static void ensureMatchingClassOrRecord(const QualifiedType& root, const QualifiedType& inst) {
   assert(!root.isUnknownOrErroneous() && !inst.isUnknownOrErroneous());
   assert((root.type()->isClassType() && inst.type()->isClassType()) ||
@@ -1584,23 +1562,23 @@ static void testPartialInstantiation() {
     auto B = QualifiedType(QualifiedType::TYPE, BoolType::get(context));
 
     auto& R__ = vars["R__"];
-    testSubs(context, R__.type()->getCompositeType(), {{"fst", R}});
+    ensureSubs(context, R__.type()->getCompositeType(), {{"fst", R}});
     ensureMatchingClassOrRecord(rootInst, R__);
     auto& R_B = vars["R_B"];
-    testSubs(context, R_B.type()->getCompositeType(), {{"fst", R}, {"thd", B}});
+    ensureSubs(context, R_B.type()->getCompositeType(), {{"fst", R}, {"thd", B}});
     ensureMatchingClassOrRecord(rootInst, R_B);
     auto& RIB = vars["RIB"];
-    testSubs(context, RIB.type()->getCompositeType(), {{"fst", R}, {"snd", I}, {"thd", B}});
+    ensureSubs(context, RIB.type()->getCompositeType(), {{"fst", R}, {"snd", I}, {"thd", B}});
     ensureMatchingClassOrRecord(rootInst, RIB);
 
     auto& r__ = vars["r__"];
-    testSubs(context, r__.type()->getCompositeType(), {{"fst", R}});
+    ensureSubs(context, r__.type()->getCompositeType(), {{"fst", R}});
     ensureMatchingClassOrRecord(rootInst, r__);
     auto& ri_ = vars["ri_"];
-    testSubs(context, ri_.type()->getCompositeType(), {{"fst", R}, {"snd", I}});
+    ensureSubs(context, ri_.type()->getCompositeType(), {{"fst", R}, {"snd", I}});
     ensureMatchingClassOrRecord(rootInst, ri_);
     auto& rib = vars["rib"];
-    testSubs(context, rib.type()->getCompositeType(), {{"fst", R}, {"snd", I}, {"thd", B}});
+    ensureSubs(context, rib.type()->getCompositeType(), {{"fst", R}, {"snd", I}, {"thd", B}});
     ensureMatchingClassOrRecord(rootInst, rib);
   }
 
@@ -1642,13 +1620,13 @@ static void testPartialInstantiation() {
     auto B = QualifiedType(QualifiedType::TYPE, BoolType::get(context));
 
     auto& r__ = vars["r__"];
-    testSubs(context, r__.type()->getCompositeType(), {{"fst", R}});
+    ensureSubs(context, r__.type()->getCompositeType(), {{"fst", R}});
     ensureMatchingClassOrRecord(rootInst, r__);
     auto& ri_ = vars["ri_"];
-    testSubs(context, ri_.type()->getCompositeType(), {{"fst", R}, {"snd", I}});
+    ensureSubs(context, ri_.type()->getCompositeType(), {{"fst", R}, {"snd", I}});
     ensureMatchingClassOrRecord(rootInst, ri_);
     auto& rib = vars["rib"];
-    testSubs(context, rib.type()->getCompositeType(), {{"fst", R}, {"snd", I}, {"thd", B}});
+    ensureSubs(context, rib.type()->getCompositeType(), {{"fst", R}, {"snd", I}, {"thd", B}});
     ensureMatchingClassOrRecord(rootInst, rib);
 
     assert(vars["bad1"].isUnknownOrErroneous());

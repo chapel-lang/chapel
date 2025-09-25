@@ -95,6 +95,10 @@ QualifiedType getTypeForFirstStmt(Context* context, const std::string& program);
 
 Context::Configuration getConfigWithHome();
 
+void ensureSubs(Context* context,
+              const CompositeType* ct,
+              const std::map<std::string, QualifiedType>& expected);
+
 /**
   Returns the ResolvedFunction called by a particular
   ResolvedExpression, if there was exactly one candidate.
