@@ -6706,6 +6706,10 @@ bool addExistingSubstitutionsAsActuals(Context* context,
       auto fieldAst = parsing::idToAst(context, id)->toVarLikeDecl();
       if (fieldAst->storageKind() == QualifiedType::TYPE ||
           fieldAst->storageKind() == QualifiedType::PARAM) {
+        if (qt.isParam() && !qt.hasParamPtr()) {
+          // don't add param substitutions that are not known
+          continue;
+        }
         addedSubs = true;
         outActuals.emplace_back(qt, fieldAst->name());
         outActualAsts.push_back(nullptr);
