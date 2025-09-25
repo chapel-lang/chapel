@@ -496,7 +496,8 @@ CallInfo CallInfo::create(Context* context,
                           bool raiseErrors,
                           std::vector<const uast::AstNode*>* actualAsts,
                           ID* moduleScopeId,
-                          UniqueString rename) {
+                          UniqueString rename,
+                          bool* outIncompleteTypeConstructor) {
 
   // Pieces of the CallInfo we need to prepare.
   UniqueString name;
@@ -560,6 +561,13 @@ CallInfo CallInfo::create(Context* context,
       } else {
         calledType = *calledExprType;
         prependActualFromSubstitutions(context, calledType, actuals, actualAsts);
+      }
+    } else if (calledExprType && calledExprType->isUnknown() && calledExprType->isType()) {
+      // it looks like we're invoking a type constructor, but we don't know
+      // what type. We don't know enough to set calledType, and the call
+      // shouldn't be resolved. Signal this via outIncompleteTypeConstructor.
+      if (outIncompleteTypeConstructor != nullptr) {
+        *outIncompleteTypeConstructor = true;
       }
     } else if (!call->isOpCall() && dotReceiverType &&
                isKindForMethodReceiver(dotReceiverType->kind())) {

@@ -650,6 +650,13 @@ class CallInfo {
       with the ID of the scope that should be searched for candidates.
       That is, if the call expression is 'M.f(...)' for a module 'M', then
       'moduleScopeId' will be set to the ID of the module 'M'.
+
+      This method detects calls to type constructors where the type
+      being constructed is not yet known. if 'outIncompleteTypeConstructor' is
+      provided and not 'nullptr', sets '*outIncompleteTypeConstructor' to 'true'
+      when detecting such a call. In that case, the returned CallInfo
+      should not be resolved.
+
    */
   static CallInfo create(Context* context,
                          const uast::Call* call,
@@ -657,7 +664,8 @@ class CallInfo {
                          bool raiseErrors = true,
                          std::vector<const uast::AstNode*>* actualAsts=nullptr,
                          ID* moduleScopeId=nullptr,
-                         UniqueString rename = UniqueString());
+                         UniqueString rename = UniqueString(),
+                         bool* outIncompleteTypeConstructor = nullptr);
 
   /** Construct a CallInfo by adding a method receiver argument to
       the passed CallInfo. */

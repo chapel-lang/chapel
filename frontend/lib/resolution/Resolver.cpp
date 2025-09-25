@@ -3238,14 +3238,16 @@ resolveSpecialKeywordCallAsNormalCall(Resolver& rv,
                                       ResolvedExpression& noteInto) {
   auto runResult = rv.context->runAndDetectErrors([&](Context* ctx) {
     std::vector<const AstNode*> actualAsts;
+    bool isIncompleteTypeConstructor = false;
     auto ci = CallInfo::create(rv.context, innerCall, rv.byPostorder,
                                /* raiseErrors */ true,
                                /* actualAsts */ &actualAsts,
                                /* moduleScopeId */ nullptr,
-                               /* rename */ name);
+                               /* rename */ name,
+                               &isIncompleteTypeConstructor);
 
     auto skip = shouldSkipCallResolution(&rv, innerCall, actualAsts, ci);
-    if (skip != NONE) {
+    if (isIncompleteTypeConstructor || skip != NONE) {
       return CallResolutionResult::getEmpty();
     }
 
@@ -5570,17 +5572,20 @@ void Resolver::handleCallExpr(const uast::Call* call) {
 
   std::vector<const uast::AstNode*> actualAsts;
   ID moduleScopeId;
+  bool isIncompleteTypeConstructor = false;
   auto ci = CallInfo::create(context, call, byPostorder,
                              /* raiseErrors */ true,
                              &actualAsts,
-                             &moduleScopeId);
+                             &moduleScopeId,
+                             /* rename */ UniqueString(),
+                             &isIncompleteTypeConstructor);
   auto inScopes =
     moduleScopeId.isEmpty() ?
     CallScopeInfo::forNormalCall(scope, poiScope) :
     CallScopeInfo::forQualifiedCall(context, moduleScopeId, scope, poiScope);
 
   auto skip = shouldSkipCallResolution(this, call, actualAsts, ci);
-  if (!skip) {
+  if (!skip && !isIncompleteTypeConstructor) {
     ResolvedExpression& r = byPostorder.byAst(call);
     QualifiedType receiverType = methodReceiverType();
 
