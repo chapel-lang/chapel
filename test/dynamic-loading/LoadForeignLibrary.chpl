@@ -230,10 +230,41 @@ proc test4() {
   }
 }
 
+// This test demonstrates that a library will persist on the locale that
+// it is originally loaded, even if other locales attempt to load it after.
+proc test5() {
+  writeln(getRoutineName());
+
+  // First create the library on LOCALE-0. This is where it will live.
+  var bin0 = new dynamicLibrary("./TestCLibraryToLoad.so");
+  type P1 = proc(_: int, _: int): int;
+  const wideProc0 = try! bin0.load("addTwoReturn", P1);
+  assert(wideProc0 != nil);
+
+  // TODO: Need a way to force evict libraries before execution ends.
+  assert(bin0._bin!.locale == here);
+
+  coforall loc in Locales do on loc {
+    var binHere = new dynamicLibrary("./TestCLibraryToLoad.so");
+
+    // The locales should match.
+    assert(binHere._bin!.locale == bin0._bin!.locale);
+
+    // And loading should work without incident.
+    type P1 = proc(_: int, _: int): int;
+    const wideProcHere = try! binHere.load("addTwoReturn", P1);
+    assert(wideProcHere != nil);
+
+    // And should have the same wide index.
+    assert(wideProcHere == wideProc0);
+  }
+}
+
 proc main() {
   test0();
   test1();
   test2();
   test3();
   test4();
+  test5();
 }
