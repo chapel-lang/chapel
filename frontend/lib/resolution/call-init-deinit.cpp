@@ -1129,8 +1129,14 @@ void CallInitDeinit::handleOutFormal(const Call* ast,
     ID actualId = refersToId(actual, rv);
     recordInitializationOrder(frame, actualId);
 
-    // we can skip the copy if the types match
-    resolveMoveInit(actual, actual, actualType, formalType, rv);
+    // In some cases (where we emit an error elsewhere), the formal's type
+    // might not have been properly computed (e.g., a user created a generic
+    // out formal but didn't initialize it). Don't resolve move init in that case.
+    if (!formalType.isUnknown() &&
+        getTypeGenericity(context, formalType) == Type::CONCRETE) {
+      // we can skip the copy if the types match
+      resolveMoveInit(actual, actual, actualType, formalType, rv);
+    }
   } else {
     // not initializing a variable, so just resolve the '=' call
     resolveAssign(actual, actualType, formalType, rv);
