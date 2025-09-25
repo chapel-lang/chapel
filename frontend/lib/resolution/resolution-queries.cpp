@@ -6440,6 +6440,25 @@ resolveFnCall(ResolutionContext* rc,
     }
   }
 
+  // if the original call was a type constructor via a managed type
+  // (e.g., (owned C(?))(typeArg)), adjust the return type to keep
+  // the management of the called type.
+  const ClassType* calledCt = nullptr;
+  if (ci.calledType().type() && (calledCt = ci.calledType().type()->toClassType())) {
+    const ClassType* retCt = nullptr;
+    const BasicClassType* retBct = nullptr;
+    if (retType && retType->type() &&
+        (retCt = retType->type()->toClassType()) &&
+        retCt->decorator().isUnknownManagement() && retCt->manageableType() &&
+        (retBct = retCt->manageableType()->toBasicClassType())) {
+      auto newCt = ClassType::get(context, retBct,
+                                  calledCt->manager(),
+                                  calledCt->decorator());
+      CHPL_ASSERT(retType->param() == nullptr);
+      retType = QualifiedType(retType->kind(), newCt);
+    }
+  }
+
   return CallResolutionResult(mostSpecific,
                               rejectedPossibleIteratorCandidates,
                               ((bool) retType) ? *retType : QualifiedType(),
