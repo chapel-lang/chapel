@@ -2306,6 +2306,51 @@ static void testInitEqRecursionError() {
   assert(guard.realizeErrors() > 0);
 }
 
+static void testPartialTypeInitEq() {
+  std::string prog = R"""(
+    record R {
+      type T;
+      param p : T;
+    }
+
+    proc R.init=(param p : this.type.T) {
+      this.T = p.type;
+      this.p = p;
+    }
+
+    operator :(from, type t: R(from.type)) {
+      var tmp: t = from;
+      return tmp;
+    }
+
+    type root = R(?);
+    var r1 : R(string, ?) = "hi";
+    var r2 : R(int, ?) = 1234;
+  )""";
+
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+  auto vars = resolveTypesOfVariables(context, prog, {"root", "r1", "r2"});
+
+  auto rootType = vars["root"].type();
+  assert(rootType && rootType->isRecordType());
+  assert(rootType->toRecordType()->instantiatedFrom() == nullptr);
+
+  auto r1Type = vars["r1"].type();
+  assert(r1Type && r1Type->isRecordType());
+  ensureSubs(context, r1Type->toCompositeType(), {
+    {"T", QualifiedType(QualifiedType::TYPE, RecordType::getStringType(context))},
+    {"p", QualifiedType::makeParamString(context, "hi")}
+  });
+
+  auto r2Type = vars["r2"].type();
+  assert(r2Type && r2Type->isRecordType());
+  ensureSubs(context, r2Type->toCompositeType(), {
+    {"T", QualifiedType(QualifiedType::TYPE, IntType::get(context, 64))},
+    {"p", QualifiedType::makeParamInt(context, 1234)}
+  });
+}
+
 // TODO:
 // - test using defaults for types and params
 //   - also in conditionals
@@ -2371,6 +2416,8 @@ int main() {
 
   testInitEqRecursion();
   testInitEqRecursionError();
+
+  testPartialTypeInitEq();
 
   return 0;
 }
