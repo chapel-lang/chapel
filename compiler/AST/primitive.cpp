@@ -331,13 +331,13 @@ static QualifiedType
 returnInfoNumericUp(CallExpr* call) {
   Type* t1 = call->get(1)->typeInfo()->getValType();
   Type* t2 = call->get(2)->typeInfo()->getValType();
-  if (is_int_type(t1) && is_real_type(t2))
+  if (isIntType(t1) && isRealType(t2))
     return QualifiedType(t2, QUAL_VAL);
-  if (is_real_type(t1) && is_int_type(t2))
+  if (isRealType(t1) && isIntType(t2))
     return QualifiedType(t1, QUAL_VAL);
-  if (is_int_type(t1) && is_bool_type(t2))
+  if (isIntType(t1) && isBoolType(t2))
     return QualifiedType(t1, QUAL_VAL);
-  if (is_bool_type(t1) && is_int_type(t2))
+  if (isBoolType(t1) && isIntType(t2))
     return QualifiedType(t2, QUAL_VAL);
   return QualifiedType(t1, QUAL_VAL);
 }

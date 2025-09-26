@@ -676,7 +676,7 @@ GenRet baseASTCodegen(BaseAST* ast)
   GenRet ret = ast->codegen();
   if (!ret.chplType)
     ret.chplType = ast->typeInfo();
-  ret.isUnsigned = ! is_signed(ret.chplType);
+  ret.isUnsigned = ! isSignedType(ret.chplType);
   return ret;
 }
 
