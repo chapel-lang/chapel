@@ -1503,6 +1503,147 @@ static void test44() {
   assert(pf.begin()->second.param()->toEnumParam()->value().str == "red");
 }
 
+static void ensureMatchingClassOrRecord(const QualifiedType& root, const QualifiedType& inst) {
+  assert(!root.isUnknownOrErroneous() && !inst.isUnknownOrErroneous());
+  assert((root.type()->isClassType() && inst.type()->isClassType()) ||
+         (root.type()->isRecordType() && inst.type()->isRecordType()));
+
+  if (auto rCt = root.type()->toClassType()) {
+    auto iCt = inst.type()->toClassType();
+    assert(rCt->manager() == iCt->manager());
+    assert(rCt->decorator() == iCt->decorator());
+  }
+  assert(root.type()->getCompositeType() ==
+         inst.type()->getCompositeType()->instantiatedFromCompositeType());
+}
+
+static void testPartialInstantiation() {
+  std::pair<const char*, const char*> cases[] = {
+    {"record", ""},
+    {"class", ""},
+    {"class", "shared "},
+    {"class", "owned "},
+    {"class", "unmanaged "}
+  };
+
+  size_t numCases = sizeof(cases) / sizeof(cases[0]);
+  for (size_t i = 0; i < numCases; i++) {
+    auto [aggregate, management] = cases[i];
+
+    std::string program = std::string(R"""(
+      )""") + aggregate + " triple { type fst; type snd; type thd; }" + R"""(
+
+      type root = )""" + management + R"""(triple(?);
+
+      type R__ = root(real, ?);
+      type R_B = R__(thd=bool, ?);
+      type RIB = R_B(snd=int, ?);
+
+      type r__ = root(real, ?);
+      type ri_ = r__(int, ?);
+      type rib = ri_(bool, ?);
+    )""";
+
+    printf("testPartialInstantiation basic: %s %s\n", aggregate, management);
+    printf("%s\n", program.c_str());
+
+    auto context = buildStdContext();
+    ErrorGuard guard(context);
+    auto vars = resolveTypesOfVariables(context, program.c_str(), {"root", "R__", "R_B", "RIB", "r__", "ri_", "rib"});
+
+    auto& rootInst = vars["root"];
+    assert(rootInst.type());
+    assert(rootInst.type()->getCompositeType());
+    assert(rootInst.type()->getCompositeType()->name() == "triple");
+    assert(rootInst.type()->getCompositeType()->instantiatedFromCompositeType() == nullptr);
+
+    auto I = QualifiedType(QualifiedType::TYPE, IntType::get(context, 0));
+    auto R = QualifiedType(QualifiedType::TYPE, RealType::get(context, 0));
+    auto B = QualifiedType(QualifiedType::TYPE, BoolType::get(context));
+
+    auto& R__ = vars["R__"];
+    ensureSubs(context, R__.type()->getCompositeType(), {{"fst", R}});
+    ensureMatchingClassOrRecord(rootInst, R__);
+    auto& R_B = vars["R_B"];
+    ensureSubs(context, R_B.type()->getCompositeType(), {{"fst", R}, {"thd", B}});
+    ensureMatchingClassOrRecord(rootInst, R_B);
+    auto& RIB = vars["RIB"];
+    ensureSubs(context, RIB.type()->getCompositeType(), {{"fst", R}, {"snd", I}, {"thd", B}});
+    ensureMatchingClassOrRecord(rootInst, RIB);
+
+    auto& r__ = vars["r__"];
+    ensureSubs(context, r__.type()->getCompositeType(), {{"fst", R}});
+    ensureMatchingClassOrRecord(rootInst, r__);
+    auto& ri_ = vars["ri_"];
+    ensureSubs(context, ri_.type()->getCompositeType(), {{"fst", R}, {"snd", I}});
+    ensureMatchingClassOrRecord(rootInst, ri_);
+    auto& rib = vars["rib"];
+    ensureSubs(context, rib.type()->getCompositeType(), {{"fst", R}, {"snd", I}, {"thd", B}});
+    ensureMatchingClassOrRecord(rootInst, rib);
+  }
+
+  for (size_t i = 0; i < numCases; i++) {
+    auto [aggregate, management] = cases[i];
+
+    std::string program = std::string(R"""(
+      )""") + aggregate + " triple { type fst; type snd; type thd; }" + R"""(
+
+      proc checkApply(type Constructor, type Arg, type Dummy: Constructor(Arg)) type {
+          return Constructor(Arg);
+      }
+      type root = )""" + management + R"""(triple(?);
+
+      type r__ = checkApply(root, real, root(real, int, bool));
+      type ri_ = checkApply(r__, int, root(real, int, bool));
+      type rib = checkApply(ri_, bool, root(real, int, bool));
+
+      type bad1 = checkApply(root, real, root(int, int, bool));
+      type bad2 = checkApply(r__, int, root(real, real, bool));
+      type bad3 = checkApply(ri_, bool, root(real, int, int));
+    )""";
+
+    printf("testPartialInstantiation formals: %s %s\n", aggregate, management);
+    printf("%s\n", program.c_str());
+
+    auto context = buildStdContext();
+    ErrorGuard guard(context);
+    auto vars = resolveTypesOfVariables(context, program.c_str(), {"root", "r__", "ri_", "rib", "bad1", "bad2", "bad3"});
+
+    auto& rootInst = vars["root"];
+    assert(rootInst.type());
+    assert(rootInst.type()->getCompositeType());
+    assert(rootInst.type()->getCompositeType()->name() == "triple");
+    assert(rootInst.type()->getCompositeType()->instantiatedFromCompositeType() == nullptr);
+
+    auto I = QualifiedType(QualifiedType::TYPE, IntType::get(context, 0));
+    auto R = QualifiedType(QualifiedType::TYPE, RealType::get(context, 0));
+    auto B = QualifiedType(QualifiedType::TYPE, BoolType::get(context));
+
+    auto& r__ = vars["r__"];
+    ensureSubs(context, r__.type()->getCompositeType(), {{"fst", R}});
+    ensureMatchingClassOrRecord(rootInst, r__);
+    auto& ri_ = vars["ri_"];
+    ensureSubs(context, ri_.type()->getCompositeType(), {{"fst", R}, {"snd", I}});
+    ensureMatchingClassOrRecord(rootInst, ri_);
+    auto& rib = vars["rib"];
+    ensureSubs(context, rib.type()->getCompositeType(), {{"fst", R}, {"snd", I}, {"thd", B}});
+    ensureMatchingClassOrRecord(rootInst, rib);
+
+    assert(vars["bad1"].isUnknownOrErroneous());
+    assert(vars["bad2"].isUnknownOrErroneous());
+    assert(vars["bad3"].isUnknownOrErroneous());
+
+    auto numNoMatchingCandidates = 0;
+    for (auto& err : guard.errors()) {
+      if (err->type() == ErrorType::NoMatchingCandidates) {
+        numNoMatchingCandidates++;
+      }
+    };
+    assert(numNoMatchingCandidates == 3);
+    guard.realizeErrors();
+  }
+}
+
 int main() {
   test1();
   test2();
@@ -1555,6 +1696,8 @@ int main() {
   testRecursiveTypeConstructorMutual();
   test43();
   test44();
+
+  testPartialInstantiation();
 
   return 0;
 }

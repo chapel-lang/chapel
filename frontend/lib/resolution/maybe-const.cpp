@@ -292,6 +292,13 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
         // it was inferred, so we need to offset by one.
         const AstNode* actualAst = inferredReceiver ? actualAsts[actualIdx-1] :
                                                       actualAsts[actualIdx];
+
+        // we could've inserted synthetic actuals when making a second
+        // call to a partially instantiated type.
+        if (!actualAst) {
+          continue;
+        }
+
         Access access = accessForQualifier(fa->formalType().kind());
 
         exprStack.push_back(ExprStackEntry(actualAst, access,

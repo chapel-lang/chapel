@@ -343,6 +343,28 @@ void ensureParamReal(const QualifiedType& type, double expectedValue) {
   }
 }
 
+void ensureSubs(Context* context,
+              const CompositeType* ct,
+              const std::map<std::string, QualifiedType>& expected) {
+  assert(ct);
+  auto rc = createDummyRC(context);
+  auto fields =
+    fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+
+  for (int i = 0; i < fields.numFields(); i++) {
+    auto name = fields.fieldName(i);
+    auto fieldId = fields.fieldDeclId(i);
+
+    if (auto it = expected.find(name.str()); it != expected.end()) {
+      auto subit = ct->substitutions().find(fieldId);
+      assert(subit != ct->substitutions().end());
+      assert(subit->second == it->second);
+    } else {
+      assert(ct->substitutions().find(fieldId) == ct->substitutions().end());
+    }
+  }
+}
+
 void ensureErroneousType(const QualifiedType& type) {
   assert(type.type() != nullptr);
   assert(type.type()->isErroneousType());

@@ -428,13 +428,76 @@ static QualifiedType convertToInitReceiverType(const QualifiedType original) {
   return original;
 }
 
+static void prependActualFromSubstitutions(Context* context,
+                                           const QualifiedType& calledType,
+                                           std::vector<CallInfoActual>& actuals,
+                                           std::vector<const uast::AstNode*>* actualAsts) {
+  if (!calledType.type()) {
+    return;
+  }
+
+  std::vector<CallInfoActual> generatedActuals;
+  std::vector<const uast::AstNode*> generatedActualAsts;
+  if (!addExistingSubstitutionsAsActuals(context, calledType.type(),
+                                         generatedActuals, generatedActualAsts)) {
+    // didn't do anything; just return.
+    return;
+  }
+
+  // if the user is explicitly overriding a substitution, don't include the
+  // previous value, since that would double up the named actuals.
+  // Unnamed actuals are assumed to be sequentially mapped to the remaining
+  // (non-substituted) formals.
+
+  // find the user-mentioned actuals
+  std::set<UniqueString> existingNames;
+  for (const auto& actual : actuals) {
+    existingNames.insert(actual.byName());
+  }
+
+  // remove any generated actuals that the user has overridden
+  //   idx points to current element
+  //   firstToRemove points to the next available index to keep elements
+  // two-list implementation of: https://en.cppreference.com/w/cpp/algorithm/remove.html
+  size_t firstToRemove = 0;
+  for(; firstToRemove < generatedActuals.size(); firstToRemove++) {
+    if (existingNames.count(generatedActuals[firstToRemove].byName()) != 0) {
+      break;
+    }
+  }
+  for (size_t idx = firstToRemove; idx < generatedActuals.size(); idx++) {
+    if (existingNames.count(generatedActuals[idx].byName()) == 0) {
+      generatedActuals[firstToRemove] = std::move(generatedActuals[idx]);
+      generatedActualAsts[firstToRemove] = generatedActualAsts[idx];
+      firstToRemove++;
+    }
+  }
+  generatedActuals.erase(generatedActuals.begin() + firstToRemove,generatedActuals.end());
+  generatedActualAsts.erase(generatedActualAsts.begin() + firstToRemove,generatedActualAsts.end());
+
+  // move the user-provided actuals into the generated lists, then swap
+  generatedActuals.insert(generatedActuals.end(),
+                          std::make_move_iterator(actuals.begin()),
+                          std::make_move_iterator(actuals.end()));
+  actuals.swap(generatedActuals);
+  if (actualAsts != nullptr) {
+    generatedActualAsts.insert(generatedActualAsts.end(),
+                               std::make_move_iterator(actualAsts->begin()),
+                               std::make_move_iterator(actualAsts->end()));
+    actualAsts->swap(generatedActualAsts);
+  }
+}
+
+
+
 CallInfo CallInfo::create(Context* context,
                           const Call* call,
                           const ResolutionResultByPostorderID& byPostorder,
                           bool raiseErrors,
                           std::vector<const uast::AstNode*>* actualAsts,
                           ID* moduleScopeId,
-                          UniqueString rename) {
+                          UniqueString rename,
+                          bool* outIncompleteTypeConstructor) {
 
   // Pieces of the CallInfo we need to prepare.
   UniqueString name;
@@ -497,6 +560,14 @@ CallInfo CallInfo::create(Context* context,
         makeCallToDotThis();
       } else {
         calledType = *calledExprType;
+        prependActualFromSubstitutions(context, calledType, actuals, actualAsts);
+      }
+    } else if (calledExprType && calledExprType->isUnknown() && calledExprType->isType()) {
+      // it looks like we're invoking a type constructor, but we don't know
+      // what type. We don't know enough to set calledType, and the call
+      // shouldn't be resolved. Signal this via outIncompleteTypeConstructor.
+      if (outIncompleteTypeConstructor != nullptr) {
+        *outIncompleteTypeConstructor = true;
       }
     } else if (!call->isOpCall() && dotReceiverType &&
                isKindForMethodReceiver(dotReceiverType->kind())) {

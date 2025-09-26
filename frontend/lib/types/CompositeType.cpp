@@ -59,6 +59,13 @@ static void stringifySortedSubstitutions(std::ostream& ss,
                                          const std::vector<SubstitutionPair>& sorted,
                                          bool& emittedField) {
   for (const auto& sub : sorted) {
+    if (sub.second.isParam() && sub.second.param() == nullptr &&
+        stringKind == StringifyKind::CHPL_SYNTAX) {
+      // we know the type of the param value, but not the value. Production
+      // doesn't print it.
+      continue;
+    }
+
     if (emittedField) ss << ", ";
 
     if (stringKind != StringifyKind::CHPL_SYNTAX) {
@@ -66,7 +73,7 @@ static void stringifySortedSubstitutions(std::ostream& ss,
       ss << ":";
       sub.second.stringify(ss, stringKind);
     } else {
-      if (sub.second.isType() || (sub.second.isParam() && sub.second.param() == nullptr)) {
+      if (sub.second.isType()) {
         sub.second.type()->stringify(ss, stringKind);
       } else if (sub.second.isParam()) {
         sub.second.param()->stringify(ss, stringKind);

@@ -228,7 +228,7 @@ setupCallForCopyOrMove(Resolver& resolver,
                         std::move(actuals));
   } else {
     // For other types, use `init=`.
-    auto varArg = QualifiedType(QualifiedType::VAR, lhsType.type(), lhsType.param());
+    auto varArg = QualifiedType(QualifiedType::INIT_RECEIVER, lhsType.type(), lhsType.param());
     actuals.push_back(CallInfoActual(varArg, USTR("this")));
     outAsts.push_back(ast);
     actuals.push_back(CallInfoActual(rhsType, UniqueString()));
