@@ -4,7 +4,7 @@ import os
 import re
 
 import overrides
-from utils import memoize, check_valid_var, which
+from utils import memoize, check_valid_var, which, warning
 
 
 @memoize
@@ -38,6 +38,10 @@ def get():
                 comm_val = 'none'
 
     check_valid_var("CHPL_COMM", comm_val, ("none", "gasnet", "ofi", "ugni"))
+
+    if comm_val == 'ugni':
+        warning("The 'ugni' communication layer is deprecated and will be removed in a future release")
+
     return comm_val
 
 
