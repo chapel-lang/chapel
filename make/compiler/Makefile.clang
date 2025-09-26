@@ -54,24 +54,11 @@ GEN_CFLAGS += $(SANITIZER_CFLAGS)
 GEN_LFLAGS += $(SANITIZER_LDFLAGS)
 
 #
-# If the compiler's default C version is less than C99, force C99 mode.
+# We always use gnu11 and gnu++11 for the runtime
 #
-# If the default C version is at least C11, force the C++ version to
-# be at least C++11 to match.
-#
-ifneq ($(CHPL_MAKE_COMPILER), llvm)
-DEF_C_VER := $(shell echo __STDC_VERSION__ | $(CC) -E -x c - | sed -e '/^\#/d' -e 's/L$$//' -e 's/__STDC_VERSION__/0/')
-DEF_CXX_VER := $(shell echo __cplusplus | $(CXX) -E -x c++ - | sed -e '/^\#/d' -e 's/L$$//' -e 's/__cplusplus/0/')
-C_STD := $(shell test $(DEF_C_VER) -lt 199901 && echo -std=gnu99)
-CXX_STD := $(shell test $(DEF_C_VER) -ge 201112 -a $(DEF_CXX_VER) -lt 201103 && echo -std=gnu++11)
-CXX11_STD := $(shell test $(DEF_CXX_VER) -lt 201103 && echo -std=gnu++11)
-else
-# when CHPL_MAKE_COMPILER=llvm, we are using at least LLVM/clang 11,
-# which defaults to supporting C17 and C++14.
-C_STD :=
-CXX_STD :=
-CXX11_STD :=
-endif
+C_STD := -std=gnu11
+CXX_STD := -std=gnu++11
+CXX11_STD := -std=gnu++11
 
 ifndef CLANG_MAJOR_VERSION
 export CLANG_MAJOR_VERSION := $(shell $(CC) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[1]);}')
@@ -155,13 +142,21 @@ SQUASH_WARN_GEN_CFLAGS += -Wno-incompatible-pointer-types
 SQUASH_WARN_GEN_CFLAGS += -Wno-tautological-compare
 
 #
+# warn for unwanted GNU extension usages
+#
+RUNTIME_GNU_WARNINGS = -Wgnu -Wno-gnu-folding-constant -Wno-zero-length-array -Wno-gnu-zero-variadic-macro-arguments
+ifeq ($(shell test $(CLANG_MAJOR_VERSION) -ge 20; echo "$$?"),0)
+RUNTIME_GNU_WARNINGS += -Wno-variadic-macro-arguments-omitted
+endif
+
+#
 # compiler warnings settings
 #
 ifeq ($(WARNINGS), 1)
 COMP_CFLAGS += $(WARN_CFLAGS)
 COMP_CXXFLAGS += $(WARN_CXXFLAGS)
-RUNTIME_CFLAGS += $(WARN_CFLAGS) -Wno-char-subscripts
-RUNTIME_CXXFLAGS += $(WARN_CXXFLAGS)
+RUNTIME_CFLAGS += $(WARN_CFLAGS) -Wno-char-subscripts $(RUNTIME_GNU_WARNINGS)
+RUNTIME_CXXFLAGS += $(WARN_CXXFLAGS) $(RUNTIME_GNU_WARNINGS)
 #WARN_GEN_CFLAGS += -Wunreachable-code
 # GEN_CFLAGS gets warnings added via WARN_GEN_CFLAGS in comp-generated Makefile
 
