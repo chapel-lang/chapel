@@ -34,6 +34,7 @@ Best Practices for Contributors
    StandardModuleStyle
    TestAnnotationsLocally
    buildingdocs
+   PythonDeps
    Potpourri
 
 This directory contains rough notes intended to be helpful in pointing
@@ -112,6 +113,9 @@ developers.  A possible reading order is roughly as follows:
 
 :ref:`readme-buildingdocs`:
   Information about building and updating the Chapel documentation
+
+:ref:`readme-python-deps`:
+  Information about updating Python dependencies for various tools
 
 :ref:`best-practices-potpourri`:
   Notes not in any of the above categories.
