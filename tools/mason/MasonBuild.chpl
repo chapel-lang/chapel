@@ -18,9 +18,9 @@
  * limitations under the License.
  */
 
+import MasonPrereqs;
 
 use ArgumentParser;
-use FileSystem;
 use List;
 use Map;
 use MasonUtils;
@@ -30,8 +30,11 @@ use MasonUpdate;
 use MasonSystem;
 use MasonExternal;
 use MasonExample;
+use MasonLogger;
 use Subprocess;
 use TOML;
+
+private var log = new logger("mason build");
 
 proc masonBuild(args: [] string) throws {
 
@@ -46,6 +49,7 @@ proc masonBuild(args: [] string) throws {
   var passArgs = parser.addPassThrough();
 
   parser.parseArgs(args);
+  log.debugln("Arguments parsed");
 
   if passArgs.hasValue() && exampleOpts._present {
     throw new owned MasonError("Examples do not support `--` syntax");
@@ -54,6 +58,8 @@ proc masonBuild(args: [] string) throws {
   const projectType = getProjectType();
   if projectType == "light" then
     throw new owned MasonError("Mason light projects do not currently support 'mason build'");
+
+  log.debugln("Project type acquired");
 
   var show = showFlag.valueAsBool();
   var release = releaseFlag.valueAsBool();
@@ -70,6 +76,9 @@ proc masonBuild(args: [] string) throws {
     else skipUpdate = true;
   }
 
+  MasonPrereqs.install();
+
+  log.debugf("Is example? %s\n", example);
   if example {
     // compopts become example names. Build never runs examples
     for val in exampleOpts.values() do compopts.pushBack(val);
@@ -90,6 +99,7 @@ proc masonBuild(args: [] string) throws {
     const configNames = updateLock(skipUpdate);
     const tomlName = configNames[0];
     const lockName = configNames[1];
+    log.debugln("About to build program");
     buildProgram(release, show, force, skipUpdate, compopts, tomlName, lockName);
   }
 }
@@ -212,14 +222,11 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
       command += gitDepSrc;
     }
 
-    // Verbosity control
-    if show then writeln("Compilation command: " + command);
-    else {
-      if release then writeln("Compiling [release] target: " + project);
-      else writeln("Compiling [debug] target: " + project);
-    }
+    log.infof("Compiling [%s] target: %s\n",
+              if release then "release" else "debug", project);
 
     // compile Program with deps
+    log.debugln("Compilation command: " + command);
     var compilation = runWithStatus(command);
     if compilation != 0 {
       return false;
