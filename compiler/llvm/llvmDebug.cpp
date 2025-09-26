@@ -216,7 +216,9 @@ llvm::DIType* DebugData::maybeWrapTypeInPointer(llvm::DIType* N, Type* type) {
       layout.getPointerSizeInBits(),
       0, /* alignment */
       chpl::empty,
-      toString(type, true)
+      type->symbol->name
+      // toString(type, true)
+      // TODO: toString messes up managed pointer pretty printing
       // Annotations
     );
     // auto N = dibuilder->createTypedef(ptrN, toString(type, true), nullptr, 0, nullptr);
@@ -249,7 +251,9 @@ llvm::DIType* DebugData::constructTypeForAggregate(llvm::StructType* ty,
   GenInfo* info = gGenInfo;
   const llvm::DataLayout& layout = info->module->getDataLayout();
 
-  const char* name = toString(type, true);
+  const char* name = type->symbol->name;
+  // toString(type, true);
+  // TODO: toString messes up managed pointer pretty printing
   DefinitionInfo defInfo(this, type->symbol);
   auto dibuilder = type->symbol->getModule()->llvmDIBuilder;
 
