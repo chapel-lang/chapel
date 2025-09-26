@@ -85,18 +85,7 @@ class Chapel < Formula
       with_env(
         CHPL_COMM:               "gasnet",
         CHPL_COMM_SUBSTRATE:     "udp",
-        CHPL_GASNET_CFG_OPTIONS: "--disable-auto-conduit-detect --enable-udp --enable-smp",
-      ) do
-        system "make"
-        # C backend requires chapel-lang/chapel#27652 to be resolved
-        # with_env(CHPL_TARGET_COMPILER: cbackend) do
-        #   system "make"
-        # end
-      end
-      with_env(
-        CHPL_COMM:               "gasnet",
-        CHPL_COMM_SUBSTRATE:     "smp",
-        CHPL_GASNET_CFG_OPTIONS: "--disable-auto-conduit-detect --enable-udp --enable-smp",
+        CHPL_GASNET_CFG_OPTIONS: "--disable-auto-conduit-detect --enable-udp",
       ) do
         system "make"
         # C backend requires chapel-lang/chapel#27652 to be resolved
@@ -169,13 +158,8 @@ class Chapel < Formula
   def post_install
     ohai "Chapel has been installed successfully!"
     puts <<~EOS
-      By default, compiled Chapel programs will be single-locale only. There are
-      two ways to compile and run multi-locale Chapel programs locally:
-
-      Compile your program with:
-        `chpl --comm=gasnet --comm-substrate=smp`
-
-      OR
+      By default, compiled Chapel programs will be single-locale only.
+      To compile and run multi-locale Chapel programs locally:
 
       Compile your program with:
         `chpl --comm=gasnet --comm-substrate=udp`
@@ -218,13 +202,6 @@ class Chapel < Formula
           #   system "util/test/checkChplInstall"
           # end
         end
-      end
-      with_env(CHPL_COMM: "gasnet", CHPL_COMM_SUBSTRATE: "smp") do
-        system "util/test/checkChplInstall"
-        # C backend requires chapel-lang/chapel#27652 to be resolved
-        # with_env(CHPL_TARGET_COMPILER: cbackend) do
-        #   system "util/test/checkChplInstall"
-        # end
       end
       with_env(CHPL_LOCALE_MODEL: "gpu", CHPL_GPU: "cpu") do
         system "util/test/checkChplInstall"
