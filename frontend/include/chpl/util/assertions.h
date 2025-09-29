@@ -49,6 +49,8 @@ void chpl_unimpl(const char* filename, const char* func, int lineno,
     } \
   } while (0)
 
+#define CHPL_UNIMPL(msg__) do {} while (0)
+
 #else
 // debug mode
 #define CHPL_ASSERT(expr__) \
@@ -56,16 +58,14 @@ void chpl_unimpl(const char* filename, const char* func, int lineno,
     chpl::assertion(expr__, __FILE__, __FUNCTION__, __LINE__, #expr__); \
   } while (0)
 
-#endif
-
 /// \cond DO_NOT_DOCUMENT
-
 #define CHPL_UNIMPL(msg__) \
   do { \
     chpl::chpl_unimpl(__FILE__, __FUNCTION__, __LINE__, msg__); \
   } while (0)
-
 /// \endcond DO_NOT_DOCUMENT
+
+#endif
 
 /*
   Set whether or not assertions in dyno are enabled
