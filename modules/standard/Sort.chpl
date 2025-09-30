@@ -822,77 +822,6 @@ proc sort(ref x: [], comparator, region: range(?), param stable:bool = false) {
   }
 }
 
-
-/*
-
-Sort the elements in the 1D rectangular array ``Data``.
-After the call, ``Data`` will store elements in sorted order.
-
-The choice of sorting algorithm used is made by the implementation.
-
-.. note::
-
-  When reordering elements, the sort implementation might use assignment, memory
-  moves, or the swap operator. Additionally, the sort might
-  copy-initialize some elements, for example, to create a pivot in quicksort.
-
-.. note::
-
-  This function currently either uses a parallel radix sort or a parallel
-  improved quick sort.  For stable sort, use :proc:`sort` with ``stable=true``.
-  The algorithms used will change over time.
-
-  It currently uses parallel radix sort if the following conditions are met:
-
-    * the array being sorted is over a non-strided domain
-    * ``comparator`` includes a ``keyPart`` method for ``eltType``
-      or includes a ``key`` returning a value for which the default comparator
-      includes a ``keyPart`` method
-
-  Note that the default comparator includes ``keyPart`` methods for:
-
-    * ``int``
-    * tuples of ``int``
-    * ``uint``
-    * tuples of ``uint``
-    * ``real``
-    * tuples of ``real``
-    * ``imag``
-    * tuples of ``imag``
-    * ``string``
-    * ``c_string``
-
-:arg Data: The array to be sorted
-:type Data: [] `eltType`
-:arg comparator: :ref:`Comparator <comparators>` record that defines how the
-  data is sorted.
-:arg stable: Defaults to ``false``. If it is ``false``, the implementation
-  can sort in a way that reorders equal keys. If it is ``true``, it will use a
-  stable algorithm in order to preserve the order of equal keys.
-:arg inPlaceAlgorithm: Defaults to ``false``. If it is ``false``, the
-  implementation can make a copy of ``Data`` for scratch storage during the
-  sort. If it is ``true``, it will use an in-place algorithm in order to use
-  less memory.
- */
-pragma "last resort"
-@deprecated("The 'sort' function with 'Data' and 'inPlaceAlgorithm' arguments has been deprecated, please use the 'sort' function with an 'x' argument instead")
-proc sort(ref Data: [?Dom] ?eltType, comparator:?rec= new defaultComparator(),
-          param stable:bool = false, param inPlaceAlgorithm:bool = false) {
-  chpl_check_comparator(comparator, eltType);
-
-  if stable {
-    // TODO: we already have a stable sort, but it is not called here
-    // maybe we should call it here, even though this one is deprecated
-    // TODO: implement a stable merge sort with parallel merge
-    // TODO: create an in-place merge sort for the stable+minimizeMemory case
-    // TODO: create a stable variant of the radix sort
-    compilerError("stable sort not yet implemented");
-  } else {
-    unstableSort(Data, comparator, Data.domain.dim(0));
-  }
-}
-
-
 @chpldoc.nodoc
 /* Error message for multi-dimension arrays */
 proc sort(ref x: [?Dom] , comparator:? = new defaultComparator(), param stable:bool = false)
@@ -967,22 +896,6 @@ proc isSorted(x: [], comparator:? = new defaultComparator())
 @chpldoc.nodoc
 proc isSorted(x: domain, comparator:? = new defaultComparator()) do
   compilerError("isSorted() is not supported on domains");
-
-/*
-   Check if array `Data` is in sorted order
-
-   :arg Data: The array to verify
-   :type Data: [] `eltType`
-   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
-      data is sorted.
-   :returns: ``true`` if array is sorted
-   :rtype: `bool`
- */
-pragma "last resort"
-@deprecated("'isSorted' with the argument name 'Data' is deprecated, please use the version with the argument name 'x' instead")
-proc isSorted(Data: [?Dom] ?eltType, comparator:?rec= new defaultComparator()): bool {
-  return isSorted(x=Data, comparator);
-}
 
 @chpldoc.nodoc
 iter sorted(x : domain, comparator:? = new defaultComparator()) {
