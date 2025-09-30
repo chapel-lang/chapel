@@ -748,10 +748,6 @@ enum endianness {
   little = 2
 }
 
-@deprecated(":enum:`ioendian` is deprecated; please use :enum:`endianness` instead")
-type ioendian = endianness;
-
-
 /* Internal version of iostringstyle for interim use */
 @chpldoc.nodoc
 enum iostringstyleInternal {
