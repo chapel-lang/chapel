@@ -76,10 +76,6 @@ module ChapelDynamicLoading {
   // One cache of pointers guarded by a lock defined per locale. We use a
   // module-scope variable here to avoid relying on task-local storage as we
   // do for array privatization.
-  //
-  // TODO: Can we try changing this to be 'owned' instead of 'unmanaged'?
-  //       When I do I seem to get a dereference 'nil' error on deinit...
-  //
   pragma "locale private"
   var chpl_localPtrCache = new unmanaged chpl_LocalPtrCache();
 
@@ -246,9 +242,9 @@ module ChapelDynamicLoading {
     // if a binary already exists for 'path'. If a binary does exist then
     // it will be returned. Otherwise, this procedure returns 'nil' and
     // either 'errOnThis' or 'handleOnThis' will be set.
-    proc checkForEntry(path: string,
-                       out handleOnThis: c_ptr(void),
-                       out errOnThis: owned DynLoadError?) {
+    proc _checkForEntry(path: string,
+                        out handleOnThis: c_ptr(void),
+                        out errOnThis: owned DynLoadError?) {
       var ret: unmanaged chpl_BinaryInfo? = nil;
 
       on this {
@@ -335,7 +331,7 @@ module ChapelDynamicLoading {
       const store = chpl_binaryInfoStore.borrow();
       var handleOnStoreLocale: c_ptr(void);
 
-      if const ret = store.checkForEntry(path, handleOnStoreLocale, err) {
+      if const ret = store._checkForEntry(path, handleOnStoreLocale, err) {
         // There was an existing entry, so return it.
         return ret;
       } else if err != nil {
@@ -355,8 +351,8 @@ module ChapelDynamicLoading {
         const skip = store.locale;
 
         coforall loc in fanToAll(skip=skip) with (ref errBuf) do on loc {
-          var err;
-          var handle = localDynLoadOpen(path, err);
+          var errHere;
+          var handle = localDynLoadOpen(path, errHere);
 
           defer { if handle then closeLocalBinary(path, handle, warn=false); }
 
@@ -366,16 +362,16 @@ module ChapelDynamicLoading {
             on bin do bin._systemHandles[idx] <=> handle;
             assert(handle == nil);
 
-          } else if err == nil {
+          } else if errHere == nil {
             // TODO: Make it so all failure paths return an error.
             const msg = 'Failed to open \'' + path + '\' on LOCALE-' +
                         here.id:string;
-            err = new DynLoadError(msg);
+            errHere = new DynLoadError(msg);
           }
 
-          if err != nil {
+          if errHere != nil {
             const idx = here.id;
-            on errBuf do errBuf[idx] = err;
+            on errBuf do errBuf[idx] = errHere;
             numErrs.add(1);
           }
         }
@@ -447,26 +443,174 @@ module ChapelDynamicLoading {
       _refCount.sub(1);
     }
 
-    // This private method emplaces a new index into the local procedure
-    // pointer cache on each locale, and then it returns the index. It
-    // may lock on local caches but it does not ensure global consistency.
-    // The caller should do that by holding 'this._lock'.
+    // Check to see if there is an already an entry for the symbol. If there
+    // is we fetch it, else we create a new entry and add a fresh dynamic
+    // index corresponding to the entry to the local pointer cache on this
+    // locale. By the end of this method, 'this.locale' should always have
+    // the correct index for 'sym'.
     //
-    // Note that the passed in pointer only has meaning on 'this.locale'.
-    inline proc _emplaceNewIndexUnlocked(sym: string, ptrOnThis: c_ptr(void),
-                                         out err: owned DynLoadError?) {
+    // This procedure returns a tuple of '(bool, int)', where the bool is
+    // 'true' if the symbol was added for the first time, and the 'int' is
+    // the dynamic index representing the wide proc for the symbol.
+    proc _resolveSymToIdxOnThis(sym: string, out err: owned DynLoadError?) {
+      var ret: (bool, int);
+
+      on this {
+        const handle = _systemHandles[here.id];
+        assert(handle != nil);
+
+        var errHere;
+        const ptr = localDynLoadSymbolLookup(sym, handle, errHere);
+
+        if errHere != nil {
+          err = errHere;
+
+        } else if ptr == nil {
+          const msg = 'Failed to load symbol on LOCALE-' + here.id:string;
+          err = new DynLoadError(msg);
+
+        } else manage this._lock {
+          var data;
+          const found = _procPtrToDataOnThis.get(ptr, data);
+
+          if found {
+            const ref (gotProcIdx, gotSym) = data;
+            assert(gotProcIdx != 0);
+            assert(gotSym == sym);
+
+            // Did not add a new entry.
+            ret = (false, gotProcIdx);
+
+          } else {
+            // Passing 'idx <= 0' tells the routine to fetch a new index.
+            const procIdx = chpl_addEntryToLocalPtrCache(ptr, idx=0);
+            assert(procIdx > 0);
+
+            if procIdx != 0 {
+              const data = (procIdx, sym);
+              const added = _procPtrToDataOnThis.add(ptr, data);
+              assert(added);
+
+              // Added a new entry.
+              ret = (true, procIdx);
+            }
+          }
+        }
+      }
+
+      return ret;
+    }
+
+    // TODO: 'T' must be a procedure type, but we cannot restrict it yet,
+    // e.g., we cannot write "type t: proc". As a short-term workaround
+    // we could add a primitive "any procedure type" to use instead.
+    proc loadSymbol(sym: string, type t, out err: owned DynLoadError?) {
+      if !isProcedure(t) || isClass(t) {
+        compilerError('The type passed to \'loadSymbol\' must be ' +
+                      'a procedure type');
+      }
+
+      if chpl_isLocalProc(t) {
+        // Users shouldn't be able to easily construct local types right now.
+        compilerError('The procedure type passed to \'loadSymbol\'' +
+                      'should be wide');
+      }
+
+      type p = chpl_toExternProcType(chpl_toWideProcType(t));
+
+      if checkForDynamicLoadingErrors(err) {
+        return __primitive("cast", p, 0);
+      }
+
+      // This dynamic index represents the wide proc on any locale.
+      var (addedNewEntry, procIdx) = _resolveSymToIdxOnThis(sym, err);
+
+      // At this point, we have a dynamic index representing 'sym', but we
+      // may need to map it on 'here' as well as any other locales that our
+      // mapping strategy requires. Right now we have to map to all locales
+      // because with the current representation, we can't translate an
+      // index that isn't already in a locale's pointer cache into a local
+      // pointer.
+      //
+      // TODO...
+      //
+      // The current strategy means that the comm to load a symbol for the
+      // first time is O(n), but after that point retrieving the local
+      // pointer (e.g., as is done when calling) is free.
+      //
+      // If we wanted, we could switch to a lazy strategy where a wide proc
+      // is not mapped on all locales. When fetching the local pointer on an
+      // unmapped locale, a fault is triggered. The new lazy strategy needs
+      // to be able to handle such faults:
+      //
+      // A) Each locale could maintain a map indicating which symbols
+      //    originated on it. The key is the dynamic index, and the value is
+      //    the "wide binary wrapper class". When a faulty call occurs, we
+      //    scan all locales until we find the locale which did the original
+      //    mapping. This costs O(n) comm events to fully map all locales,
+      //    but would avoid any comm in the case that the wide proc is never
+      //    called remotely.
+      //
+      // B) We could make the wide proc type into a struct, and use a field
+      //    to record which locale originally mapped the index, (or, the
+      //    field could be a pointer to the binary). Then we can use the
+      //    symbol table there in order to look up the symbol. --OR--, we
+      //    could try computing offsets into the text section as suggested
+      //    by Michael. I think since we need access to the 'dlopen' handle
+      //    either way, having access to the entire "wide binary wrapper
+      //    class" is no big deal.
+      //
+      // >>> As long as we're making the wide proc type into a struct...
+      //
+      // C) We could make the wide proc type an actual wide pointer!
+      //
+      //    When a call is made to a procedure point that lives on a remote
+      //    locale, a "faulty call" is triggered. We migrate to the remote
+      //    locale and use the information there to translate to a wide
+      //    pointer that is local.
+      //
+      //    Then, we leave the remote call and emplace a mapping between the
+      //    remote procedure pointer and the local one.
+      //
+      //    There are two big advantages to this representation:
+      //
+      //    -- The representation is natural: the behavior of wide pointers
+      //       is already well understood by the compiler and the runtime.
+      //    -- If we cannot translate a remote pointer, we can easily execute
+      //       a remote call. If we have a local pointer then we can easily
+      //       invoke it without any comm events.
+      //
+      // The downside of this representation is that it requires O(n) cache
+      // entries per pointer instead of 1 entry per pointer. If this is a
+      // problem then we can consider doing something like restricting the
+      // size of the cache and periodically evicting old entries once it
+      // reaches logical capacity.
+      //
+      // ---
+      //
+      // In my mind, we should switch to a lazy caching scheme only if the
+      // performance overhead of emplacing a wide proc is so bad that it
+      // becomes a necessity.
+      //
+      // The benefits of laziness are overshadowed by the compiler being able
+      // to eventually optimize away remote calls when it is safe to do so.
+      //
+      // If we had to pick a new strategy, I think (C) is the most natural,
+      // but it will probably require the most refactoring to use.
+      //
+
       var errBuf = new chpl_localBuffer(owned DynLoadError?, numLocales);
       var numErrs: atomic int;
 
-      // Get the wide index to use by interning on 'this.locale'. By passing
-      // in '0' we tell the routine to assign us a unique index to use.
-      var ret = chpl_insertExternLocalPtrNoSync(ptrOnThis, this.locale.id);
-      assert(ret != 0);
+      if shouldFanOut && addedNewEntry {
+        const skip = this.locale;
 
-      if shouldFanOut {
-        coforall loc in fanToAll(skip=this.locale) do on loc {
+        coforall loc in fanToAll(skip=skip) with (ref errBuf) do on loc {
           const idx = here.id;
 
+          // TODO: If we can have the buffer return a correct wide reference,
+          //       then we might be able to get rid of the explicit migration
+          //       all over the place.
           var handle: c_ptr(void);
           on this do handle = _systemHandles[idx];
 
@@ -484,8 +628,8 @@ module ChapelDynamicLoading {
 
           } else {
             assert(ptr != nil);
-            const got = chpl_insertExternLocalPtrNoSync(ptr, ret);
-            assert(got == ret);
+            const got = chpl_addEntryToLocalPtrCache(ptr, procIdx);
+            assert(got == procIdx);
           }
         }
       }
@@ -502,77 +646,11 @@ module ChapelDynamicLoading {
         }
 
         // Clear the index since there was an error.
-        ret = 0;
-      }
-
-      return ret;
-    }
-
-    // TODO: 'T' must be a procedure type, but we cannot restrict it yet,
-    // e.g., we cannot write "type t: proc". As a short-term workaround
-    // we could add a primitive "any procedure type" to use instead.
-    proc loadSymbol(sym: string, type t, out err: owned DynLoadError?) {
-      type P = chpl_toExternProcType(chpl_toWideProcType(t));
-      var idx: int = 0;
-
-      if !isProcedure(t) || isClass(t) {
-        compilerError('The type passed to \'loadSymbol\' must be ' +
-                      'a procedure type');
-      }
-
-      if chpl_isLocalProc(t) {
-        // Users shouldn't be able to easily construct local types right now.
-        compilerError('The procedure type passed to \'loadSymbol\'' +
-                      'should be wide');
-      }
-
-      if checkForDynamicLoadingErrors(err) {
-        return __primitive("cast", P, 0);
-      }
-
-      on this {
-        const handle = _systemHandles[here.id];
-        assert(handle != nil);
-
-        // Call the system lookup routine, e.g., 'dlsym'.
-        var errOnThis;
-        const ptrOnThis = localDynLoadSymbolLookup(sym, handle, errOnThis);
-
-        if errOnThis != nil {
-          err = errOnThis;
-
-        } else if ptrOnThis == nil {
-          // There was an error while calling the system lookup routine.
-          err = new DynLoadError('Failed to locate symbol: ' + sym);
-
-        } else manage this._lock {
-          // The following section must all happen while holding the lock.
-          // Check to see if the wide index is already stored stored here.
-          var data;
-          const found = _procPtrToDataOnThis.get(ptrOnThis, data);
-
-          if found {
-            // In the fast path there was already an entry for the symbol.
-            const ref (got, sym) = data;
-            assert(got != 0);
-            idx = got;
-
-          } else {
-            // Otherwise there was no entry, so add pointers to all caches.
-            idx = _emplaceNewIndexUnlocked(sym, ptrOnThis, err);
-
-            if idx != 0 {
-              // A non-nil index was returned, so we add a new entry.
-              const data = (idx, sym);
-              const added = _procPtrToDataOnThis.add(ptrOnThis, data);
-              assert(added);
-            }
-          }
-        }
+        procIdx = 0;
       }
 
       // Fine if 'ret' is '0', that is the wide-index equivalent of 'nil'.
-      const ret = __primitive("cast", P, idx);
+      const ret = __primitive("cast", p, procIdx);
 
       return ret;
     }
@@ -771,7 +849,7 @@ module ChapelDynamicLoading {
     }
 
     // Returns 'true' if the key was added in the map for the first time.
-    proc ref add(in key: K, in val: V, param addOnlyIfAbsent=false): bool {
+    proc ref _put(in key: K, in val: V, param putOnlyIfAbsent=false): bool {
       if _isKeyZeroBits(key) then return false;
 
       _resizeIfNeeded();
@@ -792,10 +870,20 @@ module ChapelDynamicLoading {
 
       } else if (slot.key == key) {
         // The slot is initialized, so just assign the value.
-        if !addOnlyIfAbsent then slot.val = val;
+        if !putOnlyIfAbsent then slot.val = val;
       }
 
       return false;
+    }
+
+    // Returns 'true' if the key was added in the map for the first time.
+    proc ref addOrSet(in key: K, in val: V): bool {
+      return _put(key, val, putOnlyIfAbsent=false);
+    }
+
+    // Returns 'true' if the key was added in the map for the first time.
+    proc ref add(in key: K, in val: V): bool {
+      return _put(key, val, putOnlyIfAbsent=true);
     }
 
     // Returns 'true' if the key was found.
@@ -818,7 +906,6 @@ module ChapelDynamicLoading {
     }
   }
 
-  // This class is a local bidirectional map.
   record chpl_localBidirectionalMap {
     type K, V;
     var _keyToVal: chpl_localMap(K, V);
@@ -830,7 +917,7 @@ module ChapelDynamicLoading {
       var ret = false;
 
       on this do {
-        if _keyToVal.add(key, val, addOnlyIfAbsent=true) {
+        if _keyToVal.add(key, val) {
           const added = _valToKey.add(val, key);
           assert(added);
           ret = true;
@@ -930,12 +1017,13 @@ module ChapelDynamicLoading {
   // if it has done so. It does not do synchronization on LOCALE-0 as it
   // expects the caller to do so if necessary.
   export proc
-  chpl_insertExternLocalPtrNoSync(ptr: c_ptr(void), idx: int): int {
-    const ret = if idx == 0
+  chpl_addEntryToLocalPtrCache(ptr: c_ptr(void), idx: int): int {
+    const ret = if idx <= 0
       then chpl_dynamicProcIdxCounter.fetchAdd(1)
       else idx;
 
-    local do manage chpl_localPtrCache.guard.write() as m {
+    // local do
+    manage chpl_localPtrCache.guard.write() as m {
       // If 'set()' returns 'false' then the index was already in the map!
       // We just overwrote it, but it shouldn't have been set in the first
       // place so the only thing to do is halt.
