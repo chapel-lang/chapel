@@ -883,7 +883,7 @@ module DefaultRectangular {
   proc ref _remoteAccessData.initShiftedData() {
     if earlyShiftData && hasUnitStride() {
       type idxSignedType = chpl__signedType(chpl__idxTypeToIntIdxType(idxType));
-      const shiftDist = if isIntType(idxType) then origin - factoredOffs
+      const shiftDist = if isIntegralType(idxType) then origin - factoredOffs
                         else origin:idxSignedType - factoredOffs:idxSignedType;
       shiftedData = _ddata_shift(eltType, data, shiftDist);
     }
@@ -1263,7 +1263,7 @@ module DefaultRectangular {
         // that the check is not necessary, but it seemed like unnecessary
         // work for something with no immediate reward.
         if dom.dsiNumIndices > 0 {
-          const shiftDist = if isIntType(idxType) then
+          const shiftDist = if isIntegralType(idxType) then
                               0:idxType - factoredOffs
                             else
                               // Not bothering to check for over/underflow
