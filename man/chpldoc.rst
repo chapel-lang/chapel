@@ -46,6 +46,8 @@ reStructuredText as an intermediate format.
     documentation comment from a normal one (defaults to '/\*' if
     unspecified).
 
+.. _man-chpldoc-module-dir:
+
 **-M, \--module-dir <**\ *directory*\ **>**
 
     Add the specified *directory* to the module search path. The module
