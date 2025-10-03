@@ -2156,7 +2156,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       }
 
       if (blk) {
-        (unsigned&)(blk->blockTag) &= ~(unsigned)BLOCK_TYPE_ONLY;
+        blk->blockTag = (BlockTag)((unsigned)(blk->blockTag) & ~(unsigned)BLOCK_TYPE_ONLY);
       }
     } else if (type->symbol->hasFlag(FLAG_TUPLE)) {
       Type* newt = computeNonRefTuple(toAggregateType(type));
