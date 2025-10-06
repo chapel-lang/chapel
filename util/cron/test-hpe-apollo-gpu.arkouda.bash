@@ -12,7 +12,7 @@ export ARKOUDA_PARQUET_TEST_DATA_DIR=/nas/store/khandeka/parquet-testing/data  #
 export CHPL_TEST_ARKOUDA_PERF=false
 export ARKOUDA_DEVELOPER=true
 
-export CHPL_NIGHTLY_TEST_CONFIG_NAME="hpe-apollo-hdr-gpu.arkouda"
+export CHPL_NIGHTLY_TEST_CONFIG_NAME="hpe-apollo-gpu.arkouda"
 
 module list
 
