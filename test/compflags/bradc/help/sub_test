@@ -1,5 +1,0 @@
-#!/bin/bash
-
-export -n CHPL_UNOPTIMIZED
-
-../../../../util/test/sub_test $1

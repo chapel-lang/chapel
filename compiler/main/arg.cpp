@@ -237,6 +237,13 @@ void usage(const ArgumentState* state,
 
             break;
 
+          case 'X':
+            if (desc[i].location != 0)
+              printf("0x%lx", *(unsigned long*) desc[i].location);
+            else
+              printf("''");
+            break;
+
           default:
             arg_fatalError("Unexpected case in usage()");
             break;
