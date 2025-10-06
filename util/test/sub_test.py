@@ -1880,7 +1880,7 @@ def main():
                 # sys.stdout.write('default goodfile=%s\n'%(goodfile))
                 error_msg = filter_compiler_errors(origoutput)
                 if error_msg != '':
-                    sys.stdout.write('[Error %s for %s]\n'%(error_msg, test_name))
+                    sys.stdout.write(f'{futuretest}[Error {error_msg} for {test_name}]\n')
                     sys.stdout.write('[Compiler output was as follows:]\n')
                     sys.stdout.write(origoutput)
                     cleanup(execname)
@@ -1889,9 +1889,9 @@ def main():
 
                 if not os.path.isfile(goodfile) or not os.access(goodfile, os.R_OK):
                     if perftest or executebin:
-                        sys.stdout.write('[Error compilation failed for %s]\n'%(test_name))
+                        sys.stdout.write(f'{futuretest}[Error compilation failed for {test_name}]\n')
                     else:
-                        sys.stdout.write('[Error cannot locate compiler output comparison file %s/%s]\n'%(localdir, goodfile))
+                        sys.stdout.write(f'{futuretest}[Error cannot locate compiler output comparison file {localdir}/{goodfile}]\n')
                     sys.stdout.write('[Compiler output was as follows:]\n')
                     sys.stdout.write(origoutput)
                     cleanup(execname)
@@ -1902,13 +1902,13 @@ def main():
                     result = DiffBinaryFiles(goodfile, complog)
                 else:
                     result = DiffFiles(goodfile, complog)
+                msg = f"{futuretest}{{}}matching compiler output for {localdir}/{test_filename}"
                 if result==0:
                     os.unlink(complog)
-                    sys.stdout.write('%s[Success '%(futuretest))
+                    msg = msg.format("[Success ")
                 else:
-                    sys.stdout.write('%s[Error '%(futuretest))
-                sys.stdout.write('matching compiler output for %s/%s'%
-                                     (localdir, test_filename))
+                    msg = msg.format("[Error ")
+                sys.stdout.write(msg)
                 printTestVariation(compoptsnum, compoptslist)
                 sys.stdout.write(']\n')
 
