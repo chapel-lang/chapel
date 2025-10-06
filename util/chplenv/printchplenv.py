@@ -574,6 +574,8 @@ def diagnose_missing_library(lib_type):
             print("There is no {} for '{}={}'".format(lib_type, varname, var[1]))
             others = os.listdir(current_path)
             options = [o if not shortname else o.removeprefix("{}-".format(shortname)) for o in others]
+            # filter out . files
+            options = [o for o in options if not o.startswith('.')]
             if options:
                 print("Valid options: {}".format(", ".join(options)))
             chplconfig_path = overrides.get_chplconfig_path()
