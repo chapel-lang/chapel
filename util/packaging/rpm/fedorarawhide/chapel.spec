@@ -20,7 +20,8 @@ Summary:        A Productive Parallel Programming Language
 
 License:        Apache-2.0 AND (GPL-3.0-or-later WITH Bison-exception-2.2) AND (Apache-2.0 AND MIT)
 URL:            https://chapel-lang.org
-Source:         https://github.com/chapel-lang/chapel/archive/%{version}/chapel-%{version}.tar.gz
+Source0:        https://github.com/chapel-lang/chapel/archive/%{version}/chapel-%{version}.tar.gz
+Source1:        chplconfig
 # Unsupported architecture
 ExcludeArch:    %{ix86}
 
@@ -51,8 +52,7 @@ BuildRequires:  python3-devel
 BuildRequires:  stb_image-devel
 BuildRequires:  stb_image_write-devel
 BuildRequires:  which
-# Not available on fedora rawhide
-#BuildRequires:  whereami
+BuildRequires:  whereami
 # Documentation
 BuildRequires:  python3dist(argcomplete)
 BuildRequires:  python3dist(babel)
@@ -77,7 +77,7 @@ BuildRequires:  python3dist(sphinxcontrib-chapeldomain)
 BuildRequires:  python3dist(urllib3)
 Requires: stb_image-devel
 Requires: stb_image_write-devel
-#Requires:  whereami
+Requires:  whereami
 Provides: bundled(re2)
 
 %description
@@ -89,7 +89,7 @@ supercomputers for which it was originally undertaken.
 
 %prep
 %autosetup -p1
-
+cp %{SOURCE1} .
 # Use package in Fedora
 rm modules/packages/ImageHelper/stb/README
 rm modules/packages/ImageHelper/stb/stb_image.h
@@ -98,57 +98,12 @@ ln -s %{_includedir}/stb/stb_image.h modules/packages/ImageHelper/stb/stb_image.
 ln -s %{_includedir}/stb/stb_image_write.h modules/packages/ImageHelper/stb/stb_image_write.h
 
 %build
-export CHPL_HOST_COMPILER=gnu
-export CHPL_TARGET_COMPILER=gnu
-export CHPL_TARGET_CPU=unknown
-export CHPL_LOCALE_MODEL=flat
-export CHPL_TASKS=fifo
-# gasnet not yet packaged
-export CHPL_COMM=none
-export CHPL_TARGET_MEM=cstdlib
-#export CHPL_TARGET_JEMALLOC=system
-export CHPL_HOST_MEM=cstdlib
-#export CHPL_HOST_MIMALLOC=system
-#export CHPL_HOST_JEMALLOC=system
-#export CHPL_NETWORK_ATOMICS=ofi
-export CHPL_GMP=system
-export CHPL_HWLOC=system
-# No option to use system version, Chapel
-# specific changes not pushed upstream
-export CHPL_RE2=bundled
-export CHPL_AUX_FILESYS=none
-export CHPL_LLVM=system
-export CHPL_LLVM_SUPPORT=system
-export CHPL_UNWIND=system
-export CHPL_LIB_PIC=pic
-./configure --prefix=%{_prefix}
+source chplconfig
 %make_build
 
 
 %install
-export CHPL_HOST_COMPILER=gnu
-export CHPL_TARGET_COMPILER=gnu
-export CHPL_TARGET_CPU=unknown
-export CHPL_LOCALE_MODEL=flat
-export CHPL_TASKS=fifo
-# gasnet not yet packaged
-#export CHPL_COMM=none
-export CHPL_TARGET_MEM=cstdlib
-#export CHPL_HOST_MIMALLOC=system
-#export CHPL_TARGET_JEMALLOC=system
-export CHPL_HOST_MEM=cstdlib
-#export CHPL_HOST_JEMALLOC=system
-#export CHPL_NETWORK_ATOMICS=ofi
-export CHPL_GMP=system
-export CHPL_HWLOC=system
-# No option to use system version, Chapel
-# specific changes not pushed upstream
-export CHPL_RE2=bundled
-export CHPL_AUX_FILESYS=none
-export CHPL_LLVM=system
-export CHPL_LLVM_SUPPORT=system
-export CHPL_UNWIND=system
-export CHPL_LIB_PIC=pic
+source chplconfig
 %make_install
 mkdir -p  %{buildroot}%{_libdir}
 mv %{buildroot}%{_prefix}/lib/chapel %{buildroot}%{_libdir}/chapel
@@ -194,29 +149,7 @@ ln -s %{_includedir}/stb/stb_image_write.h \
   %{buildroot}%{_datadir}/chapel/%{shortversion}/modules/packages/ImageHelper/stb/stb_image_write.h
 
 %check
-export CHPL_HOST_COMPILER=gnu
-export CHPL_TARGET_COMPILER=gnu
-export CHPL_TARGET_CPU=unknown
-export CHPL_LOCALE_MODEL=flat
-export CHPL_TASKS=fifo
-# gasnet not yet packaged
-export CHPL_COMM=none
-export CHPL_TARGET_MEM=cstdlib
-#export CHPL_TARGET_JEMALLOC=system
-export CHPL_HOST_MEM=cstdlib
-#export CHPL_HOST_MIMALLOC=system
-#export CHPL_HOST_JEMALLOC=system
-#export CHPL_NETWORK_ATOMICS=ofi
-export CHPL_GMP=system
-export CHPL_HWLOC=system
-# No option to use system version, Chapel
-# specific changes not pushed upstream
-export CHPL_RE2=bundled
-export CHPL_AUX_FILESYS=none
-export CHPL_LLVM=system
-export CHPL_LLVM_SUPPORT=system
-export CHPL_UNWIND=system
-export CHPL_LIB_PIC=pic
+source chplconfig
 # On ppc64le and s390x check fails with
 # /usr/include/bits/string_fortified.h:29:10: warning: ‘__builtin___memcpy_chk’ specified bound 18446744073709551584 exceeds maximum object size 9223372036854775807 [-Wstringop-overflow=]
 %ifnarch s390x ppc64le
