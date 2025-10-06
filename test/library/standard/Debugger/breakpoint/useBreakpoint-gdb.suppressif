@@ -1,4 +1,4 @@
-# running lldb on multi-locale code is not yet well supported
+# running gdb on multi-locale code is not yet well supported
 CHPL_COMM!=none
 COMPOPTS <= --no-local
 COMPOPTS <= --verify
