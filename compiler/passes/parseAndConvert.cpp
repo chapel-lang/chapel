@@ -32,6 +32,7 @@
 #include "symbol.h"
 #include "wellknown.h"
 #include "misc.h"
+#include "pass-manager-passes.h"
 
 #include "chpl/libraries/LibraryFile.h"
 #include "chpl/libraries/LibraryFileWriter.h"
@@ -704,7 +705,7 @@ static void maybePrintModuleFile(ModTag modTag, const char* path) {
 
 void noteParsedIncludedModule(ModuleSymbol* mod, const char* pathAstr) {
   maybePrintModuleFile(mod->modTag, pathAstr);
-  gFilenameLookup.push_back(pathAstr);
+  InsertLineNumbers::addFilenameTableEntry(pathAstr);
 }
 
 static ID findIdForContainingDecl(ID id) {
@@ -1022,7 +1023,7 @@ static ModuleSymbol* dynoConvertFile(UastConverter& c,
   auto& builderResult =
     chpl::parsing::parseFileToBuilderResultAndCheck(gContext, path,
                                                     parentSymbolPath);
-  gFilenameLookup.push_back(path.c_str());
+  InsertLineNumbers::addFilenameTableEntry(path.c_str());
 
   if (dynoRealizeErrors()) USR_STOP();
 
