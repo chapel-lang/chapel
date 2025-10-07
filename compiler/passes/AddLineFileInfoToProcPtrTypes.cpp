@@ -43,7 +43,8 @@ namespace {
 }
 
 bool Pass::shouldProcess(Symbol* sym) {
-  return !isFnSymbol(sym) && isFunctionType(sym->type);
+  if (isTypeSymbol(sym)) return false;
+  return isFnSymbol(sym) || isFunctionType(sym->type);
 }
 
 // This is used by "adjustSymbolType". Note that all the type constructor
@@ -51,12 +52,38 @@ bool Pass::shouldProcess(Symbol* sym) {
 // no check to see if they have already been appended.
 static Type* adjustProcedureTypeToHaveLineNumbers(Type* t) {
   if (auto ft = toFunctionType(t)) {
-    if (ft->hasForeignLinkage()) INT_FATAL(ft->symbol, "Not handled yet!");
-    return ft->getWithLineFileInfo();
+    if (!ft->hasForeignLinkage()) {
+      return ft->getWithLineFileInfo();
+    }
   }
+
   return t;
 }
 
 void Pass::process(Symbol* sym) {
-  adjustSymbolType(sym, adjustProcedureTypeToHaveLineNumbers);
+  bool shouldAdjustSymbolType = true;
+
+  if (auto fn = toFnSymbol(sym)) {
+    if (!fn->isUsedAsValue()) {
+      // If the function is not used as a value, then clear its type. We do
+      // this to make sure '--verify' passes (as the function type will be
+      // pruned below), Its type will not be of interest to us in subsequent
+      // passes anyways (and if we do need to know its type, we can recompute
+      // it at that time).
+      shouldAdjustSymbolType = false;
+      fn->type = dtUnknown;
+    }
+
+    // As a special case, we have to handle the 'fn->retType' separately.
+    fn->retType = adjustProcedureTypeToHaveLineNumbers(fn->retType);
+  }
+
+  if (isTypeSymbol(sym)) {
+    // Don't adjust type symbols!
+    shouldAdjustSymbolType = false;
+  }
+
+  if (shouldAdjustSymbolType) {
+    adjustSymbolType(sym, adjustProcedureTypeToHaveLineNumbers);
+  }
 }
