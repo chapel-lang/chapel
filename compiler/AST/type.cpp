@@ -1007,6 +1007,16 @@ FunctionType::Formal FunctionType::constructErrorHandlingFormal() {
   return { QUAL_REF, t, INTENT_REF, "error_out" };
 }
 
+std::array<FunctionType::Formal, 2>
+FunctionType::constructLineFileInfoFormals() {
+  std::array<Formal, 2> ret = {{
+    Formal(QUAL_CONST_VAL, dtInt[INT_SIZE_DEFAULT], INTENT_CONST_IN, "_ln"),
+    Formal(QUAL_CONST_VAL, dtInt[INT_SIZE_32], INTENT_CONST_IN, "_fn")
+  }};
+
+  return ret;
+}
+
 FunctionType* FunctionType::getWithLoweredErrorHandling() const {
   bool newThrowsFlag = false;
   auto newFormals = formals_;
@@ -1020,6 +1030,21 @@ FunctionType* FunctionType::getWithLoweredErrorHandling() const {
              returnIntent_,
              returnType_,
              newThrowsFlag);
+}
+
+FunctionType* FunctionType::getWithLineFileInfo() const {
+  auto newFormals = formals_;
+  auto lineFileFormals = constructLineFileInfoFormals();
+
+  newFormals.push_back(lineFileFormals[0]);
+  newFormals.push_back(lineFileFormals[1]);
+
+  SET_LINENO(this->symbol);
+
+  return get(kind_, width_, linkage_, std::move(newFormals),
+             returnIntent_,
+             returnType_,
+             throws_);
 }
 
 FunctionType*
