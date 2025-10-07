@@ -1902,13 +1902,13 @@ def main():
                     result = DiffBinaryFiles(goodfile, complog)
                 else:
                     result = DiffFiles(goodfile, complog)
-                msg = f"{futuretest}{{}}matching compiler output for {localdir}/{test_filename}"
+                msg = f"matching compiler output for {localdir}/{test_filename}"
                 if result==0:
                     os.unlink(complog)
-                    msg = msg.format("[Success ")
+                    msg = f"[Success {msg}"
                 else:
-                    msg = msg.format("[Error ")
-                sys.stdout.write(msg)
+                    msg = f"[Error {msg}"
+                sys.stdout.write(f'{futuretest}{msg}')
                 printTestVariation(compoptsnum, compoptslist)
                 sys.stdout.write(']\n')
 
