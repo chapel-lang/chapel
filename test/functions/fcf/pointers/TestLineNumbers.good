@@ -1,2 +1,7 @@
-TestLineNumbers.chpl:25: warning: INSERT LINE NUMBERS TEST!
-TestLineNumbers.chpl:36: warning: INSERT LINE NUMBERS TEST!
+TestLineNumbers.chpl:20: warning: INSERT LINE NUMBERS TEST!
+TestLineNumbers.chpl:31: warning: INSERT LINE NUMBERS TEST!
+TestLineNumbers.chpl:40: warning: INSERT LINE NUMBERS TEST!
+TestLineNumbers.chpl:44: warning: INSERT LINE NUMBERS TEST!
+TestLineNumbers.chpl:53: warning: INSERT LINE NUMBERS TEST!
+TestLineNumbers.chpl:55: warning: INSERT LINE NUMBERS TEST!
+TestLineNumbers.chpl:57: warning: INSERT LINE NUMBERS TEST!
