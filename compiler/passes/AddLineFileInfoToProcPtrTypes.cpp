@@ -38,13 +38,25 @@
 #include <vector>
 
 namespace {
-  using PassType = AddLineFileInfoToProcPtrTypes;
+  // As a means of abbreviation.
+  using Pass = AddLineFileInfoToProcPtrTypes;
 }
 
-bool PassType::shouldProcess(Symbol* sym) {
-  return false;
+bool Pass::shouldProcess(Symbol* sym) {
+  return !isFnSymbol(sym) && isFunctionType(sym->type);
 }
 
-void PassType::process(Symbol* sym) {
-  INT_FATAL("Not implemented yet!");
+// This is used by "adjustSymbolType". Note that all the type constructor
+// does is append the line/file formals to the end of the type - there is
+// no check to see if they have already been appended.
+static Type* adjustProcedureTypeToHaveLineNumbers(Type* t) {
+  if (auto ft = toFunctionType(t)) {
+    if (ft->hasForeignLinkage()) INT_FATAL(ft->symbol, "Not handled yet!");
+    return ft->getWithLineFileInfo();
+  }
+  return t;
+}
+
+void Pass::process(Symbol* sym) {
+  adjustSymbolType(sym, adjustProcedureTypeToHaveLineNumbers);
 }
