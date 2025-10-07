@@ -22,6 +22,7 @@
 #define _PASS_MANAGER_PASSES_H_
 
 #include "PassManager.h"
+#include "baseAST.h"
 
 /***
   A header containing passes runnable by the new pass manager. The order
@@ -241,8 +242,17 @@ struct LineAndFile {
   Symbol* file;
 };
 
+class AddLineFileInfoToProcPtrTypes : public PassT<Symbol*> {
+ public:
+  bool shouldProcess(Symbol* sym) override;
+  void process(Symbol* sym) override;
+};
+
 /**
-  Before this pass is run the 'ComputeCallSites' pass must be run.
+  This pass currently depends on:
+
+    - AddLineFileInfoToProcPtrTypes
+    - ComputeCallSites
 
   TODO: We don't need to recompute all callsites - only the subset
         that we'll be working on. Need to figure out a way to only
@@ -264,19 +274,23 @@ class InsertLineNumbers : public PassTU<FnSymbol*, CallExpr*> {
   void process(FnSymbol* fn) override;
   void process(FnSymbol* fn, CallExpr* call) override;
 
-  static bool shouldPreferASTLine(/*const*/ FnSymbol* fn,
-                                  ModuleSymbol* mod = nullptr);
-  static LineAndFile makeASTLine(CallExpr* call);
-  static void insertLineNumber(CallExpr* call, LineAndFile lineAndFile);
+  static int addFilenameTableEntry(const std::string& name);
+  static int getFilenameTableIndex(const std::string& name);
+  static const std::vector<std::string>& getFilenameTable();
 
  private:
-
+  static bool shouldPreferASTLine(CallExpr* call);
+  static bool mustHaveLineInfo(FnSymbol* fn);
+  static LineAndFile makeASTLine(CallExpr* call);
+  static void insertLineNumber(CallExpr* call, LineAndFile lineAndFile);
   static void precondition(FnSymbol *fn);
-
   LineAndFile getLineAndFileForFn(FnSymbol *fn);
 
   std::unordered_map<FnSymbol*, LineAndFile> lineAndFilenameMap;
   std::unordered_set<CallExpr*> fixedCalls;
+
+  static std::vector<std::string> gFilenameLookup;
+  static std::unordered_map<std::string, int> gFilenameLookupCache;
 };
 
 #endif

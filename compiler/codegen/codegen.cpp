@@ -92,6 +92,12 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
+namespace {
+  int getFilenameTableIndex(const std::string& str) {
+    return InsertLineNumbers::getFilenameTableIndex(str);
+  }
+}
+
 // function prototypes
 static bool compareSymbol(const void* v1, const void* v2);
 
@@ -764,7 +770,7 @@ genFinfo(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
 
   forv_Vec(FnSymbol, fn, fSymbols) {
     const char* fn_name = fn->cname;
-    int fileno = getFilenameLookupPosition(fn->astloc.filename());
+    int fileno = getFilenameTableIndex(fn->astloc.filename());
     int lineno = fn->astloc.lineno();
 
     GenRet gen;
@@ -909,12 +915,12 @@ static void genFilenameTable() {
 
   // Construct the table elements
   std::vector<GenRet> table;
-  table.reserve(gFilenameLookup.size());
+  auto& v = InsertLineNumbers::getFilenameTable();
+  table.reserve(v.size());
 
-  for (std::vector<std::string>::iterator it = gFilenameLookup.begin();
-       it != gFilenameLookup.end(); it++) {
+  for (auto it = v.begin(); it != v.end(); it++) {
     GenRet gen;
-    std::string & path = (*it);
+    auto& path = (*it);
     std::string genPath;
 
     if(!strncmp(CHPL_HOME.c_str(), path.c_str(), CHPL_HOME.length())) {
@@ -932,7 +938,7 @@ static void genFilenameTable() {
   codegenGlobalConstArray(name, eltType, &table, false);
 
   // Now emit the size
-  genGlobalInt32(sizeName, gFilenameLookup.size());
+  genGlobalInt32(sizeName, InsertLineNumbers::getFilenameTable().size());
 }
 
 //
@@ -992,7 +998,7 @@ static void genUnwindSymbolTable(){
     table.reserve(symbols.size() * 2);
 
     for (FnSymbol* fn : symbols) {
-      int fileno = getFilenameLookupPosition(fn->fname());
+      int fileno = getFilenameTableIndex(fn->fname());
       int lineno = fn->linenum();
 
       table.push_back( new_IntSymbol(fileno, INT_SIZE_32)->codegen() );

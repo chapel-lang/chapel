@@ -26,6 +26,7 @@
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/SmallVector.h"
 
+#include <functional>
 #include <vector>
 #include <set>
 
@@ -102,8 +103,10 @@ void compute_call_sites();
 void computeNonvirtualCallSites(FnSymbol* fn);
 void computeAllCallSites(FnSymbol* fn);
 
-// The type of a function that takes a type and produces a type.
-using AdjustTypeFn = Type*(*)(Type* t);
+using AdjustTypeFn = std::function<Type*(Type*)>;
+
+void adjustSymbolType(Symbol* sym, AdjustTypeFn adjustTypeFn,
+                      bool preserveRefLevels=true);
 
 // Given 'adjustTypeFn', walk all symbols and re-assign the type of symbol if
 // the type produced by 'adjustTypeFn' differs from the symbol's current type.
@@ -252,5 +255,7 @@ bool symExprIsUsedAsRef(
   SymExpr* use,
   bool constRef,
   std::function<bool(SymExpr*, CallExpr*)> checkForMove);
+
+bool isUseOfProcedureAsValue(SymExpr* se);
 
 #endif
