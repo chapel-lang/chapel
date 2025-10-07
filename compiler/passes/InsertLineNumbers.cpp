@@ -130,7 +130,7 @@ bool Pass::shouldPreferASTLine(CallExpr* call) {
   auto fn = call->getFunction();
   auto mod = call->getModule();
 
-  INT_ASSERT(mod);
+  INT_ASSERT(fn && mod);
 
   // don't add arguments to extern/export fns
   // but do use arguments already added if the fn
@@ -162,7 +162,7 @@ bool Pass::shouldPreferASTLine(CallExpr* call) {
 // This creates the line and file symbols for a call when we want it to come
 // from the AST itself
 // TODO GLOBALS getFilenamelookupposition
-LineAndFile Pass::makeASTLine(CallExpr* call) {
+Pass::LineAndFile Pass::makeASTLine(CallExpr* call) {
   SET_LINENO(call);
 
   if (call->isResolved() &&
@@ -223,7 +223,7 @@ void Pass::insertLineNumber(CallExpr* call, LineAndFile lineAndFile) {
   } else if (call->isPrimitive(PRIM_GET_USER_LINE)) {
     call->replace(new SymExpr(lineAndFile.line));
 
-  } else if (fn || call->isIndirectCall()) {
+  } else {
     if (fn && isWrapper(fn)) {
       SET_LINENO(call);
       // TODO
@@ -292,7 +292,7 @@ static VarSymbol* getOrCreateField(AggregateType* aggType,
 // FLAG_INSERT_LINE_FILE_INFO so that later processing can treat them
 // appropriately
 //
-LineAndFile Pass::getLineAndFileForFn(FnSymbol *fn) {
+Pass::LineAndFile Pass::getLineAndFileForFn(FnSymbol *fn) {
   auto it = lineAndFilenameMap.find(fn);
   if (it != lineAndFilenameMap.end()) {
     return it->second;
