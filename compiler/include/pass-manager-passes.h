@@ -232,16 +232,20 @@ class InsertNilChecks : public PassT<CallExpr*> {
 };
 
 /**
-  This struct is used to store symbols representing the line and file.
-  It is used by the 'InsertLineNumbers' pass.
+  This pass adjusts any symbol with a procedure-pointer type so that it is
+  a new, similiar type that has line/file formals appended.
 
-  TODO: Embed this in the InsertLineNumbers namespace?
+  After this pass the AST will be in an inconsistent state, and the pass
+  'InsertLineNumbers' must be run in order to fix it up.
+
+  TODO: This pass could be considered a "sub-pass" or a "hidden dependency"
+        of 'InsertLineNumbers', but we don't have the machinery to express
+        that at the moment.
+
+  This pass is similiar to e.g., 'adjustAllSymbolTypes' in spirit, however
+  it operates over passed in containers instead of assuming the existence
+  of global vectors.
 */
-struct LineAndFile {
-  Symbol* line;
-  Symbol* file;
-};
-
 class AddLineFileInfoToProcPtrTypes : public PassT<Symbol*> {
  public:
   bool shouldProcess(Symbol* sym) override;
@@ -271,6 +275,11 @@ class AddLineFileInfoToProcPtrTypes : public PassT<Symbol*> {
 */
 class InsertLineNumbers : public PassTU<FnSymbol*, CallExpr*> {
  public:
+  struct LineAndFile {
+    Symbol* line;
+    Symbol* file;
+  };
+
   void process(FnSymbol* fn) override;
   void process(FnSymbol* fn, CallExpr* call) override;
 

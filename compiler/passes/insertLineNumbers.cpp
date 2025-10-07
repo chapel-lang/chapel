@@ -40,14 +40,21 @@
 
 #include "global-ast-vecs.h"
 
+// Contains the old 'insertLineNumbers' pass.
 void insertLineNumbers() {
   PassManager pm;
 
-  // TODO: "Run pass on all symbols..."
-  pm.runPass<Symbol*>(AddLineFileInfoToProcPtrTypes(), gArgSymbols);
-  pm.runPass<Symbol*>(AddLineFileInfoToProcPtrTypes(), gFnSymbols);
-  pm.runPass<Symbol*>(AddLineFileInfoToProcPtrTypes(), gVarSymbols);
-  pm.runPass<Symbol*>(AddLineFileInfoToProcPtrTypes(), gTypeSymbols);
+  {
+    // NOTE: The pass must persist between runs on different AST lists.
+    // TODO: "Run pass on multiple lists...".
+    auto pass = AddLineFileInfoToProcPtrTypes();
+    pm.runPass<Symbol*>(pass, gArgSymbols);
+    pm.runPass<Symbol*>(pass, gFnSymbols);
+    pm.runPass<Symbol*>(pass, gVarSymbols);
+
+    // No need to adjust type symbols at present...
+    // pm.runPass<Symbol*>(pass, gTypeSymbols);
+  }
 
   // TODO It's pretty apparent in this refactoring that we don't actually need
   // to recompute all call sites, but only the subset we'll be working on, which
