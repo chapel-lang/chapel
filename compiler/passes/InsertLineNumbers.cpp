@@ -390,7 +390,12 @@ bool Pass::mustAddLineInfoFormalsToFn(FnSymbol* fn) {
 
 bool Pass::mustAddLineInfoActualsToCall(CallExpr* call) {
   if (call->primitive && call->primitive->passLineno) return true;
-  if (call->isIndirectCall()) return true;
+  if (call->isIndirectCall()) {
+    auto ft = call->functionType();
+    INT_ASSERT(ft);
+    if (!ft->hasForeignLinkage()) return true;
+  }
+
   return false;
 }
 
