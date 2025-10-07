@@ -38,6 +38,11 @@
 #include <unordered_set>
 #include <vector>
 
+namespace {
+  // As a means of abbreviation.
+  using Pass = InsertLineNumbers;
+}
+
 //
 // insertLineNumbers() inserts line numbers and filenames into
 // functions and calls so that runtime errors show line number and
@@ -48,10 +53,10 @@
 // number and a filename.
 //
 
-std::vector<std::string> InsertLineNumbers::gFilenameLookup;
-std::unordered_map<std::string, int> InsertLineNumbers::gFilenameLookupCache;
+std::vector<std::string> Pass::gFilenameLookup;
+std::unordered_map<std::string, int> Pass::gFilenameLookupCache;
 
-int InsertLineNumbers::addFilenameTableEntry(const std::string& name) {
+int Pass::addFilenameTableEntry(const std::string& name) {
   int idx = -1;
 
   if (auto it1 = gFilenameLookupCache.find(name);
@@ -81,7 +86,7 @@ int InsertLineNumbers::addFilenameTableEntry(const std::string& name) {
   return idx;
 }
 
-int InsertLineNumbers::getFilenameTableIndex(const std::string& name) {
+int Pass::getFilenameTableIndex(const std::string& name) {
   if (auto it = gFilenameLookupCache.find(name);
            it != gFilenameLookupCache.end()) {
     // Use cached position in the table
@@ -91,7 +96,7 @@ int InsertLineNumbers::getFilenameTableIndex(const std::string& name) {
   return -1;
 }
 
-const std::vector<std::string>& InsertLineNumbers::getFilenameTable() {
+const std::vector<std::string>& Pass::getFilenameTable() {
   return gFilenameLookup;
 }
 
@@ -121,7 +126,7 @@ static Vec<FnSymbol*>* rootsOrChildren(FnSymbol* fn) {
 // representing the callsite.
 //
 // TODO GLOBALS use of developer and ftableMap
-bool InsertLineNumbers::shouldPreferASTLine(CallExpr* call) {
+bool Pass::shouldPreferASTLine(CallExpr* call) {
   auto fn = call->getFunction();
   auto mod = call->getModule();
 
@@ -157,7 +162,7 @@ bool InsertLineNumbers::shouldPreferASTLine(CallExpr* call) {
 // This creates the line and file symbols for a call when we want it to come
 // from the AST itself
 // TODO GLOBALS getFilenamelookupposition
-LineAndFile InsertLineNumbers::makeASTLine(CallExpr* call) {
+LineAndFile Pass::makeASTLine(CallExpr* call) {
   SET_LINENO(call);
 
   if (call->isResolved() &&
@@ -205,18 +210,23 @@ LineAndFile InsertLineNumbers::makeASTLine(CallExpr* call) {
 //   * a call to a wrapper fn -> assign to arg bundle
 //   * a regular call         -> append to call args
 //
-void InsertLineNumbers::insertLineNumber(CallExpr* call, LineAndFile lineAndFile) {
+void Pass::insertLineNumber(CallExpr* call, LineAndFile lineAndFile) {
   SET_LINENO(call);
+
+  auto fn = call->resolvedFunction();
+
   // Replace these primitives with whatever line/file we chose
   // (probably an argument)
   if (call->isPrimitive(PRIM_GET_USER_FILE)) {
     call->replace(new SymExpr(lineAndFile.file));
+
   } else if (call->isPrimitive(PRIM_GET_USER_LINE)) {
     call->replace(new SymExpr(lineAndFile.line));
-  } else {
-    FnSymbol* fn = call->resolvedFunction();
+
+  } else if (fn || call->isIndirectCall()) {
     if (fn && isWrapper(fn)) {
       SET_LINENO(call);
+      // TODO
       // Refactor note: I pulled this case out of the moveLinenoInsideArgBundle
       // pass b/c it seems better to handle in one go instead of fixing things
       // up later. But, we do pull out the lineField and fileField each time
@@ -235,21 +245,19 @@ void InsertLineNumbers::insertLineNumber(CallExpr* call, LineAndFile lineAndFile
                                       fileField, lineAndFile.file));
 
     } else {
-      // add line/file as arguments to the call
       call->insertAtTail(lineAndFile.line);
       call->insertAtTail(lineAndFile.file);
     }
   }
 }
 
-// TODO refactor -- pulled this out as it can be checked per fn instead of per call
-void InsertLineNumbers::precondition(FnSymbol* fn) {
+void Pass::assertInvariants(FnSymbol* fn) {
   if (strcmp(fn->name, "chpl__heapAllocateGlobals") == 0 ||
       strcmp(fn->name, "chpl__initStringLiterals") == 0 ||
       strcmp(fn->name, "chpl__initModuleGuards") == 0 ||
       strcmp(fn->name, "chpl_gen_main") == 0) {
-    assert(fn->hasFlag(FLAG_EXPORT) &&
-           !fn->hasFlag(FLAG_INSERT_LINE_FILE_INFO));
+    INT_ASSERT(fn->hasFlag(FLAG_EXPORT));
+    INT_ASSERT(!fn->hasFlag(FLAG_INSERT_LINE_FILE_INFO));
   }
 }
 
@@ -269,16 +277,6 @@ static VarSymbol* getOrCreateField(AggregateType* aggType,
   }
 }
 
-// This is used by "adjustSymbolType". Note that all the type constructor
-// does is append the line/file formals to the end of the type - there is
-// no check to see if they have already been appended.
-static Type* adjustProcedureTypeToHaveLineNumbers(Type* t) {
-  if (auto ft = toFunctionType(t)) {
-    return ft->getWithLineFileInfo();
-  }
-  return t;
-}
-
 //
 // Get the line/file symbols for a function, creating them if necessary
 // The fn is either
@@ -294,7 +292,7 @@ static Type* adjustProcedureTypeToHaveLineNumbers(Type* t) {
 // FLAG_INSERT_LINE_FILE_INFO so that later processing can treat them
 // appropriately
 //
-LineAndFile InsertLineNumbers::getLineAndFileForFn(FnSymbol *fn) {
+LineAndFile Pass::getLineAndFileForFn(FnSymbol *fn) {
   auto it = lineAndFilenameMap.find(fn);
   if (it != lineAndFilenameMap.end()) {
     return it->second;
@@ -359,33 +357,6 @@ LineAndFile InsertLineNumbers::getLineAndFileForFn(FnSymbol *fn) {
     enqueue(call->getFunction(), call);
   }
 
-  if (fn->isUsedAsValue()) {
-    for_SymbolSymExprs(se, fn) {
-      if (!se->inTree()) continue;
-
-      if (isUseOfProcedureAsValue(se)) {
-        // Enqueue all uses of "procedure as value" to consider.
-        auto call = toCallExpr(se->parentExpr);
-        INT_ASSERT(call);
-        enqueue(call->getFunction(), call);
-      }
-    }
-
-    for_formals(formal, fn) {
-      if (isFunctionType(formal->getValType())) {
-        // Adjust the type of the formal to be one that has line numbers.
-        adjustSymbolType(formal, adjustProcedureTypeToHaveLineNumbers);
-
-        for_SymbolSymExprs(se, formal) {
-          if (auto call = toCallExpr(se->parentExpr)) {
-            // Enqueue all uses of procedure-pointer formals to consider.
-            enqueue(call->getFunction(), call);
-          }
-        }
-      }
-    }
-  }
-
   if (auto* others = rootsOrChildren(fn)) {
     for (FnSymbol* fn : *others) {
       fn->addFlag(FLAG_INSERT_LINE_FILE_INFO);
@@ -396,7 +367,7 @@ LineAndFile InsertLineNumbers::getLineAndFileForFn(FnSymbol *fn) {
   return result;
 }
 
-bool InsertLineNumbers::mustHaveLineInfo(FnSymbol* fn) {
+bool Pass::mustAddLineInfoFormalsToFn(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_INSERT_LINE_FILE_INFO) &&
       !fn->hasFlag(FLAG_LINE_NUMBER_OK)) {
     return true;
@@ -408,11 +379,18 @@ bool InsertLineNumbers::mustHaveLineInfo(FnSymbol* fn) {
     }
 
     // We need to uniformly pass line/file info to functions used as values
-    // (even if that information is never used), because otherwise the
-    // analysis becomes very complicated.
+    // (even if that information is never used), because at this point the
+    // ABI for function types depends on it: a previous pass already adjusted
+    // all procedure types to be passed line and file information.
     return true;
   }
 
+  return false;
+}
+
+bool Pass::mustAddLineInfoActualsToCall(CallExpr* call) {
+  if (call->primitive && call->primitive->passLineno) return true;
+  if (call->isIndirectCall()) return true;
   return false;
 }
 
@@ -421,11 +399,10 @@ bool InsertLineNumbers::mustHaveLineInfo(FnSymbol* fn) {
 //   * modifying our own function (if necessary) to take line/file formals
 //   * modifying calls in our body that need line/file actuals
 //
-void InsertLineNumbers::process(FnSymbol *fn) {
-  // Refactor note: this precondition is a general check that could be hoisted
-  precondition(fn);
+void Pass::process(FnSymbol* fn) {
+  assertInvariants(fn);
 
-  if (mustHaveLineInfo(fn)) {
+  if (mustAddLineInfoFormalsToFn(fn)) {
     // Explicitly ignore the return result since we don't need it right now.
     // This will enqueue call sites to work on.
     std::ignore = getLineAndFileForFn(fn);
@@ -445,37 +422,10 @@ void InsertLineNumbers::process(FnSymbol *fn) {
   collectCallExprs(fn, calls);
 
   for (CallExpr* call : calls) {
-    if (call->primitive && call->primitive->passLineno) {
+    if (mustAddLineInfoActualsToCall(call)) {
       process(fn, call);
     }
   }
-}
-
-namespace {
-  struct ProcedureValueUsage {
-    bool isMoveOfProcedureVal = false;
-    bool isIndirectCall = false;
-    bool isPassingProcedureVal = false;
-
-    // Use an ordered set to guarantee deterministic iteration.
-    std::set<int> procedureActualIndices;
-
-    operator bool() const {
-      return isMoveOfProcedureVal || isIndirectCall ||
-             isPassingProcedureVal;
-    }
-  };
-}
-
-static ProcedureValueUsage checkForProcedureValueUsage(CallExpr* call) {
-  ProcedureValueUsage ret;
-
-  ret.isMoveOfProcedureVal = call->isPrimitive(PRIM_MOVE) &&
-                             isFunctionType(call->get(2)->getValType());
-
-  ret.isIndirectCall = call->isIndirectCall();
-
-  return ret;
 }
 
 //
@@ -485,62 +435,12 @@ static ProcedureValueUsage checkForProcedureValueUsage(CallExpr* call) {
 // such as adjust the types of local variables. This function may
 // enqueue more work.
 //
-void InsertLineNumbers::process(FnSymbol *fn, CallExpr* call) {
+void Pass::process(FnSymbol *fn, CallExpr* call) {
   if (auto pair = fixedCalls.insert(call); !pair.second) return;
 
-  bool shouldInsertLineFileActuals = true;
-
-  if (auto usage = checkForProcedureValueUsage(call)) {
-    debuggerBreakHere();
-
-    if (usage.isMoveOfProcedureVal) {
-      shouldInsertLineFileActuals = false;
-
-      auto lhs = call->get(1);
-      auto rhs = call->get(2);
-
-      if (rhs->typeInfo()->isRef()) INT_FATAL(call, "Not handled yet!");
-
-      if (auto seLhs = toSymExpr(lhs)) {
-        auto symLhs = seLhs->symbol();
-
-        // The type of the RHS must be adjusted to match.
-        adjustSymbolType(symLhs, adjustProcedureTypeToHaveLineNumbers);
-
-        if (symLhs->getValType() != rhs->getValType()) {
-          auto lhsT = symLhs->getValType();
-          auto rhsT = rhs->getValType();
-          std::ignore = lhsT;
-          std::ignore = rhsT;
-          debuggerBreakHere();
-        }
-
-        INT_ASSERT(symLhs->getValType() == rhs->getValType());
-
-        for_SymbolSymExprs(se, seLhs->symbol()) {
-          if (!se->inTree()) continue;
-
-          if (auto c = toCallExpr(se->parentExpr)) {
-            if (c == call) continue;
-
-            // Enqueue this call to make sure it is checked.
-            enqueue(call->getFunction(), call);
-          }
-        }
-      }
-    } else if (usage.isIndirectCall) {
-      INT_FATAL(call, "Not handled yet!");
-
-    } else if (usage.isPassingProcedureVal) {
-      INT_FATAL(call, "Not handled yet!");
-    }
-  }
-
-  if (shouldInsertLineFileActuals) {
-    if (shouldPreferASTLine(call)) {
-      insertLineNumber(call, makeASTLine(call));
-    } else {
-      insertLineNumber(call, getLineAndFileForFn(fn));
-    }
+  if (shouldPreferASTLine(call)) {
+    insertLineNumber(call, makeASTLine(call));
+  } else {
+    insertLineNumber(call, getLineAndFileForFn(fn));
   }
 }
