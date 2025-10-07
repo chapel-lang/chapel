@@ -65,7 +65,6 @@ int Pass::addFilenameTableEntry(const std::string& name) {
     idx = it1->second;
   } else {
     // not found - new add new filename to the cache
-    
     auto it2 = std::find(gFilenameLookup.begin(), gFilenameLookup.end(), name);
     if (it2 == gFilenameLookup.end()) {
       // Not in the lookup table either, add it (This case should only be for
