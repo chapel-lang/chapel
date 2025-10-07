@@ -280,10 +280,11 @@ class InsertLineNumbers : public PassTU<FnSymbol*, CallExpr*> {
 
  private:
   static bool shouldPreferASTLine(CallExpr* call);
-  static bool mustHaveLineInfo(FnSymbol* fn);
+  static bool mustAddLineInfoFormalsToFn(FnSymbol* fn);
+  static bool mustAddLineInfoActualsToCall(CallExpr* call);
   static LineAndFile makeASTLine(CallExpr* call);
   static void insertLineNumber(CallExpr* call, LineAndFile lineAndFile);
-  static void precondition(FnSymbol *fn);
+  static void assertInvariants(FnSymbol *fn);
   LineAndFile getLineAndFileForFn(FnSymbol *fn);
 
   std::unordered_map<FnSymbol*, LineAndFile> lineAndFilenameMap;

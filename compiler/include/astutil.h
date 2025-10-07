@@ -256,6 +256,8 @@ bool symExprIsUsedAsRef(
   bool constRef,
   std::function<bool(SymExpr*, CallExpr*)> checkForMove);
 
+// Returns 'true' if the given 'SymExpr' refers to a 'FnSymbol' that is being
+// used as a value. This function relies on typed AST to make determinations.
 bool isUseOfProcedureAsValue(SymExpr* se);
 
 #endif
