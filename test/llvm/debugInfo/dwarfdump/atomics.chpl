@@ -47,6 +47,6 @@ proc main() {
   writeln(myAtomicUInt8.read(), myAtomicUInt16.read(),
           myAtomicUInt32.read(), myAtomicUInt64.read(), sep=" | ");
   writeln(myAtomicReal32.read(), myAtomicReal64.read(), sep=" | ");
-  writeln(myAtomicPtr.read(), myAtomicCPtr.read(), sep=" | ");
+  writeln(myAtomicPtr.read().deref(), myAtomicCPtr.read(), sep=" | ");
   breakpoint;
 }
