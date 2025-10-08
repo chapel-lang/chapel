@@ -119,7 +119,7 @@ struct DefinitionInfo {
       astr("chpl__Program"),
       astr("ChapelStringLiterals"),
       astr("ChapelBase"),
-      ast("Atomics"),
+      astr("Atomics"),
       astr("ChapelTuple"),
       astr("ChapelRange"),
       astr("OwnedObject"),
@@ -266,8 +266,8 @@ llvm::DIType* DebugData::constructTypeForAggregate(llvm::StructType* ty,
                                                    AggregateType* type) {
 
   // TODO: remove this! But to do that I need to rewrite some of this code
-  if (ty->isOpaque())
-    return nullptr;
+  // if (ty->isOpaque())
+  //   return nullptr;
 
   GenInfo* info = gGenInfo;
   const llvm::DataLayout& layout = info->module->getDataLayout();
@@ -516,7 +516,20 @@ llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
   auto dibuilder = type->symbol->getModule()->llvmDIBuilder;
 
 
-  if (type == dtObject) {
+  if (type->isRef()) {
+    auto valType = type->getValType();
+    auto diType = valType ? getType(valType) : nullptr;
+    if (!diType) {
+      if (developer || fVerify) {
+        INT_FATAL("Unable to find DIType for ref type %s ", type->symbol->name);
+      }
+      return nullptr;
+    }
+    auto N = dibuilder->createReferenceType(llvm::dwarf::DW_TAG_reference_type, diType);
+    N = dibuilder->createTypedef(N, name, nullptr, 0, nullptr);
+    type->symbol->llvmDIType = N;
+    return N;
+  } else if (type == dtObject) {
     llvm::SmallVector<llvm::Metadata *, 1> EltTys;
     llvm::Type* cidType = info->lvt->getType("chpl__class_id");
     auto cidDITy = dibuilder->createMemberType(
@@ -616,12 +629,13 @@ llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
   } else if (isEnumType(type)) {
     return constructTypeForEnum(ty, toEnumType(type));
   } else if (isAtomicType(type)) {
-    // TODO: valType is gone at codegen, how do I know the type!
+    AggregateType* at = toAggregateType(type);
+    INT_ASSERT(at);
     Type* valType = nullptr;
-    if (auto valTypeField = type->getField("valType", false)) {
+    if (auto valTypeField = at->getSubstitution(astr("valType"))) {
       valType = valTypeField->type;
-    } else if (strcmp(type->symbol->name, "atomic bool") == 0 ||
-               strcmp(type->symbol->name, "AtomicBool") == 0) {
+    } else if (type->symbol->name == astr("atomic bool") ||
+               type->symbol->name == astr("AtomicBool")) {
       valType = dtBool;
     } else {
       if (developer || fVerify) {
@@ -639,6 +653,30 @@ llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
   } else if (isSyncType(type)) {
     // TODO:
     return nullptr;
+  } else if (type->symbol->hasFlag(FLAG_C_ARRAY)) {
+    auto at = toAggregateType(type);
+    INT_ASSERT(at);
+
+    llvm::SmallVector<llvm::Metadata *> Subscripts;
+    auto arraySize = at->cArrayLength();
+    Subscripts.push_back(dibuilder->getOrCreateSubrange(0, arraySize));
+    Type *elmType = at->cArrayElementType();
+    auto elmDiType = getType(elmType);
+    if (elmDiType == nullptr) {
+      if (developer || fVerify) {
+        INT_FATAL("Unable to find DIType for element type %s of array %s",
+                  elmType->symbol->name, type->symbol->name);
+      }
+      return nullptr;
+    }
+    llvm::DIType* N = dibuilder->createArrayType(
+      arraySize,
+      8*layout.getABITypeAlign(ty).value(),
+      elmDiType,
+      dibuilder->getOrCreateArray(Subscripts));
+    N = dibuilder->createTypedef(N, name, nullptr, 0, nullptr);
+    type->symbol->llvmDIType = N;
+    return N;
   } else if (type == dtStringC) {
     llvm::DIType* N = dibuilder->createPointerType(
       getType(dt_c_char),
@@ -698,6 +736,16 @@ llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
 
 }
 
+static bool isNonCodegenType(Type * type) {
+  if (type == dtVoid || type == dtNothing)
+    return true;
+  if (auto valType = type->getValType()) {
+    if (valType == dtVoid || valType == dtNothing)
+      return true;
+  }
+  return false;
+}
+
 
 llvm::DIType* DebugData::constructType(Type *type) {
   llvm::DIType *N = nullptr;
@@ -711,6 +759,7 @@ llvm::DIType* DebugData::constructType(Type *type) {
   auto dibuilder = type->symbol->getModule()->llvmDIBuilder;
 
   if (!ty) return nullptr;
+  if (isNonCodegenType(type)) return nullptr;
 
 
   if (auto diTypeFromSpecialCase = constructTypeFromChplType(ty, type)) {
@@ -761,12 +810,8 @@ llvm::DIType* DebugData::constructType(Type *type) {
       }
     }
   } else if (ty->isArrayTy() && type->astTag == E_AggregateType) {
-    if (type->symbol->hasFlag(FLAG_C_ARRAY)) {
-      if (developer || fVerify) {
-        INT_FATAL("C array types are not yet supported in debug info");
-      }
-      return nullptr;
-    }
+    // c_array handled elsewhere
+    INT_ASSERT(!type->symbol->hasFlag(FLAG_C_ARRAY));
     AggregateType *this_class = (AggregateType *)type;
     // Subscripts are "ranges" for each dimension of the array
     llvm::SmallVector<llvm::Metadata *, 4> Subscripts;
@@ -790,10 +835,6 @@ llvm::DIType* DebugData::constructType(Type *type) {
 
     type->symbol->llvmDIType = N;
     return N;
-  }
-
-  if (type == dtVoid || type == dtNothing) {
-    return nullptr;
   }
 
   // We are unable for some reasons to find a debug type. This shouldn't be a
