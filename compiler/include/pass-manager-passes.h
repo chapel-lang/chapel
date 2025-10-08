@@ -23,6 +23,7 @@
 
 #include "PassManager.h"
 #include "baseAST.h"
+#include "ValueMappedTable.h"
 
 /***
   A header containing passes runnable by the new pass manager. The order
@@ -276,8 +277,8 @@ class AddLineFileInfoToProcPtrTypes : public PassT<Symbol*> {
 class InsertLineNumbers : public PassTU<FnSymbol*, CallExpr*> {
  public:
   struct LineAndFile {
-    Symbol* line;
-    Symbol* file;
+    Symbol* line = nullptr;
+    Symbol* file = nullptr;
   };
 
   void process(FnSymbol* fn) override;
@@ -299,8 +300,7 @@ class InsertLineNumbers : public PassTU<FnSymbol*, CallExpr*> {
   std::unordered_map<FnSymbol*, LineAndFile> lineAndFilenameMap;
   std::unordered_set<CallExpr*> fixedCalls;
 
-  static std::vector<std::string> gFilenameLookup;
-  static std::unordered_map<std::string, int> gFilenameLookupCache;
+  static ValueMappedTable<std::string> gFilenameTable;
 };
 
 #endif

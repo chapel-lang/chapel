@@ -31,6 +31,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "ValueMappedTable.h"
 #include "virtualDispatch.h"
 
 #include <algorithm>
@@ -53,50 +54,31 @@ namespace {
 // number and a filename.
 //
 
-std::vector<std::string> Pass::gFilenameLookup;
-std::unordered_map<std::string, int> Pass::gFilenameLookupCache;
+// Put a null string into the table at the first position, some runtime
+// calls will pass in NULL for their filename, we can then use this null
+// string to deal with that case.
+//
+// The table also expects "<internal>" to be in the table at the first
+// position and some runtime functions make this assumption (e.g., if it
+// is not there and you throw from within standard/internal modules, you'll
+// end up seeing a weird file/line.
+std::vector<std::string> constantFilenames = { "", "<internal>" };
+
+ValueMappedTable<std::string>
+InsertLineNumbers::gFilenameTable(constantFilenames);
 
 int Pass::addFilenameTableEntry(const std::string& name) {
-  int idx = -1;
-
-  if (auto it1 = gFilenameLookupCache.find(name);
-           it1 != gFilenameLookupCache.end()) {
-    // Use cached position in the table
-    idx = it1->second;
-  } else {
-    // not found - new add new filename to the cache
-    auto it2 = std::find(gFilenameLookup.begin(), gFilenameLookup.end(), name);
-    if (it2 == gFilenameLookup.end()) {
-      // Not in the lookup table either, add it (This case should only be for
-      // command line casts, doesn't really matter if something else sneaks in
-      // though)
-      gFilenameLookup.push_back(name);
-      idx = gFilenameLookup.size() - 1;
-    } else {
-      idx = it2 - gFilenameLookup.begin();
-    }
-
-    gFilenameLookupCache.insert(std::pair<std::string, int>(name, idx));
-  }
-
-  INT_ASSERT(idx >= 0);
-  INT_ASSERT((size_t)idx < gFilenameLookup.size());
-
-  return idx;
+  return gFilenameTable.add(name);
 }
 
 int Pass::getFilenameTableIndex(const std::string& name) {
-  if (auto it = gFilenameLookupCache.find(name);
-           it != gFilenameLookupCache.end()) {
-    // Use cached position in the table
-    return it->second;
-  }
+  if (auto optIdx = gFilenameTable.index(name)) return *optIdx;
   INT_FATAL("Entry not in table!");
   return -1;
 }
 
 const std::vector<std::string>& Pass::getFilenameTable() {
-  return gFilenameLookup;
+  return gFilenameTable.table();
 }
 
 static bool isWrapper(FnSymbol* fn) {
@@ -343,6 +325,10 @@ Pass::LineAndFile Pass::getLineAndFileForFn(FnSymbol *fn) {
     fn->insertFormalAtTail(line);
     fn->insertFormalAtTail(file);
 
+    // Also set the qualifiers to prevent inconsistencies in computed types.
+    line->qual = lineFormal.qual();
+    file->qual = fileFormal.qual();
+
     result = {line, file};
 
     // Recompute the function's type as it will be propagated to values.
@@ -373,9 +359,11 @@ bool Pass::mustAddLineInfoFormalsToFn(FnSymbol* fn) {
   }
 
   if (fn->isUsedAsValue()) {
-    if (fn->hasFlag(FLAG_EXPORT) || fn->hasFlag(FLAG_EXTERN)) {
-      INT_FATAL(fn, "Case not handled yet!");
-    }
+    bool hasForeignLinkage = fn->hasFlag(FLAG_EXPORT) ||
+                             fn->hasFlag(FLAG_EXTERN);
+
+    // Cannot insert hidden formals into functions with foreign linkage.
+    if (hasForeignLinkage) return false;
 
     // We need to uniformly pass line/file info to functions used as values
     // (even if that information is never used), because at this point the
@@ -422,6 +410,8 @@ void Pass::process(FnSymbol* fn) {
     return;
 
   // TODO iterator (or reuse calls)
+  // TODO Another cool concept might be to just run the ComputeCallSites
+  //      pass on any function passing "InsertLineNumbers::shouldProcess".
   std::vector<CallExpr*> calls;
   collectCallExprs(fn, calls);
 
@@ -432,13 +422,9 @@ void Pass::process(FnSymbol* fn) {
   }
 }
 
-//
-// This function operates on a 'call' that is within the body of 'fn'.
-// In the most common case it will append line/file info to the call,
-// however in some other cases it will do a separate AST manipulation
-// such as adjust the types of local variables. This function may
-// enqueue more work.
-//
+// This function operates on a 'call' that is within the body of 'fn'. It
+// decides whether to append the line/file info of the callsite to the call,
+// or to propagate the caller's line/file info if they exist.
 void Pass::process(FnSymbol *fn, CallExpr* call) {
   if (auto pair = fixedCalls.insert(call); !pair.second) return;
 

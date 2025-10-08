@@ -44,17 +44,12 @@
 void insertLineNumbers() {
   PassManager pm;
 
-  {
-    // NOTE: The pass must persist between runs on different AST lists.
-    // TODO: "Run pass on multiple lists...".
-    auto pass = AddLineFileInfoToProcPtrTypes();
-    pm.runPass<Symbol*>(pass, gArgSymbols);
-    pm.runPass<Symbol*>(pass, gFnSymbols);
-    pm.runPass<Symbol*>(pass, gVarSymbols);
-
-    // No need to adjust type symbols at present...
-    // pm.runPass<Symbol*>(pass, gTypeSymbols);
-  }
+  // TODO: "Run pass on multiple lists...".
+  pm.runPass<Symbol*>(AddLineFileInfoToProcPtrTypes(), gArgSymbols);
+  pm.runPass<Symbol*>(AddLineFileInfoToProcPtrTypes(), gFnSymbols);
+  pm.runPass<Symbol*>(AddLineFileInfoToProcPtrTypes(), gVarSymbols);
+  // No need to adjust type symbols at present...
+  // pm.runPass<Symbol*>(pass, gTypeSymbols);
 
   // TODO It's pretty apparent in this refactoring that we don't actually need
   // to recompute all call sites, but only the subset we'll be working on, which
@@ -63,25 +58,6 @@ void insertLineNumbers() {
   // InsertLineNumbers::getLineAndFileForFn
   pm.runPass<FnSymbol*>(ComputeCallSitesPass(), gFnSymbols);
 
-  {
-    std::vector<std::string> constantFilenames;
-
-    // Put a null string into the iterator at the first position, some runtime
-    // calls will pass in NULL for their filename, we can then use this null
-    // string to deal with that case.
-    constantFilenames.push_back("");
-
-    // Add "<internal>" to the filename table if it didn't make it in there,
-    // some runtime functions use this name directly, and it doesn't always end
-    // up in the table otherwise
-    constantFilenames.push_back("<internal>");
-
-    for (auto& name : constantFilenames) {
-      InsertLineNumbers::addFilenameTableEntry(name);
-    }
-  }
-
-  // refactoring  TODO: why is InsertNilChecks in this pass?
   if (!fNoNilChecks) {
     // TODO: this is a temporary workaround to avoid iterating over a vector
     // that changes size during iteration. gCallExprs grows during
