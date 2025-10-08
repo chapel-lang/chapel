@@ -1,7 +1,7 @@
 false | -5 | 0 | -32 | 17
 5 | 0 | 32 | 0
 1.5 | 2.5
-0x10eefe618 | nil
+42 | nil
 Running DWARF verification...
 Success!!
 Running DWARF dump checks...
