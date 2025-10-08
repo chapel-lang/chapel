@@ -305,13 +305,13 @@ static void processGenericFields() {
 
 // 2017/05/23: Noakes
 //
-// This is a specialized walk for the simplified case of ChapelProgram.
+// This is a specialized walk for the simplified case of chpl__Program.
 // This provides an anchor to start the transition to a more general
 // version of a conventional top-down traversal.
 
 // It also serves as a template for the more general version.
 // Eventually it should be possible to use the general implementation
-// to handle ChapelProgram with little or no special casing.
+// to handle chpl__Program with little or no special casing.
 
 static void addToSymbolTable() {
   rootScope = ResolveScope::getScopeFor(theProgram->block);
@@ -325,7 +325,7 @@ static void addToSymbolTable() {
   }
 
   // This would be the place to handle use statements but
-  // skipping for now as ChapelProgram does not have any.
+  // skipping for now as chpl__Program does not have any.
 
   // Now recurse on every top-level module
   for_alist(stmt, theProgram->block->body) {
