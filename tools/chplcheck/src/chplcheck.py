@@ -25,14 +25,12 @@ import sys
 import glob
 import itertools
 import functools
-from typing import List, Tuple, Optional
+from typing import List, Optional
 
 import chapel
-import chapel.replace
 from driver import LintDriver
-from lsp import run_lsp
 from rules import rules
-from fixits import Fixit, Edit
+from fixits import Edit
 from rule_types import CheckResult, RuleLocation
 from config import Config
 
@@ -287,6 +285,8 @@ def main():
         return 2
 
     if args.lsp:
+        from lsp import run_lsp
+
         run_lsp(driver)
         return 0
 
