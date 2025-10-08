@@ -368,6 +368,7 @@ module AutoMath {
 
      :rtype: The type of `x`.
    */
+  pragma "last resort"
   inline proc max(x, y)
   where !isArray(x) && !isArray(y) &&
         !(isNumeric(_desync(x.type)) && isNumeric(_desync(y.type))) {
@@ -439,6 +440,7 @@ module AutoMath {
 
      :rtype: The type of `x`.
    */
+  pragma "last resort"
   inline proc min(x, y)
   where !isArray(x) && !isArray(y) &&
         !(isNumeric(_desync(x.type)) && isNumeric(_desync(y.type))) {
