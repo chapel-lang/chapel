@@ -99,25 +99,46 @@ struct DefinitionInfo {
 
   Symbol* symbol() const { return _sym; }
 
-  bool skipInfo() const {
-    // TODO: ideallt we do this, so we can hide internal module names
-    // but that messes up record wrapped types which have the same type name
-    // as their _instance field (see toString in type.cpp)
-    // this confuses the debugger because we have two types with the same name
-    return false;
 
+  bool skipInfo() const {
     // always show the info for developer mode or if we don't know about the  symbol
     if (developer || !_sym)
       return false;
 
-    if (auto ts = toTypeSymbol(_sym)) {
-      if (ts->getModule()->modTag == MOD_INTERNAL)
-        return true; // no scope for internal types
+    // TODO: ideally we do this, so we can hide internal module names
+    // but that messes up record wrapped types which have the same type name
+    // as their _instance field (see toString in type.cpp)
+    // this confuses the debugger because we have two types with the same name
+    // if (auto ts = toTypeSymbol(_sym)) {
+    //   if (ts->getModule()->modTag == MOD_INTERNAL)
+    //     return true; // no scope for internal types
+    // }
+    // Instead, just selectively hide internal modules we know to be ok to hide
+    static auto internalModulesToHide = std::array{
+      astr("_root"),
+      astr("chpl__Program"),
+      astr("ChapelStringLiterals"),
+      astr("ChapelBase"),
+      ast("Atomics"),
+      astr("ChapelTuple"),
+      astr("ChapelRange"),
+      astr("OwnedObject"),
+      astr("SharedObject"),
+    };
+    if (_sym->getModule()->modTag == MOD_INTERNAL) {
+      auto modName = _sym->getModule()->name;
+      return std::find(internalModulesToHide.begin(),
+                       internalModulesToHide.end(),
+                       modName) != internalModulesToHide.end();
     }
+
     return false; // otherwise, show the info
   }
 
   llvm::DIScope* scope() const {
+    return _scope;
+  }
+  llvm::DIScope* maybeScope() const {
     return !skipInfo() ? _scope : nullptr;
   }
   llvm::DIFile* file() const {
@@ -265,7 +286,7 @@ llvm::DIType* DebugData::constructTypeForAggregate(llvm::StructType* ty,
   llvm::DIType* N = dibuilder->createForwardDecl(
     llvm::dwarf::DW_TAG_structure_type,
     name,
-    defInfo.scope(),
+    defInfo.maybeScope(),
     defInfo.file(),
     defInfo.line(),
     RuntimeLang,
@@ -316,7 +337,7 @@ llvm::DIType* DebugData::constructTypeForAggregate(llvm::StructType* ty,
         fditype = dibuilder->createForwardDecl(
           llvm::dwarf::DW_TAG_structure_type,
           fts->name,
-          fieldTypeDefInfo.scope(),
+          fieldTypeDefInfo.maybeScope(),
           fieldTypeDefInfo.file(),
           fieldTypeDefInfo.line(),
           RuntimeLang,
@@ -334,7 +355,7 @@ llvm::DIType* DebugData::constructTypeForAggregate(llvm::StructType* ty,
 
       bool unused;
       auto mty = dibuilder->createMemberType(
-        fieldDefInfo.scope(),
+        fieldDefInfo.maybeScope(),
         field->name,
         fieldDefInfo.file(),
         fieldDefInfo.line(),
@@ -349,7 +370,7 @@ llvm::DIType* DebugData::constructTypeForAggregate(llvm::StructType* ty,
 
     // Now create the DItype for the struct
     N = dibuilder->createStructType(
-      defInfo.scope(),
+      defInfo.maybeScope(),
       name,
       defInfo.file(),
       defInfo.line(),
@@ -410,7 +431,7 @@ llvm::DIType* DebugData::constructTypeForPointer(llvm::Type* ty, Type* type) {
       } else if (PointeeTy->isStructTy()) {
         // handle qio_channel_ptr_t, qio_file_ptr_t, syserr, _file
         auto pteStrDIType = dibuilder->createStructType(
-          defInfo.scope(),
+          defInfo.maybeScope(),
           PointeeTy->getStructName(),
           defInfo.file(),
           defInfo.line(),
@@ -499,7 +520,7 @@ llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
     llvm::SmallVector<llvm::Metadata *, 1> EltTys;
     llvm::Type* cidType = info->lvt->getType("chpl__class_id");
     auto cidDITy = dibuilder->createMemberType(
-      defInfo.scope(),
+      defInfo.maybeScope(),
       "cid",
       defInfo.file(),
       defInfo.line(),
@@ -513,7 +534,7 @@ llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
     // since dtOject has a single field, we can directly assume the size and alignent to
     // be the same as its single field
     llvm::DIType* N = dibuilder->createStructType(
-      defInfo.scope(),
+      defInfo.maybeScope(),
       name,
       defInfo.file(),
       defInfo.line(),
@@ -558,7 +579,7 @@ llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
     llvm::Type* reType = dtReal[fpSize]->getLLVMType();
     llvm::Type* imType = dtImag[fpSize]->getLLVMType();
     EltTys.push_back(dibuilder->createMemberType(
-      defInfo.scope(),
+      defInfo.maybeScope(),
       "re",
       defInfo.file(),
       defInfo.line(),
@@ -569,7 +590,7 @@ llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
       getType(dtReal[fpSize])
     ));
     EltTys.push_back(dibuilder->createMemberType(
-      defInfo.scope(),
+      defInfo.maybeScope(),
       "im",
       defInfo.file(),
       defInfo.line(),
@@ -580,7 +601,7 @@ llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
       getType(dtImag[fpSize])
     ));
     llvm::DIType* N = dibuilder->createStructType(
-      defInfo.scope(),
+      defInfo.maybeScope(),
       name,
       defInfo.file(),
       defInfo.line(),
@@ -641,7 +662,7 @@ llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
         llvm::DIType* N = dibuilder->createForwardDecl(
           llvm::dwarf::DW_TAG_structure_type,
           name,
-          defInfo.scope(),
+          defInfo.maybeScope(),
           defInfo.file(),
           defInfo.line(),
           RuntimeLang,
@@ -722,7 +743,7 @@ llvm::DIType* DebugData::constructType(Type *type) {
       N = dibuilder->createForwardDecl(
         llvm::dwarf::DW_TAG_structure_type,
         name,
-        defInfo.scope(),
+        defInfo.maybeScope(),
         defInfo.file(),
         defInfo.line(),
         RuntimeLang,
@@ -819,7 +840,7 @@ llvm::DIType* DebugData::constructTypeForEnum(llvm::Type* ty, EnumType* type) {
     Elements.push_back(ev);
   }
   auto N = dibuilder->createEnumerationType(
-    defInfo.scope(),
+    defInfo.maybeScope(),
     name,
     defInfo.file(),
     defInfo.line(),
@@ -938,13 +959,13 @@ llvm::DISubprogram* DebugData::constructFunction(FnSymbol *function)
     SPFlags |= llvm::DISubprogram::SPFlagOptimized;
 
   llvm::DISubprogram* ret = modSym->llvmDIBuilder->createFunction(
-    defInfo.scope(), /* scope */
-    name, /* name */
-    cname, /* linkage name */
+    defInfo.maybeScope(),
+    name,
+    cname,
     defInfo.file(), defInfo.line(), function_type,
     defInfo.line(), /* beginning of scope we start */
-    llvm::DINode::FlagZero, /* flags */
-    SPFlags /* subprogram flags */
+    llvm::DINode::FlagZero,
+    SPFlags
     );
   return ret;
 }
@@ -973,7 +994,7 @@ llvm::DIGlobalVariableExpression* DebugData::constructGlobalVariable(VarSymbol *
   if(gVarSym_type)
     return dibuilder->createGlobalVariableExpression
      (
-      defInfo.scope(), /* Context */
+      defInfo.maybeScope(), /* Context */
       name, /* name */
       cname, /* linkage name */
       defInfo.file(), /* File */
@@ -1025,9 +1046,10 @@ llvm::DIVariable* DebugData::constructVariable(VarSymbol *varSym)
   ); //omit the  Flags and ArgNo
 
   // TODO: can I add inlined debug info here so I can get rid of FLAG_NO_USER_DEBUG_INFO
+  auto& ctx = gGenInfo->irBuilder->getContext();
   dibuilder->insertDeclare(varSym->codegen().val, localVariable,
     dibuilder->createExpression(), llvm::DILocation::get(
-      defInfo.scope()->getContext(), defInfo.line(), 0, defInfo.scope(), nullptr, false),
+      ctx, defInfo.line(), 0, defInfo.scope(), nullptr, false),
     gGenInfo->irBuilder->GetInsertBlock());
   return localVariable;
 
@@ -1074,9 +1096,10 @@ llvm::DIVariable* DebugData::constructFormalArg(ArgSymbol *argSym, unsigned ArgN
     llvm::DINode::FlagZero /*Flags*/
     );
   auto Storage = gGenInfo->lvt->getValue(argSym->cname);
+  auto& ctx = gGenInfo->irBuilder->getContext();
   dibuilder->insertDeclare(Storage.val, diParameterVariable,
     dibuilder->createExpression(), llvm::DILocation::get(
-      defInfo.scope()->getContext(), defInfo.line(), 0, defInfo.scope(), nullptr, false),
+      ctx, defInfo.line(), 0, defInfo.scope(), nullptr, false),
     gGenInfo->irBuilder->GetInsertBlock());
   return diParameterVariable;
 }
