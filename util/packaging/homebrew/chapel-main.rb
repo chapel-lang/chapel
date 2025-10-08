@@ -6,7 +6,10 @@ class Chapel < Formula
   url "<url-placeholder-value-injected-during-testing>"
   sha256 "<sha256-placeholder-value-injected-during-testing>"
   license "Apache-2.0"
+  revision 1
   head "https://github.com/chapel-lang/chapel.git", branch: "main"
+
+  no_autobump! because: :bumped_by_upstream
 
   # Don't include the bottle information in chapel-main.rb deliberately. The
   # idea is that we don't want to accidentally use a published bottle in our testing,
@@ -88,7 +91,8 @@ class Chapel < Formula
         CHPL_GASNET_CFG_OPTIONS: "--disable-auto-conduit-detect --enable-udp",
       ) do
         system "make"
-        # C backend requires chapel-lang/chapel#27652 to be resolved
+        # C backend requires https://github.com/chapel-lang/chapel/pull/27652
+        # to be resolved
         # with_env(CHPL_TARGET_COMPILER: cbackend) do
         #   system "make"
         # end
@@ -155,9 +159,8 @@ class Chapel < Formula
     bin.install_symlink chplrun_udp => "chplrun-udp"
   end
 
-  def post_install
-    ohai "Chapel has been installed successfully!"
-    puts <<~EOS
+  def caveats
+    <<~EOS
       By default, compiled Chapel programs will be single-locale only.
       To compile and run multi-locale Chapel programs locally:
 
@@ -197,7 +200,8 @@ class Chapel < Formula
           CHPL_RT_OVERSUBSCRIBED: "yes",
         ) do
           system "util/test/checkChplInstall"
-          # C backend requires chapel-lang/chapel#27652 to be resolved
+          # C backend requires https://github.com/chapel-lang/chapel/pull/27652
+          # to be resolved
           # with_env(CHPL_TARGET_COMPILER: cbackend) do
           #   system "util/test/checkChplInstall"
           # end
