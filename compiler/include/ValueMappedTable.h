@@ -28,9 +28,10 @@
 #include <unordered_set>
 #include <vector>
 
-/** This datastructure is used to represent a table which is also indexable
-    by values of its entry type. It is suitable for representing e.g., the
-    filename table or the function table. */
+/** This datastructure is used to represent a table containing only unique
+    entries, e.g., an interned string table, a filename table or function
+    table. If you attempt to add a duplicate entry to the table it will
+    instead return the index of the previously added entry. */
 template <typename T>
 class ValueMappedTable {
  public:
