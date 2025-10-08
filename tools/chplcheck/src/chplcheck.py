@@ -286,6 +286,7 @@ def main():
 
     if args.lsp:
         from lsp import run_lsp
+
         run_lsp(driver)
         return 0
 
