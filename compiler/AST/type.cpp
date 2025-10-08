@@ -1699,7 +1699,7 @@ static VarSymbol* createSymbol(PrimitiveType* primType, const char* name) {
 ************************************** | *************************************/
 
 void initChplProgram() {
-  theProgram           = new ModuleSymbol("ChapelProgram",
+  theProgram           = new ModuleSymbol("chpl__Program",
                                           MOD_INTERNAL,
                                           new BlockStmt());
 
