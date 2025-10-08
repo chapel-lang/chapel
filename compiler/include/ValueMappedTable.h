@@ -40,21 +40,26 @@ class ValueMappedTable {
   std::unordered_map<T, int> valueToIndex_;
   Table table_;
 
+  void checkForOverflow() {
+    if (table_.size() > std::numeric_limits<int>::max()) {
+      INT_FATAL("Table is at maximum size and will overflow!");
+    }
+  }
+
  public:
   ValueMappedTable() = default;
  ~ValueMappedTable() = default;
 
   ValueMappedTable(Table initial)
     : table_(std::move(initial)) {
-    for (int i = 0; i < table_.size(); i++) {
+    checkForOverflow();
+    for (int i = 0; i < ((int) table_.size()); i++) {
       valueToIndex_.insert({table_[i], i});
     }
   }
 
   int add(const T& entry) {
-    if (table_.size() > std::numeric_limits<int>::max()) {
-      INT_FATAL("Table is at maximum size and will overflow!");
-    }
+    checkForOverflow();
 
     auto it = valueToIndex_.find(entry);
     if (it != valueToIndex_.end()) return it->second;
