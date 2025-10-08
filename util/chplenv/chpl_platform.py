@@ -6,7 +6,7 @@ import re
 import sys
 
 import overrides, utils
-from utils import error, memoize, try_run_command
+from utils import error, memoize, try_run_command, warning
 
 
 @memoize
@@ -64,6 +64,9 @@ def get(flag='host'):
                 platform_val = 'netbsd64'
             else:
                 platform_val = 'netbsd32'
+
+    if platform_val == 'cray-xc' and flag == 'target':
+        warning("Cray XC support is deprecated and will be removed in a future release")
 
     return platform_val
 
