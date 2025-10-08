@@ -1004,6 +1004,7 @@ static void genUnwindSymbolTable(){
       table.push_back( new_IntSymbol(fileno, INT_SIZE_32)->codegen() );
       table.push_back( new_IntSymbol(lineno, INT_SIZE_32)->codegen() );
     }
+
     table.push_back( new_IntSymbol(0, INT_SIZE_32)->codegen() );
     table.push_back( new_IntSymbol(0, INT_SIZE_32)->codegen() );
 
