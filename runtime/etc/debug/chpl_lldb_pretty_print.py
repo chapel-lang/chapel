@@ -566,3 +566,14 @@ def __lldb_init_module(debugger, internal_dict):
         "ManagedObjectProvider",
         recognizer("ManagedObjectRecognizer"),
     )
+
+    # make sure int(8) and uint(8) show up as numbers, not characters
+    # we have to handle char types as well because lldb doesn't cascade through
+    # things like atomics properly
+    debugger.HandleCommand("type format add -p -r --format u 'uint(8)'")
+    debugger.HandleCommand("type format add -p -r --format d 'int(8)'")
+    debugger.HandleCommand("type format add -p -r --format u 'uint8_t'")
+    debugger.HandleCommand("type format add -p -r --format d 'int8_t'")
+    debugger.HandleCommand("type format add -p -r --format u 'unsigned char'")
+    debugger.HandleCommand("type format add -p -r --format d 'signed char'")
+    debugger.HandleCommand("type format add -p -r --format d 'char'")
