@@ -46,7 +46,7 @@ def common_substitutions():
     ] = f"""
 WORKDIR /home/user/chapel-$CHAPEL_VERSION
 {generate_run_command(default_config)}
-{generate_run_command(gasnet_udp_config)}
+{generate_run_command(gasnet_config)}
 {generate_run_command(ofi_pmi2_config)}
 {generate_run_command(gpu_cpu_config)}
 {generate_run_command_default_config()}
@@ -59,7 +59,7 @@ WORKDIR /home/user/chapel-$CHAPEL_VERSION
     ] = f"""
 WORKDIR /home/user/chapel-$CHAPEL_VERSION
 {generate_run_command(default_config)}
-{generate_run_command(gasnet_udp_config)}
+{generate_run_command(gasnet_config)}
 {generate_run_command(ofi_pmi2_config)}
 {generate_run_command(gpu_cpu_config)}
     """
@@ -97,31 +97,31 @@ default_config = {
     "CHPL_HOST_MEM": "jemalloc",
     "CHPL_TARGET_MEM": ["jemalloc", "cstdlib"],
     "CHPL_ATOMICS": "cstdlib",
-    "CHPL_GMP": "bundled",
-    "CHPL_HWLOC": "bundled",
+    "CHPL_GMP": "system",
+    "CHPL_HWLOC": "system",
     "CHPL_RE2": "bundled",
     "CHPL_LLVM": "system",
     "CHPL_LIB_PIC": "none",
     "CHPL_SANITIZE": "none",
     "CHPL_SANITIZE_EXE": ["none", "address"]
 }
-gasnet_udp_config = {
+gasnet_config = {
     "CHPL_HOST_PLATFORM": "linux64",
     "CHPL_TARGET_PLATFORM": "linux64",
     "CHPL_TARGET_COMPILER": ["llvm", "gnu", "clang"],
     "CHPL_TARGET_CPU": "none",
     "CHPL_LOCALE_MODEL": "flat",
     "CHPL_COMM": "gasnet",
-    "CHPL_COMM_SUBSTRATE": "udp",
-    "CHPL_GASNET_SEGMENT": "everything",
+    "CHPL_COMM_SUBSTRATE": ["udp", "smp"],
+    "CHPL_GASNET_SEGMENT": ["everything", "fast"],
     "CHPL_TASKS": "qthreads",
     "CHPL_LAUNCHER": "amudprun",
     "CHPL_UNWIND": ["none", "bundled"],
     "CHPL_HOST_MEM": "jemalloc",
     "CHPL_TARGET_MEM": ["jemalloc", "cstdlib"],
     "CHPL_ATOMICS": "cstdlib",
-    "CHPL_GMP": "bundled",
-    "CHPL_HWLOC": "bundled",
+    "CHPL_GMP": "system",
+    "CHPL_HWLOC": "system",
     "CHPL_RE2": "bundled",
     "CHPL_LLVM": "system",
     "CHPL_LIB_PIC": "none",
@@ -144,8 +144,8 @@ ofi_pmi2_config = {
     "CHPL_TARGET_MEM": "jemalloc",
     "CHPL_ATOMICS": "cstdlib",
     "CHPL_NETWORK_ATOMICS": "ofi",
-    "CHPL_GMP": "bundled",
-    "CHPL_HWLOC": "bundled",
+    "CHPL_GMP": "system",
+    "CHPL_HWLOC": "system",
     "CHPL_RE2": "bundled",
     "CHPL_LLVM": "system",
     "CHPL_LIB_PIC": "none",
@@ -165,7 +165,7 @@ gpu_cpu_config = {
     "CHPL_HOST_MEM": "cstdlib",
     "CHPL_TARGET_MEM": "jemalloc",
     "CHPL_ATOMICS": "cstdlib",
-    "CHPL_GMP": "bundled",
+    "CHPL_GMP": "system",
     "CHPL_HWLOC": "bundled",
     "CHPL_RE2": "bundled",
     "CHPL_LLVM": "system",
@@ -177,10 +177,13 @@ gpu_cpu_config = {
 
 def generate_configs(base_config: Dict[str, Union[str,List[str]]]) -> List[Dict[str, str]]:
     incompatibilities = [
-        lambda cfg: cfg["CHPL_TARGET_MEM"] == "jemalloc" and cfg["CHPL_SANITIZE_EXE"] != "none",
-        lambda cfg: cfg["CHPL_TASKS"] == "qthreads" and cfg["CHPL_SANITIZE_EXE"] != "none",
-        lambda cfg: cfg["CHPL_TARGET_COMPILER"] == "llvm" and cfg["CHPL_SANITIZE_EXE"] != "none",
-        lambda cfg: cfg["CHPL_TARGET_COMPILER"] == "gnu"
+        lambda cfg: cfg["CHPL_TARGET_MEM"] == "jemalloc"
+        and cfg["CHPL_SANITIZE_EXE"] != "none",
+        lambda cfg: cfg["CHPL_TARGET_COMPILER"] == "gnu",
+        lambda cfg: cfg["CHPL_COMM_SUBSTRATE"] == "smp"
+        and cfg["CHPL_GASNET_SEGMENT"] == "everything",
+        lambda cfg: cfg["CHPL_GASNET_SEGMENT"] != "everything"
+        and cfg["CHPL_TARGET_MEM"] == "cstdlib",
     ]
     keys = list(base_config.keys())
 
