@@ -1235,6 +1235,22 @@ FunctionType::getWithMask(int64_t mask, bool& outMaskConflicts) const {
   return ret;
 }
 
+FunctionType* FunctionType::getReplacing(const FormalMap& formals) const {
+  INT_FATAL("Not implemented yet!");
+  return nullptr;
+}
+
+FunctionType*
+FunctionType::getReplacing(RetTag returnIntent, Type* returnType) const {
+  INT_FATAL("Not implemented yet!");
+  return nullptr;
+}
+
+FunctionType* FunctionType::getWithWidenedComponents() const {
+  INT_FATAL("Not implemented yet!");
+  return nullptr;
+}
+
 FunctionType::Kind FunctionType::kind() const {
   return this->kind_;
 }
@@ -1301,6 +1317,11 @@ bool FunctionType::throws() const {
 
 bool FunctionType::isAnyFormalNamed() const {
   return this->isAnyFormalNamed_;
+}
+
+bool FunctionType::containsAnyRefComponent() const {
+  INT_FATAL("Not implemented yet!");
+  return false;
 }
 
 const char* FunctionType::toString() const {
@@ -1530,7 +1551,23 @@ QualifiedType FunctionType::Formal::qualType() const {
 }
 
 bool FunctionType::Formal::isRef() const {
-  return qualType().isRef();
+  INT_FATAL("Not implemented yet!");
+  return false;
+}
+
+bool FunctionType::Formal::isWideRef() const {
+  INT_FATAL("Not implemented yet!");
+  return false;
+}
+
+bool FunctionType::Formal::isRefOrWideRef() const {
+  INT_FATAL("Not implemented yet!");
+  return false;
+}
+
+bool FunctionType::Formal::isConst() const {
+  INT_FATAL("Not implemented yet!");
+  return false;
 }
 
 bool FunctionType::Formal::isNamed() const {

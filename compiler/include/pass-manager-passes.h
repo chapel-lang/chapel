@@ -320,4 +320,10 @@ class StreamlineProcPtrTypesForCodegen : public AdjustSymbolTypes {
   Type* computeAdjustedType(Type* t) const override;
 };
 
+class WidenComponentsOfProcPtrTypes : public PassT<Symbol*> {
+ public:
+  bool shouldProcess(Symbol* sym) override;
+  void process(Symbol* sym) override;
+};
+
 #endif
