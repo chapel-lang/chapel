@@ -6,7 +6,6 @@ class Chapel < Formula
   url "<url-placeholder-value-injected-during-testing>"
   sha256 "<sha256-placeholder-value-injected-during-testing>"
   license "Apache-2.0"
-  revision 1
   head "https://github.com/chapel-lang/chapel.git", branch: "main"
 
   no_autobump! because: :bumped_by_upstream
