@@ -1,0 +1,25 @@
+# bash script to set environmnt variables
+
+export CHPL_HOST_COMPILER=gnu
+export CHPL_TARGET_COMPILER=gnu
+export CHPL_TARGET_CPU=none
+export CHPL_LOCALE_MODEL=flat
+export CHPL_TASKS=fifo
+# gasnet not yet packaged
+export CHPL_COMM=none
+export CHPL_TARGET_MEM=cstdlib
+#export CHPL_TARGET_JEMALLOC=system
+export CHPL_HOST_MEM=cstdlib
+#export CHPL_HOST_MIMALLOC=system
+#export CHPL_HOST_JEMALLOC=system
+#export CHPL_NETWORK_ATOMICS=ofi
+export CHPL_GMP=system
+export CHPL_HWLOC=system
+# No option to use system version, Chapel
+# specific changes not pushed upstream
+export CHPL_RE2=bundled
+export CHPL_AUX_FILESYS=none
+export CHPL_LLVM=system
+export CHPL_LLVM_SUPPORT=system
+export CHPL_UNWIND=system
+export CHPL_LIB_PIC=pic
