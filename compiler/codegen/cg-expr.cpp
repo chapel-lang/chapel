@@ -62,6 +62,12 @@
 
 class FnSymbol;
 
+namespace {
+  static int getFilenameTableIndex(const std::string& str) {
+    return InsertLineNumbers::getFilenameTableIndex(str);
+  }
+}
+
 // some prototypes
 static void codegenAssign(GenRet to_ptr, GenRet from);
 static GenRet codegenCast(Type* t, GenRet value, bool Cparens = true);
@@ -4007,7 +4013,7 @@ void codegenAssign(GenRet to_ptr, GenRet from)
           args.push_back(codegenSizeof(type));
           args.push_back(genCommID(info));
           args.push_back(info->lineno);
-          args.push_back(gFilenameLookupCache[info->filename]);
+          args.push_back(getFilenameTableIndex(info->filename));
 
           codegenCallWithArgs(fn.c_str(), args);
         }
@@ -4040,7 +4046,7 @@ void codegenAssign(GenRet to_ptr, GenRet from)
           args.push_back(codegenSizeof(type));
           args.push_back(genCommID(info));
           args.push_back(info->lineno);
-          args.push_back(gFilenameLookupCache[info->filename]);
+          args.push_back(getFilenameTableIndex(info->filename));
 
           codegenCallWithArgs(fn.c_str(), args);
         }
@@ -7122,7 +7128,7 @@ void CallExpr::codegenInvokeOnFun() {
   args[2] = codegenCast("chpl_comm_on_bundle_p", argBundle);
   args[3] = bundleSize;
   args[4] = fn->linenum();
-  args[5] = new_IntSymbol(gFilenameLookupCache[fn->fname()], INT_SIZE_32);
+  args[5] = new_IntSymbol(getFilenameTableIndex(fn->fname()), INT_SIZE_32);
 
   genComment(fn->cname, true);
 
@@ -7150,7 +7156,7 @@ void CallExpr::codegenInvokeTaskFun(const char* name) {
   args[2] = codegenCast("chpl_task_bundle_p", taskBundle);
   args[3] = bundleSize;
   args[4] = fn->linenum();
-  args[5] = new_IntSymbol(gFilenameLookupCache[fn->fname()], INT_SIZE_32);
+  args[5] = new_IntSymbol(getFilenameTableIndex(fn->fname()), INT_SIZE_32);
 
   genComment(fn->cname, true);
 

@@ -209,6 +209,9 @@ public:
   // Compute the type based on the current signature. Does not resolve.
   FunctionType*             computeAndSetType();
 
+  // Determine if this function is used as a "first class procedure".
+  bool                      isUsedAsValue();
+
   // Removes all statements from body and adds all statements from block.
   void                       replaceBodyStmtsWithStmts(BlockStmt* block);
   // Removes all statements from body and adds the passed statement.
