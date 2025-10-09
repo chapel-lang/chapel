@@ -21,6 +21,7 @@
 #include "llvmDebug.h"
 
 #include "alist.h"
+#include "global-ast-vecs.h"
 #include "clangUtil.h"
 #include "codegen.h"
 #include "expr.h"
@@ -120,6 +121,7 @@ struct DefinitionInfo {
       astr("ChapelStringLiterals"),
       astr("ChapelBase"),
       astr("Atomics"),
+      astr("ChapelSyncvar"),
       astr("ChapelTuple"),
       astr("ChapelRange"),
       astr("OwnedObject"),
@@ -169,7 +171,40 @@ std::string myGetTypeName(llvm::Type *ty) {
 #endif
 
 
+static std::pair<llvm::DIType*, int>
+removePointersAndQualifiers(llvm::DIType* N, int numLevels = -1) {
+  auto res = N;
+  int count = 0;
+  while (llvm::isa<llvm::DIDerivedType>(res) &&
+         (numLevels < 0 || count < numLevels)) {
+    auto derived = llvm::cast<llvm::DIDerivedType>(res);
+    res = derived->getBaseType();
+    count++;
+  }
+  return std::make_pair(res, count);
+}
+
 void DebugData::finalize() {
+
+  // if there are any types that weren't fully codegenned before, do it now
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+    if (ts->llvmDIForwardType) {
+      auto oldDI = ts->llvmDIForwardType;
+      ts->llvmDIForwardType = nullptr;
+      auto newDI = getType(ts->type);
+
+      // remove any pointers we added to the oldDI
+      // then remove the same number of pointers from newDI
+      auto [baseOldDI, numPtrs] =
+        removePointersAndQualifiers(llvm::cast<llvm::DIType>(oldDI));
+      auto [baseNewDI, _] = removePointersAndQualifiers(newDI, numPtrs);
+
+      auto dibuilder = ts->getModule()->llvmDIBuilder;
+      dibuilder->replaceTemporary(llvm::TempDIType(baseOldDI), baseNewDI);
+    }
+  }
+
+
   forv_Vec(ModuleSymbol, currentModule, allModules) {
     currentModule->llvmDIBuilder->finalize();
   }
@@ -265,12 +300,7 @@ bool DebugData::shouldAddDebugInfoFor(Symbol* sym) {
 llvm::DIType* DebugData::constructTypeForAggregate(llvm::StructType* ty,
                                                    AggregateType* type) {
 
-  // TODO: remove this! But to do that I need to rewrite some of this code
-  // if (ty->isOpaque())
-  //   return nullptr;
-
-  GenInfo* info = gGenInfo;
-  const llvm::DataLayout& layout = info->module->getDataLayout();
+  const llvm::DataLayout& layout = gGenInfo->module->getDataLayout();
 
   const char* name = type->symbol->name;
   // toString(type, true);
@@ -283,7 +313,7 @@ llvm::DIType* DebugData::constructTypeForAggregate(llvm::StructType* ty,
   if (type->dispatchParents.length() > 0)
     derivedFrom = getType(type->dispatchParents.first());
 
-  llvm::DIType* N = dibuilder->createForwardDecl(
+  llvm::DIType* N = dibuilder->createReplaceableCompositeType(
     llvm::dwarf::DW_TAG_structure_type,
     name,
     defInfo.maybeScope(),
@@ -295,9 +325,9 @@ llvm::DIType* DebugData::constructTypeForAggregate(llvm::StructType* ty,
   );
   N = maybeWrapTypeInPointer(N, type);
 
-  //N is added to the map (early) so that element search below can find it,
-  //so as to avoid infinite recursion for structs that contain pointers to
-  //their own type.
+  // N is added to the map (early) so that element search below can find it,
+  // so as to avoid infinite recursion for structs that contain pointers to
+  // their own type.
   type->symbol->llvmDIForwardType = N;
 
   if (!ty->isOpaque()) {
@@ -334,7 +364,7 @@ llvm::DIType* DebugData::constructTypeForAggregate(llvm::StructType* ty,
         auto fieldTypeDefInfo = DefinitionInfo(this, fts->defPoint->getModule(),
                                                fts->defPoint->fname(),
                                                fts->defPoint->linenum());
-        fditype = dibuilder->createForwardDecl(
+        fditype = dibuilder->createReplaceableCompositeType(
           llvm::dwarf::DW_TAG_structure_type,
           fts->name,
           fieldTypeDefInfo.maybeScope(),
@@ -345,6 +375,7 @@ llvm::DIType* DebugData::constructTypeForAggregate(llvm::StructType* ty,
           8*layout.getABITypeAlign(fty).value()
         );
         fditype = maybeWrapTypeInPointer(fditype, field->type);
+        fts->llvmDIForwardType = fditype;
       }
       // if the field is "super", unwrap the pointer
       if (field->hasFlag(FLAG_SUPER_CLASS) &&
@@ -381,7 +412,16 @@ llvm::DIType* DebugData::constructTypeForAggregate(llvm::StructType* ty,
       dibuilder->getOrCreateArray(EltTys)
     );
     N = maybeWrapTypeInPointer(N, type);
-    type->symbol->llvmDIForwardType = nullptr;
+    if(type->symbol->llvmDIForwardType) {
+      auto fwd = llvm::cast<llvm::DIType>(type->symbol->llvmDIForwardType);
+      // remove any pointers we added to the fwd
+      // then remove the same number of pointers from N
+      auto [baseFwd, numPtrs] = removePointersAndQualifiers(fwd);
+      auto [baseN, _] = removePointersAndQualifiers(N, numPtrs);
+
+      dibuilder->replaceTemporary(llvm::TempDIType(baseFwd), baseN);
+      type->symbol->llvmDIForwardType = nullptr;
+    }
     type->symbol->llvmDIType = N;
   } // end of if(!Opaque)
 
@@ -907,7 +947,8 @@ llvm::DIType* DebugData::getType(Type *type) {
     return llvm::cast_or_null<llvm::DIType>(type->symbol->llvmDIType);
 
   if (type->symbol->llvmDIForwardType)
-    return llvm::cast_or_null<llvm::DIType>(type->symbol->llvmDIForwardType);
+    return llvm::cast_or_null<llvm::DIType>(
+        type->symbol->llvmDIForwardType->operands()[0]);
 
   constructType(type);
 
@@ -915,7 +956,8 @@ llvm::DIType* DebugData::getType(Type *type) {
     return llvm::cast_or_null<llvm::DIType>(type->symbol->llvmDIType);
 
   if (type->symbol->llvmDIForwardType)
-    return llvm::cast_or_null<llvm::DIType>(type->symbol->llvmDIForwardType);
+    return llvm::cast_or_null<llvm::DIType>(
+      type->symbol->llvmDIForwardType->operands()[0]);
 
   return nullptr;
 }
