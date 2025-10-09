@@ -303,4 +303,10 @@ class InsertLineNumbers : public PassTU<FnSymbol*, CallExpr*> {
   static ValueMappedTable<std::string> gFilenameTable;
 };
 
+class WidenComponentsOfProcPtrTypes : public PassT<Symbol*> {
+ public:
+  bool shouldProcess(Symbol* sym) override;
+  void process(Symbol* sym) override;
+};
+
 #endif

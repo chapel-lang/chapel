@@ -48,5 +48,6 @@ set(SRCS
     returnStarTuplesByRefArgs.cpp
     scopeResolve.cpp
     splitInit.cpp
+    WidenComponentsOfProcPtrTypes.cpp
    )
 add_compiler_sources("${SRCS}" "${CMAKE_CURRENT_SOURCE_DIR}")

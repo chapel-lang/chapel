@@ -463,7 +463,12 @@ class FunctionType final : public Type {
     QualifiedType qualType() const;
     bool isAnonymous() const;
     bool isRef() const;
+    bool isWideRef() const;
+    bool isRefOrWideRef() const;
+    bool isConst() const;
   };
+
+  using FormalMap = std::unordered_map<int, Formal>;
 
  private:
   Kind kind_;
@@ -523,9 +528,12 @@ class FunctionType final : public Type {
   FunctionType* getWithLoweredErrorHandling() const;
   FunctionType* getWithLineFileInfo() const;
   FunctionType* getWithMask(int64_t mask, bool& outMaskConflicts) const;
+  FunctionType* getWithWidenedComponents() const;
   FunctionType* getAsLocal() const;
   FunctionType* getAsWide() const;
   FunctionType* getAsExtern() const;
+  FunctionType* getReplacing(const FormalMap& formals) const;
+  FunctionType* getReplacing(RetTag returnIntent, Type* returnType) const;
 
   Kind kind() const;
   Width width() const;
@@ -537,6 +545,7 @@ class FunctionType final : public Type {
   Type* returnType() const;
   bool throws() const;
   bool isAnyFormalNamed() const;
+  bool containsAnyRefComponent() const;
   bool isGeneric() const;
   bool isLocal() const;
   bool isWide() const;
