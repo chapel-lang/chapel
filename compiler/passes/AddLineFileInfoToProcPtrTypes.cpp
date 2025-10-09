@@ -24,18 +24,8 @@
 #include "FnSymbol.h"
 #include "astutil.h"
 #include "baseAST.h"
-#include "driver.h"
-#include "expr.h"
-#include "stlUtil.h"
-#include "stmt.h"
-#include "stringutil.h"
 #include "symbol.h"
-#include "virtualDispatch.h"
-
-#include <algorithm>
-#include <queue>
-#include <unordered_set>
-#include <vector>
+#include "type.h"
 
 namespace {
   // As a means of abbreviation.
@@ -61,21 +51,19 @@ static Type* adjustProcedureTypeToHaveLineNumbers(Type* t) {
 }
 
 void Pass::process(Symbol* sym) {
+  auto adjustTypeFn = adjustProcedureTypeToHaveLineNumbers;
   bool shouldAdjustSymbolType = true;
 
   if (auto fn = toFnSymbol(sym)) {
     if (!fn->isUsedAsValue()) {
-      // If the function is not used as a value, then clear its type. We do
-      // this to make sure '--verify' passes (as the function type will be
-      // pruned below), Its type will not be of interest to us in subsequent
-      // passes anyways (and if we do need to know its type, we can recompute
-      // it at that time).
+      // If the function is not used as a value then its type should not be
+      // adjusted. Clear its type - it can be recomputed later if needed.
       shouldAdjustSymbolType = false;
       fn->type = dtUnknown;
     }
 
     // As a special case, we have to handle the 'fn->retType' separately.
-    fn->retType = adjustProcedureTypeToHaveLineNumbers(fn->retType);
+    fn->retType = adjustTypeFn(fn->retType);
   }
 
   if (isTypeSymbol(sym)) {
@@ -84,6 +72,6 @@ void Pass::process(Symbol* sym) {
   }
 
   if (shouldAdjustSymbolType) {
-    adjustSymbolType(sym, adjustProcedureTypeToHaveLineNumbers);
+    adjustSymbolType(sym, adjustTypeFn);
   }
 }
