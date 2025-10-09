@@ -285,7 +285,6 @@ static bool isTypeFullyWide(BaseAST* bs) {
   return bs->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE_CLASS, FLAG_WIDE_REF);
 }
 
-
 static bool isFullyWide(BaseAST* bs) {
   if( Symbol* sym = toSymbol(bs) ) {
     if (sym->isWideRef())
