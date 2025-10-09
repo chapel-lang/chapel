@@ -1319,8 +1319,10 @@ bool FunctionType::isAnyFormalNamed() const {
   return this->isAnyFormalNamed_;
 }
 
-bool FunctionType::containsAnyRefComponent() const {
-  INT_FATAL("Not implemented yet!");
+bool FunctionType::containsAnyWidenableComponent() const {
+  for (auto& f : formals_) {
+    if (f.canBeWidened()) return true;
+  }
   return false;
 }
 
@@ -1551,21 +1553,22 @@ QualifiedType FunctionType::Formal::qualType() const {
 }
 
 bool FunctionType::Formal::isRef() const {
-  INT_FATAL("Not implemented yet!");
-  return false;
+  return qualType().isRef();
 }
 
 bool FunctionType::Formal::isWideRef() const {
-  INT_FATAL("Not implemented yet!");
-  return false;
+  return qualType().isWideRef();
 }
 
 bool FunctionType::Formal::isRefOrWideRef() const {
-  INT_FATAL("Not implemented yet!");
-  return false;
+  return qualType().isRefOrWideRef();
 }
 
 bool FunctionType::Formal::isConst() const {
+  return qualType().isConst();
+}
+
+bool FunctionType::Formal::canBeWidened() const {
   INT_FATAL("Not implemented yet!");
   return false;
 }
