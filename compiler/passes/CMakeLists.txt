@@ -37,7 +37,6 @@ set(SRCS
     flattenFunctions.cpp
     initializerRules.cpp
     insertLineNumbers.cpp
-    InsertLineNumbers.cpp
     InsertNilChecks.cpp
     insertWideReferences.cpp
     normalize.cpp
