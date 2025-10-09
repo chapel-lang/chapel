@@ -893,6 +893,13 @@ static void widenSubAggregateTypes(BaseAST* cause, Type* parent) {
 // Widen variables that we don't know how to keep narrow.
 //
 static void addKnownWides() {
+  PassManager pm;
+
+  // TODO: "Run pass over all symbols..."
+  pm.runPass(WidenComponentsOfProcPtrTypes(), gFnSymbols);
+  pm.runPass(WidenComponentsOfProcPtrTypes(), gArgSymbols);
+  pm.runPass(WidenComponentsOfProcPtrTypes(), gVarSymbols);
+
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_ON_BLOCK) && !fn->hasFlag(FLAG_LOCAL_ON)) {
       // Get the arg bundle type for an on-stmt. Testing against a name like
