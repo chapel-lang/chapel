@@ -468,6 +468,7 @@ class FunctionType final : public Type {
     bool isWideRef() const;
     bool isRefOrWideRef() const;
     bool isConst() const;
+    bool canBeWidened() const;
   };
 
   using Formals = std::vector<Formal>;
@@ -550,7 +551,7 @@ class FunctionType final : public Type {
   Type* returnType() const;
   bool throws() const;
   bool isAnyFormalNamed() const;
-  bool containsAnyRefComponent() const;
+  bool containsAnyWidenableComponent() const;
   bool isGeneric() const;
   bool isLocal() const;
   bool isWide() const;
