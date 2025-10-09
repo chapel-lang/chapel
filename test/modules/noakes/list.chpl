@@ -2,10 +2,10 @@
 // lexical lookups within internal modules in certain situations.
 
 // This occurred because
-//   a) chpl__Program 'used' ChapelStandard
+//   a) ChapelProgram 'used' ChapelStandard
 //
 //   b) Some internal modules implicitly found needed names in other
-//      modules by reaching chpl__Program and then following the use.
+//      modules by reaching ChapelProgram and then following the use.
 
 // For example there were lookup paths for the type 'list' that would
 // be blocked if a user innocently created a file named 'list.chpl'.
