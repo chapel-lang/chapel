@@ -1,0 +1,94 @@
+[0, 0, 0, 0, 0, 0, 0, 0, 0, 0] | [false, false, false, false, false] | [0.0, 0.0, 0.0] | [(x = 0), (x = 0), (x = 0), (x = 0), (x = 0), (x = 0), (x = 0), (x = 0), (x = 0), (x = 0), (x = 0), (x = 0), (x = 0), (x = 0), (x = 0), (x = 0)]
+[[0, 0, 0, 0], [0, 0, 0, 0]] | [nil, nil, nil, nil, nil, nil, nil, nil]
+Running DWARF verification...
+Success!!
+Running DWARF dump checks...
+=====================================myRec======================================
+DW_TAG_structure_type
+              DW_AT_name	("myRec")
+              DW_AT_byte_size	(0x08)
+              DW_AT_decl_file	("./c_array.chpl")
+              DW_AT_decl_line	(5)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("x")
+                DW_AT_type	("int(64)")
+                DW_AT_decl_file	("./c_array.chpl")
+                DW_AT_decl_line	(6)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  NULL
+================================================================================
+===================================myArrayInt===================================
+DW_TAG_variable
+              DW_AT_name	("myArrayInt")
+              DW_AT_decl_file	("./c_array.chpl")
+              DW_AT_decl_line	(19)
+              DW_AT_type	("c_array(int(32),10)")
+================================================================================
+==============================c_array(int(32),10)===============================
+DW_TAG_typedef
+              DW_AT_type	("int(32)[10]")
+              DW_AT_name	("c_array(int(32),10)")
+================================================================================
+==================================myArrayBool===================================
+DW_TAG_variable
+              DW_AT_name	("myArrayBool")
+              DW_AT_decl_file	("./c_array.chpl")
+              DW_AT_decl_line	(20)
+              DW_AT_type	("c_array(bool,5)")
+================================================================================
+================================c_array(bool,5)=================================
+DW_TAG_typedef
+              DW_AT_type	("bool[5]")
+              DW_AT_name	("c_array(bool,5)")
+================================================================================
+==================================myArrayReal===================================
+DW_TAG_variable
+              DW_AT_name	("myArrayReal")
+              DW_AT_decl_file	("./c_array.chpl")
+              DW_AT_decl_line	(21)
+              DW_AT_type	("c_array(real(64),3)")
+================================================================================
+==============================c_array(real(64),3)===============================
+DW_TAG_typedef
+              DW_AT_type	("real(64)[3]")
+              DW_AT_name	("c_array(real(64),3)")
+================================================================================
+===================================myArrayRec===================================
+DW_TAG_variable
+              DW_AT_name	("myArrayRec")
+              DW_AT_decl_file	("./c_array.chpl")
+              DW_AT_decl_line	(22)
+              DW_AT_type	("c_array(myRec,16)")
+================================================================================
+===============================c_array(myRec,16)================================
+DW_TAG_typedef
+              DW_AT_type	("c_array::myRec[16]")
+              DW_AT_name	("c_array(myRec,16)")
+================================================================================
+=================================myNestedArray==================================
+DW_TAG_variable
+              DW_AT_name	("myNestedArray")
+              DW_AT_decl_file	("./c_array.chpl")
+              DW_AT_decl_line	(28)
+              DW_AT_type	("c_array(c_array(int(32),4),2)")
+================================================================================
+=========================c_array(c_array(int(32),4),2)==========================
+DW_TAG_typedef
+              DW_AT_type	("c_array(int(32),4)[2]")
+              DW_AT_name	("c_array(c_array(int(32),4),2)")
+================================================================================
+===================================myPtrArray===================================
+DW_TAG_variable
+              DW_AT_name	("myPtrArray")
+              DW_AT_decl_file	("./c_array.chpl")
+              DW_AT_decl_line	(29)
+              DW_AT_type	("c_array(c_ptr(int(32)),8)")
+================================================================================
+===========================c_array(c_ptr(int(32)),8)============================
+DW_TAG_typedef
+              DW_AT_type	("int(32) *[8]")
+              DW_AT_name	("c_array(c_ptr(int(32)),8)")
+================================================================================
+Success!!
