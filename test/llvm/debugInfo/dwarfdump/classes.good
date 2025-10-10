@@ -34,7 +34,7 @@ DW_TAG_structure_type
               DW_AT_alignment	(8)
   DW_TAG_member
                 DW_AT_name	("x")
-                DW_AT_type	("OwnedObject::owned MyClass")
+                DW_AT_type	("owned MyClass")
                 DW_AT_decl_file	("./classes.chpl")
                 DW_AT_decl_line	(21)
                 DW_AT_alignment	(8)
@@ -50,7 +50,7 @@ DW_TAG_structure_type
               DW_AT_alignment	(8)
   DW_TAG_member
                 DW_AT_name	("x")
-                DW_AT_type	("SharedObject::shared MyClass")
+                DW_AT_type	("shared MyClass")
                 DW_AT_decl_file	("./classes.chpl")
                 DW_AT_decl_line	(21)
                 DW_AT_alignment	(8)
@@ -85,7 +85,7 @@ DW_TAG_structure_type
               DW_AT_alignment	(8)
   DW_TAG_member
                 DW_AT_name	("x")
-                DW_AT_type	("OwnedObject::owned MyClass?")
+                DW_AT_type	("owned MyClass?")
                 DW_AT_decl_file	("./classes.chpl")
                 DW_AT_decl_line	(21)
                 DW_AT_alignment	(8)
@@ -101,7 +101,7 @@ DW_TAG_structure_type
               DW_AT_alignment	(8)
   DW_TAG_member
                 DW_AT_name	("x")
-                DW_AT_type	("SharedObject::shared MyClass?")
+                DW_AT_type	("shared MyClass?")
                 DW_AT_decl_file	("./classes.chpl")
                 DW_AT_decl_line	(21)
                 DW_AT_alignment	(8)
@@ -149,7 +149,7 @@ DW_TAG_structure_type
               DW_AT_alignment	(8)
   DW_TAG_member
                 DW_AT_name	("x")
-                DW_AT_type	("OwnedObject::owned MyChildClass")
+                DW_AT_type	("owned MyChildClass")
                 DW_AT_decl_file	("./classes.chpl")
                 DW_AT_decl_line	(21)
                 DW_AT_alignment	(8)
@@ -165,7 +165,7 @@ DW_TAG_structure_type
               DW_AT_alignment	(8)
   DW_TAG_member
                 DW_AT_name	("x")
-                DW_AT_type	("SharedObject::shared MyChildClass")
+                DW_AT_type	("shared MyChildClass")
                 DW_AT_decl_file	("./classes.chpl")
                 DW_AT_decl_line	(21)
                 DW_AT_alignment	(8)
@@ -200,7 +200,7 @@ DW_TAG_structure_type
               DW_AT_alignment	(8)
   DW_TAG_member
                 DW_AT_name	("x")
-                DW_AT_type	("OwnedObject::owned MyChildClass?")
+                DW_AT_type	("owned MyChildClass?")
                 DW_AT_decl_file	("./classes.chpl")
                 DW_AT_decl_line	(21)
                 DW_AT_alignment	(8)
@@ -216,7 +216,7 @@ DW_TAG_structure_type
               DW_AT_alignment	(8)
   DW_TAG_member
                 DW_AT_name	("x")
-                DW_AT_type	("SharedObject::shared MyChildClass?")
+                DW_AT_type	("shared MyChildClass?")
                 DW_AT_decl_file	("./classes.chpl")
                 DW_AT_decl_line	(21)
                 DW_AT_alignment	(8)
@@ -317,14 +317,14 @@ DW_TAG_variable
               DW_AT_name	("myOwnedClass")
               DW_AT_decl_file	("./classes.chpl")
               DW_AT_decl_line	(38)
-              DW_AT_type	("OwnedObject::owned MyClass")
+              DW_AT_type	("owned MyClass")
 ================================================================================
 =================================mySharedClass==================================
 DW_TAG_variable
               DW_AT_name	("mySharedClass")
               DW_AT_decl_file	("./classes.chpl")
               DW_AT_decl_line	(40)
-              DW_AT_type	("SharedObject::shared MyClass")
+              DW_AT_type	("shared MyClass")
 ================================================================================
 ================================myBorrowedClass=================================
 DW_TAG_variable
@@ -345,14 +345,14 @@ DW_TAG_variable
               DW_AT_name	("myOwnedChildClass")
               DW_AT_decl_file	("./classes.chpl")
               DW_AT_decl_line	(47)
-              DW_AT_type	("OwnedObject::owned MyChildClass")
+              DW_AT_type	("owned MyChildClass")
 ================================================================================
 ===============================mySharedChildClass===============================
 DW_TAG_variable
               DW_AT_name	("mySharedChildClass")
               DW_AT_decl_file	("./classes.chpl")
               DW_AT_decl_line	(49)
-              DW_AT_type	("SharedObject::shared MyChildClass")
+              DW_AT_type	("shared MyChildClass")
 ================================================================================
 ==============================myBorrowedChildClass==============================
 DW_TAG_variable
@@ -373,14 +373,14 @@ DW_TAG_variable
               DW_AT_name	("myNilableOwnedClass")
               DW_AT_decl_file	("./classes.chpl")
               DW_AT_decl_line	(60)
-              DW_AT_type	("OwnedObject::owned MyClass?")
+              DW_AT_type	("owned MyClass?")
 ================================================================================
 ==============================myNilableSharedClass==============================
 DW_TAG_variable
               DW_AT_name	("myNilableSharedClass")
               DW_AT_decl_file	("./classes.chpl")
               DW_AT_decl_line	(62)
-              DW_AT_type	("SharedObject::shared MyClass?")
+              DW_AT_type	("shared MyClass?")
 ================================================================================
 =============================myNilableBorrowedClass=============================
 DW_TAG_variable
@@ -401,14 +401,14 @@ DW_TAG_variable
               DW_AT_name	("myNilableOwnedChildClass")
               DW_AT_decl_file	("./classes.chpl")
               DW_AT_decl_line	(68)
-              DW_AT_type	("OwnedObject::owned MyChildClass?")
+              DW_AT_type	("owned MyChildClass?")
 ================================================================================
 ===========================myNilableSharedChildClass============================
 DW_TAG_variable
               DW_AT_name	("myNilableSharedChildClass")
               DW_AT_decl_file	("./classes.chpl")
               DW_AT_decl_line	(70)
-              DW_AT_type	("SharedObject::shared MyChildClass?")
+              DW_AT_type	("shared MyChildClass?")
 ================================================================================
 ==========================myNilableBorrowedChildClass===========================
 DW_TAG_variable
