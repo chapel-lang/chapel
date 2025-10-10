@@ -126,6 +126,7 @@ struct DefinitionInfo {
       astr("ChapelRange"),
       astr("OwnedObject"),
       astr("SharedObject"),
+      astr("String"),
     };
     if (_sym->getModule()->modTag == MOD_INTERNAL) {
       auto modName = _sym->getModule()->name;
