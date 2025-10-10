@@ -122,6 +122,7 @@ struct DefinitionInfo {
       astr("ChapelBase"),
       astr("Atomics"),
       astr("ChapelSyncvar"),
+      astr("SyncVarRuntimeSupport"),
       astr("ChapelTuple"),
       astr("ChapelRange"),
       astr("OwnedObject"),
