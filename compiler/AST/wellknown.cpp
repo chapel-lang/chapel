@@ -162,7 +162,6 @@ static WellKnownAggregateType sWellKnownAggregateTypes[] = {
   { "Error",                 &dtError,            true  },
   { "_array",                &dtArray,            false },
   { "_domain",               &dtDomain,           false },
-  { "_ref",                  &dtRef,              true  },
   { "chpl_comm_on_bundle_t", &dtOnBundleRecord,   false },
   { "chpl_external_array",   &dtExternalArray,    false },
   { "chpl_localeID_t",       &dtLocaleID,         false },
