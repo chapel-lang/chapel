@@ -1,0 +1,10 @@
+#!/bin/sh
+#
+
+chpl=$3
+chpl_home=$($chpl --print-chpl-home)
+compiler=$($chpl_home/util/printchplenv --value --only CHPL_HOST_CC)
+libname="TestCLibraryToLoad"
+
+echo Building shared library: $libname.so
+$compiler -shared -fPIC -o $libname.so $libname.c
