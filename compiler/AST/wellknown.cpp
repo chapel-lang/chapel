@@ -204,6 +204,7 @@ static WellKnownAggregateTypeNeededEarly sWellKnownAggregateTypesNeededEarly[]=
   { "c_ptr",      "c_ptr",        &dtCPointer,      true },
   { "c_ptrConst", "c_ptrConst",   &dtCPointerConst, true },
   { "_ddata",     "_ddata",       &dtHeapBuffer,    true },
+  { "_ref",       "ref",          &dtRef,           true },
 };
 
 struct WellKnownType
