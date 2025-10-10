@@ -64,7 +64,7 @@ range_regex_c = re.compile(
     r"^range_(?P<eltType>[a-zA-Z0-9_]+)_(?P<boundsKind>both|low|high|neither)_(?P<stride>one|negOne|positive|negative|any)(?:_chpl)?$"
 )
 range_regex_llvm = re.compile(
-    r"^ChapelRange::range\((?P<eltType>[a-zA-Z0-9_()]+),(?P<boundsKind>both|low|high|neither),(?P<stride>one|negOne|positive|negative|any)\)$"
+    r"^range\((?P<eltType>[a-zA-Z0-9_()]+),(?P<boundsKind>both|low|high|neither),(?P<stride>one|negOne|positive|negative|any)\)$"
 )
 
 
@@ -477,8 +477,8 @@ class ArrayProvider:
         )
 
 
-owned_regex = re.compile(r"^((_owned_.+(_chpl)?)|(OwnedObject::owned .+))$")
-shared_regex = re.compile(r"^((_shared_.+(_chpl)?)|(SharedObject::shared .+))$")
+owned_regex = re.compile(r"^((_owned_.+(_chpl)?)|(owned .+))$")
+shared_regex = re.compile(r"^((_shared_.+(_chpl)?)|(shared .+))$")
 
 
 def ManagedObjectRecognizer(sbtype, internal_dict):
@@ -556,7 +556,7 @@ def __lldb_init_module(debugger, internal_dict):
     register(
         "StringSummary",
         "StringProvider",
-        regex("(string(_chpl)?)|String::string"),
+        regex("string(_chpl)?"),
     )
     register("RangeSummary", "RangeProvider", recognizer("RangeRecognizer"))
     register("DomainSummary", "DomainProvider", recognizer("DomainRecognizer"))
