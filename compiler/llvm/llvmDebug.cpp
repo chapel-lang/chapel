@@ -947,8 +947,7 @@ llvm::DIType* DebugData::getType(Type *type) {
     return llvm::cast_or_null<llvm::DIType>(type->symbol->llvmDIType);
 
   if (type->symbol->llvmDIForwardType)
-    return llvm::cast_or_null<llvm::DIType>(
-        type->symbol->llvmDIForwardType->operands()[0]);
+    return llvm::cast_or_null<llvm::DIType>(type->symbol->llvmDIForwardType);
 
   constructType(type);
 
@@ -956,8 +955,7 @@ llvm::DIType* DebugData::getType(Type *type) {
     return llvm::cast_or_null<llvm::DIType>(type->symbol->llvmDIType);
 
   if (type->symbol->llvmDIForwardType)
-    return llvm::cast_or_null<llvm::DIType>(
-      type->symbol->llvmDIForwardType->operands()[0]);
+    return llvm::cast_or_null<llvm::DIType>(type->symbol->llvmDIForwardType);
 
   return nullptr;
 }
