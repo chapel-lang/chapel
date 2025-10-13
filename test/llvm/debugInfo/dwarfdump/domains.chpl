@@ -109,8 +109,8 @@ proc testBlockCyclicDist() {
   // DWARFDUMP: BlockCyclicImpl(1,int(64))
   var myBlockCyclicDist = {1..100} dmapped new blockCycDist(1, 4);
   // DWARFDUMP: myBlockCyclicDist2D
-  // DWARFDUMP: BlockCyclicDom(2,int(64),one)
-  // DWARFDUMP: LocBlockCyclicDom(2,int(64),one)
+  // DWARFDUMP: BlockCyclicDom(2,int(64),positive)
+  // DWARFDUMP: LocBlockCyclicDom(2,int(64),positive)
   // DWARFDUMP: BlockCyclicImpl(2,int(64))
   var myBlockCyclicDist2D = {1..10 by 2, 1..10} dmapped new blockCycDist((1,1), (2,2));
 
