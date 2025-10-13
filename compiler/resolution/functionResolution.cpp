@@ -3770,11 +3770,15 @@ static Type* resolveTypeSpecifier(CallInfo& info) {
         // It's already a managed pointer type
         INT_ASSERT(manager == getManagedPtrManagerType(ret));
       } else {
+        if (!decorated) {
+          auto decorator = classTypeDecorator(tsType);
+          ret = getDecoratedClass(ret, decorator);
+        }
+
         CallExpr* again = new CallExpr(manager->symbol, ret->symbol);
         info.call->getStmtExpr()->insertBefore(again);
         resolveCall(again);
-        auto decorator = classTypeDecorator(tsType);
-        ret = getDecoratedClass(again->typeInfo(), decorator);
+        ret = again->typeInfo();
         again->remove();
       }
     }
