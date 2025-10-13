@@ -2463,8 +2463,11 @@ static void convertToRefTypes() {
 }
 
 extern bool printCppLineno;
-DebugData *debugInfo=NULL;
 
+
+#ifdef HAVE_LLVM
+DebugData *debugInfo=NULL;
+#endif
 
 
 
