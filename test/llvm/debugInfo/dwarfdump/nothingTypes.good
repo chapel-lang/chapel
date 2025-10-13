@@ -1,0 +1,277 @@
+(x = 0, y = 0.0) | () | (x = 0) | (x = (y = 0.0), y = 0)
+{x = 0, y = 0.0} | {} | {x = 0} | {x = nil, y = 0}
+Running DWARF verification...
+Success!!
+Running DWARF dump checks...
+=====================================myVar1=====================================
+DW_TAG_variable
+              DW_AT_name	("myVar1")
+              DW_AT_decl_file	("./nothingTypes.chpl")
+              DW_AT_decl_line	(28)
+              DW_AT_type	("nothingTypes::myRecord(int(64),real(64))")
+DW_TAG_variable
+              DW_AT_name	("myVar1")
+              DW_AT_decl_file	("./nothingTypes.chpl")
+              DW_AT_decl_line	(28)
+              DW_AT_type	("nothingTypes::MyClass(int(64),real(64)) *")
+================================================================================
+===========================myRecord(int(64),real(64))===========================
+DW_TAG_structure_type
+              DW_AT_name	("myRecord(int(64),real(64))")
+              DW_AT_byte_size	(0x10)
+              DW_AT_decl_file	("./nothingTypes.chpl")
+              DW_AT_decl_line	(3)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("x")
+                DW_AT_type	("int(64)")
+                DW_AT_decl_file	("./nothingTypes.chpl")
+                DW_AT_decl_line	(6)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("y")
+                DW_AT_type	("real(64)")
+                DW_AT_decl_file	("./nothingTypes.chpl")
+                DW_AT_decl_line	(7)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x08)
+  NULL
+================================================================================
+===========================MyClass(int(64),real(64))============================
+DW_TAG_structure_type
+              DW_AT_name	("MyClass(int(64),real(64))")
+              DW_AT_byte_size	(0x18)
+              DW_AT_decl_file	("./nothingTypes.chpl")
+              DW_AT_decl_line	(13)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("super")
+                DW_AT_type	("RootClass")
+                DW_AT_decl_file	("./nothingTypes.chpl")
+                DW_AT_decl_line	(13)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("x")
+                DW_AT_type	("int(64)")
+                DW_AT_decl_file	("./nothingTypes.chpl")
+                DW_AT_decl_line	(16)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x08)
+  DW_TAG_member
+                DW_AT_name	("y")
+                DW_AT_type	("real(64)")
+                DW_AT_decl_file	("./nothingTypes.chpl")
+                DW_AT_decl_line	(17)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x10)
+  NULL
+DW_TAG_pointer_type
+              DW_AT_type	("nothingTypes::MyClass(int(64),real(64))")
+              DW_AT_name	("MyClass(int(64),real(64))")
+================================================================================
+=====================================myVar2=====================================
+DW_TAG_variable
+              DW_AT_name	("myVar2")
+              DW_AT_decl_file	("./nothingTypes.chpl")
+              DW_AT_decl_line	(32)
+              DW_AT_type	("nothingTypes::myRecord(nothing,nothing)")
+DW_TAG_variable
+              DW_AT_name	("myVar2")
+              DW_AT_decl_file	("./nothingTypes.chpl")
+              DW_AT_decl_line	(32)
+              DW_AT_type	("nothingTypes::MyClass(nothing,nothing) *")
+================================================================================
+===========================myRecord(nothing,nothing)============================
+DW_TAG_structure_type
+              DW_AT_name	("myRecord(nothing,nothing)")
+              DW_AT_byte_size	(0x04)
+              DW_AT_decl_file	("./nothingTypes.chpl")
+              DW_AT_decl_line	(3)
+              DW_AT_alignment	(4)
+================================================================================
+============================MyClass(nothing,nothing)============================
+DW_TAG_structure_type
+              DW_AT_name	("MyClass(nothing,nothing)")
+              DW_AT_byte_size	(0x04)
+              DW_AT_decl_file	("./nothingTypes.chpl")
+              DW_AT_decl_line	(13)
+              DW_AT_alignment	(4)
+  DW_TAG_member
+                DW_AT_name	("super")
+                DW_AT_type	("RootClass")
+                DW_AT_decl_file	("./nothingTypes.chpl")
+                DW_AT_decl_line	(13)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  NULL
+DW_TAG_pointer_type
+              DW_AT_type	("nothingTypes::MyClass(nothing,nothing)")
+              DW_AT_name	("MyClass(nothing,nothing)")
+================================================================================
+=====================================myVar3=====================================
+DW_TAG_variable
+              DW_AT_name	("myVar3")
+              DW_AT_decl_file	("./nothingTypes.chpl")
+              DW_AT_decl_line	(36)
+              DW_AT_type	("nothingTypes::myRecord(int(64),nothing)")
+DW_TAG_variable
+              DW_AT_name	("myVar3")
+              DW_AT_decl_file	("./nothingTypes.chpl")
+              DW_AT_decl_line	(36)
+              DW_AT_type	("nothingTypes::MyClass(int(64),nothing) *")
+================================================================================
+===========================myRecord(int(64),nothing)============================
+DW_TAG_structure_type
+              DW_AT_name	("myRecord(int(64),nothing)")
+              DW_AT_byte_size	(0x08)
+              DW_AT_decl_file	("./nothingTypes.chpl")
+              DW_AT_decl_line	(3)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("x")
+                DW_AT_type	("int(64)")
+                DW_AT_decl_file	("./nothingTypes.chpl")
+                DW_AT_decl_line	(6)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  NULL
+================================================================================
+============================MyClass(int(64),nothing)============================
+DW_TAG_structure_type
+              DW_AT_name	("MyClass(int(64),nothing)")
+              DW_AT_byte_size	(0x10)
+              DW_AT_decl_file	("./nothingTypes.chpl")
+              DW_AT_decl_line	(13)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("super")
+                DW_AT_type	("RootClass")
+                DW_AT_decl_file	("./nothingTypes.chpl")
+                DW_AT_decl_line	(13)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("x")
+                DW_AT_type	("int(64)")
+                DW_AT_decl_file	("./nothingTypes.chpl")
+                DW_AT_decl_line	(16)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x08)
+  NULL
+DW_TAG_pointer_type
+              DW_AT_type	("nothingTypes::MyClass(int(64),nothing)")
+              DW_AT_name	("MyClass(int(64),nothing)")
+================================================================================
+=====================================myVar4=====================================
+DW_TAG_variable
+              DW_AT_name	("myVar4")
+              DW_AT_decl_file	("./nothingTypes.chpl")
+              DW_AT_decl_line	(42)
+              DW_AT_type	("nothingTypes::myRecord(myRecord(nothing,real(64)),int(64))")
+DW_TAG_variable
+              DW_AT_name	("myVar4")
+              DW_AT_decl_file	("./nothingTypes.chpl")
+              DW_AT_decl_line	(42)
+              DW_AT_type	("nothingTypes::MyClass(unmanaged MyClass(nothing,real(64))?,int(64)) *")
+================================================================================
+===========================myRecord(nothing,real(64))===========================
+DW_TAG_structure_type
+              DW_AT_name	("myRecord(nothing,real(64))")
+              DW_AT_byte_size	(0x08)
+              DW_AT_decl_file	("./nothingTypes.chpl")
+              DW_AT_decl_line	(3)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("y")
+                DW_AT_type	("real(64)")
+                DW_AT_decl_file	("./nothingTypes.chpl")
+                DW_AT_decl_line	(7)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  NULL
+================================================================================
+==================myRecord(myRecord(nothing,real(64)),int(64))==================
+DW_TAG_structure_type
+              DW_AT_name	("myRecord(myRecord(nothing,real(64)),int(64))")
+              DW_AT_byte_size	(0x10)
+              DW_AT_decl_file	("./nothingTypes.chpl")
+              DW_AT_decl_line	(3)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("x")
+                DW_AT_type	("nothingTypes::myRecord(nothing,real(64))")
+                DW_AT_decl_file	("./nothingTypes.chpl")
+                DW_AT_decl_line	(6)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("y")
+                DW_AT_type	("int(64)")
+                DW_AT_decl_file	("./nothingTypes.chpl")
+                DW_AT_decl_line	(7)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x08)
+  NULL
+================================================================================
+===========================MyClass(nothing,real(64))============================
+DW_TAG_structure_type
+              DW_AT_name	("MyClass(nothing,real(64))")
+              DW_AT_byte_size	(0x10)
+              DW_AT_decl_file	("./nothingTypes.chpl")
+              DW_AT_decl_line	(13)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("super")
+                DW_AT_type	("RootClass")
+                DW_AT_decl_file	("./nothingTypes.chpl")
+                DW_AT_decl_line	(13)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("y")
+                DW_AT_type	("real(64)")
+                DW_AT_decl_file	("./nothingTypes.chpl")
+                DW_AT_decl_line	(17)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x08)
+  NULL
+DW_TAG_pointer_type
+              DW_AT_type	("nothingTypes::MyClass(nothing,real(64))")
+              DW_AT_name	("MyClass(nothing,real(64))")
+================================================================================
+=============MyClass(unmanaged MyClass(nothing,real(64))?,int(64))==============
+DW_TAG_structure_type
+              DW_AT_name	("MyClass(unmanaged MyClass(nothing,real(64))?,int(64))")
+              DW_AT_byte_size	(0x18)
+              DW_AT_decl_file	("./nothingTypes.chpl")
+              DW_AT_decl_line	(13)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("super")
+                DW_AT_type	("RootClass")
+                DW_AT_decl_file	("./nothingTypes.chpl")
+                DW_AT_decl_line	(13)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("x")
+                DW_AT_type	("nothingTypes::MyClass(nothing,real(64)) *")
+                DW_AT_decl_file	("./nothingTypes.chpl")
+                DW_AT_decl_line	(16)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x08)
+  DW_TAG_member
+                DW_AT_name	("y")
+                DW_AT_type	("int(64)")
+                DW_AT_decl_file	("./nothingTypes.chpl")
+                DW_AT_decl_line	(17)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x10)
+  NULL
+DW_TAG_pointer_type
+              DW_AT_type	("nothingTypes::MyClass(unmanaged MyClass(nothing,real(64))?,int(64))")
+              DW_AT_name	("MyClass(unmanaged MyClass(nothing,real(64))?,int(64))")
+================================================================================
+Success!!
