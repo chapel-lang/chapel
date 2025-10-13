@@ -2575,8 +2575,7 @@ private proc isBCPindex(type t) param do
       if st1 == st2 {
         gcd = st1;
       } else {
-        // do we need casts to  something about the types of st1, st2?
-        (gcd, x) = chpl__extendedEuclid(st1, st2);
+        (gcd, x) = chpl__extendedEuclid(st1, st2):(2*strType);
         newStride = st1 / gcd * st2;  // divide first to avoid overflow
         newAbsStride = newStride;
       }
@@ -3823,8 +3822,7 @@ private proc isBCPindex(type t) param do
   //
   // source: Knuth Volume 2 --- Section 4.5.2
   //
-  proc chpl__extendedEuclidHelper(u, v)
-  {
+  proc chpl__extendedEuclid(u: int(?w), v: int(w)) where w == 32 || w == 64 {
     var zero: u.type = 0;
     var one: u.type = 1;
 
@@ -3843,12 +3841,6 @@ private proc isBCPindex(type t) param do
 
     return (U(2), U(0));
   }
-
-  inline proc chpl__extendedEuclid(u:int(32), v:int(32))
-  { return chpl__extendedEuclidHelper(u,v); }
-
-  inline proc chpl__extendedEuclid(u:int(64), v:int(64))
-  { return chpl__extendedEuclidHelper(u,v); }
 
   private proc chpl__rangeIdxTypeError(type idxType) {
     compilerError("ranges don't support '", idxType:string, "' as their idxType");
