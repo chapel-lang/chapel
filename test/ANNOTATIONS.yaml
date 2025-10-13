@@ -627,6 +627,9 @@ all:
   05/21/25:
     - text: Update system LLVM to 20
       config: chapcs, 16-node-apollo-hdr, 16-node-hpe-cray-ex, 1-node-hpe-cray-ex, 1-node-a100, 1-node-mi250x
+  08/28/25:
+    - text: Update to GASNet 2025.8 (#27717)
+      config: 16-node-apollo-hdr
 
 # End all
 
@@ -1735,6 +1738,8 @@ nbody:
     - Change param-based nbody to foreach-based (#24745)
   10/06/24:
     - Update my study version of nbody to be like nbody#2, but using foreach loops (#26044)
+  08/11/25:
+    - Some cleanup and add future for line numbers (#27600)
  
 no-op:
   02/24/17:
@@ -1912,6 +1917,22 @@ regexdna-submitted:
   <<: *regexdna-base
 regexdnaredux-submitted:
   <<: *regexdna-base
+
+remote-amos.ml-perf:
+  04/17/25:
+    - text: Suspected machine changes
+      config: 16-node-hpe-cray-ex
+  08/25/25:
+    - text: Suspected machine changes
+      config: 16-node-hpe-cray-ex
+
+remote-unordered-amos.ml-perf:
+  04/17/25:
+    - text: Suspected machine changes
+      config: 16-node-hpe-cray-ex
+  08/25/25:
+    - text: Suspected machine changes
+      config: 16-node-hpe-cray-ex
 
 remote-puts.ml-perf:
   11/03/20:
@@ -2607,6 +2628,12 @@ arkouda: &arkouda-base
       config: 16-node-hpe-apollo-hdr
   07/02/25:
     - Use Chapel 2.5 for Arkouda "release" nightly testing
+  08/18/25:
+    - Closes 4749, removes redundant cumsum, aligns cumsum, cumprod, cumulative_sum, cumulative_prod to numpy (Bears-R-Us/arkouda#4755)
+  09/23/25:
+    - Improve parquet read implementation and multiple column read performance (Bears-R-Us/arkouda#4906)
+  10/02/25:
+    - Resolves Issue 4810, cumSum and cumProd performance (Bears-R-Us/arkouda#4819)
 
 arkouda-string:
   <<: *arkouda-base
