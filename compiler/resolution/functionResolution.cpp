@@ -3587,17 +3587,18 @@ static bool isTypeConstructionCall(CallExpr* call) {
 // t is the type we resolved call to return
 static void warnForPartialInstantiationNoQ(CallExpr* call, Type* t) {
   // is the resulting type generic?
-  if (t != nullptr) {
-    CallExpr* checkCall = call;
-    if (call->numActuals() >= 1) {
-      // check for 'owned C' e.g.
-      if (SymExpr* se = toSymExpr(call->baseExpr)) {
-        if (se->symbol()->hasFlag(FLAG_MANAGED_POINTER)) {
-          checkCall = toCallExpr(call->get(1));
-        }
+  if (t == nullptr) return;
+  
+  CallExpr* checkCall = call;
+  if (call->numActuals() >= 1) {
+    // check for 'owned C' e.g.
+    if (SymExpr* se = toSymExpr(call->baseExpr)) {
+      if (se->symbol()->hasFlag(FLAG_MANAGED_POINTER)) {
+        checkCall = toCallExpr(call->get(1));
       }
     }
-    if (checkCall != nullptr && checkCall->numActuals() > 0) {
+  }
+  if (checkCall != nullptr && checkCall->numActuals() > 0) {
       bool foundQuestionMarkArg = false;
       for_actuals(actual, checkCall) {
         if (SymExpr* se = toSymExpr(actual)) {
@@ -3649,7 +3650,6 @@ static void warnForPartialInstantiationNoQ(CallExpr* call, Type* t) {
         }
       }
     }
-  }
 }
 
 static void warnForCallConcreteType(CallExpr* call, Type* t) {
@@ -3728,7 +3728,7 @@ static Type* resolveTypeSpecifier(CallInfo& info) {
   AggregateType* at = toAggregateType(canonicalClassType(tsType));
   ClassTypeDecoratorEnum decorator = ClassTypeDecorator::BORROWED_NONNIL;
   bool decorated = false;
-  if (DecoratedClassType* dt = toDecoratedClassType(ts->typeInfo())) {
+  if (DecoratedClassType* dt = toDecoratedClassType(tsType)) {
     decorated = true;
     decorator = dt->getDecorator();
     // Convert 'managed' to 'generic' -
@@ -3773,7 +3773,8 @@ static Type* resolveTypeSpecifier(CallInfo& info) {
         CallExpr* again = new CallExpr(manager->symbol, ret->symbol);
         info.call->getStmtExpr()->insertBefore(again);
         resolveCall(again);
-        ret = again->typeInfo();
+        auto decorator = classTypeDecorator(tsType);
+        ret = getDecoratedClass(again->typeInfo(), decorator);
         again->remove();
       }
     }
