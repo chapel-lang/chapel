@@ -291,6 +291,14 @@ class BlockCyclicImpl : BaseDist, writeSerializable {
     this.lowIdx = _ensureTuple(startIdx);
     this.blocksize = _ensureTuple(blocksize);
 
+    if boundsChecking {
+      for param i in 0..#rank {
+        if this.blocksize(i) <= 0 {
+          halt("blocksize must be positive");
+        }
+      }
+    }
+
     const ranges = setupTargetLocRanges(rank, targetLocales);
     this.targetLocDom = {(...ranges)};
     this.targetLocales = reshape(targetLocales, this.targetLocDom);

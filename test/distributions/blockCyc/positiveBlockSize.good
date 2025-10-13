@@ -1,0 +1,1 @@
+positiveBlockSize.chpl:3: error: halt reached - blocksize must be positive
