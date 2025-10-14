@@ -8045,7 +8045,7 @@ int isAtomicValid(enum fi_datatype ofiType) {
       for (int t = 0; t < static_cast<int>(FI_DATATYPE_LAST); t++) {
         fi_datatype fiT = static_cast<fi_datatype>(t);
         DBG_PRINTF(DBG_CFG_AMO, "%s: %s", fi_tostr(&fiT, FI_TYPE_ATOMIC_TYPE),
-                   validByType[t] ? "valid" : "invalid");
+                   validByType[fiT] ? "valid" : "invalid");
       }
     }
 #endif
