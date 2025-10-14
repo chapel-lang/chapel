@@ -42,6 +42,7 @@ enum class ErrorCheckingMode {
   UNKNOWN,
   FATAL,
   RELAXED,
+  STRICT,
 };
 
 struct TryCatchState {
@@ -137,6 +138,24 @@ struct TryCatchAnalyzer : BranchSensitiveVisitor<DefaultFrame, ResolvedVisitor<T
 
   bool canThrow() {
     return currentFn && currentFn->throws();
+  }
+
+  // Check if a function call is directly marked with try/try!/catch.
+  // Returns true if the call's parent is a Try node (for try foo()),
+  // or if the call is in a Block whose parent is a Try (for try { foo(); }).
+  bool isCallDirectlyMarkedWithTry(const FnCall* call) {
+    if (auto parent = parsing::parentAst(context, call)) {
+      if (parent->isTry()) {
+        return true;
+      } else if (parent->isBlock()) {
+        if (auto grandparent = parsing::parentAst(context, parent)) {
+          if (grandparent->isTry()) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
   }
 
   void enterTry(const Try* ast, RV& rv) {
@@ -272,6 +291,12 @@ namespace resolution {
             } else {
               context->error(ast, "call to throwing function from "
                                   "non-throwing function");
+            }
+          } else if (mode == ErrorCheckingMode::STRICT && this->canThrow()) {
+            // In strict mode, even in throwing functions, all throwing calls must be directly marked
+            if (!isCallDirectlyMarkedWithTry(ast)) {
+              context->error(ast, "call to throwing function '%s' must be marked with try, try!, or catch (strict mode)",
+                                  bestResFn->untyped()->name().c_str());
             }
           } else if (tryStack.size() > 0) {
             // check if any of the enclosing try blocks have a catchall
@@ -417,8 +442,7 @@ namespace resolution {
     } else if (ag->hasPragma(pragmatags::PRAGMA_ERROR_MODE_FATAL)) {
       return ErrorCheckingMode::FATAL;
     } else if (ag->hasPragma(pragmatags::PRAGMA_ERROR_MODE_STRICT)) {
-      CHPL_UNIMPL("strict error checking mode not implemented");
-      return ErrorCheckingMode::RELAXED;
+      return ErrorCheckingMode::STRICT;
     } else if (ag->hasPragma(pragmatags::PRAGMA_ERROR_MODE_RELAXED)) {
       return ErrorCheckingMode::RELAXED;
     }
