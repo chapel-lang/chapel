@@ -974,7 +974,7 @@ static void test26() {
   assert(resFunc);
 
   assert(guard.numErrors() == 1);
-  assert(guard.error(0)->message() == "call to throwing function 'canThrow' must be marked with try, try!, or catch (strict mode)");
+  assert(guard.error(0)->message() == "call to throwing function 'canThrow' must be marked with try or try! (strict mode)");
   assert(guard.error(0)->kind() == ErrorBase::Kind::ERROR);
   assert(guard.realizeErrors() == 1);
 }

@@ -295,7 +295,7 @@ namespace resolution {
           } else if (mode == ErrorCheckingMode::STRICT && this->canThrow()) {
             // In strict mode, even in throwing functions, all throwing calls must be directly marked
             if (!isCallDirectlyMarkedWithTry(ast)) {
-              context->error(ast, "call to throwing function '%s' must be marked with try, try!, or catch (strict mode)",
+              context->error(ast, "call to throwing function '%s' must be marked with try or try! (strict mode)",
                                   bestResFn->untyped()->name().c_str());
             }
           } else if (tryStack.size() > 0) {
