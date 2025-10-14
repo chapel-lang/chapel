@@ -83,6 +83,7 @@ extern bool fNoOptimizeRangeIteration;
 extern bool fNoOptimizeLoopIterators;
 extern bool fNoVectorize;
 extern bool fForceVectorize;
+extern std::string fVectorLib;
 extern bool fNoPrivatization;
 extern bool fNoOptimizeOnClauses;
 extern bool fNoRemoveEmptyRecords;
