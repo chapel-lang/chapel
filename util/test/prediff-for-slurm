@@ -19,6 +19,8 @@ b"""srun: Job step aborted: Waiting up to [0-9]+ seconds for job step .*
 """,
 rb"""slurmstepd: error: \*\*\* STEP [0-9.]+ ON .+ CANCELLED AT [-0-9T.:]+ \*\*\*
 """,
+rb"""\[[-0-9T.:]+\] error: \*\*\* STEP [0-9.]+ ON .+ CANCELLED AT [-0-9T.:]+ DUE TO TASK FAILURE \*\*\*
+""",
 rb"""slurmstepd: error: .+ \[[0-9]+] .*
 """,
 b"""srun: error: spank: /opt/cray/.*: Plugin file not found
