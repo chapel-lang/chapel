@@ -689,7 +689,8 @@ void AggregateType::codegenDef() {
     } else {
       INT_ASSERT(this->symbol->llvmImplType == type);
     }
-    INT_ASSERT(this->symbol->llvmAlignment == ALIGNMENT_UNINIT);
+    INT_ASSERT(this->symbol->llvmAlignment == ALIGNMENT_UNINIT ||
+               this->symbol->llvmAlignment == ALIGNMENT_DEFER);
     INT_ASSERT(structAlignment != ALIGNMENT_UNINIT);
     this->symbol->llvmAlignment = llvmAlignmentOrDefer(structAlignment, type);
     // double-check, in case we missed this in buildStructFields
