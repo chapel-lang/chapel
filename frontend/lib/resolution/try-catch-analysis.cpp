@@ -141,8 +141,8 @@ struct TryCatchAnalyzer : BranchSensitiveVisitor<DefaultFrame, ResolvedVisitor<T
   }
 
   // Check if a function call is directly marked with try/try!/catch.
-  // Returns true if the call's parent is a Try node (for try foo()),
-  // or if the call is in a Block whose parent is a Try (for try { foo(); }).
+  // Returns true if the call's parent is a Try node (for `try foo()`),
+  // or if the call is in a Block whose parent is a Try (for `try { foo(); }`).
   bool isCallDirectlyMarkedWithTry(const FnCall* call) {
     if (auto parent = parsing::parentAst(context, call)) {
       if (parent->isTry()) {
