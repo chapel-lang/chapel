@@ -42,7 +42,7 @@ Process XXXX stopped
     size = 0
   }
   myFieldE = NULL
-  myFieldF = [1..10] long {
+  myFieldF = [1..10] int(64) {
     dom = 0xXXXX
     data = 0xXXXX
     [1] = 0
@@ -58,15 +58,15 @@ Process XXXX stopped
   }
 }
 (lldb) p myRec2.myFieldC
-(ChapelTuple::(int(64),real(64)))  (x0 = 0, x1 = 0)
+((int(64),real(64)))  (x0 = 0, x1 = 0)
 (lldb) p myRec2.myFieldD
-(String::string) "" {
+(string) "" {
   size = 0
 }
 (lldb) p myRec2.myFieldE
 (basicTypes::MyClass *) NULL
 (lldb) p myRec2.myFieldF
-(ChapelArray::[domain(1,int(64),one)] int(64)) [1..10] long {
+(ChapelArray::[domain(1,int(64),one)] int(64)) [1..10] int(64) {
   dom = 0xXXXX
   data = 0xXXXX
   [1] = 0
@@ -83,13 +83,13 @@ Process XXXX stopped
 (lldb) p myUnmanagedClass
 (basicTypes::MyClass *) 0xXXXX
 (lldb) p myClass
-(OwnedObject::owned MyClass) 0xXXXX {
+(owned MyClass) 0xXXXX {
   super = (cid = XXX)
   x = 0
   y = 0
 }
 (lldb) p myStr
-(String::string) "Hello, world!" {
+(string) "Hello, world!" {
   size = 13
 }
 (lldb) p myDom
@@ -108,7 +108,7 @@ Process XXXX stopped
   }
 }
 (lldb) p myArr2d
-(ChapelArray::[domain(2,int(64),positive)] int(64)) [1..10 by 1, 1..10 by 2] long {
+(ChapelArray::[domain(2,int(64),positive)] int(64)) [1..10 by 1, 1..10 by 2] int(64) {
   dom = 0xXXXX
   data = 0xXXXX
   [1,1] = 1
@@ -163,7 +163,7 @@ Process XXXX stopped
   [10,9] = 50
 }
 (lldb) p myArr
-(ChapelArray::[domain(1,int(64),one)] int(64)) [1..10] long {
+(ChapelArray::[domain(1,int(64),one)] int(64)) [1..10] int(64) {
   dom = 0xXXXX
   data = 0xXXXX
   [1] = 1
@@ -180,15 +180,15 @@ Process XXXX stopped
 (lldb) p myBool
 (bool) true
 (lldb) p myInt
-(long) 42
+(int(64)) 42
 (lldb) p myReal
-(double) 3.1400000000000001
+(real(64)) 3.1400000000000001
 (lldb) p myEnumVal
 (basicTypes::myEnum) e2
 (lldb) p myEnumRef
-(basicTypes::myEnum *) 0xXXXX
+(_ref(myEnum)) 0xXXXX (&myEnumRef = e2)
 (lldb) p myTuple
-(ChapelTuple::(int(64),string,real(64),myEnum)) {
+((int(64),string,real(64),myEnum)) {
   x0 = 1
   x1 = "two" {
     size = 3
