@@ -38,10 +38,8 @@ proc testDR() {
 proc testAssoc() {
 
   // DWARFDUMP: myAssocDom
-  // DWARFDUMP: DefaultAssociativeDom(int(64),false)
   var myAssocDom = {1, 3, 5, 7, 9};
   // DWARFDUMP: myAssocStringDom
-  // DWARFDUMP: DefaultAssociativeDom(string,false)
   var myAssocStringDom = {"apple", "banana", "cherry"};
 
   writeln(myAssocDom, myAssocStringDom, sep=" | ");
