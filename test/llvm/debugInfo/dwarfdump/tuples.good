@@ -52,7 +52,7 @@ DW_TAG_structure_type
                 DW_AT_data_member_location	(0x08)
   DW_TAG_member
                 DW_AT_name	("x2")
-                DW_AT_type	("ref(string)")
+                DW_AT_type	("_ref(string)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelTuple.chpl")
                 DW_AT_decl_line	(26)
                 DW_AT_alignment	(8)
@@ -113,7 +113,7 @@ DW_TAG_structure_type
                 DW_AT_data_member_location	(0x08)
   DW_TAG_member
                 DW_AT_name	("x2")
-                DW_AT_type	("ref(string)")
+                DW_AT_type	("_ref(string)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelTuple.chpl")
                 DW_AT_decl_line	(26)
                 DW_AT_alignment	(8)
@@ -127,14 +127,14 @@ DW_TAG_structure_type
                 DW_AT_data_member_location	(0x18)
   DW_TAG_member
                 DW_AT_name	("x4")
-                DW_AT_type	("ref((int(64),real(64),string))")
+                DW_AT_type	("_ref((int(64),real(64),string))")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelTuple.chpl")
                 DW_AT_decl_line	(26)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x20)
   DW_TAG_member
                 DW_AT_name	("x5")
-                DW_AT_type	("ref(3*int(32))")
+                DW_AT_type	("_ref(3*int(32))")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelTuple.chpl")
                 DW_AT_decl_line	(26)
                 DW_AT_alignment	(8)
@@ -160,7 +160,7 @@ DW_TAG_structure_type
                 DW_AT_data_member_location	(0x08)
   DW_TAG_member
                 DW_AT_name	("x2")
-                DW_AT_type	("ref(string)")
+                DW_AT_type	("_ref(string)")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelTuple.chpl")
                 DW_AT_decl_line	(26)
                 DW_AT_alignment	(8)
@@ -174,14 +174,14 @@ DW_TAG_structure_type
                 DW_AT_data_member_location	(0x18)
   DW_TAG_member
                 DW_AT_name	("x4")
-                DW_AT_type	("ref((int(64),real(64),string))")
+                DW_AT_type	("_ref((int(64),real(64),string))")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelTuple.chpl")
                 DW_AT_decl_line	(26)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x20)
   DW_TAG_member
                 DW_AT_name	("x5")
-                DW_AT_type	("ref(3*int(32))")
+                DW_AT_type	("_ref(3*int(32))")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelTuple.chpl")
                 DW_AT_decl_line	(26)
                 DW_AT_alignment	(8)

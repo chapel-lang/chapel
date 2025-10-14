@@ -222,7 +222,7 @@ DW_TAG_variable
               DW_AT_name	("myEnumRef")
               DW_AT_decl_file	("./basicTypes.chpl")
               DW_AT_decl_line	(63)
-              DW_AT_type	("ref(myEnum)")
+              DW_AT_type	("_ref(myEnum)")
 ================================================================================
 ====================================myTuple=====================================
 DW_TAG_variable
