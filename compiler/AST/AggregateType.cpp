@@ -345,10 +345,17 @@ static bool isFieldTypeExprGeneric(Expr* typeExpr,
         // If it's a generic type that has default values
         // for all of it's generic attributes, it won't
         // make this type generic.
+        //
+        // Create a new 'visited' for each recursive call here to avoid
+        // polluting subseqeunt fields that oughtn't be marked recursive.
+        // Only types we've seen "on the path" to the current type should
+        // be in the visited set.
         bool foundGenericWithoutInit = false;
         for_fields(field, at) {
           bool hasDefault = false;
-          bool fieldGeneric = doFieldIsGeneric(field, hasDefault, visited);
+
+          auto visitedHere = visited;
+          bool fieldGeneric = doFieldIsGeneric(field, hasDefault, visitedHere);
           if (fieldGeneric && !hasDefault)
             foundGenericWithoutInit = true;
         }
@@ -2162,7 +2169,6 @@ void AggregateType::processGenericFields() {
     }
   }
 
-  std::set<AggregateType*> visited;
 
   foundGenericFields = true;
   bool anyDefaultedGenericFields = false;
@@ -2189,6 +2195,8 @@ void AggregateType::processGenericFields() {
 
   for_fields(field, this) {
     if (field->hasFlag(FLAG_SUPER_CLASS)) continue;
+
+    std::set<AggregateType*> visited;
 
     if (field->hasFlag(FLAG_PARAM) || field->hasFlag(FLAG_TYPE_VARIABLE)) {
       if (isTypeSymbol(field) == false) {
@@ -2310,9 +2318,9 @@ void AggregateType::buildDefaultInitializer() {
 }
 
 static bool hasFullyGenericField(AggregateType* at) {
-  std::set<AggregateType*> visited;
 
   for_fields(field, at) {
+    std::set<AggregateType*> visited;
     DefExpr* defExpr = field->defPoint;
     if (!field->hasFlag(FLAG_TYPE_VARIABLE) && !field->hasFlag(FLAG_PARAM) &&
         !field->hasFlag(FLAG_SUPER_CLASS)) {
