@@ -4810,16 +4810,8 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
   if (formal->variableExpr && call->numActuals() == 1) {
     if (SymExpr* se = toSymExpr(call->get(1))) {
       if (se->symbol() == gUninstantiated) {
-        bool genericWithDefaults = false;
-        if (SymExpr* baseSe = toSymExpr(call->baseExpr))
-          if (TypeSymbol* ts = toTypeSymbol(baseSe->symbol()))
-            if (AggregateType* at = toAggregateType(ts->type))
-              genericWithDefaults = at->isGenericWithDefaults();
-
-        if (!genericWithDefaults) {
-          formal->addFlag(FLAG_MARKED_GENERIC);
-          return; // don't do anything with this one
-        }
+        formal->addFlag(FLAG_MARKED_GENERIC);
+        return; // don't do anything with this one
       }
     }
   }
