@@ -598,8 +598,40 @@ static void setDynamicLink(const ArgumentDescription* desc, const char* arg_unus
   fLinkStyle = LS_DYNAMIC;
 }
 
-static void setChapelDebug(const ArgumentDescription* desc, const char* arg_unused) {
+static void setDebugSymbols(const ArgumentDescription* desc, const char* arg_unused) {
   printCppLineno = true;
+}
+static void setOptimizedDebug(const ArgumentDescription* desc, const char* arg_unused) {
+  // --no-copy-propagation
+  fNoCopyPropagation = true;
+  // --no-dead-code-elimination
+  fNoDeadCodeElimination = true;
+  // --no-loop-invariant-code-motion
+  fNoLoopInvariantCodeMotion = true;
+  // --no-inline
+  fNoInline = true;
+  // --no-remove-copy-calls
+  fNoRemoveCopyCalls = true;
+  // --no-scalar-replacement
+  fNoScalarReplacement = true;
+  // --no-tuple-copy-opt
+  fNoTupleCopyOpt = true;
+  // --no-denormalize
+  fDenormalize = false;
+  // --no-return-by-ref
+  fReturnByRef = false;
+  // --no-replace-array-accesses-with-ref-temps
+  fReplaceArrayAccessesWithRefTemps = false;
+  // --no-remove-empty-records
+  fNoRemoveEmptyRecords = true;
+}
+static void setDebug(const ArgumentDescription* desc, const char* arg_unused) {
+  // --debug-symbols
+  fDebugSymbols = true;
+  printCppLineno = true;
+
+  // --optimized-debug
+  setOptimizedDebug(nullptr, nullptr); // nullptr since args unused
 }
 
 static void setPrintIr(const ArgumentDescription* desc, const char* arg) {
@@ -1342,6 +1374,11 @@ static ArgumentDescription arg_desc[] = {
 
  {"", ' ', NULL, "Parallelism Control Options", NULL, NULL, NULL, NULL},
  {"local", ' ', NULL, "Target one [many] locale[s]", "N", &fLocal, "CHPL_LOCAL", setLocal},
+
+ {"", ' ', NULL, "Debugging Control Options", NULL, NULL, NULL, NULL},
+ {"debug", ' ', NULL, "Compile code in the best way for debugging", "F", NULL, "CHPL_DEBUG", setDebug},
+ {"debug-symbols", 'g', NULL, "[Don't] Generate debug symbols", "N", &fDebugSymbols, "CHPL_DEBUG_SYMBOLS", setDebugSymbols},
+ {"optimized-debug", ' ', NULL, "Turn off select Chapel optimizations that interfere with debugging", "F", NULL, "CHPL_OPTIMIZED_DEBUG", setOptimizedDebug},
 
  {"", ' ', NULL, "Optimization Control Options", NULL, NULL, NULL, NULL},
  {"baseline", ' ', NULL, "Disable all Chapel optimizations", "F", &fBaseline, "CHPL_BASELINE", setBaselineFlag},
