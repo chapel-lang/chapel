@@ -3216,11 +3216,10 @@ static void codegenPartTwo() {
   if( fLlvmCodegen ) {
 #ifdef HAVE_LLVM
 
-    if(debugCCode)
-    {
+    if (fDebugSymbols) {
       debug_info = new debug_data(*info->module);
     }
-    if(debug_info) {
+    if (debug_info) {
       // every module gets its own compile unit
       forv_Vec(ModuleSymbol, currentModule, allModules) {
         // So, this is pretty quick. I'm assuming that the main module is in the current dir, no optimization (need to figure out how to get this)

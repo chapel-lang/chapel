@@ -279,7 +279,7 @@ extern bool fReportGpuTransformTime;
 
 extern bool fPermitUnhandledModuleErrors;
 
-extern bool debugCCode;
+extern bool fDebugSymbols;
 extern bool optimizeCCode;
 extern bool specializeCCode;
 

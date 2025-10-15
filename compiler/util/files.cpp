@@ -853,7 +853,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
 
   // Bunch of C compiler flags.
   fprintf(makefile.fptr, "COMP_GEN_WARN = %i\n", ccwarnings);
-  fprintf(makefile.fptr, "COMP_GEN_DEBUG = %i\n", debugCCode);
+  fprintf(makefile.fptr, "COMP_GEN_DEBUG = %i\n", fDebugSymbols);
   fprintf(makefile.fptr, "COMP_GEN_OPT = %i\n", optimizeCCode);
   fprintf(makefile.fptr, "COMP_GEN_SPECIALIZE = %i\n", specializeCCode);
   fprintf(makefile.fptr, "COMP_GEN_FLOAT_OPT = %i\n", ffloatOpt);

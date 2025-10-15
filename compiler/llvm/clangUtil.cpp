@@ -3009,7 +3009,7 @@ static void helpComputeClangArgs(std::string& clangCC,
 #endif
 
   // Add debug flags
-  if (debugCCode) {
+  if (fDebugSymbols) {
     clangCCArgs.push_back("-g");
     clangCCArgs.push_back("-DCHPL_DEBUG");
   }
@@ -4869,7 +4869,7 @@ static void makeBinaryLLVMForCUDA(const std::string& artifactFilename,
     // with -O3, so then strip those directives.
 
     ptxasFlags = fFastFlag ? "-O3" : "-O0";
-    if (debugCCode) ptxasFlags += " -lineinfo";
+    if (fDebugSymbols) ptxasFlags += " -lineinfo";
 
     // Kind of a hack; manually turn
     //   .target sm_60, debug
@@ -4877,7 +4877,7 @@ static void makeBinaryLLVMForCUDA(const std::string& artifactFilename,
     //   .target sm_60
     // because we can't configure clang to not force
     // full debug info.
-    if (debugCCode && fFastFlag) {
+    if (fDebugSymbols && fFastFlag) {
       stripPtxDebugDirective(artifactFilename);
     }
   }
@@ -5205,7 +5205,7 @@ void makeBinaryLLVM(void) {
     // pass -Qunused-arguments or -Wno-error=unused-command-line-argument
     // to avoid unused argument errors for optimization flags.
 
-    if(debugCCode) {
+    if(fDebugSymbols) {
       bool isDarwin = !strcmp(CHPL_TARGET_PLATFORM, "darwin");
       options += isDarwin ? "-gfull" : "-g";
     }
@@ -5269,7 +5269,7 @@ void makeBinaryLLVM(void) {
     // 'dsymutil' doesn't seem to know how to handle. So we'll probably
     // need a more complicated invocation.
     const bool generateDarwinSymArchive =
-          !strcmp(CHPL_TARGET_PLATFORM, "darwin") && debugCCode &&
+          !strcmp(CHPL_TARGET_PLATFORM, "darwin") && fDebugSymbols &&
           !fLibraryCompile;
 
     if (generateDarwinSymArchive) {
