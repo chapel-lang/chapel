@@ -336,7 +336,7 @@ bool fAllowExternC = false;
 char breakOnCodegenCname[256] = "";
 int breakOnCodegenID = 0;
 
-bool debugCCode = false;
+bool fDebugSymbols = false;
 bool optimizeCCode = false;
 bool specializeCCode = false;
 

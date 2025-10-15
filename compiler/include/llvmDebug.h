@@ -35,8 +35,7 @@ struct lessAstr {
   }
 };
 
-class DebugData
-{
+class DebugData {
  private:
   bool optimized;
   std::map<const char*, llvm::DIFile*, lessAstr> filesByName;

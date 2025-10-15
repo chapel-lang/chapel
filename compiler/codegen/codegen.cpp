@@ -3226,8 +3226,7 @@ static void codegenPartTwo() {
   if( fLlvmCodegen ) {
 #ifdef HAVE_LLVM
 
-    if(debugCCode)
-    {
+    if (fDebugSymbols) {
       debugInfo = new DebugData(/*optimized*/false);
     }
     if(debugInfo) {
