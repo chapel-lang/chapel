@@ -903,6 +903,13 @@ static void normalizeBase(BaseAST* base, bool addEndOfStatements) {
 
 static Symbol* theDefinedSymbol(BaseAST* ast);
 
+static bool isInsideTaskWithClause(Expr* expr) {
+  if (CallExpr* blockInfo = findBlockInfo(expr)) {
+    return isTaskBlockInfo(blockInfo);
+  }
+  return false;
+}
+
 void checkUseBeforeDefs(FnSymbol* fn) {
   if (fn->defPoint->parentSymbol) {
     ModuleSymbol*         mod = fn->getModule();
@@ -975,9 +982,17 @@ void checkUseBeforeDefs(FnSymbol* fn) {
 
             // Only complain one time
             if (undeclared.find(name) == undeclared.end()) {
-              USR_FATAL_CONT(use,
-                             "'%s' undeclared (first use this function)",
-                             name);
+              // Check if this is a task intent variable in a with-clause
+              // If so, use the same error message as forall loops
+              if (isInsideTaskWithClause(use)) {
+                USR_FATAL_CONT(use,
+                               "could not find the outer variable for '%s'",
+                               name);
+              } else {
+                USR_FATAL_CONT(use,
+                               "'%s' undeclared (first use this function)",
+                               name);
+              }
 
               undeclared.insert(name);
             }
