@@ -3762,6 +3762,12 @@ static Type* resolveTypeSpecifier(CallInfo& info) {
       INT_ASSERT(ret);
     }
 
+    // preserve nilability
+    if (ret && isNilableClassType(tsType)) {
+      auto dec = addNilableToDecorator(classTypeDecorator(ret));
+      ret = getDecoratedClass(ret, dec);
+    }
+
     if (ret && isManagedPtrType(tsType)) {
       // For owned/shared types, resolve the canonical class type specifier and
       // re-wrap the resulting type in owned or shared.
@@ -3770,11 +3776,6 @@ static Type* resolveTypeSpecifier(CallInfo& info) {
         // It's already a managed pointer type
         INT_ASSERT(manager == getManagedPtrManagerType(ret));
       } else {
-        if (!decorated) {
-          auto decorator = classTypeDecorator(tsType);
-          ret = getDecoratedClass(ret, decorator);
-        }
-
         CallExpr* again = new CallExpr(manager->symbol, ret->symbol);
         info.call->getStmtExpr()->insertBefore(again);
         resolveCall(again);
