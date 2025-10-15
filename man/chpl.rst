@@ -273,6 +273,37 @@ OPTIONS
     $CHPL\_COMM is set to "none", **\--local** is the default; otherwise
     **\--no-local** is the default.
 
+*Debugging Control Options*
+
+.. _man-debug:
+.. index:: --debug
+
+**\--debug**
+
+    Compile code in the best way for debugging. This implies
+    **-g** and **\--optimized-debug**. This flag is useful
+    when you are trying to debug a Chapel program using a source-level
+    debugger such as gdb or lldb.
+
+.. _man-debug-symbols:
+.. index:: --debug-symbols, --no-debug-symbols
+
+**-g, \--[no-]debug-symbols**
+
+    Causes the generated code to be compiled with debugging turned on. If
+    you are trying to debug a Chapel program, this flag is essential.
+
+    This flag also turns on the **\--cpp-lines** option
+    (only useful with the C backend) unless compiling as
+    a developer (for example, via **\--devel**).
+
+.. _man-optimized-debug
+.. index:: --optimized-debug
+
+**\--optimized-debug**
+
+    Disable optimizations that may interfere with debugging.
+
 *Optimization Control Options*
 
 .. _man-baseline:
