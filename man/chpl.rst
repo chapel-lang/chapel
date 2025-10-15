@@ -633,43 +633,23 @@ OPTIONS
 
     Enable [disable] run-time checking for stack overflow.
 
-*C Code Generation Options*
+*Code Generation Options*
 
 .. _man-codegen:
 .. index:: --codegen, --no-codegen
 
 **\--[no-]codegen**
 
-    Enable [disable] generating C code and the binary executable. Disabling
+    Enable [disable] generating code and the binary executable. Disabling
     code generation is useful to reduce compilation time, for example, when
     only Chapel compiler warnings/errors are of interest.
-
-.. _man-cpp-lines:
-.. index:: --cpp-lines, --no-cpp-lines
-
-**\--[no-]cpp-lines**
-
-    Causes the compiler to emit cpp #line directives into the generated code
-    in order to help map generated C code back to the Chapel source code
-    that it implements. The [no-] version of this flag turns this feature
-    off.
-
-.. _man-max-c-ident-len:
-.. index:: --max-c-ident-len
-
-**\--max-c-ident-len**
-
-    Limits the length of identifiers in the generated code, except when set
-    to 0. The default is 0, except when $CHPL\_TARGET\_COMPILER indicates a
-    PGI compiler (pgi or cray-prgenv-pgi), in which case the default is
-    1020.
 
 .. _man-munge-user-idents:
 .. index:: --munge-user-idents, --no-munge-user-idents
 
 **\--[no-]munge-user-idents**
 
-    By default, **chpl** munges all user identifiers in the generated C code
+    By default, **chpl** munges all user identifiers in the generated code
     in order to minimize the chances of conflict with an identifier or
     keyword in C (in the current implementation, this is done by appending
     '\_chpl' to the identifier). This flag provides the ability to disable
@@ -682,11 +662,9 @@ OPTIONS
 
 **\--savec <dir>**
 
-    Saves the compiler-generated C code in the specified *directory*,
+    Saves the compiler-generated code in the specified *directory*,
     creating the *directory* if it does not already exist. This option may
     overwrite existing files in the *directory*.
-
-*C Code Compilation Options*
 
 .. _man-ccflags:
 .. index:: --ccflags
@@ -697,17 +675,6 @@ OPTIONS
     the generated code. Multiple **\--ccflags** *options* can be provided and
     in that case the combination of the flags will be forwarded to the C
     compiler.
-
-.. _man-debug:
-.. index:: --debug, --no-debug
-
-**-g, \--[no-]debug**
-
-    Causes the generated C code to be compiled with debugging turned on. If
-    you are trying to debug a Chapel program, this flag is virtually
-    essential along with the **\--savec** flag. This flag also turns on the
-    **\--cpp-lines** option unless compiling as a developer (for example, via
-    **\--devel**).
 
 .. _man-dynamic:
 .. index:: --dynamic
@@ -763,7 +730,7 @@ OPTIONS
 
 **-O, \--[no-]optimize**
 
-    Causes the generated C code to be compiled with [without] optimizations
+    Causes the generated code to be compiled with [without] optimizations
     turned on. The specific set of flags used by this option is
     platform-dependent; use the **\--print-commands** option to view the C
     compiler command used. If you would like additional flags to be used
@@ -774,7 +741,7 @@ OPTIONS
 
 **\--[no-]specialize**
 
-    Causes the generated C code to be compiled with flags that specialize
+    Causes the generated code to be compiled with flags that specialize
     the executable to the architecture that is defined by
     CHPL\_TARGET\_CPU. The effects of this flag will vary based on choice
     of back-end compiler and the value of CHPL\_TARGET\_CPU.
@@ -819,6 +786,29 @@ OPTIONS
     Pass an option to the LLVM optimization and transformation passes.
     This option can be specified multiple times.
 
+*C Code Generation Options*
+
+.. _man-cpp-lines:
+.. index:: --cpp-lines, --no-cpp-lines
+
+**\--[no-]cpp-lines**
+
+    Causes the compiler to emit cpp #line directives into the generated code
+    in order to help map generated C code back to the Chapel source code
+    that it implements. The [no-] version of this flag turns this feature
+    off.
+
+    This flag is only useful when not using CHPL_TARGET_COMPILER=llvm.
+
+.. _man-max-c-ident-len:
+.. index:: --max-c-ident-len
+
+**\--max-c-ident-len**
+
+    Limits the length of identifiers in the generated code, except when set
+    to 0. The default is 0, except when $CHPL\_TARGET\_COMPILER indicates a
+    PGI compiler (pgi or cray-prgenv-pgi), in which case the default is
+    1020.
 
 *Compilation Trace Options*
 
