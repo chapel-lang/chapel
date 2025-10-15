@@ -355,6 +355,7 @@ char compileVersion[64];
 
 std::array<std::string, 2> editions ({{"2.0", "preview"}});
 std::string fEdition = "2.0";
+bool fUserSetPreEdition = false;
 
 static bool fPrintCopyright = false;
 static bool fPrintEnvHelp = false;
@@ -941,9 +942,7 @@ static void setEdition(const ArgumentDescription* desc, const char* arg) {
     // Use the default edition, which is set at the declaration point
 
   } else if (val == "pre-edition") {
-    USR_WARN("'pre-edition' has been renamed to 'preview'.  This option will "
-             "still be available for a few releases, but we recommend updating "
-             "to the new name.");
+    fUserSetPreEdition = true;
     fEdition = editions.back();
 
   } else if (!isValidEdition(val)) {
@@ -2176,6 +2175,14 @@ static void checkDebugFlag() {
   }
 }
 
+static void checkEditionFlag() {
+  if (fUserSetPreEdition) {
+    USR_WARN("'pre-edition' has been renamed to 'preview'.  This option will "
+              "still be available for a few releases, but we recommend "
+              "updating to the new name.");
+  }
+}
+
 static void checkIncrementalAndOptimized() {
   std::size_t optimizationsEnabled = ccflags.find("-O");
   if(fIncrementalCompilation && ( optimizeCCode ||
@@ -2376,6 +2383,7 @@ static void validateSettings() {
 
   checkDebugFlag();
 
+  checkEditionFlag();
 
   checkTargetCpu();
 
