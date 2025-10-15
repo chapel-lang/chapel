@@ -27,6 +27,7 @@ class astlocT;
 class BaseAST;
 class CallExpr;
 class DefExpr;
+class Expr;
 class FnSymbol;
 class ModuleSymbol;
 class Symbol;
@@ -74,5 +75,12 @@ BaseAST* getScope(BaseAST* ast);
 
 void resolveUnresolvedSymExprs(BaseAST* ast);
 void resolveUnmanagedBorrows(CallExpr* call);
+
+// scopeResolve.cpp utility re-used in normalize.cpp
+// given an AST node that may be in a 'with' clause, find the corresponding
+// block info call
+CallExpr* findBlockInfo(Expr* exprInAst);
+bool isTaskBlockInfo(CallExpr* call);
+
 
 #endif

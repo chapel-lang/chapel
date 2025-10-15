@@ -1332,6 +1332,23 @@ static void errorDotInsideWithClause(UnresolvedSymExpr* origUSE,
   }
 }
 
+CallExpr* findBlockInfo(Expr* exprInAst) {
+  if (Expr* parent1 = exprInAst->parentExpr) {
+    if (BlockStmt* parent2 = toBlockStmt(parent1->parentExpr)) {
+      if (parent1 == parent2->byrefVars) {
+        return parent2->blockInfoGet();
+      }
+    }
+  }
+  return NULL;
+}
+
+bool isTaskBlockInfo(CallExpr* call) {
+  return call->isPrimitive(PRIM_BLOCK_COBEGIN)  ||
+         call->isPrimitive(PRIM_BLOCK_COFORALL) ||
+         call->isPrimitive(PRIM_BLOCK_BEGIN);
+}
+
 //
 // 'expr' ended up being a field reference (or perhaps a method call).
 // If we are inside a 'with' clause, report an error.
@@ -1339,19 +1356,9 @@ static void errorDotInsideWithClause(UnresolvedSymExpr* origUSE,
 static void checkIdInsideWithClause(Expr*              exprInAst,
                                     UnresolvedSymExpr* origUSE) {
   // A 'with' clause for a task construct.
-  if (Expr* parent1 = exprInAst->parentExpr) {
-    if (BlockStmt* parent2 = toBlockStmt(parent1->parentExpr)) {
-      if (parent1 == parent2->byrefVars) {
-        CallExpr* blockInfo = parent2->blockInfoGet();
-
-        // Ensure that an issue, indeed, occurred a task construct.
-        INT_ASSERT(blockInfo->isPrimitive(PRIM_BLOCK_COBEGIN)  ||
-                   blockInfo->isPrimitive(PRIM_BLOCK_COFORALL) ||
-                   blockInfo->isPrimitive(PRIM_BLOCK_BEGIN));
-
-        errorDotInsideWithClause(origUSE, blockInfo->primitive->name);
-      }
-    }
+  if (CallExpr* blockInfo = findBlockInfo(exprInAst)) {
+    INT_ASSERT(isTaskBlockInfo(blockInfo));
+    errorDotInsideWithClause(origUSE, blockInfo->primitive->name);
   }
 }
 
