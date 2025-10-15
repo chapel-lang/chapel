@@ -337,6 +337,9 @@ char breakOnCodegenCname[256] = "";
 int breakOnCodegenID = 0;
 
 bool fDebugSymbols = false;
+bool fOptimizedDebug = false;
+bool fDebug = false;
+
 bool optimizeCCode = false;
 bool specializeCCode = false;
 
@@ -1376,9 +1379,9 @@ static ArgumentDescription arg_desc[] = {
  {"local", ' ', NULL, "Target one [many] locale[s]", "N", &fLocal, "CHPL_LOCAL", setLocal},
 
  {"", ' ', NULL, "Debugging Control Options", NULL, NULL, NULL, NULL},
- {"debug", ' ', NULL, "Compile code in the best way for debugging", "F", NULL, "CHPL_DEBUG", setDebug},
+ {"debug", ' ', NULL, "Compile code in the best way for debugging", "F", &fDebug, "CHPL_DEBUG", setDebug},
  {"debug-symbols", 'g', NULL, "[Don't] Generate debug symbols", "N", &fDebugSymbols, "CHPL_DEBUG_SYMBOLS", setDebugSymbols},
- {"optimized-debug", ' ', NULL, "Turn off select Chapel optimizations that interfere with debugging", "F", NULL, "CHPL_OPTIMIZED_DEBUG", setOptimizedDebug},
+ {"optimized-debug", ' ', NULL, "Turn off select Chapel optimizations that interfere with debugging", "F", &fOptimizedDebug, "CHPL_OPTIMIZED_DEBUG", setOptimizedDebug},
 
  {"", ' ', NULL, "Optimization Control Options", NULL, NULL, NULL, NULL},
  {"baseline", ' ', NULL, "Disable all Chapel optimizations", "F", &fBaseline, "CHPL_BASELINE", setBaselineFlag},
@@ -2166,6 +2169,13 @@ static void checkTargetCpu() {
   }
 }
 
+static void checkDebugFlag() {
+  if (fDebug) {
+    USR_WARN("'--debug' implies '--optimized-debug'."
+             " If you only want debug symbols, use '-g' or '--debug-symbols'.");
+  }
+}
+
 static void checkIncrementalAndOptimized() {
   std::size_t optimizationsEnabled = ccflags.find("-O");
   if(fIncrementalCompilation && ( optimizeCCode ||
@@ -2363,6 +2373,9 @@ static void validateSettings() {
   checkNotLibraryAndMinimalModules();
 
   checkLLVMCodeGen();
+
+  checkDebugFlag();
+
 
   checkTargetCpu();
 
