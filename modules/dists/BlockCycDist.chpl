@@ -294,7 +294,8 @@ class BlockCyclicImpl : BaseDist, writeSerializable {
     if boundsChecking {
       for param i in 0..#rank {
         if this.blocksize(i) <= 0 {
-          halt("blocksize must be positive");
+          halt("blocksize must be positive - got blocksize " +
+               this.blocksize:string + " instead");
         }
       }
     }
