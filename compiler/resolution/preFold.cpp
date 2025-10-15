@@ -116,10 +116,13 @@ Expr* preFold(CallExpr* call) {
       call->replace(retval);
 
     } else {
-      if (symExpr->symbol()->hasFlag(FLAG_TYPE_VARIABLE) &&
+      auto isTypeVariable = symExpr->symbol()->hasFlag(FLAG_TYPE_VARIABLE);
+      if (isTypeVariable &&
           symExpr->getValType()->symbol->hasFlag(FLAG_TUPLE) == false) {
+        // do nothing for non-tuple type variables
 
-      } else if (isLcnSymbol(symExpr->symbol())) {
+      } else if (isLcnSymbol(symExpr->symbol()) ||
+                 (isTypeSymbol(symExpr->symbol()) && isTypeVariable)) {
         if (!isFunctionType(symExpr->symbol()->getValType())) {
           baseExpr->replace(new UnresolvedSymExpr("this"));
           call->insertAtHead(baseExpr);
@@ -2764,7 +2767,7 @@ static Expr* preFoldNamed(CallExpr* call) {
 
     Symbol* sym = base->symbol();
 
-    if (isVarSymbol(sym)                 == true &&
+    if ((isVarSymbol(sym) || isTypeSymbol(sym)) &&
         sym->hasFlag(FLAG_TYPE_VARIABLE) == true) {
       int64_t index    =        0;
       char    field[8] = { '\0' };
