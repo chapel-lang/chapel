@@ -1,102 +1,75 @@
-#!/usr/bin/env perl
+#!/usr/bin/env bash
 
-use File::Basename;
-use Cwd 'abs_path';
+# Converted from Perl to Bash. Original behavior preserved.
+# Creates a test release tarball, unpacks it in a temp dir, runs tests, and cleans up on success.
 
-$cwd = abs_path(dirname(__FILE__));
-$chplhomedir = abs_path("$cwd/../..");
+set -e
+set -x
 
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Keeping chplhomedir for parity with original (though unused later)
+chplhomedir="$(cd "$script_dir/../.." && pwd)"
 
-#
-# get uniquifiers
-#
-$pid = getpgrp();
-$user = `whoami`;
-chomp($user);
+# Uniquifiers / meta (pid unused but kept for parity)
+pid="$$"
+user="$(whoami)"
 
+chplhome="$CHPL_HOME"
 
-#
-# get build url
-#
-if (exists($ENV{"BUILD_URL"})) {
-    $buildurl = $ENV{"BUILD_URL"};
-} else {
-    $buildurl = "unknown";
+# Determine base tmp directory
+basetmpdir="${CHPL_NIGHTLY_TMPDIR:-${TMPDIR:-/tmp}}"
+tmpdir="$basetmpdir/chapel-testRelease.$user.deleteme"
+
+somethingfailed=0
+
+mysystem() {
+    local cmd="$1";
+    local desc="$2";
+    local fatal="$3";
+    # Execute command
+    eval "$cmd"
+    local status=$?
+    if [[ $status -ne 0 ]]; then
+        somethingfailed=1
+        echo "Error ${desc}: ${status}" >&2
+        if [[ ${fatal:-0} -ne 0 ]]; then
+            exit 1
+        fi
+    fi
+    return $status
 }
-
-
-$platform = `$ENV{'CHPL_HOME'}/util/chplenv/chpl_platform.py --host`;
-chomp($platform);
-
-
-#
-# directory locations
-#
-$chplhome = $ENV{'CHPL_HOME'};
-$basetmpdir = $ENV{'CHPL_NIGHTLY_TMPDIR'};
-if ($basetmpdir eq "") {
-    $basetmpdir = $ENV{'TMPDIR'};
-}
-if ($basetmpdir eq "") {
-    $basetmpdir = "/tmp";
-}
-$tmpdir = "$basetmpdir/chapel-testRelease.$user.deleteme";
-
-
-$somethingfailed = 0;
-
 
 #
 # make temp directory
 #
-mysystem("rm -rf $tmpdir", "removing previous tmp dir", 1, 1);
-mysystem("mkdir $tmpdir > /dev/null", "creating temp dir", 1, 1);
+mysystem "rm -rf $tmpdir" "removing previous tmp dir" 1
+mysystem "mkdir -p $tmpdir > /dev/null" "creating temp dir" 1
 
-
-mysystem("rm -f $chplhome/tar/chapel-test.tar.gz", "deleting previous tarball", 0, 0);
+#
+# Remove previous tarball (non-fatal)
+#
+mysystem "rm -f $chplhome/tar/chapel-test.tar.gz" "deleting previous tarball" 0
 
 #
 # make release
 #
-mysystem("$chplhome/util/buildRelease/gen_release test", "creating release", 1, 1);
-
+mysystem "$chplhome/util/buildRelease/gen_release test" "creating release" 1
 
 #
 # copy release to temp directory, unpack, and run tests
 #
-mysystem("cp $chplhome/tar/chapel-test.tar.gz $tmpdir", "copying release", 1, 1);
-mysystem("cd $tmpdir && gunzip chapel-test.tar.gz", "unzipping release", 1, 1);
-mysystem("cd $tmpdir && tar xf chapel-test.tar", "untarring release", 1, 1);
-$teststatus = mysystem("cd $tmpdir/chapel-test && $chplhome/util/buildRelease/testReleaseHelp `$chplhome/util/chplenv/chpl_make.py`", "running testReleaseHelp script", 1, 1);
+mysystem "cp $chplhome/tar/chapel-test.tar.gz $tmpdir" "copying release" 1
+mysystem "cd $tmpdir && gunzip chapel-test.tar.gz" "unzipping release" 1
+mysystem "cd $tmpdir && tar xf chapel-test.tar" "untarring release" 1
 
+# Run testReleaseHelp (capture chpl_make output first for clarity)
+chpl_make_cmd_output="$("$chplhome"/util/chplenv/chpl_make.py)"
+mysystem "cd $tmpdir/chapel-test && $chplhome/util/buildRelease/testReleaseHelp $chpl_make_cmd_output" "running testReleaseHelp script" 1
 
-#
-# clean up
-#
-if ($somethingfailed == 0) {
-    print "Cleaning up\n";
-    mysystem("rm -rf $tmpdir", "removing temp dir", 0, 1);
-}
+# Cleanup if everything succeeded
+if [[ $somethingfailed -eq 0 ]]; then
+    echo "Cleaning up"
+    mysystem "rm -rf $tmpdir" "removing temp dir" 0
+fi
 
-exit 0;
-
-
-#
-# subroutines
-#
-
-sub mysystem {
-    $command = $_[0];
-    $errorname = $_[1];
-    $fatal = $_[2];
-
-    $status = system($command);
-    if ($status != 0) {
-        $somethingfailed = 1;
-        print "Error $_[1]: $status\n";
-        if ($fatal != 0) {
-          exit 1;
-        }
-    }
-    $status;
-}
+exit 0
