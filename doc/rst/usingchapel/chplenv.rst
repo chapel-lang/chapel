@@ -319,25 +319,11 @@ CHPL_TARGET_CPU
         none      No specialization will be performed (will not warn)
         ========  =============================================================
 
-        **Architecture-specific values**
-
-        =========== ================ ================
-        intel       amd              arm
-        =========== ================ ================
-        core2           k8           aarch64
-        nehalem         k8sse3       thunderx
-        westmere        barcelona    thunderx2t99
-        sandybridge     bdver1
-        ivybridge       bdver2
-        haswell         bdver3
-        broadwell       bdver4
-        skylake
-        =========== ================ ================
-
-   These values are defined to be the same as in GCC 7:
-
-        https://gcc.gnu.org/onlinedocs/gcc-7.3.0/gcc/x86-Options.html
-        https://gcc.gnu.org/onlinedocs/gcc-7.3.0/gcc/AArch64-Options.html
+   You can also manually specify the architecture to specialize for. See
+   https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html#index-march-15 and
+   https://gcc.gnu.org/onlinedocs/gcc/AArch64-Options.html#index-march for a
+   list of possibly valid options. The exact architecture specific options
+   supported will depend on the backend C compiler being used.
 
    If you do not want ``CHPL_TARGET_CPU`` to have any effect, you can set it
    to either ``unknown`` or ``none``. Both will disable specialization, but the
