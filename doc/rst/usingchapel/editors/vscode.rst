@@ -37,10 +37,13 @@ Open the settings for the Chapel extension and set
 of the Chapel language server and chplcheck executables, respectively.
 
 
+Building and running Chapel code
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 .. _vscode-debugging:
 
 Debugging in VSCode
-~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^
 
 The Chapel VSCode extension provides builtin support for debugging Chapel
 programs. Users can set breakpoints and inspect variables directly in the
@@ -63,8 +66,8 @@ See :ref:`readme-debugging-bkc` for the best way to build your Chapel program
 for the best possible experience. Other configurations do work, but this works
 best.
 
-Building and running Chapel code with Tasks
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Using Tasks
+^^^^^^^^^^^
 
 The Chapel extension also provides support for building and running Chapel code
 with the ``chpl`` and ``chpl-run`` tasks. The extension automatically detects
@@ -74,3 +77,12 @@ in the ``.vscode`` directory of your project. See the `VSCode documentation on t
 <https://code.visualstudio.com/docs/editor/tasks>`_ for more information on
 creating tasks. For a good starting point, it is recommended to reconfigure one of
 the default tasks.
+
+Running Unit Tests
+^^^^^^^^^^^^^^^^^^
+
+If you have written tests for your project using the :chpl:mod:`UnitTest`
+module, the VSCode extension and language server provide support for
+automatically detecting and running those tests. You can run all tests in a
+file or run individual tests by clicking on the "Run Test" button that appears
+above the test function definition.
