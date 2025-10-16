@@ -255,12 +255,58 @@ static void test5() {
   }
 }
 
+// Test that a record with a field whose type is generic-with-defaults
+// is treated as concrete (regression test for issue #25987)
+static void test6() {
+  printf("test6\n");
+  Context ctx;
+  auto context = &ctx;
+
+  // GRD is generic with defaults, J has a field of type GRD
+  // J should be concrete (not instantiated from a generic)
+  std::string program = R""""(
+    record GRD {
+      type t = int;
+    }
+
+    record J {
+      var myfield: GRD;
+    }
+
+    var x: J = new J(new GRD(int));
+  )"""";
+
+  QualifiedType qt = resolveQualifiedTypeOfX(context, program);
+
+  assert(qt.type() && qt.type()->isRecordType());
+  auto ct = qt.type()->toRecordType();
+  // J should be concrete (not instantiated from a generic)
+  assert(ct->instantiatedFrom() == nullptr);
+
+  auto rc = createDummyRC(context);
+  auto& fields = chpl::resolution::fieldsForTypeDecl(&rc, ct,
+      chpl::resolution::DefaultsPolicy::USE_DEFAULTS);
+  assert(fields.numFields() == 1);
+  assert(fields.fieldName(0) == "myfield");
+
+  // The field should have concrete type GRD(int)
+  auto fieldType = fields.fieldType(0);
+  assert(fieldType.kind() == QualifiedType::VAR);
+  assert(fieldType.type() && fieldType.type()->isRecordType());
+  auto fieldRt = fieldType.type()->toRecordType();
+  assert(fieldRt);
+  assert(fieldRt->name() == "GRD");
+  // The field's type should be instantiated from generic GRD
+  assert(fieldRt->instantiatedFrom() != nullptr);
+}
+
 int main() {
   test1();
   test2();
   test3();
   test4();
   test5();
+  test6();
 
   return 0;
 }
