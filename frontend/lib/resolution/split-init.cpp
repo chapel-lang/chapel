@@ -23,6 +23,7 @@
 #include "chpl/resolution/ResolvedVisitor.h"
 #include "chpl/resolution/resolution-types.h"
 #include "chpl/resolution/scope-queries.h"
+#include "chpl/resolution/resolution-queries.h"
 #include "chpl/framework/ErrorBase.h"
 #include "chpl/uast/all-uast.h"
 
@@ -143,6 +144,33 @@ void FindSplitInits::handleInitOrAssign(ID varId,
     QualifiedType::Kind kind = QualifiedType::VAR;
     if (rv.hasId(varId)) {
       kind = rv.byId(varId).type().kind();
+    }
+
+    // if the variable was declared with an explicit type, use that type
+    // instead of the rhs type. Later, call-init will invoke init= if
+    // needed.
+    auto decl = parsing::idToAst(context, varId);
+    CHPL_ASSERT(decl->isVarLikeDecl());
+    auto vld = decl->toVarLikeDecl();
+    if (auto te = vld->typeExpression()) {
+      auto qt = rv.byAst(te).type();
+
+      bool useDeclType = !qt.isUnknownOrErroneous();
+
+      // spec says: if the declared type is generic, then all assignment statements
+      // must contain an initializer of the same type.
+      // So, if the decalred type is generic, we use the rhs type, which
+      // will later be compared against all other rhs types.
+      if (useDeclType) {
+        auto g = getTypeGenericity(context, qt.type());
+        if (g == Type::GENERIC) {
+          useDeclType = false;
+        }
+      }
+
+      if (useDeclType) {
+        rhsType = qt;
+      }
     }
 
     const Param* p = rhsType.param();
