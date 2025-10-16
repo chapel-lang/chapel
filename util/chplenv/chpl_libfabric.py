@@ -86,7 +86,7 @@ def get_link_args():
         else:
             # Try using pkg-config to get the libraries to link
             # libfabric with.
-            tup = third_party_utils.pkgconfig_get_system_link_args('libfabric')
+            tup = third_party_utils.pkgconfig_get_system_link_args('libfabric', False)
             if tup == (None, None):
                 error("Could not find a system install of 'libfabric', try setting LIBFABRIC_DIR")
             # put the two lists together (but expect tup[0] to be empty)
@@ -105,8 +105,20 @@ def get_link_args():
 
 
 def _main():
-    libfabric_val = get()
-    sys.stdout.write("{0}\n".format(libfabric_val))
+    import optparse
+    parser = optparse.OptionParser(usage='usage: %prog [options]')
+    parser.add_option('--compile', dest='which', action='store_const',
+                      const='compile', default=None)
+    parser.add_option('--link', dest='which', action='store_const',
+                      const='link')
+    options, args = parser.parse_args()
+    if options.which == 'compile':
+        val = get_compile_args()
+    elif options.which == 'link':
+        val = get_link_args()
+    else:
+        val = get()
+    sys.stdout.write("{0}\n".format(val))
 
 
 if __name__ == '__main__':
