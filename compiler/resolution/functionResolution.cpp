@@ -7409,10 +7409,10 @@ static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn) {
       // If we're performing a copy, the type might change (e.g., array view
       // becomes array). In that case, make the formal type be the post-copy type.
       auto determineType = [formal](Type* t) {
-        Type* copyType;
-        if (inOrOutFormalNeedingCopyType(formal) &&
-            (copyType = getCopyTypeDuringResolution(t->getValType()))) {
-          return copyType;
+        if (inOrOutFormalNeedingCopyType(formal)) {
+          if (Type* copyType = getCopyTypeDuringResolution(t->getValType())) {
+            return copyType;
+          }
         }
         return t;
       };
