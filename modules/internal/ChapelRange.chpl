@@ -3223,9 +3223,11 @@ private proc isBCPindex(type t) param do
     if boundsChecking && isIntType(count.type) && count < 0 then
       HaltWrappers.boundsCheckHalt("With a negative count, the range must have a last index.");
 
+    pragma "no user debug info"
     const start = low;
     // The cast to uint in the 'then' clause avoids avoids a C compile-time
     // warnings when 'low' is min(int)
+    pragma "no user debug info"
     const end = if count == 0 then (low:uint - 1):low.type
                               else (low + (count:low.type - 1)):low.type;
 
@@ -3244,6 +3246,7 @@ private proc isBCPindex(type t) param do
       if boundsChecking then
         chpl_checkIfRangeIterWillOverflow(t, low, high, stride);
 
+      pragma "no user debug info"
       var i: t;
       while __primitive("C for loop",
                         __primitive( "=", i, low),
@@ -3260,6 +3263,7 @@ private proc isBCPindex(type t) param do
     if (useOptimizedRangeIterators) {
       chpl_range_check_stride(stride, t);
 
+      pragma "no user debug info"
       var i: t;
       if (stride > 0) {
         if boundsChecking then
@@ -3322,8 +3326,11 @@ private proc isBCPindex(type t) param do
     // stride like the bounded iterators. However, all that gets you is the
     // ability to use .low over .first. The additional code isn't
     // worth it just for that.
+    pragma "no user debug info"
     var i: chpl_integralIdxType;
+    pragma "no user debug info"
     const start = chpl__idxToInt(this.first);
+    pragma "no user debug info"
     const end = max(chpl_integralIdxType) - stride: chpl_integralIdxType;
 
     while __primitive("C for loop",
@@ -3358,8 +3365,11 @@ private proc isBCPindex(type t) param do
     // Apart from the computation of 'end' and the comparison used to
     // terminate the C for loop, this iterator follows the bounded-low
     // case above.  See it for additional comments.
+    pragma "no user debug info"
     var i: chpl_integralIdxType;
+    pragma "no user debug info"
     const start = chpl__idxToInt(this.first);
+    pragma "no user debug info"
     const end = min(chpl_integralIdxType) - stride: chpl_integralIdxType;
     while __primitive("C for loop",
                       __primitive( "=", i, start),
@@ -3392,8 +3402,11 @@ private proc isBCPindex(type t) param do
       // must use first/last since we have no knowledge of stride
       // must check if low > high (something like 10..1) because of the !=
       // relational operator. Such ranges are supposed to iterate 0 times
+      pragma "no user debug info"
       var i: chpl_integralIdxType;
+      pragma "no user debug info"
       const start = chpl_firstAsIntForIter;
+      pragma "no user debug info"
       const end: chpl_integralIdxType = if this._low > this._high then start
                               else chpl_lastAsIntForIter + stride: chpl_integralIdxType;
       while __primitive("C for loop",
@@ -3421,8 +3434,11 @@ private proc isBCPindex(type t) param do
       // don't need to check if !isAligned() since stride is one
 
       // can use low/high instead of first/last since stride is one
+      pragma "no user debug info"
       var i: chpl_integralIdxType;
+      pragma "no user debug info"
       const start = chpl__idxToInt(lowBoundForIter(this));
+      pragma "no user debug info"
       const end = chpl__idxToInt(highBoundForIter(this));
 
      if stride == 1 then
@@ -3466,8 +3482,11 @@ private proc isBCPindex(type t) param do
     if boundsChecking && hasAmbiguousAlignmentForIter(this) then
       HaltWrappers.boundsCheckHalt("these -- Attempt to iterate over a range with ambiguous alignment.");
 
+    pragma "no user debug info"
     var i: chpl_integralIdxType;
+    pragma "no user debug info"
     const start = this.first;
+    pragma "no user debug info"
     const end = if this._low > this._high then start else this.last;
 
     while __primitive("C for loop",

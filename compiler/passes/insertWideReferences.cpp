@@ -748,7 +748,8 @@ static void convertNilToObject()
 static void buildWideClass(Type* type) {
   SET_LINENO(type->symbol);
   AggregateType* wide = new AggregateType(AGGREGATE_RECORD);
-  TypeSymbol* wts = new TypeSymbol(astr("__wide_", type->symbol->cname), wide);
+  TypeSymbol* wts = new TypeSymbol(astr("wide(", type->symbol->name, ")"), wide);
+  wts->cname = astr("__wide_", type->symbol->cname);
   wts->addFlag(FLAG_WIDE_CLASS);
   theProgram->block->insertAtTail(new DefExpr(wts));
   wide->fields.insertAtTail(new DefExpr(new VarSymbol("locale", dtLocaleID)));
@@ -810,7 +811,8 @@ static void buildWideRefMap()
       // This preserves the original _ref_T
       if (Type* wide = wideClassMap.get(inner)) {
         refToWideClass = new AggregateType(AGGREGATE_CLASS);
-        TypeSymbol* row = new TypeSymbol(astr("_ref", wide->symbol->cname), refToWideClass);
+        TypeSymbol* row = new TypeSymbol(astr("ref(", wide->symbol->name, ")"), refToWideClass);
+        row->cname = astr("_ref", wide->symbol->cname);
         row->addFlag(FLAG_REF);
         theProgram->block->insertAtTail(new DefExpr(row));
 
@@ -829,9 +831,11 @@ static void buildWideRefMap()
       AggregateType* wideRefType = new AggregateType(AGGREGATE_RECORD);
       TypeSymbol* wideTS = NULL;
       if (refToWideClass) {
-        wideTS = new TypeSymbol(astr("__wide_", refToWideClass->symbol->cname), wideRefType);
+        wideTS = new TypeSymbol(astr("wide(", refToWideClass->symbol->name, ")"), wideRefType);
+        wideTS->cname = astr("__wide_", refToWideClass->symbol->cname);
       } else {
-        wideTS = new TypeSymbol(astr("__wide_", ts->cname), wideRefType);
+        wideTS = new TypeSymbol(astr("wide(", ts->name, ")"), wideRefType);
+        wideTS->cname = astr("__wide_", ts->cname);
       }
 
       wideTS->addFlag(FLAG_WIDE_REF);

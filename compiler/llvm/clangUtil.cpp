@@ -362,8 +362,8 @@ static
 static
 void setupCIntType(::Type*& type, int nbits, bool unsigned_) {
   if (type != NULL) {
-    INT_ASSERT(get_width(type) == nbits);
-    INT_ASSERT(is_signed(type) == !unsigned_);
+    INT_ASSERT(getWidthOfType(type) == nbits);
+    INT_ASSERT(isSignedType(type) == !unsigned_);
   } else {
     type = getIntWithBits(nbits, unsigned_);
   }
@@ -2341,7 +2341,7 @@ void finishCodegenLLVM() {
       llvm::MDString::get(info->module->getContext(), chapel_string))
   );
 
-  if (debug_info) debug_info->finalize();
+  if (debugInfo) debugInfo->finalize();
 
   // finish bringing in symbols from separately compiled .dyno files
   if (fDynoLibGenOrUse && !fDynoGenLib) {

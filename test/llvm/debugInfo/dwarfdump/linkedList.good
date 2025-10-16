@@ -11,7 +11,7 @@ DW_TAG_structure_type
               DW_AT_alignment	(8)
   DW_TAG_member
                 DW_AT_name	("super")
-                DW_AT_type	("ChapelBase::RootClass")
+                DW_AT_type	("RootClass")
                 DW_AT_decl_file	("./linkedList.chpl")
                 DW_AT_decl_line	(4)
                 DW_AT_alignment	(8)
@@ -31,20 +31,6 @@ DW_TAG_structure_type
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x10)
   NULL
-DW_TAG_structure_type
-              DW_AT_name	("MyNode")
-              DW_AT_declaration	(true)
-              DW_AT_alignment	(8)
-DW_TAG_structure_type
-              DW_AT_name	("MyNode")
-              DW_AT_declaration	(true)
-              DW_AT_alignment	(8)
-DW_TAG_pointer_type
-              DW_AT_type	("linkedList::MyNode")
-              DW_AT_name	("MyNode")
-DW_TAG_pointer_type
-              DW_AT_type	("linkedList::MyNode")
-              DW_AT_name	("MyNode")
 DW_TAG_pointer_type
               DW_AT_type	("linkedList::MyNode")
               DW_AT_name	("MyNode")

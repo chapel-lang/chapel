@@ -1,0 +1,701 @@
+1 | true | 3.14 | 2.71i | 1.0 + 2.0i
+(x = 5) | (x = {x = 17}) | E1 | {x = 17} | nil
+hello | world
+Running DWARF verification...
+Success!!
+Running DWARF dump checks...
+===================================mySyncInt====================================
+DW_TAG_variable
+              DW_AT_name	("mySyncInt")
+              DW_AT_decl_file	("./syncs.chpl")
+              DW_AT_decl_line	(50)
+              DW_AT_type	("sync int(64)")
+================================================================================
+==================================sync int(64)==================================
+DW_TAG_structure_type
+              DW_AT_name	("sync int(64)")
+              DW_AT_byte_size	(0x10)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("wrapped")
+                DW_AT_type	("_qthreads_synccls(int(64)) *")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(126)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("isOwned")
+                DW_AT_type	("bool")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(127)
+                DW_AT_alignment	(1)
+                DW_AT_data_member_location	(0x08)
+  NULL
+================================================================================
+===========================_qthreads_synccls(int(64))===========================
+DW_TAG_pointer_type
+              DW_AT_type	("_qthreads_synccls(int(64))")
+              DW_AT_name	("_qthreads_synccls(int(64))")
+DW_TAG_structure_type
+              DW_AT_name	("_qthreads_synccls(int(64))")
+              DW_AT_byte_size	(0x10)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("super")
+                DW_AT_type	("RootClass")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(674)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("alignedValue")
+                DW_AT_type	("aligned_t")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(677)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x08)
+  NULL
+================================================================================
+===================================mySyncBool===================================
+DW_TAG_variable
+              DW_AT_name	("mySyncBool")
+              DW_AT_decl_file	("./syncs.chpl")
+              DW_AT_decl_line	(51)
+              DW_AT_type	("sync bool")
+================================================================================
+===================================sync bool====================================
+DW_TAG_structure_type
+              DW_AT_name	("sync bool")
+              DW_AT_byte_size	(0x10)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("wrapped")
+                DW_AT_type	("_qthreads_synccls(bool) *")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(126)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("isOwned")
+                DW_AT_type	("bool")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(127)
+                DW_AT_alignment	(1)
+                DW_AT_data_member_location	(0x08)
+  NULL
+================================================================================
+============================_qthreads_synccls(bool)=============================
+DW_TAG_pointer_type
+              DW_AT_type	("_qthreads_synccls(bool)")
+              DW_AT_name	("_qthreads_synccls(bool)")
+DW_TAG_structure_type
+              DW_AT_name	("_qthreads_synccls(bool)")
+              DW_AT_byte_size	(0x10)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("super")
+                DW_AT_type	("RootClass")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(674)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("alignedValue")
+                DW_AT_type	("aligned_t")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(677)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x08)
+  NULL
+================================================================================
+===================================mySyncReal===================================
+DW_TAG_variable
+              DW_AT_name	("mySyncReal")
+              DW_AT_decl_file	("./syncs.chpl")
+              DW_AT_decl_line	(52)
+              DW_AT_type	("sync real(64)")
+================================================================================
+=================================sync real(64)==================================
+DW_TAG_structure_type
+              DW_AT_name	("sync real(64)")
+              DW_AT_byte_size	(0x10)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("wrapped")
+                DW_AT_type	("_synccls(real(64)) *")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(126)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("isOwned")
+                DW_AT_type	("bool")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(127)
+                DW_AT_alignment	(1)
+                DW_AT_data_member_location	(0x08)
+  NULL
+================================================================================
+===============================_synccls(real(64))===============================
+DW_TAG_pointer_type
+              DW_AT_type	("_synccls(real(64))")
+              DW_AT_name	("_synccls(real(64))")
+DW_TAG_structure_type
+              DW_AT_name	("_synccls(real(64))")
+              DW_AT_byte_size	(0x30)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("super")
+                DW_AT_type	("RootClass")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(456)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("value")
+                DW_AT_type	("real(64)")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(460)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x08)
+  DW_TAG_member
+                DW_AT_name	("syncAux")
+                DW_AT_type	("chpl_sync_aux_t")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(462)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x10)
+  NULL
+================================================================================
+===================================mySyncImag===================================
+DW_TAG_variable
+              DW_AT_name	("mySyncImag")
+              DW_AT_decl_file	("./syncs.chpl")
+              DW_AT_decl_line	(53)
+              DW_AT_type	("sync imag(64)")
+================================================================================
+=================================sync imag(64)==================================
+DW_TAG_structure_type
+              DW_AT_name	("sync imag(64)")
+              DW_AT_byte_size	(0x10)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("wrapped")
+                DW_AT_type	("_synccls(imag(64)) *")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(126)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("isOwned")
+                DW_AT_type	("bool")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(127)
+                DW_AT_alignment	(1)
+                DW_AT_data_member_location	(0x08)
+  NULL
+================================================================================
+===============================_synccls(imag(64))===============================
+DW_TAG_pointer_type
+              DW_AT_type	("_synccls(imag(64))")
+              DW_AT_name	("_synccls(imag(64))")
+DW_TAG_structure_type
+              DW_AT_name	("_synccls(imag(64))")
+              DW_AT_byte_size	(0x30)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("super")
+                DW_AT_type	("RootClass")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(456)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("value")
+                DW_AT_type	("imag(64)")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(460)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x08)
+  DW_TAG_member
+                DW_AT_name	("syncAux")
+                DW_AT_type	("chpl_sync_aux_t")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(462)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x10)
+  NULL
+================================================================================
+=================================mySyncComplex==================================
+DW_TAG_variable
+              DW_AT_name	("mySyncComplex")
+              DW_AT_decl_file	("./syncs.chpl")
+              DW_AT_decl_line	(54)
+              DW_AT_type	("sync complex(128)")
+================================================================================
+===============================sync complex(128)================================
+DW_TAG_structure_type
+              DW_AT_name	("sync complex(128)")
+              DW_AT_byte_size	(0x10)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("wrapped")
+                DW_AT_type	("_synccls(complex(128)) *")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(126)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("isOwned")
+                DW_AT_type	("bool")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(127)
+                DW_AT_alignment	(1)
+                DW_AT_data_member_location	(0x08)
+  NULL
+================================================================================
+=============================_synccls(complex(128))=============================
+DW_TAG_pointer_type
+              DW_AT_type	("_synccls(complex(128))")
+              DW_AT_name	("_synccls(complex(128))")
+DW_TAG_structure_type
+              DW_AT_name	("_synccls(complex(128))")
+              DW_AT_byte_size	(0x38)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("super")
+                DW_AT_type	("RootClass")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(456)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("value")
+                DW_AT_type	("complex(128)")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(460)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x08)
+  DW_TAG_member
+                DW_AT_name	("syncAux")
+                DW_AT_type	("chpl_sync_aux_t")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(462)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x18)
+  NULL
+================================================================================
+==================================mySyncRecord==================================
+DW_TAG_variable
+              DW_AT_name	("mySyncRecord")
+              DW_AT_decl_file	("./syncs.chpl")
+              DW_AT_decl_line	(55)
+              DW_AT_type	("sync myRecord(int(64))")
+================================================================================
+=============================sync myRecord(int(64))=============================
+DW_TAG_structure_type
+              DW_AT_name	("sync myRecord(int(64))")
+              DW_AT_byte_size	(0x10)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("wrapped")
+                DW_AT_type	("_synccls(myRecord(int(64))) *")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(126)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("isOwned")
+                DW_AT_type	("bool")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(127)
+                DW_AT_alignment	(1)
+                DW_AT_data_member_location	(0x08)
+  NULL
+================================================================================
+==========================_synccls(myRecord(int(64)))===========================
+DW_TAG_pointer_type
+              DW_AT_type	("_synccls(myRecord(int(64)))")
+              DW_AT_name	("_synccls(myRecord(int(64)))")
+DW_TAG_structure_type
+              DW_AT_name	("_synccls(myRecord(int(64)))")
+              DW_AT_byte_size	(0x30)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("super")
+                DW_AT_type	("RootClass")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(456)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("value")
+                DW_AT_type	("syncs::myRecord(int(64))")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(460)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x08)
+  DW_TAG_member
+                DW_AT_name	("syncAux")
+                DW_AT_type	("chpl_sync_aux_t")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(462)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x10)
+  NULL
+================================================================================
+==================================mySyncRecord==================================
+DW_TAG_variable
+              DW_AT_name	("mySyncRecord")
+              DW_AT_decl_file	("./syncs.chpl")
+              DW_AT_decl_line	(55)
+              DW_AT_type	("sync myRecord(int(64))")
+================================================================================
+==========================sync myRecord(owned MyClass)==========================
+DW_TAG_structure_type
+              DW_AT_name	("sync myRecord(owned MyClass)")
+              DW_AT_byte_size	(0x10)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("wrapped")
+                DW_AT_type	("_synccls(myRecord(owned MyClass)) *")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(126)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("isOwned")
+                DW_AT_type	("bool")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(127)
+                DW_AT_alignment	(1)
+                DW_AT_data_member_location	(0x08)
+  NULL
+================================================================================
+=======================_synccls(myRecord(owned MyClass))========================
+DW_TAG_pointer_type
+              DW_AT_type	("_synccls(myRecord(owned MyClass))")
+              DW_AT_name	("_synccls(myRecord(owned MyClass))")
+DW_TAG_structure_type
+              DW_AT_name	("_synccls(myRecord(owned MyClass))")
+              DW_AT_byte_size	(0x30)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("super")
+                DW_AT_type	("RootClass")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(456)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("value")
+                DW_AT_type	("syncs::myRecord(owned MyClass)")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(460)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x08)
+  DW_TAG_member
+                DW_AT_name	("syncAux")
+                DW_AT_type	("chpl_sync_aux_t")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(462)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x10)
+  NULL
+================================================================================
+===================================mySyncEnum===================================
+DW_TAG_variable
+              DW_AT_name	("mySyncEnum")
+              DW_AT_decl_file	("./syncs.chpl")
+              DW_AT_decl_line	(57)
+              DW_AT_type	("sync myEnum")
+================================================================================
+==================================sync myEnum===================================
+DW_TAG_structure_type
+              DW_AT_name	("sync myEnum")
+              DW_AT_byte_size	(0x10)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("wrapped")
+                DW_AT_type	("_synccls(myEnum) *")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(126)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("isOwned")
+                DW_AT_type	("bool")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(127)
+                DW_AT_alignment	(1)
+                DW_AT_data_member_location	(0x08)
+  NULL
+================================================================================
+================================_synccls(myEnum)================================
+DW_TAG_pointer_type
+              DW_AT_type	("_synccls(myEnum)")
+              DW_AT_name	("_synccls(myEnum)")
+DW_TAG_structure_type
+              DW_AT_name	("_synccls(myEnum)")
+              DW_AT_byte_size	(0x30)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("super")
+                DW_AT_type	("RootClass")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(456)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("value")
+                DW_AT_type	("syncs::myEnum")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(460)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x08)
+  DW_TAG_member
+                DW_AT_name	("syncAux")
+                DW_AT_type	("chpl_sync_aux_t")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(462)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x10)
+  NULL
+================================================================================
+==================================mySyncClass===================================
+DW_TAG_variable
+              DW_AT_name	("mySyncClass")
+              DW_AT_decl_file	("./syncs.chpl")
+              DW_AT_decl_line	(58)
+              DW_AT_type	("sync shared MyClass")
+================================================================================
+==============================sync shared MyClass===============================
+DW_TAG_structure_type
+              DW_AT_name	("sync shared MyClass")
+              DW_AT_byte_size	(0x10)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("wrapped")
+                DW_AT_type	("_synccls(shared MyClass) *")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(126)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("isOwned")
+                DW_AT_type	("bool")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(127)
+                DW_AT_alignment	(1)
+                DW_AT_data_member_location	(0x08)
+  NULL
+================================================================================
+============================_synccls(shared MyClass)============================
+DW_TAG_pointer_type
+              DW_AT_type	("_synccls(shared MyClass)")
+              DW_AT_name	("_synccls(shared MyClass)")
+DW_TAG_structure_type
+              DW_AT_name	("_synccls(shared MyClass)")
+              DW_AT_byte_size	(0x38)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("super")
+                DW_AT_type	("RootClass")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(456)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("value")
+                DW_AT_type	("shared MyClass")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(460)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x08)
+  DW_TAG_member
+                DW_AT_name	("syncAux")
+                DW_AT_type	("chpl_sync_aux_t")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(462)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x18)
+  NULL
+================================================================================
+===============================mySyncNilableClass===============================
+DW_TAG_variable
+              DW_AT_name	("mySyncNilableClass")
+              DW_AT_decl_file	("./syncs.chpl")
+              DW_AT_decl_line	(59)
+              DW_AT_type	("sync borrowed MyClass?")
+================================================================================
+=============================sync borrowed MyClass?=============================
+DW_TAG_structure_type
+              DW_AT_name	("sync borrowed MyClass?")
+              DW_AT_byte_size	(0x10)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("wrapped")
+                DW_AT_type	("_synccls(borrowed MyClass?) *")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(126)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("isOwned")
+                DW_AT_type	("bool")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(127)
+                DW_AT_alignment	(1)
+                DW_AT_data_member_location	(0x08)
+  NULL
+================================================================================
+==========================_synccls(borrowed MyClass?)===========================
+DW_TAG_pointer_type
+              DW_AT_type	("_synccls(borrowed MyClass?)")
+              DW_AT_name	("_synccls(borrowed MyClass?)")
+DW_TAG_structure_type
+              DW_AT_name	("_synccls(borrowed MyClass?)")
+              DW_AT_byte_size	(0x30)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("super")
+                DW_AT_type	("RootClass")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(456)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("value")
+                DW_AT_type	("syncs::MyClass *")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(460)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x08)
+  DW_TAG_member
+                DW_AT_name	("syncAux")
+                DW_AT_type	("chpl_sync_aux_t")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(462)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x10)
+  NULL
+================================================================================
+==================================mySyncString==================================
+DW_TAG_variable
+              DW_AT_name	("mySyncString")
+              DW_AT_decl_file	("./syncs.chpl")
+              DW_AT_decl_line	(60)
+              DW_AT_type	("sync string")
+================================================================================
+==================================sync string===================================
+DW_TAG_structure_type
+              DW_AT_name	("sync string")
+              DW_AT_byte_size	(0x10)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("wrapped")
+                DW_AT_type	("_synccls(string) *")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(126)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("isOwned")
+                DW_AT_type	("bool")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(127)
+                DW_AT_alignment	(1)
+                DW_AT_data_member_location	(0x08)
+  NULL
+================================================================================
+================================_synccls(string)================================
+DW_TAG_pointer_type
+              DW_AT_type	("_synccls(string)")
+              DW_AT_name	("_synccls(string)")
+DW_TAG_structure_type
+              DW_AT_name	("_synccls(string)")
+              DW_AT_byte_size	(0x50)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("super")
+                DW_AT_type	("RootClass")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(456)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("value")
+                DW_AT_type	("string")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(460)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x08)
+  DW_TAG_member
+                DW_AT_name	("syncAux")
+                DW_AT_type	("chpl_sync_aux_t")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(462)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x30)
+  NULL
+================================================================================
+==================================mySyncBytes===================================
+DW_TAG_variable
+              DW_AT_name	("mySyncBytes")
+              DW_AT_decl_file	("./syncs.chpl")
+              DW_AT_decl_line	(61)
+              DW_AT_type	("sync bytes")
+================================================================================
+===================================sync bytes===================================
+DW_TAG_structure_type
+              DW_AT_name	("sync bytes")
+              DW_AT_byte_size	(0x10)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("wrapped")
+                DW_AT_type	("_synccls(bytes) *")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(126)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("isOwned")
+                DW_AT_type	("bool")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(127)
+                DW_AT_alignment	(1)
+                DW_AT_data_member_location	(0x08)
+  NULL
+================================================================================
+================================_synccls(bytes)=================================
+DW_TAG_pointer_type
+              DW_AT_type	("_synccls(bytes)")
+              DW_AT_name	("_synccls(bytes)")
+DW_TAG_structure_type
+              DW_AT_name	("_synccls(bytes)")
+              DW_AT_byte_size	(0x48)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("super")
+                DW_AT_type	("RootClass")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(456)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("value")
+                DW_AT_type	("Bytes::bytes")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(460)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x08)
+  DW_TAG_member
+                DW_AT_name	("syncAux")
+                DW_AT_type	("chpl_sync_aux_t")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
+                DW_AT_decl_line	(462)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x28)
+  NULL
+================================================================================
+Success!!

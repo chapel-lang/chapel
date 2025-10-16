@@ -1577,12 +1577,12 @@ static const char* buildValueName(Symbol* field, bool cname) {
         ret += buf;
       }
 
-      if (is_int_type(type) ||
-          is_uint_type(type) ||
-          is_bool_type(type) ||
-          is_real_type(type) ||
-          is_imag_type(type) ||
-          is_complex_type(type)) {
+      if (isIntType(type) ||
+          isUIntType(type) ||
+          isBoolType(type) ||
+          isRealType(type) ||
+          isImagType(type) ||
+          isComplexType(type)) {
         if (!isNumericParamDefaultType(type)) {
           if (!cname) {
             ret += ":";
@@ -1591,7 +1591,7 @@ static const char* buildValueName(Symbol* field, bool cname) {
             // TODO: The result of this is kind of weird. For example, if I have
             // a param uint(8) of '100' the string will be '1008'.
             char buf[16];
-            snprintf(buf, sizeof(buf), "%i", get_width(type));
+            snprintf(buf, sizeof(buf), "%i", getWidthOfType(type));
             ret += buf;
           }
         }

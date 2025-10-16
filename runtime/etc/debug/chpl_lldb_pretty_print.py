@@ -64,7 +64,7 @@ range_regex_c = re.compile(
     r"^range_(?P<eltType>[a-zA-Z0-9_]+)_(?P<boundsKind>both|low|high|neither)_(?P<stride>one|negOne|positive|negative|any)(?:_chpl)?$"
 )
 range_regex_llvm = re.compile(
-    r"^ChapelRange::range\((?P<eltType>[a-zA-Z0-9_()]+),(?P<boundsKind>both|low|high|neither),(?P<stride>one|negOne|positive|negative|any)\)$"
+    r"^range\((?P<eltType>[a-zA-Z0-9_()]+),(?P<boundsKind>both|low|high|neither),(?P<stride>one|negOne|positive|negative|any)\)$"
 )
 
 
@@ -477,8 +477,8 @@ class ArrayProvider:
         )
 
 
-owned_regex = re.compile(r"^((_owned_.+(_chpl)?)|(OwnedObject::owned .+))$")
-shared_regex = re.compile(r"^((_shared_.+(_chpl)?)|(SharedObject::shared .+))$")
+owned_regex = re.compile(r"^((_owned_.+(_chpl)?)|(owned .+))$")
+shared_regex = re.compile(r"^((_shared_.+(_chpl)?)|(shared .+))$")
 
 
 def ManagedObjectRecognizer(sbtype, internal_dict):
@@ -556,7 +556,7 @@ def __lldb_init_module(debugger, internal_dict):
     register(
         "StringSummary",
         "StringProvider",
-        regex("(string(_chpl)?)|String::string"),
+        regex("string(_chpl)?"),
     )
     register("RangeSummary", "RangeProvider", recognizer("RangeRecognizer"))
     register("DomainSummary", "DomainProvider", recognizer("DomainRecognizer"))
@@ -566,3 +566,14 @@ def __lldb_init_module(debugger, internal_dict):
         "ManagedObjectProvider",
         recognizer("ManagedObjectRecognizer"),
     )
+
+    # make sure int(8) and uint(8) show up as numbers, not characters
+    # we have to handle char types as well because lldb doesn't cascade through
+    # things like atomics properly
+    debugger.HandleCommand("type format add -p -r --format u 'uint(8)'")
+    debugger.HandleCommand("type format add -p -r --format d 'int(8)'")
+    debugger.HandleCommand("type format add -p -r --format u 'uint8_t'")
+    debugger.HandleCommand("type format add -p -r --format d 'int8_t'")
+    debugger.HandleCommand("type format add -p -r --format u 'unsigned char'")
+    debugger.HandleCommand("type format add -p -r --format d 'signed char'")
+    debugger.HandleCommand("type format add -p -r --format d 'char'")

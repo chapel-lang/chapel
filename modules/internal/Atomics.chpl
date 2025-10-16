@@ -216,7 +216,7 @@ module Atomics {
     if isInt(valType)  then return "int_least"  + numBits(valType):string + "_t";
     if isUint(valType) then return "uint_least" + numBits(valType):string + "_t";
     if isReal(valType) then return "_real"      + numBits(valType):string;
-    if isPointerType(valType) then return "uintptr_t";
+    if isAnyCPtr(valType) then return "uintptr_t";
   }
 
   private proc externFunc(param s: string, type valType, param explicit=true) param {
@@ -304,6 +304,7 @@ module Atomics {
       extern externFunc("load", bool)
         proc atomic_load(const ref obj:externT(bool), order:memory_order): bool;
 
+      pragma "no user debug info"
       var ret:bool;
       on this do ret = atomic_load(_v, c_memory_order(order));
       return ret;
@@ -328,6 +329,7 @@ module Atomics {
       extern externFunc("exchange", bool)
         proc atomic_exchange(ref obj:externT(bool), val:bool, order:memory_order): bool;
 
+      pragma "no user debug info"
       var ret:bool;
       on this do ret = atomic_exchange(_v, val, c_memory_order(order));
       return ret;
@@ -346,6 +348,7 @@ module Atomics {
       extern externFunc("compare_exchange_strong", bool)
         proc atomic_compare_exchange_strong(ref obj:externT(bool), ref expected:bool, desired:bool, succ:memory_order, fail:memory_order): bool;
 
+      pragma "no user debug info"
       var ret:bool;
       on this {
         var localizedExpected = expected;
@@ -372,6 +375,7 @@ module Atomics {
       extern externFunc("compare_exchange_weak", bool)
         proc atomic_compare_exchange_weak(ref obj:externT(bool), ref expected:bool, desired:bool, succ:memory_order, fail:memory_order): bool;
 
+      pragma "no user debug info"
       var ret:bool;
       on this {
         var localizedExpected = expected;
@@ -391,6 +395,7 @@ module Atomics {
       extern externFunc("compare_exchange_strong", bool)
         proc atomic_compare_exchange_strong(ref obj:externT(bool), ref expected:bool, desired:bool, succ:memory_order, fail:memory_order): bool;
 
+      pragma "no user debug info"
       var ret:bool;
       on this {
         var mutableExpected = expected;
@@ -504,6 +509,7 @@ module Atomics {
       extern externFunc("load", valType)
         proc atomic_load(const ref obj:externT(valType), order:memory_order): valType;
 
+      pragma "no user debug info"
       var ret:valType;
       on this do ret = atomic_load(_v, c_memory_order(order));
       return ret;
@@ -528,6 +534,7 @@ module Atomics {
       extern externFunc("exchange", valType)
         proc atomic_exchange(ref obj:externT(valType), val:valType, order:memory_order): valType;
 
+      pragma "no user debug info"
       var ret:valType;
       on this do ret = atomic_exchange(_v, val, c_memory_order(order));
       return ret;
@@ -546,6 +553,7 @@ module Atomics {
       extern externFunc("compare_exchange_strong", valType)
         proc atomic_compare_exchange_strong(ref obj:externT(valType), ref expected:valType, desired:valType, succ:memory_order, fail:memory_order): bool;
 
+      pragma "no user debug info"
       var ret:bool;
       on this {
         var localizedExpected = expected;
@@ -572,6 +580,7 @@ module Atomics {
       extern externFunc("compare_exchange_weak", valType)
         proc atomic_compare_exchange_weak(ref obj:externT(valType), ref expected:valType, desired:valType, succ:memory_order, fail:memory_order): bool;
 
+      pragma "no user debug info"
       var ret:bool;
       on this {
         var localizedExpected = expected;
@@ -591,6 +600,7 @@ module Atomics {
       extern externFunc("compare_exchange_strong", valType)
         proc atomic_compare_exchange_strong(ref obj:externT(valType), ref expected:valType, desired:valType, succ:memory_order, fail:memory_order): bool;
 
+      pragma "no user debug info"
       var ret:bool;
       on this {
         var mutableExpected = expected;
@@ -610,6 +620,7 @@ module Atomics {
       extern externFunc("fetch_add", valType)
         proc atomic_fetch_add(ref obj:externT(valType), operand:valType, order:memory_order): valType;
 
+      pragma "no user debug info"
       var ret:valType;
       on this do ret = atomic_fetch_add(_v, val, c_memory_order(order));
       return ret;
@@ -638,6 +649,7 @@ module Atomics {
       extern externFunc("fetch_sub", valType)
         proc atomic_fetch_sub(ref obj:externT(valType), operand:valType, order:memory_order): valType;
 
+      pragma "no user debug info"
       var ret:valType;
       on this do ret = atomic_fetch_sub(_v, val, c_memory_order(order));
       return ret;
@@ -669,6 +681,7 @@ module Atomics {
       extern externFunc("fetch_or", valType)
         proc atomic_fetch_or(ref obj:externT(valType), operand:valType, order:memory_order): valType;
 
+      pragma "no user debug info"
       var ret:valType;
       on this do ret = atomic_fetch_or(_v, val, c_memory_order(order));
       return ret;
@@ -703,6 +716,7 @@ module Atomics {
       extern externFunc("fetch_and", valType)
         proc atomic_fetch_and(ref obj:externT(valType), operand:valType, order:memory_order): valType;
 
+      pragma "no user debug info"
       var ret:valType;
       on this do ret = atomic_fetch_and(_v, val, c_memory_order(order));
       return ret;
@@ -737,6 +751,7 @@ module Atomics {
       extern externFunc("fetch_xor", valType)
         proc atomic_fetch_xor(ref obj:externT(valType), operand:valType, order:memory_order): valType;
 
+      pragma "no user debug info"
       var ret:valType;
       on this do ret = atomic_fetch_xor(_v, val, c_memory_order(order));
       return ret;

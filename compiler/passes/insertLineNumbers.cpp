@@ -330,9 +330,11 @@ LineAndFile InsertLineNumbers::getLineAndFileForFn(FnSymbol *fn) {
   } else {
     ArgSymbol* line =
         new ArgSymbol(INTENT_CONST_IN, "_ln", dtInt[INT_SIZE_DEFAULT]);
+    line->addFlag(FLAG_NO_USER_DEBUG_INFO);
     fn->insertFormalAtTail(line);
 
     ArgSymbol* file = new ArgSymbol(INTENT_IN, "_fn", dtInt[INT_SIZE_32]);
+    file->addFlag(FLAG_NO_USER_DEBUG_INFO);
     fn->insertFormalAtTail(file);
 
     result = {line, file};

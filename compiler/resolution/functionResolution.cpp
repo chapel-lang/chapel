@@ -891,32 +891,32 @@ bool canInstantiate(Type* actualType, Type* formalType) {
   }
 
   if (formalType == dtIntegral &&
-      (is_int_type(actualType) || is_uint_type(actualType))) {
+      (isIntType(actualType) || isUIntType(actualType))) {
     return true;
   }
 
-  if (formalType == dtAnyEnumerated && is_enum_type(actualType)) {
+  if (formalType == dtAnyEnumerated && isEnumType(actualType)) {
     return true;
   }
 
   if (formalType == dtNumeric &&
-      (is_int_type(actualType)  ||
-       is_uint_type(actualType) ||
-       is_imag_type(actualType) ||
-       is_real_type(actualType) ||
-       is_complex_type(actualType))) {
+      (isIntType(actualType)  ||
+       isUIntType(actualType) ||
+       isImagType(actualType) ||
+       isRealType(actualType) ||
+       isComplexType(actualType))) {
     return true;
   }
 
-  if (formalType == dtAnyComplex && is_complex_type(actualType)) {
+  if (formalType == dtAnyComplex && isComplexType(actualType)) {
     return true;
   }
 
-  if (formalType == dtAnyImag && is_imag_type(actualType)) {
+  if (formalType == dtAnyImag && isImagType(actualType)) {
     return true;
   }
 
-  if (formalType == dtAnyReal && is_real_type(actualType)) {
+  if (formalType == dtAnyReal && isRealType(actualType)) {
     return true;
   }
 
@@ -1009,18 +1009,18 @@ static bool canParamCoerce(Type*   actualType,
                            Symbol* actualSym,
                            Type*   formalType,
                            bool*   paramNarrows) {
-  if (is_int_type(formalType)) {
-    if (is_bool_type(actualType)) {
+  if (isIntType(formalType)) {
+    if (isBoolType(actualType)) {
       return true;
     }
 
-    if (is_int_type(actualType) &&
-        get_width(actualType) < get_width(formalType)) {
+    if (isIntType(actualType) &&
+        getWidthOfType(actualType) < getWidthOfType(formalType)) {
       return true;
     }
 
-    if (is_uint_type(actualType) &&
-        get_width(actualType) < get_width(formalType)) {
+    if (isUIntType(actualType) &&
+        getWidthOfType(actualType) < getWidthOfType(formalType)) {
       return true;
     }
 
@@ -1031,7 +1031,7 @@ static bool canParamCoerce(Type*   actualType,
     //
     if (VarSymbol* var = toVarSymbol(actualSym)) {
       if (var->immediate) {
-        if (fits_in_int(get_width(formalType), var->immediate)) {
+        if (fits_in_int(getWidthOfType(formalType), var->immediate)) {
           *paramNarrows = true;
           return true;
         }
@@ -1039,13 +1039,13 @@ static bool canParamCoerce(Type*   actualType,
     }
   }
 
-  if (is_uint_type(formalType)) {
-    if (is_bool_type(actualType)) {
+  if (isUIntType(formalType)) {
+    if (isBoolType(actualType)) {
       return true;
     }
 
-    if (is_uint_type(actualType) &&
-        get_width(actualType) < get_width(formalType)) {
+    if (isUIntType(actualType) &&
+        getWidthOfType(actualType) < getWidthOfType(formalType)) {
       return true;
     }
 
@@ -1054,14 +1054,14 @@ static bool canParamCoerce(Type*   actualType,
       imm = var->immediate;
     }
 
-    if (is_int_type(actualType) &&
-        get_width(actualType) <= get_width(formalType)) {
+    if (isIntType(actualType) &&
+        getWidthOfType(actualType) <= getWidthOfType(formalType)) {
       // int can coerce to uint
       return true;
     }
 
     if (imm) {
-      if (fits_in_uint(get_width(formalType), imm)) {
+      if (fits_in_uint(getWidthOfType(formalType), imm)) {
         *paramNarrows = true;
         return true;
       }
@@ -1080,26 +1080,26 @@ static bool canParamCoerce(Type*   actualType,
   }
 
   // coerce fully representable integers into real / real part of complex
-  if (is_real_type(formalType)) {
+  if (isRealType(formalType)) {
     int mantissa_width = get_mantissa_width(formalType);
 
     // don't coerce bools to reals (per spec: "unintended by programmer")
 
-    if (is_int_type(actualType) || is_uint_type(actualType)) {
+    if (isIntType(actualType) || isUIntType(actualType)) {
       // coerce any integer type to any width real
       return true;
     }
 
     // coerce real from smaller size
-    if (is_real_type(actualType) &&
-        get_width(actualType) < get_width(formalType))
+    if (isRealType(actualType) &&
+        getWidthOfType(actualType) < getWidthOfType(formalType))
       return true;
 
     // coerce literal/param ints that are exactly representable
     if (VarSymbol* var = toVarSymbol(actualSym)) {
       if (var->immediate) {
         // int/uint params would be handled by any-int-to-real rule above
-        if (is_real_type(actualType)) {
+        if (isRealType(actualType)) {
           if (fits_in_mantissa_exponent(mantissa_width,
                                         get_exponent_width(formalType),
                                         var->immediate)) {
@@ -1111,18 +1111,18 @@ static bool canParamCoerce(Type*   actualType,
     }
   }
 
-  if (is_imag_type(formalType)) {
+  if (isImagType(formalType)) {
     int mantissa_width = get_mantissa_width(formalType);
 
     // coerce imag from smaller size
-    if (is_imag_type(actualType) &&
-        get_width(actualType) < get_width(formalType))
+    if (isImagType(actualType) &&
+        getWidthOfType(actualType) < getWidthOfType(formalType))
       return true;
 
     // coerce literal/param imag that are exactly representable
     if (VarSymbol* var = toVarSymbol(actualSym)) {
       if (var->immediate) {
-        if (is_imag_type(actualType)) {
+        if (isImagType(actualType)) {
           if (fits_in_mantissa_exponent(mantissa_width,
                                         get_exponent_width(formalType),
                                         var->immediate)) {
@@ -1135,34 +1135,34 @@ static bool canParamCoerce(Type*   actualType,
   }
 
 
-  if (is_complex_type(formalType)) {
+  if (isComplexType(formalType)) {
     int mantissa_width = get_mantissa_width(formalType);
 
     // don't coerce bools to complexes (per spec: "unintended by programmer")
 
     // coerce any integer type to any width complex
-    if (is_int_type(actualType) || is_uint_type(actualType)) {
+    if (isIntType(actualType) || isUIntType(actualType)) {
       return true;
     }
 
     // coerce real/imag from smaller size
-    if (is_real_type(actualType) &&
-        get_width(actualType) <= get_width(formalType)/2)
+    if (isRealType(actualType) &&
+        getWidthOfType(actualType) <= getWidthOfType(formalType)/2)
       return true;
-    if (is_imag_type(actualType) &&
-        get_width(actualType) <= get_width(formalType)/2)
+    if (isImagType(actualType) &&
+        getWidthOfType(actualType) <= getWidthOfType(formalType)/2)
       return true;
 
     // coerce smaller complex types
-    if (is_complex_type(actualType) &&
-        (get_width(actualType) < get_width(formalType)))
+    if (isComplexType(actualType) &&
+        (getWidthOfType(actualType) < getWidthOfType(formalType)))
       return true;
 
     // coerce literal/param complexes that are exactly representable
     if (VarSymbol* var = toVarSymbol(actualSym)) {
       if (var->immediate) {
         // int/uint params would be handled by any-int-to-complex rule above
-        if (is_real_type(actualType)) {
+        if (isRealType(actualType)) {
           if (fits_in_mantissa_exponent(mantissa_width,
                                         get_exponent_width(formalType),
                                         var->immediate)) {
@@ -1170,7 +1170,7 @@ static bool canParamCoerce(Type*   actualType,
             return true;
           }
         }
-        if (is_imag_type(actualType)) {
+        if (isImagType(actualType)) {
           if (fits_in_mantissa_exponent(mantissa_width,
                                         get_exponent_width(formalType),
                                         var->immediate)) {
@@ -1178,7 +1178,7 @@ static bool canParamCoerce(Type*   actualType,
             return true;
           }
         }
-        if (is_complex_type(actualType)) {
+        if (isComplexType(actualType)) {
           bool rePartFits = fits_in_mantissa_exponent(mantissa_width,
                                                       get_exponent_width(formalType),
                                                       var->immediate,
@@ -2151,17 +2151,17 @@ static int classifyNumericWidth(Type* t)
   // Bool size 64 should be considered the same as int 64
   // and just treat all bools the same
   // to prefer the default size (i.e. int)
-  if (is_bool_type(t))
+  if (isBoolType(t))
     return 0;
 
-  if (is_int_type(t) ||
-      is_uint_type(t) ||
-      is_real_type(t) ||
-      is_imag_type(t))
-    return get_width(t);
+  if (isIntType(t) ||
+      isUIntType(t) ||
+      isRealType(t) ||
+      isImagType(t))
+    return getWidthOfType(t);
 
-  if (is_complex_type(t))
-    return get_width(t) / 2;
+  if (isComplexType(t))
+    return getWidthOfType(t) / 2;
 
   return -1;
 }
@@ -2177,12 +2177,12 @@ typedef enum {
 
 static numeric_type_t classifyNumericType(Type* t)
 {
-  if (is_bool_type(t)) return NUMERIC_TYPE_BOOL;
-  if (is_int_type(t)) return NUMERIC_TYPE_INT_UINT;
-  if (is_uint_type(t)) return NUMERIC_TYPE_INT_UINT;
-  if (is_real_type(t)) return NUMERIC_TYPE_REAL;
-  if (is_imag_type(t)) return NUMERIC_TYPE_IMAG;
-  if (is_complex_type(t)) return NUMERIC_TYPE_COMPLEX;
+  if (isBoolType(t)) return NUMERIC_TYPE_BOOL;
+  if (isIntType(t)) return NUMERIC_TYPE_INT_UINT;
+  if (isUIntType(t)) return NUMERIC_TYPE_INT_UINT;
+  if (isRealType(t)) return NUMERIC_TYPE_REAL;
+  if (isImagType(t)) return NUMERIC_TYPE_IMAG;
+  if (isComplexType(t)) return NUMERIC_TYPE_COMPLEX;
 
   return NUMERIC_TYPE_NON_NUMERIC;
 }
@@ -2190,7 +2190,7 @@ static numeric_type_t classifyNumericType(Type* t)
 static bool isNegativeParamToUnsigned(Symbol* actualSym,
                                       Type* actualScalarType,
                                       Type* formalType) {
-  if (is_int_type(actualScalarType) && is_uint_type(formalType)) {
+  if (isIntType(actualScalarType) && isUIntType(formalType)) {
     if (VarSymbol* var = toVarSymbol(actualSym)) {
       if (Immediate* imm = var->immediate) {
         if (is_negative(imm)) {
@@ -3286,7 +3286,7 @@ static bool resolveBuiltinCastCall(CallExpr* call)
                                   &promotes, &paramNarrows, paramCoerce);
 
     if (!isRecord(targetType) && !isRecord(valueType) &&
-        !is_complex_type(targetType) && !is_complex_type(valueType) &&
+        !isComplexType(targetType) && !isComplexType(valueType) &&
         dispatches && !promotes) {
 
       // Otherwise, convert the _cast call to a primitive cast
@@ -6145,12 +6145,12 @@ static int disambiguateByMatch(CallInfo&                  info,
 }
 
 static bool isMatchingImagComplex(Type* actualVt, Type* formalVt) {
-  if (is_imag_type(actualVt) && is_complex_type(formalVt) &&
-      2*get_width(actualVt) == get_width(formalVt))
+  if (isImagType(actualVt) && isComplexType(formalVt) &&
+      2*getWidthOfType(actualVt) == getWidthOfType(formalVt))
     return true;
 
-  if (is_real_type(actualVt) && is_complex_type(formalVt) &&
-      2*get_width(actualVt) == get_width(formalVt))
+  if (isRealType(actualVt) && isComplexType(formalVt) &&
+      2*getWidthOfType(actualVt) == getWidthOfType(formalVt))
     return true;
 
   return false;
@@ -8411,22 +8411,22 @@ void warnForSomeNumericConversions(BaseAST* context,
 
   Type* formalVt = formalType->getValType();
   Type* actualVt = actualType->getValType();
-  bool formalFloatingPoint = is_real_type(formalVt) ||
-                             is_imag_type(formalVt) ||
-                             is_complex_type(formalVt);
-  bool actualFloatingPoint = is_real_type(actualVt) ||
-                             is_imag_type(actualVt) ||
-                             is_complex_type(actualVt);
-  bool formalIntUint = is_int_type(formalVt) || is_uint_type(formalVt);
-  bool actualIntUint = is_int_type(actualVt) || is_uint_type(actualVt);
+  bool formalFloatingPoint = isRealType(formalVt) ||
+                             isImagType(formalVt) ||
+                             isComplexType(formalVt);
+  bool actualFloatingPoint = isRealType(actualVt) ||
+                             isImagType(actualVt) ||
+                             isComplexType(actualVt);
+  bool formalIntUint = isIntType(formalVt) || isUIntType(formalVt);
+  bool actualIntUint = isIntType(actualVt) || isUIntType(actualVt);
 
   // nothing to do if the formal is not numeric
   if (!formalFloatingPoint && !formalIntUint) return;
   // nothing to do if the actual is not numeric
   if (!actualFloatingPoint && !actualIntUint) return;
 
-  int formalWidth = get_component_width(formalVt);
-  int actualWidth = get_component_width(actualVt);
+  int formalWidth = getComponentWidthOfType(formalVt);
+  int actualWidth = getComponentWidthOfType(actualVt);
 
   bool actualIsParam = false;
   if (VarSymbol* var = toVarSymbol(actual)) {
@@ -8442,7 +8442,7 @@ void warnForSomeNumericConversions(BaseAST* context,
 
   // consider warning for int -> uint implicit conversion
   if (formalIntUint && actualIntUint &&
-      is_int_type(actualVt) && is_uint_type(formalVt)) {
+      isIntType(actualVt) && isUIntType(formalVt)) {
     // note: used to check formalWidth <= actualWidth
     // but that doesn't make sense to me; if the concern is
     // it could a be negative int, the widths don't matter
@@ -10342,7 +10342,7 @@ void ensureEnumTypeResolved(EnumType* etype) {
                     " possibly because of a use before definition",
                     def->sym->name);
         }
-        if (!is_int_type(t) && !is_uint_type(t)) {
+        if (!isIntType(t) && !isUIntType(t)) {
           USR_FATAL(def,
                     "enumerator constant '%s' has a non-integer initializer",
                     def->sym->name);
