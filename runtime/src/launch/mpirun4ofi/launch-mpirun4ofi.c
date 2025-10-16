@@ -34,9 +34,6 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
     chpl_error("mpirun4ofi only supports CHPL_COMM=ofi", 0, 0);
   }
 
-  static char _nlbuf[16];
-  snprintf(_nlbuf, sizeof(_nlbuf), "%d", getArgNumLocales());
-
   char** largv = NULL;
   int largv_len = 0;
   int largc = 0;
@@ -44,12 +41,10 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
                                             &largv_len, arg)
 
   ADD_LARGV(launch_cmd);
-  ADD_LARGV("-np");
-  ADD_LARGV(_nlbuf);
   ADD_LARGV("-map-by");
-  ADD_LARGV("ppr:1:node");
-  ADD_LARGV("-map-by");
-  ADD_LARGV("node:oversubscribe");
+  static char mapbybuf[64];
+  snprintf(mapbybuf, sizeof(mapbybuf), "ppr:%d:node:oversubscribe", getArgNumLocales());
+  ADD_LARGV(mapbybuf);
   ADD_LARGV("-bind-to");
   ADD_LARGV("none");
   if (chpl_env_rt_get_bool("OVERSUBSCRIBED", false)) {
