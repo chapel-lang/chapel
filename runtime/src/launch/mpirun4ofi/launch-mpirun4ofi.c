@@ -42,7 +42,8 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
 
   ADD_LARGV(launch_cmd);
   static char nlbuf[16];
-  snprintf(nlbuf, sizeof(nlbuf), "-np %d", getArgNumLocales());
+  snprintf(nlbuf, sizeof(nlbuf), "-%d", getArgNumLocales());
+  ADD_LARGV("-np");
   ADD_LARGV(nlbuf);
   ADD_LARGV("-map-by");
   ADD_LARGV("node:oversubscribe");
