@@ -41,10 +41,11 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
                                             &largv_len, arg)
 
   ADD_LARGV(launch_cmd);
+  static char nlbuf[16];
+  snprintf(nlbuf, sizeof(nlbuf), "-np %d", getArgNumLocales());
+  ADD_LARGV(nlbuf);
   ADD_LARGV("-map-by");
-  static char mapbybuf[64];
-  snprintf(mapbybuf, sizeof(mapbybuf), "ppr:%d:node:oversubscribe", getArgNumLocales());
-  ADD_LARGV(mapbybuf);
+  ADD_LARGV("node:oversubscribe");
   ADD_LARGV("-bind-to");
   ADD_LARGV("none");
   if (chpl_env_rt_get_bool("OVERSUBSCRIBED", false)) {
