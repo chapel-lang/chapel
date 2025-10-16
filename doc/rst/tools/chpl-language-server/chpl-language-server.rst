@@ -109,6 +109,10 @@ The following features are extra visual aids:
 | Param Inlays   | ``param`` values can be computed and       | ``--param-inlays`` (default),         |
 |                | displayed inline as inlay hints.           | ``--no-param-inlays``                 |
 +----------------+--------------------------------------------+---------------------------------------+
+| Enum Inlays    | ``enum`` elements' numerical values can be | ``--enum-inlays`` (default),          |
+|                | inferred where not explicitly specified    | ``--no-enum-inlays``                  |
+|                | and displayed as hints.                    |                                       |
++----------------+--------------------------------------------+---------------------------------------+
 | Evaluated      | ``param`` values can also be computed and  | ``--evaluate-expressions`` (default), |
 | Tooltips       | displayed as tooltips.                     | ``--no-evaluate-expressions``         |
 +----------------+--------------------------------------------+---------------------------------------+
