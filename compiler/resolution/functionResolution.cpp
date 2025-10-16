@@ -3587,62 +3587,62 @@ static bool isTypeConstructionCall(CallExpr* call) {
 // t is the type we resolved call to return
 static void warnForPartialInstantiationNoQ(CallExpr* call, Type* t) {
   // is the resulting type generic?
-  if (t != nullptr) {
-    CallExpr* checkCall = call;
-    if (call->numActuals() >= 1) {
-      // check for 'owned C' e.g.
-      if (SymExpr* se = toSymExpr(call->baseExpr)) {
-        if (se->symbol()->hasFlag(FLAG_MANAGED_POINTER)) {
-          checkCall = toCallExpr(call->get(1));
+  if (t == nullptr) return;
+
+  CallExpr* checkCall = call;
+  if (call->numActuals() >= 1) {
+    // check for 'owned C' e.g.
+    if (SymExpr* se = toSymExpr(call->baseExpr)) {
+      if (se->symbol()->hasFlag(FLAG_MANAGED_POINTER)) {
+        checkCall = toCallExpr(call->get(1));
+      }
+    }
+  }
+  if (checkCall != nullptr && checkCall->numActuals() > 0) {
+    bool foundQuestionMarkArg = false;
+    for_actuals(actual, checkCall) {
+      if (SymExpr* se = toSymExpr(actual)) {
+        if (se->symbol() == gUninstantiated) {
+          foundQuestionMarkArg = true;
         }
       }
     }
-    if (checkCall != nullptr && checkCall->numActuals() > 0) {
-      bool foundQuestionMarkArg = false;
-      for_actuals(actual, checkCall) {
-        if (SymExpr* se = toSymExpr(actual)) {
-          if (se->symbol() == gUninstantiated) {
-            foundQuestionMarkArg = true;
-          }
+
+    if (!foundQuestionMarkArg) {
+      Type* tt = canonicalClassType(t);
+      if (tt && tt->symbol->hasFlag(FLAG_GENERIC)) {
+        // print out which field
+        if (call->getFunction()->hasFlag(FLAG_COMPILER_GENERATED)) {
+          // don't warn about '?' if we're in compiler-generated code
+          return;
         }
-      }
+        USR_WARN(checkCall, "partial instantiation without '?' argument");
+        USR_PRINT(checkCall, "opt in to partial instantiation explicitly with a trailing '?' argument");
+        USR_PRINT(checkCall, "or, add arguments to instantiate the following fields in generic type '%s':", tt->symbol->name);
+        // which field names are generic?
+        if (AggregateType* at = toAggregateType(tt)) {
+          bool printedAnyFields = false;
+          for_fields(field, at) {
+            if (field->type == dtUnknown ||
+                field->type->symbol->hasFlag(FLAG_GENERIC)) {
+              const char* k = "";
+              bool possiblyDependent = false;
+              if (field->hasFlag(FLAG_TYPE_VARIABLE)) {
+                k = " type";
+              } else if (field->hasFlag(FLAG_PARAM)) {
+                k = " param";
+              } else if (field->defPoint->exprType == nullptr) {
+                // field with no type e.g. var x;
+              } else {
+                // var x: something could be concrete or generic,
+                // depending on what 'something' refers to,
+                // so only report such a field if it's the first generic one.
+                possiblyDependent = true;
+              }
 
-      if (!foundQuestionMarkArg) {
-        Type* tt = canonicalClassType(t);
-        if (tt && tt->symbol->hasFlag(FLAG_GENERIC)) {
-          // print out which field
-          if (call->getFunction()->hasFlag(FLAG_COMPILER_GENERATED)) {
-            // don't warn about '?' if we're in compiler-generated code
-            return;
-          }
-          USR_WARN(checkCall, "partial instantiation without '?' argument");
-          USR_PRINT(checkCall, "opt in to partial instantiation explicitly with a trailing '?' argument");
-          USR_PRINT(checkCall, "or, add arguments to instantiate the following fields in generic type '%s':", tt->symbol->name);
-          // which field names are generic?
-          if (AggregateType* at = toAggregateType(tt)) {
-            bool printedAnyFields = false;
-            for_fields(field, at) {
-              if (field->type == dtUnknown ||
-                  field->type->symbol->hasFlag(FLAG_GENERIC)) {
-                const char* k = "";
-                bool possiblyDependent = false;
-                if (field->hasFlag(FLAG_TYPE_VARIABLE)) {
-                  k = " type";
-                } else if (field->hasFlag(FLAG_PARAM)) {
-                  k = " param";
-                } else if (field->defPoint->exprType == nullptr) {
-                  // field with no type e.g. var x;
-                } else {
-                  // var x: something could be concrete or generic,
-                  // depending on what 'something' refers to,
-                  // so only report such a field if it's the first generic one.
-                  possiblyDependent = true;
-                }
-
-                if (!printedAnyFields || !possiblyDependent) {
-                  USR_PRINT(field, "  generic%s field '%s'", k, field->name);
-                  printedAnyFields = true;
-                }
+              if (!printedAnyFields || !possiblyDependent) {
+                USR_PRINT(field, "  generic%s field '%s'", k, field->name);
+                printedAnyFields = true;
               }
             }
           }
@@ -3728,7 +3728,7 @@ static Type* resolveTypeSpecifier(CallInfo& info) {
   AggregateType* at = toAggregateType(canonicalClassType(tsType));
   ClassTypeDecoratorEnum decorator = ClassTypeDecorator::BORROWED_NONNIL;
   bool decorated = false;
-  if (DecoratedClassType* dt = toDecoratedClassType(ts->typeInfo())) {
+  if (DecoratedClassType* dt = toDecoratedClassType(tsType)) {
     decorated = true;
     decorator = dt->getDecorator();
     // Convert 'managed' to 'generic' -
@@ -3760,6 +3760,12 @@ static Type* resolveTypeSpecifier(CallInfo& info) {
       // Include the decorator in the type
       ret = getDecoratedClass(ret, decorator);
       INT_ASSERT(ret);
+    }
+
+    // preserve nilability
+    if (ret && isNilableClassType(tsType)) {
+      auto dec = addNilableToDecorator(classTypeDecorator(ret));
+      ret = getDecoratedClass(ret, dec);
     }
 
     if (ret && isManagedPtrType(tsType)) {
