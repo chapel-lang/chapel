@@ -52,6 +52,7 @@ $buildcheck = 1;
 $parnodefile = "";
 $baseline = 0;
 $fast = 0;
+$debug_symbols = 0;
 $nolocal = 0;
 $verify = 0;
 $retaintree = 0;
@@ -133,6 +134,8 @@ while (@ARGV) {
         $dist = shift @ARGV;
     } elsif ($flag eq "-fast") {
         $fast = 1;
+    } elsif ($flag eq "-debug-symbols") {
+        $debug_symbols = 1;
     } elsif ($flag eq "-memleaks") {
         $memleaks = 1;
     } elsif ($flag eq "-memleakslog") {
@@ -239,6 +242,7 @@ if ($printusage == 1) {
     print "\t-compopts <opt>                : run tests with -compopts <opt>\n";
     print "\t-compperformance <description> : run tests with compiler performance tracking\n";
     print "\t-cron-recipient <addr>         : send -cron emails to this address instead of the default mailing list(s)\n";
+    print "\t-debug-symbols                 : run tests using --debug/-g\n";
     print "\t-dist <dist>                   : run distribution robustness tests\n";
     print "\t-examples                      : run the release/examples tests only\n";
     print "\t-execopts <opt>                : run tests with -execopts <opt>\n";
@@ -716,6 +720,9 @@ if (!($dist eq "")) {
 }
 if ($fast == 1) {
     $testflags = "$testflags -compopts --fast";
+}
+if ($debug_symbols == 1) {
+    $testflags = "$testflags -compopts --debug -compopts --verify";
 }
 if ($memleaks == 1) {
     $testflags = "$testflags -memleaks";
