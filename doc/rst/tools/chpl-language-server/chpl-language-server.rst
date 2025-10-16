@@ -111,7 +111,7 @@ The following features are extra visual aids:
 +----------------+--------------------------------------------+---------------------------------------+
 | Enum Inlays    | ``enum`` elements' numerical values can be | ``--enum-inlays`` (default),          |
 |                | inferred where not explicitly specified    | ``--no-enum-inlays``                  |
-|                | and displayed as hints.                    |                                       |
+|                | and displayed as inlay hints.              |                                       |
 +----------------+--------------------------------------------+---------------------------------------+
 | Evaluated      | ``param`` values can also be computed and  | ``--evaluate-expressions`` (default), |
 | Tooltips       | displayed as tooltips.                     | ``--no-evaluate-expressions``         |
