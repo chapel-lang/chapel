@@ -1,2 +1,0 @@
-# only test with valgrind to ensure failure consistently
-CHPL_TEST_VGRND_EXE != on
