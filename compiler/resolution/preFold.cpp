@@ -122,7 +122,12 @@ Expr* preFold(CallExpr* call) {
         // do nothing for non-tuple type variables
 
       } else if (isLcnSymbol(symExpr->symbol()) ||
-                 (isTypeSymbol(symExpr->symbol()) && isTypeVariable)) {
+                 (isTypeSymbol(symExpr->symbol()) && isTypeVariable && symExpr->typeInfo() != dtTuple)) {
+        // rewrite to '.this' call for values and type variables...
+        // ... but, per restriction above, we don't call type variables that aren't tuples.
+        // ... even for tuples, "indexing" a generic tuple is invoking its type constructor.
+        // See also isTypeConstructionCall in functionResolution.cpp
+
         if (!isFunctionType(symExpr->symbol()->getValType())) {
           baseExpr->replace(new UnresolvedSymExpr("this"));
           call->insertAtHead(baseExpr);
