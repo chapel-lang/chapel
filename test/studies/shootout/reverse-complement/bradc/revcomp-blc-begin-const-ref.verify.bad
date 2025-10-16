@@ -1,2 +1,0 @@
-revcomp-blc-begin-const-ref.chpl:18: In function 'main':
-revcomp-blc-begin-const-ref.chpl:48: error: const actual is passed to 'ref' formal 'seq' of revcomp()

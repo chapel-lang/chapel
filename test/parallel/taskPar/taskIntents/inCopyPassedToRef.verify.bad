@@ -1,2 +1,0 @@
-inCopyPassedToRef.chpl:1: In function 'main':
-inCopyPassedToRef.chpl:8: error: const actual is passed to 'ref' formal 'X' of foo()
