@@ -36,6 +36,48 @@ def _find_pmi2():
     return None
 
 @memoize
+def _find_mpi():
+    """
+    If MPI is found, return the name used, CFLAGS, and LDFLAGS
+    Otherwise, return None
+    """
+    mpi_dir_val = overrides.get_environ('MPI_DIR')
+    if mpi_dir_val:
+        name = 'mpi'
+        cflags = ([], ['-I' + os.path.join(mpi_dir_val, 'include')])
+
+        mpi_lib_dir = os.path.join(mpi_dir_val, 'lib64')
+        if not os.path.exists(mpi_lib_dir):
+            mpi_lib_dir = os.path.join(mpi_dir_val, 'lib')
+            if not os.path.exists(mpi_lib_dir):
+                mpi_lib_dir = None
+
+        system_ld_flags = []
+        if mpi_lib_dir:
+            system_ld_flags.append('-L' + mpi_lib_dir)
+            system_ld_flags.append('-Wl,-rpath,' + mpi_lib_dir)
+            mpi_lib_name = 'mpi'
+            if glob.glob(mpi_lib_dir + '/libmpich.*'):
+                mpi_lib_name = 'mpich'
+                name = 'mpich'
+            system_ld_flags.append('-l' + mpi_lib_name)
+
+        ldflags = ([], system_ld_flags)
+
+        return (name, cflags, ldflags)
+
+
+    mpi_names = ('ompi', 'mpi')
+    for name in mpi_names:
+        if third_party_utils.pkgconfig_system_has_package(name):
+            cflags = third_party_utils.pkgconfig_get_system_compile_args(name)
+            ldflags = third_party_utils.pkgconfig_get_system_link_args(name, False)
+            assert cflags != (None, None)
+            assert ldflags != (None, None)
+            return (name, cflags, ldflags)
+    return None
+
+@memoize
 def get():
     comm_val = chpl_comm.get()
     if comm_val != 'ofi':
@@ -77,9 +119,11 @@ def get_compile_args():
     flags = [ ]
     ofi_oob_val = get()
     if ofi_oob_val == 'mpi':
-        mpi_dir_val = overrides.get_environ('MPI_DIR')
-        if mpi_dir_val:
-            flags.append('-I' + mpi_dir_val + '/include')
+        tup = _find_mpi()
+        if tup is not None:
+            cflags = tup[1]
+            assert len(cflags[0]) == 0
+            flags.extend(cflags[1])
     elif ofi_oob_val == 'pmi2':
         # try and use pkg-config to get the libraries to link, but if that fails still just use the default of nothing
         tup = _find_pmi2()
@@ -102,21 +146,11 @@ def get_link_args():
     libs = [ ]
     ofi_oob_val = get()
     if ofi_oob_val == 'mpi':
-        mpi_dir_val = overrides.get_environ('MPI_DIR')
-        if mpi_dir_val:
-            mpi_lib_dir = os.path.join(mpi_dir_val, 'lib64')
-            if not os.path.exists(mpi_lib_dir):
-                mpi_lib_dir = os.path.join(mpi_dir_val, 'lib')
-                if not os.path.exists(mpi_lib_dir):
-                    mpi_lib_dir = None
-
-            if mpi_lib_dir:
-                libs.append('-L' + mpi_lib_dir)
-                libs.append('-Wl,-rpath,' + mpi_lib_dir)
-                mpi_lib_name = 'mpi'
-                if glob.glob(mpi_lib_dir + '/libmpich.*'):
-                    mpi_lib_name = 'mpich'
-                libs.append('-l' + mpi_lib_name)
+        tup = _find_mpi()
+        if tup is not None:
+            ldflags = tup[2]
+            assert len(ldflags[0]) == 0
+            libs.extend(ldflags[1])
 
     # If we're using the PMI2 out-of-band support we have to reference
     # libpmi2 explicitly, except on Cray XC systems.

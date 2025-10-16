@@ -244,7 +244,9 @@ if [ -n "${CHPL_CHECK_MAX_LOCALES}" ] ; then
 fi
 
 # Check for valid launchers
-if [ ${chpl_launcher} == "slurm-srun" -o ${chpl_launcher} == "amudprun" -o ${chpl_launcher} == "smp" -o ${chpl_launcher} == "none" ]; then
+if [ ${chpl_launcher} == "slurm-srun" -o ${chpl_launcher} == "mpirun4ofi" \
+     -o ${chpl_launcher} == "amudprun" -o ${chpl_launcher} == "smp" \
+     -o ${chpl_launcher} == "none" ]; then
     log_info "\$CHPL_LAUNCHER=${chpl_launcher} is compatible with test script."
 else
     log_warning "\$CHPL_LAUNCHER=${chpl_launcher} is not compatible with test script."
