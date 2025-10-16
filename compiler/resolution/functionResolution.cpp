@@ -7412,7 +7412,17 @@ static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn) {
 
       // Need to copy varActual->type even for type variables.
       // BTW some formals' types may have been set in createTaskFunctions().
-      formal->type = varActual->type;
+      // If we're performing a copy, the type might change (e.g., array view
+      // becomes array). In that case, make the formal type be the post-copy type.
+      auto determineType = [formal](Type* t) {
+        if (inOrOutFormalNeedingCopyType(formal)) {
+          if (Type* copyType = getCopyTypeDuringResolution(t->getValType())) {
+            return copyType;
+          }
+        }
+        return t;
+      };
+      formal->type = determineType(varActual->type);
 
       // If the actual is a ref, still need to capture it => remove ref.
       if (isReferenceType(varActual->type) == true) {
@@ -7421,7 +7431,7 @@ static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn) {
         // todo: replace needsCapture() with always resolveArgIntent(formal)
         // then checking (formal->intent & INTENT_FLAG_IN)
         if (needsCapture(deref) == true) {
-          formal->type = deref;
+          formal->type = determineType(deref);
 
           // If the formal has a ref intent, DO need a ref type => restore it.
           resolveArgIntent(formal);
