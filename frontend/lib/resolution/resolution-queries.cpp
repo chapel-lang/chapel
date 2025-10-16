@@ -1854,7 +1854,8 @@ static bool isScopeResolvedExprGeneric(Context* context,
       // a type constructor to create a concrete instance of the type (in
       // which case there is a 'call').
       if (asttags::isAggregateDecl(toTag) && !call && !isMutuallyRecursive) {
-        if (getTypeGenericity(context, initialType) != Type::CONCRETE) {
+        auto g = getTypeGenericity(context, initialType);
+        if (g != Type::CONCRETE && g != Type::GENERIC_WITH_DEFAULTS) {
           return true;
         }
       }
