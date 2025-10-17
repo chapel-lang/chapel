@@ -881,6 +881,119 @@ static void test19() {
   std::ignore = resolveTypesOfVariables(context, program, { "tmp" });
 }
 
+// Test warnings for fields with generic memory management
+static void test20() {
+  printf("test20\n");
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    class MyClass { }
+
+    record A {
+      var myfield: MyClass?;
+    }
+
+    record B {
+      var myfield: MyClass?;
+    }
+
+    record C {
+      var myfield: MyClass;
+      proc init() {
+        this.myfield = new MyClass();
+      }
+    }
+
+    var aa = new A(new MyClass());
+    var bb: B(owned MyClass?) = new B(nil: owned MyClass?);
+    var cc = new C();
+    )""";
+
+  std::ignore = resolveTypesOfVariables(context, program, { "aa", "bb", "cc" });
+
+  // Should have 3 warnings for generic memory management
+  assert(guard.numErrors() == 3);
+  for (auto& err : guard.errors()) {
+    assert(err->type() == ErrorType::FieldWithGenericManagement);
+  }
+  guard.realizeErrors();
+}
+
+// Test that records with generic-with-defaults fields don't warn
+static void test21() {
+  printf("test21\n");
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    record GRD {
+      type t = int;
+    }
+
+    record J {
+      var myfield: GRD;
+    }
+
+    var x = new J(new GRD(int));
+    )""";
+
+  std::ignore = resolveTypeOfX(context, program);
+
+  // Should have no errors or warnings
+  assert(guard.numErrors() == 0);
+}
+
+// Test warnings for fields with generic types (no defaults)
+static void test22() {
+  printf("test22\n");
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    record GR {
+      type t;
+    }
+
+    record E {
+      var myfield: GR;
+    }
+
+    var x = new E(new GR(int));
+    )""";
+
+  std::ignore = resolveTypeOfX(context, program);
+
+  // Should have 1 warning about generic field not marked with '?'
+  assert(guard.numErrors() == 1);
+  auto& err = guard.errors()[0];
+  assert(err->type() == ErrorType::GenericFieldWithoutMark);
+  guard.realizeErrors();
+}
+
+// Test warnings for domain fields without '?'
+static void test23() {
+  printf("test23\n");
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    record K {
+      var myfield: domain;
+    }
+
+    var x = new K({1..10});
+    )""";
+
+  std::ignore = resolveTypeOfX(context, program);
+
+  // Should have 1 warning about generic domain field not marked with '?'
+  assert(guard.numErrors() == 1);
+  auto& err = guard.errors()[0];
+  assert(err->type() == ErrorType::GenericFieldWithoutMark);
+  guard.realizeErrors();
+}
+
 int main() {
   test1();
   test2();
@@ -901,6 +1014,10 @@ int main() {
   test17();
   test18();
   test19();
+  test20();
+  test21();
+  test22();
+  test23();
 
   return 0;
 }
