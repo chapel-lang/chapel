@@ -330,7 +330,8 @@ types::Type::Genericity getTypeGenericity(Context* context,
 
 bool isFieldSyntacticallyGeneric(Context* context,
                                  const ID& field,
-                                 types::QualifiedType* formalType = nullptr);
+                                 types::QualifiedType* formalType = nullptr,
+                                 bool useLightResolution = true);
 
 /**
   Returns true if the field should be included in the type constructor.
