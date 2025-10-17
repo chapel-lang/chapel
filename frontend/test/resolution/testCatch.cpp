@@ -1129,6 +1129,37 @@ static void test31() {
   assert(!guard.realizeErrors());
 }
 
+// strict mode: calls not at the top level of a try block are still considered marked
+static void test32() {
+  auto ctx = buildStdContext();
+  auto path = UniqueString::get(ctx, "test28.chpl");
+
+  ErrorGuard guard(ctx);
+  std::string program = R""""(
+                        pragma "error mode strict"
+                        module M {
+                          proc canThrow() throws {
+                            throw new owned Error();
+                          }
+                          proc caller() throws {
+                            try {
+                              { { { canThrow(); } } }
+                            }
+                          }
+                        }
+              )"""";
+  setFileText(ctx, path, program);
+  const ModuleVec& vec = parseToplevel(ctx, path);
+  auto mod = vec[0]->toModule();
+  assert(mod);
+  auto func = mod->stmt(1)->toFunction();
+  assert(func);
+  auto resFunc = resolveConcreteFunction(ctx, func->id());
+  assert(resFunc);
+
+  assert(!guard.realizeErrors());
+}
+
 // TODO: error handling in defer blocks must be complete
 
 
@@ -1174,6 +1205,7 @@ int main() {
   test29();
   test30();
   test31();
+  test32();
 
   return 0;
 }
