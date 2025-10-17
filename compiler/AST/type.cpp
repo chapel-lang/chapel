@@ -325,7 +325,7 @@ const char* toString(Type* type, bool decorateAllClasses) {
 *                                                                             *
 ************************************** | *************************************/
 
-const char* qualifierToStr(Qualifier q) {
+const char* QualifiedType::qualifierToStr(Qualifier q) {
     switch (q) {
       case QUAL_UNKNOWN:
         return "unknown";
@@ -357,6 +357,41 @@ const char* qualifierToStr(Qualifier q) {
 
     INT_FATAL("Unhandled Qualifier");
     return "UNKNOWN-QUAL";
+}
+
+Qualifier QualifiedType::qualifierForArgIntent(IntentTag intent) {
+  switch (intent) {
+    case INTENT_IN:        return QUAL_VAL;
+    case INTENT_OUT:       return QUAL_REF;
+    case INTENT_INOUT:     return QUAL_REF;
+    case INTENT_CONST:     return QUAL_CONST;
+    case INTENT_CONST_IN:  return QUAL_CONST_VAL;
+    case INTENT_REF:       return QUAL_REF;
+    case INTENT_CONST_REF: return QUAL_CONST_REF;
+    case INTENT_PARAM:     return QUAL_PARAM;   // TODO
+    case INTENT_TYPE:      return QUAL_UNKNOWN; // TODO
+    case INTENT_BLANK:     return QUAL_UNKNOWN;
+    case INTENT_REF_MAYBE_CONST:
+           return QUAL_REF; // a white lie until cullOverReferences
+
+    // no default to get compiler warning if other intents are added
+  }
+  INT_FATAL("unknown intent");
+  return QUAL_UNKNOWN;
+}
+
+Qualifier QualifiedType::qualifierForRetTag(RetTag retTag) {
+  switch (retTag) {
+    case RET_VALUE:       return QUAL_VAL;
+    case RET_REF:         return QUAL_REF;
+    case RET_CONST_REF:   return QUAL_CONST_REF;
+    case RET_PARAM:       return QUAL_PARAM;    // TODO
+    case RET_TYPE:        return QUAL_UNKNOWN;  // TODO
+    // no default to get compiler warning if other intents are added
+  }
+
+  INT_FATAL("uknown return tag");
+  return QUAL_UNKNOWN;
 }
 
 bool QualifiedType::isRefType() const {
@@ -854,10 +889,16 @@ static const char* builtinTypeName(Type* vt) {
 }
 
 const char* FunctionType::typeToString(Type* t) {
-  // Use the value type when printing out the user type to hide '_ref'.
-  auto vt = t->getValType();
-  if (auto builtinName = builtinTypeName(vt)) return builtinName;
-  return vt->symbol->name;
+  if (!developer) {
+    // Use the value type when printing out the user type to hide '_ref'.
+    auto vt = t->getValType();
+    if (auto builtinName = builtinTypeName(vt)) return builtinName;
+    return vt->symbol->name;
+
+  } else {
+    // As a developer, display the type exactly as given.
+    return t->symbol->name;
+  }
 }
 
 const char* FunctionType::returnIntentToString(RetTag intent) {
@@ -876,11 +917,17 @@ FunctionType* FunctionType::create(FunctionType::Kind kind,
   bool isAnyFormalNamed = false;
 
   for (auto& formal : formals) {
-    // Call 'makeRefType' if it's likely needed to avoid problems later.
-    bool isRef = formal.qual() == QUAL_CONST_REF ||
-                 formal.qual() == QUAL_REF ||
-                 formal.intent() & INTENT_REF;
-    if (isRef) makeRefType(formal.type());
+    bool isRefIntent = formal.qual() == QUAL_CONST_REF ||
+                       formal.qual() == QUAL_REF ||
+                       formal.intent() & INTENT_REF;
+    bool isRefType = formal.qualType().isRefType();
+    bool isWideRefType = formal.qualType().isWideRefType();
+
+    if (isRefIntent && !isRefType && !isWideRefType) {
+      // Call 'makeRefType' if it's needed to avoid problems later.
+      // It should not be called if the type is already a 'ref' type.
+      makeRefType(formal.type());
+    }
 
     isAnyFormalNamed |= formal.name() != nullptr;
   }
@@ -1007,6 +1054,16 @@ FunctionType::Formal FunctionType::constructErrorHandlingFormal() {
   return { QUAL_REF, t, INTENT_REF, "error_out" };
 }
 
+std::array<FunctionType::Formal, 2>
+FunctionType::constructLineFileInfoFormals() {
+  std::array<Formal, 2> ret = {{
+    Formal(QUAL_CONST_VAL, dtInt[INT_SIZE_DEFAULT], INTENT_CONST_IN, "_ln"),
+    Formal(QUAL_CONST_VAL, dtInt[INT_SIZE_32], INTENT_CONST_IN, "_fn")
+  }};
+
+  return ret;
+}
+
 FunctionType* FunctionType::getWithLoweredErrorHandling() const {
   bool newThrowsFlag = false;
   auto newFormals = formals_;
@@ -1020,6 +1077,21 @@ FunctionType* FunctionType::getWithLoweredErrorHandling() const {
              returnIntent_,
              returnType_,
              newThrowsFlag);
+}
+
+FunctionType* FunctionType::getWithLineFileInfo() const {
+  auto newFormals = formals_;
+  auto lineFileFormals = constructLineFileInfoFormals();
+
+  newFormals.push_back(lineFileFormals[0]);
+  newFormals.push_back(lineFileFormals[1]);
+
+  SET_LINENO(this->symbol);
+
+  return get(kind_, width_, linkage_, std::move(newFormals),
+             returnIntent_,
+             returnType_,
+             throws_);
 }
 
 FunctionType*
@@ -1046,6 +1118,64 @@ FunctionType::getWithMask(int64_t mask, bool& outMaskConflicts) const {
   }
 
   outMaskConflicts = maskConflicts;
+
+  return ret;
+}
+
+// Linked in from 'insertWideReferences.cpp'.
+QualifiedType computeWidenedType(Symbol* sym, bool mustBeWide, bool wideVal);
+
+static QualifiedType widenType(QualifiedType qt) {
+  // Create and set a temporary as a workaround for passing in a 'Symbol*'.
+  auto temp = newTemp();
+  temp->type = qt.type();
+  temp->qual = qt.getQual();
+
+  // True as in 'setWide' in 'insertWideReferences.cpp'.
+  bool mustBeWide = true;
+  bool wideVal = true;
+
+  auto ret = computeWidenedType(temp, mustBeWide, wideVal);
+
+  return ret;
+}
+
+FunctionType* FunctionType::getWithWidenedComponents() const {
+  FunctionType* ret = (FunctionType*) this;
+  FormalMap formalMap;
+
+  std::vector<Formal> newFormals;
+  Type* newReturnType = returnType_;
+  bool change = false;
+
+  // Set now as 'widenType' may create a temp.
+  SET_LINENO(this->symbol);
+
+  for (int i = 0; i < numFormals(); i++) {
+    auto f = this->formal(i);
+    auto qt1 = f->qualType();
+    auto qt2 = widenType(qt1);
+
+    Formal newFormal = { qt2.getQual(), qt2.type(), f->intent(), f->name() };
+    newFormals.push_back(std::move(newFormal));
+    change = change || qt1 != qt2;
+  }
+
+  Qualifier retTagQual = QualifiedType::qualifierForRetTag(returnIntent_);
+  QualifiedType qtReturnType1 = { retTagQual, returnType() };
+  QualifiedType qtReturnType2 = widenType(qtReturnType1);
+
+  change = change || qtReturnType1 != qtReturnType2;
+
+  // TODO: Check to make sure intents still map?
+  newReturnType = qtReturnType2.type();
+
+  if (change) {
+    return get(kind_, width_, linkage_, std::move(newFormals),
+               returnIntent_,
+               newReturnType,
+               throws_);
+  }
 
   return ret;
 }

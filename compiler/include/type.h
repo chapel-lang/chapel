@@ -187,8 +187,6 @@ enum Qualifier {
   QUAL_CONST_WIDE_REF
 };
 
-const char* qualifierToStr(Qualifier q);
-
 // A QualifiedType is basically a tuple of (qualifier, type).
 // Shorter names, such as QualType and QualT have been proposed.
 // A QualifiedType is only expected to be meaningful during and
@@ -203,6 +201,9 @@ const char* qualifierToStr(Qualifier q);
 //
 class QualifiedType {
 public:
+  static const char* qualifierToStr(Qualifier q);
+  static Qualifier qualifierForArgIntent(IntentTag intent);
+  static Qualifier qualifierForRetTag(RetTag retTag);
 
   // Static methods for working with Qualifier
   static bool qualifierIsConst(Qualifier q)
@@ -317,6 +318,14 @@ public:
   // working with parts of the compiler that haven't fully
   // transferred to QualifiedType.
   QualifiedType refToRefType() const;
+
+  bool operator==(const QualifiedType& rhs) const {
+    return this->_type == rhs._type && this->_qual == rhs._qual;
+  }
+
+  bool operator!=(const QualifiedType& rhs) const {
+    return !(*this == rhs);
+  }
 
 private:
   Type*      _type;
@@ -465,6 +474,8 @@ class FunctionType final : public Type {
     bool isRef() const;
   };
 
+  using FormalMap = std::unordered_map<int, Formal>;
+
  private:
   Kind kind_;
   Width width_;
@@ -521,7 +532,9 @@ class FunctionType final : public Type {
   FunctionType* getWithWidth(Width width) const;
   FunctionType* getWithLinkage(Linkage linkage) const;
   FunctionType* getWithLoweredErrorHandling() const;
+  FunctionType* getWithLineFileInfo() const;
   FunctionType* getWithMask(int64_t mask, bool& outMaskConflicts) const;
+  FunctionType* getWithWidenedComponents() const;
   FunctionType* getAsLocal() const;
   FunctionType* getAsWide() const;
   FunctionType* getAsExtern() const;
@@ -551,6 +564,7 @@ class FunctionType final : public Type {
   static FunctionType::Kind determineKind(FnSymbol* fn);
   static FunctionType::Linkage determineLinkage(FnSymbol* fn);
   static Formal constructErrorHandlingFormal();
+  static std::array<Formal, 2> constructLineFileInfoFormals();
 
   // Prints things in a 'user facing' fashion, no mangling.
   static const char* kindToString(Kind kind);

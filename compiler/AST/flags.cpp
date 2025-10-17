@@ -110,11 +110,12 @@ static void viewSymbolFlags(Symbol* sym) {
         if (ShadowVarSymbol* svar = toShadowVarSymbol(vs)) {
           printf("%s shadow var  ", svar->intentDescrString());
         }
-        printf("qual %s\n", qualifierToStr(vs->qual));
+        printf("qual %s\n", QualifiedType::qualifierToStr(vs->qual));
 
       } else if (ArgSymbol* as = toArgSymbol(sym)) {
         printf("%s arg  qual %s\n",
-               as->intentDescrString(), qualifierToStr(as->qual));
+               as->intentDescrString(),
+               QualifiedType::qualifierToStr(as->qual));
 
       } else if (TypeSymbol* ts = toTypeSymbol(sym)) {
         if (Type* tp = ts->type) {
