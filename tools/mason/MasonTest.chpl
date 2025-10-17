@@ -243,25 +243,15 @@ private proc runTests(show: bool, run: bool, parallel: bool, filter: string,
     // then returns it. We need to fix that.
     // Get system, and external compopts
     var compopts = getTomlCompopts(lockFile, cmdLineCompopts);
+    log.debugf("compopts from Mason.toml: %?\n", compopts);
 
+    log.debugln("Adding prerequisite flags");
+
+    param compFlagFmt = "+compflag %s\n";
     // add prerequisite compopts
-    for prereq in MasonPrereqs.prereqs() {
-      const cmd = "make -C %s -s printchplflags".format(prereq);
-      const pFlags = runCommand(cmd).strip();
-
-      for pFlag in pFlags.split(" ") {
-        compopts.pushBack(pFlag);
-      }
-      // should prereqs expose these in their Makefiles instead?
-      const incGlob = Path.joinPath(prereq, "include", "*.h");
-      for path in glob(incGlob) {
-        compopts.pushBack(path);
-      }
-
-      const objGlob = Path.joinPath(prereq, "obj", "*.o");
-      for path in glob(objGlob) {
-        compopts.pushBack(path);
-      }
+    for flag in MasonPrereqs.chplFlags() {
+      log.debugf(compFlagFmt, flag);
+      compopts.pushBack(flag);
     }
 
     if isDir(joinPath(projectHome, "target/test/")) {

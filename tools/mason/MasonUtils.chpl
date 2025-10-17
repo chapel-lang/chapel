@@ -106,16 +106,23 @@ proc runCommand(cmd: [] string, quiet=false) : string throws {
   try {
     var process = spawn(cmd, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe);
 
+    log.debugf("runCommand: %?\n", cmd);
+
     var line:string;
+
+    log.debugln("stdout:");
     while process.stdout.readLine(line) {
       ret += line;
-      if !quiet {
-        write(line);
-      }
+      log.debug(line);
     }
-    if !quiet {
-      while process.stderr.readLine(line) do write(line);
+    log.debugln("end stdout");
+
+    log.debugln("stderr:");
+    while process.stderr.readLine(line) {
+      log.warn(line);
     }
+    log.debugln("end stderr.");
+
     process.wait();
     if process.exitCode != 0 {
       var cmdStr = " ".join(cmd);

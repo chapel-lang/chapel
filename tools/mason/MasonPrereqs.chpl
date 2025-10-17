@@ -19,13 +19,14 @@
  */
 
 import FileSystem as FS;
-use FileSystem only cwd,chdir;
+use FileSystem only cwd,chdir; // these are tertiary methods on locale
 import Path;
-import List;
+import List.list;
 
 import MasonLogger;
 import MasonUtils;
 
+private config param makeTargetChplFlags = "printchplflags";
 
 private var log = new MasonLogger.logger("mason prereqs");
 
@@ -47,11 +48,27 @@ proc install() {
   here.chdir(baseDir);
 }
 
-proc collectCompOpts() {
-  var compopts = new List.list(string);
+iter chplFlags() {
+  var flags: list(string);
+
   for prereq in prereqs() {
-    compopts.pushBack("-I%s".format(Path.joinPath(prereq, "include")));
-    compopts.pushBack("-L%s".format(Path.joinPath(prereq, "obj")));
+    const cmd = "make --quiet -C %s %s".format(prereq, makeTargetChplFlags);
+    const pFlags = MasonUtils.runCommand(cmd).strip();
+
+    for pFlag in pFlags.split(" ") {
+      yield pFlag;
+    }
+    // should prereqs expose these in their Makefiles instead?
+    const incGlob = Path.joinPath(prereq, "include", "*.h");
+    for path in FS.glob(incGlob) {
+      flags.pushBack(path);
+      yield path;
+    }
+
+    const objGlob = Path.joinPath(prereq, "obj", "*.o");
+    for path in FS.glob(objGlob) {
+      yield path;
+    }
   }
 }
 
