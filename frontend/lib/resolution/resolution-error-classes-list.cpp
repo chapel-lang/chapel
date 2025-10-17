@@ -446,6 +446,19 @@ void ErrorExternCCompilation::write(ErrorWriterBase& wr) const {
   }
 }
 
+void ErrorGenericFieldWithoutMark::write(ErrorWriterBase& wr) const {
+  auto decl = std::get<const uast::Decl*>(info_);
+  auto actualQt = std::get<types::QualifiedType>(info_);
+
+  CHPL_ASSERT(decl->isVarLikeDecl());
+  auto var = decl->toVarLikeDecl();
+
+  wr.heading(kind_, type_, decl, "field '", var->name(), "' has generic type '",
+             actualQt.type(), "' but is not marked with '?'.");
+  wr.code(decl, { decl });
+  wr.note(decl, "generic fields must be marked with '?'.");
+}
+
 void ErrorIfVarNonClassType::write(ErrorWriterBase& wr) const {
   auto cond = std::get<const uast::Conditional*>(info_);
   auto qtVar = std::get<types::QualifiedType>(info_);
@@ -2149,6 +2162,15 @@ void ErrorSyntacticGenericityMismatch::write(ErrorWriterBase& wr) const {
              genericityToString(syntacticGenericity), " in the program's syntax, but it has been inferred to be ",
              type, ", which is ", genericityToString(actualGenericity), ".");
   wr.codeForLocation(decl);
+}
+
+void ErrorFieldWithGenericManagement::write(ErrorWriterBase& wr) const {
+  auto decl = std::get<const uast::Decl*>(info_);
+
+  wr.heading(kind_, type_, decl, "field is declared with generic memory management.");
+  wr.codeForLocation(decl);
+  wr.note(decl, "Consider adding 'owned', 'shared', or 'borrowed'.");
+  wr.note(decl, "If generic memory management is desired, use a 'type' field to store the class type.");
 }
 
 void ErrorTertiaryUseImportUnstable::write(ErrorWriterBase& wr) const {
