@@ -47,16 +47,28 @@ module MasonLogger {
       pad = max(pad, prefix.size);
     }
 
-    proc infoln(f: string) {
-      if doInfo then Safe.writeln(logWriter, addPrefix(f));
+    proc info(s: string) {
+      if doInfo then Safe.writef(logWriter, addPrefix("%s"), s); ;
+    }
+
+    proc infoln(s: string) {
+      if doInfo then Safe.writeln(logWriter, addPrefix(s));
     }
 
     proc infof(f: string, args...) {
       if doInfo then Safe.writef(logWriter, addPrefix(f), (...args));
     }
 
-    proc debugln(f: string) {
-      if doDebug then Safe.writeln(logWriter, addPrefix(f));
+    proc warn(s: string) {
+      if doWarn then Safe.writef(logWriter, addPrefix("%s"), s);
+    }
+
+    proc debug(s: string) {
+      if doDebug then Safe.writef(logWriter, addPrefix("%s"), s);
+    }
+
+    proc debugln(s: string) {
+      if doDebug then Safe.writeln(logWriter, addPrefix(s));
     }
 
     proc debugf(f: string, args...) {
