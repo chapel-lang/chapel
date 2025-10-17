@@ -42,6 +42,7 @@ enum class ErrorCheckingMode {
   UNKNOWN,
   FATAL,
   RELAXED,
+  STRICT,
 };
 
 struct TryCatchState {
@@ -273,6 +274,12 @@ namespace resolution {
               context->error(ast, "call to throwing function from "
                                   "non-throwing function");
             }
+          } else if (mode == ErrorCheckingMode::STRICT && this->canThrow()) {
+            // In strict mode, even in throwing functions, all throwing calls must be directly marked
+            if (tryStack.size() == 0) {
+              context->error(ast, "call to throwing function '%s' must be marked with try or try! (strict mode)",
+                                  bestResFn->untyped()->name().c_str());
+            }
           } else if (tryStack.size() > 0) {
             // check if any of the enclosing try blocks have a catchall
             bool foundCatchAll = false;
@@ -417,8 +424,7 @@ namespace resolution {
     } else if (ag->hasPragma(pragmatags::PRAGMA_ERROR_MODE_FATAL)) {
       return ErrorCheckingMode::FATAL;
     } else if (ag->hasPragma(pragmatags::PRAGMA_ERROR_MODE_STRICT)) {
-      CHPL_UNIMPL("strict error checking mode not implemented");
-      return ErrorCheckingMode::RELAXED;
+      return ErrorCheckingMode::STRICT;
     } else if (ag->hasPragma(pragmatags::PRAGMA_ERROR_MODE_RELAXED)) {
       return ErrorCheckingMode::RELAXED;
     }
