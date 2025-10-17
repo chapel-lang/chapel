@@ -94,27 +94,29 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock", show=true) {
       }
     }
 
-    log.debugln("Will do external update");
-    if isDir(SPACK_ROOT) && TomlFile.pathExists('external') {
-      if getSpackVersion() < minSpackVersion then
-      throw new owned MasonError("Mason has been updated. " +
-                  "To install Spack, call: mason external --setup.");
-    }
+    if !skipUpdate {
+      log.debugln("Will do external update");
+      if isDir(SPACK_ROOT) && TomlFile.pathExists('external') {
+        if getSpackVersion() < minSpackVersion then
+        throw new owned MasonError("Mason has been updated. " +
+                    "To install Spack, call: mason external --setup.");
+      }
 
-    log.debugln("Will do createDepTree");
-    const lockFile = createDepTree(TomlFile);
-    if failedChapelVersion.size > 0 {
-      const prefix = if failedChapelVersion.size == 1
-        then "The following package is"
-        else "The following packages are";
-      stderr.writeln(prefix, " incompatible with your version of Chapel (", getChapelVersionStr(), ")");
-      for msg in failedChapelVersion do
-        stderr.writeln("  ", msg);
-      exit(1);
+      log.debugln("Will do createDepTree");
+      const lockFile = createDepTree(TomlFile);
+      if failedChapelVersion.size > 0 {
+        const prefix = if failedChapelVersion.size == 1
+          then "The following package is"
+          else "The following packages are";
+        stderr.writeln(prefix, " incompatible with your version of Chapel (", getChapelVersionStr(), ")");
+        for msg in failedChapelVersion do
+          stderr.writeln("  ", msg);
+        exit(1);
+      }
+      // Generate Lock File
+      log.debugln("Generating lock file");
+      genLock(lockFile, lockPath);
     }
-    // Generate Lock File
-    log.debugln("Generating lock file");
-    genLock(lockFile, lockPath);
     // Close Memory
     openFile.close();
 
