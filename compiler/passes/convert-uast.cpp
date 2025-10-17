@@ -1147,7 +1147,7 @@ struct Converter final : UastConverter {
           auto r = symStack.back().resolved;
           if (r != nullptr) {
             if (auto rr = r->byAstOrNull(expr)) {
-              if (!rr->toId().isEmpty()) {
+              if (!rr->toId().isEmpty() || rr->isBuiltin()) {
                 noteConvertedSym(expr, findConvertedSym(rr->toId()));
               } else {
                 // we need to note this symbol as having been converted, but
