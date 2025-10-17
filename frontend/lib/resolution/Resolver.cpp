@@ -7269,7 +7269,7 @@ void Resolver::exit(const DoWhile* loop) {
 // Returns 'true' if a single Id was scope-resolved, in which case the function
 // will also return via the ID and QualifiedType formals.
 static bool computeTaskIntentInfo(Resolver& resolver, const NamedDecl* intent,
-                                  ID& resolvedId, QualifiedType& type) {
+                                  ID& resolvedId, QualifiedType& type, bool& isBuiltin) {
   auto& scopeStack = resolver.scopeStack;
 
   // Look at the scope before the loop-statement
@@ -7284,8 +7284,10 @@ static bool computeTaskIntentInfo(Resolver& resolver, const NamedDecl* intent,
                                /* receiverScopeHelper */ helper,
                                intent->name(), config);
 
+  isBuiltin = false;
   if (ids.numIds() == 1) {
     resolvedId = ids.firstId();
+    isBuiltin = resolvedId.isEmpty();
     if (resolver.scopeResolveOnly == false) {
       if (resolvedId.isEmpty()) {
         type = typeForBuiltin(resolver.context, intent->name());
@@ -7455,9 +7457,10 @@ static QualifiedType resolveReduceScanOp(Resolver& resolver,
 bool Resolver::enter(const ReduceIntent* reduce) {
   ID id;
   QualifiedType type;
+  bool isBuiltin;
   ResolvedExpression& result = byPostorder.byAst(reduce);
 
-  if (computeTaskIntentInfo(*this, reduce, id, type)) {
+  if (computeTaskIntentInfo(*this, reduce, id, type, isBuiltin)) {
     validateAndSetToId(result, reduce, id);
   } else if (!scopeResolveOnly) {
     context->error(reduce, "Unable to find declaration of \"%s\" for reduction", reduce->name().c_str());
@@ -7486,6 +7489,7 @@ bool Resolver::enter(const ReduceIntent* reduce) {
   }
 
   result.setType(type);
+  result.setIsBuiltin(isBuiltin);
 
   return false;
 }
@@ -7513,14 +7517,16 @@ bool Resolver::enter(const TaskVar* taskVar) {
   if (isTaskIntent(taskVar)) {
     ID id;
     QualifiedType type;
+    bool isBuiltin;
     ResolvedExpression& result = byPostorder.byAst(taskVar);
-    if (computeTaskIntentInfo(*this, taskVar, id, type)) {
+    if (computeTaskIntentInfo(*this, taskVar, id, type, isBuiltin)) {
       QualifiedType taskVarType = QualifiedType(taskVar->storageKind(),
                                                 type.type());
       validateAndSetToId(result, taskVar, id);
 
       // TODO: Handle in-intents where type can change (e.g. array slices)
       result.setType(taskVarType);
+      result.setIsBuiltin(isBuiltin);
     } else if (!scopeResolveOnly) {
       context->error(taskVar, "Unable to find declaration of \"%s\" for task intent", taskVar->name().c_str());
     }
