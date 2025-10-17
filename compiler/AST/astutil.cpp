@@ -1705,6 +1705,14 @@ computeAdjustedType(std::unordered_map<Type*, Type*>& alreadyAdjusted,
   return ret;
 }
 
+void adjustSymbolType(Symbol* sym, AdjustTypeFn adjustTypeFn,
+                      bool preserveRefLevels) {
+  std::unordered_map<Type*, Type*> empty;
+  Type* t1 = sym->type;
+  Type* t2 = computeAdjustedType(empty, adjustTypeFn, preserveRefLevels, t1);
+  if (t1 != t2) sym->type = t2;
+}
+
 void adjustAllSymbolTypes(AdjustTypeFn adjustTypeFn, bool preserveRefLevels) {
   std::unordered_map<Type*, Type*> alreadyAdjusted;
 
@@ -1793,4 +1801,27 @@ void adjustAllSymbolTypes(AdjustTypeFn adjustTypeFn, bool preserveRefLevels) {
       if (noUses) ts->defPoint->remove();
     }
   }
+}
+
+bool isUseOfProcedureAsValue(SymExpr* se) {
+  auto fn = toFnSymbol(se->symbol());
+
+  if (!fn) return false;
+
+  if (auto call = toCallExpr(se->parentExpr)) {
+    if (call->baseExpr != se) {
+      auto formal = call->resolvedFunction() ? actual_to_formal(se) : nullptr;
+
+      if (call->isPrimitive(PRIM_MOVE) && call->get(2) == se) {
+        // Ok, being moved into a variable.
+        return true;
+
+      } else if (formal && isFunctionType(formal)) {
+        // Ok, being passed.
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
