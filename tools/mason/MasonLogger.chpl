@@ -36,8 +36,16 @@ module MasonLogger {
   private proc doWarn do return logs>=logLevel.warn;
   private proc doError do return logs>=logLevel.error;
 
+  private var pad = 0;
+
   record logger {
     var prefix: string;
+
+    proc init(prefix) {
+      this.prefix = prefix;
+
+      pad = max(pad, prefix.size);
+    }
 
     proc infoln(f: string) {
       if doInfo then Safe.writeln(logWriter, addPrefix(f));
@@ -56,7 +64,21 @@ module MasonLogger {
     }
 
     proc addPrefix(f) {
-      return Safe.format("%s: %s", this.prefix, f);
+      proc bold(s) {
+        param start = "\x1b[1m";
+        param reset = "\x1b[0m";
+
+        return start+s+reset;
+      }
+
+      try {
+        const prefixFmt = bold("%%<%is:".format(pad));
+        return Safe.format(prefixFmt+" %s", this.prefix, f);
+      }
+      catch e {
+        writeln("Error creating log prefix");
+        return f;
+      }
     }
   }
 
