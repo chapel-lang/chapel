@@ -31,9 +31,9 @@ public use MasonEnv;
 public use Path;
 public use TOML;
 use Regex;
-use MasonLogger;
+import MasonLogger;
 
-private var log = new logger("utils");
+private var log = new MasonLogger.logger("mason utils");
 
 
 /* Gets environment variables for spawn commands */

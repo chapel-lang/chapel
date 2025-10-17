@@ -27,7 +27,7 @@ import MasonLogger;
 import MasonUtils;
 
 
-private var log = new MasonLogger.logger("prereqs");
+private var log = new MasonLogger.logger("mason prereqs");
 
 proc install() {
 
