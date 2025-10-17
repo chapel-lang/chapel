@@ -1147,7 +1147,17 @@ struct Converter final : UastConverter {
           auto r = symStack.back().resolved;
           if (r != nullptr) {
             if (auto rr = r->byAstOrNull(expr)) {
-              noteConvertedSym(expr, findConvertedSym(rr->toId()));
+              if (!rr->toId().isEmpty()) {
+                noteConvertedSym(expr, findConvertedSym(rr->toId()));
+              } else {
+                // we need to note this symbol as having been converted, but
+                // we have nothing to map it to. This will cause problems when
+                // we can't convert TemporaryConversionSymbols referring to this
+                // task intent later. Instead, issue a user-friendly error now.
+                USR_FATAL(svs,
+                          "could not find the outer variable for '%s'",
+                          svs->name);
+              }
             }
           }
         }
