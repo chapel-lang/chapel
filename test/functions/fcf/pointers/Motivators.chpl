@@ -117,8 +117,8 @@ module Motivators {
     proc bar(p, n: int) {
       var counter = 0;
       ref x = p(counter, n);
-      x = here.id;
       assert(counter == n);
+      x = here.id;
       assert(globalCounter == here.id);
     }
 
@@ -232,15 +232,10 @@ module Motivators {
     testProcCallAsActualParsing2();
     testAnonProcAsForwardingCrazyProgram();
     testCallProcReturningProc();
-
-    if compiledForSingleLocale() {
-      // TODO: Why are these commented out again? Figure out what's wrong.
-      // testProcValueThatThrows1();
-      // testProcValueThatThrows2();
-
-      testCallProcReturningByConstRef();
-      testCallProcPassingAndReturningByRef();
-      testWideRefPatterns0();
-    }
+    testCallProcReturningByConstRef();
+    testCallProcPassingAndReturningByRef();
+    testProcValueThatThrows1();
+    testProcValueThatThrows2();
+    testWideRefPatterns0();
   }
 }

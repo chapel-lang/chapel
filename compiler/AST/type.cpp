@@ -325,7 +325,7 @@ const char* toString(Type* type, bool decorateAllClasses) {
 *                                                                             *
 ************************************** | *************************************/
 
-const char* qualifierToStr(Qualifier q) {
+const char* QualifiedType::qualifierToStr(Qualifier q) {
     switch (q) {
       case QUAL_UNKNOWN:
         return "unknown";
@@ -889,10 +889,16 @@ static const char* builtinTypeName(Type* vt) {
 }
 
 const char* FunctionType::typeToString(Type* t) {
-  // Use the value type when printing out the user type to hide '_ref'.
-  auto vt = t->getValType();
-  if (auto builtinName = builtinTypeName(vt)) return builtinName;
-  return vt->symbol->name;
+  if (!developer) {
+    // Use the value type when printing out the user type to hide '_ref'.
+    auto vt = t->getValType();
+    if (auto builtinName = builtinTypeName(vt)) return builtinName;
+    return vt->symbol->name;
+
+  } else {
+    // As a developer, display the type exactly as given.
+    return t->symbol->name;
+  }
 }
 
 const char* FunctionType::returnIntentToString(RetTag intent) {
@@ -911,11 +917,17 @@ FunctionType* FunctionType::create(FunctionType::Kind kind,
   bool isAnyFormalNamed = false;
 
   for (auto& formal : formals) {
-    // Call 'makeRefType' if it's likely needed to avoid problems later.
-    bool isRef = formal.qual() == QUAL_CONST_REF ||
-                 formal.qual() == QUAL_REF ||
-                 formal.intent() & INTENT_REF;
-    if (isRef) makeRefType(formal.type());
+    bool isRefIntent = formal.qual() == QUAL_CONST_REF ||
+                       formal.qual() == QUAL_REF ||
+                       formal.intent() & INTENT_REF;
+    bool isRefType = formal.qualType().isRefType();
+    bool isWideRefType = formal.qualType().isWideRefType();
+
+    if (isRefIntent && !isRefType && !isWideRefType) {
+      // Call 'makeRefType' if it's needed to avoid problems later.
+      // It should not be called if the type is already a 'ref' type.
+      makeRefType(formal.type());
+    }
 
     isAnyFormalNamed |= formal.isNamed();
   }
@@ -1235,20 +1247,61 @@ FunctionType::getWithMask(int64_t mask, bool& outMaskConflicts) const {
   return ret;
 }
 
-FunctionType* FunctionType::getReplacing(const FormalMap& formals) const {
-  INT_FATAL("Not implemented yet!");
-  return nullptr;
-}
+// Linked in from 'insertWideReferences.cpp'.
+QualifiedType computeWidenedType(Symbol* sym, bool mustBeWide, bool wideVal);
 
-FunctionType*
-FunctionType::getReplacing(RetTag returnIntent, Type* returnType) const {
-  INT_FATAL("Not implemented yet!");
-  return nullptr;
+static QualifiedType widenType(QualifiedType qt) {
+  // Create and set a temporary as a workaround for passing in a 'Symbol*'.
+  auto temp = newTemp();
+  temp->type = qt.type();
+  temp->qual = qt.getQual();
+
+  // True as in 'setWide' in 'insertWideReferences.cpp'.
+  bool mustBeWide = true;
+  bool wideVal = true;
+
+  auto ret = computeWidenedType(temp, mustBeWide, wideVal);
+
+  return ret;
 }
 
 FunctionType* FunctionType::getWithWidenedComponents() const {
-  INT_FATAL("Not implemented yet!");
-  return nullptr;
+  FunctionType* ret = (FunctionType*) this;
+
+  std::vector<Formal> newFormals;
+  Type* newReturnType = returnType_;
+  bool change = false;
+
+  // Set now as 'widenType' may create a temp.
+  SET_LINENO(this->symbol);
+
+  for (int i = 0; i < numFormals(); i++) {
+    auto f = this->formal(i);
+    auto qt1 = f->qualType();
+    auto qt2 = widenType(qt1);
+
+    Formal newFormal = { qt2.getQual(), qt2.type(), f->intent(), f->name() };
+    newFormals.push_back(std::move(newFormal));
+    change = change || qt1 != qt2;
+  }
+
+  Qualifier retTagQual = QualifiedType::qualifierForRetTag(returnIntent_);
+  QualifiedType qtReturnType1 = { retTagQual, returnType() };
+  QualifiedType qtReturnType2 = widenType(qtReturnType1);
+
+  change = change || qtReturnType1 != qtReturnType2;
+
+  // TODO: Check to make sure intents still map?
+  newReturnType = qtReturnType2.type();
+
+  if (change) {
+    return get(kind_, width_, linkage_, std::move(newFormals),
+               returnIntent_,
+               newReturnType,
+               throws_);
+  }
+
+  return ret;
 }
 
 FunctionType::Kind FunctionType::kind() const {
@@ -1317,13 +1370,6 @@ bool FunctionType::throws() const {
 
 bool FunctionType::isAnyFormalNamed() const {
   return this->isAnyFormalNamed_;
-}
-
-bool FunctionType::containsAnyWidenableComponent() const {
-  for (auto& f : formals_) {
-    if (f.canBeWidened()) return true;
-  }
-  return false;
 }
 
 const char* FunctionType::toString() const {
@@ -1554,23 +1600,6 @@ QualifiedType FunctionType::Formal::qualType() const {
 
 bool FunctionType::Formal::isRef() const {
   return qualType().isRef();
-}
-
-bool FunctionType::Formal::isWideRef() const {
-  return qualType().isWideRef();
-}
-
-bool FunctionType::Formal::isRefOrWideRef() const {
-  return qualType().isRefOrWideRef();
-}
-
-bool FunctionType::Formal::isConst() const {
-  return qualType().isConst();
-}
-
-bool FunctionType::Formal::canBeWidened() const {
-  INT_FATAL("Not implemented yet!");
-  return false;
 }
 
 bool FunctionType::Formal::isNamed() const {

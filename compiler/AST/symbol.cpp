@@ -173,7 +173,6 @@ bool Symbol::inTree() {
     return false;
 }
 
-
 QualifiedType
 Symbol::computeQualifiedType(bool isFormal, IntentTag intent, Type* type,
                              Qualifier qual,
@@ -194,7 +193,6 @@ Symbol::computeQualifiedType(bool isFormal, IntentTag intent, Type* type,
   if (isConst) ret = ret.toConst();
 
   return ret;
-
 }
 
 QualifiedType Symbol::qualType() {
