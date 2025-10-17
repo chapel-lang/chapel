@@ -1694,7 +1694,8 @@ static bool isScopeResolvedExprGeneric(Context* context,
 static bool isVariableDeclWithClearGenericity(Context* context,
                                               const VarLikeDecl* var,
                                               bool &outIsGeneric,
-                                              types::QualifiedType* outFormalType) {
+                                              types::QualifiedType* outFormalType,
+                                              bool useResolution) {
   // fields that are 'type' or 'param' are generic
   // and we can use the same type/param intent for the type constructor
   if (var->storageKind() == QualifiedType::TYPE ||
@@ -1733,10 +1734,12 @@ static bool isVariableDeclWithClearGenericity(Context* context,
   // Performance: this scope resolution could be put behind a query if it
   //              impacts performance too much.
   ResolutionResultByPostorderID rr;
-  auto visitor =
-    Resolver::createForScopeResolvingField(context, aggregateDecl,
-                                           var, rr);
-  var->traverse(visitor);
+  if (useResolution) {
+    auto visitor =
+      Resolver::createForScopeResolvingField(context, aggregateDecl,
+                                             var, rr);
+    var->traverse(visitor);
+  }
 
   outIsGeneric = isScopeResolvedExprGeneric(context, rr, var->typeExpression());
   return true;
@@ -1744,14 +1747,15 @@ static bool isVariableDeclWithClearGenericity(Context* context,
 
 bool isFieldSyntacticallyGeneric(Context* context,
                                  const ID& fieldId,
-                                 types::QualifiedType* formalType) {
+                                 types::QualifiedType* formalType,
+                                 bool useLightResolution) {
   // compare with AggregateType::fieldIsGeneric
 
   auto var = parsing::idToAst(context, fieldId)->toVariable();
   CHPL_ASSERT(var);
 
   bool isGeneric = false;
-  if (isVariableDeclWithClearGenericity(context, var, isGeneric, formalType)) {
+  if (isVariableDeclWithClearGenericity(context, var, isGeneric, formalType, useLightResolution)) {
     return isGeneric;
   }
 
@@ -1783,7 +1787,7 @@ bool isFieldSyntacticallyGeneric(Context* context,
         break;
       }
 
-      if (isVariableDeclWithClearGenericity(context, neighborVar, isGeneric, formalType)) {
+      if (isVariableDeclWithClearGenericity(context, neighborVar, isGeneric, formalType, useLightResolution)) {
         break;
       }
     }
