@@ -268,7 +268,14 @@ static int varArgsCount(ArgSymbol* formal, VarSymbol* nVar) {
     retval = nVar->immediate->int_value();
 
   } else {
-    INT_FATAL(formal, "unexpected non-VarSymbol");
+    // Generate user-facing error for non-integral vararg counts
+    if (is_bool_type(nVar->type)) {
+      USR_FATAL(formal, "variadic arguments count must be a 'param' integer type, not bool");
+    } else if (!is_int_type(nVar->type)) {
+      USR_FATAL(formal, "variadic arguments count must be a 'param' integer type");
+    } else {
+      INT_FATAL(formal, "unexpected non-VarSymbol");
+    }
   }
 
   return retval;
