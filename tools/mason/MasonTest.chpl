@@ -82,6 +82,8 @@ proc masonTest(args: [] string) throws {
   if updateFlag.hasValue() {
     skipUpdate = !updateFlag.valueAsBool();
   }
+  if skipUpdate then log.debugln("Will skip updates");
+
   if setCommOpt.hasValue() then setComm = setCommOpt.value();
 
   var isMasonProject = true;
