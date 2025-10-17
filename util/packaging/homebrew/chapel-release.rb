@@ -12,12 +12,13 @@ class Chapel < Formula
   no_autobump! because: :bumped_by_upstream
 
   bottle do
-    sha256 arm64_tahoe:   "6c6cde0b16467d90229fbb797f0732afd1d7dfe5a5bfcc13da98b30dfefaa094"
-    sha256 arm64_sequoia: "c03f8a4cf6cc4a26317150d8d990bfabdc8f8eb5d0442d77eb8dbf6bb3c3cd27"
-    sha256 arm64_sonoma:  "1dbade09b03fc9df2f9a9c84ab6aa306804e1b61693dbfa3445b23bb2a487403"
-    sha256 sonoma:        "67d50e5f24ab48b8f6610c892ffcc9ad2232942e4c3bef0ee99811a9bc5c5b00"
-    sha256 arm64_linux:   "955bf6276a0fb323b470c7862f599b4cab81bb86e7580abe4b44be5a58a20462"
-    sha256 x86_64_linux:  "7945f4badb7210593a5a7453746fc6566d058da0e7a02463d0d01d3020e80b9d"
+    rebuild 1
+    sha256 arm64_tahoe:   "a92b26a348ec2ddb493ed332a170b57eed2b17eab774390b6aa8f242bcd4c2bd"
+    sha256 arm64_sequoia: "86a6958d62cc8fd122bfeb781812cf1df71f08c2cb956f0bf8a9ff945a4608f2"
+    sha256 arm64_sonoma:  "44e172c1d40ec21a7c8344ffb0b81ad22c2cb7f8920ba5a4db11a2b2fe543947"
+    sha256 sonoma:        "7b593fdea9a9da9357cc2f27753a81b2c241fb8cc326970c1de74af178567018"
+    sha256 arm64_linux:   "6bbc5a340c4d98538f0007bac67b7c60129746cbfbd9e639b258e588d4b36853"
+    sha256 x86_64_linux:  "c12cedbb7591a5fb87cb7f763d5ac078caff965d94326fe3f279470dacb49aab"
   end
 
   depends_on "cmake"
@@ -26,7 +27,7 @@ class Chapel < Formula
   depends_on "jemalloc"
   depends_on "llvm@20"
   depends_on "pkgconf"
-  depends_on "python@3.13"
+  depends_on "python@3.14"
 
   def llvm
     deps.map(&:to_formula).find { |f| f.name.match? "^llvm" }
@@ -44,8 +45,8 @@ class Chapel < Formula
 
   def install
     # Always detect Python used as dependency rather than needing aliased Python formula
-    python = "python3.13"
-    # It should be noted that this will expand to: 'for cmd in python3.13 python3 python python2; do'
+    python = "python3.14"
+    # It should be noted that this will expand to: 'for cmd in python3.14 python3 python python2; do'
     # in our find-python.sh script.
     inreplace "util/config/find-python.sh", /^(for cmd in )(python3 )/, "\\1#{python} \\2"
 
