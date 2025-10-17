@@ -187,8 +187,6 @@ enum Qualifier {
   QUAL_CONST_WIDE_REF
 };
 
-const char* qualifierToStr(Qualifier q);
-
 // A QualifiedType is basically a tuple of (qualifier, type).
 // Shorter names, such as QualType and QualT have been proposed.
 // A QualifiedType is only expected to be meaningful during and
@@ -203,6 +201,7 @@ const char* qualifierToStr(Qualifier q);
 //
 class QualifiedType {
 public:
+  static const char* qualifierToStr(Qualifier q);
   static Qualifier qualifierForArgIntent(IntentTag intent);
   static Qualifier qualifierForRetTag(RetTag retTag);
 
@@ -319,6 +318,14 @@ public:
   // working with parts of the compiler that haven't fully
   // transferred to QualifiedType.
   QualifiedType refToRefType() const;
+
+  bool operator==(const QualifiedType& rhs) const {
+    return this->_type == rhs._type && this->_qual == rhs._qual;
+  }
+
+  bool operator!=(const QualifiedType& rhs) const {
+    return !(*this == rhs);
+  }
 
 private:
   Type*      _type;
@@ -465,14 +472,9 @@ class FunctionType final : public Type {
     QualifiedType qualType() const;
     bool isNamed() const;
     bool isRef() const;
-    bool isWideRef() const;
-    bool isRefOrWideRef() const;
-    bool isConst() const;
-    bool canBeWidened() const;
   };
 
   using Formals = std::vector<Formal>;
-  using FormalMap = std::unordered_map<int, Formal>;
 
  private:
   Kind kind_;
@@ -537,8 +539,6 @@ class FunctionType final : public Type {
   FunctionType* getAsLocal() const;
   FunctionType* getAsWide() const;
   FunctionType* getAsExtern() const;
-  FunctionType* getReplacing(const FormalMap& formals) const;
-  FunctionType* getReplacing(RetTag returnIntent, Type* returnType) const;
 
   Kind kind() const;
   Width width() const;
@@ -551,7 +551,6 @@ class FunctionType final : public Type {
   Type* returnType() const;
   bool throws() const;
   bool isAnyFormalNamed() const;
-  bool containsAnyWidenableComponent() const;
   bool isGeneric() const;
   bool isLocal() const;
   bool isWide() const;

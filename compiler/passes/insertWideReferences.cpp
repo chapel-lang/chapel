@@ -286,13 +286,7 @@ static bool isTypeFullyWide(BaseAST* bs) {
 }
 
 static bool isFullyWide(BaseAST* bs) {
-  if( Symbol* sym = toSymbol(bs) ) {
-    if (sym->isWideRef())
-      return true;
-  } else if( Expr* e = toExpr(bs) ) {
-    if (e->isWideRef())
-      return true;
-  }
+  if (bs->isWideRef()) return true;
 
   // Don't return true for a reference to a wide class
   return isTypeFullyWide(bs) && !bs->isRef();
@@ -463,10 +457,52 @@ static bool queueEmpty() {
   return _todo_queue.empty();
 }
 
+// Compute the wide type for a given 'Symbol*', if applicable, and return it
+// as a 'QualifiedType'. This function does not set the type of 'sym'.
+//
+// This is exposed for use in the  'FunctionType::getWithWidenableComponents()'
+// type constructor which will widen all widenable formals/return type.
+QualifiedType computeWidenedType(Symbol* sym, bool mustBeWide, bool wideVal);
 
-//
-// Change a symbol's type to something wide.
-//
+QualifiedType computeWidenedType(Symbol* sym, bool mustBeWide, bool wideVal) {
+  QualifiedType ret = sym->qualType();
+
+  if (isFullyWide(sym) || !typeCanBeWide(sym)) return ret;
+
+  if (isObj(sym) && mustBeWide) {
+    if (TypeSymbol* ts = toTypeSymbol(sym->defPoint->parentSymbol)) {
+      if (isFullyWide(ts)) return ret;
+    }
+
+    if (Type* wide = wideClassMap.get(sym->type)) {
+      ret = { ret.getQual(), wide };
+    }
+  }
+  else if (isRefType(sym)) {
+    if (mustBeWide) {
+      if (Type* wide = wideRefMap.get(sym->type)) {
+        ret = { QUAL_WIDE_REF, wide };
+      }
+    } else if (wideVal) {
+      if (Type* wide = narrowToWideVal[sym->type]) {
+        ret = { QUAL_REF, wide };
+      }
+    }
+  }
+  else if (sym->isRefOrWideRef()) {
+    if (mustBeWide) {
+      ret = { QUAL_WIDE_REF, ret.type() };
+    } else {
+      ret = { QUAL_REF, ret.type() };
+    }
+    if (Type* wide = wideClassMap.get(sym->type->getValType())) {
+      ret = { ret.getQual(), wide };
+    }
+  }
+
+  return ret;
+}
+
 static void fixType(Symbol* sym, bool mustBeWide, bool wideVal) {
   if (isFullyWide(sym) || !typeCanBeWide(sym)) return;
 
@@ -481,34 +517,11 @@ static void fixType(Symbol* sym, bool mustBeWide, bool wideVal) {
     } else if (sym->hasFlag(FLAG_LOCAL_FIELD)) {
       USR_WARN("\"local field\" pragma applied to non-field %s\n", sym->cname);
     }
+  }
 
-    if (Type* wide = wideClassMap.get(sym->type)) {
-      sym->type = wide;
-    }
-  }
-  else if (isRefType(sym)) {
-    if (mustBeWide) {
-      if (Type* wide = wideRefMap.get(sym->type)) {
-        sym->type = wide;
-        sym->qual = QUAL_WIDE_REF;
-      }
-    } else if (wideVal) {
-      if (Type* wide = narrowToWideVal[sym->type]) {
-        sym->type = wide;
-        sym->qual = QUAL_REF;
-      }
-    }
-  }
-  else if(sym->isRefOrWideRef()) {
-    if (mustBeWide) {
-      sym->qual = QUAL_WIDE_REF;
-    } else {
-      sym->qual = QUAL_REF;
-    }
-    if (Type* wide = wideClassMap.get(sym->type->getValType())) {
-      sym->type = wide;
-    }
-  }
+  auto qt = computeWidenedType(sym, mustBeWide, wideVal);
+  sym->type = qt.type();
+  sym->qual = qt.getQual();
 }
 
 static void cause_helper(BaseAST* target, int level, std::set<Symbol*>& visited) {
@@ -578,7 +591,6 @@ static void printCauses(Symbol* sym) {
   std::set<Symbol*> visited;
   cause_helper(sym, 0, visited);
 }
-
 
 static void setWide(BaseAST* cause, Symbol* sym) {
   if (!typeCanBeWide(sym)) return;
@@ -887,18 +899,34 @@ static void widenSubAggregateTypes(BaseAST* cause, Type* parent) {
   }
 }
 
+static void widenLhsTypeInReturnFromCall(Symbol* returned, CallExpr* call) {
+  // TODO: This case handles virtual method calls, or the return of
+  // a _ref. Can we handle this better?
+
+  if (auto parent = toCallExpr(call->parentExpr)) {
+    INT_ASSERT(parent->isPrimitive(PRIM_MOVE) ||
+               parent->isPrimitive(PRIM_ASSIGN));
+    auto lhs = toSymExpr(parent->get(1));
+
+    DEBUG_PRINTF("Returning wide to %s (%d)\n", lhs->symbol()->cname,
+                                                lhs->symbol()->id);
+
+    if (isObj(returned) && lhs->isRefOrWideRef()) {
+      setValWide(call, lhs);
+
+    } else if (isObj(lhs) || isObj(returned)) {
+      setWide(call, lhs);
+
+    } else if (returned->isRefOrWideRef() && lhs->isRefOrWideRef()) {
+      widenRef(call, lhs->symbol());
+    }
+  }
+}
 
 //
 // Widen variables that we don't know how to keep narrow.
 //
 static void addKnownWides() {
-  PassManager pm;
-
-  // TODO: "Run pass over all symbols..."
-  pm.runPass(WidenComponentsOfProcPtrTypes(), gFnSymbols);
-  pm.runPass(WidenComponentsOfProcPtrTypes(), gArgSymbols);
-  pm.runPass(WidenComponentsOfProcPtrTypes(), gVarSymbols);
-
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_ON_BLOCK) && !fn->hasFlag(FLAG_LOCAL_ON)) {
       // Get the arg bundle type for an on-stmt. Testing against a name like
@@ -921,10 +949,20 @@ static void addKnownWides() {
           setWide(fn, fi);
         }
       }
+
+    } else if (fn->isUsedAsValue()) {
+      DEBUG_PRINTF("Function %s (%d) is used as value, must be wide\n",
+                   fn->cname, fi->id);
+
+      for_formals(formal, fn) setWide(fn, formal);
+      setWide(fn, fn->getReturnSymbol());
     }
   }
+
   forv_Vec(VarSymbol, var, gVarSymbols) {
+    if (!var->inTree()) continue;
     //if (!typeCanBeWide(var)) continue;
+
     Symbol* defParent = var->defPoint->parentSymbol;
 
     if (usingGpuLocaleModel()) {
@@ -960,6 +998,7 @@ static void addKnownWides() {
   }
 
   // Widen the arguments of virtual methods
+  // TODO: Why not collapse this into the above loop over FnSymbol?
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
     // Skip args we removed already in this pass.
     if (!arg->defPoint->parentSymbol) continue;
@@ -968,6 +1007,7 @@ static void addKnownWides() {
 
     FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
 
+    // TODO: This can be O(1) lookup
     for (FnSymbol* indirectlyCalledFn : ftableVec) {
       if (fn == indirectlyCalledFn) {
         debug(arg, "called from ftableVec\n");
@@ -984,6 +1024,7 @@ static void addKnownWides() {
     }
   }
 
+  // TODO: Why not collapse this into the above loop on FnSymbol?
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_VIRTUAL)) {
       debug(fn->getReturnSymbol(), "must be wide, is returned from virtual fn %s (%d)\n", fn->cname, fn->id);
@@ -1017,6 +1058,8 @@ static void addKnownWides() {
       int i = 0;
       for_actuals(actual, call) {
         if (SymExpr* se = toSymExpr(actual)) {
+          // TODO: Why is this only checking `'isRefOrWideRef` and not
+          //       e.g., `typeCanBeWide`, shouldn't it widen everything?
           if (i > 1 && actual_to_formal(se)->isRefOrWideRef()) {
             setWide(call, se->symbol());
           }
@@ -1033,6 +1076,26 @@ static void addKnownWides() {
             setWide(call, se->symbol());
           }
         }
+      }
+    }
+    else if (call->isIndirectCall()) {
+      auto ft = call->functionType();
+      INT_ASSERT(ft);
+
+      if (!ft->hasForeignLinkage()) {
+        debug(call, "Call (%d) is indirect, so actuals must be wide\n",
+                    call->id);
+
+        for_actuals(actual, call) {
+          if (auto se = toSymExpr(actual)) {
+            auto sym = se->symbol();
+            if (typeCanBeWide(sym)) setWide(call, sym);
+          }
+        }
+
+        // If the call returns something, that may need to be widened.
+        auto sym = ft->returnType()->symbol;
+        widenLhsTypeInReturnFromCall(sym, call);
       }
     }
   }
@@ -1195,8 +1258,7 @@ static void propagateVar(Symbol* sym) {
         else {
           DEBUG_PRINTF("Unhandled assign: %s = %s\n", lhs->type->symbol->cname, rhs->type->symbol->cname);
         }
-      }
-      else if (call->isPrimitive(PRIM_SET_MEMBER)) {
+      } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
         // If the base class or RHS is wide, then the field may be assigned to
         // with a remote value and should be wide.
         SymExpr* field = toSymExpr(call->get(2));
@@ -1237,23 +1299,7 @@ static void propagateVar(Symbol* sym) {
 
         forv_Vec(CallExpr*, call, *fn->calledBy) {
           if (!isAlive(call)) continue;
-
-          // TODO: This case handles virtual method calls, or the return of
-          // a _ref. Can we handle this better?
-          if (CallExpr* parent = toCallExpr(call->parentExpr)) {
-            INT_ASSERT(parent->isPrimitive(PRIM_MOVE) || parent->isPrimitive(PRIM_ASSIGN));
-            SymExpr* lhs = toSymExpr(parent->get(1));
-            DEBUG_PRINTF("Returning wide to %s (%d)\n", lhs->symbol()->cname, lhs->symbol()->id);
-            if (isObj(sym) && lhs->isRefOrWideRef()) {
-              setValWide(use, lhs);
-            }
-            else if (isObj(lhs) || isObj(sym)) {
-              setWide(use, lhs);
-            }
-            else if (sym->isRefOrWideRef() && lhs->isRefOrWideRef()) {
-              widenRef(use, lhs->symbol());
-            }
-          }
+          widenLhsTypeInReturnFromCall(sym, call);
         }
       }
       else if (call->isPrimitive(PRIM_ARRAY_SHIFT_BASE_POINTER)) {
@@ -2110,7 +2156,8 @@ static void fixAST() {
       }
     }
     else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL) ||
-        call->isPrimitive(PRIM_FTABLE_CALL)) {
+             call->isPrimitive(PRIM_FTABLE_CALL) ||
+             call->isIndirectCall()) {
       for_actuals(actual, call) {
         SymExpr* act = toSymExpr(actual);
         if (isFullyWide(act)) continue;
@@ -2467,6 +2514,14 @@ insertWideReferences(void) {
 
   INT_ASSERT(wideRefMap.n == 0);
   buildWideRefMap();
+
+  // NOTE: This pass must run after wide-ref and wide-class types are built.
+  PassManager pm;
+
+  // TODO: "Run pass over all symbols..."
+  pm.runPass(WidenComponentsOfProcPtrTypes(), gFnSymbols);
+  pm.runPass(WidenComponentsOfProcPtrTypes(), gArgSymbols);
+  pm.runPass(WidenComponentsOfProcPtrTypes(), gVarSymbols);
 
   //
   // 1) change arrays of classes into arrays of wide classes
