@@ -957,6 +957,19 @@ syntacticallyGenericFieldsPriorToIdHaveSubs(Context* context,
   return true;
 }
 
+static const bool& emitFieldWithGenericManagementWarning(Context* context, const Decl* ast) {
+  QUERY_BEGIN(emitFieldWithGenericManagementWarning, context, ast);
+  CHPL_REPORT(context, FieldWithGenericManagement, ast);
+  bool res = true;
+  return QUERY_END(res);
+}
+
+static const bool& emitGenericFieldWithoutMarkWarning(Context* context, const Decl* ast, QualifiedType fieldType) {
+  QUERY_BEGIN(emitGenericFieldWithoutMarkWarning, context, ast, fieldType);
+  CHPL_REPORT(context, GenericFieldWithoutMark, ast, fieldType);
+  bool res = true;
+  return QUERY_END(res);
+}
 
 void ResolvedFields::validateFieldGenericity(Context* context, const types::CompositeType* fieldsOfType) const {
   // Check if all fields preceding the current field have substitutions.
@@ -978,6 +991,29 @@ void ResolvedFields::validateFieldGenericity(Context* context, const types::Comp
   }
 
   for (auto& field : fields_) {
+    // Check for generic memory management in class-typed fields
+    bool issuedMemoryManagementWarning = false;
+    if (field.type.type() && field.type.type()->isClassType()) {
+      auto ct = field.type.type()->toClassType();
+      if (ct->decorator().isUnknownManagement()) {
+        auto ast = parsing::idToAst(context, field.declId)->toDecl();
+        emitFieldWithGenericManagementWarning(context, ast);
+        issuedMemoryManagementWarning = true;
+      }
+    }
+
+
+    // there are two possible ways in which syntactic genericity can diverge.
+    // 2. A resolution-based (useLightResolution = true) check. This is
+    //    the default check. If we got it wrong (the type looked concrete
+    //    but eventually was found to be generic), this is an error, because
+    //    we use this logic to make important resolution decisions.
+    //    Emit SyntacticGenericityMismatch in that case.
+    // 1. The non-resolution based (useLightResolution = false) check. In that
+    //    case, the user wrote code that looks "at a glance" to be concrete,
+    //    but turned out generic. Production emits a a warning for this case,
+    //    and we do too.
+
     auto isGeneric = isFieldSyntacticallyGeneric(context, field.declId, nullptr);
     if (!isGeneric) {
       // Check if the type is actually concrete according to the type we have stored.
@@ -986,8 +1022,23 @@ void ResolvedFields::validateFieldGenericity(Context* context, const types::Comp
       if (g != Type::CONCRETE) {
         auto ast = parsing::idToAst(context, field.declId)->toDecl();
         CHPL_REPORT(context, SyntacticGenericityMismatch, ast, g, Type::CONCRETE, field.type);
+        continue;
       }
-    } else {
+    }
+
+    auto isGenericWithoutResolution =
+      isFieldSyntacticallyGeneric(context, field.declId, nullptr, /* useLightResolution */ false);
+    if (!isGenericWithoutResolution && !issuedMemoryManagementWarning) {
+      std::set<const Type*> ignore = {fieldsOfType};
+      auto g = getTypeGenericityIgnoring(context, field.type, ignore);
+      if (g != Type::CONCRETE &&
+          fieldsOfType->instantiatedFromCompositeType() == nullptr) {
+        auto ast = parsing::idToAst(context, field.declId)->toDecl();
+        emitGenericFieldWithoutMarkWarning(context, ast, field.type);
+      }
+    }
+
+    if (isGeneric) {
       // Type is syntactically generic. If it doesn't have a substitution,
       // the type may be partially instantiated, so the remaining fields,
       // which may eventually be concrete, might not be at this time, and that's
