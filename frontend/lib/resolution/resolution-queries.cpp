@@ -1927,6 +1927,13 @@ static bool isVariableDeclWithClearGenericity(Context* context,
 
   // Performance: this scope resolution could be put behind a query if it
   //              impacts performance too much.
+  //
+  // Here, we populate 'rr' with scope resolution information if resolution
+  // is enabled. Later, 'isScopeResolvedExprGeneric' performs some light
+  // resolution (checking if a type is generic, generic-with-defaults, etc.)
+  // if that scope resolution information is available. Thus, although
+  // we don't thread 'useResolution' through to 'isScopeResolvedExprGeneric',
+  // it is affected by the switch.
   ResolutionResultByPostorderID rr;
   if (useResolution) {
     auto visitor =
