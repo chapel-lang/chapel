@@ -1,0 +1,4 @@
+A: 1 2 3 4 5 6
+D: {0..1}
+T: [domain(1,int(64),one)] int(64)
+T.domain: {0..2}
