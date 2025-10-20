@@ -17,4 +17,4 @@ make install
 
 update-alternatives --install /usr/bin/cmake cmake /usr/local/bin/cmake 1
 
-rm -rf $MYTMP
+hide rm -rf $MYTMP
