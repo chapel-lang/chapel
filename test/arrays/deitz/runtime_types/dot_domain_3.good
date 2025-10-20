@@ -1,0 +1,2 @@
+[domain(1,int(64),one)] real(64)
+{1..10}
