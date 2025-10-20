@@ -786,11 +786,11 @@ static void test17() {
 
 // invalid module-level split-init
 static void test18() {
-  Context context;
+  auto context = buildStdContext();
   // Make sure no errors make it to the user, even though we will get errors.
-  ErrorGuard guard(&context);
+  ErrorGuard guard(context);
 
-  auto variables = resolveTypesOfVariables(&context,
+  auto variables = resolveTypesOfVariables(context,
       R"""(
       var flag = true;
       var foo;

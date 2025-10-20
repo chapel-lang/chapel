@@ -2538,7 +2538,9 @@ void Resolver::adjustTypesForSplitInit(ID id,
     // statement's resolution info.
     auto topLevelId = parsing::idToContainingMultiDeclId(context, id);
     auto& standaloneInfo = resolveModuleStmtStandalone(context, topLevelId);
-    lhsType = standaloneInfo.first.byId(id).type();
+    if (auto rr = standaloneInfo.first.byIdOrNull(id)) {
+      lhsType = rr->type();
+    }
   }
 
   if (!lhsType.needsSplitInitTypeInfo(context)) return;
