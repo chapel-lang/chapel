@@ -834,6 +834,10 @@ module ChapelArray {
     pragma "return not owned"
     proc _dom do return _getDomain(_value.dom);
 
+    pragma "no copy return"
+    pragma "return not owned"
+    proc type _dom do return chpl__domainFromArrayRuntimeType(this);
+
     /* The number of dimensions in the array */
     proc rank param do return this.domain.rank;
 
