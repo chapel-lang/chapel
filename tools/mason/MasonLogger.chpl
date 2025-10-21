@@ -47,6 +47,7 @@ module MasonLogger {
       pad = max(pad, prefix.size);
     }
 
+    // TODO make all variadic
     proc info(s: string) {
       if doInfo then Safe.writef(logWriter, addPrefix("%s"), s); ;
     }
