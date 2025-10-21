@@ -1,8 +1,3 @@
-//
-// This future illustrates a problem that occurs with procedure pointers and
-// insert line numbers. Make sure you are running without CHPL_DEVELOPER set.
-//
-
 // Should hold.
 compilerAssert(useProcedurePointers);
 
@@ -36,6 +31,41 @@ proc test0() {
   p();
 }
 
+record r {
+  var p = constructWideProcPointerNeedingLineNos();
+}
+
+proc test1() {
+  var r1 = new r();
+  r1.p();
+}
+
+proc test2() {
+  proc call(p) do p();
+
+  const p = constructWideProcPointerNeedingLineNos();
+  call(p);
+}
+
+proc test3() {
+  const p = constructWideProcPointerNeedingLineNos();
+  proc nested1() {
+    p();
+    proc nested2() {
+      p();
+      proc nested3() {
+        p();
+      }
+      nested3();
+    }
+    nested2();
+  }
+  nested1();
+}
+
 proc main() {
   test0();
+  test1();
+  test2();
+  test3();
 }

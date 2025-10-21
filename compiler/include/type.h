@@ -521,6 +521,7 @@ class FunctionType final : public Type {
   FunctionType* getWithWidth(Width width) const;
   FunctionType* getWithLinkage(Linkage linkage) const;
   FunctionType* getWithLoweredErrorHandling() const;
+  FunctionType* getWithLineFileInfo() const;
   FunctionType* getWithMask(int64_t mask, bool& outMaskConflicts) const;
   FunctionType* getAsLocal() const;
   FunctionType* getAsWide() const;
@@ -551,6 +552,7 @@ class FunctionType final : public Type {
   static FunctionType::Kind determineKind(FnSymbol* fn);
   static FunctionType::Linkage determineLinkage(FnSymbol* fn);
   static Formal constructErrorHandlingFormal();
+  static std::array<Formal, 2> constructLineFileInfoFormals();
 
   // Prints things in a 'user facing' fashion, no mangling.
   static const char* kindToString(Kind kind);

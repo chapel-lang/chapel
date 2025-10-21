@@ -38,6 +38,11 @@
 #include <unordered_set>
 #include <vector>
 
+namespace {
+  // As a means of abbreviation.
+  using Pass = InsertLineNumbers;
+}
+
 //
 // insertLineNumbers() inserts line numbers and filenames into
 // functions and calls so that runtime errors show line number and
@@ -48,53 +53,31 @@
 // number and a filename.
 //
 
-std::vector<std::string>   gFilenameLookup;
+// Put a null string into the table at the first position, some runtime
+// calls will pass in NULL for their filename, we can then use this null
+// string to deal with that case.
+//
+// The table also expects "<internal>" to be in the table at the first
+// position and some runtime functions make this assumption (e.g., if it
+// is not there and you throw from within standard/internal modules, you'll
+// end up seeing a weird file/line.
+std::vector<std::string> constantFilenames = { "", "<internal>" };
 
-// Caches lookups into our filename vector
-std::map<std::string, int> gFilenameLookupCache;
+ValueMappedTable<std::string>
+InsertLineNumbers::gFilenameTable(constantFilenames);
 
-int getFilenameLookupPosition(const std::string& name) {
-  std::map<std::string, int>::iterator it = gFilenameLookupCache.find(name);
-  int idx;
-  if (it != gFilenameLookupCache.end()) {
-    // Use cached position in the table
-    idx = it->second;
-  } else {
-    // not found - new add new filename to the cache
-    std::vector<std::string>::iterator vIt =
-        std::find(gFilenameLookup.begin(), gFilenameLookup.end(), name);
-    if (vIt == gFilenameLookup.end()) {
-      // Not in the lookup table either, add it (This case should only be for
-      // command line casts, doesn't really matter if something else sneaks in
-      // though)
-      gFilenameLookup.push_back(name);
-      idx = gFilenameLookup.size() - 1;
-    } else {
-      idx = vIt - gFilenameLookup.begin();
-    }
-    gFilenameLookupCache.insert(std::pair<std::string, int>(name, idx));
-  }
-  INT_ASSERT(idx >= 0);
-  INT_ASSERT((size_t)idx < gFilenameLookup.size());
-  return idx;
+int Pass::addFilenameTableEntry(const std::string& name) {
+  return gFilenameTable.add(name);
 }
 
-// TODO refactor into a nicer home
-static bool isClassMethodCall(CallExpr* call) {
-  FnSymbol* fn     = call->resolvedFunction();
-  bool      retval = false;
+int Pass::getFilenameTableIndex(const std::string& name) {
+  if (auto optIdx = gFilenameTable.index(name)) return *optIdx;
+  INT_FATAL("Entry not in table!");
+  return -1;
+}
 
-  if (fn && fn->isMethod() && fn->_this) {
-    if (AggregateType* ct = toAggregateType(fn->_this->typeInfo())) {
-      if (fn->numFormals()             >  0 &&
-          fn->getFormal(1)->typeInfo() == fn->_this->typeInfo()) {
-        if (isClass(ct) || ct->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-          retval = true;
-        }
-      }
-    }
-  }
-  return retval;
+const std::vector<std::string>& Pass::getFilenameTable() {
+  return gFilenameTable.table();
 }
 
 static bool isWrapper(FnSymbol* fn) {
@@ -116,20 +99,19 @@ static Vec<FnSymbol*>* rootsOrChildren(FnSymbol* fn) {
 
 // ---------- InsertLineNumbers ----------
 
-// NOTE, shouldPreferASTLine, makeASTLine, and insertLineNumber are static
-// functions so that we might unit test or otherwise exercise them on their
-// own them one day in the future
-
-// Should we prefer to use the AST's line and file info
-// rather than adding an argument and propagating it at runtime?
-// `fn` is const in this function but ftableMap stores by non-const
-// `mod` can be passed in if its already been looked up
+// Considering the containing function (e.g., `call->getFunction()`), decide
+// whether or not AST line numbers should be used for `call`. This function
+// assumes that line/file info has to be appended to call - the only question
+// is whether to propagate existing line/file info or construct a new one
+// representing the callsite.
+//
 // TODO GLOBALS use of developer and ftableMap
-bool InsertLineNumbers::shouldPreferASTLine(/*const*/ FnSymbol* fn,
-                                            ModuleSymbol* mod) {
-  if (!mod) {
-    mod = fn->getModule();
-  }
+bool Pass::shouldPreferASTLine(CallExpr* call) {
+  auto fn = call->getFunction();
+  auto mod = call->getModule();
+
+  INT_ASSERT(fn && mod);
+
   // don't add arguments to extern/export fns
   // but do use arguments already added if the fn
   // is marked with FLAG_INSERT_LINE_FILE_INFO
@@ -160,7 +142,7 @@ bool InsertLineNumbers::shouldPreferASTLine(/*const*/ FnSymbol* fn,
 // This creates the line and file symbols for a call when we want it to come
 // from the AST itself
 // TODO GLOBALS getFilenamelookupposition
-LineAndFile InsertLineNumbers::makeASTLine(CallExpr* call) {
+Pass::LineAndFile Pass::makeASTLine(CallExpr* call) {
   SET_LINENO(call);
 
   if (call->isResolved() &&
@@ -183,7 +165,7 @@ LineAndFile InsertLineNumbers::makeASTLine(CallExpr* call) {
     const char* cmdLineSetting = astr("<command line setting of '",
                                       var->immediate->v_string.c_str(), "'>");
 
-    int filenameIdx = getFilenameLookupPosition(cmdLineSetting);
+    int filenameIdx = addFilenameTableEntry(cmdLineSetting);
 
     Symbol* file = new_IntSymbol(filenameIdx, INT_SIZE_32);
 
@@ -193,7 +175,7 @@ LineAndFile InsertLineNumbers::makeASTLine(CallExpr* call) {
     // Apply the line number from the call AST node
     Symbol* line = new_IntSymbol(call->linenum());
 
-    int filenameIdx = getFilenameLookupPosition(call->fname());
+    int filenameIdx = addFilenameTableEntry(call->fname());
 
     Symbol* file = new_IntSymbol(filenameIdx, INT_SIZE_32);
     return {line, file};
@@ -208,18 +190,23 @@ LineAndFile InsertLineNumbers::makeASTLine(CallExpr* call) {
 //   * a call to a wrapper fn -> assign to arg bundle
 //   * a regular call         -> append to call args
 //
-void InsertLineNumbers::insertLineNumber(CallExpr* call, LineAndFile lineAndFile) {
+void Pass::insertLineNumber(CallExpr* call, LineAndFile lineAndFile) {
   SET_LINENO(call);
+
+  auto fn = call->resolvedFunction();
+
   // Replace these primitives with whatever line/file we chose
   // (probably an argument)
   if (call->isPrimitive(PRIM_GET_USER_FILE)) {
     call->replace(new SymExpr(lineAndFile.file));
+
   } else if (call->isPrimitive(PRIM_GET_USER_LINE)) {
     call->replace(new SymExpr(lineAndFile.line));
+
   } else {
-    FnSymbol* fn = call->resolvedFunction();
     if (fn && isWrapper(fn)) {
       SET_LINENO(call);
+      // TODO
       // Refactor note: I pulled this case out of the moveLinenoInsideArgBundle
       // pass b/c it seems better to handle in one go instead of fixing things
       // up later. But, we do pull out the lineField and fileField each time
@@ -238,21 +225,19 @@ void InsertLineNumbers::insertLineNumber(CallExpr* call, LineAndFile lineAndFile
                                       fileField, lineAndFile.file));
 
     } else {
-      // add line/file as arguments to the call
       call->insertAtTail(lineAndFile.line);
       call->insertAtTail(lineAndFile.file);
     }
   }
 }
 
-// TODO refactor -- pulled this out as it can be checked per fn instead of per call
-void InsertLineNumbers::precondition(FnSymbol* fn) {
+void Pass::assertInvariants(FnSymbol* fn) {
   if (strcmp(fn->name, "chpl__heapAllocateGlobals") == 0 ||
       strcmp(fn->name, "chpl__initStringLiterals") == 0 ||
       strcmp(fn->name, "chpl__initModuleGuards") == 0 ||
       strcmp(fn->name, "chpl_gen_main") == 0) {
-    assert(fn->hasFlag(FLAG_EXPORT) &&
-           !fn->hasFlag(FLAG_INSERT_LINE_FILE_INFO));
+    INT_ASSERT(fn->hasFlag(FLAG_EXPORT));
+    INT_ASSERT(!fn->hasFlag(FLAG_INSERT_LINE_FILE_INFO));
   }
 }
 
@@ -287,7 +272,7 @@ static VarSymbol* getOrCreateField(AggregateType* aggType,
 // FLAG_INSERT_LINE_FILE_INFO so that later processing can treat them
 // appropriately
 //
-LineAndFile InsertLineNumbers::getLineAndFileForFn(FnSymbol *fn) {
+Pass::LineAndFile Pass::getLineAndFileForFn(FnSymbol *fn) {
   auto it = lineAndFilenameMap.find(fn);
   if (it != lineAndFilenameMap.end()) {
     return it->second;
@@ -296,6 +281,10 @@ LineAndFile InsertLineNumbers::getLineAndFileForFn(FnSymbol *fn) {
   SET_LINENO(fn);
 
   LineAndFile result;
+
+  auto formals = FunctionType::constructLineFileInfoFormals();
+  auto& lineFormal = formals[0];
+  auto& fileFormal = formals[1];
 
   if (isWrapper(fn)) {
     // In the body of the wrapper, create a local lineno variable initialized
@@ -306,9 +295,9 @@ LineAndFile InsertLineNumbers::getLineAndFileForFn(FnSymbol *fn) {
     // lineField could have been created already. Today we see this only with
     // --gpu-specialization, which can clone `coforall_fn`s while using the same
     // arg bundle for both clones. We want to create lineField only once.
-    VarSymbol* lineField = getOrCreateField(bundleType, "_ln",
-                                            dtInt[INT_SIZE_DEFAULT]);
-    VarSymbol* lineLocal = newTemp("_ln", dtInt[INT_SIZE_DEFAULT]);
+    VarSymbol* lineField = getOrCreateField(bundleType, lineFormal.name(),
+                                            lineFormal.type());
+    VarSymbol* lineLocal = newTemp(lineFormal.name(), lineFormal.type());
 
     fn->insertAtHead("'move'(%S, '.v'(%S, %S))", lineLocal, bundleArg->sym,
                      lineField);
@@ -317,9 +306,9 @@ LineAndFile InsertLineNumbers::getLineAndFileForFn(FnSymbol *fn) {
     // Same thing, just for the filename index now.
 
     // See the comment above lineField.
-    VarSymbol* fileField = getOrCreateField(bundleType, "_fn",
-                                            dtInt[INT_SIZE_32]);
-    VarSymbol* fileLocal = newTemp("_fn", dtInt[INT_SIZE_32]);
+    VarSymbol* fileField = getOrCreateField(bundleType, fileFormal.name(),
+                                            fileFormal.type());
+    VarSymbol* fileLocal = newTemp(fileFormal.name(), fileFormal.type());
 
     fn->insertAtHead("'move'(%S, '.v'(%S, %S))", fileLocal, bundleArg->sym,
                      fileField);
@@ -328,19 +317,26 @@ LineAndFile InsertLineNumbers::getLineAndFileForFn(FnSymbol *fn) {
     result = {lineLocal, fileLocal};
 
   } else {
-    ArgSymbol* line =
-        new ArgSymbol(INTENT_CONST_IN, "_ln", dtInt[INT_SIZE_DEFAULT]);
+    auto line = new ArgSymbol(lineFormal.intent(), lineFormal.name(),
+                              lineFormal.type());
+    auto file = new ArgSymbol(fileFormal.intent(), fileFormal.name(),
+                              fileFormal.type());
     fn->insertFormalAtTail(line);
-
-    ArgSymbol* file = new ArgSymbol(INTENT_IN, "_fn", dtInt[INT_SIZE_32]);
     fn->insertFormalAtTail(file);
 
+    // Also set the qualifiers to prevent inconsistencies in computed types.
+    line->qual = lineFormal.qual();
+    file->qual = fileFormal.qual();
+
     result = {line, file};
+
+    // Recompute the function's type as it will be propagated to values.
+    if (fn->isUsedAsValue()) fn->computeAndSetType();
   }
 
   lineAndFilenameMap.emplace_hint(it, fn, result);
 
-  // NOTE: this requires that we have run ComputeCallSitesPass
+  // NOTE: this requires that we have run 'ComputeCallSitesPass'
   for (CallExpr* call : *fn->calledBy) {
     enqueue(call->getFunction(), call);
   }
@@ -355,20 +351,51 @@ LineAndFile InsertLineNumbers::getLineAndFileForFn(FnSymbol *fn) {
   return result;
 }
 
+bool Pass::mustAddLineInfoFormalsToFn(FnSymbol* fn) {
+  if (fn->hasFlag(FLAG_INSERT_LINE_FILE_INFO) &&
+      !fn->hasFlag(FLAG_LINE_NUMBER_OK)) {
+    return true;
+  }
+
+  if (fn->isUsedAsValue()) {
+    bool hasForeignLinkage = fn->hasFlag(FLAG_EXPORT) ||
+                             fn->hasFlag(FLAG_EXTERN);
+
+    // Cannot insert hidden formals into functions with foreign linkage.
+    if (hasForeignLinkage) return false;
+
+    // We need to uniformly pass line/file info to functions used as values
+    // (even if that information is never used), because at this point the
+    // ABI for function types depends on it: a previous pass already adjusted
+    // all procedure types to be passed line and file information.
+    return true;
+  }
+
+  return false;
+}
+
+bool Pass::mustAddLineInfoActualsToCall(CallExpr* call) {
+  if (call->primitive && call->primitive->passLineno) return true;
+  if (call->isIndirectCall()) {
+    auto ft = call->functionType();
+    INT_ASSERT(ft);
+    if (!ft->hasForeignLinkage()) return true;
+  }
+
+  return false;
+}
+
 //
 // InsertLineNumbers works on a function and has to take care of
 //   * modifying our own function (if necessary) to take line/file formals
 //   * modifying calls in our body that need line/file actuals
 //
-void InsertLineNumbers::process(FnSymbol *fn) {
-  // Refactor note: this precondition is a general check that could be hoisted
-  precondition(fn);
+void Pass::process(FnSymbol* fn) {
+  assertInvariants(fn);
 
-  // if we must have line/file info formals
-  if (fn->hasFlag(FLAG_INSERT_LINE_FILE_INFO) &&
-      !fn->hasFlag(FLAG_LINE_NUMBER_OK)) {
-    // Explicitly ignore the return result since we don't need it right now. Our
-    // call sites will be enqueued
+  if (mustAddLineInfoFormalsToFn(fn)) {
+    // Explicitly ignore the return result since we don't need it right now.
+    // This will enqueue call sites to work on.
     std::ignore = getLineAndFileForFn(fn);
   }
 
@@ -382,86 +409,43 @@ void InsertLineNumbers::process(FnSymbol *fn) {
     return;
 
   // TODO iterator (or reuse calls)
+  // TODO Another cool concept might be to just run the ComputeCallSites
+  //      pass on any function passing "InsertLineNumbers::shouldProcess".
   std::vector<CallExpr*> calls;
   collectCallExprs(fn, calls);
 
   for (CallExpr* call : calls) {
-    if (call->primitive && call->primitive->passLineno) {
+    if (mustAddLineInfoActualsToCall(call)) {
       process(fn, call);
     }
   }
 }
 
-//
-// inserts the line number for `call` which is in the body `fn`
-// The line/file either come from the AST itself, or from the fn formals (or arg
-// pack), which is determined by `shouldPreferASTLine`
-//
-void InsertLineNumbers::process(FnSymbol *fn, CallExpr* call) {
-  auto pair = fixedCalls.insert(call);
-  if (!pair.second) {
-    // we already visited this call, so stop
-    return;
-  }
+// This function operates on a 'call' that is within the body of 'fn'. It
+// decides whether to append the line/file info of the callsite to the call,
+// or to propagate the caller's line/file info if they exist.
+void Pass::process(FnSymbol *fn, CallExpr* call) {
+  if (auto pair = fixedCalls.insert(call); !pair.second) return;
 
-  if (shouldPreferASTLine(fn)) {
+  if (shouldPreferASTLine(call)) {
     insertLineNumber(call, makeASTLine(call));
-
   } else {
     insertLineNumber(call, getLineAndFileForFn(fn));
   }
 }
 
-// TODO move this into a more sensible home
-// ---------- InsertNilChecks ----------
-//
-// insert nil checks primitives in front of most member accesses
-//
-// Exceptions:
-//   1) The Chapel specification indicates that it is acceptable to
-//      invoke the destructor on NIL, so we avoid doing so when
-//      handling a call to a destructor.
-//
-bool InsertNilChecks::shouldProcess(CallExpr *call) {
-  if (!(call->isPrimitive(PRIM_GET_MEMBER) ||
-        call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
-        call->isPrimitive(PRIM_SET_MEMBER) ||
-        call->isPrimitive(PRIM_GETCID) ||
-        call->isPrimitive(PRIM_TESTCID) ||
-        isClassMethodCall(call))) {
-    return false;
-  }
-
-  Expr* arg0 = call->get(1);
-  AggregateType* ct = toAggregateType(arg0->typeInfo());
-
-  if (ct && (isClass(ct) || ct->symbol->hasFlag(FLAG_WIDE_CLASS))) {
-    // Avoid inserting a nil-check if this is a call to a destructor
-    if (FnSymbol* fn = call->resolvedFunction()) {
-      return !fn->hasFlag(FLAG_DESTRUCTOR);
-    }
-
-    return true;
-  }
-
-  return false;
-}
-
-void InsertNilChecks::process(CallExpr* call) {
-  Expr* arg0 = call->get(1);
-  Expr* stmt = call->getStmtExpr();
-
-  SET_LINENO(stmt);
-
-  stmt->insertBefore(new CallExpr(PRIM_CHECK_NIL, arg0->copy()));
-}
-
-// --------------------
-
 #include "global-ast-vecs.h"
 
+// Contains the old 'insertLineNumbers' pass.
 void insertLineNumbers() {
   PassManager pm;
+
+  // TODO: "Run pass on multiple lists...".
+  pm.runPass<Symbol*>(AddLineFileInfoToProcPtrTypes(), gArgSymbols);
+  pm.runPass<Symbol*>(AddLineFileInfoToProcPtrTypes(), gFnSymbols);
+  pm.runPass<Symbol*>(AddLineFileInfoToProcPtrTypes(), gVarSymbols);
+  // No need to adjust type symbols at present...
+  // pm.runPass<Symbol*>(pass, gTypeSymbols);
 
   // TODO It's pretty apparent in this refactoring that we don't actually need
   // to recompute all call sites, but only the subset we'll be working on, which
@@ -470,24 +454,6 @@ void insertLineNumbers() {
   // InsertLineNumbers::getLineAndFileForFn
   pm.runPass<FnSymbol*>(ComputeCallSitesPass(), gFnSymbols);
 
-  {
-    std::vector<std::string> constantFilenames;
-
-    // Put a null string into the iterator at the first position, some runtime
-    // calls will pass in NULL for their filename, we can then use this null
-    // string to deal with that case.
-    constantFilenames.push_back("");
-
-    // Add "<internal>" to the filename table if it didn't make it in there,
-    // some runtime functions use this name directly, and it doesn't always end
-    // up in the table otherwise
-    constantFilenames.push_back("<internal>");
-
-    gFilenameLookup.insert(gFilenameLookup.begin(), constantFilenames.begin(),
-                           constantFilenames.end());
-  }
-
-  // refactoring  TODO: why is InsertNilChecks in this pass?
   if (!fNoNilChecks) {
     // TODO: this is a temporary workaround to avoid iterating over a vector
     // that changes size during iteration. gCallExprs grows during

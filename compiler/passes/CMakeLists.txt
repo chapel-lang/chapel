@@ -15,6 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 set(SRCS
+    AddLineFileInfoToProcPtrTypes.cpp
     InitErrorHandling.cpp
     InitNormalize.cpp
     ResolveScope.cpp
@@ -36,6 +37,7 @@ set(SRCS
     flattenFunctions.cpp
     initializerRules.cpp
     insertLineNumbers.cpp
+    InsertNilChecks.cpp
     insertWideReferences.cpp
     normalize.cpp
     normalizeErrors.cpp
