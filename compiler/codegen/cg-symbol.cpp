@@ -966,8 +966,8 @@ void VarSymbol::codegenGlobalDef(bool isHeader) {
       gVar->setDSOLocal(true);
       setValueAlignment(gVar, type, this);
 
-      if (debug_info && debug_info->should_add_DI_for(this)) {
-        auto di = debug_info->get_global_variable(this);
+      if (debugInfo && debugInfo->shouldAddDebugInfoFor(this)) {
+        auto di = debugInfo->getGlobalVariable(this);
         if (di) {
           gVar->addDebugInfo(di);
         }
@@ -1054,8 +1054,8 @@ void VarSymbol::codegenDef() {
         }
       }
     }
-    if (debug_info && debug_info->should_add_DI_for(this)) {
-      debug_info->get_variable(this);
+    if (debugInfo && debugInfo->shouldAddDebugInfoFor(this)) {
+      debugInfo->getVariable(this);
     }
 #endif
   }
@@ -1549,7 +1549,7 @@ void TypeSymbol::codegenDef() {
       INT_ASSERT(getLLVMStructureType() == chkTy); // set in type->codegenDef()
     }
 
-    if(debug_info) debug_info->get_type(this->type);
+    if(debugInfo) debugInfo->getType(this->type);
 #endif
   }
 }
@@ -2895,8 +2895,8 @@ void FnSymbol::codegenDef() {
 
     info->lvt->addLayer();
 
-    if(debug_info) {
-      llvm::DISubprogram* dbgScope = debug_info->get_function(this);
+    if(debugInfo) {
+      llvm::DISubprogram* dbgScope = debugInfo->getFunction(this);
       info->irBuilder->SetCurrentDebugLocation(
         llvm::DILocation::get(dbgScope->getContext(), linenum(), 0,
                               dbgScope, nullptr, false));
@@ -3121,8 +3121,8 @@ void FnSymbol::codegenDef() {
                             tempVar.isLVPtr, tempVar.isUnsigned);
 
         // debug info for formal arguments
-        if (debug_info && debug_info->should_add_DI_for(arg)) {
-          debug_info->get_formal_arg(arg, clangArgNum+1);
+        if (debugInfo && debugInfo->shouldAddDebugInfoFor(arg)) {
+          debugInfo->getFormalArg(arg, clangArgNum+1);
         }
       }
       clangArgNum++;
@@ -3174,7 +3174,7 @@ void FnSymbol::codegenDef() {
       // Debug info generation creates metadata nodes that won't be
       // finished until the whole codegen is complete and finalize
       // is called.
-      if( ! debug_info )
+      if( ! debugInfo )
         problems = llvm::verifyFunction(*func, &llvm::errs());
       if( problems ) {
         INT_FATAL(this, "LLVM function verification failed");
@@ -3717,8 +3717,8 @@ void ModuleSymbol::codegenDef() {
   std::sort(fns.begin(), fns.end(), compareLineno);
 
 #ifdef HAVE_LLVM
-  if(debug_info && info->filename) {
-    debug_info->get_module_scope(this);
+  if(debugInfo && info->filename) {
+    debugInfo->getModuleScope(this);
   }
 #endif
 

@@ -2463,7 +2463,7 @@ static void convertToRefTypes() {
 }
 
 extern bool printCppLineno;
-debug_data *debug_info=NULL;
+DebugData *debugInfo=NULL;
 
 
 
@@ -3225,23 +3225,21 @@ static void codegenPartTwo() {
 
     if(debugCCode)
     {
-      debug_info = new debug_data(*info->module);
+      debugInfo = new DebugData(/*optimized*/false);
     }
-    if(debug_info) {
+    if(debugInfo) {
       // every module gets its own compile unit
       forv_Vec(ModuleSymbol, currentModule, allModules) {
         // So, this is pretty quick. I'm assuming that the main module is in the current dir, no optimization (need to figure out how to get this)
         // and no compile flags, since I can't figure out how to get that either.
         const char *current_dir = "./";
         const char *empty_string = "";
-        debug_info->create_compile_unit(currentModule,
-          currentModule->astloc.filename(), current_dir,
-          false, empty_string
+        debugInfo->createCompileUnit(currentModule,
+          currentModule->astloc.filename(), current_dir, empty_string
         );
       }
-      debug_info->create_compile_unit(rootModule,
-        rootModule->astloc.filename(), "./",
-        false, ""
+      debugInfo->createCompileUnit(rootModule,
+        rootModule->astloc.filename(), "./", ""
       );
     }
 

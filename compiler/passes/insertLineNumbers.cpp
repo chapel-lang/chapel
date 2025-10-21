@@ -319,8 +319,10 @@ Pass::LineAndFile Pass::getLineAndFileForFn(FnSymbol *fn) {
   } else {
     auto line = new ArgSymbol(lineFormal.intent(), lineFormal.name(),
                               lineFormal.type());
+    line->addFlag(FLAG_NO_USER_DEBUG_INFO);
     auto file = new ArgSymbol(fileFormal.intent(), fileFormal.name(),
                               fileFormal.type());
+    line->addFlag(FLAG_NO_USER_DEBUG_INFO);
     fn->insertFormalAtTail(line);
     fn->insertFormalAtTail(file);
 

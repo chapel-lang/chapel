@@ -717,6 +717,7 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
   allocated_sz->addFlag(FLAG_NO_CODEGEN);
   wrap_fn->insertFormalAtTail(allocated_sz);
   ArgSymbol *wrap_c = new ArgSymbol( INTENT_IN, "c", ctype);
+  wrap_c->addFlag(FLAG_NO_USER_DEBUG_INFO);
   //wrap_c->addFlag(FLAG_NO_CODEGEN);
   wrap_fn->insertFormalAtTail(wrap_c);
 

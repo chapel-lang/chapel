@@ -58,12 +58,12 @@ void codegenStmt(Expr* stmt) {
       info->cStatements.push_back(idCommentTemp(stmt));
   } else {
 #ifdef HAVE_LLVM
-    if (debug_info && stmt->linenum() > 0) {
+    if (debugInfo && stmt->linenum() > 0) {
       // Adjust the current line number, but leave the scope alone.
       llvm::MDNode* scope;
 
       if(stmt->inTree() && stmt->parentSymbol->astTag == E_FnSymbol) {
-        scope = debug_info->get_function((FnSymbol *)stmt->parentSymbol);
+        scope = debugInfo->getFunction((FnSymbol *)stmt->parentSymbol);
       } else {
         scope = info->irBuilder->getCurrentDebugLocation().getScope();
       }
