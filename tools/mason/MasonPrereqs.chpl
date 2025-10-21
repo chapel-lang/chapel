@@ -59,10 +59,10 @@ proc install() {
   log.infoln("Prerequisites have been installed");
 }
 
-iter chplFlags() {
+iter chplFlags(const baseDir = here.cwd()) {
   var flags: list(string);
 
-  for prereq in prereqs() {
+  for prereq in prereqs(baseDir) {
     const cmd = "make --quiet -C %s %s".format(prereq, makeTargetChplFlags);
     const pFlags = MasonUtils.runCommand(cmd).strip();
 

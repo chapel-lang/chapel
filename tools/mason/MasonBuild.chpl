@@ -34,6 +34,7 @@ use MasonLogger;
 use Subprocess;
 use TOML;
 
+import Path;
 import MasonPrereqs;
 
 private var log = new logger("mason build");
@@ -190,40 +191,64 @@ proc buildProgram(release: bool, show: bool, force: bool, skipUpdate: bool,
    named after the project folder in which it is
    contained */
 proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
-                release: bool, compopts: list(string), projectHome: string) : bool throws {
+                release: bool, compopts: list(string),
+                projectHome: string) : bool throws {
 
   const (sourceList, gitList) = genSourceList(lockFile);
-  const depPath = MASON_HOME + '/src/';
-  const gitDepPath = MASON_HOME + '/git/';
+  /*const depPath = MASON_HOME + '/src/';*/
+  const depPath = Path.joinPath(MASON_HOME, 'src');
+  /*const gitDepPath = MASON_HOME + '/git/';*/
+  const gitDepPath = Path.joinPath(MASON_HOME, 'git');
   const project = lockFile["root"]!["name"]!.s;
-  const pathToProj = projectHome + '/src/'+ project + '.chpl';
-  const moveTo = ' -o ' + projectHome + '/target/'+ binLoc +'/'+ project;
+  const pathToProj = Path.replaceExt(Path.joinPath(projectHome,
+                                                   'src',
+                                                   project), 'chpl');
+
+  const moveTo = Path.joinPath(projectHome, 'target', binLoc, project);
 
   if !isFile(pathToProj) {
     throw new owned MasonError("Mason could not find your project");
   }
   else {
-    var command: string = 'chpl ' + pathToProj + moveTo + ' ' + ' '.join(compopts.these());
-    if release then command += " --fast";
-    if sourceList.size > 0 then command += " --main-module " + project;
+    log.debugln("Starting to create compilation command");
+
+    var cmd: list(string);
+    cmd.pushBack("chpl");
+    cmd.pushBack(pathToProj);
+    cmd.pushBack("-o " + moveTo);
+    if release then cmd.pushBack("--fast");
+    if sourceList.size > 0 then cmd.pushBack("--main-module " + project);
+
+    log.debugf("Base command: %?\n", cmd);
 
     for (_, name, version) in sourceList {
+      const nameVer = "%s-%s".format(name, version);
       // version of -1 specifies a git dep
       if version != "-1" {
-        var depSrc = ' ' + depPath + name + "-" + version + '/src/' + name + ".chpl";
-        command += depSrc;
+        const depDir = Path.joinPath(depPath, nameVer);
+        const depSrc = Path.replaceExt(Path.joinPath(depDir, "src", name),
+                                       "chpl");
+
+        cmd.pushBack(depSrc);
+
+        log.debugf("Adding source dependency %s's flags\n", name);
+        for flag in MasonPrereqs.chplFlags(depDir) {
+          log.debugf("+compflag %s\n", flag);
+          cmd.pushBack(flag);
+        }
       }
     }
 
     for (_, name, branch, _) in gitList {
       var gitDepSrc = ' ' + gitDepPath + name + "-" + branch + '/src/' + name + ".chpl";
-      command += gitDepSrc;
+      cmd.pushBack(gitDepSrc);
     }
 
     log.infof("Compiling [%s] target: %s\n",
               if release then "release" else "debug", project);
 
     // compile Program with deps
+    const command = " ".join(cmd.these());
     log.debugln("Compilation command: " + command);
     var compilation = runWithStatus(command);
     if compilation != 0 {
