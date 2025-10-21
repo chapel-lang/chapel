@@ -34,6 +34,8 @@ use MasonLogger;
 use Subprocess;
 use TOML;
 
+import MasonPrereqs;
+
 private var log = new logger("mason build");
 
 proc masonBuild(args: [] string) throws {
@@ -151,11 +153,7 @@ proc buildProgram(release: bool, show: bool, force: bool, skipUpdate: bool,
         if lockFile.pathExists('external') {
           spackInstalled();
         }
-        //
-        // TODO: Temporarily use `toArray` here because `list` does not yet
-        // support parallel iteration, which the `getSrcCode` method _must_
-        // have for good performance.
-        //
+
         getSrcCode(sourceList, skipUpdate, show);
 
         getGitCode(gitList, show);
@@ -246,7 +244,9 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
 proc genSourceList(lockFile: borrowed Toml) {
   var sourceList: list((string, string, string));
   var gitList: list((string, string, string, string));
+  log.infoln("Generating source list");
   for (name, package) in zip(lockFile.A.keys(), lockFile.A.values()) {
+    log.debugln("name: "+name);
     if package!.tag == fieldtag.fieldToml {
       if name == "root" || name == "system" || name == "external" then continue;
       else {
@@ -264,9 +264,11 @@ proc genSourceList(lockFile: borrowed Toml) {
           } else {
             branch = "HEAD";
           }
+          log.debugln("adding to gitList: "+name);
           gitList.pushBack((url, name, branch, revision));
         } else if toml.pathExists("source") {
           var source = toml["source"]!.s;
+          log.debugln("adding to sourceList: "+name);
           sourceList.pushBack((source, name, version));
         }
       }
@@ -275,11 +277,9 @@ proc genSourceList(lockFile: borrowed Toml) {
   return (sourceList, gitList);
 }
 
-
 /* Clones the git repository of each dependency into
    the src code dependency pool */
 proc getSrcCode(sourceListArg: list(3*string), skipUpdate, show) throws {
-
   //
   // TODO: Temporarily use `toArray` here because `list` does not yet
   // support parallel iteration, which the `getSrcCode` method _must_
@@ -296,7 +296,7 @@ proc getSrcCode(sourceListArg: list(3*string), skipUpdate, show) throws {
       if !depExists(nameVers) {
         if skipUpdate then
           throw new owned MasonError("Dependency cannot be installed when MASON_OFFLINE is set.");
-        writeln("Downloading dependency: " + nameVers);
+        log.infoln("Downloading dependency: " + nameVers);
         var getDependency = "git clone -qn "+ srcURL + ' ' + destination +'/';
         var checkout = "git checkout -q v" + version;
         if show {
@@ -305,6 +305,11 @@ proc getSrcCode(sourceListArg: list(3*string), skipUpdate, show) throws {
         }
         runCommand(getDependency);
         gitC(destination, checkout);
+      }
+
+      //add prerequisites
+      for prereq in MasonPrereqs.prereqs(destination) {
+        MasonPrereqs.install(prereq);
       }
     }
   }
@@ -327,7 +332,7 @@ proc getGitCode(gitListArg: list(4*string), show) {
     const nameVers = name + "-" + branch;
     const destination = baseDir + nameVers;
     if !depExists(nameVers, '/git/') {
-      writeln("Downloading dependency: " + nameVers);
+      log.infoln("Downloading dependency: " + nameVers);
       var getDependency = "git clone -qn "+ srcURL + ' ' + destination +'/';
       var checkout = "git checkout -q " + revision;
       if show {

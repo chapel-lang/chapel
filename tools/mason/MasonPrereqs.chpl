@@ -30,22 +30,33 @@ private config param makeTargetChplFlags = "printchplflags";
 
 private var log = new MasonLogger.logger("mason prereqs");
 
-proc install() {
+record pushdMgr: contextManager {
+  var path: string;
+  var initDir = here.cwd();
 
-  const baseDir = here.cwd();
+  proc ref enterContext() { here.chdir(path); }
+  proc ref exitContext(in err: owned Error?) throws {
+    if err then throw err;
+    here.chdir(initDir);
+  }
+}
 
-  // dirs will include the path itself as the first element
-  for prereq in prereqs() {
-    here.chdir(prereq);
-    log.infof("Installing prerequisite %s\n", prereq);
-    here.chdir(prereq);
+private inline proc pushd(path: string) {
+  return new pushdMgr(path);
+}
 
+proc install(path: string) {
+  log.infof("Installing prerequisite %s\n", path);
+  manage pushd(path) {
     MasonUtils.runCommand("make"); // TODO check for errors
+  }
+}
 
+proc install() {
+  for prereq in prereqs() {
+    install(prereq);
   }
   log.infoln("Prerequisites have been installed");
-
-  here.chdir(baseDir);
 }
 
 iter chplFlags() {
@@ -72,8 +83,7 @@ iter chplFlags() {
   }
 }
 
-iter prereqs() {
-  const baseDir = here.cwd();
+iter prereqs(const baseDir = here.cwd()) {
   const prereqsDir = "prereqs";
   const prereqsPath = Path.joinPath(baseDir, prereqsDir);
 
