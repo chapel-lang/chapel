@@ -1685,11 +1685,20 @@ void setupClang(GenInfo* info, std::string mainFile)
   CompilerInstance* Clang = new CompilerInstance();
   auto diagOptions = clang::CreateAndPopulateDiagOpts(clangInfo->driverArgsCStrings);
   auto diagClient = new clang::TextDiagnosticPrinter(llvm::errs(),
-                                                     &*diagOptions);
+#if LLVM_VERSION_MAJOR >= 21
+                                                     *diagOptions
+#else
+                                                      diagOptions.get()
+#endif
+                                                    );
 #if LLVM_VERSION_MAJOR >= 20
   auto clangDiags =
     clang::CompilerInstance::createDiagnostics(*llvm::vfs::getRealFileSystem(),
+#if LLVM_VERSION_MAJOR >= 21
+                                              *diagOptions,
+#else
                                                diagOptions.release(),
+#endif
                                                diagClient,
                                                /* owned */ true);
 #else
@@ -2103,7 +2112,7 @@ static void setupModule()
   // Set the target triple.
   const llvm::Triple &Triple =
     clangInfo->Clang->getTarget().getTriple();
-  info->module->setTargetTriple(Triple.getTriple());
+  info->module->setTargetTriple(Triple);
 
   // Always set the module layout. This works around an apparent bug in
   // clang or LLVM (trivial/deitz/test_array_low.chpl would print out the
@@ -2171,7 +2180,7 @@ static void setupModule()
 #endif
 
   // Create the target machine.
-  info->targetMachine = Target->createTargetMachine(Triple.str(),
+  info->targetMachine = Target->createTargetMachine(Triple,
                                                     cpu,
                                                     featuresString,
                                                     Options,
@@ -4521,7 +4530,7 @@ static void linkBitCodeFile(const char *bitCodeFilePath) {
 
   // adjust it
   const llvm::Triple &Triple = info->clangInfo->Clang->getTarget().getTriple();
-  bcLib->setTargetTriple(Triple.getTriple());
+  bcLib->setTargetTriple(Triple);
   bcLib->setDataLayout(info->clangInfo->asmTargetLayoutStr);
 
   // link
@@ -4556,15 +4565,15 @@ static void linkGpuDeviceLibraries() {
   GenInfo* info = gGenInfo;
 
   // save external functions
-  std::set<std::string> externals;
-  for (auto it = info->module->begin() ; it!= info->module->end() ; ++it) {
-    if (it->hasExternalLinkage()) {
-      externals.insert(it->getGlobalIdentifier());
+  std::unordered_set<llvm::GlobalValue::GUID> externals;
+  for (const auto& f: info->module->functions()) {
+    if (f.hasExternalLinkage()) {
+      externals.insert(f.getGUID());
     }
   }
-  for (auto it = info->module->global_begin() ; it!= info->module->global_end() ; ++it) {
-    if (it->hasExternalLinkage()) {
-      externals.insert(it->getGlobalIdentifier());
+  for (const auto& g: info->module->globals()) {
+    if (g.hasExternalLinkage()) {
+      externals.insert(g.getGUID());
     }
   }
 
@@ -4602,7 +4611,7 @@ static void linkGpuDeviceLibraries() {
 
   // internalize all functions that are not in `externals`
   llvm::InternalizePass iPass([&externals](const llvm::GlobalValue& gv) {
-    return externals.count(gv.getGlobalIdentifier()) > 0;
+    return externals.count(gv.getGUID()) > 0;
   });
   iPass.internalizeModule(*info->module);
 }
