@@ -304,7 +304,7 @@ static void test7() {
 }
 
 // regression test: when 'only' mentions a method, and we try to resolve to
-// see if it's a type (as in `use x onl myRec`), we might get no identifiers
+// see if it's a type (as in `use x only myRec`), we might get no identifiers
 // back. The code  wasn't written to handle this, and resulted in a crash.
 static void test8() {
   auto context = buildStdContext();
