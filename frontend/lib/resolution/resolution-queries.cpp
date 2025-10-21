@@ -4890,6 +4890,105 @@ static bool extractParamIndexingValueForTuple(const QualifiedType& qt,
   return false;
 }
 
+static bool resolveSpecialEnumCast(Context* context,
+                                   const AstNode* astForErr,
+                                   const QualifiedType& srcQt,
+                                   const QualifiedType& dstQt,
+                                   QualifiedType& exprTypeOut) {
+  auto srcTy = srcQt.type();
+  auto dstTy = dstQt.type();
+
+  auto srcQtEnumType = srcTy->toEnumType();
+  auto dstQtEnumType = dstTy->toEnumType();
+
+  if (srcQtEnumType && (dstTy->isStringType() || dstTy->isBytesType())) {
+    std::ostringstream oss;
+    srcQt.param()->stringify(oss, chpl::StringifyKind::CHPL_SYNTAX);
+    exprTypeOut =
+      dstTy->isStringType()
+        ? QualifiedType::makeParamString(context, oss.str())
+        : QualifiedType::makeParamBytes(context, oss.str());
+    return true;
+  } else if (dstQtEnumType && (srcTy->isStringType() || srcTy->isBytesType())) {
+    CHPL_ASSERT(srcQt.param()->isStringParam());
+
+    auto enumName = srcQt.param()->toStringParam()->value();
+    auto path = UniqueString();
+    auto lastDot = findLastDot(enumName.c_str());
+
+    if (lastDot != -1) {
+      path = UniqueString::get(context, enumName.c_str(),lastDot);
+      enumName = UniqueString::get(context, enumName.c_str() + lastDot + 1);
+    }
+
+    if (!dstQtEnumType->id().symbolPath().endsWith(path)) {
+      context->error(astForErr,
+                     "invalid qualified name for enum element '%s' in cast to %s",
+                     enumName.c_str(), dstQtEnumType->id().symbolPath().c_str());
+      exprTypeOut = QualifiedType(QualifiedType::UNKNOWN,
+                                  ErroneousType::get(context));
+    } else {
+      exprTypeOut = typeForEnumElement(context, dstQtEnumType,
+                                       enumName,
+                                       astForErr);
+    }
+    return true;
+  }
+
+  if (srcQtEnumType && srcQtEnumType->isAbstract()) {
+    exprTypeOut = CHPL_TYPE_ERROR(context, EnumAbstract, astForErr, "from", srcQtEnumType, dstTy);
+    return true;
+  } else if (dstQtEnumType && dstQtEnumType->isAbstract()) {
+    exprTypeOut = CHPL_TYPE_ERROR(context, EnumAbstract, astForErr, "to", dstQtEnumType, srcTy);
+    return true;
+  } else if (srcQtEnumType && dstTy->toNothingType()) {
+    auto fromName = tagToString(srcTy->tag());
+    context->error(astForErr, "illegal cast from %s to nothing", fromName);
+    exprTypeOut = QualifiedType(QualifiedType::UNKNOWN,
+                                ErroneousType::get(context));
+    return true;
+  }
+
+  if (Param::castAllowed(context, srcQt, dstQt)) {
+    exprTypeOut = Param::fold(context, astForErr,
+                              uast::PrimitiveTag::PRIM_CAST, srcQt, dstQt);
+    return true;
+  }
+
+  // fall through, param cast isn't possible but maybe there's a runtime
+  // cast that normal function resolution can handle.
+  return false;
+}
+
+static bool resolveSpecialClassCast(Context* context,
+                                    const AstNode* astForErr,
+                                    const QualifiedType& srcQt,
+                                    const QualifiedType& dstQt,
+                                    QualifiedType& exprTypeOut) {
+  // cast (borrowed class) : unmanaged,
+  // and (unmanaged class) : borrowed
+  auto srcTy = srcQt.type();
+  auto dstTy = dstQt.type();
+  auto srcClass = srcTy->toClassType();
+  auto dstClass = dstTy->toClassType();
+  bool isValidDst = dstClass->manageableType()->isAnyClassType() &&
+                    (dstClass->decorator().isUnmanaged() ||
+                     dstClass->decorator().isBorrowed());
+  bool isValidSrc = srcClass->decorator().isBorrowed() ||
+                    srcClass->decorator().isUnmanaged();
+  if (isValidDst && isValidSrc) {
+    auto management = ClassTypeDecorator::removeNilableFromDecorator(dstClass->decorator().val());
+    auto decorator = ClassTypeDecorator(management);
+    decorator = decorator.copyNilabilityFrom(srcClass->decorator());
+    auto outTy = ClassType::get(context, srcClass->manageableType(),
+                                nullptr, decorator);
+    exprTypeOut = QualifiedType(srcQt.kind(), outTy, srcQt.param());
+    return true;
+  }
+
+  return false;
+}
+
 // Resolving calls for certain compiler-supported patterns
 // without requiring module implementations exist at all.
 static bool resolveFnCallSpecial(Context* context,
@@ -4932,65 +5031,9 @@ static bool resolveFnCallSpecial(Context* context,
     bool isParamTypeCast = srcQt.kind() == QualifiedType::PARAM && isDstType;
 
     if (isParamTypeCast) {
-        auto srcQtEnumType = srcTy->toEnumType();
-        auto dstQtEnumType = dstTy->toEnumType();
-
-        if (srcQtEnumType && (dstTy->isStringType() || dstTy->isBytesType())) {
-          std::ostringstream oss;
-          srcQt.param()->stringify(oss, chpl::StringifyKind::CHPL_SYNTAX);
-          exprTypeOut =
-            dstTy->isStringType()
-              ? QualifiedType::makeParamString(context, oss.str())
-              : QualifiedType::makeParamBytes(context, oss.str());
-          return true;
-        } else if (dstQtEnumType && (srcTy->isStringType() || srcTy->isBytesType())) {
-          CHPL_ASSERT(srcQt.param()->isStringParam());
-
-          auto enumName = srcQt.param()->toStringParam()->value();
-          auto path = UniqueString();
-          auto lastDot = findLastDot(enumName.c_str());
-
-          if (lastDot != -1) {
-            path = UniqueString::get(context, enumName.c_str(),lastDot);
-            enumName = UniqueString::get(context, enumName.c_str() + lastDot + 1);
-          }
-
-          if (!dstQtEnumType->id().symbolPath().endsWith(path)) {
-            context->error(astForErr,
-                           "invalid qualified name for enum element '%s' in cast to %s",
-                           enumName.c_str(), dstQtEnumType->id().symbolPath().c_str());
-            exprTypeOut = QualifiedType(QualifiedType::UNKNOWN,
-                                        ErroneousType::get(context));
-          } else {
-            exprTypeOut = typeForEnumElement(context, dstQtEnumType,
-                                             enumName,
-                                             astForErr);
-          }
-          return true;
-        }
-
-        if (srcQtEnumType && srcQtEnumType->isAbstract()) {
-          exprTypeOut = CHPL_TYPE_ERROR(context, EnumAbstract, astForErr, "from", srcQtEnumType, dstTy);
-          return true;
-        } else if (dstQtEnumType && dstQtEnumType->isAbstract()) {
-          exprTypeOut = CHPL_TYPE_ERROR(context, EnumAbstract, astForErr, "to", dstQtEnumType, srcTy);
-          return true;
-        } else if (srcQtEnumType && dstTy->toNothingType()) {
-          auto fromName = tagToString(srcTy->tag());
-          context->error(astForErr, "illegal cast from %s to nothing", fromName);
-          exprTypeOut = QualifiedType(QualifiedType::UNKNOWN,
-                                      ErroneousType::get(context));
-          return true;
-        }
-
-        if (Param::castAllowed(context, srcQt, dstQt)) {
-          exprTypeOut = Param::fold(context, astForErr,
-                                    uast::PrimitiveTag::PRIM_CAST, srcQt, dstQt);
-          return true;
-        }
-
-        // fall through, param cast isn't possible but maybe there's a runtime
-        // cast that normal function resolution can handle.
+      if (resolveSpecialEnumCast(context, astForErr, srcQt, dstQt,exprTypeOut)) {
+        return true;
+      }
     } else if (srcQt.isType() && dstQt.hasTypePtr() && dstTy->isStringType()) {
       // handle casting a type name to a string
       std::ostringstream oss;
@@ -4998,22 +5041,7 @@ static bool resolveFnCallSpecial(Context* context,
       exprTypeOut = QualifiedType::makeParamString(context, oss.str());
       return true;
     } else if (srcTy->isClassType() && dstTy->isClassType()) {
-      // cast (borrowed class) : unmanaged,
-      // and (unmanaged class) : borrowed
-      auto srcClass = srcTy->toClassType();
-      auto dstClass = dstTy->toClassType();
-      bool isValidDst = dstClass->manageableType()->isAnyClassType() &&
-                        (dstClass->decorator().isUnmanaged() ||
-                         dstClass->decorator().isBorrowed());
-      bool isValidSrc = srcClass->decorator().isBorrowed() ||
-                        srcClass->decorator().isUnmanaged();
-      if (isValidDst && isValidSrc) {
-        auto management = ClassTypeDecorator::removeNilableFromDecorator(dstClass->decorator().val());
-        auto decorator = ClassTypeDecorator(management);
-        decorator = decorator.copyNilabilityFrom(srcClass->decorator());
-        auto outTy = ClassType::get(context, srcClass->manageableType(),
-                                    nullptr, decorator);
-        exprTypeOut = QualifiedType(srcQt.kind(), outTy, srcQt.param());
+      if (resolveSpecialClassCast(context, astForErr, srcQt, dstQt, exprTypeOut)) {
         return true;
       }
     } else if (!srcQt.isParam() &&
