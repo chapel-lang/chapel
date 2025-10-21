@@ -4989,14 +4989,83 @@ static bool resolveSpecialClassCast(Context* context,
   return false;
 }
 
+static bool resolveSpecialTupleCast(Context* context,
+                                    const AstNode* astForErr,
+                                    const QualifiedType& srcQt,
+                                    const QualifiedType& dstQt,
+                                    const CallScopeInfo& inScopes,
+                                    QualifiedType& exprTypeOut) {
+  auto srcTy = srcQt.type();
+  auto dstTy = dstQt.type();
+  auto srcTuple = srcTy->toTupleType();
+  auto dstTuple = dstTy->toTupleType();
+
+  CHPL_ASSERT(srcTuple && dstTuple);
+  exprTypeOut = QualifiedType(srcQt.kind(), dstQt.type());
+
+  if (srcTuple->numElements() != dstTuple->numElements()) {
+    context->error(astForErr, "TODO");
+    return true;
+  }
+
+  // For the production implementation, see tuples.cpp. There are 5 broad
+  // cases to consider.
+  for (int i = 0; i < srcTuple->numElements(); i++) {
+    auto& srcEltType = srcTuple->elementType(i);
+    auto& dstEltType = dstTuple->elementType(i);
+
+    if (srcEltType.type() == dstEltType.type()) {
+      // TODO: we might perform a copy here if casting to not-a-reference.
+      continue;
+    }
+
+    if (srcEltType.type()->isTupleType() && dstEltType.type()->isTupleType()) {
+      // production directly inserts recursive coercions. Match that,
+      // and don't perform additional call resolution.
+      QualifiedType nestedExprTypeOut;
+      bool result = resolveSpecialTupleCast(context, astForErr,
+                                            srcEltType, dstEltType,
+                                            inScopes,
+                                            nestedExprTypeOut);
+      CHPL_ASSERT(result);
+      continue;
+    }
+
+    // set up cast call
+    std::vector<CallInfoActual> actuals;
+    auto dstAsType = QualifiedType(QualifiedType::TYPE, dstEltType.type());
+    actuals.push_back(CallInfoActual(srcEltType, UniqueString()));
+    actuals.push_back(CallInfoActual(dstAsType, UniqueString()));
+    auto ci = CallInfo(USTR(":"),
+                       QualifiedType(),
+                       /* isMethodCall */ false,
+                       /* hasQuestionArg */ false,
+                       /* isParenless */ false,
+                       std::move(actuals));
+
+    auto rc = createDummyRC(context);
+    auto cr = resolveGeneratedCall(&rc, astForErr, ci, inScopes);
+
+    if (cr.mostSpecific().isEmpty()) {
+      context->error(astForErr, "TODO");
+      continue;
+    }
+  }
+
+  return true;
+}
+
 // Resolving calls for certain compiler-supported patterns
 // without requiring module implementations exist at all.
-static bool resolveFnCallSpecial(Context* context,
+static bool resolveFnCallSpecial(ResolutionContext* rc,
                                  const AstNode* astForErr,
                                  const CallInfo& ci,
+                                 const CallScopeInfo& inScopes,
                                  QualifiedType& exprTypeOut) {
   // TODO: .borrow()
   // TODO: chpl__coerceCopy
+
+  auto context = rc->context();
 
   // Sometimes, actual types can be unknown since we are checking for 'out'
   // intent. No special functions here use the 'out' intent, so in this case,
@@ -5042,6 +5111,10 @@ static bool resolveFnCallSpecial(Context* context,
       return true;
     } else if (srcTy->isClassType() && dstTy->isClassType()) {
       if (resolveSpecialClassCast(context, astForErr, srcQt, dstQt, exprTypeOut)) {
+        return true;
+      }
+    } else if (srcTy->isTupleType() && dstTy->isTupleType()) {
+      if (resolveSpecialTupleCast(context, astForErr, srcQt, dstQt, inScopes, exprTypeOut)) {
         return true;
       }
     } else if (!srcQt.isParam() &&
@@ -6623,7 +6696,7 @@ CallResolutionResult resolveCall(ResolutionContext* rc,
     if (resolvePostfixNilableAppliedToNew(context, call, ci, tmpRetType)) {
       return CallResolutionResult(std::move(tmpRetType));
     }
-    if (resolveFnCallSpecial(context, call, ci, tmpRetType)) {
+    if (resolveFnCallSpecial(rc, call, ci, inScopes, tmpRetType)) {
       return CallResolutionResult(std::move(tmpRetType));
     }
 
@@ -6695,7 +6768,7 @@ CallResolutionResult resolveGeneratedCall(ResolutionContext* rc,
   QualifiedType tmpRetType;
 
   // see if the call is handled directly by the compiler
-  if (resolveFnCallSpecial(rc->context(), astContext, ci, tmpRetType)) {
+  if (resolveFnCallSpecial(rc, astContext, ci, inScopes, tmpRetType)) {
     return CallResolutionResult(std::move(tmpRetType));
   }
 
