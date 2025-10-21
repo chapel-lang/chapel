@@ -4923,12 +4923,15 @@ static bool resolveFnCallSpecial(Context* context,
         auto srcQtEnumType = srcTy->toEnumType();
         auto dstQtEnumType = dstTy->toEnumType();
 
-        if (srcQtEnumType && dstTy->isStringType()) {
+        if (srcQtEnumType && (dstTy->isStringType() || dstTy->isBytesType())) {
           std::ostringstream oss;
           srcQt.param()->stringify(oss, chpl::StringifyKind::CHPL_SYNTAX);
-          exprTypeOut = QualifiedType::makeParamString(context, oss.str());
+          exprTypeOut =
+            dstTy->isStringType()
+              ? QualifiedType::makeParamString(context, oss.str())
+              : QualifiedType::makeParamBytes(context, oss.str());
           return true;
-        } else if (dstQtEnumType && srcTy->isStringType()) {
+        } else if (dstQtEnumType && (srcTy->isStringType() || srcTy->isBytesType())) {
           CHPL_ASSERT(srcQt.param()->isStringParam());
 
           auto enumName = srcQt.param()->toStringParam()->value();

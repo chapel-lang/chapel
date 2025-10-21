@@ -78,6 +78,8 @@ class QualifiedType final {
   static QualifiedType makeParamUint(Context* context, uint64_t i);
   static QualifiedType makeParamString(Context* context, UniqueString s);
   static QualifiedType makeParamString(Context* context, std::string s);
+  static QualifiedType makeParamBytes(Context* context, UniqueString s);
+  static QualifiedType makeParamBytes(Context* context, std::string s);
 
  private:
   Kind kind_ = UNKNOWN;

@@ -76,6 +76,15 @@ QualifiedType QualifiedType::makeParamString(Context* context, std::string s) {
   return makeParamString(context, UniqueString::get(context, s));
 }
 
+QualifiedType QualifiedType::makeParamBytes(Context* context, UniqueString s) {
+  return {QualifiedType::PARAM, RecordType::getBytesType(context),
+          StringParam::get(context, s)};
+}
+
+QualifiedType QualifiedType::makeParamBytes(Context* context, std::string s) {
+  return makeParamBytes(context, UniqueString::get(context, s));
+}
+
 bool QualifiedType::needsSplitInitTypeInfo(Context* context) const {
   return (isParam() && !hasParamPtr()) ||
     isUnknownKindOrType() ||
