@@ -1027,6 +1027,82 @@ static void test29() {
   assert(vars.at("y").type()->isIntType());
 }
 
+// Param cast enum to bytes
+static void test30() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+        enum colors {red, green, blue};
+
+        param c = colors.red;
+        param s = c:bytes;
+
+        param x = colors.red:bytes;
+        param y = colors.green:bytes;
+        param z = colors.blue:bytes;
+
+        record R {
+          param p : colors;
+        }
+
+        var r = new R(colors.green);
+      )""", {"s", "x", "y", "z", "r"});
+
+  assert(guard.realizeErrors() == 0);
+
+  auto check = [] (QualifiedType qt, std::string text) {
+    assert(qt.type()->isBytesType());
+    assert(qt.param()->toStringParam()->value() == text);
+  };
+
+  check(vars.at("s"), "red");
+  check(vars.at("x"), "red");
+  check(vars.at("y"), "green");
+  check(vars.at("z"), "blue");
+
+  std::ostringstream oss;
+  vars.at("r").type()->stringify(oss, StringifyKind::CHPL_SYNTAX);
+  assert(oss.str() == "R(green)");
+}
+
+// Param cast bytes to enum
+static void test31() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+      enum color {
+        red = 0,
+        green = 0,
+        blue = 1,
+        gold = 1,
+      }
+      param a = b"red" : color;
+      param b = b"green" : color;
+      param c = b"blue" : color;
+      param d = b"gold" : color;
+      )""", {"a", "b", "c", "d"});
+
+  auto param0 = vars.at("a").param();
+  assert(param0 && param0->isEnumParam());
+  assert(param0->toEnumParam()->value().str == "red");
+
+  auto param1 = vars.at("b").param();
+  assert(param1 && param1->isEnumParam());
+  assert(param1->toEnumParam()->value().str == "green");
+
+  auto param2 = vars.at("c").param();
+  assert(param2 && param2->isEnumParam());
+  assert(param2->toEnumParam()->value().str == "blue");
+
+  auto param3 = vars.at("d").param();
+  assert(param3 && param3->isEnumParam());
+  assert(param3->toEnumParam()->value().str == "gold");
+}
+
 int main() {
   test1();
   test2();
@@ -1058,6 +1134,8 @@ int main() {
   test27();
   test28();
   test29();
+  test30();
+  test31();
 
   return 0;
 }
