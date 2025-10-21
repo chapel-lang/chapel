@@ -636,7 +636,7 @@ void AggregateType::codegenDef() {
           // of a wide pointer is always a local address.
           llvm::Type* eltType = llBaseType->getPointerElementType();
           INT_ASSERT(eltType);
-          globalPtrTy = lgetPointerType(eltType, globalAddressSpace);
+          globalPtrTy = getPointerType(eltType, globalAddressSpace);
 #endif
         }
 

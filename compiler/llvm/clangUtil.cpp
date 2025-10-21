@@ -2112,7 +2112,11 @@ static void setupModule()
   // Set the target triple.
   const llvm::Triple &Triple =
     clangInfo->Clang->getTarget().getTriple();
+#if LLVM_VERSION_MAJOR >= 21
   info->module->setTargetTriple(Triple);
+#else
+  info->module->setTargetTriple(Triple.getTriple());
+#endif
 
   // Always set the module layout. This works around an apparent bug in
   // clang or LLVM (trivial/deitz/test_array_low.chpl would print out the
@@ -2180,6 +2184,7 @@ static void setupModule()
 #endif
 
   // Create the target machine.
+#if LLVM_VERSION_MAJOR >= 21
   info->targetMachine = Target->createTargetMachine(Triple,
                                                     cpu,
                                                     featuresString,
@@ -2187,6 +2192,15 @@ static void setupModule()
                                                     relocModel,
                                                     codeModel,
                                                     optLevel);
+#else
+  info->targetMachine = Target->createTargetMachine(Triple.getTriple(),
+                                                    cpu,
+                                                    featuresString,
+                                                    Options,
+                                                    relocModel,
+                                                    codeModel,
+                                                    optLevel);
+#endif
 
 
 
@@ -4530,7 +4544,11 @@ static void linkBitCodeFile(const char *bitCodeFilePath) {
 
   // adjust it
   const llvm::Triple &Triple = info->clangInfo->Clang->getTarget().getTriple();
+#if LLVM_VERSION_MAJOR >= 21
   bcLib->setTargetTriple(Triple);
+#else
+  bcLib->setTargetTriple(Triple.getTriple());
+#endif
   bcLib->setDataLayout(info->clangInfo->asmTargetLayoutStr);
 
   // link

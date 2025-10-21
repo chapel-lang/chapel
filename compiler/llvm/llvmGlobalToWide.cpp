@@ -1304,7 +1304,11 @@ bool GlobalToWide::run(Module &M) {
       if( debugThisFn[0] || debugAllPassOne || debugAllPassTwo ) {
         dbgs() << "GlobalToWide: ";
         dbgs().write_escaped(M.getModuleIdentifier()) << '\n';
+#if LLVM_VERSION_MAJOR >= 21
         dbgs().write_escaped(M.getTargetTriple().str()) << '\n';
+#else
+        dbgs().write_escaped(M.getTargetTriple()) << '\n';
+#endif
       }
 
       // Normally we expect a user of this optimization to have
