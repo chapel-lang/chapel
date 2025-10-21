@@ -4991,6 +4991,8 @@ static bool resolveSpecialClassCast(Context* context,
 
 static bool resolveSpecialTupleCast(Context* context,
                                     const AstNode* astForErr,
+                                    const QualifiedType& outerSrcQtForErr,
+                                    const QualifiedType& outerDstQtForErr,
                                     const QualifiedType& srcQt,
                                     const QualifiedType& dstQt,
                                     const CallScopeInfo& inScopes,
@@ -5004,7 +5006,8 @@ static bool resolveSpecialTupleCast(Context* context,
   exprTypeOut = QualifiedType(srcQt.kind(), dstQt.type());
 
   if (srcTuple->numElements() != dstTuple->numElements()) {
-    context->error(astForErr, "TODO");
+    exprTypeOut = CHPL_TYPE_ERROR(context, TupleCastSizeMismatch, astForErr,
+                                  srcTuple, dstTuple);
     return true;
   }
 
@@ -5024,10 +5027,17 @@ static bool resolveSpecialTupleCast(Context* context,
       // and don't perform additional call resolution.
       QualifiedType nestedExprTypeOut;
       bool result = resolveSpecialTupleCast(context, astForErr,
+                                            outerSrcQtForErr,
+                                            outerDstQtForErr,
                                             srcEltType, dstEltType,
                                             inScopes,
                                             nestedExprTypeOut);
       CHPL_ASSERT(result);
+
+      if (nestedExprTypeOut.isUnknownOrErroneous() &&
+          !exprTypeOut.isUnknownOrErroneous()) {
+        exprTypeOut = nestedExprTypeOut;
+      }
       continue;
     }
 
@@ -5047,7 +5057,11 @@ static bool resolveSpecialTupleCast(Context* context,
     auto cr = resolveGeneratedCall(&rc, astForErr, ci, inScopes);
 
     if (cr.mostSpecific().isEmpty()) {
-      context->error(astForErr, "TODO");
+      exprTypeOut = CHPL_TYPE_ERROR(context, InvalidTupleCast, astForErr,
+                                    outerSrcQtForErr.type()->toTupleType(),
+                                    outerDstQtForErr.type()->toTupleType(),
+                                    srcEltType.type(),
+                                    dstEltType.type());
       continue;
     }
   }
@@ -5114,7 +5128,7 @@ static bool resolveFnCallSpecial(ResolutionContext* rc,
         return true;
       }
     } else if (srcTy->isTupleType() && dstTy->isTupleType()) {
-      if (resolveSpecialTupleCast(context, astForErr, srcQt, dstQt, inScopes, exprTypeOut)) {
+      if (resolveSpecialTupleCast(context, astForErr, srcQt, dstQt, srcQt, dstQt, inScopes, exprTypeOut)) {
         return true;
       }
     } else if (!srcQt.isParam() &&
