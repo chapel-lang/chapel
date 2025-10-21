@@ -303,6 +303,23 @@ static void test7() {
   assert(!vars.at("w").isUnknownOrErroneous() && vars.at("w").type()->isRealType());
 }
 
+// regression test: when 'only' mentions a method, and we try to resolve to
+// see if it's a type (as in `use x onl myRec`), we might get no identifiers
+// back. The code  wasn't written to handle this, and resulted in a crash.
+static void test8() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+      use CTypes only c_str;
+
+      var s1 = "1";
+      var s1c = s1.c_str();
+      )""", {});
+
+}
+
 int main() {
   test1();
   test2();
@@ -311,6 +328,7 @@ int main() {
   test5();
   test6();
   test7();
+  test8();
   return 0;
 }
 
