@@ -667,6 +667,199 @@ static void test49() {
   }
 }
 
+// Basic tuple cast with compatible element types (identity cast)
+static void test50() {
+  printf("test50\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  std::string program = "var x = (1, 2) : (int, int);";
+  auto vars = resolveTypesOfVariables(context, program, {"x"});
+  auto xType = vars.at("x").type();
+  assert(xType);
+  assert(xType->isTupleType());
+  auto tupleType = xType->toTupleType();
+  assert(tupleType->numElements() == 2);
+  assert(tupleType->elementType(0).type() == IntType::get(context, 0));
+  assert(tupleType->elementType(1).type() == IntType::get(context, 0));
+}
+
+// Tuple cast with type conversions (int to real)
+static void test51() {
+  printf("test51\n");
+  auto context = buildStdContext();
+
+  std::string program = "var x = (1, 2) : (real, real);";
+  auto vars = resolveTypesOfVariables(context, program, {"x"});
+  auto xType = vars.at("x").type();
+  assert(xType);
+  assert(xType->isTupleType());
+  auto tupleType = xType->toTupleType();
+  assert(tupleType->numElements() == 2);
+  assert(tupleType->elementType(0).type() == RealType::get(context, 0));
+  assert(tupleType->elementType(1).type() == RealType::get(context, 0));
+}
+
+// Tuple cast with mixed type conversions
+static void test52() {
+  printf("test52\n");
+  auto context = buildStdContext();
+
+  std::string program = "var x = (1, 2.5) : (real, int);";
+  auto vars = resolveTypesOfVariables(context, program, {"x"});
+  auto xType = vars.at("x").type();
+  assert(xType);
+  assert(xType->isTupleType());
+  auto tupleType = xType->toTupleType();
+  assert(tupleType->numElements() == 2);
+  assert(tupleType->elementType(0).type() == RealType::get(context, 0));
+  assert(tupleType->elementType(1).type() == IntType::get(context, 0));
+}
+
+// Nested tuple cast (identity cast)
+static void test53() {
+  printf("test53\n");
+  Context* context = buildStdContext();
+
+  std::string program = "var x = ((1, 2), (3, 4)) : ((int, int), (int, int));";
+  auto vars = resolveTypesOfVariables(context, program, {"x"});
+  auto xType = vars.at("x").type();
+  assert(xType);
+  assert(xType->isTupleType());
+  auto outerTuple = xType->toTupleType();
+  assert(outerTuple->numElements() == 2);
+
+  auto innerTuple0 = outerTuple->elementType(0).type()->toTupleType();
+  assert(innerTuple0);
+  assert(innerTuple0->numElements() == 2);
+  assert(innerTuple0->elementType(0).type() == IntType::get(context, 0));
+  assert(innerTuple0->elementType(1).type() == IntType::get(context, 0));
+
+  auto innerTuple1 = outerTuple->elementType(1).type()->toTupleType();
+  assert(innerTuple1);
+  assert(innerTuple1->numElements() == 2);
+  assert(innerTuple1->elementType(0).type() == IntType::get(context, 0));
+  assert(innerTuple1->elementType(1).type() == IntType::get(context, 0));
+}
+
+// Nested tuple cast with conversions
+static void test54() {
+  printf("test54\n");
+  auto context = buildStdContext();
+
+  std::string program = "var x = ((1, 2), (3, 4)) : ((real, real), (real, real));";
+  auto vars = resolveTypesOfVariables(context, program, {"x"});
+  auto xType = vars.at("x").type();
+  assert(xType);
+  assert(xType->isTupleType());
+  auto outerTuple = xType->toTupleType();
+  assert(outerTuple->numElements() == 2);
+
+  auto innerTuple0 = outerTuple->elementType(0).type()->toTupleType();
+  assert(innerTuple0);
+  assert(innerTuple0->numElements() == 2);
+  assert(innerTuple0->elementType(0).type() == RealType::get(context, 0));
+  assert(innerTuple0->elementType(1).type() == RealType::get(context, 0));
+
+  auto innerTuple1 = outerTuple->elementType(1).type()->toTupleType();
+  assert(innerTuple1);
+  assert(innerTuple1->numElements() == 2);
+  assert(innerTuple1->elementType(0).type() == RealType::get(context, 0));
+  assert(innerTuple1->elementType(1).type() == RealType::get(context, 0));
+}
+
+// Deeply nested tuple cast with conversions
+static void test55() {
+  printf("test55\n");
+  auto context = buildStdContext();
+
+  std::string program = "var x = (((1, 2), 3), 4) : (((real, real), real), real);";
+  auto vars = resolveTypesOfVariables(context, program, {"x"});
+  auto xType = vars.at("x").type();
+  assert(xType);
+  assert(xType->isTupleType());
+  auto outerTuple = xType->toTupleType();
+  assert(outerTuple->numElements() == 2);
+
+  auto midTuple = outerTuple->elementType(0).type()->toTupleType();
+  assert(midTuple);
+  assert(midTuple->numElements() == 2);
+
+  auto innerTuple = midTuple->elementType(0).type()->toTupleType();
+  assert(innerTuple);
+  assert(innerTuple->numElements() == 2);
+  assert(innerTuple->elementType(0).type() == RealType::get(context, 0));
+  assert(innerTuple->elementType(1).type() == RealType::get(context, 0));
+
+  assert(midTuple->elementType(1).type() == RealType::get(context, 0));
+  assert(outerTuple->elementType(1).type() == RealType::get(context, 0));
+}
+
+
+// Error: tuple size mismatch (source larger)
+static void test56() {
+  printf("test56\n");
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program = "var x = (1, 2, 3) : (int, int);";
+  auto m = parseModule(context, std::move(program));
+  resolveModule(context, m->id());
+
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->type() == ErrorType::TupleCastSizeMismatch);
+  assert(guard.realizeErrors() == 1);
+}
+
+// Error: tuple size mismatch (destination larger)
+static void test57() {
+  printf("test57\n");
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program = "var x = (1, 2) : (int, int, int);";
+  auto m = parseModule(context, std::move(program));
+  resolveModule(context, m->id());
+
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->type() == ErrorType::TupleCastSizeMismatch);
+  assert(guard.realizeErrors() == 1);
+}
+
+// Error: nested tuple size mismatch
+static void test58() {
+  printf("test58\n");
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program = "var x = ((1, 2), 3) : ((int, int, int), int);";
+  auto m = parseModule(context, std::move(program));
+  resolveModule(context, m->id());
+
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->type() == ErrorType::TupleCastSizeMismatch);
+  assert(guard.realizeErrors() == 1);
+}
+
+// Error: invalid element type conversion
+static void test59() {
+  printf("test59\n");
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program =
+    R"""(
+    record R {}
+    var x = (new R(), 1) : (int, int);
+    )""";
+  auto m = parseModule(context, std::move(program));
+  resolveModule(context, m->id());
+
+  assert(guard.numErrors() >= 1);
+  assert(guard.error(0)->type() == ErrorType::InvalidTupleCast);
+  assert(guard.realizeErrors() >= 1);
+}
+
 int main() {
   test1();
   test2();
@@ -717,6 +910,16 @@ int main() {
   test47();
   test48();
   test49();
+  test50();
+  test51();
+  test52();
+  test53();
+  test54();
+  test55();
+  test56();
+  test57();
+  test58();
+  test59();
 
   return 0;
 }
