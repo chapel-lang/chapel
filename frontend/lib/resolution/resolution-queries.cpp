@@ -5595,8 +5595,9 @@ struct LastResortCandidateGroups {
 };
 
 // Returns candidates with last resort candidates removed and saved in a
-// separate list.
-static void filterCandidatesLastResort(
+// separate list. Also removes candidates that are not to be considered
+// due to various pragmas.
+static void filterCandidatesAndSeparateLastResort(
     Context* context, const CandidatesAndForwardingInfo& list, CandidatesAndForwardingInfo& result,
     CandidatesAndForwardingInfo& lastResort) {
   for (auto& candidate : list) {
@@ -5604,6 +5605,28 @@ static void filterCandidatesLastResort(
         parsing::idToAttributeGroup(context, candidate->untyped()->id());
     if (attrs && attrs->hasPragma(PRAGMA_LAST_RESORT)) {
       lastResort.addCandidate(candidate);
+    } else if (attrs && attrs->hasPragma(PRAGMA_DOCS_ONLY)) {
+      // docs-only functions are not candidates...
+      // Except, production does some weird manipulation in which it rewrites
+      // 'isSubtype' and similar functions in the compiler, and marks them
+      // docs only in the modules. We don't do that, because why would we?
+      //
+      // TODO (Daniel): figure out if we can make the production not be weird about this.
+      auto candidateName = candidate->untyped()->name();
+      if (parsing::idIsInBundledModule(context, candidate->id()) &&
+          (candidateName == "isSubtype" ||
+           candidateName == "isCoercible" ||
+           candidateName == "isProperSubtype")) {
+        result.addCandidate(candidate);
+      }
+    } else if (attrs && attrs->hasPragma(PRAGMA_TUPLE_CAST_FN)) {
+      // Production fills in the body of a tuple-cast function defined in modules
+      // during resolution. This is annoying for us because
+      //   1) we can't mutate AST like production and
+      //   2) this is another of N ways to compiler-generate functions.
+      //
+      // Instead, pretend the candidate doesn't exist, and use the
+      // usual compiler-generation machinery to create it ourselves.
     } else {
       result.addCandidate(candidate);
     }
@@ -5632,7 +5655,7 @@ static void filterGatheredCandidates(ResolutionContext* rc,
       rejected);
 
   // filter out last resort candidates
-  filterCandidatesLastResort(rc->context(), candidatesWithInstantiations,
+  filterCandidatesAndSeparateLastResort(rc->context(), candidatesWithInstantiations,
       into, lastResort);
 }
 
@@ -5946,7 +5969,7 @@ static void doGatherCandidates(ResolutionContext* rc,
 
   // filter out last resort candidates
   CandidatesAndForwardingInfo lrcGroup;
-  filterCandidatesLastResort(context, candidatesWithInstantiations,
+  filterCandidatesAndSeparateLastResort(context, candidatesWithInstantiations,
                              outCandidates, lrcGroup);
   if (usePoiScope) {
     outLrcGroups.addPoiCandidates(std::move(lrcGroup));
