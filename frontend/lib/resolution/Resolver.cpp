@@ -2247,7 +2247,13 @@ gatherUserDiagnostics(ResolutionContext* rc,
     if (!msc) continue;
 
     // compiler-generated fns don't always have ASTs, so we can't resolve them.
-    if (msc.fn()->isCompilerGenerated()) continue;
+    // If it has a fabricated ID, then we generated an AST body, so don't skip it.
+    if (msc.fn()->isCompilerGenerated()) {
+      auto& id = msc.fn()->id();
+      if (!id.isFabricatedId() || id.fabricatedIdKind() != ID::Generated) {
+        continue;
+      }
+    }
 
     // shouldn't happen, but it currently does in some cases.
     if (msc.fn()->needsInstantiation()) continue;
