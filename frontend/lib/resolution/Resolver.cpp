@@ -4308,7 +4308,7 @@ ResolvedExpression Resolver::resolveNameInModule(const UniqueString name) {
     return result;
   }
 
-  if (ids.numIds() > 1) return result;
+  if (ids.numIds() != 1) return result;
 
   // One ID, not a parenless fn. Try to resolve its type "normally".
   auto id = ids.firstId();
