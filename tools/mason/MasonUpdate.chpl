@@ -31,6 +31,8 @@ use MasonLogger;
 use TOML;
 import Path;
 
+import MasonPrereqs;
+
 /*
 Update: Performs the upfront dependency resolution and generates the lock file.
 
@@ -80,22 +82,23 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock", show=true) {
     const TomlFile = parseToml(openFile);
     log.debugf("Parsed %s\n", tomlPath);
 
-    var updated = false;
-    if isFile(tomlPath) {
-      if TomlFile.pathExists('dependencies') {
-        if TomlFile['dependencies']!.A.size > 0 {
-          log.infoln("Updating registry");
-          updateRegistry(skipUpdate, show);
-          updated = true;
+    if !skipUpdate {
+      var updated = false;
+      if isFile(tomlPath) {
+        if TomlFile.pathExists('dependencies') {
+          if TomlFile['dependencies']!.A.size > 0 {
+            log.infoln("Updating registry");
+            updateRegistry(skipUpdate, show);
+            updated = true;
+          }
+        }
+        if !updated && show {
+          log.infoln("Skipping registry update since no dependency found in " +
+                     "manifest file.");
         }
       }
-      if !updated && show {
-        log.infoln("Skipping registry update since no dependency found in manifest file.");
-      }
-    }
 
-    if !skipUpdate {
-      log.debugln("Will do external update");
+      log.infoln("Will do external update");
       if isDir(SPACK_ROOT) && TomlFile.pathExists('external') {
         if getSpackVersion() < minSpackVersion then
         throw new owned MasonError("Mason has been updated. " +
@@ -116,6 +119,12 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock", show=true) {
       // Generate Lock File
       log.debugln("Generating lock file");
       genLock(lockFile, lockPath);
+
+      log.infoln("Installing prerequisites");
+      MasonPrereqs.install();
+    }
+    else {
+      log.infoln("Skipping updates");
     }
     // Close Memory
     openFile.close();
