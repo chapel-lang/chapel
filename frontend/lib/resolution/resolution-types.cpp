@@ -1543,6 +1543,8 @@ const char* AssociatedAction::kindToString(Action a) {
       return "enter-context";
     case EXIT_CONTEXT:
       return "exit-context";
+    case TUPLE_CAST:
+      return "tuple-cast";
     // no default to get a warning if new Actions are added
   }
 
