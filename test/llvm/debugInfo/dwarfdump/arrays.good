@@ -33,34 +33,6 @@ DW_TAG_pointer_type
               DW_AT_name	("[domain(1,int(64),one)] int(64)")
 DW_TAG_structure_type
               DW_AT_name	("[domain(1,int(64),one)] int(64)")
-              DW_AT_byte_size	(0x18)
-              DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelArray.chpl")
-              DW_AT_decl_line	(781)
-              DW_AT_alignment	(8)
-  DW_TAG_member
-                DW_AT_name	("_pid")
-                DW_AT_type	("int(64)")
-                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelArray.chpl")
-                DW_AT_decl_line	(782)
-                DW_AT_alignment	(8)
-                DW_AT_data_member_location	(0x00)
-  DW_TAG_member
-                DW_AT_name	("_instance")
-                DW_AT_type	("DefaultRectangular::[domain(1,int(64),one)] int(64) *")
-                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelArray.chpl")
-                DW_AT_decl_line	(785)
-                DW_AT_alignment	(8)
-                DW_AT_data_member_location	(0x08)
-  DW_TAG_member
-                DW_AT_name	("_unowned")
-                DW_AT_type	("bool")
-                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelArray.chpl")
-                DW_AT_decl_line	(786)
-                DW_AT_alignment	(1)
-                DW_AT_data_member_location	(0x10)
-  NULL
-DW_TAG_structure_type
-              DW_AT_name	("[domain(1,int(64),one)] int(64)")
               DW_AT_byte_size	(0x80)
               DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
               DW_AT_decl_line	(1036)
@@ -163,6 +135,34 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(1064)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x7b)
+  NULL
+DW_TAG_structure_type
+              DW_AT_name	("[domain(1,int(64),one)] int(64)")
+              DW_AT_byte_size	(0x18)
+              DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelArray.chpl")
+              DW_AT_decl_line	(781)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("_pid")
+                DW_AT_type	("int(64)")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelArray.chpl")
+                DW_AT_decl_line	(782)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("_instance")
+                DW_AT_type	("DefaultRectangular::[domain(1,int(64),one)] int(64) *")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelArray.chpl")
+                DW_AT_decl_line	(785)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x08)
+  DW_TAG_member
+                DW_AT_name	("_unowned")
+                DW_AT_type	("bool")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelArray.chpl")
+                DW_AT_decl_line	(786)
+                DW_AT_alignment	(1)
+                DW_AT_data_member_location	(0x10)
   NULL
 ================================================================================
 ===================BaseRectangularArr(1,int(64),one,int(64))====================
@@ -288,34 +288,6 @@ DW_TAG_pointer_type
               DW_AT_name	("[domain(2,int(64),one)] real(32)")
 DW_TAG_structure_type
               DW_AT_name	("[domain(2,int(64),one)] real(32)")
-              DW_AT_byte_size	(0x18)
-              DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelArray.chpl")
-              DW_AT_decl_line	(781)
-              DW_AT_alignment	(8)
-  DW_TAG_member
-                DW_AT_name	("_pid")
-                DW_AT_type	("int(64)")
-                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelArray.chpl")
-                DW_AT_decl_line	(782)
-                DW_AT_alignment	(8)
-                DW_AT_data_member_location	(0x00)
-  DW_TAG_member
-                DW_AT_name	("_instance")
-                DW_AT_type	("DefaultRectangular::[domain(2,int(64),one)] real(32) *")
-                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelArray.chpl")
-                DW_AT_decl_line	(785)
-                DW_AT_alignment	(8)
-                DW_AT_data_member_location	(0x08)
-  DW_TAG_member
-                DW_AT_name	("_unowned")
-                DW_AT_type	("bool")
-                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelArray.chpl")
-                DW_AT_decl_line	(786)
-                DW_AT_alignment	(1)
-                DW_AT_data_member_location	(0x10)
-  NULL
-DW_TAG_structure_type
-              DW_AT_name	("[domain(2,int(64),one)] real(32)")
               DW_AT_byte_size	(0xa0)
               DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
               DW_AT_decl_line	(1036)
@@ -418,6 +390,34 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(1064)
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x9b)
+  NULL
+DW_TAG_structure_type
+              DW_AT_name	("[domain(2,int(64),one)] real(32)")
+              DW_AT_byte_size	(0x18)
+              DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelArray.chpl")
+              DW_AT_decl_line	(781)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("_pid")
+                DW_AT_type	("int(64)")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelArray.chpl")
+                DW_AT_decl_line	(782)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("_instance")
+                DW_AT_type	("DefaultRectangular::[domain(2,int(64),one)] real(32) *")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelArray.chpl")
+                DW_AT_decl_line	(785)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x08)
+  DW_TAG_member
+                DW_AT_name	("_unowned")
+                DW_AT_type	("bool")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelArray.chpl")
+                DW_AT_decl_line	(786)
+                DW_AT_alignment	(1)
+                DW_AT_data_member_location	(0x10)
   NULL
 ================================================================================
 ===================BaseRectangularArr(2,int(64),one,real(32))===================
@@ -560,34 +560,6 @@ DW_TAG_pointer_type
               DW_AT_name	("[CyclicDom(1,int(64),one)] uint(8)")
 DW_TAG_structure_type
               DW_AT_name	("[CyclicDom(1,int(64),one)] uint(8)")
-              DW_AT_byte_size	(0x18)
-              DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelArray.chpl")
-              DW_AT_decl_line	(781)
-              DW_AT_alignment	(8)
-  DW_TAG_member
-                DW_AT_name	("_pid")
-                DW_AT_type	("int(64)")
-                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelArray.chpl")
-                DW_AT_decl_line	(782)
-                DW_AT_alignment	(8)
-                DW_AT_data_member_location	(0x00)
-  DW_TAG_member
-                DW_AT_name	("_instance")
-                DW_AT_type	("CyclicDist::[CyclicDom(1,int(64),one)] uint(8) *")
-                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelArray.chpl")
-                DW_AT_decl_line	(785)
-                DW_AT_alignment	(8)
-                DW_AT_data_member_location	(0x08)
-  DW_TAG_member
-                DW_AT_name	("_unowned")
-                DW_AT_type	("bool")
-                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelArray.chpl")
-                DW_AT_decl_line	(786)
-                DW_AT_alignment	(1)
-                DW_AT_data_member_location	(0x10)
-  NULL
-DW_TAG_structure_type
-              DW_AT_name	("[CyclicDom(1,int(64),one)] uint(8)")
               DW_AT_byte_size	(0x68)
               DW_AT_decl_file	("$CHPL_HOME/modules/dists/CyclicDist.chpl")
               DW_AT_decl_line	(919)
@@ -634,6 +606,34 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(925)
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x60)
+  NULL
+DW_TAG_structure_type
+              DW_AT_name	("[CyclicDom(1,int(64),one)] uint(8)")
+              DW_AT_byte_size	(0x18)
+              DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelArray.chpl")
+              DW_AT_decl_line	(781)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("_pid")
+                DW_AT_type	("int(64)")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelArray.chpl")
+                DW_AT_decl_line	(782)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("_instance")
+                DW_AT_type	("CyclicDist::[CyclicDom(1,int(64),one)] uint(8) *")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelArray.chpl")
+                DW_AT_decl_line	(785)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x08)
+  DW_TAG_member
+                DW_AT_name	("_unowned")
+                DW_AT_type	("bool")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelArray.chpl")
+                DW_AT_decl_line	(786)
+                DW_AT_alignment	(1)
+                DW_AT_data_member_location	(0x10)
   NULL
 ================================================================================
 Success!!
