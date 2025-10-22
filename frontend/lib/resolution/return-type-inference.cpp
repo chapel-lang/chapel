@@ -662,6 +662,13 @@ returnTypeForTypeCtorQuery(Context* context,
     if (instantiatedFrom != nullptr) {
       int nFormals = sig->numFormals();
       for (int i = 0; i < nFormals; i++) {
+        // If we didn't instantiate the formal with anything, don't create
+        // a substitution for the corresponding field. This comes up,
+        // e.g., if we made a type constructor call like R(?). In this
+        // case, we will compute the formal types to be their generic versions,
+        // but these formals oughtn't count as existing substitutions.
+        if (!sig->formalIsInstantiated(i)) continue;
+
         auto field = findFieldByName(context, ad, instantiatedFrom, untyped->formalName(i));
         const QualifiedType& formalType = sig->formalType(i);
         // Note that the formalDecl should already be a fieldDecl
