@@ -378,7 +378,7 @@ void AstDumpToHtml::visitSymExpr(SymExpr* node) {
 
     snprint_imm(imm, bufSize, *var->immediate);
 
-    fprintf(mFP, "<i><FONT COLOR=\"blue\">%s%s</FONT></i>", imm, is_imag_type(var->type) ? "i" : "");
+    fprintf(mFP, "<i><FONT COLOR=\"blue\">%s%s</FONT></i>", imm, isImagType(var->type) ? "i" : "");
 
   } else {
     writeSymbol(sym, false);

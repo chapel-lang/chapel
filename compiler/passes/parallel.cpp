@@ -717,6 +717,7 @@ static void create_block_fn_wrapper(FnSymbol* fn, CallExpr* fcall, BundleArgsFnD
   allocated_sz->addFlag(FLAG_NO_CODEGEN);
   wrap_fn->insertFormalAtTail(allocated_sz);
   ArgSymbol *wrap_c = new ArgSymbol( INTENT_IN, "c", ctype);
+  wrap_c->addFlag(FLAG_NO_USER_DEBUG_INFO);
   //wrap_c->addFlag(FLAG_NO_CODEGEN);
   wrap_fn->insertFormalAtTail(wrap_c);
 
@@ -944,13 +945,13 @@ static void findHeapVarsAndRefs(Map<Symbol*, Vec<SymExpr*>*>& defMap,
         !def->sym->hasFlag(FLAG_LOCALE_PRIVATE) &&
         !def->sym->hasFlag(FLAG_EXTERN)) {
       if (def->sym->hasFlag(FLAG_CONST) &&
-          (is_bool_type(def->sym->type)    ||
-           is_enum_type(def->sym->type)    ||
-           is_int_type(def->sym->type)     ||
-           is_uint_type(def->sym->type)    ||
-           is_real_type(def->sym->type)    ||
-           is_imag_type(def->sym->type)    ||
-           is_complex_type(def->sym->type) ||
+          (isBoolType(def->sym->type)    ||
+           isEnumType(def->sym->type)    ||
+           isIntType(def->sym->type)     ||
+           isUIntType(def->sym->type)    ||
+           isRealType(def->sym->type)    ||
+           isImagType(def->sym->type)    ||
+           isComplexType(def->sym->type) ||
            (isRecord(def->sym->type)             &&
             !isRecordWrappedType(def->sym->type) &&
             !isSyncType(def->sym->type)          &&
@@ -1499,7 +1500,8 @@ Type* getOrMakeRefTypeDuringCodegen(Type* type) {
     } else {
       SET_LINENO(type->symbol);
       AggregateType* ref = new AggregateType(AGGREGATE_CLASS);
-      TypeSymbol* refTs = new TypeSymbol(astr("_ref_", type->symbol->cname), ref);
+      TypeSymbol* refTs = new TypeSymbol(astr("ref(", type->symbol->name, ")"), ref);
+      refTs->cname = astr("_ref_", type->symbol->cname);
       refTs->addFlag(FLAG_REF);
       refTs->addFlag(FLAG_NO_DEFAULT_FUNCTIONS);
       refTs->addFlag(FLAG_NO_OBJECT);
@@ -1532,7 +1534,8 @@ Type* getOrMakeWideTypeDuringCodegen(Type* refType) {
 
   // Now, create a wide pointer type.
   AggregateType* wide = new AggregateType(AGGREGATE_RECORD);
-  TypeSymbol* wts = new TypeSymbol(astr("chpl____wide_", refType->symbol->cname), wide);
+  TypeSymbol* wts = new TypeSymbol(astr("wide(", refType->symbol->name, ")"), wide);
+  wts->cname = astr("chpl____wide_", refType->symbol->cname);
   if( refType->symbol->hasFlag(FLAG_REF) || refType == dtNil )
     wts->addFlag(FLAG_WIDE_REF);
   else

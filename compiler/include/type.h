@@ -663,22 +663,21 @@ void     initPrimitiveTypes();
 void     initChplProgram();
 void     initCompilerGlobals();
 
-bool is_nothing_type(Type*);
-bool is_bool_type(Type*);
-bool is_int_type(Type*);
-bool is_uint_type(Type*);
-bool is_signed(Type*);
-bool is_real_type(Type*);
-bool is_imag_type(Type*);
-bool is_complex_type(Type*);
-bool is_enum_type(Type*);
+bool isBoolType(Type*);
+bool isIntType(Type*);
+bool isUIntType(Type*);
+bool isSignedType(Type*);
+bool isRealType(Type*);
+bool isImagType(Type*);
+bool isComplexType(Type*);
+bool isEnumType(Type*);
 bool isLegalParamType(Type*);
 // returns the width in bytes of a numeric type
-int  get_width(Type*);
+int  getWidthOfType(Type*);
 // returns the component width in bytes of a numeric type
-// like get_width but for complex types, returns get_width/2
+// like getWidthOfType but for complex types, returns getWidthOfType/2
 // since that is the width of the real or imaginary component.
-int  get_component_width(Type*);
+int  getComponentWidthOfType(Type*);
 int  get_mantissa_width(Type*);
 int  get_exponent_width(Type*);
 bool isClass(Type* t); // includes ref, ddata, classes; not unmanaged
@@ -783,12 +782,12 @@ llvm::SmallVector<std::string, 2> explainGeneric(Type* t);
 #define SUBLOC_ID_TYPE dtInt[INT_SIZE_32]
 #define LOCALE_ID_TYPE dtLocaleID->typeInfo()
 
-#define is_arithmetic_type(t)                        \
-        (is_int_type(t)        ||                    \
-         is_uint_type(t)       ||                    \
-         is_real_type(t)       ||                    \
-         is_imag_type(t)       ||                    \
-         is_complex_type(t))
+#define is_arithmetic_type(t)                      \
+        (isIntType(t)        ||                    \
+         isUIntType(t)       ||                    \
+         isRealType(t)       ||                    \
+         isImagType(t)       ||                    \
+         isComplexType(t))
 
 
 #endif

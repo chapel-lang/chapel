@@ -535,7 +535,7 @@ void denormalize(Expr* def, SymExpr* use, Type* castTo) {
 }
 
 inline bool requiresCast(Type* t) {
-  if(is_int_type(t) || is_uint_type(t) || is_real_type(t)) {
+  if(isIntType(t) || isUIntType(t) || isRealType(t)) {
     return true;
   }
   return false;
@@ -550,8 +550,8 @@ inline bool isFloatComparisonPrimitive(CallExpr *ce) {
       case PRIM_GREATEROREQUAL:
       case PRIM_LESS:
       case PRIM_GREATER:
-        if(is_real_type(ce->get(1)->typeInfo()) ||
-           is_real_type(ce->get(2)->typeInfo())) {
+        if(isRealType(ce->get(1)->typeInfo()) ||
+           isRealType(ce->get(2)->typeInfo())) {
           return true;
         }
         break;

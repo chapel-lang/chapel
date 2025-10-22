@@ -2870,35 +2870,35 @@ static Expr* preFoldNamed(CallExpr* call) {
           Type* oldType = sym->type;
           Type* newType = toSE->symbol()->type;
 
-          bool fromEnum = is_enum_type(oldType);
+          bool fromEnum = isEnumType(oldType);
           bool fromString = (oldType == dtString ||
                              oldType == dtStringC ||
                              isCPtrConstChar(oldType));
           bool fromBytes = oldType == dtBytes;
-          bool fromIntUint = is_int_type(oldType) ||
-                             is_uint_type(oldType);
-          bool fromRealEtc = is_real_type(oldType) ||
-                             is_imag_type(oldType) ||
-                             is_complex_type(oldType);
-          bool fromIntEtc = fromIntUint || fromRealEtc || is_bool_type(oldType);
+          bool fromIntUint = isIntType(oldType) ||
+                             isUIntType(oldType);
+          bool fromRealEtc = isRealType(oldType) ||
+                             isImagType(oldType) ||
+                             isComplexType(oldType);
+          bool fromIntEtc = fromIntUint || fromRealEtc || isBoolType(oldType);
 
-          bool toEnum = is_enum_type(newType);
+          bool toEnum = isEnumType(newType);
           bool toString = (newType == dtString ||
                            newType == dtStringC ||
                            isCPtrConstChar(newType));
           bool toBytes = newType == dtBytes;
-          bool toIntUint = is_int_type(newType) ||
-                           is_uint_type(newType);
-          bool toRealEtc = is_real_type(newType) ||
-                           is_imag_type(newType) ||
-                           is_complex_type(newType);
-          bool toIntEtc = toIntUint || toRealEtc || is_bool_type(newType);
+          bool toIntUint = isIntType(newType) ||
+                           isUIntType(newType);
+          bool toRealEtc = isRealType(newType) ||
+                           isImagType(newType) ||
+                           isComplexType(newType);
+          bool toIntEtc = toIntUint || toRealEtc || isBoolType(newType);
 
 
           // Handle casting between numeric types
           if (imm != NULL && (fromEnum || fromIntEtc) && toIntEtc) {
             if (fWarnUnstable && fromEnum && !toIntUint) {
-              if (is_bool_type(newType)) {
+              if (isBoolType(newType)) {
                 USR_WARN(call, "enum-to-bool casts are likely to be deprecated in the future");
               } else {
                 USR_WARN(call, "enum-to-float casts are likely to be deprecated in the future");
@@ -3117,7 +3117,7 @@ static Expr* preFoldNamed(CallExpr* call) {
         if (t2->symbol->hasFlag(FLAG_RANGE)) USR_WARN(call,
           "(range * range) is unstable and may change in the future");
       } else if (call->isNamedAstr(astrSstarstar)) {
-        if (is_int_type(t2) || is_uint_type(t2)) USR_WARN(call,
+        if (isIntType(t2) || isUIntType(t2)) USR_WARN(call,
           "(range ** integer) is unstable and may change in the future");
       }
     }
@@ -3145,7 +3145,7 @@ static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar) {
 
   Type* indexType = call->get(3)->getValType();
 
-  if (!is_int_type(indexType) && !is_uint_type(indexType) && !is_bool_type(indexType))
+  if (!isIntType(indexType) && !isUIntType(indexType) && !isBoolType(indexType))
     USR_FATAL(call, "tuple indexing expression is not of integral type");
 
   AggregateType* baseType = toAggregateType(baseVar->getValType());

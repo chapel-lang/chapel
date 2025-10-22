@@ -1291,15 +1291,15 @@ bool isOuterVarOfShadowVar(Expr* expr) {
 
 TypeSymbol::TypeSymbol(const char* init_name, Type* init_type) :
   Symbol(E_TypeSymbol, init_name, init_type),
-    llvmImplType(NULL), llvmAlignment(ALIGNMENT_UNINIT),
-    llvmTbaaTypeDescriptor(NULL),
-    llvmTbaaAccessTag(NULL), llvmConstTbaaAccessTag(NULL),
-    llvmTbaaAggTypeDescriptor(NULL),
-    llvmTbaaStructCopyNode(NULL), llvmConstTbaaStructCopyNode(NULL),
-    llvmDIType(NULL),
-    llvmDIForwardType(NULL),
-    instantiationPoint(NULL),
-    userInstantiationPointLoc(0, NULL)
+    llvmImplType(nullptr), llvmAlignment(ALIGNMENT_UNINIT),
+    llvmTbaaTypeDescriptor(nullptr),
+    llvmTbaaAccessTag(nullptr), llvmConstTbaaAccessTag(nullptr),
+    llvmTbaaAggTypeDescriptor(nullptr),
+    llvmTbaaStructCopyNode(nullptr), llvmConstTbaaStructCopyNode(nullptr),
+    llvmDIType(nullptr),
+    llvmDIForwardType(nullptr),
+    instantiationPoint(nullptr),
+    userInstantiationPointLoc(0, nullptr)
 {
   addFlag(FLAG_TYPE_VARIABLE);
   if (!type)

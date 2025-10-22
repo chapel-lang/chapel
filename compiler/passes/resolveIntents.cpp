@@ -29,13 +29,13 @@
 bool intentsResolved = false;
 
 IntentTag constIntentForType(Type* t) {
-  if (is_bool_type(t) ||
-      is_int_type(t) ||
-      is_uint_type(t) ||
-      is_real_type(t) ||
-      is_imag_type(t) ||
-      is_complex_type(t) ||
-      is_enum_type(t) ||
+  if (isBoolType(t) ||
+      isIntType(t) ||
+      isUIntType(t) ||
+      isRealType(t) ||
+      isImagType(t) ||
+      isComplexType(t) ||
+      isEnumType(t) ||
       isClass(t) ||
       isDecoratedClassType(t) ||
       isFunctionType(t) ||
@@ -131,13 +131,13 @@ IntentTag blankIntentForType(Type* t) {
     // allow blank intent owned to be transferred out of
     retval = INTENT_CONST_REF;
 
-  } else if (is_bool_type(t)                         ||
-             is_int_type(t)                          ||
-             is_uint_type(t)                         ||
-             is_real_type(t)                         ||
-             is_imag_type(t)                         ||
-             is_complex_type(t)                      ||
-             is_enum_type(t)                         ||
+  } else if (isBoolType(t)                           ||
+             isIntType(t)                            ||
+             isUIntType(t)                           ||
+             isRealType(t)                           ||
+             isImagType(t)                           ||
+             isComplexType(t)                        ||
+             isEnumType(t)                           ||
              t == dtStringC                          ||
              t == dtCVoidPtr                         ||
              t == dtCFnPtr                           ||

@@ -25,10 +25,10 @@ Process XXXX stopped
    8   	}
 (lldb) target var
 Global variables for FILE.chpl
-(long) myGlobal_chpl = 42
+(int(64)) myGlobal_chpl = 42
 (lldb) frame var
-(long) myFormal = 59
-(long) localVar = 60
+(int(64)) myFormal = 59
+(int(64)) localVar = 60
 (lldb) c
 printing from foo
 myFormal: 59
@@ -57,9 +57,9 @@ Process XXXX stopped
    14
 (lldb) target var
 Global variables for FILE.chpl
-(long) myGlobal_chpl = 42
+(int(64)) myGlobal_chpl = 42
 (lldb) frame var
-(long) myFormal = 59
+(int(64)) myFormal = 59
 (lldb) c
 printing from bar
 myFormal: 59

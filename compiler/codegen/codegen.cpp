@@ -249,7 +249,7 @@ genGlobalDefClassId(const char* cname, int id, bool isHeader) {
         info->module->getOrInsertGlobal(name, id_type));
     gv->setInitializer(info->irBuilder->getInt32(id));
     gv->setConstant(true);
-    info->lvt->addGlobalValue(name, gv, GEN_PTR, ! is_signed(CLASS_ID_TYPE), CLASS_ID_TYPE);
+    info->lvt->addGlobalValue(name, gv, GEN_PTR, ! isSignedType(CLASS_ID_TYPE), CLASS_ID_TYPE);
 #endif
   }
 }
@@ -2380,7 +2380,7 @@ static const char* generateFileName(ChainHashMap<const char*, StringHashFns, int
 bool argRequiresCPtr(IntentTag intent, Type* t, bool isReceiver) {
   /* This used to be true for INTENT_REF, but that is handled with the "_ref"
      class and we don't need to generate a pointer for it directly */
-  if (isReceiver && is_complex_type(t)) return true;
+  if (isReceiver && isComplexType(t)) return true;
   return argMustUseCPtr(t);
 }
 
@@ -2463,8 +2463,11 @@ static void convertToRefTypes() {
 }
 
 extern bool printCppLineno;
-debug_data *debug_info=NULL;
 
+
+#ifdef HAVE_LLVM
+DebugData* debugInfo = nullptr;
+#endif
 
 
 
@@ -3225,23 +3228,21 @@ static void codegenPartTwo() {
 
     if(debugCCode)
     {
-      debug_info = new debug_data(*info->module);
+      debugInfo = new DebugData(/*optimized*/false);
     }
-    if(debug_info) {
+    if(debugInfo) {
       // every module gets its own compile unit
       forv_Vec(ModuleSymbol, currentModule, allModules) {
         // So, this is pretty quick. I'm assuming that the main module is in the current dir, no optimization (need to figure out how to get this)
         // and no compile flags, since I can't figure out how to get that either.
         const char *current_dir = "./";
         const char *empty_string = "";
-        debug_info->create_compile_unit(currentModule,
-          currentModule->astloc.filename(), current_dir,
-          false, empty_string
+        debugInfo->createCompileUnit(currentModule,
+          currentModule->astloc.filename(), current_dir, empty_string
         );
       }
-      debug_info->create_compile_unit(rootModule,
-        rootModule->astloc.filename(), "./",
-        false, ""
+      debugInfo->createCompileUnit(rootModule,
+        rootModule->astloc.filename(), "./", ""
       );
     }
 

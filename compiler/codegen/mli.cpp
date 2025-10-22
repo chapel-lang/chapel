@@ -487,7 +487,7 @@ std::string MLIContext::genMarshalRoutine(Type* t, bool push) {
   // what we can translate is limited.
   //
 
-  if (isPrimitiveScalar(t) && !is_complex_type(t)) {
+  if (isPrimitiveScalar(t) && !isComplexType(t)) {
     gen += this->genMarshalBodyPrimitiveScalar(t, push);
   } else if (t->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
              getDataClassType(t->symbol)->typeInfo() == dtInt[INT_SIZE_8]) {
@@ -697,7 +697,7 @@ MLIContext::genServerDispatchSwitch(const std::vector<FnSymbol*>& fns) {
 //
 bool MLIContext::isSupportedType(Type* t) {
   return (
-      (isPrimitiveScalar(t) && !is_complex_type(t)) ||
+      (isPrimitiveScalar(t) && !isComplexType(t)) ||
       t == exportTypeChplByteBuffer
   );
 }

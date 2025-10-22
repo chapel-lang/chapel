@@ -1609,7 +1609,7 @@ GenRet createTempVar(Type* t)
 #endif
   }
   ret.chplType = t;
-  ret.isUnsigned = !is_signed(t);
+  ret.isUnsigned = !isSignedType(t);
   return ret;
 }
 
@@ -1887,8 +1887,8 @@ GenRet codegenLessEquals(GenRet a, GenRet b)
     PromotedPair values = convertValuesToLarger(
                                  av.val,
                                  bv.val,
-                                 is_signed(av.chplType),
-                                 is_signed(bv.chplType));
+                                 isSignedType(av.chplType),
+                                 isSignedType(bv.chplType));
 
     if (values.a->getType()->isFPOrFPVectorTy()) {
       ret.val = gGenInfo->irBuilder->CreateFCmpOLE(values.a, values.b);
@@ -1963,8 +1963,8 @@ GenRet codegenAdd(GenRet a, GenRet b)
 #ifdef HAVE_LLVM
     bool a_signed = false;
     bool b_signed = false;
-    if( av.chplType ) a_signed = is_signed(av.chplType);
-    if( bv.chplType ) b_signed = is_signed(bv.chplType);
+    if( av.chplType ) a_signed = isSignedType(av.chplType);
+    if( bv.chplType ) b_signed = isSignedType(bv.chplType);
 
     if (av.chplType == dtComplex[COMPLEX_SIZE_64]) {
       ret = codegenCallExpr("complexAdd64", av, bv);
@@ -2029,8 +2029,8 @@ GenRet codegenSub(GenRet a, GenRet b)
 #ifdef HAVE_LLVM
     bool a_signed = false;
     bool b_signed = false;
-    if( av.chplType ) a_signed = is_signed(av.chplType);
-    if( bv.chplType ) b_signed = is_signed(bv.chplType);
+    if( av.chplType ) a_signed = isSignedType(av.chplType);
+    if( bv.chplType ) b_signed = isSignedType(bv.chplType);
 
     if (av.chplType == dtComplex[COMPLEX_SIZE_64]) {
       ret = codegenCallExpr("complexSubtract64", av, bv);
@@ -2082,7 +2082,7 @@ GenRet codegenNeg(GenRet a)
       trackLLVMValue(ret.val);
     } else {
       bool av_signed = false;
-      if(av.chplType) av_signed = is_signed(av.chplType);
+      if(av.chplType) av_signed = isSignedType(av.chplType);
 #if HAVE_LLVM_VER >= 190
       ret.val = info->irBuilder->CreateNeg(value, "", /*NSW*/av_signed);
 #else
@@ -2111,8 +2111,8 @@ GenRet codegenMul(GenRet a, GenRet b)
 #ifdef HAVE_LLVM
     bool a_signed = false;
     bool b_signed = false;
-    if( av.chplType ) a_signed = is_signed(av.chplType);
-    if( bv.chplType ) b_signed = is_signed(bv.chplType);
+    if( av.chplType ) a_signed = isSignedType(av.chplType);
+    if( bv.chplType ) b_signed = isSignedType(bv.chplType);
     if (av.chplType == dtComplex[COMPLEX_SIZE_64]) {
       ret = codegenCallExpr("complexMultiply64", av, bv);
     } else if (av.chplType == dtComplex[COMPLEX_SIZE_128]) {
@@ -2154,8 +2154,8 @@ GenRet codegenDiv(GenRet a, GenRet b)
     } else {
       PromotedPair values =
         convertValuesToLarger(av.val, bv.val,
-                              is_signed(av.chplType),
-                              is_signed(bv.chplType));
+                              isSignedType(av.chplType),
+                              isSignedType(bv.chplType));
       if(values.a->getType()->isFPOrFPVectorTy()) {
         ret.val = info->irBuilder->CreateFDiv(values.a, values.b);
         trackLLVMValue(ret.val);
@@ -2188,8 +2188,8 @@ GenRet codegenMod(GenRet a, GenRet b)
 #ifdef HAVE_LLVM
     PromotedPair values =
       convertValuesToLarger(av.val, bv.val,
-                            is_signed(av.chplType),
-                            is_signed(bv.chplType));
+                            isSignedType(av.chplType),
+                            isSignedType(bv.chplType));
     if(values.a->getType()->isFPOrFPVectorTy()) {
       ret.val = info->irBuilder->CreateFRem(values.a, values.b);
       trackLLVMValue(ret.val);
@@ -2376,9 +2376,9 @@ GenRet codegenLsh(GenRet a, GenRet b)
   else {
 #ifdef HAVE_LLVM
     llvm::Value* amt = convertValueToType(bv.val, av.val->getType(),
-                                          is_signed(bv.chplType));
+                                          isSignedType(bv.chplType));
     bool av_signed = false;
-    if(av.chplType) av_signed = is_signed(av.chplType);
+    if(av.chplType) av_signed = isSignedType(av.chplType);
     ret.val = info->irBuilder->CreateShl(av.val, amt, "", false, av_signed);
     trackLLVMValue(ret.val);
 #endif
@@ -2400,8 +2400,8 @@ GenRet codegenRsh(GenRet a, GenRet b)
 
 #ifdef HAVE_LLVM
     llvm::Value* amt = convertValueToType(bv.val, av.val->getType(),
-                                          is_signed(bv.chplType));
-    if(!is_signed(a.chplType)) {
+                                          isSignedType(bv.chplType));
+    if(!isSignedType(a.chplType)) {
       ret.val = info->irBuilder->CreateLShr(av.val, amt);
       trackLLVMValue(ret.val);
     } else {
@@ -2427,8 +2427,8 @@ GenRet codegenAnd(GenRet a, GenRet b)
 #ifdef HAVE_LLVM
     PromotedPair values =
       convertValuesToLarger(av.val, bv.val,
-                            is_signed(av.chplType),
-                            is_signed(bv.chplType));
+                            isSignedType(av.chplType),
+                            isSignedType(bv.chplType));
     ret.val = info->irBuilder->CreateAnd(values.a, values.b);
     trackLLVMValue(ret.val);
 #endif
@@ -2450,8 +2450,8 @@ GenRet codegenOr(GenRet a, GenRet b)
 #ifdef HAVE_LLVM
     PromotedPair values =
       convertValuesToLarger(av.val, bv.val,
-                            is_signed(av.chplType),
-                            is_signed(bv.chplType));
+                            isSignedType(av.chplType),
+                            isSignedType(bv.chplType));
     ret.val = info->irBuilder->CreateOr(values.a, values.b);
     trackLLVMValue(ret.val);
 #endif
@@ -2473,8 +2473,8 @@ GenRet codegenXor(GenRet a, GenRet b)
 #ifdef HAVE_LLVM
     PromotedPair values =
       convertValuesToLarger(av.val, bv.val,
-                            is_signed(av.chplType),
-                            is_signed(bv.chplType));
+                            isSignedType(av.chplType),
+                            isSignedType(bv.chplType));
     ret.val = info->irBuilder->CreateXor(values.a, values.b);
     trackLLVMValue(ret.val);
 #endif
@@ -2495,8 +2495,8 @@ GenRet codegenTernary(GenRet cond, GenRet ifTrue, GenRet ifFalse)
 #ifdef HAVE_LLVM
   bool ifTrueSigned = !ifTrue.isUnsigned;
   bool ifFalseSigned = !ifFalse.isUnsigned;
-  if( ifTrue.chplType ) ifTrueSigned = is_signed(ifTrue.chplType);
-  if( ifFalse.chplType ) ifFalseSigned = is_signed(ifFalse.chplType);
+  if( ifTrue.chplType ) ifTrueSigned = isSignedType(ifTrue.chplType);
+  if( ifFalse.chplType ) ifFalseSigned = isSignedType(ifFalse.chplType);
 #endif
 
   if( info->cfile ) {
@@ -2893,7 +2893,7 @@ static GenRet codegenCallExprInner(GenRet function,
         chapelRetTy = llvm::Type::getVoidTy(ctx);
       } else {
         chapelRetTy = retType->codegen().type;
-        chplRetTySigned = is_signed(retType);
+        chplRetTySigned = isSignedType(retType);
         retAlignment = retType->getLLVMAlignment();
       }
     } else if (FD) {
@@ -3083,7 +3083,7 @@ static GenRet codegenCallExprInner(GenRet function,
 
         if (fnType && llArgs.size() < fnType->getNumParams()) {
           bool isSigned = !args[i].isUnsigned ||
-                          (args[i].chplType && is_signed(args[i].chplType));
+                          (args[i].chplType && isSignedType(args[i].chplType));
           llvm::Type* targetType = NULL;
           targetType = fnType->getParamType(llArgs.size());
           val = convertValueToType(args[i].val, targetType, isSigned, false);
@@ -3702,10 +3702,10 @@ GenRet codegenCast(Type* t, GenRet value, bool Cparens)
   GenRet ret;
   ret.chplType = t;
   ret.isLVPtr = value.isLVPtr;
-  ret.isUnsigned = ! is_signed(t);
+  ret.isUnsigned = ! isSignedType(t);
 
   // If we are casting to bool, set it to != 0.
-  if( is_bool_type(t) ) {
+  if( isBoolType(t) ) {
     // NOTE: We have to limit this special treatment for bool cast to
     // C backend compilations. LLVM bool operations return single bit
     // integers whereas bool type is 8-bits. So we still need explicit
@@ -3840,7 +3840,7 @@ GenRet codegenCastPtrToInt(Type* toType, GenRet value)
     trackLLVMValue(ret.val);
     ret.isLVPtr = GEN_VAL;
     ret.chplType = toType;
-    ret.isUnsigned = ! is_signed(toType);
+    ret.isUnsigned = ! isSignedType(toType);
 #endif
     return ret;
   }
@@ -4849,8 +4849,8 @@ DEFINE_PRIM(LESSOREQUAL) {
       PromotedPair values = convertValuesToLarger(
                                    av.val,
                                    bv.val,
-                                   is_signed(call->get(1)->typeInfo()),
-                                   is_signed(call->get(2)->typeInfo()));
+                                   isSignedType(call->get(1)->typeInfo()),
+                                   isSignedType(call->get(2)->typeInfo()));
 
       if (values.a->getType()->isFPOrFPVectorTy()) {
         ret.val = gGenInfo->irBuilder->CreateFCmpOLE(values.a, values.b);
@@ -4884,8 +4884,8 @@ DEFINE_PRIM(GREATEROREQUAL) {
       PromotedPair values = convertValuesToLarger(
                                    av.val,
                                    bv.val,
-                                   is_signed(call->get(1)->typeInfo()),
-                                   is_signed(call->get(2)->typeInfo()));
+                                   isSignedType(call->get(1)->typeInfo()),
+                                   isSignedType(call->get(2)->typeInfo()));
 
       if (values.a->getType()->isFPOrFPVectorTy()) {
         ret.val = gGenInfo->irBuilder->CreateFCmpOGE(values.a, values.b);
@@ -4919,8 +4919,8 @@ DEFINE_PRIM(LESS) {
       PromotedPair values = convertValuesToLarger(
                                    av.val,
                                    bv.val,
-                                   is_signed(call->get(1)->typeInfo()),
-                                   is_signed(call->get(2)->typeInfo()));
+                                   isSignedType(call->get(1)->typeInfo()),
+                                   isSignedType(call->get(2)->typeInfo()));
 
       if (values.a->getType()->isFPOrFPVectorTy()) {
         ret.val = gGenInfo->irBuilder->CreateFCmpOLT(values.a, values.b);
@@ -4954,8 +4954,8 @@ DEFINE_PRIM(GREATER) {
       PromotedPair values = convertValuesToLarger(
                                    av.val,
                                    bv.val,
-                                   is_signed(call->get(1)->typeInfo()),
-                                   is_signed(call->get(2)->typeInfo()));
+                                   isSignedType(call->get(1)->typeInfo()),
+                                   isSignedType(call->get(2)->typeInfo()));
 
       if (values.a->getType()->isFPOrFPVectorTy()) {
         ret.val = gGenInfo->irBuilder->CreateFCmpOGT(values.a, values.b);
@@ -5151,25 +5151,25 @@ DEFINE_PRIM(MIN) {
     Type* t = call->get(1)->typeInfo();
 
     if (is_arithmetic_type( t)) {
-      if (is_int_type( t)) {
-        ret = codegenUseGlobal("MIN_INT" + numToString(get_width(t)));
+      if (isIntType( t)) {
+        ret = codegenUseGlobal("MIN_INT" + numToString(getWidthOfType(t)));
 
-      } else if (is_uint_type( t)) {
-        ret = codegenUseGlobal("MIN_UINT" + numToString(get_width(t)));
+      } else if (isUIntType( t)) {
+        ret = codegenUseGlobal("MIN_UINT" + numToString(getWidthOfType(t)));
 
-      } else if (is_real_type( t)) {
-        std::string width = numToString(get_width(t));
-
-        ret = codegenNeg(codegenUseGlobal("MAX_FLOAT" + width));
-
-      } else if (is_imag_type( t)) {
-        std::string width = numToString(get_width(t));
+      } else if (isRealType( t)) {
+        std::string width = numToString(getWidthOfType(t));
 
         ret = codegenNeg(codegenUseGlobal("MAX_FLOAT" + width));
 
-      } else if (is_complex_type( t)) {
-        std::string width     = numToString(get_width(t));
-        std::string halfWidth = numToString(get_width(t) / 2);
+      } else if (isImagType( t)) {
+        std::string width = numToString(getWidthOfType(t));
+
+        ret = codegenNeg(codegenUseGlobal("MAX_FLOAT" + width));
+
+      } else if (isComplexType( t)) {
+        std::string width     = numToString(getWidthOfType(t));
+        std::string halfWidth = numToString(getWidthOfType(t) / 2);
 
         std::string fname     = "_chpl_complex" + width;
         std::string maxFloat  = "MAX_FLOAT"     + halfWidth;
@@ -5190,21 +5190,21 @@ DEFINE_PRIM(MAX) {
     Type* t = call->get(1)->typeInfo();
 
     if (is_arithmetic_type( t)) {
-      if (is_int_type( t)) {
-        ret = codegenUseGlobal("MAX_INT" + numToString(get_width(t)));
+      if (isIntType( t)) {
+        ret = codegenUseGlobal("MAX_INT" + numToString(getWidthOfType(t)));
 
-      } else if (is_uint_type( t)) {
-        ret = codegenUseGlobal("MAX_UINT" + numToString(get_width(t)));
+      } else if (isUIntType( t)) {
+        ret = codegenUseGlobal("MAX_UINT" + numToString(getWidthOfType(t)));
 
-      } else if (is_real_type( t)) {
-        ret = codegenUseGlobal("MAX_FLOAT" + numToString(get_width(t)));
+      } else if (isRealType( t)) {
+        ret = codegenUseGlobal("MAX_FLOAT" + numToString(getWidthOfType(t)));
 
-      } else if (is_imag_type( t)) {
-        ret = codegenUseGlobal("MAX_FLOAT" + numToString(get_width(t)));
+      } else if (isImagType( t)) {
+        ret = codegenUseGlobal("MAX_FLOAT" + numToString(getWidthOfType(t)));
 
-      } else if (is_complex_type( t)) {
-        std::string width     = numToString(get_width(t));
-        std::string halfWidth = numToString(get_width(t) / 2);
+      } else if (isComplexType( t)) {
+        std::string width     = numToString(getWidthOfType(t));
+        std::string halfWidth = numToString(getWidthOfType(t) / 2);
 
         std::string fname     = "_chpl_complex" + width;
         std::string maxFloat  = "MAX_FLOAT"     + halfWidth;
@@ -5738,8 +5738,8 @@ static void codegenPutGet(CallExpr* call, GenRet &ret) {
     args.push_back(remoteAddr);
 
     curArg = call->get(curArgIdx++);
-    INT_ASSERT(curArg, is_int_type(curArg->getValType()) ||
-               is_uint_type(curArg->getValType()));
+    INT_ASSERT(curArg, isIntType(curArg->getValType()) ||
+               isUIntType(curArg->getValType()));
 
     GenRet len = codegenValueMaybeDeref(curArg);
     GenRet size;
@@ -6027,11 +6027,11 @@ DEFINE_PRIM(CAST) {
       // be enough to cast integers that are smaller than standard C int for
       // target architecture. However, there was no easy way of obtaining that
       // at the time of writing this piece. Engin
-      if (dst == src && !(is_int_type(dst) || is_uint_type(dst) ||
-                          is_real_type(dst)) ) {
+      if (dst == src && !(isIntType(dst) || isUIntType(dst) ||
+                          isRealType(dst)) ) {
         ret = srcGen;
 
-      } else if ((is_int_type(dst) || is_uint_type(dst)) && src == dtTaskID) {
+      } else if ((isIntType(dst) || isUIntType(dst)) && src == dtTaskID) {
         GenRet v = codegenValue(srcGen);
 
         // cast like this: (type) (intptr_t) v

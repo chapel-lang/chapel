@@ -736,7 +736,7 @@ void AstToText::appendExpr(SymExpr* expr, bool printingType, bool quoteStrings)
       {
         snprint_imm(imm, bufSize, *var->immediate);
 
-        if (var->type != 0 && is_imag_type(var->type) == true)
+        if (var->type != 0 && isImagType(var->type) == true)
         {
           char* tail = strchr(imm, '\0');
 

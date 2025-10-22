@@ -1405,7 +1405,7 @@ static std::string argToString(FnSymbol* fn,
         char buf[bufSize];
         snprint_imm(buf, bufSize, *imm);
         value = buf;
-        if (is_imag_type(t))
+        if (isImagType(t))
           value += 'i';
       }
     }

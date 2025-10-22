@@ -31,7 +31,7 @@ DW_TAG_structure_type
               DW_AT_alignment	(8)
   DW_TAG_member
                 DW_AT_name	("super")
-                DW_AT_type	("ChapelBase::RootClass")
+                DW_AT_type	("RootClass")
                 DW_AT_decl_file	("./c_ptrs.chpl")
                 DW_AT_decl_line	(9)
                 DW_AT_alignment	(8)
@@ -44,13 +44,6 @@ DW_TAG_structure_type
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
   NULL
-DW_TAG_structure_type
-              DW_AT_name	("MyClass")
-              DW_AT_declaration	(true)
-              DW_AT_alignment	(8)
-DW_TAG_pointer_type
-              DW_AT_type	("c_ptrs::MyClass")
-              DW_AT_name	("MyClass")
 ================================================================================
 =====================================myInt======================================
 DW_TAG_variable
@@ -85,7 +78,7 @@ DW_TAG_variable
               DW_AT_name	("myOwnedClass")
               DW_AT_decl_file	("./c_ptrs.chpl")
               DW_AT_decl_line	(25)
-              DW_AT_type	("OwnedObject::owned MyClass")
+              DW_AT_type	("owned MyClass")
 ================================================================================
 ====================================myIntPtr====================================
 DW_TAG_variable
@@ -113,14 +106,14 @@ DW_TAG_variable
               DW_AT_name	("myUnmanagedClassPtr")
               DW_AT_decl_file	("./c_ptrs.chpl")
               DW_AT_decl_line	(35)
-              DW_AT_type	("void *")
+              DW_AT_type	("c_ptrs::MyClass **")
 ================================================================================
 ================================myOwnedClassPtr=================================
 DW_TAG_variable
               DW_AT_name	("myOwnedClassPtr")
               DW_AT_decl_file	("./c_ptrs.chpl")
               DW_AT_decl_line	(37)
-              DW_AT_type	("OwnedObject::owned MyClass *")
+              DW_AT_type	("owned MyClass *")
 ================================================================================
 =================================myIntPtrConst==================================
 DW_TAG_variable
@@ -148,13 +141,13 @@ DW_TAG_variable
               DW_AT_name	("myUnmanagedClassPtrConst")
               DW_AT_decl_file	("./c_ptrs.chpl")
               DW_AT_decl_line	(51)
-              DW_AT_type	("void *")
+              DW_AT_type	("c_ptrs::MyClass **")
 ================================================================================
 ==============================myOwnedClassPtrConst==============================
 DW_TAG_variable
               DW_AT_name	("myOwnedClassPtrConst")
               DW_AT_decl_file	("./c_ptrs.chpl")
               DW_AT_decl_line	(53)
-              DW_AT_type	("OwnedObject::owned MyClass *")
+              DW_AT_type	("owned MyClass *")
 ================================================================================
 Success!!

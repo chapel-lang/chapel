@@ -1071,12 +1071,12 @@ bool ResolutionCandidate::checkGenericFormals(Expr* ctx) {
 }
 
 static bool isNumericType(Type* t) {
-  return is_bool_type(t) ||
-         is_int_type(t) ||
-         is_uint_type(t) ||
-         is_real_type(t) ||
-         is_imag_type(t) ||
-         is_complex_type(t);
+  return isBoolType(t) ||
+         isIntType(t) ||
+         isUIntType(t) ||
+         isRealType(t) ||
+         isImagType(t) ||
+         isComplexType(t);
 }
 
 static bool isClassLikeOrPtrOrManaged(Type* t) {
@@ -1102,12 +1102,12 @@ classifyTypeMismatch(Type* actualType, Symbol* formalSym) {
   if (formalSym->hasFlag(FLAG_ARG_THIS))
     return RESOLUTION_CANDIDATE_DIFFERENT_RECEIVER_TYPES;
 
-  if ((is_bool_type   (actualType) && is_bool_type   (formalType)) ||
-      (is_int_type    (actualType) && is_int_type    (formalType)) ||
-      (is_uint_type   (actualType) && is_uint_type   (formalType)) ||
-      (is_real_type   (actualType) && is_real_type   (formalType)) ||
-      (is_imag_type   (actualType) && is_imag_type   (formalType)) ||
-      (is_complex_type(actualType) && is_complex_type(formalType)))
+  if ((isBoolType   (actualType) && isBoolType   (formalType)) ||
+      (isIntType    (actualType) && isIntType    (formalType)) ||
+      (isUIntType   (actualType) && isUIntType   (formalType)) ||
+      (isRealType   (actualType) && isRealType   (formalType)) ||
+      (isImagType   (actualType) && isImagType   (formalType)) ||
+      (isComplexType(actualType) && isComplexType(formalType)))
     return RESOLUTION_CANDIDATE_TYPE_RELATED;
 
   if (isNumericType(actualType) && isNumericType(formalType))
