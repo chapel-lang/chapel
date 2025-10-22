@@ -43,8 +43,6 @@ static void cleanup(ModuleSymbol* module);
 
 static void normalizeNestedFunctionExpressions(FnSymbol* fn);
 
-static void replaceIsSubtypeWithPrimitive(CallExpr* call,
-                                          bool proper, bool coerce);
 static void addIntentRefMaybeConst(ArgSymbol* arg);
 
 static void applyAtomicTypeToPrimaryMethod(TypeSymbol* ts, FnSymbol* fn);
@@ -169,14 +167,6 @@ static void cleanup(ModuleSymbol* module) {
         }
       }
 
-    } else if (CallExpr* call = toCallExpr(ast)) {
-      if (call->isNamed("isSubtype"))
-        replaceIsSubtypeWithPrimitive(call, false, false);
-      else if (call->isNamed("isProperSubtype"))
-        replaceIsSubtypeWithPrimitive(call, true, false);
-      else if (call->isNamed("isCoercible"))
-        replaceIsSubtypeWithPrimitive(call, false, true);
-
     } else if (DefExpr* def = toDefExpr(ast)) {
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
         // Is this function defined within a type i.e. is it a method?
@@ -218,21 +208,6 @@ static void normalizeNestedFunctionExpressions(FnSymbol* fn) {
     def->replace(new SymExpr(fn));
     stmt->insertBefore(def);
   }
-}
-
-
-static void replaceIsSubtypeWithPrimitive(CallExpr* call,
-                                          bool proper, bool coerce) {
-  Expr* sub = call->get(1);
-  Expr* sup = call->get(2);
-  sub->remove();
-  sup->remove();
-
-  PrimitiveTag prim = proper ? PRIM_IS_PROPER_SUBTYPE : PRIM_IS_SUBTYPE;
-  if (coerce)
-    prim = PRIM_IS_COERCIBLE;
-
-  call->replace(new CallExpr(prim, sup, sub));
 }
 
 

@@ -1068,9 +1068,9 @@ inline proc _bxor_id(type t) do return 0:t;
    or if ``isSubtype(from, to)`` would return ``true``. See
    :ref:`Implicit_Conversion_Call`.
  */
-pragma "docs only"
+pragma "suppress generic actual warning"
 proc isCoercible(type from, type to) param {
-  return __primitive("is_coercible", from, to);
+  return __primitive("is_coercible", to, from);
 }
 
 /* Returns ``true`` if the type ``sub`` is a subtype of the type ``sup``.
@@ -1084,7 +1084,7 @@ proc isCoercible(type from, type to) param {
      * ``sub`` is non-nilable class type and ``sup`` is the nilable version of the
        same class type
    */
-pragma "docs only"
+pragma "suppress generic actual warning"
 proc isSubtype(type sub, type sup) param {
   return __primitive("is_subtype", sup, sub);
 }
@@ -1092,7 +1092,7 @@ proc isSubtype(type sub, type sup) param {
 /* Similar to :proc:`isSubtype` but returns ``false`` if
    ``sub`` and ``sup`` refer to the same type.
    */
-pragma "docs only"
+pragma "suppress generic actual warning"
 proc isProperSubtype(type sub, type sup) param {
   return __primitive("is_proper_subtype", sup, sub);
 }
