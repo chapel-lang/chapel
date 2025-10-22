@@ -860,6 +860,44 @@ static void test59() {
   assert(guard.realizeErrors() >= 1);
 }
 
+// Test that tuple casts have the TUPLE_CAST associated action
+static void test60() {
+  printf("test60\n");
+  auto context = buildStdContext();
+
+  std::string program =
+    R"""(
+    var x = (1, 2) : (real, real);
+    )""";
+
+    auto m = parseModule(context, std::move(program));
+  auto& rr = resolveModule(context, m->id());
+
+  auto xVar = findVariable(m, "x");
+  assert(xVar);
+  assert(xVar->initExpression());
+
+  // The init expression should be a cast call
+  auto castCall = xVar->initExpression()->toOpCall();
+  assert(castCall);
+  assert(castCall->op() == USTR(":"));
+
+  // Check that the cast has the TUPLE_CAST associated action
+  assert(rr.hasAst(castCall));
+  auto& resolvedExpr = rr.byAst(castCall);
+  auto actions = resolvedExpr.associatedActions();
+
+  bool foundTupleCast = false;
+  for (auto aa : actions) {
+    if (aa.action() == AssociatedAction::TUPLE_CAST) {
+      foundTupleCast = true;
+      // TUPLE_CAST actions don't have an associated function (compiler-generated)
+      assert(aa.fn() == nullptr);
+    }
+  }
+  assert(foundTupleCast);
+}
+
 int main() {
   test1();
   test2();
@@ -920,6 +958,7 @@ int main() {
   test57();
   test58();
   test59();
+  test60();
 
   return 0;
 }
