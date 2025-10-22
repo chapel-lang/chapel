@@ -4910,6 +4910,12 @@ static bool resolveFnCallSpecial(Context* context,
   // return false.
   for (auto& actual : ci.actuals()) {
     if (actual.type().isUnknown()) {
+      if (actual.type().isParam() &&
+          (ci.name() == USTR("==") || ci.name() == USTR("!="))) {
+        // we allow 'someParamField == ?' to check if 'someParamField' is unset.
+        // So, we need to allow unknown param actuals for == and !=.
+        continue;
+      }
       return false;
     }
   }
