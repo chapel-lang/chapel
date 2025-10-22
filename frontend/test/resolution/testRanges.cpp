@@ -345,6 +345,7 @@ static void test12(Context* context) {
 static void test13(Context* context) {
   context->advanceToNextRevision(false);
   setupModuleSearchPaths(context, false, false, {}, {});
+  ErrorGuard guard(context);
   auto qts = resolveTypesOfVariables(context,
     R""""(
     type SR = range(strides=strideKind.any, ?);
