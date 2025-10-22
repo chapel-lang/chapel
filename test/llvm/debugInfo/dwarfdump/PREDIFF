@@ -84,7 +84,7 @@ class Verifier:
                     for line in output
                 ]
 
-            # parse toplevel blocks of DW_TAG_ and sort them by DW_AT_name and tag
+            # parse toplevel blocks of DW_TAG_ and sort them by DW_AT_name, tag, and type
             blocks = []
             current_block = []
             for line in output:
@@ -99,11 +99,16 @@ class Verifier:
 
             def get_block_sort_key(block):
                 tag = block[0].strip()
+                name = ""
+                type_ = ""
                 for line in block:
                     match = re.search(r'DW_AT_name\s+\("([^"]+)"\)', line)
-                    if match:
-                        return (match.group(1), tag)
-                return ("", tag)
+                    if match and not name:
+                        name = match.group(1)
+                    match = re.search(r'DW_AT_type\s+\("([^"]+)"\)', line)
+                    if match and not type_:
+                        type_ = match.group(1)
+                return (name, tag, type_)
             blocks.sort(key=get_block_sort_key)
 
             # expand blocks back into output
