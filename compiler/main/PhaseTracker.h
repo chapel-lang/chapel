@@ -22,6 +22,7 @@
 #define _PHASE_TRACKER_H_
 
 #include "timer.h"
+#include "MemoryTracker.h"
 
 #include <cstdio>
 #include <vector>
@@ -62,26 +63,24 @@
 class Phase;
 class Pass;
 
-class PhaseTracker
-{
+class PhaseTracker {
 public:
-  enum SubPhase
-  {
+  enum SubPhase {
     kPrimary,
     kVerify,
     kCleanAst
   };
 
-                       PhaseTracker();
+                      PhaseTracker();
                       ~PhaseTracker();
 
-  void                 StartPhase(const char* phaseName);
-  void                 StartPhase(const char* passName, SubPhase subPhase);
+  void                StartPhase(const char* phaseName);
+  void                StartPhase(const char* passName, SubPhase subPhase);
 
-  void                 Stop();
-  void                 Resume();
+  void                Stop();
+  void                Resume();
 
-  void                 ReportPass  ()                                const;
+  void                ReportPass() const;
   // Report out total times by pass group, with differing behavior based on the
   // provided argument:
   // - nullptr: Ignore it and report as normal.
@@ -89,60 +88,59 @@ public:
   // - non-empty list: Take the values as already-recorded times and report
   // them out. They are assumed to represent pass group times in order, with
   // missing values meaning that pass group did not occur (early exit).
-  void                 ReportPassGroupTotals (std::vector<unsigned long>*
-                                              groupTimes = nullptr)  const;
+  void                ReportPassGroupTotals(
+                        std::vector<unsigned long>* groupTimes = nullptr) const;
   // Report out total overall time for the compiler. If overheadTime is
   // negative, it is unused, otherwise add it to the total time.
   // If positive it must fit in an unsigned long.
-  void                 ReportOverallTotal (long long
-                                           overheadTime = -1)        const;
+  void                ReportOverallTotal(long long overheadTime = -1) const;
 
-  void                 ReportRollup()                                const;
+  void                ReportRollup() const;
 
 private:
-  void                 PassesCollect(std::vector<Pass>& passes) const;
+  void                PassesCollect(std::vector<Pass>& passes) const;
 
-  void                 StartPhase(const char* phaseName,
-                                  int         passId,
-                                  SubPhase    subPhase);
+  void                StartPhase(const char* phaseName,
+                                 int passId, SubPhase subPhase);
 
-  Timer                mTimer;
-  int                  mPhaseId;
-  std::vector<Phase*>  mPhases;
+  Timer               mTimer;
+  MemoryTracker       mMemoryTracker;
+  int                 mPhaseId;
+  std::vector<Phase*> mPhases;
 };
 
 // Used to collect the times as the program runs
-class Phase
-{
+class Phase {
 public:
-                           Phase(const char*            name,
-                                 int                    passId,
-                                 PhaseTracker::SubPhase subPhase,
-                                 unsigned long          startTime);
+                           Phase(const char*                  name,
+                                 int                          passId,
+                                 PhaseTracker::SubPhase       subPhase,
+                                 unsigned long                startTime,
+                                 MemoryTracker::MemoryInBytes startMemory);
                           ~Phase();
 
-  bool                     IsStartOfPass()                            const;
+  bool                     IsStartOfPass() const;
 
-  void                     ReportPass (unsigned long now)   const;
-  static void              ReportTotal(unsigned long totalTime);
+  void                     ReportPass(unsigned long now,
+                                      MemoryTracker::MemoryInBytes nowMem) const;
   static void              ReportPassGroup(const char* text,
                                            unsigned long totalTime);
 
   static void              ReportTime(const char* name, double secs);
   static void              ReportText(const char* text);
 
-  char*                    mName;       // Only set for kPrimary
-  int                      mPassId;
-  PhaseTracker::SubPhase   mSubPhase;
-  unsigned long            mStartTime;  // Elapsed time from main() usecs
+  char*                        mName;       // Only set for kPrimary
+  int                          mPassId;
+  PhaseTracker::SubPhase       mSubPhase;
+  unsigned long                mStartTime;  // Elapsed time from main() usecs
+  MemoryTracker::MemoryInBytes mStartMemory
 
 private:
   Phase();
 };
 
 // Group the phases in to passes and report on passes
-class Pass
-{
+class Pass {
 public:
                  Pass();
                 ~Pass();
@@ -166,9 +164,9 @@ public:
   char*          mName;
   int            mPassId;
   int            mIndex;
-  unsigned long  mPrimary;          // usecs()
-  unsigned long  mVerify;           // usecs()
-  unsigned long  mCleanAst;         // usecs()
+  std::pair<unsigned long, MemoryTracker::MemoryInBytes> mPrimary;  // usecs(), bytes
+  std::pair<unsigned long, MemoryTracker::MemoryInBytes> mVerify;   // usecs(), bytes
+  std::pair<unsigned long, MemoryTracker::MemoryInBytes> mCleanAst; // usecs(), bytes
 };
 
 #endif
