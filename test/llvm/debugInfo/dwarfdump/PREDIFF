@@ -97,8 +97,6 @@ class Verifier:
             if current_block:
                 blocks.append(current_block)
 
-            print(blocks, file=sys.stderr)
-
             def get_block_sort_key(block):
                 tag = block[0].strip()
                 for line in block:
