@@ -5734,14 +5734,6 @@ static void filterCandidatesAndSeparateLastResort(
            candidateName == "isProperSubtype")) {
         result.addCandidate(candidate);
       }
-    } else if (attrs && attrs->hasPragma(PRAGMA_TUPLE_CAST_FN)) {
-      // Production fills in the body of a tuple-cast function defined in modules
-      // during resolution. This is annoying for us because
-      //   1) we can't mutate AST like production and
-      //   2) this is another of N ways to compiler-generate functions.
-      //
-      // Instead, pretend the candidate doesn't exist, and use the
-      // usual compiler-generation machinery to create it ourselves.
     } else {
       result.addCandidate(candidate);
     }
