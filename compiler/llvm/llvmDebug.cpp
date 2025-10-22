@@ -792,12 +792,6 @@ llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
 static bool isNonCodegenType(Type * type) {
   if (type->symbol->hasFlag(FLAG_NO_CODEGEN))
     return true;
-  // if (type == dtVoid || type == dtNothing)
-  //   return true;
-  // if (auto valType = type->getValType()) {
-  //   if (valType == dtVoid || valType == dtNothing)
-  //     return true;
-  // }
   return false;
 }
 
