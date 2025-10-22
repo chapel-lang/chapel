@@ -340,6 +340,42 @@ static void test12(Context* context) {
 
 }
 
+// check that we do partial instantiations of range and use them on the
+// left hand side of a variable declaration.
+static void test13(Context* context) {
+  context->advanceToNextRevision(false);
+  setupModuleSearchPaths(context, false, false, {}, {});
+  auto qts = resolveTypesOfVariables(context,
+    R""""(
+    type SR = range(strides=strideKind.any, ?);
+
+    var A : SR(?) = 1..10;
+    writeln(A.type:string, ": ", A);
+
+    var B : SR(?) = 1:uint .. 10:uint;
+    writeln(B.type:string, ": ", B);
+    )"""", {"A", "B"});
+
+  for (auto & name : {"A", "B"}) {
+    auto qt = qts.at(name);
+    assert(qt.type() != nullptr);
+    auto rangeType = qt.type()->toRecordType();
+    assert(rangeType != nullptr);
+    auto info = getRangeInfo(context, rangeType);
+
+    assert(std::get<0>(info).type() != nullptr);
+    if (strcmp(name, "A") == 0) {
+      assert(std::get<0>(info).type()->isIntType());
+    } else  {
+      assert(std::get<0>(info).type()->isUintType());
+    }
+    assert(std::get<0>(info).type()->isIntType() ||
+           std::get<0>(info).type()->isUintType());
+    assert(std::get<1>(info) == "both");
+    assert(std::get<2>(info) == "any");
+  }
+}
+
 int main() {
   // first test runs without environment and stdlib.
   test1();
@@ -359,5 +395,6 @@ int main() {
   test10(ctx);
   test11(ctx);
   test12(ctx);
+  test13(ctx);
   return 0;
 }
