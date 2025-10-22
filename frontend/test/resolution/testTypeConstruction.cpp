@@ -1644,6 +1644,33 @@ static void testPartialInstantiation() {
   }
 }
 
+static void testPartialInstantiationNoExtraSubstitutions() {
+  printf("testPartialInstantiationNoExtraSubstitutions\n");
+  auto context = buildStdContext();
+
+  std::string program = R"""(
+    record R {
+      type t1;
+      type t2;
+    }
+
+    var x: R(int, ?);
+  )""";
+
+  auto p = parseTypeAndFieldsOfX(context, program.c_str());
+
+  auto rt = p.first->toRecordType();
+  assert(rt);
+
+  auto fields = p.second;
+  assert(fields);
+  assert(fields->numFields() == 2);
+  assert(fields->fieldName(0) == "t1");
+  assert(fields->fieldType(0).type()->isIntType());
+  assert(rt->substitutions().size() == 1);
+  assert(rt->substitutions().begin()->first == fields->fieldDeclId(0));
+}
+
 int main() {
   test1();
   test2();
@@ -1698,6 +1725,7 @@ int main() {
   test44();
 
   testPartialInstantiation();
+  testPartialInstantiationNoExtraSubstitutions();
 
   return 0;
 }
