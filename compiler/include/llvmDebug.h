@@ -54,22 +54,22 @@ class DebugData
   llvm::DIFile* getFile(ModuleSymbol* modSym, const char *file);
   llvm::DINamespace* getModuleScope(ModuleSymbol* modSym);
 
-  llvm::DISubroutineType* getFunctionType(FnSymbol *function);
-  llvm::DISubprogram* getFunction(FnSymbol *function);
+  llvm::DISubroutineType* getFunctionType(FnSymbol* function);
+  llvm::DISubprogram* getFunction(FnSymbol* function);
 
-  llvm::DIGlobalVariableExpression* getGlobalVariable(VarSymbol *gVarSym);
-  llvm::DIVariable* getVariable(VarSymbol *varSym);
-  llvm::DIVariable* getFormalArg(ArgSymbol *argSym, unsigned int ArgNo);
+  llvm::DIGlobalVariableExpression* getGlobalVariable(VarSymbol* gVarSym);
+  llvm::DIVariable* getVariable(VarSymbol* varSym);
+  llvm::DIVariable* getFormalArg(ArgSymbol* argSym, unsigned int ArgNo);
 
   private:
 
-  llvm::DIType* constructType(Type *type);
+  llvm::DIType* constructType(Type* type);
   llvm::DIFile* constructFile(ModuleSymbol* modSym, const char *file);
   llvm::DINamespace* constructModuleScope(ModuleSymbol* modSym);
-  llvm::DISubprogram* constructFunction(FnSymbol *function);
-  llvm::DIGlobalVariableExpression* constructGlobalVariable(VarSymbol *gVarSym);
-  llvm::DIVariable* constructVariable(VarSymbol *varSym);
-  llvm::DIVariable* constructFormalArg(ArgSymbol *argSym, unsigned int ArgNo);
+  llvm::DISubprogram* constructFunction(FnSymbol* function);
+  llvm::DIGlobalVariableExpression* constructGlobalVariable(VarSymbol* gVarSym);
+  llvm::DIVariable* constructVariable(VarSymbol* varSym);
+  llvm::DIVariable* constructFormalArg(ArgSymbol* argSym, unsigned int ArgNo);
 
   llvm::DIType* constructTypeForPointer(llvm::Type* ty, Type* type);
   llvm::DIType* constructTypeForAggregate(llvm::StructType* ty, AggregateType* type);

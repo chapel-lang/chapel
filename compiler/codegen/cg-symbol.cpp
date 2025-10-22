@@ -1549,7 +1549,7 @@ void TypeSymbol::codegenDef() {
       INT_ASSERT(getLLVMStructureType() == chkTy); // set in type->codegenDef()
     }
 
-    if(debugInfo) debugInfo->getType(this->type);
+    if (debugInfo) debugInfo->getType(this->type);
 #endif
   }
 }

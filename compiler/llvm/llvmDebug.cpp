@@ -76,46 +76,45 @@ char current_dir[128];
 constexpr int RuntimeLang = 0;
 
 struct DefinitionInfo {
-  Symbol*             _sym;
-  llvm::DIScope*    _scope;
-  llvm::DIFile*      _file;
-  unsigned int       _line;
-  DefinitionInfo(): _sym(nullptr), _scope(nullptr), _file(nullptr), _line(0) {}
+  Symbol*             sym_;
+  llvm::DIScope*    scope_;
+  llvm::DIFile*      file_;
+  unsigned int       line_;
+  DefinitionInfo(): sym_(nullptr), scope_(nullptr), file_(nullptr), line_(0) {}
   DefinitionInfo(llvm::DIScope* scope,
                  llvm::DIFile*  file,
                  unsigned int   line):
-    _sym(nullptr), _scope(scope), _file(file), _line(line) {}
+    sym_(nullptr), scope_(scope), file_(file), line_(line) {}
   DefinitionInfo(DebugData*    debugData,
                  ModuleSymbol* defMod,
                  const char*   filename,
                  unsigned int  line):
-    _sym(nullptr), _scope(debugData->getModuleScope(defMod)),
-    _file(debugData->getFile(defMod, filename)), _line(line) {}
-  DefinitionInfo(DebugData* debugData, Symbol* sym) : _sym(sym) {
+    sym_(nullptr), scope_(debugData->getModuleScope(defMod)),
+    file_(debugData->getFile(defMod, filename)), line_(line) {}
+  DefinitionInfo(DebugData* debugData, Symbol* sym) : sym_(sym) {
     ModuleSymbol* defMod = sym->getModule();
-    this->_scope = debugData->getModuleScope(defMod);
-    this->_file = debugData->getFile(defMod, sym->fname());
-    this->_line = sym->linenum();
+    this->scope_ = debugData->getModuleScope(defMod);
+    this->file_ = debugData->getFile(defMod, sym->fname());
+    this->line_ = sym->linenum();
   }
 
-  Symbol* symbol() const { return _sym; }
-
+  Symbol* symbol() const { return sym_; }
 
   bool skipInfo() const {
     // always show the info for developer mode or if we don't know about the  symbol
-    if (developer || !_sym)
+    if (developer || !sym_)
       return false;
 
     // TODO: ideally we do this, so we can hide internal module names
     // but that messes up record wrapped types which have the same type name
     // as their _instance field (see toString in type.cpp)
     // this confuses the debugger because we have two types with the same name
-    // if (auto ts = toTypeSymbol(_sym)) {
+    // if (auto ts = toTypeSymbol(sym_)) {
     //   if (ts->getModule()->modTag == MOD_INTERNAL)
     //     return true; // no scope for internal types
     // }
     // Instead, just selectively hide internal modules we know to be ok to hide
-    static auto internalModulesToHide = std::array{
+    static auto internalModulesToHide = llvm::SmallPtrSet<const char*, 16>({
       astr("_root"),
       astr("chpl__Program"),
       astr("ChapelStringLiterals"),
@@ -128,9 +127,9 @@ struct DefinitionInfo {
       astr("OwnedObject"),
       astr("SharedObject"),
       astr("String"),
-    };
-    if (_sym->getModule()->modTag == MOD_INTERNAL) {
-      auto modName = _sym->getModule()->name;
+    });
+    if (sym_->getModule()->modTag == MOD_INTERNAL) {
+      auto modName = sym_->getModule()->name;
       return std::find(internalModulesToHide.begin(),
                        internalModulesToHide.end(),
                        modName) != internalModulesToHide.end();
@@ -140,16 +139,16 @@ struct DefinitionInfo {
   }
 
   llvm::DIScope* scope() const {
-    return _scope;
+    return scope_;
   }
   llvm::DIScope* maybeScope() const {
-    return !skipInfo() ? _scope : nullptr;
+    return !skipInfo() ? scope_ : nullptr;
   }
   llvm::DIFile* file() const {
-    return !skipInfo() ? _file : nullptr;
+    return !skipInfo() ? file_ : nullptr;
   }
   unsigned int line() const {
-    return !skipInfo() ? _line : 0;
+    return !skipInfo() ? line_ : 0;
   }
 };
 
@@ -471,7 +470,7 @@ llvm::DIType* DebugData::constructTypeForPointer(llvm::Type* ty, Type* type) {
         type->symbol->llvmDIType = N;
         return N;
       } else if (PointeeTy->isStructTy()) {
-        // handle qio_channel_ptr_t, qio_file_ptr_t, syserr, _file
+        // handle qio_channel_ptr_t, qiofile__ptr_t, syserr, file_
         auto pteStrDIType = dibuilder->createStructType(
           defInfo.maybeScope(),
           PointeeTy->getStructName(),
@@ -550,6 +549,9 @@ llvm::DIType* DebugData::constructTypeForPointer(llvm::Type* ty, Type* type) {
 
 llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
 
+  // TODO: this function is getting quite large with many if/else branches
+  // a better design might be a table of callback functions or something
+
   GenInfo* info = gGenInfo;
   const llvm::DataLayout& layout = info->module->getDataLayout();
 
@@ -571,6 +573,7 @@ llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
     N = dibuilder->createTypedef(N, name, nullptr, 0, nullptr);
     type->symbol->llvmDIType = N;
     return N;
+
   } else if (type == dtObject) {
     llvm::SmallVector<llvm::Metadata *, 1> EltTys;
     llvm::Type* cidType = info->lvt->getType("chpl__class_id");
@@ -602,11 +605,13 @@ llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
     N = maybeWrapTypeInPointer(N, type);
     type->symbol->llvmDIType = N;
     return N;
+
   } else if (isBoolType(type)) {
     auto size = layout.getTypeSizeInBits(ty);
     auto N = dibuilder->createBasicType(name, size, llvm::dwarf::DW_ATE_boolean);
     type->symbol->llvmDIType = N;
     return N;
+
   } else if (isIntType(type) || isUIntType(type)) {
     auto encoding = isSignedType(type) ? llvm::dwarf::DW_ATE_signed :
                                          llvm::dwarf::DW_ATE_unsigned;
@@ -615,6 +620,7 @@ llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
     N = dibuilder->createTypedef(N, name, nullptr, 0, nullptr);
     type->symbol->llvmDIType = N;
     return N;
+
   } else if (isRealType(type) || isImagType(type)) {
     // TODO: eventually, it would be nice to use DW_ATE_imaginary_float
     // for imaginary types, but lldb doesn't seem to understand that today
@@ -624,6 +630,7 @@ llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
     N = dibuilder->createTypedef(N, name, nullptr, 0, nullptr);
     type->symbol->llvmDIType = N;
     return N;
+
   } else if (isComplexType(type)) {
     // we could codegen this as DW_ATE_complex_float, but then we
     // wouldn't have the real and imaginary parts as members
@@ -668,6 +675,7 @@ llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
     );
     type->symbol->llvmDIType = N;
     return N;
+
   } else if (isEnumType(type)) {
     return constructTypeForEnum(ty, toEnumType(type));
   } else if (isAtomicType(type)) {
@@ -692,6 +700,7 @@ llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
     N = dibuilder->createTypedef(N, name, nullptr, 0, nullptr);
     type->symbol->llvmDIType = N;
     return N;
+
   } else if (isSyncType(type)) {
     // TODO:
     return nullptr;
@@ -719,6 +728,7 @@ llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
     N = dibuilder->createTypedef(N, name, nullptr, 0, nullptr);
     type->symbol->llvmDIType = N;
     return N;
+
   } else if (type == dtStringC) {
     llvm::DIType* N = dibuilder->createPointerType(
       getType(dt_c_char),
@@ -730,6 +740,7 @@ llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
     N = dibuilder->createTypedef(N, name, nullptr, 0, nullptr);
     type->symbol->llvmDIType = N;
     return N;
+
   } else if (type == dtNil || type == dtCFnPtr || type == dtCVoidPtr) {
     return dibuilder->createNullPtrType();
   } else if (toPrimitiveType(type) != nullptr &&
@@ -779,12 +790,14 @@ llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
 }
 
 static bool isNonCodegenType(Type * type) {
-  if (type == dtVoid || type == dtNothing)
+  if (type->symbol->hasFlag(FLAG_NO_CODEGEN))
     return true;
-  if (auto valType = type->getValType()) {
-    if (valType == dtVoid || valType == dtNothing)
-      return true;
-  }
+  // if (type == dtVoid || type == dtNothing)
+  //   return true;
+  // if (auto valType = type->getValType()) {
+  //   if (valType == dtVoid || valType == dtNothing)
+  //     return true;
+  // }
   return false;
 }
 
@@ -1069,7 +1082,7 @@ llvm::DIGlobalVariableExpression* DebugData::constructGlobalVariable(VarSymbol *
 
   DefinitionInfo defInfo(this, gVarSym);
   ModuleSymbol* modSym = gVarSym->getModule();
-  defInfo._scope = modSym->llvmDICompileUnit;
+  defInfo.scope_ = modSym->llvmDICompileUnit;
   auto dibuilder = modSym->llvmDIBuilder;
 
   llvm::DIType* gVarSym_type = getType(gVarSym->type); // type is member of Symbol
@@ -1106,7 +1119,7 @@ llvm::DIVariable* DebugData::constructVariable(VarSymbol *varSym)
   FnSymbol *funcSym = varSym->defPoint->getFunction();
   ModuleSymbol* modSym = varSym->getModule();
   DefinitionInfo defInfo(this, varSym);
-  defInfo._scope = getFunction(funcSym);
+  defInfo.scope_ = getFunction(funcSym);
   auto dibuilder = modSym->llvmDIBuilder;
 
   llvm::DIType* varSym_type = getType(varSym->type);
@@ -1156,7 +1169,7 @@ llvm::DIVariable* DebugData::constructFormalArg(ArgSymbol *argSym, unsigned ArgN
     printf("Couldn't find the function parent of param: %s!\n",name);
 
   DefinitionInfo defInfo(this, argSym);
-  defInfo._scope = getFunction(funcSym);
+  defInfo.scope_ = getFunction(funcSym);
   auto dibuilder = argSym->getModule()->llvmDIBuilder;
 
   llvm::DIType* argSym_type = getType(argSym->type);

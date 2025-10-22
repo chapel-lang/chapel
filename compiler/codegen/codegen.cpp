@@ -2466,7 +2466,7 @@ extern bool printCppLineno;
 
 
 #ifdef HAVE_LLVM
-DebugData *debugInfo=NULL;
+DebugData* debugInfo = nullptr;
 #endif
 
 

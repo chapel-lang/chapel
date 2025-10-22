@@ -162,7 +162,7 @@ static WellKnownAggregateType sWellKnownAggregateTypes[] = {
   { "Error",                 &dtError,            true  },
   { "_array",                &dtArray,            false },
   { "_domain",               &dtDomain,           false },
-  { "_ref",                  &dtRef,              true },
+  { "_ref",                  &dtRef,              true  },
   { "chpl_comm_on_bundle_t", &dtOnBundleRecord,   false },
   { "chpl_external_array",   &dtExternalArray,    false },
   { "chpl_localeID_t",       &dtLocaleID,         false },
@@ -204,7 +204,6 @@ static WellKnownAggregateTypeNeededEarly sWellKnownAggregateTypesNeededEarly[]=
   { "c_ptr",      "c_ptr",        &dtCPointer,      true },
   { "c_ptrConst", "c_ptrConst",   &dtCPointerConst, true },
   { "_ddata",     "_ddata",       &dtHeapBuffer,    true },
-  // { "_ref",       "ref",          &dtRef,           true },
 };
 
 struct WellKnownType

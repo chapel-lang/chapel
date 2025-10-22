@@ -131,13 +131,13 @@ IntentTag blankIntentForType(Type* t) {
     // allow blank intent owned to be transferred out of
     retval = INTENT_CONST_REF;
 
-  } else if (isBoolType(t)                         ||
-             isIntType(t)                          ||
-             isUIntType(t)                         ||
-             isRealType(t)                         ||
-             isImagType(t)                         ||
-             isComplexType(t)                      ||
-             isEnumType(t)                         ||
+  } else if (isBoolType(t)                           ||
+             isIntType(t)                            ||
+             isUIntType(t)                           ||
+             isRealType(t)                           ||
+             isImagType(t)                           ||
+             isComplexType(t)                        ||
+             isEnumType(t)                           ||
              t == dtStringC                          ||
              t == dtCVoidPtr                         ||
              t == dtCFnPtr                           ||
