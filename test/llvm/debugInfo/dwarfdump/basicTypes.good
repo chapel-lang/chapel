@@ -232,6 +232,9 @@ DW_TAG_variable
               DW_AT_type	("(int(64),string,real(64),myEnum)")
 ================================================================================
 ========================[domain(1,int(64),one)] int(64)=========================
+DW_TAG_pointer_type
+              DW_AT_type	("DefaultRectangular::[domain(1,int(64),one)] int(64)")
+              DW_AT_name	("[domain(1,int(64),one)] int(64)")
 DW_TAG_structure_type
               DW_AT_name	("[domain(1,int(64),one)] int(64)")
               DW_AT_byte_size	(0x18)
@@ -365,11 +368,11 @@ DW_TAG_structure_type
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x7b)
   NULL
-DW_TAG_pointer_type
-              DW_AT_type	("DefaultRectangular::[domain(1,int(64),one)] int(64)")
-              DW_AT_name	("[domain(1,int(64),one)] int(64)")
 ================================================================================
 ===========================domain(2,int(64),positive)===========================
+DW_TAG_pointer_type
+              DW_AT_type	("DefaultRectangular::domain(2,int(64),positive)")
+              DW_AT_name	("domain(2,int(64),positive)")
 DW_TAG_structure_type
               DW_AT_name	("domain(2,int(64),positive)")
               DW_AT_byte_size	(0x18)
@@ -398,9 +401,6 @@ DW_TAG_structure_type
                 DW_AT_alignment	(1)
                 DW_AT_data_member_location	(0x10)
   NULL
-DW_TAG_pointer_type
-              DW_AT_type	("DefaultRectangular::domain(2,int(64),positive)")
-              DW_AT_name	("domain(2,int(64),positive)")
 DW_TAG_structure_type
               DW_AT_name	("domain(2,int(64),positive)")
               DW_AT_byte_size	(0x78)
