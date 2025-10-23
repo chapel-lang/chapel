@@ -134,7 +134,7 @@ We have used the following commands to install the above prerequisites:
       sudo pacman -Syu
       sudo pacman -S base-devel
       sudo pacman -S cmake git python
-      sudo pacman -S llvm clang
+      sudo pacman -S llvm20 clang20
 
 
   * CentOS Stream 9, 10::

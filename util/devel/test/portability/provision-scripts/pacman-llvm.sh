@@ -1,4 +1,4 @@
 #!/bin/sh
 
-# and LLVM stuff, this installs LLVM 19 as of {202205} version
+# and LLVM stuff, this installs LLVM 21 as of {2025.10.01} version
 pacman --noconfirm -S llvm clang
