@@ -240,6 +240,9 @@ DW_TAG_structure_type
   NULL
 ================================================================================
 ====================================MyClass=====================================
+DW_TAG_pointer_type
+              DW_AT_type	("classes::MyClass")
+              DW_AT_name	("MyClass")
 DW_TAG_structure_type
               DW_AT_name	("MyClass")
               DW_AT_byte_size	(0x10)
@@ -261,9 +264,6 @@ DW_TAG_structure_type
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x08)
   NULL
-DW_TAG_pointer_type
-              DW_AT_type	("classes::MyClass")
-              DW_AT_name	("MyClass")
 ================================================================================
 ==================================MyChildClass==================================
 DW_TAG_pointer_type
