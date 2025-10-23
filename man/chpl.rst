@@ -875,6 +875,14 @@ OPTIONS
     the pass to <filename>. An error is displayed if the file cannot be
     opened but no recovery attempt is made.
 
+.. _man-print-passes-memory:
+.. index:: --print-passes-memory
+
+**\--[no-]print-passes-memory**
+
+    Prints the memory usage in addition to time usage for each compiler pass.
+    Implies **\--print-passes**. See **\--print-passes** for more information.
+
 *Miscellaneous Options*
 
 .. _man-detailed-errors:
