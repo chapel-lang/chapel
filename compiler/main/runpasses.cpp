@@ -185,7 +185,7 @@ void runPasses(PhaseTracker& tracker) {
 
   setupLogfiles();
 
-  if (printPasses == true || printPassesFile != 0) {
+  if (PhaseTracker::shouldReportPasses()) {
     if (fDriverCompilationPhase) {
       Phase::ReportText(
           "Timing for driver compilation phase\n--------------\n");
@@ -272,7 +272,7 @@ static void runPass(PhaseTracker& tracker, size_t passIndex) {
     cleanAst();
   }
 
-  if (printPasses == true || printPassesFile != 0) {
+  if (PhaseTracker::shouldReportPasses()) {
     tracker.ReportPass();
   }
 }

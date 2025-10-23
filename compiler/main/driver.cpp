@@ -217,8 +217,9 @@ bool fReportAutoAggregation= false;
 bool fArrayViewElision = true;
 bool fReportArrayViewElision = false;
 
-bool  printPasses     = false;
-FILE* printPassesFile = NULL;
+bool  printPasses       = false;
+FILE* printPassesFile   = nullptr;
+bool  printPassesMemory = false;
 
 // flag for llvmWideOpt
 bool fLLVMWideOpt = false;
@@ -1218,7 +1219,7 @@ static void setLogModule(const ArgumentDescription* desc, const char* arg) {
 static void setPrintPassesFile(const ArgumentDescription* desc, const char* fileName) {
   printPassesFile = fopen(fileName, "w");
 
-  if (printPassesFile == NULL) {
+  if (printPassesFile == nullptr) {
     USR_WARN("Error opening printPassesFile: %s.", fileName);
   }
 }
@@ -1462,6 +1463,7 @@ static ArgumentDescription arg_desc[] = {
  {"print-commands", ' ', NULL, "[Don't] print system commands", "N", &printSystemCommands, "CHPL_PRINT_COMMANDS", NULL},
  {"print-passes", ' ', NULL, "[Don't] print compiler passes", "N", &printPasses, "CHPL_PRINT_PASSES", NULL},
  {"print-passes-file", ' ', "<filename>", "Print compiler passes to <filename>", "S", NULL, "CHPL_PRINT_PASSES_FILE", setPrintPassesFile},
+ {"print-passes-memory", ' ', NULL, "[Don't] print memory usage after each compiler pass", "N", &printPassesMemory, "CHPL_PRINT_PASSES_MEMORY", NULL},
 
  {"", ' ', NULL, "Miscellaneous Options", NULL, NULL, NULL, NULL},
  {"detailed-errors", ' ', NULL, "Enable [disable] detailed error messages", "N", &fDetailedErrors, "CHPL_DETAILED_ERRORS", NULL},
@@ -2691,7 +2693,7 @@ int main(int argc, char* argv[]) {
 
   tracker.Stop();
 
-  if (printPasses == true || printPassesFile != NULL) {
+  if (PhaseTracker::shouldReportPasses()) {
     // Report out timing totals information, with adjustments for driver mode.
     if (fDriverDoMonolithic) {
       // Report normally in monolithic mode.
@@ -2703,7 +2705,7 @@ int main(int argc, char* argv[]) {
       // Save timing totals in sub-invocations, to restore and output by driver.
 
       static const char* groupTimesFilename = "passGroupTimings.tmp";
-      std::vector<unsigned long> groupTimes;
+      std::vector<PhaseData> groupData;
 
       if (driverInSubInvocation) {
         // This is a sub-invocation, capture timing totals information for later
@@ -2714,12 +2716,12 @@ int main(int argc, char* argv[]) {
         tracker.ReportRollup();
 
         // Get timing information
-        tracker.ReportPassGroupTotals(&groupTimes);
+        tracker.ReportPassGroupTotals(&groupData);
 
         // Save times to file
         std::vector<std::string_view> groupTimesStrs;
-        for (const unsigned long groupTime : groupTimes) {
-          groupTimesStrs.emplace_back(astr(std::to_string(groupTime).c_str()));
+        for (const auto d : groupData) {
+          groupTimesStrs.emplace_back(astr(d.serialize().c_str()));
         }
         saveDriverTmpMultiple(groupTimesFilename, groupTimesStrs);
       } else {
@@ -2728,8 +2730,8 @@ int main(int argc, char* argv[]) {
 
         // Restore times from file
         restoreDriverTmp(
-            groupTimesFilename, [&groupTimes](std::string_view timeStr) {
-              groupTimes.emplace_back(std::stoul(std::string(timeStr)));
+            groupTimesFilename, [&groupData](std::string_view timeStr) {
+              groupData.emplace_back(PhaseData::deserialize(timeStr));
             });
 
         // Unless stopping early, expect frontend, middle-end, and (incomplete)
@@ -2738,11 +2740,11 @@ int main(int argc, char* argv[]) {
         if (!shouldSkipMakeBinary(/* warnIfSkipping */ false)) {
           const size_t numPassGroups = 3;
           INT_ASSERT(
-              groupTimes.size() == (numPassGroups + 1) &&
+              groupData.size() == (numPassGroups + 1) &&
               "unexpected number of saved timing results from driver phases");
           // Combine the two halves of the backend total time into one value.
-          groupTimes[numPassGroups - 1] += groupTimes[numPassGroups];
-          groupTimes.pop_back();
+          groupData[numPassGroups - 1] += groupData[numPassGroups];
+          groupData.pop_back();
         }
 
         // Report final driver overhead timing information.
@@ -2751,17 +2753,17 @@ int main(int argc, char* argv[]) {
         tracker.ReportRollup();
 
         // Report restored times
-        tracker.ReportPassGroupTotals(&groupTimes);
+        tracker.ReportPassGroupTotals(&groupData);
         // Report total time including both pass group times and driver overhead
-        auto groupTimesSum =
-            std::accumulate(groupTimes.begin(), groupTimes.end(),
-                            decltype(groupTimes)::value_type(0));
-        tracker.ReportOverallTotal(groupTimesSum);
+        auto groupDataSum =
+            std::accumulate(groupData.begin(), groupData.end(),
+                            decltype(groupData)::value_type(0, 0));
+        tracker.ReportOverallTotal(groupDataSum);
       }
     }
   }
 
-  if (printPassesFile != NULL) {
+  if (printPassesFile != nullptr) {
     fclose(printPassesFile);
   }
 

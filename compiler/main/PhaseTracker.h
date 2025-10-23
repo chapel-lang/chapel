@@ -28,59 +28,89 @@
 #include <vector>
 
 /************************************* | **************************************
-*                                                                             *
-* This class is designed to provide an accurate and reasonably detailed view  *
-* of the way time is being spent within the compiler.  The intent is to       *
-* account for all of the time between the entry point to main() and the final *
-* call to clean_exit(0) in driver.cpp.                                        *
-*                                                                             *
-* a) Create a Timer object that will record the wall time as early in the     *
-*    compiler as possible                                                     *
-*                                                                             *
-* b) Use the Timer to determine the elapsed time between the start of the     *
-*    program and the start of each phase                                      *
-*                                                                             *
-* c) Compute the elapsed time for each phase                                  *
-*                                                                             *
-* d) Stop the timer and generate one or more reports on the time spent in     *
-*    each phase.
-*                                                                             *
-* Every phase has a descriptive name that will be used by the reports.        *
-*                                                                             *
-* The main loop for the compiler, in runpasses.cpp, has a notion of a "pass"  *
-* which consists of three phases;                                             *
-*                                                                             *
-*    1) The primary computation                                               *
-*    2) An optional verify / check phase                                      *
-*    3) An AST cleanup phase                                                  *
-*                                                                             *
-* The tracker collects the sub-phases and reports the overall time in terms   *
-* of these passes.  Phases that occur before and after the Passes ignore      *
-* the check and clean phases.                                                 *
-*                                                                             *
-************************************** | *************************************/
+ *                                                                             *
+ * This class is designed to provide an accurate and reasonably detailed view  *
+ * of the way time is being spent within the compiler.  The intent is to       *
+ * account for all of the time between the entry point to main() and the final *
+ * call to clean_exit(0) in driver.cpp.                                        *
+ *                                                                             *
+ * a) Create a Timer object that will record the wall time as early in the     *
+ *    compiler as possible                                                     *
+ *                                                                             *
+ * b) Use the Timer to determine the elapsed time between the start of the     *
+ *    program and the start of each phase                                      *
+ *                                                                             *
+ * c) Compute the elapsed time for each phase                                  *
+ *                                                                             *
+ * d) Stop the timer and generate one or more reports on the time spent in     *
+ *    each phase.
+ *                                                                             *
+ * Every phase has a descriptive name that will be used by the reports.        *
+ *                                                                             *
+ * The main loop for the compiler, in runpasses.cpp, has a notion of a "pass"  *
+ * which consists of three phases;                                             *
+ *                                                                             *
+ *    1) The primary computation                                               *
+ *    2) An optional verify / check phase                                      *
+ *    3) An AST cleanup phase                                                  *
+ *                                                                             *
+ * The tracker collects the sub-phases and reports the overall time in terms   *
+ * of these passes.  Phases that occur before and after the Passes ignore      *
+ * the check and clean phases.                                                 *
+ *                                                                             *
+ ************************************** | *************************************/
 
 class Phase;
 class Pass;
 
+struct PhaseData {
+  unsigned long                timeInUsecs;
+  MemoryTracker::MemoryInBytes memory;
+
+  PhaseData() : timeInUsecs(0), memory(0) {}
+  PhaseData(unsigned long time, MemoryTracker::MemoryInBytes memory)
+      : timeInUsecs(time), memory(memory) {}
+
+  std::string serialize() const {
+    char buffer[256];
+    snprintf(buffer, sizeof(buffer), "%lu %lld", timeInUsecs, memory);
+    return std::string(buffer);
+  }
+  static PhaseData deserialize(std::string_view str) {
+    PhaseData result;
+    sscanf(str.data(), "%lu %lld", &result.timeInUsecs, &result.memory);
+    return result;
+  }
+
+  PhaseData operator-(const PhaseData& other) const {
+    return PhaseData(this->timeInUsecs - other.timeInUsecs,
+                     this->memory - other.memory);
+  }
+  PhaseData operator+(const PhaseData& other) const {
+    return PhaseData(this->timeInUsecs + other.timeInUsecs,
+                     this->memory + other.memory);
+  }
+  PhaseData& operator+=(const PhaseData& other) {
+    this->timeInUsecs += other.timeInUsecs;
+    this->memory += other.memory;
+    return *this;
+  }
+};
+
 class PhaseTracker {
 public:
-  enum SubPhase {
-    kPrimary,
-    kVerify,
-    kCleanAst
-  };
+  enum SubPhase { kPrimary, kVerify, kCleanAst };
 
-                      PhaseTracker();
-                      ~PhaseTracker();
+  PhaseTracker();
+  ~PhaseTracker();
 
-  void                StartPhase(const char* phaseName);
-  void                StartPhase(const char* passName, SubPhase subPhase);
+  void StartPhase(const char* phaseName);
+  void StartPhase(const char* passName, SubPhase subPhase);
 
-  void                Stop();
-  void                Resume();
+  void Stop();
+  void Resume();
 
-  void                ReportPass() const;
+  void ReportPass() const;
   // Report out total times by pass group, with differing behavior based on the
   // provided argument:
   // - nullptr: Ignore it and report as normal.
@@ -88,20 +118,22 @@ public:
   // - non-empty list: Take the values as already-recorded times and report
   // them out. They are assumed to represent pass group times in order, with
   // missing values meaning that pass group did not occur (early exit).
-  void                ReportPassGroupTotals(
-                        std::vector<unsigned long>* groupTimes = nullptr) const;
-  // Report out total overall time for the compiler. If overheadTime is
-  // negative, it is unused, otherwise add it to the total time.
-  // If positive it must fit in an unsigned long.
-  void                ReportOverallTotal(long long overheadTime = -1) const;
+  void
+  ReportPassGroupTotals(std::vector<PhaseData>* groupTimes = nullptr) const;
+  // Report out total overall time for the compiler. If provided, add in
+  // the overhead time.
+  void ReportOverallTotal(
+    std::optional<PhaseData> overheadTime = std::nullopt) const;
 
-  void                ReportRollup() const;
+  void ReportRollup() const;
+
+  static bool   shouldReportPasses();
+  static FILE*& passesOutputFile();
 
 private:
-  void                PassesCollect(std::vector<Pass>& passes) const;
+  void PassesCollect(std::vector<Pass>& passes) const;
 
-  void                StartPhase(const char* phaseName,
-                                 int passId, SubPhase subPhase);
+  void StartPhase(const char* phaseName, int passId, SubPhase subPhase);
 
   Timer               mTimer;
   MemoryTracker       mMemoryTracker;
@@ -112,28 +144,26 @@ private:
 // Used to collect the times as the program runs
 class Phase {
 public:
-                           Phase(const char*                  name,
-                                 int                          passId,
-                                 PhaseTracker::SubPhase       subPhase,
-                                 unsigned long                startTime,
-                                 MemoryTracker::MemoryInBytes startMemory);
-                          ~Phase();
+  Phase(const char*            name,
+        int                    passId,
+        PhaseTracker::SubPhase subPhase,
+        PhaseData              start);
+  ~Phase();
 
-  bool                     IsStartOfPass() const;
+  bool IsStartOfPass() const;
 
-  void                     ReportPass(unsigned long now,
-                                      MemoryTracker::MemoryInBytes nowMem) const;
-  static void              ReportPassGroup(const char* text,
-                                           unsigned long totalTime);
+  void        ReportPass(PhaseData now) const;
+  static void ReportPassGroup(const char* suffix, PhaseData total);
 
-  static void              ReportTime(const char* name, double secs);
-  static void              ReportText(const char* text);
+  static void ReportTime(const char* name, double secs);
+  static void ReportMemory(const char* name, MemoryTracker::MemoryInMB MB);
+  static void ReportData(const char* name, PhaseData data);
+  static void ReportText(const char* text);
 
-  char*                        mName;       // Only set for kPrimary
-  int                          mPassId;
-  PhaseTracker::SubPhase       mSubPhase;
-  unsigned long                mStartTime;  // Elapsed time from main() usecs
-  MemoryTracker::MemoryInBytes mStartMemory
+  char*                  mName; // Only set for kPrimary
+  int                    mPassId;
+  PhaseTracker::SubPhase mSubPhase;
+  PhaseData              mStart; // Elapsed from main()
 
 private:
   Phase();
@@ -142,31 +172,30 @@ private:
 // Group the phases in to passes and report on passes
 class Pass {
 public:
-                 Pass();
-                ~Pass();
+  Pass();
+  ~Pass();
 
-  static void    Header(FILE* fp);
-  static void    Footer(FILE*         fp,
-                        unsigned long mainTime,
-                        unsigned long checkTime,
-                        unsigned long cleanTime,
-                        unsigned long totalTime);
+  static void Header(FILE* fp);
+  static void Footer(FILE*     fp,
+                     PhaseData main,
+                     PhaseData check,
+                     PhaseData clean,
+                     PhaseData total);
 
-  bool           CompareByTime(Pass const& ref)      const;
+  bool                         CompareByTime(Pass const& ref) const;
+  bool                         CompareByMemory(Pass const& ref) const;
+  void                         Reset();
+  unsigned long                TotalTime() const;
+  MemoryTracker::MemoryInBytes TotalMemory() const;
 
-  void           Reset();
-  unsigned long  TotalTime()                         const;
+  void Print(FILE* fp, PhaseData accum, PhaseData total) const;
 
-  void           Print(FILE*         fp,
-                       unsigned long accumTime,
-                       unsigned long totalTime)      const;
-
-  char*          mName;
-  int            mPassId;
-  int            mIndex;
-  std::pair<unsigned long, MemoryTracker::MemoryInBytes> mPrimary;  // usecs(), bytes
-  std::pair<unsigned long, MemoryTracker::MemoryInBytes> mVerify;   // usecs(), bytes
-  std::pair<unsigned long, MemoryTracker::MemoryInBytes> mCleanAst; // usecs(), bytes
+  char*     mName;
+  int       mPassId;
+  int       mIndex;
+  PhaseData mPrimary;
+  PhaseData mVerify;
+  PhaseData mCleanAst;
 };
 
 #endif

@@ -21,16 +21,16 @@
 #ifndef _chpl_MemoryTracker_h_
 #define _chpl_MemoryTracker_h_
 
-
 class MemoryTracker {
 public:
-
   static bool platformSupportsMemoryTracking();
   using MemoryInBytes = long long;
-
-  MemoryTracker() {
-    clear();
+  using MemoryInMB = double;
+  static MemoryInMB toMB(MemoryInBytes bytes) {
+    return bytes / (1024.0 * 1024.0);
   }
+
+  MemoryTracker() { clear(); }
   ~MemoryTracker() = default;
 
   void clear();
@@ -42,7 +42,7 @@ public:
 private:
   MemoryInBytes mRefMemoryUsage;
   MemoryInBytes mAccumMemoryUsage;
-  bool mRunning;
+  bool          mRunning;
 };
 
 #endif

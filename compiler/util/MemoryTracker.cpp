@@ -29,7 +29,6 @@
 #include <mach/mach.h>
 #endif
 
-
 #include "misc.h"
 
 bool MemoryTracker::platformSupportsMemoryTracking() {
@@ -45,7 +44,7 @@ bool MemoryTracker::platformSupportsMemoryTracking() {
 }
 static MemoryTracker::MemoryInBytes getCurrentMemoryUsage() {
 #ifdef __linux__
-  FILE *fp = fopen("/proc/self/status", "r");
+  FILE* fp = fopen("/proc/self/status", "r");
   if (fp == NULL) {
     return -1;
   }
@@ -63,7 +62,9 @@ static MemoryTracker::MemoryInBytes getCurrentMemoryUsage() {
 #if __APPLE__
   struct task_basic_info t_info;
   mach_msg_type_number_t t_info_count = TASK_BASIC_INFO_COUNT;
-  if (task_info(mach_task_self(), TASK_BASIC_INFO, (task_info_t)&t_info,
+  if (task_info(mach_task_self(),
+                TASK_BASIC_INFO,
+                (task_info_t)&t_info,
                 &t_info_count) != KERN_SUCCESS) {
     return -1;
   }
@@ -76,19 +77,19 @@ static MemoryTracker::MemoryInBytes getCurrentMemoryUsage() {
 }
 
 void MemoryTracker::clear() {
-  mRefMemoryUsage = 0;
+  mRefMemoryUsage   = 0;
   mAccumMemoryUsage = 0;
-  mRunning = false;
+  mRunning          = false;
 }
 void MemoryTracker::start() {
   INT_ASSERT(!mRunning);
   mRefMemoryUsage = getCurrentMemoryUsage();
-  mRunning = true;
+  mRunning        = true;
 }
 void MemoryTracker::stop() {
   INT_ASSERT(mRunning);
   mAccumMemoryUsage = usedBytes();
-  mRunning = false;
+  mRunning          = false;
 }
 
 MemoryTracker::MemoryInBytes MemoryTracker::usedBytes() const {
@@ -99,4 +100,3 @@ MemoryTracker::MemoryInBytes MemoryTracker::usedBytes() const {
     return current - mRefMemoryUsage;
   }
 }
-
