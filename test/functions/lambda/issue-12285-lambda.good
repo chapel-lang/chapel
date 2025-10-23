@@ -1,0 +1,7 @@
+issue-12285-lambda.chpl:32: In function 'main':
+issue-12285-lambda.chpl:34: warning: 'lambda' syntax is deprecated, please construct anonymous procedures using the 'proc' keyword instead
+issue-12285-lambda.chpl:35: warning: 'lambda' syntax is deprecated, please construct anonymous procedures using the 'proc' keyword instead
+issue-12285-lambda.chpl:38: warning: 'lambda' syntax is deprecated, please construct anonymous procedures using the 'proc' keyword instead
+R(10:uint(64))
+R(10:uint(64))
+T
