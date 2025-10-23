@@ -278,6 +278,89 @@ static void test5() {
   }
 }
 
+// Test that formals with default values but no type expression
+// get proper (non-DEFAULT) intent and allow implicit conversions.
+// This is a regression test for a bug where formals with inferred types
+// from default values disallowed implicit conversions.
+static void test6() {
+  printf("test6\n");
+
+  // Basic test: int to real conversion with default value
+  {
+    auto context = buildStdContext();
+    ErrorGuard guard(context);
+    const std::string program =
+      R""""(
+      proc foo(type idk, x=0.5) {}
+      foo(int, 1);
+      )"""";
+
+    auto path = UniqueString::get(context, "input.chpl");
+    setFileText(context, path, program);
+    const ModuleVec& vec = parseToplevel(context, path);
+    assert(vec.size() == 1);
+    const Module* m = vec[0]->toModule();
+    assert(m);
+    const Call* call = m->stmt(1)->toCall();
+    assert(call);
+
+    const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+    const ResolvedExpression& re = rr.byAst(call);
+
+    // Should resolve successfully
+    assert(!re.type().isUnknown());
+    auto c = re.mostSpecific().only();
+    assert(c);
+    assert(c.fn()->untyped()->name() == "foo");
+
+    // Check that the formal 'x' has a non-DEFAULT intent (should be CONST_IN for real)
+    assert(c.fn()->numFormals() == 2);
+    assert(c.fn()->formalName(1) == "x");
+    auto formalKind = c.fn()->formalType(1).kind();
+    assert(formalKind == QualifiedType::CONST_IN);
+    assert(c.fn()->formalType(1).type()->isRealType());
+  }
+
+  // Test with record type
+  {
+    auto context = buildStdContext();
+    ErrorGuard guard(context);
+    const std::string program =
+      R""""(
+      record R {
+        var x: int;
+      }
+      proc baz(r = new R(42)) {}
+      baz(new R(10));
+      )"""";
+
+    auto path = UniqueString::get(context, "input3.chpl");
+    setFileText(context, path, program);
+    const ModuleVec& vec = parseToplevel(context, path);
+    assert(vec.size() == 1);
+    const Module* m = vec[0]->toModule();
+    assert(m);
+    const Call* call = m->stmt(2)->toCall();
+    assert(call);
+
+    const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+    const ResolvedExpression& re = rr.byAst(call);
+
+    // Should resolve successfully
+    assert(!re.type().isUnknown());
+    auto c = re.mostSpecific().only();
+    assert(c);
+    assert(c.fn()->untyped()->name() == "baz");
+
+    // Check that the formal has a non-DEFAULT intent
+    assert(c.fn()->numFormals() == 1);
+    assert(c.fn()->formalName(0) == "r");
+    auto formalKind = c.fn()->formalType(0).kind();
+    assert(formalKind == QualifiedType::CONST_REF);
+    assert(c.fn()->formalType(0).type()->isRecordType());
+  }
+}
+
 int main() {
   test1();
   test2();
@@ -285,6 +368,7 @@ int main() {
   test3b();
   test4();
   test5();
+  test6();
 
   return 0;
 }
