@@ -13,5 +13,7 @@ export CHPL_CUDA_PATH=$(dirname $(dirname $(which nvcc)))
 export CHPL_COMM=none
 export CHPL_GPU=nvidia  # amd is also detected automatically
 
+module list
+
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="gpu-ex-cuda-11"
 $UTIL_CRON_DIR/nightly -cron ${nightly_args}

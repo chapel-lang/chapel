@@ -15,5 +15,7 @@ export CHPL_LAUNCHER_PARTITION=bardpeak  # bardpeak is the default queue
 export CHPL_GPU=amd  # also detected by default
 export CHPL_GPU_ARCH=gfx90a
 
+module list
+
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="gpu-ex-rocm-62"
 $UTIL_CRON_DIR/nightly -cron ${nightly_args}

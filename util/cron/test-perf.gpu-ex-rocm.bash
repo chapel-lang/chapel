@@ -25,6 +25,8 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.gpu-ex-rocm"
 
 export CHPL_TEST_PERF_CONFIG_NAME="1-node-mi250x"
 
+module list
+
 nightly_args="${nightly_args} -startdate 04/04/24"
 
 $UTIL_CRON_DIR/nightly -cron ${nightly_args}

@@ -11,5 +11,7 @@ source $UTIL_CRON_DIR/common-gpu-nvidia-hpe-cray-ex-cuda-12.bash
 export CHPL_COMM=ofi
 export CHPL_GPU=nvidia  # amd is also detected automatically
 
+module list
+
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="gpu-ex-cuda-12.ofi"
 $UTIL_CRON_DIR/nightly -cron ${nightly_args}
