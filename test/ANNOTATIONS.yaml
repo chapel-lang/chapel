@@ -2642,6 +2642,8 @@ arkouda-bigint:
   <<: *arkouda-base
   09/27/24:
     - Fixes 3783, 3784, 3788 multilocale io test failures (Bears-R-Us/arkouda#3790)
+  10/17/25:
+    - Closes #4984: ak.array with negative numbers still has problems (Bears-R-Us/arkouda#4985)
 
 arkouda-comp:
   <<: *arkouda-base
