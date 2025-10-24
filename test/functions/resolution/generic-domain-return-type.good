@@ -1,0 +1,3 @@
+generic-domain-return-type.chpl:6: warning: please use 'domain(?)' for the type of a generic variable storing any domain
+{1..0}
+{1..0}
