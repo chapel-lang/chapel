@@ -2870,6 +2870,12 @@ instantiateSignatureImpl(ResolutionContext* rc,
         // add a "use the default" hint substitution.
         addSub = true;
         useType = actualType;
+
+        if (sig->untyped()->isTypeConstructor()) {
+          // This is a type constructor call written without a '?' argument,
+          // which means we should consider it instantiated.
+          isInstantiated = true;
+        }
       }
     } else {
       auto got = canPassFn(context, actualType, formalType);
@@ -5086,6 +5092,12 @@ static bool resolveFnCallSpecial(ResolutionContext* rc,
   // return false.
   for (auto& actual : ci.actuals()) {
     if (actual.type().isUnknown()) {
+      if (actual.type().isParam() &&
+          (ci.name() == USTR("==") || ci.name() == USTR("!="))) {
+        // we allow 'someParamField == ?' to check if 'someParamField' is unset.
+        // So, we need to allow unknown param actuals for == and !=.
+        continue;
+      }
       return false;
     }
   }

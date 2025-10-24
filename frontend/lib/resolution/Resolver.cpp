@@ -3022,6 +3022,15 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
 
   if (callLike->isTuple()) return skip;
 
+  // don't skip calls like 'foo == ?' even though '?' is generic, because
+  // the user is specifically checking for genericity.
+  // When this happens, the call info will have only one actual, since '?'
+  // is treated specially as "has question arg".
+  bool allowGenericTypes =
+    (ci.name() == USTR("==") || ci.name() == USTR("!=")) &&
+    ci.numActuals() == 1 &&
+    (ci.actual(0).type().isType() || ci.actual(0).type().isParam());
+
   int actualIdx = 0;
   for (const auto& actual : ci.actuals()) {
     ID toId; // does the actual refer directly to a particular variable?
@@ -3067,12 +3076,16 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
           rv->substitutions == nullptr ||
           (!toId.isEmpty() && rv->substitutions->count(toId) == 0);
 
-        if (qt.isType() && isBuiltinGeneric && noSubstitution) {
+        if (qt.isType() && isBuiltinGeneric && noSubstitution && !allowGenericTypes) {
           skip = GENERIC_TYPE;
         } else if (!qt.isType() && g != Type::CONCRETE) {
           skip = GENERIC_VALUE;
         }
       }
+    }
+
+    if (skip == UNKNOWN_PARAM && allowGenericTypes) {
+      skip = NONE;
     }
 
     // Don't skip for type constructors, except due to unknown params.
