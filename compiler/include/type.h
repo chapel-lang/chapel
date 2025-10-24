@@ -203,6 +203,8 @@ const char* qualifierToStr(Qualifier q);
 //
 class QualifiedType {
 public:
+  static Qualifier qualifierForArgIntent(IntentTag intent);
+  static Qualifier qualifierForRetTag(RetTag retTag);
 
   // Static methods for working with Qualifier
   static bool qualifierIsConst(Qualifier q)
@@ -461,9 +463,11 @@ class FunctionType final : public Type {
     IntentTag intent() const;
     const char* name() const;
     QualifiedType qualType() const;
-    bool isAnonymous() const;
+    bool isNamed() const;
     bool isRef() const;
   };
+
+  using Formals = std::vector<Formal>;
 
  private:
   Kind kind_;
@@ -522,6 +526,7 @@ class FunctionType final : public Type {
   FunctionType* getWithLinkage(Linkage linkage) const;
   FunctionType* getWithLoweredErrorHandling() const;
   FunctionType* getWithLineFileInfo() const;
+  FunctionType* getWithStreamlinedComponents() const;
   FunctionType* getWithMask(int64_t mask, bool& outMaskConflicts) const;
   FunctionType* getAsLocal() const;
   FunctionType* getAsWide() const;
@@ -533,6 +538,7 @@ class FunctionType final : public Type {
   int numFormals() const;
   const Formal* formal(int idx) const;
   const Formal* formalByOrdinal(Expr* actual, int* outIdx=nullptr) const;
+  const Formals& formals() const;
   RetTag returnIntent() const;
   Type* returnType() const;
   bool throws() const;

@@ -29,9 +29,9 @@
 
 namespace {
   // As a means of abbreviation.
-  using Pass = AddLineFileInfoToProcPtrTypes;
+  using Pass = StreamlineProcPtrTypesForCodegen;
 }
 
 FunctionType* Pass::computeAdjustedType(FunctionType* ft) const {
-  return ft->getWithLineFileInfo();
+  return ft->getWithStreamlinedComponents();
 }

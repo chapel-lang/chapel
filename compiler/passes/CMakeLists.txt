@@ -16,6 +16,7 @@
 # limitations under the License.
 set(SRCS
     AddLineFileInfoToProcPtrTypes.cpp
+    AdjustProcPtrTypes.cpp
     InitErrorHandling.cpp
     InitNormalize.cpp
     ResolveScope.cpp
@@ -46,6 +47,7 @@ set(SRCS
     resolveIntents.cpp
     returnStarTuplesByRefArgs.cpp
     scopeResolve.cpp
+    StreamlineProcPtrTypesForCodegen.cpp
     splitInit.cpp
    )
 add_compiler_sources("${SRCS}" "${CMAKE_CURRENT_SOURCE_DIR}")

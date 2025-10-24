@@ -443,13 +443,7 @@ void Pass::process(FnSymbol *fn, CallExpr* call) {
 // Contains the old 'insertLineNumbers' pass.
 void insertLineNumbers() {
   PassManager pm;
-
-  // TODO: "Run pass on multiple lists...".
-  pm.runPass<Symbol*>(AddLineFileInfoToProcPtrTypes(), gArgSymbols);
-  pm.runPass<Symbol*>(AddLineFileInfoToProcPtrTypes(), gFnSymbols);
-  pm.runPass<Symbol*>(AddLineFileInfoToProcPtrTypes(), gVarSymbols);
-  // No need to adjust type symbols at present...
-  // pm.runPass<Symbol*>(pass, gTypeSymbols);
+  runPassOverAllSymbols(pm, AddLineFileInfoToProcPtrTypes());
 
   // TODO It's pretty apparent in this refactoring that we don't actually need
   // to recompute all call sites, but only the subset we'll be working on, which

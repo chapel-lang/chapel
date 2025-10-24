@@ -232,6 +232,17 @@ class InsertNilChecks : public PassT<CallExpr*> {
   void process(CallExpr* call) override;
 };
 
+/** This class operates over a container of symbols and transforms their
+    types accordingly. Uses of replaced types are enqueued so that they
+    can be adjusted as well. */
+class AdjustProcPtrTypes : public PassTU<Symbol*, SymExpr*> {
+ public:
+  virtual FunctionType* computeAdjustedType(FunctionType* ft) const = 0;
+  bool shouldProcess(Symbol* sym) override;
+  void process(Symbol* sym) override;
+  void process(Symbol* newSymbol, SymExpr* oldUse) override;
+};
+
 /**
   This pass adjusts any symbol with a procedure-pointer type so that it is
   a new, similiar type that has line/file formals appended.
@@ -242,15 +253,10 @@ class InsertNilChecks : public PassT<CallExpr*> {
   TODO: This pass could be considered a "sub-pass" or a "hidden dependency"
         of 'InsertLineNumbers', but we don't have the machinery to express
         that at the moment.
-
-  This pass is similiar to e.g., 'adjustAllSymbolTypes' in spirit, however
-  it operates over passed in containers instead of assuming the existence
-  of global vectors.
 */
-class AddLineFileInfoToProcPtrTypes : public PassT<Symbol*> {
+class AddLineFileInfoToProcPtrTypes : public AdjustProcPtrTypes {
  public:
-  bool shouldProcess(Symbol* sym) override;
-  void process(Symbol* sym) override;
+  FunctionType* computeAdjustedType(FunctionType* ft) const override;
 };
 
 /**
@@ -301,6 +307,11 @@ class InsertLineNumbers : public PassTU<FnSymbol*, CallExpr*> {
   std::unordered_set<CallExpr*> fixedCalls;
 
   static ValueMappedTable<std::string> gFilenameTable;
+};
+
+class StreamlineProcPtrTypesForCodegen : public AdjustProcPtrTypes {
+ public:
+  FunctionType* computeAdjustedType(FunctionType* ft) const override;
 };
 
 #endif

@@ -598,6 +598,50 @@ bool isRelationalOperator(CallExpr* call) {
 
 }
 
+static constexpr int DEF = 1;
+static constexpr int USE = 2;
+static constexpr int DEF_USE = 3;
+
+static int computeDefAndOrUseDirectCall(FnSymbol* fn, SymExpr* se) {
+  auto ret = USE;
+
+  ArgSymbol* arg = actual_to_formal(se);
+  if (arg->intent == INTENT_REF ||
+      arg->intent == INTENT_INOUT ||
+      (fn->name == astrSassign &&
+       fn->getFormal(1) == arg &&
+       isRecord(arg->type))) {
+    ret = DEF_USE;
+  } else if (arg->intent == INTENT_OUT) {
+    ret = DEF;
+  }
+
+  return ret;
+}
+
+static int computeDefAndOrUseFromFunctionType(CallExpr* call, SymExpr* se) {
+  auto fn = call->resolvedFunction();
+  auto ft = call->functionType();
+  INT_ASSERT(ft);
+
+  auto ret = USE;
+
+  int zeroBasedFormalIdx = -1;
+  if (auto formal = ft->formalByOrdinal(se, &zeroBasedFormalIdx)) {
+    if (fn && fn->name == astrSassign && zeroBasedFormalIdx == 0 &&
+        isRecord(formal->type())) {
+      // BHARSH TODO: get rid of this 'isRecord' special case
+      ret = DEF_USE;
+    } else if (formal->intent() == INTENT_INOUT ||
+               formal->intent() == INTENT_REF) {
+      ret = DEF_USE;
+    } else if (formal->intent() == INTENT_OUT) {
+      ret = DEF;
+    }
+  }
+
+  return ret;
+}
 
 //
 // TODO this should be fixed to include PRIM_SET_MEMBER
@@ -616,10 +660,6 @@ bool isRelationalOperator(CallExpr* call) {
 // normalize, a DefExpr itself does not set a variable, and so it does not
 // count as a Def.
 int isDefAndOrUse(SymExpr* se) {
-  const int DEF = 1;
-  const int USE = 2;
-  const int DEF_USE = 3;
-
   if (CallExpr* call = toCallExpr(se->parentExpr)) {
     bool isFirstActual = (call->numActuals() && call->get(1) == se);
     auto fn = call->resolvedFunction();
@@ -669,46 +709,20 @@ int isDefAndOrUse(SymExpr* se) {
       else if (arg->intent == INTENT_OUT)
         return DEF;
 
-    } else if (fn || call->isIndirectCall()) {
-      auto ft = call->functionType();
-      INT_ASSERT(ft);
-
-      auto ret = USE;
-
-      int zeroBasedFormalIdx = -1;
-      if (auto formal = ft->formalByOrdinal(se, &zeroBasedFormalIdx)) {
-        if (fn && fn->name == astrSassign && zeroBasedFormalIdx == 0 &&
-            isRecord(formal->type())) {
-          // BHARSH TODO: get rid of this 'isRecord' special case
-          ret = DEF_USE;
-        } else if (formal->intent() == INTENT_INOUT ||
-                   formal->intent() == INTENT_REF) {
-          ret = DEF_USE;
-        } else if (formal->intent() == INTENT_OUT) {
-          ret = DEF;
-        }
-      }
+    } else if ((fn && fn->isUsedAsValue()) || call->isIndirectCall()) {
+      auto ret = computeDefAndOrUseFromFunctionType(call, se);
 
       if (fVerify && fn) {
-        auto check = USE;
-
         // This is the old code, but we keep it around in a '--verify' branch
         // to make sure that we're computing the correct result above.
-        ArgSymbol* arg = actual_to_formal(se);
-        if (arg->intent == INTENT_REF ||
-            arg->intent == INTENT_INOUT ||
-            (fn->name == astrSassign &&
-             fn->getFormal(1) == arg &&
-             isRecord(arg->type))) {
-          check = DEF_USE;
-        } else if (arg->intent == INTENT_OUT) {
-          check = DEF;
-        }
-
+        auto check = computeDefAndOrUseDirectCall(fn, se);
         INT_ASSERT(check == ret);
       }
 
       return ret;
+
+    } else if (fn) {
+      return computeDefAndOrUseDirectCall(fn, se);
     }
   }
 

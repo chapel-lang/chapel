@@ -1860,7 +1860,7 @@ static void codegen_header(std::set<const char*> & cnames,
 
     // Collect function types to generate. The vast majority are discarded.
     // TODO (dlongnecke): Ensure that this flag is not stale...
-    bool isProcPtrRoot = fn->hasFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION);
+    bool isProcPtrRoot = fn->isUsedAsValue();
     auto ft = toFunctionType(fn->type);
 
     INT_ASSERT(!isProcPtrRoot || ft);
@@ -2743,6 +2743,9 @@ static void codegenPartOne() {
   adjustArgSymbolTypesForIntent();
 
   convertToRefTypes();
+
+  PassManager pm;
+  runPassOverAllSymbols(pm, StreamlineProcPtrTypesForCodegen());
 
 #if defined(HAVE_LLVM) && HAVE_LLVM_VER <= 150
   // this is not needed in newer LLVM versions

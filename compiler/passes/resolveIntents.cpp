@@ -361,16 +361,22 @@ IntentTag concreteIntentForArg(ArgSymbol* arg) {
 
 }
 
+static bool shouldSkipArgType(Type* t) {
+  return t == dtMethodToken       ||
+         t == dtTypeDefaultToken  ||
+         t == dtNothing           ||
+         t == dtUnknown;
+}
+
+static bool shouldSkipArg(ArgSymbol* arg) {
+  return shouldSkipArgType(arg->type)     ||
+         arg->hasFlag(FLAG_TYPE_VARIABLE) ||
+         arg->hasFlag(FLAG_PARAM);
+}
+
 void resolveArgIntent(ArgSymbol* arg) {
   if (!resolved) {
-    if (arg->type == dtMethodToken ||
-        arg->type == dtTypeDefaultToken ||
-        arg->type == dtNothing ||
-        arg->type == dtUnknown ||
-        arg->hasFlag(FLAG_TYPE_VARIABLE) ||
-        arg->hasFlag(FLAG_PARAM)) {
-      return; // Leave these alone during resolution.
-    }
+    if (shouldSkipArg(arg)) return;
   }
 
   IntentTag intent = concreteIntentForArg(arg);
@@ -430,6 +436,49 @@ static void resolveVarIntent(VarSymbol* sym) {
   }
 }
 
+static FunctionType* computeConcreteIntentsForFunctionType(FunctionType* ft) {
+  FunctionType* ret = ft;
+  std::vector<FunctionType::Formal> newFormals;
+  bool changed = false;
+
+  for (auto& formal : ft->formals()) {
+    if (shouldSkipArgType(formal.type())) continue;
+
+    auto newIntent = concreteIntent(formal.intent(), formal.type());
+    auto newQual = QualifiedType::qualifierForArgIntent(newIntent);
+
+    if (newIntent != formal.intent() || newQual != formal.qual()) {
+      FunctionType::Formal newFormal(newQual, formal.type(), newIntent,
+                                     formal.name());
+      newFormals.push_back(std::move(newFormal));
+      changed = true;
+
+    } else {
+      newFormals.push_back(formal);
+    }
+  }
+
+  if (changed) {
+    SET_LINENO(ft->symbol);
+    ret = FunctionType::get(ft->kind(), ft->width(), ft->linkage(),
+                            std::move(newFormals),
+                            ft->returnIntent(),
+                            ft->returnType(),
+                            ft->throws());
+  }
+
+  return ret;
+}
+
+// NOTE (dlongnecke): This is not a new-style compiler pass but that is OK.
+// When the typed converter comes online we'll be getting rid of this code.
+static Type* adjustFunctionTypeToHaveConcreteIntents(Type* t) {
+  if (auto ft = toFunctionType(t)) {
+    return computeConcreteIntentsForFunctionType(ft);
+  }
+  return t;
+}
+
 void resolveIntents() {
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
     if (arg->defPoint->sym->hasFlag(FLAG_RESOLVED_EARLY))
@@ -445,6 +494,9 @@ void resolveIntents() {
   forv_Vec(ShadowVarSymbol, sym, gShadowVarSymbols) {
     resolveVarIntent(sym);
   }
+
+  // Also adjust the intents for function types.
+  adjustAllSymbolTypes(adjustFunctionTypeToHaveConcreteIntents);
 
   intentsResolved = true;
 }

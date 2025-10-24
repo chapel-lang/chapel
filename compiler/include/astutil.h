@@ -108,8 +108,11 @@ using AdjustTypeFn = std::function<Type*(Type*)>;
 void adjustSymbolType(Symbol* sym, AdjustTypeFn adjustTypeFn,
                       bool preserveRefLevels=true);
 
-// Given 'adjustTypeFn', walk all symbols and re-assign the type of symbol if
-// the type produced by 'adjustTypeFn' differs from the symbol's current type.
+// Given 'adjustTypeFn', walk all symbols and re-assign the type of the symbol
+// if the type produced by 'adjustTypeFn' differs from the symbol's current
+// type. If the symbol is a 'TypeSymbol' and the adjusted type differs, this
+// function will adjust all uses of the 'TypeSymbol' to point to the new type
+// instead of setting 'sym->type'.
 void adjustAllSymbolTypes(AdjustTypeFn adjustTypeFn,
                           bool preserveRefLevels=true);
 

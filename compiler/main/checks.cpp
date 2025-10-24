@@ -562,7 +562,7 @@ static void check_afterResolveIntents()
   if (fVerify) {
     for_alive_in_Vec(DefExpr, def, gDefExprs) {
       Symbol* sym = def->sym;
-      // Only look at Var or Arg symbols
+      // look at Var or Arg symbols
       if (isLcnSymbol(sym)) {
         QualifiedType qual = sym->qualType();
         // MPF TODO: This should not be necessary
@@ -576,6 +576,15 @@ static void check_afterResolveIntents()
 
         if (qual.getQual() == QUAL_UNKNOWN) {
           INT_FATAL("Symbol should not have unknown qualifier: %s (%d)", sym->cname, sym->id);
+        }
+
+      } else if (auto ts = toTypeSymbol(sym)) {
+        auto ft = toFunctionType(ts->type);
+        if (ts->inTree() && ft) {
+          for (auto& formal : ft->formals()) {
+            INT_ASSERT(formal.intent() != INTENT_BLANK);
+            INT_ASSERT(formal.qual() != QUAL_UNKNOWN);
+          }
         }
       }
     }
