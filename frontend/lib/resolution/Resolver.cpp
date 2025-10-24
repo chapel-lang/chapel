@@ -3032,6 +3032,10 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
     ci.numActuals() == 1 &&
     (ci.actual(0).type().isType() || ci.actual(0).type().isParam());
 
+  allowGenericTypes |=
+    (ci.name() == USTR("isSubtype") || ci.name() == USTR("isProperSubtype") ||
+     ci.name() == USTR("isCoercible")) && ci.numActuals() == 2;
+
   int actualIdx = 0;
   for (const auto& actual : ci.actuals()) {
     ID toId; // does the actual refer directly to a particular variable?
