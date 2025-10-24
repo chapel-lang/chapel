@@ -10,8 +10,6 @@ class D: C {
   }
 }
 
-var bc: borrowed C? = (new owned C()).borrow();
-bc!.f(); // OK. bc initializer will live to end of scope
-
+var bc: borrowed C?;
 bc = (new owned D()).borrow();
 bc!.f(); // Not OK. bc is nil. It was freed at the end of the previous statement

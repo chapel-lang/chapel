@@ -1,0 +1,3 @@
+borrowTempVar.chpl:13: warning: Class created by nested 'new' will be deinitialized before the borrow can be used. Please update this code to use a separate variable to store the new class
+borrowTempVar.chpl:13: error: Scoped variable would outlive the value it is set to
+borrowTempVar.chpl:13: error: Scoped variable bc reachable after lifetime ends
