@@ -159,7 +159,7 @@ void FindSplitInits::handleInitOrAssign(ID varId,
 
       // spec says: if the declared type is generic, then all assignment statements
       // must contain an initializer of the same type.
-      // So, if the decalred type is generic, we use the rhs type, which
+      // So, if the declared type is generic, we use the rhs type, which
       // will later be compared against all other rhs types.
       if (useDeclType) {
         auto g = getTypeGenericity(context, qt.type());
