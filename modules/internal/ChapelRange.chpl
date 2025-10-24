@@ -2482,6 +2482,14 @@ private proc isBCPindex(type t) param do
     //
     var emptyIntersection: bool;
 
+    // Euclid's algorithm is written only for int32 or int64, and written using
+    // generics. Implicit upcasts from smaller types are deprecated. Instead,
+    // explicitly upcast them using these helper procs.
+    inline proc upcastIfNeeded(x: int(?w)) do
+      return if w < 32 then x:int(32) else x;
+    inline proc upcastIfNeeded(x: uint(?w)) do
+      return if w < 32 then x:uint(32) else x;
+
     proc myMin(x: int, y: uint) {
       if (y > max(int)) {
         return x;
@@ -2575,7 +2583,9 @@ private proc isBCPindex(type t) param do
       if st1 == st2 {
         gcd = st1;
       } else {
-        (gcd, x) = chpl__extendedEuclid(st1, st2):(2*strType);
+        (gcd, x) =
+            chpl__extendedEuclid(upcastIfNeeded(st1),
+                                 upcastIfNeeded(st2)):(2*strType);
         newStride = st1 / gcd * st2;  // divide first to avoid overflow
         newAbsStride = newStride;
       }

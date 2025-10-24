@@ -4890,14 +4890,196 @@ static bool extractParamIndexingValueForTuple(const QualifiedType& qt,
   return false;
 }
 
+static bool resolveSpecialEnumCast(Context* context,
+                                   const AstNode* astForErr,
+                                   const QualifiedType& srcQt,
+                                   const QualifiedType& dstQt,
+                                   QualifiedType& exprTypeOut) {
+  auto srcTy = srcQt.type();
+  auto dstTy = dstQt.type();
+
+  auto srcQtEnumType = srcTy->toEnumType();
+  auto dstQtEnumType = dstTy->toEnumType();
+
+  if (srcQtEnumType && (dstTy->isStringType() || dstTy->isBytesType())) {
+    std::ostringstream oss;
+    srcQt.param()->stringify(oss, chpl::StringifyKind::CHPL_SYNTAX);
+    exprTypeOut =
+      dstTy->isStringType()
+        ? QualifiedType::makeParamString(context, oss.str())
+        : QualifiedType::makeParamBytes(context, oss.str());
+    return true;
+  } else if (dstQtEnumType && (srcTy->isStringType() || srcTy->isBytesType())) {
+    CHPL_ASSERT(srcQt.param()->isStringParam());
+
+    auto enumName = srcQt.param()->toStringParam()->value();
+    auto path = UniqueString();
+    auto lastDot = findLastDot(enumName.c_str());
+
+    if (lastDot != -1) {
+      path = UniqueString::get(context, enumName.c_str(),lastDot);
+      enumName = UniqueString::get(context, enumName.c_str() + lastDot + 1);
+    }
+
+    if (!dstQtEnumType->id().symbolPath().endsWith(path)) {
+      context->error(astForErr,
+                     "invalid qualified name for enum element '%s' in cast to %s",
+                     enumName.c_str(), dstQtEnumType->id().symbolPath().c_str());
+      exprTypeOut = QualifiedType(QualifiedType::UNKNOWN,
+                                  ErroneousType::get(context));
+    } else {
+      exprTypeOut = typeForEnumElement(context, dstQtEnumType,
+                                       enumName,
+                                       astForErr);
+    }
+    return true;
+  }
+
+  if (srcQtEnumType && srcQtEnumType->isAbstract()) {
+    exprTypeOut = CHPL_TYPE_ERROR(context, EnumAbstract, astForErr, "from", srcQtEnumType, dstTy);
+    return true;
+  } else if (dstQtEnumType && dstQtEnumType->isAbstract()) {
+    exprTypeOut = CHPL_TYPE_ERROR(context, EnumAbstract, astForErr, "to", dstQtEnumType, srcTy);
+    return true;
+  } else if (srcQtEnumType && dstTy->toNothingType()) {
+    auto fromName = tagToString(srcTy->tag());
+    context->error(astForErr, "illegal cast from %s to nothing", fromName);
+    exprTypeOut = QualifiedType(QualifiedType::UNKNOWN,
+                                ErroneousType::get(context));
+    return true;
+  }
+
+  if (Param::castAllowed(context, srcQt, dstQt)) {
+    exprTypeOut = Param::fold(context, astForErr,
+                              uast::PrimitiveTag::PRIM_CAST, srcQt, dstQt);
+    return true;
+  }
+
+  // fall through, param cast isn't possible but maybe there's a runtime
+  // cast that normal function resolution can handle.
+  return false;
+}
+
+static bool resolveSpecialClassCast(Context* context,
+                                    const AstNode* astForErr,
+                                    const QualifiedType& srcQt,
+                                    const QualifiedType& dstQt,
+                                    QualifiedType& exprTypeOut) {
+  // cast (borrowed class) : unmanaged,
+  // and (unmanaged class) : borrowed
+  auto srcTy = srcQt.type();
+  auto dstTy = dstQt.type();
+  auto srcClass = srcTy->toClassType();
+  auto dstClass = dstTy->toClassType();
+  bool isValidDst = dstClass->manageableType()->isAnyClassType() &&
+                    (dstClass->decorator().isUnmanaged() ||
+                     dstClass->decorator().isBorrowed());
+  bool isValidSrc = srcClass->decorator().isBorrowed() ||
+                    srcClass->decorator().isUnmanaged();
+  if (isValidDst && isValidSrc) {
+    auto management = ClassTypeDecorator::removeNilableFromDecorator(dstClass->decorator().val());
+    auto decorator = ClassTypeDecorator(management);
+    decorator = decorator.copyNilabilityFrom(srcClass->decorator());
+    auto outTy = ClassType::get(context, srcClass->manageableType(),
+                                nullptr, decorator);
+    exprTypeOut = QualifiedType(srcQt.kind(), outTy, srcQt.param());
+    return true;
+  }
+
+  return false;
+}
+
+static bool resolveSpecialTupleCast(Context* context,
+                                    const AstNode* astForErr,
+                                    const QualifiedType& outerSrcQtForErr,
+                                    const QualifiedType& outerDstQtForErr,
+                                    const QualifiedType& srcQt,
+                                    const QualifiedType& dstQt,
+                                    const CallScopeInfo& inScopes,
+                                    QualifiedType& exprTypeOut) {
+  auto srcTy = srcQt.type();
+  auto dstTy = dstQt.type();
+  auto srcTuple = srcTy->toTupleType();
+  auto dstTuple = dstTy->toTupleType();
+
+  CHPL_ASSERT(srcTuple && dstTuple);
+  exprTypeOut = QualifiedType(srcQt.kind(), dstQt.type());
+
+  if (srcTuple->numElements() != dstTuple->numElements()) {
+    exprTypeOut = CHPL_TYPE_ERROR(context, TupleCastSizeMismatch, astForErr,
+                                  srcTuple, dstTuple);
+    return true;
+  }
+
+  // For the production implementation, see tuples.cpp. There are 5 broad
+  // cases to consider.
+  for (int i = 0; i < srcTuple->numElements(); i++) {
+    auto& srcEltType = srcTuple->elementType(i);
+    auto& dstEltType = dstTuple->elementType(i);
+
+    if (srcEltType.type() == dstEltType.type()) {
+      // TODO: we might perform a copy here if casting to not-a-reference.
+      continue;
+    }
+
+    if (srcEltType.type()->isTupleType() && dstEltType.type()->isTupleType()) {
+      // production directly inserts recursive coercions. Match that,
+      // and don't perform additional call resolution.
+      QualifiedType nestedExprTypeOut;
+      bool result = resolveSpecialTupleCast(context, astForErr,
+                                            outerSrcQtForErr,
+                                            outerDstQtForErr,
+                                            srcEltType, dstEltType,
+                                            inScopes,
+                                            nestedExprTypeOut);
+      CHPL_ASSERT(result);
+
+      if (nestedExprTypeOut.isUnknownOrErroneous() &&
+          !exprTypeOut.isUnknownOrErroneous()) {
+        exprTypeOut = nestedExprTypeOut;
+      }
+      continue;
+    }
+
+    // set up cast call
+    std::vector<CallInfoActual> actuals;
+    auto dstAsType = QualifiedType(QualifiedType::TYPE, dstEltType.type());
+    actuals.push_back(CallInfoActual(srcEltType, UniqueString()));
+    actuals.push_back(CallInfoActual(dstAsType, UniqueString()));
+    auto ci = CallInfo(USTR(":"),
+                       QualifiedType(),
+                       /* isMethodCall */ false,
+                       /* hasQuestionArg */ false,
+                       /* isParenless */ false,
+                       std::move(actuals));
+
+    auto rc = createDummyRC(context);
+    auto cr = resolveGeneratedCall(&rc, astForErr, ci, inScopes);
+
+    if (cr.mostSpecific().isEmpty()) {
+      exprTypeOut = CHPL_TYPE_ERROR(context, InvalidTupleCast, astForErr,
+                                    outerSrcQtForErr.type()->toTupleType(),
+                                    outerDstQtForErr.type()->toTupleType(),
+                                    srcEltType.type(),
+                                    dstEltType.type());
+      continue;
+    }
+  }
+
+  return true;
+}
+
 // Resolving calls for certain compiler-supported patterns
 // without requiring module implementations exist at all.
-static bool resolveFnCallSpecial(Context* context,
+static bool resolveFnCallSpecial(ResolutionContext* rc,
                                  const AstNode* astForErr,
                                  const CallInfo& ci,
+                                 const CallScopeInfo& inScopes,
                                  QualifiedType& exprTypeOut) {
   // TODO: .borrow()
   // TODO: chpl__coerceCopy
+
+  auto context = rc->context();
 
   // Sometimes, actual types can be unknown since we are checking for 'out'
   // intent. No special functions here use the 'out' intent, so in this case,
@@ -4932,65 +5114,9 @@ static bool resolveFnCallSpecial(Context* context,
     bool isParamTypeCast = srcQt.kind() == QualifiedType::PARAM && isDstType;
 
     if (isParamTypeCast) {
-        auto srcQtEnumType = srcTy->toEnumType();
-        auto dstQtEnumType = dstTy->toEnumType();
-
-        if (srcQtEnumType && (dstTy->isStringType() || dstTy->isBytesType())) {
-          std::ostringstream oss;
-          srcQt.param()->stringify(oss, chpl::StringifyKind::CHPL_SYNTAX);
-          exprTypeOut =
-            dstTy->isStringType()
-              ? QualifiedType::makeParamString(context, oss.str())
-              : QualifiedType::makeParamBytes(context, oss.str());
-          return true;
-        } else if (dstQtEnumType && (srcTy->isStringType() || srcTy->isBytesType())) {
-          CHPL_ASSERT(srcQt.param()->isStringParam());
-
-          auto enumName = srcQt.param()->toStringParam()->value();
-          auto path = UniqueString();
-          auto lastDot = findLastDot(enumName.c_str());
-
-          if (lastDot != -1) {
-            path = UniqueString::get(context, enumName.c_str(),lastDot);
-            enumName = UniqueString::get(context, enumName.c_str() + lastDot + 1);
-          }
-
-          if (!dstQtEnumType->id().symbolPath().endsWith(path)) {
-            context->error(astForErr,
-                           "invalid qualified name for enum element '%s' in cast to %s",
-                           enumName.c_str(), dstQtEnumType->id().symbolPath().c_str());
-            exprTypeOut = QualifiedType(QualifiedType::UNKNOWN,
-                                        ErroneousType::get(context));
-          } else {
-            exprTypeOut = typeForEnumElement(context, dstQtEnumType,
-                                             enumName,
-                                             astForErr);
-          }
-          return true;
-        }
-
-        if (srcQtEnumType && srcQtEnumType->isAbstract()) {
-          exprTypeOut = CHPL_TYPE_ERROR(context, EnumAbstract, astForErr, "from", srcQtEnumType, dstTy);
-          return true;
-        } else if (dstQtEnumType && dstQtEnumType->isAbstract()) {
-          exprTypeOut = CHPL_TYPE_ERROR(context, EnumAbstract, astForErr, "to", dstQtEnumType, srcTy);
-          return true;
-        } else if (srcQtEnumType && dstTy->toNothingType()) {
-          auto fromName = tagToString(srcTy->tag());
-          context->error(astForErr, "illegal cast from %s to nothing", fromName);
-          exprTypeOut = QualifiedType(QualifiedType::UNKNOWN,
-                                      ErroneousType::get(context));
-          return true;
-        }
-
-        if (Param::castAllowed(context, srcQt, dstQt)) {
-          exprTypeOut = Param::fold(context, astForErr,
-                                    uast::PrimitiveTag::PRIM_CAST, srcQt, dstQt);
-          return true;
-        }
-
-        // fall through, param cast isn't possible but maybe there's a runtime
-        // cast that normal function resolution can handle.
+      if (resolveSpecialEnumCast(context, astForErr, srcQt, dstQt,exprTypeOut)) {
+        return true;
+      }
     } else if (srcQt.isType() && dstQt.hasTypePtr() && dstTy->isStringType()) {
       // handle casting a type name to a string
       std::ostringstream oss;
@@ -4998,22 +5124,11 @@ static bool resolveFnCallSpecial(Context* context,
       exprTypeOut = QualifiedType::makeParamString(context, oss.str());
       return true;
     } else if (srcTy->isClassType() && dstTy->isClassType()) {
-      // cast (borrowed class) : unmanaged,
-      // and (unmanaged class) : borrowed
-      auto srcClass = srcTy->toClassType();
-      auto dstClass = dstTy->toClassType();
-      bool isValidDst = dstClass->manageableType()->isAnyClassType() &&
-                        (dstClass->decorator().isUnmanaged() ||
-                         dstClass->decorator().isBorrowed());
-      bool isValidSrc = srcClass->decorator().isBorrowed() ||
-                        srcClass->decorator().isUnmanaged();
-      if (isValidDst && isValidSrc) {
-        auto management = ClassTypeDecorator::removeNilableFromDecorator(dstClass->decorator().val());
-        auto decorator = ClassTypeDecorator(management);
-        decorator = decorator.copyNilabilityFrom(srcClass->decorator());
-        auto outTy = ClassType::get(context, srcClass->manageableType(),
-                                    nullptr, decorator);
-        exprTypeOut = QualifiedType(srcQt.kind(), outTy, srcQt.param());
+      if (resolveSpecialClassCast(context, astForErr, srcQt, dstQt, exprTypeOut)) {
+        return true;
+      }
+    } else if (srcTy->isTupleType() && dstTy->isTupleType()) {
+      if (resolveSpecialTupleCast(context, astForErr, srcQt, dstQt, srcQt, dstQt, inScopes, exprTypeOut)) {
         return true;
       }
     } else if (!srcQt.isParam() &&
@@ -5595,8 +5710,9 @@ struct LastResortCandidateGroups {
 };
 
 // Returns candidates with last resort candidates removed and saved in a
-// separate list.
-static void filterCandidatesLastResort(
+// separate list. Also removes candidates that are not to be considered
+// due to various pragmas.
+static void filterCandidatesAndSeparateLastResort(
     Context* context, const CandidatesAndForwardingInfo& list, CandidatesAndForwardingInfo& result,
     CandidatesAndForwardingInfo& lastResort) {
   for (auto& candidate : list) {
@@ -5604,6 +5720,20 @@ static void filterCandidatesLastResort(
         parsing::idToAttributeGroup(context, candidate->untyped()->id());
     if (attrs && attrs->hasPragma(PRAGMA_LAST_RESORT)) {
       lastResort.addCandidate(candidate);
+    } else if (attrs && attrs->hasPragma(PRAGMA_DOCS_ONLY)) {
+      // docs-only functions are not candidates...
+      // Except, production does some weird manipulation in which it rewrites
+      // 'isSubtype' and similar functions in the compiler, and marks them
+      // docs only in the modules. We don't do that, because why would we?
+      //
+      // TODO (Daniel): figure out if we can make the production not be weird about this.
+      auto candidateName = candidate->untyped()->name();
+      if (parsing::idIsInBundledModule(context, candidate->id()) &&
+          (candidateName == "isSubtype" ||
+           candidateName == "isCoercible" ||
+           candidateName == "isProperSubtype")) {
+        result.addCandidate(candidate);
+      }
     } else {
       result.addCandidate(candidate);
     }
@@ -5632,7 +5762,7 @@ static void filterGatheredCandidates(ResolutionContext* rc,
       rejected);
 
   // filter out last resort candidates
-  filterCandidatesLastResort(rc->context(), candidatesWithInstantiations,
+  filterCandidatesAndSeparateLastResort(rc->context(), candidatesWithInstantiations,
       into, lastResort);
 }
 
@@ -5946,7 +6076,7 @@ static void doGatherCandidates(ResolutionContext* rc,
 
   // filter out last resort candidates
   CandidatesAndForwardingInfo lrcGroup;
-  filterCandidatesLastResort(context, candidatesWithInstantiations,
+  filterCandidatesAndSeparateLastResort(context, candidatesWithInstantiations,
                              outCandidates, lrcGroup);
   if (usePoiScope) {
     outLrcGroups.addPoiCandidates(std::move(lrcGroup));
@@ -6572,7 +6702,7 @@ CallResolutionResult resolveCall(ResolutionContext* rc,
     if (resolvePostfixNilableAppliedToNew(context, call, ci, tmpRetType)) {
       return CallResolutionResult(std::move(tmpRetType));
     }
-    if (resolveFnCallSpecial(context, call, ci, tmpRetType)) {
+    if (resolveFnCallSpecial(rc, call, ci, inScopes, tmpRetType)) {
       return CallResolutionResult(std::move(tmpRetType));
     }
 
@@ -6644,7 +6774,7 @@ CallResolutionResult resolveGeneratedCall(ResolutionContext* rc,
   QualifiedType tmpRetType;
 
   // see if the call is handled directly by the compiler
-  if (resolveFnCallSpecial(rc->context(), astContext, ci, tmpRetType)) {
+  if (resolveFnCallSpecial(rc, astContext, ci, inScopes, tmpRetType)) {
     return CallResolutionResult(std::move(tmpRetType));
   }
 

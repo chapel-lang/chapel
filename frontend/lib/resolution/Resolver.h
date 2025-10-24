@@ -540,6 +540,7 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
                                        ResolvedExpression* r,
                                        const uast::AstNode* astForContext,
                                        const CallResolutionResult& c,
+                                       const CallInfo* ci,
                                        optional<ActionInfo> associatedActionInfo = {});
 
     // Same as noteResultWithoutError, but also issues errors.

@@ -1241,6 +1241,19 @@ void ErrorInvalidSuper::write(ErrorWriterBase& wr) const {
   }
 }
 
+void ErrorInvalidTupleCast::write(ErrorWriterBase& wr) const {
+  auto astForErr = std::get<0>(info_);
+  auto fromOuterTupleType = std::get<1>(info_);
+  auto toOuterTupleType = std::get<2>(info_);
+  auto fromType = std::get<3>(info_);
+  auto toType = std::get<4>(info_);
+
+  wr.heading(kind_, type_, astForErr,
+             "invalid cast from tuple '", fromOuterTupleType, "' to tuple '", toOuterTupleType, "'.");
+  wr.codeForLocation(astForErr);
+  wr.note(astForErr, "specifically, cannot cast element type '", fromType, "' to '", toType, "'.");
+}
+
 void ErrorIteratorsInOtherScopes::write(ErrorWriterBase& wr) const {
   auto node = std::get<const uast::AstNode*>(info_);
   auto call = node->toCall();
@@ -2252,6 +2265,22 @@ void ErrorTupleIndexOOB::write(ErrorWriterBase& wr) const {
   wr.code(call, { call });
   wr.message("the index value is '", index, "' but the valid indices for this",
              " tuple are in the range 0..", type->numElements()-1, " (inclusive)");
+}
+
+void ErrorTupleCastSizeMismatch::write(ErrorWriterBase& wr) const {
+  auto node = std::get<const uast::AstNode*>(info_);
+  auto fromType = std::get<1>(info_);
+  auto toType = std::get<2>(info_);
+
+  wr.heading(kind_, type_, node,
+             "cannot cast from tuple type '", fromType,
+             "' to tuple type '", toType,
+             "' due to size mismatch.");
+  wr.codeForLocation(node);
+  wr.note(node, "the source tuple '", fromType,
+          "' has ", fromType->numElements(), " elements.");
+  wr.note(node, "however, the target tuple '", toType,
+          "' has ", toType->numElements(), " elements.");
 }
 
 void ErrorUnknownEnumElem::write(ErrorWriterBase& wr) const {

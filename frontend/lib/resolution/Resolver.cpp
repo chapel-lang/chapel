@@ -2247,7 +2247,13 @@ gatherUserDiagnostics(ResolutionContext* rc,
     if (!msc) continue;
 
     // compiler-generated fns don't always have ASTs, so we can't resolve them.
-    if (msc.fn()->isCompilerGenerated()) continue;
+    // If it has a fabricated ID, then we generated an AST body, so don't skip it.
+    if (msc.fn()->isCompilerGenerated()) {
+      auto& id = msc.fn()->id();
+      if (!id.isFabricatedId() || id.fabricatedIdKind() != ID::Generated) {
+        continue;
+      }
+    }
 
     // shouldn't happen, but it currently does in some cases.
     if (msc.fn()->needsInstantiation()) continue;
@@ -2375,11 +2381,34 @@ void Resolver::CallResultWrapper::issueBasicError() {
   }
 }
 
+static void markResultWithAssociatedAction(ResolvedExpression* r,
+                                           const CallResolutionResult& result,
+                                           const Resolver::ActionInfo& actionInfo) {
+  // save candidates as associated functions
+  if (result.mostSpecific().isEmpty() && r) {
+    // Store an associated action that did not have a function.
+    // E.g., 'COMPARE' for a when-statement condition that is param-true
+    r->addAssociatedAction(actionInfo.action, nullptr,
+                           actionInfo.id, actionInfo.type);
+  } else {
+    bool seen = false;
+    for (auto& sig : result.mostSpecific()) {
+      if (sig && r) {
+        CHPL_ASSERT(!seen);
+        seen = true;
+        r->addAssociatedAction(actionInfo.action, sig.fn(),
+                               actionInfo.id, actionInfo.type);
+      }
+    }
+  }
+}
+
 bool Resolver::CallResultWrapper::noteResultWithoutError(
     Resolver& resolver,
     ResolvedExpression* r,
     const uast::AstNode* astForContext,
     const CallResolutionResult& result,
+    const CallInfo* ci,
     optional<ActionInfo> actionInfo) {
   bool needsErrors = false;
   bool markErroneous = false;
@@ -2422,24 +2451,15 @@ bool Resolver::CallResultWrapper::noteResultWithoutError(
     // issued its own error, so we shouldn't emit a general error.
     return !result.speciallyHandled() || needsErrors;
   } else {
+    // mark compiler-geneated tuple casts with an associated action
+    if (result.speciallyHandled() && ci &&
+        ci->name() == USTR(":") &&
+        ci->numActuals() == 2 && ci->actual(1).type().type()->isTupleType()) {
+      markResultWithAssociatedAction(r, result, { AssociatedAction::TUPLE_CAST, astForContext->id() });
+    }
+
     if (actionInfo) {
-      // save candidates as associated functions
-      if (result.mostSpecific().isEmpty() && r) {
-        // Store an associated action that did not have a function.
-        // E.g., 'COMPARE' for a when-statement condition that is param-true
-        r->addAssociatedAction(actionInfo->action, nullptr,
-                               actionInfo->id, actionInfo->type);
-      } else {
-        bool seen = false;
-        for (auto& sig : result.mostSpecific()) {
-          if (sig && r) {
-            CHPL_ASSERT(!seen);
-            seen = true;
-            r->addAssociatedAction(actionInfo->action, sig.fn(),
-                                   actionInfo->id, actionInfo->type);
-          }
-        }
-      }
+      markResultWithAssociatedAction(r, result, *actionInfo);
     } else if (r) {
       r->setPoiScope(result.poiInfo().poiScope());
       r->setType(result.exprType());
@@ -2455,7 +2475,7 @@ bool Resolver::CallResultWrapper::noteResultWithoutError(
 
 bool Resolver::CallResultWrapper::noteResultWithoutError(ResolvedExpression* r,
                                                           optional<ActionInfo> actionInfo) {
-  return noteResultWithoutError(*parent, r, astForContext, result, std::move(actionInfo));
+  return noteResultWithoutError(*parent, r, astForContext, result, ci, std::move(actionInfo));
 }
 
 void Resolver::CallResultWrapper::noteResult(ResolvedExpression* r,
@@ -6378,7 +6398,7 @@ static TheseResolutionResult resolveTheseMethod(Resolver& rv,
   auto tr = resolveTheseCall(rv.rc, iterandAstCtx, iterandType, iterKind, followThisType, inScopes);
   if (auto cr = tr.callResult()) {
     Resolver::CallResultWrapper::noteResultWithoutError(
-        rv, &iterandRe, iterandAstCtx, *cr,
+        rv, &iterandRe, iterandAstCtx, *cr, /* ci */ nullptr,
         { { AssociatedAction::ITERATE, iterandAstCtx->id() } });
   }
 

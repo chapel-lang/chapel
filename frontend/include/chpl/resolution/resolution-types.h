@@ -2465,6 +2465,7 @@ class AssociatedAction {
     RUNTIME_TYPE,     // create runtime type
     ENTER_CONTEXT,
     EXIT_CONTEXT,
+    TUPLE_CAST,
   };
 
  private:
