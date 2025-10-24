@@ -15,5 +15,7 @@ export CHPL_RT_LOCALES_PER_NODE=2
 export CHPL_NIGHTLY_TEST_DIRS="gpu/native/multiLocale"
 export CHPL_GPU=nvidia
 
+module list
+
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="gpu-ex-cuda-12.colocales"
 $UTIL_CRON_DIR/nightly -cron ${nightly_args}

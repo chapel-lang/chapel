@@ -17,4 +17,6 @@ export CHPL_LAUNCHER_PARTITION=bardpeak
 # ideally, we should run the whole suite
 export CHPL_NIGHTLY_TEST_DIRS="release/examples/ runtime/configMatters/ multilocale/"
 
+module list
+
 $UTIL_CRON_DIR/nightly -cron -blog ${nightly_args}

@@ -19,6 +19,8 @@ export CHPL_RT_COMM_OFI_EXPECTED_PROVIDER="cxi"
 export CHPL_RT_MAX_HEAP_SIZE="50%"
 export CHPL_LAUNCHER_PARTITION=bardpeak
 
+module list
+
 nightly_args="${nightly_args} -no-buildcheck"
 perf_args="-performance -perflabel ml- -numtrials 1"
 perf_hpe_cray_ex_args="-startdate 09/10/24"

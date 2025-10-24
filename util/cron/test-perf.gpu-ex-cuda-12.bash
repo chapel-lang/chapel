@@ -19,6 +19,8 @@ source $UTIL_CRON_DIR/common-native-gpu-perf.bash
 # CONFIG_NAME
 source $UTIL_CRON_DIR/common-perf.bash
 
+module list
+
 nightly_args="${nightly_args} -startdate 04/04/24"
 
 $UTIL_CRON_DIR/nightly -cron ${nightly_args}

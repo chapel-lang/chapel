@@ -20,6 +20,8 @@ source $UTIL_CRON_DIR/common-native-gpu-perf.bash
 # CONFIG_NAME
 source $UTIL_CRON_DIR/common-perf.bash
 
+module list
+
 SHORT_NAME=um
 nightly_args="${nightly_args} -performance-description $SHORT_NAME -performance-configs default:v,$SHORT_NAME:v -sync-dir-suffix $SHORT_NAME"
 nightly_args="${nightly_args} -startdate 10/10/24"

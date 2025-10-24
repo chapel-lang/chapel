@@ -11,5 +11,7 @@ source $UTIL_CRON_DIR/common-gpu-nvidia-hpe-cray-ex-cuda-12.bash
 export CHPL_TEST_GPU=true
 export CHPL_NIGHTLY_TEST_DIRS="gpu/interop/"
 
+module list
+
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="gpu-ex-cuda-12.interop"
 $UTIL_CRON_DIR/nightly -cron ${nightly_args}

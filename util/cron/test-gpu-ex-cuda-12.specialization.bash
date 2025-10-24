@@ -14,5 +14,7 @@ export CHPL_GPU=nvidia  # amd is also detected automatically
 
 export CHPL_GPU_SPECIALIZATION=y
 
+module list
+
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="gpu-ex-cuda-12.specialization"
 $UTIL_CRON_DIR/nightly -cron ${nightly_args}
