@@ -2551,21 +2551,22 @@ void Resolver::adjustTypesForSplitInit(ID id,
   ResolvedExpression& lhs = byPostorder.byId(id);
   QualifiedType lhsType = lhs.type();
 
+  if (symbol->isModule()) {
+    // Due to split init, other top-level declarations will be 'UNKNOWN'
+    // in our 'byPostorder', because module-level statements are resolved
+    // separately from each other. So, go and compute/retrieve the other
+    // statement's resolution info.
+    auto topLevelId = parsing::idToContainingMultiDeclId(context, id);
+    auto& standaloneInfo = resolveModuleStmtStandalone(context, topLevelId);
+    if (auto rr = standaloneInfo.first.byIdOrNull(id)) {
+      lhsType = rr->type();
+    }
+  }
+
   if (!lhsType.needsSplitInitTypeInfo(context)) return;
 
   const Param* p = rhsType.param();
   auto useKind = lhsType.kind();
-  if (p && symbol->isModule()) {
-    // This is a white lie since if we are in a module-level statement, the
-    // kind we see here will always be UNKNOWN, whether this is a PARAM or not.
-    // This is because module statements are resolved separately from each
-    // other.
-    // Set it to PARAM here so we are allowed to store a param value for
-    // it, else we get a complaint about storing a param value on a non-param
-    // kind. The param kind will only get preserved later (at module-level
-    // resolution) if it actually is a PARAM decl.
-    useKind = QualifiedType::PARAM;
-  }
   if (useKind != QualifiedType::PARAM) p = nullptr;
   const auto useType = QualifiedType(useKind, rhsType.type(), p);
 

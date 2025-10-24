@@ -721,6 +721,20 @@ void CallInitDeinit::resolveCopyInit(const AstNode* ast,
       // Array init is not resolved normally (via init), but copy init
       // should still occur. Note that setupCallForCopyOrMove will decide
       // what function should be called (likely chpl__coerceCopy).
+    } else if (!lhsType.isUnknownOrErroneous() && lhsType.type()->isPrimitiveType()) {
+      // For builtin types like 'int', do another canPass check. This way,
+      // even if the initialization expression was not used to compute
+      // the declaration's type, we still verify that it passes.
+      // e.g.,
+      //   var x: int;
+      //   x = 3.5; // should error
+
+      auto got = canPass(context, rhsType, lhsType);
+      if (!got.passes()) {
+        CHPL_REPORT(context, IncompatibleTypeAndInit, ast, ast,
+                    rhsAst, lhsType.type(), rhsType.type());
+      }
+      return;
     } else {
       // TODO: we could resolve it anyway
       return;

@@ -1527,6 +1527,72 @@ static void test72b() {
   assert(qtC.type()->isIntType());
 }
 
+// Test split-init with generic type 'numeric' - should error when branches
+// have different concrete types (per spec)
+static void test73() {
+  testSplitInit("test73",
+    R""""(
+        proc test(flag: bool) {
+          var x: numeric;
+          if flag {
+            x = 1;      // int(64)
+          } else {
+            x = 1.0;    // real(64)
+          }
+        }
+    )"""",
+    {}, ERRORS_EXPECTED);
+}
+
+// Test split-init with generic type 'integral' - should error when branches
+// have different concrete types
+static void test74() {
+  testSplitInit("test74",
+    R""""(
+        proc test(flag: bool) {
+          var x: integral;
+          if flag {
+            x = 1:int(32);
+          } else {
+            x = 1:int(64);
+          }
+        }
+    )"""",
+    {}, ERRORS_EXPECTED);
+}
+
+// Test split-init with generic type where branches match - should succeed
+static void test75() {
+  testSplitInit("test79",
+    R""""(
+        proc test(flag: bool) {
+          var x: numeric;
+          if flag {
+            x = 1;
+          } else {
+            x = 2;  // Same type as first branch
+          }
+        }
+    )"""",
+    {"x"});
+}
+
+// Test split-init with no explicit type - type inferred from branches
+static void test76() {
+  testSplitInit("test80",
+    R""""(
+        proc test(flag: bool) {
+          var x;
+          if flag {
+            x = 1;
+          } else {
+            x = 2.0;  // Different type from first branch
+          }
+        }
+    )"""",
+    {}, ERRORS_EXPECTED);
+}
+
 int main() {
   test1();
   test2();
@@ -1606,6 +1672,10 @@ int main() {
   test71();
   test72a();
   test72b();
+  test73();
+  test74();
+  test75();
+  test76();
 
   return 0;
 }
