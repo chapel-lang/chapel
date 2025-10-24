@@ -1,0 +1,4 @@
+array-in-scalar-ret-by-ref.chpl:4: In method 'getArrayElt':
+array-in-scalar-ret-by-ref.chpl:5: error: Initializing a reference with another type
+array-in-scalar-ret-by-ref.chpl:4: note: Reference has type int(64)
+array-in-scalar-ret-by-ref.chpl:5: note: Initializing with type [domain(1,int(64),one)] int(64)
