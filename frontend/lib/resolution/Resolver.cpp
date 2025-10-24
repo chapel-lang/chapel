@@ -2250,7 +2250,8 @@ gatherUserDiagnostics(ResolutionContext* rc,
     // If it has a fabricated ID, then we generated an AST body, so don't skip it.
     if (msc.fn()->isCompilerGenerated()) {
       auto& id = msc.fn()->id();
-      if (!id.isFabricatedId() || id.fabricatedIdKind() != ID::Generated) {
+      if (!id.isFabricatedId() || id.fabricatedIdKind() != ID::Generated ||
+          !parsing::idIsFunction(rc->context(), id)) {
         continue;
       }
     }
