@@ -43,6 +43,13 @@ proc test(type t) {
 
   writeln(myVar1, myVar2, myVar3, myVar4, sep=" | ");
   breakpoint;
+
+  if isUnmanagedClassType(t) {
+    delete myVar1;
+    delete myVar2;
+    delete myVar3;
+    delete myVar4;
+  }
 }
 proc main() {
   test(myRecord(?));
