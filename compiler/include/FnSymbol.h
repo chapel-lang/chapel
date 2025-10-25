@@ -210,7 +210,10 @@ public:
   FunctionType*             computeAndSetType();
 
   // Determine if this function is used as a "first class procedure".
-  bool                      isUsedAsValue();
+  bool                      isUsedAsValue()                              const;
+
+  // Determine if this function has "extern" or "export" linkage.
+  bool                      hasForeignLinkage()                          const;
 
   // Removes all statements from body and adds all statements from block.
   void                       replaceBodyStmtsWithStmts(BlockStmt* block);

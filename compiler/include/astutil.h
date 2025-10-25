@@ -105,8 +105,12 @@ void computeAllCallSites(FnSymbol* fn);
 
 using AdjustTypeFn = std::function<Type*(Type*)>;
 
-void adjustSymbolType(Symbol* sym, AdjustTypeFn adjustTypeFn,
-                      bool preserveRefLevels=true);
+// Given 'adjustTypeFn', compute the new type of 'sym' and adjust 'sym->type'
+// if able. Returns the newly computed type. If the symbol is a 'TypeSymbol',
+// will not set 'sym->type'. The caller is responsible for walking the live
+// uses of the type symbol and retargeting them to the newly computed type.
+Type* maybeAdjustSymbolType(Symbol* sym, AdjustTypeFn adjustTypeFn,
+                            bool preserveRefLevels=true);
 
 // Given 'adjustTypeFn', walk all symbols and re-assign the type of the symbol
 // if the type produced by 'adjustTypeFn' differs from the symbol's current

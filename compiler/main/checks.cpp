@@ -580,10 +580,22 @@ static void check_afterResolveIntents()
 
       } else if (auto ts = toTypeSymbol(sym)) {
         auto ft = toFunctionType(ts->type);
-        if (ts->inTree() && ft) {
+        if (ts->inTree() && ts->isUsed() && ft) {
           for (auto& formal : ft->formals()) {
             INT_ASSERT(formal.intent() != INTENT_BLANK);
             INT_ASSERT(formal.qual() != QUAL_UNKNOWN);
+          }
+        }
+      } else if (auto fn = toFnSymbol(sym)) {
+        if (auto ft1 = toFunctionType(fn->type)) {
+          auto ft2 = fn->computeAndSetType();
+          if (ft1 != ft2) {
+            INT_FATAL("The type computed for the current state of the "
+                      "function %s [%d] and its existing '->type' have "
+                      "diverged. Make sure that any pass that changes "
+                      "the signature of a function also recomputes its "
+                      "type and handles the consequences of doing so",
+                      fn->name, fn->id);
           }
         }
       }

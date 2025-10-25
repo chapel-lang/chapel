@@ -422,6 +422,10 @@ void resolveArgIntent(ArgSymbol* arg) {
     arg->originalIntent = arg->intent;
   }
   arg->intent = intent;
+
+  if (arg->qual == QUAL_UNKNOWN) {
+    arg->qual = QualifiedType::qualifierForArgIntent(arg->intent);
+  }
 }
 
 static void resolveVarIntent(VarSymbol* sym) {
@@ -470,14 +474,15 @@ static FunctionType* computeConcreteIntentsForFunctionType(FunctionType* ft) {
   return ret;
 }
 
-// NOTE (dlongnecke): This is not a new-style compiler pass but that is OK.
-// When the typed converter comes online we'll be getting rid of this code.
-static Type* adjustFunctionTypeToHaveConcreteIntents(Type* t) {
-  if (auto ft = toFunctionType(t)) {
+// NOTE (dlongnecke): This is a new-style compiler pass that is just defined
+// in this file, but that is OK. When the typed converter comes online we'll
+// be getting rid of this code.
+class ResolveIntentsForProcPtrTypes : public AdjustProcPtrTypes {
+ public:
+  FunctionType* computeAdjustedType(FunctionType* ft) const override {
     return computeConcreteIntentsForFunctionType(ft);
-  }
-  return t;
-}
+  };
+};
 
 void resolveIntents() {
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
@@ -495,8 +500,8 @@ void resolveIntents() {
     resolveVarIntent(sym);
   }
 
-  // Also adjust the intents for function types.
-  adjustAllSymbolTypes(adjustFunctionTypeToHaveConcreteIntents);
+  PassManager pm;
+  runPassOverAllSymbols(pm, ResolveIntentsForProcPtrTypes());
 
   intentsResolved = true;
 }

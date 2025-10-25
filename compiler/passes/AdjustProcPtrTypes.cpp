@@ -20,10 +20,11 @@
 
 #include "pass-manager-passes.h"
 
-#include "CallExpr.h"
-#include "FnSymbol.h"
 #include "astutil.h"
 #include "baseAST.h"
+#include "CallExpr.h"
+#include "FnSymbol.h"
+#include "resolution.h"
 #include "symbol.h"
 #include "type.h"
 
@@ -32,17 +33,39 @@ namespace {
   using Pass = AdjustProcPtrTypes;
 }
 
-bool Pass::shouldProcess(Symbol* sym) {
-  if (isFnSymbol(sym)) return true;
+bool Pass::shouldProcessDefault(Symbol* sym) {
+  if (auto fn = toFnSymbol(sym)) {
+    if (fn->isUsedAsValue()) return true;
+
+    // Otherwise, process the function only if you should process its RVV.
+    auto rvv = fn->getReturnSymbol();
+    return rvv && shouldProcessDefault(rvv);
+  }
+
+  return isFunctionType(sym->type);
+}
+
+bool Pass::shouldProcessIfNonForeignLinkage(Symbol* sym) {
+  if (auto fn = toFnSymbol(sym)) {
+    if (fn->isUsedAsValue() && !fn->hasForeignLinkage()) return true;
+
+    // Otherwise, process the function only if you should process its RVV.
+    auto rvv = fn->getReturnSymbol();
+    return rvv && shouldProcessIfNonForeignLinkage(rvv);
+  }
+
   if (auto ft = toFunctionType(sym->type)) {
     return !ft->hasForeignLinkage();
   }
+
   return false;
 }
 
-void Pass::process(Symbol* sym) {
-  bool shouldAdjustSymbolType = true;
+bool Pass::shouldProcess(Symbol* sym) {
+  return shouldProcessDefault(sym);
+}
 
+void Pass::process(Symbol* sym) {
   // TODO: The 'adjustSymbolType' should be made to take a template arg.
   //       That way, we can avoid the cost of constructing std::function.
   AdjustTypeFn adjustTypeFn = [this](Type* t) {
@@ -53,37 +76,27 @@ void Pass::process(Symbol* sym) {
     return ret;
   };
 
-  if (auto fn = toFnSymbol(sym)) {
-    if (!fn->isUsedAsValue()) {
-      // If the function is not used as a value then its type should not be
-      // adjusted. Clear its type - it can be recomputed later if needed.
-      shouldAdjustSymbolType = false;
-      fn->type = dtUnknown;
+  // Store the type before and after adjusting the symbol's type.
+  Type* oldType = sym->type;
+  Type* newType = maybeAdjustSymbolType(sym, adjustTypeFn);
+
+  if (isTypeSymbol(sym) && oldType != newType) {
+    // Type symbols require some special handling. They're the one class of
+    // symbol where it doesn't actually make any sense to set 'sym->type'.
+    // Instead, if they "changed", what we have to do is walk all the uses
+    // of the type symbol and point them to the new type.
+    for_SymbolSymExprs(se, sym) {
+      enqueue(newType->symbol, se);
     }
 
-    // As a special case, we have to handle the 'fn->retType' separately.
-    fn->retType = adjustTypeFn(fn->retType);
+  } else {
+    INT_ASSERT(sym->type == newType);
   }
 
-  if (isTypeSymbol(sym)) {
-    // Don't adjust type symbols!
-    shouldAdjustSymbolType = false;
-
-    auto oldType = sym->type;
-    auto newType = adjustTypeFn(oldType);
-
-    if (newType != oldType) {
-      // But we do need to adjust uses to point to new types if appropriate.
-      // TODO: Is there a step to compute uses or are these just omnipresent?
-      for_SymbolSymExprs(se, sym) {
-        // Retarget a use of the old type to point to the new type.
-        enqueue(newType->symbol, se);
-      }
-    }
-  }
-
-  if (shouldAdjustSymbolType) {
-    adjustSymbolType(sym, adjustTypeFn);
+  if (sym->hasFlag(FLAG_RVV)) {
+    // The adjust function only makes references types as needed, but the
+    // '--verify' pass will expect every return type to have a 'ref' type.
+    if (!sym->type->refType) makeRefType(sym->type);
   }
 }
 

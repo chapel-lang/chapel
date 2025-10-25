@@ -32,6 +32,10 @@ namespace {
   using Pass = AddLineFileInfoToProcPtrTypes;
 }
 
+bool Pass::shouldProcess(Symbol* sym) {
+  return shouldProcessIfNonForeignLinkage(sym);
+}
+
 FunctionType* Pass::computeAdjustedType(FunctionType* ft) const {
   return ft->getWithLineFileInfo();
 }

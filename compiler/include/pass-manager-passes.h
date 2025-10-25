@@ -241,6 +241,9 @@ class AdjustProcPtrTypes : public PassTU<Symbol*, SymExpr*> {
   bool shouldProcess(Symbol* sym) override;
   void process(Symbol* sym) override;
   void process(Symbol* newSymbol, SymExpr* oldUse) override;
+
+  static bool shouldProcessIfNonForeignLinkage(Symbol* sym);
+  static bool shouldProcessDefault(Symbol* sym);
 };
 
 /**
@@ -256,6 +259,7 @@ class AdjustProcPtrTypes : public PassTU<Symbol*, SymExpr*> {
 */
 class AddLineFileInfoToProcPtrTypes : public AdjustProcPtrTypes {
  public:
+  bool shouldProcess(Symbol* sym) override;
   FunctionType* computeAdjustedType(FunctionType* ft) const override;
 };
 

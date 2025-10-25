@@ -603,7 +603,7 @@ FunctionType* FnSymbol::computeAndSetType() {
   return ret;
 }
 
-bool FnSymbol::isUsedAsValue() {
+bool FnSymbol::isUsedAsValue() const {
   if (hasFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION)) {
     // TODO: This is a shortcut that may not always be correct? E.g., what
     //       if the use we are thinking of was removed from the tree?
@@ -1220,6 +1220,10 @@ bool FnSymbol::isGeneric() const {
 
 bool FnSymbol::isGenericIsValid() const {
   return mIsGenericIsValid;
+}
+
+bool FnSymbol::hasForeignLinkage() const {
+  return hasFlag(FLAG_EXTERN) || hasFlag(FLAG_EXPORT);
 }
 
 void FnSymbol::setGeneric(bool generic) {
