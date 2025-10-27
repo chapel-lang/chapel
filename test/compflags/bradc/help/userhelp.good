@@ -172,6 +172,8 @@ Compilation Trace Options:
       --[no-]print-commands           [Don't] print system commands
       --[no-]print-passes             [Don't] print compiler passes
       --print-passes-file <filename>  Print compiler passes to <filename>
+      --[no-]print-passes-memory      [Don't] print memory usage after each
+                                      compiler pass
 
 Miscellaneous Options:
       --[no-]detailed-errors          Enable [disable] detailed error messages
