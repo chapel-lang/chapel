@@ -355,11 +355,7 @@ llvm::DIType* DebugData::constructTypeForAggregate(llvm::StructType* ty,
       }
 
       llvm::DIType* fditype = getType(field->type);
-      if (fditype == nullptr) {
-        if (developer || fVerify) {
-          INT_FATAL("Unable to find DIType for field %s of type %s in aggregate %s",
-                    field->name, fts->name, type->symbol->name);
-        }
+      if (!fditype) {
         // if we can't determine the field type yet, create a forward decl
         // then later, the forward decl will be replaced with the actual type
         auto fieldTypeDefInfo = DefinitionInfo(this, fts->defPoint->getModule(),
@@ -562,11 +558,8 @@ llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
 
   if (type->isRef()) {
     auto valType = type->getValType();
-    auto diType = valType ? getType(valType) : nullptr;
+    auto diType = getType(valType);
     if (!diType) {
-      if (developer || fVerify) {
-        INT_FATAL("Unable to find DIType for ref type %s ", type->symbol->name);
-      }
       return nullptr;
     }
     auto N = dibuilder->createReferenceType(llvm::dwarf::DW_TAG_reference_type, diType);
@@ -713,11 +706,7 @@ llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
     Subscripts.push_back(dibuilder->getOrCreateSubrange(0, arraySize));
     Type *elmType = at->cArrayElementType();
     auto elmDiType = getType(elmType);
-    if (elmDiType == nullptr) {
-      if (developer || fVerify) {
-        INT_FATAL("Unable to find DIType for element type %s of array %s",
-                  elmType->symbol->name, type->symbol->name);
-      }
+    if (!elmDiType) {
       return nullptr;
     }
     llvm::DIType* N = dibuilder->createArrayType(
@@ -869,17 +858,14 @@ llvm::DIType* DebugData::constructType(Type *type) {
     Subscripts.push_back(dibuilder->getOrCreateSubrange(0, Asize));
     Symbol *eleSym = toDefExpr(this_class->fields.head)->sym;
     Type *eleType = eleSym->type;
-    if (getType(eleType) == nullptr) {
-      if (developer || fVerify) {
-        INT_FATAL("Unable to find DIType for element type %s of array %s",
-                  eleType->symbol->name, type->symbol->name);
-      }
+    auto eleDIType = getType(eleType);
+    if (!eleDIType) {
       return nullptr;
     }
     N = dibuilder->createArrayType(
       Asize,
       8*layout.getABITypeAlign(ty).value(),
-      getType(eleType),
+      eleDIType,
       dibuilder->getOrCreateArray(Subscripts));
 
     type->symbol->llvmDIType = N;
@@ -917,9 +903,6 @@ llvm::DIType* DebugData::constructTypeForEnum(llvm::Type* ty, EnumType* type) {
   Type* bt = type->getIntegerType();
   auto diBT = getType(bt);
   if (!diBT) {
-    if (developer || fVerify) {
-      INT_FATAL("Unable to find base type for enum %s", name);
-    }
     return nullptr;
   }
   llvm::SmallVector<llvm::Metadata *> Elements;
@@ -966,6 +949,9 @@ llvm::DIType* DebugData::getType(Type *type) {
   if (type->symbol->llvmDIForwardType)
     return llvm::cast_or_null<llvm::DIType>(type->symbol->llvmDIForwardType);
 
+  if ((developer || fVerify) && !isNonCodegenType(type)) {
+    INT_FATAL("Unable to get DIType for type %s", type->symbol->name);
+  }
   return nullptr;
 }
 
@@ -1117,12 +1103,7 @@ llvm::DIVariable* DebugData::constructVariable(VarSymbol *varSym)
   auto dibuilder = modSym->llvmDIBuilder;
 
   llvm::DIType* varSym_type = getType(varSym->type);
-
   if (!varSym_type) {
-    if (developer || fVerify) {
-      INT_FATAL("Unable to find DIType for variable %s of type %s in function %s",
-                varSym->name, varSym->type->symbol->name, funcSym->name);
-    }
     varSym_type = dibuilder->createNullPtrType();
   }
 
@@ -1167,12 +1148,7 @@ llvm::DIVariable* DebugData::constructFormalArg(ArgSymbol *argSym, unsigned ArgN
   auto dibuilder = argSym->getModule()->llvmDIBuilder;
 
   llvm::DIType* argSym_type = getType(argSym->type);
-
   if (!argSym_type) {
-    if (developer || fVerify) {
-      INT_FATAL("Unable to find DIType for formal %s of type %s in function %s",
-                argSym->name, argSym->type->symbol->name, funcSym->name);
-    }
     argSym_type = dibuilder->createNullPtrType();
   }
   auto diParameterVariable = dibuilder->createParameterVariable(
