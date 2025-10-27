@@ -2622,7 +2622,7 @@ void gatherTypesForCodegen(void) {
 
   // There appear to be a limited number of types that
   // rely on this functionality. Here is an incomplete list:
-  //   c_fn_ptr_rehook
+  //   c_fn_ptr
   //   chpl_comm_on_bundle_p
   //   chpl_task_bundle_p
   //   ptr_wide_ptr_t
