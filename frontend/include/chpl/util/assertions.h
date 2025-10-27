@@ -78,6 +78,11 @@ void setAssertions(bool enable);
 void setAssertionsFatal(bool enable);
 
 /*
+  Set whether or not unimplemented warnings are enabled in dyno
+*/
+void setUnimplementedWarnings(bool enable);
+
+/*
   Get whether or not assertions are enabled in dyno
 */
 bool assertionsAreOn();
@@ -86,6 +91,11 @@ bool assertionsAreOn();
   Get whether or not failed assertions are fatal in dyno
 */
 bool assertionsAreFatal();
+
+/*
+  Get whether or not unimplemented warnings are enabled in dyno
+*/
+bool unimplementedWarningsAreOn();
 
 
 } // namespace chpl

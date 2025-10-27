@@ -5,6 +5,8 @@ class B {
 class A {
   var b : unmanaged B;
   forwarding b;
+
+  proc deinit() do delete b;
 }
 
 var a = new owned A(new unmanaged B());

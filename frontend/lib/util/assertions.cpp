@@ -27,6 +27,8 @@ namespace chpl {
 bool assertionsAreFatal_ = true;
 // Whether or not to enable assertions
 bool assertionsAreOn_ = true;
+// Whether to warn about unimplemented features
+bool unimplementedWarningsAreOn_ = true;
 
 void setAssertions(bool enable) {
   assertionsAreOn_ = enable;
@@ -36,12 +38,20 @@ void setAssertionsFatal(bool enable) {
   assertionsAreFatal_ = enable;
 }
 
+void setUnimplementedWarnings(bool enable) {
+  unimplementedWarningsAreOn_ = enable;
+}
+
 bool assertionsAreOn() {
   return assertionsAreOn_;
 }
 
 bool assertionsAreFatal() {
   return assertionsAreFatal_;
+}
+
+bool unimplementedWarningsAreOn() {
+  return unimplementedWarningsAreOn_;
 }
 
 void assertion(bool expr, const char* filename, const char* func,
@@ -66,6 +76,10 @@ void assertion(bool expr, const char* filename, const char* func,
 
 void chpl_unimpl(const char* filename, const char* func, int lineno,
                  const char* msg) {
+  if (!unimplementedWarningsAreOn()) {
+    return;
+  }
+
   std::string fname(filename);
   std::string shortName = fname;
   auto frontPos = fname.find("frontend");

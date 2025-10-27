@@ -384,6 +384,8 @@ bool fDynoScopeBundled = false;
 bool fDynoDebugTrace = false;
 bool fDynoDebugPrintParsedFiles = false;
 bool fDynoVerifySerialization = false;
+bool fDynoWarnUnimplemented = false;
+bool fDynoWarnUnimplementedSet = false;
 bool fDynoGenLib = false;
 bool fDynoGenStdLib = false;
 bool fDynoLibGenOrUse = false; // .dyno file or --dyno-gen-lib/std
@@ -1278,6 +1280,11 @@ void setDynoGenStdLib(const ArgumentDescription* desc, const char* newpath) {
 }
 
 static
+void setDynoWarnUnimplemented(const ArgumentDescription* desc, const char* arg) {
+  fDynoWarnUnimplementedSet = true;
+}
+
+static
 void setMainModuleName(const ArgumentDescription* desc, const char* arg) {
   gMainModuleName = arg;
   ModuleSymbol::setMainModuleName(desc, arg);
@@ -1605,6 +1612,7 @@ static ArgumentDescription arg_desc[] = {
  {"dyno-gen-lib", ' ', "<path>", "Specify files named on the command line should be saved into a .dyno library", "P", NULL, NULL, addDynoGenLib},
  {"dyno-gen-std", ' ', NULL, "Generate a .dyno library file for the standard library", "F", &fDynoGenStdLib, NULL, setDynoGenStdLib},
  {"dyno-verify-serialization", ' ', NULL, "Enable [disable] verification of serialization", "N", &fDynoVerifySerialization, NULL, NULL},
+ {"dyno-warn-unimplemented", ' ', NULL, "Enable [disable] warnings for unimplemented features in dyno resolver", "N", &fDynoWarnUnimplemented, NULL, setDynoWarnUnimplemented},
  {"dyno-break-error", ' ', NULL, "Enable breakpoint for user errors from the frontend", "n", &fDynoNoBreakError, NULL, NULL},
  {"resolve-concrete-fns", ' ', NULL, "Enable [disable] resolving concrete functions",  "N", &fResolveConcreteFns, NULL, NULL},
 
@@ -2462,6 +2470,12 @@ static void dynoConfigureContext(std::string chpl_module_path) {
 
   // set whether dyno assertions should fire based on developer flag
   chpl::setAssertions(developer);
+
+  if (fDynoWarnUnimplementedSet) {
+    chpl::setUnimplementedWarnings(fDynoWarnUnimplemented);
+  } else {
+    chpl::setUnimplementedWarnings(developer);
+  }
 
   // set whether dyno assertions are fatal based on ignore_errors flag
   chpl::setAssertionsFatal(!ignore_errors);
