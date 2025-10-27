@@ -2,6 +2,7 @@ use Debugger;
 
 
 // DWARFDUMP: myRec(MyClass)
+// DWARFDUMP: myRec(unmanaged MyClass)
 // DWARFDUMP: myRec(owned MyClass)
 // DWARFDUMP: myRec(shared MyClass)
 // DWARFDUMP: myRec(borrowed MyClass)
@@ -10,6 +11,7 @@ use Debugger;
 // DWARFDUMP: myRec(shared MyClass?)
 // DWARFDUMP: myRec(borrowed MyClass?)
 // DWARFDUMP: myRec(MyChildClass)
+// DWARFDUMP: myRec(unmanaged MyChildClass)
 // DWARFDUMP: myRec(owned MyChildClass)
 // DWARFDUMP: myRec(shared MyChildClass)
 // DWARFDUMP: myRec(borrowed MyChildClass)
@@ -28,6 +30,18 @@ class MyClass {
 class MyChildClass : MyClass {
   var y: real = 3.14;
 }
+
+// DWARFDUMP: wide(MyClass)
+// DWARFDUMP: wide(MyChildClass)
+// DWARFDUMP: wide(_ref(myRec(unmanaged MyClass)))
+// DWARFDUMP: _ref(myRec(unmanaged MyClass))
+// DWARFDUMP: wide(_ref(myRec(unmanaged MyClass?)))
+// DWARFDUMP: _ref(myRec(unmanaged MyClass?))
+// DWARFDUMP: wide(_ref(myRec(unmanaged MyChildClass?)))
+// DWARFDUMP: _ref(myRec(unmanaged MyChildClass?))
+// DWARFDUMP: wide(_ref(myRec(unmanaged MyChildClass?)))
+// DWARFDUMP: _ref(myRec(unmanaged MyChildClass?))
+// DWARFDUMP: chpl_localeID_t
 
 proc main() {
 
@@ -50,8 +64,10 @@ proc main() {
   // DWARFDUMP: myBorrowedChildClass
   var myBorrowedChildClass = myUnmanagedChildClass.borrow();
 
-  writeln(myUnmanagedClass, myOwnedClass, mySharedClass, myBorrowedClass, sep =" | ");
-  writeln(myUnmanagedChildClass, myOwnedChildClass, mySharedChildClass, myBorrowedChildClass, sep =" | ");
+  on Locales[0] {
+    writeln(myUnmanagedClass, myOwnedClass, mySharedClass, myBorrowedClass, sep =" | ");
+    writeln(myUnmanagedChildClass, myOwnedChildClass, mySharedChildClass, myBorrowedChildClass, sep =" | ");
+  }
   breakpoint;
 
   // DWARFDUMP: myNilableUnmanagedClass
@@ -71,8 +87,10 @@ proc main() {
   // DWARFDUMP: myNilableBorrowedChildClass
   var myNilableBorrowedChildClass: borrowed MyChildClass? = nil;
 
-  writeln(myNilableUnmanagedClass, myNilableOwnedClass, myNilableSharedClass, myNilableBorrowedClass, sep =" | ");
-  writeln(myNilableUnmanagedChildClass, myNilableOwnedChildClass, myNilableSharedChildClass, myNilableBorrowedChildClass, sep =" | ");
+  on Locales[0] {
+    writeln(myNilableUnmanagedClass, myNilableOwnedClass, myNilableSharedClass, myNilableBorrowedClass, sep =" | ");
+    writeln(myNilableUnmanagedChildClass, myNilableOwnedChildClass, myNilableSharedChildClass, myNilableBorrowedChildClass, sep =" | ");
+  }
   breakpoint;
 
   // DWARFDUMP: myRecordWrappedUnmanagedClass
@@ -94,8 +112,10 @@ proc main() {
   // DWARFDUMP: myRecordWrappedBorrowedChildClass
   var myRecordWrappedBorrowedChildClass = new myRec(x = myRecordWrappedUnmanagedChildClass.x.borrow());
 
-  writeln(myRecordWrappedUnmanagedClass, myRecordWrappedOwnedClass, myRecordWrappedSharedClass, myRecordWrappedBorrowedClass, sep =" | ");
-  writeln(myRecordWrappedUnmanagedChildClass, myRecordWrappedOwnedChildClass, myRecordWrappedSharedChildClass, myRecordWrappedBorrowedChildClass, sep =" | ");
+  on Locales[0] {
+    writeln(myRecordWrappedUnmanagedClass, myRecordWrappedOwnedClass, myRecordWrappedSharedClass, myRecordWrappedBorrowedClass, sep =" | ");
+    writeln(myRecordWrappedUnmanagedChildClass, myRecordWrappedOwnedChildClass, myRecordWrappedSharedChildClass, myRecordWrappedBorrowedChildClass, sep =" | ");
+  }
   breakpoint;
 
   // DWARFDUMP: myNilableRecordWrappedUnmanagedClass
@@ -117,8 +137,10 @@ proc main() {
   // DWARFDUMP: myNilableRecordWrappedBorrowedChildClass
   var myNilableRecordWrappedBorrowedChildClass = new myRec(x = myNilableRecordWrappedUnmanagedChildClass.x.borrow());
 
-  writeln(myNilableRecordWrappedUnmanagedClass, myNilableRecordWrappedOwnedClass, myNilableRecordWrappedSharedClass, myNilableRecordWrappedBorrowedClass, sep =" | ");
-  writeln(myNilableRecordWrappedUnmanagedChildClass, myNilableRecordWrappedOwnedChildClass, myNilableRecordWrappedSharedChildClass, myNilableRecordWrappedBorrowedChildClass, sep =" | ");
+  on Locales[0] {
+    writeln(myNilableRecordWrappedUnmanagedClass, myNilableRecordWrappedOwnedClass, myNilableRecordWrappedSharedClass, myNilableRecordWrappedBorrowedClass, sep =" | ");
+    writeln(myNilableRecordWrappedUnmanagedChildClass, myNilableRecordWrappedOwnedChildClass, myNilableRecordWrappedSharedChildClass, myNilableRecordWrappedBorrowedChildClass, sep =" | ");
+  }
   breakpoint;
 
 }
