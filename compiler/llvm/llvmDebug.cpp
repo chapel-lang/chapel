@@ -778,12 +778,14 @@ llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
 
 }
 
-static bool isNonCodegenType(Type * type) {
-  if (type->symbol->hasFlag(FLAG_NO_CODEGEN))
-    return true;
+static bool isNonCodegenType(Type* type) {
+  if (type == dtVoid || type == dtNothing) return true;
+  if (auto valType = type->getValType()) {
+    if (type == valType) return false;
+    return isNonCodegenType(valType);
+  }
   return false;
 }
-
 
 llvm::DIType* DebugData::constructType(Type *type) {
   llvm::DIType *N = nullptr;
