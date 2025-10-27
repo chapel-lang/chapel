@@ -78,6 +78,7 @@ _chpl ()
 --dyno-scope-resolve \
 --dyno-timing \
 --dyno-verify-serialization \
+--dyno-warn-unimplemented \
 --early-deinit \
 --edition \
 --exit-leaks \
@@ -213,6 +214,7 @@ _chpl ()
 --no-dyno-scope-production \
 --no-dyno-scope-resolve \
 --no-dyno-verify-serialization \
+--no-dyno-warn-unimplemented \
 --no-early-deinit \
 --no-exit-leaks \
 --no-explain-verbose \
