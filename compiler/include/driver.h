@@ -342,6 +342,8 @@ extern bool fDynoScopeBundled;
 extern bool fDynoDebugTrace;
 extern bool fDynoDebugPrintParsedFiles;
 extern bool fDynoVerifySerialization;
+extern bool fDynoWarnUnimplemented;
+extern bool fDynoWarnUnimplementedSet;
 extern bool fDynoGenLib;
 extern bool fDynoGenStdLib;
 extern bool fDynoLibGenOrUse;
