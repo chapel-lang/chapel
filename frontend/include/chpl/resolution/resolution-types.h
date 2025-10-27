@@ -2043,6 +2043,18 @@ class MostSpecificCandidates {
     return isAmbiguous() || !isEmpty();
   }
 
+  /* Currently, iterators in production always prefer the REF intent slot.
+     Return true if this overload set should do this. */
+  bool ignoreContextForReturnIntentOverloading() const {
+    for (const MostSpecificCandidate& candidate : *this) {
+      if (candidate.fn() == nullptr) continue;
+      if (candidate.fn()->isIterator() || candidate.promotedFormals().size() > 0) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   bool operator==(const MostSpecificCandidates& other) const {
     for (int i = 0; i < NUM_INTENTS; i++) {
       if (candidates[i] != other.candidates[i])

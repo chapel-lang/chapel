@@ -6462,15 +6462,7 @@ static const MostSpecificCandidate* pickOverloadEarlyIfNeeded(const MostSpecific
   // there's only or less overload, no need to disambiguate early.
   if (mostSpecific.numBest() <= 1) return nullptr;
 
-  bool earlyDecideOverload = false;
-  for (const MostSpecificCandidate& candidate : mostSpecific) {
-    if (candidate.fn() == nullptr) continue;
-    if (!candidate.promotedFormals().empty() || candidate.fn()->isIterator()) {
-      earlyDecideOverload = true;
-      break;
-    }
-  }
-  if (!earlyDecideOverload) return nullptr;
+  if (!mostSpecific.ignoreContextForReturnIntentOverloading()) return nullptr;
 
   QualifiedType::Kind bestKindIgnored = QualifiedType::UNKNOWN;
   bool ambiguity = false;

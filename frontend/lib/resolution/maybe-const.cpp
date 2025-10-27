@@ -230,7 +230,8 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
 
   // is it return intent overloading? resolve that
   if (candidates.numBest() > 1) {
-    Access access = currentAccess();
+    Access access = candidates.ignoreContextForReturnIntentOverloading() ?
+                    Access::REF : currentAccess();
     auto kind = QualifiedType::UNKNOWN;
     bool ambiguity;
     auto best = determineBestReturnIntentOverload(candidates, access, kind, ambiguity);
