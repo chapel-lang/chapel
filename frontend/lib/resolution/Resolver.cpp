@@ -2250,7 +2250,8 @@ gatherUserDiagnostics(ResolutionContext* rc,
     // If it has a fabricated ID, then we generated an AST body, so don't skip it.
     if (msc.fn()->isCompilerGenerated()) {
       auto& id = msc.fn()->id();
-      if (!id.isFabricatedId() || id.fabricatedIdKind() != ID::Generated) {
+      if (!id.isFabricatedId() || id.fabricatedIdKind() != ID::Generated ||
+          !parsing::idIsFunction(rc->context(), id)) {
         continue;
       }
     }
@@ -3031,6 +3032,13 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
     (ci.name() == USTR("==") || ci.name() == USTR("!=")) &&
     ci.numActuals() == 1 &&
     (ci.actual(0).type().isType() || ci.actual(0).type().isParam());
+
+  // this is a workaround in which `isSubtype` etc. aren't invoked due to
+  // being given generic supertype arguments. It's a workaround because
+  // why would we bless these functions in particular?
+  allowGenericTypes |=
+    (ci.name() == USTR("isSubtype") || ci.name() == USTR("isProperSubtype") ||
+     ci.name() == USTR("isCoercible")) && ci.numActuals() == 2;
 
   int actualIdx = 0;
   for (const auto& actual : ci.actuals()) {
