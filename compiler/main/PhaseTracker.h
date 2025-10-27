@@ -26,6 +26,9 @@
 
 #include <cstdio>
 #include <vector>
+#include <optional>
+#include <string>
+#include <string_view>
 
 /************************************* | **************************************
  *                                                                             *
