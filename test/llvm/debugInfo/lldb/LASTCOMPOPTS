@@ -1,1 +1,1 @@
---debug-symbols --optimized-debug
+--debug-symbols --debug-safe-optimizations-only

@@ -337,7 +337,7 @@ char breakOnCodegenCname[256] = "";
 int breakOnCodegenID = 0;
 
 bool fDebugSymbols = false;
-bool fOptimizedDebug = false;
+bool fDebugSafeOptOnly = false;
 bool fDebug = false;
 
 bool optimizeCCode = false;
@@ -605,7 +605,7 @@ static void setDynamicLink(const ArgumentDescription* desc, const char* arg_unus
 static void setDebugSymbols(const ArgumentDescription* desc, const char* arg_unused) {
   printCppLineno = true;
 }
-static void setOptimizedDebug(const ArgumentDescription* desc, const char* arg_unused) {
+static void setDebugSafeOptOnly(const ArgumentDescription* desc, const char* arg_unused) {
   // --no-copy-propagation
   fNoCopyPropagation = true;
   // --no-dead-code-elimination
@@ -634,8 +634,8 @@ static void setDebug(const ArgumentDescription* desc, const char* arg_unused) {
   fDebugSymbols = true;
   printCppLineno = true;
 
-  // --optimized-debug
-  setOptimizedDebug(nullptr, nullptr); // nullptr since args unused
+  // --debug-safe-optimizations-only
+  setDebugSafeOptOnly(nullptr, nullptr); // nullptr since args unused
 }
 
 static void setPrintIr(const ArgumentDescription* desc, const char* arg) {
@@ -1380,7 +1380,7 @@ static ArgumentDescription arg_desc[] = {
  {"", ' ', NULL, "Debugging Control Options", NULL, NULL, NULL, NULL},
  {"debug", ' ', NULL, "Compile code in the best way for debugging", "F", &fDebug, "CHPL_DEBUG", setDebug},
  {"debug-symbols", 'g', NULL, "[Don't] Generate debug symbols", "N", &fDebugSymbols, "CHPL_DEBUG_SYMBOLS", setDebugSymbols},
- {"optimized-debug", ' ', NULL, "Turn off select Chapel optimizations that interfere with debugging", "F", &fOptimizedDebug, "CHPL_OPTIMIZED_DEBUG", setOptimizedDebug},
+ {"debug-safe-optimizations-only", ' ', NULL, "Turn off select Chapel optimizations that interfere with debugging", "F", &fDebugSafeOptOnly, "CHPL_DEBUG_SAFE_OPTIMIZATIONS_ONLY", setDebugSafeOptOnly},
 
  {"", ' ', NULL, "Optimization Control Options", NULL, NULL, NULL, NULL},
  {"baseline", ' ', NULL, "Disable all Chapel optimizations", "F", &fBaseline, "CHPL_BASELINE", setBaselineFlag},
@@ -2170,7 +2170,7 @@ static void checkTargetCpu() {
 
 static void checkDebugFlag() {
   if (fDebug) {
-    USR_WARN("'--debug' implies '--optimized-debug'."
+    USR_WARN("'--debug' implies '--debug-safe-optimizations-only'."
              " If you only want debug symbols, use '-g' or '--debug-symbols'.");
   }
 }

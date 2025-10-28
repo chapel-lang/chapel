@@ -281,7 +281,7 @@ OPTIONS
 **\--debug**
 
     Compile code in the best way for debugging. This implies
-    **-g** and **\--optimized-debug**. This flag is useful
+    **-g** and **\--debug-safe-optimizations-only**. This flag is useful
     when you are trying to debug a Chapel program using a source-level
     debugger such as gdb or lldb.
 
@@ -297,10 +297,10 @@ OPTIONS
     (only useful with the C backend) unless compiling as
     a developer (for example, via **\--devel**).
 
-.. _man-optimized-debug
-.. index:: --optimized-debug
+.. _man-debug-safe-optimizations-only
+.. index:: --debug-safe-optimizations-only
 
-**\--optimized-debug**
+**\--debug-safe-optimizations-only**
 
     Disable optimizations that may interfere with debugging.
 
