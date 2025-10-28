@@ -662,6 +662,35 @@ void determineAllSubs(FnSymbol*  fn,
   }
 }
 
+Symbol* getSubstitutionFromDefaultValue(ArgSymbol* formal,
+                                        Expr* defaultExpr,
+                                        Expr* ctx) {
+  Type* defType = defaultExpr->typeInfo();
+
+  // Check type formals after resolving to match the validation
+  // done for direct arguments in checkResolveFormalsWhereClauses
+  if (formal->hasFlag(FLAG_TYPE_VARIABLE)) {
+    if (!isTypeExpr(defaultExpr)) {
+      USR_FATAL(formal, "unable to initialize a type formal with a value");
+    }
+  }
+
+  bool inOutCopy = inOrOutFormalNeedingCopyType(formal);
+  if (defType == dtTypeDefaultToken)
+    return dtTypeDefaultToken->symbol;
+  else if (Type* type = getInstantiationType(defType, NULL,
+                                             formal->type, NULL,
+                                             ctx,
+                                             true, false,
+                                             inOutCopy)) {
+    return type->symbol;
+  } else {
+    // Report error when getInstantiationType fails to match constraint
+    USR_FATAL(formal, "default value for formal '%s' does not match its type constraint", formal->name);
+  }
+  return nullptr;
+}
+
 //
 // instantiate function
 //
@@ -728,29 +757,7 @@ FnSymbol* instantiateFunction(FnSymbol*  fn,
           USR_FATAL(formal, "default value for param is not a param");
         }
       } else {
-        Type* defType = tail->typeInfo();
-
-        // Check type formals after resolving to match the validation
-        // done for direct arguments in checkResolveFormalsWhereClauses
-        if (formal->hasFlag(FLAG_TYPE_VARIABLE)) {
-          if (!isTypeExpr(tail)) {
-            USR_FATAL(formal, "unable to initialize a type formal with a value");
-          }
-        }
-
-        bool inOutCopy = inOrOutFormalNeedingCopyType(formal);
-        if (defType == dtTypeDefaultToken)
-          val = dtTypeDefaultToken->symbol;
-        else if (Type* type = getInstantiationType(defType, NULL,
-                                                   newFormal->type, NULL,
-                                                   call,
-                                                   true, false,
-                                                   inOutCopy)) {
-          val = type->symbol;
-        } else {
-          // Report error when getInstantiationType fails to match constraint
-          USR_FATAL(formal, "default value for formal '%s' does not match its type constraint", formal->name);
-        }
+        val = getSubstitutionFromDefaultValue(newFormal, tail, call);
       }
 
       if (val != NULL) {

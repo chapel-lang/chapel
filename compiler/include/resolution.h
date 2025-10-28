@@ -440,6 +440,9 @@ static inline void sanityCheckDefinedConstArg(BaseAST *arg) {
   }
 }
 
+Symbol* getSubstitutionFromDefaultValue(ArgSymbol* formal,
+                                        Expr* defaultExpr,
+                                        Expr* ctx);
 
 // Return the array element type, or NULL if not an array
 Type* arrayElementType(Type* arrayType);

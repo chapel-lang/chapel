@@ -516,28 +516,8 @@ void ResolutionCandidate::computeSubstitutionForDefaultExpr(ArgSymbol* formal,
       }
 
     } else if (formal->type->symbol->hasFlag(FLAG_GENERIC) == true) {
-      // Check type formals before extracting type to match the validation
-      // done for direct arguments in checkResolveFormalsWhereClauses
-      if (formal->hasFlag(FLAG_TYPE_VARIABLE)) {
-        if (!isTypeExpr(tail)) {
-          USR_FATAL(tail, "unable to initialize a type formal with a value");
-        }
-      }
-
-      Type* defaultType = tail->typeInfo();
-
-      bool inOutCopy = inOrOutFormalNeedingCopyType(formal);
-      if (defaultType == dtTypeDefaultToken) {
-        substitutions.put(formal, dtTypeDefaultToken->symbol);
-
-      } else if (Type* type = getInstantiationType(defaultType, NULL,
-                                                   formal->type, NULL, ctx,
-                                                   true, false,
-                                                   inOutCopy)) {
-        substitutions.put(formal, type->symbol);
-      } else {
-        // Report error when getInstantiationType fails to match constraint
-        USR_FATAL(formal, "default value for formal '%s' does not match its type constraint", formal->name);
+      if (auto sub = getSubstitutionFromDefaultValue(formal, tail, ctx)) {
+        substitutions.put(formal, sub);
       }
     }
   }
