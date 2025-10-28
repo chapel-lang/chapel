@@ -730,6 +730,14 @@ FnSymbol* instantiateFunction(FnSymbol*  fn,
       } else {
         Type* defType = tail->typeInfo();
 
+        // Check type formals after resolving to match the validation
+        // done for direct arguments in checkResolveFormalsWhereClauses
+        if (formal->hasFlag(FLAG_TYPE_VARIABLE)) {
+          if (!isTypeExpr(tail)) {
+            USR_FATAL(formal, "unable to initialize a type formal with a value");
+          }
+        }
+
         bool inOutCopy = inOrOutFormalNeedingCopyType(formal);
         if (defType == dtTypeDefaultToken)
           val = dtTypeDefaultToken->symbol;
@@ -739,6 +747,9 @@ FnSymbol* instantiateFunction(FnSymbol*  fn,
                                                    true, false,
                                                    inOutCopy)) {
           val = type->symbol;
+        } else {
+          // Report error when getInstantiationType fails to match constraint
+          USR_FATAL(formal, "default value for formal '%s' does not match its type constraint", formal->name);
         }
       }
 
