@@ -1,2 +1,1 @@
-default-argument-type-value-literal.chpl:4: In function 'test':
 default-argument-type-value-literal.chpl:4: error: unable to initialize a type formal with a value
