@@ -580,6 +580,115 @@ static void regressionTestRecursivePromotionTypeBug() {
          CompositeType::getErrorType(context)->basicClassType());
 }
 
+// Helper to test that promoted functions with return intent overloading
+// choose the expected overload based on priority (ref > const ref > value)
+static void testPromotionChoosesOverload(
+  const char* testName,
+  const char* overloadDecls,
+  uast::Function::ReturnIntent expectedIntent) {
+  printf("%s\n", testName);
+
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+record R {
+  proc chpl__promotionType() type do return int;
+}
+iter R.these() do yield 1;
+var global: int;
+)""";
+  program += overloadDecls;
+  program += R"""(
+var promoted = foo(new R());
+)""";
+
+  auto m = parseModule(context, program);
+  auto& rr = resolveModule(context, m->id());
+
+  // Find the 'promoted' variable
+  auto promoted = findVariable(m, "promoted");
+  CHPL_ASSERT(promoted && promoted->name() == "promoted");
+
+  auto& re = rr.byAst(promoted->initExpression());
+  assert(!re.type().isUnknownOrErroneous());
+  assert(re.type().type()->isPromotionIteratorType());
+
+  // Check that the expected overload was chosen
+  auto pit = re.type().type()->toPromotionIteratorType();
+  auto scalarSig = pit->scalarFn();
+  auto fnAst = idToAst(context, scalarSig->id());
+  assert(fnAst && fnAst->isFunction());
+  assert(re.mostSpecific().only().fn());
+  assert(re.mostSpecific().only().fn()->id() == scalarSig->id());
+
+  if (fnAst->toFunction()->returnIntent() != expectedIntent) {
+    printf("Test %s failed: expected %s return intent but got %s\n",
+           testName,
+           uast::Function::returnIntentToString(expectedIntent),
+           uast::Function::returnIntentToString(fnAst->toFunction()->returnIntent()));
+    assert(false);
+  }
+
+  // Verify yielded type is int
+  assert(pit->yieldType().type()->isIntType());
+}
+
+// Test that promoted functions with ref and const ref overloads prefer ref
+static void testPromotionReturnIntentOverloading() {
+  testPromotionChoosesOverload(
+    "testPromotionReturnIntentOverloading",
+    R"""(
+proc foo(x: int) ref { return global; }
+proc foo(x: int) const ref { return global; }
+)""",
+    uast::Function::REF);
+}
+
+// Test that promoted functions with ref and value overloads prefer ref
+static void testPromotionReturnIntentOverloadingRefValue() {
+  testPromotionChoosesOverload(
+    "testPromotionReturnIntentOverloadingRefValue",
+    R"""(
+proc foo(x: int) ref { return global; }
+proc foo(x: int) { return global; }
+)""",
+    uast::Function::REF);
+}
+
+// Test that promoted functions with all three return intent overloads prefer ref
+static void testPromotionReturnIntentOverloadingAll() {
+  testPromotionChoosesOverload(
+    "testPromotionReturnIntentOverloadingAll",
+    R"""(
+proc foo(x: int) ref { return global; }
+proc foo(x: int) const ref { return global; }
+proc foo(x: int) { return global; }
+)""",
+    uast::Function::REF);
+}
+
+// Test that promoted functions with const ref and value overloads prefer const ref
+static void testPromotionReturnIntentOverloadingConstRefValue() {
+  testPromotionChoosesOverload(
+    "testPromotionReturnIntentOverloadingConstRefValue",
+    R"""(
+proc foo(x: int) const ref { return global; }
+proc foo(x: int) { return global; }
+)""",
+    uast::Function::CONST_REF);
+}
+
+// Test that promoted functions with only value overload use value
+static void testPromotionReturnIntentOverloadingValueOnly() {
+  testPromotionChoosesOverload(
+    "testPromotionReturnIntentOverloadingValueOnly",
+    R"""(
+proc foo(x: int) { return global; }
+)""",
+    uast::Function::DEFAULT_RETURN_INTENT);
+}
+
 int main() {
   // Run tests with primary and secondary method definitions (expecting
   // the same results).
@@ -618,6 +727,12 @@ int main() {
   testTertiaryMethod();
 
   regressionTestRecursivePromotionTypeBug();
+
+  testPromotionReturnIntentOverloading();
+  testPromotionReturnIntentOverloadingRefValue();
+  testPromotionReturnIntentOverloadingAll();
+  testPromotionReturnIntentOverloadingConstRefValue();
+  testPromotionReturnIntentOverloadingValueOnly();
 
   return 0;
 }

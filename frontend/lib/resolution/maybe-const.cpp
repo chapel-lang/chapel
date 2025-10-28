@@ -116,6 +116,11 @@ void AdjustMaybeRefs::process(const uast::AstNode* symbol,
     if (auto body = fn->body()) {
       body->traverse(rv);
     }
+  } else if (auto mod = symbol->toModule()) {
+    // traverse the module contents
+    for (auto child : mod->children()) {
+      child->traverse(rv);
+    }
   } else {
     CHPL_ASSERT(false && "should not be reached");
     symbol->traverse(rv);
@@ -230,7 +235,8 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
 
   // is it return intent overloading? resolve that
   if (candidates.numBest() > 1) {
-    Access access = currentAccess();
+    Access access = candidates.ignoreContextForReturnIntentOverloading() ?
+                    Access::REF : currentAccess();
     auto kind = QualifiedType::UNKNOWN;
     bool ambiguity;
     auto best = determineBestReturnIntentOverload(candidates, access, kind, ambiguity);

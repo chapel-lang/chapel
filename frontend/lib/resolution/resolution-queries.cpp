@@ -433,6 +433,7 @@ const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
       }
       checkThrows(rc, result, mod);
       callInitDeinit(r);
+      adjustReturnIntentOverloadsAndMaybeConstRefs(r);
 
       // check interface implementations in this module
       auto implPoints = collectImplementationPointsInModule(context, mod);
@@ -6446,6 +6447,37 @@ static bool handleReflectionFunction(ResolutionContext* rc,
   return false;
 }
 
+// Things that produce iterators (promotion, iterator functions) have
+// unique return types that are generated per call (e.g., "iterator record 1").
+// This means that naively, we will always get return type inequality errors,
+// since each call will have a different "iterator record N" type.
+//
+// In production, promoted function calls and iterators have a fixed preferred
+// overload regardless of context (ref > const ref > value).
+//
+//     https://github.com/chapel-lang/chapel/blob/f152a22c6d704ba8a6c9303b2ce0f69a174262f6/compiler/resolution/cullOverReferences.cpp#L1710-L1711
+//
+// It seems that this order is also used to pick the return type. Match that
+// logic, and pick the preferred overload for return type purposes.
+static const MostSpecificCandidate* pickOverloadEarlyIfNeeded(const MostSpecificCandidates& mostSpecific) {
+  // there's only or less overload, no need to disambiguate early.
+  if (mostSpecific.numBest() <= 1) return nullptr;
+
+  if (!mostSpecific.ignoreContextForReturnIntentOverloading()) return nullptr;
+
+  QualifiedType::Kind bestKindIgnored = QualifiedType::UNKNOWN;
+  bool ambiguity = false;
+
+  auto preferredIterableOverload =
+    determineBestReturnIntentOverload(mostSpecific, Access::REF, bestKindIgnored, ambiguity);
+
+  // ambiguity only happens if we can't infer maybe const, but are asking for
+  // a specific overload preference (REF).
+  CHPL_ASSERT(!ambiguity);
+
+  return preferredIterableOverload;
+}
+
 // handle field access constness and pragmas like REF_TO_CONST_WHEN_CONST_THIS
 static void adjustConstnessBasedOnReceiver(Context* context,
                                            const MostSpecificCandidate& candidate,
@@ -6533,11 +6565,18 @@ resolveFnCall(ResolutionContext* rc,
   // infer types of generic 'out' formals from function bodies
   mostSpecific.inferOutFormals(rc, instantiationPoiScope);
 
+  // see if we need to only use one overload for return type purposes
+  auto overloadForReturnType =
+    pickOverloadEarlyIfNeeded(mostSpecific);
+
   // compute the return types
   optional<QualifiedType> retType;
   optional<QualifiedType> yieldedType;
+  optional<bool> promoted;
   for (const MostSpecificCandidate& candidate : mostSpecific) {
     if (candidate.fn() == nullptr) continue;
+    bool useForReturnType = overloadForReturnType == nullptr ||
+                            &candidate == overloadForReturnType;
 
     QualifiedType rt;
     if (handleReflectionFunction(rc, candidate.fn(), call, rt)) {
@@ -6560,24 +6599,46 @@ resolveFnCall(ResolutionContext* rc,
 
     QualifiedType yt;
 
-    if (!candidate.promotedFormals().empty()) {
+    bool thisPromoted = !candidate.promotedFormals().empty();
+    if (thisPromoted) {
       // this is actually a promotion; construct a promotion type instead.
       yt = rt;
       rt = QualifiedType(rt.kind(), PromotionIteratorType::get(context, instantiationPoiScope, candidate.fn(), rt, candidate.promotedFormals()));
     }
 
-    if (retType && retType->type() != rt.type()) {
+    bool promotionMismatch = false;
+    if (((bool) promoted) && *promoted != thisPromoted) {
+      context->error(candidate.fn(),
+                     nullptr,
+                     "some return intent overloads are promoted, but others are not");
+      promotionMismatch = true;
+    } else if (!promoted) {
+      promoted = thisPromoted;
+    }
+
+    if (promotionMismatch) {
+      // return types ought to match (scalar vs promotion iterator).
+      // Technically, it's possible that the "scalar" return intent overload
+      // returns a promotion iterator by calling the ref version from its
+      // body... but that shouldn't be allowed anyway. Don't emit other errors,
+      // and don't update retType. Yield type will still be validated below.
+    } else if (!useForReturnType) {
+      // see how useForReturnType is computed above; we pick a particular return
+      // intent overload early. The yield type will still be validated below.
+    } else if (retType && retType->type() != rt.type()) {
       // The actual iterator type for each overload will be different
       // since it includes the TypedFnSignature, and different overloads
       // are different TypedFnSignatures. Don't error, though.
       //
-      // TODO: how do iterators + iterator groups work with return intent
-      // overloading?
-      if (!isIterator) {
-        context->error(candidate.fn(),
-                       nullptr,
-                       "return intent overload type does not match");
-      }
+      // The same is true for promoted calls. Their scalar types will be checked
+      // via yt below.
+      //
+      // TODO: improve iterators + iterator groups work with return intent
+      //       overloading. Currently, we match production and ignore context.
+      CHPL_ASSERT(!isIterator); // we picked one preferred overload above.
+      context->error(candidate.fn(),
+                     nullptr,
+                     "return intent overload type does not match");
     } else if (!retType) {
       retType = rt;
     }

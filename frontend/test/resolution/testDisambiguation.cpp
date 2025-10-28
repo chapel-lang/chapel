@@ -77,7 +77,9 @@ static void checkCalledIndex(Context* context,
 
   assert(stuff.fns.size() > 1); // > 1 needed for disambiguation
 
-  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+  // resolve the individual module statement, since the full module
+  // resolution performs return intent selection and discards unrelated candidates.
+  const ResolutionResultByPostorderID& rr = resolveModuleStmt(context, parsing::idToParentModuleStmt(context, stuff.fnCalls.back()->id()));
   const ResolvedExpression& re = rr.byAst(stuff.fnCalls.back());
   const MostSpecificCandidates& s = re.mostSpecific();
 

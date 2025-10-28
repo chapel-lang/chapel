@@ -342,8 +342,9 @@ static void test5c(Context* ctx) {
     }
 
     var x = 5;
+    var str = "foo";
     var y = test(x);
-    var z = test("foo");
+    var z = test(str);
     )"""";
 
   auto qt = resolveTypesOfVariables(ctx, program, { "y", "z" });
