@@ -297,7 +297,7 @@ OPTIONS
     (only useful with the C backend) unless compiling as
     a developer (for example, via **\--devel**).
 
-.. _man-debug-safe-optimizations-only
+.. _man-debug-safe-optimizations-only:
 .. index:: --debug-safe-optimizations-only
 
 **\--debug-safe-optimizations-only**
