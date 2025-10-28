@@ -158,6 +158,7 @@ private:
                                                     VisibilityInfo* visInfo);
 
   bool                    checkGenericFormals(Expr* ctx);
+  bool                    checkGenericFormalsFromDefaults(Expr* ctx);
 
   SymbolMap               substitutions;
 };

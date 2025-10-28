@@ -697,19 +697,11 @@ Symbol* getSubstitutionFromDefaultValue(ArgSymbol* formal,
     //    it doesn't provide enough type information to isntantiate the formal,
     //    leaving it generic.
     //
-    // For a nice error in the coercion version of case 2, check if we can
-    // coerce and emit a more specific error.
-    auto fn = toFnSymbol(formal->defPoint->parentSymbol);
-    if (!formal->hasFlag(FLAG_TYPE_VARIABLE) && fn &&
-        canCoerce(defType, NULL, formal->type, NULL, fn)) {
-      USR_FATAL(defaultExpr, "default value of type '%s' does not provide "
-                             "enough type information to instantiate generic formal '%s' of type '%s'",
-                toString(defType), formal->name, toString(formal->type));
-    } else {
-      USR_FATAL(formal, "cannot instantiate generic formal '%s' of type "
-                        "'%s' with default value of type '%s'",
-                formal->name, toString(formal->type), toString(defType));
-    }
+    // We will issue an error for these, but later. That way, if this
+    // function is rejected after all (e.g., due to 'where' clauses),
+    // we don't issue unnecessary errors. For now, flag the
+    // formal.
+    formal->addFlag(FLAG_BAD_UNINSTANTIATED_FORMAL);
   }
   return nullptr;
 }

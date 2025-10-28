@@ -129,6 +129,9 @@ bool ResolutionCandidate::isApplicableGeneric(CallInfo& info,
   if (checkGenericFormals(info.call) == false)
     return false;
 
+  if (checkGenericFormalsFromDefaults(info.call) == false)
+    return false;
+
   // Compute the param/type substitutions for generic arguments.
   if (computeSubstitutions(info.call) == false) {
     reason = RESOLUTION_CANDIDATE_OTHER;
@@ -1061,6 +1064,18 @@ bool ResolutionCandidate::checkGenericFormals(Expr* ctx) {
   return true;
 }
 
+bool ResolutionCandidate::checkGenericFormalsFromDefaults(Expr* ctx) {
+  for_formals(formal, fn) {
+    // See how the flag was added for a description of the error cases.
+    if (formal->hasFlag(FLAG_BAD_UNINSTANTIATED_FORMAL)) {
+      failingArgument = formal;
+      reason = RESOLUTION_CANDIDATE_UNRELATED_TYPE;
+      return false;
+    }
+  }
+  return true;
+}
+
 static bool isNumericType(Type* t) {
   return isBoolType(t) ||
          isIntType(t) ||
@@ -1204,6 +1219,16 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
     case RESOLUTION_CANDIDATE_TYPE_SAME_CATEGORY:
     case RESOLUTION_CANDIDATE_UNRELATED_TYPE:
     case RESOLUTION_CANDIDATE_DIFFERENT_RECEIVER_TYPES:
+      if (c.failingArgument && c.failingArgument->hasFlag(FLAG_BAD_UNINSTANTIATED_FORMAL)) {
+        auto failingFormal = toArgSymbol(c.failingArgument);
+        USR_PRINT(failingFormal,
+                  "because the generic formal '%s' of type '%s' cannot be "
+                  "instantiated with default value of type '%s'",
+                  failingFormal->name, toString(failingFormal->type),
+                  toString(failingFormal->defaultExpr->body.tail->getValType()));
+        break;
+      }
+
       USR_PRINT(call, "because %s with type '%s'",
                     failingActualDesc,
                     toString(failingActual->getValType()));
