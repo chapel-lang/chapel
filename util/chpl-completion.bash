@@ -53,7 +53,9 @@ _chpl ()
 --cpp-lines \
 --dead-code-elimination \
 --debug \
+--debug-safe-optimizations-only \
 --debug-short-loc \
+--debug-symbols \
 --default-dist \
 --denormalize \
 --detailed-errors \
@@ -198,8 +200,8 @@ _chpl ()
 --no-count-tokens \
 --no-cpp-lines \
 --no-dead-code-elimination \
---no-debug \
 --no-debug-short-loc \
+--no-debug-symbols \
 --no-denormalize \
 --no-detailed-errors \
 --no-devel \
@@ -464,6 +466,8 @@ _chpl ()
 --cpp-lines \
 --dead-code-elimination \
 --debug \
+--debug-safe-optimizations-only \
+--debug-symbols \
 --detailed-errors \
 --devel \
 --div-by-zero-checks \
@@ -525,7 +529,7 @@ _chpl ()
 --no-count-tokens \
 --no-cpp-lines \
 --no-dead-code-elimination \
---no-debug \
+--no-debug-symbols \
 --no-detailed-errors \
 --no-devel \
 --no-div-by-zero-checks \
