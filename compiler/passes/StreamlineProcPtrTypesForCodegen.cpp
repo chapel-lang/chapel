@@ -32,6 +32,9 @@ namespace {
   using Pass = StreamlineProcPtrTypesForCodegen;
 }
 
-FunctionType* Pass::computeAdjustedType(FunctionType* ft) const {
-  return ft->getWithStreamlinedComponents();
+Type* Pass::computeAdjustedType(Type* t) const {
+  if (auto ft = toFunctionType(t->getValType())) {
+    return ft->getWithStreamlinedComponents();
+  }
+  return t;
 }

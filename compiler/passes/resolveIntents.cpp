@@ -477,10 +477,13 @@ static FunctionType* computeConcreteIntentsForFunctionType(FunctionType* ft) {
 // NOTE (dlongnecke): This is a new-style compiler pass that is just defined
 // in this file, but that is OK. When the typed converter comes online we'll
 // be getting rid of this code.
-class ResolveIntentsForProcPtrTypes : public AdjustProcPtrTypes {
+class ResolveIntentsForProcPtrTypes : public AdjustSymbolTypes {
  public:
-  FunctionType* computeAdjustedType(FunctionType* ft) const override {
-    return computeConcreteIntentsForFunctionType(ft);
+  Type* computeAdjustedType(Type* t) const override {
+    if (auto ft = toFunctionType(t->getValType())) {
+      return computeConcreteIntentsForFunctionType(ft);
+    }
+    return t;
   };
 };
 

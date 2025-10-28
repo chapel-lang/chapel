@@ -743,7 +743,9 @@ FunctionType::~FunctionType() {
 void FunctionType::verify() {
   Type::verify();
 
-  if (!returnType()->symbol->inTree()) {
+  bool isUsed = symbol->isUsed();
+
+  if (isUsed && !returnType()->symbol->inTree()) {
     INT_FATAL(this->symbol, "The function type %s is used but has a return "
                             "type %s that is no longer in the tree",
                             typeToString(this),
@@ -754,7 +756,7 @@ void FunctionType::verify() {
     for (int i = 0; i < numFormals(); i++) {
       auto name = formal(i)->name();
       auto type = formal(i)->type();
-      if (!type->inTree()) {
+      if (isUsed && !type->inTree()) {
         INT_FATAL(this->symbol, "The function type %s is used but has a "
                                 "formal %s with a type %s that is no "
                                 "longer in the tree",
@@ -1339,8 +1341,78 @@ const char* FunctionType::qualifierMnemonicMangled(Qualifier qual) {
   return nullptr;
 }
 
+static const char*
+functionTypeDecoratorMnemonicMangled(DecoratedClassType* dct) {
+  auto d = dct->getDecorator();
+
+  if (isManagedPtrType(dct)) {
+    // Set the manager mnemonic for use when printing out managed types.
+    auto mgr = getManagedPtrManagerType(dct);
+
+    const char* mgrMnemonic = mgr ? mgr->symbol->cname : nullptr;
+    if (mgr == dtOwned) {
+      mgrMnemonic = "o";
+    } else if (mgr == dtShared) {
+      mgrMnemonic = "s";
+    }
+
+    std::ostringstream oss;
+
+    switch (d) {
+      case ClassTypeDecorator::MANAGED: {
+        return mgrMnemonic;
+      } break;
+      case ClassTypeDecorator::MANAGED_NONNIL: {
+        oss << mgrMnemonic << "n";
+        return astr(oss.str());
+      } break;
+      case ClassTypeDecorator::MANAGED_NILABLE: {
+        oss << mgrMnemonic << "x";
+        return astr(oss.str());
+      } break;
+      default: INT_FATAL("Not possible!");
+    }
+  }
+
+  switch (d) {
+    case ClassTypeDecorator::BORROWED: return "b";
+    case ClassTypeDecorator::BORROWED_NONNIL: return "bn";
+    case ClassTypeDecorator::BORROWED_NILABLE: return "bx";
+    case ClassTypeDecorator::UNMANAGED: return "u";
+    case ClassTypeDecorator::UNMANAGED_NILABLE: return "bn";
+    case ClassTypeDecorator::UNMANAGED_NONNIL: return "bn";
+    case ClassTypeDecorator::GENERIC: return "g";
+    case ClassTypeDecorator::GENERIC_NONNIL: return "gn";
+    case ClassTypeDecorator::GENERIC_NILABLE: return "gx";
+    default: INT_FATAL("Not possible!");
+  }
+
+  INT_FATAL("Should not reach here!");
+  return nullptr;
+}
+
+static const char*
+functionTypeDecoratedClassTypeToStringMangled(DecoratedClassType* dct) {
+  std::ostringstream oss;
+
+  // We cannot use the 'cname' alone for decorated class types because of
+  // restrictions for ref types (they are mapped using their 'cname'
+  // currently) which require each ref type to have a unique cname.
+  oss << functionTypeDecoratorMnemonicMangled(dct);
+  oss << dct->symbol->cname;
+
+  auto ret = astr(oss.str());
+
+  return ret;
+}
+
 const char* FunctionType::typeToStringMangled(Type* t) {
   INT_ASSERT(t->symbol->cname);
+
+  if (auto dct = toDecoratedClassType(t)) {
+    return functionTypeDecoratedClassTypeToStringMangled(dct);
+  }
+
   return t->symbol->cname;
 }
 

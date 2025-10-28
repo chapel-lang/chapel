@@ -16,7 +16,7 @@
 # limitations under the License.
 set(SRCS
     AddLineFileInfoToProcPtrTypes.cpp
-    AdjustProcPtrTypes.cpp
+    AdjustSymbolTypes.cpp
     InitErrorHandling.cpp
     InitNormalize.cpp
     ResolveScope.cpp

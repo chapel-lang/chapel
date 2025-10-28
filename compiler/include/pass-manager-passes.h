@@ -234,14 +234,16 @@ class InsertNilChecks : public PassT<CallExpr*> {
 
 /** This class operates over a container of symbols and transforms their
     types accordingly. Uses of replaced types are enqueued so that they
-    can be adjusted as well. */
-class AdjustProcPtrTypes : public PassTU<Symbol*, SymExpr*> {
+    can be adjusted as well.
+*/
+class AdjustSymbolTypes : public PassTU<Symbol*, SymExpr*> {
  public:
-  virtual FunctionType* computeAdjustedType(FunctionType* ft) const = 0;
+  virtual Type* computeAdjustedType(Type* t) const = 0;
   bool shouldProcess(Symbol* sym) override;
   void process(Symbol* sym) override;
   void process(Symbol* newSymbol, SymExpr* oldUse) override;
 
+  // Common predicates that might be useful for child passes.
   static bool shouldProcessIfNonForeignLinkage(Symbol* sym);
   static bool shouldProcessDefault(Symbol* sym);
 };
@@ -257,10 +259,10 @@ class AdjustProcPtrTypes : public PassTU<Symbol*, SymExpr*> {
         of 'InsertLineNumbers', but we don't have the machinery to express
         that at the moment.
 */
-class AddLineFileInfoToProcPtrTypes : public AdjustProcPtrTypes {
+class AddLineFileInfoToProcPtrTypes : public AdjustSymbolTypes {
  public:
   bool shouldProcess(Symbol* sym) override;
-  FunctionType* computeAdjustedType(FunctionType* ft) const override;
+  Type* computeAdjustedType(Type* t) const override;
 };
 
 /**
@@ -313,9 +315,9 @@ class InsertLineNumbers : public PassTU<FnSymbol*, CallExpr*> {
   static ValueMappedTable<std::string> gFilenameTable;
 };
 
-class StreamlineProcPtrTypesForCodegen : public AdjustProcPtrTypes {
+class StreamlineProcPtrTypesForCodegen : public AdjustSymbolTypes {
  public:
-  FunctionType* computeAdjustedType(FunctionType* ft) const override;
+  Type* computeAdjustedType(Type* t) const override;
 };
 
 #endif

@@ -1755,17 +1755,42 @@ Type* doAdjustSymbolType(std::unordered_map<Type*, Type*>& alreadyAdjusted,
     setType = false;
   }
 
+  if (ret->symbol->hasFlag(FLAG_WIDE_REF) ||
+      ret->symbol->hasFlag(FLAG_REF)) {
+    // Do not modify substitutions in reference types. Compute a new type.
+    canModifySubstitutions = false;
+  }
+
+  if (auto vs = toVarSymbol(sym)) {
+    auto parent = vs->defPoint->parentSymbol;
+    if (parent && isTypeSymbol(parent)) {
+      if (parent->hasFlag(FLAG_REF) || parent->hasFlag(FLAG_WIDE_REF)) {
+        // Do not modify fields in 'ref' or 'wide-ref' formals.
+        //
+        // TODO: In general, modifying fields and substitutions ends up making
+        //       the AST super wonky and hard to follow. The reason is because
+        //       we do not recompute certain properties such as the 'name' of
+        //       aggregates after we change things in them. For 'ref' types
+        //       this is extra egregious because they are used everywhere.
+        setType = false;
+      }
+    }
+  }
+
   if (auto fn = toFnSymbol(sym)) {
+    // Recompute the return type.
     Type* newRetT = doComputeType(fn->retType);
     if (newRetT != fn->retType) fn->retType = newRetT;
 
     if (fn->iteratorInfo) {
+      // Recompute the yielded type.
       Type* newYieldT = doComputeType(fn->iteratorInfo->yieldedType);
       if (newYieldT != fn->iteratorInfo->yieldedType)
         fn->iteratorInfo->yieldedType = newYieldT;
     }
 
     if (!fn->isUsedAsValue()) {
+      // Clear types for functions not used as values.
       ret = dtUnknown;
     }
   }
@@ -1818,10 +1843,21 @@ void adjustAllSymbolTypes(AdjustTypeFn adjustTypeFn, bool preserveRefLevels) {
                               preserveRefLevels);
   };
 
-  forv_Vec(VarSymbol, var, gVarSymbols) adjust(var);
-  forv_Vec(ArgSymbol, arg, gArgSymbols) adjust(arg);
-  forv_Vec(ShadowVarSymbol, sv, gShadowVarSymbols) adjust(sv);
-  forv_Vec(FnSymbol, fn, gFnSymbols) adjust(fn);
+  forv_Vec(VarSymbol, var, gVarSymbols) {
+    adjust(var);
+  }
+
+  forv_Vec(ArgSymbol, arg, gArgSymbols) {
+    adjust(arg);
+  }
+
+  forv_Vec(ShadowVarSymbol, sv, gShadowVarSymbols) {
+    adjust(sv);
+  }
+
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    adjust(fn);
+  }
 
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     Type* newType = adjust(ts);
@@ -1842,8 +1878,9 @@ void adjustAllSymbolTypes(AdjustTypeFn adjustTypeFn, bool preserveRefLevels) {
     if (auto ts = kt->symbol) {
       // Otherwise, try to remove the key type from the tree.
       if (!ts->inTree()) continue;
-      bool noUses = ts->firstSymExpr() == nullptr;
-      if (noUses) ts->defPoint->remove();
+      if (!ts->isUsed()) {
+        ts->defPoint->remove();
+      }
     }
   }
 }

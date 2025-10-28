@@ -457,6 +457,16 @@ void check_insertLineNumbers()
   check_afterCallDestructors();
   check_afterLowerIterators();
   check_afterInlineFunctions();
+
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+    if (auto ft = toFunctionType(ts->type)) {
+      if (ft->numFormals() < 2 && !ft->hasForeignLinkage() &&
+          ts->isUsed()) {
+        INT_FATAL("Non-foreign procedure types without line/file formals "
+                  "should not be used after this point");
+      }
+    }
+  }
 }
 
 void check_denormalize() {

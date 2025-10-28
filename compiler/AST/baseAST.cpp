@@ -248,6 +248,19 @@ void cleanAst() {
   // clear back pointers to dead ast instances
   //
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+
+    if (isAlive(ts)) {
+      if (auto ft = toFunctionType(ts->type)) {
+        for (auto& formal : ft->formals()) {
+          INT_ASSERT(isAlive(formal.type()));
+        }
+      }
+
+      if (ts->hasFlag(FLAG_REF)) {
+        INT_ASSERT(isAlive(ts->type->getValType()->symbol));
+      }
+    }
+
     for (int i = 0; i < ts->type->methods.n; i++) {
       FnSymbol* method = ts->type->methods.v[i];
 

@@ -1818,38 +1818,11 @@ static void codegen_header(std::set<const char*> & cnames,
                            std::vector<VarSymbol*> & globals) {
   GenInfo* info = gGenInfo;
 
-  // Collected when considering both types and 'FnSymbol'.
   std::unordered_set<FunctionType*> fnTypesToCodegen;
 
-  //
-  // Collect most types, but do not sort yet.
-  //
-  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (auto ft = toFunctionType(ts->type)) {
-      INT_ASSERT(fcfs::usePointerImplementation() || !ts->isUsed());
-
-      // Only function types used directly (e.g., in a cast operation)
-      // can be collected here. The rest have to be collected when
-      // functions are visited below.
-      if (!ft->symbol->isUsed()) continue;
-
-      if (auto it = fnTypesToCodegen.find(ft);
-               it == fnTypesToCodegen.end()) {
-        // TODO (dlongnecke): Rare case right now, so leave breakpoint...
-        debuggerBreakHere();
-        fnTypesToCodegen.emplace_hint(it, ft);
-        types.push_back(ts);
-      } else {
-        INT_FATAL(ts, "Type stored more than once in 'gTypeSymbols'!");
-      }
-
-    } else if (ts->defPoint->parentExpr != rootModule->block) {
-      types.push_back(ts);
-    }
-  }
 
   //
-  // Collect functions and function types, then sort them.
+  // Collect functions and function types.
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     // The function is not code-generated, so skip it.
@@ -1877,6 +1850,34 @@ static void codegen_header(std::set<const char*> & cnames,
         // TODO (dlongnecke): Could be pruned/discarded earlier...
         continue;
       }
+    }
+  }
+
+  //
+  // Collect types.
+  //
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+    if (auto ft = toFunctionType(ts->type->getValType())) {
+      INT_ASSERT(fcfs::usePointerImplementation() || !ts->isUsed());
+
+      if (!ts->isUsed() && !ft->symbol->isUsed() &&
+          !fnTypesToCodegen.count(ft)) {
+        // This (ref/wide-ref) type is not used at all, so skip it.
+        if (ts->inTree()) {
+          ts->defPoint->remove();
+        }
+
+        continue;
+      }
+
+      if (isFunctionType(ts->type)) {
+        fnTypesToCodegen.insert(ft);
+      }
+
+      types.push_back(ts);
+
+    } else if (ts->defPoint->parentExpr != rootModule->block) {
+      types.push_back(ts);
     }
   }
 
@@ -2183,7 +2184,7 @@ static void codegen_header(std::set<const char*> & cnames,
 //  the types as we use them).
 static void codegen_header_addons() {
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (ts->defPoint->parentExpr != rootModule->block) {
+    if (ts->inTree() && ts->defPoint->parentExpr != rootModule->block) {
       if (AggregateType* ct = toAggregateType(ts->type))
         codegen_aggregate_def(ct);
     }

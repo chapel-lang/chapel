@@ -24,17 +24,19 @@
 #include "baseAST.h"
 #include "CallExpr.h"
 #include "FnSymbol.h"
+#include "passes.h"
 #include "resolution.h"
 #include "symbol.h"
 #include "type.h"
 
 namespace {
   // As a means of abbreviation.
-  using Pass = AdjustProcPtrTypes;
+  using Pass = AdjustSymbolTypes;
 }
 
 bool Pass::shouldProcessDefault(Symbol* sym) {
   if (auto fn = toFnSymbol(sym)) {
+    // Process because the functions's type has semantic importance.
     if (fn->isUsedAsValue()) return true;
 
     // Otherwise, process the function only if you should process its RVV.
@@ -42,7 +44,7 @@ bool Pass::shouldProcessDefault(Symbol* sym) {
     return rvv && shouldProcessDefault(rvv);
   }
 
-  return isFunctionType(sym->type);
+  return true;
 }
 
 bool Pass::shouldProcessIfNonForeignLinkage(Symbol* sym) {
@@ -54,11 +56,14 @@ bool Pass::shouldProcessIfNonForeignLinkage(Symbol* sym) {
     return rvv && shouldProcessIfNonForeignLinkage(rvv);
   }
 
-  if (auto ft = toFunctionType(sym->type)) {
+  if (auto ft = toFunctionType(sym->type->getValType())) {
     return !ft->hasForeignLinkage();
   }
 
-  return false;
+  bool ret = !sym->hasFlag(FLAG_EXTERN) &&
+             !sym->hasFlag(FLAG_EXPORT);
+
+  return ret;
 }
 
 bool Pass::shouldProcess(Symbol* sym) {
@@ -66,21 +71,32 @@ bool Pass::shouldProcess(Symbol* sym) {
 }
 
 void Pass::process(Symbol* sym) {
-  // TODO: The 'adjustSymbolType' should be made to take a template arg.
+  // TODO: The 'maybeAdjustSymbolType' should be made to take a template arg.
   //       That way, we can avoid the cost of constructing std::function.
   AdjustTypeFn adjustTypeFn = [this](Type* t) {
-    Type* ret = t;
-    if (auto ft = toFunctionType(t)) {
-      ret = this->computeAdjustedType(ft);
-    }
-    return ret;
+    return this->computeAdjustedType(t);
   };
 
   // Store the type before and after adjusting the symbol's type.
   Type* oldType = sym->type;
   Type* newType = maybeAdjustSymbolType(sym, adjustTypeFn);
+  Type* oldVt = oldType->getValType();
+  Type* newVt = newType->getValType();
+  bool changed = oldType != newType;
+  bool wasSet = sym->type != oldType;
 
-  if (isTypeSymbol(sym) && oldType != newType) {
+  INT_ASSERT(!wasSet || sym->type == newType);
+
+  if (fVerify && changed) {
+    // TODO: This does not necessarily always need to be the case, but for
+    //       now it seems to be, so crash if it's not so.
+    INT_ASSERT(!oldType->symbol->hasFlag(FLAG_REF) ||
+                newType->symbol->hasFlag(FLAG_REF));
+    INT_ASSERT(!oldType->symbol->hasFlag(FLAG_WIDE_REF) ||
+                newType->symbol->hasFlag(FLAG_WIDE_REF));
+  }
+
+  if (isTypeSymbol(sym) && changed) {
     // Type symbols require some special handling. They're the one class of
     // symbol where it doesn't actually make any sense to set 'sym->type'.
     // Instead, if they "changed", what we have to do is walk all the uses
@@ -88,15 +104,23 @@ void Pass::process(Symbol* sym) {
     for_SymbolSymExprs(se, sym) {
       enqueue(newType->symbol, se);
     }
-
-  } else {
-    INT_ASSERT(sym->type == newType);
   }
 
-  if (sym->hasFlag(FLAG_RVV)) {
-    // The adjust function only makes references types as needed, but the
-    // '--verify' pass will expect every return type to have a 'ref' type.
-    if (!sym->type->refType) makeRefType(sym->type);
+  if (newVt != dtUnknown) {
+    if (changed && oldVt->refType && !newVt->refType) {
+      // Make sure that the type has a ref type, if needed.
+      makeRefType(newType->getValType());
+    }
+
+    if (changed && oldVt->getWideRefType() && !newVt->getWideRefType()) {
+      // Make sure that the type has a wide-ref type, if needed.
+      auto refT = newVt->getRefType();
+      INT_ASSERT(refT);
+
+      SET_LINENO(refT->symbol);
+      std::ignore = getOrMakeWideTypeDuringCodegen(refT);
+      INT_ASSERT(newVt->getWideRefType());
+    }
   }
 }
 
