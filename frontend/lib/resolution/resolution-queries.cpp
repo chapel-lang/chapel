@@ -433,6 +433,7 @@ const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
       }
       checkThrows(rc, result, mod);
       callInitDeinit(r);
+      adjustReturnIntentOverloadsAndMaybeConstRefs(r);
 
       // check interface implementations in this module
       auto implPoints = collectImplementationPointsInModule(context, mod);

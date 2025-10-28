@@ -1597,6 +1597,18 @@ ID idToParentModule(Context* context, ID id) {
   return getModuleForId(context, parentSymId);
 }
 
+ID idToParentModuleStmt(Context* context, ID id) {
+  auto mod = idToParentModule(context, id);
+  if (mod.isEmpty()) return ID();
+  auto modAst = idToAst(context, mod);
+  for (auto child : modAst->children()) {
+    if (child->id().contains(id)) {
+      return child->id();
+    }
+  }
+  return ID();
+}
+
 ID idToModule(Context* context, ID id) {
   return getModuleForId(context, id);
 }
