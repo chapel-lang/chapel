@@ -5273,7 +5273,7 @@ void makeBinaryLLVM(void) {
           !fLibraryCompile;
 
     if (generateDarwinSymArchive) {
-      const char* bin = "dsymutil";
+      auto bin = findSiblingClangToolPath("dsymutil");
       const char* sfx = ".dSYM";
       const char* tmp = astr(tmpbinname, sfx);
       const char* out = astr(executableFilename.c_str(), sfx);
