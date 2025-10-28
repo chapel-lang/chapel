@@ -628,6 +628,8 @@ static void setDebugSafeOptOnly(const ArgumentDescription* desc, const char* arg
   fReplaceArrayAccessesWithRefTemps = false;
   // --no-remove-empty-records
   fNoRemoveEmptyRecords = true;
+  // --no-fast-followers
+  fNoFastFollowers = true;
 }
 static void setDebug(const ArgumentDescription* desc, const char* arg_unused) {
   // --debug-symbols
