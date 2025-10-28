@@ -685,8 +685,31 @@ Symbol* getSubstitutionFromDefaultValue(ArgSymbol* formal,
                                              inOutCopy)) {
     return type->symbol;
   } else {
-    // Report error when getInstantiationType fails to match constraint
-    USR_FATAL(formal, "default value for formal '%s' does not match its type constraint", formal->name);
+    // At this point, we definitely have an error. There are two cases to consider.
+    //
+    // 1. Type formals. Type formals can be generic (we can pass 'integral'
+    //    as an argument). However, they do not allow coercions. Thus, since
+    //    getInstantiationType returned NULL, we couldn't instantiate the
+    //    formal with the default, so there's a type mismatch.
+    // 2. Other formals. These formals cannot be generic, but they do allow
+    //    coercions (e.g., passing 'nil' to 'borrowed C?'). However, since
+    //    getInstantiationType returned NULL, even if a coercion is possible,
+    //    it doesn't provide enough type information to isntantiate the formal,
+    //    leaving it generic.
+    //
+    // For a nice error in the coercion version of case 2, check if we can
+    // coerce and emit a more specific error.
+    auto fn = toFnSymbol(formal->defPoint->parentSymbol);
+    if (!formal->hasFlag(FLAG_TYPE_VARIABLE) && fn &&
+        canCoerce(defType, NULL, formal->type, NULL, fn)) {
+      USR_FATAL(defaultExpr, "default value of type '%s' does not provide "
+                             "enough type information to instantiate generic formal '%s' of type '%s'",
+                toString(defType), formal->name, toString(formal->type));
+    } else {
+      USR_FATAL(formal, "cannot instantiate generic formal '%s' of type "
+                        "'%s' with default value of type '%s'",
+                formal->name, toString(formal->type), toString(defType));
+    }
   }
   return nullptr;
 }
