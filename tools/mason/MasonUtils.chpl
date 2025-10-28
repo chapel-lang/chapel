@@ -124,6 +124,8 @@ proc runCommand(cmd: [] string, quiet=false) : string throws {
     log.debugln("end stderr.");
 
     process.wait();
+
+    log.debugf("exitCode: %i\n", process.exitCode);
     if process.exitCode != 0 {
       var cmdStr = " ".join(cmd);
       throw new owned MasonError("Command failed: '" + cmdStr + "'");
