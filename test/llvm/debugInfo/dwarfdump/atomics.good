@@ -1,3 +1,4 @@
+warning: '--debug' implies '--debug-safe-optimizations-only'. If you only want debug symbols, use '-g' or '--debug-symbols'.
 false | -5 | 0 | -32 | 17
 5 | 0 | 32 | 0
 1.5 | 2.5

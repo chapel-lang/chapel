@@ -1,3 +1,4 @@
+warning: '--debug' implies '--debug-safe-optimizations-only'. If you only want debug symbols, use '-g' or '--debug-symbols'.
 1..10 | 10..19 by -1 | 1..10 by 2 | 1..10 by -2 | 1..10 | 1..10 by 2
 .. | -11.. | ..11 | .. by 3 | -11.. by 3 | ..11 by 3
 1..10 by 2 | 1..10

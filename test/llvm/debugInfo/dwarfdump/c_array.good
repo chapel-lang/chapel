@@ -1,3 +1,4 @@
+warning: '--debug' implies '--debug-safe-optimizations-only'. If you only want debug symbols, use '-g' or '--debug-symbols'.
 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0] | [false, false, false, false, false] | [0.0, 0.0, 0.0] | [(x = 0), (x = 0), (x = 0), (x = 0), (x = 0), (x = 0), (x = 0), (x = 0), (x = 0), (x = 0), (x = 0), (x = 0), (x = 0), (x = 0), (x = 0), (x = 0)]
 [[0, 0, 0, 0], [0, 0, 0, 0]] | [nil, nil, nil, nil, nil, nil, nil, nil]
 Running DWARF verification...

@@ -1,3 +1,4 @@
+warning: '--debug' implies '--debug-safe-optimizations-only'. If you only want debug symbols, use '-g' or '--debug-symbols'.
 {1..10} | {1..10, 1..10} | {1..10 by 2} | {1..20 by -1} | {1..0} | {0..15}
 {5, 7, 9, 3, 1} | {cherry, apple, banana}
 {1 9}
