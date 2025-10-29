@@ -129,7 +129,8 @@ static void test1(Parser* parser) {
    class C {
      /* this class does nothing */
      var x;
-     var (x, y) = tup;
+     /* not supported; see https://github.com/chapel-lang/chapel/issues/27983.
+        var (x, y) = tup; */
      proc Cproc(val: int) {
        if val > x then x = val;
      }
