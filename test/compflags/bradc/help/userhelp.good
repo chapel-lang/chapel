@@ -141,6 +141,8 @@ Code Generation Options:
       --[no-]munge-user-idents        [Don't] Munge user identifiers to avoid
                                       naming conflicts with external code
       --savec <directory>             Save generated C code in directory
+
+Code Compilation Options:
       --ccflags <flags>               Back-end C compiler flags (can be
                                       specified multiple times)
       --dynamic                       Generate a dynamically linked binary
