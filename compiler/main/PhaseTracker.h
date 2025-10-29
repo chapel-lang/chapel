@@ -29,6 +29,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <cinttypes>
 
 /************************************* | **************************************
 *                                                                             *
@@ -76,12 +77,12 @@ struct PhaseData {
 
   std::string serialize() const {
     char buffer[256];
-    snprintf(buffer, sizeof(buffer), "%lu %" PRIx64, timeInUsecs, memory);
+    snprintf(buffer, sizeof(buffer), "%lu %" PRId64, timeInUsecs, memory);
     return std::string(buffer);
   }
   static PhaseData deserialize(std::string_view str) {
     PhaseData result;
-    sscanf(str.data(), "%lu %" PRIx64, &result.timeInUsecs, &result.memory);
+    sscanf(str.data(), "%lu %" PRId64, &result.timeInUsecs, &result.memory);
     return result;
   }
 
