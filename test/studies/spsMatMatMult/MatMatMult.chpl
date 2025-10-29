@@ -50,15 +50,25 @@ module MatMatMult {
 
     ref targLocs = A.targetLocales();
   
+    if (targLocs.dim(0) != targLocs.dim(1)) {
+      halt("sparseMatMatMult() currently assumes a square target locale array");
+    }
+    
+    const numBlocks = targLocs.dim(0).size;
+
     if countComms then startCommDiagnostics();
     var time: stopwatch;
     time.start();
 
     coforall (locRow, locCol) in targLocs.domain {
       on targLocs[locRow, locCol] {
+
         var spsData: sparseMatDat;
 
-        for srcloc in targLocs.dim(0) {
+        for loc in targLocs.dim(0) {
+          // Skew the row/col we access to avoid communication bottlenecks
+          const srcloc = (loc + locRow)%numBlocks;
+
           // Make a local copy of the remote blocks of A and B; on my branch
           // this will also make a local copy of the remote indices, so long
           // as these are 'const'/read-only
