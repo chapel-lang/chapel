@@ -1,0 +1,3 @@
+generic-field-nil.chpl:n: error: unresolved call 'A.init()'
+generic-field-nil.chpl:n: note: this candidate did not match: A.init(x: A?)
+generic-field-nil.chpl:n: note: because the generic formal 'x' of type 'A?' cannot be instantiated with default value of type 'nil'

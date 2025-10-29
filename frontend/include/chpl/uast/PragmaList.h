@@ -236,6 +236,7 @@ PRAGMA(EPILOGUE_LABEL, npr,
        "epilogue label",
        "distinguishes the epilogue label from other labels")
 PRAGMA(ERROR_LABEL, ypr, "error label", ncm)
+PRAGMA(BAD_UNINSTANTIATED_FORMAL, npr, "bad uninstantiated formal", "this formal was generic and not correctly instantiated with its default value")
 PRAGMA(EXPANDED_VARARGS, npr, "expanded varargs", ncm)
 PRAGMA(EXPAND_TUPLES_WITH_VALUES, ypr, "expand tuples with values", ncm)
 PRAGMA(EXPORT, npr, "export", ncm)

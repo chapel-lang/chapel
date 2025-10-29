@@ -662,6 +662,50 @@ void determineAllSubs(FnSymbol*  fn,
   }
 }
 
+Symbol* getSubstitutionFromDefaultValue(ArgSymbol* formal,
+                                        Expr* defaultExpr,
+                                        Expr* ctx) {
+  Type* defType = defaultExpr->typeInfo();
+
+  // Check type formals after resolving to match the validation
+  // done for direct arguments in checkResolveFormalsWhereClauses
+  if (formal->hasFlag(FLAG_TYPE_VARIABLE)) {
+    if (!isTypeExpr(defaultExpr)) {
+      USR_FATAL(formal, "unable to initialize a type formal with a value");
+    }
+  }
+
+  bool inOutCopy = inOrOutFormalNeedingCopyType(formal);
+  if (defType == dtTypeDefaultToken)
+    return dtTypeDefaultToken->symbol;
+  else if (Type* type = getInstantiationType(defType, NULL,
+                                             formal->type, NULL,
+                                             ctx,
+                                             true, false,
+                                             inOutCopy)) {
+    return type->symbol;
+  } else {
+    // At this point, we definitely have an error. There are two cases to consider.
+    //
+    // 1. Type formals. Type formals can be generic (we can pass 'integral'
+    //    as an argument). However, they do not allow coercions. Thus, since
+    //    getInstantiationType returned NULL, we couldn't instantiate the
+    //    formal with the default, so there's a type mismatch.
+    // 2. Other formals. These formals cannot be generic, but they do allow
+    //    coercions (e.g., passing 'nil' to 'borrowed C?'). However, since
+    //    getInstantiationType returned NULL, even if a coercion is possible,
+    //    it doesn't provide enough type information to isntantiate the formal,
+    //    leaving it generic.
+    //
+    // We will issue an error for these, but later. That way, if this
+    // function is rejected after all (e.g., due to 'where' clauses),
+    // we don't issue unnecessary errors. For now, flag the
+    // formal.
+    formal->addFlag(FLAG_BAD_UNINSTANTIATED_FORMAL);
+  }
+  return nullptr;
+}
+
 //
 // instantiate function
 //
@@ -728,18 +772,7 @@ FnSymbol* instantiateFunction(FnSymbol*  fn,
           USR_FATAL(formal, "default value for param is not a param");
         }
       } else {
-        Type* defType = tail->typeInfo();
-
-        bool inOutCopy = inOrOutFormalNeedingCopyType(formal);
-        if (defType == dtTypeDefaultToken)
-          val = dtTypeDefaultToken->symbol;
-        else if (Type* type = getInstantiationType(defType, NULL,
-                                                   newFormal->type, NULL,
-                                                   call,
-                                                   true, false,
-                                                   inOutCopy)) {
-          val = type->symbol;
-        }
+        val = getSubstitutionFromDefaultValue(newFormal, tail, call);
       }
 
       if (val != NULL) {
