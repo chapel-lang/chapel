@@ -16,6 +16,7 @@ from utils import memoize, run_command, warning
 cpu_llvm_synonyms = {
   'arm-thunderx':    'thunderx',
   'arm-thunderx2':   'thunderx2t99',
+  'arm-grace':       'grace',
   'knc':             'none',
   'mic-knl':         'knl',
   'x86-cascadelake': 'cascadelake',
@@ -30,7 +31,6 @@ cpu_llvm_synonyms = {
   'x86-genoa':       'znver4',
   'x86-turin':       'znver5',
   'x86-emr':         'emeraldrapids',
-  'arm-grace':       'grace',
 }
 
 # This gets the generic machine type, e.g. x86_64, i686, aarch64, arm64.
