@@ -36,7 +36,7 @@ bool MemoryTracker::platformSupportsMemoryTracking() {
   return true;
 #else
 #if __APPLE__
-  return false;
+  return true;
 #else
   return false;
 #endif
