@@ -7,6 +7,7 @@ else
   chpl_python=$($CHPL_HOME/util/config/find-python.sh)
 fi
 
+# numba doesn't support python 3.14 yet
 if $chpl_python -c 'import sys; sys.exit(int(sys.version_info[:2] != (3, 14)))' ; then
   echo "True"
 else
