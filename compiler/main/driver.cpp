@@ -2172,7 +2172,7 @@ static void checkTargetCpu() {
 
 static void checkDebugFlag() {
   if (fDebug) {
-    USR_WARN("'--debug' implies '--debug-safe-optimizations-only'."
+    USR_WARN("'--debug' now implies '--debug-safe-optimizations-only'."
              " If you only want debug symbols, use '-g' or '--debug-symbols'.");
   }
 }

@@ -1,4 +1,4 @@
-warning: '--debug' implies '--debug-safe-optimizations-only'. If you only want debug symbols, use '-g' or '--debug-symbols'.
+warning: '--debug' now implies '--debug-safe-optimizations-only'. If you only want debug symbols, use '-g' or '--debug-symbols'.
 (x = 0, y = 0.0) | () | (x = 0) | (x = (y = 0.0), y = 0)
 {x = 0, y = 0.0} | {} | {x = 0} | {x = nil, y = 0}
 {x = 0, y = 0.0} | {} | {x = 0} | {x = nil, y = 0}

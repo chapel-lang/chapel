@@ -1,4 +1,4 @@
-warning: '--debug' implies '--debug-safe-optimizations-only'. If you only want debug symbols, use '-g' or '--debug-symbols'.
+warning: '--debug' now implies '--debug-safe-optimizations-only'. If you only want debug symbols, use '-g' or '--debug-symbols'.
 (1, 2, 3) | (true, false) | (0.0,)
 (42, 3.14, hello) | (1, 2.0, three, false, (42, 3.14, hello), (1, 2, 3))
 Running DWARF verification...
