@@ -31,37 +31,37 @@
 #include <string_view>
 
 /************************************* | **************************************
- *                                                                             *
- * This class is designed to provide an accurate and reasonably detailed view  *
- * of the way time is being spent within the compiler.  The intent is to       *
- * account for all of the time between the entry point to main() and the final *
- * call to clean_exit(0) in driver.cpp.                                        *
- *                                                                             *
- * a) Create a Timer object that will record the wall time as early in the     *
- *    compiler as possible                                                     *
- *                                                                             *
- * b) Use the Timer to determine the elapsed time between the start of the     *
- *    program and the start of each phase                                      *
- *                                                                             *
- * c) Compute the elapsed time for each phase                                  *
- *                                                                             *
- * d) Stop the timer and generate one or more reports on the time spent in     *
- *    each phase.
- *                                                                             *
- * Every phase has a descriptive name that will be used by the reports.        *
- *                                                                             *
- * The main loop for the compiler, in runpasses.cpp, has a notion of a "pass"  *
- * which consists of three phases;                                             *
- *                                                                             *
- *    1) The primary computation                                               *
- *    2) An optional verify / check phase                                      *
- *    3) An AST cleanup phase                                                  *
- *                                                                             *
- * The tracker collects the sub-phases and reports the overall time in terms   *
- * of these passes.  Phases that occur before and after the Passes ignore      *
- * the check and clean phases.                                                 *
- *                                                                             *
- ************************************** | *************************************/
+*                                                                             *
+* This class is designed to provide an accurate and reasonably detailed view  *
+* of the way time is being spent within the compiler.  The intent is to       *
+* account for all of the time between the entry point to main() and the final *
+* call to clean_exit(0) in driver.cpp.                                        *
+*                                                                             *
+* a) Create a Timer object that will record the wall time as early in the     *
+*    compiler as possible                                                     *
+*                                                                             *
+* b) Use the Timer to determine the elapsed time between the start of the     *
+*    program and the start of each phase                                      *
+*                                                                             *
+* c) Compute the elapsed time for each phase                                  *
+*                                                                             *
+* d) Stop the timer and generate one or more reports on the time spent in     *
+*    each phase.
+*                                                                             *
+* Every phase has a descriptive name that will be used by the reports.        *
+*                                                                             *
+* The main loop for the compiler, in runpasses.cpp, has a notion of a "pass"  *
+* which consists of three phases;                                             *
+*                                                                             *
+*    1) The primary computation                                               *
+*    2) An optional verify / check phase                                      *
+*    3) An AST cleanup phase                                                  *
+*                                                                             *
+* The tracker collects the sub-phases and reports the overall time in terms   *
+* of these passes.  Phases that occur before and after the Passes ignore      *
+* the check and clean phases.                                                 *
+*                                                                             *
+************************************** | *************************************/
 
 class Phase;
 class Pass;
