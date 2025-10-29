@@ -105,6 +105,7 @@ Optimization Control Options:
                                       fields in classes and records
       --[no-]vectorize                Enable [disable] generation of
                                       vectorization hints
+      --vector-library <lib>          Select a vectorization library to use
       --[no-]auto-local-access        Enable [disable] using local access
                                       automatically
       --[no-]dynamic-auto-local-access
