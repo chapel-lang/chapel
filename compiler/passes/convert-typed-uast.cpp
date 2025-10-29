@@ -4851,6 +4851,18 @@ ArgSymbol* TConverter::convertFormal(const Formal* fml, RV& rv) {
     if (ret->intent == INTENT_TYPE) setupTypeIntentArg(ret);
   }
 
+  if (parsing::idIsInBundledModule(context, fml->id())) {
+    if (fml->initExpression()) {
+      auto block = new BlockStmt();
+      pushBlock(block);
+      types::QualifiedType qt;
+      auto expr = convertExpr(fml->initExpression(), rv, &qt);
+      block->insertAtTail(expr);
+      popBlock();
+      ret->defaultExpr = block;
+    }
+  }
+
   return ret;
 }
 
