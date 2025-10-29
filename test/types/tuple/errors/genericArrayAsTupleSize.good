@@ -1,0 +1,9 @@
+genericArrayAsTupleSize.chpl:2: In function 'main':
+genericArrayAsTupleSize.chpl:3: error: unresolved call '*([domain(1,int(64),one)] range(int(64),both,one), type int(64))'
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: this candidate did not match: *(a: int(8), b: int(8))
+genericArrayAsTupleSize.chpl:3: note: because actual argument #1 with type '[domain(1,int(64),one)] range(int(64),both,one)'
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: is passed to formal 'a: int(8)'
+genericArrayAsTupleSize.chpl:3: note: other candidates are:
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   *(a: int(16), b: int(16))
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   *(a: int(32), b: int(32))
+note: and 58 other candidates, use --print-all-candidates to see them
