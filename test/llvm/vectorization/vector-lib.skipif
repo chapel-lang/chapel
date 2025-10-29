@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 tgt_platform=$($CHPL_HOME/util/printchplenv --value --only CHPL_TARGET_PLATFORM)
-tgt_arch=$($CHPL_HOME/util/printchplenv --value --only CHPL_TARGET_PLATFORM)
+tgt_arch=$($CHPL_HOME/util/printchplenv --value --only CHPL_TARGET_ARCH)
 
 if [ "$tgt_platform" == "darwin" ]; then
   echo "False"
