@@ -30,6 +30,7 @@ cpu_llvm_synonyms = {
   'x86-genoa':       'znver4',
   'x86-turin':       'znver5',
   'x86-emr':         'emeraldrapids',
+  'arm-grace':       'grace',
 }
 
 # This gets the generic machine type, e.g. x86_64, i686, aarch64, arm64.
