@@ -64,6 +64,7 @@ void runPassOverAllSymbols(PassManager& pm, PassT<T, R>&& pass) {
   //  -- ...
   //
   pm.runPass<Symbol*>(pass, gVarSymbols);
+  pm.runPass<Symbol*>(pass, gShadowVarSymbols);
   pm.runPass<Symbol*>(pass, gTypeSymbols);
   pm.runPass<Symbol*>(pass, gArgSymbols);
   pm.runPass<Symbol*>(pass, gFnSymbols);
