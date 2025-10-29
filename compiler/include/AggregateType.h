@@ -136,6 +136,8 @@ public:
 
   AggregateType*              getRootInstantiation();
 
+  void                        addInstantiation(AggregateType* at);
+
   DefExpr*                    toLocalField(const char* name)             const;
   DefExpr*                    toLocalField(SymExpr*    expr)             const;
   DefExpr*                    toLocalField(CallExpr*   expr)             const;

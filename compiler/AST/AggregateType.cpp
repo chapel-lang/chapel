@@ -3414,3 +3414,7 @@ Type* AggregateType::finalArrayElementType() const {
   } while (arrayType && arrayType->symbol->hasFlag(FLAG_ARRAY));
   return ret;
 }
+
+void AggregateType::addInstantiation(AggregateType* at) {
+  instantiations.push_back(at);
+}

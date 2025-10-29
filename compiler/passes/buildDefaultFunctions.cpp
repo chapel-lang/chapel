@@ -150,6 +150,10 @@ void buildDefaultFunctions() {
           // really shouldn't have 'init=' (etc) generated for them...
           continue;
         }
+      } else if (ct->instantiatedFrom != nullptr) {
+        // We create the same intermediate instantiations during typed
+        // conversion, which should not have default functions.
+        continue;
       }
 
       buildFieldAccessorFunctions(ct);

@@ -2266,9 +2266,17 @@ struct ConvertTypeHelper {
   void helpConvertFields(const types::CompositeType* ct,
                          const ResolvedFields& rf,
                          AggregateType* at,
-                         bool isInstantiation = false) {
+                         AggregateType* instantiatedFrom) {
+    AggregateType* cur = instantiatedFrom;
     int nFields = rf.numFields();
     for (int i = 0; i < nFields; i++) {
+      bool wasGeneric = false;
+      if (instantiatedFrom) {
+        wasGeneric = ct->substitution(rf.fieldDeclId(i)) != types::QualifiedType();
+        //auto field = instantiatedFrom->getField(i+1);
+        //bool ignoredHasDefault = false;
+      }
+
       types::QualifiedType qt = rf.fieldType(i);
       Type* ft = nullptr;
       if (rf.isGeneric()) {
@@ -2296,7 +2304,7 @@ struct ConvertTypeHelper {
 
       Expr* initExpr = nullptr;
       Expr* typeExpr = nullptr;
-      if (!isInstantiation && parsing::idIsInBundledModule(tc_->context, declID)) {
+      if (!instantiatedFrom && parsing::idIsInBundledModule(tc_->context, declID)) {
         // Preserve the untyped AST for internal/standard types in case the
         // production resolver needs it later. This does not apply to
         // instantiations, which the production resolver will not handle.
@@ -2323,17 +2331,33 @@ struct ConvertTypeHelper {
         v->type = ft;
         v->qual = tc_->convertQualifier(qt.kind());
 
+        Symbol* sub = nullptr;
         if (qt.isType()) {
           at->substitutions.put(v, ft->symbol);
+
+          sub = ft->symbol;
         } else if (qt.isParam()) {
           auto param = tc_->convertParam(qt);
           at->substitutions.put(v, param);
           paramMap.put(v, param);
+          sub = param;
+        }
+
+        if (sub && cur->genericFields.size() != 1) {
+          INT_ASSERT(wasGeneric);
+          cur = cur->getInstantiation(sub, i+1, at->symbol->instantiationPoint);
+          cur->foundGenericFields = true;
         }
       }
 
       v->makeField();
       at->fields.insertAtTail(new DefExpr(v, initExpr, typeExpr));
+    }
+
+    // The final instantiation, 'at', already exists. So we need to fiddle with
+    // the logic here and replace the latest 'cur' with 'at'
+    if (instantiatedFrom) {
+      cur->addInstantiation(at);
     }
   }
 
@@ -2347,7 +2371,7 @@ struct ConvertTypeHelper {
     auto instantiatedFrom = toAggregateType(tc_->findConvertedType(gct));
 
     // First convert the fields in a regular manner.
-    helpConvertFields(ct, rf, at, instantiatedFrom != nullptr);
+    helpConvertFields(ct, rf, at, instantiatedFrom);
 
     auto ts = at->symbol;
     INT_ASSERT(ts);
@@ -2355,6 +2379,7 @@ struct ConvertTypeHelper {
     if (!rf.isGeneric()) {
       ts->addFlag(FLAG_RESOLVED_EARLY);
       at->resolveStatus = RESOLVED;
+      at->foundGenericFields = true;
 
       if (instantiatedFrom) {
         at->instantiatedFrom = instantiatedFrom;
