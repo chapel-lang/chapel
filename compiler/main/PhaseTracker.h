@@ -86,12 +86,17 @@ struct PhaseData {
   }
 
   PhaseData operator-(const PhaseData& other) const {
-    return PhaseData(this->timeInUsecs - other.timeInUsecs,
-                     this->memory - other.memory);
+    auto ret = *this;
+    return ret -= other;
+  }
+  PhaseData& operator-=(const PhaseData& other) {
+    this->timeInUsecs -= other.timeInUsecs;
+    this->memory -= other.memory;
+    return *this;
   }
   PhaseData operator+(const PhaseData& other) const {
-    return PhaseData(this->timeInUsecs + other.timeInUsecs,
-                     this->memory + other.memory);
+    auto ret = *this;
+    return ret += other;
   }
   PhaseData& operator+=(const PhaseData& other) {
     this->timeInUsecs += other.timeInUsecs;
