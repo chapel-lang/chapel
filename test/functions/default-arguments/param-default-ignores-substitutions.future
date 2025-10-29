@@ -1,0 +1,2 @@
+bug: Default value verification of params doesn't respect previous substitutions
+#27973
