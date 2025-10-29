@@ -649,6 +649,30 @@ static std::string buildTupleDeclName(const uast::TupleDecl* tup) {
   return ret;
 }
 
+static bool allActualsLookLikeIndexing(const resolution::CallInfo& ci) {
+  // technically vacuously true, but not helpful for our use case
+  if (ci.numActuals() == 0) return false;
+
+  for (size_t i = 0; i < ci.numActuals(); i++) {
+    const auto& actual = ci.actual(i);
+    auto t = actual.type().type();
+
+    bool thisNumeric = false;
+    if (actual.type().isUnknownOrErroneous()) {
+      // unknown type, not numeric.
+    } else if (actual.type().isType()) {
+      // `foo(int)`, not indexing.
+    } else if (t->isNumericType()) {
+      thisNumeric = true;
+    }
+
+    if (!thisNumeric) {
+      return false;
+    }
+  }
+  return true;
+}
+
 template <typename GetActual>
 static void printRejectedCandidates(ErrorWriterBase& wr,
                                     const ID& anchorId,
@@ -873,6 +897,34 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
                 expectedThing, "s:");
       }
       wr.code(candidate.idForErr());
+    } else if (reason == resolution::FAIL_NO_TYPE_CONSTRUCTOR) {
+      // types that don't have corresponding module code will not have an ID
+      // reported here.
+      auto candidateId = candidate.idForErr();
+      auto idForErr = candidateId;
+      if (idForErr.isEmpty()) idForErr = anchorId;
+
+      // As a special case, report an error for trying to index into a
+      // type that doesn't support indexing.
+      if (allActualsLookLikeIndexing(ci)) {
+        wr.message("");
+        wr.note(idForErr, "the type '", ci.name(), "' does not support indexing:");
+        if (!candidateId.isEmpty()) {
+          wr.codeForLocation(candidateId);
+        }
+        wr.message("Only tuple types can be indexed, but '", ci.name(), "' is not a tuple type.");
+        wr.message("If you were trying to invoke '", ci.name(),
+                   "' as a type constructor, note that only records and classes have type constructors.");
+      } else {
+        wr.message("");
+        wr.note(idForErr, "could not invoke the non-existent type constructor for type '",
+                ci.name(), "':");
+        if (!candidateId.isEmpty()) {
+          wr.codeForLocation(candidateId);
+        }
+        wr.message("Only records and classes have type constructors, but '",
+                   ci.name(), "' is not one of these.");
+      }
     } else {
       std::string reasonStr = "";
       if (reason == resolution::FAIL_VARARG_MISMATCH) {
