@@ -2957,7 +2957,16 @@ struct Converter final : UastConverter {
 
   Expr* visit(const uast::Function* node) {
     // don't convert functions we were asked to ignore
-    if (symbolsToIgnore.count(node->id()) != 0) return nullptr;
+    //if (symbolsToIgnore.count(node->id()) != 0) return nullptr;
+    if (symbolsToIgnore.count(node->id()) != 0) {
+      if (parsing::idIsInBundledModule(context, node->id()) &&
+          parsing::idIsNestedFunction(context, node->id())) {
+        // nested functions in bundled modules need to be converted
+      } else if (node->name() == USTR(":")) {
+      } else {
+        return nullptr;
+      }
+    }
 
     FnSymbol* fn = nullptr;
     Expr* ret = nullptr;
