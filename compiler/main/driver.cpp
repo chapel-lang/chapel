@@ -1034,38 +1034,6 @@ static void setVectorLib(const ArgumentDescription* desc, const char* arg)
   if (fVectorLib == "none") {
     fVectorLib = "";
   }
-  if (fVectorLib == "") return; // nothing to do
-
-  // check that we are using a supported backend
-  if ((0 == strcmp(CHPL_TARGET_COMPILER, "llvm")) ||
-      (0 == strcmp(CHPL_TARGET_COMPILER, "clang")) ||
-      (0 == strcmp(CHPL_TARGET_COMPILER, "gnu"))) {
-    // ok
-  } else {
-    USR_FATAL("--vector-library is not supported with the %s backend",
-              CHPL_TARGET_COMPILER);
-  }
-
-  // add -vector-library= to llvmFlags for LLVM, otherwise add to ccflags
-  if (0 == strcmp(CHPL_TARGET_COMPILER, "llvm")) {
-    if (llvmFlags.length() > 0)
-      llvmFlags += ' ';
-    llvmFlags += "-vector-library=";
-    llvmFlags += fVectorLib;
-  } else if (0 == strcmp(CHPL_TARGET_COMPILER, "clang")) {
-    if (ccflags.length() > 0)
-      ccflags += ' ';
-    ccflags += "-fveclib=";
-    ccflags += fVectorLib;
-  } else if (0 == strcmp(CHPL_TARGET_COMPILER, "gnu")) {
-    if (ccflags.length() > 0)
-      ccflags += ' ';
-    ccflags += "-mveclibabi=";
-    ccflags += fVectorLib;
-  } else {
-    INT_FATAL("unexpected compiler in setVectorLib");
-  }
-
 }
 
 static void setChecks(const ArgumentDescription* desc, const char* unused) {
@@ -2095,6 +2063,40 @@ static void setGPUFlags() {
 
 }
 
+static void setVectorLib() {
+  if (fVectorLib == "") return; // nothing to do
+
+  // check that we are using a supported backend
+  if ((0 == strcmp(CHPL_TARGET_COMPILER, "llvm")) ||
+      (0 == strcmp(CHPL_TARGET_COMPILER, "clang")) ||
+      (0 == strcmp(CHPL_TARGET_COMPILER, "gnu"))) {
+    // ok
+  } else {
+    USR_FATAL("--vector-library is not supported with the %s backend",
+              CHPL_TARGET_COMPILER);
+  }
+
+  // add -vector-library= to llvmFlags for LLVM, otherwise add to ccflags
+  if (0 == strcmp(CHPL_TARGET_COMPILER, "llvm")) {
+    if (llvmFlags.length() > 0)
+      llvmFlags += ' ';
+    llvmFlags += "-vector-library=";
+    llvmFlags += fVectorLib;
+  } else if (0 == strcmp(CHPL_TARGET_COMPILER, "clang")) {
+    if (ccflags.length() > 0)
+      ccflags += ' ';
+    ccflags += "-fveclib=";
+    ccflags += fVectorLib;
+  } else if (0 == strcmp(CHPL_TARGET_COMPILER, "gnu")) {
+    if (ccflags.length() > 0)
+      ccflags += ' ';
+    ccflags += "-mveclibabi=";
+    ccflags += fVectorLib;
+  } else {
+    INT_FATAL("unexpected compiler in setVectorLib");
+  }
+}
+
 // Check for inconsistencies in compiler-driver control flags
 static void checkCompilerDriverFlags() {
   if (fDriverDoMonolithic) {
@@ -2347,6 +2349,8 @@ static void postprocess_args() {
   setPrintCppLineno();
 
   setGPUFlags();
+
+  setVectorLib();
 
   // restore warnings to previous state
   ignore_warnings = ignore_warnings_previous;
