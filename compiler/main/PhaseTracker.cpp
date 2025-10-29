@@ -89,8 +89,8 @@ void PhaseTracker::Stop() {
 }
 
 void PhaseTracker::Resume() {
-  mTimer.start();
   mMemoryTracker.start();
+  mTimer.start();
 }
 
 void PhaseTracker::ReportPass() const {
@@ -132,7 +132,7 @@ void PhaseTracker::ReportPassGroupTotals(
       // No times provided, so calculate them.
 
       auto currentPass = std::find_if(
-        mPhases.begin(), mPhases.end(), [&groupLastPhase](auto pass) {
+        mPhases.begin(), mPhases.end(), [groupLastPhase](auto pass) {
           if (pass->mName == nullptr) return false;
           return strcmp(pass->mName, groupLastPhase) == 0;
         });
@@ -275,12 +275,12 @@ PassesReport(FILE* fp, const std::vector<Pass>& passes, PhaseData total) {
 
   Pass::Header(fp);
 
-  for (auto p: passes) {
+  for (auto& p: passes) {
     accum += PhaseData(p.TotalTime(), p.TotalMemory());
     p.Print(fp, accum, total);
   }
 
-  for (auto p: passes) {
+  for (auto& p: passes) {
     main += p.mPrimary;
     check += p.mVerify;
     clean += p.mCleanAst;
