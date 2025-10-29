@@ -16,6 +16,7 @@ from utils import memoize, run_command, warning
 cpu_llvm_synonyms = {
   'arm-thunderx':    'thunderx',
   'arm-thunderx2':   'thunderx2t99',
+  'arm-grace':       'grace',
   'knc':             'none',
   'mic-knl':         'knl',
   'x86-cascadelake': 'cascadelake',
