@@ -21,10 +21,12 @@
 #ifndef _chpl_MemoryTracker_h_
 #define _chpl_MemoryTracker_h_
 
+#include <cstdint>
+
 class MemoryTracker {
 public:
   static bool platformSupportsMemoryTracking();
-  using MemoryInBytes = long long;
+  using MemoryInBytes = int64_t;
   using MemoryInMB = double;
   static MemoryInMB toMB(MemoryInBytes bytes) {
     return bytes / (1024.0 * 1024.0);
