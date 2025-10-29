@@ -185,7 +185,7 @@ bool fNoOptimizeLoopIterators = false;
 bool fNoVectorize = false; // adjusted in postVectorize
 static bool fYesVectorize = false;
 bool fForceVectorize = false;
-std::string fVectorLib; // set by command line
+std::string fVectorLib;
 bool fNoGlobalConstOpt = false;
 bool fNoFastFollowers = false;
 bool fNoInlineIterators = false;
