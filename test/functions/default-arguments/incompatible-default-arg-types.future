@@ -1,0 +1,2 @@
+bug: incompatible types of default arguments inconsistently cause errors
+#27974
