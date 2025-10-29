@@ -197,6 +197,7 @@ introspectParsedFiles(Context* context) {
 const BuilderResult*
 parseFileContainingIdToBuilderResult(Context* context,
                                      ID id,
+                                     UniqueString* setSymbolPath,
                                      UniqueString* setParentSymbolPath) {
   if (id.isFabricatedId() &&
       id.fabricatedIdKind() == ID::FabricatedIdKind::Generated) {
@@ -218,6 +219,7 @@ parseFileContainingIdToBuilderResult(Context* context,
     if (found) {
       const BuilderResult& p = parseFileToBuilderResult(context, path,
                                                         parentSymbolPath);
+      if (setSymbolPath) *setSymbolPath = path;
       if (setParentSymbolPath) *setParentSymbolPath = parentSymbolPath;
       return &p;
     }
@@ -240,29 +242,12 @@ void countTokens(Context* context, UniqueString path, ParserStats* parseStats) {
   }
 }
 
-static const BuilderResult*
-builderResultOrNull(Context* context, ID id, UniqueString& pathOut) {
-  UniqueString parentSymbolPath;
-
-  // Ask the context for the filename from the ID
-  bool found = context->filePathForId(id, pathOut, parentSymbolPath);
-
-  if (found) {
-    // Get the result of parsing
-    const BuilderResult& br = parseFileToBuilderResult(context, pathOut,
-                                                       parentSymbolPath);
-    return &br;
-  }
-
-  return nullptr;
-}
-
 const Location& locateId(Context* context, ID id) {
   QUERY_BEGIN(locateId, context, id);
   Location result;
 
   UniqueString path;
-  if (auto br = builderResultOrNull(context, id, path)) {
+  if (auto br = parseFileContainingIdToBuilderResult(context, id, &path)) {
     result = br->idToLocation(context, id, path);
   }
 
@@ -283,7 +268,7 @@ const Location& locateAst(Context* context, const AstNode* ast) {
     Location ret; \
     UniqueString path; \
     if (!id) return QUERY_END(ret); \
-    if (auto br = builderResultOrNull(context, id, path)) { \
+    if (auto br = parseFileContainingIdToBuilderResult(context, id, &path)) { \
       ret = br->idTo##location__##Location(context, id, path); \
     } \
     return QUERY_END(ret); \
@@ -1520,7 +1505,7 @@ const ID& idToParentId(Context* context, ID id) {
 
   UniqueString parentSymbolPath;
   const BuilderResult* r =
-    parseFileContainingIdToBuilderResult(context, id, &parentSymbolPath);
+    parseFileContainingIdToBuilderResult(context, id, /* setSymbolPath */ nullptr, &parentSymbolPath);
 
   if (r != nullptr) {
     result = r->idToParentId(id);

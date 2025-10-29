@@ -113,6 +113,7 @@ introspectParsedFiles(Context* context);
  */
 const uast::BuilderResult*
 parseFileContainingIdToBuilderResult(Context* context, ID id,
+                                     UniqueString* setSymbolPath=nullptr,
                                      UniqueString* setParentSymbolPath=nullptr);
 
 /**
