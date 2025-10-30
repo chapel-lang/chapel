@@ -1,3 +1,4 @@
+warning: '--debug' now implies '--debug-safe-optimizations-only'. If you only want debug symbols, use '-g' or '--debug-symbols'.
 42 | 3.14 | (x = 42) | {x = 17} | {x = 17}
 42 | 3.14 | (x = 42) | {x = 17} | {x = 17}
 Running DWARF verification...

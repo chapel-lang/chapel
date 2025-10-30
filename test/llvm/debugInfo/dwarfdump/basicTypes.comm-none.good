@@ -1,3 +1,4 @@
+warning: '--debug' now implies '--debug-safe-optimizations-only'. If you only want debug symbols, use '-g' or '--debug-symbols'.
 (myField = {x = 0, y = 0.0}) | (myFieldA = 0, myFieldB = 0.0, myFieldC = (0, 0.0), myFieldD = , myFieldE = nil, myFieldF = 0 0 0 0 0 0 0 0 0 0) | Hello, world! | {x = 0, y = 0.0} | {x = 0, y = 0.0}
 {1..10, 1..10 by 2} | 1 2 3 4 5 6 7 8 9 10 | 1 2 3 4 5
 6 7 8 9 10

@@ -1,3 +1,4 @@
+warning: '--debug' now implies '--debug-safe-optimizations-only'. If you only want debug symbols, use '-g' or '--debug-symbols'.
 (1, 2, 3) | (true, false) | (0.0,)
 (42, 3.14, hello) | (1, 2.0, three, false, (42, 3.14, hello), (1, 2, 3))
 Running DWARF verification...
@@ -34,32 +35,6 @@ DW_TAG_variable
 ===========================(int(64),real(64),string)============================
 DW_TAG_structure_type
               DW_AT_name	("(int(64),real(64),string)")
-              DW_AT_byte_size	(0x18)
-              DW_AT_alignment	(8)
-  DW_TAG_member
-                DW_AT_name	("x0")
-                DW_AT_type	("int(64)")
-                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelTuple.chpl")
-                DW_AT_decl_line	(26)
-                DW_AT_alignment	(8)
-                DW_AT_data_member_location	(0x00)
-  DW_TAG_member
-                DW_AT_name	("x1")
-                DW_AT_type	("real(64)")
-                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelTuple.chpl")
-                DW_AT_decl_line	(26)
-                DW_AT_alignment	(8)
-                DW_AT_data_member_location	(0x08)
-  DW_TAG_member
-                DW_AT_name	("x2")
-                DW_AT_type	("_ref(string)")
-                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelTuple.chpl")
-                DW_AT_decl_line	(26)
-                DW_AT_alignment	(8)
-                DW_AT_data_member_location	(0x10)
-  NULL
-DW_TAG_structure_type
-              DW_AT_name	("(int(64),real(64),string)")
               DW_AT_byte_size	(0x38)
               DW_AT_alignment	(8)
   DW_TAG_member
@@ -84,6 +59,32 @@ DW_TAG_structure_type
                 DW_AT_alignment	(8)
                 DW_AT_data_member_location	(0x10)
   NULL
+DW_TAG_structure_type
+              DW_AT_name	("(int(64),real(64),string)")
+              DW_AT_byte_size	(0x18)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("x0")
+                DW_AT_type	("int(64)")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelTuple.chpl")
+                DW_AT_decl_line	(26)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("x1")
+                DW_AT_type	("real(64)")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelTuple.chpl")
+                DW_AT_decl_line	(26)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x08)
+  DW_TAG_member
+                DW_AT_name	("x2")
+                DW_AT_type	("_ref(string)")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelTuple.chpl")
+                DW_AT_decl_line	(26)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x10)
+  NULL
 ================================================================================
 ==================================myHeteroTup2==================================
 DW_TAG_variable
@@ -93,100 +94,6 @@ DW_TAG_variable
               DW_AT_type	("(int(64),real(64),string,bool,(int(64),real(64),string),3*int(32))")
 ================================================================================
 =======(int(64),real(64),string,bool,(int(64),real(64),string),3*int(32))=======
-DW_TAG_structure_type
-              DW_AT_name	("(int(64),real(64),string,bool,(int(64),real(64),string),3*int(32))")
-              DW_AT_byte_size	(0x30)
-              DW_AT_alignment	(8)
-  DW_TAG_member
-                DW_AT_name	("x0")
-                DW_AT_type	("int(64)")
-                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelTuple.chpl")
-                DW_AT_decl_line	(26)
-                DW_AT_alignment	(8)
-                DW_AT_data_member_location	(0x00)
-  DW_TAG_member
-                DW_AT_name	("x1")
-                DW_AT_type	("real(64)")
-                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelTuple.chpl")
-                DW_AT_decl_line	(26)
-                DW_AT_alignment	(8)
-                DW_AT_data_member_location	(0x08)
-  DW_TAG_member
-                DW_AT_name	("x2")
-                DW_AT_type	("_ref(string)")
-                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelTuple.chpl")
-                DW_AT_decl_line	(26)
-                DW_AT_alignment	(8)
-                DW_AT_data_member_location	(0x10)
-  DW_TAG_member
-                DW_AT_name	("x3")
-                DW_AT_type	("bool")
-                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelTuple.chpl")
-                DW_AT_decl_line	(26)
-                DW_AT_alignment	(1)
-                DW_AT_data_member_location	(0x18)
-  DW_TAG_member
-                DW_AT_name	("x4")
-                DW_AT_type	("_ref((int(64),real(64),string))")
-                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelTuple.chpl")
-                DW_AT_decl_line	(26)
-                DW_AT_alignment	(8)
-                DW_AT_data_member_location	(0x20)
-  DW_TAG_member
-                DW_AT_name	("x5")
-                DW_AT_type	("_ref(3*int(32))")
-                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelTuple.chpl")
-                DW_AT_decl_line	(26)
-                DW_AT_alignment	(8)
-                DW_AT_data_member_location	(0x28)
-  NULL
-DW_TAG_structure_type
-              DW_AT_name	("(int(64),real(64),string,bool,(int(64),real(64),string),3*int(32))")
-              DW_AT_byte_size	(0x30)
-              DW_AT_alignment	(8)
-  DW_TAG_member
-                DW_AT_name	("x0")
-                DW_AT_type	("int(64)")
-                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelTuple.chpl")
-                DW_AT_decl_line	(26)
-                DW_AT_alignment	(8)
-                DW_AT_data_member_location	(0x00)
-  DW_TAG_member
-                DW_AT_name	("x1")
-                DW_AT_type	("real(64)")
-                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelTuple.chpl")
-                DW_AT_decl_line	(26)
-                DW_AT_alignment	(8)
-                DW_AT_data_member_location	(0x08)
-  DW_TAG_member
-                DW_AT_name	("x2")
-                DW_AT_type	("_ref(string)")
-                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelTuple.chpl")
-                DW_AT_decl_line	(26)
-                DW_AT_alignment	(8)
-                DW_AT_data_member_location	(0x10)
-  DW_TAG_member
-                DW_AT_name	("x3")
-                DW_AT_type	("bool")
-                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelTuple.chpl")
-                DW_AT_decl_line	(26)
-                DW_AT_alignment	(1)
-                DW_AT_data_member_location	(0x18)
-  DW_TAG_member
-                DW_AT_name	("x4")
-                DW_AT_type	("_ref((int(64),real(64),string))")
-                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelTuple.chpl")
-                DW_AT_decl_line	(26)
-                DW_AT_alignment	(8)
-                DW_AT_data_member_location	(0x20)
-  DW_TAG_member
-                DW_AT_name	("x5")
-                DW_AT_type	("_ref(3*int(32))")
-                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelTuple.chpl")
-                DW_AT_decl_line	(26)
-                DW_AT_alignment	(8)
-                DW_AT_data_member_location	(0x28)
-  NULL
 DW_TAG_structure_type
               DW_AT_name	("(int(64),real(64),string,bool,(int(64),real(64),string),3*int(32))")
               DW_AT_byte_size	(0x88)
@@ -233,6 +140,100 @@ DW_TAG_structure_type
                 DW_AT_decl_line	(26)
                 DW_AT_alignment	(4)
                 DW_AT_data_member_location	(0x78)
+  NULL
+DW_TAG_structure_type
+              DW_AT_name	("(int(64),real(64),string,bool,(int(64),real(64),string),3*int(32))")
+              DW_AT_byte_size	(0x30)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("x0")
+                DW_AT_type	("int(64)")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelTuple.chpl")
+                DW_AT_decl_line	(26)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("x1")
+                DW_AT_type	("real(64)")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelTuple.chpl")
+                DW_AT_decl_line	(26)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x08)
+  DW_TAG_member
+                DW_AT_name	("x2")
+                DW_AT_type	("_ref(string)")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelTuple.chpl")
+                DW_AT_decl_line	(26)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x10)
+  DW_TAG_member
+                DW_AT_name	("x3")
+                DW_AT_type	("bool")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelTuple.chpl")
+                DW_AT_decl_line	(26)
+                DW_AT_alignment	(1)
+                DW_AT_data_member_location	(0x18)
+  DW_TAG_member
+                DW_AT_name	("x4")
+                DW_AT_type	("_ref((int(64),real(64),string))")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelTuple.chpl")
+                DW_AT_decl_line	(26)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x20)
+  DW_TAG_member
+                DW_AT_name	("x5")
+                DW_AT_type	("_ref(3*int(32))")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelTuple.chpl")
+                DW_AT_decl_line	(26)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x28)
+  NULL
+DW_TAG_structure_type
+              DW_AT_name	("(int(64),real(64),string,bool,(int(64),real(64),string),3*int(32))")
+              DW_AT_byte_size	(0x30)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("x0")
+                DW_AT_type	("int(64)")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelTuple.chpl")
+                DW_AT_decl_line	(26)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("x1")
+                DW_AT_type	("real(64)")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelTuple.chpl")
+                DW_AT_decl_line	(26)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x08)
+  DW_TAG_member
+                DW_AT_name	("x2")
+                DW_AT_type	("_ref(string)")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelTuple.chpl")
+                DW_AT_decl_line	(26)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x10)
+  DW_TAG_member
+                DW_AT_name	("x3")
+                DW_AT_type	("bool")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelTuple.chpl")
+                DW_AT_decl_line	(26)
+                DW_AT_alignment	(1)
+                DW_AT_data_member_location	(0x18)
+  DW_TAG_member
+                DW_AT_name	("x4")
+                DW_AT_type	("_ref((int(64),real(64),string))")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelTuple.chpl")
+                DW_AT_decl_line	(26)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x20)
+  DW_TAG_member
+                DW_AT_name	("x5")
+                DW_AT_type	("_ref(3*int(32))")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelTuple.chpl")
+                DW_AT_decl_line	(26)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x28)
   NULL
 ================================================================================
 Success!!
