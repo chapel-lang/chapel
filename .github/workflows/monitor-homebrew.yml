@@ -16,10 +16,17 @@ jobs:
   check-and-update:
     if: github.repository == 'chapel-lang/chapel'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
     - name: Checkout this repository
       uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Fetch released version of Chapel formula
       run: |
@@ -77,5 +84,3 @@ jobs:
         -H update-chapel-homebrew-release-${{ env.HASH_SUBSTRING }}
         --title 'Update our copy of the released Homebrew formula'
         --body 'Homebrew released formula file hash is ${{ env.FILE_HASH }}. Created by Github action'
-      env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
