@@ -57,6 +57,13 @@ Warning and Language Control Options:
 Parallelism Control Options:
       --[no-]local                    Target one [many] locale[s]
 
+Debugging Control Options:
+      --debug                         Compile code in the best way for
+                                      debugging
+  -g, --[no-]debug-symbols            [Don't] Generate debug symbols
+      --debug-safe-optimizations-only Turn off select Chapel optimizations
+                                      that interfere with debugging
+
 Optimization Control Options:
       --baseline                      Disable all Chapel optimizations
       --[no-]cache-remote             [Don't] enable cache for remote data
@@ -129,28 +136,23 @@ Run-time Semantic Check Options:
       --[no-]nil-checks               Enable [disable] runtime nil checking
       --[no-]stack-checks             Enable [disable] stack overflow checking
 
-C Code Generation Options:
+Code Generation Options:
       --[no-]codegen                  [Don't] Do code generation
-      --[no-]cpp-lines                [Don't] Generate #line annotations
-      --max-c-ident-len               Maximum length of identifiers in
-                                      generated code, 0 for unlimited
       --[no-]munge-user-idents        [Don't] Munge user identifiers to avoid
                                       naming conflicts with external code
       --savec <directory>             Save generated C code in directory
 
-C Code Compilation Options:
+Code Compilation Options:
       --ccflags <flags>               Back-end C compiler flags (can be
                                       specified multiple times)
-  -g, --[no-]debug                    [Don't] Support debugging of generated C
-                                      code
       --dynamic                       Generate a dynamically linked binary
   -I, --hdr-search-path <directory>   C header search path
       --ldflags <flags>               Back-end C linker flags (can be
                                       specified multiple times)
   -l, --lib-linkage <library>         C library linkage
   -L, --lib-search-path <directory>   C library search path
-  -O, --[no-]optimize                 [Don't] Optimize generated C code
-      --[no-]specialize               [Don't] Specialize generated C code for
+  -O, --[no-]optimize                 [Don't] Optimize generated code
+      --[no-]specialize               [Don't] Specialize generated code for
                                       CHPL_TARGET_CPU
   -o, --output <filename>             Name output executable
       --static                        Generate a statically linked binary
@@ -160,6 +162,11 @@ LLVM Code Generation Options:
                                       optimizations
       --mllvm <flags>                 LLVM flags (can be specified multiple
                                       times)
+
+C Code Generation Options:
+      --[no-]cpp-lines                [Don't] Generate #line annotations
+      --max-c-ident-len               Maximum length of identifiers in
+                                      generated code, 0 for unlimited
 
 Compilation Trace Options:
       --[no-]print-commands           [Don't] print system commands

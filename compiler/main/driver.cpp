@@ -336,7 +336,10 @@ bool fAllowExternC = false;
 char breakOnCodegenCname[256] = "";
 int breakOnCodegenID = 0;
 
-bool debugCCode = false;
+bool fDebugSymbols = false;
+bool fDebugSafeOptOnly = false;
+bool fDebug = false;
+
 bool optimizeCCode = false;
 bool specializeCCode = false;
 
@@ -352,6 +355,7 @@ char compileVersion[64];
 
 std::array<std::string, 2> editions ({{"2.0", "preview"}});
 std::string fEdition = "2.0";
+bool fUserSetPreEdition = false;
 
 static bool fPrintCopyright = false;
 static bool fPrintEnvHelp = false;
@@ -598,8 +602,42 @@ static void setDynamicLink(const ArgumentDescription* desc, const char* arg_unus
   fLinkStyle = LS_DYNAMIC;
 }
 
-static void setChapelDebug(const ArgumentDescription* desc, const char* arg_unused) {
+static void setDebugSymbols(const ArgumentDescription* desc, const char* arg_unused) {
   printCppLineno = true;
+}
+static void setDebugSafeOptOnly(const ArgumentDescription* desc, const char* arg_unused) {
+  // --no-copy-propagation
+  fNoCopyPropagation = true;
+  // --no-dead-code-elimination
+  fNoDeadCodeElimination = true;
+  // --no-loop-invariant-code-motion
+  fNoLoopInvariantCodeMotion = true;
+  // --no-inline
+  fNoInline = true;
+  // --no-remove-copy-calls
+  fNoRemoveCopyCalls = true;
+  // --no-scalar-replacement
+  fNoScalarReplacement = true;
+  // --no-tuple-copy-opt
+  fNoTupleCopyOpt = true;
+  // --no-denormalize
+  fDenormalize = false;
+  // --no-return-by-ref
+  fReturnByRef = false;
+  // --no-replace-array-accesses-with-ref-temps
+  fReplaceArrayAccessesWithRefTemps = false;
+  // --no-remove-empty-records
+  fNoRemoveEmptyRecords = true;
+  // --no-fast-followers
+  fNoFastFollowers = true;
+}
+static void setDebug(const ArgumentDescription* desc, const char* arg_unused) {
+  // --debug-symbols
+  fDebugSymbols = true;
+  printCppLineno = true;
+
+  // --debug-safe-optimizations-only
+  setDebugSafeOptOnly(nullptr, nullptr); // nullptr since args unused
 }
 
 static void setPrintIr(const ArgumentDescription* desc, const char* arg) {
@@ -906,9 +944,7 @@ static void setEdition(const ArgumentDescription* desc, const char* arg) {
     // Use the default edition, which is set at the declaration point
 
   } else if (val == "pre-edition") {
-    USR_WARN("'pre-edition' has been renamed to 'preview'.  This option will "
-             "still be available for a few releases, but we recommend updating "
-             "to the new name.");
+    fUserSetPreEdition = true;
     fEdition = editions.back();
 
   } else if (!isValidEdition(val)) {
@@ -1343,6 +1379,11 @@ static ArgumentDescription arg_desc[] = {
  {"", ' ', NULL, "Parallelism Control Options", NULL, NULL, NULL, NULL},
  {"local", ' ', NULL, "Target one [many] locale[s]", "N", &fLocal, "CHPL_LOCAL", setLocal},
 
+ {"", ' ', NULL, "Debugging Control Options", NULL, NULL, NULL, NULL},
+ {"debug", ' ', NULL, "Compile code in the best way for debugging", "F", &fDebug, "CHPL_DEBUG", setDebug},
+ {"debug-symbols", 'g', NULL, "[Don't] Generate debug symbols", "N", &fDebugSymbols, "CHPL_DEBUG_SYMBOLS", setDebugSymbols},
+ {"debug-safe-optimizations-only", ' ', NULL, "Turn off select Chapel optimizations that interfere with debugging", "F", &fDebugSafeOptOnly, "CHPL_DEBUG_SAFE_OPTIMIZATIONS_ONLY", setDebugSafeOptOnly},
+
  {"", ' ', NULL, "Optimization Control Options", NULL, NULL, NULL, NULL},
  {"baseline", ' ', NULL, "Disable all Chapel optimizations", "F", &fBaseline, "CHPL_BASELINE", setBaselineFlag},
  {"cache-remote", ' ', NULL, "[Don't] enable cache for remote data", "N", &fCacheRemote, "CHPL_CACHE_REMOTE", NULL},
@@ -1392,29 +1433,30 @@ static ArgumentDescription arg_desc[] = {
  {"nil-checks", ' ', NULL, "Enable [disable] runtime nil checking", "n", &fNoNilChecks, "CHPL_NIL_CHECKS", NULL},
  {"stack-checks", ' ', NULL, "Enable [disable] stack overflow checking", "n", &fNoStackChecks, "CHPL_STACK_CHECKS", setStackChecks},
 
- {"", ' ', NULL, "C Code Generation Options", NULL, NULL, NULL, NULL},
+ {"", ' ', NULL, "Code Generation Options", NULL, NULL, NULL, NULL},
  {"codegen", ' ', NULL, "[Don't] Do code generation", "n", &no_codegen, "CHPL_CODEGEN", NULL},
- {"cpp-lines", ' ', NULL, "[Don't] Generate #line annotations", "N", &printCppLineno, "CHPL_CG_CPP_LINES", noteCppLinesSet},
- {"max-c-ident-len", ' ', NULL, "Maximum length of identifiers in generated code, 0 for unlimited", "I", &fMaxCIdentLen, "CHPL_MAX_C_IDENT_LEN", NULL},
  {"munge-user-idents", ' ', NULL, "[Don't] Munge user identifiers to avoid naming conflicts with external code", "N", &fMungeUserIdents, "CHPL_MUNGE_USER_IDENTS"},
  {"savec", ' ', "<directory>", "Save generated C code in directory", "P", &saveCDir, "CHPL_SAVEC_DIR", verifySaveCDir},
 
- {"", ' ', NULL, "C Code Compilation Options", NULL, NULL, NULL, NULL},
+ {"", ' ', NULL, "Code Compilation Options", NULL, NULL, NULL, NULL},
  {"ccflags", ' ', "<flags>", "Back-end C compiler flags (can be specified multiple times)", "S", NULL, "CHPL_CC_FLAGS", setCCFlags},
- {"debug", 'g', NULL, "[Don't] Support debugging of generated C code", "N", &debugCCode, "CHPL_DEBUG", setChapelDebug},
  {"dynamic", ' ', NULL, "Generate a dynamically linked binary", "F", &fLinkStyle, NULL, setDynamicLink},
  {"hdr-search-path", 'I', "<directory>", "C header search path", "P", &incFilename, "CHPL_INCLUDE_PATH", handleIncDir},
  {"ldflags", ' ', "<flags>", "Back-end C linker flags (can be specified multiple times)", "S", NULL, "CHPL_LD_FLAGS", setLDFlags},
  {"lib-linkage", 'l', "<library>", "C library linkage", "P", &libraryFilename, "CHPL_LIB_NAME", handleLibrary},
  {"lib-search-path", 'L', "<directory>", "C library search path", "P", &libraryFilename, "CHPL_LIB_PATH", handleLibPath},
- {"optimize", 'O', NULL, "[Don't] Optimize generated C code", "N", &optimizeCCode, "CHPL_OPTIMIZE", NULL},
- {"specialize", ' ', NULL, "[Don't] Specialize generated C code for CHPL_TARGET_CPU", "N", &specializeCCode, "CHPL_SPECIALIZE", NULL},
+ {"optimize", 'O', NULL, "[Don't] Optimize generated code", "N", &optimizeCCode, "CHPL_OPTIMIZE", NULL},
+ {"specialize", ' ', NULL, "[Don't] Specialize generated code for CHPL_TARGET_CPU", "N", &specializeCCode, "CHPL_SPECIALIZE", NULL},
  {"output", 'o', "<filename>", "Name output executable", "P", &executableFilename, "CHPL_EXE_NAME", NULL},
  {"static", ' ', NULL, "Generate a statically linked binary", "F", &fLinkStyle, NULL, NULL},
 
  {"", ' ', NULL, "LLVM Code Generation Options", NULL, NULL, NULL, NULL},
  {"llvm-wide-opt", ' ', NULL, "Enable [disable] LLVM wide pointer optimizations", "N", &fLLVMWideOpt, "CHPL_LLVM_WIDE_OPTS", NULL},
  {"mllvm", ' ', "<flags>", "LLVM flags (can be specified multiple times)", "S", NULL, "CHPL_MLLVM", setLLVMFlags},
+
+ {"", ' ', NULL, "C Code Generation Options", NULL, NULL, NULL, NULL},
+ {"cpp-lines", ' ', NULL, "[Don't] Generate #line annotations", "N", &printCppLineno, "CHPL_CG_CPP_LINES", noteCppLinesSet},
+ {"max-c-ident-len", ' ', NULL, "Maximum length of identifiers in generated code, 0 for unlimited", "I", &fMaxCIdentLen, "CHPL_MAX_C_IDENT_LEN", NULL},
 
  {"", ' ', NULL, "Compilation Trace Options", NULL, NULL, NULL, NULL},
  {"print-commands", ' ', NULL, "[Don't] print system commands", "N", &printSystemCommands, "CHPL_PRINT_COMMANDS", NULL},
@@ -2130,6 +2172,21 @@ static void checkTargetCpu() {
   }
 }
 
+static void checkDebugFlag() {
+  if (fDebug) {
+    USR_WARN("'--debug' now implies '--debug-safe-optimizations-only'."
+             " If you only want debug symbols, use '-g' or '--debug-symbols'.");
+  }
+}
+
+static void checkEditionFlag() {
+  if (fUserSetPreEdition) {
+    USR_WARN("'pre-edition' has been renamed to 'preview'.  This option will "
+              "still be available for a few releases, but we recommend "
+              "updating to the new name.");
+  }
+}
+
 static void checkIncrementalAndOptimized() {
   std::size_t optimizationsEnabled = ccflags.find("-O");
   if(fIncrementalCompilation && ( optimizeCCode ||
@@ -2327,6 +2384,10 @@ static void validateSettings() {
   checkNotLibraryAndMinimalModules();
 
   checkLLVMCodeGen();
+
+  checkDebugFlag();
+
+  checkEditionFlag();
 
   checkTargetCpu();
 
