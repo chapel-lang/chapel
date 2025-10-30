@@ -2745,8 +2745,10 @@ static void codegenPartOne() {
 
   convertToRefTypes();
 
-  PassManager pm;
-  runPassOverAllSymbols(pm, StreamlineProcPtrTypesForCodegen());
+  if (fcfs::usePointerImplementation()) {
+    PassManager pm;
+    runPassOverAllSymbols(pm, StreamlineProcPtrTypesForCodegen());
+  }
 
 #if defined(HAVE_LLVM) && HAVE_LLVM_VER <= 150
   // this is not needed in newer LLVM versions

@@ -1149,7 +1149,7 @@ static Type* functionTypeStreamlineType(Qualifier qual, Type* t) {
     ret = ret->refType;
     INT_ASSERT(ret);
 
-  } else {
+  } else if (!qt.isRefOrWideRef()) {
     ret = ret->getValType();
   }
 
