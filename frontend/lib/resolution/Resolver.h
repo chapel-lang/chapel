@@ -288,15 +288,6 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
                         const uast::Enum* enumNode,
                         ResolutionResultByPostorderID& byPostorder);
 
-  // set up Resolver to resolve instantiated field declaration types
-  // without knowing the CompositeType
-  static Resolver
-  createForInstantiatedSignatureFields(Context* context,
-                                       const uast::AggregateDecl* decl,
-                                       const SubstitutionsMap& substitutions,
-                                       const PoiScope* poiScope,
-                                       ResolutionResultByPostorderID& byId);
-
   // set up Resolver to resolve a parent class type expression
   static Resolver
   createForParentClass(Context* context,

@@ -631,23 +631,6 @@ Resolver::createForEnumElements(Context* context,
   return ret;
 }
 
-// set up Resolver to resolve instantiated field declaration types
-// without knowing the CompositeType
-Resolver
-Resolver::createForInstantiatedSignatureFields(Context* context,
-                                     const AggregateDecl* decl,
-                                     const SubstitutionsMap& substitutions,
-                                     const PoiScope* poiScope,
-                                     ResolutionResultByPostorderID& byId) {
-  auto ret = Resolver(context, decl, byId, poiScope);
-  ret.substitutions = &substitutions;
-  ret.defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
-  ret.byPostorder.setupForSymbol(decl);
-  ret.fieldTypesOnly = true;
-  return ret;
-}
-
-
 // set up Resolver to resolve a parent class type expression
 Resolver
 Resolver::createForParentClass(Context* context,
