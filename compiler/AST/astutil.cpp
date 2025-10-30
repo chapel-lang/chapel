@@ -1782,8 +1782,10 @@ Type* doAdjustSymbolType(std::unordered_map<Type*, Type*>& alreadyAdjusted,
     Type* newRetT = doComputeType(fn->retType);
     if (newRetT != fn->retType) fn->retType = newRetT;
 
-    if (fn->iteratorInfo) {
-      // Recompute the yielded type.
+    if (fn->iteratorInfo && !fn->hasFlag(FLAG_TASK_FN_FROM_ITERATOR_FN)) {
+      // Recompute the yielded type, but only if this is a 'host' function
+      // that owns its 'IteratorInfo' and not a e.g., 'on_fn' that inherits
+      // the info from a parent function.
       Type* newYieldT = doComputeType(fn->iteratorInfo->yieldedType);
       if (newYieldT != fn->iteratorInfo->yieldedType)
         fn->iteratorInfo->yieldedType = newYieldT;

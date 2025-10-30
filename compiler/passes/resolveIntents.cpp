@@ -421,9 +421,11 @@ void resolveArgIntent(ArgSymbol* arg) {
   if (arg->intent != intent) {
     arg->originalIntent = arg->intent;
   }
+
   arg->intent = intent;
 
   if (arg->qual == QUAL_UNKNOWN) {
+    // TODO: Use this, or use 'Symbol::computeQualifiedType'?
     arg->qual = QualifiedType::qualifierForArgIntent(arg->intent);
   }
 }
