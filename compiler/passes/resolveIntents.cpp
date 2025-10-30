@@ -445,10 +445,29 @@ static FunctionType* computeConcreteIntentsForFunctionType(FunctionType* ft) {
   std::vector<FunctionType::Formal> newFormals;
   bool changed = false;
 
+  // TODO: See how 'concreteIntentForArg' handles method receivers. Also need
+  //       to basically rewrite 'resolveArgIntent' to be a type computation,
+  //       because it has logic related to whether or not there are temporaries
+  //       that can change intents from e.g., 'IN' to 'REF'.
+  //
   for (auto& formal : ft->formals()) {
     if (shouldSkipArgType(formal.type())) continue;
 
-    auto newIntent = concreteIntent(formal.intent(), formal.type());
+    IntentTag newIntent = formal.intent();
+
+    if (ft->hasForeignLinkage() && formal.intent() == INTENT_BLANK) {
+      // In general, the blank intent for extern functions is 'CONST_IN'.
+      newIntent = blankIntentForExternFnArg(formal.type());
+
+    } else if (ft->hasForeignLinkage()) {
+      // TODO: Any sanitation for non-blank intents on foreign types?
+      newIntent = concreteIntent(formal.intent(), formal.type());
+
+    } else {
+      // In the common case, just compute based on the old intent and type.
+      newIntent = concreteIntent(formal.intent(), formal.type());
+    }
+
     auto newQual = QualifiedType::qualifierForArgIntent(newIntent);
 
     if (newIntent != formal.intent() || newQual != formal.qual()) {
