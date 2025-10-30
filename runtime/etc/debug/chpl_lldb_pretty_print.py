@@ -17,6 +17,7 @@
 # limitations under the License.
 #
 
+from functools import cache
 import lldb
 import re
 
@@ -311,25 +312,47 @@ def ArraySummary(valobj, internal_dict):
     return f"[{RangesToString(ranges)}] {GetArrayType(_instance)}"
 
 
+def GetFunctionByName(target, function_name):
+    funcs = target.FindFunctions(function_name)
+    if funcs.GetSize() == 0:
+        return None
+    return funcs.GetContextAtIndex(0).GetFunction()
+    
+
+def ResolveWidePointer(wideptr):
+    locale = wideptr.GetNonSyntheticValue().GetChildMemberWithName("locale")
+    addr = wideptr.GetNonSyntheticValue().GetChildMemberWithName("addr")
+    addr_type = addr.GetType()
+
+    target = wideptr.GetTarget()
+
+    size = addr_type.GetPointeeType().GetByteSize()
+    ret_val = target.EvaluateExpression(
+        f"chpl_debug_get((void*){locale.GetLoadAddress()}, (void*){addr.GetValueAsUnsigned()}, {size})"
+    )
+    if not ret_val.IsValid():
+        return None
+    resolved_ptr = ret_val.Cast(addr_type)
+    if not resolved_ptr.IsValid():
+        return None
+    return resolved_ptr
+
+
 def GetArrayType(_instance):
     # if _instance's type starts with 'wide', resolve the wide pointer
     if _instance.GetTypeName().startswith("wide("):
-        # TODO: handle wide pointers
-        return "unknown"
+        _data = ResolveWidePointer(_instance)
+        if _data is None:
+            return "unknown"
+        ddata = _data.GetNonSyntheticValue().GetChildMemberWithName("data")
+        ddata_addr = ddata.GetNonSyntheticValue().GetChildMemberWithName("addr")
+        return ddata_addr.GetType().GetPointeeType().GetName()
+
     else:
         ddata = _instance.GetChildMemberWithName("data")
         if not ddata.IsValid():
             return "unknown"
-        # use the element type we can compute from ddata
-        # TODO: handle wide pointers
-        ddata_regex_c = re.compile(r"^_ddata_(?P<eltType>[a-zA-Z0-9_]+?)(?:_chpl)?$")
-        ddata_regex_llvm = re.compile(r"^(?P<eltType>[a-zA-Z0-9_\(\)]+) \*$")
-        ddata_typename = ddata.GetTypeName()
-        ddata_match = ddata_regex_c.match(ddata_typename) or ddata_regex_llvm.match(ddata_typename)
-        if not ddata_match:
-            return "unknown"
-        element_type = ddata_match.group("eltType")
-        return element_type
+        return ddata.GetType().GetPointeeType().GetName()
 
 
 class ArrayProvider:
