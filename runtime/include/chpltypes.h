@@ -63,9 +63,6 @@ typedef float c_float;
 typedef double c_double;
 typedef void* raw_c_void_ptr;
 typedef void* c_fn_ptr;  // a white lie
-// Rehook used for convenience in unstable-izing this soon to be removed symbol,
-// similar to c_string_rehook.
-typedef c_fn_ptr c_fn_ptr_rehook;
 typedef uintptr_t c_uintptr;
 typedef intptr_t c_intptr;
 typedef ptrdiff_t c_ptrdiff;

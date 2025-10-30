@@ -298,7 +298,7 @@ const char* toString(Type* type, bool decorateAllClasses) {
       retval = "c_fn_ptr";
     } else if (vt == dtStringC) {
       // present dtStringC type as familiar 'c_string' instead of the internal
-      // name 'chpl_c_string' or cname, 'c_string_rehook'.
+      // name 'chpl_c_string'
       retval = "c_string";
     }
 
@@ -1473,10 +1473,7 @@ void initPrimitiveTypes() {
   // C type is 'c_string' which is defined in the runtime as an alias for
   // 'const char*'. The user-facing alias is defined in 'ChapelBase' so that
   // it can easily be deprecated.
-  // Note that we actually map to the type 'c_string_rehook' to avoid a
-  // collision with the type alias when '--no-munge-user-idents' is thrown.
-  // TODO: a better solution than renaming c_string to avoid the collision would be preferred
-  dtStringC                            = createPrimitiveType("chpl_c_string", "c_string_rehook");
+  dtStringC                            = createPrimitiveType("chpl_c_string", "c_string");
   dtStringC->symbol->addFlag(FLAG_NO_CODEGEN);
 
   dtBool                               = createPrimitiveType("bool", "chpl_bool");
@@ -1568,10 +1565,10 @@ void initPrimitiveTypes() {
   dtCVoidPtr->symbol->addFlag(FLAG_NO_CODEGEN);
   dtCVoidPtr->defaultValue = gNil;
 
-  // Map to runtime type 'c_fn_ptr_rehook' to avoid collision with name of
+  // Map to runtime type 'c_fn_ptr' to avoid collision with name of
   // symbol in module ('c_fn_ptr'), when using '--no-munge-user-idents' is
   // thrown.
-  dtCFnPtr = createPrimitiveType("chpl_c_fn_ptr", "c_fn_ptr_rehook");
+  dtCFnPtr = createPrimitiveType("chpl_c_fn_ptr", "c_fn_ptr");
   dtCFnPtr->symbol->addFlag(FLAG_NO_CODEGEN);
   dtCFnPtr->defaultValue = gNil;
 

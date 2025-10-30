@@ -712,11 +712,11 @@ module String {
     var buffSize: int = 0; // size of the buffer we own
     var cachedNumCodepoints: int = 0;
     var buff: bufferType = nil;
-    var isOwned: bool = true;
-    var hasEscapes: bool = false;
     // We use chpl_nodeID as a shortcut to get at here.id without actually constructing
     // a locale object. Used when determining if we should make a remote transfer.
     var locale_id = chpl_nodeID; // : chpl_nodeID_t
+    var isOwned: bool = true;
+    var hasEscapes: bool = false;
     // remember to update <=> if you add a field
 
     proc init() {

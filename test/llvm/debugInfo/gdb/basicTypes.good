@@ -29,15 +29,15 @@ type = struct (int(64),real(64)) {
     real(64) x1;
 }
 $4 = {buffLen = 0, buffSize = 0, cachedNumCodepoints = 0, buff = 0xXXXX,
-  isOwned = true, hasEscapes = false, locale_id = 0}
+  locale_id = 0, isOwned = true, hasEscapes = false}
 type = struct string {
     int(64) buffLen;
     int(64) buffSize;
     int(64) cachedNumCodepoints;
     uint(8) *buff;
+    int(32) locale_id;
     bool isOwned;
     bool hasEscapes;
-    int(32) locale_id;
 }
 $5 = (struct MyClass *) 0xXXXX
 type = struct MyClass {
@@ -62,16 +62,16 @@ type = struct owned MyClass {
     struct MyClass *chpl_p;
 }
 $9 = {buffLen = 13, buffSize = 14, cachedNumCodepoints = 13,
-  buff = 0xXXXX "Hello, world!", isOwned = false, hasEscapes = false,
-  locale_id = 0}
+  buff = 0xXXXX "Hello, world!", locale_id = 0, isOwned = false,
+  hasEscapes = false}
 type = struct string {
     int(64) buffLen;
     int(64) buffSize;
     int(64) cachedNumCodepoints;
     uint(8) *buff;
+    int(32) locale_id;
     bool isOwned;
     bool hasEscapes;
-    int(32) locale_id;
 }
 $10 = {_pid = -1, _instance = 0xXXXX, _unowned = false}
 type = struct domain(2,int(64),positive) {
@@ -100,8 +100,8 @@ type = real(64)
 $16 = e2
 $17 = (_ref(myEnum)) @0xXXXX: e2
 $18 = {x0 = 1, x1 = {buffLen = 3, buffSize = 8, cachedNumCodepoints = 3,
-    buff = 0xXXXX "two", isOwned = true, hasEscapes = false,
-    locale_id = 0}, x2 = 3, x3 = e1}
+    buff = 0xXXXX "two", locale_id = 0, isOwned = true,
+    hasEscapes = false}, x2 = 3, x3 = e1}
 type = struct (int(64),string,real(64),myEnum) {
     int(64) x0;
     struct string x1;
