@@ -312,20 +312,24 @@ def ArraySummary(valobj, internal_dict):
 
 
 def GetArrayType(_instance):
-    ddata = _instance.GetChildMemberWithName("data")
-    # use the element type we can compute from ddata
-    # TODO: handle wide pointers
-    ddata_regex_c = re.compile(r"^_ddata_(?P<eltType>[a-zA-Z0-9_]+?)(?:_chpl)?$")
-    ddata_regex_llvm = re.compile(r"^(?P<eltType>[a-zA-Z0-9_\(\)]+) \*$")
-    ddata_typename = ddata.GetTypeName()
-    ddata_match = ddata_regex_c.match(ddata_typename) or ddata_regex_llvm.match(ddata_typename)
-    if not ddata_match:
-        print(
-            f"ArrayProvider: ddata type name '{ddata_typename}' did not match expected pattern"
-        )
+    # if _instance's type starts with 'wide', resolve the wide pointer
+    if _instance.GetTypeName().startswith("wide("):
+        # TODO: handle wide pointers
         return "unknown"
-    element_type = ddata_match.group("eltType")
-    return element_type
+    else:
+        ddata = _instance.GetChildMemberWithName("data")
+        if not ddata.IsValid():
+            return "unknown"
+        # use the element type we can compute from ddata
+        # TODO: handle wide pointers
+        ddata_regex_c = re.compile(r"^_ddata_(?P<eltType>[a-zA-Z0-9_]+?)(?:_chpl)?$")
+        ddata_regex_llvm = re.compile(r"^(?P<eltType>[a-zA-Z0-9_\(\)]+) \*$")
+        ddata_typename = ddata.GetTypeName()
+        ddata_match = ddata_regex_c.match(ddata_typename) or ddata_regex_llvm.match(ddata_typename)
+        if not ddata_match:
+            return "unknown"
+        element_type = ddata_match.group("eltType")
+        return element_type
 
 
 class ArrayProvider:
