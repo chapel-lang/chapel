@@ -1,0 +1,4 @@
+accidentalCapture.chpl:2: In function 'main':
+accidentalCapture.chpl:4: error: the proc 't2' is generic and cannot be captured
+accidentalCapture.chpl:4: note: the formal 'x' is generic
+accidentalCapture.chpl:4: error: cannot apply '#' to 'proc'

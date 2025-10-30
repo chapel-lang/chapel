@@ -185,6 +185,7 @@ struct Visitor {
   void checkRemoteVar(const Decl* node);
 
   void checkTupleDeclFormalIntent(const TupleDecl* node);
+  void checkTupleDeclAsField(const TupleDecl* node);
 
   // Warnings.
   void warnUnstableUnions(const Union* node);
@@ -443,6 +444,7 @@ void Visitor::check(const AstNode* node) {
   }
   if (auto tup = node->toTupleDecl()) {
     checkTupleDeclFormalIntent(tup);
+    checkTupleDeclAsField(tup);
   }
 
   // Now run checks via visitor and recurse to children.
@@ -1520,6 +1522,12 @@ void Visitor::checkTupleDeclFormalIntent(const TupleDecl* node) {
       node->intentOrKind() != TupleDecl::IntentOrKind::DEFAULT_INTENT &&
       node->intentOrKind() != TupleDecl::IntentOrKind::VAR) {
     error(node, "intents on tuple-grouped arguments are not yet supported");
+  }
+}
+
+void Visitor::checkTupleDeclAsField(const TupleDecl* node) {
+  if (parent(0) && parent(0)->isAggregateDecl()) {
+    error(node, "de-tupling declarations are not currently supported as fields");
   }
 }
 
