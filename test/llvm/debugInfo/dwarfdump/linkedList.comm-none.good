@@ -1,0 +1,61 @@
+1 2 3
+Running DWARF verification...
+Success!!
+Running DWARF dump checks...
+=====================================MyNode=====================================
+DW_TAG_pointer_type
+              DW_AT_type	("linkedList::MyNode")
+              DW_AT_name	("MyNode")
+DW_TAG_structure_type
+              DW_AT_name	("MyNode")
+              DW_AT_byte_size	(0x18)
+              DW_AT_decl_file	("./linkedList.chpl")
+              DW_AT_decl_line	(4)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("super")
+                DW_AT_type	("RootClass")
+                DW_AT_decl_file	("./linkedList.chpl")
+                DW_AT_decl_line	(4)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("id")
+                DW_AT_type	("int(64)")
+                DW_AT_decl_file	("./linkedList.chpl")
+                DW_AT_decl_line	(5)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x08)
+  DW_TAG_member
+                DW_AT_name	("next")
+                DW_AT_type	("linkedList::MyNode *")
+                DW_AT_decl_file	("./linkedList.chpl")
+                DW_AT_decl_line	(6)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x10)
+  NULL
+================================================================================
+==================================myLinkedList==================================
+DW_TAG_structure_type
+              DW_AT_name	("myLinkedList")
+              DW_AT_byte_size	(0x08)
+              DW_AT_decl_file	("./linkedList.chpl")
+              DW_AT_decl_line	(18)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("head")
+                DW_AT_type	("linkedList::MyNode *")
+                DW_AT_decl_file	("./linkedList.chpl")
+                DW_AT_decl_line	(19)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  NULL
+================================================================================
+=================================thisIsTheList==================================
+DW_TAG_variable
+              DW_AT_name	("thisIsTheList")
+              DW_AT_decl_file	("./linkedList.chpl")
+              DW_AT_decl_line	(53)
+              DW_AT_type	("linkedList::myLinkedList")
+================================================================================
+Success!!
