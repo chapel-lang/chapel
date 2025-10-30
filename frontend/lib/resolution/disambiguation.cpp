@@ -1807,7 +1807,7 @@ static bool isFormalPartiallyGeneric(const DisambiguationCandidate& candidate,
     faTypeExpr = va->typeExpression();
   } else if (auto nf = faDecl->toVarLikeDecl()) {
     faTypeExpr = nf->typeExpression();
-  } else if (auto td = faDecl->toTupleDecl()) {
+  } else if (faDecl->isTupleDecl()) {
     // implicitly constrained, since the number of decls constrants its size
     return true;
   }
@@ -1843,7 +1843,7 @@ static bool isFormalPartiallyGeneric(const DisambiguationCandidate& candidate,
       }
     }
     return false;
-  } else if (auto id = faTypeExpr->toIdentifier()) {
+  } else if (faTypeExpr->isIdentifier()) {
     // the normalize pass (see above) doesn't add 'where' clauses for
     // identifiers, even if they refer to generic types, so return false.
     return false;
