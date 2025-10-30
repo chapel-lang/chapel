@@ -25,7 +25,7 @@ Running DWARF dump checks...
 DW_TAG_variable
               DW_AT_name	("myArr1D")
               DW_AT_decl_file	("./arrays.chpl")
-              DW_AT_decl_line	(13)
+              DW_AT_decl_line	(15)
               DW_AT_type	("ChapelArray::[domain(1,int(64),one)] int(64)")
 ================================================================================
 ========================[domain(1,int(64),one)] int(64)=========================
@@ -166,6 +166,14 @@ DW_TAG_structure_type
                 DW_AT_data_member_location	(0x10)
   NULL
 ================================================================================
+=============================wide(_ddata(int(64)))==============================
+
+================================================================================
+================================_ddata(int(64))=================================
+DW_TAG_pointer_type
+              DW_AT_type	("int(64)")
+              DW_AT_name	("_ddata(int(64))")
+================================================================================
 ===================BaseRectangularArr(1,int(64),one,int(64))====================
 DW_TAG_pointer_type
               DW_AT_type	("ChapelDistribution::BaseRectangularArr(1,int(64),one,int(64))")
@@ -280,7 +288,7 @@ DW_TAG_structure_type
 DW_TAG_variable
               DW_AT_name	("myArr2D")
               DW_AT_decl_file	("./arrays.chpl")
-              DW_AT_decl_line	(18)
+              DW_AT_decl_line	(22)
               DW_AT_type	("ChapelArray::[domain(2,int(64),one)] real(32)")
 ================================================================================
 ========================[domain(2,int(64),one)] real(32)========================
@@ -421,6 +429,14 @@ DW_TAG_structure_type
                 DW_AT_data_member_location	(0x10)
   NULL
 ================================================================================
+=============================wide(_ddata(real(32)))=============================
+
+================================================================================
+================================_ddata(real(32))================================
+DW_TAG_pointer_type
+              DW_AT_type	("real(32)")
+              DW_AT_name	("_ddata(real(32))")
+================================================================================
 ===================BaseRectangularArr(2,int(64),one,real(32))===================
 DW_TAG_pointer_type
               DW_AT_type	("ChapelDistribution::BaseRectangularArr(2,int(64),one,real(32))")
@@ -463,7 +479,7 @@ DW_TAG_structure_type
 DW_TAG_variable
               DW_AT_name	("myArr2DBlock")
               DW_AT_decl_file	("./arrays.chpl")
-              DW_AT_decl_line	(22)
+              DW_AT_decl_line	(29)
               DW_AT_type	("ChapelArray::[BlockDom(2,int(64),one,unmanaged DefaultDist)] int(64)")
 ================================================================================
 ============[BlockDom(2,int(64),one,unmanaged DefaultDist)] int(64)=============
@@ -548,11 +564,199 @@ DW_TAG_structure_type
                 DW_AT_data_member_location	(0x10)
   NULL
 ================================================================================
+======[domain(2,int(64),one)] unmanaged LocBlockArr(int(64),2,int(64),one)======
+DW_TAG_pointer_type
+              DW_AT_type	("DefaultRectangular::[domain(2,int(64),one)] unmanaged LocBlockArr(int(64),2,int(64),one)")
+              DW_AT_name	("[domain(2,int(64),one)] unmanaged LocBlockArr(int(64),2,int(64),one)")
+DW_TAG_structure_type
+              DW_AT_name	("[domain(2,int(64),one)] unmanaged LocBlockArr(int(64),2,int(64),one)")
+              DW_AT_byte_size	(0xa0)
+              DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
+              DW_AT_decl_line	(1036)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("super")
+                DW_AT_type	("ChapelDistribution::BaseRectangularArr(2,int(64),one,unmanaged LocBlockArr(int(64),2,int(64),one))")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
+                DW_AT_decl_line	(1036)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("dom")
+                DW_AT_type	("DefaultRectangular::domain(2,int(64),one) *")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
+                DW_AT_decl_line	(1041)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x30)
+  DW_TAG_member
+                DW_AT_name	("off")
+                DW_AT_type	("int(64)[2]")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
+                DW_AT_decl_line	(1043)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x38)
+  DW_TAG_member
+                DW_AT_name	("blk")
+                DW_AT_type	("int(64)[2]")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
+                DW_AT_decl_line	(1044)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x48)
+  DW_TAG_member
+                DW_AT_name	("sizesPerDim")
+                DW_AT_type	("int(64)[2]")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
+                DW_AT_decl_line	(1045)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x58)
+  DW_TAG_member
+                DW_AT_name	("str")
+                DW_AT_type	("int(64)[2]")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
+                DW_AT_decl_line	(1046)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x68)
+  DW_TAG_member
+                DW_AT_name	("factoredOffs")
+                DW_AT_type	("int(64)")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
+                DW_AT_decl_line	(1047)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x78)
+  DW_TAG_member
+                DW_AT_name	("data")
+                DW_AT_type	("BlockDist::LocBlockArr(int(64),2,int(64),one) **")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
+                DW_AT_decl_line	(1051)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x80)
+  DW_TAG_member
+                DW_AT_name	("shiftedData")
+                DW_AT_type	("BlockDist::LocBlockArr(int(64),2,int(64),one) **")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
+                DW_AT_decl_line	(1055)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x88)
+  DW_TAG_member
+                DW_AT_name	("externFreeFunc")
+                DW_AT_type	("void *")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
+                DW_AT_decl_line	(1058)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x90)
+  DW_TAG_member
+                DW_AT_name	("externArr")
+                DW_AT_type	("bool")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
+                DW_AT_decl_line	(1059)
+                DW_AT_alignment	(1)
+                DW_AT_data_member_location	(0x98)
+  DW_TAG_member
+                DW_AT_name	("_borrowed")
+                DW_AT_type	("bool")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
+                DW_AT_decl_line	(1060)
+                DW_AT_alignment	(1)
+                DW_AT_data_member_location	(0x99)
+  DW_TAG_member
+                DW_AT_name	("callPostAlloc")
+                DW_AT_type	("bool")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
+                DW_AT_decl_line	(1062)
+                DW_AT_alignment	(1)
+                DW_AT_data_member_location	(0x9a)
+  DW_TAG_member
+                DW_AT_name	("deinitElts")
+                DW_AT_type	("bool")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/DefaultRectangular.chpl")
+                DW_AT_decl_line	(1064)
+                DW_AT_alignment	(1)
+                DW_AT_data_member_location	(0x9b)
+  NULL
+DW_TAG_structure_type
+              DW_AT_name	("[domain(2,int(64),one)] unmanaged LocBlockArr(int(64),2,int(64),one)")
+              DW_AT_byte_size	(0x18)
+              DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelArray.chpl")
+              DW_AT_decl_line	(781)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("_pid")
+                DW_AT_type	("int(64)")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelArray.chpl")
+                DW_AT_decl_line	(782)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("_instance")
+                DW_AT_type	("DefaultRectangular::[domain(2,int(64),one)] unmanaged LocBlockArr(int(64),2,int(64),one) *")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelArray.chpl")
+                DW_AT_decl_line	(785)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x08)
+  DW_TAG_member
+                DW_AT_name	("_unowned")
+                DW_AT_type	("bool")
+                DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelArray.chpl")
+                DW_AT_decl_line	(786)
+                DW_AT_alignment	(1)
+                DW_AT_data_member_location	(0x10)
+  NULL
+================================================================================
+====================wide(LocBlockArr(int(64),2,int(64),one))====================
+
+================================================================================
+=======================LocBlockArr(int(64),2,int(64),one)=======================
+DW_TAG_pointer_type
+              DW_AT_type	("BlockDist::LocBlockArr(int(64),2,int(64),one)")
+              DW_AT_name	("LocBlockArr(int(64),2,int(64),one)")
+DW_TAG_structure_type
+              DW_AT_name	("LocBlockArr(int(64),2,int(64),one)")
+              DW_AT_byte_size	(0x38)
+              DW_AT_decl_file	("$CHPL_HOME/modules/dists/BlockDist.chpl")
+              DW_AT_decl_line	(579)
+              DW_AT_alignment	(8)
+  DW_TAG_member
+                DW_AT_name	("super")
+                DW_AT_type	("RootClass")
+                DW_AT_decl_file	("$CHPL_HOME/modules/dists/BlockDist.chpl")
+                DW_AT_decl_line	(579)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x00)
+  DW_TAG_member
+                DW_AT_name	("locDom")
+                DW_AT_type	("BlockDist::LocBlockDom(2,int(64),one) *")
+                DW_AT_decl_file	("$CHPL_HOME/modules/dists/BlockDist.chpl")
+                DW_AT_decl_line	(584)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x08)
+  DW_TAG_member
+                DW_AT_name	("locRAD")
+                DW_AT_type	("DefaultRectangular::LocRADCache(int(64),2,int(64),one) *")
+                DW_AT_decl_file	("$CHPL_HOME/modules/dists/BlockDist.chpl")
+                DW_AT_decl_line	(585)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x10)
+  DW_TAG_member
+                DW_AT_name	("myElems")
+                DW_AT_type	("ChapelArray::[domain(2,int(64),one)] int(64)")
+                DW_AT_decl_file	("$CHPL_HOME/modules/dists/BlockDist.chpl")
+                DW_AT_decl_line	(588)
+                DW_AT_alignment	(8)
+                DW_AT_data_member_location	(0x18)
+  DW_TAG_member
+                DW_AT_name	("locRADLock")
+                DW_AT_type	("ChapelLocks::chpl_LocalSpinlock")
+                DW_AT_decl_file	("$CHPL_HOME/modules/dists/BlockDist.chpl")
+                DW_AT_decl_line	(589)
+                DW_AT_alignment	(1)
+                DW_AT_data_member_location	(0x30)
+  NULL
+================================================================================
 =================================myArr1DCyclic==================================
 DW_TAG_variable
               DW_AT_name	("myArr1DCyclic")
               DW_AT_decl_file	("./arrays.chpl")
-              DW_AT_decl_line	(25)
+              DW_AT_decl_line	(32)
               DW_AT_type	("ChapelArray::[CyclicDom(1,int(64),one)] uint(8)")
 ================================================================================
 =======================[CyclicDom(1,int(64),one)] uint(8)=======================
