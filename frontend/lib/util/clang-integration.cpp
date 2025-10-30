@@ -158,12 +158,12 @@ const std::vector<std::string>& getCC1Arguments(Context* context,
 
   std::string triple = llvm::sys::getDefaultTargetTriple();
   // Create a compiler instance to handle the actual work.
-  auto diagOptions = std::make_unique<clang::DiagnosticOptions>();
+  auto diagOptions = new clang::DiagnosticOptions();
   auto diagClient = new clang::TextDiagnosticPrinter(llvm::errs(),
 #if LLVM_VERSION_MAJOR >= 21
-                                                    *diagOptions
+                                                     *diagOptions
 #else
-                                                     diagOptions.get()
+                                                     &*diagOptions
 #endif
                                                     );
   auto diagID = new clang::DiagnosticIDs();
@@ -172,7 +172,7 @@ const std::vector<std::string>& getCC1Arguments(Context* context,
 #if LLVM_VERSION_MAJOR >= 21
     *diagOptions,
 #else
-    diagOptions.get(),
+    &*diagOptions,
 #endif
     diagClient);
 
@@ -219,6 +219,8 @@ const std::vector<std::string>& getCC1Arguments(Context* context,
       result.push_back(arg);
     }
   }
+
+  delete diags;
 
 #endif
 
@@ -307,14 +309,14 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
     auto diagOptions = clang::CreateAndPopulateDiagOpts(cc1argsCstrs);
     auto diagClient = new clang::TextDiagnosticBuffer();
 #if LLVM_VERSION_MAJOR >= 21
-      auto clangDiags =
+    auto clangDiags =
       clang::CompilerInstance::createDiagnostics(*llvm::vfs::getRealFileSystem(),
                                                  *diagOptions,
                                                  diagClient,
                                                  /* owned */ true);
 #else
 #if LLVM_VERSION_MAJOR >= 20
-      auto clangDiags =
+    auto clangDiags =
       clang::CompilerInstance::createDiagnostics(*llvm::vfs::getRealFileSystem(),
                                                  diagOptions.release(),
                                                  diagClient,
