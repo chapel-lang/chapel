@@ -2640,7 +2640,6 @@ static QualifiedType getVarArgTupleElemType(const QualifiedType& varArgType) {
 
 static Resolver createResolverForAst(ResolutionContext* rc,
                                      const Function* fn,
-                                     const AggregateDecl* ad,
                                      const Enum* ed,
                                      const SubstitutionsMap& substitutions,
                                      const PoiScope* poiScope,
@@ -2648,29 +2647,10 @@ static Resolver createResolverForAst(ResolutionContext* rc,
   if (fn != nullptr) {
     return Resolver::createForInstantiatedSignature(rc, fn, substitutions,
                                                     poiScope, r);
-  } else if (ad != nullptr) {
-    return Resolver::createForInstantiatedSignatureFields(rc->context(), ad,
-                                                          substitutions,
-                                                          poiScope, r);
   } else {
     CHPL_ASSERT(ed != nullptr);
     return Resolver::createForEnumElements(rc->context(), ed, r);
   }
-}
-
-static QualifiedType getProperFormalType(const ResolutionResultByPostorderID& r,
-                                         const FormalActual& entry,
-                                         const AggregateDecl* ad,
-                                         const AstNode* typeFor) {
-  auto type = r.byAst(typeFor).type();
-  if (ad != nullptr) {
-    // generic var fields from a type are type fields in its type constructor.
-    // so, make sure the kind is correct.
-    type = QualifiedType(entry.formalType().kind(),
-                         type.type(),
-                         type.param());
-  }
-  return type;
 }
 
 // if the signature is a function and has an AST, fn should be that AST.
@@ -2726,13 +2706,11 @@ instantiateSignatureImpl(ResolutionContext* rc,
   const UntypedFnSignature* untypedSignature = sig->untyped();
   const AstNode* ast = nullptr;
   const Function* fn = nullptr;
-  const AggregateDecl* ad = nullptr;
   const Enum* ed = nullptr;
 
   if (!untypedSignature->id().isEmpty()) {
     ast = parsing::idToAst(context, untypedSignature->id());
     fn = ast->toFunction();
-    ad = ast->toAggregateDecl();
     ed = ast->toEnum();
   }
 
@@ -2781,7 +2759,7 @@ instantiateSignatureImpl(ResolutionContext* rc,
   int varArgIdx = -1;
 
   ResolutionResultByPostorderID r;
-  auto visitor = createResolverForAst(rc, fn, ad, ed, substitutions,
+  auto visitor = createResolverForAst(rc, fn, ed, substitutions,
                                       poiScope, r);
 
   // TODO: Stop copying these back in.
@@ -2849,7 +2827,7 @@ instantiateSignatureImpl(ResolutionContext* rc,
       }
     } else if (formal) {
       formal->traverse(visitor);
-      formalType = getProperFormalType(r, entry, ad, formal);
+      formalType = r.byAst(formal).type();
     } else {
       // without a formal AST, assume that the originally provided formal type
       // is right.
@@ -3023,7 +3001,7 @@ instantiateSignatureImpl(ResolutionContext* rc,
       // Substitutions have been updated; re-run resolution to get better
       // intents, vararg info, and to extract type query info.
       formal->traverse(visitor);
-      formalType = getProperFormalType(r, entry, ad, formal);
+      formalType = r.byAst(formal).type();
     }
 
     // Type queries have now been computed. We need to verify that type
@@ -3039,7 +3017,7 @@ instantiateSignatureImpl(ResolutionContext* rc,
         }
       }
       formal->traverse(visitor);
-      auto qFormalType = getProperFormalType(r, entry, ad, formal);
+      auto qFormalType = r.byAst(formal).type();
       if (entry.isVarArgEntry()) {
         // We only need to canPass the tuple element types.
         qFormalType = getVarArgTupleElemType(qFormalType);
@@ -3166,82 +3144,6 @@ instantiateSignatureImpl(ResolutionContext* rc,
                                                      untypedSignature,
                                                      &substitutions);
     where = whereClauseResult(context, fn, r, instantiationState);
-  } else if (ad != nullptr) {
-    // TODO: compute the class type
-
-    // visit the fields
-    ResolutionResultByPostorderID r;
-    auto visitor =
-      Resolver::createForInstantiatedSignatureFields(context, ad, substitutions,
-                                                     poiScope, r);
-    // visit the parent type
-    if (auto cls = ad->toClass()) {
-      for (int i = 0; i < cls->numInheritExprs(); i++) {
-        cls->inheritExpr(i)->traverse(visitor);
-      }
-    }
-
-    // do not visit the field declarations directly; only visit those
-    // that are relevant for computing the types of the formals. This
-    // happens below.
-
-    // add formals according to the parent class type
-
-    // now pull out the field types
-    CHPL_ASSERT(formalTypes.empty());
-    int nFormals = sig->numFormals();
-    int formalIdx = 0;
-
-    // The "default value" hints are set in substitutions, but at this
-    // point, we want to use the actual type that was computed. So,
-    // rebuild the substitutions.
-    SubstitutionsMap newSubstitutions;
-
-    if (!sig->untyped()->isTypeConstructor()) {
-      // Compiler-generated initializer has an initial 'this' formal,
-      // skip it for now and insert a placeholder.
-      formalIdx++;
-      formalTypes.push_back(QualifiedType());
-    }
-
-    for (; formalIdx < nFormals; formalIdx++) {
-      const Decl* fieldDecl = untypedSignature->formalDecl(formalIdx);
-      fieldDecl->traverse(visitor);
-      const ResolvedExpression& e = r.byAst(fieldDecl);
-      QualifiedType fieldType = e.type();
-      QualifiedType sigType = sig->formalType(formalIdx);
-
-      // use the same kind as the old formal type but update the type, param
-      // to reflect how instantiation occurred.
-      formalTypes.push_back(QualifiedType(sigType.kind(),
-                                          fieldType.type(),
-                                          fieldType.param()));
-
-      if (isFieldSyntacticallyGeneric(context, fieldDecl->id())){
-        newSubstitutions.insert({fieldDecl->id(), fieldType});
-      }
-    }
-
-    if (!sig->untyped()->isTypeConstructor()) {
-      // We've visited the rest of the formals and figured out their types.
-      // Time to backfill the 'this' formal.
-      const Type* newType = helpGetTypeForDecl(context, ad, newSubstitutions,
-                                               poiScope, sig->formalType(0).type());
-
-      // If the original formal is a class type (with management etc.), ensure
-      // that the management etc. is preserved.
-      if (auto sigCt = sig->formalType(0).type()->toClassType()) {
-        if (auto mt = newType->toManageableType()) {
-          newType = ClassType::get(context, mt, sigCt->manager(), sigCt->decorator());
-        }
-      }
-
-      formalTypes[0] = QualifiedType(sig->formalType(0).kind(), newType);
-    }
-
-    instantiationState = anyFormalNeedsInstantiation(context, formalTypes,
-                                                     untypedSignature,
-                                                     &newSubstitutions);
   } else if (ed) {
     // Fine; formal types were stored into formalTypes earlier since we're
     // considering a compiler-generated candidate on an enum.
