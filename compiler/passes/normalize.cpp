@@ -4330,9 +4330,9 @@ static void fixupArrayElementExpr(FnSymbol*                    fn,
                                   ArgSymbol*                   formal,
                                   Expr*                        eltExpr,
                                   const std::vector<SymExpr*>& symExprs) {
-  // e.g. : [1..3] ?t
+  // e.g. x : [1..3] ?t
   if (DefExpr* queryEltType = toDefExpr(eltExpr)) {
-    // Walk the body of 'fn' and replace uses of 't' with 't'.eltType
+    // Walk the body of 'fn' and replace uses of 't' with 'x'.eltType
     for_vector(SymExpr, se, symExprs) {
       if (se->symbol() == queryEltType->sym) {
         SET_LINENO(se);
