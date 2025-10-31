@@ -424,10 +424,11 @@ void resolveArgIntent(ArgSymbol* arg) {
 
   arg->intent = intent;
 
-  if (arg->qual == QUAL_UNKNOWN) {
-    // TODO: Use this, or use 'Symbol::computeQualifiedType'?
-    arg->qual = QualifiedType::qualifierForArgIntent(arg->intent);
-  }
+  auto qt = arg->qualType();
+  arg->qual = qt.getQual();
+
+  // These should not have changed, else there was some desync somewhere...
+  INT_ASSERT(qt.type() == arg->type);
 }
 
 static void resolveVarIntent(VarSymbol* sym) {
@@ -455,7 +456,8 @@ static FunctionType* computeConcreteIntentsForFunctionType(FunctionType* ft) {
   for (auto& formal : ft->formals()) {
     if (shouldSkipArgType(formal.type())) continue;
 
-    IntentTag newIntent = formal.intent();
+    auto newIntent = formal.intent();
+    auto newQual = formal.qual();
 
     if (ft->hasForeignLinkage() && formal.intent() == INTENT_BLANK) {
       // In general, the blank intent for extern functions is 'CONST_IN'.
@@ -470,7 +472,16 @@ static FunctionType* computeConcreteIntentsForFunctionType(FunctionType* ft) {
       newIntent = concreteIntent(formal.intent(), formal.type());
     }
 
-    auto newQual = QualifiedType::qualifierForArgIntent(newIntent);
+    bool isFormal = true;
+    auto qualForIntent = QualifiedType::qualifierForArgIntent(newIntent);
+    bool isConst = QualifiedType::qualifierIsConst(qualForIntent);
+    auto qt = Symbol::computeQualifiedType(isFormal, newIntent,
+                                           formal.type(),
+                                           qualForIntent,
+                                           isConst);
+
+    // Set the 'qual' from the qualifier that was computed.
+    newQual = qt.getQual();
 
     if (newIntent != formal.intent() || newQual != formal.qual()) {
       FunctionType::Formal newFormal(newQual, formal.type(), newIntent,

@@ -399,7 +399,7 @@ static void adjustArgIntentForDeref(ArgSymbol* arg) {
   arg->removeFlag(FLAG_SCOPE);
 
   // And also, recompute the qualifier
-  arg->qual = QualifiedType::qualifierForArgIntent(arg->intent);
+  arg->qual = arg->qualType().getQual();
 }
 
 // Update each callsite to invoke the serializer.

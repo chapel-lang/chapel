@@ -179,17 +179,19 @@ Symbol::computeQualifiedType(bool isFormal, IntentTag intent, Type* type,
                              Qualifier qual,
                              bool isConst) {
   QualifiedType ret(dtUnknown, QUAL_UNKNOWN);
+
   if (isFormal) {
     Qualifier q = QualifiedType::qualifierForArgIntent(intent);
     if (qual == QUAL_WIDE_REF && (q == QUAL_REF || q == QUAL_CONST_REF)) {
+      // Preserve wide ref'ness if needed...
       q = QUAL_WIDE_REF;
-      // MPF: Should this be CONST_WIDE_REF in some cases?
     }
     ret = QualifiedType(type, q);
   } else {
     ret = QualifiedType(type, qual);
-    if (isConst) ret = ret.toConst();
   }
+
+  if (isConst) ret = ret.toConst();
 
   return ret;
 
