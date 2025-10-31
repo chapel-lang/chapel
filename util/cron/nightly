@@ -53,6 +53,7 @@ $parnodefile = "";
 $baseline = 0;
 $fast = 0;
 $debug_symbols = 0;
+$debug_optimizations = 0;
 $nolocal = 0;
 $verify = 0;
 $retaintree = 0;
@@ -136,6 +137,8 @@ while (@ARGV) {
         $fast = 1;
     } elsif ($flag eq "-debug-symbols") {
         $debug_symbols = 1;
+    } elsif ($flag eq "-debug-optimizations") {
+        $debug_optimizations = 1;
     } elsif ($flag eq "-memleaks") {
         $memleaks = 1;
     } elsif ($flag eq "-memleakslog") {
@@ -723,6 +726,9 @@ if ($fast == 1) {
 }
 if ($debug_symbols == 1) {
     $testflags = "$testflags -compopts --debug -compopts --verify";
+}
+if ($debug_optimizations == 1) {
+    $testflags = "$testflags -compopts --debug-safe-optimizations-only";
 }
 if ($memleaks == 1) {
     $testflags = "$testflags -memleaks";
