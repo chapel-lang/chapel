@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+if [[ "$CHPL_COMM" != "none" ]]; then
+  echo "True"
+  exit 0
+fi
+
 if command -v lldb >/dev/null ; then
 
   # Sept 10, 2025: skip if lldb does not have python support

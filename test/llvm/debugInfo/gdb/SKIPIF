@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+if [[ "$CHPL_COMM" != "none" ]]; then
+  echo "True"
+  exit 0
+fi
+
 if command -v gdb >/dev/null ; then
   echo "False"
 else
