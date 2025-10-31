@@ -22,6 +22,7 @@
 #define _GDB_H_
 
 #include <signal.h>
+#include "chpltypes.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -41,6 +42,10 @@ inline static void chpl_debugtrap(void) {
   call_debugtrap();
   #undef call_debugtrap
 }
+
+
+void* chpl_debug_get(void* locale, void* addr, size_t size);
+void chpl_debug_free(void* ptr);
 
 #ifdef __cplusplus
 }

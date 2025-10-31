@@ -22,6 +22,62 @@ import lldb
 import re
 
 
+class Ptr:
+    def __init__(self, target, ptr, owned=True):
+        self.target = target
+        assert self.target is not None
+        self.ptr = ptr
+        self.owned = owned
+
+    def __del__(self):
+        if self.owned and self.ptr is not None and self.ptr.IsValid():
+            self.target.EvaluateExpression(
+                f"chpl_debug_free((void*){self.ptr.GetValueAsUnsigned()})"
+            )
+
+    def __call__(self):
+        if self.ptr is not None:
+            return self.ptr
+        else:
+            # return an invalid SBValue
+            return lldb.SBValue()
+
+
+def debugp(*args, **kwargs):
+    print("[chpl_lldb_pretty_print]", *args, **kwargs)
+
+
+def errorp(*args, **kwargs):
+    print("[chpl_lldb_pretty_print][ERROR]", *args, **kwargs)
+
+
+def ResolveWidePointer(wideptr, size=None):
+    locale = wideptr.GetNonSyntheticValue().GetChildMemberWithName("locale")
+    addr = wideptr.GetNonSyntheticValue().GetChildMemberWithName("addr")
+    addr_type = addr.GetType()
+
+    target = wideptr.GetTarget()
+
+    if size is None:
+        size = addr_type.GetPointeeType().GetByteSize()
+    ret_val = target.EvaluateExpression(
+        f"chpl_debug_get((void*){locale.GetLoadAddress()}, (void*){addr.GetValueAsUnsigned()}, {size})"
+    )
+    if not ret_val.IsValid():
+        return Ptr(target, None, owned=False)
+    resolved_ptr = ret_val.Cast(addr_type)
+    if not resolved_ptr.IsValid():
+        return Ptr(target, None, owned=False)
+    return Ptr(target, resolved_ptr)
+
+
+def MaybeResolveWidePointer(wideptr, size=None):
+    if wideptr.GetTypeName().startswith("wide("):
+        return ResolveWidePointer(wideptr, size=size)
+    else:
+        return Ptr(wideptr.GetTarget(), wideptr, owned=False)
+
+
 def StringSummary(valobj, internal_dict):
     size = valobj.GetChildMemberWithName("size").GetValueAsUnsigned()
     buff = valobj.GetNonSyntheticValue().GetChildMemberWithName("buff")
@@ -89,7 +145,7 @@ def RangeSummary(valobj, internal_dict):
     typename = valobj.GetTypeName()
     match = range_regex_c.match(typename) or range_regex_llvm.match(typename)
     if not match:
-        print(
+        errorp(
             f"Range_Summary: type name '{typename}' did not match expected pattern"
         )
         return None
@@ -112,7 +168,6 @@ def RangeSummary(valobj, internal_dict):
         res += str(high)
     if has_stride():
         res += f" by {stride}"
-
 
     return res
 
@@ -147,7 +202,7 @@ class RangeProvider:
             typename
         )
         if not match:
-            print(
+            errorp(
                 f"RangeProvider: type name '{typename}' did not match expected pattern"
             )
             return False
@@ -159,7 +214,7 @@ class RangeProvider:
             typename
         )
         if not match:
-            print(
+            errorp(
                 f"RangeProvider: type name '{typename}' did not match expected pattern"
             )
             return False
@@ -171,7 +226,7 @@ class RangeProvider:
             typename
         )
         if not match:
-            print(
+            errorp(
                 f"RangeProvider: type name '{typename}' did not match expected pattern"
             )
             return False
@@ -202,7 +257,9 @@ class RangeProvider:
 domain_regex_c = re.compile(
     r"^_domain_DefaultRectangularDom_(?P<rank>[0-9]+)_(?P<eltType>[a-zA-Z0-9_]+)_(?P<stride>one|negOne|positive|negative|any)(?:_chpl)?$"
 )
-domain_regex_llvm = re.compile(r"^ChapelDomain::domain\((?P<rank>[0-9]+),(?P<eltType>[a-zA-Z0-9_\(\)]+),(?P<stride>one|negOne|positive|negative|any)\)$")
+domain_regex_llvm = re.compile(
+    r"^ChapelDomain::domain\((?P<rank>[0-9]+),(?P<eltType>[a-zA-Z0-9_\(\)]+),(?P<stride>one|negOne|positive|negative|any)\)$"
+)
 # TODO handle developer domain regex
 
 
@@ -214,14 +271,18 @@ def DomainRecognizer(sbtype, internal_dict):
 
 def RangesToString(ranges):
     getSum = lambda r: r.GetSummary() or r.GetValue() or ""
-    s = ", ".join(getSum(ranges.GetChildAtIndex(i)) for i in range(ranges.GetNumChildren()))
+    s = ", ".join(
+        getSum(ranges.GetChildAtIndex(i))
+        for i in range(ranges.GetNumChildren())
+    )
     return s
+
 
 def DomainSummary(valobj, internal_dict):
     typename = valobj.GetTypeName()
     match = domain_regex_c.match(typename) or domain_regex_llvm.match(typename)
     if not match:
-        print(
+        errorp(
             f"Domain_Summary: type name '{typename}' did not match expected pattern"
         )
         return None
@@ -245,7 +306,7 @@ class DomainProvider:
             typename
         )
         if not match:
-            print(
+            errorp(
                 f"DomainProvider: type name '{typename}' did not match expected pattern"
             )
             return
@@ -285,7 +346,9 @@ class DomainProvider:
 array_regex_c = re.compile(
     r"^_array_DefaultRectangularArr_(?P<rank>[0-9]+)_(?P<idxType>[a-zA-Z0-9_]+)_(?P<stride>one|negOne|positive|negative|any)_(?P<eltType>[a-zA-Z0-9_]+)_(?P<idxSignedType>[a-zA-Z0-9_]+)(?:_chpl)?$"
 )
-array_regex_llvm = re.compile(r"^ChapelArray::\[domain\((?P<rank>[0-9]+),(?P<idxType>[a-zA-Z0-9_\(\)]+),(?P<stride>one|negOne|positive|negative|any)\)\] (?P<eltType>[a-zA-Z0-9_\(\)]+)$")
+array_regex_llvm = re.compile(
+    r"^ChapelArray::\[domain\((?P<rank>[0-9]+),(?P<idxType>[a-zA-Z0-9_\(\)]+),(?P<stride>one|negOne|positive|negative|any)\)\] (?P<eltType>[a-zA-Z0-9_\(\)]+)$"
+)
 
 
 def ArrayRecognizer(sbtype, internal_dict):
@@ -298,61 +361,28 @@ def ArraySummary(valobj, internal_dict):
     typename = valobj.GetTypeName()
     match = array_regex_c.match(typename) or array_regex_llvm.match(typename)
     if not match:
-        print(
+        errorp(
             f"Array_Summary: type name '{typename}' did not match expected pattern"
         )
         return None
 
-    _instance = valobj.GetNonSyntheticValue().GetChildMemberWithName(
-        "_instance"
+    _instance = MaybeResolveWidePointer(
+        valobj.GetNonSyntheticValue().GetChildMemberWithName("_instance")
     )
-    domClass = _instance.GetChildMemberWithName("dom")
-    data = _instance.GetChildMemberWithName("data")
-    ranges = domClass.GetNonSyntheticValue().GetChildMemberWithName("ranges")
-    return f"[{RangesToString(ranges)}] {GetArrayType(_instance)}"
 
-
-def GetFunctionByName(target, function_name):
-    funcs = target.FindFunctions(function_name)
-    if funcs.GetSize() == 0:
-        return None
-    return funcs.GetContextAtIndex(0).GetFunction()
-    
-
-def ResolveWidePointer(wideptr):
-    locale = wideptr.GetNonSyntheticValue().GetChildMemberWithName("locale")
-    addr = wideptr.GetNonSyntheticValue().GetChildMemberWithName("addr")
-    addr_type = addr.GetType()
-
-    target = wideptr.GetTarget()
-
-    size = addr_type.GetPointeeType().GetByteSize()
-    ret_val = target.EvaluateExpression(
-        f"chpl_debug_get((void*){locale.GetLoadAddress()}, (void*){addr.GetValueAsUnsigned()}, {size})"
+    domClass = MaybeResolveWidePointer(
+        _instance().GetChildMemberWithName("dom")
     )
-    if not ret_val.IsValid():
-        return None
-    resolved_ptr = ret_val.Cast(addr_type)
-    if not resolved_ptr.IsValid():
-        return None
-    return resolved_ptr
+    ranges = domClass().GetNonSyntheticValue().GetChildMemberWithName("ranges")
+    return f"[{RangesToString(ranges)}] {GetArrayType(_instance()).GetName()}"
 
 
 def GetArrayType(_instance):
-    # if _instance's type starts with 'wide', resolve the wide pointer
-    if _instance.GetTypeName().startswith("wide("):
-        _data = ResolveWidePointer(_instance)
-        if _data is None:
-            return "unknown"
-        ddata = _data.GetNonSyntheticValue().GetChildMemberWithName("data")
-        ddata_addr = ddata.GetNonSyntheticValue().GetChildMemberWithName("addr")
-        return ddata_addr.GetType().GetPointeeType().GetName()
-
-    else:
-        ddata = _instance.GetChildMemberWithName("data")
-        if not ddata.IsValid():
-            return "unknown"
-        return ddata.GetType().GetPointeeType().GetName()
+    # returns SBType
+    data = MaybeResolveWidePointer(_instance)
+    ddata = data().GetNonSyntheticValue().GetChildMemberWithName("data")
+    ddata_addr = MaybeResolveWidePointer(ddata)
+    return ddata_addr().GetType().GetPointeeType()
 
 
 class ArrayProvider:
@@ -365,7 +395,7 @@ class ArrayProvider:
             typename
         )
         if not match:
-            print(
+            errorp(
                 f"ArrayProvider: type name '{typename}' did not match expected pattern"
             )
             return
@@ -375,10 +405,12 @@ class ArrayProvider:
                 "_instance"
             )
         )
-        self.domClass = self._instance.GetChildMemberWithName("dom")
-        self.data = self._instance.GetChildMemberWithName("data")
-        self.synthetic_children["dom"] = self.domClass
-        self.synthetic_children["data"] = self.data
+        temp = MaybeResolveWidePointer(self._instance)
+        self.domClass = temp().GetChildMemberWithName("dom")
+        self.data = temp().GetChildMemberWithName("data")
+        # TODO: itd be nice to have a domain as a valid child too
+        # but the array printer currently gets confused if we do that
+        # self.synthetic_children["domain"] = self.domClass
 
         self.rank = int(match.group("rank"))
         self.element_type = GetArrayType(self._instance)
@@ -388,29 +420,12 @@ class ArrayProvider:
     def _make_synthetic_array(self):
         """Create synthetic children for array elements"""
 
-        data_valobj = self.data.GetNonSyntheticValue().GetData()
-        if not data_valobj.IsValid():
-            print("ArrayProvider: data SBData is not valid")
-            return
-
-        # Get the size of each element based on the element type
-        element_size = self._get_element_size()
-        if element_size == 0:
-            print(
-                f"ArrayProvider: unknown element size for type '{self.element_type}'"
-            )
-            return
-
-        element_type = self.valobj.GetTarget().FindFirstType(self.element_type)
-        if not element_type.IsValid():
-            print(
-                f"ArrayProvider: could not find element type '{self.element_type}'"
-            )
-            return
-
+        resolved_dom = MaybeResolveWidePointer(self.domClass)
         # For 1D arrays, get the range to determine array bounds
-        ranges = self.domClass.GetNonSyntheticValue().GetChildMemberWithName(
-            "ranges"
+        ranges = (
+            resolved_dom()
+            .GetNonSyntheticValue()
+            .GetChildMemberWithName("ranges")
         )
         if ranges.GetNumChildren() <= 0:
             return
@@ -436,7 +451,16 @@ class ArrayProvider:
             )
             bounds.append((low, high, stride))
 
-        data_ptr = self.data.GetValueAsUnsigned()
+        element_size = self.element_type.GetByteSize()
+        num_elements = 1
+        for low, high, stride in bounds:
+            dim_size = (high - low) // (stride if stride else 1) + 1
+            num_elements *= dim_size
+
+        resolved_data = MaybeResolveWidePointer(
+            self.data, num_elements * element_size
+        )
+        data_ptr = resolved_data().GetValueAsUnsigned()
 
         def generate_indices(dims, bounds):
             if dims == 0:
@@ -447,7 +471,6 @@ class ArrayProvider:
                     for rest in generate_indices(dims - 1, bounds):
                         yield rest + [i]
 
-
         for indices in generate_indices(self.rank, bounds):
             # Calculate linear offset for multi-dimensional array
             offset = 0
@@ -456,7 +479,9 @@ class ArrayProvider:
                 low, high, stride = bounds[dim]
                 dim_index = indices[dim]
                 # Convert from Chapel index to 0-based index
-                zero_based_index = (dim_index - low) // (stride if stride else 1)
+                zero_based_index = (dim_index - low) // (
+                    stride if stride else 1
+                )
                 offset += zero_based_index * multiplier
                 # Update multiplier for next dimension
                 dim_size = (high - low) // (stride if stride else 1) + 1
@@ -466,21 +491,13 @@ class ArrayProvider:
             element_name = f"[{','.join(map(str, indices))}]"
             try:
                 element_val = self.valobj.CreateValueFromAddress(
-                    element_name, element_addr, element_type
+                    element_name, element_addr, self.element_type
                 )
                 self.synthetic_children[element_name] = element_val
             except:
-                print(
+                errorp(
                     f"ArrayProvider: failed to create element at indices {indices}"
                 )
-
-    def _get_element_size(self):
-        """Get the size in bytes of the element type"""
-        target = self.valobj.GetTarget()
-        element_type = target.FindFirstType(self.element_type)
-        if element_type.IsValid():
-            return element_type.GetByteSize()
-        return 0
 
     def has_children(self):
         return self.num_children() > 0
@@ -564,6 +581,89 @@ class ManagedObjectProvider:
         )
 
 
+def WidePointerSummary(valobj, internal_dict):
+    resolved_ptr = ResolveWidePointer(valobj)
+    if not resolved_ptr().IsValid():
+        return "nil"
+    else:
+        return resolved_ptr().GetSummary() or resolved_ptr().GetValue()
+
+
+class WidePointerProvider:
+    def __init__(self, valobj, internal_dict):
+        self.valobj = valobj
+
+        resolved_ptr = ResolveWidePointer(self.valobj)
+        if not resolved_ptr().IsValid():
+            self.synthetic_children = {}
+        else:
+            self.synthetic_children = {}
+            deref_ptr = resolved_ptr().Dereference()
+            if deref_ptr.IsValid():
+                for i in range(deref_ptr.GetNumChildren()):
+                    child = deref_ptr.GetChildAtIndex(i)
+                    if child.IsValid():
+                        self.synthetic_children[child.GetName()] = child
+
+    def has_children(self):
+        return self.num_children() > 0
+
+    def num_children(self):
+        return len(self.synthetic_children)
+
+    def get_child_index(self, name):
+        if name in self.synthetic_children:
+            return list(self.synthetic_children.keys()).index(name)
+        else:
+            return -1
+
+    def get_child_at_index(self, index):
+        if index < 0 or index >= self.num_children():
+            return None
+        key = list(self.synthetic_children.keys())[index]
+        element_data = self.synthetic_children[key].GetData()
+        element_type = self.synthetic_children[key].GetType()
+        return self.valobj.CreateValueFromData(
+            f"{key}", element_data, element_type
+        )
+
+
+def DebugFunc_ResolveWidePointer(debugger, command, result, internal_dict):
+    """Resolve a wide pointer manually.
+    Usage: RWP <wide pointer variable> [size]
+    Size is optional; if not provided, the size of the pointee type is used.
+    Example: RWP myWidePtr
+    """
+    target = debugger.GetSelectedTarget()
+    frame = target.GetProcess().GetSelectedThread().GetSelectedFrame()
+
+    args = command.split()
+    if len(args) == 0:
+        result.PutCString("Error: No wide pointer expression provided.")
+        result.SetStatus(lldb.eReturnStatusFailed)
+        return
+    wideptr_expr = args[0]
+    size = None
+    if len(args) > 1:
+        try:
+            size = int(args[1])
+        except ValueError:
+            result.PutCString("Error: Size must be an integer.")
+            result.SetStatus(lldb.eReturnStatusFailed)
+            return
+    wideptr = frame.EvaluateExpression(wideptr_expr)
+    if not wideptr.IsValid():
+        result.PutCString("Error: Invalid wide pointer expression.")
+        result.SetStatus(lldb.eReturnStatusFailed)
+        return
+
+    resolved_ptr = ResolveWidePointer(wideptr, size)
+    result.PutCString(
+        f"Resolved Pointer: ({resolved_ptr().GetTypeName()}) {resolved_ptr().GetValue()}"
+    )
+    result.SetStatus(lldb.eReturnStatusSuccessFinishResult)
+
+
 def __lldb_init_module(debugger, internal_dict):
 
     def register(summary_function, provider_class, recognizer_str):
@@ -592,6 +692,12 @@ def __lldb_init_module(debugger, internal_dict):
         "ManagedObjectSummary",
         "ManagedObjectProvider",
         recognizer("ManagedObjectRecognizer"),
+    )
+    # TODO: I can't decide if having a wide pointer summary/provider is useful
+    # or just confusing
+    # register("WidePointerSummary", "WidePointerProvider", regex("wide\\(.+\\)"))
+    debugger.HandleCommand(
+        "command script add -f chpl_lldb_pretty_print.DebugFunc_ResolveWidePointer RWP"
     )
 
     # make sure int(8) and uint(8) show up as numbers, not characters
