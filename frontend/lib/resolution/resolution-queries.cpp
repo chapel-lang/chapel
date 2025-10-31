@@ -4218,6 +4218,26 @@ doIsCandidateApplicableInstantiating(ResolutionContext* rc,
   return instantiated;
 }
 
+// To avoid something like SFINAE (in which one candidate's initial
+// signature errors out, and we end up picking a different candidate
+// that was less specific but didn't error), if we encountered errors
+// in any candidate, we discard all candidates.
+static void failCallResolutionDueToErrors(CandidatesAndForwardingInfo& matching,
+                                          std::vector<ApplicabilityResult>* rejected) {
+  if (rejected) {
+    for (auto candidate : matching) {
+      rejected->push_back(
+        ApplicabilityResult::failure(candidate, FAIL_ERRORS_THROWN));
+    }
+  }
+  matching.clear();
+}
+
+static void failCallResolutionDueToErrors(bool gatherRejected, EvaluatedCandidates& ret) {
+  failCallResolutionDueToErrors(ret.matching,
+                                gatherRejected ? &ret.rejected : nullptr);
+}
+
 static const EvaluatedCandidates
 filterCandidatesInitialGatherRejectedImpl(ResolutionContext* rc,
                                           const MatchingIdsWithName& lst,

@@ -1339,6 +1339,12 @@ struct CandidatesAndForwardingInfo {
   // Check if any candidates are present
   inline bool empty() const { return candidates.empty(); }
 
+  // Clear the list
+  inline void clear() {
+    candidates.clear();
+    forwardingInfo.clear();
+  }
+
   // Get the number of candidates
   inline size_t size() const { return candidates.size(); }
 
@@ -1390,6 +1396,8 @@ enum CandidateFailureReason {
   FAIL_PARENLESS_MISMATCH,
   /* An interface tried to resolve an associated type function but it didn't return a type */
   FAIL_INTERFACE_NOT_TYPE_INTENT,
+  /* Resolving one of the signature led to errors. */
+  FAIL_ERRORS_THROWN,
   /* Some other, generic reason. */
   FAIL_CANDIDATE_OTHER,
 };
