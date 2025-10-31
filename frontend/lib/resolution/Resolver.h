@@ -100,6 +100,11 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
   bool usePlaceholders = false;
   bool allowLocalSearch = true;
   ID useConcreteArrayTypeForFormals = ID();
+  bool speculating = false; // should we bail when resolving calls we're unsure
+                            // about, thus preventing errors in initial signatures?
+                            // when not speculating, be more aggressive,
+                            // knowing that we might hit errors. Presumably
+                            // we should report those.
 
   // internal variables
   ResolutionContext emptyResolutionContext;

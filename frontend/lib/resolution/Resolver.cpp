@@ -336,6 +336,7 @@ Resolver Resolver::createForInitialSignature(
   ret.signatureOnly = true;
   ret.fnBody = fn->body();
   ret.byPostorder.setupForSignature(fn);
+  ret.speculating = true;
 
   ret.rc = rc;
 
@@ -599,6 +600,7 @@ Resolver::createForInitialFieldStmt(ResolutionContext* rc,
   ret.byPostorder.setupForSymbol(decl);
   ret.fieldTypesOnly = true;
   ret.allowReceiverScopes = true;
+  ret.speculating = true;
   return ret;
 }
 
@@ -3015,23 +3017,10 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
   SkipCallResolutionReason skip = NONE;
   auto& byPostorder = rv->byPostorder;
 
+  if (callLike->id().str() == "ChapelRange.init=@14") debuggerBreakHere();
+  if (callLike->id().str() == "ChapelRange.init=@194") debuggerBreakHere();
+
   if (callLike->isTuple()) return skip;
-
-  // don't skip calls like 'foo == ?' even though '?' is generic, because
-  // the user is specifically checking for genericity.
-  // When this happens, the call info will have only one actual, since '?'
-  // is treated specially as "has question arg".
-  bool allowGenericTypes =
-    (ci.name() == USTR("==") || ci.name() == USTR("!=")) &&
-    ci.numActuals() == 1 &&
-    (ci.actual(0).type().isType() || ci.actual(0).type().isParam());
-
-  // this is a workaround in which `isSubtype` etc. aren't invoked due to
-  // being given generic supertype arguments. It's a workaround because
-  // why would we bless these functions in particular?
-  allowGenericTypes |=
-    (ci.name() == USTR("isSubtype") || ci.name() == USTR("isProperSubtype") ||
-     ci.name() == USTR("isCoercible")) && ci.numActuals() == 2;
 
   int actualIdx = 0;
   for (const auto& actual : ci.actuals()) {
@@ -3062,7 +3051,7 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
     } else if (actualAst != nullptr && actualAst->isTypeQuery() && ci.calledType().isType()) {
       // don't skip for type queries in type constructors
     } else {
-      if (qt.isParam() && qt.param() == nullptr) {
+      if (qt.isParam() && qt.param() == nullptr && rv->speculating) {
         skip = UNKNOWN_PARAM;
       } else if (qt.isUnknown()) {
         skip = UNKNOWN_ACT;
@@ -3072,33 +3061,34 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
         // should be fine.
 
         auto g = getTypeGenericity(context, t);
-        bool isBuiltinGeneric = (g == Type::GENERIC &&
-                                 (t->isAnyType() || t->isBuiltinType()));
-        bool noSubstitution =
-          rv->substitutions == nullptr ||
-          (!toId.isEmpty() && rv->substitutions->count(toId) == 0);
+        bool noSubstitution;
+        if (rv->substitutions == nullptr) {
+          noSubstitution = rv->speculating;
+        } else {
+          noSubstitution = !toId.isEmpty() && rv->substitutions->count(toId) == 0;
+        }
 
-        if (qt.isType() && isBuiltinGeneric && noSubstitution && !allowGenericTypes) {
-          skip = GENERIC_TYPE;
+        if (qt.isType() && g != Type::CONCRETE) {
+          // is there a chance this thing we're passing is generic temporarily,
+          // while other substitutions are missing? If so, consider
+          // skipping it.
+          bool affectedBySubstitutions = false;
+          if (!toId.isEmpty()) {
+            auto tag = parsing::idToTag(context, toId);
+            if (asttags::isVarLikeDecl(tag) || asttags::isTypeQuery(tag)) {
+              affectedBySubstitutions = true;
+            }
+          }
+
+          if (noSubstitution && affectedBySubstitutions) {
+            // if we are making a best-effort attempt to resolve, this
+            // is our cue to give up.
+            skip = GENERIC_TYPE;
+          }
         } else if (!qt.isType() && g != Type::CONCRETE) {
           skip = GENERIC_VALUE;
         }
       }
-    }
-
-    if (skip == UNKNOWN_PARAM && allowGenericTypes) {
-      skip = NONE;
-    }
-
-    // Don't skip for type constructors, except due to unknown params.
-    if (skip != UNKNOWN_PARAM && skip != UNKNOWN_ACT && ci.calledType().isType()) {
-      skip = NONE;
-    }
-
-    // Do not skip primitive calls that accept a generic type, since they
-    // may be valid.
-    if (skip == GENERIC_TYPE && callLike->toPrimCall()) {
-      skip = NONE;
     }
 
     if (skip) {
