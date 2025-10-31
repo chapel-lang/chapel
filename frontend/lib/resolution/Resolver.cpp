@@ -3051,10 +3051,6 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
   SkipCallResolutionReason skip = NONE;
   auto& byPostorder = rv->byPostorder;
 
-  if (callLike->id().str() == "ChapelRange.init=@27") debuggerBreakHere();
-  if (callLike->id().str() == "ChapelRange.init=@14") debuggerBreakHere();
-  if (callLike->id().str() == "ChapelRange.init=@194") debuggerBreakHere();
-
   if (callLike->isTuple()) return skip;
 
   int actualIdx = 0;
