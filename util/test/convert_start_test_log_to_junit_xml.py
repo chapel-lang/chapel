@@ -5,7 +5,6 @@
 
 from __future__ import print_function, unicode_literals
 
-import codecs
 import getpass
 import logging
 import optparse
@@ -113,7 +112,7 @@ def _parse_start_test_log(start_test_log):
     :returns: list of dicts; each dict contains info about a single test case
     """
     logging.debug('Parsing start_test log: {0}'.format(start_test_log))
-    with codecs.open(start_test_log, 'r', encoding='utf-8', errors='ignore') as fp:
+    with open(start_test_log, 'r', encoding='utf-8', errors='ignore') as fp:
         start_test_lines = fp.readlines()
     logging.debug('Read {0} lines from "{1}".'.format(
         len(start_test_lines), start_test_log))
