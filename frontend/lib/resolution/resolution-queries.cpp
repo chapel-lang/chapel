@@ -2685,6 +2685,15 @@ static bool instantiateAcrossManagerRecordConversion(Context* context,
   return false;
 }
 
+static bool traverseDetectingErrors(Context* context, const AstNode* toVisit,
+                                    Resolver& visitor) {
+  auto result = context->runAndDetectErrors([toVisit, &visitor](Context* context) {
+    toVisit->traverse(visitor);
+    return true;
+  }, /* silenceErrors */ false);
+  return !result.ranWithoutErrors();
+}
+
 // TODO: We could remove the 'ResolutionContext' argument if we figure out
 // a different way/decide not to resolve initializer bodies down below.
 static ApplicabilityResult
@@ -2811,7 +2820,9 @@ instantiateSignatureImpl(ResolutionContext* rc,
     if (entry.isVarArgEntry()) {
       if (varArgType.isUnknown()) {
         // We haven't yet re-computed the vararg tuple type.
-        formal->traverse(visitor);
+        if (traverseDetectingErrors(context, formal, visitor)) {
+          return ApplicabilityResult::failure(sig, FAIL_ERRORS_THROWN);
+        }
         varArgType = r.byAst(formal).type();
         justComputedVarArgType = true;
       }
@@ -2826,7 +2837,9 @@ instantiateSignatureImpl(ResolutionContext* rc,
         formalType = QualifiedType(entry.formalType().kind(), formalType.type(), formalType.param());
       }
     } else if (formal) {
-      formal->traverse(visitor);
+      if (traverseDetectingErrors(context, formal, visitor)) {
+        return ApplicabilityResult::failure(sig, FAIL_ERRORS_THROWN);
+      }
       formalType = r.byAst(formal).type();
     } else {
       // without a formal AST, assume that the originally provided formal type
@@ -3000,7 +3013,9 @@ instantiateSignatureImpl(ResolutionContext* rc,
     } else if (formal) {
       // Substitutions have been updated; re-run resolution to get better
       // intents, vararg info, and to extract type query info.
-      formal->traverse(visitor);
+      if (traverseDetectingErrors(context, formal, visitor)) {
+        return ApplicabilityResult::failure(sig, FAIL_ERRORS_THROWN);
+      }
       formalType = r.byAst(formal).type();
     }
 
@@ -3016,7 +3031,9 @@ instantiateSignatureImpl(ResolutionContext* rc,
           visitor.skipTypeQueries = true;
         }
       }
-      formal->traverse(visitor);
+      if (traverseDetectingErrors(context, formal, visitor)) {
+        return ApplicabilityResult::failure(sig, FAIL_ERRORS_THROWN);
+      }
       auto qFormalType = r.byAst(formal).type();
       if (entry.isVarArgEntry()) {
         // We only need to canPass the tuple element types.
@@ -3134,7 +3151,9 @@ instantiateSignatureImpl(ResolutionContext* rc,
 
     // visit the where clause
     if (auto whereClause = fn->whereClause()) {
-      whereClause->traverse(visitor);
+      if (traverseDetectingErrors(context, whereClause, visitor)) {
+        return ApplicabilityResult::failure(sig, FAIL_ERRORS_THROWN);
+      }
     }
     // do not visit the return type or function body
 
@@ -4246,12 +4265,18 @@ filterCandidatesInitialGatherRejectedImpl(ResolutionContext* rc,
   Context* context = rc->context();
   EvaluatedCandidates ret;
 
+  bool discoveredErrors = false;
   for (auto cur = lst.begin(); cur != lst.end(); ++cur) {
     auto& idv = cur.curIdAndFlags();
     bool isNestedCandidate = parsing::idIsNestedFunction(context, idv.id());
 
     if (isNestedCandidate) ret.evaluatedAnyNestedFunction = true;
-    auto s = doIsCandidateApplicableInitial(rc, idv, call);
+
+    auto initialAndErrors = context->runAndDetectErrors([rc, &idv, call](Context* context) {
+      return doIsCandidateApplicableInitial(rc, idv, call);
+    }, /* silenceErrors */ false);
+    discoveredErrors |= !initialAndErrors.ranWithoutErrors();
+    auto& s = initialAndErrors.result();
 
     if (s.success()) {
       ret.matching.addCandidate(s.candidate());
@@ -4260,6 +4285,10 @@ filterCandidatesInitialGatherRejectedImpl(ResolutionContext* rc,
     } else if (gatherRejected) {
       ret.rejected.push_back(s);
     }
+  }
+
+  if (discoveredErrors) {
+    failCallResolutionDueToErrors(gatherRejected, ret);
   }
 
   return ret;
@@ -4303,6 +4332,7 @@ filterCandidatesInstantiating(ResolutionContext* rc,
   //  and seems like it might have limited ability for reuse).
   const PoiScope* instantiationPoiScope = nullptr;
 
+  bool discoveredErrors = false;
   for (const TypedFnSignature* typedSignature : lst) {
     if (typedSignature->needsInstantiation()) {
       if (instantiationPoiScope == nullptr) {
@@ -4310,9 +4340,14 @@ filterCandidatesInstantiating(ResolutionContext* rc,
           pointOfInstantiationScope(context, inScope, inPoiScope);
       }
 
-      auto instantiated =
-        doIsCandidateApplicableInstantiating(rc, typedSignature, call,
-                                             instantiationPoiScope);
+      auto instantiatedAndErrors = context->runAndDetectErrors(
+        [rc, typedSignature, &call, instantiationPoiScope](Context* context) {
+          return doIsCandidateApplicableInstantiating(rc, typedSignature, call,
+                                                      instantiationPoiScope);
+        }, /* silenceErrors */ false);
+      discoveredErrors |= !instantiatedAndErrors.ranWithoutErrors();
+      auto& instantiated = instantiatedAndErrors.result();
+
       if (instantiated.success()) {
         result.addCandidate(instantiated.candidate());
       } if (rejected) {
@@ -4322,6 +4357,10 @@ filterCandidatesInstantiating(ResolutionContext* rc,
       // if it's already concrete, we already know it is a candidate.
       result.addCandidate(typedSignature);
     }
+  }
+
+  if (discoveredErrors) {
+    failCallResolutionDueToErrors(result, rejected);
   }
 }
 
