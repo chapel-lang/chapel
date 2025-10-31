@@ -4994,7 +4994,12 @@ void Resolver::exit(const MultiDecl* decl) {
       curInitExpr->traverse(*this);
     }
 
-    if (!scopeResolveOnly && (curTypeExpr || curInitExpr)) {
+    // even if the last decl doesn't have a type/init, we should
+    // resovle it, because `var x: int, y, z;` means `y` and `z`
+    // are generic.
+    bool isLast = std::next(it) == decl->decls().end();
+
+    if (!scopeResolveOnly && (curTypeExpr || curInitExpr || isLast)) {
       // Decl with type/init encountered, resolve and propagate the type info
       // backwards through its group.
       auto groupEnd = std::next(it);
@@ -5015,7 +5020,7 @@ void Resolver::exit(const MultiDecl* decl) {
         //    var a, b: int
         // a is of type int
         const Type* t = nullptr;
-        if (curTypeExpr == nullptr && curInitExpr == nullptr) {
+        if (curTypeExpr == nullptr && curInitExpr == nullptr && !isLast) {
           if (lastType == nullptr) {
             // this could be split init
             t = UnknownType::get(context);
@@ -5043,6 +5048,7 @@ void Resolver::exit(const MultiDecl* decl) {
         // update lastType
         ResolvedExpression& result = byPostorder.byAst(d);
         lastType = result.type().type();
+        isLast = false;
       }
 
       // Advance to beginning of next group
