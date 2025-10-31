@@ -9,7 +9,15 @@ from utils import error, memoize, warning, check_valid_var
 def get():
     platform_val = chpl_platform.get('target')
     osx = platform_val.startswith('darwin')
-    val = overrides.get('CHPL_UNWIND', 'none')
+    val = overrides.get('CHPL_UNWIND', None)
+
+    if val is None:
+        if osx:
+            val = 'system'
+        elif third_party_utils.pkgconfig_system_has_package('libunwind'):
+            val = 'system'
+        else:
+            val = 'bundled'
 
     if osx and val == 'bundled':
         error("Using CHPL_UNWIND=bundled is not supported on Mac OS X."
@@ -27,10 +35,21 @@ def get_uniq_cfg_path():
 @memoize
 def get_compile_args():
     unwind_val = get()
+    platform_val = chpl_platform.get('target')
+    osx = platform_val.startswith('darwin')
+
+    args = ([ ], [ ])
+
+    # Mac OS X supports libunwind in the C library
+    # it's not actually a special library.
+    if osx:
+      return args
+
     if unwind_val == 'bundled':
         return third_party_utils.get_bundled_compile_args('libunwind')
-
-    return ([ ], [ ])
+    elif unwind_val == 'system' :
+        args = third_party_utils.pkgconfig_get_system_compile_args('libunwind')
+    return args
 
 # returns 2-tuple of lists
 #  (linker_bundled_args, linker_system_args)
@@ -49,19 +68,9 @@ def get_link_args():
 
     # Get the link arguments (e.g. -lunwind)
     if unwind_val == 'bundled':
-      args = third_party_utils.pkgconfig_get_bundled_link_args('libunwind')
-
+        args = third_party_utils.pkgconfig_get_bundled_link_args('libunwind')
     elif unwind_val == 'system':
-      # Try using pkg-config to get the libraries to link
-      # libunwind with.
-      args = third_party_utils.pkgconfig_get_system_link_args('libunwind',
-                                                              static=True)
-
-    if unwind_val == 'system' or unwind_val == 'bundled':
-        # add -ldl so that we can call dladdr
-        if "-ldl" not in args[1]:
-            args[1].append("-ldl")
-
+        args = third_party_utils.pkgconfig_get_system_link_args('libunwind', static=True)
     return args
 
 
