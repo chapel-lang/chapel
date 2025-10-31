@@ -511,12 +511,12 @@ def ManagedObjectRecognizer(sbtype, internal_dict):
 
 
 def ManagedObjectSummary(valobj, internal_dict):
-    chpl_p = valobj.GetNonSyntheticValue().GetChildMemberWithName("chpl_p")
+    chpl_p = MaybeResolveWidePointer(valobj.GetNonSyntheticValue().GetChildMemberWithName("chpl_p"))
 
-    if chpl_p.GetValueAsUnsigned() == 0:
+    if chpl_p().GetValueAsUnsigned() == 0:
         return "nil"
     else:
-        return chpl_p.GetSummary() or chpl_p.GetValue()
+        return chpl_p().GetSummary() or chpl_p().GetValue()
 
 
 class ManagedObjectProvider:
