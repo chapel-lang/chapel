@@ -279,20 +279,10 @@ def RangesToString(ranges):
 
 
 def DomainSummary(valobj, internal_dict):
-    typename = valobj.GetTypeName()
-    match = domain_regex_c.match(typename) or domain_regex_llvm.match(typename)
-    if not match:
-        errorp(
-            f"Domain_Summary: type name '{typename}' did not match expected pattern"
-        )
-        return None
-
-    ranges = (
-        valobj.GetNonSyntheticValue()
-        .GetChildMemberWithName("_instance")
-        .GetNonSyntheticValue()
-        .GetChildMemberWithName("ranges")
+    _instance = MaybeResolveWidePointer(
+        valobj.GetNonSyntheticValue().GetChildMemberWithName("_instance")
     )
+    ranges = _instance().GetNonSyntheticValue().GetChildMemberWithName("ranges")
     return "{" + RangesToString(ranges) + "}"
 
 
@@ -301,22 +291,11 @@ class DomainProvider:
         self.valobj = valobj
 
         self.synthetic_children = {}
-        typename = self.valobj.GetTypeName()
-        match = domain_regex_c.match(typename) or domain_regex_llvm.match(
-            typename
-        )
-        if not match:
-            errorp(
-                f"DomainProvider: type name '{typename}' did not match expected pattern"
-            )
-            return
 
-        ranges = (
-            self.valobj.GetNonSyntheticValue()
-            .GetChildMemberWithName("_instance")
-            .GetNonSyntheticValue()
-            .GetChildMemberWithName("ranges")
+        _instance = MaybeResolveWidePointer(
+            valobj.GetNonSyntheticValue().GetChildMemberWithName("_instance")
         )
+        ranges = _instance().GetNonSyntheticValue().GetChildMemberWithName("ranges")
         self.synthetic_children["dim"] = ranges
 
     def has_children(self):
