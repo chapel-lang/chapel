@@ -336,7 +336,7 @@ Resolver Resolver::createForInitialSignature(
   ret.signatureOnly = true;
   ret.fnBody = fn->body();
   ret.byPostorder.setupForSignature(fn);
-  ret.speculating = true;
+  ret.callEagerness = CallResolutionEagerness::LAZY;
 
   ret.rc = rc;
 
@@ -600,7 +600,7 @@ Resolver::createForInitialFieldStmt(ResolutionContext* rc,
   ret.byPostorder.setupForSymbol(decl);
   ret.fieldTypesOnly = true;
   ret.allowReceiverScopes = true;
-  ret.speculating = true;
+  ret.callEagerness = CallResolutionEagerness::LAZY;
   return ret;
 }
 
@@ -621,6 +621,7 @@ Resolver::createForInstantiatedFieldStmt(Context* context,
   ret.byPostorder.setupForSymbol(decl);
   ret.fieldTypesOnly = true;
   ret.allowReceiverScopes = true;
+  ret.callEagerness = CallResolutionEagerness::LAZY;
   return ret;
 }
 
@@ -3009,6 +3010,39 @@ static bool couldBeOutInitialized(Resolver* rv, const ID& toId) {
   return true;
 }
 
+static bool const&
+toIdAffectedBySubstitutions(Context* context, ID toId) {
+  QUERY_BEGIN(toIdAffectedBySubstitutions, context, toId);
+  bool affectedBySubstitutions = false;
+  if (!toId.isEmpty()) {
+    auto tag = parsing::idToTag(context, toId);
+    if (asttags::isVariable(tag)) {
+      auto ast = parsing::idToAst(context, toId)->toVariable();
+
+      // normal variables (such as `type x = numeric`) don't get substitutions.
+      // Whatever they're set to, that's what they resolve to.
+      affectedBySubstitutions = ast->isField();
+    } else if (asttags::isVarLikeDecl(tag) || asttags::isTypeQuery(tag)) {
+      // formals, task variables, vararg formals, type queries, etc. can be
+      // affected by substitutions.
+      affectedBySubstitutions = true;
+    }
+  }
+  return QUERY_END(affectedBySubstitutions);
+}
+
+static bool skipDependingOnEagerness(Resolver* rv, const ID& toId) {
+  if (rv->callEagerness == Resolver::CallResolutionEagerness::EAGER) {
+    return false;
+  } else {
+    bool noSubstitution = rv->substitutions == nullptr ||
+      (!toId.isEmpty() && rv->substitutions->count(toId) == 0);
+
+    return noSubstitution &&
+           toIdAffectedBySubstitutions(rv->context, toId);
+  }
+}
+
 static SkipCallResolutionReason
 shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
                          std::vector<const uast::AstNode*> actualAsts,
@@ -3017,6 +3051,7 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
   SkipCallResolutionReason skip = NONE;
   auto& byPostorder = rv->byPostorder;
 
+  if (callLike->id().str() == "ChapelRange.init=@27") debuggerBreakHere();
   if (callLike->id().str() == "ChapelRange.init=@14") debuggerBreakHere();
   if (callLike->id().str() == "ChapelRange.init=@194") debuggerBreakHere();
 
@@ -3051,8 +3086,12 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
     } else if (actualAst != nullptr && actualAst->isTypeQuery() && ci.calledType().isType()) {
       // don't skip for type queries in type constructors
     } else {
-      if (qt.isParam() && qt.param() == nullptr && rv->speculating) {
-        skip = UNKNOWN_PARAM;
+      if (qt.isParam() && qt.param() == nullptr) {
+        if (skipDependingOnEagerness(rv, toId)) {
+          // if we are making a best-effort attempt to resolve, this
+          // is our cue to give up.
+          skip = UNKNOWN_PARAM;
+        }
       } else if (qt.isUnknown()) {
         skip = UNKNOWN_ACT;
       } else if (t != nullptr && qt.kind() != QualifiedType::INIT_RECEIVER) {
@@ -3061,26 +3100,9 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
         // should be fine.
 
         auto g = getTypeGenericity(context, t);
-        bool noSubstitution;
-        if (rv->substitutions == nullptr) {
-          noSubstitution = rv->speculating;
-        } else {
-          noSubstitution = !toId.isEmpty() && rv->substitutions->count(toId) == 0;
-        }
 
         if (qt.isType() && g != Type::CONCRETE) {
-          // is there a chance this thing we're passing is generic temporarily,
-          // while other substitutions are missing? If so, consider
-          // skipping it.
-          bool affectedBySubstitutions = false;
-          if (!toId.isEmpty()) {
-            auto tag = parsing::idToTag(context, toId);
-            if (asttags::isVarLikeDecl(tag) || asttags::isTypeQuery(tag)) {
-              affectedBySubstitutions = true;
-            }
-          }
-
-          if (noSubstitution && affectedBySubstitutions) {
+          if (skipDependingOnEagerness(rv, toId)) {
             // if we are making a best-effort attempt to resolve, this
             // is our cue to give up.
             skip = GENERIC_TYPE;

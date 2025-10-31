@@ -84,6 +84,42 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
     bool hasNonMethodCandidates() const { return hasNonMethodCandidates_; }
   };
 
+  /**
+   Not all resolution attempts are the same. In particular, Dyno has
+   two distinct phases to resolving called functions: an "initial resolution"
+   phase, during which formals are resolved without incorporating type
+   information from the call site, and a "instantiated resolution" phase,
+   in which all available information is incorporated. During the "initial"
+   phase, we might easily be missing instantiations and substitutions.
+   A simple example is:
+
+     proc foo(x, y: someFn(x.type)) { ... }
+
+   Above, during initial resolution, 'x.type' will be unknown. If we resolved
+   'someFn', we'd likely get garbage results. Things would get even more
+   complicated if 'x' had type 'numeric':
+
+     proc foo(x: numeric, y: someFn(x.type)) { ... }
+
+   'someFn' might try to distinguish between generic and non-generic type actuals.
+   Even if the call site provided a concrete type for 'x', during initial resolution,
+   we'd end up giving 'numeric' to 'someFn', which might lead to unexpected errors.
+   Moreover, in general, it's impossible to distinguish between "the argument to
+   someFn is supposed to be generic" from "it's just not instantiated yet" just
+   by looking at its type.
+
+   To disambiguate between the two cases, we want to define two "eagerness"
+   policies. During "initial resolution", we act lazily, avoiding resolving
+   things that may depend on incomplete information. This would include skipping
+   calls like 'someFn(x.type)' when 'x' is 'numeric'. During "instantiated
+   resolution", we resolve these calls and others, generally making the
+   assumption that all type information we could've had is now available.
+  */
+  enum class CallResolutionEagerness {
+    LAZY,      // for initial resolution; skip iffy-looking calls
+    EAGER,     // for instantiated resolution; resolve most calls
+  };
+
   // inputs to the resolution process
   Context* context = nullptr;
   const uast::AstNode* symbol = nullptr;
@@ -100,11 +136,7 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
   bool usePlaceholders = false;
   bool allowLocalSearch = true;
   ID useConcreteArrayTypeForFormals = ID();
-  bool speculating = false; // should we bail when resolving calls we're unsure
-                            // about, thus preventing errors in initial signatures?
-                            // when not speculating, be more aggressive,
-                            // knowing that we might hit errors. Presumably
-                            // we should report those.
+  CallResolutionEagerness callEagerness = CallResolutionEagerness::EAGER;
 
   // internal variables
   ResolutionContext emptyResolutionContext;
