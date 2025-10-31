@@ -666,6 +666,39 @@ OPTIONS
 
 *Code Generation Options*
 
+.. _man-codegen:
+.. index:: --codegen, --no-codegen
+
+**\--[no-]codegen**
+
+    Enable [disable] generating code and the binary executable. Disabling
+    code generation is useful to reduce compilation time, for example, when
+    only Chapel compiler warnings/errors are of interest.
+
+.. _man-munge-user-idents:
+.. index:: --munge-user-idents, --no-munge-user-idents
+
+**\--[no-]munge-user-idents**
+
+    By default, **chpl** munges all user identifiers in the generated code
+    in order to minimize the chances of conflict with an identifier or
+    keyword in C (in the current implementation, this is done by appending
+    '\_chpl' to the identifier). This flag provides the ability to disable
+    this munging. Note that whichever mode, the flag is in, **chpl** may
+    perform additional munging in order to implement Chapel semantics in C,
+    or for other reasons.
+
+.. _man-savec:
+.. index:: --savec
+
+**\--savec <dir>**
+
+    Saves the compiler-generated code in the specified *directory*,
+    creating the *directory* if it does not already exist. This option may
+    overwrite existing files in the *directory*.
+
+*Code Compilation Options*
+
 .. _man-ccflags:
 .. index:: --ccflags
 
@@ -763,39 +796,6 @@ OPTIONS
     Use static linking when generating the final binary. If neither
     **\--static** or **\--dynamic** are specified, use the backend compiler's
     default.
-
-*Code Compilation Options*
-
-.. _man-codegen:
-.. index:: --codegen, --no-codegen
-
-**\--[no-]codegen**
-
-    Enable [disable] generating code and the binary executable. Disabling
-    code generation is useful to reduce compilation time, for example, when
-    only Chapel compiler warnings/errors are of interest.
-
-.. _man-munge-user-idents:
-.. index:: --munge-user-idents, --no-munge-user-idents
-
-**\--[no-]munge-user-idents**
-
-    By default, **chpl** munges all user identifiers in the generated code
-    in order to minimize the chances of conflict with an identifier or
-    keyword in C (in the current implementation, this is done by appending
-    '\_chpl' to the identifier). This flag provides the ability to disable
-    this munging. Note that whichever mode, the flag is in, **chpl** may
-    perform additional munging in order to implement Chapel semantics in C,
-    or for other reasons.
-
-.. _man-savec:
-.. index:: --savec
-
-**\--savec <dir>**
-
-    Saves the compiler-generated code in the specified *directory*,
-    creating the *directory* if it does not already exist. This option may
-    overwrite existing files in the *directory*.
 
 *LLVM Code Generation Options*
 
