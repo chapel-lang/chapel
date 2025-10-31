@@ -1450,6 +1450,10 @@ static int testArgMapping(const DisambiguationContext& dctx,
   auto actualType = actualQualType.type();
   CHPL_ASSERT(actualQualType == fa2->actualType());
 
+  // To ensure '==' and '!=' checks work below, normalize 'owned C' into '_owned(C)'.
+  tryConvertClassTypeIntoManagerRecordIfNeeded(dctx.rc->context(), f1Type, f2Type);
+  tryConvertClassTypeIntoManagerRecordIfNeeded(dctx.rc->context(), f2Type, f1Type);
+
   if (!actualQualType.hasTypePtr()) return -1;
 
   // Give up early for out intent arguments
