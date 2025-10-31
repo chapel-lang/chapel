@@ -523,14 +523,14 @@ class ManagedObjectProvider:
     def __init__(self, valobj, internal_dict):
         self.valobj = valobj
 
-        chpl_p = self.valobj.GetNonSyntheticValue().GetChildMemberWithName(
+        chpl_p = MaybeResolveWidePointer(self.valobj.GetNonSyntheticValue().GetChildMemberWithName(
             "chpl_p"
-        )
-        if chpl_p.GetValueAsUnsigned() == 0:
+        ))
+        if chpl_p().GetValueAsUnsigned() == 0:
             self.synthetic_children = {}
         else:
             self.synthetic_children = {}
-            deref_chpl_p = chpl_p.Dereference()
+            deref_chpl_p = chpl_p().Dereference()
             if deref_chpl_p.IsValid():
                 for i in range(deref_chpl_p.GetNumChildren()):
                     child = deref_chpl_p.GetChildAtIndex(i)
