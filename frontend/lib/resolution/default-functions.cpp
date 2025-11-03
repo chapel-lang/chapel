@@ -408,6 +408,7 @@ generateIntegralToOrFromCastForEnum(ResolutionContext* rc,
                                    /* instantiatedFrom */ nullptr,
                                    /* parentFn */ nullptr,
                                    /* formalsInstantiated */ Bitmap(),
+                                   /* formalsErrored */ Bitmap(),
                                    /* outerVariables */ {});
   return ret;
 }
@@ -1814,6 +1815,7 @@ generateTupleMethod(Context* context,
                                  /* instantiatedFrom */ nullptr,
                                  /* parentFn */ nullptr,
                                  /* formalsInstantiated */ Bitmap(),
+                                 /* formalsInstantiated */ Bitmap(),
                                  /* outerVariables */ {});
 
   return result;
@@ -1868,6 +1870,7 @@ fieldAccessorQuery(Context* context,
                                  /* instantiatedFrom */ nullptr,
                                  /* parentFn */ nullptr,
                                  /* formalsInstantiated */ Bitmap(),
+                                 /* formalsErrored */ Bitmap(),
                                  /* outerVariables */ {});
 
   return QUERY_END(result);
@@ -1947,6 +1950,7 @@ generatePtrMethod(Context* context, QualifiedType receiverType,
                                  /* instantiatedFrom */ nullptr,
                                  /* parentFn */ nullptr,
                                  /* formalsInstantiated */ Bitmap(),
+                                 /* formalsErrored */ Bitmap(),
                                  /* outerVariables */ {});
 
   return result;
@@ -1989,6 +1993,7 @@ generateEnumMethod(ResolutionContext* rc,
           /* instantiatedFrom */ nullptr,
           /* parentFn */ nullptr,
           /* formalsInstantiated */ Bitmap(),
+          /* formalsErrored */ Bitmap(),
           /* outerVariables */ {});
     }
   }
@@ -2047,6 +2052,7 @@ generateIteratorMethod(Context* context,
         /* instantiatedFrom */ nullptr,
         /* parentFn */ nullptr,
         /* formalsInstantiated */ Bitmap(),
+        /* formalsErrored */ Bitmap(),
         /* outerVariables */ {});
   }
   return result;
@@ -2091,6 +2097,7 @@ generateExternAssignment(ResolutionContext* rc, const ExternType* type) {
                                  /* instantiatedFrom */ nullptr,
                                  /* parentFn */ nullptr,
                                  /* formalsInstantiated */ Bitmap(),
+                                 /* formalsErrored */ Bitmap(),
                                  /* outerVariables */ {});
 
   return result;
@@ -2253,6 +2260,7 @@ getParamOrderToEnum(Context* context, const EnumType* et) {
                                    /* instantiatedFrom */ nullptr,
                                    /* parentFn */ nullptr,
                                    /* formalsInstantiated */ Bitmap(),
+                                   /* formalsErrored */ Bitmap(),
                                    /* outerVariables */ {});
 
   return QUERY_END(ret);
@@ -2325,6 +2333,7 @@ getParamEnumToOrder(Context* context, const EnumType* et) {
                                    /* instantiatedFrom */ nullptr,
                                    /* parentFn */ nullptr,
                                    /* formalsInstantiated */ Bitmap(),
+                                   /* formalsErrored */ Bitmap(),
                                    /* outerVariables */ {});
 
   return QUERY_END(ret);

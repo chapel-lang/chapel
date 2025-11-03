@@ -1004,6 +1004,10 @@ class TypedFnSignature {
   // Which formal arguments were substituted when instantiating?
   Bitmap formalsInstantiated_;
 
+  // For initial signatures, did any formals produce errors?
+  // Instantiated signatures with erroring formals should not be constructed.
+  Bitmap formalsErrored_;
+
   // What are the the types of outer variables used to construct this?
   // TODO: Can probably flatten into a vector.
   OuterVariables outerVariables_;
@@ -1016,6 +1020,7 @@ class TypedFnSignature {
                    const TypedFnSignature* instantiatedFrom,
                    const TypedFnSignature* parentFn,
                    Bitmap formalsInstantiated,
+                   Bitmap formalsErrored,
                    OuterVariables outerVariables)
     : untypedSignature_(untypedSignature),
       formalTypes_(std::move(formalTypes)),
@@ -1025,6 +1030,7 @@ class TypedFnSignature {
       instantiatedFrom_(instantiatedFrom),
       parentFn_(parentFn),
       formalsInstantiated_(std::move(formalsInstantiated)),
+      formalsErrored_(std::move(formalsErrored)),
       outerVariables_(std::move(outerVariables)) { }
 
   static const owned<TypedFnSignature>&
@@ -1037,6 +1043,7 @@ class TypedFnSignature {
                       const TypedFnSignature* instantiatedFrom,
                       const TypedFnSignature* parentFn,
                       Bitmap formalsInstantiated,
+                      Bitmap formalsErrored,
                       OuterVariables outerVariables);
 
   /** If this is an iterator, set 'found' to a string representing its
@@ -1055,6 +1062,7 @@ class TypedFnSignature {
                               const TypedFnSignature* instantiatedFrom,
                               const TypedFnSignature* parentFn,
                               Bitmap formalsInstantiated,
+                              Bitmap formalsErrored,
                               OuterVariables outerVariables);
 
   /** Get the unique TypedFnSignature containing these components
@@ -1078,6 +1086,7 @@ class TypedFnSignature {
            instantiatedFrom_ == other.instantiatedFrom_ &&
            parentFn_ == other.parentFn_ &&
            formalsInstantiated_ == other.formalsInstantiated_ &&
+           formalsErrored_ == other.formalsErrored_ &&
            outerVariables_ == other.outerVariables_;
   }
   bool operator!=(const TypedFnSignature& other) const {
@@ -1096,6 +1105,7 @@ class TypedFnSignature {
     context->markPointer(instantiatedFrom_);
     context->markPointer(parentFn_);
     (void) formalsInstantiated_; // nothing to mark
+    (void) formalsErrored_; // nothing to mark
     outerVariables_.mark(context);
   }
 
@@ -1200,6 +1210,29 @@ class TypedFnSignature {
     const TypedFnSignature* sig = inferredFrom();
     return sig->formalsInstantiated_;
   }
+
+  /**
+    For initial signatures, returns 'true' if resolving formal argument i
+    produced an error.
+   */
+  bool formalProducedError(int i) const {
+    if (formalsErrored_.size() == 0) return false;
+    return formalsErrored_[i];
+  }
+
+  /**
+    For initial signatures, returns 'true' if resolving the where clause
+    produced an error.
+   */
+  bool whereClausePrducedError() const {
+    if (formalsErrored_.size() == 0) return false;
+    return formalsErrored_[numFormals()];
+  }
+
+  const Bitmap& formalsErroredBitmap() const {
+    return formalsErrored_;
+  }
+
 
   /**
      Is this for an inner Function? If so, what is the parent

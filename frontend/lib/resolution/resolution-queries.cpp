@@ -878,8 +878,15 @@ typedSignatureInitialImpl(ResolutionContext* rc,
   auto visitor = Resolver::createForInitialSignature(rc, fn, r);
   visitor.usePlaceholders = usePlaceholders;
 
+  Bitmap formalsErroredBitmap;
+  formalsErroredBitmap.resize(fn->numFormals()+1);
+
   // visit the formals, but not the return type or body
-  for (auto formal : fn->formals()) formal->traverse(visitor);
+  for (int i = 0; i < fn->numFormals(); i++) {
+    visitor.encounteredErrors = false;
+    fn->formal(i)->traverse(visitor);
+    formalsErroredBitmap.setBit((size_t) i, visitor.encounteredErrors);
+  }
 
   if (!visitor.outerVariables.isEmpty()) {
     // outer variables can come from a parent function or from
@@ -900,6 +907,7 @@ typedSignatureInitialImpl(ResolutionContext* rc,
   // which case we will visit the where clause when that happens
   auto whereResult = TypedFnSignature::WHERE_NONE;
   if (auto whereClause = fn->whereClause()) {
+    visitor.encounteredErrors = false;
     if (instantiationState) {
       // Visit the where clause for generic nested functions just to collect
       // outer variables. TODO: Is this OK or could POI muck with this?
@@ -909,6 +917,8 @@ typedSignatureInitialImpl(ResolutionContext* rc,
       whereClause->traverse(visitor);
       whereResult = whereClauseResult(context, fn, r, instantiationState);
     }
+    formalsErroredBitmap.setBit((size_t) fn->numFormals(),
+                                 visitor.encounteredErrors);
   }
 
   if (!visitor.outerVariables.isEmpty()) {
@@ -928,6 +938,7 @@ typedSignatureInitialImpl(ResolutionContext* rc,
                                  /* instantiatedFrom */ nullptr,
                                  /* parentFn */ parentSignature,
                                  /* formalsInstantiated */ Bitmap(),
+                                 formalsErroredBitmap,
                                  std::move(visitor.outerVariables));
 
   // also check the signature at this point if it is concrete
@@ -3177,6 +3188,7 @@ instantiateSignatureImpl(ResolutionContext* rc,
                                       /* instantiatedFrom */ sig,
                                       /* parentFn */ parentSignature,
                                       std::move(formalsInstantiated),
+                                      /* formalsErrored */ Bitmap(),
                                       sig->outerVariables());
 
   // For initializers, may need to resolve the body to compute final TFS.

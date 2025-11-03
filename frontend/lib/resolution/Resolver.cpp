@@ -544,6 +544,7 @@ Resolver::createForScopeResolvingFunction(Context* context,
                           /* instantiatedFrom */ nullptr,
                           /* parentFn */ nullptr,
                           /* formalsInstantiated */ Bitmap(),
+                          /* formalsErrored */ Bitmap(),
                           /* outerVariables */ ret.outerVariables);
 
   ret.typedSignature = sig;

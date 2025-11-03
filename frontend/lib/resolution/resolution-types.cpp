@@ -1101,12 +1101,15 @@ TypedFnSignature::getTypedFnSignature(Context* context,
                     const TypedFnSignature* instantiatedFrom,
                     const TypedFnSignature* parentFn,
                     Bitmap formalsInstantiated,
+                    Bitmap formalsErrored,
                     OuterVariables outerVariables) {
   QUERY_BEGIN(getTypedFnSignature, context,
               untypedSignature, formalTypes, whereClauseResult,
               instantiationState, isRefinementOnly, instantiatedFrom, parentFn,
-              formalsInstantiated,
+              formalsInstantiated, formalsErrored,
               outerVariables);
+
+  if (instantiatedFrom) CHPL_ASSERT(formalsErrored.size() == 0 || isRefinementOnly);
 
   auto result = toOwned(new TypedFnSignature(untypedSignature,
                                              std::move(formalTypes),
@@ -1116,6 +1119,7 @@ TypedFnSignature::getTypedFnSignature(Context* context,
                                              instantiatedFrom,
                                              parentFn,
                                              std::move(formalsInstantiated),
+                                             std::move(formalsErrored),
                                              std::move(outerVariables)));
 
   return QUERY_END(result);
@@ -1130,6 +1134,7 @@ TypedFnSignature::get(Context* context,
                       const TypedFnSignature* instantiatedFrom,
                       const TypedFnSignature* parentFn,
                       Bitmap formalsInstantiated,
+                      Bitmap formalsErrored,
                       OuterVariables outerVariables) {
   return getTypedFnSignature(context, untypedSignature,
                              std::move(formalTypes),
@@ -1139,6 +1144,7 @@ TypedFnSignature::get(Context* context,
                              instantiatedFrom,
                              parentFn,
                              std::move(formalsInstantiated),
+                             std::move(formalsErrored),
                              std::move(outerVariables)).get();
 }
 
@@ -1156,6 +1162,7 @@ TypedFnSignature::getInferred(
                              inferredFrom->inferredFrom(),
                              inferredFrom->parentFn(),
                              inferredFrom->formalsInstantiatedBitmap(),
+                             inferredFrom->formalsErroredBitmap(),
                              inferredFrom->outerVariables()).get();
 }
 
@@ -1177,6 +1184,7 @@ TypedFnSignature::substitute(Context* context,
                              instantiatedFrom(),
                              parentFn(),
                              formalsInstantiatedBitmap(),
+                             formalsErroredBitmap(),
                              outerVariables()).get();
 }
 
