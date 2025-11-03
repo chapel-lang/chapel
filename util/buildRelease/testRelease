@@ -46,7 +46,7 @@ cp $chplhome/tar/chapel-test.tar.gz $tmpdir
 cd $tmpdir && tar xf chapel-test.tar.gz
 
 # Run testReleaseHelp (capture chpl_make output first for clarity)
-chpl_make_cmd_output="$("$chplhome"/util/chplenv/chpl_make.py)"
+chpl_make_cmd_output=$("$chplhome"/util/chplenv/chpl_make.py)
 cd $tmpdir/chapel-test && $chplhome/util/buildRelease/testReleaseHelp $chpl_make_cmd_output
 
 # Cleanup if everything succeeded
