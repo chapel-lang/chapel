@@ -2830,6 +2830,9 @@ static bool shouldInsertCallTemps(CallExpr* call) {
   if (isInLifetimeClause(call))
     return false;
 
+  if (call->parentSymbol && call->parentSymbol->hasFlag(FLAG_RESOLVED_EARLY))
+    return false;
+
   return true;
 }
 

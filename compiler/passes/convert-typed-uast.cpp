@@ -3516,19 +3516,20 @@ Symbol* TConverter::convertVariable(const uast::Variable* node,
 
 
   Expr* initExpr = nullptr;
+  types::QualifiedType initQt;
   if (const uast::AstNode* ie = node->initExpression()) {
     const uast::BracketLoop* bkt = ie->toBracketLoop();
     if (bkt && isTypeVar) {
       TC_UNIMPL("convert array type");
     } else {
-      initExpr = convertExpr(ie, rv);
+      initExpr = convertExpr(ie, rv, &initQt);
     }
 
     if (isStatic) {
       TC_UNIMPL("function-static variables");
     }
   } else {
-    initExpr = convertExprOrNull(node->initExpression(), rv);
+    initExpr = convertExprOrNull(node->initExpression(), rv, &initQt);
   }
 
   if ((!typeExpr && !initExpr) && multiState) {
@@ -3550,8 +3551,13 @@ Symbol* TConverter::convertVariable(const uast::Variable* node,
 
     CallExpr* move = nullptr;
     if (varSym->isRef()) {
-      move = new CallExpr(PRIM_MOVE, varSym,
-                                     new CallExpr(PRIM_ADDR_OF, initExpr));
+      if (initQt.isRef()) {
+          move = new CallExpr(PRIM_MOVE, varSym, initExpr);
+      } else if (move == nullptr) {
+        auto expr = storeInTempIfNeeded(initExpr , initQt);
+        move = new CallExpr(PRIM_MOVE, varSym,
+                                       new CallExpr(PRIM_ADDR_OF, expr));
+      }
     } else {
       if (initExpr == nullptr) {
         // compute the default value for this type
@@ -5211,6 +5217,10 @@ bool TConverter::enter(const Function* node, RV& rv) {
   }
 
   fn->retType = convertType(cur.resolvedFunction->returnType().type());
+
+  if (fn->returnsRefOrConstRef() && !fn->retType->isRef()) {
+    fn->retType = fn->retType->refType;
+  }
 
   // visit the body to convert
   if (node->body()) {
