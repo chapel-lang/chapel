@@ -193,6 +193,10 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
   // to be issued further up the call stack.
   std::vector<CompilerDiagnostic> userDiagnostics;
 
+  // whether the resolver emitted error messages for any parts of the formal AST.
+  // does not include errors from e.g., bodies of called functions.
+  bool encounteredErrors = false;
+
   static PoiInfo makePoiInfo(const PoiScope* poiScope) {
     if (poiScope == nullptr)
       return PoiInfo();
@@ -370,6 +374,12 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
      relevant to location for 'ast'.
    */
   types::QualifiedType typeErr(const uast::AstNode* ast, const char* msg);
+
+  /* Emit a general error message using the given format and arguments,
+     setting the 'encountered errors' flag.
+   */
+  void error(const uast::AstNode* ast, const char* fmt, ...);
+  void error(const ID& id, const char* fmt, ...);
 
   /** Try to get info about the closest method receiver. The first value
       is the ID of the containing symbol. It could be a method or a

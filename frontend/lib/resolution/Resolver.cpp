@@ -54,6 +54,16 @@ namespace resolution {
 using namespace uast;
 using namespace types;
 
+/* Shortcut for CHPL_REPORT that also sets the encounteredErrors flag on
+   the resolver. */
+#define RESOLVER_REPORT(RESOLVER__, NAME__, EINFO__...) \
+  ((RESOLVER__).encounteredErrors = true, \
+   CHPL_REPORT((RESOLVER__).context, NAME__, ##EINFO__))
+
+#define RESOLVER_TYPE_ERROR(RESOLVER__, NAME__, EINFO__...) \
+  ((RESOLVER__).encounteredErrors = true, \
+   CHPL_TYPE_ERROR((RESOLVER__).context, NAME__, ##EINFO__))
+
 namespace {
   struct IterDetails {
     // Iterators will be resolved for each bit set in descending order.
@@ -778,8 +788,26 @@ types::QualifiedType Resolver::typeErr(const uast::AstNode* ast,
                                        const char* msg)
 {
   context->error(ast, "%s", msg);
+  encounteredErrors = true;
   auto t = QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
   return t;
+}
+
+
+void Resolver::error(const uast::AstNode* ast, const char* fmt, ...) {
+  va_list vl; va_start(vl, fmt);
+  auto err = GeneralError::vbuild(ErrorBase::ERROR, ast->id(), fmt, vl);
+  context->report(std::move(err));
+  encounteredErrors = true;
+  va_end(vl);
+}
+
+void Resolver::error(const ID& id, const char* fmt, ...) {
+  va_list vl; va_start(vl, fmt);
+  auto err = GeneralError::vbuild(ErrorBase::ERROR, id, fmt, vl);
+  context->report(std::move(err));
+  encounteredErrors = true;
+  va_end(vl);
 }
 
 static bool
@@ -1200,12 +1228,12 @@ handleRejectedCandidates(Resolver::CallResultWrapper& result,
   result.reportError(result, rejected, actualDecls);
 }
 
-static void varArgTypeQueryError(Context* context,
+static void varArgTypeQueryError(Resolver& rv,
                                  const AstNode* node,
                                  ResolvedExpression& result) {
-  context->error(node, "Cannot query type of variable arguments formal when types are not homogeneous");
+  rv.error(node, "Cannot query type of variable arguments formal when types are not homogeneous");
   auto errType = QualifiedType(QualifiedType::TYPE,
-                               ErroneousType::get(context));
+                               ErroneousType::get(rv.context));
   result.setType(errType);
 }
 
@@ -1246,7 +1274,7 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
     ResolvedExpression& result = byPostorder.byAst(formalTypeExpr);
 
     if (isNonStarVarArg) {
-      varArgTypeQueryError(context, formalTypeExpr, result);
+      varArgTypeQueryError(*this, formalTypeExpr, result);
     } else {
       // Set the type that we know (since it was passed in)
       if (isTopLevel) {
@@ -1269,7 +1297,7 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
           if (auto pt = actualTypePtr->toPrimitiveType()) {
             ResolvedExpression& resolvedWidth = byPostorder.byAst(tq);
             if (isNonStarVarArg) {
-              varArgTypeQueryError(context, call->actual(0), resolvedWidth);
+              varArgTypeQueryError(*this, call->actual(0), resolvedWidth);
             } else {
               auto qt = QualifiedType::makeParamInt(context, pt->bitwidth());
               resolvedWidth.setType(qt);
@@ -1285,7 +1313,7 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
           if (auto pt = actualTypePtr->toPtrType()) {
             ResolvedExpression& resolvedElt = byPostorder.byAst(tq);
             if (isNonStarVarArg) {
-              varArgTypeQueryError(context, call->actual(0), resolvedElt);
+              varArgTypeQueryError(*this, call->actual(0), resolvedElt);
             } else {
               resolvedElt.setType(QualifiedType(QualifiedType::TYPE,
                                                 pt->eltType()));
@@ -1337,9 +1365,9 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
       // TODO: Can emit more elaborate errors here.
       if (this->signatureOnly && !isCertainlyCallToTypeConstructor) {
         CHPL_ASSERT(!typeQueries.empty());
-        context->error(typeQueries[0], "One or more type queries appeared "
-                                       "outside of a type constructor call - "
-                                       "here is the first one");
+        error(typeQueries[0], "One or more type queries appeared "
+                              "outside of a type constructor call - "
+                              "here is the first one");
         return;
       }
 
@@ -1377,7 +1405,7 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
       // types of type queries.
       if (this->signatureOnly) {
         if (!actualCt->instantiatedFromCompositeType()) {
-          context->error(formalTypeExpr, "Instantiated type expected");
+          error(formalTypeExpr, "Instantiated type expected");
           return;
         }
       }
@@ -1525,7 +1553,7 @@ bool Resolver::checkForKindError(const AstNode* typeForErr,
       declaredType.kind() != QualifiedType::UNKNOWN &&
       declaredType.kind() != QualifiedType::TYPE_QUERY) {
     if (declaredType.kind() != QualifiedType::TYPE) {
-      CHPL_REPORT(context, ValueUsedAsType, typeForErr, declaredType);
+      RESOLVER_REPORT(*this, ValueUsedAsType, typeForErr, declaredType);
       return true;
     }
   }
@@ -1536,15 +1564,15 @@ bool Resolver::checkForKindError(const AstNode* typeForErr,
       initExprType.kind() != QualifiedType::UNKNOWN) {
     if (declKind == QualifiedType::TYPE &&
         initExprType.kind() != QualifiedType::TYPE) {
-      CHPL_REPORT(context, IncompatibleKinds, declKind, initForErr, initExprType);
+      RESOLVER_REPORT(*this, IncompatibleKinds, declKind, initForErr, initExprType);
       return true;
     } else if (declKind != QualifiedType::TYPE &&
                initExprType.kind() == QualifiedType::TYPE) {
-      CHPL_REPORT(context, IncompatibleKinds, declKind, initForErr, initExprType);
+      RESOLVER_REPORT(*this, IncompatibleKinds, declKind, initForErr, initExprType);
       return true;
     } else if (declKind == QualifiedType::PARAM &&
                initExprType.kind() != QualifiedType::PARAM) {
-      CHPL_REPORT(context, IncompatibleKinds, declKind, initForErr, initExprType);
+      RESOLVER_REPORT(*this, IncompatibleKinds, declKind, initForErr, initExprType);
       return true;
     }
   }
@@ -1595,7 +1623,7 @@ Resolver::computeCustomInferType(const AstNode* decl,
     rr.noteResult(&byPostorder.byAst(decl),
                    { { AssociatedAction::INFER_TYPE, decl->id() } });
   } else {
-    context->error(ct->id(), "'chpl__inferCopyType' is unimplemented");
+    error(ct->id(), "'chpl__inferCopyType' is unimplemented");
   }
 
   return ret.type();
@@ -1664,7 +1692,7 @@ static const Type* tryFindTypeViaCopyFn(Resolver& resolver,
   }
 
   // No cigar, issue an error and return ErroneousType
-  CHPL_REPORT(resolver.context, IncompatibleTypeAndInit, declForErr, typeForErr,
+  RESOLVER_REPORT(resolver, IncompatibleTypeAndInit, declForErr, typeForErr,
               initForErr, declaredType.type(), initExprType.type());
   return ErroneousType::get(resolver.context);
 }
@@ -1763,7 +1791,7 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
         if (!c.mostSpecific().isEmpty()) {
           typePtr = declaredType.type();
         } else {
-          CHPL_REPORT(context, IncompatibleTypeAndInit, declForErr, typeForErr,
+          RESOLVER_REPORT(*this, IncompatibleTypeAndInit, declForErr, typeForErr,
                       initForErr, declaredType.type(), initExprType.type());
           typePtr = ErroneousType::get(context);
         }
@@ -2267,10 +2295,10 @@ gatherUserDiagnostics(ResolutionContext* rc,
 void Resolver::emitUserDiagnostic(const CompilerDiagnostic& diagnostic,
                                   const uast::AstNode* astForErr) {
   if (diagnostic.isError()) {
-    CHPL_REPORT(context, UserDiagnosticEmitError, diagnostic.message(), astForErr->id());
+    RESOLVER_REPORT(*this, UserDiagnosticEmitError, diagnostic.message(), astForErr->id());
     noteErrorMessage(context, diagnostic.message());
   } else if (diagnostic.isWarning()) {
-    CHPL_REPORT(context, UserDiagnosticEmitWarning, diagnostic.message(), astForErr->id());
+    RESOLVER_REPORT(*this, UserDiagnosticEmitWarning, diagnostic.message(), astForErr->id());
     noteWarningMessage(context, diagnostic.message());
   }
 }
@@ -2278,9 +2306,9 @@ void Resolver::emitUserDiagnostic(const CompilerDiagnostic& diagnostic,
 void Resolver::noteEncounteredUserDiagnostic(CompilerDiagnostic diagnostic,
                                              const uast::AstNode* astForErr) {
   if (diagnostic.isError()) {
-    CHPL_REPORT(context, UserDiagnosticEncounterError, diagnostic.message(), astForErr->id());
+    RESOLVER_REPORT(*this, UserDiagnosticEncounterError, diagnostic.message(), astForErr->id());
   } else if (diagnostic.isWarning()) {
-    CHPL_REPORT(context, UserDiagnosticEncounterWarning, diagnostic.message(), astForErr->id());
+    RESOLVER_REPORT(*this, UserDiagnosticEncounterWarning, diagnostic.message(), astForErr->id());
   }
   userDiagnostics.push_back(std::move(diagnostic));
 }
@@ -2340,7 +2368,7 @@ void Resolver::issueErrorForFailedModuleDot(const Dot* dot,
     }
   }
 
-  CHPL_REPORT(context, NotInModule, dot, moduleId, modName, renameClauseId, thereButPrivate);
+  RESOLVER_REPORT(*this, NotInModule, dot, moduleId, modName, renameClauseId, thereButPrivate);
 
 }
 
@@ -2361,17 +2389,17 @@ void Resolver::CallResultWrapper::issueBasicError() {
     // if the call resolution result is empty, we need to issue an error
     if (result.mostSpecific().isAmbiguous()) {
       // ambiguity between candidates
-      parent->context->error(astForContext, "Cannot resolve call to '%s': ambiguity",
-                     callName ? callName : ci->name().c_str());
+      parent->error(astForContext, "Cannot resolve call to '%s': ambiguity",
+            callName ? callName : ci->name().c_str());
     } else {
       std::vector<const uast::VarLikeDecl*> uninitializedActuals;
       // could not find a most specific candidate
       std::vector<ApplicabilityResult> rejected;
       CHPL_ASSERT(rejected.size() == uninitializedActuals.size());
-      CHPL_REPORT(parent->context, NoMatchingCandidates, astForContext, *ci, rejected, uninitializedActuals);
+      RESOLVER_REPORT(*parent, NoMatchingCandidates, astForContext, *ci, rejected, uninitializedActuals);
     }
   } else {
-    parent->context->error(astForContext, "Cannot establish type for call expression");
+    parent->error(astForContext, "Cannot establish type for call expression");
 
     // expecting call site to check for hasTypePtr.
     CHPL_ASSERT(!result.exprType().hasTypePtr());
@@ -2665,7 +2693,7 @@ void Resolver::resolveTupleUnpackDecl(const TupleDecl* lhsTuple,
   if (scopeResolveOnly) return;
 
   if (!rhsType.hasTypePtr()) {
-    CHPL_REPORT(context, TupleDeclUnknownType, lhsTuple);
+    RESOLVER_REPORT(*this, TupleDeclUnknownType, lhsTuple);
     return;
   }
 
@@ -2680,13 +2708,13 @@ void Resolver::resolveTupleUnpackDecl(const TupleDecl* lhsTuple,
       // at least get the 'kind' right
       eltTypes = std::vector<QualifiedType>(lhsTuple->numDecls(), rhsType);
     } else {
-      CHPL_REPORT(context, TupleDeclNotTuple, lhsTuple, rhsType.type());
+      RESOLVER_REPORT(*this, TupleDeclNotTuple, lhsTuple, rhsType.type());
       return;
     }
 
   // Then, check that they have the same size
   } else if (lhsTuple->numDecls() != rhsT->numElements()) {
-    CHPL_REPORT(context, TupleDeclMismatchedElems, lhsTuple, rhsT);
+    RESOLVER_REPORT(*this, TupleDeclMismatchedElems, lhsTuple, rhsT);
     return;
 
   // Else, it's a tuple of the same size, so use the RHS element types
@@ -2939,7 +2967,7 @@ static void resolveReduceAssign(Resolver& rv, const OpCall* op) {
 
   auto lhsIdent = lhs->toIdentifier();
   if (!lhsIdent) {
-    CHPL_REPORT(rv.context, ReductionAssignNonIdentifier, op);
+    RESOLVER_REPORT(rv, ReductionAssignNonIdentifier, op);
     return;
   }
 
@@ -2948,7 +2976,7 @@ static void resolveReduceAssign(Resolver& rv, const OpCall* op) {
 
   if (parsing::idToTag(rv.context, resolvedLhs.toId()) != asttags::ReduceIntent) {
     auto refersTo = parsing::idToAst(rv.context, resolvedLhs.toId());
-    CHPL_REPORT(rv.context, ReductionAssignNotReduceIntent, op, refersTo);
+    RESOLVER_REPORT(rv, ReductionAssignNotReduceIntent, op, refersTo);
     return;
   }
 
@@ -2983,7 +3011,7 @@ static void resolveReduceAssign(Resolver& rv, const OpCall* op) {
 
   if (!resolveResult.ranWithoutErrors() || resolveResult.result()) {
     auto shadows = parsing::idToAst(rv.context, rv.byPostorder.byAst(intent).toId());
-    CHPL_REPORT(rv.context, ReductionAssignInvalidRhs, op, intent, shadows, ci);
+    RESOLVER_REPORT(rv, ReductionAssignInvalidRhs, op, intent, shadows, ci);
   }
   resolvedOp.setType(QualifiedType(QualifiedType::CONST_VAR, VoidType::get(rv.context)));
 }
@@ -3235,7 +3263,7 @@ bool Resolver::resolveSpecialPrimitiveCall(const Call* call) {
     }
 
     if (!messageComponents) {
-      context->error(primCall, "invalid use of compiler diagnostic primitive");
+      error(primCall, "invalid use of compiler diagnostic primitive");
       return true;
     }
 
@@ -3307,6 +3335,7 @@ resolveSpecialKeywordCallAsNormalCall(Resolver& rv,
       firstActual = rv.byPostorder.byAst(innerCall->actual(0)).type();
     }
     rv.context->report(ErrorType::get(std::make_tuple(outerCall, firstActual)));
+    rv.encounteredErrors = true;
   }
 }
 
@@ -3419,8 +3448,8 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
         for (auto it = actuals.begin() + 1; it != actuals.end(); ++it) {
           actualTypesForErr.push_back(it->type());
         }
-        domainTy = CHPL_TYPE_ERROR(context, InvalidDomainCall, fnCall,
-                                   actualTypesForErr).type();
+        domainTy = RESOLVER_TYPE_ERROR(*this, InvalidDomainCall, fnCall,
+                                       actualTypesForErr).type();
       }
       r.setType(QualifiedType(QualifiedType::TYPE, domainTy));
     }
@@ -3707,7 +3736,7 @@ bool Resolver::enter(const uast::Conditional* cond) {
           reVar.setType(QualifiedType(reVar.type().kind(), newClassType));
         }
       } else {
-        CHPL_REPORT(context, IfVarNonClassType, cond, reVar.type());
+        RESOLVER_REPORT(*this, IfVarNonClassType, cond, reVar.type());
       }
     }
   }
@@ -3771,8 +3800,8 @@ bool Resolver::enter(const uast::Conditional* cond) {
     auto ifType = commonType(context, returnTypes);
     if (!ifType && !condType.isUnknown()) {
       // do not error if the condition type is unknown
-      r.setType(CHPL_TYPE_ERROR(context, IncompatibleIfBranches, cond,
-                                returnTypes[0], returnTypes[1]));
+      r.setType(RESOLVER_TYPE_ERROR(*this, IncompatibleIfBranches, cond,
+                                    returnTypes[0], returnTypes[1]));
     } else if (ifType) {
       r.setType(*ifType);
     }
@@ -3858,7 +3887,7 @@ void Resolver::issueAmbiguityErrorIfNeeded(const Identifier* ident,
                         traceResult);
 
     // emit an ambiguity error if this is not resolving a called ident
-    CHPL_REPORT(context, AmbiguousIdentifier,
+    RESOLVER_REPORT(*this, AmbiguousIdentifier,
                 ident, printFirstMention, vec, traceResult);
   }
 }
@@ -4085,6 +4114,7 @@ void Resolver::validateAndSetToId(ResolvedExpression& r,
   r.setToId(toId);
   if (!toId || toId.isFabricatedId()) return;
   auto error = checkForIdentifierTargetErrorsQuery(context, node->id(), toId);
+  encounteredErrors |= error;
   // If there was an error, clear the target to prevent false lookups.
   if (error) r.setToId(ID());
 }
@@ -4120,7 +4150,7 @@ void Resolver::validateAndSetMostSpecific(ResolvedExpression& r,
     // to C's aliasing rules.
 
     if (only.hasConstRefCoercion()) {
-      r.setType(CHPL_TYPE_ERROR(context, ConstRefCoercion, expr, only));
+      r.setType(RESOLVER_TYPE_ERROR(*this, ConstRefCoercion, expr, only));
     }
   }
 
@@ -4188,7 +4218,7 @@ QualifiedType Resolver::getSuperType(Context* context,
       return QualifiedType(sub.kind(), newClassType);
     }
   }
-  CHPL_REPORT(context, InvalidSuper, identForError, sub);
+  RESOLVER_REPORT(*this, InvalidSuper, identForError, sub);
   return QualifiedType();
 }
 
@@ -4491,7 +4521,7 @@ void Resolver::resolveIdentifier(const Identifier* ident) {
       if (pair.second) {
         // insertion took place so emit the error
         bool mentionedMoreThanOnce = identHasMoreMentions(ident);
-        CHPL_REPORT(context, UnknownIdentifier, ident, mentionedMoreThanOnce);
+        RESOLVER_REPORT(*this, UnknownIdentifier, ident, mentionedMoreThanOnce);
       }
     }
 
@@ -5257,7 +5287,7 @@ void Resolver::exit(const uast::Domain* decl) {
       if (decl->numExprs() > 1 || decl->usedCurlyBraces()) {
         // We can only query the whole domain using a type query, so reject
         // the domain expression.
-        context->error(decl, "cannot query part of a domain");
+        error(decl, "cannot query part of a domain");
       }
 
       auto& re = byPostorder.byAst(decl);
@@ -5580,12 +5610,12 @@ issueIteratorDiagnosticsIfNeeded(Resolver& rv,
         std::get<2>(foundIter) =
           findTaggedIteratorForType(rv.rc, iterType, std::get<0>(foundIter)).fn();
       }
-      CHPL_REPORT(rv.context, IncompatibleYieldTypes, call, std::move(yieldTypes));
+      RESOLVER_REPORT(rv, IncompatibleYieldTypes, call, std::move(yieldTypes));
     }
 
     if (!ignoredItersInCallScope.empty()) {
-      CHPL_REPORT(rv.context, IteratorsInOtherScopes, call, iterType->iteratorFn(),
-                  std::move(ignoredItersInCallScope));
+      RESOLVER_REPORT(rv, IteratorsInOtherScopes, call, iterType->iteratorFn(),
+                      std::move(ignoredItersInCallScope));
     }
   }
 }
@@ -5846,8 +5876,8 @@ void Resolver::exit(const Dot* dot) {
     if (!receiver.type().isType()) {
       r.setType(QualifiedType(QualifiedType::TYPE, receiverType));
     } else {
-      r.setType(CHPL_TYPE_ERROR(context, DotTypeOnType, dot, receiverType,
-                                receiver.toId()));
+      r.setType(RESOLVER_TYPE_ERROR(*this, DotTypeOnType, dot, receiverType,
+                                    receiver.toId()));
     }
     return;
   }
@@ -5982,12 +6012,13 @@ bool Resolver::enter(const New* node) {
 // TODO: How do we wire this up with 'getManagedClassType'? Is it possible?
 // TODO: How to handle nilability, e.g. new owned C'?'
 static const ClassType*
-getDecoratedClassForNew(Context* context, const New* node,
+getDecoratedClassForNew(Resolver& rv, const New* node,
                         const ClassType* classType) {
+  auto context = rv.context;
   auto basic = classType->basicClassType();
 
   if (!basic) {
-    context->error(node, "attempt to 'new' the generic 'class' type");
+    rv.error(node, "attempt to 'new' the generic 'class' type");
     return nullptr;
   }
 
@@ -6034,7 +6065,7 @@ getDecoratedClassForNew(Context* context, const New* node,
 static void resolveNewForClass(Resolver& rv, const New* node,
                                const ClassType* classType) {
   ResolvedExpression& re = rv.byPostorder.byAst(node);
-  auto cls = getDecoratedClassForNew(rv.context, node, classType);
+  auto cls = getDecoratedClassForNew(rv, node, classType);
   auto qt = QualifiedType(QualifiedType::INIT_RECEIVER, cls);
   re.setType(qt);
 }
@@ -6049,7 +6080,7 @@ static void resolveNewForRecordLike(Resolver& rv, const New* node,
   ResolvedExpression& re = rv.byPostorder.byAst(node);
 
   if (node->management() != New::DEFAULT_MANAGEMENT) {
-    CHPL_REPORT(rv.context, MemManagementNonClass, node, recordLikeType);
+    RESOLVER_REPORT(rv, MemManagementNonClass, node, recordLikeType);
   } else {
     auto qt = QualifiedType(QualifiedType::INIT_RECEIVER, recordLikeType);
     re.setType(qt);
@@ -6075,10 +6106,10 @@ void Resolver::exit(const New* node) {
 
   // Check and exit on obvious error cases.
   if (qtTypeExpr.isUnknown()) {
-    context->error(node, "Attempt to 'new' a function or undefined symbol");
+    error(node, "Attempt to 'new' a function or undefined symbol");
     return;
   } else if (qtTypeExpr.kind() != QualifiedType::TYPE) {
-    context->error(node, "'new' must be followed by a type expression");
+    error(node, "'new' must be followed by a type expression");
     return;
   }
 
@@ -6092,10 +6123,10 @@ void Resolver::exit(const New* node) {
     resolveNewForRecordLike(*this, node, type->toCompositeType());
   } else {
     if (node->management() != New::DEFAULT_MANAGEMENT) {
-      CHPL_REPORT(context, MemManagementNonClass, node, qtTypeExpr.type());
+      RESOLVER_REPORT(*this, MemManagementNonClass, node, qtTypeExpr.type());
     }
 
-    CHPL_REPORT(context, InvalidNewTarget, node, qtTypeExpr);
+    RESOLVER_REPORT(*this, InvalidNewTarget, node, qtTypeExpr);
   }
 }
 
@@ -6150,7 +6181,7 @@ class IterandComponent {
       if (qt.isUnknownOrErroneous()) return false;
       auto tt = qt.type()->toTupleType();
       if (!tt) {
-        rv.context->error(astForErr, "unexpected type in tuple unpacking operator");
+        rv.error(astForErr, "unexpected type in tuple unpacking operator");
         return false;
       }
 
@@ -6196,7 +6227,7 @@ class IterandComponent {
 
     CHPL_ASSERT(out.size() >= 1);
     if (out.size() > 1) {
-      rv.context->error(astForErr, "cannot perform tuple unpacking in non-zippered loop iterand");
+      rv.error(astForErr, "cannot perform tuple unpacking in non-zippered loop iterand");
       return false;
     }
 
@@ -6338,7 +6369,7 @@ resolveIterDetailsInPriorityOrder(Resolver& rv,
 }
 
 static QualifiedType
-issueErrorForFailedIterDetails(Context* context,
+issueErrorForFailedIterDetails(Resolver& rv,
                                IterDetails& details,
                                const uast::AstNode* astForErr,
                                const uast::AstNode* iterand,
@@ -6355,8 +6386,8 @@ issueErrorForFailedIterDetails(Context* context,
   tryAdd(Function::FOLLOWER, details.follower.resolutionResult);
   tryAdd(Function::SERIAL, details.serial.resolutionResult);
 
-  return CHPL_TYPE_ERROR(context, NonIterable, astForErr, iterand,
-                         iterandType, std::move(failures));
+  return RESOLVER_TYPE_ERROR(rv, NonIterable, astForErr, iterand,
+                             iterandType, std::move(failures));
 }
 
 static IterDetails resolveNonZipExpression(Resolver& rv,
@@ -6391,7 +6422,7 @@ static IterDetails resolveNonZipExpression(Resolver& rv,
   if (ret.succeededAt == IterDetails::NONE && !iterandRe.type().isUnknownOrErroneous()) {
     auto& iterandRE = rv.byPostorder.byAst(iterand);
     if (!iterandRE.type().isUnknownOrErroneous()) {
-      ret.idxType = issueErrorForFailedIterDetails(rv.context, ret, astForErr, iterand, iterandRE.type());
+      ret.idxType = issueErrorForFailedIterDetails(rv, ret, astForErr, iterand, iterandRE.type());
     }
   }
 
@@ -6554,7 +6585,7 @@ struct BaseParamRangeInfo {
   }
 
   static owned<BaseParamRangeInfo>
-  fromBound(Context* context, ResolutionResultByPostorderID& rr,
+  fromBound(Resolver& rv, ResolutionResultByPostorderID& rr,
             const AstNode* node);
 };
 
@@ -6650,7 +6681,7 @@ struct EnumParamRangeInfo : IntParamRangeInfo {
 };
 
 owned<BaseParamRangeInfo>
-BaseParamRangeInfo::fromBound(Context* context,
+BaseParamRangeInfo::fromBound(Resolver& rv,
                               ResolutionResultByPostorderID& rr,
                               const AstNode* node) {
   int step = 1;
@@ -6670,13 +6701,13 @@ BaseParamRangeInfo::fromBound(Context* context,
   bool seenBy = false;
   while (auto op = node->toOpCall()) {
     if (seenPound) {
-      context->error(op, "unexpected composition of operators in 'param' loop");
+      rv.error(op, "unexpected composition of operators in 'param' loop");
       return {};
     }
 
     if (op->op() == USTR("by")) {
       if (seenBy) {
-        context->error(op, "multiple 'by' operators unsupported in 'param' loop");
+        rv.error(op, "multiple 'by' operators unsupported in 'param' loop");
         return {};
       }
       seenBy = true;
@@ -6685,13 +6716,13 @@ BaseParamRangeInfo::fromBound(Context* context,
       auto& byRe = rr.byAst(op->actual(1));
       auto byParam = byRe.type().param();
       if (!byParam || !byParam->isIntParam()) {
-        context->error(op, "expected an integer 'param' for 'by'");
+        rv.error(op, "expected an integer 'param' for 'by'");
         return {};
       }
 
       step *= byParam->toIntParam()->value();
       if (step == 0) {
-        context->error(op, "step size for 'by' must be non-zero");
+        rv.error(op, "step size for 'by' must be non-zero");
         return {};
       }
     } else if (op->op() == USTR("#")) {
@@ -6701,13 +6732,13 @@ BaseParamRangeInfo::fromBound(Context* context,
       auto& byRe = rr.byAst(op->actual(1));
       auto byParam = byRe.type().param();
       if (!byParam || !byParam->isIntParam()) {
-        context->error(op, "expected an integer 'param' for '#'");
+        rv.error(op, "expected an integer 'param' for '#'");
         return {};
       }
 
       numElts = byParam->toIntParam()->value();
       if (numElts < 0) {
-        context->error(op, "number of elements for '#' must be non-negative");
+        rv.error(op, "number of elements for '#' must be non-negative");
         return {};
       }
     }
@@ -6715,19 +6746,19 @@ BaseParamRangeInfo::fromBound(Context* context,
 
   auto rng = node->toRange();
   if (!rng) {
-    context->error(node, "'param' loops can only iterate over range literals");
+    rv.error(node, "'param' loops can only iterate over range literals");
     return {};
   }
 
   // TODO: Simplify once we no longer use nullptr for param()
   optional<paramtags::ParamTag> tag = empty;
   bool validBounds = true;
-  auto findBoundParam = [context, &validBounds, &tag, &yieldType, &rr](const AstNode* bound) -> const Param* {
+  auto findBoundParam = [&rv, &validBounds, &tag, &yieldType, &rr](const AstNode* bound) -> const Param* {
     if (!bound) return nullptr;
     ResolvedExpression& boundRE = rr.byAst(bound);
     auto param = boundRE.type().param();
     if (!param) {
-      context->error(bound, "expected a 'param' for range bound in 'param' loop");
+      rv.error(bound, "expected a 'param' for range bound in 'param' loop");
       validBounds = false;
       return nullptr;
     }
@@ -6735,7 +6766,7 @@ BaseParamRangeInfo::fromBound(Context* context,
     if (!tag) {
       tag = param->tag();
     } else if (param->tag() != *tag) {
-      context->error(bound, "incompatible range bounds in 'param' loop");
+      rv.error(bound, "incompatible range bounds in 'param' loop");
       validBounds = false;
       return nullptr;
     }
@@ -6748,10 +6779,10 @@ BaseParamRangeInfo::fromBound(Context* context,
 
   owned<BaseParamRangeInfo> toReturn = nullptr;
   if (tag == paramtags::ParamTag::IntParam) {
-    toReturn = IntParamRangeInfo::build(context, yieldType, low, hi,
+    toReturn = IntParamRangeInfo::build(rv.context, yieldType, low, hi,
                                         rng, step, numElts);
   } else if (tag == paramtags::ParamTag::EnumParam) {
-    toReturn = EnumParamRangeInfo::build(context, yieldType, low, hi,
+    toReturn = EnumParamRangeInfo::build(rv.context, yieldType, low, hi,
                                          rng, step, numElts);
   }
   if (toReturn) toReturn->yieldType = yieldType;
@@ -6828,7 +6859,6 @@ static bool resolveParamForLoop(Resolver& rv, const For* forLoop, BoundInfo&& bo
 
 static bool resolveParamForLoop(Resolver& rv, const For* forLoop) {
   const AstNode* iterand = forLoop->iterand();
-  Context* context = rv.context;
 
   iterand->traverse(rv);
 
@@ -6837,7 +6867,7 @@ static bool resolveParamForLoop(Resolver& rv, const For* forLoop) {
     return true;
   }
 
-  auto iterandInfo = BaseParamRangeInfo::fromBound(context, rv.byPostorder, iterand);
+  auto iterandInfo = BaseParamRangeInfo::fromBound(rv, rv.byPostorder, iterand);
   if (!iterandInfo) return false;
 
   return resolveParamForLoop(rv, forLoop, std::move(iterandInfo));
@@ -6916,8 +6946,8 @@ resolveZipExpression(Resolver& rv, const AstNode* anchor, bool requiresParallel,
 
   if (!rv.scopeResolveOnly && ret.isUnknownOrErroneous()) {
     // Emit a NonIterable error.
-    ret = CHPL_TYPE_ERROR(context, NonIterable, anchor, zip,
-                          QualifiedType(), std::move(failures));
+    ret = RESOLVER_TYPE_ERROR(rv, NonIterable, anchor, zip,
+                              QualifiedType(), std::move(failures));
   }
 
   auto& reZip = rv.byPostorder.byAst(zip);
@@ -7389,7 +7419,7 @@ constructReduceScanOpClass(Resolver& resolver,
 
   // Couldn't resolve the call; is opName a valid reduction?
   if (opType.isUnknown()) {
-    CHPL_REPORT(context, ReductionInvalidName, reduceOrScan, opName, iterType);
+    RESOLVER_REPORT(resolver, ReductionInvalidName, reduceOrScan, opName, iterType);
     return nullptr;
   } else {
     c.noteResult(&resolver.byPostorder.byAst(reduceOrScan),
@@ -7404,7 +7434,7 @@ constructReduceScanOpClass(Resolver& resolver,
       !actualClass ||
       !actualClass->basicClassType() ||
       !actualClass->basicClassType()->isSubtypeOf(context, baseClass, converts, instantiates)) {
-    CHPL_REPORT(context, ReductionNotReduceScanOp, reduceOrScan, opType);
+    RESOLVER_REPORT(resolver, ReductionNotReduceScanOp, reduceOrScan, opType);
   }
 
   return actualClass;
@@ -7512,7 +7542,7 @@ bool Resolver::enter(const ReduceIntent* reduce) {
   if (computeTaskIntentInfo(*this, reduce, id, type, isBuiltin)) {
     validateAndSetToId(result, reduce, id);
   } else if (!scopeResolveOnly) {
-    context->error(reduce, "Unable to find declaration of \"%s\" for reduction", reduce->name().c_str());
+    error(reduce, "Unable to find declaration of \"%s\" for reduction", reduce->name().c_str());
   }
 
   // in case we failed to compute the variable type, don't keep going
@@ -7530,7 +7560,7 @@ bool Resolver::enter(const ReduceIntent* reduce) {
   // Check if the intent changes.
   auto got = canPassScalar(context, elementType, type);
   if (!got.passes() || got.converts()) {
-    CHPL_REPORT(context, ReductionIntentChangesType, reduce, parsing::idToAst(context, id), type, elementType);
+    RESOLVER_REPORT(*this, ReductionIntentChangesType, reduce, parsing::idToAst(context, id), type, elementType);
     type = QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
   } else {
     // override the intent to be VAR, since it's a mutable accumulator
@@ -7577,7 +7607,7 @@ bool Resolver::enter(const TaskVar* taskVar) {
       result.setType(taskVarType);
       result.setIsBuiltin(isBuiltin);
     } else if (!scopeResolveOnly) {
-      context->error(taskVar, "Unable to find declaration of \"%s\" for task intent", taskVar->name().c_str());
+      error(taskVar, "Unable to find declaration of \"%s\" for task intent", taskVar->name().c_str());
     }
     return false;
   } else {
@@ -7634,7 +7664,7 @@ const Loop* findTargetLoop(Resolver& rv, const ContinueOrBreak* node) {
 
 
   if (refersTo.type().kind() != QualifiedType::LOOP) {
-    CHPL_REPORT(rv.context, InvalidContinueBreakTarget, node, refersTo.toId(), refersTo.type());
+    RESOLVER_REPORT(rv, InvalidContinueBreakTarget, node, refersTo.toId(), refersTo.type());
     return findLastLoop(rv);
   }
 
@@ -7680,7 +7710,7 @@ bool Resolver::enter(const Throw* node) {
 
 void Resolver::exit(const Throw* node) {
   if (initResolver) {
-    context->error(node, "initializers are not yet allowed to throw errors");
+    error(node, "initializers are not yet allowed to throw errors");
   }
   markThrow();
 }
@@ -7692,7 +7722,7 @@ bool Resolver::enter(const Try* node) {
 
 void Resolver::exit(const Try* node) {
   if (initResolver && node->isTryBang() && node->numHandlers() > 0) {
-    context->error(node, "Only catch-less try! statements are allowed in initializers for now");
+    error(node, "Only catch-less try! statements are allowed in initializers for now");
   }
   // Node inherits the type of its expression if it is not a statement.
   if (node->isExpressionLevel()) {
@@ -7739,7 +7769,7 @@ bool Resolver::enter(const Catch* node) {
           while (!bct->parentClassType()->isObjectType()) {
             bct = bct->parentClassType();
           }
-          context->error(errVar, "catch variable '%s' must be a class that inherits from Error, not '%s'", errVar->name().c_str(), bct->name().c_str());
+          error(errVar, "catch variable '%s' must be a class that inherits from Error, not '%s'", errVar->name().c_str(), bct->name().c_str());
         } else {
           auto dec = ClassTypeDecorator(ClassTypeDecorator::MANAGED_NONNIL);
           auto manager = AnyOwnedType::get(context);
@@ -7751,7 +7781,7 @@ bool Resolver::enter(const Catch* node) {
     }
 
     if (!isBasicClass) {
-      context->error(errVar, "catch variable '%s' must be a class that inherits from Error", errVar->name().c_str());
+      error(errVar, "catch variable '%s' must be a class that inherits from Error", errVar->name().c_str());
     }
   } // TODO: is there an else case to handle here for catchall without an error variable (e.g. catch {})?
 
@@ -7816,7 +7846,7 @@ void Resolver::exit(const uast::Let* node) {
 
   auto& resultQt = otherR.type();
   if (resultQt.type() && resultQt.type()->isVoidType()) {
-    context->error(node, "invalid use of 'void' value as expression");
+    error(node, "invalid use of 'void' value as expression");
   }
   thisR.setType(resultQt);
   exitScope(node);
