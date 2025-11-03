@@ -580,6 +580,8 @@ void AggregateType::addDeclarations(Expr* expr) {
 
     this->forwardingTo.insertAtTail(forwarding);
 
+    forwarding->parentSymbol = symbol;
+
   } else if (isEndOfStatementMarker(expr)) {
     // drop it
   } else {
@@ -632,12 +634,10 @@ void AggregateType::addDeclaration(DefExpr* defExpr) {
                                                        dtMethodToken)));
     }
 
-    if (fn->hasFlag(FLAG_METHOD_PRIMARY)) {
-      arg->type = this;
-      // workaround: clear the typeExpr
-      // (it is confusing the production scope resolver)
-      arg->typeExpr = nullptr;
-    }
+    arg->type = this;
+    // workaround: clear the typeExpr
+    // (it is confusing the production scope resolver)
+    arg->typeExpr = nullptr;
 
     if (fn->name == astrInitEquals) {
       if (fn->numFormals() != 3) { // mt, this, other

@@ -2468,11 +2468,13 @@ struct Converter final : UastConverter {
 
     // compute the 'this' formal type
     const uast::AggregateDecl* decl = nullptr;
-    INT_ASSERT(symStack.size() > 0);
-    {
+    if (symStack.size() > 0) {
       SymStackEntry& last = symStack.back();
       INT_ASSERT(last.ast != nullptr);
       decl = last.ast->toAggregateDecl();
+      INT_ASSERT(decl);
+    } else {
+      decl = parsing::parentAst(context, node)->toAggregateDecl();
       INT_ASSERT(decl);
     }
     // TODO: use the resolved type for the contained declaration

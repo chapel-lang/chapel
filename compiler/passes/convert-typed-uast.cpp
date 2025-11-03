@@ -2426,6 +2426,12 @@ struct ConvertTypeHelper {
             auto expr = tc_->untypedConverter->convertAST(decl);
             INT_ASSERT(expr);
             at->addDeclarations(expr);
+          } else if (parsing::idIsInBundledModule(context(), stmt->id()) &&
+                     stmt->isForwardingDecl() &&
+                     at->instantiatedFrom == nullptr) {
+            auto expr = toBlockStmt(tc_->untypedConverter->convertAST(stmt));
+            INT_ASSERT(expr);
+            at->addDeclarations(expr->body.last());
           }
         }
       }
