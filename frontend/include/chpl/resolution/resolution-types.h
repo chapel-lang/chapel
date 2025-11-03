@@ -1556,6 +1556,19 @@ class ApplicabilityResult {
     return ApplicabilityResult(std::move(idForErr), nullptr, reason, FAIL_FORMAL_OTHER, -1);
   }
 
+  static ApplicabilityResult failureErrorInAnotherCandidate(const TypedFnSignature* fn) {
+    return ApplicabilityResult(fn, nullptr, FAIL_ERRORS_THROWN, FAIL_FORMAL_OTHER, -1);
+  }
+
+  static ApplicabilityResult failureErrorInFormal(const TypedFnSignature* fn,
+                                                  int formalIdx) {
+    return ApplicabilityResult(fn, nullptr, FAIL_ERRORS_THROWN, FAIL_FORMAL_OTHER, formalIdx);
+  }
+
+  static ApplicabilityResult failureErrorInWhereClause(const TypedFnSignature* fn) {
+    return ApplicabilityResult(fn, nullptr, FAIL_ERRORS_THROWN, FAIL_FORMAL_OTHER, fn->numFormals());
+  }
+
   static bool update(ApplicabilityResult& keep, ApplicabilityResult& addin) {
     bool update = false;
     update |= defaultUpdateBasic(keep.rejected_, addin.rejected_);

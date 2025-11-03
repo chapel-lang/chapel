@@ -2830,7 +2830,7 @@ instantiateSignatureImpl(ResolutionContext* rc,
       if (varArgType.isUnknown()) {
         // We haven't yet re-computed the vararg tuple type.
         if (traverseDetectingErrors(context, formal, visitor)) {
-          return ApplicabilityResult::failure(sig, FAIL_ERRORS_THROWN);
+          return ApplicabilityResult::failureErrorInFormal(sig, entry.formalIdx());
         }
         varArgType = r.byAst(formal).type();
         justComputedVarArgType = true;
@@ -2847,7 +2847,7 @@ instantiateSignatureImpl(ResolutionContext* rc,
       }
     } else if (formal) {
       if (traverseDetectingErrors(context, formal, visitor)) {
-        return ApplicabilityResult::failure(sig, FAIL_ERRORS_THROWN);
+        return ApplicabilityResult::failureErrorInFormal(sig, entry.formalIdx());
       }
       formalType = r.byAst(formal).type();
     } else {
@@ -3023,7 +3023,7 @@ instantiateSignatureImpl(ResolutionContext* rc,
       // Substitutions have been updated; re-run resolution to get better
       // intents, vararg info, and to extract type query info.
       if (traverseDetectingErrors(context, formal, visitor)) {
-        return ApplicabilityResult::failure(sig, FAIL_ERRORS_THROWN);
+        return ApplicabilityResult::failureErrorInFormal(sig, entry.formalIdx());
       }
       formalType = r.byAst(formal).type();
     }
@@ -3041,7 +3041,7 @@ instantiateSignatureImpl(ResolutionContext* rc,
         }
       }
       if (traverseDetectingErrors(context, formal, visitor)) {
-        return ApplicabilityResult::failure(sig, FAIL_ERRORS_THROWN);
+        return ApplicabilityResult::failureErrorInFormal(sig, entry.formalIdx());
       }
       auto qFormalType = r.byAst(formal).type();
       if (entry.isVarArgEntry()) {
@@ -3161,7 +3161,7 @@ instantiateSignatureImpl(ResolutionContext* rc,
     // visit the where clause
     if (auto whereClause = fn->whereClause()) {
       if (traverseDetectingErrors(context, whereClause, visitor)) {
-        return ApplicabilityResult::failure(sig, FAIL_ERRORS_THROWN);
+        return ApplicabilityResult::failureErrorInWhereClause(sig);
       }
     }
     // do not visit the return type or function body
@@ -4228,10 +4228,10 @@ doIsCandidateApplicableInitial(ResolutionContext* rc,
   // this candidate is not applicable because it is ill-formed.
   for (int i = 0; i < ufs->numFormals(); i++) {
     if (ret->formalProducedError(i))
-      return ApplicabilityResult::failure(candidateId, FAIL_ERRORS_THROWN);
+      return ApplicabilityResult::failureErrorInFormal(ret, i);
   }
   if (ret->whereClausePrducedError())
-    return ApplicabilityResult::failure(candidateId, FAIL_ERRORS_THROWN);
+    return ApplicabilityResult::failureErrorInWhereClause(ret);
 
   auto faMap = FormalActualMap(ufs, ci);
   return isInitialTypedSignatureApplicable(context, ret, faMap, ci);
@@ -4265,7 +4265,7 @@ static void failCallResolutionDueToErrors(CandidatesAndForwardingInfo& matching,
   if (rejected) {
     for (auto candidate : matching) {
       rejected->push_back(
-        ApplicabilityResult::failure(candidate, FAIL_ERRORS_THROWN));
+        ApplicabilityResult::failureErrorInAnotherCandidate(candidate));
     }
   }
   matching.clear();
