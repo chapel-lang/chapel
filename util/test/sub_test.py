@@ -1136,6 +1136,8 @@ def main():
         else:
             printpassesfile='timing.txt'
             os.environ['CHPL_PRINT_PASSES_FILE'] = 'timing.txt'
+        # make sure we also collect memory usage data
+        os.environ['CHPL_PRINT_PASSES_MEMORY'] = '1'
 
         # check for the perfkeys file
         if os.getenv('CHPL_TEST_COMP_PERF_KEYS')!=None:

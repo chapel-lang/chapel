@@ -18,6 +18,7 @@ set(SRCS
     astlocs.cpp
     exprAnalysis.cpp
     files.cpp
+    MemoryTracker.cpp
     misc.cpp
     mysystem.cpp
     stringutil.cpp

@@ -161,6 +161,7 @@ extern const char* CHPL_GPU_ARCH;
 
 extern bool  printPasses;
 extern FILE* printPassesFile;
+extern bool  printPassesMemory;
 
 extern char fExplainCall[256];
 extern int  explainCallID;

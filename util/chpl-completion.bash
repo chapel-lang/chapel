@@ -278,6 +278,7 @@ _chpl ()
 --no-print-commands \
 --no-print-id-on-error \
 --no-print-passes \
+--no-print-passes-memory \
 --no-print-search-dirs \
 --no-print-unused-functions \
 --no-print-unused-internal-functions \
@@ -357,6 +358,7 @@ _chpl ()
 --print-module-resolution \
 --print-passes \
 --print-passes-file \
+--print-passes-memory \
 --print-search-dirs \
 --print-statistics \
 --print-unused-functions \
@@ -562,6 +564,7 @@ _chpl ()
 --no-print-code-size \
 --no-print-commands \
 --no-print-passes \
+--no-print-passes-memory \
 --no-print-search-dirs \
 --no-print-unused-functions \
 --no-privatization \
@@ -603,6 +606,7 @@ _chpl ()
 --print-module-files \
 --print-passes \
 --print-passes-file \
+--print-passes-memory \
 --print-search-dirs \
 --print-unused-functions \
 --privatization \

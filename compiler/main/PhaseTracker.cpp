@@ -27,117 +27,115 @@
 #include <cstring>
 #include <algorithm>
 
-struct SortByTime
-{
-  bool operator() (Pass const& a, Pass const& b) const
-  {
+struct SortByTime {
+  bool operator()(Pass const& a, Pass const& b) const {
     return a.CompareByTime(b);
   }
 };
+struct SortByMemory {
+  bool operator()(Pass const& a, Pass const& b) const {
+    return a.CompareByMemory(b);
+  }
+};
 
-static void PassesSortByTime(std::vector<Pass>& passes);
+static void PassesReport(const std::vector<Pass>& passes, PhaseData total);
 
-static void PassesReport(const std::vector<Pass>& passes,
-                         unsigned long            totalTime);
-
-static void PassesReport(FILE*                    fp,
-                         const std::vector<Pass>& passes,
-                         unsigned long            totalTime);
+static void
+PassesReport(FILE* fp, const std::vector<Pass>& passes, PhaseData total);
 
 /************************************* | **************************************
-*                                                                             *
-* Implementation of PhaseTracker                                              *
-*                                                                             *
-************************************** | *************************************/
+ *                                                                             *
+ * Implementation of PhaseTracker                                              *
+ *                                                                             *
+ ************************************** | *************************************/
 
-PhaseTracker::PhaseTracker()
-{
+PhaseTracker::PhaseTracker() {
   mPhaseId = 0;
 
   mTimer.start();
+  mMemoryTracker.start();
   StartPhase("startup");
 }
 
-PhaseTracker::~PhaseTracker()
-{
-  for (size_t i = 0; i < mPhases.size(); i++)
-    delete mPhases[i];
+PhaseTracker::~PhaseTracker() {
+  for (size_t i = 0; i < mPhases.size(); i++) delete mPhases[i];
 }
 
-void PhaseTracker::StartPhase(const char* name)
-{
+void PhaseTracker::StartPhase(const char* name) {
   StartPhase(name, 0, kPrimary);
 }
 
 void PhaseTracker::StartPhase(const char*            name,
-                              PhaseTracker::SubPhase subPhase)
-{
-  if (subPhase == kPrimary)
-    mPhaseId = mPhaseId + 1;
+                              PhaseTracker::SubPhase subPhase) {
+  if (subPhase == kPrimary) mPhaseId = mPhaseId + 1;
 
   StartPhase(name, mPhaseId, subPhase);
 }
 
-
-void PhaseTracker::StartPhase(const char* name,
-                              int         passId,
-                              SubPhase    subPhase)
-{
-  Phase* phase = new Phase(name, passId, subPhase, mTimer.elapsedUsecs());
+void PhaseTracker::StartPhase(const char* name, int passId, SubPhase subPhase) {
+  Phase* phase = new Phase(
+    name,
+    passId,
+    subPhase,
+    PhaseData(mTimer.elapsedUsecs(), mMemoryTracker.usedBytes())
+  );
 
   mPhases.push_back(phase);
 }
 
-void PhaseTracker::Stop()
-{
+void PhaseTracker::Stop() {
   mTimer.stop();
+  mMemoryTracker.stop();
 }
 
-void PhaseTracker::Resume()
-{
+void PhaseTracker::Resume() {
+  mMemoryTracker.start();
   mTimer.start();
 }
 
-void PhaseTracker::ReportPass() const
-{
+void PhaseTracker::ReportPass() const {
   int index = mPhases.size() - 1;
 
-  while (index >= 0 && mPhases[index]->IsStartOfPass() == false)
+  while (index >= 0 && !mPhases[index]->IsStartOfPass())
     index = index - 1;
 
-  mPhases[index]->ReportPass(mTimer.elapsedUsecs());
+  mPhases[index]->ReportPass(
+    PhaseData(mTimer.elapsedUsecs(),
+              mMemoryTracker.usedBytes()));
 }
 
-static const char* passGroups[][2] = {
-  {"total time (front end)", "parallel"},
-  {"total time (middle end)", "denormalize"},
-  {"total time (back end)", "driverCleanup"},
+static auto passGroups = std::array{
+  std::make_pair("(front end)", "parallel"),
+  std::make_pair("(middle end)", "denormalize"),
+  std::make_pair("(back end)", "driverCleanup"),
 };
 
 void PhaseTracker::ReportPassGroupTotals(
-    std::vector<unsigned long>* groupTimes) const {
-  // Capture total time up to this point
-  const unsigned long totalTime = mTimer.elapsedUsecs();
+  std::vector<PhaseData>* groupTimes) const {
+  // Capture total up to this point
+  const auto total =
+    PhaseData(mTimer.elapsedUsecs(), mMemoryTracker.usedBytes());
 
   // Were we provided previously-saved values to report out?
   const bool useSaved = groupTimes && !groupTimes->empty();
   // Should we save values to the provided list?
   const bool saveToList = groupTimes && groupTimes->empty();
 
-  static const size_t numMetapasses =
-      sizeof(passGroups) / sizeof(passGroups[0]);
-  unsigned long lastStart = 0;
-  unsigned long passTime;
-  for (size_t i = 0; i < numMetapasses; i++) {
+  PhaseData lastStart;
+  PhaseData passData;
+  for (size_t i = 0; i < passGroups.size(); i++) {
+    // can't capture structured bindings in the lambda without C++20
+    // auto [groupName, groupLastPhase] = passGroups[i];
+    auto groupName      = passGroups[i].first;
+    auto groupLastPhase = passGroups[i].second;
     if (!useSaved) {
       // No times provided, so calculate them.
 
-      const char* groupLastPhase = passGroups[i][1];
-      auto currentPass = mPhases.begin();
-      currentPass = std::find_if(currentPass, mPhases.end(), [&](auto pass) {
-        if (pass->mName == nullptr) return false;
-        return strcmp(pass->mName, groupLastPhase) == 0;
-      });
+      auto currentPass = std::find_if(
+        mPhases.begin(), mPhases.end(), [groupLastPhase](auto pass) {
+          if (pass->mName == nullptr) return false;
+          return strcmp(pass->mName, groupLastPhase) == 0;
+        });
 
       // No such pass, we might've exited early, or begun late from driver mode.
       if (currentPass == mPhases.end()) {
@@ -153,11 +151,10 @@ void PhaseTracker::ReportPassGroupTotals(
       auto nextPass = currentPass + 1;
 
       if (nextPass != mPhases.end()) {
-        passTime = (*nextPass)->mStartTime - lastStart;
-        lastStart = (*nextPass)->mStartTime;
+        passData = (*nextPass)->mStart - lastStart;
+        lastStart = (*nextPass)->mStart;
       } else {
-        passTime = totalTime - lastStart;
-        lastStart = totalTime;
+        passData = total - lastStart;
       }
     } else {
       // Just used saved time value
@@ -167,41 +164,44 @@ void PhaseTracker::ReportPassGroupTotals(
       // following either.
       if (groupTimes->size() <= i) break;
 
-      passTime = (*groupTimes)[i];
+      passData = (*groupTimes)[i];
     }
 
     // Save or report out result
     if (saveToList) {
-      groupTimes->emplace_back(passTime);
+      groupTimes->emplace_back(passData);
     } else {
       // No out-parameter to save into, report time normally
       // (whether it was calculated or retrieved from list).
 
-      const char* groupName = passGroups[i][0];
-      Phase::ReportPassGroup(groupName, passTime);
+      Phase::ReportPassGroup(groupName, passData);
     }
   }
 }
 
-void PhaseTracker::ReportOverallTotal(long long overheadTime) const {
-  // Measure time so far
-  unsigned long totalTime = mTimer.elapsedUsecs();
+void PhaseTracker::ReportOverallTotal(
+  std::optional<PhaseData> overheadTime) const {
+  // Measure so far
+  auto total = PhaseData(mTimer.elapsedUsecs(), mMemoryTracker.usedBytes());
   // Add overhead if used
-  if (overheadTime >= 0) {
-    totalTime += overheadTime;
+  if (overheadTime.has_value()) {
+    total += overheadTime.value();
   }
 
-  Phase::ReportTime("total time", totalTime / 1e6);
+  Phase::ReportTime("total time", total.timeInUsecs / 1e6);
+  if (printPassesMemory) {
+    Phase::ReportText("\n");
+    Phase::ReportMemory("total memory", MemoryTracker::toMB(total.memory));
+  }
   Phase::ReportText("\n\n\n\n");
 }
 
-void PhaseTracker::ReportRollup() const
-{
+void PhaseTracker::ReportRollup() const {
   std::vector<Pass> passes;
-  unsigned long     totalTime = mTimer.elapsedUsecs();
+  auto total = PhaseData(mTimer.elapsedUsecs(), mMemoryTracker.usedBytes());
 
   PassesCollect(passes);
-  PassesReport(passes, totalTime);
+  PassesReport(passes, total);
 
   // Repeat the information but sorted by time, for monolithic mode or driver
   // compilation phase.
@@ -210,52 +210,50 @@ void PhaseTracker::ReportRollup() const
   if (fDriverDoMonolithic || fDriverCompilationPhase) {
     Phase::ReportText("\n\n\n");
 
-    PassesSortByTime(passes);
-    PassesReport(passes, totalTime);
+    std::sort(passes.begin(), passes.end(), SortByTime());
+    PassesReport(passes, total);
+
+    if (printPassesMemory) {
+      Phase::ReportText("\n\n\n");
+
+      std::sort(passes.begin(), passes.end(), SortByMemory());
+      PassesReport(passes, total);
+    }
+    Phase::ReportText("\n");
   }
 }
 
-void PhaseTracker::PassesCollect(std::vector<Pass>& passes) const
-{
-  unsigned long totalTime = mTimer.elapsedUsecs();
+void PhaseTracker::PassesCollect(std::vector<Pass>& passes) const {
+  auto total = PhaseData(mTimer.elapsedUsecs(), mMemoryTracker.usedBytes());
 
-  if (mPhases.size() > 0)
-  {
+  if (mPhases.size() > 0) {
     Pass pass;
 
-    for (size_t i = 0; i < mPhases.size(); i++)
-    {
-      unsigned long start   = mPhases[i]->mStartTime;
-      unsigned long elapsed = 0;
+    for (size_t i = 0; i < mPhases.size(); i++) {
+      auto start = mPhases[i]->mStart;
+      PhaseData elapsed;
 
       // Check if it's time to push an completed pass
-      if (i > 0 && mPhases[i]->mSubPhase == PhaseTracker::kPrimary)
-      {
+      if (i > 0 && mPhases[i]->mSubPhase == PhaseTracker::kPrimary) {
         passes.push_back(pass);
         pass.Reset();
       }
 
-      if (i < mPhases.size() - 1)
-        elapsed = mPhases[i + 1]->mStartTime - start;
-      else
-        elapsed = totalTime                 - start;
+      if (i < mPhases.size() - 1) {
+        elapsed = mPhases[i + 1]->mStart - start;
+      } else {
+        elapsed = total - start;
+      }
 
-      switch (mPhases[i]->mSubPhase)
-      {
+      switch (mPhases[i]->mSubPhase) {
         case PhaseTracker::kPrimary:
-          pass.mName     = mPhases[i]->mName;
-          pass.mPassId   = mPhases[i]->mPassId;
-          pass.mIndex    = (int) passes.size();
-          pass.mPrimary  = elapsed;
+          pass.mName    = mPhases[i]->mName;
+          pass.mPassId  = mPhases[i]->mPassId;
+          pass.mIndex   = (int)passes.size();
+          pass.mPrimary = elapsed;
           break;
-
-        case PhaseTracker::kVerify:
-          pass.mVerify   = elapsed;
-          break;
-
-        case PhaseTracker::kCleanAst:
-          pass.mCleanAst = elapsed;
-          break;
+        case PhaseTracker::kVerify:   pass.mVerify = elapsed; break;
+        case PhaseTracker::kCleanAst: pass.mCleanAst = elapsed; break;
       }
     }
 
@@ -263,48 +261,32 @@ void PhaseTracker::PassesCollect(std::vector<Pass>& passes) const
   }
 }
 
-static void PassesSortByTime(std::vector<Pass>& passes)
-{
-  std::sort(passes.begin(), passes.end(), SortByTime());
+static void PassesReport(const std::vector<Pass>& passes, PhaseData total) {
+  if (PhaseTracker::shouldReportPasses())
+    PassesReport(PhaseTracker::passesOutputFile(), passes, total);
 }
 
-static void PassesReport(const std::vector<Pass>& passes,
-                         unsigned long            totalTime)
-{
-  if (printPasses     == true)
-    PassesReport(stderr, passes, totalTime);
-
-  if (printPassesFile != 0)
-    PassesReport(printPassesFile, passes, totalTime);
-}
-
-static void PassesReport(FILE*                    fp,
-                         const std::vector<Pass>& passes,
-                         unsigned long            totalTime)
-{
-  unsigned long accumTime = 0;
-
-  unsigned long mainTime  = 0;
-  unsigned long checkTime = 0;
-  unsigned long cleanTime = 0;
+static void
+PassesReport(FILE* fp, const std::vector<Pass>& passes, PhaseData total) {
+  PhaseData accum;
+  PhaseData main;
+  PhaseData check;
+  PhaseData clean;
 
   Pass::Header(fp);
 
-  for (size_t i = 0; i < passes.size(); i++)
-  {
-    accumTime = accumTime + passes[i].TotalTime();
-
-    passes[i].Print(fp, accumTime, totalTime);
+  for (auto& p: passes) {
+    accum += PhaseData(p.TotalTime(), p.TotalMemory());
+    p.Print(fp, accum, total);
   }
 
-  for (size_t i = 0; i < passes.size(); i++)
-  {
-    mainTime  = mainTime  + passes[i].mPrimary;
-    checkTime = checkTime + passes[i].mVerify;
-    cleanTime = cleanTime + passes[i].mCleanAst;
+  for (auto& p: passes) {
+    main += p.mPrimary;
+    check += p.mVerify;
+    clean += p.mCleanAst;
   }
 
-  Pass::Footer(fp, mainTime, checkTime, cleanTime, totalTime);
+  Pass::Footer(fp, main, check, clean, total);
 }
 
 /************************************* | **************************************
@@ -316,36 +298,31 @@ static void PassesReport(FILE*                    fp,
 Phase::Phase(const char*            name,
              int                    passId,
              PhaseTracker::SubPhase subPhase,
-             unsigned long          startTime)
-{
-  mName      = (subPhase == PhaseTracker::kPrimary) ? strdup(name) : 0;
-  mPassId    = passId;
-  mSubPhase  = subPhase;
-  mStartTime = startTime;
+             PhaseData              start) {
+  mName     = (subPhase == PhaseTracker::kPrimary) ? strdup(name) : 0;
+  mPassId   = passId;
+  mSubPhase = subPhase;
+  mStart    = start;
 }
 
-Phase::~Phase()
-{
-  if (mName)
-    free(mName);
+Phase::~Phase() {
+  if (mName) free(mName);
 }
 
-bool Phase::IsStartOfPass() const
-{
+bool Phase::IsStartOfPass() const {
   return (mSubPhase == PhaseTracker::kPrimary) ? true : false;
 }
 
-void Phase::ReportPass(unsigned long now) const
-{
+void Phase::ReportPass(PhaseData now) const {
   // clock-skew can cause now < startTime, just report 0 in that case
   unsigned long phaseTime = 0;
-  if (now > mStartTime)
-    phaseTime = now - mStartTime;
+  if (now.timeInUsecs > mStart.timeInUsecs)
+    phaseTime = now.timeInUsecs - mStart.timeInUsecs;
+  auto phaseMemory = now.memory - mStart.memory;
 
-  ReportTime(mName, phaseTime / 1e6);
+  ReportData(mName, PhaseData(phaseTime, phaseMemory));
 
-  if (developer == true)
-  {
+  if (developer) {
     char text[32];
 
     snprintf(text, sizeof(text), "  [%9d]", lastNodeIDUsed());
@@ -356,34 +333,38 @@ void Phase::ReportPass(unsigned long now) const
   ReportText("\n");
 }
 
-void Phase::ReportTotal(unsigned long totalTime)
-{
-  ReportTime("total time", totalTime / 1e6);
-  ReportText("\n\n\n\n");
-}
-
-void Phase::ReportPassGroup(const char* label, unsigned long totalTime)
-{
-  ReportTime(label, totalTime / 1e6);
+void Phase::ReportPassGroup(const char* suffix, PhaseData data) {
+  ReportTime((std::string("total time ") + suffix).c_str(),
+             data.timeInUsecs / 1e6);
+  if (printPassesMemory) {
+    Phase::ReportText("\n");
+    ReportMemory((std::string("total memory ") + suffix).c_str(),
+                 MemoryTracker::toMB(data.memory));
+  }
   ReportText("\n");
 }
 
-void Phase::ReportTime(const char* name, double secs)
-{
-  if (printPasses     == true)
-    fprintf(stderr, "%32s :%8.3f seconds", name, secs);
-
-  if (printPassesFile != 0)
-    fprintf(printPassesFile, "%32s :%8.3f seconds", name, secs);
+void Phase::ReportTime(const char* name, double secs) {
+  if (PhaseTracker::shouldReportPasses())
+    fprintf(PhaseTracker::passesOutputFile(), "%32s :%8.3f seconds", name, secs);
 }
 
-void Phase::ReportText(const char* text)
-{
-  if (printPasses     == true)
-    fputs(text, stderr);
+void Phase::ReportMemory(const char* name, MemoryTracker::MemoryInMB MB) {
+  if (PhaseTracker::shouldReportPasses() && printPassesMemory)
+    fprintf(PhaseTracker::passesOutputFile(), "%32s :%8.3f MB", name, MB);
+}
 
-  if (printPassesFile != 0)
-    fputs(text, printPassesFile);
+void Phase::ReportData(const char* name, PhaseData data) {
+  if (PhaseTracker::shouldReportPasses()) {
+    fprintf(PhaseTracker::passesOutputFile(), "%32s :%8.3f seconds", name, data.timeInUsecs / 1e6);
+    if (printPassesMemory)
+      fprintf(PhaseTracker::passesOutputFile(), "  %8.3f MB", MemoryTracker::toMB(data.memory));
+  }
+}
+
+void Phase::ReportText(const char* text) {
+  if (PhaseTracker::shouldReportPasses())
+    fputs(text, PhaseTracker::passesOutputFile());
 }
 
 /************************************* | **************************************
@@ -392,49 +373,45 @@ void Phase::ReportText(const char* text)
 *                                                                             *
 ************************************** | *************************************/
 
-Pass::Pass()
-{
-  Reset();
-}
+Pass::Pass() { Reset(); }
 
-Pass::~Pass()
-{
+Pass::~Pass() {}
 
-}
-
-void Pass::Reset()
-{
+void Pass::Reset() {
   mName     = 0;
   mPassId   = 0;
   mIndex    = 0;
-  mPrimary  = 0;
-  mVerify   = 0;
-  mCleanAst = 0;
+  mPrimary  = PhaseData();
+  mVerify   = PhaseData();
+  mCleanAst = PhaseData();
 }
 
-unsigned long Pass::TotalTime() const
-{
-  return mPrimary + mVerify + mCleanAst;
+unsigned long Pass::TotalTime() const {
+  return mPrimary.timeInUsecs + mVerify.timeInUsecs + mCleanAst.timeInUsecs;
 }
 
-bool Pass::CompareByTime(Pass const& ref) const
-{
-  bool retval = false;
+MemoryTracker::MemoryInBytes Pass::TotalMemory() const {
+  return mPrimary.memory + mVerify.memory + mCleanAst.memory;
+}
 
+bool Pass::CompareByTime(Pass const& ref) const {
   if (TotalTime() > ref.TotalTime())
-    retval = true;
-
+    return true;
   else if (TotalTime() < ref.TotalTime())
-    retval = false;
-
+    return false;
   else
-    retval = mIndex < ref.mIndex;
-
-  return retval;
+    return mIndex < ref.mIndex;
+}
+bool Pass::CompareByMemory(Pass const& ref) const {
+  if (TotalMemory() > ref.TotalMemory())
+    return true;
+  else if (TotalMemory() < ref.TotalMemory())
+    return false;
+  else
+    return mIndex < ref.mIndex;
 }
 
-void Pass::Header(FILE* fp)
-{
+void Pass::Header(FILE* fp) {
   // Print column headers
   fprintf(fp, "Pass               Name               ");
 
@@ -444,8 +421,19 @@ void Pass::Header(FILE* fp)
 
   fprintf(fp, "    Time    %%  ");
   fprintf(fp, "   Accum    %%  ");
-  fprintf(fp, "\n");
 
+  if (printPassesMemory) {
+    fprintf(fp, "  ");
+
+    fprintf(fp, "    Main (MB) ");
+    fprintf(fp, "   Check (MB) ");
+    fprintf(fp, "   Clean (MB) ");
+
+    fprintf(fp, "   Memory   %%  ");
+    fprintf(fp, "   Accum    %%  ");
+  }
+
+  fprintf(fp, "\n");
 
   // Print column underlines
   fprintf(fp, "---- ---------------------------------");
@@ -456,20 +444,38 @@ void Pass::Header(FILE* fp)
 
   fprintf(fp, "  ------- -----");
   fprintf(fp, "  ------- -----");
+
+  if (printPassesMemory) {
+    fprintf(fp, "  ");
+
+    fprintf(fp, "  ------------");
+    fprintf(fp, "  ------------");
+    fprintf(fp, "  ------------");
+
+    fprintf(fp, "  ------- -----");
+    fprintf(fp, "  ------- -----");
+  }
+
   fprintf(fp, "\n");
 }
 
-void Pass::Print(FILE*         fp,
-                 unsigned long accumTime,
-                 unsigned long totalTime) const
-{
-  unsigned long passTime  = TotalTime();
-  double        passFrac  = (100.0 * passTime)  / totalTime;
-  double        accumFrac = (100.0 * accumTime) / totalTime;
+void Pass::Print(FILE* fp, PhaseData accum, PhaseData total) const {
 
-  double        primary   = mPrimary  / 1e6;
-  double        verify    = mVerify   / 1e6;
-  double        clean     = mCleanAst / 1e6;
+  unsigned long passTime  = TotalTime();
+  double        passFrac  = (100.0 * passTime) / total.timeInUsecs;
+  double        accumFrac = (100.0 * accum.timeInUsecs) / total.timeInUsecs;
+
+  double primary = mPrimary.timeInUsecs / 1e6;
+  double verify  = mVerify.timeInUsecs / 1e6;
+  double clean   = mCleanAst.timeInUsecs / 1e6;
+
+  auto passMemory      = TotalMemory();
+  auto passMemoryFrac  = (100.0 * passMemory) / total.memory;
+  auto accumMemoryFrac = (100.0 * accum.memory) / total.memory;
+
+  auto primaryMem = MemoryTracker::toMB(mPrimary.memory);
+  auto verifyMem  = MemoryTracker::toMB(mVerify.memory);
+  auto cleanMem   = MemoryTracker::toMB(mCleanAst.memory);
 
   if (mPassId > 0)
     fprintf(fp, "%4d ", mPassId);
@@ -479,24 +485,44 @@ void Pass::Print(FILE*         fp,
   fprintf(fp, "%-33s", mName);
   fprintf(fp, "  %7.3f  %7.3f  %7.3f", primary, verify, clean);
   fprintf(fp, "  %7.3f %5.1f", passTime  / 1e6, passFrac );
-  fprintf(fp, "  %7.3f %5.1f", accumTime / 1e6, accumFrac);
+  fprintf(fp, "  %7.3f %5.1f", accum.timeInUsecs / 1e6, accumFrac);
+  if (printPassesMemory) {
+    fprintf(fp, "  ");
+    fprintf(fp, "  %12.3f  %12.3f  %12.3f", primaryMem, verifyMem, cleanMem);
+    fprintf(fp, "  %7.3f %5.1f", MemoryTracker::toMB(passMemory), passMemoryFrac);
+    fprintf(fp, "  %7.3f %5.1f", MemoryTracker::toMB(accum.memory), accumMemoryFrac);
+  }
   fprintf(fp, "\n");
 }
 
-void Pass::Footer(FILE*         fp,
-                  unsigned long mainTime,
-                  unsigned long checkTime,
-                  unsigned long cleanTime,
-                  unsigned long totalTime)
-{
+void Pass::Footer(FILE*     fp,
+                  PhaseData main,
+                  PhaseData check,
+                  PhaseData clean,
+                  PhaseData total) {
+
   fprintf(fp,
-          "\n     %-33s  %7.3f  %7.3f  %7.3f  %7.3f\n",
-          "total time",
-          mainTime / 1e6,
-          checkTime / 1e6,
-          cleanTime / 1e6,
-          totalTime / 1e6);
+          "\n     %-33s  %7.3f  %7.3f  %7.3f  %7.3f ",
+          "total",
+          main.timeInUsecs / 1e6,
+          check.timeInUsecs / 1e6,
+          clean.timeInUsecs / 1e6,
+          total.timeInUsecs / 1e6);
+  if (printPassesMemory) {
+    fprintf(fp, "%28s", "");
+    fprintf(fp,
+            " %7.3f  %7.3f  %7.3f  %7.3f ",
+            MemoryTracker::toMB(main.memory),
+            MemoryTracker::toMB(check.memory),
+            MemoryTracker::toMB(clean.memory),
+            MemoryTracker::toMB(total.memory));
+  }
+  fprintf(fp, "\n");
 }
 
-
-
+bool PhaseTracker::shouldReportPasses() {
+  return printPasses || printPassesFile != nullptr || printPassesMemory;
+}
+FILE*& PhaseTracker::passesOutputFile() {
+  return printPassesFile != nullptr ? printPassesFile : stderr;
+}
