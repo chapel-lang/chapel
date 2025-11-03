@@ -4301,6 +4301,8 @@ filterCandidatesInitialGatherRejectedImpl(ResolutionContext* rc,
     } else if (gatherRejected) {
       ret.rejected.push_back(s);
     }
+
+    if (discoveredErrors) break;
   }
 
   if (discoveredErrors) {
@@ -4366,6 +4368,8 @@ filterCandidatesInstantiating(ResolutionContext* rc,
       } if (rejected) {
         rejected->push_back(std::move(instantiated));
       }
+
+      if (discoveredErrors) break;
     } else {
       // if it's already concrete, we already know it is a candidate.
       result.addCandidate(typedSignature);

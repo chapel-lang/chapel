@@ -790,6 +790,31 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
       } else if (formalReason == resolution::FAIL_NOT_EXACT_MATCH) {
         wr.message("The 'ref' intent requires the ", expectedThing, " and ", passedThing, " types to match exactly.");
       }
+    } else if (reason == resolution::FAIL_ERRORS_THROWN) {
+      // call resolution was interrupted. Potentially applicable candidates
+      // were retroactively rejected with FAIL_ERRORS_THROWN and formalIdx == -1.
+      // If this is one of them, don't print anything. At this point, we
+      // rely on the assumption that the last candidates in the rejected list
+      // all have FAIL_ERRORS_THROWN.
+      if (candidate.formalIdx() == -1) continue;
+
+      CHPL_ASSERT(candidate.untypedForErr() && candidate.initialForErr());
+      bool errorInInitial =
+        candidate.initialForErr()->formalsErroredBitmap()[candidate.formalIdx()];
+      const char* extraText = !errorInInitial ? "after instantiation, " : "";
+      if (candidate.formalIdx() < candidate.untypedForErr()->numFormals()) {
+        wr.note(candidate.idForErr(),
+                "call resolution was not completed because ", extraText, expectedThing, " ",
+                candidate.formalIdx() + 1," of this candidate was ill-formed:");
+        wr.code(candidate.idForErr(), { candidate.untypedForErr()->formalDecl(candidate.formalIdx()) });
+      } else {
+        wr.note(candidate.idForErr(),
+                "call resolution was not completed because the 'where' clause for this candidate was ill-formed:");
+        wr.codeForDef(candidate.idForErr());
+      }
+      wr.message("For correctness reasons, candidate selection and disambiguation cannot proceed if any of the candidates "
+                 "is ill-formed.");
+      break;
     } else if (reason == resolution::FAIL_FORMAL_ACTUAL_MISMATCH) {
       bool printedSpecial = false;
       if (auto fn = candidate.initialForErr()) {
