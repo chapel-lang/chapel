@@ -2687,11 +2687,9 @@ static bool instantiateAcrossManagerRecordConversion(Context* context,
 
 static bool traverseDetectingErrors(Context* context, const AstNode* toVisit,
                                     Resolver& visitor) {
-  auto result = context->runAndDetectErrors([toVisit, &visitor](Context* context) {
-    toVisit->traverse(visitor);
-    return true;
-  }, /* silenceErrors */ false);
-  return !result.ranWithoutErrors();
+  visitor.encounteredErrors = false;
+  toVisit->traverse(visitor);
+  return visitor.encounteredErrors;
 }
 
 // TODO: We could remove the 'ResolutionContext' argument if we figure out
@@ -4272,11 +4270,8 @@ filterCandidatesInitialGatherRejectedImpl(ResolutionContext* rc,
 
     if (isNestedCandidate) ret.evaluatedAnyNestedFunction = true;
 
-    auto initialAndErrors = context->runAndDetectErrors([rc, &idv, call](Context* context) {
-      return doIsCandidateApplicableInitial(rc, idv, call);
-    }, /* silenceErrors */ false);
-    discoveredErrors |= !initialAndErrors.ranWithoutErrors();
-    auto& s = initialAndErrors.result();
+    const auto& s = doIsCandidateApplicableInitial(rc, idv, call);
+    discoveredErrors |= s.reason() == FAIL_ERRORS_THROWN;
 
     if (s.success()) {
       ret.matching.addCandidate(s.candidate());
@@ -4340,13 +4335,10 @@ filterCandidatesInstantiating(ResolutionContext* rc,
           pointOfInstantiationScope(context, inScope, inPoiScope);
       }
 
-      auto instantiatedAndErrors = context->runAndDetectErrors(
-        [rc, typedSignature, &call, instantiationPoiScope](Context* context) {
-          return doIsCandidateApplicableInstantiating(rc, typedSignature, call,
-                                                      instantiationPoiScope);
-        }, /* silenceErrors */ false);
-      discoveredErrors |= !instantiatedAndErrors.ranWithoutErrors();
-      auto& instantiated = instantiatedAndErrors.result();
+      const auto& instantiated =
+        doIsCandidateApplicableInstantiating(rc, typedSignature, call,
+                                             instantiationPoiScope);
+      discoveredErrors |= instantiated.reason() == FAIL_ERRORS_THROWN;
 
       if (instantiated.success()) {
         result.addCandidate(instantiated.candidate());
