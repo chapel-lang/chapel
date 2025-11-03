@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
 # Converted from Perl to Bash. Original behavior preserved.
-# Creates a test release tarball, unpacks it in a temp dir, runs tests, and cleans up on success.
+# Creates a test release tarball, unpacks it in a temp dir, runs tests,
+# and cleans up on success.
 
 set -e
 set -x
@@ -22,51 +23,34 @@ tmpdir="$basetmpdir/chapel-testRelease.$user.deleteme"
 
 somethingfailed=0
 
-mysystem() {
-    local cmd="$1";
-    local desc="$2";
-    local fatal="$3";
-    # Execute command
-    eval "$cmd"
-    local status=$?
-    if [[ $status -ne 0 ]]; then
-        somethingfailed=1
-        echo "Error ${desc}: ${status}" >&2
-        if [[ ${fatal:-0} -ne 0 ]]; then
-            exit 1
-        fi
-    fi
-    return $status
-}
-
 #
 # make temp directory
 #
-mysystem "rm -rf $tmpdir" "removing previous tmp dir" 1
-mysystem "mkdir -p $tmpdir > /dev/null" "creating temp dir" 1
+rm -rf $tmpdir
+mkdir -p $tmpdir > /dev/null
 
 #
 # Remove previous tarball (non-fatal)
 #
-mysystem "rm -f $chplhome/tar/chapel-test.tar.gz" "deleting previous tarball" 0
+rm -f $chplhome/tar/chapel-test.tar.gz || true
 
 #
 # make release
 #
-mysystem "$chplhome/util/buildRelease/gen_release test" "creating release" 1
+$chplhome/util/buildRelease/gen_release test
 
 #
 # copy release to temp directory, unpack, and run tests
 #
-mysystem "cp $chplhome/tar/chapel-test.tar.gz $tmpdir" "copying release" 1
-mysystem "cd $tmpdir && tar xf chapel-test.tar.gz" "untarring release" 1
+cp $chplhome/tar/chapel-test.tar.gz $tmpdir
+cd $tmpdir && tar xf chapel-test.tar.gz
 
 # Run testReleaseHelp (capture chpl_make output first for clarity)
 chpl_make_cmd_output="$("$chplhome"/util/chplenv/chpl_make.py)"
-mysystem "cd $tmpdir/chapel-test && $chplhome/util/buildRelease/testReleaseHelp $chpl_make_cmd_output" "running testReleaseHelp script" 1
+cd $tmpdir/chapel-test && $chplhome/util/buildRelease/testReleaseHelp $chpl_make_cmd_output
 
 # Cleanup if everything succeeded
 if [[ $somethingfailed -eq 0 ]]; then
     echo "Cleaning up"
-    mysystem "rm -rf $tmpdir" "removing temp dir" 0
+    rm -rf $tmpdir || true
 fi
