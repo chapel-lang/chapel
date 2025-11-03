@@ -4224,6 +4224,15 @@ doIsCandidateApplicableInitial(ResolutionContext* rc,
     return ApplicabilityResult::failure(candidateId, /* TODO */ FAIL_CANDIDATE_OTHER);
   }
 
+  // If resolving any of the formals, or the where clause, led to errors,
+  // this candidate is not applicable because it is ill-formed.
+  for (int i = 0; i < ufs->numFormals(); i++) {
+    if (ret->formalProducedError(i))
+      return ApplicabilityResult::failure(candidateId, FAIL_ERRORS_THROWN);
+  }
+  if (ret->whereClausePrducedError())
+    return ApplicabilityResult::failure(candidateId, FAIL_ERRORS_THROWN);
+
   auto faMap = FormalActualMap(ufs, ci);
   return isInitialTypedSignatureApplicable(context, ret, faMap, ci);
 }
