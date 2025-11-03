@@ -59,8 +59,7 @@ mysystem "$chplhome/util/buildRelease/gen_release test" "creating release" 1
 # copy release to temp directory, unpack, and run tests
 #
 mysystem "cp $chplhome/tar/chapel-test.tar.gz $tmpdir" "copying release" 1
-mysystem "cd $tmpdir && gunzip chapel-test.tar.gz" "unzipping release" 1
-mysystem "cd $tmpdir && tar xf chapel-test.tar" "untarring release" 1
+mysystem "cd $tmpdir && tar xf chapel-test.tar.gz" "untarring release" 1
 
 # Run testReleaseHelp (capture chpl_make output first for clarity)
 chpl_make_cmd_output="$("$chplhome"/util/chplenv/chpl_make.py)"
@@ -71,5 +70,3 @@ if [[ $somethingfailed -eq 0 ]]; then
     echo "Cleaning up"
     mysystem "rm -rf $tmpdir" "removing temp dir" 0
 fi
-
-exit 0
