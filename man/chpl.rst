@@ -447,6 +447,21 @@ OPTIONS
     If enabled, hints will always be generated, but the effects on performance
     (and in some cases correctness) will vary based on the target compiler.
 
+.. _man-vector-library:
+.. index:: --vector-library
+
+**\--vector-library <lib>**
+
+    Select a vectorization library to use. Supported values are `none` (the
+    default) or a valid vectorization library for the current backend. This
+    option is only supported with the LLVM backend, or when using the
+    C backend with Clang or GCC.
+
+    When using the LLVM backend or Clang, see
+    https://clang.llvm.org/docs/ClangCommandLineReference.html#cmdoption-clang-fveclib
+    for supported libraries. When using GCC, see
+    https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html#index-mveclibabi-1.
+
 .. _man-optimize-on-clauses:
 .. index:: --optimize-on-clauses, --no-optimize-on-clauses
 

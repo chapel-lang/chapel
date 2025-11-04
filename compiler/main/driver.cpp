@@ -185,6 +185,7 @@ bool fNoOptimizeLoopIterators = false;
 bool fNoVectorize = false; // adjusted in postVectorize
 static bool fYesVectorize = false;
 bool fForceVectorize = false;
+std::string fVectorLib;
 bool fNoGlobalConstOpt = false;
 bool fNoFastFollowers = false;
 bool fNoInlineIterators = false;
@@ -1064,6 +1065,14 @@ static void setVectorize(const ArgumentDescription* desc, const char* unused)
     fYesVectorize = true;
 }
 
+static void setVectorLib(const ArgumentDescription* desc, const char* arg)
+{
+  fVectorLib = std::string(arg);
+  if (fVectorLib == "none") {
+    fVectorLib = "";
+  }
+}
+
 static void setChecks(const ArgumentDescription* desc, const char* unused) {
   fNoNilChecks    = fNoChecks;
   fNoBoundsChecks = fNoChecks;
@@ -1414,6 +1423,7 @@ static ArgumentDescription arg_desc[] = {
  {"tuple-copy-limit", ' ', "<limit>", "Limit on the size of tuples considered for optimization", "I", &tuple_copy_limit, "CHPL_TUPLE_COPY_LIMIT", NULL},
  {"infer-local-fields", ' ', NULL, "Enable [disable] analysis to infer local fields in classes and records", "n", &fNoInferLocalFields, "CHPL_DISABLE_INFER_LOCAL_FIELDS", NULL},
  {"vectorize", ' ', NULL, "Enable [disable] generation of vectorization hints", "n", &fNoVectorize, "CHPL_DISABLE_VECTORIZATION", setVectorize},
+ {"vector-library", ' ', "<lib>", "Select a vectorization library to use", "S", NULL, "CHPL_VECTORIZATION_LIBRARY", setVectorLib},
 
  {"auto-local-access", ' ', NULL, "Enable [disable] using local access automatically", "N", &fAutoLocalAccess, "CHPL_DISABLE_AUTO_LOCAL_ACCESS", NULL},
  {"dynamic-auto-local-access", ' ', NULL, "Enable [disable] using local access automatically (dynamic only)", "N", &fDynamicAutoLocalAccess, "CHPL_DISABLE_DYNAMIC_AUTO_LOCAL_ACCESS", NULL},
@@ -2097,6 +2107,40 @@ static void setGPUFlags() {
 
 }
 
+static void setVectorLib() {
+  if (fVectorLib == "") return; // nothing to do
+
+  // check that we are using a supported backend
+  if ((0 == strcmp(CHPL_TARGET_COMPILER, "llvm")) ||
+      (0 == strcmp(CHPL_TARGET_COMPILER, "clang")) ||
+      (0 == strcmp(CHPL_TARGET_COMPILER, "gnu"))) {
+    // ok
+  } else {
+    USR_FATAL("--vector-library is not supported with the %s backend",
+              CHPL_TARGET_COMPILER);
+  }
+
+  // add -vector-library= to llvmFlags for LLVM, otherwise add to ccflags
+  if (0 == strcmp(CHPL_TARGET_COMPILER, "llvm")) {
+    if (llvmFlags.length() > 0)
+      llvmFlags += ' ';
+    llvmFlags += "-vector-library=";
+    llvmFlags += fVectorLib;
+  } else if (0 == strcmp(CHPL_TARGET_COMPILER, "clang")) {
+    if (ccflags.length() > 0)
+      ccflags += ' ';
+    ccflags += "-fveclib=";
+    ccflags += fVectorLib;
+  } else if (0 == strcmp(CHPL_TARGET_COMPILER, "gnu")) {
+    if (ccflags.length() > 0)
+      ccflags += ' ';
+    ccflags += "-mveclibabi=";
+    ccflags += fVectorLib;
+  } else {
+    INT_FATAL("unexpected compiler in setVectorLib");
+  }
+}
+
 // Check for inconsistencies in compiler-driver control flags
 static void checkCompilerDriverFlags() {
   if (fDriverDoMonolithic) {
@@ -2370,6 +2414,8 @@ static void postprocess_args() {
   setPrintCppLineno();
 
   setGPUFlags();
+
+  setVectorLib();
 
   // restore warnings to previous state
   ignore_warnings = ignore_warnings_previous;

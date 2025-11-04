@@ -2584,8 +2584,6 @@ static void runModuleOptPipeline(bool addWideOpts) {
   // some FAM add-ins
   std::unique_ptr<TargetLibraryInfoImpl> TLII(
       new TargetLibraryInfoImpl(llvm::Triple(info->targetMachine->getTargetTriple())));
-  // TODO: handle CodeGenOptions::LIBMVEC etc to support
-  // vectorizing the math library.
 
   // not sure if this one is needed
   FAM.registerPass([&] { return info->targetMachine->getTargetIRAnalysis(); });

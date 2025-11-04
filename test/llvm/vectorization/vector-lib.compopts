@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+
+base="--fast --no-ieee-float --llvm-print-ir kernel --llvm-print-ir-stage full"
+
+tgt_platform=$($CHPL_HOME/util/printchplenv --value --only CHPL_TARGET_PLATFORM)
+
+if [ "$tgt_platform" == "darwin" ]; then
+  base="$base --vector-library=Darwin_libsystem_m"
+else
+  base="$base --vector-library=LIBMVEC-X86"
+fi
+
+echo $base

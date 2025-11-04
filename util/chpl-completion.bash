@@ -413,6 +413,7 @@ _chpl ()
 --tuple-copy-opt \
 --use-color-terminal \
 --using-attribute-toolname \
+--vector-library \
 --vectorize \
 --verify \
 --version \
@@ -632,6 +633,7 @@ _chpl ()
 --tuple-copy-limit \
 --tuple-copy-opt \
 --using-attribute-toolname \
+--vector-library \
 --vectorize \
 --version \
 --warn-float-to-float \
