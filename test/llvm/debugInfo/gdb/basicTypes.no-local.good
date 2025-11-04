@@ -5,22 +5,21 @@ Thread 2 "basicTypes" hit Breakpoint 1, debuggerBreakHere () at debugger.c:31
 31	void debuggerBreakHere(void) {printf("%s", "");}
 #1  0xXXXX in chpl_user_main ()
 74	  use Debugger; breakpoint;
-$1 = {myField = 0xXXXX}
+$1 = {myField = {locale = {node = 0}, addr = 0xXXXX}}
 type = struct MyRecord1 {
-    struct MyClass *myField;
+    struct wide(MyClass) myField;
 }
-$2 = (struct MyClass *) 0xXXXX
-type = struct MyClass {
-    struct RootClass super;
-    int(64) x;
-    real(64) y;
-} *
+$2 = {locale = {node = 0}, addr = 0xXXXX}
+type = struct wide(MyClass) {
+    struct chpl_localeID_t locale;
+    struct MyClass *addr;
+}
 type = struct MyRecord2 {
     int(64) myFieldA;
     real(64) myFieldB;
     struct (int(64),real(64)) myFieldC;
     struct string myFieldD;
-    struct MyClass *myFieldE;
+    struct wide(MyClass) myFieldE;
     struct [domain(1,int(64),one)] int(64) myFieldF;
 }
 $3 = {x0 = 0, x1 = 0}
@@ -39,16 +38,16 @@ type = struct string {
     bool isOwned;
     bool hasEscapes;
 }
-$5 = (struct MyClass *) 0xXXXX
-type = struct MyClass {
-    struct RootClass super;
-    int(64) x;
-    real(64) y;
-} *
-$6 = {_pid = -1, _instance = 0xXXXX, _unowned = false}
+$5 = {locale = {node = 0}, addr = 0xXXXX}
+type = struct wide(MyClass) {
+    struct chpl_localeID_t locale;
+    struct MyClass *addr;
+}
+$6 = {_pid = -1, _instance = {locale = {node = 0}, addr = 0xXXXX},
+  _unowned = false}
 type = struct [domain(1,int(64),one)] int(64) {
     int(64) _pid;
-    struct [domain(1,int(64),one)] int(64) *_instance;
+    struct wide([domain(1,int(64),one)] int(64)) _instance;
     bool _unowned;
 }
 $7 = (struct MyClass *) 0xXXXX
@@ -57,9 +56,9 @@ type = struct MyClass {
     int(64) x;
     real(64) y;
 } *
-$8 = {chpl_p = 0xXXXX}
+$8 = {chpl_p = {locale = {node = 0}, addr = 0xXXXX}}
 type = struct owned MyClass {
-    struct MyClass *chpl_p;
+    struct wide(MyClass) chpl_p;
 }
 $9 = {buffLen = 13, buffSize = 14, cachedNumCodepoints = 13,
   buff = 0xXXXX "Hello, world!", locale_id = 0, isOwned = false,
@@ -73,22 +72,25 @@ type = struct string {
     bool isOwned;
     bool hasEscapes;
 }
-$10 = {_pid = -1, _instance = 0xXXXX, _unowned = false}
+$10 = {_pid = -1, _instance = {locale = {node = 0}, addr = 0xXXXX},
+  _unowned = false}
 type = struct domain(2,int(64),positive) {
     int(64) _pid;
-    struct domain(2,int(64),positive) *_instance;
+    struct wide(domain(2,int(64),positive)) _instance;
     bool _unowned;
 }
-$11 = {_pid = -1, _instance = 0xXXXX, _unowned = false}
+$11 = {_pid = -1, _instance = {locale = {node = 0}, addr = 0xXXXX},
+  _unowned = false}
 type = struct [domain(2,int(64),positive)] int(64) {
     int(64) _pid;
-    struct [domain(2,int(64),positive)] int(64) *_instance;
+    struct wide([domain(2,int(64),positive)] int(64)) _instance;
     bool _unowned;
 }
-$12 = {_pid = -1, _instance = 0xXXXX, _unowned = false}
+$12 = {_pid = -1, _instance = {locale = {node = 0}, addr = 0xXXXX},
+  _unowned = false}
 type = struct [domain(1,int(64),one)] int(64) {
     int(64) _pid;
-    struct [domain(1,int(64),one)] int(64) *_instance;
+    struct wide([domain(1,int(64),one)] int(64)) _instance;
     bool _unowned;
 }
 $13 = true
