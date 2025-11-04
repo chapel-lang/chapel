@@ -361,6 +361,84 @@ static void test6() {
   }
 }
 
+// during the instantiation of a generic function, we resolve its formals
+// many times. However, if we encounter an error in the formal, we should
+// stop resolving, and we shoul give on call resolution.
+static void test7() {
+
+  auto runTest = [](const std::string& str) {
+    auto base =
+      R"""(
+      proc idk(param x) type : int {
+        compilerError("nooo");
+        return int;
+      }
+
+      record wrapper { type t; }
+      proc makeWrapper(type t) type do return wrapper(t);
+      )""";
+
+    auto fullProg = std::string(base) + str;
+
+    int numberOfNoos = 0;
+    auto ctx = buildStdContext();
+    ErrorGuard guard(ctx);
+
+    auto mod = parseModule(ctx, fullProg);
+    auto res = resolveModule(ctx, mod->id());
+
+    bool noMatchingCalls = false;
+    bool dueToErrorsThrown = false;
+    for (auto& e : guard.errors()) {
+      if (e->type() == ErrorType::UserDiagnosticEmitError && e->message() == "nooo") {
+        numberOfNoos++;
+      } else if (e->type() == chpl::NoMatchingCandidates) {
+        auto err = static_cast<const chpl::ErrorNoMatchingCandidates*>(e.get());
+        for (auto& candidate : std::get<std::vector<ApplicabilityResult>>(err->info())) {
+          if (candidate.reason() == FAIL_ERRORS_THROWN) {
+            dueToErrorsThrown = true;
+          }
+        }
+        noMatchingCalls = true;
+      }
+    }
+    printf("number of 'nooo' errors: %d\n", numberOfNoos);
+    assert(numberOfNoos == 1);
+    assert(noMatchingCalls);
+    assert(dueToErrorsThrown);
+    guard.realizeErrors();
+  };
+
+  // "concrete" function (should discard candidate during initial resolution)
+  {
+    runTest(
+      R"""(
+      proc foo(arg: makeWrapper(idk(1))) {}
+      foo(new wrapper(int));
+      )""");
+  }
+
+  // "generic" function (should discard candidate during instantiation)
+  {
+    runTest(
+      R"""(
+      proc foo(param p, arg: makeWrapper(idk(p))) {}
+      foo(1, new wrapper(int));
+      )""");
+  }
+
+  // ensure we don't fall back to a non-erroring candidate
+  // (should still have no matching candidates)
+  {
+    runTest(
+      R"""(
+      proc foo(arg: makeWrapper(idk(1))) {}
+      proc foo(arg) {}
+      foo(new wrapper(int));
+      )""");
+  }
+}
+
 int main() {
   test1();
   test2();
@@ -369,6 +447,7 @@ int main() {
   test4();
   test5();
   test6();
+  test7();
 
   return 0;
 }
