@@ -4735,14 +4735,27 @@ Expr* TConverter::ActualConverter::convertActual(const FormalActual& fa) {
       auto got = canPassScalar(context, fa.actualType(), fa.formalType());
       if (got.converts() &&
           got.conversionKind() != CanPassResult::ConversionKind::TO_REFERENTIAL_TUPLE) {
-        auto type = tc_->convertType(fa.formalType().type());
-        temp = tc_->storeInTempIfNeeded(new CallExpr(PRIM_CAST, type->symbol, temp), fa.formalType());
+        bool isExternFn = parsing::idIsExtern(context, tfs_->untyped()->id());
+        if (isExternFn &&
+            fa.formalType().type()->isCStringType() &&
+            astActual->isStringLiteral()) {
+          // When passing a string literal to an extern 'c' function expecting
+          // a c_string, just create a c_string directly instead of allocating
+          // a class.
+          auto sym = new_CStringSymbol(
+              astActual->toStringLiteral()->value().c_str());
+          temp = new SymExpr(sym);
+        } else {
+          auto type = tc_->convertType(fa.formalType().type());
+          temp = tc_->storeInTempIfNeeded(new CallExpr(PRIM_CAST, type->symbol, temp), fa.formalType());
+        }
       }
     }
 
     return temp;
   }
 
+  // Note: 'calledFnState_' is only populated if there are default args
   // Otherwise we need a default argument. Get the formal's init expression.
   const Function* fn = calledFnState_.symbol->toFunction();
   const Decl* decl = fn->formal(fa.formalIdx());

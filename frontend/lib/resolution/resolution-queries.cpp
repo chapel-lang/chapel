@@ -2911,6 +2911,11 @@ instantiateSignatureImpl(ResolutionContext* rc,
             // e.g., `type T : R(int)`, we want to add a substitution but
             // should not consider it instantiated.
             useType = scalarType;
+          } else if (formalType.type()->isAnyType() &&
+                     actualType.type()->isStringType() &&
+                     fn && fn->linkage() == Function::EXTERN) {
+            isInstantiated = true;
+            useType = QualifiedType(scalarType.kind(), CStringType::get(context));
           } else {
             // use the actual type since no conversion/promotion was needed
             isInstantiated = true;
