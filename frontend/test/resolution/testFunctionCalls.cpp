@@ -563,6 +563,52 @@ static void test9() {
   }
 }
 
+// this locks in the (questionable) behavior of not discarding a candidate
+// when an error occurred deep in the call stack during formal resolution.
+// Specifically, in this case, idk2 emits an error from its body,
+// but its return type is inferred to be int, and the formal itself
+// does not emit any errors. We don't interrupt call resolution, and
+// the call to 'foo' goes through.
+//
+// Today, only errors emitted directly from the formal resolution
+// cause candidate elimination. This seems like a decent balance for
+// applications such as the Chapel compiler and best-effort resolution
+// in IDEs.
+static void test10() {
+  auto prog = R"""(
+    proc idk1(param x) type : int {
+      compilerError("nooo");
+      return int;
+    }
+
+    proc idk2(param x) type : int {
+      return idk1(x);
+    }
+
+    record wrapper { type t; }
+    proc makeWrapper(type t) type do return wrapper(t);
+    proc foo(param p, arg: makeWrapper(idk2(p))) param { return "They called me!"; }
+    var x = foo(1, new wrapper(int));
+  )""";
+
+  auto ctx = buildStdContext();
+  ErrorGuard guard(ctx);
+
+  auto qt = resolveTypeOfXInit(ctx, prog);
+  ensureParamString(qt, "They called me!");
+
+  bool foundNooo = false;
+  for (auto& e : guard.errors()) {
+    if (e->type() == ErrorType::UserDiagnosticEmitError && e->message() == "nooo") {
+      foundNooo = true;
+    } else if (e->type() != ErrorType::UserDiagnosticEncounterError) {
+      assert(false && "unexpected error");
+    }
+  }
+  assert(foundNooo);
+  guard.realizeErrors();
+}
+
 int main() {
   test1();
   test2();
@@ -574,6 +620,7 @@ int main() {
   test7();
   test8();
   test9();
+  test10();
 
   return 0;
 }
