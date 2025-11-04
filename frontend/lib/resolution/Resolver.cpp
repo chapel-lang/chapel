@@ -3060,10 +3060,15 @@ toIdAffectedBySubstitutions(Context* context, ID toId) {
   return QUERY_END(affectedBySubstitutions);
 }
 
-static bool skipDependingOnEagerness(Resolver* rv, const ID& toId) {
+static bool skipDependingOnEagerness(Resolver* rv, const ID& toId,
+                                     const ResolvedExpression* actualRe) {
   if (rv->callEagerness == Resolver::CallResolutionEagerness::EAGER) {
     return false;
   } else {
+    bool compoundExpr =
+      actualRe != nullptr && toId.isEmpty() && !actualRe->isBuiltin();
+    if (compoundExpr) return actualRe->skippedResolution();
+
     bool noSubstitution = rv->substitutions == nullptr ||
       (!toId.isEmpty() && rv->substitutions->count(toId) == 0);
 
@@ -3080,14 +3085,20 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
   SkipCallResolutionReason skip = NONE;
   auto& byPostorder = rv->byPostorder;
 
-  if (callLike->isTuple()) return skip;
-
   int actualIdx = 0;
   for (const auto& actual : ci.actuals()) {
     ID toId; // does the actual refer directly to a particular variable?
     const AstNode* actualAst = actualAsts[actualIdx];
-    if (actualAst != nullptr && byPostorder.hasAst(actualAst)) {
-      toId = byPostorder.byAst(actualAst).toId();
+    const ResolvedExpression* actualRe = nullptr;
+    if (actualAst != nullptr && (actualRe = byPostorder.byAstOrNull(actualAst))) {
+      if (auto ident = actualAst->toIdentifier()) {
+        if (ident->name() == USTR("_")) {
+          // post-parse checks assert that '_' only occurs in tuples in
+          // appropriate contexts. Don't skip for this..
+          continue;
+        }
+      }
+      toId = actualRe->toId();
     }
     QualifiedType qt = actual.type();
     const Type* t = qt.type();
@@ -3112,7 +3123,7 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
       // don't skip for type queries in type constructors
     } else {
       if (qt.isParam() && qt.param() == nullptr) {
-        if (skipDependingOnEagerness(rv, toId)) {
+        if (skipDependingOnEagerness(rv, toId, actualRe)) {
           // if we are making a best-effort attempt to resolve, this
           // is our cue to give up.
           skip = UNKNOWN_PARAM;
@@ -3127,7 +3138,7 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
         auto g = getTypeGenericity(context, t);
 
         if (qt.isType() && g != Type::CONCRETE) {
-          if (skipDependingOnEagerness(rv, toId)) {
+          if (skipDependingOnEagerness(rv, toId, actualRe)) {
             // if we are making a best-effort attempt to resolve, this
             // is our cue to give up.
             skip = GENERIC_TYPE;
@@ -3149,6 +3160,7 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
     skip = OTHER_REASON;
   }
 
+  // Mark the call if we decided to skip it.
   if (skip) {
     byPostorder.byAst(callLike).setSkippedResolution(true);
   }
