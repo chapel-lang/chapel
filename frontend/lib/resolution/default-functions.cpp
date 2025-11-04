@@ -670,7 +670,7 @@ static bool initHelper(Context* context,
         // Now, propagate to the previous decls forming the current 'group'.
         // We process this group in a 'forward' direction, rather than a
         // 'backward' direction, so that we preserve field declaration order.
-        if (curTypeExpr || curInitExpr) {
+        if (curTypeExpr || curInitExpr || std::next(it) == multi->decls().end()) {
           auto groupEnd = std::next(it);
           auto groupIt = groupBegin;
           while (groupIt != groupEnd) {

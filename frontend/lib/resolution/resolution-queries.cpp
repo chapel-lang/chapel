@@ -1913,7 +1913,8 @@ static bool isVariableDeclWithClearGenericity(Context* context,
                                               const VarLikeDecl* var,
                                               bool &outIsGeneric,
                                               types::QualifiedType* outFormalType,
-                                              bool useResolution) {
+                                              bool useResolution,
+                                              bool lastInMultiDecl = false) {
   // fields that are 'type' or 'param' are generic
   // and we can use the same type/param intent for the type constructor
   if (var->storageKind() == QualifiedType::TYPE ||
@@ -1938,7 +1939,10 @@ static bool isVariableDeclWithClearGenericity(Context* context,
     if (outFormalType)
       *outFormalType = QualifiedType(QualifiedType::TYPE, AnyType::get(context));
     outIsGeneric = true;
-    return false;
+
+    // if this is the last declaration in a multi-decl (like 'y' in 'var x, y;'),
+    // its genericity is clear: it's definitely generic.
+    return lastInMultiDecl;
   }
 
   // Otherwise, it has a type expression and no init expression. The form
@@ -2012,7 +2016,8 @@ bool isFieldSyntacticallyGeneric(Context* context,
         break;
       }
 
-      if (isVariableDeclWithClearGenericity(context, neighborVar, isGeneric, formalType, useLightResolution)) {
+      bool lastInMultiDecl = (std::next(declIter) == declIterPair.end());
+      if (isVariableDeclWithClearGenericity(context, neighborVar, isGeneric, formalType, useLightResolution, lastInMultiDecl)) {
         break;
       }
     }
