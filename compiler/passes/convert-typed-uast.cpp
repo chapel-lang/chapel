@@ -380,7 +380,7 @@ struct TConverter final : UastConverter,
     void prepareCalledFnConversionState();
 
     // Convert a single actual considering 'fa'.
-    SymExpr* convertActual(const FormalActual& fa);
+    Expr* convertActual(const FormalActual& fa);
 
    public:
     ActualConverter(TConverter* tc,
@@ -897,6 +897,13 @@ struct TConverter final : UastConverter,
                                 const std::vector<const AstNode*>& actualAsts,
                                 const resolution::CallInfo& ci,
                                 RV& rv);
+
+  // Primitive assignment between extern types
+  Expr* convertTupleExpand(const Call* node,
+                           const ResolvedExpression* re,
+                           const std::vector<const AstNode*>& actualAsts,
+                           const resolution::CallInfo& ci,
+                           RV& rv);
 
   // Try to elide a call to a specific signature at compile-time. If so,
   // generate and return a NOOP. Sets 'outRf' to the results of the
@@ -4498,6 +4505,19 @@ Expr* TConverter::convertExternAssignmentOrNull(
   return assign;
 }
 
+Expr* TConverter::convertTupleExpand(
+                                const Call* node,
+                                const ResolvedExpression* re,
+                                const std::vector<const AstNode*>& actualAsts,
+                                const resolution::CallInfo& ci,
+                                RV& rv) {
+  if (ci.name() != USTR("...")) return nullptr;
+
+  auto qt = rv.byAst(node->actual(0)).type();
+  auto tup = storeInTempIfNeeded(convertExpr(node->actual(0), rv), qt);
+  return new CallExpr(PRIM_TUPLE_EXPAND, tup);
+}
+
 Expr* TConverter::convertNamedCallOrNull(const Call* node, RV& rv) {
   auto re = rv.byAstOrNull(node);
 
@@ -4565,6 +4585,9 @@ Expr* TConverter::convertNamedCallOrNull(const Call* node, RV& rv) {
     if (ret) return ret;
 
     ret = convertExternAssignmentOrNull(node, re, actualAsts, ci, rv);
+    if (ret) return ret;
+
+    ret = convertTupleExpand(node, re, actualAsts, ci, rv);
     if (ret) return ret;
 
     TC_UNIMPL("Unhandled named call with no candidate!");
@@ -4655,7 +4678,7 @@ void TConverter::ActualConverter::prepareCalledFnConversionState() {
   s.topLevelModTag         = moduleSymbol->modTag;
 }
 
-SymExpr* TConverter::ActualConverter::convertActual(const FormalActual& fa) {
+Expr* TConverter::ActualConverter::convertActual(const FormalActual& fa) {
   if (tc_->shouldElideFormal(tfs_, fa.formalIdx())) return nullptr;
 
   Context* context = tc_->context;
@@ -4686,7 +4709,15 @@ SymExpr* TConverter::ActualConverter::convertActual(const FormalActual& fa) {
     } else {
       actualExpr = tc_->convertExpr(astActual, rv_, &actualType);
     }
-    auto temp = tc_->storeInTempIfNeeded(actualExpr, actualType);
+
+    Expr* temp = nullptr;
+    if (CallExpr* call = toCallExpr(actualExpr);
+        call && call->isPrimitive(PRIM_TUPLE_EXPAND)) {
+      // expanded later
+      temp = actualExpr;
+    } else {
+      temp = tc_->storeInTempIfNeeded(actualExpr, actualType);
+    }
 
     // Note: Assumes that an unknown formal indicates some kind of fabricated
     // formal/actual map based on an untyped signature. This can happen when
@@ -4790,21 +4821,52 @@ convertAndInsertActuals(CallExpr* call, bool skipReceiver) {
   tc_->enterCallActuals(call);
 
   int i = 0;
+  int skipUnpack = 0;
   for (const FormalActual& fa : fam_.byFormals()) {
     const int curIdx = i++;
+    if (skipUnpack > 0) {
+      skipUnpack--;
+      continue;
+    }
     if (skipReceiver && curIdx == 0) continue;
 
-    if (auto se = this->convertActual(fa)) {
-      call->insertAtTail(se);
+    if (auto expr = this->convertActual(fa)) {
+      // Is usually a SymExpr, but can be a PRIM_TUPLE_EXPAND which needs
+      // to remain in the call's actuals
+      if (CallExpr* actual = toCallExpr(expr)) {
+        INT_ASSERT(actual->isPrimitive(PRIM_TUPLE_EXPAND));
+        auto astActual = actualAsts_[fa.actualIdx()]->toOpCall();
+        INT_ASSERT(astActual->op() == USTR("..."));
+        auto ident = astActual->actual(0)->toIdentifier();
+        auto id = rv_.byAst(ident).toId();
+        auto tup = parsing::idToAst(tc_->context, id);
+        if (tup->isVarArgFormal()) {
+          for_formals(arg, tc_->cur.fnSymbol) {
+            if (!arg->hasFlag(FLAG_EXPANDED_VARARGS)) continue;
+            call->insertAtTail(new SymExpr(arg));
+            skipUnpack++;
+          }
+        } else {
+          auto qt = rv_.byAst(tup).type().type()->toTupleType();
+          for (int i = 0; i < qt->numElements(); i++) {
+            auto getField = new CallExpr(PRIM_GET_MEMBER_VALUE, actual->get(1)->copy(), new_CStringSymbol(astr("x", istr(i))));
+            auto temp = tc_->storeInTempIfNeeded(getField, qt->elementType(i));
+            call->insertAtTail(temp);
+            skipUnpack++;
+          }
+        }
+      } else if (SymExpr* se = toSymExpr(expr)) {
+        call->insertAtTail(expr);
 
-      if (auto decl = fa.formal()) {
-        // A vararg formal can never be referred to by another formal.
-        if (decl->isVarArgFormal()) continue;
+        if (auto decl = fa.formal()) {
+          // A vararg formal can never be referred to by another formal.
+          if (decl->isVarArgFormal()) continue;
 
-        // Add entries so that slots can be looked up by formal ID.
-        auto it = formalIdToActualSymbol_.find(decl->id());
-        INT_ASSERT(it == formalIdToActualSymbol_.end());
-        formalIdToActualSymbol_.emplace(decl->id(), se->symbol());
+          // Add entries so that slots can be looked up by formal ID.
+          auto it = formalIdToActualSymbol_.find(decl->id());
+          INT_ASSERT(it == formalIdToActualSymbol_.end());
+          formalIdToActualSymbol_.emplace(decl->id(), se->symbol());
+        }
       }
     }
   }
