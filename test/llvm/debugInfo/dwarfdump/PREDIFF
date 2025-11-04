@@ -12,10 +12,10 @@ class Verifier:
         self.llvm_dwarfdump = llvm_dwarfdump
         self.chplenv = chplenv
         self.dwarfDumpTarget = target
-        if chplenv["CHPL_TARGET_PLATFORM"] == "darwin":
-            self.dwarfDumpTarget += ".dSYM"
         if chplenv["CHPL_LAUNCHER"] != "none":
             self.dwarfDumpTarget += "_real"
+        if chplenv["CHPL_TARGET_PLATFORM"] == "darwin":
+            self.dwarfDumpTarget += ".dSYM"
 
     def verify(self):
 
