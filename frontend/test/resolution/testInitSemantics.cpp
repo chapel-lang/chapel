@@ -2489,6 +2489,53 @@ static void testPartialTypeConstructor() {
   }
 }
 
+static void testInitWithGenericMultiDeclExplicit() {
+  std::string prog = R"""(
+    record R {
+      var x, y, z;
+      proc init(x, y, z) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+      }
+    }
+    var r = new R(1, 2.0, true);
+  )""";
+
+  auto ctx = buildStdContext();
+  ErrorGuard guard(ctx);
+  auto vars = resolveTypesOfVariables(ctx, prog, {"r"});
+  auto rType = vars.at("r").type();
+  assert(rType && rType->isRecordType());
+
+  ensureSubs(ctx, rType->toCompositeType(), {
+    {"x", QualifiedType(QualifiedType::VAR, IntType::get(ctx, 64))},
+    {"y", QualifiedType(QualifiedType::VAR, RealType::get(ctx, 64))},
+    {"z", QualifiedType(QualifiedType::VAR, BoolType::get(ctx))}
+  });
+}
+
+static void testInitWithGenericMultiDeclDefault() {
+  std::string prog = R"""(
+    record R {
+      var x, y, z;
+    }
+    var r = new R(1, 2.0, true);
+  )""";
+
+  auto ctx = buildStdContext();
+  ErrorGuard guard(ctx);
+  auto vars = resolveTypesOfVariables(ctx, prog, {"r"});
+  auto rType = vars.at("r").type();
+  assert(rType && rType->isRecordType());
+
+  ensureSubs(ctx, rType->toCompositeType(), {
+    {"x", QualifiedType(QualifiedType::VAR, IntType::get(ctx, 64))},
+    {"y", QualifiedType(QualifiedType::VAR, RealType::get(ctx, 64))},
+    {"z", QualifiedType(QualifiedType::VAR, BoolType::get(ctx))}
+  });
+}
+
 // TODO:
 // - test using defaults for types and params
 //   - also in conditionals
@@ -2557,6 +2604,9 @@ int main() {
 
   testPartialTypeInitEq();
   testPartialTypeConstructor();
+
+  testInitWithGenericMultiDeclExplicit();
+  testInitWithGenericMultiDeclDefault();
 
   return 0;
 }
