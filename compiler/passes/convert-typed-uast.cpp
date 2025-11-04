@@ -4320,9 +4320,16 @@ Expr* TConverter::convertIntrinsicCastOrNull(
   if (qt2.kind() != types::QualifiedType::TYPE) return TC_PLACEHOLDER(this);
 
   if (qt1.type() == qt2.type()) {
-    // TODO: I believe we actually have to insert a copy here
+    // TODO: we actually have to insert a copy here
     if (qt1.type()->isCPtrType()) {
       return convertExpr(node->actual(0), rv);
+    } else if (qt1.type()->isPrimitiveType() ||
+               qt1.type()->isStringType()) {
+      // Temporary workaround to get some things working
+      auto t = makeNewTemp(qt2);
+      auto orig = storeInTempIfNeeded(convertExpr(node->actual(0), rv), qt1);
+      insertStmt(new CallExpr(PRIM_MOVE, t, orig));
+      return new SymExpr(t);
     } else {
       TC_UNIMPL("Eliding cast to same type!");
       return TC_PLACEHOLDER(this);
