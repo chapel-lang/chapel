@@ -2592,6 +2592,8 @@ class ResolvedExpression {
   bool isBuiltin_ = false;
   // Did this expression cause the function to stop being resolved?
   bool causedFatalError_ = false;
+  // Did we skip resolution for this expression?
+  bool skippedResolution_ = false;
 
   // For a function call, what is the most specific candidate,
   // or when using return intent overloading, what are the most specific
@@ -2626,6 +2628,9 @@ class ResolvedExpression {
 
   /** check whether this resolution result caused a fatal error. */
   bool causedFatalError() const { return causedFatalError_; }
+
+  /** check whether resolution was skipped for this expression. */
+  bool skippedResolution() const { return skippedResolution_; }
 
   /** For a function call, what is the most specific candidate, or when using
    * return intent overloading, what are the most specific candidates? The
@@ -2666,6 +2671,9 @@ class ResolvedExpression {
 
   /** set the causedFatalError flag */
   void setCausedFatalError(bool causedFatalError) { causedFatalError_ = causedFatalError; }
+
+  /** set the skippedResolution flag */
+  void setSkippedResolution(bool skippedResolution) { skippedResolution_ = skippedResolution; }
 
   /** set the toId */
   void setToId(ID toId) { toId_ = toId; }

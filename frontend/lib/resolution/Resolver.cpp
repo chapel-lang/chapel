@@ -3149,6 +3149,10 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
     skip = OTHER_REASON;
   }
 
+  if (skip) {
+    byPostorder.byAst(callLike).setSkippedResolution(true);
+  }
+
   return skip;
 }
 
