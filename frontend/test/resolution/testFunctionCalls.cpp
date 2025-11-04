@@ -439,6 +439,130 @@ static void test7() {
   }
 }
 
+// 'compilerWarning' should not cause candidate elimination, it's a warning.
+static void test8() {
+
+  auto runTest = [](const std::string& str) {
+    auto base =
+      R"""(
+      proc idk(param x) type : int {
+        compilerWarning("yesss");
+        return int;
+      }
+
+      record wrapper { type t; }
+      proc makeWrapper(type t) type do return wrapper(t);
+      )""";
+
+    auto fullProg = std::string(base) + str;
+
+    auto ctx = buildStdContext();
+    ErrorGuard guard(ctx);
+
+    auto mod = parseModule(ctx, fullProg);
+    auto res = resolveModule(ctx, mod->id());
+    guard.realizeErrors(/* countWarnings */ false);
+  };
+
+  {
+    runTest(
+      R"""(
+      proc foo(arg: makeWrapper(idk(1))) {}
+      foo(new wrapper(int));
+      )""");
+  }
+
+  {
+    runTest(
+      R"""(
+      proc foo(param p, arg: makeWrapper(idk(p))) {}
+      foo(1, new wrapper(int));
+      )""");
+  }
+
+  {
+    runTest(
+      R"""(
+      proc foo(arg: makeWrapper(idk(1))) {}
+      proc foo(arg) {}
+      foo(new wrapper(int));
+      )""");
+  }
+}
+
+// Not all errors emitted while resolving the formals should cause candidate elimination.
+// Specifically, if a syntax error was emitted as part of parsing and resolving
+// a function called from a formal, and that syntax error doesn't affect
+// the function, it should not cause candidate elimination.
+static void test9() {
+  auto runTest = [](const std::string& str) {
+    auto base =
+      R"""(
+      module M1 {
+        proc idk(param x) type : int {
+          compilerError("nooo");
+          return int;
+        }
+
+        var;
+      }
+      module M2 {
+        use M1;
+
+        record wrapper { type t; }
+        proc makeWrapper(type t) type do return wrapper(t);
+      )""";
+
+    auto fullProg = std::string(base) + str + "\n}";
+
+    auto ctx = buildStdContext();
+    ErrorGuard guard(ctx);
+
+    setFileText(ctx, UniqueString::get(ctx, "input.chpl"), fullProg);
+    auto mods = parse(ctx, UniqueString::get(ctx, "input.chpl"), UniqueString());
+
+    auto M2 = mods[0]->stmt(1);
+    auto res = resolveModule(ctx, M2->id());
+
+    // there should be one syntax error, nothing else.
+    int syntaxErrors = 0;
+    for (auto& e : guard.errors()) {
+      if (e->kind() == ErrorBase::SYNTAX) {
+        syntaxErrors++;
+      } else {
+        assert(false && "unexpected error");
+      }
+    }
+    assert(syntaxErrors == 1);
+    guard.realizeErrors();
+  };
+
+  {
+    runTest(
+      R"""(
+      proc foo(arg: makeWrapper(idk(1))) {}
+      foo(new wrapper(int));
+      )""");
+  }
+
+  {
+    runTest(
+      R"""(
+      proc foo(param p, arg: makeWrapper(idk(p))) {}
+      foo(1, new wrapper(int));
+      )""");
+  }
+
+  {
+    runTest(
+      R"""(
+      proc foo(arg: makeWrapper(idk(1))) {}
+      proc foo(arg) {}
+      foo(new wrapper(int));
+      )""");
+  }
+}
+
 int main() {
   test1();
   test2();
@@ -448,6 +572,8 @@ int main() {
   test5();
   test6();
   test7();
+  test8();
+  test9();
 
   return 0;
 }
