@@ -874,15 +874,27 @@ typedSignatureInitialImpl(ResolutionContext* rc,
     }
   }
 
+  Bitmap formalsErroredBitmap;
+  formalsErroredBitmap.resize(fn->numFormals()+1);
+
   ResolutionResultByPostorderID r;
   auto visitor = Resolver::createForInitialSignature(rc, fn, r);
   visitor.usePlaceholders = usePlaceholders;
 
-  Bitmap formalsErroredBitmap;
-  formalsErroredBitmap.resize(fn->numFormals()+1);
+  // createForInitialSignature auto-traverses the 'this' formal for methods
+  if (fn->isMethod()) {
+    CHPL_ASSERT(fn->thisFormal() == fn->formal(0));
+    formalsErroredBitmap.setBit(0, visitor.encounteredErrors);
+  }
 
   // visit the formals, but not the return type or body
   for (int i = 0; i < fn->numFormals(); i++) {
+    auto fml = fn->formal(i);
+    if (fn->isMethod() && fml == fn->thisFormal()) {
+      // already visited when setting up; see createForInitialSignature.
+      continue;
+    }
+
     visitor.encounteredErrors = false;
     fn->formal(i)->traverse(visitor);
     formalsErroredBitmap.setBit((size_t) i, visitor.encounteredErrors);
