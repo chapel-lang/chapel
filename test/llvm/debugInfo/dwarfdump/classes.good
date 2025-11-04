@@ -504,7 +504,7 @@ DW_TAG_typedef
 DW_TAG_typedef
               DW_AT_type	("structure ")
               DW_AT_name	("chpl_localeID_t")
-              DW_AT_decl_file	("$CHPL_HOME/runtime/src/comm/none/../../../include/localeModels/flat/chpl-locale-model.h")
+              DW_AT_decl_file	("$CHPL_HOME/runtime/src/comm/COMM_IMPL/../../../include/localeModels/flat/chpl-locale-model.h")
               DW_AT_decl_line	(36)
 ================================================================================
 ================================myUnmanagedClass================================
