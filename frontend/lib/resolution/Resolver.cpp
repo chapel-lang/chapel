@@ -57,11 +57,11 @@ using namespace types;
 /* Shortcut for CHPL_REPORT that also sets the encounteredErrors flag on
    the resolver. */
 #define RESOLVER_REPORT(RESOLVER__, NAME__, EINFO__...) \
-  ((RESOLVER__).encounteredErrors = true, \
+  ((RESOLVER__).encounteredErrors |= errorKindIsError(errorKindForErrorType(ErrorType::NAME__)), \
    CHPL_REPORT((RESOLVER__).context, NAME__, ##EINFO__))
 
 #define RESOLVER_TYPE_ERROR(RESOLVER__, NAME__, EINFO__...) \
-  ((RESOLVER__).encounteredErrors = true, \
+  ((RESOLVER__).encounteredErrors |= errorKindIsError(errorKindForErrorType(ErrorType::NAME__)), \
    CHPL_TYPE_ERROR((RESOLVER__).context, NAME__, ##EINFO__))
 
 namespace {
