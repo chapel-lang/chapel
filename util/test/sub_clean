@@ -57,6 +57,7 @@ def cleanChapelTest(f):
         unlink(execname)
         unlink(execname+'_real')
         unlink(execname+'.dSYM', removeDirs=True)
+        unlink(execname+'_real.dSYM', removeDirs=True)
         cleanCleanfiles(None, execname+'.cleanfiles', False)
 
 # Clean files listed in the file c, in the directory d (if given)
