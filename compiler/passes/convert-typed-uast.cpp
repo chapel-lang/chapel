@@ -4466,7 +4466,8 @@ Expr* TConverter::convertIntrinsicLogicalOrNull(
     INT_ASSERT(fnNeg && rf);
 
     // TODO: Negation is not in a temporary, is that OK?
-    cond = new CallExpr(fnNeg, cond);
+    auto bt = types::QualifiedType(types::QualifiedType::VAR, types::BoolType::get(context));
+    cond = storeInTempIfNeeded(new CallExpr(fnNeg, cond), bt);
   }
 
   // Insert the prepared branch into the tree.

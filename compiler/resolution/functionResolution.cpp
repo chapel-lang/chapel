@@ -13057,7 +13057,6 @@ static void insertReturnTemps() {
       if (call->list == NULL && isForallRecIterHelper(call))
         continue;
       if (FnSymbol* fn = call->resolvedOrVirtualFunction()) {
-        if (fn->hasFlag(FLAG_RESOLVED_EARLY)) continue;
         if (fn->retType != dtVoid && fn->retType != dtUnknown &&
             fn->retTag != RET_TYPE) {
           ContextCallExpr* contextCall = toContextCallExpr(call->parentExpr);
