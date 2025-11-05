@@ -1,9 +1,20 @@
 #!/usr/bin/env python3
 import sys
+import optparse
 
 import chpl_platform, overrides, third_party_utils
 from utils import error, memoize, warning, check_valid_var
 
+
+@memoize
+def system_library_available():
+    platform_val = chpl_platform.get('target')
+    osx = platform_val.startswith('darwin')
+
+    if osx:
+        return True
+    else:
+        return third_party_utils.pkgconfig_system_has_package('libunwind')
 
 @memoize
 def get():
@@ -12,9 +23,7 @@ def get():
     val = overrides.get('CHPL_UNWIND', None)
 
     if val is None:
-        if osx:
-            val = 'system'
-        elif third_party_utils.pkgconfig_system_has_package('libunwind'):
+        if system_library_available():
             val = 'system'
         else:
             val = 'bundled'
@@ -75,8 +84,20 @@ def get_link_args():
 
 
 def _main():
-    unwind_val = get()
-    sys.stdout.write("{0}\n".format(unwind_val))
+    parser = optparse.OptionParser()
+    parser.add_option('--quickstart', dest='action',
+                      action='store_const',
+                      const='quickstart', default='')
+    (options, args) = parser.parse_args()
+
+    if options.action == 'quickstart':
+        if system_library_available():
+            sys.stdout.write("system\n")
+        else:
+            sys.stdout.write("none\n")
+    else:
+        unwind_val = get()
+        sys.stdout.write("{0}\n".format(unwind_val))
 
 
 if __name__ == '__main__':
