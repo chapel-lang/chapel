@@ -162,7 +162,7 @@ __build_packages() {
 
   # if there is a template file, use it to generate the Dockerfile
   if [ -f Dockerfile.template ]; then
-    ${fill_script} Dockerfile.template
+    ${fill_script} Dockerfile.template --osname $os
   fi
   set -x
 
@@ -224,7 +224,7 @@ __build_image() {
 
   # if there is a template file, use it to generate the Dockerfile
   if [ -f Dockerfile.template ]; then
-    ${fill_script} Dockerfile.template
+    ${fill_script} Dockerfile.template --osname $os
   fi
 
   DOCKER_BUILDKIT=1 docker buildx build \
