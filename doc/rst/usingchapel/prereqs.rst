@@ -76,9 +76,8 @@ Installation
 
   The commands below are automatically generated.
   To regenerate them:
-    cd util/devel/test/portability/apptainer
-    ./extract-docs.py
-    paste output below & adjust to add any notes
+    ./util/devel/test/portability/apptainer/extract-docs.py > doc/rst/usingchapel/prereqs-commands.rst
+  Then make any adjustments to add any notes
 
 We have used the following commands to install the above prerequisites:
 

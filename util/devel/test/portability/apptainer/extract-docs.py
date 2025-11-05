@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
 
+#
+# When updating the prereqs for Chapel, rerun this script to extract requirements
+# for the documentation.
+#
+# The following command will generate the file needed for inclusion in the docs:
+# `util/devel/test/portability/apptainer/extract-docs.py > doc/rst/usingchapel/prereqs-commands.rst`
+#
+
+
 import os
 import re
 from contextlib import contextmanager
