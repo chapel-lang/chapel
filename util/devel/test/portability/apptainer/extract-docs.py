@@ -1,9 +1,20 @@
 #!/usr/bin/env python3
 
+#
+# When updating the prereqs for Chapel, rerun this script to extract requirements
+# for the documentation.
+#
+# The following command will generate the file needed for inclusion in the docs:
+# `util/devel/test/portability/apptainer/extract-docs.py > doc/rst/usingchapel/prereqs-commands.rst`
+#
+
+
 import os
 import re
+from contextlib import contextmanager
 
 directories = ["current", "../vagrant/current"]
+
 
 def gather_provision_script_cmds(path):
     cmds = [ ]
@@ -149,120 +160,137 @@ def extract_vfile_commands(vfile):
                             cmds.extend(subcmds)
     return cmds
 
-subdirs = [ ]
-for d in directories:
-    for subdir in os.listdir(d):
-        subpath = os.path.join(d, subdir)
-        if "nollvm" in subpath:
-            continue # skip these configurations
-        if "homebrew" in subpath:
-            continue # skip these configurations
-                     # (not sure how useful this is)
-        if "nix" in subpath:
-            continue # skip these configurations
-                     # (not sure how useful this is)
-        if "generic-x32-debian" in subpath:
-            continue # skip this one, redudant with other debian ones
+@contextmanager
+def cd(newdir):
+    prevdir = os.getcwd()
+    os.chdir(newdir)
+    try:
+        yield
+    finally:
+        os.chdir(prevdir)
 
-        subdirs.append(subpath)
+def main():
+    directories = ["current", "../vagrant/current"]
 
-subdirs.sort(key=os.path.basename)
+    subdirs = [ ]
+    for d in directories:
+        for subdir in os.listdir(d):
+            subpath = os.path.join(d, subdir)
+            if "nollvm" in subpath:
+                continue # skip these configurations
+            if "homebrew" in subpath:
+                continue # skip these configurations
+                        # (not sure how useful this is)
+            if "nix" in subpath:
+                continue # skip these configurations
+                        # (not sure how useful this is)
+            if "generic-x32-debian" in subpath:
+                continue # skip this one, redudant with other debian ones
 
-tocmds = { }
+            subdirs.append(subpath)
 
-for subpath in subdirs:
-    cmds = [ ]
-    if os.path.isdir(subpath):
-        sdef = os.path.join(subpath, "image.def")
-        vfile = os.path.join(subpath, "Vagrantfile")
-        if os.path.exists(sdef):
-            cmds = extract_sdef_commands(sdef)
-        elif os.path.exists(vfile):
-            cmds = extract_vfile_commands(vfile)
-        else:
-            print("NO CMDS FILE FOUND for", subpath)
+    subdirs.sort(key=os.path.basename)
 
-    result = [ ]
-    for cmd in cmds:
-        if cmd.startswith("#"):
-            pass # ignore comments
-        else:
-            words = cmd.split()
-            adj = [ ]
-            sudo = True
-            if words[0] == "sudo":
-                words.pop(0)
-            if words[0] == "unsudo":
-                sudo = False
-                words.pop(0)
-            if words[-1] == "#unsudo":
-                sudo = False
-                words.pop(-1)
-            if len(words) >= 2 and words[-2] == "#" and words[-1] == "unsudo":
-                sudo = False
-                words.pop(-1)
-                words.pop(-1)
-            if words[0] == "cd":
-                sudo = False
-            for word in words:
-                if word == "-y" or word == "--yes" or word == "--noconfirm":
-                    pass # filter these out
-                elif word == "/home/vagrant/.bashrc":
-                    adj.append("~/.bashrc")
-                else:
-                    adj.append(word)
-            if sudo:
-                result.append("sudo " + " ".join(adj))
+    tocmds = { }
+
+    for subpath in subdirs:
+        cmds = [ ]
+        if os.path.isdir(subpath):
+            sdef = os.path.join(subpath, "image.def")
+            vfile = os.path.join(subpath, "Vagrantfile")
+            if os.path.exists(sdef):
+                cmds = extract_sdef_commands(sdef)
+            elif os.path.exists(vfile):
+                cmds = extract_vfile_commands(vfile)
             else:
-                result.append(" ".join(adj))
+                print("NO CMDS FILE FOUND for", subpath)
 
-    tocmds[subpath] = result
-
-tab = { }
-
-i = 0
-while i < len(subdirs):
-    subpath = subdirs[i]
-    names = [ ]
-
-    # find how many configs have the same commands
-    cmds = tocmds[subpath]
-    while i < len(subdirs) and tocmds[subdirs[i]] == cmds:
-        names.append(fixname(subdirs[i]))
-        i += 1
-
-    # summarize names string
-    # remove words that occur repeatedly
-    shortnames = [ ]
-    firstwords = names[0].split()
-    first = True
-    for name in names:
-        if first:
-            # always give full name for first element
-            shortnames.append(name)
-            first = False
-        elif not first:
-            # remove words that occurred already
-            words = name.split()
-            j = 0
-            mayskip = True
-            shortname = ""
-            while j < len(words):
-                if mayskip and j < len(firstwords) and firstwords[j] == words[j]:
-                    pass # skip redundant word
+        result = [ ]
+        for cmd in cmds:
+            if cmd.startswith("#"):
+                pass # ignore comments
+            else:
+                words = cmd.split()
+                adj = [ ]
+                sudo = True
+                if words[0] == "sudo":
+                    words.pop(0)
+                if words[0] == "unsudo":
+                    sudo = False
+                    words.pop(0)
+                if words[-1] == "#unsudo":
+                    sudo = False
+                    words.pop(-1)
+                if len(words) >= 2 and words[-2] == "#" and words[-1] == "unsudo":
+                    sudo = False
+                    words.pop(-1)
+                    words.pop(-1)
+                if words[0] == "cd":
+                    sudo = False
+                for word in words:
+                    if word == "-y" or word == "--yes" or word == "--noconfirm":
+                        pass # filter these out
+                    elif word == "/home/vagrant/.bashrc":
+                        adj.append("~/.bashrc")
+                    else:
+                        adj.append(word)
+                if sudo:
+                    result.append("sudo " + " ".join(adj))
                 else:
-                    mayskip = False
-                    shortname += " " + words[j]
-                j += 1
-            shortnames.append(shortname)
+                    result.append(" ".join(adj))
 
-    tab[",".join(shortnames)] = cmds
+        tocmds[subpath] = result
 
-# finally, output the table
-for names, cmds in sorted(tab.items(), key=lambda x: x[0]):
-    print("  * " + names + '::')
-    print()
-    for cmd in cmds:
-        print("      " + cmd)
-    print()
-    print()
+    tab = { }
+
+    i = 0
+    while i < len(subdirs):
+        subpath = subdirs[i]
+        names = [ ]
+
+        # find how many configs have the same commands
+        cmds = tocmds[subpath]
+        while i < len(subdirs) and tocmds[subdirs[i]] == cmds:
+            names.append(fixname(subdirs[i]))
+            i += 1
+
+        # summarize names string
+        # remove words that occur repeatedly
+        shortnames = [ ]
+        firstwords = names[0].split()
+        first = True
+        for name in names:
+            if first:
+                # always give full name for first element
+                shortnames.append(name)
+                first = False
+            elif not first:
+                # remove words that occurred already
+                words = name.split()
+                j = 0
+                mayskip = True
+                shortname = ""
+                while j < len(words):
+                    if mayskip and j < len(firstwords) and firstwords[j] == words[j]:
+                        pass # skip redundant word
+                    else:
+                        mayskip = False
+                        shortname += " " + words[j]
+                    j += 1
+                shortnames.append(shortname)
+
+        tab[",".join(shortnames)] = cmds
+
+    # finally, output the table
+    for names, cmds in sorted(tab.items(), key=lambda x: x[0]):
+        print("  * " + names + '::')
+        print()
+        for cmd in cmds:
+            print("      " + cmd)
+        print()
+        print()
+
+if __name__ == "__main__":
+    SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+    with cd(SCRIPT_DIR):
+        main()
