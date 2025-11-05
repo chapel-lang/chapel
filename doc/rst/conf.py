@@ -185,6 +185,7 @@ exclude_patterns = ['Makefile',
                     'modules/standard/AutoGpu.rst',
                     'modules/standard/ChapelIO.rst',
                     'modules/standard/ChapelSysCTypes.rst',
+                    'usingchapel/prereqs-commands.rst',
 
                     # exclude the chapel-py files
                     'tools/chapel-py/chapel-py-api-template.rst',
