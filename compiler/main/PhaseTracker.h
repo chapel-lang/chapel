@@ -137,7 +137,7 @@ public:
   void ReportRollup() const;
 
   static bool shouldReportPasses();
-  static auto passesOutputFile() {
+  static auto& passesOutputFile() {
     return printPassesFile != nullptr ? printPassesFile : stderr;
   }
 
