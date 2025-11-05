@@ -287,6 +287,17 @@ void CallInfo::prepareActuals(Context* context,
   }
 }
 
+template <typename Err, typename ... Args>
+static bool const& reportOnce(Context* context, Args...args) {
+  auto thisFn = &reportOnce<Err, Args...>;
+  QUERY_BEGIN(thisFn, context, args...);
+
+  bool result = true;
+  context->report(Err::get(std::make_tuple(args...)));
+
+  return QUERY_END(result);
+}
+
 void CallInfo::prepareActual(Context* context,
                              const Call* call,
                              const AstNode* actual,
@@ -310,7 +321,7 @@ void CallInfo::prepareActual(Context* context,
     } else if (questionArg == nullptr) {
       questionArg = actual;
     } else {
-      CHPL_REPORT(context, MultipleQuestionArgs, fnCall, questionArg, actual);
+      reportOnce<ErrorMultipleQuestionArgs>(context, fnCall, questionArg, actual);
       // Keep questionArg pointing at the first question argument we found
     }
   } else {
@@ -348,13 +359,13 @@ void CallInfo::prepareActual(Context* context,
           // let it stay erroneous type
         } else if (!actualType.type()->isTupleType()) {
           if (raiseErrors) {
-            CHPL_REPORT(context, TupleExpansionNonTuple, fnCall, op, actualType);
+            reportOnce<ErrorTupleExpansionNonTuple>(context, fnCall, op, actualType);
           }
           actualType = QualifiedType(QualifiedType::VAR,
               ErroneousType::get(context));
         } else {
           if (!byName.isEmpty()) {
-            CHPL_REPORT(context, TupleExpansionNamedArgs, op, fnCall);
+            reportOnce<ErrorTupleExpansionNamedArgs>(context, op, fnCall);
           }
 
           auto tupleType = actualType.type()->toTupleType();
@@ -956,20 +967,6 @@ syntacticallyGenericFieldsPriorToIdHaveSubs(Context* context,
   return true;
 }
 
-static const bool& emitFieldWithGenericManagementWarning(Context* context, const Decl* ast) {
-  QUERY_BEGIN(emitFieldWithGenericManagementWarning, context, ast);
-  CHPL_REPORT(context, FieldWithGenericManagement, ast);
-  bool res = true;
-  return QUERY_END(res);
-}
-
-static const bool& emitGenericFieldWithoutMarkWarning(Context* context, const Decl* ast, QualifiedType fieldType) {
-  QUERY_BEGIN(emitGenericFieldWithoutMarkWarning, context, ast, fieldType);
-  CHPL_REPORT(context, GenericFieldWithoutMark, ast, fieldType);
-  bool res = true;
-  return QUERY_END(res);
-}
-
 void ResolvedFields::validateFieldGenericity(Context* context, const types::CompositeType* fieldsOfType) const {
   // Check if all fields preceding the current field have substitutions.
   // We do this in case this ResolvedFields is computed for a particular
@@ -996,7 +993,7 @@ void ResolvedFields::validateFieldGenericity(Context* context, const types::Comp
       auto ct = field.type.type()->toClassType();
       if (ct->decorator().isUnknownManagement()) {
         auto ast = parsing::idToAst(context, field.declId)->toDecl();
-        emitFieldWithGenericManagementWarning(context, ast);
+        reportOnce<ErrorFieldWithGenericManagement>(context, ast);
         issuedMemoryManagementWarning = true;
       }
     }
@@ -1033,7 +1030,7 @@ void ResolvedFields::validateFieldGenericity(Context* context, const types::Comp
       if (g != Type::CONCRETE &&
           fieldsOfType->instantiatedFromCompositeType() == nullptr) {
         auto ast = parsing::idToAst(context, field.declId)->toDecl();
-        emitGenericFieldWithoutMarkWarning(context, ast, field.type);
+        reportOnce<ErrorGenericFieldWithoutMark>(context, ast, field.type);
       }
     }
 
