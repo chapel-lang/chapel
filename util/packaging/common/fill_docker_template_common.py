@@ -4,7 +4,7 @@ from typing import List, Dict, Union
 import textwrap
 
 
-def common_substitutions():
+def common_substitutions(osname: str):
     substitutions = dict()
 
     substitutions[
@@ -45,11 +45,11 @@ def common_substitutions():
         "BUILD_DEFAULT"
     ] = f"""
 WORKDIR /home/user/chapel-$CHAPEL_VERSION
-{generate_run_command(default_config)}
-{generate_run_command(gasnet_udp_config)}
-{generate_run_command(ofi_pmi2_config)}
-{generate_run_command(gpu_cpu_config)}
-{generate_run_command_default_config()}
+{generate_run_command(default_config, osname)}
+{generate_run_command(gasnet_config, osname)}
+{generate_run_command(ofi_pmi2_config, osname)}
+{generate_run_command(gpu_cpu_config, osname)}
+{generate_run_command_default_config(osname)}
     """
 
     # build the minimal configuration
@@ -58,10 +58,10 @@ WORKDIR /home/user/chapel-$CHAPEL_VERSION
         "BUILD_ONLY_COMPILER"
     ] = f"""
 WORKDIR /home/user/chapel-$CHAPEL_VERSION
-{generate_run_command(default_config)}
-{generate_run_command(gasnet_udp_config)}
-{generate_run_command(ofi_pmi2_config)}
-{generate_run_command(gpu_cpu_config)}
+{generate_run_command(default_config, osname)}
+{generate_run_command(gasnet_config, osname)}
+{generate_run_command(ofi_pmi2_config, osname)}
+{generate_run_command(gpu_cpu_config, osname)}
     """
 
     substitutions[
@@ -97,31 +97,31 @@ default_config = {
     "CHPL_HOST_MEM": "jemalloc",
     "CHPL_TARGET_MEM": ["jemalloc", "cstdlib"],
     "CHPL_ATOMICS": "cstdlib",
-    "CHPL_GMP": "bundled",
-    "CHPL_HWLOC": "bundled",
+    "CHPL_GMP": "system",
+    "CHPL_HWLOC": "system",
     "CHPL_RE2": "bundled",
     "CHPL_LLVM": "system",
     "CHPL_LIB_PIC": "none",
     "CHPL_SANITIZE": "none",
     "CHPL_SANITIZE_EXE": ["none", "address"]
 }
-gasnet_udp_config = {
+gasnet_config = {
     "CHPL_HOST_PLATFORM": "linux64",
     "CHPL_TARGET_PLATFORM": "linux64",
     "CHPL_TARGET_COMPILER": ["llvm", "gnu", "clang"],
     "CHPL_TARGET_CPU": "none",
     "CHPL_LOCALE_MODEL": "flat",
     "CHPL_COMM": "gasnet",
-    "CHPL_COMM_SUBSTRATE": "udp",
-    "CHPL_GASNET_SEGMENT": "everything",
+    "CHPL_COMM_SUBSTRATE": ["udp", "smp"],
+    "CHPL_GASNET_SEGMENT": ["everything", "fast"],
     "CHPL_TASKS": "qthreads",
     "CHPL_LAUNCHER": "amudprun",
     "CHPL_UNWIND": ["none", "bundled"],
     "CHPL_HOST_MEM": "jemalloc",
     "CHPL_TARGET_MEM": ["jemalloc", "cstdlib"],
     "CHPL_ATOMICS": "cstdlib",
-    "CHPL_GMP": "bundled",
-    "CHPL_HWLOC": "bundled",
+    "CHPL_GMP": "system",
+    "CHPL_HWLOC": "system",
     "CHPL_RE2": "bundled",
     "CHPL_LLVM": "system",
     "CHPL_LIB_PIC": "none",
@@ -144,8 +144,8 @@ ofi_pmi2_config = {
     "CHPL_TARGET_MEM": "jemalloc",
     "CHPL_ATOMICS": "cstdlib",
     "CHPL_NETWORK_ATOMICS": "ofi",
-    "CHPL_GMP": "bundled",
-    "CHPL_HWLOC": "bundled",
+    "CHPL_GMP": "system",
+    "CHPL_HWLOC": "system",
     "CHPL_RE2": "bundled",
     "CHPL_LLVM": "system",
     "CHPL_LIB_PIC": "none",
@@ -165,7 +165,7 @@ gpu_cpu_config = {
     "CHPL_HOST_MEM": "cstdlib",
     "CHPL_TARGET_MEM": "jemalloc",
     "CHPL_ATOMICS": "cstdlib",
-    "CHPL_GMP": "bundled",
+    "CHPL_GMP": "system",
     "CHPL_HWLOC": "bundled",
     "CHPL_RE2": "bundled",
     "CHPL_LLVM": "system",
@@ -175,12 +175,16 @@ gpu_cpu_config = {
 }
 
 
-def generate_configs(base_config: Dict[str, Union[str,List[str]]]) -> List[Dict[str, str]]:
+def generate_configs(base_config: Dict[str, Union[str,List[str]]], osname: str) -> List[Dict[str, str]]:
     incompatibilities = [
-        lambda cfg: cfg["CHPL_TARGET_MEM"] == "jemalloc" and cfg["CHPL_SANITIZE_EXE"] != "none",
-        lambda cfg: cfg["CHPL_TASKS"] == "qthreads" and cfg["CHPL_SANITIZE_EXE"] != "none",
-        lambda cfg: cfg["CHPL_TARGET_COMPILER"] == "llvm" and cfg["CHPL_SANITIZE_EXE"] != "none",
-        lambda cfg: cfg["CHPL_TARGET_COMPILER"] == "gnu"
+        lambda cfg: cfg.get("CHPL_TARGET_MEM") == "jemalloc"
+        and cfg.get("CHPL_SANITIZE_EXE") != "none",
+        lambda cfg: cfg.get("CHPL_TARGET_COMPILER") == "gnu",
+        lambda cfg: cfg.get("CHPL_COMM_SUBSTRATE") == "smp"
+        and cfg.get("CHPL_GASNET_SEGMENT") == "everything",
+        lambda cfg: cfg.get("CHPL_GASNET_SEGMENT") != "everything"
+        and cfg.get("CHPL_TARGET_MEM") == "cstdlib",
+        lambda cfg: cfg.get("CHPL_TARGET_COMPILER") == "llvm" and cfg.get("CHPL_SANITIZE_EXE") != "none" and osname == "amzn2023",
     ]
     keys = list(base_config.keys())
 
@@ -193,7 +197,7 @@ def generate_configs(base_config: Dict[str, Union[str,List[str]]]) -> List[Dict[
         configs.append(perm)
     return configs
 
-def generate_run_command_default_config() -> str:
+def generate_run_command_default_config(osname) -> str:
     """
     Generate a default configuration string for Chapel. This only has 1 runtime
     """
@@ -202,10 +206,10 @@ def generate_run_command_default_config() -> str:
         if isinstance(value, list):
             value = value[0]
         config[key] = value
-    return generate_run_command(config, build_cmd="nice make all chpldoc mason chplcheck chpl-language-server -j$PARALLEL")
+    return generate_run_command(config, osname, build_cmd="nice make all chpldoc mason chplcheck chpl-language-server -j$PARALLEL")
 
-def generate_run_command(base_config: Dict[str, Union[str,List[str]]], build_cmd="nice make all -j$PARALLEL") -> str:
-    configs = generate_configs(base_config)
+def generate_run_command(base_config: Dict[str, Union[str,List[str]]], osname: str, build_cmd="nice make all -j$PARALLEL") -> str:
+    configs = generate_configs(base_config, osname)
 
     run_commands = []
     for config in configs:
