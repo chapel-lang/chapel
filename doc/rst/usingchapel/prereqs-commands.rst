@@ -1,4 +1,4 @@
- * Alma Linux 8, 9.6, 10.0::
+  * Alma Linux 10, 8, 9::
 
       sudo dnf upgrade
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake
@@ -6,13 +6,13 @@
       sudo dnf install llvm-devel clang clang-devel
 
 
-  * Alpine 3.18, 3.19::
+  * Alpine 3.19::
 
       sudo apk add gcc g++ m4 perl python3 python3-dev bash make gawk git cmake
       sudo apk add llvm15-dev clang15-dev llvm15-static clang15-static
 
 
-  * Alpine 3.20, 3.21::
+  * Alpine 3.20, 3.21, 3.22::
 
       sudo apk add gcc g++ m4 perl python3 python3-dev bash make gawk git cmake
       sudo apk add llvm-dev clang-dev clang-static llvm-static
@@ -53,7 +53,7 @@
       sudo pacman -S llvm20 clang20
 
 
-  * CentOS Stream 9, 10::
+  * CentOS Stream 10, 9::
 
       sudo dnf upgrade
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake
@@ -61,7 +61,7 @@
       sudo dnf install llvm-devel clang clang-devel
 
 
-  * Debian 11 "Bullseye" (but note `Newer CMake required to build LLVM`_)::
+  * Debian 11 "Bullseye"::
 
       sudo apt-get update
       sudo apt-get install gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config cmake
@@ -83,7 +83,7 @@
       sudo dnf install llvm-devel clang clang-devel
 
 
-  * FreeBSD 13.5, 14.2::
+  * FreeBSD 13.5, 14.2, 14.3::
 
       sudo pkg install gcc m4 perl5 python3 bash gmake gawk git pkgconf cmake
       sudo pkg install llvm
@@ -95,7 +95,7 @@
       sudo zypper install llvm-devel clang-devel clang
 
 
-  * Rocky Linux 8.10, 9.5::
+  * Rocky Linux 10, 8, 9::
 
       sudo dnf upgrade
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake
@@ -103,8 +103,10 @@
       sudo dnf install llvm-devel clang clang-devel
 
 
-  * Ubuntu 22.04 "Jammy Jellyfish", 24.04 "Noble Numbat", 24.10 "Oracular Oriole", 25.04 "Plucky Puffin"::
+  * Ubuntu 22.04 "Jammy Jellyfish", 24.04 "Noble Numbat", 25.04 "Plucky Puffin"::
 
       sudo apt-get update
       sudo apt-get install gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config cmake
       sudo apt-get install llvm-dev llvm clang libclang-dev libclang-cpp-dev libedit-dev
+
+
