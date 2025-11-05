@@ -606,9 +606,11 @@ def check_environment():
 
     if "CHPL_EXE_NAME" in os.environ:  # unset CHPL_EXE_NAME
         del os.environ["CHPL_EXE_NAME"]
-        
-    if "CHPL_UNWIND" in os.environ:    # squash CHPL_UNWIND output
-        os.environ["CHPL_RT_UNWIND"] = "0"
+
+    # squash CHPL_UNWIND output
+    # TODO: we should remove this if its the default behavior since we want
+    # to be testing the default behavior
+    os.environ["CHPL_RT_UNWIND"] = "0"
 
     # Check for $CHPL_HOME
     global home
