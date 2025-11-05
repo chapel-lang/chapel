@@ -23,6 +23,7 @@
 
 #include "timer.h"
 #include "MemoryTracker.h"
+#include "driver.h"
 
 #include <cstdio>
 #include <vector>
