@@ -7130,6 +7130,7 @@ static bool handleArrayTypeExpr(Resolver& rv,
     domainType = genericDomainType;
   }
 
+  bool computeUninstanced = false;
 
   // Assemble the array type
   auto arrayType = genericArrayType;
@@ -7152,6 +7153,40 @@ static bool handleArrayTypeExpr(Resolver& rv,
               /* eltType */ eltType));
     }
   } else if (ignoreInstanceInArrayOrDomain(rv, loop)) {
+    computeUninstanced = true;
+  } else {
+    // We have an instantiated domain, so get array type via call to its
+    // array builder function.
+    const char* arrayBuilderProc = "chpl__buildArrayRuntimeType";
+    std::vector<CallInfoActual> actuals;
+    std::vector<const AstNode*> actualAsts;
+    actuals.emplace_back(domainType, UniqueString::get(rv.context, "dom"));
+    actualAsts.emplace_back(iterandExpr);
+    actuals.emplace_back(eltType, UniqueString::get(rv.context, "eltType"));
+    actualAsts.emplace_back(loop->numStmts() > 0 ? loop->stmt(0) : nullptr);
+    auto ci = CallInfo(
+        /* name */ UniqueString::get(rv.context, arrayBuilderProc),
+        /* calledType */ QualifiedType(),
+        /* isMethodCall */ false,
+        /* hasQuestionArg */ false,
+        /* isParenless */ false,
+        actuals);
+
+
+    if (shouldSkipCallResolution(&rv, iterandExpr, actualAsts, ci)) {
+      computeUninstanced = true;
+    } else {
+      auto scope = rv.currentScope();
+      auto inScopes = CallScopeInfo::forNormalCall(scope, rv.poiScope);
+
+      auto c = resolveGeneratedCall(rv.rc, iterandExpr, ci, inScopes);
+      if (!c.exprType().isUnknownOrErroneous()) {
+        arrayType = QualifiedType(QualifiedType::TYPE, c.exprType().type());
+      }
+    }
+  }
+
+  if (computeUninstanced) {
     auto domainT = domainType.type();
     if (auto dt = domainT->toDomainType()) {
       domainT = dt->makeUninstanced(rv.context);
@@ -7162,27 +7197,6 @@ static bool handleArrayTypeExpr(Resolver& rv,
       QualifiedType(QualifiedType::TYPE, eltType.type());
     arrayType = QualifiedType(QualifiedType::TYPE,
         ArrayType::getUninstancedArrayType(rv.context, adjustedDomainType, adjustedEltType));
-  } else {
-    // We have an instantiated domain, so get array type via call to its
-    // array builder function.
-    const char* arrayBuilderProc = "chpl__buildArrayRuntimeType";
-    std::vector<CallInfoActual> actuals;
-    actuals.emplace_back(domainType, UniqueString::get(rv.context, "dom"));
-    actuals.emplace_back(eltType, UniqueString::get(rv.context, "eltType"));
-    auto ci = CallInfo(
-        /* name */ UniqueString::get(rv.context, arrayBuilderProc),
-        /* calledType */ QualifiedType(),
-        /* isMethodCall */ false,
-        /* hasQuestionArg */ false,
-        /* isParenless */ false,
-        actuals);
-    auto scope = rv.currentScope();
-    auto inScopes = CallScopeInfo::forNormalCall(scope, rv.poiScope);
-
-    auto c = resolveGeneratedCall(rv.rc, iterandExpr, ci, inScopes);
-    if (!c.exprType().isUnknownOrErroneous()) {
-      arrayType = QualifiedType(QualifiedType::TYPE, c.exprType().type());
-    }
   }
 
   re.setType(arrayType);
