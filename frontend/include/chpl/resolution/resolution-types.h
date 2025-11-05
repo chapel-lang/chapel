@@ -2709,6 +2709,7 @@ class ResolvedExpression {
            toId_ == other.toId_ &&
            isBuiltin_ == other.isBuiltin_ &&
            causedFatalError_ == other.causedFatalError_ &&
+           skippedResolution_ == other.skippedResolution_ &&
            mostSpecific_ == other.mostSpecific_ &&
            poiScope_ == other.poiScope_ &&
            associatedActions_ == other.associatedActions_ &&
@@ -2722,6 +2723,7 @@ class ResolvedExpression {
     toId_.swap(other.toId_);
     std::swap(isBuiltin_, other.isBuiltin_);
     std::swap(causedFatalError_, other.causedFatalError_);
+    std::swap(skippedResolution_, other.skippedResolution_);
     mostSpecific_.swap(other.mostSpecific_);
     std::swap(poiScope_, other.poiScope_);
     std::swap(associatedActions_, other.associatedActions_);
