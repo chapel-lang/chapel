@@ -10,6 +10,7 @@ Source0: chapel-%{version}.tar.gz
 Requires: bash perl git llvm-devel clang clang-devel python3 python3-devel make
 Requires: pkgconf gmp-devel hwloc-devel
 Requires: pmix-devel
+Requires: libunwind-devel
 
 %description
 Chapel Programming Language
