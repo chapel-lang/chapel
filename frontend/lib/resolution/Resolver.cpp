@@ -3162,6 +3162,18 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
       }
     }
 
+    // Tuple type constructors are particularly well behaved; giving them
+    // partial information doesn't break them. So, if the skip reason
+    // is 'generic type', don't skip.
+    //
+    // This is a "safe" extension of the default logic; removing this special
+    // case ought not break any cases, but it does allow us to provide more
+    // specific partial results.
+    if (callLike->isTuple() && skip == GENERIC_TYPE) {
+      skip = NONE;
+      wouldBePartial = true; // ..., but, the expression is still partial now.
+    }
+
     if (skip) {
       break;
     }
