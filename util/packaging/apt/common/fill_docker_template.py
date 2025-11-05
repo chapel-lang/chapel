@@ -18,7 +18,7 @@ class MyTemplate(Template):
 
 def get_substitutions(osname):
 
-    substitutions = common_substitutions(osname=osname)
+    substitutions = common_substitutions(osname)
 
     substitutions[
         "USER_CREATION"
@@ -84,9 +84,7 @@ def fill_docker_template(template_file, osname):
 def main():
     parser = argparse.ArgumentParser(description="Fill Docker template")
     parser.add_argument("template_file", type=str, help="Template file to fill")
-    parser.add_argument(
-        "--osname", type=str, default="unknown", help="Operating system for the Dockerfile"
-    )
+    parser.add_argument("--osname", type=str, required=True, help="Target OS for the Dockerfile")
     args = parser.parse_args()
     template_file = os.path.abspath(os.path.expanduser(args.template_file))
     fill_docker_template(template_file, osname=args.osname)

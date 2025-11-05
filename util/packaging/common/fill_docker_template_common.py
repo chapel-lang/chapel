@@ -4,7 +4,7 @@ from typing import List, Dict, Union
 import textwrap
 
 
-def common_substitutions(osname="unknown"):
+def common_substitutions(osname: str):
     substitutions = dict()
 
     substitutions[
@@ -45,11 +45,11 @@ def common_substitutions(osname="unknown"):
         "BUILD_DEFAULT"
     ] = f"""
 WORKDIR /home/user/chapel-$CHAPEL_VERSION
-{generate_run_command(default_config, osname=osname)}
-{generate_run_command(gasnet_config, osname=osname)}
-{generate_run_command(ofi_pmi2_config, osname=osname)}
-{generate_run_command(gpu_cpu_config, osname=osname)}
-{generate_run_command_default_config(osname=osname)}
+{generate_run_command(default_config, osname)}
+{generate_run_command(gasnet_config, osname)}
+{generate_run_command(ofi_pmi2_config, osname)}
+{generate_run_command(gpu_cpu_config, osname)}
+{generate_run_command_default_config(osname)}
     """
 
     # build the minimal configuration
@@ -58,10 +58,10 @@ WORKDIR /home/user/chapel-$CHAPEL_VERSION
         "BUILD_ONLY_COMPILER"
     ] = f"""
 WORKDIR /home/user/chapel-$CHAPEL_VERSION
-{generate_run_command(default_config, osname=osname)}
-{generate_run_command(gasnet_config, osname=osname)}
-{generate_run_command(ofi_pmi2_config, osname=osname)}
-{generate_run_command(gpu_cpu_config, osname=osname)}
+{generate_run_command(default_config, osname)}
+{generate_run_command(gasnet_config, osname)}
+{generate_run_command(ofi_pmi2_config, osname)}
+{generate_run_command(gpu_cpu_config, osname)}
     """
 
     substitutions[
@@ -175,7 +175,7 @@ gpu_cpu_config = {
 }
 
 
-def generate_configs(base_config: Dict[str, Union[str,List[str]]], osname="unknown") -> List[Dict[str, str]]:
+def generate_configs(base_config: Dict[str, Union[str,List[str]]], osname: str) -> List[Dict[str, str]]:
     incompatibilities = [
         lambda cfg: cfg.get("CHPL_TARGET_MEM") == "jemalloc"
         and cfg.get("CHPL_SANITIZE_EXE") != "none",
@@ -197,7 +197,7 @@ def generate_configs(base_config: Dict[str, Union[str,List[str]]], osname="unkno
         configs.append(perm)
     return configs
 
-def generate_run_command_default_config(osname="unknown") -> str:
+def generate_run_command_default_config(osname) -> str:
     """
     Generate a default configuration string for Chapel. This only has 1 runtime
     """
@@ -206,10 +206,10 @@ def generate_run_command_default_config(osname="unknown") -> str:
         if isinstance(value, list):
             value = value[0]
         config[key] = value
-    return generate_run_command(config, build_cmd="nice make all chpldoc mason chplcheck chpl-language-server -j$PARALLEL", osname=osname)
+    return generate_run_command(config, osname, build_cmd="nice make all chpldoc mason chplcheck chpl-language-server -j$PARALLEL")
 
-def generate_run_command(base_config: Dict[str, Union[str,List[str]]], build_cmd="nice make all -j$PARALLEL", osname="unknown") -> str:
-    configs = generate_configs(base_config, osname=osname)
+def generate_run_command(base_config: Dict[str, Union[str,List[str]]], osname: str, build_cmd="nice make all -j$PARALLEL") -> str:
+    configs = generate_configs(base_config, osname)
 
     run_commands = []
     for config in configs:
