@@ -1425,13 +1425,14 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
 
       // Now, consider the formals
       int nActuals = call->numActuals();
+      int faActualIndex = 0; // faMap doesn't count '?' for actual indexing.
       for (int i = 0; i < nActuals; i++) {
         // ignore actuals like ?
         // since these aren't type queries & don't match a formal
         if (isQuestionMark(call->actual(i)))
           continue;
 
-        const FormalActual* fa = faMap.byActualIdx(i);
+        const FormalActual* fa = faMap.byActualIdx(faActualIndex);
         CHPL_ASSERT(fa != nullptr && fa->formal() != nullptr);
 
         // get the substitution for that field from the CompositeType
@@ -1455,6 +1456,7 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
                              isNonStarVarArg,
                              /* isTopLevel */ false);
         }
+        faActualIndex++;
       }
     }
   } else if (auto arr = formalTypeExpr->toBracketLoop()) {

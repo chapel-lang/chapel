@@ -253,8 +253,8 @@ CallInfo CallInfo::createUnknown(const uast::FnCall* call) {
   // set the name (simple cases only)
   name = getCallName(call);
 
-  int i = 0;
-  for (auto actual : call->actuals()) {
+  for (int i = 0; i < call->numActuals(); i++) {
+    auto actual = call->actual(i);
     if (isQuestionMark(actual)) {
       hasQuestionArg = true;
     } else {
@@ -263,7 +263,6 @@ CallInfo CallInfo::createUnknown(const uast::FnCall* call) {
         byName = call->actualName(i);
       }
       actuals.push_back(CallInfoActual(QualifiedType(), byName));
-      i++;
     }
   }
 
