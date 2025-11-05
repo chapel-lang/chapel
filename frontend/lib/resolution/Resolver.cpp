@@ -3069,7 +3069,7 @@ static bool skipDependingOnEagerness(Resolver* rv, const ID& toId,
   } else {
     bool compoundExpr =
       actualRe != nullptr && toId.isEmpty() && !actualRe->isBuiltin();
-    if (compoundExpr) return actualRe->skippedResolution();
+    if (compoundExpr) return actualRe->isPartialResult();
 
     bool noSubstitution = rv->substitutions == nullptr ||
       (!toId.isEmpty() && rv->substitutions->count(toId) == 0);
@@ -3086,6 +3086,17 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
   Context* context = rv->context;
   SkipCallResolutionReason skip = NONE;
   auto& byPostorder = rv->byPostorder;
+
+  // In lazy resolution mode, skip resolving expressions that depend on
+  // partial information. For the most part, this is defined inductively as
+  // follows:
+  // * Any individual variable that is affected by a substitution, doesn't
+  //   have a substitution, and is generic/unknown is partial.
+  // * Any expression that we failed to compute (getting 'unknown' or
+  //   'erroneous') is partial.
+  // * Any call, even if it was resolved (see: tuples) that was made with
+  //   partial information is partial.
+  bool wouldBePartial = false;
 
   int actualIdx = 0;
   for (const auto& actual : ci.actuals()) {
@@ -3162,10 +3173,8 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
     skip = OTHER_REASON;
   }
 
-  // Mark the call if we decided to skip it.
-  if (skip) {
-    byPostorder.byAst(callLike).setSkippedResolution(true);
-  }
+  if (skip) wouldBePartial = true;
+  byPostorder.byAst(callLike).setIsPartialResult(wouldBePartial);
 
   return skip;
 }

@@ -2592,8 +2592,8 @@ class ResolvedExpression {
   bool isBuiltin_ = false;
   // Did this expression cause the function to stop being resolved?
   bool causedFatalError_ = false;
-  // Did we skip resolution for this expression?
-  bool skippedResolution_ = false;
+  // Did this result depend somehow on unknown/uninstantiated expressions?
+  bool isPartialResult_ = false;
 
   // For a function call, what is the most specific candidate,
   // or when using return intent overloading, what are the most specific
@@ -2629,8 +2629,8 @@ class ResolvedExpression {
   /** check whether this resolution result caused a fatal error. */
   bool causedFatalError() const { return causedFatalError_; }
 
-  /** check whether resolution was skipped for this expression. */
-  bool skippedResolution() const { return skippedResolution_; }
+  /** check whether this resolution result depended on unknown/uninstantiated expressions. */
+  bool isPartialResult() const { return isPartialResult_; }
 
   /** For a function call, what is the most specific candidate, or when using
    * return intent overloading, what are the most specific candidates? The
@@ -2672,8 +2672,8 @@ class ResolvedExpression {
   /** set the causedFatalError flag */
   void setCausedFatalError(bool causedFatalError) { causedFatalError_ = causedFatalError; }
 
-  /** set the skippedResolution flag */
-  void setSkippedResolution(bool skippedResolution) { skippedResolution_ = skippedResolution; }
+  /** set the isPartialResult flag */
+  void setIsPartialResult(bool isPartialResult) { isPartialResult_ = isPartialResult; }
 
   /** set the toId */
   void setToId(ID toId) { toId_ = toId; }
@@ -2709,7 +2709,7 @@ class ResolvedExpression {
            toId_ == other.toId_ &&
            isBuiltin_ == other.isBuiltin_ &&
            causedFatalError_ == other.causedFatalError_ &&
-           skippedResolution_ == other.skippedResolution_ &&
+           isPartialResult_ == other.isPartialResult_ &&
            mostSpecific_ == other.mostSpecific_ &&
            poiScope_ == other.poiScope_ &&
            associatedActions_ == other.associatedActions_ &&
@@ -2723,7 +2723,7 @@ class ResolvedExpression {
     toId_.swap(other.toId_);
     std::swap(isBuiltin_, other.isBuiltin_);
     std::swap(causedFatalError_, other.causedFatalError_);
-    std::swap(skippedResolution_, other.skippedResolution_);
+    std::swap(isPartialResult_, other.isPartialResult_);
     mostSpecific_.swap(other.mostSpecific_);
     std::swap(poiScope_, other.poiScope_);
     std::swap(associatedActions_, other.associatedActions_);
