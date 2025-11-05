@@ -523,6 +523,3 @@ void Pass::Footer(FILE*     fp,
 bool PhaseTracker::shouldReportPasses() {
   return printPasses || printPassesFile != nullptr || printPassesMemory;
 }
-FILE*& PhaseTracker::passesOutputFile() {
-  return printPassesFile != nullptr ? printPassesFile : stderr;
-}

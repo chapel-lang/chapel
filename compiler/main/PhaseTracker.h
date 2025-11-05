@@ -23,6 +23,7 @@
 
 #include "timer.h"
 #include "MemoryTracker.h"
+#include "driver.h"
 
 #include <cstdio>
 #include <vector>
@@ -136,8 +137,10 @@ public:
 
   void ReportRollup() const;
 
-  static bool   shouldReportPasses();
-  static FILE*& passesOutputFile();
+  static bool shouldReportPasses();
+  static auto& passesOutputFile() {
+    return printPassesFile != nullptr ? printPassesFile : stderr;
+  }
 
 private:
   void PassesCollect(std::vector<Pass>& passes) const;
