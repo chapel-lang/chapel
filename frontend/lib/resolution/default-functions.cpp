@@ -763,24 +763,23 @@ buildInitUfsFormals(const uast::Function* initFn) {
   std::vector<UntypedFnSignature::FormalDetail> formals;
   for (auto decl : initFn->formals()) {
     UniqueString name;
-    bool hasDefault = false;
 
+    auto defaultKind = UntypedFnSignature::DK_NO_DEFAULT;
     if (auto formal = decl->toFormal()) {
       name = formal->name();
 
-      hasDefault = formal->initExpression() != nullptr;
-      if (decl != initFn->thisFormal()) {
+      if (formal->initExpression() != nullptr) {
+        defaultKind = UntypedFnSignature::DK_DEFAULT;
+      } else if (decl != initFn->thisFormal()) {
         if (formal->intent() != Formal::Intent::TYPE &&
             formal->intent() != Formal::Intent::PARAM) {
           if (formal->typeExpression() != nullptr) {
-            hasDefault = true;
+            defaultKind = UntypedFnSignature::DK_MAYBE_DEFAULT;
           }
         }
       }
     }
 
-    auto defaultKind = hasDefault ? UntypedFnSignature::DK_MAYBE_DEFAULT
-                                  : UntypedFnSignature::DK_NO_DEFAULT;
     auto fd = UntypedFnSignature::FormalDetail(name, defaultKind,
                                                decl, decl->isVarArgFormal());
     formals.push_back(fd);
