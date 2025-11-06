@@ -90,6 +90,10 @@ ErrorBase::Kind errorKindForErrorType(ErrorType type) {
 #define DIAGNOSTIC_CLASS(NAME, KIND, EINFO...) case NAME: return ErrorBase::Kind::KIND;
 #include "chpl/framework/error-classes-list.h"
 #undef DIAGNOSTIC_CLASS
+    default: {
+      CHPL_ASSERT(false && "unknown error type");
+      return ErrorBase::Kind::ERROR;
+    }
   }
 }
 
