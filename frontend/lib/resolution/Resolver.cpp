@@ -5870,6 +5870,7 @@ void Resolver::exit(const Dot* dot) {
     const Type* receiverType = nullptr;
     if (skipDependingOnEagerness(this, receiver.toId(), &receiver)) {
       receiverType = UnknownType::get(context);
+      r.setIsPartialResult(true);
     } else if (receiver.type().type() != nullptr) {
       receiverType = receiver.type().type();
     } else {
