@@ -633,7 +633,9 @@ static void test13() {
     proc SecretlyGeneric type do return owned class;
     proc SecretlyNotGeneric type do return int;
 
-    var myR: r;
+    class C {}
+
+    var myR = new r(x=new C());
     var tmp = (myR.x, myR.y, myR.z);
     )""";
 
@@ -873,12 +875,13 @@ static void test19() {
       var z: wrapper(ClearlyOwnershipGeneric);
     }
 
-    var myR: r(wrapper(wrapper(int)), owned ClearlyOwnershipGeneric, wrapper(owned ClearlyOwnershipGeneric));
+    var myR = new r(new wrapper(wrapper(int)), new ClearlyOwnershipGeneric(), new wrapper(owned ClearlyOwnershipGeneric));
     var tmp = (myR.x, myR.y, myR.z);
     )""";
 
   // should resolve without issue
   std::ignore = resolveTypesOfVariables(context, program, { "tmp" });
+  assert(!guard.realizeErrors(/* countWarnings */ false));
 }
 
 // Test warnings for fields with generic memory management

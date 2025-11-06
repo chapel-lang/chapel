@@ -2875,6 +2875,7 @@ instantiateSignatureImpl(ResolutionContext* rc,
 
     if (entry.actualIdx() == -1 &&
         sig->untyped()->formalDefaultKind(entry.formalIdx()) == UntypedFnSignature::DK_MAYBE_DEFAULT &&
+        !formalType.isType() &&
         getTypeGenericity(context, formalType.type()) != Type::CONCRETE) {
 
       // When building the compiler-generated 'init' we claimed the formal has

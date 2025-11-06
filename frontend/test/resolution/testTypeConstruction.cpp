@@ -1335,9 +1335,14 @@ static void testRecursiveTypeConstructorGeneric() {
 
   bool foundError = false;
   for (auto& err : guard.errors()) {
-    if (err->type() == ErrorType::MissingFormalInstantiation) {
-      foundError = true;
-      break;
+    if (err->type() == ErrorType::NoMatchingCandidates) {
+      auto noCandidates = static_cast<ErrorNoMatchingCandidates*>(err.get());
+      auto& rejected = std::get<2>(noCandidates->info());
+      if (rejected.size() > 0 &&
+          rejected[0].reason() == chpl::resolution::FAIL_NO_DEFAULT_VALUE_FOR_GENERIC_FIELD) {
+        foundError = true;
+        break;
+      }
     }
   }
   assert(foundError);
