@@ -3017,6 +3017,10 @@ toIdAffectedBySubstitutions(Context* context, ID toId) {
       // formals, task variables, vararg formals, type queries, etc. can be
       // affected by substitutions.
       affectedBySubstitutions = true;
+    } else if (asttags::isTupleDecl(tag)) {
+      auto ast = parsing::idToAst(context, toId)->toTupleDecl();
+
+      affectedBySubstitutions = ast->isTupleDeclFormal();
     }
   }
   return QUERY_END(affectedBySubstitutions);
@@ -3034,8 +3038,19 @@ static bool skipDependingOnEagerness(Resolver* rv, const ID& toId,
     bool noSubstitution = rv->substitutions == nullptr ||
       (!toId.isEmpty() && rv->substitutions->count(toId) == 0);
 
+    ID toUse = toId;
+    if (rv->substitutions && noSubstitution && !toId.isEmpty()) {
+      // formals like `x` in `(x, y)` don't have their own substitutions,
+      // but their parent multi-decl might.
+      auto parentId = parsing::idToContainingMultiDeclId(rv->context, actualRe->toId());
+      if (asttags::isTupleDecl(parsing::idToTag(rv->context, parentId))) {
+        toUse = parentId;
+        noSubstitution = rv->substitutions->count(toUse) == 0;
+      }
+    }
+
     return noSubstitution &&
-           toIdAffectedBySubstitutions(rv->context, toId);
+           toIdAffectedBySubstitutions(rv->context, toUse);
   }
 }
 
