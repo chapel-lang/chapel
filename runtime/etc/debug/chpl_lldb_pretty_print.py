@@ -71,11 +71,11 @@ def ResolveWidePointer(wideptr, size=None):
     return Ptr(target, resolved_ptr)
 
 
-def MaybeResolveWidePointer(wideptr, size=None):
-    if wideptr.GetTypeName().startswith("wide("):
-        return ResolveWidePointer(wideptr, size=size)
+def MaybeResolveWidePointer(ptr, size=None):
+    if ptr.GetTypeName().startswith("wide("):
+        return ResolveWidePointer(ptr, size=size)
     else:
-        return Ptr(wideptr.GetTarget(), wideptr, owned=False)
+        return Ptr(ptr.GetTarget(), ptr, owned=False)
 
 
 def StringSummary(valobj, internal_dict):
