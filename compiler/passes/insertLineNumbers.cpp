@@ -38,6 +38,8 @@
 #include <unordered_set>
 #include <vector>
 
+#include "chpl-linefile-defs.h"
+
 namespace {
   // As a means of abbreviation.
   using Pass = InsertLineNumbers;
@@ -72,8 +74,7 @@ int Pass::addFilenameTableEntry(const std::string& name) {
 
 int Pass::getFilenameTableIndex(const std::string& name) {
   if (auto optIdx = gFilenameTable.index(name)) return *optIdx;
-  INT_FATAL("Entry not in table!");
-  return -1;
+  return CHPL_FILE_IDX_UNKNOWN;
 }
 
 const std::vector<std::string>& Pass::getFilenameTable() {
@@ -147,6 +148,7 @@ Pass::LineAndFile Pass::makeASTLine(CallExpr* call) {
 
   if (call->isResolved() &&
       call->resolvedFunction()->hasFlag(FLAG_COMMAND_LINE_SETTING)) {
+    // TODO: can this just use CHPL_FILE_IDX_COMMAND_LINE_ARG?
     // Make up pretend line numbers for errors with command line
     // configuration variables.
     Symbol* line = new_IntSymbol(0);

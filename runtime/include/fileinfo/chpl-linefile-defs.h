@@ -18,28 +18,29 @@
  * limitations under the License.
  */
 
-#ifndef _chpl_linefile_support_h_
-#define _chpl_linefile_support_h_
-
-#include "chpltypes.h"
-
-#include "fileinfo/chpl-linefile-defs.h"
+#ifndef _chpl_linefile_defs_h_
+#define _chpl_linefile_defs_h_
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-// chpl_saveFilename stores the passed in char*, subsequent calls to
-// chpl_lookupFilename(CHPL_FILE_IDX_SAVED_FILENAME) will return that stored
-// pointer. CHPL_FILE_IDX_SAVED_FILENAME may only be used while the original
-// filename pointer is still valid.  This was added to support reporting errors
-// in a user-supplied file for config vars.
-void chpl_saveFilename(const char *filename);
-
-c_string chpl_lookupFilename(const int32_t idx);
+enum chpl_file_idx_t {
+  CHPL_FILE_IDX_INTERNAL = 1, // <internal>
+  CHPL_FILE_IDX_COMMAND_LINE = -1,     // (command-line)
+  CHPL_FILE_IDX_COMMAND_LINE_ARG = -2, // <command-line arg>
+  CHPL_FILE_IDX_FORK_LARGE = -3,       // "fork large"
+  CHPL_FILE_IDX_MAIN_PROGRAM = -4,     // "main program"
+  CHPL_FILE_IDX_UNKNOWN = -5,          // "<unknown>"
+  CHPL_FILE_IDX_IDLE_TASK = -6,        // "|idle|"
+  CHPL_FILE_IDX_COMM_TASK = -7,        // "<comm thread>"
+  CHPL_FILE_IDX_MAIN_TASK = -8,        // "<main task>"
+  CHPL_FILE_IDX_ON_BODY_TASK = -9,     // "on-body task"
+  CHPL_FILE_IDX_SAVED_FILENAME = -10,  // variable, see chpl-linefile-support.h
+};
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // _chpl_linefile_support_h_
+#endif // _chpl_linefile_defs_h_

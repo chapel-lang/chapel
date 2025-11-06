@@ -99,6 +99,7 @@ target_include_directories(chpl PRIVATE
         ${SRC_DIR}/../build/compiler/${CHPL_COMPILER_SUBDIR} # for enabling CONFIGURED_PREFIX in configured_prefix.h
         ${SRC_DIR}/../runtime/include/encoding # support for sharing unicode support between compiler and runtime
         ${SRC_DIR}/../third-party/utf8-decoder # support for sharing unicode support between compiler and runtime
+        ${SRC_DIR}/../runtime/include/fileinfo # support for sharing line/file support between compiler and runtime
         )
 
 # all the compiler subdirectories with sources do these same things
