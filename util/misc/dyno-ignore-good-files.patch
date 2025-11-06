@@ -2079,8 +2079,8 @@ index b6369d1bc20..8e7d2852637 100644
 +split-init-out-return-intent-overloads3.chpl:30: note: The actual 'y' expects to be split-initialized because it is declared without a type or initialization expression here
 +split-init-out-return-intent-overloads3.chpl:31: note: The call to 'c' occurs before any valid initialization points
 +split-init-out-return-intent-overloads3.chpl:30: error: variable 'x' is declared without an initializer or type
-+split-init-out-return-intent-overloads3.chpl:31: note: cannot find initialization point to split-init this variable
-+split-init-out-return-intent-overloads3.chpl:31: note: the variable 'x' is used here
++split-init-out-return-intent-overloads3.chpl:32: note: cannot find initialization point to split-init this variable
++split-init-out-return-intent-overloads3.chpl:32: note: the variable 'x' is used here
 +split-init-out-return-intent-overloads3.chpl:30: error: variable 'y' is declared without an initializer or type
 +split-init-out-return-intent-overloads3.chpl:31: note: cannot find initialization point to split-init this variable
 +split-init-out-return-intent-overloads3.chpl:31: note: the variable 'y' is used here
@@ -2101,8 +2101,8 @@ index 1aa23a6151e..8f3fb23bf22 100644
 +split-init-out-return-intent-overloads4.chpl:30: note: The actual 'y' expects to be split-initialized because it is declared without a type or initialization expression here
 +split-init-out-return-intent-overloads4.chpl:31: note: The call to 'd' occurs before any valid initialization points
 +split-init-out-return-intent-overloads4.chpl:30: error: variable 'x' is declared without an initializer or type
-+split-init-out-return-intent-overloads4.chpl:31: note: cannot find initialization point to split-init this variable
-+split-init-out-return-intent-overloads4.chpl:31: note: the variable 'x' is used here
++split-init-out-return-intent-overloads4.chpl:32: note: cannot find initialization point to split-init this variable
++split-init-out-return-intent-overloads4.chpl:32: note: the variable 'x' is used here
 +split-init-out-return-intent-overloads4.chpl:30: error: variable 'y' is declared without an initializer or type
 +split-init-out-return-intent-overloads4.chpl:31: note: cannot find initialization point to split-init this variable
 +split-init-out-return-intent-overloads4.chpl:31: note: the variable 'y' is used here
