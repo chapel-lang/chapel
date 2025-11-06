@@ -6989,7 +6989,12 @@ static bool isShapedLikeArray(const IndexableLoop* loop) {
 // in formals are effectively generic, we treat them specially, throw
 // away their _instance field, and allow generic element types. We want to only
 // do this in formals, though, which is what this function checks for.
-static bool ignoreInstanceInArrayOrDomain(Resolver& rv, const AstNode* exprToConsider) {
+static bool ignoreInstanceInArrayOrDomain(Resolver& rv, const IndexableLoop* exprToConsider) {
+  if (exprToConsider->numStmts() == 0) {
+    // empty array type expressions are always generic
+    return true;
+  }
+
   if (rv.declStack.empty()) return false;
   if (rv.useConcreteArrayTypeForFormals.contains(exprToConsider->id())) {
     return false;
