@@ -2873,6 +2873,16 @@ instantiateSignatureImpl(ResolutionContext* rc,
       formalType = entry.formalType();
     }
 
+    if (entry.actualIdx() == -1 &&
+        sig->untyped()->formalDefaultKind(entry.formalIdx()) == UntypedFnSignature::DK_MAYBE_DEFAULT &&
+        getTypeGenericity(context, formalType.type()) != Type::CONCRETE) {
+
+      // we claimed the formal has a default value. However, this formal
+      // is generic, which means we can't know what its default value is,
+      // and none was provided. This indicates failure.
+      return ApplicabilityResult::failure(sig, FAIL_CANDIDATE_OTHER);
+    }
+
     usedConcreteArrayType |=
       !visitor.useConcreteArrayTypeForFormals.isEmpty() &&
       formalType.type() != sig->formalType(entry.formalIdx()).type();

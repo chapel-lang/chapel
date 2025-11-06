@@ -779,7 +779,7 @@ buildInitUfsFormals(const uast::Function* initFn) {
       }
     }
 
-    auto defaultKind = hasDefault ? UntypedFnSignature::DK_DEFAULT
+    auto defaultKind = hasDefault ? UntypedFnSignature::DK_MAYBE_DEFAULT
                                   : UntypedFnSignature::DK_NO_DEFAULT;
     auto fd = UntypedFnSignature::FormalDetail(name, defaultKind,
                                                decl, decl->isVarArgFormal());

@@ -1105,51 +1105,7 @@ bool Resolver::isPotentialSuper(const Identifier* ident, QualifiedType* outType)
 }
 
 bool Resolver::shouldUseUnknownTypeForGeneric(const ID& id) {
-  if (signatureOnly && substitutions) {
-    // We're computing a final instantiated signature. We'll be incrementally
-    // traversing formals and accumulating type information. As a result,
-    // we should use (partial, generic) types and not unknowns.
-    return false;
-  }
-
-  // make sure the set of IDs for fields and formals is computed
-  if (!fieldOrFormalsComputed) {
-    auto visitor = GatherFieldsOrFormals();
-    symbol->traverse(visitor);
-    fieldOrFormals.swap(visitor.fieldOrFormals);
-
-    // also compute instantiatedFieldOrFormals
-    if (typedSignature != nullptr) {
-      auto untyped = typedSignature->untyped();
-      int nFormals = untyped->numFormals();
-      for (int i = 0; i < nFormals; i++) {
-        if (typedSignature->formalIsInstantiated(i)) {
-          CHPL_ASSERT(!untyped->formalDecl(i)->id().isEmpty());
-          instantiatedFieldOrFormals.insert(untyped->formalDecl(i)->id());
-        }
-      }
-    }
-
-    fieldOrFormalsComputed = true;
-  }
-
-  bool isFieldOrFormal = fieldOrFormals.count(id) > 0;
-  bool isSubstituted = false;
-  bool isFormalInstantiated = false;
-
-  if (substitutions != nullptr) {
-    auto search = substitutions->find(id);
-    if (search != substitutions->end()) {
-      isSubstituted = true;
-    }
-  }
-
-  // check also instantiated formals from typedSignature
-  if (isFieldOrFormal) {
-    isFormalInstantiated = instantiatedFieldOrFormals.count(id) > 0;
-  }
-
-  return isFieldOrFormal && !isSubstituted && !isFormalInstantiated;
+  return false;
 }
 
 // is it a call to int / uint / etc?
@@ -5906,8 +5862,11 @@ void Resolver::exit(const Dot* dot) {
   }
 
   if (dot->field() == USTR("type")) {
+
     const Type* receiverType = nullptr;
-    if (receiver.type().type() != nullptr) {
+    if (skipDependingOnEagerness(this, receiver.toId(), &receiver)) {
+      receiverType = UnknownType::get(context);
+    } else if (receiver.type().type() != nullptr) {
       receiverType = receiver.type().type();
     } else {
       receiverType = UnknownType::get(context);
