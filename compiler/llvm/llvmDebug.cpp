@@ -571,7 +571,7 @@ llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
   } else if (type == dtLocaleID) {
     // handle locale types
     llvm::SmallVector<llvm::Metadata *, 1> EltTys;
-    llvm::Type* nodeTy = dtInt[INT_SIZE_32]->getLLVMType();
+    llvm::Type* nodeTy = info->lvt->getType("c_nodeid_t");
     EltTys.push_back(dibuilder->createMemberType(
       defInfo.maybeScope(),
       "node",
