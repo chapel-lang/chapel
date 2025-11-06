@@ -6995,6 +6995,17 @@ static bool ignoreInstanceInArrayOrDomain(Resolver& rv, const AstNode* exprToCon
     return false;
   }
 
+  // for records like 'R { var A: [1..10] int; }', the compiler-generated
+  // initializer forces the default-generic array.
+  if (rv.symbol) {
+    if (auto fn = rv.symbol->toFunction()) {
+      if (fn->name() == USTR("init") && fn->id().isFabricatedId() &&
+          fn->id().fabricatedIdKind() == ID::Generated) {
+        return false;
+      }
+    }
+  }
+
   size_t consideringDecl = rv.declStack.size() - 1;
 
   // We treat array type expression specially when they are in formal type
