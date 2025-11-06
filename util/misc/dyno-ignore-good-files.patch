@@ -729,14 +729,12 @@ index 8d265af15ad..ad39e892589 100644
 +default-init-generic2.chpl:13: error: cannot default initialize variable using generic or unknown type
 +default-init-generic2.chpl:16: error: cannot default initialize variable using generic or unknown type
 diff --git a/test/types/partial/dependent.simple.good b/test/types/partial/dependent.simple.good
-index 8b525abed7b..300404428dd 100644
+index 8b525abed7b..51c0d0dfedf 100644
 --- a/test/types/partial/dependent.simple.good
 +++ b/test/types/partial/dependent.simple.good
-@@ -1,3 +1,7 @@
+@@ -1,3 +1,5 @@
 +dependent.chpl:-1: In function 'D':
 +dependent.chpl: error: can't apply '.type' to a type ('unknown type')
-+dependent.chpl: error: can't apply '.type' to a type ('?')
-+dependent.chpl: error: can't apply '.type' to a type ('?')
 +dependent.chpl: error: can't apply '.type' to a type ('?')
  dependent.chpl:19: In function 'main':
 -dependent.chpl:21: error: Unable to resolve partial instantiation 'D(type int(64), p=1024)'
@@ -765,7 +763,7 @@ index 06864a0cdea..fe8dd82ca5f 100644
 +invalid-set-type-again.chpl:7: error: final result of initialization does not match the initial type
 +invalid-set-type-again.chpl:2: note: field 'fixed' started with type 'real(64)', but had incompatible type 'int(64)' after initialization
 diff --git a/test/types/partial/issue-18005.good b/test/types/partial/issue-18005.good
-index f6dd93e4327..b8ccb31a2ef 100644
+index f6dd93e4327..c3aeca41823 100644
 --- a/test/types/partial/issue-18005.good
 +++ b/test/types/partial/issue-18005.good
 @@ -1,11 +1,5 @@
@@ -780,11 +778,11 @@ index f6dd93e4327..b8ccb31a2ef 100644
 -issue-18005.chpl:8: warning: unstable type construction with some generic defaults
 -$CHPL_HOME/modules/standard/Map.chpl:nnnn: note: this type construction might ignore field defaults in the type declared here but that may change
 -issue-18005.chpl:11: error: initialization requires an argument for bar
-+issue-18005.chpl:8: warning: field 'bar' has generic type 'map(string, B, false)' but is not marked with '?'
-+issue-18005.chpl:8: note: generic fields must be marked with '?'
-+issue-18005.chpl:11: error: call does not provide enough type information for a complete instantiation
++issue-18005.chpl:11: error: unable to resolve call to 'init': no matching candidates
++issue-18005.chpl: note: the compiler-generated initializer didn't match because formal 2, corresponding to field 'bar', had a generic type expression
 +issue-18005.chpl:-1: In initializer:
-+issue-18005.chpl: note: formal 'bar' has generic type 'map(string, B, false)', but is expected to have a concrete type
++issue-18005.chpl: note: currently, calls to initializers cannot omit arguments for fields with generic type expressions
++issue-18005.chpl:11: note: omitting 22 more candidates that didn't match
 diff --git a/test/types/partial/multiple-question.good b/test/types/partial/multiple-question.good
 index a1f63a5b763..bed784f8c4a 100644
 --- a/test/types/partial/multiple-question.good
@@ -1402,16 +1400,16 @@ index 09393a1eb24..253b1c9db62 100644
 -initeq-forwarding-record.chpl:1: note: is passed to formal 'other: R'
 +initeq-forwarding-record.chpl:6: error: type mismatch between declared type of 'r' and initialization expression
 diff --git a/test/types/records/bugs/methodOnValue.good b/test/types/records/bugs/methodOnValue.good
-index e971ddfba20..b58cc050773 100644
+index e971ddfba20..301ef0f3781 100644
 --- a/test/types/records/bugs/methodOnValue.good
 +++ b/test/types/records/bugs/methodOnValue.good
 @@ -1 +1,5 @@
 -methodOnValue.chpl:12: error: Method defined on non-type 'myR'
 +methodOnValue.chpl:12: In method 'bar':
 +methodOnValue.chpl:12: error: type specifier is a value of type 'R', but it was expected to be a type
-+methodOnValue.chpl:12: error: type specifier is a value of type 'R', but it was expected to be a type
 +methodOnValue.chpl:17: error: unable to resolve call to 'bar': no matching candidates
-+methodOnValue.chpl:12: note: the following candidate didn't match because an actual couldn't be passed to a formal
++methodOnValue.chpl:12: note: call resolution was not completed because formal 1 of this candidate was ill-formed
++methodOnValue.chpl:17: note: omitting 1 more candidates that didn't match
 diff --git a/test/types/records/casts/castToNonType.good b/test/types/records/casts/castToNonType.good
 index eb1ac1828f5..40207a41793 100644
 --- a/test/types/records/casts/castToNonType.good
@@ -1686,14 +1684,14 @@ index 4cfba0738e3..65d3ea0832d 100644
 -allGenericsDefaulted.chpl:3: note: is passed to formal 'other: R(int(64),2)'
 +allGenericsDefaulted.chpl:55: error: type mismatch between declared type of 'ri4' and initialization expression
 diff --git a/test/types/records/generic/issue-11846-2.good b/test/types/records/generic/issue-11846-2.good
-index f0c9950cf93..e2ca674352e 100644
+index f0c9950cf93..6d436d8967e 100644
 --- a/test/types/records/generic/issue-11846-2.good
 +++ b/test/types/records/generic/issue-11846-2.good
 @@ -1,2 +1,2 @@
 -issue-11846-2.chpl:12: error: Cannot replace an instantiated field with another type
 -issue-11846-2.chpl:12: note: field 'data1' has type '2*3*int(64)' but is set to '_uninstantiated'
-+issue-11846-2.chpl:12: error: field 'data1' appears to be concrete in the program's syntax, but it has been inferred to be a value of type '?', which is generic
-+issue-11846-2.chpl:12: error: field 'data1' appears to be concrete in the program's syntax, but it has been inferred to be a value of type '?', which is generic
++issue-11846-2.chpl:1: In function 'main':
++issue-11846-2.chpl:2: error: unable to resolve call to 'init': no matching candidates
 diff --git a/test/types/records/init/copy/initEqualsErrorMessage.good b/test/types/records/init/copy/initEqualsErrorMessage.good
 index b1d93f24a2d..4b5245ffe91 100644
 --- a/test/types/records/init/copy/initEqualsErrorMessage.good
@@ -1734,6 +1732,15 @@ index 35547e41592..8fade9a9b0e 100644
 -mismatch2.chpl:20: note: because actual argument #1 with type 'A(real(64))'
 -mismatch2.chpl:1: note: is passed to formal 'other: A(int(64))'
 +mismatch2.chpl:20: error: type mismatch between declared type of 'a' and initialization expression
+diff --git a/test/types/records/init/no-default-init-generic-var.good b/test/types/records/init/no-default-init-generic-var.good
+index 4c893c10677..68588ec39aa 100644
+--- a/test/types/records/init/no-default-init-generic-var.good
++++ b/test/types/records/init/no-default-init-generic-var.good
+@@ -1,3 +1 @@
+-no-default-init-generic-var.chpl:3: error: default initialization with type 'R(int(64))' is not yet supported
+-no-default-init-generic-var.chpl:1: note: field 'genericField' is a generic value
+-no-default-init-generic-var.chpl:1: note: consider separately declaring a type field for it or using a 'new' call
++no-default-init-generic-var.chpl:3: error: unable to resolve call to 'init': no matching candidates
 diff --git a/test/types/records/init/no-default-init-typeless.good b/test/types/records/init/no-default-init-typeless.good
 index b2ce13555ce..7fde98bc8ab 100644
 --- a/test/types/records/init/no-default-init-typeless.good
@@ -1877,17 +1884,19 @@ index b0775c29d35..be3d4740181 100644
 -error-never-initialized-values-global4.chpl:3: note: consider adding a management decorator such as 'owned', 'shared', 'borrowed', or 'unmanaged'
 +error-never-initialized-values-global4.chpl:3: error: cannot default initialize variable using generic or unknown type
 diff --git a/test/types/records/split-init/error-never-initialized-values-mentioned1.good b/test/types/records/split-init/error-never-initialized-values-mentioned1.good
-index bfa8e6442f2..11898320a15 100644
+index bfa8e6442f2..4111436584e 100644
 --- a/test/types/records/split-init/error-never-initialized-values-mentioned1.good
 +++ b/test/types/records/split-init/error-never-initialized-values-mentioned1.good
-@@ -1,4 +1,7 @@
+@@ -1,4 +1,9 @@
  error-never-initialized-values-mentioned1.chpl:3: In function 'error':
 -error-never-initialized-values-mentioned1.chpl:5: error: 'a2' is not initialized and has no type
 -error-never-initialized-values-mentioned1.chpl:5: note: cannot find initialization point to split-init this variable
 -error-never-initialized-values-mentioned1.chpl:7: note: 'a2' is used here before it is initialized
 +error-never-initialized-values-mentioned1.chpl:7: error: unable to resolve call to 'writeln': no matching candidates
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:414: note: the following candidate didn't match because the provided actuals could not be mapped to its formals
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because an actual couldn't be passed to a formal
++error-never-initialized-values-mentioned1.chpl:5: note: The actual 'a2' expects to be split-initialized because it is declared without a type or initialization expression here
++error-never-initialized-values-mentioned1.chpl:7: note: The call to 'writeln' occurs before any valid initialization points
++$CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +error-never-initialized-values-mentioned1.chpl:5: note: The actual 'a2' expects to be split-initialized because it is declared without a type or initialization expression here
 +error-never-initialized-values-mentioned1.chpl:7: note: The call to 'writeln' occurs before any valid initialization points
 +error-never-initialized-values-mentioned1.chpl:7: note: omitting 1 more candidates that didn't match
@@ -2041,69 +2050,62 @@ index 764472f72e1..18ddee4d23c 100644
 -note: the type for a generic out-intent formal is inferred in the function body
 +split-init-out-formal-never-set.chpl:1: error: cannot default initialize variable using generic or unknown type
 diff --git a/test/types/records/split-init/split-init-out-formal-never-set2.good b/test/types/records/split-init/split-init-out-formal-never-set2.good
-index e6ce9ed9b72..63c9ea4422c 100644
+index e6ce9ed9b72..c3606c54649 100644
 --- a/test/types/records/split-init/split-init-out-formal-never-set2.good
 +++ b/test/types/records/split-init/split-init-out-formal-never-set2.good
-@@ -1,4 +1,10 @@
+@@ -1,4 +1,5 @@
  split-init-out-formal-never-set2.chpl:1: In function 'outProc':
 -split-init-out-formal-never-set2.chpl:1: error: 'outarg' is not initialized and has no type
 -note: the type for a generic out-intent formal is inferred in the function body
 -split-init-out-formal-never-set2.chpl:2: note: 'outarg' is used here before it is initialized
-+split-init-out-formal-never-set2.chpl:2: error: unable to resolve call to '+': no matching candidates
-+$CHPL_HOME/modules/internal/ChapelDomain.chpl:438: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+split-init-out-formal-never-set2.chpl:1: note: The actual 'outarg' expects to be split-initialized because it is declared without a type or initialization expression here
-+split-init-out-formal-never-set2.chpl:2: note: The call to '+' occurs before any valid initialization points
-+$CHPL_HOME/modules/internal/ChapelDomain.chpl:428: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+split-init-out-formal-never-set2.chpl:1: note: The actual 'outarg' expects to be split-initialized because it is declared without a type or initialization expression here
-+split-init-out-formal-never-set2.chpl:2: note: The call to '+' occurs before any valid initialization points
-+split-init-out-formal-never-set2.chpl:2: note: omitting 80 more candidates that didn't match
++split-init-out-formal-never-set2.chpl:1: error: variable 'outarg' is declared without an initializer or type
++split-init-out-formal-never-set2.chpl:2: note: cannot find initialization point to split-init this variable
++split-init-out-formal-never-set2.chpl:2: note: the variable 'outarg' is used here
 +split-init-out-formal-never-set2.chpl:9: error: unable to resolve call to '=': no matching candidates
 diff --git a/test/types/records/split-init/split-init-out-return-intent-overloads3.good b/test/types/records/split-init/split-init-out-return-intent-overloads3.good
-index b6369d1bc20..4d85fb8955f 100644
+index b6369d1bc20..8e7d2852637 100644
 --- a/test/types/records/split-init/split-init-out-return-intent-overloads3.good
 +++ b/test/types/records/split-init/split-init-out-return-intent-overloads3.good
-@@ -1,4 +1,15 @@
+@@ -1,4 +1,14 @@
  split-init-out-return-intent-overloads3.chpl:28: In function 'test3':
 -split-init-out-return-intent-overloads3.chpl:30: error: 'x' is not initialized and has no type
 -split-init-out-return-intent-overloads3.chpl:30: note: cannot find initialization point to split-init this variable
 -split-init-out-return-intent-overloads3.chpl:31: note: 'x' is used here before it is initialized
-+split-init-out-return-intent-overloads3.chpl:31: error: return intent overloading but intent does not match
-+split-init-out-return-intent-overloads3.chpl:31: error: return intent overloading but intent does not match
-+split-init-out-return-intent-overloads3.chpl:31: error: return intent overloading but intent does not match
-+split-init-out-return-intent-overloads3.chpl:31: error: return intent overloading but intent does not match
-+split-init-out-return-intent-overloads3.chpl:31: error: return intent overloading but intent does not match
-+split-init-out-return-intent-overloads3.chpl:31: error: return intent overloading but intent does not match
++split-init-out-return-intent-overloads3.chpl:31: error: unable to resolve call to 'c': no matching candidates
++split-init-out-return-intent-overloads3.chpl:27: note: the following candidate didn't match because an actual couldn't be passed to a formal
++split-init-out-return-intent-overloads3.chpl:30: note: The actual 'x' expects to be split-initialized because it is declared without a type or initialization expression here
++split-init-out-return-intent-overloads3.chpl:31: note: The call to 'c' occurs before any valid initialization points
++split-init-out-return-intent-overloads3.chpl:26: note: the following candidate didn't match because an actual couldn't be passed to a formal
++split-init-out-return-intent-overloads3.chpl:30: note: The actual 'y' expects to be split-initialized because it is declared without a type or initialization expression here
++split-init-out-return-intent-overloads3.chpl:31: note: The call to 'c' occurs before any valid initialization points
 +split-init-out-return-intent-overloads3.chpl:30: error: variable 'x' is declared without an initializer or type
-+split-init-out-return-intent-overloads3.chpl:32: note: cannot find initialization point to split-init this variable
-+split-init-out-return-intent-overloads3.chpl:32: note: the variable 'x' is used here
++split-init-out-return-intent-overloads3.chpl:31: note: cannot find initialization point to split-init this variable
++split-init-out-return-intent-overloads3.chpl:31: note: the variable 'x' is used here
 +split-init-out-return-intent-overloads3.chpl:30: error: variable 'y' is declared without an initializer or type
 +split-init-out-return-intent-overloads3.chpl:31: note: cannot find initialization point to split-init this variable
 +split-init-out-return-intent-overloads3.chpl:31: note: the variable 'y' is used here
-+split-init-out-return-intent-overloads3.chpl:31: error: return intent overloading but intent does not match
-+split-init-out-return-intent-overloads3.chpl:31: error: return intent overloading but intent does not match
 diff --git a/test/types/records/split-init/split-init-out-return-intent-overloads4.good b/test/types/records/split-init/split-init-out-return-intent-overloads4.good
-index 1aa23a6151e..51208075eba 100644
+index 1aa23a6151e..8f3fb23bf22 100644
 --- a/test/types/records/split-init/split-init-out-return-intent-overloads4.good
 +++ b/test/types/records/split-init/split-init-out-return-intent-overloads4.good
-@@ -1,4 +1,15 @@
+@@ -1,4 +1,14 @@
  split-init-out-return-intent-overloads4.chpl:28: In function 'test4':
 -split-init-out-return-intent-overloads4.chpl:30: error: 'x' is not initialized and has no type
 -split-init-out-return-intent-overloads4.chpl:30: note: cannot find initialization point to split-init this variable
 -split-init-out-return-intent-overloads4.chpl:31: note: 'x' is used here before it is initialized
-+split-init-out-return-intent-overloads4.chpl:31: error: return intent overloading but intent does not match
-+split-init-out-return-intent-overloads4.chpl:31: error: return intent overloading but intent does not match
-+split-init-out-return-intent-overloads4.chpl:31: error: return intent overloading but intent does not match
-+split-init-out-return-intent-overloads4.chpl:31: error: return intent overloading but intent does not match
-+split-init-out-return-intent-overloads4.chpl:31: error: return intent overloading but intent does not match
-+split-init-out-return-intent-overloads4.chpl:31: error: return intent overloading but intent does not match
++split-init-out-return-intent-overloads4.chpl:31: error: unable to resolve call to 'd': no matching candidates
++split-init-out-return-intent-overloads4.chpl:27: note: the following candidate didn't match because an actual couldn't be passed to a formal
++split-init-out-return-intent-overloads4.chpl:30: note: The actual 'x' expects to be split-initialized because it is declared without a type or initialization expression here
++split-init-out-return-intent-overloads4.chpl:31: note: The call to 'd' occurs before any valid initialization points
++split-init-out-return-intent-overloads4.chpl:26: note: the following candidate didn't match because an actual couldn't be passed to a formal
++split-init-out-return-intent-overloads4.chpl:30: note: The actual 'y' expects to be split-initialized because it is declared without a type or initialization expression here
++split-init-out-return-intent-overloads4.chpl:31: note: The call to 'd' occurs before any valid initialization points
 +split-init-out-return-intent-overloads4.chpl:30: error: variable 'x' is declared without an initializer or type
-+split-init-out-return-intent-overloads4.chpl:32: note: cannot find initialization point to split-init this variable
-+split-init-out-return-intent-overloads4.chpl:32: note: the variable 'x' is used here
++split-init-out-return-intent-overloads4.chpl:31: note: cannot find initialization point to split-init this variable
++split-init-out-return-intent-overloads4.chpl:31: note: the variable 'x' is used here
 +split-init-out-return-intent-overloads4.chpl:30: error: variable 'y' is declared without an initializer or type
 +split-init-out-return-intent-overloads4.chpl:31: note: cannot find initialization point to split-init this variable
 +split-init-out-return-intent-overloads4.chpl:31: note: the variable 'y' is used here
-+split-init-out-return-intent-overloads4.chpl:31: error: return intent overloading but intent does not match
-+split-init-out-return-intent-overloads4.chpl:31: error: return intent overloading but intent does not match
 diff --git a/test/types/records/split-init/split-init-param-multiple.good b/test/types/records/split-init/split-init-param-multiple.good
 index 6a4f7929836..37c52fbe11f 100644
 --- a/test/types/records/split-init/split-init-param-multiple.good
@@ -2196,6 +2198,13 @@ index 65856d9b0d3..5d6d8c390d7 100644
 @@ -1 +1 @@
 -externRecordInvalidNOT_EQUALS.chpl:5: error: unresolved call '!=(blah_t, 1)'
 +externRecordInvalidNOT_EQUALS.chpl:5: error: unable to resolve call to '!=': no matching candidates
+diff --git a/test/types/records/tupleFields/detupleFieldDecl.good b/test/types/records/tupleFields/detupleFieldDecl.good
+index f2b8c3613e5..d0bd96fc06a 100644
+--- a/test/types/records/tupleFields/detupleFieldDecl.good
++++ b/test/types/records/tupleFields/detupleFieldDecl.good
+@@ -1 +1,2 @@
+ detupleFieldDecl.chpl:10: error: de-tupling declarations are not currently supported as fields
++detupleFieldDecl.chpl:16: error: cannot default initialize variable using generic or unknown type
 diff --git a/test/types/records/typeArgs/argConstraints2.good b/test/types/records/typeArgs/argConstraints2.good
 index 6845f32f34e..5fd92f7f8ff 100644
 --- a/test/types/records/typeArgs/argConstraints2.good
@@ -2588,11 +2597,29 @@ index 2e262243d51..840498b22db 100644
 @@ -1 +1 @@
 -zerotuple.chpl:1: error: tuple must have positive size
 +zerotuple.chpl:1: error: cannot default initialize variable using generic or unknown type
+diff --git a/test/types/tuple/errors/genericArrayAsTupleSize.good b/test/types/tuple/errors/genericArrayAsTupleSize.good
+index 9b607b7c291..9fd33151906 100644
+--- a/test/types/tuple/errors/genericArrayAsTupleSize.good
++++ b/test/types/tuple/errors/genericArrayAsTupleSize.good
+@@ -1,9 +1,5 @@
+ genericArrayAsTupleSize.chpl:2: In function 'main':
+-genericArrayAsTupleSize.chpl:3: error: unresolved call '*([domain(1,int(64),one)] range(int(64),both,one), type int(64))'
+-$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: this candidate did not match: *(a: int(8), b: int(8))
+-genericArrayAsTupleSize.chpl:3: note: because actual argument #1 with type '[domain(1,int(64),one)] range(int(64),both,one)'
+-$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: is passed to formal 'a: int(8)'
+-genericArrayAsTupleSize.chpl:3: note: other candidates are:
+-$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   *(a: int(16), b: int(16))
+-$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   *(a: int(32), b: int(32))
+-note: and 58 other candidates, use --print-all-candidates to see them
++genericArrayAsTupleSize.chpl:3: error: unable to resolve call to '*': no matching candidates
++$CHPL_HOME/modules/internal/ChapelTuple.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
++$CHPL_HOME/modules/internal/ChapelTuple.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
++genericArrayAsTupleSize.chpl:3: note: omitting 59 more candidates that didn't match
 diff --git a/test/types/tuple/errors/indexHetTuple.good b/test/types/tuple/errors/indexHetTuple.good
-index cc1699cb7ee..37ca1c580d7 100644
+index cc1699cb7ee..d22f447a1ab 100644
 --- a/test/types/tuple/errors/indexHetTuple.good
 +++ b/test/types/tuple/errors/indexHetTuple.good
-@@ -1,5 +1,28 @@
+@@ -1,5 +1,33 @@
 -$CHPL_HOME/modules/internal/ChapelTuple.chpl:nnnn: In method 'this':
 -$CHPL_HOME/modules/internal/ChapelTuple.chpl:nnnn: error: invalid access of non-homogeneous tuple by runtime value
 -  $CHPL_HOME/modules/standard/Sort/RadixSortHelp.chpl:nnnn: called as ((real(64),int(64))).this(i: int(64)) from function 'msbRadixSortParamLastStartBit'
@@ -2605,6 +2632,11 @@ index cc1699cb7ee..37ca1c580d7 100644
 +$CHPL_HOME/modules/standard/Sort/ShellSort.chpl:nnnn: error: The comparator ContrivedComparator must implement either 'keyComparator', 'keyPartComparator', or 'relativeComparator' for (real(64), int(64))
 +$CHPL_HOME/modules/standard/Sort/RadixSortHelp.chpl:nnnn: In method 'bucketForRecord':
 +$CHPL_HOME/modules/standard/Sort/RadixSortHelp.chpl:nnnn: error: Bad comparator for radix sort ContrivedComparator with eltType (real(64), int(64))
++$CHPL_HOME/modules/standard/Sort/TwoArrayPartitioning.chpl:nnnn: In function 'bucketize':
++$CHPL_HOME/modules/standard/Sort/TwoArrayPartitioning.chpl:nnnn: error: Cannot establish type for call expression
++$CHPL_HOME/modules/standard/Sort/TwoArrayPartitioning.chpl:nnnn: error: Cannot establish type for tuple decl
++$CHPL_HOME/modules/standard/Sort/TwoArrayPartitioning.chpl:nnnn: error: Cannot establish type for call expression
++$CHPL_HOME/modules/standard/Sort/TwoArrayPartitioning.chpl:nnnn: error: Cannot establish type for tuple decl
 +$CHPL_HOME/modules/standard/Sort/MSBRadixSort.chpl:nnnn: In function 'msbRadixSort':
 +$CHPL_HOME/modules/standard/Sort/MSBRadixSort.chpl:nnnn: error: The comparator ContrivedComparator must implement either 'keyComparator', 'keyPartComparator', or 'relativeComparator' for (real(64), int(64))
 +$CHPL_HOME/modules/standard/Sort/MSBRadixSort.chpl:nnnn: error: Bad comparator for radix sort ContrivedComparator with eltType (real(64), int(64))
@@ -2626,6 +2658,14 @@ index cc1699cb7ee..37ca1c580d7 100644
 +$CHPL_HOME/modules/standard/Sort/MSBRadixSort.chpl:nnnn: error: Bad comparator for radix sort ContrivedComparator with eltType (real(64), int(64))
 +$CHPL_HOME/modules/standard/Sort/MSBRadixSort.chpl:nnnn: error: Bad comparator for radix sort ContrivedComparator with eltType (real(64), int(64))
 +$CHPL_HOME/modules/standard/Sort/MSBRadixSort.chpl:nnnn: error: Bad comparator for radix sort ContrivedComparator with eltType (real(64), int(64))
+diff --git a/test/types/tuple/errors/invalidTupleSizeExpr.good b/test/types/tuple/errors/invalidTupleSizeExpr.good
+index 07e0fe90dc1..6013d3fface 100644
+--- a/test/types/tuple/errors/invalidTupleSizeExpr.good
++++ b/test/types/tuple/errors/invalidTupleSizeExpr.good
+@@ -1,2 +1,2 @@
+ invalidTupleSizeExpr.chpl:1: In function 'main':
+-invalidTupleSizeExpr.chpl:1: error: tuple must have positive size
++invalidTupleSizeExpr.chpl:2: error: type specifier is a value of type 'void', but it was expected to be a type
 diff --git a/test/types/tuple/errors/returnWrongSize.good b/test/types/tuple/errors/returnWrongSize.good
 index da77619dc80..c717dab07ce 100644
 --- a/test/types/tuple/errors/returnWrongSize.good
@@ -2881,7 +2921,7 @@ index 85f70d81ba5..97f5f42574f 100644
 +illegalValueReturn.chpl:8: error: cannot return it with provided return intent
 +illegalValueReturn.chpl:2: error: could not determine return type for function
 diff --git a/test/types/type_variables/bharshbarg/illegalFieldQuery.good b/test/types/type_variables/bharshbarg/illegalFieldQuery.good
-index 36ea9a89178..704350ed77e 100644
+index 36ea9a89178..e29c74be642 100644
 --- a/test/types/type_variables/bharshbarg/illegalFieldQuery.good
 +++ b/test/types/type_variables/bharshbarg/illegalFieldQuery.good
 @@ -1,3 +1,5 @@
@@ -2889,18 +2929,18 @@ index 36ea9a89178..704350ed77e 100644
 -illegalFieldQuery.chpl:8: error: invalid query -- queried field must be a type or parameter
 -  illegalFieldQuery.chpl:13: called as foo(x: borrowed Foo(true,5))
 +illegalFieldQuery.chpl:8: error: unable to resolve call to 'Foo': no matching candidates
-+illegalFieldQuery.chpl:8: error: invalid class type construction
 +illegalFieldQuery.chpl:13: error: unable to resolve call to 'foo': no matching candidates
-+illegalFieldQuery.chpl:8: note: the following candidate didn't match
++illegalFieldQuery.chpl:8: note: call resolution was not completed because formal 1 of this candidate was ill-formed
++illegalFieldQuery.chpl:13: note: omitting 1 more candidates that didn't match
 diff --git a/test/types/type_variables/bharshbarg/thisOnTypeVar.good b/test/types/type_variables/bharshbarg/thisOnTypeVar.good
-index 273bd12b43d..d98f2af29ab 100644
+index 273bd12b43d..ca2b3bccbd9 100644
 --- a/test/types/type_variables/bharshbarg/thisOnTypeVar.good
 +++ b/test/types/type_variables/bharshbarg/thisOnTypeVar.good
 @@ -1 +1,4 @@
 -thisOnTypeVar.chpl:3: error: illegal call of type
 +thisOnTypeVar.chpl:3: error: unable to resolve call to 'this': no matching candidates
++$CHPL_HOME/modules/internal/ChapelBase.chpl:42: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:2432: note: the following candidate didn't match because it expects 1 actual, but none were provided
-+$CHPL_HOME/modules/internal/ChapelTuple.chpl:181: note: the following candidate didn't match because it expects 1 actual, but none were provided
 +thisOnTypeVar.chpl:3: note: omitting 11 more candidates that didn't match
 diff --git a/test/types/type_variables/deitz/functions/test_foo5-error.good b/test/types/type_variables/deitz/functions/test_foo5-error.good
 index ca5709a54b8..207dd5573c3 100644
@@ -2913,15 +2953,14 @@ index ca5709a54b8..207dd5573c3 100644
 +test_foo5-error.chpl:16: error: Cannot resolve call to 'foo': ambiguity
 +test_foo5-error.chpl:17: error: Cannot resolve call to 'foo': ambiguity
 diff --git a/test/types/type_variables/deitz/part1/test_clone_class1_old.good b/test/types/type_variables/deitz/part1/test_clone_class1_old.good
-index ea2f8dcec3f..58970e20f84 100644
+index ea2f8dcec3f..3ad632cfe85 100644
 --- a/test/types/type_variables/deitz/part1/test_clone_class1_old.good
 +++ b/test/types/type_variables/deitz/part1/test_clone_class1_old.good
-@@ -1,3 +1,2 @@
+@@ -1,3 +1 @@
 -test_clone_class1_old.chpl:8: error: invalid type specifier 'foo(2)'
 -test_clone_class1_old.chpl:8: note: type specifier did not match: foo(type x)
 -test_clone_class1_old.chpl:8: note: generic field 'x' must be instantiated with a type-expression
 +test_clone_class1_old.chpl:8: error: unable to resolve call to 'foo': no matching candidates
-+test_clone_class1_old.chpl:8: error: invalid class type construction
 diff --git a/test/types/type_variables/deitz/part1/test_clone_class1b.good b/test/types/type_variables/deitz/part1/test_clone_class1b.good
 index 4a67e4787c2..6fc06ca81c7 100644
 --- a/test/types/type_variables/deitz/part1/test_clone_class1b.good
@@ -3067,14 +3106,14 @@ index f091335475d..ccdca27dd5e 100644
 -assignValToTypeVar.chpl:2: error: illegal assignment of value to type
 +assignValToTypeVar.chpl:2: error: a type variable cannot be initialized with a regular value
 diff --git a/test/types/type_variables/diten/typeTupleIdxExtraArgs.good b/test/types/type_variables/diten/typeTupleIdxExtraArgs.good
-index e8603ca5061..777f7dae7c3 100644
+index e8603ca5061..4b37de75cdd 100644
 --- a/test/types/type_variables/diten/typeTupleIdxExtraArgs.good
 +++ b/test/types/type_variables/diten/typeTupleIdxExtraArgs.good
 @@ -1 +1,4 @@
 -typeTupleIdxExtraArgs.chpl:3: error: too many arguments to type index expression
 +typeTupleIdxExtraArgs.chpl:3: error: unable to resolve call to 'this': no matching candidates
++$CHPL_HOME/modules/internal/ChapelBase.chpl:48: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/internal/ChapelRange.chpl:2432: note: the following candidate didn't match because the provided actuals could not be mapped to its formals
-+$CHPL_HOME/modules/internal/ChapelTuple.chpl:181: note: the following candidate didn't match because the provided actuals could not be mapped to its formals
 +typeTupleIdxExtraArgs.chpl:3: note: omitting 11 more candidates that didn't match
 diff --git a/test/types/type_variables/diten/typeTupleOOB.0.good b/test/types/type_variables/diten/typeTupleOOB.0.good
 index 272cf2a6674..8063ea9c6a5 100644
@@ -3203,7 +3242,7 @@ index aa289f0aefb..247f9e1fa87 100644
 -loop-expr-ind.chpl:2: error: unimplemented feature: if you are attempting to use skyline arrays, they are not yet supported; if not, remove the index expression from this array type specification
 +loop-expr-ind.chpl:2: error: a type variable cannot be initialized with a regular value
 diff --git a/test/types/typedefs/bradc/redefineTypeNames.good b/test/types/typedefs/bradc/redefineTypeNames.good
-index 426c9bacc24..d1b70e79d3e 100644
+index 426c9bacc24..8aef9489d26 100644
 --- a/test/types/typedefs/bradc/redefineTypeNames.good
 +++ b/test/types/typedefs/bradc/redefineTypeNames.good
 @@ -8,3 +8,25 @@ redefineTypeNames.chpl:8: error: attempt to redefine reserved type 'imag'
@@ -3211,24 +3250,24 @@ index 426c9bacc24..d1b70e79d3e 100644
  redefineTypeNames.chpl:20: error: attempt to redefine reserved type 'imag'
  redefineTypeNames.chpl:22: error: attempt to redefine reserved type 'complex'
 +redefineTypeNames.chpl:10: error: unable to resolve call to 'writeln': no matching candidates
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:414: note: the following candidate didn't match because the provided actuals could not be mapped to its formals
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because an actual couldn't be passed to a formal
++$CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +redefineTypeNames.chpl:10: note: omitting 1 more candidates that didn't match
 +redefineTypeNames.chpl:11: error: unable to resolve call to 'writeln': no matching candidates
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:414: note: the following candidate didn't match because the provided actuals could not be mapped to its formals
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because an actual couldn't be passed to a formal
++$CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +redefineTypeNames.chpl:11: note: omitting 1 more candidates that didn't match
 +redefineTypeNames.chpl:12: error: unable to resolve call to 'writeln': no matching candidates
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:414: note: the following candidate didn't match because the provided actuals could not be mapped to its formals
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because an actual couldn't be passed to a formal
++$CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +redefineTypeNames.chpl:12: note: omitting 1 more candidates that didn't match
 +redefineTypeNames.chpl:13: error: unable to resolve call to 'writeln': no matching candidates
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:414: note: the following candidate didn't match because the provided actuals could not be mapped to its formals
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because an actual couldn't be passed to a formal
++$CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +redefineTypeNames.chpl:13: note: omitting 1 more candidates that didn't match
 +redefineTypeNames.chpl:14: error: unable to resolve call to 'writeln': no matching candidates
-+$CHPL_HOME/modules/standard/ChapelIO.chpl:414: note: the following candidate didn't match because the provided actuals could not be mapped to its formals
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because an actual couldn't be passed to a formal
++$CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +redefineTypeNames.chpl:14: note: omitting 1 more candidates that didn't match
 +redefineTypeNames.chpl:24: error: type mismatch between declared type of 'a' and initialization expression
 +redefineTypeNames.chpl:28: error: type mismatch between declared type of 'e' and initialization expression
