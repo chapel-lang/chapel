@@ -57,12 +57,21 @@ def infer_docker_os(package):
             return docker
 
     # do fedora separately, since its easy to predict
-    m = re.search(r".fc(\d+).", package)
+    m = re.search(r"\.fc(\d+)\.", package)
     if m:
         fc = m.group(1)
         return f"fedora:{fc}"
 
     return ValueError(f"Could not infer docker image from package {package}")
+
+def infer_docker_os_tag(package):
+    prefixes = ("el", "amzn", "ubuntu", "debian", "fc")
+    regex = r"\.((?:" + "|".join(prefixes) + r")\d+)\."
+    m = re.search(regex, package)
+    if m:
+        return m.group(1)
+    else:
+        raise ValueError(f"Could not infer docker os tag from package {package}")
 
 
 def add_digest_to_image(docker_os):
@@ -131,7 +140,8 @@ def build_docker(test_dir, package_path, package_name, docker_os):
     # now invoke the proper script to fill in the rest of the Dockerfile
     pkg_type = infer_pkg_type(package_name)
     fill_script = "{}/util/packaging/{}/common/fill_docker_template.py".format(chpl_home, pkg_type)
-    run_command(["python3", fill_script, output_file])
+    os_tag = infer_docker_os_tag(package_name)
+    run_command(["python3", fill_script, output_file, "--osname", os_tag])
 
 
 def docker_build_image(
