@@ -823,14 +823,17 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
       std::string fieldName;
       auto formal = candidate.untypedForErr()->formalDecl(candidate.formalIdx());
       if (auto named = formal->toNamedDecl()) {
-        fieldName = ", corresponding to field '" + named->name().str() + "'";
+        fieldName = ", corresponding to field '" + named->name().str() + "',";
       }
 
       wr.note(candidate.idForErr(),
-              "the compiler-generated initializer didn't match because ", expectedThingArticle, " ",
+              "the compiler-generated initializer didn't match because ",
               expectedThing, " ", candidate.formalIdx() + 1,
-              fieldName, " had a generic type specifier:");
+              fieldName, " had a generic type expression:");
       wr.code(candidate.idForErr(), { formal });
+      wr.note(formal,
+              "currently, calls to initializers cannot omit arguments for fields with generic type expressions.");
+      wr.message("Consider using a 'type' field to make genericity explicit.");
     } else if (reason == resolution::FAIL_FORMAL_ACTUAL_MISMATCH) {
       bool printedSpecial = false;
       if (auto fn = candidate.initialForErr()) {
