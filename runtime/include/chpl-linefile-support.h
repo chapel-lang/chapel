@@ -23,22 +23,11 @@
 
 #include "chpltypes.h"
 
+#include "fileinfo/chpl-linefile-defs.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#define CHPL_FILE_IDX_INTERNAL 1 // <internal>
-
-#define CHPL_FILE_IDX_COMMAND_LINE -1     // (command-line)
-#define CHPL_FILE_IDX_COMMAND_LINE_ARG -2 // <command-line arg>
-#define CHPL_FILE_IDX_FORK_LARGE -3       // "fork large"
-#define CHPL_FILE_IDX_MAIN_PROGRAM -4     // "main program"
-#define CHPL_FILE_IDX_UNKNOWN -5          // "<unknown>"
-#define CHPL_FILE_IDX_IDLE_TASK -6        // "|idle|"
-#define CHPL_FILE_IDX_COMM_TASK -7        // "<comm thread>"
-#define CHPL_FILE_IDX_MAIN_TASK -8        // "<main task>"
-#define CHPL_FILE_IDX_ON_BODY_TASK -9     // "on-body task"
-#define CHPL_FILE_IDX_SAVED_FILENAME -10  // variable, see below
 
 // chpl_saveFilename stores the passed in char*, subsequent calls to
 // chpl_lookupFilename(CHPL_FILE_IDX_SAVED_FILENAME) will return that stored
