@@ -1150,6 +1150,10 @@ handleRejectedCandidates(Resolver::CallResultWrapper& result,
   // explaining why each candidate was rejected.
   std::vector<const uast::VarLikeDecl*> actualDecls;
   actualDecls.resize(rejected.size());
+  std::stable_sort(rejected.begin(), rejected.end(),
+            [](const ApplicabilityResult& a, const ApplicabilityResult& b) {
+    return a.reason() > b.reason();
+  });
   std::reverse(rejected.begin(), rejected.end());
   // check each rejected candidate for uninitialized actuals
   for (size_t i = 0; i < rejected.size(); i++) {

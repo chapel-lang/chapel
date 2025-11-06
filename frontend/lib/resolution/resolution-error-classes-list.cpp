@@ -20,6 +20,7 @@
 #include "chpl/framework/ErrorBase.h"
 #include "chpl/framework/ErrorWriter.h"
 #include "chpl/parsing/parsing-queries.h"
+#include "chpl/resolution/resolution-types.h"
 #include "chpl/resolution/scope-types.h"
 #include "chpl/framework/query-impl.h"
 #include "chpl/uast/VisibilityClause.h"
@@ -815,6 +816,21 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
       wr.message("For correctness reasons, candidate selection and disambiguation cannot proceed if any of the candidates "
                  "is ill-formed.");
       break;
+    } else if (reason == resolution::FAIL_NO_DEFAULT_VALUE_FOR_GENERIC_FIELD) {
+      CHPL_ASSERT(candidate.untypedForErr() && candidate.initialForErr());
+      CHPL_ASSERT(candidate.formalIdx() >= 0 && candidate.formalIdx() < candidate.initialForErr()->numFormals());
+
+      std::string fieldName;
+      auto formal = candidate.untypedForErr()->formalDecl(candidate.formalIdx());
+      if (auto named = formal->toNamedDecl()) {
+        fieldName = ", corresponding to field '" + named->name().str() + "'";
+      }
+
+      wr.note(candidate.idForErr(),
+              "the compiler-generated initializer didn't match because ", expectedThingArticle, " ",
+              expectedThing, " ", candidate.formalIdx() + 1,
+              fieldName, " had a generic type specifier:");
+      wr.code(candidate.idForErr(), { formal });
     } else if (reason == resolution::FAIL_FORMAL_ACTUAL_MISMATCH) {
       bool printedSpecial = false;
       if (auto fn = candidate.initialForErr()) {

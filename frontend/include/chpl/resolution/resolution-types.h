@@ -1412,25 +1412,27 @@ struct CandidatesAndForwardingInfo {
 
 /**
   An enum that represents the reason why a function candidate was filtered out
-  during call resolution.
+  during call resolution. Ordered by "most important" to show to the user.
  */
 enum CandidateFailureReason {
+  /* Resolving one of the signature led to errors. */
+  FAIL_ERRORS_THROWN,
+  /* The user tried to use a default value for a generic field in an initializer. */
+  FAIL_NO_DEFAULT_VALUE_FOR_GENERIC_FIELD,
+  /* The wrong number of varargs were given to the function. */
+  FAIL_VARARG_MISMATCH,
+  /* An interface tried to resolve an associated type function but it didn't return a type */
+  FAIL_INTERFACE_NOT_TYPE_INTENT,
+  /* The where clause returned 'false'. */
+  FAIL_WHERE_CLAUSE,
   /* Cannot pass an actual to one of the candidate's formals. */
   FAIL_CANNOT_PASS,
   /* Not a valid formal-actual mapping for this candidate. */
   FAIL_FORMAL_ACTUAL_MISMATCH,
   /* Special case of formal/actual mismatch when we tried to call a parallel iterator without a tag. */
   FAIL_FORMAL_ACTUAL_MISMATCH_ITERATOR_API,
-  /* The wrong number of varargs were given to the function. */
-  FAIL_VARARG_MISMATCH,
-  /* The where clause returned 'false'. */
-  FAIL_WHERE_CLAUSE,
   /* A parenful call to a parenless function or vice versa. */
   FAIL_PARENLESS_MISMATCH,
-  /* An interface tried to resolve an associated type function but it didn't return a type */
-  FAIL_INTERFACE_NOT_TYPE_INTENT,
-  /* Resolving one of the signature led to errors. */
-  FAIL_ERRORS_THROWN,
   /* Some other, generic reason. */
   FAIL_CANDIDATE_OTHER,
 };
@@ -1567,6 +1569,12 @@ class ApplicabilityResult {
 
   static ApplicabilityResult failureErrorInWhereClause(const TypedFnSignature* fn) {
     return ApplicabilityResult(fn, nullptr, FAIL_ERRORS_THROWN, FAIL_FORMAL_OTHER, fn->numFormals());
+  }
+
+  static ApplicabilityResult failureNoDefaultValueForGenericField(const TypedFnSignature* fn,
+                                                                  int formalIdx) {
+    return ApplicabilityResult(fn, nullptr, FAIL_NO_DEFAULT_VALUE_FOR_GENERIC_FIELD,
+                               FAIL_FORMAL_OTHER, formalIdx);
   }
 
   static bool update(ApplicabilityResult& keep, ApplicabilityResult& addin) {
