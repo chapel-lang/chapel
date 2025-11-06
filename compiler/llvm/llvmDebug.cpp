@@ -586,13 +586,14 @@ llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
     // TODO: we should more directly check for sublocales, not just use
     // the gpu locale model as a proxy for that
     if (usingGpuLocaleModel()) {
+      llvm::Type* subnodeTy = info->lvt->getType("c_sublocid_t");
       EltTys.push_back(dibuilder->createMemberType(
         defInfo.maybeScope(),
         "subloc",
         defInfo.file(),
         defInfo.line(),
-        layout.getTypeSizeInBits(nodeTy),
-        8*layout.getABITypeAlign(nodeTy).value(),
+        layout.getTypeSizeInBits(subnodeTy),
+        8*layout.getABITypeAlign(subnodeTy).value(),
         layout.getTypeSizeInBits(nodeTy), /* offset, assume after node */
         llvm::DINode::FlagZero,
         getType(dtInt[INT_SIZE_32])
