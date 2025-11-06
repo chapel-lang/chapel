@@ -36,7 +36,7 @@ enum chpl_file_idx_t {
   CHPL_FILE_IDX_COMM_TASK = -7,        // "<comm thread>"
   CHPL_FILE_IDX_MAIN_TASK = -8,        // "<main task>"
   CHPL_FILE_IDX_ON_BODY_TASK = -9,     // "on-body task"
-  CHPL_FILE_IDX_SAVED_FILENAME = -10,  // variable, see below
+  CHPL_FILE_IDX_SAVED_FILENAME = -10,  // variable, see chpl-linefile-support.h
 };
 
 #ifdef __cplusplus
