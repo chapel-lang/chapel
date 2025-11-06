@@ -3073,6 +3073,35 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
   //   partial information is partial.
   bool wouldBePartial = false;
 
+  // For calls like T(args), we might skip not only because of the actuals,
+  // but if T refers to an as-yet unspecified type.
+  if (!ci.calledType().isUnknown()) {
+    CHPL_ASSERT(ci.calledType().isType());
+    auto call = callLike->toCall();
+    CHPL_ASSERT(call != nullptr && call->calledExpression() != nullptr);
+    auto calledExpr = call->calledExpression();
+
+    const ResolvedExpression* calledRe = nullptr;
+    ID calledToId;
+    if ((calledRe = byPostorder.byAstOrNull(calledExpr))) {
+      calledToId = calledRe->toId();
+    }
+
+    auto g = getTypeGenericity(context, ci.calledType().type());
+    if (g != Type::CONCRETE) {
+      if (skipDependingOnEagerness(rv, calledToId, calledRe)) {
+        // if we are making a best-effort attempt to resolve, this
+        // is our cue to give up.
+        skip = GENERIC_TYPE;
+        wouldBePartial = true;
+        byPostorder.byAst(callLike).setIsPartialResult(wouldBePartial);
+
+        // don't bother going through the actuals
+        return skip;
+      }
+    }
+  }
+
   int actualIdx = 0;
   for (const auto& actual : ci.actuals()) {
     ID toId; // does the actual refer directly to a particular variable?
