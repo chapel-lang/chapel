@@ -38,7 +38,9 @@ def make(*args, **kwargs):
 pjoin = os.path.join
 
 def log(*args, **kwargs):
-    print("[gen_release]", *args, **kwargs)
+    _kwargs = {'flush': True}
+    _kwargs.update(kwargs)
+    print("[gen_release]", *args, **_kwargs)
 
 
 def rm_rf(*paths):
