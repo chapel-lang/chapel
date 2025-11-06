@@ -5883,13 +5883,15 @@ void Resolver::exit(const Dot* dot) {
   if (dot->field() == USTR("type")) {
 
     const Type* receiverType = nullptr;
-    if (skipDependingOnEagerness(this, receiver.toId(), &receiver)) {
+    if (receiver.type().isUnknownOrErroneous()) {
+      receiverType = UnknownType::get(context);
+      r.setIsPartialResult(true);
+    } else if (getTypeGenericity(context, receiver.type().type()) != Type::CONCRETE &&
+               skipDependingOnEagerness(this, receiver.toId(), &receiver)) {
       receiverType = UnknownType::get(context);
       r.setIsPartialResult(true);
     } else if (receiver.type().type() != nullptr) {
       receiverType = receiver.type().type();
-    } else {
-      receiverType = UnknownType::get(context);
     }
 
     if (!receiver.type().isType()) {

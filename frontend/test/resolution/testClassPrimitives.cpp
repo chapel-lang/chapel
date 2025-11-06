@@ -76,7 +76,10 @@ static void testPrimitive(std::string primitive, std::vector<std::tuple<const ch
     if (expectedValidities[i]) {
       assert(varTypes.at(variables[i]).isParamTrue());
     } else {
-      assert(varTypes.at(variables[i]).isErroneousType());
+      // if we are calling .type, we'll get 'unknown' instead of erroneous
+      bool callDotType = std::get<2>(args[i]);
+      assert(callDotType ? varTypes.at(variables[i]).isUnknown()
+                         : varTypes.at(variables[i]).isErroneousType());
     }
   }
 
