@@ -80,15 +80,15 @@ def main():
         lines = firstFile.readlines()
         # get the perfkeys out of the first line, first line starts with a '#'
         perfKeysString = lines[0]
-        perfKeys = [ l.strip() for l in perfKeysString.replace('#', '').split('\t') ]
-        # There are as many passes are there are keys (-1 for the date)
-        numPasses = len(perfKeys) - 1
+        perfKeys = [ l.strip() for l in perfKeysString.replace('#', '').split('\t')[1:] ]
+        # There are as many passes are there are time keys
+        numPasses = len([ k for k in perfKeys if "time" in k ])
         # grab the date
         date = lines[1].split('\t')[0]
         # create two lists to keep track of the combined results. One for the
         # tests in the release/examples directory and one for all tests
-        allCombinedValues = [ float(0) for i in range(numPasses) ]
-        releaseExampleCombinedValues = [ float(0) for i in range(numPasses) ]
+        allCombinedValues = [ float(0) for i in range(len(perfKeys)) ]
+        releaseExampleCombinedValues = [ float(0) for i in range(len(perfKeys)) ]
         firstFile.close()
 
     except IOError:
@@ -109,16 +109,16 @@ def main():
             # read in the actual values and remove the date
             perfValues = [ l.strip() for l in lines[1].split('\t')[1:] ]
             # check that we had the right number of passes
-            if len(perfValues)  != numPasses:
+            if len(perfValues) != len(perfKeys):
                 sys.stderr.write('[ERROR: num passes is not the same for all files: %s]\n' %(tempDatDir + datFile))
                 continue
             # for each value add it to the running total and maybe the release
             # example running total if it was in that dir
             for valueIndex in range(len(perfValues)):
-               value = float(perfValues[valueIndex])
-               allCombinedValues[valueIndex] += value;
-               if isReleaseExample:
-                   releaseExampleCombinedValues[valueIndex] += value;
+                value = float(perfValues[valueIndex])
+                allCombinedValues[valueIndex] += value
+                if isReleaseExample:
+                    releaseExampleCombinedValues[valueIndex] += value
             f.close()
 
         except IOError:
@@ -126,7 +126,7 @@ def main():
             return -1
 
     # get the total time compiling, which is the last "pass"
-    totalTimeCompiling = allCombinedValues[numPasses - 1]
+    totalTimeCompiling = next(allCombinedValues[i] for i in range(len(allCombinedValues)) if perfKeys[i] == 'total time :')
 
     # compute the average for each value and truncate to two decimal places
     allCombinedValues = [ '%1.2f'%(i/numCompiles) for i in allCombinedValues ]
