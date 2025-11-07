@@ -2942,28 +2942,6 @@ static void resolveReduceAssign(Resolver& rv, const OpCall* op) {
   resolvedOp.setType(QualifiedType(QualifiedType::CONST_VAR, VoidType::get(rv.context)));
 }
 
-// checks if an identifier referring to toId could be attempting to set its
-// type via a call to an 'out' function.
-static bool couldBeOutInitialized(Resolver* rv, const ID& toId) {
-  if (!asttags::isVarLikeDecl(parsing::idToTag(rv->context, toId))) return false;
-
-  auto vld = parsing::idToAst(rv->context, toId)->toVarLikeDecl();
-
-  // if it had a type expression or an init expression, we certainly can't
-  // be trying to out-initialize it.
-  if (vld->typeExpression() || vld->initExpression()) return false;
-
-  auto parentDecl = parsing::idToContainingMultiDeclId(rv->context, toId);
-  auto parentOfDecl = parsing::idToParentId(rv->context, parentDecl);
-  if (asttags::isIndexableLoop(parsing::idToTag(rv->context, parentOfDecl))) {
-    // if this is a (multi)decl in a loop, it can't be out-initialized;
-    // it's set by the loop.
-    return false;
-  }
-
-  return true;
-}
-
 static bool const&
 toIdAffectedBySubstitutions(Context* context, ID toId) {
   QUERY_BEGIN(toIdAffectedBySubstitutions, context, toId);
@@ -2989,6 +2967,72 @@ toIdAffectedBySubstitutions(Context* context, ID toId) {
   return QUERY_END(affectedBySubstitutions);
 }
 
+static bool idCouldBePartial(Resolver* rv, const ID& toId) {
+  bool noSubstitution = rv->substitutions == nullptr ||
+    (!toId.isEmpty() && rv->substitutions->count(toId) == 0);
+
+  ID toUse = toId;
+  if (rv->substitutions && noSubstitution && !toId.isEmpty()) {
+    // formals like `x` in `(x, y)` don't have their own substitutions,
+    // but their parent multi-decl might.
+    auto parentId = parsing::idToContainingMultiDeclId(rv->context, toId);
+    if (asttags::isTupleDecl(parsing::idToTag(rv->context, parentId))) {
+      toUse = parentId;
+      noSubstitution = rv->substitutions->count(toUse) == 0;
+    }
+  }
+
+  return noSubstitution &&
+         toIdAffectedBySubstitutions(rv->context, toUse);
+}
+
+// checks if an identifier referring to toId could be attempting to set its
+// type via a call to an 'out' function.
+static bool couldBeOutInitialized(Resolver* rv, const ID& toId, const QualifiedType& qt) {
+  // params and types can't be out-initialized, nor can refs.
+  if (qt.kind() == QualifiedType::PARAM ||
+      qt.kind() == QualifiedType::TYPE ||
+      qt.isRef()) return false;
+
+  if (!asttags::isVarLikeDecl(parsing::idToTag(rv->context, toId))) return false;
+
+  auto vld = parsing::idToAst(rv->context, toId)->toVarLikeDecl();
+
+  // if it an init expression, we certainly can't be trying to out-initialize it.
+  // We might be out-initialize variables with type expressions (e.g., for
+  // 'var x: numeric').
+  if (vld->initExpression()) return false;
+
+  auto parentDecl = parsing::idToContainingMultiDeclId(rv->context, toId);
+  auto parentOfDecl = parsing::idToParentId(rv->context, parentDecl);
+  if (asttags::isIndexableLoop(parsing::idToTag(rv->context, parentOfDecl))) {
+    // if this is a (multi)decl in a loop, it can't be out-initialized;
+    // it's set by the loop.
+    return false;
+  }
+
+  // While we're lazy, it's hard to tell if something is generic because
+  // it's uninstantiated, or generic because it should be out-initialized.
+  // Wait until we know more.
+  if (rv->callEagerness == Resolver::CallResolutionEagerness::LAZY &&
+      idCouldBePartial(rv, toId)) {
+    return false;
+  }
+
+  if (qt.isUnknown() && vld->typeExpression() == nullptr) {
+    // var x;
+    // initialize(x);
+    return true;
+  } else if (vld->typeExpression() &&
+             getTypeGenericity(rv->context, qt.type()) != Type::CONCRETE) {
+    // var x: numeric;
+    // initialize(x);
+    return true;
+  }
+
+  return true;
+}
+
 static bool skipDependingOnEagerness(Resolver* rv, const ID& toId,
                                      const ResolvedExpression* actualRe) {
   if (rv->callEagerness == Resolver::CallResolutionEagerness::EAGER) {
@@ -2998,22 +3042,7 @@ static bool skipDependingOnEagerness(Resolver* rv, const ID& toId,
       actualRe != nullptr && toId.isEmpty() && !actualRe->isBuiltin();
     if (compoundExpr) return actualRe->isPartialResult();
 
-    bool noSubstitution = rv->substitutions == nullptr ||
-      (!toId.isEmpty() && rv->substitutions->count(toId) == 0);
-
-    ID toUse = toId;
-    if (rv->substitutions && noSubstitution && !toId.isEmpty()) {
-      // formals like `x` in `(x, y)` don't have their own substitutions,
-      // but their parent multi-decl might.
-      auto parentId = parsing::idToContainingMultiDeclId(rv->context, actualRe->toId());
-      if (asttags::isTupleDecl(parsing::idToTag(rv->context, parentId))) {
-        toUse = parentId;
-        noSubstitution = rv->substitutions->count(toUse) == 0;
-      }
-    }
-
-    return noSubstitution &&
-           toIdAffectedBySubstitutions(rv->context, toUse);
+    return idCouldBePartial(rv, toId);
   }
 }
 
@@ -3092,11 +3121,7 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
       // always skip if there is an ErroneousType
       skip = ERRONEOUS_ACT;
     } else if (!toId.isEmpty() && !isNonOutFormal &&
-               qt.isUnknown() &&
-               qt.kind() != QualifiedType::PARAM &&
-               qt.kind() != QualifiedType::TYPE &&
-               qt.isRef() == false &&
-               couldBeOutInitialized(rv, toId)) {
+               couldBeOutInitialized(rv, toId, qt)) {
       // don't skip because it could be initialized with 'out' intent,
       // but not for non-out formals because they can't be split-initialized.
     } else if (actualAst != nullptr && actualAst->isTypeQuery() && ci.calledType().isType()) {
