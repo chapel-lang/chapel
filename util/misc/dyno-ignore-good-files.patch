@@ -437,18 +437,14 @@ index d3234dfb69d..a066cd49173 100644
 +badenum.chpl:2: note: the constant 'a' is associated with -1, a param of type 'int(64)', which requires a signed integer type
 +badenum.chpl:2: note: however, the constant 'b' is associated with 9223372036854775808, a param of type 'uint(64)', which requires an unsigned integer type
 diff --git a/test/types/enum/indexEnumType.good b/test/types/enum/indexEnumType.good
-index 79222cce404..44dfeb71769 100644
+index 79222cce404..0a025653a75 100644
 --- a/test/types/enum/indexEnumType.good
 +++ b/test/types/enum/indexEnumType.good
-@@ -1,2 +1,6 @@
+@@ -1,2 +1,2 @@
 -indexEnumType.chpl:2: error: illegal type index expression 'testEnum[0]'
 -indexEnumType.chpl:2: note: enum type 'testEnum' cannot be indexed in this manner
-+internal error: UTI-MIS-1049 chpl version 2.7.0 pre-release (de786db05f4)
-+
-+Internal errors indicate a bug in the Chapel compiler,
-+and we're sorry for the hassle.  We would appreciate your reporting this bug --
-+please see https://chapel-lang.org/bugs.html for instructions.
-+
++indexEnumType.chpl:2: error: unable to resolve call to 'testEnum': no matching candidates
++indexEnumType.chpl:1: note: the type 'testEnum' does not support indexing
 diff --git a/test/types/enum/ldelaney/enum-functions-bad.good b/test/types/enum/ldelaney/enum-functions-bad.good
 index 2f660cab63e..e361864c654 100644
 --- a/test/types/enum/ldelaney/enum-functions-bad.good
