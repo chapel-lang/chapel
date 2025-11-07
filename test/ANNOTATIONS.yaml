@@ -630,6 +630,9 @@ all:
   08/28/25:
     - text: Update to GASNet 2025.8 (#27717)
       config: 16-node-apollo-hdr
+  09/27/25:
+    - text: System hardware/software change
+      config: 16-node-hpe-cray-ex
 
 # End all
 
