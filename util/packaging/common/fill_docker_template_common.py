@@ -184,7 +184,9 @@ def generate_configs(base_config: Dict[str, Union[str,List[str]]], osname: str) 
         and cfg.get("CHPL_GASNET_SEGMENT") == "everything",
         lambda cfg: cfg.get("CHPL_GASNET_SEGMENT") != "everything"
         and cfg.get("CHPL_TARGET_MEM") == "cstdlib",
-        lambda cfg: cfg.get("CHPL_TARGET_COMPILER") == "llvm" and cfg.get("CHPL_SANITIZE_EXE") != "none" and osname == "amzn2023",
+    lambda cfg: cfg.get("CHPL_TARGET_COMPILER") == "llvm"
+    and cfg.get("CHPL_SANITIZE_EXE") != "none"
+        and osname in ("amzn2023", "ubuntu22", "debian12"),
     ]
     keys = list(base_config.keys())
 
