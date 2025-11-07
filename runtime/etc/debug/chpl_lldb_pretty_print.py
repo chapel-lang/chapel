@@ -35,7 +35,7 @@ class Ptr:
                 f"chpl_debug_free((void*){self.ptr.GetValueAsUnsigned()})"
             )
 
-    def __call__(self):
+    def get(self):
         if self.ptr is not None:
             return self.ptr
         else:
@@ -282,7 +282,7 @@ def DomainSummary(valobj, internal_dict):
     _instance = MaybeResolveWidePointer(
         valobj.GetNonSyntheticValue().GetChildMemberWithName("_instance")
     )
-    ranges = _instance().GetNonSyntheticValue().GetChildMemberWithName("ranges")
+    ranges = _instance.get().GetNonSyntheticValue().GetChildMemberWithName("ranges")
     return "{" + RangesToString(ranges) + "}"
 
 
@@ -295,7 +295,7 @@ class DomainProvider:
         _instance = MaybeResolveWidePointer(
             valobj.GetNonSyntheticValue().GetChildMemberWithName("_instance")
         )
-        ranges = _instance().GetNonSyntheticValue().GetChildMemberWithName("ranges")
+        ranges = _instance.get().GetNonSyntheticValue().GetChildMemberWithName("ranges")
         self.synthetic_children["dim"] = ranges
 
     def has_children(self):
@@ -350,18 +350,18 @@ def ArraySummary(valobj, internal_dict):
     )
 
     domClass = MaybeResolveWidePointer(
-        _instance().GetChildMemberWithName("dom")
+        _instance.get().GetChildMemberWithName("dom")
     )
-    ranges = domClass().GetNonSyntheticValue().GetChildMemberWithName("ranges")
-    return f"[{RangesToString(ranges)}] {GetArrayType(_instance()).GetName()}"
+    ranges = domClass.get().GetNonSyntheticValue().GetChildMemberWithName("ranges")
+    return f"[{RangesToString(ranges)}] {GetArrayType(_instance.get()).GetName()}"
 
 
 def GetArrayType(_instance):
     # returns SBType
     data = MaybeResolveWidePointer(_instance)
-    ddata = data().GetNonSyntheticValue().GetChildMemberWithName("data")
+    ddata = data.get().GetNonSyntheticValue().GetChildMemberWithName("data")
     ddata_addr = MaybeResolveWidePointer(ddata)
-    return ddata_addr().GetType().GetPointeeType()
+    return ddata_addr.get().GetType().GetPointeeType()
 
 
 class ArrayProvider:
@@ -385,8 +385,8 @@ class ArrayProvider:
             )
         )
         temp = MaybeResolveWidePointer(self._instance)
-        self.domClass = temp().GetChildMemberWithName("dom")
-        self.data = temp().GetChildMemberWithName("data")
+        self.domClass = temp.get().GetChildMemberWithName("dom")
+        self.data = temp.get().GetChildMemberWithName("data")
         # TODO: itd be nice to have a domain as a valid child too
         # but the array printer currently gets confused if we do that
         # self.synthetic_children["domain"] = self.domClass
@@ -402,7 +402,7 @@ class ArrayProvider:
         resolved_dom = MaybeResolveWidePointer(self.domClass)
         # For 1D arrays, get the range to determine array bounds
         ranges = (
-            resolved_dom()
+            resolved_dom.get()
             .GetNonSyntheticValue()
             .GetChildMemberWithName("ranges")
         )
@@ -439,7 +439,7 @@ class ArrayProvider:
         resolved_data = MaybeResolveWidePointer(
             self.data, num_elements * element_size
         )
-        data_ptr = resolved_data().GetValueAsUnsigned()
+        data_ptr = resolved_data.get().GetValueAsUnsigned()
 
         def generate_indices(dims, bounds):
             if dims == 0:
@@ -513,10 +513,10 @@ def ManagedObjectRecognizer(sbtype, internal_dict):
 def ManagedObjectSummary(valobj, internal_dict):
     chpl_p = MaybeResolveWidePointer(valobj.GetNonSyntheticValue().GetChildMemberWithName("chpl_p"))
 
-    if chpl_p().GetValueAsUnsigned() == 0:
+    if chpl_p.get().GetValueAsUnsigned() == 0:
         return "nil"
     else:
-        return chpl_p().GetSummary() or chpl_p().GetValue()
+        return chpl_p.get().GetSummary() or chpl_p.get().GetValue()
 
 
 class ManagedObjectProvider:
@@ -526,11 +526,11 @@ class ManagedObjectProvider:
         chpl_p = MaybeResolveWidePointer(self.valobj.GetNonSyntheticValue().GetChildMemberWithName(
             "chpl_p"
         ))
-        if chpl_p().GetValueAsUnsigned() == 0:
+        if chpl_p.get().GetValueAsUnsigned() == 0:
             self.synthetic_children = {}
         else:
             self.synthetic_children = {}
-            deref_chpl_p = chpl_p().Dereference()
+            deref_chpl_p = chpl_p.get().Dereference()
             if deref_chpl_p.IsValid():
                 for i in range(deref_chpl_p.GetNumChildren()):
                     child = deref_chpl_p.GetChildAtIndex(i)
@@ -562,10 +562,10 @@ class ManagedObjectProvider:
 
 def WidePointerSummary(valobj, internal_dict):
     resolved_ptr = ResolveWidePointer(valobj)
-    if not resolved_ptr().IsValid():
+    if not resolved_ptr.get().IsValid():
         return "nil"
     else:
-        return resolved_ptr().GetSummary() or resolved_ptr().GetValue()
+        return resolved_ptr.get().GetSummary() or resolved_ptr.get().GetValue()
 
 
 class WidePointerProvider:
@@ -573,11 +573,11 @@ class WidePointerProvider:
         self.valobj = valobj
 
         resolved_ptr = ResolveWidePointer(self.valobj)
-        if not resolved_ptr().IsValid():
+        if not resolved_ptr.get().IsValid():
             self.synthetic_children = {}
         else:
             self.synthetic_children = {}
-            deref_ptr = resolved_ptr().Dereference()
+            deref_ptr = resolved_ptr.get().Dereference()
             if deref_ptr.IsValid():
                 for i in range(deref_ptr.GetNumChildren()):
                     child = deref_ptr.GetChildAtIndex(i)
@@ -642,7 +642,7 @@ def DebugFunc_ResolveWidePointer(debugger, command, result, internal_dict):
 
     resolved_ptr = ResolveWidePointer(wideptr, size)
     result.PutCString(
-        f"Resolved Pointer: ({resolved_ptr().GetTypeName()}) {resolved_ptr().GetValue()}"
+        f"Resolved Pointer: ({resolved_ptr.get().GetTypeName()}) {resolved_ptr.get().GetValue()}"
     )
     result.SetStatus(lldb.eReturnStatusSuccessFinishResult)
 
