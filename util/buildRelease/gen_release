@@ -142,12 +142,12 @@ def main():
     # Just use whatever is found in $CHPL_HOME
     if "CHPL_GEN_RELEASE_NO_CLONE" in os.environ:
         # copy the current CHPL_HOME into the directory where chapel will be built
-        log("CHPL_GEN_RELEASE_NO_CLONE: Creating build workspace with tar...")
-        with cd(chplhome):
-            p = run(tar_executable, "-cf", "-", ".", stdout=subprocess.PIPE)
-            with cd(archive_dir):
-                run(tar_executable, "-xf", "-", input=p.stdout)
-            del p  # free all the memory used by the tar file
+        log("CHPL_GEN_RELEASE_NO_CLONE: Creating build workspace in", archive_dir)
+        shutil.copytree(chplhome, archive_dir,
+                        dirs_exist_ok=True,
+                        ignore_dangling_symlinks=True, symlinks=True,
+                        copy_function=shutil.copy2)
+
         resultdir = pjoin(chplhome, "tar")
     else:
         # check out a clean copy of the sources into the directory where chapel will be built
