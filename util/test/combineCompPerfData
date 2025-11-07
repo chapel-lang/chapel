@@ -115,10 +115,10 @@ def main():
             # for each value add it to the running total and maybe the release
             # example running total if it was in that dir
             for valueIndex in range(len(perfValues)):
-               value = float(perfValues[valueIndex])
-               allCombinedValues[valueIndex] += value;
-               if isReleaseExample:
-                   releaseExampleCombinedValues[valueIndex] += value;
+                value = float(perfValues[valueIndex])
+                allCombinedValues[valueIndex] += value
+                if isReleaseExample:
+                    releaseExampleCombinedValues[valueIndex] += value
             f.close()
 
         except IOError:
