@@ -1,3 +1,95 @@
+diff --git a/doc/rst/language/spec/classes.rst b/doc/rst/language/spec/classes.rst
+index 04d4ef8da31..4f9c9345d55 100644
+--- a/doc/rst/language/spec/classes.rst
++++ b/doc/rst/language/spec/classes.rst
+@@ -260,6 +260,7 @@ available for this purpose (see :ref:`Explicit_Class_Conversions`).
+    .. BLOCK-test-chapeloutput
+ 
+       duplicate-management.chpl:2: error: type expression uses multiple memory management strategies ('borrowed' and 'unmanaged')
++      duplicate-management.chpl:2: error: cannot default initialize variable using non-nilable class type
+ 
+ ..
+ 
+@@ -947,7 +948,7 @@ be issued.
+    .. code-block:: printoutput
+ 
+       usedBeforeInitialized.chpl:4: In initializer:
+-      usedBeforeInitialized.chpl:5: error: field "x" used before it is initialized
++      usedBeforeInitialized.chpl:5: error: 'x' is used before it is initialized
+ 
+ .. index::
+    single: user-defined initializers; omitting fields
+@@ -1045,9 +1046,10 @@ initialized out of order, a compile-time error will be issued.
+ 
+    .. BLOCK-test-chapeloutput
+ 
++      fieldsOutOfOrder.chpl:6: In initializer:
++      fieldsOutOfOrder.chpl:9: error: 'y' is used before it is initialized
+       fieldsOutOfOrder.chpl:12: In initializer:
+       fieldsOutOfOrder.chpl:15: error: Field "y" initialized out of order
+-      fieldsOutOfOrder.chpl:15: note: initialization of fields before .init() call must be in field declaration order
+ 
+    The first initializer leverages the well-defined order of omitted
+    field initialization to use the default value of field ``y`` in order
+diff --git a/doc/rst/language/spec/generics.rst b/doc/rst/language/spec/generics.rst
+index d3a3ce48f3b..3a3c7226c58 100644
+--- a/doc/rst/language/spec/generics.rst
++++ b/doc/rst/language/spec/generics.rst
+@@ -476,7 +476,7 @@ constrained.
+ 
+    .. BLOCK-test-chapeloutput
+ 
+-      partially-concrete-tuple-ambiguity.chpl:5: error: ambiguous call 'f(2*real(64))'
++      partially-concrete-tuple-ambiguity.chpl:5: error: Cannot resolve call to 'f': ambiguity
+ 
+ .. index::
+    single: formal arguments; array
+@@ -1336,6 +1336,7 @@ continue after encountering a ``compilerWarning``.
+       compilerDiagnostics.chpl:15: warning: 1-argument version of foo called with type: real(64)
+       compilerDiagnostics.chpl:16: warning: 1-argument version of foo called with type: string
+       compilerDiagnostics.chpl:20: error: foo() called with non-matching types: int(64) != real(64)
++      compilerDiagnostics.chpl:21: error: foo() called with non-matching types: string != real(64)
+ 
+ .. index::
+    single: specific instantiations
+diff --git a/doc/rst/language/spec/modules.rst b/doc/rst/language/spec/modules.rst
+index dc386e89673..88ad174d5e3 100644
+--- a/doc/rst/language/spec/modules.rst
++++ b/doc/rst/language/spec/modules.rst
+@@ -936,9 +936,7 @@ be used to disambiguate the symbols in this case.
+    .. BLOCK-test-chapeloutput
+ 
+       ambiguity.chpl:22: In function 'main':
+-      ambiguity.chpl:27: error: ambiguous call 'printY()'
+-      ambiguity.chpl:34: note: candidates are: printY()
+-      ambiguity.chpl:7: note:                 printY()
++      ambiguity.chpl:27: error: Cannot resolve call to 'printY': ambiguity
+ 
+    The call to printX() is not ambiguous because M2’s definition shadows
+    that of M1. On the other hand, the call to printY() is ambiguous
+diff --git a/doc/rst/language/spec/variables.rst b/doc/rst/language/spec/variables.rst
+index 57b4b8d78b4..b0d208e7515 100644
+--- a/doc/rst/language/spec/variables.rst
++++ b/doc/rst/language/spec/variables.rst
+@@ -224,9 +224,15 @@ unconditionally return.
+    .. BLOCK-test-chapeloutput
+ 
+       no-split-init.chpl:1: In function 'main':
+-      no-split-init.chpl:2: error: 'x' is not initialized and has no type
+-      no-split-init.chpl:2: note: cannot find initialization point to split-init this variable
+-      no-split-init.chpl:3: note: 'x' is used here before it is initialized
++      no-split-init.chpl:3: error: unable to resolve call to 'writeln': no matching candidates
++      $CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because an actual couldn't be passed to a formal
++      no-split-init.chpl:2: note: The actual 'x' expects to be split-initialized because it is declared without a type or initialization expression here
++      no-split-init.chpl:3: note: The call to 'writeln' occurs before any valid initialization points
++      $CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because an actual couldn't be passed to a formal
++      no-split-init.chpl:2: note: The actual 'x' expects to be split-initialized because it is declared without a type or initialization expression here
++      no-split-init.chpl:3: note: The call to 'writeln' occurs before any valid initialization points
++      no-split-init.chpl:3: note: omitting 1 more candidates that didn't match
++      no-split-init.chpl:4: error: cannot pass const to non-const
+ 
+ 
+    *Example (split-cond-blocks-init.chpl)*
 diff --git a/test/types/POD/elliot/varNotPOD.good b/test/types/POD/elliot/varNotPOD.good
 index 66db8242dd1..1a9cf52c977 100644
 --- a/test/types/POD/elliot/varNotPOD.good
