@@ -543,6 +543,7 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
                                            std::vector<const uast::VarLikeDecl*>& actualDecls) {
       CHPL_REPORT(r.parent->context, NoMatchingCandidates,
                   r.astForContext, *r.ci, rejected, actualDecls);
+      r.parent->encounteredErrors = true;
     }
 
     Resolver* parent = nullptr;
