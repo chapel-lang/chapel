@@ -148,6 +148,7 @@ def main():
         shutil.copytree(chplhome, archive_dir,
                         dirs_exist_ok=True,
                         ignore_dangling_symlinks=True, symlinks=True,
+                        ignore=shutil.ignore_patterns(f"*{os.path.basename(tmpdir)}*"),
                         copy_function=shutil.copy2)
 
         resultdir = pjoin(chplhome, "tar")
