@@ -17,4 +17,3 @@ RUN apt-get update && apt-get install -y ./@@{PACKAGE_NAME}
 USER user
 WORKDIR /home/user
 
-@@{TEST_SCRIPT}
