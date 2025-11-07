@@ -621,9 +621,13 @@ def DebugFunc_ResolveWidePointer(debugger, command, result, internal_dict):
         result.PutCString("Error: No wide pointer expression provided.")
         result.SetStatus(lldb.eReturnStatusFailed)
         return
+    if len(args) > 2:
+        result.PutCString("Error: Too many arguments provided.")
+        result.SetStatus(lldb.eReturnStatusFailed)
+        return
     wideptr_expr = args[0]
     size = None
-    if len(args) > 1:
+    if len(args) == 2:
         try:
             size = int(args[1])
         except ValueError:
