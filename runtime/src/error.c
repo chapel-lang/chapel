@@ -312,11 +312,16 @@ static void chpl_stack_unwind_helper(enum chpl_stack_unwind_mode mode, char sep,
 
 
 void chpl_stack_unwind(FILE* out, char sep) {
-  // Check if we need to print the stack trace (default = yes)
-  if (!chpl_env_rt_get_bool("UNWIND", true)) {
+  const char* chpl_rt_unwind = chpl_env_rt_get("UNWIND", NULL);
+  chpl_bool should_print = chpl_env_str_to_bool("UNWIND", chpl_rt_unwind, true);
+  chpl_bool user_set = chpl_rt_unwind != NULL;
+  if (!should_print) {
     return;
   }
   chpl_stack_unwind_helper(CHPL_STACK_UNWIND_MODE_FILE, sep, out);
+  if (!user_set && strcmp(CHPL_UNWIND, "none") != 0) {
+    fprintf(out, "%cDisable full stacktrace by setting 'CHPL_RT_UNWIND=0'%c", sep, sep);
+  }
 }
 
 char* chpl_stack_unwind_to_string(char sep) {
