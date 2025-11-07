@@ -678,18 +678,6 @@ bool CallInitDeinit::validateTuplesForAssignOrInit(const AstNode* ast,
   return true;
 }
 
-static void accumulateActions(std::unordered_set<AssociatedAction>& seen,
-                              std::unordered_set<AssociatedAction>& newActions,
-                              const ResolvedExpression& re) {
-  auto allActions = re.associatedActions();
-  for (auto action : allActions) {
-    bool isNew = seen.insert(action).second;
-    if (isNew) {
-      newActions.insert(action);
-    }
-  }
-}
-
 void CallInitDeinit::resolveTupleInit(const AstNode* ast, const AstNode* rhsAst,
                                       const QualifiedType& lhsType,
                                       const QualifiedType& rhsType, RV& rv) {
@@ -714,7 +702,6 @@ void CallInitDeinit::resolveTupleInit(const AstNode* ast, const AstNode* rhsAst,
     // Resolve an init per component, which will become sub-actions of the
     // overall top-level tuple init.
     auto& re = rv.byPostorder().byAst(ast);
-    std::unordered_set<AssociatedAction> seenActions;
     AssociatedAction::ActionsList subActions;
     for (int i = 0; i < lhsTupleType->numElements(); i++) {
       auto lhsEltType = lhsTupleType->elementType(i);
@@ -723,9 +710,7 @@ void CallInitDeinit::resolveTupleInit(const AstNode* ast, const AstNode* rhsAst,
       processTupleEltInit(frame, ast, rhsTupleAst, i, lhsEltType, rhsEltType,
                           rv);
 
-      std::unordered_set<AssociatedAction> newActions;
-      accumulateActions(seenActions, newActions, re);
-      for (auto action : newActions) {
+      for (auto action : re.associatedActions()) {
         auto useId = action.id();
         auto useTupleEltIdx = i;
         if (rhsTupleAst) {
@@ -737,6 +722,7 @@ void CallInitDeinit::resolveTupleInit(const AstNode* ast, const AstNode* rhsAst,
             /* tupleEltIdx */ useTupleEltIdx, action.subActions());
         subActions.push_back(actionWithIdx);
       }
+      re.clearAssociatedActions();
     }
 
     // Resolve a top-level init for the tuple itself, which should generate an
@@ -744,8 +730,7 @@ void CallInitDeinit::resolveTupleInit(const AstNode* ast, const AstNode* rhsAst,
     resolveCopyInit(ast, rhsAst, lhsType, rhsType, false, rv);
 
     // Gather the sub-actions into this new action.
-    std::unordered_set<AssociatedAction> topLevelActions;
-    accumulateActions(seenActions, topLevelActions, re);
+    auto topLevelActions = re.associatedActions();
     if (topLevelActions.size() == 0) {
       // No action created for the tuple itself, nothing to do.
       CHPL_ASSERT(subActions.empty() &&
@@ -786,7 +771,6 @@ void CallInitDeinit::resolveTupleUnpackAssignOrInit(const Tuple* lhsTuple,
   // Resolve an init per component, which will become sub-actions of the
   // overall top-level tuple init.
   auto& re = rv.byPostorder().byAst(astForErr);
-  std::unordered_set<AssociatedAction> seenActions;
   AssociatedAction::ActionsList subActions;
   for (int i = 0; i < lhsTuple->numActuals(); i++) {
     auto actual = lhsTuple->actual(i);
@@ -816,9 +800,7 @@ void CallInitDeinit::resolveTupleUnpackAssignOrInit(const Tuple* lhsTuple,
       processInit(frame, actual, lhsEltType, rhsEltType, rv);
     }
 
-    std::unordered_set<AssociatedAction> newActions;
-    accumulateActions(seenActions, newActions, re);
-    for (auto action : newActions) {
+    for (auto action : re.associatedActions()) {
       auto useId = action.id();
       auto useTupleEltIdx = i;
       if (rhsTuple) {
@@ -830,6 +812,7 @@ void CallInitDeinit::resolveTupleUnpackAssignOrInit(const Tuple* lhsTuple,
           /* tupleEltIdx */ useTupleEltIdx, action.subActions());
       subActions.push_back(actionWithIdx);
     }
+    re.clearAssociatedActions();
   }
 
   // TODO: Resolve a top-level init or assign for the tuple itself
