@@ -2196,6 +2196,47 @@ static void test34() {
     });
 }
 
+// Tuple expr containing tuple variables
+static void test35() {
+  {
+    // Inner tuples of same type
+    testActions("test35a",
+      R""""(
+        module M {
+          record R { }
+          proc test() {
+            var tup, tup2 : 2 * int;
+            var x = (tup, tup2);
+          }
+        }
+      )"""",
+      {
+        {AssociatedAction::INIT_OTHER, "x",         ""},
+          {AssociatedAction::COPY_INIT, "x",   "M.test@6"},
+          {AssociatedAction::COPY_INIT, "x",   "M.test@7"},
+      });
+  }
+  {
+    // Inner tuples of different type
+    testActions("test35b",
+      R""""(
+        module M {
+          record R { }
+          proc test() {
+            var tup : 2 * int;
+            var tup2 : 3 * int;
+            var x = (tup, tup2);
+          }
+        }
+      )"""",
+      {
+        {AssociatedAction::INIT_OTHER, "x",         ""},
+          {AssociatedAction::COPY_INIT, "x",   "M.test@8"},
+          {AssociatedAction::COPY_INIT, "x",   "M.test@9"},
+      });
+  }
+}
+
 // calling function with 'out' intent formal
 
 // calling functions with 'inout' intent formal
@@ -2308,6 +2349,7 @@ int main() {
   test32();
   test33();
   test34();
+  test35();
 
   return 0;
 }
