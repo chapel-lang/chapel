@@ -354,28 +354,16 @@ index cd023174ecc..5e2f39af974 100644
 -c_ptrConst_modify.chpl:6: error: cannot assign to const variable
 +c_ptrConst_modify.chpl:6: error: cannot pass const to non-const
 diff --git a/test/types/cptr/const/const_actual_nonconst_formal.good b/test/types/cptr/const/const_actual_nonconst_formal.good
-index 7c9b6835ee3..bed784f8c4a 100644
+index 7c9b6835ee3..0f3adb37bf5 100644
 --- a/test/types/cptr/const/const_actual_nonconst_formal.good
 +++ b/test/types/cptr/const/const_actual_nonconst_formal.good
-@@ -1,4 +1,6 @@
+@@ -1,4 +1,2 @@
 -const_actual_nonconst_formal.chpl:12: error: unresolved call 'foo(c_ptrConst(int(32)))'
 -const_actual_nonconst_formal.chpl:4: note: this candidate did not match: foo(x: c_ptr(int(32)))
 -const_actual_nonconst_formal.chpl:12: note: because actual argument #1 with type 'c_ptrConst(int(32))'
 -const_actual_nonconst_formal.chpl:4: note: is passed to formal 'in x: c_ptr(int(32))'
-+internal error: UTI-MIS-nnnn chpl version mmmm
-+
-+Internal errors indicate a bug in the Chapel compiler,
-+and we're sorry for the hassle.  We would appreciate your reporting this bug --
-+please see https://chapel-lang.org/bugs.html for instructions.
-+
-diff --git a/test/types/cptr/const/const_actual_nonconst_formal.prediff b/test/types/cptr/const/const_actual_nonconst_formal.prediff
-new file mode 120000
-index 00000000000..07fd5bd8e46
---- /dev/null
-+++ b/test/types/cptr/const/const_actual_nonconst_formal.prediff
-@@ -0,0 +1 @@
-+../../../../util/test/prediff-obscure-internal-error
-\ No newline at end of file
++const_actual_nonconst_formal.chpl:12: error: unable to resolve call to 'foo': no matching candidates
++const_actual_nonconst_formal.chpl: note: the following candidate didn't match because an actual couldn't be passed to a formal
 diff --git a/test/types/cptr/const/extern_var_is_const.good b/test/types/cptr/const/extern_var_is_const.good
 index 0e973b15f01..ff988096177 100644
 --- a/test/types/cptr/const/extern_var_is_const.good
@@ -881,32 +869,21 @@ index f6dd93e4327..b7c2d6059d9 100644
 +issue-18005.chpl:7: note: currently, calls to initializers cannot omit arguments for fields with generic type expressions
 +issue-18005.chpl:11: note: omitting 22 more candidates that didn't match
 diff --git a/test/types/partial/multiple-question.good b/test/types/partial/multiple-question.good
-index a1f63a5b763..bed784f8c4a 100644
+index a1f63a5b763..16d261af331 100644
 --- a/test/types/partial/multiple-question.good
 +++ b/test/types/partial/multiple-question.good
-@@ -1,8 +1,6 @@
--multiple-question.chpl:2: In function 'foo':
+@@ -1,8 +1,5 @@
+ multiple-question.chpl:2: In function 'foo':
 -multiple-question.chpl:2: error: formal 'r' may not have a type expression with multiple '?'
 -multiple-question.chpl:2: note: '?' cannot be used to positionally indicate uninstantiated fields
--multiple-question.chpl:10: In function 'bar':
++multiple-question.chpl:2: error: cannot have '?' more than once in a call
++multiple-question.chpl:2: error: cannot have '?' more than once in a call
+ multiple-question.chpl:10: In function 'bar':
 -multiple-question.chpl:10: error: formal 'r' may not have a type expression with multiple '?'
 -multiple-question.chpl:10: note: '?' cannot be used to positionally indicate uninstantiated fields
 -multiple-question.chpl:10: error: type expression of formal 'r' cannot use '?' before unnamed arguments to a type specifier
 -multiple-question.chpl:10: note: '?' cannot be used to positionally indicate uninstantiated fields
-+internal error: UTI-MIS-nnnn chpl version mmmm
-+
-+Internal errors indicate a bug in the Chapel compiler,
-+and we're sorry for the hassle.  We would appreciate your reporting this bug --
-+please see https://chapel-lang.org/bugs.html for instructions.
-+
-diff --git a/test/types/partial/multiple-question.prediff b/test/types/partial/multiple-question.prediff
-new file mode 120000
-index 00000000000..157961463b3
---- /dev/null
-+++ b/test/types/partial/multiple-question.prediff
-@@ -0,0 +1 @@
-+../../../util/test/prediff-obscure-internal-error
-\ No newline at end of file
++multiple-question.chpl:10: error: cannot have '?' more than once in a call
 diff --git a/test/types/partial/partialTypeFormal.error.good b/test/types/partial/partialTypeFormal.error.good
 index 5114b18582c..bc61a3ed040 100644
 --- a/test/types/partial/partialTypeFormal.error.good
