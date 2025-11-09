@@ -2856,7 +2856,6 @@ struct ConvertTypeHelper {
 
     makeTupleName(args, t->isStarTuple(), name, cname);
 
-    ret->instantiatedFrom = dtTuple;
     ret->resolveStatus = RESOLVED;
 
     // TODO: We could drop this stuff setting up dispatch parents since we
@@ -2881,9 +2880,11 @@ struct ConvertTypeHelper {
     newTypeSymbol->addFlag(FLAG_PARTIAL_TUPLE);
     newTypeSymbol->addFlag(FLAG_TYPE_VARIABLE);
     newTypeSymbol->addFlag(FLAG_RESOLVED_EARLY);
+    newTypeSymbol->addFlag(FLAG_INSTANTIATED_GENERIC);
     if (t->isStarTuple()) newTypeSymbol->addFlag(FLAG_STAR_TUPLE);
 
     ret->saveGenericSubstitutions();
+    ret->instantiatedFrom = dtTuple;
 
     // Insert all tuple instantiations in the tuple module.
     tc_->modChapelTuple->block->insertAtHead(new DefExpr(newTypeSymbol));
