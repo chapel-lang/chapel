@@ -3103,8 +3103,8 @@ struct ConvertDefaultValueHelper {
     // Taken from 'functionResolution.cpp:14000~'. Make a temp and zero it.
     types::QualifiedType qt = { types::QualifiedType::VAR, t };
     auto temp = tc_->makeNewTemp(qt);
-    auto ret = new CallExpr(PRIM_ZERO_VARIABLE, temp);
-    return ret;
+    tc_->insertStmt(new CallExpr(PRIM_ZERO_VARIABLE, temp));
+    return new SymExpr(temp);
   }
 
   Expr* visit(const types::BoolType* t) {
