@@ -5764,6 +5764,12 @@ bool TConverter::enter(const Conditional* node, RV& rv) {
       attachSymbolVisibility(ifVar, ifVarSym);
     } else {
       cond = convertExpr(node->condition(), rv, &qtCond);
+      // TODO: need to resolve _cond_test
+      if (qtCond.isRef()) {
+        auto qt = types::QualifiedType(KindProperties::removeRef(qtCond.kind()),
+                                      qtCond.type());
+        cond = storeInTempIfNeeded(new CallExpr(PRIM_DEREF, cond), qt);
+      }
     }
     INT_ASSERT(cond);
 
