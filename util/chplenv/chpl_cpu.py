@@ -155,14 +155,22 @@ def default_cpu(flag):
 # get_lcd has no effect on non cray systems and is intended to be used to get
 # the correct runtime and gen directory.
 @memoize
-def get(flag, map_to_compiler=False, get_lcd=False):
+def get(flag, map_to_compiler=False, get_lcd=False, prefer_runtime_cpu=False):
 
     cpu_tuple = collections.namedtuple('cpu_tuple', ['flag', 'cpu'])
 
     if not flag or flag == 'host':
         cpu = overrides.get('CHPL_HOST_CPU', '')
     elif flag == 'target':
-        cpu = overrides.get('CHPL_TARGET_CPU', '')
+        # For target, we default to CHPL_RUNTIME_CPU when CHPL_TARGET_CPU is not
+        # specified. this lets us specify the runtime build of `CHPL_TARGET_CPU=none`
+        # but still get user code specialization if desired
+        runtime_cpu = overrides.get('CHPL_RUNTIME_CPU', None)
+        if prefer_runtime_cpu and runtime_cpu is not None:
+            cpu = runtime_cpu
+        else:
+            cpu = overrides.get('CHPL_TARGET_CPU', )
+
     else:
         raise InvalidLocationError(flag)
 
