@@ -1074,6 +1074,9 @@ struct TConverter final : UastConverter,
   bool enter(const Range* node, RV& rv);
   void exit(const Range* node, RV& rv);
 
+  bool enter(const While* node, RV& rv);
+  void exit(const While* node, RV& rv);
+
   bool enter(const AstNode* node, RV& rv);
   void exit(const AstNode* node, RV& rv);
 };
@@ -6056,6 +6059,34 @@ bool TConverter::enter(const Range* node, RV& rv) {
 }
 
 void TConverter::exit(const Range* node, RV& rv) {
+}
+
+bool TConverter::enter(const While* node, RV& rv) {
+  auto primCall = node->condition()->toPrimCall();
+
+  if (primCall && primCall->prim() == PRIM_BLOCK_C_FOR_LOOP) {
+    node->condition()->traverse(rv);
+    auto cond = cur.lastList()->last()->remove();
+
+    enterScope(node, rv);
+    // Necessary for explicit standalone block-statements
+    auto block = new BlockStmt();
+    pushBlock(block);
+
+    node->body()->traverse(rv);
+
+    exitScope(node, rv);
+    auto cur = popBlock();
+
+    insertStmt(CForLoop::buildCForLoop(toCallExpr(cond), cur, {}));
+
+    return false;
+  } else {
+    return true;
+  }
+}
+
+void TConverter::exit(const While* node, RV& rv) {
 }
 
 bool TConverter::enter(const AstNode* node, RV& rv) {
