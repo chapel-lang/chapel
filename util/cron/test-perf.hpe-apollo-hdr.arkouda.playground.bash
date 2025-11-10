@@ -46,16 +46,16 @@ if [[ "$SKIP_ARKOUDA_PLAYGROUND" == "1" ]]; then
   exit
 fi
 
-TEST_NIGHTLY=0
+TEST_NIGHTLY=1
 
 GITHUB_USER=chapel-lang
 GITHUB_BRANCH=main
 
-SHORT_NAME=scan-regression-fix
-START_DATE=09/18/25
+SHORT_NAME=new-sort
+START_DATE=11/10/25
 
-export ARKOUDA_URL=https://github.com/drculhane/arkouda.git
-export ARKOUDA_BRANCH=ForIssue4810
+export ARKOUDA_URL=https://github.com/e-kayrakli/arkouda.git
+export ARKOUDA_BRANCH=use-new-sort
 
 if [[ "$TEST_NIGHTLY" == "1" ]]; then
   set -e
