@@ -52,7 +52,7 @@ GITHUB_USER=chapel-lang
 GITHUB_BRANCH=main
 
 SHORT_NAME=new-sort
-START_DATE=10/10/25
+START_DATE=11/10/25
 
 export ARKOUDA_URL=https://github.com/e-kayrakli/arkouda.git
 export ARKOUDA_BRANCH=use-new-sort
