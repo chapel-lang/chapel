@@ -560,8 +560,8 @@ def diagnose_missing_library(lib_type):
     libdir = chpl_home_utils.get_chpl_runtime_lib()
     subdir = ENV_VALS['CHPL_{}_SUBDIR'.format(lib_type.upper())]
     runtime_libdir = os.path.join(libdir, subdir)
-    found_error = False
-    if not os.path.exists(runtime_libdir):
+    found_error = not os.path.exists(runtime_libdir)
+    if found_error:
         variables = printchplenv(set([lib_type]), print_format='path', raw=True)
         current_path = libdir
         for var in variables:
@@ -570,7 +570,6 @@ def diagnose_missing_library(lib_type):
             if os.path.exists(new_path):
                 current_path = new_path
                 continue
-            found_error = True
 
             varname = var[0].strip()
             print("There is no {} for '{}={}'".format(lib_type, varname, var[1]))
