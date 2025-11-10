@@ -334,6 +334,14 @@ CHPL_TARGET_CPU
    Special care should be taken to select the lowest common denominator when
    running on machines with heterogeneous processor architectures.
 
+   ``CHPL_TARGET_CPU`` affects what runtime the Chapel compiler will use, so to
+   switch between different ``CHPL_TARGET_CPU`` settings you must rebuild the
+   runtime. However, it is possible to instead set ``CHPL_RUNTIME_CPU`` when
+   building Chapel, which will affect only the runtime used, and not the
+   specialization of user code. If both are set, ``CHPL_RUNTIME_CPU`` will
+   select the runtime build and ``CHPL_TARGET_CPU`` will select the specialization
+   of user code.
+
    The default value for this setting will vary based on settings in your
    environment, in order of application these rules are:
 
