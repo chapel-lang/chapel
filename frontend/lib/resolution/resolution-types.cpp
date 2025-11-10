@@ -1519,6 +1519,8 @@ const char* AssociatedAction::kindToString(Action a) {
   switch (a) {
     case ASSIGN:
       return "assign";
+    case MOVE_INIT:
+      return "move-init";
     case COPY_INIT:
       return "copy-init";
     case DEFAULT_INIT:

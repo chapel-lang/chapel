@@ -2527,6 +2527,7 @@ class AssociatedAction {
  public:
   enum Action {
     ASSIGN,           // same type or different type assign
+    MOVE_INIT,        // no copy function invoked, value was moved
     COPY_INIT,        // init= from same type
     INIT_OTHER,       // init= from other type
     CUSTOM_COPY_INIT, // chpl__copyInit for specialized behavior
