@@ -29,12 +29,6 @@ class Ptr:
         self.ptr = ptr
         self.owned = owned
 
-    def __del__(self):
-        if self.owned and self.ptr is not None and self.ptr.IsValid():
-            self.target.EvaluateExpression(
-                f"chpl_debug_free((void*){self.ptr.GetValueAsUnsigned()})"
-            )
-
     def get(self):
         if self.ptr is not None:
             return self.ptr
