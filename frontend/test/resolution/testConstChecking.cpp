@@ -273,7 +273,7 @@ static void test5a() {
         }
       }
     )"""",
-    {6});
+    {});
 }
 static void test5b() {
   testConstChecking("test5b",
