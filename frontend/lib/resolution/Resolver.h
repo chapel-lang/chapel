@@ -146,12 +146,9 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
   std::vector<const uast::Loop*> loopStack;
   std::vector<int> tagTracker;
   bool signatureOnly = false;
-  bool fieldOrFormalsComputed = false;
   bool scopeResolveOnly = false;
   bool fieldTypesOnly = false;
   const uast::Block* fnBody = nullptr;
-  std::set<ID> fieldOrFormals;
-  std::set<ID> instantiatedFieldOrFormals;
   std::set<UniqueString> namesWithErrorsEmitted;
   std::vector<const uast::Call*> callNodeStack;
   std::vector<std::pair<UniqueString, const uast::AstNode*>> genericReceiverOverrideStack;
@@ -431,20 +428,6 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
   types::QualifiedType getSuperType(Context* context,
                                     const types::QualifiedType& sub,
                                     const uast::Identifier* identForError);
-
-  /* When resolving a generic record or a generic function,
-     there might be generic types that we don't know yet.
-     E.g.
-
-       proc f(type t, arg: t)
-
-     before instantiating, we should conclude that:
-       * t has type AnyType
-       * arg has type UnknownType (and in particular, not AnyType)
-
-     But, if we have a substitution for `t`, we should use that.
-   */
-  bool shouldUseUnknownTypeForGeneric(const ID& id);
 
   // helper for resolveTypeQueriesFromFormalType
   void resolveTypeQueries(const uast::AstNode* formalTypeExpr,

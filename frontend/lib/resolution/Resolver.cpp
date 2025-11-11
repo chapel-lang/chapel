@@ -191,39 +191,6 @@ qualifiedTypeKindForDecl(Context* context, const NamedDecl* decl) {
   return ret;
 }
 
-// This class can gather up the IDs of contained fields or formals
-struct GatherFieldsOrFormals {
-  std::set<ID> fieldOrFormals;
-
-  bool enter(const NamedDecl* decl) {
-    // visit type declarations
-    // is it a field or a formal?
-    bool isField = false;
-    if (auto var = decl->toVariable())
-      if (var->isField())
-        isField = true;
-
-    bool isFieldOrFormal = isField || decl->isFormal();
-
-    if (isFieldOrFormal && decl->name() != USTR("this"))
-      fieldOrFormals.insert(decl->id());
-
-    return decl->isAggregateDecl() || decl->isFunction();
-  }
-  void exit(const NamedDecl* decl) { }
-
-  // go in to TupleDecl and MultiDecl
-  bool enter(const TupleDecl* d) { return true; }
-  void exit(const TupleDecl* d) { }
-  bool enter(const MultiDecl* d) { return true; }
-  void exit(const MultiDecl* d) { }
-
-  // don't go in to anything else
-  bool enter(const AstNode* ast) { return false; }
-  void exit(const AstNode* ast) { }
-};
-
-
 Resolver::ParenlessOverloadInfo
 Resolver::ParenlessOverloadInfo::fromMatchingIds(Context* context,
                                                  const MatchingIdsWithName& ids)
@@ -1101,10 +1068,6 @@ bool Resolver::isPotentialSuper(const Identifier* ident, QualifiedType* outType)
       return true;
     }
   }
-  return false;
-}
-
-bool Resolver::shouldUseUnknownTypeForGeneric(const ID& id) {
   return false;
 }
 
@@ -3586,22 +3549,7 @@ QualifiedType Resolver::typeForId(const ID& id) {
   }
 
   if (useLocalResult) {
-    QualifiedType ret = byPostorder.byId(id).type();
-    auto g = Type::MAYBE_GENERIC;
-    if (ret.hasTypePtr()) {
-      g = getTypeGenericity(context, ret.type());
-    }
-
-    if (g != Type::CONCRETE && shouldUseUnknownTypeForGeneric(id)) {
-      // if id refers to a field or formal that needs to be instantiated,
-      // replace the type with UnknownType since we can't compute
-      // the type of anything using this type (since it will change
-      // on instantiation).
-      auto unknownType = UnknownType::get(context);
-      ret = QualifiedType(ret.kind(), unknownType);
-    }
-
-    return ret;
+    return byPostorder.byId(id).type();
   }
 
   // Otherwise, use a query to try to look it up.
