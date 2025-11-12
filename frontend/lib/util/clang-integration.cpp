@@ -376,8 +376,17 @@ static QualifiedType convertClangTypeToChapelType(
     Context* context, const clang::Type* clangType) {
   QualifiedType chapelType;
 
-  auto clangBuiltinType = clangType->getAs<clang::BuiltinType>();
-  if (clangBuiltinType) {
+  if (auto clangPtrType = clangType->getAs<clang::PointerType>()) {
+    const auto& pointee = clangPtrType->getPointeeType();
+    bool isConst = pointee.isConstQualified();
+
+    auto eltType = convertClangTypeToChapelType(context, pointee.getTypePtr());
+    if (eltType.isUnknownOrErroneous()) return QualifiedType();
+
+    auto cPtrType = isConst ? types::CPtrType::getConst(context, eltType.type())
+                            : types::CPtrType::get(context, eltType.type());
+    chapelType = QualifiedType(QualifiedType::TYPE, cPtrType);
+  } else if (auto clangBuiltinType = clangType->getAs<clang::BuiltinType>()) {
 #define BUILTIN_TYPE_ENTRY(ClangType, ChapelCTypeString)               \
   case clang::BuiltinType::ClangType:                                  \
     chapelType =                                                       \

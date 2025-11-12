@@ -687,12 +687,20 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
       auto formalDecl = badPass.formal();
       const uast::AstNode* actualExpr = getActual(badPass.actualIdx());
 
+      // formalDecl can be null if the function is in an 'extern' block, in which
+      // case there is no Chapel AST corresponding to the formal.
+
       wr.message("");
       wr.note(fn->id(), "the following candidate didn't match because ", passedThingArticle, " ", passedThing, " couldn't be passed to ", expectedThingArticle, " ", expectedThing, ":");
-      wr.code(fn->id(), { formalDecl });
+
+      std::vector<const uast::AstNode*> highlightNodes;
+      if (formalDecl) highlightNodes.push_back(formalDecl);
+      wr.code(fn->id(), highlightNodes);
 
       std::string formalName;
-      if (auto named = formalDecl->toNamedDecl()) {
+      if (!formalDecl ) {
+        /* see above re: formalDecl being null */
+      } else if (auto named = formalDecl->toNamedDecl()) {
         formalName = "'" + named->name().str() + "'";
       } else if (formalDecl->isTupleDecl()) {
         formalName = "'" + buildTupleDeclName(formalDecl->toTupleDecl()) + "'";

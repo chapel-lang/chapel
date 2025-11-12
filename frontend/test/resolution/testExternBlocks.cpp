@@ -306,6 +306,62 @@ static void test11() {
   assert(!guard.realizeErrors());
 }
 
+static void test12() {
+  printf("%s\n", __FUNCTION__);
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+  QualifiedType qt =
+    resolveTypeOfXInit(context,
+                       R""""(
+                        module M {
+                          use CTypes;
+                          extern {
+                            static int foo(const int* x) {
+                              return *x + 1;
+                            }
+                          }
+
+                          var y : c_int = 5;
+                          var yp : c_ptr(c_int) = c_ptrTo(y);
+                          var x = foo(yp);
+                        }
+                       )"""");
+
+  assert(qt.type()->isIntType());
+  assert(!guard.realizeErrors());
+}
+
+static void test13() {
+  printf("%s\n", __FUNCTION__);
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+  std::ignore =
+    resolveTypeOfXInit(context,
+                       R""""(
+                        module M {
+                          use CTypes;
+                          extern {
+                            static int bar(int* x) {
+                              return *x + 1;
+                            }
+                          }
+
+                          var y: c_int = 10;
+                          var yp: c_ptrConst(c_int) = c_ptrToConst(y);
+                          var x = bar(yp);
+                        }
+                       )"""", false);
+
+  assert(guard.numErrors() == 1);
+  assert(guard.errors().at(0)->type() == ErrorType::NoMatchingCandidates);
+  auto error = static_cast<ErrorNoMatchingCandidates*>(guard.errors().at(0).get());
+  auto& candidates = std::get<2>(error->info());
+  assert(candidates.size() == 1);
+  assert(candidates[0].reason() == resolution::FAIL_CANNOT_PASS);
+
+  guard.realizeErrors();
+}
+
 
 
 
@@ -321,6 +377,8 @@ int main() {
   test9();
   test10();
   test11();
+  test12();
+  test13();
 
   return 0;
 }
