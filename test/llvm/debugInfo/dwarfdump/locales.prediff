@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+
+# remove all of the DW_TAG_typedef blocks from the dwarfdump
+# this is needed because if the Chapel runtime was built with debug symbols
+# then there will be typedefs for chpl_localeID_t that are not present
+# in a user build. This causes diffs to fail when comparing
+# the output of dwarfdump.
+
+output=$2
+awk '
+BEGIN {
+  in_typedef_block = 0
+}
+/^DW_TAG_typedef/ {
+  in_typedef_block = 1
+  next
+}
+/^DW_TAG_/ && !/^DW_TAG_typedef/ {
+  in_typedef_block = 0
+  print
+  next
+}
+/^[^[:space:]]/ && !/^DW_TAG_/ {
+  in_typedef_block = 0
+  print
+  next
+}
+{
+  if (!in_typedef_block) {
+    print
+  }
+}
+' $output > $output.tmp
+mv $output.tmp $output

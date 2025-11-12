@@ -362,38 +362,6 @@ DW_TAG_typedef
               DW_AT_type	("classes::myRec(unmanaged MyChildClass?) &")
               DW_AT_name	("_ref(myRec(unmanaged MyChildClass?))")
 ================================================================================
-================================chpl_localeID_t=================================
-DW_TAG_structure_type
-              DW_AT_name	("chpl_localeID_t")
-              DW_AT_byte_size	(0x04)
-              DW_AT_alignment	(4)
-  DW_TAG_member
-                DW_AT_name	("node")
-                DW_AT_type	("int(32)")
-                DW_AT_alignment	(4)
-                DW_AT_data_member_location	(0x00)
-  NULL
-DW_TAG_typedef
-              DW_AT_type	("structure ")
-              DW_AT_name	("chpl_localeID_t")
-              DW_AT_decl_file	("$CHPL_HOME/runtime/include/localeModels/flat/chpl-locale-model.h")
-              DW_AT_decl_line	(36)
-DW_TAG_typedef
-              DW_AT_type	("structure ")
-              DW_AT_name	("chpl_localeID_t")
-              DW_AT_decl_file	("$CHPL_HOME/runtime/src/../include/localeModels/flat/chpl-locale-model.h")
-              DW_AT_decl_line	(36)
-DW_TAG_typedef
-              DW_AT_type	("structure ")
-              DW_AT_name	("chpl_localeID_t")
-              DW_AT_decl_file	("$CHPL_HOME/runtime/src/../include/localeModels/flat/chpl-locale-model.h")
-              DW_AT_decl_line	(36)
-DW_TAG_typedef
-              DW_AT_type	("structure ")
-              DW_AT_name	("chpl_localeID_t")
-              DW_AT_decl_file	("$CHPL_HOME/runtime/src/comm/COMM_IMPL/../../../include/localeModels/flat/chpl-locale-model.h")
-              DW_AT_decl_line	(36)
-================================================================================
 ================================myUnmanagedClass================================
 DW_TAG_variable
               DW_AT_name	("myUnmanagedClass")

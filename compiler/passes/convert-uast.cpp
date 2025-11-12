@@ -2722,7 +2722,7 @@ struct Converter final : UastConverter {
         // ignore things like chpl_taskAddCoStmt
         !fn->hasFlag(FLAG_ALWAYS_RESOLVE)) {
       CHPL_ASSERT(node->id().postOrderId() == -1);
-      fn->cname = astr(node->id().symbolPath());
+      fn->cname = astr(chpl::unescapeStringId(node->id().symbolPath().c_str()));
     }
 
     if (convertedReceiver) {

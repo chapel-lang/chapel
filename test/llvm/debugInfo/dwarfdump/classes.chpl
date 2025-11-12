@@ -41,7 +41,7 @@ class MyChildClass : MyClass {
 // DWARFDUMP: _ref(myRec(unmanaged MyChildClass?))
 // DWARFDUMP: wide(_ref(myRec(unmanaged MyChildClass?)))
 // DWARFDUMP: _ref(myRec(unmanaged MyChildClass?))
-// DWARFDUMP: chpl_localeID_t
+
 
 proc main() {
 
