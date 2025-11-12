@@ -400,12 +400,12 @@ This causes various software components, from launchers to the
 runtime, to be more considerate in how they use node resources.
 
 
-----------------
+------------
 Stack Traces
-----------------
+------------
 
-When compiled with unwind support (``CHPL_UNWIND=bundled`` or
-``CHPL_UNWIND=system``), Chapel can print a stacktrace when it halts due to an
+When compiled with unwind support (``CHPL_UNWIND=system`` or
+``CHPL_UNWIND=bundled``), Chapel can print a stacktrace when it halts due to an
 error. For example, when compiling and running the following program:
 
    .. code-block:: chapel

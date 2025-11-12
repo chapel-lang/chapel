@@ -71,6 +71,10 @@ export CHPL_GMP=none
 echo "Setting CHPL_RE2 to none"
 export CHPL_RE2=none
 
+USE_UNWIND=`$CHPL_PYTHON $chpl_home/util/chplenv/chpl_unwind.py --quickstart`
+echo "Setting CHPL_UNWIND to $USE_UNWIND"
+export CHPL_UNWIND=$USE_UNWIND
+
 USE_LLVM=`$CHPL_PYTHON $chpl_home/util/chplenv/chpl_llvm.py --quickstart`
 echo "Setting CHPL_LLVM to $USE_LLVM"
 export CHPL_LLVM=$USE_LLVM
