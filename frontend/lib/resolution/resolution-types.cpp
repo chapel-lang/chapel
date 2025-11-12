@@ -648,6 +648,22 @@ CallInfo CallInfo::copyAndRename(const CallInfo &ci, UniqueString rename) {
                   ci.hasQuestionArg_, ci.isParenless_, ci.actuals_);
 }
 
+CallInfo CallInfo::copyAndMarkSplitInitActuals(const CallInfo &ci, const std::unordered_set<int>& actualIndices) {
+  std::vector<CallInfoActual> newActuals;
+  int idx = 0;
+  for (auto& actual : ci.actuals_) {
+    CHPL_ASSERT(actual.expectSplitInit() == false);
+    if (actualIndices.count(idx) != 0) {
+      newActuals.push_back(CallInfoActual(actual.type(), actual.byName(), /* isSplitInitActual */ true));
+    } else {
+      newActuals.push_back(actual);
+    }
+    idx++;
+  }
+  return CallInfo(ci.name_, ci.calledType(), ci.isMethodCall(),
+                  ci.hasQuestionArg_, ci.isParenless_, std::move(newActuals));
+}
+
 void ResolutionResultByPostorderID::setupForSymbol(const AstNode* ast) {
   CHPL_ASSERT(Builder::astTagIndicatesNewIdScope(ast->tag()));
 

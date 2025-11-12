@@ -44,6 +44,7 @@
 #include <string>
 #include <tuple>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -2765,7 +2766,18 @@ void Resolver::resolveTupleDecl(const TupleDecl* td, QualifiedType useType) {
 static SkipCallResolutionReason
 shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
                          std::vector<const uast::AstNode*> actualAsts,
-                         const CallInfo& ci);
+                         const CallInfo& ci,
+                         std::unordered_set<int>* actualsToInit = nullptr);
+
+/*
+  A more permissive version of shouldSkipCallResolution, which doesn't
+  skip calls if actuals are generic/unknown but possibly 'out'-inited
+  by the call in 'ci'.
+ */
+static SkipCallResolutionReason
+shouldSkipCallResolutionAllowInit(Resolver* rv, const uast::AstNode* callLike,
+                                  std::vector<const uast::AstNode*> actualAsts,
+                                  CallInfo& ci);
 
 bool Resolver::resolveSpecialNewCall(const Call* call) {
   if (!call->calledExpression() ||
@@ -2840,7 +2852,7 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
   auto inPoiScope = poiScope;
   auto inScopes = CallScopeInfo::forNormalCall(inScope, inPoiScope);
 
-  if (shouldSkipCallResolution(this, call, actualAsts, ci)) {
+  if (shouldSkipCallResolutionAllowInit(this, call, actualAsts, ci)) {
     return true;
   }
 
@@ -3049,7 +3061,8 @@ static bool skipDependingOnEagerness(Resolver* rv, const ID& toId,
 static SkipCallResolutionReason
 shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
                          std::vector<const uast::AstNode*> actualAsts,
-                         const CallInfo& ci) {
+                         const CallInfo& ci,
+                         std::unordered_set<int>* actualsToInit) {
   Context* context = rv->context;
   SkipCallResolutionReason skip = NONE;
   auto& byPostorder = rv->byPostorder;
@@ -3120,11 +3133,15 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
     if (t != nullptr && t->isErroneousType()) {
       // always skip if there is an ErroneousType
       skip = ERRONEOUS_ACT;
-    } else if (!toId.isEmpty() && !isNonOutFormal &&
-               couldBeOutInitialized(rv, toId, qt)) {
-      // don't skip because it could be initialized with 'out' intent,
-      // but not for non-out formals because they can't be split-initialized.
-    } else if (actualAst != nullptr && actualAst->isTypeQuery() && ci.calledType().isType()) {
+      break;
+    }
+
+    // In some cases, don't skip because it could be initialized with 'out'
+    // intent, but not for non-out formals because they can't be split-initialized.
+    bool splitInitAllowed = !toId.isEmpty() && !isNonOutFormal &&
+                            couldBeOutInitialized(rv, toId, qt);
+
+    if (actualAst != nullptr && actualAst->isTypeQuery() && ci.calledType().isType()) {
       // don't skip for type queries in type constructors
     } else {
       if (qt.isParam() && qt.param() == nullptr) {
@@ -3134,7 +3151,11 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
           skip = UNKNOWN_PARAM;
         }
       } else if (qt.isUnknown()) {
-        skip = UNKNOWN_ACT;
+        if (splitInitAllowed && actualsToInit != nullptr) {
+          actualsToInit->insert(actualIdx);
+        } else {
+          skip = UNKNOWN_ACT;
+        }
       } else if (t != nullptr && qt.kind() != QualifiedType::INIT_RECEIVER) {
         // For initializer calls, allow generic formals using the above
         // condition; this way, 'this.init(..)' while 'this' is generic
@@ -3149,7 +3170,11 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
             skip = GENERIC_TYPE;
           }
         } else if (!qt.isType() && g != Type::CONCRETE) {
-          skip = GENERIC_VALUE;
+          if (splitInitAllowed && actualsToInit != nullptr) {
+            actualsToInit->insert(actualIdx);
+          } else {
+            skip = GENERIC_VALUE;
+          }
         }
       }
     }
@@ -3183,6 +3208,18 @@ shouldSkipCallResolution(Resolver* rv, const uast::AstNode* callLike,
   return skip;
 }
 
+
+static SkipCallResolutionReason
+shouldSkipCallResolutionAllowInit(Resolver* rv, const uast::AstNode* callLike,
+                                  std::vector<const uast::AstNode*> actualAsts,
+                                  CallInfo& ci) {
+  std::unordered_set<int> actualsToInit;
+  auto skip = shouldSkipCallResolution(rv, callLike, actualAsts, ci, &actualsToInit);
+  if (skip != NONE) return skip;
+
+  ci = CallInfo::copyAndMarkSplitInitActuals(ci, actualsToInit);
+  return NONE;
+}
 
 bool Resolver::resolveSpecialOpCall(const Call* call) {
   if (!call->isOpCall()) return false;
@@ -5680,7 +5717,7 @@ void Resolver::handleCallExpr(const uast::Call* call) {
     CallScopeInfo::forNormalCall(scope, poiScope) :
     CallScopeInfo::forQualifiedCall(context, moduleScopeId, scope, poiScope);
 
-  auto skip = shouldSkipCallResolution(this, call, actualAsts, ci);
+  auto skip = shouldSkipCallResolutionAllowInit(this, call, actualAsts, ci);
   if (!skip && !isIncompleteTypeConstructor) {
     ResolvedExpression& r = byPostorder.byAst(call);
     QualifiedType receiverType = methodReceiverType();

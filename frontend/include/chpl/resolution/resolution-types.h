@@ -523,13 +523,14 @@ class CallInfoActual {
  private:
   types::QualifiedType type_;
   UniqueString byName_;
+  bool expctSplitInit_ = false;
 
  public:
   explicit CallInfoActual(types::QualifiedType type)
     : type_(std::move(type)) {
   }
-  CallInfoActual(types::QualifiedType type, UniqueString byName)
-    : type_(std::move(type)), byName_(byName) {
+  CallInfoActual(types::QualifiedType type, UniqueString byName, bool expectSplitInit = false)
+    : type_(std::move(type)), byName_(byName), expctSplitInit_(expectSplitInit) {
   }
 
   /** return the qualified type */
@@ -539,6 +540,11 @@ class CallInfoActual {
       Ex: in f(number=3), byName() would be "number"
    */
   UniqueString byName() const { return byName_; }
+
+  /** In some cases, we resolve calls with partial information (unknown/generic
+      actuals) because we consider it possible that an 'out' formal will
+      split-init them. Returns true if this is one such actual. */
+  bool expectSplitInit() const { return expctSplitInit_; }
 
   bool operator==(const CallInfoActual &other) const {
     return type_ == other.type_ && byName_ == other.byName_;
@@ -675,6 +681,10 @@ class CallInfo {
 
   /** Copy and rename a CallInfo. */
   static CallInfo copyAndRename(const CallInfo& ci, UniqueString rename);
+
+  /** Copy and mark the selected actuals as "only having been allowed in
+      in oder to support split-init". */
+  static CallInfo copyAndMarkSplitInitActuals(const CallInfo& ci, const std::unordered_set<int>& actualIndices);
 
   /** Prepare actuals for a call for later use in creating a CallInfo.
       This is a helper function for CallInfo::create that is sometimes
