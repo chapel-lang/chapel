@@ -207,8 +207,11 @@ def compute_all_values():
 
     # Use module's LCD architecture in case it was built before
     # Internal, but this value is used in place of CHPL_TARGET_CPU for --path
+    # we don't actually specialize the codegen for the runtime (chapel-private#2968)
+    # if we ever do CHPL_TARGET_BACKEND_CPU and CHPL_LLVM_TARGET_CPU may need
+    # adjustments
     ENV_VALS['CHPL_RUNTIME_CPU'] = chpl_cpu.get('target',
-            get_lcd=chpl_home_utils.using_chapel_module()).cpu
+            get_lcd=chpl_home_utils.using_chapel_module(), prefer_runtime_cpu=True).cpu
 
     ENV_VALS['CHPL_LOCALE_MODEL'] = chpl_locale_model.get()
     ENV_VALS['  CHPL_GPU'] = chpl_gpu.get()

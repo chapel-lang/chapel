@@ -31,6 +31,7 @@ chplvars = [
              'CHPL_TARGET_LD',
              'CHPL_TARGET_ARCH',
              'CHPL_TARGET_CPU',
+             'CHPL_RUNTIME_CPU', # not printed in `--all`
 
              'CHPL_LOCALE_MODEL',
              'CHPL_GPU',
