@@ -3295,12 +3295,13 @@ Symbol* TConverter::convertParam(const types::QualifiedType& qt) {
       return new_ImagSymbol(buf, getImagSize(it));
     }
   } else if (auto sp = p->toStringParam()) {
+    auto val = escapeStringC(sp->value().c_str());
     if (t->isStringType()) {
-      return new_StringSymbol(sp->value().c_str());
+      return new_StringSymbol(val.c_str());
     } else if (t->isCStringType()) {
-      return new_CStringSymbol(sp->value().c_str());
+      return new_CStringSymbol(val.c_str());
     } else if (t->isBytesType()) {
-      return new_BytesSymbol(sp->value().c_str());
+      return new_BytesSymbol(val.c_str());
     }
   } else if (auto up = p->toUintParam()) {
     const types::UintType* t = qt.type()->toUintType();
