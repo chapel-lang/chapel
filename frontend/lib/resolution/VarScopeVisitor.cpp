@@ -175,6 +175,18 @@ bool VarScopeVisitor::processDeclarationInit(const NamedDecl* lhsAst, const AstN
   return inserted;
 }
 
+bool VarScopeVisitor::declIsLoopIndex(const Decl* ast) {
+  if (auto parentAst = parsing::parentAst(context, ast)) {
+    if (auto indexableLoop = parentAst->toIndexableLoop()) {
+      if (ast == indexableLoop->index()) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
 const QualifiedType& VarScopeVisitor::returnOrYieldType() {
   return fnReturnType;
 }
@@ -272,29 +284,30 @@ bool VarScopeVisitor::enter(const TupleDecl* ast, RV& rv) {
   enterAst(ast);
   enterScope(ast, rv);
 
-  return false;
-}
-void VarScopeVisitor::exit(const TupleDecl* ast, RV& rv) {
+  if (!outermostContainingTuple) outermostContainingTuple = ast;
+
   // Loop index variables don't need default-initialization and aren't
   // subject to split init etc., so skip them.
   //
   // TODO: I think it's fine to skip this for all users of VarScopeVisitor;
   //       is there an analysis that does need to handle loop indices?
-  // Logic copied from NamedDecl below.
-  bool skipDecl = false;
-  if (inAstStack.size() > 1) {
-    auto parentAst = inAstStack[inAstStack.size() - 2];
-    if (auto indexableLoop = parentAst->toIndexableLoop()) {
-      if (ast == indexableLoop->index()) {
-        skipDecl = true;
-      }
-    }
-  }
-
+  // See also: skip for NamedDecl
+  return !declIsLoopIndex(outermostContainingTuple);
+}
+void VarScopeVisitor::exit(const TupleDecl* ast, RV& rv) {
   CHPL_ASSERT(!scopeStack.empty());
-  if (!scopeStack.empty() && !skipDecl) {
+
+  // Loop index variables don't need default-initialization and aren't
+  // subject to split init etc., so skip them.
+  //
+  // TODO: I think it's fine to skip this for all users of VarScopeVisitor;
+  //       is there an analysis that does need to handle loop indices?
+  // See also: skip for NamedDecl
+  if (!declIsLoopIndex(outermostContainingTuple)) {
     handleTupleDeclaration(ast, rv);
   }
+
+  if (outermostContainingTuple == ast) outermostContainingTuple = nullptr;
 
   exitScope(ast, rv);
   exitAst(ast);
@@ -321,23 +334,14 @@ void VarScopeVisitor::exit(const NamedDecl* ast, RV& rv) {
     return;
   }
 
+  CHPL_ASSERT(!scopeStack.empty());
+
   // Loop index variables don't need default-initialization and aren't
   // subject to split init etc., so skip them.
   //
   // TODO: I think it's fine to skip this for all users of VarScopeVisitor;
   //       is there an analysis that does need to handle loop indices?
-  bool skipDecl = false;
-  if (inAstStack.size() > 1) {
-    auto parentAst = inAstStack[inAstStack.size() - 2];
-    if (auto indexableLoop = parentAst->toIndexableLoop()) {
-      if (ast == indexableLoop->index()) {
-        skipDecl = true;
-      }
-    }
-  }
-
-  CHPL_ASSERT(!scopeStack.empty());
-  if (!scopeStack.empty() && !skipDecl) {
+  if (!declIsLoopIndex(ast)) {
     if (auto vld = ast->toVarLikeDecl()) {
       handleDeclaration(vld, rv);
     }

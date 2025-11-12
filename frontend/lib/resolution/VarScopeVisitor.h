@@ -63,6 +63,7 @@ class VarScopeVisitor : public BranchSensitiveVisitor<VarFrame, MutatingResolved
 
   // ----- internal variables
   std::vector<const AstNode*> inAstStack;
+  const TupleDecl* outermostContainingTuple = nullptr;
 
   // ----- methods to be implemented by specific analysis subclass
 
@@ -165,6 +166,8 @@ class VarScopeVisitor : public BranchSensitiveVisitor<VarFrame, MutatingResolved
   bool processDeclarationInit(const NamedDecl* lhsAst,
                               const AstNode* initExpression,
                               RV& rv);
+
+  bool declIsLoopIndex(const Decl* ast);
 
   /** Returns the return or yield type of the function being processed */
   const types::QualifiedType& returnOrYieldType();
