@@ -84,7 +84,7 @@ static void checkCalledIndex(Context* context,
   const MostSpecificCandidates& s = re.mostSpecific();
 
   // disambiguation tests should either have a best candidate or be ambiguous.
-  assert (!s.isEmpty());
+  assert (!s.isEmpty() || s.isAmbiguous());
 
   int foundOnlyIdx = 0;
   int foundBestRef = 0;
@@ -435,6 +435,130 @@ static void testDistance() {
   assert(x->isStringType());
 }
 
+// Test partial instantiation: single type field
+static void testPartialGeneric1() {
+  auto context = buildStdContext();
+
+  checkCalledIndex(context,
+      R""""(
+        record R {
+          type T;
+          param p : T;
+        }
+        proc f(x : R(int)) { }   // 1 - partially generic
+        proc f(x : R(?)) { }     // 2 - fully generic
+        var arg = new R(int, 100);
+        f(arg);
+      )"""",
+    1);
+}
+
+// Test partial instantiation: class with management
+static void testPartialGeneric2() {
+  auto context = buildStdContext();
+
+  // 'owned' makes both partially generic; this is ambiguous in prod.
+  checkCalledIndex(context,
+      R""""(
+        class C {
+          type T;
+          param n : int;
+        }
+        proc f(x : owned C(int)) { }
+        proc f(x : owned C(?)) { }
+        var arg = new owned C(int, 4);
+        f(arg);
+      )"""",
+    -1);
+
+  checkCalledIndex(context,
+      R""""(
+        class C {
+          type T;
+          param n : int;
+        }
+        proc f(x : owned C(?)) { }   // 1
+        proc f(x :       C(?)) { }   // 2
+        var arg = new owned C(string, 10);
+        f(arg);
+      )"""",
+    1);
+}
+
+// Test partial instantiation: param values constrain the type
+static void testPartialGeneric3() {
+  auto context = buildStdContext();
+
+  checkCalledIndex(context,
+      R""""(
+        class C {
+          type T;
+          param n : int;
+        }
+        proc f(x : C(n=4)) { }    // 1 - partially generic (param specified)
+        proc f(x : C(?)) { }      // 2 - fully generic
+        var arg = new owned C(string, 4);
+        f(arg);
+      )"""",
+    1);
+}
+
+// Test partial instantiation: tuple types constrain size
+static void testPartialGeneric4() {
+  auto context = buildStdContext();
+
+  checkCalledIndex(context,
+      R""""(
+        proc f(x : (int, ?)) { }   // 1 - partially generic (size constrained)
+        proc f(x : _tuple) { }     // 2 - fully generic
+        var arg = (1, 2);
+        f(arg);
+      )"""",
+    1);
+
+  checkCalledIndex(context,
+      R""""(
+        proc f(x : (?, ?)) { }   // 1 - partially generic (size constrained)
+        proc f(x : _tuple) { }   // 2 - fully generic
+        var arg = (1, 2);
+        f(arg);
+      )"""",
+    1);
+}
+
+// Test partial instantiation: array element types
+static void testPartialGeneric5() {
+  auto context = buildStdContext();
+
+  checkCalledIndex(context,
+      R""""(
+        proc f(x : [1..10] int) { }  // 1 - partially generic (element type specified)
+        proc f(x : [1..10] ?) { }    // 2 - fully generic
+        var arg : [1..10] int;
+        f(arg);
+      )"""",
+    1);
+}
+
+// Test multiple fields with different specificity
+static void testPartialGeneric6() {
+  auto context = buildStdContext();
+
+  checkCalledIndex(context,
+      R""""(
+        record R {
+          type T;
+          type U;
+        }
+        proc f(x : R(T=int, ?)) { }    // 1 - partially generic
+        proc f(x : R(?, U=int)) { }    // 2 - partially generic (different field)
+        proc f(x : R(?)) { }         // 3 - fully generic
+        var arg : R(int, int);
+        f(arg);
+      )"""",
+    -1); // ambiguous between 1 and 2
+}
+
 int main() {
 
   test1();
@@ -445,6 +569,12 @@ int main() {
   test6();
   test7();
   testDistance();
+  testPartialGeneric1();
+  testPartialGeneric2();
+  testPartialGeneric3();
+  testPartialGeneric4();
+  testPartialGeneric5();
+  testPartialGeneric6();
 
   return 0;
 }
