@@ -4056,40 +4056,50 @@ isInitialTypedSignatureApplicable(Context* context,
   for (const FormalActual& entry : faMap.byFormals()) {
     const auto& actualType = entry.actualType();
 
-    // note: entry.actualType can have type()==nullptr and UNKNOWN.
-    // in that case, resolver code should treat it as a hint to
-    // use the default value. Unless the call used a ? argument.
-    //
-    // TODO: set a flag in the entry rather than relying on some encoded
-    // property via QualifiedType.
-    if (actualType.kind() == QualifiedType::UNKNOWN &&
-        actualType.type() == nullptr &&
-        !ci.hasQuestionArg()) {
-      // use the default value - no need to check it matches formal
-    } else {
-      const auto& formalType = tfs->formalType(entry.formalIdx());
-      CanPassResult got;
-      if (entry.isVarArgEntry()) {
-        if (varArgType.isUnknown()) {
-          varArgType = formalType;
-        }
-        numVarArgActuals += 1;
+    if (!entry.hasActual()) {
+      // how could we have mapped this if there is no actual?
+      // Either we're partially instantiating a type `R(x, ?)`, in which any subsequent generic type
+      // fields are defaulted, or we are using defaults, in which case
+      // there should be a 'hasDefault' entry here. We allow (but warn about)
+      // partial instnatiations without '?', if it's a type constructor.
+      //
+      // One other niche case is that the 'this' formal of operators is unused.
+      CHPL_ASSERT(tfs->untyped()->isTypeConstructor() || entry.hasDefault() ||
+                  (ci.isOpCall() && tfs->untyped()->formalName(entry.formalIdx()) == USTR("this")));
 
-        got = canPassFn(context, actualType, getVarArgTupleElemType(formalType));
-      } else {
-        got = canPassFn(context, actualType, formalType);
+      // use the default value - no need to check it matches formal
+      continue;
+    }
+
+    if (tfs->formalType(entry.formalIdx()).kind() == QualifiedType::OUT) {
+      // 'out' formals are resolved by assigning the formal back to the actual.
+      // There's no need to check 'canPass', but later we might error if there's
+      // no way to perform the assignment.
+      continue;
+    }
+
+    const auto& formalType = tfs->formalType(entry.formalIdx());
+    CanPassResult got;
+    if (entry.isVarArgEntry()) {
+      if (varArgType.isUnknown()) {
+        varArgType = formalType;
       }
-      if (got.passes()) {
-        // fine, continue to next entry
-      } else if (got.reason() == FAIL_DID_NOT_INSTANTIATE) {
-        // A conversion is possible, but the formal type is generic and
-        // the actual doesn't have enough info to instantiate. However,
-        // this is only the "initial" check -- previous formals might contribute
-        // information that makes the formal concrete. Allow this for now.
-      } else {
-        CHPL_ASSERT(!got.passes());
-        return ApplicabilityResult::failure(tfs, got.reason(), entry.formalIdx());
-      }
+      numVarArgActuals += 1;
+
+      got = canPassFn(context, actualType, getVarArgTupleElemType(formalType));
+    } else {
+      got = canPassFn(context, actualType, formalType);
+    }
+    if (got.passes()) {
+      // fine, continue to next entry
+    } else if (got.reason() == FAIL_DID_NOT_INSTANTIATE) {
+      // A conversion is possible, but the formal type is generic and
+      // the actual doesn't have enough info to instantiate. However,
+      // this is only the "initial" check -- previous formals might contribute
+      // information that makes the formal concrete. Allow this for now.
+    } else {
+      CHPL_ASSERT(!got.passes());
+      return ApplicabilityResult::failure(tfs, got.reason(), entry.formalIdx());
     }
   }
 
@@ -5427,11 +5437,22 @@ resolveFnCallForTypeCtor(Context* context,
 
   // TODO: do something for partial instantiation
 
+  // concrete constructor may still not match if formals don't map to actuals.
+  FormalActualMap faMap = FormalActualMap(initial->untyped(), ci);
+  auto initialApplicability =
+      isInitialTypedSignatureApplicable(context, initial, faMap, ci);
+  if (!initialApplicability.success()) {
+    if (rejected) {
+      rejected->push_back(std::move(initialApplicability));
+    }
+    return MostSpecificCandidates();
+  }
+
+  // if the constructor was generic, see if it applies after instantiation
   filterCandidatesInstantiating(rc, initialCandidates, ci, inScope,
                                 inPoiScope,
                                 candidates,
                                 rejected);
-
 
   // find most specific candidates / disambiguate
   // Note: at present there can only be one candidate here
