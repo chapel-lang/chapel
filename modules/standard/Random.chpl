@@ -1695,7 +1695,7 @@ module Random {
 
   // Returns an unsigned integer x with 0 <= x <= bound
   // count is 1-based
-  private proc boundedrand64_1(ref states, seed:int(64), count:int(64),
+  private inline proc boundedrand64_1(ref states, seed:int(64), count:int(64),
                                 bound:uint):uint
   {
     if bound > max(uint(32)):uint {

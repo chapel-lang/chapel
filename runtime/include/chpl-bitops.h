@@ -235,7 +235,7 @@ CHPL_BITOPS_ROTL(64)
 //     http://blog.regehr.org/archives/1063
 // These should be recognized by the backend C compiler and turned into a ror
 //
-// Returns: x rotated left by n
+// Returns: x rotated right by n
 
 #define CHPL_BITOPS_ROTR(size) \
 MAYBE_GPU static inline UI(size) chpl_bitops_rotr_##size(UI(size) x, UI(size) n) { \
