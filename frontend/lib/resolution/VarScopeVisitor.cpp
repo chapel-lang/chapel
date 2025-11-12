@@ -284,12 +284,29 @@ bool VarScopeVisitor::enter(const TupleDecl* ast, RV& rv) {
   return false;
 }
 void VarScopeVisitor::exit(const TupleDecl* ast, RV& rv) {
-  handleTupleDeclaration(ast, rv);
+  // Loop index variables don't need default-initialization and aren't
+  // subject to split init etc., so skip them.
+  //
+  // TODO: I think it's fine to skip this for all users of VarScopeVisitor;
+  //       is there an analysis that does need to handle loop indices?
+  // Logic copied from NamedDecl below.
+  bool skipDecl = false;
+  if (inAstStack.size() > 1) {
+    auto parentAst = inAstStack[inAstStack.size() - 2];
+    if (auto indexableLoop = parentAst->toIndexableLoop()) {
+      if (ast == indexableLoop->index()) {
+        skipDecl = true;
+      }
+    }
+  }
+
+  CHPL_ASSERT(!scopeStack.empty());
+  if (!scopeStack.empty() && !skipDecl) {
+    handleTupleDeclaration(ast, rv);
+  }
 
   exitScope(ast, rv);
   exitAst(ast);
-
-  return;
 }
 
 bool VarScopeVisitor::enter(const NamedDecl* ast, RV& rv) {
