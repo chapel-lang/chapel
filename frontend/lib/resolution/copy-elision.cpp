@@ -464,7 +464,6 @@ void FindElidedCopies::processSingleAssignHelper(const AstNode* lhsAst,
         } else {
           ID rhsVarId = refersToId(actual, rv);
           if (!rhsVarId.isEmpty() && isEligibleVarInAnyFrame(rhsVarId)) {
-            debuggerBreakHere();
             // check that the types are the same
             if (rv.hasId(lhsVarId) && rv.hasId(rhsVarId)) {
               if (lhsType.type() && lhsType.type()->isTupleType()) {
