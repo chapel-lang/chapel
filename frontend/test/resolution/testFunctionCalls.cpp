@@ -361,6 +361,254 @@ static void test6() {
   }
 }
 
+// during the instantiation of a generic function, we resolve its formals
+// many times. However, if we encounter an error in the formal, we should
+// stop resolving, and we shoul give on call resolution.
+static void test7() {
+
+  auto runTest = [](const std::string& str) {
+    auto base =
+      R"""(
+      proc idk(param x) type : int {
+        compilerError("nooo");
+        return int;
+      }
+
+      record wrapper { type t; }
+      proc makeWrapper(type t) type do return wrapper(t);
+      )""";
+
+    auto fullProg = std::string(base) + str;
+
+    int numberOfNoos = 0;
+    auto ctx = buildStdContext();
+    ErrorGuard guard(ctx);
+
+    auto mod = parseModule(ctx, fullProg);
+    auto res = resolveModule(ctx, mod->id());
+
+    bool noMatchingCalls = false;
+    bool dueToErrorsThrown = false;
+    for (auto& e : guard.errors()) {
+      if (e->type() == ErrorType::UserDiagnosticEmitError && e->message() == "nooo") {
+        numberOfNoos++;
+      } else if (e->type() == chpl::NoMatchingCandidates) {
+        auto err = static_cast<const chpl::ErrorNoMatchingCandidates*>(e.get());
+        for (auto& candidate : std::get<std::vector<ApplicabilityResult>>(err->info())) {
+          if (candidate.reason() == FAIL_ERRORS_THROWN) {
+            dueToErrorsThrown = true;
+          }
+        }
+        noMatchingCalls = true;
+      }
+    }
+    printf("number of 'nooo' errors: %d\n", numberOfNoos);
+    assert(numberOfNoos == 1);
+    assert(noMatchingCalls);
+    assert(dueToErrorsThrown);
+    guard.realizeErrors();
+  };
+
+  // "concrete" function (should discard candidate during initial resolution)
+  {
+    runTest(
+      R"""(
+      proc foo(arg: makeWrapper(idk(1))) {}
+      foo(new wrapper(int));
+      )""");
+  }
+
+  // "generic" function (should discard candidate during instantiation)
+  {
+    runTest(
+      R"""(
+      proc foo(param p, arg: makeWrapper(idk(p))) {}
+      foo(1, new wrapper(int));
+      )""");
+  }
+
+  // ensure we don't fall back to a non-erroring candidate
+  // (should still have no matching candidates)
+  {
+    runTest(
+      R"""(
+      proc foo(arg: makeWrapper(idk(1))) {}
+      proc foo(arg) {}
+      foo(new wrapper(int));
+      )""");
+  }
+}
+
+// 'compilerWarning' should not cause candidate elimination, it's a warning.
+static void test8() {
+
+  auto runTest = [](const std::string& str) {
+    auto base =
+      R"""(
+      proc idk(param x) type : int {
+        compilerWarning("yesss");
+        return int;
+      }
+
+      record wrapper { type t; }
+      proc makeWrapper(type t) type do return wrapper(t);
+      )""";
+
+    auto fullProg = std::string(base) + str;
+
+    auto ctx = buildStdContext();
+    ErrorGuard guard(ctx);
+
+    auto mod = parseModule(ctx, fullProg);
+    auto res = resolveModule(ctx, mod->id());
+    guard.realizeErrors(/* countWarnings */ false);
+  };
+
+  {
+    runTest(
+      R"""(
+      proc foo(arg: makeWrapper(idk(1))) {}
+      foo(new wrapper(int));
+      )""");
+  }
+
+  {
+    runTest(
+      R"""(
+      proc foo(param p, arg: makeWrapper(idk(p))) {}
+      foo(1, new wrapper(int));
+      )""");
+  }
+
+  {
+    runTest(
+      R"""(
+      proc foo(arg: makeWrapper(idk(1))) {}
+      proc foo(arg) {}
+      foo(new wrapper(int));
+      )""");
+  }
+}
+
+// Not all errors emitted while resolving the formals should cause candidate elimination.
+// Specifically, if a syntax error was emitted as part of parsing and resolving
+// a function called from a formal, and that syntax error doesn't affect
+// the function, it should not cause candidate elimination.
+static void test9() {
+  auto runTest = [](const std::string& str) {
+    auto base =
+      R"""(
+      module M1 {
+        proc idk(param x) type : int {
+          compilerError("nooo");
+          return int;
+        }
+
+        var;
+      }
+      module M2 {
+        use M1;
+
+        record wrapper { type t; }
+        proc makeWrapper(type t) type do return wrapper(t);
+      )""";
+
+    auto fullProg = std::string(base) + str + "\n}";
+
+    auto ctx = buildStdContext();
+    ErrorGuard guard(ctx);
+
+    setFileText(ctx, UniqueString::get(ctx, "input.chpl"), fullProg);
+    auto mods = parse(ctx, UniqueString::get(ctx, "input.chpl"), UniqueString());
+
+    auto M2 = mods[0]->stmt(1);
+    auto res = resolveModule(ctx, M2->id());
+
+    // there should be one syntax error, nothing else.
+    int syntaxErrors = 0;
+    for (auto& e : guard.errors()) {
+      if (e->kind() == ErrorBase::SYNTAX) {
+        syntaxErrors++;
+      } else {
+        assert(false && "unexpected error");
+      }
+    }
+    assert(syntaxErrors == 1);
+    guard.realizeErrors();
+  };
+
+  {
+    runTest(
+      R"""(
+      proc foo(arg: makeWrapper(idk(1))) {}
+      foo(new wrapper(int));
+      )""");
+  }
+
+  {
+    runTest(
+      R"""(
+      proc foo(param p, arg: makeWrapper(idk(p))) {}
+      foo(1, new wrapper(int));
+      )""");
+  }
+
+  {
+    runTest(
+      R"""(
+      proc foo(arg: makeWrapper(idk(1))) {}
+      proc foo(arg) {}
+      foo(new wrapper(int));
+      )""");
+  }
+}
+
+// this locks in the (questionable) behavior of not discarding a candidate
+// when an error occurred deep in the call stack during formal resolution.
+// Specifically, in this case, idk2 emits an error from its body,
+// but its return type is inferred to be int, and the formal itself
+// does not emit any errors. We don't interrupt call resolution, and
+// the call to 'foo' goes through.
+//
+// Today, only errors emitted directly from the formal resolution
+// cause candidate elimination. This seems like a decent balance for
+// applications such as the Chapel compiler and best-effort resolution
+// in IDEs.
+static void test10() {
+  auto prog = R"""(
+    proc idk1(param x) type : int {
+      compilerError("nooo");
+      return int;
+    }
+
+    proc idk2(param x) type : int {
+      return idk1(x);
+    }
+
+    record wrapper { type t; }
+    proc makeWrapper(type t) type do return wrapper(t);
+    proc foo(param p, arg: makeWrapper(idk2(p))) param { return "They called me!"; }
+    var x = foo(1, new wrapper(int));
+  )""";
+
+  auto ctx = buildStdContext();
+  ErrorGuard guard(ctx);
+
+  auto qt = resolveTypeOfXInit(ctx, prog);
+  ensureParamString(qt, "They called me!");
+
+  bool foundNooo = false;
+  for (auto& e : guard.errors()) {
+    if (e->type() == ErrorType::UserDiagnosticEmitError && e->message() == "nooo") {
+      foundNooo = true;
+    } else if (e->type() != ErrorType::UserDiagnosticEncounterError) {
+      assert(false && "unexpected error");
+    }
+  }
+  assert(foundNooo);
+  guard.realizeErrors();
+}
+
 int main() {
   test1();
   test2();
@@ -369,6 +617,10 @@ int main() {
   test4();
   test5();
   test6();
+  test7();
+  test8();
+  test9();
+  test10();
 
   return 0;
 }

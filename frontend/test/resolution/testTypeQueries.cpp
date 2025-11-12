@@ -975,6 +975,28 @@ static void test28() {
   ensureParamInt(vars.at("x"), 64);
 }
 
+static void test29() {
+  printf("%s\n", __FUNCTION__);
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+                R""""(
+                record pair { type first; type second; }
+                proc foo(x: pair(?, first=?t)) param do return t : string;
+                proc bar(x: pair(?, second=?t)) param do return t : string;
+                param x = foo(new pair(int, real));
+                param y = foo(new pair(real, int));
+                param z = bar(new pair(int, real));
+                param w = bar(new pair(real, int));
+                )"""", {"x", "y", "z", "w"});
+
+  ensureParamString(vars.at("x"), "int(64)");
+  ensureParamString(vars.at("y"), "real(64)");
+  ensureParamString(vars.at("z"), "real(64)");
+  ensureParamString(vars.at("w"), "int(64)");
+}
+
 int main() {
   test1();
   test2();
@@ -1011,6 +1033,7 @@ int main() {
   test26();
   test27();
   test28();
+  test29();
 
   return 0;
 }

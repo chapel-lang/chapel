@@ -408,6 +408,7 @@ generateIntegralToOrFromCastForEnum(ResolutionContext* rc,
                                    /* instantiatedFrom */ nullptr,
                                    /* parentFn */ nullptr,
                                    /* formalsInstantiated */ Bitmap(),
+                                   /* formalsErrored */ Bitmap(),
                                    /* outerVariables */ {});
   return ret;
 }
@@ -669,7 +670,7 @@ static bool initHelper(Context* context,
         // Now, propagate to the previous decls forming the current 'group'.
         // We process this group in a 'forward' direction, rather than a
         // 'backward' direction, so that we preserve field declaration order.
-        if (curTypeExpr || curInitExpr) {
+        if (curTypeExpr || curInitExpr || std::next(it) == multi->decls().end()) {
           auto groupEnd = std::next(it);
           auto groupIt = groupBegin;
           while (groupIt != groupEnd) {
@@ -762,24 +763,23 @@ buildInitUfsFormals(const uast::Function* initFn) {
   std::vector<UntypedFnSignature::FormalDetail> formals;
   for (auto decl : initFn->formals()) {
     UniqueString name;
-    bool hasDefault = false;
 
+    auto defaultKind = UntypedFnSignature::DK_NO_DEFAULT;
     if (auto formal = decl->toFormal()) {
       name = formal->name();
 
-      hasDefault = formal->initExpression() != nullptr;
-      if (decl != initFn->thisFormal()) {
+      if (formal->initExpression() != nullptr) {
+        defaultKind = UntypedFnSignature::DK_DEFAULT;
+      } else if (decl != initFn->thisFormal()) {
         if (formal->intent() != Formal::Intent::TYPE &&
             formal->intent() != Formal::Intent::PARAM) {
           if (formal->typeExpression() != nullptr) {
-            hasDefault = true;
+            defaultKind = UntypedFnSignature::DK_MAYBE_DEFAULT;
           }
         }
       }
     }
 
-    auto defaultKind = hasDefault ? UntypedFnSignature::DK_DEFAULT
-                                  : UntypedFnSignature::DK_NO_DEFAULT;
     auto fd = UntypedFnSignature::FormalDetail(name, defaultKind,
                                                decl, decl->isVarArgFormal());
     formals.push_back(fd);
@@ -1814,6 +1814,7 @@ generateTupleMethod(Context* context,
                                  /* instantiatedFrom */ nullptr,
                                  /* parentFn */ nullptr,
                                  /* formalsInstantiated */ Bitmap(),
+                                 /* formalsInstantiated */ Bitmap(),
                                  /* outerVariables */ {});
 
   return result;
@@ -1868,6 +1869,7 @@ fieldAccessorQuery(Context* context,
                                  /* instantiatedFrom */ nullptr,
                                  /* parentFn */ nullptr,
                                  /* formalsInstantiated */ Bitmap(),
+                                 /* formalsErrored */ Bitmap(),
                                  /* outerVariables */ {});
 
   return QUERY_END(result);
@@ -1947,6 +1949,7 @@ generatePtrMethod(Context* context, QualifiedType receiverType,
                                  /* instantiatedFrom */ nullptr,
                                  /* parentFn */ nullptr,
                                  /* formalsInstantiated */ Bitmap(),
+                                 /* formalsErrored */ Bitmap(),
                                  /* outerVariables */ {});
 
   return result;
@@ -1989,6 +1992,7 @@ generateEnumMethod(ResolutionContext* rc,
           /* instantiatedFrom */ nullptr,
           /* parentFn */ nullptr,
           /* formalsInstantiated */ Bitmap(),
+          /* formalsErrored */ Bitmap(),
           /* outerVariables */ {});
     }
   }
@@ -2047,6 +2051,7 @@ generateIteratorMethod(Context* context,
         /* instantiatedFrom */ nullptr,
         /* parentFn */ nullptr,
         /* formalsInstantiated */ Bitmap(),
+        /* formalsErrored */ Bitmap(),
         /* outerVariables */ {});
   }
   return result;
@@ -2091,6 +2096,7 @@ generateExternAssignment(ResolutionContext* rc, const ExternType* type) {
                                  /* instantiatedFrom */ nullptr,
                                  /* parentFn */ nullptr,
                                  /* formalsInstantiated */ Bitmap(),
+                                 /* formalsErrored */ Bitmap(),
                                  /* outerVariables */ {});
 
   return result;
@@ -2253,6 +2259,7 @@ getParamOrderToEnum(Context* context, const EnumType* et) {
                                    /* instantiatedFrom */ nullptr,
                                    /* parentFn */ nullptr,
                                    /* formalsInstantiated */ Bitmap(),
+                                   /* formalsErrored */ Bitmap(),
                                    /* outerVariables */ {});
 
   return QUERY_END(ret);
@@ -2325,6 +2332,7 @@ getParamEnumToOrder(Context* context, const EnumType* et) {
                                    /* instantiatedFrom */ nullptr,
                                    /* parentFn */ nullptr,
                                    /* formalsInstantiated */ Bitmap(),
+                                   /* formalsErrored */ Bitmap(),
                                    /* outerVariables */ {});
 
   return QUERY_END(ret);

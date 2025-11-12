@@ -597,6 +597,7 @@ const TypedFnSignature* const& precompiledHeaderSigForFn(
     if (auto fnDecl = llvm::dyn_cast<clang::FunctionDecl>(decl)) {
       std::vector<UntypedFnSignature::FormalDetail> formals;
       std::vector<types::QualifiedType> formalTypes;
+      Bitmap formalsErrored; /* TODO: populate this property */
       for (auto clangFormal : fnDecl->parameters()) {
         auto formalName = UniqueString::get(context, clangFormal->getName());
         formals.emplace_back(formalName, UntypedFnSignature::DK_NO_DEFAULT,
@@ -611,6 +612,7 @@ const TypedFnSignature* const& precompiledHeaderSigForFn(
         formalChplType = QualifiedType(intent, formalChplType.type());
         formalTypes.push_back(formalChplType);
       }
+      formalsErrored.resize(formals.size() + 1);
 
       const UntypedFnSignature* untypedSig = UntypedFnSignature::get(
           context, fnId, name,
@@ -630,6 +632,7 @@ const TypedFnSignature* const& precompiledHeaderSigForFn(
           /* instantiatedFrom */ nullptr,
           /* parentFn */ nullptr,
           /* formalsInstantiated */ Bitmap(),
+          /* formalsErrored */ formalsErrored,
           /* outerVariables */ OuterVariables());
     }
   });

@@ -148,8 +148,7 @@ std::vector<owned<ErrorBase>> Context::CapturingRunResultBase::consumeErrors() {
 
 bool Context::CapturingRunResultBase::ranWithoutErrors() const {
   for (auto& error : errors_) {
-    auto kind = error->kind();
-    if (kind == ErrorBase::ERROR || kind == ErrorBase::SYNTAX) {
+    if (errorKindIsError(error->kind())) {
       return false;
     }
   }
@@ -194,7 +193,7 @@ void Context::ErrorCollectionEntry::storeError(owned<ErrorBase> toStore) const {
   }
   if (noteErrorOccurredInto_) {
     *noteErrorOccurredInto_ |=
-      toStore->kind() == ErrorBase::ERROR || toStore->kind() == ErrorBase::SYNTAX;
+      errorKindIsError(toStore->kind());
   }
 }
 
@@ -919,7 +918,7 @@ void Context::report(owned<ErrorBase> error) {
   // results (errors will be re-emitted if the cached query is invoked without
   // error collection).
 
-  bool isError = error->kind() == ErrorBase::ERROR || error->kind() == ErrorBase::SYNTAX;
+  bool isError = errorKindIsError(error->kind());
 
   if (queryStack.size() > 0 && errorCollectionStack.size() > 0) {
     bool isSilencing =
@@ -1220,6 +1219,7 @@ bool Context::queryCanUseSavedResultAndPushIfNot(
     // Clear out the dependencies and errors since these will be recomputed
     // by evaluating the query.
     resultEntry->dependencies.clear();
+    resultEntry->errorsPresentInSelfOrDependencies = 0;
     resultEntry->errors.clear();
     resultEntry->oldResultForErrorContents = -1;
     resultEntry->recursionErrors.clear();

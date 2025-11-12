@@ -1004,6 +1004,10 @@ class TypedFnSignature {
   // Which formal arguments were substituted when instantiating?
   Bitmap formalsInstantiated_;
 
+  // For initial signatures, did any formals produce errors?
+  // Instantiated signatures with erroring formals should not be constructed.
+  Bitmap formalsErrored_;
+
   // What are the the types of outer variables used to construct this?
   // TODO: Can probably flatten into a vector.
   OuterVariables outerVariables_;
@@ -1016,6 +1020,7 @@ class TypedFnSignature {
                    const TypedFnSignature* instantiatedFrom,
                    const TypedFnSignature* parentFn,
                    Bitmap formalsInstantiated,
+                   Bitmap formalsErrored,
                    OuterVariables outerVariables)
     : untypedSignature_(untypedSignature),
       formalTypes_(std::move(formalTypes)),
@@ -1025,6 +1030,7 @@ class TypedFnSignature {
       instantiatedFrom_(instantiatedFrom),
       parentFn_(parentFn),
       formalsInstantiated_(std::move(formalsInstantiated)),
+      formalsErrored_(std::move(formalsErrored)),
       outerVariables_(std::move(outerVariables)) { }
 
   static const owned<TypedFnSignature>&
@@ -1037,6 +1043,7 @@ class TypedFnSignature {
                       const TypedFnSignature* instantiatedFrom,
                       const TypedFnSignature* parentFn,
                       Bitmap formalsInstantiated,
+                      Bitmap formalsErrored,
                       OuterVariables outerVariables);
 
   /** If this is an iterator, set 'found' to a string representing its
@@ -1055,6 +1062,7 @@ class TypedFnSignature {
                               const TypedFnSignature* instantiatedFrom,
                               const TypedFnSignature* parentFn,
                               Bitmap formalsInstantiated,
+                              Bitmap formalsErrored,
                               OuterVariables outerVariables);
 
   /** Get the unique TypedFnSignature containing these components
@@ -1078,6 +1086,7 @@ class TypedFnSignature {
            instantiatedFrom_ == other.instantiatedFrom_ &&
            parentFn_ == other.parentFn_ &&
            formalsInstantiated_ == other.formalsInstantiated_ &&
+           formalsErrored_ == other.formalsErrored_ &&
            outerVariables_ == other.outerVariables_;
   }
   bool operator!=(const TypedFnSignature& other) const {
@@ -1096,6 +1105,7 @@ class TypedFnSignature {
     context->markPointer(instantiatedFrom_);
     context->markPointer(parentFn_);
     (void) formalsInstantiated_; // nothing to mark
+    (void) formalsErrored_; // nothing to mark
     outerVariables_.mark(context);
   }
 
@@ -1200,6 +1210,29 @@ class TypedFnSignature {
     const TypedFnSignature* sig = inferredFrom();
     return sig->formalsInstantiated_;
   }
+
+  /**
+    For initial signatures, returns 'true' if resolving formal argument i
+    produced an error.
+   */
+  bool formalProducedError(int i) const {
+    if (formalsErrored_.size() == 0) return false;
+    return formalsErrored_[i];
+  }
+
+  /**
+    For initial signatures, returns 'true' if resolving the where clause
+    produced an error.
+   */
+  bool whereClausePrducedError() const {
+    if (formalsErrored_.size() == 0) return false;
+    return formalsErrored_[numFormals()];
+  }
+
+  const Bitmap& formalsErroredBitmap() const {
+    return formalsErrored_;
+  }
+
 
   /**
      Is this for an inner Function? If so, what is the parent
@@ -1339,6 +1372,12 @@ struct CandidatesAndForwardingInfo {
   // Check if any candidates are present
   inline bool empty() const { return candidates.empty(); }
 
+  // Clear the list
+  inline void clear() {
+    candidates.clear();
+    forwardingInfo.clear();
+  }
+
   // Get the number of candidates
   inline size_t size() const { return candidates.size(); }
 
@@ -1373,23 +1412,27 @@ struct CandidatesAndForwardingInfo {
 
 /**
   An enum that represents the reason why a function candidate was filtered out
-  during call resolution.
+  during call resolution. Ordered by "most important" to show to the user.
  */
 enum CandidateFailureReason {
+  /* Resolving one of the signature led to errors. */
+  FAIL_ERRORS_THROWN,
+  /* The user tried to use a default value for a generic field in an initializer. */
+  FAIL_NO_DEFAULT_VALUE_FOR_GENERIC_FIELD,
+  /* The wrong number of varargs were given to the function. */
+  FAIL_VARARG_MISMATCH,
+  /* An interface tried to resolve an associated type function but it didn't return a type */
+  FAIL_INTERFACE_NOT_TYPE_INTENT,
+  /* The where clause returned 'false'. */
+  FAIL_WHERE_CLAUSE,
   /* Cannot pass an actual to one of the candidate's formals. */
   FAIL_CANNOT_PASS,
   /* Not a valid formal-actual mapping for this candidate. */
   FAIL_FORMAL_ACTUAL_MISMATCH,
   /* Special case of formal/actual mismatch when we tried to call a parallel iterator without a tag. */
   FAIL_FORMAL_ACTUAL_MISMATCH_ITERATOR_API,
-  /* The wrong number of varargs were given to the function. */
-  FAIL_VARARG_MISMATCH,
-  /* The where clause returned 'false'. */
-  FAIL_WHERE_CLAUSE,
   /* A parenful call to a parenless function or vice versa. */
   FAIL_PARENLESS_MISMATCH,
-  /* An interface tried to resolve an associated type function but it didn't return a type */
-  FAIL_INTERFACE_NOT_TYPE_INTENT,
   /* Some other, generic reason. */
   FAIL_CANDIDATE_OTHER,
 };
@@ -1513,6 +1556,25 @@ class ApplicabilityResult {
 
   static ApplicabilityResult failure(ID idForErr, CandidateFailureReason reason) {
     return ApplicabilityResult(std::move(idForErr), nullptr, reason, FAIL_FORMAL_OTHER, -1);
+  }
+
+  static ApplicabilityResult failureErrorInAnotherCandidate(const TypedFnSignature* fn) {
+    return ApplicabilityResult(fn, nullptr, FAIL_ERRORS_THROWN, FAIL_FORMAL_OTHER, -1);
+  }
+
+  static ApplicabilityResult failureErrorInFormal(const TypedFnSignature* fn,
+                                                  int formalIdx) {
+    return ApplicabilityResult(fn, nullptr, FAIL_ERRORS_THROWN, FAIL_FORMAL_OTHER, formalIdx);
+  }
+
+  static ApplicabilityResult failureErrorInWhereClause(const TypedFnSignature* fn) {
+    return ApplicabilityResult(fn, nullptr, FAIL_ERRORS_THROWN, FAIL_FORMAL_OTHER, fn->numFormals());
+  }
+
+  static ApplicabilityResult failureNoDefaultValueForGenericField(const TypedFnSignature* fn,
+                                                                  int formalIdx) {
+    return ApplicabilityResult(fn, nullptr, FAIL_NO_DEFAULT_VALUE_FOR_GENERIC_FIELD,
+                               FAIL_FORMAL_OTHER, formalIdx);
   }
 
   static bool update(ApplicabilityResult& keep, ApplicabilityResult& addin) {
@@ -2538,6 +2600,8 @@ class ResolvedExpression {
   bool isBuiltin_ = false;
   // Did this expression cause the function to stop being resolved?
   bool causedFatalError_ = false;
+  // Did this result depend somehow on unknown/uninstantiated expressions?
+  bool isPartialResult_ = false;
 
   // For a function call, what is the most specific candidate,
   // or when using return intent overloading, what are the most specific
@@ -2572,6 +2636,9 @@ class ResolvedExpression {
 
   /** check whether this resolution result caused a fatal error. */
   bool causedFatalError() const { return causedFatalError_; }
+
+  /** check whether this resolution result depended on unknown/uninstantiated expressions. */
+  bool isPartialResult() const { return isPartialResult_; }
 
   /** For a function call, what is the most specific candidate, or when using
    * return intent overloading, what are the most specific candidates? The
@@ -2613,6 +2680,9 @@ class ResolvedExpression {
   /** set the causedFatalError flag */
   void setCausedFatalError(bool causedFatalError) { causedFatalError_ = causedFatalError; }
 
+  /** set the isPartialResult flag */
+  void setIsPartialResult(bool isPartialResult) { isPartialResult_ = isPartialResult; }
+
   /** set the toId */
   void setToId(ID toId) { toId_ = toId; }
 
@@ -2647,6 +2717,7 @@ class ResolvedExpression {
            toId_ == other.toId_ &&
            isBuiltin_ == other.isBuiltin_ &&
            causedFatalError_ == other.causedFatalError_ &&
+           isPartialResult_ == other.isPartialResult_ &&
            mostSpecific_ == other.mostSpecific_ &&
            poiScope_ == other.poiScope_ &&
            associatedActions_ == other.associatedActions_ &&
@@ -2660,6 +2731,7 @@ class ResolvedExpression {
     toId_.swap(other.toId_);
     std::swap(isBuiltin_, other.isBuiltin_);
     std::swap(causedFatalError_, other.causedFatalError_);
+    std::swap(isPartialResult_, other.isPartialResult_);
     mostSpecific_.swap(other.mostSpecific_);
     std::swap(poiScope_, other.poiScope_);
     std::swap(associatedActions_, other.associatedActions_);

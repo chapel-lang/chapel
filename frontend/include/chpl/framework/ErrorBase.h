@@ -154,6 +154,13 @@ class ErrorBase {
   virtual owned<ErrorBase> clone() const = 0;
 };
 
+/* Converts a given ErrorType to its corresponding ErrorBase::Kind */
+ErrorBase::Kind errorKindForErrorType(ErrorType type);
+
+/* Returns whether the given kind represents an error (as opposed to
+   a warning or note) */
+bool errorKindIsError(ErrorBase::Kind kind);
+
 /**
   An error without a specific type, and lacking (typed) additional information
   about what happened.

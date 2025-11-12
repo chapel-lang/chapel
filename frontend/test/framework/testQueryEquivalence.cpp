@@ -64,6 +64,7 @@ static MostSpecificCandidate const& mscQuery(Context* context) {
       /* instantiatedFrom */ nullptr,
       /* parentFn */ nullptr,
       /* instantiatedFormals */ Bitmap{},
+      /* erroredFormals */ Bitmap{},
       {});
 
   auto ci = CallInfo(

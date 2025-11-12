@@ -20,6 +20,7 @@
 #include "chpl/framework/ErrorBase.h"
 #include "chpl/framework/ErrorWriter.h"
 #include "chpl/parsing/parsing-queries.h"
+#include "chpl/resolution/resolution-types.h"
 #include "chpl/resolution/scope-types.h"
 #include "chpl/framework/query-impl.h"
 #include "chpl/uast/VisibilityClause.h"
@@ -790,6 +791,49 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
       } else if (formalReason == resolution::FAIL_NOT_EXACT_MATCH) {
         wr.message("The 'ref' intent requires the ", expectedThing, " and ", passedThing, " types to match exactly.");
       }
+    } else if (reason == resolution::FAIL_ERRORS_THROWN) {
+      // call resolution was interrupted. Potentially applicable candidates
+      // were retroactively rejected with FAIL_ERRORS_THROWN and formalIdx == -1.
+      // If this is one of them, don't print anything. At this point, we
+      // rely on the assumption that the last candidates in the rejected list
+      // all have FAIL_ERRORS_THROWN.
+      if (candidate.formalIdx() == -1) continue;
+
+      CHPL_ASSERT(candidate.untypedForErr() && candidate.initialForErr());
+      bool errorInInitial =
+        candidate.initialForErr()->formalsErroredBitmap()[candidate.formalIdx()];
+      const char* extraText = !errorInInitial ? "after instantiation, " : "";
+      if (candidate.formalIdx() < candidate.untypedForErr()->numFormals()) {
+        wr.note(candidate.idForErr(),
+                "call resolution was not completed because ", extraText, expectedThing, " ",
+                candidate.formalIdx() + 1," of this candidate was ill-formed:");
+        wr.code(candidate.idForErr(), { candidate.untypedForErr()->formalDecl(candidate.formalIdx()) });
+      } else {
+        wr.note(candidate.idForErr(),
+                "call resolution was not completed because the 'where' clause for this candidate was ill-formed:");
+        wr.codeForDef(candidate.idForErr());
+      }
+      wr.message("For correctness reasons, candidate selection and disambiguation cannot proceed if any of the candidates "
+                 "is ill-formed.");
+      break;
+    } else if (reason == resolution::FAIL_NO_DEFAULT_VALUE_FOR_GENERIC_FIELD) {
+      CHPL_ASSERT(candidate.untypedForErr() && candidate.initialForErr());
+      CHPL_ASSERT(candidate.formalIdx() >= 0 && candidate.formalIdx() < candidate.initialForErr()->numFormals());
+
+      std::string fieldName;
+      auto formal = candidate.untypedForErr()->formalDecl(candidate.formalIdx());
+      if (auto named = formal->toNamedDecl()) {
+        fieldName = ", corresponding to field '" + named->name().str() + "',";
+      }
+
+      wr.note(candidate.idForErr(),
+              "the compiler-generated initializer didn't match because ",
+              expectedThing, " ", candidate.formalIdx() + 1,
+              fieldName, " had a generic type expression:");
+      wr.code(candidate.idForErr(), { formal });
+      wr.note(formal,
+              "currently, calls to initializers cannot omit arguments for fields with generic type expressions.");
+      wr.message("Consider using a 'type' field to make genericity explicit.");
     } else if (reason == resolution::FAIL_FORMAL_ACTUAL_MISMATCH) {
       bool printedSpecial = false;
       if (auto fn = candidate.initialForErr()) {

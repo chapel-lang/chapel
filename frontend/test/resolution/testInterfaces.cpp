@@ -681,7 +681,7 @@ static void testBasicReturnTypesIter() {
 static void testMismatchedFnKind() {
   auto i1 = InterfaceSource("myInterface", "iter Self.foo(): int;");
   auto r1 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo() do yield 42;", "proc")
+    .addMethod(NOT_A_TYPE_METHOD, "foo() do return 42;", "proc")
     .addInterfaceConstraint(i1);
   testSingleInterface(i1, r1, ErrorType::General /* InterfaceInvalidReturnType */);
 

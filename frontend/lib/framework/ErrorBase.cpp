@@ -81,6 +81,28 @@ ErrorMessage ErrorBase::toErrorMessage(Context* context) const {
   return message;
 }
 
+ErrorBase::Kind errorKindForErrorType(ErrorType type) {
+  switch (type) {
+    case ErrorType::General: {
+      CHPL_ASSERT(false && "general error can be of any kind");
+      return ErrorBase::Kind::ERROR;
+    }
+#define DIAGNOSTIC_CLASS(NAME, KIND, EINFO...) case NAME: return ErrorBase::Kind::KIND;
+#include "chpl/framework/error-classes-list.h"
+#undef DIAGNOSTIC_CLASS
+    default: {
+      CHPL_ASSERT(false && "unknown error type");
+      return ErrorBase::Kind::ERROR;
+    }
+  }
+}
+
+/* Returns whether the given kind represents an error (as opposed to
+   a warning or note) */
+bool errorKindIsError(ErrorBase::Kind kind) {
+  return kind == ErrorBase::Kind::ERROR || kind == ErrorBase::Kind::SYNTAX;
+}
+
 void BasicError::write(ErrorWriterBase& wr) const {
   // if the ID is set, determine the location from that
   wr.heading(kind_, type_, idOrLoc_, message_);

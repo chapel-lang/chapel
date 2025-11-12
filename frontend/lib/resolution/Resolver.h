@@ -84,6 +84,42 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
     bool hasNonMethodCandidates() const { return hasNonMethodCandidates_; }
   };
 
+  /**
+   Not all resolution attempts are the same. In particular, Dyno has
+   two distinct phases to resolving called functions: an "initial resolution"
+   phase, during which formals are resolved without incorporating type
+   information from the call site, and a "instantiated resolution" phase,
+   in which all available information is incorporated. During the "initial"
+   phase, we might easily be missing instantiations and substitutions.
+   A simple example is:
+
+     proc foo(x, y: someFn(x.type)) { ... }
+
+   Above, during initial resolution, 'x.type' will be unknown. If we resolved
+   'someFn', we'd likely get garbage results. Things would get even more
+   complicated if 'x' had type 'numeric':
+
+     proc foo(x: numeric, y: someFn(x.type)) { ... }
+
+   'someFn' might try to distinguish between generic and non-generic type actuals.
+   Even if the call site provided a concrete type for 'x', during initial resolution,
+   we'd end up giving 'numeric' to 'someFn', which might lead to unexpected errors.
+   Moreover, in general, it's impossible to distinguish between "the argument to
+   someFn is supposed to be generic" from "it's just not instantiated yet" just
+   by looking at its type.
+
+   To disambiguate between the two cases, we want to define two "eagerness"
+   policies. During "initial resolution", we act lazily, avoiding resolving
+   things that may depend on incomplete information. This would include skipping
+   calls like 'someFn(x.type)' when 'x' is 'numeric'. During "instantiated
+   resolution", we resolve these calls and others, generally making the
+   assumption that all type information we could've had is now available.
+  */
+  enum class CallResolutionEagerness {
+    LAZY,      // for initial resolution; skip iffy-looking calls
+    EAGER,     // for instantiated resolution; resolve most calls
+  };
+
   // inputs to the resolution process
   Context* context = nullptr;
   const uast::AstNode* symbol = nullptr;
@@ -100,6 +136,7 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
   bool usePlaceholders = false;
   bool allowLocalSearch = true;
   ID useConcreteArrayTypeForFormals = ID();
+  CallResolutionEagerness callEagerness = CallResolutionEagerness::EAGER;
 
   // internal variables
   ResolutionContext emptyResolutionContext;
@@ -109,12 +146,9 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
   std::vector<const uast::Loop*> loopStack;
   std::vector<int> tagTracker;
   bool signatureOnly = false;
-  bool fieldOrFormalsComputed = false;
   bool scopeResolveOnly = false;
   bool fieldTypesOnly = false;
   const uast::Block* fnBody = nullptr;
-  std::set<ID> fieldOrFormals;
-  std::set<ID> instantiatedFieldOrFormals;
   std::set<UniqueString> namesWithErrorsEmitted;
   std::vector<const uast::Call*> callNodeStack;
   std::vector<std::pair<UniqueString, const uast::AstNode*>> genericReceiverOverrideStack;
@@ -155,6 +189,10 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
   // diagnostics emitted by compilerError / compilerWarning that are
   // to be issued further up the call stack.
   std::vector<CompilerDiagnostic> userDiagnostics;
+
+  // whether the resolver emitted error messages for any parts of the formal AST.
+  // does not include errors from e.g., bodies of called functions.
+  bool encounteredErrors = false;
 
   static PoiInfo makePoiInfo(const PoiScope* poiScope) {
     if (poiScope == nullptr)
@@ -288,15 +326,6 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
                         const uast::Enum* enumNode,
                         ResolutionResultByPostorderID& byPostorder);
 
-  // set up Resolver to resolve instantiated field declaration types
-  // without knowing the CompositeType
-  static Resolver
-  createForInstantiatedSignatureFields(Context* context,
-                                       const uast::AggregateDecl* decl,
-                                       const SubstitutionsMap& substitutions,
-                                       const PoiScope* poiScope,
-                                       ResolutionResultByPostorderID& byId);
-
   // set up Resolver to resolve a parent class type expression
   static Resolver
   createForParentClass(Context* context,
@@ -342,6 +371,12 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
      relevant to location for 'ast'.
    */
   types::QualifiedType typeErr(const uast::AstNode* ast, const char* msg);
+
+  /* Emit a general error message using the given format and arguments,
+     setting the 'encountered errors' flag.
+   */
+  void error(const uast::AstNode* ast, const char* fmt, ...);
+  void error(const ID& id, const char* fmt, ...);
 
   /** Try to get info about the closest method receiver. The first value
       is the ID of the containing symbol. It could be a method or a
@@ -393,20 +428,6 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
   types::QualifiedType getSuperType(Context* context,
                                     const types::QualifiedType& sub,
                                     const uast::Identifier* identForError);
-
-  /* When resolving a generic record or a generic function,
-     there might be generic types that we don't know yet.
-     E.g.
-
-       proc f(type t, arg: t)
-
-     before instantiating, we should conclude that:
-       * t has type AnyType
-       * arg has type UnknownType (and in particular, not AnyType)
-
-     But, if we have a substitution for `t`, we should use that.
-   */
-  bool shouldUseUnknownTypeForGeneric(const ID& id);
 
   // helper for resolveTypeQueriesFromFormalType
   void resolveTypeQueries(const uast::AstNode* formalTypeExpr,
@@ -505,6 +526,7 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
                                            std::vector<const uast::VarLikeDecl*>& actualDecls) {
       CHPL_REPORT(r.parent->context, NoMatchingCandidates,
                   r.astForContext, *r.ci, rejected, actualDecls);
+      r.parent->encounteredErrors = true;
     }
 
     Resolver* parent = nullptr;

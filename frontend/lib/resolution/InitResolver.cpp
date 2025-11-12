@@ -665,6 +665,7 @@ InitResolver::computeTypedSignature(const Type* newRecvType) {
                               tfs->instantiatedFrom(),
                               tfs->parentFn(),
                               formalsInstantiated,
+                              ret->formalsErroredBitmap(),
                               /* outerVariables */ {});
   return ret;
 }

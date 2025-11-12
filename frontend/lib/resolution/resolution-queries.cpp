@@ -874,12 +874,31 @@ typedSignatureInitialImpl(ResolutionContext* rc,
     }
   }
 
+  Bitmap formalsErroredBitmap;
+  formalsErroredBitmap.resize(fn->numFormals()+1);
+
   ResolutionResultByPostorderID r;
   auto visitor = Resolver::createForInitialSignature(rc, fn, r);
   visitor.usePlaceholders = usePlaceholders;
 
+  // createForInitialSignature auto-traverses the 'this' formal for methods
+  if (fn->isMethod()) {
+    CHPL_ASSERT(fn->thisFormal() == fn->formal(0));
+    formalsErroredBitmap.setBit(0, visitor.encounteredErrors);
+  }
+
   // visit the formals, but not the return type or body
-  for (auto formal : fn->formals()) formal->traverse(visitor);
+  for (int i = 0; i < fn->numFormals(); i++) {
+    auto fml = fn->formal(i);
+    if (fn->isMethod() && fml == fn->thisFormal()) {
+      // already visited when setting up; see createForInitialSignature.
+      continue;
+    }
+
+    visitor.encounteredErrors = false;
+    fn->formal(i)->traverse(visitor);
+    formalsErroredBitmap.setBit((size_t) i, visitor.encounteredErrors);
+  }
 
   if (!visitor.outerVariables.isEmpty()) {
     // outer variables can come from a parent function or from
@@ -900,6 +919,7 @@ typedSignatureInitialImpl(ResolutionContext* rc,
   // which case we will visit the where clause when that happens
   auto whereResult = TypedFnSignature::WHERE_NONE;
   if (auto whereClause = fn->whereClause()) {
+    visitor.encounteredErrors = false;
     if (instantiationState) {
       // Visit the where clause for generic nested functions just to collect
       // outer variables. TODO: Is this OK or could POI muck with this?
@@ -909,6 +929,8 @@ typedSignatureInitialImpl(ResolutionContext* rc,
       whereClause->traverse(visitor);
       whereResult = whereClauseResult(context, fn, r, instantiationState);
     }
+    formalsErroredBitmap.setBit((size_t) fn->numFormals(),
+                                 visitor.encounteredErrors);
   }
 
   if (!visitor.outerVariables.isEmpty()) {
@@ -928,6 +950,7 @@ typedSignatureInitialImpl(ResolutionContext* rc,
                                  /* instantiatedFrom */ nullptr,
                                  /* parentFn */ parentSignature,
                                  /* formalsInstantiated */ Bitmap(),
+                                 formalsErroredBitmap,
                                  std::move(visitor.outerVariables));
 
   // also check the signature at this point if it is concrete
@@ -1890,7 +1913,8 @@ static bool isVariableDeclWithClearGenericity(Context* context,
                                               const VarLikeDecl* var,
                                               bool &outIsGeneric,
                                               types::QualifiedType* outFormalType,
-                                              bool useResolution) {
+                                              bool useResolution,
+                                              bool lastInMultiDecl = false) {
   // fields that are 'type' or 'param' are generic
   // and we can use the same type/param intent for the type constructor
   if (var->storageKind() == QualifiedType::TYPE ||
@@ -1915,7 +1939,10 @@ static bool isVariableDeclWithClearGenericity(Context* context,
     if (outFormalType)
       *outFormalType = QualifiedType(QualifiedType::TYPE, AnyType::get(context));
     outIsGeneric = true;
-    return false;
+
+    // if this is the last declaration in a multi-decl (like 'y' in 'var x, y;'),
+    // its genericity is clear: it's definitely generic.
+    return lastInMultiDecl;
   }
 
   // Otherwise, it has a type expression and no init expression. The form
@@ -1989,7 +2016,8 @@ bool isFieldSyntacticallyGeneric(Context* context,
         break;
       }
 
-      if (isVariableDeclWithClearGenericity(context, neighborVar, isGeneric, formalType, useLightResolution)) {
+      bool lastInMultiDecl = (std::next(declIter) == declIterPair.end());
+      if (isVariableDeclWithClearGenericity(context, neighborVar, isGeneric, formalType, useLightResolution, lastInMultiDecl)) {
         break;
       }
     }
@@ -2640,7 +2668,6 @@ static QualifiedType getVarArgTupleElemType(const QualifiedType& varArgType) {
 
 static Resolver createResolverForAst(ResolutionContext* rc,
                                      const Function* fn,
-                                     const AggregateDecl* ad,
                                      const Enum* ed,
                                      const SubstitutionsMap& substitutions,
                                      const PoiScope* poiScope,
@@ -2648,29 +2675,10 @@ static Resolver createResolverForAst(ResolutionContext* rc,
   if (fn != nullptr) {
     return Resolver::createForInstantiatedSignature(rc, fn, substitutions,
                                                     poiScope, r);
-  } else if (ad != nullptr) {
-    return Resolver::createForInstantiatedSignatureFields(rc->context(), ad,
-                                                          substitutions,
-                                                          poiScope, r);
   } else {
     CHPL_ASSERT(ed != nullptr);
     return Resolver::createForEnumElements(rc->context(), ed, r);
   }
-}
-
-static QualifiedType getProperFormalType(const ResolutionResultByPostorderID& r,
-                                         const FormalActual& entry,
-                                         const AggregateDecl* ad,
-                                         const AstNode* typeFor) {
-  auto type = r.byAst(typeFor).type();
-  if (ad != nullptr) {
-    // generic var fields from a type are type fields in its type constructor.
-    // so, make sure the kind is correct.
-    type = QualifiedType(entry.formalType().kind(),
-                         type.type(),
-                         type.param());
-  }
-  return type;
 }
 
 // if the signature is a function and has an AST, fn should be that AST.
@@ -2705,6 +2713,13 @@ static bool instantiateAcrossManagerRecordConversion(Context* context,
   return false;
 }
 
+static bool traverseDetectingErrors(Context* context, const AstNode* toVisit,
+                                    Resolver& visitor) {
+  visitor.encounteredErrors = false;
+  toVisit->traverse(visitor);
+  return visitor.encounteredErrors;
+}
+
 // TODO: We could remove the 'ResolutionContext' argument if we figure out
 // a different way/decide not to resolve initializer bodies down below.
 static ApplicabilityResult
@@ -2726,13 +2741,11 @@ instantiateSignatureImpl(ResolutionContext* rc,
   const UntypedFnSignature* untypedSignature = sig->untyped();
   const AstNode* ast = nullptr;
   const Function* fn = nullptr;
-  const AggregateDecl* ad = nullptr;
   const Enum* ed = nullptr;
 
   if (!untypedSignature->id().isEmpty()) {
     ast = parsing::idToAst(context, untypedSignature->id());
     fn = ast->toFunction();
-    ad = ast->toAggregateDecl();
     ed = ast->toEnum();
   }
 
@@ -2781,7 +2794,7 @@ instantiateSignatureImpl(ResolutionContext* rc,
   int varArgIdx = -1;
 
   ResolutionResultByPostorderID r;
-  auto visitor = createResolverForAst(rc, fn, ad, ed, substitutions,
+  auto visitor = createResolverForAst(rc, fn, ed, substitutions,
                                       poiScope, r);
 
   // TODO: Stop copying these back in.
@@ -2833,7 +2846,9 @@ instantiateSignatureImpl(ResolutionContext* rc,
     if (entry.isVarArgEntry()) {
       if (varArgType.isUnknown()) {
         // We haven't yet re-computed the vararg tuple type.
-        formal->traverse(visitor);
+        if (traverseDetectingErrors(context, formal, visitor)) {
+          return ApplicabilityResult::failureErrorInFormal(sig, entry.formalIdx());
+        }
         varArgType = r.byAst(formal).type();
         justComputedVarArgType = true;
       }
@@ -2848,12 +2863,27 @@ instantiateSignatureImpl(ResolutionContext* rc,
         formalType = QualifiedType(entry.formalType().kind(), formalType.type(), formalType.param());
       }
     } else if (formal) {
-      formal->traverse(visitor);
-      formalType = getProperFormalType(r, entry, ad, formal);
+      if (traverseDetectingErrors(context, formal, visitor)) {
+        return ApplicabilityResult::failureErrorInFormal(sig, entry.formalIdx());
+      }
+      formalType = r.byAst(formal).type();
     } else {
       // without a formal AST, assume that the originally provided formal type
       // is right.
       formalType = entry.formalType();
+    }
+
+    if (entry.actualIdx() == -1 &&
+        sig->untyped()->formalDefaultKind(entry.formalIdx()) == UntypedFnSignature::DK_MAYBE_DEFAULT &&
+        !formalType.isType() &&
+        getTypeGenericity(context, formalType.type()) != Type::CONCRETE) {
+
+      // When building the compiler-generated 'init' we claimed the formal has
+      // a default value. However, this formal is generic, which means we
+      // can't know what its default value is, and none was provided.
+      // This indicates failure.
+      CHPL_ASSERT(sig->isInit() && sig->isCompilerGenerated());
+      return ApplicabilityResult::failureNoDefaultValueForGenericField(sig, formalIdx);
     }
 
     usedConcreteArrayType |=
@@ -3022,8 +3052,10 @@ instantiateSignatureImpl(ResolutionContext* rc,
     } else if (formal) {
       // Substitutions have been updated; re-run resolution to get better
       // intents, vararg info, and to extract type query info.
-      formal->traverse(visitor);
-      formalType = getProperFormalType(r, entry, ad, formal);
+      if (traverseDetectingErrors(context, formal, visitor)) {
+        return ApplicabilityResult::failureErrorInFormal(sig, entry.formalIdx());
+      }
+      formalType = r.byAst(formal).type();
     }
 
     // Type queries have now been computed. We need to verify that type
@@ -3038,8 +3070,10 @@ instantiateSignatureImpl(ResolutionContext* rc,
           visitor.skipTypeQueries = true;
         }
       }
-      formal->traverse(visitor);
-      auto qFormalType = getProperFormalType(r, entry, ad, formal);
+      if (traverseDetectingErrors(context, formal, visitor)) {
+        return ApplicabilityResult::failureErrorInFormal(sig, entry.formalIdx());
+      }
+      auto qFormalType = r.byAst(formal).type();
       if (entry.isVarArgEntry()) {
         // We only need to canPass the tuple element types.
         qFormalType = getVarArgTupleElemType(qFormalType);
@@ -3156,7 +3190,9 @@ instantiateSignatureImpl(ResolutionContext* rc,
 
     // visit the where clause
     if (auto whereClause = fn->whereClause()) {
-      whereClause->traverse(visitor);
+      if (traverseDetectingErrors(context, whereClause, visitor)) {
+        return ApplicabilityResult::failureErrorInWhereClause(sig);
+      }
     }
     // do not visit the return type or function body
 
@@ -3166,82 +3202,6 @@ instantiateSignatureImpl(ResolutionContext* rc,
                                                      untypedSignature,
                                                      &substitutions);
     where = whereClauseResult(context, fn, r, instantiationState);
-  } else if (ad != nullptr) {
-    // TODO: compute the class type
-
-    // visit the fields
-    ResolutionResultByPostorderID r;
-    auto visitor =
-      Resolver::createForInstantiatedSignatureFields(context, ad, substitutions,
-                                                     poiScope, r);
-    // visit the parent type
-    if (auto cls = ad->toClass()) {
-      for (int i = 0; i < cls->numInheritExprs(); i++) {
-        cls->inheritExpr(i)->traverse(visitor);
-      }
-    }
-
-    // do not visit the field declarations directly; only visit those
-    // that are relevant for computing the types of the formals. This
-    // happens below.
-
-    // add formals according to the parent class type
-
-    // now pull out the field types
-    CHPL_ASSERT(formalTypes.empty());
-    int nFormals = sig->numFormals();
-    int formalIdx = 0;
-
-    // The "default value" hints are set in substitutions, but at this
-    // point, we want to use the actual type that was computed. So,
-    // rebuild the substitutions.
-    SubstitutionsMap newSubstitutions;
-
-    if (!sig->untyped()->isTypeConstructor()) {
-      // Compiler-generated initializer has an initial 'this' formal,
-      // skip it for now and insert a placeholder.
-      formalIdx++;
-      formalTypes.push_back(QualifiedType());
-    }
-
-    for (; formalIdx < nFormals; formalIdx++) {
-      const Decl* fieldDecl = untypedSignature->formalDecl(formalIdx);
-      fieldDecl->traverse(visitor);
-      const ResolvedExpression& e = r.byAst(fieldDecl);
-      QualifiedType fieldType = e.type();
-      QualifiedType sigType = sig->formalType(formalIdx);
-
-      // use the same kind as the old formal type but update the type, param
-      // to reflect how instantiation occurred.
-      formalTypes.push_back(QualifiedType(sigType.kind(),
-                                          fieldType.type(),
-                                          fieldType.param()));
-
-      if (isFieldSyntacticallyGeneric(context, fieldDecl->id())){
-        newSubstitutions.insert({fieldDecl->id(), fieldType});
-      }
-    }
-
-    if (!sig->untyped()->isTypeConstructor()) {
-      // We've visited the rest of the formals and figured out their types.
-      // Time to backfill the 'this' formal.
-      const Type* newType = helpGetTypeForDecl(context, ad, newSubstitutions,
-                                               poiScope, sig->formalType(0).type());
-
-      // If the original formal is a class type (with management etc.), ensure
-      // that the management etc. is preserved.
-      if (auto sigCt = sig->formalType(0).type()->toClassType()) {
-        if (auto mt = newType->toManageableType()) {
-          newType = ClassType::get(context, mt, sigCt->manager(), sigCt->decorator());
-        }
-      }
-
-      formalTypes[0] = QualifiedType(sig->formalType(0).kind(), newType);
-    }
-
-    instantiationState = anyFormalNeedsInstantiation(context, formalTypes,
-                                                     untypedSignature,
-                                                     &newSubstitutions);
   } else if (ed) {
     // Fine; formal types were stored into formalTypes earlier since we're
     // considering a compiler-generated candidate on an enum.
@@ -3258,6 +3218,7 @@ instantiateSignatureImpl(ResolutionContext* rc,
                                       /* instantiatedFrom */ sig,
                                       /* parentFn */ parentSignature,
                                       std::move(formalsInstantiated),
+                                      /* formalsErrored */ Bitmap(),
                                       sig->outerVariables());
 
   // For initializers, may need to resolve the body to compute final TFS.
@@ -4293,6 +4254,15 @@ doIsCandidateApplicableInitial(ResolutionContext* rc,
     return ApplicabilityResult::failure(candidateId, /* TODO */ FAIL_CANDIDATE_OTHER);
   }
 
+  // If resolving any of the formals, or the where clause, led to errors,
+  // this candidate is not applicable because it is ill-formed.
+  for (int i = 0; i < ufs->numFormals(); i++) {
+    if (ret->formalProducedError(i))
+      return ApplicabilityResult::failureErrorInFormal(ret, i);
+  }
+  if (ret->whereClausePrducedError())
+    return ApplicabilityResult::failureErrorInWhereClause(ret);
+
   auto faMap = FormalActualMap(ufs, ci);
   return isInitialTypedSignatureApplicable(context, ret, faMap, ci);
 }
@@ -4316,6 +4286,26 @@ doIsCandidateApplicableInstantiating(ResolutionContext* rc,
   return instantiated;
 }
 
+// To avoid something like SFINAE (in which one candidate's initial
+// signature errors out, and we end up picking a different candidate
+// that was less specific but didn't error), if we encountered errors
+// in any candidate, we discard all candidates.
+static void failCallResolutionDueToErrors(CandidatesAndForwardingInfo& matching,
+                                          std::vector<ApplicabilityResult>* rejected) {
+  if (rejected) {
+    for (auto candidate : matching) {
+      rejected->push_back(
+        ApplicabilityResult::failureErrorInAnotherCandidate(candidate));
+    }
+  }
+  matching.clear();
+}
+
+static void failCallResolutionDueToErrors(bool gatherRejected, EvaluatedCandidates& ret) {
+  failCallResolutionDueToErrors(ret.matching,
+                                gatherRejected ? &ret.rejected : nullptr);
+}
+
 static const EvaluatedCandidates
 filterCandidatesInitialGatherRejectedImpl(ResolutionContext* rc,
                                           const MatchingIdsWithName& lst,
@@ -4324,12 +4314,15 @@ filterCandidatesInitialGatherRejectedImpl(ResolutionContext* rc,
   Context* context = rc->context();
   EvaluatedCandidates ret;
 
+  bool discoveredErrors = false;
   for (auto cur = lst.begin(); cur != lst.end(); ++cur) {
     auto& idv = cur.curIdAndFlags();
     bool isNestedCandidate = parsing::idIsNestedFunction(context, idv.id());
 
     if (isNestedCandidate) ret.evaluatedAnyNestedFunction = true;
-    auto s = doIsCandidateApplicableInitial(rc, idv, call);
+
+    const auto& s = doIsCandidateApplicableInitial(rc, idv, call);
+    discoveredErrors |= s.reason() == FAIL_ERRORS_THROWN;
 
     if (s.success()) {
       ret.matching.addCandidate(s.candidate());
@@ -4338,6 +4331,12 @@ filterCandidatesInitialGatherRejectedImpl(ResolutionContext* rc,
     } else if (gatherRejected) {
       ret.rejected.push_back(s);
     }
+
+    if (discoveredErrors) break;
+  }
+
+  if (discoveredErrors) {
+    failCallResolutionDueToErrors(gatherRejected, ret);
   }
 
   return ret;
@@ -4381,6 +4380,7 @@ filterCandidatesInstantiating(ResolutionContext* rc,
   //  and seems like it might have limited ability for reuse).
   const PoiScope* instantiationPoiScope = nullptr;
 
+  bool discoveredErrors = false;
   for (const TypedFnSignature* typedSignature : lst) {
     if (typedSignature->needsInstantiation()) {
       if (instantiationPoiScope == nullptr) {
@@ -4388,18 +4388,26 @@ filterCandidatesInstantiating(ResolutionContext* rc,
           pointOfInstantiationScope(context, inScope, inPoiScope);
       }
 
-      auto instantiated =
+      const auto& instantiated =
         doIsCandidateApplicableInstantiating(rc, typedSignature, call,
                                              instantiationPoiScope);
+      discoveredErrors |= instantiated.reason() == FAIL_ERRORS_THROWN;
+
       if (instantiated.success()) {
         result.addCandidate(instantiated.candidate());
       } if (rejected) {
         rejected->push_back(std::move(instantiated));
       }
+
+      if (discoveredErrors) break;
     } else {
       // if it's already concrete, we already know it is a candidate.
       result.addCandidate(typedSignature);
     }
+  }
+
+  if (discoveredErrors) {
+    failCallResolutionDueToErrors(result, rejected);
   }
 }
 
