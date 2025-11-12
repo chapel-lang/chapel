@@ -1,0 +1,18 @@
+warning: '--debug' now implies '--debug-safe-optimizations-only'. If you only want debug symbols, use '-g' or '--debug-symbols'.
+0 LOCALE0 0
+Running DWARF verification...
+Success!!
+Running DWARF dump checks...
+================================chpl_localeID_t=================================
+DW_TAG_structure_type
+              DW_AT_name	("chpl_localeID_t")
+              DW_AT_byte_size	(0x04)
+              DW_AT_alignment	(4)
+  DW_TAG_member
+                DW_AT_name	("node")
+                DW_AT_type	("int(32)")
+                DW_AT_alignment	(4)
+                DW_AT_data_member_location	(0x00)
+  NULL
+================================================================================
+Success!!
