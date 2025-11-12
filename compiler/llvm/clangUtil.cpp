@@ -5272,16 +5272,13 @@ void makeBinaryLLVM(void) {
 
     if (generateDarwinSymArchive) {
       auto bin = findSiblingClangToolPath("dsymutil");
-      const char* sfx = ".dSYM";
-      const char* tmp = astr(tmpbinname, sfx);
-      const char* out = astr(executableFilename.c_str(), sfx);
+      const char* tmp = astr(tmpbinname, ".dSYM");
 
       // TODO: The innermost binary in the .dSYM with all the DWARF info
       // will have the name "executable.tmp", is there a way to give it a
       // better name?
       std::vector<std::string> cmd = { bin, tmpbinname, "-o", tmp };
       mysystem(cmd, "Make Binary - Generating OSX .dSYM Archive");
-      moveResultFromTmp(out, tmp);
     }
 
     // If we're not using a launcher, copy the program here
@@ -5291,6 +5288,11 @@ void makeBinaryLLVM(void) {
         moveGeneratedLibraryFile(tmpbinname);
       } else {
         moveResultFromTmp(executableFilename.c_str(), tmpbinname);
+      }
+      if (generateDarwinSymArchive) {
+        const char* out = astr(executableFilename.c_str(), ".dSYM");
+        const char* tmp = astr(tmpbinname, ".dSYM");
+        moveResultFromTmp(out, tmp);
       }
 
     } else {
