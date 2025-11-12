@@ -12,10 +12,10 @@ class Verifier:
         self.llvm_dwarfdump = llvm_dwarfdump
         self.chplenv = chplenv
         self.dwarfDumpTarget = target
-        if chplenv["CHPL_TARGET_PLATFORM"] == "darwin":
-            self.dwarfDumpTarget += ".dSYM"
         if chplenv["CHPL_LAUNCHER"] != "none":
             self.dwarfDumpTarget += "_real"
+        if chplenv["CHPL_TARGET_PLATFORM"] == "darwin":
+            self.dwarfDumpTarget += ".dSYM"
 
     def verify(self):
 
@@ -61,6 +61,17 @@ class Verifier:
             chpl_home = self.chplenv.get("CHPL_HOME", "")
             output = [
                 re.sub(re.escape(chpl_home), "$CHPL_HOME", line)
+                for line in output
+            ]
+
+            # replace anything that looks like `$CHPL_HOME/runtime/src/comm/<>`
+            # with `$CHPL_HOME/runtime/src/comm/COMM_IMPL`
+            output = [
+                re.sub(
+                    r"\$CHPL_HOME/runtime/src/comm/[^/\s]+",
+                    "$CHPL_HOME/runtime/src/comm/COMM_IMPL",
+                    line,
+                )
                 for line in output
             ]
 

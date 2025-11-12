@@ -29,10 +29,16 @@ Process XXXX stopped
    75  	}
 (lldb) p myRec
 (basicTypes::MyRecord1) {
-  myField = 0xXXXX
+  myField = {
+    locale = (node = 0)
+    addr = 0xXXXX
+  }
 }
 (lldb) p myRec.myField
-(basicTypes::MyClass *) 0xXXXX
+(wide(MyClass)) {
+  locale = (node = 0)
+  addr = 0xXXXX
+}
 (lldb) p myRec2
 (basicTypes::MyRecord2) {
   myFieldA = 0
@@ -41,7 +47,10 @@ Process XXXX stopped
   myFieldD = "" {
     size = 0
   }
-  myFieldE = NULL
+  myFieldE = {
+    locale = (node = 0)
+    addr = NULL
+  }
   myFieldF = [1..10] int(64) {
     [1] = 0
     [2] = 0
@@ -62,7 +71,10 @@ Process XXXX stopped
   size = 0
 }
 (lldb) p myRec2.myFieldE
-(basicTypes::MyClass *) NULL
+(wide(MyClass)) {
+  locale = (node = 0)
+  addr = NULL
+}
 (lldb) p myRec2.myFieldF
 (ChapelArray::[domain(1,int(64),one)] int(64)) [1..10] int(64) {
   [1] = 0

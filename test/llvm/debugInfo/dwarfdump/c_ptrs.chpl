@@ -1,6 +1,11 @@
 use Debugger;
 use CTypes;
 
+// Workaround https://github.com/chapel-lang/chapel/issues/28008
+// turning this into a runtime check for wide ptr builds to avoid DCE
+import ChplConfig;
+config const workaround28008 = !ChplConfig.compiledForSingleLocale();
+
 // DWARFDUMP: myRec(int(64))
 record myRec {
   var x;
@@ -36,7 +41,12 @@ proc main() {
     // DWARFDUMP: myOwnedClassPtr
     var myOwnedClassPtr = c_addrOf(myOwnedClass);
 
-    writeln(myIntPtr.deref(), myRealPtr.deref(), myRecIntPtr.deref(), myUnmanagedClassPtr.deref(), myOwnedClassPtr.deref(), sep =" | ");
+    if workaround28008 then
+      writeln(myIntPtr.deref(), myRealPtr.deref(), myRecIntPtr.deref(),
+              /*myUnmanagedClassPtr.deref(),*/ myOwnedClassPtr.deref(), sep =" | ");
+    else
+      writeln(myIntPtr.deref(), myRealPtr.deref(), myRecIntPtr.deref(),
+              myUnmanagedClassPtr.deref(), myOwnedClassPtr.deref(), sep =" | ");
     breakpoint;
   }
 
@@ -52,7 +62,12 @@ proc main() {
     // DWARFDUMP: myOwnedClassPtrConst
     var myOwnedClassPtrConst = c_addrOfConst(myOwnedClass);
 
-    writeln(myIntPtrConst.deref(), myRealPtrConst.deref(), myRecIntPtrConst.deref(), myUnmanagedClassPtrConst.deref(), myOwnedClassPtrConst.deref(), sep =" | ");
+    if workaround28008 then
+      writeln(myIntPtrConst.deref(), myRealPtrConst.deref(), myRecIntPtrConst.deref(),
+              /*myUnmanagedClassPtrConst.deref(),*/ myOwnedClassPtrConst.deref(), sep =" | ");
+    else
+      writeln(myIntPtrConst.deref(), myRealPtrConst.deref(), myRecIntPtrConst.deref(),
+              myUnmanagedClassPtrConst.deref(), myOwnedClassPtrConst.deref(), sep =" | ");
     breakpoint;
   }
 

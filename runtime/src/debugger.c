@@ -24,5 +24,24 @@
 
 #include <stdio.h>
 
+#include "chpl-mem-sys.h"
+#include "chpl-comm-compiler-macros.h"
+
 
 void debuggerBreakHere(void) {printf("%s", "");}
+
+void* chpl_debug_get(void* locale, void* addr, size_t size) {
+  chpl_localeID_t* localeID = (chpl_localeID_t*)locale;
+  size_t numBytes = sizeof(uint8_t)*size;
+  void* ret = sys_malloc(numBytes);
+  if (ret == NULL) {
+    chpl_error("Out of memory in chpl_debug_get", 0, 0);
+  }
+  chpl_gen_comm_get(ret, chpl_rt_nodeFromLocaleID(*localeID), addr,
+                    numBytes, CHPL_COMM_UNKNOWN_ID, -1, 0);
+  return ret;
+}
+void chpl_debug_free(void* ptr) {
+  // free the memory allocated in chpl_debug_get
+  sys_free(ptr);
+}

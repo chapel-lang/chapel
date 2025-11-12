@@ -32,8 +32,8 @@ extern "C" {
 // This is the type of a global locale ID.
 //
 typedef struct {
-  int32_t node;
-  int32_t subloc;
+  c_nodeid_t node;
+  c_sublocid_t subloc;
 } chpl_localeID_t;
 
 //

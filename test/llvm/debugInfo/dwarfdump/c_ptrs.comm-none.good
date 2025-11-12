@@ -1,6 +1,6 @@
 warning: '--debug' now implies '--debug-safe-optimizations-only'. If you only want debug symbols, use '-g' or '--debug-symbols'.
-42 | 3.14 | (x = 42) | {x = 17}
-42 | 3.14 | (x = 42) | {x = 17}
+42 | 3.14 | (x = 42) | {x = 17} | {x = 17}
+42 | 3.14 | (x = 42) | {x = 17} | {x = 17}
 Running DWARF verification...
 Success!!
 Running DWARF dump checks...
@@ -107,7 +107,7 @@ DW_TAG_variable
               DW_AT_name	("myUnmanagedClassPtr")
               DW_AT_decl_file	("./c_ptrs.chpl")
               DW_AT_decl_line	(40)
-              DW_AT_type	("wide(MyClass) *")
+              DW_AT_type	("c_ptrs::MyClass **")
 ================================================================================
 ================================myOwnedClassPtr=================================
 DW_TAG_variable
@@ -142,7 +142,7 @@ DW_TAG_variable
               DW_AT_name	("myUnmanagedClassPtrConst")
               DW_AT_decl_file	("./c_ptrs.chpl")
               DW_AT_decl_line	(61)
-              DW_AT_type	("wide(MyClass) *")
+              DW_AT_type	("c_ptrs::MyClass **")
 ================================================================================
 ==============================myOwnedClassPtrConst==============================
 DW_TAG_variable

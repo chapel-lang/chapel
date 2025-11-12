@@ -9,7 +9,7 @@ DW_TAG_pointer_type
               DW_AT_name	("MyNode")
 DW_TAG_structure_type
               DW_AT_name	("MyNode")
-              DW_AT_byte_size	(0x20)
+              DW_AT_byte_size	(0x18)
               DW_AT_decl_file	("./linkedList.chpl")
               DW_AT_decl_line	(4)
               DW_AT_alignment	(8)
@@ -29,7 +29,7 @@ DW_TAG_structure_type
                 DW_AT_data_member_location	(0x08)
   DW_TAG_member
                 DW_AT_name	("next")
-                DW_AT_type	("wide(MyNode)")
+                DW_AT_type	("linkedList::MyNode *")
                 DW_AT_decl_file	("./linkedList.chpl")
                 DW_AT_decl_line	(6)
                 DW_AT_alignment	(8)
@@ -39,13 +39,13 @@ DW_TAG_structure_type
 ==================================myLinkedList==================================
 DW_TAG_structure_type
               DW_AT_name	("myLinkedList")
-              DW_AT_byte_size	(0x10)
+              DW_AT_byte_size	(0x08)
               DW_AT_decl_file	("./linkedList.chpl")
               DW_AT_decl_line	(18)
               DW_AT_alignment	(8)
   DW_TAG_member
                 DW_AT_name	("head")
-                DW_AT_type	("wide(MyNode)")
+                DW_AT_type	("linkedList::MyNode *")
                 DW_AT_decl_file	("./linkedList.chpl")
                 DW_AT_decl_line	(19)
                 DW_AT_alignment	(8)

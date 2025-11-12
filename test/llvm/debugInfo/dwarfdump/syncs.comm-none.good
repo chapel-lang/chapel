@@ -379,7 +379,7 @@ DW_TAG_pointer_type
               DW_AT_name	("_synccls(myRecord(owned MyClass))")
 DW_TAG_structure_type
               DW_AT_name	("_synccls(myRecord(owned MyClass))")
-              DW_AT_byte_size	(0x38)
+              DW_AT_byte_size	(0x30)
               DW_AT_alignment	(8)
   DW_TAG_member
                 DW_AT_name	("super")
@@ -401,7 +401,7 @@ DW_TAG_structure_type
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
                 DW_AT_decl_line	(462)
                 DW_AT_alignment	(8)
-                DW_AT_data_member_location	(0x18)
+                DW_AT_data_member_location	(0x10)
   NULL
 ================================================================================
 ===================================mySyncEnum===================================
@@ -497,7 +497,7 @@ DW_TAG_pointer_type
               DW_AT_name	("_synccls(shared MyClass)")
 DW_TAG_structure_type
               DW_AT_name	("_synccls(shared MyClass)")
-              DW_AT_byte_size	(0x48)
+              DW_AT_byte_size	(0x38)
               DW_AT_alignment	(8)
   DW_TAG_member
                 DW_AT_name	("super")
@@ -519,7 +519,7 @@ DW_TAG_structure_type
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
                 DW_AT_decl_line	(462)
                 DW_AT_alignment	(8)
-                DW_AT_data_member_location	(0x28)
+                DW_AT_data_member_location	(0x18)
   NULL
 ================================================================================
 ===============================mySyncNilableClass===============================
@@ -556,7 +556,7 @@ DW_TAG_pointer_type
               DW_AT_name	("_synccls(borrowed MyClass?)")
 DW_TAG_structure_type
               DW_AT_name	("_synccls(borrowed MyClass?)")
-              DW_AT_byte_size	(0x38)
+              DW_AT_byte_size	(0x30)
               DW_AT_alignment	(8)
   DW_TAG_member
                 DW_AT_name	("super")
@@ -567,7 +567,7 @@ DW_TAG_structure_type
                 DW_AT_data_member_location	(0x00)
   DW_TAG_member
                 DW_AT_name	("value")
-                DW_AT_type	("wide(MyClass)")
+                DW_AT_type	("syncs::MyClass *")
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
                 DW_AT_decl_line	(460)
                 DW_AT_alignment	(8)
@@ -578,7 +578,7 @@ DW_TAG_structure_type
                 DW_AT_decl_file	("$CHPL_HOME/modules/internal/ChapelSyncvar.chpl")
                 DW_AT_decl_line	(462)
                 DW_AT_alignment	(8)
-                DW_AT_data_member_location	(0x18)
+                DW_AT_data_member_location	(0x10)
   NULL
 ================================================================================
 ==================================mySyncString==================================

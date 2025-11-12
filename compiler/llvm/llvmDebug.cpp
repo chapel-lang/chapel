@@ -127,6 +127,7 @@ struct DefinitionInfo {
       astr("OwnedObject"),
       astr("SharedObject"),
       astr("String"),
+      astr("LocaleModelHelpRuntime"),
     });
     if (sym_->getModule()->modTag == MOD_INTERNAL) {
       auto modName = sym_->getModule()->name;
@@ -564,6 +565,51 @@ llvm::DIType* DebugData::constructTypeFromChplType(llvm::Type* ty, Type* type) {
     }
     auto N = dibuilder->createReferenceType(llvm::dwarf::DW_TAG_reference_type, diType);
     N = dibuilder->createTypedef(N, name, nullptr, 0, nullptr);
+    type->symbol->llvmDIType = N;
+    return N;
+
+  } else if (type == dtLocaleID) {
+    // handle locale types
+    llvm::SmallVector<llvm::Metadata *, 1> EltTys;
+    llvm::Type* nodeTy = info->lvt->getType("c_nodeid_t");
+    EltTys.push_back(dibuilder->createMemberType(
+      defInfo.maybeScope(),
+      "node",
+      defInfo.file(),
+      defInfo.line(),
+      layout.getTypeSizeInBits(nodeTy),
+      8*layout.getABITypeAlign(nodeTy).value(),
+      0, /* offset, assume its zero */
+      llvm::DINode::FlagZero,
+      getType(dtInt[INT_SIZE_32])
+    ));
+    // TODO: we should more directly check for sublocales, not just use
+    // the gpu locale model as a proxy for that
+    if (usingGpuLocaleModel()) {
+      llvm::Type* subnodeTy = info->lvt->getType("c_sublocid_t");
+      EltTys.push_back(dibuilder->createMemberType(
+        defInfo.maybeScope(),
+        "subloc",
+        defInfo.file(),
+        defInfo.line(),
+        layout.getTypeSizeInBits(subnodeTy),
+        8*layout.getABITypeAlign(subnodeTy).value(),
+        layout.getTypeSizeInBits(nodeTy), /* offset, assume after node */
+        llvm::DINode::FlagZero,
+        getType(dtInt[INT_SIZE_32])
+      ));
+    }
+    llvm::DIType* N = dibuilder->createStructType(
+      defInfo.maybeScope(),
+      name,
+      defInfo.file(),
+      defInfo.line(),
+      layout.getTypeSizeInBits(ty), /* SizeInBits */
+      8*layout.getABITypeAlign(ty).value(), /* AlignInBits */
+      llvm::DINode::FlagZero, /* Flags */
+      nullptr,
+      dibuilder->getOrCreateArray(EltTys) /* Elements */
+    );
     type->symbol->llvmDIType = N;
     return N;
 
