@@ -654,6 +654,7 @@ def DebugFunc_ResolveWidePointer(debugger, command, result, internal_dict):
     result.PutCString(
         f"Resolved Pointer: ({resolved_ptr.get().GetTypeName()}) {resolved_ptr.get().GetValue()}"
     )
+    resolved_ptr._cleanup()
     result.SetStatus(lldb.eReturnStatusSuccessFinishResult)
 
 
