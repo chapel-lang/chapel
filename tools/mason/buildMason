@@ -6,7 +6,17 @@
 #
 
 export CHPL_COMM=none
-export CHPL_LAUNCHER=none
+export CHPL_RE2=bundled
+
+if ! $CHPL_MAKE_HOME/util/printchplenv --diagnose-lib=runtime >/dev/null 2>/dev/null; then
+  cat<<EOF
+  Cannot build mason with this configuration.
+  Check that you have built a Chapel configuration that supports:
+  CHPL_COMM=none
+  CHPL_RE2=bundled
+EOF
+  exit 1
+fi
 
 if command -v module > /dev/null 2>&1 ; then
   HUGEPAGES=$(module list 2>&1 | grep craype-hugepage | sed -e"s:[0-9]*)::g")
@@ -16,12 +26,9 @@ if command -v module > /dev/null 2>&1 ; then
   fi
 fi
 
-if ! $chplBinDir/chpl mason.chpl -o $chplBinDir/mason; then
+if ! $chplBinDir/chpl --launcher=none mason.chpl -o $chplBinDir/mason; then
   cat<<EOF
-  Error building mason. Check that you have built a runtime configuration that supports:
-  CHPL_COMM=none
-  CHPL_LAUNCHER=none
-  CHPL_RE2=bundled
+  Error building mason.
 EOF
   exit 1
 fi

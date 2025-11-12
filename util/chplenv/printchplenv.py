@@ -560,7 +560,8 @@ def diagnose_missing_library(lib_type):
     libdir = chpl_home_utils.get_chpl_runtime_lib()
     subdir = ENV_VALS['CHPL_{}_SUBDIR'.format(lib_type.upper())]
     runtime_libdir = os.path.join(libdir, subdir)
-    if not os.path.exists(runtime_libdir):
+    found_error = not os.path.exists(runtime_libdir)
+    if found_error:
         variables = printchplenv(set([lib_type]), print_format='path', raw=True)
         current_path = libdir
         for var in variables:
@@ -595,6 +596,7 @@ def diagnose_missing_library(lib_type):
                 affecting_env = textwrap.indent(affecting_env, '  ')
                 stdout.write(affecting_env)
             break
+    return found_error
 
 
 """Define argument to parse"""
@@ -735,7 +737,9 @@ def main():
             utils.error("Verification failed: {}".format(reason))
 
     if options.diagnose_lib:
-        diagnose_missing_library(options.diagnose_lib)
+        found_error = diagnose_missing_library(options.diagnose_lib)
+        if found_error:
+            exit(1)
 
 
 if __name__ == '__main__':

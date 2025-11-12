@@ -37,10 +37,6 @@ mason: $(bdir)/mason FORCE
 install: $(bdir)/mason FORCE
 
 $(bdir)/mason: $(MASON_SOURCES)
-	@if [ $(shell $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_re2.py) != bundled ]; then \
-        echo "CHPL_RE2=bundled is required to build mason"; \
-        exit 1;\
-	fi;
 	@echo "Building Mason..."
 	@chplBinDir=$(bdir) ./buildMason
 
