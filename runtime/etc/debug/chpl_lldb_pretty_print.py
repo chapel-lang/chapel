@@ -29,6 +29,22 @@ class Ptr:
         self.ptr = ptr
         self.owned = owned
 
+    def _cleanup(self):
+        """
+        This function should only be called when we are completely done with
+        the pointer and want to free the memory allocated for it in the
+        debugged program. Putting this in `__del__` will cause issues because
+        `__del__` may fire too early and cause us to access freed memory.
+
+        Currently this is unused since most values are stored by the LLDB API
+        and its not actually clear when LLDB is done with them.
+        """
+        if self.owned and self.ptr is not None and self.ptr.IsValid():
+            self.target.EvaluateExpression(
+                f"chpl_debug_free((void*){self.ptr.GetValueAsUnsigned()})"
+            )
+            self.owned = False
+
     def get(self):
         if self.ptr is not None:
             return self.ptr
