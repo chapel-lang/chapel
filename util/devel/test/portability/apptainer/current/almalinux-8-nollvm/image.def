@@ -5,7 +5,7 @@ From: almalinux:8
     ../../provision-scripts/* /provision-scripts/
 
 %post
-    /provision-scripts/dnf-deps.sh
+    /provision-scripts/dnf-deps-ep.sh
 
 %runscript
     ../../provision-scripts/run.sh "$@"
