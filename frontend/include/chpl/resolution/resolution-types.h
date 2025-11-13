@@ -547,7 +547,9 @@ class CallInfoActual {
   bool expectSplitInit() const { return expectSplitInit_; }
 
   bool operator==(const CallInfoActual &other) const {
-    return type_ == other.type_ && byName_ == other.byName_;
+    return type_ == other.type_ &&
+           byName_ == other.byName_ &&
+           expectSplitInit_ == other.expectSplitInit_;
   }
   bool operator!=(const CallInfoActual& other) const {
     return !(*this == other);
