@@ -175,7 +175,7 @@ bool VarScopeVisitor::processDeclarationInit(const NamedDecl* lhsAst, const AstN
   return inserted;
 }
 
-bool VarScopeVisitor::declIsLoopIndex(const Decl* ast) {
+bool VarScopeVisitor::isLoopIndex(const AstNode* ast) {
   if (auto parentAst = parsing::parentAst(context, ast)) {
     if (auto indexableLoop = parentAst->toIndexableLoop()) {
       if (ast == indexableLoop->index()) {
@@ -284,7 +284,28 @@ bool VarScopeVisitor::enter(const TupleDecl* ast, RV& rv) {
   enterAst(ast);
   enterScope(ast, rv);
 
-  if (!outermostContainingTuple) outermostContainingTuple = ast;
+  const Tuple* initPart = nullptr;
+  if (auto initExpr = ast->initExpression()) {
+    // Get init part (if any) directly, which is possible if this is a top level
+    // tuple decl.
+    initPart = initExpr->toTuple();
+  } else if (outermostContainingTuple()) {
+    // Otherwise, see if we're nested in another tuple decl and can
+    // derive it from our parent's.
+    auto parentTuple = inAstStack.back()->toTupleDecl();
+    CHPL_ASSERT(parentTuple);
+    int indexWithinParent = -1;
+    while (++indexWithinParent < parentTuple->numDecls() &&
+           parentTuple->decl(indexWithinParent) != ast);
+    CHPL_ASSERT(indexWithinParent < parentTuple->numDecls() &&
+                "could not find child within parent tuple decl");
+    if (auto parentInit = tupleInitPartsStack.back()) {
+      initPart = parentInit->actual(indexWithinParent)->toTuple();
+    }
+  }
+  if (initPart) CHPL_ASSERT(ast->numDecls() == initPart->numActuals());
+  tupleInitPartsStack.push_back(initPart);
+
 
   // Loop index variables don't need default-initialization and aren't
   // subject to split init etc., so skip them.
@@ -292,7 +313,8 @@ bool VarScopeVisitor::enter(const TupleDecl* ast, RV& rv) {
   // TODO: I think it's fine to skip this for all users of VarScopeVisitor;
   //       is there an analysis that does need to handle loop indices?
   // See also: skip for NamedDecl
-  return !declIsLoopIndex(outermostContainingTuple);
+  // In this tuple decl case, also prevent descending into the contained decls.
+  return !isLoopIndex(outermostContainingTuple());
 }
 void VarScopeVisitor::exit(const TupleDecl* ast, RV& rv) {
   CHPL_ASSERT(!scopeStack.empty());
@@ -303,11 +325,9 @@ void VarScopeVisitor::exit(const TupleDecl* ast, RV& rv) {
   // TODO: I think it's fine to skip this for all users of VarScopeVisitor;
   //       is there an analysis that does need to handle loop indices?
   // See also: skip for NamedDecl
-  if (!declIsLoopIndex(outermostContainingTuple)) {
+  if (!isLoopIndex(outermostContainingTuple())) {
     handleTupleDeclaration(ast, rv);
   }
-
-  if (outermostContainingTuple == ast) outermostContainingTuple = nullptr;
 
   exitScope(ast, rv);
   exitAst(ast);
@@ -341,7 +361,7 @@ void VarScopeVisitor::exit(const NamedDecl* ast, RV& rv) {
   //
   // TODO: I think it's fine to skip this for all users of VarScopeVisitor;
   //       is there an analysis that does need to handle loop indices?
-  if (!declIsLoopIndex(ast)) {
+  if (!isLoopIndex(ast)) {
     if (auto vld = ast->toVarLikeDecl()) {
       handleDeclaration(vld, rv);
     }

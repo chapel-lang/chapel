@@ -63,7 +63,11 @@ class VarScopeVisitor : public BranchSensitiveVisitor<VarFrame, MutatingResolved
 
   // ----- internal variables
   std::vector<const AstNode*> inAstStack;
-  const TupleDecl* outermostContainingTuple = nullptr;
+  // Stack of tuple init exprs, matching the number and order of tuple decls in
+  // the AST stack.
+  // Init expr(s) can be nullptr if the containing tuple decl has no init expr,
+  // or its init expr is not a tuple expr.
+  std::vector<const Tuple*> tupleInitPartsStack;
 
   // ----- methods to be implemented by specific analysis subclass
 
@@ -167,7 +171,12 @@ class VarScopeVisitor : public BranchSensitiveVisitor<VarFrame, MutatingResolved
                               const AstNode* initExpression,
                               RV& rv);
 
-  bool declIsLoopIndex(const Decl* ast);
+  bool isLoopIndex(const AstNode* ast);
+
+  const AstNode* outermostContainingTuple() {
+    if (tupleInitPartsStack.empty()) return nullptr;
+    return inAstStack[inAstStack.size() - tupleInitPartsStack.size()];
+  }
 
   /** Returns the return or yield type of the function being processed */
   const types::QualifiedType& returnOrYieldType();
