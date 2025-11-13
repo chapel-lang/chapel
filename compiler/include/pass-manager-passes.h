@@ -327,13 +327,11 @@ class StreamlineProcPtrTypesForCodegen : public AdjustSymbolTypes {
 
   After this pass the AST will be in an inconsistent state, and the pass
   'InsertWideReferences' pass must be run in order to fix it up.
-
-  TODO: Transform 'IWR' from a on old-style to new-style compiler pass.
 */
-class WidenComponentsOfProcPtrTypes : public PassT<Symbol*> {
+class WidenComponentsOfProcPtrTypes : public AdjustSymbolTypes {
  public:
   bool shouldProcess(Symbol* sym) override;
-  void process(Symbol* sym) override;
+  Type* computeAdjustedType(Type* t) const override;
 };
 
 #endif
