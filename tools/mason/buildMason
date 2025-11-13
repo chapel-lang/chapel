@@ -26,7 +26,7 @@ if command -v module > /dev/null 2>&1 ; then
   fi
 fi
 
-if ! $chplBinDir/chpl --launcher=none mason.chpl -o $chplBinDir/mason; then
+if ! $chplBinDir/chpl --launcher=none --fast --checks --no-specialize mason.chpl -o $chplBinDir/mason; then
   cat<<EOF
   Error building mason.
 EOF
