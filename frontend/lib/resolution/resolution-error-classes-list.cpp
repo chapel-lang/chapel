@@ -649,6 +649,30 @@ static std::string buildTupleDeclName(const uast::TupleDecl* tup) {
   return ret;
 }
 
+static bool allActualsLookLikeIndexing(const resolution::CallInfo& ci) {
+  // technically vacuously true, but not helpful for our use case
+  if (ci.numActuals() == 0) return false;
+
+  for (size_t i = 0; i < ci.numActuals(); i++) {
+    const auto& actual = ci.actual(i);
+    auto t = actual.type().type();
+
+    bool thisNumeric = false;
+    if (actual.type().isUnknownOrErroneous()) {
+      // unknown type, not numeric.
+    } else if (actual.type().isType()) {
+      // `foo(int)`, not indexing.
+    } else if (t->isNumericType()) {
+      thisNumeric = true;
+    }
+
+    if (!thisNumeric) {
+      return false;
+    }
+  }
+  return true;
+}
+
 template <typename GetActual>
 static void printRejectedCandidates(ErrorWriterBase& wr,
                                     const ID& anchorId,
@@ -676,6 +700,18 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
     if (printCount == maxPrintCount) break;
 
     bool isThisCandidateDecent = true;
+    // type constructor "candidates" aren't really candidates (they have no ID).
+    // We can use this to specialize the error message.
+    std::string candidateDescription = "the following candidate";
+    ID idForErr = candidate.idForErr();
+    if (idForErr.isEmpty() ||
+        (candidate.initialForErr() &&
+         candidate.initialForErr()->untyped()->isTypeConstructor())) {
+      if (idForErr.isEmpty()) {
+        idForErr = anchorId;
+      }
+      candidateDescription = std::string("the type constructor for '") + ci.name().c_str() + "'";
+    }
 
     auto reason = candidate.reason();
     if (/* skip printing detailed info_ here because computing the formal-actual
@@ -691,7 +727,7 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
       // case there is no Chapel AST corresponding to the formal.
 
       wr.message("");
-      wr.note(fn->id(), "the following candidate didn't match because ", passedThingArticle, " ", passedThing, " couldn't be passed to ", expectedThingArticle, " ", expectedThing, ":");
+      wr.note(fn->id(), candidateDescription, " didn't match because ", passedThingArticle, " ", passedThing, " couldn't be passed to ", expectedThingArticle, " ", expectedThing, ":");
 
       std::vector<const uast::AstNode*> highlightNodes;
       if (formalDecl) highlightNodes.push_back(formalDecl);
@@ -851,7 +887,7 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
           auto& actual = ci.actual(fa.failingActualIdx());
           if (!actual.byName().isEmpty()) {
             wr.message("");
-            wr.note(candidate.idForErr(), "the following candidate didn't match"
+            wr.note(idForErr, candidateDescription, " didn't match"
                     " because ", passedThing, " ", fa.failingActualIdx() + 1,
                     " was named '", actual.byName(), "', but no ", expectedThing,
                     " with that name was found.");
@@ -861,18 +897,46 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
           auto numFormals = fn->numFormals() - (int) fn->isMethod();
           const char* usePlural = numFormals > 1 ? "s" : "";
           wr.message("");
-          wr.note(candidate.idForErr(), "the following candidate didn't match because it expects ", numFormals, " ", passedThing, usePlural, ", but none were provided.");
+          wr.note(idForErr, candidateDescription, " didn't match because it expects ", numFormals, " ", passedThing, usePlural, ", but none were provided.");
           printedSpecial = true;
         }
       }
 
       if (!printedSpecial) {
         wr.message("");
-        wr.note(candidate.idForErr(), "the following candidate didn't match ",
+        wr.note(idForErr, candidateDescription, " didn't match ",
                 "because the provided ", passedThing, "s could not be mapped to its ",
                 expectedThing, "s:");
       }
-      wr.code(candidate.idForErr());
+      wr.codeForLocation(idForErr);
+    } else if (reason == resolution::FAIL_NO_TYPE_CONSTRUCTOR) {
+      // types that don't have corresponding module code will not have an ID
+      // reported here.
+      auto candidateId = idForErr;
+      auto idForErr = candidateId;
+      if (idForErr.isEmpty()) idForErr = anchorId;
+
+      // As a special case, report an error for trying to index into a
+      // type that doesn't support indexing.
+      if (allActualsLookLikeIndexing(ci)) {
+        wr.message("");
+        wr.note(idForErr, "the type '", ci.name(), "' does not support indexing:");
+        if (!candidateId.isEmpty()) {
+          wr.codeForLocation(candidateId);
+        }
+        wr.message("Only tuple types can be indexed, but '", ci.name(), "' is not a tuple type.");
+        wr.message("If you were trying to invoke '", ci.name(),
+                   "' as a type constructor, note that only records and classes have type constructors.");
+      } else {
+        wr.message("");
+        wr.note(idForErr, "could not invoke the non-existent type constructor for type '",
+                ci.name(), "':");
+        if (!candidateId.isEmpty()) {
+          wr.codeForLocation(candidateId);
+        }
+        wr.message("Only records and classes have type constructors, but '",
+                   ci.name(), "' is not one of these.");
+      }
     } else {
       std::string reasonStr = "";
       if (reason == resolution::FAIL_VARARG_MISMATCH) {
@@ -893,16 +957,16 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
         isThisCandidateDecent = false;
         if (!printedDecentCandidate) {
           wr.message("");
-          wr.note(candidate.idForErr(), "the following candidate didn't match:");
+          wr.note(idForErr, candidateDescription, " didn't match:");
         } else {
           continue;
         }
       } else {
         wr.message("");
-        wr.note(candidate.idForErr(), "the following candidate didn't match ",
+        wr.note(idForErr, candidateDescription, " didn't match ",
                 "because ", reasonStr);
       }
-      wr.code(candidate.idForErr());
+      wr.code(idForErr);
     }
     printedDecentCandidate |= isThisCandidateDecent;
     printCount++;

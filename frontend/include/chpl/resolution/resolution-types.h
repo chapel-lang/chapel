@@ -1427,6 +1427,8 @@ enum CandidateFailureReason {
   FAIL_WHERE_CLAUSE,
   /* Cannot pass an actual to one of the candidate's formals. */
   FAIL_CANNOT_PASS,
+  /* We tried to call a type constructor, but this type can't be constructed. */
+  FAIL_NO_TYPE_CONSTRUCTOR,
   /* Not a valid formal-actual mapping for this candidate. */
   FAIL_FORMAL_ACTUAL_MISMATCH,
   /* Special case of formal/actual mismatch when we tried to call a parallel iterator without a tag. */

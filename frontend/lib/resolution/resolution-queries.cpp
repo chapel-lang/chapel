@@ -2097,7 +2097,7 @@ typeConstructorInitialQuery(Context* context, const Type* t)
   } else if (auto ift = t->toInterfaceType()) {
     id = ift->id();
   } else {
-    CHPL_ASSERT(false && "invalid argument to typeConstructorInitialQuery");
+    return QUERY_END(result);
   }
 
   UniqueString name;
@@ -4110,6 +4110,18 @@ isInitialTypedSignatureApplicable(Context* context,
   return ApplicabilityResult::success(tfs);
 }
 
+static ApplicabilityResult
+reportCalledTypeWithoutTypeConstructor(const Type* calledT) {
+
+  ID idForCandidate;
+  if (auto et = calledT->toEnumType()) {
+    idForCandidate = et->id();
+  }
+
+  return ApplicabilityResult::failure(idForCandidate,
+                                      FAIL_NO_TYPE_CONSTRUCTOR);
+}
+
 // returns nullptr if the candidate is not applicable,
 // or the result of typedSignatureInitial if it is.
 static ApplicabilityResult
@@ -4135,7 +4147,12 @@ doIsCandidateApplicableInitial(ResolutionContext* rc,
   if (candidate.isType() && !ci.isParenless()) {
     // calling a type - i.e. type construction
     const Type* t = initialTypeForTypeDecl(context, candidateId);
-    return ApplicabilityResult::success(typeConstructorInitial(context, t));
+    auto sig = typeConstructorInitial(context, t);
+    if (!sig) {
+      return reportCalledTypeWithoutTypeConstructor(t);
+    } else {
+      return ApplicabilityResult::success(sig);
+    }
   }
 
   // quickly rule out formals as candidates for method calls
@@ -5384,7 +5401,8 @@ resolveFnCallForTypeCtor(Context* context,
                          const CallInfo& ci,
                          const Scope* inScope,
                          const PoiScope* inPoiScope,
-                         PoiInfo& poiInfo) {
+                         PoiInfo& poiInfo,
+                         std::vector<ApplicabilityResult>* rejected) {
 
   CandidatesAndForwardingInfo initialCandidates;
   CandidatesAndForwardingInfo candidates;
@@ -5395,6 +5413,16 @@ resolveFnCallForTypeCtor(Context* context,
   CHPL_ASSERT(!ci.calledType().type()->isUnknownType());
 
   auto initial = typeConstructorInitial(context, ci.calledType().type());
+
+  // the called type doesn't support type constructors. Report it as a rejected
+  // candidate and give up.
+  if (!initial) {
+    if (rejected) {
+      rejected->push_back(reportCalledTypeWithoutTypeConstructor(ci.calledType().type()));
+    }
+    return MostSpecificCandidates();
+  }
+
   initialCandidates.addCandidate(initial);
 
   // TODO: do something for partial instantiation
@@ -5402,7 +5430,7 @@ resolveFnCallForTypeCtor(Context* context,
   filterCandidatesInstantiating(rc, initialCandidates, ci, inScope,
                                 inPoiScope,
                                 candidates,
-                                /* rejected */ nullptr);
+                                rejected);
 
 
   // find most specific candidates / disambiguate
@@ -6544,7 +6572,8 @@ resolveFnCall(ResolutionContext* rc,
     mostSpecific = resolveFnCallForTypeCtor(context, ci,
                                             inScopes.callScope(),
                                             inScopes.poiScope(),
-                                            poiInfo);
+                                            poiInfo,
+                                            rejected);
   } else {
     // * search for candidates at each POI until we have found a candidate
     // * filter and instantiate

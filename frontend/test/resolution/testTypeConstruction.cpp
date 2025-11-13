@@ -27,6 +27,7 @@
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Record.h"
 #include "chpl/uast/Variable.h"
+#include "chpl/framework/ErrorBase.h"
 
 static void test1() {
   printf("test1\n");
@@ -1676,6 +1677,80 @@ static void testPartialInstantiationNoExtraSubstitutions() {
   assert(rt->substitutions().begin()->first == fields->fieldDeclId(0));
 }
 
+// Helper function to check that an error is NoMatchingCandidates with
+// the FAIL_NO_TYPE_CONSTRUCTOR reason
+static void assertNoTypeConstructorError(ErrorGuard& guard, size_t errorIdx) {
+  assert(guard.numErrors() > errorIdx);
+  const auto& err = guard.error(errorIdx);
+  assert(err->type() == ErrorType::NoMatchingCandidates);
+
+  auto nmcErr = static_cast<const ErrorNoMatchingCandidates*>(err.get());
+  auto& info = nmcErr->info();
+  auto& rejectedCandidates = std::get<2>(info);
+
+  assert(rejectedCandidates.size() > 0);
+  bool foundNoTypeCtor = false;
+  for (const auto& result : rejectedCandidates) {
+    if (result.reason() == FAIL_NO_TYPE_CONSTRUCTOR) {
+      foundNoTypeCtor = true;
+      break;
+    }
+  }
+  assert(foundNoTypeCtor);
+}
+
+static void testEnumTypeConstructorError() {
+  printf("testEnumTypeConstructorError\n");
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    enum Color { red, green, blue }
+    var x = Color(0);
+  )""";
+
+  std::ignore = resolveTypeOfXInit(context, program, /* requireTypeKnown */ false);
+
+  assertNoTypeConstructorError(guard, 0);
+  assert(guard.realizeErrors() > 0);
+}
+
+static void testPrimitiveTypeConstructorErrors() {
+  printf("testPrimitiveTypeConstructorErrors\n");
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  // Test with integral, a builtin type that doesn't support constructors
+  std::string program = R"""(
+    type IntegralType = integral;
+    var b = IntegralType(5);
+  )""";
+
+  auto m = parseModule(context, program.c_str());
+  std::ignore = resolveModule(context, m->id());
+
+  assertNoTypeConstructorError(guard, 0);
+  assert(guard.realizeErrors() > 0);
+}
+
+static void testBuiltinTypeConstructorErrors() {
+  printf("testBuiltinTypeConstructorErrors\n");
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  // Test with void type - doesn't support constructors
+  std::string program = R"""(
+    type VoidType = void;
+    var x = VoidType(0);
+  )""";
+
+  auto m = parseModule(context, program.c_str());
+  std::ignore = resolveModule(context, m->id());
+
+  assertNoTypeConstructorError(guard, 0);
+  assert(guard.realizeErrors() > 0);
+}
+
 int main() {
   test1();
   test2();
@@ -1731,6 +1806,10 @@ int main() {
 
   testPartialInstantiation();
   testPartialInstantiationNoExtraSubstitutions();
+
+  testEnumTypeConstructorError();
+  testPrimitiveTypeConstructorErrors();
+  testBuiltinTypeConstructorErrors();
 
   return 0;
 }
