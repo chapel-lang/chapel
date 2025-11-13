@@ -359,6 +359,41 @@ const char* qualifierToStr(Qualifier q) {
     return "UNKNOWN-QUAL";
 }
 
+Qualifier QualifiedType::qualifierForArgIntent(IntentTag intent) {
+  switch (intent) {
+    case INTENT_IN:        return QUAL_VAL;
+    case INTENT_OUT:       return QUAL_REF;
+    case INTENT_INOUT:     return QUAL_REF;
+    case INTENT_CONST:     return QUAL_CONST;
+    case INTENT_CONST_IN:  return QUAL_CONST_VAL;
+    case INTENT_REF:       return QUAL_REF;
+    case INTENT_CONST_REF: return QUAL_CONST_REF;
+    case INTENT_PARAM:     return QUAL_PARAM;   // TODO
+    case INTENT_TYPE:      return QUAL_UNKNOWN; // TODO
+    case INTENT_BLANK:     return QUAL_UNKNOWN;
+    case INTENT_REF_MAYBE_CONST:
+           return QUAL_REF; // a white lie until cullOverReferences
+
+    // no default to get compiler warning if other intents are added
+  }
+  INT_FATAL("unknown intent");
+  return QUAL_UNKNOWN;
+}
+
+Qualifier QualifiedType::qualifierForRetTag(RetTag retTag) {
+  switch (retTag) {
+    case RET_VALUE:       return QUAL_VAL;
+    case RET_REF:         return QUAL_REF;
+    case RET_CONST_REF:   return QUAL_CONST_REF;
+    case RET_PARAM:       return QUAL_PARAM;    // TODO
+    case RET_TYPE:        return QUAL_UNKNOWN;  // TODO
+    // no default to get compiler warning if other intents are added
+  }
+
+  INT_FATAL("unknown return tag");
+  return QUAL_UNKNOWN;
+}
+
 bool QualifiedType::isRefType() const {
   return _type && _type->symbol->hasFlag(FLAG_REF);
 }
@@ -708,7 +743,9 @@ FunctionType::~FunctionType() {
 void FunctionType::verify() {
   Type::verify();
 
-  if (!returnType()->symbol->inTree()) {
+  bool isUsed = symbol->isUsed();
+
+  if (isUsed && !returnType()->symbol->inTree()) {
     INT_FATAL(this->symbol, "The function type %s is used but has a return "
                             "type %s that is no longer in the tree",
                             typeToString(this),
@@ -719,13 +756,15 @@ void FunctionType::verify() {
     for (int i = 0; i < numFormals(); i++) {
       auto name = formal(i)->name();
       auto type = formal(i)->type();
-      if (!type->inTree()) {
+      if (isUsed && !type->inTree()) {
         INT_FATAL(this->symbol, "The function type %s is used but has a "
                                 "formal %s with a type %s that is no "
                                 "longer in the tree",
                                 typeToString(this), name,
                                 typeToString(type));
       }
+
+      INT_ASSERT(name != nullptr);
     }
   }
 }
@@ -767,16 +806,12 @@ FunctionType::buildUserTypeString(FunctionType::Kind kind,
   for (size_t i = 0; i < formals.size(); i++) {
     auto& info = formals[i];
 
-    INT_ASSERT(info.name());
-
     if (info.intent() != INTENT_BLANK) {
-      oss << intentToString(info.intent());
-      if (info.name()) oss << " ";
+      oss << intentToString(info.intent()) << " ";
     }
 
-    if (info.name()) oss << info.name();
-    if (info.name() && info.type() != dtAny) oss << ": ";
-    if (info.type() != dtAny) oss << typeToString(info.type());
+    oss << info.name();
+    if (info.type() != dtAny) oss << ": " << typeToString(info.type());
     if ((i+1) != formals.size()) oss << ", ";
   }
 
@@ -882,7 +917,7 @@ FunctionType* FunctionType::create(FunctionType::Kind kind,
                  formal.intent() & INTENT_REF;
     if (isRef) makeRefType(formal.type());
 
-    isAnyFormalNamed |= formal.name() != nullptr;
+    isAnyFormalNamed |= formal.isNamed();
   }
 
   // TODO: We could delay computing this until it's actually needed.
@@ -1047,6 +1082,131 @@ FunctionType* FunctionType::getWithLineFileInfo() const {
              throws_);
 }
 
+static Qualifier
+functionTypeStreamlineFormalQualifier(const FunctionType::Formal& f) {
+  Qualifier ret = QUAL_UNKNOWN;
+  auto qt = f.qualType();
+
+  // TODO: Do this or call 'concreteIntent' as is done in resolve?
+  auto qualForIntent = QualifiedType::qualifierForArgIntent(f.intent());
+
+  if (qualForIntent != QUAL_UNKNOWN) {
+    ret = qualForIntent;
+
+  } else if (qt.isWideRefType()) {
+    ret = QUAL_WIDE_REF;
+
+  } else if (qt.isRefType()) {
+    ret = QUAL_REF;
+
+  } else {
+    ret = QUAL_VAL;
+  }
+
+  // Determine if there is any constness to preserve.
+  if (QualifiedType::qualifierIsConst(qualForIntent) ||
+      QualifiedType::qualifierIsConst(qt.getQual())) {
+    ret = QualifiedType::qualifierToConst(ret);
+  }
+
+  // Should not appear at this point.
+  INT_ASSERT(ret != QUAL_UNKNOWN);
+  INT_ASSERT(ret != QUAL_PARAM);
+
+  return ret;
+}
+
+// Map backwards from qualifier to intent.
+static IntentTag functionTypeStreamlineIntent(Qualifier qual) {
+  // TODO: Do we have to do this or can we just drop to INTENT_BLANK?
+  switch (qual) {
+    case QUAL_VAL: return INTENT_IN;
+    case QUAL_CONST_VAL: return INTENT_CONST_IN;
+    case QUAL_REF: return INTENT_REF;
+    case QUAL_CONST_REF: return INTENT_CONST_REF;
+    case QUAL_WIDE_REF: return INTENT_REF;
+    case QUAL_CONST_WIDE_REF: return INTENT_REF;
+    default: INT_FATAL("Not handled!");
+  }
+
+  return INTENT_BLANK;
+}
+
+static Type* functionTypeStreamlineType(Qualifier qual, Type* t) {
+  Type* ret = t;
+  auto qt = QualifiedType(qual, t);
+
+  if (auto ft = toFunctionType(t->getValType())) {
+    ret = ft->getWithStreamlinedComponents();
+    qt = { qt.getQual(), ret };
+  }
+
+  if (qt.isWideRef() && !qt.isWideRefType()) {
+    ret = ret->getWideRefType();
+    INT_ASSERT(ret);
+
+  } else if (qt.isRef() && !qt.isRefType()) {
+    ret = ret->refType;
+    INT_ASSERT(ret);
+
+  } else if (!qt.isRefOrWideRef()) {
+    ret = ret->getValType();
+  }
+
+  return ret;
+}
+
+static FunctionType::Formal
+functionTypeStreamlineFormal(const FunctionType::Formal& f) {
+  auto qual = functionTypeStreamlineFormalQualifier(f);
+  auto intent = functionTypeStreamlineIntent(qual);
+  auto type = functionTypeStreamlineType(qual, f.type());
+  const char* name = "";
+
+  return { qual, type, intent, name };
+}
+
+static void
+functionTypeValidateReturnIntent(RetTag returnIntent, Type* returnType) {
+  if (returnType->isRef()) {
+    INT_ASSERT(returnIntent == RET_REF || returnIntent == RET_CONST_REF);
+  } else {
+    INT_ASSERT(returnIntent == RET_VALUE);
+  }
+}
+
+// The order of authority is: qualifier -> intent -> type. If the 'qual()'
+// is not given, first the 'intent()' is consulted. If the 'intent()' is not
+// given, then the 'type()' is consulted.
+//
+// The type is adjusted to match the "refness" of the streamlined qualifier.
+//
+// The name is discarded as we no longer need it.
+//
+// TODO: How do wide-class types play into this determination?
+FunctionType* FunctionType::getWithStreamlinedComponents() const {
+  std::vector<Formal> newFormals;
+
+  for (int i = 0; i < numFormals(); i++) {
+    auto newFormal = functionTypeStreamlineFormal(*formal(i));
+    newFormals.push_back(std::move(newFormal));
+  }
+
+  SET_LINENO(this->symbol);
+
+  auto returnQual = QualifiedType::qualifierForRetTag(returnIntent_);
+  auto newReturnType = functionTypeStreamlineType(returnQual, returnType_);
+
+  functionTypeValidateReturnIntent(returnIntent_, newReturnType);
+
+  auto ret = get(kind_, width_, linkage_, std::move(newFormals),
+                 returnIntent_,
+                 newReturnType,
+                 throws_);
+
+  return ret;
+}
+
 FunctionType*
 FunctionType::getWithMask(int64_t mask, bool& outMaskConflicts) const {
   FunctionType* ret = (FunctionType*) this;
@@ -1123,6 +1283,10 @@ FunctionType::formalByOrdinal(Expr* actual, int* outIdx) const {
   return nullptr;
 }
 
+const FunctionType::Formals& FunctionType::formals() const {
+  return formals_;
+}
+
 RetTag FunctionType::returnIntent() const {
   return this->returnIntent_;
 }
@@ -1177,8 +1341,78 @@ const char* FunctionType::qualifierMnemonicMangled(Qualifier qual) {
   return nullptr;
 }
 
+static const char*
+functionTypeDecoratorMnemonicMangled(DecoratedClassType* dct) {
+  auto d = dct->getDecorator();
+
+  if (isManagedPtrType(dct)) {
+    // Set the manager mnemonic for use when printing out managed types.
+    auto mgr = getManagedPtrManagerType(dct);
+
+    const char* mgrMnemonic = mgr ? mgr->symbol->cname : nullptr;
+    if (mgr == dtOwned) {
+      mgrMnemonic = "o";
+    } else if (mgr == dtShared) {
+      mgrMnemonic = "s";
+    }
+
+    std::ostringstream oss;
+
+    switch (d) {
+      case ClassTypeDecorator::MANAGED: {
+        return mgrMnemonic;
+      } break;
+      case ClassTypeDecorator::MANAGED_NONNIL: {
+        oss << mgrMnemonic << "n";
+        return astr(oss.str());
+      } break;
+      case ClassTypeDecorator::MANAGED_NILABLE: {
+        oss << mgrMnemonic << "x";
+        return astr(oss.str());
+      } break;
+      default: INT_FATAL("Not possible!");
+    }
+  }
+
+  switch (d) {
+    case ClassTypeDecorator::BORROWED: return "b";
+    case ClassTypeDecorator::BORROWED_NONNIL: return "bn";
+    case ClassTypeDecorator::BORROWED_NILABLE: return "bx";
+    case ClassTypeDecorator::UNMANAGED: return "u";
+    case ClassTypeDecorator::UNMANAGED_NILABLE: return "bn";
+    case ClassTypeDecorator::UNMANAGED_NONNIL: return "bn";
+    case ClassTypeDecorator::GENERIC: return "g";
+    case ClassTypeDecorator::GENERIC_NONNIL: return "gn";
+    case ClassTypeDecorator::GENERIC_NILABLE: return "gx";
+    default: INT_FATAL("Not possible!");
+  }
+
+  INT_FATAL("Should not reach here!");
+  return nullptr;
+}
+
+static const char*
+functionTypeDecoratedClassTypeToStringMangled(DecoratedClassType* dct) {
+  std::ostringstream oss;
+
+  // We cannot use the 'cname' alone for decorated class types because of
+  // restrictions for ref types (they are mapped using their 'cname'
+  // currently) which require each ref type to have a unique cname.
+  oss << functionTypeDecoratorMnemonicMangled(dct);
+  oss << dct->symbol->cname;
+
+  auto ret = astr(oss.str());
+
+  return ret;
+}
+
 const char* FunctionType::typeToStringMangled(Type* t) {
   INT_ASSERT(t->symbol->cname);
+
+  if (auto dct = toDecoratedClassType(t)) {
+    return functionTypeDecoratedClassTypeToStringMangled(dct);
+  }
+
   return t->symbol->cname;
 }
 
@@ -1251,7 +1485,7 @@ size_t FunctionType::hash() const {
 FunctionType::Formal::Formal(Qualifier qual, Type* type, IntentTag intent,
                              const char* name)
     : qual_(qual), type_(type), intent_(intent) {
-  name_ = name ? astr(name) : nullptr;
+  name_ = name ? astr(name) : astr("_");
 }
 
 bool
@@ -1297,6 +1531,10 @@ QualifiedType FunctionType::Formal::qualType() const {
 
 bool FunctionType::Formal::isRef() const {
   return qualType().isRef();
+}
+
+bool FunctionType::Formal::isNamed() const {
+  return name_ && 0 != strcmp(name_, "") && 0 != strcmp(name_, "_");
 }
 
 bool FunctionType::Formal::isGeneric() const {

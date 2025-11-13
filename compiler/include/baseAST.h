@@ -277,6 +277,7 @@ public:
   ModuleSymbol*     getModule();
   Type*             getValType();
   Type*             getRefType();
+  Type*             getWideRefType();
 
   const char*       astTagAsString()                             const;
 
@@ -292,8 +293,6 @@ protected:
 
 private:
                     BaseAST();
-
-  Type*             getWideRefType();
 };
 
 GenRet baseASTCodegen(BaseAST* ast);

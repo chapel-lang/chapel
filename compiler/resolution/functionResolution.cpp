@@ -7481,6 +7481,12 @@ static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn) {
           shouldCapture = true;
         formal->type = getManagedPtrBorrowType(varActual->getValType());
         formal->intent = INTENT_CONST_IN;
+
+        // This call computes the 'qualType' but does not set 'qual'.
+        auto qt = formal->qualType();
+
+        // So set it.
+        formal->qual = qt.getQual();
       }
 
       if (shouldCapture) {

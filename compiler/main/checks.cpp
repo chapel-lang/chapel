@@ -457,6 +457,16 @@ void check_insertLineNumbers()
   check_afterCallDestructors();
   check_afterLowerIterators();
   check_afterInlineFunctions();
+
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+    if (auto ft = toFunctionType(ts->type)) {
+      if (ft->numFormals() < 2 && !ft->hasForeignLinkage() &&
+          ts->isUsed()) {
+        INT_FATAL("Non-foreign procedure types without line/file formals "
+                  "should not be used after this point");
+      }
+    }
+  }
 }
 
 void check_denormalize() {
@@ -562,7 +572,7 @@ static void check_afterResolveIntents()
   if (fVerify) {
     for_alive_in_Vec(DefExpr, def, gDefExprs) {
       Symbol* sym = def->sym;
-      // Only look at Var or Arg symbols
+      // look at Var or Arg symbols
       if (isLcnSymbol(sym)) {
         QualifiedType qual = sym->qualType();
         // MPF TODO: This should not be necessary
@@ -576,6 +586,27 @@ static void check_afterResolveIntents()
 
         if (qual.getQual() == QUAL_UNKNOWN) {
           INT_FATAL("Symbol should not have unknown qualifier: %s (%d)", sym->cname, sym->id);
+        }
+
+      } else if (auto ts = toTypeSymbol(sym)) {
+        auto ft = toFunctionType(ts->type);
+        if (ts->inTree() && ts->isUsed() && ft) {
+          for (auto& formal : ft->formals()) {
+            INT_ASSERT(formal.intent() != INTENT_BLANK);
+            INT_ASSERT(formal.qual() != QUAL_UNKNOWN);
+          }
+        }
+      } else if (auto fn = toFnSymbol(sym)) {
+        if (auto ft1 = toFunctionType(fn->type)) {
+          auto ft2 = fn->computeAndSetType();
+          if (ft1 != ft2) {
+            INT_FATAL("The type computed for the current state of the "
+                      "function %s [%d] and its existing '->type' have "
+                      "diverged. Make sure that any pass that changes "
+                      "the signature of a function also recomputes its "
+                      "type and handles the consequences of doing so",
+                      fn->name, fn->id);
+          }
         }
       }
     }

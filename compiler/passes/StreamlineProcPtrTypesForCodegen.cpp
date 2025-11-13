@@ -29,33 +29,12 @@
 
 namespace {
   // As a means of abbreviation.
-  using Pass = AddLineFileInfoToProcPtrTypes;
-}
-
-bool Pass::shouldProcess(Symbol* sym) {
-  return shouldProcessIfNonForeignLinkage(sym);
+  using Pass = StreamlineProcPtrTypesForCodegen;
 }
 
 Type* Pass::computeAdjustedType(Type* t) const {
   if (auto ft = toFunctionType(t->getValType())) {
-    auto [line, file] = FunctionType::constructLineFileInfoFormals();
-
-    if (ft->numFormals() >= 2) {
-      if (*(ft->formals().end() - 1) == file &&
-          *(ft->formals().end() - 2) == line) {
-        // TODO: This is just a heuristic, but it's the best we can do at
-        //       the moment. To truly make this operation idempotent, we
-        //       need to address the TODO in 'runPassOverAllSymbols' or
-        //       add extra information to 'FunctionType' to let us detect
-        //       if this has already been done.
-        //
-        // Do not change if the formals match the line/file formals.
-        return ft;
-      }
-    }
-
-    return ft->getWithLineFileInfo();
+    return ft->getWithStreamlinedComponents();
   }
-
   return t;
 }

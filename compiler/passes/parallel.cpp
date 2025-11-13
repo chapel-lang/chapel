@@ -1519,18 +1519,20 @@ Type* getOrMakeRefTypeDuringCodegen(Type* type) {
 // exist to cause it to be code generated even though it was not
 // needed by earlier passes.
 Type* getOrMakeWideTypeDuringCodegen(Type* refType) {
-  Type* wideType;
+  bool isActualRefType = refType->symbol->hasFlag(FLAG_REF);
+
   INT_ASSERT(refType == dtNil ||
              isClass(refType) ||
-             refType->symbol->hasFlag(FLAG_REF));
+             isActualRefType);
+
   // First, check if the wide type already exists.
-  if( isClass(refType) ) {
-    wideType = wideClassMap.get(refType);
-    if( wideType ) return wideType;
+  if(!isActualRefType && isClass(refType)) {
+    // For a ref to a class, isClass seems to return true...
+    // TODO: I don't think this is right...?
+    if (auto wideType = wideClassMap.get(refType)) return wideType;
   }
-  // For a ref to a class, isClass seems to return true...
-  wideType = wideRefMap.get(refType);
-  if( wideType ) return wideType;
+
+  if (auto wideType = wideRefMap.get(refType)) return wideType;
 
   // Now, create a wide pointer type.
   AggregateType* wide = new AggregateType(AGGREGATE_RECORD);
@@ -1543,10 +1545,12 @@ Type* getOrMakeWideTypeDuringCodegen(Type* refType) {
   theProgram->block->insertAtTail(new DefExpr(wts));
   wide->fields.insertAtTail(new DefExpr(new VarSymbol("locale", dtLocaleID)));
   wide->fields.insertAtTail(new DefExpr(new VarSymbol("addr", refType)));
-  if( isClass(refType) ) {
+
+  if(!isActualRefType && isClass(refType)) {
     wideClassMap.put(refType, wide);
   } else {
     wideRefMap.put(refType, wide);
   }
+
   return wide;
 }

@@ -414,15 +414,19 @@ returnInfoGetTupleMember(CallExpr* call) {
 static QualifiedType
 returnInfoGetTupleMemberRef(CallExpr* call) {
   Type* type = returnInfoGetTupleMember(call).type();
-  if (type->refType)
-    type = type->refType;
+
+  if (!type->refType) makeRefType(type);
+  INT_ASSERT(type->refType);
+  type = type->refType;
   Qualifier q = QUAL_REF;
+
   if (call->get(1)->isWideRef()) {
     q = QUAL_WIDE_REF;
-    if (Type* t = wideRefMap.get(type)) {
-      type = t;
-    }
+    Type* wideRefT = type->getWideRefType();
+    INT_ASSERT(wideRefT);
+    type = wideRefT;
   }
+
   return QualifiedType(type, q);
 }
 

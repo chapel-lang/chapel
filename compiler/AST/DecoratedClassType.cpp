@@ -418,10 +418,17 @@ void convertClassTypesToCanonical() {
   // be removed from the tree. Using these would be an error.
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (isDecoratedClassType(ts->type)) {
-      if (ts->inTree())
+      if (ts->inTree()) {
+        INT_ASSERT(!ts->isUsed());
         ts->defPoint->remove();
-      if (ts->type->refType && ts->type->refType->symbol->inTree())
-        ts->type->refType->symbol->defPoint->remove();
+      }
+
+      if (auto refT = ts->type->refType) {
+        if (refT->symbol->inTree()) {
+          INT_ASSERT(!refT->symbol->isUsed());
+          refT->symbol->defPoint->remove();
+        }
+      }
     }
   }
 

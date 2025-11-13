@@ -397,6 +397,9 @@ static void adjustArgIntentForDeref(ArgSymbol* arg) {
   arg->removeFlag(FLAG_REF_TO_IMMUTABLE);
   arg->removeFlag(FLAG_RETURN_SCOPE);
   arg->removeFlag(FLAG_SCOPE);
+
+  // And also, recompute the qualifier
+  arg->qual = arg->qualType().getQual();
 }
 
 // Update each callsite to invoke the serializer.
