@@ -3211,7 +3211,7 @@ shouldSkipCallResolutionAllowInit(Resolver* rv, const uast::AstNode* callLike,
                                   CallInfo& ci) {
   std::unordered_set<int> actualsToInit;
   auto skip = shouldSkipCallResolution(rv, callLike, actualAsts, ci, &actualsToInit);
-  if (skip != NONE) return skip;
+  if (skip != NONE || actualsToInit.empty()) return skip;
 
   ci = CallInfo::copyAndMarkSplitInitActuals(ci, actualsToInit);
   return NONE;
