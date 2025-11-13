@@ -5,7 +5,9 @@ From: almalinux:10
     ../../provision-scripts/* /provision-scripts/
 
 %post
-    /provision-scripts/dnf-deps-ep.sh
+    /provision-scripts/dnf-upgrade.sh
+    /provision-scripts/dnf-epel.sh
+    /provision-scripts/dnf-deps.sh
     /provision-scripts/dnf-llvm.sh
 
 %runscript
