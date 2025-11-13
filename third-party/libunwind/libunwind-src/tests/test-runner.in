@@ -1,0 +1,45 @@
+#!/bin/sh
+#
+# This file is part of libunwind.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+#
+
+test_dir="$(dirname $0)"
+
+: ${LIBUNWIND:=@LIBDIR@/libunwind.so}
+: ${LIBUNWIND_GENERIC:=@LIBDIR@/libunwind-@ARCH@.so}
+
+count=0
+printf "TAP version 14\n"
+for t in @TESTS@; do
+    "$test_dir/$t" >$t.out 2>$t.err
+    status=$?
+    if [ $status = 77 ]; then
+        printf "%d ok - %s # SKIP\n" $count "$t"
+    elif [ $status = 0 ]; then
+        printf "%d ok - %s\n" $count "$t"
+    elif (echo @XFAIL_TESTS@ | grep -Fqw "$t"); then
+        printf "%d not ok - %s # TODO\n" $count "$t"
+    else
+        printf "%d not ok - %s returned %d\n" $count "$t" $status
+    fi
+    count=$(expr $count + 1)
+done
+printf "1..%d\n" $count
