@@ -189,11 +189,13 @@ bool VarScopeVisitor::isLoopIndex(const AstNode* ast) const {
 
 const AstNode* VarScopeVisitor::outermostContainingTuple() const {
   if (tupleInitPartsStack.empty()) return nullptr;
+  CHPL_ASSERT(inAstStack.size() >= tupleInitPartsStack.size());
   return inAstStack[inAstStack.size() - tupleInitPartsStack.size()];
 }
 
 int VarScopeVisitor::indexWithinContainingTuple(const AstNode* ast) const {
-  auto parentTuple = inAstStack.back()->toTupleDecl();
+  CHPL_ASSERT(inAstStack.size() > 1);
+  auto parentTuple = inAstStack[inAstStack.size() - 2]->toTupleDecl();
   CHPL_ASSERT(parentTuple);
   int indexWithinParent = -1;
   while (++indexWithinParent < parentTuple->numDecls() &&
@@ -337,6 +339,8 @@ void VarScopeVisitor::exit(const TupleDecl* ast, RV& rv) {
   if (!isLoopIndex(outermostContainingTuple())) {
     handleTupleDeclaration(ast, rv);
   }
+
+  tupleInitPartsStack.pop_back();
 
   exitScope(ast, rv);
   exitAst(ast);
