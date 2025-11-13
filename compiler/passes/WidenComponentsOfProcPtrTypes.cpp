@@ -37,45 +37,17 @@ namespace {
 }
 
 bool Pass::shouldProcess(Symbol* sym) {
-  if (isTypeSymbol(sym)) return false;
-  return isFnSymbol(sym) || isFunctionType(sym->type);
+  return shouldProcessIfNonForeignLinkage(sym);
 }
 
 // This is used by "adjustSymbolType". It will replace any procedure type
 // with "widenable" components (e.g., 'ref' or 'class' formals) with a new
 // type where those components are wide.
-static Type* adjustProcedureTypeToHaveWidenedComponents(Type* t) {
+Type* Pass::computeAdjustedType(Type* t) const {
   if (auto ft = toFunctionType(t)) {
     if (!ft->hasForeignLinkage()) {
       return ft->getWithWidenedComponents();
     }
   }
   return t;
-}
-
-void Pass::process(Symbol* sym) {
-  auto adjustTypeFn = adjustProcedureTypeToHaveWidenedComponents;
-  bool shouldAdjustSymbolType = true;
-
-  if (auto fn = toFnSymbol(sym)) {
-    if (!fn->isUsedAsValue()) {
-      // If the function is not used as a value then do not adjust it.
-      shouldAdjustSymbolType = false;
-
-      // And clear the type, it can be recomputed later if needed.
-      fn->type = dtUnknown;
-    }
-
-    // As a special case, we have to handle the 'fn->retType' separately.
-    fn->retType = adjustTypeFn(fn->retType);
-  }
-
-  if (isTypeSymbol(sym)) {
-    // Don't adjust type symbols!
-    shouldAdjustSymbolType = false;
-  }
-
-  if (shouldAdjustSymbolType) {
-    maybeAdjustSymbolType(sym, adjustTypeFn);
-  }
 }
