@@ -1,3 +1,95 @@
+diff --git a/doc/rst/language/spec/classes.rst b/doc/rst/language/spec/classes.rst
+index 04d4ef8da31..4f9c9345d55 100644
+--- a/doc/rst/language/spec/classes.rst
++++ b/doc/rst/language/spec/classes.rst
+@@ -260,6 +260,7 @@ available for this purpose (see :ref:`Explicit_Class_Conversions`).
+    .. BLOCK-test-chapeloutput
+ 
+       duplicate-management.chpl:2: error: type expression uses multiple memory management strategies ('borrowed' and 'unmanaged')
++      duplicate-management.chpl:2: error: cannot default initialize variable using non-nilable class type
+ 
+ ..
+ 
+@@ -947,7 +948,7 @@ be issued.
+    .. code-block:: printoutput
+ 
+       usedBeforeInitialized.chpl:4: In initializer:
+-      usedBeforeInitialized.chpl:5: error: field "x" used before it is initialized
++      usedBeforeInitialized.chpl:5: error: 'x' is used before it is initialized
+ 
+ .. index::
+    single: user-defined initializers; omitting fields
+@@ -1045,9 +1046,10 @@ initialized out of order, a compile-time error will be issued.
+ 
+    .. BLOCK-test-chapeloutput
+ 
++      fieldsOutOfOrder.chpl:6: In initializer:
++      fieldsOutOfOrder.chpl:9: error: 'y' is used before it is initialized
+       fieldsOutOfOrder.chpl:12: In initializer:
+       fieldsOutOfOrder.chpl:15: error: Field "y" initialized out of order
+-      fieldsOutOfOrder.chpl:15: note: initialization of fields before .init() call must be in field declaration order
+ 
+    The first initializer leverages the well-defined order of omitted
+    field initialization to use the default value of field ``y`` in order
+diff --git a/doc/rst/language/spec/generics.rst b/doc/rst/language/spec/generics.rst
+index d3a3ce48f3b..3a3c7226c58 100644
+--- a/doc/rst/language/spec/generics.rst
++++ b/doc/rst/language/spec/generics.rst
+@@ -476,7 +476,7 @@ constrained.
+ 
+    .. BLOCK-test-chapeloutput
+ 
+-      partially-concrete-tuple-ambiguity.chpl:5: error: ambiguous call 'f(2*real(64))'
++      partially-concrete-tuple-ambiguity.chpl:5: error: Cannot resolve call to 'f': ambiguity
+ 
+ .. index::
+    single: formal arguments; array
+@@ -1336,6 +1336,7 @@ continue after encountering a ``compilerWarning``.
+       compilerDiagnostics.chpl:15: warning: 1-argument version of foo called with type: real(64)
+       compilerDiagnostics.chpl:16: warning: 1-argument version of foo called with type: string
+       compilerDiagnostics.chpl:20: error: foo() called with non-matching types: int(64) != real(64)
++      compilerDiagnostics.chpl:21: error: foo() called with non-matching types: string != real(64)
+ 
+ .. index::
+    single: specific instantiations
+diff --git a/doc/rst/language/spec/modules.rst b/doc/rst/language/spec/modules.rst
+index dc386e89673..88ad174d5e3 100644
+--- a/doc/rst/language/spec/modules.rst
++++ b/doc/rst/language/spec/modules.rst
+@@ -936,9 +936,7 @@ be used to disambiguate the symbols in this case.
+    .. BLOCK-test-chapeloutput
+ 
+       ambiguity.chpl:22: In function 'main':
+-      ambiguity.chpl:27: error: ambiguous call 'printY()'
+-      ambiguity.chpl:34: note: candidates are: printY()
+-      ambiguity.chpl:7: note:                 printY()
++      ambiguity.chpl:27: error: Cannot resolve call to 'printY': ambiguity
+ 
+    The call to printX() is not ambiguous because M2’s definition shadows
+    that of M1. On the other hand, the call to printY() is ambiguous
+diff --git a/doc/rst/language/spec/variables.rst b/doc/rst/language/spec/variables.rst
+index 57b4b8d78b4..b0d208e7515 100644
+--- a/doc/rst/language/spec/variables.rst
++++ b/doc/rst/language/spec/variables.rst
+@@ -224,9 +224,15 @@ unconditionally return.
+    .. BLOCK-test-chapeloutput
+ 
+       no-split-init.chpl:1: In function 'main':
+-      no-split-init.chpl:2: error: 'x' is not initialized and has no type
+-      no-split-init.chpl:2: note: cannot find initialization point to split-init this variable
+-      no-split-init.chpl:3: note: 'x' is used here before it is initialized
++      no-split-init.chpl:3: error: unable to resolve call to 'writeln': no matching candidates
++      $CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because an actual couldn't be passed to a formal
++      no-split-init.chpl:2: note: The actual 'x' expects to be split-initialized because it is declared without a type or initialization expression here
++      no-split-init.chpl:3: note: The call to 'writeln' occurs before any valid initialization points
++      $CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because an actual couldn't be passed to a formal
++      no-split-init.chpl:2: note: The actual 'x' expects to be split-initialized because it is declared without a type or initialization expression here
++      no-split-init.chpl:3: note: The call to 'writeln' occurs before any valid initialization points
++      no-split-init.chpl:3: note: omitting 1 more candidates that didn't match
++      no-split-init.chpl:4: error: cannot pass const to non-const
+ 
+ 
+    *Example (split-cond-blocks-init.chpl)*
 diff --git a/test/types/POD/elliot/varNotPOD.good b/test/types/POD/elliot/varNotPOD.good
 index 66db8242dd1..1a9cf52c977 100644
 --- a/test/types/POD/elliot/varNotPOD.good
@@ -262,28 +354,23 @@ index cd023174ecc..5e2f39af974 100644
 -c_ptrConst_modify.chpl:6: error: cannot assign to const variable
 +c_ptrConst_modify.chpl:6: error: cannot pass const to non-const
 diff --git a/test/types/cptr/const/const_actual_nonconst_formal.good b/test/types/cptr/const/const_actual_nonconst_formal.good
-index 7c9b6835ee3..bed784f8c4a 100644
+index 7c9b6835ee3..0f3adb37bf5 100644
 --- a/test/types/cptr/const/const_actual_nonconst_formal.good
 +++ b/test/types/cptr/const/const_actual_nonconst_formal.good
-@@ -1,4 +1,6 @@
+@@ -1,4 +1,2 @@
 -const_actual_nonconst_formal.chpl:12: error: unresolved call 'foo(c_ptrConst(int(32)))'
 -const_actual_nonconst_formal.chpl:4: note: this candidate did not match: foo(x: c_ptr(int(32)))
 -const_actual_nonconst_formal.chpl:12: note: because actual argument #1 with type 'c_ptrConst(int(32))'
 -const_actual_nonconst_formal.chpl:4: note: is passed to formal 'in x: c_ptr(int(32))'
-+internal error: UTI-MIS-nnnn chpl version mmmm
-+
-+Internal errors indicate a bug in the Chapel compiler,
-+and we're sorry for the hassle.  We would appreciate your reporting this bug --
-+please see https://chapel-lang.org/bugs.html for instructions.
-+
-diff --git a/test/types/cptr/const/const_actual_nonconst_formal.prediff b/test/types/cptr/const/const_actual_nonconst_formal.prediff
-new file mode 120000
-index 00000000000..07fd5bd8e46
---- /dev/null
-+++ b/test/types/cptr/const/const_actual_nonconst_formal.prediff
-@@ -0,0 +1 @@
-+../../../../util/test/prediff-obscure-internal-error
-\ No newline at end of file
++const_actual_nonconst_formal.chpl:12: error: unable to resolve call to 'foo': no matching candidates
++const_actual_nonconst_formal.chpl: note: the following candidate didn't match because an actual couldn't be passed to a formal
+diff --git a/test/types/cptr/const/extern_var_is_const.good b/test/types/cptr/const/extern_var_is_const.good
+index 0e973b15f01..ff988096177 100644
+--- a/test/types/cptr/const/extern_var_is_const.good
++++ b/test/types/cptr/const/extern_var_is_const.good
+@@ -1 +1 @@
+-extern_var_is_const.chpl:9: error: cannot assign to const variable
++extern_var_is_const.chpl:9: error: cannot pass const to non-const
 diff --git a/test/types/cptr/cross_type_init.good b/test/types/cptr/cross_type_init.good
 index a27bc35c209..b2ac0190984 100644
 --- a/test/types/cptr/cross_type_init.good
@@ -430,18 +517,14 @@ index d3234dfb69d..a066cd49173 100644
 +badenum.chpl:2: note: the constant 'a' is associated with -1, a param of type 'int(64)', which requires a signed integer type
 +badenum.chpl:2: note: however, the constant 'b' is associated with 9223372036854775808, a param of type 'uint(64)', which requires an unsigned integer type
 diff --git a/test/types/enum/indexEnumType.good b/test/types/enum/indexEnumType.good
-index 79222cce404..44dfeb71769 100644
+index 79222cce404..0a025653a75 100644
 --- a/test/types/enum/indexEnumType.good
 +++ b/test/types/enum/indexEnumType.good
-@@ -1,2 +1,6 @@
+@@ -1,2 +1,2 @@
 -indexEnumType.chpl:2: error: illegal type index expression 'testEnum[0]'
 -indexEnumType.chpl:2: note: enum type 'testEnum' cannot be indexed in this manner
-+internal error: UTI-MIS-1049 chpl version 2.7.0 pre-release (de786db05f4)
-+
-+Internal errors indicate a bug in the Chapel compiler,
-+and we're sorry for the hassle.  We would appreciate your reporting this bug --
-+please see https://chapel-lang.org/bugs.html for instructions.
-+
++indexEnumType.chpl:2: error: unable to resolve call to 'testEnum': no matching candidates
++indexEnumType.chpl:1: note: the type 'testEnum' does not support indexing
 diff --git a/test/types/enum/ldelaney/enum-functions-bad.good b/test/types/enum/ldelaney/enum-functions-bad.good
 index 2f660cab63e..e361864c654 100644
 --- a/test/types/enum/ldelaney/enum-functions-bad.good
@@ -729,17 +812,19 @@ index 8d265af15ad..ad39e892589 100644
 +default-init-generic2.chpl:13: error: cannot default initialize variable using generic or unknown type
 +default-init-generic2.chpl:16: error: cannot default initialize variable using generic or unknown type
 diff --git a/test/types/partial/dependent.simple.good b/test/types/partial/dependent.simple.good
-index 8b525abed7b..51c0d0dfedf 100644
+index 8b525abed7b..f7a352e8f7b 100644
 --- a/test/types/partial/dependent.simple.good
 +++ b/test/types/partial/dependent.simple.good
-@@ -1,3 +1,5 @@
-+dependent.chpl:-1: In function 'D':
-+dependent.chpl: error: can't apply '.type' to a type ('unknown type')
-+dependent.chpl: error: can't apply '.type' to a type ('?')
+@@ -1,3 +1,7 @@
++dependent.chpl:4: In function 'D':
++dependent.chpl:4: error: can't apply '.type' to a type ('unknown type')
++dependent.chpl:4: error: can't apply '.type' to a type ('?')
  dependent.chpl:19: In function 'main':
 -dependent.chpl:21: error: Unable to resolve partial instantiation 'D(type int(64), p=1024)'
 -dependent.chpl:21: note: Instantiation of field 'p' depends on uninstantiated fields: 'param b', 'const x'
 +dependent.chpl:21: error: unable to resolve call to 'D': no matching candidates
++dependent.chpl:4: note: call resolution was not completed because formal 4 of this candidate was ill-formed
++dependent.chpl:21: note: omitting 1 more candidates that didn't match
 diff --git a/test/types/partial/invalid-set-param-again.good b/test/types/partial/invalid-set-param-again.good
 index 49151e4b125..8d93f1553fd 100644
 --- a/test/types/partial/invalid-set-param-again.good
@@ -763,7 +848,7 @@ index 06864a0cdea..fe8dd82ca5f 100644
 +invalid-set-type-again.chpl:7: error: final result of initialization does not match the initial type
 +invalid-set-type-again.chpl:2: note: field 'fixed' started with type 'real(64)', but had incompatible type 'int(64)' after initialization
 diff --git a/test/types/partial/issue-18005.good b/test/types/partial/issue-18005.good
-index f6dd93e4327..c3aeca41823 100644
+index f6dd93e4327..b7c2d6059d9 100644
 --- a/test/types/partial/issue-18005.good
 +++ b/test/types/partial/issue-18005.good
 @@ -1,11 +1,5 @@
@@ -779,37 +864,26 @@ index f6dd93e4327..c3aeca41823 100644
 -$CHPL_HOME/modules/standard/Map.chpl:nnnn: note: this type construction might ignore field defaults in the type declared here but that may change
 -issue-18005.chpl:11: error: initialization requires an argument for bar
 +issue-18005.chpl:11: error: unable to resolve call to 'init': no matching candidates
-+issue-18005.chpl: note: the compiler-generated initializer didn't match because formal 2, corresponding to field 'bar', had a generic type expression
-+issue-18005.chpl:-1: In initializer:
-+issue-18005.chpl: note: currently, calls to initializers cannot omit arguments for fields with generic type expressions
++issue-18005.chpl:7: note: the compiler-generated initializer didn't match because formal 2, corresponding to field 'bar', had a generic type expression
++issue-18005.chpl:7: In initializer:
++issue-18005.chpl:7: note: currently, calls to initializers cannot omit arguments for fields with generic type expressions
 +issue-18005.chpl:11: note: omitting 22 more candidates that didn't match
 diff --git a/test/types/partial/multiple-question.good b/test/types/partial/multiple-question.good
-index a1f63a5b763..bed784f8c4a 100644
+index a1f63a5b763..16d261af331 100644
 --- a/test/types/partial/multiple-question.good
 +++ b/test/types/partial/multiple-question.good
-@@ -1,8 +1,6 @@
--multiple-question.chpl:2: In function 'foo':
+@@ -1,8 +1,5 @@
+ multiple-question.chpl:2: In function 'foo':
 -multiple-question.chpl:2: error: formal 'r' may not have a type expression with multiple '?'
 -multiple-question.chpl:2: note: '?' cannot be used to positionally indicate uninstantiated fields
--multiple-question.chpl:10: In function 'bar':
++multiple-question.chpl:2: error: cannot have '?' more than once in a call
++multiple-question.chpl:2: error: cannot have '?' more than once in a call
+ multiple-question.chpl:10: In function 'bar':
 -multiple-question.chpl:10: error: formal 'r' may not have a type expression with multiple '?'
 -multiple-question.chpl:10: note: '?' cannot be used to positionally indicate uninstantiated fields
 -multiple-question.chpl:10: error: type expression of formal 'r' cannot use '?' before unnamed arguments to a type specifier
 -multiple-question.chpl:10: note: '?' cannot be used to positionally indicate uninstantiated fields
-+internal error: UTI-MIS-nnnn chpl version mmmm
-+
-+Internal errors indicate a bug in the Chapel compiler,
-+and we're sorry for the hassle.  We would appreciate your reporting this bug --
-+please see https://chapel-lang.org/bugs.html for instructions.
-+
-diff --git a/test/types/partial/multiple-question.prediff b/test/types/partial/multiple-question.prediff
-new file mode 120000
-index 00000000000..157961463b3
---- /dev/null
-+++ b/test/types/partial/multiple-question.prediff
-@@ -0,0 +1 @@
-+../../../util/test/prediff-obscure-internal-error
-\ No newline at end of file
++multiple-question.chpl:10: error: cannot have '?' more than once in a call
 diff --git a/test/types/partial/partialTypeFormal.error.good b/test/types/partial/partialTypeFormal.error.good
 index 5114b18582c..bc61a3ed040 100644
 --- a/test/types/partial/partialTypeFormal.error.good
@@ -1421,41 +1495,41 @@ index eb1ac1828f5..40207a41793 100644
 +$CHPL_HOME/modules/internal/ChapelTaskID.chpl:39: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +castToNonType.chpl:3: note: omitting 124 more candidates that didn't match
 diff --git a/test/types/records/comparisons/compareRecords-gt.good b/test/types/records/comparisons/compareRecords-gt.good
-index defa4ff736c..c159384ce9b 100644
+index defa4ff736c..4fdc31007c7 100644
 --- a/test/types/records/comparisons/compareRecords-gt.good
 +++ b/test/types/records/comparisons/compareRecords-gt.good
 @@ -1 +1,3 @@
 -compareRecords.chpl:34: error: ordered comparisons not supported by default on records with array fields
-+compareRecords.chpl:-1: In method '>':
-+compareRecords.chpl: error: ordered comparisons not supported by default on records with array fields
-+compareRecords.chpl: error: ordered comparisons not supported by default on records with array fields
++compareRecords.chpl:3: In method '>':
++compareRecords.chpl:3: error: ordered comparisons not supported by default on records with array fields
++compareRecords.chpl:3: error: ordered comparisons not supported by default on records with array fields
 diff --git a/test/types/records/comparisons/compareRecords-gte.good b/test/types/records/comparisons/compareRecords-gte.good
-index ce08d63415a..41b5f97b00f 100644
+index ce08d63415a..9a6a925cb73 100644
 --- a/test/types/records/comparisons/compareRecords-gte.good
 +++ b/test/types/records/comparisons/compareRecords-gte.good
 @@ -1 +1,3 @@
 -compareRecords.chpl:39: error: ordered comparisons not supported by default on records with array fields
-+compareRecords.chpl:-1: In method '>=':
-+compareRecords.chpl: error: ordered comparisons not supported by default on records with array fields
-+compareRecords.chpl: error: ordered comparisons not supported by default on records with array fields
++compareRecords.chpl:3: In method '>=':
++compareRecords.chpl:3: error: ordered comparisons not supported by default on records with array fields
++compareRecords.chpl:3: error: ordered comparisons not supported by default on records with array fields
 diff --git a/test/types/records/comparisons/compareRecords-lt.good b/test/types/records/comparisons/compareRecords-lt.good
-index 7db97e3d904..81db3d27bb6 100644
+index 7db97e3d904..bb79720dc81 100644
 --- a/test/types/records/comparisons/compareRecords-lt.good
 +++ b/test/types/records/comparisons/compareRecords-lt.good
 @@ -1 +1,3 @@
 -compareRecords.chpl:24: error: ordered comparisons not supported by default on records with array fields
-+compareRecords.chpl:-1: In method '<':
-+compareRecords.chpl: error: ordered comparisons not supported by default on records with array fields
-+compareRecords.chpl: error: ordered comparisons not supported by default on records with array fields
++compareRecords.chpl:3: In method '<':
++compareRecords.chpl:3: error: ordered comparisons not supported by default on records with array fields
++compareRecords.chpl:3: error: ordered comparisons not supported by default on records with array fields
 diff --git a/test/types/records/comparisons/compareRecords-lte.good b/test/types/records/comparisons/compareRecords-lte.good
-index 1367bd320a6..8c7727f0b57 100644
+index 1367bd320a6..d0f2b6f1207 100644
 --- a/test/types/records/comparisons/compareRecords-lte.good
 +++ b/test/types/records/comparisons/compareRecords-lte.good
 @@ -1 +1,3 @@
 -compareRecords.chpl:29: error: ordered comparisons not supported by default on records with array fields
-+compareRecords.chpl:-1: In method '<=':
-+compareRecords.chpl: error: ordered comparisons not supported by default on records with array fields
-+compareRecords.chpl: error: ordered comparisons not supported by default on records with array fields
++compareRecords.chpl:3: In method '<=':
++compareRecords.chpl:3: error: ordered comparisons not supported by default on records with array fields
++compareRecords.chpl:3: error: ordered comparisons not supported by default on records with array fields
 diff --git a/test/types/records/const-checking/assignments.good b/test/types/records/const-checking/assignments.good
 index ff5667328c8..f59e361629a 100644
 --- a/test/types/records/const-checking/assignments.good
@@ -2063,7 +2137,7 @@ index e6ce9ed9b72..c3606c54649 100644
 +split-init-out-formal-never-set2.chpl:2: note: the variable 'outarg' is used here
 +split-init-out-formal-never-set2.chpl:9: error: unable to resolve call to '=': no matching candidates
 diff --git a/test/types/records/split-init/split-init-out-return-intent-overloads3.good b/test/types/records/split-init/split-init-out-return-intent-overloads3.good
-index b6369d1bc20..8e7d2852637 100644
+index b6369d1bc20..9ad31747e68 100644
 --- a/test/types/records/split-init/split-init-out-return-intent-overloads3.good
 +++ b/test/types/records/split-init/split-init-out-return-intent-overloads3.good
 @@ -1,4 +1,14 @@
@@ -2085,7 +2159,7 @@ index b6369d1bc20..8e7d2852637 100644
 +split-init-out-return-intent-overloads3.chpl:31: note: cannot find initialization point to split-init this variable
 +split-init-out-return-intent-overloads3.chpl:31: note: the variable 'y' is used here
 diff --git a/test/types/records/split-init/split-init-out-return-intent-overloads4.good b/test/types/records/split-init/split-init-out-return-intent-overloads4.good
-index 1aa23a6151e..8f3fb23bf22 100644
+index 1aa23a6151e..3fca029ab1a 100644
 --- a/test/types/records/split-init/split-init-out-return-intent-overloads4.good
 +++ b/test/types/records/split-init/split-init-out-return-intent-overloads4.good
 @@ -1,4 +1,14 @@
@@ -2921,14 +2995,15 @@ index 85f70d81ba5..97f5f42574f 100644
 +illegalValueReturn.chpl:8: error: cannot return it with provided return intent
 +illegalValueReturn.chpl:2: error: could not determine return type for function
 diff --git a/test/types/type_variables/bharshbarg/illegalFieldQuery.good b/test/types/type_variables/bharshbarg/illegalFieldQuery.good
-index 36ea9a89178..e29c74be642 100644
+index 36ea9a89178..b711582e4fc 100644
 --- a/test/types/type_variables/bharshbarg/illegalFieldQuery.good
 +++ b/test/types/type_variables/bharshbarg/illegalFieldQuery.good
-@@ -1,3 +1,5 @@
+@@ -1,3 +1,6 @@
  illegalFieldQuery.chpl:8: In function 'foo':
 -illegalFieldQuery.chpl:8: error: invalid query -- queried field must be a type or parameter
 -  illegalFieldQuery.chpl:13: called as foo(x: borrowed Foo(true,5))
 +illegalFieldQuery.chpl:8: error: unable to resolve call to 'Foo': no matching candidates
++illegalFieldQuery.chpl:2: note: the type constructor for 'Foo' didn't match because the provided actuals could not be mapped to its formals
 +illegalFieldQuery.chpl:13: error: unable to resolve call to 'foo': no matching candidates
 +illegalFieldQuery.chpl:8: note: call resolution was not completed because formal 1 of this candidate was ill-formed
 +illegalFieldQuery.chpl:13: note: omitting 1 more candidates that didn't match
@@ -2953,14 +3028,15 @@ index ca5709a54b8..207dd5573c3 100644
 +test_foo5-error.chpl:16: error: Cannot resolve call to 'foo': ambiguity
 +test_foo5-error.chpl:17: error: Cannot resolve call to 'foo': ambiguity
 diff --git a/test/types/type_variables/deitz/part1/test_clone_class1_old.good b/test/types/type_variables/deitz/part1/test_clone_class1_old.good
-index ea2f8dcec3f..3ad632cfe85 100644
+index ea2f8dcec3f..6a54ca6717f 100644
 --- a/test/types/type_variables/deitz/part1/test_clone_class1_old.good
 +++ b/test/types/type_variables/deitz/part1/test_clone_class1_old.good
-@@ -1,3 +1 @@
+@@ -1,3 +1,2 @@
 -test_clone_class1_old.chpl:8: error: invalid type specifier 'foo(2)'
 -test_clone_class1_old.chpl:8: note: type specifier did not match: foo(type x)
 -test_clone_class1_old.chpl:8: note: generic field 'x' must be instantiated with a type-expression
 +test_clone_class1_old.chpl:8: error: unable to resolve call to 'foo': no matching candidates
++test_clone_class1_old.chpl:1: note: the type constructor for 'foo' didn't match because an actual couldn't be passed to a formal
 diff --git a/test/types/type_variables/deitz/part1/test_clone_class1b.good b/test/types/type_variables/deitz/part1/test_clone_class1b.good
 index 4a67e4787c2..6fc06ca81c7 100644
 --- a/test/types/type_variables/deitz/part1/test_clone_class1b.good
@@ -2985,15 +3061,16 @@ index 1c5e6119e3f..b17441bf3a4 100644
 -note:   If this is intentional, try increasing the instantiation limit from 160
 +error: invoking driver compilation phase
 diff --git a/test/types/type_variables/deitz/part7/construct-1b.good b/test/types/type_variables/deitz/part7/construct-1b.good
-index a0e63647d78..b90935d67f3 100644
+index a0e63647d78..19b302c585a 100644
 --- a/test/types/type_variables/deitz/part7/construct-1b.good
 +++ b/test/types/type_variables/deitz/part7/construct-1b.good
-@@ -1,4 +1 @@
+@@ -1,4 +1,2 @@
 -construct-1b.chpl:6: error: invalid type specifier 'R(t=type real(64), x="deitz was here")'
 -construct-1b.chpl:6: note: type specifier did not match: R(type t)
 -construct-1b.chpl:6: note: type was specified with 2 arguments
 -construct-1b.chpl:1: note: but type 'R' only has 1 generic field
 +construct-1b.chpl:6: error: unable to resolve call to 'R': no matching candidates
++construct-1b.chpl:1: note: the type constructor for 'R' didn't match because actual 2 was named 'x', but no formal with that name was found
 diff --git a/test/types/type_variables/deitz/part7/test_error1.good b/test/types/type_variables/deitz/part7/test_error1.good
 index 5b9443a4214..e75292a3092 100644
 --- a/test/types/type_variables/deitz/part7/test_error1.good
@@ -3130,13 +3207,14 @@ index 653a77810cf..00f822da1b5 100644
 -typeTupleOOB.chpl:4: error: type index expression '4' out of bounds (0..2)
 +typeTupleOOB.chpl:4: error: tuple index 4 is out of bounds
 diff --git a/test/types/type_variables/ferguson/instantiate-non-generic.good b/test/types/type_variables/ferguson/instantiate-non-generic.good
-index e70800a745e..e223c4762f8 100644
+index e70800a745e..49772260362 100644
 --- a/test/types/type_variables/ferguson/instantiate-non-generic.good
 +++ b/test/types/type_variables/ferguson/instantiate-non-generic.good
-@@ -1,2 +1 @@
+@@ -1,2 +1,2 @@
 -instantiate-non-generic.chpl:7: error: named arguments can only be used in type construction to set 'type' or 'param' fields
 -instantiate-non-generic.chpl:4: note: field 'x' declared here is not 'type' or 'param'
 +instantiate-non-generic.chpl:7: error: unable to resolve call to 'S': no matching candidates
++instantiate-non-generic.chpl:1: note: the type constructor for 'S' didn't match because actual 1 was named 'x', but no formal with that name was found
 diff --git a/test/types/type_variables/ferguson/ref-type-error.good b/test/types/type_variables/ferguson/ref-type-error.good
 index b7f0f02b1de..35bfa5be114 100644
 --- a/test/types/type_variables/ferguson/ref-type-error.good
@@ -3215,15 +3293,16 @@ index e03d62e156e..b4f60705fdd 100644
 +warn-generic-var-field-no-q.chpl:14: warning: field 'genericFieldX' has generic type 'GR' but is not marked with '?'
 +warn-generic-var-field-no-q.chpl:14: note: generic fields must be marked with '?'
 diff --git a/test/types/type_variables/jplevyak/construct-1.good b/test/types/type_variables/jplevyak/construct-1.good
-index 55995b207c2..4445b84a21c 100644
+index 55995b207c2..1e27557704d 100644
 --- a/test/types/type_variables/jplevyak/construct-1.good
 +++ b/test/types/type_variables/jplevyak/construct-1.good
-@@ -1,4 +1 @@
+@@ -1,4 +1,2 @@
 -construct-1.chpl:6: error: invalid type specifier 'R(t=type real(64), x=3)'
 -construct-1.chpl:6: note: type specifier did not match: R(type t)
 -construct-1.chpl:6: note: type was specified with 2 arguments
 -construct-1.chpl:1: note: but type 'R' only has 1 generic field
 +construct-1.chpl:6: error: unable to resolve call to 'R': no matching candidates
++construct-1.chpl:1: note: the type constructor for 'R' didn't match because actual 2 was named 'x', but no formal with that name was found
 diff --git a/test/types/type_variables/jplevyak/where-3-error.good b/test/types/type_variables/jplevyak/where-3-error.good
 index dcc965a4314..6b8c3edd89a 100644
 --- a/test/types/type_variables/jplevyak/where-3-error.good
@@ -3326,57 +3405,57 @@ index 7cf82588936..52bea1d6921 100644
 +test_type3.chpl:5: note: cannot find initialization point to split-init this variable
 +test_type3.chpl:5: note: the variable 'c' is used here
 diff --git a/test/types/void/void-field-4.good b/test/types/void/void-field-4.good
-index 0390aa025d6..b1367b6a41a 100644
+index 0390aa025d6..49c1eb6e2ec 100644
 --- a/test/types/void/void-field-4.good
 +++ b/test/types/void/void-field-4.good
 @@ -1 +1,2 @@
 -void-field-4.chpl:2: error: Field 'a' cannot be declared 'void'. Consider using 'nothing' instead.
-+void-field-4.chpl:-1: In initializer:
-+void-field-4.chpl: error: unable to resolve call to '=': no matching candidates
++void-field-4.chpl:1: In initializer:
++void-field-4.chpl:1: error: unable to resolve call to '=': no matching candidates
 diff --git a/test/types/void/void-field-5.good b/test/types/void/void-field-5.good
-index 88b4e82b405..4c0c32fc013 100644
+index 88b4e82b405..d485ae38936 100644
 --- a/test/types/void/void-field-5.good
 +++ b/test/types/void/void-field-5.good
 @@ -1 +1,2 @@
 -void-field-5.chpl:4: error: Field 'a' cannot be declared 'void'. Consider using 'nothing' instead.
-+void-field-5.chpl:-1: In initializer:
-+void-field-5.chpl: error: unable to resolve call to '=': no matching candidates
++void-field-5.chpl:3: In initializer:
++void-field-5.chpl:3: error: unable to resolve call to '=': no matching candidates
 diff --git a/test/types/void/void-field-6.good b/test/types/void/void-field-6.good
-index a4e064c92ff..153aa4e1103 100644
+index a4e064c92ff..61bb50d578b 100644
 --- a/test/types/void/void-field-6.good
 +++ b/test/types/void/void-field-6.good
 @@ -1 +1,4 @@
 -void-field-6.chpl:6: error: Field 'a' cannot be declared 'void'. Consider using 'nothing' instead.
 +void-field-6.chpl:1: In function 't':
 +void-field-6.chpl:2: error: Cannot return void with type return intent
-+void-field-6.chpl:-1: In initializer:
-+void-field-6.chpl: error: unable to resolve call to '=': no matching candidates
++void-field-6.chpl:5: In initializer:
++void-field-6.chpl:5: error: unable to resolve call to '=': no matching candidates
 diff --git a/test/types/void/void-field-7.good b/test/types/void/void-field-7.good
-index 60adc9d5641..a50e623df31 100644
+index 60adc9d5641..12e1ab6dbb0 100644
 --- a/test/types/void/void-field-7.good
 +++ b/test/types/void/void-field-7.good
 @@ -1 +1,2 @@
 -void-field-7.chpl:2: error: Field 'a' cannot be declared 'void'. Consider using 'nothing' instead.
-+void-field-7.chpl:-1: In initializer:
-+void-field-7.chpl: error: unable to resolve call to '=': no matching candidates
++void-field-7.chpl:1: In initializer:
++void-field-7.chpl:1: error: unable to resolve call to '=': no matching candidates
 diff --git a/test/types/void/void-field-8.good b/test/types/void/void-field-8.good
-index bc5725d2bf3..4698e3371a3 100644
+index bc5725d2bf3..80d16168682 100644
 --- a/test/types/void/void-field-8.good
 +++ b/test/types/void/void-field-8.good
 @@ -1 +1,2 @@
 -void-field-8.chpl:4: error: Field 'a' cannot be declared 'void'. Consider using 'nothing' instead.
-+void-field-8.chpl:-1: In initializer:
-+void-field-8.chpl: error: unable to resolve call to '=': no matching candidates
++void-field-8.chpl:3: In initializer:
++void-field-8.chpl:3: error: unable to resolve call to '=': no matching candidates
 diff --git a/test/types/void/void-field-9.good b/test/types/void/void-field-9.good
-index 95bb3a95d06..0bb0b1fd8a4 100644
+index 95bb3a95d06..eb09f25a0bb 100644
 --- a/test/types/void/void-field-9.good
 +++ b/test/types/void/void-field-9.good
 @@ -1 +1,4 @@
 -void-field-9.chpl:6: error: Field 'a' cannot be declared 'void'. Consider using 'nothing' instead.
 +void-field-9.chpl:1: In function 't':
 +void-field-9.chpl:2: error: Cannot return void with type return intent
-+void-field-9.chpl:-1: In initializer:
-+void-field-9.chpl: error: unable to resolve call to '=': no matching candidates
++void-field-9.chpl:5: In initializer:
++void-field-9.chpl:5: error: unable to resolve call to '=': no matching candidates
 diff --git a/test/types/void/void-formal-1.good b/test/types/void/void-formal-1.good
 index 0067c77029f..2c350424bea 100644
 --- a/test/types/void/void-formal-1.good
