@@ -1511,6 +1511,13 @@ AggregateType* installInternalType(AggregateType* ct, AggregateType* dt) {
 
   // grab the existing symbol from the placeholder "dtString"
   ct->addSymbol(dt->symbol);
+
+  // During typed conversion we may populate RootClass fields. Save them here.
+  if (fDynoResolver && dt->symbol->defPoint) {
+    memcpy(ct->decoratedClasses, dt->decoratedClasses, NUM_PACKED_DECORATED_TYPES);
+    dt->symbol->defPoint->remove();
+  }
+
   *dt = *ct;
 
   // These fields get overwritten with `ct` by the assignment.

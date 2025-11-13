@@ -2579,6 +2579,15 @@ struct ConvertTypeHelper {
   // declared types
 
   Type* visit(const types::ClassType* t) {
+    if (dtObject->symbol->defPoint == nullptr) {
+      // Ensure that dtObject is inserted into the module before any other
+      // class types are converted, since other class types may inherit from
+      // it.
+      auto root = types::BasicClassType::getRootClassType(context());
+      auto type = tc_->convertType(root);
+      insertTypeIntoModule(root->id(), type);
+    }
+
     if (auto mt = t->manageableType()) {
       if (mt->isAnyClassType()) {
         // The production compiler represents these as special builtins
