@@ -336,9 +336,9 @@ void VarScopeVisitor::exit(const TupleDecl* ast, RV& rv) {
   // TODO: I think it's fine to skip this for all users of VarScopeVisitor;
   //       is there an analysis that does need to handle loop indices?
   // See also: skip for NamedDecl
-  if (!isLoopIndex(outermostContainingTuple())) {
-    handleTupleDeclaration(ast, rv);
-  }
+  // if (!isLoopIndex(outermostContainingTuple())) {
+  //   handleTupleDeclaration(ast, rv);
+  // }
 
   tupleInitPartsStack.pop_back();
 
@@ -376,7 +376,14 @@ void VarScopeVisitor::exit(const NamedDecl* ast, RV& rv) {
   //       is there an analysis that does need to handle loop indices?
   if (!isLoopIndex(ast)) {
     if (auto vld = ast->toVarLikeDecl()) {
-      handleDeclaration(vld, rv);
+      auto parent = parsing::parentAst(context, vld);
+      auto initExpr = vld->initExpression();
+      const QualifiedType& initType =
+          initExpr ? rv.byAst(initExpr).type() : QualifiedType();
+      Qualifier intentOrKind = vld->storageKind();
+      bool isFormal = vld->isFormal() || vld->isVarArgFormal();
+      handleDeclaration(vld, parent, initExpr, initType, intentOrKind, isFormal,
+                        rv);
     }
   }
 

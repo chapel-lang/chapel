@@ -146,27 +146,20 @@ struct CallInitDeinit : VarScopeVisitor {
                                  const QualifiedType& rhsType,
                                  RV& rv);
 
-  void processSingleDeclHelper(const NamedDecl* ast,
-                               const AstNode* parent,
-                               const AstNode* initExpression,
-                               const QualifiedType& initType,
-                               bool isFormal,
-                               Qualifier intentOrKind,
-                               RV& rv);
   void validateTypeAndInitExpr(const AstNode* typeExpression,
                                const AstNode* initExpression,
                                RV& rv);
 
-  void processTupleDecl(const TupleDecl* ast,
-                        const QualifiedType& initType,
-                        const TupleDecl* topLevelDeclAst,
-                        RV& rv);
-
   void processReturnThrowYield(const uast::AstNode* ast, RV& rv);
 
   // overrides
-  void handleTupleDeclaration(const TupleDecl* ast, RV& rv) override;
-  void handleDeclaration(const VarLikeDecl* ast, RV& rv) override;
+  void handleDeclaration(const VarLikeDecl* ast,
+                         const AstNode* parent,
+                         const AstNode* initExpr,
+                         const QualifiedType& initType,
+                         Qualifier intentOrKind,
+                         bool isFormal,
+                         RV& rv) override;
   void handleMention(const Identifier* ast, ID varId, RV& rv) override;
   void handleAssign(const OpCall* ast, RV& rv) override;
   void handleOutFormal(const Call* ast, const AstNode* actual,
@@ -1225,10 +1218,107 @@ void CallInitDeinit::resolveDeinit(const AstNode* ast,
   c.noteResult(&opR, { { AssociatedAction::DEINIT, deinitedId } });
 }
 
-void CallInitDeinit::processSingleDeclHelper(const NamedDecl* ast, const AstNode* parent, const AstNode* initExpression, const QualifiedType& initType, bool isFormal, Qualifier intentOrKind, RV& rv) {
+void CallInitDeinit::validateTypeAndInitExpr(const AstNode* typeExpression,
+                                             const AstNode* initExpression,
+                                             RV& rv) {
+  // check for use of deinited variables in type or init exprs
+  if (typeExpression) {
+    processMentions(typeExpression, rv);
+  }
+  if (initExpression) {
+    processMentions(initExpression, rv);
+  }
+}
+
+// void CallInitDeinit::processTupleDecl(const TupleDecl* ast,
+//                                       const QualifiedType& initType,
+//                                       const TupleDecl* topLevelDeclAst,
+//                                       RV& rv) {
+//   auto topLevelInitExpr = topLevelDeclAst->initExpression();
+
+//   // If there's an init expr, it should be a tuple type with the same shape as
+//   // this tuple decl.
+//   const TupleType* initExprTupleType = nullptr;
+//   if (initType.type()) {
+//     initExprTupleType = initType.type()->toTupleType();
+//     CHPL_ASSERT(initExprTupleType);
+//     CHPL_ASSERT(initExprTupleType->numElements() == ast->numDecls());
+//   }
+
+//   for (int i = 0; i < ast->numDecls(); i++) {
+//     auto decl = ast->decl(i);
+//     // Use top-level tuple decl's init expr ast, but use corresponding
+//     // element type for this element for the init expr type.
+//     const QualifiedType& eltInitType =
+//         initExprTupleType ? initExprTupleType->elementType(i) : QualifiedType();
+//     if (auto vld = decl->toVarLikeDecl()) {
+//       auto parent = parsing::parentAst(context, topLevelDeclAst);
+//       // Propagate formal-ness and intent from the tuple decl
+//       bool isFormal = ast->isTupleDeclFormal();
+//       Qualifier intentOrKind = (Qualifier)ast->intentOrKind();
+//       processSingleDeclHelper(vld, parent, topLevelInitExpr, eltInitType,
+//                               isFormal, intentOrKind, rv);
+//     } else if (auto td = decl->toTupleDecl()) {
+//       processTupleDecl(td, eltInitType, topLevelDeclAst, rv);
+//     } else {
+//       context->error(decl, "unexpected type of contained decl in tuple decl");
+//     }
+
+//     auto& re = rv.byPostorder().byAst(decl);
+//     AssociatedAction::ActionsList subActions;
+//     for (auto action : re.associatedActions()) {
+//       auto useId = action.id();
+//       auto useTupleEltIdx = i;
+//       // if (rhsTupleAst) {
+//       //   useId = rhsTupleAst->actual(i)->id();
+//       //   useTupleEltIdx = -1;
+//       // }
+//       auto actionWithIdx = new AssociatedAction(
+//           action.action(), action.fn(), useId, action.type(),
+//           /* tupleEltIdx */ useTupleEltIdx, action.subActions());
+//       subActions.push_back(actionWithIdx);
+//     }
+
+//     // Gather the sub-actions into this new action.
+//     re.clearAssociatedActions();
+//     for (auto action : subActions) {
+//       re.addAssociatedAction(*action);
+//     }
+//   }
+
+//   // TODO: Resolve a top-level init or assign for the tuple itself?
+// }
+
+// void CallInitDeinit::handleTupleDeclaration(const TupleDecl* ast, RV& rv) {
+//   auto initExpr = ast->initExpression();
+//   validateTypeAndInitExpr(ast->typeExpression(), initExpr, rv);
+
+//   auto topLevelDeclAst = ast;
+//   auto initExprType = initExpr ? rv.byAst(initExpr).type() : QualifiedType();
+//   processTupleDecl(ast, initExprType, topLevelDeclAst, rv);
+// }
+
+void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast,
+                                       const AstNode* parent,
+                                       const AstNode* initExpr,
+                                       const QualifiedType& initType,
+                                       Qualifier intentOrKind,
+                                       bool isFormal,
+                                       RV& rv) {
+  // validateTypeAndInitExpr(ast->typeExpression(), ast->initExpression(), rv);
+
+  // auto initExpr = ast->initExpression();
+  // auto parent = parsing::parentAst(context, ast);
+  // bool isFormal = ast->isFormal() || ast->isVarArgFormal();
+  // Qualifier intentOrKind = ast->storageKind();
+  // const QualifiedType& initType =
+  //     initExpr ? rv.byAst(initExpr).type() : QualifiedType();
+  // processSingleDeclHelper(ast, parent, initExpr, initType, isFormal,
+  //                         intentOrKind, rv);
+
   VarFrame* frame = currentFrame();
 
-  bool inited = processDeclarationInit(ast, initExpression, rv);
+  bool inited = processDeclarationInit(ast, initExpr, rv);
   bool splitInited = (splitInitedVars.count(ast->id()) > 0);
 
   bool handledFormal = false;
@@ -1341,99 +1431,6 @@ void CallInitDeinit::processSingleDeclHelper(const NamedDecl* ast, const AstNode
 
   // record it in declaredVars
   frame->addToDeclaredVars(ast->id());
-}
-
-void CallInitDeinit::validateTypeAndInitExpr(const AstNode* typeExpression,
-                                             const AstNode* initExpression,
-                                             RV& rv) {
-  // check for use of deinited variables in type or init exprs
-  if (typeExpression) {
-    processMentions(typeExpression, rv);
-  }
-  if (initExpression) {
-    processMentions(initExpression, rv);
-  }
-}
-
-void CallInitDeinit::processTupleDecl(const TupleDecl* ast,
-                                      const QualifiedType& initType,
-                                      const TupleDecl* topLevelDeclAst,
-                                      RV& rv) {
-  auto topLevelInitExpr = topLevelDeclAst->initExpression();
-
-  // If there's an init expr, it should be a tuple type with the same shape as
-  // this tuple decl.
-  const TupleType* initExprTupleType = nullptr;
-  if (initType.type()) {
-    initExprTupleType = initType.type()->toTupleType();
-    CHPL_ASSERT(initExprTupleType);
-    CHPL_ASSERT(initExprTupleType->numElements() == ast->numDecls());
-  }
-
-  for (int i = 0; i < ast->numDecls(); i++) {
-    auto decl = ast->decl(i);
-    // Use top-level tuple decl's init expr ast, but use corresponding
-    // element type for this element for the init expr type.
-    const QualifiedType& eltInitType =
-        initExprTupleType ? initExprTupleType->elementType(i) : QualifiedType();
-    if (auto vld = decl->toVarLikeDecl()) {
-      auto parent = parsing::parentAst(context, topLevelDeclAst);
-      // Propagate formal-ness and intent from the tuple decl
-      bool isFormal = ast->isTupleDeclFormal();
-      Qualifier intentOrKind = (Qualifier)ast->intentOrKind();
-      processSingleDeclHelper(vld, parent, topLevelInitExpr, eltInitType,
-                              isFormal, intentOrKind, rv);
-    } else if (auto td = decl->toTupleDecl()) {
-      processTupleDecl(td, eltInitType, topLevelDeclAst, rv);
-    } else {
-      context->error(decl, "unexpected type of contained decl in tuple decl");
-    }
-
-    auto& re = rv.byPostorder().byAst(decl);
-    AssociatedAction::ActionsList subActions;
-    for (auto action : re.associatedActions()) {
-      auto useId = action.id();
-      auto useTupleEltIdx = i;
-      // if (rhsTupleAst) {
-      //   useId = rhsTupleAst->actual(i)->id();
-      //   useTupleEltIdx = -1;
-      // }
-      auto actionWithIdx = new AssociatedAction(
-          action.action(), action.fn(), useId, action.type(),
-          /* tupleEltIdx */ useTupleEltIdx, action.subActions());
-      subActions.push_back(actionWithIdx);
-    }
-
-    // Gather the sub-actions into this new action.
-    re.clearAssociatedActions();
-    for (auto action : subActions) {
-      re.addAssociatedAction(*action);
-    }
-  }
-
-  // TODO: Resolve a top-level init or assign for the tuple itself?
-}
-
-void CallInitDeinit::handleTupleDeclaration(const TupleDecl* ast, RV& rv) {
-  auto initExpr = ast->initExpression();
-  validateTypeAndInitExpr(ast->typeExpression(), initExpr, rv);
-
-  auto topLevelDeclAst = ast;
-  auto initExprType = initExpr ? rv.byAst(initExpr).type() : QualifiedType();
-  processTupleDecl(ast, initExprType, topLevelDeclAst, rv);
-}
-
-void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
-  validateTypeAndInitExpr(ast->typeExpression(), ast->initExpression(), rv);
-
-  auto initExpr = ast->initExpression();
-  auto parent = parsing::parentAst(context, ast);
-  bool isFormal = ast->isFormal() || ast->isVarArgFormal();
-  Qualifier intentOrKind = ast->storageKind();
-  const QualifiedType& initType =
-      initExpr ? rv.byAst(initExpr).type() : QualifiedType();
-  processSingleDeclHelper(ast, parent, initExpr, initType, isFormal,
-                          intentOrKind, rv);
 }
 
 void CallInitDeinit::handleMention(const Identifier* ast, ID varId, RV& rv) {

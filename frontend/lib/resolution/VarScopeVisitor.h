@@ -71,12 +71,17 @@ class VarScopeVisitor : public BranchSensitiveVisitor<VarFrame, MutatingResolved
 
   // ----- methods to be implemented by specific analysis subclass
 
-  /** Called for a tuple destructuring variable declaration */
-  virtual void handleTupleDeclaration(const TupleDecl* ast, RV& rv) = 0;
   /** Called for a variable declaration */
-  virtual void handleDeclaration(const uast::VarLikeDecl* ast, RV& rv) = 0;
+  virtual void handleDeclaration(const VarLikeDecl* ast,
+                                 const AstNode* parent,
+                                 const AstNode* initExpr,
+                                 const types::QualifiedType& initType,
+                                 Qualifier intentOrKind,
+                                 bool isFormal,
+                                 RV& rv) = 0;
   /** Called for an Identifier not used in one of the below cases */
-  virtual void handleMention(const uast::Identifier* ast, ID varId, RV& rv) = 0;
+  virtual void handleMention(const uast::Identifier* ast, ID varId,
+                             RV& rv) = 0;
   /** Called for <expr> = <expr> assignment pattern */
   virtual void handleAssign(const uast::OpCall* ast, RV& rv) = 0;
   /** Called for an actual passed to an 'out' formal */
