@@ -80,8 +80,7 @@ class VarScopeVisitor : public BranchSensitiveVisitor<VarFrame, MutatingResolved
                                  bool isFormal,
                                  RV& rv) = 0;
   /** Called for an Identifier not used in one of the below cases */
-  virtual void handleMention(const uast::Identifier* ast, ID varId,
-                             RV& rv) = 0;
+  virtual void handleMention(const uast::Identifier* ast, ID varId, RV& rv) = 0;
   /** Called for <expr> = <expr> assignment pattern */
   virtual void handleAssign(const uast::OpCall* ast, RV& rv) = 0;
   /** Called for an actual passed to an 'out' formal */
