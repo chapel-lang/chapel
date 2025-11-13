@@ -523,14 +523,14 @@ class CallInfoActual {
  private:
   types::QualifiedType type_;
   UniqueString byName_;
-  bool expctSplitInit_ = false;
+  bool expectSplitInit_ = false;
 
  public:
   explicit CallInfoActual(types::QualifiedType type)
     : type_(std::move(type)) {
   }
   CallInfoActual(types::QualifiedType type, UniqueString byName, bool expectSplitInit = false)
-    : type_(std::move(type)), byName_(byName), expctSplitInit_(expectSplitInit) {
+    : type_(std::move(type)), byName_(byName), expectSplitInit_(expectSplitInit) {
   }
 
   /** return the qualified type */
@@ -544,7 +544,7 @@ class CallInfoActual {
   /** In some cases, we resolve calls with partial information (unknown/generic
       actuals) because we consider it possible that an 'out' formal will
       split-init them. Returns true if this is one such actual. */
-  bool expectSplitInit() const { return expctSplitInit_; }
+  bool expectSplitInit() const { return expectSplitInit_; }
 
   bool operator==(const CallInfoActual &other) const {
     return type_ == other.type_ && byName_ == other.byName_;
@@ -557,7 +557,7 @@ class CallInfoActual {
     byName_.mark(context);
   }
   size_t hash() const {
-    return chpl::hash(type_, byName_);
+    return chpl::hash(type_, byName_, expectSplitInit_);
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
