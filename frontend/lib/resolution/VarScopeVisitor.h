@@ -171,12 +171,16 @@ class VarScopeVisitor : public BranchSensitiveVisitor<VarFrame, MutatingResolved
                               const AstNode* initExpression,
                               RV& rv);
 
-  bool isLoopIndex(const AstNode* ast);
-
-  const AstNode* outermostContainingTuple() {
-    if (tupleInitPartsStack.empty()) return nullptr;
-    return inAstStack[inAstStack.size() - tupleInitPartsStack.size()];
-  }
+  /** Determine if the given AST node is a loop index variable. */
+  bool isLoopIndex(const AstNode* ast) const;
+  /** Get the outermost containing tuple declaration for the current
+      surrounding tuple nest, or nullptr if not within a tuple decl. */
+  const AstNode* outermostContainingTuple() const;
+  /** Get the index of the given AST within its the surrounding tuple
+      declaration.
+      Expects that we are currently within a tuple declaration that does
+      actually contain that ast. */
+  int indexWithinContainingTuple(const AstNode* ast) const;
 
   /** Returns the return or yield type of the function being processed */
   const types::QualifiedType& returnOrYieldType();

@@ -175,7 +175,7 @@ bool VarScopeVisitor::processDeclarationInit(const NamedDecl* lhsAst, const AstN
   return inserted;
 }
 
-bool VarScopeVisitor::isLoopIndex(const AstNode* ast) {
+bool VarScopeVisitor::isLoopIndex(const AstNode* ast) const {
   if (auto parentAst = parsing::parentAst(context, ast)) {
     if (auto indexableLoop = parentAst->toIndexableLoop()) {
       if (ast == indexableLoop->index()) {
@@ -185,6 +185,22 @@ bool VarScopeVisitor::isLoopIndex(const AstNode* ast) {
   }
 
   return false;
+}
+
+const AstNode* VarScopeVisitor::outermostContainingTuple() const {
+  if (tupleInitPartsStack.empty()) return nullptr;
+  return inAstStack[inAstStack.size() - tupleInitPartsStack.size()];
+}
+
+int VarScopeVisitor::indexWithinContainingTuple(const AstNode* ast) const {
+  auto parentTuple = inAstStack.back()->toTupleDecl();
+  CHPL_ASSERT(parentTuple);
+  int indexWithinParent = -1;
+  while (++indexWithinParent < parentTuple->numDecls() &&
+         parentTuple->decl(indexWithinParent) != ast);
+  CHPL_ASSERT(indexWithinParent < parentTuple->numDecls() &&
+              "could not find child within parent tuple decl");
+  return indexWithinParent;
 }
 
 const QualifiedType& VarScopeVisitor::returnOrYieldType() {
@@ -292,15 +308,8 @@ bool VarScopeVisitor::enter(const TupleDecl* ast, RV& rv) {
   } else if (outermostContainingTuple()) {
     // Otherwise, see if we're nested in another tuple decl and can
     // derive it from our parent's.
-    auto parentTuple = inAstStack.back()->toTupleDecl();
-    CHPL_ASSERT(parentTuple);
-    int indexWithinParent = -1;
-    while (++indexWithinParent < parentTuple->numDecls() &&
-           parentTuple->decl(indexWithinParent) != ast);
-    CHPL_ASSERT(indexWithinParent < parentTuple->numDecls() &&
-                "could not find child within parent tuple decl");
     if (auto parentInit = tupleInitPartsStack.back()) {
-      initPart = parentInit->actual(indexWithinParent)->toTuple();
+      initPart = parentInit->actual(indexWithinContainingTuple(ast))->toTuple();
     }
   }
   if (initPart) CHPL_ASSERT(ast->numDecls() == initPart->numActuals());
