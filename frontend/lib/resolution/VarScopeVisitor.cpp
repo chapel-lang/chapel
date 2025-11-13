@@ -376,12 +376,32 @@ void VarScopeVisitor::exit(const NamedDecl* ast, RV& rv) {
   //       is there an analysis that does need to handle loop indices?
   if (!isLoopIndex(ast)) {
     if (auto vld = ast->toVarLikeDecl()) {
-      auto parent = parsing::parentAst(context, vld);
-      auto initExpr = vld->initExpression();
-      const QualifiedType& initType =
-          initExpr ? rv.byAst(initExpr).type() : QualifiedType();
-      Qualifier intentOrKind = vld->storageKind();
-      bool isFormal = vld->isFormal() || vld->isVarArgFormal();
+      const AstNode* astForDeclProps;
+
+      const AstNode* parent;
+      const AstNode* initExpr;
+      QualifiedType initType;
+      Qualifier intentOrKind;
+      bool isFormal;
+
+      auto maybeOuterTuple = outermostContainingTuple();
+      if (const TupleDecl* outerTuple =
+              (maybeOuterTuple ? maybeOuterTuple->toTupleDecl() : nullptr)) {
+        astForDeclProps = outerTuple;
+
+        initExpr = outerTuple->initExpression();
+        intentOrKind = (Qualifier)outerTuple->intentOrKind();
+      } else {
+        astForDeclProps = vld;
+
+        initExpr = vld->initExpression();
+        intentOrKind = vld->storageKind();
+      }
+      parent = parsing::parentAst(context, astForDeclProps);
+      initType = initExpr ? rv.byAst(initExpr).type() : QualifiedType();
+      isFormal =
+          astForDeclProps->isFormal() || astForDeclProps->isVarArgFormal();
+
       handleDeclaration(vld, parent, initExpr, initType, intentOrKind, isFormal,
                         rv);
     }
