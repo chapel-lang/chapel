@@ -776,6 +776,15 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
 
       // zero-sized varargs not currently supported
       int numExtra = call.numActuals() - numFormals;
+
+      // Any formals-with-defaults past the vararg are also assumed to not
+      // be positionally provided, which means more of numActuals map to varargs.
+      for (int j = i + 1; j < numFormals; j++) {
+        if (untyped->formalMightHaveDefault(j) == true) {
+          numExtra++;
+        }
+      }
+
       attemptedNumVarArgs = std::max(numExtra + 1, 1);
       numEntries = numFormals + attemptedNumVarArgs - 1;
       byFormalIdx_.resize(numEntries);
