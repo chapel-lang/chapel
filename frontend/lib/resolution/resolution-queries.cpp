@@ -4078,6 +4078,13 @@ isInitialTypedSignatureApplicable(Context* context,
       continue;
     }
 
+    // 'canPass' expects non-null types. We could reset 'actualType' to ensure
+    // it has an UnknownType*, or we could short-circuit that, knowing
+    // that an unknown actual won't get accepted.
+    if (!actualType.type()) {
+      return ApplicabilityResult::failure(tfs, FAIL_UNKNOWN_ACTUAL_TYPE, entry.formalIdx(), entry.actualIdx());
+    }
+
     const auto& formalType = tfs->formalType(entry.formalIdx());
     CanPassResult got;
     if (entry.isVarArgEntry()) {
