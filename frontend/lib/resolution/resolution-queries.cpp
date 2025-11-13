@@ -2912,7 +2912,7 @@ instantiateSignatureImpl(ResolutionContext* rc,
       auto got = canPassFn(context, actualType, formalType);
       if (!got.passes()) {
         // Including past type information made this instantiation fail.
-        return ApplicabilityResult::failure(sig, got.reason(), entry.formalIdx());
+        return ApplicabilityResult::failure(sig, got.reason(), entry.formalIdx(), entry.actualIdx());
       }
 
       // If promotion was involved, figure out the scalar type. We want to
@@ -2968,7 +2968,7 @@ instantiateSignatureImpl(ResolutionContext* rc,
 
           auto got = canPassFn(context, scalarType, useTypeConcrete);
           if (!got.passes()) {
-            return ApplicabilityResult::failure(sig, got.reason(), entry.formalIdx());
+            return ApplicabilityResult::failure(sig, got.reason(), entry.formalIdx(), entry.actualIdx());
           }
         }
       }
@@ -3089,12 +3089,12 @@ instantiateSignatureImpl(ResolutionContext* rc,
       // means the call is ill-formed.
       if (qFormalType.isUnknownKindOrType()) {
         if (entry.hasActual()) {
-          return ApplicabilityResult::failure(sig, FAIL_CANNOT_INSTANTIATE, entry.formalIdx());
+          return ApplicabilityResult::failure(sig, FAIL_CANNOT_INSTANTIATE, entry.formalIdx(), entry.actualIdx());
         } else {
           // Something else has gone wrong. Use this failure kind to avoid
           // situations down the line where someone wants to know which
           // actual the failure corresponds to.
-          return ApplicabilityResult::failure(sig, FAIL_UNKNOWN_FORMAL_TYPE, entry.formalIdx());
+          return ApplicabilityResult::failure(sig, FAIL_UNKNOWN_FORMAL_TYPE, entry.formalIdx(), entry.actualIdx());
         }
       }
 
@@ -3103,7 +3103,7 @@ instantiateSignatureImpl(ResolutionContext* rc,
       auto passResult = canPassFn(context, checkType, qFormalType);
       if (!passResult.passes()) {
         // Type query constraints were not satisfied
-        return ApplicabilityResult::failure(sig, passResult.reason(), entry.formalIdx());
+        return ApplicabilityResult::failure(sig, passResult.reason(), entry.formalIdx(), entry.actualIdx());
       }
 
       // be strict about instantiation type to ensure type query values
@@ -3115,7 +3115,7 @@ instantiateSignatureImpl(ResolutionContext* rc,
         CHPL_ASSERT(vfml != nullptr);
         if (vfml->typeExpression() &&
             !parsing::typeQueriesInExpression(context, vfml->typeExpression()).empty()) {
-          return ApplicabilityResult::failure(sig, FAIL_VARARG_TQ_MISMATCH, entry.formalIdx());
+          return ApplicabilityResult::failure(sig, FAIL_VARARG_TQ_MISMATCH, entry.formalIdx(), entry.actualIdx());
         }
       }
 
@@ -4099,7 +4099,7 @@ isInitialTypedSignatureApplicable(Context* context,
       // information that makes the formal concrete. Allow this for now.
     } else {
       CHPL_ASSERT(!got.passes());
-      return ApplicabilityResult::failure(tfs, got.reason(), entry.formalIdx());
+      return ApplicabilityResult::failure(tfs, got.reason(), entry.formalIdx(), entry.actualIdx());
     }
   }
 

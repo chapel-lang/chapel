@@ -1127,15 +1127,11 @@ handleRejectedCandidates(Resolver::CallResultWrapper& result,
         !candidate.failedDueToWrongActual()) {
       continue;
     }
-    auto fn = candidate.initialForErr();
-    // TODO: this can assert if the fn was resolved but had erroneous type formals
-    resolution::FormalActualMap fa(fn, *result.ci);
-    auto& badPass = fa.byFormalIdx(candidate.formalIdx());
     const uast::AstNode *actualExpr = nullptr;
     const uast::VarLikeDecl *actualDecl = nullptr;
-    size_t actualIdx = badPass.actualIdx();
+    size_t actualIdx = candidate.actualIdx();
     CHPL_ASSERT(0 <= actualIdx && actualIdx < actualAsts.size());
-    actualExpr = actualAsts[badPass.actualIdx()];
+    actualExpr = actualAsts[actualIdx];
 
     // look for a definition point of the actual for error reporting of
     // uninitialized vars typically in the case of bad split-initialization
