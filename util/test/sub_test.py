@@ -574,6 +574,10 @@ def FindGoodFile(basename, commExecNums=['']):
         if not os.path.isfile(goodfile):
             if '--no-local' in envCompopts:
                 goodfile=basename+'.no-local'+commExecNum+'.good'
+        # Else if --fast try the fast .good file.
+        if not os.path.isfile(goodfile):
+            if '--fast' in envCompopts:
+                goodfile=basename+'.fast'+commExecNum+'.good'
         # Else try comm-, networkAtomics-, and localeModel-specific .good
         # files.  All 3, any 2, or just 1 of these may be used, but if more
         # then 1 they must be in the above order.
