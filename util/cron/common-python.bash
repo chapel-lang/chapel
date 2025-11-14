@@ -14,7 +14,7 @@ function set_and_check_python_version() {
   local setup_script="/hpcdc/project/chapel/chpl-deps/chapcs11/setup_python.bash"
 
   if [[ -f "${setup_script}" ]] ; then
-    source ${setup_script} $minor_ver
+    source ${setup_script} $major_ver.$minor_ver
   else
     echo "[Error: cannot find the python configuration script: ${setup_script}]"
     exit 2
