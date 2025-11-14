@@ -5,6 +5,7 @@ From: quay.io/centos/centos:stream10
     ../../provision-scripts/* /provision-scripts/
 
 %post
+    /provision-scripts/dnf-upgrade.sh
     /provision-scripts/dnf-deps.sh
     # installing llvm-devel installs LLVM 19
     /provision-scripts/dnf-llvm.sh

@@ -5,6 +5,7 @@ From: quay.io/centos/centos:stream9
     ../../provision-scripts/* /provision-scripts/
 
 %post
+    /provision-scripts/dnf-upgrade.sh
     /provision-scripts/dnf-deps.sh
 
 %runscript
