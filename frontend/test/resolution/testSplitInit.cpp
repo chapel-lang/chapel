@@ -1642,6 +1642,24 @@ static void test79() {
     {}, ERRORS_EXPECTED);
 }
 
+/* TODO: Fails, split-init doesn't enforce type constraints.
+
+static void test80() {
+  testSplitInit("test80",
+    R""""(
+        proc initWith(type t, out v) {
+          var tmp: t;
+          v = tmp;
+        }
+        proc test(flag: bool) {
+          var x: integral;
+          initWith(real(64), x);
+        }
+    )"""",
+    {}, ERRORS_EXPECTED);
+}
+*/
+
 int main() {
   test1();
   test2();
