@@ -18,8 +18,6 @@
  * limitations under the License.
  */
 
-#include <google/protobuf/stubs/logging.h>
-
 #include <field_base.h>
 #include <helpers.h>
 
@@ -96,7 +94,7 @@ namespace chapel {
       case FieldDescriptor::TYPE_MESSAGE:
         return GetMessageName(descriptor->message_type());
       default:
-        GOOGLE_LOG(FATAL)<< "Unknown field type.";
+        std::cerr << "Unknown field type.\n";
         return "";
     }
   }
@@ -141,7 +139,7 @@ namespace chapel {
         }
         return "message";
       default:
-        GOOGLE_LOG(FATAL)<< "Unknown field type.";
+        std::cerr << "Unknown field type.\n";
         return "";
     }
   }
@@ -183,7 +181,7 @@ namespace chapel {
       case FieldDescriptor::TYPE_SFIXED64:
         return std::to_string(descriptor->default_value_int64());
       default:
-        GOOGLE_LOG(FATAL)<< "Unknown field type.";
+        std::cerr << "Unknown field type.\n";
         return "";
     }
   }
