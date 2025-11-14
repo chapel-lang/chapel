@@ -178,6 +178,7 @@ static void handleReceiverFormals() {
   // resolve type of this for methods
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->hasFlag(FLAG_RESOLVED_EARLY)) continue;
 
     if (fn->_this == NULL) continue; // not a method
     SET_LINENO(fn->_this);

@@ -2468,11 +2468,13 @@ struct Converter final : UastConverter {
 
     // compute the 'this' formal type
     const uast::AggregateDecl* decl = nullptr;
-    INT_ASSERT(symStack.size() > 0);
-    {
+    if (symStack.size() > 0) {
       SymStackEntry& last = symStack.back();
       INT_ASSERT(last.ast != nullptr);
       decl = last.ast->toAggregateDecl();
+      INT_ASSERT(decl);
+    } else {
+      decl = parsing::parentAst(context, node)->toAggregateDecl();
       INT_ASSERT(decl);
     }
     // TODO: use the resolved type for the contained declaration
@@ -2957,7 +2959,17 @@ struct Converter final : UastConverter {
 
   Expr* visit(const uast::Function* node) {
     // don't convert functions we were asked to ignore
-    if (symbolsToIgnore.count(node->id()) != 0) return nullptr;
+    if (symbolsToIgnore.count(node->id()) != 0) {
+      if (parsing::idIsInBundledModule(context, node->id()) &&
+          parsing::idIsNestedFunction(context, node->id())) {
+        // nested functions in bundled modules need to be converted
+      } else if (node->name() == USTR(":")) {
+        // allow untyped conversion of cast operators, as the typed converter
+        // will strip out type formals, which cannot be used by production.
+      } else {
+        return nullptr;
+      }
+    }
 
     FnSymbol* fn = nullptr;
     Expr* ret = nullptr;

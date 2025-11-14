@@ -959,6 +959,8 @@ void checkUseBeforeDefs(FnSymbol* fn) {
 
                 // Only complain one time
                 if (undefined.find(sym) == undefined.end()) {
+                  if (se->parentSymbol->hasFlag(FLAG_RESOLVED_EARLY) &&
+                      mod->initFn == parent) continue;
                   USR_FATAL_CONT(se, "'%s' used before defined", sym->name);
                   USR_PRINT(sym->defPoint, "defined here");
                   undefined.insert(sym);
@@ -2826,6 +2828,9 @@ static bool shouldInsertCallTemps(CallExpr* call) {
 
   // Don't normalize lifetime constraint clauses
   if (isInLifetimeClause(call))
+    return false;
+
+  if (call->parentSymbol && call->parentSymbol->hasFlag(FLAG_RESOLVED_EARLY))
     return false;
 
   return true;

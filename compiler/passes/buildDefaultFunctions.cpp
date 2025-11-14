@@ -150,6 +150,10 @@ void buildDefaultFunctions() {
           // really shouldn't have 'init=' (etc) generated for them...
           continue;
         }
+      } else if (ct->instantiatedFrom != nullptr) {
+        // We create the same intermediate instantiations during typed
+        // conversion, which should not have default functions.
+        continue;
       }
 
       buildFieldAccessorFunctions(ct);
@@ -2059,7 +2063,7 @@ void buildDefaultDestructor(AggregateType* ct) {
 
     FnSymbol* fn = new FnSymbol("deinit");
 
-    fn->cname = astr("chpl__auto_destroy_", ct->symbol->name);
+    fn->cname = astr("chpl__auto_destroy_", ct->symbol->cname);
 
     fn->setMethod(true);
     fn->addFlag(FLAG_METHOD_PRIMARY);

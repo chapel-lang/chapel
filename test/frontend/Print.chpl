@@ -71,6 +71,8 @@ proc print(x: ?t) {
     printMyReal64(x);
   } else if t == string {
     printStr(x.c_str());
+  } else if t == c_ptrConst(c_char) {
+    printStr(x);
   } else if isTupleType(t) {
     // TODO: Param loop this...
     // TODO: Move this to 'print'...
