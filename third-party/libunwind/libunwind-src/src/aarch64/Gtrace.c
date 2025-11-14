@@ -25,7 +25,7 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 
 #include "unwind_i.h"
-#include "offsets.h"
+#include "ucontext_i.h"
 #include <signal.h>
 #include <limits.h>
 
@@ -52,8 +52,8 @@ static pthread_once_t trace_cache_once = PTHREAD_ONCE_INIT;
 static sig_atomic_t trace_cache_once_happen;
 static pthread_key_t trace_cache_key;
 static struct mempool trace_cache_pool;
-static __thread  unw_trace_cache_t *tls_cache;
-static __thread  int tls_cache_destroyed;
+static _Thread_local  unw_trace_cache_t *tls_cache;
+static _Thread_local  int tls_cache_destroyed;
 
 /* Free memory for a thread's trace cache. */
 static void
@@ -70,7 +70,7 @@ trace_cache_free (void *arg)
   }
   tls_cache_destroyed = 1;
   tls_cache = NULL;
-  munmap (cache->frames, (1u << cache->log_size) * sizeof(unw_tdep_frame_t));
+  mi_munmap (cache->frames, (1u << cache->log_size) * sizeof(unw_tdep_frame_t));
   mempool_free (&trace_cache_pool, cache);
   Debug(5, "freed cache %p\n", cache);
 }
@@ -152,7 +152,7 @@ trace_cache_expand (unw_trace_cache_t *cache)
   }
 
   Debug(5, "expanded cache from 2^%lu to 2^%lu buckets\n", cache->log_size, new_log_size);
-  munmap(cache->frames, old_size * sizeof(unw_tdep_frame_t));
+  mi_munmap(cache->frames, old_size * sizeof(unw_tdep_frame_t));
   cache->frames = new_frames;
   cache->log_size = new_log_size;
   cache->used = 0;
@@ -244,6 +244,18 @@ trace_init_addr (unw_tdep_frame_t *f,
   d->loc[UNW_AARCH64_SP] = DWARF_REG_LOC (d, UNW_AARCH64_SP);
   d->loc[UNW_AARCH64_PC] = DWARF_REG_LOC (d, UNW_AARCH64_PC);
   c->frame_info = *f;
+
+#if defined(__QNXNTO__)
+  /**
+   * Without slow DWARF unwinding the signal context gets lost, so skip.
+   */
+  if (unw_is_signal_frame (cursor))
+    {
+      f->frame_type = UNW_AARCH64_FRAME_SIGRETURN;
+      f->last_frame = -1;
+      return f;
+    }
+#endif
 
   if (likely(dwarf_put (d, d->loc[UNW_AARCH64_X29], fp) >= 0)
       && likely(dwarf_put (d, d->loc[UNW_AARCH64_SP], sp) >= 0)
@@ -407,7 +419,7 @@ tdep_trace (unw_cursor_t *cursor, void **buffer, int *size)
   int depth = 0;
   int ret;
 
-  /* Check input parametres. */
+  /* Check input parameters. */
   if (unlikely(! cursor || ! buffer || ! size || (maxdepth = *size) <= 0))
     return -UNW_EINVAL;
 
@@ -470,7 +482,16 @@ tdep_trace (unw_cursor_t *cursor, void **buffer, int *size)
        enough bad unwind info floating around that we need to trust
        what unw_step() previously said, in potentially bogus frames. */
     if (f->last_frame)
-      break;
+      {
+#if defined(__QNXNTO__)
+        if (f->frame_type == UNW_AARCH64_FRAME_SIGRETURN)
+          {
+            Debug (3, "frame is a signal trampoline, stopping.\n");
+            ret = -UNW_ESTOPUNWIND;
+          }
+#endif
+        break;
+      }
 
     /* Evaluate CFA and registers for the next frame. */
     switch (f->frame_type)
@@ -483,13 +504,23 @@ tdep_trace (unw_cursor_t *cursor, void **buffer, int *size)
       /* Advance standard traceable frame. */
       cfa = (f->cfa_reg_sp ? sp : fp) + f->cfa_reg_offset;
       if (likely(f->lr_cfa_offset != -1))
-        ACCESS_MEM_FAST(ret, c->validate, d, cfa + f->lr_cfa_offset, pc);
+        {
+          ACCESS_MEM_FAST(ret, c->validate, d, cfa + f->lr_cfa_offset, pc);
+          if (likely(ret >= 0))
+            pc = tdep_strip_ptrauth_insn_mask(cursor, pc);
+        }
       else if (lr != 0)
-      {
-        /* Use the saved link register as the new pc. */
-        pc = lr;
-        lr = 0;
-      }
+        {
+          /* Use the saved link register as the new pc. */
+          pc = lr;
+          lr = 0;
+        }
+      else
+        {
+          /* Cached frame has no LR and neither do we. */
+          Debug (3, "frame has no link register, stopping.\n");
+          return -UNW_ESTOPUNWIND;
+        }
       if (likely(ret >= 0) && likely(f->fp_cfa_offset != -1))
         ACCESS_MEM_FAST(ret, c->validate, d, cfa + f->fp_cfa_offset, fp);
 
@@ -503,15 +534,18 @@ tdep_trace (unw_cursor_t *cursor, void **buffer, int *size)
     case UNW_AARCH64_FRAME_SIGRETURN:
       cfa = cfa + f->cfa_reg_offset; /* cfa now points to ucontext_t.  */
 
-      ACCESS_MEM_FAST(ret, c->validate, d, cfa + LINUX_SC_PC_OFF, pc);
+      ACCESS_MEM_FAST(ret, c->validate, d, cfa + SC_PC_OFF, pc);
       if (likely(ret >= 0))
-        ACCESS_MEM_FAST(ret, c->validate, d, cfa + LINUX_SC_X29_OFF, fp);
+        {
+          pc = tdep_strip_ptrauth_insn_mask(cursor, pc);
+          ACCESS_MEM_FAST(ret, c->validate, d, cfa + SC_X29_OFF, fp);
+        }
       if (likely(ret >= 0))
-        ACCESS_MEM_FAST(ret, c->validate, d, cfa + LINUX_SC_SP_OFF, sp);
+        ACCESS_MEM_FAST(ret, c->validate, d, cfa + SC_SP_OFF, sp);
       /* Save the link register here in case we end up in a function that
          doesn't save the link register in the prologue, e.g. kill. */
       if (likely(ret >= 0))
-        ACCESS_MEM_FAST(ret, c->validate, d, cfa + LINUX_SC_X30_OFF, lr);
+        ACCESS_MEM_FAST(ret, c->validate, d, cfa + SC_X30_OFF, lr);
 
       /* Resume stack at signal restoration point. The stack is not
          necessarily continuous here, especially with sigaltstack(). */
@@ -525,6 +559,7 @@ tdep_trace (unw_cursor_t *cursor, void **buffer, int *size)
       /* We cannot trace through this frame, give up and tell the
           caller we had to stop.  Data collected so far may still be
           useful to the caller, so let it know how far we got.  */
+      Debug (3, "frame has unknown type, stopping.\n");
       ret = -UNW_ESTOPUNWIND;
       break;
     }
@@ -537,7 +572,7 @@ tdep_trace (unw_cursor_t *cursor, void **buffer, int *size)
       break;
 
     /* Record this address in stack trace. We skipped the first address. */
-    buffer[depth++] = (void *) (pc - d->use_prev_instr);
+    buffer[depth++] = (void *) pc;
   }
 
 #if UNW_DEBUG
