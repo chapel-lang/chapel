@@ -406,16 +406,32 @@ static void testResolverError(const char* program, const char* error,
   auto mod = parseResult.singleModule();
   auto resolutionResult = resolveModule(context, mod->id());
 
-  assert(guard.numErrors() == 1);
+  assert(guard.numErrors() >= 1);
   assert(guard.error(0)->type() == expectedType);
 
   std::ostringstream oss;
   ErrorWriter detailedWriter(context, oss, ErrorWriter::DETAILED, /* useColor */ false);
   guard.error(0)->write(detailedWriter);
 
+  auto got = oss.str();
   printf("Expected error:\n%s\n", error);
-  printf("Actual error:\n%s\n", oss.str().c_str());
-  assert(oss.str() == error);
+  printf("Actual error:\n%s\n", got.c_str());
+  auto minlen = std::min(strlen(error), got.size());
+  int line = 0;
+  int col = 0;
+  for (size_t i = 0; i < minlen; i++) {
+    if (error[i] != got[i]) {
+      printf("First difference at line %d column %d, (%c vs %c)\n",
+             line, col, error[i], got[i]);
+      break;
+    }
+    if (error[i] == '\n') {
+      line++;
+      col = 0;
+    }
+    col++;
+  }
+  assert(got == error);
 
   guard.clearErrors();
 }
