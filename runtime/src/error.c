@@ -76,7 +76,7 @@ static int chpl_unwind_getLineNum(void *addr){
   // 3. addr2line
 
   const char* script =
-    "function my_addr2line() { "
+    "my_addr2line() { "
     "addr2line_cmd=$1/addr2line; shift; "
     "if ! command -v $addr2line_cmd >/dev/null 2>&1; then "
       "addr2line_cmd=llvm-addr2line; "
