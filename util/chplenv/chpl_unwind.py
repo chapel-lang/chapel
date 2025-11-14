@@ -56,7 +56,7 @@ def get_compile_args():
 
     if unwind_val == 'bundled':
         return third_party_utils.get_bundled_compile_args('libunwind')
-    elif unwind_val == 'system' :
+    elif unwind_val == 'system':
         args = third_party_utils.pkgconfig_get_system_compile_args('libunwind')
     return args
 
@@ -80,6 +80,9 @@ def get_link_args():
         args = third_party_utils.pkgconfig_get_bundled_link_args('libunwind')
     elif unwind_val == 'system':
         args = third_party_utils.pkgconfig_get_system_link_args('libunwind', static=True)
+        # remove `-llzma` from the system link args if present
+        if '-llzma' in args[1]:
+            args[1].remove('-llzma')
     return args
 
 
