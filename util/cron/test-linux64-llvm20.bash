@@ -5,13 +5,13 @@
 UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $UTIL_CRON_DIR/common.bash
 
-source /hpcdc/project/chapel/setup_llvm.bash 20
+source /hpcdc/project/chapel/chpl-deps/chapcs11/setup_llvm.bash 20
 
 # Check LLVM version via llvm-config from CHPL_LLVM_CONFIG
 llvm_version=$($CHPL_LLVM_CONFIG --version)
-if [ "$llvm_version" != "20.1.0" ]; then
+if [ "$llvm_version" != "20.1.4" ]; then
   echo "Wrong LLVM version"
-  echo "Expected Version: 20.1.0 Actual Version: $llvm_version"
+  echo "Expected Version: 20.1.4 Actual Version: $llvm_version"
   exit 2
 fi
 
