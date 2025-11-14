@@ -385,6 +385,48 @@ static const char* errorLabelAsValue = R"""(
       |
 )""";
 
+static const char* notSplitInit = R"""(
+  proc foo(x: int) {}
+  proc foo(x: real) {}
+  var x: numeric;
+  foo(x);
+)""";
+
+static const char* errorNotSplitInit = R"""(
+─── error in file.chpl:4 [NoMatchingCandidates] ───
+  Unable to resolve call to 'foo': no matching candidates.
+      |
+    4 |   foo(x);
+      |
+  
+  The following candidate didn't match because it does not initialize an actual which expects to be initialized:
+      |
+    2 |   proc foo(x: real) {}
+      |            ⎺⎺⎺⎺⎺⎺⎺
+      |
+  The actual 'x' expects to be split-initialized because it is declared with a generic type and no initialization expression here:
+      |
+    3 |   var x: numeric;
+      |       ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+  The call to 'foo' occurs before any valid initialization points:
+      |
+    4 |   foo(x);
+      |       ⎺
+      |
+  The call to 'foo' cannot initialize 'x' because only 'out' formals can be used to split-initialize. However, 'x' is passed to formal 'x' which has intent 'const in'.
+  
+  The following candidate didn't match because it does not initialize an actual which expects to be initialized:
+      |
+    1 |   proc foo(x: int) {}
+      |            ⎺⎺⎺⎺⎺⎺
+      |
+      |
+    4 |   foo(x);
+      |       ⎺
+      |
+)""";
+
 static void testResolverError(const char* program, const char* error,
                               bool standard = true,
                               ErrorType expectedType = ErrorType::NoMatchingCandidates) {
@@ -452,6 +494,7 @@ int main() {
 
   testResolverError(progBreakNonLoop, errorBreakNonLoop, true,  ErrorType::InvalidContinueBreakTarget);
   testResolverError(progLabelAsValue, errorLabelAsValue, true, ErrorType::LoopLabelOutsideBreakOrContinue);
+  testResolverError(notSplitInit, errorNotSplitInit, true, ErrorType::NoMatchingCandidates);
 
   return 0;
 }
