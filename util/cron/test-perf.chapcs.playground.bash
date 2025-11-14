@@ -33,8 +33,6 @@ GITHUB_BRANCH=main
 SHORT_NAME=main
 START_DATE=05/09/25
 
-source /hpcdc/project/chapel/setup_llvm.bash 20
-
 set -e
 checkout_branch $GITHUB_USER $GITHUB_BRANCH
 set +e
