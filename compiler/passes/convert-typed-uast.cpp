@@ -393,6 +393,10 @@ struct TConverter final : UastConverter,
     // Insert converted actuals into the given 'CallExpr'.
     void convertAndInsertActuals(CallExpr* call, bool skipReceiver);
 
+    int expandTupleHelper(CallExpr* call,
+                          const AstNode* actualAst,
+                          Expr* tupleExpr);
+
     // When converting a default argument, this is called to replace a
     // reference to a formal with a reference to an actual if needed.
     Symbol* interceptFormalUse(const ID& id);
@@ -898,7 +902,7 @@ struct TConverter final : UastConverter,
                                 const resolution::CallInfo& ci,
                                 RV& rv);
 
-  // Primitive assignment between extern types
+  // Support '...' tuple expansion
   Expr* convertTupleExpand(const Call* node,
                            const ResolvedExpression* re,
                            const std::vector<const AstNode*>& actualAsts,
@@ -4844,6 +4848,36 @@ Expr* TConverter::ActualConverter::convertActual(const FormalActual& fa) {
   return se;
 }
 
+int TConverter::ActualConverter::
+expandTupleHelper(CallExpr* call,
+                  const AstNode* actualAst,
+                  Expr* tupleExpr) {
+  auto astActual = actualAst->toOpCall();
+  INT_ASSERT(astActual->op() == USTR("..."));
+  auto ident = astActual->actual(0)->toIdentifier();
+  auto id = rv_.byAst(ident).toId();
+  auto tup = parsing::idToAst(tc_->context, id);
+
+  int counter = 0;
+  if (tup->isVarArgFormal()) {
+    for_formals(arg, tc_->cur.fnSymbol) {
+      if (!arg->hasFlag(FLAG_EXPANDED_VARARGS)) continue;
+      call->insertAtTail(new SymExpr(arg));
+      counter++;
+    }
+  } else {
+    auto qt = rv_.byAst(tup).type().type()->toTupleType();
+    for (int i = 0; i < qt->numElements(); i++) {
+      auto getField = new CallExpr(PRIM_GET_MEMBER_VALUE, tupleExpr->copy(), new_CStringSymbol(astr("x", istr(i))));
+      auto temp = tc_->storeInTempIfNeeded(getField, qt->elementType(i));
+      call->insertAtTail(temp);
+    }
+    counter = qt->numElements();
+  }
+
+  return counter;
+}
+
 void TConverter::ActualConverter::
 convertAndInsertActuals(CallExpr* call, bool skipReceiver) {
   if (fam_.numFormalsMapped() == 0) {
@@ -4860,6 +4894,7 @@ convertAndInsertActuals(CallExpr* call, bool skipReceiver) {
   for (const FormalActual& fa : fam_.byFormals()) {
     const int curIdx = i++;
     if (skipUnpack > 0) {
+      // We may skip formal/actual pairs in the event of a tuple expansion
       skipUnpack--;
       continue;
     }
@@ -4870,26 +4905,7 @@ convertAndInsertActuals(CallExpr* call, bool skipReceiver) {
       // to remain in the call's actuals
       if (CallExpr* actual = toCallExpr(expr)) {
         INT_ASSERT(actual->isPrimitive(PRIM_TUPLE_EXPAND));
-        auto astActual = actualAsts_[fa.actualIdx()]->toOpCall();
-        INT_ASSERT(astActual->op() == USTR("..."));
-        auto ident = astActual->actual(0)->toIdentifier();
-        auto id = rv_.byAst(ident).toId();
-        auto tup = parsing::idToAst(tc_->context, id);
-        if (tup->isVarArgFormal()) {
-          for_formals(arg, tc_->cur.fnSymbol) {
-            if (!arg->hasFlag(FLAG_EXPANDED_VARARGS)) continue;
-            call->insertAtTail(new SymExpr(arg));
-            skipUnpack++;
-          }
-        } else {
-          auto qt = rv_.byAst(tup).type().type()->toTupleType();
-          for (int i = 0; i < qt->numElements(); i++) {
-            auto getField = new CallExpr(PRIM_GET_MEMBER_VALUE, actual->get(1)->copy(), new_CStringSymbol(astr("x", istr(i))));
-            auto temp = tc_->storeInTempIfNeeded(getField, qt->elementType(i));
-            call->insertAtTail(temp);
-            skipUnpack++;
-          }
-        }
+        skipUnpack += expandTupleHelper(call, actualAsts_[fa.actualIdx()], actual->get(1));
       } else if (SymExpr* se = toSymExpr(expr)) {
         call->insertAtTail(expr);
 
