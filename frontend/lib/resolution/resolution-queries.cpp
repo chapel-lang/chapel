@@ -5135,7 +5135,9 @@ static bool resolveSpecialClassCast(Context* context,
   auto cr = resolveGeneratedCall(&rc, astForErr, ci, inScopes);
 
   if (cr.mostSpecific().isEmpty()) {
-    exprTypeOut = QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
+    // couldn't resolve the call. Fall back to resolving the unadjusted call,
+    // to report errors in the normal way.
+    return false;
   } else {
     exprTypeOut = cr.exprType();
   }
