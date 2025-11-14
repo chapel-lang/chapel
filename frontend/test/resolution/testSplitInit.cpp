@@ -1593,6 +1593,55 @@ static void test76() {
     {}, ERRORS_EXPECTED);
 }
 
+static void test77() {
+  testSplitInit("test77",
+    R"""(
+      proc doInitInt(out x: int) { x = 42; }
+      proc test() {
+        var x: numeric;
+        doInitInt(x);
+      }
+    )""",{"x"});
+}
+
+static void test78() {
+  testSplitInit("test78",
+    R""""(
+        proc initWith(type t, out v) {
+          var tmp: t;
+          v = tmp;
+        }
+        proc test(flag: bool) {
+          var x: integral;
+          if flag {
+            initWith(int(64), x);
+          } else {
+            initWith(int(64), x);
+          }
+        }
+    )"""",
+    {"x"});
+}
+
+static void test79() {
+  testSplitInit("test79",
+    R""""(
+        proc initWith(type t, out v) {
+          var tmp: t;
+          v = tmp;
+        }
+        proc test(flag: bool) {
+          var x: integral;
+          if flag {
+            initWith(int(32), x);
+          } else {
+            initWith(int(64), x);
+          }
+        }
+    )"""",
+    {}, ERRORS_EXPECTED);
+}
+
 int main() {
   test1();
   test2();
@@ -1676,6 +1725,9 @@ int main() {
   test74();
   test75();
   test76();
+  test77();
+  test78();
+  test79();
 
   return 0;
 }
