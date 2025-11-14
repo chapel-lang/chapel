@@ -1228,6 +1228,12 @@ CanPassResult CanPassResult::canPassScalar(Context* context,
       return fail(FAIL_GENERIC_TO_NONTYPE); // generic types can only be passed to type actuals
 
     auto got = canInstantiate(context, actualQT, formalQT);
+    if (got.passes() && formalQT.kind() == QualifiedType::TYPE &&
+        (got.conversionKind() == BORROWS ||
+         got.conversionKind() == BORROWS_SUBTYPE)) {
+      // 'type x: borrowed' should not be instantiate-able with 'owned C'.
+      return fail(FAIL_INCOMPATIBLE_MGMT);
+    }
     if (!got.passes() &&
          got.reason() == FAIL_DID_NOT_INSTANTIATE && canAcceptGenericActuals) {
       // No instantiation occurred, but the actual isn't incompatible with
