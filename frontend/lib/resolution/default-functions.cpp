@@ -1463,14 +1463,17 @@ static void buildWhenStmts(Context* context, Builder* builder,
 // location (at this time, logically "inside" the type declaration it's generated
 // for). To ensure we have the necessary access to things in ChapelBase,
 // `use` ChapelBase` in the body.
-static owned<Use> buildUseBaseEqualsOverload(Context* context, Builder* builder,
-                                    const Location& dummyLoc) {
+static owned<Use> useDefsFromChapelBase(Context* context, Builder* builder,
+                                        const Location& dummyLoc,
+                                        std::vector<const char*> limitationStrs = {"=="}) {
   AstList baseUseList;
   auto baseIdent = Identifier::build(builder, dummyLoc,
                                      UniqueString::get(context, "ChapelBase"));
-  auto eq = Identifier::build(builder, dummyLoc, USTR("=="));
   std::vector<owned<AstNode>> limitations;
-  limitations.push_back(std::move(eq));
+  for (auto limitation : limitationStrs) {
+    auto eq = Identifier::build(builder, dummyLoc, UniqueString::get(context, limitation));
+    limitations.push_back(std::move(eq));
+  }
   auto baseVisClause = VisibilityClause::build(builder, dummyLoc,
                                                std::move(baseIdent), VisibilityClause::ONLY, std::move(limitations));
   baseUseList.push_back(std::move(baseVisClause));
@@ -1508,7 +1511,7 @@ const BuilderResult& buildEnumToOrder(Context* context, ID typeID) {
     stmts.push_back(std::move(useEnum));
   }
 
-  stmts.push_back(buildUseBaseEqualsOverload(context, builder, dummyLoc));
+  stmts.push_back(useDefsFromChapelBase(context, builder, dummyLoc));
 
 
   // build up when-stmts
@@ -1601,7 +1604,8 @@ struct EnumCastBuilder : BinaryFnBuilder {
   }
 
   BuilderResult finalize() {
-    stmts().push_back(buildUseBaseEqualsOverload(context(), builder(), dummyLoc_));
+    stmts().push_back(useDefsFromChapelBase(context(), builder(), dummyLoc_,
+                      {"==", "chpl_enum_cast_error"}));
     auto select = Select::build(builder(), dummyLoc_,
                                 identifier(lhsFormal()->name()),
                                 std::move(selectWhens_));
