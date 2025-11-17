@@ -1,4 +1,4 @@
-.. image:: https://chapel-lang.org/images/chapel-logo-200.png
+.. image:: https://chapel-lang.org/img/Chapel-HPSF-logo-draft.png
 
 The Chapel Language
 ===================

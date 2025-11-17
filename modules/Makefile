@@ -210,7 +210,7 @@ INTERNAL_MODULES_TO_DOCUMENT =                        \
 
 documentation: $(SYS_CTYPES_MODULE_DOC)
 	@echo "Generating module documentation with chpldoc"
-	@export CHPLDOC_AUTHOR='Hewlett Packard Enterprise Development LP' && \
+	@export CHPLDOC_AUTHOR='Chapel a Series of LF Projects, LLC' && \
 	  $(CHPLDOC) --home $(CHPL_MAKE_HOME) --save-sphinx ${MODULE_SPHINX} --no-html $(MODULES_TO_DOCUMENT) $(DISTS_TO_DOCUMENT) $(PACKAGES_TO_DOCUMENT) $(INTERNAL_MODULES_TO_DOCUMENT) $(SYS_CTYPES_MODULE_DOC)
 	@echo "Running post-processing scripts"
 	@./internal/fixInternalDocs.sh ${MODULE_SPHINX}
