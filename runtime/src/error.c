@@ -45,6 +45,14 @@
 #endif
 #endif
 
+// #define DEBUG
+#ifdef DEBUG
+#define DEBUG_PRINT(x) printf x
+#endif
+#ifndef DEBUG
+#define DEBUG_PRINT(x) do {} while (0)
+#endif
+
 #ifdef CHPL_UNWIND_NOT_LAUNCHER
 // Necessary for instruct libunwind to use only the local unwind
 #define UNW_LOCAL_ONLY
@@ -224,8 +232,14 @@ static void chpl_stack_unwind_helper(enum chpl_stack_unwind_mode mode, char sep,
   unw_word_t wordValue;
   char buffer[256];
 
-  unw_getcontext(&uc);
-  unw_init_local(&cursor, &uc);
+  if (unw_getcontext(&uc) != 0) {
+    DEBUG_PRINT(("unw_getcontext failed\n"));
+    return;
+  }
+  if (unw_init_local(&cursor, &uc) != 0) {
+    DEBUG_PRINT(("unw_init_local failed\n"));
+    return;
+  }
 
   // only used with CHPL_STACK_UNWIND_MODE_STRING
   size_t bufsz = 0;
