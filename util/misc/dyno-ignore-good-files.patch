@@ -68,10 +68,10 @@ index dc386e89673..88ad174d5e3 100644
     The call to printX() is not ambiguous because M2’s definition shadows
     that of M1. On the other hand, the call to printY() is ambiguous
 diff --git a/doc/rst/language/spec/variables.rst b/doc/rst/language/spec/variables.rst
-index 57b4b8d78b4..b0d208e7515 100644
+index 57b4b8d78b4..8da7750790b 100644
 --- a/doc/rst/language/spec/variables.rst
 +++ b/doc/rst/language/spec/variables.rst
-@@ -224,9 +224,15 @@ unconditionally return.
+@@ -224,9 +224,14 @@ unconditionally return.
     .. BLOCK-test-chapeloutput
  
        no-split-init.chpl:1: In function 'main':
@@ -79,14 +79,13 @@ index 57b4b8d78b4..b0d208e7515 100644
 -      no-split-init.chpl:2: note: cannot find initialization point to split-init this variable
 -      no-split-init.chpl:3: note: 'x' is used here before it is initialized
 +      no-split-init.chpl:3: error: unable to resolve call to 'writeln': no matching candidates
-+      $CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+      no-split-init.chpl:2: note: The actual 'x' expects to be split-initialized because it is declared without a type or initialization expression here
++      $CHPL_HOME/modules/standard/ChapelIO.chpl:409: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
++      no-split-init.chpl:2: note: The actual 'x' expects to be split-initialized because it is declared with a generic type and no initialization expression here
 +      no-split-init.chpl:3: note: The call to 'writeln' occurs before any valid initialization points
-+      $CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+      no-split-init.chpl:2: note: The actual 'x' expects to be split-initialized because it is declared without a type or initialization expression here
-+      no-split-init.chpl:3: note: The call to 'writeln' occurs before any valid initialization points
++      $CHPL_HOME/modules/standard/ChapelIO.chpl:403: note: the following candidate didn't match because it does not initialize an actual which expects to be initialized
 +      no-split-init.chpl:3: note: omitting 1 more candidates that didn't match
 +      no-split-init.chpl:4: error: cannot pass const to non-const
++
  
  
     *Example (split-cond-blocks-init.chpl)*
