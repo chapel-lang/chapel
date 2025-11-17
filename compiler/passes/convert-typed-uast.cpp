@@ -3974,6 +3974,15 @@ Expr* TConverter::convertPrimCallOrNull(const Call* node, RV& rv) {
   CallExpr* ret = nullptr;
   if (primCall->prim() == chpl::uast::primtags::PRIM_RT_ERROR) {
     ret = new CallExpr(primCall->prim(), new_CStringSymbol("<cannot handle PRIM_RT_ERROR without strings>"));
+  } else if (primCall->prim() == chpl::uast::primtags::PRIM_TO_BORROWED_CLASS) {
+    auto ct = rv.byAst(node->actual(0)).type().type()->toClassType();
+    auto dec = types::ClassTypeDecorator(types::ClassTypeDecorator::BORROWED);
+    dec = dec.copyNilabilityFrom(ct->decorator());
+    auto ut = ct->withDecorator(context, dec);
+    auto sym = convertType(ut)->symbol;
+    auto arg = convertExpr(node->actual(0), rv);
+    arg = storeInTempIfNeeded(arg, rv.byAst(node->actual(0)).type());
+    ret = new CallExpr(PRIM_CAST, sym, arg);
   } else {
     ret = new CallExpr(primCall->prim());
 
