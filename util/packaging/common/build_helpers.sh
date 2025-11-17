@@ -37,6 +37,9 @@ __docker_image_from_os() {
     "fc42")
     docker_image_base="fedora:42"
     ;;
+    "fc43")
+    docker_image_base="fedora:43"
+    ;;
     "el10")
     docker_image_base="almalinux:10"
     ;;
