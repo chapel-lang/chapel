@@ -3882,6 +3882,35 @@ Expr* TConverter::convertNewCallOrNull(const Call* node, RV& rv) {
     INT_ASSERT(fam.isValid());
 
     convertAndInsertActuals(toCallExpr(ret), node, actualAsts, init, fam, rv);
+
+    if (re->type().type()->toClassType()->managerRecordType(context)->isOwnedRecordType()) {
+      auto ct = re->type().type()->toClassType();
+      auto mt = ct->managerRecordType(context);
+      types::QualifiedType recvQt = { re->type().kind(), mt };
+
+      auto dec = types::ClassTypeDecorator(types::ClassTypeDecorator::UNMANAGED);
+      dec = dec.copyNilabilityFrom(ct->decorator());
+      auto ut = ct->withDecorator(context, dec);
+      types::QualifiedType uqt = { re->type().kind(), ut };
+      std::vector<CallInfoActual> mtActuals;
+      mtActuals.push_back(CallInfoActual(uqt));
+
+      auto ci1 = resolution::CallInfo::createSimple(USTR("init"), mtActuals);
+      auto ci2 = resolution::CallInfo::createWithReceiver(ci1, recvQt);
+
+      // Search for 'init()' using the generated call.
+      const ResolvedFunction* rf = nullptr;
+      auto fn = convertFunctionForGeneratedCall(ci2, node, &rf);
+
+      VarSymbol* initTemp = newTemp("initTemp", convertType(recvQt.type()));
+      insertStmt(new DefExpr(initTemp));
+
+      auto newResult = storeInTempIfNeeded(ret, init->formalType(0));
+      Expr* unm = new CallExpr(PRIM_CAST, convertType(ut)->symbol, newResult);
+      unm = storeInTempIfNeeded(unm, uqt);
+      insertStmt(new CallExpr(fn, initTemp, unm));
+      ret = new SymExpr(initTemp);
+    }
   }
 
   return ret;
