@@ -5511,7 +5511,30 @@ Expr* TConverter::convertFieldAccessOrNull(const AstNode* node, RV& rv) {
   // Otherwise we'll do our best to generate a "plain-old" field access.
   types::QualifiedType qtField;
   auto [recvAst, fieldName] = accessExpressionDetails(node);
-  auto get = codegenGetField(recvAst, fieldName.c_str(), rv, &qtField);
+
+  types::QualifiedType qtRecv;
+  Expr* recv = recvAst ? convertExpr(recvAst, rv, &qtRecv) : nullptr;
+
+  if (recvAst && qtRecv.type()->isClassType() &&
+      qtRecv.type()->toClassType()->manager() &&
+      qtRecv.type()->toClassType()->manager()->isAnyOwnedType() &&
+      fieldName != "chpl_p") {
+    // temporarily simulate forwarding for owned records
+    qtRecv = types::QualifiedType(qtRecv.kind(),
+               qtRecv.type()->toClassType()->managerRecordType(context));
+    auto fwd = codegenGetFieldImpl(this, PRIM_UNKNOWN, recv, qtRecv,
+                                   "chpl_p",
+                                   -1,
+                                   rv, &qtField);
+    recv = storeInTempIfNeeded(fwd, qtField);
+    qtRecv = qtField;
+  }
+
+  const int fieldIndex = -1;
+  auto get = codegenGetFieldImpl(this, PRIM_UNKNOWN, recv, qtRecv,
+                                 fieldName.c_str(),
+                                 fieldIndex,
+                                 rv, &qtField);
 
   // NOTE: Field accesses should be stored in temps to make the rest of
   // the compiler passes after callDestructors happy (part of the normal
