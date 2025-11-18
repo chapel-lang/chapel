@@ -180,6 +180,14 @@ def run_process(*args, **kwargs):
 
     return (p.returncode, stdout_str, stderr_str)
 
+def get_process_env(testenv):
+    process_env = dict(list(os.environ.items()) + list(testenv.items()))
+    # delete any variables set to None
+    for var in list(process_env.keys()):
+        if process_env[var] is None:
+            del process_env[var]
+    return process_env
+
 #
 # Time out class:  Read from a stream until time out
 #  A little ugly but sending SIGALRM (or any other signal) to Python
@@ -2124,8 +2132,13 @@ def main():
                     globalExecenv=list()
 
                 testenv = {}
-                for var, val in [env.split('=', 1) for env in globalExecenv]:
-                    testenv[var.strip()] = val.strip()
+                for env in globalExecenv:
+                    if env.startswith('unset '):
+                        var = env.split(' ', 1)[1]
+                        testenv[var.strip()] = None
+                    else:
+                        var, val = env.split('=', 1)
+                        testenv[var.strip()] = val.strip()
 
                 # The test environment is that of this process,
                 # augmented as specified
@@ -2137,8 +2150,13 @@ def main():
                                                     args=args)
                 else:
                     execenv = list()
-                for var, val in [env.split('=', 1) for env in execenv]:
-                    testenv[var.strip()] = val.strip()
+                for env in execenv:
+                    if env.startswith('unset '):
+                        var = env.split(' ', 1)[1]
+                        testenv[var.strip()] = None
+                    else:
+                        var, val = env.split('=', 1)
+                        testenv[var.strip()] = val.strip()
 
                 pre_exec_output = ''
                 if os.path.exists(execlog):
@@ -2251,7 +2269,7 @@ def main():
                                 my_stdin=open(redirectin, 'r')
                             test_command = [cmd] + args
                             (exec_status, stdout, stderr) = run_process(test_command,
-                                            env=dict(list(os.environ.items()) + list(testenv.items())),
+                                            env=get_process_env(testenv),
                                             stdin=my_stdin, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                             output = stdout + stderr
 
@@ -2277,7 +2295,7 @@ def main():
                                 my_stdin = open(redirectin, 'r')
 
                             (exec_status, stdout, stderr) = run_process([timedexec, str(timeout), wholecmd],
-                                             env=dict(list(os.environ.items()) + list(testenv.items())),
+                                             env=get_process_env(testenv),
                                              stdin=my_stdin, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                             output = stdout + stderr
 
@@ -2307,7 +2325,7 @@ def main():
                             else:
                                 my_stdin=open(redirectin, 'r')
                             p = subprocess.Popen([cmd]+args,
-                                                 env=dict(list(os.environ.items()) + list(testenv.items())),
+                                                 env=get_process_env(testenv),
                                                  stdin=my_stdin, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                             try:
                                 stdoutOutput = str(SuckOutputWithTimeout(p.stdout, timeout), "utf-8")
@@ -2388,7 +2406,7 @@ def main():
                                 sys.stdout.flush()
                                 stdout = run_process([sprediff, execname, execlog, compiler,
                                                       ' '.join(envCompopts)+' '+compopts, ' '.join(args)],
-                                                     env=dict(list(os.environ.items()) + list(testenv.items())),
+                                                     env=get_process_env(testenv),
                                                      stdout=subprocess.PIPE, stderr=subprocess.STDOUT)[1]
                                 sys.stdout.write(stdout)
 
@@ -2397,7 +2415,7 @@ def main():
                             sys.stdout.flush()
                             stdout = run_process(['./PREDIFF', execname, execlog, compiler,
                                                  ' '.join(envCompopts)+ ' '+compopts, ' '.join(args)],
-                                                 env=dict(list(os.environ.items()) + list(testenv.items())),
+                                                 env=get_process_env(testenv),
                                                  stdout=subprocess.PIPE, stderr=subprocess.STDOUT)[1]
                             sys.stdout.write(stdout)
 
@@ -2406,7 +2424,7 @@ def main():
                             sys.stdout.flush()
                             stdout = run_process(['./'+prediff, execname, execlog, compiler,
                                                  ' '.join(envCompopts)+' '+compopts, ' '.join(args)],
-                                                 env=dict(list(os.environ.items()) + list(testenv.items())),
+                                                 env=get_process_env(testenv),
                                                  stdout=subprocess.PIPE, stderr=subprocess.STDOUT)[1]
                             sys.stdout.write(stdout)
 
