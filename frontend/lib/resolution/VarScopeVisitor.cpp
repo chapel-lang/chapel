@@ -312,11 +312,10 @@ bool VarScopeVisitor::enter(const TupleDecl* ast, RV& rv) {
   enterScope(ast, rv);
 
   QualifiedType initType;
-  if (auto initTypeExpr = ast->typeExpression()) {
-    // Get init part (if any) directly, which is possible if this is a top level
-    // tuple decl.
-    initTypeExpr->traverse(rv);
-    initType = rv.byAst(initTypeExpr).type();
+  if (auto typeExpr = ast->typeExpression()) {
+    initType = rv.byAst(typeExpr).type();
+  } else if (auto initExpr = ast->initExpression()) {
+    initType = rv.byAst(initExpr).type();
   } else if (outermostContainingTuple()) {
     // Otherwise, see if we're nested in another tuple decl and can
     // derive it from our parent's.
@@ -392,7 +391,6 @@ void VarScopeVisitor::exit(const NamedDecl* ast, RV& rv) {
   //       is there an analysis that does need to handle loop indices?
   if (!isLoopIndex(ast)) {
     if (auto vld = ast->toVarLikeDecl()) {
-      if (vld->name() == "foo") debuggerBreakHere();
       const AstNode* astForDeclProps;
 
       const AstNode* parent;
@@ -407,7 +405,13 @@ void VarScopeVisitor::exit(const NamedDecl* ast, RV& rv) {
         astForDeclProps = outerTuple;
 
         initExpr = outerTuple->initExpression();
-        initType = tupleInitTypesStack.back();
+        auto parentInitType = tupleInitTypesStack.back();
+        if (!parentInitType.isUnknown()) {
+          auto parentInitTupleType = parentInitType.type()->toTupleType();
+          CHPL_ASSERT(parentInitTupleType);
+          initType =
+              parentInitTupleType->elementType(indexWithinContainingTuple(ast));
+        }
         intentOrKind = (Qualifier)outerTuple->intentOrKind();
       } else {
         astForDeclProps = vld;
