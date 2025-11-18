@@ -62,18 +62,25 @@ clobber: FORCE clean-documentation
 depend:
 
 MAKE_SYS_BASIC_TYPES=$(CHPL_MAKE_HOME)/util/config/make_sys_basic_types.py
+MAKE_SYS_BASIC_TYPES_CMD=CHPL_HOST_COMPILER='$(CHPL_MAKE_HOST_COMPILER)' \
+                         CHPL_HOST_CC='$(CHPL_MAKE_HOST_CC)' \
+                         CHPL_HOST_CXX='$(CHPL_MAKE_HOST_CXX)' \
+                         CHPL_TARGET_COMPILER='$(CHPL_MAKE_TARGET_COMPILER)' \
+                         CHPL_TARGET_CC='$(CHPL_MAKE_TARGET_CC)' \
+                         CHPL_TARGET_CXX='$(CHPL_MAKE_TARGET_CXX)' \
+                         $(CHPL_MAKE_PYTHON) $(MAKE_SYS_BASIC_TYPES)
 
 $(SYS_CTYPES_MODULE): $(MAKE_SYS_BASIC_TYPES)
 	mkdir -p $(@D)
-	cd $(@D) && $(CHPL_MAKE_PYTHON) $(MAKE_SYS_BASIC_TYPES) $(@F)
+	cd $(@D) && $(MAKE_SYS_BASIC_TYPES_CMD) $(@F)
 
 $(SYS_CTYPES_MODULE_MINIMAL): $(MAKE_SYS_BASIC_TYPES)
 	mkdir -p $(@D)
-	cd $(@D) && $(CHPL_MAKE_PYTHON) $(MAKE_SYS_BASIC_TYPES) --minimal $(@F)
+	cd $(@D) && $(MAKE_SYS_BASIC_TYPES_CMD) --minimal $(@F)
 
 $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
 	mkdir -p $(@D)
-	cd $(@D) && $(CHPL_MAKE_PYTHON) $(MAKE_SYS_BASIC_TYPES) --doc $(@F)
+	cd $(@D) && $(MAKE_SYS_BASIC_TYPES_CMD) --doc $(@F)
 
 MODULES_TO_DOCUMENT = \
 	standard/Allocators.chpl \
