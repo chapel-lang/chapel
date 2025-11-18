@@ -6,8 +6,8 @@ From: almalinux:10
 
 %post
     /provision-scripts/dnf-upgrade.sh
-    /provision-scripts/dnf-deps.sh
     /provision-scripts/dnf-epel.sh
+    /provision-scripts/dnf-deps.sh
 
 %runscript
     ../../provision-scripts/run.sh "$@"
