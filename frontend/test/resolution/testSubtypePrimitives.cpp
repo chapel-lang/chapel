@@ -35,8 +35,7 @@ static constexpr int shouldError = 2;
 
 static void testPrimitive(std::string primitive,
                           std::vector<std::tuple<const char*, const char*, int>> args) {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::stringstream ps;
@@ -673,6 +672,12 @@ static void test21() {
   });
 }
 
+static void test22() {
+  testPrimitive("is_subtype", {
+    { "DefaultDist", "([1,2,3].domain.distribution.type)", shouldReturnTrue },
+  });
+}
+
 int main() {
   test1();
   test2();
@@ -695,4 +700,5 @@ int main() {
   test19();
   test20();
   test21();
+  test22();
 }
