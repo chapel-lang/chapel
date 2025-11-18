@@ -7177,10 +7177,12 @@ static bool handleArrayTypeExpr(Resolver& rv,
     if (auto dt = domainT->toDomainType()) {
       domainT = dt->makeUninstanced(rv.context);
     }
+    auto eltTypeT = eltType.type();
+    if (!eltTypeT) eltTypeT = UnknownType::get(rv.context);
     auto adjustedDomainType =
       QualifiedType(QualifiedType::TYPE, domainT);
     auto adjustedEltType =
-      QualifiedType(QualifiedType::TYPE, eltType.type());
+      QualifiedType(QualifiedType::TYPE, eltTypeT);
     arrayType = QualifiedType(QualifiedType::TYPE,
         ArrayType::getUninstancedArrayType(rv.context, adjustedDomainType, adjustedEltType));
   }
