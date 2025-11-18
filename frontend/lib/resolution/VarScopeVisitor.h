@@ -65,7 +65,9 @@ class VarScopeVisitor : public BranchSensitiveVisitor<VarFrame, MutatingResolved
   std::vector<const AstNode*> inAstStack;
   // Stack of tuple init/assign RHS types, matching the number and order of
   // tuple decls in the AST stack.
+  // TODO: use SmallVectors
   std::vector<types::QualifiedType> tupleInitTypesStack;
+  std::vector<const Tuple*> tupleInitExprsStack;
 
   // ----- methods to be implemented by specific analysis subclass
 

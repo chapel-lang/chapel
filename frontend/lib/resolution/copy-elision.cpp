@@ -79,7 +79,7 @@ struct FindElidedCopies : VarScopeVisitor {
   static void addDeclaration(VarFrame* frame,
                              Qualifier intentOrKind,
                              const NamedDecl* ast);
-  static void addCopyInit(VarFrame* frame, ID fromVarId, ID point);
+  void addCopyInit(VarFrame* frame, ID fromVarId, ID point);
   static void addMention(VarFrame* frame, ID varId);
 
   // save the copy-elided variables in frame to allElidedCopyFromIds
@@ -236,7 +236,9 @@ void FindElidedCopies::addCopyInit(VarFrame* frame, ID fromVarId, ID point) {
   // get the map entry, default-initializing it if there was none
   CopyElisionState& state = frame->copyElisionState[fromVarId];
   state.lastIsCopy = true;
-  state.points.clear();
+  if (!outermostContainingTuple()) {
+    state.points.clear();
+  }
   state.points.insert(point);
 }
 void FindElidedCopies::addMention(VarFrame* frame, ID varId) {
@@ -379,36 +381,36 @@ void FindElidedCopies::handleDeclaration(const VarLikeDecl* ast,
   if (initExpr) {
     VarFrame* frame = currentFrame();
     ID lhsVarId = ast->id();
-    QualifiedType lhsType = rv.byId(lhsVarId).type();
-    if (auto tupleExprInit = initExpr->toTuple()) {
-      // handle init with tuple expression
-      for (int i = 0; i < tupleExprInit->numActuals(); i++) {
-        auto actual = tupleExprInit->actual(i);
-        if (actual->isTuple()) {
-          // processSingleDeclHelper(ast, actual, QualifiedType(),
-          //                         isFormal, intentOrKind, rv);
-          handleDeclaration(ast, parent, actual, QualifiedType(), intentOrKind,
-                            isFormal, rv);
-        } else {
-          ID rhsVarId = refersToId(actual, rv);
-          if (!rhsVarId.isEmpty() && isEligibleVarInAnyFrame(rhsVarId)) {
-            // check that the types are the same
-            if (rv.hasId(lhsVarId) && rv.hasId(rhsVarId)) {
-              if (lhsType.type() && lhsType.type()->isTupleType()) {
-                const TupleType* ttype = lhsType.type()->toTupleType();
-                CHPL_ASSERT(ttype->numElements() == tupleExprInit->numActuals());
-                QualifiedType lhsEltType = ttype->elementType(i);
+    // QualifiedType lhsType = rv.byId(lhsVarId).type();
+    // if (auto tupleExprInit = initExpr->toTuple()) {
+    //   // handle init with tuple expression
+    //   for (int i = 0; i < tupleExprInit->numActuals(); i++) {
+    //     auto actual = tupleExprInit->actual(i);
+    //     if (actual->isTuple()) {
+    //       // processSingleDeclHelper(ast, actual, QualifiedType(),
+    //       //                         isFormal, intentOrKind, rv);
+    //       handleDeclaration(ast, parent, actual, QualifiedType(), intentOrKind,
+    //                         isFormal, rv);
+    //     } else {
+    //       ID rhsVarId = refersToId(actual, rv);
+    //       if (!rhsVarId.isEmpty() && isEligibleVarInAnyFrame(rhsVarId)) {
+    //         // check that the types are the same
+    //         if (rv.hasId(lhsVarId) && rv.hasId(rhsVarId)) {
+    //           if (lhsType.type() && lhsType.type()->isTupleType()) {
+    //             const TupleType* ttype = lhsType.type()->toTupleType();
+    //             CHPL_ASSERT(ttype->numElements() == tupleExprInit->numActuals());
+    //             QualifiedType lhsEltType = ttype->elementType(i);
 
-                QualifiedType rhsType = rv.byId(rhsVarId).type();
-                if (copyElisionAllowedForTypes(lhsEltType, rhsType, ast, rv)) {
-                  addCopyInit(frame, rhsVarId, actual->id());
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+    //             QualifiedType rhsType = rv.byId(rhsVarId).type();
+    //             if (copyElisionAllowedForTypes(lhsEltType, rhsType, ast, rv)) {
+    //               addCopyInit(frame, rhsVarId, actual->id());
+    //             }
+    //           }
+    //         }
+    //       }
+    //     }
+    //   }
+    // }
     ID rhsVarId = refersToId(initExpr, rv);
     if (!rhsVarId.isEmpty() && isEligibleVarInAnyFrame(rhsVarId)) {
       // check that the types are the same
