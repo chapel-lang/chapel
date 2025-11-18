@@ -63,11 +63,9 @@ class VarScopeVisitor : public BranchSensitiveVisitor<VarFrame, MutatingResolved
 
   // ----- internal variables
   std::vector<const AstNode*> inAstStack;
-  // Stack of tuple init exprs, matching the number and order of tuple decls in
-  // the AST stack.
-  // Init expr(s) can be nullptr if the containing tuple decl has no init expr,
-  // or its init expr is not a tuple expr.
-  std::vector<const Tuple*> tupleInitPartsStack;
+  // Stack of tuple init/assign RHS types, matching the number and order of
+  // tuple decls in the AST stack.
+  std::vector<types::QualifiedType> tupleInitTypesStack;
 
   // ----- methods to be implemented by specific analysis subclass
 
