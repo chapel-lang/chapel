@@ -355,6 +355,30 @@ void VarScopeVisitor::exit(const TupleDecl* ast, RV& rv) {
   //   handleTupleDeclaration(ast, rv);
   // }
 
+  // Add tuple index info to AssociatedActions on contained decls
+  for (int i = 0; i < ast->numDecls(); i++) {
+    auto decl = ast->decl(i);
+    auto& re = rv.byPostorder().byAst(decl);
+    AssociatedAction::ActionsList subActions;
+    for (auto action : re.associatedActions()) {
+      auto useId = action.id();
+      auto useTupleEltIdx = i;
+      // if (rhsTupleAst) {
+      //   useId = rhsTupleAst->actual(i)->id();
+      //   useTupleEltIdx = -1;
+      // }
+      auto actionWithIdx = new AssociatedAction(
+          action.action(), action.fn(), useId, action.type(),
+          /* tupleEltIdx */ useTupleEltIdx, action.subActions());
+      subActions.push_back(actionWithIdx);
+    }
+
+    re.clearAssociatedActions();
+    for (auto action : subActions) {
+      re.addAssociatedAction(*action);
+    }
+  }
+
   tupleInitTypesStack.pop_back();
 
   exitScope(ast, rv);
