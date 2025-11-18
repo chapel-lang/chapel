@@ -13,7 +13,8 @@ def get(flag='host'):
     platform = chpl_platform.get(flag)
     arch = chpl_arch.get(flag)
     (_, cpu) = chpl_cpu.get(flag, map_to_compiler=True,
-                            get_lcd=chpl_home_utils.using_chapel_module())
+                            get_lcd=chpl_home_utils.using_chapel_module(),
+                            prefer_runtime_cpu=True)
 
     # platform
     result = platform
