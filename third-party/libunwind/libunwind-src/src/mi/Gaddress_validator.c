@@ -242,7 +242,8 @@ _cache_valid_mem(unw_word_t page_addr)
  * Validates the memory range from @p addr to (@p addr + @p len - 1) is
  * readable.  Since the granularity of memory readability is the page, only one
  * byte needs to be validated per page for each page starting at @p addr and
- * encompassing @p len bytes. Only the first address of each page is checked.
+ * encompassing @p len bytes. Only the starting address of the memory range and
+ * the first address of each additional page is checked.
  *
  * @returns true if the memory is readable, false otherwise.
  */
@@ -288,7 +289,8 @@ unw_address_is_valid(unw_word_t addr, size_t len)
     {
       if (!_is_cached_valid_mem(page_addr))
         {
-          if (!_write_validate (page_addr))
+          /* Check 'addr' in first page to avoid uninitialized memory access. */
+          if (!_write_validate ((page_addr == start_page_addr) ? addr : page_addr))
             {
               Debug(1, "returning false\n");
               return false;
