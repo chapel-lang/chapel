@@ -1807,7 +1807,6 @@ static bool isFormalPartiallyGeneric(const DisambiguationCandidate& candidate,
 
   const uast::AstNode* faTypeExpr = nullptr;
   if (auto va = faDecl->toVarArgFormal()) {
-    if (va->count() != nullptr) return true;
     faTypeExpr = va->typeExpression();
   } else if (auto nf = faDecl->toVarLikeDecl()) {
     faTypeExpr = nf->typeExpression();
