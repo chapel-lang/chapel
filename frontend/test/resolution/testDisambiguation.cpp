@@ -559,6 +559,24 @@ static void testPartialGeneric6() {
     -1); // ambiguous between 1 and 2
 }
 
+// regression test; vararg counts are not part of a formal's type and thus
+// don't make it partially generic. Thus, 'proc foo(x...1)` and `proc foo(x)`
+// should both be fully generic and ambiguous. Other constraitns (e.g. `where`
+// clauses) would then be used to disambiguate.
+//
+// See `Matrix(rows, cols, type eltType)` in `LinearAlgebra` for an example
+// of this in practice.
+static void testPartialGeneric7() {
+  auto context = buildStdContext();
+  checkCalledIndex(context,
+      R""""(
+        proc f(const args...?n, type eltType) { }  // 1 - fully generic
+        proc f(arg1, arg2, type eltType=real) where isIntegral(arg1) && isIntegral(arg2) { }  // 2 - fully generic
+        f(5, 10, int);
+      )"""",
+    2); // where clause makes 2 more specific
+}
+
 int main() {
 
   test1();
@@ -575,6 +593,7 @@ int main() {
   testPartialGeneric4();
   testPartialGeneric5();
   testPartialGeneric6();
+  testPartialGeneric7();
 
   return 0;
 }
